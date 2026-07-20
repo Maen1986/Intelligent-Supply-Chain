@@ -238,7 +238,7 @@ export function Home() {
                 {/* Gold glow behind photo */}
                 <div className="absolute -inset-4 rounded-3xl bg-accent/20 blur-2xl" />
                 <img
-                  src="/brand/hero-consultant.jpg?v=2"
+                  src="/brand/hero-consultant.jpg?v=3"
                   alt="Maen — AI Supply Chain Consultant"
                   className="relative rounded-3xl shadow-2xl object-cover ring-2 ring-white/20"
                   style={{ width: '420px', height: '520px', objectPosition: 'top center' }}
