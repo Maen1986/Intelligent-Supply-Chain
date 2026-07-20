@@ -168,3 +168,15 @@ id = "hHRM6jtu98KeE6jpm2GYE"
 uri = "file://artifacts/i-supply-chain/public/brand/about-team.jpg"
 type = "image"
 title = "Strategy Meeting"
+
+[[outputs]]
+id = "twlXPos0GirK3niquz77Y"
+uri = "file://artifacts/i-supply-chain/public/brand/hero-consultant-v1.jpg"
+type = "image"
+title = "V1 — Thobe + Navy European Blazer + Ghutra"
+
+[[outputs]]
+id = "0BRyTs9IOmexaCL7_Bb10"
+uri = "file://artifacts/i-supply-chain/public/brand/hero-consultant-v2.jpg"
+type = "image"
+title = "V2 — Thobe + Charcoal Suit Jacket + Ghutra & Agal"
