@@ -15,6 +15,7 @@ import { Csr } from '@/pages/Csr';
 import { About } from '@/pages/About';
 import { CaseStudies } from '@/pages/CaseStudies';
 import { Insights } from '@/pages/Insights';
+import { Intelligence } from '@/pages/Intelligence';
 import { ChatWidget } from '@/components/ChatWidget';
 import { WhatsAppButton } from '@/components/WhatsAppButton';
 
@@ -46,6 +47,7 @@ function Router() {
         <Route path="/about" component={About} />
         <Route path="/case-studies" component={CaseStudies} />
         <Route path="/insights" component={Insights} />
+        <Route path="/intelligence" component={Intelligence} />
         <Route component={NotFound} />
       </Switch>
     </Layout>
