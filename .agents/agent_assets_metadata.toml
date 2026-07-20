@@ -132,3 +132,21 @@ id = "e-1yQIj0OwH293yCxtZKX"
 uri = "file://artifacts/i-supply-chain/public/brand/avatar-option-3.png"
 type = "image"
 title = "Avatar C — Minimal geometric"
+
+[[outputs]]
+id = "4rC6UGxFCR4XWueQMb-D9"
+uri = "file://artifacts/i-supply-chain/public/brand/logo.png"
+type = "image"
+title = "Current logo.png (what is live on the site right now)"
+
+[[outputs]]
+id = "n541UBMXknNrHY54A7e7j"
+uri = "file://artifacts/i-supply-chain/public/brand/logo-d1-v1.png"
+type = "image"
+title = "D1 ISC — V1 (neural nodes + chain S + chain C, gold connectors)"
+
+[[outputs]]
+id = "frHdbQL1T9pD6TMIyBCLj"
+uri = "file://artifacts/i-supply-chain/public/brand/logo-d1-v2.png"
+type = "image"
+title = "D1 ISC — V2 (same concept, tighter composition)"
