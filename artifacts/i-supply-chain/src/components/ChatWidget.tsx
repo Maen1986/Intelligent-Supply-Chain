@@ -37,48 +37,96 @@ export function ChatWidget() {
   const inputRef = useRef<HTMLInputElement>(null);
   const abortRef = useRef<AbortController | null>(null);
 
-  // Pick the best available male voice (runs once voices are loaded)
-  const pickMaleVoice = useCallback((): SpeechSynthesisVoice | null => {
-    const voices = window.speechSynthesis.getVoices();
-    // Prefer high-quality English male voices by name priority
-    const preferred = ['Google UK English Male', 'Microsoft David', 'Microsoft Mark',
-      'Daniel', 'Alex', 'Fred', 'Ralph', 'Albert'];
+  // Ref to the Chrome keep-alive interval (fixes the ~15s auto-pause bug)
+  const ttsWatchdogRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const clearWatchdog = useCallback(() => {
+    if (ttsWatchdogRef.current) {
+      clearInterval(ttsWatchdogRef.current);
+      ttsWatchdogRef.current = null;
+    }
+  }, []);
+
+  // Load voices — returns a promise that resolves once voices are available
+  const getVoices = useCallback((): Promise<SpeechSynthesisVoice[]> => {
+    return new Promise(resolve => {
+      const voices = window.speechSynthesis.getVoices();
+      if (voices.length > 0) { resolve(voices); return; }
+      const handler = () => { resolve(window.speechSynthesis.getVoices()); };
+      window.speechSynthesis.addEventListener('voiceschanged', handler, { once: true });
+      // Fallback if event never fires (some browsers)
+      setTimeout(() => resolve(window.speechSynthesis.getVoices()), 1000);
+    });
+  }, []);
+
+  const pickMaleVoice = useCallback((voices: SpeechSynthesisVoice[]): SpeechSynthesisVoice | null => {
+    const preferred = [
+      'Google UK English Male', 'Microsoft David - English', 'Microsoft Mark - English',
+      'Daniel', 'Alex', 'Fred', 'Ralph', 'Albert',
+    ];
     for (const name of preferred) {
       const v = voices.find(v => v.name.includes(name));
       if (v) return v;
     }
-    // Fallback: any male-sounding English voice
-    const maleFallback = voices.find(v =>
-      v.lang.startsWith('en') && /male|man|david|mark|daniel|alex|fred/i.test(v.name)
+    // Any male-sounding en voice
+    const male = voices.find(v =>
+      v.lang.startsWith('en') && /male|david|mark|daniel|alex|fred|ralph/i.test(v.name)
     );
-    return maleFallback ?? voices.find(v => v.lang.startsWith('en')) ?? null;
+    // Fallback: first English voice
+    return male ?? voices.find(v => v.lang.startsWith('en')) ?? voices[0] ?? null;
   }, []);
 
-  const speakText = useCallback((text: string) => {
+  const speakText = useCallback(async (text: string) => {
     if (!text.trim() || !window.speechSynthesis) return;
-    window.speechSynthesis.cancel(); // stop anything currently playing
-    const utterance = new SpeechSynthesisUtterance(text);
-    const voice = pickMaleVoice();
-    if (voice) utterance.voice = voice;
-    utterance.rate = 0.92;
-    utterance.pitch = 0.85;
-    utterance.volume = 1;
-    utterance.onstart = () => setIsSpeaking(true);
-    utterance.onend = () => setIsSpeaking(false);
-    utterance.onerror = () => setIsSpeaking(false);
-    // voices may not be ready yet — small delay on first call
-    const go = () => { setIsSpeaking(true); window.speechSynthesis.speak(utterance); };
-    if (window.speechSynthesis.getVoices().length === 0) {
-      window.speechSynthesis.onvoiceschanged = go;
-    } else {
-      go();
-    }
-  }, [pickMaleVoice]);
+
+    // Cancel anything in progress and clear watchdog
+    window.speechSynthesis.cancel();
+    clearWatchdog();
+
+    const voices = await getVoices();
+    const voice = pickMaleVoice(voices);
+
+    // Split into sentences so Chrome's 15-second limit doesn't cut us off mid-response
+    const sentences = text.match(/[^.!?]+[.!?]*/g)?.filter(s => s.trim()) ?? [text];
+
+    let index = 0;
+    setIsSpeaking(true);
+
+    // Chrome pauses synthesis randomly — this watchdog resumes it every 10s
+    ttsWatchdogRef.current = setInterval(() => {
+      if (window.speechSynthesis.paused) window.speechSynthesis.resume();
+    }, 10_000);
+
+    const speakNext = () => {
+      if (index >= sentences.length) {
+        clearWatchdog();
+        setIsSpeaking(false);
+        return;
+      }
+      const utt = new SpeechSynthesisUtterance(sentences[index].trim());
+      if (voice) utt.voice = voice;
+      utt.rate = 0.92;
+      utt.pitch = 0.85;
+      utt.volume = 1;
+      utt.onend = () => { index++; speakNext(); };
+      utt.onerror = (e) => {
+        // 'interrupted' fires on cancel — treat as normal stop
+        if ((e as any).error !== 'interrupted') {
+          clearWatchdog();
+          setIsSpeaking(false);
+        }
+      };
+      window.speechSynthesis.speak(utt);
+    };
+
+    speakNext();
+  }, [getVoices, pickMaleVoice, clearWatchdog]);
 
   const stopSpeaking = useCallback(() => {
+    clearWatchdog();
     window.speechSynthesis?.cancel();
     setIsSpeaking(false);
-  }, []);
+  }, [clearWatchdog]);
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
