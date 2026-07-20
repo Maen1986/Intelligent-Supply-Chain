@@ -41,9 +41,11 @@ export function Header() {
           <Button variant="ghost" size="sm" onClick={toggleLanguage} className="font-medium" data-testid="button-lang-toggle">
             {lang === 'en' ? 'AR' : 'EN'}
           </Button>
-          <Button variant="outline" size="sm" className="border-border text-foreground hover:bg-muted" data-testid="button-login">
-            {t('nav.loginRegister')}
-          </Button>
+          <Link href="/consultant">
+            <Button variant="outline" size="sm" className="border-primary text-primary hover:bg-primary hover:text-white font-semibold transition-colors" data-testid="button-login">
+              {t('nav.loginRegister')}
+            </Button>
+          </Link>
         </div>
 
         {/* Mobile menu toggle */}
@@ -70,9 +72,11 @@ export function Header() {
               {t(link.key as any)}
             </Link>
           ))}
-          <Button variant="outline" className="mt-2 w-full justify-center">
-            {t('nav.loginRegister')}
-          </Button>
+          <Link href="/consultant" onClick={() => setMobileMenuOpen(false)}>
+            <Button variant="outline" className="mt-2 w-full justify-center border-primary text-primary hover:bg-primary hover:text-white font-semibold">
+              {t('nav.loginRegister')}
+            </Button>
+          </Link>
         </div>
       )}
     </header>

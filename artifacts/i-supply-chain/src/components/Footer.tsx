@@ -27,7 +27,8 @@ export function Footer() {
           <p className="text-white/80 text-sm">{t('footer.email')}</p>
           <div className="flex flex-wrap gap-4 mt-4 md:justify-end">
             <Link href="/" className="text-white/70 hover:text-white text-sm transition-colors">{t('nav.home')}</Link>
-            <Link href="/diagnostic" className="text-white/70 hover:text-white text-sm transition-colors">{t('diagnostic.title')}</Link>
+            <Link href="/diagnostic" className="text-white/70 hover:text-white text-sm transition-colors">{t('nav.diagnostic') as string || 'AI Diagnostic'}</Link>
+            <Link href="/consultant" className="text-white/70 hover:text-white text-sm transition-colors">{t('nav.contact')}</Link>
             <Link href="/csr" className="text-white/70 hover:text-white text-sm transition-colors">{t('nav.csr')}</Link>
           </div>
         </div>

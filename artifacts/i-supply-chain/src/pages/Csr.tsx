@@ -17,7 +17,7 @@ export function Csr() {
   });
 
   const industries = [
-    'Manufacturing', 'Marine', 'Retail', 'FMCG', 'Pharma', 'Logistics', 
+    'Manufacturing', 'Marine', 'Retail', 'FMCG', 'Pharma', 'Logistics',
     'Energy', 'Construction', 'Tech', 'Food & Beverage', 'Healthcare', 'Other'
   ];
 
@@ -40,7 +40,6 @@ export function Csr() {
         "Month 3: Standardize your company's preferred payment terms and negotiate with top 3 suppliers"
       ];
 
-      // Custom industry overrrides
       if (formData.industry === 'Manufacturing') {
         summary = "Manufacturing SMEs typically face fragmented supplier management, limited inventory visibility, and reactive maintenance procurement.";
         gaps = ["No formal approved vendor list for raw materials", "Spot purchasing driving price volatility", "Limited supplier quality data and inspection processes"];
@@ -69,132 +68,139 @@ export function Csr() {
     <div className="w-full">
       {/* Page Hero Banner */}
       <div className="relative w-full h-56 md:h-72 overflow-hidden">
-        <img src="/brand/page-csr.jpg" alt="CSR Free Diagnostic" className="absolute inset-0 w-full h-full object-cover object-center" />
+        <img
+          src="/brand/page-csr.jpg"
+          alt="CSR Free Diagnostic"
+          className="absolute inset-0 w-full h-full object-cover object-center"
+        />
         <div className="absolute inset-0 bg-gradient-to-r from-[#082C6B]/90 via-[#0B3D91]/80 to-[#0B3D91]/50" />
         <div className="relative z-10 h-full flex flex-col items-center justify-center text-center px-4">
           <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-white mb-3">{t('csr.title')}</h1>
-          <p className="text-white/80 text-base md:text-lg max-w-2xl">Free supply chain support for startups and small businesses — our contribution to stronger, more resilient communities.</p>
+          <p className="text-white/80 text-base md:text-lg max-w-2xl">
+            Free supply chain support for startups and small businesses — our contribution to stronger, more resilient communities.
+          </p>
         </div>
       </div>
 
-    <div className="container mx-auto px-4 py-10 sm:py-16 max-w-4xl">
-      {!report ? (
-        <div className="bg-white rounded-2xl shadow-lg border border-border p-6 md:p-10 max-w-2xl mx-auto">
-          <div className="space-y-6">
-            <div className="space-y-3">
-              <Label htmlFor="industry" className="text-base font-medium">Your Industry</Label>
-              <Select onValueChange={(val) => setFormData(p => ({ ...p, industry: val }))}>
-                <SelectTrigger id="industry" className="h-12 text-base">
-                  <SelectValue placeholder="Select industry" />
-                </SelectTrigger>
-                <SelectContent>
-                  {industries.map(ind => (
-                    <SelectItem key={ind} value={ind}>{ind}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-3">
-              <Label htmlFor="challenge" className="text-base font-medium">Primary Challenge</Label>
-              <Textarea 
-                id="challenge"
-                placeholder="Describe your current challenge in a few sentences..." 
-                className="resize-none min-h-[120px] text-base"
-                value={formData.challenge}
-                onChange={(e) => setFormData(p => ({ ...p, challenge: e.target.value }))}
-              />
-            </div>
-
-            <Button 
-              onClick={generateCsrReport} 
-              disabled={!isFormValid || isGenerating}
-              className="w-full bg-accent hover:bg-accent/90 text-white font-bold h-12 text-lg mt-4"
-            >
-              {isGenerating ? "Analyzing..." : "Generate Free Report"}
-            </Button>
-          </div>
-        </div>
-      ) : (
-        <div className="flex flex-col gap-6">
-          <div className="flex justify-end no-print">
-             <Button variant="outline" onClick={() => window.print()} className="border-accent text-accent hover:bg-accent/10">
-                Download as PDF
-             </Button>
-          </div>
-          
-          <div id="diagnostic-report" className="bg-white rounded-xl shadow-lg border border-border overflow-hidden">
-            <div className="bg-[#EAF1FB] p-4 sm:p-8 border-b border-border">
-              <div className="flex justify-between items-start mb-6">
-                <Logo />
-                <span className="px-3 py-1 bg-primary text-white text-xs font-bold rounded-full uppercase tracking-wider">CSR Support Program</span>
+      {/* Page Content */}
+      <div className="container mx-auto px-4 py-10 sm:py-16 max-w-4xl">
+        {!report ? (
+          <div className="bg-white rounded-2xl shadow-lg border border-border p-6 md:p-10 max-w-2xl mx-auto">
+            <div className="space-y-6">
+              <div className="space-y-3">
+                <Label htmlFor="industry" className="text-base font-medium">Your Industry</Label>
+                <Select onValueChange={(val) => setFormData(p => ({ ...p, industry: val }))}>
+                  <SelectTrigger id="industry" className="h-12 text-base">
+                    <SelectValue placeholder="Select industry" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {industries.map(ind => (
+                      <SelectItem key={ind} value={ind}>{ind}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-              <h2 className="text-2xl font-bold text-primary mb-2">SME Supply Chain Action Plan</h2>
-              <p className="text-muted-foreground font-medium">Prepared for: {report.industry} Sector</p>
+
+              <div className="space-y-3">
+                <Label htmlFor="challenge" className="text-base font-medium">Primary Challenge</Label>
+                <Textarea
+                  id="challenge"
+                  placeholder="Describe your current challenge in a few sentences..."
+                  className="resize-none min-h-[120px] text-base"
+                  value={formData.challenge}
+                  onChange={(e) => setFormData(p => ({ ...p, challenge: e.target.value }))}
+                />
+              </div>
+
+              <Button
+                onClick={generateCsrReport}
+                disabled={!isFormValid || isGenerating}
+                className="w-full bg-accent hover:bg-accent/90 text-white font-bold h-12 text-lg mt-4"
+              >
+                {isGenerating ? "Analyzing..." : "Generate Free Report"}
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-6">
+            <div className="flex justify-end no-print">
+              <Button variant="outline" onClick={() => window.print()} className="border-accent text-accent hover:bg-accent/10">
+                Download as PDF
+              </Button>
             </div>
 
-            <div className="p-4 sm:p-8 space-y-8">
-              <section>
-                <h3 className="text-lg font-bold text-primary mb-3 uppercase tracking-wide border-b-2 border-accent pb-2">1. Diagnostic Summary</h3>
-                <p className="text-foreground leading-relaxed">{report.summary}</p>
-              </section>
-
-              <section>
-                <h3 className="text-lg font-bold text-primary mb-3 uppercase tracking-wide border-b-2 border-accent pb-2">2. Procurement Gap Analysis</h3>
-                <ul className="space-y-3">
-                  {report.gaps.map((item: string, i: number) => (
-                    <li key={i} className="flex items-start gap-3">
-                      <span className="w-2 h-2 mt-2 rounded-full bg-accent shrink-0"></span>
-                      <span className="text-foreground">{item}</span>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-
-              <section>
-                <h3 className="text-lg font-bold text-primary mb-3 uppercase tracking-wide border-b-2 border-accent pb-2">3. Contract Risk Scan</h3>
-                <ul className="space-y-3">
-                  {report.risks.map((item: string, i: number) => (
-                    <li key={i} className="flex items-start gap-3">
-                      <span className="w-2 h-2 mt-2 rounded-full bg-destructive shrink-0"></span>
-                      <span className="text-foreground">{item}</span>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-
-              <section>
-                <h3 className="text-lg font-bold text-primary mb-3 uppercase tracking-wide border-b-2 border-accent pb-2">4. Basic Improvement Roadmap</h3>
-                <div className="bg-muted p-5 rounded-lg border border-border">
-                  <ul className="space-y-4">
-                    {report.roadmap.map((item: string, i: number) => {
-                      const [time, action] = item.split(': ');
-                      return (
-                        <li key={i} className="flex items-start gap-3">
-                          <span className="font-bold text-primary">{time}:</span>
-                          <span className="text-foreground/90">{action}</span>
-                        </li>
-                      );
-                    })}
-                  </ul>
+            <div id="diagnostic-report" className="bg-white rounded-xl shadow-lg border border-border overflow-hidden">
+              <div className="bg-[#EAF1FB] p-4 sm:p-8 border-b border-border">
+                <div className="flex justify-between items-start mb-6">
+                  <Logo />
+                  <span className="px-3 py-1 bg-primary text-white text-xs font-bold rounded-full uppercase tracking-wider">CSR Support Program</span>
                 </div>
-              </section>
+                <h2 className="text-2xl font-bold text-primary mb-2">SME Supply Chain Action Plan</h2>
+                <p className="text-muted-foreground font-medium">Prepared for: {report.industry} Sector</p>
+              </div>
+
+              <div className="p-4 sm:p-8 space-y-8">
+                <section>
+                  <h3 className="text-lg font-bold text-primary mb-3 uppercase tracking-wide border-b-2 border-accent pb-2">1. Diagnostic Summary</h3>
+                  <p className="text-foreground leading-relaxed">{report.summary}</p>
+                </section>
+
+                <section>
+                  <h3 className="text-lg font-bold text-primary mb-3 uppercase tracking-wide border-b-2 border-accent pb-2">2. Procurement Gap Analysis</h3>
+                  <ul className="space-y-3">
+                    {report.gaps.map((item: string, i: number) => (
+                      <li key={i} className="flex items-start gap-3">
+                        <span className="w-2 h-2 mt-2 rounded-full bg-accent shrink-0" />
+                        <span className="text-foreground">{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+
+                <section>
+                  <h3 className="text-lg font-bold text-primary mb-3 uppercase tracking-wide border-b-2 border-accent pb-2">3. Contract Risk Scan</h3>
+                  <ul className="space-y-3">
+                    {report.risks.map((item: string, i: number) => (
+                      <li key={i} className="flex items-start gap-3">
+                        <span className="w-2 h-2 mt-2 rounded-full bg-destructive shrink-0" />
+                        <span className="text-foreground">{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+
+                <section>
+                  <h3 className="text-lg font-bold text-primary mb-3 uppercase tracking-wide border-b-2 border-accent pb-2">4. Basic Improvement Roadmap</h3>
+                  <div className="bg-muted p-5 rounded-lg border border-border">
+                    <ul className="space-y-4">
+                      {report.roadmap.map((item: string, i: number) => {
+                        const [time, action] = item.split(': ');
+                        return (
+                          <li key={i} className="flex items-start gap-3">
+                            <span className="font-bold text-primary">{time}:</span>
+                            <span className="text-foreground/90">{action}</span>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                </section>
+              </div>
+
+              <div className="bg-primary px-4 sm:px-8 py-4 text-white flex flex-col sm:flex-row justify-between sm:items-center gap-1 text-sm">
+                <p>I Supply Chain — CSR Initiative</p>
+                <p>Confidential</p>
+              </div>
             </div>
-            
-            <div className="bg-primary px-4 sm:px-8 py-4 text-white flex flex-col sm:flex-row justify-between sm:items-center gap-1 text-sm">
-              <p>I Supply Chain — CSR Initiative</p>
-              <p>Confidential</p>
+
+            <div className="mt-8 text-center no-print">
+              <Button variant="ghost" onClick={() => setReport(null)}>
+                Run Another Analysis
+              </Button>
             </div>
           </div>
-          
-          <div className="mt-8 text-center no-print">
-            <Button variant="ghost" onClick={() => setReport(null)}>
-               Run Another Analysis
-            </Button>
-          </div>
-        </div>
-      )}
-    </div>
+        )}
+      </div>
     </div>
   );
 }
