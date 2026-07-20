@@ -1,0 +1,20 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "abhBYiH-C9sgdznILxHb6"
+uri = "file://artifacts/i-supply-chain/public/brand/logo-option-a.png"
+type = "image"
+title = "Logo A — Hexagonal Network"
+
+[[outputs]]
+id = "euq2w7nOYBxRLsVqchNdS"
+uri = "file://artifacts/i-supply-chain/public/brand/logo-option-b.png"
+type = "image"
+title = "Logo B — Interlocking Chain Rings"
+
+[[outputs]]
+id = "owkmNAnbm0_e1obzswSzK"
+uri = "file://artifacts/i-supply-chain/public/brand/logo-option-c.png"
+type = "image"
+title = "Logo C — Gradient Arrow Bars"
