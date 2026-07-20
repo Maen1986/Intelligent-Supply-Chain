@@ -90,3 +90,15 @@ id = "pQJg3ky8V9IGsxGp_gt4A"
 uri = "file://artifacts/i-supply-chain/public/brand/logo-isc-2.png"
 type = "image"
 title = "ISC v2 — Flowing single organism, I-S-C seamlessly connected"
+
+[[outputs]]
+id = "hmGroJf-HDa-xusBHb70o"
+uri = "file://artifacts/i-supply-chain/public/brand/logo-isc-final-1.png"
+type = "image"
+title = "ISC Final 1 — I (neural) + S (chain rings) + C (bent chain arc), gold connectors"
+
+[[outputs]]
+id = "hGJJUzyGAEBJk0lrg4Dne"
+uri = "file://artifacts/i-supply-chain/public/brand/logo-isc-final-2.png"
+type = "image"
+title = "ISC Final 2 — All three letters chained together with prominent gold links between them"
