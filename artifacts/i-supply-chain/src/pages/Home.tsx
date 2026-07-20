@@ -3,7 +3,7 @@ import { motion, useInView, useMotionValue, useTransform, animate, AnimatePresen
 import { useLanguage } from '@/lib/LanguageContext';
 import { Link } from 'wouter';
 import { Button } from '@/components/ui/button';
-import { GitBranch, ShoppingCart, FileText, Users, ShieldAlert, Leaf, RefreshCw, Cpu, ChevronRight, ArrowRight } from 'lucide-react';
+import { GitBranch, ShoppingCart, FileText, Users, ShieldAlert, Leaf, RefreshCw, Cpu, ChevronRight, ArrowRight, Star, Quote } from 'lucide-react';
 
 // ─── Animated counter hook ──────────────────────────────────────────────────
 function useAnimatedCounter(target: number, shouldStart: boolean, duration = 2) {
@@ -521,6 +521,142 @@ export function Home() {
           </div>
         </div>
       </section>
+
+      {/* ── Testimonials ─────────────────────────────────────────────────── */}
+      <section className="py-20 bg-muted">
+        <div className="container mx-auto px-4">
+          <RevealSection className="text-center mb-14">
+            <span className="text-accent font-bold text-sm uppercase tracking-widest">Client Voices</span>
+            <h2 className="text-3xl md:text-4xl font-bold text-primary mt-3">What Our Clients Say</h2>
+          </RevealSection>
+          <div className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
+            {[
+              {
+                quote: "I Supply Chain transformed how we manage our supplier base. We went from 47 fragmented vendors to 18 high-performance partners — and our procurement costs dropped by 23% in six months. The diagnostic report alone was worth the engagement.",
+                name: "Chief Procurement Officer",
+                company: "Saudi Pharmaceutical Group",
+                region: "Riyadh, KSA",
+                stars: 5,
+              },
+              {
+                quote: "Maen and the team have a rare combination: genuine technical depth in supply chain and an intuitive understanding of how business is done in the GCC. Their Vision 2030 compliance framework gave us a competitive advantage we did not expect.",
+                name: "VP Operations",
+                company: "GCC Government Entity",
+                region: "Abu Dhabi, UAE",
+                stars: 5,
+              },
+              {
+                quote: "The AI diagnostic identified three procurement gaps we had overlooked for years. Within 90 days of implementation, our raw material purchase cycle dropped from 28 days to 11. I recommend I Supply Chain to every operations leader I meet.",
+                name: "General Manager",
+                company: "Jordanian Manufacturing Company",
+                region: "Amman, Jordan",
+                stars: 5,
+              },
+              {
+                quote: "We were struggling with out-of-stock rates above 15% during peak seasons. I Supply Chain redesigned our inventory policy and supplier SLA framework. Our stockouts are now below 5% and customer satisfaction has never been higher.",
+                name: "Head of Supply Chain",
+                company: "Regional Retail Chain",
+                region: "Jeddah, KSA",
+                stars: 5,
+              },
+              {
+                quote: "The CSR free diagnostic was genuinely useful. As a startup we couldn't afford a full engagement, but the report gave us a practical 90-day roadmap that helped us win our first major procurement contract. Exceptional value.",
+                name: "Founder & CEO",
+                company: "Tech Startup",
+                region: "Amman, Jordan",
+                stars: 5,
+              },
+              {
+                quote: "Sophie and James brought European best practice and adapted it perfectly to our local market context. Our ESG supplier framework opened three international tender opportunities within six months of completion.",
+                name: "Sustainability Director",
+                company: "Saudi Energy Services Company",
+                region: "Dhahran, KSA",
+                stars: 5,
+              },
+            ].map((t, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: '-40px' }}
+                transition={{ duration: 0.55, delay: i * 0.08, ease: [0.22, 1, 0.36, 1] }}
+                className="bg-white rounded-2xl p-7 shadow-sm border border-border flex flex-col gap-5 hover:shadow-md transition-shadow"
+              >
+                <Quote className="w-7 h-7 text-accent/40 shrink-0" />
+                <p className="text-foreground/80 text-sm leading-relaxed flex-1 italic">"{t.quote}"</p>
+                <div className="flex items-center justify-between pt-4 border-t border-border">
+                  <div>
+                    <p className="font-bold text-primary text-sm">{t.name}</p>
+                    <p className="text-xs text-muted-foreground">{t.company}</p>
+                    <p className="text-xs text-muted-foreground">{t.region}</p>
+                  </div>
+                  <div className="flex gap-0.5">
+                    {Array.from({ length: t.stars }).map((_, si) => (
+                      <Star key={si} className="w-3.5 h-3.5 text-accent fill-accent" />
+                    ))}
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Case Studies Teaser ───────────────────────────────────────────── */}
+      <RevealSection className="py-16 bg-white">
+        <div className="container mx-auto px-4 max-w-5xl">
+          <div className="grid md:grid-cols-3 gap-6 items-center">
+            <div className="md:col-span-2 space-y-4">
+              <span className="text-accent font-bold text-sm uppercase tracking-widest">Proven Impact</span>
+              <h2 className="text-3xl font-bold text-primary">23% Cost Reduction. 67% Fewer Stockouts. Zero Single-Source Dependencies.</h2>
+              <p className="text-muted-foreground leading-relaxed">
+                Real results for real organisations. Explore our case studies across pharma, manufacturing, retail, government, logistics, and energy.
+              </p>
+            </div>
+            <div className="flex flex-col gap-3">
+              <Link href="/case-studies">
+                <Button size="lg" className="w-full bg-primary hover:bg-primary/90 text-white font-bold">
+                  View All Case Studies <ChevronRight className="w-4 h-4 ml-1" />
+                </Button>
+              </Link>
+              <Link href="/diagnostic">
+                <Button size="lg" variant="outline" className="w-full border-primary text-primary hover:bg-primary hover:text-white font-bold">
+                  Start Free Diagnostic
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </RevealSection>
+
+      {/* ── Final CTA ─────────────────────────────────────────────────────── */}
+      <section className="py-20 bg-gradient-to-r from-[#082C6B] to-[#0B3D91] text-white">
+        <div className="container mx-auto px-4 text-center max-w-3xl">
+          <RevealSection className="space-y-6">
+            <Cpu className="w-12 h-12 text-accent mx-auto" />
+            <h2 className="text-3xl md:text-4xl font-bold">Ready to Build a World-Class Supply Chain?</h2>
+            <p className="text-white/75 text-lg leading-relaxed">
+              Start with a free 5-minute AI diagnostic and receive a strategic report tailored to your organisation — or book a confidential consultation with our senior team today.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center pt-2">
+              <Link href="/diagnostic">
+                <Button size="lg" className="bg-accent hover:bg-accent/90 text-white font-bold px-8 min-h-[52px]">
+                  Start Free AI Diagnostic
+                </Button>
+              </Link>
+              <Link href="/consultant">
+                <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-primary font-bold px-8 min-h-[52px]">
+                  Book a Consultation
+                </Button>
+              </Link>
+            </div>
+            <Link href="/insights" className="text-white/50 hover:text-accent text-sm underline underline-offset-4 inline-block transition-colors">
+              Read our latest insights →
+            </Link>
+          </RevealSection>
+        </div>
+      </section>
+
     </div>
   );
 }

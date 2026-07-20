@@ -12,7 +12,11 @@ import { Home } from '@/pages/Home';
 import { Diagnostic } from '@/pages/Diagnostic';
 import { Consultant } from '@/pages/Consultant';
 import { Csr } from '@/pages/Csr';
+import { About } from '@/pages/About';
+import { CaseStudies } from '@/pages/CaseStudies';
+import { Insights } from '@/pages/Insights';
 import { ChatWidget } from '@/components/ChatWidget';
+import { WhatsAppButton } from '@/components/WhatsAppButton';
 
 const queryClient = new QueryClient();
 
@@ -26,6 +30,7 @@ function Layout({ children }: { children: React.ReactNode }) {
       </main>
       <Footer />
       <ChatWidget />
+      <WhatsAppButton />
     </div>
   );
 }
@@ -38,6 +43,9 @@ function Router() {
         <Route path="/diagnostic" component={Diagnostic} />
         <Route path="/consultant" component={Consultant} />
         <Route path="/csr" component={Csr} />
+        <Route path="/about" component={About} />
+        <Route path="/case-studies" component={CaseStudies} />
+        <Route path="/insights" component={Insights} />
         <Route component={NotFound} />
       </Switch>
     </Layout>
