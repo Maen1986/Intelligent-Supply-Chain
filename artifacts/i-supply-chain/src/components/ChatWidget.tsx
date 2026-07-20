@@ -210,31 +210,105 @@ export function ChatWidget() {
 
   return (
     <>
+      {/* Speaking avatar card — shown above trigger when speaking & chat is closed */}
+      <AnimatePresence>
+        {isSpeaking && !isOpen && (
+          <motion.div
+            key="speaking-card"
+            initial={{ opacity: 0, y: 16, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 16, scale: 0.9 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 28 }}
+            className="fixed bottom-28 right-4 z-50 flex flex-col items-center gap-2"
+          >
+            {/* Avatar with ripple rings */}
+            <div className="relative flex items-center justify-center">
+              {/* Ripple rings */}
+              {[0, 1, 2].map(i => (
+                <span
+                  key={i}
+                  className="absolute rounded-full border-2 border-[#0B3D91]/40"
+                  style={{
+                    width: `${80 + i * 22}px`,
+                    height: `${80 + i * 22}px`,
+                    animation: `ping 1.4s cubic-bezier(0,0,0.2,1) ${i * 0.3}s infinite`,
+                    opacity: 0,
+                  }}
+                />
+              ))}
+              <img
+                src="/brand/chat-avatar.png"
+                alt="Maen speaking"
+                className="w-20 h-20 rounded-full object-cover ring-4 ring-[#0B3D91] shadow-2xl relative z-10"
+              />
+            </div>
+            {/* Name + sound bars */}
+            <div className="bg-[#0B3D91] text-white text-xs font-semibold px-3 py-1.5 rounded-full flex items-center gap-2 shadow-lg">
+              <span>Maen</span>
+              {/* Animated sound bars */}
+              <span className="flex items-end gap-0.5 h-3">
+                {[0.6, 1, 0.7, 1, 0.5].map((h, i) => (
+                  <span
+                    key={i}
+                    className="w-0.5 bg-white rounded-full"
+                    style={{
+                      height: `${h * 100}%`,
+                      animation: `soundbar 0.8s ease-in-out ${i * 0.1}s infinite alternate`,
+                    }}
+                  />
+                ))}
+              </span>
+            </div>
+            {/* Stop button */}
+            <button
+              onClick={stopSpeaking}
+              className="text-[10px] text-white/80 bg-black/30 hover:bg-black/50 px-2 py-0.5 rounded-full transition-colors"
+            >
+              stop
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Floating trigger button */}
       <AnimatePresence>
         {!isOpen && (
-          <motion.button
-            key="trigger"
-            initial={{ scale: 0, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0, opacity: 0 }}
-            whileHover={{ scale: 1.08 }}
-            whileTap={{ scale: 0.92 }}
-            onClick={() => setIsOpen(true)}
-            className="fixed bottom-6 right-6 z-50 w-16 h-16 rounded-full shadow-2xl overflow-hidden focus:outline-none focus-visible:ring-4 focus-visible:ring-primary/50"
-            aria-label="Open chat with Laila, AI Consultant"
-          >
-            <img
-              src="/brand/chat-avatar.png"
-              alt="Laila AI Consultant"
-              className="w-full h-full object-cover bg-primary"
-            />
-            {/* Pulsing online indicator */}
-            <span className="absolute top-1 right-1 w-4 h-4 flex items-center justify-center">
-              <span className="absolute w-3 h-3 bg-green-400 rounded-full animate-ping opacity-75" />
-              <span className="w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-white relative z-10" />
-            </span>
-          </motion.button>
+          <motion.div key="trigger-wrap" className="fixed bottom-6 right-6 z-50">
+            {/* Speaking rings on trigger */}
+            {isSpeaking && (
+              <>
+                <span className="absolute inset-0 rounded-full border-2 border-[#0B3D91]/50 animate-ping" />
+                <span className="absolute -inset-1 rounded-full border border-[#0B3D91]/30 animate-ping [animation-delay:0.4s]" />
+              </>
+            )}
+            <motion.button
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0, opacity: 0 }}
+              whileHover={{ scale: 1.08 }}
+              whileTap={{ scale: 0.92 }}
+              onClick={() => setIsOpen(true)}
+              className="w-16 h-16 rounded-full shadow-2xl overflow-hidden focus:outline-none focus-visible:ring-4 focus-visible:ring-primary/50 relative"
+              aria-label="Open chat with Maen, AI Consultant"
+            >
+              <img
+                src="/brand/chat-avatar.png"
+                alt="Maen AI Consultant"
+                className="w-full h-full object-cover bg-primary"
+              />
+              {/* Online / speaking indicator */}
+              <span className="absolute top-1 right-1 w-4 h-4 flex items-center justify-center">
+                {isSpeaking ? (
+                  <span className="w-3 h-3 bg-blue-400 rounded-full border-2 border-white animate-pulse" />
+                ) : (
+                  <>
+                    <span className="absolute w-3 h-3 bg-green-400 rounded-full animate-ping opacity-75" />
+                    <span className="w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-white relative z-10" />
+                  </>
+                )}
+              </span>
+            </motion.button>
+          </motion.div>
         )}
       </AnimatePresence>
 
@@ -252,22 +326,49 @@ export function ChatWidget() {
             style={{ maxHeight: 'min(600px, calc(100dvh - 96px))' }}
           >
             {/* Header */}
-            <div className="bg-gradient-to-r from-[#0B3D91] to-[#082C6B] px-4 py-3 flex items-center gap-3 shrink-0">
+            <div className={`bg-gradient-to-r from-[#0B3D91] to-[#082C6B] px-4 flex items-center gap-3 shrink-0 transition-all duration-300 ${isSpeaking ? 'py-4' : 'py-3'}`}>
               <div className="relative shrink-0">
+                {/* Ripple rings when speaking */}
+                {isSpeaking && (
+                  <>
+                    <span className="absolute inset-0 rounded-full border-2 border-white/30 animate-ping" />
+                    <span className="absolute -inset-1.5 rounded-full border border-white/20 animate-ping [animation-delay:0.3s]" />
+                  </>
+                )}
                 <img
                   src="/brand/chat-avatar.png"
-                  alt="Laila"
-                  className="w-10 h-10 rounded-full ring-2 ring-white/30 object-cover bg-white/10"
+                  alt="Maen"
+                  className={`rounded-full ring-2 object-cover bg-white/10 transition-all duration-300 relative z-10 ${isSpeaking ? 'w-14 h-14 ring-white/60' : 'w-10 h-10 ring-white/30'}`}
                 />
-                <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-400 rounded-full border-2 border-[#0B3D91]" />
+                {/* Status dot */}
+                <span className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-[#0B3D91] ${isSpeaking ? 'bg-blue-400 animate-pulse' : 'bg-green-400'}`} />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-white font-bold text-sm leading-none">
                   {isRtl ? 'معن' : 'Maen'}
                 </p>
-                <p className="text-white/70 text-xs mt-0.5 truncate">
-                  {isRtl ? 'مستشار سلسلة التوريد الذكية' : 'AI Supply Chain Consultant'}
-                </p>
+                {isSpeaking ? (
+                  <div className="flex items-center gap-1.5 mt-1">
+                    <span className="text-blue-200 text-xs">{isRtl ? 'يتحدث...' : 'Speaking...'}</span>
+                    {/* Animated sound bars */}
+                    <span className="flex items-end gap-0.5 h-3.5">
+                      {[0.5, 1, 0.6, 1, 0.7, 0.4, 1].map((h, i) => (
+                        <span
+                          key={i}
+                          className="w-0.5 bg-blue-300 rounded-full soundbar"
+                          style={{
+                            height: `${h * 100}%`,
+                            animationDelay: `${i * 0.1}s`,
+                          }}
+                        />
+                      ))}
+                    </span>
+                  </div>
+                ) : (
+                  <p className="text-white/70 text-xs mt-0.5 truncate">
+                    {isRtl ? 'مستشار سلسلة التوريد الذكية' : 'AI Supply Chain Consultant'}
+                  </p>
+                )}
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 {/* Voice toggle */}
