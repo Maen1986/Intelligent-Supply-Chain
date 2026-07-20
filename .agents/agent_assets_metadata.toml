@@ -60,3 +60,21 @@ id = "rOOcXfHeMBe_69uF4uR5U"
 uri = "file://artifacts/i-supply-chain/public/brand/logo-story-d.png"
 type = "image"
 title = "D — Brain Meets Chain (AI neural network morphs into logistics network)"
+
+[[outputs]]
+id = "MVDKJ5GShJiDhaVHk4wq0"
+uri = "file://artifacts/i-supply-chain/public/brand/logo-refined-1.png"
+type = "image"
+title = "D1 — I as neural spine + S as chain flow, gold junction node"
+
+[[outputs]]
+id = "zvP9JmSOeroJc66a3ZhqL"
+uri = "file://artifacts/i-supply-chain/public/brand/logo-refined-2.png"
+type = "image"
+title = "D2 — I built from stacked nodes + S built from chain links"
+
+[[outputs]]
+id = "FisPaNErbZkg9usVI6twW"
+uri = "file://artifacts/i-supply-chain/public/brand/logo-refined-3.png"
+type = "image"
+title = "D3 — Bold I+S letters: brain pattern inside I, chain pattern inside S"
