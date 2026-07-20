@@ -1,0 +1,27 @@
+kind = "web"
+previewPath = "/"
+title = "I Supply Chain"
+version = "1.0.0"
+id = "artifacts/i-supply-chain"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 18807
+
+[services.development]
+run = "pnpm --filter @workspace/i-supply-chain run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/i-supply-chain", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/i-supply-chain/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "18807"
+BASE_PATH = "/"
