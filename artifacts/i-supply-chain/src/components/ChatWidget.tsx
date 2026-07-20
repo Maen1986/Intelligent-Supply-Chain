@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Send, MessageCircle, RotateCcw } from 'lucide-react';
+import { X, Send, RotateCcw, Volume2, VolumeX } from 'lucide-react';
 import { useLanguage } from '@/lib/LanguageContext';
 
 interface ChatMessage {
@@ -31,8 +31,54 @@ export function ChatWidget() {
   const [isStreaming, setIsStreaming] = useState(false);
   const [conversationId, setConversationId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [voiceEnabled, setVoiceEnabled] = useState(true);
+  const [isSpeaking, setIsSpeaking] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const speakText = useCallback(async (text: string) => {
+    if (!text.trim()) return;
+    // Stop any currently playing audio
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
+    try {
+      setIsSpeaking(true);
+      const res = await fetch('/api/openai/tts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text }),
+      });
+      if (!res.ok) return;
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      audioRef.current = audio;
+      audio.onended = () => {
+        setIsSpeaking(false);
+        URL.revokeObjectURL(url);
+        audioRef.current = null;
+      };
+      audio.onerror = () => {
+        setIsSpeaking(false);
+        URL.revokeObjectURL(url);
+        audioRef.current = null;
+      };
+      await audio.play();
+    } catch {
+      setIsSpeaking(false);
+    }
+  }, []);
+
+  const stopSpeaking = useCallback(() => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
+    setIsSpeaking(false);
+  }, []);
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -121,6 +167,9 @@ export function ChatWidget() {
                 updated[updated.length - 1] = { role: 'assistant', content: assistantContent, streaming: false };
                 return updated;
               });
+              if (voiceEnabled && assistantContent) {
+                speakText(assistantContent);
+              }
             }
           } catch {}
         }
@@ -221,6 +270,21 @@ export function ChatWidget() {
                 </p>
               </div>
               <div className="flex items-center gap-2 shrink-0">
+                {/* Voice toggle */}
+                <button
+                  onClick={() => {
+                    if (voiceEnabled) stopSpeaking();
+                    setVoiceEnabled(v => !v);
+                  }}
+                  className={`transition-colors p-1.5 rounded-lg hover:bg-white/10 ${voiceEnabled ? 'text-white' : 'text-white/40'}`}
+                  title={voiceEnabled ? 'Mute voice' : 'Enable voice'}
+                  aria-label={voiceEnabled ? 'Mute voice' : 'Enable voice'}
+                >
+                  {voiceEnabled
+                    ? <Volume2 className={`w-4 h-4 ${isSpeaking ? 'animate-pulse' : ''}`} />
+                    : <VolumeX className="w-4 h-4" />
+                  }
+                </button>
                 {messages.length > 0 && (
                   <button
                     onClick={resetChat}

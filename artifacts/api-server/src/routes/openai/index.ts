@@ -182,4 +182,25 @@ router.post("/conversations/:id/messages", async (req, res) => {
   }
 });
 
+// POST /openai/tts — text-to-speech with onyx male voice
+router.post("/tts", async (req, res) => {
+  const { text } = req.body as { text?: string };
+  if (!text || typeof text !== "string" || !text.trim()) {
+    return res.status(400).json({ error: "text is required" });
+  }
+  try {
+    const mp3 = await openai.audio.speech.create({
+      model: "tts-1",
+      voice: "onyx",
+      input: text.slice(0, 4096), // API limit
+    });
+    const buffer = Buffer.from(await mp3.arrayBuffer());
+    res.setHeader("Content-Type", "audio/mpeg");
+    res.setHeader("Cache-Control", "no-store");
+    res.send(buffer);
+  } catch (e) {
+    res.status(500).json({ error: "TTS generation failed" });
+  }
+});
+
 export default router;
