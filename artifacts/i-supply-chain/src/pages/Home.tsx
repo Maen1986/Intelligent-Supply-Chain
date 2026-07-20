@@ -383,7 +383,27 @@ export function Home() {
     {
       photo: 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=600&h=380&fit=crop&q=80',
       title: 'Digital Transformation',
-      desc: 'Technology enablement, ERP optimisation, and digital supply chain maturity roadmaps.',
+      desc: 'Technology enablement, ERP optimisation (SAP MM/SCM, Ariba, Dynamics 365, IFS, Odoo), and digital supply chain maturity roadmaps.',
+    },
+    {
+      photo: 'https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=600&h=380&fit=crop&q=80',
+      title: 'Value Engineering',
+      desc: 'Systematic function analysis and cost-reduction techniques that eliminate non-value-added spend without compromising quality or performance.',
+    },
+    {
+      photo: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=600&h=380&fit=crop&q=80',
+      title: 'Lean & Agile Supply Chain',
+      desc: 'Waste elimination, flow optimisation, and agile replenishment models that cut lead times, reduce inventory, and increase throughput.',
+    },
+    {
+      photo: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=600&h=380&fit=crop&q=80',
+      title: 'Process Improvement & Policy',
+      desc: 'End-to-end process redesign, SOP authoring, workflow automation, and procurement policy development aligned with Saudi regulations.',
+    },
+    {
+      photo: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=600&h=380&fit=crop&q=80',
+      title: 'Training & Capability Building',
+      desc: 'Bespoke procurement and supply chain training programmes — workshops, coaching, and knowledge transfer — delivered to teams across government, energy, and private sector.',
     },
   ];
 

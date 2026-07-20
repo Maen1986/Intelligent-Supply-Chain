@@ -62,10 +62,15 @@ const achievements = [
 ];
 
 const expertise = [
-  'Procurement Transformation', 'Strategic Sourcing', 'Contract Lifecycle Management',
-  'Supplier Governance & SRM', 'Digital Procurement (SAP/Ariba)', 'Change Management',
-  'Vision 2030 & Iktva Compliance', 'Spend Analysis & Category Management',
-  'S&OP & Demand Planning', 'Supply Chain Risk & Resiliency',
+  'Procurement Transformation', 'Strategic Sourcing', 'Contract Lifecycle Management (CLM)',
+  'Supplier Relationship Management (SRM)', 'Digital Procurement (SAP / Ariba / Dynamics 365)',
+  'Change Management', 'Vision 2030 & Iktva Compliance',
+  'Spend Analysis & Category Management', 'S&OP & Demand Planning',
+  'Supply Chain Risk & Resiliency', 'Value Engineering',
+  'Lean & Agile Supply Chain', 'Process Improvement & Policy Development',
+  'Training & Capability Building', 'Stakeholder Engagement',
+  'Total Cost of Ownership (TCO)', 'Supplier Diversity & ESG',
+  'ISO 9001 / 14001 / 45001 Implementation',
 ];
 
 export function About() {
