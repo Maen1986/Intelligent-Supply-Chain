@@ -36,3 +36,27 @@ id = "QOgZyB7BApkD955fBt8qs"
 uri = "file://artifacts/i-supply-chain/public/brand/logo-x3.png"
 type = "image"
 title = "X3 — Kinetic Arc Pinwheel (Apple-meets-logistics)"
+
+[[outputs]]
+id = "uZe3GPSWLqh3ZDh8WKinA"
+uri = "file://artifacts/i-supply-chain/public/brand/logo-story-a.png"
+type = "image"
+title = "A — The \"I\" IS the Route (factory → nodes → destination)"
+
+[[outputs]]
+id = "rFr-0SJ21EUoTPy5zZJfW"
+uri = "file://artifacts/i-supply-chain/public/brand/logo-story-b.png"
+type = "image"
+title = "B — Transformation Arc (raw → process → product, gold chain links)"
+
+[[outputs]]
+id = "Q1_Lj43tYZ0-TMB5RRk-S"
+uri = "file://artifacts/i-supply-chain/public/brand/logo-story-c.png"
+type = "image"
+title = "C — Intelligent Compass (factory/ship/truck/city connected at gold center)"
+
+[[outputs]]
+id = "rOOcXfHeMBe_69uF4uR5U"
+uri = "file://artifacts/i-supply-chain/public/brand/logo-story-d.png"
+type = "image"
+title = "D — Brain Meets Chain (AI neural network morphs into logistics network)"
