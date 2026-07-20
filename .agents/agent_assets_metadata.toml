@@ -18,3 +18,21 @@ id = "owkmNAnbm0_e1obzswSzK"
 uri = "file://artifacts/i-supply-chain/public/brand/logo-option-c.png"
 type = "image"
 title = "Logo C — Gradient Arrow Bars"
+
+[[outputs]]
+id = "XbFcFUFXci8t4d1qvDZ0U"
+uri = "file://artifacts/i-supply-chain/public/brand/logo-x1.png"
+type = "image"
+title = "X1 — DNA Helix Chain (3D metallic)"
+
+[[outputs]]
+id = "tVVb9LVtzVGdKt6OLgUkS"
+uri = "file://artifacts/i-supply-chain/public/brand/logo-x2.png"
+type = "image"
+title = "X2 — Arabic Calligraphy Route (cultural/modern)"
+
+[[outputs]]
+id = "QOgZyB7BApkD955fBt8qs"
+uri = "file://artifacts/i-supply-chain/public/brand/logo-x3.png"
+type = "image"
+title = "X3 — Kinetic Arc Pinwheel (Apple-meets-logistics)"

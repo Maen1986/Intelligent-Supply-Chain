@@ -12,6 +12,7 @@ import { Home } from '@/pages/Home';
 import { Diagnostic } from '@/pages/Diagnostic';
 import { Consultant } from '@/pages/Consultant';
 import { Csr } from '@/pages/Csr';
+import { ChatWidget } from '@/components/ChatWidget';
 
 const queryClient = new QueryClient();
 
@@ -24,6 +25,7 @@ function Layout({ children }: { children: React.ReactNode }) {
         {children}
       </main>
       <Footer />
+      <ChatWidget />
     </div>
   );
 }
