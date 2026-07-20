@@ -114,3 +114,21 @@ id = "_t-1DID0rqWAcZtVAfF1h"
 uri = "file://artifacts/i-supply-chain/public/brand/logo-final-2.png"
 type = "image"
 title = "ISC Final 2 — Same concept, tighter composition"
+
+[[outputs]]
+id = "Hboi5eW3WOJKht9PO1Dp5"
+uri = "file://artifacts/i-supply-chain/public/brand/avatar-option-1.png"
+type = "image"
+title = "Avatar A — Photorealistic professional"
+
+[[outputs]]
+id = "c3GPWL9_HJzF5jUBK1d3y"
+uri = "file://artifacts/i-supply-chain/public/brand/avatar-option-2.png"
+type = "image"
+title = "Avatar B — Semi-realistic illustration"
+
+[[outputs]]
+id = "e-1yQIj0OwH293yCxtZKX"
+uri = "file://artifacts/i-supply-chain/public/brand/avatar-option-3.png"
+type = "image"
+title = "Avatar C — Minimal geometric"
