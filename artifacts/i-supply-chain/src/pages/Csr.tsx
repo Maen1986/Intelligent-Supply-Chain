@@ -66,7 +66,7 @@ export function Csr() {
   const isFormValid = !!formData.industry && !!formData.challenge;
 
   return (
-    <div className="container mx-auto px-4 py-16 max-w-4xl min-h-[calc(100vh-200px)]">
+    <div className="container mx-auto px-4 py-10 sm:py-16 max-w-4xl min-h-[calc(100vh-200px)]">
       <div className="text-center mb-12">
         <h1 className="text-3xl md:text-4xl font-bold text-primary mb-4">{t('csr.title')}</h1>
         <p className="text-muted-foreground max-w-2xl mx-auto">
@@ -120,7 +120,7 @@ export function Csr() {
           </div>
           
           <div id="diagnostic-report" className="bg-white rounded-xl shadow-lg border border-border overflow-hidden">
-            <div className="bg-[#EAF1FB] p-8 border-b border-border">
+            <div className="bg-[#EAF1FB] p-4 sm:p-8 border-b border-border">
               <div className="flex justify-between items-start mb-6">
                 <Logo />
                 <span className="px-3 py-1 bg-primary text-white text-xs font-bold rounded-full uppercase tracking-wider">CSR Support Program</span>
@@ -129,7 +129,7 @@ export function Csr() {
               <p className="text-muted-foreground font-medium">Prepared for: {report.industry} Sector</p>
             </div>
 
-            <div className="p-8 space-y-8">
+            <div className="p-4 sm:p-8 space-y-8">
               <section>
                 <h3 className="text-lg font-bold text-primary mb-3 uppercase tracking-wide border-b-2 border-accent pb-2">1. Diagnostic Summary</h3>
                 <p className="text-foreground leading-relaxed">{report.summary}</p>
@@ -167,7 +167,7 @@ export function Csr() {
                       const [time, action] = item.split(': ');
                       return (
                         <li key={i} className="flex items-start gap-3">
-                          <span className="font-bold text-primary whitespace-nowrap">{time}:</span>
+                          <span className="font-bold text-primary">{time}:</span>
                           <span className="text-foreground/90">{action}</span>
                         </li>
                       );
@@ -177,7 +177,7 @@ export function Csr() {
               </section>
             </div>
             
-            <div className="bg-primary px-8 py-4 text-white flex justify-between items-center text-sm">
+            <div className="bg-primary px-4 sm:px-8 py-4 text-white flex flex-col sm:flex-row justify-between sm:items-center gap-1 text-sm">
               <p>I Supply Chain — CSR Initiative</p>
               <p>Confidential</p>
             </div>

@@ -10,13 +10,8 @@ export function Footer() {
     <footer className="bg-[#082C6B] text-white py-12">
       <div className="container mx-auto px-4 grid grid-cols-1 md:grid-cols-2 gap-8">
         <div className="flex flex-col gap-4 items-start">
-          <div className="flex items-center gap-3 bg-white p-3 rounded-xl shadow-sm self-start">
-            <div className="w-10 h-10 rounded-lg bg-accent flex items-center justify-center">
-              <span className="text-white font-extrabold text-sm tracking-widest leading-none">SC</span>
-            </div>
-            <div className="font-bold text-primary tracking-[0.15em] uppercase text-sm sm:text-base leading-none">
-              I Supply Chain
-            </div>
+          <div className="bg-white p-3 rounded-xl shadow-sm self-start">
+            <Logo />
           </div>
           <p className="text-white/80 max-w-sm text-sm leading-relaxed mt-2">
             {t('hero.headline')}

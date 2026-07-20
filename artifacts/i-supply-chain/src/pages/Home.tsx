@@ -50,27 +50,27 @@ export function Home() {
   return (
     <div className="w-full flex flex-col min-h-screen">
       {/* Hero Section */}
-      <section className="relative w-full bg-gradient-to-br from-[#0B3D91] to-[#082C6B] text-white py-20 lg:py-32 overflow-hidden">
+      <section className="relative w-full bg-gradient-to-br from-[#0B3D91] to-[#082C6B] text-white py-16 lg:py-32 overflow-hidden">
         {/* Subtle background pattern or glow could go here */}
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 mix-blend-overlay"></div>
         
         <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-4xl mx-auto text-center space-y-8">
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold leading-tight tracking-tight">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold leading-tight tracking-tight">
               {t('hero.headline')}
             </h1>
             <p className="text-lg md:text-xl text-white/80 max-w-2xl mx-auto leading-relaxed">
               {t('hero.subheadline')}
             </p>
             
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-8">
-              <Link href="/diagnostic">
-                <Button size="lg" className="w-full sm:w-auto bg-accent hover:bg-accent/90 text-white font-bold px-8 shadow-lg">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 sm:gap-4 pt-6 sm:pt-8 w-full max-w-md mx-auto sm:max-w-none">
+              <Link href="/diagnostic" className="w-full sm:w-auto">
+                <Button size="lg" className="w-full sm:w-auto bg-accent hover:bg-accent/90 text-white font-bold px-8 shadow-lg min-h-[48px]">
                   {t('hero.ctaPrimary')}
                 </Button>
               </Link>
-              <Link href="/consultant">
-                <Button size="lg" variant="outline" className="w-full sm:w-auto border-white text-white hover:bg-white hover:text-primary font-bold px-8">
+              <Link href="/consultant" className="w-full sm:w-auto">
+                <Button size="lg" variant="outline" className="w-full sm:w-auto border-white text-white hover:bg-white hover:text-primary font-bold px-8 min-h-[48px]">
                   {t('hero.ctaSecondary')}
                 </Button>
               </Link>
@@ -128,9 +128,10 @@ export function Home() {
               <h2 className="text-2xl md:text-3xl font-bold text-primary mb-4">{t('sections.industries')}</h2>
               <p className="text-muted-foreground">Expertise tailored to the unique demands of your specific sector.</p>
             </div>
-            <div className="md:w-2/3 flex flex-wrap gap-3 justify-center md:justify-end">
+            {/* Mobile: intentional horizontal scroll with snap. md+: wrapping flex */}
+            <div className="md:w-2/3 flex overflow-x-auto md:flex-wrap gap-3 md:justify-end pb-2 md:pb-0 snap-x snap-mandatory md:snap-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
               {industries.map((ind, i) => (
-                <div key={i} className="px-4 py-2 rounded-full bg-muted border border-border text-primary text-sm font-medium hover:bg-primary hover:text-white transition-colors cursor-default">
+                <div key={i} className="snap-start shrink-0 md:shrink px-4 py-2 rounded-full bg-muted border border-border text-primary text-sm font-medium hover:bg-primary hover:text-white transition-colors cursor-default">
                   {ind}
                 </div>
               ))}

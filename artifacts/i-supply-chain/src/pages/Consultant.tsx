@@ -80,7 +80,7 @@ export function Consultant() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-16 max-w-2xl min-h-[calc(100vh-200px)]">
+    <div className="container mx-auto px-4 py-10 sm:py-16 max-w-2xl min-h-[calc(100vh-200px)]">
       <div className="mb-10 text-center">
         <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-6">
           <Calendar className="w-8 h-8 text-primary" />
