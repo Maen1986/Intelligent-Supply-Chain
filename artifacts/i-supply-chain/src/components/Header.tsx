@@ -141,9 +141,13 @@ export function Header() {
             {servicesOpen && (
               <div className={dropdownCls} style={{ minWidth: 230 }}>
                 {servicesList.map(item => (
-                  <Link key={item.href} href={item.href} className={dropItemCls} onClick={() => setServicesOpen(false)}>
-                    {navLabel(item.key)}
-                  </Link>
+                  item.href.startsWith('/#')
+                    ? <a key={item.href} href={item.href} className={dropItemCls} onClick={() => setServicesOpen(false)}>
+                        {navLabel(item.key)}
+                      </a>
+                    : <Link key={item.href} href={item.href} className={dropItemCls} onClick={() => setServicesOpen(false)}>
+                        {navLabel(item.key)}
+                      </Link>
                 ))}
               </div>
             )}
