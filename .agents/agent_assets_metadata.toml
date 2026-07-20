@@ -78,3 +78,15 @@ id = "FisPaNErbZkg9usVI6twW"
 uri = "file://artifacts/i-supply-chain/public/brand/logo-refined-3.png"
 type = "image"
 title = "D3 — Bold I+S letters: brain pattern inside I, chain pattern inside S"
+
+[[outputs]]
+id = "8efg1MfMYR5OPlaZv7AEQ"
+uri = "file://artifacts/i-supply-chain/public/brand/logo-isc-1.png"
+type = "image"
+title = "ISC v1 — I (neural nodes) + S (chain route) + C (arc chain link)"
+
+[[outputs]]
+id = "pQJg3ky8V9IGsxGp_gt4A"
+uri = "file://artifacts/i-supply-chain/public/brand/logo-isc-2.png"
+type = "image"
+title = "ISC v2 — Flowing single organism, I-S-C seamlessly connected"
