@@ -8,7 +8,7 @@ export function Logo() {
         src="/brand/logo.png?v=3"
         alt="I Supply Chain"
         className="w-auto object-contain"
-        style={{ height: '60px', maxWidth: '260px' }}
+        style={{ height: '100px', maxWidth: '380px' }}
       />
     </Link>
   );
