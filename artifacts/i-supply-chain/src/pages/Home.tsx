@@ -1,5 +1,5 @@
-import React, { useRef, useEffect, useState } from 'react';
-import { motion, useInView, useMotionValue, useTransform, animate } from 'framer-motion';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
+import { motion, useInView, useMotionValue, useTransform, animate, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '@/lib/LanguageContext';
 import { Link } from 'wouter';
 import { Button } from '@/components/ui/button';
@@ -103,6 +103,125 @@ function Orb({
         ease: 'easeInOut',
       }}
     />
+  );
+}
+
+// ─── Consultant carousel ─────────────────────────────────────────────────────
+const consultants = [
+  {
+    src: '/brand/hero-consultant.jpg?v=3',
+    alt: 'Saudi Supply Chain Consultant',
+    label: 'GCC & Saudi Arabia Expert',
+    sublabel: 'Strategic Advisor',
+  },
+  {
+    src: '/brand/consultant-euro.jpg',
+    alt: 'European Supply Chain Consultant',
+    label: 'European Markets Expert',
+    sublabel: 'Senior Consultant',
+  },
+  {
+    src: '/brand/consultant-female.jpg',
+    alt: 'Female Supply Chain Consultant',
+    label: 'Global Strategy Advisor',
+    sublabel: 'Lead Consultant',
+  },
+];
+
+function ConsultantCarousel({ heroInView }: { heroInView: boolean }) {
+  const [active, setActive] = useState(0);
+  const [direction, setDirection] = useState(1);
+
+  const next = useCallback(() => {
+    setDirection(1);
+    setActive((p) => (p + 1) % consultants.length);
+  }, []);
+
+  useEffect(() => {
+    const id = setInterval(next, 4000);
+    return () => clearInterval(id);
+  }, [next]);
+
+  const goTo = (i: number) => {
+    setDirection(i > active ? 1 : -1);
+    setActive(i);
+  };
+
+  const variants = {
+    enter: (dir: number) => ({ opacity: 0, x: dir * 60, scale: 0.97 }),
+    center: { opacity: 1, x: 0, scale: 1 },
+    exit: (dir: number) => ({ opacity: 0, x: dir * -60, scale: 0.97 }),
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.95, x: 40 }}
+      animate={heroInView ? { opacity: 1, scale: 1, x: 0 } : {}}
+      transition={{ duration: 1, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
+      className="hidden lg:flex justify-center items-end"
+    >
+      <div className="relative" style={{ width: '420px' }}>
+        {/* Gold glow */}
+        <div className="absolute -inset-4 rounded-3xl bg-accent/20 blur-2xl pointer-events-none" />
+
+        {/* Image frame */}
+        <div className="relative rounded-3xl overflow-hidden shadow-2xl ring-2 ring-white/20" style={{ width: '420px', height: '520px' }}>
+          <AnimatePresence custom={direction} mode="wait">
+            <motion.img
+              key={active}
+              custom={direction}
+              variants={variants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+              src={consultants[active].src}
+              alt={consultants[active].alt}
+              className="absolute inset-0 w-full h-full object-cover"
+              style={{ objectPosition: 'top center' }}
+            />
+          </AnimatePresence>
+
+          {/* Name tag overlay */}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={`label-${active}`}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.35 }}
+              className="absolute top-4 right-4 bg-white/15 backdrop-blur-md rounded-xl px-3 py-1.5 text-white"
+            >
+              <p className="text-xs font-medium text-white/70">{consultants[active].sublabel}</p>
+              <p className="text-sm font-bold leading-tight">{consultants[active].label}</p>
+            </motion.div>
+          </AnimatePresence>
+        </div>
+
+        {/* Floating AI badge */}
+        <div className="absolute -bottom-4 -left-4 bg-white rounded-2xl shadow-xl px-5 py-3 flex items-center gap-3 z-10">
+          <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center shrink-0">
+            <Cpu className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground font-medium">AI-Powered</p>
+            <p className="text-sm font-bold text-primary">Supply Chain Expert</p>
+          </div>
+        </div>
+
+        {/* Dot indicators */}
+        <div className="absolute -bottom-12 left-1/2 -translate-x-1/2 flex gap-2">
+          {consultants.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => goTo(i)}
+              className={`rounded-full transition-all duration-300 ${i === active ? 'w-6 h-2.5 bg-accent' : 'w-2.5 h-2.5 bg-white/40 hover:bg-white/70'}`}
+              aria-label={`Consultant ${i + 1}`}
+            />
+          ))}
+        </div>
+      </div>
+    </motion.div>
   );
 }
 
@@ -227,34 +346,8 @@ export function Home() {
               </motion.div>
             </div>
 
-            {/* Right — consultant photo */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, x: 40 }}
-              animate={heroInView ? { opacity: 1, scale: 1, x: 0 } : {}}
-              transition={{ duration: 1, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
-              className="hidden lg:flex justify-center items-end"
-            >
-              <div className="relative">
-                {/* Gold glow behind photo */}
-                <div className="absolute -inset-4 rounded-3xl bg-accent/20 blur-2xl" />
-                <img
-                  src="/brand/hero-consultant.jpg?v=3"
-                  alt="Maen — AI Supply Chain Consultant"
-                  className="relative rounded-3xl shadow-2xl object-cover ring-2 ring-white/20"
-                  style={{ width: '420px', height: '520px', objectPosition: 'top center' }}
-                />
-                {/* Floating badge */}
-                <div className="absolute -bottom-4 -left-4 bg-white rounded-2xl shadow-xl px-5 py-3 flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center shrink-0">
-                    <Cpu className="w-5 h-5 text-white" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground font-medium">AI-Powered</p>
-                    <p className="text-sm font-bold text-primary">Supply Chain Expert</p>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
+            {/* Right — consultant carousel */}
+            <ConsultantCarousel heroInView={heroInView} />
 
           </div>
         </div>

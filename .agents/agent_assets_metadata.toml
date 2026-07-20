@@ -180,3 +180,15 @@ id = "0BRyTs9IOmexaCL7_Bb10"
 uri = "file://artifacts/i-supply-chain/public/brand/hero-consultant-v2.jpg"
 type = "image"
 title = "V2 — Thobe + Charcoal Suit Jacket + Ghutra & Agal"
+
+[[outputs]]
+id = "0ROVNR5rJluaO4VQYpJJN"
+uri = "file://artifacts/i-supply-chain/public/brand/consultant-euro.jpg"
+type = "image"
+title = "European Male Consultant"
+
+[[outputs]]
+id = "vE8BvmV1v7jz8Y5eF1iCU"
+uri = "file://artifacts/i-supply-chain/public/brand/consultant-female.jpg"
+type = "image"
+title = "Female Consultant"
