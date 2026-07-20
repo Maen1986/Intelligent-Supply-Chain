@@ -85,6 +85,19 @@ export function Home() {
         </div>
       </section>
 
+      {/* Brand Visual Strip */}
+      <section className="w-full bg-white py-12">
+        <div className="container mx-auto px-4">
+          <div className="rounded-2xl overflow-hidden shadow-lg border border-border max-w-4xl mx-auto">
+            <img
+              src="/brand/social-launch.png"
+              alt="I Supply Chain — Your Intelligent Supply Chain Consultant"
+              className="w-full h-auto object-cover block"
+            />
+          </div>
+        </div>
+      </section>
+
       {/* Solutions Section */}
       <section id="solutions" className="py-20 bg-muted">
         <div className="container mx-auto px-4">
