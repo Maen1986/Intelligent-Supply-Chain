@@ -91,8 +91,29 @@ export function ChatWidget() {
     return male ?? voices.find(v => v.lang.startsWith('en')) ?? voices[0] ?? null;
   }, []);
 
+  // Strip markdown and special characters before TTS reads them
+  const sanitizeForSpeech = useCallback((text: string): string => {
+    return text
+      .replace(/```[\s\S]*?```/g, '')          // code blocks
+      .replace(/`[^`]*`/g, '')                  // inline code
+      .replace(/#{1,6}\s+/g, '')                // headings
+      .replace(/\*\*([^*]+)\*\*/g, '$1')        // bold
+      .replace(/\*([^*]+)\*/g, '$1')            // italic
+      .replace(/_{1,2}([^_]+)_{1,2}/g, '$1')   // underline/italic
+      .replace(/~~([^~]+)~~/g, '$1')            // strikethrough
+      .replace(/^\s*[-•*]\s+/gm, '')            // bullet points
+      .replace(/^\s*\d+\.\s+/gm, '')            // numbered lists
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')  // markdown links → text only
+      .replace(/[|#~^\\]/g, '')                 // stray special chars
+      .replace(/&amp;/g, 'and')
+      .replace(/&/g, 'and')
+      .replace(/ {2,}/g, ' ')                   // collapse extra spaces
+      .trim();
+  }, []);
+
   const speakText = useCallback(async (text: string) => {
-    if (!text.trim() || !window.speechSynthesis) return;
+    const clean = sanitizeForSpeech(text);
+    if (!clean.trim() || !window.speechSynthesis) return;
 
     window.speechSynthesis.cancel();
     clearWatchdog();
@@ -104,7 +125,7 @@ export function ChatWidget() {
     const splitPattern = lang === 'ar'
       ? /[^.!?،؟]+[.!?،؟]*/g
       : /[^.!?]+[.!?]*/g;
-    const sentences = text.match(splitPattern)?.filter(s => s.trim()) ?? [text];
+    const sentences = clean.match(splitPattern)?.filter(s => s.trim()) ?? [clean];
 
     let index = 0;
     setIsSpeaking(true);
