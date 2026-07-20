@@ -102,3 +102,15 @@ id = "hGJJUzyGAEBJk0lrg4Dne"
 uri = "file://artifacts/i-supply-chain/public/brand/logo-isc-final-2.png"
 type = "image"
 title = "ISC Final 2 — All three letters chained together with prominent gold links between them"
+
+[[outputs]]
+id = "jQ6NDzh5JQM65cKswn7Oa"
+uri = "file://artifacts/i-supply-chain/public/brand/logo-final.png"
+type = "image"
+title = "ISC Final 1 — I (neural nodes) + S (chain links) + C (chain arc), gold connectors"
+
+[[outputs]]
+id = "_t-1DID0rqWAcZtVAfF1h"
+uri = "file://artifacts/i-supply-chain/public/brand/logo-final-2.png"
+type = "image"
+title = "ISC Final 2 — Same concept, tighter composition"
