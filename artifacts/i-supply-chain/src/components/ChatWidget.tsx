@@ -35,48 +35,48 @@ export function ChatWidget() {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
-  const speakText = useCallback(async (text: string) => {
-    if (!text.trim()) return;
-    // Stop any currently playing audio
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current = null;
+  // Pick the best available male voice (runs once voices are loaded)
+  const pickMaleVoice = useCallback((): SpeechSynthesisVoice | null => {
+    const voices = window.speechSynthesis.getVoices();
+    // Prefer high-quality English male voices by name priority
+    const preferred = ['Google UK English Male', 'Microsoft David', 'Microsoft Mark',
+      'Daniel', 'Alex', 'Fred', 'Ralph', 'Albert'];
+    for (const name of preferred) {
+      const v = voices.find(v => v.name.includes(name));
+      if (v) return v;
     }
-    try {
-      setIsSpeaking(true);
-      const res = await fetch('/api/openai/tts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text }),
-      });
-      if (!res.ok) return;
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const audio = new Audio(url);
-      audioRef.current = audio;
-      audio.onended = () => {
-        setIsSpeaking(false);
-        URL.revokeObjectURL(url);
-        audioRef.current = null;
-      };
-      audio.onerror = () => {
-        setIsSpeaking(false);
-        URL.revokeObjectURL(url);
-        audioRef.current = null;
-      };
-      await audio.play();
-    } catch {
-      setIsSpeaking(false);
-    }
+    // Fallback: any male-sounding English voice
+    const maleFallback = voices.find(v =>
+      v.lang.startsWith('en') && /male|man|david|mark|daniel|alex|fred/i.test(v.name)
+    );
+    return maleFallback ?? voices.find(v => v.lang.startsWith('en')) ?? null;
   }, []);
 
-  const stopSpeaking = useCallback(() => {
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current = null;
+  const speakText = useCallback((text: string) => {
+    if (!text.trim() || !window.speechSynthesis) return;
+    window.speechSynthesis.cancel(); // stop anything currently playing
+    const utterance = new SpeechSynthesisUtterance(text);
+    const voice = pickMaleVoice();
+    if (voice) utterance.voice = voice;
+    utterance.rate = 0.92;
+    utterance.pitch = 0.85;
+    utterance.volume = 1;
+    utterance.onstart = () => setIsSpeaking(true);
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = () => setIsSpeaking(false);
+    // voices may not be ready yet — small delay on first call
+    const go = () => { setIsSpeaking(true); window.speechSynthesis.speak(utterance); };
+    if (window.speechSynthesis.getVoices().length === 0) {
+      window.speechSynthesis.onvoiceschanged = go;
+    } else {
+      go();
     }
+  }, [pickMaleVoice]);
+
+  const stopSpeaking = useCallback(() => {
+    window.speechSynthesis?.cancel();
     setIsSpeaking(false);
   }, []);
 
@@ -110,6 +110,11 @@ export function ChatWidget() {
     const trimmed = text.trim();
     if (!trimmed || isStreaming) return;
 
+    // Cancel any previous in-flight request
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     setError(null);
     setInput('');
 
@@ -127,6 +132,7 @@ export function ChatWidget() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content: trimmed }),
+        signal: controller.signal,
       });
 
       if (!response.ok || !response.body) throw new Error('Stream failed');
@@ -174,7 +180,9 @@ export function ChatWidget() {
           } catch {}
         }
       }
-    } catch {
+    } catch (err: any) {
+      // Aborted by reset — stay silent, don't overwrite cleared messages
+      if (err?.name === 'AbortError') return;
       setMessages(prev => {
         const updated = [...prev];
         updated[updated.length - 1] = {
@@ -200,6 +208,13 @@ export function ChatWidget() {
   };
 
   const resetChat = () => {
+    // Kill any in-flight stream so its callbacks don't write back into the cleared messages
+    abortRef.current?.abort();
+    abortRef.current = null;
+    // Stop voice
+    stopSpeaking();
+    // Clear all state
+    setIsStreaming(false);
     setMessages([]);
     setConversationId(null);
     setError(null);
