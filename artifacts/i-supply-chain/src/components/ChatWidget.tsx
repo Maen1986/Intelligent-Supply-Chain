@@ -214,10 +214,10 @@ export function ChatWidget() {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-white font-bold text-sm leading-none">
-                  {isRtl ? 'ليلى' : 'Laila'}
+                  {isRtl ? 'معن' : 'Maen'}
                 </p>
                 <p className="text-white/70 text-xs mt-0.5 truncate">
-                  {isRtl ? 'مستشارة سلسلة التوريد الذكية' : 'AI Supply Chain Consultant'}
+                  {isRtl ? 'مستشار سلسلة التوريد الذكية' : 'AI Supply Chain Consultant'}
                 </p>
               </div>
               <div className="flex items-center gap-2 shrink-0">
@@ -252,8 +252,8 @@ export function ChatWidget() {
                 />
                 <div className="max-w-[82%] bg-white rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm border border-border text-sm text-foreground leading-relaxed">
                   {isRtl
-                    ? 'مرحباً! أنا ليلى، مستشارتك الذكية لسلسلة التوريد في I Supply Chain. كيف يمكنني مساعدتك اليوم؟'
-                    : "Hi! I'm Laila, your AI supply chain consultant at I Supply Chain. How can I help you today?"}
+                    ? 'مرحباً! أنا معن، مستشارك الذكي لسلسلة التوريد في I Supply Chain. كيف يمكنني مساعدتك اليوم؟'
+                    : "Hi! I'm Maen, your AI supply chain consultant at I Supply Chain. How can I help you today?"}
                 </div>
               </div>
 
