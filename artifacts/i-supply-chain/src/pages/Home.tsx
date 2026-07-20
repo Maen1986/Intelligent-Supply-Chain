@@ -3,7 +3,7 @@ import { motion, useInView, useMotionValue, useTransform, animate, AnimatePresen
 import { useLanguage } from '@/lib/LanguageContext';
 import { Link } from 'wouter';
 import { Button } from '@/components/ui/button';
-import { ChevronRight, ArrowRight, Star, Quote, Cpu } from 'lucide-react';
+import { ChevronRight, ArrowRight, Star, Quote, Cpu, Check, Clock, Users, Building2, Landmark, Rocket, TrendingUp } from 'lucide-react';
 
 // ─── Animated counter hook ──────────────────────────────────────────────────
 function useAnimatedCounter(target: number, shouldStart: boolean, duration = 2) {
@@ -44,6 +44,121 @@ function RevealSection({
       className={className}
     >
       {children}
+    </motion.div>
+  );
+}
+
+// ─── Package card component ───────────────────────────────────────────────────
+function PackageCard({
+  pkg,
+  index,
+  wide = false,
+}: {
+  pkg: {
+    name: string;
+    tag: string;
+    icon: React.ElementType;
+    color: string;
+    duration: string;
+    badge: string | null;
+    forWho: string;
+    deliverables: string[];
+    outcomes: string[];
+  };
+  index: number;
+  wide?: boolean;
+}) {
+  const Icon = pkg.icon;
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 35 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: '-60px' }}
+      transition={{ duration: 0.6, delay: index * 0.08, ease: [0.22, 1, 0.36, 1] }}
+      className="relative bg-white border border-border rounded-2xl shadow-sm flex flex-col overflow-hidden hover:shadow-lg transition-shadow duration-300"
+    >
+      {/* Colour bar */}
+      <div className="h-1.5 w-full" style={{ backgroundColor: pkg.color }} />
+
+      {/* Badge */}
+      {pkg.badge && (
+        <div className="absolute top-4 right-4 px-3 py-1 rounded-full text-xs font-bold text-white"
+          style={{ backgroundColor: pkg.color }}>
+          {pkg.badge}
+        </div>
+      )}
+
+      {/* Header */}
+      <div className="px-7 pt-6 pb-5 border-b border-border">
+        <div className="flex items-center gap-3 mb-3">
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+            style={{ backgroundColor: pkg.color + '18' }}>
+            <Icon className="w-5 h-5" style={{ color: pkg.color }} />
+          </div>
+          <div>
+            <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">{pkg.tag}</p>
+            <h3 className="text-lg font-extrabold text-primary leading-tight">{pkg.name}</h3>
+          </div>
+        </div>
+
+        {/* Duration */}
+        <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
+          <Clock className="w-3.5 h-3.5 shrink-0" />
+          <span><span className="font-semibold text-foreground">Duration:</span> {pkg.duration}</span>
+        </div>
+
+        {/* Who it's for */}
+        <div className="mt-3 bg-muted rounded-lg px-4 py-3">
+          <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-1">Best For</p>
+          <p className="text-sm text-foreground leading-relaxed">{pkg.forWho}</p>
+        </div>
+      </div>
+
+      {/* Deliverables */}
+      <div className={`px-7 py-5 flex-1 ${wide ? 'grid sm:grid-cols-2 gap-x-8' : ''}`}>
+        <div>
+          <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: pkg.color }}>
+            What's Included
+          </p>
+          <ul className="space-y-2.5">
+            {pkg.deliverables.map((d, di) => (
+              <li key={di} className="flex items-start gap-2.5 text-sm text-foreground">
+                <div className="w-4 h-4 rounded-full flex items-center justify-center shrink-0 mt-0.5"
+                  style={{ backgroundColor: pkg.color + '18' }}>
+                  <Check className="w-2.5 h-2.5" style={{ color: pkg.color }} />
+                </div>
+                {d}
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {/* Outcomes */}
+        <div className={wide ? '' : 'mt-5'}>
+          <p className="text-xs font-bold uppercase tracking-widest mb-3 text-muted-foreground">
+            Expected Outcomes
+          </p>
+          <ul className="space-y-2">
+            {pkg.outcomes.map((o, oi) => (
+              <li key={oi} className="flex items-start gap-2 text-sm text-muted-foreground">
+                <span className="text-accent font-bold shrink-0 mt-0.5">→</span>
+                {o}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+
+      {/* CTA */}
+      <div className="px-7 pb-6 pt-2">
+        <Link href="/consultant">
+          <Button className="w-full font-bold group text-white"
+            style={{ backgroundColor: pkg.color }}>
+            Enquire About This Package
+            <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
+          </Button>
+        </Link>
+      </div>
     </motion.div>
   );
 }
@@ -280,24 +395,101 @@ export function Home() {
 
   const packages = [
     {
-      name: 'Startup',
-      desc: 'For early-stage companies establishing their first supply chain processes. Includes AI diagnostic, basic procurement framework, and 1 consultation session.',
+      name: 'Startup Launchpad',
+      tag: 'New & Early-Stage',
+      icon: Rocket,
+      color: '#0B3D91',
+      duration: '4 weeks',
+      badge: null,
+      forWho: 'Companies under 3 years old or with fewer than 50 employees establishing supply chain processes for the first time.',
+      deliverables: [
+        'Supply chain maturity diagnostic (self-assessment + consultant review)',
+        'Procurement policy template & standard operating procedures',
+        'Supplier onboarding checklist & qualification criteria',
+        'Basic vendor scoring matrix for top 10 suppliers',
+        '1 × 90-minute strategy session with Ma\'in Alhaqash',
+        '15-page strategic report with prioritised 90-day action plan',
+      ],
+      outcomes: ['Structured procurement process from day one', 'Avoid the common early-stage sourcing mistakes', '90-day implementation roadmap you can execute independently'],
     },
     {
-      name: 'SME',
-      desc: 'For growing businesses scaling operations. Includes full AI diagnostic, procurement strategy, supplier onboarding support, and 3 consultation sessions.',
+      name: 'SME Growth',
+      tag: 'Growing Businesses',
+      icon: TrendingUp,
+      color: '#C9A84C',
+      duration: '6–8 weeks',
+      badge: 'Most Popular',
+      forWho: 'Businesses with 50–250 employees experiencing growth pressure on procurement, inventory, or supplier performance.',
+      deliverables: [
+        'Full AI-powered diagnostic across 5 supply chain dimensions',
+        'Category management framework for top 5 spend categories',
+        'Supplier segmentation model (strategic / preferred / transactional)',
+        'Savings opportunity analysis with quantified potential',
+        'Procurement KPI dashboard template with targets',
+        '3 × 90-minute consultation sessions (strategy + review + sign-off)',
+        '30-page strategy report + 6-month implementation roadmap',
+      ],
+      outcomes: ['Typical 10–20% cost reduction in addressable spend', 'Clear supplier tiers with differentiated management', 'Savings tracking mechanism operational from day one'],
     },
     {
-      name: 'Mid-Market',
-      desc: 'For mid-sized organizations optimizing complex supply chains. Includes advanced diagnostics, CLM setup, risk assessment, and 6 consultation sessions.',
+      name: 'Mid-Market Excellence',
+      tag: 'Scaling Organisations',
+      icon: Building2,
+      color: '#0B6E4F',
+      duration: '8–12 weeks',
+      badge: null,
+      forWho: 'Organisations with 250–1,000 employees seeking competitive advantage through supply chain optimisation.',
+      deliverables: [
+        'Full 8-segment maturity assessment with GCC & global benchmarking',
+        'Category management programme across all significant spend',
+        'Contract lifecycle management setup: templates, register & approval workflow',
+        'Supplier performance scorecard system (SRM Lite)',
+        'Supply chain risk register with tier-1 mapping & BCP framework',
+        '6 × consultation sessions including C-suite workshop',
+        'Executive presentation deck + full implementation roadmap',
+        'Optional: technology tool selection shortlist (CLM / SRM / analytics)',
+      ],
+      outcomes: ['Benchmarked maturity score vs GCC peers', 'Risk gaps identified and mitigation plans assigned', 'Board-ready strategy presentation on completion'],
     },
     {
-      name: 'Enterprise',
-      desc: 'For large organizations requiring comprehensive transformation. Custom scope, dedicated consultant, full suite of services, ongoing support.',
+      name: 'Enterprise Transformation',
+      tag: 'Large Organisations',
+      icon: Users,
+      color: '#5B21B6',
+      duration: 'Custom — typically 3–6 months',
+      badge: null,
+      forWho: 'Corporates, multinationals, and large family businesses requiring end-to-end supply chain transformation with dedicated senior support.',
+      deliverables: [
+        'End-to-end transformation programme across all 8 supply chain domains',
+        'Dedicated engagement lead: Ma\'in Alhaqash MCIPS · CPSM (primary contact)',
+        'Full diagnostic, strategy design, and phased implementation support',
+        'Change management framework & stakeholder engagement plan',
+        'Technology evaluation, vendor RFP, and selection support',
+        'Monthly board-level reporting with KPI dashboards',
+        'Unlimited consultation access for the duration of the engagement',
+        'Monthly retainer option available post-engagement',
+      ],
+      outcomes: ['Comprehensive maturity uplift across all supply chain dimensions', 'Technology and process transformation with measurable ROI', 'Capability transfer to internal teams'],
     },
     {
-      name: 'Government',
-      desc: 'Tailored for public sector entities aligned with Vision 2030 (Saudi Arabia) and GCC national development programs. Includes regulatory compliance, nationalization strategy, and governance frameworks.',
+      name: 'Government & Public Sector',
+      tag: 'Ministries · SOEs · Vision 2030',
+      icon: Landmark,
+      color: '#B91C1C',
+      duration: 'Custom — project-based',
+      badge: null,
+      forWho: 'Saudi and GCC government ministries, sovereign entities, state-owned enterprises, and Vision 2030 programme offices.',
+      deliverables: [
+        'Vision 2030 / national development strategy procurement alignment',
+        'Saudisation (Nitaqat) & GCC nationalisation compliance framework',
+        'Government procurement regulation advisory (NCAR / GPSD aligned)',
+        'Public sector supplier development & local content programme',
+        'ESG and sustainability reporting framework for government entities',
+        'Audit-readiness and governance framework for procurement function',
+        'Bilingual (Arabic / English) deliverables and executive reporting',
+        'Policy drafting support for procurement manuals and regulations',
+      ],
+      outcomes: ['Regulatory compliance & audit readiness', 'National content targets met with documented evidence', 'Arabic-language policy documents and reporting'],
     },
   ];
 
@@ -521,10 +713,14 @@ export function Home() {
       </section>
 
       {/* ── Packages ─────────────────────────────────────────────────────── */}
-      <section id="packages" className="py-14 bg-white">
-        <div className="container mx-auto px-4">
-          <RevealSection className="text-center mb-10">
-            <h2 className="text-3xl md:text-4xl font-bold text-primary">{t('sections.packages')}</h2>
+      <section id="packages" className="py-16 bg-muted/40">
+        <div className="container mx-auto px-4 max-w-7xl">
+          <RevealSection className="text-center mb-12">
+            <span className="text-accent font-bold text-sm uppercase tracking-widest">Engagement Models</span>
+            <h2 className="text-3xl md:text-4xl font-bold text-primary mt-3">{t('sections.packages')}</h2>
+            <p className="text-muted-foreground mt-4 max-w-2xl mx-auto">
+              Each package has a defined scope, explicit deliverables, and clear outcomes — so you know exactly what you are getting before you commit.
+            </p>
             <motion.div
               initial={{ scaleX: 0 }}
               whileInView={{ scaleX: 1 }}
@@ -534,27 +730,16 @@ export function Home() {
             />
           </RevealSection>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 justify-center">
-            {packages.map((pkg, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 35 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: '-60px' }}
-                transition={{ duration: 0.6, delay: i * 0.1, ease: [0.22, 1, 0.36, 1] }}
-                whileHover={{ y: -6, boxShadow: '0 20px 48px rgba(11,61,145,0.13)' }}
-                className={`bg-white border rounded-2xl p-8 flex flex-col border-border shadow-sm transition-colors
-                  ${pkg.name === 'Enterprise' ? 'lg:col-span-1 md:col-span-2' : ''}
-                  ${pkg.name === 'Government' ? 'lg:col-span-2 md:col-span-2 bg-gradient-to-br from-white to-muted' : ''}`}
-              >
-                <h3 className="text-2xl font-bold text-primary mb-4">{pkg.name}</h3>
-                <p className="text-muted-foreground mb-8 flex-1 leading-relaxed">{pkg.desc}</p>
-                <Link href="/consultant">
-                  <Button className="w-full bg-accent hover:bg-accent/90 text-white font-bold group">
-                    Get Started <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
-                  </Button>
-                </Link>
-              </motion.div>
+          {/* Top row — 3 cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+            {packages.slice(0, 3).map((pkg, i) => (
+              <PackageCard key={pkg.name} pkg={pkg} index={i} />
+            ))}
+          </div>
+          {/* Bottom row — 2 wide cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {packages.slice(3).map((pkg, i) => (
+              <PackageCard key={pkg.name} pkg={pkg} index={i + 3} wide />
             ))}
           </div>
         </div>
