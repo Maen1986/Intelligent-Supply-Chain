@@ -91,12 +91,18 @@ export function Diagnostic() {
     'flex items-center gap-3 border border-border p-4 rounded-xl hover:border-primary/50 transition-colors cursor-pointer';
 
   return (
-    <div className="container mx-auto px-4 py-10 sm:py-16 max-w-3xl min-h-[calc(100vh-200px)]">
-      <div className="mb-8 sm:mb-10 text-center">
-        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-primary mb-3 sm:mb-4">{t('diagnostic.title')}</h1>
-        <p className="text-muted-foreground text-sm sm:text-base">Complete this 5-step assessment to receive an instant, AI-generated strategic report tailored to your organization.</p>
+    <div className="w-full">
+      {/* Page Hero Banner */}
+      <div className="relative w-full h-56 md:h-72 overflow-hidden">
+        <img src="/brand/page-diagnostic.jpg" alt="AI Supply Chain Diagnostic" className="absolute inset-0 w-full h-full object-cover object-center" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#082C6B]/90 via-[#0B3D91]/80 to-[#0B3D91]/50" />
+        <div className="relative z-10 h-full flex flex-col items-center justify-center text-center px-4">
+          <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-white mb-3">{t('diagnostic.title')}</h1>
+          <p className="text-white/80 text-base md:text-lg max-w-2xl">Complete this 5-step assessment to receive an instant, AI-generated strategic report tailored to your organization.</p>
+        </div>
       </div>
 
+    <div className="container mx-auto px-4 py-10 sm:py-16 max-w-3xl">
       <div className="bg-white rounded-2xl shadow-xl border border-border p-5 sm:p-6 md:p-10">
 
         {/* Step Progress — compact on mobile */}
@@ -245,6 +251,7 @@ export function Diagnostic() {
           )}
         </div>
       </div>
+    </div>
     </div>
   );
 }

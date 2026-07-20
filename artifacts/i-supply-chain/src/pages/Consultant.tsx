@@ -80,13 +80,23 @@ export function Consultant() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-10 sm:py-16 max-w-2xl min-h-[calc(100vh-200px)]">
+    <div className="w-full">
+      {/* Page Hero Banner */}
+      <div className="relative w-full h-56 md:h-72 overflow-hidden">
+        <img src="/brand/page-consultant.jpg" alt="Talk to a Human Consultant" className="absolute inset-0 w-full h-full object-cover object-top" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#082C6B]/90 via-[#0B3D91]/80 to-[#0B3D91]/50" />
+        <div className="relative z-10 h-full flex flex-col items-center justify-center text-center px-4">
+          <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-white mb-3">{t('consultant.title')}</h1>
+          <p className="text-white/80 text-base md:text-lg max-w-2xl">Schedule a confidential consultation with our senior supply chain experts.</p>
+        </div>
+      </div>
+
+    <div className="container mx-auto px-4 py-10 sm:py-16 max-w-2xl">
       <div className="mb-10 text-center">
-        <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-6">
+        <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
           <Calendar className="w-8 h-8 text-primary" />
         </div>
-        <h1 className="text-3xl md:text-4xl font-bold text-primary mb-4">{t('consultant.title')}</h1>
-        <p className="text-muted-foreground">Schedule a confidential consultation with our supply chain experts to discuss your specific organizational challenges.</p>
+        <p className="text-muted-foreground">Fill in your details and we'll confirm your session within 24 hours.</p>
       </div>
 
       <div className="bg-white rounded-2xl shadow-xl border border-border p-6 md:p-10">
@@ -192,6 +202,7 @@ export function Consultant() {
           </form>
         </Form>
       </div>
+    </div>
     </div>
   );
 }
