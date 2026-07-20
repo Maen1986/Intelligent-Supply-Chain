@@ -264,6 +264,14 @@ const tabs = ['Latest News', 'Tools Spotlight', 'Process Innovation', 'Expert Ti
 
 export function Intelligence() {
   const [activeTab, setActiveTab] = useState(0);
+  const contentRef = React.useRef<HTMLDivElement>(null);
+
+  const switchTab = (i: number) => {
+    setActiveTab(i);
+    setTimeout(() => {
+      contentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 50);
+  };
 
   return (
     <div className="w-full">
@@ -295,7 +303,7 @@ export function Intelligence() {
               return (
                 <button
                   key={tab}
-                  onClick={() => setActiveTab(i)}
+                  onClick={() => switchTab(i)}
                   className={`flex items-center gap-2 px-5 py-4 text-sm font-semibold border-b-2 whitespace-nowrap transition-all duration-200 shrink-0 ${
                     activeTab === i
                       ? 'border-primary text-primary'
@@ -311,7 +319,7 @@ export function Intelligence() {
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-12 max-w-6xl">
+      <div ref={contentRef} className="container mx-auto px-4 py-10 max-w-6xl" style={{ scrollMarginTop: '140px' }}>
 
         {/* ── Tab 0: Latest News ──────────────────────────────────────── */}
         {activeTab === 0 && (

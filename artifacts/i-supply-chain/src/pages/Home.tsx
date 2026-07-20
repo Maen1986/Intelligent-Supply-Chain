@@ -3,7 +3,7 @@ import { motion, useInView, useMotionValue, useTransform, animate, AnimatePresen
 import { useLanguage } from '@/lib/LanguageContext';
 import { Link } from 'wouter';
 import { Button } from '@/components/ui/button';
-import { GitBranch, ShoppingCart, FileText, Users, ShieldAlert, Leaf, RefreshCw, Cpu, ChevronRight, ArrowRight, Star, Quote } from 'lucide-react';
+import { ChevronRight, ArrowRight, Star, Quote, Cpu } from 'lucide-react';
 
 // ─── Animated counter hook ──────────────────────────────────────────────────
 function useAnimatedCounter(target: number, shouldStart: boolean, duration = 2) {
@@ -230,14 +230,46 @@ export function Home() {
   const { t } = useLanguage();
 
   const solutions = [
-    { icon: GitBranch, title: 'Supply Chain Strategy', desc: 'End-to-end supply chain design and operational strategy.' },
-    { icon: ShoppingCart, title: 'Procurement Excellence', desc: 'Strategic sourcing, vendor selection, and procurement transformation.' },
-    { icon: FileText, title: 'Contract Lifecycle Management', desc: 'Full contract lifecycle from drafting to renewal and compliance.' },
-    { icon: Users, title: 'Supplier Relationship & Governance', desc: 'Supplier performance management and governance frameworks.' },
-    { icon: ShieldAlert, title: 'Risk Management', desc: 'Proactive identification and mitigation of supply chain risks.' },
-    { icon: Leaf, title: 'Sustainability', desc: 'ESG integration and sustainable procurement practices.' },
-    { icon: RefreshCw, title: 'Resiliency', desc: 'Building adaptive, disruption-resistant supply chains.' },
-    { icon: Cpu, title: 'Digital Transformation', desc: 'Technology enablement and digital supply chain maturity.' },
+    {
+      photo: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=600&h=380&fit=crop&q=80',
+      title: 'Supply Chain Strategy',
+      desc: 'End-to-end supply chain design and operational strategy aligned with business objectives.',
+    },
+    {
+      photo: 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=600&h=380&fit=crop&q=80',
+      title: 'Procurement Excellence',
+      desc: 'Strategic sourcing, vendor selection, and full procurement transformation programmes.',
+    },
+    {
+      photo: 'https://images.unsplash.com/photo-1450101499163-c8848c66ca85?w=600&h=380&fit=crop&q=80',
+      title: 'Contract Lifecycle Management',
+      desc: 'Full contract lifecycle from drafting and negotiation through to renewal and compliance.',
+    },
+    {
+      photo: 'https://images.unsplash.com/photo-1521791136064-7986c2920216?w=600&h=380&fit=crop&q=80',
+      title: 'Supplier Relationship & Governance',
+      desc: 'Supplier performance management, scorecards, and structured governance frameworks.',
+    },
+    {
+      photo: 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=600&h=380&fit=crop&q=80',
+      title: 'Risk Management',
+      desc: 'Proactive identification, assessment, and mitigation of supply chain risks.',
+    },
+    {
+      photo: 'https://images.unsplash.com/photo-1497436072909-60f360e1d4b1?w=600&h=380&fit=crop&q=80',
+      title: 'Sustainability & ESG',
+      desc: 'ESG integration, circular procurement practices, and Scope 3 emissions reporting.',
+    },
+    {
+      photo: 'https://images.unsplash.com/photo-1533750349088-cd871a92f312?w=600&h=380&fit=crop&q=80',
+      title: 'Resiliency',
+      desc: 'Building adaptive, disruption-resistant supply chains with dual-source strategies.',
+    },
+    {
+      photo: 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=600&h=380&fit=crop&q=80',
+      title: 'Digital Transformation',
+      desc: 'Technology enablement, ERP optimisation, and digital supply chain maturity roadmaps.',
+    },
   ];
 
   const industries = [
@@ -280,7 +312,6 @@ export function Home() {
       <section
         ref={heroRef}
         className="relative w-full bg-gradient-to-br from-[#0B3D91] to-[#082C6B] text-white overflow-hidden"
-        style={{ minHeight: '92vh' }}
       >
         {/* Full-bleed background photo */}
         <div
@@ -294,8 +325,8 @@ export function Home() {
         <Orb size={320} color="rgba(201,168,76,0.15)" x="55%" y="-5%" duration={9} delay={0} />
         <Orb size={200} color="rgba(201,168,76,0.10)" x="75%" y="55%" duration={12} delay={2} />
 
-        <div className="container mx-auto px-4 relative z-10 flex items-center" style={{ minHeight: '92vh' }}>
-          <div className="grid lg:grid-cols-2 gap-12 items-center w-full py-20 lg:py-0">
+        <div className="container mx-auto px-4 relative z-10 flex items-center">
+          <div className="grid lg:grid-cols-2 gap-12 items-center w-full py-20">
 
             {/* Left — text */}
             <div className="space-y-8">
@@ -415,20 +446,20 @@ export function Home() {
       </RevealSection>
 
       {/* ── Solutions ────────────────────────────────────────────────────── */}
-      <section id="solutions" className="py-20 bg-muted">
+      <section id="solutions" className="py-14 bg-muted">
         <div className="container mx-auto px-4">
-          <RevealSection className="text-center mb-16">
+          <RevealSection className="text-center mb-10">
             <h2 className="text-3xl md:text-4xl font-bold text-primary">{t('sections.solutions')}</h2>
             <motion.div
               initial={{ scaleX: 0 }}
               whileInView={{ scaleX: 1 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6, delay: 0.2 }}
-              className="w-24 h-1 bg-accent mx-auto mt-6 rounded-full origin-center"
+              className="w-24 h-1 bg-accent mx-auto mt-5 rounded-full origin-center"
             />
           </RevealSection>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
             {solutions.map((sol, i) => (
               <motion.div
                 key={i}
@@ -436,18 +467,25 @@ export function Home() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: '-60px' }}
                 transition={{ duration: 0.55, delay: (i % 4) * 0.08, ease: [0.22, 1, 0.36, 1] }}
-                whileHover={{ y: -5, boxShadow: '0 12px 32px rgba(11,61,145,0.12)' }}
-                className="bg-white p-6 rounded-xl border border-border shadow-sm cursor-default group"
+                whileHover={{ y: -5, boxShadow: '0 16px 40px rgba(11,61,145,0.15)' }}
+                className="bg-white rounded-2xl border border-border shadow-sm cursor-default group overflow-hidden"
               >
-                <motion.div
-                  whileHover={{ scale: 1.1 }}
-                  transition={{ type: 'spring', stiffness: 400, damping: 15 }}
-                  className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center text-primary mb-5 group-hover:bg-primary group-hover:text-white transition-colors"
-                >
-                  <sol.icon className="w-6 h-6" />
-                </motion.div>
-                <h3 className="text-xl font-bold text-foreground mb-3">{sol.title}</h3>
-                <p className="text-muted-foreground text-sm leading-relaxed">{sol.desc}</p>
+                {/* Photo */}
+                <div className="relative h-40 overflow-hidden">
+                  <img
+                    src={sol.photo}
+                    alt={sol.title}
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#082C6B]/80 via-[#082C6B]/20 to-transparent" />
+                  <div className="absolute bottom-0 left-0 right-0 px-4 py-3">
+                    <h3 className="text-white font-bold text-sm leading-tight drop-shadow">{sol.title}</h3>
+                  </div>
+                </div>
+                {/* Body */}
+                <div className="p-4">
+                  <p className="text-muted-foreground text-sm leading-relaxed">{sol.desc}</p>
+                </div>
               </motion.div>
             ))}
           </div>
@@ -483,9 +521,9 @@ export function Home() {
       </section>
 
       {/* ── Packages ─────────────────────────────────────────────────────── */}
-      <section id="packages" className="py-20 bg-white">
+      <section id="packages" className="py-14 bg-white">
         <div className="container mx-auto px-4">
-          <RevealSection className="text-center mb-16">
+          <RevealSection className="text-center mb-10">
             <h2 className="text-3xl md:text-4xl font-bold text-primary">{t('sections.packages')}</h2>
             <motion.div
               initial={{ scaleX: 0 }}
@@ -523,9 +561,9 @@ export function Home() {
       </section>
 
       {/* ── Testimonials ─────────────────────────────────────────────────── */}
-      <section className="py-20 bg-muted">
+      <section className="py-14 bg-muted">
         <div className="container mx-auto px-4">
-          <RevealSection className="text-center mb-14">
+          <RevealSection className="text-center mb-10">
             <span className="text-accent font-bold text-sm uppercase tracking-widest">Client Voices</span>
             <h2 className="text-3xl md:text-4xl font-bold text-primary mt-3">What Our Clients Say</h2>
           </RevealSection>

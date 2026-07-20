@@ -3,12 +3,12 @@ import { Link } from 'wouter';
 
 export function Logo() {
   return (
-    <Link href="/" className="flex items-center">
+    <Link href="/" className="flex items-center shrink-0">
       <img
         src="/brand/logo.png?v=3"
         alt="I Supply Chain"
-        className="h-12 w-auto object-contain"
-        style={{ maxWidth: '220px' }}
+        className="w-auto object-contain"
+        style={{ height: '60px', maxWidth: '260px' }}
       />
     </Link>
   );
