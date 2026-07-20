@@ -47,7 +47,15 @@ export function Diagnostic() {
         fetch(DIAGNOSTIC_LEAD_WEBHOOK_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ form: formData, report: generated }),
+          body: JSON.stringify({
+              submissionType: 'diagnostic',
+              businessSize: formData.businessSize,
+              region: formData.region,
+              industry: formData.industry,
+              focusArea: formData.focusArea,
+              challengeText: formData.challenge,
+              reportSummary: generated.executiveSummary,
+            }),
         }).catch(() => {});
       } catch (e) {
         // silent fail

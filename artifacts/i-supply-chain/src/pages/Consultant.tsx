@@ -45,7 +45,14 @@ export function Consultant() {
         await fetch(CONSULTANT_BOOKING_WEBHOOK_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(values),
+          body: JSON.stringify({
+            submissionType: 'booking',
+            name: values.fullName,
+            email: values.email,
+            company: values.company,
+            preferredDateTime: `${values.preferredDate} ${values.preferredTime}`,
+            description: values.description,
+          }),
         });
       } catch (e) {
         // silent fail
