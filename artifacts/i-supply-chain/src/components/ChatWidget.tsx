@@ -59,40 +59,57 @@ export function ChatWidget() {
     });
   }, []);
 
-  const pickMaleVoice = useCallback((voices: SpeechSynthesisVoice[]): SpeechSynthesisVoice | null => {
-    const preferred = [
+  const pickVoice = useCallback((voices: SpeechSynthesisVoice[], language: string): SpeechSynthesisVoice | null => {
+    if (language === 'ar') {
+      // Preferred Arabic voices in priority order
+      const preferredAr = [
+        'Google Arabic', 'Microsoft Naayf', 'Microsoft Hoda',
+        'Majed', 'Tarik', 'Maged',
+      ];
+      for (const name of preferredAr) {
+        const v = voices.find(v => v.name.includes(name));
+        if (v) return v;
+      }
+      // Any Arabic locale voice
+      const arVoice = voices.find(v => v.lang.startsWith('ar'));
+      if (arVoice) return arVoice;
+      // Last resort: fall through to English so speech still works
+    }
+
+    // English male voices in priority order
+    const preferredEn = [
       'Google UK English Male', 'Microsoft David - English', 'Microsoft Mark - English',
       'Daniel', 'Alex', 'Fred', 'Ralph', 'Albert',
     ];
-    for (const name of preferred) {
+    for (const name of preferredEn) {
       const v = voices.find(v => v.name.includes(name));
       if (v) return v;
     }
-    // Any male-sounding en voice
     const male = voices.find(v =>
       v.lang.startsWith('en') && /male|david|mark|daniel|alex|fred|ralph/i.test(v.name)
     );
-    // Fallback: first English voice
     return male ?? voices.find(v => v.lang.startsWith('en')) ?? voices[0] ?? null;
   }, []);
 
   const speakText = useCallback(async (text: string) => {
     if (!text.trim() || !window.speechSynthesis) return;
 
-    // Cancel anything in progress and clear watchdog
     window.speechSynthesis.cancel();
     clearWatchdog();
 
     const voices = await getVoices();
-    const voice = pickMaleVoice(voices);
+    const voice = pickVoice(voices, lang);
 
-    // Split into sentences so Chrome's 15-second limit doesn't cut us off mid-response
-    const sentences = text.match(/[^.!?]+[.!?]*/g)?.filter(s => s.trim()) ?? [text];
+    // Arabic uses ، ؟ as sentence separators; English uses . ! ?
+    const splitPattern = lang === 'ar'
+      ? /[^.!?،؟]+[.!?،؟]*/g
+      : /[^.!?]+[.!?]*/g;
+    const sentences = text.match(splitPattern)?.filter(s => s.trim()) ?? [text];
 
     let index = 0;
     setIsSpeaking(true);
 
-    // Chrome pauses synthesis randomly — this watchdog resumes it every 10s
+    // Chrome watchdog: resumes auto-paused synthesis every 10s
     ttsWatchdogRef.current = setInterval(() => {
       if (window.speechSynthesis.paused) window.speechSynthesis.resume();
     }, 10_000);
@@ -105,12 +122,13 @@ export function ChatWidget() {
       }
       const utt = new SpeechSynthesisUtterance(sentences[index].trim());
       if (voice) utt.voice = voice;
-      utt.rate = 0.92;
-      utt.pitch = 0.85;
+      // Arabic reads better slightly slower; English at natural pace
+      utt.rate  = lang === 'ar' ? 0.88 : 0.92;
+      utt.pitch = lang === 'ar' ? 1.0  : 0.85;
       utt.volume = 1;
+      utt.lang  = lang === 'ar' ? 'ar-SA' : 'en-GB';
       utt.onend = () => { index++; speakNext(); };
       utt.onerror = (e) => {
-        // 'interrupted' fires on cancel — treat as normal stop
         if ((e as any).error !== 'interrupted') {
           clearWatchdog();
           setIsSpeaking(false);
@@ -120,7 +138,7 @@ export function ChatWidget() {
     };
 
     speakNext();
-  }, [getVoices, pickMaleVoice, clearWatchdog]);
+  }, [getVoices, pickVoice, clearWatchdog, lang]);
 
   const stopSpeaking = useCallback(() => {
     clearWatchdog();
