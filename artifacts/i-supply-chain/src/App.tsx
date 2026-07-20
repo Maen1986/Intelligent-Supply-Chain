@@ -4,6 +4,7 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import NotFound from '@/pages/not-found';
 import { Route, Switch, Router as WouterRouter } from 'wouter';
 import { LanguageProvider, useLanguage } from '@/lib/LanguageContext';
+import { AuthProvider } from '@/lib/AuthContext';
 
 // Components & Pages
 import { Header } from '@/components/Header';
@@ -17,6 +18,8 @@ import { CaseStudies } from '@/pages/CaseStudies';
 import { Insights } from '@/pages/Insights';
 import { Intelligence } from '@/pages/Intelligence';
 import { Maturity } from '@/pages/Maturity';
+import { Login } from '@/pages/Login';
+import { IndustryPage } from '@/pages/IndustryPage';
 import { ChatWidget } from '@/components/ChatWidget';
 import { WhatsAppButton } from '@/components/WhatsAppButton';
 
@@ -50,6 +53,8 @@ function Router() {
         <Route path="/insights" component={Insights} />
         <Route path="/intelligence" component={Intelligence} />
         <Route path="/maturity" component={Maturity} />
+        <Route path="/login" component={Login} />
+        <Route path="/industry/:slug" component={IndustryPage} />
         <Route component={NotFound} />
       </Switch>
     </Layout>
@@ -59,14 +64,16 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <LanguageProvider>
-        <TooltipProvider>
-          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
-            <Router />
-          </WouterRouter>
-          <Toaster />
-        </TooltipProvider>
-      </LanguageProvider>
+      <AuthProvider>
+        <LanguageProvider>
+          <TooltipProvider>
+            <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
+              <Router />
+            </WouterRouter>
+            <Toaster />
+          </TooltipProvider>
+        </LanguageProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

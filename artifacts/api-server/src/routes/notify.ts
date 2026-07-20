@@ -1,0 +1,131 @@
+import { Router } from 'express';
+import nodemailer from 'nodemailer';
+
+const router = Router();
+
+const NOTIFY_EMAILS = [
+  'haqash.maen@gmail.com',
+  'maen.haqash@yahoo.com',
+];
+
+function createTransporter() {
+  const user = process.env.GMAIL_USER || 'haqash.maen@gmail.com';
+  const pass = process.env.GMAIL_APP_PASSWORD;
+  if (!pass) return null;
+  return nodemailer.createTransport({
+    service: 'gmail',
+    auth: { user, pass },
+  });
+}
+
+function buildEmailHtml(subject: string, rows: Record<string, string>) {
+  const rowsHtml = Object.entries(rows)
+    .map(([k, v]) => `<tr><td style="padding:8px 12px;font-weight:bold;color:#082C6B;background:#f5f8ff;border:1px solid #dde4f0;white-space:nowrap">${k}</td><td style="padding:8px 12px;border:1px solid #dde4f0">${v || '—'}</td></tr>`)
+    .join('');
+  return `
+    <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto">
+      <div style="background:#082C6B;padding:24px 32px;border-radius:8px 8px 0 0">
+        <h1 style="color:#fff;margin:0;font-size:20px">I Supply Chain</h1>
+        <p style="color:#C9A84C;margin:4px 0 0;font-size:14px">${subject}</p>
+      </div>
+      <div style="background:#fff;padding:24px 32px;border:1px solid #dde4f0;border-top:none">
+        <table style="width:100%;border-collapse:collapse">${rowsHtml}</table>
+        <p style="color:#666;font-size:12px;margin-top:24px">Sent automatically from I Supply Chain website • ${new Date().toLocaleString('en-GB', { timeZone: 'Asia/Riyadh' })} AST</p>
+      </div>
+    </div>`;
+}
+
+async function sendToAll(subject: string, html: string) {
+  const transporter = createTransporter();
+  if (!transporter) {
+    console.warn('[notify] GMAIL_APP_PASSWORD not set — email not sent');
+    return { sent: false, reason: 'GMAIL_APP_PASSWORD not configured' };
+  }
+  const results = await Promise.allSettled(
+    NOTIFY_EMAILS.map(to =>
+      transporter.sendMail({
+        from: `"I Supply Chain" <${process.env.GMAIL_USER || 'haqash.maen@gmail.com'}>`,
+        to,
+        subject,
+        html,
+      })
+    )
+  );
+  const errors = results.filter(r => r.status === 'rejected').map(r => (r as PromiseRejectedResult).reason?.message);
+  return { sent: true, errors };
+}
+
+/* ── POST /api/notify/lead ── */
+router.post('/lead', async (req, res) => {
+  const { fullName, email, mobile, designation, company, source } = req.body;
+  const subject = `🆕 New Lead: ${fullName} — ${company}`;
+  const html = buildEmailHtml(subject, {
+    'Full Name': fullName,
+    'Email': email,
+    'Mobile': mobile,
+    'Designation': designation,
+    'Company': company,
+    'Source': source || 'Website Registration',
+    'Time': new Date().toLocaleString('en-GB', { timeZone: 'Asia/Riyadh' }),
+  });
+  const result = await sendToAll(subject, html);
+  res.json({ ok: true, ...result });
+});
+
+/* ── POST /api/notify/booking ── */
+router.post('/booking', async (req, res) => {
+  const { fullName, email, mobile, designation, company, preferredDate, preferredTime, serviceType, description } = req.body;
+  const subject = `📅 Booking Request: ${fullName} — ${preferredDate} ${preferredTime}`;
+  const html = buildEmailHtml(subject, {
+    'Full Name': fullName,
+    'Email': email,
+    'Mobile': mobile,
+    'Designation': designation,
+    'Company': company,
+    'Service Requested': serviceType || 'Consultation',
+    'Preferred Date': preferredDate,
+    'Preferred Time': preferredTime,
+    'Notes': description || '',
+    'Time Received': new Date().toLocaleString('en-GB', { timeZone: 'Asia/Riyadh' }),
+  });
+  const result = await sendToAll(subject, html);
+  res.json({ ok: true, ...result });
+});
+
+/* ── POST /api/notify/diagnostic ── */
+router.post('/diagnostic', async (req, res) => {
+  const { fullName, email, mobile, designation, company, scores, overallScore } = req.body;
+  const subject = `📊 Diagnostic Completed: ${fullName} — Score ${overallScore}%`;
+  const html = buildEmailHtml(subject, {
+    'Full Name': fullName,
+    'Email': email,
+    'Mobile': mobile,
+    'Designation': designation,
+    'Company': company,
+    'Overall Score': `${overallScore}%`,
+    'Segment Scores': scores ? JSON.stringify(scores) : '',
+    'Time': new Date().toLocaleString('en-GB', { timeZone: 'Asia/Riyadh' }),
+  });
+  const result = await sendToAll(subject, html);
+  res.json({ ok: true, ...result });
+});
+
+/* ── POST /api/notify/maturity ── */
+router.post('/maturity', async (req, res) => {
+  const { fullName, email, mobile, designation, company, overallLevel, scores } = req.body;
+  const subject = `📈 Maturity Assessment: ${fullName} — Level ${overallLevel}`;
+  const html = buildEmailHtml(subject, {
+    'Full Name': fullName,
+    'Email': email,
+    'Mobile': mobile,
+    'Designation': designation,
+    'Company': company,
+    'Overall Maturity Level': overallLevel,
+    'Segment Scores': scores ? JSON.stringify(scores) : '',
+    'Time': new Date().toLocaleString('en-GB', { timeZone: 'Asia/Riyadh' }),
+  });
+  const result = await sendToAll(subject, html);
+  res.json({ ok: true, ...result });
+});
+
+export default router;

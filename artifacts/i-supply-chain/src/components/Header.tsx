@@ -2,33 +2,35 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'wouter';
 import { Logo } from './Logo';
 import { useLanguage } from '@/lib/LanguageContext';
-import { Menu, X, ChevronDown, Phone } from 'lucide-react';
+import { useAuth } from '@/lib/AuthContext';
+import { Menu, X, ChevronDown, Phone, LogOut, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const industryList = [
-  { label: 'Manufacturing',   href: '/case-studies?industry=manufacturing' },
-  { label: 'Energy & Oil',    href: '/case-studies?industry=energy' },
-  { label: 'Government',      href: '/case-studies?industry=government' },
-  { label: 'Pharmaceutical',  href: '/case-studies?industry=pharma' },
-  { label: 'Retail & FMCG',  href: '/case-studies?industry=retail' },
-  { label: 'Logistics',       href: '/case-studies?industry=logistics' },
-  { label: 'Marine',          href: '/case-studies?industry=marine' },
-  { label: 'Construction',    href: '/case-studies?industry=construction' },
-  { label: 'Healthcare',      href: '/case-studies?industry=healthcare' },
-  { label: 'Technology',      href: '/case-studies?industry=tech' },
+  { label: 'Manufacturing',           slug: 'manufacturing' },
+  { label: 'Energy & Oil',            slug: 'energy' },
+  { label: 'Government & Public Sector', slug: 'government' },
+  { label: 'Pharmaceutical',          slug: 'pharma' },
+  { label: 'Retail & FMCG',          slug: 'retail' },
+  { label: 'Logistics & Distribution', slug: 'logistics' },
+  { label: 'Marine & Port Operations', slug: 'marine' },
+  { label: 'Construction & EPC',      slug: 'construction' },
+  { label: 'Healthcare',              slug: 'healthcare' },
+  { label: 'Technology & ICT',        slug: 'tech' },
 ];
 
 const servicesList = [
   { key: 'nav.solutions',    href: '/#solutions',   label: 'Our Solutions' },
   { key: 'nav.packages',     href: '/#packages',    label: 'Packages & Pricing' },
   { key: 'nav.diagnostic',   href: '/diagnostic',   label: 'AI Diagnostic' },
+  { key: 'nav.maturity',     href: '/maturity',     label: 'Maturity Assessment' },
   { key: 'nav.caseStudies',  href: '/case-studies', label: 'Case Studies' },
   { key: 'nav.intelligence', href: '/intelligence', label: 'Intelligence Hub' },
-  { key: 'nav.maturity',     href: '/maturity',     label: 'Maturity Assessment' },
 ];
 
 export function Header() {
   const { lang, setLang } = useLanguage();
+  const { user, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [servicesOpen, setServicesOpen] = useState(false);
   const [industriesOpen, setIndustriesOpen] = useState(false);
@@ -81,16 +83,13 @@ export function Header() {
   };
 
   const isActive = (href: string) =>
-    href !== '/' ? location.startsWith(href.split('?')[0].replace('/#', '/')) : location === '/';
+    href.startsWith('/#') ? false : href !== '/' ? location.startsWith(href.split('?')[0]) : location === '/';
 
-  /* ─── shared styles ─── */
-  const tabBase =
-    'relative flex items-center gap-1 px-4 py-2 text-[15px] font-semibold rounded-lg transition-all duration-150 whitespace-nowrap';
-  const tabActive = 'text-primary bg-primary/8 after:absolute after:bottom-0 after:left-3 after:right-3 after:h-[2px] after:bg-primary after:rounded-full';
-  const tabIdle   = 'text-gray-700 hover:text-primary hover:bg-primary/5';
-
-  const dropdownCls  = 'absolute top-full left-0 mt-2 bg-white border border-border rounded-2xl shadow-2xl py-2 z-50';
-  const dropItemCls  = 'flex items-center gap-2 px-5 py-2.5 text-[14px] font-medium text-gray-700 hover:bg-primary/5 hover:text-primary transition-colors';
+  const tabBase = 'relative flex items-center gap-1 px-4 py-2 text-[15px] font-semibold rounded-lg transition-all duration-150 whitespace-nowrap';
+  const tabActive = 'text-primary bg-primary/8';
+  const tabIdle = 'text-gray-700 hover:text-primary hover:bg-primary/5';
+  const dropdownCls = 'absolute top-full left-0 mt-2 bg-white border border-border rounded-2xl shadow-2xl py-2 z-50';
+  const dropItemCls = 'flex items-center gap-2 px-5 py-2.5 text-[14px] font-medium text-gray-700 hover:bg-primary/5 hover:text-primary transition-colors';
 
   return (
     <header className={`sticky top-0 z-50 w-full transition-all duration-200 ${scrolled ? 'bg-white shadow-lg border-b border-border' : 'bg-white shadow-md border-b border-border'}`}>
@@ -98,9 +97,21 @@ export function Header() {
       {/* ── Top utility bar ── */}
       <div className="hidden lg:flex items-center justify-end gap-6 px-6 py-1.5 bg-[#082C6B] text-white text-[12px] font-medium">
         <a href="tel:+966549479722" className="flex items-center gap-1.5 hover:text-[#C9A84C] transition-colors">
-          <Phone className="w-3 h-3" />
-          +966 549 479 722
+          <Phone className="w-3 h-3" /> +966 549 479 722
         </a>
+        <span className="text-white/40">|</span>
+        {user ? (
+          <div className="flex items-center gap-3">
+            <span className="flex items-center gap-1.5 text-white/80">
+              <User className="w-3 h-3" /> {user.fullName.split(' ')[0]}
+            </span>
+            <button onClick={logout} className="flex items-center gap-1 hover:text-[#C9A84C] transition-colors">
+              <LogOut className="w-3 h-3" /> Sign out
+            </button>
+          </div>
+        ) : (
+          <Link href="/login" className="hover:text-[#C9A84C] transition-colors font-semibold">Sign In / Register</Link>
+        )}
         <span className="text-white/40">|</span>
         <button onClick={toggleLanguage} className="hover:text-[#C9A84C] transition-colors font-semibold tracking-wide">
           {lang === 'en' ? 'عربي' : 'English'}
@@ -109,10 +120,9 @@ export function Header() {
 
       {/* ── Main header row ── */}
       <div className="container mx-auto px-4 h-[68px] flex items-center justify-between gap-4">
-
         <Logo />
 
-        {/* ── Desktop Nav tabs ── */}
+        {/* ── Desktop Nav ── */}
         <nav className="hidden lg:flex items-center gap-0.5 flex-1 justify-center">
 
           <Link href="/" className={`${tabBase} ${isActive('/') ? tabActive : tabIdle}`}>
@@ -149,13 +159,14 @@ export function Header() {
               <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${industriesOpen ? 'rotate-180' : ''}`} />
             </button>
             {industriesOpen && (
-              <div className={dropdownCls} style={{ minWidth: 210 }}>
-                <Link href="/#industries" className={dropItemCls} onClick={() => setIndustriesOpen(false)}>
-                  All Industries
-                </Link>
-                <div className="border-t border-border my-1" />
+              <div className={dropdownCls} style={{ minWidth: 230 }}>
                 {industryList.map(ind => (
-                  <Link key={ind.href} href={ind.href} className={dropItemCls} onClick={() => setIndustriesOpen(false)}>
+                  <Link
+                    key={ind.slug}
+                    href={`/industry/${ind.slug}`}
+                    className={dropItemCls}
+                    onClick={() => setIndustriesOpen(false)}
+                  >
                     {ind.label}
                   </Link>
                 ))}
@@ -225,7 +236,7 @@ export function Header() {
 
             <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest px-4 py-2 mt-3">Industries</p>
             {industryList.map(ind => (
-              <Link key={ind.href} href={ind.href} onClick={() => setMobileMenuOpen(false)}
+              <Link key={ind.slug} href={`/industry/${ind.slug}`} onClick={() => setMobileMenuOpen(false)}
                 className="block px-7 py-2.5 text-[15px] text-gray-700 hover:text-primary hover:bg-primary/5 rounded-lg transition-colors font-medium">
                 {ind.label}
               </Link>
@@ -245,10 +256,19 @@ export function Header() {
             ))}
 
             <div className="mt-4 pt-4 border-t border-border space-y-3">
+              {user ? (
+                <div className="flex items-center justify-between px-4 py-2 bg-primary/5 rounded-xl">
+                  <span className="text-sm font-semibold text-primary">{user.fullName}</span>
+                  <button onClick={() => { logout(); setMobileMenuOpen(false); }} className="text-sm text-red-500 font-semibold">Sign Out</button>
+                </div>
+              ) : (
+                <Link href="/login" onClick={() => setMobileMenuOpen(false)}>
+                  <Button variant="outline" className="w-full border-primary text-primary font-semibold">Sign In / Register</Button>
+                </Link>
+              )}
               <a href="tel:+966549479722"
                 className="flex items-center justify-center gap-2 w-full py-3 rounded-xl border border-primary text-primary font-semibold text-[15px] hover:bg-primary/5 transition-colors">
-                <Phone className="w-4 h-4" />
-                +966 549 479 722
+                <Phone className="w-4 h-4" /> +966 549 479 722
               </a>
               <Link href="/consultant" onClick={() => setMobileMenuOpen(false)}>
                 <Button className="w-full bg-[#C9A84C] hover:bg-[#b8963e] text-white font-bold text-[15px] py-3 rounded-xl">
