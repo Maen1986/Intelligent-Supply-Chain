@@ -160,65 +160,102 @@ export function Home() {
       {/* ── Hero ─────────────────────────────────────────────────────────── */}
       <section
         ref={heroRef}
-        className="relative w-full bg-gradient-to-br from-[#0B3D91] to-[#082C6B] text-white py-16 lg:py-32 overflow-hidden"
+        className="relative w-full bg-gradient-to-br from-[#0B3D91] to-[#082C6B] text-white overflow-hidden"
+        style={{ minHeight: '92vh' }}
       >
-        {/* Subtle cube texture */}
-        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 mix-blend-overlay pointer-events-none" />
+        {/* Full-bleed background photo */}
+        <div
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+          style={{ backgroundImage: "url('/brand/hero-port.jpg')" }}
+        />
+        {/* Dark overlay so text stays readable */}
+        <div className="absolute inset-0 bg-gradient-to-r from-[#082C6B]/95 via-[#0B3D91]/80 to-[#0B3D91]/30" />
 
-        {/* Animated orbs */}
-        <Orb size={380} color="rgba(201,168,76,0.18)" x="60%" y="-10%" duration={9} delay={0} />
-        <Orb size={280} color="rgba(11,61,145,0.5)" x="-8%" y="30%" duration={12} delay={2} />
-        <Orb size={220} color="rgba(201,168,76,0.12)" x="20%" y="55%" duration={10} delay={1} />
-        <Orb size={180} color="rgba(255,255,255,0.07)" x="78%" y="50%" duration={14} delay={3} />
+        {/* Animated orbs on top */}
+        <Orb size={320} color="rgba(201,168,76,0.15)" x="55%" y="-5%" duration={9} delay={0} />
+        <Orb size={200} color="rgba(201,168,76,0.10)" x="75%" y="55%" duration={12} delay={2} />
 
-        <div className="container mx-auto px-4 relative z-10">
-          <div className="max-w-4xl mx-auto text-center space-y-8">
-            <motion.h1
-              initial={{ opacity: 0, y: 30 }}
-              animate={heroInView ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-              className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold leading-tight tracking-tight"
-            >
-              {t('hero.headline')}
-            </motion.h1>
+        <div className="container mx-auto px-4 relative z-10 flex items-center" style={{ minHeight: '92vh' }}>
+          <div className="grid lg:grid-cols-2 gap-12 items-center w-full py-20 lg:py-0">
 
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={heroInView ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 0.8, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
-              className="text-lg md:text-xl text-white/80 max-w-2xl mx-auto leading-relaxed"
-            >
-              {t('hero.subheadline')}
-            </motion.p>
+            {/* Left — text */}
+            <div className="space-y-8">
+              <motion.h1
+                initial={{ opacity: 0, x: -40 }}
+                animate={heroInView ? { opacity: 1, x: 0 } : {}}
+                transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+                className="text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-tight tracking-tight"
+              >
+                {t('hero.headline')}
+              </motion.h1>
 
+              <motion.p
+                initial={{ opacity: 0, x: -30 }}
+                animate={heroInView ? { opacity: 1, x: 0 } : {}}
+                transition={{ duration: 0.9, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
+                className="text-lg md:text-xl text-white/80 max-w-xl leading-relaxed"
+              >
+                {t('hero.subheadline')}
+              </motion.p>
+
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={heroInView ? { opacity: 1, y: 0 } : {}}
+                transition={{ duration: 0.8, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                className="flex flex-col sm:flex-row gap-3"
+              >
+                <Link href="/diagnostic">
+                  <Button size="lg" className="w-full sm:w-auto bg-accent hover:bg-accent/90 text-white font-bold px-8 shadow-lg min-h-[52px] text-base">
+                    {t('hero.ctaPrimary')}
+                  </Button>
+                </Link>
+                <Link href="/consultant">
+                  <Button size="lg" variant="outline" className="w-full sm:w-auto border-white/70 text-white hover:bg-white hover:text-primary font-bold px-8 min-h-[52px] text-base">
+                    {t('hero.ctaSecondary')}
+                  </Button>
+                </Link>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={heroInView ? { opacity: 1 } : {}}
+                transition={{ duration: 0.8, delay: 0.5 }}
+              >
+                <Link href="/csr" className="text-sm text-white/60 hover:text-accent underline underline-offset-4 font-medium inline-flex items-center gap-1 transition-colors">
+                  {t('hero.ctaTertiary')} <ArrowRight className="w-3 h-3" />
+                </Link>
+              </motion.div>
+            </div>
+
+            {/* Right — consultant photo */}
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={heroInView ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 0.8, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
-              className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 sm:gap-4 pt-6 sm:pt-8 w-full max-w-md mx-auto sm:max-w-none"
+              initial={{ opacity: 0, scale: 0.95, x: 40 }}
+              animate={heroInView ? { opacity: 1, scale: 1, x: 0 } : {}}
+              transition={{ duration: 1, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
+              className="hidden lg:flex justify-center items-end"
             >
-              <Link href="/diagnostic" className="w-full sm:w-auto">
-                <Button size="lg" className="w-full sm:w-auto bg-accent hover:bg-accent/90 text-white font-bold px-8 shadow-lg min-h-[48px]">
-                  {t('hero.ctaPrimary')}
-                </Button>
-              </Link>
-              <Link href="/consultant" className="w-full sm:w-auto">
-                <Button size="lg" variant="outline" className="w-full sm:w-auto border-white text-white hover:bg-white hover:text-primary font-bold px-8 min-h-[48px]">
-                  {t('hero.ctaSecondary')}
-                </Button>
-              </Link>
+              <div className="relative">
+                {/* Gold glow behind photo */}
+                <div className="absolute -inset-4 rounded-3xl bg-accent/20 blur-2xl" />
+                <img
+                  src="/brand/hero-consultant.jpg"
+                  alt="Maen — AI Supply Chain Consultant"
+                  className="relative rounded-3xl shadow-2xl object-cover ring-2 ring-white/20"
+                  style={{ width: '420px', height: '520px', objectPosition: 'top center' }}
+                />
+                {/* Floating badge */}
+                <div className="absolute -bottom-4 -left-4 bg-white rounded-2xl shadow-xl px-5 py-3 flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center shrink-0">
+                    <Cpu className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground font-medium">AI-Powered</p>
+                    <p className="text-sm font-bold text-primary">Supply Chain Expert</p>
+                  </div>
+                </div>
+              </div>
             </motion.div>
 
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={heroInView ? { opacity: 1 } : {}}
-              transition={{ duration: 0.8, delay: 0.45 }}
-              className="pt-4"
-            >
-              <Link href="/csr" className="text-sm text-white/70 hover:text-accent underline underline-offset-4 font-medium inline-flex items-center gap-1 transition-colors">
-                {t('hero.ctaTertiary')} <ArrowRight className="w-3 h-3" />
-              </Link>
-            </motion.div>
           </div>
         </div>
       </section>
@@ -234,15 +271,52 @@ export function Home() {
         </div>
       </section>
 
-      {/* ── Brand Visual Strip ───────────────────────────────────────────── */}
-      <RevealSection className="w-full bg-white py-12">
+      {/* ── About / Visual Strip ─────────────────────────────────────────── */}
+      <RevealSection className="w-full bg-white py-16">
         <div className="container mx-auto px-4">
-          <div className="rounded-2xl overflow-hidden shadow-lg border border-border max-w-4xl mx-auto">
-            <img
-              src="/brand/social-launch.png"
-              alt="I Supply Chain — Your Intelligent Supply Chain Consultant"
-              className="w-full h-auto object-cover block"
-            />
+          <div className="grid lg:grid-cols-2 gap-12 items-center max-w-6xl mx-auto">
+            {/* Photo */}
+            <div className="relative rounded-2xl overflow-hidden shadow-2xl">
+              <img
+                src="/brand/about-team.jpg"
+                alt="I Supply Chain strategy team"
+                className="w-full h-80 lg:h-96 object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#082C6B]/60 to-transparent" />
+              <div className="absolute bottom-6 left-6 text-white">
+                <p className="text-sm font-medium text-white/80">Strategic Advisory</p>
+                <p className="text-xl font-bold">Global Supply Chain Excellence</p>
+              </div>
+            </div>
+            {/* Text */}
+            <div className="space-y-6">
+              <h2 className="text-3xl md:text-4xl font-bold text-primary">
+                Why I Supply Chain?
+              </h2>
+              <p className="text-muted-foreground text-lg leading-relaxed">
+                We combine deep domain expertise with cutting-edge AI to deliver supply chain strategies that are resilient, cost-efficient, and built for the GCC's evolving regulatory landscape.
+              </p>
+              <ul className="space-y-3">
+                {[
+                  'AI-driven diagnostics with actionable strategic reports',
+                  'Senior consultants with 10+ years GCC experience',
+                  'Vision 2030 and ESG-aligned frameworks',
+                  'End-to-end from strategy to implementation',
+                ].map((item, i) => (
+                  <li key={i} className="flex items-start gap-3 text-foreground">
+                    <span className="w-5 h-5 rounded-full bg-accent/20 flex items-center justify-center shrink-0 mt-0.5">
+                      <span className="w-2 h-2 rounded-full bg-accent" />
+                    </span>
+                    {item}
+                  </li>
+                ))}
+              </ul>
+              <Link href="/consultant">
+                <Button className="bg-primary hover:bg-primary/90 text-white font-bold px-6">
+                  Book a Consultation <ChevronRight className="w-4 h-4 ml-1" />
+                </Button>
+              </Link>
+            </div>
           </div>
         </div>
       </RevealSection>

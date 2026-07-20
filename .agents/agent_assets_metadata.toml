@@ -150,3 +150,21 @@ id = "frHdbQL1T9pD6TMIyBCLj"
 uri = "file://artifacts/i-supply-chain/public/brand/logo-d1-v2.png"
 type = "image"
 title = "D1 ISC — V2 (same concept, tighter composition)"
+
+[[outputs]]
+id = "6nfU-uq_SNVCKVZRyZp1h"
+uri = "file://artifacts/i-supply-chain/public/brand/hero-consultant.jpg"
+type = "image"
+title = "Hero — Consultant"
+
+[[outputs]]
+id = "TG34W1qhkO3LL55CjD1SF"
+uri = "file://artifacts/i-supply-chain/public/brand/hero-port.jpg"
+type = "image"
+title = "Hero — Port Aerial"
+
+[[outputs]]
+id = "hHRM6jtu98KeE6jpm2GYE"
+uri = "file://artifacts/i-supply-chain/public/brand/about-team.jpg"
+type = "image"
+title = "Strategy Meeting"
