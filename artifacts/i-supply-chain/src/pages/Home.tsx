@@ -50,10 +50,10 @@ function RevealSection({
 
 // ─── Stats strip data ────────────────────────────────────────────────────────
 const stats = [
-  { value: 500, suffix: '+', label: 'Projects Delivered' },
+  { value: 100, suffix: 'M+', label: 'Cost Savings Delivered (USD)' },
   { value: 15, suffix: '+', label: 'Countries Served' },
   { value: 98, suffix: '%', label: 'Client Satisfaction' },
-  { value: 10, suffix: '+', label: 'Years of Expertise' },
+  { value: 20, suffix: '+', label: 'Years of Expertise' },
 ];
 
 function StatCard({ value, suffix, label }: { value: number; suffix: string; label: string }) {

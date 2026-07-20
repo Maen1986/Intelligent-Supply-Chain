@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Link } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/lib/LanguageContext';
-import { Award, Globe, Users, TrendingUp, CheckCircle, ChevronRight, Linkedin, Mail, Phone } from 'lucide-react';
+import { Award, Globe, Users, TrendingUp, CheckCircle, ChevronRight, Linkedin, Mail, Phone, GraduationCap, BadgeCheck } from 'lucide-react';
 
 function RevealSection({ children, className = '', delay = 0 }: { children: React.ReactNode; className?: string; delay?: number }) {
   return (
@@ -43,23 +43,37 @@ const values = [
 ];
 
 const certifications = [
-  'CIPS-Aligned Procurement Frameworks',
-  'ISO 28000 Supply Chain Security',
-  'GCC Localisation & Iktva Compliance',
-  'Vision 2030 Program Alignment',
-  'ESG & Sustainability Reporting',
-  'UN Global Compact Principles',
+  'MCIPS — Chartered Institute of Procurement & Supply',
+  'CPSM — Certified Professional in Supply Management (ISM)',
+  'MIPP — Maersk International Procurement Programme, Denmark',
+  'MSc Procurement & Supply Chain, Robert Gordon University (Distinction)',
+  'PEX Process Excellence — Sponsor Level (36 hrs)',
+  'Saudi Procurement Competition Law Practitioner',
+  'Anti-Corruption & Competition Compliance Certified',
+  'Vision 2030 & Iktva Localisation Compliance',
+  'SAP MM/SCM · Ariba · MS Dynamics 365 · IFS · Odoo · JD Edwards',
 ];
 
 const teamMembers = [
   {
-    name: 'Maen Haqash',
-    title: 'Founder & Lead Supply Chain Consultant',
-    origin: 'Jordan / Saudi Arabia',
-    bio: 'Maen brings over a decade of hands-on experience transforming supply chains for enterprises, government entities, and fast-growing SMEs across Saudi Arabia, Jordan, and the wider GCC. His expertise spans procurement strategy, contract lifecycle management, supplier governance, and digital transformation. He has advised clients in manufacturing, pharma, logistics, retail, energy, and government sectors — consistently delivering measurable results aligned with Vision 2030 objectives.',
-    expertise: ['Supply Chain Strategy', 'Procurement Excellence', 'CLM', 'Supplier Governance', 'Risk Management', 'Vision 2030'],
+    name: "Ma'in Alhaqash",
+    title: 'Procurement & Supply Chain Director | Senior Consultant',
+    credentials: 'MSc · MCIPS · CPSM · MIPP',
+    origin: 'Jordan · Riyadh, Saudi Arabia',
+    bio: `A bilingual (English/Arabic) Procurement and Supply Chain Director and Senior Consultant with 20+ years of progressive, cross-sector leadership spanning government, oil & gas, FMCG, manufacturing, and EPC construction. Trusted by BP, Maersk, Kaplan, and Saudi government ministries — including MoE, MoI, MoF, and MoD — to architect and deliver transformational programmes at scale, with a consistent record of $100M+ in cumulative cost savings and sustained operational uplift.
+
+Ma'in co-founded two General Departments within the Ministry of Education's Institutional Transformation Agency and designed a proprietary Transformation Maturity Model — adopted as the Ministry's official reform benchmark, the first of its kind within the MoE. As Cluster Procurement Manager at Maersk Terminals (Jordan & Georgia), he built a centralised digital procurement system achieving 100% spend visibility and delivered $5M in annual cost reductions. At SOLB Steel, he delivered $15M in cost savings through strategic sourcing and value engineering. At Saudi Pan Gulf Group (Vita Foods), he redesigned end-to-end supply chain operations achieving 90% forecast accuracy and 0% stock obsolescence.
+
+He holds an MSc in Procurement & Supply Chain Management from Robert Gordon University Aberdeen (Distinction — Dean's Award Winner), with a thesis on "The Influence of Big Data Analytics on Supply Chain Sustainability and Resiliency." He is also an international speaker, having presented at the CQI North Sea Conference in Scotland, and has provided voluntary consultancy to Cfine and the North Sea Food Industry sector in the UK.`,
+    expertise: ['Procurement Transformation', 'Strategic Sourcing', 'CLM', 'Supplier Governance', 'Digital Procurement (SAP/Ariba)', 'Change Management', 'Vision 2030 & Iktva', 'Spend Analysis', 'Category Management', 'S&OP & Demand Planning'],
+    achievements: [
+      { metric: '$100M+', label: 'Cumulative cost savings delivered' },
+      { metric: '50%', label: 'TCO reduction achieved for clients' },
+      { metric: '100%', label: 'Supply chain efficiency improvement' },
+      { metric: '#1', label: 'Jeddah Chamber among 28 KSA chambers' },
+    ],
     photo: '/brand/hero-consultant.jpg?v=3',
-    linkedin: '#',
+    linkedin: 'https://linkedin.com/in/maen-alhaqash',
     email: 'maen.haqash@yahoo.com',
     phone: '+966 549 479 722',
   },
@@ -120,9 +134,9 @@ export function About() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               {[
-                { value: '500+', label: 'Projects Delivered' },
+                { value: '$100M+', label: 'Cost Savings Delivered' },
                 { value: '15+', label: 'Countries Served' },
-                { value: '10+', label: 'Years of Expertise' },
+                { value: '20+', label: 'Years of Expertise' },
                 { value: '98%', label: 'Client Satisfaction' },
               ].map((stat) => (
                 <div key={stat.label} className="bg-primary/5 rounded-2xl p-6 text-center border border-primary/10">
@@ -183,13 +197,40 @@ export function About() {
                     <div className="absolute inset-0 bg-gradient-to-t from-[#082C6B]/60 to-transparent lg:bg-gradient-to-r lg:from-transparent lg:to-[#082C6B]/20" />
                   </div>
                   {/* Content */}
-                  <div className={`lg:col-span-2 p-8 space-y-5 ${i % 2 === 1 ? 'lg:col-start-1' : ''}`}>
+                  <div className={`lg:col-span-2 p-8 flex flex-col gap-5 ${i % 2 === 1 ? 'lg:col-start-1' : ''}`}>
+                    {/* Header */}
                     <div>
                       <p className="text-accent font-bold text-sm uppercase tracking-widest mb-1">{member.origin}</p>
                       <h3 className="text-2xl font-bold text-primary">{member.name}</h3>
-                      <p className="text-muted-foreground font-medium mt-1">{member.title}</p>
+                      <p className="text-muted-foreground font-medium mt-0.5">{member.title}</p>
+                      {'credentials' in member && (
+                        <div className="flex items-center gap-2 mt-2">
+                          <BadgeCheck className="w-4 h-4 text-accent shrink-0" />
+                          <span className="text-accent font-bold text-xs tracking-wide">{(member as any).credentials}</span>
+                        </div>
+                      )}
                     </div>
-                    <p className="text-foreground/80 leading-relaxed">{member.bio}</p>
+
+                    {/* Achievements grid — only for Maen */}
+                    {'achievements' in member && (
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        {(member as any).achievements.map((a: { metric: string; label: string }) => (
+                          <div key={a.label} className="bg-primary/5 rounded-xl p-3 text-center border border-primary/10">
+                            <p className="text-xl font-extrabold text-primary leading-tight">{a.metric}</p>
+                            <p className="text-xs text-muted-foreground mt-0.5 leading-tight">{a.label}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Bio — split on double newlines */}
+                    <div className="space-y-3">
+                      {member.bio.split('\n\n').map((para, pi) => (
+                        <p key={pi} className="text-foreground/80 leading-relaxed text-sm">{para}</p>
+                      ))}
+                    </div>
+
+                    {/* Expertise tags */}
                     <div className="flex flex-wrap gap-2">
                       {member.expertise.map((tag) => (
                         <span key={tag} className="px-3 py-1 bg-primary/8 text-primary rounded-full text-xs font-semibold border border-primary/15">
@@ -197,14 +238,16 @@ export function About() {
                         </span>
                       ))}
                     </div>
-                    <div className="flex flex-wrap gap-4 pt-2">
+
+                    {/* Contact */}
+                    <div className="flex flex-wrap gap-4 pt-2 border-t border-border">
                       <a href={`mailto:${member.email}`} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors">
                         <Mail className="w-4 h-4" /> {member.email}
                       </a>
                       <a href={`tel:${member.phone.replace(/\s/g, '')}`} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors">
                         <Phone className="w-4 h-4" /> {member.phone}
                       </a>
-                      <a href={member.linkedin} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors">
+                      <a href={member.linkedin} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors">
                         <Linkedin className="w-4 h-4" /> LinkedIn
                       </a>
                     </div>
