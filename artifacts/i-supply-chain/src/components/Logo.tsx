@@ -7,8 +7,8 @@ export function Logo() {
       <img
         src="/brand/logo.png"
         alt="I Supply Chain"
-        className="h-10 w-auto object-contain"
-        style={{ maxWidth: '200px' }}
+        className="h-12 w-auto object-contain"
+        style={{ maxWidth: '220px' }}
       />
     </Link>
   );
