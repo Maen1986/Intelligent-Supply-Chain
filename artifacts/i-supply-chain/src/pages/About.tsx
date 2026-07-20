@@ -153,23 +153,16 @@ export function About() {
           </RevealSection>
 
           <RevealSection>
-            <div className="grid lg:grid-cols-5 gap-0 bg-white rounded-3xl shadow-xl border border-border overflow-hidden">
+            <div className="bg-white rounded-3xl shadow-xl border border-border overflow-hidden">
 
-              {/* Photo column */}
-              <div className="lg:col-span-2 relative min-h-[420px] lg:min-h-[560px]">
+              {/* Full-width photo */}
+              <div className="relative w-full bg-[#071e3d]">
                 <img
                   src="/brand/maen-photo.jpg"
                   alt="Ma'in Alhaqash — Supply Chain Consultant"
-                  className="absolute inset-0 w-full h-full object-cover object-top"
+                  className="w-full h-auto block"
+                  style={{ maxHeight: '75vh', objectFit: 'contain', objectPosition: 'center' }}
                 />
-                {/* Overlay gradient */}
-                <div className="absolute inset-0 bg-gradient-to-t from-[#082C6B]/80 via-[#082C6B]/10 to-transparent lg:bg-gradient-to-r lg:from-transparent lg:to-[#082C6B]/10" />
-                {/* Bottom nameplate on mobile */}
-                <div className="absolute bottom-0 left-0 right-0 p-5 lg:hidden">
-                  <p className="text-[#C9A84C] font-bold text-xs uppercase tracking-widest mb-0.5">Jordan · Riyadh, KSA</p>
-                  <h3 className="text-white text-xl font-extrabold">Ma'in Alhaqash</h3>
-                  <p className="text-white/80 text-sm">MSc · MCIPS · CPSM · MIPP</p>
-                </div>
                 {/* Supply chain badge overlay */}
                 <div className="absolute top-4 right-4 bg-[#082C6B]/90 text-white text-xs font-bold px-3 py-2 rounded-xl border border-[#C9A84C]/40">
                   <p className="text-[#C9A84C]">20+ Years</p>
@@ -177,10 +170,10 @@ export function About() {
                 </div>
               </div>
 
-              {/* Content column */}
-              <div className="lg:col-span-3 p-8 lg:p-10 flex flex-col gap-6">
-                {/* Name / title — desktop */}
-                <div className="hidden lg:block">
+              {/* Content below */}
+              <div className="p-8 lg:p-10 flex flex-col gap-6">
+                {/* Name / title */}
+                <div>
                   <p className="text-accent font-bold text-xs uppercase tracking-widest mb-1">Jordan · Riyadh, Saudi Arabia</p>
                   <h3 className="text-2xl font-extrabold text-primary">Ma'in Alhaqash</h3>
                   <p className="text-muted-foreground font-medium text-sm mt-0.5">Procurement & Supply Chain Director | Senior Consultant</p>
