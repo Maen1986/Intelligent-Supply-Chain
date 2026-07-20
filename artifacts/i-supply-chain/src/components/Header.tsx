@@ -24,6 +24,7 @@ const servicesList = [
   { key: 'nav.diagnostic',  href: '/diagnostic',  label: 'AI Diagnostic' },
   { key: 'nav.caseStudies', href: '/case-studies',label: 'Case Studies' },
   { key: 'nav.intelligence',href: '/intelligence', label: 'Intelligence Hub' },
+  { key: 'nav.maturity',    href: '/maturity',     label: 'Maturity Assessment' },
 ];
 
 export function Header() {
@@ -74,7 +75,8 @@ export function Header() {
       'nav.packages':    { en: 'Packages',      ar: 'الباقات' },
       'nav.diagnostic':  { en: 'AI Diagnostic', ar: 'التشخيص الذكي' },
       'nav.caseStudies': { en: 'Case Studies',  ar: 'دراسات الحالة' },
-      'nav.intelligence':{ en: 'Intelligence Hub', ar: 'المستجدات' },
+      'nav.intelligence':{ en: 'Intelligence Hub',    ar: 'المستجدات' },
+      'nav.maturity':    { en: 'Maturity Assessment', ar: 'نضج سلسلة الإمداد' },
       'nav.industries':  { en: 'Industries',    ar: 'القطاعات' },
       'nav.insights':    { en: 'Insights',      ar: 'المقالات' },
       'nav.about':       { en: 'About',         ar: 'من نحن' },
