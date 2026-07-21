@@ -582,14 +582,14 @@ export function Home() {
                 Why I Supply Chain?
               </h2>
               <p className="text-muted-foreground text-lg leading-relaxed">
-                We combine deep domain expertise with cutting-edge AI to deliver supply chain strategies that are resilient, cost-efficient, and built for the GCC's evolving regulatory landscape.
+                When supply chain decisions carry SAR-million consequences, generic advice won't cut it. ISC brings 20+ years of hands-on GCC and MENA expertise — from Saudi Vision 2030 procurement reform to Jordan's trade gateway dynamics — fused with AI that compresses weeks of analysis into minutes of insight.
               </p>
               <ul className="space-y-3">
                 {[
-                  'AI-driven diagnostics with actionable strategic reports',
-                  'Senior consultants with 10+ years GCC experience',
-                  'Vision 2030 and ESG-aligned frameworks',
-                  'End-to-end from strategy to implementation',
+                  'AI diagnostics that surface SAR-million savings opportunities in minutes',
+                  'Senior consultants with 20+ years of GCC & MENA supply chain experience',
+                  'Saudi Vision 2030, CIPS, APICS SCOR & ESG-aligned methodologies',
+                  'From strategic roadmap to hands-on implementation — we stay until results show',
                 ].map((item, i) => (
                   <li key={i} className="flex items-start gap-3 text-foreground">
                     <span className="w-5 h-5 rounded-full bg-accent/20 flex items-center justify-center shrink-0 mt-0.5">
@@ -629,7 +629,7 @@ export function Home() {
               <span className="text-[#C9A84C]">Now take 60 seconds.</span>
             </h2>
             <p className="text-white/60 text-lg max-w-2xl mx-auto leading-relaxed">
-              The ISC Command Centre is the only AI-powered supply chain intelligence platform built specifically for GCC organisations — free, instant, and grounded in CIPS, APICS SCOR, and 20 years of regional expertise.
+              The ISC Command Centre is the only AI-powered supply chain intelligence platform built specifically for GCC organisations — grounded in CIPS, APICS SCOR, and 20 years of regional expertise. Affordable plans sized to your organisation.
             </p>
           </motion.div>
 
@@ -667,7 +667,7 @@ export function Home() {
               </div>
               {[
                 ['Time to first insight', '2 – 4 weeks', '60 seconds'],
-                ['Cost', 'SAR 50K – 150K', 'Free'],
+                ['Cost', 'SAR 50K – 150K', 'SAR 250 – 2,500 / mo'],
                 ['GCC & Vision 2030 expertise', '⚠️ Variable', '✅ Embedded'],
                 ['CIPS / APICS SCOR grounding', '⚠️ Variable', '✅ Always'],
                 ['Personalised to your data', '✅ Yes (manual)', '✅ Yes (AI)'],
@@ -690,7 +690,7 @@ export function Home() {
                 whileTap={{ scale: 0.98 }}
                 className="inline-flex items-center gap-3 bg-[#C9A84C] hover:bg-[#b8973e] text-white font-black text-base px-8 py-4 rounded-2xl transition-colors shadow-xl cursor-pointer"
               >
-                ⚡ Launch Command Centre — Free
+                ⚡ Launch Command Centre
                 <ChevronRight className="w-5 h-5" />
               </motion.button>
             </Link>

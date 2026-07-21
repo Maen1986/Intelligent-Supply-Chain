@@ -72,10 +72,14 @@ export function CommandCentreFloat() {
               <span className="text-[#C9A84C] font-bold"> benchmarks, savings model, risk score & 90-day plan.</span>
             </p>
 
-            {/* 60 seconds badge */}
-            <div className="flex items-center gap-1.5 mb-4">
+            {/* Pricing + speed badge */}
+            <div className="flex items-center gap-1.5 mb-1">
               <Clock className="w-3.5 h-3.5 text-[#C9A84C]" />
-              <span className="text-white/60 text-xs">Ready in <span className="text-white font-bold">60 seconds</span> · No consultant required</span>
+              <span className="text-white/60 text-xs">Ready in <span className="text-white font-bold">60 seconds</span></span>
+            </div>
+            <div className="flex items-center gap-1.5 mb-4">
+              <span className="text-[#C9A84C] text-xs">💰</span>
+              <span className="text-white/60 text-xs">From <span className="text-white font-bold">SAR 250 / mo</span> · sized to your organisation</span>
             </div>
 
             {/* CTA */}
@@ -86,7 +90,7 @@ export function CommandCentreFloat() {
                 onClick={() => { sessionStorage.setItem(SESSION_KEY, '1'); setVisible(false); }}
                 className="flex items-center justify-center gap-2 w-full bg-[#C9A84C] hover:bg-[#b8973e] text-white font-bold text-sm py-2.5 rounded-xl transition-colors cursor-pointer shadow-lg"
               >
-                Launch Free Tool <ArrowRight className="w-4 h-4" />
+                Explore Command Centre <ArrowRight className="w-4 h-4" />
               </motion.span>
             </Link>
           </div>

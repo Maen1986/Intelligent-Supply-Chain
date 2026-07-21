@@ -45,7 +45,7 @@ export function AnnouncementBanner() {
                   transition={{ duration: 0.6, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
                 >
                   The GCC's only AI Supply Chain Command Centre is live —
-                  <span className="text-[#C9A84C] font-bold"> executive briefing in 60 seconds, free.</span>
+                  <span className="text-[#C9A84C] font-bold"> executive briefing in 60 seconds — plans from SAR 250 / mo.</span>
                 </motion.p>
               </div>
             </div>
@@ -57,7 +57,7 @@ export function AnnouncementBanner() {
                   whileHover={{ scale: 1.04 }}
                   className="hidden sm:flex items-center gap-1.5 bg-[#C9A84C] hover:bg-[#b8973e] text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-colors cursor-pointer shadow"
                 >
-                  Try Free <ArrowRight className="w-3.5 h-3.5" />
+                  Get Started <ArrowRight className="w-3.5 h-3.5" />
                 </motion.span>
               </Link>
               <button

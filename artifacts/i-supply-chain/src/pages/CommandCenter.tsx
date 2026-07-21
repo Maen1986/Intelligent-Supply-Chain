@@ -883,7 +883,7 @@ export function CommandCenter() {
         <div className="mt-10 rounded-2xl overflow-hidden border border-border">
           <div className="bg-[#082C6B] px-6 py-4">
             <h3 className="text-white font-black text-base">How ISC Command Centre Compares</h3>
-            <p className="text-white/60 text-xs mt-0.5">The only AI supply chain intelligence platform built for the GCC — free, instant, CIPS-grounded.</p>
+            <p className="text-white/60 text-xs mt-0.5">The only AI supply chain intelligence platform built for the GCC — CIPS-grounded, affordable plans sized to your organisation.</p>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -898,7 +898,7 @@ export function CommandCenter() {
               <tbody>
                 {[
                   ['Time to first insight',         '2 – 4 weeks',        '3 – 6 months',        '60 seconds'],
-                  ['Cost',                          'SAR 50K – 150K',     'SAR 500K – 2M+',      'Free'],
+                  ['Cost',                          'SAR 50K – 150K',     'SAR 500K – 2M+',      'SAR 250 – 2,500 / mo'],
                   ['GCC & Vision 2030 expertise',   '⚠️ Variable',         '⚠️ Variable',          '✅ Embedded'],
                   ['CIPS / APICS SCOR grounding',   '⚠️ Variable',         '❌ Rarely',            '✅ Always'],
                   ['Personalised to your data',     '✅ Manual',           '✅ Manual',            '✅ AI-powered'],
