@@ -25,6 +25,8 @@ import { LeanSixSigma } from '@/pages/LeanSixSigma';
 import { RiskManagement } from '@/pages/RiskManagement';
 import { GovernanceCompliance } from '@/pages/GovernanceCompliance';
 import { CommandCenter } from '@/pages/CommandCenter';
+import { Legal } from '@/pages/Legal';
+import { useIPProtection } from '@/hooks/useIPProtection';
 import { ChatWidget } from '@/components/ChatWidget';
 import { WhatsAppButton } from '@/components/WhatsAppButton';
 import { AnnouncementBanner } from '@/components/AnnouncementBanner';
@@ -34,6 +36,7 @@ const queryClient = new QueryClient();
 
 function Layout({ children }: { children: React.ReactNode }) {
   const { lang } = useLanguage();
+  useIPProtection();
   return (
     <div className={`min-h-screen flex flex-col font-sans ${lang === 'ar' ? 'rtl' : 'ltr'}`}>
       <AnnouncementBanner />
@@ -69,6 +72,7 @@ function Router() {
         <Route path="/risk-management" component={RiskManagement} />
         <Route path="/governance-compliance" component={GovernanceCompliance} />
         <Route path="/command-center" component={CommandCenter} />
+        <Route path="/legal" component={Legal} />
         <Route component={NotFound} />
       </Switch>
     </Layout>

@@ -1,2 +1,99 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# I Supply Chain — robots.txt
+# © 2026 I Supply Chain. All Rights Reserved.
+# Proprietary methodologies, AI tools and content are protected IP.
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Standard crawlers — index homepage and public pages only
 User-agent: *
-Allow: /
+Allow: /i-supply-chain/
+Allow: /i-supply-chain/about
+Allow: /i-supply-chain/insights
+Allow: /i-supply-chain/csr
+Allow: /i-supply-chain/case-studies
+Disallow: /i-supply-chain/command-center
+Disallow: /i-supply-chain/diagnostic
+Disallow: /i-supply-chain/maturity
+Disallow: /i-supply-chain/consultant
+Disallow: /i-supply-chain/login
+Disallow: /i-supply-chain/solutions/
+Disallow: /i-supply-chain/lean-six-sigma
+Disallow: /i-supply-chain/risk-management
+Disallow: /i-supply-chain/governance-compliance
+Disallow: /api-server/
+
+# ── AI Training Crawlers — Blocked ───────────────────────────────────────────
+# OpenAI GPT
+User-agent: GPTBot
+Disallow: /
+
+# OpenAI ChatGPT plugin crawler
+User-agent: ChatGPT-User
+Disallow: /
+
+# Anthropic Claude
+User-agent: ClaudeBot
+Disallow: /
+
+User-agent: anthropic-ai
+Disallow: /
+
+# Google AI (Gemini training)
+User-agent: Google-Extended
+Disallow: /
+
+# Common Crawl (used for training many LLMs)
+User-agent: CCBot
+Disallow: /
+
+# ByteDance / TikTok
+User-agent: Bytespider
+Disallow: /
+
+# Meta AI
+User-agent: FacebookBot
+Disallow: /
+
+# Apple AI
+User-agent: Applebot-Extended
+Disallow: /
+
+# Cohere AI
+User-agent: cohere-ai
+Disallow: /
+
+# PerplexityBot
+User-agent: PerplexityBot
+Disallow: /
+
+# YouBot
+User-agent: YouBot
+Disallow: /
+
+# Omgili
+User-agent: Omgili
+Disallow: /
+
+# DataForSEO
+User-agent: DataForSeoBot
+Disallow: /
+
+# PetalBot (Huawei)
+User-agent: PetalBot
+Disallow: /
+
+# SemrushBot scraper
+User-agent: SemrushBot
+Disallow: /
+
+# AhrefsBot
+User-agent: AhrefsBot
+Disallow: /
+
+# MJ12bot
+User-agent: MJ12bot
+Disallow: /
+
+# DotBot
+User-agent: DotBot
+Disallow: /

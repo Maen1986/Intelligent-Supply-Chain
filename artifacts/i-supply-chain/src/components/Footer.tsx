@@ -133,10 +133,13 @@ export function Footer() {
       {/* Bottom bar */}
       <div className="border-t border-white/10">
         <div className="container mx-auto px-4 py-5 flex flex-col sm:flex-row justify-between items-center gap-3 text-xs text-white/40">
-          <p>{lang === 'ar' ? '© 2025 آي سبلاي تشين. جميع الحقوق محفوظة.' : '© 2025 I Supply Chain. All rights reserved.'}</p>
+          <div>
+            <p>{lang === 'ar' ? '© 2026 آي سبلاي تشين. جميع الحقوق محفوظة.' : '© 2026 I Supply Chain. All Rights Reserved.'}</p>
+            <p className="text-white/25 text-[10px] mt-0.5">All intellectual property, methodologies, AI tools &amp; frameworks are exclusively owned by ISC.</p>
+          </div>
           <div className="flex gap-5">
-            <Link href="/about" className="hover:text-white/70 transition-colors">Privacy Policy</Link>
-            <Link href="/about" className="hover:text-white/70 transition-colors">Terms of Service</Link>
+            <Link href="/legal" className="hover:text-white/70 transition-colors">Legal &amp; IP Notice</Link>
+            <Link href="/legal" className="hover:text-white/70 transition-colors">Terms of Use</Link>
             <Link href="/csr" className="hover:text-white/70 transition-colors">CSR Programme</Link>
           </div>
         </div>
