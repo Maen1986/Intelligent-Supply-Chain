@@ -27,6 +27,8 @@ import { GovernanceCompliance } from '@/pages/GovernanceCompliance';
 import { CommandCenter } from '@/pages/CommandCenter';
 import { ChatWidget } from '@/components/ChatWidget';
 import { WhatsAppButton } from '@/components/WhatsAppButton';
+import { AnnouncementBanner } from '@/components/AnnouncementBanner';
+import { CommandCentreFloat } from '@/components/CommandCentreFloat';
 
 const queryClient = new QueryClient();
 
@@ -34,6 +36,7 @@ function Layout({ children }: { children: React.ReactNode }) {
   const { lang } = useLanguage();
   return (
     <div className={`min-h-screen flex flex-col font-sans ${lang === 'ar' ? 'rtl' : 'ltr'}`}>
+      <AnnouncementBanner />
       <Header />
       <main className="flex-1 bg-background">
         {children}
@@ -41,6 +44,7 @@ function Layout({ children }: { children: React.ReactNode }) {
       <Footer />
       <ChatWidget />
       <WhatsAppButton />
+      <CommandCentreFloat />
     </div>
   );
 }

@@ -879,6 +879,45 @@ export function CommandCenter() {
           </AnimatePresence>
         </div>
 
+        {/* ── How We Compare ──────────────────────────────────────────────── */}
+        <div className="mt-10 rounded-2xl overflow-hidden border border-border">
+          <div className="bg-[#082C6B] px-6 py-4">
+            <h3 className="text-white font-black text-base">How ISC Command Centre Compares</h3>
+            <p className="text-white/60 text-xs mt-0.5">The only AI supply chain intelligence platform built for the GCC — free, instant, CIPS-grounded.</p>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border">
+                  <th className="px-5 py-3 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider bg-muted w-44">What you need</th>
+                  <th className="px-5 py-3 text-center text-xs font-bold text-muted-foreground uppercase tracking-wider bg-muted">Traditional Consultant</th>
+                  <th className="px-5 py-3 text-center text-xs font-bold text-muted-foreground uppercase tracking-wider bg-muted">McKinsey / Big-4</th>
+                  <th className="px-5 py-3 text-center text-xs font-black uppercase tracking-wider bg-[#082C6B]/8 text-[#082C6B]">⚡ ISC Command Centre</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  ['Time to first insight',         '2 – 4 weeks',        '3 – 6 months',        '60 seconds'],
+                  ['Cost',                          'SAR 50K – 150K',     'SAR 500K – 2M+',      'Free'],
+                  ['GCC & Vision 2030 expertise',   '⚠️ Variable',         '⚠️ Variable',          '✅ Embedded'],
+                  ['CIPS / APICS SCOR grounding',   '⚠️ Variable',         '❌ Rarely',            '✅ Always'],
+                  ['Personalised to your data',     '✅ Manual',           '✅ Manual',            '✅ AI-powered'],
+                  ['Quantified SAR impact',         '✅ Yes (delayed)',    '✅ Yes (delayed)',     '✅ Instant'],
+                  ['90-day actionable roadmap',     '✅ Yes (weeks)',      '✅ Yes (months)',      '✅ In 60 seconds'],
+                  ['Immediate next steps',          '⚠️ After engagement', '⚠️ After engagement', '✅ Right now'],
+                ].map(([label, trad, big4, isc], i) => (
+                  <tr key={i} className={`border-b border-border ${i % 2 === 0 ? 'bg-white' : 'bg-muted/30'}`}>
+                    <td className="px-5 py-3 text-xs font-semibold text-foreground">{label}</td>
+                    <td className="px-5 py-3 text-center text-xs text-muted-foreground">{trad}</td>
+                    <td className="px-5 py-3 text-center text-xs text-muted-foreground">{big4}</td>
+                    <td className="px-5 py-3 text-center text-xs font-bold text-[#082C6B] bg-[#082C6B]/5">{isc}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
         {/* Footer CTA */}
         <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4 bg-muted rounded-2xl p-6">
           <div className="flex items-center gap-3">

@@ -609,6 +609,97 @@ export function Home() {
         </div>
       </RevealSection>
 
+      {/* ── Command Centre Spotlight ─────────────────────────────────────── */}
+      <section className="relative bg-[#060F1E] overflow-hidden py-20">
+        {/* Background texture */}
+        <div className="absolute inset-0 opacity-20"
+          style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, #C9A84C 0%, transparent 50%), radial-gradient(circle at 80% 20%, #0B3D91 0%, transparent 50%)' }} />
+        <div className="absolute inset-0 opacity-5"
+          style={{ backgroundImage: 'repeating-linear-gradient(0deg,transparent,transparent 39px,rgba(201,168,76,0.3) 40px), repeating-linear-gradient(90deg,transparent,transparent 39px,rgba(201,168,76,0.3) 40px)' }} />
+
+        <div className="container mx-auto px-4 relative z-10">
+
+          {/* Label + Headline */}
+          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }} className="text-center mb-14">
+            <span className="inline-flex items-center gap-2 bg-[#C9A84C]/15 border border-[#C9A84C]/30 text-[#C9A84C] text-xs font-black uppercase tracking-[0.2em] px-4 py-1.5 rounded-full mb-5">
+              ⚡ Unprecedented — GCC First
+            </span>
+            <h2 className="text-4xl md:text-5xl font-black text-white leading-tight mb-4">
+              Insights that took weeks.<br />
+              <span className="text-[#C9A84C]">Now take 60 seconds.</span>
+            </h2>
+            <p className="text-white/60 text-lg max-w-2xl mx-auto leading-relaxed">
+              The ISC Command Centre is the only AI-powered supply chain intelligence platform built specifically for GCC organisations — free, instant, and grounded in CIPS, APICS SCOR, and 20 years of regional expertise.
+            </p>
+          </motion.div>
+
+          {/* 4 Feature Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-14">
+            {[
+              { icon: '🎯', title: 'GCC Benchmark Radar', body: 'Compare your 6 key KPIs against GCC top-quartile and median benchmarks. See your gaps. See the SAR impact.', time: '30 sec' },
+              { icon: '💰', title: 'Savings Calculator', body: 'Model your savings potential across 5 procurement initiatives. Move a slider — watch SAR millions appear in real time.', time: '2 min' },
+              { icon: '🛡️', title: 'Risk Exposure Score', body: 'Input 5 risk factors. Receive an ISO 31000-aligned score, annual disruption cost, and prioritised mitigations.', time: '1 min' },
+              { icon: '🧠', title: 'AI Executive Briefing', body: 'A 3-question wizard → GPT-4o acts as Ma\'in → produces a full executive report with gaps, quick wins & 90-day plan.', time: '60 sec' },
+            ].map((f, i) => (
+              <motion.div key={i}
+                initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-40px' }}
+                transition={{ duration: 0.5, delay: i * 0.1 }}
+                className="bg-white/5 border border-white/10 rounded-2xl p-5 hover:bg-white/10 hover:border-[#C9A84C]/30 transition-all group">
+                <span className="text-3xl mb-3 block">{f.icon}</span>
+                <h3 className="text-white font-bold text-sm mb-2">{f.title}</h3>
+                <p className="text-white/50 text-xs leading-relaxed mb-3">{f.body}</p>
+                <span className="inline-flex items-center gap-1 text-[#C9A84C] text-xs font-bold">
+                  ⏱ Ready in {f.time}
+                </span>
+              </motion.div>
+            ))}
+          </div>
+
+          {/* Before / After Comparison */}
+          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6, delay: 0.2 }}
+            className="max-w-3xl mx-auto mb-12">
+            <div className="rounded-2xl overflow-hidden border border-white/10">
+              {/* Table header */}
+              <div className="grid grid-cols-3 text-xs font-black uppercase tracking-wider">
+                <div className="bg-white/5 px-4 py-3 text-white/40">What you need</div>
+                <div className="bg-white/10 px-4 py-3 text-white/40 text-center">Traditional Consultant</div>
+                <div className="px-4 py-3 text-center text-[#C9A84C]" style={{ background: 'rgba(201,168,76,0.12)' }}>⚡ ISC Command Centre</div>
+              </div>
+              {[
+                ['Time to first insight', '2 – 4 weeks', '60 seconds'],
+                ['Cost', 'SAR 50K – 150K', 'Free'],
+                ['GCC & Vision 2030 expertise', '⚠️ Variable', '✅ Embedded'],
+                ['CIPS / APICS SCOR grounding', '⚠️ Variable', '✅ Always'],
+                ['Personalised to your data', '✅ Yes (manual)', '✅ Yes (AI)'],
+                ['Immediate next steps', '⚠️ Delayed', '✅ Instant'],
+              ].map(([label, trad, isc], i) => (
+                <div key={i} className={`grid grid-cols-3 text-sm border-t border-white/5 ${i % 2 === 0 ? '' : 'bg-white/[0.02]'}`}>
+                  <div className="px-4 py-3 text-white/60 font-medium text-xs">{label}</div>
+                  <div className="px-4 py-3 text-center text-white/40 text-xs">{trad}</div>
+                  <div className="px-4 py-3 text-center font-bold text-[#C9A84C] text-xs" style={{ background: 'rgba(201,168,76,0.05)' }}>{isc}</div>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+
+          {/* CTA */}
+          <motion.div initial={{ opacity: 0, scale: 0.97 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: 0.3 }} className="text-center">
+            <Link href="/command-center">
+              <motion.button
+                whileHover={{ scale: 1.04, boxShadow: '0 0 40px rgba(201,168,76,0.4)' }}
+                whileTap={{ scale: 0.98 }}
+                className="inline-flex items-center gap-3 bg-[#C9A84C] hover:bg-[#b8973e] text-white font-black text-base px-8 py-4 rounded-2xl transition-colors shadow-xl cursor-pointer"
+              >
+                ⚡ Launch Command Centre — Free
+                <ChevronRight className="w-5 h-5" />
+              </motion.button>
+            </Link>
+            <p className="text-white/30 text-xs mt-3">No sign-up · No credit card · GCC's only tool of its kind</p>
+          </motion.div>
+
+        </div>
+      </section>
+
       {/* ── Solutions ────────────────────────────────────────────────────── */}
       <section id="solutions" className="py-14 bg-muted">
         <div className="container mx-auto px-4">
