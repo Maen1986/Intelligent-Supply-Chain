@@ -20,12 +20,15 @@ const industryList = [
 ];
 
 const servicesList = [
-  { key: 'nav.solutions',    href: '/#solutions',   label: 'Our Solutions' },
-  { key: 'nav.packages',     href: '/#packages',    label: 'Packages & Pricing' },
-  { key: 'nav.diagnostic',   href: '/diagnostic',   label: 'AI Diagnostic' },
-  { key: 'nav.maturity',     href: '/maturity',     label: 'Maturity Assessment' },
-  { key: 'nav.caseStudies',  href: '/case-studies', label: 'Case Studies' },
-  { key: 'nav.intelligence', href: '/intelligence', label: 'Intelligence Hub' },
+  { key: 'nav.solutions',    href: '/#solutions',              label: 'Our Solutions' },
+  { key: 'nav.packages',     href: '/#packages',               label: 'Packages & Pricing' },
+  { key: 'nav.diagnostic',   href: '/diagnostic',              label: 'AI Diagnostic' },
+  { key: 'nav.maturity',     href: '/maturity',                label: 'Maturity Assessment' },
+  { key: 'nav.lean',         href: '/lean-six-sigma',          label: 'Lean & Six Sigma' },
+  { key: 'nav.risk',         href: '/risk-management',         label: 'Risk Management' },
+  { key: 'nav.governance',   href: '/governance-compliance',   label: 'Governance & Compliance' },
+  { key: 'nav.caseStudies',  href: '/case-studies',            label: 'Case Studies' },
+  { key: 'nav.intelligence', href: '/intelligence',            label: 'Intelligence Hub' },
 ];
 
 export function Header() {

@@ -20,6 +20,10 @@ import { Intelligence } from '@/pages/Intelligence';
 import { Maturity } from '@/pages/Maturity';
 import { Login } from '@/pages/Login';
 import { IndustryPage } from '@/pages/IndustryPage';
+import { SolutionDetail } from '@/pages/SolutionDetail';
+import { LeanSixSigma } from '@/pages/LeanSixSigma';
+import { RiskManagement } from '@/pages/RiskManagement';
+import { GovernanceCompliance } from '@/pages/GovernanceCompliance';
 import { ChatWidget } from '@/components/ChatWidget';
 import { WhatsAppButton } from '@/components/WhatsAppButton';
 
@@ -55,6 +59,10 @@ function Router() {
         <Route path="/maturity" component={Maturity} />
         <Route path="/login" component={Login} />
         <Route path="/industry/:slug" component={IndustryPage} />
+        <Route path="/solutions/:slug" component={SolutionDetail} />
+        <Route path="/lean-six-sigma" component={LeanSixSigma} />
+        <Route path="/risk-management" component={RiskManagement} />
+        <Route path="/governance-compliance" component={GovernanceCompliance} />
         <Route component={NotFound} />
       </Switch>
     </Layout>

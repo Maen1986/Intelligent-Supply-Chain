@@ -345,66 +345,18 @@ export function Home() {
   const { t } = useLanguage();
 
   const solutions = [
-    {
-      photo: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=600&h=380&fit=crop&q=80',
-      title: 'Supply Chain Strategy',
-      desc: 'End-to-end supply chain design and operational strategy aligned with business objectives.',
-    },
-    {
-      photo: 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=600&h=380&fit=crop&q=80',
-      title: 'Procurement Excellence',
-      desc: 'Strategic sourcing, vendor selection, and full procurement transformation programmes.',
-    },
-    {
-      photo: 'https://images.unsplash.com/photo-1450101499163-c8848c66ca85?w=600&h=380&fit=crop&q=80',
-      title: 'Contract Lifecycle Management',
-      desc: 'Full contract lifecycle from drafting and negotiation through to renewal and compliance.',
-    },
-    {
-      photo: 'https://images.unsplash.com/photo-1521791136064-7986c2920216?w=600&h=380&fit=crop&q=80',
-      title: 'Supplier Relationship & Governance',
-      desc: 'Supplier performance management, scorecards, and structured governance frameworks.',
-    },
-    {
-      photo: 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=600&h=380&fit=crop&q=80',
-      title: 'Risk Management',
-      desc: 'Proactive identification, assessment, and mitigation of supply chain risks.',
-    },
-    {
-      photo: 'https://images.unsplash.com/photo-1497436072909-60f360e1d4b1?w=600&h=380&fit=crop&q=80',
-      title: 'Sustainability & ESG',
-      desc: 'ESG integration, circular procurement practices, and Scope 3 emissions reporting.',
-    },
-    {
-      photo: 'https://images.unsplash.com/photo-1533750349088-cd871a92f312?w=600&h=380&fit=crop&q=80',
-      title: 'Resiliency',
-      desc: 'Building adaptive, disruption-resistant supply chains with dual-source strategies.',
-    },
-    {
-      photo: 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=600&h=380&fit=crop&q=80',
-      title: 'Digital Transformation',
-      desc: 'Technology enablement, ERP optimisation (SAP MM/SCM, Ariba, Dynamics 365, IFS, Odoo), and digital supply chain maturity roadmaps.',
-    },
-    {
-      photo: 'https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=600&h=380&fit=crop&q=80',
-      title: 'Value Engineering',
-      desc: 'Systematic function analysis and cost-reduction techniques that eliminate non-value-added spend without compromising quality or performance.',
-    },
-    {
-      photo: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=600&h=380&fit=crop&q=80',
-      title: 'Lean & Agile Supply Chain',
-      desc: 'Waste elimination, flow optimisation, and agile replenishment models that cut lead times, reduce inventory, and increase throughput.',
-    },
-    {
-      photo: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=600&h=380&fit=crop&q=80',
-      title: 'Process Improvement & Policy',
-      desc: 'End-to-end process redesign, SOP authoring, workflow automation, and procurement policy development aligned with Saudi regulations.',
-    },
-    {
-      photo: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=600&h=380&fit=crop&q=80',
-      title: 'Training & Capability Building',
-      desc: 'Bespoke procurement and supply chain training programmes — workshops, coaching, and knowledge transfer — delivered to teams across government, energy, and private sector.',
-    },
+    { photo: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=600&h=380&fit=crop&q=80', title: 'Supply Chain Strategy', desc: 'End-to-end supply chain design and operational strategy aligned with business objectives.', slug: 'supply-chain-strategy' },
+    { photo: 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=600&h=380&fit=crop&q=80', title: 'Procurement Excellence', desc: 'Strategic sourcing, vendor selection, and full procurement transformation programmes.', slug: 'procurement-excellence' },
+    { photo: 'https://images.unsplash.com/photo-1450101499163-c8848c66ca85?w=600&h=380&fit=crop&q=80', title: 'Contract Lifecycle Management', desc: 'Full contract lifecycle from drafting and negotiation through to renewal and compliance.', slug: 'contract-lifecycle-management' },
+    { photo: 'https://images.unsplash.com/photo-1521791136064-7986c2920216?w=600&h=380&fit=crop&q=80', title: 'Supplier Relationship & Governance', desc: 'Supplier performance management, scorecards, and structured governance frameworks.', slug: 'supplier-relationship-governance' },
+    { photo: 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=600&h=380&fit=crop&q=80', title: 'Risk Management', desc: 'Proactive identification, assessment, and mitigation of supply chain risks.', slug: 'risk-management-solution' },
+    { photo: 'https://images.unsplash.com/photo-1497436072909-60f360e1d4b1?w=600&h=380&fit=crop&q=80', title: 'Sustainability & ESG', desc: 'ESG integration, circular procurement practices, and Scope 3 emissions reporting.', slug: 'sustainability-esg' },
+    { photo: 'https://images.unsplash.com/photo-1533750349088-cd871a92f312?w=600&h=380&fit=crop&q=80', title: 'Resiliency', desc: 'Building adaptive, disruption-resistant supply chains with dual-source strategies.', slug: 'resiliency' },
+    { photo: 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=600&h=380&fit=crop&q=80', title: 'Digital Transformation', desc: 'Technology enablement, ERP optimisation (SAP MM/SCM, Ariba, Dynamics 365, IFS, Odoo), and digital supply chain maturity roadmaps.', slug: 'digital-transformation' },
+    { photo: 'https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=600&h=380&fit=crop&q=80', title: 'Value Engineering', desc: 'Systematic function analysis and cost-reduction techniques that eliminate non-value-added spend without compromising quality or performance.', slug: 'value-engineering' },
+    { photo: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=600&h=380&fit=crop&q=80', title: 'Lean & Agile Supply Chain', desc: 'Waste elimination, flow optimisation, and agile replenishment models that cut lead times, reduce inventory, and increase throughput.', slug: 'lean-agile-supply-chain' },
+    { photo: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=600&h=380&fit=crop&q=80', title: 'Process Improvement & Policy', desc: 'End-to-end process redesign, SOP authoring, workflow automation, and procurement policy development aligned with Saudi regulations.', slug: 'process-improvement-policy' },
+    { photo: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=600&h=380&fit=crop&q=80', title: 'Training & Capability Building', desc: 'Bespoke procurement and supply chain training programmes — workshops, coaching, and knowledge transfer — delivered to teams across government, energy, and private sector.', slug: 'training-capability-building' },
   ];
 
   const industries = [
@@ -680,10 +632,10 @@ export function Home() {
                 viewport={{ once: true, margin: '-60px' }}
                 transition={{ duration: 0.55, delay: (i % 4) * 0.08, ease: [0.22, 1, 0.36, 1] }}
                 whileHover={{ y: -5, boxShadow: '0 16px 40px rgba(11,61,145,0.15)' }}
-                className="bg-white rounded-2xl border border-border shadow-sm cursor-default group overflow-hidden"
+                className="bg-white rounded-2xl border border-border shadow-sm group overflow-hidden flex flex-col"
               >
                 {/* Photo */}
-                <div className="relative h-40 overflow-hidden">
+                <div className="relative h-40 overflow-hidden shrink-0">
                   <img
                     src={sol.photo}
                     alt={sol.title}
@@ -695,8 +647,13 @@ export function Home() {
                   </div>
                 </div>
                 {/* Body */}
-                <div className="p-4">
-                  <p className="text-muted-foreground text-sm leading-relaxed">{sol.desc}</p>
+                <div className="p-4 flex flex-col flex-1">
+                  <p className="text-muted-foreground text-sm leading-relaxed flex-1">{sol.desc}</p>
+                  <Link href={`/solutions/${sol.slug}`}>
+                    <span className="mt-3 flex items-center gap-1 text-primary text-xs font-bold hover:gap-2 transition-all cursor-pointer">
+                      Frameworks, KPIs &amp; Case Studies <ChevronRight className="w-3.5 h-3.5" />
+                    </span>
+                  </Link>
                 </div>
               </motion.div>
             ))}
