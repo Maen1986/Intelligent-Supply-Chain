@@ -24,6 +24,7 @@ import { SolutionDetail } from '@/pages/SolutionDetail';
 import { LeanSixSigma } from '@/pages/LeanSixSigma';
 import { RiskManagement } from '@/pages/RiskManagement';
 import { GovernanceCompliance } from '@/pages/GovernanceCompliance';
+import { CommandCenter } from '@/pages/CommandCenter';
 import { ChatWidget } from '@/components/ChatWidget';
 import { WhatsAppButton } from '@/components/WhatsAppButton';
 
@@ -63,6 +64,7 @@ function Router() {
         <Route path="/lean-six-sigma" component={LeanSixSigma} />
         <Route path="/risk-management" component={RiskManagement} />
         <Route path="/governance-compliance" component={GovernanceCompliance} />
+        <Route path="/command-center" component={CommandCenter} />
         <Route component={NotFound} />
       </Switch>
     </Layout>

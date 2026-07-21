@@ -20,6 +20,7 @@ const industryList = [
 ];
 
 const servicesList = [
+  { key: 'nav.commandCenter',href: '/command-center',          label: '⚡ Command Centre', highlight: true },
   { key: 'nav.solutions',    href: '/#solutions',              label: 'Our Solutions' },
   { key: 'nav.packages',     href: '/#packages',               label: 'Packages & Pricing' },
   { key: 'nav.diagnostic',   href: '/diagnostic',              label: 'AI Diagnostic' },
