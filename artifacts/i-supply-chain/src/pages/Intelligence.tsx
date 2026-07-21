@@ -1,13 +1,32 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'wouter';
 import { Button } from '@/components/ui/button';
 import {
   Newspaper, Cpu, GitBranch, Lightbulb, ExternalLink,
   ChevronRight, Zap, TrendingUp, Shield, Leaf, Radio,
-  BookOpen, Clock, ArrowRight, BarChart3, Globe, Lock
+  BookOpen, Clock, ArrowRight, BarChart3, Globe, Lock,
+  RefreshCw, CheckCircle,
 } from 'lucide-react';
 
+/* ─── ICON MAP ───────────────────────────────────────────────────────────── */
+const ICON_MAP: Record<string, React.ElementType> = {
+  Cpu, Globe, Lock, TrendingUp, Zap, Leaf, BarChart3, GitBranch, Shield, Radio,
+};
+const ICON_COLORS: Record<string, { bg: string; color: string }> = {
+  Cpu:       { bg: 'bg-blue-50',    color: 'text-blue-600'   },
+  Globe:     { bg: 'bg-green-50',   color: 'text-green-600'  },
+  Lock:      { bg: 'bg-orange-50',  color: 'text-orange-600' },
+  TrendingUp:{ bg: 'bg-indigo-50',  color: 'text-indigo-600' },
+  Zap:       { bg: 'bg-purple-50',  color: 'text-purple-600' },
+  Leaf:      { bg: 'bg-emerald-50', color: 'text-emerald-600'},
+  BarChart3: { bg: 'bg-blue-50',    color: 'text-blue-600'   },
+  GitBranch: { bg: 'bg-red-50',     color: 'text-red-600'    },
+  Shield:    { bg: 'bg-orange-50',  color: 'text-orange-600' },
+  Radio:     { bg: 'bg-purple-50',  color: 'text-purple-600' },
+};
+
+/* ─── ANIMATION ─────────────────────────────────────────────────────────── */
 function Reveal({ children, className = '', delay = 0 }: { children: React.ReactNode; className?: string; delay?: number }) {
   return (
     <motion.div
@@ -22,256 +41,161 @@ function Reveal({ children, className = '', delay = 0 }: { children: React.React
   );
 }
 
-/* ─── DATA ────────────────────────────────────────────────────────────────── */
-
-const news = [
+/* ─── STATIC FALLBACK DATA ───────────────────────────────────────────────── */
+const STATIC_NEWS = [
   {
     category: 'AI & Technology',
     date: 'July 2025',
     headline: 'Gartner Names Agentic AI the #1 Strategic Technology for Procurement in 2025',
     summary: "Gartner's 2025 Hype Cycle for Procurement identifies agentic AI — autonomous AI agents that can issue RFQs, evaluate bids, and manage POs without human intervention — as the single highest-impact technology in the procurement landscape. Early adopters in Fortune 500 companies report 35–60% reduction in routine procurement cycle time.",
-    impact: 'High Impact',
-    impactColor: 'bg-red-100 text-red-700',
-    icon: Cpu,
-    iconColor: 'text-blue-600',
-    iconBg: 'bg-blue-50',
+    impact: 'High Impact', impactColor: 'bg-red-100 text-red-700', iconName: 'Cpu',
   },
   {
     category: 'GCC Policy',
     date: 'June 2025',
     headline: 'Saudi Arabia Launches Unified National Procurement Portal Under Vision 2030',
-    summary: 'The Saudi Ministry of Finance has launched a consolidated e-procurement portal integrating government procurement across 132 ministries and entities. The portal mandates digital submission of all tenders above SAR 100,000, full Iktva reporting, and real-time supplier performance tracking — raising the bar for supplier qualification across the Kingdom.',
-    impact: 'Critical for KSA',
-    impactColor: 'bg-green-100 text-green-700',
-    icon: Globe,
-    iconColor: 'text-green-600',
-    iconBg: 'bg-green-50',
+    summary: 'The Saudi Ministry of Finance has launched a consolidated e-procurement portal integrating government procurement across 132 ministries and entities. The portal mandates digital submission of all tenders above SAR 100,000, full Iktva reporting, and real-time supplier performance tracking.',
+    impact: 'Critical for KSA', impactColor: 'bg-green-100 text-green-700', iconName: 'Globe',
   },
   {
     category: 'Regulatory',
     date: 'May 2025',
     headline: 'EU CSDDD Enforcement Begins: GCC Exporters Face New Supply Chain Due Diligence Rules',
-    summary: 'The EU Corporate Sustainability Due Diligence Directive (CSDDD) entered enforcement phase in May 2025, requiring European companies to audit their entire supply chains — including GCC suppliers — for human rights and environmental risks. Saudi, Jordanian, and UAE exporters supplying European buyers must now produce ESG due diligence documentation or risk contract termination.',
-    impact: 'Regulatory Alert',
-    impactColor: 'bg-orange-100 text-orange-700',
-    icon: Lock,
-    iconColor: 'text-orange-600',
-    iconBg: 'bg-orange-50',
+    summary: 'The EU Corporate Sustainability Due Diligence Directive entered enforcement phase in May 2025, requiring European companies to audit entire supply chains — including GCC suppliers — for human rights and environmental risks. Saudi, Jordanian, and UAE exporters supplying European buyers must now produce ESG due diligence documentation.',
+    impact: 'Regulatory Alert', impactColor: 'bg-orange-100 text-orange-700', iconName: 'Lock',
   },
   {
     category: 'Market Intelligence',
     date: 'April 2025',
     headline: 'IMF: GCC Supply Chain Localisation Programs to Contribute $180B to GDP by 2030',
-    summary: 'An IMF research note estimates that successful localisation programmes across the GCC — including Saudi Iktva, UAE ICV, and Qatar TAWTEEN — could contribute up to $180 billion to regional GDP by 2030 by substituting imported goods and services with domestic alternatives. Procurement leaders are urged to build local supplier development capabilities now.',
-    impact: 'Strategic',
-    impactColor: 'bg-blue-100 text-blue-700',
-    icon: TrendingUp,
-    iconColor: 'text-indigo-600',
-    iconBg: 'bg-indigo-50',
+    summary: 'An IMF research note estimates that successful localisation programmes across the GCC — Iktva, UAE ICV, and Qatar TAWTEEN — could contribute up to $180 billion to regional GDP by 2030. Procurement leaders are urged to build local supplier development capabilities now.',
+    impact: 'Strategic', impactColor: 'bg-blue-100 text-blue-700', iconName: 'TrendingUp',
   },
   {
     category: 'Digital Tools',
     date: 'March 2025',
     headline: 'SAP Ariba Releases GenAI Supplier Risk Scoring and Auto-RFx Drafting',
-    summary: 'SAP Ariba\'s Spring 2025 release embeds generative AI into the supplier risk module, enabling real-time risk scores based on financial data, news feeds, and ESG ratings — and into the sourcing module with auto-generated RFQ and RFP documents based on category specifications. Existing Ariba customers gain access via standard subscription with a configuration update.',
-    impact: 'Tool Update',
-    impactColor: 'bg-purple-100 text-purple-700',
-    icon: Zap,
-    iconColor: 'text-purple-600',
-    iconBg: 'bg-purple-50',
+    summary: "SAP Ariba's Spring 2025 release embeds generative AI into the supplier risk module, enabling real-time risk scores based on financial data, news feeds, and ESG ratings — and auto-generated RFQ documents based on category specifications.",
+    impact: 'Tool Update', impactColor: 'bg-purple-100 text-purple-700', iconName: 'Zap',
   },
   {
     category: 'Sustainability',
     date: 'February 2025',
     headline: 'Scope 3 Emissions Now Mandatory Disclosure for GCC-Listed Companies Over SAR 1B Revenue',
-    summary: 'The Saudi Capital Market Authority (CMA) has expanded ESG disclosure requirements to mandate Scope 3 (supply chain) emissions reporting for listed companies above SAR 1 billion in revenue. This brings procurement into the direct regulatory spotlight, requiring organisations to measure and disclose their suppliers\' carbon footprints for the first time.',
-    impact: 'Compliance Alert',
-    impactColor: 'bg-emerald-100 text-emerald-700',
-    icon: Leaf,
-    iconColor: 'text-emerald-600',
-    iconBg: 'bg-emerald-50',
+    summary: 'The Saudi Capital Market Authority has expanded ESG disclosure requirements to mandate Scope 3 (supply chain) emissions reporting for listed companies above SAR 1 billion in revenue, bringing procurement into the direct regulatory spotlight.',
+    impact: 'Compliance Alert', impactColor: 'bg-emerald-100 text-emerald-700', iconName: 'Leaf',
   },
 ];
 
-const tools = [
-  {
-    name: 'SAP Ariba',
-    category: 'End-to-End Procurement',
-    desc: 'The market-leading procurement platform for large enterprises. Covers strategic sourcing, supplier management, contract lifecycle, and procure-to-pay. Now with embedded GenAI for RFx drafting and supplier risk scoring.',
-    bestFor: 'Enterprise · Government · Multi-entity',
-    badge: 'Enterprise Grade',
-    badgeColor: 'bg-blue-100 text-blue-700',
-    rating: 'Industry Standard',
-    logo: '🔵',
-  },
-  {
-    name: 'Coupa',
-    category: 'AI-Powered Spend Management',
-    desc: 'Cloud-native platform combining spend management, supplier risk, contract management, and treasury in one suite. Coupa\'s AI benchmarks your spend against $6 trillion in community intelligence — instantly surfacing where you are overpaying versus market.',
-    bestFor: 'Mid-Market · Enterprise · FMCG',
-    badge: 'AI-Native',
-    badgeColor: 'bg-purple-100 text-purple-700',
-    rating: 'Gartner Leader 2025',
-    logo: '🟣',
-  },
-  {
-    name: 'Jaggaer ONE',
-    category: 'Strategic Sourcing & SRM',
-    desc: 'Deep strategic sourcing capabilities with advanced reverse auction, multi-attribute scoring, and supplier collaboration tools. Particularly strong for complex category management and supplier performance programmes.',
-    bestFor: 'Manufacturing · Energy · EPC',
-    badge: 'Sourcing-First',
-    badgeColor: 'bg-orange-100 text-orange-700',
-    rating: 'Forrester Strong Performer',
-    logo: '🟠',
-  },
-  {
-    name: 'Microsoft Dynamics 365 SCM',
-    category: 'ERP + Supply Chain',
-    desc: 'Microsoft\'s integrated ERP and supply chain suite. Excels at demand planning, inventory optimisation, and warehouse management — with Power BI native integration for real-time procurement dashboards and Copilot AI for purchase order management.',
-    bestFor: 'SME · Mid-Market · Government',
-    badge: 'ERP-Integrated',
-    badgeColor: 'bg-cyan-100 text-cyan-700',
-    rating: 'Microsoft Ecosystem',
-    logo: '🔷',
-  },
-  {
-    name: 'Zycus iQ',
-    category: 'AI Procurement Suite',
-    desc: 'Zycus has repositioned around AI-first procurement, with its Merlin AI handling spend classification, contract review, supplier risk, and savings opportunity identification. Strong CLM module with AI-powered clause analysis and obligation tracking.',
-    bestFor: 'CLM-Heavy · Multi-Contract',
-    badge: 'AI-First',
-    badgeColor: 'bg-violet-100 text-violet-700',
-    rating: 'Gartner Visionary',
-    logo: '🟡',
-  },
-  {
-    name: 'Power BI + Fabric',
-    category: 'Procurement Analytics',
-    desc: 'Microsoft\'s analytics platform has become the de facto standard for procurement KPI dashboards. With Microsoft Fabric, teams can now connect ERP spend data, supplier scorecards, and contract data into unified semantic models — enabling real-time category spend analysis without an enterprise BI team.',
-    bestFor: 'All sizes · Analytics teams',
-    badge: 'Analytics',
-    badgeColor: 'bg-yellow-100 text-yellow-700',
-    rating: 'Widely Deployed',
-    logo: '📊',
-  },
+const STATIC_TOOLS = [
+  { name: 'SAP Ariba', category: 'End-to-End Procurement', desc: 'The market-leading procurement platform for large enterprises. Covers strategic sourcing, supplier management, contract lifecycle, and procure-to-pay. Now with embedded GenAI for RFx drafting and supplier risk scoring.', bestFor: 'Enterprise · Government · Multi-entity', badge: 'Enterprise Grade', badgeColor: 'bg-blue-100 text-blue-700', rating: 'Industry Standard', logo: '🔵' },
+  { name: 'Coupa', category: 'AI-Powered Spend Management', desc: "Cloud-native platform combining spend management, supplier risk, contract management, and treasury in one suite. Coupa's AI benchmarks your spend against $6 trillion in community intelligence — instantly surfacing where you are overpaying versus market.", bestFor: 'Mid-Market · Enterprise · FMCG', badge: 'AI-Native', badgeColor: 'bg-purple-100 text-purple-700', rating: 'Gartner Leader 2025', logo: '🟣' },
+  { name: 'Jaggaer ONE', category: 'Strategic Sourcing & SRM', desc: 'Deep strategic sourcing capabilities with advanced reverse auction, multi-attribute scoring, and supplier collaboration tools. Particularly strong for complex category management and supplier performance programmes.', bestFor: 'Manufacturing · Energy · EPC', badge: 'Sourcing-First', badgeColor: 'bg-orange-100 text-orange-700', rating: 'Forrester Strong Performer', logo: '🟠' },
+  { name: 'Microsoft Dynamics 365 SCM', category: 'ERP + Supply Chain', desc: "Microsoft's integrated ERP and supply chain suite. Excels at demand planning, inventory optimisation, and warehouse management — with Power BI native integration and Copilot AI for purchase order management.", bestFor: 'SME · Mid-Market · Government', badge: 'ERP-Integrated', badgeColor: 'bg-cyan-100 text-cyan-700', rating: 'Microsoft Ecosystem', logo: '🔷' },
+  { name: 'Zycus iQ', category: 'AI Procurement Suite', desc: "Zycus has repositioned around AI-first procurement, with its Merlin AI handling spend classification, contract review, supplier risk, and savings opportunity identification. Strong CLM module with AI-powered clause analysis.", bestFor: 'CLM-Heavy · Multi-Contract', badge: 'AI-First', badgeColor: 'bg-violet-100 text-violet-700', rating: 'Gartner Visionary', logo: '🟡' },
+  { name: 'Power BI + Fabric', category: 'Procurement Analytics', desc: "Microsoft's analytics platform has become the de facto standard for procurement KPI dashboards. With Microsoft Fabric, teams can connect ERP spend data, supplier scorecards, and contract data into unified semantic models.", bestFor: 'All sizes · Analytics teams', badge: 'Analytics', badgeColor: 'bg-yellow-100 text-yellow-700', rating: 'Widely Deployed', logo: '📊' },
 ];
 
-const processes = [
-  {
-    icon: Cpu,
-    title: 'Agentic AI Procurement',
-    tag: '2025 Trend',
-    tagColor: 'bg-blue-100 text-blue-700',
-    desc: 'AI agents that autonomously handle routine procurement tasks — generating RFQs from specs, comparing supplier bids, raising purchase orders within approved parameters, and chasing invoice approvals — without human intervention. Typically deployed for tail spend and repeat purchases first.',
-    steps: ['Define policy guardrails and approval thresholds', 'Identify tail spend categories for automation', 'Pilot with one agent on a single category', 'Expand based on compliance and savings data'],
-  },
-  {
-    icon: BarChart3,
-    title: 'Continuous Spend Intelligence',
-    tag: 'Best Practice',
-    tagColor: 'bg-green-100 text-green-700',
-    desc: 'Moving from annual spend reviews to real-time spend analytics. Modern procurement teams connect ERP transaction data to analytics platforms (Power BI, Tableau, Coupa Insights) that automatically classify spend, flag maverick purchasing, and surface savings opportunities on a rolling basis.',
-    steps: ['Establish a clean spend data taxonomy', 'Connect ERP to analytics platform with live refresh', 'Build category-level KPI dashboards', 'Run monthly savings opportunity reviews'],
-  },
-  {
-    icon: GitBranch,
-    title: 'Dual-Sourcing as Standard Practice',
-    tag: 'Resilience',
-    tagColor: 'bg-red-100 text-red-700',
-    desc: 'Post-pandemic supply chain disruptions have elevated dual-sourcing from a niche risk strategy to a standard operating model. Leading procurement organisations now mandate a secondary qualified supplier for all Tier-1 categories, with pre-negotiated contingency pricing and documented activation protocols.',
-    steps: ['Map all single-source critical category dependencies', 'Qualify and pre-negotiate with contingency suppliers', 'Embed dual-source requirement in sourcing policy', 'Review and test activation quarterly'],
-  },
-  {
-    icon: Leaf,
-    title: 'Circular Procurement',
-    tag: 'ESG',
-    tagColor: 'bg-emerald-100 text-emerald-700',
-    desc: 'Integrating circular economy principles into procurement specifications — requiring suppliers to take back end-of-life products, use recycled content, and design for disassembly. Increasingly required by government buyers and corporate sustainability commitments, and aligned with Saudi Net Zero 2060 targets.',
-    steps: ['Add circular criteria to tender evaluation scoring', 'Require supplier material passports for key categories', 'Specify recycled content minimums in RFQ specifications', 'Track circular KPIs in supplier scorecards'],
-  },
-  {
-    icon: Shield,
-    title: 'Predictive Supplier Risk Monitoring',
-    tag: 'Risk',
-    tagColor: 'bg-orange-100 text-orange-700',
-    desc: 'Moving beyond annual supplier audits to continuous, AI-powered risk monitoring. Tools like Resilinc, riskmethods, and SAP Ariba Risk scan supplier financial data, news, geopolitical events, and ESG ratings in real time — alerting procurement teams before a supplier failure becomes a supply disruption.',
-    steps: ['Segment suppliers by business criticality', 'Deploy real-time risk monitoring for Tier-1 suppliers', 'Define risk tolerance thresholds and alert rules', 'Build risk response playbooks by category'],
-  },
-  {
-    icon: Radio,
-    title: 'Digital Twin Supply Chains',
-    tag: 'Emerging',
-    tagColor: 'bg-purple-100 text-purple-700',
-    desc: 'A digital twin of the supply chain creates a virtual replica of physical supply chain operations — enabling scenario modelling, stress testing, and what-if analysis before decisions are made. Leading manufacturers use digital twins to simulate the impact of supplier disruptions, demand spikes, or logistics failures before they occur.',
-    steps: ['Map the physical supply chain end-to-end', 'Build the digital model with ERP and IoT data', 'Run disruption simulations for top 5 risk scenarios', 'Integrate model outputs into S&OP planning'],
-  },
+const STATIC_PROCESSES = [
+  { iconName: 'Cpu', title: 'Agentic AI Procurement', tag: '2025 Trend', tagColor: 'bg-blue-100 text-blue-700', desc: 'AI agents that autonomously handle routine procurement tasks — generating RFQs from specs, comparing supplier bids, raising purchase orders within approved parameters, and chasing invoice approvals — without human intervention.', steps: ['Define policy guardrails and approval thresholds', 'Identify tail spend categories for automation', 'Pilot with one agent on a single category', 'Expand based on compliance and savings data'] },
+  { iconName: 'BarChart3', title: 'Continuous Spend Intelligence', tag: 'Best Practice', tagColor: 'bg-green-100 text-green-700', desc: 'Moving from annual spend reviews to real-time spend analytics. Modern procurement teams connect ERP transaction data to analytics platforms that automatically classify spend, flag maverick purchasing, and surface savings opportunities on a rolling basis.', steps: ['Establish a clean spend data taxonomy', 'Connect ERP to analytics platform with live refresh', 'Build category-level KPI dashboards', 'Run monthly savings opportunity reviews'] },
+  { iconName: 'GitBranch', title: 'Dual-Sourcing as Standard Practice', tag: 'Resilience', tagColor: 'bg-red-100 text-red-700', desc: 'Post-pandemic supply chain disruptions have elevated dual-sourcing from a niche risk strategy to a standard operating model. Leading procurement organisations now mandate a secondary qualified supplier for all Tier-1 categories.', steps: ['Map all single-source critical category dependencies', 'Qualify and pre-negotiate with contingency suppliers', 'Embed dual-source requirement in sourcing policy', 'Review and test activation quarterly'] },
+  { iconName: 'Leaf', title: 'Circular Procurement', tag: 'ESG', tagColor: 'bg-emerald-100 text-emerald-700', desc: 'Integrating circular economy principles into procurement specifications — requiring suppliers to take back end-of-life products, use recycled content, and design for disassembly. Aligned with Saudi Net Zero 2060 targets.', steps: ['Add circular criteria to tender evaluation scoring', 'Require supplier material passports for key categories', 'Specify recycled content minimums in RFQ specifications', 'Track circular KPIs in supplier scorecards'] },
+  { iconName: 'Shield', title: 'Predictive Supplier Risk Monitoring', tag: 'Risk', tagColor: 'bg-orange-100 text-orange-700', desc: 'Moving beyond annual supplier audits to continuous, AI-powered risk monitoring. Tools like Resilinc and SAP Ariba Risk scan supplier financial data, news, geopolitical events, and ESG ratings in real time.', steps: ['Segment suppliers by business criticality', 'Deploy real-time risk monitoring for Tier-1 suppliers', 'Define risk tolerance thresholds and alert rules', 'Build risk response playbooks by category'] },
+  { iconName: 'Radio', title: 'Digital Twin Supply Chains', tag: 'Emerging', tagColor: 'bg-purple-100 text-purple-700', desc: 'A digital twin creates a virtual replica of physical supply chain operations — enabling scenario modelling, stress testing, and what-if analysis before decisions are made. Leading manufacturers use digital twins to simulate disruptions.', steps: ['Map the physical supply chain end-to-end', 'Build the digital model with ERP and IoT data', 'Run disruption simulations for top 5 risk scenarios', 'Integrate model outputs into S&OP planning'] },
 ];
 
-const tips = [
-  {
-    number: '01',
-    title: 'Start with spend data — everything else depends on it.',
-    body: 'You cannot category-manage what you cannot see. The first investment in any procurement transformation is clean, classified spend data. Run a spend analysis before you redesign processes, deploy technology, or restructure your supplier base. The data tells you where the money actually goes — and it is almost always different from what leadership believes.',
-    tag: 'Transformation Foundation',
-  },
-  {
-    number: '02',
-    title: 'Build the governance architecture before the technology.',
-    body: 'Technology solves an execution problem; governance solves a structural problem. Organisations that deploy procurement systems without first establishing clear policy, delegation of authority, and approval workflows end up with expensive software that replicates their old broken processes faster. Design the governance first, then select and configure the tools to support it.',
-    tag: 'Digital Transformation',
-  },
-  {
-    number: '03',
-    title: 'Treat your suppliers as strategic partners, not transactional vendors.',
-    body: 'Your top 20% of suppliers by spend represent 80% of your supply chain risk and 80% of your innovation potential. Organisations that invest in structured Supplier Relationship Management — regular reviews, shared KPIs, development programmes, and early visibility of upcoming demand — consistently outperform those that manage suppliers at arm\'s length. The best suppliers give their collaborative customers their best capacity, pricing, and ideas first.',
-    tag: 'Supplier Management',
-  },
-  {
-    number: '04',
-    title: 'Negotiate contracts — do not just accept them.',
-    body: 'The majority of contracts in mid-market organisations are accepted as presented, with no meaningful commercial negotiation. Every contract has leverage points: payment terms, volume commitments, liability caps, IP ownership, renewal mechanics, and performance guarantees. A structured negotiation strategy — even for modest-sized contracts — typically recovers 5–15% of contract value and significantly reduces risk exposure.',
-    tag: 'Contract Strategy',
-  },
-  {
-    number: '05',
-    title: 'Never let a contract auto-renew without a review.',
-    body: 'Auto-renewal clauses in supplier contracts are a silent margin drain in most organisations. Suppliers know that procurement teams are under-resourced and rarely audit renewal dates proactively. Building a contract milestone alert system — even a simple spreadsheet calendar — that flags renewals 90 days in advance gives you the leverage window to negotiate, re-tender, or exit on your terms.',
-    tag: 'CLM',
-  },
-  {
-    number: '06',
-    title: 'Make Vision 2030 localisation a sourcing strategy, not a compliance exercise.',
-    body: 'Organisations in Saudi Arabia that treat Iktva and local content as a tick-box exercise are missing a genuine competitive advantage. Building a robust local supplier development programme — qualifying, training, and growing Saudi suppliers in your key categories — creates long-term cost advantage, reduces logistics risk, and builds the political capital that matters for large government contracts. Localisation done well is a competitive moat, not a regulatory burden.',
-    tag: 'Vision 2030 / GCC',
-  },
-  {
-    number: '07',
-    title: 'Measure TCO, not just purchase price.',
-    body: 'The lowest-price supplier is rarely the lowest-cost supplier when you account for quality failure rates, rework costs, delivery reliability, returns handling, and relationship management overhead. Organisations that shift their category strategies from purchase price to Total Cost of Ownership consistently identify 10–25% cost reduction opportunities that price-focused sourcing misses entirely.',
-    tag: 'Cost Management',
-  },
-  {
-    number: '08',
-    title: 'Use AI as a thinking partner — not a replacement for expertise.',
-    body: 'Generative AI tools (ChatGPT, Claude, Copilot) can dramatically accelerate procurement work: drafting RFQs and tender specifications, reviewing contract clauses, summarising supplier proposals, researching market benchmarks, and building first-draft procurement policies. But they require experienced procurement judgement to direct, validate, and refine the output. The highest-return use of AI in procurement is pairing it with a senior practitioner who knows what good looks like.',
-    tag: 'AI & Technology',
-  },
+const STATIC_TIPS = [
+  { number: '01', title: 'Start with spend data — everything else depends on it.', body: 'You cannot category-manage what you cannot see. The first investment in any procurement transformation is clean, classified spend data. Run a spend analysis before you redesign processes, deploy technology, or restructure your supplier base. The data tells you where the money actually goes — and it is almost always different from what leadership believes.', tag: 'Transformation Foundation' },
+  { number: '02', title: 'Build the governance architecture before the technology.', body: 'Technology solves an execution problem; governance solves a structural problem. Organisations that deploy procurement systems without first establishing clear policy, delegation of authority, and approval workflows end up with expensive software that replicates their old broken processes faster. Design the governance first, then select and configure the tools to support it.', tag: 'Digital Transformation' },
+  { number: '03', title: "Treat your suppliers as strategic partners, not transactional vendors.", body: "Your top 20% of suppliers by spend represent 80% of your supply chain risk and 80% of your innovation potential. Organisations that invest in structured Supplier Relationship Management — regular reviews, shared KPIs, development programmes, and early visibility of upcoming demand — consistently outperform those that manage suppliers at arm's length.", tag: 'Supplier Management' },
+  { number: '04', title: 'Negotiate contracts — do not just accept them.', body: 'The majority of contracts in mid-market organisations are accepted as presented, with no meaningful commercial negotiation. Every contract has leverage points: payment terms, volume commitments, liability caps, IP ownership, renewal mechanics, and performance guarantees. A structured negotiation strategy typically recovers 5–15% of contract value.', tag: 'Contract Strategy' },
+  { number: '05', title: 'Never let a contract auto-renew without a review.', body: 'Auto-renewal clauses in supplier contracts are a silent margin drain in most organisations. Suppliers know that procurement teams are under-resourced and rarely audit renewal dates proactively. Building a contract milestone alert system that flags renewals 90 days in advance gives you the leverage window to negotiate, re-tender, or exit on your terms.', tag: 'CLM' },
+  { number: '06', title: 'Make Vision 2030 localisation a sourcing strategy, not a compliance exercise.', body: 'Organisations in Saudi Arabia that treat Iktva and local content as a tick-box exercise are missing a genuine competitive advantage. Building a robust local supplier development programme creates long-term cost advantage, reduces logistics risk, and builds the political capital that matters for large government contracts.', tag: 'Vision 2030 / GCC' },
+  { number: '07', title: 'Measure TCO, not just purchase price.', body: 'The lowest-price supplier is rarely the lowest-cost supplier when you account for quality failure rates, rework costs, delivery reliability, returns handling, and relationship management overhead. Organisations that shift from purchase price to Total Cost of Ownership consistently identify 10–25% cost reduction opportunities that price-focused sourcing misses entirely.', tag: 'Cost Management' },
+  { number: '08', title: 'Use AI as a thinking partner — not a replacement for expertise.', body: 'Generative AI tools can dramatically accelerate procurement work: drafting RFQs, reviewing contract clauses, summarising supplier proposals, researching market benchmarks. But they require experienced procurement judgement to direct, validate, and refine the output. The highest-return use of AI in procurement is pairing it with a senior practitioner who knows what good looks like.', tag: 'AI & Technology' },
 ];
 
-const tabs = ['Latest News', 'Tools Spotlight', 'Process Innovation', 'Expert Tips'];
+/* ─── API TYPES ─────────────────────────────────────────────────────────── */
+interface ApiNewsItem {
+  category: string; date: string; headline: string; summary: string;
+  impact: string; impactColor: string; iconName: string;
+}
+interface ApiToolItem {
+  name: string; category: string; desc: string; bestFor: string;
+  badge: string; badgeColor: string; rating: string; logo: string;
+}
+interface ApiProcessItem {
+  iconName: string; title: string; tag: string; tagColor: string;
+  desc: string; steps: string[];
+}
+interface ApiTipItem { number: string; title: string; body: string; tag: string; }
+interface ApiData {
+  generatedAt: string;
+  news: ApiNewsItem[];
+  tools: ApiToolItem[];
+  processes: ApiProcessItem[];
+  tips: ApiTipItem[];
+}
 
-/* ─── COMPONENT ───────────────────────────────────────────────────────────── */
+/* ─── TABS ──────────────────────────────────────────────────────────────── */
+const TABS = ['Latest News', 'Tools Spotlight', 'Process Innovation', 'Expert Tips'];
 
+const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, '').replace('/i-supply-chain', '') + '/api-server/api';
+
+/* ─── SKELETON ──────────────────────────────────────────────────────────── */
+function Skeleton({ className = '' }: { className?: string }) {
+  return <div className={`animate-pulse bg-primary/8 rounded-xl ${className}`} />;
+}
+function CardSkeleton() {
+  return (
+    <div className="bg-white rounded-2xl border border-border p-6 flex flex-col gap-4">
+      <Skeleton className="h-11 w-11 rounded-xl shrink-0" />
+      <Skeleton className="h-4 w-1/3" />
+      <Skeleton className="h-5 w-5/6" />
+      <Skeleton className="h-3 w-full" />
+      <Skeleton className="h-3 w-4/5" />
+    </div>
+  );
+}
+
+/* ─── COMPONENT ─────────────────────────────────────────────────────────── */
 export function Intelligence() {
   const [activeTab, setActiveTab] = useState(0);
   const contentRef = React.useRef<HTMLDivElement>(null);
+  const [apiData, setApiData] = useState<ApiData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [lastUpdated, setLastUpdated] = useState<string | null>(null);
+
+  useEffect(() => {
+    setLoading(true);
+    fetch(`${API_BASE}/intelligence`)
+      .then(r => r.ok ? r.json() as Promise<ApiData> : Promise.reject(r.status))
+      .then(data => {
+        setApiData(data);
+        if (data.generatedAt) {
+          setLastUpdated(new Date(data.generatedAt).toLocaleDateString('en-GB', {
+            day: 'numeric', month: 'long', year: 'numeric',
+          }));
+        }
+      })
+      .catch(() => { /* silently fall back to static data */ })
+      .finally(() => setLoading(false));
+  }, []);
+
+  const news = (apiData?.news ?? STATIC_NEWS) as ApiNewsItem[];
+  const tools = (apiData?.tools ?? STATIC_TOOLS) as ApiToolItem[];
+  const processes = (apiData?.processes ?? STATIC_PROCESSES) as ApiProcessItem[];
+  const tips = (apiData?.tips ?? STATIC_TIPS) as ApiTipItem[];
 
   const switchTab = (i: number) => {
     setActiveTab(i);
-    setTimeout(() => {
-      contentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 50);
+    setTimeout(() => contentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
   };
+
+  function resolveIcon(name: string): React.ElementType {
+    return ICON_MAP[name] ?? Cpu;
+  }
 
   return (
     <div className="w-full">
@@ -290,6 +214,12 @@ export function Intelligence() {
           <p className="text-white/75 text-base md:text-lg max-w-2xl">
             Latest industry news, digital tools, process innovations, and transformation insights — curated by Ma'in Alhaqash, MCIPS.
           </p>
+          {lastUpdated && (
+            <div className="flex items-center gap-1.5 mt-3 text-white/60 text-xs">
+              <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Refreshed weekly · Last updated {lastUpdated}</span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -297,7 +227,7 @@ export function Intelligence() {
       <div className="sticky top-16 z-30 bg-white border-b border-border shadow-sm">
         <div className="container mx-auto px-4">
           <div className="flex overflow-x-auto gap-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-            {tabs.map((tab, i) => {
+            {TABS.map((tab, i) => {
               const icons = [Newspaper, Cpu, GitBranch, Lightbulb];
               const Icon = icons[i];
               return (
@@ -312,6 +242,7 @@ export function Intelligence() {
                 >
                   <Icon className="w-4 h-4" />
                   {tab}
+                  {loading && <RefreshCw className="w-3 h-3 animate-spin text-muted-foreground/60 ml-1" />}
                 </button>
               );
             })}
@@ -327,49 +258,56 @@ export function Intelligence() {
             <Reveal className="flex items-center justify-between flex-wrap gap-4">
               <div>
                 <h2 className="text-2xl font-bold text-primary">Latest Industry News</h2>
-                <p className="text-muted-foreground mt-1">Curated developments shaping procurement and supply chain management in 2025.</p>
+                <p className="text-muted-foreground mt-1">Curated developments shaping procurement and supply chain management — refreshed every week.</p>
               </div>
               <span className="flex items-center gap-2 text-xs text-accent font-bold uppercase tracking-widest">
-                <Radio className="w-3.5 h-3.5 animate-pulse" /> Updated July 2025
+                <Radio className="w-3.5 h-3.5 animate-pulse" />
+                {lastUpdated ? `Updated ${lastUpdated}` : 'Weekly refresh'}
               </span>
             </Reveal>
 
             <div className="grid md:grid-cols-2 gap-6">
-              {news.map((item, i) => (
-                <Reveal key={item.headline} delay={i * 0.06}>
-                  <div className="bg-white rounded-2xl border border-border shadow-sm hover:shadow-md transition-shadow p-6 flex flex-col gap-4 h-full">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className={`w-11 h-11 rounded-xl ${item.iconBg} flex items-center justify-center shrink-0`}>
-                        <item.icon className={`w-5 h-5 ${item.iconColor}`} />
-                      </div>
-                      <span className={`px-3 py-1 rounded-full text-xs font-bold ${item.impactColor} shrink-0`}>
-                        {item.impact}
-                      </span>
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">{item.category}</span>
-                        <span className="text-muted-foreground">·</span>
-                        <span className="text-xs text-muted-foreground flex items-center gap-1"><Clock className="w-3 h-3" />{item.date}</span>
-                      </div>
-                      <h3 className="font-bold text-primary text-base leading-snug mb-3">{item.headline}</h3>
-                      <p className="text-muted-foreground text-sm leading-relaxed">{item.summary}</p>
-                    </div>
-                    <div className="mt-auto pt-4 border-t border-border">
-                      <Link href="/consultant">
-                        <span className="text-primary text-sm font-semibold flex items-center gap-1 hover:gap-2 transition-all cursor-pointer">
-                          Discuss with a consultant <ArrowRight className="w-4 h-4" />
-                        </span>
-                      </Link>
-                    </div>
-                  </div>
-                </Reveal>
-              ))}
+              {loading
+                ? Array.from({ length: 6 }).map((_, i) => <CardSkeleton key={i} />)
+                : news.map((item, i) => {
+                    const iconColors = ICON_COLORS[item.iconName] ?? ICON_COLORS['Cpu'];
+                    const Icon = resolveIcon(item.iconName);
+                    return (
+                      <Reveal key={item.headline} delay={i * 0.06}>
+                        <div className="bg-white rounded-2xl border border-border shadow-sm hover:shadow-md transition-shadow p-6 flex flex-col gap-4 h-full">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className={`w-11 h-11 rounded-xl ${iconColors.bg} flex items-center justify-center shrink-0`}>
+                              <Icon className={`w-5 h-5 ${iconColors.color}`} />
+                            </div>
+                            <span className={`px-3 py-1 rounded-full text-xs font-bold ${item.impactColor} shrink-0`}>
+                              {item.impact}
+                            </span>
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2 mb-2">
+                              <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">{item.category}</span>
+                              <span className="text-muted-foreground">·</span>
+                              <span className="text-xs text-muted-foreground flex items-center gap-1"><Clock className="w-3 h-3" />{item.date}</span>
+                            </div>
+                            <h3 className="font-bold text-primary text-base leading-snug mb-3">{item.headline}</h3>
+                            <p className="text-muted-foreground text-sm leading-relaxed">{item.summary}</p>
+                          </div>
+                          <div className="mt-auto pt-4 border-t border-border">
+                            <Link href="/consultant">
+                              <span className="text-primary text-sm font-semibold flex items-center gap-1 hover:gap-2 transition-all cursor-pointer">
+                                Discuss with a consultant <ArrowRight className="w-4 h-4" />
+                              </span>
+                            </Link>
+                          </div>
+                        </div>
+                      </Reveal>
+                    );
+                  })}
             </div>
 
             <Reveal className="bg-primary/5 border border-primary/15 rounded-2xl p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
               <div>
-                <p className="font-bold text-primary">Stay updated every month</p>
+                <p className="font-bold text-primary">Stay updated every week</p>
                 <p className="text-muted-foreground text-sm">Subscribe to our intelligence briefing — GCC regulatory updates, tool releases, and market intelligence delivered to your inbox.</p>
               </div>
               <Link href="/insights#newsletter">
@@ -386,46 +324,47 @@ export function Intelligence() {
           <div className="space-y-8">
             <Reveal>
               <h2 className="text-2xl font-bold text-primary">Digital Tools Spotlight</h2>
-              <p className="text-muted-foreground mt-1">The platforms and technologies Ma'in and the I Supply Chain team deploy for clients — assessed independently.</p>
+              <p className="text-muted-foreground mt-1">The platforms and technologies Ma'in and the I Supply Chain team deploy for clients — assessed independently, refreshed weekly.</p>
             </Reveal>
 
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
-              {tools.map((tool, i) => (
-                <Reveal key={tool.name} delay={i * 0.06}>
-                  <div className="bg-white rounded-2xl border border-border shadow-sm hover:shadow-md transition-shadow p-6 flex flex-col gap-4 h-full">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <div className="flex items-center gap-3 mb-1">
-                          <span className="text-2xl">{tool.logo}</span>
-                          <h3 className="font-bold text-primary text-lg">{tool.name}</h3>
-                        </div>
-                        <p className="text-xs text-muted-foreground font-medium">{tool.category}</p>
-                      </div>
-                      <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${tool.badgeColor} shrink-0 ml-2`}>
-                        {tool.badge}
-                      </span>
-                    </div>
-                    <p className="text-muted-foreground text-sm leading-relaxed flex-1">{tool.desc}</p>
-                    <div className="pt-4 border-t border-border space-y-2">
-                      <div>
-                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">Best For</p>
-                        <p className="text-sm text-foreground font-medium">{tool.bestFor}</p>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-semibold text-accent">{tool.rating}</span>
-                        <Link href="/consultant">
-                          <span className="text-primary text-xs font-semibold flex items-center gap-1 hover:gap-2 transition-all cursor-pointer">
-                            Ask about implementation <ChevronRight className="w-3.5 h-3.5" />
+              {loading
+                ? Array.from({ length: 6 }).map((_, i) => <CardSkeleton key={i} />)
+                : tools.map((tool, i) => (
+                    <Reveal key={tool.name} delay={i * 0.06}>
+                      <div className="bg-white rounded-2xl border border-border shadow-sm hover:shadow-md transition-shadow p-6 flex flex-col gap-4 h-full">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <div className="flex items-center gap-3 mb-1">
+                              <span className="text-2xl">{tool.logo}</span>
+                              <h3 className="font-bold text-primary text-lg">{tool.name}</h3>
+                            </div>
+                            <p className="text-xs text-muted-foreground font-medium">{tool.category}</p>
+                          </div>
+                          <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${tool.badgeColor} shrink-0 ml-2`}>
+                            {tool.badge}
                           </span>
-                        </Link>
+                        </div>
+                        <p className="text-muted-foreground text-sm leading-relaxed flex-1">{tool.desc}</p>
+                        <div className="pt-4 border-t border-border space-y-2">
+                          <div>
+                            <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">Best For</p>
+                            <p className="text-sm text-foreground font-medium">{tool.bestFor}</p>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-semibold text-accent">{tool.rating}</span>
+                            <Link href="/consultant">
+                              <span className="text-primary text-xs font-semibold flex items-center gap-1 hover:gap-2 transition-all cursor-pointer">
+                                Ask about implementation <ChevronRight className="w-3.5 h-3.5" />
+                              </span>
+                            </Link>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
-                </Reveal>
-              ))}
+                    </Reveal>
+                  ))}
             </div>
 
-            {/* Expert note */}
             <Reveal className="bg-[#082C6B] text-white rounded-2xl p-7 flex gap-5 items-start">
               <div className="w-12 h-12 rounded-full bg-white/15 flex items-center justify-center shrink-0">
                 <BookOpen className="w-5 h-5 text-accent" />
@@ -445,39 +384,42 @@ export function Intelligence() {
           <div className="space-y-8">
             <Reveal>
               <h2 className="text-2xl font-bold text-primary">Process Innovations</h2>
-              <p className="text-muted-foreground mt-1">The six most impactful procurement and supply chain process advances defining best practice in 2025.</p>
+              <p className="text-muted-foreground mt-1">The most impactful procurement and supply chain process advances defining best practice — refreshed weekly.</p>
             </Reveal>
 
             <div className="grid md:grid-cols-2 gap-6">
-              {processes.map((proc, i) => (
-                <Reveal key={proc.title} delay={i * 0.06}>
-                  <div className="bg-white rounded-2xl border border-border shadow-sm hover:shadow-md transition-shadow p-7 flex flex-col gap-5 h-full">
-                    <div className="flex items-start gap-4">
-                      <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                        <proc.icon className="w-6 h-6 text-primary" />
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between gap-2 mb-1">
-                          <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${proc.tagColor}`}>{proc.tag}</span>
+              {loading
+                ? Array.from({ length: 6 }).map((_, i) => <CardSkeleton key={i} />)
+                : processes.map((proc, i) => {
+                    const Icon = resolveIcon(proc.iconName);
+                    return (
+                      <Reveal key={proc.title} delay={i * 0.06}>
+                        <div className="bg-white rounded-2xl border border-border shadow-sm hover:shadow-md transition-shadow p-7 flex flex-col gap-5 h-full">
+                          <div className="flex items-start gap-4">
+                            <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                              <Icon className="w-6 h-6 text-primary" />
+                            </div>
+                            <div className="flex-1">
+                              <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${proc.tagColor} mb-1 inline-block`}>{proc.tag}</span>
+                              <h3 className="font-bold text-primary text-lg leading-tight">{proc.title}</h3>
+                            </div>
+                          </div>
+                          <p className="text-muted-foreground text-sm leading-relaxed">{proc.desc}</p>
+                          <div className="bg-muted rounded-xl p-4 mt-auto">
+                            <p className="text-xs font-bold text-primary uppercase tracking-widest mb-3">Implementation Pathway</p>
+                            <ol className="space-y-2">
+                              {proc.steps.map((step, si) => (
+                                <li key={si} className="flex items-start gap-3 text-sm text-foreground">
+                                  <span className="w-5 h-5 rounded-full bg-primary text-white text-xs flex items-center justify-center shrink-0 font-bold mt-0.5">{si + 1}</span>
+                                  {step}
+                                </li>
+                              ))}
+                            </ol>
+                          </div>
                         </div>
-                        <h3 className="font-bold text-primary text-lg leading-tight">{proc.title}</h3>
-                      </div>
-                    </div>
-                    <p className="text-muted-foreground text-sm leading-relaxed">{proc.desc}</p>
-                    <div className="bg-muted rounded-xl p-4 mt-auto">
-                      <p className="text-xs font-bold text-primary uppercase tracking-widest mb-3">Implementation Pathway</p>
-                      <ol className="space-y-2">
-                        {proc.steps.map((step, si) => (
-                          <li key={si} className="flex items-start gap-3 text-sm text-foreground">
-                            <span className="w-5 h-5 rounded-full bg-primary text-white text-xs flex items-center justify-center shrink-0 font-bold mt-0.5">{si + 1}</span>
-                            {step}
-                          </li>
-                        ))}
-                      </ol>
-                    </div>
-                  </div>
-                </Reveal>
-              ))}
+                      </Reveal>
+                    );
+                  })}
             </div>
 
             <Reveal className="text-center pt-4">
@@ -497,39 +439,40 @@ export function Intelligence() {
             <Reveal>
               <div className="flex items-start gap-5">
                 <img
-                  src="/brand/hero-consultant.jpg?v=3"
+                  src="/brand/maen-photo.jpg"
                   alt="Ma'in Alhaqash"
                   className="w-16 h-16 rounded-full object-cover object-top border-2 border-accent shrink-0 hidden sm:block"
                 />
                 <div>
                   <h2 className="text-2xl font-bold text-primary">Expert Transformation Tips</h2>
                   <p className="text-muted-foreground mt-1">
-                    Eight principles from <span className="font-semibold text-primary">Ma'in Alhaqash</span> — 20+ years, $100M+ in savings, trusted by BP, Maersk, and Saudi government ministries.
+                    Principles from <span className="font-semibold text-primary">Ma'in Alhaqash</span> — 20+ years, $100M+ in savings, trusted by BP, Maersk, and Saudi government ministries. Refreshed weekly.
                   </p>
                 </div>
               </div>
             </Reveal>
 
             <div className="grid md:grid-cols-2 gap-5">
-              {tips.map((tip, i) => (
-                <Reveal key={tip.number} delay={i * 0.05}>
-                  <div className="bg-white rounded-2xl border border-border shadow-sm hover:shadow-md transition-shadow p-7 flex flex-col gap-4 h-full">
-                    <div className="flex items-start gap-4">
-                      <span className="text-5xl font-extrabold text-primary/10 leading-none font-mono shrink-0 select-none">{tip.number}</span>
-                      <div className="flex-1">
-                        <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold bg-primary/8 text-primary border border-primary/15 mb-2 inline-block`}>
-                          {tip.tag}
-                        </span>
-                        <h3 className="font-bold text-primary text-base leading-snug">{tip.title}</h3>
+              {loading
+                ? Array.from({ length: 8 }).map((_, i) => <CardSkeleton key={i} />)
+                : tips.map((tip, i) => (
+                    <Reveal key={tip.number} delay={i * 0.05}>
+                      <div className="bg-white rounded-2xl border border-border shadow-sm hover:shadow-md transition-shadow p-7 flex flex-col gap-4 h-full">
+                        <div className="flex items-start gap-4">
+                          <span className="text-5xl font-extrabold text-primary/10 leading-none font-mono shrink-0 select-none">{tip.number}</span>
+                          <div className="flex-1">
+                            <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-primary/8 text-primary border border-primary/15 mb-2 inline-block">
+                              {tip.tag}
+                            </span>
+                            <h3 className="font-bold text-primary text-base leading-snug">{tip.title}</h3>
+                          </div>
+                        </div>
+                        <p className="text-muted-foreground text-sm leading-relaxed flex-1">{tip.body}</p>
                       </div>
-                    </div>
-                    <p className="text-muted-foreground text-sm leading-relaxed flex-1">{tip.body}</p>
-                  </div>
-                </Reveal>
-              ))}
+                    </Reveal>
+                  ))}
             </div>
 
-            {/* CTA */}
             <Reveal className="bg-gradient-to-r from-[#082C6B] to-[#0B3D91] rounded-3xl p-10 text-white text-center">
               <Lightbulb className="w-10 h-10 text-accent mx-auto mb-4" />
               <h3 className="text-2xl font-bold mb-3">Want these principles applied to your organisation?</h3>
