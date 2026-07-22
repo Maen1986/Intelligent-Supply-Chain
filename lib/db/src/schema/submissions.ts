@@ -18,6 +18,9 @@ export const submissionsTable = pgTable("submissions", {
   // The raw inputs and computed/AI outputs stored as JSONB
   inputs:              jsonb("inputs"),
   outputs:             jsonb("outputs"),
+  // Object-storage path of the stored PDF briefing (e.g. "/objects/briefings/42.pdf")
+  pdfObjectPath:       text("pdf_object_path"),
+  pdfFilename:         text("pdf_filename"),
   // Optional metadata
   ipAddress:           text("ip_address"),
   createdAt:           timestamp("created_at").defaultNow().notNull(),

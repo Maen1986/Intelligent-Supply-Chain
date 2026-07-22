@@ -11,6 +11,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@google-cloud/storage": "^7.21.0",
     "@types/nodemailer": "^8.0.1",
     "@types/pg": "^8.20.0",
     "@workspace/api-zod": "workspace:*",
@@ -24,6 +25,7 @@
     "express": "^5.2.1",
     "express-rate-limit": "^8.6.0",
     "express-session": "^1.19.0",
+    "google-auth-library": "^10.9.0",
     "nodemailer": "^9.0.3",
     "pg": "^8.22.0",
     "pino": "^9.14.0",
