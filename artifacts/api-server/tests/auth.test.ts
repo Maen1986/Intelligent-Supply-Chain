@@ -74,7 +74,7 @@ describe('POST /api/auth/register', () => {
   it('rejects a missing/short password with 400', async () => {
     const app = makeApp('/api/auth', authRouter);
     const res = await request(app).post('/api/auth/register').send({
-      email: user.email,
+      email: 'shortpass@example.com',
       fullName: user.fullName,
       password: '123',
     });
@@ -95,7 +95,7 @@ describe('POST /api/auth/register', () => {
     dbState.failNext = true;
     const app = makeApp('/api/auth', authRouter);
     const res = await request(app).post('/api/auth/register').send({
-      email: user.email,
+      email: 'dbfail@example.com',
       fullName: user.fullName,
       password: 'secret6',
     });
@@ -146,7 +146,7 @@ describe('POST /api/auth/register rate limiting', () => {
     const res = await request(app)
       .post('/api/auth/register')
       .set('X-Forwarded-For', '10.1.0.1')
-      .send({ email: user.email, fullName: user.fullName, password: 'secret6' });
+      .send({ email: 'normal-single@example.com', fullName: user.fullName, password: 'secret6' });
     expect(res.status).toBe(200);
     expect(res.body.ok).toBe(true);
   });
@@ -178,6 +178,64 @@ describe('POST /api/auth/register rate limiting', () => {
     expect(blocked.body.ok).toBe(false);
     expect(blocked.body.retryAfterSeconds).toBeGreaterThan(0);
     expect(blocked.headers['retry-after']).toBeDefined();
+  });
+
+  it('returns 429 after 3 attempts for the same email, even from different IPs', async () => {
+    const app = makeApp('/api/auth', authRouter);
+    const email = 'botnet-target@example.com';
+
+    // 3 attempts from 3 different IPs — all for the same email.
+    for (let i = 0; i < 3; i++) {
+      dbState.selectRows = [];
+      dbState.insertRows = [{ ...user, id: i + 200, email }];
+      const res = await request(app)
+        .post('/api/auth/register')
+        .set('X-Forwarded-For', `10.4.${i}.1`)
+        .send({ email, fullName: 'Bot User', password: 'secret6' });
+      expect(res.status).not.toBe(429);
+    }
+
+    // 4th attempt from yet another IP is blocked by the per-email limit.
+    dbState.selectRows = [];
+    dbState.insertRows = [{ ...user, id: 999, email }];
+    const blocked = await request(app)
+      .post('/api/auth/register')
+      .set('X-Forwarded-For', '10.4.99.1')
+      .send({ email, fullName: 'Bot User', password: 'secret6' });
+    expect(blocked.status).toBe(429);
+    expect(blocked.body.ok).toBe(false);
+    expect(blocked.body.retryAfterSeconds).toBeGreaterThan(0);
+    expect(blocked.headers['retry-after']).toBeDefined();
+
+    // A different email from one of those IPs is still allowed.
+    dbState.selectRows = [];
+    dbState.insertRows = [{ ...user, id: 1000, email: 'other-target@example.com' }];
+    const other = await request(app)
+      .post('/api/auth/register')
+      .set('X-Forwarded-For', '10.4.0.1')
+      .send({ email: 'other-target@example.com', fullName: 'Bot User', password: 'secret6' });
+    expect(other.status).not.toBe(429);
+  });
+
+  it('normalizes email case/whitespace for the per-email limit', async () => {
+    const app = makeApp('/api/auth', authRouter);
+    const variants = ['Case@Example.com', ' case@example.com ', 'CASE@EXAMPLE.COM'];
+    for (let i = 0; i < variants.length; i++) {
+      dbState.selectRows = [];
+      dbState.insertRows = [{ ...user, id: i + 300, email: 'case@example.com' }];
+      const res = await request(app)
+        .post('/api/auth/register')
+        .set('X-Forwarded-For', `10.5.${i}.1`)
+        .send({ email: variants[i], fullName: 'Case User', password: 'secret6' });
+      expect(res.status).not.toBe(429);
+    }
+    dbState.selectRows = [];
+    dbState.insertRows = [{ ...user, id: 399, email: 'case@example.com' }];
+    const blocked = await request(app)
+      .post('/api/auth/register')
+      .set('X-Forwarded-For', '10.5.99.1')
+      .send({ email: 'case@example.com', fullName: 'Case User', password: 'secret6' });
+    expect(blocked.status).toBe(429);
   });
 });
 

@@ -6,7 +6,7 @@ import { z } from 'zod';
 import bcrypt from 'bcryptjs';
 import crypto from 'node:crypto';
 import { logger } from '../lib/logger';
-import { loginRateLimiter, authRateLimiter, forgotPasswordRateLimiter } from '../lib/rateLimit';
+import { loginRateLimiter, authRateLimiter, registerEmailRateLimiter, forgotPasswordRateLimiter } from '../lib/rateLimit';
 import { sendPasswordResetEmail } from './notify';
 
 // ── Session type augmentation ────────────────────────────────────────────────
@@ -64,7 +64,7 @@ function publicUser(user: typeof usersTable.$inferSelect) {
    Creates a user with a bcrypt-hashed password and establishes a server-side
    session. Legacy profile-only accounts (no password hash) may claim their
    account by registering again with the same email.                          */
-router.post('/register', authRateLimiter, async (req, res) => {
+router.post('/register', authRateLimiter, registerEmailRateLimiter, async (req, res) => {
   const parsed = RegisterSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ ok: false, error: 'Invalid registration data', details: parsed.error.format() });

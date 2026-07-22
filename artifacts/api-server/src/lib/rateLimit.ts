@@ -146,6 +146,39 @@ export const forgotPasswordRateLimiter = rateLimit({
   ...(isTest ? {} : { store: new PgRateLimitStore(pgPool, "forgot-password") }),
 });
 
+/* Per-email registration throttle: 3 attempts per hour keyed by the target
+ * email (normalized). Closes the distributed-botnet gap the IP-based
+ * authRateLimiter leaves open — many IPs hammering the same email are all
+ * counted in one bucket. Backed by PostgreSQL outside tests. */
+export const registerEmailRateLimiter = rateLimit({
+  windowMs: 60 * 60_000,
+  limit: 3,
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+  keyGenerator: (req: Request) => {
+    const email =
+      typeof req.body?.email === "string"
+        ? req.body.email.trim().toLowerCase()
+        : "";
+    // Fall back to IP if no email is present so malformed requests still
+    // consume some quota instead of sharing a single global "" bucket.
+    return email || ipKeyGenerator(req.ip ?? "");
+  },
+  handler: (req, res) => {
+    const resetTime: Date | undefined = (req as any).rateLimit?.resetTime;
+    const retryAfterSeconds = resetTime
+      ? Math.max(1, Math.ceil((resetTime.getTime() - Date.now()) / 1000))
+      : 3600;
+    res.set("Retry-After", String(retryAfterSeconds));
+    res.status(429).json({
+      ok: false,
+      error: "Too many registration attempts for this email. Please try again later.",
+      retryAfterSeconds,
+    });
+  },
+  ...(isTest ? {} : { store: new PgRateLimitStore(pgPool, "register-email") }),
+});
+
 /* Login brute-force throttle: 5 FAILED sign-in attempts per minute, keyed by
  * IP + target email. Successful logins don't consume quota, so legitimate
  * users signing in/out normally are never affected; an attacker hammering one
