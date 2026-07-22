@@ -318,6 +318,65 @@ router.post('/change-password', async (req, res) => {
   }
 });
 
+/* ── POST /api/auth/update-profile ───────────────────────────────────────────
+   Lets a signed-in user update their name, mobile, designation, and company.
+   Updates the DB row and refreshes the session so the UI reflects the change
+   immediately without requiring a fresh login.                                */
+const UpdateProfileSchema = z.object({
+  fullName:    z.string().min(2),
+  mobile:      z.string().optional().nullable(),
+  designation: z.string().optional().nullable(),
+  company:     z.string().optional().nullable(),
+});
+
+router.post('/update-profile', async (req, res) => {
+  const userId = req.session.userId;
+  if (!userId) {
+    res.status(401).json({ ok: false, error: 'Not authenticated' });
+    return;
+  }
+
+  const parsed = UpdateProfileSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ ok: false, error: 'Invalid profile data', details: parsed.error.format() });
+    return;
+  }
+  const { fullName, mobile, designation, company } = parsed.data;
+
+  try {
+    const [user] = await db
+      .update(usersTable)
+      .set({
+        fullName,
+        mobile:      mobile      ?? null,
+        designation: designation ?? null,
+        company:     company     ?? null,
+      })
+      .where(eq(usersTable.id, userId))
+      .returning();
+
+    if (!user) {
+      res.status(404).json({ ok: false, error: 'User not found' });
+      return;
+    }
+
+    // Refresh session fields so /me and subsequent requests reflect the new values
+    establishSession(req, user);
+    req.session.save(err => {
+      if (err) {
+        logger.error({ err }, '[auth] Session save failed after profile update');
+        res.status(500).json({ ok: false, error: 'Profile updated but session could not be refreshed' });
+        return;
+      }
+      logger.info({ userId }, '[auth] User updated profile');
+      res.json({ ok: true, user: publicUser(user) });
+    });
+  } catch (err) {
+    logger.error({ err }, '[auth] Update-profile error');
+    res.status(500).json({ ok: false, error: 'Could not update profile' });
+  }
+});
+
 /* ── GET /api/auth/me ────────────────────────────────────────────────────────
    Validates the session cookie server-side and returns the user profile.
    Returns 401 if no valid session exists — client-side localStorage cannot

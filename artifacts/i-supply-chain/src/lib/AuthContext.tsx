@@ -18,6 +18,7 @@ interface AuthState {
   login:           (email: string, password: string) => Promise<void>;
   logout:          () => Promise<void>;
   changePassword:  (currentPassword: string, newPassword: string) => Promise<void>;
+  updateProfile:   (profile: Pick<UserProfile, 'fullName' | 'mobile' | 'designation' | 'company'>) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthState>({
@@ -28,6 +29,7 @@ const AuthContext = createContext<AuthState>({
   login:           async () => {},
   logout:          async () => {},
   changePassword:  async () => {},
+  updateProfile:   async () => {},
 });
 
 import { API_BASE } from '@/lib/apiBase';
@@ -120,8 +122,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!res.ok || !data?.ok) throw new Error(data?.error ?? 'Could not update the password.');
   }, []);
 
+  // ── updateProfile: update name, mobile, designation, company server-side ──
+  const updateProfile = useCallback(async (profile: Pick<UserProfile, 'fullName' | 'mobile' | 'designation' | 'company'>) => {
+    const res = await fetch(`${API_BASE}/auth/update-profile`, {
+      method:      'POST',
+      headers:     { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(profile),
+    });
+    const data = await res.json().catch(() => null);
+    if (!res.ok || !data?.ok) throw new Error(data?.error ?? 'Could not update profile.');
+    // Refresh local state so the Header and other consumers reflect new values
+    if (data.user) setUser(data.user);
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated: !!user, loading, register, login, logout, changePassword }}>
+    <AuthContext.Provider value={{ user, isAuthenticated: !!user, loading, register, login, logout, changePassword, updateProfile }}>
       {children}
     </AuthContext.Provider>
   );
