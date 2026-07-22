@@ -173,4 +173,39 @@ router.post('/maturity', async (req, res) => {
   res.status(result.sent || !result.reason ? 200 : 503).json({ ok: true, ...result });
 });
 
+// ── Exported helper: sendEscalationEmail ─────────────────────────────────────
+// Called by the consultancy escalation endpoint.
+export async function sendEscalationEmail(params: {
+  subject:           string;
+  clientName:        string;
+  clientEmail:       string;
+  clientMobile:      string;
+  company:           string;
+  title:             string;
+  industry:          string;
+  challenge:         string;
+  satisfactionScore: number | null;
+  diagnosisSummary:  string;
+  solutionSummary:   string;
+}): Promise<void> {
+  const html = buildEmailHtml(params.subject, {
+    'Client Name':          params.clientName,
+    'Email':                params.clientEmail,
+    'Mobile':               params.clientMobile,
+    'Designation':          params.title,
+    'Company':              params.company,
+    'Industry':             params.industry,
+    'Challenge':            params.challenge,
+    'Satisfaction Score':   params.satisfactionScore !== null ? `${params.satisfactionScore}/5` : 'Not rated',
+    'Diagnosis Summary':    params.diagnosisSummary  || '—',
+    'Solution Summary':     params.solutionSummary   || '—',
+    'Action Required':      'Client needs personalised follow-up. Review AI diagnosis and book consultation.',
+    'Time':                 new Date().toLocaleString('en-GB', { timeZone: 'Asia/Riyadh' }),
+  });
+  const result = await sendToAll(params.subject, html);
+  if (!result.sent && result.reason) {
+    throw new Error(result.reason);
+  }
+}
+
 export default router;

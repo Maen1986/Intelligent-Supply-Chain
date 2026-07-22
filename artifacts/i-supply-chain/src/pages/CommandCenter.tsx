@@ -10,6 +10,7 @@ import {
   Target, TrendingUp, ShieldAlert, Brain, ChevronRight, Check,
   AlertTriangle, Zap, BarChart2, DollarSign, Clock, Loader2,
   ArrowRight, Copy, CheckCircle2, Star, RefreshCw, Building2,
+  MessageSquare, Languages, Sparkles,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -38,16 +39,87 @@ const LEVERS = [
   { id: 'demand',    label: 'Demand Forecasting Improvement', short: 'Forecasting',   maxPct: 0.04, color: '#7c3aed' },
 ];
 
-const INDUSTRIES = ['Manufacturing','Energy & Oil','Government / Public Sector','Pharmaceutical','Retail & FMCG','Logistics','Construction & EPC','Healthcare','Technology & ICT','Mining & Resources'];
+// ─── Bilingual ───────────────────────────────────────────────────────────────
+type Lang = 'en' | 'ar';
+
+// ─── Industry Tree (12 industries with sub-sectors) ──────────────────────────
+const INDUSTRY_TREE: Record<string, string[]> = {
+  'Manufacturing':              ['Automotive & Assembly','Aerospace & Defense','Electronics & Semiconductors','FMCG Manufacturing','Heavy Industry & Steel','Chemicals & Petrochemicals','Plastics & Composites','Textiles & Apparel','Furniture & Wood Products','Medical Devices'],
+  'Energy & Oil':               ['Oil & Gas Upstream','Oil & Gas Midstream / Pipelines','Oil & Gas Downstream / Refining','Petrochemicals','Renewable Energy (Solar/Wind)','Power Generation & Utilities','Mining & Extractives'],
+  'Government / Public Sector': ['Federal / Central Government','Municipal Authorities','Defense & Security','Healthcare Authorities','Education Ministries','Infrastructure & Transport','Saudi Vision 2030 Entities (NDF, PIF)','Jordan Public Institutions','GCC Development Authorities'],
+  'Pharmaceutical':             ['Branded Pharmaceuticals','Generic Pharmaceuticals','Medical Devices & Diagnostics','Biotechnology','Clinical Research Organizations','Healthcare Distribution','Veterinary Products'],
+  'Retail & FMCG':              ['Grocery & Supermarkets','Fashion & Apparel','Electronics & Technology Retail','Home & Furniture','Health & Beauty','Foodservice & Restaurants','Wholesale & Distribution','Hypermarkets & Department Stores'],
+  'Logistics & Transportation': ['3PL / 4PL Providers','Freight Forwarding','Warehousing & Distribution Centers','Last-Mile Delivery','Courier & Express','Cold Chain Logistics','Port & Customs Operations','Air Cargo','Road Haulage'],
+  'Construction & EPC':         ['Residential Construction','Commercial & Office Construction','Infrastructure & Mega Projects','Oil & Gas EPC','Power & Utilities EPC','Industrial Facilities','Roads & Bridges','Smart Cities Development'],
+  'Healthcare':                 ['Hospitals & Medical Centers','Diagnostics & Laboratories','Medical & Surgical Supplies','Home Healthcare','Specialist Clinics','Dental Chains','Ophthalmology Centers','Health Insurance'],
+  'Technology & ICT':           ['Software & SaaS','Hardware & Electronics','Telecommunications','IT Services & Managed Services','Cloud & Data Centers','Cybersecurity','AI & Data Analytics','FinTech','EdTech'],
+  'Food & Beverage':            ['Food Processing & Manufacturing','Dairy Products','Bakery & Confectionery','Beverages (Non-Alcoholic)','Halal Food Production','Agricultural Products & Trading','QSR & Fast Food Chains','Catering & Food Services'],
+  'E-commerce':                 ['B2C E-Commerce Platform','B2B E-Commerce','Marketplace & Aggregators','D2C Brand','Cross-Border Trade','Social Commerce','Subscription Services'],
+  'Services':                   ['Professional Services (Consulting, Legal, Audit)','Facilities Management (FM)','Hospitality & Tourism','Education & Training','Financial Services & Banking','Media & Entertainment','Real Estate & Property Management'],
+};
+
 const REVENUE_BANDS = ['< SAR 50M','SAR 50–200M','SAR 200M–1B','SAR 1–5B','> SAR 5B'];
+
 const PAIN_POINTS = [
-  'High procurement costs / maverick spend','Long procurement cycle times','Poor supplier performance & visibility',
-  'Excess inventory / stockouts','Weak contract management','Non-compliance with procurement policy',
-  'Manual & paper-based processes','Lack of spend visibility','Single-source dependencies',
-  'Slow demand forecasting','Risk & disruption events','ESG / Iktva / localisation pressure',
+  // Cost & Efficiency
+  'High procurement costs / maverick spend',
+  'Low cost savings achievement vs targets',
+  'High total cost of ownership (TCO)',
+  // Cycle & Speed
+  'Long procurement cycle times',
+  'Slow supplier onboarding process',
+  'Delayed deliveries / OTIF failures',
+  // Supplier Management
+  'Poor supplier performance & visibility',
+  'Single-source dependencies / supply concentration',
+  'No formal supplier segmentation or SRM program',
+  'Weak supplier development & collaboration',
+  // Inventory & Demand
+  'Excess inventory / frequent stockouts',
+  'Low inventory turns / high holding costs',
+  'Poor demand forecasting accuracy',
+  'No S&OP / IBP process',
+  // Contract & Governance
+  'Weak contract management & compliance',
+  'Non-compliance with procurement policy',
+  'Weak delegation of authority (DoA) framework',
+  'No contract lifecycle management (CLM) system',
+  // Digital & Process
+  'Manual & paper-based processes',
+  'Lack of spend visibility & analytics',
+  'No integrated ERP or e-procurement system',
+  'Fragmented data across departments',
+  // Risk & Compliance
+  'High supply chain disruption risk',
+  'Weak business continuity planning (BCP)',
+  'Regulatory / compliance gaps (GTPL, Vision 2030)',
+  'Sole-source & geopolitical supply risk',
+  // ESG & Localisation
+  'ESG / sustainability compliance pressure',
+  'IKTVA / local content compliance (Saudi Arabia)',
+  'Vendor ESG risk & ethical sourcing gaps',
 ];
-const MATURITY_DOMAINS = ['Strategy & Governance','Procurement & Sourcing','Operations & Logistics','Risk & Compliance','Data & Digital'];
-const KPI_DOMAINS = ['Cost Savings Achieved','Supplier On-Time Delivery','Procurement Cycle Time','Forecast Accuracy','Contract Compliance'];
+
+const MATURITY_DOMAINS = [
+  'Strategy & Governance',
+  'Procurement & Sourcing',
+  'Contract Management (CLM)',
+  'Supplier Relationship (SRM)',
+  'Operations & Logistics',
+  'Risk & Business Continuity',
+  'Data & Digital Maturity',
+  'Sustainability & ESG',
+];
+
+const KPI_DOMAINS = [
+  'Cost Savings Achieved vs Target',
+  'Supplier On-Time & In-Full (OTIF)',
+  'Procurement Cycle Time',
+  'Demand Forecast Accuracy',
+  'Contract Compliance Rate',
+  'Inventory Turnover Rate',
+  'Supplier Performance Score',
+];
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 function formatSAR(v: number) {
@@ -468,14 +540,17 @@ interface Briefing {
   strategicPriorities: { priority: number; title: string; rationale: string; expectedROI: string; timeline: string }[];
   ninetyDayPlan: { month1: { focus: string; milestones: string[] }; month2: { focus: string; milestones: string[] }; month3: { focus: string; milestones: string[] }; totalProjectedSaving: string };
   benchmarkInsight: string;
+  sustainabilityOpportunity?: string;
+  resiliencyGap?: string;
   recommendedPackage: string;
   recommendedPackageRationale: string;
   consultantNote: string;
 }
 
-function BriefingTab() {
+function BriefingTab({ lang }: { lang: Lang }) {
   const [step, setStep] = useState<BriefingStep>('step1');
-  const [industry, setIndustry] = useState(INDUSTRIES[0]);
+  const [industry, setIndustry] = useState(Object.keys(INDUSTRY_TREE)[0]);
+  const [subIndustry, setSubIndustry] = useState('');
   const [revenueBand, setRevenueBand] = useState(REVENUE_BANDS[1]);
   const [painPoints, setPainPoints] = useState<string[]>([]);
   const [kpiRatings, setKpiRatings] = useState<Record<string, number>>(Object.fromEntries(KPI_DOMAINS.map(d => [d, 3])));
@@ -493,7 +568,8 @@ function BriefingTab() {
       const resp = await fetch(`${API_BASE}/assessment`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ industry, revenueBand, painPoints, kpiRatings, maturityRatings }),
+        credentials: 'include',
+        body: JSON.stringify({ industry, subIndustry: subIndustry || undefined, revenueBand, painPoints, kpiRatings, maturityRatings, language: lang }),
       });
       const data = await resp.json() as { success: boolean; briefing: Briefing; error?: string };
       if (!data.success || !data.briefing) throw new Error(data.error || 'No briefing returned');
@@ -730,9 +806,18 @@ function BriefingTab() {
           <motion.div key="step1" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-5">
             <h3 className="text-xl font-bold text-[#082C6B]">Tell us about your organisation</h3>
             <div className="space-y-1.5">
-              <label className="text-sm font-semibold">Industry / Sector</label>
-              <select value={industry} onChange={e => setIndustry(e.target.value)} className="w-full border border-border rounded-xl px-4 py-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#082C6B]/30">
-                {INDUSTRIES.map(i => <option key={i}>{i}</option>)}
+              <label className="text-sm font-semibold">{lang === 'ar' ? 'القطاع الصناعي' : 'Industry / Sector'}</label>
+              <select value={industry} onChange={e => { setIndustry(e.target.value); setSubIndustry(''); }}
+                className="w-full border border-border rounded-xl px-4 py-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#082C6B]/30">
+                {Object.keys(INDUSTRY_TREE).map(i => <option key={i}>{i}</option>)}
+              </select>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-sm font-semibold">{lang === 'ar' ? 'القطاع الفرعي (اختياري)' : 'Sub-Sector (optional)'}</label>
+              <select value={subIndustry} onChange={e => setSubIndustry(e.target.value)}
+                className="w-full border border-border rounded-xl px-4 py-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#082C6B]/30">
+                <option value="">{lang === 'ar' ? '— كل القطاعات الفرعية —' : '— All sub-sectors —'}</option>
+                {(INDUSTRY_TREE[industry] ?? []).map(s => <option key={s}>{s}</option>)}
               </select>
             </div>
             <div className="space-y-1.5">
@@ -821,14 +906,385 @@ function BriefingTab() {
   );
 }
 
+// ─── Tab 5: AI Consultancy Engine ────────────────────────────────────────────
+type ConsultStage = 'input' | 'diagnosing' | 'diagnosis' | 'solving' | 'solution' | 'refining';
+
+interface DiagnosisResult {
+  challengeSummary: string;
+  rootCauses: { cause: string; framework: string; severity: string }[];
+  riskAssessment: { level: string; topRisks: string[]; iso31000Score: number };
+  maturityAssessment: { level: string; score: number; keyGaps: string[] };
+  diagnosticSummary: string;
+  urgentActions: string[];
+  estimatedAnnualCost: string;
+  consultantNote: string;
+}
+
+interface SolutionResult {
+  executiveSolution: string;
+  solutionPhases: { phase: number; title: string; duration: string; focus: string; activities: string[]; deliverables: string[]; kpis: string[]; framework: string }[];
+  kpiDashboard: { kpi: string; baseline: string; target: string; timeframe: string }[];
+  sustainabilityImpact: string;
+  resiliencyImpact: string;
+  totalProjectedSaving: string;
+  roi: string;
+  nextStep: string;
+  consultantNote: string;
+}
+
+function ConsultancyTab({ lang }: { lang: Lang }) {
+  const [stage, setStage]           = useState<ConsultStage>('input');
+  const [industry, setIndustry]     = useState(Object.keys(INDUSTRY_TREE)[0]);
+  const [subIndustry, setSubIndustry] = useState('');
+  const [companySize, setCompanySize] = useState('');
+  const [challenge, setChallenge]   = useState('');
+  const [diagnosis, setDiagnosis]   = useState<DiagnosisResult | null>(null);
+  const [solution, setSolution]     = useState<SolutionResult | null>(null);
+  const [error, setError]           = useState('');
+  const [satisfaction, setSatisfaction] = useState(0);
+  const [feedback, setFeedback]     = useState('');
+  const [escalated, setEscalated]   = useState(false);
+  const ar = lang === 'ar';
+
+  const runDiagnosis = useCallback(async () => {
+    if (challenge.trim().length < 20) return;
+    setStage('diagnosing'); setError('');
+    try {
+      const r = await fetch(`${API_BASE}/consultancy/diagnose`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+        body: JSON.stringify({ industry, subIndustry: subIndustry || undefined, challenge, companySize: companySize || undefined, language: lang }),
+      });
+      const d = await r.json();
+      if (!d.ok) throw new Error(d.error || 'Diagnosis failed');
+      setDiagnosis(d.diagnosis); setStage('diagnosis');
+    } catch (e) { setError(String(e)); setStage('input'); }
+  }, [industry, subIndustry, challenge, companySize, lang]);
+
+  const generateSolution = useCallback(async () => {
+    if (!diagnosis) return;
+    setStage('solving'); setError('');
+    try {
+      const r = await fetch(`${API_BASE}/consultancy/solution`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+        body: JSON.stringify({ industry, subIndustry: subIndustry || undefined, challenge, diagnosis, language: lang }),
+      });
+      const d = await r.json();
+      if (!d.ok) throw new Error(d.error || 'Solution failed');
+      setSolution(d.solution); setStage('solution');
+    } catch (e) { setError(String(e)); setStage('diagnosis'); }
+  }, [industry, subIndustry, challenge, diagnosis, lang]);
+
+  const refineSolution = useCallback(async () => {
+    if (!solution || !feedback.trim()) return;
+    setStage('refining'); setError('');
+    try {
+      const r = await fetch(`${API_BASE}/consultancy/refine`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+        body: JSON.stringify({ industry, subIndustry: subIndustry || undefined, challenge, previousSolution: solution, feedback, language: lang }),
+      });
+      const d = await r.json();
+      if (!d.ok) throw new Error(d.error || 'Refinement failed');
+      setSolution(d.solution); setFeedback(''); setStage('solution');
+    } catch (e) { setError(String(e)); setStage('solution'); }
+  }, [industry, subIndustry, challenge, solution, feedback, lang]);
+
+  const escalate = useCallback(async () => {
+    try {
+      await fetch(`${API_BASE}/consultancy/escalate`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+        body: JSON.stringify({ industry, subIndustry, challenge, diagnosis, solution, satisfactionScore: satisfaction }),
+      });
+      setEscalated(true);
+    } catch { /* best-effort */ }
+  }, [industry, subIndustry, challenge, diagnosis, solution, satisfaction]);
+
+  const isLoading = stage === 'diagnosing' || stage === 'solving' || stage === 'refining';
+
+  if (isLoading) {
+    const msg = stage === 'diagnosing' ? (ar ? 'جارٍ تشخيص تحديك...' : 'Running AI diagnosis...')
+               : stage === 'solving'   ? (ar ? 'جارٍ إنشاء خطة الحل...' : 'Generating solution plan...')
+               : (ar ? 'جارٍ تحسين الحل...' : 'Refining solution...');
+    return (
+      <div className="flex flex-col items-center justify-center py-24 gap-6">
+        <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1.5, ease: 'linear' }}>
+          <Loader2 className="w-12 h-12 text-[#082C6B]" />
+        </motion.div>
+        <p className="font-bold text-[#082C6B] text-lg text-center">{msg}</p>
+        {stage === 'diagnosing' && (
+          <div className="space-y-2 text-center">
+            {[
+              ar ? 'تطبيق نموذج SCOR...' : 'Applying SCOR model analysis...',
+              ar ? 'تقييم إطار CIPS...' : 'Evaluating CIPS framework gaps...',
+              ar ? 'تحديد الأسباب الجذرية...' : 'Identifying root causes (Six Sigma)...',
+              ar ? 'تقييم مخاطر ISO 31000...' : 'Assessing ISO 31000 risk exposure...',
+            ].map((t, i) => (
+              <motion.p key={t} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.7 }} className="text-xs text-muted-foreground">{t}</motion.p>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className={`space-y-7 ${ar ? 'text-right' : ''}`} dir={ar ? 'rtl' : 'ltr'}>
+      {error && <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl p-4 text-sm">{error}</div>}
+
+      {/* INPUT */}
+      {stage === 'input' && (
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="space-y-5 max-w-2xl mx-auto">
+          <div>
+            <h3 className="text-xl font-black text-[#082C6B]">{ar ? 'محرك الاستشارات الذكي' : 'AI Consultancy Engine'}</h3>
+            <p className="text-muted-foreground text-sm mt-1">{ar ? 'صِف تحديك وسيقوم الذكاء الاصطناعي بتشخيصه وتقديم حلول عالمية المستوى بناءً على SCOR وCIPS وLean وSix Sigma' : 'Describe your challenge and receive a world-class, framework-grounded diagnosis and solution plan. Powered by SCOR, CIPS, Lean, Six Sigma, ISO 31000.'}</p>
+          </div>
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-sm font-semibold">{ar ? 'القطاع الصناعي' : 'Industry / Sector'}</label>
+              <select value={industry} onChange={e => { setIndustry(e.target.value); setSubIndustry(''); }} className="w-full border border-border rounded-xl px-4 py-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#082C6B]/30">
+                {Object.keys(INDUSTRY_TREE).map(i => <option key={i}>{i}</option>)}
+              </select>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-sm font-semibold">{ar ? 'القطاع الفرعي' : 'Sub-Sector'}</label>
+              <select value={subIndustry} onChange={e => setSubIndustry(e.target.value)} className="w-full border border-border rounded-xl px-4 py-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#082C6B]/30">
+                <option value="">{ar ? '— اختر —' : '— All sub-sectors —'}</option>
+                {(INDUSTRY_TREE[industry] ?? []).map(s => <option key={s}>{s}</option>)}
+              </select>
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-sm font-semibold">{ar ? 'حجم الشركة / الإيرادات' : 'Company Size / Revenue Band'}</label>
+            <select value={companySize} onChange={e => setCompanySize(e.target.value)} className="w-full border border-border rounded-xl px-4 py-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#082C6B]/30">
+              <option value="">{ar ? '— اختر —' : '— Select —'}</option>
+              {REVENUE_BANDS.map(b => <option key={b}>{b}</option>)}
+            </select>
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-sm font-semibold">{ar ? 'صِف تحديك أو مشكلتك' : 'Describe your challenge or pain point'}</label>
+            <textarea value={challenge} onChange={e => setChallenge(e.target.value)} rows={5}
+              placeholder={ar ? 'مثال: نعاني من ارتفاع تكاليف المشتريات وطول دورة الشراء وضعف أداء الموردين وانعدام الرؤية في بيانات الإنفاق...' : 'Example: We struggle with high procurement costs, long cycle times, poor supplier performance, excess inventory, weak contract compliance, or lack of spend visibility...'}
+              className="w-full border border-border rounded-xl px-4 py-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#082C6B]/30 resize-none" />
+            <p className="text-xs text-muted-foreground">{challenge.length}/2000</p>
+          </div>
+          <Button onClick={runDiagnosis} disabled={challenge.trim().length < 20} className="w-full bg-[#082C6B] hover:bg-[#0B3D91] text-white font-bold py-3">
+            <Brain className="w-4 h-4 mr-2" />{ar ? 'ابدأ التشخيص الذكي' : 'Run AI Diagnosis'}
+          </Button>
+        </motion.div>
+      )}
+
+      {/* DIAGNOSIS */}
+      {stage === 'diagnosis' && diagnosis && (
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+          <div className="flex items-start justify-between gap-4 flex-wrap">
+            <div>
+              <span className="text-xs uppercase tracking-widest text-muted-foreground font-semibold">{ar ? 'نتائج التشخيص' : 'AI Diagnosis Results'}</span>
+              <h2 className="text-xl font-black text-[#082C6B] mt-0.5">{industry}{subIndustry ? ` — ${subIndustry}` : ''}</h2>
+            </div>
+            <button onClick={() => setStage('input')} className="text-xs text-muted-foreground hover:text-foreground underline">{ar ? 'تشخيص جديد' : 'New Diagnosis'}</button>
+          </div>
+          <div className="bg-[#082C6B] rounded-2xl p-6 text-white">
+            <p className="text-xs uppercase tracking-widest text-white/60 mb-2">{ar ? 'ملخص التحدي' : 'Challenge Summary'}</p>
+            <p className="text-base leading-relaxed">{diagnosis.challengeSummary}</p>
+          </div>
+          <div className="grid grid-cols-3 gap-4">
+            <div className="rounded-xl border p-4 text-center">
+              <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">{ar ? 'مستوى النضج' : 'Maturity'}</p>
+              <p className="font-black text-[#082C6B] text-sm">{diagnosis.maturityAssessment.level}</p>
+              <p className="text-2xl font-black text-[#082C6B] mt-1">{diagnosis.maturityAssessment.score}<span className="text-sm font-normal">/100</span></p>
+            </div>
+            <div className="rounded-xl border p-4 text-center">
+              <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">{ar ? 'المخاطر' : 'Risk Level'}</p>
+              <p className={`font-black text-sm ${diagnosis.riskAssessment.level === 'Critical' ? 'text-red-600' : diagnosis.riskAssessment.level === 'High' ? 'text-orange-600' : diagnosis.riskAssessment.level === 'Moderate' ? 'text-amber-600' : 'text-emerald-600'}`}>{diagnosis.riskAssessment.level}</p>
+              <p className="text-2xl font-black mt-1" style={{ color: riskColor(diagnosis.riskAssessment.iso31000Score) }}>{diagnosis.riskAssessment.iso31000Score}<span className="text-sm font-normal">/100</span></p>
+            </div>
+            <div className="rounded-xl border p-4 text-center">
+              <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">{ar ? 'التكلفة السنوية' : 'Annual Cost'}</p>
+              <p className="font-black text-[#C9A84C] text-sm mt-2 leading-tight">{diagnosis.estimatedAnnualCost}</p>
+            </div>
+          </div>
+          <div>
+            <h4 className="text-xs font-bold text-[#082C6B] uppercase tracking-wider mb-3">{ar ? 'الأسباب الجذرية' : 'Root Causes'}</h4>
+            <div className="space-y-2">
+              {(diagnosis.rootCauses ?? []).map((rc, i) => (
+                <div key={i} className={`flex gap-3 rounded-xl p-4 border ${rc.severity === 'High' ? 'bg-red-50 border-red-200' : rc.severity === 'Medium' ? 'bg-amber-50 border-amber-200' : 'bg-blue-50 border-blue-200'}`}>
+                  <AlertTriangle className={`w-4 h-4 shrink-0 mt-0.5 ${rc.severity === 'High' ? 'text-red-600' : rc.severity === 'Medium' ? 'text-amber-600' : 'text-blue-600'}`} />
+                  <div className="flex-1 min-w-0"><p className="text-sm font-semibold">{rc.cause}</p><p className="text-xs text-muted-foreground mt-0.5">{rc.framework}</p></div>
+                  <span className={`text-xs font-bold px-2 py-0.5 rounded-full h-fit shrink-0 ${rc.severity === 'High' ? 'bg-red-100 text-red-700' : rc.severity === 'Medium' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'}`}>{rc.severity}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="bg-muted rounded-xl p-5">
+            <h4 className="text-xs font-bold text-[#082C6B] uppercase tracking-wider mb-2">{ar ? 'التشخيص التفصيلي' : 'Detailed Diagnosis'}</h4>
+            <p className="text-sm leading-relaxed whitespace-pre-line">{diagnosis.diagnosticSummary}</p>
+          </div>
+          <div>
+            <h4 className="text-xs font-bold text-[#082C6B] uppercase tracking-wider mb-3">{ar ? 'إجراءات فورية هذا الأسبوع' : 'Urgent Actions — This Week'}</h4>
+            <div className="space-y-2">
+              {(diagnosis.urgentActions ?? []).map((a, i) => (
+                <div key={i} className="flex gap-3 items-start bg-white rounded-xl border border-border p-3">
+                  <span className="w-6 h-6 rounded-full bg-[#082C6B] text-white flex items-center justify-center text-xs font-black shrink-0">{i+1}</span>
+                  <p className="text-sm">{a}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+          {diagnosis.consultantNote && (
+            <div className="bg-[#082C6B]/5 border border-[#082C6B]/20 rounded-xl p-5">
+              <div className="flex items-center gap-3 mb-3">
+                <img src="/i-supply-chain/maen-photo.jpg" alt="Ma'in" className="w-9 h-9 rounded-full object-cover object-top border-2 border-[#C9A84C]" />
+                <div><p className="font-bold text-[#082C6B] text-sm">Ma'in Alhaqash</p><p className="text-xs text-muted-foreground">MCIPS · CPSM · MSc · MIPP</p></div>
+              </div>
+              <p className="text-sm italic">"{diagnosis.consultantNote}"</p>
+            </div>
+          )}
+          <Button onClick={generateSolution} className="w-full bg-[#082C6B] hover:bg-[#0B3D91] text-white font-bold py-3">
+            <Zap className="w-4 h-4 mr-2" />{ar ? 'إنشاء خطة الحل الكاملة' : 'Generate Full Solution Plan'}
+          </Button>
+        </motion.div>
+      )}
+
+      {/* SOLUTION */}
+      {stage === 'solution' && solution && (
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+          <div className="flex items-start justify-between gap-4 flex-wrap">
+            <div>
+              <span className="text-xs uppercase tracking-widest text-muted-foreground font-semibold">{ar ? 'خطة الحل' : 'Solution Plan'}</span>
+              <h2 className="text-xl font-black text-[#082C6B] mt-0.5">{industry}{subIndustry ? ` — ${subIndustry}` : ''}</h2>
+            </div>
+            <div className="flex gap-3">
+              <button onClick={() => setStage('diagnosis')} className="text-xs text-muted-foreground hover:text-foreground underline">{ar ? 'العودة للتشخيص' : 'Back to Diagnosis'}</button>
+              <button onClick={() => { setStage('input'); setDiagnosis(null); setSolution(null); setSatisfaction(0); }} className="text-xs text-muted-foreground hover:text-foreground underline">{ar ? 'بدء جديد' : 'Start Over'}</button>
+            </div>
+          </div>
+          <div className="bg-[#082C6B] rounded-2xl p-6 text-white">
+            <p className="text-xs uppercase tracking-widest text-white/60 mb-2">{ar ? 'ملخص الحل التنفيذي' : 'Executive Solution'}</p>
+            <p className="text-base leading-relaxed">{solution.executiveSolution}</p>
+            <div className="flex gap-6 mt-4 flex-wrap">
+              <div><p className="text-[#C9A84C] font-black text-lg">{solution.totalProjectedSaving}</p><p className="text-white/60 text-xs">{ar ? 'التوفير المتوقع' : 'Projected Saving'}</p></div>
+              <div><p className="text-[#C9A84C] font-black text-lg">{solution.roi}</p><p className="text-white/60 text-xs">{ar ? 'العائد على الاستثمار' : 'ROI'}</p></div>
+            </div>
+          </div>
+          <div>
+            <h4 className="text-xs font-bold text-[#082C6B] uppercase tracking-wider mb-3">{ar ? 'مراحل التنفيذ' : 'Implementation Phases'}</h4>
+            <div className="space-y-4">
+              {(solution.solutionPhases ?? []).map(phase => (
+                <div key={phase.phase} className="rounded-xl border border-border p-5">
+                  <div className="flex items-center gap-3 mb-3">
+                    <span className="w-8 h-8 rounded-full bg-[#082C6B] text-white flex items-center justify-center text-sm font-black shrink-0">{phase.phase}</span>
+                    <div><p className="font-bold text-[#082C6B]">{phase.title}</p><p className="text-xs text-muted-foreground">{phase.duration} · {phase.framework}</p></div>
+                  </div>
+                  <p className="text-sm font-semibold mb-3">{phase.focus}</p>
+                  <div className="grid sm:grid-cols-3 gap-3 text-xs">
+                    <div><p className="font-bold text-muted-foreground uppercase tracking-wider mb-1">{ar ? 'الأنشطة' : 'Activities'}</p>{phase.activities.map((a,i) => <p key={i} className="flex gap-1 mt-0.5"><Check className="w-3 h-3 text-emerald-600 shrink-0 mt-0.5" />{a}</p>)}</div>
+                    <div><p className="font-bold text-muted-foreground uppercase tracking-wider mb-1">{ar ? 'المخرجات' : 'Deliverables'}</p>{phase.deliverables.map((d,i) => <p key={i} className="flex gap-1 mt-0.5"><ChevronRight className="w-3 h-3 text-[#082C6B] shrink-0 mt-0.5" />{d}</p>)}</div>
+                    <div><p className="font-bold text-muted-foreground uppercase tracking-wider mb-1">{ar ? 'مؤشرات الأداء' : 'KPIs'}</p>{phase.kpis.map((k,i) => <p key={i} className="flex gap-1 mt-0.5"><BarChart2 className="w-3 h-3 text-[#C9A84C] shrink-0 mt-0.5" />{k}</p>)}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          {(solution.kpiDashboard ?? []).length > 0 && (
+            <div>
+              <h4 className="text-xs font-bold text-[#082C6B] uppercase tracking-wider mb-3">{ar ? 'لوحة مؤشرات الأداء' : 'KPI Dashboard'}</h4>
+              <div className="overflow-x-auto rounded-xl border border-border">
+                <table className="w-full text-xs">
+                  <thead><tr className="bg-muted border-b border-border">
+                    <th className="px-4 py-2 text-left font-bold text-muted-foreground uppercase">{ar ? 'المؤشر' : 'KPI'}</th>
+                    <th className="px-4 py-2 text-center font-bold text-muted-foreground uppercase">{ar ? 'الوضع الحالي' : 'Baseline'}</th>
+                    <th className="px-4 py-2 text-center font-bold text-muted-foreground uppercase">{ar ? 'الهدف' : 'Target'}</th>
+                    <th className="px-4 py-2 text-center font-bold text-muted-foreground uppercase">{ar ? 'الإطار الزمني' : 'Timeframe'}</th>
+                  </tr></thead>
+                  <tbody>{solution.kpiDashboard.map((row, i) => (
+                    <tr key={i} className={`border-b border-border ${i%2===0?'bg-white':'bg-muted/20'}`}>
+                      <td className="px-4 py-2 font-semibold">{row.kpi}</td>
+                      <td className="px-4 py-2 text-center text-muted-foreground">{row.baseline}</td>
+                      <td className="px-4 py-2 text-center font-bold text-emerald-700">{row.target}</td>
+                      <td className="px-4 py-2 text-center text-[#082C6B] font-semibold">{row.timeframe}</td>
+                    </tr>
+                  ))}</tbody>
+                </table>
+              </div>
+            </div>
+          )}
+          <div className="bg-[#C9A84C]/10 border border-[#C9A84C]/30 rounded-xl p-5">
+            <p className="text-xs font-bold uppercase tracking-wider text-[#C9A84C] mb-1">{ar ? 'الخطوة التالية الفورية' : 'Immediate Next Step'}</p>
+            <p className="text-sm font-semibold">{solution.nextStep}</p>
+          </div>
+          {/* Sustainability + Resiliency */}
+          {(solution.sustainabilityImpact || solution.resiliencyImpact) && (
+            <div className="grid sm:grid-cols-2 gap-4">
+              {solution.sustainabilityImpact && <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4"><p className="text-xs font-bold text-emerald-700 uppercase tracking-wider mb-1">{ar ? 'أثر الاستدامة' : 'Sustainability Impact'}</p><p className="text-sm text-emerald-900 leading-relaxed">{solution.sustainabilityImpact}</p></div>}
+              {solution.resiliencyImpact && <div className="bg-blue-50 border border-blue-200 rounded-xl p-4"><p className="text-xs font-bold text-blue-700 uppercase tracking-wider mb-1">{ar ? 'أثر المرونة' : 'Resiliency Impact'}</p><p className="text-sm text-blue-900 leading-relaxed">{solution.resiliencyImpact}</p></div>}
+            </div>
+          )}
+          {/* Satisfaction */}
+          {!escalated && (
+            <div className="rounded-xl border border-border p-5 space-y-3">
+              <h4 className="text-sm font-bold text-[#082C6B]">{ar ? 'ما مدى رضاك عن هذا الحل؟' : 'How satisfied are you with this solution?'}</h4>
+              <div className="flex gap-2 items-center">
+                {[1,2,3,4,5].map(n => (
+                  <button key={n} onClick={() => setSatisfaction(n)}
+                    className={`w-10 h-10 rounded-full border text-sm font-bold transition-all ${satisfaction >= n ? 'bg-[#C9A84C] text-white border-[#C9A84C]' : 'bg-white text-muted-foreground border-border hover:border-[#C9A84C]'}`}>
+                    {n}
+                  </button>
+                ))}
+                {satisfaction > 0 && <span className="text-sm text-muted-foreground ml-2">{satisfaction >= 4 ? (ar ? '— ممتاز!' : '— Great!') : (ar ? '— دعنا نحسّنه' : '— Let us improve')}</span>}
+              </div>
+              {satisfaction > 0 && satisfaction < 4 && (
+                <div className="space-y-2">
+                  <textarea value={feedback} onChange={e => setFeedback(e.target.value)} rows={3}
+                    placeholder={ar ? 'ما الذي تريد تحسينه أو توضيحه؟' : 'What would you like improved or clarified?'}
+                    className="w-full border border-border rounded-xl px-4 py-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#082C6B]/30 resize-none" />
+                  <Button onClick={refineSolution} disabled={!feedback.trim()} className="bg-[#082C6B] hover:bg-[#0B3D91] text-white text-sm">
+                    <RefreshCw className="w-3 h-3 mr-1" />{ar ? 'تحسين الحل' : 'Refine Solution'}
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
+          {/* Escalate CTA */}
+          <div className="bg-[#082C6B] rounded-2xl p-6 flex items-center justify-between gap-4 flex-wrap">
+            <div>
+              <p className="text-white font-bold text-base">{ar ? "تريد متابعة شخصية من ما'ين الحقاش؟" : "Need personalised follow-up from Ma'in?"}</p>
+              <p className="text-white/70 text-sm mt-1">{escalated ? (ar ? 'تم الإرسال! ستتلقى ردًا خلال 4 ساعات عمل.' : 'Escalated! Response within 4 business hours.') : (ar ? 'أرسل تحديك وتشخيصك لما\'ين مباشرة' : "Send your AI diagnosis to Ma'in for a human consultation.")}</p>
+            </div>
+            {!escalated ? (
+              <div className="flex gap-2 flex-wrap">
+                <Button onClick={escalate} className="bg-[#C9A84C] hover:bg-[#b8973e] text-white font-bold shrink-0">
+                  <MessageSquare className="w-4 h-4 mr-2" />{ar ? 'إحالة للمستشار' : 'Escalate to Consultant'}
+                </Button>
+                <Link href="/consultant">
+                  <Button variant="outline" className="bg-white/10 border-white/30 text-white hover:bg-white/20 shrink-0">
+                    {ar ? 'احجز موعداً' : 'Book Consultation'} <ArrowRight className="w-4 h-4 ml-1" />
+                  </Button>
+                </Link>
+              </div>
+            ) : <CheckCircle2 className="w-8 h-8 text-[#C9A84C]" />}
+          </div>
+        </motion.div>
+      )}
+    </div>
+  );
+}
+
 // ─── Main Page ────────────────────────────────────────────────────────────────
 const TABS = [
-  { id: 'benchmark', label: 'GCC Benchmark Radar',   icon: Target,      desc: 'Compare your KPIs against GCC quartiles' },
-  { id: 'savings',   label: 'Savings Calculator',     icon: TrendingUp,  desc: 'Model your savings potential by initiative' },
-  { id: 'risk',      label: 'Risk Exposure Score',    icon: ShieldAlert, desc: 'Quantify and prioritise supply chain risk' },
-  { id: 'briefing',  label: 'AI Executive Briefing',  icon: Brain,       desc: 'Receive a personalised, AI-generated strategy report' },
+  { id: 'benchmark',   label: 'GCC Benchmark Radar',   icon: Target,      desc: 'Compare your KPIs against GCC quartiles' },
+  { id: 'savings',     label: 'Savings Calculator',     icon: TrendingUp,  desc: 'Model your savings potential by initiative' },
+  { id: 'risk',        label: 'Risk Exposure Score',    icon: ShieldAlert, desc: 'Quantify and prioritise supply chain risk' },
+  { id: 'briefing',    label: 'AI Executive Briefing',  icon: Brain,       desc: 'Receive a personalised, AI-generated strategy report' },
+  { id: 'consultancy', label: 'AI Consultancy Engine',  icon: Sparkles,    desc: 'Full AI diagnostic & solution workflow — SCOR, Lean, Six Sigma, ISO 31000' },
 ] as const;
 type TabId = typeof TABS[number]['id'];
+
+const TAB_LABELS_AR: Record<string, { label: string; desc: string }> = {
+  benchmark:   { label: 'رادار المعيار الخليجي',   desc: 'قارن مؤشراتك بنظراء الخليج' },
+  savings:     { label: 'حاسبة التوفير',            desc: 'احسب إمكانات التوفير المحتملة' },
+  risk:        { label: 'مؤشر المخاطر',             desc: 'قيّم مخاطر سلسلة التوريد' },
+  briefing:    { label: 'التقرير التنفيذي الذكي',   desc: 'تقرير استراتيجي مخصص بالذكاء الاصطناعي' },
+  consultancy: { label: 'محرك الاستشارات الذكي',    desc: 'تشخيص وحل كامل بالذكاء الاصطناعي' },
+};
 
 const STAT_ITEMS = [
   { value: '14%', label: 'avg. procurement savings unlocked by ISC clients' },
@@ -838,7 +1294,9 @@ const STAT_ITEMS = [
 ];
 
 export function CommandCenter() {
-  const [tab, setTab] = useState<TabId>('benchmark');
+  const [tab,  setTab]  = useState<TabId>('benchmark');
+  const [lang, setLang] = useState<Lang>('en');
+  const ar = lang === 'ar';
 
   return (
     <div className="min-h-screen bg-background">
@@ -891,10 +1349,12 @@ export function CommandCenter() {
         <div className="bg-white rounded-2xl border border-border shadow-sm p-6 md:p-8">
           <AnimatePresence mode="wait">
             <motion.div key={tab} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.25 }}>
-              {tab === 'benchmark' && <BenchmarkTab />}
-              {tab === 'savings'   && <SavingsTab />}
-              {tab === 'risk'      && <RiskTab />}
-              {tab === 'briefing'  && <BriefingTab />}
+              {tab === 'benchmark'   && <BenchmarkTab />}
+              {tab === 'savings'     && <SavingsTab />}
+              {tab === 'risk'        && <RiskTab />}
+              {tab === 'briefing'    && <BriefingTab lang={lang} />}
+              {tab === 'consultancy' && <ConsultancyTab lang={lang} />}
+              {tab === 'consultancy' && <ConsultancyTab lang={lang} />}
             </motion.div>
           </AnimatePresence>
         </div>
