@@ -1526,8 +1526,10 @@ function BriefingTab({ lang }: { lang: Lang }) {
       const canvas = await html2canvas(containerEl, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pageW = 210, pageH = 297;
+      const footerHmm = 12; // reserved band at the bottom of every page for branding + page number
+      const contentHmm = pageH - footerHmm;
       const pxPerMm = canvas.width / pageW;
-      const pageHpx = Math.floor(pageH * pxPerMm);
+      const pageHpx = Math.floor(contentHmm * pxPerMm);
       const domToCanvas = canvas.width / containerRect.width; // DOM px → canvas px
 
       // Greedy section-aware pagination: whenever a block would straddle the
@@ -1559,6 +1561,45 @@ function BriefingTab({ lang }: { lang: Lang }) {
         }
         cur = b;
       }
+      // Pre-render the footer band once per page (canvas 2D renders Arabic/RTL
+      // text natively, which jsPDF's built-in fonts cannot).
+      const footerHpx = Math.ceil(footerHmm * pxPerMm);
+      const marginPx = Math.round(12 * pxPerMm); // ~12mm side margins
+      const totalPages = starts.length;
+      const renderFooter = (pageNum: number) => {
+        const f = document.createElement('canvas');
+        f.width = canvas.width;
+        f.height = footerHpx;
+        const fctx = f.getContext('2d')!;
+        fctx.fillStyle = '#ffffff';
+        fctx.fillRect(0, 0, f.width, f.height);
+        // Slim divider line
+        fctx.strokeStyle = '#E2E6EF';
+        fctx.lineWidth = Math.max(1, Math.round(0.25 * pxPerMm));
+        fctx.beginPath();
+        fctx.moveTo(marginPx, fctx.lineWidth);
+        fctx.lineTo(f.width - marginPx, fctx.lineWidth);
+        fctx.stroke();
+        const fontPx = Math.round(2.8 * pxPerMm); // ~8pt
+        fctx.font = `600 ${fontPx}px Tahoma, Arial, sans-serif`;
+        fctx.textBaseline = 'middle';
+        const textY = Math.round(footerHpx * 0.55);
+        const brand = ar
+          ? 'آي سبلاي تشين — الإحاطة التنفيذية لسلسلة الإمداد · isupplychain.com'
+          : 'I Supply Chain — Executive Supply Chain Briefing · isupplychain.com';
+        const pageLabel = ar
+          ? `صفحة ${pageNum} من ${totalPages}`
+          : `Page ${pageNum} of ${totalPages}`;
+        // Brand line on the reading-start side, page number on the opposite side.
+        fctx.fillStyle = '#082C6B';
+        fctx.textAlign = ar ? 'right' : 'left';
+        fctx.fillText(brand, ar ? f.width - marginPx : marginPx, textY);
+        fctx.fillStyle = '#6B7280';
+        fctx.textAlign = ar ? 'left' : 'right';
+        fctx.fillText(pageLabel, ar ? marginPx : f.width - marginPx, textY);
+        return f;
+      };
+
       for (let page = 0; page < starts.length; page++) {
         const y = starts[page];
         const end = page + 1 < starts.length ? starts[page + 1] : canvas.height;
@@ -1573,9 +1614,12 @@ function BriefingTab({ lang }: { lang: Lang }) {
         ctx.drawImage(canvas, 0, y, canvas.width, sliceH, 0, 0, canvas.width, sliceH);
         if (page > 0) pdf.addPage();
         pdf.addImage(slice.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, pageW, sliceH / pxPerMm);
+        // Footer band: page number + brand line at the bottom of every page.
+        const footer = renderFooter(page + 1);
+        pdf.addImage(footer.toDataURL('image/jpeg', 0.92), 'JPEG', 0, pageH - footerHmm, pageW, footerHmm);
       }
     return { pdf, filename: `ISC-Executive-Briefing-${new Date().toISOString().slice(0, 10)}.pdf` };
-  }, []);
+  }, [ar]);
 
   const downloadPdf = async () => {
     if (!briefing || !pdfRef.current || pdfBusy) return;
