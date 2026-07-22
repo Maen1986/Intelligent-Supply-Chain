@@ -233,9 +233,12 @@ export class ContentValidationError extends Error {
 }
 
 /* Single-flight generation: never let two generations run concurrently.
- * All callers (cache-miss GETs, background refreshes) share the same
- * in-flight promise, so a burst of visitors costs exactly one AI call. */
+ * All callers (cache-miss GETs, background refreshes, admin refresh) share
+ * the same in-flight promise, so a burst of visitors costs exactly one AI call. */
 let generationInFlight: Promise<Record<string, unknown>> | null = null;
+
+/** Reset the single-flight state. Exported for test isolation only — do not call in production code. */
+export function _resetInFlightForTest(): void { generationInFlight = null; }
 
 function generateAndCache(reason: string): Promise<Record<string, unknown>> {
   if (generationInFlight) return generationInFlight;
@@ -305,11 +308,13 @@ router.get('/intelligence', async (_req, res) => {
 });
 
 /* POST /api/intelligence/refresh — force regeneration (bypass cache).
-   Each call costs AI credits, so only an authenticated admin may trigger it. */
+   Each call costs AI credits, so only an authenticated admin may trigger it.
+   Uses generateAndCache so a refresh never spawns a second parallel AI call
+   when a generation (e.g. from a concurrent cache-miss GET) is already in
+   flight — the refresh joins the existing in-flight promise instead. */
 router.post('/intelligence/refresh', requireAdmin, async (_req, res) => {
   try {
-    const content = await generateContent();
-    await writeCache(content);
+    const content = await generateAndCache('admin refresh');
     return res.json({ success: true, generatedAt: (content as { generatedAt: string }).generatedAt });
   } catch (err) {
     console.error('[intelligence] refresh failed', err);

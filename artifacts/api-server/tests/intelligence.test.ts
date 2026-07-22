@@ -35,7 +35,7 @@ function seedCache(value: unknown) {
   dbState.row = { key: 'intelligence', value, generatedAt: generatedAt ? new Date(generatedAt) : new Date(0) };
 }
 
-import intelligenceRouter from '../src/routes/intelligence';
+import intelligenceRouter, { _resetInFlightForTest } from '../src/routes/intelligence';
 
 const newsItem = {
   category: 'AI & Technology', date: 'July 2026', headline: 'Headline here',
@@ -66,6 +66,7 @@ const generated = {
 const fetchMock = vi.fn();
 
 beforeEach(() => {
+  _resetInFlightForTest();
   dbState.row = null;
   dbState.written = [];
   fetchMock.mockReset();
@@ -359,5 +360,41 @@ describe('POST /api/intelligence/refresh', () => {
     const res = await request(app).post('/api/intelligence/refresh');
     expect(res.status).toBe(502);
     expect(res.body.error).toBeTruthy();
+  });
+
+  it('joins an in-flight generation instead of starting a second AI call', async () => {
+    // Use a fetch that takes ~80 ms to complete, giving both concurrent requests
+    // time to call generateAndCache while the first AI call is still in flight.
+    // Because generateAndCache is single-flight, only whichever request wins the
+    // race calls fetch; the other joins the existing in-flight promise.
+    fetchMock.mockImplementation(
+      () => new Promise<unknown>((resolve) => {
+        setTimeout(() => {
+          resolve({
+            ok: true,
+            json: async () => ({ choices: [{ message: { content: JSON.stringify(generated) } }] }),
+          });
+        }, 80);
+      }),
+    );
+
+    // Use adminSession so the refresh route's requireAdmin check passes.
+    // The GET endpoint ignores session, so both requests work fine here.
+    const app = makeApp('/api', intelligenceRouter, adminSession);
+
+    // Fire both requests simultaneously.
+    const [getRes, refreshRes] = await Promise.all([
+      request(app).get('/api/intelligence'),
+      request(app).post('/api/intelligence/refresh'),
+    ]);
+
+    expect(getRes.status).toBe(200);
+    expect(refreshRes.status).toBe(200);
+    expect(refreshRes.body.success).toBe(true);
+    expect(refreshRes.body.generatedAt).toBeTruthy();
+
+    // Only one AI call and one cache write — the refresh joined the in-flight generation.
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(dbState.written.length).toBe(1);
   });
 });
