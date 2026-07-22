@@ -2134,6 +2134,11 @@ function BriefingTab({ lang }: { lang: Lang }) {
             <h2 className="text-2xl font-black text-[#082C6B] mt-0.5">
               {ar ? `تقييم سلسلة إمداد — ${industry}` : `${industry} Supply Chain Assessment`}
             </h2>
+            {clientCompany && (
+              <p className="text-sm font-semibold text-[#C9A84C] mt-0.5">
+                {ar ? `أُعدت لصالح ${clientCompany}` : `Prepared for ${clientCompany}`}
+              </p>
+            )}
             <p className="text-sm text-muted-foreground">{revenueBand} · Ma'in Alhaqash MCIPS CPSM MSc</p>
           </div>
           <div className="flex gap-2">
