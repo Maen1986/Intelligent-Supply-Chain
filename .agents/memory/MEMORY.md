@@ -1,0 +1,1 @@
+- [connect-pg-simple esbuild fix](connect-pg-simple-esbuild.md) — createTableIfMissing: true crashes in esbuild bundles; own the table via Drizzle instead.
