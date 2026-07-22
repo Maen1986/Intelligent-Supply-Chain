@@ -11,7 +11,7 @@ import {
   Target, TrendingUp, ShieldAlert, Brain, ChevronRight, ChevronLeft, Check,
   AlertTriangle, Zap, BarChart2, DollarSign, Clock, Loader2,
   ArrowRight, ArrowLeft, Copy, CheckCircle2, Star, RefreshCw, Building2,
-  MessageSquare, Languages, Sparkles,
+  MessageSquare, Languages, Sparkles, Download,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -1262,6 +1262,202 @@ function loadBriefingDraft(): BriefingDraft {
   }
 }
 
+// ─── Branded PDF printable layout (hidden off-screen, captured by html2canvas) ─
+const PDF_NAVY = '#082C6B';
+const PDF_GOLD = '#C9A84C';
+const PDF_GRAY = '#6B7280';
+const PDF_BORDER = '#E5E7EB';
+
+function BriefingPrintable({
+  briefing, maturityRatings, industry, revenueBand, lang,
+}: {
+  briefing: Briefing;
+  maturityRatings: Record<string, number>;
+  industry: string;
+  revenueBand: string;
+  lang: Lang;
+}) {
+  const ar = lang === 'ar';
+  const radarData = MATURITY_DOMAINS_EX.map(d => {
+    const vals = d.subs.map(s => maturityRatings[`${d.id}__${s.id}`] ?? 2);
+    const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
+    return { domain: ar ? d.labelAr : d.label, score: Math.round(avg * 10) / 10 };
+  });
+  const sectionTitle: React.CSSProperties = {
+    color: PDF_NAVY, fontSize: 13, fontWeight: 800, textTransform: 'uppercase',
+    letterSpacing: 1, margin: '0 0 10px', borderBottom: `2px solid ${PDF_GOLD}`, paddingBottom: 6,
+  };
+  const card: React.CSSProperties = {
+    border: `1px solid ${PDF_BORDER}`, borderRadius: 10, padding: 14, backgroundColor: '#ffffff',
+  };
+  const monthMeta = ar
+    ? [['month1', 'الشهر 1', PDF_NAVY], ['month2', 'الشهر 2', '#0B3D91'], ['month3', 'الشهر 3', PDF_GOLD]] as const
+    : [['month1', 'Month 1', PDF_NAVY], ['month2', 'Month 2', '#0B3D91'], ['month3', 'Month 3', PDF_GOLD]] as const;
+  const dateStr = new Date().toLocaleDateString(ar ? 'ar-SA' : 'en-GB', { year: 'numeric', month: 'long', day: 'numeric' });
+  return (
+    <div dir={ar ? 'rtl' : 'ltr'} style={{ width: 794, backgroundColor: '#ffffff', color: '#111827', fontSize: 13, lineHeight: 1.55, textAlign: ar ? 'right' : 'left' }}>
+      {/* Branded header */}
+      <div style={{ backgroundColor: PDF_NAVY, color: '#ffffff', padding: '28px 40px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16 }}>
+          <div>
+            <p style={{ margin: 0, fontSize: 11, letterSpacing: 3, textTransform: 'uppercase', color: PDF_GOLD, fontWeight: 700 }}>
+              {ar ? 'آي سبلاي تشين' : 'I SUPPLY CHAIN'}
+            </p>
+            <h1 style={{ margin: '6px 0 0', fontSize: 24, fontWeight: 900 }}>
+              {ar ? 'إحاطة سلسلة الإمداد التنفيذية' : 'Executive Supply Chain Briefing'}
+            </h1>
+            <p style={{ margin: '6px 0 0', fontSize: 12, color: 'rgba(255,255,255,0.75)' }}>
+              {ar ? `تقييم سلسلة إمداد — ${industryLabel(industry, true)}` : `${industry} Supply Chain Assessment`} · {ar ? REVENUE_BANDS_AR[REVENUE_BANDS.indexOf(revenueBand)] ?? revenueBand : revenueBand}
+            </p>
+          </div>
+          <div style={{ textAlign: ar ? 'left' : 'right', fontSize: 11, color: 'rgba(255,255,255,0.75)' }}>
+            <p style={{ margin: 0, fontWeight: 700, color: '#ffffff' }}>{ar ? 'سري وخاص' : 'CONFIDENTIAL'}</p>
+            <p style={{ margin: '4px 0 0' }}>{dateStr}</p>
+            <p style={{ margin: '4px 0 0' }}>Ma'in Alhaqash · MCIPS · CPSM · MSc · MIPP</p>
+          </div>
+        </div>
+      </div>
+
+      <div style={{ padding: '28px 40px', display: 'flex', flexDirection: 'column', gap: 24 }}>
+        {/* Scores row */}
+        <div style={{ display: 'flex', gap: 12 }}>
+          <div style={{ ...card, flex: 1, textAlign: 'center' }}>
+            <p style={{ margin: 0, fontSize: 10, textTransform: 'uppercase', letterSpacing: 1, color: PDF_GRAY, fontWeight: 700 }}>{ar ? 'مستوى النضج' : 'Maturity Level'}</p>
+            <p style={{ margin: '8px 0 0', fontSize: 26, fontWeight: 900, color: PDF_NAVY }}>{briefing.maturityScore}<span style={{ fontSize: 12, fontWeight: 400, color: PDF_GRAY }}>/100</span></p>
+            <p style={{ margin: '4px 0 0', fontSize: 12, fontWeight: 700, color: PDF_NAVY }}>{briefing.maturityLevel}</p>
+          </div>
+          <div style={{ ...card, flex: 1, textAlign: 'center' }}>
+            <p style={{ margin: 0, fontSize: 10, textTransform: 'uppercase', letterSpacing: 1, color: PDF_GRAY, fontWeight: 700 }}>{ar ? 'مستوى المخاطر' : 'Risk Level'}</p>
+            <p style={{ margin: '8px 0 0', fontSize: 18, fontWeight: 900, color: briefing.overallRiskLevel === 'Critical' ? '#dc2626' : briefing.overallRiskLevel === 'High' ? '#ea580c' : briefing.overallRiskLevel === 'Moderate' ? '#d97706' : '#059669' }}>
+              {ar ? (RISK_LEVEL_AR[briefing.overallRiskLevel] ?? briefing.overallRiskLevel) : briefing.overallRiskLevel}
+            </p>
+            <p style={{ margin: '6px 0 0', fontSize: 11, color: PDF_GRAY }}>{ar ? 'التعرض الإجمالي لمخاطر سلسلة الإمداد' : 'Overall supply chain risk exposure'}</p>
+          </div>
+          <div style={{ ...card, flex: 1, textAlign: 'center', borderColor: PDF_GOLD }}>
+            <p style={{ margin: 0, fontSize: 10, textTransform: 'uppercase', letterSpacing: 1, color: PDF_GRAY, fontWeight: 700 }}>{ar ? 'الباقة الموصى بها' : 'Recommended Package'}</p>
+            <p style={{ margin: '8px 0 0', fontSize: 14, fontWeight: 900, color: PDF_NAVY }}>{briefing.recommendedPackage}</p>
+            <p style={{ margin: '6px 0 0', fontSize: 10, color: PDF_GRAY }}>{briefing.recommendedPackageRationale}</p>
+          </div>
+        </div>
+
+        {/* Executive summary */}
+        <div>
+          <h2 style={sectionTitle}>{ar ? 'الملخص التنفيذي' : 'Executive Summary'}</h2>
+          <div style={{ backgroundColor: PDF_NAVY, borderRadius: 10, padding: 18, color: '#ffffff', fontSize: 13 }}>
+            {briefing.executiveSummary}
+          </div>
+        </div>
+
+        {/* Radar + domain maturity breakdown */}
+        <div>
+          <h2 style={sectionTitle}>{ar ? 'نضج المجالات' : 'Domain Maturity'}</h2>
+          <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+            <div dir="ltr" style={{ flexShrink: 0 }}>
+              <RadarChart width={380} height={300} data={radarData} outerRadius="68%">
+                <PolarGrid stroke={PDF_BORDER} />
+                <PolarAngleAxis dataKey="domain" tick={{ fontSize: 9, fill: '#374151' }} />
+                <PolarRadiusAxis angle={90} domain={[0, 5]} tickCount={6} tick={{ fontSize: 8, fill: '#9CA3AF' }} />
+                <Radar name="score" dataKey="score" stroke={PDF_NAVY} fill={PDF_NAVY} fillOpacity={0.25} isAnimationActive={false} />
+              </RadarChart>
+            </div>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 7 }}>
+              {radarData.map(d => (
+                <div key={d.domain}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, marginBottom: 2 }}>
+                    <span style={{ fontWeight: 600 }}>{d.domain}</span>
+                    <span style={{ fontWeight: 800, color: PDF_NAVY }}>{d.score}/5</span>
+                  </div>
+                  <div style={{ height: 6, borderRadius: 3, backgroundColor: '#F3F4F6', overflow: 'hidden' }} dir="ltr">
+                    <div style={{ height: '100%', width: `${(d.score / 5) * 100}%`, backgroundColor: d.score < 2.5 ? '#dc2626' : d.score < 3.5 ? PDF_GOLD : PDF_NAVY }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Critical gaps */}
+        <div>
+          <h2 style={sectionTitle}>{ar ? 'الفجوات الحرجة' : 'Critical Gaps'}</h2>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {briefing.criticalGaps.map((g, i) => (
+              <div key={i} style={{ ...card, borderInlineStart: `4px solid ${g.urgency === 'Immediate' ? '#dc2626' : g.urgency === '90-Day' ? '#d97706' : PDF_NAVY}` }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, marginBottom: 4 }}>
+                  <p style={{ margin: 0, fontWeight: 800, fontSize: 13 }}>{i + 1}. {g.title}</p>
+                  <p style={{ margin: 0, fontSize: 10, fontWeight: 700, color: PDF_GRAY, whiteSpace: 'nowrap' }}>
+                    {ar ? (URGENCY_AR[g.urgency] ?? g.urgency) : g.urgency} · {g.framework}
+                  </p>
+                </div>
+                <p style={{ margin: '0 0 3px', fontWeight: 700, fontSize: 12 }}>{g.businessImpact}</p>
+                <p style={{ margin: 0, fontSize: 12, color: '#374151' }}>{g.detail}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Quick wins */}
+        <div>
+          <h2 style={sectionTitle}>{ar ? 'المكاسب السريعة' : 'Quick Wins'}</h2>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {briefing.quickWins.map((w, i) => (
+              <div key={i} style={{ ...card, display: 'flex', gap: 10 }}>
+                <div style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: '#D1FAE5', color: '#047857', fontSize: 11, fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{i + 1}</div>
+                <div>
+                  <p style={{ margin: 0, fontWeight: 700, fontSize: 12 }}>{w.action}</p>
+                  <p style={{ margin: '3px 0 0', fontSize: 10.5, color: PDF_GRAY }}>
+                    {w.timeframe} · {ar ? `جهد ${EFFORT_AR[w.effort] ?? w.effort}` : `${w.effort} effort`} · ~{w.expectedSavingPct}% {ar ? 'وفر' : 'saving'} · {w.framework}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* 90-day plan */}
+        <div>
+          <h2 style={sectionTitle}>
+            {ar ? 'خارطة طريق التحول — 90 يوماً' : '90-Day Transformation Roadmap'}
+          </h2>
+          <p style={{ margin: '0 0 10px', fontSize: 12, fontWeight: 800, color: PDF_GOLD }}>
+            {briefing.ninetyDayPlan.totalProjectedSaving} {ar ? 'وفر متوقع — السنة الأولى' : 'projected Year-1 saving'}
+          </p>
+          <div style={{ display: 'flex', gap: 10 }}>
+            {monthMeta.map(([key, label, color]) => (
+              <div key={key} style={{ ...card, flex: 1 }}>
+                <p style={{ margin: 0, fontSize: 11, fontWeight: 900, color: '#ffffff', backgroundColor: color, display: 'inline-block', padding: '2px 10px', borderRadius: 10 }}>{label}</p>
+                <p style={{ margin: '8px 0 6px', fontWeight: 800, fontSize: 12, color }}>{briefing.ninetyDayPlan[key].focus}</p>
+                <ul style={{ margin: 0, paddingInlineStart: 16, fontSize: 10.5, color: '#374151' }}>
+                  {briefing.ninetyDayPlan[key].milestones.map((m, i) => <li key={i} style={{ marginBottom: 3 }}>{m}</li>)}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Benchmark + consultant note */}
+        <div style={{ display: 'flex', gap: 12 }}>
+          <div style={{ ...card, flex: 1, backgroundColor: '#F9FAFB' }}>
+            <p style={{ margin: '0 0 6px', fontSize: 10, textTransform: 'uppercase', letterSpacing: 1, fontWeight: 800, color: PDF_NAVY }}>{ar ? 'السياق المرجعي — نظراء الخليج' : 'GCC Peer Benchmark Context'}</p>
+            <p style={{ margin: 0, fontSize: 12 }}>{briefing.benchmarkInsight}</p>
+          </div>
+          <div style={{ ...card, flex: 1, backgroundColor: '#F5F7FB' }}>
+            <p style={{ margin: '0 0 6px', fontSize: 10, textTransform: 'uppercase', letterSpacing: 1, fontWeight: 800, color: PDF_NAVY }}>{ar ? 'ملاحظة المستشار' : 'Consultant Note'}</p>
+            <p style={{ margin: 0, fontSize: 12, fontStyle: 'italic' }}>"{briefing.consultantNote}"</p>
+            <p style={{ margin: '8px 0 0', fontSize: 11, fontWeight: 700, color: PDF_NAVY }}>— Ma'in Alhaqash, MCIPS · CPSM · MSc · MIPP</p>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div style={{ borderTop: `1px solid ${PDF_BORDER}`, paddingTop: 12, fontSize: 9.5, color: PDF_GRAY, textAlign: 'center' }}>
+          {ar
+            ? '© 2026 آي سبلاي تشين. جميع الحقوق محفوظة. سري وخاص — يُحظر إعادة الإنتاج أو التوزيع غير المصرح به. مُنشأ بواسطة ISC Command Centre — isupplychain.com'
+            : '© 2026 I Supply Chain. All Rights Reserved. Proprietary & Confidential — unauthorised reproduction or distribution is prohibited. Generated by ISC Command Centre — isupplychain.com'}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function BriefingTab({ lang }: { lang: Lang }) {
   const ar = lang === 'ar';
   const [draft] = useState<BriefingDraft>(loadBriefingDraft);
@@ -1291,6 +1487,45 @@ function BriefingTab({ lang }: { lang: Lang }) {
   const [briefing, setBriefing] = useState<Briefing | null>(null);
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
+  const [pdfBusy, setPdfBusy] = useState(false);
+  const pdfRef = React.useRef<HTMLDivElement>(null);
+
+  const downloadPdf = async () => {
+    if (!briefing || !pdfRef.current || pdfBusy) return;
+    setPdfBusy(true);
+    try {
+      const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
+        import('html2canvas-pro'),
+        import('jspdf'),
+      ]);
+      const canvas = await html2canvas(pdfRef.current, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pageW = 210, pageH = 297;
+      const pxPerMm = canvas.width / pageW;
+      const pageHpx = Math.floor(pageH * pxPerMm);
+      let y = 0, page = 0;
+      while (y < canvas.height) {
+        const sliceH = Math.min(pageHpx, canvas.height - y);
+        const slice = document.createElement('canvas');
+        slice.width = canvas.width;
+        slice.height = sliceH;
+        const ctx = slice.getContext('2d')!;
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, slice.width, slice.height);
+        ctx.drawImage(canvas, 0, y, canvas.width, sliceH, 0, 0, canvas.width, sliceH);
+        if (page > 0) pdf.addPage();
+        pdf.addImage(slice.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, pageW, sliceH / pxPerMm);
+        y += sliceH;
+        page++;
+      }
+      pdf.save(`ISC-Executive-Briefing-${new Date().toISOString().slice(0, 10)}.pdf`);
+    } catch (err) {
+      console.error('PDF generation failed:', err);
+      alert(ar ? 'تعذّر إنشاء ملف PDF. حاول مرة أخرى.' : 'Could not generate the PDF. Please try again.');
+    } finally {
+      setPdfBusy(false);
+    }
+  };
 
   const togglePain = (p: string) => setPainPoints(prev => prev.includes(p) ? prev.filter(x => x !== p) : [...prev, p]);
 
@@ -1426,6 +1661,12 @@ function BriefingTab({ lang }: { lang: Lang }) {
     });
     return (
       <div className="space-y-7" dir={ar ? 'rtl' : 'ltr'}>
+        {/* Hidden branded layout captured for PDF export */}
+        <div style={{ position: 'fixed', left: -10000, top: 0, pointerEvents: 'none' }} aria-hidden="true">
+          <div ref={pdfRef}>
+            <BriefingPrintable briefing={briefing} maturityRatings={maturityRatings} industry={industry} revenueBand={revenueBand} lang={lang} />
+          </div>
+        </div>
         {/* Header */}
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
@@ -1438,6 +1679,10 @@ function BriefingTab({ lang }: { lang: Lang }) {
             <p className="text-sm text-muted-foreground">{revenueBand} · Ma'in Alhaqash MCIPS CPSM MSc</p>
           </div>
           <div className="flex gap-2">
+            <button onClick={downloadPdf} disabled={pdfBusy} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#082C6B] text-white text-sm font-semibold hover:bg-[#0B3D91] transition-colors disabled:opacity-60">
+              {pdfBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+              {pdfBusy ? (ar ? 'جارٍ الإنشاء…' : 'Generating…') : (ar ? 'تحميل PDF' : 'Download PDF')}
+            </button>
             <button onClick={copyBriefing} className="flex items-center gap-2 px-4 py-2 rounded-lg border border-border text-sm font-semibold hover:bg-muted transition-colors">
               {copied ? <CheckCircle2 className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
               {copied ? (ar ? 'تم النسخ!' : 'Copied!') : (ar ? 'نسخ الإحاطة' : 'Copy Briefing')}
