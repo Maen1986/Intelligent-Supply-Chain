@@ -1585,7 +1585,8 @@ function BriefingTab({ lang }: { lang: Lang }) {
       // text natively, which jsPDF's built-in fonts cannot).
       const footerHpx = Math.ceil(footerHmm * pxPerMm);
       const marginPx = Math.round(12 * pxPerMm); // ~12mm side margins
-      const totalPages = starts.length;
+      // +1 for the branded cover page (unnumbered, but counted in the total)
+      const totalPages = starts.length + 1;
       const renderFooter = (pageNum: number) => {
         const f = document.createElement('canvas');
         f.width = canvas.width;
@@ -1638,10 +1639,107 @@ function BriefingTab({ lang }: { lang: Lang }) {
         ctx.fillRect(0, 0, slice.width, slice.height);
         ctx.drawImage(canvas, 0, y, canvas.width, sliceH, 0, 0, canvas.width, sliceH);
         // Footer band: page number + brand line at the bottom of every page.
-        const footer = renderFooter(page + 1);
+        // Content pages start at 2 — page 1 is the branded cover.
+        const footer = renderFooter(page + 2);
         ctx.drawImage(footer, 0, fullPageHpx - footerHpx);
         pages.push(slice);
       }
+
+      // ── Branded cover page (page 1, unnumbered) ──────────────────────────
+      // Drawn on a canvas (like the footer) so Arabic/RTL text renders natively.
+      const renderCover = () => {
+        const c = document.createElement('canvas');
+        c.width = canvas.width;
+        c.height = fullPageHpx;
+        const cctx = c.getContext('2d')!;
+        // Navy background
+        cctx.fillStyle = '#082C6B';
+        cctx.fillRect(0, 0, c.width, c.height);
+        // Subtle darker band at the bottom
+        cctx.fillStyle = 'rgba(0,0,0,0.18)';
+        cctx.fillRect(0, c.height - Math.round(34 * pxPerMm), c.width, Math.round(34 * pxPerMm));
+        const cx = c.width / 2;
+        const font = (weight: number, mm: number) => `${weight} ${Math.round(mm * pxPerMm)}px Tahoma, Arial, sans-serif`;
+        cctx.textAlign = 'center';
+        cctx.textBaseline = 'middle';
+        // Simple word-wrap helper (works for both LTR and RTL since lines stay centered)
+        const wrapText = (text: string, maxW: number): string[] => {
+          const words = text.split(' ');
+          const lines: string[] = [];
+          let line = '';
+          for (const w of words) {
+            const test = line ? `${line} ${w}` : w;
+            if (cctx.measureText(test).width > maxW && line) { lines.push(line); line = w; }
+            else line = test;
+          }
+          if (line) lines.push(line);
+          return lines;
+        };
+        const maxTextW = c.width - marginPx * 4;
+
+        // Gold wordmark
+        let y = Math.round(70 * pxPerMm);
+        cctx.fillStyle = PDF_GOLD;
+        cctx.font = font(700, 4.6);
+        cctx.fillText(ar ? 'آي سبلاي تشين' : 'I  S U P P L Y  C H A I N', cx, y);
+        // Gold rule under the wordmark
+        y += Math.round(6 * pxPerMm);
+        cctx.strokeStyle = PDF_GOLD;
+        cctx.lineWidth = Math.max(2, Math.round(0.6 * pxPerMm));
+        cctx.beginPath();
+        cctx.moveTo(cx - Math.round(22 * pxPerMm), y);
+        cctx.lineTo(cx + Math.round(22 * pxPerMm), y);
+        cctx.stroke();
+        // Main title
+        y += Math.round(16 * pxPerMm);
+        cctx.fillStyle = '#ffffff';
+        cctx.font = font(900, 9.5);
+        const titleLines = wrapText(ar ? 'إحاطة سلسلة الإمداد التنفيذية' : 'Executive Supply Chain Briefing', maxTextW);
+        for (const line of titleLines) {
+          cctx.fillText(line, cx, y);
+          y += Math.round(12 * pxPerMm);
+        }
+        // Industry · sub-sector
+        y += Math.round(4 * pxPerMm);
+        cctx.fillStyle = 'rgba(255,255,255,0.85)';
+        cctx.font = font(600, 4.6);
+        const industryLine = subIndustry
+          ? `${industryLabel(industry, ar)} — ${subSectorLabel(industry, subIndustry, ar)}`
+          : industryLabel(industry, ar);
+        for (const line of wrapText(industryLine, maxTextW)) {
+          cctx.fillText(line, cx, y);
+          y += Math.round(6.5 * pxPerMm);
+        }
+        // Revenue band
+        cctx.fillStyle = 'rgba(255,255,255,0.7)';
+        cctx.font = font(400, 4);
+        cctx.fillText(ar ? (REVENUE_BANDS_AR[REVENUE_BANDS.indexOf(revenueBand)] ?? revenueBand) : revenueBand, cx, y);
+        // Date
+        y += Math.round(9 * pxPerMm);
+        cctx.font = font(400, 3.8);
+        cctx.fillText(new Date().toLocaleDateString(ar ? 'ar-SA' : 'en-GB', { year: 'numeric', month: 'long', day: 'numeric' }), cx, y);
+
+        // Bottom band: prepared by + confidential
+        const bandTop = c.height - Math.round(34 * pxPerMm);
+        let by = bandTop + Math.round(10 * pxPerMm);
+        cctx.fillStyle = PDF_GOLD;
+        cctx.font = font(700, 3.4);
+        cctx.fillText(ar ? 'أُعدت بواسطة' : 'PREPARED BY', cx, by);
+        by += Math.round(6.5 * pxPerMm);
+        cctx.fillStyle = '#ffffff';
+        cctx.font = font(700, 4.2);
+        cctx.fillText("Ma'in Alhaqash · MCIPS · CPSM · MSc · MIPP", cx, by);
+        by += Math.round(6 * pxPerMm);
+        cctx.fillStyle = 'rgba(255,255,255,0.75)';
+        cctx.font = font(600, 3.4);
+        cctx.fillText(ar ? 'آي سبلاي تشين · isupplychain.com' : 'I Supply Chain · isupplychain.com', cx, by);
+        by += Math.round(7 * pxPerMm);
+        cctx.fillStyle = 'rgba(255,255,255,0.5)';
+        cctx.font = font(400, 2.9);
+        cctx.fillText(ar ? 'سري وخاص' : 'CONFIDENTIAL & PROPRIETARY', cx, by);
+        return c;
+      };
+      pages.unshift(renderCover());
       return pages;
   };
 
