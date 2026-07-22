@@ -1526,9 +1526,18 @@ function BriefingTab({ lang }: { lang: Lang }) {
   const [previewPages, setPreviewPages] = useState<string[]>([]);
   const previewCanvases = React.useRef<HTMLCanvasElement[]>([]);
   const pdfRef = React.useRef<HTMLDivElement>(null);
+  // Generation token: bumped whenever the briefing or language changes so any
+  // in-flight page render (background warming or on-demand) discards its result
+  // instead of caching stale pages.
+  const pagesGenRef = React.useRef(0);
+  // Shared in-flight render so warming, preview, download, and submission never
+  // run html2canvas concurrently — they all await the same promise.
+  const pagesPromiseRef = React.useRef<Promise<HTMLCanvasElement[]> | null>(null);
 
   // Cached pages become stale whenever the briefing content or language changes
   useEffect(() => {
+    pagesGenRef.current++;
+    pagesPromiseRef.current = null;
     previewCanvases.current = [];
     setPreviewPages([]);
     setPreviewOpen(false);
@@ -1775,10 +1784,61 @@ function BriefingTab({ lang }: { lang: Lang }) {
       return pages;
   };
 
+  /** Get the page canvases, reusing the cache or a shared in-flight render.
+      Successful results are cached (canvases + preview data-URLs) unless the
+      briefing/language changed mid-render, in which case they're discarded. */
+  const getPdfPages = (): Promise<HTMLCanvasElement[]> => {
+    if (previewCanvases.current.length > 0) return Promise.resolve(previewCanvases.current);
+    if (!pagesPromiseRef.current) {
+      const gen = pagesGenRef.current;
+      const promise = renderPdfPages()
+        .then(pages => {
+          if (gen === pagesGenRef.current) {
+            previewCanvases.current = pages;
+            setPreviewPages(pages.map(p => p.toDataURL('image/jpeg', 0.85)));
+            return pages;
+          }
+          // Stale render (briefing/language changed mid-capture) — don't cache.
+          throw new Error('stale-pdf-render');
+        })
+        .finally(() => {
+          if (pagesPromiseRef.current === promise) pagesPromiseRef.current = null;
+        });
+      pagesPromiseRef.current = promise;
+    }
+    return pagesPromiseRef.current;
+  };
+
+  // Warm the page canvases in the background right after the briefing renders,
+  // so the first "Preview PDF" click opens instantly. Low priority: waits for
+  // the off-screen charts to paint, then runs during browser idle time.
+  useEffect(() => {
+    if (step !== 'result' || !briefing) return;
+    const gen = pagesGenRef.current;
+    let idleId: number | null = null;
+    const warm = () => {
+      if (gen !== pagesGenRef.current || previewCanvases.current.length > 0) return;
+      getPdfPages().catch(() => { /* fall back to on-demand render on click */ });
+    };
+    const timer = setTimeout(() => {
+      if (gen !== pagesGenRef.current) return;
+      if (typeof window.requestIdleCallback === 'function') {
+        idleId = window.requestIdleCallback(warm, { timeout: 3000 });
+      } else {
+        warm();
+      }
+    }, 900);
+    return () => {
+      clearTimeout(timer);
+      if (idleId !== null && typeof window.cancelIdleCallback === 'function') window.cancelIdleCallback(idleId);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [briefing, step, lang]);
+
   /** Assemble a jsPDF document from rendered page canvases, reusing cached
       preview pages when available. Used by download and submission attach. */
   const buildPdf = useCallback(async () => {
-    const pages = previewCanvases.current.length > 0 ? previewCanvases.current : await renderPdfPages();
+    const pages = await getPdfPages();
     const { jsPDF } = await import('jspdf');
     const pdf = new jsPDF('p', 'mm', 'a4');
     const pageW = 210, pageH = 297;
@@ -1814,11 +1874,9 @@ function BriefingTab({ lang }: { lang: Lang }) {
     }
     setPreviewBusy(true);
     try {
-      const pages = previewCanvases.current.length > 0
-        ? previewCanvases.current
-        : await renderPdfPages();
-      previewCanvases.current = pages;
-      setPreviewPages(pages.map(p => p.toDataURL('image/jpeg', 0.85)));
+      // Reuses the warmed cache or joins the in-flight background render;
+      // falls back to an on-demand render otherwise.
+      await getPdfPages();
       setPreviewOpen(true);
     } catch (err) {
       console.error('PDF preview failed:', err);
