@@ -4,24 +4,12 @@ import { globalRateLimiter } from "./lib/rateLimit";
 import pinoHttp from "pino-http";
 import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
-import pg from "pg";
 import router from "./routes";
 import { logger } from "./lib/logger";
+import { pgPool } from "./lib/pgPool";
 import { checkEmailConfig } from "./routes/notify";
 
 const PgSession = connectPgSimple(session);
-
-// Explicit pg.Pool — more reliable than passing conString directly to
-// connect-pg-simple, and lets us control SSL / error handling clearly.
-const pgPool = new pg.Pool({
-  connectionString: process.env.DATABASE_URL,
-  // Replit's built-in PostgreSQL is localhost; no TLS needed.
-  ssl: false,
-});
-
-pgPool.on("error", (err) => {
-  logger.error({ err }, "[pg-pool] Unexpected idle client error");
-});
 
 const app: Express = express();
 
