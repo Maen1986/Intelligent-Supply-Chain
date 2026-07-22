@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import nodemailer from 'nodemailer';
+import { logger } from '../lib/logger';
 
 const router = Router();
 
@@ -7,6 +8,25 @@ const NOTIFY_EMAILS = [
   'haqash.maen@gmail.com',
   'maen.haqash@yahoo.com',
 ];
+
+// ── Startup config check (called once when server starts) ────────────────────
+export function checkEmailConfig() {
+  const pass = process.env.GMAIL_APP_PASSWORD;
+  const user = process.env.GMAIL_USER || 'haqash.maen@gmail.com';
+  if (!pass) {
+    logger.error(
+      '╔══════════════════════════════════════════════════════════════╗\n' +
+      '║  EMAIL NOTIFICATIONS ARE DISABLED                           ║\n' +
+      '║  GMAIL_APP_PASSWORD secret is not set.                      ║\n' +
+      '║  Every lead, booking, diagnostic and maturity alert         ║\n' +
+      '║  will be SILENTLY LOST until this is configured.            ║\n' +
+      '║  → Go to Replit Secrets and add GMAIL_APP_PASSWORD          ║\n' +
+      '╚══════════════════════════════════════════════════════════════╝'
+    );
+  } else {
+    logger.info(`[notify] Email configured — will send from ${user} to ${NOTIFY_EMAILS.join(', ')}`);
+  }
+}
 
 function createTransporter() {
   const user = process.env.GMAIL_USER || 'haqash.maen@gmail.com';
@@ -20,7 +40,12 @@ function createTransporter() {
 
 function buildEmailHtml(subject: string, rows: Record<string, string>) {
   const rowsHtml = Object.entries(rows)
-    .map(([k, v]) => `<tr><td style="padding:8px 12px;font-weight:bold;color:#082C6B;background:#f5f8ff;border:1px solid #dde4f0;white-space:nowrap">${k}</td><td style="padding:8px 12px;border:1px solid #dde4f0">${v || '—'}</td></tr>`)
+    .map(([k, v]) =>
+      `<tr>
+        <td style="padding:8px 12px;font-weight:bold;color:#082C6B;background:#f5f8ff;border:1px solid #dde4f0;white-space:nowrap">${k}</td>
+        <td style="padding:8px 12px;border:1px solid #dde4f0">${v || '—'}</td>
+      </tr>`
+    )
     .join('');
   return `
     <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto">
@@ -30,17 +55,27 @@ function buildEmailHtml(subject: string, rows: Record<string, string>) {
       </div>
       <div style="background:#fff;padding:24px 32px;border:1px solid #dde4f0;border-top:none">
         <table style="width:100%;border-collapse:collapse">${rowsHtml}</table>
-        <p style="color:#666;font-size:12px;margin-top:24px">Sent automatically from I Supply Chain website • ${new Date().toLocaleString('en-GB', { timeZone: 'Asia/Riyadh' })} AST</p>
+        <p style="color:#666;font-size:12px;margin-top:24px">
+          Sent automatically from I Supply Chain website •
+          ${new Date().toLocaleString('en-GB', { timeZone: 'Asia/Riyadh' })} AST
+        </p>
       </div>
     </div>`;
 }
 
-async function sendToAll(subject: string, html: string) {
+async function sendToAll(
+  subject: string,
+  html: string
+): Promise<{ sent: boolean; errors?: string[]; reason?: string }> {
   const transporter = createTransporter();
+
   if (!transporter) {
-    console.warn('[notify] GMAIL_APP_PASSWORD not set — email not sent');
-    return { sent: false, reason: 'GMAIL_APP_PASSWORD not configured' };
+    const msg = 'GMAIL_APP_PASSWORD not configured — email NOT sent. Set this secret in Replit to fix.';
+    logger.error({ subject }, `[notify] BLOCKED: ${msg}`);
+    // Return a descriptive failure — callers surface this to the API response
+    return { sent: false, reason: msg };
   }
+
   const results = await Promise.allSettled(
     NOTIFY_EMAILS.map(to =>
       transporter.sendMail({
@@ -51,8 +86,18 @@ async function sendToAll(subject: string, html: string) {
       })
     )
   );
-  const errors = results.filter(r => r.status === 'rejected').map(r => (r as PromiseRejectedResult).reason?.message);
-  return { sent: true, errors };
+
+  const errors = results
+    .filter((r): r is PromiseRejectedResult => r.status === 'rejected')
+    .map(r => r.reason?.message ?? String(r.reason));
+
+  if (errors.length) {
+    logger.error({ subject, errors }, '[notify] Some recipients failed');
+  } else {
+    logger.info({ subject, recipients: NOTIFY_EMAILS }, '[notify] Email sent successfully');
+  }
+
+  return { sent: true, errors: errors.length ? errors : undefined };
 }
 
 /* ── POST /api/notify/lead ── */
@@ -60,16 +105,16 @@ router.post('/lead', async (req, res) => {
   const { fullName, email, mobile, designation, company, source } = req.body;
   const subject = `🆕 New Lead: ${fullName} — ${company}`;
   const html = buildEmailHtml(subject, {
-    'Full Name': fullName,
-    'Email': email,
-    'Mobile': mobile,
+    'Full Name':   fullName,
+    'Email':       email,
+    'Mobile':      mobile,
     'Designation': designation,
-    'Company': company,
-    'Source': source || 'Website Registration',
-    'Time': new Date().toLocaleString('en-GB', { timeZone: 'Asia/Riyadh' }),
+    'Company':     company,
+    'Source':      source || 'Website Registration',
+    'Time':        new Date().toLocaleString('en-GB', { timeZone: 'Asia/Riyadh' }),
   });
   const result = await sendToAll(subject, html);
-  res.json({ ok: true, ...result });
+  res.status(result.sent || !result.reason ? 200 : 503).json({ ok: true, ...result });
 });
 
 /* ── POST /api/notify/booking ── */
@@ -77,19 +122,19 @@ router.post('/booking', async (req, res) => {
   const { fullName, email, mobile, designation, company, preferredDate, preferredTime, serviceType, description } = req.body;
   const subject = `📅 Booking Request: ${fullName} — ${preferredDate} ${preferredTime}`;
   const html = buildEmailHtml(subject, {
-    'Full Name': fullName,
-    'Email': email,
-    'Mobile': mobile,
-    'Designation': designation,
-    'Company': company,
-    'Service Requested': serviceType || 'Consultation',
-    'Preferred Date': preferredDate,
-    'Preferred Time': preferredTime,
-    'Notes': description || '',
-    'Time Received': new Date().toLocaleString('en-GB', { timeZone: 'Asia/Riyadh' }),
+    'Full Name':       fullName,
+    'Email':           email,
+    'Mobile':          mobile,
+    'Designation':     designation,
+    'Company':         company,
+    'Service':         serviceType || 'Consultation',
+    'Preferred Date':  preferredDate,
+    'Preferred Time':  preferredTime,
+    'Notes':           description || '',
+    'Time Received':   new Date().toLocaleString('en-GB', { timeZone: 'Asia/Riyadh' }),
   });
   const result = await sendToAll(subject, html);
-  res.json({ ok: true, ...result });
+  res.status(result.sent || !result.reason ? 200 : 503).json({ ok: true, ...result });
 });
 
 /* ── POST /api/notify/diagnostic ── */
@@ -97,17 +142,17 @@ router.post('/diagnostic', async (req, res) => {
   const { fullName, email, mobile, designation, company, scores, overallScore } = req.body;
   const subject = `📊 Diagnostic Completed: ${fullName} — Score ${overallScore}%`;
   const html = buildEmailHtml(subject, {
-    'Full Name': fullName,
-    'Email': email,
-    'Mobile': mobile,
-    'Designation': designation,
-    'Company': company,
+    'Full Name':     fullName,
+    'Email':         email,
+    'Mobile':        mobile,
+    'Designation':   designation,
+    'Company':       company,
     'Overall Score': `${overallScore}%`,
     'Segment Scores': scores ? JSON.stringify(scores) : '',
-    'Time': new Date().toLocaleString('en-GB', { timeZone: 'Asia/Riyadh' }),
+    'Time':          new Date().toLocaleString('en-GB', { timeZone: 'Asia/Riyadh' }),
   });
   const result = await sendToAll(subject, html);
-  res.json({ ok: true, ...result });
+  res.status(result.sent || !result.reason ? 200 : 503).json({ ok: true, ...result });
 });
 
 /* ── POST /api/notify/maturity ── */
@@ -115,17 +160,17 @@ router.post('/maturity', async (req, res) => {
   const { fullName, email, mobile, designation, company, overallLevel, scores } = req.body;
   const subject = `📈 Maturity Assessment: ${fullName} — Level ${overallLevel}`;
   const html = buildEmailHtml(subject, {
-    'Full Name': fullName,
-    'Email': email,
-    'Mobile': mobile,
-    'Designation': designation,
-    'Company': company,
+    'Full Name':             fullName,
+    'Email':                 email,
+    'Mobile':                mobile,
+    'Designation':           designation,
+    'Company':               company,
     'Overall Maturity Level': overallLevel,
-    'Segment Scores': scores ? JSON.stringify(scores) : '',
-    'Time': new Date().toLocaleString('en-GB', { timeZone: 'Asia/Riyadh' }),
+    'Segment Scores':        scores ? JSON.stringify(scores) : '',
+    'Time':                  new Date().toLocaleString('en-GB', { timeZone: 'Asia/Riyadh' }),
   });
   const result = await sendToAll(subject, html);
-  res.json({ ok: true, ...result });
+  res.status(result.sent || !result.reason ? 200 : 503).json({ ok: true, ...result });
 });
 
 export default router;

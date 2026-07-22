@@ -499,6 +499,17 @@ function BriefingTab() {
       if (!data.success || !data.briefing) throw new Error(data.error || 'No briefing returned');
       setBriefing(data.briefing);
       setStep('result');
+      // Persist to database — fire-and-forget, never blocks the UI
+      fetch(`${API_BASE}/submissions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          tool: 'command_centre',
+          inputs: { industry, revenueBand, painPoints, kpiRatings, maturityRatings },
+          outputs: data.briefing,
+        }),
+      }).catch(() => { /* non-blocking */ });
     } catch (err) {
       setError(String(err));
       setStep('step3');
