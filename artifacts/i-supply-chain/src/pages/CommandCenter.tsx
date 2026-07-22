@@ -33,11 +33,11 @@ const SAR_IMPACT_FACTOR: Record<string, number> = {
 
 // ─── Savings Levers ───────────────────────────────────────────────────────────
 const LEVERS = [
-  { id: 'catMgmt',   label: 'Strategic Category Management',  short: 'Category Mgmt', maxPct: 0.13, color: '#082C6B' },
-  { id: 'suppCons',  label: 'Supplier Consolidation',         short: 'Supplier Consol.', maxPct: 0.09, color: '#0B3D91' },
-  { id: 'procAuto',  label: 'Process & eProcurement Automation', short: 'Automation',  maxPct: 0.05, color: '#C9A84C' },
-  { id: 'invOpt',    label: 'Inventory Optimisation',         short: 'Inventory',     maxPct: 0.07, color: '#1a5c2e' },
-  { id: 'demand',    label: 'Demand Forecasting Improvement', short: 'Forecasting',   maxPct: 0.04, color: '#7c3aed' },
+  { id: 'catMgmt',   label: 'Strategic Category Management',     labelAr: 'إدارة الفئات الاستراتيجية',            short: 'Category Mgmt',    shortAr: 'إدارة الفئات',  maxPct: 0.13, color: '#082C6B' },
+  { id: 'suppCons',  label: 'Supplier Consolidation',            labelAr: 'توحيد الموردين',                        short: 'Supplier Consol.', shortAr: 'توحيد الموردين', maxPct: 0.09, color: '#0B3D91' },
+  { id: 'procAuto',  label: 'Process & eProcurement Automation', labelAr: 'أتمتة العمليات والمشتريات الإلكترونية', short: 'Automation',       shortAr: 'الأتمتة',        maxPct: 0.05, color: '#C9A84C' },
+  { id: 'invOpt',    label: 'Inventory Optimisation',            labelAr: 'تحسين المخزون',                         short: 'Inventory',        shortAr: 'المخزون',        maxPct: 0.07, color: '#1a5c2e' },
+  { id: 'demand',    label: 'Demand Forecasting Improvement',    labelAr: 'تحسين التنبؤ بالطلب',                   short: 'Forecasting',      shortAr: 'التنبؤ',         maxPct: 0.04, color: '#7c3aed' },
 ];
 
 // ─── Bilingual ───────────────────────────────────────────────────────────────
@@ -60,6 +60,12 @@ const INDUSTRY_TREE: Record<string, string[]> = {
 };
 
 const REVENUE_BANDS = ['< SAR 50M','SAR 50–200M','SAR 200M–1B','SAR 1–5B','> SAR 5B'];
+const REVENUE_BANDS_AR = ['< 50 مليون ريال','50–200 مليون ريال','200 مليون–1 مليار ريال','1–5 مليار ريال','> 5 مليار ريال'];
+
+// Arabic display maps for backend-returned English enum values
+const RISK_LEVEL_AR: Record<string, string> = { Critical: 'حرج', High: 'عالٍ', Moderate: 'متوسط', Low: 'منخفض' };
+const URGENCY_AR: Record<string, string> = { Immediate: 'فوري', '90-Day': 'خلال 90 يوماً', '6-Month': 'خلال 6 أشهر' };
+const EFFORT_AR: Record<string, string> = { Low: 'منخفض', Medium: 'متوسط', High: 'عالٍ' };
 
 const PAIN_POINTS = [
   // Cost & Efficiency
@@ -227,6 +233,17 @@ function domainAverages(ratings: Record<string, number>): Record<string, number>
   );
 }
 
+const MATURITY_DOMAINS_AR = [
+  'الاستراتيجية والحوكمة',
+  'المشتريات والتوريد',
+  'إدارة العقود (CLM)',
+  'إدارة علاقات الموردين (SRM)',
+  'العمليات واللوجستيات',
+  'المخاطر واستمرارية الأعمال',
+  'نضج البيانات والرقمنة',
+  'الاستدامة والحوكمة البيئية',
+];
+
 const KPI_DOMAINS = [
   'Cost Savings Achieved vs Target',
   'Supplier On-Time & In-Full (OTIF)',
@@ -235,6 +252,56 @@ const KPI_DOMAINS = [
   'Contract Compliance Rate',
   'Inventory Turnover Rate',
   'Supplier Performance Score',
+];
+
+const KPI_DOMAINS_AR = [
+  'الوفورات المحققة مقابل الهدف',
+  'التوريد في الوقت وبالكمية (OTIF)',
+  'دورة المشتريات',
+  'دقة التنبؤ بالطلب',
+  'معدل الامتثال التعاقدي',
+  'معدل دوران المخزون',
+  'مؤشر أداء الموردين',
+];
+
+const PAIN_POINTS_AR = [
+  // تكلفة وكفاءة
+  'ارتفاع تكاليف المشتريات / الإنفاق غير المنضبط',
+  'ضعف تحقيق وفورات التكلفة مقارنة بالأهداف',
+  'ارتفاع التكلفة الإجمالية للملكية (TCO)',
+  // دورة وسرعة
+  'طول دورات المشتريات',
+  'بطء عملية استقبال الموردين الجدد',
+  'تأخر التسليمات / إخفاقات OTIF',
+  // إدارة الموردين
+  'ضعف أداء الموردين والرؤية',
+  'الاعتماد على مصدر فردي / تركز التوريد',
+  'غياب تصنيف الموردين أو برنامج SRM رسمي',
+  'ضعف تطوير الموردين والتعاون معهم',
+  // المخزون والطلب
+  'فائض المخزون / نفاد المخزون المتكرر',
+  'انخفاض معدل دوران المخزون / ارتفاع تكاليف الاحتفاظ',
+  'ضعف دقة التنبؤ بالطلب',
+  'غياب عملية S&OP / IBP',
+  // العقود والحوكمة
+  'ضعف إدارة العقود والامتثال',
+  'عدم الامتثال لسياسة المشتريات',
+  'ضعف إطار تفويض الصلاحيات (DoA)',
+  'غياب نظام إدارة دورة حياة العقود (CLM)',
+  // رقمنة وعمليات
+  'العمليات اليدوية والورقية',
+  'غياب الرؤية التحليلية للإنفاق',
+  'غياب نظام ERP أو مشتريات إلكترونية متكامل',
+  'تشتت البيانات عبر الأقسام',
+  // مخاطر وامتثال
+  'ارتفاع مخاطر اضطراب سلسلة الإمداد',
+  'ضعف تخطيط استمرارية الأعمال (BCP)',
+  'ثغرات تنظيمية (نظام المنافسات، رؤية 2030)',
+  'مخاطر التوريد الجيوسياسية والمصدر الفردي',
+  // ESG والتوطين
+  'ضغوط امتثال الاستدامة والحوكمة (ESG)',
+  'امتثال المحتوى المحلي IKTVA (المملكة العربية السعودية)',
+  'مخاطر ESG للموردين وثغرات الشراء الأخلاقي',
 ];
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -626,7 +693,7 @@ function BenchmarkTab({ lang }: { lang: Lang }) {
 
 // ─── Tab 2: Savings Calculator ────────────────────────────────────────────────
 function SavingsTab({ lang }: { lang: Lang }) {
-  const ar = lang === 'ar'; void ar;
+  const ar = lang === 'ar';
   const [revenue, setRevenue] = useState(500);
   const [spendPct, setSpendPct] = useState(28);
   const [industry, setIndustry] = useState(Object.keys(INDUSTRY_TREE)[0]);
@@ -640,28 +707,34 @@ function SavingsTab({ lang }: { lang: Lang }) {
   const totalSaving = useMemo(() => LEVERS.reduce((s, l) => s + calcSaving(l.id, levers[l.id] ?? 40), 0), [levers, spend]);
   const roi = totalSaving / (revenue * 1_000_000) * 100;
 
-  const barData = LEVERS.map(l => ({ name: l.short, value: Math.round(calcSaving(l.id, levers[l.id] ?? 40) / 1000) }));
+  const barData = LEVERS.map(l => ({ name: ar ? l.shortAr : l.short, value: Math.round(calcSaving(l.id, levers[l.id] ?? 40) / 1000) }));
 
   return (
-    <div className="space-y-7">
+    <div className="space-y-7" dir={ar ? 'rtl' : 'ltr'}>
       {/* Inputs row */}
       <div className="grid sm:grid-cols-3 gap-4">
         <div className="space-y-1.5">
-          <label className="text-xs font-bold text-[#082C6B] uppercase tracking-wider">Annual Revenue</label>
+          <label className="text-xs font-bold text-[#082C6B] uppercase tracking-wider">
+            {ar ? 'الإيرادات السنوية' : 'Annual Revenue'}
+          </label>
           <div className="flex items-center gap-2">
             <input type="range" min={50} max={5000} step={50} value={revenue} onChange={e => setRevenue(+e.target.value)} className="flex-1 accent-[#082C6B]" />
             <span className="text-sm font-bold text-[#C9A84C] w-20 text-right">SAR {revenue >= 1000 ? `${(revenue/1000).toFixed(1)}B` : `${revenue}M`}</span>
           </div>
         </div>
         <div className="space-y-1.5">
-          <label className="text-xs font-bold text-[#082C6B] uppercase tracking-wider">Procurement Spend % of Revenue</label>
+          <label className="text-xs font-bold text-[#082C6B] uppercase tracking-wider">
+            {ar ? 'الإنفاق الشرائي % من الإيرادات' : 'Procurement Spend % of Revenue'}
+          </label>
           <div className="flex items-center gap-2">
             <input type="range" min={5} max={70} value={spendPct} onChange={e => setSpendPct(+e.target.value)} className="flex-1 accent-[#082C6B]" />
             <span className="text-sm font-bold text-[#C9A84C] w-12 text-right">{spendPct}%</span>
           </div>
         </div>
         <div className="space-y-1.5">
-          <label className="text-xs font-bold text-[#082C6B] uppercase tracking-wider">Industry</label>
+          <label className="text-xs font-bold text-[#082C6B] uppercase tracking-wider">
+            {ar ? 'القطاع' : 'Industry'}
+          </label>
           <select value={industry} onChange={e => setIndustry(e.target.value)}
             className="w-full border border-border rounded-lg px-3 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#082C6B]/30">
             {Object.keys(INDUSTRY_TREE).map(i => <option key={i}>{i}</option>)}
@@ -672,12 +745,18 @@ function SavingsTab({ lang }: { lang: Lang }) {
       <div className="grid lg:grid-cols-5 gap-8 items-start">
         {/* Levers */}
         <div className="lg:col-span-3 space-y-5">
-          <h3 className="font-bold text-[#082C6B] text-sm uppercase tracking-wider">Improvement Initiative Levers</h3>
-          <p className="text-xs text-muted-foreground -mt-3">Slide each lever to indicate how fully you plan to deploy each initiative (0% = no action, 100% = full deployment)</p>
+          <h3 className="font-bold text-[#082C6B] text-sm uppercase tracking-wider">
+            {ar ? 'محاور مبادرات التحسين' : 'Improvement Initiative Levers'}
+          </h3>
+          <p className="text-xs text-muted-foreground -mt-3">
+            {ar
+              ? 'اضبط كل محور ليعكس مدى تطبيق المبادرة (0% = لا إجراء، 100% = تطبيق كامل)'
+              : 'Slide each lever to indicate how fully you plan to deploy each initiative (0% = no action, 100% = full deployment)'}
+          </p>
           {LEVERS.map(l => (
             <div key={l.id} className="space-y-1.5">
               <div className="flex justify-between">
-                <span className="text-sm font-semibold">{l.label}</span>
+                <span className="text-sm font-semibold">{ar ? l.labelAr : l.label}</span>
                 <span className="text-sm font-bold" style={{ color: l.color }}>{formatSAR(calcSaving(l.id, levers[l.id] ?? 40))}</span>
               </div>
               <div className="flex items-center gap-2">
@@ -686,7 +765,11 @@ function SavingsTab({ lang }: { lang: Lang }) {
                   className="flex-1" style={{ accentColor: l.color }} />
                 <span className="text-xs text-muted-foreground w-10 text-right">{levers[l.id] ?? 40}%</span>
               </div>
-              <p className="text-xs text-muted-foreground">Max potential: {formatSAR(calcSaving(l.id, 100))} (at 100% deployment)</p>
+              <p className="text-xs text-muted-foreground">
+                {ar
+                  ? `أقصى إمكانية: ${formatSAR(calcSaving(l.id, 100))} (عند التطبيق الكامل 100%)`
+                  : `Max potential: ${formatSAR(calcSaving(l.id, 100))} (at 100% deployment)`}
+              </p>
             </div>
           ))}
         </div>
@@ -698,23 +781,35 @@ function SavingsTab({ lang }: { lang: Lang }) {
             initial={{ scale: 0.97, opacity: 0.8 }} animate={{ scale: 1, opacity: 1 }}
             className="bg-[#082C6B] rounded-2xl p-6 text-white text-center shadow-xl"
           >
-            <p className="text-xs uppercase tracking-widest text-white/60 mb-1">Total Savings Potential</p>
+            <p className="text-xs uppercase tracking-widest text-white/60 mb-1">
+              {ar ? 'إجمالي الوفورات المحتملة' : 'Total Savings Potential'}
+            </p>
             <p className="text-4xl font-black text-[#C9A84C] mb-1">{formatSAR(totalSaving)}</p>
-            <p className="text-sm text-white/80">per annum · {roi.toFixed(1)}% of revenue</p>
+            <p className="text-sm text-white/80">
+              {ar ? `سنوياً · ${roi.toFixed(1)}% من الإيرادات` : `per annum · ${roi.toFixed(1)}% of revenue`}
+            </p>
             <div className="mt-4 pt-4 border-t border-white/20 grid grid-cols-2 gap-3 text-center">
-              <div><p className="text-white/60 text-xs">Addressable Spend</p><p className="font-bold">{formatSAR(spend)}</p></div>
-              <div><p className="text-white/60 text-xs">Payback Period</p><p className="font-bold">6–12 months</p></div>
+              <div>
+                <p className="text-white/60 text-xs">{ar ? 'الإنفاق القابل للتحسين' : 'Addressable Spend'}</p>
+                <p className="font-bold">{formatSAR(spend)}</p>
+              </div>
+              <div>
+                <p className="text-white/60 text-xs">{ar ? 'فترة الاسترداد' : 'Payback Period'}</p>
+                <p className="font-bold">{ar ? '6–12 شهراً' : '6–12 months'}</p>
+              </div>
             </div>
           </motion.div>
 
           <div>
-            <h4 className="text-xs font-bold text-[#082C6B] uppercase tracking-wider mb-3">Savings Breakdown (SAR K)</h4>
+            <h4 className="text-xs font-bold text-[#082C6B] uppercase tracking-wider mb-3">
+              {ar ? 'تفصيل الوفورات (ألف ريال)' : 'Savings Breakdown (SAR K)'}
+            </h4>
             <ResponsiveContainer width="100%" height={200}>
               <BarChart data={barData} layout="vertical" margin={{ left: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-                <XAxis type="number" tick={{ fontSize: 10 }} tickFormatter={v => `${v}K`} />
+                <XAxis type="number" tick={{ fontSize: 10 }} tickFormatter={v => ar ? `${v} ألف` : `${v}K`} />
                 <YAxis type="category" dataKey="name" tick={{ fontSize: 10 }} width={90} />
-                <Tooltip formatter={(v: number) => [`SAR ${v}K`, '']} />
+                <Tooltip formatter={(v: number) => [ar ? `${v} ألف ريال` : `SAR ${v}K`, '']} />
                 <Bar dataKey="value" radius={[0, 4, 4, 0]}>
                   {LEVERS.map(l => <Cell key={l.id} fill={l.color} />)}
                 </Bar>
@@ -725,7 +820,11 @@ function SavingsTab({ lang }: { lang: Lang }) {
       </div>
 
       <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-900">
-        <strong className="font-bold">ISC Note:</strong> These estimates are based on ISC's GCC benchmark database and CIPS Category Management savings curves for {industry}. Actual savings depend on organisational readiness, procurement maturity, and implementation quality. Book a consultation for a precise opportunity assessment.
+        {ar ? (
+          <><strong className="font-bold">ملاحظة ISC:</strong> تستند هذه التقديرات إلى قاعدة بيانات معايير الخليج الخاصة بـ ISC ومنحنيات وفورات إدارة الفئات من CIPS لقطاع {industry}. تعتمد الوفورات الفعلية على الجاهزية التنظيمية ونضج المشتريات وجودة التنفيذ. احجز استشارة للحصول على تقييم دقيق للفرص.</>
+        ) : (
+          <><strong className="font-bold">ISC Note:</strong> These estimates are based on ISC's GCC benchmark database and CIPS Category Management savings curves for {industry}. Actual savings depend on organisational readiness, procurement maturity, and implementation quality. Book a consultation for a precise opportunity assessment.</>
+        )}
       </div>
     </div>
   );
@@ -1138,17 +1237,33 @@ function BriefingTab({ lang }: { lang: Lang }) {
 
   const copyBriefing = () => {
     if (!briefing) return;
-    const header = [
-      '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
-      'CONFIDENTIAL — © 2026 I Supply Chain. All Rights Reserved.',
-      'Proprietary methodology — Ma\'in Alhaqash MCIPS · CPSM · MSc · MIPP',
-      'Unauthorised reproduction, distribution or disclosure is strictly prohibited.',
-      'Generated by ISC Command Centre — isupplychain.com',
-      '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
-      '',
-    ].join('\n');
-    const body = `ISC EXECUTIVE SUPPLY CHAIN BRIEFING\n\nExecutive Summary:\n${briefing.executiveSummary}\n\nMaturity: ${briefing.maturityLevel} (${briefing.maturityScore}/100)\n\nCritical Gaps:\n${briefing.criticalGaps.map((g, i) => `${i+1}. ${g.title} — ${g.businessImpact}`).join('\n')}\n\nQuick Wins:\n${briefing.quickWins.map((w, i) => `${i+1}. ${w.action} (${w.timeframe}, ~${w.expectedSavingPct}% savings)`).join('\n')}\n\n90-Day Plan:\nMonth 1: ${briefing.ninetyDayPlan.month1.focus}\nMonth 2: ${briefing.ninetyDayPlan.month2.focus}\nMonth 3: ${briefing.ninetyDayPlan.month3.focus}\n\nProjected Year-1 Saving: ${briefing.ninetyDayPlan.totalProjectedSaving}\n\n— Ma'in Alhaqash, MCIPS · CPSM · MSc · MIPP\n   I Supply Chain | haqash.maen@gmail.com\n\n© 2026 I Supply Chain. All Rights Reserved. Proprietary & Confidential.`;
-    navigator.clipboard.writeText(header + body);
+    let text: string;
+    if (ar) {
+      const header = [
+        '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
+        'سري — © 2026 آي سبلاي تشين. جميع الحقوق محفوظة.',
+        'منهجية خاصة — معين الحقاش MCIPS · CPSM · MSc · MIPP',
+        'يُحظر إعادة الإنتاج أو التوزيع أو الإفصاح غير المصرح به.',
+        'مُنشأ بواسطة ISC Command Centre — isupplychain.com',
+        '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
+        '',
+      ].join('\n');
+      const body = `إحاطة سلسلة الإمداد التنفيذية — ISC\n\nالملخص التنفيذي:\n${briefing.executiveSummary}\n\nمستوى النضج: ${briefing.maturityLevel} (${briefing.maturityScore}/100)\n\nالفجوات الحرجة:\n${briefing.criticalGaps.map((g, i) => `${i+1}. ${g.title} — ${g.businessImpact}`).join('\n')}\n\nالمكاسب السريعة:\n${briefing.quickWins.map((w, i) => `${i+1}. ${w.action} (${w.timeframe}, ~${w.expectedSavingPct}% وفر)`).join('\n')}\n\nخطة 90 يوماً:\nالشهر 1: ${briefing.ninetyDayPlan.month1.focus}\nالشهر 2: ${briefing.ninetyDayPlan.month2.focus}\nالشهر 3: ${briefing.ninetyDayPlan.month3.focus}\n\nالوفر المتوقع — السنة الأولى: ${briefing.ninetyDayPlan.totalProjectedSaving}\n\n— معين الحقاش، MCIPS · CPSM · MSc · MIPP\n   آي سبلاي تشين | haqash.maen@gmail.com\n\n© 2026 آي سبلاي تشين. جميع الحقوق محفوظة. سري وخاص.`;
+      text = header + body;
+    } else {
+      const header = [
+        '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
+        'CONFIDENTIAL — © 2026 I Supply Chain. All Rights Reserved.',
+        'Proprietary methodology — Ma\'in Alhaqash MCIPS · CPSM · MSc · MIPP',
+        'Unauthorised reproduction, distribution or disclosure is strictly prohibited.',
+        'Generated by ISC Command Centre — isupplychain.com',
+        '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
+        '',
+      ].join('\n');
+      const body = `ISC EXECUTIVE SUPPLY CHAIN BRIEFING\n\nExecutive Summary:\n${briefing.executiveSummary}\n\nMaturity: ${briefing.maturityLevel} (${briefing.maturityScore}/100)\n\nCritical Gaps:\n${briefing.criticalGaps.map((g, i) => `${i+1}. ${g.title} — ${g.businessImpact}`).join('\n')}\n\nQuick Wins:\n${briefing.quickWins.map((w, i) => `${i+1}. ${w.action} (${w.timeframe}, ~${w.expectedSavingPct}% savings)`).join('\n')}\n\n90-Day Plan:\nMonth 1: ${briefing.ninetyDayPlan.month1.focus}\nMonth 2: ${briefing.ninetyDayPlan.month2.focus}\nMonth 3: ${briefing.ninetyDayPlan.month3.focus}\n\nProjected Year-1 Saving: ${briefing.ninetyDayPlan.totalProjectedSaving}\n\n— Ma'in Alhaqash, MCIPS · CPSM · MSc · MIPP\n   I Supply Chain | haqash.maen@gmail.com\n\n© 2026 I Supply Chain. All Rights Reserved. Proprietary & Confidential.`;
+      text = header + body;
+    }
+    navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -1156,17 +1271,26 @@ function BriefingTab({ lang }: { lang: Lang }) {
   const urgencyColor: Record<string, string> = { Immediate: 'text-red-700 bg-red-50 border-red-200', '90-Day': 'text-amber-700 bg-amber-50 border-amber-200', '6-Month': 'text-blue-700 bg-blue-50 border-blue-200' };
   const effortColor: Record<string, string> = { Low: 'text-emerald-700 bg-emerald-50', Medium: 'text-amber-700 bg-amber-50', High: 'text-red-700 bg-red-50' };
 
+  const ar = lang === 'ar';
+
   if (step === 'generating') {
+    const genSteps = ar
+      ? ['تحليل الفجوات في KPI مقابل أفضل ربع الخليج…','المرجعية بإطارَي CIPS وAPACS SCOR…','تحديد التدخلات الأعلى عائداً على الاستثمار…','صياغة خطة العمل التسعينية…']
+      : ['Analysing KPI gaps vs GCC top quartile…','Cross-referencing CIPS & APICS SCOR frameworks…','Identifying highest-ROI interventions…','Drafting your 90-day action plan…'];
     return (
       <div className="flex flex-col items-center justify-center py-24 gap-6">
         <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1.5, ease: 'linear' }}>
           <Loader2 className="w-12 h-12 text-[#082C6B]" />
         </motion.div>
         <div className="text-center">
-          <p className="font-bold text-[#082C6B] text-lg">Generating your Executive Briefing…</p>
-          <p className="text-muted-foreground text-sm mt-1">Ma'in's AI is analysing your profile against GCC benchmarks</p>
+          <p className="font-bold text-[#082C6B] text-lg">
+            {ar ? 'جارٍ إنشاء إحاطتك التنفيذية…' : 'Generating your Executive Briefing…'}
+          </p>
+          <p className="text-muted-foreground text-sm mt-1">
+            {ar ? 'يحلّل الذكاء الاصطناعي ملفك مقارنةً بمعايير الخليج' : "Ma'in's AI is analysing your profile against GCC benchmarks"}
+          </p>
         </div>
-        {['Analysing KPI gaps vs GCC top quartile…','Cross-referencing CIPS & APICS SCOR frameworks…','Identifying highest-ROI interventions…','Drafting your 90-day action plan…'].map((t, i) => (
+        {genSteps.map((t, i) => (
           <motion.p key={t} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.6 }} className="text-xs text-muted-foreground">{t}</motion.p>
         ))}
       </div>
@@ -1175,22 +1299,29 @@ function BriefingTab({ lang }: { lang: Lang }) {
 
   if (step === 'result' && briefing) {
     const maturityBg = briefing.maturityScore < 40 ? 'bg-red-600' : briefing.maturityScore < 60 ? 'bg-amber-500' : briefing.maturityScore < 80 ? 'bg-blue-600' : 'bg-emerald-600';
+    const monthLabels = ar
+      ? [['month1','الشهر 1','#082C6B'],['month2','الشهر 2','#0B3D91'],['month3','الشهر 3','#C9A84C']] as const
+      : [['month1','Month 1','#082C6B'],['month2','Month 2','#0B3D91'],['month3','Month 3','#C9A84C']] as const;
     return (
-      <div className="space-y-7">
+      <div className="space-y-7" dir={ar ? 'rtl' : 'ltr'}>
         {/* Header */}
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
-            <span className="text-xs uppercase tracking-widest text-muted-foreground font-semibold">Confidential Executive Briefing</span>
-            <h2 className="text-2xl font-black text-[#082C6B] mt-0.5">{industry} Supply Chain Assessment</h2>
+            <span className="text-xs uppercase tracking-widest text-muted-foreground font-semibold">
+              {ar ? 'إحاطة تنفيذية سرية' : 'Confidential Executive Briefing'}
+            </span>
+            <h2 className="text-2xl font-black text-[#082C6B] mt-0.5">
+              {ar ? `تقييم سلسلة إمداد — ${industry}` : `${industry} Supply Chain Assessment`}
+            </h2>
             <p className="text-sm text-muted-foreground">{revenueBand} · Ma'in Alhaqash MCIPS CPSM MSc</p>
           </div>
           <div className="flex gap-2">
             <button onClick={copyBriefing} className="flex items-center gap-2 px-4 py-2 rounded-lg border border-border text-sm font-semibold hover:bg-muted transition-colors">
               {copied ? <CheckCircle2 className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
-              {copied ? 'Copied!' : 'Copy Briefing'}
+              {copied ? (ar ? 'تم النسخ!' : 'Copied!') : (ar ? 'نسخ الإحاطة' : 'Copy Briefing')}
             </button>
             <button onClick={() => { setStep('step1'); setBriefing(null); }} className="flex items-center gap-2 px-4 py-2 rounded-lg border border-border text-sm font-semibold hover:bg-muted transition-colors">
-              <RefreshCw className="w-4 h-4" /> New Assessment
+              <RefreshCw className="w-4 h-4" /> {ar ? 'تقييم جديد' : 'New Assessment'}
             </button>
           </div>
         </div>
@@ -1198,17 +1329,27 @@ function BriefingTab({ lang }: { lang: Lang }) {
         {/* Scores row */}
         <div className="grid grid-cols-3 gap-4">
           <div className="rounded-xl border border-border p-4 text-center">
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Maturity Level</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+              {ar ? 'مستوى النضج' : 'Maturity Level'}
+            </p>
             <span className={`inline-block px-3 py-1 rounded-full text-white text-sm font-bold ${maturityBg}`}>{briefing.maturityLevel}</span>
             <p className="text-3xl font-black text-[#082C6B] mt-2">{briefing.maturityScore}<span className="text-sm font-normal text-muted-foreground">/100</span></p>
           </div>
           <div className="rounded-xl border border-border p-4 text-center">
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Risk Level</p>
-            <span className={`inline-block px-3 py-1 rounded-full text-sm font-bold ${briefing.overallRiskLevel === 'Critical' ? 'bg-red-100 text-red-700' : briefing.overallRiskLevel === 'High' ? 'bg-orange-100 text-orange-700' : briefing.overallRiskLevel === 'Moderate' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>{briefing.overallRiskLevel}</span>
-            <p className="text-sm text-muted-foreground mt-3">Overall supply chain risk exposure</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+              {ar ? 'مستوى المخاطر' : 'Risk Level'}
+            </p>
+            <span className={`inline-block px-3 py-1 rounded-full text-sm font-bold ${briefing.overallRiskLevel === 'Critical' ? 'bg-red-100 text-red-700' : briefing.overallRiskLevel === 'High' ? 'bg-orange-100 text-orange-700' : briefing.overallRiskLevel === 'Moderate' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>
+              {ar ? (RISK_LEVEL_AR[briefing.overallRiskLevel] ?? briefing.overallRiskLevel) : briefing.overallRiskLevel}
+            </span>
+            <p className="text-sm text-muted-foreground mt-3">
+              {ar ? 'التعرض الإجمالي لمخاطر سلسلة الإمداد' : 'Overall supply chain risk exposure'}
+            </p>
           </div>
           <div className="rounded-xl border border-[#C9A84C]/40 bg-[#C9A84C]/5 p-4 text-center">
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Recommended Package</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+              {ar ? 'الباقة الموصى بها' : 'Recommended Package'}
+            </p>
             <span className="inline-block px-3 py-1 rounded-full bg-[#082C6B] text-white text-sm font-bold">{briefing.recommendedPackage}</span>
             <p className="text-xs text-muted-foreground mt-3 leading-relaxed">{briefing.recommendedPackageRationale}</p>
           </div>
@@ -1216,20 +1357,26 @@ function BriefingTab({ lang }: { lang: Lang }) {
 
         {/* Executive Summary */}
         <div className="bg-[#082C6B] rounded-2xl p-6 text-white">
-          <h3 className="text-xs uppercase tracking-widest text-white/60 mb-3 font-semibold">Executive Summary</h3>
+          <h3 className="text-xs uppercase tracking-widest text-white/60 mb-3 font-semibold">
+            {ar ? 'الملخص التنفيذي' : 'Executive Summary'}
+          </h3>
           <p className="text-base leading-relaxed">{briefing.executiveSummary}</p>
         </div>
 
         {/* Critical Gaps */}
         <div>
-          <h3 className="font-bold text-[#082C6B] text-sm uppercase tracking-wider mb-3">Critical Gaps — Immediate Attention Required</h3>
+          <h3 className="font-bold text-[#082C6B] text-sm uppercase tracking-wider mb-3">
+            {ar ? 'الفجوات الحرجة — تتطلب اهتماماً فورياً' : 'Critical Gaps — Immediate Attention Required'}
+          </h3>
           <div className="space-y-3">
             {briefing.criticalGaps.map((g, i) => (
               <div key={i} className={`rounded-xl border p-4 ${urgencyColor[g.urgency] || 'bg-gray-50 border-gray-200 text-gray-700'}`}>
                 <div className="flex items-start justify-between gap-3 flex-wrap mb-2">
                   <h4 className="font-bold">{i + 1}. {g.title}</h4>
                   <div className="flex gap-2 items-center shrink-0">
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-bold border ${urgencyColor[g.urgency]}`}>{g.urgency}</span>
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-bold border ${urgencyColor[g.urgency]}`}>
+                      {ar ? (URGENCY_AR[g.urgency] ?? g.urgency) : g.urgency}
+                    </span>
                     <span className="text-xs bg-white/60 px-2 py-0.5 rounded-full font-semibold">{g.framework}</span>
                   </div>
                 </div>
@@ -1242,7 +1389,9 @@ function BriefingTab({ lang }: { lang: Lang }) {
 
         {/* Quick Wins */}
         <div>
-          <h3 className="font-bold text-[#082C6B] text-sm uppercase tracking-wider mb-3">Quick Wins — Implement Now</h3>
+          <h3 className="font-bold text-[#082C6B] text-sm uppercase tracking-wider mb-3">
+            {ar ? 'المكاسب السريعة — نفّذ الآن' : 'Quick Wins — Implement Now'}
+          </h3>
           <div className="grid sm:grid-cols-2 gap-3">
             {briefing.quickWins.map((w, i) => (
               <div key={i} className="bg-white rounded-xl border border-border p-4 flex gap-3">
@@ -1251,8 +1400,12 @@ function BriefingTab({ lang }: { lang: Lang }) {
                   <p className="text-sm font-semibold leading-snug">{w.action}</p>
                   <div className="flex gap-2 mt-2 flex-wrap">
                     <span className="text-xs bg-[#082C6B]/10 text-[#082C6B] px-2 py-0.5 rounded-full font-semibold"><Clock className="w-2.5 h-2.5 inline mr-1" />{w.timeframe}</span>
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${effortColor[w.effort]}`}>{w.effort} effort</span>
-                    <span className="text-xs bg-[#C9A84C]/20 text-[#C9A84C] px-2 py-0.5 rounded-full font-semibold">~{w.expectedSavingPct}% saving</span>
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${effortColor[w.effort]}`}>
+                      {ar ? (EFFORT_AR[w.effort] ?? w.effort) : w.effort} {ar ? 'جهد' : 'effort'}
+                    </span>
+                    <span className="text-xs bg-[#C9A84C]/20 text-[#C9A84C] px-2 py-0.5 rounded-full font-semibold">
+                      ~{w.expectedSavingPct}% {ar ? 'وفر' : 'saving'}
+                    </span>
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">{w.framework}</p>
                 </div>
@@ -1264,11 +1417,15 @@ function BriefingTab({ lang }: { lang: Lang }) {
         {/* 90-Day Plan */}
         <div>
           <div className="flex items-center justify-between mb-3">
-            <h3 className="font-bold text-[#082C6B] text-sm uppercase tracking-wider">90-Day Transformation Roadmap</h3>
-            <span className="text-sm font-bold text-[#C9A84C]">{briefing.ninetyDayPlan.totalProjectedSaving} projected Year 1</span>
+            <h3 className="font-bold text-[#082C6B] text-sm uppercase tracking-wider">
+              {ar ? 'خارطة طريق التحول — 90 يوماً' : '90-Day Transformation Roadmap'}
+            </h3>
+            <span className="text-sm font-bold text-[#C9A84C]">
+              {briefing.ninetyDayPlan.totalProjectedSaving} {ar ? 'وفر متوقع — السنة الأولى' : 'projected Year 1'}
+            </span>
           </div>
           <div className="grid sm:grid-cols-3 gap-4">
-            {([['month1','Month 1','#082C6B'],['month2','Month 2','#0B3D91'],['month3','Month 3','#C9A84C']] as const).map(([key, label, color]) => (
+            {monthLabels.map(([key, label, color]) => (
               <div key={key} className="rounded-xl border border-border p-4">
                 <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-black mb-3" style={{ backgroundColor: color }}>{label.split(' ')[1]}</div>
                 <p className="font-bold text-sm mb-2" style={{ color }}>{briefing.ninetyDayPlan[key].focus}</p>
@@ -1287,7 +1444,9 @@ function BriefingTab({ lang }: { lang: Lang }) {
         {/* Benchmark + Consultant Note */}
         <div className="grid sm:grid-cols-2 gap-4">
           <div className="bg-muted rounded-xl p-5">
-            <h4 className="font-bold text-[#082C6B] text-xs uppercase tracking-wider mb-2">GCC Peer Benchmark Context</h4>
+            <h4 className="font-bold text-[#082C6B] text-xs uppercase tracking-wider mb-2">
+              {ar ? 'السياق المرجعي — نظراء الخليج' : 'GCC Peer Benchmark Context'}
+            </h4>
             <p className="text-sm text-foreground leading-relaxed">{briefing.benchmarkInsight}</p>
           </div>
           <div className="bg-[#082C6B]/5 border border-[#082C6B]/20 rounded-xl p-5">
@@ -1305,12 +1464,16 @@ function BriefingTab({ lang }: { lang: Lang }) {
         {/* CTA */}
         <div className="bg-[#082C6B] rounded-2xl p-6 flex items-center justify-between gap-4 flex-wrap">
           <div>
-            <p className="text-white font-bold text-lg">Ready to activate these recommendations?</p>
-            <p className="text-white/70 text-sm">Book a free 45-minute consultation to build your implementation plan.</p>
+            <p className="text-white font-bold text-lg">
+              {ar ? 'هل أنت مستعد لتفعيل هذه التوصيات؟' : 'Ready to activate these recommendations?'}
+            </p>
+            <p className="text-white/70 text-sm">
+              {ar ? 'احجز استشارة مجانية لمدة 45 دقيقة لبناء خطة التنفيذ.' : 'Book a free 45-minute consultation to build your implementation plan.'}
+            </p>
           </div>
           <Link href="/consultant">
             <Button className="bg-[#C9A84C] hover:bg-[#b8973e] text-white font-bold shrink-0">
-              Book Consultation <ArrowRight className="w-4 h-4 ml-2" />
+              {ar ? 'احجز استشارة' : 'Book Consultation'} <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
           </Link>
         </div>
@@ -1319,11 +1482,16 @@ function BriefingTab({ lang }: { lang: Lang }) {
   }
 
   // ── Wizard Steps ───────────────────────────────────────────────────────────
-  const stepTitles = ['Your Organisation','Pain Points','Self-Assessment'];
+  const stepTitles = ar
+    ? ['مؤسستك', 'نقاط الألم', 'التقييم الذاتي']
+    : ['Your Organisation', 'Pain Points', 'Self-Assessment'];
   const stepIcons = [Building2, AlertTriangle, BarChart2];
 
+  // For step 2: use Arabic pain points when in Arabic mode, with English keys for state
+  const displayPainPoints = ar ? PAIN_POINTS_AR : PAIN_POINTS;
+
   return (
-    <div className="max-w-2xl mx-auto space-y-8">
+    <div className="max-w-2xl mx-auto space-y-8" dir={ar ? 'rtl' : 'ltr'}>
       {/* Progress */}
       <div className="flex items-center gap-0">
         {stepTitles.map((t, i) => {
@@ -1348,55 +1516,66 @@ function BriefingTab({ lang }: { lang: Lang }) {
       <AnimatePresence mode="wait">
         {step === 'step1' && (
           <motion.div key="step1" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-5">
-            <h3 className="text-xl font-bold text-[#082C6B]">Tell us about your organisation</h3>
+            <h3 className="text-xl font-bold text-[#082C6B]">
+              {ar ? 'أخبرنا عن مؤسستك' : 'Tell us about your organisation'}
+            </h3>
             <div className="space-y-1.5">
-              <label className="text-sm font-semibold">{lang === 'ar' ? 'القطاع الصناعي' : 'Industry / Sector'}</label>
+              <label className="text-sm font-semibold">{ar ? 'القطاع الصناعي' : 'Industry / Sector'}</label>
               <select value={industry} onChange={e => { setIndustry(e.target.value); setSubIndustry(''); }}
                 className="w-full border border-border rounded-xl px-4 py-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#082C6B]/30">
                 {Object.keys(INDUSTRY_TREE).map(i => <option key={i}>{i}</option>)}
               </select>
             </div>
             <div className="space-y-1.5">
-              <label className="text-sm font-semibold">{lang === 'ar' ? 'القطاع الفرعي (اختياري)' : 'Sub-Sector (optional)'}</label>
+              <label className="text-sm font-semibold">{ar ? 'القطاع الفرعي (اختياري)' : 'Sub-Sector (optional)'}</label>
               <select value={subIndustry} onChange={e => setSubIndustry(e.target.value)}
                 className="w-full border border-border rounded-xl px-4 py-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#082C6B]/30">
-                <option value="">{lang === 'ar' ? '— كل القطاعات الفرعية —' : '— All sub-sectors —'}</option>
+                <option value="">{ar ? '— كل القطاعات الفرعية —' : '— All sub-sectors —'}</option>
                 {(INDUSTRY_TREE[industry] ?? []).map(s => <option key={s}>{s}</option>)}
               </select>
             </div>
             <div className="space-y-1.5">
-              <label className="text-sm font-semibold">Annual Revenue Band</label>
+              <label className="text-sm font-semibold">{ar ? 'نطاق الإيرادات السنوية' : 'Annual Revenue Band'}</label>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                {REVENUE_BANDS.map(b => (
+                {REVENUE_BANDS.map((b, idx) => (
                   <button key={b} onClick={() => setRevenueBand(b)}
                     className={`py-2.5 px-3 rounded-xl border text-sm font-semibold transition-all ${revenueBand === b ? 'bg-[#082C6B] text-white border-[#082C6B]' : 'bg-white text-foreground border-border hover:border-[#082C6B]/40'}`}>
-                    {b}
+                    {ar ? REVENUE_BANDS_AR[idx] : b}
                   </button>
                 ))}
               </div>
             </div>
             <Button onClick={() => setStep('step2')} className="w-full bg-[#082C6B] hover:bg-[#0B3D91] text-white">
-              Continue <ChevronRight className="w-4 h-4 ml-1" />
+              {ar ? 'التالي' : 'Continue'} <ChevronRight className="w-4 h-4 ml-1" />
             </Button>
           </motion.div>
         )}
 
         {step === 'step2' && (
           <motion.div key="step2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-5">
-            <h3 className="text-xl font-bold text-[#082C6B]">What are your biggest challenges?</h3>
-            <p className="text-sm text-muted-foreground">Select all that apply — minimum 2</p>
+            <h3 className="text-xl font-bold text-[#082C6B]">
+              {ar ? 'ما أبرز تحدياتك؟' : 'What are your biggest challenges?'}
+            </h3>
+            <p className="text-sm text-muted-foreground">
+              {ar ? 'اختر كل ما ينطبق — 2 على الأقل' : 'Select all that apply — minimum 2'}
+            </p>
             <div className="flex flex-wrap gap-2">
-              {PAIN_POINTS.map(p => (
-                <button key={p} onClick={() => togglePain(p)}
-                  className={`px-3 py-1.5 rounded-full border text-sm font-medium transition-all ${painPoints.includes(p) ? 'bg-[#082C6B] text-white border-[#082C6B]' : 'bg-white text-foreground border-border hover:border-[#082C6B]/40'}`}>
-                  {painPoints.includes(p) && <Check className="w-3 h-3 inline mr-1" />}{p}
-                </button>
-              ))}
+              {displayPainPoints.map((p, idx) => {
+                const key = PAIN_POINTS[idx]; // always use English key for state
+                return (
+                  <button key={key} onClick={() => togglePain(key)}
+                    className={`px-3 py-1.5 rounded-full border text-sm font-medium transition-all ${painPoints.includes(key) ? 'bg-[#082C6B] text-white border-[#082C6B]' : 'bg-white text-foreground border-border hover:border-[#082C6B]/40'}`}>
+                    {painPoints.includes(key) && <Check className="w-3 h-3 inline mr-1" />}{p}
+                  </button>
+                );
+              })}
             </div>
             <div className="flex gap-3">
-              <Button variant="outline" onClick={() => setStep('step1')} className="flex-1">Back</Button>
+              <Button variant="outline" onClick={() => setStep('step1')} className="flex-1">
+                {ar ? 'السابق' : 'Back'}
+              </Button>
               <Button onClick={() => setStep('step3')} disabled={painPoints.length < 2} className="flex-1 bg-[#082C6B] hover:bg-[#0B3D91] text-white">
-                Continue <ChevronRight className="w-4 h-4 ml-1" />
+                {ar ? 'التالي' : 'Continue'} <ChevronRight className="w-4 h-4 ml-1" />
               </Button>
             </div>
           </motion.div>
@@ -1404,12 +1583,16 @@ function BriefingTab({ lang }: { lang: Lang }) {
 
         {step === 'step3' && (
           <motion.div key="step3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6">
-            <h3 className="text-xl font-bold text-[#082C6B]">Rate your current performance</h3>
+            <h3 className="text-xl font-bold text-[#082C6B]">
+              {ar ? 'قيّم أداءك الحالي' : 'Rate your current performance'}
+            </h3>
             <div className="space-y-4">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">KPI Performance (1 = Very Poor, 5 = Excellent)</h4>
-              {KPI_DOMAINS.map(d => (
+              <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                {ar ? 'أداء مؤشرات KPI (1 = ضعيف جداً، 5 = ممتاز)' : 'KPI Performance (1 = Very Poor, 5 = Excellent)'}
+              </h4>
+              {KPI_DOMAINS.map((d, idx) => (
                 <div key={d} className="flex items-center gap-3">
-                  <span className="text-sm w-48 shrink-0">{d}</span>
+                  <span className="text-sm w-48 shrink-0">{ar ? KPI_DOMAINS_AR[idx] : d}</span>
                   <div className="flex gap-1.5">
                     {[1,2,3,4,5].map(n => (
                       <button key={n} onClick={() => setKpiRatings(prev => ({ ...prev, [d]: n }))}
@@ -1423,7 +1606,9 @@ function BriefingTab({ lang }: { lang: Lang }) {
             </div>
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Process Maturity (1 = Reactive, 5 = World-Class)</h4>
+                <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                  {ar ? 'نضج العمليات (1 = تفاعلي، 5 = عالمي المستوى)' : 'Process Maturity (1 = Reactive, 5 = World-Class)'}
+                </h4>
                 <span className="text-xs text-muted-foreground">{ar ? 'انقر لتوسيع كل مجال' : 'Click domain to expand'}</span>
               </div>
               {MATURITY_DOMAINS_EX.map(domain => {
@@ -1492,9 +1677,11 @@ function BriefingTab({ lang }: { lang: Lang }) {
               })}
             </div>
             <div className="flex gap-3">
-              <Button variant="outline" onClick={() => setStep('step2')} className="flex-1">Back</Button>
+              <Button variant="outline" onClick={() => setStep('step2')} className="flex-1">
+                {ar ? 'السابق' : 'Back'}
+              </Button>
               <Button onClick={generate} className="flex-1 bg-[#082C6B] hover:bg-[#0B3D91] text-white font-bold">
-                <Brain className="w-4 h-4 mr-2" /> Generate My Briefing
+                <Brain className="w-4 h-4 mr-2" /> {ar ? 'إنشاء إحاطتي التنفيذية' : 'Generate My Briefing'}
               </Button>
             </div>
           </motion.div>
