@@ -1,9 +1,54 @@
 import { Router } from 'express';
 import { writeFileSync, readFileSync, mkdirSync, existsSync } from 'fs';
 import { join } from 'path';
+import { z } from 'zod';
 import { OPENAI_MODEL, friendlyAIError } from '../lib/aiConfig';
 
 const router = Router();
+
+const newsItemSchema = z.object({
+  category: z.string().min(1),
+  date: z.string().min(1),
+  headline: z.string().min(1),
+  summary: z.string().min(1),
+  impact: z.string().min(1),
+  impactColor: z.string().min(1),
+  iconName: z.string().min(1),
+});
+
+const toolItemSchema = z.object({
+  name: z.string().min(1),
+  category: z.string().min(1),
+  desc: z.string().min(1),
+  bestFor: z.string().min(1),
+  badge: z.string().min(1),
+  badgeColor: z.string().min(1),
+  rating: z.string().min(1),
+  logo: z.string().min(1),
+});
+
+const processItemSchema = z.object({
+  iconName: z.string().min(1),
+  title: z.string().min(1),
+  tag: z.string().min(1),
+  tagColor: z.string().min(1),
+  desc: z.string().min(1),
+  steps: z.array(z.string().min(1)).length(4),
+});
+
+const tipItemSchema = z.object({
+  number: z.string().min(1),
+  title: z.string().min(1),
+  body: z.string().min(1),
+  tag: z.string().min(1),
+});
+
+export const intelligenceContentSchema = z.object({
+  news: z.array(newsItemSchema).length(6),
+  tools: z.array(toolItemSchema).length(6),
+  processes: z.array(processItemSchema).length(6),
+  tips: z.array(tipItemSchema).length(8),
+});
 
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 const CACHE_DIR = join(process.cwd(), 'cache');
@@ -113,13 +158,26 @@ Rules:
   }
 
   const json = await resp.json() as { choices: { message: { content: string } }[] };
-  const content = JSON.parse(json.choices[0].message.content) as Record<string, unknown>;
+  let content: unknown;
+  try {
+    content = JSON.parse(json.choices[0].message.content);
+  } catch (e) {
+    throw new ContentValidationError('AI returned invalid JSON');
+  }
+
+  const parsed = intelligenceContentSchema.safeParse(content);
+  if (!parsed.success) {
+    console.error('[intelligence] AI content failed schema validation', parsed.error.issues.slice(0, 5));
+    throw new ContentValidationError('AI returned content in an unexpected shape');
+  }
 
   return {
     generatedAt: new Date().toISOString(),
-    ...content,
+    ...parsed.data,
   };
 }
+
+export class ContentValidationError extends Error {}
 
 /* GET /api/intelligence — return cached or freshly generated content */
 router.get('/intelligence', async (_req, res) => {
@@ -136,6 +194,9 @@ router.get('/intelligence', async (_req, res) => {
     return res.json(content);
   } catch (err) {
     console.error('[intelligence] GET failed', err);
+    if (err instanceof ContentValidationError) {
+      return res.status(502).json({ error: 'The intelligence feed could not be refreshed right now. Please try again shortly.' });
+    }
     const { message, status } = friendlyAIError(err);
     return res.status(status).json({ error: message });
   }
@@ -149,6 +210,9 @@ router.post('/intelligence/refresh', async (_req, res) => {
     return res.json({ success: true, generatedAt: (content as { generatedAt: string }).generatedAt });
   } catch (err) {
     console.error('[intelligence] refresh failed', err);
+    if (err instanceof ContentValidationError) {
+      return res.status(502).json({ error: 'The intelligence feed could not be refreshed right now. Please try again shortly.' });
+    }
     const { message, status } = friendlyAIError(err);
     return res.status(status).json({ error: message });
   }

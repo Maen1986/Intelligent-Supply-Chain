@@ -17,8 +17,30 @@ vi.mock('fs', () => ({
 
 import intelligenceRouter from '../src/routes/intelligence';
 
+const newsItem = {
+  category: 'AI & Technology', date: 'July 2026', headline: 'Headline here',
+  summary: 'Summary here.', impact: 'High Impact',
+  impactColor: 'bg-red-100 text-red-700', iconName: 'Cpu',
+};
+const toolItem = {
+  name: 'Tool', category: 'Sourcing', desc: 'Desc.', bestFor: 'Enterprise',
+  badge: 'AI-Native', badgeColor: 'bg-blue-100 text-blue-700',
+  rating: 'Gartner Leader 2026', logo: '🤖',
+};
+const processItem = {
+  iconName: 'Cpu', title: 'Process', tag: '2026 Trend',
+  tagColor: 'bg-blue-100 text-blue-700', desc: 'Desc.',
+  steps: ['a', 'b', 'c', 'd'],
+};
+const tipItem = {
+  number: '01', title: 'Do the thing', body: 'Body.', tag: 'Strategy',
+};
+
 const generated = {
-  news: [], tools: [], processes: [], tips: [],
+  news: Array.from({ length: 6 }, () => ({ ...newsItem })),
+  tools: Array.from({ length: 6 }, () => ({ ...toolItem })),
+  processes: Array.from({ length: 6 }, () => ({ ...processItem })),
+  tips: Array.from({ length: 8 }, (_, i) => ({ ...tipItem, number: String(i + 1).padStart(2, '0') })),
 };
 
 const fetchMock = vi.fn();
@@ -84,6 +106,41 @@ describe('GET /api/intelligence', () => {
     expect(res.body.error).not.toContain('boom');
   });
 
+  it('rejects malformed AI content (wrong shape) without caching it', async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ choices: [{ message: { content: JSON.stringify({ news: [], tools: [], processes: [], tips: [] }) } }] }),
+    });
+    const app = makeApp('/api', intelligenceRouter);
+    const res = await request(app).get('/api/intelligence');
+    expect(res.status).toBe(502);
+    expect(res.body.error).toBeTruthy();
+    expect(fsState.written.length).toBe(0);
+  });
+
+  it('rejects AI content with missing item fields without caching it', async () => {
+    const bad = { ...generated, news: generated.news.map(({ headline: _h, ...rest }) => rest) };
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ choices: [{ message: { content: JSON.stringify(bad) } }] }),
+    });
+    const app = makeApp('/api', intelligenceRouter);
+    const res = await request(app).get('/api/intelligence');
+    expect(res.status).toBe(502);
+    expect(fsState.written.length).toBe(0);
+  });
+
+  it('rejects non-JSON AI content without caching it', async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ choices: [{ message: { content: 'not json {{{' } }] }),
+    });
+    const app = makeApp('/api', intelligenceRouter);
+    const res = await request(app).get('/api/intelligence');
+    expect(res.status).toBe(502);
+    expect(fsState.written.length).toBe(0);
+  });
+
   it('fails cleanly when AI env vars are not configured', async () => {
     vi.stubEnv('AI_INTEGRATIONS_OPENAI_BASE_URL', '');
     const app = makeApp('/api', intelligenceRouter);
@@ -103,6 +160,24 @@ describe('POST /api/intelligence/refresh', () => {
     expect(res.body.success).toBe(true);
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(fsState.written.length).toBe(1);
+  });
+
+  it('keeps the previous cache when refreshed content is malformed', async () => {
+    fsState.fileExists = true;
+    fsState.fileContent = JSON.stringify({ generatedAt: new Date().toISOString(), ...generated });
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ choices: [{ message: { content: JSON.stringify({ news: [] }) } }] }),
+    });
+    const app = makeApp('/api', intelligenceRouter);
+    const res = await request(app).post('/api/intelligence/refresh');
+    expect(res.status).toBe(502);
+    expect(res.body.error).toBeTruthy();
+    expect(fsState.written.length).toBe(0);
+    // Old cache remains untouched and still served
+    const getRes = await request(app).get('/api/intelligence');
+    expect(getRes.status).toBe(200);
+    expect(getRes.headers['x-cache']).toBe('HIT');
   });
 
   it('returns a friendly error when regeneration fails', async () => {
