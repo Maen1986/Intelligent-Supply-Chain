@@ -107,3 +107,39 @@ export const authRateLimiter = rateLimit({
   legacyHeaders: false,
   message: { error: "Too many attempts. Please try again later." },
 });
+
+/* Login brute-force throttle: 5 FAILED sign-in attempts per minute, keyed by
+ * IP + target email. Successful logins don't consume quota, so legitimate
+ * users signing in/out normally are never affected; an attacker hammering one
+ * account (or one IP hammering many passwords) gets 429s after ~5 misses.
+ * Backed by PostgreSQL outside tests so the limit survives restarts. */
+const LOGIN_FAIL_LIMIT = 5;
+
+export const loginRateLimiter = rateLimit({
+  windowMs: 60_000,
+  limit: LOGIN_FAIL_LIMIT,
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+  // Only failed attempts (401/4xx/5xx) count toward the limit.
+  skipSuccessfulRequests: true,
+  keyGenerator: (req: Request) => {
+    const email =
+      typeof req.body?.email === "string"
+        ? req.body.email.trim().toLowerCase()
+        : "";
+    return `${ipKeyGenerator(req.ip ?? "")}:${email}`;
+  },
+  handler: (req, res) => {
+    const resetTime: Date | undefined = (req as any).rateLimit?.resetTime;
+    const retryAfterSeconds = resetTime
+      ? Math.max(1, Math.ceil((resetTime.getTime() - Date.now()) / 1000))
+      : 60;
+    res.set("Retry-After", String(retryAfterSeconds));
+    res.status(429).json({
+      ok: false,
+      error: "Too many sign-in attempts. Please try again shortly.",
+      retryAfterSeconds,
+    });
+  },
+  ...(isTest ? {} : { store: new PgRateLimitStore(pgPool, "login") }),
+});

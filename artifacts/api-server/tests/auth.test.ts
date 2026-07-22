@@ -128,6 +128,47 @@ describe('POST /api/auth/login', () => {
   });
 });
 
+describe('POST /api/auth/login rate limiting', () => {
+  it('returns 429 after 5 failed attempts for the same email within a minute', async () => {
+    const bcrypt = (await import('bcryptjs')).default;
+    dbState.selectRows = [{ ...user, email: 'bruteforce@example.com', passwordHash: await bcrypt.hash('secret6', 4) }];
+    const app = makeApp('/api/auth', authRouter);
+
+    for (let i = 0; i < 5; i++) {
+      const res = await request(app)
+        .post('/api/auth/login')
+        .send({ email: 'bruteforce@example.com', password: `wrong-${i}` });
+      expect(res.status).toBe(401);
+    }
+
+    const blocked = await request(app)
+      .post('/api/auth/login')
+      .send({ email: 'bruteforce@example.com', password: 'wrong-again' });
+    expect(blocked.status).toBe(429);
+    expect(blocked.body.ok).toBe(false);
+    expect(blocked.body.retryAfterSeconds).toBeGreaterThan(0);
+    expect(blocked.headers['retry-after']).toBeDefined();
+
+    // Even the correct password is blocked while the window is active.
+    const stillBlocked = await request(app)
+      .post('/api/auth/login')
+      .send({ email: 'bruteforce@example.com', password: 'secret6' });
+    expect(stillBlocked.status).toBe(429);
+  });
+
+  it('does not throttle successful sign-ins', async () => {
+    const bcrypt = (await import('bcryptjs')).default;
+    dbState.selectRows = [{ ...user, email: 'goodusers@example.com', passwordHash: await bcrypt.hash('secret6', 4) }];
+    const app = makeApp('/api/auth', authRouter);
+    for (let i = 0; i < 7; i++) {
+      const res = await request(app)
+        .post('/api/auth/login')
+        .send({ email: 'goodusers@example.com', password: 'secret6' });
+      expect(res.status).toBe(200);
+    }
+  });
+});
+
 describe('GET /api/auth/me', () => {
   it('returns 401 with no session', async () => {
     const app = makeApp('/api/auth', authRouter);

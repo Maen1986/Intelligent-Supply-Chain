@@ -5,6 +5,7 @@ import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import bcrypt from 'bcryptjs';
 import { logger } from '../lib/logger';
+import { loginRateLimiter } from '../lib/rateLimit';
 
 // ── Session type augmentation ────────────────────────────────────────────────
 declare module 'express-session' {
@@ -116,7 +117,7 @@ router.post('/register', async (req, res) => {
 /* ── POST /api/auth/login ────────────────────────────────────────────────────
    Verifies email + password against the bcrypt hash and establishes a
    server-side session. Works from any device/browser.                        */
-router.post('/login', async (req, res) => {
+router.post('/login', loginRateLimiter, async (req, res) => {
   const parsed = LoginSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ ok: false, error: 'Invalid login data' });
