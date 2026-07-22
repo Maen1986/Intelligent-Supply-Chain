@@ -1301,7 +1301,7 @@ function BriefingPrintable({
   return (
     <div dir={ar ? 'rtl' : 'ltr'} style={{ width: 794, backgroundColor: '#ffffff', color: '#111827', fontSize: 13, lineHeight: 1.55, textAlign: ar ? 'right' : 'left' }}>
       {/* Branded header */}
-      <div style={{ backgroundColor: PDF_NAVY, color: '#ffffff', padding: '28px 40px' }}>
+      <div data-pdf-block="" style={{ backgroundColor: PDF_NAVY, color: '#ffffff', padding: '28px 40px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16 }}>
           <div>
             <p style={{ margin: 0, fontSize: 11, letterSpacing: 3, textTransform: 'uppercase', color: PDF_GOLD, fontWeight: 700 }}>
@@ -1324,7 +1324,7 @@ function BriefingPrintable({
 
       <div style={{ padding: '28px 40px', display: 'flex', flexDirection: 'column', gap: 24 }}>
         {/* Scores row */}
-        <div style={{ display: 'flex', gap: 12 }}>
+        <div data-pdf-block="" style={{ display: 'flex', gap: 12 }}>
           <div style={{ ...card, flex: 1, textAlign: 'center' }}>
             <p style={{ margin: 0, fontSize: 10, textTransform: 'uppercase', letterSpacing: 1, color: PDF_GRAY, fontWeight: 700 }}>{ar ? 'مستوى النضج' : 'Maturity Level'}</p>
             <p style={{ margin: '8px 0 0', fontSize: 26, fontWeight: 900, color: PDF_NAVY }}>{briefing.maturityScore}<span style={{ fontSize: 12, fontWeight: 400, color: PDF_GRAY }}>/100</span></p>
@@ -1345,7 +1345,7 @@ function BriefingPrintable({
         </div>
 
         {/* Executive summary */}
-        <div>
+        <div data-pdf-block="">
           <h2 style={sectionTitle}>{ar ? 'الملخص التنفيذي' : 'Executive Summary'}</h2>
           <div style={{ backgroundColor: PDF_NAVY, borderRadius: 10, padding: 18, color: '#ffffff', fontSize: 13 }}>
             {briefing.executiveSummary}
@@ -1353,7 +1353,7 @@ function BriefingPrintable({
         </div>
 
         {/* Radar + domain maturity breakdown */}
-        <div>
+        <div data-pdf-block="">
           <h2 style={sectionTitle}>{ar ? 'نضج المجالات' : 'Domain Maturity'}</h2>
           <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
             <div dir="ltr" style={{ flexShrink: 0 }}>
@@ -1382,10 +1382,10 @@ function BriefingPrintable({
 
         {/* Critical gaps */}
         <div>
-          <h2 style={sectionTitle}>{ar ? 'الفجوات الحرجة' : 'Critical Gaps'}</h2>
+          <h2 data-pdf-block="keep-next" style={sectionTitle}>{ar ? 'الفجوات الحرجة' : 'Critical Gaps'}</h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {briefing.criticalGaps.map((g, i) => (
-              <div key={i} style={{ ...card, borderInlineStart: `4px solid ${g.urgency === 'Immediate' ? '#dc2626' : g.urgency === '90-Day' ? '#d97706' : PDF_NAVY}` }}>
+              <div key={i} data-pdf-block="" style={{ ...card, borderInlineStart: `4px solid ${g.urgency === 'Immediate' ? '#dc2626' : g.urgency === '90-Day' ? '#d97706' : PDF_NAVY}` }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, marginBottom: 4 }}>
                   <p style={{ margin: 0, fontWeight: 800, fontSize: 13 }}>{i + 1}. {g.title}</p>
                   <p style={{ margin: 0, fontSize: 10, fontWeight: 700, color: PDF_GRAY, whiteSpace: 'nowrap' }}>
@@ -1401,10 +1401,10 @@ function BriefingPrintable({
 
         {/* Quick wins */}
         <div>
-          <h2 style={sectionTitle}>{ar ? 'المكاسب السريعة' : 'Quick Wins'}</h2>
+          <h2 data-pdf-block="keep-next" style={sectionTitle}>{ar ? 'المكاسب السريعة' : 'Quick Wins'}</h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {briefing.quickWins.map((w, i) => (
-              <div key={i} style={{ ...card, display: 'flex', gap: 10 }}>
+              <div key={i} data-pdf-block="" style={{ ...card, display: 'flex', gap: 10 }}>
                 <div style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: '#D1FAE5', color: '#047857', fontSize: 11, fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{i + 1}</div>
                 <div>
                   <p style={{ margin: 0, fontWeight: 700, fontSize: 12 }}>{w.action}</p>
@@ -1418,7 +1418,7 @@ function BriefingPrintable({
         </div>
 
         {/* 90-day plan */}
-        <div>
+        <div data-pdf-block="">
           <h2 style={sectionTitle}>
             {ar ? 'خارطة طريق التحول — 90 يوماً' : '90-Day Transformation Roadmap'}
           </h2>
@@ -1439,7 +1439,7 @@ function BriefingPrintable({
         </div>
 
         {/* Benchmark + consultant note */}
-        <div style={{ display: 'flex', gap: 12 }}>
+        <div data-pdf-block="" style={{ display: 'flex', gap: 12 }}>
           <div style={{ ...card, flex: 1, backgroundColor: '#F9FAFB' }}>
             <p style={{ margin: '0 0 6px', fontSize: 10, textTransform: 'uppercase', letterSpacing: 1, fontWeight: 800, color: PDF_NAVY }}>{ar ? 'السياق المرجعي — نظراء الخليج' : 'GCC Peer Benchmark Context'}</p>
             <p style={{ margin: 0, fontSize: 12 }}>{briefing.benchmarkInsight}</p>
@@ -1452,7 +1452,7 @@ function BriefingPrintable({
         </div>
 
         {/* Footer */}
-        <div style={{ borderTop: `1px solid ${PDF_BORDER}`, paddingTop: 12, fontSize: 9.5, color: PDF_GRAY, textAlign: 'center' }}>
+        <div data-pdf-block="" style={{ borderTop: `1px solid ${PDF_BORDER}`, paddingTop: 12, fontSize: 9.5, color: PDF_GRAY, textAlign: 'center' }}>
           {ar
             ? '© 2026 آي سبلاي تشين. جميع الحقوق محفوظة. سري وخاص — يُحظر إعادة الإنتاج أو التوزيع غير المصرح به. مُنشأ بواسطة ISC Command Centre — isupplychain.com'
             : '© 2026 I Supply Chain. All Rights Reserved. Proprietary & Confidential — unauthorised reproduction or distribution is prohibited. Generated by ISC Command Centre — isupplychain.com'}
@@ -1502,14 +1502,68 @@ function BriefingTab({ lang }: { lang: Lang }) {
         import('html2canvas-pro'),
         import('jspdf'),
       ]);
-      const canvas = await html2canvas(pdfRef.current, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
+      // Measure atomic blocks (cards, headings, sections) BEFORE capture so page
+      // breaks can be placed between blocks instead of cutting through them.
+      const containerEl = pdfRef.current;
+      const containerRect = containerEl.getBoundingClientRect();
+      const blockEls = Array.from(containerEl.querySelectorAll<HTMLElement>('[data-pdf-block]'));
+      const rawBlocks = blockEls.map(el => {
+        const r = el.getBoundingClientRect();
+        return { top: r.top - containerRect.top, bottom: r.bottom - containerRect.top, keepNext: el.dataset.pdfBlock === 'keep-next' };
+      }).sort((a, b) => a.top - b.top);
+      // Merge "keep-next" blocks (section headings) with the block that follows,
+      // so a heading is never stranded at the bottom of a page.
+      const units: { top: number; bottom: number }[] = [];
+      for (let i = 0; i < rawBlocks.length; i++) {
+        const u = { top: rawBlocks[i].top, bottom: rawBlocks[i].bottom };
+        while (rawBlocks[i].keepNext && i + 1 < rawBlocks.length) {
+          i++;
+          u.bottom = Math.max(u.bottom, rawBlocks[i].bottom);
+        }
+        units.push(u);
+      }
+
+      const canvas = await html2canvas(containerEl, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pageW = 210, pageH = 297;
       const pxPerMm = canvas.width / pageW;
       const pageHpx = Math.floor(pageH * pxPerMm);
-      let y = 0, page = 0;
-      while (y < canvas.height) {
-        const sliceH = Math.min(pageHpx, canvas.height - y);
+      const domToCanvas = canvas.width / containerRect.width; // DOM px → canvas px
+
+      // Greedy section-aware pagination: whenever a block would straddle the
+      // page boundary, start a new page at that block's top instead.
+      const breaks: number[] = [];
+      let pageStart = 0;
+      for (const u of units) {
+        const top = Math.floor(u.top * domToCanvas);
+        const bottom = Math.ceil(u.bottom * domToCanvas);
+        if (bottom - pageStart > pageHpx && top > pageStart) {
+          breaks.push(top);
+          pageStart = top;
+        }
+        // Block taller than a full page: unavoidable hard splits inside it.
+        while (bottom - pageStart > pageHpx) {
+          breaks.push(pageStart + pageHpx);
+          pageStart += pageHpx;
+        }
+      }
+
+      // Enforce hard splits so no page span exceeds a full page (never drop content).
+      const starts: number[] = [];
+      let cur = 0;
+      for (const b of [...breaks.filter(x => x > 0 && x < canvas.height), canvas.height]) {
+        starts.push(cur);
+        while (b - cur > pageHpx) {
+          cur += pageHpx;
+          starts.push(cur);
+        }
+        cur = b;
+      }
+      for (let page = 0; page < starts.length; page++) {
+        const y = starts[page];
+        const end = page + 1 < starts.length ? starts[page + 1] : canvas.height;
+        const sliceH = Math.min(end - y, pageHpx);
+        if (sliceH <= 0) continue;
         const slice = document.createElement('canvas');
         slice.width = canvas.width;
         slice.height = sliceH;
@@ -1519,8 +1573,6 @@ function BriefingTab({ lang }: { lang: Lang }) {
         ctx.drawImage(canvas, 0, y, canvas.width, sliceH, 0, 0, canvas.width, sliceH);
         if (page > 0) pdf.addPage();
         pdf.addImage(slice.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, pageW, sliceH / pxPerMm);
-        y += sliceH;
-        page++;
       }
       pdf.save(`ISC-Executive-Briefing-${new Date().toISOString().slice(0, 10)}.pdf`);
     } catch (err) {
