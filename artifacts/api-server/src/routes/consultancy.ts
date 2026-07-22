@@ -104,7 +104,7 @@ Rules:
 
   try {
     const response = await openai.chat.completions.create({
-      model: 'gpt-5',
+      model: 'gpt-4o',
       messages: [
         { role: 'system', content: CONSULTANT_IDENTITY },
         { role: 'user',   content: prompt },
@@ -201,7 +201,7 @@ Rules:
 
   try {
     const response = await openai.chat.completions.create({
-      model: 'gpt-5',
+      model: 'gpt-4o',
       messages: [
         { role: 'system', content: CONSULTANT_IDENTITY },
         { role: 'user',   content: prompt },
@@ -263,7 +263,7 @@ Return an improved solution in the same JSON structure as the original solution,
 
   try {
     const response = await openai.chat.completions.create({
-      model: 'gpt-5',
+      model: 'gpt-4o',
       messages: [
         { role: 'system', content: CONSULTANT_IDENTITY },
         { role: 'user',   content: prompt },

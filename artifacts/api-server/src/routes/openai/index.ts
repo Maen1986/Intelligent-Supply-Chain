@@ -173,7 +173,7 @@ router.post("/conversations/:id/messages", async (req, res) => {
   let fullResponse = "";
   try {
     const stream = await openai.chat.completions.create({
-      model: "gpt-5.6-luna",
+      model: "gpt-4o",
       max_completion_tokens: 8192,
       messages: chatMessages,
       stream: true,
