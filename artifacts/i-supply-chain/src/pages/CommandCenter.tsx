@@ -1259,6 +1259,7 @@ interface Briefing {
 const BRIEFING_DRAFT_KEY = 'isc-briefing-draft-v1';
 
 interface BriefingDraft {
+  companyName?: string;
   industry?: string;
   subIndustry?: string;
   revenueBand?: string;
@@ -1492,8 +1493,13 @@ function BriefingTab({ lang }: { lang: Lang }) {
   const ar = lang === 'ar';
   // Client company name captured at lead sign-up — personalises the PDF cover.
   const { user } = useAuth();
-  const clientCompany = user?.company?.trim() ?? '';
   const [draft] = useState<BriefingDraft>(loadBriefingDraft);
+  // Optional company name entered on step 1 (persisted with the draft).
+  const [companyName, setCompanyName] = useState(() =>
+    typeof draft.companyName === 'string' ? draft.companyName : '');
+  // Cover personalisation: prefer the name typed in the briefing, fall back to
+  // the signed-in user's company from sign-up.
+  const clientCompany = companyName.trim() || (user?.company?.trim() ?? '');
   const [step, setStep] = useState<BriefingStep>(() =>
     RESUMABLE_STEPS.includes(draft.step as BriefingStep) ? draft.step as BriefingStep : 'step1');
   const [industry, setIndustry] = useState(() =>
@@ -1928,12 +1934,13 @@ function BriefingTab({ lang }: { lang: Lang }) {
   useEffect(() => {
     try {
       const savedStep = RESUMABLE_STEPS.includes(step) ? step : 'step3';
-      localStorage.setItem(BRIEFING_DRAFT_KEY, JSON.stringify({ industry, subIndustry, revenueBand, painPoints, kpiRatings, maturityRatings, step: savedStep, savedAt: Date.now() } satisfies BriefingDraft));
+      localStorage.setItem(BRIEFING_DRAFT_KEY, JSON.stringify({ companyName, industry, subIndustry, revenueBand, painPoints, kpiRatings, maturityRatings, step: savedStep, savedAt: Date.now() } satisfies BriefingDraft));
     } catch { /* storage unavailable — ignore */ }
-  }, [industry, subIndustry, revenueBand, painPoints, kpiRatings, maturityRatings, step]);
+  }, [companyName, industry, subIndustry, revenueBand, painPoints, kpiRatings, maturityRatings, step]);
 
   const clearDraft = () => {
     try { localStorage.removeItem(BRIEFING_DRAFT_KEY); } catch { /* ignore */ }
+    setCompanyName('');
     setIndustry(Object.keys(INDUSTRY_TREE)[0]);
     setSubIndustry('');
     setRevenueBand(REVENUE_BANDS[1]);
@@ -2402,6 +2409,13 @@ function BriefingTab({ lang }: { lang: Lang }) {
             <h3 className="text-xl font-bold text-[#082C6B]">
               {ar ? 'أخبرنا عن مؤسستك' : 'Tell us about your organisation'}
             </h3>
+            <div className="space-y-1.5">
+              <label className="text-sm font-semibold">{ar ? 'اسم الشركة (اختياري)' : 'Company Name (optional)'}</label>
+              <input type="text" value={companyName} onChange={e => setCompanyName(e.target.value)}
+                maxLength={120}
+                placeholder={ar ? 'يظهر على غلاف الإحاطة — «أُعدت لصالح …»' : 'Shown on the briefing cover — “Prepared for …”'}
+                className="w-full border border-border rounded-xl px-4 py-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#082C6B]/30" />
+            </div>
             <div className="space-y-1.5">
               <label className="text-sm font-semibold">{ar ? 'القطاع الصناعي' : 'Industry / Sector'}</label>
               <select value={industry} onChange={e => { setIndustry(e.target.value); setSubIndustry(''); }}
