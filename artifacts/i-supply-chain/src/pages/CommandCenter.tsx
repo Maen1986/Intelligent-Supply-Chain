@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useLanguage } from '@/lib/LanguageContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -1216,15 +1216,52 @@ interface Briefing {
   consultantNote: string;
 }
 
+// ─── Assessment draft persistence (localStorage) ────────────────────────────
+const BRIEFING_DRAFT_KEY = 'isc-briefing-draft-v1';
+
+interface BriefingDraft {
+  industry?: string;
+  subIndustry?: string;
+  revenueBand?: string;
+  painPoints?: string[];
+  kpiRatings?: Record<string, number>;
+  maturityRatings?: Record<string, number>;
+}
+
+function loadBriefingDraft(): BriefingDraft {
+  try {
+    const raw = localStorage.getItem(BRIEFING_DRAFT_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    return typeof parsed === 'object' && parsed !== null ? parsed as BriefingDraft : {};
+  } catch {
+    return {};
+  }
+}
+
 function BriefingTab({ lang }: { lang: Lang }) {
   const ar = lang === 'ar';
+  const [draft] = useState<BriefingDraft>(loadBriefingDraft);
   const [step, setStep] = useState<BriefingStep>('step1');
-  const [industry, setIndustry] = useState(Object.keys(INDUSTRY_TREE)[0]);
-  const [subIndustry, setSubIndustry] = useState('');
-  const [revenueBand, setRevenueBand] = useState(REVENUE_BANDS[1]);
-  const [painPoints, setPainPoints] = useState<string[]>([]);
-  const [kpiRatings, setKpiRatings] = useState<Record<string, number>>(Object.fromEntries(KPI_DOMAINS.map(d => [d, 3])));
-  const [maturityRatings, setMaturityRatings] = useState<Record<string, number>>(Object.fromEntries(allSubKeys().map(k => [k, 2])));
+  const [industry, setIndustry] = useState(() =>
+    draft.industry && INDUSTRY_TREE[draft.industry] ? draft.industry : Object.keys(INDUSTRY_TREE)[0]);
+  const [subIndustry, setSubIndustry] = useState(() =>
+    draft.industry && INDUSTRY_TREE[draft.industry] && draft.subIndustry && INDUSTRY_TREE[draft.industry].includes(draft.subIndustry) ? draft.subIndustry : '');
+  const [revenueBand, setRevenueBand] = useState(() =>
+    draft.revenueBand && REVENUE_BANDS.includes(draft.revenueBand) ? draft.revenueBand : REVENUE_BANDS[1]);
+  const [painPoints, setPainPoints] = useState<string[]>(() =>
+    Array.isArray(draft.painPoints) ? draft.painPoints.filter(p => PAIN_POINTS.includes(p)) : []);
+  const [kpiRatings, setKpiRatings] = useState<Record<string, number>>(() => ({
+    ...Object.fromEntries(KPI_DOMAINS.map(d => [d, 3])),
+    ...Object.fromEntries(Object.entries(draft.kpiRatings ?? {}).filter(([k, v]) => KPI_DOMAINS.includes(k) && typeof v === 'number' && v >= 1 && v <= 5)),
+  }));
+  const [maturityRatings, setMaturityRatings] = useState<Record<string, number>>(() => {
+    const validKeys = new Set(allSubKeys());
+    return {
+      ...Object.fromEntries(allSubKeys().map(k => [k, 2])),
+      ...Object.fromEntries(Object.entries(draft.maturityRatings ?? {}).filter(([k, v]) => validKeys.has(k) && typeof v === 'number' && v >= 1 && v <= 5)),
+    };
+  });
   const [expandedDomains, setExpandedDomains] = useState<Record<string, boolean>>(Object.fromEntries(MATURITY_DOMAINS_EX.map(d => [d.id, d.id === 'strategy'])));
   const toggleDomain = (id: string) => setExpandedDomains(prev => ({ ...prev, [id]: !prev[id] }));
   const [briefing, setBriefing] = useState<Briefing | null>(null);
@@ -1232,6 +1269,26 @@ function BriefingTab({ lang }: { lang: Lang }) {
   const [copied, setCopied] = useState(false);
 
   const togglePain = (p: string) => setPainPoints(prev => prev.includes(p) ? prev.filter(x => x !== p) : [...prev, p]);
+
+  // Auto-save draft on every change
+  useEffect(() => {
+    try {
+      localStorage.setItem(BRIEFING_DRAFT_KEY, JSON.stringify({ industry, subIndustry, revenueBand, painPoints, kpiRatings, maturityRatings } satisfies BriefingDraft));
+    } catch { /* storage unavailable — ignore */ }
+  }, [industry, subIndustry, revenueBand, painPoints, kpiRatings, maturityRatings]);
+
+  const clearDraft = () => {
+    try { localStorage.removeItem(BRIEFING_DRAFT_KEY); } catch { /* ignore */ }
+    setIndustry(Object.keys(INDUSTRY_TREE)[0]);
+    setSubIndustry('');
+    setRevenueBand(REVENUE_BANDS[1]);
+    setPainPoints([]);
+    setKpiRatings(Object.fromEntries(KPI_DOMAINS.map(d => [d, 3])));
+    setMaturityRatings(Object.fromEntries(allSubKeys().map(k => [k, 2])));
+    setBriefing(null);
+    setError('');
+    setStep('step1');
+  };
 
   const generate = useCallback(async () => {
     setStep('generating');
@@ -1360,7 +1417,7 @@ function BriefingTab({ lang }: { lang: Lang }) {
               {copied ? <CheckCircle2 className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
               {copied ? (ar ? 'تم النسخ!' : 'Copied!') : (ar ? 'نسخ الإحاطة' : 'Copy Briefing')}
             </button>
-            <button onClick={() => { setStep('step1'); setBriefing(null); }} className="flex items-center gap-2 px-4 py-2 rounded-lg border border-border text-sm font-semibold hover:bg-muted transition-colors">
+            <button onClick={clearDraft} className="flex items-center gap-2 px-4 py-2 rounded-lg border border-border text-sm font-semibold hover:bg-muted transition-colors">
               <RefreshCw className="w-4 h-4" /> {ar ? 'تقييم جديد' : 'New Assessment'}
             </button>
           </div>
@@ -1579,6 +1636,13 @@ function BriefingTab({ lang }: { lang: Lang }) {
       </div>
 
       {error && <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl p-4 text-sm">{error}</div>}
+
+      <div className="flex justify-end">
+        <button type="button" onClick={clearDraft}
+          className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-red-600 transition-colors">
+          <RefreshCw className="w-3.5 h-3.5" /> {ar ? 'مسح والبدء من جديد' : 'Clear & Start Over'}
+        </button>
+      </div>
 
       <AnimatePresence mode="wait">
         {step === 'step1' && (
