@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLanguage } from '@/lib/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -15,7 +15,24 @@ export function Diagnostic() {
   const [step, setStep] = useState(1);
   const [isGenerating, setIsGenerating] = useState(false);
   const [report, setReport] = useState<DiagnosticReport | null>(null);
-  const [rateLimitNotice, setRateLimitNotice] = useState<string | null>(null);
+  const [retryUntil, setRetryUntil] = useState<number | null>(null);
+  const [secondsLeft, setSecondsLeft] = useState<number>(0);
+
+  useEffect(() => {
+    if (retryUntil === null) return;
+    const tick = () => {
+      const remaining = Math.ceil((retryUntil - Date.now()) / 1000);
+      if (remaining <= 0) {
+        setRetryUntil(null);
+        setSecondsLeft(0);
+      } else {
+        setSecondsLeft(remaining);
+      }
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [retryUntil]);
 
   const [formData, setFormData] = useState({
     businessSize: '',
@@ -31,20 +48,25 @@ export function Diagnostic() {
   const handleBack = () => { if (step > 1) setStep(step - 1); };
 
   const retryMessage = (seconds: number) => {
-    const minutes = Math.max(1, Math.ceil(seconds / 60));
-    if (isAr) {
-      return minutes >= 60
+    if (seconds >= 3600) {
+      return isAr
         ? 'لقد وصلت إلى الحد الأقصى للطلبات. يرجى المحاولة مرة أخرى بعد حوالي ساعة.'
-        : `لقد وصلت إلى الحد الأقصى للطلبات. يرجى المحاولة مرة أخرى بعد حوالي ${minutes} ${minutes === 1 ? 'دقيقة' : 'دقائق'}.`;
+        : "You've reached the request limit. Please try again in about an hour.";
     }
-    return minutes >= 60
-      ? "You've reached the request limit. Please try again in about an hour."
-      : `You've reached the request limit. Please try again in about ${minutes} minute${minutes === 1 ? '' : 's'}.`;
+    if (seconds >= 60) {
+      const minutes = Math.ceil(seconds / 60);
+      return isAr
+        ? `لقد وصلت إلى الحد الأقصى للطلبات. يرجى المحاولة مرة أخرى بعد حوالي ${minutes} ${minutes === 1 ? 'دقيقة' : 'دقائق'}.`
+        : `You've reached the request limit. Please try again in about ${minutes} minute${minutes === 1 ? '' : 's'}.`;
+    }
+    return isAr
+      ? `لقد وصلت إلى الحد الأقصى للطلبات. يمكنك المحاولة مرة أخرى خلال ${seconds} ${seconds === 1 ? 'ثانية' : 'ثوانٍ'}.`
+      : `You've reached the request limit. You can try again in ${seconds} second${seconds === 1 ? '' : 's'}.`;
   };
 
   const handleSubmit = async () => {
     setIsGenerating(true);
-    setRateLimitNotice(null);
+    setRetryUntil(null);
     await new Promise(r => setTimeout(r, 1200));
     const generated = generateReport(formData as any, lang);
 
@@ -69,7 +91,7 @@ export function Diagnostic() {
             const body = await res.json().catch(() => null);
             seconds = Number(body?.retryAfterSeconds) || 3600;
           }
-          setRateLimitNotice(retryMessage(seconds));
+          setRetryUntil(Date.now() + seconds * 1000);
         }
       } catch (e) { /* silent fail — lead capture is best-effort */ }
     })();
@@ -254,13 +276,13 @@ export function Diagnostic() {
             )}
           </div>
 
-          {rateLimitNotice && (
+          {retryUntil !== null && secondsLeft > 0 && (
             <div
               className="mt-6 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900"
               role="alert"
               data-testid="notice-rate-limit"
             >
-              {rateLimitNotice}
+              {retryMessage(secondsLeft)}
             </div>
           )}
 
@@ -290,7 +312,7 @@ export function Diagnostic() {
             ) : (
               <Button
                 onClick={handleSubmit}
-                disabled={isGenerating}
+                disabled={isGenerating || retryUntil !== null}
                 className="flex-1 sm:flex-none bg-accent hover:bg-accent/90 text-white font-bold h-11 sm:min-w-[200px]"
                 data-testid="button-wizard-submit"
               >
