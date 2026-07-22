@@ -242,6 +242,56 @@ describe('GET /api/feedback/export.csv', () => {
     expect(dataRow).not.toMatch(/(?:^|,)\+HYPERLINK/);
   });
 
+  /* Recursively collect bound parameter values from a drizzle SQL object so
+     we can assert which filter values ended up in the WHERE clause. */
+  const collectParams = (node: any, acc: any[] = []): any[] => {
+    // With the string-column db mock, drizzle inlines bound values (and column
+    // names) directly as primitive/Date queryChunks; raw SQL text lives in
+    // StringChunk nodes whose `value` is an array — skip those.
+    if (node == null) return acc;
+    if (typeof node !== 'object' || node instanceof Date) {
+      acc.push(node);
+      return acc;
+    }
+    if (Array.isArray(node.queryChunks)) {
+      for (const chunk of node.queryChunks) collectParams(chunk, acc);
+    }
+    return acc;
+  };
+
+  it('applies tool, from, to, and min_rating filters to the query', async () => {
+    dbState.selectRows = [];
+    const app = makeApp('/api/feedback', feedbackRouter, adminSession);
+    const res = await request(app).get(
+      '/api/feedback/export.csv?tool=diagnostic&from=2025-01-01&to=2025-06-30&min_rating=4'
+    );
+    expect(res.status).toBe(200);
+    expect(dbState.whereArgs).toHaveLength(1);
+    const params = collectParams(dbState.whereArgs[0]);
+    expect(params).toContain('diagnostic');
+    expect(params).toContain(4);
+    expect(params.some((p) => p instanceof Date && p.toISOString().startsWith('2025-01-01'))).toBe(true);
+    expect(params.some((p) => p instanceof Date && p.toISOString().startsWith('2025-06-30'))).toBe(true);
+  });
+
+  it('does not add a WHERE clause when no filters are given', async () => {
+    dbState.selectRows = [];
+    const app = makeApp('/api/feedback', feedbackRouter, adminSession);
+    const res = await request(app).get('/api/feedback/export.csv');
+    expect(res.status).toBe(200);
+    expect(dbState.whereArgs).toHaveLength(0);
+  });
+
+  it('ignores invalid date and rating filter values', async () => {
+    dbState.selectRows = [];
+    const app = makeApp('/api/feedback', feedbackRouter, adminSession);
+    const res = await request(app).get(
+      '/api/feedback/export.csv?from=not-a-date&to=also-bad&min_rating=abc'
+    );
+    expect(res.status).toBe(200);
+    expect(dbState.whereArgs).toHaveLength(0);
+  });
+
   it('emits null values as empty fields', async () => {
     const ts = new Date('2025-03-01T00:00:00Z');
     dbState.selectRows = [

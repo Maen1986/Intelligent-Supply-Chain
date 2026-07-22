@@ -10,6 +10,8 @@ export const dbState = {
   /** When true, the next awaited db chain rejects with an Error. */
   failNext: false,
   insertedValues: [] as any[],
+  /** Arguments passed to .where() on any mocked chain, in call order. */
+  whereArgs: [] as any[],
 };
 
 export function resetDbState() {
@@ -18,15 +20,20 @@ export function resetDbState() {
   dbState.updateRows = [];
   dbState.failNext = false;
   dbState.insertedValues = [];
+  dbState.whereArgs = [];
 }
 
 /** A drizzle-like chain: every builder method returns itself; awaiting it
     resolves to the configured rows (or rejects when failNext is set). */
 function chain(rowsGetter: () => any[], recordValues = false) {
   const c: any = {};
-  for (const m of ['from', 'where', 'orderBy', 'limit', 'offset', 'set', 'returning']) {
+  for (const m of ['from', 'orderBy', 'limit', 'offset', 'set', 'returning']) {
     c[m] = () => c;
   }
+  c.where = (arg: any) => {
+    dbState.whereArgs.push(arg);
+    return c;
+  };
   c.values = (v: any) => {
     if (recordValues) dbState.insertedValues.push(v);
     return c;
