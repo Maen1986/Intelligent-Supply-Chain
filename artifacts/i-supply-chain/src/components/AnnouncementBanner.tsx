@@ -36,7 +36,7 @@ export function AnnouncementBanner() {
             <div className="flex items-center gap-3 min-w-0">
               <span className="flex items-center gap-1.5 bg-[#C9A84C] text-white text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full shrink-0 shadow-lg">
                 <Zap className="w-3 h-3" />
-                GCC First
+                {ar ? 'الأول خليجياً' : 'GCC First'}
               </span>
 
               {/* Scrolling marquee on mobile, static on desktop */}

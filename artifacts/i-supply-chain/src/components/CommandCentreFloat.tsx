@@ -56,7 +56,7 @@ export function CommandCentreFloat() {
                 </div>
                 <div>
                   <span className="flex items-center gap-1 text-[10px] font-black uppercase tracking-widest text-[#C9A84C]">
-                    <Zap className="w-3 h-3" /> GCC First
+                    <Zap className="w-3 h-3" /> {ar ? 'الأول خليجياً' : 'GCC First'}
                   </span>
                   <p className="text-white font-bold text-sm leading-tight">{ar ? 'مركز القيادة الذكي' : 'AI Command Centre'}</p>
                 </div>
