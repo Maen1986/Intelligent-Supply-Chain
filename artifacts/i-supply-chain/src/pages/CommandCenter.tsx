@@ -59,6 +59,35 @@ const INDUSTRY_TREE: Record<string, string[]> = {
   'Services':                   ['Professional Services (Consulting, Legal, Audit)','Facilities Management (FM)','Hospitality & Tourism','Education & Training','Financial Services & Banking','Media & Entertainment','Real Estate & Property Management'],
 };
 
+// Arabic mirror of INDUSTRY_TREE — keys are the English industry names; values are
+// [industryNameAr, subSectorsAr[]] aligned index-by-index with INDUSTRY_TREE sub-sectors.
+const INDUSTRY_TREE_AR: Record<string, { name: string; subs: string[] }> = {
+  'Manufacturing':              { name: 'التصنيع', subs: ['السيارات والتجميع','الطيران والدفاع','الإلكترونيات وأشباه الموصلات','تصنيع السلع الاستهلاكية سريعة التداول','الصناعات الثقيلة والصلب','الكيماويات والبتروكيماويات','البلاستيك والمواد المركبة','المنسوجات والملابس','الأثاث والمنتجات الخشبية','الأجهزة الطبية'] },
+  'Energy & Oil':               { name: 'الطاقة والنفط', subs: ['النفط والغاز - الإنتاج','النفط والغاز - النقل وخطوط الأنابيب','النفط والغاز - التكرير','البتروكيماويات','الطاقة المتجددة (شمسية/رياح)','توليد الطاقة والمرافق','التعدين والصناعات الاستخراجية'] },
+  'Government / Public Sector': { name: 'الحكومة / القطاع العام', subs: ['الحكومة الاتحادية / المركزية','الأمانات والبلديات','الدفاع والأمن','الهيئات الصحية','وزارات التعليم','البنية التحتية والنقل','كيانات رؤية السعودية 2030 (صندوق التنمية الوطني، صندوق الاستثمارات العامة)','المؤسسات العامة الأردنية','هيئات التنمية الخليجية'] },
+  'Pharmaceutical':             { name: 'الصناعات الدوائية', subs: ['الأدوية ذات العلامات التجارية','الأدوية الجنيسة','الأجهزة الطبية والتشخيص','التقنية الحيوية','منظمات الأبحاث السريرية','توزيع الرعاية الصحية','المنتجات البيطرية'] },
+  'Retail & FMCG':              { name: 'التجزئة والسلع الاستهلاكية', subs: ['البقالة والسوبرماركت','الأزياء والملابس','تجزئة الإلكترونيات والتقنية','المنزل والأثاث','الصحة والجمال','خدمات الطعام والمطاعم','الجملة والتوزيع','الهايبرماركت والمتاجر الكبرى'] },
+  'Logistics & Transportation': { name: 'اللوجستيات والنقل', subs: ['مزودو الخدمات اللوجستية (3PL / 4PL)','الشحن والتخليص','المستودعات ومراكز التوزيع','توصيل الميل الأخير','البريد السريع','لوجستيات سلسلة التبريد','عمليات الموانئ والجمارك','الشحن الجوي','النقل البري'] },
+  'Construction & EPC':         { name: 'الإنشاءات والمقاولات (EPC)', subs: ['الإنشاءات السكنية','الإنشاءات التجارية والمكتبية','البنية التحتية والمشاريع العملاقة','مقاولات النفط والغاز','مقاولات الطاقة والمرافق','المنشآت الصناعية','الطرق والجسور','تطوير المدن الذكية'] },
+  'Healthcare':                 { name: 'الرعاية الصحية', subs: ['المستشفيات والمراكز الطبية','التشخيص والمختبرات','المستلزمات الطبية والجراحية','الرعاية الصحية المنزلية','العيادات التخصصية','سلاسل عيادات الأسنان','مراكز طب العيون','التأمين الصحي'] },
+  'Technology & ICT':           { name: 'التقنية والاتصالات', subs: ['البرمجيات والحلول السحابية (SaaS)','الأجهزة والإلكترونيات','الاتصالات','خدمات تقنية المعلومات والخدمات المُدارة','السحابة ومراكز البيانات','الأمن السيبراني','الذكاء الاصطناعي وتحليل البيانات','التقنية المالية','تقنيات التعليم'] },
+  'Food & Beverage':            { name: 'الأغذية والمشروبات', subs: ['تصنيع ومعالجة الأغذية','منتجات الألبان','المخبوزات والحلويات','المشروبات (غير الكحولية)','إنتاج الأغذية الحلال','المنتجات الزراعية والتجارة','سلاسل الوجبات السريعة','التموين وخدمات الطعام'] },
+  'E-commerce':                 { name: 'التجارة الإلكترونية', subs: ['منصات التجارة الإلكترونية للمستهلك (B2C)','التجارة الإلكترونية بين الشركات (B2B)','الأسواق الإلكترونية والمجمّعات','العلامات التجارية المباشرة للمستهلك (D2C)','التجارة عبر الحدود','التجارة الاجتماعية','خدمات الاشتراكات'] },
+  'Services':                   { name: 'الخدمات', subs: ['الخدمات المهنية (استشارات، قانونية، تدقيق)','إدارة المرافق','الضيافة والسياحة','التعليم والتدريب','الخدمات المالية والمصرفية','الإعلام والترفيه','العقارات وإدارة الممتلكات'] },
+};
+
+/** Display label for an industry (English key) in the given language */
+function industryLabel(industry: string, ar: boolean): string {
+  return ar ? (INDUSTRY_TREE_AR[industry]?.name ?? industry) : industry;
+}
+
+/** Display label for a sub-sector (English value) of an industry in the given language */
+function subSectorLabel(industry: string, sub: string, ar: boolean): string {
+  if (!ar) return sub;
+  const idx = (INDUSTRY_TREE[industry] ?? []).indexOf(sub);
+  return INDUSTRY_TREE_AR[industry]?.subs[idx] ?? sub;
+}
+
 const REVENUE_BANDS = ['< SAR 50M','SAR 50–200M','SAR 200M–1B','SAR 1–5B','> SAR 5B'];
 const REVENUE_BANDS_AR = ['< 50 مليون ريال','50–200 مليون ريال','200 مليون–1 مليار ريال','1–5 مليار ريال','> 5 مليار ريال'];
 
@@ -521,7 +550,7 @@ function BenchmarkTab({ lang }: { lang: Lang }) {
           <label className="text-xs font-bold text-[#082C6B] uppercase tracking-wider">{ar ? 'القطاع الصناعي' : 'Industry Sector'}</label>
           <select value={industry} onChange={e => handleIndustryChange(e.target.value)}
             className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#082C6B]/30">
-            {Object.keys(INDUSTRY_TREE).map(i => <option key={i}>{i}</option>)}
+            {Object.keys(INDUSTRY_TREE).map(i => <option key={i} value={i}>{industryLabel(i, ar)}</option>)}
           </select>
         </div>
         <div className="space-y-1.5">
@@ -529,7 +558,7 @@ function BenchmarkTab({ lang }: { lang: Lang }) {
           <select value={subIndustry} onChange={e => setSubIndustry(e.target.value)}
             className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#082C6B]/30">
             <option value="">{ar ? '— الكل —' : '— All sub-sectors —'}</option>
-            {(INDUSTRY_TREE[industry] ?? []).map(s => <option key={s}>{s}</option>)}
+            {(INDUSTRY_TREE[industry] ?? []).map(s => <option key={s} value={s}>{subSectorLabel(industry, s, ar)}</option>)}
           </select>
         </div>
         <div className="space-y-1.5">
@@ -737,7 +766,7 @@ function SavingsTab({ lang }: { lang: Lang }) {
           </label>
           <select value={industry} onChange={e => setIndustry(e.target.value)}
             className="w-full border border-border rounded-lg px-3 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#082C6B]/30">
-            {Object.keys(INDUSTRY_TREE).map(i => <option key={i}>{i}</option>)}
+            {Object.keys(INDUSTRY_TREE).map(i => <option key={i} value={i}>{industryLabel(i, ar)}</option>)}
           </select>
         </div>
       </div>
@@ -907,7 +936,7 @@ function RiskTab({ lang }: { lang: Lang }) {
           <label className="text-xs font-bold text-[#082C6B] uppercase tracking-wider">{ar ? 'القطاع' : 'Industry Sector'}</label>
           <select value={industry} onChange={e => setIndustry(e.target.value)}
             className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-white">
-            {Object.keys(INDUSTRY_TREE).map(i => <option key={i}>{i}</option>)}
+            {Object.keys(INDUSTRY_TREE).map(i => <option key={i} value={i}>{industryLabel(i, ar)}</option>)}
           </select>
         </div>
         <div className="space-y-1.5">
@@ -1561,7 +1590,7 @@ function BriefingTab({ lang }: { lang: Lang }) {
               <label className="text-sm font-semibold">{ar ? 'القطاع الصناعي' : 'Industry / Sector'}</label>
               <select value={industry} onChange={e => { setIndustry(e.target.value); setSubIndustry(''); }}
                 className="w-full border border-border rounded-xl px-4 py-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#082C6B]/30">
-                {Object.keys(INDUSTRY_TREE).map(i => <option key={i}>{i}</option>)}
+                {Object.keys(INDUSTRY_TREE).map(i => <option key={i} value={i}>{industryLabel(i, ar)}</option>)}
               </select>
             </div>
             <div className="space-y-1.5">
@@ -1569,7 +1598,7 @@ function BriefingTab({ lang }: { lang: Lang }) {
               <select value={subIndustry} onChange={e => setSubIndustry(e.target.value)}
                 className="w-full border border-border rounded-xl px-4 py-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#082C6B]/30">
                 <option value="">{ar ? '— كل القطاعات الفرعية —' : '— All sub-sectors —'}</option>
-                {(INDUSTRY_TREE[industry] ?? []).map(s => <option key={s}>{s}</option>)}
+                {(INDUSTRY_TREE[industry] ?? []).map(s => <option key={s} value={s}>{subSectorLabel(industry, s, ar)}</option>)}
               </select>
             </div>
             <div className="space-y-1.5">
@@ -1864,14 +1893,14 @@ function ConsultancyTab({ lang }: { lang: Lang }) {
             <div className="space-y-1.5">
               <label className="text-sm font-semibold">{ar ? 'القطاع الصناعي' : 'Industry / Sector'}</label>
               <select value={industry} onChange={e => { setIndustry(e.target.value); setSubIndustry(''); }} className="w-full border border-border rounded-xl px-4 py-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#082C6B]/30">
-                {Object.keys(INDUSTRY_TREE).map(i => <option key={i}>{i}</option>)}
+                {Object.keys(INDUSTRY_TREE).map(i => <option key={i} value={i}>{industryLabel(i, ar)}</option>)}
               </select>
             </div>
             <div className="space-y-1.5">
               <label className="text-sm font-semibold">{ar ? 'القطاع الفرعي' : 'Sub-Sector'}</label>
               <select value={subIndustry} onChange={e => setSubIndustry(e.target.value)} className="w-full border border-border rounded-xl px-4 py-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#082C6B]/30">
                 <option value="">{ar ? '— اختر —' : '— All sub-sectors —'}</option>
-                {(INDUSTRY_TREE[industry] ?? []).map(s => <option key={s}>{s}</option>)}
+                {(INDUSTRY_TREE[industry] ?? []).map(s => <option key={s} value={s}>{subSectorLabel(industry, s, ar)}</option>)}
               </select>
             </div>
           </div>
