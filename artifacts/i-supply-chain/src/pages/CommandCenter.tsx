@@ -980,8 +980,15 @@ function RiskTab({ lang }: { lang: Lang }) {
         </div>
       </div>
 
-      {/* 3-Number Summary */}
-      <div className="grid grid-cols-3 gap-4">
+      {/* Exposure Gauge + 3-Number Summary */}
+      <div className="grid md:grid-cols-[minmax(0,260px)_1fr] gap-4 items-center">
+        <div className="rounded-xl border border-border p-4">
+          <p className="text-xs text-muted-foreground uppercase tracking-wider text-center mb-1 leading-tight">
+            {ar ? 'التعرض الإجمالي لمخاطر سلسلة الإمداد' : 'Overall supply chain risk exposure'}
+          </p>
+          <RiskGauge score={exposureScore} ar={ar} />
+        </div>
+        <div className="grid grid-cols-3 gap-4">
         {[
           { label: ar ? 'مؤشر تعرضك (As-Is)' : 'Your Exposure Score (As-Is)', value: exposureScore, color: riskColor(exposureScore), sub: riskLabel(exposureScore, ar) },
           { label: ar ? 'معيار الخليج' : 'GCC Industry Benchmark', value: industryBenchmark, color: '#082C6B', sub: ar ? 'متوسط القطاع' : 'Sector median' },
@@ -993,6 +1000,7 @@ function RiskTab({ lang }: { lang: Lang }) {
             <p className="text-xs font-semibold mt-1" style={{ color: s.color }}>{s.sub}</p>
           </div>
         ))}
+        </div>
       </div>
 
       {/* Risk Category Ratings */}
