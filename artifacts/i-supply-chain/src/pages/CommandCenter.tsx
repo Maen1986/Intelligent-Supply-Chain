@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useLanguage } from '@/lib/LanguageContext';
+import { rankWeakest } from '@/lib/weakestAreas';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
@@ -289,13 +290,17 @@ function subDimensionScores(ratings: Record<string, number>, lang: Lang = 'en'):
 /** Compute the 5 weakest sub-dimensions (sorted ascending by score) with localized domain + sub labels */
 function weakestSubDimensions(ratings: Record<string, number>, lang: Lang): { domain: string; label: string; score: number }[] {
   const ar = lang === 'ar';
-  return MATURITY_DOMAINS_EX.flatMap(d =>
-    d.subs.map(s => ({
-      domain: ar ? d.labelAr : d.label,
-      label: ar ? s.labelAr : s.label,
-      score: ratings[`${d.id}__${s.id}`] ?? 2,
-    }))
-  ).sort((a, b) => a.score - b.score).slice(0, 5);
+  return rankWeakest(
+    MATURITY_DOMAINS_EX.flatMap(d =>
+      d.subs.map(s => ({
+        domain: ar ? d.labelAr : d.label,
+        label: ar ? s.labelAr : s.label,
+        score: ratings[`${d.id}__${s.id}`] ?? 2,
+      }))
+    ),
+    item => item.score,
+    5,
+  );
 }
 
 const KPI_DOMAINS = [

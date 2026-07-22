@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/lib/LanguageContext';
+import { rankWeakest } from '@/lib/weakestAreas';
 import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
   ResponsiveContainer, Tooltip, Legend, BarChart, Bar, XAxis, YAxis,
@@ -1517,10 +1518,11 @@ export function Maturity() {
             <h2 className="text-xl font-bold">{ar ? 'خطة العمل ذات الأولوية' : 'Priority Action Plan'}</h2>
           </div>
           <div className="grid md:grid-cols-3 gap-5 mb-8">
-            {[...SEGMENTS]
-              .map((seg, i) => ({ seg, i, score: segScore(i) ?? 0 }))
-              .sort((a, b) => a.score - b.score)
-              .slice(0, 3)
+            {rankWeakest(
+              SEGMENTS.map((seg, i) => ({ seg, i, score: segScore(i) ?? 0 })),
+              item => item.score,
+              3,
+            )
               .map((item, rank) => (
                 <div key={item.seg.id} className="bg-white/10 rounded-2xl p-5 border border-white/15">
                   <div className="flex items-center gap-2 mb-3">
