@@ -8,9 +8,9 @@ import {
 } from 'recharts';
 import { Link } from 'wouter';
 import {
-  Target, TrendingUp, ShieldAlert, Brain, ChevronRight, Check,
+  Target, TrendingUp, ShieldAlert, Brain, ChevronRight, ChevronLeft, Check,
   AlertTriangle, Zap, BarChart2, DollarSign, Clock, Loader2,
-  ArrowRight, Copy, CheckCircle2, Star, RefreshCw, Building2,
+  ArrowRight, ArrowLeft, Copy, CheckCircle2, Star, RefreshCw, Building2,
   MessageSquare, Languages, Sparkles,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -712,7 +712,7 @@ function BenchmarkTab({ lang }: { lang: Lang }) {
         </div>
         <Link href="/consultant">
           <Button className="bg-[#C9A84C] hover:bg-[#b8973e] text-white font-bold shrink-0">
-            {ar ? 'احجز استشارة مجانية' : 'Book Free Consultation'} <ArrowRight className="w-4 h-4 ml-1" />
+            {ar ? 'احجز استشارة مجانية' : 'Book Free Consultation'} {ar ? <ArrowLeft className="w-4 h-4 mr-1" /> : <ArrowRight className="w-4 h-4 ml-1" />}
           </Button>
         </Link>
       </div>
@@ -1149,8 +1149,8 @@ function RiskTab({ lang }: { lang: Lang }) {
           </div>
           <Button onClick={generatePlan} disabled={loading} className="bg-[#082C6B] hover:bg-[#0B3D91] text-white font-bold">
             {loading
-              ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />{ar ? 'جارٍ الإنشاء...' : 'Generating...'}</>
-              : <><Brain className="w-4 h-4 mr-2" />{ar ? 'إنشاء خطة التخفيف' : 'Generate Mitigation Plan'}</>}
+              ? <><Loader2 className={`w-4 h-4 animate-spin ${ar ? 'ml-2' : 'mr-2'}`} />{ar ? 'جارٍ الإنشاء...' : 'Generating...'}</>
+              : <><Brain className={`w-4 h-4 ${ar ? 'ml-2' : 'mr-2'}`} />{ar ? 'إنشاء خطة التخفيف' : 'Generate Mitigation Plan'}</>}
           </Button>
         </div>
         {aiErr && <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl p-3 text-sm">{aiErr}</div>}
@@ -1188,7 +1188,7 @@ function RiskTab({ lang }: { lang: Lang }) {
         </div>
         <Link href="/consultant">
           <Button className="bg-[#C9A84C] hover:bg-[#b8973e] text-white font-bold shrink-0">
-            {ar ? "تحدّث مع ما'ين" : "Talk to Ma'in"} <ArrowRight className="w-4 h-4 ml-1" />
+            {ar ? "تحدّث مع ما'ين" : "Talk to Ma'in"} {ar ? <ArrowLeft className="w-4 h-4 mr-1" /> : <ArrowRight className="w-4 h-4 ml-1" />}
           </Button>
         </Link>
       </div>
@@ -1466,7 +1466,7 @@ function BriefingTab({ lang }: { lang: Lang }) {
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold leading-snug">{w.action}</p>
                   <div className="flex gap-2 mt-2 flex-wrap">
-                    <span className="text-xs bg-[#082C6B]/10 text-[#082C6B] px-2 py-0.5 rounded-full font-semibold"><Clock className="w-2.5 h-2.5 inline mr-1" />{w.timeframe}</span>
+                    <span className="text-xs bg-[#082C6B]/10 text-[#082C6B] px-2 py-0.5 rounded-full font-semibold"><Clock className={`w-2.5 h-2.5 inline ${ar ? 'ml-1' : 'mr-1'}`} />{w.timeframe}</span>
                     <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${effortColor[w.effort]}`}>
                       {ar ? (EFFORT_AR[w.effort] ?? w.effort) : w.effort} {ar ? 'جهد' : 'effort'}
                     </span>
@@ -1540,7 +1540,7 @@ function BriefingTab({ lang }: { lang: Lang }) {
           </div>
           <Link href="/consultant">
             <Button className="bg-[#C9A84C] hover:bg-[#b8973e] text-white font-bold shrink-0">
-              {ar ? 'احجز استشارة' : 'Book Consultation'} <ArrowRight className="w-4 h-4 ml-2" />
+              {ar ? 'احجز استشارة' : 'Book Consultation'} {ar ? <ArrowLeft className="w-4 h-4 mr-2" /> : <ArrowRight className="w-4 h-4 ml-2" />}
             </Button>
           </Link>
         </div>
@@ -1613,7 +1613,7 @@ function BriefingTab({ lang }: { lang: Lang }) {
               </div>
             </div>
             <Button onClick={() => setStep('step2')} className="w-full bg-[#082C6B] hover:bg-[#0B3D91] text-white">
-              {ar ? 'التالي' : 'Continue'} <ChevronRight className="w-4 h-4 ml-1" />
+              {ar ? 'التالي' : 'Continue'} {ar ? <ChevronLeft className="w-4 h-4 mr-1" /> : <ChevronRight className="w-4 h-4 ml-1" />}
             </Button>
           </motion.div>
         )}
@@ -1632,7 +1632,7 @@ function BriefingTab({ lang }: { lang: Lang }) {
                 return (
                   <button key={key} onClick={() => togglePain(key)}
                     className={`px-3 py-1.5 rounded-full border text-sm font-medium transition-all ${painPoints.includes(key) ? 'bg-[#082C6B] text-white border-[#082C6B]' : 'bg-white text-foreground border-border hover:border-[#082C6B]/40'}`}>
-                    {painPoints.includes(key) && <Check className="w-3 h-3 inline mr-1" />}{p}
+                    {painPoints.includes(key) && <Check className={`w-3 h-3 inline ${ar ? 'ml-1' : 'mr-1'}`} />}{p}
                   </button>
                 );
               })}
@@ -1642,7 +1642,7 @@ function BriefingTab({ lang }: { lang: Lang }) {
                 {ar ? 'السابق' : 'Back'}
               </Button>
               <Button onClick={() => setStep('step3')} disabled={painPoints.length < 2} className="flex-1 bg-[#082C6B] hover:bg-[#0B3D91] text-white">
-                {ar ? 'التالي' : 'Continue'} <ChevronRight className="w-4 h-4 ml-1" />
+                {ar ? 'التالي' : 'Continue'} {ar ? <ChevronLeft className="w-4 h-4 mr-1" /> : <ChevronRight className="w-4 h-4 ml-1" />}
               </Button>
             </div>
           </motion.div>
@@ -1698,7 +1698,9 @@ function BriefingTab({ lang }: { lang: Lang }) {
                       <span className="text-xs font-bold px-2 py-0.5 rounded-full text-white" style={{ backgroundColor: avgColor }}>
                         {domainAvg} / 5
                       </span>
-                      <ChevronRight className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${isOpen ? 'rotate-90' : ''}`} />
+                      {ar
+                        ? <ChevronLeft className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${isOpen ? '-rotate-90' : ''}`} />
+                        : <ChevronRight className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${isOpen ? 'rotate-90' : ''}`} />}
                     </button>
                     {/* Sub-dimensions */}
                     <AnimatePresence initial={false}>
@@ -1748,7 +1750,7 @@ function BriefingTab({ lang }: { lang: Lang }) {
                 {ar ? 'السابق' : 'Back'}
               </Button>
               <Button onClick={generate} className="flex-1 bg-[#082C6B] hover:bg-[#0B3D91] text-white font-bold">
-                <Brain className="w-4 h-4 mr-2" /> {ar ? 'إنشاء إحاطتي التنفيذية' : 'Generate My Briefing'}
+                <Brain className={`w-4 h-4 ${ar ? 'ml-2' : 'mr-2'}`} /> {ar ? 'إنشاء إحاطتي التنفيذية' : 'Generate My Briefing'}
               </Button>
             </div>
           </motion.div>
@@ -1919,7 +1921,7 @@ function ConsultancyTab({ lang }: { lang: Lang }) {
             <p className="text-xs text-muted-foreground">{challenge.length}/2000</p>
           </div>
           <Button onClick={runDiagnosis} disabled={challenge.trim().length < 20} className="w-full bg-[#082C6B] hover:bg-[#0B3D91] text-white font-bold py-3">
-            <Brain className="w-4 h-4 mr-2" />{ar ? 'ابدأ التشخيص الذكي' : 'Run AI Diagnosis'}
+            <Brain className={`w-4 h-4 ${ar ? 'ml-2' : 'mr-2'}`} />{ar ? 'ابدأ التشخيص الذكي' : 'Run AI Diagnosis'}
           </Button>
         </motion.div>
       )}
@@ -1991,7 +1993,7 @@ function ConsultancyTab({ lang }: { lang: Lang }) {
             </div>
           )}
           <Button onClick={generateSolution} className="w-full bg-[#082C6B] hover:bg-[#0B3D91] text-white font-bold py-3">
-            <Zap className="w-4 h-4 mr-2" />{ar ? 'إنشاء خطة الحل الكاملة' : 'Generate Full Solution Plan'}
+            <Zap className={`w-4 h-4 ${ar ? 'ml-2' : 'mr-2'}`} />{ar ? 'إنشاء خطة الحل الكاملة' : 'Generate Full Solution Plan'}
           </Button>
         </motion.div>
       )}
@@ -2029,7 +2031,7 @@ function ConsultancyTab({ lang }: { lang: Lang }) {
                   <p className="text-sm font-semibold mb-3">{phase.focus}</p>
                   <div className="grid sm:grid-cols-3 gap-3 text-xs">
                     <div><p className="font-bold text-muted-foreground uppercase tracking-wider mb-1">{ar ? 'الأنشطة' : 'Activities'}</p>{phase.activities.map((a,i) => <p key={i} className="flex gap-1 mt-0.5"><Check className="w-3 h-3 text-emerald-600 shrink-0 mt-0.5" />{a}</p>)}</div>
-                    <div><p className="font-bold text-muted-foreground uppercase tracking-wider mb-1">{ar ? 'المخرجات' : 'Deliverables'}</p>{phase.deliverables.map((d,i) => <p key={i} className="flex gap-1 mt-0.5"><ChevronRight className="w-3 h-3 text-[#082C6B] shrink-0 mt-0.5" />{d}</p>)}</div>
+                    <div><p className="font-bold text-muted-foreground uppercase tracking-wider mb-1">{ar ? 'المخرجات' : 'Deliverables'}</p>{phase.deliverables.map((d,i) => <p key={i} className="flex gap-1 mt-0.5">{ar ? <ChevronLeft className="w-3 h-3 text-[#082C6B] shrink-0 mt-0.5" /> : <ChevronRight className="w-3 h-3 text-[#082C6B] shrink-0 mt-0.5" />}{d}</p>)}</div>
                     <div><p className="font-bold text-muted-foreground uppercase tracking-wider mb-1">{ar ? 'مؤشرات الأداء' : 'KPIs'}</p>{phase.kpis.map((k,i) => <p key={i} className="flex gap-1 mt-0.5"><BarChart2 className="w-3 h-3 text-[#C9A84C] shrink-0 mt-0.5" />{k}</p>)}</div>
                   </div>
                 </div>
@@ -2081,7 +2083,7 @@ function ConsultancyTab({ lang }: { lang: Lang }) {
                     {n}
                   </button>
                 ))}
-                {satisfaction > 0 && <span className="text-sm text-muted-foreground ml-2">{satisfaction >= 4 ? (ar ? '— ممتاز!' : '— Great!') : (ar ? '— دعنا نحسّنه' : '— Let us improve')}</span>}
+                {satisfaction > 0 && <span className={`text-sm text-muted-foreground ${ar ? 'mr-2' : 'ml-2'}`}>{satisfaction >= 4 ? (ar ? '— ممتاز!' : '— Great!') : (ar ? '— دعنا نحسّنه' : '— Let us improve')}</span>}
               </div>
               {satisfaction > 0 && satisfaction < 4 && (
                 <div className="space-y-2">
@@ -2089,7 +2091,7 @@ function ConsultancyTab({ lang }: { lang: Lang }) {
                     placeholder={ar ? 'ما الذي تريد تحسينه أو توضيحه؟' : 'What would you like improved or clarified?'}
                     className="w-full border border-border rounded-xl px-4 py-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#082C6B]/30 resize-none" />
                   <Button onClick={refineSolution} disabled={!feedback.trim()} className="bg-[#082C6B] hover:bg-[#0B3D91] text-white text-sm">
-                    <RefreshCw className="w-3 h-3 mr-1" />{ar ? 'تحسين الحل' : 'Refine Solution'}
+                    <RefreshCw className={`w-3 h-3 ${ar ? 'ml-1' : 'mr-1'}`} />{ar ? 'تحسين الحل' : 'Refine Solution'}
                   </Button>
                 </div>
               )}
@@ -2104,11 +2106,11 @@ function ConsultancyTab({ lang }: { lang: Lang }) {
             {!escalated ? (
               <div className="flex gap-2 flex-wrap">
                 <Button onClick={escalate} className="bg-[#C9A84C] hover:bg-[#b8973e] text-white font-bold shrink-0">
-                  <MessageSquare className="w-4 h-4 mr-2" />{ar ? 'إحالة للمستشار' : 'Escalate to Consultant'}
+                  <MessageSquare className={`w-4 h-4 ${ar ? 'ml-2' : 'mr-2'}`} />{ar ? 'إحالة للمستشار' : 'Escalate to Consultant'}
                 </Button>
                 <Link href="/consultant">
                   <Button variant="outline" className="bg-white/10 border-white/30 text-white hover:bg-white/20 shrink-0">
-                    {ar ? 'احجز موعداً' : 'Book Consultation'} <ArrowRight className="w-4 h-4 ml-1" />
+                    {ar ? 'احجز موعداً' : 'Book Consultation'} {ar ? <ArrowLeft className="w-4 h-4 mr-1" /> : <ArrowRight className="w-4 h-4 ml-1" />}
                   </Button>
                 </Link>
               </div>
