@@ -1235,7 +1235,10 @@ interface BriefingDraft {
   painPoints?: string[];
   kpiRatings?: Record<string, number>;
   maturityRatings?: Record<string, number>;
+  step?: string;
 }
+
+const RESUMABLE_STEPS: BriefingStep[] = ['step1', 'step2', 'step3'];
 
 function loadBriefingDraft(): BriefingDraft {
   try {
@@ -1251,7 +1254,8 @@ function loadBriefingDraft(): BriefingDraft {
 function BriefingTab({ lang }: { lang: Lang }) {
   const ar = lang === 'ar';
   const [draft] = useState<BriefingDraft>(loadBriefingDraft);
-  const [step, setStep] = useState<BriefingStep>('step1');
+  const [step, setStep] = useState<BriefingStep>(() =>
+    RESUMABLE_STEPS.includes(draft.step as BriefingStep) ? draft.step as BriefingStep : 'step1');
   const [industry, setIndustry] = useState(() =>
     draft.industry && INDUSTRY_TREE[draft.industry] ? draft.industry : Object.keys(INDUSTRY_TREE)[0]);
   const [subIndustry, setSubIndustry] = useState(() =>
@@ -1282,9 +1286,10 @@ function BriefingTab({ lang }: { lang: Lang }) {
   // Auto-save draft on every change
   useEffect(() => {
     try {
-      localStorage.setItem(BRIEFING_DRAFT_KEY, JSON.stringify({ industry, subIndustry, revenueBand, painPoints, kpiRatings, maturityRatings } satisfies BriefingDraft));
+      const savedStep = RESUMABLE_STEPS.includes(step) ? step : 'step3';
+      localStorage.setItem(BRIEFING_DRAFT_KEY, JSON.stringify({ industry, subIndustry, revenueBand, painPoints, kpiRatings, maturityRatings, step: savedStep } satisfies BriefingDraft));
     } catch { /* storage unavailable — ignore */ }
-  }, [industry, subIndustry, revenueBand, painPoints, kpiRatings, maturityRatings]);
+  }, [industry, subIndustry, revenueBand, painPoints, kpiRatings, maturityRatings, step]);
 
   const clearDraft = () => {
     try { localStorage.removeItem(BRIEFING_DRAFT_KEY); } catch { /* ignore */ }
