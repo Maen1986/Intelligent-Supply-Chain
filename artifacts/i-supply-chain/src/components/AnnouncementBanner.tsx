@@ -66,7 +66,7 @@ export function AnnouncementBanner() {
               <button
                 onClick={dismiss}
                 className="text-white/60 hover:text-white transition-colors p-1 rounded"
-                aria-label="Dismiss"
+                aria-label={ar ? 'إغلاق' : 'Dismiss'}
               >
                 <X className="w-4 h-4" />
               </button>

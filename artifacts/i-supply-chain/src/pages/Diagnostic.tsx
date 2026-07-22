@@ -31,7 +31,7 @@ export function Diagnostic() {
   const handleSubmit = async () => {
     setIsGenerating(true);
     await new Promise(r => setTimeout(r, 1200));
-    const generated = generateReport(formData as any);
+    const generated = generateReport(formData as any, lang);
     setReport(generated);
     setIsGenerating(false);
 

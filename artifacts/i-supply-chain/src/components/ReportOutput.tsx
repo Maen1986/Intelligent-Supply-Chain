@@ -10,6 +10,25 @@ export function ReportOutput({ report }: { report: DiagnosticReport }) {
   const { t, lang } = useLanguage();
   const isAr = lang === 'ar';
 
+  const labelAr: Record<string, string> = {
+    // Business size
+    'Startup': 'شركة ناشئة', 'SME': 'منشأة صغيرة ومتوسطة', 'Mid-Market': 'الشركات المتوسطة',
+    'Enterprise': 'مؤسسة كبرى', 'Government Entity': 'جهة حكومية',
+    // Region
+    'International': 'دولي', 'Saudi Arabia': 'المملكة العربية السعودية', 'Jordan': 'الأردن', 'Other GCC': 'دول الخليج الأخرى',
+    // Industry
+    'Manufacturing': 'التصنيع', 'Marine': 'القطاع البحري', 'Retail': 'التجزئة', 'FMCG': 'السلع الاستهلاكية سريعة الدوران',
+    'Pharma': 'الأدوية', 'Logistics': 'الخدمات اللوجستية', 'Energy': 'الطاقة', 'Construction': 'الإنشاءات',
+    'Tech': 'التقنية', 'Government': 'القطاع الحكومي', 'Ecommerce': 'التجارة الإلكترونية',
+    'Food & Beverage': 'الأغذية والمشروبات', 'Healthcare': 'الرعاية الصحية',
+    // Focus area
+    'Supply Chain Strategy': 'استراتيجية سلسلة الإمداد', 'Procurement': 'المشتريات', 'CLM': 'إدارة دورة حياة العقود',
+    'Supplier Governance': 'حوكمة الموردين', 'Risk Management': 'إدارة المخاطر', 'Sustainability': 'الاستدامة',
+    'Resiliency': 'المرونة التشغيلية', 'Digital Transformation': 'التحول الرقمي',
+    'Organizational Design': 'التصميم المؤسسي', 'Government Compliance': 'الامتثال الحكومي',
+  };
+  const loc = (v: string) => (isAr ? labelAr[v] ?? v : v);
+
   const handlePrint = () => {
     window.print();
   };
@@ -52,10 +71,10 @@ export function ReportOutput({ report }: { report: DiagnosticReport }) {
           <h1 className="text-xl sm:text-3xl font-bold mb-3 sm:mb-4">{isAr ? 'تقرير تشخيص سلسلة الإمداد' : 'Supply Chain Diagnostic Report'}</h1>
 
           <div className="flex flex-wrap gap-2 sm:gap-4 mt-4 sm:mt-6">
-            <span className="px-3 py-1 bg-white/10 rounded-full text-xs sm:text-sm font-medium">{report.industry}</span>
-            <span className="px-3 py-1 bg-white/10 rounded-full text-xs sm:text-sm font-medium">{report.businessSize}</span>
-            <span className="px-3 py-1 bg-white/10 rounded-full text-xs sm:text-sm font-medium">{report.region}</span>
-            <span className="px-3 py-1 bg-accent/20 border border-accent/50 text-accent-foreground rounded-full text-xs sm:text-sm font-medium">{report.focusArea}</span>
+            <span className="px-3 py-1 bg-white/10 rounded-full text-xs sm:text-sm font-medium">{loc(report.industry)}</span>
+            <span className="px-3 py-1 bg-white/10 rounded-full text-xs sm:text-sm font-medium">{loc(report.businessSize)}</span>
+            <span className="px-3 py-1 bg-white/10 rounded-full text-xs sm:text-sm font-medium">{loc(report.region)}</span>
+            <span className="px-3 py-1 bg-accent/20 border border-accent/50 text-accent-foreground rounded-full text-xs sm:text-sm font-medium">{loc(report.focusArea)}</span>
           </div>
         </div>
 

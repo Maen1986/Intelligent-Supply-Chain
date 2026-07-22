@@ -217,7 +217,7 @@ export function Header() {
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className="p-2 rounded-lg text-gray-700 hover:bg-muted transition-colors"
-            aria-label="Toggle menu"
+            aria-label={lang === 'ar' ? 'تبديل القائمة' : 'Toggle menu'}
           >
             {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
           </button>

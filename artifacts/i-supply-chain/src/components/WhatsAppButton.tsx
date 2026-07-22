@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageCircle, X } from 'lucide-react';
+import { useLanguage } from '@/lib/LanguageContext';
 
 export function WhatsAppButton() {
+  const { lang } = useLanguage();
+  const ar = lang === 'ar';
   const [hovered, setHovered] = useState(false);
   const phone = '966549479722';
-  const message = encodeURIComponent('Hello, I would like to discuss a supply chain challenge with I Supply Chain.');
+  const message = encodeURIComponent(ar ? 'مرحباً، أودّ مناقشة تحدٍّ في سلسلة الإمداد مع I Supply Chain.' : 'Hello, I would like to discuss a supply chain challenge with I Supply Chain.');
   const url = `https://wa.me/${phone}?text=${message}`;
 
   return (
@@ -19,7 +22,7 @@ export function WhatsAppButton() {
             transition={{ duration: 0.2 }}
             className="bg-white text-foreground text-sm font-semibold px-4 py-2 rounded-xl shadow-lg border border-border whitespace-nowrap pointer-events-none"
           >
-            Chat on WhatsApp
+            {ar ? 'تواصل عبر واتساب' : 'Chat on WhatsApp'}
           </motion.div>
         )}
       </AnimatePresence>
@@ -28,7 +31,7 @@ export function WhatsAppButton() {
         href={url}
         target="_blank"
         rel="noopener noreferrer"
-        aria-label="Chat with us on WhatsApp"
+        aria-label={ar ? 'تواصل معنا عبر واتساب' : 'Chat with us on WhatsApp'}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
         whileHover={{ scale: 1.1 }}
