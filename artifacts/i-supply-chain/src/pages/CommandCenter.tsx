@@ -11,7 +11,7 @@ import {
   Target, TrendingUp, ShieldAlert, Brain, ChevronRight, ChevronLeft, Check,
   AlertTriangle, Zap, BarChart2, DollarSign, Clock, Loader2,
   ArrowRight, ArrowLeft, Copy, CheckCircle2, Star, RefreshCw, Building2,
-  MessageSquare, Languages, Sparkles, Download,
+  MessageSquare, Languages, Sparkles, Download, Eye, X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -1504,17 +1504,26 @@ function BriefingTab({ lang }: { lang: Lang }) {
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
   const [pdfBusy, setPdfBusy] = useState(false);
+  const [previewBusy, setPreviewBusy] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewPages, setPreviewPages] = useState<string[]>([]);
+  const previewCanvases = React.useRef<HTMLCanvasElement[]>([]);
   const pdfRef = React.useRef<HTMLDivElement>(null);
 
-  /** Render the hidden BriefingPrintable layout into a jsPDF instance
-      with section-aware pagination (no awkward splits mid-card). */
-  const buildPdf = useCallback(async () => {
-    if (!pdfRef.current) throw new Error('Printable layout not mounted');
-    const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
-      import('html2canvas-pro'),
-      import('jspdf'),
-    ]);
-    // Measure atomic blocks (cards, headings, sections) BEFORE capture so page
+  // Cached pages become stale whenever the briefing content or language changes
+  useEffect(() => {
+    previewCanvases.current = [];
+    setPreviewPages([]);
+    setPreviewOpen(false);
+  }, [briefing, lang]);
+
+  // Renders the hidden printable layout into A4-sized page canvases (section-aware
+  // pagination, no awkward splits mid-card). Shared by the preview modal, the PDF
+  // download, and the submission attachment.
+  const renderPdfPages = async (): Promise<HTMLCanvasElement[]> => {
+      if (!pdfRef.current) throw new Error('Printable layout not mounted');
+      const { default: html2canvas } = await import('html2canvas-pro');
+      // Measure atomic blocks (cards, headings, sections) BEFORE capture so page
       // breaks can be placed between blocks instead of cutting through them.
       const containerEl = pdfRef.current;
       const containerRect = containerEl.getBoundingClientRect();
@@ -1536,7 +1545,6 @@ function BriefingTab({ lang }: { lang: Lang }) {
       }
 
       const canvas = await html2canvas(containerEl, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
-      const pdf = new jsPDF('p', 'mm', 'a4');
       const pageW = 210, pageH = 297;
       const footerHmm = 12; // reserved band at the bottom of every page for branding + page number
       const contentHmm = pageH - footerHmm;
@@ -1612,25 +1620,44 @@ function BriefingTab({ lang }: { lang: Lang }) {
         return f;
       };
 
+      const fullPageHpx = Math.floor(pageH * pxPerMm);
+      const pages: HTMLCanvasElement[] = [];
       for (let page = 0; page < starts.length; page++) {
         const y = starts[page];
         const end = page + 1 < starts.length ? starts[page + 1] : canvas.height;
         const sliceH = Math.min(end - y, pageHpx);
         if (sliceH <= 0) continue;
+        // Full A4-height page canvas (content area + footer band) so every page —
+        // including the last — has the same aspect ratio, and the preview shows
+        // exactly what the downloaded PDF will contain.
         const slice = document.createElement('canvas');
         slice.width = canvas.width;
-        slice.height = sliceH;
+        slice.height = fullPageHpx;
         const ctx = slice.getContext('2d')!;
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(0, 0, slice.width, slice.height);
         ctx.drawImage(canvas, 0, y, canvas.width, sliceH, 0, 0, canvas.width, sliceH);
-        if (page > 0) pdf.addPage();
-        pdf.addImage(slice.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, pageW, sliceH / pxPerMm);
         // Footer band: page number + brand line at the bottom of every page.
         const footer = renderFooter(page + 1);
-        pdf.addImage(footer.toDataURL('image/jpeg', 0.92), 'JPEG', 0, pageH - footerHmm, pageW, footerHmm);
+        ctx.drawImage(footer, 0, fullPageHpx - footerHpx);
+        pages.push(slice);
       }
+      return pages;
+  };
+
+  /** Assemble a jsPDF document from rendered page canvases, reusing cached
+      preview pages when available. Used by download and submission attach. */
+  const buildPdf = useCallback(async () => {
+    const pages = previewCanvases.current.length > 0 ? previewCanvases.current : await renderPdfPages();
+    const { jsPDF } = await import('jspdf');
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const pageW = 210, pageH = 297;
+    pages.forEach((slice, i) => {
+      if (i > 0) pdf.addPage();
+      pdf.addImage(slice.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, pageW, pageH);
+    });
     return { pdf, filename: `ISC-Executive-Briefing-${new Date().toISOString().slice(0, 10)}.pdf` };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ar]);
 
   const downloadPdf = async () => {
@@ -1644,6 +1671,22 @@ function BriefingTab({ lang }: { lang: Lang }) {
       alert(ar ? 'تعذّر إنشاء ملف PDF. حاول مرة أخرى.' : 'Could not generate the PDF. Please try again.');
     } finally {
       setPdfBusy(false);
+    }
+  };
+
+  const previewPdf = async () => {
+    if (!briefing || !pdfRef.current || previewBusy) return;
+    setPreviewBusy(true);
+    try {
+      const pages = await renderPdfPages();
+      previewCanvases.current = pages;
+      setPreviewPages(pages.map(p => p.toDataURL('image/jpeg', 0.85)));
+      setPreviewOpen(true);
+    } catch (err) {
+      console.error('PDF preview failed:', err);
+      alert(ar ? 'تعذّر إنشاء معاينة PDF. حاول مرة أخرى.' : 'Could not generate the PDF preview. Please try again.');
+    } finally {
+      setPreviewBusy(false);
     }
   };
 
@@ -1831,6 +1874,54 @@ function BriefingTab({ lang }: { lang: Lang }) {
             <BriefingPrintable briefing={briefing} maturityRatings={maturityRatings} industry={industry} revenueBand={revenueBand} lang={lang} />
           </div>
         </div>
+        {/* PDF page preview modal */}
+        <AnimatePresence>
+          {previewOpen && previewPages.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4"
+              onClick={() => setPreviewOpen(false)}
+            >
+              <motion.div
+                initial={{ scale: 0.96, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.96, opacity: 0 }}
+                className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden"
+                dir={ar ? 'rtl' : 'ltr'}
+                onClick={e => e.stopPropagation()}
+              >
+                <div className="flex items-center justify-between px-5 py-3 border-b border-border shrink-0">
+                  <div>
+                    <p className="font-bold text-[#082C6B]">{ar ? 'معاينة ملف PDF' : 'PDF Preview'}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {ar ? `${previewPages.length} صفحة — هذا ما سيبدو عليه الملف الذي تشاركه` : `${previewPages.length} page${previewPages.length > 1 ? 's' : ''} — this is exactly what your downloaded PDF will look like`}
+                    </p>
+                  </div>
+                  <button onClick={() => setPreviewOpen(false)} aria-label={ar ? 'إغلاق' : 'Close'} className="p-2 rounded-lg hover:bg-muted transition-colors">
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                <div className="overflow-y-auto p-5 space-y-5 bg-gray-100">
+                  {previewPages.map((src, i) => (
+                    <div key={i}>
+                      <img src={src} alt={ar ? `صفحة ${i + 1}` : `Page ${i + 1}`} className="w-full rounded-md shadow-md border border-border bg-white" />
+                      <p className="text-center text-xs text-muted-foreground mt-1.5">
+                        {ar ? `صفحة ${i + 1} من ${previewPages.length}` : `Page ${i + 1} of ${previewPages.length}`}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex justify-end gap-2 px-5 py-3 border-t border-border shrink-0">
+                  <button onClick={() => setPreviewOpen(false)} className="px-4 py-2 rounded-lg border border-border text-sm font-semibold hover:bg-muted transition-colors">
+                    {ar ? 'إغلاق' : 'Close'}
+                  </button>
+                  <button onClick={downloadPdf} disabled={pdfBusy} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#082C6B] text-white text-sm font-semibold hover:bg-[#0B3D91] transition-colors disabled:opacity-60">
+                    {pdfBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                    {pdfBusy ? (ar ? 'جارٍ الإنشاء…' : 'Generating…') : (ar ? 'تحميل PDF' : 'Download PDF')}
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
         {/* Header */}
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
@@ -1843,6 +1934,10 @@ function BriefingTab({ lang }: { lang: Lang }) {
             <p className="text-sm text-muted-foreground">{revenueBand} · Ma'in Alhaqash MCIPS CPSM MSc</p>
           </div>
           <div className="flex gap-2">
+            <button onClick={previewPdf} disabled={previewBusy} className="flex items-center gap-2 px-4 py-2 rounded-lg border border-[#082C6B] text-[#082C6B] text-sm font-semibold hover:bg-[#082C6B]/5 transition-colors disabled:opacity-60">
+              {previewBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Eye className="w-4 h-4" />}
+              {previewBusy ? (ar ? 'جارٍ التحضير…' : 'Preparing…') : (ar ? 'معاينة PDF' : 'Preview PDF')}
+            </button>
             <button onClick={downloadPdf} disabled={pdfBusy} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#082C6B] text-white text-sm font-semibold hover:bg-[#0B3D91] transition-colors disabled:opacity-60">
               {pdfBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
               {pdfBusy ? (ar ? 'جارٍ الإنشاء…' : 'Generating…') : (ar ? 'تحميل PDF' : 'Download PDF')}
