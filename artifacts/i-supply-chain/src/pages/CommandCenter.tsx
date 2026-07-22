@@ -1663,6 +1663,13 @@ function BriefingTab({ lang }: { lang: Lang }) {
         score: Math.round(avg * 10) / 10,
       };
     });
+    const weakestSubs = MATURITY_DOMAINS_EX.flatMap(d =>
+      d.subs.map(s => ({
+        domain: ar ? d.labelAr : d.label,
+        label: ar ? s.labelAr : s.label,
+        score: maturityRatings[`${d.id}__${s.id}`] ?? 2,
+      }))
+    ).sort((a, b) => a.score - b.score).slice(0, 5);
     return (
       <div className="space-y-7" dir={ar ? 'rtl' : 'ltr'}>
         {/* Hidden branded layout captured for PDF export */}
@@ -1758,6 +1765,33 @@ function BriefingTab({ lang }: { lang: Lang }) {
                 <Tooltip formatter={(v: number) => [`${v} / 5`, lang === 'ar' ? 'درجة النضج' : 'Maturity Score']} />
               </RadarChart>
             </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Weakest Sub-Dimensions */}
+        <div className="rounded-xl border border-border p-4">
+          <h3 className="font-bold text-[#082C6B] text-sm uppercase tracking-wider mb-1">
+            {ar ? 'أضعف الأبعاد الفرعية' : 'Weakest Sub-Dimensions'}
+          </h3>
+          <p className="text-xs text-muted-foreground mb-3">
+            {ar ? 'أدنى خمس درجات من تقييمك المكوّن من 40 بُعداً فرعياً' : 'Your five lowest scores across the 40-point sub-dimension assessment'}
+          </p>
+          <div className="space-y-2">
+            {weakestSubs.map((s, i) => (
+              <div key={`${s.domain}-${s.label}`} className="flex items-center gap-3">
+                <div className="w-6 h-6 rounded-full bg-red-100 text-red-700 flex items-center justify-center text-xs font-black shrink-0">{i + 1}</div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold leading-snug truncate">{s.label}</p>
+                  <p className="text-xs text-muted-foreground truncate">{s.domain}</p>
+                </div>
+                <div className="flex items-center gap-2 shrink-0" dir="ltr">
+                  <div className="w-20 h-1.5 rounded-full bg-gray-100 overflow-hidden">
+                    <div className={`h-full rounded-full ${s.score <= 2 ? 'bg-red-500' : s.score <= 3 ? 'bg-amber-500' : 'bg-emerald-500'}`} style={{ width: `${(s.score / 5) * 100}%` }} />
+                  </div>
+                  <span className={`text-sm font-bold tabular-nums ${s.score <= 2 ? 'text-red-600' : s.score <= 3 ? 'text-amber-600' : 'text-emerald-600'}`}>{s.score}<span className="text-xs font-normal text-muted-foreground">/5</span></span>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 
