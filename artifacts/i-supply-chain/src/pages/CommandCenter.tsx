@@ -2428,7 +2428,20 @@ function BriefingTab({ lang }: { lang: Lang }) {
               {ar ? 'أخبرنا عن مؤسستك' : 'Tell us about your organisation'}
             </h3>
             <div className="space-y-1.5">
-              <label className="text-sm font-semibold">{ar ? 'اسم الشركة (اختياري)' : 'Company Name (optional)'}</label>
+              <div className="flex items-center justify-between gap-2">
+                <label className="text-sm font-semibold">{ar ? 'اسم الشركة (اختياري)' : 'Company Name (optional)'}</label>
+                {(() => {
+                  const profileCompany = user?.company?.trim();
+                  if (!profileCompany || companyName.trim() === profileCompany) return null;
+                  return (
+                    <button type="button" onClick={() => setCompanyName(profileCompany)}
+                      className="flex items-center gap-1 text-xs font-semibold text-[#082C6B] hover:underline">
+                      <RefreshCw className="w-3 h-3" />
+                      {ar ? 'استخدام شركة ملفي الشخصي' : 'Use my profile company'}
+                    </button>
+                  );
+                })()}
+              </div>
               <input type="text" value={companyName} onChange={e => setCompanyName(e.target.value)}
                 maxLength={120}
                 placeholder={ar ? 'يظهر على غلاف الإحاطة — «أُعدت لصالح …»' : 'Shown on the briefing cover — “Prepared for …”'}
