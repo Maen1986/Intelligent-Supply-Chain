@@ -1610,11 +1610,25 @@ function BriefingTab({ lang }: { lang: Lang }) {
     setStep('generating');
     setError('');
     try {
+      // When in Arabic, send the exact Arabic labels shown in the UI so the
+      // briefing cites KPIs and pain points verbatim (aligned by index).
+      const localizedKpiRatings = ar
+        ? Object.fromEntries(Object.entries(kpiRatings).map(([k, v]) => {
+            const idx = KPI_DOMAINS.indexOf(k);
+            return [idx >= 0 ? KPI_DOMAINS_AR[idx] : k, v];
+          }))
+        : kpiRatings;
+      const localizedPainPoints = ar
+        ? painPoints.map(p => {
+            const idx = PAIN_POINTS.indexOf(p);
+            return idx >= 0 ? PAIN_POINTS_AR[idx] : p;
+          })
+        : painPoints;
       const resp = await fetch(`${API_BASE}/assessment`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ industry, subIndustry: subIndustry || undefined, revenueBand, painPoints, kpiRatings, maturityRatings: domainAverages(maturityRatings), subDimensionRatings: subDimensionScores(maturityRatings, lang), language: lang }),
+        body: JSON.stringify({ industry, subIndustry: subIndustry || undefined, revenueBand, painPoints: localizedPainPoints, kpiRatings: localizedKpiRatings, maturityRatings: domainAverages(maturityRatings), subDimensionRatings: subDimensionScores(maturityRatings, lang), language: lang }),
       });
       const data = await resp.json() as { success: boolean; briefing: Briefing; error?: string };
       if (!data.success || !data.briefing) throw new Error(data.error || 'No briefing returned');
@@ -1635,7 +1649,7 @@ function BriefingTab({ lang }: { lang: Lang }) {
       setError(String(err));
       setStep('step3');
     }
-  }, [industry, revenueBand, painPoints, kpiRatings, maturityRatings]);
+  }, [industry, subIndustry, revenueBand, painPoints, kpiRatings, maturityRatings, lang, ar]);
 
   const copyBriefing = () => {
     if (!briefing) return;
