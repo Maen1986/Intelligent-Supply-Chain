@@ -1,11 +1,13 @@
 import { Router } from 'express';
 import { db } from '@workspace/db';
 import { usersTable } from '@workspace/db';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import bcrypt from 'bcryptjs';
+import crypto from 'node:crypto';
 import { logger } from '../lib/logger';
 import { loginRateLimiter } from '../lib/rateLimit';
+import { sendPasswordResetEmail } from './notify';
 
 // ── Session type augmentation ────────────────────────────────────────────────
 declare module 'express-session' {
@@ -152,6 +154,105 @@ router.post('/login', loginRateLimiter, async (req, res) => {
   } catch (err) {
     logger.error({ err }, '[auth] Login error');
     res.status(500).json({ ok: false, error: 'Login failed' });
+  }
+});
+
+/* ── POST /api/auth/forgot-password ──────────────────────────────────────────
+   Issues a short-lived (15 min) one-time reset code and emails it to the
+   account's address. Always responds 200 with the same body regardless of
+   whether the email exists — don't leak which emails are registered.         */
+const ForgotSchema = z.object({
+  email: z.string().email(),
+  lang:  z.enum(['en', 'ar']).optional(),
+});
+
+const RESET_CODE_TTL_MS = 15 * 60 * 1000;
+
+router.post('/forgot-password', loginRateLimiter, async (req, res) => {
+  const parsed = ForgotSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ ok: false, error: 'Invalid email' });
+    return;
+  }
+  const { email, lang } = parsed.data;
+  const genericResponse = { ok: true, message: 'If an account exists for that email, a reset code has been sent.' };
+
+  try {
+    const [user] = await db.select().from(usersTable).where(eq(usersTable.email, email)).limit(1);
+    if (!user || !user.passwordHash) {
+      // No account (or a legacy profile with no password to reset) — same reply.
+      res.json(genericResponse);
+      return;
+    }
+
+    // 6-digit numeric code, cryptographically random
+    const code = crypto.randomInt(0, 1_000_000).toString().padStart(6, '0');
+    const resetTokenHash = await bcrypt.hash(code, 10);
+    await db
+      .update(usersTable)
+      .set({ resetTokenHash, resetTokenExpiresAt: new Date(Date.now() + RESET_CODE_TTL_MS) })
+      .where(eq(usersTable.id, user.id));
+
+    const result = await sendPasswordResetEmail({ to: user.email, fullName: user.fullName, code, lang });
+    if (!result.sent) {
+      // Email genuinely failed — be explicit rather than stranding the user.
+      logger.error({ userId: user.id, reason: result.reason }, '[auth] Reset email could not be sent');
+      res.status(503).json({ ok: false, error: 'The reset email could not be sent right now. Please try again later.' });
+      return;
+    }
+    logger.info({ userId: user.id }, '[auth] Password reset code issued');
+    res.json(genericResponse);
+  } catch (err) {
+    logger.error({ err }, '[auth] Forgot-password error');
+    res.status(500).json({ ok: false, error: 'Could not process the request' });
+  }
+});
+
+/* ── POST /api/auth/reset-password ───────────────────────────────────────────
+   Verifies the emailed code, sets the new password, clears the token, and
+   invalidates every existing session for that account.                       */
+const ResetSchema = z.object({
+  email:       z.string().email(),
+  code:        z.string().min(4).max(12),
+  newPassword: z.string().min(6),
+});
+
+router.post('/reset-password', loginRateLimiter, async (req, res) => {
+  const parsed = ResetSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ ok: false, error: 'Invalid reset data' });
+    return;
+  }
+  const { email, code, newPassword } = parsed.data;
+
+  try {
+    const [user] = await db.select().from(usersTable).where(eq(usersTable.email, email)).limit(1);
+    const invalid = () => res.status(400).json({ ok: false, error: 'Invalid or expired reset code.' });
+
+    if (!user || !user.resetTokenHash || !user.resetTokenExpiresAt) { invalid(); return; }
+    if (user.resetTokenExpiresAt.getTime() < Date.now())            { invalid(); return; }
+    const codeOk = await bcrypt.compare(code, user.resetTokenHash);
+    if (!codeOk)                                                     { invalid(); return; }
+
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+    await db
+      .update(usersTable)
+      .set({ passwordHash, resetTokenHash: null, resetTokenExpiresAt: null })
+      .where(eq(usersTable.id, user.id));
+
+    // Invalidate every existing session for this account — anyone holding an
+    // old cookie (including a potential attacker) is signed out.
+    try {
+      await db.execute(sql`DELETE FROM "session" WHERE sess ->> 'userId' = ${String(user.id)}`);
+    } catch (err) {
+      logger.error({ err, userId: user.id }, '[auth] Failed to invalidate old sessions after reset');
+    }
+
+    logger.info({ userId: user.id }, '[auth] Password reset completed; old sessions invalidated');
+    res.json({ ok: true, message: 'Password updated. Please sign in with your new password.' });
+  } catch (err) {
+    logger.error({ err }, '[auth] Reset-password error');
+    res.status(500).json({ ok: false, error: 'Could not reset the password' });
   }
 });
 

@@ -19,10 +19,16 @@ export function Login() {
   const { lang } = useLanguage();
   const ar = lang === 'ar';
   const [, navigate] = useLocation();
-  const [mode, setMode] = useState<'login' | 'register'>('register');
+  const [mode, setMode] = useState<'login' | 'register' | 'forgot'>('register');
   const [showPass, setShowPass] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Forgot-password flow state
+  const [resetStep, setResetStep] = useState<'request' | 'verify' | 'done'>('request');
+  const [resetCode, setResetCode] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [notice, setNotice] = useState('');
 
   // Registration fields
   const [form, setForm] = useState({
@@ -80,6 +86,81 @@ export function Login() {
     }
   };
 
+  const handleForgotRequest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setNotice('');
+    if (!form.email) {
+      setError(ar ? 'يُرجى إدخال بريدك الإلكتروني.' : 'Please enter your email address.');
+      return;
+    }
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/auth/forgot-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: form.email, lang }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.error || '');
+      setResetStep('verify');
+      setNotice(ar
+        ? 'إذا كان هناك حساب بهذا البريد، فقد أرسلنا رمزاً مكوناً من 6 أرقام. تحقق من بريدك الوارد.'
+        : 'If an account exists for that email, we sent a 6-digit code. Check your inbox.');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : '';
+      setError(msg || (ar ? 'تعذّر إرسال رمز إعادة التعيين. حاول مرة أخرى لاحقاً.' : 'Could not send the reset code. Please try again later.'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    if (!resetCode || !newPassword) {
+      setError(ar ? 'يُرجى إدخال الرمز وكلمة المرور الجديدة.' : 'Please enter the code and your new password.');
+      return;
+    }
+    if (newPassword.length < 6) {
+      setError(ar ? 'يجب أن تتكون كلمة المرور من 6 أحرف على الأقل.' : 'Password must be at least 6 characters.');
+      return;
+    }
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/auth/reset-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: form.email, code: resetCode.trim(), newPassword }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(data?.error === 'Invalid or expired reset code.'
+          ? (ar ? 'الرمز غير صحيح أو منتهي الصلاحية.' : 'Invalid or expired reset code.')
+          : (ar ? 'تعذّرت إعادة تعيين كلمة المرور. حاول مرة أخرى.' : data?.error || 'Could not reset the password. Please try again.'));
+        return;
+      }
+      setResetStep('done');
+      setNotice(ar ? 'تم تحديث كلمة المرور. يمكنك الآن تسجيل الدخول.' : 'Password updated. You can now sign in.');
+      setForm(f => ({ ...f, password: '' }));
+      setResetCode('');
+      setNewPassword('');
+    } catch {
+      setError(ar ? 'تعذّرت إعادة تعيين كلمة المرور. حاول مرة أخرى.' : 'Could not reset the password. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const openForgot = () => {
+    setMode('forgot');
+    setResetStep('request');
+    setError('');
+    setNotice('');
+    setResetCode('');
+    setNewPassword('');
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -117,7 +198,9 @@ export function Login() {
             <p className="text-white/70 text-sm mt-1">
               {mode === 'register'
                 ? (ar ? 'أنشئ حساب العميل الخاص بك' : 'Create your client account')
-                : (ar ? 'سجّل الدخول إلى حسابك' : 'Sign in to your account')}
+                : mode === 'forgot'
+                  ? (ar ? 'إعادة تعيين كلمة المرور' : 'Reset your password')
+                  : (ar ? 'سجّل الدخول إلى حسابك' : 'Sign in to your account')}
             </p>
           </div>
 
@@ -126,8 +209,8 @@ export function Login() {
             {(['register', 'login'] as const).map(tab => (
               <button
                 key={tab}
-                onClick={() => { setMode(tab); setError(''); }}
-                className={`flex-1 py-3.5 text-sm font-bold transition-colors ${mode === tab ? 'text-primary border-b-2 border-primary bg-primary/3' : 'text-muted-foreground hover:text-primary'}`}
+                onClick={() => { setMode(tab); setError(''); setNotice(''); }}
+                className={`flex-1 py-3.5 text-sm font-bold transition-colors ${mode === tab || (mode === 'forgot' && tab === 'login') ? 'text-primary border-b-2 border-primary bg-primary/3' : 'text-muted-foreground hover:text-primary'}`}
               >
                 {tab === 'register'
                   ? (ar ? 'إنشاء حساب' : 'Create Account')
@@ -142,8 +225,66 @@ export function Login() {
                 {error}
               </div>
             )}
+            {notice && (
+              <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-xl text-green-800 text-sm font-medium">
+                {notice}
+              </div>
+            )}
 
-            {mode === 'register' ? (
+            {mode === 'forgot' ? (
+              <div className="space-y-4">
+                {resetStep === 'request' && (
+                  <form onSubmit={handleForgotRequest} className="space-y-4">
+                    <p className="text-sm text-muted-foreground">
+                      {ar
+                        ? 'أدخل بريدك الإلكتروني وسنرسل لك رمزاً لإعادة تعيين كلمة المرور.'
+                        : "Enter your email and we'll send you a code to reset your password."}
+                    </p>
+                    <Field label={ar ? 'البريد الإلكتروني *' : 'Email Address *'} icon={<Mail className="w-4 h-4" />}>
+                      <Input type="email" placeholder="you@company.com" value={form.email} onChange={set('email')} />
+                    </Field>
+                    <Button type="submit" disabled={loading}
+                      className="w-full bg-[#082C6B] hover:bg-[#0B3D91] text-white font-bold h-12 text-[15px] rounded-xl mt-2">
+                      {loading ? (ar ? 'جارٍ الإرسال…' : 'Sending…') : (ar ? 'إرسال رمز إعادة التعيين' : 'Send Reset Code')}
+                    </Button>
+                  </form>
+                )}
+                {resetStep === 'verify' && (
+                  <form onSubmit={handleResetPassword} className="space-y-4">
+                    <Field label={ar ? 'رمز إعادة التعيين *' : 'Reset Code *'} icon={<Shield className="w-4 h-4" />}>
+                      <Input inputMode="numeric" autoComplete="one-time-code" placeholder={ar ? 'الرمز المكون من 6 أرقام' : '6-digit code'} value={resetCode} onChange={e => setResetCode(e.target.value)} />
+                    </Field>
+                    <Field label={ar ? 'كلمة المرور الجديدة *' : 'New Password *'} icon={<Lock className="w-4 h-4" />}
+                      suffix={<button type="button" onClick={() => setShowPass(v => !v)} className="text-muted-foreground hover:text-primary">{showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}</button>}>
+                      <Input type={showPass ? 'text' : 'password'} placeholder={ar ? '6 أحرف على الأقل' : 'Min. 6 characters'} value={newPassword} onChange={e => setNewPassword(e.target.value)} />
+                    </Field>
+                    <Button type="submit" disabled={loading}
+                      className="w-full bg-[#082C6B] hover:bg-[#0B3D91] text-white font-bold h-12 text-[15px] rounded-xl mt-2">
+                      {loading ? (ar ? 'جارٍ التحديث…' : 'Updating…') : (ar ? 'تعيين كلمة المرور الجديدة' : 'Set New Password')}
+                    </Button>
+                    <p className="text-center text-sm text-muted-foreground">
+                      {ar ? 'لم يصلك الرمز؟' : "Didn't get the code?"}{' '}
+                      <button type="button" onClick={() => { setResetStep('request'); setError(''); setNotice(''); }} className="text-primary font-semibold hover:underline">
+                        {ar ? 'أعد الإرسال' : 'Resend'}
+                      </button>
+                    </p>
+                  </form>
+                )}
+                {resetStep === 'done' && (
+                  <Button onClick={() => { setMode('login'); setError(''); setNotice(''); }}
+                    className="w-full bg-[#082C6B] hover:bg-[#0B3D91] text-white font-bold h-12 text-[15px] rounded-xl">
+                    {ar ? 'الانتقال إلى تسجيل الدخول' : 'Go to Sign In'}
+                  </Button>
+                )}
+                {resetStep !== 'done' && (
+                  <p className="text-center text-sm text-muted-foreground">
+                    <button type="button" onClick={() => { setMode('login'); setError(''); setNotice(''); }} className="text-primary font-semibold hover:underline">
+                      {ar ? 'العودة إلى تسجيل الدخول' : 'Back to Sign In'}
+                    </button>
+                  </p>
+                )}
+              </div>
+            ) : mode === 'register' ? (
               <form onSubmit={handleRegister} className="space-y-4">
                 <Field label={ar ? 'الاسم الكامل *' : 'Full Name *'} icon={<User className="w-4 h-4" />}>
                   <Input placeholder={ar ? 'مثال: أحمد الراشد' : 'e.g. Ahmed Al-Rashid'} value={form.fullName} onChange={set('fullName')} />
@@ -188,6 +329,11 @@ export function Login() {
                   suffix={<button type="button" onClick={() => setShowPass(v => !v)} className="text-muted-foreground hover:text-primary">{showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}</button>}>
                   <Input type={showPass ? 'text' : 'password'} placeholder={ar ? 'كلمة المرور الخاصة بك' : 'Your password'} value={form.password} onChange={set('password')} />
                 </Field>
+                <p className="text-right rtl:text-left -mt-1">
+                  <button type="button" onClick={openForgot} className="text-sm text-primary font-semibold hover:underline">
+                    {ar ? 'هل نسيت كلمة المرور؟' : 'Forgot password?'}
+                  </button>
+                </p>
                 <Button type="submit" disabled={loading}
                   className="w-full bg-[#082C6B] hover:bg-[#0B3D91] text-white font-bold h-12 text-[15px] rounded-xl mt-2">
                   {loading ? (ar ? 'جارٍ تسجيل الدخول…' : 'Signing In…') : (ar ? 'تسجيل الدخول' : 'Sign In')} {!loading && (ar ? <ChevronLeft className="w-4 h-4 mr-1" /> : <ChevronRight className="w-4 h-4 ml-1" />)}

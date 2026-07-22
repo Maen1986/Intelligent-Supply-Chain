@@ -11,6 +11,8 @@ export const usersTable = pgTable("users", {
   company:      text("company"),
   role:         text("role").notNull().default("user"),  // 'user' | 'admin'
   passwordHash: text("password_hash"),                    // bcrypt hash; null for legacy profile-only accounts
+  resetTokenHash:      text("reset_token_hash"),           // bcrypt hash of the one-time password-reset code
+  resetTokenExpiresAt: timestamp("reset_token_expires_at"),// reset code validity window
   createdAt:    timestamp("created_at").defaultNow().notNull(),
 });
 

@@ -198,6 +198,60 @@ router.post('/maturity', async (req, res) => {
   res.status(result.sent || !result.reason ? 200 : 503).json({ ok: true, ...result });
 });
 
+// ── Exported helper: sendPasswordResetEmail ──────────────────────────────────
+// Unlike the lead notifications above (which go to the consultant), this one
+// goes to the account owner's own email address with a one-time reset code.
+export async function sendPasswordResetEmail(params: {
+  to:       string;
+  fullName: string;
+  code:     string;
+  lang?:    'en' | 'ar';
+}): Promise<{ sent: boolean; reason?: string }> {
+  const transporter = createTransporter();
+  if (!transporter) {
+    const msg = 'GMAIL_APP_PASSWORD not configured — password reset email NOT sent.';
+    logger.error({ to: params.to }, `[notify] BLOCKED: ${msg}`);
+    return { sent: false, reason: msg };
+  }
+  const ar = params.lang === 'ar';
+  const subject = ar ? 'رمز إعادة تعيين كلمة المرور — I Supply Chain' : 'Your password reset code — I Supply Chain';
+  const html = `
+    <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto"${ar ? ' dir="rtl"' : ''}>
+      <div style="background:#082C6B;padding:24px 32px;border-radius:8px 8px 0 0">
+        <h1 style="color:#fff;margin:0;font-size:20px">I Supply Chain</h1>
+        <p style="color:#C9A84C;margin:4px 0 0;font-size:14px">${ar ? 'إعادة تعيين كلمة المرور' : 'Password Reset'}</p>
+      </div>
+      <div style="background:#fff;padding:24px 32px;border:1px solid #dde4f0;border-top:none">
+        <p style="color:#333">${ar ? `مرحباً ${params.fullName}،` : `Hello ${params.fullName},`}</p>
+        <p style="color:#333">${ar
+          ? 'استخدم الرمز التالي لإعادة تعيين كلمة المرور الخاصة بك. الرمز صالح لمدة 15 دقيقة.'
+          : 'Use the code below to reset your password. It is valid for 15 minutes.'}</p>
+        <p style="font-size:32px;font-weight:bold;letter-spacing:8px;color:#082C6B;text-align:center;background:#f5f8ff;border:1px solid #dde4f0;border-radius:8px;padding:16px 0">${params.code}</p>
+        <p style="color:#666;font-size:13px">${ar
+          ? 'إذا لم تطلب إعادة التعيين، يمكنك تجاهل هذه الرسالة بأمان.'
+          : "If you didn't request a reset, you can safely ignore this email."}</p>
+      </div>
+    </div>`;
+  const from = `"I Supply Chain" <${process.env.GMAIL_USER || 'haqash.maen@gmail.com'}>`;
+  try {
+    await transporter.sendMail({ from, to: params.to, subject, html });
+    logger.info({ to: params.to }, '[notify] Password reset email sent');
+    return { sent: true };
+  } catch (firstErr) {
+    logger.warn({ to: params.to, err: (firstErr as Error)?.message }, '[notify] Reset email failed — retrying once');
+    await new Promise(r => setTimeout(r, EMAIL_RETRY_DELAY_MS));
+    try {
+      await transporter.sendMail({ from, to: params.to, subject, html });
+      logger.info({ to: params.to }, '[notify] Password reset email sent on retry');
+      return { sent: true };
+    } catch (err) {
+      const reason = (err as Error)?.message ?? String(err);
+      logger.error({ to: params.to, reason }, '[notify] Password reset email failed after retry');
+      return { sent: false, reason };
+    }
+  }
+}
+
 // ── Exported helper: sendBriefingEmail ───────────────────────────────────────
 // Called by the submissions route when a Command Centre briefing lands with a
 // client-rendered PDF. Sends the lead summary with the branded PDF attached.

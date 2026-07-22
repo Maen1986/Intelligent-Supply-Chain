@@ -4,6 +4,10 @@ import { makeApp, dbState, resetDbState, makeDbMock, makeLoggerMock } from './he
 
 vi.mock('@workspace/db', () => makeDbMock());
 vi.mock('../src/lib/logger', () => makeLoggerMock());
+const sendPasswordResetEmail = vi.fn(async () => ({ sent: true }));
+vi.mock('../src/routes/notify', () => ({ sendPasswordResetEmail: (...args: unknown[]) => sendPasswordResetEmail(...(args as [])) }));
+
+import bcrypt from 'bcryptjs';
 
 import authRouter from '../src/routes/auth';
 
@@ -199,5 +203,74 @@ describe('POST /api/auth/logout', () => {
     const res = await request(app).post('/api/auth/logout');
     expect(res.status).toBe(200);
     expect(res.body.ok).toBe(true);
+  });
+});
+
+describe('POST /api/auth/forgot-password', () => {
+  it('returns the generic response and sends an email for a known account', async () => {
+    sendPasswordResetEmail.mockClear();
+    dbState.selectRows = [{ ...user, passwordHash: 'hashed' }];
+    const app = makeApp('/api/auth', authRouter);
+    const res = await request(app).post('/api/auth/forgot-password').send({ email: user.email });
+    expect(res.status).toBe(200);
+    expect(res.body.ok).toBe(true);
+    expect(sendPasswordResetEmail).toHaveBeenCalledTimes(1);
+  });
+
+  it('returns the same generic response for an unknown email without sending', async () => {
+    sendPasswordResetEmail.mockClear();
+    dbState.selectRows = [];
+    const app = makeApp('/api/auth', authRouter);
+    const res = await request(app).post('/api/auth/forgot-password').send({ email: 'nobody@example.com' });
+    expect(res.status).toBe(200);
+    expect(res.body.ok).toBe(true);
+    expect(sendPasswordResetEmail).not.toHaveBeenCalled();
+  });
+
+  it('surfaces a 503 when the email cannot be sent', async () => {
+    sendPasswordResetEmail.mockResolvedValueOnce({ sent: false, reason: 'smtp down' } as any);
+    dbState.selectRows = [{ ...user, passwordHash: 'hashed' }];
+    const app = makeApp('/api/auth', authRouter);
+    const res = await request(app).post('/api/auth/forgot-password').send({ email: user.email });
+    expect(res.status).toBe(503);
+    expect(res.body.ok).toBe(false);
+  });
+});
+
+describe('POST /api/auth/reset-password', () => {
+  it('resets the password with a valid, unexpired code', async () => {
+    const resetTokenHash = await bcrypt.hash('123456', 4);
+    dbState.selectRows = [{ ...user, passwordHash: 'old', resetTokenHash, resetTokenExpiresAt: new Date(Date.now() + 60_000) }];
+    const app = makeApp('/api/auth', authRouter);
+    const res = await request(app).post('/api/auth/reset-password')
+      .send({ email: user.email, code: '123456', newPassword: 'newpass6' });
+    expect(res.status).toBe(200);
+    expect(res.body.ok).toBe(true);
+  });
+
+  it('rejects a wrong code', async () => {
+    const resetTokenHash = await bcrypt.hash('123456', 4);
+    dbState.selectRows = [{ ...user, passwordHash: 'old', resetTokenHash, resetTokenExpiresAt: new Date(Date.now() + 60_000) }];
+    const app = makeApp('/api/auth', authRouter);
+    const res = await request(app).post('/api/auth/reset-password')
+      .send({ email: 'wrongcode@example.com', code: '999999', newPassword: 'newpass6' });
+    expect(res.status).toBe(400);
+  });
+
+  it('rejects an expired code', async () => {
+    const resetTokenHash = await bcrypt.hash('123456', 4);
+    dbState.selectRows = [{ ...user, passwordHash: 'old', resetTokenHash, resetTokenExpiresAt: new Date(Date.now() - 1000) }];
+    const app = makeApp('/api/auth', authRouter);
+    const res = await request(app).post('/api/auth/reset-password')
+      .send({ email: 'expired@example.com', code: '123456', newPassword: 'newpass6' });
+    expect(res.status).toBe(400);
+  });
+
+  it('rejects when no reset was requested', async () => {
+    dbState.selectRows = [{ ...user, passwordHash: 'old' }];
+    const app = makeApp('/api/auth', authRouter);
+    const res = await request(app).post('/api/auth/reset-password')
+      .send({ email: 'noreset@example.com', code: '123456', newPassword: 'newpass6' });
+    expect(res.status).toBe(400);
   });
 });

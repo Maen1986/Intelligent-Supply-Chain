@@ -50,6 +50,7 @@ export function makeDbMock() {
       select: vi.fn(() => chain(() => dbState.selectRows)),
       insert: vi.fn(() => chain(() => dbState.insertRows, true)),
       update: vi.fn(() => chain(() => dbState.updateRows)),
+      execute: vi.fn(async () => ({ rows: [] })),
     },
     usersTable: { email: 'email', id: 'id' },
     submissionsTable: { tool: 'tool', createdAt: 'createdAt' },
