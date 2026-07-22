@@ -83,7 +83,10 @@ router.post("/conversations", async (req, res) => {
     const [conv] = await db.insert(conversations).values({ title }).returning();
     res.status(201).json(conv);
   } catch (e) {
-    if (e instanceof z.ZodError) return res.status(400).json({ error: e.message });
+    if (e instanceof z.ZodError) {
+      res.status(400).json({ error: e.message });
+      return;
+    }
     res.status(500).json({ error: "Failed to create conversation" });
   }
 });
@@ -93,7 +96,10 @@ router.get("/conversations/:id", async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     const [conv] = await db.select().from(conversations).where(eq(conversations.id, id));
-    if (!conv) return res.status(404).json({ error: "Conversation not found" });
+    if (!conv) {
+      res.status(404).json({ error: "Conversation not found" });
+      return;
+    }
     const msgs = await db
       .select()
       .from(messages)
@@ -110,7 +116,10 @@ router.delete("/conversations/:id", async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     const [conv] = await db.select().from(conversations).where(eq(conversations.id, id));
-    if (!conv) return res.status(404).json({ error: "Conversation not found" });
+    if (!conv) {
+      res.status(404).json({ error: "Conversation not found" });
+      return;
+    }
     await db.delete(conversations).where(eq(conversations.id, id));
     res.status(204).send();
   } catch (e) {
@@ -141,13 +150,20 @@ router.post("/conversations/:id/messages", async (req, res) => {
   try {
     ({ content } = SendMessageBody.parse(req.body));
   } catch (e) {
-    if (e instanceof z.ZodError) return res.status(400).json({ error: e.message });
-    return res.status(400).json({ error: "Invalid request" });
+    if (e instanceof z.ZodError) {
+      res.status(400).json({ error: e.message });
+      return;
+    }
+    res.status(400).json({ error: "Invalid request" });
+    return;
   }
 
   // Verify conversation exists
   const [conv] = await db.select().from(conversations).where(eq(conversations.id, id));
-  if (!conv) return res.status(404).json({ error: "Conversation not found" });
+  if (!conv) {
+    res.status(404).json({ error: "Conversation not found" });
+    return;
+  }
 
   // Load history
   const history = await db
@@ -209,7 +225,8 @@ router.post("/conversations/:id/messages", async (req, res) => {
 router.post("/tts", async (req, res) => {
   const { text } = req.body as { text?: string };
   if (!text || typeof text !== "string" || !text.trim()) {
-    return res.status(400).json({ error: "text is required" });
+    res.status(400).json({ error: "text is required" });
+    return;
   }
   try {
     const mp3 = await openai.audio.speech.create({

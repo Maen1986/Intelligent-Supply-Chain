@@ -1,1 +1,2 @@
 - [connect-pg-simple esbuild fix](connect-pg-simple-esbuild.md) — createTableIfMissing: true crashes in esbuild bundles; own the table via Drizzle instead.
+- [Stale TS project-reference output](stale-project-refs.md) — phantom TS2305 from @workspace libs means stale dist; rebuild lib with `tsc -b --force`.
