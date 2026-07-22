@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { Star, ChevronDown, ChevronUp, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Star, ChevronDown, ChevronUp, Loader2, ChevronLeft, ChevronRight, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useLanguage } from '@/lib/LanguageContext';
 import { useFeedbackList, type FeedbackListFilters } from '@/hooks/useFeedback';
+import { API_BASE } from '@/lib/apiBase';
 
 const PER_PAGE = 20;
 
@@ -84,6 +85,24 @@ export function VoiceFeedbackList() {
               {[1, 2, 3, 4, 5].map((r) => <SelectItem key={r} value={String(r)}>{r}★+</SelectItem>)}
             </SelectContent>
           </Select>
+        </div>
+        <div className="ms-auto">
+          <Button
+            variant="outline"
+            size="sm"
+            data-testid="button-export-csv"
+            onClick={() => {
+              const params = new URLSearchParams();
+              if (tool !== 'all') params.set('tool', tool);
+              if (from) params.set('from', from);
+              if (to) params.set('to', to);
+              if (minRating !== 'all') params.set('min_rating', minRating);
+              window.location.href = `${API_BASE}/feedback/export.csv?${params.toString()}`;
+            }}
+          >
+            <Download className="w-4 h-4 me-1.5" />
+            {t('voice.exportCsv')}
+          </Button>
         </div>
       </div>
 

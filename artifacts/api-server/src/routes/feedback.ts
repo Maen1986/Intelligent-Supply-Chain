@@ -61,6 +61,75 @@ router.get('/rate-limit', async (req, res) => {
   return res.json(await getFeedbackRateLimitStatus(req));
 });
 
+/* ── GET /api/feedback/export.csv ────────────────────────────────────────────
+   Admin-only. Returns all feedback matching the current filters (tool, from,
+   to, min_rating) as a UTF-8 CSV attachment. No pagination — full dataset.   */
+router.get('/export.csv', requireAdmin, async (req, res) => {
+  try {
+    const { tool, from, to, min_rating } = req.query as Record<string, string | undefined>;
+
+    const conditions: SQL[] = [];
+    if (tool) conditions.push(eq(feedbackTable.tool, tool));
+    if (from) {
+      const d = new Date(from);
+      if (!Number.isNaN(d.getTime())) conditions.push(gte(feedbackTable.createdAt, d));
+    }
+    if (to) {
+      const d = new Date(to);
+      if (!Number.isNaN(d.getTime())) conditions.push(lte(feedbackTable.createdAt, d));
+    }
+    if (min_rating) {
+      const r = parseInt(min_rating, 10);
+      if (!Number.isNaN(r)) conditions.push(gte(feedbackTable.rating, r));
+    }
+
+    const base = db.select().from(feedbackTable);
+    const filtered = conditions.length ? base.where(and(...conditions)) : base;
+    const rows = await filtered.orderBy(desc(feedbackTable.createdAt));
+
+    // Build CSV (RFC 4180): quote fields that contain comma, quote, or newline.
+    // Neutralise formula injection: string values that start with =, +, -, @,
+    // tab, or carriage-return are prefixed with a tab so spreadsheet software
+    // treats the cell as text rather than a formula (OWASP CSV-injection fix).
+    const FORMULA_CHARS = /^[=+\-@\t\r]/;
+    const escape = (v: string | number | null | undefined): string => {
+      if (v == null) return '';
+      const s = String(v);
+      // Only neutralise string values (numbers like rating/nps are safe)
+      const safe = typeof v === 'string' && FORMULA_CHARS.test(s) ? '\t' + s : s;
+      if (safe.includes('"') || safe.includes(',') || safe.includes('\n') || safe.includes('\r') || safe.includes('\t')) {
+        return `"${safe.replace(/"/g, '""')}"`;
+      }
+      return safe;
+    };
+
+    const header = ['date', 'company', 'tool', 'rating', 'nps', 'comment'];
+    const csvLines = [
+      header.join(','),
+      ...rows.map((r) =>
+        [
+          escape(new Date(r.createdAt).toISOString().slice(0, 10)),
+          escape(r.company),
+          escape(r.tool),
+          escape(r.rating),
+          escape(r.nps),
+          escape(r.comment),
+        ].join(',')
+      ),
+    ];
+    const csv = csvLines.join('\r\n');
+
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename="feedback-export.csv"');
+    res.setHeader('Cache-Control', 'no-store');
+    // BOM so Excel opens UTF-8 correctly
+    res.send('\uFEFF' + csv);
+  } catch (err) {
+    logger.error({ err }, '[feedback] CSV export failed');
+    res.status(500).json({ ok: false, error: 'Failed to export feedback' });
+  }
+});
+
 /* ── GET /api/feedback ───────────────────────────────────────────────────────
    Admin-only. Query params: tool, from, to (ISO dates), min_rating,
    page (1-based), per_page (default 50, max 200). Newest first.              */

@@ -171,6 +171,89 @@ describe('GET /api/feedback/analytics', () => {
   });
 });
 
+describe('GET /api/feedback/export.csv', () => {
+  it('returns 401 when unauthenticated', async () => {
+    const app = makeApp('/api/feedback', feedbackRouter);
+    const res = await request(app).get('/api/feedback/export.csv');
+    expect(res.status).toBe(401);
+  });
+
+  it('returns 403 for a non-admin session', async () => {
+    const app = makeApp('/api/feedback', feedbackRouter, { userId: 2, userRole: 'user' });
+    const res = await request(app).get('/api/feedback/export.csv');
+    expect(res.status).toBe(403);
+  });
+
+  it('returns a CSV attachment with BOM and correct column headers', async () => {
+    dbState.selectRows = [];
+    const app = makeApp('/api/feedback', feedbackRouter, adminSession);
+    const res = await request(app).get('/api/feedback/export.csv');
+    expect(res.status).toBe(200);
+    expect(res.headers['content-type']).toMatch(/text\/csv/);
+    expect(res.headers['content-disposition']).toContain('attachment');
+    expect(res.headers['content-disposition']).toContain('feedback-export.csv');
+    expect(res.headers['cache-control']).toBe('no-store');
+    // UTF-8 BOM followed by header row
+    const text: string = res.text;
+    expect(text.startsWith('\uFEFF')).toBe(true);
+    const firstLine = text.replace('\uFEFF', '').split('\r\n')[0];
+    expect(firstLine).toBe('date,company,tool,rating,nps,comment');
+  });
+
+  it('serialises rows with the correct columns', async () => {
+    const ts = new Date('2025-06-15T10:00:00Z');
+    dbState.selectRows = [
+      { id: 1, tool: 'diagnostic', rating: 4, nps: 9, comment: 'Great tool', company: 'Acme', createdAt: ts },
+    ];
+    const app = makeApp('/api/feedback', feedbackRouter, adminSession);
+    const res = await request(app).get('/api/feedback/export.csv');
+    expect(res.status).toBe(200);
+    const lines = res.text.replace('\uFEFF', '').split('\r\n');
+    expect(lines).toHaveLength(2); // header + 1 data row (no trailing newline)
+    expect(lines[1]).toBe('2025-06-15,Acme,diagnostic,4,9,Great tool');
+  });
+
+  it('quotes fields containing commas or double-quotes', async () => {
+    const ts = new Date('2025-06-15T10:00:00Z');
+    dbState.selectRows = [
+      { id: 2, tool: 'maturity', rating: 3, nps: null, comment: 'Good, but needs work', company: 'Say "Hello" Ltd', createdAt: ts },
+    ];
+    const app = makeApp('/api/feedback', feedbackRouter, adminSession);
+    const res = await request(app).get('/api/feedback/export.csv');
+    const lines = res.text.replace('\uFEFF', '').split('\r\n');
+    expect(lines[1]).toBe('2025-06-15,"Say ""Hello"" Ltd",maturity,3,,"Good, but needs work"');
+  });
+
+  it('neutralises formula-injection in string fields', async () => {
+    const ts = new Date('2025-06-15T00:00:00Z');
+    dbState.selectRows = [
+      { id: 3, tool: 'diagnostic', rating: 5, nps: 10, comment: '=SUM(A1:A10)', company: '+HYPERLINK("evil.com")', createdAt: ts },
+    ];
+    const app = makeApp('/api/feedback', feedbackRouter, adminSession);
+    const res = await request(app).get('/api/feedback/export.csv');
+    const lines = res.text.replace('\uFEFF', '').split('\r\n');
+    const dataRow = lines[1];
+    // company starts with + → should be tab-prefixed and quoted
+    expect(dataRow).toContain('"\t+HYPERLINK(""evil.com"")"');
+    // comment starts with = → should be tab-prefixed and quoted
+    expect(dataRow).toContain('"\t=SUM(A1:A10)"');
+    // Neither should appear as a bare formula
+    expect(dataRow).not.toMatch(/(?:^|,)=SUM/);
+    expect(dataRow).not.toMatch(/(?:^|,)\+HYPERLINK/);
+  });
+
+  it('emits null values as empty fields', async () => {
+    const ts = new Date('2025-03-01T00:00:00Z');
+    dbState.selectRows = [
+      { id: 4, tool: 'maturity', rating: 2, nps: null, comment: null, company: null, createdAt: ts },
+    ];
+    const app = makeApp('/api/feedback', feedbackRouter, adminSession);
+    const res = await request(app).get('/api/feedback/export.csv');
+    const lines = res.text.replace('\uFEFF', '').split('\r\n');
+    expect(lines[1]).toBe('2025-03-01,,maturity,2,,');
+  });
+});
+
 describe('extractTopKeywords', () => {
   it('drops stop-words, short tokens, and ranks by frequency', () => {
     const out = extractTopKeywords([
