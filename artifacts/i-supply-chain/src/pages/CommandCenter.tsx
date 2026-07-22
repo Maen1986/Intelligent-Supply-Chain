@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useCallback } from 'react';
+import { useLanguage } from '@/lib/LanguageContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis,
@@ -14,7 +15,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, '').replace('/i-supply-chain', '') + '/api-server/api';
+const API_BASE = '/api';
 
 // ─── KPI Configuration ────────────────────────────────────────────────────────
 const KPI_CONFIG = [
@@ -176,121 +177,344 @@ function RiskGauge({ score }: { score: number }) {
   );
 }
 
-// ─── Tab 1: Benchmark Radar ───────────────────────────────────────────────────
-function BenchmarkTab() {
-  const defaultVals: Record<string, number> = Object.fromEntries(KPI_CONFIG.map(k => [k.id, k.def]));
-  const [vals, setVals] = useState(defaultVals);
-  const [revenue, setRevenue] = useState(200); // SAR M
+// ─── Industry-Specific KPI Profiles ──────────────────────────────────────────
+type KPIDef = {
+  id: string; label: string; labelAr: string; unit: string;
+  min: number; max: number; def: number;
+  gcMedian: number; gcTopQ: number;        // normalized 0-100
+  gcMedianRaw: string; gcTopQRaw: string;  // display strings
+  norm: (v: number) => number;             // raw → 0-100, higher = better
+  impactPct: number;                       // % revenue impact per 100 normalized pts
+  howToClose: string; howToCloseAr: string;
+};
 
-  const radarData = useMemo(() => KPI_CONFIG.map(k => ({
-    metric: k.label,
-    'Your Score': Math.round(k.norm(vals[k.id] ?? k.def)),
-    'GCC Median': k.median,
-    'Top Quartile': k.topQ,
-  })), [vals]);
+const INDUSTRY_KPIS: Record<string, KPIDef[]> = {
+  'Manufacturing': [
+    { id:'otif',         label:'OTIF %',                  labelAr:'نسبة OTIF',                   unit:'%',    min:50,max:100,def:76, gcMedian:85,gcTopQ:95, gcMedianRaw:'85%',    gcTopQRaw:'95%',    norm:v=>v,                            impactPct:0.20, howToClose:'Implement VMI/Kanban with top-10 suppliers; set contractual OTIF KPIs with penalty clauses (CIPS Level 4).', howToCloseAr:'طبّق نموذج VMI/Kanban مع أفضل 10 موردين بمؤشرات أداء تعاقدية (CIPS المستوى 4).' },
+    { id:'invTurns',     label:'Inventory Turns',          labelAr:'معدل دوران المخزون',           unit:'×/yr',min:1, max:25, def:5,  gcMedian:60,gcTopQ:88, gcMedianRaw:'8×',     gcTopQRaw:'14×',    norm:v=>Math.min(100,(v/20)*100),     impactPct:0.15, howToClose:'Introduce demand-driven MRP with 12-week rolling forecast; reduce safety stock using statistical models (APICS CPIM).', howToCloseAr:'طبّق MRP بتحفيز الطلب وقلّص مخزون الأمان بالنماذج الإحصائية.' },
+    { id:'procCycle',    label:'Procurement Cycle Time',   labelAr:'دورة المشتريات',               unit:'days',min:3, max:90, def:28, gcMedian:70,gcTopQ:92, gcMedianRaw:'18d',    gcTopQRaw:'8d',     norm:v=>Math.max(0,((90-v)/82)*100),  impactPct:0.08, howToClose:'Deploy e-procurement with pre-approved vendor panels and dynamic purchasing (CIPS eSourcing).', howToCloseAr:'طبّق المشتريات الإلكترونية مع قوائم الموردين المعتمدين.' },
+    { id:'forecastAcc',  label:'Forecast Accuracy',        labelAr:'دقة التنبؤ بالطلب',            unit:'%',   min:30,max:99, def:63, gcMedian:72,gcTopQ:88, gcMedianRaw:'72%',    gcTopQRaw:'88%',    norm:v=>v,                            impactPct:0.20, howToClose:'Implement collaborative S&OP with AI/ML demand sensing (APICS IBF).', howToCloseAr:'طبّق S&OP التعاوني مع استشعار الطلب بالذكاء الاصطناعي.' },
+    { id:'procCost',     label:'Procurement Cost % Rev',   labelAr:'تكلفة المشتريات %',            unit:'%rev',min:3, max:30, def:15, gcMedian:60,gcTopQ:88, gcMedianRaw:'12% rev',gcTopQRaw:'8% rev', norm:v=>Math.max(0,((30-v)/27)*100),  impactPct:0.40, howToClose:'Launch strategic category management; negotiate multi-year framework agreements.', howToCloseAr:'أطلق إدارة الفئات الاستراتيجية وتفاوض على اتفاقيات إطارية.' },
+    { id:'perfOrder',    label:'Perfect Order Rate',       labelAr:'معدل الطلب المثالي',           unit:'%',   min:50,max:100,def:73, gcMedian:85,gcTopQ:96, gcMedianRaw:'85%',    gcTopQRaw:'96%',    norm:v=>v,                            impactPct:0.12, howToClose:'Implement E2E order management with quality checkpoints at each SCOR Deliver milestone.', howToCloseAr:'طبّق إدارة الطلبيات الشاملة مع نقاط تفتيش SCOR Deliver.' },
+    { id:'wasteRate',    label:'Waste / Scrap Rate',       labelAr:'معدل الهدر والنفايات',         unit:'%',   min:0, max:15, def:5.8,gcMedian:65,gcTopQ:90, gcMedianRaw:'3.5%',   gcTopQRaw:'1.2%',   norm:v=>Math.max(0,((15-v)/15)*100),  impactPct:0.30, howToClose:'Deploy Lean Six Sigma DMAIC: value stream mapping, waste identification, kaizen events.', howToCloseAr:'طبّق Lean Six Sigma DMAIC: خرطشة القيمة وجلسات Kaizen.' },
+  ],
+  'Energy & Oil': [
+    { id:'matAvail',     label:'Material/Spares Availability',labelAr:'توافر المواد وقطع الغيار', unit:'%',   min:50,max:100,def:74, gcMedian:82,gcTopQ:95, gcMedianRaw:'82%',    gcTopQRaw:'95%',    norm:v=>v,                            impactPct:0.30, howToClose:'Implement critical spare parts ABCD analysis with min/max stock levels at site.', howToCloseAr:'طبّق تصنيف قطع الغيار الحرجة (ABCD) مع مستويات الحد الأدنى في الموقع.' },
+    { id:'downtime',     label:'Unplanned Downtime %',     labelAr:'التوقف غير المخطط',            unit:'%',   min:0, max:20, def:7.8,gcMedian:68,gcTopQ:92, gcMedianRaw:'4.5%',   gcTopQRaw:'1.2%',   norm:v=>Math.max(0,((20-v)/20)*100),  impactPct:0.50, howToClose:'Deploy reliability-centred maintenance (RCM) with predictive sensors; reduce MTTR by 40%.', howToCloseAr:'طبّق الصيانة المتمحورة حول الموثوقية (RCM) مع أجهزة استشعار تنبؤية.' },
+    { id:'procCycle',    label:'Procurement Cycle Time',   labelAr:'دورة المشتريات',               unit:'days',min:5, max:120,def:42, gcMedian:65,gcTopQ:90, gcMedianRaw:'28d',    gcTopQRaw:'12d',    norm:v=>Math.max(0,((120-v)/115)*100),impactPct:0.08, howToClose:'Pre-qualify and pre-price critical materials; deploy blanket purchase orders with call-off.', howToCloseAr:'أهّل وسعّر المواد الحرجة مسبقاً؛ أصدر أوامر شراء إطارية.' },
+    { id:'supplierComp', label:'Supplier Compliance Rate', labelAr:'امتثال الموردين',              unit:'%',   min:40,max:100,def:70, gcMedian:80,gcTopQ:95, gcMedianRaw:'80%',    gcTopQRaw:'95%',    norm:v=>v,                            impactPct:0.20, howToClose:'Implement supplier development programme (SDP) with quarterly KPI reviews; CIPS SRM Level 4.', howToCloseAr:'طبّق برنامج تطوير الموردين مع مراجعات ربع سنوية (CIPS SRM المستوى 4).' },
+    { id:'iktva',        label:'IKTVA Local Content %',    labelAr:'نسبة المحتوى المحلي IKTVA',   unit:'%',   min:0, max:100,def:28, gcMedian:40,gcTopQ:62, gcMedianRaw:'40%',    gcTopQRaw:'62%',    norm:v=>v,                            impactPct:0.10, howToClose:'Map sourcing categories against IKTVA scorecard; develop SME local supplier pipeline.', howToCloseAr:'خرطشة فئات التوريد مقابل بطاقة IKTVA؛ طوّر خط أنابيب موردين محليين.' },
+    { id:'contractComp', label:'Contract Compliance Rate', labelAr:'الامتثال التعاقدي',            unit:'%',   min:40,max:100,def:72, gcMedian:82,gcTopQ:97, gcMedianRaw:'82%',    gcTopQRaw:'97%',    norm:v=>v,                            impactPct:0.18, howToClose:'Deploy CLM system with automated milestone alerts and deviation management workflow.', howToCloseAr:'طبّق نظام CLM مع تنبيهات آلية للمعالم وسير عمل الانحرافات.' },
+  ],
+  'Government / Public Sector': [
+    { id:'contractComp', label:'Contract Compliance Rate', labelAr:'الامتثال التعاقدي',            unit:'%',   min:30,max:100,def:60, gcMedian:72,gcTopQ:94, gcMedianRaw:'72%',    gcTopQRaw:'94%',    norm:v=>v,                            impactPct:0.25, howToClose:'Implement CLM with GTPL-aligned workflow; train staff to CIPS Level 4 contract management.', howToCloseAr:'طبّق CLM بسير عمل متوافق مع نظام المنافسات؛ درّب الموظفين على CIPS المستوى 4.' },
+    { id:'procCycle',    label:'Procurement Cycle Time',   labelAr:'دورة المشتريات',               unit:'days',min:10,max:180,def:65, gcMedian:58,gcTopQ:84, gcMedianRaw:'45d',    gcTopQRaw:'22d',    norm:v=>Math.max(0,((180-v)/170)*100),impactPct:0.06, howToClose:'Pre-approve framework agreements for repeat purchases; deploy e-procurement per GTPL Chapter 5.', howToCloseAr:'أقرّ اتفاقيات إطارية للمشتريات المتكررة؛ طبّق المشتريات الإلكترونية وفق نظام المنافسات.' },
+    { id:'poaAdherence', label:'Policy / DoA Adherence',  labelAr:'الالتزام بجدول التفويض',       unit:'%',   min:30,max:100,def:65, gcMedian:78,gcTopQ:96, gcMedianRaw:'78%',    gcTopQRaw:'96%',    norm:v=>v,                            impactPct:0.20, howToClose:'Publish clear DoA matrix; automate approvals in ERP with policy guards (CIPS Governance).', howToCloseAr:'انشر مصفوفة تفويض واضحة؛ أتمتة الاعتمادات في نظام ERP.' },
+    { id:'suppPerf',     label:'Supplier Performance Score',labelAr:'أداء الموردين',              unit:'/100',min:0, max:100,def:55, gcMedian:68,gcTopQ:88, gcMedianRaw:'68/100',  gcTopQRaw:'88/100', norm:v=>v,                            impactPct:0.18, howToClose:'Implement KPI-based SRM programme; conduct bi-annual supplier reviews with corrective plans.', howToCloseAr:'طبّق برنامج SRM قائم على المؤشرات ومراجعات أداء نصف سنوية.' },
+    { id:'localContent', label:'Local Content / IKTVA %', labelAr:'المحتوى المحلي',               unit:'%',   min:0, max:100,def:22, gcMedian:32,gcTopQ:55, gcMedianRaw:'32%',    gcTopQRaw:'55%',    norm:v=>v,                            impactPct:0.10, howToClose:'Map spend categories to Nitaqat/IKTVA; shift non-critical commodities to SME local suppliers.', howToCloseAr:'خرطشة فئات الإنفاق مع بطاقة نطاقات/IKTVA؛ وجّه الاستهلاك نحو الموردين المحليين.' },
+    { id:'savings',      label:'Budget Savings Achieved',  labelAr:'الوفورات المحققة',             unit:'%',   min:0, max:20, def:4,  gcMedian:40,gcTopQ:75, gcMedianRaw:'7%',     gcTopQRaw:'14%',    norm:v=>Math.min(100,(v/20)*100),     impactPct:0.50, howToClose:'Launch strategic category management; negotiate multi-year framework agreements with re-tendering.', howToCloseAr:'أطلق إدارة الفئات وتفاوض على اتفاقيات إطارية متعددة السنوات.' },
+    { id:'auditComp',    label:'Audit Compliance Rate',    labelAr:'الامتثال للتدقيق',             unit:'%',   min:30,max:100,def:62, gcMedian:75,gcTopQ:95, gcMedianRaw:'75%',    gcTopQRaw:'95%',    norm:v=>v,                            impactPct:0.15, howToClose:'Implement continuous compliance monitoring dashboard; schedule quarterly procurement audits (GTPL Article 65).', howToCloseAr:'طبّق لوحة متابعة الامتثال وجدوِّل تدقيقات مشتريات ربع سنوية.' },
+  ],
+  'Pharmaceutical': [
+    { id:'supplyContinu',label:'Supply Continuity Rate',   labelAr:'معدل استمرارية التوريد',       unit:'%',   min:50,max:100,def:88, gcMedian:95,gcTopQ:99, gcMedianRaw:'95%',    gcTopQRaw:'99.5%',  norm:v=>v,                            impactPct:0.40, howToClose:'Dual-source all critical APIs; maintain 12-week strategic reserve for top-20 essential medicines.', howToCloseAr:'استخدم مزودين بديلين للمكونات الفعّالة؛ احتفظ باحتياطي 12 أسبوعاً.' },
+    { id:'regComp',      label:'GMP/Regulatory Compliance',labelAr:'الامتثال التنظيمي GMP',       unit:'%',   min:50,max:100,def:79, gcMedian:88,gcTopQ:99, gcMedianRaw:'88%',    gcTopQRaw:'99%',    norm:v=>v,                            impactPct:0.50, howToClose:'Implement QMS aligned to ICH Q10; automate batch record management and CAPA tracking.', howToCloseAr:'طبّق نظام إدارة الجودة ICH Q10؛ أتمتة سجلات الدفعات وتتبع الإجراءات التصحيحية.' },
+    { id:'invTurns',     label:'Inventory Turns',          labelAr:'معدل دوران المخزون',           unit:'×/yr',min:1, max:20, def:3.5,gcMedian:40,gcTopQ:70, gcMedianRaw:'5×',     gcTopQRaw:'9×',     norm:v=>Math.min(100,(v/18)*100),     impactPct:0.20, howToClose:'Implement demand-driven replenishment with 26-week rolling forecasts; reduce expired inventory.', howToCloseAr:'طبّق التجديد بتحفيز الطلب مع توقع 26 أسبوعاً؛ قلّص المخزون منتهي الصلاحية.' },
+    { id:'procCycle',    label:'Procurement Cycle Time',   labelAr:'دورة المشتريات',               unit:'days',min:5, max:90, def:38, gcMedian:60,gcTopQ:85, gcMedianRaw:'25d',    gcTopQRaw:'12d',    norm:v=>Math.max(0,((90-v)/85)*100),  impactPct:0.10, howToClose:'Pre-qualify and pre-price approved suppliers; deploy e-auction for commodity APIs.', howToCloseAr:'أهّل وسعّر الموردين المعتمدين مسبقاً؛ طبّق المزادات الإلكترونية.' },
+    { id:'suppQuality',  label:'Supplier Quality Score',   labelAr:'مؤشر جودة الموردين',          unit:'/100',min:0, max:100,def:70, gcMedian:82,gcTopQ:97, gcMedianRaw:'82/100',  gcTopQRaw:'97/100', norm:v=>v,                            impactPct:0.30, howToClose:'Implement supplier qualification programme (SQP) with GMP audit checklist; require CoA per batch.', howToCloseAr:'طبّق برنامج تأهيل الموردين مع قائمة تدقيق GMP وشهادة التحليل لكل دفعة.' },
+    { id:'coldChain',    label:'Cold Chain Compliance',    labelAr:'الامتثال للسلسلة الباردة',     unit:'%',   min:50,max:100,def:83, gcMedian:90,gcTopQ:99, gcMedianRaw:'90%',    gcTopQRaw:'99.5%',  norm:v=>v,                            impactPct:0.40, howToClose:'Deploy IoT temperature monitoring with automated alerts; qualify carriers to GDP standards.', howToCloseAr:'طبّق مراقبة IoT للحرارة مع تنبيهات آلية؛ أهّل الناقلين بمعايير GDP.' },
+  ],
+  'Retail & FMCG': [
+    { id:'otif',         label:'OTIF %',                   labelAr:'نسبة OTIF',                   unit:'%',   min:50,max:100,def:80, gcMedian:87,gcTopQ:96, gcMedianRaw:'87%',    gcTopQRaw:'96%',    norm:v=>v,                            impactPct:0.20, howToClose:'Implement EDI with top-20 suppliers; enforce 48-hour advance shipping notices with automated OTIF reporting.', howToCloseAr:'طبّق EDI مع أفضل 20 مورد وإشعارات الشحن المسبقة مع تقارير OTIF.' },
+    { id:'invTurns',     label:'Inventory Turns',          labelAr:'معدل دوران المخزون',           unit:'×/yr',min:3, max:40, def:9,  gcMedian:52,gcTopQ:82, gcMedianRaw:'14×',    gcTopQRaw:'24×',    norm:v=>Math.min(100,(v/36)*100),     impactPct:0.20, howToClose:'Switch to demand-driven replenishment (CPFR); reduce assortment complexity 20% using Pareto.', howToCloseAr:'انتقل إلى التجديد بتحفيز الطلب (CPFR)؛ قلّص تعقيد التشكيلة 20%.' },
+    { id:'fillRate',     label:'Fill Rate %',              labelAr:'معدل الاستيفاء',               unit:'%',   min:50,max:100,def:78, gcMedian:86,gcTopQ:97, gcMedianRaw:'86%',    gcTopQRaw:'97%',    norm:v=>v,                            impactPct:0.25, howToClose:'Implement min/max reorder points with automatic PO generation; improve demand forecast accuracy.', howToCloseAr:'طبّق نقاط إعادة الطلب التلقائية وحسّن دقة التنبؤ بالطلب.' },
+    { id:'daysSupply',   label:'Days of Supply',           labelAr:'أيام التوريد',                 unit:'days',min:5, max:90, def:35, gcMedian:60,gcTopQ:85, gcMedianRaw:'24d',    gcTopQRaw:'12d',    norm:v=>Math.max(0,((90-v)/85)*100),  impactPct:0.15, howToClose:'Align safety stock to statistical demand variability; implement seasonal buffer stock planning.', howToCloseAr:'اضبط مخزون الأمان مع تقلب الطلب الإحصائي؛ طبّق التخطيط الموسمي.' },
+    { id:'shrinkage',    label:'Shrinkage / Waste Rate',   labelAr:'معدل الاختلاس والهدر',         unit:'%',   min:0, max:15, def:4.5,gcMedian:65,gcTopQ:90, gcMedianRaw:'2.8%',   gcTopQRaw:'0.9%',   norm:v=>Math.max(0,((15-v)/15)*100),  impactPct:0.40, howToClose:'Deploy RFID inventory tracking; implement cycle counting programme; strengthen receiving controls.', howToCloseAr:'طبّق تتبع RFID للمخزون؛ نفّذ برنامج الجرد الدوري وعزّز ضوابط الاستقبال.' },
+    { id:'forecastAcc',  label:'Forecast Accuracy',        labelAr:'دقة التنبؤ',                   unit:'%',   min:30,max:99, def:65, gcMedian:76,gcTopQ:91, gcMedianRaw:'76%',    gcTopQRaw:'91%',    norm:v=>v,                            impactPct:0.20, howToClose:'Implement statistical forecasting (ARIMA/ML) with promotional lift factors; run monthly S&OP.', howToCloseAr:'طبّق التنبؤ الإحصائي مع عوامل العروض الترويجية ومراجعة S&OP شهرية.' },
+  ],
+  'Logistics & Transportation': [
+    { id:'otif',         label:'OTIF %',                   labelAr:'نسبة OTIF',                   unit:'%',   min:50,max:100,def:83, gcMedian:90,gcTopQ:98, gcMedianRaw:'90%',    gcTopQRaw:'98%',    norm:v=>v,                            impactPct:0.30, howToClose:'Implement real-time GPS tracking with automated ETA updates; enforce carrier KPIs with bonuses.', howToCloseAr:'طبّق تتبع GPS مع تحديثات ETA آلية ومؤشرات أداء الناقلين.' },
+    { id:'orderAccuracy',label:'Order Accuracy Rate',      labelAr:'معدل دقة الطلبيات',            unit:'%',   min:80,max:100,def:94, gcMedian:97,gcTopQ:99, gcMedianRaw:'97%',    gcTopQRaw:'99.8%',  norm:v=>v,                            impactPct:0.20, howToClose:'Deploy barcode/RFID scanning at all pick/pack stations; implement WMS.', howToCloseAr:'طبّق مسح الباركود/RFID في محطات الالتقاط والتعبئة؛ نفّذ نظام WMS.' },
+    { id:'whUtil',       label:'Warehouse Utilization',    labelAr:'استغلال المستودع',              unit:'%',   min:20,max:100,def:65, gcMedian:74,gcTopQ:89, gcMedianRaw:'74%',    gcTopQRaw:'89%',    norm:v=>v,                            impactPct:0.20, howToClose:'Re-slot warehouse using ABC velocity analysis; implement dynamic slotting algorithms.', howToCloseAr:'أعد تخصيص المستودع باستخدام تحليل ABC وخوارزميات التخصيص الديناميكي.' },
+    { id:'damageRate',   label:'Damage / Loss Rate',       labelAr:'معدل التلف والفقدان',           unit:'%',   min:0, max:5,  def:1.2,gcMedian:68,gcTopQ:94, gcMedianRaw:'0.6%',   gcTopQRaw:'0.1%',   norm:v=>Math.max(0,((5-v)/5)*100),    impactPct:0.50, howToClose:'Implement carrier liability KPIs; standardise packing specs; deploy claims management system.', howToCloseAr:'طبّق مؤشرات مسؤولية الناقلين وقيّس مواصفات التعبئة ونظام إدارة المطالبات.' },
+    { id:'transitVar',   label:'Transit Time Variance',    labelAr:'تباين وقت العبور',              unit:'days',min:0, max:10, def:3.2,gcMedian:64,gcTopQ:92, gcMedianRaw:'1.8d',   gcTopQRaw:'0.4d',   norm:v=>Math.max(0,((10-v)/10)*100),  impactPct:0.20, howToClose:'Optimise routing with TMS; negotiate dedicated capacity with key carriers for critical lanes.', howToCloseAr:'حسّن مسارات الشحن بنظام TMS؛ تفاوض على طاقة مخصصة مع الناقلين.' },
+    { id:'costEff',      label:'Cost Efficiency Score',    labelAr:'مؤشر كفاءة التكلفة',           unit:'/100',min:0, max:100,def:50, gcMedian:62,gcTopQ:88, gcMedianRaw:'62/100',  gcTopQRaw:'88/100', norm:v=>v,                            impactPct:0.30, howToClose:'Consolidate shipments; implement multi-drop routing optimisation; automate last-mile dispatch.', howToCloseAr:'دمج الشحنات؛ طبّق تحسين مسارات التوزيع المتعدد وأتمتة المرحلة الأخيرة.' },
+  ],
+  'Construction & EPC': [
+    { id:'matAvail',     label:'Material Availability On Schedule',labelAr:'توافر المواد في الموعد',unit:'%', min:30,max:100,def:68, gcMedian:78,gcTopQ:95, gcMedianRaw:'78%',    gcTopQRaw:'95%',    norm:v=>v,                            impactPct:0.40, howToClose:'Implement MRP linked to project schedule; apply SCOR Plan-Source integration.', howToCloseAr:'طبّق تخطيط متطلبات المواد المرتبط بجدول المشروع (SCOR Plan-Source).' },
+    { id:'procCycle',    label:'Procurement Cycle Time',   labelAr:'دورة المشتريات',               unit:'days',min:5, max:120,def:52, gcMedian:63,gcTopQ:85, gcMedianRaw:'35d',    gcTopQRaw:'15d',    norm:v=>Math.max(0,((120-v)/115)*100),impactPct:0.10, howToClose:'Pre-qualify tier-1 contractors; deploy blanket orders for standard materials with fast-track approval.', howToCloseAr:'أهّل مقاولي الدرجة الأولى وأصدر أوامر إطارية للمواد المعيارية.' },
+    { id:'contractComp', label:'Contract Compliance Rate', labelAr:'الامتثال التعاقدي',            unit:'%',   min:40,max:100,def:70, gcMedian:82,gcTopQ:97, gcMedianRaw:'82%',    gcTopQRaw:'97%',    norm:v=>v,                            impactPct:0.20, howToClose:'Implement CLM with milestone tracking; deploy variation order management per FIDIC standards.', howToCloseAr:'طبّق CLM مع تتبع المعالم وأوامر التغيير وفق معايير FIDIC.' },
+    { id:'costAdherence',label:'Cost vs Budget Adherence', labelAr:'الالتزام بالميزانية',          unit:'%',   min:50,max:100,def:85, gcMedian:93,gcTopQ:99, gcMedianRaw:'93%',    gcTopQRaw:'99%',    norm:v=>v,                            impactPct:0.50, howToClose:'Implement earned value management (EVM); deploy cost engineering and change management.', howToCloseAr:'طبّق إدارة القيمة المكتسبة (EVM) وهندسة التكلفة وبروتوكولات التغيير.' },
+    { id:'localContent', label:'Local Content / IKTVA %', labelAr:'المحتوى المحلي',               unit:'%',   min:0, max:100,def:21, gcMedian:32,gcTopQ:55, gcMedianRaw:'32%',    gcTopQRaw:'55%',    norm:v=>v,                            impactPct:0.10, howToClose:'Map subcontracts against Saudi IKTVA scorecard; develop SME supplier panel for civil works.', howToCloseAr:'خرطشة عقود الباطن مع بطاقة IKTVA؛ طوّر لوحة موردين محليين للأعمال المدنية.' },
+    { id:'schedAdherence',label:'Schedule Adherence Rate', labelAr:'الالتزام بالجدول',             unit:'%',   min:30,max:100,def:62, gcMedian:75,gcTopQ:94, gcMedianRaw:'75%',    gcTopQRaw:'94%',    norm:v=>v,                            impactPct:0.40, howToClose:'Deploy CPM with weekly lookahead scheduling; implement weekly material flow meetings.', howToCloseAr:'طبّق طريقة المسار الحرج (CPM) مع جدولة أسبوعية ومراجعات تدفق المواد.' },
+  ],
+  'Healthcare': [
+    { id:'supplyAvail',  label:'Drug/Supply Availability', labelAr:'توافر الأدوية والمستلزمات',    unit:'%',   min:50,max:100,def:87, gcMedian:93,gcTopQ:99, gcMedianRaw:'93%',    gcTopQRaw:'99%',    norm:v=>v,                            impactPct:0.40, howToClose:'Implement demand-driven pharmaceutical inventory with safety stock based on lead time variability.', howToCloseAr:'طبّق مخزون دوائي بتحفيز الطلب مع مخزون أمان مبني على تباين التوريد.' },
+    { id:'stockoutRate', label:'Stockout Incidence Rate',  labelAr:'معدل نفاد المخزون',            unit:'%',   min:0, max:20, def:7,  gcMedian:73,gcTopQ:94, gcMedianRaw:'4%',     gcTopQRaw:'0.6%',   norm:v=>Math.max(0,((20-v)/20)*100),  impactPct:0.60, howToClose:'Classify medications by criticality (ABC/VED analysis); set higher safety stock for vital medications.', howToCloseAr:'صنّف الأدوية حسب الأهمية (ABC/VED)؛ اضبط مخزوناً أمانياً للأدوية الحيوية.' },
+    { id:'invTurns',     label:'Inventory Turns',          labelAr:'معدل دوران المخزون',           unit:'×/yr',min:1, max:20, def:4,  gcMedian:40,gcTopQ:70, gcMedianRaw:'6×',     gcTopQRaw:'11×',    norm:v=>Math.min(100,(v/18)*100),     impactPct:0.20, howToClose:'Implement consignment stock for high-value implants; automate reorder points in HIS.', howToCloseAr:'طبّق مخزون الأمانة للمستلزمات عالية القيمة؛ أتمتة نقاط إعادة الطلب.' },
+    { id:'procCycle',    label:'Procurement Cycle Time',   labelAr:'دورة المشتريات',               unit:'days',min:3, max:60, def:30, gcMedian:65,gcTopQ:85, gcMedianRaw:'20d',    gcTopQRaw:'9d',     norm:v=>Math.max(0,((60-v)/57)*100),  impactPct:0.10, howToClose:'Pre-qualify and centrally contract with top suppliers; deploy e-catalog for standard consumables.', howToCloseAr:'أهّل الموردين وتعاقد مركزياً؛ طبّق الكتالوج الإلكتروني للمستهلكات.' },
+    { id:'suppQuality',  label:'Supplier Quality Score',   labelAr:'مؤشر جودة الموردين',          unit:'/100',min:0, max:100,def:68, gcMedian:79,gcTopQ:95, gcMedianRaw:'79/100',  gcTopQRaw:'95/100', norm:v=>v,                            impactPct:0.30, howToClose:'Implement vendor qualification programme; require quality certificates and post-market reports.', howToCloseAr:'طبّق برنامج تأهيل الموردين واشترط شهادات الجودة وتقارير المراقبة.' },
+    { id:'coldChain',    label:'Cold Chain Compliance',    labelAr:'الامتثال للسلسلة الباردة',     unit:'%',   min:50,max:100,def:83, gcMedian:90,gcTopQ:99, gcMedianRaw:'90%',    gcTopQRaw:'99.5%',  norm:v=>v,                            impactPct:0.40, howToClose:'Deploy IoT temperature monitoring; qualify all cold-chain providers to GDP standards (SFDA/MOH).', howToCloseAr:'طبّق مراقبة IoT للحرارة؛ أهّل مزودي السلسلة الباردة بمعايير GDP.' },
+  ],
+  'Technology & ICT': [
+    { id:'vendorPerf',   label:'Vendor Performance Score', labelAr:'مؤشر أداء البائعين',           unit:'/100',min:0, max:100,def:65, gcMedian:76,gcTopQ:94, gcMedianRaw:'76/100',  gcTopQRaw:'94/100', norm:v=>v,                            impactPct:0.20, howToClose:'Implement vendor management office (VMO) with quarterly balanced scorecard reviews.', howToCloseAr:'أنشئ مكتب إدارة البائعين (VMO) مع مراجعات ربع سنوية ببطاقة أداء.' },
+    { id:'contractComp', label:'Contract Compliance Rate', labelAr:'الامتثال التعاقدي',            unit:'%',   min:40,max:100,def:72, gcMedian:82,gcTopQ:97, gcMedianRaw:'82%',    gcTopQRaw:'97%',    norm:v=>v,                            impactPct:0.25, howToClose:'Deploy IT-specific CLM with auto-renewal alerts, SLA tracking, and license reconciliation.', howToCloseAr:'طبّق CLM مخصص لتقنية المعلومات مع تنبيهات التجديد وتتبع SLA.' },
+    { id:'itProcCycle',  label:'IT Procurement Cycle',     labelAr:'دورة مشتريات تقنية المعلومات',unit:'days',min:3, max:60, def:24, gcMedian:63,gcTopQ:87, gcMedianRaw:'16d',    gcTopQRaw:'7d',     norm:v=>Math.max(0,((60-v)/57)*100),  impactPct:0.08, howToClose:'Standardise equipment catalogue; deploy e-procurement with pre-approved IT vendor panel.', howToCloseAr:'وحّد كتالوج المعدات؛ طبّق المشتريات الإلكترونية مع لوحة موردين IT معتمدين.' },
+    { id:'slaComp',      label:'SLA Compliance Rate',      labelAr:'الامتثال لاتفاقيات الخدمة',    unit:'%',   min:50,max:100,def:80, gcMedian:89,gcTopQ:98, gcMedianRaw:'89%',    gcTopQRaw:'98%',    norm:v=>v,                            impactPct:0.30, howToClose:'Implement ITSM platform; enforce SLA breach escalation matrix with financial penalties.', howToCloseAr:'طبّق منصة ITSM؛ اشترط مصفوفة تصعيد خرق SLA مع عقوبات مالية.' },
+    { id:'assetUtil',    label:'Asset / License Utilization',labelAr:'استغلال الأصول والتراخيص',  unit:'%',   min:20,max:100,def:58, gcMedian:70,gcTopQ:90, gcMedianRaw:'70%',    gcTopQRaw:'90%',    norm:v=>v,                            impactPct:0.20, howToClose:'Conduct SAM audit; implement license harvesting for unused seats; consolidate vendors.', howToCloseAr:'أجرِ تدقيق SAM؛ طبّق حصاد التراخيص وادمج الموردين.' },
+    { id:'itSavings',    label:'IT Savings vs Budget %',   labelAr:'الوفورات مقابل ميزانية IT',    unit:'%',   min:0, max:25, def:4,  gcMedian:42,gcTopQ:72, gcMedianRaw:'8%',     gcTopQRaw:'16%',    norm:v=>Math.min(100,(v/25)*100),     impactPct:0.40, howToClose:'Leverage cloud economies of scale; consolidate vendors; negotiate volume discounts.', howToCloseAr:'استفد من اقتصاديات السحابة؛ دمج الموردين وتفاوض على خصومات الحجم.' },
+  ],
+  'Food & Beverage': [
+    { id:'otif',         label:'OTIF %',                   labelAr:'نسبة OTIF',                   unit:'%',   min:50,max:100,def:78, gcMedian:86,gcTopQ:95, gcMedianRaw:'86%',    gcTopQRaw:'95%',    norm:v=>v,                            impactPct:0.20, howToClose:'Implement EDI with top suppliers; enforce 24-hour advance shipping notice for fresh categories.', howToCloseAr:'طبّق EDI مع الموردين الرئيسيين وإشعار الشحن المسبق 24 ساعة.' },
+    { id:'foodSafety',   label:'Food Safety Compliance',   labelAr:'الامتثال لسلامة الغذاء SFDA', unit:'%',   min:50,max:100,def:82, gcMedian:90,gcTopQ:99, gcMedianRaw:'90%',    gcTopQRaw:'99%',    norm:v=>v,                            impactPct:0.50, howToClose:'Implement HACCP-based QMS; automate supplier food safety certification tracking (SFDA).', howToCloseAr:'طبّق نظام HACCP؛ أتمتة تتبع شهادات سلامة الغذاء للموردين (SFDA).' },
+    { id:'invTurns',     label:'Inventory Turns',          labelAr:'معدل دوران المخزون',           unit:'×/yr',min:4, max:52, def:10, gcMedian:48,gcTopQ:78, gcMedianRaw:'16×',    gcTopQRaw:'28×',    norm:v=>Math.min(100,(v/50)*100),     impactPct:0.20, howToClose:'Implement FEFO warehouse management; reduce SKU complexity using Pareto analysis.', howToCloseAr:'طبّق إدارة FEFO للمستودعات؛ قلّص تعقيد SKU باستخدام باريتو.' },
+    { id:'spoilage',     label:'Waste / Spoilage Rate',    labelAr:'معدل الهدر والتلف',            unit:'%',   min:0, max:20, def:3.8,gcMedian:65,gcTopQ:90, gcMedianRaw:'2.2%',   gcTopQRaw:'0.7%',   norm:v=>Math.max(0,((20-v)/20)*100),  impactPct:0.50, howToClose:'Implement dynamic pricing for near-expiry products; establish redistribution channels.', howToCloseAr:'طبّق التسعير الديناميكي للمنتجات القريبة من الانتهاء؛ أنشئ قنوات إعادة التوزيع.' },
+    { id:'fillRate',     label:'Fill Rate %',              labelAr:'معدل الاستيفاء',               unit:'%',   min:50,max:100,def:79, gcMedian:87,gcTopQ:97, gcMedianRaw:'87%',    gcTopQRaw:'97%',    norm:v=>v,                            impactPct:0.25, howToClose:'Reduce minimum order quantities with key suppliers; improve SKU-level demand forecasting.', howToCloseAr:'قلّص الحد الأدنى لكميات الطلب؛ حسّن التنبؤ بالطلب على مستوى SKU.' },
+    { id:'forecastAcc',  label:'Forecast Accuracy',        labelAr:'دقة التنبؤ',                   unit:'%',   min:30,max:99, def:68, gcMedian:78,gcTopQ:92, gcMedianRaw:'78%',    gcTopQRaw:'92%',    norm:v=>v,                            impactPct:0.20, howToClose:'Implement collaborative forecasting with top-10 distributors (CPFR); apply promotional uplift modelling.', howToCloseAr:'طبّق CPFR مع أفضل 10 موزعين ونمذجة رفع العروض الترويجية.' },
+  ],
+  'E-commerce': [
+    { id:'fillRate',     label:'Order Fill Rate %',        labelAr:'معدل استيفاء الطلبيات',        unit:'%',   min:50,max:100,def:88, gcMedian:94,gcTopQ:99, gcMedianRaw:'94%',    gcTopQRaw:'99%',    norm:v=>v,                            impactPct:0.30, howToClose:'Implement real-time inventory visibility across all nodes; use available-to-promise (ATP) at checkout.', howToCloseAr:'طبّق رؤية فورية للمخزون عبر جميع العقد وكيانات ATP عند الدفع.' },
+    { id:'otd',          label:'On-Time Delivery %',       labelAr:'التسليم في الوقت المحدد',      unit:'%',   min:50,max:100,def:80, gcMedian:88,gcTopQ:97, gcMedianRaw:'88%',    gcTopQRaw:'97%',    norm:v=>v,                            impactPct:0.30, howToClose:'Multi-carrier routing optimisation; implement last-mile tracking with customer notifications.', howToCloseAr:'تحسين التوجيه متعدد الناقلين وتتبع المرحلة الأخيرة مع إشعارات العملاء.' },
+    { id:'returnRate',   label:'Return / Refund Rate',     labelAr:'معدل الإرجاع',                 unit:'%',   min:0, max:30, def:14, gcMedian:64,gcTopQ:90, gcMedianRaw:'8%',     gcTopQRaw:'2%',     norm:v=>Math.max(0,((30-v)/30)*100),  impactPct:0.40, howToClose:'Improve product listing accuracy; QC at fulfilment centre; launch returns analytics programme.', howToCloseAr:'حسّن دقة قوائم المنتجات؛ ضبط الجودة في مراكز التلبية وتحليلات الإرجاع.' },
+    { id:'invAccuracy',  label:'Inventory Accuracy',       labelAr:'دقة المخزون',                  unit:'%',   min:60,max:100,def:91, gcMedian:96,gcTopQ:99, gcMedianRaw:'96%',    gcTopQRaw:'99.5%',  norm:v=>v,                            impactPct:0.20, howToClose:'Deploy RFID or barcode scanning; implement daily cycle count programme at fulfilment centres.', howToCloseAr:'طبّق مسح RFID أو الباركود؛ نفّذ برنامج الجرد الدوري اليومي.' },
+    { id:'daysSupply',   label:'Days of Supply',           labelAr:'أيام التوريد',                 unit:'days',min:3, max:60, def:32, gcMedian:67,gcTopQ:87, gcMedianRaw:'20d',    gcTopQRaw:'10d',    norm:v=>Math.max(0,((60-v)/57)*100),  impactPct:0.15, howToClose:'Implement demand-driven reorder with ML-based demand sensing; reduce minimum order quantities.', howToCloseAr:'طبّق إعادة الطلب بتحفيز ML؛ قلّص الحد الأدنى لكميات الطلب.' },
+    { id:'perfOrder',    label:'Perfect Order Rate',       labelAr:'معدل الطلب المثالي',           unit:'%',   min:50,max:100,def:79, gcMedian:87,gcTopQ:96, gcMedianRaw:'87%',    gcTopQRaw:'96%',    norm:v=>v,                            impactPct:0.30, howToClose:'Integrate order management, WMS and TMS for E2E visibility; automate exception management.', howToCloseAr:'ادمج إدارة الطلبيات وWMS وTMS للرؤية الشاملة؛ أتمتة إدارة الاستثناءات.' },
+  ],
+  'Services': [
+    { id:'contractComp', label:'Contract Compliance Rate', labelAr:'الامتثال التعاقدي',            unit:'%',   min:30,max:100,def:68, gcMedian:80,gcTopQ:96, gcMedianRaw:'80%',    gcTopQRaw:'96%',    norm:v=>v,                            impactPct:0.30, howToClose:'Deploy CLM platform with automated milestone tracking and renewal alerts; align to CIPS standards.', howToCloseAr:'طبّق CLM مع تتبع المعالم وتنبيهات التجديد؛ توافق مع معايير CIPS.' },
+    { id:'procCycle',    label:'Procurement Cycle Time',   labelAr:'دورة المشتريات',               unit:'days',min:5, max:90, def:35, gcMedian:65,gcTopQ:87, gcMedianRaw:'22d',    gcTopQRaw:'9d',     norm:v=>Math.max(0,((90-v)/85)*100),  impactPct:0.10, howToClose:'Pre-qualify service providers; deploy e-procurement with digital RFP/RFQ templates.', howToCloseAr:'أهّل مزودي الخدمات مسبقاً؛ طبّق المشتريات الإلكترونية مع قوالب RFP/RFQ.' },
+    { id:'suppPerf',     label:'Supplier Performance',     labelAr:'أداء الموردين',                unit:'/100',min:0, max:100,def:62, gcMedian:74,gcTopQ:92, gcMedianRaw:'74/100',  gcTopQRaw:'92/100', norm:v=>v,                            impactPct:0.20, howToClose:'Implement quarterly supplier performance reviews with balanced scorecard (quality, delivery, cost).', howToCloseAr:'نفّذ مراجعات أداء ربع سنوية للموردين ببطاقة الأداء المتوازن.' },
+    { id:'slaComp',      label:'SLA Delivery Rate',        labelAr:'الوفاء باتفاقيات الخدمة',     unit:'%',   min:50,max:100,def:74, gcMedian:85,gcTopQ:97, gcMedianRaw:'85%',    gcTopQRaw:'97%',    norm:v=>v,                            impactPct:0.30, howToClose:'Establish SLA management office; implement automated SLA monitoring with breach escalation.', howToCloseAr:'أنشئ مكتب إدارة SLA؛ طبّق المراقبة الآلية مع تصعيد الخرق.' },
+    { id:'savings',      label:'Cost Savings vs Budget %', labelAr:'الوفورات مقابل الميزانية',     unit:'%',   min:0, max:20, def:3,  gcMedian:38,gcTopQ:72, gcMedianRaw:'7%',     gcTopQRaw:'14%',    norm:v=>Math.min(100,(v/20)*100),     impactPct:0.50, howToClose:'Launch strategic sourcing programme; negotiate framework agreements for top-20 spend categories.', howToCloseAr:'أطلق الشراء الاستراتيجي وتفاوض على اتفاقيات إطارية لأفضل 20 فئة إنفاق.' },
+    { id:'riskCoverage', label:'Vendor Risk Coverage',     labelAr:'تغطية مخاطر البائعين',         unit:'%',   min:0, max:100,def:45, gcMedian:65,gcTopQ:92, gcMedianRaw:'65%',    gcTopQRaw:'92%',    norm:v=>v,                            impactPct:0.20, howToClose:'Implement annual vendor risk assessment for all strategic vendors; score against ISO 31000.', howToCloseAr:'طبّق تقييم مخاطر سنوي للبائعين الاستراتيجيين مقابل معايير ISO 31000.' },
+  ],
+};
 
-  const gaps = useMemo(() => KPI_CONFIG.map(k => {
-    const userNorm = k.norm(vals[k.id] ?? k.def);
-    const gap = k.median - userNorm;
-    const gapAbove = k.topQ - userNorm;
-    const sarImpact = Math.max(0, gap) * revenue * 1_000_000 * SAR_IMPACT_FACTOR[k.id];
-    return { ...k, userNorm, gap, gapAbove, sarImpact };
-  }), [vals, revenue]);
+function getIndustryKPIs(industry: string): KPIDef[] {
+  return INDUSTRY_KPIS[industry] ?? INDUSTRY_KPIS['Manufacturing'];
+}
+
+// ─── Tab 1: Benchmark Radar (Industry-Specific) ───────────────────────────────
+function BenchmarkTab({ lang }: { lang: Lang }) {
+  const ar = lang === 'ar';
+  const [industry, setIndustry]       = useState(Object.keys(INDUSTRY_TREE)[0]);
+  const [subIndustry, setSubIndustry] = useState('');
+  const [revenue, setRevenue]         = useState(200); // SAR M
+  const [vals, setVals]               = useState<Record<string, number>>({});
+  const [targets, setTargets]         = useState<Record<string, number>>({});
+
+  const kpis = useMemo(() => getIndustryKPIs(industry), [industry]);
+
+  const handleIndustryChange = useCallback((ind: string) => {
+    setIndustry(ind); setSubIndustry(''); setVals({}); setTargets({});
+  }, []);
+
+  const getVal = (k: KPIDef) => vals[k.id] ?? k.def;
+
+  const radarData = useMemo(() => kpis.map(k => ({
+    metric: ar ? k.labelAr : k.label,
+    'As-Is':        Math.round(k.norm(getVal(k))),
+    'GCC Median':   k.gcMedian,
+    'Top Quartile': k.gcTopQ,
+  })), [kpis, vals, ar]);
+
+  const gaps = useMemo(() => kpis.map(k => {
+    const asIs       = Math.round(k.norm(getVal(k)));
+    const targetNorm = targets[k.id] ?? k.gcTopQ;
+    const gapToMed   = k.gcMedian - asIs;
+    const gapToTgt   = targetNorm - asIs;
+    const sarImpact  = Math.max(0, gapToTgt) * revenue * 1_000_000 * k.impactPct / 100;
+    return { ...k, asIs, targetNorm, gapToMed, gapToTgt, sarImpact };
+  }), [kpis, vals, targets, revenue]);
+
+  const totalImpact = gaps.reduce((s, g) => s + g.sarImpact, 0);
+  const avgAsIs     = Math.round(gaps.reduce((s, g) => s + g.asIs, 0) / Math.max(gaps.length, 1));
+  const avgMedian   = Math.round(kpis.reduce((s, k) => s + k.gcMedian, 0) / Math.max(kpis.length, 1));
+  const avgTopQ     = Math.round(kpis.reduce((s, k) => s + k.gcTopQ, 0) / Math.max(kpis.length, 1));
 
   return (
-    <div className="space-y-8">
-      {/* Revenue input */}
-      <div className="flex items-center gap-4 bg-[#082C6B]/5 border border-[#082C6B]/20 rounded-xl px-5 py-3">
-        <DollarSign className="w-5 h-5 text-[#082C6B] shrink-0" />
-        <span className="text-sm font-semibold text-[#082C6B] whitespace-nowrap">Annual Revenue</span>
-        <input type="range" min={10} max={5000} step={10} value={revenue} onChange={e => setRevenue(+e.target.value)}
-          className="flex-1 accent-[#C9A84C]" />
-        <span className="text-sm font-bold text-[#C9A84C] whitespace-nowrap w-24 text-right">SAR {revenue >= 1000 ? `${(revenue/1000).toFixed(1)}B` : `${revenue}M`}</span>
+    <div className="space-y-8" dir={ar ? 'rtl' : 'ltr'}>
+      {/* Company Profile */}
+      <div className="grid sm:grid-cols-3 gap-4 bg-[#082C6B]/5 border border-[#082C6B]/20 rounded-xl p-5">
+        <div className="space-y-1.5">
+          <label className="text-xs font-bold text-[#082C6B] uppercase tracking-wider">{ar ? 'القطاع الصناعي' : 'Industry Sector'}</label>
+          <select value={industry} onChange={e => handleIndustryChange(e.target.value)}
+            className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#082C6B]/30">
+            {Object.keys(INDUSTRY_TREE).map(i => <option key={i}>{i}</option>)}
+          </select>
+        </div>
+        <div className="space-y-1.5">
+          <label className="text-xs font-bold text-[#082C6B] uppercase tracking-wider">{ar ? 'القطاع الفرعي' : 'Sub-Sector'}</label>
+          <select value={subIndustry} onChange={e => setSubIndustry(e.target.value)}
+            className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#082C6B]/30">
+            <option value="">{ar ? '— الكل —' : '— All sub-sectors —'}</option>
+            {(INDUSTRY_TREE[industry] ?? []).map(s => <option key={s}>{s}</option>)}
+          </select>
+        </div>
+        <div className="space-y-1.5">
+          <label className="text-xs font-bold text-[#082C6B] uppercase tracking-wider">{ar ? 'الإيرادات السنوية' : 'Annual Revenue'}</label>
+          <div className="flex items-center gap-2">
+            <input type="range" min={10} max={5000} step={10} value={revenue} onChange={e => setRevenue(+e.target.value)} className="flex-1 accent-[#C9A84C]" />
+            <span className="text-sm font-bold text-[#C9A84C] whitespace-nowrap w-24 text-right">
+              {revenue >= 1000 ? `SAR ${(revenue/1000).toFixed(1)}B` : `SAR ${revenue}M`}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Sector label */}
+      <div className="flex items-center gap-3">
+        <div className="flex-1 h-px bg-border" />
+        <span className="text-xs font-bold text-[#082C6B] uppercase tracking-widest px-3 py-1 bg-[#082C6B]/8 rounded-full whitespace-nowrap">
+          {ar ? 'مؤشرات قطاع:' : 'KPIs for:'} {industry}{subIndustry ? ` — ${subIndustry}` : ''}
+        </span>
+        <div className="flex-1 h-px bg-border" />
       </div>
 
       <div className="grid lg:grid-cols-2 gap-8">
-        {/* KPI Sliders */}
-        <div className="space-y-5">
-          <h3 className="font-bold text-[#082C6B] text-sm uppercase tracking-wider">Your KPI Inputs</h3>
-          {KPI_CONFIG.map(k => (
-            <div key={k.id} className="space-y-1">
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-semibold text-foreground">{k.label}</span>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-bold text-[#C9A84C]">{vals[k.id] ?? k.def}{k.unit}</span>
-                  <span className="text-xs text-muted-foreground">/ Median: {k.higher ? '' : ''}{k.id === 'invTurns' ? '8×' : k.id === 'procCycle' ? '18d' : k.id === 'procCost' ? '11%' : `${k.id === 'otif' ? 88 : k.id === 'forecastAcc' ? 73 : 87}%`}</span>
+        {/* KPI Sliders — As-Is inputs */}
+        <div className="space-y-4">
+          <h3 className="font-bold text-[#082C6B] text-sm uppercase tracking-wider">{ar ? 'أدخل أرقامك الحالية (As-Is)' : 'Your Current Numbers — As-Is'}</h3>
+          {kpis.map(k => {
+            const v     = getVal(k);
+            const normV = Math.round(k.norm(v));
+            const ok    = normV >= k.gcMedian;
+            return (
+              <div key={k.id} className="space-y-1">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-semibold">{ar ? k.labelAr : k.label}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-bold text-[#C9A84C]">{v}{k.unit}</span>
+                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${ok ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>{normV}/100</span>
+                  </div>
+                </div>
+                <input type="range" min={k.min} max={k.max} step={(k.max - k.min) < 5 ? 0.1 : 1}
+                  value={v} onChange={e => setVals(p => ({ ...p, [k.id]: +e.target.value }))}
+                  className="w-full accent-[#082C6B]" />
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>{ar ? 'وسيط الخليج:' : 'GCC Median:'} {k.gcMedianRaw}</span>
+                  <span>{ar ? 'أفضل ربع:' : 'Top Quartile:'} {k.gcTopQRaw}</span>
                 </div>
               </div>
-              <input type="range" min={k.min} max={k.max} value={vals[k.id] ?? k.def}
-                onChange={e => setVals(prev => ({ ...prev, [k.id]: +e.target.value }))}
-                className="w-full accent-[#082C6B]" />
-            </div>
-          ))}
+            );
+          })}
         </div>
 
-        {/* Radar Chart */}
-        <div>
-          <h3 className="font-bold text-[#082C6B] text-sm uppercase tracking-wider mb-4">GCC Benchmark Comparison</h3>
-          <ResponsiveContainer width="100%" height={320}>
+        {/* Radar + 3-number summary */}
+        <div className="space-y-5">
+          <h3 className="font-bold text-[#082C6B] text-sm uppercase tracking-wider">{ar ? 'رادار المقارنة (As-Is / وسيط الخليج / أفضل ربع)' : 'Benchmark Radar (As-Is / GCC Median / Top Quartile)'}</h3>
+          <ResponsiveContainer width="100%" height={300}>
             <RadarChart data={radarData}>
               <PolarGrid stroke="#E5E7EB" />
-              <PolarAngleAxis dataKey="metric" tick={{ fontSize: 10, fill: '#6B7280' }} />
-              <Radar name="Your Score" dataKey="Your Score" stroke="#C9A84C" fill="#C9A84C" fillOpacity={0.35} strokeWidth={2} />
-              <Radar name="GCC Median" dataKey="GCC Median" stroke="#082C6B" fill="none" strokeDasharray="6 3" strokeWidth={1.5} />
-              <Radar name="Top Quartile" dataKey="Top Quartile" stroke="#10b981" fill="none" strokeDasharray="3 2" strokeWidth={1} />
+              <PolarAngleAxis dataKey="metric" tick={{ fontSize: 8, fill: '#6B7280' }} />
+              <Radar name={ar ? 'أداؤك' : 'Your Score (As-Is)'}    dataKey="As-Is"        stroke="#C9A84C" fill="#C9A84C" fillOpacity={0.4} strokeWidth={2} />
+              <Radar name={ar ? 'وسيط الخليج' : 'GCC Median'}       dataKey="GCC Median"   stroke="#082C6B" fill="none"    strokeDasharray="6 3" strokeWidth={1.5} />
+              <Radar name={ar ? 'أفضل ربع (الهدف)' : 'Top Quartile Target'} dataKey="Top Quartile" stroke="#10b981" fill="none" strokeDasharray="3 2" strokeWidth={1.2} />
               <Legend iconSize={10} iconType="circle" />
             </RadarChart>
           </ResponsiveContainer>
+
+          {/* 3-number score cards */}
+          <div className="grid grid-cols-3 gap-3">
+            {[
+              { label: ar ? 'As-Is (أداؤك)' : 'As-Is', value: avgAsIs,  color: '#C9A84C' },
+              { label: ar ? 'وسيط الخليج' : 'GCC Median', value: avgMedian, color: '#082C6B' },
+              { label: ar ? 'الهدف (Top Q)' : 'Target (Top Q)', value: avgTopQ,  color: '#10b981' },
+            ].map(c => (
+              <div key={c.label} className="text-center rounded-xl border border-border p-3">
+                <p className="text-xs text-muted-foreground mb-1 leading-tight">{c.label}</p>
+                <p className="text-2xl font-black" style={{ color: c.color }}>{c.value}</p>
+                <p className="text-xs text-muted-foreground">{ar ? '/100 درجة' : '/ 100 pts'}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
       {/* Gap Analysis Table */}
       <div>
-        <h3 className="font-bold text-[#082C6B] text-sm uppercase tracking-wider mb-3">Gap Analysis & Financial Impact</h3>
+        <h3 className="font-bold text-[#082C6B] text-sm uppercase tracking-wider mb-3">{ar ? 'تحليل الفجوات والأثر المالي' : 'Gap Analysis & Financial Impact'}</h3>
         <div className="overflow-x-auto rounded-xl border border-border">
-          <table className="w-full text-sm">
+          <table className="w-full text-xs">
             <thead className="bg-[#082C6B] text-white">
               <tr>
-                {['KPI','Your Score','GCC Median','Gap to Median','Gap to Top Q','Est. Annual Impact'].map(h => (
-                  <th key={h} className="px-4 py-2.5 text-left font-semibold text-xs">{h}</th>
-                ))}
+                {(ar
+                  ? ['مؤشر الأداء','As-Is','وسيط الخليج','هدفك (Top Q)','الفجوة للوسيط','الفجوة للهدف','الأثر السنوي (ريال)','كيف تسدّها؟']
+                  : ['KPI','As-Is','GCC Median','Your Target','Gap to Median','Gap to Target','Annual SAR Impact','How to Close']
+                ).map(h => <th key={h} className="px-3 py-2.5 text-left font-semibold whitespace-nowrap">{h}</th>)}
               </tr>
             </thead>
             <tbody>
               {gaps.map((g, i) => (
-                <tr key={g.id} className={i % 2 === 0 ? 'bg-white' : 'bg-muted/40'}>
-                  <td className="px-4 py-2.5 font-semibold text-foreground">{g.label}</td>
-                  <td className="px-4 py-2.5 font-bold text-[#C9A84C]">{Math.round(g.userNorm)}</td>
-                  <td className="px-4 py-2.5 text-muted-foreground">{g.median}</td>
-                  <td className={`px-4 py-2.5 font-semibold ${g.gap > 10 ? 'text-red-600' : g.gap > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>
-                    {g.gap > 0 ? `−${Math.round(g.gap)}` : `+${Math.abs(Math.round(g.gap))}`}
+                <tr key={g.id} className={i % 2 === 0 ? 'bg-white' : 'bg-muted/30'}>
+                  <td className="px-3 py-2.5 font-semibold">{ar ? g.labelAr : g.label}</td>
+                  <td className="px-3 py-2.5">
+                    <span className={`font-bold px-2 py-0.5 rounded-full ${g.asIs >= g.gcMedian ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>{g.asIs}</span>
                   </td>
-                  <td className={`px-4 py-2.5 font-semibold ${g.gapAbove > 15 ? 'text-red-600' : g.gapAbove > 5 ? 'text-amber-600' : 'text-emerald-600'}`}>
-                    {g.gapAbove > 0 ? `−${Math.round(g.gapAbove)}` : `+${Math.abs(Math.round(g.gapAbove))}`}
+                  <td className="px-3 py-2.5 font-semibold text-muted-foreground">{g.gcMedianRaw}</td>
+                  <td className="px-3 py-2.5">
+                    <div className="flex items-center gap-1">
+                      <input type="number" min={0} max={100}
+                        value={Math.round(targets[g.id] ?? g.gcTopQ)}
+                        onChange={e => setTargets(p => ({ ...p, [g.id]: +e.target.value }))}
+                        className="w-14 border border-border rounded px-1.5 py-0.5 text-xs text-center bg-white focus:outline-none focus:ring-1 focus:ring-[#082C6B]" />
+                      <span className="text-muted-foreground">/100</span>
+                    </div>
                   </td>
-                  <td className="px-4 py-2.5 font-bold text-[#082C6B]">{g.sarImpact > 10000 ? formatSAR(g.sarImpact) : '< SAR 10K'}</td>
+                  <td className={`px-3 py-2.5 font-bold ${g.gapToMed > 10 ? 'text-red-600' : g.gapToMed > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>
+                    {g.gapToMed > 0 ? `−${Math.round(g.gapToMed)}` : `+${Math.abs(Math.round(g.gapToMed))}`}
+                  </td>
+                  <td className={`px-3 py-2.5 font-bold ${g.gapToTgt > 15 ? 'text-red-600' : g.gapToTgt > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>
+                    {g.gapToTgt > 0 ? `−${Math.round(g.gapToTgt)}` : `+${Math.abs(Math.round(g.gapToTgt))}`}
+                  </td>
+                  <td className="px-3 py-2.5 font-bold text-[#082C6B]">
+                    {g.sarImpact > 10000 ? formatSAR(g.sarImpact) : g.sarImpact > 0 ? '< SAR 10K' : <span className="text-emerald-600">✓ On Target</span>}
+                  </td>
+                  <td className="px-3 py-2.5 max-w-xs">
+                    <p className="text-muted-foreground leading-snug">{ar ? g.howToCloseAr : g.howToClose}</p>
+                  </td>
                 </tr>
               ))}
             </tbody>
-            <tfoot className="bg-[#082C6B]/5 border-t border-border">
+            <tfoot className="bg-[#082C6B]/8 border-t-2 border-[#082C6B]/20">
               <tr>
-                <td colSpan={5} className="px-4 py-2.5 font-bold text-[#082C6B] text-sm">Total Improvement Opportunity</td>
-                <td className="px-4 py-2.5 font-bold text-[#C9A84C] text-base">{formatSAR(gaps.reduce((s, g) => s + g.sarImpact, 0))}</td>
+                <td colSpan={6} className="px-3 py-3 font-black text-[#082C6B] text-sm">{ar ? 'إجمالي الفرصة السنوية' : 'Total Annual Improvement Opportunity'}</td>
+                <td className="px-3 py-3 font-black text-[#C9A84C] text-base">{formatSAR(totalImpact)}</td>
+                <td />
               </tr>
             </tfoot>
           </table>
         </div>
-        <p className="text-xs text-muted-foreground mt-2">* Impact estimates based on ISC GCC benchmark database. Actual results subject to organisational context and implementation quality.</p>
+        <p className="text-xs text-muted-foreground mt-2">
+          {ar ? '* التقديرات مبنية على قاعدة بيانات ISC الخليجية. يمكنك تعديل هدفك في عمود Target.' : '* Estimates based on ISC GCC benchmark database. Adjust your target in the table above.'}
+        </p>
+      </div>
+
+      {/* ISC Value Add CTA */}
+      <div className="bg-[#082C6B] rounded-2xl p-6 flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <p className="text-white font-black text-base">
+            {ar ? `مع ISC، تُغلق شركات قطاع ${industry} هذه الفجوات خلال 3–6 أشهر.` : `With ISC, ${industry} organisations close these gaps in 3–6 months.`}
+          </p>
+          <p className="text-white/70 text-sm mt-1">
+            {ar ? `فرصتك المحددة: ${formatSAR(totalImpact)} سنوياً — دعنا نحوّل هذه الأرقام إلى خطة عمل.` : `Your identified opportunity: ${formatSAR(totalImpact)} annually. Let us build an action plan together.`}
+          </p>
+        </div>
+        <Link href="/consultant">
+          <Button className="bg-[#C9A84C] hover:bg-[#b8973e] text-white font-bold shrink-0">
+            {ar ? 'احجز استشارة مجانية' : 'Book Free Consultation'} <ArrowRight className="w-4 h-4 ml-1" />
+          </Button>
+        </Link>
       </div>
     </div>
   );
 }
 
 // ─── Tab 2: Savings Calculator ────────────────────────────────────────────────
-function SavingsTab() {
+function SavingsTab({ lang }: { lang: Lang }) {
+  const ar = lang === 'ar'; void ar;
   const [revenue, setRevenue] = useState(500);
   const [spendPct, setSpendPct] = useState(28);
-  const [industry, setIndustry] = useState(INDUSTRIES[0]);
+  const [industry, setIndustry] = useState(Object.keys(INDUSTRY_TREE)[0]);
   const [levers, setLevers] = useState<Record<string, number>>(Object.fromEntries(LEVERS.map(l => [l.id, 40])));
 
   const spend = revenue * 1_000_000 * spendPct / 100;
@@ -325,7 +549,7 @@ function SavingsTab() {
           <label className="text-xs font-bold text-[#082C6B] uppercase tracking-wider">Industry</label>
           <select value={industry} onChange={e => setIndustry(e.target.value)}
             className="w-full border border-border rounded-lg px-3 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#082C6B]/30">
-            {INDUSTRIES.map(i => <option key={i}>{i}</option>)}
+            {Object.keys(INDUSTRY_TREE).map(i => <option key={i}>{i}</option>)}
           </select>
         </div>
       </div>
@@ -392,137 +616,339 @@ function SavingsTab() {
   );
 }
 
-// ─── Tab 3: Risk Exposure ─────────────────────────────────────────────────────
-function RiskTab() {
-  const [soleSource, setSoleSource] = useState(6);
-  const [spendConc, setSpendConc] = useState(55);
-  const [leadTime, setLeadTime] = useState(45);
-  const [auditAge, setAuditAge] = useState(18);
-  const [bcp, setBcp] = useState<'none' | 'partial' | 'full'>('partial');
+// ─── Risk Category Definitions ────────────────────────────────────────────────
+const RISK_CATEGORIES_DATA = [
+  { id:'supply',      icon:'🏭', label:'Supply Risk',                   labelAr:'مخاطر التوريد',                  desc:'Supplier concentration, sole-source dependencies, lead time, quality failures',           descAr:'تركز الموردين، المصدر الفردي، وقت التوريد، إخفاقات الجودة',               gcMedian:45, gcTopQ:22, examples:['Sole-source dependencies','Supplier financial risk','Geographic concentration','Long lead times'] },
+  { id:'demand',      icon:'📊', label:'Demand Risk',                   labelAr:'مخاطر الطلب',                    desc:'Forecast inaccuracy, demand volatility, customer concentration',                            descAr:'عدم دقة التنبؤ، تقلب الطلب، تركز العملاء',                                gcMedian:40, gcTopQ:20, examples:['Demand volatility','Forecast inaccuracy','Seasonal spikes','Customer concentration'] },
+  { id:'operational', icon:'⚙️', label:'Operational Risk',              labelAr:'المخاطر التشغيلية',               desc:'Process failures, capacity constraints, quality escapes, BCP gaps',                          descAr:'إخفاقات العمليات، قيود الطاقة، هروب الجودة، ثغرات BCP',                   gcMedian:48, gcTopQ:25, examples:['Process failures','BCP gaps','Capacity constraints','Quality escapes'] },
+  { id:'financial',   icon:'💰', label:'Financial Risk',                labelAr:'المخاطر المالية',                 desc:'Currency exposure, price volatility, payment terms, supplier credit risk',                   descAr:'تعرض العملة، تقلب الأسعار، شروط الدفع، مخاطر الائتمان',                   gcMedian:38, gcTopQ:18, examples:['Currency fluctuation','Commodity price volatility','Supplier credit risk','Payment terms'] },
+  { id:'geopolitical',icon:'🌍', label:'Geopolitical / Regulatory Risk',labelAr:'المخاطر الجيوسياسية والتنظيمية',desc:'Trade restrictions, sanctions, GCC regulatory changes (GTPL, Vision 2030)',                  descAr:'القيود التجارية، العقوبات، التغييرات التنظيمية في الخليج',                  gcMedian:42, gcTopQ:20, examples:['Import/export restrictions','GTPL/IKTVA compliance','Sanctions risk','Political instability'] },
+  { id:'esg',         icon:'🌱', label:'ESG / Sustainability Risk',     labelAr:'مخاطر الاستدامة والحوكمة',        desc:'Environmental compliance, ethical sourcing, social responsibility, ESG reporting',             descAr:'الامتثال البيئي، الشراء الأخلاقي، المسؤولية الاجتماعية',                  gcMedian:52, gcTopQ:28, examples:['Carbon footprint','Supplier ethical sourcing','Water/energy usage','ESG reporting gaps'] },
+  { id:'cyber',       icon:'🔒', label:'Cyber / Technology Risk',       labelAr:'مخاطر الأمن السيبراني',           desc:'Data breaches, system outages, digital supply chain vulnerabilities',                        descAr:'اختراقات البيانات، انقطاع الأنظمة، ثغرات سلسلة التوريد الرقمية',           gcMedian:55, gcTopQ:25, examples:['Cybersecurity incidents','System downtime','Data integrity','Third-party digital risk'] },
+  { id:'contract',    icon:'📜', label:'Contract / Governance Risk',    labelAr:'مخاطر العقود والحوكمة',           desc:'Contract non-compliance, governance gaps, legal/liability exposure',                         descAr:'عدم الامتثال التعاقدي، ثغرات الحوكمة، التعرض القانوني',                   gcMedian:44, gcTopQ:20, examples:['Contract compliance gaps','IP/liability exposure','PoA violations','Audit findings'] },
+];
+
+type RiskRating = { likelihood: number; impact: number; mitigation: 'none' | 'partial' | 'full' };
+
+// ─── Tab 3: Risk Engine ──────────────────────────────────────────────────────
+function RiskTab({ lang }: { lang: Lang }) {
+  const ar = lang === 'ar';
+  const [ratings, setRatings] = useState<Record<string, RiskRating>>(
+    Object.fromEntries(RISK_CATEGORIES_DATA.map(c => [c.id, { likelihood: 3, impact: 3, mitigation: 'partial' }]))
+  );
   const [revenue, setRevenue] = useState(300);
+  const [industry, setIndustry] = useState(Object.keys(INDUSTRY_TREE)[0]);
+  const [aiPlan, setAiPlan]   = useState<Record<string, unknown> | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [aiErr,   setAiErr]   = useState('');
 
-  const score = useMemo(() => {
-    const a = Math.min(30, soleSource * 5);
-    const b = spendConc / 100 * 25;
-    const c = Math.min(20, (leadTime / 90) * 20);
-    const d = Math.min(15, (auditAge / 24) * 15);
-    const e = bcp === 'none' ? 10 : bcp === 'partial' ? 5 : 0;
-    return Math.round(a + b + c + d + e);
-  }, [soleSource, spendConc, leadTime, auditAge, bcp]);
+  const exposureScore = useMemo(() => {
+    let total = 0;
+    RISK_CATEGORIES_DATA.forEach(cat => {
+      const r = ratings[cat.id] ?? { likelihood: 3, impact: 3, mitigation: 'partial' };
+      const raw = r.likelihood * r.impact;                                 // 1–25
+      const mitFactor = r.mitigation === 'full' ? 0.6 : r.mitigation === 'partial' ? 0.3 : 0;
+      total += raw * (1 - mitFactor);
+    });
+    return Math.round(Math.min(100, (total / 200) * 100));
+  }, [ratings]);
 
-  const annualExposure = revenue * 1_000_000 * score * 0.00025;
+  const industryBenchmark = Math.round(RISK_CATEGORIES_DATA.reduce((s,c)=>s+c.gcMedian,0)/RISK_CATEGORIES_DATA.length / 2);
+  const targetScore        = Math.round(RISK_CATEGORIES_DATA.reduce((s,c)=>s+c.gcTopQ,0)/RISK_CATEGORIES_DATA.length / 2);
+  const annualExposure     = revenue * 1_000_000 * Math.max(0, exposureScore - targetScore) * 0.0003;
 
-  const recs = useMemo(() => {
-    const all = [
-      { cond: soleSource > 4,  text: `Dual-source your top ${Math.min(soleSource, 5)} critical sole-source suppliers within 90 days — each sole-source dependency represents 5+ risk points and potential 2–4 week disruption.`, priority: 'HIGH' },
-      { cond: spendConc > 50,  text: `Spend concentration with top 3 suppliers exceeds the ISO 31000 recommended 40% threshold. Diversify by onboarding 2–3 qualified alternatives per category.`, priority: 'HIGH' },
-      { cond: leadTime > 30,   text: `Average supplier lead time of ${leadTime} days is significantly above the GCC top quartile of 14 days. Implement VMI or buffer stock agreements for critical items.`, priority: 'MEDIUM' },
-      { cond: auditAge > 12,   text: `Supplier audits are ${auditAge} months overdue — CIPS recommends annual audits for strategic suppliers. Schedule a rapid audit programme within 60 days.`, priority: 'MEDIUM' },
-      { cond: bcp !== 'full',  text: `${bcp === 'none' ? 'No BCP exists' : 'BCP is incomplete'} — a documented and tested supply chain BCP is mandatory under Saudi GTPL Article 65 and APICS SCOR resilience standards.`, priority: bcp === 'none' ? 'HIGH' : 'MEDIUM' },
-    ].filter(r => r.cond);
-    return all.slice(0, 3);
-  }, [soleSource, spendConc, leadTime, auditAge, bcp]);
+  const highRisks = useMemo(() =>
+    RISK_CATEGORIES_DATA.filter(cat => {
+      const r = ratings[cat.id] ?? { likelihood: 3, impact: 3 };
+      return r.likelihood * r.impact >= 9;
+    }), [ratings]);
+
+  const setRating = useCallback((id: string, field: keyof RiskRating, value: number | string) => {
+    setRatings(prev => ({ ...prev, [id]: { ...prev[id], [field]: value } }));
+  }, []);
+
+  const generatePlan = async () => {
+    setLoading(true); setAiErr(''); setAiPlan(null);
+    try {
+      const desc = RISK_CATEGORIES_DATA.map(cat => {
+        const r = ratings[cat.id] ?? { likelihood: 3, impact: 3 };
+        return `${cat.label}: L${r.likelihood}×I${r.impact}=${r.likelihood*r.impact}`;
+      }).join('; ');
+      const resp = await fetch(`${API_BASE}/consultancy/diagnose`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+        body: JSON.stringify({ industry, challenge: `Risk assessment: ${desc}. Exposure score: ${exposureScore}/100. Generate ISO 31000-aligned mitigation plan.`, language: lang }),
+      });
+      const data = await resp.json();
+      if (!data.ok) throw new Error(data.error ?? 'AI error');
+      setAiPlan(data.diagnosis);
+    } catch (e) { setAiErr(String(e)); }
+    setLoading(false);
+  };
 
   return (
-    <div className="space-y-7">
-      <div className="grid lg:grid-cols-2 gap-8">
-        {/* Inputs */}
-        <div className="space-y-5">
-          <h3 className="font-bold text-[#082C6B] text-sm uppercase tracking-wider">Risk Profile Inputs</h3>
-
-          {[
-            { label: 'Critical Sole-Source Suppliers', val: soleSource, set: setSoleSource, min: 0, max: 20, unit: ' suppliers', display: `${soleSource}` },
-            { label: '% Spend with Top 3 Suppliers', val: spendConc, set: setSpendConc, min: 5, max: 100, unit: '%', display: `${spendConc}%` },
-            { label: 'Average Supplier Lead Time', val: leadTime, set: setLeadTime, min: 3, max: 120, unit: ' days', display: `${leadTime}d` },
-            { label: 'Months Since Last Supplier Audit', val: auditAge, set: setAuditAge, min: 0, max: 36, unit: ' months', display: auditAge === 0 ? 'This month' : `${auditAge}mo` },
-          ].map(({ label, val, set, min, max, display }) => (
-            <div key={label} className="space-y-1">
-              <div className="flex justify-between">
-                <span className="text-sm font-semibold">{label}</span>
-                <span className="text-sm font-bold text-[#C9A84C]">{display}</span>
-              </div>
-              <input type="range" min={min} max={max} value={val} onChange={e => set(+e.target.value)} className="w-full accent-[#082C6B]" />
-            </div>
-          ))}
-
-          <div className="space-y-1">
-            <span className="text-sm font-semibold">Business Continuity Plan (BCP) Status</span>
-            <div className="flex gap-2 mt-1">
-              {(['none', 'partial', 'full'] as const).map(opt => (
-                <button key={opt} onClick={() => setBcp(opt)}
-                  className={`flex-1 py-2 rounded-lg text-sm font-semibold border transition-all ${bcp === opt ? 'bg-[#082C6B] text-white border-[#082C6B]' : 'bg-white text-muted-foreground border-border hover:border-[#082C6B]/40'}`}>
-                  {opt.charAt(0).toUpperCase() + opt.slice(1)}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="space-y-1">
-            <div className="flex justify-between">
-              <span className="text-sm font-semibold">Annual Revenue (for exposure calc)</span>
-              <span className="text-sm font-bold text-[#C9A84C]">SAR {revenue >= 1000 ? `${(revenue/1000).toFixed(1)}B` : `${revenue}M`}</span>
-            </div>
-            <input type="range" min={10} max={5000} step={10} value={revenue} onChange={e => setRevenue(+e.target.value)} className="w-full accent-[#082C6B]" />
-          </div>
+    <div className="space-y-7" dir={ar ? 'rtl' : 'ltr'}>
+      {/* Profile row */}
+      <div className="grid sm:grid-cols-2 gap-4 bg-[#082C6B]/5 border border-[#082C6B]/20 rounded-xl p-5">
+        <div className="space-y-1.5">
+          <label className="text-xs font-bold text-[#082C6B] uppercase tracking-wider">{ar ? 'القطاع' : 'Industry Sector'}</label>
+          <select value={industry} onChange={e => setIndustry(e.target.value)}
+            className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-white">
+            {Object.keys(INDUSTRY_TREE).map(i => <option key={i}>{i}</option>)}
+          </select>
         </div>
-
-        {/* Gauge + Exposure */}
-        <div className="space-y-5">
-          <h3 className="font-bold text-[#082C6B] text-sm uppercase tracking-wider">Risk Exposure Score</h3>
-          <RiskGauge score={score} />
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className={`rounded-xl p-4 text-center border ${score >= 75 ? 'bg-red-50 border-red-200' : score >= 55 ? 'bg-orange-50 border-orange-200' : score >= 30 ? 'bg-amber-50 border-amber-200' : 'bg-emerald-50 border-emerald-200'}`}>
-              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Annual Disruption Cost</p>
-              <p className={`text-xl font-black ${score >= 75 ? 'text-red-700' : score >= 55 ? 'text-orange-700' : score >= 30 ? 'text-amber-700' : 'text-emerald-700'}`}>{formatSAR(annualExposure)}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">estimated exposure</p>
-            </div>
-            <div className="rounded-xl p-4 text-center border bg-[#082C6B]/5 border-[#082C6B]/20">
-              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">GCC Peer Benchmark</p>
-              <p className="text-xl font-black text-[#082C6B]">Score 38</p>
-              <p className="text-xs text-muted-foreground mt-0.5">median for your sector</p>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <h4 className="text-xs font-bold text-[#082C6B] uppercase tracking-wider">Risk Factor Breakdown</h4>
-            {[
-              { label: 'Sole-Source Concentration', pts: Math.min(30, soleSource * 5), max: 30 },
-              { label: 'Supplier Spend Concentration', pts: Math.round(spendConc / 100 * 25), max: 25 },
-              { label: 'Lead Time Exposure', pts: Math.round(Math.min(20, (leadTime / 90) * 20)), max: 20 },
-              { label: 'Audit Freshness', pts: Math.round(Math.min(15, (auditAge / 24) * 15)), max: 15 },
-              { label: 'BCP Readiness', pts: bcp === 'none' ? 10 : bcp === 'partial' ? 5 : 0, max: 10 },
-            ].map(({ label, pts, max }) => (
-              <div key={label} className="flex items-center gap-2">
-                <span className="text-xs w-44 truncate">{label}</span>
-                <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
-                  <motion.div className="h-full rounded-full" style={{ backgroundColor: riskColor((pts / max) * 100) }}
-                    initial={{ width: 0 }} animate={{ width: `${(pts / max) * 100}%` }} transition={{ duration: 0.8 }} />
-                </div>
-                <span className="text-xs font-bold w-10 text-right">{pts}/{max}</span>
-              </div>
-            ))}
+        <div className="space-y-1.5">
+          <label className="text-xs font-bold text-[#082C6B] uppercase tracking-wider">{ar ? 'الإيرادات السنوية' : 'Annual Revenue'}</label>
+          <div className="flex items-center gap-2">
+            <input type="range" min={10} max={5000} step={10} value={revenue} onChange={e => setRevenue(+e.target.value)} className="flex-1 accent-[#C9A84C]" />
+            <span className="text-sm font-bold text-[#C9A84C] whitespace-nowrap w-24 text-right">
+              {revenue >= 1000 ? `SAR ${(revenue/1000).toFixed(1)}B` : `SAR ${revenue}M`}
+            </span>
           </div>
         </div>
       </div>
 
-      {/* Recommendations */}
-      {recs.length > 0 && (
-        <div>
-          <h3 className="font-bold text-[#082C6B] text-sm uppercase tracking-wider mb-3">Priority Risk Mitigations</h3>
-          <div className="space-y-3">
-            {recs.map((r, i) => (
-              <div key={i} className={`flex gap-3 rounded-xl p-4 border ${r.priority === 'HIGH' ? 'bg-red-50 border-red-200' : 'bg-amber-50 border-amber-200'}`}>
-                <AlertTriangle className={`w-5 h-5 shrink-0 mt-0.5 ${r.priority === 'HIGH' ? 'text-red-600' : 'text-amber-600'}`} />
-                <div>
-                  <span className={`text-xs font-bold uppercase tracking-wider ${r.priority === 'HIGH' ? 'text-red-700' : 'text-amber-700'}`}>{r.priority} PRIORITY</span>
-                  <p className="text-sm mt-0.5">{r.text}</p>
+      {/* 3-Number Summary */}
+      <div className="grid grid-cols-3 gap-4">
+        {[
+          { label: ar ? 'مؤشر تعرضك (As-Is)' : 'Your Exposure Score (As-Is)', value: exposureScore, color: riskColor(exposureScore), sub: riskLabel(exposureScore) },
+          { label: ar ? 'معيار الخليج' : 'GCC Industry Benchmark', value: industryBenchmark, color: '#082C6B', sub: ar ? 'متوسط القطاع' : 'Sector median' },
+          { label: ar ? 'الهدف (Top Quartile)' : 'Target (Top Quartile)', value: targetScore, color: '#10b981', sub: ar ? 'أفضل ربع' : 'Top quartile' },
+        ].map(s => (
+          <div key={s.label} className="text-center rounded-xl border border-border p-4">
+            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2 leading-tight">{s.label}</p>
+            <p className="text-3xl font-black" style={{ color: s.color }}>{s.value}</p>
+            <p className="text-xs font-semibold mt-1" style={{ color: s.color }}>{s.sub}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Risk Category Ratings */}
+      <div>
+        <h3 className="font-bold text-[#082C6B] text-sm uppercase tracking-wider mb-4">
+          {ar ? 'قيّم كل فئة من فئات المخاطر (1=منخفض، 5=حرج)' : 'Rate Each Risk Category (1=Low, 5=Critical)'}
+        </h3>
+        <div className="space-y-3">
+          {RISK_CATEGORIES_DATA.map(cat => {
+            const r     = ratings[cat.id] ?? { likelihood: 3, impact: 3, mitigation: 'partial' };
+            const score = r.likelihood * r.impact;
+            const lvl   = score >= 16 ? 'Critical' : score >= 9 ? 'High' : score >= 4 ? 'Medium' : 'Low';
+            const brdCls = score >= 16 ? 'border-red-200 bg-red-50' : score >= 9 ? 'border-orange-200 bg-orange-50' : score >= 4 ? 'border-amber-100 bg-amber-50/50' : 'border-emerald-200 bg-emerald-50/50';
+            const bdgCls = score >= 16 ? 'bg-red-100 text-red-700' : score >= 9 ? 'bg-orange-100 text-orange-700' : score >= 4 ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700';
+            return (
+              <div key={cat.id} className={`rounded-xl border p-4 transition-all ${brdCls}`}>
+                <div className="flex flex-wrap items-start gap-3">
+                  <div className="flex items-start gap-2 flex-1 min-w-0">
+                    <span className="text-xl leading-none mt-0.5 shrink-0">{cat.icon}</span>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="font-bold text-sm">{ar ? cat.labelAr : cat.label}</p>
+                        <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${bdgCls}`}>{lvl} · {score}/25</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-0.5">{ar ? cat.descAr : cat.desc}</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-4 shrink-0 flex-wrap">
+                    {/* Likelihood */}
+                    <div className="space-y-1">
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{ar ? 'الاحتمالية' : 'Likelihood'}</p>
+                      <div className="flex gap-1">
+                        {[1,2,3,4,5].map(n => (
+                          <button key={n} onClick={() => setRating(cat.id, 'likelihood', n)}
+                            className={`w-8 h-8 rounded text-xs font-bold border transition-all ${r.likelihood >= n ? (n >= 4 ? 'bg-red-500 text-white border-red-500' : n >= 2 ? 'bg-amber-400 text-white border-amber-400' : 'bg-emerald-400 text-white border-emerald-400') : 'bg-white text-muted-foreground border-border hover:border-[#082C6B]/40'}`}>
+                            {n}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    {/* Impact */}
+                    <div className="space-y-1">
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{ar ? 'التأثير' : 'Impact'}</p>
+                      <div className="flex gap-1">
+                        {[1,2,3,4,5].map(n => (
+                          <button key={n} onClick={() => setRating(cat.id, 'impact', n)}
+                            className={`w-8 h-8 rounded text-xs font-bold border transition-all ${r.impact >= n ? (n >= 4 ? 'bg-red-500 text-white border-red-500' : n >= 2 ? 'bg-amber-400 text-white border-amber-400' : 'bg-emerald-400 text-white border-emerald-400') : 'bg-white text-muted-foreground border-border hover:border-[#082C6B]/40'}`}>
+                            {n}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    {/* Mitigation */}
+                    <div className="space-y-1">
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{ar ? 'التخفيف' : 'Mitigation'}</p>
+                      <div className="flex gap-1">
+                        {(['none','partial','full'] as const).map(opt => (
+                          <button key={opt} onClick={() => setRating(cat.id, 'mitigation', opt)}
+                            className={`px-2 h-8 rounded text-xs font-semibold border transition-all ${r.mitigation === opt ? 'bg-[#082C6B] text-white border-[#082C6B]' : 'bg-white text-muted-foreground border-border hover:border-[#082C6B]/40'}`}>
+                            {ar ? (opt==='none'?'لا يوجد':opt==='partial'?'جزئي':'كامل') : opt.charAt(0).toUpperCase()+opt.slice(1)}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
-            ))}
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Risk Heat Map 5×5 */}
+      <div>
+        <h3 className="font-bold text-[#082C6B] text-sm uppercase tracking-wider mb-3">
+          {ar ? 'خريطة حرارة المخاطر (بناءً على تقييمك)' : 'Risk Heat Map — Live (Based on Your Assessment)'}
+        </h3>
+        <div className="bg-white rounded-xl border border-border p-4 space-y-2">
+          <div className="flex items-start gap-2">
+            <div className="flex flex-col justify-between text-xs text-muted-foreground w-6 text-right" style={{ height: 220 }}>
+              {[5,4,3,2,1].map(n => <span key={n} className="leading-none py-2">{n}</span>)}
+            </div>
+            <div className="flex-1 space-y-1">
+              {[5,4,3,2,1].map(impactLvl => (
+                <div key={impactLvl} className="grid grid-cols-5 gap-1">
+                  {[1,2,3,4,5].map(likeLvl => {
+                    const sc   = impactLvl * likeLvl;
+                    const cats = RISK_CATEGORIES_DATA.filter(cat => {
+                      const r = ratings[cat.id] ?? { likelihood: 3, impact: 3 };
+                      return r.likelihood === likeLvl && r.impact === impactLvl;
+                    });
+                    const bg = sc >= 16 ? 'bg-red-500 text-white' : sc >= 9 ? 'bg-orange-400 text-white' : sc >= 4 ? 'bg-amber-300 text-foreground' : 'bg-emerald-200 text-foreground';
+                    return (
+                      <div key={likeLvl} title={cats.map(c=>c.label).join(', ')}
+                        className={`h-10 rounded flex items-center justify-center text-center ${bg} cursor-default transition-all`}>
+                        {cats.length > 0 && (
+                          <span className="text-[8px] font-bold leading-none px-0.5">
+                            {cats.map(c => c.label.split(' ')[0]).join(',')}
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="flex gap-1 ml-8">
+            {[1,2,3,4,5].map(n => <div key={n} className="flex-1 text-center text-xs text-muted-foreground">{n}</div>)}
+          </div>
+          <div className="flex items-center justify-between ml-8 mt-1">
+            <span className="text-xs text-muted-foreground">{ar ? 'الاحتمالية ←' : '← Likelihood →'}</span>
+            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+              {[['bg-emerald-200',ar?'منخفض':'Low'],['bg-amber-300',ar?'متوسط':'Medium'],['bg-orange-400',ar?'عالٍ':'High'],['bg-red-500',ar?'حرج':'Critical']].map(([cls,lbl])=>(
+                <span key={lbl} className="flex items-center gap-1"><span className={`w-3 h-3 rounded ${cls} inline-block`} />{lbl}</span>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Risk Register — High & Critical */}
+      {highRisks.length > 0 && (
+        <div>
+          <h3 className="font-bold text-[#082C6B] text-sm uppercase tracking-wider mb-3">
+            {ar ? 'سجل المخاطر — المخاطر العالية والحرجة' : 'Risk Register — High & Critical Risks'}
+          </h3>
+          <div className="overflow-x-auto rounded-xl border border-border">
+            <table className="w-full text-xs">
+              <thead className="bg-[#082C6B] text-white">
+                <tr>
+                  {(ar
+                    ? ['فئة المخاطر','الاحتمالية','التأثير','الدرجة','المستوى','التخفيف الحالي','المالك','الإجراء المطلوب']
+                    : ['Risk Category','Likelihood','Impact','Score','Level','Mitigation','Suggested Owner','Required Action']
+                  ).map(h => <th key={h} className="px-3 py-2.5 text-left font-semibold whitespace-nowrap">{h}</th>)}
+                </tr>
+              </thead>
+              <tbody>
+                {highRisks.map((cat, i) => {
+                  const r     = ratings[cat.id] ?? { likelihood: 3, impact: 3, mitigation: 'partial' };
+                  const score = r.likelihood * r.impact;
+                  const lvl   = score >= 16 ? 'Critical' : 'High';
+                  const lvlCls = lvl === 'Critical' ? 'bg-red-100 text-red-700' : 'bg-orange-100 text-orange-700';
+                  const mitCls = r.mitigation === 'none' ? 'bg-red-100 text-red-700' : r.mitigation === 'partial' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700';
+                  return (
+                    <tr key={cat.id} className={i%2===0?'bg-white':'bg-muted/30'}>
+                      <td className="px-3 py-2.5 font-semibold">{cat.icon} {ar ? cat.labelAr : cat.label}</td>
+                      <td className="px-3 py-2.5 text-center font-bold">{r.likelihood}/5</td>
+                      <td className="px-3 py-2.5 text-center font-bold">{r.impact}/5</td>
+                      <td className="px-3 py-2.5 text-center font-black text-[#082C6B]">{score}/25</td>
+                      <td className="px-3 py-2.5"><span className={`px-2 py-0.5 rounded-full font-bold text-xs ${lvlCls}`}>{lvl}</span></td>
+                      <td className="px-3 py-2.5"><span className={`px-2 py-0.5 rounded-full font-bold text-xs ${mitCls}`}>{r.mitigation.charAt(0).toUpperCase()+r.mitigation.slice(1)}</span></td>
+                      <td className="px-3 py-2.5 text-muted-foreground">{ar ? 'مدير سلسلة التوريد' : 'Supply Chain Director'}</td>
+                      <td className="px-3 py-2.5 text-muted-foreground">{cat.examples[0]}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         </div>
       )}
+
+      {/* Financial Exposure + Opportunity */}
+      <div className="grid sm:grid-cols-2 gap-4">
+        <div className={`rounded-xl p-5 border ${exposureScore >= 60 ? 'bg-red-50 border-red-200' : exposureScore >= 40 ? 'bg-amber-50 border-amber-200' : 'bg-emerald-50 border-emerald-200'}`}>
+          <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">{ar ? 'التكلفة السنوية المقدرة للمخاطر' : 'Est. Annual Risk Exposure Cost'}</p>
+          <p className={`text-2xl font-black ${exposureScore >= 60 ? 'text-red-700' : exposureScore >= 40 ? 'text-amber-700' : 'text-emerald-700'}`}>{formatSAR(annualExposure)}</p>
+          <p className="text-xs text-muted-foreground mt-1">{ar ? 'إذا بقيت المخاطر دون معالجة' : 'if risks remain unaddressed'}</p>
+        </div>
+        <div className="rounded-xl p-5 bg-[#082C6B]/5 border border-[#082C6B]/20">
+          <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">{ar ? 'فرصة التحسين نحو أفضل ربع' : 'Opportunity: Close to Top Quartile'}</p>
+          <p className="text-2xl font-black text-[#082C6B]">{exposureScore} → {targetScore} <span className="text-base font-semibold">pts</span></p>
+          <p className="text-xs text-muted-foreground mt-1">{ar ? `تحسين بمقدار ${exposureScore - targetScore} نقطة يرفعك إلى أفضل ربع` : `Improve by ${exposureScore - targetScore} pts to reach sector top quartile`}</p>
+        </div>
+      </div>
+
+      {/* AI Mitigation Plan Generator */}
+      <div className="border border-border rounded-2xl p-5 space-y-4">
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <div>
+            <h3 className="font-bold text-[#082C6B] text-base">{ar ? 'خطة التخفيف بالذكاء الاصطناعي' : 'AI Risk Mitigation Plan'}</h3>
+            <p className="text-xs text-muted-foreground mt-0.5">{ar ? 'مبنية على ISO 31000 وCIPS وأطر الخليج' : 'ISO 31000 · CIPS · GCC regulatory frameworks'}</p>
+          </div>
+          <Button onClick={generatePlan} disabled={loading} className="bg-[#082C6B] hover:bg-[#0B3D91] text-white font-bold">
+            {loading
+              ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />{ar ? 'جارٍ الإنشاء...' : 'Generating...'}</>
+              : <><Brain className="w-4 h-4 mr-2" />{ar ? 'إنشاء خطة التخفيف' : 'Generate Mitigation Plan'}</>}
+          </Button>
+        </div>
+        {aiErr && <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl p-3 text-sm">{aiErr}</div>}
+        {aiPlan && (
+          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+            <div className="bg-[#082C6B] rounded-xl p-5 text-white">
+              <p className="text-xs uppercase tracking-widest text-white/60 mb-2">{ar ? 'ملخص التشخيص' : 'Diagnostic Summary'}</p>
+              <p className="text-sm leading-relaxed">{String((aiPlan as any).challengeSummary ?? '')}</p>
+            </div>
+            <div>
+              <h4 className="text-xs font-bold text-[#082C6B] uppercase tracking-wider mb-2">{ar ? 'الإجراءات العاجلة' : 'Urgent Actions'}</h4>
+              <div className="space-y-2">
+                {((aiPlan as any).urgentActions ?? []).map((a: string, i: number) => (
+                  <div key={i} className="flex gap-3 items-start bg-white rounded-xl border border-border p-3">
+                    <span className="w-6 h-6 rounded-full bg-[#082C6B] text-white flex items-center justify-center text-xs font-black shrink-0">{i+1}</span>
+                    <p className="text-sm">{a}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+            {(aiPlan as any).estimatedAnnualCost && (
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-sm text-amber-900">
+                <strong>{ar ? 'التكلفة المقدرة إذا لم تُعالَج:' : 'Estimated cost if unresolved:'}</strong> {String((aiPlan as any).estimatedAnnualCost)}
+              </div>
+            )}
+          </motion.div>
+        )}
+      </div>
+
+      {/* ISC Value Add CTA */}
+      <div className="bg-[#082C6B] rounded-2xl p-6 flex items-center justify-between gap-4 flex-wrap">
+        <div>
+          <p className="text-white font-black text-base">{ar ? 'هل تريد خطة إدارة مخاطر مخصصة بالكامل؟' : 'Need a fully customised risk management plan?'}</p>
+          <p className="text-white/70 text-sm mt-1">{ar ? `تعرضك: ${exposureScore}/100 · الهدف: ${targetScore}/100 · ISC تسدّ هذه الفجوة بدقة ISO 31000.` : `Your exposure: ${exposureScore}/100 · Target: ${targetScore}/100 · ISC closes this gap with ISO 31000 precision.`}</p>
+        </div>
+        <Link href="/consultant">
+          <Button className="bg-[#C9A84C] hover:bg-[#b8973e] text-white font-bold shrink-0">
+            {ar ? "تحدّث مع ما'ين" : "Talk to Ma'in"} <ArrowRight className="w-4 h-4 ml-1" />
+          </Button>
+        </Link>
+      </div>
     </div>
   );
 }
@@ -1295,7 +1721,7 @@ const STAT_ITEMS = [
 
 export function CommandCenter() {
   const [tab,  setTab]  = useState<TabId>('benchmark');
-  const [lang, setLang] = useState<Lang>('en');
+  const { lang } = useLanguage();
   const ar = lang === 'ar';
 
   return (
@@ -1331,15 +1757,18 @@ export function CommandCenter() {
       {/* Tabs + Content */}
       <section className="container mx-auto px-4 py-10">
         {/* Tab Nav */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
+        <div className={`grid grid-cols-2 md:grid-cols-5 gap-3 mb-8 ${ar ? 'direction-rtl' : ''}`}>
           {TABS.map(t => {
             const Icon = t.icon;
+            const arLabels = TAB_LABELS_AR[t.id];
+            const label = ar ? arLabels.label : t.label;
+            const desc  = ar ? arLabels.desc  : t.desc;
             return (
               <button key={t.id} onClick={() => setTab(t.id)}
                 className={`rounded-xl p-4 text-left border transition-all ${tab === t.id ? 'bg-[#082C6B] text-white border-[#082C6B] shadow-lg' : 'bg-white text-foreground border-border hover:border-[#082C6B]/40 hover:shadow-sm'}`}>
                 <Icon className={`w-5 h-5 mb-2 ${tab === t.id ? 'text-[#C9A84C]' : 'text-[#082C6B]'}`} />
-                <p className="font-bold text-sm leading-tight">{t.label}</p>
-                <p className={`text-xs mt-1 leading-relaxed ${tab === t.id ? 'text-white/70' : 'text-muted-foreground'}`}>{t.desc}</p>
+                <p className="font-bold text-sm leading-tight">{label}</p>
+                <p className={`text-xs mt-1 leading-relaxed ${tab === t.id ? 'text-white/70' : 'text-muted-foreground'}`}>{desc}</p>
               </button>
             );
           })}
@@ -1349,11 +1778,10 @@ export function CommandCenter() {
         <div className="bg-white rounded-2xl border border-border shadow-sm p-6 md:p-8">
           <AnimatePresence mode="wait">
             <motion.div key={tab} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.25 }}>
-              {tab === 'benchmark'   && <BenchmarkTab />}
-              {tab === 'savings'     && <SavingsTab />}
-              {tab === 'risk'        && <RiskTab />}
+              {tab === 'benchmark'   && <BenchmarkTab lang={lang} />}
+              {tab === 'savings'     && <SavingsTab lang={lang} />}
+              {tab === 'risk'        && <RiskTab lang={lang} />}
               {tab === 'briefing'    && <BriefingTab lang={lang} />}
-              {tab === 'consultancy' && <ConsultancyTab lang={lang} />}
               {tab === 'consultancy' && <ConsultancyTab lang={lang} />}
             </motion.div>
           </AnimatePresence>

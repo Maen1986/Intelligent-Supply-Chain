@@ -236,10 +236,15 @@ export function Header() {
 
             <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest px-4 py-2 mt-3">Services</p>
             {servicesList.map(item => (
-              <Link key={item.href} href={item.href} onClick={() => setMobileMenuOpen(false)}
-                className="block px-7 py-2.5 text-[15px] text-gray-700 hover:text-primary hover:bg-primary/5 rounded-lg transition-colors font-medium">
-                {navLabel(item.key)}
-              </Link>
+              item.href.startsWith('/#')
+                ? <a key={item.href} href={item.href} onClick={() => setMobileMenuOpen(false)}
+                    className="block px-7 py-2.5 text-[15px] text-gray-700 hover:text-primary hover:bg-primary/5 rounded-lg transition-colors font-medium">
+                    {navLabel(item.key)}
+                  </a>
+                : <Link key={item.href} href={item.href} onClick={() => setMobileMenuOpen(false)}
+                    className="block px-7 py-2.5 text-[15px] text-gray-700 hover:text-primary hover:bg-primary/5 rounded-lg transition-colors font-medium">
+                    {navLabel(item.key)}
+                  </Link>
             ))}
 
             <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest px-4 py-2 mt-3">Industries</p>
