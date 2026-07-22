@@ -106,38 +106,65 @@ describe('GET /api/intelligence', () => {
     expect(res.body.error).not.toContain('boom');
   });
 
-  it('rejects malformed AI content (wrong shape) without caching it', async () => {
-    fetchMock.mockResolvedValueOnce({
+  it('rejects malformed AI content (wrong shape) after one retry, without caching it', async () => {
+    const malformed = {
       ok: true,
       json: async () => ({ choices: [{ message: { content: JSON.stringify({ news: [], tools: [], processes: [], tips: [] }) } }] }),
-    });
+    };
+    fetchMock.mockResolvedValueOnce(malformed).mockResolvedValueOnce(malformed);
     const app = makeApp('/api', intelligenceRouter);
     const res = await request(app).get('/api/intelligence');
     expect(res.status).toBe(502);
     expect(res.body.error).toBeTruthy();
+    expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(fsState.written.length).toBe(0);
   });
 
-  it('rejects AI content with missing item fields without caching it', async () => {
-    const bad = { ...generated, news: generated.news.map(({ headline: _h, ...rest }) => rest) };
-    fetchMock.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ choices: [{ message: { content: JSON.stringify(bad) } }] }),
-    });
-    const app = makeApp('/api', intelligenceRouter);
-    const res = await request(app).get('/api/intelligence');
-    expect(res.status).toBe(502);
-    expect(fsState.written.length).toBe(0);
-  });
-
-  it('rejects non-JSON AI content without caching it', async () => {
+  it('retries once on malformed content and serves + caches the good retry result', async () => {
     fetchMock.mockResolvedValueOnce({
       ok: true,
       json: async () => ({ choices: [{ message: { content: 'not json {{{' } }] }),
     });
     const app = makeApp('/api', intelligenceRouter);
     const res = await request(app).get('/api/intelligence');
+    expect(res.status).toBe(200);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fsState.written.length).toBe(1);
+    expect(res.body.news).toHaveLength(6);
+  });
+
+  it('does not retry when the AI API call itself fails', async () => {
+    fetchMock.mockResolvedValue({ ok: false, status: 500, text: async () => 'boom' });
+    const app = makeApp('/api', intelligenceRouter);
+    const res = await request(app).get('/api/intelligence');
     expect(res.status).toBe(502);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('rejects AI content with missing item fields after one retry, without caching it', async () => {
+    const bad = { ...generated, news: generated.news.map(({ headline: _h, ...rest }) => rest) };
+    const malformed = {
+      ok: true,
+      json: async () => ({ choices: [{ message: { content: JSON.stringify(bad) } }] }),
+    };
+    fetchMock.mockResolvedValueOnce(malformed).mockResolvedValueOnce(malformed);
+    const app = makeApp('/api', intelligenceRouter);
+    const res = await request(app).get('/api/intelligence');
+    expect(res.status).toBe(502);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fsState.written.length).toBe(0);
+  });
+
+  it('rejects non-JSON AI content after one retry, without caching it', async () => {
+    const malformed = {
+      ok: true,
+      json: async () => ({ choices: [{ message: { content: 'not json {{{' } }] }),
+    };
+    fetchMock.mockResolvedValueOnce(malformed).mockResolvedValueOnce(malformed);
+    const app = makeApp('/api', intelligenceRouter);
+    const res = await request(app).get('/api/intelligence');
+    expect(res.status).toBe(502);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(fsState.written.length).toBe(0);
   });
 
@@ -165,10 +192,11 @@ describe('POST /api/intelligence/refresh', () => {
   it('keeps the previous cache when refreshed content is malformed', async () => {
     fsState.fileExists = true;
     fsState.fileContent = JSON.stringify({ generatedAt: new Date().toISOString(), ...generated });
-    fetchMock.mockResolvedValueOnce({
+    const malformed = {
       ok: true,
       json: async () => ({ choices: [{ message: { content: JSON.stringify({ news: [] }) } }] }),
-    });
+    };
+    fetchMock.mockResolvedValueOnce(malformed).mockResolvedValueOnce(malformed);
     const app = makeApp('/api', intelligenceRouter);
     const res = await request(app).post('/api/intelligence/refresh');
     expect(res.status).toBe(502);

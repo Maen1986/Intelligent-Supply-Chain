@@ -77,6 +77,18 @@ function writeCache(data: Record<string, unknown>): void {
 }
 
 async function generateContent(): Promise<Record<string, unknown>> {
+  try {
+    return await generateContentOnce();
+  } catch (err) {
+    if (err instanceof ContentValidationError) {
+      console.warn('[intelligence] AI content malformed, retrying once', err.message);
+      return await generateContentOnce();
+    }
+    throw err;
+  }
+}
+
+async function generateContentOnce(): Promise<Record<string, unknown>> {
   const baseUrl = process.env['AI_INTEGRATIONS_OPENAI_BASE_URL'];
   const apiKey = process.env['AI_INTEGRATIONS_OPENAI_API_KEY'];
   if (!baseUrl || !apiKey) throw new Error('OpenAI env vars not configured');

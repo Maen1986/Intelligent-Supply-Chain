@@ -224,7 +224,7 @@ router.get('/:id/briefing-pdf', requireAdmin, async (req, res) => {
     if (metadata.size) res.setHeader('Content-Length', String(metadata.size));
     file
       .createReadStream()
-      .on('error', (err) => {
+      .on('error', (err: Error) => {
         logger.error({ err, submissionId: id }, '[submissions] PDF stream failed');
         if (!res.headersSent) res.status(500).json({ ok: false, error: 'Failed to stream PDF' });
         else res.end();
