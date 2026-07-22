@@ -1644,6 +1644,14 @@ function BriefingTab({ lang }: { lang: Lang }) {
       const avg = Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 10) / 10;
       return `• ${ar ? d.labelAr : d.label}: ${avg}/5`;
     }).join('\n');
+    const weakestSubLines = MATURITY_DOMAINS_EX.flatMap(d =>
+      d.subs.map(s => ({
+        domain: ar ? d.labelAr : d.label,
+        label: ar ? s.labelAr : s.label,
+        score: maturityRatings[`${d.id}__${s.id}`] ?? 2,
+      }))
+    ).sort((a, b) => a.score - b.score).slice(0, 5)
+      .map(s => `• ${s.domain} > ${s.label}: ${s.score}/5`).join('\n');
     let text: string;
     if (ar) {
       const header = [
@@ -1655,7 +1663,7 @@ function BriefingTab({ lang }: { lang: Lang }) {
         '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
         '',
       ].join('\n');
-      const body = `إحاطة سلسلة الإمداد التنفيذية — ISC\n\nالملخص التنفيذي:\n${briefing.executiveSummary}\n\nمستوى النضج: ${briefing.maturityLevel} (${briefing.maturityScore}/100)\n\nنضج المجالات:\n${domainLines}\n\nالفجوات الحرجة:\n${briefing.criticalGaps.map((g, i) => `${i+1}. ${g.title} — ${g.businessImpact}`).join('\n')}\n\nالمكاسب السريعة:\n${briefing.quickWins.map((w, i) => `${i+1}. ${w.action} (${w.timeframe}, ~${w.expectedSavingPct}% وفر)`).join('\n')}\n\nخطة 90 يوماً:\nالشهر 1: ${briefing.ninetyDayPlan.month1.focus}\nالشهر 2: ${briefing.ninetyDayPlan.month2.focus}\nالشهر 3: ${briefing.ninetyDayPlan.month3.focus}\n\nالوفر المتوقع — السنة الأولى: ${briefing.ninetyDayPlan.totalProjectedSaving}\n\n— معين الحقاش، MCIPS · CPSM · MSc · MIPP\n   آي سبلاي تشين | haqash.maen@gmail.com\n\n© 2026 آي سبلاي تشين. جميع الحقوق محفوظة. سري وخاص.`;
+      const body = `إحاطة سلسلة الإمداد التنفيذية — ISC\n\nالملخص التنفيذي:\n${briefing.executiveSummary}\n\nمستوى النضج: ${briefing.maturityLevel} (${briefing.maturityScore}/100)\n\nنضج المجالات:\n${domainLines}\n\nأضعف الأبعاد الفرعية:\n${weakestSubLines}\n\nالفجوات الحرجة:\n${briefing.criticalGaps.map((g, i) => `${i+1}. ${g.title} — ${g.businessImpact}`).join('\n')}\n\nالمكاسب السريعة:\n${briefing.quickWins.map((w, i) => `${i+1}. ${w.action} (${w.timeframe}, ~${w.expectedSavingPct}% وفر)`).join('\n')}\n\nخطة 90 يوماً:\nالشهر 1: ${briefing.ninetyDayPlan.month1.focus}\nالشهر 2: ${briefing.ninetyDayPlan.month2.focus}\nالشهر 3: ${briefing.ninetyDayPlan.month3.focus}\n\nالوفر المتوقع — السنة الأولى: ${briefing.ninetyDayPlan.totalProjectedSaving}\n\n— معين الحقاش، MCIPS · CPSM · MSc · MIPP\n   آي سبلاي تشين | haqash.maen@gmail.com\n\n© 2026 آي سبلاي تشين. جميع الحقوق محفوظة. سري وخاص.`;
       text = header + body;
     } else {
       const header = [
@@ -1667,7 +1675,7 @@ function BriefingTab({ lang }: { lang: Lang }) {
         '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
         '',
       ].join('\n');
-      const body = `ISC EXECUTIVE SUPPLY CHAIN BRIEFING\n\nExecutive Summary:\n${briefing.executiveSummary}\n\nMaturity: ${briefing.maturityLevel} (${briefing.maturityScore}/100)\n\nDomain Maturity:\n${domainLines}\n\nCritical Gaps:\n${briefing.criticalGaps.map((g, i) => `${i+1}. ${g.title} — ${g.businessImpact}`).join('\n')}\n\nQuick Wins:\n${briefing.quickWins.map((w, i) => `${i+1}. ${w.action} (${w.timeframe}, ~${w.expectedSavingPct}% savings)`).join('\n')}\n\n90-Day Plan:\nMonth 1: ${briefing.ninetyDayPlan.month1.focus}\nMonth 2: ${briefing.ninetyDayPlan.month2.focus}\nMonth 3: ${briefing.ninetyDayPlan.month3.focus}\n\nProjected Year-1 Saving: ${briefing.ninetyDayPlan.totalProjectedSaving}\n\n— Ma'in Alhaqash, MCIPS · CPSM · MSc · MIPP\n   I Supply Chain | haqash.maen@gmail.com\n\n© 2026 I Supply Chain. All Rights Reserved. Proprietary & Confidential.`;
+      const body = `ISC EXECUTIVE SUPPLY CHAIN BRIEFING\n\nExecutive Summary:\n${briefing.executiveSummary}\n\nMaturity: ${briefing.maturityLevel} (${briefing.maturityScore}/100)\n\nDomain Maturity:\n${domainLines}\n\nWeakest Sub-Dimensions:\n${weakestSubLines}\n\nCritical Gaps:\n${briefing.criticalGaps.map((g, i) => `${i+1}. ${g.title} — ${g.businessImpact}`).join('\n')}\n\nQuick Wins:\n${briefing.quickWins.map((w, i) => `${i+1}. ${w.action} (${w.timeframe}, ~${w.expectedSavingPct}% savings)`).join('\n')}\n\n90-Day Plan:\nMonth 1: ${briefing.ninetyDayPlan.month1.focus}\nMonth 2: ${briefing.ninetyDayPlan.month2.focus}\nMonth 3: ${briefing.ninetyDayPlan.month3.focus}\n\nProjected Year-1 Saving: ${briefing.ninetyDayPlan.totalProjectedSaving}\n\n— Ma'in Alhaqash, MCIPS · CPSM · MSc · MIPP\n   I Supply Chain | haqash.maen@gmail.com\n\n© 2026 I Supply Chain. All Rights Reserved. Proprietary & Confidential.`;
       text = header + body;
     }
     navigator.clipboard.writeText(text);
