@@ -1497,6 +1497,19 @@ function BriefingTab({ lang }: { lang: Lang }) {
   // Optional company name entered on step 1 (persisted with the draft).
   const [companyName, setCompanyName] = useState(() =>
     typeof draft.companyName === 'string' ? draft.companyName : '');
+  // Pre-fill the (optional) company field from the signed-in user's profile so
+  // the personalisation is visible and editable up front. Only applies when the
+  // draft carried no companyName and the user hasn't typed anything yet; runs
+  // once per mount even if auth resolves after first render.
+  const prefilledRef = React.useRef(false);
+  useEffect(() => {
+    if (prefilledRef.current) return;
+    if (typeof draft.companyName === 'string' && draft.companyName.trim()) { prefilledRef.current = true; return; }
+    const profileCompany = user?.company?.trim();
+    if (!profileCompany) return;
+    prefilledRef.current = true;
+    setCompanyName(prev => (prev.trim() ? prev : profileCompany));
+  }, [user, draft.companyName]);
   // Cover personalisation: prefer the name typed in the briefing, fall back to
   // the signed-in user's company from sign-up.
   const clientCompany = companyName.trim() || (user?.company?.trim() ?? '');
