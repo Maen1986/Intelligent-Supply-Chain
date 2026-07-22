@@ -3011,6 +3011,8 @@ const STAT_ITEMS = [
 export function CommandCenter() {
   const [tab,  setTab]  = useState<TabId>('benchmark');
   const { lang } = useLanguage();
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
   const ar = lang === 'ar';
 
   return (
@@ -3061,6 +3063,17 @@ export function CommandCenter() {
               </button>
             );
           })}
+          {isAdmin && (
+            <Link href="/customer-voice"
+              className="rounded-xl p-4 text-left border transition-all bg-white text-foreground border-border hover:border-[#082C6B]/40 hover:shadow-sm block"
+              data-testid="link-customer-voice">
+              <MessageSquare className="w-5 h-5 mb-2 text-[#082C6B]" />
+              <p className="font-bold text-sm leading-tight">{ar ? 'صوت العميل' : 'Customer Voice'}</p>
+              <p className="text-xs mt-1 leading-relaxed text-muted-foreground">
+                {ar ? 'تحليلات ملاحظات العملاء' : 'Feedback analytics from tool users'}
+              </p>
+            </Link>
+          )}
         </div>
 
         {/* Active Panel */}

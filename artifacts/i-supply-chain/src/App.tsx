@@ -25,6 +25,7 @@ import { LeanSixSigma } from '@/pages/LeanSixSigma';
 import { RiskManagement } from '@/pages/RiskManagement';
 import { GovernanceCompliance } from '@/pages/GovernanceCompliance';
 import { CommandCenter } from '@/pages/CommandCenter';
+import { CustomerVoice } from '@/pages/CustomerVoice';
 import { Legal } from '@/pages/Legal';
 import { AdminLeads } from '@/pages/AdminLeads';
 import { useIPProtection } from '@/hooks/useIPProtection';
@@ -74,6 +75,7 @@ function Router() {
         <Route path="/governance-compliance" component={GovernanceCompliance} />
         <Route path="/command-center" component={CommandCenter} />
         <Route path="/admin/leads" component={AdminLeads} />
+        <Route path="/customer-voice" component={CustomerVoice} />
         <Route path="/legal" component={Legal} />
         <Route component={NotFound} />
       </Switch>

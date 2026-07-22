@@ -5,6 +5,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
 import { generateReport, DiagnosticReport } from '@/lib/diagnosticEngine';
 import { ReportOutput } from '@/components/ReportOutput';
+import { FeedbackModal, shouldShowFeedback } from '@/components/FeedbackModal';
 import { ChevronRight, ArrowLeft } from 'lucide-react';
 
 import { API_BASE } from '@/lib/apiBase';
@@ -16,6 +17,15 @@ export function Diagnostic() {
   const [step, setStep] = useState(1);
   const [isGenerating, setIsGenerating] = useState(false);
   const [report, setReport] = useState<DiagnosticReport | null>(null);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+
+  // Show the feedback modal once per session after the report is rendered
+  useEffect(() => {
+    if (!report) return;
+    if (!shouldShowFeedback('diagnostic')) return;
+    const id = setTimeout(() => setFeedbackOpen(true), 2500);
+    return () => clearTimeout(id);
+  }, [report]);
 
   // Server-honest retry countdown for the leads rate limit (resyncs on tab
   // wake/focus and when the local countdown reaches zero).
@@ -96,6 +106,7 @@ export function Diagnostic() {
           </Button>
         </div>
         <ReportOutput report={report} />
+        <FeedbackModal open={feedbackOpen} onClose={() => setFeedbackOpen(false)} tool="diagnostic" />
       </div>
     );
   }

@@ -162,6 +162,12 @@ router.get('/analytics', requireAdmin, async (_req, res) => {
       else npsBreakdown.detractors++;
     }
 
+    // Rating distribution: count of entries per star rating 1–5
+    const ratingDistribution = [1, 2, 3, 4, 5].map((rating) => ({
+      rating,
+      count: rows.filter((r) => r.rating === rating).length,
+    }));
+
     // Per-tool breakdown: count + average rating
     const toolMap = new Map<string, { count: number; sum: number }>();
     for (const r of rows) {
@@ -203,6 +209,7 @@ router.get('/analytics', requireAdmin, async (_req, res) => {
       total,
       averageRating,
       npsBreakdown,
+      ratingDistribution,
       byTool,
       weeklyTrend,
       topKeywords,

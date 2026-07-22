@@ -1,9 +1,10 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/lib/LanguageContext';
 import { rankWeakest } from '@/lib/weakestAreas';
+import { FeedbackModal, shouldShowFeedback } from '@/components/FeedbackModal';
 import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
   ResponsiveContainer, Tooltip, Legend, BarChart, Bar, XAxis, YAxis,
@@ -1028,6 +1029,15 @@ export function Maturity() {
   const [segIdx, setSegIdx]   = useState(0);
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const topRef = useRef<HTMLDivElement>(null);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+
+  // Show the feedback modal once per session after results are rendered
+  useEffect(() => {
+    if (phase !== 'results') return;
+    if (!shouldShowFeedback('maturity')) return;
+    const id = setTimeout(() => setFeedbackOpen(true), 2500);
+    return () => clearTimeout(id);
+  }, [phase]);
 
   const scrollUp = () => setTimeout(() => topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60);
 
@@ -1549,6 +1559,7 @@ export function Maturity() {
         </div>
 
       </div>
+      <FeedbackModal open={feedbackOpen} onClose={() => setFeedbackOpen(false)} tool="maturity" />
     </div>
   );
 }
