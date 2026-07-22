@@ -110,7 +110,6 @@ Rules:
         { role: 'user',   content: prompt },
       ],
       response_format: { type: 'json_object' },
-      temperature: 0.7,
       max_completion_tokens: 2500,
     });
 
@@ -208,7 +207,6 @@ Rules:
         { role: 'user',   content: prompt },
       ],
       response_format: { type: 'json_object' },
-      temperature: 0.7,
       max_completion_tokens: 3000,
     });
 
@@ -271,7 +269,6 @@ Return an improved solution in the same JSON structure as the original solution,
         { role: 'user',   content: prompt },
       ],
       response_format: { type: 'json_object' },
-      temperature: 0.6,
       max_completion_tokens: 3000,
     });
 

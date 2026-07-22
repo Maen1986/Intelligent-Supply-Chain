@@ -113,7 +113,6 @@ Rules:
       { role: 'user',   content: userPrompt },
     ],
     response_format: { type: 'json_object' },
-    temperature:     0.7,
     max_completion_tokens: 4000,
   });
 

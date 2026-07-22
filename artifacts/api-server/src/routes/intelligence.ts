@@ -99,11 +99,10 @@ Rules:
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'gpt-4o',
+      model: 'gpt-5',
       messages: [{ role: 'user', content: prompt }],
       response_format: { type: 'json_object' },
-      temperature: 0.72,
-      max_tokens: 4000,
+      max_completion_tokens: 16000,
     }),
   });
 
