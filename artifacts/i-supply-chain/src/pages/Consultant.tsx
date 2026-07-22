@@ -11,7 +11,7 @@ import * as z from 'zod';
 import { CheckCircle2, Calendar, Clock, Phone, Mail, User, Briefcase, Building2, MessageSquare } from 'lucide-react';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 
-const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, '').replace('/i-supply-chain', '') + '/api-server/api';
+import { API_BASE } from '@/lib/apiBase';
 
 const TIME_SLOTS = [
   '09:00 AM AST', '10:00 AM AST', '11:00 AM AST',

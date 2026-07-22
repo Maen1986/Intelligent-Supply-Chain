@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-const API_BASE = '/api';
+import { API_BASE } from '@/lib/apiBase';
 
 // ─── KPI Configuration ────────────────────────────────────────────────────────
 const KPI_CONFIG = [

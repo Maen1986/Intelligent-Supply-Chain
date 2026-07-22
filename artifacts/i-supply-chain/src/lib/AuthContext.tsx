@@ -26,7 +26,7 @@ const AuthContext = createContext<AuthState>({
   logout:          async () => {},
 });
 
-const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, '').replace('/i-supply-chain', '') + '/api-server/api';
+import { API_BASE } from '@/lib/apiBase';
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user,    setUser]    = useState<UserProfile | null>(null);

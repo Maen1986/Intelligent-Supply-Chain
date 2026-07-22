@@ -7,7 +7,7 @@ import { generateReport, DiagnosticReport } from '@/lib/diagnosticEngine';
 import { ReportOutput } from '@/components/ReportOutput';
 import { ChevronRight, ArrowLeft } from 'lucide-react';
 
-const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, '').replace('/i-supply-chain', '') + '/api-server/api';
+import { API_BASE } from '@/lib/apiBase';
 
 export function Diagnostic() {
   const { t, lang } = useLanguage();

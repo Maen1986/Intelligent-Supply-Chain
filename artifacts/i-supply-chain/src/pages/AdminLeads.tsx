@@ -6,7 +6,7 @@ import {
   RefreshCw, Mail, AlertTriangle, CheckCircle2, Loader2, ShieldAlert, FileDown,
 } from 'lucide-react';
 
-const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, '') + '/api';
+import { API_BASE } from '@/lib/apiBase';
 
 interface Submission {
   id: number;

@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Eye, EyeOff, User, Lock, Mail, Phone, Briefcase, Building2, ChevronRight, CheckCircle2, Shield , ChevronLeft } from 'lucide-react';
 
-const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, '').replace('/i-supply-chain', '') + '/api-server/api';
+import { API_BASE } from '@/lib/apiBase';
 
 export function Login() {
   const { login } = useAuth();

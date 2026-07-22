@@ -171,7 +171,7 @@ interface ApiData {
 const TABS = ['Latest News', 'Tools Spotlight', 'Process Innovation', 'Expert Tips'];
 const TABS_AR = ['أحدث الأخبار', 'أبرز الأدوات', 'ابتكار العمليات', 'نصائح الخبراء'];
 
-const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, '').replace('/i-supply-chain', '') + '/api-server/api';
+import { API_BASE } from '@/lib/apiBase';
 
 /* ─── SKELETON ──────────────────────────────────────────────────────────── */
 function Skeleton({ className = '' }: { className?: string }) {
