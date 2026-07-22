@@ -48,6 +48,7 @@ export function useIPProtection() {
         e.stopPropagation();
         return false;
       }
+      return undefined;
     };
 
     // ── Disable image drag ───────────────────────────────────────────────
@@ -56,6 +57,7 @@ export function useIPProtection() {
         e.preventDefault();
         return false;
       }
+      return undefined;
     };
 
     // ── Disable print ────────────────────────────────────────────────────
@@ -64,6 +66,7 @@ export function useIPProtection() {
         e.preventDefault();
         return false;
       }
+      return undefined;
     };
 
     document.addEventListener('contextmenu', blockContextMenu);

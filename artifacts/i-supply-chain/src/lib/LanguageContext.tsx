@@ -13,7 +13,19 @@ interface LanguageContextType {
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [lang, setLang] = useState<Language>('en');
+  const [lang, setLangState] = useState<Language>(() => {
+    try {
+      const saved = localStorage.getItem('isc-lang');
+      return saved === 'ar' ? 'ar' : 'en';
+    } catch {
+      return 'en';
+    }
+  });
+
+  const setLang = (l: Language) => {
+    setLangState(l);
+    try { localStorage.setItem('isc-lang', l); } catch { /* ignore */ }
+  };
 
   useEffect(() => {
     document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';

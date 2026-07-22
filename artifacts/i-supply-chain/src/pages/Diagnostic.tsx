@@ -9,7 +9,8 @@ import { DIAGNOSTIC_LEAD_WEBHOOK_URL } from '@/config';
 import { ChevronRight, ArrowLeft } from 'lucide-react';
 
 export function Diagnostic() {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
+  const isAr = lang === 'ar';
   const [step, setStep] = useState(1);
   const [isGenerating, setIsGenerating] = useState(false);
   const [report, setReport] = useState<DiagnosticReport | null>(null);
@@ -58,7 +59,7 @@ export function Diagnostic() {
       <div className="container mx-auto px-4 py-8 sm:py-12 max-w-5xl">
         <div className="mb-4 sm:mb-6 no-print">
           <Button variant="ghost" onClick={() => setReport(null)} className="text-muted-foreground">
-            <ArrowLeft className="w-4 h-4 mr-2" /> Start Over
+            <ArrowLeft className="w-4 h-4 mr-2 rtl:rotate-180" /> {isAr ? 'البدء من جديد' : 'Start Over'}
           </Button>
         </div>
         <ReportOutput report={report} />
@@ -79,6 +80,46 @@ export function Diagnostic() {
 
   const radioItemCls = 'flex items-center gap-3 border border-border p-4 rounded-xl hover:border-primary/50 transition-colors cursor-pointer';
 
+  const labelAr: Record<string, string> = {
+    // Business size
+    'Startup': 'شركة ناشئة',
+    'SME': 'منشأة صغيرة ومتوسطة',
+    'Mid-Market': 'الشركات المتوسطة',
+    'Enterprise': 'مؤسسة كبرى',
+    'Government Entity': 'جهة حكومية',
+    // Region
+    'International': 'دولي',
+    'Saudi Arabia': 'المملكة العربية السعودية',
+    'Jordan': 'الأردن',
+    'Other GCC': 'دول الخليج الأخرى',
+    // Industry
+    'Manufacturing': 'التصنيع',
+    'Marine': 'القطاع البحري',
+    'Retail': 'التجزئة',
+    'FMCG': 'السلع الاستهلاكية سريعة الدوران',
+    'Pharma': 'الأدوية',
+    'Logistics': 'الخدمات اللوجستية',
+    'Energy': 'الطاقة',
+    'Construction': 'الإنشاءات',
+    'Tech': 'التقنية',
+    'Government': 'القطاع الحكومي',
+    'Ecommerce': 'التجارة الإلكترونية',
+    'Food & Beverage': 'الأغذية والمشروبات',
+    'Healthcare': 'الرعاية الصحية',
+    // Focus area
+    'Supply Chain Strategy': 'استراتيجية سلسلة الإمداد',
+    'Procurement': 'المشتريات',
+    'CLM': 'إدارة دورة حياة العقود',
+    'Supplier Governance': 'حوكمة الموردين',
+    'Risk Management': 'إدارة المخاطر',
+    'Sustainability': 'الاستدامة',
+    'Resiliency': 'المرونة التشغيلية',
+    'Digital Transformation': 'التحول الرقمي',
+    'Organizational Design': 'التصميم المؤسسي',
+    'Government Compliance': 'الامتثال الحكومي',
+  };
+  const optLabel = (opt: string) => (isAr ? labelAr[opt] ?? opt : opt);
+
   return (
     <div className="w-full">
       {/* Page Hero Banner */}
@@ -92,7 +133,9 @@ export function Diagnostic() {
         <div className="relative z-10 h-full flex flex-col items-center justify-center text-center px-4">
           <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-white mb-3">{t('diagnostic.title')}</h1>
           <p className="text-white/80 text-base md:text-lg max-w-2xl">
-            Complete this 5-step assessment to receive an instant, AI-generated strategic report tailored to your organization.
+            {isAr
+              ? 'أكمل هذا التقييم المكوّن من خمس خطوات لتحصل فوراً على تقرير استراتيجي مُعد بالذكاء الاصطناعي ومصمم خصيصاً لمنشأتك.'
+              : 'Complete this 5-step assessment to receive an instant, AI-generated strategic report tailored to your organization.'}
           </p>
         </div>
       </div>
@@ -124,7 +167,7 @@ export function Diagnostic() {
                   {['Startup', 'SME', 'Mid-Market', 'Enterprise', 'Government Entity'].map((opt) => (
                     <label key={opt} htmlFor={`bs-${opt}`} className={radioItemCls}>
                       <RadioGroupItem value={opt} id={`bs-${opt}`} />
-                      <span className="flex-1 font-medium text-base">{opt}</span>
+                      <span className="flex-1 font-medium text-base">{optLabel(opt)}</span>
                     </label>
                   ))}
                 </RadioGroup>
@@ -138,7 +181,7 @@ export function Diagnostic() {
                   {['International', 'Saudi Arabia', 'Jordan', 'Other GCC'].map((opt) => (
                     <label key={opt} htmlFor={`rg-${opt}`} className={radioItemCls}>
                       <RadioGroupItem value={opt} id={`rg-${opt}`} />
-                      <span className="flex-1 font-medium text-base">{opt}</span>
+                      <span className="flex-1 font-medium text-base">{optLabel(opt)}</span>
                     </label>
                   ))}
                 </RadioGroup>
@@ -152,7 +195,7 @@ export function Diagnostic() {
                   {['Manufacturing', 'Marine', 'Retail', 'FMCG', 'Pharma', 'Logistics', 'Energy', 'Construction', 'Tech', 'Government', 'Ecommerce', 'Food & Beverage', 'Healthcare'].map((opt) => (
                     <label key={opt} htmlFor={`ind-${opt}`} className={radioItemCls}>
                       <RadioGroupItem value={opt} id={`ind-${opt}`} />
-                      <span className="flex-1 font-medium">{opt}</span>
+                      <span className="flex-1 font-medium">{optLabel(opt)}</span>
                     </label>
                   ))}
                 </RadioGroup>
@@ -166,7 +209,7 @@ export function Diagnostic() {
                   {['Supply Chain Strategy', 'Procurement', 'CLM', 'Supplier Governance', 'Risk Management', 'Sustainability', 'Resiliency', 'Digital Transformation', 'Organizational Design', 'Government Compliance'].map((opt) => (
                     <label key={opt} htmlFor={`fa-${opt}`} className={radioItemCls}>
                       <RadioGroupItem value={opt} id={`fa-${opt}`} />
-                      <span className="flex-1 font-medium">{opt}</span>
+                      <span className="flex-1 font-medium">{optLabel(opt)}</span>
                     </label>
                   ))}
                 </RadioGroup>
@@ -176,9 +219,9 @@ export function Diagnostic() {
             {step === 5 && (
               <div className="animate-in fade-in slide-in-from-right-4 duration-300">
                 <h2 className="text-xl sm:text-2xl font-bold text-foreground mb-2">{t('diagnostic.step5')}</h2>
-                <p className="text-muted-foreground mb-5 sm:mb-6 text-sm sm:text-base">Optional: Add specific context to improve your report.</p>
+                <p className="text-muted-foreground mb-5 sm:mb-6 text-sm sm:text-base">{isAr ? 'اختياري: أضف سياقاً محدداً لتحسين تقريرك.' : 'Optional: Add specific context to improve your report.'}</p>
                 <Textarea
-                  placeholder="In a few sentences, describe your current supply chain challenge..."
+                  placeholder={isAr ? 'في بضع جمل، صف التحدي الحالي الذي تواجهه سلسلة الإمداد لديك...' : 'In a few sentences, describe your current supply chain challenge...'}
                   className="min-h-[140px] sm:min-h-[150px] resize-none text-base"
                   value={formData.challenge}
                   onChange={(e) => setFormData(p => ({ ...p, challenge: e.target.value }))}
@@ -197,7 +240,7 @@ export function Diagnostic() {
               data-testid="button-wizard-back"
             >
               {step > 1 && <ArrowLeft className="w-4 h-4 mr-1 rtl:hidden" />}
-              Back
+              {isAr ? 'رجوع' : 'Back'}
               {step > 1 && <ArrowLeft className="w-4 h-4 ml-1 hidden rtl:block rotate-180" />}
             </Button>
 
@@ -208,7 +251,7 @@ export function Diagnostic() {
                 className="flex-1 sm:flex-none sm:min-w-[120px] bg-primary hover:bg-primary/90 text-white font-bold h-11"
                 data-testid="button-wizard-next"
               >
-                Next <ChevronRight className="w-4 h-4 ml-1 rtl:rotate-180" />
+                {isAr ? 'التالي' : 'Next'} <ChevronRight className="w-4 h-4 ml-1 rtl:rotate-180" />
               </Button>
             ) : (
               <Button
@@ -217,7 +260,7 @@ export function Diagnostic() {
                 className="flex-1 sm:flex-none bg-accent hover:bg-accent/90 text-white font-bold h-11 sm:min-w-[200px]"
                 data-testid="button-wizard-submit"
               >
-                {isGenerating ? 'Analyzing...' : t('diagnostic.submit')}
+                {isGenerating ? (isAr ? 'جارٍ التحليل...' : 'Analyzing...') : t('diagnostic.submit')}
               </Button>
             )}
           </div>

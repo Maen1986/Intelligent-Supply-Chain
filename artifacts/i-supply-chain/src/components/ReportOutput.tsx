@@ -7,7 +7,8 @@ import { Link } from 'wouter';
 import { useLanguage } from '@/lib/LanguageContext';
 
 export function ReportOutput({ report }: { report: DiagnosticReport }) {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
+  const isAr = lang === 'ar';
 
   const handlePrint = () => {
     window.print();
@@ -42,13 +43,13 @@ export function ReportOutput({ report }: { report: DiagnosticReport }) {
             <div className="bg-white p-2 sm:p-3 rounded-lg shadow-sm">
               <Logo />
             </div>
-            <div className="text-right">
-              <p className="text-xs sm:text-sm font-medium text-white/80 uppercase tracking-widest mb-1">Confidential</p>
+            <div className="text-right rtl:text-left">
+              <p className="text-xs sm:text-sm font-medium text-white/80 uppercase tracking-widest mb-1">{isAr ? 'سري' : 'Confidential'}</p>
               <p className="text-white/60 text-xs sm:text-sm">{new Date().toLocaleDateString()}</p>
             </div>
           </div>
 
-          <h1 className="text-xl sm:text-3xl font-bold mb-3 sm:mb-4">Supply Chain Diagnostic Report</h1>
+          <h1 className="text-xl sm:text-3xl font-bold mb-3 sm:mb-4">{isAr ? 'تقرير تشخيص سلسلة الإمداد' : 'Supply Chain Diagnostic Report'}</h1>
 
           <div className="flex flex-wrap gap-2 sm:gap-4 mt-4 sm:mt-6">
             <span className="px-3 py-1 bg-white/10 rounded-full text-xs sm:text-sm font-medium">{report.industry}</span>
@@ -65,7 +66,7 @@ export function ReportOutput({ report }: { report: DiagnosticReport }) {
           <section>
             <div className="flex items-center gap-3 mb-4">
               <Compass className="w-5 h-5 sm:w-6 sm:h-6 text-primary shrink-0" />
-              <h2 className="text-xl sm:text-2xl font-bold text-primary">1. Executive Summary</h2>
+              <h2 className="text-xl sm:text-2xl font-bold text-primary">{isAr ? '1. الملخص التنفيذي' : '1. Executive Summary'}</h2>
             </div>
             <p className="text-foreground leading-relaxed text-base sm:text-lg">{report.executiveSummary}</p>
           </section>
@@ -75,7 +76,7 @@ export function ReportOutput({ report }: { report: DiagnosticReport }) {
           {/* Regional Alignment if applicable */}
           {report.regionalAlignment && (
             <section className="bg-muted p-4 sm:p-6 rounded-lg border-l-4 border-primary">
-              <h3 className="text-lg sm:text-xl font-bold text-primary mb-3">Regional & Regulatory Alignment</h3>
+              <h3 className="text-lg sm:text-xl font-bold text-primary mb-3">{isAr ? 'التوافق الإقليمي والتنظيمي' : 'Regional & Regulatory Alignment'}</h3>
               <p className="text-foreground leading-relaxed">{report.regionalAlignment}</p>
             </section>
           )}
@@ -85,7 +86,7 @@ export function ReportOutput({ report }: { report: DiagnosticReport }) {
             <section>
               <div className="flex items-center gap-3 mb-4">
                 <Target className="w-5 h-5 text-primary shrink-0" />
-                <h3 className="text-lg sm:text-xl font-bold text-primary">Key Diagnostics</h3>
+                <h3 className="text-lg sm:text-xl font-bold text-primary">{isAr ? 'أبرز نتائج التشخيص' : 'Key Diagnostics'}</h3>
               </div>
               <ul className="space-y-3">
                 {report.diagnosis.map((item, i) => (
@@ -100,7 +101,7 @@ export function ReportOutput({ report }: { report: DiagnosticReport }) {
             <section>
               <div className="flex items-center gap-3 mb-4">
                 <Crosshair className="w-5 h-5 text-primary shrink-0" />
-                <h3 className="text-lg sm:text-xl font-bold text-primary">Identified Root Causes</h3>
+                <h3 className="text-lg sm:text-xl font-bold text-primary">{isAr ? 'الأسباب الجذرية المحددة' : 'Identified Root Causes'}</h3>
               </div>
               <ul className="space-y-3">
                 {report.rootCauses.map((item, i) => (
@@ -119,7 +120,7 @@ export function ReportOutput({ report }: { report: DiagnosticReport }) {
           <section>
             <div className="flex items-center gap-3 mb-5 sm:mb-6">
               <CheckCircle2 className="w-5 h-5 sm:w-6 sm:h-6 text-primary shrink-0" />
-              <h2 className="text-xl sm:text-2xl font-bold text-primary">2. Strategic Recommendations</h2>
+              <h2 className="text-xl sm:text-2xl font-bold text-primary">{isAr ? '2. التوصيات الاستراتيجية' : '2. Strategic Recommendations'}</h2>
             </div>
             <ul className="space-y-3 sm:space-y-4 mb-6 sm:mb-8">
               {report.recommendations.map((item, i) => (
@@ -133,7 +134,7 @@ export function ReportOutput({ report }: { report: DiagnosticReport }) {
             </ul>
 
             <h3 className="text-base sm:text-lg font-bold text-primary mb-4 flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 shrink-0" /> Recommended KPIs
+              <TrendingUp className="w-5 h-5 shrink-0" /> {isAr ? 'مؤشرات الأداء الرئيسية الموصى بها' : 'Recommended KPIs'}
             </h3>
             <div className="grid sm:grid-cols-2 gap-3">
               {report.kpis.map((kpi, i) => (
@@ -151,14 +152,14 @@ export function ReportOutput({ report }: { report: DiagnosticReport }) {
           <section>
             <div className="flex items-center gap-3 mb-5 sm:mb-6">
               <AlertTriangle className="w-5 h-5 sm:w-6 sm:h-6 text-primary shrink-0" />
-              <h2 className="text-xl sm:text-2xl font-bold text-primary">3. Risk Mitigation</h2>
+              <h2 className="text-xl sm:text-2xl font-bold text-primary">{isAr ? '3. إدارة المخاطر' : '3. Risk Mitigation'}</h2>
             </div>
             <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
               <table className="w-full text-left border-collapse min-w-[520px]">
                 <thead>
                   <tr className="bg-muted text-primary">
-                    <th className="p-3 sm:p-4 border-b border-border font-bold w-1/2 text-sm sm:text-base">Risk Factor</th>
-                    <th className="p-3 sm:p-4 border-b border-border font-bold w-1/2 text-sm sm:text-base">Mitigation Strategy</th>
+                    <th className="p-3 sm:p-4 border-b border-border font-bold w-1/2 text-sm sm:text-base">{isAr ? 'عامل الخطر' : 'Risk Factor'}</th>
+                    <th className="p-3 sm:p-4 border-b border-border font-bold w-1/2 text-sm sm:text-base">{isAr ? 'استراتيجية التخفيف' : 'Mitigation Strategy'}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -179,7 +180,7 @@ export function ReportOutput({ report }: { report: DiagnosticReport }) {
           <section>
             <div className="flex items-center gap-3 mb-5 sm:mb-6">
               <CalendarDays className="w-5 h-5 sm:w-6 sm:h-6 text-primary shrink-0" />
-              <h2 className="text-xl sm:text-2xl font-bold text-primary">4. Transformation Roadmap</h2>
+              <h2 className="text-xl sm:text-2xl font-bold text-primary">{isAr ? '4. خارطة طريق التحول' : '4. Transformation Roadmap'}</h2>
             </div>
 
             <div className="grid md:grid-cols-3 gap-4 sm:gap-6">
@@ -208,8 +209,8 @@ export function ReportOutput({ report }: { report: DiagnosticReport }) {
 
         {/* Footer of the document */}
         <div className="bg-muted px-4 sm:px-8 py-4 border-t border-border flex flex-col sm:flex-row justify-between sm:items-center gap-1">
-          <p className="text-sm font-bold text-primary">I Supply Chain Consultancy</p>
-          <p className="text-xs text-muted-foreground">Generated via Intelligent Diagnostic Engine</p>
+          <p className="text-sm font-bold text-primary">{isAr ? 'استشارات I Supply Chain' : 'I Supply Chain Consultancy'}</p>
+          <p className="text-xs text-muted-foreground">{isAr ? 'تم إنشاؤه عبر محرك التشخيص الذكي' : 'Generated via Intelligent Diagnostic Engine'}</p>
         </div>
 
       </div>

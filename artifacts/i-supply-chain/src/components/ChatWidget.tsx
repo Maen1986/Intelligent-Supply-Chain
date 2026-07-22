@@ -366,7 +366,7 @@ export function ChatWidget() {
               onClick={stopSpeaking}
               className="text-[10px] text-white/80 bg-black/30 hover:bg-black/50 px-2 py-0.5 rounded-full transition-colors"
             >
-              stop
+              {isRtl ? 'إيقاف' : 'stop'}
             </button>
           </motion.div>
         )}
@@ -391,7 +391,7 @@ export function ChatWidget() {
               whileTap={{ scale: 0.92 }}
               onClick={() => setIsOpen(true)}
               className="w-16 h-16 rounded-full shadow-2xl overflow-hidden focus:outline-none focus-visible:ring-4 focus-visible:ring-primary/50 relative"
-              aria-label="Open chat with Maen, AI Consultant"
+              aria-label={isRtl ? 'افتح المحادثة مع معن، المستشار الذكي' : 'Open chat with Maen, AI Consultant'}
             >
               <img
                 src="/brand/chat-avatar.png"
@@ -480,8 +480,8 @@ export function ChatWidget() {
                     setVoiceEnabled(v => !v);
                   }}
                   className={`transition-colors p-1.5 rounded-lg hover:bg-white/10 ${voiceEnabled ? 'text-white' : 'text-white/40'}`}
-                  title={voiceEnabled ? 'Mute voice' : 'Enable voice'}
-                  aria-label={voiceEnabled ? 'Mute voice' : 'Enable voice'}
+                  title={voiceEnabled ? (isRtl ? 'كتم الصوت' : 'Mute voice') : (isRtl ? 'تفعيل الصوت' : 'Enable voice')}
+                  aria-label={voiceEnabled ? (isRtl ? 'كتم الصوت' : 'Mute voice') : (isRtl ? 'تفعيل الصوت' : 'Enable voice')}
                 >
                   {voiceEnabled
                     ? <Volume2 className={`w-4 h-4 ${isSpeaking ? 'animate-pulse' : ''}`} />
@@ -492,8 +492,8 @@ export function ChatWidget() {
                   <button
                     onClick={resetChat}
                     className="text-white/60 hover:text-white transition-colors p-1.5 rounded-lg hover:bg-white/10"
-                    title="New conversation"
-                    aria-label="Start new conversation"
+                    title={isRtl ? 'محادثة جديدة' : 'New conversation'}
+                    aria-label={isRtl ? 'بدء محادثة جديدة' : 'Start new conversation'}
                   >
                     <RotateCcw className="w-4 h-4" />
                   </button>
@@ -501,7 +501,7 @@ export function ChatWidget() {
                 <button
                   onClick={() => setIsOpen(false)}
                   className="text-white/60 hover:text-white transition-colors p-1.5 rounded-lg hover:bg-white/10"
-                  aria-label="Close chat"
+                  aria-label={isRtl ? 'إغلاق المحادثة' : 'Close chat'}
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -596,7 +596,7 @@ export function ChatWidget() {
                   onClick={() => sendMessage(input)}
                   disabled={!input.trim() || isStreaming}
                   className="w-10 h-10 rounded-xl bg-[#0B3D91] text-white flex items-center justify-center hover:bg-[#082C6B] disabled:opacity-40 disabled:cursor-not-allowed transition-colors shrink-0"
-                  aria-label="Send message"
+                  aria-label={isRtl ? 'إرسال الرسالة' : 'Send message'}
                 >
                   <Send className="w-4 h-4" />
                 </button>

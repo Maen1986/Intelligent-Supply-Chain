@@ -7,16 +7,16 @@ import { Menu, X, ChevronDown, Phone, LogOut, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const industryList = [
-  { label: 'Manufacturing',           slug: 'manufacturing' },
-  { label: 'Energy & Oil',            slug: 'energy' },
-  { label: 'Government & Public Sector', slug: 'government' },
-  { label: 'Pharmaceutical',          slug: 'pharma' },
-  { label: 'Retail & FMCG',          slug: 'retail' },
-  { label: 'Logistics & Distribution', slug: 'logistics' },
-  { label: 'Marine & Port Operations', slug: 'marine' },
-  { label: 'Construction & EPC',      slug: 'construction' },
-  { label: 'Healthcare',              slug: 'healthcare' },
-  { label: 'Technology & ICT',        slug: 'tech' },
+  { label: 'Manufacturing',           labelAr: 'التصنيع',                    slug: 'manufacturing' },
+  { label: 'Energy & Oil',            labelAr: 'الطاقة والنفط',              slug: 'energy' },
+  { label: 'Government & Public Sector', labelAr: 'الحكومة والقطاع العام',   slug: 'government' },
+  { label: 'Pharmaceutical',          labelAr: 'الأدوية',                    slug: 'pharma' },
+  { label: 'Retail & FMCG',          labelAr: 'التجزئة والسلع الاستهلاكية', slug: 'retail' },
+  { label: 'Logistics & Distribution', labelAr: 'الخدمات اللوجستية والتوزيع', slug: 'logistics' },
+  { label: 'Marine & Port Operations', labelAr: 'العمليات البحرية والموانئ',  slug: 'marine' },
+  { label: 'Construction & EPC',      labelAr: 'الإنشاءات والمقاولات',       slug: 'construction' },
+  { label: 'Healthcare',              labelAr: 'الرعاية الصحية',             slug: 'healthcare' },
+  { label: 'Technology & ICT',        labelAr: 'التقنية والاتصالات',         slug: 'tech' },
 ];
 
 const servicesList = [
@@ -92,7 +92,7 @@ export function Header() {
   const tabBase = 'relative flex items-center gap-1 px-4 py-2 text-[15px] font-semibold rounded-lg transition-all duration-150 whitespace-nowrap';
   const tabActive = 'text-primary bg-primary/8';
   const tabIdle = 'text-gray-700 hover:text-primary hover:bg-primary/5';
-  const dropdownCls = 'absolute top-full left-0 mt-2 bg-white border border-border rounded-2xl shadow-2xl py-2 z-50';
+  const dropdownCls = `absolute top-full ${lang === 'ar' ? 'right-0' : 'left-0'} mt-2 bg-white border border-border rounded-2xl shadow-2xl py-2 z-50`;
   const dropItemCls = 'flex items-center gap-2 px-5 py-2.5 text-[14px] font-medium text-gray-700 hover:bg-primary/5 hover:text-primary transition-colors';
 
   return (
@@ -110,11 +110,11 @@ export function Header() {
               <User className="w-3 h-3" /> {user.fullName.split(' ')[0]}
             </span>
             <button onClick={logout} className="flex items-center gap-1 hover:text-[#C9A84C] transition-colors">
-              <LogOut className="w-3 h-3" /> Sign out
+              <LogOut className="w-3 h-3" /> {lang === 'ar' ? 'تسجيل الخروج' : 'Sign out'}
             </button>
           </div>
         ) : (
-          <Link href="/login" className="hover:text-[#C9A84C] transition-colors font-semibold">Sign In / Register</Link>
+          <Link href="/login" className="hover:text-[#C9A84C] transition-colors font-semibold">{lang === 'ar' ? 'تسجيل الدخول / إنشاء حساب' : 'Sign In / Register'}</Link>
         )}
         <span className="text-white/40">|</span>
         <button onClick={toggleLanguage} className="hover:text-[#C9A84C] transition-colors font-semibold tracking-wide">
@@ -175,7 +175,7 @@ export function Header() {
                     className={dropItemCls}
                     onClick={() => setIndustriesOpen(false)}
                   >
-                    {ind.label}
+                    {lang === 'ar' ? ind.labelAr : ind.label}
                   </Link>
                 ))}
               </div>
@@ -204,7 +204,7 @@ export function Header() {
         <div className="hidden lg:flex items-center shrink-0">
           <Link href="/consultant">
             <Button className="bg-[#C9A84C] hover:bg-[#b8963e] text-white font-bold px-6 py-2.5 text-[15px] rounded-xl shadow-md hover:shadow-lg transition-all">
-              Book a Consultation
+              {lang === 'ar' ? 'احجز استشارة' : 'Book a Consultation'}
             </Button>
           </Link>
         </div>
@@ -231,10 +231,10 @@ export function Header() {
 
             <Link href="/" onClick={() => setMobileMenuOpen(false)}
               className="block px-4 py-3 text-base font-semibold rounded-lg text-gray-800 hover:text-primary hover:bg-primary/5 transition-colors">
-              Home
+              {lang === 'ar' ? 'الرئيسية' : 'Home'}
             </Link>
 
-            <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest px-4 py-2 mt-3">Services</p>
+            <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest px-4 py-2 mt-3">{lang === 'ar' ? 'الخدمات' : 'Services'}</p>
             {servicesList.map(item => (
               item.href.startsWith('/#')
                 ? <a key={item.href} href={item.href} onClick={() => setMobileMenuOpen(false)}
@@ -247,11 +247,11 @@ export function Header() {
                   </Link>
             ))}
 
-            <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest px-4 py-2 mt-3">Industries</p>
+            <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest px-4 py-2 mt-3">{lang === 'ar' ? 'القطاعات' : 'Industries'}</p>
             {industryList.map(ind => (
               <Link key={ind.slug} href={`/industry/${ind.slug}`} onClick={() => setMobileMenuOpen(false)}
                 className="block px-7 py-2.5 text-[15px] text-gray-700 hover:text-primary hover:bg-primary/5 rounded-lg transition-colors font-medium">
-                {ind.label}
+                {lang === 'ar' ? ind.labelAr : ind.label}
               </Link>
             ))}
 
@@ -272,11 +272,11 @@ export function Header() {
               {user ? (
                 <div className="flex items-center justify-between px-4 py-2 bg-primary/5 rounded-xl">
                   <span className="text-sm font-semibold text-primary">{user.fullName}</span>
-                  <button onClick={() => { logout(); setMobileMenuOpen(false); }} className="text-sm text-red-500 font-semibold">Sign Out</button>
+                  <button onClick={() => { logout(); setMobileMenuOpen(false); }} className="text-sm text-red-500 font-semibold">{lang === 'ar' ? 'تسجيل الخروج' : 'Sign Out'}</button>
                 </div>
               ) : (
                 <Link href="/login" onClick={() => setMobileMenuOpen(false)}>
-                  <Button variant="outline" className="w-full border-primary text-primary font-semibold">Sign In / Register</Button>
+                  <Button variant="outline" className="w-full border-primary text-primary font-semibold">{lang === 'ar' ? 'تسجيل الدخول / إنشاء حساب' : 'Sign In / Register'}</Button>
                 </Link>
               )}
               <a href="tel:+966549479722"
@@ -285,7 +285,7 @@ export function Header() {
               </a>
               <Link href="/consultant" onClick={() => setMobileMenuOpen(false)}>
                 <Button className="w-full bg-[#C9A84C] hover:bg-[#b8963e] text-white font-bold text-[15px] py-3 rounded-xl">
-                  Book a Consultation
+                  {lang === 'ar' ? 'احجز استشارة' : 'Book a Consultation'}
                 </Button>
               </Link>
             </div>

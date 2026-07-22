@@ -53,22 +53,38 @@ function PackageCard({
   pkg,
   index,
   wide = false,
+  isAr = false,
 }: {
   pkg: {
     name: string;
+    nameAr: string;
     tag: string;
+    tagAr: string;
     icon: React.ElementType;
     color: string;
     duration: string;
+    durationAr: string;
     badge: string | null;
+    badgeAr: string | null;
     forWho: string;
+    forWhoAr: string;
     deliverables: string[];
+    deliverablesAr: string[];
     outcomes: string[];
+    outcomesAr: string[];
   };
   index: number;
   wide?: boolean;
+  isAr?: boolean;
 }) {
   const Icon = pkg.icon;
+  const name = isAr ? pkg.nameAr : pkg.name;
+  const tag = isAr ? pkg.tagAr : pkg.tag;
+  const duration = isAr ? pkg.durationAr : pkg.duration;
+  const badge = isAr ? pkg.badgeAr : pkg.badge;
+  const forWho = isAr ? pkg.forWhoAr : pkg.forWho;
+  const deliverables = isAr ? pkg.deliverablesAr : pkg.deliverables;
+  const outcomes = isAr ? pkg.outcomesAr : pkg.outcomes;
   return (
     <motion.div
       initial={{ opacity: 0, y: 35 }}
@@ -81,10 +97,10 @@ function PackageCard({
       <div className="h-1.5 w-full" style={{ backgroundColor: pkg.color }} />
 
       {/* Badge */}
-      {pkg.badge && (
-        <div className="absolute top-4 right-4 px-3 py-1 rounded-full text-xs font-bold text-white"
+      {badge && (
+        <div className="absolute top-4 right-4 rtl:right-auto rtl:left-4 px-3 py-1 rounded-full text-xs font-bold text-white"
           style={{ backgroundColor: pkg.color }}>
-          {pkg.badge}
+          {badge}
         </div>
       )}
 
@@ -96,21 +112,21 @@ function PackageCard({
             <Icon className="w-5 h-5" style={{ color: pkg.color }} />
           </div>
           <div>
-            <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">{pkg.tag}</p>
-            <h3 className="text-lg font-extrabold text-primary leading-tight">{pkg.name}</h3>
+            <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">{tag}</p>
+            <h3 className="text-lg font-extrabold text-primary leading-tight">{name}</h3>
           </div>
         </div>
 
         {/* Duration */}
         <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
           <Clock className="w-3.5 h-3.5 shrink-0" />
-          <span><span className="font-semibold text-foreground">Duration:</span> {pkg.duration}</span>
+          <span><span className="font-semibold text-foreground">{isAr ? 'المدة:' : 'Duration:'}</span> {duration}</span>
         </div>
 
         {/* Who it's for */}
         <div className="mt-3 bg-muted rounded-lg px-4 py-3">
-          <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-1">Best For</p>
-          <p className="text-sm text-foreground leading-relaxed">{pkg.forWho}</p>
+          <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-1">{isAr ? 'الأنسب لـ' : 'Best For'}</p>
+          <p className="text-sm text-foreground leading-relaxed">{forWho}</p>
         </div>
       </div>
 
@@ -118,10 +134,10 @@ function PackageCard({
       <div className={`px-7 py-5 flex-1 ${wide ? 'grid sm:grid-cols-2 gap-x-8' : ''}`}>
         <div>
           <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: pkg.color }}>
-            What's Included
+            {isAr ? 'ما يشمله' : "What's Included"}
           </p>
           <ul className="space-y-2.5">
-            {pkg.deliverables.map((d, di) => (
+            {deliverables.map((d, di) => (
               <li key={di} className="flex items-start gap-2.5 text-sm text-foreground">
                 <div className="w-4 h-4 rounded-full flex items-center justify-center shrink-0 mt-0.5"
                   style={{ backgroundColor: pkg.color + '18' }}>
@@ -136,12 +152,12 @@ function PackageCard({
         {/* Outcomes */}
         <div className={wide ? '' : 'mt-5'}>
           <p className="text-xs font-bold uppercase tracking-widest mb-3 text-muted-foreground">
-            Expected Outcomes
+            {isAr ? 'النتائج المتوقعة' : 'Expected Outcomes'}
           </p>
           <ul className="space-y-2">
-            {pkg.outcomes.map((o, oi) => (
+            {outcomes.map((o, oi) => (
               <li key={oi} className="flex items-start gap-2 text-sm text-muted-foreground">
-                <span className="text-accent font-bold shrink-0 mt-0.5">→</span>
+                <span className="text-accent font-bold shrink-0 mt-0.5 rtl:rotate-180">→</span>
                 {o}
               </li>
             ))}
@@ -154,8 +170,8 @@ function PackageCard({
         <Link href="/consultant">
           <Button className="w-full font-bold group text-white"
             style={{ backgroundColor: pkg.color }}>
-            Enquire About This Package
-            <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
+            {isAr ? 'استفسر عن هذه الباقة' : 'Enquire About This Package'}
+            <ChevronRight className="w-4 h-4 ml-1 rtl:ml-0 rtl:mr-1 rtl:rotate-180 group-hover:translate-x-1 rtl:group-hover:-translate-x-1 transition-transform" />
           </Button>
         </Link>
       </div>
@@ -165,10 +181,10 @@ function PackageCard({
 
 // ─── Stats strip data ────────────────────────────────────────────────────────
 const stats = [
-  { value: 100, suffix: 'M+', label: 'Cost Savings Delivered (USD)' },
-  { value: 15, suffix: '+', label: 'Countries Served' },
-  { value: 98, suffix: '%', label: 'Client Satisfaction' },
-  { value: 20, suffix: '+', label: 'Years of Expertise' },
+  { value: 100, suffix: 'M+', label: 'Cost Savings Delivered (USD)', labelAr: 'وفورات محققة في التكاليف (دولار أمريكي)' },
+  { value: 15, suffix: '+', label: 'Countries Served', labelAr: 'دولة تم خدمتها' },
+  { value: 98, suffix: '%', label: 'Client Satisfaction', labelAr: 'رضا العملاء' },
+  { value: 20, suffix: '+', label: 'Years of Expertise', labelAr: 'عاماً من الخبرة' },
 ];
 
 function StatCard({ value, suffix, label }: { value: number; suffix: string; label: string }) {
@@ -227,23 +243,29 @@ const consultants = [
     src: '/brand/hero-consultant.jpg?v=3',
     alt: 'Saudi Supply Chain Consultant',
     label: 'GCC & Saudi Arabia Expert',
+    labelAr: 'خبير الخليج والمملكة العربية السعودية',
     sublabel: 'Strategic Advisor',
+    sublabelAr: 'مستشار استراتيجي',
   },
   {
     src: '/brand/consultant-euro.jpg',
     alt: 'European Supply Chain Consultant',
     label: 'European Markets Expert',
+    labelAr: 'خبير الأسواق الأوروبية',
     sublabel: 'Senior Consultant',
+    sublabelAr: 'مستشار أول',
   },
   {
     src: '/brand/consultant-female.jpg',
     alt: 'Female Supply Chain Consultant',
     label: 'Global Strategy Advisor',
+    labelAr: 'مستشارة الاستراتيجية العالمية',
     sublabel: 'Lead Consultant',
+    sublabelAr: 'مستشارة رئيسية',
   },
 ];
 
-function ConsultantCarousel({ heroInView }: { heroInView: boolean }) {
+function ConsultantCarousel({ heroInView, isAr = false }: { heroInView: boolean; isAr?: boolean }) {
   const [active, setActive] = useState(0);
   const [direction, setDirection] = useState(1);
 
@@ -307,8 +329,8 @@ function ConsultantCarousel({ heroInView }: { heroInView: boolean }) {
               transition={{ duration: 0.35 }}
               className="absolute top-4 right-4 bg-white/15 backdrop-blur-md rounded-xl px-3 py-1.5 text-white"
             >
-              <p className="text-xs font-medium text-white/70">{consultants[active].sublabel}</p>
-              <p className="text-sm font-bold leading-tight">{consultants[active].label}</p>
+              <p className="text-xs font-medium text-white/70">{isAr ? consultants[active].sublabelAr : consultants[active].sublabel}</p>
+              <p className="text-sm font-bold leading-tight">{isAr ? consultants[active].labelAr : consultants[active].label}</p>
             </motion.div>
           </AnimatePresence>
         </div>
@@ -319,8 +341,8 @@ function ConsultantCarousel({ heroInView }: { heroInView: boolean }) {
             <Cpu className="w-5 h-5 text-white" />
           </div>
           <div>
-            <p className="text-xs text-muted-foreground font-medium">AI-Powered</p>
-            <p className="text-sm font-bold text-primary">Supply Chain Expert</p>
+            <p className="text-xs text-muted-foreground font-medium">{isAr ? 'مدعوم بالذكاء الاصطناعي' : 'AI-Powered'}</p>
+            <p className="text-sm font-bold text-primary">{isAr ? 'خبير سلسلة الإمداد' : 'Supply Chain Expert'}</p>
           </div>
         </div>
 
@@ -331,7 +353,7 @@ function ConsultantCarousel({ heroInView }: { heroInView: boolean }) {
               key={i}
               onClick={() => goTo(i)}
               className={`rounded-full transition-all duration-300 ${i === active ? 'w-6 h-2.5 bg-accent' : 'w-2.5 h-2.5 bg-white/40 hover:bg-white/70'}`}
-              aria-label={`Consultant ${i + 1}`}
+              aria-label={isAr ? `مستشار ${i + 1}` : `Consultant ${i + 1}`}
             />
           ))}
         </div>
@@ -342,38 +364,46 @@ function ConsultantCarousel({ heroInView }: { heroInView: boolean }) {
 
 // ─── Main component ──────────────────────────────────────────────────────────
 export function Home() {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
+  const isAr = lang === 'ar';
 
   const solutions = [
-    { photo: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=600&h=380&fit=crop&q=80', title: 'Supply Chain Strategy', desc: 'End-to-end supply chain design and operational strategy aligned with business objectives.', slug: 'supply-chain-strategy' },
-    { photo: 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=600&h=380&fit=crop&q=80', title: 'Procurement Excellence', desc: 'Strategic sourcing, vendor selection, and full procurement transformation programmes.', slug: 'procurement-excellence' },
-    { photo: 'https://images.unsplash.com/photo-1450101499163-c8848c66ca85?w=600&h=380&fit=crop&q=80', title: 'Contract Lifecycle Management', desc: 'Full contract lifecycle from drafting and negotiation through to renewal and compliance.', slug: 'contract-lifecycle-management' },
-    { photo: 'https://images.unsplash.com/photo-1521791136064-7986c2920216?w=600&h=380&fit=crop&q=80', title: 'Supplier Relationship & Governance', desc: 'Supplier performance management, scorecards, and structured governance frameworks.', slug: 'supplier-relationship-governance' },
-    { photo: 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=600&h=380&fit=crop&q=80', title: 'Risk Management', desc: 'Proactive identification, assessment, and mitigation of supply chain risks.', slug: 'risk-management-solution' },
-    { photo: 'https://images.unsplash.com/photo-1497436072909-60f360e1d4b1?w=600&h=380&fit=crop&q=80', title: 'Sustainability & ESG', desc: 'ESG integration, circular procurement practices, and Scope 3 emissions reporting.', slug: 'sustainability-esg' },
-    { photo: 'https://images.unsplash.com/photo-1533750349088-cd871a92f312?w=600&h=380&fit=crop&q=80', title: 'Resiliency', desc: 'Building adaptive, disruption-resistant supply chains with dual-source strategies.', slug: 'resiliency' },
-    { photo: 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=600&h=380&fit=crop&q=80', title: 'Digital Transformation', desc: 'Technology enablement, ERP optimisation (SAP MM/SCM, Ariba, Dynamics 365, IFS, Odoo), and digital supply chain maturity roadmaps.', slug: 'digital-transformation' },
-    { photo: 'https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=600&h=380&fit=crop&q=80', title: 'Value Engineering', desc: 'Systematic function analysis and cost-reduction techniques that eliminate non-value-added spend without compromising quality or performance.', slug: 'value-engineering' },
-    { photo: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=600&h=380&fit=crop&q=80', title: 'Lean & Agile Supply Chain', desc: 'Waste elimination, flow optimisation, and agile replenishment models that cut lead times, reduce inventory, and increase throughput.', slug: 'lean-agile-supply-chain' },
-    { photo: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=600&h=380&fit=crop&q=80', title: 'Process Improvement & Policy', desc: 'End-to-end process redesign, SOP authoring, workflow automation, and procurement policy development aligned with Saudi regulations.', slug: 'process-improvement-policy' },
-    { photo: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=600&h=380&fit=crop&q=80', title: 'Training & Capability Building', desc: 'Bespoke procurement and supply chain training programmes — workshops, coaching, and knowledge transfer — delivered to teams across government, energy, and private sector.', slug: 'training-capability-building' },
+    { photo: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=600&h=380&fit=crop&q=80', title: 'Supply Chain Strategy', titleAr: 'استراتيجية سلسلة الإمداد', desc: 'End-to-end supply chain design and operational strategy aligned with business objectives.', descAr: 'تصميم متكامل لسلسلة الإمداد واستراتيجية تشغيلية متوافقة مع الأهداف المؤسسية.', slug: 'supply-chain-strategy' },
+    { photo: 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=600&h=380&fit=crop&q=80', title: 'Procurement Excellence', titleAr: 'التميّز في المشتريات', desc: 'Strategic sourcing, vendor selection, and full procurement transformation programmes.', descAr: 'التوريد الاستراتيجي واختيار الموردين وبرامج تحوّل شاملة لوظيفة المشتريات.', slug: 'procurement-excellence' },
+    { photo: 'https://images.unsplash.com/photo-1450101499163-c8848c66ca85?w=600&h=380&fit=crop&q=80', title: 'Contract Lifecycle Management', titleAr: 'إدارة دورة حياة العقود', desc: 'Full contract lifecycle from drafting and negotiation through to renewal and compliance.', descAr: 'إدارة كاملة لدورة حياة العقود من الصياغة والتفاوض حتى التجديد والامتثال.', slug: 'contract-lifecycle-management' },
+    { photo: 'https://images.unsplash.com/photo-1521791136064-7986c2920216?w=600&h=380&fit=crop&q=80', title: 'Supplier Relationship & Governance', titleAr: 'علاقات الموردين والحوكمة', desc: 'Supplier performance management, scorecards, and structured governance frameworks.', descAr: 'إدارة أداء الموردين وبطاقات التقييم وأطر حوكمة منظّمة.', slug: 'supplier-relationship-governance' },
+    { photo: 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=600&h=380&fit=crop&q=80', title: 'Risk Management', titleAr: 'إدارة المخاطر', desc: 'Proactive identification, assessment, and mitigation of supply chain risks.', descAr: 'التحديد الاستباقي لمخاطر سلسلة الإمداد وتقييمها والتخفيف من آثارها.', slug: 'risk-management-solution' },
+    { photo: 'https://images.unsplash.com/photo-1497436072909-60f360e1d4b1?w=600&h=380&fit=crop&q=80', title: 'Sustainability & ESG', titleAr: 'الاستدامة والحوكمة البيئية والاجتماعية (ESG)', desc: 'ESG integration, circular procurement practices, and Scope 3 emissions reporting.', descAr: 'دمج معايير ESG وممارسات المشتريات الدائرية وإعداد تقارير انبعاثات النطاق الثالث.', slug: 'sustainability-esg' },
+    { photo: 'https://images.unsplash.com/photo-1533750349088-cd871a92f312?w=600&h=380&fit=crop&q=80', title: 'Resiliency', titleAr: 'المرونة التشغيلية', desc: 'Building adaptive, disruption-resistant supply chains with dual-source strategies.', descAr: 'بناء سلاسل إمداد مرنة وقادرة على مقاومة الاضطرابات عبر استراتيجيات التوريد المزدوج.', slug: 'resiliency' },
+    { photo: 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=600&h=380&fit=crop&q=80', title: 'Digital Transformation', titleAr: 'التحول الرقمي', desc: 'Technology enablement, ERP optimisation (SAP MM/SCM, Ariba, Dynamics 365, IFS, Odoo), and digital supply chain maturity roadmaps.', descAr: 'تمكين التقنية وتحسين أنظمة تخطيط الموارد (SAP MM/SCM وAriba وDynamics 365 وIFS وOdoo) وخرائط طريق النضج الرقمي لسلسلة الإمداد.', slug: 'digital-transformation' },
+    { photo: 'https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=600&h=380&fit=crop&q=80', title: 'Value Engineering', titleAr: 'هندسة القيمة', desc: 'Systematic function analysis and cost-reduction techniques that eliminate non-value-added spend without compromising quality or performance.', descAr: 'تحليل منهجي للوظائف وأساليب لخفض التكاليف تلغي الإنفاق غير المضيف للقيمة دون المساس بالجودة أو الأداء.', slug: 'value-engineering' },
+    { photo: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=600&h=380&fit=crop&q=80', title: 'Lean & Agile Supply Chain', titleAr: 'سلسلة الإمداد الرشيقة والمرنة', desc: 'Waste elimination, flow optimisation, and agile replenishment models that cut lead times, reduce inventory, and increase throughput.', descAr: 'إزالة الهدر وتحسين التدفق ونماذج تجديد مخزون رشيقة تقلّص مهل التوريد وتخفض المخزون وترفع الإنتاجية.', slug: 'lean-agile-supply-chain' },
+    { photo: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=600&h=380&fit=crop&q=80', title: 'Process Improvement & Policy', titleAr: 'تحسين العمليات والسياسات', desc: 'End-to-end process redesign, SOP authoring, workflow automation, and procurement policy development aligned with Saudi regulations.', descAr: 'إعادة تصميم شاملة للعمليات وإعداد إجراءات التشغيل المعيارية وأتمتة سير العمل وتطوير سياسات المشتريات بما يتوافق مع الأنظمة السعودية.', slug: 'process-improvement-policy' },
+    { photo: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=600&h=380&fit=crop&q=80', title: 'Training & Capability Building', titleAr: 'التدريب وبناء القدرات', desc: 'Bespoke procurement and supply chain training programmes — workshops, coaching, and knowledge transfer — delivered to teams across government, energy, and private sector.', descAr: 'برامج تدريب مصمّمة خصيصاً للمشتريات وسلسلة الإمداد — ورش عمل وإرشاد ونقل معرفة — تُقدَّم لفرق العمل في القطاعات الحكومية والطاقة والخاص.', slug: 'training-capability-building' },
   ];
 
-  const industries = [
-    'Manufacturing', 'Marine', 'Retail', 'FMCG', 'Pharma', 'Logistics',
-    'Energy', 'Construction', 'Tech', 'Government', 'Ecommerce',
-    'Food & Beverage', 'Healthcare',
+  const industries: { en: string; ar: string }[] = [
+    { en: 'Manufacturing', ar: 'التصنيع' }, { en: 'Marine', ar: 'القطاع البحري' }, { en: 'Retail', ar: 'التجزئة' },
+    { en: 'FMCG', ar: 'السلع الاستهلاكية سريعة الدوران' }, { en: 'Pharma', ar: 'الأدوية' }, { en: 'Logistics', ar: 'الخدمات اللوجستية' },
+    { en: 'Energy', ar: 'الطاقة' }, { en: 'Construction', ar: 'الإنشاءات' }, { en: 'Tech', ar: 'التقنية' },
+    { en: 'Government', ar: 'القطاع الحكومي' }, { en: 'Ecommerce', ar: 'التجارة الإلكترونية' },
+    { en: 'Food & Beverage', ar: 'الأغذية والمشروبات' }, { en: 'Healthcare', ar: 'الرعاية الصحية' },
   ];
 
   const packages = [
     {
       name: 'Startup Launchpad',
+      nameAr: 'منصة انطلاق الشركات الناشئة',
       tag: 'New & Early-Stage',
+      tagAr: 'الشركات الجديدة والمبكرة',
       icon: Rocket,
       color: '#0B3D91',
       duration: '4 weeks',
+      durationAr: '4 أسابيع',
       badge: null,
+      badgeAr: null,
       forWho: 'Companies under 3 years old or with fewer than 50 employees establishing supply chain processes for the first time.',
+      forWhoAr: 'الشركات التي يقل عمرها عن 3 سنوات أو التي تضم أقل من 50 موظفاً وتؤسس عمليات سلسلة الإمداد لأول مرة.',
       deliverables: [
         'Supply chain maturity diagnostic (self-assessment + consultant review)',
         'Procurement policy template & standard operating procedures',
@@ -382,16 +412,30 @@ export function Home() {
         '1 × 90-minute strategy session with Ma\'in Alhaqash',
         '15-page strategic report with prioritised 90-day action plan',
       ],
+      deliverablesAr: [
+        'تشخيص نضج سلسلة الإمداد (تقييم ذاتي + مراجعة استشارية)',
+        'قالب سياسة المشتريات وإجراءات التشغيل المعيارية',
+        'قائمة تحقق لإدماج الموردين ومعايير التأهيل',
+        'مصفوفة تقييم أساسية لأفضل 10 موردين',
+        'جلسة استراتيجية واحدة مدتها 90 دقيقة مع معن الحقش',
+        'تقرير استراتيجي من 15 صفحة مع خطة عمل مُرتّبة الأولويات لمدة 90 يوماً',
+      ],
       outcomes: ['Structured procurement process from day one', 'Avoid the common early-stage sourcing mistakes', '90-day implementation roadmap you can execute independently'],
+      outcomesAr: ['عملية مشتريات منظّمة منذ اليوم الأول', 'تجنّب أخطاء التوريد الشائعة في المراحل المبكرة', 'خارطة طريق تنفيذية لمدة 90 يوماً يمكنك تنفيذها باستقلالية'],
     },
     {
       name: 'SME Growth',
+      nameAr: 'نمو المنشآت الصغيرة والمتوسطة',
       tag: 'Growing Businesses',
+      tagAr: 'الشركات النامية',
       icon: TrendingUp,
       color: '#C9A84C',
       duration: '6–8 weeks',
+      durationAr: '6–8 أسابيع',
       badge: 'Most Popular',
+      badgeAr: 'الأكثر طلباً',
       forWho: 'Businesses with 50–250 employees experiencing growth pressure on procurement, inventory, or supplier performance.',
+      forWhoAr: 'الشركات التي تضم من 50 إلى 250 موظفاً وتواجه ضغوط النمو على المشتريات أو المخزون أو أداء الموردين.',
       deliverables: [
         'Full AI-powered diagnostic across 5 supply chain dimensions',
         'Category management framework for top 5 spend categories',
@@ -401,16 +445,31 @@ export function Home() {
         '3 × 90-minute consultation sessions (strategy + review + sign-off)',
         '30-page strategy report + 6-month implementation roadmap',
       ],
+      deliverablesAr: [
+        'تشخيص شامل مدعوم بالذكاء الاصطناعي عبر 5 أبعاد لسلسلة الإمداد',
+        'إطار إدارة الفئات لأهم 5 فئات إنفاق',
+        'نموذج تصنيف الموردين (استراتيجي / مفضّل / معاملاتي)',
+        'تحليل فرص التوفير مع تقدير كمّي للإمكانات',
+        'قالب لوحة مؤشرات أداء المشتريات مع مستهدفات',
+        '3 جلسات استشارية مدة كل منها 90 دقيقة (استراتيجية + مراجعة + اعتماد)',
+        'تقرير استراتيجي من 30 صفحة + خارطة طريق تنفيذية لمدة 6 أشهر',
+      ],
       outcomes: ['Typical 10–20% cost reduction in addressable spend', 'Clear supplier tiers with differentiated management', 'Savings tracking mechanism operational from day one'],
+      outcomesAr: ['خفض التكاليف عادةً بنسبة 10–20% ضمن الإنفاق القابل للمعالجة', 'مستويات موردين واضحة مع إدارة متمايزة', 'آلية لتتبّع التوفير جاهزة للعمل منذ اليوم الأول'],
     },
     {
       name: 'Mid-Market Excellence',
+      nameAr: 'التميّز للشركات المتوسطة',
       tag: 'Scaling Organisations',
+      tagAr: 'المنظمات المتوسّعة',
       icon: Building2,
       color: '#0B6E4F',
       duration: '8–12 weeks',
+      durationAr: '8–12 أسبوعاً',
       badge: null,
+      badgeAr: null,
       forWho: 'Organisations with 250–1,000 employees seeking competitive advantage through supply chain optimisation.',
+      forWhoAr: 'المنظمات التي تضم من 250 إلى 1,000 موظف وتسعى إلى ميزة تنافسية عبر تحسين سلسلة الإمداد.',
       deliverables: [
         'Full 8-segment maturity assessment with GCC & global benchmarking',
         'Category management programme across all significant spend',
@@ -421,16 +480,32 @@ export function Home() {
         'Executive presentation deck + full implementation roadmap',
         'Optional: technology tool selection shortlist (CLM / SRM / analytics)',
       ],
+      deliverablesAr: [
+        'تقييم نضج كامل من 8 أقسام مع مقارنة مرجعية خليجية وعالمية',
+        'برنامج إدارة الفئات يشمل جميع الإنفاق الجوهري',
+        'إعداد إدارة دورة حياة العقود: قوالب وسجل ومسار اعتماد',
+        'نظام بطاقات تقييم أداء الموردين (SRM Lite)',
+        'سجل مخاطر سلسلة الإمداد مع تحديد موردي المستوى الأول وإطار استمرارية الأعمال',
+        '6 جلسات استشارية تشمل ورشة عمل للإدارة التنفيذية العليا',
+        'عرض تقديمي تنفيذي + خارطة طريق تنفيذية كاملة',
+        'اختياري: قائمة مختصرة لاختيار الأدوات التقنية (CLM / SRM / التحليلات)',
+      ],
       outcomes: ['Benchmarked maturity score vs GCC peers', 'Risk gaps identified and mitigation plans assigned', 'Board-ready strategy presentation on completion'],
+      outcomesAr: ['درجة نضج مقارنة مرجعياً بالنظراء في الخليج', 'تحديد فجوات المخاطر وإسناد خطط التخفيف', 'عرض استراتيجي جاهز لمجلس الإدارة عند الإنجاز'],
     },
     {
       name: 'Enterprise Transformation',
+      nameAr: 'التحول المؤسسي',
       tag: 'Large Organisations',
+      tagAr: 'المؤسسات الكبرى',
       icon: Users,
       color: '#5B21B6',
       duration: 'Custom — typically 3–6 months',
+      durationAr: 'مخصّص — عادةً 3–6 أشهر',
       badge: null,
+      badgeAr: null,
       forWho: 'Corporates, multinationals, and large family businesses requiring end-to-end supply chain transformation with dedicated senior support.',
+      forWhoAr: 'الشركات الكبرى والمتعددة الجنسيات والشركات العائلية الكبيرة التي تحتاج إلى تحول متكامل لسلسلة الإمداد مع دعم متخصص من كبار الخبراء.',
       deliverables: [
         'End-to-end transformation programme across all 8 supply chain domains',
         'Dedicated engagement lead: Ma\'in Alhaqash MCIPS · CPSM (primary contact)',
@@ -441,16 +516,32 @@ export function Home() {
         'Unlimited consultation access for the duration of the engagement',
         'Monthly retainer option available post-engagement',
       ],
+      deliverablesAr: [
+        'برنامج تحول متكامل يشمل جميع مجالات سلسلة الإمداد الثمانية',
+        'قائد ارتباط متخصص: معن الحقش MCIPS · CPSM (جهة الاتصال الرئيسية)',
+        'تشخيص كامل وتصميم استراتيجي ودعم تنفيذ على مراحل',
+        'إطار إدارة التغيير وخطة إشراك أصحاب المصلحة',
+        'تقييم التقنية وإعداد كراسات طلب العروض ودعم الاختيار',
+        'تقارير شهرية على مستوى مجلس الإدارة مع لوحات مؤشرات الأداء',
+        'وصول غير محدود للاستشارات طوال مدة الارتباط',
+        'خيار عقد شهري متاح بعد انتهاء الارتباط',
+      ],
       outcomes: ['Comprehensive maturity uplift across all supply chain dimensions', 'Technology and process transformation with measurable ROI', 'Capability transfer to internal teams'],
+      outcomesAr: ['ارتقاء شامل بمستوى النضج عبر جميع أبعاد سلسلة الإمداد', 'تحول تقني وعملياتي بعائد استثمار قابل للقياس', 'نقل القدرات إلى الفرق الداخلية'],
     },
     {
       name: 'Government & Public Sector',
+      nameAr: 'القطاع الحكومي والعام',
       tag: 'Ministries · SOEs · Vision 2030',
+      tagAr: 'الوزارات · الشركات المملوكة للدولة · رؤية 2030',
       icon: Landmark,
       color: '#B91C1C',
       duration: 'Custom — project-based',
+      durationAr: 'مخصّص — حسب المشروع',
       badge: null,
+      badgeAr: null,
       forWho: 'Saudi and GCC government ministries, sovereign entities, state-owned enterprises, and Vision 2030 programme offices.',
+      forWhoAr: 'الوزارات الحكومية السعودية والخليجية والجهات السيادية والشركات المملوكة للدولة ومكاتب برامج رؤية 2030.',
       deliverables: [
         'Vision 2030 / national development strategy procurement alignment',
         'Saudisation (Nitaqat) & GCC nationalisation compliance framework',
@@ -461,7 +552,18 @@ export function Home() {
         'Bilingual (Arabic / English) deliverables and executive reporting',
         'Policy drafting support for procurement manuals and regulations',
       ],
+      deliverablesAr: [
+        'مواءمة المشتريات مع رؤية 2030 واستراتيجيات التنمية الوطنية',
+        'إطار الامتثال للسعودة (نطاقات) والتوطين الخليجي',
+        'استشارات أنظمة المشتريات الحكومية (بما يتوافق مع NCAR / GPSD)',
+        'برنامج تطوير موردي القطاع العام والمحتوى المحلي',
+        'إطار إعداد تقارير الاستدامة ومعايير ESG للجهات الحكومية',
+        'إطار الجاهزية للتدقيق وحوكمة وظيفة المشتريات',
+        'مخرجات وتقارير تنفيذية ثنائية اللغة (عربي / إنجليزي)',
+        'دعم صياغة السياسات لأدلة ولوائح المشتريات',
+      ],
       outcomes: ['Regulatory compliance & audit readiness', 'National content targets met with documented evidence', 'Arabic-language policy documents and reporting'],
+      outcomesAr: ['الامتثال التنظيمي والجاهزية للتدقيق', 'تحقيق مستهدفات المحتوى الوطني بأدلة موثّقة', 'وثائق سياسات وتقارير باللغة العربية'],
     },
   ];
 
@@ -536,13 +638,13 @@ export function Home() {
                 transition={{ duration: 0.8, delay: 0.5 }}
               >
                 <Link href="/csr" className="text-sm text-white/60 hover:text-accent underline underline-offset-4 font-medium inline-flex items-center gap-1 transition-colors">
-                  {t('hero.ctaTertiary')} <ArrowRight className="w-3 h-3" />
+                  {t('hero.ctaTertiary')} <ArrowRight className="w-3 h-3 rtl:rotate-180" />
                 </Link>
               </motion.div>
             </div>
 
             {/* Right — consultant carousel */}
-            <ConsultantCarousel heroInView={heroInView} />
+            <ConsultantCarousel heroInView={heroInView} isAr={isAr} />
 
           </div>
         </div>
@@ -553,7 +655,7 @@ export function Home() {
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-4">
             {stats.map((s) => (
-              <StatCard key={s.label} {...s} />
+              <StatCard key={s.label} value={s.value} suffix={s.suffix} label={isAr ? s.labelAr : s.label} />
             ))}
           </div>
         </div>
@@ -571,26 +673,36 @@ export function Home() {
                 className="w-full h-80 lg:h-96 object-cover"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-[#082C6B]/60 to-transparent" />
-              <div className="absolute bottom-6 left-6 text-white">
-                <p className="text-sm font-medium text-white/80">Strategic Advisory</p>
-                <p className="text-xl font-bold">Global Supply Chain Excellence</p>
+              <div className="absolute bottom-6 left-6 rtl:left-auto rtl:right-6 text-white">
+                <p className="text-sm font-medium text-white/80">{isAr ? 'الاستشارات الاستراتيجية' : 'Strategic Advisory'}</p>
+                <p className="text-xl font-bold">{isAr ? 'التميّز العالمي في سلاسل الإمداد' : 'Global Supply Chain Excellence'}</p>
               </div>
             </div>
             {/* Text */}
             <div className="space-y-6">
               <h2 className="text-3xl md:text-4xl font-bold text-primary">
-                Why I Supply Chain?
+                {isAr ? 'لماذا I Supply Chain؟' : 'Why I Supply Chain?'}
               </h2>
               <p className="text-muted-foreground text-lg leading-relaxed">
-                When supply chain decisions carry SAR-million consequences, generic advice won't cut it. ISC brings 20+ years of hands-on GCC and MENA expertise — from Saudi Vision 2030 procurement reform to Jordan's trade gateway dynamics — fused with AI that compresses weeks of analysis into minutes of insight.
+                {isAr
+                  ? 'حين تحمل قرارات سلسلة الإمداد تبعات بملايين الريالات، لا تكفي النصائح العامة. تجلب ISC أكثر من 20 عاماً من الخبرة الميدانية في الخليج ومنطقة الشرق الأوسط وشمال إفريقيا — من إصلاح المشتريات ضمن رؤية السعودية 2030 إلى ديناميكيات البوابة التجارية في الأردن — مدمجةً مع الذكاء الاصطناعي الذي يختصر أسابيع من التحليل إلى دقائق من الرؤى.'
+                  : "When supply chain decisions carry SAR-million consequences, generic advice won't cut it. ISC brings 20+ years of hands-on GCC and MENA expertise — from Saudi Vision 2030 procurement reform to Jordan's trade gateway dynamics — fused with AI that compresses weeks of analysis into minutes of insight."}
               </p>
               <ul className="space-y-3">
-                {[
-                  'AI diagnostics that surface SAR-million savings opportunities in minutes',
-                  'Senior consultants with 20+ years of GCC & MENA supply chain experience',
-                  'Saudi Vision 2030, CIPS, APICS SCOR & ESG-aligned methodologies',
-                  'From strategic roadmap to hands-on implementation — we stay until results show',
-                ].map((item, i) => (
+                {(isAr
+                  ? [
+                      'تشخيصات مدعومة بالذكاء الاصطناعي تكشف فرص توفير بملايين الريالات خلال دقائق',
+                      'مستشارون كبار بخبرة تتجاوز 20 عاماً في سلاسل الإمداد بالخليج والشرق الأوسط وشمال إفريقيا',
+                      'منهجيات متوافقة مع رؤية السعودية 2030 وCIPS وAPICS SCOR ومعايير ESG',
+                      'من الخارطة الاستراتيجية إلى التنفيذ الميداني — نبقى معكم حتى تظهر النتائج',
+                    ]
+                  : [
+                      'AI diagnostics that surface SAR-million savings opportunities in minutes',
+                      'Senior consultants with 20+ years of GCC & MENA supply chain experience',
+                      'Saudi Vision 2030, CIPS, APICS SCOR & ESG-aligned methodologies',
+                      'From strategic roadmap to hands-on implementation — we stay until results show',
+                    ]
+                ).map((item, i) => (
                   <li key={i} className="flex items-start gap-3 text-foreground">
                     <span className="w-5 h-5 rounded-full bg-accent/20 flex items-center justify-center shrink-0 mt-0.5">
                       <span className="w-2 h-2 rounded-full bg-accent" />
@@ -601,7 +713,7 @@ export function Home() {
               </ul>
               <Link href="/consultant">
                 <Button className="bg-primary hover:bg-primary/90 text-white font-bold px-6">
-                  Book a Consultation <ChevronRight className="w-4 h-4 ml-1" />
+                  {isAr ? 'احجز استشارة' : 'Book a Consultation'} <ChevronRight className="w-4 h-4 ml-1 rtl:ml-0 rtl:mr-1 rtl:rotate-180" />
                 </Button>
               </Link>
             </div>
@@ -622,25 +734,34 @@ export function Home() {
           {/* Label + Headline */}
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }} className="text-center mb-14">
             <span className="inline-flex items-center gap-2 bg-[#C9A84C]/15 border border-[#C9A84C]/30 text-[#C9A84C] text-xs font-black uppercase tracking-[0.2em] px-4 py-1.5 rounded-full mb-5">
-              ⚡ Unprecedented — GCC First
+              {isAr ? '⚡ سابقة غير مسبوقة — الأول في الخليج' : '⚡ Unprecedented — GCC First'}
             </span>
             <h2 className="text-4xl md:text-5xl font-black text-white leading-tight mb-4">
-              Insights that took weeks.<br />
-              <span className="text-[#C9A84C]">Now take 60 seconds.</span>
+              {isAr ? (<>رؤى كانت تستغرق أسابيع.<br /><span className="text-[#C9A84C]">أصبحت تستغرق 60 ثانية.</span></>) : (<>Insights that took weeks.<br /><span className="text-[#C9A84C]">Now take 60 seconds.</span></>)}
             </h2>
             <p className="text-white/60 text-lg max-w-2xl mx-auto leading-relaxed">
-              The ISC Command Centre is the only AI-powered supply chain intelligence platform built specifically for GCC organisations — grounded in CIPS, APICS SCOR, and 20 years of regional expertise. Affordable plans sized to your organisation.
+              {isAr
+                ? 'مركز القيادة من ISC هو منصة ذكاء سلسلة الإمداد المدعومة بالذكاء الاصطناعي الوحيدة المصممة خصيصاً لمنظمات الخليج — مبنية على CIPS وAPICS SCOR و20 عاماً من الخبرة الإقليمية. خطط بأسعار مناسبة تُصمَّم بحسب حجم منشأتك.'
+                : 'The ISC Command Centre is the only AI-powered supply chain intelligence platform built specifically for GCC organisations — grounded in CIPS, APICS SCOR, and 20 years of regional expertise. Affordable plans sized to your organisation.'}
             </p>
           </motion.div>
 
           {/* 4 Feature Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-14">
-            {[
-              { icon: '🎯', title: 'GCC Benchmark Radar', body: 'Compare your 6 key KPIs against GCC top-quartile and median benchmarks. See your gaps. See the SAR impact.', time: '30 sec' },
-              { icon: '💰', title: 'Savings Calculator', body: 'Model your savings potential across 5 procurement initiatives. Move a slider — watch SAR millions appear in real time.', time: '2 min' },
-              { icon: '🛡️', title: 'Risk Exposure Score', body: 'Input 5 risk factors. Receive an ISO 31000-aligned score, annual disruption cost, and prioritised mitigations.', time: '1 min' },
-              { icon: '🧠', title: 'AI Executive Briefing', body: 'A 3-question wizard → GPT-4o acts as Ma\'in → produces a full executive report with gaps, quick wins & 90-day plan.', time: '60 sec' },
-            ].map((f, i) => (
+            {(isAr
+              ? [
+                  { icon: '🎯', title: 'رادار المقارنة المرجعية الخليجية', body: 'قارن مؤشرات الأداء الستة الرئيسية لديك بمعايير الربع الأعلى والوسيط في الخليج. اطّلع على فجواتك وأثرها بالريال.', time: '30 ثانية' },
+                  { icon: '💰', title: 'حاسبة التوفير', body: 'قدّر إمكانات التوفير عبر 5 مبادرات للمشتريات. حرّك المؤشر — وشاهد ملايين الريالات تظهر لحظياً.', time: 'دقيقتان' },
+                  { icon: '🛡️', title: 'درجة التعرّض للمخاطر', body: 'أدخل 5 عوامل خطر لتحصل على درجة متوافقة مع ISO 31000 وتكلفة الاضطراب السنوية وإجراءات تخفيف مُرتّبة الأولويات.', time: 'دقيقة واحدة' },
+                  { icon: '🧠', title: 'الإحاطة التنفيذية بالذكاء الاصطناعي', body: 'معالج من 3 أسئلة ← يتقمّص GPT-4o دور معن ← ينتج تقريراً تنفيذياً كاملاً يتضمن الفجوات والمكاسب السريعة وخطة 90 يوماً.', time: '60 ثانية' },
+                ]
+              : [
+                  { icon: '🎯', title: 'GCC Benchmark Radar', body: 'Compare your 6 key KPIs against GCC top-quartile and median benchmarks. See your gaps. See the SAR impact.', time: '30 sec' },
+                  { icon: '💰', title: 'Savings Calculator', body: 'Model your savings potential across 5 procurement initiatives. Move a slider — watch SAR millions appear in real time.', time: '2 min' },
+                  { icon: '🛡️', title: 'Risk Exposure Score', body: 'Input 5 risk factors. Receive an ISO 31000-aligned score, annual disruption cost, and prioritised mitigations.', time: '1 min' },
+                  { icon: '🧠', title: 'AI Executive Briefing', body: 'A 3-question wizard → GPT-4o acts as Ma\'in → produces a full executive report with gaps, quick wins & 90-day plan.', time: '60 sec' },
+                ]
+            ).map((f, i) => (
               <motion.div key={i}
                 initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-40px' }}
                 transition={{ duration: 0.5, delay: i * 0.1 }}
@@ -649,7 +770,7 @@ export function Home() {
                 <h3 className="text-white font-bold text-sm mb-2">{f.title}</h3>
                 <p className="text-white/50 text-xs leading-relaxed mb-3">{f.body}</p>
                 <span className="inline-flex items-center gap-1 text-[#C9A84C] text-xs font-bold">
-                  ⏱ Ready in {f.time}
+                  {isAr ? `⏱ جاهز خلال ${f.time}` : `⏱ Ready in ${f.time}`}
                 </span>
               </motion.div>
             ))}
@@ -661,18 +782,28 @@ export function Home() {
             <div className="rounded-2xl overflow-hidden border border-white/10">
               {/* Table header */}
               <div className="grid grid-cols-3 text-xs font-black uppercase tracking-wider">
-                <div className="bg-white/5 px-4 py-3 text-white/40">What you need</div>
-                <div className="bg-white/10 px-4 py-3 text-white/40 text-center">Traditional Consultant</div>
-                <div className="px-4 py-3 text-center text-[#C9A84C]" style={{ background: 'rgba(201,168,76,0.12)' }}>⚡ ISC Command Centre</div>
+                <div className="bg-white/5 px-4 py-3 text-white/40">{isAr ? 'ما تحتاجه' : 'What you need'}</div>
+                <div className="bg-white/10 px-4 py-3 text-white/40 text-center">{isAr ? 'الاستشاري التقليدي' : 'Traditional Consultant'}</div>
+                <div className="px-4 py-3 text-center text-[#C9A84C]" style={{ background: 'rgba(201,168,76,0.12)' }}>{isAr ? '⚡ مركز القيادة ISC' : '⚡ ISC Command Centre'}</div>
               </div>
-              {[
-                ['Time to first insight', '2 – 4 weeks', '60 seconds'],
-                ['Cost', 'SAR 50K – 150K', 'SAR 250 – 2,500 / mo'],
-                ['GCC & Vision 2030 expertise', '⚠️ Variable', '✅ Embedded'],
-                ['CIPS / APICS SCOR grounding', '⚠️ Variable', '✅ Always'],
-                ['Personalised to your data', '✅ Yes (manual)', '✅ Yes (AI)'],
-                ['Immediate next steps', '⚠️ Delayed', '✅ Instant'],
-              ].map(([label, trad, isc], i) => (
+              {(isAr
+                ? [
+                    ['الوقت حتى أول رؤية', '2 – 4 أسابيع', '60 ثانية'],
+                    ['التكلفة', 'SAR 50K – 150K', 'SAR 250 – 2,500 / شهرياً'],
+                    ['خبرة الخليج ورؤية 2030', '⚠️ متفاوتة', '✅ متضمّنة'],
+                    ['الاستناد إلى CIPS / APICS SCOR', '⚠️ متفاوت', '✅ دائماً'],
+                    ['التخصيص وفق بياناتك', '✅ نعم (يدوياً)', '✅ نعم (بالذكاء الاصطناعي)'],
+                    ['الخطوات التالية الفورية', '⚠️ متأخرة', '✅ فورية'],
+                  ]
+                : [
+                    ['Time to first insight', '2 – 4 weeks', '60 seconds'],
+                    ['Cost', 'SAR 50K – 150K', 'SAR 250 – 2,500 / mo'],
+                    ['GCC & Vision 2030 expertise', '⚠️ Variable', '✅ Embedded'],
+                    ['CIPS / APICS SCOR grounding', '⚠️ Variable', '✅ Always'],
+                    ['Personalised to your data', '✅ Yes (manual)', '✅ Yes (AI)'],
+                    ['Immediate next steps', '⚠️ Delayed', '✅ Instant'],
+                  ]
+              ).map(([label, trad, isc], i) => (
                 <div key={i} className={`grid grid-cols-3 text-sm border-t border-white/5 ${i % 2 === 0 ? '' : 'bg-white/[0.02]'}`}>
                   <div className="px-4 py-3 text-white/60 font-medium text-xs">{label}</div>
                   <div className="px-4 py-3 text-center text-white/40 text-xs">{trad}</div>
@@ -690,11 +821,11 @@ export function Home() {
                 whileTap={{ scale: 0.98 }}
                 className="inline-flex items-center gap-3 bg-[#C9A84C] hover:bg-[#b8973e] text-white font-black text-base px-8 py-4 rounded-2xl transition-colors shadow-xl cursor-pointer"
               >
-                ⚡ Launch Command Centre
-                <ChevronRight className="w-5 h-5" />
+                {isAr ? '⚡ ادخل إلى مركز القيادة' : '⚡ Launch Command Centre'}
+                <ChevronRight className="w-5 h-5 rtl:rotate-180" />
               </motion.button>
             </Link>
-            <p className="text-white/30 text-xs mt-3">No sign-up · No credit card · GCC's only tool of its kind</p>
+            <p className="text-white/30 text-xs mt-3">{isAr ? 'بدون تسجيل · بدون بطاقة ائتمان · الأداة الوحيدة من نوعها في الخليج' : "No sign-up · No credit card · GCC's only tool of its kind"}</p>
           </motion.div>
 
         </div>
@@ -734,15 +865,15 @@ export function Home() {
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-[#082C6B]/80 via-[#082C6B]/20 to-transparent" />
                   <div className="absolute bottom-0 left-0 right-0 px-4 py-3">
-                    <h3 className="text-white font-bold text-sm leading-tight drop-shadow">{sol.title}</h3>
+                    <h3 className="text-white font-bold text-sm leading-tight drop-shadow">{isAr ? sol.titleAr : sol.title}</h3>
                   </div>
                 </div>
                 {/* Body */}
                 <div className="p-4 flex flex-col flex-1">
-                  <p className="text-muted-foreground text-sm leading-relaxed flex-1">{sol.desc}</p>
+                  <p className="text-muted-foreground text-sm leading-relaxed flex-1">{isAr ? sol.descAr : sol.desc}</p>
                   <Link href={`/solutions/${sol.slug}`}>
                     <span className="mt-3 flex items-center gap-1 text-primary text-xs font-bold hover:gap-2 transition-all cursor-pointer">
-                      Frameworks, KPIs &amp; Case Studies <ChevronRight className="w-3.5 h-3.5" />
+                      {isAr ? 'الأطر ومؤشرات الأداء ودراسات الحالة' : 'Frameworks, KPIs & Case Studies'} <ChevronRight className="w-3.5 h-3.5 rtl:rotate-180" />
                     </span>
                   </Link>
                 </div>
@@ -758,7 +889,7 @@ export function Home() {
           <div className="flex flex-col md:flex-row items-center gap-8 justify-between">
             <RevealSection className="md:w-1/3 text-center md:text-start md:rtl:text-right">
               <h2 className="text-2xl md:text-3xl font-bold text-primary mb-4">{t('sections.industries')}</h2>
-              <p className="text-muted-foreground">Expertise tailored to the unique demands of your specific sector.</p>
+              <p className="text-muted-foreground">{isAr ? 'خبرة مصمّمة لتلبية المتطلبات الفريدة لقطاعك تحديداً.' : 'Expertise tailored to the unique demands of your specific sector.'}</p>
             </RevealSection>
 
             <div className="md:w-2/3 flex overflow-x-auto md:flex-wrap gap-3 md:justify-end pb-2 md:pb-0 snap-x snap-mandatory md:snap-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
@@ -772,7 +903,7 @@ export function Home() {
                   whileHover={{ scale: 1.06, backgroundColor: 'var(--color-primary)', color: '#fff' }}
                   className="snap-start shrink-0 md:shrink px-4 py-2 rounded-full bg-muted border border-border text-primary text-sm font-medium cursor-default"
                 >
-                  {ind}
+                  {isAr ? ind.ar : ind.en}
                 </motion.div>
               ))}
             </div>
@@ -784,10 +915,12 @@ export function Home() {
       <section id="packages" className="py-16 bg-muted/40">
         <div className="container mx-auto px-4 max-w-7xl">
           <RevealSection className="text-center mb-12">
-            <span className="text-accent font-bold text-sm uppercase tracking-widest">Engagement Models</span>
+            <span className="text-accent font-bold text-sm uppercase tracking-widest">{isAr ? 'نماذج التعاقد' : 'Engagement Models'}</span>
             <h2 className="text-3xl md:text-4xl font-bold text-primary mt-3">{t('sections.packages')}</h2>
             <p className="text-muted-foreground mt-4 max-w-2xl mx-auto">
-              Each package has a defined scope, explicit deliverables, and clear outcomes — so you know exactly what you are getting before you commit.
+              {isAr
+                ? 'لكل باقة نطاق محدّد ومخرجات صريحة ونتائج واضحة — لتعرف تماماً ما ستحصل عليه قبل الالتزام.'
+                : 'Each package has a defined scope, explicit deliverables, and clear outcomes — so you know exactly what you are getting before you commit.'}
             </p>
             <motion.div
               initial={{ scaleX: 0 }}
@@ -801,13 +934,13 @@ export function Home() {
           {/* Top row — 3 cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
             {packages.slice(0, 3).map((pkg, i) => (
-              <PackageCard key={pkg.name} pkg={pkg} index={i} />
+              <PackageCard key={pkg.name} pkg={pkg} index={i} isAr={isAr} />
             ))}
           </div>
           {/* Bottom row — 2 wide cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {packages.slice(3).map((pkg, i) => (
-              <PackageCard key={pkg.name} pkg={pkg} index={i + 3} wide />
+              <PackageCard key={pkg.name} pkg={pkg} index={i + 3} wide isAr={isAr} />
             ))}
           </div>
         </div>
@@ -817,51 +950,75 @@ export function Home() {
       <section className="py-14 bg-muted">
         <div className="container mx-auto px-4">
           <RevealSection className="text-center mb-10">
-            <span className="text-accent font-bold text-sm uppercase tracking-widest">Client Voices</span>
-            <h2 className="text-3xl md:text-4xl font-bold text-primary mt-3">What Our Clients Say</h2>
+            <span className="text-accent font-bold text-sm uppercase tracking-widest">{isAr ? 'أصوات عملائنا' : 'Client Voices'}</span>
+            <h2 className="text-3xl md:text-4xl font-bold text-primary mt-3">{isAr ? 'ماذا يقول عملاؤنا' : 'What Our Clients Say'}</h2>
           </RevealSection>
           <div className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
             {[
               {
                 quote: "I Supply Chain transformed how we manage our supplier base. We went from 47 fragmented vendors to 18 high-performance partners — and our procurement costs dropped by 23% in six months. The diagnostic report alone was worth the engagement.",
+                quoteAr: "غيّرت I Supply Chain طريقة إدارتنا لقاعدة الموردين. انتقلنا من 47 مورداً مشتّتاً إلى 18 شريكاً عالي الأداء — وانخفضت تكاليف مشترياتنا بنسبة 23% خلال ستة أشهر. كان تقرير التشخيص وحده يستحق التعاقد.",
                 name: "Chief Procurement Officer",
+                nameAr: "الرئيس التنفيذي للمشتريات",
                 company: "Saudi Pharmaceutical Group",
+                companyAr: "مجموعة صيدلانية سعودية",
                 region: "Riyadh, KSA",
+                regionAr: "الرياض، المملكة العربية السعودية",
                 stars: 5,
               },
               {
                 quote: "Maen and the team have a rare combination: genuine technical depth in supply chain and an intuitive understanding of how business is done in the GCC. Their Vision 2030 compliance framework gave us a competitive advantage we did not expect.",
+                quoteAr: "يمتلك معن وفريقه مزيجاً نادراً: عمق تقني حقيقي في سلسلة الإمداد وفهم بديهي لكيفية إدارة الأعمال في الخليج. منحنا إطارهم للامتثال لرؤية 2030 ميزة تنافسية لم نكن نتوقعها.",
                 name: "VP Operations",
+                nameAr: "نائب الرئيس للعمليات",
                 company: "GCC Government Entity",
+                companyAr: "جهة حكومية خليجية",
                 region: "Abu Dhabi, UAE",
+                regionAr: "أبوظبي، الإمارات",
                 stars: 5,
               },
               {
                 quote: "The AI diagnostic identified three procurement gaps we had overlooked for years. Within 90 days of implementation, our raw material purchase cycle dropped from 28 days to 11. I recommend I Supply Chain to every operations leader I meet.",
+                quoteAr: "حدّد التشخيص الذكي ثلاث فجوات في المشتريات تجاهلناها لسنوات. وخلال 90 يوماً من التنفيذ، انخفضت دورة شراء المواد الخام من 28 يوماً إلى 11 يوماً. أوصي بـ I Supply Chain لكل قائد عمليات ألتقيه.",
                 name: "General Manager",
+                nameAr: "المدير العام",
                 company: "Jordanian Manufacturing Company",
+                companyAr: "شركة تصنيع أردنية",
                 region: "Amman, Jordan",
+                regionAr: "عمّان، الأردن",
                 stars: 5,
               },
               {
                 quote: "We were struggling with out-of-stock rates above 15% during peak seasons. I Supply Chain redesigned our inventory policy and supplier SLA framework. Our stockouts are now below 5% and customer satisfaction has never been higher.",
+                quoteAr: "كنا نعاني من معدلات نفاد مخزون تتجاوز 15% خلال مواسم الذروة. أعادت I Supply Chain تصميم سياسة مخزوننا وإطار اتفاقيات مستوى الخدمة مع الموردين. أصبح نفاد المخزون لدينا أقل من 5% ولم يكن رضا العملاء أعلى من ذلك من قبل.",
                 name: "Head of Supply Chain",
+                nameAr: "رئيس سلسلة الإمداد",
                 company: "Regional Retail Chain",
+                companyAr: "سلسلة تجزئة إقليمية",
                 region: "Jeddah, KSA",
+                regionAr: "جدة، المملكة العربية السعودية",
                 stars: 5,
               },
               {
                 quote: "The CSR free diagnostic was genuinely useful. As a startup we couldn't afford a full engagement, but the report gave us a practical 90-day roadmap that helped us win our first major procurement contract. Exceptional value.",
+                quoteAr: "كان التشخيص المجاني ضمن المسؤولية الاجتماعية مفيداً حقاً. كشركة ناشئة لم يكن بمقدورنا تحمّل تعاقد كامل، لكن التقرير منحنا خارطة طريق عملية لمدة 90 يوماً ساعدتنا على الفوز بأول عقد مشتريات كبير لنا. قيمة استثنائية.",
                 name: "Founder & CEO",
+                nameAr: "المؤسس والرئيس التنفيذي",
                 company: "Tech Startup",
+                companyAr: "شركة تقنية ناشئة",
                 region: "Amman, Jordan",
+                regionAr: "عمّان، الأردن",
                 stars: 5,
               },
               {
                 quote: "Sophie and James brought European best practice and adapted it perfectly to our local market context. Our ESG supplier framework opened three international tender opportunities within six months of completion.",
+                quoteAr: "جلب صوفي وجيمس أفضل الممارسات الأوروبية وكيّفاها بإتقان مع سياق سوقنا المحلي. فتح إطار موردينا المتوافق مع معايير ESG ثلاث فرص لمناقصات دولية خلال ستة أشهر من الإنجاز.",
                 name: "Sustainability Director",
+                nameAr: "مدير الاستدامة",
                 company: "Saudi Energy Services Company",
+                companyAr: "شركة خدمات طاقة سعودية",
                 region: "Dhahran, KSA",
+                regionAr: "الظهران، المملكة العربية السعودية",
                 stars: 5,
               },
             ].map((t, i) => (
@@ -874,12 +1031,12 @@ export function Home() {
                 className="bg-white rounded-2xl p-7 shadow-sm border border-border flex flex-col gap-5 hover:shadow-md transition-shadow"
               >
                 <Quote className="w-7 h-7 text-accent/40 shrink-0" />
-                <p className="text-foreground/80 text-sm leading-relaxed flex-1 italic">"{t.quote}"</p>
+                <p className="text-foreground/80 text-sm leading-relaxed flex-1 italic">"{isAr ? t.quoteAr : t.quote}"</p>
                 <div className="flex items-center justify-between pt-4 border-t border-border">
                   <div>
-                    <p className="font-bold text-primary text-sm">{t.name}</p>
-                    <p className="text-xs text-muted-foreground">{t.company}</p>
-                    <p className="text-xs text-muted-foreground">{t.region}</p>
+                    <p className="font-bold text-primary text-sm">{isAr ? t.nameAr : t.name}</p>
+                    <p className="text-xs text-muted-foreground">{isAr ? t.companyAr : t.company}</p>
+                    <p className="text-xs text-muted-foreground">{isAr ? t.regionAr : t.region}</p>
                   </div>
                   <div className="flex gap-0.5">
                     {Array.from({ length: t.stars }).map((_, si) => (
@@ -898,21 +1055,23 @@ export function Home() {
         <div className="container mx-auto px-4 max-w-5xl">
           <div className="grid md:grid-cols-3 gap-6 items-center">
             <div className="md:col-span-2 space-y-4">
-              <span className="text-accent font-bold text-sm uppercase tracking-widest">Proven Impact</span>
-              <h2 className="text-3xl font-bold text-primary">23% Cost Reduction. 67% Fewer Stockouts. Zero Single-Source Dependencies.</h2>
+              <span className="text-accent font-bold text-sm uppercase tracking-widest">{isAr ? 'أثر مثبت' : 'Proven Impact'}</span>
+              <h2 className="text-3xl font-bold text-primary">{isAr ? 'خفض التكاليف 23%. تقليل نفاد المخزون 67%. صفر اعتماد على مصدر وحيد.' : '23% Cost Reduction. 67% Fewer Stockouts. Zero Single-Source Dependencies.'}</h2>
               <p className="text-muted-foreground leading-relaxed">
-                Real results for real organisations. Explore our case studies across pharma, manufacturing, retail, government, logistics, and energy.
+                {isAr
+                  ? 'نتائج حقيقية لمنظمات حقيقية. استكشف دراسات الحالة لدينا في قطاعات الأدوية والتصنيع والتجزئة والقطاع الحكومي والخدمات اللوجستية والطاقة.'
+                  : 'Real results for real organisations. Explore our case studies across pharma, manufacturing, retail, government, logistics, and energy.'}
               </p>
             </div>
             <div className="flex flex-col gap-3">
               <Link href="/case-studies">
                 <Button size="lg" className="w-full bg-primary hover:bg-primary/90 text-white font-bold">
-                  View All Case Studies <ChevronRight className="w-4 h-4 ml-1" />
+                  {isAr ? 'عرض جميع دراسات الحالة' : 'View All Case Studies'} <ChevronRight className="w-4 h-4 ml-1 rtl:ml-0 rtl:mr-1 rtl:rotate-180" />
                 </Button>
               </Link>
               <Link href="/diagnostic">
                 <Button size="lg" variant="outline" className="w-full border-primary text-primary hover:bg-primary hover:text-white font-bold">
-                  Start Free Diagnostic
+                  {isAr ? 'ابدأ التشخيص المجاني' : 'Start Free Diagnostic'}
                 </Button>
               </Link>
             </div>
@@ -925,24 +1084,26 @@ export function Home() {
         <div className="container mx-auto px-4 text-center max-w-3xl">
           <RevealSection className="space-y-6">
             <Cpu className="w-12 h-12 text-accent mx-auto" />
-            <h2 className="text-3xl md:text-4xl font-bold">Ready to Build a World-Class Supply Chain?</h2>
+            <h2 className="text-3xl md:text-4xl font-bold">{isAr ? 'هل أنت مستعد لبناء سلسلة إمداد عالمية المستوى؟' : 'Ready to Build a World-Class Supply Chain?'}</h2>
             <p className="text-white/75 text-lg leading-relaxed">
-              Start with a free 5-minute AI diagnostic and receive a strategic report tailored to your organisation — or book a confidential consultation with our senior team today.
+              {isAr
+                ? 'ابدأ بتشخيص ذكي مجاني مدته 5 دقائق واحصل على تقرير استراتيجي مصمّم خصيصاً لمنشأتك — أو احجز استشارة سرية مع فريقنا من كبار الخبراء اليوم.'
+                : 'Start with a free 5-minute AI diagnostic and receive a strategic report tailored to your organisation — or book a confidential consultation with our senior team today.'}
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center pt-2">
               <Link href="/diagnostic">
                 <Button size="lg" className="bg-accent hover:bg-accent/90 text-white font-bold px-8 min-h-[52px]">
-                  Start Free AI Diagnostic
+                  {isAr ? 'ابدأ التشخيص الذكي المجاني' : 'Start Free AI Diagnostic'}
                 </Button>
               </Link>
               <Link href="/consultant">
                 <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-primary font-bold px-8 min-h-[52px]">
-                  Book a Consultation
+                  {isAr ? 'احجز استشارة' : 'Book a Consultation'}
                 </Button>
               </Link>
             </div>
             <Link href="/insights" className="text-white/50 hover:text-accent text-sm underline underline-offset-4 inline-block transition-colors">
-              Read our latest insights →
+              {isAr ? 'اقرأ أحدث رؤانا ←' : 'Read our latest insights →'}
             </Link>
           </RevealSection>
         </div>

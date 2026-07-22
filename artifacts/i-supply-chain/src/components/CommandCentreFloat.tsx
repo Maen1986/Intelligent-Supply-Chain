@@ -2,12 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useLocation } from 'wouter';
 import { X, Brain, Zap, ArrowRight, Clock } from 'lucide-react';
+import { useLanguage } from '@/lib/LanguageContext';
 
 const SESSION_KEY = 'isc_float_dismissed';
 
 export function CommandCentreFloat() {
   const [location] = useLocation();
   const [visible, setVisible] = useState(false);
+  const { lang } = useLanguage();
+  const ar = lang === 'ar';
 
   useEffect(() => {
     // Don't show on the command centre itself, or if already dismissed this session
@@ -55,7 +58,7 @@ export function CommandCentreFloat() {
                   <span className="flex items-center gap-1 text-[10px] font-black uppercase tracking-widest text-[#C9A84C]">
                     <Zap className="w-3 h-3" /> GCC First
                   </span>
-                  <p className="text-white font-bold text-sm leading-tight">AI Command Centre</p>
+                  <p className="text-white font-bold text-sm leading-tight">{ar ? 'مركز القيادة الذكي' : 'AI Command Centre'}</p>
                 </div>
               </div>
               <button
@@ -68,18 +71,18 @@ export function CommandCentreFloat() {
 
             {/* Body */}
             <p className="text-white/80 text-xs leading-relaxed mb-3">
-              Get a personalised GCC supply chain executive briefing —
-              <span className="text-[#C9A84C] font-bold"> benchmarks, savings model, risk score & 90-day plan.</span>
+              {ar ? 'احصل على تقرير تنفيذي مخصص لسلسلة الإمداد في الخليج — ' : 'Get a personalised GCC supply chain executive briefing —'}
+              <span className="text-[#C9A84C] font-bold">{ar ? ' معايير مقارنة، نموذج توفير، مؤشر مخاطر وخطة 90 يوماً.' : ' benchmarks, savings model, risk score & 90-day plan.'}</span>
             </p>
 
             {/* Pricing + speed badge */}
             <div className="flex items-center gap-1.5 mb-1">
               <Clock className="w-3.5 h-3.5 text-[#C9A84C]" />
-              <span className="text-white/60 text-xs">Ready in <span className="text-white font-bold">60 seconds</span></span>
+              <span className="text-white/60 text-xs">{ar ? <>جاهز خلال <span className="text-white font-bold">60 ثانية</span></> : <>Ready in <span className="text-white font-bold">60 seconds</span></>}</span>
             </div>
             <div className="flex items-center gap-1.5 mb-4">
               <span className="text-[#C9A84C] text-xs">💰</span>
-              <span className="text-white/60 text-xs">From <span className="text-white font-bold">SAR 250 / mo</span> · sized to your organisation</span>
+              <span className="text-white/60 text-xs">{ar ? <>تبدأ من <span className="text-white font-bold">250 ريال / شهرياً</span> · حسب حجم منشأتك</> : <>From <span className="text-white font-bold">SAR 250 / mo</span> · sized to your organisation</>}</span>
             </div>
 
             {/* CTA */}
@@ -90,7 +93,7 @@ export function CommandCentreFloat() {
                 onClick={() => { sessionStorage.setItem(SESSION_KEY, '1'); setVisible(false); }}
                 className="flex items-center justify-center gap-2 w-full bg-[#C9A84C] hover:bg-[#b8973e] text-white font-bold text-sm py-2.5 rounded-xl transition-colors cursor-pointer shadow-lg"
               >
-                Explore Command Centre <ArrowRight className="w-4 h-4" />
+                {ar ? 'استكشف مركز القيادة' : 'Explore Command Centre'} <ArrowRight className="w-4 h-4" />
               </motion.span>
             </Link>
           </div>
