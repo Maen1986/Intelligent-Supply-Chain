@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import { writeFileSync, readFileSync, mkdirSync, existsSync } from 'fs';
-import { join } from 'path';
+import { eq } from 'drizzle-orm';
+import { db, appCacheTable } from '@workspace/db';
 import { z } from 'zod';
 import { OPENAI_MODEL, friendlyAIError } from '../lib/aiConfig';
 
@@ -50,9 +50,7 @@ export const intelligenceContentSchema = z.object({
   tips: z.array(tipItemSchema).length(8),
 });
 
-const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
-const CACHE_DIR = join(process.cwd(), 'cache');
-const CACHE_FILE = join(CACHE_DIR, 'intelligence.json');
+const CACHE_KEY = 'intelligence';
 
 /* Refresh proactively once the cache is older than this (before the 7-day hard expiry). */
 const REFRESH_AFTER_MS = 6 * 24 * 60 * 60 * 1000;
@@ -62,28 +60,41 @@ interface CacheEntry {
   ageMs: number;
 }
 
-/* Read any schema-valid cache regardless of age; caller decides how to treat staleness. */
-function readCacheEntry(): CacheEntry | null {
+/* Read any schema-valid cache regardless of age; caller decides how to treat staleness.
+ * Stored in Postgres so the cache survives restarts and redeploys (the
+ * container filesystem is ephemeral on Replit deployments). */
+async function readCacheEntry(): Promise<CacheEntry | null> {
   try {
-    if (existsSync(CACHE_FILE)) {
-      const raw = readFileSync(CACHE_FILE, 'utf8');
-      const data = JSON.parse(raw) as { generatedAt?: string };
-      if (!data.generatedAt) return null;
-      const parsed = intelligenceContentSchema.safeParse(data);
-      if (!parsed.success) {
-        console.warn('[intelligence] cached content failed schema validation — regenerating');
-        return null;
-      }
-      return { data: data as Record<string, unknown>, ageMs: Date.now() - new Date(data.generatedAt).getTime() };
+    const [row] = await db
+      .select()
+      .from(appCacheTable)
+      .where(eq(appCacheTable.key, CACHE_KEY))
+      .limit(1);
+    if (!row) return null;
+    const data = row.value as { generatedAt?: string };
+    if (!data || typeof data !== 'object' || !data.generatedAt) return null;
+    const parsed = intelligenceContentSchema.safeParse(data);
+    if (!parsed.success) {
+      console.warn('[intelligence] cached content failed schema validation — regenerating');
+      return null;
     }
-  } catch (_) { /* corrupt — regenerate */ }
-  return null;
+    return { data: data as Record<string, unknown>, ageMs: Date.now() - new Date(data.generatedAt).getTime() };
+  } catch (e) {
+    console.error('[intelligence] cache read failed', e);
+    return null;
+  }
 }
 
-function writeCache(data: Record<string, unknown>): void {
+async function writeCache(data: Record<string, unknown>): Promise<void> {
   try {
-    if (!existsSync(CACHE_DIR)) mkdirSync(CACHE_DIR, { recursive: true });
-    writeFileSync(CACHE_FILE, JSON.stringify(data, null, 2), 'utf8');
+    const generatedAt = new Date((data as { generatedAt: string }).generatedAt);
+    await db
+      .insert(appCacheTable)
+      .values({ key: CACHE_KEY, value: data, generatedAt })
+      .onConflictDoUpdate({
+        target: appCacheTable.key,
+        set: { value: data, generatedAt },
+      });
   } catch (e) {
     console.error('[intelligence] cache write failed', e);
   }
@@ -229,7 +240,7 @@ function refreshInBackground(reason: string): Promise<void> {
   refreshInFlight = (async () => {
     try {
       const content = await generateContent();
-      writeCache(content);
+      await writeCache(content);
       console.log('[intelligence] background refresh succeeded');
     } catch (err) {
       // Keep serving the old cache; just log the failure.
@@ -244,16 +255,18 @@ function refreshInBackground(reason: string): Promise<void> {
 /* Proactive timer: check hourly and regenerate before the 7-day window lapses. */
 const REFRESH_CHECK_INTERVAL_MS = 60 * 60 * 1000;
 const refreshTimer = setInterval(() => {
-  const entry = readCacheEntry();
-  if (entry && entry.ageMs < REFRESH_AFTER_MS) return;
-  void refreshInBackground(entry ? 'scheduled: cache nearing expiry' : 'scheduled: no valid cache');
+  void (async () => {
+    const entry = await readCacheEntry();
+    if (entry && entry.ageMs < REFRESH_AFTER_MS) return;
+    void refreshInBackground(entry ? 'scheduled: cache nearing expiry' : 'scheduled: no valid cache');
+  })().catch((err) => console.error('[intelligence] scheduled refresh check failed', err));
 }, REFRESH_CHECK_INTERVAL_MS);
 refreshTimer.unref?.();
 
 /* GET /api/intelligence — serve cache instantly; refresh in the background when stale */
 router.get('/intelligence', async (_req, res) => {
   try {
-    const entry = readCacheEntry();
+    const entry = await readCacheEntry();
     if (entry) {
       if (entry.ageMs >= REFRESH_AFTER_MS) {
         // Stale-while-revalidate: serve the old cache, refresh in the background.
@@ -268,7 +281,7 @@ router.get('/intelligence', async (_req, res) => {
     // No usable cache at all — the visitor has to wait for this one generation.
     res.setHeader('X-Cache', 'MISS');
     const content = await generateContent();
-    writeCache(content);
+    await writeCache(content);
     return res.json(content);
   } catch (err) {
     console.error('[intelligence] GET failed', err);
@@ -284,7 +297,7 @@ router.get('/intelligence', async (_req, res) => {
 router.post('/intelligence/refresh', async (_req, res) => {
   try {
     const content = await generateContent();
-    writeCache(content);
+    await writeCache(content);
     return res.json({ success: true, generatedAt: (content as { generatedAt: string }).generatedAt });
   } catch (err) {
     console.error('[intelligence] refresh failed', err);

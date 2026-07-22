@@ -2,18 +2,38 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import request from 'supertest';
 import { makeApp } from './helpers';
 
-/* Mock the fs cache so tests never touch the real cache directory. */
-const fsState = {
-  fileExists: false,
-  fileContent: '',
-  written: [] as string[],
+/* Mock the DB cache so tests never touch the real database. */
+const dbState = {
+  row: null as { key: string; value: unknown; generatedAt: Date } | null,
+  written: [] as unknown[],
 };
-vi.mock('fs', () => ({
-  existsSync: () => fsState.fileExists,
-  readFileSync: () => fsState.fileContent,
-  writeFileSync: (_path: string, data: string) => { fsState.written.push(data); },
-  mkdirSync: () => undefined,
+vi.mock('@workspace/db', () => ({
+  appCacheTable: { key: 'key' },
+  db: {
+    select: () => ({
+      from: () => ({
+        where: () => ({
+          limit: async () => (dbState.row ? [dbState.row] : []),
+        }),
+      }),
+    }),
+    insert: () => ({
+      values: (v: { key: string; value: unknown; generatedAt: Date }) => ({
+        onConflictDoUpdate: async () => {
+          dbState.written.push(v.value);
+          dbState.row = v;
+        },
+      }),
+    }),
+  },
 }));
+vi.mock('drizzle-orm', () => ({ eq: () => ({}) }));
+
+/* Helper: put an entry in the mocked cache the way the route stores it. */
+function seedCache(value: unknown) {
+  const generatedAt = (value as { generatedAt?: string })?.generatedAt;
+  dbState.row = { key: 'intelligence', value, generatedAt: generatedAt ? new Date(generatedAt) : new Date(0) };
+}
 
 import intelligenceRouter from '../src/routes/intelligence';
 
@@ -46,9 +66,8 @@ const generated = {
 const fetchMock = vi.fn();
 
 beforeEach(() => {
-  fsState.fileExists = false;
-  fsState.fileContent = '';
-  fsState.written = [];
+  dbState.row = null;
+  dbState.written = [];
   fetchMock.mockReset();
   fetchMock.mockResolvedValue({
     ok: true,
@@ -66,8 +85,7 @@ afterEach(() => {
 
 describe('GET /api/intelligence', () => {
   it('serves fresh cached content without calling the AI', async () => {
-    fsState.fileExists = true;
-    fsState.fileContent = JSON.stringify({ generatedAt: new Date().toISOString(), ...generated });
+    seedCache({ generatedAt: new Date().toISOString(), ...generated });
     const app = makeApp('/api', intelligenceRouter);
     const res = await request(app).get('/api/intelligence');
     expect(res.status).toBe(200);
@@ -77,8 +95,7 @@ describe('GET /api/intelligence', () => {
 
   it('serves stale cache instantly and refreshes in the background', async () => {
     const eightDaysAgo = new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString();
-    fsState.fileExists = true;
-    fsState.fileContent = JSON.stringify({ generatedAt: eightDaysAgo, ...generated });
+    seedCache({ generatedAt: eightDaysAgo, ...generated });
     const app = makeApp('/api', intelligenceRouter);
     const res = await request(app).get('/api/intelligence');
     expect(res.status).toBe(200);
@@ -88,15 +105,14 @@ describe('GET /api/intelligence', () => {
     // The background refresh regenerates and writes the new cache.
     await vi.waitFor(() => {
       expect(fetchMock).toHaveBeenCalledTimes(1);
-      expect(fsState.written.length).toBe(1);
+      expect(dbState.written.length).toBe(1);
     });
   });
 
   it('keeps the old cache when the background refresh fails', async () => {
     fetchMock.mockResolvedValue({ ok: false, status: 500, text: async () => 'boom' });
     const eightDaysAgo = new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString();
-    fsState.fileExists = true;
-    fsState.fileContent = JSON.stringify({ generatedAt: eightDaysAgo, ...generated });
+    seedCache({ generatedAt: eightDaysAgo, ...generated });
     const app = makeApp('/api', intelligenceRouter);
     const res = await request(app).get('/api/intelligence');
     expect(res.status).toBe(200);
@@ -104,12 +120,11 @@ describe('GET /api/intelligence', () => {
     expect(res.body.generatedAt).toBe(eightDaysAgo);
     await vi.waitFor(() => expect(fetchMock).toHaveBeenCalled());
     // Failed refresh never overwrote the cache.
-    expect(fsState.written.length).toBe(0);
+    expect(dbState.written.length).toBe(0);
   });
 
   it('ignores a corrupt cache file and regenerates', async () => {
-    fsState.fileExists = true;
-    fsState.fileContent = 'not json {{{';
+    seedCache('not json {{{');
     const app = makeApp('/api', intelligenceRouter);
     const res = await request(app).get('/api/intelligence');
     expect(res.status).toBe(200);
@@ -117,8 +132,7 @@ describe('GET /api/intelligence', () => {
   });
 
   it('treats a wrong-shaped but valid-JSON cache as a miss and regenerates', async () => {
-    fsState.fileExists = true;
-    fsState.fileContent = JSON.stringify({
+    seedCache({
       generatedAt: new Date().toISOString(),
       news: [],
       tools: 'nope',
@@ -128,7 +142,7 @@ describe('GET /api/intelligence', () => {
     expect(res.status).toBe(200);
     expect(res.headers['x-cache']).toBe('MISS');
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    expect(fsState.written.length).toBe(1);
+    expect(dbState.written.length).toBe(1);
   });
 
   it('returns a friendly 502 when the AI call fails', async () => {
@@ -151,7 +165,7 @@ describe('GET /api/intelligence', () => {
     expect(res.status).toBe(502);
     expect(res.body.error).toBeTruthy();
     expect(fetchMock).toHaveBeenCalledTimes(2);
-    expect(fsState.written.length).toBe(0);
+    expect(dbState.written.length).toBe(0);
   });
 
   it('retries once on malformed content and serves + caches the good retry result', async () => {
@@ -163,7 +177,7 @@ describe('GET /api/intelligence', () => {
     const res = await request(app).get('/api/intelligence');
     expect(res.status).toBe(200);
     expect(fetchMock).toHaveBeenCalledTimes(2);
-    expect(fsState.written.length).toBe(1);
+    expect(dbState.written.length).toBe(1);
     expect(res.body.news).toHaveLength(6);
   });
 
@@ -220,7 +234,7 @@ describe('GET /api/intelligence', () => {
     const res = await request(app).get('/api/intelligence');
     expect(res.status).toBe(502);
     expect(fetchMock).toHaveBeenCalledTimes(2);
-    expect(fsState.written.length).toBe(0);
+    expect(dbState.written.length).toBe(0);
   });
 
   it('rejects non-JSON AI content after one retry, without caching it', async () => {
@@ -233,7 +247,7 @@ describe('GET /api/intelligence', () => {
     const res = await request(app).get('/api/intelligence');
     expect(res.status).toBe(502);
     expect(fetchMock).toHaveBeenCalledTimes(2);
-    expect(fsState.written.length).toBe(0);
+    expect(dbState.written.length).toBe(0);
   });
 
   it('fails cleanly when AI env vars are not configured', async () => {
@@ -247,19 +261,17 @@ describe('GET /api/intelligence', () => {
 
 describe('POST /api/intelligence/refresh', () => {
   it('bypasses a fresh cache and regenerates', async () => {
-    fsState.fileExists = true;
-    fsState.fileContent = JSON.stringify({ generatedAt: new Date().toISOString(), ...generated });
+    seedCache({ generatedAt: new Date().toISOString(), ...generated });
     const app = makeApp('/api', intelligenceRouter);
     const res = await request(app).post('/api/intelligence/refresh');
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    expect(fsState.written.length).toBe(1);
+    expect(dbState.written.length).toBe(1);
   });
 
   it('keeps the previous cache when refreshed content is malformed', async () => {
-    fsState.fileExists = true;
-    fsState.fileContent = JSON.stringify({ generatedAt: new Date().toISOString(), ...generated });
+    seedCache({ generatedAt: new Date().toISOString(), ...generated });
     const malformed = {
       ok: true,
       json: async () => ({ choices: [{ message: { content: JSON.stringify({ news: [] }) } }] }),
@@ -269,7 +281,7 @@ describe('POST /api/intelligence/refresh', () => {
     const res = await request(app).post('/api/intelligence/refresh');
     expect(res.status).toBe(502);
     expect(res.body.error).toBeTruthy();
-    expect(fsState.written.length).toBe(0);
+    expect(dbState.written.length).toBe(0);
     // Old cache remains untouched and still served
     const getRes = await request(app).get('/api/intelligence');
     expect(getRes.status).toBe(200);

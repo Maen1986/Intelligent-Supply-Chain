@@ -23,3 +23,4 @@ export * from "./users";
 export * from "./submissions";
 export * from "./sessions";
 export * from "./feedback";
+export * from "./appCache";
