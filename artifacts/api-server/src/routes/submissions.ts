@@ -63,13 +63,15 @@ router.post('/', async (req, res) => {
     logger.info({ submissionId: row.id, tool: data.tool, contactEmail }, '[submissions] Saved');
     res.json({ ok: true, id: row.id });
 
-    // Email the branded PDF briefing to the consultant — fire-and-forget,
-    // never blocks or fails the API response.
-    if (data.tool === 'command_centre' && data.pdfBase64) {
+    // Email the lead summary to the consultant — with the branded PDF attached
+    // when the client captured one, or without an attachment when capture
+    // failed, so no lead is ever missed. Fire-and-forget: never blocks or
+    // fails the API response.
+    if (data.tool === 'command_centre') {
       const inputs  = (data.inputs  ?? {}) as Record<string, unknown>;
       const outputs = (data.outputs ?? {}) as Record<string, unknown>;
       try {
-        const pdfBuffer = Buffer.from(data.pdfBase64, 'base64');
+        const pdfBuffer = data.pdfBase64 ? Buffer.from(data.pdfBase64, 'base64') : undefined;
         const result = await sendBriefingEmail({
           contactName,
           contactEmail,
@@ -83,12 +85,15 @@ router.post('/', async (req, res) => {
           pdfFilename: data.pdfFilename || `ISC-Executive-Briefing-${row.id}.pdf`,
         });
         if (!result.sent) {
-          logger.error({ submissionId: row.id, reason: result.reason }, '[submissions] Briefing PDF email NOT sent');
+          logger.error({ submissionId: row.id, reason: result.reason }, '[submissions] Briefing email NOT sent');
         } else {
-          logger.info({ submissionId: row.id, pdfBytes: pdfBuffer.length }, '[submissions] Briefing PDF emailed');
+          logger.info(
+            { submissionId: row.id, pdfBytes: pdfBuffer?.length ?? 0, hasPdf: !!pdfBuffer },
+            pdfBuffer ? '[submissions] Briefing PDF emailed' : '[submissions] Briefing email sent WITHOUT PDF (capture failed client-side)'
+          );
         }
       } catch (emailErr) {
-        logger.error({ err: emailErr, submissionId: row.id }, '[submissions] Briefing PDF email failed');
+        logger.error({ err: emailErr, submissionId: row.id }, '[submissions] Briefing email failed');
       }
     }
   } catch (err) {

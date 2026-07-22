@@ -189,9 +189,12 @@ export async function sendBriefingEmail(params: {
   language:     'en' | 'ar';
   maturityScore: string;
   maturityLevel: string;
-  pdfBuffer:    Buffer;
-  pdfFilename:  string;
+  // When PDF capture fails client-side, these are absent — the lead summary
+  // email is still sent, just without an attachment.
+  pdfBuffer?:   Buffer;
+  pdfFilename?: string;
 }): Promise<{ sent: boolean; errors?: string[]; reason?: string }> {
+  const hasPdf = !!params.pdfBuffer;
   const subject = `📋 Executive Briefing Generated${params.contactName ? `: ${params.contactName}` : ''} — ${params.industry} (${params.language === 'ar' ? 'Arabic' : 'English'})`;
   const html = buildEmailHtml(subject, {
     'Contact Name':   params.contactName ?? 'Anonymous visitor',
@@ -201,12 +204,18 @@ export async function sendBriefingEmail(params: {
     'Revenue Band':   params.revenueBand,
     'Language':       params.language === 'ar' ? 'Arabic (العربية)' : 'English',
     'Maturity':       `${params.maturityLevel} (${params.maturityScore}/100)`,
-    'Attachment':     'Full branded PDF briefing attached',
+    'Attachment':     hasPdf
+      ? 'Full branded PDF briefing attached'
+      : '⚠️ PDF capture failed on the client — no attachment. Lead details above are complete.',
     'Time':           new Date().toLocaleString('en-GB', { timeZone: 'Asia/Riyadh' }),
   });
-  return sendToAll(subject, html, [
-    { filename: params.pdfFilename, content: params.pdfBuffer, contentType: 'application/pdf' },
-  ]);
+  return sendToAll(
+    subject,
+    html,
+    hasPdf
+      ? [{ filename: params.pdfFilename || 'ISC-Executive-Briefing.pdf', content: params.pdfBuffer!, contentType: 'application/pdf' }]
+      : undefined
+  );
 }
 
 // ── Exported helper: sendEscalationEmail ─────────────────────────────────────
