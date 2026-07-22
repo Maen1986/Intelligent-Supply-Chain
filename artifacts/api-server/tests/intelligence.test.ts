@@ -97,6 +97,21 @@ describe('GET /api/intelligence', () => {
     expect(res.headers['x-cache']).toBe('MISS');
   });
 
+  it('treats a wrong-shaped but valid-JSON cache as a miss and regenerates', async () => {
+    fsState.fileExists = true;
+    fsState.fileContent = JSON.stringify({
+      generatedAt: new Date().toISOString(),
+      news: [],
+      tools: 'nope',
+    });
+    const app = makeApp('/api', intelligenceRouter);
+    const res = await request(app).get('/api/intelligence');
+    expect(res.status).toBe(200);
+    expect(res.headers['x-cache']).toBe('MISS');
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fsState.written.length).toBe(1);
+  });
+
   it('returns a friendly 502 when the AI call fails', async () => {
     fetchMock.mockResolvedValueOnce({ ok: false, status: 500, text: async () => 'boom' });
     const app = makeApp('/api', intelligenceRouter);

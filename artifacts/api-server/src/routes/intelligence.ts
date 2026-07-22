@@ -60,6 +60,11 @@ function readCache(): Record<string, unknown> | null {
       const raw = readFileSync(CACHE_FILE, 'utf8');
       const data = JSON.parse(raw) as { generatedAt?: string };
       if (data.generatedAt && Date.now() - new Date(data.generatedAt).getTime() < SEVEN_DAYS_MS) {
+        const parsed = intelligenceContentSchema.safeParse(data);
+        if (!parsed.success) {
+          console.warn('[intelligence] cached content failed schema validation — regenerating');
+          return null;
+        }
         return data as Record<string, unknown>;
       }
     }
