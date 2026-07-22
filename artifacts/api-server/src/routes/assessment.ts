@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { openai } from '@workspace/integrations-openai-ai-server';
+import { OPENAI_MODEL, friendlyAIError } from '../lib/aiConfig';
 
 const router = Router();
 
@@ -107,7 +108,7 @@ Rules:
 - Every recommendation grounded in SCOR, CIPS, APICS, or GCC regulatory frameworks`;
 
   const response = await openai.chat.completions.create({
-    model:           'gpt-4o',
+    model:           OPENAI_MODEL,
     messages: [
       { role: 'system', content: systemPrompt },
       { role: 'user',   content: userPrompt },
@@ -132,7 +133,8 @@ router.post('/assessment', async (req, res) => {
     return res.json({ success: true, generatedAt: new Date().toISOString(), briefing });
   } catch (err) {
     console.error('[assessment] failed', err);
-    return res.status(500).json({ error: 'Failed to generate assessment', details: String(err) });
+    const { message, status } = friendlyAIError(err);
+    return res.status(status).json({ error: message });
   }
 });
 

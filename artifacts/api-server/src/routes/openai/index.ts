@@ -4,6 +4,7 @@ import { db } from "@workspace/db";
 import { conversations, messages } from "@workspace/db/schema";
 import { eq, asc } from "drizzle-orm";
 import { openai } from "@workspace/integrations-openai-ai-server";
+import { OPENAI_MODEL, OPENAI_TTS_MODEL, friendlyAIError } from "../../lib/aiConfig";
 
 const router: IRouter = Router();
 
@@ -173,7 +174,7 @@ router.post("/conversations/:id/messages", async (req, res) => {
   let fullResponse = "";
   try {
     const stream = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: OPENAI_MODEL,
       max_completion_tokens: 8192,
       messages: chatMessages,
       stream: true,
@@ -196,7 +197,9 @@ router.post("/conversations/:id/messages", async (req, res) => {
 
     res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
   } catch (e) {
-    res.write(`data: ${JSON.stringify({ error: "AI service error. Please try again." })}\n\n`);
+    console.error("[openai/messages] AI call failed", e);
+    const { message } = friendlyAIError(e);
+    res.write(`data: ${JSON.stringify({ error: message })}\n\n`);
   } finally {
     res.end();
   }
@@ -210,7 +213,7 @@ router.post("/tts", async (req, res) => {
   }
   try {
     const mp3 = await openai.audio.speech.create({
-      model: "tts-1",
+      model: OPENAI_TTS_MODEL,
       voice: "onyx",
       input: text.slice(0, 4096), // API limit
     });
@@ -219,7 +222,9 @@ router.post("/tts", async (req, res) => {
     res.setHeader("Cache-Control", "no-store");
     res.send(buffer);
   } catch (e) {
-    res.status(500).json({ error: "TTS generation failed" });
+    console.error("[openai/tts] TTS call failed", e);
+    const { message, status } = friendlyAIError(e);
+    res.status(status).json({ error: message });
   }
 });
 

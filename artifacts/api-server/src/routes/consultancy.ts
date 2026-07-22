@@ -11,6 +11,7 @@ import { openai } from '@workspace/integrations-openai-ai-server';
 import { db } from '@workspace/db';
 import { submissionsTable } from '@workspace/db';
 import { logger } from '../lib/logger';
+import { OPENAI_MODEL, friendlyAIError } from '../lib/aiConfig';
 import { sendEscalationEmail } from './notify';
 
 const router = Router();
@@ -104,7 +105,7 @@ Rules:
 
   try {
     const response = await openai.chat.completions.create({
-      model: 'gpt-4o',
+      model: OPENAI_MODEL,
       messages: [
         { role: 'system', content: CONSULTANT_IDENTITY },
         { role: 'user',   content: prompt },
@@ -132,7 +133,8 @@ Rules:
     res.json({ ok: true, diagnosis });
   } catch (err) {
     logger.error({ err }, '[consultancy/diagnose] failed');
-    res.status(500).json({ ok: false, error: 'Diagnosis generation failed', detail: String(err) });
+    const { message, status } = friendlyAIError(err);
+    res.status(status).json({ ok: false, error: message });
   }
 });
 
@@ -201,7 +203,7 @@ Rules:
 
   try {
     const response = await openai.chat.completions.create({
-      model: 'gpt-4o',
+      model: OPENAI_MODEL,
       messages: [
         { role: 'system', content: CONSULTANT_IDENTITY },
         { role: 'user',   content: prompt },
@@ -229,7 +231,8 @@ Rules:
     res.json({ ok: true, solution });
   } catch (err) {
     logger.error({ err }, '[consultancy/solution] failed');
-    res.status(500).json({ ok: false, error: 'Solution generation failed', detail: String(err) });
+    const { message, status } = friendlyAIError(err);
+    res.status(status).json({ ok: false, error: message });
   }
 });
 
@@ -263,7 +266,7 @@ Return an improved solution in the same JSON structure as the original solution,
 
   try {
     const response = await openai.chat.completions.create({
-      model: 'gpt-4o',
+      model: OPENAI_MODEL,
       messages: [
         { role: 'system', content: CONSULTANT_IDENTITY },
         { role: 'user',   content: prompt },
@@ -277,7 +280,8 @@ Return an improved solution in the same JSON structure as the original solution,
     res.json({ ok: true, solution: JSON.parse(content) });
   } catch (err) {
     logger.error({ err }, '[consultancy/refine] failed');
-    res.status(500).json({ ok: false, error: 'Refinement failed', detail: String(err) });
+    const { message, status } = friendlyAIError(err);
+    res.status(status).json({ ok: false, error: message });
   }
 });
 

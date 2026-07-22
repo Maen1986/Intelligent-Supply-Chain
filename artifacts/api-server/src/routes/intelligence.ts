@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { writeFileSync, readFileSync, mkdirSync, existsSync } from 'fs';
 import { join } from 'path';
+import { OPENAI_MODEL, friendlyAIError } from '../lib/aiConfig';
 
 const router = Router();
 
@@ -99,7 +100,7 @@ Rules:
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'gpt-5',
+      model: OPENAI_MODEL,
       messages: [{ role: 'user', content: prompt }],
       response_format: { type: 'json_object' },
       max_completion_tokens: 16000,
@@ -135,7 +136,8 @@ router.get('/intelligence', async (_req, res) => {
     return res.json(content);
   } catch (err) {
     console.error('[intelligence] GET failed', err);
-    return res.status(500).json({ error: 'Failed to load intelligence content', details: String(err) });
+    const { message, status } = friendlyAIError(err);
+    return res.status(status).json({ error: message });
   }
 });
 
@@ -147,7 +149,8 @@ router.post('/intelligence/refresh', async (_req, res) => {
     return res.json({ success: true, generatedAt: (content as { generatedAt: string }).generatedAt });
   } catch (err) {
     console.error('[intelligence] refresh failed', err);
-    return res.status(500).json({ error: 'Failed to refresh intelligence content', details: String(err) });
+    const { message, status } = friendlyAIError(err);
+    return res.status(status).json({ error: message });
   }
 });
 
