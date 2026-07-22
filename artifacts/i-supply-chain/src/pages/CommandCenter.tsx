@@ -2,7 +2,7 @@ import React, { useState, useMemo, useCallback } from 'react';
 import { useLanguage } from '@/lib/LanguageContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  RadarChart, Radar, PolarGrid, PolarAngleAxis,
+  RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
   ResponsiveContainer, Legend,
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Cell,
 } from 'recharts';
@@ -1271,8 +1271,6 @@ function BriefingTab({ lang }: { lang: Lang }) {
   const urgencyColor: Record<string, string> = { Immediate: 'text-red-700 bg-red-50 border-red-200', '90-Day': 'text-amber-700 bg-amber-50 border-amber-200', '6-Month': 'text-blue-700 bg-blue-50 border-blue-200' };
   const effortColor: Record<string, string> = { Low: 'text-emerald-700 bg-emerald-50', Medium: 'text-amber-700 bg-amber-50', High: 'text-red-700 bg-red-50' };
 
-  const ar = lang === 'ar';
-
   if (step === 'generating') {
     const genSteps = ar
       ? ['تحليل الفجوات في KPI مقابل أفضل ربع الخليج…','المرجعية بإطارَي CIPS وAPACS SCOR…','تحديد التدخلات الأعلى عائداً على الاستثمار…','صياغة خطة العمل التسعينية…']
@@ -1302,6 +1300,14 @@ function BriefingTab({ lang }: { lang: Lang }) {
     const monthLabels = ar
       ? [['month1','الشهر 1','#082C6B'],['month2','الشهر 2','#0B3D91'],['month3','الشهر 3','#C9A84C']] as const
       : [['month1','Month 1','#082C6B'],['month2','Month 2','#0B3D91'],['month3','Month 3','#C9A84C']] as const;
+    const radarData = MATURITY_DOMAINS_EX.map(d => {
+      const vals = d.subs.map(s => maturityRatings[`${d.id}__${s.id}`] ?? 2);
+      const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
+      return {
+        domain: lang === 'ar' ? d.labelAr : d.label,
+        score: Math.round(avg * 10) / 10,
+      };
+    });
     return (
       <div className="space-y-7" dir={ar ? 'rtl' : 'ltr'}>
         {/* Header */}
@@ -1361,6 +1367,33 @@ function BriefingTab({ lang }: { lang: Lang }) {
             {ar ? 'الملخص التنفيذي' : 'Executive Summary'}
           </h3>
           <p className="text-base leading-relaxed">{briefing.executiveSummary}</p>
+        </div>
+
+        {/* Domain Maturity Radar */}
+        <div className="rounded-xl border border-border p-4">
+          <h3 className="font-bold text-[#082C6B] text-sm uppercase tracking-wider mb-1">
+            {lang === 'ar' ? 'نضج المجالات — نظرة شاملة' : 'Domain Maturity — At a Glance'}
+          </h3>
+          <p className="text-xs text-muted-foreground mb-2">
+            {lang === 'ar' ? 'متوسط درجات النضج لكل مجال (مقياس ١–٥)' : 'Average maturity score per domain (1–5 scale)'}
+          </p>
+          <div className="w-full h-80" dir="ltr">
+            <ResponsiveContainer width="100%" height="100%">
+              <RadarChart data={radarData} outerRadius="70%">
+                <PolarGrid stroke="#E5E7EB" />
+                <PolarAngleAxis dataKey="domain" tick={{ fontSize: 11, fill: '#374151' }} />
+                <PolarRadiusAxis angle={90} domain={[0, 5]} tickCount={6} tick={{ fontSize: 10, fill: '#9CA3AF' }} />
+                <Radar
+                  name={lang === 'ar' ? 'درجة النضج' : 'Maturity Score'}
+                  dataKey="score"
+                  stroke="#082C6B"
+                  fill="#082C6B"
+                  fillOpacity={0.25}
+                />
+                <Tooltip formatter={(v: number) => [`${v} / 5`, lang === 'ar' ? 'درجة النضج' : 'Maturity Score']} />
+              </RadarChart>
+            </ResponsiveContainer>
+          </div>
         </div>
 
         {/* Critical Gaps */}
