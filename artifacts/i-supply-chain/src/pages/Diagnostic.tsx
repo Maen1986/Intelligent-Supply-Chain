@@ -48,30 +48,31 @@ export function Diagnostic() {
     await new Promise(r => setTimeout(r, 1200));
     const generated = generateReport(formData as any, lang);
 
-    try {
-      const res = await fetch(`${API_BASE}/leads/diagnostic`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          businessSize: formData.businessSize,
-          region: formData.region,
-          industry: formData.industry,
-          focusArea: formData.focusArea,
-          challengeText: formData.challenge,
-          reportSummary: generated.executiveSummary,
-        }),
-      });
-      if (res.status === 429) {
-        let seconds = Number(res.headers.get('Retry-After'));
-        if (!Number.isFinite(seconds) || seconds <= 0) {
-          const body = await res.json().catch(() => null);
-          seconds = Number(body?.retryAfterSeconds) || 3600;
+    // Lead capture is best-effort and runs in the background — never block the report.
+    void (async () => {
+      try {
+        const res = await fetch(`${API_BASE}/leads/diagnostic`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            businessSize: formData.businessSize,
+            region: formData.region,
+            industry: formData.industry,
+            focusArea: formData.focusArea,
+            challengeText: formData.challenge,
+            reportSummary: generated.executiveSummary,
+          }),
+        });
+        if (res.status === 429) {
+          let seconds = Number(res.headers.get('Retry-After'));
+          if (!Number.isFinite(seconds) || seconds <= 0) {
+            const body = await res.json().catch(() => null);
+            seconds = Number(body?.retryAfterSeconds) || 3600;
+          }
+          setRateLimitNotice(retryMessage(seconds));
         }
-        setRateLimitNotice(retryMessage(seconds));
-        setIsGenerating(false);
-        return;
-      }
-    } catch (e) { /* silent fail — lead capture is best-effort */ }
+      } catch (e) { /* silent fail — lead capture is best-effort */ }
+    })();
 
     setReport(generated);
     setIsGenerating(false);

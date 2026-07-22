@@ -54,21 +54,29 @@ const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 const CACHE_DIR = join(process.cwd(), 'cache');
 const CACHE_FILE = join(CACHE_DIR, 'intelligence.json');
 
-function readCache(): Record<string, unknown> | null {
+/* Refresh proactively once the cache is older than this (before the 7-day hard expiry). */
+const REFRESH_AFTER_MS = 6 * 24 * 60 * 60 * 1000;
+
+interface CacheEntry {
+  data: Record<string, unknown>;
+  ageMs: number;
+}
+
+/* Read any schema-valid cache regardless of age; caller decides how to treat staleness. */
+function readCacheEntry(): CacheEntry | null {
   try {
     if (existsSync(CACHE_FILE)) {
       const raw = readFileSync(CACHE_FILE, 'utf8');
       const data = JSON.parse(raw) as { generatedAt?: string };
-      if (data.generatedAt && Date.now() - new Date(data.generatedAt).getTime() < SEVEN_DAYS_MS) {
-        const parsed = intelligenceContentSchema.safeParse(data);
-        if (!parsed.success) {
-          console.warn('[intelligence] cached content failed schema validation — regenerating');
-          return null;
-        }
-        return data as Record<string, unknown>;
+      if (!data.generatedAt) return null;
+      const parsed = intelligenceContentSchema.safeParse(data);
+      if (!parsed.success) {
+        console.warn('[intelligence] cached content failed schema validation — regenerating');
+        return null;
       }
+      return { data: data as Record<string, unknown>, ageMs: Date.now() - new Date(data.generatedAt).getTime() };
     }
-  } catch (_) { /* stale or corrupt — regenerate */ }
+  } catch (_) { /* corrupt — regenerate */ }
   return null;
 }
 
@@ -212,15 +220,52 @@ export class ContentValidationError extends Error {
   }
 }
 
-/* GET /api/intelligence — return cached or freshly generated content */
+/* Single-flight background refresh: never let two generations run concurrently. */
+let refreshInFlight: Promise<void> | null = null;
+
+function refreshInBackground(reason: string): Promise<void> {
+  if (refreshInFlight) return refreshInFlight;
+  console.log(`[intelligence] background refresh started (${reason})`);
+  refreshInFlight = (async () => {
+    try {
+      const content = await generateContent();
+      writeCache(content);
+      console.log('[intelligence] background refresh succeeded');
+    } catch (err) {
+      // Keep serving the old cache; just log the failure.
+      console.error('[intelligence] background refresh failed — keeping existing cache', err);
+    } finally {
+      refreshInFlight = null;
+    }
+  })();
+  return refreshInFlight;
+}
+
+/* Proactive timer: check hourly and regenerate before the 7-day window lapses. */
+const REFRESH_CHECK_INTERVAL_MS = 60 * 60 * 1000;
+const refreshTimer = setInterval(() => {
+  const entry = readCacheEntry();
+  if (entry && entry.ageMs < REFRESH_AFTER_MS) return;
+  void refreshInBackground(entry ? 'scheduled: cache nearing expiry' : 'scheduled: no valid cache');
+}, REFRESH_CHECK_INTERVAL_MS);
+refreshTimer.unref?.();
+
+/* GET /api/intelligence — serve cache instantly; refresh in the background when stale */
 router.get('/intelligence', async (_req, res) => {
   try {
-    const cached = readCache();
-    if (cached) {
-      res.setHeader('X-Cache', 'HIT');
-      return res.json(cached);
+    const entry = readCacheEntry();
+    if (entry) {
+      if (entry.ageMs >= REFRESH_AFTER_MS) {
+        // Stale-while-revalidate: serve the old cache, refresh in the background.
+        void refreshInBackground('stale-while-revalidate');
+        res.setHeader('X-Cache', 'STALE');
+      } else {
+        res.setHeader('X-Cache', 'HIT');
+      }
+      return res.json(entry.data);
     }
 
+    // No usable cache at all — the visitor has to wait for this one generation.
     res.setHeader('X-Cache', 'MISS');
     const content = await generateContent();
     writeCache(content);

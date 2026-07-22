@@ -75,17 +75,36 @@ describe('GET /api/intelligence', () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it('regenerates when the cache is stale and writes the new cache', async () => {
+  it('serves stale cache instantly and refreshes in the background', async () => {
     const eightDaysAgo = new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString();
     fsState.fileExists = true;
     fsState.fileContent = JSON.stringify({ generatedAt: eightDaysAgo, ...generated });
     const app = makeApp('/api', intelligenceRouter);
     const res = await request(app).get('/api/intelligence');
     expect(res.status).toBe(200);
-    expect(res.headers['x-cache']).toBe('MISS');
-    expect(fetchMock).toHaveBeenCalledTimes(1);
-    expect(fsState.written.length).toBe(1);
-    expect(res.body.generatedAt).toBeTruthy();
+    expect(res.headers['x-cache']).toBe('STALE');
+    // The visitor gets the old cache immediately.
+    expect(res.body.generatedAt).toBe(eightDaysAgo);
+    // The background refresh regenerates and writes the new cache.
+    await vi.waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      expect(fsState.written.length).toBe(1);
+    });
+  });
+
+  it('keeps the old cache when the background refresh fails', async () => {
+    fetchMock.mockResolvedValue({ ok: false, status: 500, text: async () => 'boom' });
+    const eightDaysAgo = new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString();
+    fsState.fileExists = true;
+    fsState.fileContent = JSON.stringify({ generatedAt: eightDaysAgo, ...generated });
+    const app = makeApp('/api', intelligenceRouter);
+    const res = await request(app).get('/api/intelligence');
+    expect(res.status).toBe(200);
+    expect(res.headers['x-cache']).toBe('STALE');
+    expect(res.body.generatedAt).toBe(eightDaysAgo);
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalled());
+    // Failed refresh never overwrote the cache.
+    expect(fsState.written.length).toBe(0);
   });
 
   it('ignores a corrupt cache file and regenerates', async () => {
