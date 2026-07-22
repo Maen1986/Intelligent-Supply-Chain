@@ -4,6 +4,9 @@ import { makeApp, dbState, resetDbState, makeDbMock, makeLoggerMock } from './he
 
 vi.mock('@workspace/db', () => makeDbMock());
 vi.mock('../src/lib/logger', () => makeLoggerMock());
+vi.mock('../src/routes/notify', () => ({
+  sendPasswordResetEmail: vi.fn().mockResolvedValue({ sent: true }),
+}));
 const sendPasswordResetEmail = vi.fn(async () => ({ sent: true }));
 vi.mock('../src/routes/notify', () => ({ sendPasswordResetEmail: (...args: unknown[]) => sendPasswordResetEmail(...(args as [])) }));
 
@@ -132,6 +135,103 @@ describe('POST /api/auth/login', () => {
   });
 });
 
+describe('POST /api/auth/register rate limiting', () => {
+  // Each test uses a dedicated spoofed IP (via X-Forwarded-For) so the
+  // in-memory rate-limit store buckets are isolated from one another.
+
+  it('does not rate-limit a normal single registration', async () => {
+    dbState.selectRows = [];
+    dbState.insertRows = [user];
+    const app = makeApp('/api/auth', authRouter);
+    const res = await request(app)
+      .post('/api/auth/register')
+      .set('X-Forwarded-For', '10.1.0.1')
+      .send({ email: user.email, fullName: user.fullName, password: 'secret6' });
+    expect(res.status).toBe(200);
+    expect(res.body.ok).toBe(true);
+  });
+
+  it('returns 429 after 20 registration attempts from the same IP', async () => {
+    // Share one app instance so the in-memory rate-limit store accumulates hits.
+    const app = makeApp('/api/auth', authRouter);
+
+    // Fire 20 attempts from the bot IP — each unique email.
+    for (let i = 0; i < 20; i++) {
+      dbState.selectRows = [];
+      dbState.insertRows = [{ ...user, id: i + 100, email: `bot${i}@example.com` }];
+      const res = await request(app)
+        .post('/api/auth/register')
+        .set('X-Forwarded-For', '10.2.0.1')
+        .send({ email: `bot${i}@example.com`, fullName: 'Bot User', password: 'secret6' });
+      // Each of the first 20 should succeed (not be rate-limited).
+      expect(res.status).not.toBe(429);
+    }
+
+    // The 21st attempt from the same IP should be blocked.
+    dbState.selectRows = [];
+    dbState.insertRows = [{ ...user, id: 999, email: 'bot99@example.com' }];
+    const blocked = await request(app)
+      .post('/api/auth/register')
+      .set('X-Forwarded-For', '10.2.0.1')
+      .send({ email: 'bot99@example.com', fullName: 'Bot User', password: 'secret6' });
+    expect(blocked.status).toBe(429);
+    expect(blocked.body.ok).toBe(false);
+    expect(blocked.body.retryAfterSeconds).toBeGreaterThan(0);
+    expect(blocked.headers['retry-after']).toBeDefined();
+  });
+});
+
+describe('POST /api/auth/forgot-password rate limiting', () => {
+  // Uses a dedicated IP bucket so this suite doesn't bleed into others.
+  const FP_IP = '10.3.0.1';
+
+  it('returns 429 after 5 attempts from the same IP, even when all return 200', async () => {
+    // User with a password — forgot-password will issue a code and return 200.
+    const bcrypt = (await import('bcryptjs')).default;
+    dbState.selectRows = [{ ...user, passwordHash: await bcrypt.hash('secret6', 4) }];
+    const app = makeApp('/api/auth', authRouter);
+
+    for (let i = 0; i < 5; i++) {
+      const res = await request(app)
+        .post('/api/auth/forgot-password')
+        .set('X-Forwarded-For', FP_IP)
+        .send({ email: user.email });
+      // All five succeed with 200; each must still consume quota.
+      expect(res.status).toBe(200);
+      expect(res.body.ok).toBe(true);
+    }
+
+    // 6th attempt from the same IP should be blocked.
+    const blocked = await request(app)
+      .post('/api/auth/forgot-password')
+      .set('X-Forwarded-For', FP_IP)
+      .send({ email: user.email });
+    expect(blocked.status).toBe(429);
+    expect(blocked.body.ok).toBe(false);
+    expect(blocked.body.retryAfterSeconds).toBeGreaterThan(0);
+    expect(blocked.headers['retry-after']).toBeDefined();
+  });
+
+  it('also throttles unknown-email requests (which also return 200)', async () => {
+    dbState.selectRows = []; // no user found — route returns generic 200
+    const app = makeApp('/api/auth', authRouter);
+
+    for (let i = 0; i < 5; i++) {
+      const res = await request(app)
+        .post('/api/auth/forgot-password')
+        .set('X-Forwarded-For', '10.3.0.2')
+        .send({ email: `nobody${i}@example.com` });
+      expect(res.status).toBe(200);
+    }
+
+    const blocked = await request(app)
+      .post('/api/auth/forgot-password')
+      .set('X-Forwarded-For', '10.3.0.2')
+      .send({ email: 'nobody99@example.com' });
+    expect(blocked.status).toBe(429);
+  });
+});
+
 describe('POST /api/auth/login rate limiting', () => {
   it('returns 429 after 5 failed attempts for the same email within a minute', async () => {
     const bcrypt = (await import('bcryptjs')).default;
@@ -207,11 +307,16 @@ describe('POST /api/auth/logout', () => {
 });
 
 describe('POST /api/auth/forgot-password', () => {
+  // Use a dedicated IP so these functional tests never bleed into the rate-
+  // limit bucket shared with the reset-password and rate-limiting test suites.
+  const FP_FUNC_IP = '10.10.0.1';
+
   it('returns the generic response and sends an email for a known account', async () => {
     sendPasswordResetEmail.mockClear();
     dbState.selectRows = [{ ...user, passwordHash: 'hashed' }];
     const app = makeApp('/api/auth', authRouter);
-    const res = await request(app).post('/api/auth/forgot-password').send({ email: user.email });
+    const res = await request(app).post('/api/auth/forgot-password')
+      .set('X-Forwarded-For', FP_FUNC_IP).send({ email: user.email });
     expect(res.status).toBe(200);
     expect(res.body.ok).toBe(true);
     expect(sendPasswordResetEmail).toHaveBeenCalledTimes(1);
@@ -221,7 +326,8 @@ describe('POST /api/auth/forgot-password', () => {
     sendPasswordResetEmail.mockClear();
     dbState.selectRows = [];
     const app = makeApp('/api/auth', authRouter);
-    const res = await request(app).post('/api/auth/forgot-password').send({ email: 'nobody@example.com' });
+    const res = await request(app).post('/api/auth/forgot-password')
+      .set('X-Forwarded-For', FP_FUNC_IP).send({ email: 'nobody@example.com' });
     expect(res.status).toBe(200);
     expect(res.body.ok).toBe(true);
     expect(sendPasswordResetEmail).not.toHaveBeenCalled();
@@ -231,18 +337,24 @@ describe('POST /api/auth/forgot-password', () => {
     sendPasswordResetEmail.mockResolvedValueOnce({ sent: false, reason: 'smtp down' } as any);
     dbState.selectRows = [{ ...user, passwordHash: 'hashed' }];
     const app = makeApp('/api/auth', authRouter);
-    const res = await request(app).post('/api/auth/forgot-password').send({ email: user.email });
+    const res = await request(app).post('/api/auth/forgot-password')
+      .set('X-Forwarded-For', FP_FUNC_IP).send({ email: user.email });
     expect(res.status).toBe(503);
     expect(res.body.ok).toBe(false);
   });
 });
 
 describe('POST /api/auth/reset-password', () => {
+  // Dedicated IP keeps these tests out of the forgotPasswordRateLimiter bucket
+  // shared with forgot-password tests (both routes share the same limiter).
+  const RP_FUNC_IP = '10.10.0.2';
+
   it('resets the password with a valid, unexpired code', async () => {
     const resetTokenHash = await bcrypt.hash('123456', 4);
     dbState.selectRows = [{ ...user, passwordHash: 'old', resetTokenHash, resetTokenExpiresAt: new Date(Date.now() + 60_000) }];
     const app = makeApp('/api/auth', authRouter);
     const res = await request(app).post('/api/auth/reset-password')
+      .set('X-Forwarded-For', RP_FUNC_IP)
       .send({ email: user.email, code: '123456', newPassword: 'newpass6' });
     expect(res.status).toBe(200);
     expect(res.body.ok).toBe(true);
@@ -253,6 +365,7 @@ describe('POST /api/auth/reset-password', () => {
     dbState.selectRows = [{ ...user, passwordHash: 'old', resetTokenHash, resetTokenExpiresAt: new Date(Date.now() + 60_000) }];
     const app = makeApp('/api/auth', authRouter);
     const res = await request(app).post('/api/auth/reset-password')
+      .set('X-Forwarded-For', RP_FUNC_IP)
       .send({ email: 'wrongcode@example.com', code: '999999', newPassword: 'newpass6' });
     expect(res.status).toBe(400);
   });
@@ -262,6 +375,7 @@ describe('POST /api/auth/reset-password', () => {
     dbState.selectRows = [{ ...user, passwordHash: 'old', resetTokenHash, resetTokenExpiresAt: new Date(Date.now() - 1000) }];
     const app = makeApp('/api/auth', authRouter);
     const res = await request(app).post('/api/auth/reset-password')
+      .set('X-Forwarded-For', RP_FUNC_IP)
       .send({ email: 'expired@example.com', code: '123456', newPassword: 'newpass6' });
     expect(res.status).toBe(400);
   });
@@ -270,6 +384,7 @@ describe('POST /api/auth/reset-password', () => {
     dbState.selectRows = [{ ...user, passwordHash: 'old' }];
     const app = makeApp('/api/auth', authRouter);
     const res = await request(app).post('/api/auth/reset-password')
+      .set('X-Forwarded-For', RP_FUNC_IP)
       .send({ email: 'noreset@example.com', code: '123456', newPassword: 'newpass6' });
     expect(res.status).toBe(400);
   });

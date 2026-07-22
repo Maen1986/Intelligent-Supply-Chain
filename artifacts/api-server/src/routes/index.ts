@@ -8,7 +8,6 @@ import authRouter         from "./auth";
 import submissionsRouter  from "./submissions";
 import debugRouter        from "./debug";
 import consultancyRouter  from "./consultancy";
-import { authRateLimiter } from "../lib/rateLimit";
 import leadsRouter        from "./leads";
 import feedbackRouter     from "./feedback";
 
@@ -17,7 +16,7 @@ const router: IRouter = Router();
 router.use(healthRouter);
 router.use("/openai",       openaiRouter);
 router.use("/notify",       notifyRouter);
-router.use("/auth",         authRateLimiter, authRouter);
+router.use("/auth",         authRouter);
 router.use("/submissions",  submissionsRouter);
 router.use("/consultancy",  consultancyRouter);
 router.use("/leads",        leadsRouter);

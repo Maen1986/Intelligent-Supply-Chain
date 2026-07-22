@@ -6,7 +6,7 @@ import { z } from 'zod';
 import bcrypt from 'bcryptjs';
 import crypto from 'node:crypto';
 import { logger } from '../lib/logger';
-import { loginRateLimiter } from '../lib/rateLimit';
+import { loginRateLimiter, authRateLimiter, forgotPasswordRateLimiter } from '../lib/rateLimit';
 import { sendPasswordResetEmail } from './notify';
 
 // ── Session type augmentation ────────────────────────────────────────────────
@@ -64,7 +64,7 @@ function publicUser(user: typeof usersTable.$inferSelect) {
    Creates a user with a bcrypt-hashed password and establishes a server-side
    session. Legacy profile-only accounts (no password hash) may claim their
    account by registering again with the same email.                          */
-router.post('/register', async (req, res) => {
+router.post('/register', authRateLimiter, async (req, res) => {
   const parsed = RegisterSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ ok: false, error: 'Invalid registration data', details: parsed.error.format() });
@@ -168,7 +168,7 @@ const ForgotSchema = z.object({
 
 const RESET_CODE_TTL_MS = 15 * 60 * 1000;
 
-router.post('/forgot-password', loginRateLimiter, async (req, res) => {
+router.post('/forgot-password', forgotPasswordRateLimiter, async (req, res) => {
   const parsed = ForgotSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ ok: false, error: 'Invalid email' });
@@ -217,7 +217,7 @@ const ResetSchema = z.object({
   newPassword: z.string().min(6),
 });
 
-router.post('/reset-password', loginRateLimiter, async (req, res) => {
+router.post('/reset-password', forgotPasswordRateLimiter, async (req, res) => {
   const parsed = ResetSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ ok: false, error: 'Invalid reset data' });

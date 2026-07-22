@@ -99,13 +99,51 @@ export const feedbackRateLimiter = rateLimit({
 export const getFeedbackRateLimitStatus = (req: Request) =>
   getRateLimitStatus(feedbackRateLimiter, FEEDBACK_LIMIT, req);
 
-// Tighter limit on authentication endpoints to slow brute-force attempts.
+// Registration throttle: 20 sign-ups per IP per 15 minutes, backed by
+// PostgreSQL outside tests so the limit survives restarts. Fails open if
+// the DB is unreachable — the global in-memory limiter still applies.
 export const authRateLimiter = rateLimit({
   windowMs: 15 * 60_000,
   limit: 20,
   standardHeaders: "draft-7",
   legacyHeaders: false,
-  message: { error: "Too many attempts. Please try again later." },
+  handler: (req, res) => {
+    const resetTime: Date | undefined = (req as any).rateLimit?.resetTime;
+    const retryAfterSeconds = resetTime
+      ? Math.max(1, Math.ceil((resetTime.getTime() - Date.now()) / 1000))
+      : 900;
+    res.set("Retry-After", String(retryAfterSeconds));
+    res.status(429).json({
+      ok: false,
+      error: "Too many registration attempts. Please try again later.",
+      retryAfterSeconds,
+    });
+  },
+  ...(isTest ? {} : { store: new PgRateLimitStore(pgPool, "auth") }),
+});
+
+// Forgot-password / reset-password throttle: 5 requests per IP per 15 minutes.
+// Must NOT use skipSuccessfulRequests because forgot-password intentionally
+// returns 200 even for unknown emails (anti-enumeration), so every request must
+// consume quota to prevent email-bombing / cost amplification attacks.
+export const forgotPasswordRateLimiter = rateLimit({
+  windowMs: 15 * 60_000,
+  limit: 5,
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+  handler: (req, res) => {
+    const resetTime: Date | undefined = (req as any).rateLimit?.resetTime;
+    const retryAfterSeconds = resetTime
+      ? Math.max(1, Math.ceil((resetTime.getTime() - Date.now()) / 1000))
+      : 900;
+    res.set("Retry-After", String(retryAfterSeconds));
+    res.status(429).json({
+      ok: false,
+      error: "Too many attempts. Please try again later.",
+      retryAfterSeconds,
+    });
+  },
+  ...(isTest ? {} : { store: new PgRateLimitStore(pgPool, "forgot-password") }),
 });
 
 /* Login brute-force throttle: 5 FAILED sign-in attempts per minute, keyed by
