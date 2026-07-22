@@ -148,6 +148,40 @@ describe('GET /api/intelligence', () => {
     expect(res.body.news).toHaveLength(6);
   });
 
+  it('includes a correction hint about zod issues in the retry request body', async () => {
+    const bad = { news: [], tools: [], processes: [], tips: [] };
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ choices: [{ message: { content: JSON.stringify(bad) } }] }),
+    });
+    const app = makeApp('/api', intelligenceRouter);
+    const res = await request(app).get('/api/intelligence');
+    expect(res.status).toBe(200);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    const firstBody = JSON.parse(fetchMock.mock.calls[0][1].body as string);
+    const secondBody = JSON.parse(fetchMock.mock.calls[1][1].body as string);
+    expect(secondBody).not.toEqual(firstBody);
+    const firstPrompt = firstBody.messages[0].content as string;
+    const secondPrompt = secondBody.messages[0].content as string;
+    expect(firstPrompt).not.toContain('previous output was rejected');
+    expect(secondPrompt).toContain('previous output was rejected');
+    expect(secondPrompt).toContain('news');
+  });
+
+  it('includes an invalid-JSON correction hint in the retry request body', async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ choices: [{ message: { content: 'not json {{{' } }] }),
+    });
+    const app = makeApp('/api', intelligenceRouter);
+    const res = await request(app).get('/api/intelligence');
+    expect(res.status).toBe(200);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    const secondPrompt = JSON.parse(fetchMock.mock.calls[1][1].body as string).messages[0].content as string;
+    expect(secondPrompt).toContain('previous output was rejected');
+    expect(secondPrompt).toContain('not valid JSON');
+  });
+
   it('does not retry when the AI API call itself fails', async () => {
     fetchMock.mockResolvedValue({ ok: false, status: 500, text: async () => 'boom' });
     const app = makeApp('/api', intelligenceRouter);

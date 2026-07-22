@@ -87,20 +87,20 @@ async function generateContent(): Promise<Record<string, unknown>> {
   } catch (err) {
     if (err instanceof ContentValidationError) {
       console.warn('[intelligence] AI content malformed, retrying once', err.message);
-      return await generateContentOnce();
+      return await generateContentOnce(err.correctionHint);
     }
     throw err;
   }
 }
 
-async function generateContentOnce(): Promise<Record<string, unknown>> {
+async function generateContentOnce(correctionHint?: string): Promise<Record<string, unknown>> {
   const baseUrl = process.env['AI_INTEGRATIONS_OPENAI_BASE_URL'];
   const apiKey = process.env['AI_INTEGRATIONS_OPENAI_API_KEY'];
   if (!baseUrl || !apiKey) throw new Error('OpenAI env vars not configured');
 
   const today = new Date().toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
 
-  const prompt = `You are a senior procurement and supply chain expert curating weekly intelligence for I Supply Chain (ISC) — a GCC consultancy led by Ma'in Alhaqash MCIPS CPSM MSc. Generate fresh content for ${today} relevant to Saudi Arabia, Jordan, and the broader GCC. Return ONLY valid JSON matching this exact schema — no markdown, no code fences:
+  const basePrompt = `You are a senior procurement and supply chain expert curating weekly intelligence for I Supply Chain (ISC) — a GCC consultancy led by Ma'in Alhaqash MCIPS CPSM MSc. Generate fresh content for ${today} relevant to Saudi Arabia, Jordan, and the broader GCC. Return ONLY valid JSON matching this exact schema — no markdown, no code fences:
 
 {
   "news": [
@@ -155,6 +155,14 @@ Rules:
 - GCC/Saudi/Vision2030 context where relevant
 - Ground in professional standards: CIPS, CPSM, APICS SCOR, ISO, IACCM, CSCMP`;
 
+  const prompt = correctionHint
+    ? `${basePrompt}
+
+IMPORTANT — your previous output was rejected for the following reason(s):
+${correctionHint}
+Fix these issues and return ONLY valid JSON matching the schema above.`
+    : basePrompt;
+
   const resp = await fetch(`${baseUrl}/chat/completions`, {
     method: 'POST',
     headers: {
@@ -179,13 +187,17 @@ Rules:
   try {
     content = JSON.parse(json.choices[0].message.content);
   } catch (e) {
-    throw new ContentValidationError('AI returned invalid JSON');
+    throw new ContentValidationError('AI returned invalid JSON', 'The output was not valid JSON (it failed to parse).');
   }
 
   const parsed = intelligenceContentSchema.safeParse(content);
   if (!parsed.success) {
-    console.error('[intelligence] AI content failed schema validation', parsed.error.issues.slice(0, 5));
-    throw new ContentValidationError('AI returned content in an unexpected shape');
+    const topIssues = parsed.error.issues.slice(0, 5);
+    console.error('[intelligence] AI content failed schema validation', topIssues);
+    const hint = topIssues
+      .map((i) => `- ${i.path.join('.') || '(root)'}: ${i.message}`)
+      .join('\n');
+    throw new ContentValidationError('AI returned content in an unexpected shape', hint);
   }
 
   return {
@@ -194,7 +206,11 @@ Rules:
   };
 }
 
-export class ContentValidationError extends Error {}
+export class ContentValidationError extends Error {
+  constructor(message: string, public readonly correctionHint: string) {
+    super(message);
+  }
+}
 
 /* GET /api/intelligence — return cached or freshly generated content */
 router.get('/intelligence', async (_req, res) => {
