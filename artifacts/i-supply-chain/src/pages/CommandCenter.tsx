@@ -384,15 +384,15 @@ function riskColor(score: number) {
   return '#ef4444';
 }
 
-function riskLabel(score: number) {
-  if (score < 30) return 'LOW';
-  if (score < 55) return 'MODERATE';
-  if (score < 75) return 'HIGH';
-  return 'CRITICAL';
+function riskLabel(score: number, ar = false) {
+  if (score < 30) return ar ? RISK_LEVEL_AR.Low : 'LOW';
+  if (score < 55) return ar ? RISK_LEVEL_AR.Moderate : 'MODERATE';
+  if (score < 75) return ar ? RISK_LEVEL_AR.High : 'HIGH';
+  return ar ? RISK_LEVEL_AR.Critical : 'CRITICAL';
 }
 
 // ─── Gauge SVG ────────────────────────────────────────────────────────────────
-function RiskGauge({ score }: { score: number }) {
+function RiskGauge({ score, ar = false }: { score: number; ar?: boolean }) {
   const cx = 110, cy = 100, r = 72, sw = 14;
   const startDeg = 135, totalDeg = 270;
   const fillDeg = startDeg + (totalDeg * score) / 100;
@@ -408,7 +408,7 @@ function RiskGauge({ score }: { score: number }) {
       />
       <text x={cx} y={cy - 4} textAnchor="middle" className="font-bold" style={{ fontSize: 28, fontWeight: 700, fill: color }}>{score}</text>
       <text x={cx} y={cy + 16} textAnchor="middle" style={{ fontSize: 11, fill: '#6B7280' }}>/ 100</text>
-      <text x={cx} y={cy + 32} textAnchor="middle" style={{ fontSize: 12, fontWeight: 700, fill: color, letterSpacing: 1 }}>{riskLabel(score)}</text>
+      <text x={cx} y={cy + 32} textAnchor="middle" style={{ fontSize: 12, fontWeight: 700, fill: color, letterSpacing: ar ? 0 : 1 }}>{riskLabel(score, ar)}</text>
     </svg>
   );
 }
@@ -978,7 +978,7 @@ function RiskTab({ lang }: { lang: Lang }) {
       {/* 3-Number Summary */}
       <div className="grid grid-cols-3 gap-4">
         {[
-          { label: ar ? 'مؤشر تعرضك (As-Is)' : 'Your Exposure Score (As-Is)', value: exposureScore, color: riskColor(exposureScore), sub: riskLabel(exposureScore) },
+          { label: ar ? 'مؤشر تعرضك (As-Is)' : 'Your Exposure Score (As-Is)', value: exposureScore, color: riskColor(exposureScore), sub: riskLabel(exposureScore, ar) },
           { label: ar ? 'معيار الخليج' : 'GCC Industry Benchmark', value: industryBenchmark, color: '#082C6B', sub: ar ? 'متوسط القطاع' : 'Sector median' },
           { label: ar ? 'الهدف (Top Quartile)' : 'Target (Top Quartile)', value: targetScore, color: '#10b981', sub: ar ? 'أفضل ربع' : 'Top quartile' },
         ].map(s => (
