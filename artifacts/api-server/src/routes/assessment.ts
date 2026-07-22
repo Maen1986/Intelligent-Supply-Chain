@@ -11,6 +11,7 @@ interface AssessmentInput {
   painPoints:       string[];
   kpiRatings:       Record<string, number>;
   maturityRatings:  Record<string, number>;
+  subDimensionRatings?: Record<string, number>;
   language?:        'en' | 'ar';
 }
 
@@ -45,8 +46,20 @@ STATED PAIN POINTS: ${input.painPoints.join(', ')}
 KPI SELF-RATINGS (1=Very Poor, 5=Excellent):
 ${Object.entries(input.kpiRatings).map(([k, v]) => `  ${k}: ${v}/5`).join('\n')}
 
-PROCESS MATURITY SELF-RATINGS (1=Reactive, 5=World-Class):
+PROCESS MATURITY SELF-RATINGS — DOMAIN AVERAGES (1=Reactive, 5=World-Class):
 ${Object.entries(input.maturityRatings).map(([k, v]) => `  ${k}: ${v}/5`).join('\n')}
+${input.subDimensionRatings && Object.keys(input.subDimensionRatings).length > 0 ? `
+SUB-DIMENSION MATURITY DETAIL (1=Reactive, 5=World-Class) — the full breakdown behind the domain averages, formatted "Domain > Sub-dimension":
+${Object.entries(input.subDimensionRatings).map(([k, v]) => `  ${k}: ${v}/5`).join('\n')}
+
+WEAKEST SUB-DIMENSIONS (lowest scores first):
+${Object.entries(input.subDimensionRatings).sort((a, b) => a[1] - b[1]).slice(0, 8).map(([k, v]) => `  ${k}: ${v}/5`).join('\n')}
+
+SUB-DIMENSION ANALYSIS INSTRUCTIONS:
+- Base your gap analysis on the sub-dimension detail, not just the domain averages. A domain average can mask a critical weakness (e.g. a 3.2 average hiding a 1/5 in "CLM System & Automation").
+- Each critical gap MUST cite the specific sub-dimension(s) by name with their score (e.g. "CLM System & Automation rated 1/5").
+- Prioritise sub-dimensions scoring 1-2/5, especially those that correlate with the stated pain points.
+- Quick wins and strategic priorities should target the specific weakest sub-dimensions where possible.` : ''}
 
 DERIVED SCORES: KPI avg=${avgKpi.toFixed(1)}/5, Maturity avg=${avgMaturity.toFixed(1)}/5
 
@@ -63,7 +76,7 @@ Return ONLY valid JSON (no markdown, no code fences) matching this exact structu
       "title": "specific gap title, 4-8 words",
       "businessImpact": "quantified SAR/USD or % impact e.g. SAR 2–4M annually in excess spend",
       "urgency": "one of: Immediate | 90-Day | 6-Month",
-      "detail": "2-3 sentences: what is happening, why it matters in their specific industry context, what SCOR/CIPS/APICS best practice looks like",
+      "detail": "2-3 sentences: what is happening, why it matters in their specific industry context, what SCOR/CIPS/APICS best practice looks like. Name the specific weak sub-dimension(s) and score(s) driving this gap when sub-dimension detail is provided",
       "framework": "relevant standard e.g. CIPS Level 4 | APICS SCOR Plan | ISO 31000 | GTPL Article 62"
     }
   ],
@@ -114,7 +127,7 @@ Rules:
       { role: 'user',   content: userPrompt },
     ],
     response_format: { type: 'json_object' },
-    max_completion_tokens: 4000,
+    max_completion_tokens: 16000,
   });
 
   const content = response.choices[0]?.message?.content;

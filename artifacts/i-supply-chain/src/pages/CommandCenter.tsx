@@ -273,6 +273,15 @@ const MATURITY_DOMAINS_AR = [
   'الاستدامة والحوكمة البيئية',
 ];
 
+/** Flatten all 40 sub-dimension scores with readable "Domain > Sub" labels */
+function subDimensionScores(ratings: Record<string, number>): Record<string, number> {
+  return Object.fromEntries(
+    MATURITY_DOMAINS_EX.flatMap(d =>
+      d.subs.map(s => [`${d.label} > ${s.label}`, ratings[`${d.id}__${s.id}`] ?? 2])
+    )
+  );
+}
+
 const KPI_DOMAINS = [
   'Cost Savings Achieved vs Target',
   'Supplier On-Time & In-Full (OTIF)',
@@ -1298,7 +1307,7 @@ function BriefingTab({ lang }: { lang: Lang }) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ industry, subIndustry: subIndustry || undefined, revenueBand, painPoints, kpiRatings, maturityRatings: domainAverages(maturityRatings), language: lang }),
+        body: JSON.stringify({ industry, subIndustry: subIndustry || undefined, revenueBand, painPoints, kpiRatings, maturityRatings: domainAverages(maturityRatings), subDimensionRatings: subDimensionScores(maturityRatings), language: lang }),
       });
       const data = await resp.json() as { success: boolean; briefing: Briefing; error?: string };
       if (!data.success || !data.briefing) throw new Error(data.error || 'No briefing returned');
