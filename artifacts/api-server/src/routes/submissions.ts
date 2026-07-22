@@ -253,4 +253,90 @@ router.get('/:id/briefing-pdf', requireAdmin, async (req, res) => {
   }
 });
 
+/* ── POST /api/submissions/:id/resend-email ─────────────────────────────────
+   Rebuilds and re-sends the briefing email for a submission whose email
+   previously failed (emailSentAt is null). Re-attaches the stored PDF when
+   available. Updates emailSentAt/emailError to reflect the outcome. Admin-only. */
+router.post('/:id/resend-email', requireAdmin, async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id) || id <= 0) {
+    res.status(400).json({ ok: false, error: 'Invalid submission id' });
+    return;
+  }
+  try {
+    const [row] = await db
+      .select()
+      .from(submissionsTable)
+      .where(eq(submissionsTable.id, id))
+      .limit(1);
+    if (!row) {
+      res.status(404).json({ ok: false, error: 'Submission not found' });
+      return;
+    }
+    if (row.tool !== 'command_centre') {
+      res.status(400).json({ ok: false, error: 'Only briefing (command_centre) submissions can be re-sent' });
+      return;
+    }
+    if (row.emailSentAt) {
+      res.status(409).json({ ok: false, error: 'Email was already sent for this submission' });
+      return;
+    }
+
+    // Re-fetch the stored PDF (best effort — email still goes out without it)
+    let pdfBuffer: Buffer | undefined;
+    if (row.pdfObjectPath) {
+      try {
+        const file = await objectStorage.getObjectEntityFile(row.pdfObjectPath);
+        const [contents] = await file.download();
+        pdfBuffer = contents;
+      } catch (pdfErr) {
+        logger.warn({ err: pdfErr, submissionId: id }, '[submissions] Resend: stored PDF unavailable — sending without attachment');
+      }
+    }
+
+    const inputs  = (row.inputs  ?? {}) as Record<string, unknown>;
+    const outputs = (row.outputs ?? {}) as Record<string, unknown>;
+    const language = inputs.language === 'ar' ? 'ar' as const : 'en' as const;
+
+    const result = await sendBriefingEmail({
+      contactName:  row.contactName,
+      contactEmail: row.contactEmail,
+      company:      row.contactCompany,
+      industry:      typeof inputs.industry    === 'string' ? inputs.industry    : '—',
+      revenueBand:   typeof inputs.revenueBand === 'string' ? inputs.revenueBand : '—',
+      language,
+      maturityScore: String(outputs.maturityScore ?? '—'),
+      maturityLevel: String(outputs.maturityLevel ?? '—'),
+      pdfBuffer,
+      pdfFilename:   row.pdfFilename || `ISC-Executive-Briefing-${id}.pdf`,
+    });
+
+    if (result.sent) {
+      const emailSentAt = new Date();
+      await db
+        .update(submissionsTable)
+        .set({ emailSentAt, emailError: null })
+        .where(eq(submissionsTable.id, id));
+      logger.info({ submissionId: id, hasPdf: !!pdfBuffer }, '[submissions] Briefing email re-sent');
+      res.json({ ok: true, sent: true, emailSentAt, hadPdf: !!pdfBuffer });
+    } else {
+      const reason = result.reason ?? 'Email send failed';
+      await db
+        .update(submissionsTable)
+        .set({ emailError: reason })
+        .where(eq(submissionsTable.id, id));
+      logger.error({ submissionId: id, reason }, '[submissions] Briefing email resend FAILED');
+      res.status(502).json({ ok: false, sent: false, error: reason });
+    }
+  } catch (err) {
+    logger.error({ err, submissionId: id }, '[submissions] Resend failed');
+    await db
+      .update(submissionsTable)
+      .set({ emailError: (err as Error)?.message ?? 'Email send failed' })
+      .where(eq(submissionsTable.id, id))
+      .catch(() => {});
+    res.status(500).json({ ok: false, error: 'Failed to resend email' });
+  }
+});
+
 export default router;
