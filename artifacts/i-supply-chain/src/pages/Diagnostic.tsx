@@ -5,8 +5,9 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
 import { generateReport, DiagnosticReport } from '@/lib/diagnosticEngine';
 import { ReportOutput } from '@/components/ReportOutput';
-import { DIAGNOSTIC_LEAD_WEBHOOK_URL } from '@/config';
 import { ChevronRight, ArrowLeft } from 'lucide-react';
+
+const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, '').replace('/i-supply-chain', '') + '/api-server/api';
 
 export function Diagnostic() {
   const { t, lang } = useLanguage();
@@ -35,23 +36,20 @@ export function Diagnostic() {
     setReport(generated);
     setIsGenerating(false);
 
-    if (DIAGNOSTIC_LEAD_WEBHOOK_URL) {
-      try {
-        fetch(DIAGNOSTIC_LEAD_WEBHOOK_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            submissionType: 'diagnostic',
-            businessSize: formData.businessSize,
-            region: formData.region,
-            industry: formData.industry,
-            focusArea: formData.focusArea,
-            challengeText: formData.challenge,
-            reportSummary: generated.executiveSummary,
-          }),
-        }).catch(() => {});
-      } catch (e) { /* silent fail */ }
-    }
+    try {
+      fetch(`${API_BASE}/leads/diagnostic`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          businessSize: formData.businessSize,
+          region: formData.region,
+          industry: formData.industry,
+          focusArea: formData.focusArea,
+          challengeText: formData.challenge,
+          reportSummary: generated.executiveSummary,
+        }),
+      }).catch(() => {});
+    } catch (e) { /* silent fail */ }
   };
 
   if (report) {
