@@ -22,3 +22,4 @@ export * from "./messages";
 export * from "./users";
 export * from "./submissions";
 export * from "./sessions";
+export * from "./feedback";

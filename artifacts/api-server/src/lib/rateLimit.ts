@@ -40,6 +40,28 @@ export const leadsRateLimiter = rateLimit({
   ...(isTest ? {} : { store: new PgRateLimitStore(pgPool, "leads") }),
 });
 
+// Feedback submissions: 5 per IP per hour (same posture as leads), backed by
+// PostgreSQL so the limit survives restarts. Fails open if the DB is down.
+export const feedbackRateLimiter = rateLimit({
+  windowMs: 60 * 60_000,
+  limit: 5,
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+  handler: (req, res) => {
+    const resetTime: Date | undefined = (req as any).rateLimit?.resetTime;
+    const retryAfterSeconds = resetTime
+      ? Math.max(1, Math.ceil((resetTime.getTime() - Date.now()) / 1000))
+      : 3600;
+    res.set("Retry-After", String(retryAfterSeconds));
+    res.status(429).json({
+      ok: false,
+      error: "Too many feedback submissions. Please try again later.",
+      retryAfterSeconds,
+    });
+  },
+  ...(isTest ? {} : { store: new PgRateLimitStore(pgPool, "feedback") }),
+});
+
 // Tighter limit on authentication endpoints to slow brute-force attempts.
 export const authRateLimiter = rateLimit({
   windowMs: 15 * 60_000,

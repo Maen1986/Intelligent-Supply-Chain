@@ -10,6 +10,7 @@ import debugRouter        from "./debug";
 import consultancyRouter  from "./consultancy";
 import { authRateLimiter } from "../lib/rateLimit";
 import leadsRouter        from "./leads";
+import feedbackRouter     from "./feedback";
 
 const router: IRouter = Router();
 
@@ -20,6 +21,7 @@ router.use("/auth",         authRateLimiter, authRouter);
 router.use("/submissions",  submissionsRouter);
 router.use("/consultancy",  consultancyRouter);
 router.use("/leads",        leadsRouter);
+router.use("/feedback",     feedbackRouter);
 router.use("/debug",        debugRouter);
 router.use(intelligenceRouter);
 router.use(assessmentRouter);

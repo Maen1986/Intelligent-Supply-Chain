@@ -24,7 +24,7 @@ export function resetDbState() {
     resolves to the configured rows (or rejects when failNext is set). */
 function chain(rowsGetter: () => any[], recordValues = false) {
   const c: any = {};
-  for (const m of ['from', 'where', 'orderBy', 'limit', 'set', 'returning']) {
+  for (const m of ['from', 'where', 'orderBy', 'limit', 'offset', 'set', 'returning']) {
     c[m] = () => c;
   }
   c.values = (v: any) => {
@@ -53,6 +53,7 @@ export function makeDbMock() {
     },
     usersTable: { email: 'email', id: 'id' },
     submissionsTable: { tool: 'tool', createdAt: 'createdAt' },
+    feedbackTable: { tool: 'tool', rating: 'rating', nps: 'nps', comment: 'comment', createdAt: 'createdAt' },
     pool: {},
   };
 }
