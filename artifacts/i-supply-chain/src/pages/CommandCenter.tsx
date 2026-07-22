@@ -101,16 +101,131 @@ const PAIN_POINTS = [
   'Vendor ESG risk & ethical sourcing gaps',
 ];
 
-const MATURITY_DOMAINS = [
-  'Strategy & Governance',
-  'Procurement & Sourcing',
-  'Contract Management (CLM)',
-  'Supplier Relationship (SRM)',
-  'Operations & Logistics',
-  'Risk & Business Continuity',
-  'Data & Digital Maturity',
-  'Sustainability & ESG',
-];
+// ─── Maturity Domains: 8 × 5 sub-dimensions ──────────────────────────────────
+const MATURITY_DOMAINS_EX = [
+  {
+    id: 'strategy',
+    label: 'Strategy & Governance',
+    labelAr: 'الاستراتيجية والحوكمة',
+    icon: '🎯',
+    subs: [
+      { id: 'alignment',   label: 'Strategic Alignment & Vision',          labelAr: 'التوافق الاستراتيجي والرؤية' },
+      { id: 'policy',      label: 'Procurement Policy & Delegation (DoA)',  labelAr: 'سياسة المشتريات وجدول التفويض' },
+      { id: 'structure',   label: 'Leadership & Organisational Structure',  labelAr: 'القيادة والهيكل التنظيمي' },
+      { id: 'kpi',         label: 'Performance Management & KPIs',          labelAr: 'إدارة الأداء ومؤشرات القياس' },
+      { id: 'stakeholder', label: 'Stakeholder Engagement & Reporting',     labelAr: 'إشراك أصحاب المصلحة والتقارير' },
+    ],
+  },
+  {
+    id: 'procurement',
+    label: 'Procurement & Sourcing',
+    labelAr: 'المشتريات والتوريد',
+    icon: '🛒',
+    subs: [
+      { id: 'category',   label: 'Category Management',                   labelAr: 'إدارة الفئات' },
+      { id: 'sourcing',   label: 'Sourcing Strategy & Tendering',          labelAr: 'استراتيجية التوريد والمناقصات' },
+      { id: 'onboarding', label: 'Supplier Selection & Onboarding',        labelAr: 'اختيار الموردين والتأهيل' },
+      { id: 'eprocure',   label: 'eProcurement & Digital Tools',           labelAr: 'المشتريات الإلكترونية والأدوات الرقمية' },
+      { id: 'spend',      label: 'Spend Analytics & Visibility',           labelAr: 'تحليلات الإنفاق والرؤية' },
+    ],
+  },
+  {
+    id: 'clm',
+    label: 'Contract Management (CLM)',
+    labelAr: 'إدارة العقود',
+    icon: '📄',
+    subs: [
+      { id: 'development',  label: 'Contract Development & Standardisation', labelAr: 'تطوير العقود والتوحيس القياسي' },
+      { id: 'compliance',   label: 'Contract Compliance & Monitoring',       labelAr: 'الامتثال التعاقدي والمتابعة' },
+      { id: 'clmSystem',    label: 'CLM System & Automation',               labelAr: 'نظام إدارة دورة حياة العقود' },
+      { id: 'risk',         label: 'Risk & Liability Management',            labelAr: 'إدارة المخاطر والمسؤولية التعاقدية' },
+      { id: 'renewals',     label: 'Renewals, Lessons Learned & Closeout',  labelAr: 'التجديد والدروس المستفادة والإغلاق' },
+    ],
+  },
+  {
+    id: 'srm',
+    label: 'Supplier Relationship (SRM)',
+    labelAr: 'إدارة علاقات الموردين',
+    icon: '🤝',
+    subs: [
+      { id: 'segmentation', label: 'Supplier Segmentation & Classification', labelAr: 'تصنيف وتقسيم الموردين' },
+      { id: 'performance',  label: 'Supplier Performance Measurement',       labelAr: 'قياس أداء الموردين' },
+      { id: 'development',  label: 'Supplier Development & Collaboration',   labelAr: 'تطوير الموردين والتعاون' },
+      { id: 'srmRisk',      label: 'Supplier Risk Management',               labelAr: 'إدارة مخاطر الموردين' },
+      { id: 'local',        label: 'Local Content & SME Supplier Pipeline',  labelAr: 'المحتوى المحلي وخط أنابيب الموردين الصغيرين' },
+    ],
+  },
+  {
+    id: 'operations',
+    label: 'Operations & Logistics',
+    labelAr: 'العمليات واللوجستيات',
+    icon: '⚙️',
+    subs: [
+      { id: 'demand',    label: 'Demand Planning & Forecasting',           labelAr: 'تخطيط الطلب والتنبؤ' },
+      { id: 'inventory', label: 'Inventory Management',                    labelAr: 'إدارة المخزون' },
+      { id: 'warehouse', label: 'Warehousing & Distribution',              labelAr: 'التخزين والتوزيع' },
+      { id: 'transport', label: 'Transport & Last-Mile Delivery',          labelAr: 'النقل وتوصيل الميل الأخير' },
+      { id: 'sop',       label: 'S&OP / IBP Process Maturity',            labelAr: 'نضج عملية S&OP / IBP' },
+    ],
+  },
+  {
+    id: 'risk',
+    label: 'Risk & Business Continuity',
+    labelAr: 'المخاطر واستمرارية الأعمال',
+    icon: '🛡️',
+    subs: [
+      { id: 'identify',   label: 'Risk Identification & Assessment',       labelAr: 'تحديد المخاطر وتقييمها' },
+      { id: 'resilience', label: 'Supply Chain Resilience',                labelAr: 'مرونة سلسلة التوريد' },
+      { id: 'bcp',        label: 'Business Continuity Planning (BCP)',     labelAr: 'تخطيط استمرارية الأعمال' },
+      { id: 'regulatory', label: 'Regulatory & Compliance Risk',           labelAr: 'المخاطر التنظيمية والامتثال' },
+      { id: 'crisis',     label: 'Crisis Response & Recovery',             labelAr: 'الاستجابة للأزمات والتعافي' },
+    ],
+  },
+  {
+    id: 'digital',
+    label: 'Data & Digital Maturity',
+    labelAr: 'البيانات والنضج الرقمي',
+    icon: '💡',
+    subs: [
+      { id: 'erp',       label: 'ERP & Systems Integration',              labelAr: 'تكامل نظام ERP والأنظمة' },
+      { id: 'data',      label: 'Data Quality & Governance',              labelAr: 'جودة البيانات وحوكمتها' },
+      { id: 'analytics', label: 'Analytics & Reporting Capability',       labelAr: 'قدرات التحليل والتقارير' },
+      { id: 'tools',     label: 'Digital Procurement Tools',              labelAr: 'أدوات المشتريات الرقمية' },
+      { id: 'ai',        label: 'AI & Automation Adoption',               labelAr: 'تبني الذكاء الاصطناعي والأتمتة' },
+    ],
+  },
+  {
+    id: 'esg',
+    label: 'Sustainability & ESG',
+    labelAr: 'الاستدامة والحوكمة البيئية والاجتماعية',
+    icon: '🌱',
+    subs: [
+      { id: 'enviro',   label: 'Environmental Impact Management',         labelAr: 'إدارة الأثر البيئي' },
+      { id: 'ethical',  label: 'Ethical Sourcing & Labour Standards',     labelAr: 'الشراء الأخلاقي ومعايير العمل' },
+      { id: 'iktva',    label: 'Local Content & IKTVA Compliance',        labelAr: 'المحتوى المحلي والامتثال لـ IKTVA' },
+      { id: 'report',   label: 'ESG Reporting & Disclosure',              labelAr: 'تقارير ومتطلبات الإفصاح ESG' },
+      { id: 'circular', label: 'Circular Economy & Waste Reduction',      labelAr: 'الاقتصاد الدائري وخفض النفايات' },
+    ],
+  },
+] as const;
+
+type MaturityDomainId = typeof MATURITY_DOMAINS_EX[number]['id'];
+
+/** Flatten all 40 sub-dimension keys (domainId__subId) */
+function allSubKeys(): string[] {
+  return MATURITY_DOMAINS_EX.flatMap(d => d.subs.map(s => `${d.id}__${s.id}`));
+}
+
+/** Compute per-domain average from flat sub-ratings */
+function domainAverages(ratings: Record<string, number>): Record<string, number> {
+  return Object.fromEntries(
+    MATURITY_DOMAINS_EX.map(d => {
+      const vals = d.subs.map(s => ratings[`${d.id}__${s.id}`] ?? 2);
+      const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
+      return [d.label, Math.round(avg * 10) / 10];
+    })
+  );
+}
 
 const KPI_DOMAINS = [
   'Cost Savings Achieved vs Target',
@@ -974,13 +1089,16 @@ interface Briefing {
 }
 
 function BriefingTab({ lang }: { lang: Lang }) {
+  const ar = lang === 'ar';
   const [step, setStep] = useState<BriefingStep>('step1');
   const [industry, setIndustry] = useState(Object.keys(INDUSTRY_TREE)[0]);
   const [subIndustry, setSubIndustry] = useState('');
   const [revenueBand, setRevenueBand] = useState(REVENUE_BANDS[1]);
   const [painPoints, setPainPoints] = useState<string[]>([]);
   const [kpiRatings, setKpiRatings] = useState<Record<string, number>>(Object.fromEntries(KPI_DOMAINS.map(d => [d, 3])));
-  const [maturityRatings, setMaturityRatings] = useState<Record<string, number>>(Object.fromEntries(MATURITY_DOMAINS.map(d => [d, 2])));
+  const [maturityRatings, setMaturityRatings] = useState<Record<string, number>>(Object.fromEntries(allSubKeys().map(k => [k, 2])));
+  const [expandedDomains, setExpandedDomains] = useState<Record<string, boolean>>(Object.fromEntries(MATURITY_DOMAINS_EX.map(d => [d.id, d.id === 'strategy'])));
+  const toggleDomain = (id: string) => setExpandedDomains(prev => ({ ...prev, [id]: !prev[id] }));
   const [briefing, setBriefing] = useState<Briefing | null>(null);
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
@@ -995,7 +1113,7 @@ function BriefingTab({ lang }: { lang: Lang }) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ industry, subIndustry: subIndustry || undefined, revenueBand, painPoints, kpiRatings, maturityRatings, language: lang }),
+        body: JSON.stringify({ industry, subIndustry: subIndustry || undefined, revenueBand, painPoints, kpiRatings, maturityRatings: domainAverages(maturityRatings), language: lang }),
       });
       const data = await resp.json() as { success: boolean; briefing: Briefing; error?: string };
       if (!data.success || !data.briefing) throw new Error(data.error || 'No briefing returned');
@@ -1303,21 +1421,75 @@ function BriefingTab({ lang }: { lang: Lang }) {
                 </div>
               ))}
             </div>
-            <div className="space-y-4">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Process Maturity (1 = Reactive, 5 = World-Class)</h4>
-              {MATURITY_DOMAINS.map(d => (
-                <div key={d} className="flex items-center gap-3">
-                  <span className="text-sm w-48 shrink-0">{d}</span>
-                  <div className="flex gap-1.5">
-                    {[1,2,3,4,5].map(n => (
-                      <button key={n} onClick={() => setMaturityRatings(prev => ({ ...prev, [d]: n }))}
-                        className={`w-9 h-9 rounded-lg text-sm font-bold border transition-all ${(maturityRatings[d] ?? 2) >= n ? 'bg-[#C9A84C] text-white border-[#C9A84C]' : 'bg-white text-muted-foreground border-border hover:border-[#C9A84C]/40'}`}>
-                        {n}
-                      </button>
-                    ))}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Process Maturity (1 = Reactive, 5 = World-Class)</h4>
+                <span className="text-xs text-muted-foreground">{ar ? 'انقر لتوسيع كل مجال' : 'Click domain to expand'}</span>
+              </div>
+              {MATURITY_DOMAINS_EX.map(domain => {
+                const domainVals = domain.subs.map(s => maturityRatings[`${domain.id}__${s.id}`] ?? 2);
+                const domainAvg = Math.round((domainVals.reduce((a, b) => a + b, 0) / domainVals.length) * 10) / 10;
+                const avgColor = domainAvg <= 2 ? '#ef4444' : domainAvg <= 3 ? '#f59e0b' : domainAvg <= 4 ? '#3b82f6' : '#10b981';
+                const isOpen = expandedDomains[domain.id];
+                return (
+                  <div key={domain.id} className="border border-border rounded-xl overflow-hidden">
+                    {/* Domain header — click to expand */}
+                    <button
+                      type="button"
+                      onClick={() => toggleDomain(domain.id)}
+                      className="w-full flex items-center gap-3 px-4 py-3 bg-[#082C6B]/5 hover:bg-[#082C6B]/10 transition-colors text-left"
+                    >
+                      <span className="text-lg leading-none">{domain.icon}</span>
+                      <span className="flex-1 font-bold text-sm text-[#082C6B]">
+                        {ar ? domain.labelAr : domain.label}
+                      </span>
+                      <span className="text-xs font-bold px-2 py-0.5 rounded-full text-white" style={{ backgroundColor: avgColor }}>
+                        {domainAvg} / 5
+                      </span>
+                      <ChevronRight className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${isOpen ? 'rotate-90' : ''}`} />
+                    </button>
+                    {/* Sub-dimensions */}
+                    <AnimatePresence initial={false}>
+                      {isOpen && (
+                        <motion.div
+                          key="sub"
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.2 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="divide-y divide-border">
+                            {domain.subs.map(sub => {
+                              const key = `${domain.id}__${sub.id}`;
+                              const val = maturityRatings[key] ?? 2;
+                              return (
+                                <div key={sub.id} className="flex items-center gap-3 px-4 py-2.5">
+                                  <span className="text-sm flex-1 text-muted-foreground leading-snug">
+                                    {ar ? sub.labelAr : sub.label}
+                                  </span>
+                                  <div className="flex gap-1 shrink-0">
+                                    {[1,2,3,4,5].map(n => (
+                                      <button
+                                        key={n}
+                                        type="button"
+                                        onClick={() => setMaturityRatings(prev => ({ ...prev, [key]: n }))}
+                                        className={`w-8 h-8 rounded-md text-xs font-bold border transition-all ${val >= n ? 'bg-[#C9A84C] text-white border-[#C9A84C]' : 'bg-white text-muted-foreground border-border hover:border-[#C9A84C]/40'}`}
+                                      >
+                                        {n}
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
             <div className="flex gap-3">
               <Button variant="outline" onClick={() => setStep('step2')} className="flex-1">Back</Button>
