@@ -23,6 +23,11 @@ export const submissionsTable = pgTable("submissions", {
   pdfFilename:         text("pdf_filename"),
   // Optional metadata
   ipAddress:           text("ip_address"),
+  // Email notification tracking — set when the lead/briefing email is
+  // delivered to at least one recipient; emailError holds the last failure
+  // so unsent leads are visible in the admin list and can be re-sent.
+  emailSentAt:         timestamp("email_sent_at"),
+  emailError:          text("email_error"),
   createdAt:           timestamp("created_at").defaultNow().notNull(),
 });
 

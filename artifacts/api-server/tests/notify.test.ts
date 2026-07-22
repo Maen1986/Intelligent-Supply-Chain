@@ -9,7 +9,13 @@ vi.mock('nodemailer', () => ({
   default: { createTransport: () => ({ sendMail: sendMailMock }) },
 }));
 
-import notifyRouter, { sendBriefingEmail, sendEscalationEmail } from '../src/routes/notify';
+// Keep retry delay at 0 in tests — must be set before the module is imported.
+process.env.EMAIL_RETRY_DELAY_MS = '0';
+process.env.GMAIL_APP_PASSWORD = 'test-app-password';
+
+const notifyModule = await import('../src/routes/notify');
+const notifyRouter = notifyModule.default;
+const { sendBriefingEmail, sendEscalationEmail } = notifyModule;
 
 const lead = {
   fullName: 'Jane Doe',
@@ -18,6 +24,9 @@ const lead = {
   designation: 'CPO',
   company: 'Acme',
 };
+
+// Count only genuine sendMail(mailOptions) invocations
+const realCalls = () => sendMailMock.mock.calls.filter(c => c.length > 0).length;
 
 beforeEach(() => {
   sendMailMock.mockReset();
@@ -50,10 +59,26 @@ describe('POST /api/notify/lead', () => {
     expect(sendMailMock).not.toHaveBeenCalled();
   });
 
-  it('reports per-recipient errors but still returns 200 when transport works', async () => {
+  it('recovers from a transient per-recipient failure via retry', async () => {
+    // Second recipient fails once; the automatic retry succeeds.
     sendMailMock
       .mockResolvedValueOnce({ messageId: 'ok' })
       .mockRejectedValueOnce(new Error('mailbox full'));
+    const app = makeApp('/api/notify', notifyRouter);
+    const res = await request(app).post('/api/notify/lead').send(lead);
+    expect(res.status).toBe(200);
+    expect(res.body.sent).toBe(true);
+    expect(res.body.errors).toBeUndefined();
+    expect(realCalls()).toBe(3); // 2 attempts + 1 retry
+  });
+
+  it('reports per-recipient errors when a recipient fails even after the retry', async () => {
+    const failing = 'yahoo';
+    sendMailMock.mockImplementation((opts?: { to: string }) =>
+      opts && opts.to.includes(failing)
+        ? Promise.reject(new Error('mailbox full'))
+        : Promise.resolve({ messageId: 'ok' })
+    );
     const app = makeApp('/api/notify', notifyRouter);
     const res = await request(app).post('/api/notify/lead').send(lead);
     expect(res.status).toBe(200);
@@ -145,6 +170,68 @@ describe('sendBriefingEmail', () => {
     expect(result.sent).toBe(false);
     expect(result.reason).toMatch(/GMAIL_APP_PASSWORD/);
     expect(sendMailMock).not.toHaveBeenCalled();
+  });
+});
+
+describe('sendBriefingEmail retry behaviour', () => {
+  const baseParams = {
+    contactName: 'Test Lead',
+    contactEmail: 'lead@example.com',
+    company: 'Acme',
+    industry: 'FMCG',
+    revenueBand: '10-50M',
+    language: 'en' as const,
+    maturityScore: '55',
+    maturityLevel: 'Developing',
+  };
+
+  it('sends normally when the transporter works', async () => {
+    const result = await sendBriefingEmail(baseParams);
+    expect(result.sent).toBe(true);
+    expect(result.errors).toBeUndefined();
+    // one call per recipient (2 recipients), no retries
+    expect(realCalls()).toBe(2);
+  });
+
+  it('retries once per recipient and succeeds on the retry', async () => {
+    // First attempt for each recipient fails; retry succeeds.
+    const failedOnce = new Set<string>();
+    sendMailMock.mockImplementation((opts?: { to: string }) => {
+      if (!opts) return Promise.resolve({});
+      if (!failedOnce.has(opts.to)) {
+        failedOnce.add(opts.to);
+        return Promise.reject(new Error('454 Throttled (test)'));
+      }
+      return Promise.resolve({});
+    });
+    const result = await sendBriefingEmail(baseParams);
+    expect(result.sent).toBe(true);
+    expect(result.errors).toBeUndefined();
+    // 2 recipients × (1 attempt + 1 retry)
+    expect(realCalls()).toBe(4);
+  });
+
+  it('reports sent=false when every attempt (incl. retries) fails', async () => {
+    sendMailMock.mockImplementation((opts?: unknown) =>
+      opts ? Promise.reject(new Error('535 Auth failed (test)')) : Promise.resolve({}));
+    const result = await sendBriefingEmail(baseParams);
+    expect(result.sent).toBe(false);
+    expect(result.errors?.length).toBeGreaterThan(0);
+    expect(result.reason).toContain('All recipients failed after retry');
+    expect(realCalls()).toBe(4);
+  });
+
+  it('reports sent=true when at least one recipient succeeds', async () => {
+    sendMailMock.mockImplementation((opts?: { to: string }) => {
+      if (!opts) return Promise.resolve({});
+      // Fail all attempts for the first recipient, succeed for the second
+      return opts.to.includes('yahoo')
+        ? Promise.resolve({})
+        : Promise.reject(new Error('mailbox full (test)'));
+    });
+    const result = await sendBriefingEmail(baseParams);
+    expect(result.sent).toBe(true);
+    expect(result.errors?.length).toBe(1);
   });
 });
 

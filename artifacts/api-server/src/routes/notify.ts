@@ -28,6 +28,9 @@ export function checkEmailConfig() {
   }
 }
 
+// Delay before the single retry attempt (overridable in tests)
+export const EMAIL_RETRY_DELAY_MS = Number(process.env.EMAIL_RETRY_DELAY_MS ?? 2000);
+
 function createTransporter() {
   const user = process.env.GMAIL_USER || 'haqash.maen@gmail.com';
   const pass = process.env.GMAIL_APP_PASSWORD;
@@ -79,29 +82,47 @@ async function sendToAll(
     return { sent: false, reason: msg };
   }
 
-  const results = await Promise.allSettled(
-    NOTIFY_EMAILS.map(to =>
-      transporter.sendMail({
-        from: `"I Supply Chain" <${process.env.GMAIL_USER || 'haqash.maen@gmail.com'}>`,
-        to,
-        subject,
-        html,
-        attachments,
-      })
-    )
-  );
+  const from = `"I Supply Chain" <${process.env.GMAIL_USER || 'haqash.maen@gmail.com'}>`;
+
+  // Send to each recipient with one retry on failure (covers transient Gmail
+  // rate limits / outages). A recipient counts as failed only if both the
+  // initial attempt AND the retry fail.
+  const sendWithRetry = async (to: string): Promise<void> => {
+    try {
+      await transporter.sendMail({ from, to, subject, html, attachments });
+    } catch (firstErr) {
+      logger.warn(
+        { subject, to, err: (firstErr as Error)?.message },
+        '[notify] Send failed — retrying once in 2s'
+      );
+      await new Promise(r => setTimeout(r, EMAIL_RETRY_DELAY_MS));
+      await transporter.sendMail({ from, to, subject, html, attachments });
+      logger.info({ subject, to }, '[notify] Retry succeeded');
+    }
+  };
+
+  const results = await Promise.allSettled(NOTIFY_EMAILS.map(sendWithRetry));
 
   const errors = results
     .filter((r): r is PromiseRejectedResult => r.status === 'rejected')
     .map(r => r.reason?.message ?? String(r.reason));
 
-  if (errors.length) {
-    logger.error({ subject, errors }, '[notify] Some recipients failed');
+  // sent=true only if at least one recipient actually received the email
+  const sent = errors.length < NOTIFY_EMAILS.length;
+
+  if (!sent) {
+    logger.error({ subject, errors }, '[notify] ALL recipients failed (after retry) — email NOT delivered');
+  } else if (errors.length) {
+    logger.error({ subject, errors }, '[notify] Some recipients failed (after retry)');
   } else {
     logger.info({ subject, recipients: NOTIFY_EMAILS }, '[notify] Email sent successfully');
   }
 
-  return { sent: true, errors: errors.length ? errors : undefined };
+  return {
+    sent,
+    errors: errors.length ? errors : undefined,
+    reason: sent ? undefined : `All recipients failed after retry: ${errors.join('; ')}`,
+  };
 }
 
 /* ── POST /api/notify/lead ── */

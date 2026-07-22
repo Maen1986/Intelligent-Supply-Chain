@@ -128,14 +128,27 @@ router.post('/', async (req, res) => {
         });
         if (!result.sent) {
           logger.error({ submissionId: row.id, reason: result.reason }, '[submissions] Briefing email NOT sent');
+          await db
+            .update(submissionsTable)
+            .set({ emailError: result.reason ?? 'Email send failed' })
+            .where(eq(submissionsTable.id, row.id));
         } else {
           logger.info(
             { submissionId: row.id, pdfBytes: pdfBuffer?.length ?? 0, hasPdf: !!pdfBuffer },
             pdfBuffer ? '[submissions] Briefing PDF emailed' : '[submissions] Briefing email sent WITHOUT PDF (capture failed client-side)'
           );
+          await db
+            .update(submissionsTable)
+            .set({ emailSentAt: new Date(), emailError: null })
+            .where(eq(submissionsTable.id, row.id));
         }
       } catch (emailErr) {
         logger.error({ err: emailErr, submissionId: row.id }, '[submissions] Briefing email failed');
+        await db
+          .update(submissionsTable)
+          .set({ emailError: (emailErr as Error)?.message ?? 'Email send failed' })
+          .where(eq(submissionsTable.id, row.id))
+          .catch(() => {});
       }
     }
   } catch (err) {
