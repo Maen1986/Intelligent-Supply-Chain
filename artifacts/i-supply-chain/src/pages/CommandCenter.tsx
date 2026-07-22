@@ -286,6 +286,18 @@ function subDimensionScores(ratings: Record<string, number>, lang: Lang = 'en'):
   );
 }
 
+/** Compute the 5 weakest sub-dimensions (sorted ascending by score) with localized domain + sub labels */
+function weakestSubDimensions(ratings: Record<string, number>, lang: Lang): { domain: string; label: string; score: number }[] {
+  const ar = lang === 'ar';
+  return MATURITY_DOMAINS_EX.flatMap(d =>
+    d.subs.map(s => ({
+      domain: ar ? d.labelAr : d.label,
+      label: ar ? s.labelAr : s.label,
+      score: ratings[`${d.id}__${s.id}`] ?? 2,
+    }))
+  ).sort((a, b) => a.score - b.score).slice(0, 5);
+}
+
 const KPI_DOMAINS = [
   'Cost Savings Achieved vs Target',
   'Supplier On-Time & In-Full (OTIF)',
@@ -1737,13 +1749,7 @@ function BriefingTab({ lang }: { lang: Lang }) {
       const avg = Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 10) / 10;
       return `• ${ar ? d.labelAr : d.label}: ${avg}/5`;
     }).join('\n');
-    const weakestSubLines = MATURITY_DOMAINS_EX.flatMap(d =>
-      d.subs.map(s => ({
-        domain: ar ? d.labelAr : d.label,
-        label: ar ? s.labelAr : s.label,
-        score: maturityRatings[`${d.id}__${s.id}`] ?? 2,
-      }))
-    ).sort((a, b) => a.score - b.score).slice(0, 5)
+    const weakestSubLines = weakestSubDimensions(maturityRatings, lang)
       .map(s => `• ${s.domain} > ${s.label}: ${s.score}/5`).join('\n');
     let text: string;
     if (ar) {
@@ -1816,13 +1822,7 @@ function BriefingTab({ lang }: { lang: Lang }) {
         score: Math.round(avg * 10) / 10,
       };
     });
-    const weakestSubs = MATURITY_DOMAINS_EX.flatMap(d =>
-      d.subs.map(s => ({
-        domain: ar ? d.labelAr : d.label,
-        label: ar ? s.labelAr : s.label,
-        score: maturityRatings[`${d.id}__${s.id}`] ?? 2,
-      }))
-    ).sort((a, b) => a.score - b.score).slice(0, 5);
+    const weakestSubs = weakestSubDimensions(maturityRatings, lang);
     return (
       <div className="space-y-7" dir={ar ? 'rtl' : 'ltr'}>
         {/* Hidden branded layout captured for PDF export */}
