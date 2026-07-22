@@ -1676,9 +1676,17 @@ function BriefingTab({ lang }: { lang: Lang }) {
 
   const previewPdf = async () => {
     if (!briefing || !pdfRef.current || previewBusy) return;
+    // Reuse cached pages (invalidated on briefing/language change) so reopening
+    // the modal is instant instead of re-running the html2canvas capture.
+    if (previewCanvases.current.length > 0 && previewPages.length > 0) {
+      setPreviewOpen(true);
+      return;
+    }
     setPreviewBusy(true);
     try {
-      const pages = await renderPdfPages();
+      const pages = previewCanvases.current.length > 0
+        ? previewCanvases.current
+        : await renderPdfPages();
       previewCanvases.current = pages;
       setPreviewPages(pages.map(p => p.toDataURL('image/jpeg', 0.85)));
       setPreviewOpen(true);
