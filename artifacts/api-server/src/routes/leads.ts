@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { logger } from '../lib/logger';
-import { leadsRateLimiter } from '../lib/rateLimit';
+import { leadsRateLimiter, getLeadsRateLimitStatus } from '../lib/rateLimit';
 
 const router = Router();
 
@@ -64,6 +64,15 @@ router.post('/diagnostic', leadsRateLimiter, async (req, res) => {
 
   // Always 200 to the client once validated — lead capture is best-effort.
   return res.json({ ok: true });
+});
+
+/* ── GET /api/leads/diagnostic/rate-limit ──
+ * Read-only rate-limit status for the caller's IP; does NOT consume quota.
+ * The frontend uses it to keep its retry countdown honest even when the
+ * visitor's device clock drifts (e.g. after laptop sleep/wake). */
+router.get('/diagnostic/rate-limit', async (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  return res.json(await getLeadsRateLimitStatus(req));
 });
 
 export default router;

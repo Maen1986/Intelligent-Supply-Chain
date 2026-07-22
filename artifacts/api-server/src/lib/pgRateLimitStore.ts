@@ -44,6 +44,20 @@ export class PgRateLimitStore implements Store {
     return `${this.prefix}:${key}`;
   }
 
+  /** Read-only lookup (no quota consumed) — used by status endpoints. */
+  async get(
+    key: string,
+  ): Promise<{ totalHits: number; resetTime: Date } | undefined> {
+    await this.ensureTable();
+    const { rows } = await this.pool.query(
+      `SELECT count, expires_at FROM rate_limit_hits
+       WHERE key = $1 AND expires_at > now()`,
+      [this.key(key)],
+    );
+    if (!rows[0]) return undefined;
+    return { totalHits: rows[0].count, resetTime: new Date(rows[0].expires_at) };
+  }
+
   async increment(key: string): Promise<IncrementResponse> {
     try {
       await this.ensureTable();

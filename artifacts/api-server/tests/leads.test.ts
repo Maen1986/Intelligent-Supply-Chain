@@ -106,3 +106,41 @@ describe('POST /api/leads/diagnostic', () => {
     expect(stillLimited.status).toBe(429);
   });
 });
+
+describe('GET /api/leads/diagnostic/rate-limit', () => {
+  it('reports limited with retryAfterSeconds for a blocked IP, without consuming quota', async () => {
+    const app = makeApp('/api/leads', leadsRouter);
+    // The default IP bucket was exhausted by the POST tests above.
+    const res = await request(app).get('/api/leads/diagnostic/rate-limit');
+    expect(res.status).toBe(200);
+    expect(res.headers['cache-control']).toBe('no-store');
+    expect(res.body.limited).toBe(true);
+    expect(res.body.retryAfterSeconds).toBeGreaterThan(0);
+    expect(res.body.retryAfterSeconds).toBeLessThanOrEqual(3600);
+  });
+
+  it('reports not limited for a fresh IP', async () => {
+    const app = makeApp('/api/leads', leadsRouter);
+    const res = await request(app)
+      .get('/api/leads/diagnostic/rate-limit')
+      .set('X-Forwarded-For', '192.0.2.44');
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ limited: false, retryAfterSeconds: 0 });
+  });
+
+  it('does not itself count against the submission limit', async () => {
+    const app = makeApp('/api/leads', leadsRouter);
+    // Poll status several times from a fresh IP, then a real submission
+    // must still succeed (status checks consumed no quota).
+    for (let i = 0; i < 6; i++) {
+      await request(app)
+        .get('/api/leads/diagnostic/rate-limit')
+        .set('X-Forwarded-For', '192.0.2.45');
+    }
+    const post = await request(app)
+      .post('/api/leads/diagnostic')
+      .set('X-Forwarded-For', '192.0.2.45')
+      .send(validLead);
+    expect(post.status).toBe(200);
+  });
+});
