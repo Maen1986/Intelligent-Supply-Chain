@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useLanguage } from '@/lib/LanguageContext';
 import { rankWeakest } from '@/lib/weakestAreas';
+import { useAuth } from '@/lib/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
@@ -1489,6 +1490,9 @@ function BriefingPrintable({
 
 function BriefingTab({ lang }: { lang: Lang }) {
   const ar = lang === 'ar';
+  // Client company name captured at lead sign-up — personalises the PDF cover.
+  const { user } = useAuth();
+  const clientCompany = user?.company?.trim() ?? '';
   const [draft] = useState<BriefingDraft>(loadBriefingDraft);
   const [step, setStep] = useState<BriefingStep>(() =>
     RESUMABLE_STEPS.includes(draft.step as BriefingStep) ? draft.step as BriefingStep : 'step1');
@@ -1528,7 +1532,7 @@ function BriefingTab({ lang }: { lang: Lang }) {
     previewCanvases.current = [];
     setPreviewPages([]);
     setPreviewOpen(false);
-  }, [briefing, lang]);
+  }, [briefing, lang, clientCompany]);
 
   // Renders the hidden printable layout into A4-sized page canvases (section-aware
   // pagination, no awkward splits mid-card). Shared by the preview modal, the PDF
@@ -1712,6 +1716,21 @@ function BriefingTab({ lang }: { lang: Lang }) {
           cctx.fillText(line, cx, y);
           y += Math.round(12 * pxPerMm);
         }
+        // "Prepared for <Company>" — only when the lead has captured a company name
+        if (clientCompany) {
+          y += Math.round(2 * pxPerMm);
+          cctx.fillStyle = PDF_GOLD;
+          cctx.font = font(700, 3.4);
+          cctx.fillText(ar ? 'أُعدت لصالح' : 'PREPARED FOR', cx, y);
+          y += Math.round(7.5 * pxPerMm);
+          cctx.fillStyle = '#ffffff';
+          cctx.font = font(800, 6.2);
+          for (const line of wrapText(clientCompany, maxTextW)) {
+            cctx.fillText(line, cx, y);
+            y += Math.round(8.5 * pxPerMm);
+          }
+          y += Math.round(2 * pxPerMm);
+        }
         // Industry · sub-sector
         y += Math.round(4 * pxPerMm);
         cctx.fillStyle = 'rgba(255,255,255,0.85)';
@@ -1769,7 +1788,7 @@ function BriefingTab({ lang }: { lang: Lang }) {
     });
     return { pdf, filename: `ISC-Executive-Briefing-${new Date().toISOString().slice(0, 10)}.pdf` };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ar]);
+  }, [ar, clientCompany]);
 
   const downloadPdf = async () => {
     if (!briefing || !pdfRef.current || pdfBusy) return;
