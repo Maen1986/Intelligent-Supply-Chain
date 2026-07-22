@@ -75,4 +75,28 @@ describe('POST /api/leads/diagnostic', () => {
     expect(sixth.status).toBe(429);
     expect(sixth.body.ok).toBe(false);
   });
+
+  it('gives distinct client IPs independent rate-limit buckets (trust proxy)', async () => {
+    const app = makeApp('/api/leads', leadsRouter);
+    // The previous test exhausted the shared/default IP bucket. A different
+    // client IP (via X-Forwarded-For, honored because trust proxy is set)
+    // must NOT be blocked by that bucket.
+    const other = await request(app)
+      .post('/api/leads/diagnostic')
+      .set('X-Forwarded-For', '203.0.113.7')
+      .send(validLead);
+    expect(other.status).toBe(200);
+    expect(other.body).toEqual({ ok: true });
+
+    // And a third distinct IP also gets its own fresh bucket.
+    const third = await request(app)
+      .post('/api/leads/diagnostic')
+      .set('X-Forwarded-For', '198.51.100.9')
+      .send(validLead);
+    expect(third.status).toBe(200);
+
+    // Meanwhile the original (default) IP is still rate-limited.
+    const stillLimited = await request(app).post('/api/leads/diagnostic').send(validLead);
+    expect(stillLimited.status).toBe(429);
+  });
 });

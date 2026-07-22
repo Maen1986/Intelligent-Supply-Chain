@@ -68,6 +68,9 @@ export type SessionData = Record<string, unknown>;
 /** Build a minimal express app that mounts a router with a fake session. */
 export function makeApp(basePath: string, router: Router, session: SessionData = {}): Express {
   const app = express();
+  // Mirror the real app (src/app.ts): trust the first proxy hop so req.ip
+  // reflects X-Forwarded-For, matching per-IP rate limiting behind Replit's proxy.
+  app.set('trust proxy', 1);
   app.use(express.json());
   const fakeSession: RequestHandler = (req, _res, next) => {
     (req as any).session = {
