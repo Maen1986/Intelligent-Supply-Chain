@@ -389,3 +389,81 @@ describe('POST /api/auth/reset-password', () => {
     expect(res.status).toBe(400);
   });
 });
+
+describe('POST /api/auth/change-password', () => {
+  it('returns 401 when the user is not authenticated', async () => {
+    const app = makeApp('/api/auth', authRouter); // no session
+    const res = await request(app).post('/api/auth/change-password')
+      .send({ currentPassword: 'secret6', newPassword: 'newpass6' });
+    expect(res.status).toBe(401);
+    expect(res.body.ok).toBe(false);
+  });
+
+  it('returns 400 with a clear message when the current password is wrong', async () => {
+    const passwordHash = await bcrypt.hash('secret6', 4);
+    dbState.selectRows = [{ ...user, passwordHash }];
+    const app = makeApp('/api/auth', authRouter, { userId: 1 });
+    const res = await request(app).post('/api/auth/change-password')
+      .send({ currentPassword: 'wrongpassword', newPassword: 'newpass6' });
+    expect(res.status).toBe(400);
+    expect(res.body.ok).toBe(false);
+    expect(res.body.error).toMatch(/current password/i);
+  });
+
+  it('returns 400 when the new password is too short', async () => {
+    const passwordHash = await bcrypt.hash('secret6', 4);
+    dbState.selectRows = [{ ...user, passwordHash }];
+    const app = makeApp('/api/auth', authRouter, { userId: 1 });
+    const res = await request(app).post('/api/auth/change-password')
+      .send({ currentPassword: 'secret6', newPassword: '123' }); // only 3 chars
+    expect(res.status).toBe(400);
+    expect(res.body.ok).toBe(false);
+  });
+
+  it('returns 200 on a valid request and triggers a DB update', async () => {
+    const passwordHash = await bcrypt.hash('secret6', 4);
+    dbState.selectRows = [{ ...user, passwordHash }];
+    dbState.updateRows = [{ ...user, passwordHash: 'newhash' }];
+
+    // Capture db.execute calls to verify session invalidation
+    const { db } = await import('@workspace/db');
+    (db.execute as ReturnType<typeof vi.fn>).mockClear();
+
+    const app = makeApp('/api/auth', authRouter, { userId: 1 });
+    const res = await request(app).post('/api/auth/change-password')
+      .send({ currentPassword: 'secret6', newPassword: 'newpass6' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.ok).toBe(true);
+    // The DB update must have been called (password change persisted)
+    expect(db.update).toHaveBeenCalled();
+  });
+
+  it('deletes other sessions for the user after a successful change', async () => {
+    const passwordHash = await bcrypt.hash('secret6', 4);
+    dbState.selectRows = [{ ...user, passwordHash }];
+    dbState.updateRows = [{ ...user, passwordHash: 'newhash' }];
+
+    const { db } = await import('@workspace/db');
+    (db.execute as ReturnType<typeof vi.fn>).mockClear();
+
+    const app = makeApp('/api/auth', authRouter, { userId: 1 });
+    await request(app).post('/api/auth/change-password')
+      .send({ currentPassword: 'secret6', newPassword: 'newpass6' });
+
+    // db.execute is called to DELETE other sessions for this userId
+    expect(db.execute).toHaveBeenCalled();
+    const callArg = (db.execute as ReturnType<typeof vi.fn>).mock.calls[0][0];
+    // The SQL should reference the userId to scope the delete
+    expect(JSON.stringify(callArg)).toContain('1'); // userId = 1
+  });
+
+  it('returns 400 when no password is set on the account', async () => {
+    dbState.selectRows = [{ ...user }]; // no passwordHash field
+    const app = makeApp('/api/auth', authRouter, { userId: 1 });
+    const res = await request(app).post('/api/auth/change-password')
+      .send({ currentPassword: 'secret6', newPassword: 'newpass6' });
+    expect(res.status).toBe(400);
+    expect(res.body.ok).toBe(false);
+  });
+});
