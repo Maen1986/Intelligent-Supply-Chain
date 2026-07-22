@@ -14,7 +14,8 @@ interface AuthState {
   user:            UserProfile | null;
   isAuthenticated: boolean;
   loading:         boolean;
-  login:           (profile: Omit<UserProfile, 'id' | 'role'>) => Promise<void>;
+  register:        (profile: Omit<UserProfile, 'id' | 'role'> & { password: string }) => Promise<void>;
+  login:           (email: string, password: string) => Promise<void>;
   logout:          () => Promise<void>;
 }
 
@@ -22,6 +23,7 @@ const AuthContext = createContext<AuthState>({
   user:            null,
   isAuthenticated: false,
   loading:         true,
+  register:        async () => {},
   login:           async () => {},
   logout:          async () => {},
 });
@@ -53,8 +55,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     })();
   }, []);
 
-  // ── login: POST profile to server, receive session cookie ────────────────
-  const login = useCallback(async (profile: Omit<UserProfile, 'id' | 'role'>) => {
+  // ── register: create account server-side (password hashed there),
+  //    receive session cookie ────────────────────────────────────────────────
+  const register = useCallback(async (profile: Omit<UserProfile, 'id' | 'role'> & { password: string }) => {
     const res = await fetch(`${API_BASE}/auth/register`, {
       method:      'POST',
       headers:     { 'Content-Type': 'application/json' },
@@ -62,15 +65,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       body: JSON.stringify({
         email:       profile.email,
         fullName:    profile.fullName,
+        password:    profile.password,
         mobile:      profile.mobile ?? undefined,
         designation: profile.designation ?? undefined,
         company:     profile.company ?? undefined,
       }),
     });
 
-    if (!res.ok) throw new Error('Registration failed — server error');
-    const data = await res.json();
-    if (!data.ok) throw new Error(data.error ?? 'Registration failed');
+    const data = await res.json().catch(() => null);
+    if (!res.ok || !data?.ok) throw new Error(data?.error ?? 'Registration failed — server error');
+
+    setUser(data.user);
+  }, []);
+
+  // ── login: verify credentials server-side, receive session cookie ────────
+  const login = useCallback(async (email: string, password: string) => {
+    const res = await fetch(`${API_BASE}/auth/login`, {
+      method:      'POST',
+      headers:     { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ email, password }),
+    });
+
+    const data = await res.json().catch(() => null);
+    if (!res.ok || !data?.ok) throw new Error(data?.error ?? 'Invalid email or password.');
 
     setUser(data.user);
   }, []);
@@ -89,7 +107,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated: !!user, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, isAuthenticated: !!user, loading, register, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

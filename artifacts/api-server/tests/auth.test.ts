@@ -27,6 +27,7 @@ describe('POST /api/auth/register', () => {
     const res = await request(app).post('/api/auth/register').send({
       email: user.email,
       fullName: user.fullName,
+      password: 'secret6',
       mobile: user.mobile,
       designation: user.designation,
       company: user.company,
@@ -34,18 +35,43 @@ describe('POST /api/auth/register', () => {
     expect(res.status).toBe(200);
     expect(res.body.ok).toBe(true);
     expect(res.body.user).toMatchObject({ id: 1, email: user.email, role: 'user' });
+    expect(res.body.user.passwordHash).toBeUndefined();
   });
 
-  it('updates an existing user profile', async () => {
-    dbState.selectRows = [user];
-    dbState.updateRows = [{ ...user, fullName: 'Jane Updated' }];
+  it('lets a legacy user (no password hash) claim their account', async () => {
+    dbState.selectRows = [user]; // no passwordHash field → legacy
+    dbState.updateRows = [{ ...user, fullName: 'Jane Updated', passwordHash: 'hashed' }];
     const app = makeApp('/api/auth', authRouter);
     const res = await request(app).post('/api/auth/register').send({
       email: user.email,
       fullName: 'Jane Updated',
+      password: 'secret6',
     });
     expect(res.status).toBe(200);
     expect(res.body.user.fullName).toBe('Jane Updated');
+    expect(res.body.user.passwordHash).toBeUndefined();
+  });
+
+  it('rejects registration for an email that already has a password', async () => {
+    dbState.selectRows = [{ ...user, passwordHash: 'hashed' }];
+    const app = makeApp('/api/auth', authRouter);
+    const res = await request(app).post('/api/auth/register').send({
+      email: user.email,
+      fullName: user.fullName,
+      password: 'secret6',
+    });
+    expect(res.status).toBe(409);
+    expect(res.body.ok).toBe(false);
+  });
+
+  it('rejects a missing/short password with 400', async () => {
+    const app = makeApp('/api/auth', authRouter);
+    const res = await request(app).post('/api/auth/register').send({
+      email: user.email,
+      fullName: user.fullName,
+      password: '123',
+    });
+    expect(res.status).toBe(400);
   });
 
   it('rejects invalid payloads with 400', async () => {
@@ -64,9 +90,41 @@ describe('POST /api/auth/register', () => {
     const res = await request(app).post('/api/auth/register').send({
       email: user.email,
       fullName: user.fullName,
+      password: 'secret6',
     });
     expect(res.status).toBe(500);
     expect(res.body.ok).toBe(false);
+  });
+});
+
+describe('POST /api/auth/login', () => {
+  it('signs in with a correct password', async () => {
+    const bcrypt = (await import('bcryptjs')).default;
+    dbState.selectRows = [{ ...user, passwordHash: await bcrypt.hash('secret6', 4) }];
+    const app = makeApp('/api/auth', authRouter);
+    const res = await request(app).post('/api/auth/login').send({ email: user.email, password: 'secret6' });
+    expect(res.status).toBe(200);
+    expect(res.body.user).toMatchObject({ id: 1, email: user.email });
+    expect(res.body.user.passwordHash).toBeUndefined();
+  });
+
+  it('rejects a wrong password with 401', async () => {
+    const bcrypt = (await import('bcryptjs')).default;
+    dbState.selectRows = [{ ...user, passwordHash: await bcrypt.hash('secret6', 4) }];
+    const app = makeApp('/api/auth', authRouter);
+    const res = await request(app).post('/api/auth/login').send({ email: user.email, password: 'nope' });
+    expect(res.status).toBe(401);
+  });
+
+  it('rejects unknown emails and legacy no-password accounts with 401', async () => {
+    dbState.selectRows = [];
+    const app = makeApp('/api/auth', authRouter);
+    const res = await request(app).post('/api/auth/login').send({ email: 'nobody@example.com', password: 'x' });
+    expect(res.status).toBe(401);
+
+    dbState.selectRows = [user]; // legacy: no passwordHash
+    const res2 = await request(app).post('/api/auth/login').send({ email: user.email, password: 'x' });
+    expect(res2.status).toBe(401);
   });
 });
 

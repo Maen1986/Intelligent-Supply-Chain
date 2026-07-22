@@ -10,8 +10,12 @@ import { Eye, EyeOff, User, Lock, Mail, Phone, Briefcase, Building2, ChevronRigh
 
 import { API_BASE } from '@/lib/apiBase';
 
+// One-time cleanup: earlier versions stored registered users (including
+// plaintext passwords) in localStorage. Remove any leftover data.
+try { localStorage.removeItem('isc_users'); } catch {}
+
 export function Login() {
-  const { login } = useAuth();
+  const { register, login } = useAuth();
   const { lang } = useLanguage();
   const ar = lang === 'ar';
   const [, navigate] = useLocation();
@@ -41,50 +45,57 @@ export function Login() {
     }
     setLoading(true);
 
-    // Save to auth context
     const profile = {
       fullName: form.fullName,
       email: form.email,
       mobile: form.mobile,
       designation: form.designation,
       company: form.company,
-      registeredAt: new Date().toISOString(),
     };
 
-    // Send lead notification email
     try {
-      await fetch(`${API_BASE}/notify/lead`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...profile, source: 'Website Registration' }),
-      });
-    } catch {}
+      // Create the account server-side (password is hashed on the server;
+      // it is never stored in the browser).
+      await register({ ...profile, password: form.password });
 
-    // Store credentials in localStorage (simple auth)
-    const users = JSON.parse(localStorage.getItem('isc_users') || '[]');
-    const exists = users.find((u: any) => u.email === form.email);
-    if (exists) {
+      // Send lead notification email (best-effort)
+      try {
+        await fetch(`${API_BASE}/notify/lead`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...profile, registeredAt: new Date().toISOString(), source: 'Website Registration' }),
+        });
+      } catch {}
+
+      navigate('/');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : '';
+      if (msg.toLowerCase().includes('already exists')) {
+        setError(ar ? 'يوجد حساب مسجّل بهذا البريد الإلكتروني بالفعل. يُرجى تسجيل الدخول.' : 'An account with this email already exists. Please sign in.');
+      } else {
+        setError(ar ? 'تعذّر إنشاء الحساب. حاول مرة أخرى.' : msg || 'Could not create the account. Please try again.');
+      }
+    } finally {
       setLoading(false);
-      setError(ar ? 'يوجد حساب مسجّل بهذا البريد الإلكتروني بالفعل. يُرجى تسجيل الدخول.' : 'An account with this email already exists. Please sign in.');
-      return;
     }
-    users.push({ ...profile, password: form.password });
-    localStorage.setItem('isc_users', JSON.stringify(users));
-
-    login(profile);
-    setLoading(false);
-    navigate('/');
   };
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    const users = JSON.parse(localStorage.getItem('isc_users') || '[]');
-    const found = users.find((u: any) => u.email === form.email && u.password === form.password);
-    if (!found) { setError(ar ? 'البريد الإلكتروني أو كلمة المرور غير صحيحة.' : 'Invalid email or password.'); return; }
-    const { password: _, ...profile } = found;
-    login(profile);
-    navigate('/');
+    if (!form.email || !form.password) {
+      setError(ar ? 'يُرجى إدخال البريد الإلكتروني وكلمة المرور.' : 'Please enter your email and password.');
+      return;
+    }
+    setLoading(true);
+    try {
+      await login(form.email, form.password);
+      navigate('/');
+    } catch {
+      setError(ar ? 'البريد الإلكتروني أو كلمة المرور غير صحيحة.' : 'Invalid email or password.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -177,9 +188,9 @@ export function Login() {
                   suffix={<button type="button" onClick={() => setShowPass(v => !v)} className="text-muted-foreground hover:text-primary">{showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}</button>}>
                   <Input type={showPass ? 'text' : 'password'} placeholder={ar ? 'كلمة المرور الخاصة بك' : 'Your password'} value={form.password} onChange={set('password')} />
                 </Field>
-                <Button type="submit"
+                <Button type="submit" disabled={loading}
                   className="w-full bg-[#082C6B] hover:bg-[#0B3D91] text-white font-bold h-12 text-[15px] rounded-xl mt-2">
-                  {ar ? 'تسجيل الدخول' : 'Sign In'} {ar ? <ChevronLeft className="w-4 h-4 mr-1" /> : <ChevronRight className="w-4 h-4 ml-1" />}
+                  {loading ? (ar ? 'جارٍ تسجيل الدخول…' : 'Signing In…') : (ar ? 'تسجيل الدخول' : 'Sign In')} {!loading && (ar ? <ChevronLeft className="w-4 h-4 mr-1" /> : <ChevronRight className="w-4 h-4 ml-1" />)}
                 </Button>
                 <p className="text-center text-sm text-muted-foreground">
                   {ar ? 'ليس لديك حساب بعد؟' : 'No account yet?'}{' '}

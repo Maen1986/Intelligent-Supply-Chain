@@ -10,6 +10,7 @@ export const usersTable = pgTable("users", {
   designation:  text("designation"),
   company:      text("company"),
   role:         text("role").notNull().default("user"),  // 'user' | 'admin'
+  passwordHash: text("password_hash"),                    // bcrypt hash; null for legacy profile-only accounts
   createdAt:    timestamp("created_at").defaultNow().notNull(),
 });
 
