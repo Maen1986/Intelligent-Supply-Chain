@@ -250,6 +250,55 @@ describe('GET /api/intelligence', () => {
     expect(dbState.written.length).toBe(0);
   });
 
+  it('shares a single generation across concurrent cache-miss requests', async () => {
+    let resolveFetch!: (v: unknown) => void;
+    fetchMock.mockImplementation(
+      () => new Promise((resolve) => { resolveFetch = resolve; }),
+    );
+    const app = makeApp('/api', intelligenceRouter);
+    const requests = Promise.all([
+      request(app).get('/api/intelligence'),
+      request(app).get('/api/intelligence'),
+      request(app).get('/api/intelligence'),
+    ]);
+    // Wait until the (single) AI call is in flight, then let it complete.
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalled());
+    resolveFetch({
+      ok: true,
+      json: async () => ({ choices: [{ message: { content: JSON.stringify(generated) } }] }),
+    });
+    const responses = await requests;
+    for (const res of responses) {
+      expect(res.status).toBe(200);
+      expect(res.headers['x-cache']).toBe('MISS');
+      expect(res.body.news).toHaveLength(6);
+    }
+    // Only one AI generation and one cache write for the whole burst.
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(dbState.written.length).toBe(1);
+  });
+
+  it('propagates a shared generation failure to all concurrent miss requests without extra AI calls', async () => {
+    let rejectFetch!: (e: unknown) => void;
+    fetchMock.mockImplementation(
+      () => new Promise((_resolve, reject) => { rejectFetch = reject; }),
+    );
+    const app = makeApp('/api', intelligenceRouter);
+    const requests = Promise.all([
+      request(app).get('/api/intelligence'),
+      request(app).get('/api/intelligence'),
+    ]);
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalled());
+    rejectFetch(new Error('network down'));
+    const responses = await requests;
+    for (const res of responses) {
+      expect(res.status).toBe(502);
+      expect(res.body.error).toBeTruthy();
+    }
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(dbState.written.length).toBe(0);
+  });
+
   it('fails cleanly when AI env vars are not configured', async () => {
     vi.stubEnv('AI_INTEGRATIONS_OPENAI_BASE_URL', '');
     const app = makeApp('/api', intelligenceRouter);

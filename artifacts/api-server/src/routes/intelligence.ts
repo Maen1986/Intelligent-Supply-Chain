@@ -232,25 +232,35 @@ export class ContentValidationError extends Error {
   }
 }
 
-/* Single-flight background refresh: never let two generations run concurrently. */
-let refreshInFlight: Promise<void> | null = null;
+/* Single-flight generation: never let two generations run concurrently.
+ * All callers (cache-miss GETs, background refreshes) share the same
+ * in-flight promise, so a burst of visitors costs exactly one AI call. */
+let generationInFlight: Promise<Record<string, unknown>> | null = null;
 
-function refreshInBackground(reason: string): Promise<void> {
-  if (refreshInFlight) return refreshInFlight;
-  console.log(`[intelligence] background refresh started (${reason})`);
-  refreshInFlight = (async () => {
+function generateAndCache(reason: string): Promise<Record<string, unknown>> {
+  if (generationInFlight) return generationInFlight;
+  console.log(`[intelligence] generation started (${reason})`);
+  generationInFlight = (async () => {
     try {
       const content = await generateContent();
       await writeCache(content);
-      console.log('[intelligence] background refresh succeeded');
-    } catch (err) {
-      // Keep serving the old cache; just log the failure.
-      console.error('[intelligence] background refresh failed — keeping existing cache', err);
+      console.log('[intelligence] generation succeeded');
+      return content;
     } finally {
-      refreshInFlight = null;
+      generationInFlight = null;
     }
   })();
-  return refreshInFlight;
+  return generationInFlight;
+}
+
+function refreshInBackground(reason: string): Promise<void> {
+  return generateAndCache(reason).then(
+    () => undefined,
+    (err) => {
+      // Keep serving the old cache; just log the failure.
+      console.error('[intelligence] background refresh failed — keeping existing cache', err);
+    },
+  );
 }
 
 /* Proactive timer: check hourly and regenerate before the 7-day window lapses. */
@@ -279,10 +289,10 @@ router.get('/intelligence', async (_req, res) => {
       return res.json(entry.data);
     }
 
-    // No usable cache at all — the visitor has to wait for this one generation.
+    // No usable cache at all — the visitor waits for the (shared) generation.
+    // Concurrent misses all await the same in-flight promise: one AI call total.
     res.setHeader('X-Cache', 'MISS');
-    const content = await generateContent();
-    await writeCache(content);
+    const content = await generateAndCache('cache miss');
     return res.json(content);
   } catch (err) {
     console.error('[intelligence] GET failed', err);
