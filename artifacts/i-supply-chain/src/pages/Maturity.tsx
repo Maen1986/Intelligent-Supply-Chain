@@ -1160,6 +1160,7 @@ export function Maturity() {
 
         <div className="text-center">
           <Button size="lg" onClick={() => { setPhase('questions'); scrollUp(); }}
+            data-testid="button-start-assessment"
             className="bg-primary hover:bg-primary/90 text-white font-bold px-10 min-h-[52px] text-base shadow-lg">
             {ar ? 'ابدأ التقييم' : 'Start Assessment'} {ar ? <ChevronLeft className="w-5 h-5 mr-1" /> : <ChevronRight className="w-5 h-5 ml-1" />}
           </Button>
@@ -1245,6 +1246,7 @@ export function Maturity() {
                         return (
                           <button
                             key={s.value}
+                            data-testid={`answer-${segIdx}-${qi}-${s.value}`}
                             onClick={() => setAnswer(segIdx, qi, s.value)}
                             className={`w-full text-left flex items-start gap-4 px-5 py-4 transition-all duration-150 group
                               ${selected ? 'ring-2 ring-inset' : 'hover:bg-muted/60'}`}
@@ -1308,6 +1310,7 @@ export function Maturity() {
                   )}
                 </div>
                 <Button onClick={handleNext} disabled={!segComplete}
+                  data-testid="button-maturity-next"
                   className={`gap-2 ${segIdx === SEGMENTS.length - 1 ? 'bg-accent hover:bg-accent/90' : 'bg-primary hover:bg-primary/90'} text-white font-bold`}>
                   {segIdx === SEGMENTS.length - 1
                     ? <><Award className="w-4 h-4" /> {ar ? 'عرض النتائج' : 'View Results'}</>
@@ -1323,7 +1326,7 @@ export function Maturity() {
 
   /* ── RESULTS ───────────────────────────────────────────────────────────── */
   return (
-    <div ref={topRef} className="w-full">
+    <div ref={topRef} className="w-full" data-testid="maturity-results">
       <div className="bg-[#082C6B] text-white">
         <div className="container mx-auto px-4 py-10 max-w-5xl text-center">
           <div className="inline-flex items-center gap-2 bg-white/10 rounded-full px-4 py-1.5 mb-4">
