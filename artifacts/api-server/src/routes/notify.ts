@@ -63,9 +63,12 @@ function buildEmailHtml(subject: string, rows: Record<string, string>) {
     </div>`;
 }
 
+type EmailAttachment = { filename: string; content: Buffer; contentType?: string };
+
 async function sendToAll(
   subject: string,
-  html: string
+  html: string,
+  attachments?: EmailAttachment[]
 ): Promise<{ sent: boolean; errors?: string[]; reason?: string }> {
   const transporter = createTransporter();
 
@@ -83,6 +86,7 @@ async function sendToAll(
         to,
         subject,
         html,
+        attachments,
       })
     )
   );
@@ -172,6 +176,38 @@ router.post('/maturity', async (req, res) => {
   const result = await sendToAll(subject, html);
   res.status(result.sent || !result.reason ? 200 : 503).json({ ok: true, ...result });
 });
+
+// ── Exported helper: sendBriefingEmail ───────────────────────────────────────
+// Called by the submissions route when a Command Centre briefing lands with a
+// client-rendered PDF. Sends the lead summary with the branded PDF attached.
+export async function sendBriefingEmail(params: {
+  contactName:  string | null;
+  contactEmail: string | null;
+  company:      string | null;
+  industry:     string;
+  revenueBand:  string;
+  language:     'en' | 'ar';
+  maturityScore: string;
+  maturityLevel: string;
+  pdfBuffer:    Buffer;
+  pdfFilename:  string;
+}): Promise<{ sent: boolean; errors?: string[]; reason?: string }> {
+  const subject = `📋 Executive Briefing Generated${params.contactName ? `: ${params.contactName}` : ''} — ${params.industry} (${params.language === 'ar' ? 'Arabic' : 'English'})`;
+  const html = buildEmailHtml(subject, {
+    'Contact Name':   params.contactName ?? 'Anonymous visitor',
+    'Contact Email':  params.contactEmail ?? '—',
+    'Company':        params.company ?? '—',
+    'Industry':       params.industry,
+    'Revenue Band':   params.revenueBand,
+    'Language':       params.language === 'ar' ? 'Arabic (العربية)' : 'English',
+    'Maturity':       `${params.maturityLevel} (${params.maturityScore}/100)`,
+    'Attachment':     'Full branded PDF briefing attached',
+    'Time':           new Date().toLocaleString('en-GB', { timeZone: 'Asia/Riyadh' }),
+  });
+  return sendToAll(subject, html, [
+    { filename: params.pdfFilename, content: params.pdfBuffer, contentType: 'application/pdf' },
+  ]);
+}
 
 // ── Exported helper: sendEscalationEmail ─────────────────────────────────────
 // Called by the consultancy escalation endpoint.

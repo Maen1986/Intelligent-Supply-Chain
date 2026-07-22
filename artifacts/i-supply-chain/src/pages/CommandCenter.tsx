@@ -1494,15 +1494,15 @@ function BriefingTab({ lang }: { lang: Lang }) {
   const [pdfBusy, setPdfBusy] = useState(false);
   const pdfRef = React.useRef<HTMLDivElement>(null);
 
-  const downloadPdf = async () => {
-    if (!briefing || !pdfRef.current || pdfBusy) return;
-    setPdfBusy(true);
-    try {
-      const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
-        import('html2canvas-pro'),
-        import('jspdf'),
-      ]);
-      // Measure atomic blocks (cards, headings, sections) BEFORE capture so page
+  /** Render the hidden BriefingPrintable layout into a jsPDF instance
+      with section-aware pagination (no awkward splits mid-card). */
+  const buildPdf = useCallback(async () => {
+    if (!pdfRef.current) throw new Error('Printable layout not mounted');
+    const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
+      import('html2canvas-pro'),
+      import('jspdf'),
+    ]);
+    // Measure atomic blocks (cards, headings, sections) BEFORE capture so page
       // breaks can be placed between blocks instead of cutting through them.
       const containerEl = pdfRef.current;
       const containerRect = containerEl.getBoundingClientRect();
@@ -1574,7 +1574,15 @@ function BriefingTab({ lang }: { lang: Lang }) {
         if (page > 0) pdf.addPage();
         pdf.addImage(slice.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, pageW, sliceH / pxPerMm);
       }
-      pdf.save(`ISC-Executive-Briefing-${new Date().toISOString().slice(0, 10)}.pdf`);
+    return { pdf, filename: `ISC-Executive-Briefing-${new Date().toISOString().slice(0, 10)}.pdf` };
+  }, []);
+
+  const downloadPdf = async () => {
+    if (!briefing || !pdfRef.current || pdfBusy) return;
+    setPdfBusy(true);
+    try {
+      const { pdf, filename } = await buildPdf();
+      pdf.save(filename);
     } catch (err) {
       console.error('PDF generation failed:', err);
       alert(ar ? 'تعذّر إنشاء ملف PDF. حاول مرة أخرى.' : 'Could not generate the PDF. Please try again.');
@@ -1582,6 +1590,42 @@ function BriefingTab({ lang }: { lang: Lang }) {
       setPdfBusy(false);
     }
   };
+
+  // Persist the submission (with branded PDF attached) once the hidden
+  // printable layout has rendered. Fire-and-forget — never blocks the UI.
+  const submittedRef = React.useRef<Briefing | null>(null);
+  useEffect(() => {
+    if (!briefing || step !== 'result' || submittedRef.current === briefing) return;
+    submittedRef.current = briefing;
+    let cancelled = false;
+    const submit = (pdfBase64?: string, pdfFilename?: string) =>
+      fetch(`${API_BASE}/submissions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          tool: 'command_centre',
+          inputs: { industry, revenueBand, painPoints, kpiRatings, maturityRatings },
+          outputs: briefing,
+          language: lang,
+          ...(pdfBase64 ? { pdfBase64, pdfFilename } : {}),
+        }),
+      }).catch(() => { /* non-blocking */ });
+    // Give the off-screen charts a moment to finish painting before capture
+    const timer = setTimeout(async () => {
+      if (cancelled) return;
+      try {
+        const { pdf, filename } = await buildPdf();
+        const dataUri = pdf.output('datauristring');
+        const base64 = dataUri.slice(dataUri.indexOf('base64,') + 'base64,'.length);
+        submit(base64, filename);
+      } catch {
+        // PDF capture failed — still persist the raw submission
+        submit();
+      }
+    }, 800);
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [briefing, step, industry, revenueBand, painPoints, kpiRatings, maturityRatings, lang, buildPdf]);
 
   const togglePain = (p: string) => setPainPoints(prev => prev.includes(p) ? prev.filter(x => x !== p) : [...prev, p]);
 
@@ -1634,17 +1678,8 @@ function BriefingTab({ lang }: { lang: Lang }) {
       if (!data.success || !data.briefing) throw new Error(data.error || 'No briefing returned');
       setBriefing(data.briefing);
       setStep('result');
-      // Persist to database — fire-and-forget, never blocks the UI
-      fetch(`${API_BASE}/submissions`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          tool: 'command_centre',
-          inputs: { industry, revenueBand, painPoints, kpiRatings, maturityRatings },
-          outputs: data.briefing,
-        }),
-      }).catch(() => { /* non-blocking */ });
+      // Persistence + consultant email (with PDF attachment) happens in the
+      // effect below, once the hidden printable layout has rendered.
     } catch (err) {
       setError(String(err));
       setStep('step3');

@@ -4,6 +4,7 @@ import { submissionsTable } from '@workspace/db';
 import { desc, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { logger } from '../lib/logger';
+import { sendBriefingEmail } from './notify';
 
 const router = Router();
 
@@ -16,6 +17,10 @@ const SaveSchema = z.object({
   contactCompany:      z.string().optional(),
   inputs:              z.record(z.unknown()).optional(),
   outputs:             z.record(z.unknown()).optional(),
+  language:            z.enum(['en', 'ar']).optional(),
+  // Base64-encoded branded PDF briefing rendered client-side (≤ ~15 MB decoded)
+  pdfBase64:           z.string().max(20_000_000).optional(),
+  pdfFilename:         z.string().max(200).optional(),
 });
 
 /* ── POST /api/submissions ───────────────────────────────────────────────────
@@ -57,6 +62,35 @@ router.post('/', async (req, res) => {
 
     logger.info({ submissionId: row.id, tool: data.tool, contactEmail }, '[submissions] Saved');
     res.json({ ok: true, id: row.id });
+
+    // Email the branded PDF briefing to the consultant — fire-and-forget,
+    // never blocks or fails the API response.
+    if (data.tool === 'command_centre' && data.pdfBase64) {
+      const inputs  = (data.inputs  ?? {}) as Record<string, unknown>;
+      const outputs = (data.outputs ?? {}) as Record<string, unknown>;
+      try {
+        const pdfBuffer = Buffer.from(data.pdfBase64, 'base64');
+        const result = await sendBriefingEmail({
+          contactName,
+          contactEmail,
+          company: contactCompany,
+          industry:      typeof inputs.industry    === 'string' ? inputs.industry    : '—',
+          revenueBand:   typeof inputs.revenueBand === 'string' ? inputs.revenueBand : '—',
+          language:      data.language ?? 'en',
+          maturityScore: String(outputs.maturityScore ?? '—'),
+          maturityLevel: String(outputs.maturityLevel ?? '—'),
+          pdfBuffer,
+          pdfFilename: data.pdfFilename || `ISC-Executive-Briefing-${row.id}.pdf`,
+        });
+        if (!result.sent) {
+          logger.error({ submissionId: row.id, reason: result.reason }, '[submissions] Briefing PDF email NOT sent');
+        } else {
+          logger.info({ submissionId: row.id, pdfBytes: pdfBuffer.length }, '[submissions] Briefing PDF emailed');
+        }
+      } catch (emailErr) {
+        logger.error({ err: emailErr, submissionId: row.id }, '[submissions] Briefing PDF email failed');
+      }
+    }
   } catch (err) {
     logger.error({ err, tool: data.tool }, '[submissions] Save failed');
     res.status(500).json({ ok: false, error: 'Failed to save submission' });

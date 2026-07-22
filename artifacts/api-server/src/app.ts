@@ -80,7 +80,8 @@ app.use(
 // ── Rate limiting (global baseline; tighter auth limiter lives in routes) ────
 app.use(globalRateLimiter);
 
-app.use(express.json());
+// 25mb limit: Command Centre submissions include a base64-encoded PDF briefing
+app.use(express.json({ limit: '25mb' }));
 app.use(express.urlencoded({ extended: true }));
 
 // ── Server-side sessions (PostgreSQL-backed via connect-pg-simple) ────────────
