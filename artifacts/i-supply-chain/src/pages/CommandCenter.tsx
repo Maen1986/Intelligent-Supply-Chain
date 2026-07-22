@@ -1236,7 +1236,11 @@ interface BriefingDraft {
   kpiRatings?: Record<string, number>;
   maturityRatings?: Record<string, number>;
   step?: string;
+  savedAt?: number;
 }
+
+/** Drafts older than this are considered stale and discarded on load */
+const DRAFT_MAX_AGE_MS = 14 * 24 * 60 * 60 * 1000; // 14 days
 
 const RESUMABLE_STEPS: BriefingStep[] = ['step1', 'step2', 'step3'];
 
@@ -1245,7 +1249,14 @@ function loadBriefingDraft(): BriefingDraft {
     const raw = localStorage.getItem(BRIEFING_DRAFT_KEY);
     if (!raw) return {};
     const parsed = JSON.parse(raw);
-    return typeof parsed === 'object' && parsed !== null ? parsed as BriefingDraft : {};
+    if (typeof parsed !== 'object' || parsed === null) return {};
+    const draft = parsed as BriefingDraft;
+    // Discard drafts that are too old (or missing a valid savedAt timestamp)
+    if (typeof draft.savedAt !== 'number' || Date.now() - draft.savedAt > DRAFT_MAX_AGE_MS) {
+      try { localStorage.removeItem(BRIEFING_DRAFT_KEY); } catch { /* ignore */ }
+      return {};
+    }
+    return draft;
   } catch {
     return {};
   }
@@ -1287,7 +1298,7 @@ function BriefingTab({ lang }: { lang: Lang }) {
   useEffect(() => {
     try {
       const savedStep = RESUMABLE_STEPS.includes(step) ? step : 'step3';
-      localStorage.setItem(BRIEFING_DRAFT_KEY, JSON.stringify({ industry, subIndustry, revenueBand, painPoints, kpiRatings, maturityRatings, step: savedStep } satisfies BriefingDraft));
+      localStorage.setItem(BRIEFING_DRAFT_KEY, JSON.stringify({ industry, subIndustry, revenueBand, painPoints, kpiRatings, maturityRatings, step: savedStep, savedAt: Date.now() } satisfies BriefingDraft));
     } catch { /* storage unavailable — ignore */ }
   }, [industry, subIndustry, revenueBand, painPoints, kpiRatings, maturityRatings, step]);
 
