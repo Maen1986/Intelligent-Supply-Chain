@@ -74,6 +74,12 @@ describe('POST /api/leads/diagnostic', () => {
     const sixth = await request(app).post('/api/leads/diagnostic').send(validLead); // hit 6 → limited
     expect(sixth.status).toBe(429);
     expect(sixth.body.ok).toBe(false);
+    // Retry-After header tells the client when the window frees up (seconds).
+    const retryAfter = Number(sixth.headers['retry-after']);
+    expect(Number.isInteger(retryAfter)).toBe(true);
+    expect(retryAfter).toBeGreaterThan(0);
+    expect(retryAfter).toBeLessThanOrEqual(3600);
+    expect(sixth.body.retryAfterSeconds).toBe(retryAfter);
   });
 
   it('gives distinct client IPs independent rate-limit buckets (trust proxy)', async () => {

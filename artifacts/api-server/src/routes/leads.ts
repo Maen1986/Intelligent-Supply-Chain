@@ -35,8 +35,9 @@ const diagnosticLeadSchema = z.object({
 
 /* ── POST /api/leads/diagnostic ──
  * Server-side proxy for the n8n lead webhook. Validates and caps input,
- * rate-limits per IP (5/hour via express-rate-limit, standard RateLimit
- * headers), and attaches a server-held secret if configured. */
+ * rate-limits per IP (5/hour via express-rate-limit backed by Postgres,
+ * standard RateLimit headers plus Retry-After on 429), and attaches a
+ * server-held secret if configured. */
 router.post('/diagnostic', leadsRateLimiter, async (req, res) => {
   const parsed = diagnosticLeadSchema.safeParse(req.body);
   if (!parsed.success) {

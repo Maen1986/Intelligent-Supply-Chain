@@ -15,6 +15,7 @@ export function Diagnostic() {
   const [step, setStep] = useState(1);
   const [isGenerating, setIsGenerating] = useState(false);
   const [report, setReport] = useState<DiagnosticReport | null>(null);
+  const [rateLimitNotice, setRateLimitNotice] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     businessSize: '',
@@ -29,15 +30,26 @@ export function Diagnostic() {
   const handleNext = () => { if (step < totalSteps) setStep(step + 1); };
   const handleBack = () => { if (step > 1) setStep(step - 1); };
 
+  const retryMessage = (seconds: number) => {
+    const minutes = Math.max(1, Math.ceil(seconds / 60));
+    if (isAr) {
+      return minutes >= 60
+        ? 'لقد وصلت إلى الحد الأقصى للطلبات. يرجى المحاولة مرة أخرى بعد حوالي ساعة.'
+        : `لقد وصلت إلى الحد الأقصى للطلبات. يرجى المحاولة مرة أخرى بعد حوالي ${minutes} ${minutes === 1 ? 'دقيقة' : 'دقائق'}.`;
+    }
+    return minutes >= 60
+      ? "You've reached the request limit. Please try again in about an hour."
+      : `You've reached the request limit. Please try again in about ${minutes} minute${minutes === 1 ? '' : 's'}.`;
+  };
+
   const handleSubmit = async () => {
     setIsGenerating(true);
+    setRateLimitNotice(null);
     await new Promise(r => setTimeout(r, 1200));
     const generated = generateReport(formData as any, lang);
-    setReport(generated);
-    setIsGenerating(false);
 
     try {
-      fetch(`${API_BASE}/leads/diagnostic`, {
+      const res = await fetch(`${API_BASE}/leads/diagnostic`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -48,8 +60,21 @@ export function Diagnostic() {
           challengeText: formData.challenge,
           reportSummary: generated.executiveSummary,
         }),
-      }).catch(() => {});
-    } catch (e) { /* silent fail */ }
+      });
+      if (res.status === 429) {
+        let seconds = Number(res.headers.get('Retry-After'));
+        if (!Number.isFinite(seconds) || seconds <= 0) {
+          const body = await res.json().catch(() => null);
+          seconds = Number(body?.retryAfterSeconds) || 3600;
+        }
+        setRateLimitNotice(retryMessage(seconds));
+        setIsGenerating(false);
+        return;
+      }
+    } catch (e) { /* silent fail — lead capture is best-effort */ }
+
+    setReport(generated);
+    setIsGenerating(false);
   };
 
   if (report) {
@@ -227,6 +252,16 @@ export function Diagnostic() {
               </div>
             )}
           </div>
+
+          {rateLimitNotice && (
+            <div
+              className="mt-6 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900"
+              role="alert"
+              data-testid="notice-rate-limit"
+            >
+              {rateLimitNotice}
+            </div>
+          )}
 
           {/* Navigation */}
           <div className="mt-8 flex items-center justify-between gap-3 pt-5 sm:pt-6 border-t border-border">

@@ -23,7 +23,20 @@ export const leadsRateLimiter = rateLimit({
   limit: 5,
   standardHeaders: "draft-7",
   legacyHeaders: false,
-  message: { ok: false, error: "Too many submissions. Please try again later." },
+  // Blocked visitors get a Retry-After header and a machine-readable
+  // retryAfterSeconds so the frontend can show "try again in ~N minutes".
+  handler: (req, res) => {
+    const resetTime: Date | undefined = (req as any).rateLimit?.resetTime;
+    const retryAfterSeconds = resetTime
+      ? Math.max(1, Math.ceil((resetTime.getTime() - Date.now()) / 1000))
+      : 3600;
+    res.set("Retry-After", String(retryAfterSeconds));
+    res.status(429).json({
+      ok: false,
+      error: "Too many submissions. Please try again later.",
+      retryAfterSeconds,
+    });
+  },
   ...(isTest ? {} : { store: new PgRateLimitStore(pgPool, "leads") }),
 });
 
