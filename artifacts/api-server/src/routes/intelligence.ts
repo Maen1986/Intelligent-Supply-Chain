@@ -3,6 +3,7 @@ import { eq } from 'drizzle-orm';
 import { db, appCacheTable } from '@workspace/db';
 import { z } from 'zod';
 import { OPENAI_MODEL, friendlyAIError } from '../lib/aiConfig';
+import { requireAdmin } from '../middlewares/requireAdmin';
 
 const router = Router();
 
@@ -293,8 +294,9 @@ router.get('/intelligence', async (_req, res) => {
   }
 });
 
-/* POST /api/intelligence/refresh — force regeneration (bypass cache) */
-router.post('/intelligence/refresh', async (_req, res) => {
+/* POST /api/intelligence/refresh — force regeneration (bypass cache).
+   Each call costs AI credits, so only an authenticated admin may trigger it. */
+router.post('/intelligence/refresh', requireAdmin, async (_req, res) => {
   try {
     const content = await generateContent();
     await writeCache(content);

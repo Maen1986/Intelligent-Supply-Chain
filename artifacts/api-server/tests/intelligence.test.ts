@@ -259,10 +259,26 @@ describe('GET /api/intelligence', () => {
   });
 });
 
+const adminSession = { userId: 1, userRole: 'admin' };
+
 describe('POST /api/intelligence/refresh', () => {
+  it('rejects unauthenticated callers with 401', async () => {
+    const app = makeApp('/api', intelligenceRouter);
+    const res = await request(app).post('/api/intelligence/refresh');
+    expect(res.status).toBe(401);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('rejects authenticated non-admin callers with 403', async () => {
+    const app = makeApp('/api', intelligenceRouter, { userId: 2, userRole: 'user' });
+    const res = await request(app).post('/api/intelligence/refresh');
+    expect(res.status).toBe(403);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it('bypasses a fresh cache and regenerates', async () => {
     seedCache({ generatedAt: new Date().toISOString(), ...generated });
-    const app = makeApp('/api', intelligenceRouter);
+    const app = makeApp('/api', intelligenceRouter, adminSession);
     const res = await request(app).post('/api/intelligence/refresh');
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
@@ -277,7 +293,7 @@ describe('POST /api/intelligence/refresh', () => {
       json: async () => ({ choices: [{ message: { content: JSON.stringify({ news: [] }) } }] }),
     };
     fetchMock.mockResolvedValueOnce(malformed).mockResolvedValueOnce(malformed);
-    const app = makeApp('/api', intelligenceRouter);
+    const app = makeApp('/api', intelligenceRouter, adminSession);
     const res = await request(app).post('/api/intelligence/refresh');
     expect(res.status).toBe(502);
     expect(res.body.error).toBeTruthy();
@@ -290,7 +306,7 @@ describe('POST /api/intelligence/refresh', () => {
 
   it('returns a friendly error when regeneration fails', async () => {
     fetchMock.mockRejectedValueOnce(new Error('network down'));
-    const app = makeApp('/api', intelligenceRouter);
+    const app = makeApp('/api', intelligenceRouter, adminSession);
     const res = await request(app).post('/api/intelligence/refresh');
     expect(res.status).toBe(502);
     expect(res.body.error).toBeTruthy();
