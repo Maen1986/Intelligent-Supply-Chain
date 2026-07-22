@@ -256,6 +256,68 @@ router.post('/reset-password', loginRateLimiter, async (req, res) => {
   }
 });
 
+/* ── POST /api/auth/change-password ─────────────────────────────────────────
+   Lets a signed-in user rotate their password.  Requires the current password
+   so an attacker who finds an unlocked screen cannot silently take over.
+   After a successful change every OTHER session (other devices) is signed out;
+   the requesting session is re-saved so the user stays logged in.             */
+const ChangePasswordSchema = z.object({
+  currentPassword: z.string().min(1),
+  newPassword:     z.string().min(6),
+});
+
+router.post('/change-password', async (req, res) => {
+  const userId = req.session.userId;
+  if (!userId) {
+    res.status(401).json({ ok: false, error: 'Not authenticated' });
+    return;
+  }
+
+  const parsed = ChangePasswordSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ ok: false, error: 'New password must be at least 6 characters.' });
+    return;
+  }
+  const { currentPassword, newPassword } = parsed.data;
+
+  try {
+    const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
+    if (!user || !user.passwordHash) {
+      res.status(400).json({ ok: false, error: 'No password is set on this account.' });
+      return;
+    }
+
+    const valid = await bcrypt.compare(currentPassword, user.passwordHash);
+    if (!valid) {
+      res.status(400).json({ ok: false, error: 'Current password is incorrect.' });
+      return;
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+    await db
+      .update(usersTable)
+      .set({ passwordHash, resetTokenHash: null, resetTokenExpiresAt: null })
+      .where(eq(usersTable.id, user.id));
+
+    // Invalidate every OTHER session for this account so other devices are
+    // signed out, but keep the current session alive (user stays logged in).
+    const currentSid = (req.session as unknown as { id: string }).id;
+    try {
+      await db.execute(
+        sql`DELETE FROM "session" WHERE sess ->> 'userId' = ${String(user.id)} AND sid != ${currentSid}`
+      );
+    } catch (err) {
+      logger.error({ err, userId: user.id }, '[auth] Failed to invalidate other sessions after password change');
+    }
+
+    logger.info({ userId: user.id }, '[auth] Password changed; other sessions invalidated');
+    res.json({ ok: true, message: 'Password updated successfully.' });
+  } catch (err) {
+    logger.error({ err }, '[auth] Change-password error');
+    res.status(500).json({ ok: false, error: 'Could not update the password' });
+  }
+});
+
 /* ── GET /api/auth/me ────────────────────────────────────────────────────────
    Validates the session cookie server-side and returns the user profile.
    Returns 401 if no valid session exists — client-side localStorage cannot

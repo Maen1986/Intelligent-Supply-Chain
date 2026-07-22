@@ -17,6 +17,7 @@ interface AuthState {
   register:        (profile: Omit<UserProfile, 'id' | 'role'> & { password: string }) => Promise<void>;
   login:           (email: string, password: string) => Promise<void>;
   logout:          () => Promise<void>;
+  changePassword:  (currentPassword: string, newPassword: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthState>({
@@ -26,6 +27,7 @@ const AuthContext = createContext<AuthState>({
   register:        async () => {},
   login:           async () => {},
   logout:          async () => {},
+  changePassword:  async () => {},
 });
 
 import { API_BASE } from '@/lib/apiBase';
@@ -106,8 +108,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
   }, []);
 
+  // ── changePassword: verify current password, set new one server-side ─────
+  const changePassword = useCallback(async (currentPassword: string, newPassword: string) => {
+    const res = await fetch(`${API_BASE}/auth/change-password`, {
+      method:      'POST',
+      headers:     { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ currentPassword, newPassword }),
+    });
+    const data = await res.json().catch(() => null);
+    if (!res.ok || !data?.ok) throw new Error(data?.error ?? 'Could not update the password.');
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated: !!user, loading, register, login, logout }}>
+    <AuthContext.Provider value={{ user, isAuthenticated: !!user, loading, register, login, logout, changePassword }}>
       {children}
     </AuthContext.Provider>
   );

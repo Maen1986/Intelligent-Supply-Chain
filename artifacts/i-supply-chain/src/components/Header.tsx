@@ -3,7 +3,7 @@ import { Link, useLocation } from 'wouter';
 import { Logo } from './Logo';
 import { useLanguage } from '@/lib/LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
-import { Menu, X, ChevronDown, Phone, LogOut, User } from 'lucide-react';
+import { Menu, X, ChevronDown, Phone, LogOut, User, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const industryList = [
@@ -109,6 +109,9 @@ export function Header() {
             <span className="flex items-center gap-1.5 text-white/80">
               <User className="w-3 h-3" /> {user.fullName.split(' ')[0]}
             </span>
+            <Link href="/account" className="flex items-center gap-1 hover:text-[#C9A84C] transition-colors">
+              <Settings className="w-3 h-3" /> {lang === 'ar' ? 'إعدادات الحساب' : 'Account'}
+            </Link>
             <button onClick={logout} className="flex items-center gap-1 hover:text-[#C9A84C] transition-colors">
               <LogOut className="w-3 h-3" /> {lang === 'ar' ? 'تسجيل الخروج' : 'Sign out'}
             </button>
@@ -270,9 +273,15 @@ export function Header() {
 
             <div className="mt-4 pt-4 border-t border-border space-y-3">
               {user ? (
-                <div className="flex items-center justify-between px-4 py-2 bg-primary/5 rounded-xl">
-                  <span className="text-sm font-semibold text-primary">{user.fullName}</span>
-                  <button onClick={() => { logout(); setMobileMenuOpen(false); }} className="text-sm text-red-500 font-semibold">{lang === 'ar' ? 'تسجيل الخروج' : 'Sign Out'}</button>
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center justify-between px-4 py-2 bg-primary/5 rounded-xl">
+                    <span className="text-sm font-semibold text-primary">{user.fullName}</span>
+                    <button onClick={() => { logout(); setMobileMenuOpen(false); }} className="text-sm text-red-500 font-semibold">{lang === 'ar' ? 'تسجيل الخروج' : 'Sign Out'}</button>
+                  </div>
+                  <Link href="/account" onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-700 hover:text-primary hover:bg-primary/5 rounded-xl transition-colors">
+                    <Settings className="w-4 h-4" /> {lang === 'ar' ? 'إعدادات الحساب' : 'Account Settings'}
+                  </Link>
                 </div>
               ) : (
                 <Link href="/login" onClick={() => setMobileMenuOpen(false)}>
