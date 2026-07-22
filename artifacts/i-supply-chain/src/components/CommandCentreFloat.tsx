@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence  } from 'framer-motion';
 import { Link, useLocation } from 'wouter';
-import { X, Brain, Zap, ArrowRight, Clock } from 'lucide-react';
+import { X, Brain, Zap, ArrowRight, Clock , ArrowLeft } from 'lucide-react';
 import { useLanguage } from '@/lib/LanguageContext';
 
 const SESSION_KEY = 'isc_float_dismissed';
@@ -93,7 +93,7 @@ export function CommandCentreFloat() {
                 onClick={() => { sessionStorage.setItem(SESSION_KEY, '1'); setVisible(false); }}
                 className="flex items-center justify-center gap-2 w-full bg-[#C9A84C] hover:bg-[#b8973e] text-white font-bold text-sm py-2.5 rounded-xl transition-colors cursor-pointer shadow-lg"
               >
-                {ar ? 'استكشف مركز القيادة' : 'Explore Command Centre'} <ArrowRight className="w-4 h-4" />
+                {ar ? 'استكشف مركز القيادة' : 'Explore Command Centre'} {ar ? <ArrowLeft className="w-4 h-4" /> : <ArrowRight className="w-4 h-4" />}
               </motion.span>
             </Link>
           </div>

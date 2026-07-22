@@ -7,6 +7,7 @@ import {
   ChevronRight, Zap, TrendingUp, Shield, Leaf, Radio,
   BookOpen, Clock, ArrowRight, BarChart3, Globe, Lock,
   RefreshCw, CheckCircle,
+  ArrowLeft, ChevronLeft,
 } from 'lucide-react';
 import { useLanguage } from '@/lib/LanguageContext';
 
@@ -326,7 +327,7 @@ export function Intelligence() {
                           <div className="mt-auto pt-4 border-t border-border">
                             <Link href="/consultant">
                               <span className="text-primary text-sm font-semibold flex items-center gap-1 hover:gap-2 transition-all cursor-pointer">
-                                {isAr ? 'ناقش مع استشاري' : 'Discuss with a consultant'} <ArrowRight className="w-4 h-4" />
+                                {isAr ? 'ناقش مع استشاري' : 'Discuss with a consultant'} {isAr ? <ArrowLeft className="w-4 h-4" /> : <ArrowRight className="w-4 h-4" />}
                               </span>
                             </Link>
                           </div>
@@ -386,7 +387,7 @@ export function Intelligence() {
                             <span className="text-xs font-semibold text-accent">{isAr ? (tool.ratingAr ?? tool.rating) : tool.rating}</span>
                             <Link href="/consultant">
                               <span className="text-primary text-xs font-semibold flex items-center gap-1 hover:gap-2 transition-all cursor-pointer">
-                                {isAr ? 'اسأل عن التطبيق' : 'Ask about implementation'} <ChevronRight className="w-3.5 h-3.5" />
+                                {isAr ? 'اسأل عن التطبيق' : 'Ask about implementation'} {isAr ? <ChevronLeft className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
                               </span>
                             </Link>
                           </div>
@@ -458,7 +459,7 @@ export function Intelligence() {
             <Reveal className="text-center pt-4">
               <Link href="/diagnostic">
                 <Button size="lg" className="bg-primary hover:bg-primary/90 text-white font-bold px-8">
-                  {isAr ? 'قيّم نضج عملياتك بالذكاء الاصطناعي' : 'Assess Your Process Maturity with AI'} <ChevronRight className="w-4 h-4 ml-1" />
+                  {isAr ? 'قيّم نضج عملياتك بالذكاء الاصطناعي' : 'Assess Your Process Maturity with AI'} {isAr ? <ChevronLeft className="w-4 h-4 mr-1" /> : <ChevronRight className="w-4 h-4 ml-1" />}
                 </Button>
               </Link>
               <p className="text-muted-foreground text-sm mt-3">{isAr ? 'تشخيص مجاني في 5 دقائق — حدّد أي فجوات العمليات تكلّفك الأكثر.' : 'Free 5-minute diagnostic — identify which process gaps cost you the most.'}</p>

@@ -1,9 +1,9 @@
 import React from 'react';
-import { motion } from 'framer-motion';
+import { motion  } from 'framer-motion';
 import { Link } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/lib/LanguageContext';
-import { Award, Globe, Users, TrendingUp, CheckCircle, ChevronRight, Linkedin, Mail, Phone, BadgeCheck } from 'lucide-react';
+import { Award, Globe, Users, TrendingUp, CheckCircle, ChevronRight, Linkedin, Mail, Phone, BadgeCheck , ChevronLeft } from 'lucide-react';
 
 function RevealSection({ children, className = '', delay = 0 }: { children: React.ReactNode; className?: string; delay?: number }) {
   return (
@@ -313,7 +313,7 @@ export function About() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/consultant">
               <Button size="lg" className="bg-primary hover:bg-primary/90 text-white font-bold px-8">
-                {ar ? 'احجز استشارة' : 'Book a Consultation'} <ChevronRight className="w-4 h-4 ml-1" />
+                {ar ? 'احجز استشارة' : 'Book a Consultation'} {ar ? <ChevronLeft className="w-4 h-4 mr-1" /> : <ChevronRight className="w-4 h-4 ml-1" />}
               </Button>
             </Link>
             <Link href="/diagnostic">

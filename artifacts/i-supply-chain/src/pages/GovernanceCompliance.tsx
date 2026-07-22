@@ -315,7 +315,7 @@ export function GovernanceCompliance() {
                             <p className="font-bold text-lg">{isAr ? p.titleAr : p.title}</p>
                             <p className={`text-xs ${p.accent} font-medium mt-0.5`}>{isAr ? 'المالك: ' : 'Owner: '}{isAr ? p.ownerAr : p.owner}</p>
                           </div>
-                          <ChevronRight className={`w-5 h-5 opacity-60 transition-transform ${openPolicy === i ? 'rotate-90' : ''}`} />
+                          <ChevronRight className={`w-5 h-5 opacity-60 transition-transform ${openPolicy === i ? 'rotate-90' : 'rtl:rotate-180'}`} />
                         </div>
                         {openPolicy === i && (
                           <div className="mt-4 grid sm:grid-cols-2 gap-4">

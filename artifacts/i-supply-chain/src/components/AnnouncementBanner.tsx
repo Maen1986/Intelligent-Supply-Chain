@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence  } from 'framer-motion';
 import { Link } from 'wouter';
-import { X, Zap, ArrowRight } from 'lucide-react';
+import { X, Zap, ArrowRight , ArrowLeft } from 'lucide-react';
 import { useLanguage } from '@/lib/LanguageContext';
 
 const BANNER_KEY = 'isc_banner_dismissed_v2';
@@ -60,7 +60,7 @@ export function AnnouncementBanner() {
                   whileHover={{ scale: 1.04 }}
                   className="hidden sm:flex items-center gap-1.5 bg-[#C9A84C] hover:bg-[#b8973e] text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-colors cursor-pointer shadow"
                 >
-                  {ar ? 'ابدأ الآن' : 'Get Started'} <ArrowRight className="w-3.5 h-3.5" />
+                  {ar ? 'ابدأ الآن' : 'Get Started'} {ar ? <ArrowLeft className="w-3.5 h-3.5" /> : <ArrowRight className="w-3.5 h-3.5" />}
                 </motion.span>
               </Link>
               <button

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion  } from 'framer-motion';
 import { Link } from 'wouter';
 import { Button } from '@/components/ui/button';
 import {
@@ -7,6 +7,7 @@ import {
   CheckCircle, ChevronRight, Globe, Cpu, DollarSign,
   Scale, Users, Leaf, Globe2, Lock, TrendingDown,
   ArrowRight, Clock, Filter, Eye, Layers,
+  ChevronLeft,
 } from 'lucide-react';
 import { useLanguage } from '@/lib/LanguageContext';
 
@@ -184,7 +185,7 @@ export function RiskManagement() {
                         <rt.icon className={`w-5 h-5 ${rt.color.split(' ')[1]}`} />
                       </div>
                       <p className="font-bold text-primary flex-1">{isAr ? rt.nameAr : rt.name}</p>
-                      <ChevronRight className={`w-5 h-5 text-muted-foreground transition-transform ${openRiskType === i ? 'rotate-90' : ''}`} />
+                      <ChevronRight className={`w-5 h-5 text-muted-foreground transition-transform ${openRiskType === i ? 'rotate-90' : 'rtl:rotate-180'}`} />
                     </button>
                     {openRiskType === i && (
                       <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="border-t border-border">
@@ -419,7 +420,7 @@ export function RiskManagement() {
                   <div key={r.rule} className="flex items-start gap-2"><Shield className="w-4 h-4 text-[#C9A84C] shrink-0 mt-0.5" /><p className="text-sm text-white/80">{isAr ? r.ruleAr : r.rule}</p></div>
                 ))}
               </div>
-              <Link href="/governance-compliance"><span className="text-[#C9A84C] text-sm font-semibold hover:underline cursor-pointer flex items-center gap-1">{isAr ? 'إطار الحوكمة والامتثال الكامل' : 'Full Governance & Compliance Framework'} <ChevronRight className="w-4 h-4" /></span></Link>
+              <Link href="/governance-compliance"><span className="text-[#C9A84C] text-sm font-semibold hover:underline cursor-pointer flex items-center gap-1">{isAr ? 'إطار الحوكمة والامتثال الكامل' : 'Full Governance & Compliance Framework'} {isAr ? <ChevronLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}</span></Link>
             </Reveal>
             <Reveal className="text-center py-4">
               <Link href="/consultant"><Button size="lg" className="bg-primary hover:bg-primary/90 text-white font-bold px-10">{isAr ? 'اطلب تقييم المخاطر' : 'Request Risk Assessment'}</Button></Link>

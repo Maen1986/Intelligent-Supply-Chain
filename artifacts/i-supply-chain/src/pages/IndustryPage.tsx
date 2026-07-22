@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion  } from 'framer-motion';
 import { Link, useParams } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/lib/LanguageContext';
@@ -7,6 +7,7 @@ import {
   Factory, Zap, Building2, Pill, ShoppingCart, Truck, Anchor, HardHat, Heart, Cpu,
   AlertTriangle, CheckCircle, ChevronRight, ArrowRight, BookOpen,
   ArrowUpCircle, CircleDot, ArrowDownCircle,
+  ChevronLeft,
 } from 'lucide-react';
 
 interface Stream {
@@ -1336,7 +1337,7 @@ function ProcessFlow({ steps }: { steps: string[] }) {
           <span className="px-3 py-1.5 bg-white border border-primary/20 rounded-lg text-xs font-semibold text-primary shadow-sm whitespace-nowrap">
             {step}
           </span>
-          {i < steps.length - 1 && <ArrowRight className="w-3.5 h-3.5 text-accent shrink-0" />}
+          {i < steps.length - 1 && <ArrowRight className="w-3.5 h-3.5 text-accent shrink-0 rtl:rotate-180" />}
         </React.Fragment>
       ))}
     </div>
@@ -1385,7 +1386,7 @@ function StreamCard({ stream, index }: { stream: Stream; index: number }) {
             <h3 className="text-base font-extrabold text-primary leading-tight">{ar ? stream.nameAr : stream.name}</h3>
           </div>
         </div>
-        <ChevronRight className={`w-5 h-5 text-muted-foreground transition-transform duration-200 shrink-0 ${open ? 'rotate-90' : ''}`} />
+        <ChevronRight className={`w-5 h-5 text-muted-foreground transition-transform duration-200 shrink-0 ${open ? 'rotate-90' : 'rtl:rotate-180'}`} />
       </button>
 
       {open && (
@@ -1580,7 +1581,7 @@ export function IndustryPage() {
           <div className="mt-8 text-center">
             <Link href="/case-studies">
               <Button variant="outline" className="border-primary text-primary hover:bg-primary hover:text-white font-semibold">
-                {ar ? 'عرض جميع دراسات الحالة' : 'View All Case Studies'} <ChevronRight className="w-4 h-4 ml-1" />
+                {ar ? 'عرض جميع دراسات الحالة' : 'View All Case Studies'} {ar ? <ChevronLeft className="w-4 h-4 mr-1" /> : <ChevronRight className="w-4 h-4 ml-1" />}
               </Button>
             </Link>
           </div>
@@ -1601,7 +1602,7 @@ export function IndustryPage() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/consultant">
               <Button size="lg" className="bg-[#C9A84C] hover:bg-[#b8963e] text-white font-bold px-8">
-                {ar ? 'احجز استشارة' : 'Book a Consultation'} <ChevronRight className="w-4 h-4 ml-1" />
+                {ar ? 'احجز استشارة' : 'Book a Consultation'} {ar ? <ChevronLeft className="w-4 h-4 mr-1" /> : <ChevronRight className="w-4 h-4 ml-1" />}
               </Button>
             </Link>
             <Link href="/maturity">

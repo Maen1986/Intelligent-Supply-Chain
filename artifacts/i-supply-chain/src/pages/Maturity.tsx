@@ -1150,7 +1150,7 @@ export function Maturity() {
         <div className="text-center">
           <Button size="lg" onClick={() => { setPhase('questions'); scrollUp(); }}
             className="bg-primary hover:bg-primary/90 text-white font-bold px-10 min-h-[52px] text-base shadow-lg">
-            {ar ? 'ابدأ التقييم' : 'Start Assessment'} <ChevronRight className="w-5 h-5 ml-1" />
+            {ar ? 'ابدأ التقييم' : 'Start Assessment'} {ar ? <ChevronLeft className="w-5 h-5 mr-1" /> : <ChevronRight className="w-5 h-5 ml-1" />}
           </Button>
           <p className="text-muted-foreground text-sm mt-3">{ar ? 'لا يتطلب حسابًا · تُعرض النتائج فورًا · سرّي' : 'No account required · Results displayed instantly · Confidential'}</p>
         </div>
@@ -1288,7 +1288,7 @@ export function Maturity() {
               {/* Navigation */}
               <div className="flex items-center justify-between mt-6 gap-4">
                 <Button variant="outline" onClick={handleBack} className="gap-2">
-                  <ChevronLeft className="w-4 h-4" />
+                  {ar ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
                   {segIdx === 0 ? (ar ? 'المقدمة' : 'Intro') : (ar ? 'السابق' : 'Previous')}
                 </Button>
                 <div className="text-center">
@@ -1300,7 +1300,7 @@ export function Maturity() {
                   className={`gap-2 ${segIdx === SEGMENTS.length - 1 ? 'bg-accent hover:bg-accent/90' : 'bg-primary hover:bg-primary/90'} text-white font-bold`}>
                   {segIdx === SEGMENTS.length - 1
                     ? <><Award className="w-4 h-4" /> {ar ? 'عرض النتائج' : 'View Results'}</>
-                    : <>{ar ? 'المجال التالي' : 'Next Segment'} <ChevronRight className="w-4 h-4" /></>}
+                    : <>{ar ? 'المجال التالي' : 'Next Segment'} {ar ? <ChevronLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}</>}
                 </Button>
               </div>
             </motion.div>
@@ -1535,7 +1535,7 @@ export function Maturity() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/consultant">
               <Button size="lg" className="bg-accent hover:bg-accent/90 text-white font-bold px-8">
-                {ar ? "ناقش النتائج مع مَعِين" : "Discuss Results with Ma'in"} <ChevronRight className="w-4 h-4 ml-1" />
+                {ar ? "ناقش النتائج مع مَعِين" : "Discuss Results with Ma'in"} {ar ? <ChevronLeft className="w-4 h-4 mr-1" /> : <ChevronRight className="w-4 h-4 ml-1" />}
               </Button>
             </Link>
             <Button size="lg" variant="outline"

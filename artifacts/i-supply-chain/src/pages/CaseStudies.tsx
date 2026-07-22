@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion  } from 'framer-motion';
 import { Link } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/lib/LanguageContext';
-import { ChevronRight, TrendingDown, TrendingUp, Clock, Shield, Leaf, Cpu } from 'lucide-react';
+import { ChevronRight, TrendingDown, TrendingUp, Clock, Shield, Leaf, Cpu , ChevronLeft } from 'lucide-react';
 
 function RevealSection({ children, className = '', delay = 0 }: { children: React.ReactNode; className?: string; delay?: number }) {
   return (
@@ -260,7 +260,7 @@ export function CaseStudies() {
                     <div className="mt-auto pt-4 border-t border-border flex flex-col sm:flex-row gap-3">
                       <Link href="/consultant">
                         <Button className="bg-primary hover:bg-primary/90 text-white font-semibold">
-                          {ar ? 'ناقش تحديًا مماثلاً' : 'Discuss a Similar Challenge'} <ChevronRight className="w-4 h-4 ml-1" />
+                          {ar ? 'ناقش تحديًا مماثلاً' : 'Discuss a Similar Challenge'} {ar ? <ChevronLeft className="w-4 h-4 mr-1" /> : <ChevronRight className="w-4 h-4 ml-1" />}
                         </Button>
                       </Link>
                       <Link href="/diagnostic">

@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion  } from 'framer-motion';
 import { Link, useLocation } from 'wouter';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Eye, EyeOff, User, Lock, Mail, Phone, Briefcase, Building2, ChevronRight, CheckCircle2, Shield } from 'lucide-react';
+import { Eye, EyeOff, User, Lock, Mail, Phone, Briefcase, Building2, ChevronRight, CheckCircle2, Shield , ChevronLeft } from 'lucide-react';
 
 const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, '').replace('/i-supply-chain', '') + '/api-server/api';
 
@@ -159,7 +159,7 @@ export function Login() {
                   {loading
                     ? (ar ? 'جارٍ إنشاء الحساب…' : 'Creating Account…')
                     : (ar ? 'إنشاء الحساب والمتابعة' : 'Create Account & Continue')}
-                  {!loading && <ChevronRight className="w-4 h-4 ml-1" />}
+                  {!loading && (ar ? <ChevronLeft className="w-4 h-4 mr-1" /> : <ChevronRight className="w-4 h-4 ml-1" />)}
                 </Button>
 
                 <p className="text-xs text-muted-foreground text-center leading-relaxed">
@@ -179,7 +179,7 @@ export function Login() {
                 </Field>
                 <Button type="submit"
                   className="w-full bg-[#082C6B] hover:bg-[#0B3D91] text-white font-bold h-12 text-[15px] rounded-xl mt-2">
-                  {ar ? 'تسجيل الدخول' : 'Sign In'} <ChevronRight className="w-4 h-4 ml-1" />
+                  {ar ? 'تسجيل الدخول' : 'Sign In'} {ar ? <ChevronLeft className="w-4 h-4 mr-1" /> : <ChevronRight className="w-4 h-4 ml-1" />}
                 </Button>
                 <p className="text-center text-sm text-muted-foreground">
                   {ar ? 'ليس لديك حساب بعد؟' : 'No account yet?'}{' '}

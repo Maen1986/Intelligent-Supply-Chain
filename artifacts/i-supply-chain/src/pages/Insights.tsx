@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion  } from 'framer-motion';
 import { Link } from 'wouter';
 import { Button } from '@/components/ui/button';
-import { Clock, ChevronRight, BookOpen } from 'lucide-react';
+import { Clock, ChevronRight, BookOpen , ChevronLeft } from 'lucide-react';
 import { useLanguage } from '@/lib/LanguageContext';
 
 function RevealSection({ children, className = '', delay = 0 }: { children: React.ReactNode; className?: string; delay?: number }) {
@@ -223,7 +223,7 @@ function ArticleModal({ article, onClose }: { article: typeof articles[0]; onClo
           <div className="pt-6 border-t border-border flex flex-col sm:flex-row gap-3">
             <Link href="/consultant" onClick={onClose}>
               <Button className="bg-primary hover:bg-primary/90 text-white font-semibold">
-                {isAr ? 'ناقش مع استشاري' : 'Discuss with a Consultant'} <ChevronRight className="w-4 h-4 ml-1" />
+                {isAr ? 'ناقش مع استشاري' : 'Discuss with a Consultant'} {isAr ? <ChevronLeft className="w-4 h-4 mr-1" /> : <ChevronRight className="w-4 h-4 ml-1" />}
               </Button>
             </Link>
             <Link href="/diagnostic" onClick={onClose}>
@@ -295,7 +295,7 @@ export function Insights() {
                 <h3 className="text-xl font-bold text-primary mb-4">{isAr ? featured.titleAr : featured.title}</h3>
                 <p className="text-muted-foreground leading-relaxed mb-6">{isAr ? featured.excerptAr : featured.excerpt}</p>
                 <Button className="bg-primary hover:bg-primary/90 text-white self-start font-semibold">
-                  {isAr ? 'اقرأ المقال كاملاً' : 'Read Full Article'} <ChevronRight className="w-4 h-4 ml-1" />
+                  {isAr ? 'اقرأ المقال كاملاً' : 'Read Full Article'} {isAr ? <ChevronLeft className="w-4 h-4 mr-1" /> : <ChevronRight className="w-4 h-4 ml-1" />}
                 </Button>
               </div>
             </div>
@@ -347,7 +347,7 @@ export function Insights() {
                       <p className="text-xs text-muted-foreground">{isAr ? article.dateAr : article.date}</p>
                     </div>
                     <span className="text-primary text-sm font-semibold flex items-center gap-1 group-hover:gap-2 transition-all">
-                      {isAr ? 'اقرأ' : 'Read'} <ChevronRight className="w-4 h-4" />
+                      {isAr ? 'اقرأ' : 'Read'} {isAr ? <ChevronLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
                     </span>
                   </div>
                 </div>

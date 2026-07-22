@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion  } from 'framer-motion';
 import { Link, useParams } from 'wouter';
 import { Button } from '@/components/ui/button';
 import {
@@ -8,6 +8,7 @@ import {
   ChevronRight, ArrowLeft, AlertTriangle, Globe, Cpu,
   FileText, ClipboardList, Star, Clock, DollarSign,
   Factory, Activity, Building2, Layers, RefreshCw,
+  ArrowRight,
 } from 'lucide-react';
 import { useLanguage } from '@/lib/LanguageContext';
 
@@ -443,7 +444,7 @@ export function SolutionDetail() {
         <div className="relative z-10 container mx-auto max-w-5xl">
           <Link href="/#solutions">
             <span className="flex items-center gap-1 text-white/60 text-sm mb-5 hover:text-white transition-colors cursor-pointer w-fit">
-              <ArrowLeft className="w-4 h-4" /> {isAr ? 'جميع الحلول' : 'All Solutions'}
+              {isAr ? <ArrowRight className="w-4 h-4" /> : <ArrowLeft className="w-4 h-4" />} {isAr ? 'جميع الحلول' : 'All Solutions'}
             </span>
           </Link>
           <div className="flex items-start gap-5">
@@ -679,7 +680,7 @@ export function SolutionDetail() {
                       <p className="font-bold text-primary">{isAr ? (c.challengeAr ?? c.challenge) : c.challenge}</p>
                       <p className="text-xs text-red-600 font-medium mt-1">{isAr ? 'الأثر: ' : 'Impact: '}{isAr ? (c.impactAr ?? c.impact) : c.impact}</p>
                     </div>
-                    <ChevronRight className={`w-5 h-5 text-muted-foreground shrink-0 transition-transform ${openChallenge === i ? 'rotate-90' : ''}`} />
+                    <ChevronRight className={`w-5 h-5 text-muted-foreground shrink-0 transition-transform ${openChallenge === i ? 'rotate-90' : 'rtl:rotate-180'}`} />
                   </button>
                   {openChallenge === i && (
                     <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="border-t border-border">
