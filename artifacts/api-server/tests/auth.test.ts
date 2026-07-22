@@ -10,6 +10,7 @@ vi.mock('../src/routes/notify', () => ({
 const sendPasswordResetEmail = vi.fn(async () => ({ sent: true }));
 vi.mock('../src/routes/notify', () => ({ sendPasswordResetEmail: (...args: unknown[]) => sendPasswordResetEmail(...(args as [])) }));
 
+import express from 'express';
 import bcrypt from 'bcryptjs';
 
 import authRouter from '../src/routes/auth';
@@ -328,6 +329,118 @@ describe('POST /api/auth/login rate limiting', () => {
         .send({ email: 'goodusers@example.com', password: 'secret6' });
       expect(res.status).toBe(200);
     }
+  });
+});
+
+describe('POST /api/auth/update-profile', () => {
+  /** Like makeApp, but keeps a live reference to the session object so tests
+      can assert that the route refreshed session fields. */
+  function makeAppWithSession(sessionSeed: Record<string, unknown>) {
+    const app = express();
+    app.set('trust proxy', 1);
+    app.use(express.json());
+    const sessionObj: Record<string, any> = {
+      ...sessionSeed,
+      save: (cb: (err?: unknown) => void) => cb(),
+      destroy: (cb: (err?: unknown) => void) => cb(),
+    };
+    app.use((req: any, _res: any, next: any) => { req.session = sessionObj; next(); });
+    app.use('/api/auth', authRouter);
+    return { app, sessionObj };
+  }
+
+  it('returns 401 for unauthenticated requests', async () => {
+    const app = makeApp('/api/auth', authRouter); // no session
+    const res = await request(app).post('/api/auth/update-profile')
+      .send({ fullName: 'New Name' });
+    expect(res.status).toBe(401);
+    expect(res.body.ok).toBe(false);
+  });
+
+  it('rejects invalid data (name shorter than 2 chars) with 400 and no DB write', async () => {
+    const { db } = await import('@workspace/db');
+    (db.update as ReturnType<typeof vi.fn>).mockClear();
+    const app = makeApp('/api/auth', authRouter, { userId: 1 });
+    const res = await request(app).post('/api/auth/update-profile')
+      .send({ fullName: 'J' });
+    expect(res.status).toBe(400);
+    expect(res.body.ok).toBe(false);
+    expect(db.update).not.toHaveBeenCalled();
+  });
+
+  it('persists valid data and refreshes the session fields', async () => {
+    const updated = {
+      ...user,
+      fullName: 'Jane Renamed',
+      mobile: '+966511111111',
+      designation: 'VP Supply Chain',
+      company: 'NewCo',
+    };
+    dbState.updateRows = [updated];
+
+    const { db } = await import('@workspace/db');
+    (db.update as ReturnType<typeof vi.fn>).mockClear();
+
+    const { app, sessionObj } = makeAppWithSession({ userId: 1, userFullName: user.fullName });
+    const res = await request(app).post('/api/auth/update-profile')
+      .send({
+        fullName: 'Jane Renamed',
+        mobile: '+966511111111',
+        designation: 'VP Supply Chain',
+        company: 'NewCo',
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body.ok).toBe(true);
+    // Response reflects the persisted row (this is what the Header consumes)
+    expect(res.body.user).toMatchObject({
+      id: 1,
+      fullName: 'Jane Renamed',
+      mobile: '+966511111111',
+      designation: 'VP Supply Chain',
+      company: 'NewCo',
+    });
+    expect(res.body.user.passwordHash).toBeUndefined();
+    // DB write happened
+    expect(db.update).toHaveBeenCalled();
+    // Session was refreshed so /me and subsequent requests see the new values
+    expect(sessionObj.userFullName).toBe('Jane Renamed');
+    expect(sessionObj.userMobile).toBe('+966511111111');
+    expect(sessionObj.userDesignation).toBe('VP Supply Chain');
+    expect(sessionObj.userCompany).toBe('NewCo');
+  });
+
+  it('nulls out optional fields when they are omitted or null', async () => {
+    const updated = { ...user, fullName: 'Jane Minimal', mobile: null, designation: null, company: null };
+    dbState.updateRows = [updated];
+
+    const { app, sessionObj } = makeAppWithSession({ userId: 1, userMobile: user.mobile });
+    const res = await request(app).post('/api/auth/update-profile')
+      .send({ fullName: 'Jane Minimal', mobile: null });
+
+    expect(res.status).toBe(200);
+    expect(res.body.user).toMatchObject({ fullName: 'Jane Minimal', mobile: null, designation: null, company: null });
+    expect(sessionObj.userMobile).toBeNull();
+    expect(sessionObj.userDesignation).toBeNull();
+    expect(sessionObj.userCompany).toBeNull();
+  });
+
+  it('returns 404 when the session user no longer exists', async () => {
+    dbState.updateRows = []; // update matched no row
+    const app = makeApp('/api/auth', authRouter, { userId: 999 });
+    const res = await request(app).post('/api/auth/update-profile')
+      .send({ fullName: 'Ghost User' });
+    expect(res.status).toBe(404);
+    expect(res.body.ok).toBe(false);
+  });
+
+  it('returns 500 when the database fails', async () => {
+    dbState.failNext = true;
+    const app = makeApp('/api/auth', authRouter, { userId: 1 });
+    const res = await request(app).post('/api/auth/update-profile')
+      .send({ fullName: 'Jane Renamed' });
+    expect(res.status).toBe(500);
+    expect(res.body.ok).toBe(false);
   });
 });
 
