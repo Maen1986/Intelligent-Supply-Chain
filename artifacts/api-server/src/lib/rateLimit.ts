@@ -44,18 +44,20 @@ export const leadsRateLimiter = rateLimit({
   ...(isTest ? {} : { store: new PgRateLimitStore(pgPool, "leads") }),
 });
 
-/* Read-only view of a visitor's leads rate-limit state — does NOT consume
- * quota. Lets the frontend re-validate its countdown against the server
- * (device clocks drift, laptops sleep). Fails open (not limited) if the
- * store is unreachable, matching the limiter's own fail-open posture. */
-export async function getLeadsRateLimitStatus(
+/* Read-only view of a visitor's rate-limit state for a given limiter — does
+ * NOT consume quota. Lets the frontend re-validate its countdown against the
+ * server (device clocks drift, laptops sleep). Fails open (not limited) if
+ * the store is unreachable, matching the limiters' own fail-open posture. */
+async function getRateLimitStatus(
+  limiter: ReturnType<typeof rateLimit>,
+  limit: number,
   req: Request,
 ): Promise<{ limited: boolean; retryAfterSeconds: number }> {
   try {
     // Same key derivation as express-rate-limit's default keyGenerator.
     const key = ipKeyGenerator(req.ip ?? "");
-    const info = await leadsRateLimiter.getKey(key);
-    if (info?.resetTime && info.totalHits >= LEADS_LIMIT) {
+    const info = await limiter.getKey(key);
+    if (info?.resetTime && info.totalHits >= limit) {
       const retryAfterSeconds = Math.ceil(
         (info.resetTime.getTime() - Date.now()) / 1000,
       );
@@ -67,11 +69,16 @@ export async function getLeadsRateLimitStatus(
   return { limited: false, retryAfterSeconds: 0 };
 }
 
+export const getLeadsRateLimitStatus = (req: Request) =>
+  getRateLimitStatus(leadsRateLimiter, LEADS_LIMIT, req);
+
 // Feedback submissions: 5 per IP per hour (same posture as leads), backed by
 // PostgreSQL so the limit survives restarts. Fails open if the DB is down.
+const FEEDBACK_LIMIT = 5;
+
 export const feedbackRateLimiter = rateLimit({
   windowMs: 60 * 60_000,
-  limit: 5,
+  limit: FEEDBACK_LIMIT,
   standardHeaders: "draft-7",
   legacyHeaders: false,
   handler: (req, res) => {
@@ -88,6 +95,9 @@ export const feedbackRateLimiter = rateLimit({
   },
   ...(isTest ? {} : { store: new PgRateLimitStore(pgPool, "feedback") }),
 });
+
+export const getFeedbackRateLimitStatus = (req: Request) =>
+  getRateLimitStatus(feedbackRateLimiter, FEEDBACK_LIMIT, req);
 
 // Tighter limit on authentication endpoints to slow brute-force attempts.
 export const authRateLimiter = rateLimit({

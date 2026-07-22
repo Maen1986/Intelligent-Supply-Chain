@@ -3,7 +3,7 @@ import { db, feedbackTable } from '@workspace/db';
 import { desc, eq, gte, lte, and, type SQL } from 'drizzle-orm';
 import { FeedbackCreateSchema } from '@workspace/api-zod';
 import { logger } from '../lib/logger';
-import { feedbackRateLimiter } from '../lib/rateLimit';
+import { feedbackRateLimiter, getFeedbackRateLimitStatus } from '../lib/rateLimit';
 
 const router = Router();
 
@@ -50,6 +50,15 @@ router.post('/', feedbackRateLimiter, async (req, res) => {
     logger.error({ err, tool: data.tool }, '[feedback] Save failed');
     res.status(500).json({ ok: false, error: 'Failed to save feedback' });
   }
+});
+
+/* ── GET /api/feedback/rate-limit ──
+ * Read-only rate-limit status for the caller's IP; does NOT consume quota.
+ * The frontend uses it to keep its retry countdown honest even when the
+ * visitor's device clock drifts (e.g. after laptop sleep/wake). */
+router.get('/rate-limit', async (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  return res.json(await getFeedbackRateLimitStatus(req));
 });
 
 /* ── GET /api/feedback ───────────────────────────────────────────────────────

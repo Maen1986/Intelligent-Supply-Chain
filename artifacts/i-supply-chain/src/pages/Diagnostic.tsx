@@ -8,6 +8,7 @@ import { ReportOutput } from '@/components/ReportOutput';
 import { ChevronRight, ArrowLeft } from 'lucide-react';
 
 import { API_BASE } from '@/lib/apiBase';
+import { useRateLimitCountdown } from '@/hooks/useRateLimitCountdown';
 
 export function Diagnostic() {
   const { t, lang } = useLanguage();
@@ -15,56 +16,10 @@ export function Diagnostic() {
   const [step, setStep] = useState(1);
   const [isGenerating, setIsGenerating] = useState(false);
   const [report, setReport] = useState<DiagnosticReport | null>(null);
-  const [retryUntil, setRetryUntil] = useState<number | null>(null);
-  const [secondsLeft, setSecondsLeft] = useState<number>(0);
 
-  // Re-validate the countdown against the server (does not consume quota).
-  // Device clocks drift — especially across laptop sleep/wake — so the
-  // server is the source of truth for whether the visitor is still limited.
-  const resyncRateLimit = React.useCallback(async () => {
-    try {
-      const res = await fetch(`${API_BASE}/leads/diagnostic/rate-limit`);
-      if (!res.ok) return;
-      const data = await res.json();
-      const seconds = Number(data?.retryAfterSeconds);
-      if (data?.limited && Number.isFinite(seconds) && seconds > 0) {
-        setRetryUntil(Date.now() + seconds * 1000);
-      } else {
-        setRetryUntil(null);
-        setSecondsLeft(0);
-      }
-    } catch { /* offline — keep the local countdown as-is */ }
-  }, []);
-
-  useEffect(() => {
-    if (retryUntil === null) return;
-    const tick = () => {
-      const remaining = Math.ceil((retryUntil - Date.now()) / 1000);
-      if (remaining <= 0) {
-        // Local clock says the window is over — confirm with the server
-        // before unlocking so an immediate retry doesn't hit another 429.
-        setRetryUntil(null);
-        setSecondsLeft(0);
-        void resyncRateLimit();
-      } else {
-        setSecondsLeft(remaining);
-      }
-    };
-    tick();
-    const id = setInterval(tick, 1000);
-    // After tab wake / visibility change the local deadline may be stale
-    // (clock drift, suspended timers) — resync with the server.
-    const onVisible = () => {
-      if (document.visibilityState === 'visible') void resyncRateLimit();
-    };
-    document.addEventListener('visibilitychange', onVisible);
-    window.addEventListener('focus', onVisible);
-    return () => {
-      clearInterval(id);
-      document.removeEventListener('visibilitychange', onVisible);
-      window.removeEventListener('focus', onVisible);
-    };
-  }, [retryUntil, resyncRateLimit]);
+  // Server-honest retry countdown for the leads rate limit (resyncs on tab
+  // wake/focus and when the local countdown reaches zero).
+  const rateLimit = useRateLimitCountdown(`${API_BASE}/leads/diagnostic/rate-limit`);
 
   const [formData, setFormData] = useState({
     businessSize: '',
@@ -98,7 +53,7 @@ export function Diagnostic() {
 
   const handleSubmit = async () => {
     setIsGenerating(true);
-    setRetryUntil(null);
+    rateLimit.clear();
     await new Promise(r => setTimeout(r, 1200));
     const generated = generateReport(formData as any, lang);
 
@@ -123,7 +78,7 @@ export function Diagnostic() {
             const body = await res.json().catch(() => null);
             seconds = Number(body?.retryAfterSeconds) || 3600;
           }
-          setRetryUntil(Date.now() + seconds * 1000);
+          rateLimit.start(seconds);
         }
       } catch (e) { /* silent fail — lead capture is best-effort */ }
     })();
@@ -308,13 +263,13 @@ export function Diagnostic() {
             )}
           </div>
 
-          {retryUntil !== null && secondsLeft > 0 && (
+          {rateLimit.limited && rateLimit.secondsLeft > 0 && (
             <div
               className="mt-6 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900"
               role="alert"
               data-testid="notice-rate-limit"
             >
-              {retryMessage(secondsLeft)}
+              {retryMessage(rateLimit.secondsLeft)}
             </div>
           )}
 
@@ -344,7 +299,7 @@ export function Diagnostic() {
             ) : (
               <Button
                 onClick={handleSubmit}
-                disabled={isGenerating || retryUntil !== null}
+                disabled={isGenerating || rateLimit.limited}
                 className="flex-1 sm:flex-none bg-accent hover:bg-accent/90 text-white font-bold h-11 sm:min-w-[200px]"
                 data-testid="button-wizard-submit"
               >
