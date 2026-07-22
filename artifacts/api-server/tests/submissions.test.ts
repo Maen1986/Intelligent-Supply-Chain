@@ -55,9 +55,23 @@ describe('POST /api/submissions', () => {
 });
 
 describe('GET /api/submissions', () => {
-  it('lists submissions newest first with a total', async () => {
-    dbState.selectRows = [{ id: 2 }, { id: 1 }];
+  const adminSession = { userId: 1, userRole: 'admin' };
+
+  it('rejects unauthenticated requests with 401', async () => {
     const app = makeApp('/api/submissions', submissionsRouter);
+    const res = await request(app).get('/api/submissions');
+    expect(res.status).toBe(401);
+  });
+
+  it('rejects non-admin users with 403', async () => {
+    const app = makeApp('/api/submissions', submissionsRouter, { userId: 2, userRole: 'user' });
+    const res = await request(app).get('/api/submissions');
+    expect(res.status).toBe(403);
+  });
+
+  it('lists submissions newest first with a total for an admin', async () => {
+    dbState.selectRows = [{ id: 2 }, { id: 1 }];
+    const app = makeApp('/api/submissions', submissionsRouter, adminSession);
     const res = await request(app).get('/api/submissions');
     expect(res.status).toBe(200);
     expect(res.body.total).toBe(2);
@@ -66,16 +80,30 @@ describe('GET /api/submissions', () => {
 
   it('returns 500 when the query fails', async () => {
     dbState.failNext = true;
-    const app = makeApp('/api/submissions', submissionsRouter);
+    const app = makeApp('/api/submissions', submissionsRouter, adminSession);
     const res = await request(app).get('/api/submissions');
     expect(res.status).toBe(500);
   });
 });
 
 describe('GET /api/submissions/by-tool/:tool', () => {
-  it('filters by tool', async () => {
-    dbState.selectRows = [{ id: 5, tool: 'lead' }];
+  const adminSession = { userId: 1, userRole: 'admin' };
+
+  it('rejects unauthenticated requests with 401', async () => {
     const app = makeApp('/api/submissions', submissionsRouter);
+    const res = await request(app).get('/api/submissions/by-tool/lead');
+    expect(res.status).toBe(401);
+  });
+
+  it('rejects non-admin users with 403', async () => {
+    const app = makeApp('/api/submissions', submissionsRouter, { userId: 2, userRole: 'user' });
+    const res = await request(app).get('/api/submissions/by-tool/lead');
+    expect(res.status).toBe(403);
+  });
+
+  it('filters by tool for an admin', async () => {
+    dbState.selectRows = [{ id: 5, tool: 'lead' }];
+    const app = makeApp('/api/submissions', submissionsRouter, adminSession);
     const res = await request(app).get('/api/submissions/by-tool/lead');
     expect(res.status).toBe(200);
     expect(res.body.submissions[0].tool).toBe('lead');

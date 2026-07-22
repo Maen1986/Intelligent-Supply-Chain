@@ -144,10 +144,23 @@ router.post('/', async (req, res) => {
   }
 });
 
+/* Admin guard: lead contact details and stored briefings are sensitive, so
+   only an authenticated admin session may access them.                        */
+const requireAdmin: import('express').RequestHandler = (req, res, next) => {
+  if (!req.session.userId) {
+    res.status(401).json({ ok: false, error: 'Authentication required' });
+    return;
+  }
+  if (req.session.userRole !== 'admin') {
+    res.status(403).json({ ok: false, error: 'Admin access required' });
+    return;
+  }
+  next();
+};
+
 /* ── GET /api/submissions ────────────────────────────────────────────────────
-   Returns all submissions, newest first. Intended for admin review.
-   In production, protect with an admin-role middleware.                        */
-router.get('/', async (req, res) => {
+   Returns all submissions, newest first. Admin-only.                          */
+router.get('/', requireAdmin, async (req, res) => {
   try {
     const rows = await db
       .select()
@@ -162,8 +175,8 @@ router.get('/', async (req, res) => {
 });
 
 /* ── GET /api/submissions/by-tool/:tool ─────────────────────────────────────
-   Filter by tool type for quick admin queries.                                 */
-router.get('/by-tool/:tool', async (req, res) => {
+   Filter by tool type for quick admin queries. Admin-only.                     */
+router.get<{ tool: string }>('/by-tool/:tool', requireAdmin, async (req, res) => {
   try {
     const rows = await db
       .select()
@@ -177,20 +190,6 @@ router.get('/by-tool/:tool', async (req, res) => {
     res.status(500).json({ ok: false, error: 'Failed to fetch submissions' });
   }
 });
-
-/* Admin guard: the stored briefings contain sensitive lead data, so only an
-   authenticated admin session may download them.                              */
-const requireAdmin: import('express').RequestHandler = (req, res, next) => {
-  if (!req.session.userId) {
-    res.status(401).json({ ok: false, error: 'Authentication required' });
-    return;
-  }
-  if (req.session.userRole !== 'admin') {
-    res.status(403).json({ ok: false, error: 'Admin access required' });
-    return;
-  }
-  next();
-};
 
 /* ── GET /api/submissions/:id/briefing-pdf ──────────────────────────────────
    Streams the stored briefing PDF for a submission so an admin can
