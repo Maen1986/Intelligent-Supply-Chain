@@ -17,7 +17,7 @@ import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, act, cleanup } from '@testing-library/react';
 import { LanguageProvider } from '@/lib/LanguageContext';
-import { Maturity } from '@/pages/Maturity';
+import { Maturity, _setMaturityTestSeed } from '@/pages/Maturity';
 
 /* ── jsdom stubs ───────────────────────────────────────────────────────── */
 class ResizeObserverStub {
@@ -186,6 +186,102 @@ describe('Maturity page feedback modal integration', () => {
     });
 
     expect(screen.queryByTestId('button-feedback-dismiss')).toBeNull();
+  });
+});
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Maturity page: incomplete-segment redirect guard
+══════════════════════════════════════════════════════════════════════════ */
+
+/**
+ * Build an answer map where segments 0..(lastFull) are fully answered at
+ * level 1, and optionally one segment has only (partialCount) answers.
+ */
+function buildAnswers(
+  lastFullSeg: number,
+  partialSeg?: number,
+  partialCount?: number,
+): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (let seg = 0; seg <= lastFullSeg; seg++) {
+    const count = seg === partialSeg ? (partialCount ?? NUM_QUESTIONS) : NUM_QUESTIONS;
+    for (let q = 0; q < count; q++) {
+      out[`${seg}-${q}`] = 1;
+    }
+  }
+  return out;
+}
+
+describe('Maturity page: incomplete-segment redirect guard', () => {
+  beforeEach(() => {
+    sessionStorage.clear();
+    vi.useFakeTimers();
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({ ok: true, status: 201, json: async () => ({}) })) as unknown as typeof fetch,
+    );
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+  });
+
+  afterEach(() => {
+    // Always clear the test seed so other tests are not affected
+    _setMaturityTestSeed({});
+  });
+
+  it('redirects to the first incomplete segment and shows a warning when results are entered with partial answers', async () => {
+    // Seed: segments 0–6 fully answered, segment 7 unanswered → null segScore for seg 7
+    const partialAnswers = buildAnswers(NUM_SEGMENTS - 2, undefined, undefined);
+    _setMaturityTestSeed({ phase: 'results', answers: partialAnswers });
+
+    render(
+      <LanguageProvider>
+        <Maturity />
+      </LanguageProvider>,
+    );
+
+    // Guard useEffect fires on mount (phase is already 'results'):
+    // results must NOT be shown; component should be back on questions phase
+    expect(screen.queryByTestId('maturity-results')).toBeNull();
+
+    // Warning banner must be visible
+    expect(screen.getByTestId('incomplete-warning')).toBeInTheDocument();
+  });
+
+  it('redirects to the correct (first) incomplete segment index', async () => {
+    // Segments 0–5 fully answered, segment 6 missing one answer, segment 7 fully answered.
+    // Guard should redirect to segment 6 (the FIRST incomplete one).
+    const answers: Record<string, number> = {
+      ...buildAnswers(5), // segs 0–5 fully answered
+      // seg 6: only 4 questions answered
+      '6-0': 1, '6-1': 1, '6-2': 1, '6-3': 1,
+      // seg 7: fully answered
+      '7-0': 1, '7-1': 1, '7-2': 1, '7-3': 1, '7-4': 1,
+    };
+    _setMaturityTestSeed({ phase: 'results', answers });
+
+    render(
+      <LanguageProvider>
+        <Maturity />
+      </LanguageProvider>,
+    );
+
+    expect(screen.queryByTestId('maturity-results')).toBeNull();
+    expect(screen.getByTestId('incomplete-warning')).toBeInTheDocument();
+    // Progress header should show segment 7 of 8 (segment 6, 0-indexed → "Segment 7 of 8")
+    expect(screen.getByText(/Segment 7 of 8/i)).toBeInTheDocument();
+  });
+
+  it('does NOT redirect when all segments are complete', () => {
+    renderMaturity();
+    completeMaturityAssessment();
+    // Results should render without the warning
+    expect(screen.getByTestId('maturity-results')).toBeInTheDocument();
+    expect(screen.queryByTestId('incomplete-warning')).toBeNull();
   });
 });
 

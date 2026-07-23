@@ -1013,14 +1013,26 @@ const SEGMENTS: Segment[] = [
 
 type Phase = 'intro' | 'questions' | 'results';
 
+/**
+ * @internal Test-only escape hatch.
+ * Call `_setMaturityTestSeed` before rendering to start the component in a
+ * specific phase / with specific answers without changing the public props
+ * signature (which would break wouter's Route typing).
+ */
+let _testSeed: { phase?: Phase; answers?: Record<string, number> } = {};
+export function _setMaturityTestSeed(seed: typeof _testSeed) {
+  _testSeed = seed;
+}
+
 export function Maturity() {
   const { lang } = useLanguage();
   const ar = lang === 'ar';
-  const [phase, setPhase]     = useState<Phase>('intro');
+  const [phase, setPhase]     = useState<Phase>(_testSeed.phase ?? 'intro');
   const [segIdx, setSegIdx]   = useState(0);
-  const [answers, setAnswers] = useState<Record<string, number>>({});
+  const [answers, setAnswers] = useState<Record<string, number>>(_testSeed.answers ?? {});
   const topRef = useRef<HTMLDivElement>(null);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [incompleteWarning, setIncompleteWarning] = useState(false);
 
   // Show the feedback modal once per session after results are rendered
   useEffect(() => {
@@ -1029,6 +1041,18 @@ export function Maturity() {
     const id = setTimeout(() => setFeedbackOpen(true), 2500);
     return () => clearTimeout(id);
   }, [phase]);
+
+  // Guard: if results are reached with any incomplete segment, redirect to the
+  // first incomplete segment so the user never sees a falsely-low score of 0.
+  useEffect(() => {
+    if (phase !== 'results') return;
+    const firstIncomplete = SEGMENTS.findIndex((_, i) => calcSegScore(answers, i) === null);
+    if (firstIncomplete === -1) return; // all complete — stay on results
+    setSegIdx(firstIncomplete);
+    setPhase('questions');
+    setIncompleteWarning(true);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase]); // answers excluded intentionally: guard only needs to fire on phase transition
 
   const scrollUp = () => setTimeout(() => topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60);
 
@@ -1052,7 +1076,7 @@ export function Maturity() {
     if (segIdx > 0) { setSegIdx(s => s - 1); scrollUp(); }
     else { setPhase('intro'); scrollUp(); }
   };
-  const handleReset = () => { setAnswers({}); setSegIdx(0); setPhase('intro'); scrollUp(); };
+  const handleReset = () => { setAnswers({}); setSegIdx(0); setPhase('intro'); setIncompleteWarning(false); scrollUp(); };
 
   const L = {
     yourScore:  ar ? 'نتيجتك' : 'Your Score',
@@ -1199,6 +1223,22 @@ export function Maturity() {
         </div>
 
         <div className="container mx-auto px-4 py-8 max-w-3xl">
+
+          {/* Incomplete-segment redirect warning */}
+          {incompleteWarning && (
+            <div
+              data-testid="incomplete-warning"
+              className="mb-6 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-800 text-sm font-medium"
+            >
+              <span className="mt-0.5 shrink-0 text-base">⚠️</span>
+              <span>
+                {ar
+                  ? 'يرجى إكمال جميع أسئلة هذا المقطع قبل عرض النتائج. تم إعادة توجيهك إلى أول مقطع غير مكتمل.'
+                  : 'Please complete all questions before viewing your results. You\'ve been redirected to the first incomplete segment.'}
+              </span>
+            </div>
+          )}
+
           <AnimatePresence mode="wait">
             <motion.div key={segIdx}
               initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }}
