@@ -4,6 +4,7 @@ import { Link } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/lib/LanguageContext';
 import { rankWeakest } from '@/lib/weakestAreas';
+import { MATURITY_LEVELS, getLevel, segScore as calcSegScore, overallScore as calcOverallScore } from '@/lib/maturityScoring';
 import { FeedbackModal, shouldShowFeedback } from '@/components/FeedbackModal';
 import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
@@ -1004,17 +1005,7 @@ const SEGMENTS: Segment[] = [
    MATURITY LEVELS
 ═══════════════════════════════════════════════════════════════════════════ */
 
-const MATURITY_LEVELS = [
-  { label: 'Reactive',   labelAr: 'تفاعلي',   min: 1.0, max: 1.9, color: '#EF4444', bg: 'bg-red-50',    text: 'text-red-700',    border: 'border-red-200' },
-  { label: 'Aware',      labelAr: 'مُدرِك',    min: 2.0, max: 2.9, color: '#F97316', bg: 'bg-orange-50',  text: 'text-orange-700', border: 'border-orange-200' },
-  { label: 'Defined',    labelAr: 'مُعرَّف',   min: 3.0, max: 3.9, color: '#EAB308', bg: 'bg-yellow-50',  text: 'text-yellow-700', border: 'border-yellow-200' },
-  { label: 'Managed',    labelAr: 'مُدار',     min: 4.0, max: 4.4, color: '#22C55E', bg: 'bg-green-50',   text: 'text-green-700',  border: 'border-green-200' },
-  { label: 'Optimised',  labelAr: 'مُحسَّن',   min: 4.5, max: 5.0, color: '#0B3D91', bg: 'bg-blue-50',    text: 'text-blue-700',   border: 'border-blue-200' },
-];
-
-function getLevel(score: number) {
-  return MATURITY_LEVELS.find(l => score >= l.min && score <= l.max) ?? MATURITY_LEVELS[0];
-}
+// MATURITY_LEVELS and getLevel are imported from @/lib/maturityScoring
 
 /* ═══════════════════════════════════════════════════════════════════════════
    MAIN COMPONENT
@@ -1049,11 +1040,7 @@ export function Maturity() {
     setAnswers(prev => ({ ...prev, [`${seg}-${q}`]: val }));
   };
 
-  const segScore = (seg: number) => {
-    const vals   = [0, 1, 2, 3, 4].map(q => answers[`${seg}-${q}`] ?? 0);
-    const filled = vals.filter(v => v > 0);
-    return filled.length === 5 ? filled.reduce((a, b) => a + b, 0) / 5 : null;
-  };
+  const segScore = (seg: number) => calcSegScore(answers, seg);
 
   const currentSegComplete = () => [0, 1, 2, 3, 4].every(q => answers[`${segIdx}-${q}`]);
 
@@ -1082,7 +1069,7 @@ export function Maturity() {
     [L.bestClass]:  seg.benchmarks.best,
   }));
 
-  const overallScore = SEGMENTS.reduce((sum, _, i) => sum + (segScore(i) ?? 0), 0) / SEGMENTS.length;
+  const overallScore = calcOverallScore(answers, SEGMENTS.length);
   const overallLevel = getLevel(overallScore);
 
   /* ── INTRO ─────────────────────────────────────────────────────────────── */
