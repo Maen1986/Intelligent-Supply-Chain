@@ -108,13 +108,23 @@ describe('overallScore', () => {
     expect(overallScore(answers, NUM_SEGMENTS)).toBeCloseTo(30 / 8);
   });
 
-  it('treats an incomplete segment (null segScore) as 0', () => {
-    // Only segment 0 answered (all 3s); segments 1–7 get 0 by fallback
-    // overall = (3 + 0*7) / 8 = 0.375
+  it('excludes incomplete segments from the average (partial-data case)', () => {
+    // Only segment 0 answered (all 3s); segments 1–7 are unanswered (null)
+    // The null segments are excluded, so overall = 3 / 1 = 3
     const answers: Record<string, number> = {
       '0-0': 3, '0-1': 3, '0-2': 3, '0-3': 3, '0-4': 3,
     };
-    expect(overallScore(answers, NUM_SEGMENTS)).toBeCloseTo(3 / 8);
+    expect(overallScore(answers, NUM_SEGMENTS)).toBeCloseTo(3);
+  });
+
+  it('averages only the completed segments when some are incomplete', () => {
+    // Segments 0 and 1 complete (scores 2 and 4); segments 2–7 unanswered
+    // overall = (2 + 4) / 2 = 3
+    const answers: Record<string, number> = {
+      '0-0': 2, '0-1': 2, '0-2': 2, '0-3': 2, '0-4': 2,
+      '1-0': 4, '1-1': 4, '1-2': 4, '1-3': 4, '1-4': 4,
+    };
+    expect(overallScore(answers, NUM_SEGMENTS)).toBeCloseTo(3);
   });
 
   it('returns 0 when no segment is answered', () => {

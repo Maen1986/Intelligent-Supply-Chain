@@ -42,16 +42,18 @@ export function segScore(answers: Record<string, number>, seg: number): number |
 /**
  * Compute the overall maturity score across all segments.
  *
- * Segments with a `null` score (partially answered) are treated as 0,
- * matching the component's existing behaviour.
+ * Only segments with a fully-answered (non-null) score are included in the
+ * average. Partially-answered segments are excluded so they cannot deflate
+ * the result. Returns 0 when no segment has been completed yet.
  *
  * @param answers      Flat answer map.
  * @param numSegments  Total number of segments (8 in the current assessment).
  */
 export function overallScore(answers: Record<string, number>, numSegments: number): number {
-  let sum = 0;
+  const scores: number[] = [];
   for (let i = 0; i < numSegments; i++) {
-    sum += segScore(answers, i) ?? 0;
+    const s = segScore(answers, i);
+    if (s !== null) scores.push(s);
   }
-  return sum / numSegments;
+  return scores.length === 0 ? 0 : scores.reduce((a, b) => a + b, 0) / scores.length;
 }
