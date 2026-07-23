@@ -1,10 +1,10 @@
 import { Router } from 'express';
+import crypto from 'node:crypto';
 import { db } from '@workspace/db';
 import { usersTable } from '@workspace/db';
 import { eq, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import bcrypt from 'bcryptjs';
-import crypto from 'node:crypto';
 import { logger } from '../lib/logger';
 import { loginRateLimiter, authRateLimiter, registerEmailRateLimiter, forgotPasswordRateLimiter } from '../lib/rateLimit';
 import { sendPasswordResetEmail } from './notify';
@@ -72,6 +72,14 @@ router.post('/register', authRateLimiter, registerEmailRateLimiter, async (req, 
   }
   const { email, fullName, password, mobile, designation, company } = parsed.data;
 
+  // Block the admin email from open registration unconditionally — even before
+  // the admin user row exists — to close the pre-claim privilege-escalation vector.
+  const adminEmail = process.env.ADMIN_EMAIL?.trim().toLowerCase();
+  if (adminEmail && email.trim().toLowerCase() === adminEmail) {
+    res.status(403).json({ ok: false, error: 'This account requires admin sign-in' });
+    return;
+  }
+
   try {
     const passwordHash = await bcrypt.hash(password, 10);
     let [user] = await db.select().from(usersTable).where(eq(usersTable.email, email)).limit(1);
@@ -129,9 +137,9 @@ router.post('/login', loginRateLimiter, async (req, res) => {
 
   try {
     const [user] = await db.select().from(usersTable).where(eq(usersTable.email, email)).limit(1);
-    if (!user || !user.passwordHash) {
-      // Same message whether the account is missing or has no password yet —
-      // don't leak which emails are registered.
+    if (!user || !user.passwordHash || user.role === 'admin') {
+      // Admin accounts must use /auth/admin-login, not the public password route.
+      // Same message for all failure cases — don't leak which emails are registered.
       res.status(401).json({ ok: false, error: 'Invalid email or password.' });
       return;
     }
@@ -374,6 +382,106 @@ router.post('/update-profile', async (req, res) => {
   } catch (err) {
     logger.error({ err }, '[auth] Update-profile error');
     res.status(500).json({ ok: false, error: 'Could not update profile' });
+  }
+});
+
+/* ── POST /api/auth/admin-login ──────────────────────────────────────────────
+   Password-protected sign-in for the consultant. Credentials come from the
+   ADMIN_EMAIL / ADMIN_PASSWORD environment secrets; on success the matching
+   user row is upserted with role 'admin' and an admin session is created.    */
+const AdminLoginSchema = z.object({
+  email:    z.string().email(),
+  password: z.string().min(1),
+});
+
+function safeEqual(a: string, b: string): boolean {
+  const ab = Buffer.from(a);
+  const bb = Buffer.from(b);
+  return ab.length === bb.length && crypto.timingSafeEqual(ab, bb);
+}
+
+router.post('/admin-login', async (req, res) => {
+  const adminEmail    = process.env.ADMIN_EMAIL?.trim().toLowerCase();
+  const adminPassword = process.env.ADMIN_PASSWORD;
+  if (!adminEmail || !adminPassword) {
+    res.status(503).json({ ok: false, error: 'Admin sign-in is not configured' });
+    return;
+  }
+  const parsed = AdminLoginSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ ok: false, error: 'Email and password are required' });
+    return;
+  }
+  const email    = parsed.data.email.trim().toLowerCase();
+  const password = parsed.data.password;
+
+  // Compare both factors; timing-safe on the password.
+  if (!safeEqual(email, adminEmail) || !safeEqual(password, adminPassword)) {
+    logger.warn({ email }, '[auth] Failed admin login attempt');
+    res.status(401).json({ ok: false, error: 'Invalid admin credentials' });
+    return;
+  }
+
+  try {
+    // Upsert the admin user row so submissions/session data stay consistent.
+    let [user] = await db.select().from(usersTable).where(eq(usersTable.email, adminEmail)).limit(1);
+    if (!user) {
+      const [created] = await db
+        .insert(usersTable)
+        .values({ email: adminEmail, fullName: 'Administrator', role: 'admin' })
+        .returning();
+      user = created;
+      logger.info({ userId: user.id }, '[auth] Admin user created');
+    } else if (user.role !== 'admin') {
+      // Clear any existing passwordHash so a pre-registered attacker-controlled
+      // account cannot later sign in via /auth/login with the stolen password.
+      const [updated] = await db
+        .update(usersTable)
+        .set({ role: 'admin', passwordHash: null, resetTokenHash: null, resetTokenExpiresAt: null })
+        .where(eq(usersTable.id, user.id))
+        .returning();
+      user = updated;
+      logger.info({ userId: user.id }, '[auth] User promoted to admin; previous credentials cleared');
+    }
+
+    // Prevent session fixation: issue a fresh session id for the admin.
+    req.session.regenerate(regenErr => {
+      if (regenErr) {
+        logger.error({ err: regenErr }, '[auth] Admin session regenerate failed');
+        res.status(500).json({ ok: false, error: 'Session could not be created' });
+        return;
+      }
+      req.session.userId          = user.id;
+      req.session.userEmail       = user.email;
+      req.session.userFullName    = user.fullName;
+      req.session.userMobile      = user.mobile ?? null;
+      req.session.userDesignation = user.designation ?? null;
+      req.session.userCompany     = user.company ?? null;
+      req.session.userRole        = 'admin';
+      req.session.save(err => {
+        if (err) {
+          logger.error({ err }, '[auth] Admin session save failed');
+          res.status(500).json({ ok: false, error: 'Session could not be created' });
+          return;
+        }
+        logger.info({ userId: user.id }, '[auth] Admin signed in');
+        res.json({
+          ok: true,
+          user: {
+            id:          user.id,
+            email:       user.email,
+            fullName:    user.fullName,
+            mobile:      user.mobile,
+            designation: user.designation,
+            company:     user.company,
+            role:        'admin',
+          },
+        });
+      });
+    });
+  } catch (err) {
+    logger.error({ err }, '[auth] Admin login error');
+    res.status(500).json({ ok: false, error: 'Admin sign-in failed' });
   }
 });
 

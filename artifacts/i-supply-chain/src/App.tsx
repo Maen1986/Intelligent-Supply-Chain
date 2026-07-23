@@ -79,6 +79,7 @@ function Router() {
         <Route path="/account" component={AccountSettings} />
         <Route path="/customer-voice" component={CustomerVoice} />
         <Route path="/legal" component={Legal} />
+        <Route path="/admin" component={AdminLeads} />
         <Route component={NotFound} />
       </Switch>
     </Layout>
