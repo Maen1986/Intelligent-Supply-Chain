@@ -82,11 +82,20 @@ export function makeApp(basePath: string, router: Router, session: SessionData =
   app.set('trust proxy', 1);
   app.use(express.json());
   const fakeSession: RequestHandler = (req, _res, next) => {
-    (req as any).session = {
+    const sessionObj: Record<string, any> = {
       ...session,
       save: (cb: (err?: unknown) => void) => cb(),
       destroy: (cb: (err?: unknown) => void) => cb(),
+      // Simulate session fixation prevention: clears data, then calls cb so the
+      // route can re-populate the fresh session before saving.
+      regenerate: (cb: (err?: unknown) => void) => {
+        Object.keys(sessionObj).forEach(k => {
+          if (typeof sessionObj[k] !== 'function') delete sessionObj[k];
+        });
+        cb();
+      },
     };
+    (req as any).session = sessionObj;
     next();
   };
   app.use(fakeSession);

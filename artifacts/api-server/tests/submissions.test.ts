@@ -240,3 +240,62 @@ describe('GET /api/submissions/:id/briefing-pdf', () => {
     expect(res.status).toBe(400);
   });
 });
+
+/* ── Resend-email auth guard ────────────────────────────────────────────────── */
+
+vi.mock('../src/routes/notify', () => ({
+  sendBriefingEmail:    vi.fn(async () => ({ sent: true })),
+  sendPasswordResetEmail: vi.fn(async () => ({ sent: true })),
+}));
+
+describe('POST /api/submissions/:id/resend-email', () => {
+  const adminSession = { userId: 1, userRole: 'admin' };
+
+  it('rejects unauthenticated requests with 401', async () => {
+    const app = makeApp('/api/submissions', submissionsRouter);
+    const res = await request(app).post('/api/submissions/1/resend-email');
+    expect(res.status).toBe(401);
+    expect(res.body.ok).toBe(false);
+  });
+
+  it('rejects non-admin users with 403', async () => {
+    const app = makeApp('/api/submissions', submissionsRouter, { userId: 2, userRole: 'user' });
+    const res = await request(app).post('/api/submissions/1/resend-email');
+    expect(res.status).toBe(403);
+    expect(res.body.ok).toBe(false);
+  });
+
+  it('returns 404 when the submission does not exist', async () => {
+    dbState.selectRows = [];
+    const app = makeApp('/api/submissions', submissionsRouter, adminSession);
+    const res = await request(app).post('/api/submissions/99/resend-email');
+    expect(res.status).toBe(404);
+    expect(res.body.ok).toBe(false);
+  });
+
+  it('returns 400 when the submission is not a command_centre briefing', async () => {
+    dbState.selectRows = [{ id: 1, tool: 'diagnostic', emailSentAt: null, pdfObjectPath: null }];
+    const app = makeApp('/api/submissions', submissionsRouter, adminSession);
+    const res = await request(app).post('/api/submissions/1/resend-email');
+    expect(res.status).toBe(400);
+    expect(res.body.ok).toBe(false);
+  });
+
+  it('returns 409 when the email was already sent', async () => {
+    dbState.selectRows = [{
+      id: 1, tool: 'command_centre', emailSentAt: new Date(), pdfObjectPath: null,
+      inputs: {}, outputs: {},
+    }];
+    const app = makeApp('/api/submissions', submissionsRouter, adminSession);
+    const res = await request(app).post('/api/submissions/1/resend-email');
+    expect(res.status).toBe(409);
+    expect(res.body.ok).toBe(false);
+  });
+
+  it('rejects a non-numeric id with 400', async () => {
+    const app = makeApp('/api/submissions', submissionsRouter, adminSession);
+    const res = await request(app).post('/api/submissions/abc/resend-email');
+    expect(res.status).toBe(400);
+    expect(res.body.ok).toBe(false);
+  });
+});

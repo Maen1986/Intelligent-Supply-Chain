@@ -561,6 +561,106 @@ describe('POST /api/auth/reset-password', () => {
   });
 });
 
+describe('POST /api/auth/admin-login', () => {
+  const ADMIN_EMAIL = 'admin@example.com';
+  const ADMIN_PASSWORD = 'supersecret';
+
+  beforeEach(() => {
+    process.env.ADMIN_EMAIL    = ADMIN_EMAIL;
+    process.env.ADMIN_PASSWORD = ADMIN_PASSWORD;
+  });
+
+  it('returns 503 when admin credentials are not configured', async () => {
+    delete process.env.ADMIN_EMAIL;
+    delete process.env.ADMIN_PASSWORD;
+    const app = makeApp('/api/auth', authRouter);
+    const res = await request(app).post('/api/auth/admin-login').send({
+      email: ADMIN_EMAIL, password: ADMIN_PASSWORD,
+    });
+    expect(res.status).toBe(503);
+    expect(res.body.ok).toBe(false);
+  });
+
+  it('rejects wrong credentials with 401', async () => {
+    const app = makeApp('/api/auth', authRouter);
+    const res = await request(app).post('/api/auth/admin-login').send({
+      email: ADMIN_EMAIL, password: 'wrongpassword',
+    });
+    expect(res.status).toBe(401);
+    expect(res.body.ok).toBe(false);
+    expect(res.body.error).toMatch(/invalid admin credentials/i);
+  });
+
+  it('rejects wrong email with 401', async () => {
+    const app = makeApp('/api/auth', authRouter);
+    const res = await request(app).post('/api/auth/admin-login').send({
+      email: 'notadmin@example.com', password: ADMIN_PASSWORD,
+    });
+    expect(res.status).toBe(401);
+    expect(res.body.ok).toBe(false);
+  });
+
+  it('rejects invalid payloads with 400', async () => {
+    const app = makeApp('/api/auth', authRouter);
+    const res = await request(app).post('/api/auth/admin-login').send({
+      email: 'not-an-email', password: ADMIN_PASSWORD,
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.ok).toBe(false);
+  });
+
+  it('creates an admin user row and establishes a session on correct credentials', async () => {
+    dbState.selectRows = []; // no existing user — triggers insert
+    dbState.insertRows = [{
+      id: 99, email: ADMIN_EMAIL, fullName: 'Administrator',
+      mobile: null, designation: null, company: null, role: 'admin',
+    }];
+    const app = makeApp('/api/auth', authRouter);
+    const res = await request(app).post('/api/auth/admin-login').send({
+      email: ADMIN_EMAIL, password: ADMIN_PASSWORD,
+    });
+    expect(res.status).toBe(200);
+    expect(res.body.ok).toBe(true);
+    expect(res.body.user).toMatchObject({ email: ADMIN_EMAIL, role: 'admin' });
+    expect(res.body.user.passwordHash).toBeUndefined();
+  });
+
+  it('accepts an existing admin row without re-inserting', async () => {
+    dbState.selectRows = [{
+      id: 99, email: ADMIN_EMAIL, fullName: 'Administrator',
+      mobile: null, designation: null, company: null, role: 'admin',
+    }];
+    const { db } = await import('@workspace/db');
+    (db.insert as ReturnType<typeof vi.fn>).mockClear();
+    const app = makeApp('/api/auth', authRouter);
+    const res = await request(app).post('/api/auth/admin-login').send({
+      email: ADMIN_EMAIL, password: ADMIN_PASSWORD,
+    });
+    expect(res.status).toBe(200);
+    expect(res.body.user.role).toBe('admin');
+    expect(db.insert).not.toHaveBeenCalled();
+  });
+
+  it('promotes a pre-existing non-admin row to admin and clears its password hash', async () => {
+    dbState.selectRows = [{
+      id: 5, email: ADMIN_EMAIL, fullName: 'Old User', passwordHash: 'old-hash',
+      mobile: null, designation: null, company: null, role: 'user',
+    }];
+    dbState.updateRows = [{
+      id: 5, email: ADMIN_EMAIL, fullName: 'Old User', passwordHash: null,
+      mobile: null, designation: null, company: null, role: 'admin',
+    }];
+    const app = makeApp('/api/auth', authRouter);
+    const res = await request(app).post('/api/auth/admin-login').send({
+      email: ADMIN_EMAIL, password: ADMIN_PASSWORD,
+    });
+    expect(res.status).toBe(200);
+    expect(res.body.user.role).toBe('admin');
+    const { db } = await import('@workspace/db');
+    expect(db.update).toHaveBeenCalled();
+  });
+});
+
 describe('POST /api/auth/change-password', () => {
   it('returns 401 when the user is not authenticated', async () => {
     const app = makeApp('/api/auth', authRouter); // no session
