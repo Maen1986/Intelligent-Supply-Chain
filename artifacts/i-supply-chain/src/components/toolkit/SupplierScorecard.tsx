@@ -4,7 +4,7 @@
  */
 import React, { useState } from 'react';
 import { RadarChart, Radar, PolarGrid, PolarAngleAxis, ResponsiveContainer, Tooltip } from 'recharts';
-import { Printer, Plus, Trash2, Users, Download } from 'lucide-react';
+import { Printer, Plus, Trash2, Users, Download, Settings, ChevronDown, ChevronUp, RotateCcw } from 'lucide-react';
 import { safeSetItem } from '@/lib/storage';
 
 function printZone(zone: string) {
@@ -128,7 +128,32 @@ const TIERS = [
 const TIER_OPTIONS    = ['Strategic', 'Preferred', 'Transactional', 'New Supplier'];
 const TIER_OPTIONS_AR = ['استراتيجي', 'مفضّل', 'معاملاتي', 'مورّد جديد'];
 
-function getTier(score: number) { return TIERS.find(t => score >= t.min) ?? TIERS[2]; }
+/* ─── Configurable framework ─── */
+interface ScorecardConfig {
+  weights: Record<string, number>; // dimId → weight (0–100)
+  tiers: { strategic: number; preferred: number };
+}
+const DEFAULT_CONFIG: ScorecardConfig = {
+  weights: { delivery: 25, quality: 25, cost: 20, compliance: 15, innovation: 10, relationship: 5 },
+  tiers: { strategic: 75, preferred: 55 },
+};
+const CONFIG_KEY = 'isc-tool-scorecard-config';
+function loadConfig(): ScorecardConfig {
+  try {
+    const raw = localStorage.getItem(CONFIG_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw) as ScorecardConfig;
+      if (parsed?.weights && parsed?.tiers) return parsed;
+    }
+  } catch { /* fall through */ }
+  return { weights: { ...DEFAULT_CONFIG.weights }, tiers: { ...DEFAULT_CONFIG.tiers } };
+}
+
+function getTier(score: number, config: ScorecardConfig) {
+  if (score >= config.tiers.strategic) return TIERS[0];
+  if (score >= config.tiers.preferred) return TIERS[1];
+  return TIERS[2];
+}
 
 /* ─── Storage keys ─── */
 const ROSTER_KEY = 'isc-tool-supplier-roster';
@@ -182,17 +207,18 @@ function calcDimScore(dimId: string, subScores: Record<string, Record<string, st
   return Math.min(100, Math.max(0, Math.round(vals.reduce((a, b) => a + b, 0) / vals.length)));
 }
 
-function calcWeightedScore(subScores: Record<string, Record<string, string>>): number | null {
+function calcWeightedScore(subScores: Record<string, Record<string, string>>, config: ScorecardConfig): number | null {
   const dimScores = DIMS.map(d => calcDimScore(d.id, subScores));
   if (dimScores.some(s => s === null)) return null;
-  const totalWeight = DIMS.reduce((s, d) => s + d.weight, 0);
+  const totalWeight = DIMS.reduce((s, d) => s + (config.weights[d.id] ?? d.weight), 0);
+  if (totalWeight === 0) return null;
   return Math.round(
-    DIMS.reduce((sum, d, i) => sum + ((dimScores[i] as number) / 100) * d.weight, 0) / totalWeight * 100,
+    DIMS.reduce((sum, d, i) => sum + ((dimScores[i] as number) / 100) * (config.weights[d.id] ?? d.weight), 0) / totalWeight * 100,
   );
 }
 
 /* ─── CSV export ─── */
-function exportToCSV(suppliers: SupplierRecord[]) {
+function exportToCSV(suppliers: SupplierRecord[], config: ScorecardConfig) {
   // Build column headers
   const dimHeaders = DIMS.map(d => `${d.label} Score (/100)`);
   const subHeaders: string[] = [];
@@ -219,14 +245,14 @@ function exportToCSV(suppliers: SupplierRecord[]) {
         subVals.push(s.subScores[d.id]?.[sub.id] ?? '');
       });
     });
-    const ws = calcWeightedScore(s.subScores);
+    const ws = calcWeightedScore(s.subScores, config);
     return [
       s.name || 'New Supplier',
       s.tier,
       ...dimScores,
       ...subVals,
       ws !== null ? String(ws) : '',
-      ws !== null ? getTier(ws).label : '',
+      ws !== null ? getTier(ws, config).label : '',
     ];
   });
 
@@ -249,11 +275,36 @@ interface SupplierScorecardProps { isAr: boolean; }
 
 export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
   const [roster, setRoster] = useState<RosterState>(loadRoster);
+  const [config, setConfig] = useState<ScorecardConfig>(loadConfig);
+  const [configOpen, setConfigOpen] = useState(false);
 
   const save = (next: RosterState) => {
     setRoster(next);
     safeSetItem(ROSTER_KEY, JSON.stringify(next));
   };
+
+  const saveConfig = (next: ScorecardConfig) => {
+    setConfig(next);
+    safeSetItem(CONFIG_KEY, JSON.stringify(next));
+  };
+
+  const resetConfig = () => saveConfig({ weights: { ...DEFAULT_CONFIG.weights }, tiers: { ...DEFAULT_CONFIG.tiers } });
+
+  const setWeight = (dimId: string, raw: string) => {
+    const val = Math.max(0, Math.min(100, parseInt(raw, 10) || 0));
+    saveConfig({ ...config, weights: { ...config.weights, [dimId]: val } });
+  };
+
+  const setTierThreshold = (key: 'strategic' | 'preferred', raw: string) => {
+    const val = Math.max(0, Math.min(100, parseInt(raw, 10) || 0));
+    const next = { ...config.tiers, [key]: val };
+    // Enforce strategic > preferred
+    if (key === 'preferred' && val >= config.tiers.strategic) next.preferred = Math.max(0, config.tiers.strategic - 1);
+    if (key === 'strategic' && val <= config.tiers.preferred) next.strategic = config.tiers.preferred + 1;
+    saveConfig({ ...config, tiers: next });
+  };
+
+  const weightTotal = DIMS.reduce((s, d) => s + (config.weights[d.id] ?? d.weight), 0);
 
   const active = roster.suppliers.find(s => s.id === roster.activeId) ?? roster.suppliers[0] ?? null;
 
@@ -291,8 +342,8 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
   };
 
   const today = new Date().toLocaleDateString(isAr ? 'ar-SA' : 'en-GB');
-  const weightedScore = active ? calcWeightedScore(active.subScores) : null;
-  const tier = weightedScore !== null && weightedScore !== undefined ? getTier(weightedScore) : null;
+  const weightedScore = active ? calcWeightedScore(active.subScores, config) : null;
+  const tier = weightedScore !== null && weightedScore !== undefined ? getTier(weightedScore, config) : null;
   const radarData = DIMS.map(d => ({
     dimension: isAr ? d.labelAr : d.label,
     value: calcDimScore(d.id, active?.subScores ?? {}) ?? 0,
@@ -341,7 +392,7 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
             </div>
             <div className="flex items-center gap-2">
               <button
-                onClick={() => exportToCSV(roster.suppliers)}
+                onClick={() => exportToCSV(roster.suppliers, config)}
                 disabled={roster.suppliers.filter(s => Object.keys(s.subScores).length > 0).length < 1}
                 title={isAr ? 'تنزيل جميع بطاقات التقييم كملف CSV' : 'Download all scorecards as CSV'}
                 className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg font-bold bg-slate-600 text-white hover:bg-slate-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
@@ -360,8 +411,8 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
           </div>
           <div className="divide-y divide-border max-h-52 overflow-y-auto">
             {roster.suppliers.map(s => {
-              const sc = calcWeightedScore(s.subScores);
-              const t = sc !== null ? getTier(sc) : null;
+              const sc = calcWeightedScore(s.subScores, config);
+              const t = sc !== null ? getTier(sc, config) : null;
               const isActive = s.id === roster.activeId;
               return (
                 <div
@@ -397,6 +448,113 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
               );
             })}
           </div>
+        </div>
+
+        {/* ── Customise Framework ── */}
+        <div className="no-print border border-border rounded-xl overflow-hidden">
+          <button
+            onClick={() => setConfigOpen(o => !o)}
+            className="w-full flex items-center justify-between gap-2 px-4 py-2.5 bg-slate-50 hover:bg-slate-100 transition-colors text-left"
+          >
+            <div className="flex items-center gap-1.5">
+              <Settings className="w-3.5 h-3.5 text-primary" />
+              <span className="text-xs font-bold text-primary uppercase tracking-widest">
+                {isAr ? '⚙ تخصيص الإطار' : '⚙ Customise Framework'}
+              </span>
+              {weightTotal !== 100 && (
+                <span className="text-[10px] font-bold text-red-500 bg-red-50 px-1.5 py-0.5 rounded-full">
+                  {isAr ? `الإجمالي: ${weightTotal}%` : `Total: ${weightTotal}%`}
+                </span>
+              )}
+            </div>
+            {configOpen ? <ChevronUp className="w-3.5 h-3.5 text-muted-foreground" /> : <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />}
+          </button>
+          {configOpen && (
+            <div className="p-4 space-y-5 bg-white">
+              {/* Dimension weights */}
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-xs font-bold text-primary">
+                    {isAr ? 'أوزان الأبعاد (%)' : 'Dimension Weights (%)'}
+                  </p>
+                  <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${weightTotal === 100 ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'}`}>
+                    {isAr ? `الإجمالي: ${weightTotal}%` : `Total: ${weightTotal}%`}
+                  </span>
+                </div>
+                <div className="space-y-2">
+                  {DIMS.map(d => (
+                    <div key={d.id} className="grid grid-cols-[1fr_64px_28px] gap-2 items-center">
+                      <label htmlFor={`weight-${d.id}`} className="text-xs text-gray-700 font-medium">
+                        {isAr ? d.labelAr : d.label}
+                      </label>
+                      <input
+                        id={`weight-${d.id}`}
+                        type="number" min={0} max={100} step={1}
+                        value={config.weights[d.id] ?? d.weight}
+                        onChange={e => setWeight(d.id, e.target.value)}
+                        className="text-center text-sm border border-border rounded-lg px-1 py-1 focus:outline-none focus:ring-2 focus:ring-primary/30"
+                      />
+                      <span className="text-xs text-muted-foreground">%</span>
+                    </div>
+                  ))}
+                </div>
+                {weightTotal !== 100 && (
+                  <p className="text-[11px] text-red-500 mt-2">
+                    {isAr
+                      ? 'يجب أن يساوي مجموع الأوزان 100% للحصول على درجة مرجّحة دقيقة.'
+                      : 'Weights should sum to 100% for an accurate weighted score. Scoring still works but is normalised to the total.'}
+                  </p>
+                )}
+              </div>
+              {/* Tier thresholds */}
+              <div>
+                <p className="text-xs font-bold text-primary mb-3">
+                  {isAr ? 'حدود الشرائح (الحد الأدنى للدرجة)' : 'Tier Thresholds (minimum score)'}
+                </p>
+                <div className="space-y-2">
+                  <div className="grid grid-cols-[1fr_64px_28px] gap-2 items-center">
+                    <label htmlFor="tier-strategic" className="text-xs font-semibold" style={{ color: TIERS[0].color }}>
+                      {isAr ? TIERS[0].labelAr : TIERS[0].label}
+                    </label>
+                    <input
+                      id="tier-strategic"
+                      type="number" min={1} max={100} step={1}
+                      value={config.tiers.strategic}
+                      onChange={e => setTierThreshold('strategic', e.target.value)}
+                      className="text-center text-sm border border-border rounded-lg px-1 py-1 focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    />
+                    <span className="text-xs text-muted-foreground">/100</span>
+                  </div>
+                  <div className="grid grid-cols-[1fr_64px_28px] gap-2 items-center">
+                    <label htmlFor="tier-preferred" className="text-xs font-semibold" style={{ color: TIERS[1].color }}>
+                      {isAr ? TIERS[1].labelAr : TIERS[1].label}
+                    </label>
+                    <input
+                      id="tier-preferred"
+                      type="number" min={0} max={99} step={1}
+                      value={config.tiers.preferred}
+                      onChange={e => setTierThreshold('preferred', e.target.value)}
+                      className="text-center text-sm border border-border rounded-lg px-1 py-1 focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    />
+                    <span className="text-xs text-muted-foreground">/100</span>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground">
+                    {isAr
+                      ? `معاملاتي: 0 – ${config.tiers.preferred - 1}`
+                      : `Transactional: 0 – ${config.tiers.preferred - 1}`}
+                  </p>
+                </div>
+              </div>
+              {/* Reset */}
+              <button
+                onClick={resetConfig}
+                className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors"
+              >
+                <RotateCcw className="w-3 h-3" />
+                {isAr ? 'إعادة تعيين الإعدادات الافتراضية' : 'Reset to defaults'}
+              </button>
+            </div>
+          )}
         </div>
 
         {active && (
@@ -452,7 +610,7 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
                     <div className="flex items-center justify-between gap-3 px-4 py-2.5 bg-gray-50 border-b border-border">
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-bold text-primary">{isAr ? d.labelAr : d.label}</span>
-                        <span className="text-xs text-muted-foreground">{d.weight}{isAr ? '% وزن' : '% weight'}</span>
+                        <span className="text-xs text-muted-foreground">{config.weights[d.id] ?? d.weight}{isAr ? '% وزن' : '% weight'}</span>
                       </div>
                       {dimScore !== null ? (
                         <span className="text-xs font-extrabold px-2 py-0.5 rounded-full shrink-0"
@@ -531,10 +689,14 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
                   </div>
                   <div className="rounded-xl p-4 bg-muted text-xs space-y-1">
                     <p className="font-bold text-primary mb-2">{isAr ? 'حدود الشرائح' : 'Tier Thresholds'}</p>
-                    {TIERS.map(t => (
+                    {[
+                      { t: TIERS[0], min: config.tiers.strategic },
+                      { t: TIERS[1], min: config.tiers.preferred },
+                      { t: TIERS[2], min: 0 },
+                    ].map(({ t, min }) => (
                       <div key={t.label} className="flex items-center justify-between">
                         <span style={{ color: t.color }} className="font-semibold">{isAr ? t.labelAr : t.label}</span>
-                        <span className="text-muted-foreground">≥{t.min}</span>
+                        <span className="text-muted-foreground">≥{min}</span>
                       </div>
                     ))}
                   </div>
