@@ -11,6 +11,89 @@ import {
 import { useLanguage } from '@/lib/LanguageContext';
 import { KPIDashboard } from '@/components/KPIDashboard';
 
+/* ─── Lean Waste Calculator (inline) ─── */
+function LeanWasteCalculator({ isAr }: { isAr: boolean }) {
+  const SK = 'isc-tool-lean-waste-calc';
+  const [v, setV] = useState<Record<string, string>>(() => {
+    try { const s = localStorage.getItem(SK); return s ? JSON.parse(s) : {}; } catch { return {}; }
+  });
+  const set = (k: string, val: string) => setV(prev => {
+    const next = { ...prev, [k]: val };
+    try { localStorage.setItem(SK, JSON.stringify(next)); } catch { }
+    return next;
+  });
+
+  const totalTime = parseFloat(v.total || '0');
+  const vaTime = parseFloat(v.va || '0');
+  const defectRate = parseFloat(v.defect || '0');
+  const inventoryDays = parseFloat(v.inventory || '0');
+  const waitPct = parseFloat(v.wait || '0');
+  const hasData = totalTime > 0 && vaTime > 0;
+
+  const pce = hasData ? Math.min(100, Math.round((vaTime / totalTime) * 100)) : 0;
+  const wastePct = hasData ? 100 - pce : 0;
+  const wasteHours = hasData ? Math.round((totalTime - vaTime) * 10) / 10 : 0;
+  const dominantWaste = defectRate > 10 ? (isAr ? 'العيوب' : 'Defects') :
+    inventoryDays > 30 ? (isAr ? 'المخزون الزائد' : 'Excess Inventory') :
+    waitPct > 30 ? (isAr ? 'الانتظار' : 'Waiting') :
+    wastePct > 50 ? (isAr ? 'المعالجة الزائدة' : 'Over-processing') : null;
+
+  const fields = [
+    { id: 'total', label: 'Total Process Time (hrs)', labelAr: 'إجمالي وقت العملية (ساعة)' },
+    { id: 'va', label: 'Value-Adding Time (hrs)', labelAr: 'وقت القيمة المضافة (ساعة)' },
+    { id: 'defect', label: 'Defect / Rework Rate (%)', labelAr: 'معدّل العيوب / إعادة العمل (%)' },
+    { id: 'inventory', label: 'Excess Inventory (days)', labelAr: 'المخزون الزائد (أيام)' },
+    { id: 'wait', label: 'Waiting / Queue Time (%)', labelAr: 'وقت الانتظار / قائمة الانتظار (%)' },
+  ];
+
+  const pceColor = pce >= 35 ? '#22c55e' : pce >= 20 ? '#f59e0b' : '#ef4444';
+  const pceBand = pce >= 35 ? (isAr ? 'تنافسي' : 'Competitive') : pce >= 20 ? (isAr ? 'متوسط' : 'Average') : (isAr ? 'هدر عالٍ' : 'High Waste');
+
+  return (
+    <div className="bg-white border border-border rounded-2xl shadow-sm overflow-hidden">
+      <div className="p-5 border-b border-border bg-purple-50">
+        <p className="text-sm font-bold text-primary">{isAr ? '⚡ حاسبة هدر Lean' : '⚡ Lean Waste Calculator'}</p>
+        <p className="text-xs text-muted-foreground mt-1">{isAr ? 'أدخل بياناتك — يُحسَب PCE ونوع الهدر السائد لحظياً' : 'Enter your data — PCE and dominant waste type calculated live'}</p>
+      </div>
+      <div className="p-5 space-y-4">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {fields.map(f => (
+            <div key={f.id}>
+              <label className="text-xs font-bold text-primary mb-1 block">{isAr ? f.labelAr : f.label}</label>
+              <input type="number" step="any" min="0" value={v[f.id] ?? ''} onChange={e => set(f.id, e.target.value)}
+                className="w-full text-sm border border-border rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-primary/30" placeholder="0" />
+            </div>
+          ))}
+        </div>
+        {hasData && (
+          <div className="grid sm:grid-cols-3 gap-4">
+            <div className="rounded-xl p-4 text-center" style={{ background: pceColor + '15', border: `1px solid ${pceColor}40` }}>
+              <p className="text-xs text-muted-foreground mb-1">{isAr ? 'كفاءة دورة العملية (PCE)' : 'Process Cycle Efficiency (PCE)'}</p>
+              <p className="text-3xl font-extrabold" style={{ color: pceColor }}>{pce}%</p>
+              <p className="text-xs font-bold mt-1" style={{ color: pceColor }}>{pceBand}</p>
+            </div>
+            <div className="rounded-xl p-4 text-center bg-red-50 border border-red-200">
+              <p className="text-xs text-muted-foreground mb-1">{isAr ? 'وقت الهدر' : 'Waste Time'}</p>
+              <p className="text-3xl font-extrabold text-red-700">{wasteHours}<span className="text-base font-normal">h</span></p>
+              <p className="text-xs text-red-600 mt-1">{wastePct}% {isAr ? 'من إجمالي الوقت' : 'of total time'}</p>
+            </div>
+            <div className={`rounded-xl p-4 text-center ${dominantWaste ? 'bg-amber-50 border border-amber-200' : 'bg-emerald-50 border border-emerald-200'}`}>
+              <p className="text-xs text-muted-foreground mb-1">{isAr ? 'أولوية Kaizen' : 'Kaizen Priority'}</p>
+              <p className={`text-lg font-extrabold ${dominantWaste ? 'text-amber-700' : 'text-emerald-700'}`}>{dominantWaste ?? (isAr ? 'راجع VSM' : 'Review VSM')}</p>
+              <p className="text-xs text-muted-foreground mt-1">{isAr ? 'ابدأ هنا' : 'Start here'}</p>
+            </div>
+          </div>
+        )}
+        {pce > 0 && pce < 35 && (
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 text-xs text-blue-800">
+            {isAr ? `💡 تحسين PCE من ${pce}% إلى 35% سيوفّر ${Math.round(wasteHours * (35 - pce) / (100 - pce) * 10) / 10} ساعة أسبوعياً — جرّب رسم VSM لتحديد أعلى خطوة غير مضيفة للقيمة.` : `💡 Improving PCE from ${pce}% to 35% saves ~${Math.round(wasteHours * (35 - pce) / (100 - pce) * 10) / 10} hrs/week — run a VSM to identify your highest NVA step.`}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function Reveal({ children, delay = 0, className = '' }: { children: React.ReactNode; delay?: number; className?: string }) {
   return (
     <motion.div initial={{ opacity: 0, y: 22 }} whileInView={{ opacity: 1, y: 0 }}
@@ -262,6 +345,9 @@ export function LeanSixSigma() {
                   ))}
                 </div>
               </div>
+            </Reveal>
+            <Reveal>
+              <LeanWasteCalculator isAr={isAr} />
             </Reveal>
           </div>
         )}

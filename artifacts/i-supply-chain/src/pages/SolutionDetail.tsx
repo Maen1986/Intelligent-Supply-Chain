@@ -12,6 +12,13 @@ import {
 } from 'lucide-react';
 import { useLanguage } from '@/lib/LanguageContext';
 import { KPIDashboard } from '@/components/KPIDashboard';
+import { ChallengeToolkitPanel } from '@/components/toolkit/ChallengeChecklists';
+import { ProcurementToolsSection } from '@/components/toolkit/ProcurementTools';
+import { RiskToolsSection } from '@/components/toolkit/RiskTools';
+import { SupplierScorecardTool } from '@/components/toolkit/SupplierScorecard';
+import { ContractHealthChecker } from '@/components/toolkit/CLMTools';
+import { TrainingNeedsAssessment } from '@/components/toolkit/TrainingTools';
+import { MaturityAssessmentTool } from '@/components/toolkit/MaturityTools';
 
 function Reveal({ children, delay = 0, className = '' }: { children: React.ReactNode; delay?: number; className?: string }) {
   return (
@@ -987,6 +994,11 @@ export function SolutionDetail() {
                 </div>
               </Reveal>
             </div>
+            {sol.slug === 'procurement-excellence' && (
+              <Reveal>
+                <ProcurementToolsSection isAr={isAr} />
+              </Reveal>
+            )}
           </div>
         )}
 
@@ -1020,12 +1032,20 @@ export function SolutionDetail() {
                           <BookOpen className="w-4 h-4 text-accent" />
                           <span className="text-xs font-bold text-accent">{c.framework}</span>
                         </div>
+                        <ChallengeToolkitPanel slug={sol.slug} challengeIndex={i} isAr={isAr} />
                       </div>
                     </motion.div>
                   )}
                 </div>
               </Reveal>
             ))}
+            {sol.slug === 'risk-management-solution' && <Reveal><RiskToolsSection isAr={isAr} /></Reveal>}
+            {sol.slug === 'contract-lifecycle-management' && <Reveal><ContractHealthChecker isAr={isAr} /></Reveal>}
+            {sol.slug === 'supplier-relationship-governance' && <Reveal><SupplierScorecardTool isAr={isAr} /></Reveal>}
+            {sol.slug === 'training-capability-building' && <Reveal><TrainingNeedsAssessment isAr={isAr} /></Reveal>}
+            {(sol.slug === 'resiliency' || sol.slug === 'value-engineering' || sol.slug === 'process-improvement-policy' || sol.slug === 'lean-agile-supply-chain' || sol.slug === 'supply-chain-strategy' || sol.slug === 'sustainability-esg' || sol.slug === 'digital-transformation') && (
+              <Reveal><MaturityAssessmentTool slug={sol.slug} isAr={isAr} /></Reveal>
+            )}
           </div>
         )}
 

@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { useLanguage } from '@/lib/LanguageContext';
 import { KPIDashboard } from '@/components/KPIDashboard';
+import { RiskToolsSection } from '@/components/toolkit/RiskTools';
 
 function Reveal({ children, delay = 0, className = '' }: { children: React.ReactNode; delay?: number; className?: string }) {
   return (
@@ -390,6 +391,9 @@ export function RiskManagement() {
                 </div>
                 <p className="text-xs text-muted-foreground">{isAr ? 'الدرجة 0–100: ≥80 = مخاطر منخفضة (أخضر)؛ 60–79 = مخاطر متوسطة (أصفر)؛ 40–59 = مخاطر مرتفعة (برتقالي)؛ أقل من 40 = مخاطر حرجة (أحمر) ← يلزم خطة تطوير أو استبعاد.' : 'Score 0–100: ≥80 = Low Risk (Green); 60–79 = Medium Risk (Yellow); 40–59 = High Risk (Orange); <40 = Critical Risk (Red) → development plan or disqualification required.'}</p>
               </div>
+            </Reveal>
+            <Reveal>
+              <RiskToolsSection isAr={isAr} />
             </Reveal>
           </div>
         )}

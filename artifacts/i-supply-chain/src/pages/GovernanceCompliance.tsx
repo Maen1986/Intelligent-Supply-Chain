@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { useLanguage } from '@/lib/LanguageContext';
 import { KPIDashboard } from '@/components/KPIDashboard';
+import { MaturityAssessmentTool } from '@/components/toolkit/MaturityTools';
 
 function Reveal({ children, delay = 0, className = '' }: { children: React.ReactNode; delay?: number; className?: string }) {
   return (
@@ -284,6 +285,9 @@ export function GovernanceCompliance() {
                   <p className="text-xs text-muted-foreground">{isAr ? <>شدّة عدم المطابقة: <span className="font-bold text-red-700">حرجة</span> (إجراء تصحيحي فوري، وخطر تعليق المورّد) · <span className="font-bold text-orange-700">كبيرة</span> (تلزم خطة تصحيح خلال 30 يوماً) · <span className="font-bold text-yellow-700">طفيفة</span> (تلزم خطة تصحيح خلال 90 يوماً). ثلاث حالات عدم مطابقة كبيرة خلال 12 شهراً تستوجب التصعيد إلى رئيس المشتريات وإعادة التدقيق.</> : <>Non-conformance severity: <span className="font-bold text-red-700">Critical</span> (immediate corrective action, supplier suspension risk) · <span className="font-bold text-orange-700">Major</span> (30-day CAP required) · <span className="font-bold text-yellow-700">Minor</span> (90-day CAP required). Three Major NCs in 12 months triggers escalation to CPO and re-audit.</>}</p>
                 </div>
               </div>
+            </Reveal>
+            <Reveal>
+              <MaturityAssessmentTool slug="governance-compliance" isAr={isAr} />
             </Reveal>
           </div>
         )}
