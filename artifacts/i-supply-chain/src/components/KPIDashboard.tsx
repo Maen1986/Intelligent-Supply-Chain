@@ -195,6 +195,37 @@ function HealthGauge({ score }: { score: number }) {
   );
 }
 
+/* ─── Mini per-KPI gauge (embedded in each KPI card) ─── */
+function MiniGauge({ score, hasValue }: { score: number; hasValue: boolean }) {
+  const r = 30, cx = 40, cy = 36;
+  const circumference = Math.PI * r;
+  const safeScore = Math.max(0, Math.min(100, score));
+  const strokeDash = (safeScore / 100) * circumference;
+  const angle = (safeScore / 100) * 180;
+  const rad = (angle - 180) * (Math.PI / 180);
+  const color = hasValue ? scoreColor(safeScore) : '#e5e7eb';
+  return (
+    <svg width={80} height={46} viewBox="0 0 80 46" className="overflow-visible" aria-hidden="true">
+      {/* Track */}
+      <path d={`M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy}`}
+        fill="none" stroke="#e5e7eb" strokeWidth={8} strokeLinecap="round" />
+      {/* Fill */}
+      <path d={`M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy}`}
+        fill="none" stroke={color} strokeWidth={8} strokeLinecap="round"
+        strokeDasharray={`${strokeDash} ${circumference}`} />
+      {/* Score label */}
+      <text x={cx} y={cy - 3} textAnchor="middle" fontSize={13} fontWeight="800"
+        fill={hasValue ? NAVY : '#9ca3af'}>{hasValue ? safeScore : '–'}</text>
+      <text x={cx} y={cy + 9} textAnchor="middle" fontSize={8} fill="#9ca3af">/100</text>
+      {/* Needle */}
+      <line x1={cx} y1={cy}
+        x2={cx + (r - 5) * Math.cos(rad)} y2={cy + (r - 5) * Math.sin(rad)}
+        stroke={hasValue ? NAVY : '#d1d5db'} strokeWidth={1.5} strokeLinecap="round" />
+      <circle cx={cx} cy={cy} r={3} fill={hasValue ? NAVY : '#d1d5db'} />
+    </svg>
+  );
+}
+
 /* ─── Main component ─── */
 interface KPIDashboardProps { slug: string; }
 
@@ -338,12 +369,11 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
                 />
                 <span className="text-xs text-muted-foreground shrink-0">{isAr ? kpi.unitAr : kpi.unit}</span>
               </div>
-              {/* Progress bar */}
-              <div className="mt-2 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                <div className="h-full rounded-full transition-all duration-500"
-                  style={{ width: `${score ?? 0}%`, background: scoreColor(score ?? 0) }} />
+              {/* Mini speedometer gauge */}
+              <div className="flex justify-center mt-1 mb-0.5">
+                <MiniGauge score={score ?? 0} hasValue={score !== null} />
               </div>
-              <div className="flex justify-between mt-1.5 text-xs text-muted-foreground">
+              <div className="flex justify-between text-xs text-muted-foreground">
                 <span title={isAr ? 'المستهدف' : 'Target'}>
                   {isAr ? `هدف: ${kpi.targetLabelAr ?? kpi.targetLabel}` : `Target: ${kpi.targetLabel}`}
                 </span>
