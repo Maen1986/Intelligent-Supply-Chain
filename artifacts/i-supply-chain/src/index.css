@@ -188,17 +188,32 @@ html[lang="ar"] {
     box-sizing: border-box;
   }
 
+  body[data-print="checklist"] .print-zone-checklist,
+  body[data-print="checklist"] .print-zone-checklist * {
+    visibility: visible;
+  }
+  body[data-print="checklist"] .print-zone-checklist {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    padding: 24px;
+    box-sizing: border-box;
+  }
+
   /* Common print typography */
   .print-zone-scorecard,
   .print-zone-kri,
-  .print-zone-clm {
+  .print-zone-clm,
+  .print-zone-checklist {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     color: #111;
     background: #fff;
   }
   .print-zone-scorecard table,
   .print-zone-kri table,
-  .print-zone-clm table {
+  .print-zone-clm table,
+  .print-zone-checklist table {
     width: 100%;
     border-collapse: collapse;
   }
@@ -207,7 +222,9 @@ html[lang="ar"] {
   .print-zone-kri th,
   .print-zone-kri td,
   .print-zone-clm th,
-  .print-zone-clm td {
+  .print-zone-clm td,
+  .print-zone-checklist th,
+  .print-zone-checklist td {
     border: 1px solid #d1d5db;
     padding: 6px 10px;
     font-size: 11px;

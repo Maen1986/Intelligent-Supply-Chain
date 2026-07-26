@@ -4,8 +4,18 @@
  * inside each expanded challenge accordion item.
  */
 import React, { useState } from 'react';
-import { Wrench, ChevronDown, ChevronUp } from 'lucide-react';
+import { Wrench, ChevronDown, ChevronUp, Printer } from 'lucide-react';
 import { ChecklistTool, ActionTracker, ChecklistItem } from './Primitives';
+
+function printZone(zone: string) {
+  document.body.setAttribute('data-print', zone);
+  const cleanup = () => {
+    document.body.removeAttribute('data-print');
+    window.removeEventListener('afterprint', cleanup);
+  };
+  window.addEventListener('afterprint', cleanup);
+  window.print();
+}
 
 /** Map: slug → array-of-checklists (one per challenge, in order) */
 const CHALLENGE_CHECKLISTS: Record<string, ChecklistItem[][]> = {
@@ -462,18 +472,36 @@ export function ChallengeToolkitPanel({ slug, challengeIndex, isAr }: ChallengeT
   const storageKey = `isc-tool-${slug}-challenge-${challengeIndex}`;
   const actionKey = `isc-tool-${slug}-actions-${challengeIndex}`;
 
+  const today = new Date().toLocaleDateString(isAr ? 'ar-SA' : 'en-GB');
+
   return (
     <div className="mt-3 border-t border-dashed border-border pt-3">
-      <button
-        onClick={() => setOpen(o => !o)}
-        className="flex items-center gap-2 text-xs font-bold text-primary hover:text-accent transition-colors"
-      >
-        <Wrench className="w-3.5 h-3.5" />
-        {isAr ? 'أدوات التطبيق المساعدة' : 'Implementation Toolkit'}
-        {open ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-      </button>
+      <div className="flex items-center justify-between gap-2">
+        <button
+          onClick={() => setOpen(o => !o)}
+          className="flex items-center gap-2 text-xs font-bold text-primary hover:text-accent transition-colors"
+        >
+          <Wrench className="w-3.5 h-3.5" />
+          {isAr ? 'أدوات التطبيق المساعدة' : 'Implementation Toolkit'}
+          {open ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+        </button>
+        {open && (
+          <button
+            onClick={() => printZone('checklist')}
+            className="no-print flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg font-bold bg-primary text-white hover:bg-primary/90 transition-colors shrink-0"
+          >
+            <Printer className="w-3.5 h-3.5" />
+            {isAr ? 'تصدير PDF' : 'Export PDF'}
+          </button>
+        )}
+      </div>
       {open && (
-        <div className="mt-3 space-y-3">
+        <div className="print-zone-checklist mt-3 space-y-3">
+          {/* Print-only header */}
+          <div className="hidden print:block mb-4 pb-3 border-b border-gray-300">
+            <p className="text-lg font-extrabold text-gray-900">{isAr ? '✅ قائمة خطوات التطبيق' : '✅ Implementation Checklist'}</p>
+            <p className="text-xs text-gray-500">{isAr ? `تاريخ التصدير: ${today}` : `Exported: ${today}`}</p>
+          </div>
           <ChecklistTool
             storageKey={storageKey}
             items={items}
