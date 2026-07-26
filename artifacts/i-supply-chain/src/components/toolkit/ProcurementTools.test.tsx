@@ -1,12 +1,14 @@
 /**
- * Tests: ProcurementToolsSection — localStorage save & restore
+ * Tests: ProcurementToolsSection — accessibility (label/input associations) &
+ *         localStorage save & restore
  *
  * Covers:
- *   1. CategoryProfileBuilder persists all field values to localStorage and
- *      restores them on remount (simulating page refresh).
- *   2. SpendParetoChart persists row data to localStorage and restores it.
- *   3. MarketIntelligenceScorecard persists slider scores to localStorage
- *      and restores them.
+ *   1. CategoryProfileBuilder — getByLabelText for all 5 fields, persists and
+ *      restores from localStorage.
+ *   2. SpendParetoChart — getByLabelText for supplier-name and spend inputs
+ *      across multiple rows, persists and restores from localStorage.
+ *   3. MarketIntelligenceScorecard — getByLabelText for all 6 dimension
+ *      sliders, persists and restores from localStorage.
  *   4. Each tool uses its own isolated localStorage key — no cross-tool
  *      contamination.
  *   5. A second mount of ProcurementToolsSection (simulating the same
@@ -21,8 +23,8 @@ import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { ProcurementToolsSection } from './ProcurementTools';
 
 /* ── localStorage keys matched to the component source ────────────────── */
-const SK_CATPROFILE = 'isc-tool-procurement-catprofile';
-const SK_PARETO     = 'isc-tool-procurement-pareto';
+const SK_CATPROFILE  = 'isc-tool-procurement-catprofile';
+const SK_PARETO      = 'isc-tool-procurement-pareto';
 const SK_MARKETINTEL = 'isc-tool-procurement-marketintel';
 
 /* ── Recharts uses ResizeObserver internally ───────────────────────────── */
@@ -42,37 +44,81 @@ function renderAndActivate(tabLabel: string) {
   fireEvent.click(tab);
 }
 
-/** Fill a labelled text/number input in the active panel. */
-function fillInput(labelText: string, value: string) {
-  const input = screen.getByLabelText(labelText) as HTMLInputElement;
-  fireEvent.change(input, { target: { value } });
-}
-
 /* ══════════════════════════════════════════════════════════════════════════
    Suite 1 — CategoryProfileBuilder
+   All 5 fields must be reachable via getByLabelText.
 ══════════════════════════════════════════════════════════════════════════ */
-describe('CategoryProfileBuilder — save & restore', () => {
+describe('CategoryProfileBuilder — label associations & save/restore', () => {
   beforeEach(() => {
     localStorage.clear();
     cleanup();
   });
 
-  it('persists field values to localStorage on change', () => {
+  it('all 5 fields are reachable by label text', () => {
     renderAndActivate('Category Profile Builder');
 
-    // Category Name is the only type="text" input (the rest are number spinbuttons)
-    const categoryInput = screen.getAllByRole('textbox')[0] as HTMLInputElement;
-    fireEvent.change(categoryInput, { target: { value: 'MRO Supplies' } });
+    // Each of these must resolve to exactly one element without throwing.
+    expect(screen.getByLabelText('Category Name')).toBeInTheDocument();
+    expect(screen.getByLabelText('Annual Spend (SAR)')).toBeInTheDocument();
+    expect(screen.getByLabelText('Number of Qualified Suppliers')).toBeInTheDocument();
+    expect(screen.getByLabelText('Strategic Importance (1–5)')).toBeInTheDocument();
+    expect(screen.getByLabelText('Market Complexity (1–5)')).toBeInTheDocument();
+  });
+
+  it('persists Category Name to localStorage on change', () => {
+    renderAndActivate('Category Profile Builder');
+
+    const input = screen.getByLabelText('Category Name') as HTMLInputElement;
+    fireEvent.change(input, { target: { value: 'MRO Supplies' } });
 
     const saved = JSON.parse(localStorage.getItem(SK_CATPROFILE) ?? '{}');
     expect(saved.category).toBe('MRO Supplies');
   });
 
+  it('persists Annual Spend to localStorage on change', () => {
+    renderAndActivate('Category Profile Builder');
+
+    const input = screen.getByLabelText('Annual Spend (SAR)') as HTMLInputElement;
+    fireEvent.change(input, { target: { value: '750000' } });
+
+    const saved = JSON.parse(localStorage.getItem(SK_CATPROFILE) ?? '{}');
+    expect(saved.spend).toBe('750000');
+  });
+
+  it('persists Number of Qualified Suppliers to localStorage on change', () => {
+    renderAndActivate('Category Profile Builder');
+
+    const input = screen.getByLabelText('Number of Qualified Suppliers') as HTMLInputElement;
+    fireEvent.change(input, { target: { value: '6' } });
+
+    const saved = JSON.parse(localStorage.getItem(SK_CATPROFILE) ?? '{}');
+    expect(saved.suppliers).toBe('6');
+  });
+
+  it('persists Strategic Importance to localStorage on change', () => {
+    renderAndActivate('Category Profile Builder');
+
+    const input = screen.getByLabelText('Strategic Importance (1–5)') as HTMLInputElement;
+    fireEvent.change(input, { target: { value: '4' } });
+
+    const saved = JSON.parse(localStorage.getItem(SK_CATPROFILE) ?? '{}');
+    expect(saved.strategic).toBe('4');
+  });
+
+  it('persists Market Complexity to localStorage on change', () => {
+    renderAndActivate('Category Profile Builder');
+
+    const input = screen.getByLabelText('Market Complexity (1–5)') as HTMLInputElement;
+    fireEvent.change(input, { target: { value: '3' } });
+
+    const saved = JSON.parse(localStorage.getItem(SK_CATPROFILE) ?? '{}');
+    expect(saved.complexity).toBe('3');
+  });
+
   it('restores all field values from localStorage on remount', () => {
-    // Pre-seed localStorage as if data was entered in a previous session
     localStorage.setItem(SK_CATPROFILE, JSON.stringify({
       category: 'IT Hardware',
-      spend: '500000',
+      spend:    '500000',
       suppliers: '4',
       strategic: '4',
       complexity: '3',
@@ -81,23 +127,21 @@ describe('CategoryProfileBuilder — save & restore', () => {
     render(<ProcurementToolsSection isAr={false} />);
     // Category Profile Builder is the default active tab
 
-    const inputs = screen.getAllByRole('spinbutton') as HTMLInputElement[];
-    // spend, suppliers, strategic, complexity — order matches field definition
-    const spendInput     = inputs.find(i => (i as HTMLInputElement).value === '500000');
-    const suppliersInput = inputs.find(i => (i as HTMLInputElement).value === '4');
+    expect((screen.getByLabelText('Category Name') as HTMLInputElement).value).toBe('IT Hardware');
+    expect((screen.getByLabelText('Annual Spend (SAR)') as HTMLInputElement).value).toBe('500000');
+    expect((screen.getByLabelText('Number of Qualified Suppliers') as HTMLInputElement).value).toBe('4');
+    expect((screen.getByLabelText('Strategic Importance (1–5)') as HTMLInputElement).value).toBe('4');
+    expect((screen.getByLabelText('Market Complexity (1–5)') as HTMLInputElement).value).toBe('3');
 
-    expect(spendInput).toBeDefined();
-    expect(suppliersInput).toBeDefined();
-
-    // Quadrant card should appear because strategic(4) > 3 && complexity(3) <= 3
+    // Quadrant card should appear: strategic(4) > 3, complexity(3) ≤ 3 → Leverage
     expect(screen.getByText('Leverage')).toBeInTheDocument();
   });
 
   it('does NOT write to the pareto or marketintel keys', () => {
     renderAndActivate('Category Profile Builder');
 
-    const textboxes = screen.getAllByRole('textbox') as HTMLInputElement[];
-    fireEvent.change(textboxes[0], { target: { value: 'Office Supplies' } });
+    const input = screen.getByLabelText('Category Name') as HTMLInputElement;
+    fireEvent.change(input, { target: { value: 'Office Supplies' } });
 
     expect(localStorage.getItem(SK_PARETO)).toBeNull();
     expect(localStorage.getItem(SK_MARKETINTEL)).toBeNull();
@@ -106,31 +150,64 @@ describe('CategoryProfileBuilder — save & restore', () => {
 
 /* ══════════════════════════════════════════════════════════════════════════
    Suite 2 — SpendParetoChart
+   Supplier-name and spend inputs across multiple rows must be reachable via
+   getByLabelText (sr-only labels); no getByPlaceholderText fallbacks.
 ══════════════════════════════════════════════════════════════════════════ */
-describe('SpendParetoChart — save & restore', () => {
+describe('SpendParetoChart — label associations & save/restore', () => {
   beforeEach(() => {
     localStorage.clear();
     cleanup();
   });
 
-  it('persists row data to localStorage when a supplier name is entered', () => {
+  it('supplier name inputs are reachable by label text for rows 1–10', () => {
     renderAndActivate('Spend Pareto Analysis');
 
-    const supplierInputs = screen.getAllByPlaceholderText(/Supplier \d+/);
-    fireEvent.change(supplierInputs[0], { target: { value: 'ACME Corp' } });
+    for (let i = 1; i <= 10; i++) {
+      expect(screen.getByLabelText(`Supplier ${i} name`)).toBeInTheDocument();
+    }
+  });
+
+  it('supplier spend inputs are reachable by label text for rows 1–10', () => {
+    renderAndActivate('Spend Pareto Analysis');
+
+    for (let i = 1; i <= 10; i++) {
+      expect(screen.getByLabelText(`Supplier ${i} spend`)).toBeInTheDocument();
+    }
+  });
+
+  it('persists row data to localStorage when a supplier name is entered via label', () => {
+    renderAndActivate('Spend Pareto Analysis');
+
+    const input = screen.getByLabelText('Supplier 1 name') as HTMLInputElement;
+    fireEvent.change(input, { target: { value: 'ACME Corp' } });
 
     const saved = JSON.parse(localStorage.getItem(SK_PARETO) ?? '[]');
     expect(saved[0].name).toBe('ACME Corp');
   });
 
-  it('persists spend values to localStorage', () => {
+  it('persists spend values to localStorage when entered via label', () => {
     renderAndActivate('Spend Pareto Analysis');
 
-    const spendInputs = screen.getAllByPlaceholderText(/Spend \(SAR\)/);
-    fireEvent.change(spendInputs[0], { target: { value: '1200000' } });
+    const input = screen.getByLabelText('Supplier 1 spend') as HTMLInputElement;
+    fireEvent.change(input, { target: { value: '1200000' } });
 
     const saved = JSON.parse(localStorage.getItem(SK_PARETO) ?? '[]');
     expect(saved[0].spend).toBe('1200000');
+  });
+
+  it('persists name and spend for multiple rows simultaneously', () => {
+    renderAndActivate('Spend Pareto Analysis');
+
+    fireEvent.change(screen.getByLabelText('Supplier 1 name'), { target: { value: 'Alpha' } });
+    fireEvent.change(screen.getByLabelText('Supplier 1 spend'), { target: { value: '900000' } });
+    fireEvent.change(screen.getByLabelText('Supplier 2 name'), { target: { value: 'Beta' } });
+    fireEvent.change(screen.getByLabelText('Supplier 2 spend'), { target: { value: '600000' } });
+
+    const saved = JSON.parse(localStorage.getItem(SK_PARETO) ?? '[]');
+    expect(saved[0].name).toBe('Alpha');
+    expect(saved[0].spend).toBe('900000');
+    expect(saved[1].name).toBe('Beta');
+    expect(saved[1].spend).toBe('600000');
   });
 
   it('restores row data from localStorage on remount', () => {
@@ -141,15 +218,15 @@ describe('SpendParetoChart — save & restore', () => {
 
     renderAndActivate('Spend Pareto Analysis');
 
-    const supplierInputs = screen.getAllByPlaceholderText(/Supplier \d+/) as HTMLInputElement[];
-    expect(supplierInputs[0].value).toBe('Top Supplier');
+    const input = screen.getByLabelText('Supplier 1 name') as HTMLInputElement;
+    expect(input.value).toBe('Top Supplier');
   });
 
   it('does NOT write to the catprofile or marketintel keys', () => {
     renderAndActivate('Spend Pareto Analysis');
 
-    const spendInputs = screen.getAllByPlaceholderText(/Spend \(SAR\)/);
-    fireEvent.change(spendInputs[0], { target: { value: '50000' } });
+    const input = screen.getByLabelText('Supplier 1 spend') as HTMLInputElement;
+    fireEvent.change(input, { target: { value: '50000' } });
 
     expect(localStorage.getItem(SK_CATPROFILE)).toBeNull();
     expect(localStorage.getItem(SK_MARKETINTEL)).toBeNull();
@@ -158,22 +235,84 @@ describe('SpendParetoChart — save & restore', () => {
 
 /* ══════════════════════════════════════════════════════════════════════════
    Suite 3 — MarketIntelligenceScorecard
+   All 6 dimension sliders must be reachable via getByLabelText.
 ══════════════════════════════════════════════════════════════════════════ */
-describe('MarketIntelligenceScorecard — save & restore', () => {
+describe('MarketIntelligenceScorecard — label associations & save/restore', () => {
   beforeEach(() => {
     localStorage.clear();
     cleanup();
   });
 
-  it('persists slider scores to localStorage on change', () => {
+  it('all 6 dimension sliders are reachable by label text', () => {
     renderAndActivate('Market Intelligence Scorecard');
 
-    const sliders = screen.getAllByRole('slider') as HTMLInputElement[];
-    // Move the first slider (Supplier Concentration) to 8
-    fireEvent.change(sliders[0], { target: { value: '8' } });
+    expect(screen.getByLabelText('Supplier Concentration')).toBeInTheDocument();
+    expect(screen.getByLabelText('Market Growth Rate')).toBeInTheDocument();
+    expect(screen.getByLabelText('Technology Change Rate')).toBeInTheDocument();
+    expect(screen.getByLabelText('Regulatory Complexity')).toBeInTheDocument();
+    expect(screen.getByLabelText('Price Volatility')).toBeInTheDocument();
+    expect(screen.getByLabelText('Supply Continuity Risk')).toBeInTheDocument();
+  });
+
+  it('persists Supplier Concentration slider score via label', () => {
+    renderAndActivate('Market Intelligence Scorecard');
+
+    const slider = screen.getByLabelText('Supplier Concentration') as HTMLInputElement;
+    fireEvent.change(slider, { target: { value: '8' } });
 
     const saved = JSON.parse(localStorage.getItem(SK_MARKETINTEL) ?? '{}');
     expect(saved.concentration).toBe(8);
+  });
+
+  it('persists Market Growth Rate slider score via label', () => {
+    renderAndActivate('Market Intelligence Scorecard');
+
+    const slider = screen.getByLabelText('Market Growth Rate') as HTMLInputElement;
+    fireEvent.change(slider, { target: { value: '7' } });
+
+    const saved = JSON.parse(localStorage.getItem(SK_MARKETINTEL) ?? '{}');
+    expect(saved.growth).toBe(7);
+  });
+
+  it('persists Technology Change Rate slider score via label', () => {
+    renderAndActivate('Market Intelligence Scorecard');
+
+    const slider = screen.getByLabelText('Technology Change Rate') as HTMLInputElement;
+    fireEvent.change(slider, { target: { value: '6' } });
+
+    const saved = JSON.parse(localStorage.getItem(SK_MARKETINTEL) ?? '{}');
+    expect(saved.technology).toBe(6);
+  });
+
+  it('persists Regulatory Complexity slider score via label', () => {
+    renderAndActivate('Market Intelligence Scorecard');
+
+    const slider = screen.getByLabelText('Regulatory Complexity') as HTMLInputElement;
+    // Use 7 (not the default 5) so the change event triggers a state update
+    fireEvent.change(slider, { target: { value: '7' } });
+
+    const saved = JSON.parse(localStorage.getItem(SK_MARKETINTEL) ?? '{}');
+    expect(saved.regulation).toBe(7);
+  });
+
+  it('persists Price Volatility slider score via label', () => {
+    renderAndActivate('Market Intelligence Scorecard');
+
+    const slider = screen.getByLabelText('Price Volatility') as HTMLInputElement;
+    fireEvent.change(slider, { target: { value: '9' } });
+
+    const saved = JSON.parse(localStorage.getItem(SK_MARKETINTEL) ?? '{}');
+    expect(saved.price).toBe(9);
+  });
+
+  it('persists Supply Continuity Risk slider score via label', () => {
+    renderAndActivate('Market Intelligence Scorecard');
+
+    const slider = screen.getByLabelText('Supply Continuity Risk') as HTMLInputElement;
+    fireEvent.change(slider, { target: { value: '4' } });
+
+    const saved = JSON.parse(localStorage.getItem(SK_MARKETINTEL) ?? '{}');
+    expect(saved.continuity).toBe(4);
   });
 
   it('restores all slider scores from localStorage on remount', () => {
@@ -190,15 +329,22 @@ describe('MarketIntelligenceScorecard — save & restore', () => {
 
     // Composite = round((9+7+6+8+9+8)/6) = round(7.83) = 8 → High Risk
     expect(screen.getByText('High Risk')).toBeInTheDocument();
-    // The composite score renders as "8" inside a <p> followed by "/10" in a <span>
     expect(screen.getByText('Composite Market Risk Score')).toBeInTheDocument();
+
+    // Verify each slider reflects the restored value
+    expect((screen.getByLabelText('Supplier Concentration') as HTMLInputElement).value).toBe('9');
+    expect((screen.getByLabelText('Market Growth Rate') as HTMLInputElement).value).toBe('7');
+    expect((screen.getByLabelText('Technology Change Rate') as HTMLInputElement).value).toBe('6');
+    expect((screen.getByLabelText('Regulatory Complexity') as HTMLInputElement).value).toBe('8');
+    expect((screen.getByLabelText('Price Volatility') as HTMLInputElement).value).toBe('9');
+    expect((screen.getByLabelText('Supply Continuity Risk') as HTMLInputElement).value).toBe('8');
   });
 
   it('does NOT write to the catprofile or pareto keys', () => {
     renderAndActivate('Market Intelligence Scorecard');
 
-    const sliders = screen.getAllByRole('slider') as HTMLInputElement[];
-    fireEvent.change(sliders[0], { target: { value: '5' } });
+    const slider = screen.getByLabelText('Supplier Concentration') as HTMLInputElement;
+    fireEvent.change(slider, { target: { value: '5' } });
 
     expect(localStorage.getItem(SK_CATPROFILE)).toBeNull();
     expect(localStorage.getItem(SK_PARETO)).toBeNull();
@@ -222,8 +368,8 @@ describe('Dual-tab shared-key consistency', () => {
     render(<ProcurementToolsSection isAr={false} />);
     // Category Profile Builder is active by default
 
-    const textboxes = screen.getAllByRole('textbox') as HTMLInputElement[];
-    fireEvent.change(textboxes[0], { target: { value: 'Logistics Services' } });
+    const input = screen.getByLabelText('Category Name') as HTMLInputElement;
+    fireEvent.change(input, { target: { value: 'Logistics Services' } });
 
     // Confirm the key was written by the Projects-tab render
     const afterProjectsTab = JSON.parse(localStorage.getItem(SK_CATPROFILE) ?? '{}');
@@ -236,21 +382,21 @@ describe('Dual-tab shared-key consistency', () => {
     render(<ProcurementToolsSection isAr={false} />);
 
     // The second instance should read the same key and restore the value
-    const restoredTextboxes = screen.getAllByRole('textbox') as HTMLInputElement[];
-    expect(restoredTextboxes[0].value).toBe('Logistics Services');
+    const restored = screen.getByLabelText('Category Name') as HTMLInputElement;
+    expect(restored.value).toBe('Logistics Services');
   });
 
   it('data written by the Challenges-tab instance is read by the Projects-tab instance', () => {
     // ── Simulate Challenges tab writing data ──
     render(<ProcurementToolsSection isAr={false} />);
-    const textboxes = screen.getAllByRole('textbox') as HTMLInputElement[];
-    fireEvent.change(textboxes[0], { target: { value: 'Raw Materials' } });
+    const input = screen.getByLabelText('Category Name') as HTMLInputElement;
+    fireEvent.change(input, { target: { value: 'Raw Materials' } });
     cleanup();
 
     // ── Simulate Projects tab remounting and reading back ──
     render(<ProcurementToolsSection isAr={false} />);
-    const restoredTextboxes = screen.getAllByRole('textbox') as HTMLInputElement[];
-    expect(restoredTextboxes[0].value).toBe('Raw Materials');
+    const restored = screen.getByLabelText('Category Name') as HTMLInputElement;
+    expect(restored.value).toBe('Raw Materials');
   });
 
   it('all three localStorage keys remain isolated from each other across instances', () => {
@@ -266,8 +412,8 @@ describe('Dual-tab shared-key consistency', () => {
 
     // Switch to Spend Pareto
     fireEvent.click(screen.getByRole('button', { name: 'Spend Pareto Analysis' }));
-    const supplierInputs = screen.getAllByPlaceholderText(/Supplier \d+/) as HTMLInputElement[];
-    expect(supplierInputs[0].value).toBe('FuelCo');
+    const supplierInput = screen.getByLabelText('Supplier 1 name') as HTMLInputElement;
+    expect(supplierInput.value).toBe('FuelCo');
 
     // Switch to Market Intelligence Scorecard — Low Risk (composite ≈ 2.7 → 3)
     fireEvent.click(screen.getByRole('button', { name: 'Market Intelligence Scorecard' }));
