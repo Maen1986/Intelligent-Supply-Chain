@@ -1,4 +1,4 @@
-import { pgTable, serial, text, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, timestamp, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -13,6 +13,7 @@ export const usersTable = pgTable("users", {
   passwordHash: text("password_hash"),                    // bcrypt hash; null for legacy profile-only accounts
   resetTokenHash:      text("reset_token_hash"),           // bcrypt hash of the one-time password-reset code
   resetTokenExpiresAt: timestamp("reset_token_expires_at"),// reset code validity window
+  scorecardRoster:     jsonb("scorecard_roster"),           // supplier roster synced from the Scorecard Tool
   createdAt:    timestamp("created_at").defaultNow().notNull(),
 });
 

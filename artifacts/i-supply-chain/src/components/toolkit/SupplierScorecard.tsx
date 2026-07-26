@@ -2,10 +2,12 @@
  * Supplier Scorecard Tool v2 — multi-supplier roster + sub-indicators
  * per dimension, weighted scoring, tier badge, RadarChart.
  */
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { RadarChart, Radar, PolarGrid, PolarAngleAxis, ResponsiveContainer, Tooltip } from 'recharts';
 import { Printer, Plus, Trash2, Users, Download, Settings, ChevronDown, ChevronUp, RotateCcw } from 'lucide-react';
 import { safeSetItem } from '@/lib/storage';
+import { useAuth } from '@/lib/AuthContext';
+import { API_BASE } from '@/lib/apiBase';
 
 function printZone(zone: string) {
   document.body.setAttribute('data-print', zone);
@@ -274,13 +276,84 @@ function exportToCSV(suppliers: SupplierRecord[], config: ScorecardConfig) {
 interface SupplierScorecardProps { isAr: boolean; }
 
 export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
+  const { user } = useAuth();
   const [roster, setRoster] = useState<RosterState>(loadRoster);
   const [config, setConfig] = useState<ScorecardConfig>(loadConfig);
   const [configOpen, setConfigOpen] = useState(false);
+  const [syncStatus, setSyncStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const syncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Track which user id we last bootstrapped from the server.
+  // Storing the id (not just a boolean) means logging out → logging in as a
+  // different user re-runs the bootstrap for the new account.
+  const serverLoadedForUserId = useRef<number | null>(null);
+
+  /* ── Server load: per-user bootstrap on login / account switch ── */
+  useEffect(() => {
+    if (!user) {
+      // User logged out — reset to fresh localStorage state so no stale
+      // data from the previous account leaks into the next login.
+      if (serverLoadedForUserId.current !== null) {
+        serverLoadedForUserId.current = null;
+        if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
+        setSyncStatus('idle');
+        const freshRoster = loadRoster();
+        setRoster(freshRoster);
+      }
+      return;
+    }
+    // Already bootstrapped for this exact user — skip.
+    if (serverLoadedForUserId.current === user.id) return;
+    serverLoadedForUserId.current = user.id;
+
+    (async () => {
+      try {
+        const res = await fetch(`${API_BASE}/scorecard-roster`, { credentials: 'include' });
+        if (!res.ok) return;
+        const data = await res.json() as { ok: boolean; roster: RosterState | null };
+        if (data.ok && data.roster && Array.isArray(data.roster.suppliers) && data.roster.suppliers.length > 0) {
+          // Server has data — use it as source of truth for this account
+          setRoster(data.roster);
+          safeSetItem(ROSTER_KEY, JSON.stringify(data.roster));
+        } else {
+          // Server is empty — upload whatever localStorage has as initial value
+          const localRaw = localStorage.getItem(ROSTER_KEY);
+          if (localRaw) {
+            fetch(`${API_BASE}/scorecard-roster`, {
+              method: 'PUT',
+              credentials: 'include',
+              headers: { 'Content-Type': 'application/json' },
+              body: localRaw,
+            }).catch(() => { /* silent — localStorage is still the fallback */ });
+          }
+        }
+      } catch { /* network error — localStorage still works */ }
+    })();
+  }, [user]);
+
+  const syncToServer = (next: RosterState) => {
+    if (!user) return;
+    setSyncStatus('saving');
+    if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
+    syncTimerRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`${API_BASE}/scorecard-roster`, {
+          method: 'PUT',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(next),
+        });
+        setSyncStatus(res.ok ? 'saved' : 'error');
+        if (res.ok) setTimeout(() => setSyncStatus('idle'), 2500);
+      } catch {
+        setSyncStatus('error');
+      }
+    }, 400);
+  };
 
   const save = (next: RosterState) => {
     setRoster(next);
     safeSetItem(ROSTER_KEY, JSON.stringify(next));
+    syncToServer(next);
   };
 
   const saveConfig = (next: ScorecardConfig) => {
@@ -364,9 +437,16 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
         <div className="min-w-0">
           <p className="text-sm font-bold text-primary">{isAr ? '🏆 أداة بطاقة تقييم المورّد' : '🏆 Supplier Scorecard Tool'}</p>
           <p className="text-xs text-muted-foreground mt-1">
-            {active?.name
-              ? (isAr ? `التقييم: ${active.name} — يُحفظ تلقائياً` : `Evaluating: ${active.name} — auto-saved`)
-              : (isAr ? 'أضف مورّداً أو اختر من القائمة' : 'Add a supplier or select from the roster')}
+            {active?.name ? (() => {
+              const syncLabel = syncStatus === 'saving'
+                ? (isAr ? 'جارٍ الحفظ…' : 'Saving…')
+                : syncStatus === 'saved'
+                ? (isAr ? 'تم الحفظ ✓' : 'Saved ✓')
+                : syncStatus === 'error'
+                ? (isAr ? 'تعذّر المزامنة — تم الحفظ محلياً' : 'Could not sync — saved locally')
+                : (isAr ? 'يُحفظ تلقائياً' : 'auto-saved');
+              return isAr ? `التقييم: ${active.name} — ${syncLabel}` : `Evaluating: ${active.name} — ${syncLabel}`;
+            })() : (isAr ? 'أضف مورّداً أو اختر من القائمة' : 'Add a supplier or select from the roster')}
           </p>
         </div>
         <button
