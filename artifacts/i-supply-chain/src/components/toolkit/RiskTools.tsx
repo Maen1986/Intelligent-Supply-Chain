@@ -178,9 +178,26 @@ function SupplierAlertConfig({ isAr }: { isAr: boolean }) {
     return next;
   });
 
+  const today = new Date().toLocaleDateString(isAr ? 'ar-SA' : 'en-GB');
+
   return (
-    <div className="space-y-4">
-      <p className="text-sm font-bold text-primary">{isAr ? 'إعداد تنبيهات المورّدين' : 'Supplier Alert Configuration'}</p>
+    <div className="print-zone-alert-config space-y-4">
+      {/* Print-only header */}
+      <div className="hidden print:block mb-4 pb-3 border-b border-gray-300">
+        <p className="text-lg font-extrabold text-gray-900">{isAr ? '🔔 إعداد تنبيهات المورّدين' : '🔔 Supplier Alert Configuration'}</p>
+        <p className="text-xs text-gray-500">{isAr ? `تاريخ التصدير: ${today}` : `Exported: ${today}`}</p>
+      </div>
+
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <p className="text-sm font-bold text-primary">{isAr ? 'إعداد تنبيهات المورّدين' : 'Supplier Alert Configuration'}</p>
+        <button
+          onClick={() => printZone('alert-config')}
+          className="no-print flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg font-bold bg-primary text-white hover:bg-primary/90 transition-colors"
+        >
+          <Printer className="w-3.5 h-3.5" />
+          {isAr ? 'تصدير PDF' : 'Export PDF'}
+        </button>
+      </div>
       <div className="overflow-x-auto">
         <table className="w-full text-xs min-w-[400px]">
           <thead><tr className="border-b border-border bg-muted/30">
@@ -287,15 +304,30 @@ Signed: _______________  Date: ${today}`;
   };
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <p className="text-sm font-bold text-primary">{isAr ? 'نموذج المراجعة الأسبوعية للمخاطر' : 'Weekly Risk Review Template'}</p>
-        <button onClick={copy} className={`flex items-center gap-2 text-xs px-3 py-1.5 rounded-lg font-bold transition-all ${copied ? 'bg-emerald-100 text-emerald-700' : 'bg-primary text-white hover:bg-primary/90'}`}>
-          {copied ? <CheckCircle className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-          {copied ? (isAr ? 'تم النسخ!' : 'Copied!') : (isAr ? 'نسخ النموذج' : 'Copy Template')}
-        </button>
+    <div className="print-zone-weekly-review space-y-3">
+      {/* Print-only header */}
+      <div className="hidden print:block mb-4 pb-3 border-b border-gray-300">
+        <p className="text-lg font-extrabold text-gray-900">{isAr ? '📋 نموذج المراجعة الأسبوعية لمخاطر سلسلة الإمداد' : '📋 Weekly Supply Chain Risk Review'}</p>
+        <p className="text-xs text-gray-500">{isAr ? `تاريخ التصدير: ${today}` : `Exported: ${today}`}</p>
       </div>
-      <pre className="text-xs bg-muted rounded-xl p-4 overflow-x-auto whitespace-pre-wrap font-mono leading-relaxed border border-border max-h-64 overflow-y-auto">
+
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <p className="text-sm font-bold text-primary">{isAr ? 'نموذج المراجعة الأسبوعية للمخاطر' : 'Weekly Risk Review Template'}</p>
+        <div className="no-print flex items-center gap-2">
+          <button onClick={copy} className={`flex items-center gap-2 text-xs px-3 py-1.5 rounded-lg font-bold transition-all ${copied ? 'bg-emerald-100 text-emerald-700' : 'bg-muted text-primary hover:bg-muted/70 border border-border'}`}>
+            {copied ? <CheckCircle className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+            {copied ? (isAr ? 'تم النسخ!' : 'Copied!') : (isAr ? 'نسخ النموذج' : 'Copy Template')}
+          </button>
+          <button
+            onClick={() => printZone('weekly-review')}
+            className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg font-bold bg-primary text-white hover:bg-primary/90 transition-colors"
+          >
+            <Printer className="w-3.5 h-3.5" />
+            {isAr ? 'تصدير PDF' : 'Export PDF'}
+          </button>
+        </div>
+      </div>
+      <pre className="print-weekly-template text-xs bg-muted rounded-xl p-4 overflow-x-auto whitespace-pre-wrap font-mono leading-relaxed border border-border max-h-64 overflow-y-auto">
         {template}
       </pre>
     </div>
