@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import request from 'supertest';
 import { makeApp, dbState, resetDbState, makeDbMock, makeLoggerMock } from './helpers';
 
@@ -102,6 +102,67 @@ describe('POST /api/auth/register', () => {
     });
     expect(res.status).toBe(500);
     expect(res.body.ok).toBe(false);
+  });
+
+  describe('admin email block', () => {
+    const ADMIN = 'admin@example.com';
+
+    beforeEach(() => {
+      process.env.ADMIN_EMAIL = ADMIN;
+    });
+
+    afterEach(() => {
+      delete process.env.ADMIN_EMAIL;
+    });
+
+    it('returns 403 when the submitted email matches ADMIN_EMAIL', async () => {
+      dbState.selectRows = []; // no admin row in DB yet
+      const app = makeApp('/api/auth', authRouter);
+      const res = await request(app).post('/api/auth/register').send({
+        email: ADMIN,
+        fullName: 'Admin Attacker',
+        password: 'secret6',
+      });
+      expect(res.status).toBe(403);
+      expect(res.body.ok).toBe(false);
+    });
+
+    it('blocks the admin email even before an admin user row exists in the database', async () => {
+      // Explicitly confirm the guard fires without any DB row present.
+      dbState.selectRows = [];
+      const app = makeApp('/api/auth', authRouter);
+      const res = await request(app).post('/api/auth/register').send({
+        email: ADMIN,
+        fullName: 'Pre-claim Attacker',
+        password: 'secret6',
+      });
+      expect(res.status).toBe(403);
+      expect(res.body.ok).toBe(false);
+      // Ensure the block is case-insensitive (Zod accepts uppercase emails).
+      const res2 = await request(app).post('/api/auth/register').send({
+        email: 'ADMIN@EXAMPLE.COM',
+        fullName: 'Pre-claim Attacker',
+        password: 'secret6',
+      });
+      expect(res2.status).toBe(403);
+    });
+
+    it('allows a different email to register normally while ADMIN_EMAIL is set', async () => {
+      // Use a fresh email that has not been touched by any earlier test so the
+      // per-email rate-limit bucket is empty.
+      const freshEmail = 'nonadmin-unique@example.com';
+      const freshUser = { ...user, email: freshEmail };
+      dbState.selectRows = [];
+      dbState.insertRows = [freshUser];
+      const app = makeApp('/api/auth', authRouter);
+      const res = await request(app).post('/api/auth/register').send({
+        email: freshEmail,
+        fullName: user.fullName,
+        password: 'secret6',
+      });
+      expect(res.status).toBe(200);
+      expect(res.body.ok).toBe(true);
+    });
   });
 });
 
