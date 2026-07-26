@@ -2,16 +2,17 @@
  * AIPlanPanel — shared UI for every AI "Generate" action plan feature.
  *
  * Shows:
- *   • A "Generate ✨" button (when idle)
+ *   • A "Last plan (from [date])" notice with View / Delete links when a
+ *     server-persisted plan exists and the user hasn't loaded a result yet
+ *   • A "Generate ✨" button (when idle, authenticated) or sign-in prompt (unauthenticated)
  *   • A spinner while generating
  *   • A collapsible panel with formatted AI output when ready
  *   • An inline error + retry button on failure
- *
- * The rendered output is ephemeral — not stored, only displayed.
  */
 import React, { useState } from 'react';
-import { Sparkles, Loader2, Copy, Check, ChevronDown, ChevronUp, RefreshCw, AlertCircle, LogIn } from 'lucide-react';
+import { Sparkles, Loader2, Copy, Check, ChevronDown, ChevronUp, RefreshCw, AlertCircle, LogIn, History, Trash2 } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
+import { type SavedPlan } from '@/hooks/useAIPlan';
 
 interface AIPlanPanelProps {
   loading:    boolean;
@@ -24,10 +25,15 @@ interface AIPlanPanelProps {
   isAr:       boolean;
   /** Disable the generate button (e.g. not enough data entered yet) */
   disabled?:  boolean;
+  /** Server-persisted plan from a previous session */
+  savedPlan?:    SavedPlan | null;
+  onViewSaved?:  () => void;
+  onDeleteSaved?: () => void;
 }
 
 export function AIPlanPanel({
   loading, result, error, onGenerate, onReset, buttonLabel, isAr, disabled,
+  savedPlan, onViewSaved, onDeleteSaved,
 }: AIPlanPanelProps) {
   const { isAuthenticated } = useAuth();
   const [open,   setOpen]   = useState(true);
@@ -41,8 +47,44 @@ export function AIPlanPanel({
     });
   };
 
+  /* ── Format savedAt date ── */
+  const savedAtLabel = savedPlan
+    ? new Date(savedPlan.savedAt).toLocaleDateString(isAr ? 'ar-SA' : 'en-GB', {
+        year: 'numeric', month: 'short', day: 'numeric',
+      })
+    : null;
+
+  /* Whether to show the "last saved plan" notice (only when idle) */
+  const showSavedNotice = !!savedPlan && !result && !loading && !error;
+
   return (
-    <div className="no-print mt-3">
+    <div className="no-print mt-3 space-y-2">
+
+      {/* ── Saved plan notice ── */}
+      {showSavedNotice && (
+        <div className="flex items-center gap-2 text-xs text-muted-foreground bg-primary/5 border border-primary/15 rounded-lg px-3 py-2 max-w-xl">
+          <History className="w-3.5 h-3.5 text-primary shrink-0" />
+          <span className="flex-1">
+            {isAr
+              ? `آخر خطة (بتاريخ ${savedAtLabel})`
+              : `Last plan (from ${savedAtLabel})`}
+          </span>
+          <button
+            onClick={onViewSaved}
+            className="font-bold text-primary underline underline-offset-2 hover:opacity-70 shrink-0"
+          >
+            {isAr ? 'عرض' : 'View'}
+          </button>
+          <button
+            onClick={onDeleteSaved}
+            className="p-0.5 rounded hover:text-red-500 transition-colors shrink-0"
+            title={isAr ? 'حذف الخطة المحفوظة' : 'Delete saved plan'}
+          >
+            <Trash2 className="w-3 h-3" />
+          </button>
+        </div>
+      )}
+
       {/* ── Idle: show Generate button (authenticated) or sign-in prompt ── */}
       {!result && !loading && !error && (
         isAuthenticated ? (

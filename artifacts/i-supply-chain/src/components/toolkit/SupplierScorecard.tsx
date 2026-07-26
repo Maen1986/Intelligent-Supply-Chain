@@ -493,8 +493,9 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
     ].join('\n');
   }, [active, config]);
 
-  const { loading: planLoading, result: planResult, error: planError, generate: generatePlan, reset: resetPlan } =
-    useAIPlan(buildScorecardPrompt, isAr);
+  const { loading: planLoading, result: planResult, error: planError, generate: generatePlan, reset: resetPlan,
+          savedPlan: planSavedPlan, viewSaved: viewSavedPlan, deleteSaved: deleteSavedPlan } =
+    useAIPlan(buildScorecardPrompt, isAr, 'scorecard');
 
   const setActiveId = (id: string) => save({ ...roster, activeId: id });
 
@@ -906,6 +907,9 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
                 onReset={resetPlan}
                 buttonLabel={isAr ? 'توليد خطة التطوير ✨' : 'Generate Development Plan ✨'}
                 isAr={isAr}
+                savedPlan={planSavedPlan}
+                onViewSaved={viewSavedPlan}
+                onDeleteSaved={deleteSavedPlan}
               />
             )}
             {weightedScore !== null && tier && (

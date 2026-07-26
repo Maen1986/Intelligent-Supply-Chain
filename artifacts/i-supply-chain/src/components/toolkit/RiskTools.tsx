@@ -141,8 +141,9 @@ function KRIDashboard({ isAr }: { isAr: boolean }) {
     ].join('\n');
   }, [entries, filled, heatScore]);
 
-  const { loading: planLoading, result: planResult, error: planError, generate: generatePlan, reset: resetPlan } =
-    useAIPlan(buildKriPrompt, isAr);
+  const { loading: planLoading, result: planResult, error: planError, generate: generatePlan, reset: resetPlan,
+          savedPlan: planSavedPlan, viewSaved: viewSavedPlan, deleteSaved: deleteSavedPlan } =
+    useAIPlan(buildKriPrompt, isAr, 'risk');
 
   const today = new Date().toLocaleDateString(isAr ? 'ar-SA' : 'en-GB');
 
@@ -256,6 +257,9 @@ function KRIDashboard({ isAr }: { isAr: boolean }) {
         buttonLabel={isAr ? 'توليد خطة تخفيف المخاطر ✨' : 'Generate Risk Mitigation Plan ✨'}
         isAr={isAr}
         disabled={filled.length === 0}
+        savedPlan={planSavedPlan}
+        onViewSaved={viewSavedPlan}
+        onDeleteSaved={deleteSavedPlan}
       />
     </div>
   );

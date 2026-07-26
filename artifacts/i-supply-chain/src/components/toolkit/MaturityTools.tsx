@@ -135,8 +135,9 @@ export function MaturityAssessmentTool({ slug, isAr }: MaturityToolsProps) {
     ].join('\n');
   }, [slug, scores, dims, avg, band]);
 
-  const { loading: planLoading, result: planResult, error: planError, generate: generatePlan, reset: resetPlan } =
-    useAIPlan(buildMaturityPrompt, isAr);
+  const { loading: planLoading, result: planResult, error: planError, generate: generatePlan, reset: resetPlan,
+          savedPlan: planSavedPlan, viewSaved: viewSavedPlan, deleteSaved: deleteSavedPlan } =
+    useAIPlan(buildMaturityPrompt, isAr, 'maturity');
 
   const LEVEL_COLORS = { 1: '#fca5a5', 2: '#fcd34d', 3: '#6ee7b7', 4: '#34d399', 5: '#059669' };
   const LEVEL_LABELS_AR = { 1: 'تأسيسي', 2: 'ناشئ', 3: 'مؤهَّل', 4: 'متقدّم', 5: 'عالمي' };
@@ -207,6 +208,9 @@ export function MaturityAssessmentTool({ slug, isAr }: MaturityToolsProps) {
           buttonLabel={isAr ? 'توليد خارطة طريق النضج ✨' : 'Generate Maturity Roadmap ✨'}
           isAr={isAr}
           disabled={filled.length === 0}
+          savedPlan={planSavedPlan}
+          onViewSaved={viewSavedPlan}
+          onDeleteSaved={deleteSavedPlan}
         />
 
         {/* Action Tracker */}

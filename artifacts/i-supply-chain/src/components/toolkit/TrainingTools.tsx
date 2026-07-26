@@ -162,8 +162,9 @@ export function TrainingNeedsAssessment({ isAr }: TrainingToolsProps) {
   }, [members, scores, domainAvgs]);
 
   const hasAnyScores = members.some(m => DOMAINS.some(d => (scores[m]?.[d.id] ?? 0) > 0));
-  const { loading: planLoading, result: planResult, error: planError, generate: generatePlan, reset: resetPlan } =
-    useAIPlan(buildTrainingPrompt, isAr);
+  const { loading: planLoading, result: planResult, error: planError, generate: generatePlan, reset: resetPlan,
+          savedPlan: planSavedPlan, viewSaved: viewSavedPlan, deleteSaved: deleteSavedPlan } =
+    useAIPlan(buildTrainingPrompt, isAr, 'training');
 
   return (
     <div className="bg-white border border-border rounded-2xl shadow-sm overflow-hidden">
@@ -301,6 +302,9 @@ export function TrainingNeedsAssessment({ isAr }: TrainingToolsProps) {
           buttonLabel={isAr ? 'توليد خارطة التعلّم ✨' : 'Generate Learning Roadmap ✨'}
           isAr={isAr}
           disabled={!hasAnyScores}
+          savedPlan={planSavedPlan}
+          onViewSaved={viewSavedPlan}
+          onDeleteSaved={deleteSavedPlan}
         />
       </div>
     </div>

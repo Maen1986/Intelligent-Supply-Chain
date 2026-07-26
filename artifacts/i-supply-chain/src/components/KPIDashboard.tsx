@@ -304,8 +304,9 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
     ].join('\n');
   }, [kpis, values, resolvedSlug]);
 
-  const { loading: planLoading, result: planResult, error: planError, generate: generatePlan, reset: resetPlan } =
-    useAIPlan(buildKpiPrompt, isAr);
+  const { loading: planLoading, result: planResult, error: planError, generate: generatePlan, reset: resetPlan,
+          savedPlan: planSavedPlan, viewSaved: viewSavedPlan, deleteSaved: deleteSavedPlan } =
+    useAIPlan(buildKpiPrompt, isAr, 'kpi');
 
   const handleChange = useCallback((id: string, raw: string) => {
     setValues(prev => {
@@ -559,7 +560,7 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
       )}
 
       {/* AI Plan panel */}
-      {(planLoading || planResult || planError) && (
+      {(planLoading || planResult || planError || planSavedPlan) && (
         <AIPlanPanel
           loading={planLoading}
           result={planResult}
@@ -568,6 +569,9 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
           onReset={resetPlan}
           buttonLabel={isAr ? 'توليد التقرير التنفيذي ✨' : 'Generate Performance Brief ✨'}
           isAr={isAr}
+          savedPlan={planSavedPlan}
+          onViewSaved={viewSavedPlan}
+          onDeleteSaved={deleteSavedPlan}
         />
       )}
 
