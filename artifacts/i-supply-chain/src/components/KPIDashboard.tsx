@@ -146,10 +146,23 @@ function scoreKpi(def: KpiDef, value: number): number {
   }
 }
 
-function scoreColor(score: number): string {
+export function scoreColor(score: number): string {
   if (score >= 80) return '#22c55e';
   if (score >= 50) return '#f59e0b';
   return '#ef4444';
+}
+
+/** Pure helper — returns the clamped 0-100 score and strokeDasharray values
+ *  used by MiniGauge so they can be unit-tested independently of the DOM. */
+export function miniGaugeState(rawScore: number, hasValue: boolean) {
+  const r = 30;
+  const circumference = Math.PI * r;
+  const safeScore = Math.max(0, Math.min(100, rawScore));
+  const strokeDash = (safeScore / 100) * circumference;
+  const color = hasValue ? scoreColor(safeScore) : '#e5e7eb';
+  const angle = (safeScore / 100) * 180;
+  const rad = (angle - 180) * (Math.PI / 180);
+  return { safeScore, circumference, strokeDash, color, rad };
 }
 
 function scoreBg(score: number): string {

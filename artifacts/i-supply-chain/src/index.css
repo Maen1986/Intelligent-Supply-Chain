@@ -254,4 +254,15 @@ html[lang="ar"] {
   .print-hide {
     display: none !important;
   }
+
+  /* ── SVG gauge print safety ──────────────────────────────────────────────
+     Some browsers (Safari, Firefox) apply overflow:hidden to SVG elements
+     during print, clipping the arc stroke that extends to the viewBox edge.
+     Force overflow:visible so the gauge arcs and needle render in full.
+     The fill path inside MiniGauge uses stroke-dasharray, not fill, so no
+     background-colour stripping occurs — these rules only affect geometry.
+  ─────────────────────────────────────────────────────────────────────── */
+  svg {
+    overflow: visible !important;
+  }
 }
