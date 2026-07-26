@@ -160,6 +160,8 @@ html[lang="ar"] {
     width: 100%;
     padding: 24px;
     box-sizing: border-box;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
 
   body[data-print="kri"] .print-zone-kri,
@@ -173,6 +175,8 @@ html[lang="ar"] {
     width: 100%;
     padding: 24px;
     box-sizing: border-box;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
 
   body[data-print="clm"] .print-zone-clm,
@@ -186,6 +190,8 @@ html[lang="ar"] {
     width: 100%;
     padding: 24px;
     box-sizing: border-box;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
 
   body[data-print="checklist"] .print-zone-checklist,
