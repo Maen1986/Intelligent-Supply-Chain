@@ -1039,6 +1039,7 @@ export function SolutionDetail() {
                 </div>
               </Reveal>
             ))}
+            {sol.slug === 'procurement-excellence' && <Reveal><ProcurementToolsSection isAr={isAr} /></Reveal>}
             {sol.slug === 'risk-management-solution' && <Reveal><RiskToolsSection isAr={isAr} /></Reveal>}
             {sol.slug === 'contract-lifecycle-management' && <Reveal><ContractHealthChecker isAr={isAr} /></Reveal>}
             {sol.slug === 'supplier-relationship-governance' && <Reveal><SupplierScorecardTool isAr={isAr} /></Reveal>}
