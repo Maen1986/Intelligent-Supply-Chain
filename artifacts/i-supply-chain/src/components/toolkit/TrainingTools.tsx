@@ -5,6 +5,7 @@
  */
 import React, { useState } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
+import { safeSetItem } from '@/lib/storage';
 
 interface TrainingToolsProps { isAr: boolean; }
 
@@ -39,8 +40,8 @@ export function TrainingNeedsAssessment({ isAr }: TrainingToolsProps) {
     try { const s = localStorage.getItem(SK_SCORES); return s ? JSON.parse(s) : {}; } catch { return {}; }
   });
 
-  const persistMembers = (m: string[]) => { try { localStorage.setItem(SK_MEMBERS, JSON.stringify(m)); } catch { } };
-  const persistScores = (s: Record<string, Record<string, number>>) => { try { localStorage.setItem(SK_SCORES, JSON.stringify(s)); } catch { } };
+  const persistMembers = (m: string[]) => { safeSetItem(SK_MEMBERS, JSON.stringify(m)); };
+  const persistScores = (s: Record<string, Record<string, number>>) => { safeSetItem(SK_SCORES, JSON.stringify(s)); };
 
   const addMember = () => {
     const next = [...members, `Member ${members.length + 1}`];

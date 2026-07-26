@@ -5,6 +5,7 @@
  */
 import React, { useState } from 'react';
 import { ActionTracker } from './Primitives';
+import { safeSetItem } from '@/lib/storage';
 
 interface MaturityToolsProps { slug: string; isAr: boolean; }
 
@@ -89,7 +90,7 @@ export function MaturityAssessmentTool({ slug, isAr }: MaturityToolsProps) {
   });
   const set = (id: string, val: number) => setScores(prev => {
     const next = { ...prev, [id]: val };
-    try { localStorage.setItem(SK, JSON.stringify(next)); } catch { }
+    safeSetItem(SK, JSON.stringify(next));
     return next;
   });
 

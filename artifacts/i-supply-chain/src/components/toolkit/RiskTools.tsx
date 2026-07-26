@@ -6,6 +6,7 @@
  */
 import React, { useState } from 'react';
 import { AlertTriangle, Copy, CheckCircle, Settings, Printer } from 'lucide-react';
+import { safeSetItem } from '@/lib/storage';
 
 function printZone(zone: string) {
   document.body.setAttribute('data-print', zone);
@@ -59,7 +60,7 @@ function KRIDashboard({ isAr }: { isAr: boolean }) {
   });
   const set = (id: string, val: string) => setValues(prev => {
     const next = { ...prev, [id]: val };
-    try { localStorage.setItem(SK, JSON.stringify(next)); } catch { }
+    safeSetItem(SK, JSON.stringify(next));
     return next;
   });
 
@@ -173,7 +174,7 @@ function SupplierAlertConfig({ isAr }: { isAr: boolean }) {
   });
   const update = (ti: number, field: 'otif' | 'defect' | 'financial', val: string) => setCfg(prev => {
     const next = prev.map((c, i) => i === ti ? { ...c, [field]: val } : c);
-    try { localStorage.setItem(SK, JSON.stringify(next)); } catch { }
+    safeSetItem(SK, JSON.stringify(next));
     return next;
   });
 

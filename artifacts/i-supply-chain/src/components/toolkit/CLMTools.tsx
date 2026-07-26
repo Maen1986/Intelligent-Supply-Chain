@@ -4,6 +4,7 @@
  */
 import React, { useState } from 'react';
 import { Printer } from 'lucide-react';
+import { safeSetItem } from '@/lib/storage';
 
 function printZone(zone: string) {
   document.body.setAttribute('data-print', zone);
@@ -80,14 +81,14 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
   });
   const set = (id: string, val: string) => setValues(prev => {
     const next = { ...prev, [id]: val };
-    try { localStorage.setItem(SK, JSON.stringify(next)); } catch { }
+    safeSetItem(SK, JSON.stringify(next));
     return next;
   });
 
   const [contracts, setContracts] = useState<string>(() => {
     try { return localStorage.getItem('isc-tool-clm-count') ?? ''; } catch { return ''; }
   });
-  const setContractsVal = (v: string) => { setContracts(v); try { localStorage.setItem('isc-tool-clm-count', v); } catch { } };
+  const setContractsVal = (v: string) => { setContracts(v); safeSetItem('isc-tool-clm-count', v); };
 
   const statuses = CLM_DIMS.map(d => {
     const raw = parseFloat(values[d.id] ?? '');

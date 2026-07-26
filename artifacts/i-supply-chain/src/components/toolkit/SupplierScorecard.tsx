@@ -5,6 +5,7 @@
 import React, { useState } from 'react';
 import { RadarChart, Radar, PolarGrid, PolarAngleAxis, ResponsiveContainer, Tooltip } from 'recharts';
 import { Printer } from 'lucide-react';
+import { safeSetItem } from '@/lib/storage';
 
 function printZone(zone: string) {
   document.body.setAttribute('data-print', zone);
@@ -49,7 +50,7 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
 
   const update = (patch: Partial<typeof state>) => setState(prev => {
     const next = { ...prev, ...patch };
-    try { localStorage.setItem(SK, JSON.stringify(next)); } catch { }
+    safeSetItem(SK, JSON.stringify(next));
     return next;
   });
 

@@ -4,6 +4,7 @@
  */
 import React, { useState } from 'react';
 import { CheckCircle, Circle, Plus, Trash2, Clock, User } from 'lucide-react';
+import { safeSetItem } from '@/lib/storage';
 
 /* ─── ChecklistTool ─── */
 export interface ChecklistItem { en: string; ar: string; }
@@ -23,7 +24,7 @@ export function ChecklistTool({
 
   const toggle = (i: number) => setChecked(prev => {
     const next = [...prev]; next[i] = !next[i];
-    try { localStorage.setItem(storageKey, JSON.stringify(next)); } catch { }
+    safeSetItem(storageKey, JSON.stringify(next));
     return next;
   });
 
@@ -70,7 +71,7 @@ export function ActionTracker({ storageKey, isAr }: { storageKey: string; isAr: 
   const [form, setForm] = useState({ issue: '', owner: '', dueDate: '' });
   const [showForm, setShowForm] = useState(false);
 
-  const persist = (acts: Action[]) => { try { localStorage.setItem(storageKey, JSON.stringify(acts)); } catch { } };
+  const persist = (acts: Action[]) => { safeSetItem(storageKey, JSON.stringify(acts)); };
 
   const add = () => {
     if (!form.issue.trim()) return;
@@ -147,7 +148,7 @@ export function ParamForm({
   });
   const set = (id: string, v: string) => setValues(prev => {
     const next = { ...prev, [id]: v };
-    try { localStorage.setItem(storageKey, JSON.stringify(next)); } catch { }
+    safeSetItem(storageKey, JSON.stringify(next));
     return next;
   });
   const results = compute(values);

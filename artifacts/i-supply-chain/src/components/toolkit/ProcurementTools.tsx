@@ -9,6 +9,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Cell, Line, ComposedChart,
 } from 'recharts';
+import { safeSetItem } from '@/lib/storage';
 
 interface ProcurementToolsProps { isAr: boolean; }
 
@@ -20,7 +21,7 @@ function CategoryProfileBuilder({ isAr }: { isAr: boolean }) {
   });
   const set = (k: string, val: string) => setV(prev => {
     const next = { ...prev, [k]: val };
-    try { localStorage.setItem(SK, JSON.stringify(next)); } catch { }
+    safeSetItem(SK, JSON.stringify(next));
     return next;
   });
 
@@ -115,7 +116,7 @@ function SpendParetoChart({ isAr }: { isAr: boolean }) {
   const update = (i: number, field: 'name' | 'spend', val: string) => {
     setRows(prev => {
       const next = prev.map((r, ri) => ri === i ? { ...r, [field]: val } : r);
-      try { localStorage.setItem(SK, JSON.stringify(next)); } catch { }
+      safeSetItem(SK, JSON.stringify(next));
       return next;
     });
   };
@@ -181,7 +182,7 @@ function MarketIntelligenceScorecard({ isAr }: { isAr: boolean }) {
   });
   const set = (id: string, val: number) => setScores(prev => {
     const next = { ...prev, [id]: Math.min(10, Math.max(1, val)) };
-    try { localStorage.setItem(SK, JSON.stringify(next)); } catch { }
+    safeSetItem(SK, JSON.stringify(next));
     return next;
   });
 
