@@ -11,6 +11,8 @@
  *  7. The toast includes an action button (label + onClick) for one-tap recovery.
  *  8. Realistic fill-to-capacity: writing in a loop until quota is hit calls the toast exactly once.
  *  9. clearAppStorage removes only isc-/isc_ prefixed keys, leaving others intact.
+ * 10. When localStorage is fully blocked (private/incognito mode) a warning toast fires instead of
+ *     silently losing the write.
  *
  * ── Manual smoke-test guide (iOS Safari / Android Chrome) ──────────────────
  *
@@ -38,6 +40,17 @@
  *     all isc- keys are gone from Application → Local Storage in DevTools.
  *  7. Clean up any remaining fill-N keys: localStorage.clear() in the console.
  *
+ * ── Manual smoke-test guide (private / incognito mode) ─────────────────────
+ *
+ *  1. Open the app in a private/incognito tab (Safari: File → New Private
+ *     Window; Chrome: ⌘/Ctrl+Shift+N).
+ *  2. Interact with any toolkit control that persists data.
+ *  3. Expected: a warning toast appears reading "Private browsing detected —
+ *     your changes cannot be saved. Open the app in a normal tab to keep your
+ *     work." (followed by the Arabic translation).
+ *  4. Confirm the toast does not appear again while staying in the same tab
+ *     (Sonner deduplicates by id).
+ *
  * ──────────────────────────────────────────────────────────────────────────
  */
 
@@ -47,12 +60,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 vi.mock('sonner', () => ({
   toast: {
     error: vi.fn(),
+    warning: vi.fn(),
     dismiss: vi.fn(),
   },
 }));
 
 import { toast } from 'sonner';
-import { safeSetItem, clearAppStorage } from './storage';
+import { _resetStorageAvailabilityCache, clearAppStorage, safeSetItem } from './storage';
 
 /* ── helpers ────────────────────────────────────────────────────────────── */
 function makeQuotaError(name = 'QuotaExceededError'): DOMException {
@@ -70,6 +84,10 @@ function makeCode22Error(): DOMException {
   return e;
 }
 
+function makeSecurityError(): DOMException {
+  return new DOMException('The operation is insecure.', 'SecurityError');
+}
+
 function makeOtherDOMException(): DOMException {
   return new DOMException('Security error.', 'SecurityError');
 }
@@ -78,6 +96,10 @@ function makeOtherDOMException(): DOMException {
 beforeEach(() => {
   localStorage.clear();
   vi.clearAllMocks();
+  // NOTE: _resetStorageAvailabilityCache() is intentionally NOT called here.
+  // The availability probe runs once at module load (jsdom → available = true)
+  // and should stay cached so quota-error mocks don't accidentally retrigger
+  // the probe. Private-browsing tests reset the cache explicitly.
 });
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -93,6 +115,11 @@ describe('safeSetItem — happy path', () => {
   it('does not call toast.error on a successful write', () => {
     safeSetItem('test-key', JSON.stringify({ a: 1 }));
     expect(toast.error).not.toHaveBeenCalled();
+  });
+
+  it('does not call toast.warning on a successful write', () => {
+    safeSetItem('test-key', JSON.stringify({ a: 1 }));
+    expect(toast.warning).not.toHaveBeenCalled();
   });
 
   it('overwrites an existing value', () => {
@@ -323,7 +350,7 @@ describe('safeSetItem — action button', () => {
 });
 
 /* ══════════════════════════════════════════════════════════════════════════
-   safeSetItem — non-quota errors
+   safeSetItem — non-quota errors (storage available, write-time error)
 ══════════════════════════════════════════════════════════════════════════ */
 
 describe('safeSetItem — non-quota errors', () => {
@@ -391,5 +418,108 @@ describe('clearAppStorage', () => {
     clearAppStorage();
     expect(localStorage.length).toBe(1);
     expect(localStorage.getItem('keep-me')).toBe('yes');
+  });
+});
+
+/* ══════════════════════════════════════════════════════════════════════════
+   safeSetItem — private / incognito browsing (localStorage fully blocked)
+══════════════════════════════════════════════════════════════════════════ */
+
+describe('safeSetItem — private browsing (localStorage unavailable)', () => {
+  /**
+   * Helper: mock ALL setItem calls to throw a SecurityError (simulating iOS
+   * Safari private mode), reset the cached availability result so the probe
+   * reruns, then run the callback, and finally restore everything.
+   */
+  function withBlockedStorage(fn: (spy: ReturnType<typeof vi.spyOn>) => void): void {
+    const spy = vi.spyOn(Storage.prototype, 'setItem')
+      .mockImplementation(() => { throw makeSecurityError(); });
+    _resetStorageAvailabilityCache(); // force probe to rerun inside next safeSetItem call
+    try {
+      fn(spy);
+    } finally {
+      spy.mockRestore();
+      _resetStorageAvailabilityCache(); // clean up so later tests start fresh
+    }
+  }
+
+  it('calls toast.warning when localStorage is completely blocked', () => {
+    withBlockedStorage(() => {
+      safeSetItem('any-key', 'any-value');
+      expect(toast.warning).toHaveBeenCalledOnce();
+    });
+  });
+
+  it('does NOT call toast.error when localStorage is completely blocked', () => {
+    withBlockedStorage(() => {
+      safeSetItem('any-key', 'any-value');
+      expect(toast.error).not.toHaveBeenCalled();
+    });
+  });
+
+  it('does not throw when localStorage is completely blocked', () => {
+    withBlockedStorage(() => {
+      expect(() => safeSetItem('any-key', 'any-value')).not.toThrow();
+    });
+  });
+
+  it('passes id="storage-private-browsing" so the toast is deduplicated', () => {
+    withBlockedStorage(() => {
+      safeSetItem('any-key', 'any-value');
+      expect(toast.warning).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({ id: 'storage-private-browsing' }),
+      );
+    });
+  });
+
+  it('private-browsing toast contains an English actionable sentence', () => {
+    withBlockedStorage(() => {
+      safeSetItem('any-key', 'any-value');
+      const [message] = (toast.warning as ReturnType<typeof vi.fn>).mock.calls[0] as [string, ...unknown[]];
+      expect(message).toMatch(/private browsing/i);
+      expect(message).toMatch(/cannot be saved/i);
+      expect(message).toMatch(/normal tab/i);
+    });
+  });
+
+  it('private-browsing toast contains an Arabic actionable sentence', () => {
+    withBlockedStorage(() => {
+      safeSetItem('any-key', 'any-value');
+      const [message] = (toast.warning as ReturnType<typeof vi.fn>).mock.calls[0] as [string, ...unknown[]];
+      expect(message).toMatch(/وضع التصفح الخاص/);
+      expect(message).toMatch(/تبويب عادي/);
+    });
+  });
+
+  it('private-browsing toast is shown for 8 seconds — long enough to read on mobile', () => {
+    withBlockedStorage(() => {
+      safeSetItem('any-key', 'any-value');
+      const [, options] = (toast.warning as ReturnType<typeof vi.fn>).mock.calls[0] as [string, { duration?: number }];
+      expect(options.duration).toBeGreaterThanOrEqual(8000);
+    });
+  });
+
+  it('fires the warning toast on every call while blocked (Sonner deduplicates by id)', () => {
+    // Each safeSetItem call fires toast.warning — Sonner's id-deduplication
+    // ensures only one notification is visible on screen at any time.
+    withBlockedStorage(() => {
+      safeSetItem('k1', 'v1');
+      safeSetItem('k2', 'v2');
+      expect(toast.warning).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  it('caches the unavailability result — probe runs only once across multiple calls', () => {
+    // The probe write is Storage.prototype.setItem. Count calls to confirm only
+    // one probe write happens regardless of how many safeSetItem calls are made.
+    withBlockedStorage((spy) => {
+      safeSetItem('k1', 'v1');
+      safeSetItem('k2', 'v2');
+      safeSetItem('k3', 'v3');
+      // Only the very first call triggers the probe (1 setItem call).
+      // Subsequent calls skip the probe and go straight to toast.warning.
+      expect(spy).toHaveBeenCalledTimes(1);
+    });
   });
 });

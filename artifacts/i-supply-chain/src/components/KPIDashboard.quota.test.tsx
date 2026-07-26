@@ -11,7 +11,7 @@ import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 
 /* ── mock sonner before importing anything that imports it ─────────────── */
 vi.mock('sonner', () => ({
-  toast: { error: vi.fn() },
+  toast: { error: vi.fn(), warning: vi.fn(), dismiss: vi.fn() },
 }));
 
 /* ── mock LanguageContext so the component renders without a Provider ──── */

@@ -1,19 +1,30 @@
 /**
- * Shared localStorage helper with quota-exceeded detection.
+ * Shared localStorage helper with quota-exceeded and private-browsing detection.
  *
  * Drop-in replacement for the bare `try { localStorage.setItem(…) } catch {}`
- * pattern used throughout the toolkit. When the browser's storage quota is
- * full (common on iOS Safari at ~5 MB) the user sees a visible toast warning
- * with a one-tap "Clear saved data" action so they can recover without leaving
- * the app.
+ * pattern used throughout the toolkit.
+ *
+ * Two distinct failure modes are handled:
+ *
+ *  1. **Private / incognito browsing** — on iOS Safari (and some other
+ *     browsers) localStorage is completely blocked and throws a SecurityError
+ *     on the very first access. The module detects this with a write-then-
+ *     delete probe the first time safeSetItem is called, then shows a one-time
+ *     warning toast telling the user to switch to a normal tab.
+ *
+ *  2. **Storage quota exceeded** — when the 5 MB cap is hit (common on
+ *     mobile) the user sees a toast with a one-tap "Clear saved data" action
+ *     so they can recover without leaving the app.
  */
 import { toast } from 'sonner';
 
+/* ── quota-error detection ──────────────────────────────────────────────── */
+
 /** Names browsers use for the storage-quota error. */
 const QUOTA_NAMES = new Set([
-  'QuotaExceededError',          // Chrome / Safari
-  'NS_ERROR_DOM_QUOTA_REACHED',  // Firefox
-  'QUOTA_EXCEEDED_ERR',          // older WebKit
+  'QuotaExceededError',         // Chrome / Safari
+  'NS_ERROR_DOM_QUOTA_REACHED', // Firefox
+  'QUOTA_EXCEEDED_ERR',         // older WebKit
 ]);
 
 /** Key prefixes that belong exclusively to this app. */
@@ -24,6 +35,47 @@ function isQuotaError(e: unknown): boolean {
   // code 22 is the legacy numeric constant for QuotaExceededError
   return QUOTA_NAMES.has(e.name) || e.code === 22;
 }
+
+/* ── private-browsing detection ─────────────────────────────────────────── */
+
+/**
+ * Cached result of the localStorage availability probe.
+ * `null` = not yet tested; `true` = available; `false` = blocked.
+ */
+let _storageAvailable: boolean | null = null;
+
+/**
+ * Reset the cached availability result.
+ *
+ * @internal Exposed for unit tests only — do not call in application code.
+ */
+export function _resetStorageAvailabilityCache(): void {
+  _storageAvailable = null;
+}
+
+/**
+ * Returns `true` when localStorage is readable and writable.
+ * The result is cached after the first call so subsequent calls are free.
+ *
+ * On iOS Safari in private browsing mode `localStorage.setItem` throws a
+ * `SecurityError`; this function catches that and returns `false`.
+ */
+function isLocalStorageAvailable(): boolean {
+  if (_storageAvailable !== null) return _storageAvailable;
+  try {
+    const probe = '__storage_probe__';
+    localStorage.setItem(probe, '1');
+    localStorage.removeItem(probe);
+    _storageAvailable = true;
+  } catch (e) {
+    // QuotaExceededError means storage exists but is full — still available.
+    // SecurityError (and similar access-denied errors) means storage is blocked.
+    _storageAvailable = isQuotaError(e) ? true : false;
+  }
+  return _storageAvailable;
+}
+
+/* ── public API ─────────────────────────────────────────────────────────── */
 
 /**
  * Removes every localStorage entry whose key starts with an app prefix.
@@ -48,11 +100,33 @@ export function clearAppStorage(): void {
 /**
  * Writes `value` to localStorage under `key`.
  *
- * On a quota-exceeded error a toast warning is shown once (deduplicated by
- * id) with a "Clear saved data" action button so users can recover in one tap.
- * All other errors are swallowed silently, matching the previous behaviour.
+ * • If localStorage is completely unavailable (private/incognito mode) a
+ *   toast.warning is shown with id `'storage-private-browsing'` so the user
+ *   sees it only once per Sonner deduplication.
+ *
+ * • On a quota-exceeded error a toast.error is shown with id
+ *   `'storage-quota-exceeded'` and a one-tap "Clear saved data" action button.
+ *
+ * • All other errors are swallowed silently (no regression from previous
+ *   behaviour).
  */
 export function safeSetItem(key: string, value: string): void {
+  // Private-browsing / storage-blocked path
+  if (!isLocalStorageAvailable()) {
+    toast.warning(
+      'Private browsing detected — your changes cannot be saved. ' +
+      'Open the app in a normal tab to keep your work.\n' +
+      'تم اكتشاف وضع التصفح الخاص — لا يمكن حفظ التغييرات. ' +
+      'افتح التطبيق في تبويب عادي للاحتفاظ بعملك.',
+      {
+        id: 'storage-private-browsing', // deduplicate: only one toast at a time
+        duration: 8000,
+      },
+    );
+    return;
+  }
+
+  // Normal path — localStorage is available
   try {
     localStorage.setItem(key, value);
   } catch (e) {
@@ -79,6 +153,6 @@ export function safeSetItem(key: string, value: string): void {
         },
       );
     }
-    // non-quota errors (e.g. private-browsing restrictions) are silently ignored
+    // non-quota errors are swallowed silently
   }
 }
