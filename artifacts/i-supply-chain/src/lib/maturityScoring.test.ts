@@ -353,6 +353,123 @@ describe('draft restoration — incomplete segments trigger redirect guard', () 
 });
 
 /* ══════════════════════════════════════════════════════════════════════════
+   In-session edit path — user navigates back, changes an answer, returns
+   to the results page.
+
+   Scenario A: A single answer change in one segment updates overallScore
+     to the new correct arithmetic mean without zeroing any other segment.
+
+   Scenario B: A single answer change never makes any segment score null
+     (the redirect guard must not fire after a valid answer edit).
+══════════════════════════════════════════════════════════════════════════ */
+
+describe('in-session edit — overallScore updates correctly after an answer changes', () => {
+  const NUM_SEGMENTS = 8;
+
+  /** Build a fully-complete answer map with every question set to `val`. */
+  function allAnswers(val: number): Record<string, number> {
+    const answers: Record<string, number> = {};
+    for (let s = 0; s < NUM_SEGMENTS; s++) {
+      for (let q = 0; q < 5; q++) {
+        answers[`${s}-${q}`] = val;
+      }
+    }
+    return answers;
+  }
+
+  it('overallScore changes to the new arithmetic mean after one answer is mutated', () => {
+    // Start: all 8 segments uniformly at 3 → overallScore = 3
+    const answers = allAnswers(3);
+    expect(overallScore(answers, NUM_SEGMENTS)).toBe(3);
+
+    // Edit: change all 5 questions in segment 0 to 5 (simulates user raising
+    // every answer in the first segment).
+    for (let q = 0; q < 5; q++) answers[`0-${q}`] = 5;
+
+    // Segment 0 score is now 5; segments 1–7 remain 3.
+    // New mean: (5 + 3*7) / 8 = (5 + 21) / 8 = 26 / 8 = 3.25
+    expect(overallScore(answers, NUM_SEGMENTS)).toBeCloseTo(26 / 8);
+  });
+
+  it('mutating a single question in one segment reflects in overallScore', () => {
+    // All segments at 3; then raise one question in segment 2 from 3 → 5.
+    // Segment 2 new score: (3+3+5+3+3)/5 = 17/5 = 3.4
+    // Overall: (3*7 + 3.4) / 8 = (21 + 3.4) / 8 = 24.4 / 8 = 3.05
+    const answers = allAnswers(3);
+    answers['2-2'] = 5;
+
+    const seg2Score = (3 + 3 + 5 + 3 + 3) / 5; // 3.4
+    const expectedMean = (3 * 7 + seg2Score) / 8;
+
+    expect(overallScore(answers, NUM_SEGMENTS)).toBeCloseTo(expectedMean);
+  });
+
+  it('lowering answers in one segment reduces overallScore accordingly', () => {
+    // All segments at 4; then lower segment 5 to all 2s.
+    // New overall: (4*7 + 2) / 8 = (28 + 2) / 8 = 30 / 8 = 3.75
+    const answers = allAnswers(4);
+    for (let q = 0; q < 5; q++) answers[`5-${q}`] = 2;
+
+    expect(overallScore(answers, NUM_SEGMENTS)).toBeCloseTo(30 / 8);
+  });
+});
+
+describe('in-session edit — redirect guard does not fire after a valid answer change', () => {
+  const NUM_SEGMENTS = 8;
+
+  /** Build a fully-complete answer map with every question set to `val`. */
+  function allAnswers(val: number): Record<string, number> {
+    const answers: Record<string, number> = {};
+    for (let s = 0; s < NUM_SEGMENTS; s++) {
+      for (let q = 0; q < 5; q++) {
+        answers[`${s}-${q}`] = val;
+      }
+    }
+    return answers;
+  }
+
+  it('no segment score becomes null when a single answer is changed to another valid value', () => {
+    const answers = allAnswers(3);
+    // User edits one answer in segment 4 from 3 to 1 — still a valid (non-zero) value.
+    answers['4-2'] = 1;
+
+    for (let i = 0; i < NUM_SEGMENTS; i++) {
+      expect(segScore(answers, i)).not.toBeNull();
+    }
+  });
+
+  it('redirect guard logic (firstIncomplete === -1) still passes after editing multiple segments', () => {
+    // Start complete, then edit answers across three different segments.
+    const answers = allAnswers(3);
+    answers['0-0'] = 5;
+    answers['3-4'] = 2;
+    answers['7-1'] = 4;
+
+    const firstIncomplete = Array.from({ length: NUM_SEGMENTS }, (_, i) => i)
+      .find(i => segScore(answers, i) === null);
+
+    // undefined means no incomplete segment — the guard would NOT redirect.
+    expect(firstIncomplete).toBeUndefined();
+  });
+
+  it('editing every question in one segment to a different valid value keeps that segment non-null', () => {
+    const answers = allAnswers(2);
+    // Overwrite all of segment 6 with varied but all-valid values.
+    answers['6-0'] = 1;
+    answers['6-1'] = 3;
+    answers['6-2'] = 5;
+    answers['6-3'] = 2;
+    answers['6-4'] = 4;
+
+    expect(segScore(answers, 6)).not.toBeNull();
+    // All other segments should also be non-null.
+    for (let i = 0; i < NUM_SEGMENTS; i++) {
+      expect(segScore(answers, i)).not.toBeNull();
+    }
+  });
+});
+
+/* ══════════════════════════════════════════════════════════════════════════
    Recommendation text resolution
 ══════════════════════════════════════════════════════════════════════════ */
 
