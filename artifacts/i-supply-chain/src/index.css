@@ -199,6 +199,8 @@ html[lang="ar"] {
     width: 100%;
     padding: 24px;
     box-sizing: border-box;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
 
   /* Common print typography */
