@@ -5,10 +5,11 @@ import {
   ResponsiveContainer, Cell, PieChart, Pie,
 } from 'recharts';
 import { useLanguage } from '@/lib/LanguageContext';
-import { Info, TrendingUp, TrendingDown, Download, Upload } from 'lucide-react';
+import { Info, TrendingUp, TrendingDown, Download, Upload, LogIn } from 'lucide-react';
 import { parseCsvFile, downloadCsv } from '@/lib/importCsv';
 import { useAIPlan } from '@/hooks/useAIPlan';
 import { AIPlanPanel } from '@/components/AIPlanPanel';
+import { useAuth } from '@/lib/AuthContext';
 
 /* ─── KPI definition types ─── */
 interface KpiDef {
@@ -249,6 +250,7 @@ const SAVE_DELAY = 400;
 
 export function KPIDashboard({ slug }: KPIDashboardProps) {
   const { lang } = useLanguage();
+  const { isAuthenticated } = useAuth();
   const isAr = lang === 'ar';
   const resolvedSlug = SLUG_ALIAS[slug] ?? slug;
   const kpis = KPI_FRAMEWORKS[resolvedSlug] ?? null;
@@ -404,14 +406,23 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <h2 className="text-2xl font-bold text-primary">{isAr ? 'لوحة مؤشرات الأداء — ISC' : 'ISC KPI Dashboard'}</h2>
           <div className="flex items-center gap-2 flex-wrap">
-            {hasAnyValue && !planResult && !planLoading && (
-              <button
-                onClick={generatePlan}
-                className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg font-bold bg-gradient-to-r from-[#082C6B] to-[#1a4a9e] text-white hover:opacity-90 transition-all shadow-sm"
-              >
-                <span className="text-sm leading-none">✨</span>
-                {isAr ? 'توليد التقرير التنفيذي' : 'Generate Performance Brief'}
-              </button>
+            {!planResult && !planLoading && (
+              isAuthenticated ? (
+                hasAnyValue && (
+                  <button
+                    onClick={generatePlan}
+                    className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg font-bold bg-gradient-to-r from-[#082C6B] to-[#1a4a9e] text-white hover:opacity-90 transition-all shadow-sm"
+                  >
+                    <span className="text-sm leading-none">✨</span>
+                    {isAr ? 'توليد التقرير التنفيذي' : 'Generate Performance Brief'}
+                  </button>
+                )
+              ) : (
+                <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/60 border border-border rounded-lg px-3 py-2">
+                  <LogIn className="w-3.5 h-3.5 shrink-0 text-primary/60" />
+                  <span>{isAr ? 'سجِّل دخولك لتوليد خطة الذكاء الاصطناعي' : 'Sign in to generate an AI plan'}</span>
+                </div>
+              )
             )}
             {(planResult || planLoading) && !planResult && (
               <span className="text-xs text-muted-foreground flex items-center gap-1">

@@ -10,7 +10,8 @@
  * The rendered output is ephemeral — not stored, only displayed.
  */
 import React, { useState } from 'react';
-import { Sparkles, Loader2, Copy, Check, ChevronDown, ChevronUp, RefreshCw, AlertCircle } from 'lucide-react';
+import { Sparkles, Loader2, Copy, Check, ChevronDown, ChevronUp, RefreshCw, AlertCircle, LogIn } from 'lucide-react';
+import { useAuth } from '@/lib/AuthContext';
 
 interface AIPlanPanelProps {
   loading:    boolean;
@@ -28,6 +29,7 @@ interface AIPlanPanelProps {
 export function AIPlanPanel({
   loading, result, error, onGenerate, onReset, buttonLabel, isAr, disabled,
 }: AIPlanPanelProps) {
+  const { isAuthenticated } = useAuth();
   const [open,   setOpen]   = useState(true);
   const [copied, setCopied] = useState(false);
 
@@ -41,16 +43,27 @@ export function AIPlanPanel({
 
   return (
     <div className="no-print mt-3">
-      {/* ── Idle: show Generate button ── */}
+      {/* ── Idle: show Generate button (authenticated) or sign-in prompt ── */}
       {!result && !loading && !error && (
-        <button
-          onClick={onGenerate}
-          disabled={disabled}
-          className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg font-bold bg-gradient-to-r from-[#082C6B] to-[#1a4a9e] text-white hover:opacity-90 active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-sm"
-        >
-          <Sparkles className="w-3.5 h-3.5" />
-          {buttonLabel}
-        </button>
+        isAuthenticated ? (
+          <button
+            onClick={onGenerate}
+            disabled={disabled}
+            className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg font-bold bg-gradient-to-r from-[#082C6B] to-[#1a4a9e] text-white hover:opacity-90 active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-sm"
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            {buttonLabel}
+          </button>
+        ) : (
+          <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/60 border border-border rounded-lg px-3 py-2">
+            <LogIn className="w-3.5 h-3.5 shrink-0 text-primary/60" />
+            <span>
+              {isAr
+                ? 'سجِّل دخولك لتوليد خطة الذكاء الاصطناعي'
+                : 'Sign in to generate an AI plan'}
+            </span>
+          </div>
+        )
       )}
 
       {/* ── Loading spinner ── */}
@@ -66,12 +79,14 @@ export function AIPlanPanel({
         <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-xs text-red-700 max-w-xl">
           <AlertCircle className="w-3.5 h-3.5 shrink-0" />
           <span className="flex-1">{error}</span>
-          <button
-            onClick={onGenerate}
-            className="font-bold underline underline-offset-2 shrink-0 hover:opacity-80"
-          >
-            {isAr ? 'إعادة المحاولة' : 'Retry'}
-          </button>
+          {isAuthenticated && (
+            <button
+              onClick={onGenerate}
+              className="font-bold underline underline-offset-2 shrink-0 hover:opacity-80"
+            >
+              {isAr ? 'إعادة المحاولة' : 'Retry'}
+            </button>
+          )}
           <button
             onClick={onReset}
             className="font-bold opacity-50 hover:opacity-100 shrink-0"
@@ -104,14 +119,16 @@ export function AIPlanPanel({
                   ? <Check  className="w-3.5 h-3.5 text-emerald-600" />
                   : <Copy   className="w-3.5 h-3.5 text-muted-foreground" />}
               </button>
-              {/* Regenerate */}
-              <button
-                onClick={onGenerate}
-                className="p-1.5 rounded hover:bg-primary/10 transition-colors"
-                title={isAr ? 'إعادة التوليد' : 'Regenerate'}
-              >
-                <RefreshCw className="w-3.5 h-3.5 text-muted-foreground" />
-              </button>
+              {/* Regenerate — only when authenticated */}
+              {isAuthenticated && (
+                <button
+                  onClick={onGenerate}
+                  className="p-1.5 rounded hover:bg-primary/10 transition-colors"
+                  title={isAr ? 'إعادة التوليد' : 'Regenerate'}
+                >
+                  <RefreshCw className="w-3.5 h-3.5 text-muted-foreground" />
+                </button>
+              )}
               {/* Collapse / expand */}
               <button
                 onClick={() => setOpen(o => !o)}
