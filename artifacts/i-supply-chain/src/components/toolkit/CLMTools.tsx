@@ -127,8 +127,8 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
       </div>
       <div className="p-5 space-y-5">
         <div>
-          <label className="text-xs font-bold text-primary mb-1 block">{isAr ? 'عدد العقود النشطة' : 'Number of Active Contracts'}</label>
-          <input type="number" className="w-36 text-sm border border-border rounded-lg px-3 py-1.5" placeholder="0" value={contracts} onChange={e => setContractsVal(e.target.value)} />
+          <label htmlFor="clm-active-contracts" className="text-xs font-bold text-primary mb-1 block">{isAr ? 'عدد العقود النشطة' : 'Number of Active Contracts'}</label>
+          <input id="clm-active-contracts" type="number" className="w-36 text-sm border border-border rounded-lg px-3 py-1.5" placeholder="0" value={contracts} onChange={e => setContractsVal(e.target.value)} />
         </div>
 
         <div className="grid sm:grid-cols-2 gap-4">
@@ -144,7 +144,10 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
                   {cfg && <span className={`text-xs font-bold px-2 py-0.5 rounded-full shrink-0 ${cfg.badge}`}>{isAr ? cfg.labelAr : cfg.label}</span>}
                 </div>
                 <div className="flex items-center gap-2">
-                  <input type="number" step="any" min={0} max={dim.unit === '%' ? 100 : undefined}
+                  <input
+                    id={`clm-dim-${dim.id}`}
+                    type="number" step="any" min={0} max={dim.unit === '%' ? 100 : undefined}
+                    aria-label={isAr ? `${dim.labelAr} (${dim.unitAr})` : `${dim.label} (${dim.unit})`}
                     value={values[dim.id] ?? ''} onChange={e => set(dim.id, e.target.value)}
                     className="flex-1 text-sm border border-border rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-primary/30 bg-white" placeholder="—" />
                   <span className="text-xs text-muted-foreground shrink-0">{isAr ? dim.unitAr : dim.unit}</span>

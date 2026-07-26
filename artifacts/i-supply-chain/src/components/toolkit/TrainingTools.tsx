@@ -89,7 +89,10 @@ export function TrainingNeedsAssessment({ isAr }: TrainingToolsProps) {
         <div className="flex items-center gap-2 flex-wrap">
           {members.map((m, i) => (
             <div key={i} className="flex items-center gap-1 bg-muted rounded-lg px-2 py-1">
-              <input className="text-xs border-0 bg-transparent w-28 focus:outline-none" value={m} onChange={e => updateMember(i, e.target.value)} />
+              <input
+                id={`training-member-${i}`}
+                aria-label={isAr ? `اسم العضو ${i + 1}` : `Team member ${i + 1} name`}
+                className="text-xs border-0 bg-transparent w-28 focus:outline-none" value={m} onChange={e => updateMember(i, e.target.value)} />
               {members.length > 1 && <button onClick={() => removeMember(i)} className="text-muted-foreground hover:text-red-500"><Trash2 className="w-3 h-3" /></button>}
             </div>
           ))}
@@ -121,6 +124,8 @@ export function TrainingNeedsAssessment({ isAr }: TrainingToolsProps) {
                       return (
                         <td key={m} className="py-2 px-2 text-center">
                           <select
+                            id={`training-score-${m}-${d.id}`}
+                            aria-label={isAr ? `${m} — ${d.labelAr}` : `${m} — ${d.label}`}
                             value={val}
                             onChange={e => setScore(m, d.id, parseInt(e.target.value))}
                             className="w-12 text-center text-xs rounded border border-border py-0.5 focus:outline-none"

@@ -99,12 +99,12 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
         {/* Supplier info */}
         <div className="grid sm:grid-cols-2 gap-3">
           <div>
-            <label className="text-xs font-bold text-primary mb-1 block">{isAr ? 'اسم المورّد' : 'Supplier Name'}</label>
-            <input className="w-full text-sm border border-border rounded-lg px-3 py-1.5" placeholder={isAr ? 'أدخل اسم المورّد' : 'Enter supplier name'} value={state.name} onChange={e => update({ name: e.target.value })} />
+            <label htmlFor="scorecard-supplier-name" className="text-xs font-bold text-primary mb-1 block">{isAr ? 'اسم المورّد' : 'Supplier Name'}</label>
+            <input id="scorecard-supplier-name" className="w-full text-sm border border-border rounded-lg px-3 py-1.5" placeholder={isAr ? 'أدخل اسم المورّد' : 'Enter supplier name'} value={state.name} onChange={e => update({ name: e.target.value })} />
           </div>
           <div>
-            <label className="text-xs font-bold text-primary mb-1 block">{isAr ? 'الشريحة الحالية' : 'Current Tier'}</label>
-            <select className="w-full text-sm border border-border rounded-lg px-3 py-1.5" value={state.tier} onChange={e => update({ tier: e.target.value })}>
+            <label htmlFor="scorecard-current-tier" className="text-xs font-bold text-primary mb-1 block">{isAr ? 'الشريحة الحالية' : 'Current Tier'}</label>
+            <select id="scorecard-current-tier" className="w-full text-sm border border-border rounded-lg px-3 py-1.5" value={state.tier} onChange={e => update({ tier: e.target.value })}>
               {TIER_OPTIONS.map((o, i) => <option key={o} value={o}>{isAr ? TIER_OPTIONS_AR[i] : o}</option>)}
             </select>
           </div>
@@ -128,7 +128,10 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
                       <div className="h-full rounded-full transition-all duration-300" style={{ width: `${val}%`, background: barColor }} />
                     </div>
                   </div>
-                  <input type="number" min={0} max={100} value={state.scores[d.id] ?? ''} onChange={e => setScore(d.id, e.target.value)}
+                  <input
+                    id={`scorecard-dim-${d.id}`}
+                    type="number" min={0} max={100} value={state.scores[d.id] ?? ''} onChange={e => setScore(d.id, e.target.value)}
+                    aria-label={isAr ? `${d.labelAr} (0–100)` : `${d.label} (0–100)`}
                     className="text-center text-sm border border-border rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-primary/30" placeholder="0" />
                   <span className="text-xs text-muted-foreground">/100</span>
                 </div>

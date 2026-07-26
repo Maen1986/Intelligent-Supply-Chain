@@ -114,10 +114,13 @@ export function ActionTracker({ storageKey, isAr }: { storageKey: string; isAr: 
       </div>
       {showForm ? (
         <div className="space-y-2 bg-white border border-amber-300 rounded-lg p-3">
-          <input className="w-full text-xs border border-border rounded px-2 py-1.5" placeholder={isAr ? 'وصف الإجراء *' : 'Action description *'} value={form.issue} onChange={e => setForm({ ...form, issue: e.target.value })} onKeyDown={e => e.key === 'Enter' && add()} />
+          <label htmlFor={`${storageKey}-action-issue`} className="sr-only">{isAr ? 'وصف الإجراء' : 'Action description'}</label>
+          <input id={`${storageKey}-action-issue`} className="w-full text-xs border border-border rounded px-2 py-1.5" placeholder={isAr ? 'وصف الإجراء *' : 'Action description *'} value={form.issue} onChange={e => setForm({ ...form, issue: e.target.value })} onKeyDown={e => e.key === 'Enter' && add()} />
           <div className="flex gap-2">
-            <input className="flex-1 text-xs border border-border rounded px-2 py-1.5" placeholder={isAr ? 'المسؤول' : 'Owner'} value={form.owner} onChange={e => setForm({ ...form, owner: e.target.value })} />
-            <input type="date" className="flex-1 text-xs border border-border rounded px-2 py-1.5" value={form.dueDate} onChange={e => setForm({ ...form, dueDate: e.target.value })} />
+            <label htmlFor={`${storageKey}-action-owner`} className="sr-only">{isAr ? 'المسؤول' : 'Owner'}</label>
+            <input id={`${storageKey}-action-owner`} className="flex-1 text-xs border border-border rounded px-2 py-1.5" placeholder={isAr ? 'المسؤول' : 'Owner'} value={form.owner} onChange={e => setForm({ ...form, owner: e.target.value })} />
+            <label htmlFor={`${storageKey}-action-due-date`} className="sr-only">{isAr ? 'تاريخ الاستحقاق' : 'Due date'}</label>
+            <input id={`${storageKey}-action-due-date`} type="date" className="flex-1 text-xs border border-border rounded px-2 py-1.5" value={form.dueDate} onChange={e => setForm({ ...form, dueDate: e.target.value })} />
           </div>
           <div className="flex gap-2">
             <button onClick={add} className="text-xs px-3 py-1.5 bg-amber-600 text-white rounded-lg font-bold hover:bg-amber-700">{isAr ? 'إضافة' : 'Add'}</button>
@@ -160,15 +163,15 @@ export function ParamForm({
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {fields.map(f => (
           <div key={f.id}>
-            <label className="text-xs font-bold text-primary mb-1 block">{isAr ? f.labelAr : f.label}</label>
+            <label htmlFor={`param-${storageKey}-${f.id}`} className="text-xs font-bold text-primary mb-1 block">{isAr ? f.labelAr : f.label}</label>
             {f.type === 'select' && f.options ? (
-              <select className="w-full text-sm border border-border rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-primary/30" value={values[f.id] ?? ''} onChange={e => set(f.id, e.target.value)}>
+              <select id={`param-${storageKey}-${f.id}`} className="w-full text-sm border border-border rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-primary/30" value={values[f.id] ?? ''} onChange={e => set(f.id, e.target.value)}>
                 <option value="">{isAr ? 'اختر...' : 'Select...'}</option>
                 {(f.options).map((o, i) => <option key={i} value={o}>{isAr && f.optionsAr ? f.optionsAr[i] : o}</option>)}
               </select>
             ) : (
               <div className="flex items-center gap-1">
-                <input type={f.type ?? 'number'} min={f.min} max={f.max} value={values[f.id] ?? ''} onChange={e => set(f.id, e.target.value)} className="flex-1 text-sm border border-border rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-primary/30" />
+                <input id={`param-${storageKey}-${f.id}`} type={f.type ?? 'number'} min={f.min} max={f.max} value={values[f.id] ?? ''} onChange={e => set(f.id, e.target.value)} className="flex-1 text-sm border border-border rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-primary/30" />
                 {(isAr ? f.unitAr : f.unit) && <span className="text-xs text-muted-foreground shrink-0">{isAr ? f.unitAr : f.unit}</span>}
               </div>
             )}

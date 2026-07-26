@@ -121,6 +121,8 @@ export function MaturityAssessmentTool({ slug, isAr }: MaturityToolsProps) {
                 <div className="flex gap-1 shrink-0">
                   {[1, 2, 3, 4, 5].map(l => (
                     <button key={l} onClick={() => set(d.id, val === l ? 0 : l)}
+                      aria-label={isAr ? `${d.labelAr}: ${LEVEL_LABELS_AR[l as keyof typeof LEVEL_LABELS_AR]} (${l})` : `${d.label}: ${LEVEL_LABELS_EN[l as keyof typeof LEVEL_LABELS_EN]} (${l})`}
+                      aria-pressed={val >= l}
                       className="w-8 h-8 rounded-lg text-xs font-bold border-2 transition-all"
                       style={{
                         background: val >= l ? LEVEL_COLORS[l as keyof typeof LEVEL_COLORS] : 'transparent',

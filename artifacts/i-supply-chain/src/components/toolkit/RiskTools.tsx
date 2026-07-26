@@ -126,7 +126,10 @@ function KRIDashboard({ isAr }: { isAr: boolean }) {
                   </td>
                   <td className="py-3 px-2 text-center">
                     <div className="flex items-center gap-1 justify-center">
-                      <input type="number" step="any" value={values[def.id] ?? ''} onChange={e => set(def.id, e.target.value)}
+                      <input
+                        id={`kri-input-${def.id}`}
+                        type="number" step="any" value={values[def.id] ?? ''} onChange={e => set(def.id, e.target.value)}
+                        aria-label={isAr ? `${def.labelAr} (${def.unitAr})` : `${def.label} (${def.unit})`}
                         className="w-16 text-center text-xs border border-border rounded px-1 py-1 focus:outline-none focus:ring-1 focus:ring-primary/30" placeholder="—" />
                       <span className="text-muted-foreground">{isAr ? def.unitAr : def.unit}</span>
                     </div>
@@ -209,12 +212,18 @@ function SupplierAlertConfig({ isAr }: { isAr: boolean }) {
           <tbody>{TIERS.map((tier, ti) => (
             <tr key={tier} className="border-b border-border/50">
               <td className="py-2 px-3 font-semibold text-primary">{isAr ? TIERS_AR[ti] : tier}</td>
-              {(['otif', 'defect', 'financial'] as const).map(field => (
-                <td key={field} className="py-2 px-2 text-center">
-                  <input type="number" value={cfg[ti][field]} onChange={e => update(ti, field, e.target.value)}
-                    className="w-20 text-center text-xs border border-border rounded px-1 py-1 focus:outline-none focus:ring-1 focus:ring-primary/30" />
-                </td>
-              ))}
+              {(['otif', 'defect', 'financial'] as const).map(field => {
+                const fieldLabel = field === 'otif' ? (isAr ? 'حدّ OTIF' : 'OTIF Threshold') : field === 'defect' ? (isAr ? 'حدّ العيوب' : 'Defect Threshold') : (isAr ? 'الحدّ المالي' : 'Financial Score Min');
+                return (
+                  <td key={field} className="py-2 px-2 text-center">
+                    <input
+                      id={`alert-${ti}-${field}`}
+                      type="number" value={cfg[ti][field]} onChange={e => update(ti, field, e.target.value)}
+                      aria-label={`${isAr ? TIERS_AR[ti] : tier} — ${fieldLabel}`}
+                      className="w-20 text-center text-xs border border-border rounded px-1 py-1 focus:outline-none focus:ring-1 focus:ring-primary/30" />
+                  </td>
+                );
+              })}
             </tr>
           ))}</tbody>
         </table>
