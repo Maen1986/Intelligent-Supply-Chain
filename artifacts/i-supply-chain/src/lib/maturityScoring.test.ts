@@ -204,6 +204,155 @@ describe('getLevel', () => {
 });
 
 /* ══════════════════════════════════════════════════════════════════════════
+   Draft restoration — results page score accuracy
+   These tests mirror the two scenarios that can occur when a returning user
+   has their answers rehydrated from a saved draft:
+
+   Scenario A: all 8 segments were previously completed.
+     → The redirect guard (which checks for any null segScore) must NOT fire,
+       and the displayed overallScore must equal the plain arithmetic mean of
+       the 8 individual segment scores.
+
+   Scenario B: fewer than 8 segments were answered before the draft was saved.
+     → At least one segScore is null, so the redirect guard MUST fire and
+       send the user back to the assessment rather than showing a deflated
+       (or misleadingly partial) score.
+══════════════════════════════════════════════════════════════════════════ */
+
+describe('draft restoration — all 8 segments complete', () => {
+  const NUM_SEGMENTS = 8;
+
+  /**
+   * Build an answer map that assigns a specific uniform value to every
+   * question within one segment, leaving all other segments at the same
+   * default value.
+   */
+  function buildAnswers(segValues: number[]): Record<string, number> {
+    const answers: Record<string, number> = {};
+    segValues.forEach((val, s) => {
+      for (let q = 0; q < 5; q++) {
+        answers[`${s}-${q}`] = val;
+      }
+    });
+    return answers;
+  }
+
+  it('no segment score is null — redirect guard would not fire', () => {
+    // Each segment has a distinct uniform score; all 8 are fully answered.
+    const segValues = [1, 2, 3, 4, 5, 3, 2, 4];
+    const answers   = buildAnswers(segValues);
+
+    for (let i = 0; i < NUM_SEGMENTS; i++) {
+      expect(segScore(answers, i)).not.toBeNull();
+    }
+  });
+
+  it('overallScore equals the arithmetic mean of all 8 individual segment scores', () => {
+    // Assign each segment a distinct uniform level so the expected mean is
+    // easy to compute by hand: (1+2+3+4+5+3+2+4) / 8 = 24 / 8 = 3
+    const segValues    = [1, 2, 3, 4, 5, 3, 2, 4];
+    const answers      = buildAnswers(segValues);
+
+    // Independently compute the expected mean from the per-segment scores.
+    const expectedMean = segValues.reduce((a, b) => a + b, 0) / NUM_SEGMENTS; // 3
+
+    expect(overallScore(answers, NUM_SEGMENTS)).toBeCloseTo(expectedMean);
+  });
+
+  it('displayed overallScore matches arithmetic mean for varied segment scores', () => {
+    // Scores that produce a non-trivial mean: (2+3+4+5+1+2+3+4)/8 = 24/8 = 3
+    const segValues    = [2, 3, 4, 5, 1, 2, 3, 4];
+    const answers      = buildAnswers(segValues);
+
+    const segScores    = segValues.map((_, i) => segScore(answers, i) as number);
+    const expectedMean = segScores.reduce((a, b) => a + b, 0) / segScores.length;
+
+    expect(overallScore(answers, NUM_SEGMENTS)).toBeCloseTo(expectedMean);
+  });
+
+  it('overallScore with all segments at 5 equals 5 (restored perfect draft)', () => {
+    const answers = buildAnswers([5, 5, 5, 5, 5, 5, 5, 5]);
+    expect(overallScore(answers, NUM_SEGMENTS)).toBe(5);
+  });
+
+  it('overallScore with all segments at 1 equals 1 (restored lowest-level draft)', () => {
+    const answers = buildAnswers([1, 1, 1, 1, 1, 1, 1, 1]);
+    expect(overallScore(answers, NUM_SEGMENTS)).toBe(1);
+  });
+});
+
+describe('draft restoration — incomplete segments trigger redirect guard', () => {
+  const NUM_SEGMENTS = 8;
+
+  it('a draft with only 7 complete segments has at least one null segScore', () => {
+    // Segments 0–6 are fully answered; segment 7 has only 4 of 5 answers.
+    const answers: Record<string, number> = {};
+    for (let s = 0; s < 7; s++) {
+      for (let q = 0; q < 5; q++) answers[`${s}-${q}`] = 3;
+    }
+    // Segment 7: only 4 of 5 answered — incomplete
+    answers['7-0'] = 2; answers['7-1'] = 3; answers['7-2'] = 4; answers['7-3'] = 1;
+
+    const incompleteSegments = Array.from({ length: NUM_SEGMENTS }, (_, i) => i)
+      .filter(i => segScore(answers, i) === null);
+
+    // The redirect guard fires on firstIncomplete !== -1
+    expect(incompleteSegments.length).toBeGreaterThan(0);
+    // Exactly segment 7 is incomplete
+    expect(incompleteSegments).toEqual([7]);
+  });
+
+  it('a draft with only 4 complete segments leaves 4 null scores for the guard', () => {
+    // Only segments 0–3 are complete; 4–7 are empty.
+    const answers: Record<string, number> = {};
+    for (let s = 0; s < 4; s++) {
+      for (let q = 0; q < 5; q++) answers[`${s}-${q}`] = 3;
+    }
+
+    const nullCount = Array.from({ length: NUM_SEGMENTS }, (_, i) => i)
+      .filter(i => segScore(answers, i) === null).length;
+
+    expect(nullCount).toBe(4);
+  });
+
+  it('a draft with 0 complete segments means all 8 segScores are null', () => {
+    // Only partial answers for segment 0; nothing else answered.
+    const answers = { '0-0': 2, '0-1': 3 };
+
+    const nullCount = Array.from({ length: NUM_SEGMENTS }, (_, i) => i)
+      .filter(i => segScore(answers, i) === null).length;
+
+    expect(nullCount).toBe(NUM_SEGMENTS);
+  });
+
+  it('overallScore does not include the incomplete segment in its average', () => {
+    // Segments 0–6 complete at score 4; segment 7 incomplete.
+    const answers: Record<string, number> = {};
+    for (let s = 0; s < 7; s++) {
+      for (let q = 0; q < 5; q++) answers[`${s}-${q}`] = 4;
+    }
+    // Segment 7: only 3 of 5 answered
+    answers['7-0'] = 1; answers['7-1'] = 1; answers['7-2'] = 1;
+
+    // overallScore excludes the null segment — result is mean of 7 × 4 = 4
+    expect(overallScore(answers, NUM_SEGMENTS)).toBeCloseTo(4);
+  });
+
+  it('the first incomplete segment index matches what the redirect guard would use', () => {
+    // Segments 0 and 1 complete; segment 2 is the first gap.
+    const answers: Record<string, number> = {};
+    for (let q = 0; q < 5; q++) { answers[`0-${q}`] = 3; answers[`1-${q}`] = 3; }
+    answers['2-0'] = 2; // only 1 of 5 for seg 2 — incomplete
+
+    // Mirror the guard: SEGMENTS.findIndex((_, i) => calcSegScore(answers, i) === null)
+    const firstIncomplete = Array.from({ length: NUM_SEGMENTS }, (_, i) => i)
+      .find(i => segScore(answers, i) === null);
+
+    expect(firstIncomplete).toBe(2);
+  });
+});
+
+/* ══════════════════════════════════════════════════════════════════════════
    Recommendation text resolution
 ══════════════════════════════════════════════════════════════════════════ */
 
