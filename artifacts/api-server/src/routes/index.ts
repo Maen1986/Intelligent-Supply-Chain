@@ -11,6 +11,8 @@ import consultancyRouter     from "./consultancy";
 import leadsRouter           from "./leads";
 import feedbackRouter        from "./feedback";
 import scorecardRosterRouter from "./scorecardRoster";
+import v1Router              from "./v1";
+import integrationsRouter    from "./integrations";
 
 const router: IRouter = Router();
 
@@ -24,6 +26,8 @@ router.use("/leads",             leadsRouter);
 router.use("/feedback",          feedbackRouter);
 router.use("/debug",             debugRouter);
 router.use("/scorecard-roster",  scorecardRosterRouter);
+router.use("/v1",                v1Router);
+router.use("/integrations",      integrationsRouter);
 router.use(intelligenceRouter);
 router.use(assessmentRouter);
 

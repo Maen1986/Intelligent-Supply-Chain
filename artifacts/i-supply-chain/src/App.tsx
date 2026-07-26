@@ -28,6 +28,7 @@ import { CommandCenter } from '@/pages/CommandCenter';
 import { CustomerVoice } from '@/pages/CustomerVoice';
 import { Legal } from '@/pages/Legal';
 import { AdminLeads } from '@/pages/AdminLeads';
+import { AdminIntegrations } from '@/pages/AdminIntegrations';
 import { AccountSettings } from '@/pages/AccountSettings';
 import { useIPProtection } from '@/hooks/useIPProtection';
 import { ChatWidget } from '@/components/ChatWidget';
@@ -76,6 +77,7 @@ function Router() {
         <Route path="/governance-compliance" component={GovernanceCompliance} />
         <Route path="/command-center" component={CommandCenter} />
         <Route path="/admin/leads" component={AdminLeads} />
+        <Route path="/admin/integrations" component={AdminIntegrations} />
         <Route path="/account" component={AccountSettings} />
         <Route path="/customer-voice" component={CustomerVoice} />
         <Route path="/legal" component={Legal} />
