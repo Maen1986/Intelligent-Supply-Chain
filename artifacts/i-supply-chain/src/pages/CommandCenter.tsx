@@ -18,6 +18,7 @@ import {
 import { Button } from '@/components/ui/button';
 
 import { API_BASE } from '@/lib/apiBase';
+import { safeSetItem } from '@/lib/storage';
 
 // ─── KPI Configuration ────────────────────────────────────────────────────────
 const KPI_CONFIG = [
@@ -1945,10 +1946,8 @@ function BriefingTab({ lang }: { lang: Lang }) {
 
   // Auto-save draft on every change
   useEffect(() => {
-    try {
-      const savedStep = RESUMABLE_STEPS.includes(step) ? step : 'step3';
-      localStorage.setItem(BRIEFING_DRAFT_KEY, JSON.stringify({ companyName, industry, subIndustry, revenueBand, painPoints, kpiRatings, maturityRatings, step: savedStep, savedAt: Date.now() } satisfies BriefingDraft));
-    } catch { /* storage unavailable — ignore */ }
+    const savedStep = RESUMABLE_STEPS.includes(step) ? step : 'step3';
+    safeSetItem(BRIEFING_DRAFT_KEY, JSON.stringify({ companyName, industry, subIndustry, revenueBand, painPoints, kpiRatings, maturityRatings, step: savedStep, savedAt: Date.now() } satisfies BriefingDraft));
   }, [companyName, industry, subIndustry, revenueBand, painPoints, kpiRatings, maturityRatings, step]);
 
   const clearDraft = () => {

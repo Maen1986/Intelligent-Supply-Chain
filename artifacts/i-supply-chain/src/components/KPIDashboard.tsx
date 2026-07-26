@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { safeSetItem } from '@/lib/storage';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Cell, PieChart, Pie,
@@ -220,7 +221,7 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
       const next = { ...prev, [id]: raw };
       if (saveTimer.current) clearTimeout(saveTimer.current);
       saveTimer.current = setTimeout(() => {
-        try { localStorage.setItem(storageKey, JSON.stringify(next)); } catch { /* ignore */ }
+        safeSetItem(storageKey, JSON.stringify(next));
       }, SAVE_DELAY);
       return next;
     });

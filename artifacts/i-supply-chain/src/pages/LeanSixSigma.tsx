@@ -9,6 +9,7 @@ import {
   ArrowRight, Layers, Star, Globe, Radio,
 } from 'lucide-react';
 import { useLanguage } from '@/lib/LanguageContext';
+import { safeSetItem } from '@/lib/storage';
 import { KPIDashboard } from '@/components/KPIDashboard';
 
 /* ─── Lean Waste Calculator (inline) ─── */
@@ -19,7 +20,7 @@ function LeanWasteCalculator({ isAr }: { isAr: boolean }) {
   });
   const set = (k: string, val: string) => setV(prev => {
     const next = { ...prev, [k]: val };
-    try { localStorage.setItem(SK, JSON.stringify(next)); } catch { }
+    safeSetItem(SK, JSON.stringify(next));
     return next;
   });
 

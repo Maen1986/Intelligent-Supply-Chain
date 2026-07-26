@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { translations } from './translations';
+import { safeSetItem } from './storage';
 
 type Language = 'en' | 'ar';
 type TranslationKey = keyof typeof translations.en;
@@ -24,7 +25,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 
   const setLang = (l: Language) => {
     setLangState(l);
-    try { localStorage.setItem('isc-lang', l); } catch { /* ignore */ }
+    safeSetItem('isc-lang', l);
   };
 
   useEffect(() => {

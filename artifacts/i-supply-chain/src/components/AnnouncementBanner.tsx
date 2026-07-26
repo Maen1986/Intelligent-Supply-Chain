@@ -3,6 +3,7 @@ import { motion, AnimatePresence  } from 'framer-motion';
 import { Link } from 'wouter';
 import { X, Zap, ArrowRight , ArrowLeft } from 'lucide-react';
 import { useLanguage } from '@/lib/LanguageContext';
+import { safeSetItem } from '@/lib/storage';
 
 const BANNER_KEY = 'isc_banner_dismissed_v2';
 
@@ -16,7 +17,7 @@ export function AnnouncementBanner() {
   }, []);
 
   const dismiss = () => {
-    localStorage.setItem(BANNER_KEY, '1');
+    safeSetItem(BANNER_KEY, '1');
     setVisible(false);
   };
 
