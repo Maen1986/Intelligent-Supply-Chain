@@ -5,7 +5,17 @@
  * 3. WeeklyRiskReview — template generator
  */
 import React, { useState } from 'react';
-import { AlertTriangle, Copy, CheckCircle, Settings } from 'lucide-react';
+import { AlertTriangle, Copy, CheckCircle, Settings, Printer } from 'lucide-react';
+
+function printZone(zone: string) {
+  document.body.setAttribute('data-print', zone);
+  const cleanup = () => {
+    document.body.removeAttribute('data-print');
+    window.removeEventListener('afterprint', cleanup);
+  };
+  window.addEventListener('afterprint', cleanup);
+  window.print();
+}
 
 interface RiskToolsProps { isAr: boolean; }
 
@@ -65,16 +75,33 @@ function KRIDashboard({ isAr }: { isAr: boolean }) {
     return s + (st === 'red' ? 3 : st === 'amber' ? 1.5 : 0);
   }, 0) / KRI_DEFS.length * 33.3) : 0;
 
+  const today = new Date().toLocaleDateString(isAr ? 'ar-SA' : 'en-GB');
+
   return (
-    <div className="space-y-4">
+    <div className="print-zone-kri space-y-4">
+      {/* Print-only header */}
+      <div className="hidden print:block mb-4 pb-3 border-b border-gray-300">
+        <p className="text-lg font-extrabold text-gray-900">{isAr ? '🛡 لوحة مؤشرات المخاطر الرئيسية (KRI)' : '🛡 Key Risk Indicator (KRI) Dashboard'}</p>
+        <p className="text-xs text-gray-500">{isAr ? `تاريخ التصدير: ${today}` : `Exported: ${today}`}</p>
+      </div>
+
       <div className="flex items-center justify-between flex-wrap gap-3">
         <p className="text-sm font-bold text-primary">{isAr ? 'لوحة مؤشرات المخاطر الرئيسية (KRI)' : 'Key Risk Indicator (KRI) Dashboard'}</p>
-        {filled.length > 0 && (
-          <div className="flex gap-2 text-xs">
-            {redCount > 0 && <span className="px-2 py-1 bg-red-100 text-red-700 rounded-full font-bold">🔴 {redCount} {isAr ? 'تنبيه' : 'Alert'}</span>}
-            {amberCount > 0 && <span className="px-2 py-1 bg-amber-100 text-amber-700 rounded-full font-bold">🟡 {amberCount} {isAr ? 'مراقبة' : 'Watch'}</span>}
-          </div>
-        )}
+        <div className="flex items-center gap-2 flex-wrap">
+          {filled.length > 0 && (
+            <div className="flex gap-2 text-xs">
+              {redCount > 0 && <span className="px-2 py-1 bg-red-100 text-red-700 rounded-full font-bold">🔴 {redCount} {isAr ? 'تنبيه' : 'Alert'}</span>}
+              {amberCount > 0 && <span className="px-2 py-1 bg-amber-100 text-amber-700 rounded-full font-bold">🟡 {amberCount} {isAr ? 'مراقبة' : 'Watch'}</span>}
+            </div>
+          )}
+          <button
+            onClick={() => printZone('kri')}
+            className="no-print flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg font-bold bg-primary text-white hover:bg-primary/90 transition-colors"
+          >
+            <Printer className="w-3.5 h-3.5" />
+            {isAr ? 'تصدير PDF' : 'Export PDF'}
+          </button>
+        </div>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-xs min-w-[500px]">

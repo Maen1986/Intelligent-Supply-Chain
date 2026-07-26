@@ -147,4 +147,72 @@ html[lang="ar"] {
   .no-print {
     display: none !important;
   }
+
+  /* ── Toolkit tool print zones ── */
+  body[data-print="scorecard"] .print-zone-scorecard,
+  body[data-print="scorecard"] .print-zone-scorecard * {
+    visibility: visible;
+  }
+  body[data-print="scorecard"] .print-zone-scorecard {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    padding: 24px;
+    box-sizing: border-box;
+  }
+
+  body[data-print="kri"] .print-zone-kri,
+  body[data-print="kri"] .print-zone-kri * {
+    visibility: visible;
+  }
+  body[data-print="kri"] .print-zone-kri {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    padding: 24px;
+    box-sizing: border-box;
+  }
+
+  body[data-print="clm"] .print-zone-clm,
+  body[data-print="clm"] .print-zone-clm * {
+    visibility: visible;
+  }
+  body[data-print="clm"] .print-zone-clm {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    padding: 24px;
+    box-sizing: border-box;
+  }
+
+  /* Common print typography */
+  .print-zone-scorecard,
+  .print-zone-kri,
+  .print-zone-clm {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: #111;
+    background: #fff;
+  }
+  .print-zone-scorecard table,
+  .print-zone-kri table,
+  .print-zone-clm table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .print-zone-scorecard th,
+  .print-zone-scorecard td,
+  .print-zone-kri th,
+  .print-zone-kri td,
+  .print-zone-clm th,
+  .print-zone-clm td {
+    border: 1px solid #d1d5db;
+    padding: 6px 10px;
+    font-size: 11px;
+  }
+  .print-hide {
+    display: none !important;
+  }
 }

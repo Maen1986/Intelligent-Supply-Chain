@@ -3,6 +3,17 @@
  * Contract Health Checker — 4-metric RAG dashboard + priority actions
  */
 import React, { useState } from 'react';
+import { Printer } from 'lucide-react';
+
+function printZone(zone: string) {
+  document.body.setAttribute('data-print', zone);
+  const cleanup = () => {
+    document.body.removeAttribute('data-print');
+    window.removeEventListener('afterprint', cleanup);
+  };
+  window.addEventListener('afterprint', cleanup);
+  window.print();
+}
 
 interface CLMToolsProps { isAr: boolean; }
 
@@ -90,11 +101,28 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
 
   const priorityActions = statuses.filter(s => s.status === 'red' || s.status === 'amber').flatMap(s => (isAr ? s.dim.actionsAr : s.dim.actions).slice(0, 2));
 
+  const today = new Date().toLocaleDateString(isAr ? 'ar-SA' : 'en-GB');
+
   return (
-    <div className="bg-white border border-border rounded-2xl shadow-sm overflow-hidden">
-      <div className="p-5 border-b border-border bg-violet-50">
-        <p className="text-sm font-bold text-primary">{isAr ? '📋 فاحص صحة العقود' : '📋 Contract Health Checker'}</p>
-        <p className="text-xs text-muted-foreground mt-1">{isAr ? 'أدخل أرقامك الفعلية — يُحدَّث RAG لحظياً' : 'Enter your actual metrics — RAG updates live'}</p>
+    <div className="print-zone-clm bg-white border border-border rounded-2xl shadow-sm overflow-hidden">
+      {/* Print-only header */}
+      <div className="hidden print:block mb-4 pb-3 border-b border-gray-300">
+        <p className="text-lg font-extrabold text-gray-900">{isAr ? '📋 فاحص صحة العقود' : '📋 Contract Health Checker'}</p>
+        <p className="text-xs text-gray-500">{isAr ? `تاريخ التصدير: ${today}` : `Exported: ${today}`}</p>
+      </div>
+
+      <div className="p-5 border-b border-border bg-violet-50 flex items-center justify-between gap-3">
+        <div>
+          <p className="text-sm font-bold text-primary">{isAr ? '📋 فاحص صحة العقود' : '📋 Contract Health Checker'}</p>
+          <p className="text-xs text-muted-foreground mt-1">{isAr ? 'أدخل أرقامك الفعلية — يُحدَّث RAG لحظياً' : 'Enter your actual metrics — RAG updates live'}</p>
+        </div>
+        <button
+          onClick={() => printZone('clm')}
+          className="no-print flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg font-bold bg-primary text-white hover:bg-primary/90 transition-colors shrink-0"
+        >
+          <Printer className="w-3.5 h-3.5" />
+          {isAr ? 'تصدير PDF' : 'Export PDF'}
+        </button>
       </div>
       <div className="p-5 space-y-5">
         <div>
