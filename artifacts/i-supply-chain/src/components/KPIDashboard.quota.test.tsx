@@ -22,13 +22,6 @@ vi.mock('@/lib/LanguageContext', () => ({
 import { toast } from 'sonner';
 import { KPIDashboard } from './KPIDashboard';
 
-/* ── jsdom doesn't ship ResizeObserver; stub it for recharts ───────────── */
-global.ResizeObserver = class ResizeObserver {
-  observe() {}
-  unobserve() {}
-  disconnect() {}
-};
-
 function makeQuotaError(): DOMException {
   return new DOMException('The quota has been exceeded.', 'QuotaExceededError');
 }
