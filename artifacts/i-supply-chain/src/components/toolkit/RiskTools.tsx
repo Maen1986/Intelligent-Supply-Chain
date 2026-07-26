@@ -141,7 +141,7 @@ function KRIDashboard({ isAr }: { isAr: boolean }) {
     ].join('\n');
   }, [entries, filled, heatScore]);
 
-  const { loading: planLoading, result: planResult, error: planError, generate: generatePlan, reset: resetPlan,
+  const { loading: planLoading, result: planResult, error: planError, rateLimited: planRateLimited, generate: generatePlan, reset: resetPlan,
           savedPlan: planSavedPlan, viewSaved: viewSavedPlan, deleteSaved: deleteSavedPlan } =
     useAIPlan(buildKriPrompt, isAr, 'risk');
 
@@ -260,6 +260,7 @@ function KRIDashboard({ isAr }: { isAr: boolean }) {
         savedPlan={planSavedPlan}
         onViewSaved={viewSavedPlan}
         onDeleteSaved={deleteSavedPlan}
+        rateLimited={planRateLimited}
       />
     </div>
   );

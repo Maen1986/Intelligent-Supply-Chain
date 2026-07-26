@@ -162,7 +162,7 @@ export function TrainingNeedsAssessment({ isAr }: TrainingToolsProps) {
   }, [members, scores, domainAvgs]);
 
   const hasAnyScores = members.some(m => DOMAINS.some(d => (scores[m]?.[d.id] ?? 0) > 0));
-  const { loading: planLoading, result: planResult, error: planError, generate: generatePlan, reset: resetPlan,
+  const { loading: planLoading, result: planResult, error: planError, rateLimited: planRateLimited, generate: generatePlan, reset: resetPlan,
           savedPlan: planSavedPlan, viewSaved: viewSavedPlan, deleteSaved: deleteSavedPlan } =
     useAIPlan(buildTrainingPrompt, isAr, 'training');
 
@@ -305,6 +305,7 @@ export function TrainingNeedsAssessment({ isAr }: TrainingToolsProps) {
           savedPlan={planSavedPlan}
           onViewSaved={viewSavedPlan}
           onDeleteSaved={deleteSavedPlan}
+          rateLimited={planRateLimited}
         />
       </div>
     </div>

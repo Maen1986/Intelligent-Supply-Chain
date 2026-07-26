@@ -11,10 +11,11 @@
 import { Router } from 'express';
 import { OPENAI_MODEL, friendlyAIError } from '../lib/aiConfig';
 import { requireApiKeyOrSession } from '../middlewares/requireApiKeyOrSession';
+import { aiPlanRateLimiter } from '../lib/rateLimit';
 
 const router = Router();
 
-router.post('/ai/plan', requireApiKeyOrSession, async (req, res) => {
+router.post('/ai/plan', requireApiKeyOrSession, aiPlanRateLimiter, async (req, res) => {
   const { prompt, language } = (req.body ?? {}) as { prompt?: unknown; language?: unknown };
 
   if (typeof prompt !== 'string' || !prompt.trim()) {

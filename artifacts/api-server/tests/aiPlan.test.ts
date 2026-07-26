@@ -9,10 +9,13 @@
  *   5. 200 with { ok: true, text } on a successful OpenAI call
  *   6. 502 when the upstream OpenAI API returns an error
  *   7. Accepts language='ar' and passes it to the system prompt
+ *   8. Per-user rate limiting: Nth call allowed, (N+1)th blocked; separate user buckets
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import request from 'supertest';
+import express from 'express';
+import rateLimit from 'express-rate-limit';
 import { makeApp, makeDbMock, makeLoggerMock, resetDbState, dbState } from './helpers';
 
 vi.mock('@workspace/db', () => makeDbMock());
@@ -308,5 +311,91 @@ describe('POST /ai/plan — upstream errors', () => {
 
     expect(res.status).toBeGreaterThanOrEqual(400);
     expect(res.body.ok).toBe(false);
+  });
+});
+
+/* ══════════════════════════════════════════════════════════════════════════
+   6. Per-user rate limiting
+   Uses a purpose-built tight limiter (limit=3) so tests stay fast and the
+   production singleton (limit=10 000 in test mode) is never tripped.
+══════════════════════════════════════════════════════════════════════════ */
+describe('POST /ai/plan — rate limiting', () => {
+  /**
+   * Build a minimal app that:
+   *   1. Fakes a session with the supplied userId
+   *   2. Writes userId into res.locals (mirrors requireApiKeyOrSession)
+   *   3. Applies a fresh tight rate-limiter keyed by res.locals.userId
+   *   4. Returns 200 for every allowed request
+   */
+  function makeRateLimitApp(userId: number, limiter: ReturnType<typeof rateLimit>) {
+    const app = express();
+    app.use(express.json());
+    // Fake session + res.locals population (mirrors requireApiKeyOrSession)
+    app.use((_req, res, next) => {
+      res.locals.userId = userId;
+      next();
+    });
+    app.use(limiter);
+    app.post('/ai/plan', (_req, res) => {
+      res.json({ ok: true, text: 'plan' });
+    });
+    return app;
+  }
+
+  it('allows requests up to the limit', async () => {
+    const limiter = rateLimit({ windowMs: 60_000, limit: 3,
+      keyGenerator: (_req, res) => `user:${res.locals.userId}` });
+    const app = makeRateLimitApp(10, limiter);
+
+    for (let i = 0; i < 3; i++) {
+      const res = await request(app).post('/ai/plan').send({ prompt: 'p' });
+      expect(res.status).toBe(200);
+    }
+  });
+
+  it('returns 429 with ok:false and retryAfterSeconds after the limit is exceeded', async () => {
+    const limiter = rateLimit({
+      windowMs: 60_000,
+      limit: 3,
+      keyGenerator: (_req, res) => `user:${res.locals.userId}`,
+      handler: (req, res) => {
+        const resetTime: Date | undefined = (req as any).rateLimit?.resetTime;
+        const retryAfterSeconds = resetTime
+          ? Math.max(1, Math.ceil((resetTime.getTime() - Date.now()) / 1000))
+          : 3600;
+        res.set('Retry-After', String(retryAfterSeconds));
+        res.status(429).json({ ok: false, error: 'limit reached', retryAfterSeconds });
+      },
+    });
+    const app = makeRateLimitApp(20, limiter);
+
+    // Exhaust quota
+    for (let i = 0; i < 3; i++) {
+      await request(app).post('/ai/plan').send({ prompt: 'p' });
+    }
+    // Next call must be blocked
+    const res = await request(app).post('/ai/plan').send({ prompt: 'p' });
+    expect(res.status).toBe(429);
+    expect(res.body.ok).toBe(false);
+    expect(res.body.retryAfterSeconds).toBeGreaterThan(0);
+  });
+
+  it('counts each user in a separate bucket — blocking one user does not block another', async () => {
+    const limiter = rateLimit({
+      windowMs: 60_000,
+      limit: 2,
+      keyGenerator: (_req, res) => `user:${res.locals.userId}`,
+    });
+    // User 30 exhausts their quota
+    const appUser30 = makeRateLimitApp(30, limiter);
+    await request(appUser30).post('/ai/plan').send({ prompt: 'p' });
+    await request(appUser30).post('/ai/plan').send({ prompt: 'p' });
+    const blocked = await request(appUser30).post('/ai/plan').send({ prompt: 'p' });
+    expect(blocked.status).toBe(429);
+
+    // User 31 uses the same limiter instance but a different key — still allowed
+    const appUser31 = makeRateLimitApp(31, limiter);
+    const allowed = await request(appUser31).post('/ai/plan').send({ prompt: 'p' });
+    expect(allowed.status).toBe(200);
   });
 });

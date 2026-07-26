@@ -304,7 +304,7 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
     ].join('\n');
   }, [kpis, values, resolvedSlug]);
 
-  const { loading: planLoading, result: planResult, error: planError, generate: generatePlan, reset: resetPlan,
+  const { loading: planLoading, result: planResult, error: planError, rateLimited: planRateLimited, generate: generatePlan, reset: resetPlan,
           savedPlan: planSavedPlan, viewSaved: viewSavedPlan, deleteSaved: deleteSavedPlan } =
     useAIPlan(buildKpiPrompt, isAr, 'kpi');
 
@@ -572,6 +572,7 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
           savedPlan={planSavedPlan}
           onViewSaved={viewSavedPlan}
           onDeleteSaved={deleteSavedPlan}
+          rateLimited={planRateLimited}
         />
       )}
 

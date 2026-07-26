@@ -26,24 +26,26 @@ export interface SavedPlan {
 }
 
 export interface AIPlanState {
-  loading:     boolean;
-  result:      string | null;
-  error:       string | null;
-  generate:    () => Promise<void>;
-  reset:       () => void;
-  savedPlan:   SavedPlan | null;
-  viewSaved:   () => void;
-  deleteSaved: () => Promise<void>;
+  loading:      boolean;
+  result:       string | null;
+  error:        string | null;
+  /** True when the last request was rejected with a 429 rate-limit response. */
+  rateLimited:  boolean;
+  generate:     () => Promise<void>;
+  reset:        () => void;
+  savedPlan:    SavedPlan | null;
+  viewSaved:    () => void;
+  deleteSaved:  () => Promise<void>;
 }
 
 export function useAIPlan(buildPrompt: () => string, isAr: boolean, toolKey?: string): AIPlanState {
   const { isAuthenticated } = useAuth();
 
-  const [loading,   setLoading]   = useState(false);
-  const [result,    setResult]    = useState<string | null>(null);
-  const [error,     setError]     = useState<string | null>(null);
-  const [savedPlan, setSavedPlan] = useState<SavedPlan | null>(null);
-
+  const [loading,     setLoading]     = useState(false);
+  const [result,      setResult]      = useState<string | null>(null);
+  const [error,       setError]       = useState<string | null>(null);
+  const [rateLimited, setRateLimited] = useState(false);
+  const [savedPlan,   setSavedPlan]   = useState<SavedPlan | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
   /* ── Load saved plan on mount / when auth state changes ── */
@@ -77,6 +79,7 @@ export function useAIPlan(buildPrompt: () => string, isAr: boolean, toolKey?: st
     setLoading(true);
     setResult(null);
     setError(null);
+    setRateLimited(false);
 
     try {
       const res = await fetch(`${API_BASE}/ai/plan`, {
@@ -87,7 +90,24 @@ export function useAIPlan(buildPrompt: () => string, isAr: boolean, toolKey?: st
         signal: abortRef.current.signal,
       });
 
-      const data = await res.json() as { ok: boolean; text?: string; error?: string };
+      const data = await res.json() as {
+        ok: boolean;
+        text?: string;
+        error?: string;
+        retryAfterSeconds?: number;
+      };
+
+      if (res.status === 429) {
+        setRateLimited(true);
+        const mins = data.retryAfterSeconds ? Math.ceil(data.retryAfterSeconds / 60) : 60;
+        throw new Error(
+          data.error ??
+          (isAr
+            ? `تجاوزت الحد المسموح. حاول مجدّداً خلال ${mins} دقيقة`
+            : `AI plan limit reached. Please try again in ${mins} minute(s).`),
+        );
+      }
+
       if (!res.ok || !data.ok) {
         throw new Error(data.error ?? (isAr ? 'تعذّر التوليد — حاول مجدّداً' : 'Could not generate — try again'));
       }
@@ -130,6 +150,7 @@ export function useAIPlan(buildPrompt: () => string, isAr: boolean, toolKey?: st
     setResult(null);
     setError(null);
     setLoading(false);
+    setRateLimited(false);
   }, []);
 
   /* ── View saved plan ── */
@@ -151,5 +172,5 @@ export function useAIPlan(buildPrompt: () => string, isAr: boolean, toolKey?: st
     }
   }, [toolKey]);
 
-  return { loading, result, error, generate, reset, savedPlan, viewSaved, deleteSaved };
+  return { loading, result, error, rateLimited, generate, reset, savedPlan, viewSaved, deleteSaved };
 }

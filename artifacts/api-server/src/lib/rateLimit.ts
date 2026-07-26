@@ -1,5 +1,5 @@
 import rateLimit, { ipKeyGenerator } from "express-rate-limit";
-import type { Request } from "express";
+import type { Request, Response } from "express";
 import { pgPool } from "./pgPool";
 import { PgRateLimitStore } from "./pgRateLimitStore";
 import { logger } from "./logger";
@@ -177,6 +177,43 @@ export const registerEmailRateLimiter = rateLimit({
     });
   },
   ...(isTest ? {} : { store: new PgRateLimitStore(pgPool, "register-email") }),
+});
+
+// AI plan generation: 10 calls per user per hour, keyed by authenticated userId
+// so the limit is fair behind NAT / shared IPs. requireApiKeyOrSession runs
+// before this limiter and writes the resolved user ID into res.locals.userId.
+// Falls back to IP if (somehow) no userId is present. Fails open if the DB is
+// unreachable — the global in-memory limiter still applies.
+//
+// In test mode the effective limit is raised to 10 000 so unit-test suites
+// (which share a single in-memory store) never accidentally trip the cap
+// while still exercising happy-path logic.  Rate-limit behaviour itself is
+// tested separately with a purpose-built tight limiter.
+const AI_PLAN_LIMIT = isTest ? 10_000 : 10;
+
+export const aiPlanRateLimiter = rateLimit({
+  windowMs: 60 * 60_000,
+  limit: AI_PLAN_LIMIT,
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+  keyGenerator: (req: Request, res: Response) => {
+    const userId = res.locals.userId as number | undefined;
+    return userId != null ? `user:${userId}` : ipKeyGenerator(req.ip ?? "");
+  },
+  handler: (req, res) => {
+    const resetTime: Date | undefined = (req as any).rateLimit?.resetTime;
+    const retryAfterSeconds = resetTime
+      ? Math.max(1, Math.ceil((resetTime.getTime() - Date.now()) / 1000))
+      : 3600;
+    const retryAfterMins = Math.ceil(retryAfterSeconds / 60);
+    res.set("Retry-After", String(retryAfterSeconds));
+    res.status(429).json({
+      ok: false,
+      error: `AI plan limit reached. Please try again in ${retryAfterMins} minute(s).`,
+      retryAfterSeconds,
+    });
+  },
+  ...(isTest ? {} : { store: new PgRateLimitStore(pgPool, "ai-plan") }),
 });
 
 /* Login brute-force throttle: 5 FAILED sign-in attempts per minute, keyed by

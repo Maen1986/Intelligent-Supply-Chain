@@ -29,11 +29,13 @@ interface AIPlanPanelProps {
   savedPlan?:    SavedPlan | null;
   onViewSaved?:  () => void;
   onDeleteSaved?: () => void;
+  /** True when the last request was rejected with a 429 — hides Retry */
+  rateLimited?: boolean;
 }
 
 export function AIPlanPanel({
   loading, result, error, onGenerate, onReset, buttonLabel, isAr, disabled,
-  savedPlan, onViewSaved, onDeleteSaved,
+  savedPlan, onViewSaved, onDeleteSaved, rateLimited,
 }: AIPlanPanelProps) {
   const { isAuthenticated } = useAuth();
   const [open,   setOpen]   = useState(true);
@@ -121,7 +123,7 @@ export function AIPlanPanel({
         <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-xs text-red-700 max-w-xl">
           <AlertCircle className="w-3.5 h-3.5 shrink-0" />
           <span className="flex-1">{error}</span>
-          {isAuthenticated && (
+          {isAuthenticated && !rateLimited && (
             <button
               onClick={onGenerate}
               className="font-bold underline underline-offset-2 shrink-0 hover:opacity-80"
