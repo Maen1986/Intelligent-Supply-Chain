@@ -74,8 +74,8 @@ function CategoryProfileBuilder({ isAr }: { isAr: boolean }) {
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {fields.map(f => (
           <div key={f.id}>
-            <label className="text-xs font-bold text-primary mb-1 block">{isAr ? f.labelAr : f.label}</label>
-            <input type={f.type} min={f.type === 'number' ? 1 : undefined} max={f.type === 'number' && (f.id === 'strategic' || f.id === 'complexity') ? 5 : undefined}
+            <label htmlFor={`catprofile-${f.id}`} className="text-xs font-bold text-primary mb-1 block">{isAr ? f.labelAr : f.label}</label>
+            <input id={`catprofile-${f.id}`} type={f.type} min={f.type === 'number' ? 1 : undefined} max={f.type === 'number' && (f.id === 'strategic' || f.id === 'complexity') ? 5 : undefined}
               value={v[f.id] ?? ''} onChange={e => set(f.id, e.target.value)}
               className="w-full text-sm border border-border rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-primary/30" />
           </div>
@@ -138,8 +138,10 @@ function SpendParetoChart({ isAr }: { isAr: boolean }) {
       <div className="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto">
         {rows.map((r, i) => (
           <div key={i} className="flex gap-2">
-            <input className="flex-1 text-xs border border-border rounded px-2 py-1" placeholder={isAr ? `مورّد ${i + 1}` : `Supplier ${i + 1}`} value={r.name} onChange={e => update(i, 'name', e.target.value)} />
-            <input type="number" className="w-24 text-xs border border-border rounded px-2 py-1" placeholder={isAr ? 'الإنفاق (ريال)' : 'Spend (SAR)'} value={r.spend} onChange={e => update(i, 'spend', e.target.value)} />
+            <label htmlFor={`pareto-name-${i}`} className="sr-only">{isAr ? `اسم المورّد ${i + 1}` : `Supplier ${i + 1} name`}</label>
+            <input id={`pareto-name-${i}`} className="flex-1 text-xs border border-border rounded px-2 py-1" placeholder={isAr ? `مورّد ${i + 1}` : `Supplier ${i + 1}`} value={r.name} onChange={e => update(i, 'name', e.target.value)} />
+            <label htmlFor={`pareto-spend-${i}`} className="sr-only">{isAr ? `إنفاق المورّد ${i + 1}` : `Supplier ${i + 1} spend`}</label>
+            <input id={`pareto-spend-${i}`} type="number" className="w-24 text-xs border border-border rounded px-2 py-1" placeholder={isAr ? 'الإنفاق (ريال)' : 'Spend (SAR)'} value={r.spend} onChange={e => update(i, 'spend', e.target.value)} />
           </div>
         ))}
       </div>
@@ -197,11 +199,11 @@ function MarketIntelligenceScorecard({ isAr }: { isAr: boolean }) {
         {DIMS.map(d => (
           <div key={d.id} className="flex items-center gap-3">
             <div className="flex-1">
-              <p className="text-xs font-bold text-primary">{isAr ? d.labelAr : d.label}</p>
+              <label htmlFor={`marketintel-${d.id}`} className="text-xs font-bold text-primary">{isAr ? d.labelAr : d.label}</label>
               <p className="text-xs text-muted-foreground">{isAr ? d.descAr : d.desc}</p>
             </div>
             <div className="flex items-center gap-2 shrink-0">
-              <input type="range" min={1} max={10} value={scores[d.id] ?? 5} onChange={e => set(d.id, parseInt(e.target.value))} className="w-24 accent-primary" />
+              <input id={`marketintel-${d.id}`} type="range" min={1} max={10} value={scores[d.id] ?? 5} onChange={e => set(d.id, parseInt(e.target.value))} className="w-24 accent-primary" />
               <span className="text-xs font-bold text-primary w-4 text-center">{scores[d.id] ?? '—'}</span>
             </div>
           </div>
