@@ -4,12 +4,14 @@
  * 2. SpendParetoChart — top-10 supplier spend with live Pareto bar chart
  * 3. MarketIntelligenceScorecard — 6-dimension market risk scoring
  */
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Cell, Line, ComposedChart,
 } from 'recharts';
 import { safeSetItem } from '@/lib/storage';
+import { parseCsvFile, downloadCsv } from '@/lib/importCsv';
+import { Download, Upload } from 'lucide-react';
 
 interface ProcurementToolsProps { isAr: boolean; }
 
@@ -112,6 +114,8 @@ function SpendParetoChart({ isAr }: { isAr: boolean }) {
   const [rows, setRows] = useState<{ name: string; spend: string }[]>(() => {
     try { const s = localStorage.getItem(SK); return s ? JSON.parse(s) : Array(10).fill({ name: '', spend: '' }).map(() => ({ name: '', spend: '' })); } catch { return Array(10).fill(null).map(() => ({ name: '', spend: '' })); }
   });
+  const [importLog, setImportLog] = useState<string[] | null>(null);
+  const importInputRef = useRef<HTMLInputElement | null>(null);
 
   const update = (i: number, field: 'name' | 'spend', val: string) => {
     setRows(prev => {
@@ -119,6 +123,44 @@ function SpendParetoChart({ isAr }: { isAr: boolean }) {
       safeSetItem(SK, JSON.stringify(next));
       return next;
     });
+  };
+
+  const downloadParetoTemplate = () => {
+    const headers = ['Supplier Name', 'Annual Spend (SAR)'];
+    const examples = [['Supplier A', '1200000'], ['Supplier B', '800000'], ['Supplier C', '450000']];
+    downloadCsv([headers, ...examples], 'spend-pareto-template.csv');
+  };
+
+  const handleParetoImport = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target?.result as string;
+      const { rows: csvRows, errors } = parseCsvFile(text, ['Supplier Name', 'Annual Spend (SAR)']);
+      if (errors.length > 0 && csvRows.length === 0) { setImportLog([isAr ? 'فشل الاستيراد:' : 'Import failed:', ...errors]); return; }
+      const hasExisting = rows.some(r => r.name || r.spend);
+      if (hasExisting) {
+        const ok = window.confirm(isAr ? 'سيؤدي الاستيراد إلى استبدال قائمة الموردين الحالية. المتابعة؟' : 'Import will replace the existing supplier list. Continue?');
+        if (!ok) return;
+      }
+      const log: string[] = [...errors];
+      const newRows: { name: string; spend: string }[] = [];
+      let count = 0;
+      csvRows.forEach((row, i) => {
+        const name = row['Supplier Name']?.trim();
+        const spendStr = row['Annual Spend (SAR)']?.trim() ?? '';
+        if (!name) { log.push(`Row ${i + 2}: Supplier Name is empty — skipped.`); return; }
+        const spend = parseFloat(spendStr);
+        if (isNaN(spend) || spend < 0) { log.push(`Row ${i + 2}: Annual Spend "${spendStr}" must be ≥ 0 — skipped.`); return; }
+        if (newRows.length < 10) { newRows.push({ name, spend: spendStr }); count++; }
+        else { log.push(`Row ${i + 2}: "${name}" — max 10 rows reached, skipped.`); }
+      });
+      while (newRows.length < 10) newRows.push({ name: '', spend: '' });
+      setRows(newRows);
+      safeSetItem(SK, JSON.stringify(newRows));
+      log.unshift(isAr ? `✓ تم استيراد ${count} مورّد(ين).` : `✓ Imported ${count} supplier(s).`);
+      setImportLog(log);
+    };
+    reader.readAsText(file);
   };
 
   const parsed = rows.map(r => ({ name: r.name, spend: parseFloat(r.spend) || 0 })).filter(r => r.name && r.spend > 0).sort((a, b) => b.spend - a.spend);
@@ -132,10 +174,28 @@ function SpendParetoChart({ isAr }: { isAr: boolean }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-2">
         <p className="text-sm font-bold text-primary">{isAr ? 'تحليل باريتو للإنفاق' : 'Spend Pareto Analysis'}</p>
-        {vital > 0 && <span className="text-xs bg-primary text-white px-2 py-1 rounded-full">{isAr ? `${vital} موردين = 80% من الإنفاق` : `${vital} suppliers = 80% of spend`}</span>}
+        <div className="flex items-center gap-2">
+          {vital > 0 && <span className="text-xs bg-primary text-white px-2 py-1 rounded-full">{isAr ? `${vital} موردين = 80% من الإنفاق` : `${vital} suppliers = 80% of spend`}</span>}
+          <button onClick={downloadParetoTemplate} className="flex items-center gap-1 text-xs px-2 py-1 rounded-lg font-bold bg-slate-200 text-slate-700 hover:bg-slate-300 transition-colors">
+            <Download className="w-3 h-3" />{isAr ? 'قالب' : 'Template'}
+          </button>
+          <button onClick={() => importInputRef.current?.click()} className="flex items-center gap-1 text-xs px-2 py-1 rounded-lg font-bold bg-slate-200 text-slate-700 hover:bg-slate-300 transition-colors">
+            <Upload className="w-3 h-3" />{isAr ? 'استيراد' : 'Import'}
+          </button>
+          <input type="file" accept=".csv" className="hidden" ref={importInputRef}
+            onChange={e => { const f = e.target.files?.[0]; if (f) handleParetoImport(f); e.target.value = ''; }} />
+        </div>
       </div>
+      {importLog && (
+        <div className={`text-xs rounded-lg p-3 border ${importLog[0]?.startsWith('✓') ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-red-50 border-red-200 text-red-800'}`}>
+          <div className="flex items-start justify-between gap-2">
+            <div className="space-y-0.5">{importLog.map((m, i) => <p key={i} className={i === 0 ? 'font-bold' : 'opacity-75'}>{m}</p>)}</div>
+            <button onClick={() => setImportLog(null)} className="shrink-0 opacity-50 hover:opacity-100 font-bold">✕</button>
+          </div>
+        </div>
+      )}
       <div className="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto">
         {rows.map((r, i) => (
           <div key={i} className="flex gap-2">

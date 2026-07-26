@@ -4,9 +4,10 @@
  * 2. SupplierAlertConfig — tier-based alert threshold configurator
  * 3. WeeklyRiskReview — template generator
  */
-import React, { useState } from 'react';
-import { AlertTriangle, Copy, CheckCircle, Settings, Printer } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { AlertTriangle, Copy, CheckCircle, Settings, Printer, Download, Upload } from 'lucide-react';
 import { safeSetItem } from '@/lib/storage';
+import { parseCsvFile, downloadCsv } from '@/lib/importCsv';
 
 function printZone(zone: string) {
   document.body.setAttribute('data-print', zone);
@@ -58,11 +59,47 @@ function KRIDashboard({ isAr }: { isAr: boolean }) {
   const [values, setValues] = useState<Record<string, string>>(() => {
     try { const s = localStorage.getItem(SK); return s ? JSON.parse(s) : {}; } catch { return {}; }
   });
+  const [importLog, setImportLog] = useState<string[] | null>(null);
+  const importInputRef = useRef<HTMLInputElement | null>(null);
   const set = (id: string, val: string) => setValues(prev => {
     const next = { ...prev, [id]: val };
     safeSetItem(SK, JSON.stringify(next));
     return next;
   });
+
+  const downloadKriTemplate = () => {
+    const headers = ['KRI ID', 'KRI Name', 'Current Value', 'Unit'];
+    const rows = KRI_DEFS.map(d => [d.id, d.label, '', d.unit]);
+    downloadCsv([headers, ...rows], 'kri-dashboard-template.csv');
+  };
+
+  const handleKriImport = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target?.result as string;
+      const { rows: csvRows, errors } = parseCsvFile(text, ['KRI ID', 'Current Value']);
+      if (errors.length > 0 && csvRows.length === 0) { setImportLog([isAr ? 'فشل الاستيراد:' : 'Import failed:', ...errors]); return; }
+      const log: string[] = [...errors];
+      const nextValues = { ...values };
+      let count = 0;
+      csvRows.forEach((row, i) => {
+        const kriId = row['KRI ID']?.trim();
+        const val = row['Current Value']?.trim();
+        const def = KRI_DEFS.find(d => d.id === kriId);
+        if (!def) { if (kriId) log.push(`Row ${i + 2}: KRI ID "${kriId}" not recognised — skipped.`); return; }
+        if (val !== undefined && val !== '') {
+          const num = parseFloat(val);
+          if (isNaN(num)) { log.push(`Row ${i + 2}: Current Value "${val}" must be a number — skipped.`); return; }
+          nextValues[kriId] = val; count++;
+        }
+      });
+      setValues(nextValues);
+      safeSetItem(SK, JSON.stringify(nextValues));
+      log.unshift(isAr ? `✓ تم تحديث ${count} مؤشر(ات).` : `✓ Updated ${count} KRI(s).`);
+      setImportLog(log);
+    };
+    reader.readAsText(file);
+  };
 
   const entries = KRI_DEFS.map(def => {
     const raw = parseFloat(values[def.id] ?? '');
@@ -95,6 +132,14 @@ function KRIDashboard({ isAr }: { isAr: boolean }) {
               {amberCount > 0 && <span className="px-2 py-1 bg-amber-100 text-amber-700 rounded-full font-bold">🟡 {amberCount} {isAr ? 'مراقبة' : 'Watch'}</span>}
             </div>
           )}
+          <button onClick={downloadKriTemplate} className="no-print flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg font-bold bg-slate-200 text-slate-700 hover:bg-slate-300 transition-colors">
+            <Download className="w-3 h-3" />{isAr ? 'قالب' : 'Template'}
+          </button>
+          <button onClick={() => importInputRef.current?.click()} className="no-print flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg font-bold bg-slate-200 text-slate-700 hover:bg-slate-300 transition-colors">
+            <Upload className="w-3 h-3" />{isAr ? 'استيراد' : 'Import CSV'}
+          </button>
+          <input type="file" accept=".csv" className="hidden" ref={importInputRef}
+            onChange={e => { const f = e.target.files?.[0]; if (f) handleKriImport(f); e.target.value = ''; }} />
           <button
             onClick={() => printZone('kri')}
             className="no-print flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg font-bold bg-primary text-white hover:bg-primary/90 transition-colors"
@@ -104,6 +149,14 @@ function KRIDashboard({ isAr }: { isAr: boolean }) {
           </button>
         </div>
       </div>
+      {importLog && (
+        <div className={`text-xs rounded-lg p-3 border ${importLog[0]?.startsWith('✓') ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-red-50 border-red-200 text-red-800'}`}>
+          <div className="flex items-start justify-between gap-2">
+            <div className="space-y-0.5">{importLog.map((m, i) => <p key={i} className={i === 0 ? 'font-bold' : 'opacity-75'}>{m}</p>)}</div>
+            <button onClick={() => setImportLog(null)} className="shrink-0 opacity-50 hover:opacity-100 font-bold">✕</button>
+          </div>
+        </div>
+      )}
       <div className="overflow-x-auto">
         <table className="w-full text-xs min-w-[500px]">
           <thead>

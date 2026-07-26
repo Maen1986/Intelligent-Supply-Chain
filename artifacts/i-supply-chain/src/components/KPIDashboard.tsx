@@ -5,7 +5,8 @@ import {
   ResponsiveContainer, Cell, PieChart, Pie,
 } from 'recharts';
 import { useLanguage } from '@/lib/LanguageContext';
-import { Info, TrendingUp, TrendingDown } from 'lucide-react';
+import { Info, TrendingUp, TrendingDown, Download, Upload } from 'lucide-react';
+import { parseCsvFile, downloadCsv } from '@/lib/importCsv';
 
 /* ─── KPI definition types ─── */
 interface KpiDef {
@@ -259,6 +260,8 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
   });
 
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [importLog, setImportLog] = useState<string[] | null>(null);
+  const importInputRef = useRef<HTMLInputElement | null>(null);
 
   const handleChange = useCallback((id: string, raw: string) => {
     setValues(prev => {
@@ -272,6 +275,44 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
   }, [storageKey]);
 
   useEffect(() => () => { if (saveTimer.current) clearTimeout(saveTimer.current); }, []);
+
+  /* ── CSV template ── */
+  const downloadKpiTemplate = () => {
+    if (!kpis) return;
+    const headers = ['KPI ID', 'KPI Name', 'Actual Value', 'Unit'];
+    const rows = kpis.map(k => [k.id, k.label, '', k.unit]);
+    downloadCsv([headers, ...rows], `kpi-template-${resolvedSlug}.csv`);
+  };
+
+  /* ── CSV import ── */
+  const handleKpiImport = (file: File) => {
+    if (!kpis) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target?.result as string;
+      const { rows: csvRows, errors } = parseCsvFile(text, ['KPI ID', 'Actual Value']);
+      if (errors.length > 0 && csvRows.length === 0) { setImportLog([isAr ? 'فشل الاستيراد:' : 'Import failed:', ...errors]); return; }
+      const log: string[] = [...errors];
+      const nextValues = { ...values };
+      let count = 0;
+      csvRows.forEach((row, i) => {
+        const kpiId = row['KPI ID']?.trim();
+        const val = row['Actual Value']?.trim();
+        const kpiDef = kpis.find(k => k.id === kpiId || k.label === row['KPI Name']?.trim());
+        if (!kpiDef) { if (kpiId) log.push(`Row ${i + 2}: KPI ID "${kpiId}" not in this framework — skipped.`); return; }
+        if (val !== undefined && val !== '') {
+          const num = parseFloat(val);
+          if (isNaN(num)) { log.push(`Row ${i + 2}: Actual Value "${val}" must be a number — skipped.`); return; }
+          nextValues[kpiDef.id] = val; count++;
+        }
+      });
+      setValues(nextValues);
+      safeSetItem(storageKey, JSON.stringify(nextValues));
+      log.unshift(isAr ? `✓ تم تحديث ${count} مؤشر(ات).` : `✓ Updated ${count} KPI(s).`);
+      setImportLog(log);
+    };
+    reader.readAsText(file);
+  };
 
   /* scores */
   /* Strict guard — show explicit error state if slug has no configured framework */
@@ -318,12 +359,32 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h2 className="text-2xl font-bold text-primary">{isAr ? 'لوحة مؤشرات الأداء — ISC' : 'ISC KPI Dashboard'}</h2>
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <h2 className="text-2xl font-bold text-primary">{isAr ? 'لوحة مؤشرات الأداء — ISC' : 'ISC KPI Dashboard'}</h2>
+          <div className="flex items-center gap-2">
+            <button onClick={downloadKpiTemplate} className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg font-bold bg-slate-200 text-slate-700 hover:bg-slate-300 transition-colors">
+              <Download className="w-3 h-3" />{isAr ? 'قالب CSV' : 'Template'}
+            </button>
+            <button onClick={() => importInputRef.current?.click()} className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg font-bold bg-slate-200 text-slate-700 hover:bg-slate-300 transition-colors">
+              <Upload className="w-3 h-3" />{isAr ? 'استيراد CSV' : 'Import CSV'}
+            </button>
+            <input type="file" accept=".csv" className="hidden" ref={importInputRef}
+              onChange={e => { const f = e.target.files?.[0]; if (f) handleKpiImport(f); e.target.value = ''; }} />
+          </div>
+        </div>
         <p className="text-muted-foreground mt-1 text-sm">
           {isAr
             ? 'أدخل أرقامك الفعلية — تتحدّث اللوحة لحظياً. تُحفظ قيمك تلقائياً.'
             : 'Enter your actual numbers — the dashboard updates live. Your values are auto-saved.'}
         </p>
+        {importLog && (
+          <div className={`mt-2 text-xs rounded-lg p-3 border ${importLog[0]?.startsWith('✓') ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-red-50 border-red-200 text-red-800'}`}>
+            <div className="flex items-start justify-between gap-2">
+              <div className="space-y-0.5">{importLog.map((m, i) => <p key={i} className={i === 0 ? 'font-bold' : 'opacity-75'}>{m}</p>)}</div>
+              <button onClick={() => setImportLog(null)} className="shrink-0 opacity-50 hover:opacity-100 font-bold">✕</button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Health score + inputs grid */}

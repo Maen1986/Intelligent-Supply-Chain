@@ -4,10 +4,11 @@
  */
 import React, { useState, useEffect, useRef } from 'react';
 import { RadarChart, Radar, PolarGrid, PolarAngleAxis, ResponsiveContainer, Tooltip } from 'recharts';
-import { Printer, Plus, Trash2, Users, Download, Settings, ChevronDown, ChevronUp, RotateCcw } from 'lucide-react';
+import { Printer, Plus, Trash2, Users, Download, Upload, Settings, ChevronDown, ChevronUp, RotateCcw } from 'lucide-react';
 import { safeSetItem } from '@/lib/storage';
 import { useAuth } from '@/lib/AuthContext';
 import { API_BASE } from '@/lib/apiBase';
+import { parseCsvFile, downloadCsv } from '@/lib/importCsv';
 
 function printZone(zone: string) {
   document.body.setAttribute('data-print', zone);
@@ -286,6 +287,8 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
   // Storing the id (not just a boolean) means logging out → logging in as a
   // different user re-runs the bootstrap for the new account.
   const serverLoadedForUserId = useRef<number | null>(null);
+  const [importLog, setImportLog] = useState<string[] | null>(null);
+  const importInputRef = useRef<HTMLInputElement | null>(null);
 
   /* ── Server load: per-user bootstrap on login / account switch ── */
   useEffect(() => {
@@ -354,6 +357,86 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
     setRoster(next);
     safeSetItem(ROSTER_KEY, JSON.stringify(next));
     syncToServer(next);
+  };
+
+  /* ── CSV template download ── */
+  const downloadScorecardTemplate = () => {
+    const dimHeaders = DIMS.map(d => `${d.label} Score (/100)`);
+    const subHeaders: string[] = [];
+    DIMS.forEach(d => { (SUB_INDICATORS[d.id] ?? []).forEach(sub => { subHeaders.push(`${d.label} — ${sub.label}`); }); });
+    const headers = ['Supplier Name', 'Current Tier', ...dimHeaders, ...subHeaders, 'Weighted Score (/100)', 'Calculated Tier'];
+    const example = ['Example Supplier', 'Preferred', ...dimHeaders.map(() => ''), ...subHeaders.map(() => '75'), '', ''];
+    downloadCsv([headers, example], 'supplier-scorecard-template.csv');
+  };
+
+  /* ── CSV import ── */
+  const handleScorecardImport = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target?.result as string;
+      const subColToIds: Record<string, { dimId: string; subId: string }> = {};
+      const subHeaders: string[] = [];
+      DIMS.forEach(d => {
+        (SUB_INDICATORS[d.id] ?? []).forEach(sub => {
+          const col = `${d.label} — ${sub.label}`;
+          subHeaders.push(col);
+          subColToIds[col] = { dimId: d.id, subId: sub.id };
+        });
+      });
+
+      const { rows: csvRows, errors } = parseCsvFile(text, ['Supplier Name']);
+      if (errors.length > 0 && csvRows.length === 0) { setImportLog([isAr ? 'فشل الاستيراد:' : 'Import failed:', ...errors]); return; }
+
+      const log: string[] = [...errors];
+      const nextSuppliers = [...roster.suppliers];
+
+      const dupNames = csvRows.map(r => r['Supplier Name']?.trim()).filter(n => n && nextSuppliers.some(s => s.name === n));
+      let overwrite = false;
+      if (dupNames.length > 0) {
+        overwrite = window.confirm(
+          isAr
+            ? `${dupNames.length} مورّد(ين) موجود(ون): ${dupNames.slice(0, 3).join('، ')}${dupNames.length > 3 ? '…' : ''}.\n\nاستبدال البيانات الحالية؟ (موافق = استبدال، إلغاء = تخطّي المكررات)`
+            : `${dupNames.length} supplier(s) already exist: ${dupNames.slice(0, 3).join(', ')}${dupNames.length > 3 ? '…' : ''}.\n\nOverwrite? OK = overwrite, Cancel = skip duplicates.`
+        );
+      }
+
+      let imported = 0; let skipped = 0;
+      csvRows.forEach((row, ri) => {
+        const rowNum = ri + 2;
+        const name = row['Supplier Name']?.trim();
+        if (!name) { log.push(`Row ${rowNum}: Supplier Name is empty — skipped.`); return; }
+
+        const subScores: Record<string, Record<string, string>> = {};
+        subHeaders.forEach(col => {
+          const val = row[col]?.trim();
+          if (val !== undefined && val !== '') {
+            const num = parseFloat(val);
+            if (!isNaN(num) && num >= 0 && num <= 100) {
+              const { dimId, subId } = subColToIds[col];
+              if (!subScores[dimId]) subScores[dimId] = {};
+              subScores[dimId][subId] = val;
+            } else {
+              log.push(`Row ${rowNum}: "${col}" value "${val}" must be 0–100 — ignored.`);
+            }
+          }
+        });
+
+        const existingIdx = nextSuppliers.findIndex(s => s.name === name);
+        if (existingIdx >= 0) {
+          if (overwrite) { nextSuppliers[existingIdx] = { ...nextSuppliers[existingIdx], tier: row['Current Tier']?.trim() || nextSuppliers[existingIdx].tier, subScores }; imported++; }
+          else { skipped++; }
+        } else {
+          nextSuppliers.push({ id: makeId(), name, tier: row['Current Tier']?.trim() || 'Strategic', subScores });
+          imported++;
+        }
+      });
+
+      const nextActiveId = nextSuppliers.find(s => s.id === roster.activeId) ? roster.activeId : (nextSuppliers[0]?.id ?? roster.activeId);
+      save({ suppliers: nextSuppliers, activeId: nextActiveId });
+      log.unshift(isAr ? `✓ تم استيراد ${imported} مورّد(ين)${skipped > 0 ? `، تخطّي ${skipped}` : ''}.` : `✓ Imported ${imported} supplier(s).${skipped > 0 ? ` ${skipped} skipped.` : ''}`);
+      setImportLog(log);
+    };
+    reader.readAsText(file);
   };
 
   const saveConfig = (next: ScorecardConfig) => {
@@ -470,7 +553,23 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
               </span>
               <span className="text-xs text-muted-foreground">({roster.suppliers.length})</span>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              <button
+                onClick={downloadScorecardTemplate}
+                title={isAr ? 'تنزيل قالب CSV فارغ' : 'Download blank CSV template'}
+                className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg font-bold bg-slate-200 text-slate-700 hover:bg-slate-300 transition-colors"
+              >
+                <Download className="w-3 h-3" />
+                {isAr ? 'قالب' : 'Template'}
+              </button>
+              <button
+                onClick={() => importInputRef.current?.click()}
+                title={isAr ? 'استيراد بيانات المورّدين من CSV' : 'Import supplier data from CSV'}
+                className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg font-bold bg-slate-200 text-slate-700 hover:bg-slate-300 transition-colors"
+              >
+                <Upload className="w-3 h-3" />
+                {isAr ? 'استيراد CSV' : 'Import CSV'}
+              </button>
               <button
                 onClick={() => exportToCSV(roster.suppliers, config)}
                 disabled={roster.suppliers.filter(s => Object.keys(s.subScores).length > 0).length < 1}
@@ -487,6 +586,10 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
                 <Plus className="w-3 h-3" />
                 {isAr ? 'إضافة مورّد' : 'Add Supplier'}
               </button>
+              <input
+                type="file" accept=".csv" className="hidden" ref={importInputRef}
+                onChange={e => { const f = e.target.files?.[0]; if (f) handleScorecardImport(f); e.target.value = ''; }}
+              />
             </div>
           </div>
           <div className="divide-y divide-border max-h-52 overflow-y-auto">
@@ -529,6 +632,16 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
             })}
           </div>
         </div>
+
+        {/* ── Import log ── */}
+        {importLog && (
+          <div className={`text-xs rounded-lg p-3 border ${importLog[0]?.startsWith('✓') ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-red-50 border-red-200 text-red-800'}`}>
+            <div className="flex items-start justify-between gap-2">
+              <div className="space-y-0.5">{importLog.map((m, i) => <p key={i} className={i === 0 ? 'font-bold' : 'opacity-75'}>{m}</p>)}</div>
+              <button onClick={() => setImportLog(null)} className="shrink-0 opacity-50 hover:opacity-100 font-bold">✕</button>
+            </div>
+          </div>
+        )}
 
         {/* ── Customise Framework ── */}
         <div className="no-print border border-border rounded-xl overflow-hidden">

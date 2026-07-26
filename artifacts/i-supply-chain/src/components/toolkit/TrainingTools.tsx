@@ -3,9 +3,10 @@
  * Matrix: team members × 8 supply chain domains, competency 1–5
  * Output: heatmap, gap clusters, CIPS/ISC learning path recommendations
  */
-import React, { useState } from 'react';
-import { Plus, Trash2 } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { Plus, Trash2, Download, Upload } from 'lucide-react';
 import { safeSetItem } from '@/lib/storage';
+import { parseCsvFile, downloadCsv } from '@/lib/importCsv';
 
 interface TrainingToolsProps { isAr: boolean; }
 
@@ -39,9 +40,65 @@ export function TrainingNeedsAssessment({ isAr }: TrainingToolsProps) {
   const [scores, setScores] = useState<Record<string, Record<string, number>>>(() => {
     try { const s = localStorage.getItem(SK_SCORES); return s ? JSON.parse(s) : {}; } catch { return {}; }
   });
+  const [importLog, setImportLog] = useState<string[] | null>(null);
+  const importInputRef = useRef<HTMLInputElement | null>(null);
 
   const persistMembers = (m: string[]) => { safeSetItem(SK_MEMBERS, JSON.stringify(m)); };
   const persistScores = (s: Record<string, Record<string, number>>) => { safeSetItem(SK_SCORES, JSON.stringify(s)); };
+
+  /* ── CSV template ── */
+  const downloadTrainingTemplate = () => {
+    const headers = ['Member Name', ...DOMAINS.map(d => d.label)];
+    const example = ['Team Member 1', ...DOMAINS.map(() => '3')];
+    downloadCsv([headers, example], 'training-assessment-template.csv');
+  };
+
+  /* ── CSV import ── */
+  const handleTrainingImport = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target?.result as string;
+      const { rows: csvRows, errors } = parseCsvFile(text, ['Member Name']);
+      if (errors.length > 0 && csvRows.length === 0) { setImportLog(['Import failed:', ...errors]); return; }
+      const log: string[] = [...errors];
+      const nextMembers = [...members];
+      const nextScores = { ...scores };
+      const existingSet = new Set(members);
+      const dupNames = csvRows.map(r => r['Member Name']?.trim()).filter(n => n && existingSet.has(n));
+      let overwrite = false;
+      if (dupNames.length > 0) {
+        overwrite = window.confirm(
+          `${dupNames.length} member(s) already exist: ${dupNames.slice(0, 3).join(', ')}${dupNames.length > 3 ? '…' : ''}.\nOverwrite existing scores? OK = overwrite, Cancel = skip duplicates.`
+        );
+      }
+      let count = 0;
+      csvRows.forEach((row, i) => {
+        const name = row['Member Name']?.trim();
+        if (!name) { log.push(`Row ${i + 2}: Member Name is empty — skipped.`); return; }
+        const domainScores: Record<string, number> = {};
+        DOMAINS.forEach(d => {
+          const val = row[d.label]?.trim();
+          if (val !== undefined && val !== '') {
+            const num = parseInt(val, 10);
+            if (num >= 1 && num <= 5) { domainScores[d.id] = num; }
+            else { log.push(`Row ${i + 2}: "${d.label}" value "${val}" must be 1–5 — ignored.`); }
+          }
+        });
+        const existingIdx = nextMembers.indexOf(name);
+        if (existingIdx >= 0) {
+          if (overwrite) { nextScores[name] = { ...(nextScores[name] ?? {}), ...domainScores }; count++; }
+        } else {
+          if (nextMembers.length < 8) { nextMembers.push(name); nextScores[name] = domainScores; count++; }
+          else { log.push(`Row ${i + 2}: "${name}" — max 8 members reached, skipped.`); }
+        }
+      });
+      setMembers(nextMembers); persistMembers(nextMembers);
+      setScores(nextScores); persistScores(nextScores);
+      log.unshift(`✓ Imported ${count} member(s).`);
+      setImportLog(log);
+    };
+    reader.readAsText(file);
+  };
 
   const addMember = () => {
     const next = [...members, `Member ${members.length + 1}`];
@@ -72,8 +129,28 @@ export function TrainingNeedsAssessment({ isAr }: TrainingToolsProps) {
   return (
     <div className="bg-white border border-border rounded-2xl shadow-sm overflow-hidden">
       <div className="p-5 border-b border-border bg-rose-50">
-        <p className="text-sm font-bold text-primary">{isAr ? '📊 تقييم الاحتياجات التدريبية' : '📊 Training Needs Assessment'}</p>
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <p className="text-sm font-bold text-primary">{isAr ? '📊 تقييم الاحتياجات التدريبية' : '📊 Training Needs Assessment'}</p>
+          <div className="flex items-center gap-2">
+            <button onClick={downloadTrainingTemplate} className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg font-bold bg-rose-200 text-rose-800 hover:bg-rose-300 transition-colors">
+              <Download className="w-3 h-3" />{isAr ? 'قالب' : 'Template'}
+            </button>
+            <button onClick={() => importInputRef.current?.click()} className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg font-bold bg-rose-200 text-rose-800 hover:bg-rose-300 transition-colors">
+              <Upload className="w-3 h-3" />{isAr ? 'استيراد CSV' : 'Import CSV'}
+            </button>
+            <input type="file" accept=".csv" className="hidden" ref={importInputRef}
+              onChange={e => { const f = e.target.files?.[0]; if (f) handleTrainingImport(f); e.target.value = ''; }} />
+          </div>
+        </div>
         <p className="text-xs text-muted-foreground mt-1">{isAr ? 'قيّم كفاءة كل عضو في الفريق (1=مبتدئ، 5=خبير)' : 'Rate each team member competency (1=Beginner, 5=Expert)'}</p>
+        {importLog && (
+          <div className={`mt-2 text-xs rounded-lg p-3 border ${importLog[0]?.startsWith('✓') ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-red-50 border-red-200 text-red-800'}`}>
+            <div className="flex items-start justify-between gap-2">
+              <div className="space-y-0.5">{importLog.map((m, i) => <p key={i} className={i === 0 ? 'font-bold' : 'opacity-75'}>{m}</p>)}</div>
+              <button onClick={() => setImportLog(null)} className="shrink-0 opacity-50 hover:opacity-100 font-bold">✕</button>
+            </div>
+          </div>
+        )}
       </div>
       <div className="p-5 space-y-5">
         {/* Legend */}
