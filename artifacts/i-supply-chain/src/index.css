@@ -148,12 +148,15 @@ html[lang="ar"] {
     display: none !important;
   }
 
-  /* ── Toolkit tool print zones ── */
-  body[data-print="scorecard"] .print-zone-scorecard,
-  body[data-print="scorecard"] .print-zone-scorecard * {
-    visibility: visible;
-  }
-  body[data-print="scorecard"] .print-zone-scorecard {
+  /* ── Shared layout for ALL print zones ──────────────────────────────────
+     Any element whose class includes "print-zone-" automatically gets:
+       • correct positioning so it fills the page
+       • the -webkit-print-color-adjust / print-color-adjust pair that
+         prevents Safari and Firefox from stripping background colours
+     To add a new zone: just add one visibility-gate rule below — the
+     shared layout and colour-preserve properties are already inherited.
+  ─────────────────────────────────────────────────────────────────────── */
+  [class*="print-zone-"] {
     position: absolute;
     left: 0;
     top: 0;
@@ -162,51 +165,27 @@ html[lang="ar"] {
     box-sizing: border-box;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
+  }
+
+  /* ── Per-zone visibility gates (one rule per zone, nothing more needed) ── */
+  body[data-print="scorecard"] .print-zone-scorecard,
+  body[data-print="scorecard"] .print-zone-scorecard * {
+    visibility: visible;
   }
 
   body[data-print="kri"] .print-zone-kri,
   body[data-print="kri"] .print-zone-kri * {
     visibility: visible;
   }
-  body[data-print="kri"] .print-zone-kri {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    padding: 24px;
-    box-sizing: border-box;
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
-  }
 
   body[data-print="clm"] .print-zone-clm,
   body[data-print="clm"] .print-zone-clm * {
     visibility: visible;
   }
-  body[data-print="clm"] .print-zone-clm {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    padding: 24px;
-    box-sizing: border-box;
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
-  }
 
   body[data-print="checklist"] .print-zone-checklist,
   body[data-print="checklist"] .print-zone-checklist * {
     visibility: visible;
-  }
-  body[data-print="checklist"] .print-zone-checklist {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    padding: 24px;
-    box-sizing: border-box;
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
   }
 
   body[data-print="alert-config"] .print-zone-alert-config,
