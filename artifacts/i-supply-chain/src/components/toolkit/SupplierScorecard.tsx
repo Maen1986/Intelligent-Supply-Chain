@@ -2,13 +2,15 @@
  * Supplier Scorecard Tool v2 — multi-supplier roster + sub-indicators
  * per dimension, weighted scoring, tier badge, RadarChart.
  */
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { RadarChart, Radar, PolarGrid, PolarAngleAxis, ResponsiveContainer, Tooltip } from 'recharts';
-import { Printer, Plus, Trash2, Users, Download, Upload, Settings, ChevronDown, ChevronUp, RotateCcw } from 'lucide-react';
+import { Printer, Plus, Trash2, Users, Download, Upload, Settings, ChevronDown, ChevronUp, RotateCcw, Sparkles } from 'lucide-react';
 import { safeSetItem } from '@/lib/storage';
 import { useAuth } from '@/lib/AuthContext';
 import { API_BASE } from '@/lib/apiBase';
 import { parseCsvFile, downloadCsv } from '@/lib/importCsv';
+import { useAIPlan } from '@/hooks/useAIPlan';
+import { AIPlanPanel } from '@/components/AIPlanPanel';
 
 function printZone(zone: string) {
   document.body.setAttribute('data-print', zone);
@@ -464,6 +466,36 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
 
   const active = roster.suppliers.find(s => s.id === roster.activeId) ?? roster.suppliers[0] ?? null;
 
+  /* ── AI Plan ── */
+  const buildScorecardPrompt = useCallback((): string => {
+    if (!active) return '';
+    const ws = calcWeightedScore(active.subScores, config);
+    const t  = ws !== null ? getTier(ws, config) : null;
+    const dimLines = DIMS.map(d => {
+      const sc   = calcDimScore(d.id, active.subScores);
+      const subs = (SUB_INDICATORS[d.id] ?? [])
+        .filter(s => active.subScores[d.id]?.[s.id])
+        .map(s => `    - ${s.label}: ${active.subScores[d.id]![s.id]}/100`)
+        .join('\n');
+      return `- **${d.label}** (weight: ${config.weights[d.id] ?? d.weight}%): ${sc !== null ? `${sc}/100` : 'not fully scored'}${subs ? '\n' + subs : ''}`;
+    }).join('\n');
+    const allGreen = ws !== null && DIMS.every(d => (calcDimScore(d.id, active.subScores) ?? 0) >= 75);
+    return [
+      `## Supplier: ${active.name || 'Unnamed'} | Current tier: ${active.tier} | Weighted score: ${ws ?? 'N/A'}/100 → Calculated tier: ${t?.label ?? 'N/A'}`,
+      '',
+      '## Dimension Scores',
+      dimLines,
+      '',
+      '## Your Task',
+      allGreen
+        ? 'All dimensions score ≥ 75. Generate a **Relationship Deepening Plan**: concrete actions to grow this supplier from Preferred to Strategic — joint business planning, co-innovation, technology integration, executive engagement, and mutual risk sharing. Use one ## heading per initiative type.'
+        : 'Generate a **Supplier Development Plan**. For each dimension scoring below 75, name the specific weak sub-indicators and provide 2–3 concrete improvement actions. Label each action [HIGH], [MEDIUM], or [LOW] priority based on dimension weight × score gap. Use one ## heading per underperforming dimension.',
+    ].join('\n');
+  }, [active, config]);
+
+  const { loading: planLoading, result: planResult, error: planError, generate: generatePlan, reset: resetPlan } =
+    useAIPlan(buildScorecardPrompt, isAr);
+
   const setActiveId = (id: string) => save({ ...roster, activeId: id });
 
   const updateActive = (patch: Partial<SupplierRecord>) => {
@@ -865,6 +897,17 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
             )}
 
             {/* ── Results ── */}
+            {weightedScore !== null && tier && (
+              <AIPlanPanel
+                loading={planLoading}
+                result={planResult}
+                error={planError}
+                onGenerate={generatePlan}
+                onReset={resetPlan}
+                buttonLabel={isAr ? 'توليد خطة التطوير ✨' : 'Generate Development Plan ✨'}
+                isAr={isAr}
+              />
+            )}
             {weightedScore !== null && tier && (
               <div className="grid sm:grid-cols-2 gap-5 items-start">
                 <div className="space-y-3">

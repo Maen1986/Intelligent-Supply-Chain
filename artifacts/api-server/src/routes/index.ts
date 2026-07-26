@@ -13,6 +13,7 @@ import feedbackRouter        from "./feedback";
 import scorecardRosterRouter from "./scorecardRoster";
 import v1Router              from "./v1";
 import integrationsRouter    from "./integrations";
+import aiPlanRouter          from "./aiPlan";
 
 const router: IRouter = Router();
 
@@ -28,6 +29,7 @@ router.use("/debug",             debugRouter);
 router.use("/scorecard-roster",  scorecardRosterRouter);
 router.use("/v1",                v1Router);
 router.use("/integrations",      integrationsRouter);
+router.use(aiPlanRouter);
 router.use(intelligenceRouter);
 router.use(assessmentRouter);
 

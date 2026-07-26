@@ -7,6 +7,8 @@ import {
 import { useLanguage } from '@/lib/LanguageContext';
 import { Info, TrendingUp, TrendingDown, Download, Upload } from 'lucide-react';
 import { parseCsvFile, downloadCsv } from '@/lib/importCsv';
+import { useAIPlan } from '@/hooks/useAIPlan';
+import { AIPlanPanel } from '@/components/AIPlanPanel';
 
 /* ─── KPI definition types ─── */
 interface KpiDef {
@@ -263,6 +265,46 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
   const [importLog, setImportLog] = useState<string[] | null>(null);
   const importInputRef = useRef<HTMLInputElement | null>(null);
 
+  /* ── AI Plan (hook must be called before the !kpis early return) ── */
+  const buildKpiPrompt = useCallback((): string => {
+    if (!kpis) return '';
+    const kpiLines = kpis.map(k => {
+      const raw = parseFloat(values[k.id] ?? '');
+      if (isNaN(raw)) return null;
+      const score = k.higherIsBetter
+        ? Math.min(100, Math.round((raw / k.targetValue) * 100))
+        : raw > 0 ? Math.min(100, Math.round((k.targetValue / raw) * 100)) : 0;
+      const status = score >= 70 ? '🟢 GREEN' : score >= 40 ? '🟡 AMBER' : '🔴 RED';
+      return `- **${k.label}**: actual ${raw} ${k.unit} vs target ${k.targetLabel} (benchmark: ${k.benchmarkLabel}) → ${status}`;
+    }).filter(Boolean).join('\n');
+    const entered = kpis.filter(k => !isNaN(parseFloat(values[k.id] ?? ''))).length;
+    const rawScores = kpis.map(k => {
+      const raw = parseFloat(values[k.id] ?? '');
+      if (isNaN(raw)) return null;
+      return k.higherIsBetter
+        ? Math.min(100, Math.round((raw / k.targetValue) * 100))
+        : raw > 0 ? Math.min(100, Math.round((k.targetValue / raw) * 100)) : 0;
+    }).filter((v): v is number => v !== null);
+    const overallScore = rawScores.length > 0 ? Math.round(rawScores.reduce((a, b) => a + b, 0) / rawScores.length) : 0;
+    return [
+      `## KPI Performance Brief — Framework: ${resolvedSlug}`,
+      `Health Score: ${overallScore}/100 | KPIs entered: ${entered} of ${kpis.length}`,
+      '',
+      '## KPI Status',
+      kpiLines || '(no KPI values entered)',
+      '',
+      '## Your Task',
+      'Generate a 3–5 paragraph executive performance brief:',
+      '1. Lead with an overall health score narrative (what the number means for the business)',
+      '2. Call out the specific RED and AMBER KPIs by name with their actual values vs targets',
+      '3. For each RED KPI: one root-cause hypothesis and one recommended corrective action',
+      '4. Close with a prioritised 30-day action list (label each item [HIGH], [MEDIUM], or [LOW])',
+    ].join('\n');
+  }, [kpis, values, resolvedSlug]);
+
+  const { loading: planLoading, result: planResult, error: planError, generate: generatePlan, reset: resetPlan } =
+    useAIPlan(buildKpiPrompt, isAr);
+
   const handleChange = useCallback((id: string, raw: string) => {
     setValues(prev => {
       const next = { ...prev, [id]: raw };
@@ -361,7 +403,21 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
       <div>
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <h2 className="text-2xl font-bold text-primary">{isAr ? 'لوحة مؤشرات الأداء — ISC' : 'ISC KPI Dashboard'}</h2>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            {hasAnyValue && !planResult && !planLoading && (
+              <button
+                onClick={generatePlan}
+                className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg font-bold bg-gradient-to-r from-[#082C6B] to-[#1a4a9e] text-white hover:opacity-90 transition-all shadow-sm"
+              >
+                <span className="text-sm leading-none">✨</span>
+                {isAr ? 'توليد التقرير التنفيذي' : 'Generate Performance Brief'}
+              </button>
+            )}
+            {(planResult || planLoading) && !planResult && (
+              <span className="text-xs text-muted-foreground flex items-center gap-1">
+                <span className="animate-spin">⟳</span>{isAr ? 'جارٍ التوليد…' : 'Generating…'}
+              </span>
+            )}
             <button onClick={downloadKpiTemplate} className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg font-bold bg-slate-200 text-slate-700 hover:bg-slate-300 transition-colors">
               <Download className="w-3 h-3" />{isAr ? 'قالب CSV' : 'Template'}
             </button>
@@ -489,6 +545,19 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
             ))}
           </div>
         </div>
+      )}
+
+      {/* AI Plan panel */}
+      {(planLoading || planResult || planError) && (
+        <AIPlanPanel
+          loading={planLoading}
+          result={planResult}
+          error={planError}
+          onGenerate={generatePlan}
+          onReset={resetPlan}
+          buttonLabel={isAr ? 'توليد التقرير التنفيذي ✨' : 'Generate Performance Brief ✨'}
+          isAr={isAr}
+        />
       )}
 
       {/* ISC CTA */}

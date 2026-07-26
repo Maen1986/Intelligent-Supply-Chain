@@ -4,10 +4,12 @@
  * 2. SupplierAlertConfig — tier-based alert threshold configurator
  * 3. WeeklyRiskReview — template generator
  */
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { AlertTriangle, Copy, CheckCircle, Settings, Printer, Download, Upload } from 'lucide-react';
 import { safeSetItem } from '@/lib/storage';
 import { parseCsvFile, downloadCsv } from '@/lib/importCsv';
+import { useAIPlan } from '@/hooks/useAIPlan';
+import { AIPlanPanel } from '@/components/AIPlanPanel';
 
 function printZone(zone: string) {
   document.body.setAttribute('data-print', zone);
@@ -113,6 +115,35 @@ function KRIDashboard({ isAr }: { isAr: boolean }) {
     return s + (st === 'red' ? 3 : st === 'amber' ? 1.5 : 0);
   }, 0) / KRI_DEFS.length * 33.3) : 0;
 
+  /* ── AI Plan ── */
+  const buildKriPrompt = useCallback((): string => {
+    const kriLines = entries.map(({ def, value }) => {
+      if (value === null) return null;
+      const status = kpiStatus(def, value);
+      const statusLabel = status === 'red' ? '🔴 ALERT' : status === 'amber' ? '🟡 WATCH' : '🟢 ON TRACK';
+      return `- **${def.label}**: ${value} ${def.unit} | Amber: ${def.amber}, Red: ${def.red} → ${statusLabel}\n  (${def.desc})`;
+    }).filter(Boolean).join('\n');
+    const atRiskCount = filled.filter(e => kpiStatus(e.def, e.value!) !== 'green').length;
+    return [
+      `## KRI Dashboard Snapshot`,
+      `Risk Heat Score: ${Math.min(100, heatScore)}/100 | KRIs monitored: ${filled.length} of ${KRI_DEFS.length} | At-risk: ${atRiskCount}`,
+      '',
+      '## KRI Readings',
+      kriLines || '(no KRIs entered)',
+      '',
+      '## Your Task',
+      'Generate a risk mitigation brief. For each KRI in ALERT or WATCH status:',
+      '1. Describe the risk in plain language (what it means for the business)',
+      '2. Summarise likelihood and potential impact',
+      '3. Provide 2 concrete mitigation actions with suggested owner roles (e.g. Procurement Director, Supply Chain Manager)',
+      '4. Recommend a target date: 30-day, 60-day, or 90-day based on severity',
+      'Use one ## heading per at-risk KRI. Label action priority [HIGH], [MEDIUM], or [LOW].',
+    ].join('\n');
+  }, [entries, filled, heatScore]);
+
+  const { loading: planLoading, result: planResult, error: planError, generate: generatePlan, reset: resetPlan } =
+    useAIPlan(buildKriPrompt, isAr);
+
   const today = new Date().toLocaleDateString(isAr ? 'ar-SA' : 'en-GB');
 
   return (
@@ -214,6 +245,18 @@ function KRIDashboard({ isAr }: { isAr: boolean }) {
           </p>
         </div>
       )}
+
+      {/* AI Plan */}
+      <AIPlanPanel
+        loading={planLoading}
+        result={planResult}
+        error={planError}
+        onGenerate={generatePlan}
+        onReset={resetPlan}
+        buttonLabel={isAr ? 'توليد خطة تخفيف المخاطر ✨' : 'Generate Risk Mitigation Plan ✨'}
+        isAr={isAr}
+        disabled={filled.length === 0}
+      />
     </div>
   );
 }

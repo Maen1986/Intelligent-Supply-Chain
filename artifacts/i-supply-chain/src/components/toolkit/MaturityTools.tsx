@@ -3,9 +3,11 @@
  * Works across: resiliency, value-engineering, process-improvement-policy,
  *               lean-agile-supply-chain, supply-chain-strategy, sustainability-esg, digital-transformation
  */
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { ActionTracker } from './Primitives';
 import { safeSetItem } from '@/lib/storage';
+import { useAIPlan } from '@/hooks/useAIPlan';
+import { AIPlanPanel } from '@/components/AIPlanPanel';
 
 interface MaturityToolsProps { slug: string; isAr: boolean; }
 
@@ -98,6 +100,44 @@ export function MaturityAssessmentTool({ slug, isAr }: MaturityToolsProps) {
   const avg = filled.length > 0 ? filled.reduce((s, d) => s + (scores[d.id] ?? 0), 0) / filled.length : 0;
   const band = avg > 0 ? getMatureBand(avg) : null;
 
+  /* ── AI Plan ── */
+  const buildMaturityPrompt = useCallback((): string => {
+    const nextBand = MATURITY_BANDS.find(b => b.min > avg);
+    const dimLines = dims.map(d => {
+      const v = scores[d.id];
+      return v !== undefined
+        ? `- **${d.label}**: ${v}/5 — ${d.desc}`
+        : `- **${d.label}**: not yet assessed`;
+    }).join('\n');
+    // Dimensions with biggest gap (scored but below 4)
+    const gapDims = dims
+      .filter(d => scores[d.id] !== undefined && (scores[d.id] ?? 5) < 4)
+      .sort((a, b) => (scores[a.id] ?? 5) - (scores[b.id] ?? 5))
+      .slice(0, 3);
+    return [
+      `## Maturity Assessment: ${slug}`,
+      `Current score: ${avg.toFixed(1)}/5 → Level: ${band ? band.label : 'Not assessed'}`,
+      `Next level: ${nextBand ? nextBand.label : 'Already World Class'} (requires ≥${nextBand?.min ?? 5}/5)`,
+      '',
+      '## Dimension Scores',
+      dimLines,
+      '',
+      '## Your Task',
+      'Generate a staged maturity improvement roadmap:',
+      '1. State the current level and gap to the next maturity band',
+      `2. Focus on these highest-priority dimensions: ${gapDims.map(d => d.label).join(', ') || 'all dimensions'}`,
+      '3. For each priority dimension, provide 3–5 specific improvement initiatives as project briefs:',
+      '   - Objective (what will be achieved)',
+      '   - Success metric (how progress will be measured)',
+      '   - Estimated effort: weeks or months',
+      '4. Assign overall initiative priority labels [HIGH], [MEDIUM], or [LOW]',
+      'Structure with one ## heading per priority dimension.',
+    ].join('\n');
+  }, [slug, scores, dims, avg, band]);
+
+  const { loading: planLoading, result: planResult, error: planError, generate: generatePlan, reset: resetPlan } =
+    useAIPlan(buildMaturityPrompt, isAr);
+
   const LEVEL_COLORS = { 1: '#fca5a5', 2: '#fcd34d', 3: '#6ee7b7', 4: '#34d399', 5: '#059669' };
   const LEVEL_LABELS_AR = { 1: 'تأسيسي', 2: 'ناشئ', 3: 'مؤهَّل', 4: 'متقدّم', 5: 'عالمي' };
   const LEVEL_LABELS_EN = { 1: 'Foundational', 2: 'Developing', 3: 'Competent', 4: 'Advanced', 5: 'World Class' };
@@ -156,6 +196,18 @@ export function MaturityAssessmentTool({ slug, isAr }: MaturityToolsProps) {
             </div>
           </div>
         )}
+
+        {/* AI Plan */}
+        <AIPlanPanel
+          loading={planLoading}
+          result={planResult}
+          error={planError}
+          onGenerate={generatePlan}
+          onReset={resetPlan}
+          buttonLabel={isAr ? 'توليد خارطة طريق النضج ✨' : 'Generate Maturity Roadmap ✨'}
+          isAr={isAr}
+          disabled={filled.length === 0}
+        />
 
         {/* Action Tracker */}
         <ActionTracker storageKey={`isc-tool-actions-maturity-${slug}`} isAr={isAr} />

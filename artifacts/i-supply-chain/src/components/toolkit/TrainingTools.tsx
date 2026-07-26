@@ -3,10 +3,12 @@
  * Matrix: team members × 8 supply chain domains, competency 1–5
  * Output: heatmap, gap clusters, CIPS/ISC learning path recommendations
  */
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { Plus, Trash2, Download, Upload } from 'lucide-react';
 import { safeSetItem } from '@/lib/storage';
 import { parseCsvFile, downloadCsv } from '@/lib/importCsv';
+import { useAIPlan } from '@/hooks/useAIPlan';
+import { AIPlanPanel } from '@/components/AIPlanPanel';
 
 interface TrainingToolsProps { isAr: boolean; }
 
@@ -125,6 +127,43 @@ export function TrainingNeedsAssessment({ isAr }: TrainingToolsProps) {
     return { domain: d, avg: vals.length > 0 ? vals.reduce((s, v) => s + v, 0) / vals.length : 0 };
   });
   const gaps = domainAvgs.filter(({ avg }) => avg > 0 && avg < 3);
+
+  /* ── AI Plan ── */
+  const buildTrainingPrompt = useCallback((): string => {
+    const domainAvgLines = domainAvgs
+      .filter(({ avg }) => avg > 0)
+      .map(({ domain, avg }) => `- **${domain.label}**: team avg ${avg.toFixed(1)}/5 | Course: ${domain.cips}`)
+      .join('\n');
+    const memberLines = members.map(m => {
+      const domScores = DOMAINS.map(d => ({ domain: d, val: scores[m]?.[d.id] ?? 0 })).filter(x => x.val > 0);
+      if (!domScores.length) return `- ${m}: no scores entered`;
+      const weakest = domScores.sort((a, b) => a.val - b.val)[0];
+      const allScores = domScores.map(x => `${x.domain.label}: ${x.val}`).join(', ');
+      return `- **${m}**: [${allScores}] → Biggest gap: ${weakest.domain.label} (${weakest.val}/5)`;
+    }).join('\n');
+    const hasScores = members.some(m => DOMAINS.some(d => (scores[m]?.[d.id] ?? 0) > 0));
+    if (!hasScores) return 'No scores have been entered yet. Please score the team first.';
+    return [
+      `## Team Training Assessment (${members.length} member${members.length !== 1 ? 's' : ''})`,
+      '',
+      '## Domain Averages (team-wide)',
+      domainAvgLines || '(no scores entered)',
+      '',
+      '## Individual Profiles',
+      memberLines,
+      '',
+      '## Your Task',
+      'Generate a team learning roadmap:',
+      '1. Group members by skill gap profile (e.g. "Technical group", "Strategic group")',
+      '2. Recommend the top 3 training priorities for the team as a whole, with CIPS/ISC course recommendations and rationale',
+      '3. Give each member a personalised development focus: their single biggest gap domain + one recommended course',
+      'Label priorities [HIGH], [MEDIUM], or [LOW]. Use ## headings per section.',
+    ].join('\n');
+  }, [members, scores, domainAvgs]);
+
+  const hasAnyScores = members.some(m => DOMAINS.some(d => (scores[m]?.[d.id] ?? 0) > 0));
+  const { loading: planLoading, result: planResult, error: planError, generate: generatePlan, reset: resetPlan } =
+    useAIPlan(buildTrainingPrompt, isAr);
 
   return (
     <div className="bg-white border border-border rounded-2xl shadow-sm overflow-hidden">
@@ -251,6 +290,18 @@ export function TrainingNeedsAssessment({ isAr }: TrainingToolsProps) {
             <p className="text-xs font-bold text-emerald-800">{isAr ? '✓ لا توجد فجوات حرجة — جميع المجالات التي قُيِّمت فوق المستوى 3' : '✓ No critical gaps — all assessed domains above Level 3'}</p>
           </div>
         )}
+
+        {/* AI Plan */}
+        <AIPlanPanel
+          loading={planLoading}
+          result={planResult}
+          error={planError}
+          onGenerate={generatePlan}
+          onReset={resetPlan}
+          buttonLabel={isAr ? 'توليد خارطة التعلّم ✨' : 'Generate Learning Roadmap ✨'}
+          isAr={isAr}
+          disabled={!hasAnyScores}
+        />
       </div>
     </div>
   );
