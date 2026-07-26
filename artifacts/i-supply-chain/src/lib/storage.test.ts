@@ -1,5 +1,5 @@
 /**
- * Unit tests for the safeSetItem localStorage helper.
+ * Unit tests for safeSetItem and clearAppStorage.
  *
  * Verifies that:
  *  1. A normal write succeeds without triggering a toast.
@@ -7,8 +7,10 @@
  *  3. All known quota-error variants (Chrome/Safari, Firefox, old WebKit, code 22) fire the toast.
  *  4. A non-quota DOMException does NOT fire a toast.
  *  5. The helper never throws; callers always continue normally.
- *  6. The toast message is short enough to read on a mobile screen and contains actionable text.
- *  7. Realistic fill-to-capacity: writing in a loop until quota is hit calls the toast exactly once.
+ *  6. The toast message is short enough to read on a mobile screen.
+ *  7. The toast includes an action button (label + onClick) for one-tap recovery.
+ *  8. Realistic fill-to-capacity: writing in a loop until quota is hit calls the toast exactly once.
+ *  9. clearAppStorage removes only isc-/isc_ prefixed keys, leaving others intact.
  *
  * ── Manual smoke-test guide (iOS Safari / Android Chrome) ──────────────────
  *
@@ -28,12 +30,13 @@
  *
  *  3. Without refreshing, interact with any toolkit control (check a checklist
  *     item, add an action tracker entry, change a calculator field).
- *  4. Expected: a toast appears at the bottom of the screen reading:
- *       "Storage full — your changes could not be saved. Clear browser storage
- *        and try again."  (followed by the Arabic translation)
- *  5. Verify on a 375 px-wide viewport that the full message is readable
- *     (Sonner's default max-width keeps toasts within the viewport).
- *  6. Clean up: localStorage.clear() in the console.
+ *  4. Expected: a toast appears at the bottom of the screen with the bilingual
+ *     message and a "Clear saved data / مسح البيانات" action button.
+ *  5. Verify on a 375 px-wide viewport that the button is large enough to tap
+ *     (Sonner renders action buttons as full-width on narrow viewports).
+ *  6. Tap the button, confirm the dialog, and verify the toast dismisses and
+ *     all isc- keys are gone from Application → Local Storage in DevTools.
+ *  7. Clean up any remaining fill-N keys: localStorage.clear() in the console.
  *
  * ──────────────────────────────────────────────────────────────────────────
  */
@@ -44,11 +47,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 vi.mock('sonner', () => ({
   toast: {
     error: vi.fn(),
+    dismiss: vi.fn(),
   },
 }));
 
 import { toast } from 'sonner';
-import { safeSetItem } from './storage';
+import { safeSetItem, clearAppStorage } from './storage';
 
 /* ── helpers ────────────────────────────────────────────────────────────── */
 function makeQuotaError(name = 'QuotaExceededError'): DOMException {
@@ -198,41 +202,121 @@ describe('safeSetItem — quota exceeded', () => {
 ══════════════════════════════════════════════════════════════════════════ */
 
 describe('safeSetItem — toast message readability', () => {
-  it('toast message contains an English actionable sentence', () => {
+  it('toast message contains an English error description', () => {
     const spy = vi.spyOn(Storage.prototype, 'setItem')
       .mockImplementationOnce(() => { throw makeQuotaError(); });
     safeSetItem('any-key', 'any-value');
 
     const [message] = (toast.error as ReturnType<typeof vi.fn>).mock.calls[0] as [string, ...unknown[]];
-    // Must mention the problem and what the user should do
     expect(message).toMatch(/storage full/i);
     expect(message).toMatch(/could not be saved/i);
-    expect(message).toMatch(/clear browser storage/i);
 
     spy.mockRestore();
   });
 
-  it('toast message contains an Arabic actionable sentence', () => {
+  it('toast message contains an Arabic error description', () => {
     const spy = vi.spyOn(Storage.prototype, 'setItem')
       .mockImplementationOnce(() => { throw makeQuotaError(); });
     safeSetItem('any-key', 'any-value');
 
     const [message] = (toast.error as ReturnType<typeof vi.fn>).mock.calls[0] as [string, ...unknown[]];
-    // Arabic translation must be present
     expect(message).toMatch(/التخزين ممتلئ/);
-    expect(message).toMatch(/أفرغ مساحة المتصفح/);
+    expect(message).toMatch(/تعذّر حفظ التغييرات/);
 
     spy.mockRestore();
   });
 
-  it('toast is shown for 8 seconds — long enough to read on mobile', () => {
+  it('toast is shown for at least 8 seconds — long enough to read on mobile', () => {
     const spy = vi.spyOn(Storage.prototype, 'setItem')
       .mockImplementationOnce(() => { throw makeQuotaError(); });
     safeSetItem('any-key', 'any-value');
 
     const [, options] = (toast.error as ReturnType<typeof vi.fn>).mock.calls[0] as [string, { duration?: number }];
-    // 8 000 ms gives users on slow mobile connections enough time to read the bilingual message
     expect(options.duration).toBeGreaterThanOrEqual(8000);
+
+    spy.mockRestore();
+  });
+});
+
+/* ══════════════════════════════════════════════════════════════════════════
+   safeSetItem — action button (one-tap recovery)
+══════════════════════════════════════════════════════════════════════════ */
+
+describe('safeSetItem — action button', () => {
+  it('includes an action object in the toast options', () => {
+    const spy = vi.spyOn(Storage.prototype, 'setItem')
+      .mockImplementationOnce(() => { throw makeQuotaError(); });
+    safeSetItem('any-key', 'any-value');
+
+    const [, options] = (toast.error as ReturnType<typeof vi.fn>).mock.calls[0] as [
+      string,
+      { action?: { label: string; onClick: () => void } },
+    ];
+    expect(options.action).toBeDefined();
+    expect(typeof options.action?.label).toBe('string');
+    expect(options.action?.label.length).toBeGreaterThan(0);
+    expect(typeof options.action?.onClick).toBe('function');
+
+    spy.mockRestore();
+  });
+
+  it('action label is readable on a 375 px iOS Safari viewport (≤ 40 chars)', () => {
+    const spy = vi.spyOn(Storage.prototype, 'setItem')
+      .mockImplementationOnce(() => { throw makeQuotaError(); });
+    safeSetItem('any-key', 'any-value');
+
+    const [, options] = (toast.error as ReturnType<typeof vi.fn>).mock.calls[0] as [
+      string,
+      { action?: { label: string; onClick: () => void } },
+    ];
+    // Keeps the button label concise so it is not clipped on narrow screens
+    expect(options.action!.label.length).toBeLessThanOrEqual(40);
+
+    spy.mockRestore();
+  });
+
+  it('action onClick does nothing when the user cancels the confirmation', () => {
+    const spy = vi.spyOn(Storage.prototype, 'setItem')
+      .mockImplementationOnce(() => { throw makeQuotaError(); });
+    vi.spyOn(window, 'confirm').mockReturnValueOnce(false);
+
+    safeSetItem('any-key', 'any-value');
+    const [, options] = (toast.error as ReturnType<typeof vi.fn>).mock.calls[0] as [
+      string,
+      { action?: { label: string; onClick: () => void } },
+    ];
+
+    // Seed some app keys so we can verify they are NOT removed
+    localStorage.setItem('isc-tool-test', 'should-remain');
+    options.action!.onClick();
+
+    expect(localStorage.getItem('isc-tool-test')).toBe('should-remain');
+    expect(toast.dismiss).not.toHaveBeenCalled();
+
+    spy.mockRestore();
+  });
+
+  it('action onClick clears app storage and dismisses the toast when confirmed', () => {
+    const spy = vi.spyOn(Storage.prototype, 'setItem')
+      .mockImplementationOnce(() => { throw makeQuotaError(); });
+    vi.spyOn(window, 'confirm').mockReturnValueOnce(true);
+
+    safeSetItem('any-key', 'any-value');
+    const [, options] = (toast.error as ReturnType<typeof vi.fn>).mock.calls[0] as [
+      string,
+      { action?: { label: string; onClick: () => void } },
+    ];
+
+    localStorage.setItem('isc-tool-test', 'data');
+    localStorage.setItem('isc-kpi-foo', 'data');
+    localStorage.setItem('other-app-key', 'keep-me');
+
+    options.action!.onClick();
+
+    expect(localStorage.getItem('isc-tool-test')).toBeNull();
+    expect(localStorage.getItem('isc-kpi-foo')).toBeNull();
+    expect(localStorage.getItem('other-app-key')).toBe('keep-me');
+    expect(toast.dismiss).toHaveBeenCalledWith('storage-quota-exceeded');
 
     spy.mockRestore();
   });
@@ -264,5 +348,48 @@ describe('safeSetItem — non-quota errors', () => {
     safeSetItem('any-key', 'any-value');
     expect(toast.error).not.toHaveBeenCalled();
     spy.mockRestore();
+  });
+});
+
+/* ══════════════════════════════════════════════════════════════════════════
+   clearAppStorage
+══════════════════════════════════════════════════════════════════════════ */
+
+describe('clearAppStorage', () => {
+  it('removes keys with the isc- prefix', () => {
+    localStorage.setItem('isc-tool-checklist', '[]');
+    localStorage.setItem('isc-kpi-overview', '{}');
+    clearAppStorage();
+    expect(localStorage.getItem('isc-tool-checklist')).toBeNull();
+    expect(localStorage.getItem('isc-kpi-overview')).toBeNull();
+  });
+
+  it('removes keys with the isc_ prefix', () => {
+    localStorage.setItem('isc_banner_dismissed_v2', '1');
+    clearAppStorage();
+    expect(localStorage.getItem('isc_banner_dismissed_v2')).toBeNull();
+  });
+
+  it('leaves keys that do not belong to the app untouched', () => {
+    localStorage.setItem('some-other-app', 'value');
+    localStorage.setItem('_ga', 'analytics');
+    localStorage.setItem('isc-tool-test', 'mine');
+    clearAppStorage();
+    expect(localStorage.getItem('some-other-app')).toBe('value');
+    expect(localStorage.getItem('_ga')).toBe('analytics');
+  });
+
+  it('does not throw when localStorage is empty', () => {
+    expect(() => clearAppStorage()).not.toThrow();
+  });
+
+  it('removes all isc- keys in a mixed store', () => {
+    localStorage.setItem('isc-a', '1');
+    localStorage.setItem('isc-b', '2');
+    localStorage.setItem('isc-c', '3');
+    localStorage.setItem('keep-me', 'yes');
+    clearAppStorage();
+    expect(localStorage.length).toBe(1);
+    expect(localStorage.getItem('keep-me')).toBe('yes');
   });
 });
