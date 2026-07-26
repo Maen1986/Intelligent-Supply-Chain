@@ -4,7 +4,7 @@
  */
 import React, { useState } from 'react';
 import { RadarChart, Radar, PolarGrid, PolarAngleAxis, ResponsiveContainer, Tooltip } from 'recharts';
-import { Printer, Plus, Trash2, Users } from 'lucide-react';
+import { Printer, Plus, Trash2, Users, Download } from 'lucide-react';
 import { safeSetItem } from '@/lib/storage';
 
 function printZone(zone: string) {
@@ -191,6 +191,59 @@ function calcWeightedScore(subScores: Record<string, Record<string, string>>): n
   );
 }
 
+/* ─── CSV export ─── */
+function exportToCSV(suppliers: SupplierRecord[]) {
+  // Build column headers
+  const dimHeaders = DIMS.map(d => `${d.label} Score (/100)`);
+  const subHeaders: string[] = [];
+  DIMS.forEach(d => {
+    (SUB_INDICATORS[d.id] ?? []).forEach(sub => {
+      subHeaders.push(`${d.label} — ${sub.label}`);
+    });
+  });
+  const headers = [
+    'Supplier Name', 'Current Tier',
+    ...dimHeaders,
+    ...subHeaders,
+    'Weighted Score (/100)', 'Calculated Tier',
+  ];
+
+  const rows = suppliers.map(s => {
+    const dimScores = DIMS.map(d => {
+      const sc = calcDimScore(d.id, s.subScores);
+      return sc !== null ? String(sc) : '';
+    });
+    const subVals: string[] = [];
+    DIMS.forEach(d => {
+      (SUB_INDICATORS[d.id] ?? []).forEach(sub => {
+        subVals.push(s.subScores[d.id]?.[sub.id] ?? '');
+      });
+    });
+    const ws = calcWeightedScore(s.subScores);
+    return [
+      s.name || 'New Supplier',
+      s.tier,
+      ...dimScores,
+      ...subVals,
+      ws !== null ? String(ws) : '',
+      ws !== null ? getTier(ws).label : '',
+    ];
+  });
+
+  const escape = (cell: string) => `"${cell.replace(/"/g, '""')}"`;
+  const csv = [headers, ...rows].map(row => row.map(escape).join(',')).join('\r\n');
+  const today = new Date().toISOString().split('T')[0];
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `supplier-scorecards-${today}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 /* ─── Component ─── */
 interface SupplierScorecardProps { isAr: boolean; }
 
@@ -286,13 +339,24 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
               </span>
               <span className="text-xs text-muted-foreground">({roster.suppliers.length})</span>
             </div>
-            <button
-              onClick={addSupplier}
-              className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg font-bold bg-teal-600 text-white hover:bg-teal-700 transition-colors"
-            >
-              <Plus className="w-3 h-3" />
-              {isAr ? 'إضافة مورّد' : 'Add Supplier'}
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => exportToCSV(roster.suppliers)}
+                disabled={roster.suppliers.filter(s => Object.keys(s.subScores).length > 0).length < 1}
+                title={isAr ? 'تنزيل جميع بطاقات التقييم كملف CSV' : 'Download all scorecards as CSV'}
+                className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg font-bold bg-slate-600 text-white hover:bg-slate-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <Download className="w-3 h-3" />
+                {isAr ? 'تصدير CSV' : 'Export CSV'}
+              </button>
+              <button
+                onClick={addSupplier}
+                className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg font-bold bg-teal-600 text-white hover:bg-teal-700 transition-colors"
+              >
+                <Plus className="w-3 h-3" />
+                {isAr ? 'إضافة مورّد' : 'Add Supplier'}
+              </button>
+            </div>
           </div>
           <div className="divide-y divide-border max-h-52 overflow-y-auto">
             {roster.suppliers.map(s => {
