@@ -11,6 +11,7 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import { useLanguage } from '@/lib/LanguageContext';
+import { KPIDashboard } from '@/components/KPIDashboard';
 
 function Reveal({ children, delay = 0, className = '' }: { children: React.ReactNode; delay?: number; className?: string }) {
   return (
@@ -924,41 +925,9 @@ export function SolutionDetail() {
           </div>
         )}
 
-        {/* TAB 2 — KPIs */}
+        {/* TAB 2 — KPI Dashboard */}
         {activeTab === 2 && (
-          <div className="space-y-6">
-            <Reveal>
-              <h2 className="text-2xl font-bold text-primary">{isAr ? 'إطار مؤشرات الأداء' : 'KPI Framework'}</h2>
-              <p className="text-muted-foreground mt-1">{isAr ? 'أهداف مستمدّة من المعايير المرجعية لقطاعات الخليج، ومعايير CIPS، وبيانات ارتباطات مَعِن عبر أكثر من 40 مؤسسة.' : "Targets derived from GCC industry benchmarks, CIPS standards, and Ma'in's engagement data across 40+ organisations."}</p>
-            </Reveal>
-            {sol.kpis.map((cat, ci) => (
-              <Reveal key={cat.category} delay={ci * 0.06}>
-                <div className="bg-white border border-border rounded-2xl p-6 shadow-sm">
-                  <h3 className="font-bold text-primary mb-4 flex items-center gap-2"><BarChart3 className="w-4 h-4" />{isAr ? (cat.categoryAr ?? cat.category) : cat.category}</h3>
-                  <div className="grid sm:grid-cols-3 gap-4">
-                    {cat.metrics.map((m, mi) => (
-                      <div key={mi} className="bg-muted rounded-xl p-4">
-                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">{isAr ? (m.nameAr ?? m.name) : m.name}</p>
-                        <p className="text-2xl font-extrabold text-[#C9A84C] mb-1">{isAr ? (m.targetAr ?? m.target) : m.target}</p>
-                        <div className="flex items-center justify-between mt-2">
-                          <span className="text-xs text-muted-foreground">{isAr ? 'المعيار المرجعي: ' : 'Benchmark: '}{isAr ? (m.benchmarkAr ?? m.benchmark) : m.benchmark}</span>
-                          <span className="text-xs font-medium text-muted-foreground">{isAr ? (m.unitAr ?? m.unit) : m.unit}</span>
-                        </div>
-                        <div className="mt-2 h-1.5 bg-border rounded-full overflow-hidden">
-                          <div className="h-full bg-primary/40 rounded-full" style={{ width: '65%' }} />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </Reveal>
-            ))}
-            <Reveal className="bg-[#082C6B] rounded-2xl p-6 text-white">
-              <p className="font-bold mb-2">{isAr ? `لوحة مقترحة: ${sol.titleAr ?? sol.title}` : `Suggested Dashboard: ${sol.title}`}</p>
-              <p className="text-white/70 text-sm mb-3">{isAr ? 'توصي ISC بلوحة من 3 طبقات: المجلس (شهرياً، 5–6 مؤشرات رئيسية)، الإدارة (أسبوعياً، 12–15 مؤشراً حسب الفئة)، التشغيل (يومياً، مقاييس على مستوى العملية). مبنية على Power BI ومتصلة ببيانات ERP.' : 'ISC recommends a 3-layer dashboard: Board (monthly, 5–6 headline KPIs), Management (weekly, 12–15 category KPIs), Operational (daily, process-level metrics). Built in Power BI, connected to ERP data.'}</p>
-              <Link href="/consultant"><span className="text-[#C9A84C] text-sm font-semibold cursor-pointer hover:underline">{isAr ? 'اطلب تصميم لوحة ←' : 'Request dashboard design →'}</span></Link>
-            </Reveal>
-          </div>
+          <KPIDashboard slug={sol.slug} />
         )}
 
         {/* TAB 3 — PROJECTS & QUICK WINS */}

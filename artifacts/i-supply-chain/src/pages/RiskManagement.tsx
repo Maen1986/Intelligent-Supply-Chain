@@ -10,6 +10,7 @@ import {
   ChevronLeft,
 } from 'lucide-react';
 import { useLanguage } from '@/lib/LanguageContext';
+import { KPIDashboard } from '@/components/KPIDashboard';
 
 function Reveal({ children, delay = 0, className = '' }: { children: React.ReactNode; delay?: number; className?: string }) {
   return (
@@ -19,8 +20,8 @@ function Reveal({ children, delay = 0, className = '' }: { children: React.React
   );
 }
 
-const TABS = ['Overview', 'Risk Types', 'Heat Map', 'Risk Register', 'Mitigation Plans', 'Governance'];
-const TABS_AR = ['نظرة عامة', 'أنواع المخاطر', 'خريطة الحرارة', 'سجلّ المخاطر', 'خطط التخفيف', 'الحوكمة'];
+const TABS = ['Overview', 'Risk Types', 'Heat Map', 'Risk Register', 'Mitigation Plans', 'Governance', 'KPI Dashboard'];
+const TABS_AR = ['نظرة عامة', 'أنواع المخاطر', 'خريطة الحرارة', 'سجلّ المخاطر', 'خطط التخفيف', 'الحوكمة', 'لوحة المؤشرات'];
 
 const RISK_TYPES = [
   { icon: Globe, color: 'bg-red-50 text-red-600 border-red-200', badge: 'bg-red-100 text-red-700', name: 'Strategic Risk', nameAr: 'المخاطر الاستراتيجية', examples: ['Aramco localisation (Iktva) requirements tightening', 'Trade sanctions impacting import corridors', 'Competitor supply chain advantage'], examplesAr: ['تشديد متطلبات التوطين (Iktva) لدى أرامكو', 'عقوبات تجارية تؤثّر في ممرّات الاستيراد', 'تفوّق سلسلة إمداد المنافس'], signals: ['Regulatory announcements', 'Competitor supplier shifts', 'Customer requirement changes'], signalsAr: ['الإعلانات التنظيمية', 'تحوّلات مورّدي المنافسين', 'تغيّرات متطلبات العملاء'], response: 'Scenario planning, strategy review, supply chain redesign', responseAr: 'تخطيط السيناريوهات، ومراجعة الاستراتيجية، وإعادة تصميم سلسلة الإمداد' },
@@ -427,6 +428,11 @@ export function RiskManagement() {
               <p className="text-muted-foreground text-sm mt-3">{isAr ? 'تُجري ISC تقييماً كاملاً لمخاطر سلسلة الإمداد — يشمل سجلّ المخاطر وخريطة الحرارة وخارطة طريق التخفيف — خلال 4–6 أسابيع.' : 'ISC conducts a full supply chain risk assessment — delivering risk register, heat map, and mitigation roadmap — in 4–6 weeks.'}</p>
             </Reveal>
           </div>
+        )}
+
+        {/* TAB 6 — KPI Dashboard */}
+        {activeTab === 6 && (
+          <KPIDashboard slug="risk-management" />
         )}
       </div>
     </div>

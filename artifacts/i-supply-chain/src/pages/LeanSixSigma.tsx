@@ -9,6 +9,7 @@ import {
   ArrowRight, Layers, Star, Globe, Radio,
 } from 'lucide-react';
 import { useLanguage } from '@/lib/LanguageContext';
+import { KPIDashboard } from '@/components/KPIDashboard';
 
 function Reveal({ children, delay = 0, className = '' }: { children: React.ReactNode; delay?: number; className?: string }) {
   return (
@@ -18,8 +19,8 @@ function Reveal({ children, delay = 0, className = '' }: { children: React.React
   );
 }
 
-const TABS = ['Overview', 'Lean Framework', 'Six Sigma (DMAIC)', 'Quality Management', 'Agile & Resilience', 'Industry Applications'];
-const TABS_AR = ['نظرة عامة', 'إطار Lean', 'Six Sigma (DMAIC)', 'إدارة الجودة', 'الرشاقة والمرونة', 'تطبيقات القطاعات'];
+const TABS = ['Overview', 'Lean Framework', 'Six Sigma (DMAIC)', 'Quality Management', 'Agile & Resilience', 'Industry Applications', 'KPI Dashboard'];
+const TABS_AR = ['نظرة عامة', 'إطار Lean', 'Six Sigma (DMAIC)', 'إدارة الجودة', 'الرشاقة والمرونة', 'تطبيقات القطاعات', 'لوحة المؤشرات'];
 
 const LEAN_WASTES = [
   { letter: 'T', name: 'Transportation', nameAr: 'النقل', desc: 'Unnecessary movement of goods', descAr: 'نقل غير ضروري للبضائع', example: 'Multi-leg routing of goods when direct delivery is possible; excess inter-warehouse transfers', exampleAr: 'توجيه البضائع عبر مراحل متعددة رغم إمكانية التسليم المباشر؛ عمليات نقل زائدة بين المستودعات' },
@@ -499,6 +500,11 @@ export function LeanSixSigma() {
               </div>
             </Reveal>
           </div>
+        )}
+
+        {/* TAB 6 — KPI Dashboard */}
+        {activeTab === 6 && (
+          <KPIDashboard slug="lean-six-sigma" />
         )}
 
       </div>

@@ -9,6 +9,7 @@ import {
   ArrowRight, BarChart3, Eye, Cpu, Flag,
 } from 'lucide-react';
 import { useLanguage } from '@/lib/LanguageContext';
+import { KPIDashboard } from '@/components/KPIDashboard';
 
 function Reveal({ children, delay = 0, className = '' }: { children: React.ReactNode; delay?: number; className?: string }) {
   return (
@@ -18,8 +19,8 @@ function Reveal({ children, delay = 0, className = '' }: { children: React.React
   );
 }
 
-const TABS = ['Framework', 'Regulatory Landscape', 'Compliance Strategy', 'Policy Architecture', 'Implementation', 'Client Benefits'];
-const TABS_AR = ['الإطار', 'المشهد التنظيمي', 'استراتيجية الامتثال', 'هيكل السياسات', 'التنفيذ', 'فوائد العملاء'];
+const TABS = ['Framework', 'Regulatory Landscape', 'Compliance Strategy', 'Policy Architecture', 'Implementation', 'Client Benefits', 'KPI Dashboard'];
+const TABS_AR = ['الإطار', 'المشهد التنظيمي', 'استراتيجية الامتثال', 'هيكل السياسات', 'التنفيذ', 'فوائد العملاء', 'لوحة المؤشرات'];
 
 const RACI = [
   { activity: 'Procurement Strategy Approval', activityAr: 'اعتماد استراتيجية المشتريات', board: 'A', cpo: 'R', catMgr: 'C', procMgr: 'I', finance: 'C', legal: 'I', audit: 'I' },
@@ -37,7 +38,7 @@ const ROADMAP = [
   { weeks: 'Weeks 5–6', weeksAr: 'الأسبوع 5–6', title: 'Policy Development', titleAr: 'تطوير السياسات', tasks: ['Draft Procurement Policy (board-level)', 'Supplier Code of Conduct', 'Category policies for top 5 spend areas', 'Anti-corruption & conflict of interest policy'], tasksAr: ['صياغة سياسة المشتريات (على مستوى المجلس)', 'مدوّنة سلوك المورّدين', 'سياسات الفئات لأعلى 5 مجالات إنفاق', 'سياسة مكافحة الفساد وتضارب المصالح'], color: 'bg-purple-600' },
   { weeks: 'Weeks 7–8', weeksAr: 'الأسبوع 7–8', title: 'SOPs & Controls', titleAr: 'الإجراءات والضوابط', tasks: ['Process SOPs for 15–25 key procurement activities', 'Approval workflow design (ERP-integrated)', 'Audit trail and documentation requirements', 'ERP access control mapping'], tasksAr: ['إجراءات تشغيل معيارية لـ 15–25 نشاط مشتريات رئيسي', 'تصميم مسار اعتماد (متكامل مع ERP)', 'متطلبات مسار التدقيق والتوثيق', 'رسم ضوابط الوصول لنظام ERP'], color: 'bg-violet-600' },
   { weeks: 'Weeks 9–10', weeksAr: 'الأسبوع 9–10', title: 'Training & Communication', titleAr: 'التدريب والتواصل', tasks: ['Policy training workshop for all procurement staff', 'Management briefings and sign-off', 'Supplier communication — Code of Conduct rollout', 'Internal audit team briefing'], tasksAr: ['ورشة تدريب على السياسات لجميع موظفي المشتريات', 'إحاطات الإدارة والاعتماد', 'التواصل مع المورّدين — إطلاق مدوّنة السلوك', 'إحاطة فريق التدقيق الداخلي'], color: 'bg-pink-600' },
-  { weeks: 'Weeks 11–12', weeksAr: 'الأسبوع 11–12', title: 'Go-Live & Monitoring', titleAr: 'الإطلاق والمراقبة', tasks: ['Policy launch and formal sign-off', 'KPI dashboard setup (Power BI)', 'First compliance review against new policy', 'Governance calendar (review cadence) established'], tasksAr: ['إطلاق السياسة والاعتماد الرسمي', 'إعداد لوحة مؤشرات الأداء (Power BI)', 'أول مراجعة امتثال مقابل السياسة الجديدة', 'ترسيخ تقويم الحوكمة (وتيرة المراجعة)'], color: 'bg-rose-600' },
+  { weeks: 'Weeks 11–12', weeksAr: 'الأسبوع 11–12', title: 'Go-Live & Monitoring', titleAr: 'الإطلاق والمراقبة', tasks: ['Policy launch and formal sign-off', 'KPI dashboard setup (ISC Dashboard Builder)', 'First compliance review against new policy', 'Governance calendar (review cadence) established'], tasksAr: ['إطلاق السياسة والاعتماد الرسمي', 'إعداد لوحة مؤشرات الأداء (ISC Dashboard Builder)', 'أول مراجعة امتثال مقابل السياسة الجديدة', 'ترسيخ تقويم الحوكمة (وتيرة المراجعة)'], color: 'bg-rose-600' },
 ];
 
 const QUICK_WINS_30 = [
@@ -427,6 +428,11 @@ export function GovernanceCompliance() {
               </div>
             </Reveal>
           </div>
+        )}
+
+        {/* TAB 6 — KPI Dashboard */}
+        {activeTab === 6 && (
+          <KPIDashboard slug="governance-compliance" />
         )}
       </div>
     </div>
