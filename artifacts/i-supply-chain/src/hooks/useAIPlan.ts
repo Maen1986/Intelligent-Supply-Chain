@@ -57,7 +57,7 @@ export function useAIPlan(
   const [saveError,   setSaveError]   = useState(false);
   const [savedPlan,   setSavedPlan]   = useState<SavedPlan | null>(null);
   const abortRef = useRef<AbortController | null>(null);
-  const prevAuthenticated = useRef<boolean>(isAuthenticated);
+  const prevAuthRef = useRef<boolean>(isAuthenticated);
 
   /**
    * Set by Effect B when the pending-plan flag is consumed on login.
@@ -68,8 +68,10 @@ export function useAIPlan(
 
   /* ── Auto-generate once when the user just logged in ── */
   useEffect(() => {
-    const wasAuthenticated = prevAuthenticated.current;
-    prevAuthenticated.current = isAuthenticated;
+    // Read the previous value but do NOT update prevAuthRef here — Effect B
+    // (which runs after this one) owns the update so both effects see the same
+    // "old" value on any given render cycle.
+    const wasAuthenticated = prevAuthRef.current;
 
     if (isAuthenticated && !wasAuthenticated && !result && !savedPlan && !loading && canGenerate) {
       // Skip if the sessionStorage pending-plan hook will handle this login event
@@ -85,7 +87,6 @@ export function useAIPlan(
   }, [isAuthenticated, result, savedPlan, canGenerate]);
 
   /* ── Consume pendingAIPlan_<toolKey> flag on login — defer generate to Effect C ── */
-  const prevAuthRef = useRef<boolean>(isAuthenticated);
   useEffect(() => {
     const wasAuthenticated = prevAuthRef.current;
     prevAuthRef.current = isAuthenticated;
