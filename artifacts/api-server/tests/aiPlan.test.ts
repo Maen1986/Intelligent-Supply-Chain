@@ -255,6 +255,37 @@ describe('POST /ai/plan — happy path', () => {
     expect(body.messages[0].content).toMatch(/supply chain|procurement/i);
   });
 
+  it('falls back to the English system prompt when language is an unrecognised value', async () => {
+    setAiEnv();
+    stubOpenAiOk();
+    const app = makeAuthApp();
+
+    await request(app)
+      .post('/ai/plan')
+      .send({ prompt: 'Test prompt', language: 'fr' });
+
+    const [, opts] = (fetch as ReturnType<typeof vi.fn>).mock.calls[0];
+    const body = JSON.parse(opts.body as string);
+    expect(body.messages[0].content).toMatch(/supply chain|procurement/i);
+    // Must not accidentally use the Arabic prompt
+    expect(body.messages[0].content).not.toMatch(/عربية|خليجية/);
+  });
+
+  it('falls back to the English system prompt when language field is omitted', async () => {
+    setAiEnv();
+    stubOpenAiOk();
+    const app = makeAuthApp();
+
+    await request(app)
+      .post('/ai/plan')
+      .send({ prompt: 'Test prompt' }); // no language field
+
+    const [, opts] = (fetch as ReturnType<typeof vi.fn>).mock.calls[0];
+    const body = JSON.parse(opts.body as string);
+    expect(body.messages[0].content).toMatch(/supply chain|procurement/i);
+    expect(body.messages[0].content).not.toMatch(/عربية|خليجية/);
+  });
+
   it('includes Authorization header in the OpenAI request', async () => {
     setAiEnv();
     stubOpenAiOk();
