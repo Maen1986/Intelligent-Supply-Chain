@@ -69,13 +69,14 @@ export function SavedPlansSection({ isAr }: Props) {
 
   const handleDelete = useCallback(async (toolKey: string) => {
     setDeleting(prev => new Set(prev).add(toolKey));
+    // Optimistic removal — update UI immediately before the network round-trip
+    setPlans(prev => prev.filter(p => p.toolKey !== toolKey));
+    setExpanded(prev => { const n = new Set(prev); n.delete(toolKey); return n; });
     try {
       await fetch(`${API_BASE}/plans/${encodeURIComponent(toolKey)}`, {
         method:      'DELETE',
         credentials: 'include',
       });
-      setPlans(prev => prev.filter(p => p.toolKey !== toolKey));
-      setExpanded(prev => { const n = new Set(prev); n.delete(toolKey); return n; });
     } finally {
       setDeleting(prev => { const n = new Set(prev); n.delete(toolKey); return n; });
     }
