@@ -1117,3 +1117,84 @@ describe('Manual-add — roster-state invariant', () => {
     expect(unique.size).toBe(names.length);
   });
 });
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Suite 7 — Tier fallback on re-import when CSV "Current Tier" cell is blank
+
+   Verifies the fallback in handleScorecardImport:
+     tier: row['Current Tier']?.trim() || nextSuppliers[existingIdx].tier
+   A blank CSV tier cell must NOT clobber the supplier's manually-set tier.
+   A non-blank CSV tier cell must be applied.
+══════════════════════════════════════════════════════════════════════════ */
+
+describe('Scorecard CSV — tier preservation on re-import', () => {
+  beforeEach(() => localStorage.clear());
+
+  it('keeps the existing manually-set tier when the CSV "Current Tier" cell is blank', () => {
+    // Roster has a supplier with tier "Strategic".
+    const existing: SupplierRecord = {
+      id: 'sup-tier-test',
+      name: 'Tier Test Supplier',
+      tier: 'Strategic',
+      subScores: { delivery: { otif: '80' } },
+    };
+
+    // Re-import CSV row where "Current Tier" is absent (blank cell).
+    const csvRowBlankTier: Record<string, string> = {
+      'Supplier Name': 'Tier Test Supplier',
+      'Current Tier': '',  // blank — fallback must fire
+      'Delivery Performance — OTIF %': '90',
+    };
+
+    const { nextSuppliers } = simulateImport([existing], [csvRowBlankTier], true);
+
+    const after = nextSuppliers.find(s => s.name === 'Tier Test Supplier')!;
+    expect(after).toBeDefined();
+    // Tier must remain "Strategic" — the blank CSV cell must not clobber it.
+    expect(after.tier).toBe('Strategic');
+  });
+
+  it('keeps the existing tier when the CSV "Current Tier" cell contains only whitespace', () => {
+    const existing: SupplierRecord = {
+      id: 'sup-tier-ws',
+      name: 'Whitespace Tier Supplier',
+      tier: 'Preferred',
+      subScores: {},
+    };
+
+    const csvRowWhitespaceTier: Record<string, string> = {
+      'Supplier Name': 'Whitespace Tier Supplier',
+      'Current Tier': '   ',  // whitespace-only — trim() → '' → fallback must fire
+      'Delivery Performance — OTIF %': '75',
+    };
+
+    const { nextSuppliers } = simulateImport([existing], [csvRowWhitespaceTier], true);
+
+    const after = nextSuppliers.find(s => s.name === 'Whitespace Tier Supplier')!;
+    expect(after.tier).toBe('Preferred');
+  });
+
+  it('applies the tier from the CSV when the "Current Tier" cell has a valid value', () => {
+    // Roster has a supplier with tier "Strategic".
+    const existing: SupplierRecord = {
+      id: 'sup-tier-update',
+      name: 'Tier Update Supplier',
+      tier: 'Strategic',
+      subScores: { delivery: { otif: '70' } },
+    };
+
+    // Re-import CSV row with a non-blank, valid tier.
+    const csvRowWithTier: Record<string, string> = {
+      'Supplier Name': 'Tier Update Supplier',
+      'Current Tier': 'Transactional',  // valid — must be applied
+      'Delivery Performance — OTIF %': '65',
+    };
+
+    const { nextSuppliers } = simulateImport([existing], [csvRowWithTier], true);
+
+    const after = nextSuppliers.find(s => s.name === 'Tier Update Supplier')!;
+    expect(after).toBeDefined();
+    // The CSV-supplied tier must be applied.
+    expect(after.tier).toBe('Transactional');
+  });
+});
