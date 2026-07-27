@@ -5,7 +5,7 @@
  * When no slug is supplied, renders the generic 5-domain
  * (Strategy / People / Process / Technology / Governance) assessment.
  */
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis,
   ResponsiveContainer, Tooltip, Legend,
@@ -207,6 +207,25 @@ export function MaturityAssessmentTool({ slug, isAr }: MaturityToolsProps) {
   });
   const [targetScore] = useState<number>(4); // target = "Advanced" (level 4)
 
+  /* ── Tab navigation ── */
+  type MaturityTab = 'assess' | 'analysis' | 'ai';
+  const MATURITY_TABS: { id: MaturityTab; icon: string; label: string; labelAr: string }[] = [
+    { id: 'assess',   icon: '📋', label: 'Assessment',   labelAr: 'التقييم'        },
+    { id: 'analysis', icon: '📊', label: 'Gap Analysis',  labelAr: 'تحليل الفجوات' },
+    { id: 'ai',       icon: '✨', label: 'AI Roadmap',    labelAr: 'خارطة AI'       },
+  ];
+  const [activeTab, setActiveTab] = useState<MaturityTab>('assess');
+  const tabListRef = useRef<HTMLDivElement>(null);
+  const handleTabKey = useCallback((e: React.KeyboardEvent, idx: number) => {
+    if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+    e.preventDefault();
+    const next = e.key === 'ArrowRight'
+      ? (idx + 1) % MATURITY_TABS.length
+      : (idx - 1 + MATURITY_TABS.length) % MATURITY_TABS.length;
+    setActiveTab(MATURITY_TABS[next].id);
+    (tabListRef.current?.querySelectorAll('[role="tab"]')[next] as HTMLElement | undefined)?.focus();
+  }, []);
+
   const set = (id: string, val: number) => setScores(prev => {
     const next = { ...prev, [id]: val };
     safeSetItem(SK, JSON.stringify(next));
@@ -295,7 +314,26 @@ export function MaturityAssessmentTool({ slug, isAr }: MaturityToolsProps) {
           </button>
         </div>
       </div>
+
+      {/* ── Tab bar ── */}
+      <div role="tablist" ref={tabListRef} className="flex gap-1 bg-slate-50 border-b border-slate-200 px-4 pt-3 overflow-x-auto">
+        {MATURITY_TABS.map((t, idx) => (
+          <button key={t.id}
+            role="tab"
+            aria-selected={activeTab === t.id}
+            tabIndex={activeTab === t.id ? 0 : -1}
+            onClick={() => setActiveTab(t.id)}
+            onKeyDown={e => handleTabKey(e, idx)}
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-t-xl text-[12px] font-semibold whitespace-nowrap transition-all border-b-2 ${activeTab === t.id ? 'border-purple-600 text-purple-700 bg-white' : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-100'}`}>
+            <span>{t.icon}</span><span>{isAr ? t.labelAr : t.label}</span>
+          </button>
+        ))}
+      </div>
+
       <div className="p-5 space-y-5">
+
+        {/* ── Tab: Assessment ── */}
+        {activeTab === 'assess' && <>
 
         {/* ── Dimension rating buttons ── */}
         <div className="space-y-3">
@@ -346,6 +384,11 @@ export function MaturityAssessmentTool({ slug, isAr }: MaturityToolsProps) {
             </div>
           </div>
         )}
+
+        </>} {/* end assess tab */}
+
+        {/* ── Tab: Gap Analysis ── */}
+        {activeTab === 'analysis' && <>
 
         {/* ── Radar chart: Current vs Target ── */}
         {filled.length >= 2 && (
@@ -428,8 +471,16 @@ export function MaturityAssessmentTool({ slug, isAr }: MaturityToolsProps) {
             </p>
           </div>
         )}
+        {filled.length === 0 && (
+          <p className="text-xs text-muted-foreground text-center py-8">
+            {isAr ? 'قيّم الأبعاد في علامة التبويب "التقييم" لعرض تحليل الفجوات.' : 'Rate dimensions in the Assessment tab to view gap analysis.'}
+          </p>
+        )}
 
-        {/* ── AI Plan ── */}
+        </>} {/* end analysis tab */}
+
+        {/* ── Tab: AI Roadmap ── */}
+        {activeTab === 'ai' && <>
         <AIPlanPanel
           loading={planLoading}
           result={planResult}
@@ -447,9 +498,9 @@ export function MaturityAssessmentTool({ slug, isAr }: MaturityToolsProps) {
           onDismissSaveError={dismissPlanSaveError}
           toolKey="maturity"
         />
-
-        {/* ── Action Tracker ── */}
         <ActionTracker storageKey={`isc-tool-actions-maturity-${slug ?? 'generic'}`} isAr={isAr} />
+        </>} {/* end ai tab */}
+
       </div>
     </div>
   );

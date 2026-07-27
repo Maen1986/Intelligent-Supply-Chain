@@ -152,14 +152,21 @@ describe('TrainingNeedsAssessment — Generate button', () => {
   const SK_MEMBERS = 'isc-tool-training-members';
   const SK_SCORES  = 'isc-tool-training-scores';
 
+  /** Navigate to the AI Learning Plan tab where the Generate button lives. */
+  function openAITab() {
+    fireEvent.click(screen.getByRole('tab', { name: /AI Learning Plan/i }));
+  }
+
   it('shows sign-in prompt when not authenticated', () => {
     mockUseAuth.mockReturnValue({ isAuthenticated: false });
     render(<TrainingNeedsAssessment isAr={false} />);
+    openAITab();
     expect(screen.getByText(/Sign in to generate an AI plan/i)).toBeInTheDocument();
   });
 
   it('Generate button is disabled when no member scores are entered', () => {
     render(<TrainingNeedsAssessment isAr={false} />);
+    openAITab();
     expect(screen.getByRole('button', { name: /Generate Learning Roadmap/i })).toBeDisabled();
   });
 
@@ -167,6 +174,7 @@ describe('TrainingNeedsAssessment — Generate button', () => {
     localStorage.setItem(SK_MEMBERS, JSON.stringify(['Alice', 'Bob']));
     localStorage.setItem(SK_SCORES, JSON.stringify({ Alice: { strategy: 2, procurement: 3 } }));
     render(<TrainingNeedsAssessment isAr={false} />);
+    openAITab();
     expect(screen.getByRole('button', { name: /Generate Learning Roadmap/i })).not.toBeDisabled();
   });
 
@@ -175,6 +183,7 @@ describe('TrainingNeedsAssessment — Generate button', () => {
     localStorage.setItem(SK_SCORES, JSON.stringify({ Alice: { strategy: 2, procurement: 3, risk: 4 } }));
     stubFetchOk();
     render(<TrainingNeedsAssessment isAr={false} />);
+    openAITab();
 
     fireEvent.click(screen.getByRole('button', { name: /Generate Learning Roadmap/i }));
     expect(screen.getByText(/Generating/i)).toBeInTheDocument();
@@ -189,6 +198,7 @@ describe('TrainingNeedsAssessment — Generate button', () => {
     localStorage.setItem(SK_SCORES, JSON.stringify({ Alice: { strategy: 2 } }));
     stubFetchFail('AI service unavailable');
     render(<TrainingNeedsAssessment isAr={false} />);
+    openAITab();
 
     fireEvent.click(screen.getByRole('button', { name: /Generate Learning Roadmap/i }));
 
@@ -205,20 +215,28 @@ describe('MaturityAssessmentTool — Generate button', () => {
   const slug = 'resiliency';
   const SK   = `isc-tool-maturity-${slug}`;
 
+  /** Navigate to the AI Roadmap tab where the Generate button lives. */
+  function openAITab() {
+    fireEvent.click(screen.getByRole('tab', { name: /AI Roadmap/i }));
+  }
+
   it('shows sign-in prompt when not authenticated', () => {
     mockUseAuth.mockReturnValue({ isAuthenticated: false });
     render(<MaturityAssessmentTool slug={slug} isAr={false} />);
+    openAITab();
     expect(screen.getByText(/Sign in to generate an AI plan/i)).toBeInTheDocument();
   });
 
   it('Generate button is disabled when no dimensions are rated', () => {
     render(<MaturityAssessmentTool slug={slug} isAr={false} />);
+    openAITab();
     expect(screen.getByRole('button', { name: /Generate Maturity Roadmap/i })).toBeDisabled();
   });
 
   it('Generate button is enabled once at least one dimension is rated', () => {
     localStorage.setItem(SK, JSON.stringify({ visibility: 3, dual_source: 4 }));
     render(<MaturityAssessmentTool slug={slug} isAr={false} />);
+    openAITab();
     expect(screen.getByRole('button', { name: /Generate Maturity Roadmap/i })).not.toBeDisabled();
   });
 
@@ -226,6 +244,7 @@ describe('MaturityAssessmentTool — Generate button', () => {
     localStorage.setItem(SK, JSON.stringify({ visibility: 3, dual_source: 4, bcp: 2 }));
     stubFetchOk();
     render(<MaturityAssessmentTool slug={slug} isAr={false} />);
+    openAITab();
 
     fireEvent.click(screen.getByRole('button', { name: /Generate Maturity Roadmap/i }));
     expect(screen.getByText(/Generating/i)).toBeInTheDocument();
@@ -239,6 +258,7 @@ describe('MaturityAssessmentTool — Generate button', () => {
     localStorage.setItem(SK, JSON.stringify({ visibility: 3 }));
     stubFetchFail('Service error');
     render(<MaturityAssessmentTool slug={slug} isAr={false} />);
+    openAITab();
 
     fireEvent.click(screen.getByRole('button', { name: /Generate Maturity Roadmap/i }));
 
@@ -251,6 +271,7 @@ describe('MaturityAssessmentTool — Generate button', () => {
     const veSlug = 'value-engineering';
     localStorage.setItem(`isc-tool-maturity-${veSlug}`, JSON.stringify({ function: 3 }));
     render(<MaturityAssessmentTool slug={veSlug} isAr={false} />);
+    openAITab();
     expect(screen.getByRole('button', { name: /Generate Maturity Roadmap/i })).not.toBeDisabled();
   });
 });
@@ -465,10 +486,15 @@ describe('TrainingNeedsAssessment — Arabic path (isAr=true)', () => {
   const SK_MEMBERS = 'isc-tool-training-members';
   const SK_SCORES  = 'isc-tool-training-scores';
 
+  function openAITabAr() {
+    fireEvent.click(screen.getByRole('tab', { name: /خطة التعلّم AI/i }));
+  }
+
   it('shows Arabic generate button label', () => {
     localStorage.setItem(SK_MEMBERS, JSON.stringify(['أحمد']));
     localStorage.setItem(SK_SCORES, JSON.stringify({ أحمد: { strategy: 2 } }));
     render(<TrainingNeedsAssessment isAr={true} />);
+    openAITabAr();
     expect(screen.getByRole('button', { name: /توليد خارطة التعلّم/i })).toBeInTheDocument();
   });
 
@@ -477,6 +503,7 @@ describe('TrainingNeedsAssessment — Arabic path (isAr=true)', () => {
     localStorage.setItem(SK_SCORES, JSON.stringify({ أحمد: { strategy: 2, procurement: 3 } }));
     stubFetchOk();
     render(<TrainingNeedsAssessment isAr={true} />);
+    openAITabAr();
 
     fireEvent.click(screen.getByRole('button', { name: /توليد خارطة التعلّم/i }));
 
@@ -489,6 +516,7 @@ describe('TrainingNeedsAssessment — Arabic path (isAr=true)', () => {
     localStorage.setItem(SK_SCORES, JSON.stringify({ أحمد: { strategy: 2, procurement: 3 } }));
     stubFetchOk();
     const { container } = render(<TrainingNeedsAssessment isAr={true} />);
+    openAITabAr();
 
     fireEvent.click(screen.getByRole('button', { name: /توليد خارطة التعلّم/i }));
 
@@ -501,9 +529,14 @@ describe('MaturityAssessmentTool — Arabic path (isAr=true)', () => {
   const slug = 'resiliency';
   const SK   = `isc-tool-maturity-${slug}`;
 
+  function openAITabAr() {
+    fireEvent.click(screen.getByRole('tab', { name: /خارطة AI/i }));
+  }
+
   it('shows Arabic generate button label', () => {
     localStorage.setItem(SK, JSON.stringify({ visibility: 3 }));
     render(<MaturityAssessmentTool slug={slug} isAr={true} />);
+    openAITabAr();
     expect(screen.getByRole('button', { name: /توليد خارطة طريق النضج/i })).toBeInTheDocument();
   });
 
@@ -511,6 +544,7 @@ describe('MaturityAssessmentTool — Arabic path (isAr=true)', () => {
     localStorage.setItem(SK, JSON.stringify({ visibility: 3, dual_source: 4 }));
     stubFetchOk();
     render(<MaturityAssessmentTool slug={slug} isAr={true} />);
+    openAITabAr();
 
     fireEvent.click(screen.getByRole('button', { name: /توليد خارطة طريق النضج/i }));
 
@@ -522,6 +556,7 @@ describe('MaturityAssessmentTool — Arabic path (isAr=true)', () => {
     localStorage.setItem(SK, JSON.stringify({ visibility: 3, dual_source: 4 }));
     stubFetchOk();
     const { container } = render(<MaturityAssessmentTool slug={slug} isAr={true} />);
+    openAITabAr();
 
     fireEvent.click(screen.getByRole('button', { name: /توليد خارطة طريق النضج/i }));
 

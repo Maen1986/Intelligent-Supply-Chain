@@ -170,6 +170,26 @@ export function TrainingNeedsAssessment({ isAr }: TrainingToolsProps) {
   const [importLog, setImportLog] = useState<string[] | null>(null);
   const importInputRef = useRef<HTMLInputElement | null>(null);
 
+  /* ── Tab navigation ── */
+  type TrainingTab = 'matrix' | 'radar' | 'actions' | 'ai';
+  const TRAINING_TABS: { id: TrainingTab; icon: string; label: string; labelAr: string }[] = [
+    { id: 'matrix',  icon: '📋', label: 'Assessment Matrix',      labelAr: 'مصفوفة التقييم'        },
+    { id: 'radar',   icon: '📊', label: 'Skill-Gap Radar',        labelAr: 'رادار الكفاءات'         },
+    { id: 'actions', icon: '🎯', label: 'Development Actions',    labelAr: 'إجراءات التطوير'        },
+    { id: 'ai',      icon: '✨', label: 'AI Learning Plan',       labelAr: 'خطة التعلّم AI'         },
+  ];
+  const [activeTab, setActiveTab] = useState<TrainingTab>('matrix');
+  const tabListRef = useRef<HTMLDivElement>(null);
+  const handleTabKey = useCallback((e: React.KeyboardEvent, idx: number) => {
+    if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+    e.preventDefault();
+    const next = e.key === 'ArrowRight'
+      ? (idx + 1) % TRAINING_TABS.length
+      : (idx - 1 + TRAINING_TABS.length) % TRAINING_TABS.length;
+    setActiveTab(TRAINING_TABS[next].id);
+    (tabListRef.current?.querySelectorAll('[role="tab"]')[next] as HTMLElement | undefined)?.focus();
+  }, []);
+
   const persistMembers = (m: string[]) => { safeSetItem(SK_MEMBERS, JSON.stringify(m)); };
   const persistScores  = (s: Record<string, Record<string, number>>) => { safeSetItem(SK_SCORES, JSON.stringify(s)); };
   const persistMgr     = (s: Record<string, Record<string, number>>) => { safeSetItem(SK_MGR, JSON.stringify(s)); };
@@ -381,7 +401,25 @@ export function TrainingNeedsAssessment({ isAr }: TrainingToolsProps) {
         )}
       </div>
 
+      {/* ── Tab bar ── */}
+      <div role="tablist" ref={tabListRef} className="flex gap-1 bg-slate-50 border-b border-slate-200 px-4 pt-3 overflow-x-auto">
+        {TRAINING_TABS.map((t, idx) => (
+          <button key={t.id}
+            role="tab"
+            aria-selected={activeTab === t.id}
+            tabIndex={activeTab === t.id ? 0 : -1}
+            onClick={() => setActiveTab(t.id)}
+            onKeyDown={e => handleTabKey(e, idx)}
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-t-xl text-[12px] font-semibold whitespace-nowrap transition-all border-b-2 ${activeTab === t.id ? 'border-rose-600 text-rose-700 bg-white' : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-100'}`}>
+            <span>{t.icon}</span><span>{isAr ? t.labelAr : t.label}</span>
+          </button>
+        ))}
+      </div>
+
       <div className="p-5 space-y-5">
+
+        {/* ── Tab: Matrix ── */}
+        {activeTab === 'matrix' && <>
 
         {/* ── Legend ── */}
         <div className="flex flex-wrap gap-2">
@@ -504,7 +542,15 @@ export function TrainingNeedsAssessment({ isAr }: TrainingToolsProps) {
           </table>
         </div>
 
-        {/* ── Skill-gap radar chart ── */}
+        </>} {/* end matrix tab */}
+
+        {/* ── Tab: Radar ── */}
+        {activeTab === 'radar' && <>
+        {!hasSelfScores && (
+          <p className="text-xs text-muted-foreground text-center py-8">
+            {isAr ? 'أدخل التقييمات في علامة التبويب "مصفوفة التقييم" لعرض الرادار.' : 'Enter scores in the Assessment Matrix tab to display the radar.'}
+          </p>
+        )}
         {hasSelfScores && (
           <div className="rounded-xl border border-border p-4">
             <p className="text-xs font-bold text-primary mb-3 uppercase tracking-widest">
@@ -546,7 +592,10 @@ export function TrainingNeedsAssessment({ isAr }: TrainingToolsProps) {
           </div>
         )}
 
-        {/* ── Priority development actions ── */}
+        </>} {/* end radar tab */}
+
+        {/* ── Tab: Development Actions ── */}
+        {activeTab === 'actions' && <>
         {priorityGaps.length > 0 && (
           <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
             <p className="text-xs font-bold text-amber-800 uppercase tracking-widest mb-3">
@@ -597,25 +646,34 @@ export function TrainingNeedsAssessment({ isAr }: TrainingToolsProps) {
             </p>
           </div>
         )}
+        {!hasAnyScores && (
+          <p className="text-xs text-muted-foreground text-center py-8">
+            {isAr ? 'أدخل التقييمات في علامة التبويب "مصفوفة التقييم" لعرض الإجراءات.' : 'Enter scores in the Assessment Matrix tab to see development actions.'}
+          </p>
+        )}
+        </>} {/* end actions tab */}
 
-        {/* ── AI Plan ── */}
-        <AIPlanPanel
-          loading={planLoading}
-          result={planResult}
-          error={planError}
-          onGenerate={generatePlan}
-          onReset={resetPlan}
-          buttonLabel={isAr ? 'توليد خارطة التعلّم ✨' : 'Generate Learning Roadmap ✨'}
-          isAr={isAr}
-          disabled={!hasAnyScores}
-          savedPlan={planSavedPlan}
-          onViewSaved={viewSavedPlan}
-          onDeleteSaved={deleteSavedPlan}
-          rateLimited={planRateLimited}
-          saveError={planSaveError}
-          onDismissSaveError={dismissPlanSaveError}
-          toolKey="training"
-        />
+        {/* ── Tab: AI Learning Plan ── */}
+        {activeTab === 'ai' && (
+          <AIPlanPanel
+            loading={planLoading}
+            result={planResult}
+            error={planError}
+            onGenerate={generatePlan}
+            onReset={resetPlan}
+            buttonLabel={isAr ? 'توليد خارطة التعلّم ✨' : 'Generate Learning Roadmap ✨'}
+            isAr={isAr}
+            disabled={!hasAnyScores}
+            savedPlan={planSavedPlan}
+            onViewSaved={viewSavedPlan}
+            onDeleteSaved={deleteSavedPlan}
+            rateLimited={planRateLimited}
+            saveError={planSaveError}
+            onDismissSaveError={dismissPlanSaveError}
+            toolKey="training"
+          />
+        )}
+
       </div>
     </div>
   );
