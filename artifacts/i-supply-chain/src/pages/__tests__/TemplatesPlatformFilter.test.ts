@@ -16,6 +16,8 @@ import manifest from '../../../../api-server/public/n8n-templates/manifest.json'
 
 /* ── Types ────────────────────────────────────────────────────────────────── */
 
+type Platform = 'n8n' | 'make' | 'zapier';
+
 interface ManifestEntry {
   id: string;
   platform: string;
@@ -79,11 +81,8 @@ describe('TemplatesTab — platform filter', () => {
   });
 
   it('n8n + make + zapier counts sum to the All count', () => {
-    const n8nCount    = applyPlatformFilter(templates, 'n8n').length;
-    const makeCount   = applyPlatformFilter(templates, 'make').length;
-    const zapierCount = applyPlatformFilter(templates, 'zapier').length;
-    const allCount    = applyPlatformFilter(templates, '').length;
-    expect(n8nCount + makeCount + zapierCount).toBe(allCount);
+    const allCount = applyPlatformFilter(templates, '').length;
+    expect(N8N_COUNT + MAKE_COUNT + ZAPIER_COUNT).toBe(allCount);
   });
 
   it('switching from Make.com to Zapier yields only Zapier cards (no stale Make.com entries)', () => {
@@ -115,7 +114,7 @@ describe('TemplatesTab — platform filter', () => {
   });
 
   it('counter text "X / Y templates" would be correct for every filter', () => {
-    const cases: Array<[string, number]> = [
+    const cases: Array<['' | Platform, number]> = [
       ['',       TOTAL_COUNT],
       ['n8n',    N8N_COUNT],
       ['make',   MAKE_COUNT],
