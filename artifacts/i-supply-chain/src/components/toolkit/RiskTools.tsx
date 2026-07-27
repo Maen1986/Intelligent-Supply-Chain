@@ -193,11 +193,11 @@ function KRIDashboard({ isAr }: { isAr: boolean }) {
         <table className="w-full text-xs min-w-[500px]">
           <thead>
             <tr className="border-b border-border bg-muted/30">
-              <th className="text-left py-2 px-3 font-bold text-primary">{isAr ? 'المؤشر' : 'KRI'}</th>
-              <th className="text-center py-2 px-2 font-bold text-primary w-20">{isAr ? 'القيمة الحالية' : 'Current'}</th>
-              <th className="text-center py-2 px-2 font-bold text-primary w-16">{isAr ? 'كهرماني' : 'Amber'}</th>
-              <th className="text-center py-2 px-2 font-bold text-primary w-16">{isAr ? 'أحمر' : 'Red'}</th>
-              <th className="text-center py-2 px-2 font-bold text-primary w-24">{isAr ? 'الحالة' : 'Status'}</th>
+              <th scope="col" className="text-left py-2 px-3 font-bold text-primary">{isAr ? 'المؤشر' : 'KRI'}</th>
+              <th scope="col" className="text-center py-2 px-2 font-bold text-primary w-20">{isAr ? 'القيمة الحالية' : 'Current'}</th>
+              <th scope="col" className="text-center py-2 px-2 font-bold text-primary w-16">{isAr ? 'كهرماني' : 'Amber'}</th>
+              <th scope="col" className="text-center py-2 px-2 font-bold text-primary w-16">{isAr ? 'أحمر' : 'Red'}</th>
+              <th scope="col" className="text-center py-2 px-2 font-bold text-primary w-24">{isAr ? 'الحالة' : 'Status'}</th>
             </tr>
           </thead>
           <tbody>
@@ -305,14 +305,14 @@ function SupplierAlertConfig({ isAr }: { isAr: boolean }) {
       <div className="overflow-x-auto">
         <table className="w-full text-xs min-w-[400px]">
           <thead><tr className="border-b border-border bg-muted/30">
-            <th className="text-left py-2 px-3 font-bold text-primary">{isAr ? 'الشريحة' : 'Tier'}</th>
-            <th className="text-center py-2 px-2 font-bold text-primary">{isAr ? 'حدّ OTIF (%)' : 'OTIF Threshold (%)'}</th>
-            <th className="text-center py-2 px-2 font-bold text-primary">{isAr ? 'حدّ العيوب (PPM)' : 'Defect Threshold (PPM)'}</th>
-            <th className="text-center py-2 px-2 font-bold text-primary">{isAr ? 'الحدّ المالي (/100)' : 'Financial Score Min'}</th>
+            <th scope="col" className="text-left py-2 px-3 font-bold text-primary">{isAr ? 'الشريحة' : 'Tier'}</th>
+            <th scope="col" className="text-center py-2 px-2 font-bold text-primary">{isAr ? 'حدّ OTIF (%)' : 'OTIF Threshold (%)'}</th>
+            <th scope="col" className="text-center py-2 px-2 font-bold text-primary">{isAr ? 'حدّ العيوب (PPM)' : 'Defect Threshold (PPM)'}</th>
+            <th scope="col" className="text-center py-2 px-2 font-bold text-primary">{isAr ? 'الحدّ المالي (/100)' : 'Financial Score Min'}</th>
           </tr></thead>
           <tbody>{TIERS.map((tier, ti) => (
             <tr key={tier} className="border-b border-border/50">
-              <td className="py-2 px-3 font-semibold text-primary">{isAr ? TIERS_AR[ti] : tier}</td>
+              <th scope="row" className="py-2 px-3 font-semibold text-primary text-left">{isAr ? TIERS_AR[ti] : tier}</th>
               {(['otif', 'defect', 'financial'] as const).map(field => {
                 const fieldLabel = field === 'otif' ? (isAr ? 'حدّ OTIF' : 'OTIF Threshold') : field === 'defect' ? (isAr ? 'حدّ العيوب' : 'Defect Threshold') : (isAr ? 'الحدّ المالي' : 'Financial Score Min');
                 return (
