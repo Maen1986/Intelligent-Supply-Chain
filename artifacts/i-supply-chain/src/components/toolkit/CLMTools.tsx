@@ -407,7 +407,23 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
   }, [tabs]);
 
   return (
-    <div className="space-y-4">
+    <div className="print-zone-clm space-y-4">
+      {/* Print-only header */}
+      <div className="hidden">
+        {isAr ? 'فاحص صحة العقود' : 'Contract Health Checker'}
+      </div>
+      <div className="hidden">
+        {isAr ? `تاريخ التصدير: ${new Date().toLocaleDateString()}` : `Exported: ${new Date().toLocaleDateString()}`}
+      </div>
+      {/* Toolbar */}
+      <div className="flex items-center justify-between">
+        <p className="text-xs text-slate-400">{isAr ? 'إدارة دورة حياة العقود' : 'Contract Lifecycle Management'}</p>
+        <button
+          onClick={() => { document.body.setAttribute('data-print', 'clm'); window.addEventListener('afterprint', () => document.body.removeAttribute('data-print'), { once: true }); window.print(); }}
+          className="no-print flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg font-bold text-white bg-[#082C6B] hover:opacity-90 transition-colors">
+          {isAr ? 'تصدير PDF' : 'Export PDF'}
+        </button>
+      </div>
       {/* Tab bar */}
       <div role="tablist" ref={tabListRef} className="flex gap-1 bg-slate-50 border border-slate-200 rounded-2xl p-1 overflow-x-auto">
         {tabs.map((t, idx) => (

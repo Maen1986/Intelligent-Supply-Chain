@@ -160,11 +160,11 @@ function downloadCsv(filename: string, content: string) {
   URL.revokeObjectURL(url);
 }
 
-const BCP_TEMPLATE = `================================================================================
+const BCP_TEMPLATE = `--------------------------------------------------------------------------------
 SUPPLY CHAIN BUSINESS CONTINUITY PLAN (BCP) — TEMPLATE
 I Supply Chain | Risk Management Toolkit
 ISO 22301-Aligned | Version 1.0
-================================================================================
+--------------------------------------------------------------------------------
 
 DOCUMENT CONTROL
 ────────────────
@@ -265,9 +265,9 @@ SECTION 5 — TESTING & MAINTENANCE
 • Contact list review: Quarterly
 • Full document review: Annually or after any major supply disruption
 
-================================================================================
+--------------------------------------------------------------------------------
 END OF BCP TEMPLATE — Complete all [bracketed] fields before use.
-================================================================================`;
+--------------------------------------------------------------------------------`;
 
 const RISK_CSV_TEMPLATE =
   'ID,Category,Description,Risk Driver,Affected Area,Likelihood (1-5),Impact (1-5),Risk Score,Velocity,Mitigation Action,Owner,Due Date,Status,Residual Likelihood,Residual Impact\n' +
@@ -394,7 +394,25 @@ export function RiskToolsSection({ isAr }: RiskToolsProps) {
   }, [tabs]);
 
   return (
-    <div className="space-y-4">
+    <div className="print-zone-kri space-y-4">
+      {/* Print-only header */}
+      <div className="hidden">
+        {isAr ? 'مؤشرات المخاطر الرئيسية' : 'Key Risk Indicator Dashboard'}
+      </div>
+      <div className="hidden">
+        {isAr ? `تاريخ التصدير: ${new Date().toLocaleDateString()}` : `Exported: ${new Date().toLocaleDateString()}`}
+      </div>
+      {/* Toolbar */}
+      <div className="flex items-center justify-between">
+        <p className="text-xs text-slate-400">{isAr ? 'إدارة مخاطر سلسلة التوريد' : 'Supply Chain Risk Management'}</p>
+        {activeTab !== 'alert-config' && (
+          <button
+            onClick={() => { document.body.setAttribute('data-print', 'kri'); window.addEventListener('afterprint', () => document.body.removeAttribute('data-print'), { once: true }); window.print(); }}
+            className="no-print flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg font-bold text-white bg-[#082C6B] hover:opacity-90 transition-colors">
+            {isAr ? 'تصدير PDF' : 'Export PDF'}
+          </button>
+        )}
+      </div>
       {/* Tab bar */}
       <div role="tablist" ref={tabListRef} className="flex gap-1 bg-slate-50 border border-slate-200 rounded-2xl p-1 overflow-x-auto">
         {tabs.map((t, idx) => (
