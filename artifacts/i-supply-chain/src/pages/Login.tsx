@@ -73,7 +73,9 @@ export function Login() {
         });
       } catch {}
 
-      navigate('/');
+      const redirectTo = sessionStorage.getItem('navigateAfterAuth');
+      sessionStorage.removeItem('navigateAfterAuth');
+      navigate(redirectTo || '/');
     } catch (err) {
       const msg = err instanceof Error ? err.message : '';
       if (msg.toLowerCase().includes('already exists')) {
@@ -171,7 +173,9 @@ export function Login() {
     setLoading(true);
     try {
       await login(form.email, form.password);
-      navigate('/');
+      const redirectTo = sessionStorage.getItem('navigateAfterAuth');
+      sessionStorage.removeItem('navigateAfterAuth');
+      navigate(redirectTo || '/');
     } catch {
       setError(ar ? 'البريد الإلكتروني أو كلمة المرور غير صحيحة.' : 'Invalid email or password.');
     } finally {

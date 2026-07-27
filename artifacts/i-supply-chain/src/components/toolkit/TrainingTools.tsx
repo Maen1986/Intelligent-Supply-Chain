@@ -306,6 +306,7 @@ export function TrainingNeedsAssessment({ isAr }: TrainingToolsProps) {
           onViewSaved={viewSavedPlan}
           onDeleteSaved={deleteSavedPlan}
           rateLimited={planRateLimited}
+          toolKey="training"
         />
       </div>
     </div>

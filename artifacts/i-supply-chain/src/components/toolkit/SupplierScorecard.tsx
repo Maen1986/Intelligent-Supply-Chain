@@ -1187,6 +1187,7 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
                 onViewSaved={viewSavedPlan}
                 onDeleteSaved={deleteSavedPlan}
                 rateLimited={planRateLimited}
+                toolKey={active?.id ? `scorecard-${active.id}` : undefined}
               />
             )}
             {weightedScore !== null && tier && (

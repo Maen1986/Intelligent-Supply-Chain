@@ -10,6 +10,7 @@
  *   • An inline error + retry button on failure
  */
 import React, { useState } from 'react';
+import { useLocation } from 'wouter';
 import { Sparkles, Loader2, Copy, Check, ChevronDown, ChevronUp, RefreshCw, AlertCircle, LogIn, History, Trash2 } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 import { type SavedPlan } from '@/hooks/useAIPlan';
@@ -31,13 +32,16 @@ interface AIPlanPanelProps {
   onDeleteSaved?: () => void;
   /** True when the last request was rejected with a 429 — hides Retry */
   rateLimited?: boolean;
+  /** Tool key used to set a pending-generate flag in sessionStorage before redirecting to login */
+  toolKey?: string;
 }
 
 export function AIPlanPanel({
   loading, result, error, onGenerate, onReset, buttonLabel, isAr, disabled,
-  savedPlan, onViewSaved, onDeleteSaved, rateLimited,
+  savedPlan, onViewSaved, onDeleteSaved, rateLimited, toolKey,
 }: AIPlanPanelProps) {
   const { isAuthenticated } = useAuth();
+  const [, navigate] = useLocation();
   const [open,   setOpen]   = useState(true);
   const [copied, setCopied] = useState(false);
 
@@ -99,14 +103,21 @@ export function AIPlanPanel({
             {buttonLabel}
           </button>
         ) : (
-          <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/60 border border-border rounded-lg px-3 py-2">
+          <button
+            className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/60 border border-border rounded-lg px-3 py-2 hover:bg-muted/80 hover:border-primary/30 transition-colors cursor-pointer text-left"
+            onClick={() => {
+              sessionStorage.setItem('navigateAfterAuth', window.location.pathname);
+              if (toolKey) sessionStorage.setItem(`pendingAIPlan_${toolKey}`, '1');
+              navigate('/login');
+            }}
+          >
             <LogIn className="w-3.5 h-3.5 shrink-0 text-primary/60" />
             <span>
               {isAr
                 ? 'سجِّل دخولك لتوليد خطة الذكاء الاصطناعي'
                 : 'Sign in to generate an AI plan'}
             </span>
-          </div>
+          </button>
         )
       )}
 

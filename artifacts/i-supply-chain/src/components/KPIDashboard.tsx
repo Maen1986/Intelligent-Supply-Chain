@@ -325,8 +325,17 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
   /* ── CSV template ── */
   const downloadKpiTemplate = () => {
     if (!kpis) return;
-    const headers = ['KPI ID', 'KPI Name', 'Actual Value', 'Unit'];
-    const rows = kpis.map(k => [k.id, k.label, '', k.unit]);
+    const headers = ['KPI ID', 'KPI Name', 'Actual Value', 'Unit', 'Target', 'Benchmark', 'Status'];
+    const rows = kpis.map((k, i) => {
+      const row = i + 2; // row 1 is header
+      // Parse numeric target from targetLabel (e.g. ">95%" → 95, "<28 days" → 28)
+      const targetNum = k.targetValue;
+      // Direction: higherIsBetter → ">", lowerIsBetter → "<"
+      const dir = k.higherIsBetter ? '>' : '<';
+      // Formula: if Actual is empty → blank; compare C against E (Target col)
+      const formula = `=IF(C${row}="","",IF(ISNUMBER(C${row}*1),IF("${dir}"=">",IF(C${row}*1>=${targetNum},"🟢 GREEN","🔴 RED"),IF(C${row}*1<=${targetNum},"🟢 GREEN","🔴 RED")),""))`;
+      return [k.id, k.label, '', k.unit, k.targetLabel, k.benchmarkLabel, formula];
+    });
     downloadCsv([headers, ...rows], `kpi-template-${resolvedSlug}.csv`);
   };
 
@@ -579,6 +588,7 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
           onViewSaved={viewSavedPlan}
           onDeleteSaved={deleteSavedPlan}
           rateLimited={planRateLimited}
+          toolKey="kpi"
         />
       )}
 

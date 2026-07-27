@@ -268,6 +268,7 @@ function KRIDashboard({ isAr }: { isAr: boolean }) {
         onViewSaved={viewSavedPlan}
         onDeleteSaved={deleteSavedPlan}
         rateLimited={planRateLimited}
+        toolKey="risk"
       />
     </div>
   );

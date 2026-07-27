@@ -212,6 +212,7 @@ export function MaturityAssessmentTool({ slug, isAr }: MaturityToolsProps) {
           onViewSaved={viewSavedPlan}
           onDeleteSaved={deleteSavedPlan}
           rateLimited={planRateLimited}
+          toolKey="maturity"
         />
 
         {/* Action Tracker */}

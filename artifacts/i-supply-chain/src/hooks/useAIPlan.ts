@@ -48,6 +48,22 @@ export function useAIPlan(buildPrompt: () => string, isAr: boolean, toolKey?: st
   const [savedPlan,   setSavedPlan]   = useState<SavedPlan | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
+  /* ── Auto-generate after login (consume pendingAIPlan_<toolKey> flag) ── */
+  const prevAuthRef = useRef<boolean>(false);
+  useEffect(() => {
+    const wasAuthenticated = prevAuthRef.current;
+    prevAuthRef.current = isAuthenticated;
+
+    if (isAuthenticated && !wasAuthenticated && toolKey) {
+      const flagKey = `pendingAIPlan_${toolKey}`;
+      if (sessionStorage.getItem(flagKey) === '1') {
+        sessionStorage.removeItem(flagKey);
+        generate();
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, toolKey]);
+
   /* ── Load saved plan on mount / when toolKey or auth state changes ── */
   useEffect(() => {
     // Always clear stale savedPlan immediately when key or auth changes,
