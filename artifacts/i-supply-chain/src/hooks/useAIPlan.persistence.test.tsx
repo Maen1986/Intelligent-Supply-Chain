@@ -755,4 +755,46 @@ describe('useAIPlan persistence — saveError when plan save fails', () => {
     );
     expect(aiPlanCall).toBeDefined();
   });
+
+  it('removes the flag but does NOT call generate() when canGenerate=true but server returns an existing saved plan', async () => {
+    mockIsAuthenticated.value = false;
+    sessionStorage.setItem(`pendingAIPlan_${TOOL_KEY}`, '1');
+
+    // GET /plans returns an existing plan; /ai/plan must NOT be called
+    const fetchMock = vi.fn().mockImplementation((url: string, opts?: RequestInit) => {
+      const method = opts?.method ?? 'GET';
+      if (method === 'GET' && url.includes(`/plans/${TOOL_KEY}`)) {
+        return Promise.resolve({ ok: true, json: async () => ({ ok: true, plan: SAVED_PLAN }) });
+      }
+      // Any other call (e.g. POST /ai/plan) resolves generically — should not happen
+      return Promise.resolve({ ok: true, json: async () => ({ ok: true }) });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { rerender } = renderHook(
+      ({ authed, canGenerate }: { authed: boolean; canGenerate: boolean }) => {
+        mockIsAuthenticated.value = authed;
+        return useAIPlan(() => 'prompt', false, TOOL_KEY, canGenerate);
+      },
+      { initialProps: { authed: false, canGenerate: true } },
+    );
+
+    await act(async () => { await new Promise(r => setTimeout(r, 10)); });
+
+    // Simulate sign-in with a filled form (canGenerate=true)
+    await act(async () => { rerender({ authed: true, canGenerate: true }); });
+
+    // Wait for the GET to resolve so Effect C has a chance to (not) fire generate()
+    await act(async () => { await new Promise(r => setTimeout(r, 30)); });
+
+    // Flag must be removed even though generate() was skipped
+    expect(sessionStorage.getItem(`pendingAIPlan_${TOOL_KEY}`)).toBeNull();
+
+    // generate() (POST /ai/plan) must NOT have been called — server already had a plan
+    const aiPlanCall = fetchMock.mock.calls.find(
+      ([url, o]: [string, RequestInit]) =>
+        url.includes('/ai/plan') && o?.method === 'POST',
+    );
+    expect(aiPlanCall).toBeUndefined();
+  });
 });
