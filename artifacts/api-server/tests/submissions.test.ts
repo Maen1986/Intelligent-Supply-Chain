@@ -69,6 +69,19 @@ describe('GET /api/submissions', () => {
     expect(res.status).toBe(403);
   });
 
+  it('rejects a session with a valid userId but no userRole with 403', async () => {
+    // Simulates a cleared/invalidated session where userRole was stripped
+    const app = makeApp('/api/submissions', submissionsRouter, { userId: 1 });
+    const res = await request(app).get('/api/submissions');
+    expect(res.status).toBe(403);
+  });
+
+  it('rejects a session with an unexpected role (moderator) with 403', async () => {
+    const app = makeApp('/api/submissions', submissionsRouter, { userId: 3, userRole: 'moderator' });
+    const res = await request(app).get('/api/submissions');
+    expect(res.status).toBe(403);
+  });
+
   it('lists submissions newest first with a total for an admin', async () => {
     dbState.selectRows = [{ id: 2 }, { id: 1 }];
     const app = makeApp('/api/submissions', submissionsRouter, adminSession);
