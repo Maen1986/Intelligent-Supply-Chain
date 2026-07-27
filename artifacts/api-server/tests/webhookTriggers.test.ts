@@ -388,6 +388,42 @@ describe('kri.threshold_breached webhook event', () => {
     expect(mockDispatchEvent).not.toHaveBeenCalledWith(1, 'kri.threshold_breached', expect.anything());
   });
 
+  it('dispatches kri.threshold_breached when a KRI jumps green→red with higherIsBetter: true', async () => {
+    const { db } = await import('@workspace/db');
+    const executeMock = db.execute as ReturnType<typeof vi.fn>;
+    // OTIF: old value 90 (green, above amber=80); new value 50 (red, below red=60)
+    // Skips the amber band entirely in a single import
+    executeMock
+      .mockResolvedValueOnce({
+        rows: [{ scorecard_roster: null, tool_data: { riskKris: { otif: '90' } } }],
+      })
+      .mockResolvedValueOnce({ rows: [] });
+    executeMock.mockResolvedValue({ rows: [] });
+
+    const app = makeApp('/api/v1', v1Router);
+    const res = await request(app)
+      .post('/api/v1/risk-kris/import')
+      .send({
+        kris: [{ id: 'otif', label: 'On-Time In-Full', value: 50, amber: 80, red: 60, higherIsBetter: true }],
+      });
+
+    expect(res.status).toBe(200);
+    // Exactly one kri.threshold_breached + one risk_kri.imported
+    expect(mockDispatchEvent).toHaveBeenCalledTimes(2);
+    expect(mockDispatchEvent).toHaveBeenCalledWith(
+      1,
+      'kri.threshold_breached',
+      expect.objectContaining({
+        kriId:     'otif',
+        oldStatus: 'green',
+        newStatus: 'red',
+        oldValue:  90,
+        newValue:  50,
+        higherIsBetter: true,
+      }),
+    );
+  });
+
   it('dispatches when the KRI moves from amber to red', async () => {
     const { db } = await import('@workspace/db');
     const executeMock = db.execute as ReturnType<typeof vi.fn>;
