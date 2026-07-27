@@ -804,11 +804,11 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
               </div>
 
               {/* Dimension table */}
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto" dir={isAr ? 'rtl' : 'ltr'}>
                 <table className="w-full text-xs border-collapse">
                   <thead>
                     <tr className="bg-slate-50 border-b border-border">
-                      <th className="text-left px-4 py-2.5 font-bold text-primary min-w-[140px]">
+                      <th className="text-start px-4 py-2.5 font-bold text-primary min-w-[140px]">
                         {isAr ? 'البُعد' : 'Dimension'}
                       </th>
                       {suppliers.map((s, si) => (
