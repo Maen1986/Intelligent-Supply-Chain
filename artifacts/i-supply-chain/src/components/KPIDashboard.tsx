@@ -531,7 +531,10 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
 
       {/* Bar chart — only when values exist */}
       {hasAnyValue && (
-        <div className="bg-white border border-border rounded-2xl p-6 shadow-sm">
+        <div
+          className="bg-white border border-border rounded-2xl p-6 shadow-sm kpi-chart-wrap"
+          style={{ WebkitPrintColorAdjust: 'exact' } as React.CSSProperties}
+        >
           <p className="text-sm font-bold text-primary mb-4">
             {isAr ? 'مقارنة: قيمتك · المستهدف · المعيار الخليجي' : 'Comparison: Yours · Target · GCC Benchmark'}
           </p>

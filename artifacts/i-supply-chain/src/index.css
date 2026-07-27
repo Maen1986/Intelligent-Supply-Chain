@@ -255,6 +255,17 @@ html[lang="ar"] {
     display: none !important;
   }
 
+  /* ── KPI bar chart print colour safety ─────────────────────────────────
+     Recharts Cell fills are inline SVG attributes. Safari and Firefox strip
+     those colours during print unless the container opts in to exact colour
+     rendering. The JS side also sets WebkitPrintColorAdjust via inline style
+     as a belt-and-suspenders guard for older WebKit.
+  ─────────────────────────────────────────────────────────────────────── */
+  .kpi-chart-wrap {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
   /* ── SVG gauge print safety ──────────────────────────────────────────────
      Some browsers (Safari, Firefox) apply overflow:hidden to SVG elements
      during print, clipping the arc stroke that extends to the viewBox edge.
