@@ -109,7 +109,12 @@ export function AIPlanPanel({
           </button>
         ) : (
           <button
-            onClick={() => navigate(`/login?from=${encodeURIComponent(location)}`)}
+            onClick={() => {
+              if (toolKey) {
+                sessionStorage.setItem(`pendingAIPlan_${toolKey}`, '1');
+              }
+              navigate(`/login?from=${encodeURIComponent(location)}`);
+            }}
             className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/60 border border-border rounded-lg px-3 py-2 hover:bg-muted/80 hover:border-primary/30 transition-colors cursor-pointer text-left"
           >
             <LogIn className="w-3.5 h-3.5 shrink-0 text-primary/60" />

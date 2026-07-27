@@ -17,8 +17,8 @@
  */
 
 import React, { useState } from 'react';
-import { describe, it, expect, vi, afterEach } from 'vitest';
-import { render, screen, act, cleanup } from '@testing-library/react';
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
+import { render, screen, act, cleanup, fireEvent } from '@testing-library/react';
 import { AIPlanPanel } from './AIPlanPanel';
 import * as AuthContextModule from '@/lib/AuthContext';
 
@@ -366,5 +366,72 @@ describe('AIPlanPanel — auth-loading phase (cold load)', () => {
 
     expect(screen.getByText('سجِّل دخولك لتوليد خطة الذكاء الاصطناعي')).toBeTruthy();
     expect(screen.queryByText('Generate Plan ✨')).toBeNull();
+  });
+});
+
+// ─── Sign-in button pending-plan flag tests ───────────────────────────────────
+
+/** Render AIPlanPanel in unauthenticated state with an optional toolKey */
+function renderUnauthenticated(toolKey?: string) {
+  const fakeAuth = {
+    isAuthenticated: false,
+    user: null,
+    loading: false,
+    register:       async () => {},
+    login:          async () => {},
+    logout:         async () => {},
+    changePassword: async () => {},
+    updateProfile:  async () => {},
+  };
+  vi.spyOn(AuthContextModule, 'useAuth').mockReturnValue(fakeAuth);
+
+  render(
+    <AIPlanPanel
+      loading={false}
+      result={null}
+      error={null}
+      onGenerate={vi.fn()}
+      onReset={vi.fn()}
+      buttonLabel="Generate Plan ✨"
+      isAr={false}
+      toolKey={toolKey}
+    />,
+  );
+}
+
+describe('AIPlanPanel — sign-in button sets pending-plan sessionStorage flag', () => {
+  let setItemSpy: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    sessionStorage.clear();
+    setItemSpy = vi.spyOn(Storage.prototype, 'setItem');
+  });
+
+  afterEach(() => {
+    setItemSpy.mockRestore();
+    sessionStorage.clear();
+    cleanup();
+  });
+
+  it('sets pendingAIPlan_<toolKey> = "1" in sessionStorage when toolKey is provided', () => {
+    renderUnauthenticated('supplierPlan');
+
+    const btn = screen.getByText('Sign in to generate an AI plan').closest('button')!;
+    fireEvent.click(btn);
+
+    expect(setItemSpy).toHaveBeenCalledWith('pendingAIPlan_supplierPlan', '1');
+  });
+
+  it('does NOT call sessionStorage.setItem when no toolKey is provided', () => {
+    renderUnauthenticated(/* no toolKey */);
+
+    const btn = screen.getByText('Sign in to generate an AI plan').closest('button')!;
+    fireEvent.click(btn);
+
+    // setItem may be called for other reasons (e.g. wouter) but never for a pendingAIPlan_ key
+    const pendingCalls = setItemSpy.mock.calls.filter(([key]) =>
+      typeof key === 'string' && key.startsWith('pendingAIPlan_'),
+    );
+    expect(pendingCalls).toHaveLength(0);
   });
 });
