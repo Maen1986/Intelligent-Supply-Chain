@@ -13,7 +13,7 @@ import {
 } from 'recharts';
 import {
   ChevronRight, ChevronLeft, BarChart3, Award,
-  TrendingUp, RotateCcw,
+  TrendingUp, RotateCcw, Pencil,
   GitBranch, ShoppingCart, FileText, Users, Shield, Leaf, Cpu, RefreshCw,
 } from 'lucide-react';
 
@@ -1033,6 +1033,7 @@ export function Maturity() {
   const topRef = useRef<HTMLDivElement>(null);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [incompleteWarning, setIncompleteWarning] = useState(false);
+  const [editingFromResults, setEditingFromResults] = useState(false);
 
   // Show the feedback modal once per session after results are rendered
   useEffect(() => {
@@ -1070,13 +1071,15 @@ export function Maturity() {
 
   const handleNext = () => {
     if (segIdx < SEGMENTS.length - 1) { setSegIdx(s => s + 1); scrollUp(); }
-    else { setPhase('results'); scrollUp(); }
+    else { setEditingFromResults(false); setPhase('results'); scrollUp(); }
   };
   const handleBack = () => {
     if (segIdx > 0) { setSegIdx(s => s - 1); scrollUp(); }
     else { setPhase('intro'); scrollUp(); }
   };
-  const handleReset = () => { setAnswers({}); setSegIdx(0); setPhase('intro'); setIncompleteWarning(false); scrollUp(); };
+  const handleReset = () => { setAnswers({}); setSegIdx(0); setPhase('intro'); setIncompleteWarning(false); setEditingFromResults(false); scrollUp(); };
+  const handleEditSegment = (i: number) => { setSegIdx(i); setEditingFromResults(true); setPhase('questions'); scrollUp(); };
+  const handleBackToResults = () => { setEditingFromResults(false); setPhase('results'); scrollUp(); };
 
   const L = {
     yourScore:  ar ? 'نتيجتك' : 'Your Score',
@@ -1326,6 +1329,21 @@ export function Maturity() {
               })}
 
               {/* Navigation */}
+              {editingFromResults && (
+                <div className={`flex ${ar ? 'justify-start' : 'justify-end'} mt-4 mb-2`}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleBackToResults}
+                    className="gap-1.5 border-primary/30 text-primary hover:bg-primary/5"
+                    data-testid="button-back-to-results"
+                  >
+                    {ar ? <ChevronRight className="w-3.5 h-3.5" /> : <BarChart3 className="w-3.5 h-3.5" />}
+                    {ar ? 'العودة إلى النتائج' : 'Back to Results'}
+                    {ar ? <BarChart3 className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+                  </Button>
+                </div>
+              )}
               <div className="flex items-center justify-between mt-6 gap-4">
                 <Button variant="outline" onClick={handleBack} className="gap-2">
                   {ar ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
@@ -1453,6 +1471,7 @@ export function Maturity() {
                   <th className="px-4 py-3 font-bold text-center text-slate-600">{ar ? 'المتوسط العالمي' : 'Global Avg'}</th>
                   <th className="px-4 py-3 font-bold text-center" style={{ color: '#C9A84C' }}>{ar ? 'الأفضل في الفئة' : 'Best-in-Class'}</th>
                   <th className="px-4 py-3 font-bold text-primary text-center">{ar ? 'المستوى' : 'Level'}</th>
+                <th className="px-4 py-3 font-bold text-primary text-center">{ar ? 'تعديل' : 'Edit'}</th>
                 </tr>
               </thead>
               <tbody>
@@ -1484,6 +1503,17 @@ export function Maturity() {
                       <td className="px-4 py-3.5 text-center">
                         <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${level.bg} ${level.text} border ${level.border}`}>{ar ? level.labelAr : level.label}</span>
                       </td>
+                      <td className="px-4 py-3.5 text-center">
+                        <button
+                          onClick={() => handleEditSegment(i)}
+                          data-testid={`button-edit-segment-${i}`}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold text-primary border border-primary/25 hover:bg-primary/8 hover:border-primary/50 transition-colors"
+                          title={ar ? `تعديل ${seg.shortTitleAr}` : `Edit ${seg.shortTitle}`}
+                        >
+                          <Pencil className="w-3 h-3" />
+                          {ar ? 'تعديل' : 'Edit'}
+                        </button>
+                      </td>
                     </tr>
                   );
                 })}
@@ -1498,6 +1528,7 @@ export function Maturity() {
                   <td className="px-4 py-3.5 text-center">
                     <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${overallLevel.bg} ${overallLevel.text} border ${overallLevel.border}`}>{ar ? overallLevel.labelAr : overallLevel.label}</span>
                   </td>
+                  <td />
                 </tr>
               </tfoot>
             </table>
@@ -1535,6 +1566,15 @@ export function Maturity() {
                       </div>
                       <div className="flex justify-between text-xs text-muted-foreground mt-0.5"><span>0</span><span>5</span></div>
                     </div>
+                    <button
+                      onClick={() => handleEditSegment(i)}
+                      data-testid={`button-edit-segment-rec-${i}`}
+                      className="flex-shrink-0 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-primary border border-primary/25 hover:bg-primary/8 hover:border-primary/50 transition-colors"
+                      title={ar ? `تعديل ${seg.shortTitleAr}` : `Edit ${seg.shortTitle}`}
+                    >
+                      <Pencil className="w-3 h-3" />
+                      {ar ? 'تعديل' : 'Edit'}
+                    </button>
                   </div>
                   <div className="px-5 py-4">
                     <div className="flex gap-3 mb-3">
