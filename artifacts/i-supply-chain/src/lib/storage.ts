@@ -153,6 +153,11 @@ export function safeSetItem(key: string, value: string): boolean {
               if (confirmed) {
                 clearAppStorage();
                 toast.dismiss('storage-quota-exceeded');
+                toast.success(
+                  'Cleared — reloading…\nتم المسح — جارٍ إعادة التحميل…',
+                  { id: 'storage-cleared', duration: 1500 },
+                );
+                setTimeout(() => window.location.reload(), 1500);
               }
             },
           },

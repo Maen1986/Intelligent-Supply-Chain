@@ -62,6 +62,7 @@ vi.mock('sonner', () => ({
     error: vi.fn(),
     warning: vi.fn(),
     dismiss: vi.fn(),
+    success: vi.fn(),
   },
 }));
 
@@ -324,6 +325,13 @@ describe('safeSetItem — action button', () => {
   });
 
   it('action onClick clears app storage and dismisses the toast when confirmed', () => {
+    vi.useFakeTimers();
+    const reloadSpy = vi.fn();
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: { ...window.location, reload: reloadSpy },
+    });
+
     const spy = vi.spyOn(Storage.prototype, 'setItem')
       .mockImplementationOnce(() => { throw makeQuotaError(); });
     vi.spyOn(window, 'confirm').mockReturnValueOnce(true);
@@ -344,8 +352,18 @@ describe('safeSetItem — action button', () => {
     expect(localStorage.getItem('isc-kpi-foo')).toBeNull();
     expect(localStorage.getItem('other-app-key')).toBe('keep-me');
     expect(toast.dismiss).toHaveBeenCalledWith('storage-quota-exceeded');
+    expect(toast.success).toHaveBeenCalledWith(
+      expect.stringContaining('Cleared'),
+      expect.objectContaining({ id: 'storage-cleared' }),
+    );
+
+    // reload should not fire immediately — it is delayed by 1 500 ms
+    expect(reloadSpy).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(1500);
+    expect(reloadSpy).toHaveBeenCalledOnce();
 
     spy.mockRestore();
+    vi.useRealTimers();
   });
 });
 
