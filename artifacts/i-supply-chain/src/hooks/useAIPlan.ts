@@ -61,7 +61,14 @@ export function useAIPlan(
     prevAuthenticated.current = isAuthenticated;
 
     if (isAuthenticated && !wasAuthenticated && !result && !savedPlan && !loading && canGenerate) {
-      generate();
+      // Skip if the sessionStorage pending-plan hook will handle this login event
+      // (that hook takes priority to avoid two simultaneous generate() calls).
+      const hasPendingFlag = toolKey
+        ? sessionStorage.getItem(`pendingAIPlan_${toolKey}`) === '1'
+        : false;
+      if (!hasPendingFlag) {
+        generate();
+      }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, result, savedPlan, canGenerate]);

@@ -70,7 +70,20 @@ export function parseCsvFile(
     return { headers: [], rows: [], errors: ['The file is empty.'] };
   }
 
-  const headers = parseCsvLine(lines[0]).map(h => h.trim());
+  // Find the header row: scan lines until one contains all required headers.
+  // This lets templates include branding/instructions rows before the header row.
+  let headerLineIndex = 0;
+  if (requiredHeaders.length > 0) {
+    for (let li = 0; li < lines.length; li++) {
+      const candidate = parseCsvLine(lines[li]).map(h => h.trim());
+      if (requiredHeaders.every(h => candidate.includes(h))) {
+        headerLineIndex = li;
+        break;
+      }
+    }
+  }
+
+  const headers = parseCsvLine(lines[headerLineIndex]).map(h => h.trim());
   const errors: string[] = [];
 
   // Validate required headers
@@ -81,7 +94,7 @@ export function parseCsvFile(
   }
 
   const rows: Record<string, string>[] = [];
-  for (let i = 1; i < lines.length; i++) {
+  for (let i = headerLineIndex + 1; i < lines.length; i++) {
     const vals = parseCsvLine(lines[i]);
     const row: Record<string, string> = {};
     headers.forEach((h, hi) => { row[h] = (vals[hi] ?? '').trim(); });
