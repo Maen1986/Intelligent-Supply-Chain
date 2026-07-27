@@ -1367,7 +1367,7 @@ export function Maturity() {
             <div>
               <p className="text-white/60 text-xs font-bold uppercase tracking-widest mb-1">{ar ? 'نتيجة النضج الإجمالية' : 'Overall Maturity Score'}</p>
               <div className="flex items-baseline gap-2">
-                <span className="text-6xl font-extrabold text-white">{overallScore.toFixed(1)}</span>
+                <span className="text-6xl font-extrabold text-white" data-testid="maturity-overall-score">{overallScore.toFixed(1)}</span>
                 <span className="text-white/50 text-xl">/5.0</span>
               </div>
             </div>
