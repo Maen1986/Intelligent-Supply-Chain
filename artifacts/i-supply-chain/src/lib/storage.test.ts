@@ -592,3 +592,113 @@ describe('safeSetItem — boolean return value', () => {
     expect(safeSetItem('k2', 'v2')).toBe(true);
   });
 });
+
+/* ══════════════════════════════════════════════════════════════════════════
+   clearAppStorage — full toolkit coverage
+   Seeds one representative key from every toolkit component and verifies
+   that clearAppStorage() wipes all of them.  Any component whose key
+   survives the clear has stepped outside the isc- / isc_ prefix contract.
+══════════════════════════════════════════════════════════════════════════ */
+
+describe('clearAppStorage — full toolkit key coverage', () => {
+  /**
+   * One representative localStorage key per toolkit component / feature.
+   * These mirror the exact constant or template strings used in production code.
+   *
+   * Sources (all under artifacts/i-supply-chain/src/):
+   *  - ChecklistTool   → ChallengeChecklists.tsx  storageKey
+   *  - ActionTracker   → ChallengeChecklists.tsx  actionKey
+   *  - ParamForm       → ChallengeChecklists.tsx  toolKey (calc)
+   *  - ProcurementTools→ ProcurementTools.tsx     SK_SPEND / SK_PORTER / SK_STRATEGY
+   *  - RiskTools       → RiskTools.tsx             SK_RISKS / SK_KRI
+   *  - SupplierScorecard→ SupplierScorecard.tsx   CONFIG_KEY / ROSTER_KEY / LEGACY_KEY
+   *  - TrainingTools   → TrainingTools.tsx         SK_MEMBERS / SK_SCORES
+   *  - CLMTools        → CLMTools.tsx              SK_CONTRACTS
+   *  - MaturityTools   → MaturityTools.tsx         SK / action SK
+   *  - KPIDashboard    → KPIDashboard.tsx          storageKey / industry / skuClass / banner
+   *  - CommandCenter   → CommandCenter.tsx         BRIEFING_DRAFT_KEY
+   *  - Language pref   → LanguageContext.tsx       isc-lang
+   *  - Announcement    → uses isc_ prefix          isc_banner_dismissed_v2
+   *  - FeedbackModal   → FeedbackModal.tsx         isc-feedback-shown-<tool>
+   */
+  const TOOLKIT_KEYS: Record<string, string> = {
+    // ChecklistTool (challenge checklist items)
+    'ChecklistTool':            'isc-tool-checklist-challenge-0',
+    // ActionTracker (challenge action items)
+    'ActionTracker':            'isc-tool-checklist-actions-0',
+    // ParamForm / calculator
+    'ParamForm':                'isc-tool-checklist-calc-0',
+    // ProcurementTools
+    'ProcurementTools-spend':   'isc-tool-catmgmt-spend-v2',
+    'ProcurementTools-porter':  'isc-tool-catmgmt-porter-v2',
+    'ProcurementTools-strategy':'isc-tool-catmgmt-strategy-v2',
+    // RiskTools
+    'RiskTools-register':       'isc-tool-risk-register-v2',
+    'RiskTools-kri':            'isc-tool-risk-kri-v2',
+    // SupplierScorecard
+    'SupplierScorecard-config': 'isc-tool-scorecard-config',
+    'SupplierScorecard-roster': 'isc-tool-supplier-roster',
+    'SupplierScorecard-legacy': 'isc-tool-supplier-scorecard',
+    // TrainingTools
+    'TrainingTools-members':    'isc-tool-training-members',
+    'TrainingTools-scores':     'isc-tool-training-scores',
+    // CLMTools
+    'CLMTools-contracts':       'isc-tool-clm-contracts-v2',
+    // MaturityTools
+    'MaturityTools-scores':     'isc-tool-maturity-procurement',
+    'MaturityTools-actions':    'isc-tool-actions-maturity-procurement',
+    // KPIDashboard
+    'KPIDashboard-data':        'isc-kpi-procurement',
+    'KPIDashboard-industry':    'isc-kpi-industry',
+    'KPIDashboard-skuClass':    'isc-kpi-sku-class',
+    'KPIDashboard-banner':      'isc-kpi-banner-dismissed-procurement',
+    // CommandCenter draft
+    'CommandCenter-draft':      'isc-briefing-draft-v1',
+    // Language preference
+    'LanguagePref':             'isc-lang',
+    // Announcement banner (uses isc_ prefix)
+    'AnnouncementBanner':       'isc_banner_dismissed_v2',
+    // Feedback modal
+    'FeedbackModal':            'isc-feedback-shown-checklist',
+  };
+
+  it('wipes every toolkit component key after clearAppStorage()', () => {
+    // Seed every key with a non-empty value
+    for (const key of Object.values(TOOLKIT_KEYS)) {
+      localStorage.setItem(key, 'test-value');
+    }
+
+    clearAppStorage();
+
+    // Every key must now be null — a non-null value means the key escaped the
+    // isc- / isc_ prefix contract and would silently survive a real clear.
+    for (const [component, key] of Object.entries(TOOLKIT_KEYS)) {
+      expect(
+        localStorage.getItem(key),
+        `${component} key "${key}" survived clearAppStorage() — it may use an unexpected prefix`,
+      ).toBeNull();
+    }
+  });
+
+  it('does not remove non-app keys while wiping all toolkit keys', () => {
+    // Mix app keys with third-party keys
+    for (const key of Object.values(TOOLKIT_KEYS)) {
+      localStorage.setItem(key, 'data');
+    }
+    localStorage.setItem('_ga', 'analytics-id');
+    localStorage.setItem('intercom.user', '{}');
+    localStorage.setItem('other-app-pref', 'dark');
+
+    clearAppStorage();
+
+    // All toolkit keys gone
+    for (const key of Object.values(TOOLKIT_KEYS)) {
+      expect(localStorage.getItem(key)).toBeNull();
+    }
+
+    // Third-party keys untouched
+    expect(localStorage.getItem('_ga')).toBe('analytics-id');
+    expect(localStorage.getItem('intercom.user')).toBe('{}');
+    expect(localStorage.getItem('other-app-pref')).toBe('dark');
+  });
+});
