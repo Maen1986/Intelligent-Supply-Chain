@@ -392,7 +392,7 @@ const ADMIN_SESSION = { userId: 1, userRole: 'admin' };
 
 describe('GET /api/integrations/keys', () => {
   it('returns key list for an admin', async () => {
-    apiKeyRows = [{ id: 1, nameLabel: 'SAP', keyPrefix: 'isk_abc…', createdAt: new Date(), lastUsedAt: null, revokedAt: null }];
+    apiKeyRows = [{ id: 1, nameLabel: 'SAP', keyPrefix: 'isk_abc…', scope: 'write', createdAt: new Date(), lastUsedAt: null, revokedAt: null }];
     const { default: intRouter } = await import('../src/routes/integrations');
     const app = makeApp('/api/integrations', intRouter, ADMIN_SESSION);
     const res = await request(app).get('/api/integrations/keys');
@@ -428,6 +428,65 @@ describe('POST /api/integrations/keys', () => {
     expect(res.body.key.rawKey.length).toBeGreaterThan(20);
     // Raw key must NOT appear in the prefix stored for display
     expect(res.body.key.rawKey).not.toBe(res.body.key.keyPrefix);
+  });
+});
+
+describe('API key scope round-trip', () => {
+  beforeEach(() => {
+    selectResponses = [];
+    selectCallCount = 0;
+    mockInsert.mockClear();
+    mockSelect.mockClear();
+  });
+
+  it('POST with scope:read → GET returns the row with scope:read', async () => {
+    insertReturn = [{ id: 99, createdAt: new Date().toISOString() }];
+    const { default: intRouter } = await import('../src/routes/integrations');
+    const app = makeApp('/api/integrations', intRouter, ADMIN_SESSION);
+
+    // Create a read-scoped key
+    const createRes = await request(app)
+      .post('/api/integrations/keys')
+      .send({ nameLabel: 'Read Key', scope: 'read' });
+    expect(createRes.status).toBe(200);
+    expect(createRes.body.key.scope).toBe('read');
+
+    // Simulate what the DB returns after a page reload
+    selectResponses = [];
+    selectCallCount = 0;
+    apiKeyRows = [{ id: 99, nameLabel: 'Read Key', keyPrefix: createRes.body.key.keyPrefix, scope: 'read', createdAt: new Date(), lastUsedAt: null, revokedAt: null }];
+
+    const listRes = await request(app).get('/api/integrations/keys');
+    expect(listRes.status).toBe(200);
+    expect(listRes.body.ok).toBe(true);
+    const row = listRes.body.keys.find((k: { id: number }) => k.id === 99);
+    expect(row).toBeDefined();
+    expect(row.scope).toBe('read');
+  });
+
+  it('POST with no explicit scope → GET returns the row with scope:write (backward-compat default)', async () => {
+    insertReturn = [{ id: 100, createdAt: new Date().toISOString() }];
+    const { default: intRouter } = await import('../src/routes/integrations');
+    const app = makeApp('/api/integrations', intRouter, ADMIN_SESSION);
+
+    // Create a key without specifying scope
+    const createRes = await request(app)
+      .post('/api/integrations/keys')
+      .send({ nameLabel: 'Default Key' });
+    expect(createRes.status).toBe(200);
+    expect(createRes.body.key.scope).toBe('write');
+
+    // Simulate what the DB returns after a page reload
+    selectResponses = [];
+    selectCallCount = 0;
+    apiKeyRows = [{ id: 100, nameLabel: 'Default Key', keyPrefix: createRes.body.key.keyPrefix, scope: 'write', createdAt: new Date(), lastUsedAt: null, revokedAt: null }];
+
+    const listRes = await request(app).get('/api/integrations/keys');
+    expect(listRes.status).toBe(200);
+    expect(listRes.body.ok).toBe(true);
+    const row = listRes.body.keys.find((k: { id: number }) => k.id === 100);
+    expect(row).toBeDefined();
+    expect(row.scope).toBe('write');
   });
 });
 

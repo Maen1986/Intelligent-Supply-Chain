@@ -119,11 +119,10 @@ router.post("/webhooks/inbound", async (req, res) => {
     res.status(401).json({ ok: false, error: "Replayed request rejected" });
     return;
   }
-  // Register the nonce before processing so concurrent duplicate requests are
-  // also blocked (the map is in-process; sufficient for single-instance deploys).
-  usedNonces.set(nonce, nowMs + NONCE_TTL_MS);
 
   // ── Signature check ──────────────────────────────────────────────────────
+  // Verify signature BEFORE registering the nonce so that unauthenticated
+  // callers with unique nonces cannot grow the nonce map unboundedly (DoS).
   const sig = req.headers["x-isc-signature"] as string | undefined;
   if (!verifySignature(rawBody, timestampHeader, nonce, sig, secret)) {
     logger.warn("[webhooks/inbound] Invalid signature rejected");
@@ -131,6 +130,11 @@ router.post("/webhooks/inbound", async (req, res) => {
     res.status(401).json({ ok: false, error: "Invalid signature" });
     return;
   }
+
+  // Register the nonce only after the request is authenticated so concurrent
+  // duplicate requests from verified callers are also blocked.
+  // (The map is in-process; sufficient for single-instance deploys.)
+  usedNonces.set(nonce, nowMs + NONCE_TTL_MS);
 
   const body        = req.body as Record<string, unknown>;
   const action      = typeof body.action === "string" ? body.action : "";
