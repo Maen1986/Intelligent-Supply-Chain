@@ -191,6 +191,33 @@ describe('requireApiKeyOrSession middleware', () => {
     expect(res.body.error).toMatch(/read-only/i);
   });
 
+  it('returns 403 when a read-only key is used on a DELETE request', async () => {
+    const { raw } = makeKey();
+    apiKeyRows = [{ id: 10, userId: 55, scope: 'read', revokedAt: null }];
+    const { default: v1Router } = await import('../src/routes/v1');
+    const app = makeApp('/api/v1', v1Router);
+    const res = await request(app)
+      .delete('/api/v1/suppliers/42')
+      .set('Authorization', `Bearer ${raw}`);
+    expect(res.status).toBe(403);
+    expect(res.body.ok).toBe(false);
+    expect(res.body.error).toMatch(/read-only/i);
+  });
+
+  it('returns 403 when a read-only key is used on a PUT request', async () => {
+    const { raw } = makeKey();
+    apiKeyRows = [{ id: 11, userId: 55, scope: 'read', revokedAt: null }];
+    const { default: v1Router } = await import('../src/routes/v1');
+    const app = makeApp('/api/v1', v1Router);
+    const res = await request(app)
+      .put('/api/v1/suppliers/42')
+      .set('Authorization', `Bearer ${raw}`)
+      .send({ name: 'Updated Supplier' });
+    expect(res.status).toBe(403);
+    expect(res.body.ok).toBe(false);
+    expect(res.body.error).toMatch(/read-only/i);
+  });
+
   it('allows a read-only key on GET requests', async () => {
     const { raw } = makeKey();
     apiKeyRows = [{ id: 9, userId: 55, scope: 'read', revokedAt: null }];
