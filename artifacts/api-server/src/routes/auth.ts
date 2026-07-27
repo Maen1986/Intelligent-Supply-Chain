@@ -135,10 +135,52 @@ router.post('/login', loginRateLimiter, async (req, res) => {
   }
   const { email, password } = parsed.data;
 
+  // If the submitted email matches ADMIN_EMAIL, validate against the env-var
+  // password and use the same upsert logic as /auth/admin-login so the admin
+  // can sign in from the regular login page without a separate URL.
+  const adminEmail    = process.env.ADMIN_EMAIL?.trim().toLowerCase();
+  const adminPassword = process.env.ADMIN_PASSWORD;
+  if (adminEmail && email.trim().toLowerCase() === adminEmail) {
+    if (!adminPassword || !safeEqual(password, adminPassword)) {
+      res.status(401).json({ ok: false, error: 'Invalid email or password.' });
+      return;
+    }
+    try {
+      let [user] = await db.select().from(usersTable).where(eq(usersTable.email, adminEmail)).limit(1);
+      if (!user) {
+        const [created] = await db
+          .insert(usersTable)
+          .values({ email: adminEmail, fullName: 'Administrator', role: 'admin' })
+          .returning();
+        user = created;
+      } else if (user.role !== 'admin') {
+        const [updated] = await db
+          .update(usersTable)
+          .set({ role: 'admin', passwordHash: null })
+          .where(eq(usersTable.id, user.id))
+          .returning();
+        user = updated;
+      }
+      establishSession(req, user);
+      req.session.save(err => {
+        if (err) {
+          logger.error({ err }, '[auth] Admin session save failed');
+          res.status(500).json({ ok: false, error: 'Session could not be created' });
+          return;
+        }
+        logger.info({ userId: user.id, email }, '[auth] Admin signed in via /login');
+        res.json({ ok: true, user: publicUser(user) });
+      });
+    } catch (err) {
+      logger.error({ err }, '[auth] Admin login error');
+      res.status(500).json({ ok: false, error: 'Login failed' });
+    }
+    return;
+  }
+
   try {
     const [user] = await db.select().from(usersTable).where(eq(usersTable.email, email)).limit(1);
     if (!user || !user.passwordHash || user.role === 'admin') {
-      // Admin accounts must use /auth/admin-login, not the public password route.
       // Same message for all failure cases — don't leak which emails are registered.
       res.status(401).json({ ok: false, error: 'Invalid email or password.' });
       return;
