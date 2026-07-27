@@ -327,6 +327,34 @@ describe('Login — post-login redirect uses decoded `from` param', () => {
     });
   });
 
+  it('falls back to / on registration when the from param is a protocol-relative URL (//evil.com bypass guard)', async () => {
+    // Same guard must fire on the registration path, not just the sign-in path.
+    mockSearch = 'from=%2F%2Fevil.com%2Fphish';
+    mockRegister.mockResolvedValue(undefined);
+
+    render(<Login />);
+
+    // Default tab is register — fill in all required registration fields
+    fireEvent.change(screen.getByPlaceholderText(/Ahmed Al-Rashid/i), { target: { value: 'Test User' } });
+    const [emailInput] = screen.getAllByPlaceholderText('you@company.com');
+    fireEvent.change(emailInput, { target: { value: 'newuser@test.com' } });
+    const passInputs = document.querySelectorAll('input[type="password"]');
+    fireEvent.change(passInputs[0], { target: { value: 'password123' } });
+    fireEvent.change(screen.getByPlaceholderText(/\+966/i), { target: { value: '+966501234567' } });
+    fireEvent.change(screen.getByPlaceholderText(/Supply Chain Manager/i), { target: { value: 'Manager' } });
+    fireEvent.change(screen.getByPlaceholderText(/Saudi Aramco/i), { target: { value: 'Test Corp' } });
+
+    const createBtn = screen.getByRole('button', { name: /Create Account & Continue/i });
+    fireEvent.click(createBtn);
+
+    await waitFor(() => {
+      expect(mockRegister).toHaveBeenCalled();
+    });
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith('/');
+    });
+  });
+
   it('does not redirect when login fails', async () => {
     mockSearch = 'from=%2Fcommand-center';
     mockLogin.mockRejectedValue(new Error('Invalid credentials'));
