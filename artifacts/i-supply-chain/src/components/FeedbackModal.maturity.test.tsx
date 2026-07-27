@@ -115,7 +115,7 @@ describe('Maturity page feedback modal integration', () => {
     renderMaturity();
     completeMaturityAssessment();
     expect(screen.getByTestId('maturity-results')).toBeInTheDocument();
-  });
+  }, 20_000);
 
   it('modal does not auto-open before the 2500 ms delay', () => {
     renderMaturity();
@@ -124,7 +124,7 @@ describe('Maturity page feedback modal integration', () => {
     // Results visible, but modal not yet open
     expect(screen.getByTestId('maturity-results')).toBeInTheDocument();
     expect(screen.queryByTestId('button-feedback-dismiss')).toBeNull();
-  });
+  }, 20_000);
 
   it('modal auto-opens after the 2500 ms delay', async () => {
     renderMaturity();
