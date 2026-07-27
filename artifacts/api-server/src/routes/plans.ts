@@ -18,7 +18,7 @@ router.use(requireSession);
 
 /* ─── helpers ──────────────────────────────────────────────────────────── */
 
-const TOOL_KEY_RE = /^[a-z][a-z0-9-]{0,31}$/;
+const TOOL_KEY_RE = /^[a-z][a-z0-9-]{0,63}$/;
 
 function validKey(k: unknown): k is string {
   return typeof k === "string" && TOOL_KEY_RE.test(k);

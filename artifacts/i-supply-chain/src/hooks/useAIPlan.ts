@@ -48,20 +48,22 @@ export function useAIPlan(buildPrompt: () => string, isAr: boolean, toolKey?: st
   const [savedPlan,   setSavedPlan]   = useState<SavedPlan | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
-  /* ── Load saved plan on mount / when auth state changes ── */
+  /* ── Load saved plan on mount / when toolKey or auth state changes ── */
   useEffect(() => {
-    if (!toolKey || !isAuthenticated) {
-      setSavedPlan(null);
-      return;
-    }
+    // Always clear stale savedPlan immediately when key or auth changes,
+    // so a previous supplier's plan notice never bleeds into the next.
+    setSavedPlan(null);
+
+    if (!toolKey || !isAuthenticated) return;
 
     let cancelled = false;
     (async () => {
       try {
         const res  = await fetch(`${API_BASE}/plans/${toolKey}`, { credentials: 'include' });
         const data = await res.json() as { ok: boolean; plan?: SavedPlan | null };
-        if (!cancelled && data.ok && data.plan) {
-          setSavedPlan(data.plan);
+        if (!cancelled) {
+          // Explicitly set null when the server has no plan for this key
+          setSavedPlan(data.ok && data.plan ? data.plan : null);
         }
       } catch {
         // Non-fatal — user just won't see a saved plan notice

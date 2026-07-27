@@ -495,7 +495,16 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
 
   const { loading: planLoading, result: planResult, error: planError, rateLimited: planRateLimited, generate: generatePlan, reset: resetPlan,
           savedPlan: planSavedPlan, viewSaved: viewSavedPlan, deleteSaved: deleteSavedPlan } =
-    useAIPlan(buildScorecardPrompt, isAr, 'scorecard');
+    useAIPlan(buildScorecardPrompt, isAr, active?.id ? `scorecard-${active.id}` : undefined);
+
+  // Clear any displayed plan result when the user switches to a different supplier
+  const prevActiveIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (active?.id && prevActiveIdRef.current !== null && prevActiveIdRef.current !== active.id) {
+      resetPlan();
+    }
+    prevActiveIdRef.current = active?.id ?? null;
+  }, [active?.id, resetPlan]);
 
   const setActiveId = (id: string) => save({ ...roster, activeId: id });
 
