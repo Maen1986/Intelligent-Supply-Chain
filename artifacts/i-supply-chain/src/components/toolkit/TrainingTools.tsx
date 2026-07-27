@@ -236,13 +236,14 @@ export function TrainingNeedsAssessment({ isAr }: TrainingToolsProps) {
                 return (
                   <tr key={d.id} className="border-b border-border/50">
                     <td className="py-2 px-2 font-semibold text-primary">{isAr ? d.labelAr : d.label}</td>
-                    {members.map(m => {
+                    {members.map((m, mi) => {
                       const val = scores[m]?.[d.id] ?? 0;
+                      const memberLabel = m.trim() || (isAr ? `عضو ${mi + 1}` : `Member ${mi + 1}`);
                       return (
-                        <td key={m} className="py-2 px-2 text-center">
+                        <td key={mi} className="py-2 px-2 text-center">
                           <select
-                            id={`training-score-${m}-${d.id}`}
-                            aria-label={isAr ? `${m} — ${d.labelAr}` : `${m} — ${d.label}`}
+                            id={`training-score-${mi}-${d.id}`}
+                            aria-label={isAr ? `${memberLabel} — ${d.labelAr}` : `${memberLabel} — ${d.label}`}
                             value={val}
                             onChange={e => setScore(m, d.id, parseInt(e.target.value))}
                             className="w-12 text-center text-xs rounded border border-border py-0.5 focus:outline-none"
