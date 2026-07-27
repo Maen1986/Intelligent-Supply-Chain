@@ -133,6 +133,104 @@ export const KPI_FRAMEWORKS: Record<string, KpiDef[]> = {
   ],
 };
 
+/* ─── KPI template CSV builder (pure, exported for unit tests) ─── */
+/**
+ * Builds the rows for the KPI data-collection CSV template.
+ *
+ * Column layout (7 columns):
+ *   0  KPI ID
+ *   1  Input Field
+ *   2  Your Value
+ *   3  Unit
+ *   4  Target
+ *   5  GCC Benchmark
+ *   6  Status  ← Excel IF formula; uses >= for higherIsBetter, <= otherwise
+ */
+export function buildKpiTemplateRows(
+  kpis: KpiDef[],
+  frameworkLabel: string,
+  today: string,
+): string[][] {
+  const EMPTY7 = ['', '', '', '', '', '', ''];
+
+  const allRows: string[][] = [
+    // Branding / title block
+    ['I Supply Chain — KPI Data Collection Template', '', '', '', '', '', ''],
+    [`Framework: ${frameworkLabel}`, '', '', '', '', '', ''],
+    [`Generated: ${today} | Ma'in Alhaqash MCIPS CPSM | isupplychain.com`, '', '', '', '', '', ''],
+    [...EMPTY7],
+    ['INSTRUCTIONS:', 'Fill in the "Your Value" column (column C) for EVERY input row.', '', '', '', '', ''],
+    ['', 'Do NOT modify KPI ID, Input Field, Unit, or Formula columns.', '', '', '', '', ''],
+    ['', 'When complete, click "Import CSV" in the KPI Dashboard to auto-calculate results.', '', '', '', '', ''],
+    ['', 'Each KPI section shows what raw data to collect and exactly where to find it.', '', '', '', '', ''],
+    [...EMPTY7],
+    // Column headers
+    ['KPI ID', 'Input Field', 'Your Value', 'Unit', 'Target', 'GCC Benchmark', 'Status'],
+  ];
+
+  kpis.forEach(k => {
+    const spec = KPI_DATA_SPECS[k.id];
+    const cmp = k.higherIsBetter ? '>=' : '<=';
+
+    // KPI section header
+    allRows.push([...EMPTY7]);
+    allRows.push([
+      `=== ${k.label.toUpperCase()} ===`,
+      spec ? spec.methodology.substring(0, 120) + (spec.methodology.length > 120 ? '…' : '') : k.description,
+      '', '', '', '', spec ? spec.formula : '',
+    ]);
+
+    if (spec) {
+      // One row per raw input
+      spec.inputs.forEach(inp => {
+        allRows.push([
+          k.id,
+          inp.label,
+          '',                  // ← client fills this
+          inp.unit,
+          inp.dataSource,
+          '',
+          '',
+        ]);
+      });
+      // Notes row
+      if (spec.notes) {
+        allRows.push(['', `📌 Note: ${spec.notes}`, '', '', '', '', '']);
+      }
+      // Calculated result placeholder – Status formula uses the right comparison direction
+      const resultRowNum = allRows.length + 1; // 1-indexed for Excel
+      allRows.push([
+        `${k.id}__result`,
+        `[AUTO-CALCULATED] ${k.label}`,
+        '← calculated on import',
+        k.unit,
+        k.targetLabel,
+        k.benchmarkLabel,
+        `=IF(C${resultRowNum}="","",IF(C${resultRowNum}${cmp}${k.targetValue},"✅ On Target","❌ Below Target"))`,
+      ]);
+    } else {
+      // Fallback: simple direct entry
+      allRows.push([k.id, `Enter your ${k.label} value directly`, '', k.unit, k.targetLabel, k.benchmarkLabel, '']);
+      const resultRowNum = allRows.length + 1;
+      allRows.push([
+        `${k.id}__result`,
+        `[DIRECT ENTRY] ${k.label}`,
+        '',
+        k.unit,
+        k.targetLabel,
+        k.benchmarkLabel,
+        `=IF(C${resultRowNum}="","",IF(C${resultRowNum}${cmp}${k.targetValue},"✅ On Target","❌ Below Target"))`,
+      ]);
+    }
+  });
+
+  // Footer
+  allRows.push([...EMPTY7]);
+  allRows.push(['--- END OF TEMPLATE ---', 'Return the completed file to I Supply Chain or import directly into the KPI Dashboard.', '', '', '', '', '']);
+
+  return allRows;
+}
+
 /* ─── Slug aliases: SolutionDetail slugs that map to a shared KPI framework ─── */
 export const SLUG_ALIAS: Record<string, string> = {
   /** SolutionDetail uses "lean-agile-supply-chain"; the KPI framework lives under "lean-six-sigma" */
@@ -736,75 +834,7 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
     const frameworkLabel = resolvedSlug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
     const today = new Date().toLocaleDateString('en-GB', { year: 'numeric', month: 'long', day: 'numeric' });
 
-    const allRows: string[][] = [
-      // Branding / title block
-      ['I Supply Chain — KPI Data Collection Template', '', '', '', '', ''],
-      [`Framework: ${frameworkLabel}`, '', '', '', '', ''],
-      [`Generated: ${today} | Ma'in Alhaqash MCIPS CPSM | isupplychain.com`, '', '', '', '', ''],
-      ['', '', '', '', '', ''],
-      ['INSTRUCTIONS:', 'Fill in the "Your Value" column (column C) for EVERY input row.', '', '', '', ''],
-      ['', 'Do NOT modify KPI ID, Input Field, Unit, or Formula columns.', '', '', '', ''],
-      ['', 'When complete, click "Import CSV" in the KPI Dashboard to auto-calculate results.', '', '', '', ''],
-      ['', 'Each KPI section shows what raw data to collect and exactly where to find it.', '', '', '', ''],
-      ['', '', '', '', '', ''],
-      // Column headers
-      ['KPI ID', 'Input Field', 'Your Value', 'Unit', 'Data Source / Where to Find This', 'Calculation Formula'],
-    ];
-
-    kpis.forEach(k => {
-      const spec = KPI_DATA_SPECS[k.id];
-
-      // KPI section header
-      allRows.push(['', '', '', '', '', '']);
-      allRows.push([
-        `=== ${k.label.toUpperCase()} ===`,
-        spec ? spec.methodology.substring(0, 120) + (spec.methodology.length > 120 ? '…' : '') : k.description,
-        '', '', '', spec ? spec.formula : '',
-      ]);
-
-      if (spec) {
-        // One row per raw input
-        spec.inputs.forEach(inp => {
-          allRows.push([
-            k.id,
-            inp.label,
-            '',                        // ← client fills this
-            inp.unit,
-            inp.dataSource,
-            '',
-          ]);
-        });
-        // Notes row
-        if (spec.notes) {
-          allRows.push(['', `📌 Note: ${spec.notes}`, '', '', '', '']);
-        }
-        // Calculated result placeholder
-        allRows.push([
-          `${k.id}__result`,
-          `[AUTO-CALCULATED] ${k.label}`,
-          '← calculated on import',
-          k.unit,
-          `Target: ${k.targetLabel} | GCC Benchmark: ${k.benchmarkLabel}`,
-          spec.formula,
-        ]);
-      } else {
-        // Fallback for KPIs without a spec: simple direct entry
-        allRows.push([k.id, `Enter your ${k.label} value directly`, '', k.unit, k.description, '']);
-        allRows.push([
-          `${k.id}__result`,
-          `[DIRECT ENTRY] ${k.label}`,
-          '',
-          k.unit,
-          `Target: ${k.targetLabel} | Benchmark: ${k.benchmarkLabel}`,
-          'Direct value — no raw inputs required',
-        ]);
-      }
-    });
-
-    // Footer
-    allRows.push(['', '', '', '', '', '']);
-    allRows.push(['--- END OF TEMPLATE ---', 'Return the completed file to I Supply Chain or import directly into the KPI Dashboard.', '', '', '', '']);
-
+    const allRows = buildKpiTemplateRows(kpis, frameworkLabel, today);
     downloadCsv(allRows, `ISC-KPI-Data-Collection-${resolvedSlug}-${today.replace(/\s/g, '-')}.csv`);
   };
 
