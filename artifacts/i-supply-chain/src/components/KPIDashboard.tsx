@@ -11,6 +11,7 @@ import { useAIPlan } from '@/hooks/useAIPlan';
 import { AIPlanPanel } from '@/components/AIPlanPanel';
 import { useAuth } from '@/lib/AuthContext';
 import { KPI_DATA_SPECS } from '@/lib/kpiDataSpecs';
+import { INDUSTRIES, type IndustryKey, getIndustryBenchmark } from '@/lib/kpiBenchmarksByIndustry';
 
 /* ─── KPI definition types ─── */
 interface KpiDef {
@@ -592,6 +593,26 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
   const [saveFailed, setSaveFailed] = useState(false);
   const [expandedKpi, setExpandedKpi] = useState<string | null>(null);
 
+  /* ── Industry benchmark selection ── */
+  const industryStorageKey = 'isc-kpi-industry';
+  const [selectedIndustry, setSelectedIndustry] = useState<IndustryKey | null>(() => {
+    try { return (localStorage.getItem(industryStorageKey) as IndustryKey) || null; } catch { return null; }
+  });
+  const handleIndustryChange = useCallback((key: IndustryKey | null) => {
+    setSelectedIndustry(key);
+    try {
+      if (key) localStorage.setItem(industryStorageKey, key);
+      else localStorage.removeItem(industryStorageKey);
+    } catch {}
+  }, []);
+
+  /** Returns a patched KpiDef with industry-specific benchmark substituted in where available */
+  const withIndustryBenchmark = useCallback((kpi: KpiDef): KpiDef => {
+    const ib = getIndustryBenchmark(kpi.id, selectedIndustry);
+    if (!ib) return kpi;
+    return { ...kpi, benchmarkValue: ib.value, benchmarkLabel: ib.label, benchmarkLabelAr: ib.labelAr };
+  }, [selectedIndustry]);
+
   const bannerDismissKey = `isc-kpi-banner-dismissed-${resolvedSlug}`;
   const [bannerDismissed, setBannerDismissed] = useState<boolean>(() => {
     try { return localStorage.getItem(`isc-kpi-banner-dismissed-${resolvedSlug}`) === '1'; } catch { return false; }
@@ -604,39 +625,48 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
   /* ── AI Plan (hook must be called before the !kpis early return) ── */
   const buildKpiPrompt = useCallback((): string => {
     if (!kpis) return '';
+    const industryMeta = selectedIndustry ? INDUSTRIES.find(i => i.id === selectedIndustry) : null;
     const kpiLines = kpis.map(k => {
+      const ek = withIndustryBenchmark(k);
       const raw = parseFloat(values[k.id] ?? '');
       if (isNaN(raw)) return null;
-      const score = k.higherIsBetter
-        ? Math.min(100, Math.round((raw / k.targetValue) * 100))
-        : raw > 0 ? Math.min(100, Math.round((k.targetValue / raw) * 100)) : 0;
-      const status = score >= 70 ? '🟢 GREEN' : score >= 40 ? '🟡 AMBER' : '🔴 RED';
-      return `- **${k.label}**: actual ${raw} ${k.unit} vs target ${k.targetLabel} (benchmark: ${k.benchmarkLabel}) → ${status}`;
+      const score = ek.higherIsBetter
+        ? Math.min(100, Math.round((raw / ek.targetValue) * 100))
+        : raw > 0 ? Math.min(100, Math.round((ek.targetValue / raw) * 100)) : 0;
+      const tier = score >= 95 ? 'WORLD CLASS' : score >= 80 ? 'BEST-IN-GCC' : score >= 65 ? 'COMPETITIVE' : score >= 50 ? 'DEVELOPING' : score >= 35 ? 'NEEDS ATTENTION' : 'CRITICAL GAP';
+      const bLabel = industryMeta ? `${ek.benchmarkLabel} (${industryMeta.label} sector median)` : `${ek.benchmarkLabel} (GCC general median)`;
+      return `- **${k.label}**: ${raw} ${k.unit} vs target ${k.targetLabel} | peer benchmark: ${bLabel} → ${tier}`;
     }).filter(Boolean).join('\n');
     const entered = kpis.filter(k => !isNaN(parseFloat(values[k.id] ?? ''))).length;
     const rawScores = kpis.map(k => {
+      const ek = withIndustryBenchmark(k);
       const raw = parseFloat(values[k.id] ?? '');
       if (isNaN(raw)) return null;
-      return k.higherIsBetter
-        ? Math.min(100, Math.round((raw / k.targetValue) * 100))
-        : raw > 0 ? Math.min(100, Math.round((k.targetValue / raw) * 100)) : 0;
+      return ek.higherIsBetter
+        ? Math.min(100, Math.round((raw / ek.targetValue) * 100))
+        : raw > 0 ? Math.min(100, Math.round((ek.targetValue / raw) * 100)) : 0;
     }).filter((v): v is number => v !== null);
     const overallScore = rawScores.length > 0 ? Math.round(rawScores.reduce((a, b) => a + b, 0) / rawScores.length) : 0;
+    const industryContext = industryMeta
+      ? `Industry context: ${industryMeta.label} sector in the GCC. All benchmarks are ${industryMeta.label}-specific peer medians — weight your analysis accordingly.`
+      : 'Industry context: General GCC cross-sector benchmarks used.';
     return [
       `## KPI Performance Brief — Framework: ${resolvedSlug}`,
       `Health Score: ${overallScore}/100 | KPIs entered: ${entered} of ${kpis.length}`,
+      industryContext,
       '',
-      '## KPI Status',
+      '## KPI Status (6-tier: World Class / Best-in-GCC / Competitive / Developing / Needs Attention / Critical Gap)',
       kpiLines || '(no KPI values entered)',
       '',
       '## Your Task',
-      'Generate a 3–5 paragraph executive performance brief:',
-      '1. Lead with an overall health score narrative (what the number means for the business)',
-      '2. Call out the specific RED and AMBER KPIs by name with their actual values vs targets',
-      '3. For each RED KPI: one root-cause hypothesis and one recommended corrective action',
+      `Generate a 3–5 paragraph executive performance brief for a ${industryMeta?.label ?? 'GCC'} supply chain organisation:`,
+      '1. Lead with an overall health score narrative calibrated to this industry — what the number means competitively',
+      '2. Call out CRITICAL GAP and NEEDS ATTENTION KPIs by name with actual vs target and the industry peer gap',
+      '3. For each underperforming KPI: one root-cause hypothesis specific to this sector, one corrective action',
       '4. Close with a prioritised 30-day action list (label each item [HIGH], [MEDIUM], or [LOW])',
+      '5. Where relevant, reference GCC Vision 2030 supply chain priorities (Iktva, localisation, digital transformation)',
     ].join('\n');
-  }, [kpis, values, resolvedSlug]);
+  }, [kpis, values, resolvedSlug, selectedIndustry, withIndustryBenchmark]);
 
   // Compute hasAnyValue here (before hook) so canGenerate can be passed to useAIPlan
   const hasAnyValue = !!kpis && kpis.some(k => !isNaN(parseFloat(values[k.id] ?? '')));
@@ -856,8 +886,9 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
   }
 
   const scores = kpis.map(k => {
+    const ek = withIndustryBenchmark(k);
     const raw = parseFloat(values[k.id] ?? '');
-    return { kpi: k, score: isNaN(raw) ? null as number | null : scoreKpi(k, raw), value: raw };
+    return { kpi: ek, score: isNaN(raw) ? null as number | null : scoreKpi(ek, raw), value: raw };
   });
 
   const scoredKpis = scores.filter(s => s.score !== null);
@@ -868,7 +899,7 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
   /* scored entries used by Performance Intelligence */
   const piScores = scores.filter(s => s.score !== null) as { kpi: KpiDef; score: number; value: number }[];
 
-  /* bar chart data */
+  /* bar chart data — uses industry-resolved benchmark via ek stored in scores */
   const barData = scores.map(s => ({
     name: isAr ? s.kpi.labelAr : s.kpi.label,
     nameShort: (isAr ? s.kpi.labelAr : s.kpi.label).substring(0, 18) + ((isAr ? s.kpi.labelAr : s.kpi.label).length > 18 ? '…' : ''),
@@ -932,6 +963,58 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
             </div>
           </div>
         )}
+      </div>
+
+      {/* Industry benchmark selector */}
+      <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+        <div className="flex items-start gap-3 flex-wrap">
+          <div className="shrink-0 pt-0.5">
+            <p className="text-[11px] font-bold text-primary uppercase tracking-wider">
+              {isAr ? 'المقارنة القطاعية' : 'Industry Benchmark'}
+            </p>
+            <p className="text-[10px] text-muted-foreground mt-0.5 whitespace-nowrap">
+              {isAr ? 'اختر قطاعك للمقارنة الدقيقة' : 'Select your sector for peer comparison'}
+            </p>
+          </div>
+          <div className="flex items-center gap-1.5 flex-wrap flex-1">
+            <button
+              onClick={() => handleIndustryChange(null)}
+              className="text-[10px] font-semibold px-2.5 py-1 rounded-full border transition-all whitespace-nowrap"
+              style={!selectedIndustry ? {
+                background: '#082C6B', color: '#fff', borderColor: '#082C6B',
+              } : {
+                background: '#fff', color: '#6b7280', borderColor: '#e5e7eb',
+              }}
+            >
+              {isAr ? '🌍 عام' : '🌍 General GCC'}
+            </button>
+            {INDUSTRIES.map(ind => (
+              <button
+                key={ind.id}
+                onClick={() => handleIndustryChange(ind.id)}
+                title={ind.description}
+                className="text-[10px] font-semibold px-2.5 py-1 rounded-full border transition-all whitespace-nowrap"
+                style={selectedIndustry === ind.id ? {
+                  background: '#082C6B', color: '#fff', borderColor: '#082C6B',
+                } : {
+                  background: '#fff', color: '#6b7280', borderColor: '#e5e7eb',
+                }}
+              >
+                {ind.icon} {isAr ? ind.labelAr : ind.label}
+              </button>
+            ))}
+          </div>
+          {selectedIndustry && (
+            <div className="shrink-0 pt-0.5">
+              <p className="text-[10px] text-emerald-700 font-semibold flex items-center gap-1">
+                <span>✓</span>
+                {isAr
+                  ? `المعايير مُعدَّلة لـ ${INDUSTRIES.find(i => i.id === selectedIndustry)?.labelAr}`
+                  : `Benchmarks calibrated for ${INDUSTRIES.find(i => i.id === selectedIndustry)?.label}`}
+              </p>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Data-collection guidance banner — shown once per framework until dismissed or values are entered */}
