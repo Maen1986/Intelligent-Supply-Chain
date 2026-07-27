@@ -17,7 +17,10 @@ import { parseCsvFile } from '@/lib/importCsv';
 import { DIMS, SUB_INDICATORS, hasCaseInsensitiveDuplicate } from '../SupplierScorecard';
 import {
   buildScorecardCsvString,
+  calcWeightedScore,
+  getTier,
   parseSubScoresFromRow,
+  type ScorecardConfig,
   type SupplierRecord,
 } from '@/lib/scorecardCsv';
 
@@ -1221,5 +1224,173 @@ describe('Scorecard CSV — new-supplier tier default when "Current Tier" is abs
     const added = nextSuppliers.find(s => s.name === 'Another New Supplier')!;
     expect(added).toBeDefined();
     expect(added.tier).toBe('Strategic');
+  });
+});
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Suite 9 — Weighted Score and Calculated Tier columns in the CSV export
+
+   Verifies that buildScorecardCsvString, when called WITH a ScorecardConfig,
+   produces non-blank Weighted Score and Calculated Tier cells that match the
+   output of calcWeightedScore / getTier — closing the gap that previously
+   left those columns blank in every round-trip test.
+══════════════════════════════════════════════════════════════════════════ */
+
+/**
+ * Config that mirrors the application's built-in default weights and tier
+ * thresholds, so test assertions are stable and independent of any UI state.
+ */
+const DEFAULT_CONFIG: ScorecardConfig = {
+  weights: {
+    delivery:     25,
+    quality:      25,
+    cost:         20,
+    compliance:   15,
+    innovation:   10,
+    relationship:  5,
+  },
+  tiers: { strategic: 75, preferred: 55 },
+};
+
+describe('Scorecard CSV — weighted score and calculated tier columns', () => {
+  beforeEach(() => localStorage.clear());
+
+  it('Weighted Score column is non-blank when a config is supplied', () => {
+    const csv = buildScorecardCsvString([FULL_SUPPLIER], DEFAULT_CONFIG);
+    const { rows } = parseCsvFile(csv, ['Supplier Name']);
+    expect(rows[0]['Weighted Score (/100)']).not.toBe('');
+  });
+
+  it('Calculated Tier column is non-blank when a config is supplied', () => {
+    const csv = buildScorecardCsvString([FULL_SUPPLIER], DEFAULT_CONFIG);
+    const { rows } = parseCsvFile(csv, ['Supplier Name']);
+    expect(rows[0]['Calculated Tier']).not.toBe('');
+  });
+
+  it('Weighted Score cell matches the value returned by calcWeightedScore', () => {
+    const expectedScore = calcWeightedScore(FULL_SUPPLIER.subScores, DEFAULT_CONFIG);
+    expect(expectedScore).not.toBeNull();
+
+    const csv = buildScorecardCsvString([FULL_SUPPLIER], DEFAULT_CONFIG);
+    const { rows } = parseCsvFile(csv, ['Supplier Name']);
+    expect(rows[0]['Weighted Score (/100)']).toBe(String(expectedScore));
+  });
+
+  it('Calculated Tier cell matches the label returned by getTier', () => {
+    const score = calcWeightedScore(FULL_SUPPLIER.subScores, DEFAULT_CONFIG)!;
+    const expectedTier = getTier(score, DEFAULT_CONFIG).label;
+
+    const csv = buildScorecardCsvString([FULL_SUPPLIER], DEFAULT_CONFIG);
+    const { rows } = parseCsvFile(csv, ['Supplier Name']);
+    expect(rows[0]['Calculated Tier']).toBe(expectedTier);
+  });
+
+  it('Weighted Score cell equals 80 for FULL_SUPPLIER with default config', () => {
+    // Computed value is pinned so any future drift in calcWeightedScore or
+    // the sub-indicator averages is caught immediately by this assertion.
+    //
+    // Dim averages (Math.round of sub-indicator mean):
+    //   delivery:     (92+85+78+70)/4 = 81.25 → 81
+    //   quality:      (88+91+95+80)/4 = 88.5  → 89  (JS rounds .5 up)
+    //   cost:         (65+97+50+72)/4 = 71     → 71
+    //   compliance:   (100+74+89+83)/4 = 86.5  → 87
+    //   innovation:   (60+45+77)/3    = 60.67  → 61
+    //   relationship: (90+82+68)/3    = 80     → 80
+    //
+    // Weighted sum = (81×25 + 89×25 + 71×20 + 87×15 + 61×10 + 80×5) / 100
+    //             = 7985 / 100 = 79.85 → Math.round → 80
+    const csv = buildScorecardCsvString([FULL_SUPPLIER], DEFAULT_CONFIG);
+    const { rows } = parseCsvFile(csv, ['Supplier Name']);
+    expect(rows[0]['Weighted Score (/100)']).toBe('80');
+  });
+
+  it('Calculated Tier cell equals "Strategic" for FULL_SUPPLIER with default config', () => {
+    // Score 80 ≥ strategic threshold (75) → 'Strategic'
+    const csv = buildScorecardCsvString([FULL_SUPPLIER], DEFAULT_CONFIG);
+    const { rows } = parseCsvFile(csv, ['Supplier Name']);
+    expect(rows[0]['Calculated Tier']).toBe('Strategic');
+  });
+
+  it('Weighted Score and Calculated Tier are blank when no config is supplied', () => {
+    // Existing behaviour: omitting config leaves both computed columns empty.
+    // This guards against accidentally breaking the no-config path.
+    const csv = buildScorecardCsvString([FULL_SUPPLIER]);
+    const { rows } = parseCsvFile(csv, ['Supplier Name']);
+    expect(rows[0]['Weighted Score (/100)']).toBe('');
+    expect(rows[0]['Calculated Tier']).toBe('');
+  });
+
+  it('correctly populates both columns for a partially-scored supplier', () => {
+    // Only delivery is scored — calcWeightedScore returns null (some dims missing) → blank cells.
+    const partial: SupplierRecord = {
+      id: 'sup-partial-ws',
+      name: 'Partial WS',
+      tier: 'Preferred',
+      subScores: {
+        delivery: { otif: '80', lead_time: '70', fill_rate: '60', expedite: '50' },
+        // quality, cost, compliance, innovation, relationship intentionally absent
+      },
+    };
+    const csv = buildScorecardCsvString([partial], DEFAULT_CONFIG);
+    const { rows } = parseCsvFile(csv, ['Supplier Name']);
+    // calcWeightedScore returns null when any dimension has no scores → both cells blank
+    expect(rows[0]['Weighted Score (/100)']).toBe('');
+    expect(rows[0]['Calculated Tier']).toBe('');
+  });
+
+  it('Weighted Score and Calculated Tier are correct for a Preferred-tier supplier', () => {
+    // Construct a supplier whose weighted score falls in the Preferred band (55–74).
+    const preferredSupplier: SupplierRecord = {
+      id: 'sup-preferred',
+      name: 'Preferred Supplier',
+      tier: 'Preferred',
+      subScores: {
+        delivery:     { otif: '60', lead_time: '60', fill_rate: '60', expedite: '60' },
+        quality:      { defect: '60', ftr: '60', cert: '60', nonconf: '60' },
+        cost:         { savings: '60', invoice: '60', cost_reduction: '60', tco: '60' },
+        compliance:   { regulatory: '60', esg: '60', docs: '60', ethics: '60' },
+        innovation:   { ideas: '60', implemented: '60', tech: '60' },
+        relationship: { responsiveness: '60', resolution: '60', collaboration: '60' },
+      },
+    };
+    // All dim averages = 60, weighted score = Math.round(60/100 * 100/100 * 100) = 60
+    const expectedScore = calcWeightedScore(preferredSupplier.subScores, DEFAULT_CONFIG)!;
+    const expectedTier  = getTier(expectedScore, DEFAULT_CONFIG).label;
+
+    const csv = buildScorecardCsvString([preferredSupplier], DEFAULT_CONFIG);
+    const { rows } = parseCsvFile(csv, ['Supplier Name']);
+    expect(rows[0]['Weighted Score (/100)']).toBe(String(expectedScore));
+    expect(rows[0]['Calculated Tier']).toBe(expectedTier);
+    expect(rows[0]['Calculated Tier']).toBe('Preferred');
+  });
+
+  it('populates both columns for every supplier in a multi-supplier export', () => {
+    const supplier2: SupplierRecord = {
+      id: 'sup-multi-2',
+      name: 'Full Supplier 2',
+      tier: 'Transactional',
+      subScores: {
+        delivery:     { otif: '40', lead_time: '40', fill_rate: '40', expedite: '40' },
+        quality:      { defect: '40', ftr: '40', cert: '40', nonconf: '40' },
+        cost:         { savings: '40', invoice: '40', cost_reduction: '40', tco: '40' },
+        compliance:   { regulatory: '40', esg: '40', docs: '40', ethics: '40' },
+        innovation:   { ideas: '40', implemented: '40', tech: '40' },
+        relationship: { responsiveness: '40', resolution: '40', collaboration: '40' },
+      },
+    };
+
+    const csv = buildScorecardCsvString([FULL_SUPPLIER, supplier2], DEFAULT_CONFIG);
+    const { rows } = parseCsvFile(csv, ['Supplier Name']);
+    expect(rows).toHaveLength(2);
+
+    // First supplier
+    expect(rows[0]['Weighted Score (/100)']).toBe('80');
+    expect(rows[0]['Calculated Tier']).toBe('Strategic');
+
+    // Second supplier — all dims = 40, weighted score = 40, tier = Transactional
+    const score2 = calcWeightedScore(supplier2.subScores, DEFAULT_CONFIG)!;
+    expect(rows[1]['Weighted Score (/100)']).toBe(String(score2));
+    expect(rows[1]['Calculated Tier']).toBe(getTier(score2, DEFAULT_CONFIG).label);
+    expect(rows[1]['Calculated Tier']).toBe('Transactional');
   });
 });
