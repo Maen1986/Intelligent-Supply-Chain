@@ -111,7 +111,7 @@ export function hasCaseInsensitiveDuplicate(
   return suppliers.some(s => s.id !== excludeId && s.name.toLowerCase() === needle);
 }
 
-function loadRoster(): RosterState {
+export function loadRoster(): RosterState {
   try {
     const raw = localStorage.getItem(ROSTER_KEY);
     if (raw) {
