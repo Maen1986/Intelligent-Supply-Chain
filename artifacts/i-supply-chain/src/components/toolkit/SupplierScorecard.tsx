@@ -207,6 +207,7 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
         setSyncStatus('idle');
         const freshRoster = loadRoster();
         setRoster(freshRoster);
+        setConfig(loadConfig());
       }
       return;
     }
@@ -216,23 +217,51 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
 
     (async () => {
       try {
-        const res = await fetch(`${API_BASE}/scorecard-roster`, { credentials: 'include' });
-        if (!res.ok) return;
-        const data = await res.json() as { ok: boolean; roster: RosterState | null };
-        if (data.ok && data.roster && Array.isArray(data.roster.suppliers) && data.roster.suppliers.length > 0) {
-          // Server has data — use it as source of truth for this account
-          setRoster(data.roster);
-          safeSetItem(ROSTER_KEY, JSON.stringify(data.roster));
-        } else {
-          // Server is empty — upload whatever localStorage has as initial value
-          const localRaw = localStorage.getItem(ROSTER_KEY);
-          if (localRaw) {
-            fetch(`${API_BASE}/scorecard-roster`, {
-              method: 'PUT',
-              credentials: 'include',
-              headers: { 'Content-Type': 'application/json' },
-              body: localRaw,
-            }).catch(() => { /* silent — localStorage is still the fallback */ });
+        // Bootstrap roster and config in parallel
+        const [rosterRes, configRes] = await Promise.all([
+          fetch(`${API_BASE}/scorecard-roster`, { credentials: 'include' }),
+          fetch(`${API_BASE}/scorecard-config`, { credentials: 'include' }),
+        ]);
+
+        // ── Roster ──
+        if (rosterRes.ok) {
+          const data = await rosterRes.json() as { ok: boolean; roster: RosterState | null };
+          if (data.ok && data.roster && Array.isArray(data.roster.suppliers) && data.roster.suppliers.length > 0) {
+            // Server has data — use it as source of truth for this account
+            setRoster(data.roster);
+            safeSetItem(ROSTER_KEY, JSON.stringify(data.roster));
+          } else {
+            // Server is empty — upload whatever localStorage has as initial value
+            const localRaw = localStorage.getItem(ROSTER_KEY);
+            if (localRaw) {
+              fetch(`${API_BASE}/scorecard-roster`, {
+                method: 'PUT',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: localRaw,
+              }).catch(() => { /* silent — localStorage is still the fallback */ });
+            }
+          }
+        }
+
+        // ── Config ──
+        if (configRes.ok) {
+          const cfgData = await configRes.json() as { ok: boolean; config: ScorecardConfig | null };
+          if (cfgData.ok && cfgData.config?.weights && cfgData.config?.tiers) {
+            // Server has config — use it as source of truth for this account
+            setConfig(cfgData.config);
+            safeSetItem(CONFIG_KEY, JSON.stringify(cfgData.config));
+          } else {
+            // Server is empty — upload whatever localStorage has as initial value
+            const localCfgRaw = localStorage.getItem(CONFIG_KEY);
+            if (localCfgRaw) {
+              fetch(`${API_BASE}/scorecard-config`, {
+                method: 'PUT',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: localCfgRaw,
+              }).catch(() => { /* silent — localStorage is still the fallback */ });
+            }
           }
         }
       } catch { /* network error — localStorage still works */ }
@@ -353,6 +382,14 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
   const saveConfig = (next: ScorecardConfig) => {
     setConfig(next);
     safeSetItem(CONFIG_KEY, JSON.stringify(next));
+    if (user) {
+      fetch(`${API_BASE}/scorecard-config`, {
+        method: 'PUT',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(next),
+      }).catch(() => { /* silent — localStorage is still the fallback */ });
+    }
   };
 
   const resetConfig = () => saveConfig({ weights: { ...DEFAULT_CONFIG.weights }, tiers: { ...DEFAULT_CONFIG.tiers } });
