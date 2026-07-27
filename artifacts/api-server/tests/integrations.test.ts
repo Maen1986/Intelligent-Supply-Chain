@@ -452,3 +452,75 @@ describe('POST /api/integrations/webhooks/:id/test', () => {
     expect(res.body.result.success).toBe(true);
   });
 });
+
+/* ─── Post-logout access controls (Task 171) ────────────────────────────── */
+//
+// These tests confirm that once a session is destroyed (simulated by making
+// requests with no session at all), the Integration Hub management endpoints
+// and the v1 data endpoints both return 401 — i.e. there is no stale-session
+// or cookie misconfiguration that could expose them after sign-out.
+
+describe('Post-logout: /api/integrations/keys returns 401', () => {
+  it('GET /api/integrations/keys — no session (post-logout) → 401', async () => {
+    const { default: intRouter } = await import('../src/routes/integrations');
+    // makeApp with no session object simulates a destroyed / expired session
+    const app = makeApp('/api/integrations', intRouter);
+    const res = await request(app).get('/api/integrations/keys');
+    expect(res.status).toBe(401);
+    expect(res.body.ok).toBe(false);
+  });
+
+  it('POST /api/integrations/keys — no session (post-logout) → 401', async () => {
+    const { default: intRouter } = await import('../src/routes/integrations');
+    const app = makeApp('/api/integrations', intRouter);
+    const res = await request(app).post('/api/integrations/keys').send({ nameLabel: 'Leaked key' });
+    expect(res.status).toBe(401);
+    expect(res.body.ok).toBe(false);
+  });
+
+  it('GET /api/integrations/webhooks — no session (post-logout) → 401', async () => {
+    const { default: intRouter } = await import('../src/routes/integrations');
+    const app = makeApp('/api/integrations', intRouter);
+    const res = await request(app).get('/api/integrations/webhooks');
+    expect(res.status).toBe(401);
+    expect(res.body.ok).toBe(false);
+  });
+
+  it('GET /api/integrations/activity — no session (post-logout) → 401', async () => {
+    const { default: intRouter } = await import('../src/routes/integrations');
+    const app = makeApp('/api/integrations', intRouter);
+    const res = await request(app).get('/api/integrations/activity');
+    expect(res.status).toBe(401);
+    expect(res.body.ok).toBe(false);
+  });
+});
+
+describe('Post-logout: /api/v1/* returns 401 without Bearer token', () => {
+  beforeEach(() => { apiKeyRows = []; });
+
+  it('GET /api/v1/suppliers — no session, no Bearer (post-logout) → 401', async () => {
+    const { default: v1Router } = await import('../src/routes/v1');
+    const app = makeApp('/api/v1', v1Router);   // no session, no auth header
+    const res = await request(app).get('/api/v1/suppliers');
+    expect(res.status).toBe(401);
+    expect(res.body.ok).toBe(false);
+  });
+
+  it('GET /api/v1/kpis — no session, no Bearer (post-logout) → 401', async () => {
+    const { default: v1Router } = await import('../src/routes/v1');
+    const app = makeApp('/api/v1', v1Router);
+    const res = await request(app).get('/api/v1/kpis');
+    expect(res.status).toBe(401);
+    expect(res.body.ok).toBe(false);
+  });
+
+  it('POST /api/v1/suppliers/import — no session, no Bearer (post-logout) → 401', async () => {
+    const { default: v1Router } = await import('../src/routes/v1');
+    const app = makeApp('/api/v1', v1Router);
+    const res = await request(app)
+      .post('/api/v1/suppliers/import')
+      .send({ suppliers: [{ id: 's1', name: 'ACME' }] });
+    expect(res.status).toBe(401);
+    expect(res.body.ok).toBe(false);
+  });
+});
