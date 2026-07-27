@@ -86,15 +86,18 @@ export function useAIPlan(
     const wasAuthenticated = prevAuthRef.current;
     prevAuthRef.current = isAuthenticated;
 
-    if (isAuthenticated && !wasAuthenticated && toolKey && canGenerate) {
+    if (isAuthenticated && !wasAuthenticated && toolKey) {
       const flagKey = `pendingAIPlan_${toolKey}`;
       if (sessionStorage.getItem(flagKey) === '1') {
-        // Remove the flag now to prevent re-consumption, but do NOT call generate()
-        // yet — we don't know whether the user already has a saved plan. Effect C
-        // will call generate() only after the GET /plans/:toolKey fetch confirms
-        // there is no existing plan.
+        // Always remove the flag on login to prevent it lingering when canGenerate
+        // is false (e.g. the form is still empty). Only defer a generate() call
+        // when canGenerate is true — Effect C will fire it after the saved-plan
+        // fetch confirms there is no existing plan.
         sessionStorage.removeItem(flagKey);
-        pendingFlagConsumed.current = true;
+        if (canGenerate) {
+          pendingFlagConsumed.current = true;
+        }
+        // If !canGenerate: flag is discarded, generate() is NOT called.
       }
     } else {
       // Auth didn't just transition false→true (e.g. toolKey or canGenerate changed

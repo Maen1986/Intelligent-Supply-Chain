@@ -88,6 +88,7 @@ beforeEach(() => {
 afterEach(() => {
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
+  sessionStorage.clear();
 });
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -395,5 +396,122 @@ describe('useAIPlan persistence — unauthenticated ephemeral flow', () => {
     await act(async () => { rerender({ authed: true }); });
     await waitFor(() => expect(result.current.savedPlan).not.toBeNull());
     expect(result.current.savedPlan?.text).toBe(PLAN_TEXT);
+  });
+});
+
+/* ══════════════════════════════════════════════════════════════════════════
+   6. pendingAIPlan_<toolKey> flag — canGenerate gate
+   When the user returns after a redirect-to-login the flag may already be
+   in sessionStorage. If the form is still empty (canGenerate=false) the
+   flag must be silently discarded — generate() must NOT fire. If the form
+   is filled (canGenerate=true) the flag is consumed and generate() runs.
+══════════════════════════════════════════════════════════════════════════ */
+describe('useAIPlan persistence — pending flag + canGenerate gate', () => {
+  beforeEach(() => {
+    sessionStorage.clear();
+  });
+
+  it('removes the flag without calling generate() when canGenerate=false on login', async () => {
+    mockIsAuthenticated.value = false;
+    sessionStorage.setItem(`pendingAIPlan_${TOOL_KEY}`, '1');
+
+    // GET /plans returns no saved plan; /ai/plan should NOT be called
+    const fetchMock = vi.fn().mockImplementation((url: string) => {
+      if (url.includes(`/plans/${TOOL_KEY}`)) {
+        return Promise.resolve({ ok: true, json: async () => ({ ok: true, plan: null }) });
+      }
+      return Promise.resolve({ ok: true, json: async () => ({ ok: true }) });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { rerender } = renderHook(
+      ({ authed, canGenerate }: { authed: boolean; canGenerate: boolean }) => {
+        mockIsAuthenticated.value = authed;
+        return useAIPlan(() => 'prompt', false, TOOL_KEY, canGenerate);
+      },
+      { initialProps: { authed: false, canGenerate: false } },
+    );
+
+    await act(async () => { await new Promise(r => setTimeout(r, 10)); });
+
+    // Simulate sign-in with an empty form (canGenerate still false)
+    await act(async () => { rerender({ authed: true, canGenerate: false }); });
+    await act(async () => { await new Promise(r => setTimeout(r, 30)); });
+
+    // Flag must be gone — no stale entry left in sessionStorage
+    expect(sessionStorage.getItem(`pendingAIPlan_${TOOL_KEY}`)).toBeNull();
+
+    // generate() must NOT have been called
+    const aiPlanCall = fetchMock.mock.calls.find(
+      ([url, opts]: [string, RequestInit]) =>
+        url.includes('/ai/plan') && opts?.method === 'POST',
+    );
+    expect(aiPlanCall).toBeUndefined();
+  });
+
+  it('flag is gone immediately after sign-in regardless of the subsequent fetch result', async () => {
+    mockIsAuthenticated.value = false;
+    sessionStorage.setItem(`pendingAIPlan_${TOOL_KEY}`, '1');
+
+    // Deliberately slow GET so we can check the flag removal timing
+    let resolveGet!: () => void;
+    const fetchMock = vi.fn().mockImplementation((url: string) => {
+      if (url.includes(`/plans/${TOOL_KEY}`)) {
+        return new Promise<Response>((res) => {
+          resolveGet = () =>
+            res({ ok: true, json: async () => ({ ok: true, plan: null }) } as Response);
+        });
+      }
+      return Promise.resolve({ ok: true, json: async () => ({ ok: true }) } as Response);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { rerender } = renderHook(
+      ({ authed, canGenerate }: { authed: boolean; canGenerate: boolean }) => {
+        mockIsAuthenticated.value = authed;
+        return useAIPlan(() => 'prompt', false, TOOL_KEY, canGenerate);
+      },
+      { initialProps: { authed: false, canGenerate: false } },
+    );
+
+    await act(async () => { rerender({ authed: true, canGenerate: false }); });
+
+    // Flag removed before the GET even resolves
+    expect(sessionStorage.getItem(`pendingAIPlan_${TOOL_KEY}`)).toBeNull();
+
+    // Let the GET finish cleanly
+    await act(async () => { resolveGet(); await new Promise(r => setTimeout(r, 10)); });
+  });
+
+  it('removes the flag and calls generate() when canGenerate=true and no saved plan exists', async () => {
+    mockIsAuthenticated.value = false;
+    sessionStorage.setItem(`pendingAIPlan_${TOOL_KEY}`, '1');
+
+    const fetchMock = stubFullFlow(PLAN_TEXT);
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { result, rerender } = renderHook(
+      ({ authed, canGenerate }: { authed: boolean; canGenerate: boolean }) => {
+        mockIsAuthenticated.value = authed;
+        return useAIPlan(() => 'prompt', false, TOOL_KEY, canGenerate);
+      },
+      { initialProps: { authed: false, canGenerate: true } },
+    );
+
+    await act(async () => { await new Promise(r => setTimeout(r, 10)); });
+
+    // Simulate sign-in with a filled form (canGenerate=true)
+    await act(async () => { rerender({ authed: true, canGenerate: true }); });
+    await waitFor(() => expect(result.current.result).toBe(PLAN_TEXT));
+
+    // Flag consumed — must be gone
+    expect(sessionStorage.getItem(`pendingAIPlan_${TOOL_KEY}`)).toBeNull();
+
+    // generate() must have been called
+    const aiPlanCall = fetchMock.mock.calls.find(
+      ([url, opts]: [string, RequestInit]) =>
+        url.includes('/ai/plan') && opts?.method === 'POST',
+    );
+    expect(aiPlanCall).toBeDefined();
   });
 });
