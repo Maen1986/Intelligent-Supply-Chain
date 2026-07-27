@@ -73,7 +73,7 @@ describe('KRIDashboard — Generate button', () => {
 
   /** Navigate to the AI Risk Brief tab inside RiskToolsSection */
   function goToAiTab() {
-    fireEvent.click(screen.getByRole('button', { name: /AI Risk Brief/i }));
+    fireEvent.click(screen.getByRole('tab', { name: /AI Risk Brief/i }));
   }
 
   it('shows sign-in prompt when not authenticated', async () => {
@@ -410,7 +410,7 @@ describe('KRIDashboard — Arabic path (isAr=true)', () => {
   const SK = 'isc-tool-risk-kri-v2';
 
   function goToAiTabAr() {
-    fireEvent.click(screen.getByRole('button', { name: /تقرير المخاطر/i }));
+    fireEvent.click(screen.getByRole('tab', { name: /تقرير المخاطر/i }));
   }
 
   it('shows Arabic generate button label', () => {

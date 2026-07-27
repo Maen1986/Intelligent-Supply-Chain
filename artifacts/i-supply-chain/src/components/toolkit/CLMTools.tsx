@@ -8,7 +8,7 @@
  * 4. Templates & Tools     — downloadable contract templates and checklists
  * 5. AI Contract Brief     — AI-generated portfolio analysis and renewal strategy
  */
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useRef } from 'react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
 } from 'recharts';
@@ -395,12 +395,28 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
     { id: 'ai',         icon: '✨', label: 'AI Portfolio Brief',  labelAr: 'تقرير المحفظة AI'    },
   ];
 
+  const tabListRef = useRef<HTMLDivElement>(null);
+  const handleTabKey = useCallback((e: React.KeyboardEvent, idx: number) => {
+    if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+    e.preventDefault();
+    const next = e.key === 'ArrowRight'
+      ? (idx + 1) % tabs.length
+      : (idx - 1 + tabs.length) % tabs.length;
+    setActiveTab(tabs[next].id);
+    (tabListRef.current?.querySelectorAll('[role="tab"]')[next] as HTMLElement | undefined)?.focus();
+  }, [tabs]);
+
   return (
     <div className="space-y-4">
       {/* Tab bar */}
-      <div className="flex gap-1 bg-slate-50 border border-slate-200 rounded-2xl p-1 overflow-x-auto">
-        {tabs.map(t => (
-          <button key={t.id} onClick={() => setActiveTab(t.id)}
+      <div role="tablist" ref={tabListRef} className="flex gap-1 bg-slate-50 border border-slate-200 rounded-2xl p-1 overflow-x-auto">
+        {tabs.map((t, idx) => (
+          <button key={t.id}
+            role="tab"
+            aria-selected={activeTab === t.id}
+            tabIndex={activeTab === t.id ? 0 : -1}
+            onClick={() => setActiveTab(t.id)}
+            onKeyDown={e => handleTabKey(e, idx)}
             className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-[12px] font-semibold whitespace-nowrap transition-all ${activeTab === t.id ? 'bg-[#082C6B] text-white shadow' : 'text-slate-500 hover:bg-slate-100'}`}>
             <span>{t.icon}</span><span className="hidden sm:inline">{isAr ? t.labelAr : t.label}</span>
           </button>

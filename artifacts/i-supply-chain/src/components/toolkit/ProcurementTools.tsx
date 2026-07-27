@@ -122,11 +122,15 @@ const TEMPLATES = [
   },
 ];
 
-const RFP_TEMPLATE = `================================================================================
+// HR80 is a runtime expression so a long run of equals signs never appears
+// as a literal in this source file (avoiding false-positive conflict-marker scans).
+const HR80 = '='.repeat(80);
+
+const RFP_TEMPLATE = `${HR80}
 REQUEST FOR PROPOSAL (RFP) — TEMPLATE
 I Supply Chain | Category Management Toolkit
 CIPS-Aligned | Version 1.0
-================================================================================
+${HR80}
 
 SECTION 1 — OVERVIEW
 ─────────────────────
@@ -212,9 +216,9 @@ SECTION 7 — TERMS & CONDITIONS
 • Negotiations may be conducted with any or all shortlisted suppliers.
 • The contract will be governed by Saudi Arabian law.
 
-================================================================================
+${HR80}
 END OF RFP TEMPLATE — Customise all [bracketed] fields before issue.
-================================================================================`;
+${HR80}`;
 
 const SCORECARD_CSV = `Supplier Evaluation Scorecard — CIPS Aligned
 ,,,,,,,,,
@@ -303,10 +307,10 @@ NOTES:,,,,,,,
 "Soft savings = cost avoided or efficiency gain — does not directly reduce P&L",,,,,,,
 "All savings require Finance sign-off to be counted in official reporting",,,,,,,`;
 
-const CATEGORY_PROFILE_TEMPLATE = `================================================================================
+const CATEGORY_PROFILE_TEMPLATE = `${HR80}
 CATEGORY PROFILE — ONE-PAGE TEMPLATE
 I Supply Chain | Category Management Toolkit
-================================================================================
+${HR80}
 
 CATEGORY NAME:        [e.g. Packaging Materials — Primary]
 CATEGORY OWNER:       [Name / Title]
@@ -364,9 +368,9 @@ Identified savings:    SAR [Amount] — [Category: Hard / Soft / Avoidance]
 Target delivery date:  [Quarter / Month]
 Finance sign-off:      [Yes / Pending / No]
 
-================================================================================
+${HR80}
 END OF CATEGORY PROFILE — Review and update at least annually.
-================================================================================`;
+${HR80}`;
 
 // ─── Storage helpers ──────────────────────────────────────────────────────────
 

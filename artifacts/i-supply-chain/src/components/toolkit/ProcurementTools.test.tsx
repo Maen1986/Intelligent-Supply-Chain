@@ -34,7 +34,7 @@ beforeEach(() => {
   cleanup();
 });
 
-/* ── helper: click a tab by partial label text ────────────────────────── */
+/* ── helper: click a tab by partial label text ─────────────────────────── */
 function goToTab(label: string) {
   fireEvent.click(screen.getByRole('tab', { name: new RegExp(label, 'i') }));
 }
@@ -302,7 +302,7 @@ describe('ProcurementToolsSection — tab navigation', () => {
     expect(screen.queryByLabelText('Supplier: contracted')).toBeNull();
   });
 
-  it('all 5 tab buttons are rendered', () => {
+  it('all 5 tab buttons are rendered with role="tab"', () => {
     render(<ProcurementToolsSection isAr={false} />);
     expect(screen.getByRole('tab', { name: /Spend Analysis/i })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /Market Intelligence/i })).toBeInTheDocument();
@@ -693,5 +693,92 @@ describe('ProcurementToolsSection — storage key isolation', () => {
     // Second mount (simulates component being re-rendered)
     render(<ProcurementToolsSection isAr={false} />);
     expect(screen.getByLabelText('Persistent Supplier: contracted')).toBeInTheDocument();
+  });
+});
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Suite 6 — Arrow-key tab navigation (ARIA tablist pattern)
+   ArrowRight/ArrowLeft must move focus and activate the correct tab.
+══════════════════════════════════════════════════════════════════════════ */
+describe('ProcurementToolsSection — arrow-key tab navigation', () => {
+  it('tab bar container has role="tablist"', () => {
+    render(<ProcurementToolsSection isAr={false} />);
+    expect(screen.getByRole('tablist')).toBeInTheDocument();
+  });
+
+  it('all 5 tabs have role="tab"', () => {
+    render(<ProcurementToolsSection isAr={false} />);
+    expect(screen.getAllByRole('tab').length).toBe(5);
+  });
+
+  it('default tab is aria-selected and has tabIndex 0', () => {
+    render(<ProcurementToolsSection isAr={false} />);
+    const first = screen.getByRole('tab', { name: /Spend Analysis/i });
+    expect(first).toHaveAttribute('aria-selected', 'true');
+    expect(first).toHaveAttribute('tabindex', '0');
+  });
+
+  it('non-active tabs have tabIndex -1', () => {
+    render(<ProcurementToolsSection isAr={false} />);
+    const second = screen.getByRole('tab', { name: /Market Intelligence/i });
+    expect(second).toHaveAttribute('tabindex', '-1');
+  });
+
+  it('ArrowRight moves focus to the next tab and marks it selected', () => {
+    render(<ProcurementToolsSection isAr={false} />);
+    const first = screen.getByRole('tab', { name: /Spend Analysis/i });
+    first.focus();
+    fireEvent.keyDown(first, { key: 'ArrowRight' });
+    const second = screen.getByRole('tab', { name: /Market Intelligence/i });
+    expect(second).toHaveAttribute('aria-selected', 'true');
+    expect(document.activeElement).toBe(second);
+  });
+
+  it('ArrowLeft moves focus to the previous tab and marks it selected', () => {
+    render(<ProcurementToolsSection isAr={false} />);
+    // Navigate to the second tab first
+    fireEvent.click(screen.getByRole('tab', { name: /Market Intelligence/i }));
+    const second = screen.getByRole('tab', { name: /Market Intelligence/i });
+    second.focus();
+    fireEvent.keyDown(second, { key: 'ArrowLeft' });
+    const first = screen.getByRole('tab', { name: /Spend Analysis/i });
+    expect(first).toHaveAttribute('aria-selected', 'true');
+    expect(document.activeElement).toBe(first);
+  });
+
+  it('ArrowRight wraps from last tab to first', () => {
+    render(<ProcurementToolsSection isAr={false} />);
+    const last = screen.getByRole('tab', { name: /AI Strategy Brief/i });
+    fireEvent.click(last);
+    last.focus();
+    fireEvent.keyDown(last, { key: 'ArrowRight' });
+    expect(screen.getByRole('tab', { name: /Spend Analysis/i })).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('ArrowLeft wraps from first tab to last', () => {
+    render(<ProcurementToolsSection isAr={false} />);
+    const first = screen.getByRole('tab', { name: /Spend Analysis/i });
+    first.focus();
+    fireEvent.keyDown(first, { key: 'ArrowLeft' });
+    expect(screen.getByRole('tab', { name: /AI Strategy Brief/i })).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('ArrowRight then panel content reflects the newly active tab', () => {
+    render(<ProcurementToolsSection isAr={false} />);
+    const first = screen.getByRole('tab', { name: /Spend Analysis/i });
+    first.focus();
+    fireEvent.keyDown(first, { key: 'ArrowRight' });
+    // Market Intelligence content should now be present (Porter sliders)
+    expect(screen.getByLabelText('Supplier Power')).toBeInTheDocument();
+    // Spend Analysis content should be gone
+    expect(screen.queryByLabelText('Supplier: contracted')).toBeNull();
+  });
+
+  it('other keys on a tab do not change the active tab', () => {
+    render(<ProcurementToolsSection isAr={false} />);
+    const first = screen.getByRole('tab', { name: /Spend Analysis/i });
+    first.focus();
+    fireEvent.keyDown(first, { key: 'Enter' });
+    expect(first).toHaveAttribute('aria-selected', 'true');
   });
 });
