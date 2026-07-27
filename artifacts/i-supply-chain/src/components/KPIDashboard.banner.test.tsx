@@ -209,4 +209,39 @@ describe('KPIDashboard — data-collection guidance banner', () => {
     expect(localStorage.getItem(keyA)).toBe('1');
     expect(localStorage.getItem(keyB)).toBe('1');
   });
+
+  it('re-shows the banner when the slug prop changes to a framework whose banner was never dismissed', () => {
+    const slugA = 'supply-chain-strategy';
+    const slugB = 'procurement-excellence';
+
+    // Mount with slug A, dismiss its banner
+    const { container, rerender } = render(<KPIDashboard slug={slugA} />);
+    expect(bannerVisible(container)).toBe(true);
+    fireEvent.click(within(container).getByRole('button', { name: /dismiss/i }));
+    expect(bannerVisible(container)).toBe(false);
+
+    // Re-render the same component instance with slug B (no dismiss key for B)
+    rerender(<KPIDashboard slug={slugB} />);
+
+    // Banner must re-appear because slug B was never dismissed
+    expect(bannerVisible(container)).toBe(true);
+  });
+
+  it('keeps the banner hidden when switching back to a slug whose banner was already dismissed', () => {
+    const slugA = 'supply-chain-strategy';
+    const slugB = 'procurement-excellence';
+
+    // Mount with slug A and dismiss its banner
+    const { container, rerender } = render(<KPIDashboard slug={slugA} />);
+    fireEvent.click(within(container).getByRole('button', { name: /dismiss/i }));
+    expect(bannerVisible(container)).toBe(false);
+
+    // Switch to slug B — banner re-appears for the new framework
+    rerender(<KPIDashboard slug={slugB} />);
+    expect(bannerVisible(container)).toBe(true);
+
+    // Switch back to slug A — banner must remain hidden (dismiss key still set)
+    rerender(<KPIDashboard slug={slugA} />);
+    expect(bannerVisible(container)).toBe(false);
+  });
 });

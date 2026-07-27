@@ -638,6 +638,10 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
   const [bannerDismissed, setBannerDismissed] = useState<boolean>(() => {
     try { return localStorage.getItem(`isc-kpi-banner-dismissed-${resolvedSlug}`) === '1'; } catch { return false; }
   });
+  // Re-evaluate the dismiss state whenever the slug changes on an already-mounted component.
+  useEffect(() => {
+    try { setBannerDismissed(localStorage.getItem(bannerDismissKey) === '1'); } catch { setBannerDismissed(false); }
+  }, [bannerDismissKey]);
   const dismissBanner = useCallback(() => {
     try { localStorage.setItem(bannerDismissKey, '1'); } catch {}
     setBannerDismissed(true);
