@@ -60,7 +60,7 @@ export function _resetStorageAvailabilityCache(): void {
  * On iOS Safari in private browsing mode `localStorage.setItem` throws a
  * `SecurityError`; this function catches that and returns `false`.
  */
-function isLocalStorageAvailable(): boolean {
+export function isLocalStorageAvailable(): boolean {
   if (_storageAvailable !== null) return _storageAvailable;
   try {
     const probe = '__storage_probe__';

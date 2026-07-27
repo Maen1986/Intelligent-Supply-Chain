@@ -1,10 +1,13 @@
+import { useEffect } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import NotFound from '@/pages/not-found';
 import { Route, Switch, Router as WouterRouter } from 'wouter';
 import { LanguageProvider, useLanguage } from '@/lib/LanguageContext';
 import { AuthProvider } from '@/lib/AuthContext';
+import { isLocalStorageAvailable } from '@/lib/storage';
 
 // Components & Pages
 import { Header } from '@/components/Header';
@@ -89,6 +92,21 @@ function Router() {
 }
 
 function App() {
+  useEffect(() => {
+    if (!isLocalStorageAvailable()) {
+      toast.warning(
+        'Private browsing detected — your changes cannot be saved. ' +
+        'Open the app in a normal tab to keep your work.\n' +
+        'تم اكتشاف وضع التصفح الخاص — لا يمكن حفظ التغييرات. ' +
+        'افتح التطبيق في تبويب عادي للاحتفاظ بعملك.',
+        {
+          id: 'storage-private-browsing',
+          duration: 8000,
+        },
+      );
+    }
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
