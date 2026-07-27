@@ -4,8 +4,11 @@
  * Two-way automation bridge: n8n (or any platform) can call back into ISC
  * to trigger actions without the client touching the UI.
  *
- * Security: every request must include an X-ISC-Signature header containing
- *   HMAC-SHA256(rawBody, INBOUND_WEBHOOK_SECRET)   (hex-encoded)
+ * Security: every request must carry three headers:
+ *   X-ISC-Timestamp  — Unix epoch seconds (integer string); must be within ±5 min of server time
+ *   X-ISC-Nonce      — unique random string per request (max 256 chars); prevents replays
+ *   X-ISC-Signature  — HMAC-SHA256("<timestamp>\n<nonce>\n<rawBody>", INBOUND_WEBHOOK_SECRET) hex-encoded
+ *
  * If INBOUND_WEBHOOK_SECRET is not configured the endpoint returns 503.
  *
  * Supported actions (pass in body.action + body.payload):
@@ -25,11 +28,41 @@ import { logger }                       from "../lib/logger";
 
 const router = Router();
 
+/* ── Replay-protection nonce store ───────────────────────────────────────── */
+// Nonces are kept for twice the clock-skew window so a request at the edge of
+// the window can never be replayed after it ages out of the freshness check.
+
+const CLOCK_SKEW_MS  = 5 * 60 * 1000; // 5 minutes
+const NONCE_TTL_MS   = CLOCK_SKEW_MS * 2;
+
+// Map<nonce, expiresAtMs>
+const usedNonces = new Map<string, number>();
+
+function evictExpiredNonces(nowMs: number) {
+  for (const [nonce, expiresAt] of usedNonces) {
+    if (nowMs >= expiresAt) usedNonces.delete(nonce);
+  }
+}
+
 /* ── Helpers ─────────────────────────────────────────────────────────────── */
 
-function verifySignature(rawBody: Buffer, header: string | undefined, secret: string): boolean {
+/**
+ * Verify the HMAC-SHA256 signature over "<timestamp>\n<nonce>\n<rawBody>".
+ * Uses a timing-safe comparison to prevent timing attacks.
+ */
+function verifySignature(
+  rawBody:   Buffer,
+  timestamp: string,
+  nonce:     string,
+  header:    string | undefined,
+  secret:    string,
+): boolean {
   if (!header) return false;
-  const expected    = createHmac("sha256", secret).update(rawBody).digest("hex");
+  const material   = Buffer.concat([
+    Buffer.from(`${timestamp}\n${nonce}\n`, "utf8"),
+    rawBody,
+  ]);
+  const expected    = createHmac("sha256", secret).update(material).digest("hex");
   const expectedBuf = Buffer.from(expected, "utf8");
   const headerBuf   = Buffer.from(header,   "utf8");
   if (expectedBuf.length !== headerBuf.length) return false;
@@ -58,8 +91,41 @@ router.post("/webhooks/inbound", async (req, res) => {
     return;
   }
 
+  // ── Timestamp freshness check ────────────────────────────────────────────
+  const timestampHeader = req.headers["x-isc-timestamp"] as string | undefined;
+  if (!timestampHeader || !/^\d+$/.test(timestampHeader)) {
+    res.status(401).json({ ok: false, error: "Missing or invalid X-ISC-Timestamp header" });
+    return;
+  }
+  const nowMs        = Date.now();
+  const requestMs    = parseInt(timestampHeader, 10) * 1000;
+  if (Math.abs(nowMs - requestMs) > CLOCK_SKEW_MS) {
+    logger.warn({ requestMs, nowMs }, "[webhooks/inbound] Stale timestamp rejected");
+    logInbound("unknown", rawBody.slice(0, 200).toString(), "error", "Stale timestamp");
+    res.status(401).json({ ok: false, error: "Request timestamp is too old or too far in the future" });
+    return;
+  }
+
+  // ── Nonce uniqueness check ───────────────────────────────────────────────
+  const nonce = req.headers["x-isc-nonce"] as string | undefined;
+  if (!nonce || nonce.length > 256) {
+    res.status(401).json({ ok: false, error: "Missing or invalid X-ISC-Nonce header" });
+    return;
+  }
+  evictExpiredNonces(nowMs);
+  if (usedNonces.has(nonce)) {
+    logger.warn({ nonce }, "[webhooks/inbound] Replayed nonce rejected");
+    logInbound("unknown", rawBody.slice(0, 200).toString(), "error", "Replayed nonce");
+    res.status(401).json({ ok: false, error: "Replayed request rejected" });
+    return;
+  }
+  // Register the nonce before processing so concurrent duplicate requests are
+  // also blocked (the map is in-process; sufficient for single-instance deploys).
+  usedNonces.set(nonce, nowMs + NONCE_TTL_MS);
+
+  // ── Signature check ──────────────────────────────────────────────────────
   const sig = req.headers["x-isc-signature"] as string | undefined;
-  if (!verifySignature(rawBody, sig, secret)) {
+  if (!verifySignature(rawBody, timestampHeader, nonce, sig, secret)) {
     logger.warn("[webhooks/inbound] Invalid signature rejected");
     logInbound("unknown", rawBody.slice(0, 200).toString(), "error", "Invalid signature");
     res.status(401).json({ ok: false, error: "Invalid signature" });
