@@ -21,6 +21,16 @@ import { ProcurementToolsSection } from './ProcurementTools';
 const SK_SPEND  = 'isc-tool-catmgmt-spend-v2';
 const SK_PORTER = 'isc-tool-catmgmt-porter-v2';
 
+/* ── FileReader stub: synchronously calls onload with provided text ─────── */
+function makeFileReaderStub(text: string) {
+  return class FileReaderStub {
+    onload: ((e: { target: { result: string } }) => void) | null = null;
+    readAsText(_file: File) {
+      this.onload?.({ target: { result: text } });
+    }
+  };
+}
+
 /* ── Recharts uses ResizeObserver internally ───────────────────────────── */
 class ResizeObserverStub {
   observe()    {}
@@ -922,6 +932,121 @@ describe('ProcurementToolsSection — CategoryProfileBuilder Arabic quadrant lab
 
     expect(screen.queryAllByText('مناقصة تنافسية')).toHaveLength(0);
     expect(screen.getAllByText('Competitive Tendering').length).toBeGreaterThan(0);
+  });
+});
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Suite 9 — SpendParetoChart CSV import in Arabic mode
+   Confirms the Arabic success message and localStorage update.
+══════════════════════════════════════════════════════════════════════════ */
+describe('ProcurementToolsSection — SpendParetoChart CSV import (Arabic mode)', () => {
+  const VALID_CSV =
+    'Supplier,Category,Subcategory,Annual Spend (SAR),YTD Spend (SAR),Contracted (Yes/No),Strategic (Yes/No),Notes\n' +
+    'مورد الخليج,مواد أولية,كيماويات,1200000,900000,Yes,Yes,عقد طويل\n' +
+    'شركة النور,لوجستيات,شحن,420000,315000,Yes,No,عقد سنوي\n';
+
+  /* Helper: simulate a file-input change with the given CSV text */
+  function fireFileInput(text: string) {
+    // Install stub before firing so the component's FileReader is replaced
+    (globalThis as any).FileReader = makeFileReaderStub(text);
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    const file = new File([text], 'spend.csv', { type: 'text/csv' });
+    Object.defineProperty(input, 'files', { value: [file], configurable: true });
+    fireEvent.change(input, { target: { files: [file] } });
+  }
+
+  it('import button is present in Arabic mode', () => {
+    render(<ProcurementToolsSection isAr={true} />);
+    expect(screen.getByRole('button', { name: 'استيراد CSV' })).toBeInTheDocument();
+  });
+
+  it('hidden file input is present in Arabic mode', () => {
+    render(<ProcurementToolsSection isAr={true} />);
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    expect(input).not.toBeNull();
+    expect(input.accept).toBe('.csv');
+  });
+
+  it('shows Arabic success message after a valid CSV import', () => {
+    render(<ProcurementToolsSection isAr={true} />);
+    fireFileInput(VALID_CSV);
+    // Message format: ✓ تم استيراد N مورّد(ين).
+    expect(screen.getByText(/✓ تم استيراد 2 مورّد\(ين\)\./)).toBeInTheDocument();
+  });
+
+  it('success message starts with ✓ (success class applied)', () => {
+    render(<ProcurementToolsSection isAr={true} />);
+    fireFileInput(VALID_CSV);
+    const msg = screen.getByText(/✓ تم استيراد/);
+    // Parent log container should have emerald styling (success)
+    expect(msg.closest('.bg-emerald-50')).not.toBeNull();
+  });
+
+  it('imports the correct number of rows into localStorage', () => {
+    render(<ProcurementToolsSection isAr={true} />);
+    fireFileInput(VALID_CSV);
+    const saved = JSON.parse(localStorage.getItem(SK_SPEND) ?? '[]') as { supplier: string }[];
+    expect(saved).toHaveLength(2);
+  });
+
+  it('saves the correct supplier names to localStorage', () => {
+    render(<ProcurementToolsSection isAr={true} />);
+    fireFileInput(VALID_CSV);
+    const saved = JSON.parse(localStorage.getItem(SK_SPEND) ?? '[]') as { supplier: string }[];
+    expect(saved[0].supplier).toBe('مورد الخليج');
+    expect(saved[1].supplier).toBe('شركة النور');
+  });
+
+  it('saves the correct annualSpend values to localStorage', () => {
+    render(<ProcurementToolsSection isAr={true} />);
+    fireFileInput(VALID_CSV);
+    const saved = JSON.parse(localStorage.getItem(SK_SPEND) ?? '[]') as { annualSpend: number }[];
+    expect(saved[0].annualSpend).toBe(1200000);
+    expect(saved[1].annualSpend).toBe(420000);
+  });
+
+  it('saves contracted=true when CSV has "Yes"', () => {
+    render(<ProcurementToolsSection isAr={true} />);
+    fireFileInput(VALID_CSV);
+    const saved = JSON.parse(localStorage.getItem(SK_SPEND) ?? '[]') as { contracted: boolean }[];
+    expect(saved[0].contracted).toBe(true);
+    expect(saved[1].contracted).toBe(true);
+  });
+
+  it('saves strategic correctly (Yes → true, No → false)', () => {
+    render(<ProcurementToolsSection isAr={true} />);
+    fireFileInput(VALID_CSV);
+    const saved = JSON.parse(localStorage.getItem(SK_SPEND) ?? '[]') as { strategic: boolean }[];
+    expect(saved[0].strategic).toBe(true);
+    expect(saved[1].strategic).toBe(false);
+  });
+
+  it('shows an error log when required columns are missing', () => {
+    render(<ProcurementToolsSection isAr={true} />);
+    const badCsv = 'Name,Spend\nمورد,1000\n';
+    fireFileInput(badCsv);
+    // Error path shows the Arabic failure header
+    expect(screen.getByText('فشل الاستيراد:')).toBeInTheDocument();
+  });
+
+  it('error log container has red styling on failure', () => {
+    render(<ProcurementToolsSection isAr={true} />);
+    fireFileInput('Name,Spend\nمورد,1000\n');
+    const msg = screen.getByText('فشل الاستيراد:');
+    expect(msg.closest('.bg-red-50')).not.toBeNull();
+  });
+
+  it('skips empty-supplier rows and notes them in the log', () => {
+    render(<ProcurementToolsSection isAr={true} />);
+    const csvWithEmpty =
+      'Supplier,Category,Subcategory,Annual Spend (SAR),YTD Spend (SAR),Contracted (Yes/No),Strategic (Yes/No),Notes\n' +
+      ',مواد,فئة,500000,,,, \n' +
+      'مورد الخليج,مواد أولية,كيماويات,1200000,900000,Yes,Yes,\n';
+    fireFileInput(csvWithEmpty);
+    // Only the non-empty row should be imported
+    expect(screen.getByText(/✓ تم استيراد 1 مورّد\(ين\)\./)).toBeInTheDocument();
+    const saved = JSON.parse(localStorage.getItem(SK_SPEND) ?? '[]') as { supplier: string }[];
+    expect(saved[0].supplier).toBe('مورد الخليج');
   });
 });
 

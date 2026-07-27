@@ -8,7 +8,7 @@
  * 4. Templates & Tools     — downloadable RFP, evaluation scorecard, TCO calculator
  * 5. AI Category Brief     — AI-generated full category strategy document
  */
-import React, { useState, useCallback, useMemo, useRef, KeyboardEvent } from 'react';
+import React, { useState, useCallback, useMemo, useRef, KeyboardEvent, ChangeEvent } from 'react';
 import {
   ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Cell, ReferenceLine,
@@ -17,6 +17,7 @@ import { Upload, Download, Plus, Trash2, ChevronDown, ChevronUp,
   BarChart3, Globe, Target, FileDown, Sparkles, TrendingUp,
   AlertTriangle, CheckCircle, Info } from 'lucide-react';
 import { safeSetItem } from '@/lib/storage';
+import { parseCsvFile, downloadCsv } from '@/lib/importCsv';
 import { useAIPlan } from '@/hooks/useAIPlan';
 import { AIPlanPanel } from '@/components/AIPlanPanel';
 import { toast } from 'sonner';
@@ -393,11 +394,52 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
 
   // Spend data
   const [rows, setRows] = useState<SpendRow[]>(() => loadJson(SK_SPEND, [defaultRow()]));
-  const saveRows = (r: SpendRow[]) => { setRows(r); safeSetItem(SK_SPEND, JSON.stringify(r)); };
+  const saveRows = useCallback((r: SpendRow[]) => { setRows(r); safeSetItem(SK_SPEND, JSON.stringify(r)); }, []);
   const updateRow = (id: string, field: keyof SpendRow, value: string | number | boolean) =>
     saveRows(rows.map(r => r.id === id ? { ...r, [field]: value } : r));
   const addRow = () => saveRows([...rows, defaultRow()]);
   const removeRow = (id: string) => saveRows(rows.filter(r => r.id !== id));
+
+  // CSV import
+  const importInputRef = useRef<HTMLInputElement>(null);
+  const [importLog, setImportLog] = useState<string[] | null>(null);
+
+  const handleSpendImport = useCallback((file: File) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target?.result as string;
+      const { rows: csvRows, errors } = parseCsvFile(text, ['Supplier', 'Annual Spend (SAR)']);
+      if (errors.length > 0 && csvRows.length === 0) {
+        setImportLog([isAr ? 'فشل الاستيراد:' : 'Import failed:', ...errors]);
+        return;
+      }
+      const log: string[] = [...errors];
+      const imported: SpendRow[] = [];
+      csvRows.forEach((row, ri) => {
+        const supplier = row['Supplier']?.trim();
+        if (!supplier) { log.push(`Row ${ri + 2}: Supplier is empty — skipped.`); return; }
+        const spendRaw = row['Annual Spend (SAR)']?.trim().replace(/,/g, '') || '0';
+        const annualSpend = parseFloat(spendRaw) || 0;
+        imported.push({
+          id: nid(),
+          supplier,
+          category: row['Category']?.trim() || '',
+          subcategory: row['Subcategory']?.trim() || '',
+          annualSpend,
+          contracted: row['Contracted (Yes/No)']?.trim().toLowerCase() === 'yes',
+          strategic: row['Strategic (Yes/No)']?.trim().toLowerCase() === 'yes',
+          notes: row['Notes']?.trim() || '',
+        });
+      });
+      const finalRows = imported.length > 0 ? imported : [defaultRow()];
+      saveRows(finalRows);
+      const summary = isAr
+        ? `✓ تم استيراد ${imported.length} مورّد(ين).`
+        : `✓ Imported ${imported.length} supplier(s).`;
+      setImportLog([summary, ...log]);
+    };
+    reader.readAsText(file);
+  }, [isAr, saveRows]);
 
   // Porter's forces
   const [porter, setPorter] = useState<Record<string, { score: number; notes: string }>>(() =>
@@ -612,15 +654,44 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
               </table>
             </div>
             <div className="px-4 py-2 border-t border-slate-100 flex justify-between items-center">
-              <button onClick={addRow} className="flex items-center gap-1.5 text-xs text-[#082C6B] font-semibold hover:opacity-80">
-                <Plus className="w-3.5 h-3.5" />{isAr ? 'إضافة مورد' : 'Add row'}
-              </button>
+              <div className="flex items-center gap-2">
+                <button onClick={addRow} className="flex items-center gap-1.5 text-xs text-[#082C6B] font-semibold hover:opacity-80">
+                  <Plus className="w-3.5 h-3.5" />{isAr ? 'إضافة مورد' : 'Add row'}
+                </button>
+                <button
+                  onClick={() => importInputRef.current?.click()}
+                  aria-label={isAr ? 'استيراد CSV' : 'Import CSV'}
+                  className="flex items-center gap-1.5 text-xs text-slate-500 font-semibold hover:text-[#082C6B] hover:opacity-80"
+                >
+                  <Upload className="w-3.5 h-3.5" />{isAr ? 'استيراد CSV' : 'Import CSV'}
+                </button>
+                <input
+                  ref={importInputRef}
+                  type="file"
+                  accept=".csv"
+                  aria-label={isAr ? 'ملف CSV للاستيراد' : 'CSV file to import'}
+                  className="hidden"
+                  onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                    const file = e.target.files?.[0];
+                    if (file) { handleSpendImport(file); e.target.value = ''; }
+                  }}
+                />
+              </div>
               {validRows.length > 0 && (
                 <button onClick={() => setActiveTab('market')} className="text-xs bg-[#082C6B] text-white px-3 py-1.5 rounded-lg font-semibold hover:opacity-90">
                   {isAr ? 'التالي: استخبارات السوق →' : 'Next: Market Intelligence →'}
                 </button>
               )}
             </div>
+            {importLog && (
+              <div className={`mx-4 mb-3 text-xs rounded-lg p-3 border ${importLog[0]?.startsWith('✓') ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-red-50 border-red-200 text-red-800'}`}>
+                <div className="space-y-0.5">
+                  {importLog.map((m, i) => (
+                    <p key={i} className={i === 0 ? 'font-bold' : 'opacity-75'}>{m}</p>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
