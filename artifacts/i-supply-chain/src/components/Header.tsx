@@ -36,7 +36,7 @@ const servicesList = [
 
 export function Header() {
   const { lang, setLang } = useLanguage();
-  const { user, logout } = useAuth();
+  const { user, logout, loading } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [servicesOpen, setServicesOpen] = useState(false);
   const [industriesOpen, setIndustriesOpen] = useState(false);
@@ -107,7 +107,9 @@ export function Header() {
           <Phone className="w-3 h-3" /> +966 549 479 722
         </a>
         <span className="text-white/40">|</span>
-        {user ? (
+        {loading ? (
+          <span data-testid="auth-loading-placeholder" className="w-24 h-3 rounded bg-white/20 animate-pulse inline-block" />
+        ) : user ? (
           <div className="flex items-center gap-3">
             <span className="flex items-center gap-1.5 text-white/80">
               <User className="w-3 h-3" /> {user.fullName.split(' ')[0]}
@@ -286,7 +288,9 @@ export function Header() {
             ))}
 
             <div className="mt-4 pt-4 border-t border-border space-y-3">
-              {user ? (
+              {loading ? (
+                <div data-testid="auth-loading-placeholder-mobile" className="h-10 rounded-xl bg-muted animate-pulse" />
+              ) : user ? (
                 <div className="flex flex-col gap-2">
                   <div className="flex items-center justify-between px-4 py-2 bg-primary/5 rounded-xl">
                     <span className="text-sm font-semibold text-primary">{user.fullName}</span>

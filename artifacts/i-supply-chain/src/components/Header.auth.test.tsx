@@ -74,18 +74,24 @@ function makeUser(name = 'Alice Johnson') {
 function HeaderAuthHarness({
   initialAuth,
   onFlipRef,
+  initialLoading = false,
+  onSetLoadingRef,
 }: {
   initialAuth: boolean;
   onFlipRef: React.MutableRefObject<((v: boolean) => void) | null>;
+  initialLoading?: boolean;
+  onSetLoadingRef?: React.MutableRefObject<((v: boolean) => void) | null>;
 }) {
   const [authed, setAuthed] = useState(initialAuth);
+  const [loading, setLoading] = useState(initialLoading);
 
   onFlipRef.current = setAuthed;
+  if (onSetLoadingRef) onSetLoadingRef.current = setLoading;
 
   const fakeAuth = {
     isAuthenticated: authed,
     user: authed ? makeUser() : null,
-    loading: false,
+    loading,
     register:       async () => {},
     login:          async () => {},
     logout:         vi.fn(async () => { setAuthed(false); }),
@@ -173,6 +179,52 @@ describe('Header — auth-driven user name display', () => {
     render(<HeaderAuthHarness initialAuth={false} onFlipRef={ref} />);
 
     expect(screen.queryByText('Sign out')).toBeNull();
+  });
+
+  // ── Loading placeholder ────────────────────────────────────────────────
+
+  it('shows a placeholder and hides "Sign In / Register" while loading', () => {
+    const ref = { current: null } as React.MutableRefObject<((v: boolean) => void) | null>;
+    render(<HeaderAuthHarness initialAuth={false} onFlipRef={ref} initialLoading={true} />);
+
+    // Placeholder must be visible
+    expect(screen.getByTestId('auth-loading-placeholder')).toBeTruthy();
+    // Guest link must NOT flash during loading
+    expect(screen.queryByText('Sign In / Register')).toBeNull();
+    // User name must not appear either
+    expect(screen.queryByText('Alice')).toBeNull();
+  });
+
+  it('shows "Sign In / Register" after loading resolves with no session', async () => {
+    const ref = { current: null } as React.MutableRefObject<((v: boolean) => void) | null>;
+    const loadingRef = { current: null } as React.MutableRefObject<((v: boolean) => void) | null>;
+    render(<HeaderAuthHarness initialAuth={false} onFlipRef={ref} initialLoading={true} onSetLoadingRef={loadingRef} />);
+
+    // Still loading — no Sign In link
+    expect(screen.queryByText('Sign In / Register')).toBeNull();
+
+    // Session check finishes: no user
+    await act(async () => { loadingRef.current!(false); });
+
+    expect(screen.getByText('Sign In / Register')).toBeTruthy();
+    expect(screen.queryByTestId('auth-loading-placeholder')).toBeNull();
+  });
+
+  it('shows user name after loading resolves with an active session', async () => {
+    const ref = { current: null } as React.MutableRefObject<((v: boolean) => void) | null>;
+    const loadingRef = { current: null } as React.MutableRefObject<((v: boolean) => void) | null>;
+    render(<HeaderAuthHarness initialAuth={true} onFlipRef={ref} initialLoading={true} onSetLoadingRef={loadingRef} />);
+
+    // Still loading — no name yet
+    expect(screen.queryByText('Alice')).toBeNull();
+    expect(screen.queryByText('Sign In / Register')).toBeNull();
+
+    // Session check finishes: user is authenticated
+    await act(async () => { loadingRef.current!(false); });
+
+    expect(screen.getByText('Alice')).toBeTruthy();
+    expect(screen.queryByText('Sign In / Register')).toBeNull();
+    expect(screen.queryByTestId('auth-loading-placeholder')).toBeNull();
   });
 });
 
