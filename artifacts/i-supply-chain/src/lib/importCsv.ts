@@ -85,12 +85,23 @@ export function parseCsvFile(
   const HEADER_SCAN_LIMIT = 30;
   let headerLineIndex = 0;
   if (requiredHeaders.length > 0) {
+    let found = false;
     for (let li = 0; li < Math.min(lines.length, HEADER_SCAN_LIMIT); li++) {
       const candidate = parseCsvLine(lines[li]).map(h => h.trim());
       if (requiredHeaders.every(h => candidate.includes(h))) {
         headerLineIndex = li;
+        found = true;
         break;
       }
+    }
+    if (!found) {
+      return {
+        headers: [],
+        rows: [],
+        errors: [
+          'Could not locate the required column headers in the first 30 rows. Make sure the file is a KPI template without extra rows added above the header.',
+        ],
+      };
     }
   }
 

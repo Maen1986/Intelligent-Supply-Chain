@@ -134,16 +134,16 @@ describe('parseCsvFile — empty file error message', () => {
 });
 
 describe('parseCsvFile — missing required column error message', () => {
-  it('error message includes the missing column name', () => {
+  it('error message tells the user the header was not found in the first 30 rows', () => {
     const { errors } = parseCsvFile('Category,Description\nsupply,Some risk', ['Supplier Name']);
     expect(errors.length).toBeGreaterThan(0);
-    expect(errors[0]).toMatch(/Supplier Name/);
+    expect(errors[0]).toMatch(/Could not locate the required column headers in the first 30 rows/);
   });
 
-  it('error message lists every missing column when several are absent', () => {
+  it('returns a single clear error when none of the required headers are present', () => {
     const { errors } = parseCsvFile('Category\nsupply', ['KRI ID', 'Value']);
-    expect(errors[0]).toMatch(/KRI ID/);
-    expect(errors[0]).toMatch(/Value/);
+    expect(errors).toHaveLength(1);
+    expect(errors[0]).toMatch(/Could not locate the required column headers in the first 30 rows/);
   });
 
   it('rows is empty when a required column is missing', () => {

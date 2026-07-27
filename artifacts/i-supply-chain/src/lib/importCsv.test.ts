@@ -91,7 +91,8 @@ describe('parseCsvFile — required header validation', () => {
     const csv = 'Tier,Score\nPreferred,80';
     const { errors } = parseCsvFile(csv, ['Supplier Name']);
     expect(errors.length).toBeGreaterThan(0);
-    expect(errors[0]).toMatch(/Supplier Name/);
+    // The new error tells the user the header was not found in the first 30 rows
+    expect(errors[0]).toMatch(/Could not locate the required column headers in the first 30 rows/);
   });
 
   it('returns an empty rows array when required headers are missing', () => {
@@ -100,12 +101,12 @@ describe('parseCsvFile — required header validation', () => {
     expect(rows).toHaveLength(0);
   });
 
-  it('reports all missing required headers in one error', () => {
+  it('reports a single clear error when none of the required headers are found', () => {
     const csv = 'Score\n80';
     const { errors } = parseCsvFile(csv, ['Supplier Name', 'Tier']);
-    // Both missing columns should appear in the error message
-    expect(errors[0]).toMatch(/Supplier Name/);
-    expect(errors[0]).toMatch(/Tier/);
+    // A single "not found in 30 rows" error is returned — no need to list each missing column
+    expect(errors).toHaveLength(1);
+    expect(errors[0]).toMatch(/Could not locate the required column headers in the first 30 rows/);
   });
 
   it('accepts extra columns beyond the required set without error', () => {
@@ -364,8 +365,9 @@ describe('parseCsvFile — 30-row header-scan limit', () => {
     // 31 filler rows → header is at index 31, outside the scan window
     const csv = buildCsvWithLeadingRows(31);
     const { errors, rows } = parseCsvFile(csv, ['Name', 'Score']);
-    // The parser will treat the first filler row as the header and report missing columns
-    expect(errors.length).toBeGreaterThan(0);
+    // The parser detects the scan was exhausted and returns a specific user-friendly error
+    expect(errors).toHaveLength(1);
+    expect(errors[0]).toMatch(/Could not locate the required column headers in the first 30 rows/);
     expect(rows).toHaveLength(0);
   });
 

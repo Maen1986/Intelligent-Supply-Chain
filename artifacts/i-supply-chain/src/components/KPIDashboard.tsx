@@ -1131,7 +1131,8 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
 
       if (isNewFormat) {
         // ── New format: collect raw inputs per KPI, then calculate ──
-        const { rows: csvRows } = parseCsvFile(text, ['KPI ID', 'Input Field', 'Your Value', 'Unit']);
+        const { rows: csvRows, errors: parseErrors } = parseCsvFile(text, ['KPI ID', 'Input Field', 'Your Value', 'Unit']);
+        if (parseErrors.length > 0 && !csvRows.length) { setImportLog([isAr ? 'فشل الاستيراد:' : 'Import failed:', ...parseErrors]); return; }
         if (!csvRows.length) { setImportLog([isAr ? 'فشل الاستيراد: لا توجد بيانات.' : 'Import failed: no data rows found.']); return; }
 
         // Group input values by kpiId
