@@ -218,6 +218,11 @@ html[lang="ar"] {
     overflow: visible !important;
   }
 
+  body[data-print="kpi"] .print-zone-kpi,
+  body[data-print="kpi"] .print-zone-kpi * {
+    visibility: visible;
+  }
+
   .print-hide {
     display: none !important;
   }

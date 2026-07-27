@@ -5,7 +5,7 @@ import {
   ResponsiveContainer, Cell, ReferenceLine,
 } from 'recharts';
 import { useLanguage } from '@/lib/LanguageContext';
-import { Info, TrendingUp, TrendingDown, Download, Upload, LogIn, ChevronDown, ChevronUp, X } from 'lucide-react';
+import { Info, TrendingUp, TrendingDown, Download, Upload, LogIn, ChevronDown, ChevronUp, X, Printer } from 'lucide-react';
 import { parseCsvFile, downloadCsv } from '@/lib/importCsv';
 import { useAIPlan } from '@/hooks/useAIPlan';
 import { AIPlanPanel } from '@/components/AIPlanPanel';
@@ -677,6 +677,17 @@ function PerformanceIntelligence({ scores, isAr, kpisTotal }: {
   );
 }
 
+/* ─── Print helper ─── */
+function printKpiZone() {
+  document.body.setAttribute('data-print', 'kpi');
+  const cleanup = () => {
+    document.body.removeAttribute('data-print');
+    window.removeEventListener('afterprint', cleanup);
+  };
+  window.addEventListener('afterprint', cleanup);
+  window.print();
+}
+
 /* ─── Main component ─── */
 interface KPIDashboardProps { slug: string; }
 
@@ -1000,7 +1011,7 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
   }));
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 print-zone-kpi">
       {/* Header */}
       <div>
         <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -1034,6 +1045,9 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
             </button>
             <button onClick={() => importInputRef.current?.click()} className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg font-bold bg-slate-200 text-slate-700 hover:bg-slate-300 transition-colors">
               <Upload className="w-3 h-3" />{isAr ? 'استيراد CSV' : 'Import CSV'}
+            </button>
+            <button onClick={printKpiZone} className="print-hide flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg font-bold bg-slate-200 text-slate-700 hover:bg-slate-300 transition-colors">
+              <Printer className="w-3 h-3" />{isAr ? 'طباعة' : 'Print'}
             </button>
             <input type="file" accept=".csv" className="hidden" ref={importInputRef}
               onChange={e => { const f = e.target.files?.[0]; if (f) handleKpiImport(f); e.target.value = ''; }} />
