@@ -9,9 +9,9 @@
  *
  * Expected counts (from manifest at time of writing):
  *   n8n    — 8 templates
- *   make   — 3 templates
- *   zapier — 3 templates
- *   All    — 14 templates
+ *   make   — 8 templates
+ *   zapier — 8 templates
+ *   All    — 24 templates
  */
 
 import { describe, it, expect } from 'vitest';
@@ -45,9 +45,9 @@ function applyPlatformFilter(
 const templates = manifest.templates as ManifestEntry[];
 
 describe('TemplatesTab — platform filter', () => {
-  it('All filter returns the full manifest (14 templates)', () => {
+  it('All filter returns the full manifest (24 templates)', () => {
     const visible = applyPlatformFilter(templates, '');
-    expect(visible.length).toBe(14);
+    expect(visible.length).toBe(24);
     expect(visible.length).toBe(templates.length);
   });
 
@@ -57,15 +57,15 @@ describe('TemplatesTab — platform filter', () => {
     expect(visible.every(t => t.platform === 'n8n')).toBe(true);
   });
 
-  it('Make.com filter shows exactly 3 templates', () => {
+  it('Make.com filter shows exactly 8 templates', () => {
     const visible = applyPlatformFilter(templates, 'make');
-    expect(visible.length).toBe(3);
+    expect(visible.length).toBe(8);
     expect(visible.every(t => t.platform === 'make')).toBe(true);
   });
 
-  it('Zapier filter shows exactly 3 templates', () => {
+  it('Zapier filter shows exactly 8 templates', () => {
     const visible = applyPlatformFilter(templates, 'zapier');
-    expect(visible.length).toBe(3);
+    expect(visible.length).toBe(8);
     expect(visible.every(t => t.platform === 'zapier')).toBe(true);
   });
 
@@ -87,7 +87,7 @@ describe('TemplatesTab — platform filter', () => {
     expect(stale).toHaveLength(0);
 
     // And the counts are correct
-    expect(afterZapier.length).toBe(3);
+    expect(afterZapier.length).toBe(8);
   });
 
   it('switching from n8n to All restores the full set without duplicates', () => {
@@ -107,17 +107,17 @@ describe('TemplatesTab — platform filter', () => {
 
   it('counter text "X / Y templates" would be correct for every filter', () => {
     const cases: Array<['' | Platform, number]> = [
-      ['',       14],
+      ['',       24],
       ['n8n',     8],
-      ['make',    3],
-      ['zapier',  3],
+      ['make',    8],
+      ['zapier',  8],
     ];
 
     for (const [filter, expectedVisible] of cases) {
       const visible = applyPlatformFilter(templates, filter);
       // The component renders: `${visible.length} / ${templates.length} templates`
       const counterText = `${visible.length} / ${templates.length} templates`;
-      expect(counterText).toBe(`${expectedVisible} / 14 templates`);
+      expect(counterText).toBe(`${expectedVisible} / 24 templates`);
     }
   });
 

@@ -1537,6 +1537,9 @@ function BriefingTab({ lang }: { lang: Lang }) {
   });
   const [expandedDomains, setExpandedDomains] = useState<Record<string, boolean>>(Object.fromEntries(MATURITY_DOMAINS_EX.map(d => [d.id, d.id === 'strategy'])));
   const toggleDomain = (id: string) => setExpandedDomains(prev => ({ ...prev, [id]: !prev[id] }));
+  // True when the component mounted with a non-empty saved draft so we can
+  // show the "restored" banner. Dismissed independently of clearDraft.
+  const [draftRestored, setDraftRestored] = useState(() => draft.savedAt !== undefined);
   const [briefing, setBriefing] = useState<Briefing | null>(null);
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
@@ -1962,6 +1965,7 @@ function BriefingTab({ lang }: { lang: Lang }) {
     setBriefing(null);
     setError('');
     setStep('step1');
+    setDraftRestored(false);
   };
 
   const generate = useCallback(async () => {
@@ -2410,6 +2414,40 @@ function BriefingTab({ lang }: { lang: Lang }) {
           );
         })}
       </div>
+
+      {/* Draft-restored notice — shown once per mount when answers were saved */}
+      {draftRestored && (
+        <div
+          className="flex items-start gap-3 rounded-xl border border-[#C9A84C]/40 bg-[#C9A84C]/8 px-4 py-3 text-sm"
+          data-testid="banner-draft-restored"
+        >
+          <span className="text-[#C9A84C] mt-0.5 shrink-0">💾</span>
+          <p className="flex-1 text-[#082C6B] leading-snug">
+            {ar
+              ? 'استعدنا تقدمك المحفوظ —'
+              : 'We restored your saved progress —'}
+            {' '}
+            <button
+              type="button"
+              onClick={clearDraft}
+              className="font-bold underline underline-offset-2 hover:opacity-70 transition-opacity"
+            >
+              {ar ? 'مسح والبدء من جديد' : 'Clear & Start Over'}
+            </button>
+            {' '}
+            {ar ? 'لإعادة الضبط.' : 'to reset.'}
+          </p>
+          <button
+            type="button"
+            aria-label={ar ? 'إغلاق الإشعار' : 'Dismiss notice'}
+            onClick={() => setDraftRestored(false)}
+            className="shrink-0 text-muted-foreground hover:text-foreground transition-colors"
+            data-testid="button-draft-restored-dismiss"
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       {error && <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl p-4 text-sm">{error}</div>}
 
