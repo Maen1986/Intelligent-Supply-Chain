@@ -1136,3 +1136,180 @@ describe('ProcurementToolsSection — arrow-key tab navigation', () => {
     expect(first).toHaveAttribute('aria-selected', 'true');
   });
 });
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Suite 10 — Arrow-key navigation to Sourcing Strategy and Templates tabs
+   ArrowRight from tab 2 → 3 → 4 activates each panel in turn and shows
+   panel-specific content; verified in both LTR and RTL modes.
+   Also confirms wrap-around tests still pass after navigating through all tabs.
+══════════════════════════════════════════════════════════════════════════ */
+describe('ProcurementToolsSection — arrow-key navigation to Sourcing Strategy and Templates tabs (LTR)', () => {
+  it('ArrowRight from Market Intelligence (tab 2) activates Sourcing Strategy panel', () => {
+    render(<ProcurementToolsSection isAr={false} />);
+    const tabs = screen.getAllByRole('tab');
+
+    // Navigate to tab 2 (Market Intelligence)
+    fireEvent.click(tabs[1]);
+    expect(tabs[1].getAttribute('aria-selected')).toBe('true');
+
+    // ArrowRight → tab 3 (Sourcing Strategy)
+    fireEvent.keyDown(tabs[1], { key: 'ArrowRight' });
+    expect(tabs[2].getAttribute('aria-selected')).toBe('true');
+
+    // Panel-specific content: strategy explorer heading
+    expect(screen.getByText(/Explore All 7 Strategies/i)).toBeInTheDocument();
+    // Market Intelligence content is gone
+    expect(screen.queryByLabelText('Supplier Power')).toBeNull();
+  });
+
+  it('ArrowRight from Sourcing Strategy (tab 3) activates Templates & Tools panel', () => {
+    render(<ProcurementToolsSection isAr={false} />);
+    const tabs = screen.getAllByRole('tab');
+
+    // Navigate to tab 3 (Sourcing Strategy)
+    fireEvent.click(tabs[2]);
+    expect(tabs[2].getAttribute('aria-selected')).toBe('true');
+
+    // ArrowRight → tab 4 (Templates & Tools)
+    fireEvent.keyDown(tabs[2], { key: 'ArrowRight' });
+    expect(tabs[3].getAttribute('aria-selected')).toBe('true');
+
+    // Panel-specific content: one of the well-known template names
+    expect(screen.getByText(/RFP \/ RFQ Template/i)).toBeInTheDocument();
+    // Sourcing Strategy content is gone
+    expect(screen.queryByText(/Explore All 7 Strategies/i)).toBeNull();
+  });
+
+  it('sequential ArrowRight from tab 2 → 3 → 4 activates each panel in turn', () => {
+    render(<ProcurementToolsSection isAr={false} />);
+    const tabs = screen.getAllByRole('tab');
+
+    // Start at tab 2
+    fireEvent.click(tabs[1]);
+
+    // → tab 3: Sourcing Strategy
+    fireEvent.keyDown(tabs[1], { key: 'ArrowRight' });
+    expect(tabs[2].getAttribute('aria-selected')).toBe('true');
+    expect(screen.getByText(/Explore All 7 Strategies/i)).toBeInTheDocument();
+
+    // → tab 4: Templates & Tools
+    fireEvent.keyDown(tabs[2], { key: 'ArrowRight' });
+    expect(tabs[3].getAttribute('aria-selected')).toBe('true');
+    expect(screen.getByText(/RFP \/ RFQ Template/i)).toBeInTheDocument();
+  });
+
+  it('wrap-around still works after navigating through Sourcing Strategy and Templates tabs', () => {
+    render(<ProcurementToolsSection isAr={false} />);
+    const tabs = screen.getAllByRole('tab');
+
+    // Navigate all the way to the last tab
+    for (let i = 0; i < 4; i++) {
+      const current = tabs.findIndex(t => t.getAttribute('aria-selected') === 'true');
+      fireEvent.keyDown(tabs[current], { key: 'ArrowRight' });
+    }
+    expect(tabs[4].getAttribute('aria-selected')).toBe('true');
+
+    // One more ArrowRight should wrap to first tab
+    fireEvent.keyDown(tabs[4], { key: 'ArrowRight' });
+    expect(tabs[0].getAttribute('aria-selected')).toBe('true');
+    expect(screen.getByLabelText('Supplier: contracted')).toBeInTheDocument();
+  });
+
+  it('ArrowLeft from Templates & Tools (tab 4) returns to Sourcing Strategy panel', () => {
+    render(<ProcurementToolsSection isAr={false} />);
+    const tabs = screen.getAllByRole('tab');
+
+    fireEvent.click(tabs[3]);
+    expect(tabs[3].getAttribute('aria-selected')).toBe('true');
+
+    fireEvent.keyDown(tabs[3], { key: 'ArrowLeft' });
+    expect(tabs[2].getAttribute('aria-selected')).toBe('true');
+    expect(screen.getByText(/Explore All 7 Strategies/i)).toBeInTheDocument();
+  });
+});
+
+describe('ProcurementToolsSection — arrow-key navigation to Sourcing Strategy and Templates tabs (RTL)', () => {
+  it('ArrowRight from Market Intelligence (tab 2) activates Sourcing Strategy panel in Arabic mode', () => {
+    render(<ProcurementToolsSection isAr={true} />);
+    const tabs = screen.getAllByRole('tab');
+
+    // Navigate to tab 2 (Market Intelligence)
+    fireEvent.click(tabs[1]);
+    expect(tabs[1].getAttribute('aria-selected')).toBe('true');
+
+    // ArrowRight → tab 3 (Sourcing Strategy)
+    fireEvent.keyDown(tabs[1], { key: 'ArrowRight' });
+    expect(tabs[2].getAttribute('aria-selected')).toBe('true');
+
+    // Panel-specific content: Arabic strategy explorer heading
+    expect(screen.getByText(/استكشف جميع الاستراتيجيات/)).toBeInTheDocument();
+    // Market Intelligence content is gone
+    expect(screen.queryByLabelText('قوة الموردين')).toBeNull();
+  });
+
+  it('ArrowRight from Sourcing Strategy (tab 3) activates Templates & Tools panel in Arabic mode', () => {
+    render(<ProcurementToolsSection isAr={true} />);
+    const tabs = screen.getAllByRole('tab');
+
+    // Navigate to tab 3
+    fireEvent.click(tabs[2]);
+    expect(tabs[2].getAttribute('aria-selected')).toBe('true');
+
+    // ArrowRight → tab 4 (Templates & Tools)
+    fireEvent.keyDown(tabs[2], { key: 'ArrowRight' });
+    expect(tabs[3].getAttribute('aria-selected')).toBe('true');
+
+    // Panel-specific content: Arabic info text on the templates panel
+    expect(screen.getByText(/قوالب CIPS-متوافقة جاهزة للتحميل/)).toBeInTheDocument();
+    // Sourcing Strategy content is gone
+    expect(screen.queryByText(/استكشف جميع الاستراتيجيات/)).toBeNull();
+  });
+
+  it('sequential ArrowRight from tab 2 → 3 → 4 activates each Arabic panel in turn', () => {
+    render(<ProcurementToolsSection isAr={true} />);
+    const tabs = screen.getAllByRole('tab');
+
+    // Start at tab 2
+    fireEvent.click(tabs[1]);
+
+    // → tab 3: Sourcing Strategy (Arabic)
+    fireEvent.keyDown(tabs[1], { key: 'ArrowRight' });
+    expect(tabs[2].getAttribute('aria-selected')).toBe('true');
+    expect(screen.getByText(/استكشف جميع الاستراتيجيات/)).toBeInTheDocument();
+
+    // → tab 4: Templates & Tools (Arabic)
+    fireEvent.keyDown(tabs[2], { key: 'ArrowRight' });
+    expect(tabs[3].getAttribute('aria-selected')).toBe('true');
+    expect(screen.getByText(/قوالب CIPS-متوافقة جاهزة للتحميل/)).toBeInTheDocument();
+  });
+
+  it('wrap-around still works in Arabic mode after navigating through all tabs', () => {
+    render(<ProcurementToolsSection isAr={true} />);
+    const tabs = screen.getAllByRole('tab');
+
+    // Navigate all the way to the last tab
+    for (let i = 0; i < 4; i++) {
+      const current = tabs.findIndex(t => t.getAttribute('aria-selected') === 'true');
+      fireEvent.keyDown(tabs[current], { key: 'ArrowRight' });
+    }
+    expect(tabs[4].getAttribute('aria-selected')).toBe('true');
+
+    // One more ArrowRight should wrap to first tab
+    fireEvent.keyDown(tabs[4], { key: 'ArrowRight' });
+    expect(tabs[0].getAttribute('aria-selected')).toBe('true');
+    // Spend Analysis panel content visible in Arabic mode
+    expect(screen.getByLabelText(/تحت عقد/)).toBeInTheDocument();
+  });
+
+  it('ArrowLeft from Templates & Tools (tab 4) returns to Sourcing Strategy panel in Arabic mode', () => {
+    render(<ProcurementToolsSection isAr={true} />);
+    const tabs = screen.getAllByRole('tab');
+
+    fireEvent.click(tabs[3]);
+    expect(tabs[3].getAttribute('aria-selected')).toBe('true');
+
+    fireEvent.keyDown(tabs[3], { key: 'ArrowLeft' });
+    expect(tabs[2].getAttribute('aria-selected')).toBe('true');
+    expect(screen.getByText(/استكشف جميع الاستراتيجيات/)).toBeInTheDocument();
+  });
+});
