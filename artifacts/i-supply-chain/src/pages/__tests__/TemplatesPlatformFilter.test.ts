@@ -43,7 +43,7 @@ function buildPillList(templates: ManifestEntry[]): string[] {
   return ['', ...Array.from(new Set(templates.map(t => t.platform))).sort()];
 }
 
-/* ── Tests ────────────────────────────────────────────────────────────────── */
+/* ── Derive counts directly from the manifest so the test never drifts ───── */
 
 const templates = manifest.templates as ManifestEntry[];
 

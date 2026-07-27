@@ -1312,8 +1312,9 @@ export const SETUP_GUIDES: Record<string, { en: string[]; ar: string[] }> = {
       '٤. استبدل YOUR_ISC_DOMAIN وREPLACE_WITH_ISC_API_KEY في وحدتَي ISC (المفتاح يجب أن يملك صلاحية الكتابة).',
       '٥. راجع وحدة Set Variable (تعيين الحقول) وعدّل أسماء حقول ERP.',
       '٦. عدّل تعيين حقول الموردين في وحدة ISC Suppliers بالمثل.',
-      '٧. يستخدم السيناريو مجدول Make.com الداخلي — لا حاجة لتسجيل ويب-هوك في ISC.',
-      '٨. شغّل السيناريو.',
+      '٧. غيّر قيمة slug "erp-sync" لتطابق اسم الحقيبة التي تستخدمها في ISC.',
+      '٨. يستخدم السيناريو مجدول Make.com الداخلي — لا حاجة لتسجيل ويب-هوك في ISC.',
+      '٩. شغّل السيناريو.',
     ],
   },
   'make-escalation-router': {
