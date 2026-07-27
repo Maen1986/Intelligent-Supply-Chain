@@ -364,3 +364,215 @@ describe('KPIDashboard — Generate button', () => {
     );
   });
 });
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Arabic path — isAr=true for all five tools
+   Confirms:
+     1. Arabic button label is shown
+     2. fetch body sends language='ar'
+     3. Result panel has dir="rtl"
+══════════════════════════════════════════════════════════════════════════ */
+
+/** Find the fetch call that targeted the AI plan endpoint and parse its body */
+function getAIPlanFetchBody(): Record<string, unknown> {
+  const calls = (fetch as ReturnType<typeof vi.fn>).mock.calls as [string, RequestInit][];
+  const match = calls.find(([url]) => typeof url === 'string' && url.includes('/ai/plan'));
+  if (!match) throw new Error('No fetch call to /ai/plan was found');
+  return JSON.parse(match[1].body as string);
+}
+
+describe('KRIDashboard — Arabic path (isAr=true)', () => {
+  const SK = 'isc-tool-risk-kri';
+
+  it('shows Arabic generate button label', () => {
+    localStorage.setItem(SK, JSON.stringify({ concentration: '55' }));
+    render(<RiskToolsSection isAr={true} />);
+    expect(screen.getByRole('button', { name: /توليد خطة تخفيف المخاطر/i })).toBeInTheDocument();
+  });
+
+  it('sends language=ar in the fetch body', async () => {
+    localStorage.setItem(SK, JSON.stringify({ concentration: '55', dio: '50' }));
+    stubFetchOk();
+    render(<RiskToolsSection isAr={true} />);
+
+    fireEvent.click(screen.getByRole('button', { name: /توليد خطة تخفيف المخاطر/i }));
+
+    await waitFor(() => expect(screen.getByText('الخطة المُولَّدة بالذكاء الاصطناعي')).toBeInTheDocument());
+    expect(getAIPlanFetchBody().language).toBe('ar');
+  });
+
+  it('result panel renders with dir="rtl"', async () => {
+    localStorage.setItem(SK, JSON.stringify({ concentration: '55', dio: '50' }));
+    stubFetchOk();
+    const { container } = render(<RiskToolsSection isAr={true} />);
+
+    fireEvent.click(screen.getByRole('button', { name: /توليد خطة تخفيف المخاطر/i }));
+
+    await waitFor(() => expect(screen.getByText('الخطة المُولَّدة بالذكاء الاصطناعي')).toBeInTheDocument());
+    expect(container.querySelector('[dir="rtl"]')).toBeInTheDocument();
+  });
+});
+
+describe('TrainingNeedsAssessment — Arabic path (isAr=true)', () => {
+  const SK_MEMBERS = 'isc-tool-training-members';
+  const SK_SCORES  = 'isc-tool-training-scores';
+
+  it('shows Arabic generate button label', () => {
+    localStorage.setItem(SK_MEMBERS, JSON.stringify(['أحمد']));
+    localStorage.setItem(SK_SCORES, JSON.stringify({ أحمد: { strategy: 2 } }));
+    render(<TrainingNeedsAssessment isAr={true} />);
+    expect(screen.getByRole('button', { name: /توليد خارطة التعلّم/i })).toBeInTheDocument();
+  });
+
+  it('sends language=ar in the fetch body', async () => {
+    localStorage.setItem(SK_MEMBERS, JSON.stringify(['أحمد']));
+    localStorage.setItem(SK_SCORES, JSON.stringify({ أحمد: { strategy: 2, procurement: 3 } }));
+    stubFetchOk();
+    render(<TrainingNeedsAssessment isAr={true} />);
+
+    fireEvent.click(screen.getByRole('button', { name: /توليد خارطة التعلّم/i }));
+
+    await waitFor(() => expect(screen.getByText('الخطة المُولَّدة بالذكاء الاصطناعي')).toBeInTheDocument());
+    expect(getAIPlanFetchBody().language).toBe('ar');
+  });
+
+  it('result panel renders with dir="rtl"', async () => {
+    localStorage.setItem(SK_MEMBERS, JSON.stringify(['أحمد']));
+    localStorage.setItem(SK_SCORES, JSON.stringify({ أحمد: { strategy: 2, procurement: 3 } }));
+    stubFetchOk();
+    const { container } = render(<TrainingNeedsAssessment isAr={true} />);
+
+    fireEvent.click(screen.getByRole('button', { name: /توليد خارطة التعلّم/i }));
+
+    await waitFor(() => expect(screen.getByText('الخطة المُولَّدة بالذكاء الاصطناعي')).toBeInTheDocument());
+    expect(container.querySelector('[dir="rtl"]')).toBeInTheDocument();
+  });
+});
+
+describe('MaturityAssessmentTool — Arabic path (isAr=true)', () => {
+  const slug = 'resiliency';
+  const SK   = `isc-tool-maturity-${slug}`;
+
+  it('shows Arabic generate button label', () => {
+    localStorage.setItem(SK, JSON.stringify({ visibility: 3 }));
+    render(<MaturityAssessmentTool slug={slug} isAr={true} />);
+    expect(screen.getByRole('button', { name: /توليد خارطة طريق النضج/i })).toBeInTheDocument();
+  });
+
+  it('sends language=ar in the fetch body', async () => {
+    localStorage.setItem(SK, JSON.stringify({ visibility: 3, dual_source: 4 }));
+    stubFetchOk();
+    render(<MaturityAssessmentTool slug={slug} isAr={true} />);
+
+    fireEvent.click(screen.getByRole('button', { name: /توليد خارطة طريق النضج/i }));
+
+    await waitFor(() => expect(screen.getByText('الخطة المُولَّدة بالذكاء الاصطناعي')).toBeInTheDocument());
+    expect(getAIPlanFetchBody().language).toBe('ar');
+  });
+
+  it('result panel renders with dir="rtl"', async () => {
+    localStorage.setItem(SK, JSON.stringify({ visibility: 3, dual_source: 4 }));
+    stubFetchOk();
+    const { container } = render(<MaturityAssessmentTool slug={slug} isAr={true} />);
+
+    fireEvent.click(screen.getByRole('button', { name: /توليد خارطة طريق النضج/i }));
+
+    await waitFor(() => expect(screen.getByText('الخطة المُولَّدة بالذكاء الاصطناعي')).toBeInTheDocument());
+    expect(container.querySelector('[dir="rtl"]')).toBeInTheDocument();
+  });
+});
+
+describe('SupplierScorecardTool — Arabic path (isAr=true)', () => {
+  const ROSTER_KEY = 'isc-tool-supplier-roster';
+
+  function seedFullRoster() {
+    localStorage.setItem(ROSTER_KEY, JSON.stringify({
+      suppliers: [{
+        id: 'sup-ar-1',
+        name: 'مورّد نموذجي',
+        tier: 'Strategic',
+        subScores: {
+          delivery:     { otif: '90' },
+          quality:      { defect: '85' },
+          cost:         { savings: '80' },
+          compliance:   { regulatory: '90' },
+          innovation:   { ideas: '75' },
+          relationship: { responsiveness: '85' },
+        },
+      }],
+      activeId: 'sup-ar-1',
+    }));
+  }
+
+  it('shows Arabic generate button label', () => {
+    seedFullRoster();
+    stubFetchNetworkOff();
+    render(<SupplierScorecardTool isAr={true} />);
+    expect(screen.getByRole('button', { name: /توليد خطة التطوير/i })).toBeInTheDocument();
+  });
+
+  it('sends language=ar in the fetch body', async () => {
+    seedFullRoster();
+    stubFetchOk();
+    render(<SupplierScorecardTool isAr={true} />);
+
+    fireEvent.click(screen.getByRole('button', { name: /توليد خطة التطوير/i }));
+
+    await waitFor(() => expect(screen.getByText('الخطة المُولَّدة بالذكاء الاصطناعي')).toBeInTheDocument());
+    expect(getAIPlanFetchBody().language).toBe('ar');
+  });
+
+  it('result panel renders with dir="rtl"', async () => {
+    seedFullRoster();
+    stubFetchOk();
+    const { container } = render(<SupplierScorecardTool isAr={true} />);
+
+    fireEvent.click(screen.getByRole('button', { name: /توليد خطة التطوير/i }));
+
+    await waitFor(() => expect(screen.getByText('الخطة المُولَّدة بالذكاء الاصطناعي')).toBeInTheDocument());
+    expect(container.querySelector('[dir="rtl"]')).toBeInTheDocument();
+  });
+});
+
+describe('KPIDashboard — Arabic path (isAr=true via LanguageProvider)', () => {
+  const slug = 'supply-chain-strategy';
+  const SK   = `isc-kpi-${slug}`;
+
+  /** Render KPIDashboard with Arabic pre-set via localStorage so LanguageProvider starts in AR mode */
+  function renderKPIAr() {
+    localStorage.setItem('isc-lang', 'ar');
+    return render(
+      <LanguageProvider>
+        <KPIDashboard slug={slug} />
+      </LanguageProvider>,
+    );
+  }
+
+  it('shows Arabic generate button label', () => {
+    localStorage.setItem(SK, JSON.stringify({ por: '88' }));
+    renderKPIAr();
+    expect(screen.getByRole('button', { name: /توليد التقرير التنفيذي/i })).toBeInTheDocument();
+  });
+
+  it('sends language=ar in the fetch body', async () => {
+    localStorage.setItem(SK, JSON.stringify({ por: '88', otif: '91' }));
+    stubFetchOk();
+    renderKPIAr();
+
+    fireEvent.click(screen.getByRole('button', { name: /توليد التقرير التنفيذي/i }));
+
+    await waitFor(() => expect(screen.getByText('الخطة المُولَّدة بالذكاء الاصطناعي')).toBeInTheDocument());
+    expect(getAIPlanFetchBody().language).toBe('ar');
+  });
+
+  it('result panel renders with dir="rtl"', async () => {
+    localStorage.setItem(SK, JSON.stringify({ por: '88', otif: '91' }));
+    stubFetchOk();
+    const { container } = renderKPIAr();
+
+    fireEvent.click(screen.getByRole('button', { name: /توليد التقرير التنفيذي/i }));
+
+    await waitFor(() => expect(screen.getByText('الخطة المُولَّدة بالذكاء الاصطناعي')).toBeInTheDocument());
+    expect(container.querySelector('[dir="rtl"]')).toBeInTheDocument();
+  });
+});

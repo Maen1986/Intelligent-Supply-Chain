@@ -165,6 +165,14 @@ describe('AIPlanPanel — loading state', () => {
 /* ══════════════════════════════════════════════════════════════════════════
    4. Result state — panel header and content rendering
 ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── helpers for RTL / Arabic assertions ─────────────────────────────────── */
+
+/** Find the scrollable content div that carries dir="rtl" or dir="ltr" */
+function getContentDiv(container: HTMLElement) {
+  return container.querySelector('[dir]');
+}
+
 describe('AIPlanPanel — result panel', () => {
   it('shows the AI-Generated Plan panel header', () => {
     renderPanel({ result: MOCK_RESULT });
@@ -207,6 +215,46 @@ describe('AIPlanPanel — result panel', () => {
   it('shows the Arabic panel header when isAr=true', () => {
     renderPanel({ result: MOCK_RESULT, isAr: true });
     expect(screen.getByText('الخطة المُولَّدة بالذكاء الاصطناعي')).toBeInTheDocument();
+  });
+
+  it('result content area has dir="rtl" when isAr=true', () => {
+    const { container } = renderPanel({ result: MOCK_RESULT, isAr: true });
+    expect(getContentDiv(container)?.getAttribute('dir')).toBe('rtl');
+  });
+
+  it('result content area has dir="ltr" when isAr=false', () => {
+    const { container } = renderPanel({ result: MOCK_RESULT, isAr: false });
+    expect(getContentDiv(container)?.getAttribute('dir')).toBe('ltr');
+  });
+});
+
+/* ══════════════════════════════════════════════════════════════════════════
+   4b. Arabic priority badge translations
+══════════════════════════════════════════════════════════════════════════ */
+describe('AIPlanPanel — Arabic priority badges', () => {
+  it('renders [عالية] badge text (high priority)', () => {
+    renderPanel({ result: '- إجراء مطلوب [عالية]', isAr: true });
+    expect(screen.getByText('عالية')).toBeInTheDocument();
+  });
+
+  it('renders [متوسطة] badge text (medium priority)', () => {
+    renderPanel({ result: '- إجراء مطلوب [متوسطة]', isAr: true });
+    expect(screen.getByText('متوسطة')).toBeInTheDocument();
+  });
+
+  it('renders [منخفضة] badge text (low priority)', () => {
+    renderPanel({ result: '- إجراء مطلوب [منخفضة]', isAr: true });
+    expect(screen.getByText('منخفضة')).toBeInTheDocument();
+  });
+
+  it('renders all three Arabic priority badges in a multi-action plan', () => {
+    renderPanel({
+      result: '## خطة\n- بند عاجل [عالية]\n- بند متوسط [متوسطة]\n- بند منخفض [منخفضة]',
+      isAr: true,
+    });
+    expect(screen.getByText('عالية')).toBeInTheDocument();
+    expect(screen.getByText('متوسطة')).toBeInTheDocument();
+    expect(screen.getByText('منخفضة')).toBeInTheDocument();
   });
 });
 
