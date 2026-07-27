@@ -662,12 +662,12 @@ export function KraljicMatrix() {
                 loading={aiPlan.loading}
                 result={aiPlan.result}
                 error={aiPlan.error}
+                rateLimited={aiPlan.rateLimited}
                 onGenerate={aiPlan.generate}
                 onReset={aiPlan.reset}
                 savedPlan={aiPlan.savedPlan}
                 onViewSaved={aiPlan.viewSaved}
                 onDeleteSaved={aiPlan.deleteSaved}
-                rateLimited={aiPlan.rateLimited}
                 buttonLabel={isAr ? 'توليد تقرير المحفظة ✨' : 'Generate Portfolio Brief ✨'}
                 isAr={isAr}
                 toolKey="kraljic"

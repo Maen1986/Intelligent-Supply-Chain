@@ -55,6 +55,13 @@ export function useAIPlan(
   const abortRef = useRef<AbortController | null>(null);
   const prevAuthenticated = useRef<boolean>(isAuthenticated);
 
+  /**
+   * Set by Effect B when the pending-plan flag is consumed on login.
+   * Effect C reads this after the saved-plan fetch resolves and only calls
+   * generate() when no existing plan was found — preventing overwrites.
+   */
+  const pendingFlagConsumed = useRef(false);
+
   /* ── Auto-generate once when the user just logged in ── */
   useEffect(() => {
     const wasAuthenticated = prevAuthenticated.current;
@@ -73,8 +80,8 @@ export function useAIPlan(
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, result, savedPlan, canGenerate]);
 
-  /* ── Auto-generate after login (consume pendingAIPlan_<toolKey> flag) ── */
-  const prevAuthRef = useRef<boolean>(false);
+  /* ── Consume pendingAIPlan_<toolKey> flag on login — defer generate to Effect C ── */
+  const prevAuthRef = useRef<boolean>(isAuthenticated);
   useEffect(() => {
     const wasAuthenticated = prevAuthRef.current;
     prevAuthRef.current = isAuthenticated;
@@ -82,9 +89,18 @@ export function useAIPlan(
     if (isAuthenticated && !wasAuthenticated && toolKey && canGenerate) {
       const flagKey = `pendingAIPlan_${toolKey}`;
       if (sessionStorage.getItem(flagKey) === '1') {
+        // Remove the flag now to prevent re-consumption, but do NOT call generate()
+        // yet — we don't know whether the user already has a saved plan. Effect C
+        // will call generate() only after the GET /plans/:toolKey fetch confirms
+        // there is no existing plan.
         sessionStorage.removeItem(flagKey);
-        generate();
+        pendingFlagConsumed.current = true;
       }
+    } else {
+      // Auth didn't just transition false→true (e.g. toolKey or canGenerate changed
+      // while already authenticated). Clear any stale deferred-generate marker so it
+      // can't fire unexpectedly on a subsequent Effect C run.
+      pendingFlagConsumed.current = false;
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, toolKey, canGenerate]);
@@ -96,7 +112,10 @@ export function useAIPlan(
     setSavedPlan(null);
     setResult(null);
 
-    if (!toolKey || !isAuthenticated) return;
+    if (!toolKey || !isAuthenticated) {
+      pendingFlagConsumed.current = false;
+      return;
+    }
 
     let cancelled = false;
     (async () => {
@@ -104,15 +123,26 @@ export function useAIPlan(
         const res  = await fetch(`${API_BASE}/plans/${toolKey}`, { credentials: 'include' });
         const data = await res.json() as { ok: boolean; plan?: SavedPlan | null };
         if (!cancelled) {
-          // Explicitly set null when the server has no plan for this key
-          setSavedPlan(data.ok && data.plan ? data.plan : null);
+          const plan = data.ok && data.plan ? data.plan : null;
+          setSavedPlan(plan);
+
+          // If Effect B deferred a generate() (pending flag was set on login),
+          // only proceed when the server confirmed there is no existing plan.
+          if (pendingFlagConsumed.current) {
+            pendingFlagConsumed.current = false;
+            if (!plan) {
+              generate();
+            }
+          }
         }
       } catch {
         // Non-fatal — user just won't see a saved plan notice
+        pendingFlagConsumed.current = false;
       }
     })();
 
     return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [toolKey, isAuthenticated]);
 
   /* ── Generate (and persist if authenticated) ── */

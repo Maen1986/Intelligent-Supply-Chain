@@ -30,15 +30,19 @@ const TOOL_KEY  = 'kpi';
 const PLAN_TEXT = '## KPI Plan\n- Reduce lead time [HIGH]';
 
 /* ── Fetch stub: handles all calls the hook makes after login ─────────── */
-function stubAllFetches() {
+function stubAllFetches({ hasSavedPlan = false }: { hasSavedPlan?: boolean } = {}) {
+  const savedPlan = hasSavedPlan
+    ? { text: PLAN_TEXT, savedAt: '2026-07-01T00:00:00.000Z' }
+    : null;
+
   return vi.fn().mockImplementation((url: string, opts?: RequestInit) => {
     const method = opts?.method ?? 'GET';
 
-    // GET /plans/:toolKey — no saved plan on file
+    // GET /plans/:toolKey — optionally return a saved plan
     if (method === 'GET' && url.includes(`/plans/${TOOL_KEY}`)) {
       return Promise.resolve({
         ok: true,
-        json: async () => ({ ok: true, plan: null }),
+        json: async () => ({ ok: true, plan: savedPlan }),
       });
     }
     // POST /ai/plan — the generate endpoint
@@ -172,6 +176,93 @@ describe('useAIPlan login auto-generate — without pending flag', () => {
     await waitFor(() => expect(result.current.result).toBe(PLAN_TEXT), { timeout: 500 });
     expect(result.current.error).toBeNull();
     expect(result.current.loading).toBe(false);
+  });
+});
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Saved-plan guard — pending flag must be a no-op when a plan already exists
+   on the server, even when the flag is consumed during a real login transition.
+
+   The risk: Effect B fires on false→true and removes the flag; Effect C then
+   fetches the saved plan. Without the guard, generate() would be called before
+   the GET resolves — overwriting the existing plan. The fix: Effect B sets a
+   deferred-generate ref; Effect C calls generate() only when GET returns null.
+
+   Expected: POST /api/ai/plan is NEVER called; the existing plan is preserved.
+══════════════════════════════════════════════════════════════════════════ */
+describe('useAIPlan pending-flag — saved plan guard', () => {
+  it('does NOT call generate() when the server has a saved plan and the user logs in with a pending flag', async () => {
+    // Arrange: pending flag is set (simulating "Sign in to generate" redirect)
+    sessionStorage.setItem(`pendingAIPlan_${TOOL_KEY}`, '1');
+
+    // GET /plans/:toolKey returns an existing saved plan
+    const fetchMock = stubAllFetches({ hasSavedPlan: true });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { result, rerender } = renderHook(
+      ({ authed }: { authed: boolean }) => {
+        mockIsAuthenticated.value = authed;
+        return useAIPlan(() => 'build me a KPI plan', false, TOOL_KEY);
+      },
+      { initialProps: { authed: false } },
+    );
+
+    // Transition: unauthenticated → authenticated (real login event)
+    await act(async () => { rerender({ authed: true }); });
+
+    // Wait for the saved-plan GET to complete (savedPlan becomes populated)
+    await waitFor(() => expect(result.current.savedPlan).not.toBeNull(), { timeout: 500 });
+
+    // Assert: POST /api/ai/plan was NEVER called — existing plan was preserved
+    expect(countAIPlanCalls(fetchMock)).toBe(0);
+  });
+
+  it('preserves the server-side plan text and leaves result null after login with a pending flag', async () => {
+    sessionStorage.setItem(`pendingAIPlan_${TOOL_KEY}`, '1');
+
+    const fetchMock = stubAllFetches({ hasSavedPlan: true });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { result, rerender } = renderHook(
+      ({ authed }: { authed: boolean }) => {
+        mockIsAuthenticated.value = authed;
+        return useAIPlan(() => 'build me a KPI plan', false, TOOL_KEY);
+      },
+      { initialProps: { authed: false } },
+    );
+
+    await act(async () => { rerender({ authed: true }); });
+
+    // Wait for savedPlan to load
+    await waitFor(() => expect(result.current.savedPlan).not.toBeNull(), { timeout: 500 });
+
+    // The saved plan from the server must be intact, no new result generated
+    expect(result.current.savedPlan?.text).toBe(PLAN_TEXT);
+    expect(result.current.result).toBeNull();
+    expect(result.current.loading).toBe(false);
+  });
+
+  it('still removes the pending flag from sessionStorage even when generate() is skipped', async () => {
+    sessionStorage.setItem(`pendingAIPlan_${TOOL_KEY}`, '1');
+
+    const fetchMock = stubAllFetches({ hasSavedPlan: true });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { result, rerender } = renderHook(
+      ({ authed }: { authed: boolean }) => {
+        mockIsAuthenticated.value = authed;
+        return useAIPlan(() => 'prompt', false, TOOL_KEY);
+      },
+      { initialProps: { authed: false } },
+    );
+
+    await act(async () => { rerender({ authed: true }); });
+
+    // Wait for savedPlan load to confirm the full cycle completed
+    await waitFor(() => expect(result.current.savedPlan).not.toBeNull(), { timeout: 500 });
+
+    // Flag must be cleaned up regardless — prevents stale flags from accumulating
+    expect(sessionStorage.getItem(`pendingAIPlan_${TOOL_KEY}`)).toBeNull();
   });
 });
 
