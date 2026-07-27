@@ -12,6 +12,7 @@ import { AIPlanPanel } from '@/components/AIPlanPanel';
 import { useAuth } from '@/lib/AuthContext';
 import { KPI_DATA_SPECS } from '@/lib/kpiDataSpecs';
 import { INDUSTRIES, type IndustryKey, getIndustryBenchmark } from '@/lib/kpiBenchmarksByIndustry';
+import { SKU_CLASSES, type SkuClassKey, getSkuClassBenchmark } from '@/lib/kpiBenchmarksBySkuClass';
 
 /* ─── KPI definition types ─── */
 interface KpiDef {
@@ -606,12 +607,32 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
     } catch {}
   }, []);
 
-  /** Returns a patched KpiDef with industry-specific benchmark substituted in where available */
+  /* ── SKU / Inventory class selection ── */
+  const skuClassStorageKey = 'isc-kpi-sku-class';
+  const [selectedSkuClass, setSelectedSkuClass] = useState<SkuClassKey | null>(() => {
+    try { return (localStorage.getItem(skuClassStorageKey) as SkuClassKey) || null; } catch { return null; }
+  });
+  const handleSkuClassChange = useCallback((key: SkuClassKey | null) => {
+    setSelectedSkuClass(key);
+    try {
+      if (key) localStorage.setItem(skuClassStorageKey, key);
+      else localStorage.removeItem(skuClassStorageKey);
+    } catch {}
+  }, []);
+
+  /**
+   * Returns a KpiDef with the effective benchmark substituted.
+   * Priority: SKU class override → Industry override → KPI definition default.
+   * SKU class wins for inventory-intensive KPIs (turns, fa, buf, ppm, mav, pocycle…).
+   * Industry wins for process/operational KPIs not covered by SKU class.
+   */
   const withIndustryBenchmark = useCallback((kpi: KpiDef): KpiDef => {
-    const ib = getIndustryBenchmark(kpi.id, selectedIndustry);
-    if (!ib) return kpi;
-    return { ...kpi, benchmarkValue: ib.value, benchmarkLabel: ib.label, benchmarkLabelAr: ib.labelAr };
-  }, [selectedIndustry]);
+    const skuOverride = getSkuClassBenchmark(kpi.id, selectedSkuClass);
+    if (skuOverride) return { ...kpi, benchmarkValue: skuOverride.value, benchmarkLabel: skuOverride.label, benchmarkLabelAr: skuOverride.labelAr };
+    const indOverride = getIndustryBenchmark(kpi.id, selectedIndustry);
+    if (indOverride) return { ...kpi, benchmarkValue: indOverride.value, benchmarkLabel: indOverride.label, benchmarkLabelAr: indOverride.labelAr };
+    return kpi;
+  }, [selectedIndustry, selectedSkuClass]);
 
   const bannerDismissKey = `isc-kpi-banner-dismissed-${resolvedSlug}`;
   const [bannerDismissed, setBannerDismissed] = useState<boolean>(() => {
@@ -647,26 +668,31 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
         : raw > 0 ? Math.min(100, Math.round((ek.targetValue / raw) * 100)) : 0;
     }).filter((v): v is number => v !== null);
     const overallScore = rawScores.length > 0 ? Math.round(rawScores.reduce((a, b) => a + b, 0) / rawScores.length) : 0;
+    const skuMeta = selectedSkuClass ? SKU_CLASSES.find(s => s.id === selectedSkuClass) : null;
     const industryContext = industryMeta
-      ? `Industry context: ${industryMeta.label} sector in the GCC. All benchmarks are ${industryMeta.label}-specific peer medians — weight your analysis accordingly.`
-      : 'Industry context: General GCC cross-sector benchmarks used.';
+      ? `Industry: ${industryMeta.label} (GCC sector median benchmarks applied)`
+      : 'Industry: General GCC cross-sector benchmarks';
+    const skuContext = skuMeta
+      ? `Inventory class: ${skuMeta.label} — ${skuMeta.description}. SKU-class benchmarks override industry values for inventory-intensive KPIs (turns, forecast accuracy, buffer stock, defect rate, maverick spend, PO cycle time).`
+      : 'Inventory class: All classes (no SKU-class filter applied)';
     return [
       `## KPI Performance Brief — Framework: ${resolvedSlug}`,
       `Health Score: ${overallScore}/100 | KPIs entered: ${entered} of ${kpis.length}`,
       industryContext,
+      skuContext,
       '',
       '## KPI Status (6-tier: World Class / Best-in-GCC / Competitive / Developing / Needs Attention / Critical Gap)',
       kpiLines || '(no KPI values entered)',
       '',
       '## Your Task',
-      `Generate a 3–5 paragraph executive performance brief for a ${industryMeta?.label ?? 'GCC'} supply chain organisation:`,
-      '1. Lead with an overall health score narrative calibrated to this industry — what the number means competitively',
-      '2. Call out CRITICAL GAP and NEEDS ATTENTION KPIs by name with actual vs target and the industry peer gap',
-      '3. For each underperforming KPI: one root-cause hypothesis specific to this sector, one corrective action',
-      '4. Close with a prioritised 30-day action list (label each item [HIGH], [MEDIUM], or [LOW])',
-      '5. Where relevant, reference GCC Vision 2030 supply chain priorities (Iktva, localisation, digital transformation)',
+      `Generate a 3–5 paragraph executive performance brief for a ${industryMeta?.label ?? 'GCC'} organisation${skuMeta ? ` focusing on ${skuMeta.label} inventory` : ''}:`,
+      '1. Lead with an overall health score narrative calibrated to this industry and inventory class',
+      '2. Call out CRITICAL GAP and NEEDS ATTENTION KPIs with actual vs target and the peer gap',
+      `3. For each underperforming KPI: one root-cause specific to ${skuMeta ? skuMeta.label + ' inventory in the ' + (industryMeta?.label ?? 'GCC') + ' context' : (industryMeta?.label ?? 'GCC') + ' sector'}, one corrective action`,
+      '4. Close with a prioritised 30-day action list ([HIGH] / [MEDIUM] / [LOW])',
+      '5. Where relevant, reference GCC Vision 2030 priorities (Iktva, localisation, digital transformation)',
     ].join('\n');
-  }, [kpis, values, resolvedSlug, selectedIndustry, withIndustryBenchmark]);
+  }, [kpis, values, resolvedSlug, selectedIndustry, selectedSkuClass, withIndustryBenchmark]);
 
   // Compute hasAnyValue here (before hook) so canGenerate can be passed to useAIPlan
   const hasAnyValue = !!kpis && kpis.some(k => !isNaN(parseFloat(values[k.id] ?? '')));
@@ -1011,6 +1037,56 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
                 {isAr
                   ? `المعايير مُعدَّلة لـ ${INDUSTRIES.find(i => i.id === selectedIndustry)?.labelAr}`
                   : `Benchmarks calibrated for ${INDUSTRIES.find(i => i.id === selectedIndustry)?.label}`}
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* SKU / Inventory class row */}
+        <div className="flex items-start gap-3 flex-wrap pt-2.5 border-t border-slate-200 mt-2.5">
+          <div className="shrink-0 pt-0.5">
+            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+              {isAr ? 'تصنيف المخزون / الصنف' : 'SKU / Inventory Class'}
+            </p>
+            <p className="text-[10px] text-muted-foreground mt-0.5 whitespace-nowrap">
+              {isAr ? 'يُعدِّل مؤشرات المخزون' : 'Adjusts inventory-intensive KPIs'}
+            </p>
+          </div>
+          <div className="flex items-center gap-1.5 flex-wrap flex-1">
+            <button
+              onClick={() => handleSkuClassChange(null)}
+              className="text-[10px] font-semibold px-2.5 py-1 rounded-full border transition-all whitespace-nowrap"
+              style={!selectedSkuClass ? {
+                background: '#475569', color: '#fff', borderColor: '#475569',
+              } : {
+                background: '#fff', color: '#9ca3af', borderColor: '#e5e7eb',
+              }}
+            >
+              {isAr ? '📦 كل الأصناف' : '📦 All Classes'}
+            </button>
+            {SKU_CLASSES.map(sc => (
+              <button
+                key={sc.id}
+                onClick={() => handleSkuClassChange(sc.id)}
+                title={sc.description}
+                className="text-[10px] font-semibold px-2.5 py-1 rounded-full border transition-all whitespace-nowrap"
+                style={selectedSkuClass === sc.id ? {
+                  background: '#475569', color: '#fff', borderColor: '#475569',
+                } : {
+                  background: '#fff', color: '#9ca3af', borderColor: '#e5e7eb',
+                }}
+              >
+                {sc.icon} {isAr ? sc.labelAr : sc.label}
+              </button>
+            ))}
+          </div>
+          {selectedSkuClass && (
+            <div className="shrink-0 pt-0.5">
+              <p className="text-[10px] text-slate-600 font-semibold flex items-center gap-1">
+                <span>✓</span>
+                {isAr
+                  ? `مُعدَّل لـ ${SKU_CLASSES.find(s => s.id === selectedSkuClass)?.labelAr}`
+                  : `Overrides: ${SKU_CLASSES.find(s => s.id === selectedSkuClass)?.label}`}
               </p>
             </div>
           )}
