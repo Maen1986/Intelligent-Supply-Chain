@@ -77,7 +77,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     const data = await res.json().catch(() => null);
-    if (!res.ok || !data?.ok) throw new Error(data?.error ?? 'Registration failed — server error');
+    if (!res.ok || !data?.ok) {
+      const err = new Error(data?.error ?? 'Registration failed — server error');
+      if (res.status === 429 && typeof data?.retryAfterSeconds === 'number') {
+        (err as any).retryAfterSeconds = data.retryAfterSeconds;
+      }
+      throw err;
+    }
 
     setUser(data.user);
   }, []);

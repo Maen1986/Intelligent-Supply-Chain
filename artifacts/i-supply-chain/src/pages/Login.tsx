@@ -79,7 +79,13 @@ export function Login() {
       navigate(redirectTo);
     } catch (err) {
       const msg = err instanceof Error ? err.message : '';
-      if (msg.toLowerCase().includes('already exists')) {
+      const retryAfterSeconds = (err as any)?.retryAfterSeconds;
+      if (typeof retryAfterSeconds === 'number' && retryAfterSeconds > 0) {
+        const mins = Math.ceil(retryAfterSeconds / 60);
+        setError(ar
+          ? `محاولات كثيرة جداً — حاول مرة أخرى بعد ${mins} دقيقة تقريباً.`
+          : `Too many attempts — try again in ~${mins} minute${mins === 1 ? '' : 's'}.`);
+      } else if (msg.toLowerCase().includes('already exists')) {
         setError(ar ? 'يوجد حساب مسجّل بهذا البريد الإلكتروني بالفعل. يُرجى تسجيل الدخول.' : 'An account with this email already exists. Please sign in.');
       } else {
         setError(ar ? 'تعذّر إنشاء الحساب. حاول مرة أخرى.' : msg || 'Could not create the account. Please try again.');
