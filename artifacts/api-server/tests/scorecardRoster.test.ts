@@ -15,6 +15,7 @@ import { makeApp, dbState, resetDbState, makeDbMock, makeLoggerMock } from './he
 
 vi.mock('@workspace/db', () => makeDbMock());
 vi.mock('../src/lib/logger', () => makeLoggerMock());
+vi.mock('../src/lib/webhookDispatch', () => ({ dispatchEvent: vi.fn() }));
 
 import scorecardRosterRouter from '../src/routes/scorecardRoster';
 
@@ -155,10 +156,12 @@ describe('PUT /api/scorecard-roster', () => {
     const { db } = await import('@workspace/db');
     const executeMock = db.execute as ReturnType<typeof vi.fn>;
 
-    // First call (PUT) → success; second call (GET) → return stored data
+    // PUT now makes two db.execute calls: SELECT (pre-read) + UPDATE.
+    // GET then makes a third SELECT call.
     executeMock
-      .mockResolvedValueOnce({ rows: [] })                                // PUT
-      .mockResolvedValueOnce({ rows: [{ scorecard_roster: VALID_ROSTER }] }); // GET
+      .mockResolvedValueOnce({ rows: [] })                                     // PUT pre-read SELECT (no prior roster)
+      .mockResolvedValueOnce({ rows: [] })                                     // PUT UPDATE
+      .mockResolvedValueOnce({ rows: [{ scorecard_roster: VALID_ROSTER }] });  // GET SELECT
 
     const app = makeApp('/api/scorecard-roster', scorecardRosterRouter, { userId: 1 });
 

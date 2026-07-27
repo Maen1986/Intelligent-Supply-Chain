@@ -3,6 +3,7 @@ import type { RequestHandler } from 'express';
 import { sql } from 'drizzle-orm';
 import { db } from '@workspace/db';
 import { logger } from '../lib/logger';
+import { dispatchEvent } from '../lib/webhookDispatch';
 
 const router = Router();
 
@@ -44,11 +45,57 @@ router.put('/', requireAuth, async (req, res) => {
     return;
   }
   try {
+    const userId = req.session.userId as number;
+
+    // Fetch existing roster to detect tier changes before overwriting
+    const existing = await db.execute(
+      sql`SELECT scorecard_roster FROM users WHERE id = ${userId}`,
+    );
+    const existingRoster = (existing.rows?.[0] as { scorecard_roster: unknown } | undefined)
+      ?.scorecard_roster;
+
+    // Build map of supplierId → tier from the old roster
+    const oldTierMap = new Map<string, string>();
+    if (
+      existingRoster &&
+      typeof existingRoster === 'object' &&
+      Array.isArray((existingRoster as Record<string, unknown>).suppliers)
+    ) {
+      for (const s of (existingRoster as { suppliers: unknown[] }).suppliers) {
+        if (s && typeof s === 'object') {
+          const r = s as Record<string, unknown>;
+          if (typeof r.id === 'string' && typeof r.tier === 'string') {
+            oldTierMap.set(r.id, r.tier);
+          }
+        }
+      }
+    }
+
     await db.execute(
       sql`UPDATE users
           SET scorecard_roster = ${JSON.stringify(roster)}::jsonb
-          WHERE id = ${req.session.userId}`,
+          WHERE id = ${userId}`,
     );
+
+    // Dispatch supplier.tier_changed for each supplier whose tier differs
+    const newSuppliers = (roster as { suppliers: unknown[] }).suppliers;
+    for (const s of newSuppliers) {
+      if (s && typeof s === 'object') {
+        const r = s as Record<string, unknown>;
+        if (typeof r.id === 'string' && typeof r.tier === 'string') {
+          const oldTier = oldTierMap.get(r.id);
+          if (oldTier !== undefined && oldTier !== r.tier) {
+            dispatchEvent(userId, 'supplier.tier_changed', {
+              supplierId: r.id,
+              supplierName: typeof r.name === 'string' ? r.name : r.id,
+              oldTier,
+              newTier: r.tier,
+            });
+          }
+        }
+      }
+    }
+
     res.json({ ok: true });
   } catch (err) {
     logger.error({ err }, '[scorecard-roster] PUT failed');
