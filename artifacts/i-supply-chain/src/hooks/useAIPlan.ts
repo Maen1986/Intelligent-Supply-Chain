@@ -31,11 +31,14 @@ export interface AIPlanState {
   error:        string | null;
   /** True when the last request was rejected with a 429 rate-limit response. */
   rateLimited:  boolean;
+  /** True when generation succeeded but the server-side save failed — plan is shown but not persisted. */
+  saveError:    boolean;
   generate:     () => Promise<void>;
   reset:        () => void;
   savedPlan:    SavedPlan | null;
   viewSaved:    () => void;
   deleteSaved:  () => Promise<void>;
+  dismissSaveError: () => void;
 }
 
 export function useAIPlan(
@@ -51,6 +54,7 @@ export function useAIPlan(
   const [result,      setResult]      = useState<string | null>(null);
   const [error,       setError]       = useState<string | null>(null);
   const [rateLimited, setRateLimited] = useState(false);
+  const [saveError,   setSaveError]   = useState(false);
   const [savedPlan,   setSavedPlan]   = useState<SavedPlan | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const prevAuthenticated = useRef<boolean>(isAuthenticated);
@@ -157,6 +161,7 @@ export function useAIPlan(
     setResult(null);
     setError(null);
     setRateLimited(false);
+    setSaveError(false);
 
     try {
       const res = await fetch(`${API_BASE}/ai/plan`, {
@@ -202,11 +207,15 @@ export function useAIPlan(
             body:        JSON.stringify({ text }),
           });
           const saveData = await saveRes.json() as { ok: boolean; savedAt?: string };
-          if (saveData.ok && saveData.savedAt) {
+          if (saveRes.ok && saveData.ok && saveData.savedAt) {
             setSavedPlan({ text, savedAt: saveData.savedAt });
+          } else {
+            // HTTP error or API-level failure — plan shown but not persisted
+            setSaveError(true);
           }
         } catch {
-          // Non-fatal — the plan is still shown, just not persisted
+          // Network/parse error — plan shown but not persisted; surface a warning
+          setSaveError(true);
         }
       }
     } catch (err) {
@@ -228,7 +237,11 @@ export function useAIPlan(
     setError(null);
     setLoading(false);
     setRateLimited(false);
+    setSaveError(false);
   }, []);
+
+  /* ── Dismiss save-error warning without clearing the result ── */
+  const dismissSaveError = useCallback(() => setSaveError(false), []);
 
   /* ── View saved plan ── */
   const viewSaved = useCallback(() => {
@@ -257,5 +270,5 @@ export function useAIPlan(
     }
   }, [toolKey, savedPlan, isAr]);
 
-  return { loading, result, error, rateLimited, generate, reset, savedPlan, viewSaved, deleteSaved };
+  return { loading, result, error, rateLimited, saveError, generate, reset, savedPlan, viewSaved, deleteSaved, dismissSaveError };
 }

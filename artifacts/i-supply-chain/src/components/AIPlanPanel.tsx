@@ -11,7 +11,7 @@
  */
 import React, { useState } from 'react';
 import { useLocation } from 'wouter';
-import { Sparkles, Loader2, Copy, Check, ChevronDown, ChevronUp, RefreshCw, AlertCircle, LogIn, History, Trash2 } from 'lucide-react';
+import { Sparkles, Loader2, Copy, Check, ChevronDown, ChevronUp, RefreshCw, AlertCircle, LogIn, History, Trash2, CloudOff } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 import { type SavedPlan } from '@/hooks/useAIPlan';
 
@@ -34,11 +34,14 @@ interface AIPlanPanelProps {
   rateLimited?: boolean;
   /** Tool key used to set a pending-generate flag in sessionStorage before redirecting to login */
   toolKey?: string;
+  /** True when the plan was generated but the server-side save failed */
+  saveError?: boolean;
+  onDismissSaveError?: () => void;
 }
 
 export function AIPlanPanel({
   loading, result, error, onGenerate, onReset, buttonLabel, isAr, disabled,
-  savedPlan, onViewSaved, onDeleteSaved, rateLimited, toolKey,
+  savedPlan, onViewSaved, onDeleteSaved, rateLimited, toolKey, saveError, onDismissSaveError,
 }: AIPlanPanelProps) {
   const { isAuthenticated, loading: authLoading } = useAuth();
   const [location, navigate] = useLocation();
@@ -142,6 +145,25 @@ export function AIPlanPanel({
           )}
           <button
             onClick={onReset}
+            className="font-bold opacity-50 hover:opacity-100 shrink-0"
+            title={isAr ? 'إغلاق' : 'Dismiss'}
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
+      {/* ── Save-error warning (plan shown but not persisted) ── */}
+      {saveError && result && !loading && (
+        <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-xs text-amber-800 max-w-3xl">
+          <CloudOff className="w-3.5 h-3.5 shrink-0" />
+          <span className="flex-1">
+            {isAr
+              ? 'تعذّر حفظ الخطة — قد تُفقد عند تحديث الصفحة'
+              : 'Plan not saved — refresh may lose it'}
+          </span>
+          <button
+            onClick={onDismissSaveError}
             className="font-bold opacity-50 hover:opacity-100 shrink-0"
             title={isAr ? 'إغلاق' : 'Dismiss'}
           >

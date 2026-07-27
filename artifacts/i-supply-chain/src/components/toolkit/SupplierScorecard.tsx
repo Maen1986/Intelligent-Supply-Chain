@@ -404,7 +404,8 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
   }, [active, config]);
 
   const { loading: planLoading, result: planResult, error: planError, rateLimited: planRateLimited, generate: generatePlan, reset: resetPlan,
-          savedPlan: planSavedPlan, viewSaved: viewSavedPlan, deleteSaved: deleteSavedPlan } =
+          savedPlan: planSavedPlan, viewSaved: viewSavedPlan, deleteSaved: deleteSavedPlan,
+          saveError: planSaveError, dismissSaveError: dismissPlanSaveError } =
     useAIPlan(buildScorecardPrompt, isAr, active?.id ? `scorecard-${active.id}` : undefined, weightedScore !== null);
 
   // Clear any displayed plan result when the user switches to a different supplier.
@@ -1157,6 +1158,8 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
                 onViewSaved={viewSavedPlan}
                 onDeleteSaved={deleteSavedPlan}
                 rateLimited={planRateLimited}
+                saveError={planSaveError}
+                onDismissSaveError={dismissPlanSaveError}
                 toolKey={active?.id ? `scorecard-${active.id}` : undefined}
               />
             )}

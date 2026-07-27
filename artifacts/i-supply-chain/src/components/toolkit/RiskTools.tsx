@@ -925,6 +925,8 @@ export function RiskToolsSection({ isAr }: RiskToolsProps) {
           onGenerate={aiPlan.generate} onReset={aiPlan.reset}
           savedPlan={aiPlan.savedPlan} onViewSaved={aiPlan.viewSaved} onDeleteSaved={aiPlan.deleteSaved}
           rateLimited={aiPlan.rateLimited}
+          saveError={aiPlan.saveError}
+          onDismissSaveError={aiPlan.dismissSaveError}
           buttonLabel={isAr ? 'توليد تقرير المخاطر ✨' : 'Generate Risk Assessment ✨'}
           isAr={isAr} toolKey="risk-register"
           disabled={risks.length === 0 && !Object.values(kriValues).some(v => v)}

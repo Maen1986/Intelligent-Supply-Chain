@@ -545,6 +545,185 @@ describe('useAIPlan persistence — pending flag + canGenerate gate', () => {
     await act(async () => { resolveGet(); await new Promise(r => setTimeout(r, 10)); });
   });
 
+/* ══════════════════════════════════════════════════════════════════════════
+   7. saveError — warn when plan persistence fails after generation
+══════════════════════════════════════════════════════════════════════════ */
+describe('useAIPlan persistence — saveError when plan save fails', () => {
+  /** Base fetch that makes the GET return no saved plan and /ai/plan succeed */
+  function stubGenerateOk(planText = PLAN_TEXT) {
+    return vi.fn().mockImplementation((url: string, opts?: RequestInit) => {
+      const method = opts?.method ?? 'GET';
+      if (method === 'GET' && url.includes(`/plans/${TOOL_KEY}`)) {
+        return Promise.resolve({ ok: true, json: async () => ({ ok: true, plan: null }) });
+      }
+      if (method === 'POST' && url.includes('/ai/plan')) {
+        return Promise.resolve({
+          ok: true, status: 200,
+          json: async () => ({ ok: true, text: planText }),
+        });
+      }
+      return Promise.resolve({ ok: true, json: async () => ({ ok: true }) });
+    });
+  }
+
+  it('sets saveError when the save POST returns a non-ok HTTP status (e.g. 500)', async () => {
+    const fetchMock = stubGenerateOk();
+    // Override the save POST to return 500
+    fetchMock.mockImplementation((url: string, opts?: RequestInit) => {
+      const method = opts?.method ?? 'GET';
+      if (method === 'GET' && url.includes(`/plans/${TOOL_KEY}`)) {
+        return Promise.resolve({ ok: true, json: async () => ({ ok: true, plan: null }) });
+      }
+      if (method === 'POST' && url.includes('/ai/plan')) {
+        return Promise.resolve({
+          ok: true, status: 200,
+          json: async () => ({ ok: true, text: PLAN_TEXT }),
+        });
+      }
+      if (method === 'POST' && url.includes(`/plans/${TOOL_KEY}`)) {
+        return Promise.resolve({ ok: false, status: 500, json: async () => ({ ok: false }) });
+      }
+      return Promise.resolve({ ok: true, json: async () => ({ ok: true }) });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { result } = renderHook(() => useAIPlan(() => 'prompt', false, TOOL_KEY));
+    await act(() => result.current.generate());
+
+    expect(result.current.result).toBe(PLAN_TEXT);   // plan still shown
+    expect(result.current.saveError).toBe(true);      // warning triggered
+    expect(result.current.savedPlan).toBeNull();      // not persisted
+  });
+
+  it('sets saveError when the save POST returns ok:false in the JSON body', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockImplementation((url: string, opts?: RequestInit) => {
+      const method = opts?.method ?? 'GET';
+      if (method === 'GET' && url.includes(`/plans/${TOOL_KEY}`)) {
+        return Promise.resolve({ ok: true, json: async () => ({ ok: true, plan: null }) });
+      }
+      if (method === 'POST' && url.includes('/ai/plan')) {
+        return Promise.resolve({
+          ok: true, status: 200,
+          json: async () => ({ ok: true, text: PLAN_TEXT }),
+        });
+      }
+      if (method === 'POST' && url.includes(`/plans/${TOOL_KEY}`)) {
+        // HTTP 200 but API signals failure
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ ok: false }) });
+      }
+      return Promise.resolve({ ok: true, json: async () => ({ ok: true }) });
+    }));
+
+    const { result } = renderHook(() => useAIPlan(() => 'prompt', false, TOOL_KEY));
+    await act(() => result.current.generate());
+
+    expect(result.current.result).toBe(PLAN_TEXT);
+    expect(result.current.saveError).toBe(true);
+    expect(result.current.savedPlan).toBeNull();
+  });
+
+  it('sets saveError when the save POST throws a network error', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockImplementation((url: string, opts?: RequestInit) => {
+      const method = opts?.method ?? 'GET';
+      if (method === 'GET' && url.includes(`/plans/${TOOL_KEY}`)) {
+        return Promise.resolve({ ok: true, json: async () => ({ ok: true, plan: null }) });
+      }
+      if (method === 'POST' && url.includes('/ai/plan')) {
+        return Promise.resolve({
+          ok: true, status: 200,
+          json: async () => ({ ok: true, text: PLAN_TEXT }),
+        });
+      }
+      if (method === 'POST' && url.includes(`/plans/${TOOL_KEY}`)) {
+        return Promise.reject(new TypeError('Failed to fetch'));
+      }
+      return Promise.resolve({ ok: true, json: async () => ({ ok: true }) });
+    }));
+
+    const { result } = renderHook(() => useAIPlan(() => 'prompt', false, TOOL_KEY));
+    await act(() => result.current.generate());
+
+    expect(result.current.result).toBe(PLAN_TEXT);
+    expect(result.current.saveError).toBe(true);
+  });
+
+  it('saveError is false after a successful save', async () => {
+    vi.stubGlobal('fetch', stubFullFlow(PLAN_TEXT));
+
+    const { result } = renderHook(() => useAIPlan(() => 'prompt', false, TOOL_KEY));
+    await act(() => result.current.generate());
+
+    expect(result.current.saveError).toBe(false);
+    expect(result.current.savedPlan).not.toBeNull();
+  });
+
+  it('dismissSaveError clears saveError without affecting result or savedPlan', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockImplementation((url: string, opts?: RequestInit) => {
+      const method = opts?.method ?? 'GET';
+      if (method === 'GET' && url.includes(`/plans/${TOOL_KEY}`)) {
+        return Promise.resolve({ ok: true, json: async () => ({ ok: true, plan: null }) });
+      }
+      if (method === 'POST' && url.includes('/ai/plan')) {
+        return Promise.resolve({
+          ok: true, status: 200,
+          json: async () => ({ ok: true, text: PLAN_TEXT }),
+        });
+      }
+      // Save fails
+      return Promise.resolve({ ok: false, status: 500, json: async () => ({ ok: false }) });
+    }));
+
+    const { result } = renderHook(() => useAIPlan(() => 'prompt', false, TOOL_KEY));
+    await act(() => result.current.generate());
+
+    expect(result.current.saveError).toBe(true);
+    expect(result.current.result).toBe(PLAN_TEXT);
+
+    act(() => result.current.dismissSaveError());
+
+    expect(result.current.saveError).toBe(false);
+    expect(result.current.result).toBe(PLAN_TEXT);   // result unchanged
+  });
+
+  it('saveError resets to false at the start of a new generate() call', async () => {
+    let callCount = 0;
+    vi.stubGlobal('fetch', vi.fn().mockImplementation((url: string, opts?: RequestInit) => {
+      const method = opts?.method ?? 'GET';
+      if (method === 'GET' && url.includes(`/plans/${TOOL_KEY}`)) {
+        return Promise.resolve({ ok: true, json: async () => ({ ok: true, plan: null }) });
+      }
+      if (method === 'POST' && url.includes('/ai/plan')) {
+        return Promise.resolve({
+          ok: true, status: 200,
+          json: async () => ({ ok: true, text: PLAN_TEXT }),
+        });
+      }
+      if (method === 'POST' && url.includes(`/plans/${TOOL_KEY}`)) {
+        callCount++;
+        // First save fails; second save succeeds
+        if (callCount === 1) {
+          return Promise.resolve({ ok: false, status: 500, json: async () => ({ ok: false }) });
+        }
+        return Promise.resolve({
+          ok: true, json: async () => ({ ok: true, savedAt: new Date().toISOString() }),
+        });
+      }
+      return Promise.resolve({ ok: true, json: async () => ({ ok: true }) });
+    }));
+
+    const { result } = renderHook(() => useAIPlan(() => 'prompt', false, TOOL_KEY));
+
+    // First generate — save fails
+    await act(() => result.current.generate());
+    expect(result.current.saveError).toBe(true);
+
+    // Second generate — saveError must clear at the start
+    await act(() => result.current.generate());
+    expect(result.current.saveError).toBe(false);   // cleared by successful save
+    expect(result.current.savedPlan).not.toBeNull();
+  });
+});
+
   it('removes the flag and calls generate() when canGenerate=true and no saved plan exists', async () => {
     mockIsAuthenticated.value = false;
     sessionStorage.setItem(`pendingAIPlan_${TOOL_KEY}`, '1');

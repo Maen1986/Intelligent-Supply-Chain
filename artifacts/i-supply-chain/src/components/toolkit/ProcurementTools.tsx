@@ -783,6 +783,8 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
           onGenerate={aiPlan.generate} onReset={aiPlan.reset}
           savedPlan={aiPlan.savedPlan} onViewSaved={aiPlan.viewSaved} onDeleteSaved={aiPlan.deleteSaved}
           rateLimited={aiPlan.rateLimited}
+          saveError={aiPlan.saveError}
+          onDismissSaveError={aiPlan.dismissSaveError}
           buttonLabel={isAr ? 'توليد استراتيجية الفئة ✨' : 'Generate Category Strategy ✨'}
           isAr={isAr} toolKey="procurement-catmgmt"
           disabled={validRows.length < 2}

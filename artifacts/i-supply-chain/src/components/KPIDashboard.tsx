@@ -811,7 +811,8 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
   const hasAnyValue = !!kpis && kpis.some(k => !isNaN(parseFloat(values[k.id] ?? '')));
 
   const { loading: planLoading, result: planResult, error: planError, rateLimited: planRateLimited, generate: generatePlan, reset: resetPlan,
-          savedPlan: planSavedPlan, viewSaved: viewSavedPlan, deleteSaved: deleteSavedPlan } =
+          savedPlan: planSavedPlan, viewSaved: viewSavedPlan, deleteSaved: deleteSavedPlan,
+          saveError: planSaveError, dismissSaveError: dismissPlanSaveError } =
     useAIPlan(buildKpiPrompt, isAr, 'kpi', hasAnyValue);
 
   const handleChange = useCallback((id: string, raw: string) => {
@@ -1505,6 +1506,8 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
           onViewSaved={viewSavedPlan}
           onDeleteSaved={deleteSavedPlan}
           rateLimited={planRateLimited}
+          saveError={planSaveError}
+          onDismissSaveError={dismissPlanSaveError}
           toolKey="kpi"
         />
       )}

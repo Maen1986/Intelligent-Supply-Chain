@@ -136,7 +136,8 @@ export function MaturityAssessmentTool({ slug, isAr }: MaturityToolsProps) {
   }, [slug, scores, dims, avg, band]);
 
   const { loading: planLoading, result: planResult, error: planError, rateLimited: planRateLimited, generate: generatePlan, reset: resetPlan,
-          savedPlan: planSavedPlan, viewSaved: viewSavedPlan, deleteSaved: deleteSavedPlan } =
+          savedPlan: planSavedPlan, viewSaved: viewSavedPlan, deleteSaved: deleteSavedPlan,
+          saveError: planSaveError, dismissSaveError: dismissPlanSaveError } =
     useAIPlan(buildMaturityPrompt, isAr, 'maturity', filled.length > 0);
 
   const LEVEL_COLORS = { 1: '#fca5a5', 2: '#fcd34d', 3: '#6ee7b7', 4: '#34d399', 5: '#059669' };
@@ -212,6 +213,8 @@ export function MaturityAssessmentTool({ slug, isAr }: MaturityToolsProps) {
           onViewSaved={viewSavedPlan}
           onDeleteSaved={deleteSavedPlan}
           rateLimited={planRateLimited}
+          saveError={planSaveError}
+          onDismissSaveError={dismissPlanSaveError}
           toolKey="maturity"
         />
 

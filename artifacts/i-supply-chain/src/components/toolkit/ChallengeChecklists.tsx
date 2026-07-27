@@ -1517,6 +1517,8 @@ function ChallengeAIPanel({
       onGenerate={aiPlan.generate} onReset={aiPlan.reset}
       savedPlan={aiPlan.savedPlan} onViewSaved={aiPlan.viewSaved} onDeleteSaved={aiPlan.deleteSaved}
       rateLimited={aiPlan.rateLimited}
+      saveError={aiPlan.saveError}
+      onDismissSaveError={aiPlan.dismissSaveError}
       buttonLabel={isAr ? 'توليد توجيه AI لهذا التحدّي ✨' : 'Generate AI Guidance for This Challenge ✨'}
       isAr={isAr} toolKey={storageKey}
     />
