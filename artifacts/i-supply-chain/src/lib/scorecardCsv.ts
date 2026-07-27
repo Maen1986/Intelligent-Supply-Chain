@@ -133,13 +133,13 @@ const TIERS = [
   { label: 'Transactional', min:  0 },
 ];
 
-function getTier(score: number, config: ScorecardConfig) {
+export function getTier(score: number, config: ScorecardConfig) {
   if (score >= config.tiers.strategic) return TIERS[0];
   if (score >= config.tiers.preferred) return TIERS[1];
   return TIERS[2];
 }
 
-function calcWeightedScore(
+export function calcWeightedScore(
   subScores: Record<string, Record<string, string>>,
   config: ScorecardConfig,
 ): number | null {

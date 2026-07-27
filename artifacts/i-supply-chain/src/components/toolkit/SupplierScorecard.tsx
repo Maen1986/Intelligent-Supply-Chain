@@ -55,12 +55,12 @@ const TIER_OPTIONS_AR = ['استراتيجي', 'مفضّل', 'معاملاتي',
 
 /* ─── Configurable framework ─── */
 // ScorecardConfig is imported from @/lib/scorecardCsv
-const DEFAULT_CONFIG: ScorecardConfig = {
+export const DEFAULT_CONFIG: ScorecardConfig = {
   weights: { delivery: 25, quality: 25, cost: 20, compliance: 15, innovation: 10, relationship: 5 },
   tiers: { strategic: 75, preferred: 55 },
 };
-const CONFIG_KEY = 'isc-tool-scorecard-config';
-function loadConfig(): ScorecardConfig {
+export const CONFIG_KEY = 'isc-tool-scorecard-config';
+export function loadConfig(): ScorecardConfig {
   try {
     const raw = localStorage.getItem(CONFIG_KEY);
     if (raw) {
