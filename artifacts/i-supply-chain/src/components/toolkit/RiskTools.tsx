@@ -838,14 +838,14 @@ export function RiskToolsSection({ isAr }: RiskToolsProps) {
 
             {/* Table */}
             <div className="overflow-x-auto px-5 py-4">
-              <table className="w-full border-collapse text-sm">
+              <table className="w-full border-collapse text-sm" aria-label={isAr ? 'إعداد تنبيهات الموردين' : 'Supplier alert thresholds by tier'}>
                 <thead>
                   <tr className="border-b border-slate-200">
-                    <th className="text-left py-2 pr-4 text-[11px] font-bold text-slate-500 uppercase tracking-wider w-32">
+                    <th scope="col" className="text-left py-2 pr-4 text-[11px] font-bold text-slate-500 uppercase tracking-wider w-32">
                       {isAr ? 'الشريحة' : 'Tier'}
                     </th>
                     {ALERT_COLS.map(col => (
-                      <th key={col.field} className="text-center py-2 px-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                      <th key={col.field} scope="col" className="text-center py-2 px-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
                         <div>{isAr ? col.labelAr : col.label}</div>
                         <div className="text-[10px] font-normal text-slate-400 normal-case tracking-normal mt-0.5">
                           ({isAr ? col.unitAr : col.unit})
@@ -857,13 +857,16 @@ export function RiskToolsSection({ isAr }: RiskToolsProps) {
                 <tbody>
                   {ALERT_TIERS.map((tier, tierIdx) => (
                     <tr key={tier.label} className="border-b border-slate-100 last:border-0">
-                      <td className="py-3 pr-4">
+                      <th scope="row" className="py-3 pr-4 text-left font-normal">
                         <span className="text-xs font-bold" style={{ color: tier.color }}>
                           {isAr ? tier.labelAr : tier.label}
                         </span>
-                      </td>
+                      </th>
                       {ALERT_COLS.map(col => {
                         const val = alertCfg[tierIdx]?.[col.field] ?? '';
+                        const tierName = isAr ? tier.labelAr : tier.label;
+                        const colName  = isAr ? col.labelAr : col.label;
+                        const unitName = isAr ? col.unitAr   : col.unit;
                         return (
                           <td key={col.field} className="py-3 px-3">
                             {/*
@@ -881,6 +884,7 @@ export function RiskToolsSection({ isAr }: RiskToolsProps) {
                                 max={col.max}
                                 value={val}
                                 onChange={e => updateAlert(tierIdx, col.field, e.target.value)}
+                                aria-label={`${tierName} — ${colName} (${unitName})`}
                                 className="alert-cfg-input w-full text-center text-sm font-semibold border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-[#082C6B] focus:border-[#082C6B]"
                               />
                               {/* Print-only value overlay — hidden on screen via CSS */}

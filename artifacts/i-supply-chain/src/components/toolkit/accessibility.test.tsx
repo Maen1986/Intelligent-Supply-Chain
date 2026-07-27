@@ -104,14 +104,89 @@ describe('CLMTools — ContractHealthChecker accessibility', () => {
 describe('RiskTools — RiskToolsSection accessibility', () => {
   beforeEach(() => { localStorage.clear(); cleanup(); });
 
-  it('has zero critical violations on initial render', async () => {
+  it('has zero critical violations on initial render (KRI Monitor tab)', async () => {
     const { container } = render(<RiskToolsSection isAr={false} />);
     await expectNoCriticalViolations(container);
   });
 
-  it('has zero critical violations in Arabic mode', async () => {
+  it('has zero critical violations in Arabic mode (KRI Monitor tab)', async () => {
     const { container } = render(<RiskToolsSection isAr={true} />);
     await expectNoCriticalViolations(container);
+  });
+
+  it('has zero critical violations on Supplier Alert Config tab', async () => {
+    const { container } = render(<RiskToolsSection isAr={false} />);
+    fireEvent.click(screen.getByRole('tab', { name: /Supplier Alerts/i }));
+    await expectNoCriticalViolations(container);
+  });
+
+  it('has zero critical violations on Supplier Alert Config tab in Arabic mode', async () => {
+    const { container } = render(<RiskToolsSection isAr={true} />);
+    // In Arabic mode the tab label is in Arabic — find by role instead
+    const tabs = screen.getAllByRole('tab');
+    // The alert-config tab is the 6th tab (index 5)
+    fireEvent.click(tabs[5]);
+    await expectNoCriticalViolations(container);
+  });
+});
+
+/* ══════════════════════════════════════════════════════════════════════════
+   RiskTools — Alert Config table scope attributes
+   Structural checks that column and row headers carry scope= so that
+   screen readers can correctly associate header context with data cells.
+══════════════════════════════════════════════════════════════════════════ */
+describe('RiskTools — Alert Config table header scope attributes', () => {
+  beforeEach(() => { localStorage.clear(); cleanup(); });
+
+  it('all <th> elements in the thead carry scope="col"', () => {
+    render(<RiskToolsSection isAr={false} />);
+    fireEvent.click(screen.getByRole('tab', { name: /Supplier Alerts/i }));
+    const colHeaders = document.querySelectorAll('thead th');
+    expect(colHeaders.length).toBeGreaterThan(0);
+    colHeaders.forEach(th => {
+      expect(th).toHaveAttribute('scope', 'col');
+    });
+  });
+
+  it('the first cell of every data row carries scope="row"', () => {
+    render(<RiskToolsSection isAr={false} />);
+    fireEvent.click(screen.getByRole('tab', { name: /Supplier Alerts/i }));
+    const rows = document.querySelectorAll('tbody tr');
+    expect(rows.length).toBe(3); // Strategic, Preferred, Transactional
+    rows.forEach(row => {
+      const firstCell = row.querySelector(':first-child');
+      expect(firstCell?.tagName).toBe('TH');
+      expect(firstCell).toHaveAttribute('scope', 'row');
+    });
+  });
+
+  it('every threshold input has an aria-label that names its tier and column', () => {
+    render(<RiskToolsSection isAr={false} />);
+    fireEvent.click(screen.getByRole('tab', { name: /Supplier Alerts/i }));
+    const inputs = document.querySelectorAll<HTMLInputElement>('input.alert-cfg-input');
+    expect(inputs.length).toBe(9); // 3 tiers × 3 columns
+    inputs.forEach(input => {
+      const label = input.getAttribute('aria-label') ?? '';
+      expect(label.length).toBeGreaterThan(0);
+    });
+  });
+
+  it('scope attributes are preserved in Arabic mode', () => {
+    render(<RiskToolsSection isAr={true} />);
+    // Navigate to the alert-config tab (6th tab, index 5)
+    const tabs = screen.getAllByRole('tab');
+    fireEvent.click(tabs[5]);
+    const colHeaders = document.querySelectorAll('thead th');
+    expect(colHeaders.length).toBeGreaterThan(0);
+    colHeaders.forEach(th => {
+      expect(th).toHaveAttribute('scope', 'col');
+    });
+    const rows = document.querySelectorAll('tbody tr');
+    rows.forEach(row => {
+      const firstCell = row.querySelector(':first-child');
+      expect(firstCell?.tagName).toBe('TH');
+      expect(firstCell).toHaveAttribute('scope', 'row');
+    });
   });
 });
 
