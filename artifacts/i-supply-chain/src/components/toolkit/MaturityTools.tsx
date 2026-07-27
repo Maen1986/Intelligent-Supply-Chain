@@ -2,16 +2,41 @@
  * Generic Maturity Self-Assessment + Action Tracker
  * Works across: resiliency, value-engineering, process-improvement-policy,
  *               lean-agile-supply-chain, supply-chain-strategy, sustainability-esg, digital-transformation
+ * When no slug is supplied, renders the generic 5-domain
+ * (Strategy / People / Process / Technology / Governance) assessment.
  */
 import React, { useState, useCallback } from 'react';
+import {
+  RadarChart, Radar, PolarGrid, PolarAngleAxis,
+  ResponsiveContainer, Tooltip, Legend,
+} from 'recharts';
+import { Download } from 'lucide-react';
 import { ActionTracker } from './Primitives';
 import { safeSetItem } from '@/lib/storage';
 import { useAIPlan } from '@/hooks/useAIPlan';
 import { AIPlanPanel } from '@/components/AIPlanPanel';
 
-interface MaturityToolsProps { slug: string; isAr: boolean; }
+interface MaturityToolsProps { slug?: string; isAr: boolean; }
 
 interface MaturityDim { id: string; label: string; labelAr: string; desc: string; descAr: string; }
+
+/* ── helper ── */
+function downloadText(filename: string, content: string) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([content], { type: 'text/plain;charset=utf-8' }));
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+/* ── Generic 5-domain set (Strategy / People / Process / Technology / Governance) ── */
+const GENERIC_DIMS: MaturityDim[] = [
+  { id: 'strategy',   label: 'Strategy & Planning',       labelAr: 'الاستراتيجية والتخطيط',     desc: 'SC strategy aligned to corporate objectives with SCOR baseline', descAr: 'استراتيجية سلسلة الإمداد متوافقة مع الأهداف المؤسسية' },
+  { id: 'people',     label: 'People & Capability',       labelAr: 'الكوادر والقدرات',           desc: 'Competency frameworks, training plans, and CIPS certification levels', descAr: 'أطر الكفاءات وخطط التدريب ومستويات الشهادات' },
+  { id: 'process',    label: 'Process & Efficiency',      labelAr: 'العمليات والكفاءة',          desc: 'Documented SOPs, CI programme, and process automation coverage', descAr: 'إجراءات موثَّقة وبرنامج تحسين مستمر وتغطية الأتمتة' },
+  { id: 'technology', label: 'Technology & Data',         labelAr: 'التكنولوجيا والبيانات',      desc: 'ERP utilisation, analytics capability, and data quality', descAr: 'استخدام ERP وقدرة التحليلات وجودة البيانات' },
+  { id: 'governance', label: 'Governance & Compliance',   labelAr: 'الحوكمة والامتثال',          desc: 'Policy suite, DoA, audit frequency, and ESG compliance', descAr: 'مجموعة السياسات وتفويض الصلاحيات وتكرار التدقيق وامتثال ESG' },
+];
 
 const SLUG_DIMS: Record<string, MaturityDim[]> = {
   'resiliency': [
@@ -73,23 +98,115 @@ const SLUG_DIMS: Record<string, MaturityDim[]> = {
 };
 
 const MATURITY_BANDS = [
-  { min: 4.5, label: 'World Class', labelAr: 'مستوى عالمي', color: '#059669', desc: 'Top 10% of GCC organisations', descAr: 'أفضل 10% من المنشآت الخليجية' },
-  { min: 3.5, label: 'Advanced', labelAr: 'متقدّم', color: '#10b981', desc: 'Above GCC benchmark', descAr: 'فوق المعيار المرجعي الخليجي' },
-  { min: 2.5, label: 'Developing', labelAr: 'ناشئ', color: '#f59e0b', desc: 'At GCC average, improvement opportunity', descAr: 'عند متوسط الخليج، فرصة تحسين' },
-  { min: 1, label: 'Foundational', labelAr: 'تأسيسي', color: '#ef4444', desc: 'Below GCC benchmark, urgent action needed', descAr: 'دون المعيار الخليجي، إجراء عاجل مطلوب' },
+  { min: 4.5, label: 'World Class',   labelAr: 'مستوى عالمي',  color: '#059669', desc: 'Top 10% of GCC organisations',               descAr: 'أفضل 10% من المنشآت الخليجية' },
+  { min: 3.5, label: 'Advanced',      labelAr: 'متقدّم',        color: '#10b981', desc: 'Above GCC benchmark',                         descAr: 'فوق المعيار المرجعي الخليجي' },
+  { min: 2.5, label: 'Developing',    labelAr: 'ناشئ',          color: '#f59e0b', desc: 'At GCC average, improvement opportunity',     descAr: 'عند متوسط الخليج، فرصة تحسين' },
+  { min: 1,   label: 'Foundational',  labelAr: 'تأسيسي',        color: '#ef4444', desc: 'Below GCC benchmark, urgent action needed',   descAr: 'دون المعيار الخليجي، إجراء عاجل مطلوب' },
 ];
 
 function getMatureBand(score: number) {
   return MATURITY_BANDS.find(b => score >= b.min) ?? MATURITY_BANDS[MATURITY_BANDS.length - 1];
 }
 
+/* ── Gap action hints per generic dimension ── */
+const GAP_ACTIONS: Record<string, { en: string; ar: string }[]> = {
+  strategy:   [
+    { en: 'Develop a 3-year SC strategy document linked to Vision 2030 objectives', ar: 'وضع وثيقة استراتيجية 3 سنوات مرتبطة بأهداف رؤية 2030' },
+    { en: 'Establish SCOR Level-1 baseline KPIs and benchmark against GCC peers', ar: 'إنشاء مؤشرات SCOR المستوى 1 ومقارنتها بنظرائها الخليجيين' },
+    { en: 'Launch a monthly S&OP/IBP rhythm with cross-functional participation', ar: 'إطلاق إيقاع S&OP/IBP شهري بمشاركة متعددة الوظائف' },
+  ],
+  people:     [
+    { en: 'Map current team competencies against CIPS/APICS frameworks', ar: 'رسم كفاءات الفريق الحالية مقابل أطر CIPS/APICS' },
+    { en: 'Design a 12-month training calendar with CIPS L4/L5 pathway', ar: 'تصميم تقويم تدريبي 12 شهرًا مع مسار CIPS L4/L5' },
+    { en: 'Introduce a mentoring scheme pairing senior and junior SC professionals', ar: 'إدخال برنامج إرشاد يربط المهنيين الكبار والجدد في سلسلة الإمداد' },
+  ],
+  process:    [
+    { en: 'Identify and document top 10 high-value procurement processes as SOPs', ar: 'تحديد وتوثيق أهم 10 عمليات مشتريات ذات قيمة عالية' },
+    { en: 'Launch a structured CI programme with monthly kaizen cadence', ar: 'إطلاق برنامج تحسين مستمر منظَّم بإيقاع kaizen شهري' },
+    { en: 'Automate at least 3 routine purchase-to-pay steps in ERP', ar: 'أتمتة 3 خطوات روتينية على الأقل في دورة الشراء حتى الدفع ضمن ERP' },
+  ],
+  technology: [
+    { en: 'Conduct an ERP utilisation audit and close gaps in unused modules', ar: 'إجراء تدقيق استخدام ERP وسد الثغرات في الوحدات غير المستخدمة' },
+    { en: 'Implement a procurement analytics dashboard with weekly refresh', ar: 'تطبيق لوحة تحليلات مشتريات بتحديث أسبوعي' },
+    { en: 'Launch a master data quality programme (suppliers, items, contracts)', ar: 'إطلاق برنامج جودة البيانات الرئيسية (الموردون، الأصناف، العقود)' },
+  ],
+  governance: [
+    { en: 'Publish a consolidated procurement policy suite covering all spend categories', ar: 'نشر مجموعة سياسات مشتريات موحَّدة تغطي جميع فئات الإنفاق' },
+    { en: 'Establish quarterly internal procurement audits with formal action-tracking', ar: 'إرساء تدقيق مشتريات داخلي ربع سنوي مع تتبُّع الإجراءات الرسمي' },
+    { en: 'Define and enforce a Delegation of Authority matrix in ERP', ar: 'تحديد وتطبيق مصفوفة تفويض الصلاحيات في نظام ERP' },
+  ],
+};
+
+function buildMaturityProfileText(
+  slug: string | undefined,
+  dims: MaturityDim[],
+  scores: Record<string, number>,
+  avg: number,
+  band: typeof MATURITY_BANDS[0] | null,
+  isAr: boolean,
+): string {
+  const date = new Date().toLocaleDateString(isAr ? 'ar-SA' : 'en-GB');
+  const lines = [
+    isAr ? '═══════════════════════════════════════════' : '═══════════════════════════════════════════',
+    isAr ? `   تقرير نضج سلسلة الإمداد — ${date}` : `   Supply Chain Maturity Profile — ${date}`,
+    isAr ? '═══════════════════════════════════════════' : '═══════════════════════════════════════════',
+    '',
+    isAr ? `الموضوع: ${slug ?? 'تقييم عام'}` : `Assessment: ${slug ?? 'General Maturity Assessment'}`,
+    isAr ? `الدرجة الإجمالية: ${avg.toFixed(2)} / 5.0` : `Overall Score: ${avg.toFixed(2)} / 5.0`,
+    isAr ? `مستوى النضج: ${band ? band.labelAr : '—'}` : `Maturity Band: ${band ? band.label : '—'}`,
+    isAr ? `وصف المستوى: ${band ? band.descAr : '—'}` : `Band Description: ${band ? band.desc : '—'}`,
+    '',
+    isAr ? '─── تفاصيل الأبعاد ──────────────────────' : '─── Dimension Detail ─────────────────────',
+    '',
+  ];
+  const LEVEL_EN: Record<number, string> = { 0: 'Not assessed', 1: 'Foundational', 2: 'Developing', 3: 'Competent', 4: 'Advanced', 5: 'World Class' };
+  const LEVEL_AR: Record<number, string> = { 0: 'غير مقيَّم', 1: 'تأسيسي', 2: 'ناشئ', 3: 'مؤهَّل', 4: 'متقدّم', 5: 'عالمي' };
+  dims.forEach(d => {
+    const v = scores[d.id] ?? 0;
+    const label = isAr ? LEVEL_AR[v] : LEVEL_EN[v];
+    const bar = '█'.repeat(v) + '░'.repeat(5 - v);
+    lines.push(isAr
+      ? `  ${d.labelAr.padEnd(30)}  ${bar}  ${v}/5 — ${label}`
+      : `  ${d.label.padEnd(30)}  ${bar}  ${v}/5 — ${label}`);
+  });
+  lines.push('');
+  lines.push(isAr ? '─── الفجوات والأولويات ───────────────────' : '─── Gap Analysis & Priorities ─────────────');
+  lines.push('');
+  const gaps = dims.filter(d => (scores[d.id] ?? 0) > 0 && (scores[d.id] ?? 5) < 4)
+    .sort((a, b) => (scores[a.id] ?? 5) - (scores[b.id] ?? 5));
+  if (gaps.length === 0) {
+    lines.push(isAr ? '  ✓ لا توجد فجوات حرجة — جميع الأبعاد المقيَّمة عند المستوى 4 أو أعلى' : '  ✓ No critical gaps — all assessed dimensions at Level 4 or above');
+  } else {
+    gaps.forEach((d, i) => {
+      const v = scores[d.id] ?? 0;
+      lines.push(isAr
+        ? `  ${i + 1}. ${d.labelAr} (${v}/5) — فجوة ${4 - v} مستويات حتى "متقدّم"`
+        : `  ${i + 1}. ${d.label} (${v}/5) — gap of ${4 - v} level${4 - v !== 1 ? 's' : ''} to reach "Advanced"`);
+    });
+  }
+  lines.push('');
+  lines.push(isAr ? '─── المرحلة القادمة (90 يومًا) ──────────' : '─── Suggested 90-Day Actions ──────────────');
+  lines.push('');
+  gaps.slice(0, 3).forEach((d, i) => {
+    const actions = (GAP_ACTIONS[d.id] ?? []).slice(0, 2);
+    lines.push(isAr ? `  الأولوية ${i + 1}: ${d.labelAr}` : `  Priority ${i + 1}: ${d.label}`);
+    actions.forEach(a => lines.push(isAr ? `    • ${a.ar}` : `    • ${a.en}`));
+    lines.push('');
+  });
+  lines.push('');
+  lines.push(isAr ? '═══════════════════════════════════════════' : '═══════════════════════════════════════════');
+  return lines.join('\n');
+}
+
 export function MaturityAssessmentTool({ slug, isAr }: MaturityToolsProps) {
-  const SK = `isc-tool-maturity-${slug}`;
-  const dims = SLUG_DIMS[slug] ?? SLUG_DIMS['resiliency'];
+  const SK = `isc-tool-maturity-${slug ?? 'generic'}`;
+  const dims = slug ? (SLUG_DIMS[slug] ?? SLUG_DIMS['resiliency']) : GENERIC_DIMS;
 
   const [scores, setScores] = useState<Record<string, number>>(() => {
     try { const s = localStorage.getItem(SK); return s ? JSON.parse(s) : {}; } catch { return {}; }
   });
+  const [targetScore] = useState<number>(4); // target = "Advanced" (level 4)
+
   const set = (id: string, val: number) => setScores(prev => {
     const next = { ...prev, [id]: val };
     safeSetItem(SK, JSON.stringify(next));
@@ -100,6 +217,18 @@ export function MaturityAssessmentTool({ slug, isAr }: MaturityToolsProps) {
   const avg = filled.length > 0 ? filled.reduce((s, d) => s + (scores[d.id] ?? 0), 0) / filled.length : 0;
   const band = avg > 0 ? getMatureBand(avg) : null;
 
+  /* ── Radar data ── */
+  const radarData = dims.map(d => ({
+    dimension: isAr ? d.labelAr : d.label,
+    [isAr ? 'الحالي' : 'Current']: scores[d.id] ?? 0,
+    [isAr ? 'الهدف' : 'Target']: targetScore,
+  }));
+
+  /* ── Gap analysis ── */
+  const gapDims = dims
+    .filter(d => (scores[d.id] ?? 0) > 0 && (scores[d.id] ?? 5) < targetScore)
+    .sort((a, b) => (scores[a.id] ?? 5) - (scores[b.id] ?? 5));
+
   /* ── AI Plan ── */
   const buildMaturityPrompt = useCallback((): string => {
     const nextBand = MATURITY_BANDS.find(b => b.min > avg);
@@ -109,13 +238,12 @@ export function MaturityAssessmentTool({ slug, isAr }: MaturityToolsProps) {
         ? `- **${d.label}**: ${v}/5 — ${d.desc}`
         : `- **${d.label}**: not yet assessed`;
     }).join('\n');
-    // Dimensions with biggest gap (scored but below 4)
-    const gapDims = dims
+    const topGaps = dims
       .filter(d => scores[d.id] !== undefined && (scores[d.id] ?? 5) < 4)
       .sort((a, b) => (scores[a.id] ?? 5) - (scores[b.id] ?? 5))
       .slice(0, 3);
     return [
-      `## Maturity Assessment: ${slug}`,
+      `## Maturity Assessment: ${slug ?? 'General'}`,
       `Current score: ${avg.toFixed(1)}/5 → Level: ${band ? band.label : 'Not assessed'}`,
       `Next level: ${nextBand ? nextBand.label : 'Already World Class'} (requires ≥${nextBand?.min ?? 5}/5)`,
       '',
@@ -125,7 +253,7 @@ export function MaturityAssessmentTool({ slug, isAr }: MaturityToolsProps) {
       '## Your Task',
       'Generate a staged maturity improvement roadmap:',
       '1. State the current level and gap to the next maturity band',
-      `2. Focus on these highest-priority dimensions: ${gapDims.map(d => d.label).join(', ') || 'all dimensions'}`,
+      `2. Focus on these highest-priority dimensions: ${topGaps.map(d => d.label).join(', ') || 'all dimensions'}`,
       '3. For each priority dimension, provide 3–5 specific improvement initiatives as project briefs:',
       '   - Objective (what will be achieved)',
       '   - Success metric (how progress will be measured)',
@@ -144,13 +272,32 @@ export function MaturityAssessmentTool({ slug, isAr }: MaturityToolsProps) {
   const LEVEL_LABELS_AR = { 1: 'تأسيسي', 2: 'ناشئ', 3: 'مؤهَّل', 4: 'متقدّم', 5: 'عالمي' };
   const LEVEL_LABELS_EN = { 1: 'Foundational', 2: 'Developing', 3: 'Competent', 4: 'Advanced', 5: 'World Class' };
 
+  const handleDownload = () => {
+    const txt = buildMaturityProfileText(slug, dims, scores, avg, band, isAr);
+    downloadText(`maturity-profile-${slug ?? 'general'}.txt`, txt);
+  };
+
   return (
     <div className="bg-white border border-border rounded-2xl shadow-sm overflow-hidden">
       <div className="p-5 border-b border-border bg-purple-50">
-        <p className="text-sm font-bold text-primary">{isAr ? '📈 تقييم النضج الذاتي' : '📈 Maturity Self-Assessment'}</p>
-        <p className="text-xs text-muted-foreground mt-1">{isAr ? 'قيّم كل بُعد من 1 (تأسيسي) إلى 5 (عالمي)' : 'Rate each dimension 1 (Foundational) → 5 (World Class)'}</p>
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div>
+            <p className="text-sm font-bold text-primary">{isAr ? '📈 تقييم النضج الذاتي' : '📈 Maturity Self-Assessment'}</p>
+            <p className="text-xs text-muted-foreground mt-1">{isAr ? 'قيّم كل بُعد من 1 (تأسيسي) إلى 5 (عالمي)' : 'Rate each dimension 1 (Foundational) → 5 (World Class)'}</p>
+          </div>
+          <button
+            onClick={handleDownload}
+            disabled={filled.length === 0}
+            className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg font-bold bg-purple-200 text-purple-800 hover:bg-purple-300 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <Download className="w-3.5 h-3.5" />
+            {isAr ? 'تنزيل الملف الشخصي' : 'Download Profile'}
+          </button>
+        </div>
       </div>
       <div className="p-5 space-y-5">
+
+        {/* ── Dimension rating buttons ── */}
         <div className="space-y-3">
           {dims.map(d => {
             const val = scores[d.id] ?? 0;
@@ -183,6 +330,7 @@ export function MaturityAssessmentTool({ slug, isAr }: MaturityToolsProps) {
           })}
         </div>
 
+        {/* ── Score badge ── */}
         {band && filled.length > 0 && (
           <div className="grid sm:grid-cols-3 gap-4">
             <div className="rounded-xl p-4 text-center" style={{ background: band.color + '15', border: `1px solid ${band.color}40` }}>
@@ -199,7 +347,89 @@ export function MaturityAssessmentTool({ slug, isAr }: MaturityToolsProps) {
           </div>
         )}
 
-        {/* AI Plan */}
+        {/* ── Radar chart: Current vs Target ── */}
+        {filled.length >= 2 && (
+          <div className="rounded-xl border border-border p-4">
+            <p className="text-xs font-bold text-primary mb-3 uppercase tracking-widest">
+              {isAr ? 'رادار النضج — الحالي مقابل الهدف (المستوى 4)' : 'Maturity Radar — Current vs. Target (Level 4)'}
+            </p>
+            <ResponsiveContainer width="100%" height={280}>
+              <RadarChart data={radarData} cx="50%" cy="50%" outerRadius="68%">
+                <PolarGrid />
+                <PolarAngleAxis dataKey="dimension" tick={{ fontSize: 9, fill: '#6b7280' }} />
+                <Radar
+                  name={isAr ? 'الهدف' : 'Target'}
+                  dataKey={isAr ? 'الهدف' : 'Target'}
+                  stroke="#94a3b8"
+                  fill="none"
+                  strokeDasharray="5 3"
+                  strokeWidth={1.5}
+                />
+                <Radar
+                  name={isAr ? 'الحالي' : 'Current'}
+                  dataKey={isAr ? 'الحالي' : 'Current'}
+                  stroke="#8b5cf6"
+                  fill="#8b5cf6"
+                  fillOpacity={0.3}
+                  strokeWidth={2}
+                />
+                <Tooltip formatter={(v: number) => [`${v}/5`]} />
+                <Legend iconSize={10} wrapperStyle={{ fontSize: 10 }} />
+              </RadarChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+
+        {/* ── Gap analysis ── */}
+        {gapDims.length > 0 && (
+          <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+            <p className="text-xs font-bold text-amber-800 uppercase tracking-widest mb-3">
+              {isAr ? 'تحليل الفجوات — خارطة التحسين (90 يومًا)' : 'Gap Analysis — 90-Day Improvement Roadmap'}
+            </p>
+            <div className="space-y-3">
+              {gapDims.map((d, i) => {
+                const v = scores[d.id] ?? 0;
+                const gap = targetScore - v;
+                const hints = (GAP_ACTIONS[d.id] ?? []).slice(0, 2);
+                return (
+                  <div key={d.id} className="bg-white border border-amber-200 rounded-lg p-3">
+                    <div className="flex items-start gap-2">
+                      <span className="shrink-0 w-5 h-5 rounded-full bg-amber-500 text-white text-[10px] font-bold flex items-center justify-center">{i + 1}</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-bold text-amber-900">
+                          {isAr ? d.labelAr : d.label}
+                          <span className="ml-2 font-normal text-muted-foreground">
+                            {isAr ? `${v}/5 — فجوة ${gap} مستوى` : `${v}/5 — gap of ${gap} level${gap !== 1 ? 's' : ''}`}
+                          </span>
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-0.5">{isAr ? d.descAr : d.desc}</p>
+                        {hints.length > 0 && (
+                          <ul className="mt-2 space-y-1">
+                            {hints.map((h, hi) => (
+                              <li key={hi} className="text-xs text-amber-800 flex gap-1.5">
+                                <span className="shrink-0">→</span>
+                                <span>{isAr ? h.ar : h.en}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+        {gapDims.length === 0 && filled.length > 0 && (
+          <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-center">
+            <p className="text-xs font-bold text-emerald-800">
+              {isAr ? '✓ لا توجد فجوات حرجة — جميع الأبعاد المقيَّمة عند المستوى 4 أو أعلى' : '✓ No critical gaps — all assessed dimensions at Level 4 or above'}
+            </p>
+          </div>
+        )}
+
+        {/* ── AI Plan ── */}
         <AIPlanPanel
           loading={planLoading}
           result={planResult}
@@ -218,8 +448,8 @@ export function MaturityAssessmentTool({ slug, isAr }: MaturityToolsProps) {
           toolKey="maturity"
         />
 
-        {/* Action Tracker */}
-        <ActionTracker storageKey={`isc-tool-actions-maturity-${slug}`} isAr={isAr} />
+        {/* ── Action Tracker ── */}
+        <ActionTracker storageKey={`isc-tool-actions-maturity-${slug ?? 'generic'}`} isAr={isAr} />
       </div>
     </div>
   );
