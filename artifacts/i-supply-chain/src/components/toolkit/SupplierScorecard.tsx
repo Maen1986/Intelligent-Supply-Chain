@@ -51,7 +51,7 @@ interface RosterState {
 }
 
 /* ─── Dimensions (unchanged weights) ─── */
-const DIMS: Dimension[] = [
+export const DIMS: Dimension[] = [
   { id: 'delivery',     label: 'Delivery Performance',  labelAr: 'أداء التسليم',          weight: 25 },
   { id: 'quality',      label: 'Quality',               labelAr: 'الجودة',                weight: 25 },
   { id: 'cost',         label: 'Cost Competitiveness',  labelAr: 'التنافسية السعرية',     weight: 20 },
@@ -61,7 +61,7 @@ const DIMS: Dimension[] = [
 ];
 
 /* ─── Sub-indicators — all scored 0–100 (100 = best performance) ─── */
-const SUB_INDICATORS: Record<string, SubIndicator[]> = {
+export const SUB_INDICATORS: Record<string, SubIndicator[]> = {
   delivery: [
     { id: 'otif',      label: 'OTIF %',                             labelAr: 'OTIF %' },
     { id: 'lead_time', label: 'Lead Time Adherence %',              labelAr: 'الالتزام بمهلة التسليم %' },
