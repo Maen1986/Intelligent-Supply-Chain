@@ -1124,6 +1124,7 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
       const nextValues = { ...values };
       let count = 0;
       let foundManualKpis: KpiDef[] = [];
+      const importedKpiIds: string[] = [];
 
       // Detect format: new data-collection template has "Input Field" and "Your Value" columns
       const isNewFormat = text.includes('Your Value') && text.includes('Input Field');
@@ -1167,6 +1168,7 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
         Object.assign(nextValues, calcValues);
         log.push(...calcLog);
         count += calcCount;
+        importedKpiIds.push(...Object.keys(calcValues));
 
         // Identify KPIs in this framework that have no calculation spec — user must enter them manually
         foundManualKpis = kpis.filter(k => !KPI_DATA_SPECS[k.id]);
@@ -1191,8 +1193,30 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
             const num = parseFloat(val);
             if (isNaN(num)) { log.push(`Row ${i + 2}: "${val}" must be a number — skipped.`); return; }
             nextValues[kpiDef.id] = val; count++;
+            importedKpiIds.push(kpiDef.id);
           }
         });
+      }
+
+      // ── Per-KPI on-target status summary ──
+      if (importedKpiIds.length > 0) {
+        const statusLines: string[] = [];
+        kpis.forEach(k => {
+          if (!importedKpiIds.includes(k.id)) return;
+          const rawVal = nextValues[k.id];
+          if (rawVal === undefined || rawVal === '') return;
+          const num = parseFloat(String(rawVal));
+          if (isNaN(num)) return;
+          const onTarget = k.higherIsBetter ? num >= k.targetValue : num <= k.targetValue;
+          const label = isAr ? k.labelAr : k.label;
+          const unit  = isAr ? k.unitAr  : k.unit;
+          statusLines.push(
+            onTarget
+              ? (isAr ? `✅ ${label}: ${num} ${unit} — حسب الهدف`    : `✅ ${label}: ${num} ${unit} — On Target`)
+              : (isAr ? `❌ ${label}: ${num} ${unit} — دون الهدف` : `❌ ${label}: ${num} ${unit} — Below Target`),
+          );
+        });
+        if (statusLines.length > 0) log.push(...statusLines);
       }
 
       setValues(nextValues);
@@ -1325,6 +1349,12 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
                           </React.Fragment>
                         ))}
                       </p>
+                    );
+                  }
+                  if (m.startsWith('✅') || m.startsWith('❌')) {
+                    const ok = m.startsWith('✅');
+                    return (
+                      <p key={i} className={`font-medium ${ok ? 'text-emerald-700' : 'text-red-700'}`}>{m}</p>
                     );
                   }
                   return <p key={i} className={i === 0 ? 'font-bold' : 'opacity-75'}>{m}</p>;
