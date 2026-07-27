@@ -19,7 +19,9 @@ export function Login() {
   const { lang } = useLanguage();
   const ar = lang === 'ar';
   const [, navigate] = useLocation();
-  const redirectTo = new URLSearchParams(useSearch()).get('from') || '/';
+  const _rawRedirect = new URLSearchParams(useSearch()).get('from') ?? '';
+  // Accept only genuine in-app paths: must start with exactly one '/' (not '//' which is a protocol-relative external URL).
+  const redirectTo = _rawRedirect.startsWith('/') && !_rawRedirect.startsWith('//') ? _rawRedirect : '/';
   const [mode, setMode] = useState<'login' | 'register' | 'forgot'>('register');
   const [showPass, setShowPass] = useState(false);
   const [error, setError] = useState('');

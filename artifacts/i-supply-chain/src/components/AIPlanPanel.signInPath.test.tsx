@@ -298,6 +298,35 @@ describe('Login — post-login redirect uses decoded `from` param', () => {
     });
   });
 
+  it('falls back to / when the from param is an absolute URL (open-redirect guard)', async () => {
+    // Simulate a tampered from param pointing to an external site
+    mockSearch = 'from=https%3A%2F%2Fevil.com%2Fphish';
+    mockLogin.mockResolvedValue(undefined);
+
+    render(<Login />);
+    switchToLoginTab();
+    await fillAndSubmitLogin('user@test.com', 'password123');
+
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith('/');
+    });
+  });
+
+  it('falls back to / when the from param is a protocol-relative URL (//evil.com bypass guard)', async () => {
+    // Protocol-relative URLs start with '//' — they pass a naive startsWith('/')
+    // check but navigate the browser to an external origin.
+    mockSearch = 'from=%2F%2Fevil.com%2Fphish';
+    mockLogin.mockResolvedValue(undefined);
+
+    render(<Login />);
+    switchToLoginTab();
+    await fillAndSubmitLogin('user@test.com', 'password123');
+
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith('/');
+    });
+  });
+
   it('does not redirect when login fails', async () => {
     mockSearch = 'from=%2Fcommand-center';
     mockLogin.mockRejectedValue(new Error('Invalid credentials'));
