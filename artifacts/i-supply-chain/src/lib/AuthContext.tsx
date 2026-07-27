@@ -38,26 +38,46 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user,    setUser]    = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // ── Shared helper: call /auth/me and update state ───────────────────────
+  const revalidateSession = useCallback(async (opts?: { setLoadingTrue?: boolean }) => {
+    if (opts?.setLoadingTrue) setLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/auth/me`, {
+        credentials: 'include',   // send the httpOnly session cookie
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setUser(data.ok && data.user ? data.user : null);
+      } else {
+        setUser(null);
+      }
+    } catch {
+      // Network error — keep existing state, don't clear the user
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   // ── On mount: validate session server-side ───────────────────────────────
   // This is the key security fix: we ask the SERVER whether this browser
   // has a valid session cookie. localStorage cannot fake this response.
   useEffect(() => {
-    (async () => {
-      try {
-        const res = await fetch(`${API_BASE}/auth/me`, {
-          credentials: 'include',   // send the httpOnly session cookie
-        });
-        if (res.ok) {
-          const data = await res.json();
-          if (data.ok && data.user) setUser(data.user);
-        }
-      } catch {
-        // Network error — not authenticated, just carry on
-      } finally {
-        setLoading(false);
+    revalidateSession({ setLoadingTrue: false });
+  }, [revalidateSession]);
+
+  // ── Cross-tab login: re-validate when this tab regains visibility ─────────
+  // If the user logs in on another tab, their session cookie is now valid.
+  // When they switch back here, the visibilitychange event lets us pick up
+  // the new session without requiring a full page reload.
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        revalidateSession();
       }
-    })();
-  }, []);
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, [revalidateSession]);
 
   // ── register: create account server-side (password hashed there),
   //    receive session cookie ────────────────────────────────────────────────
