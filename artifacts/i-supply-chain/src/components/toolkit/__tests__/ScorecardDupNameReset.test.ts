@@ -39,7 +39,7 @@ interface SupplierRecord {
  *                   the useEffect firing (clears warning/pendingName when id
  *                   differs from prevActiveId).
  */
-function createScorecardState(suppliers: SupplierRecord[], initialActiveId: string) {
+function createScorecardState(suppliers: SupplierRecord[], initialActiveId: string, isAr = false) {
   let dupNameWarning: string | null = null;
   let pendingName: string | null = null;
   let activeId = initialActiveId;
@@ -54,13 +54,16 @@ function createScorecardState(suppliers: SupplierRecord[], initialActiveId: stri
    * Simulates the component's handleNameBlur.
    * Sets dupNameWarning when the typed name is a case-insensitive duplicate of
    * any other supplier; otherwise commits the name (clears warning, clears pending).
+   * Mirrors the isAr branch in SupplierScorecard.tsx handleNameBlur.
    */
   const handleNameBlur = (typed: string) => {
     if (hasCaseInsensitiveDuplicate(typed, roster, activeId)) {
       const existing = roster.find(
         s => s.id !== activeId && s.name.toLowerCase() === typed.trim().toLowerCase(),
       )!;
-      dupNameWarning = `A supplier named "${existing.name}" already exists. Please choose a different name.`;
+      dupNameWarning = isAr
+        ? `يوجد مورّد بهذا الاسم بالفعل: "${existing.name}". يرجى استخدام اسم مختلف.`
+        : `A supplier named "${existing.name}" already exists. Please choose a different name.`;
       // pendingName stays set — the user's in-progress edit is preserved until
       // they either correct it or navigate away.
     } else {
@@ -119,11 +122,12 @@ function createScorecardState(suppliers: SupplierRecord[], initialActiveId: stri
 function createScorecardStateWithAddSupplier(
   initialSuppliers: SupplierRecord[],
   initialActiveId: string,
+  isAr = false,
 ) {
   const suppliers = [...initialSuppliers];
   let nextIdx = suppliers.length;
 
-  const state = createScorecardState(suppliers, initialActiveId);
+  const state = createScorecardState(suppliers, initialActiveId, isAr);
 
   const addSupplier = () => {
     const newId = `sup-new-${nextIdx++}`;
@@ -528,4 +532,99 @@ describe('Scorecard — hasCaseInsensitiveDuplicate returns false after the conf
     expect(hasCaseInsensitiveDuplicate('Beta Ltd', afterDeleteB, SUPPLIER_A.id)).toBe(false);
   });
 
+});
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Suite 5 — Arabic warning path (isAr = true)
+   Confirms that when the component is in Arabic mode, blurring a duplicate
+   name produces the correct Arabic warning string, and blurring a unique
+   name clears the warning — mirroring the isAr branch of handleNameBlur in
+   SupplierScorecard.tsx.
+══════════════════════════════════════════════════════════════════════════ */
+
+describe('Scorecard — duplicate-name warning text in Arabic mode (isAr = true)', () => {
+  it('produces a non-null Arabic warning when a duplicate name is blurred', () => {
+    const sc = createScorecardState(ALL_SUPPLIERS, SUPPLIER_A.id, /* isAr */ true);
+    sc.handleNameChange('Beta Ltd');
+    sc.handleNameBlur('Beta Ltd');
+    expect(sc.getState().dupNameWarning).not.toBeNull();
+  });
+
+  it('Arabic warning contains the existing supplier\'s name in quoted form', () => {
+    const sc = createScorecardState(ALL_SUPPLIERS, SUPPLIER_A.id, /* isAr */ true);
+    sc.handleNameChange('Beta Ltd');
+    sc.handleNameBlur('Beta Ltd');
+    // The warning must embed the colliding supplier's stored name inside quotes.
+    expect(sc.getState().dupNameWarning).toContain('"Beta Ltd"');
+  });
+
+  it('Arabic warning uses the correct Arabic template string', () => {
+    // Mirrors: `يوجد مورّد بهذا الاسم بالفعل: "${existing.name}". يرجى استخدام اسم مختلف.`
+    const sc = createScorecardState(ALL_SUPPLIERS, SUPPLIER_A.id, /* isAr */ true);
+    sc.handleNameChange('Beta Ltd');
+    sc.handleNameBlur('Beta Ltd');
+    const warning = sc.getState().dupNameWarning!;
+    expect(warning).toContain('يوجد مورّد بهذا الاسم بالفعل');
+    expect(warning).toContain('يرجى استخدام اسم مختلف');
+  });
+
+  it('Arabic warning is different from the English warning for the same collision', () => {
+    const scEn = createScorecardState(ALL_SUPPLIERS, SUPPLIER_A.id, /* isAr */ false);
+    scEn.handleNameChange('Beta Ltd');
+    scEn.handleNameBlur('Beta Ltd');
+
+    const scAr = createScorecardState(ALL_SUPPLIERS, SUPPLIER_A.id, /* isAr */ true);
+    scAr.handleNameChange('Beta Ltd');
+    scAr.handleNameBlur('Beta Ltd');
+
+    expect(scAr.getState().dupNameWarning).not.toBe(scEn.getState().dupNameWarning);
+  });
+
+  it('Arabic warning is set for a mixed-case duplicate name (case-insensitive match)', () => {
+    const sc = createScorecardState(ALL_SUPPLIERS, SUPPLIER_A.id, /* isAr */ true);
+    sc.handleNameChange('BETA LTD');
+    sc.handleNameBlur('BETA LTD');
+    expect(sc.getState().dupNameWarning).not.toBeNull();
+    expect(sc.getState().dupNameWarning).toContain('يوجد مورّد بهذا الاسم بالفعل');
+  });
+
+  it('clears the Arabic warning when blurring a unique name', () => {
+    const sc = createScorecardState(ALL_SUPPLIERS, SUPPLIER_A.id, /* isAr */ true);
+
+    // First blur — duplicate
+    sc.handleNameChange('Beta Ltd');
+    sc.handleNameBlur('Beta Ltd');
+    expect(sc.getState().dupNameWarning).not.toBeNull();
+
+    // Second blur — unique name
+    sc.handleNameChange('Delta Inc');
+    sc.handleNameBlur('Delta Inc');
+    expect(sc.getState().dupNameWarning).toBeNull();
+  });
+
+  it('warning is null in Arabic mode when blurring the supplier\'s own name (no self-collision)', () => {
+    const sc = createScorecardState(ALL_SUPPLIERS, SUPPLIER_A.id, /* isAr */ true);
+    sc.handleNameChange('Alpha Corp');
+    sc.handleNameBlur('Alpha Corp');
+    expect(sc.getState().dupNameWarning).toBeNull();
+  });
+
+  it('warning is null in Arabic mode for a brand-new unique name', () => {
+    const sc = createScorecardState(ALL_SUPPLIERS, SUPPLIER_A.id, /* isAr */ true);
+    sc.handleNameChange('Delta Inc');
+    sc.handleNameBlur('Delta Inc');
+    expect(sc.getState().dupNameWarning).toBeNull();
+  });
+
+  it('Arabic warning clears on supplier switch, same as English mode', () => {
+    const sc = createScorecardState(ALL_SUPPLIERS, SUPPLIER_A.id, /* isAr */ true);
+    sc.handleNameChange('Beta Ltd');
+    sc.handleNameBlur('Beta Ltd');
+    expect(sc.getState().dupNameWarning).not.toBeNull();
+
+    sc.switchSupplier(SUPPLIER_B.id);
+
+    expect(sc.getState().dupNameWarning).toBeNull();
+    expect(sc.getState().pendingName).toBeNull();
+  });
 });
