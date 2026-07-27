@@ -713,6 +713,8 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
   const importInputRef = useRef<HTMLInputElement | null>(null);
   const [saveFailed, setSaveFailed] = useState(false);
   const [expandedKpi, setExpandedKpi] = useState<string | null>(null);
+  const [manualKpis, setManualKpis] = useState<KpiDef[]>([]);
+  const [highlightedKpi, setHighlightedKpi] = useState<string | null>(null);
 
   /* ── Industry benchmark selection ── */
   const industryStorageKey = 'isc-kpi-industry';
@@ -838,6 +840,15 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
           saveError: planSaveError, dismissSaveError: dismissPlanSaveError } =
     useAIPlan(buildKpiPrompt, isAr, 'kpi', hasAnyValue);
 
+  const scrollToKpi = useCallback((kpiId: string) => {
+    const el = document.getElementById(`kpi-card-${kpiId}`);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setHighlightedKpi(kpiId);
+      setTimeout(() => setHighlightedKpi(null), 2000);
+    }
+  }, []);
+
   const handleChange = useCallback((id: string, raw: string) => {
     setValues(prev => {
       const next = { ...prev, [id]: raw };
@@ -871,7 +882,7 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
       const log: string[] = [];
       const nextValues = { ...values };
       let count = 0;
-      let manualKpis: KpiDef[] = [];
+      let foundManualKpis: KpiDef[] = [];
 
       // Detect format: new data-collection template has "Input Field" and "Your Value" columns
       const isNewFormat = text.includes('Your Value') && text.includes('Input Field');
@@ -941,12 +952,12 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
         });
 
         // Identify KPIs in this framework that have no calculation spec — user must enter them manually
-        manualKpis = kpis.filter(k => !KPI_DATA_SPECS[k.id]);
-        if (manualKpis.length > 0) {
-          const labels = manualKpis.map(k => isAr ? k.labelAr : k.label).join(', ');
+        foundManualKpis = kpis.filter(k => !KPI_DATA_SPECS[k.id]);
+        if (foundManualKpis.length > 0) {
+          const labels = foundManualKpis.map(k => isAr ? k.labelAr : k.label).join(', ');
           log.push(isAr
-            ? `📝 ${manualKpis.length} مؤشر(ات) تتطلّب إدخالاً يدوياً: ${labels}`
-            : `📝 ${manualKpis.length} KPI(s) require manual entry: ${labels}`);
+            ? `📝 ${foundManualKpis.length} مؤشر(ات) تتطلّب إدخالاً يدوياً: ${labels}`
+            : `📝 ${foundManualKpis.length} KPI(s) require manual entry: ${labels}`);
         }
 
       } else {
@@ -970,8 +981,8 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
       setValues(nextValues);
       setSaveFailed(!safeSetItem(storageKey, JSON.stringify(nextValues)));
       if (isNewFormat) {
-        const manualSuffix = manualKpis.length > 0
-          ? (isAr ? `، ${manualKpis.length} تتطلّب إدخالاً يدوياً` : `, ${manualKpis.length} require manual entry`)
+        const manualSuffix = foundManualKpis.length > 0
+          ? (isAr ? `، ${foundManualKpis.length} تتطلّب إدخالاً يدوياً` : `, ${foundManualKpis.length} require manual entry`)
           : '';
         log.unshift(isAr
           ? `✓ تم احتساب ${count} مؤشر(ات) تلقائياً${manualSuffix}.`
@@ -979,6 +990,7 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
       } else {
         log.unshift(isAr ? `✓ تم احتساب ${count} مؤشر(ات) وتحديثها.` : `✓ ${count} KPI(s) calculated and updated.`);
       }
+      setManualKpis(foundManualKpis);
       setImportLog(log);
     };
     reader.readAsText(file);
@@ -1080,8 +1092,34 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
         {importLog && (
           <div className={`mt-2 text-xs rounded-lg p-3 border ${importLog[0]?.startsWith('✓') ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-red-50 border-red-200 text-red-800'}`}>
             <div className="flex items-start justify-between gap-2">
-              <div className="space-y-0.5">{importLog.map((m, i) => <p key={i} className={i === 0 ? 'font-bold' : 'opacity-75'}>{m}</p>)}</div>
-              <button onClick={() => setImportLog(null)} className="shrink-0 opacity-50 hover:opacity-100 font-bold">✕</button>
+              <div className="space-y-0.5">
+                {importLog.map((m, i) => {
+                  // Render the manual-entry line with clickable KPI labels
+                  if (m.startsWith('📝') && manualKpis.length > 0) {
+                    const prefix = isAr
+                      ? `📝 ${manualKpis.length} مؤشر(ات) تتطلّب إدخالاً يدوياً: `
+                      : `📝 ${manualKpis.length} KPI(s) require manual entry: `;
+                    return (
+                      <p key={i} className="opacity-75">
+                        {prefix}
+                        {manualKpis.map((k, ki) => (
+                          <React.Fragment key={k.id}>
+                            <button
+                              onClick={() => scrollToKpi(k.id)}
+                              className="underline font-semibold hover:opacity-70 transition-opacity focus:outline-none"
+                            >
+                              {isAr ? k.labelAr : k.label}
+                            </button>
+                            {ki < manualKpis.length - 1 && ', '}
+                          </React.Fragment>
+                        ))}
+                      </p>
+                    );
+                  }
+                  return <p key={i} className={i === 0 ? 'font-bold' : 'opacity-75'}>{m}</p>;
+                })}
+              </div>
+              <button onClick={() => { setImportLog(null); setManualKpis([]); }} className="shrink-0 opacity-50 hover:opacity-100 font-bold">✕</button>
             </div>
           </div>
         )}
@@ -1308,8 +1346,15 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
 
             return (
               <div key={kpi.id}
+                id={`kpi-card-${kpi.id}`}
                 className="bg-white rounded-xl shadow-sm overflow-hidden flex"
-                style={{ border: `1px solid ${t ? t.color + '35' : '#e5e7eb'}` }}>
+                style={{
+                  border: `1px solid ${t ? t.color + '35' : '#e5e7eb'}`,
+                  transition: 'box-shadow 0.4s ease',
+                  boxShadow: highlightedKpi === kpi.id
+                    ? '0 0 0 3px #3b82f6aa, 0 4px 24px #3b82f640'
+                    : undefined,
+                }}>
 
                 {/* Left tier accent bar */}
                 <div className="w-1 shrink-0 rounded-l-xl" style={{ background: t ? t.color : '#e5e7eb' }} />
