@@ -7,11 +7,19 @@
  *  - Logged-in state: user's first name is visible, "Sign In / Register" is absent
  *  - Login transition: after setUser() fires, header immediately shows the user name
  *  - Logout transition: after setUser(null) fires, header immediately returns to guest state
+ *
+ * Task 317 — Confirm the mobile header menu also updates instantly when a user
+ * logs in or out.
+ *
+ * Additional mobile-menu covers:
+ *  - Mobile menu open + logged-out: shows "Sign In / Register" guest button, no full name
+ *  - Login transition: mobile menu immediately shows user's full name
+ *  - Logout transition: mobile menu immediately returns to guest sign-in button
  */
 
 import React, { useState } from 'react';
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { render, screen, act, cleanup } from '@testing-library/react';
+import { render, screen, act, cleanup, fireEvent } from '@testing-library/react';
 import * as AuthContextModule from '@/lib/AuthContext';
 
 // ── Lightweight stubs for Header's dependencies ────────────────────────────
@@ -33,6 +41,10 @@ vi.mock('@/components/Logo', () => ({
 vi.mock('@/components/ui/button', () => ({
   Button: ({ children, ...props }: React.ButtonHTMLAttributes<HTMLButtonElement> & { children?: React.ReactNode }) =>
     <button {...props}>{children}</button>,
+}));
+
+vi.mock('@/components/NotificationsBell', () => ({
+  NotificationsBell: () => <div data-testid="notifications-bell" />,
 }));
 
 // ── Import the real Header after mocks are in place ────────────────────────
@@ -161,5 +173,103 @@ describe('Header — auth-driven user name display', () => {
     render(<HeaderAuthHarness initialAuth={false} onFlipRef={ref} />);
 
     expect(screen.queryByText('Sign out')).toBeNull();
+  });
+});
+
+// ── Mobile menu auth tests ─────────────────────────────────────────────────
+
+describe('Header — mobile menu auth-driven display', () => {
+
+  /** Opens the mobile hamburger menu by clicking its toggle button. */
+  function openMobileMenu() {
+    const toggleBtn = screen.getByLabelText('Toggle menu');
+    act(() => { fireEvent.click(toggleBtn); });
+  }
+
+  // ── Guest baseline (mobile) ────────────────────────────────────────────
+
+  it('mobile menu shows "Sign In / Register" and no user name when logged out', () => {
+    const ref = { current: null } as React.MutableRefObject<((v: boolean) => void) | null>;
+    render(<HeaderAuthHarness initialAuth={false} onFlipRef={ref} />);
+    openMobileMenu();
+
+    // The mobile menu renders a Sign In / Register button
+    const signInButtons = screen.getAllByText('Sign In / Register');
+    expect(signInButtons.length).toBeGreaterThan(0);
+
+    // Full name must NOT appear anywhere
+    expect(screen.queryByText('Alice Johnson')).toBeNull();
+  });
+
+  // ── Authenticated baseline (mobile) ───────────────────────────────────
+
+  it('mobile menu shows the full name and hides the sign-in button when already logged in', () => {
+    const ref = { current: null } as React.MutableRefObject<((v: boolean) => void) | null>;
+    render(<HeaderAuthHarness initialAuth={true} onFlipRef={ref} />);
+    openMobileMenu();
+
+    expect(screen.getByText('Alice Johnson')).toBeTruthy();
+    // The mobile Sign In / Register button must not be rendered
+    // (desktop utility bar is hidden via CSS on mobile; we look for the Button variant)
+    const mobileSignIn = screen.queryByRole('button', { name: 'Sign In / Register' });
+    expect(mobileSignIn).toBeNull();
+  });
+
+  // ── Login transition (mobile) ──────────────────────────────────────────
+
+  it('mobile menu instantly shows the full name after login — no page refresh required', async () => {
+    const ref = { current: null } as React.MutableRefObject<((v: boolean) => void) | null>;
+    render(<HeaderAuthHarness initialAuth={false} onFlipRef={ref} />);
+    openMobileMenu();
+
+    // Verify guest state
+    expect(screen.getAllByText('Sign In / Register').length).toBeGreaterThan(0);
+    expect(screen.queryByText('Alice Johnson')).toBeNull();
+
+    // Simulate login
+    await act(async () => { ref.current!(true); });
+
+    // Mobile menu must immediately show the full name
+    expect(screen.getByText('Alice Johnson')).toBeTruthy();
+    // Sign-in button must disappear from the mobile section
+    expect(screen.queryByRole('button', { name: 'Sign In / Register' })).toBeNull();
+  });
+
+  // ── Logout transition (mobile) ─────────────────────────────────────────
+
+  it('mobile menu instantly returns to guest state after logout — no page refresh required', async () => {
+    const ref = { current: null } as React.MutableRefObject<((v: boolean) => void) | null>;
+    render(<HeaderAuthHarness initialAuth={true} onFlipRef={ref} />);
+    openMobileMenu();
+
+    // Verify authenticated state
+    expect(screen.getByText('Alice Johnson')).toBeTruthy();
+
+    // Simulate logout
+    await act(async () => { ref.current!(false); });
+
+    // Full name must be gone
+    expect(screen.queryByText('Alice Johnson')).toBeNull();
+    // Sign-in button must reappear in the mobile section
+    const signInButtons = screen.getAllByText('Sign In / Register');
+    expect(signInButtons.length).toBeGreaterThan(0);
+  });
+
+  // ── Mobile "Sign Out" button ───────────────────────────────────────────
+
+  it('mobile menu shows a "Sign Out" button when authenticated', () => {
+    const ref = { current: null } as React.MutableRefObject<((v: boolean) => void) | null>;
+    render(<HeaderAuthHarness initialAuth={true} onFlipRef={ref} />);
+    openMobileMenu();
+
+    expect(screen.getByText('Sign Out')).toBeTruthy();
+  });
+
+  it('mobile menu does not show "Sign Out" when logged out', () => {
+    const ref = { current: null } as React.MutableRefObject<((v: boolean) => void) | null>;
+    render(<HeaderAuthHarness initialAuth={false} onFlipRef={ref} />);
+    openMobileMenu();
+
+    expect(screen.queryByText('Sign Out')).toBeNull();
   });
 });
