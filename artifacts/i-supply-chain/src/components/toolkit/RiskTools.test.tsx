@@ -42,9 +42,14 @@ describe('RiskToolsSection — ARIA roles', () => {
     expect(screen.getByRole('tablist')).toBeInTheDocument();
   });
 
-  it('renders exactly 6 tabs', () => {
+  it('renders exactly 7 tabs', () => {
     render(<RiskToolsSection isAr={false} />);
-    expect(screen.getAllByRole('tab').length).toBe(6);
+    expect(screen.getAllByRole('tab').length).toBe(7);
+  });
+
+  it('renders a Supplier Alerts tab', () => {
+    render(<RiskToolsSection isAr={false} />);
+    expect(screen.getByRole('tab', { name: /Supplier Alerts/i })).toBeInTheDocument();
   });
 
   it('first tab (KRI Monitor) is aria-selected by default', () => {
@@ -73,7 +78,62 @@ describe('RiskToolsSection — ARIA roles', () => {
 });
 
 /* ══════════════════════════════════════════════════════════════════════════
-   Suite 2 — Arrow-key navigation
+   Suite 2 — Supplier Alert Config tab
+══════════════════════════════════════════════════════════════════════════ */
+describe('RiskToolsSection — Supplier Alert Config tab', () => {
+  it('shows the threshold table after clicking Supplier Alerts tab', () => {
+    render(<RiskToolsSection isAr={false} />);
+    fireEvent.click(screen.getByRole('tab', { name: /Supplier Alerts/i }));
+    // Three tier rows should be labelled
+    expect(screen.getByText(/Strategic/)).toBeInTheDocument();
+    expect(screen.getByText(/Preferred/)).toBeInTheDocument();
+    expect(screen.getByText(/Transactional/)).toBeInTheDocument();
+  });
+
+  it('renders number inputs for each threshold cell', () => {
+    render(<RiskToolsSection isAr={false} />);
+    fireEvent.click(screen.getByRole('tab', { name: /Supplier Alerts/i }));
+    const inputs = document.querySelectorAll('input[type="number"].alert-cfg-input');
+    // 3 tiers × 3 KPI columns = 9 inputs
+    expect(inputs.length).toBe(9);
+  });
+
+  it('renders print-safe value spans alongside each input', () => {
+    render(<RiskToolsSection isAr={false} />);
+    fireEvent.click(screen.getByRole('tab', { name: /Supplier Alerts/i }));
+    const spans = document.querySelectorAll('span.alert-cfg-val');
+    expect(spans.length).toBe(9);
+  });
+
+  it('default OTIF value for Strategic tier is 90', () => {
+    render(<RiskToolsSection isAr={false} />);
+    fireEvent.click(screen.getByRole('tab', { name: /Supplier Alerts/i }));
+    const inputs = Array.from(
+      document.querySelectorAll<HTMLInputElement>('input[type="number"].alert-cfg-input')
+    );
+    // First input = Strategic OTIF
+    expect(inputs[0].value).toBe('90');
+  });
+
+  it('updating a threshold input persists the new value in state', () => {
+    render(<RiskToolsSection isAr={false} />);
+    fireEvent.click(screen.getByRole('tab', { name: /Supplier Alerts/i }));
+    const inputs = Array.from(
+      document.querySelectorAll<HTMLInputElement>('input[type="number"].alert-cfg-input')
+    );
+    fireEvent.change(inputs[0], { target: { value: '95' } });
+    expect(inputs[0].value).toBe('95');
+  });
+
+  it('renders Export PDF button', () => {
+    render(<RiskToolsSection isAr={false} />);
+    fireEvent.click(screen.getByRole('tab', { name: /Supplier Alerts/i }));
+    expect(screen.getByText(/Export PDF/i)).toBeInTheDocument();
+  });
+});
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Suite 3 — Arrow-key navigation
 ══════════════════════════════════════════════════════════════════════════ */
 describe('RiskToolsSection — arrow-key tab navigation', () => {
   it('ArrowRight activates the next tab', () => {

@@ -131,6 +131,9 @@ html[lang="ar"] {
   100% { transform: scale(1.6); opacity: 0; }
 }
 
+/* Supplier Alert Config — hide print-value spans on screen; revealed only in @media print */
+.alert-cfg-val { display: none; }
+
 @media print {
   body * {
     visibility: hidden;
@@ -257,5 +260,25 @@ html[lang="ar"] {
   body[data-print] .overflow-x-auto,
   body[data-print] .overflow-y-auto {
     overflow: visible !important;
+  }
+
+  /* ── Supplier Alert Config input print fix ───────────────────────────
+     Firefox and older Safari do not print the value inside
+     <input type="number">; the box renders blank. Each threshold cell
+     contains a sibling <span class="alert-cfg-val"> that mirrors the
+     live value. On screen the span is hidden (see rule below this
+     block). Inside the print zone we swap: make the input transparent
+     so its box still occupies the column width, and reveal the span
+     over it. This guarantees the number appears in every browser.
+  ─────────────────────────────────────────────────────────────────────── */
+  .print-zone-alert-config .alert-cfg-input {
+    opacity: 0;
+  }
+  .print-zone-alert-config .alert-cfg-val {
+    display: flex !important;
+  }
+  /* Show the print-only header block inside the alert-config zone */
+  .print-zone-alert-config .alert-cfg-print-header {
+    display: block !important;
   }
 }

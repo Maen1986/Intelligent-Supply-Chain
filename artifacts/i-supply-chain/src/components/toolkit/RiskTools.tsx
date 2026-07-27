@@ -103,8 +103,43 @@ function defaultRisk(): RiskItem {
 
 // ─── Storage keys ─────────────────────────────────────────────────────────────
 
-const SK_RISKS = 'isc-tool-risk-register-v2';
-const SK_KRI   = 'isc-tool-risk-kri-v2';
+const SK_RISKS   = 'isc-tool-risk-register-v2';
+const SK_KRI     = 'isc-tool-risk-kri-v2';
+const SK_ALERTS  = 'isc-tool-risk-alerts';
+
+// ─── Supplier Alert Config types & defaults ───────────────────────────────────
+
+interface AlertCfg { otif: string; defect: string; financial: string; }
+
+const DEFAULT_ALERTS: AlertCfg[] = [
+  { otif: '90', defect: '1000', financial: '70' },
+  { otif: '85', defect: '2000', financial: '55' },
+  { otif: '80', defect: '3000', financial: '40' },
+];
+
+const ALERT_TIERS = [
+  { label: 'Strategic',     labelAr: 'استراتيجي', color: '#082C6B' },
+  { label: 'Preferred',     labelAr: 'مفضّل',     color: '#C9A84C' },
+  { label: 'Transactional', labelAr: 'معاملاتي',  color: '#64748b' },
+];
+
+const ALERT_COLS: { field: keyof AlertCfg; label: string; labelAr: string; unit: string; unitAr: string; min: number; max: number }[] = [
+  { field: 'otif',      label: 'OTIF Threshold',      labelAr: 'حد OTIF',              unit: '%',   unitAr: '%',    min: 0,   max: 100  },
+  { field: 'defect',    label: 'Defect Rate Threshold', labelAr: 'حد معدّل العيوب',     unit: 'ppm', unitAr: 'ppm',  min: 0,   max: 99999 },
+  { field: 'financial', label: 'Financial Score',       labelAr: 'درجة الأداء المالي',  unit: '/100', unitAr: '/100', min: 0,   max: 100  },
+];
+
+// ─── Print zone helper ────────────────────────────────────────────────────────
+
+function printZone(zone: string) {
+  document.body.setAttribute('data-print', zone);
+  const cleanup = () => {
+    document.body.removeAttribute('data-print');
+    window.removeEventListener('afterprint', cleanup);
+  };
+  window.addEventListener('afterprint', cleanup);
+  window.print();
+}
 
 function loadJson<T>(key: string, fallback: T): T {
   try { const s = localStorage.getItem(key); return s ? JSON.parse(s) : fallback; } catch { return fallback; }
@@ -255,12 +290,21 @@ const RISK_TEMPLATES = [
 
 // ─── Tabs ─────────────────────────────────────────────────────────────────────
 
-type Tab = 'kri' | 'register' | 'heatmap' | 'mitigation' | 'templates' | 'ai';
+type Tab = 'kri' | 'register' | 'heatmap' | 'mitigation' | 'templates' | 'ai' | 'alert-config';
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export function RiskToolsSection({ isAr }: RiskToolsProps) {
   const [activeTab, setActiveTab] = useState<Tab>('kri');
+
+  // Supplier Alert Config state
+  const [alertCfg, setAlertCfg] = useState<AlertCfg[]>(() => loadJson(SK_ALERTS, DEFAULT_ALERTS));
+  const updateAlert = (tierIdx: number, field: keyof AlertCfg, val: string) => {
+    const next = alertCfg.map((r, i) => i === tierIdx ? { ...r, [field]: val } : r);
+    setAlertCfg(next);
+    safeSetItem(SK_ALERTS, JSON.stringify(next));
+  };
+  const resetAlerts = () => { setAlertCfg(DEFAULT_ALERTS); safeSetItem(SK_ALERTS, JSON.stringify(DEFAULT_ALERTS)); };
 
   // KRI state
   const [kriValues, setKriValues] = useState<Record<string, string>>(() => loadJson(SK_KRI, {}));
@@ -329,12 +373,13 @@ export function RiskToolsSection({ isAr }: RiskToolsProps) {
   const aiPlan = useAIPlan(buildPrompt, isAr, 'risk-register', risks.length > 0 || Object.values(kriValues).some(v => v));
 
   const tabs: { id: Tab; icon: string; label: string; labelAr: string }[] = [
-    { id: 'kri',        icon: '🚨', label: 'KRI Monitor',      labelAr: 'مؤشرات المخاطر'    },
-    { id: 'register',   icon: '📋', label: 'Risk Register',    labelAr: 'سجل المخاطر'        },
-    { id: 'heatmap',    icon: '🗺️', label: 'Heat Map',         labelAr: 'خريطة الحرارة'      },
-    { id: 'mitigation', icon: '🛡️', label: 'Mitigation Plans', labelAr: 'خطط التخفيف'        },
-    { id: 'templates',  icon: '📥', label: 'BCP & Templates',  labelAr: 'القوالب والاستمرارية' },
-    { id: 'ai',         icon: '✨', label: 'AI Risk Brief',    labelAr: 'تقرير المخاطر AI'   },
+    { id: 'kri',          icon: '🚨', label: 'KRI Monitor',      labelAr: 'مؤشرات المخاطر'      },
+    { id: 'register',     icon: '📋', label: 'Risk Register',    labelAr: 'سجل المخاطر'          },
+    { id: 'heatmap',      icon: '🗺️', label: 'Heat Map',         labelAr: 'خريطة الحرارة'        },
+    { id: 'mitigation',   icon: '🛡️', label: 'Mitigation Plans', labelAr: 'خطط التخفيف'          },
+    { id: 'templates',    icon: '📥', label: 'BCP & Templates',  labelAr: 'القوالب والاستمرارية'  },
+    { id: 'alert-config', icon: '🔔', label: 'Supplier Alerts',  labelAr: 'تنبيهات الموردين'     },
+    { id: 'ai',           icon: '✨', label: 'AI Risk Brief',    labelAr: 'تقرير المخاطر AI'     },
   ];
 
   const tabListRef = useRef<HTMLDivElement>(null);
@@ -762,7 +807,118 @@ export function RiskToolsSection({ isAr }: RiskToolsProps) {
         </div>
       )}
 
-      {/* ── TAB 6: AI Risk Brief ── */}
+      {/* ── TAB 6: Supplier Alert Config ── */}
+      {activeTab === 'alert-config' && (
+        <div className="space-y-4">
+          {/* Export PDF button — hidden when printing */}
+          <div className="flex justify-end print-hide">
+            <button
+              onClick={() => printZone('alert-config')}
+              className="flex items-center gap-1.5 text-xs font-semibold bg-[#082C6B] text-white px-3 py-1.5 rounded-xl hover:bg-[#082C6B]/90 transition-colors"
+            >
+              <FileDown className="w-3.5 h-3.5" />
+              {isAr ? 'تصدير PDF' : 'Export PDF'}
+            </button>
+          </div>
+
+          {/* Print zone — wraps all visible content */}
+          <div className="print-zone-alert-config bg-white border border-slate-200 rounded-2xl shadow-sm">
+
+            {/* Print-only header */}
+            <div className="hidden alert-cfg-print-header px-5 pt-5 pb-3 border-b border-slate-100">
+              <h2 className="text-base font-bold text-slate-800">{isAr ? 'إعداد تنبيهات الموردين' : 'Supplier Alert Configuration'}</h2>
+              <p className="text-[11px] text-slate-400 mt-0.5">{isAr ? 'حدود تشغيل تنبيهات أداء الموردين' : 'Threshold values that trigger supplier performance alerts'}</p>
+            </div>
+
+            {/* Card header — visible on screen */}
+            <div className="px-5 pt-5 pb-3 border-b border-slate-100 print-hide">
+              <h3 className="font-bold text-slate-800 text-sm">{isAr ? 'إعداد تنبيهات الموردين' : 'Supplier Alert Configuration'}</h3>
+              <p className="text-[11px] text-slate-400 mt-0.5">{isAr ? 'عيّن حدود التنبيه لكل شريحة من شرائح الموردين' : 'Set alert thresholds for each supplier tier. Values outside these bounds trigger an alert.'}</p>
+            </div>
+
+            {/* Table */}
+            <div className="overflow-x-auto px-5 py-4">
+              <table className="w-full border-collapse text-sm">
+                <thead>
+                  <tr className="border-b border-slate-200">
+                    <th className="text-left py-2 pr-4 text-[11px] font-bold text-slate-500 uppercase tracking-wider w-32">
+                      {isAr ? 'الشريحة' : 'Tier'}
+                    </th>
+                    {ALERT_COLS.map(col => (
+                      <th key={col.field} className="text-center py-2 px-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        <div>{isAr ? col.labelAr : col.label}</div>
+                        <div className="text-[10px] font-normal text-slate-400 normal-case tracking-normal mt-0.5">
+                          ({isAr ? col.unitAr : col.unit})
+                        </div>
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {ALERT_TIERS.map((tier, tierIdx) => (
+                    <tr key={tier.label} className="border-b border-slate-100 last:border-0">
+                      <td className="py-3 pr-4">
+                        <span className="text-xs font-bold" style={{ color: tier.color }}>
+                          {isAr ? tier.labelAr : tier.label}
+                        </span>
+                      </td>
+                      {ALERT_COLS.map(col => {
+                        const val = alertCfg[tierIdx]?.[col.field] ?? '';
+                        return (
+                          <td key={col.field} className="py-3 px-3">
+                            {/*
+                             * Print-safe number cell:
+                             * – <input> is shown on screen for editing.
+                             * – <span class="alert-cfg-val"> mirrors the live value.
+                             * – In @media print inside .print-zone-alert-config the CSS
+                             *   hides the input (opacity:0) and shows the span, so
+                             *   Firefox and older Safari always render the number.
+                             */}
+                            <div className="relative inline-flex items-center justify-center w-full">
+                              <input
+                                type="number"
+                                min={col.min}
+                                max={col.max}
+                                value={val}
+                                onChange={e => updateAlert(tierIdx, col.field, e.target.value)}
+                                className="alert-cfg-input w-full text-center text-sm font-semibold border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-[#082C6B] focus:border-[#082C6B]"
+                              />
+                              {/* Print-only value overlay — hidden on screen via CSS */}
+                              <span
+                                className="alert-cfg-val absolute inset-0 flex items-center justify-center text-sm font-bold"
+                                aria-hidden="true"
+                              >
+                                {val || '—'}
+                              </span>
+                            </div>
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Footer note */}
+            <div className="px-5 pb-4 flex items-center justify-between gap-3">
+              <p className="text-[10px] text-slate-400 leading-relaxed">
+                {isAr
+                  ? 'يتم تشغيل التنبيه عندما يكون الأداء الفعلي أقل من حدّ الشريحة المقابلة.'
+                  : 'An alert fires when actual supplier performance falls below the threshold for its tier.'}
+              </p>
+              <button
+                onClick={resetAlerts}
+                className="print-hide flex items-center gap-1.5 text-[11px] text-slate-400 hover:text-slate-600 whitespace-nowrap transition-colors"
+              >
+                {isAr ? 'إعادة التعيين' : 'Reset to defaults'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── TAB 7: AI Risk Brief ── */}
       {activeTab === 'ai' && (
         <AIPlanPanel
           loading={aiPlan.loading} result={aiPlan.result} error={aiPlan.error}
