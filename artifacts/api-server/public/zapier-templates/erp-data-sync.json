@@ -1,0 +1,101 @@
+{
+  "_isc_version": "1.0.0",
+  "platform": "zapier",
+  "title": "ISC — ERP Data Sync (Daily)",
+  "description": "Runs on a daily Zapier schedule. Calls your ERP REST API, maps the response using Code by Zapier, and POSTs KPI and supplier data to ISC via fetch() inside the Code steps (avoids Zapier JSON serialization issues). Requires a write-scope ISC API key.",
+  "steps": [
+    {
+      "type": "trigger",
+      "step_number": 1,
+      "app": "Schedule by Zapier",
+      "app_slug": "schedule",
+      "event": "Every Day",
+      "event_slug": "every_day",
+      "settings": {
+        "time": "02:00",
+        "note": "Runs daily at 02:00 AM in your Zapier account's timezone. Adjust to match your ERP's data availability window."
+      }
+    },
+    {
+      "type": "action",
+      "step_number": 2,
+      "app": "Webhooks by Zapier",
+      "app_slug": "zapier-webhook",
+      "event": "GET",
+      "event_slug": "get",
+      "settings": {
+        "url": "YOUR_ERP_BASE_URL/api/kpis",
+        "headers": {
+          "Authorization": "Bearer REPLACE_WITH_ERP_API_TOKEN",
+          "Accept": "application/json"
+        },
+        "params": {
+          "since": "yesterday"
+        },
+        "note": "Replace YOUR_ERP_BASE_URL and REPLACE_WITH_ERP_API_TOKEN. Adjust the 'since' param to match your ERP's API."
+      }
+    },
+    {
+      "type": "action",
+      "step_number": 3,
+      "app": "Code by Zapier",
+      "app_slug": "code",
+      "event": "Run Javascript",
+      "event_slug": "run_javascript",
+      "settings": {
+        "input_data": {
+          "erpKpisRaw": "{{2__items}}",
+          "iscDomain": "YOUR_ISC_DOMAIN",
+          "iscApiKey": "REPLACE_WITH_ISC_API_KEY"
+        },
+        "code": "// Map ERP KPI response to ISC /api/v1/kpis/import and POST directly.\n// ISC expects: { slug: string, values: Record<kpiId, numericValue> }\n// Adjust item.kpi_code and item.current_value to match your ERP's fields.\nconst raw = JSON.parse(inputData.erpKpisRaw || '[]');\nconst values = {};\nfor (const item of raw) {\n  // item.kpi_code → ISC kpi ID, item.current_value → numeric value\n  values[String(item.kpi_code)] = Number(item.current_value);\n}\n// Change 'erp-sync' to match the toolkit slug you use in ISC.\nconst body = JSON.stringify({ slug: 'erp-sync', values });\nconst resp = await fetch(`https://${inputData.iscDomain}/api/v1/kpis/import`, {\n  method: 'POST',\n  headers: { 'Content-Type': 'application/json', 'x-api-key': inputData.iscApiKey },\n  body,\n});\nconst result = await resp.json().catch(() => ({}));\nreturn { status: resp.status, ok: resp.ok ? 'true' : 'false', kpiCount: Object.keys(values).length };",
+        "note": "This step maps ERP KPI fields AND posts to ISC in one step to avoid Zapier JSON serialization issues. Replace YOUR_ISC_DOMAIN and REPLACE_WITH_ISC_API_KEY (write scope). Adjust item.kpi_code and item.current_value for your ERP."
+      }
+    },
+    {
+      "type": "action",
+      "step_number": 4,
+      "app": "Webhooks by Zapier",
+      "app_slug": "zapier-webhook",
+      "event": "GET",
+      "event_slug": "get",
+      "settings": {
+        "url": "YOUR_ERP_BASE_URL/api/suppliers",
+        "headers": {
+          "Authorization": "Bearer REPLACE_WITH_ERP_API_TOKEN",
+          "Accept": "application/json"
+        },
+        "note": "Fetches the supplier roster from your ERP."
+      }
+    },
+    {
+      "type": "action",
+      "step_number": 5,
+      "app": "Code by Zapier",
+      "app_slug": "code",
+      "event": "Run Javascript",
+      "event_slug": "run_javascript",
+      "settings": {
+        "input_data": {
+          "erpSuppliersRaw": "{{4__items}}",
+          "iscDomain": "YOUR_ISC_DOMAIN",
+          "iscApiKey": "REPLACE_WITH_ISC_API_KEY"
+        },
+        "code": "// Map ERP supplier response to ISC /api/v1/suppliers/import and POST directly.\n// ISC requires each supplier to have 'id' and 'name'. All other fields optional.\n// Adjust item.supplier_code, item.supplier_name, item.classification, item.country_code for your ERP.\nconst raw = JSON.parse(inputData.erpSuppliersRaw || '[]');\nconst suppliers = raw.map(item => ({\n  id:      String(item.supplier_code),   // required — unique identifier\n  name:    String(item.supplier_name),   // required — display name\n  tier:    item.classification || 'Approved',\n  country: item.country_code   || '',\n}));\nconst body = JSON.stringify({ suppliers });\nconst resp = await fetch(`https://${inputData.iscDomain}/api/v1/suppliers/import`, {\n  method: 'POST',\n  headers: { 'Content-Type': 'application/json', 'x-api-key': inputData.iscApiKey },\n  body,\n});\nconst result = await resp.json().catch(() => ({}));\nreturn { status: resp.status, ok: resp.ok ? 'true' : 'false', supplierCount: suppliers.length };",
+        "note": "This step maps ERP supplier fields AND posts to ISC in one step. Both 'id' and 'name' are required by ISC. Adjust field names for your ERP. Replace YOUR_ISC_DOMAIN and REPLACE_WITH_ISC_API_KEY (write scope)."
+      }
+    }
+  ],
+  "isc": {
+    "triggerEvent": "cron.daily",
+    "setupSteps": [
+      "1. In Zapier, create a new Zap. Choose 'Schedule by Zapier → Every Day' as the trigger. Set time to 02:00.",
+      "2. Add a 'Webhooks by Zapier → GET' step for your ERP KPI endpoint. Replace YOUR_ERP_BASE_URL and REPLACE_WITH_ERP_API_TOKEN.",
+      "3. Add a 'Code by Zapier → Run Javascript' step. Paste the KPI mapping code from step 3 in this file. Replace YOUR_ISC_DOMAIN and REPLACE_WITH_ISC_API_KEY inside the code. Adjust item.kpi_code and item.current_value to match your ERP fields. The Code step posts directly to ISC using fetch().",
+      "4. Add another 'Webhooks by Zapier → GET' step for your ERP supplier endpoint.",
+      "5. Add another 'Code by Zapier → Run Javascript' step. Paste the supplier mapping code from step 5. Both 'id' and 'name' are required by ISC. The Code step posts directly to ISC using fetch().",
+      "6. No ISC webhook registration needed — this Zap is triggered by Zapier's own scheduler.",
+      "7. Turn the Zap ON."
+    ]
+  }
+}

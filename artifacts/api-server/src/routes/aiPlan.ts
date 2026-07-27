@@ -13,7 +13,6 @@ import { OPENAI_MODEL, friendlyAIError } from '../lib/aiConfig';
 import { requireApiKeyOrSession } from '../middlewares/requireApiKeyOrSession';
 import { aiPlanRateLimiter } from '../lib/rateLimit';
 import { dispatchEvent } from '../lib/webhookDispatch';
-import { buildEventPayload } from '../lib/eventCatalog';
 
 const router = Router();
 
@@ -66,10 +65,13 @@ router.post('/ai/plan', requireApiKeyOrSession, aiPlanRateLimiter, async (req, r
     // Fire event — userId comes from requireApiKeyOrSession → res.locals.userId
     const uid = res.locals.userId as number | undefined;
     if (uid) {
-      dispatchEvent(uid, 'ai_plan.generated', buildEventPayload('ai_plan.generated', uid, {
-        language: lang,
+      dispatchEvent(uid, 'ai_plan.generated', {
+        language:     lang,
         promptLength: (prompt as string).length,
-      }));
+        userEmail:    req.session.userEmail    ?? null,
+        userName:     req.session.userFullName ?? null,
+        userPhone:    req.session.userMobile   ?? null,
+      });
     }
 
     res.json({ ok: true, text });

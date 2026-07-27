@@ -1,0 +1,83 @@
+{
+  "_isc_version": "1.0.0",
+  "platform": "zapier",
+  "title": "ISC — Monthly Supplier Scorecard",
+  "description": "Triggers when ISC fires a schedule.monthly_scorecard webhook (1st of each month). Builds an HTML scorecard table from the suppliers array in the payload using Code by Zapier, and emails it to the user. Payload fields are nested under 'data': data.userEmail, data.userName, data.month, data.suppliers, data.supplierCount.",
+  "steps": [
+    {
+      "type": "trigger",
+      "step_number": 1,
+      "app": "Webhooks by Zapier",
+      "app_slug": "zapier-webhook",
+      "event": "Catch Hook",
+      "event_slug": "catch_hook",
+      "settings": {
+        "note": "Copy the generated Catch Hook URL and paste it into ISC → Admin → Integration Hub → Webhooks with event 'schedule.monthly_scorecard'.",
+        "pick_off": ""
+      },
+      "sample": {
+        "event": "schedule.monthly_scorecard",
+        "source": "isc",
+        "version": "1",
+        "timestamp": "2026-02-01T08:00:00Z",
+        "userId": 42,
+        "data": {
+          "supplierCount": 2,
+          "userEmail": "user@example.com",
+          "userName": "Sara Ahmed",
+          "month": "February 2026",
+          "suppliers": [
+            { "name": "Gulf Supplies Co.", "tier": "Strategic" },
+            { "name": "Delta Logistics", "tier": "Preferred" }
+          ]
+        }
+      }
+    },
+    {
+      "type": "action",
+      "step_number": 2,
+      "app": "Code by Zapier",
+      "app_slug": "code",
+      "event": "Run Javascript",
+      "event_slug": "run_javascript",
+      "settings": {
+        "input_data": {
+          "suppliers": "{{1__data__suppliers}}",
+          "month": "{{1__data__month}}",
+          "userName": "{{1__data__userName}}"
+        },
+        "code": "// Build an HTML scorecard table from the ISC webhook payload.\n// suppliers is a JSON array of { name, tier } objects.\nconst suppliers = JSON.parse(inputData.suppliers || '[]');\nconst month = inputData.month || new Date().toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });\nconst userName = inputData.userName || '';\n\nconst rows = suppliers.map(s =>\n  `<tr>\n    <td style='padding:8px 12px;border:1px solid #e2e8f0'>${s.name}</td>\n    <td style='padding:8px 12px;border:1px solid #e2e8f0'>${s.tier}</td>\n  </tr>`\n).join('');\n\nconst html = `\n<h2 style='font-family:sans-serif;color:#1e293b'>Monthly Supplier Scorecard — ${month}</h2>\n<p style='font-family:sans-serif;color:#64748b'>Hi ${userName}, here is your supplier scorecard for ${month}.</p>\n<table style='border-collapse:collapse;width:100%;font-family:sans-serif;font-size:13px'>\n  <thead>\n    <tr style='background:#f1f5f9'>\n      <th style='padding:8px 12px;border:1px solid #e2e8f0;text-align:left'>Supplier</th>\n      <th style='padding:8px 12px;border:1px solid #e2e8f0;text-align:left'>Tier</th>\n    </tr>\n  </thead>\n  <tbody>${rows}</tbody>\n</table>\n<br/>\n<p style='font-family:sans-serif'><a href='https://YOUR_ISC_DOMAIN/'>→ View full scorecard in ISC</a></p>\n`;\n\nreturn { html, subject: `Monthly Supplier Scorecard — ${month}` };",
+        "note": "Replace YOUR_ISC_DOMAIN inside the code. The supplier list, user name, and month all come from the ISC webhook payload (data.suppliers, data.userName, data.month)."
+      }
+    },
+    {
+      "type": "action",
+      "step_number": 3,
+      "app": "Gmail",
+      "app_slug": "gmail",
+      "event": "Send Email",
+      "event_slug": "send_email",
+      "settings": {
+        "to": "{{1__data__userEmail}}",
+        "subject": "{{2__subject}}",
+        "body": "{{2__html}}",
+        "body_type": "html",
+        "from_name": "I Supply Chain Reports",
+        "note": "Connect your Gmail account. To = {{1__data__userEmail}} (maps to data.userEmail in the payload). Subject and body come from the Code step output."
+      }
+    }
+  ],
+  "isc": {
+    "triggerEvent": "schedule.monthly_scorecard",
+    "setupSteps": [
+      "1. In Zapier, create a new Zap. Choose 'Webhooks by Zapier' as the trigger with event 'Catch Hook'.",
+      "2. Copy the Catch Hook URL and register it in ISC → Admin → Integration Hub → Webhooks with event 'schedule.monthly_scorecard'.",
+      "3. Add a 'Code by Zapier → Run Javascript' step. Paste the code from step 2 in this file. Replace YOUR_ISC_DOMAIN inside the code.",
+      "4. Add a Gmail action. Set To = {{1__data__userEmail}}, Subject = {{2__subject}}, Body = {{2__html}}.",
+      "5. Connect your Gmail account.",
+      "6. All payload fields (userEmail, userName, month, suppliers) are nested under 'data' — use {{1__data__userEmail}} etc.",
+      "7. ISC fires this on the 1st of each month automatically — no Zapier schedule trigger needed.",
+      "8. Turn the Zap ON."
+    ]
+  }
+}

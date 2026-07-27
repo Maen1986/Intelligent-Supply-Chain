@@ -85,9 +85,11 @@ export async function dispatchWebhook(
 ): Promise<SendResult> {
   const payload = {
     event,
+    source:    "isc",
+    version:   "1",
     timestamp: new Date().toISOString(),
-    data,
     userId,
+    data,
   };
 
   const result      = await sendWebhookPayload(webhook.url, payload);

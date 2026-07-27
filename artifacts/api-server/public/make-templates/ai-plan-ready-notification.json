@@ -1,0 +1,124 @@
+{
+  "name": "ISC — AI Plan Ready Notification",
+  "flow": [
+    {
+      "id": 1,
+      "module": "gateway:CustomWebHook",
+      "version": 1,
+      "parameters": {
+        "hook": "REPLACE_WITH_MAKE_WEBHOOK_ID",
+        "maxResults": 1
+      },
+      "mapper": {},
+      "metadata": {
+        "designer": { "x": 0, "y": 0 },
+        "restore": { "parameters": { "hook": { "label": "ISC AI Plan Generated Webhook" } } },
+        "parameters": [
+          { "name": "hook", "type": "hook:gateway-webhook", "label": "Webhook", "required": true },
+          { "name": "maxResults", "type": "number", "label": "Maximum number of results" }
+        ],
+        "notes": "Webhook payload shape: { event, source, version, timestamp, userId, data: { language, promptLength, userEmail, userName, userPhone } }"
+      }
+    },
+    {
+      "id": 2,
+      "module": "gmail:ActionSendEmail",
+      "version": 1,
+      "parameters": { "account": "REPLACE_WITH_MAKE_GMAIL_CONNECTION_ID" },
+      "mapper": {
+        "to": "{{1.body.data.userEmail}}",
+        "subject": "Your AI Action Plan is ready — I Supply Chain",
+        "bodyType": "html",
+        "body": "<h2 style='color:#4f46e5'>✅ Your AI Action Plan is ready</h2><p>Hi {{1.body.data.userName}},</p><p>Your AI-generated action plan has been created and is waiting for you in the platform.</p><p style='margin:24px 0'><a href='https://YOUR_ISC_DOMAIN/' style='background:#4f46e5;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:bold'>→ View My AI Plan</a></p><p>The plan includes prioritised actions, timelines, and resource guidance tailored to your supply-chain data.</p><br/><p>Best regards,<br/>The I Supply Chain Team</p>",
+        "from": "noreply@YOUR_ISC_DOMAIN"
+      },
+      "metadata": {
+        "designer": { "x": 300, "y": -100 },
+        "restore": {
+          "parameters": { "account": { "label": "Gmail — ISC Notifications" } },
+          "expect": { "bodyType": { "label": "HTML" } }
+        },
+        "parameters": [{ "name": "account", "type": "account:google", "label": "Connection", "required": true }],
+        "expect": [
+          { "name": "to", "type": "email", "label": "To", "required": true },
+          { "name": "subject", "type": "text", "label": "Subject" },
+          { "name": "body", "type": "text", "label": "Content" }
+        ],
+        "notes": "1.body.data.userEmail and 1.body.data.userName come from the nested data envelope in the webhook payload. Replace YOUR_ISC_DOMAIN."
+      }
+    },
+    {
+      "id": 3,
+      "module": "http:ActionSendData",
+      "version": 3,
+      "parameters": { "handleErrors": true, "useNewZLibDeflate": true },
+      "mapper": {
+        "url": "https://graph.facebook.com/v18.0/REPLACE_WITH_PHONE_NUMBER_ID/messages",
+        "method": "post",
+        "headers": [
+          { "name": "Authorization", "value": "Bearer REPLACE_WITH_WHATSAPP_TOKEN" }
+        ],
+        "qs": [],
+        "bodyType": "raw",
+        "parseResponse": false,
+        "authUser": "",
+        "authPass": "",
+        "timeout": "",
+        "shareCookies": false,
+        "ca": "",
+        "cert": "",
+        "key": "",
+        "rejectUnauthorized": true,
+        "followRedirect": true,
+        "useQuerystring": false,
+        "encoding": "json",
+        "serializeUrl": false,
+        "blockedStatus": "",
+        "contentType": "application/json",
+        "data": "{\"messaging_product\":\"whatsapp\",\"to\":\"{{1.body.data.userPhone}}\",\"type\":\"text\",\"text\":{\"body\":\"✅ Your AI action plan is ready! Log in to view it: https://YOUR_ISC_DOMAIN/\"}}"
+      },
+      "metadata": {
+        "designer": { "x": 300, "y": 100 },
+        "restore": { "expect": { "method": { "label": "POST" }, "bodyType": { "label": "Raw" }, "contentType": { "label": "JSON (application/json)" } } },
+        "expect": [
+          { "name": "url", "type": "url", "label": "URL", "required": true },
+          { "name": "method", "type": "select", "label": "Method", "required": true },
+          { "name": "data", "type": "buffer", "label": "Body" }
+        ],
+        "notes": "Optional — disable or delete this module if you do not use WhatsApp Business API. 1.body.data.userPhone comes from the nested data envelope."
+      }
+    }
+  ],
+  "metadata": {
+    "instant": true,
+    "version": 1,
+    "scenario": {
+      "roundtrips": 1,
+      "maxErrors": 3,
+      "autoCommit": true,
+      "autoCommitTriggerLast": true,
+      "sequential": false,
+      "slots": null,
+      "confidential": false,
+      "dataloss": false,
+      "dlq": false,
+      "freshVariables": false
+    },
+    "designer": { "orphans": [] },
+    "zone": "eu1.make.com"
+  },
+  "isc": {
+    "platform": "make",
+    "triggerEvent": "ai_plan.generated",
+    "setupSteps": [
+      "1. In Make.com, create a new scenario and import this JSON (three dots → Import Blueprint).",
+      "2. Click the Webhook module and copy the generated webhook URL.",
+      "3. In ISC → Admin → Integration Hub → Webhooks, create a webhook with event 'ai_plan.generated' and paste that URL.",
+      "4. Add your Gmail connection to the Gmail module.",
+      "5. Replace YOUR_ISC_DOMAIN in the Gmail body.",
+      "6. For WhatsApp: replace REPLACE_WITH_PHONE_NUMBER_ID and REPLACE_WITH_WHATSAPP_TOKEN with your Meta Business API credentials. If not using WhatsApp, disable or delete that module.",
+      "7. Note: all user fields (userEmail, userName, userPhone) are nested under 1.body.data — the template already uses the correct paths.",
+      "8. Turn the scenario ON."
+    ]
+  }
+}

@@ -227,9 +227,9 @@ describe('AdminAutomations — TemplatesTab', () => {
   it('A — renders exactly 8 template cards', async () => {
     await renderAndOpenTemplates();
 
-    // Each card has a Download link; count them as a proxy for card count
-    const downloadLinks = screen.getAllByRole('link', { name: /Download/i });
-    expect(downloadLinks).toHaveLength(8);
+    // Each card has a "Prepare & Download" button; count them as a proxy for card count
+    const downloadButtons = screen.getAllByRole('button', { name: /Prepare & Download/i });
+    expect(downloadButtons).toHaveLength(8);
 
     // Spot-check all 8 template names are visible
     const expectedNames = [
@@ -268,45 +268,37 @@ describe('AdminAutomations — TemplatesTab', () => {
     expect(screen.getByText('Webhook')).toBeInTheDocument();
   });
 
-  /* ── C. Download link resolves to valid n8n JSON ────────────────────────── */
+  /* ── C. Prepare & Download button opens the modal ───────────────────────── */
 
-  it('C — Download link href fetches a valid n8n JSON with _isc_version = "1.0.0"', async () => {
+  it('C — clicking Prepare & Download opens the preparation modal', async () => {
     await renderAndOpenTemplates();
 
-    // Grab the first Download anchor and its href
-    const downloadLinks = screen.getAllByRole('link', { name: /Download/i });
-    const firstHref = (downloadLinks[0] as HTMLAnchorElement).href;
+    // Click the first "Prepare & Download" button
+    const downloadButtons = screen.getAllByRole('button', { name: /Prepare & Download/i });
+    expect(downloadButtons.length).toBeGreaterThanOrEqual(1);
+    fireEvent.click(downloadButtons[0]);
 
-    // href should point at the n8n-templates directory
-    expect(firstHref).toMatch(/\/public\/n8n-templates\/.+\.json$/);
+    // The preparation modal should appear
+    await waitFor(() => {
+      expect(screen.getByText(/Prepare & Download Template/i)).toBeInTheDocument();
+    });
 
-    // Fetch that URL and verify the response is valid n8n JSON
-    const response = await fetch(firstHref);
-    expect(response.ok).toBe(true);
-
-    const json = await response.json() as Record<string, unknown>;
-    expect(typeof json).toBe('object');
-    expect(json).not.toBeNull();
-    expect(Object.keys(json).length).toBeGreaterThan(0);
-    expect(json._isc_version).toBe('1.0.0');
+    // Modal should contain the ISC Domain and API Key fields
+    expect(screen.getByText(/ISC Domain/i)).toBeInTheDocument();
+    expect(screen.getByText(/ISC API Key/i)).toBeInTheDocument();
   });
 
-  /* ── D. All Download links point at .json files ─────────────────────────── */
+  /* ── D. All 8 template cards have Prepare & Download buttons ─────────────── */
 
-  it('D — all 8 Download links resolve to valid JSON with _isc_version = "1.0.0"', async () => {
+  it('D — all 8 template cards have a Prepare & Download button', async () => {
     await renderAndOpenTemplates();
 
-    const downloadLinks = screen.getAllByRole('link', { name: /Download/i });
-    expect(downloadLinks).toHaveLength(8);
+    const downloadButtons = screen.getAllByRole('button', { name: /Prepare & Download/i });
+    expect(downloadButtons).toHaveLength(8);
 
-    for (const link of downloadLinks) {
-      const href = (link as HTMLAnchorElement).href;
-      expect(href).toMatch(/\/public\/n8n-templates\/.+\.json$/);
-
-      const res = await fetch(href);
-      expect(res.ok).toBe(true);
-      const json = await res.json() as Record<string, unknown>;
-      expect(json._isc_version).toBe('1.0.0');
+    // Each button should be enabled
+    for (const btn of downloadButtons) {
+      expect((btn as HTMLButtonElement).disabled).toBe(false);
     }
   });
 });

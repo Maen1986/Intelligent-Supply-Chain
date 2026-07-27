@@ -1,0 +1,92 @@
+{
+  "_isc_version": "1.0.0",
+  "platform": "zapier",
+  "title": "ISC — Lead Nurture Sequence",
+  "description": "Triggers when ISC fires a lead.captured webhook. Sends a personalised intro email immediately, then after a 48-hour delay sends a discovery call invitation. Payload fields are nested under 'data': data.name, data.email, data.company, data.industry.",
+  "steps": [
+    {
+      "type": "trigger",
+      "step_number": 1,
+      "app": "Webhooks by Zapier",
+      "app_slug": "zapier-webhook",
+      "event": "Catch Hook",
+      "event_slug": "catch_hook",
+      "settings": {
+        "note": "Copy the generated Catch Hook URL and paste it into ISC → Admin → Integration Hub → Webhooks with event 'lead.captured'.",
+        "pick_off": ""
+      },
+      "sample": {
+        "event": "lead.captured",
+        "source": "isc",
+        "version": "1",
+        "timestamp": "2026-01-13T09:00:00Z",
+        "userId": 1,
+        "data": {
+          "submissionId": 42,
+          "tool": "lead",
+          "name": "Sara Ahmed",
+          "email": "sara@example.com",
+          "company": "Acme Logistics",
+          "industry": "Transportation"
+        }
+      }
+    },
+    {
+      "type": "action",
+      "step_number": 2,
+      "app": "Gmail",
+      "app_slug": "gmail",
+      "event": "Send Email",
+      "event_slug": "send_email",
+      "settings": {
+        "to": "{{1__data__email}}",
+        "subject": "Welcome to I Supply Chain — let's get started",
+        "body": "<h2>Hi {{1__data__name}},</h2><p>Thank you for reaching out to I Supply Chain. We have reviewed your submission and are excited to help you optimise your supply chain.</p><p>Over the next 48 hours we will send you some useful resources and would love to schedule a short discovery call.</p><p><a href='YOUR_CALENDAR_LINK'>→ Book a 20-minute discovery call</a></p><p>If you have any questions, simply reply to this email.</p><br/><p>Best regards,<br/>The I Supply Chain Team<br/><a href='https://YOUR_ISC_DOMAIN/'>YOUR_ISC_DOMAIN</a></p>",
+        "body_type": "html",
+        "from_name": "I Supply Chain",
+        "note": "Connect your Gmail account. Replace YOUR_ISC_DOMAIN and YOUR_CALENDAR_LINK. {{1__data__email}} and {{1__data__name}} map to the nested data.email and data.name fields."
+      }
+    },
+    {
+      "type": "action",
+      "step_number": 3,
+      "app": "Delay by Zapier",
+      "app_slug": "delay",
+      "event": "Delay For",
+      "event_slug": "delay_for",
+      "settings": {
+        "unit": "hours",
+        "amount": "48",
+        "note": "Pauses the Zap for 48 hours before sending the follow-up. Adjust as needed."
+      }
+    },
+    {
+      "type": "action",
+      "step_number": 4,
+      "app": "Gmail",
+      "app_slug": "gmail",
+      "event": "Send Email",
+      "event_slug": "send_email",
+      "settings": {
+        "to": "{{1__data__email}}",
+        "subject": "Ready for a quick discovery call? — I Supply Chain",
+        "body": "<p>Hi {{1__data__name}},</p><p>Following up on your enquiry — we would love to schedule a short call to understand your supply-chain goals and show you how ISC can help.</p><p><a href='YOUR_CALENDAR_LINK'>→ Pick a time that works for you</a></p><p>Looking forward to speaking soon.</p><br/><p>Best,<br/>The I Supply Chain Team</p>",
+        "body_type": "html",
+        "from_name": "I Supply Chain",
+        "note": "Replace YOUR_CALENDAR_LINK. Sent 48 hours after the welcome email."
+      }
+    }
+  ],
+  "isc": {
+    "triggerEvent": "lead.captured",
+    "setupSteps": [
+      "1. In Zapier, create a new Zap. Choose 'Webhooks by Zapier' as the trigger with event 'Catch Hook'.",
+      "2. Copy the Catch Hook URL and register it in ISC → Admin → Integration Hub → Webhooks with event 'lead.captured'.",
+      "3. Add a Gmail action (step 2). Connect your account, set To = {{1__data__email}}, and replace YOUR_ISC_DOMAIN and YOUR_CALENDAR_LINK.",
+      "4. Add a 'Delay by Zapier → Delay For 48 hours' step.",
+      "5. Add a second Gmail action (step 4). Set To = {{1__data__email}} and replace YOUR_CALENDAR_LINK.",
+      "6. All lead fields (name, email, company, industry) are nested under 'data' in the payload — use {{1__data__name}}, {{1__data__email}} etc. (Zapier flattens nested objects automatically when you map using the sample payload.)",
+      "7. Turn the Zap ON."
+    ]
+  }
+}

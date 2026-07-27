@@ -84,8 +84,13 @@ describe('FeedbackModal failed submission', () => {
   it('shows a live rate-limit countdown (429) and succeeds on retry', async () => {
     const fetchMock = vi
       .fn()
-      // First call: POST /feedback → 429 (no body / headers, fallback to 3600 s)
-      .mockResolvedValueOnce({ ok: false, status: 429 })
+      // First call: POST /feedback → 429 (empty JSON body, no Retry-After header — fallback to 3600 s)
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 429,
+        headers: { get: (_: string) => null },
+        json: async () => null,
+      })
       // Second call: POST /feedback → success
       .mockResolvedValueOnce({ ok: true, status: 201, json: async () => ({ ok: true, id: 1 }) });
     vi.stubGlobal('fetch', fetchMock as unknown as typeof fetch);

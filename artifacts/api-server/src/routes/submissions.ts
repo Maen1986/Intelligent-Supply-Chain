@@ -6,7 +6,6 @@ import { z } from 'zod';
 import { logger } from '../lib/logger';
 import { sendBriefingEmail } from './notify';
 import { dispatchEvent } from '../lib/webhookDispatch';
-import { buildEventPayload } from '../lib/eventCatalog';
 import {
   ObjectStorageService,
   ObjectNotFoundError,
@@ -91,17 +90,19 @@ router.post('/', async (req, res) => {
     // Fire lead.captured for any command_centre or lead submission
     const submissionUserId = req.session.userId ?? null;
     if (data.tool === 'command_centre' || data.tool === 'lead') {
-      dispatchEvent(submissionUserId ?? 0, 'lead.captured', buildEventPayload('lead.captured', submissionUserId, {
+      dispatchEvent(submissionUserId ?? 0, 'lead.captured', {
         submissionId: row.id,
         tool:         data.tool,
+        name:         contactName    ?? null,
+        email:        contactEmail   ?? null,
         company:      contactCompany ?? null,
         industry:     (data.inputs as Record<string, unknown>)?.industry ?? null,
-      }));
+      });
     } else {
-      dispatchEvent(submissionUserId ?? 0, 'assessment.saved', buildEventPayload('assessment.saved', submissionUserId, {
+      dispatchEvent(submissionUserId ?? 0, 'assessment.saved', {
         submissionId: row.id,
         tool:         data.tool,
-      }));
+      });
     }
     res.json({ ok: true, id: row.id });
 

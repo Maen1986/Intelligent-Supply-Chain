@@ -1,0 +1,229 @@
+{
+  "name": "ISC — ERP Data Sync (Daily)",
+  "flow": [
+    {
+      "id": 1,
+      "module": "builtin:BasicScheduler",
+      "version": 1,
+      "parameters": {
+        "interval": 1440,
+        "unit": "minutes",
+        "startTime": "02:00"
+      },
+      "mapper": {},
+      "metadata": {
+        "designer": { "x": 0, "y": 0 },
+        "notes": "Runs once daily at 02:00 UTC. Adjust the time to suit your ERP's data availability window."
+      }
+    },
+    {
+      "id": 2,
+      "module": "http:ActionSendData",
+      "version": 3,
+      "parameters": { "handleErrors": false, "useNewZLibDeflate": true },
+      "mapper": {
+        "url": "YOUR_ERP_BASE_URL/api/kpis",
+        "method": "get",
+        "headers": [
+          { "name": "Authorization", "value": "Bearer REPLACE_WITH_ERP_API_TOKEN" },
+          { "name": "Accept", "value": "application/json" }
+        ],
+        "qs": [
+          { "key": "since", "value": "{{formatDate(addDays(now; -1); 'YYYY-MM-DD')}}" }
+        ],
+        "bodyType": "raw",
+        "parseResponse": true,
+        "authUser": "",
+        "authPass": "",
+        "timeout": "30",
+        "shareCookies": false,
+        "ca": "",
+        "cert": "",
+        "key": "",
+        "rejectUnauthorized": true,
+        "followRedirect": true,
+        "useQuerystring": false,
+        "encoding": "json",
+        "serializeUrl": false,
+        "blockedStatus": ""
+      },
+      "metadata": {
+        "designer": { "x": 300, "y": -100 },
+        "restore": { "expect": { "method": { "label": "GET" }, "bodyType": { "label": "Raw" } } },
+        "expect": [
+          { "name": "url", "type": "url", "label": "URL", "required": true },
+          { "name": "method", "type": "select", "label": "Method", "required": true }
+        ]
+      }
+    },
+    {
+      "id": 3,
+      "module": "builtin:SetVariable",
+      "version": 1,
+      "parameters": {},
+      "mapper": {
+        "name": "kpiValues",
+        "scope": "roundtrip",
+        "value": "{{toJSON(map(2.data.items; [item.kpi_code; item.current_value]))}}"
+      },
+      "metadata": {
+        "designer": { "x": 600, "y": -100 },
+        "notes": "Builds a flat key→value object of { kpiId: numericValue } for the ISC /kpis/import endpoint. The ISC API expects { slug, values: Record<kpiId, value> }. Adjust item.kpi_code and item.current_value to match your ERP's field names."
+      }
+    },
+    {
+      "id": 4,
+      "module": "http:ActionSendData",
+      "version": 3,
+      "parameters": { "handleErrors": false, "useNewZLibDeflate": true },
+      "mapper": {
+        "url": "https://YOUR_ISC_DOMAIN/api/v1/kpis/import",
+        "method": "post",
+        "headers": [
+          { "name": "x-api-key", "value": "REPLACE_WITH_ISC_API_KEY" },
+          { "name": "Content-Type", "value": "application/json" }
+        ],
+        "qs": [],
+        "bodyType": "raw",
+        "parseResponse": true,
+        "authUser": "",
+        "authPass": "",
+        "timeout": "30",
+        "shareCookies": false,
+        "ca": "",
+        "cert": "",
+        "key": "",
+        "rejectUnauthorized": true,
+        "followRedirect": true,
+        "useQuerystring": false,
+        "encoding": "json",
+        "serializeUrl": false,
+        "blockedStatus": "",
+        "contentType": "application/json",
+        "data": "{\"slug\":\"erp-sync\",\"values\":{{3.kpiValues}}}"
+      },
+      "metadata": {
+        "designer": { "x": 900, "y": -100 },
+        "restore": { "expect": { "method": { "label": "POST" }, "bodyType": { "label": "Raw" }, "contentType": { "label": "JSON (application/json)" } } },
+        "expect": [
+          { "name": "url", "type": "url", "label": "URL", "required": true },
+          { "name": "method", "type": "select", "label": "Method", "required": true },
+          { "name": "data", "type": "buffer", "label": "Body" }
+        ],
+        "notes": "Sends { slug: 'erp-sync', values: { kpiId: value } } to the ISC import endpoint. The slug groups KPIs under your ERP sync tool — change 'erp-sync' to match your toolkit slug."
+      }
+    },
+    {
+      "id": 5,
+      "module": "http:ActionSendData",
+      "version": 3,
+      "parameters": { "handleErrors": false, "useNewZLibDeflate": true },
+      "mapper": {
+        "url": "YOUR_ERP_BASE_URL/api/suppliers",
+        "method": "get",
+        "headers": [
+          { "name": "Authorization", "value": "Bearer REPLACE_WITH_ERP_API_TOKEN" },
+          { "name": "Accept", "value": "application/json" }
+        ],
+        "qs": [],
+        "bodyType": "raw",
+        "parseResponse": true,
+        "authUser": "",
+        "authPass": "",
+        "timeout": "30",
+        "shareCookies": false,
+        "ca": "",
+        "cert": "",
+        "key": "",
+        "rejectUnauthorized": true,
+        "followRedirect": true,
+        "useQuerystring": false,
+        "encoding": "json",
+        "serializeUrl": false,
+        "blockedStatus": ""
+      },
+      "metadata": {
+        "designer": { "x": 300, "y": 100 },
+        "restore": { "expect": { "method": { "label": "GET" }, "bodyType": { "label": "Raw" } } },
+        "expect": [
+          { "name": "url", "type": "url", "label": "URL", "required": true },
+          { "name": "method", "type": "select", "label": "Method", "required": true }
+        ]
+      }
+    },
+    {
+      "id": 6,
+      "module": "http:ActionSendData",
+      "version": 3,
+      "parameters": { "handleErrors": false, "useNewZLibDeflate": true },
+      "mapper": {
+        "url": "https://YOUR_ISC_DOMAIN/api/v1/suppliers/import",
+        "method": "post",
+        "headers": [
+          { "name": "x-api-key", "value": "REPLACE_WITH_ISC_API_KEY" },
+          { "name": "Content-Type", "value": "application/json" }
+        ],
+        "qs": [],
+        "bodyType": "raw",
+        "parseResponse": true,
+        "authUser": "",
+        "authPass": "",
+        "timeout": "30",
+        "shareCookies": false,
+        "ca": "",
+        "cert": "",
+        "key": "",
+        "rejectUnauthorized": true,
+        "followRedirect": true,
+        "useQuerystring": false,
+        "encoding": "json",
+        "serializeUrl": false,
+        "blockedStatus": "",
+        "contentType": "application/json",
+        "data": "{{toJSON({\"suppliers\": map(5.data.items; {\"id\": item.supplier_code; \"name\": item.supplier_name; \"tier\": item.classification; \"country\": item.country_code})})}}"
+      },
+      "metadata": {
+        "designer": { "x": 600, "y": 100 },
+        "restore": { "expect": { "method": { "label": "POST" }, "bodyType": { "label": "Raw" }, "contentType": { "label": "JSON (application/json)" } } },
+        "expect": [
+          { "name": "url", "type": "url", "label": "URL", "required": true },
+          { "name": "method", "type": "select", "label": "Method", "required": true },
+          { "name": "data", "type": "buffer", "label": "Body" }
+        ],
+        "notes": "Sends { suppliers: [{ id, name, tier, country }] } to the ISC import endpoint. Both 'id' and 'name' are required fields. Adjust item.supplier_code, item.supplier_name, item.classification, and item.country_code to match your ERP's field names."
+      }
+    }
+  ],
+  "metadata": {
+    "instant": false,
+    "version": 1,
+    "scenario": {
+      "roundtrips": 1,
+      "maxErrors": 3,
+      "autoCommit": true,
+      "autoCommitTriggerLast": true,
+      "sequential": true,
+      "slots": null,
+      "confidential": false,
+      "dataloss": false,
+      "dlq": false,
+      "freshVariables": false
+    },
+    "designer": { "orphans": [] },
+    "zone": "eu1.make.com"
+  },
+  "isc": {
+    "platform": "make",
+    "triggerEvent": "cron.daily",
+    "setupSteps": [
+      "1. In Make.com, create a new scenario and import this JSON (three dots → Import Blueprint).",
+      "2. Replace YOUR_ERP_BASE_URL and REPLACE_WITH_ERP_API_TOKEN with your ERP endpoint and credentials.",
+      "3. Replace YOUR_ISC_DOMAIN and REPLACE_WITH_ISC_API_KEY (the key must have write scope).",
+      "4. Review the Set Variable (KPI Mapping) module: adjust item.kpi_code and item.current_value to match your ERP's field names. The ISC API expects { slug, values: { kpiId: value } }.",
+      "5. In the ISC Suppliers HTTP module, adjust item.supplier_code, item.supplier_name, item.classification, and item.country_code. Both 'id' and 'name' are required by ISC.",
+      "6. Change the slug value 'erp-sync' in step 4 to match the toolkit slug you use in ISC.",
+      "7. This scenario uses Make.com's built-in scheduler — no ISC webhook registration needed.",
+      "8. Turn the scenario ON."
+    ]
+  }
+}

@@ -1,0 +1,124 @@
+{
+  "name": "ISC — Lead Nurture Sequence",
+  "flow": [
+    {
+      "id": 1,
+      "module": "gateway:CustomWebHook",
+      "version": 1,
+      "parameters": {
+        "hook": "REPLACE_WITH_MAKE_WEBHOOK_ID",
+        "maxResults": 1
+      },
+      "mapper": {},
+      "metadata": {
+        "designer": { "x": 0, "y": 0 },
+        "restore": { "parameters": { "hook": { "label": "ISC Lead Captured Webhook" } } },
+        "parameters": [
+          { "name": "hook", "type": "hook:gateway-webhook", "label": "Webhook", "required": true },
+          { "name": "maxResults", "type": "number", "label": "Maximum number of results" }
+        ],
+        "notes": "Webhook payload shape: { event, source, version, timestamp, userId, data: { submissionId, tool, name, email, company, industry } }"
+      }
+    },
+    {
+      "id": 2,
+      "module": "gmail:ActionSendEmail",
+      "version": 1,
+      "parameters": { "account": "REPLACE_WITH_MAKE_GMAIL_CONNECTION_ID" },
+      "mapper": {
+        "to": "{{1.body.data.email}}",
+        "subject": "Welcome to I Supply Chain — let's get started",
+        "bodyType": "html",
+        "body": "<h2>Hi {{1.body.data.name}},</h2><p>Thank you for reaching out to I Supply Chain. We've reviewed your submission and we're excited to help you optimise your supply chain.</p><p>Over the next few days we'll send you some useful resources and would love to schedule a short discovery call at your convenience.</p><p><a href='YOUR_CALENDAR_LINK'>→ Book a 20-minute discovery call</a></p><p>If you have any questions in the meantime, simply reply to this email.</p><br/><p>Best regards,<br/>The I Supply Chain Team</p><p style='font-size:11px;color:#666'>I Supply Chain — <a href='https://YOUR_ISC_DOMAIN/'>YOUR_ISC_DOMAIN</a></p>",
+        "from": "hello@YOUR_ISC_DOMAIN"
+      },
+      "metadata": {
+        "designer": { "x": 300, "y": 0 },
+        "restore": {
+          "parameters": { "account": { "label": "Gmail — ISC Outreach" } },
+          "expect": { "bodyType": { "label": "HTML" } }
+        },
+        "parameters": [{ "name": "account", "type": "account:google", "label": "Connection", "required": true }],
+        "expect": [
+          { "name": "to", "type": "email", "label": "To", "required": true },
+          { "name": "subject", "type": "text", "label": "Subject" },
+          { "name": "body", "type": "text", "label": "Content" }
+        ],
+        "notes": "1.body.data.email and 1.body.data.name are the lead's details from the nested data envelope. Replace YOUR_ISC_DOMAIN and YOUR_CALENDAR_LINK."
+      }
+    },
+    {
+      "id": 3,
+      "module": "builtin:Delay",
+      "version": 1,
+      "parameters": {},
+      "mapper": {
+        "delay": 172800,
+        "unit": "seconds"
+      },
+      "metadata": {
+        "designer": { "x": 600, "y": 0 },
+        "notes": "Waits 48 hours before sending the follow-up discovery call invite."
+      }
+    },
+    {
+      "id": 4,
+      "module": "gmail:ActionSendEmail",
+      "version": 1,
+      "parameters": { "account": "REPLACE_WITH_MAKE_GMAIL_CONNECTION_ID" },
+      "mapper": {
+        "to": "{{1.body.data.email}}",
+        "subject": "Ready for a quick discovery call? — I Supply Chain",
+        "bodyType": "html",
+        "body": "<p>Hi {{1.body.data.name}},</p><p>Following up on your enquiry — we'd love to schedule a short call to understand your supply-chain goals and show you how ISC can help.</p><p><a href='YOUR_CALENDAR_LINK'>→ Pick a time that works for you</a></p><p>Looking forward to speaking soon.</p><br/><p>Best,<br/>The I Supply Chain Team</p>",
+        "from": "hello@YOUR_ISC_DOMAIN"
+      },
+      "metadata": {
+        "designer": { "x": 900, "y": 0 },
+        "restore": {
+          "parameters": { "account": { "label": "Gmail — ISC Outreach" } },
+          "expect": { "bodyType": { "label": "HTML" } }
+        },
+        "parameters": [{ "name": "account", "type": "account:google", "label": "Connection", "required": true }],
+        "expect": [
+          { "name": "to", "type": "email", "label": "To", "required": true },
+          { "name": "subject", "type": "text", "label": "Subject" },
+          { "name": "body", "type": "text", "label": "Content" }
+        ],
+        "notes": "Sends a follow-up discovery call invitation 48 hours after the initial welcome email. Replace YOUR_CALENDAR_LINK."
+      }
+    }
+  ],
+  "metadata": {
+    "instant": true,
+    "version": 1,
+    "scenario": {
+      "roundtrips": 1,
+      "maxErrors": 3,
+      "autoCommit": true,
+      "autoCommitTriggerLast": true,
+      "sequential": true,
+      "slots": null,
+      "confidential": false,
+      "dataloss": false,
+      "dlq": false,
+      "freshVariables": false
+    },
+    "designer": { "orphans": [] },
+    "zone": "eu1.make.com"
+  },
+  "isc": {
+    "platform": "make",
+    "triggerEvent": "lead.captured",
+    "setupSteps": [
+      "1. In Make.com, create a new scenario and import this JSON (three dots → Import Blueprint).",
+      "2. Click the Webhook module and copy the generated webhook URL.",
+      "3. In ISC → Admin → Integration Hub → Webhooks, create a webhook with event 'lead.captured' and paste that URL.",
+      "4. Add your Gmail connection to all Gmail modules.",
+      "5. Replace YOUR_ISC_DOMAIN and YOUR_CALENDAR_LINK throughout.",
+      "6. The Delay module waits 48 hours before the follow-up — adjust if needed.",
+      "7. Note: lead fields (name, email, company, industry) are nested under data in the payload — the template already uses the correct paths (1.body.data.name, 1.body.data.email).",
+      "8. Turn the scenario ON."
+    ]
+  }
+}

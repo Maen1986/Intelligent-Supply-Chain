@@ -1,0 +1,98 @@
+{
+  "name": "ISC — Monthly Supplier Scorecard",
+  "flow": [
+    {
+      "id": 1,
+      "module": "gateway:CustomWebHook",
+      "version": 1,
+      "parameters": {
+        "hook": "REPLACE_WITH_MAKE_WEBHOOK_ID",
+        "maxResults": 1
+      },
+      "mapper": {},
+      "metadata": {
+        "designer": { "x": 0, "y": 0 },
+        "restore": { "parameters": { "hook": { "label": "ISC Monthly Scorecard Webhook" } } },
+        "parameters": [
+          { "name": "hook", "type": "hook:gateway-webhook", "label": "Webhook", "required": true },
+          { "name": "maxResults", "type": "number", "label": "Maximum number of results" }
+        ],
+        "notes": "Webhook payload shape: { event, source, version, timestamp, userId, data: { supplierCount, userEmail, userName, month, suppliers: [{ name, tier }] } }"
+      }
+    },
+    {
+      "id": 2,
+      "module": "builtin:SetVariable",
+      "version": 1,
+      "parameters": {},
+      "mapper": {
+        "name": "scorecardHtml",
+        "scope": "roundtrip",
+        "value": "{{\"<h2 style='font-family:sans-serif;color:#1e293b'>Monthly Supplier Scorecard — \" + ifempty(1.body.data.month; formatDate(now; 'MMMM YYYY')) + \"</h2><p style='font-family:sans-serif;color:#64748b'>Hi \" + ifempty(1.body.data.userName; 'there') + \", here is your supplier scorecard for \" + ifempty(1.body.data.month; formatDate(now; 'MMMM YYYY')) + \".</p><table style='border-collapse:collapse;width:100%;font-family:sans-serif;font-size:13px'><thead><tr style='background:#f1f5f9'><th style='padding:8px 12px;border:1px solid #e2e8f0;text-align:left'>Supplier</th><th style='padding:8px 12px;border:1px solid #e2e8f0;text-align:left'>Tier</th></tr></thead><tbody>\" + join(map(1.body.data.suppliers; \"<tr><td style='padding:8px 12px;border:1px solid #e2e8f0'>\" + item.name + \"</td><td style='padding:8px 12px;border:1px solid #e2e8f0'>\" + item.tier + \"</td></tr>\"); \"\") + \"</tbody></table><br/><p style='font-family:sans-serif'><a href='https://YOUR_ISC_DOMAIN/'>→ View full scorecard in ISC</a></p>\"}}"
+      },
+      "metadata": {
+        "designer": { "x": 300, "y": 0 },
+        "notes": "Builds the HTML table directly from the webhook payload's suppliers array (1.body.data.suppliers). Each entry has 'name' and 'tier'. Replace YOUR_ISC_DOMAIN."
+      }
+    },
+    {
+      "id": 3,
+      "module": "gmail:ActionSendEmail",
+      "version": 1,
+      "parameters": { "account": "REPLACE_WITH_MAKE_GMAIL_CONNECTION_ID" },
+      "mapper": {
+        "to": "{{1.body.data.userEmail}}",
+        "subject": "Monthly Supplier Scorecard — {{ifempty(1.body.data.month; formatDate(now; 'MMMM YYYY'))}}",
+        "bodyType": "html",
+        "body": "{{2.scorecardHtml}}",
+        "from": "reports@YOUR_ISC_DOMAIN"
+      },
+      "metadata": {
+        "designer": { "x": 600, "y": 0 },
+        "restore": {
+          "parameters": { "account": { "label": "Gmail — ISC Reports" } },
+          "expect": { "bodyType": { "label": "HTML" } }
+        },
+        "parameters": [{ "name": "account", "type": "account:google", "label": "Connection", "required": true }],
+        "expect": [
+          { "name": "to", "type": "email", "label": "To", "required": true },
+          { "name": "subject", "type": "text", "label": "Subject" },
+          { "name": "body", "type": "text", "label": "Content" }
+        ],
+        "notes": "Sends to 1.body.data.userEmail. No ISC API key needed — all data comes from the webhook payload. Replace YOUR_ISC_DOMAIN."
+      }
+    }
+  ],
+  "metadata": {
+    "instant": true,
+    "version": 1,
+    "scenario": {
+      "roundtrips": 1,
+      "maxErrors": 3,
+      "autoCommit": true,
+      "autoCommitTriggerLast": true,
+      "sequential": false,
+      "slots": null,
+      "confidential": false,
+      "dataloss": false,
+      "dlq": false,
+      "freshVariables": false
+    },
+    "designer": { "orphans": [] },
+    "zone": "eu1.make.com"
+  },
+  "isc": {
+    "platform": "make",
+    "triggerEvent": "schedule.monthly_scorecard",
+    "setupSteps": [
+      "1. In Make.com, create a new scenario and import this JSON (three dots → Import Blueprint).",
+      "2. Click the Webhook module and copy the generated webhook URL.",
+      "3. In ISC → Admin → Integration Hub → Webhooks, create a webhook with event 'schedule.monthly_scorecard' and paste that URL.",
+      "4. Add your Gmail connection to the Gmail module.",
+      "5. Replace YOUR_ISC_DOMAIN in the Set Variable module and in the Gmail 'from' address.",
+      "6. The supplier data (name, tier), user email, user name, and month all come from the ISC webhook payload — no ISC API key needed.",
+      "7. ISC fires this on the 1st of each month automatically — no Make.com schedule trigger needed.",
+      "8. Turn the scenario ON."
+    ]
+  }
+}

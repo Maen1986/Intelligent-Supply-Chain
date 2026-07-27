@@ -147,6 +147,10 @@ export async function runMonthlyScorecardDigest(): Promise<void> {
 
       dispatchEvent(user.id, "schedule.monthly_scorecard", {
         supplierCount: roster.suppliers.length,
+        userEmail:     user.email,
+        userName:      user.full_name ?? null,
+        month: new Date().toLocaleDateString("en-GB", { month: "long", year: "numeric", timeZone: "Asia/Riyadh" }),
+        suppliers: roster.suppliers.map(s => ({ name: s.name ?? s.id, tier: s.tier ?? "Unclassified" })),
       });
 
       processed++;

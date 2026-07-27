@@ -1,0 +1,109 @@
+{
+  "_isc_version": "1.0.0",
+  "platform": "zapier",
+  "title": "ISC — Escalation Router",
+  "description": "Triggers when ISC fires a kpi.threshold_breach webhook (critical only). Looks up the responsible team lead from a Google Sheet, creates a Linear (or Jira) issue, and sends an escalation email.",
+  "steps": [
+    {
+      "type": "trigger",
+      "step_number": 1,
+      "app": "Webhooks by Zapier",
+      "app_slug": "zapier-webhook",
+      "event": "Catch Hook",
+      "event_slug": "catch_hook",
+      "settings": {
+        "note": "Copy the generated Catch Hook URL and paste it into ISC → Admin → Integration Hub → Webhooks with event 'kpi.threshold_breach'. This Zap only escalates critical breaches — the Filter step in step 2 drops warn events silently.",
+        "pick_off": ""
+      },
+      "sample": {
+        "event": "kpi.threshold_breach",
+        "source": "isc",
+        "version": "1",
+        "timestamp": "2026-01-13T08:00:00Z",
+        "userId": 42,
+        "data": {
+          "kpiId": "on-time-delivery",
+          "kpiLabel": "On-Time Delivery",
+          "kpiCategory": "Delivery",
+          "value": 61,
+          "warnThreshold": 80,
+          "criticalThreshold": 70,
+          "severity": "critical"
+        }
+      }
+    },
+    {
+      "type": "filter",
+      "step_number": 2,
+      "name": "Only continue if severity is critical",
+      "conditions": [
+        {
+          "field": "{{1__data__severity}}",
+          "operator": "(Text) Exactly matches",
+          "value": "critical"
+        }
+      ],
+      "note": "Warn-level breaches are silently dropped here. Only critical breaches proceed to escalation."
+    },
+    {
+      "type": "action",
+      "step_number": 3,
+      "app": "Google Sheets",
+      "app_slug": "google-sheets",
+      "event": "Lookup Spreadsheet Row",
+      "event_slug": "lookup_spreadsheet_row",
+      "settings": {
+        "spreadsheet": "REPLACE_WITH_GOOGLE_SHEET_ID",
+        "worksheet": "TeamLeads",
+        "lookup_column": "KPI_Category",
+        "lookup_value": "{{1__data__kpiCategory}}",
+        "note": "Create a Google Sheet named 'TeamLeads' with columns: KPI_Category (A), Name (B), Email (C). Connect your Google account."
+      }
+    },
+    {
+      "type": "action",
+      "step_number": 4,
+      "app": "Linear",
+      "app_slug": "linear",
+      "event": "Create Issue",
+      "event_slug": "create_issue",
+      "settings": {
+        "team_id": "REPLACE_WITH_LINEAR_TEAM_ID",
+        "title": "🚨 CRITICAL KPI Breach: {{1__data__kpiLabel}}",
+        "description": "**KPI:** {{1__data__kpiLabel}}\n**Value:** {{1__data__value}}\n**Critical Threshold:** {{1__data__criticalThreshold}}\n**Assigned To:** {{3__Name}}\n**ISC Link:** https://YOUR_ISC_DOMAIN/",
+        "priority": "urgent",
+        "assignee_id": "",
+        "note": "Connect your Linear account. Replace REPLACE_WITH_LINEAR_TEAM_ID. Alternatively, replace this step with 'Jira Software → Create Issue' if your team uses Jira."
+      }
+    },
+    {
+      "type": "action",
+      "step_number": 5,
+      "app": "Gmail",
+      "app_slug": "gmail",
+      "event": "Send Email",
+      "event_slug": "send_email",
+      "settings": {
+        "to": "{{3__Email}}",
+        "subject": "🚨 Escalation: Critical KPI Breach — {{1__data__kpiLabel}}",
+        "body": "<h2 style='color:#dc2626'>🚨 Critical KPI Breach — Immediate Action Required</h2><p>Hi {{3__Name}},</p><p>A critical KPI breach has been detected that falls within your area of responsibility.</p><table style='border-collapse:collapse;font-family:sans-serif;font-size:14px'><tr><td style='padding:6px 12px;font-weight:bold;color:#64748b'>KPI</td><td style='padding:6px 12px'>{{1__data__kpiLabel}}</td></tr><tr><td style='padding:6px 12px;font-weight:bold;color:#64748b'>Current Value</td><td style='padding:6px 12px;color:#dc2626;font-weight:bold'>{{1__data__value}}</td></tr><tr><td style='padding:6px 12px;font-weight:bold;color:#64748b'>Critical Threshold</td><td style='padding:6px 12px'>{{1__data__criticalThreshold}}</td></tr><tr><td style='padding:6px 12px;font-weight:bold;color:#64748b'>Ticket</td><td style='padding:6px 12px'>{{4__url}}</td></tr></table><p style='margin-top:24px'><a href='https://YOUR_ISC_DOMAIN/' style='background:#dc2626;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;font-weight:bold'>→ View in ISC Platform</a></p>",
+        "body_type": "html",
+        "from_name": "ISC Alerts",
+        "note": "Connect your Gmail account. Replace YOUR_ISC_DOMAIN."
+      }
+    }
+  ],
+  "isc": {
+    "triggerEvent": "kpi.threshold_breach",
+    "setupSteps": [
+      "1. In Zapier, create a new Zap. Choose 'Webhooks by Zapier' as the trigger with event 'Catch Hook'.",
+      "2. Copy the Catch Hook URL and register it in ISC → Admin → Integration Hub → Webhooks with event 'kpi.threshold_breach'.",
+      "3. Add a Filter step: continue only if severity (Text) Exactly matches 'critical'.",
+      "4. Create a Google Sheet named 'TeamLeads' with columns: KPI_Category (A), Name (B), Email (C). Fill in your team leads.",
+      "5. Add a 'Google Sheets → Lookup Spreadsheet Row' step. Set lookup column to KPI_Category and value to {{1__data__kpiCategory}}.",
+      "6. Add a 'Linear → Create Issue' step (or swap for Jira). Replace REPLACE_WITH_LINEAR_TEAM_ID and connect your Linear account.",
+      "7. Add a Gmail action. Set To = {{3__Email}} (team lead's email from the sheet). Replace YOUR_ISC_DOMAIN.",
+      "8. Turn the Zap ON."
+    ]
+  }
+}

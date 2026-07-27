@@ -19,6 +19,7 @@ export interface KpiThreshold {
   critical:         number;
   higherIsBetter?:  boolean;
   label?:           string;
+  category?:        string;
 }
 
 export type KpiThresholds = Record<string, KpiThreshold>;
@@ -81,6 +82,8 @@ export async function checkKpiThresholds(params: {
       dispatchEvent(params.userId, "kpi.threshold_breach", {
         kpiId,
         label,
+        kpiLabel:          label,          // alias for Make/Zapier templates
+        kpiCategory:       threshold.category ?? null,
         slug:             params.slug,
         severity,
         value,

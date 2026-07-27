@@ -1,0 +1,171 @@
+{
+  "name": "ISC — Escalation Router",
+  "flow": [
+    {
+      "id": 1,
+      "module": "gateway:CustomWebHook",
+      "version": 1,
+      "parameters": {
+        "hook": "REPLACE_WITH_MAKE_WEBHOOK_ID",
+        "maxResults": 1
+      },
+      "mapper": {},
+      "metadata": {
+        "designer": { "x": 0, "y": 0 },
+        "restore": { "parameters": { "hook": { "label": "ISC KPI Breach Webhook" } } },
+        "parameters": [
+          { "name": "hook", "type": "hook:gateway-webhook", "label": "Webhook", "required": true },
+          { "name": "maxResults", "type": "number", "label": "Maximum number of results" }
+        ]
+      }
+    },
+    {
+      "id": 2,
+      "module": "builtin:BasicRouter",
+      "version": 1,
+      "parameters": {},
+      "mapper": {},
+      "metadata": { "designer": { "x": 300, "y": 0 } },
+      "routes": [
+        {
+          "filter": {
+            "name": "Critical only",
+            "conditions": [
+              [
+                {
+                  "a": "{{1.body.data.severity}}",
+                  "b": "critical",
+                  "o": "text:equal"
+                }
+              ]
+            ]
+          },
+          "flow": [
+            {
+              "id": 3,
+              "module": "google-sheets:ActionGetRows",
+              "version": 4,
+              "parameters": { "account": "REPLACE_WITH_MAKE_GOOGLE_CONNECTION_ID" },
+              "mapper": {
+                "spreadsheetId": "REPLACE_WITH_GOOGLE_SHEET_ID",
+                "sheetId": "TeamLeads",
+                "filterType": "column",
+                "filter": {
+                  "column": "A",
+                  "value": "{{1.body.data.kpiCategory}}"
+                },
+                "includesHeaders": true
+              },
+              "metadata": {
+                "designer": { "x": 600, "y": -100 },
+                "restore": {
+                  "parameters": { "account": { "label": "Google Sheets — ISC TeamLeads" } },
+                  "expect": { "includesHeaders": { "label": "Yes" } }
+                },
+                "parameters": [{ "name": "account", "type": "account:google", "label": "Connection", "required": true }],
+                "notes": "Expects a Google Sheet named 'TeamLeads' with columns: KPI_Category (A), Name (B), Email (C)."
+              }
+            },
+            {
+              "id": 4,
+              "module": "http:ActionSendData",
+              "version": 3,
+              "parameters": { "handleErrors": false, "useNewZLibDeflate": true },
+              "mapper": {
+                "url": "https://api.linear.app/graphql",
+                "method": "post",
+                "headers": [
+                  { "name": "Authorization", "value": "REPLACE_WITH_LINEAR_API_KEY" },
+                  { "name": "Content-Type", "value": "application/json" }
+                ],
+                "qs": [],
+                "bodyType": "raw",
+                "parseResponse": true,
+                "authUser": "",
+                "authPass": "",
+                "timeout": "15",
+                "shareCookies": false,
+                "ca": "",
+                "cert": "",
+                "key": "",
+                "rejectUnauthorized": true,
+                "followRedirect": true,
+                "useQuerystring": false,
+                "encoding": "json",
+                "serializeUrl": false,
+                "blockedStatus": "",
+                "contentType": "application/json",
+                "data": "{\"query\":\"mutation IssueCreate($input: IssueCreateInput!) { issueCreate(input: $input) { issue { id identifier url } } }\",\"variables\":{\"input\":{\"teamId\":\"REPLACE_WITH_LINEAR_TEAM_ID\",\"title\":\"🚨 CRITICAL KPI Breach: {{1.body.data.kpiLabel}}\",\"description\":\"**KPI:** {{1.body.data.kpiLabel}}\\n**Value:** {{1.body.data.value}}\\n**Critical Threshold:** {{1.body.data.criticalThreshold}}\\n**Assigned To:** {{3.Name}}\\n**ISC Link:** https://YOUR_ISC_DOMAIN/\",\"priority\":1}}}"
+              },
+              "metadata": {
+                "designer": { "x": 900, "y": -200 },
+                "restore": { "expect": { "method": { "label": "POST" }, "bodyType": { "label": "Raw" }, "contentType": { "label": "JSON (application/json)" } } },
+                "expect": [
+                  { "name": "url", "type": "url", "label": "URL", "required": true },
+                  { "name": "method", "type": "select", "label": "Method", "required": true },
+                  { "name": "data", "type": "buffer", "label": "Body" }
+                ],
+                "notes": "Creates a Linear issue. Replace with a Jira HTTP call if your team uses Jira instead."
+              }
+            },
+            {
+              "id": 5,
+              "module": "gmail:ActionSendEmail",
+              "version": 1,
+              "parameters": { "account": "REPLACE_WITH_MAKE_GMAIL_CONNECTION_ID" },
+              "mapper": {
+                "to": "{{3.Email}}",
+                "subject": "🚨 Escalation: Critical KPI Breach — {{1.body.data.kpiLabel}}",
+                "bodyType": "html",
+                "body": "<h2 style='color:#dc2626'>🚨 Critical KPI Breach — Immediate Action Required</h2><p>Hi {{3.Name}},</p><p>A critical KPI breach has been detected that falls within your area of responsibility.</p><table style='border-collapse:collapse;font-family:sans-serif;font-size:14px'><tr><td style='padding:6px 12px;font-weight:bold;color:#64748b'>KPI</td><td style='padding:6px 12px'>{{1.body.data.kpiLabel}}</td></tr><tr><td style='padding:6px 12px;font-weight:bold;color:#64748b'>Current Value</td><td style='padding:6px 12px;color:#dc2626;font-weight:bold'>{{1.body.data.value}}</td></tr><tr><td style='padding:6px 12px;font-weight:bold;color:#64748b'>Critical Threshold</td><td style='padding:6px 12px'>{{1.body.data.criticalThreshold}}</td></tr><tr><td style='padding:6px 12px;font-weight:bold;color:#64748b'>Ticket</td><td style='padding:6px 12px'><a href='{{4.data.issueCreate.issue.url}}'>{{4.data.issueCreate.issue.identifier}}</a></td></tr></table><p style='margin-top:24px'><a href='https://YOUR_ISC_DOMAIN/' style='background:#dc2626;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;font-weight:bold'>→ View in ISC Platform</a></p>",
+                "from": "alerts@YOUR_ISC_DOMAIN"
+              },
+              "metadata": {
+                "designer": { "x": 900, "y": 0 },
+                "restore": {
+                  "parameters": { "account": { "label": "Gmail — ISC Alerts" } },
+                  "expect": { "bodyType": { "label": "HTML" } }
+                },
+                "parameters": [{ "name": "account", "type": "account:google", "label": "Connection", "required": true }]
+              }
+            }
+          ],
+          "label": "Critical — escalate"
+        }
+      ]
+    }
+  ],
+  "metadata": {
+    "instant": true,
+    "version": 1,
+    "scenario": {
+      "roundtrips": 1,
+      "maxErrors": 3,
+      "autoCommit": true,
+      "autoCommitTriggerLast": true,
+      "sequential": false,
+      "slots": null,
+      "confidential": false,
+      "dataloss": false,
+      "dlq": false,
+      "freshVariables": false
+    },
+    "designer": { "orphans": [] },
+    "zone": "eu1.make.com"
+  },
+  "isc": {
+    "platform": "make",
+    "triggerEvent": "kpi.threshold_breach",
+    "setupSteps": [
+      "1. In Make.com, create a new scenario and import this JSON (three dots → Import Blueprint).",
+      "2. Click the Webhook module and copy the generated webhook URL.",
+      "3. In ISC → Admin → Integration Hub → Webhooks, create a webhook with event 'kpi.threshold_breach' and paste that URL.",
+      "4. Create a Google Sheet named 'TeamLeads' with columns: KPI_Category (A), Name (B), Email (C). Add your team leads.",
+      "5. Connect your Google Sheets account and set the spreadsheet ID in the Google Sheets module.",
+      "6. Replace REPLACE_WITH_LINEAR_API_KEY and REPLACE_WITH_LINEAR_TEAM_ID in the Linear HTTP module. Or replace it entirely with a Jira API call.",
+      "7. Add your Gmail connection and replace YOUR_ISC_DOMAIN throughout.",
+      "8. This scenario only escalates 'critical' severity — warn events pass through the router without action.",
+      "9. Turn the scenario ON."
+    ]
+  }
+}
