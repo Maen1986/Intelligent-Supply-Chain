@@ -330,6 +330,92 @@ describe('useAIPlan — savedPlan fetch resolves after login', () => {
 });
 
 /* ══════════════════════════════════════════════════════════════════════════
+   Remount guard — stale pending flag must NOT trigger generate on remount
+   while already authenticated.
+
+   The risk: if prevAuthRef were initialised to `false` rather than
+   `isAuthenticated`, then on remount with isAuthenticated=true the effect
+   would see wasAuthenticated=false and fire generate() even though there was
+   no real login transition in this session.
+
+   The fix (Task 269): prevAuthRef is initialised to isAuthenticated, so on
+   remount prevAuthRef.current is already true, !wasAuthenticated is false,
+   and neither Effect A nor Effect B fires.
+══════════════════════════════════════════════════════════════════════════ */
+describe('useAIPlan remount guard — stale pending flag must not trigger generate', () => {
+  it('does NOT call POST /api/ai/plan when remounted while already authenticated, even with a pending flag', async () => {
+    // Start authenticated so the first mount initialises prevAuthRef to true
+    mockIsAuthenticated.value = true;
+
+    const fetchMock = stubAllFetches();
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { unmount } = renderHook(
+      () => useAIPlan(() => 'build me a KPI plan', false, TOOL_KEY),
+    );
+
+    // Let any initial effects settle
+    await act(async () => { await new Promise(r => setTimeout(r, 60)); });
+
+    const callsBeforeUnmount = countAIPlanCalls(fetchMock);
+
+    // Unmount — simulates navigating away while staying logged in
+    unmount();
+
+    // Plant a stale pending flag (e.g. left over from a previous session or
+    // from another tab setting the flag while this component was unmounted)
+    sessionStorage.setItem(`pendingAIPlan_${TOOL_KEY}`, '1');
+
+    // Remount with the same authenticated state — prevAuthRef will initialise
+    // to true so !wasAuthenticated is false in both Effect A and Effect B
+    renderHook(
+      () => useAIPlan(() => 'build me a KPI plan', false, TOOL_KEY),
+    );
+
+    // Give effects time to run
+    await act(async () => { await new Promise(r => setTimeout(r, 80)); });
+
+    // No generate should have fired — the stale flag must be ignored
+    expect(countAIPlanCalls(fetchMock)).toBe(callsBeforeUnmount);
+  });
+
+  it('also does NOT generate when the hook is remounted a second time with a pending flag', async () => {
+    mockIsAuthenticated.value = true;
+
+    const fetchMock = stubAllFetches();
+    vi.stubGlobal('fetch', fetchMock);
+
+    // First mount + unmount
+    const { unmount: unmount1 } = renderHook(
+      () => useAIPlan(() => 'build me a KPI plan', false, TOOL_KEY),
+    );
+    await act(async () => { await new Promise(r => setTimeout(r, 30)); });
+    unmount1();
+
+    // Second mount + unmount
+    const { unmount: unmount2 } = renderHook(
+      () => useAIPlan(() => 'build me a KPI plan', false, TOOL_KEY),
+    );
+    await act(async () => { await new Promise(r => setTimeout(r, 30)); });
+    unmount2();
+
+    const callsAfterTwoMounts = countAIPlanCalls(fetchMock);
+
+    // Plant a stale flag before the third mount
+    sessionStorage.setItem(`pendingAIPlan_${TOOL_KEY}`, '1');
+
+    renderHook(
+      () => useAIPlan(() => 'build me a KPI plan', false, TOOL_KEY),
+    );
+
+    await act(async () => { await new Promise(r => setTimeout(r, 80)); });
+
+    // Still no additional generate call
+    expect(countAIPlanCalls(fetchMock)).toBe(callsAfterTwoMounts);
+  });
+});
+
+/* ══════════════════════════════════════════════════════════════════════════
    Edge cases
 ══════════════════════════════════════════════════════════════════════════ */
 describe('useAIPlan login auto-generate — edge cases', () => {
