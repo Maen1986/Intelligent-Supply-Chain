@@ -485,7 +485,7 @@ function simulateImport(
   rosterSuppliers: SupplierRecord[],
   csvRows: Array<Record<string, string>>,
   overwrite: boolean,
-): { nextSuppliers: SupplierRecord[]; imported: number; skipped: number } {
+): { nextSuppliers: SupplierRecord[]; imported: number; skipped: number; log: string[] } {
   const nextSuppliers = rosterSuppliers.map(s => ({
     ...s,
     subScores: { ...s.subScores },
@@ -493,16 +493,20 @@ function simulateImport(
 
   let imported = 0;
   let skipped  = 0;
+  const log: string[] = [];
 
-  for (const row of csvRows) {
+  csvRows.forEach((row, ri) => {
+    const rowNum = ri + 2; // 1-based header + 1-based data rows
     const name = row['Supplier Name']?.trim();
-    if (!name) continue;
+    if (!name) return;
 
     const { subScores: incoming } = parseSubScoresFromRow(row);
 
     // Case-insensitive match — mirrors the fixed handleScorecardImport behaviour.
     const existingIdx = nextSuppliers.findIndex(s => s.name.toLowerCase() === name.toLowerCase());
     if (existingIdx >= 0) {
+      const existingName = nextSuppliers[existingIdx].name;
+      const isCaseVariant = existingName !== name;
       if (overwrite) {
         // Wholesale replace — mirrors handleScorecardImport exactly:
         //   nextSuppliers[existingIdx] = { ...nextSuppliers[existingIdx], tier, subScores }
@@ -514,8 +518,14 @@ function simulateImport(
           subScores: incoming,
         };
         imported++;
+        if (isCaseVariant) {
+          log.push(`Row ${rowNum}: '${name}' matched existing '${existingName}' — merged.`);
+        }
       } else {
         skipped++;
+        if (isCaseVariant) {
+          log.push(`Row ${rowNum}: '${name}' matched existing '${existingName}' — skipped.`);
+        }
       }
     } else {
       nextSuppliers.push({
@@ -526,9 +536,9 @@ function simulateImport(
       });
       imported++;
     }
-  }
+  });
 
-  return { nextSuppliers, imported, skipped };
+  return { nextSuppliers, imported, skipped, log };
 }
 
 /* ─── Fixtures for Suite 3 ─── */
@@ -868,6 +878,60 @@ describe('Scorecard CSV — case-insensitive supplier name matching', () => {
     expect(imported).toBe(1);
     const added = nextSuppliers.find(s => s.name === 'Alpha Corp International');
     expect(added).toBeDefined();
+  });
+
+  it('log includes a case-variant notice when overwrite=true and names differ by case', () => {
+    const lowercaseRow: Record<string, string> = {
+      'Supplier Name': 'alpha corp',
+      'Current Tier': 'Preferred',
+      'Delivery Performance — OTIF %': '77',
+    };
+    const { log } = simulateImport(
+      [SUPPLIER_A, SUPPLIER_B, SUPPLIER_C],
+      [lowercaseRow],
+      true,
+    );
+
+    // Must contain a message that identifies the CSV name, the existing name, and "merged"
+    expect(log.length).toBeGreaterThanOrEqual(1);
+    const notice = log.find(m => m.includes("'alpha corp'") && m.includes("'Alpha Corp'") && m.includes('merged'));
+    expect(notice).toBeDefined();
+    expect(notice).toMatch(/Row 2:/);
+  });
+
+  it('log includes a case-variant notice when overwrite=false and names differ by case', () => {
+    const lowercaseRow: Record<string, string> = {
+      'Supplier Name': 'alpha corp',
+      'Current Tier': 'Preferred',
+      'Delivery Performance — OTIF %': '77',
+    };
+    const { log } = simulateImport(
+      [SUPPLIER_A, SUPPLIER_B, SUPPLIER_C],
+      [lowercaseRow],
+      false,
+    );
+
+    expect(log.length).toBeGreaterThanOrEqual(1);
+    const notice = log.find(m => m.includes("'alpha corp'") && m.includes("'Alpha Corp'") && m.includes('skipped'));
+    expect(notice).toBeDefined();
+    expect(notice).toMatch(/Row 2:/);
+  });
+
+  it('does NOT add a case-variant notice when the name matches exactly', () => {
+    // Exact match: "Alpha Corp" → "Alpha Corp" — no notice needed
+    const exactRow: Record<string, string> = {
+      'Supplier Name': 'Alpha Corp',
+      'Current Tier': 'Strategic',
+      'Delivery Performance — OTIF %': '95',
+    };
+    const { log } = simulateImport(
+      [SUPPLIER_A, SUPPLIER_B, SUPPLIER_C],
+      [exactRow],
+      true,
+    );
+
+    const caseNotice = log.find(m => m.includes('matched existing'));
+    expect(caseNotice).toBeUndefined();
   });
 });
 

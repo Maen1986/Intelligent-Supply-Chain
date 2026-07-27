@@ -456,8 +456,20 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
         // Case-insensitive match: treat "alpha corp" and "Alpha Corp" as the same supplier.
         const existingIdx = nextSuppliers.findIndex(s => s.name.toLowerCase() === name.toLowerCase());
         if (existingIdx >= 0) {
-          if (overwrite) { nextSuppliers[existingIdx] = { ...nextSuppliers[existingIdx], tier: row['Current Tier']?.trim() || nextSuppliers[existingIdx].tier, subScores }; imported++; }
-          else { skipped++; }
+          const existingName = nextSuppliers[existingIdx].name;
+          const isCaseVariant = existingName !== name;
+          if (overwrite) {
+            nextSuppliers[existingIdx] = { ...nextSuppliers[existingIdx], tier: row['Current Tier']?.trim() || nextSuppliers[existingIdx].tier, subScores };
+            imported++;
+            if (isCaseVariant) {
+              log.push(`Row ${rowNum}: '${name}' matched existing '${existingName}' — merged.`);
+            }
+          } else {
+            skipped++;
+            if (isCaseVariant) {
+              log.push(`Row ${rowNum}: '${name}' matched existing '${existingName}' — skipped.`);
+            }
+          }
         } else {
           nextSuppliers.push({ id: makeId(), name, tier: row['Current Tier']?.trim() || 'Strategic', subScores });
           imported++;
