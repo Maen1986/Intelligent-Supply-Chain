@@ -5,7 +5,7 @@
  * plan auto-generates once the user lands back on the tool page after signing
  * in (rather than requiring a second click).
  *
- * Three behaviours under test:
+ * Four behaviours under test:
  *   1. isAuthenticated transitions false→true WITH pendingAIPlan_<toolKey> set
  *      → generate() fires automatically (fetch POST /ai/plan is called)
  *   2. isAuthenticated transitions false→true WITHOUT the flag
@@ -14,6 +14,8 @@
  *        auto-generate conditions are suppressed via canGenerate=false)
  *   3. The flag is removed from sessionStorage after it is consumed, so it
  *      cannot retrigger on the next render cycle
+ *   4. Flag present + server already has a saved plan → generate() is NOT
+ *      auto-called (existing plan is preserved, not overwritten)
  */
 import { describe, it, expect, afterEach, vi, beforeEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
@@ -247,5 +249,108 @@ describe('useAIPlan pendingFlag — flag is consumed after auto-generate', () =>
 
     // No additional generate call triggered
     expect(callsAfterRerender).toBe(callsAfterFirstGenerate);
+  });
+});
+
+/* ══════════════════════════════════════════════════════════════════════════
+   4. Flag present + savedPlan exists → generate() is NOT auto-called
+      (existing plan must not be overwritten)
+══════════════════════════════════════════════════════════════════════════ */
+describe('useAIPlan pendingFlag — flag present but savedPlan exists: generate() is suppressed', () => {
+  const SAVED_PLAN_TEXT = '## Existing Plan\n- Already generated [HIGH]';
+  const SAVED_AT = '2026-07-01T10:00:00.000Z';
+
+  /** Fetch stub that returns an existing saved plan from the server. */
+  function stubWithExistingPlan() {
+    return vi.fn().mockImplementation((url: string, opts?: RequestInit) => {
+      const method = opts?.method ?? 'GET';
+      // GET /plans/:toolKey — return an existing saved plan
+      if (method === 'GET' && url.includes('/plans/')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ ok: true, plan: { text: SAVED_PLAN_TEXT, savedAt: SAVED_AT } }),
+        });
+      }
+      // Any other request — should NOT happen in this scenario
+      return Promise.resolve({ ok: true, json: async () => ({ ok: true }) });
+    });
+  }
+
+  it('does NOT call POST /ai/plan when the pending flag is set but a saved plan already exists', async () => {
+    const fetchMock = stubWithExistingPlan();
+    vi.stubGlobal('fetch', fetchMock);
+
+    // Set the pending flag — as if the user clicked "Sign in to generate"
+    sessionStorage.setItem(FLAG_KEY, '1');
+
+    const { rerender } = renderHook(
+      ({ authed }: { authed: boolean }) => {
+        mockAuth.isAuthenticated = authed;
+        return useAIPlan(() => 'my prompt', false, TOOL_KEY);
+      },
+      { initialProps: { authed: false } },
+    );
+
+    // Simulate login
+    await act(async () => { rerender({ authed: true }); });
+
+    // Allow time for Effect B (flag consumption) and Effect C (saved-plan fetch) to settle
+    await act(async () => { await new Promise(r => setTimeout(r, 50)); });
+
+    // generate() must NOT have fired — no POST /ai/plan
+    const aiPlanCalls = fetchMock.mock.calls.filter(
+      ([url, opts]) => url.includes('/ai/plan') && (opts?.method ?? 'GET') === 'POST',
+    );
+    expect(aiPlanCalls).toHaveLength(0);
+  });
+
+  it('leaves the existing savedPlan intact when the flag is present but a plan is already saved', async () => {
+    const fetchMock = stubWithExistingPlan();
+    vi.stubGlobal('fetch', fetchMock);
+
+    sessionStorage.setItem(FLAG_KEY, '1');
+
+    const { result, rerender } = renderHook(
+      ({ authed }: { authed: boolean }) => {
+        mockAuth.isAuthenticated = authed;
+        return useAIPlan(() => 'my prompt', false, TOOL_KEY);
+      },
+      { initialProps: { authed: false } },
+    );
+
+    await act(async () => { rerender({ authed: true }); });
+
+    // Wait for the saved-plan fetch to complete and populate savedPlan
+    await waitFor(() => {
+      expect(result.current.savedPlan).not.toBeNull();
+    });
+
+    // The saved plan from the server must be intact
+    expect(result.current.savedPlan?.text).toBe(SAVED_PLAN_TEXT);
+    expect(result.current.savedPlan?.savedAt).toBe(SAVED_AT);
+
+    // No in-session result should have been set (generate() never ran)
+    expect(result.current.result).toBeNull();
+  });
+
+  it('still removes the flag from sessionStorage even when generate() is suppressed', async () => {
+    const fetchMock = stubWithExistingPlan();
+    vi.stubGlobal('fetch', fetchMock);
+
+    sessionStorage.setItem(FLAG_KEY, '1');
+
+    const { rerender } = renderHook(
+      ({ authed }: { authed: boolean }) => {
+        mockAuth.isAuthenticated = authed;
+        return useAIPlan(() => 'my prompt', false, TOOL_KEY);
+      },
+      { initialProps: { authed: false } },
+    );
+
+    await act(async () => { rerender({ authed: true }); });
+    await act(async () => { await new Promise(r => setTimeout(r, 50)); });
+
+    // Flag must be cleared regardless of whether generate() was called
+    expect(sessionStorage.getItem(FLAG_KEY)).toBeNull();
   });
 });
