@@ -367,3 +367,80 @@ describe('sync status', () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 });
+
+/* ══════════════════════════════════════════════════════════════════════════
+   6. User account switch — roster refreshes for new user id
+   Verifies that switching from user A to user B (same session, no page
+   reload) causes the component to re-fetch and display B's roster, and
+   that re-rendering with the same user id never fires a duplicate GET.
+══════════════════════════════════════════════════════════════════════════ */
+
+describe('user account switch — roster refreshes for new user id', () => {
+  const ROSTER_A = {
+    suppliers: [{ id: 'a-1', name: 'Supplier A', tier: 'Strategic', subScores: {} }],
+    activeId: 'a-1',
+  };
+  const ROSTER_B = {
+    suppliers: [{ id: 'b-1', name: 'Supplier B', tier: 'Preferred', subScores: {} }],
+    activeId: 'b-1',
+  };
+
+  it('re-fetches and shows the new account roster when the user switches from A to B', async () => {
+    // Start with user A (id: 1)
+    mockUseAuth.mockReturnValue({ user: { id: 1, fullName: 'Alice' }, isAuthenticated: true, loading: false });
+
+    const fetchMock = vi.fn()
+      // First GET: bootstrap for user A
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ ok: true, roster: ROSTER_A }) })
+      // Second GET: bootstrap for user B after auth switch
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ ok: true, roster: ROSTER_B }) })
+      // Any subsequent PUT calls
+      .mockResolvedValue({ ok: true, json: async () => ({ ok: true }) });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { rerender } = render(<SupplierScorecardTool isAr={false} />);
+
+    // Wait for user A's roster to load
+    await waitFor(() => expect(screen.getByText('Supplier A')).toBeInTheDocument());
+
+    // Switch auth context to user B (id: 2) — simulates logout → login as different account
+    mockUseAuth.mockReturnValue({ user: { id: 2, fullName: 'Bob' }, isAuthenticated: true, loading: false });
+    rerender(<SupplierScorecardTool isAr={false} />);
+
+    // Component must re-fetch and display B's roster
+    await waitFor(() => expect(screen.getByText('Supplier B')).toBeInTheDocument());
+
+    // User A's supplier must no longer be rendered
+    expect(screen.queryByText('Supplier A')).not.toBeInTheDocument();
+  });
+
+  it('does not fire a duplicate GET when the same user id re-appears (e.g. tab regains focus)', async () => {
+    // User A (id: 1) is logged in
+    mockUseAuth.mockReturnValue({ user: { id: 1, fullName: 'Alice' }, isAuthenticated: true, loading: false });
+
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ ok: true, roster: ROSTER_A }) })
+      .mockResolvedValue({ ok: true, json: async () => ({ ok: true }) });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { rerender } = render(<SupplierScorecardTool isAr={false} />);
+
+    // Wait for the initial bootstrap GET to complete
+    await waitFor(() => expect(screen.getByText('Supplier A')).toBeInTheDocument());
+
+    const getCallsBefore = (fetchMock.mock.calls as Array<[string, RequestInit]>).filter(
+      ([url, opts]) => url.includes('scorecard-roster') && (!opts?.method || opts.method === 'GET'),
+    ).length;
+
+    // Same user id re-appears (e.g. visibility-change event causes a rerender)
+    rerender(<SupplierScorecardTool isAr={false} />);
+    await waitFor(() => {}); // flush any pending microtasks
+
+    const getCallsAfter = (fetchMock.mock.calls as Array<[string, RequestInit]>).filter(
+      ([url, opts]) => url.includes('scorecard-roster') && (!opts?.method || opts.method === 'GET'),
+    ).length;
+
+    // No additional GET should have been fired
+    expect(getCallsAfter).toBe(getCallsBefore);
+  });
+});
