@@ -188,6 +188,9 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
   const serverLoadedForUserId = useRef<number | null>(null);
   const [importLog, setImportLog] = useState<string[] | null>(null);
   const importInputRef = useRef<HTMLInputElement | null>(null);
+  /** Snapshot taken just before a successful import; null once consumed or invalidated. */
+  const preImportRosterRef = useRef<RosterState | null>(null);
+  const [importUndoAvailable, setImportUndoAvailable] = useState(false);
   const [dupNameWarning, setDupNameWarning] = useState<string | null>(null);
   // pendingName tracks what the user has typed but not yet committed to the roster.
   // null means "no in-progress edit; use active.name from the roster".
@@ -262,6 +265,12 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
     syncToServer(next);
   };
 
+  /** Invalidate the undo snapshot whenever the user makes a manual roster change. */
+  const clearUndo = () => {
+    preImportRosterRef.current = null;
+    setImportUndoAvailable(false);
+  };
+
   /* ── CSV template download ── */
   const downloadScorecardTemplate = () => {
     const dimHeaders = DIMS.map(d => `${d.label} Score (/100)`);
@@ -280,6 +289,9 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
 
       const { rows: csvRows, errors } = parseCsvFile(text, ['Supplier Name']);
       if (errors.length > 0 && csvRows.length === 0) { setImportLog([isAr ? 'فشل الاستيراد:' : 'Import failed:', ...errors]); return; }
+
+      // Snapshot the roster before making any changes so undo can restore it.
+      const snapshotBeforeImport: RosterState = { suppliers: roster.suppliers.map(s => ({ ...s })), activeId: roster.activeId };
 
       const log: string[] = [...errors];
       const nextSuppliers = [...roster.suppliers];
@@ -329,6 +341,8 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
       });
 
       const nextActiveId = nextSuppliers.find(s => s.id === roster.activeId) ? roster.activeId : (nextSuppliers[0]?.id ?? roster.activeId);
+      preImportRosterRef.current = snapshotBeforeImport;
+      setImportUndoAvailable(true);
       save({ suppliers: nextSuppliers, activeId: nextActiveId });
       log.unshift(isAr ? `✓ تم استيراد ${imported} مورّد(ين)${skipped > 0 ? `، تخطّي ${skipped}` : ''}.` : `✓ Imported ${imported} supplier(s).${skipped > 0 ? ` ${skipped} skipped.` : ''}`);
       setImportLog(log);
@@ -446,6 +460,7 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
   };
 
   const updateActive = (patch: Partial<SupplierRecord>) => {
+    clearUndo();
     save({
       ...roster,
       suppliers: roster.suppliers.map(s => s.id === active?.id ? { ...s, ...patch } : s),
@@ -459,6 +474,7 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
   };
 
   const addSupplier = () => {
+    clearUndo();
     const s = newSupplier();
     save({ suppliers: [...roster.suppliers, s], activeId: s.id });
   };
@@ -466,6 +482,7 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
   const deleteSupplier = (id: string) => {
     const label = isAr ? 'هل تريد حذف هذا المورّد؟' : 'Delete this supplier? This cannot be undone.';
     if (!window.confirm(label)) return;
+    clearUndo();
     const remaining = roster.suppliers.filter(s => s.id !== id);
     if (remaining.length === 0) {
       const blank = newSupplier();
@@ -872,7 +889,26 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
                   </p>
                 );
               })}</div>
-              <button onClick={() => setImportLog(null)} className="shrink-0 opacity-50 hover:opacity-100 font-bold">✕</button>
+              <div className="flex items-center gap-2 shrink-0">
+                {importUndoAvailable && importLog[0]?.startsWith('✓') && (
+                  <button
+                    onClick={() => {
+                      if (preImportRosterRef.current) {
+                        save(preImportRosterRef.current);
+                        preImportRosterRef.current = null;
+                        setImportUndoAvailable(false);
+                        setImportLog(null);
+                      }
+                    }}
+                    className="flex items-center gap-1 px-2 py-1 rounded-lg font-bold bg-white border border-emerald-300 text-emerald-700 hover:bg-emerald-100 transition-colors"
+                    title={isAr ? 'التراجع عن الاستيراد الأخير' : 'Undo last import'}
+                  >
+                    <RotateCcw className="w-3 h-3" />
+                    {isAr ? 'تراجع' : 'Undo import'}
+                  </button>
+                )}
+                <button onClick={() => { setImportLog(null); clearUndo(); }} className="opacity-50 hover:opacity-100 font-bold">✕</button>
+              </div>
             </div>
           </div>
         )}
