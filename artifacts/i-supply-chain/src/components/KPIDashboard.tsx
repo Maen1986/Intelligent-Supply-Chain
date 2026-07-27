@@ -184,6 +184,19 @@ export function miniGaugeState(rawScore: number, hasValue: boolean) {
   return { safeScore, circumference, strokeDash, color, rad };
 }
 
+/** Pure helper — returns state values used by HealthGauge so they can be
+ *  unit-tested independently of the DOM. */
+export function healthGaugeState(rawScore: number, hasAnyValue: boolean) {
+  const r = 72;
+  const circumference = Math.PI * r;
+  const safeScore = Math.max(0, Math.min(100, rawScore));
+  const strokeDash = hasAnyValue ? (safeScore / 100) * circumference : 0;
+  const color = hasAnyValue ? scoreColor(safeScore) : '#e5e7eb';
+  const angle = hasAnyValue ? (safeScore / 100) * 180 : 0;
+  const rad = (angle - 180) * (Math.PI / 180);
+  return { safeScore, circumference, strokeDash, color, rad };
+}
+
 function scoreBg(score: number): string {
   const t = scoreTier(score);
   return `${t.bg} ${t.border}`;
@@ -368,28 +381,26 @@ const NAVY = '#082C6B';
 const GOLD = '#C9A84C';
 
 /* ─── Gauge using SVG arc ─── */
-function HealthGauge({ score }: { score: number }) {
-  const r = 72, cx = 90, cy = 90;
-  const circumference = Math.PI * r; // half circle
-  const angle = (score / 100) * 180; // degrees for half-circle gauge
-  const rad = (angle - 180) * (Math.PI / 180);
-  // Simple semicircle gauge with SVG
-  const strokeDash = (score / 100) * circumference;
-  const color = scoreColor(score);
+function HealthGauge({ score, hasAnyValue }: { score: number; hasAnyValue: boolean }) {
+  const cx = 90, cy = 90;
+  const { circumference, strokeDash, color, rad } = healthGaugeState(score, hasAnyValue);
+  const needleColor = hasAnyValue ? NAVY : '#d1d5db';
   return (
     <svg width={180} height={110} viewBox="0 0 180 110" className="overflow-visible">
       {/* Track */}
-      <path d={`M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy}`} fill="none" stroke="#e5e7eb" strokeWidth={18} strokeLinecap="round" />
-      {/* Fill */}
-      <path d={`M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy}`} fill="none" stroke={color} strokeWidth={18} strokeLinecap="round"
+      <path d={`M ${cx - 72} ${cy} A 72 72 0 0 1 ${cx + 72} ${cy}`} fill="none" stroke="#e5e7eb" strokeWidth={18} strokeLinecap="round" />
+      {/* Fill — hidden when no values entered */}
+      <path d={`M ${cx - 72} ${cy} A 72 72 0 0 1 ${cx + 72} ${cy}`} fill="none" stroke={color} strokeWidth={18} strokeLinecap="round"
         strokeDasharray={`${strokeDash} ${circumference}`} />
-      {/* Score text */}
-      <text x={cx} y={cy - 4} textAnchor="middle" fontSize={28} fontWeight="800" fill={NAVY}>{score}</text>
+      {/* Score text — '–' when no values entered */}
+      <text x={cx} y={cy - 4} textAnchor="middle" fontSize={28} fontWeight="800" fill={hasAnyValue ? NAVY : '#9ca3af'}>
+        {hasAnyValue ? score : '–'}
+      </text>
       <text x={cx} y={cy + 16} textAnchor="middle" fontSize={11} fill="#6b7280">/100</text>
       {/* Needle */}
-      <line x1={cx} y1={cy} x2={cx + (r - 8) * Math.cos(rad)} y2={cy + (r - 8) * Math.sin(rad)}
-        stroke={NAVY} strokeWidth={2.5} strokeLinecap="round" />
-      <circle cx={cx} cy={cy} r={5} fill={NAVY} />
+      <line x1={cx} y1={cy} x2={cx + (72 - 8) * Math.cos(rad)} y2={cy + (72 - 8) * Math.sin(rad)}
+        stroke={needleColor} strokeWidth={2.5} strokeLinecap="round" />
+      <circle cx={cx} cy={cy} r={5} fill={needleColor} />
     </svg>
   );
 }
@@ -1185,7 +1196,7 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
           <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest text-center">
             {isAr ? 'صحة مؤشرات الأداء' : 'KPI Health Score'}
           </p>
-          <HealthGauge score={hasAnyValue ? healthScore : 0} />
+          <HealthGauge score={healthScore} hasAnyValue={hasAnyValue} />
           {hasAnyValue ? (
             <>
               <div className="w-full rounded-xl px-3 py-2 text-center text-xs font-semibold mt-1"

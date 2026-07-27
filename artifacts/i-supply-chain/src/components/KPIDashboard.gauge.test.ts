@@ -8,7 +8,7 @@
  *  • miniGaugeState  grey/neutral state when hasValue is false
  */
 import { describe, it, expect } from 'vitest';
-import { scoreColor, miniGaugeState } from './KPIDashboard';
+import { scoreColor, miniGaugeState, healthGaugeState } from './KPIDashboard';
 
 const R = 30;
 const CIRCUMFERENCE = Math.PI * R;
@@ -133,5 +133,47 @@ describe('miniGaugeState — grey/neutral state (no value entered)', () => {
   it('uses tier colour when hasValue is true (score 95 → World Class #059669)', () => {
     const { color } = miniGaugeState(95, true);
     expect(color).toBe('#059669');
+  });
+});
+
+// ─── healthGaugeState — neutral state when hasAnyValue is false ───────────
+const R_HEALTH = 72;
+const CIRCUMFERENCE_HEALTH = Math.PI * R_HEALTH;
+
+describe('healthGaugeState — neutral state (no KPI values entered)', () => {
+  it('returns grey (#e5e7eb) colour when hasAnyValue is false', () => {
+    const { color } = healthGaugeState(0, false);
+    expect(color).toBe('#e5e7eb');
+  });
+
+  it('strokeDash is 0 when hasAnyValue is false (arc shows no fill)', () => {
+    const { strokeDash } = healthGaugeState(0, false);
+    expect(strokeDash).toBe(0);
+  });
+
+  it('returns grey even if a non-zero score is passed while hasAnyValue is false', () => {
+    const { color, strokeDash } = healthGaugeState(75, false);
+    expect(color).toBe('#e5e7eb');
+    expect(strokeDash).toBe(0);
+  });
+
+  it('uses tier colour when hasAnyValue is true (score 80 → Best-in-GCC #10b981)', () => {
+    const { color } = healthGaugeState(80, true);
+    expect(color).toBe('#10b981');
+  });
+
+  it('uses tier colour when hasAnyValue is true (score 95 → World Class #059669)', () => {
+    const { color } = healthGaugeState(95, true);
+    expect(color).toBe('#059669');
+  });
+
+  it('strokeDash is proportional to score when hasAnyValue is true', () => {
+    const { strokeDash } = healthGaugeState(50, true);
+    expect(strokeDash).toBeCloseTo(CIRCUMFERENCE_HEALTH * 0.5, 5);
+  });
+
+  it('strokeDash equals full circumference at score 100 when hasAnyValue is true', () => {
+    const { strokeDash } = healthGaugeState(100, true);
+    expect(strokeDash).toBeCloseTo(CIRCUMFERENCE_HEALTH, 5);
   });
 });
