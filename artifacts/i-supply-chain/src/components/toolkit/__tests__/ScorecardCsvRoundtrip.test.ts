@@ -1175,3 +1175,51 @@ describe('Scorecard CSV — tier preservation on re-import', () => {
     expect(after.tier).toBe('Transactional');
   });
 });
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Suite 8 — Tier default for brand-new suppliers when "Current Tier" is
+   absent or blank in the CSV
+
+   Verifies the fallback in handleScorecardImport's new-supplier branch:
+     tier: row['Current Tier']?.trim() || 'Strategic'
+   A completely absent "Current Tier" column, or a blank cell, must both
+   result in the supplier receiving the 'Strategic' default tier.
+══════════════════════════════════════════════════════════════════════════ */
+
+describe('Scorecard CSV — new-supplier tier default when "Current Tier" is absent or blank', () => {
+  beforeEach(() => localStorage.clear());
+
+  it('defaults tier to "Strategic" when the CSV row has no "Current Tier" key at all', () => {
+    // Simulate a custom export that omits the "Current Tier" column entirely.
+    const csvRow: Record<string, string> = {
+      'Supplier Name': 'Brand New Supplier',
+      // No 'Current Tier' key — column absent from the CSV.
+      'Delivery Performance — OTIF %': '80',
+    };
+
+    const { nextSuppliers, imported } = simulateImport([], [csvRow], true);
+
+    expect(imported).toBe(1);
+    expect(nextSuppliers).toHaveLength(1);
+    const added = nextSuppliers.find(s => s.name === 'Brand New Supplier')!;
+    expect(added).toBeDefined();
+    expect(added.tier).toBe('Strategic');
+  });
+
+  it('defaults tier to "Strategic" when the CSV row has a blank "Current Tier" cell', () => {
+    // Simulate a CSV where the column exists but the cell for this row is empty.
+    const csvRow: Record<string, string> = {
+      'Supplier Name': 'Another New Supplier',
+      'Current Tier': '',  // blank cell — fallback must fire
+      'Delivery Performance — OTIF %': '70',
+    };
+
+    const { nextSuppliers, imported } = simulateImport([], [csvRow], true);
+
+    expect(imported).toBe(1);
+    expect(nextSuppliers).toHaveLength(1);
+    const added = nextSuppliers.find(s => s.name === 'Another New Supplier')!;
+    expect(added).toBeDefined();
+    expect(added.tier).toBe('Strategic');
+  });
+});
