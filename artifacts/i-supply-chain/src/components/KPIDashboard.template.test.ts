@@ -11,7 +11,7 @@
  * 5. The column-header row contains exactly 7 columns
  */
 import { describe, it, expect } from 'vitest';
-import { buildKpiTemplateRows, KPI_FRAMEWORKS } from './KPIDashboard';
+import { buildKpiTemplateRows, KPI_FRAMEWORKS, type KpiDef } from './KPIDashboard';
 import { KPI_DATA_SPECS, KpiDataSpec } from '@/lib/kpiDataSpecs';
 import { parseCsvFile } from '@/lib/importCsv';
 
@@ -732,5 +732,124 @@ describe('Excel-mutated template round-trip (risk-management)', () => {
     const kpiLines = log.filter(l => l.startsWith('✓') && !l.includes('auto-calculated'));
     expect(kpiLines.length).toBe(6);
     expect(log.find(l => l.includes('require manual entry'))).toBeUndefined();
+  });
+});
+
+// ─── Multi-KPI sequence: Status formula cell reference ───────────────────────
+//
+//  buildKpiTemplateRows tracks the current Excel row number by counting array
+//  pushes.  With multiple KPIs the preamble, section headers, input rows, and
+//  notes rows all shift the index, so this suite verifies that the row number
+//  embedded in every Status formula matches the actual 1-indexed position of
+//  that __result row in the returned array — for both spec-backed KPIs and
+//  fallback (direct-entry) KPIs.
+//
+//  KPIs used:
+//    KPI_A  — por  (supply-chain-strategy[0])  spec-backed, higherIsBetter: true
+//    KPI_B  — sccost (supply-chain-strategy[2]) spec-backed, higherIsBetter: false
+//    KPI_FALLBACK — synthetic id not in KPI_DATA_SPECS, fallback path, higherIsBetter: true
+
+const KPI_FALLBACK: KpiDef = {
+  id: '__test_fallback_kpi__',
+  label: 'Test Fallback KPI',
+  labelAr: 'مؤشر اختبار',
+  unit: '%',
+  unitAr: '%',
+  targetValue: 50,
+  targetLabel: '>50%',
+  benchmarkValue: 30,
+  benchmarkLabel: '30%',
+  higherIsBetter: true,
+  description: 'Synthetic KPI without a spec — exercises the fallback (direct-entry) path.',
+  descriptionAr: 'مؤشر اصطناعي بدون مواصفة — يختبر مسار الإدخال المباشر.',
+};
+
+/** Extract the first C<n> row reference from a Status formula string. */
+function extractFormulaRowNum(formula: string): number {
+  const m = formula.match(/C(\d+)/);
+  return m ? parseInt(m[1], 10) : -1;
+}
+
+describe('buildKpiTemplateRows – Status formula cell reference in multi-KPI sequence', () => {
+  const THREE_KPIS = [
+    KPI_FRAMEWORKS['supply-chain-strategy'][0], // por  — spec-backed, higherIsBetter: true
+    KPI_FRAMEWORKS['supply-chain-strategy'][2], // sccost — spec-backed, higherIsBetter: false
+    KPI_FALLBACK,                                // synthetic — fallback, higherIsBetter: true
+  ];
+
+  it('every __result row formula references its own 1-indexed array position (3-KPI sequence)', () => {
+    const rows = buildKpiTemplateRows(THREE_KPIS, FRAMEWORK_LABEL, TODAY);
+
+    for (const kpi of THREE_KPIS) {
+      const idx = rows.findIndex(r => r[0] === `${kpi.id}__result`);
+      expect(idx, `__result row not found for "${kpi.id}"`).toBeGreaterThan(-1);
+
+      const oneIndexed = idx + 1;
+      const formula = rows[idx][6];
+      const formulaRow = extractFormulaRowNum(formula);
+
+      expect(formulaRow, `Formula C-ref for "${kpi.id}" should be ${oneIndexed}, got ${formulaRow} in: ${formula}`)
+        .toBe(oneIndexed);
+    }
+  });
+
+  it('spec-backed higherIsBetter: true KPI has correct formula direction and row ref', () => {
+    const rows = buildKpiTemplateRows(THREE_KPIS, FRAMEWORK_LABEL, TODAY);
+    const kpi = KPI_FRAMEWORKS['supply-chain-strategy'][0]; // por
+    const idx = rows.findIndex(r => r[0] === `${kpi.id}__result`);
+    const formula = rows[idx][6];
+
+    expect(formula).toContain('>=');
+    expect(formula).not.toContain('<=');
+    expect(extractFormulaRowNum(formula)).toBe(idx + 1);
+  });
+
+  it('spec-backed higherIsBetter: false KPI has correct formula direction and row ref', () => {
+    const rows = buildKpiTemplateRows(THREE_KPIS, FRAMEWORK_LABEL, TODAY);
+    const kpi = KPI_FRAMEWORKS['supply-chain-strategy'][2]; // sccost
+    const idx = rows.findIndex(r => r[0] === `${kpi.id}__result`);
+    const formula = rows[idx][6];
+
+    expect(formula).toContain('<=');
+    expect(formula).not.toContain('>=');
+    expect(extractFormulaRowNum(formula)).toBe(idx + 1);
+  });
+
+  it('fallback (direct-entry) KPI has correct formula direction and row ref', () => {
+    const rows = buildKpiTemplateRows(THREE_KPIS, FRAMEWORK_LABEL, TODAY);
+    const idx = rows.findIndex(r => r[0] === `${KPI_FALLBACK.id}__result`);
+    const formula = rows[idx][6];
+
+    // KPI_FALLBACK.higherIsBetter = true → >=
+    expect(formula).toContain('>=');
+    expect(formula).not.toContain('<=');
+    expect(extractFormulaRowNum(formula)).toBe(idx + 1);
+  });
+
+  it('formula row refs are strictly increasing across the sequence (each KPI shifts the index)', () => {
+    const rows = buildKpiTemplateRows(THREE_KPIS, FRAMEWORK_LABEL, TODAY);
+
+    const refs = THREE_KPIS.map(kpi => {
+      const idx = rows.findIndex(r => r[0] === `${kpi.id}__result`);
+      return extractFormulaRowNum(rows[idx][6]);
+    });
+
+    // Each subsequent KPI occupies a higher row number
+    expect(refs[1]).toBeGreaterThan(refs[0]);
+    expect(refs[2]).toBeGreaterThan(refs[1]);
+  });
+
+  it('two-KPI sequence: both formula refs are correct (minimal repro)', () => {
+    const TWO_KPIS = [
+      KPI_FRAMEWORKS['supply-chain-strategy'][0], // por — spec-backed, higherIsBetter: true
+      KPI_FALLBACK,                                // fallback, higherIsBetter: true
+    ];
+    const rows = buildKpiTemplateRows(TWO_KPIS, FRAMEWORK_LABEL, TODAY);
+
+    for (const kpi of TWO_KPIS) {
+      const idx = rows.findIndex(r => r[0] === `${kpi.id}__result`);
+      expect(idx, `__result row not found for "${kpi.id}"`).toBeGreaterThan(-1);
+      expect(extractFormulaRowNum(rows[idx][6])).toBe(idx + 1);
+    }
   });
 });
