@@ -3,8 +3,8 @@
  * per dimension, weighted scoring, tier badge, RadarChart.
  */
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { RadarChart, Radar, PolarGrid, PolarAngleAxis, ResponsiveContainer, Tooltip, Legend } from 'recharts';
-import { Printer, Plus, Trash2, Users, Download, Upload, Settings, ChevronDown, ChevronUp, RotateCcw, Sparkles, Columns, X } from 'lucide-react';
+import { RadarChart, Radar, PolarGrid, PolarAngleAxis, ResponsiveContainer, Tooltip, Legend, LineChart, Line, XAxis, YAxis, CartesianGrid } from 'recharts';
+import { Printer, Plus, Trash2, Users, Download, Upload, Settings, ChevronDown, ChevronUp, RotateCcw, Sparkles, Columns, X, TrendingUp, ClipboardList, BookOpen, CheckCircle2, AlertCircle, Clock, Calendar, DollarSign, ChevronRight, Edit2 } from 'lucide-react';
 import { safeSetItem } from '@/lib/storage';
 import { useAuth } from '@/lib/AuthContext';
 import { API_BASE } from '@/lib/apiBase';
@@ -43,6 +43,46 @@ interface RosterState {
   suppliers: SupplierRecord[];
   activeId: string;
 }
+
+/* ─── CAR (Corrective Action Request) ─── */
+type CARCategory = 'quality' | 'delivery' | 'compliance' | 'safety' | 'documentation' | 'other';
+type CARStatus   = 'open' | 'in-progress' | 'closed';
+
+interface CAR {
+  id: string;
+  title: string;
+  category: CARCategory;
+  owner: string;
+  dueDate: string;
+  rootCause: string;
+  resolution: string;
+  status: CARStatus;
+  createdAt: string;
+  closedAt?: string;
+}
+
+/* ─── Development Investment Log ─── */
+type DevLogType = 'audit' | 'training' | 'co-development' | 'site-visit' | 'certification' | 'other';
+
+interface DevLogEntry {
+  id: string;
+  type: DevLogType;
+  description: string;
+  date: string;
+  cost: number;
+  currency: 'SAR' | 'USD' | 'EUR' | 'AED';
+  notes: string;
+}
+
+/* ─── Trend Snapshot ─── */
+interface TrendSnapshot {
+  month: string; // YYYY-MM
+  weightedScore: number;
+  dimScores: Record<string, number>;
+}
+
+/* ─── Scorecard tab ─── */
+type ScorecardTab = 'scorecard' | 'car' | 'devlog';
 
 /* ─── Tiers ─── */
 const TIERS = [
@@ -90,6 +130,58 @@ function ragColor(score: number | null): string {
 /* ─── Storage keys ─── */
 const ROSTER_KEY = 'isc-tool-supplier-roster';
 const LEGACY_KEY = 'isc-tool-supplier-scorecard';
+const carKey     = (id: string) => `isc-tool-scorecard-cars-${id}`;
+const devKey     = (id: string) => `isc-tool-scorecard-devlog-${id}`;
+const trendKey   = (id: string) => `isc-tool-scorecard-trend-${id}`;
+
+function loadJson<T>(key: string, fallback: T): T {
+  try { const s = localStorage.getItem(key); return s ? (JSON.parse(s) as T) : fallback; }
+  catch { return fallback; }
+}
+function saveJson(key: string, value: unknown) {
+  try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* quota — ignore */ }
+}
+
+/* ─── CAR / DevLog metadata ─── */
+const CAR_CATEGORIES: { id: CARCategory; label: string; labelAr: string }[] = [
+  { id: 'quality',       label: 'Quality',       labelAr: 'الجودة'         },
+  { id: 'delivery',      label: 'Delivery',      labelAr: 'التسليم'        },
+  { id: 'compliance',    label: 'Compliance',     labelAr: 'الامتثال'       },
+  { id: 'safety',        label: 'Safety',         labelAr: 'السلامة'        },
+  { id: 'documentation', label: 'Documentation',  labelAr: 'التوثيق'        },
+  { id: 'other',         label: 'Other',          labelAr: 'أخرى'           },
+];
+const CAR_STATUS_META: Record<CARStatus, { label: string; labelAr: string; color: string; bg: string }> = {
+  'open':        { label: 'Open',        labelAr: 'مفتوح',       color: '#dc2626', bg: '#fee2e2' },
+  'in-progress': { label: 'In Progress', labelAr: 'قيد التنفيذ', color: '#d97706', bg: '#fef3c7' },
+  'closed':      { label: 'Closed',      labelAr: 'مغلق',        color: '#16a34a', bg: '#dcfce7' },
+};
+const DEV_LOG_TYPES: { id: DevLogType; label: string; labelAr: string; icon: string }[] = [
+  { id: 'audit',          label: 'Audit Visit',         labelAr: 'زيارة تدقيق',      icon: '🔍' },
+  { id: 'training',       label: 'Training',            labelAr: 'تدريب',            icon: '📚' },
+  { id: 'co-development', label: 'Co-development',      labelAr: 'تطوير مشترك',      icon: '🤝' },
+  { id: 'site-visit',     label: 'Site Visit',          labelAr: 'زيارة ميدانية',    icon: '🏭' },
+  { id: 'certification',  label: 'Certification Support',labelAr: 'دعم الاعتماد',    icon: '🏆' },
+  { id: 'other',          label: 'Other',               labelAr: 'أخرى',             icon: '📌' },
+];
+
+function newCAR(): CAR {
+  return {
+    id: `car-${Date.now()}-${Math.random().toString(36).slice(2,6)}`,
+    title: '', category: 'quality', owner: '',
+    dueDate: new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10),
+    rootCause: '', resolution: '', status: 'open',
+    createdAt: new Date().toISOString().slice(0, 10),
+  };
+}
+function newDevEntry(): DevLogEntry {
+  return {
+    id: `dev-${Date.now()}-${Math.random().toString(36).slice(2,6)}`,
+    type: 'audit', description: '',
+    date: new Date().toISOString().slice(0, 10),
+    cost: 0, currency: 'SAR', notes: '',
+  };
+}
 
 function makeId(): string {
   return `sup-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
@@ -284,6 +376,24 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
   // pendingName tracks what the user has typed but not yet committed to the roster.
   // null means "no in-progress edit; use active.name from the roster".
   const [pendingName, setPendingName] = useState<string | null>(null);
+
+  /* ── Per-supplier tabs (Scorecard / CAR Tracker / Dev Log) ── */
+  const [scorecardTab, setScorecardTab] = useState<ScorecardTab>('scorecard');
+  const tabListRef = useRef<HTMLDivElement>(null);
+
+  /* ── CAR state ── */
+  const [cars, setCars] = useState<CAR[]>([]);
+  const [carFormOpen, setCarFormOpen] = useState(false);
+  const [editingCar, setEditingCar] = useState<CAR | null>(null);
+  const [expandedCarIds, setExpandedCarIds] = useState<Set<string>>(new Set());
+
+  /* ── Dev Log state ── */
+  const [devLog, setDevLog] = useState<DevLogEntry[]>([]);
+  const [devFormOpen, setDevFormOpen] = useState(false);
+  const [editingDev, setEditingDev] = useState<DevLogEntry | null>(null);
+
+  /* ── Trend history state ── */
+  const [trend, setTrend] = useState<TrendSnapshot[]>([]);
 
   /* ── Server load: per-user bootstrap on login / account switch ── */
   useEffect(() => {
@@ -591,9 +701,97 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
       resetPlan();
       setDupNameWarning(null);
       setPendingName(null);
+      setScorecardTab('scorecard');
+      setCarFormOpen(false);
+      setEditingCar(null);
+      setDevFormOpen(false);
+      setEditingDev(null);
+      setExpandedCarIds(new Set());
     }
     prevActiveIdRef.current = active?.id ?? null;
   }, [active?.id, resetPlan]);
+
+  /* ── Load per-supplier CAR / DevLog / Trend data when active supplier changes ── */
+  useEffect(() => {
+    if (!active?.id) return;
+    setCars(loadJson<CAR[]>(carKey(active.id), []));
+    setDevLog(loadJson<DevLogEntry[]>(devKey(active.id), []));
+    setTrend(loadJson<TrendSnapshot[]>(trendKey(active.id), []));
+  }, [active?.id]);
+
+  /* ── Auto-snapshot monthly trend ── */
+  // Guard uses a composite key (supplierId + month + score) so switching between
+  // two suppliers with the same weighted score still records a snapshot for each.
+  const prevTrendKeyRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!active?.id || weightedScore === null) return;
+    const month = new Date().toISOString().slice(0, 7); // YYYY-MM
+    const key = `${active.id}|${month}|${weightedScore}`;
+    if (prevTrendKeyRef.current === key) return;
+    prevTrendKeyRef.current = key;
+
+    const dimScores: Record<string, number> = {};
+    DIMS.forEach(d => {
+      const sc = calcDimScore(d.id, active.subScores);
+      if (sc !== null) dimScores[d.id] = sc;
+    });
+    setTrend(prev => {
+      const without = prev.filter(s => s.month !== month);
+      const next = [...without, { month, weightedScore, dimScores }]
+        .sort((a, b) => a.month.localeCompare(b.month))
+        .slice(-12); // keep last 12 months
+      saveJson(trendKey(active.id), next);
+      return next;
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active?.id, weightedScore]);
+
+  /* ── CAR helpers ── */
+  const saveCars = (supplierId: string, next: CAR[]) => {
+    setCars(next);
+    saveJson(carKey(supplierId), next);
+  };
+  const commitCar = (car: CAR) => {
+    if (!active?.id) return;
+    const next = cars.some(c => c.id === car.id)
+      ? cars.map(c => c.id === car.id ? car : c)
+      : [...cars, car];
+    saveCars(active.id, next);
+    setEditingCar(null);
+    setCarFormOpen(false);
+  };
+  const closeCAR = (id: string) => {
+    if (!active?.id) return;
+    saveCars(active.id, cars.map(c => c.id === id
+      ? { ...c, status: 'closed', closedAt: new Date().toISOString().slice(0, 10) }
+      : c));
+  };
+  const deleteCAR = (id: string) => {
+    if (!active?.id) return;
+    saveCars(active.id, cars.filter(c => c.id !== id));
+  };
+  const toggleCarExpand = (id: string) => setExpandedCarIds(prev => {
+    const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s;
+  });
+
+  /* ── Dev Log helpers ── */
+  const saveDevLog = (supplierId: string, next: DevLogEntry[]) => {
+    setDevLog(next);
+    saveJson(devKey(supplierId), next);
+  };
+  const commitDev = (entry: DevLogEntry) => {
+    if (!active?.id) return;
+    const next = devLog.some(e => e.id === entry.id)
+      ? devLog.map(e => e.id === entry.id ? entry : e)
+      : [...devLog, entry];
+    saveDevLog(active.id, next);
+    setEditingDev(null);
+    setDevFormOpen(false);
+  };
+  const deleteDev = (id: string) => {
+    if (!active?.id) return;
+    saveDevLog(active.id, devLog.filter(e => e.id !== id));
+  };
 
   /**
    * Called when the name field loses focus.
@@ -680,6 +878,13 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
       save({ suppliers: remaining, activeId: nextActive });
     }
   };
+
+  /* ── Tab definitions (defined here so they can reference `cars` / `devLog` for badges) ── */
+  const SCORECARD_TABS: { id: ScorecardTab; icon: string; label: string; labelAr: string }[] = [
+    { id: 'scorecard', icon: '📊', label: 'Scorecard',   labelAr: 'بطاقة التقييم'  },
+    { id: 'car',       icon: '⚠️',  label: 'CAR Tracker', labelAr: 'طلبات التصحيح'  },
+    { id: 'devlog',    icon: '📈',  label: 'Dev Log',     labelAr: 'سجل التطوير'    },
+  ];
 
   const today = new Date().toLocaleDateString(isAr ? 'ar-SA' : 'en-GB');
   const tier = weightedScore !== null && weightedScore !== undefined ? getTier(weightedScore, config) : null;
@@ -1237,7 +1442,7 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
 
         {active && (
           <>
-            {/* Supplier info */}
+            {/* Supplier info — always visible across all tabs */}
             <div className="grid sm:grid-cols-2 gap-3">
               <div>
                 <label htmlFor="scorecard-supplier-name" className="text-xs font-bold text-primary mb-1 block">
@@ -1249,8 +1454,6 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
                   placeholder={isAr ? 'أدخل اسم المورّد' : 'Enter supplier name'}
                   value={pendingName ?? active.name}
                   onChange={e => {
-                    // Update the local display only; the roster is NOT written here.
-                    // Commit (or reject) happens in onBlur via handleNameBlur.
                     setPendingName(e.target.value);
                     if (dupNameWarning) setDupNameWarning(null);
                   }}
@@ -1261,15 +1464,10 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
                     <p className="text-[11px] text-red-500">{dupNameWarning}</p>
                     <button
                       type="button"
-                      onClick={() => {
-                        setPendingName(null);
-                        setDupNameWarning(null);
-                      }}
+                      onClick={() => { setPendingName(null); setDupNameWarning(null); }}
                       className="text-[11px] font-semibold text-primary underline underline-offset-2 hover:opacity-75 transition-opacity whitespace-nowrap"
                     >
-                      {isAr
-                        ? `استعادة "${active.name}"`
-                        : `Revert to "${active.name}"`}
+                      {isAr ? `استعادة "${active.name}"` : `Revert to "${active.name}"`}
                     </button>
                   </div>
                 )}
@@ -1291,154 +1489,646 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
               </div>
             </div>
 
-            {/* ── Dimensions + Sub-indicators ── */}
-            <div className="space-y-4">
-              <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
-                {isAr ? 'التقييم — أدخل 0–100 لكل مؤشر فرعي (100 = أفضل أداء)' : 'Evaluation — enter 0–100 per sub-indicator (100 = best)'}
-              </p>
-              {DIMS.map(d => {
-                const dimScore = calcDimScore(d.id, active.subScores);
-                const barColor = dimScore === null
-                  ? '#e5e7eb'
-                  : dimScore >= 75 ? '#22c55e'
-                  : dimScore >= 55 ? '#f59e0b'
-                  : '#ef4444';
-                const subs = SUB_INDICATORS[d.id] ?? [];
-
+            {/* ── Tab bar ── */}
+            <div
+              role="tablist"
+              ref={tabListRef}
+              className="no-print flex gap-1 bg-slate-50 border border-slate-200 rounded-2xl p-1 overflow-x-auto"
+            >
+              {SCORECARD_TABS.map((t, idx) => {
+                const badge = t.id === 'car'
+                  ? cars.filter(c => c.status !== 'closed').length
+                  : t.id === 'devlog' ? devLog.length : 0;
+                const isActive = scorecardTab === t.id;
                 return (
-                  <div key={d.id} className="border border-border rounded-xl overflow-hidden">
-                    {/* Dimension header */}
-                    <div className="flex items-center justify-between gap-3 px-4 py-2.5 bg-gray-50 border-b border-border">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-primary">{isAr ? d.labelAr : d.label}</span>
-                        <span className="text-xs text-muted-foreground">{config.weights[d.id] ?? d.weight}{isAr ? '% وزن' : '% weight'}</span>
-                      </div>
-                      {dimScore !== null ? (
-                        <span className="text-xs font-extrabold px-2 py-0.5 rounded-full shrink-0"
-                          style={{ background: barColor + '22', color: barColor }}>
-                          {dimScore}/100
-                        </span>
-                      ) : (
-                        <span className="text-xs text-muted-foreground shrink-0">{isAr ? 'لم يُدخَل بعد' : 'Not entered'}</span>
-                      )}
-                    </div>
-                    {/* Progress bar */}
-                    <div className="h-1 bg-gray-100">
-                      <div className="h-full transition-all duration-300"
-                        style={{ width: `${dimScore ?? 0}%`, background: barColor }} />
-                    </div>
-                    {/* Sub-indicator rows */}
-                    <div className="p-3 space-y-2.5 bg-white">
-                      {subs.map(sub => {
-                        const note = isAr ? sub.noteAr : sub.note;
-                        const currentVal = active.subScores[d.id]?.[sub.id] ?? '';
-                        return (
-                          <div key={sub.id} className="grid grid-cols-[1fr_68px_28px] gap-2 items-start">
-                            <div>
-                              <label
-                                htmlFor={`sub-${d.id}-${sub.id}`}
-                                className="text-xs text-gray-700 font-medium block leading-snug"
-                              >
-                                {isAr ? sub.labelAr : sub.label}
-                              </label>
-                              {note && (
-                                <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">{note}</p>
-                              )}
-                            </div>
-                            <input
-                              id={`sub-${d.id}-${sub.id}`}
-                              type="number" min={0} max={100} step={1}
-                              value={currentVal}
-                              onChange={e => setSubScore(d.id, sub.id, e.target.value)}
-                              className="text-center text-sm border border-border rounded-lg px-1 py-1 focus:outline-none focus:ring-2 focus:ring-primary/30"
-                              placeholder="0"
-                            />
-                            <span className="text-xs text-muted-foreground pt-1.5">/100</span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
+                  <button
+                    key={t.id}
+                    role="tab"
+                    aria-selected={isActive}
+                    tabIndex={isActive ? 0 : -1}
+                    onClick={() => setScorecardTab(t.id)}
+                    onKeyDown={e => {
+                      if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+                      e.preventDefault();
+                      const next = e.key === 'ArrowRight'
+                        ? (idx + 1) % SCORECARD_TABS.length
+                        : (idx - 1 + SCORECARD_TABS.length) % SCORECARD_TABS.length;
+                      setScorecardTab(SCORECARD_TABS[next].id);
+                      (tabListRef.current?.querySelectorAll('[role="tab"]')[next] as HTMLElement | undefined)?.focus();
+                    }}
+                    className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-[12px] font-semibold whitespace-nowrap transition-all ${isActive ? 'bg-primary text-white shadow' : 'text-slate-500 hover:bg-slate-100'}`}
+                  >
+                    <span>{t.icon}</span>
+                    <span className="hidden sm:inline">{isAr ? t.labelAr : t.label}</span>
+                    {badge > 0 && (
+                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${isActive ? 'bg-white/25 text-white' : 'bg-primary/10 text-primary'}`}>
+                        {badge}
+                      </span>
+                    )}
+                  </button>
                 );
               })}
             </div>
 
-            {/* Incomplete hint */}
-            {weightedScore === null && Object.keys(active.subScores).length > 0 && (
-              <p className="text-xs text-amber-600 text-center">
-                {isAr
-                  ? 'أدخل مؤشراً فرعياً واحداً على الأقل في كل بُعد لرؤية النتيجة الإجمالية'
-                  : 'Enter at least one sub-indicator in every dimension to see the weighted total'}
-              </p>
+            {/* ══════════════════════════════════════════════════
+                TAB 1 — Scorecard (dimensions + results + trend)
+            ══════════════════════════════════════════════════ */}
+            {scorecardTab === 'scorecard' && (
+              <>
+                {/* Dimensions + Sub-indicators */}
+                <div className="space-y-4">
+                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
+                    {isAr ? 'التقييم — أدخل 0–100 لكل مؤشر فرعي (100 = أفضل أداء)' : 'Evaluation — enter 0–100 per sub-indicator (100 = best)'}
+                  </p>
+                  {DIMS.map(d => {
+                    const dimScore = calcDimScore(d.id, active.subScores);
+                    const barColor = dimScore === null ? '#e5e7eb'
+                      : dimScore >= 75 ? '#22c55e'
+                      : dimScore >= 55 ? '#f59e0b'
+                      : '#ef4444';
+                    const subs = SUB_INDICATORS[d.id] ?? [];
+                    return (
+                      <div key={d.id} className="border border-border rounded-xl overflow-hidden">
+                        <div className="flex items-center justify-between gap-3 px-4 py-2.5 bg-gray-50 border-b border-border">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold text-primary">{isAr ? d.labelAr : d.label}</span>
+                            <span className="text-xs text-muted-foreground">{config.weights[d.id] ?? d.weight}{isAr ? '% وزن' : '% weight'}</span>
+                          </div>
+                          {dimScore !== null ? (
+                            <span className="text-xs font-extrabold px-2 py-0.5 rounded-full shrink-0"
+                              style={{ background: barColor + '22', color: barColor }}>
+                              {dimScore}/100
+                            </span>
+                          ) : (
+                            <span className="text-xs text-muted-foreground shrink-0">{isAr ? 'لم يُدخَل بعد' : 'Not entered'}</span>
+                          )}
+                        </div>
+                        <div className="h-1 bg-gray-100">
+                          <div className="h-full transition-all duration-300"
+                            style={{ width: `${dimScore ?? 0}%`, background: barColor }} />
+                        </div>
+                        <div className="p-3 space-y-2.5 bg-white">
+                          {subs.map(sub => {
+                            const note = isAr ? sub.noteAr : sub.note;
+                            const currentVal = active.subScores[d.id]?.[sub.id] ?? '';
+                            return (
+                              <div key={sub.id} className="grid grid-cols-[1fr_68px_28px] gap-2 items-start">
+                                <div>
+                                  <label htmlFor={`sub-${d.id}-${sub.id}`}
+                                    className="text-xs text-gray-700 font-medium block leading-snug">
+                                    {isAr ? sub.labelAr : sub.label}
+                                  </label>
+                                  {note && <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">{note}</p>}
+                                </div>
+                                <input
+                                  id={`sub-${d.id}-${sub.id}`}
+                                  type="number" min={0} max={100} step={1}
+                                  value={currentVal}
+                                  onChange={e => setSubScore(d.id, sub.id, e.target.value)}
+                                  className="text-center text-sm border border-border rounded-lg px-1 py-1 focus:outline-none focus:ring-2 focus:ring-primary/30"
+                                  placeholder="0"
+                                />
+                                <span className="text-xs text-muted-foreground pt-1.5">/100</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Incomplete hint */}
+                {weightedScore === null && Object.keys(active.subScores).length > 0 && (
+                  <p className="text-xs text-amber-600 text-center">
+                    {isAr
+                      ? 'أدخل مؤشراً فرعياً واحداً على الأقل في كل بُعد لرؤية النتيجة الإجمالية'
+                      : 'Enter at least one sub-indicator in every dimension to see the weighted total'}
+                  </p>
+                )}
+
+                {/* AI Plan */}
+                {weightedScore !== null && tier && (
+                  <AIPlanPanel
+                    loading={planLoading}
+                    result={planResult}
+                    error={planError}
+                    onGenerate={generatePlan}
+                    onReset={resetPlan}
+                    buttonLabel={isAr ? 'توليد خطة التطوير ✨' : 'Generate Development Plan ✨'}
+                    isAr={isAr}
+                    savedPlan={planSavedPlan}
+                    onViewSaved={viewSavedPlan}
+                    onDeleteSaved={deleteSavedPlan}
+                    rateLimited={planRateLimited}
+                    saveError={planSaveError}
+                    onDismissSaveError={dismissPlanSaveError}
+                    toolKey={active?.id ? `scorecard-${active.id}` : undefined}
+                  />
+                )}
+
+                {/* Results: score cards + radar + trend */}
+                {weightedScore !== null && tier && (
+                  <div className="grid sm:grid-cols-2 gap-5 items-start">
+                    {/* Left: score / tier / thresholds */}
+                    <div className="space-y-3">
+                      <div className="rounded-xl p-5 text-center" style={{ background: tier.bg, border: `1px solid ${tier.color}30` }}>
+                        <p className="text-xs text-muted-foreground mb-1">{isAr ? 'الدرجة المرجّحة' : 'Weighted Score'}</p>
+                        <p className="text-4xl font-extrabold" style={{ color: tier.color }}>
+                          {weightedScore}<span className="text-lg font-normal">/100</span>
+                        </p>
+                      </div>
+                      <div className="rounded-xl p-4 text-center" style={{ background: tier.color, color: '#fff' }}>
+                        <p className="text-xs opacity-75 mb-1">{isAr ? 'تصنيف المورّد' : 'Supplier Tier'}</p>
+                        <p className="text-xl font-extrabold">
+                          {isAr ? TIERS.find(t => t.label === tier.label)?.labelAr : tier.label}
+                        </p>
+                      </div>
+                      <div className="rounded-xl p-4 bg-muted text-xs space-y-1">
+                        <p className="font-bold text-primary mb-2">{isAr ? 'حدود الشرائح' : 'Tier Thresholds'}</p>
+                        {[
+                          { t: TIERS[0], min: config.tiers.strategic },
+                          { t: TIERS[1], min: config.tiers.preferred },
+                          { t: TIERS[2], min: 0 },
+                        ].map(({ t, min }) => (
+                          <div key={t.label} className="flex items-center justify-between">
+                            <span style={{ color: t.color }} className="font-semibold">{isAr ? t.labelAr : t.label}</span>
+                            <span className="text-muted-foreground">≥{min}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Right: radar + trend */}
+                    <div className="space-y-4">
+                      <div>
+                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-2 text-center">
+                          {isAr ? 'ملف الأداء' : 'Performance Profile'}
+                        </p>
+                        <ResponsiveContainer width="100%" height={220}>
+                          <RadarChart data={radarData} cx="50%" cy="50%" outerRadius="70%">
+                            <PolarGrid />
+                            <PolarAngleAxis dataKey="dimension" tick={{ fontSize: 9, fill: '#6b7280' }} />
+                            <Radar
+                              name={active.name || (isAr ? 'المورّد' : 'Supplier')}
+                              dataKey="value"
+                              stroke={tier.color}
+                              fill={tier.color}
+                              fillOpacity={0.25}
+                            />
+                            <Tooltip formatter={(v: number) => [`${v}/100`, isAr ? 'الدرجة' : 'Score']} />
+                          </RadarChart>
+                        </ResponsiveContainer>
+                      </div>
+
+                      {/* Trend line chart — shown once 2+ monthly snapshots exist */}
+                      {trend.length >= 2 && (
+                        <div className="border border-border rounded-xl p-3 bg-white">
+                          <div className="flex items-center gap-1.5 mb-2">
+                            <TrendingUp className="w-3.5 h-3.5 text-primary" />
+                            <p className="text-xs font-bold text-primary uppercase tracking-widest">
+                              {isAr ? 'الاتجاه الشهري' : 'Monthly Trend'}
+                            </p>
+                          </div>
+                          <ResponsiveContainer width="100%" height={140}>
+                            <LineChart data={trend} margin={{ top: 4, right: 8, left: -22, bottom: 0 }}>
+                              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                              <XAxis dataKey="month" tick={{ fontSize: 8, fill: '#6b7280' }} />
+                              <YAxis domain={[0, 100]} tick={{ fontSize: 8, fill: '#6b7280' }} />
+                              <Tooltip
+                                formatter={(v: number) => [`${v}/100`, isAr ? 'الدرجة' : 'Score']}
+                                labelFormatter={(label: string) => label}
+                              />
+                              <Line
+                                type="monotone"
+                                dataKey="weightedScore"
+                                stroke={tier.color}
+                                strokeWidth={2}
+                                dot={{ r: 3, fill: tier.color }}
+                                name={isAr ? 'الدرجة المرجّحة' : 'Weighted Score'}
+                              />
+                            </LineChart>
+                          </ResponsiveContainer>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </>
             )}
 
-            {/* ── Results ── */}
-            {weightedScore !== null && tier && (
-              <AIPlanPanel
-                loading={planLoading}
-                result={planResult}
-                error={planError}
-                onGenerate={generatePlan}
-                onReset={resetPlan}
-                buttonLabel={isAr ? 'توليد خطة التطوير ✨' : 'Generate Development Plan ✨'}
-                isAr={isAr}
-                savedPlan={planSavedPlan}
-                onViewSaved={viewSavedPlan}
-                onDeleteSaved={deleteSavedPlan}
-                rateLimited={planRateLimited}
-                saveError={planSaveError}
-                onDismissSaveError={dismissPlanSaveError}
-                toolKey={active?.id ? `scorecard-${active.id}` : undefined}
-              />
-            )}
-            {weightedScore !== null && tier && (
-              <div className="grid sm:grid-cols-2 gap-5 items-start">
-                <div className="space-y-3">
-                  <div className="rounded-xl p-5 text-center" style={{ background: tier.bg, border: `1px solid ${tier.color}30` }}>
-                    <p className="text-xs text-muted-foreground mb-1">{isAr ? 'الدرجة المرجّحة' : 'Weighted Score'}</p>
-                    <p className="text-4xl font-extrabold" style={{ color: tier.color }}>
-                      {weightedScore}<span className="text-lg font-normal">/100</span>
-                    </p>
+            {/* ══════════════════════════════════════════════════
+                TAB 2 — CAR Tracker
+            ══════════════════════════════════════════════════ */}
+            {scorecardTab === 'car' && (
+              <div className="space-y-4">
+                {/* Summary bar */}
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                  <div className="flex items-center gap-3 flex-wrap">
+                    {(['open', 'in-progress', 'closed'] as CARStatus[]).map(st => {
+                      const count = cars.filter(c => c.status === st).length;
+                      const meta = CAR_STATUS_META[st];
+                      return (
+                        <span key={st} className="flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full"
+                          style={{ background: meta.bg, color: meta.color }}>
+                          {count} {isAr ? meta.labelAr : meta.label}
+                        </span>
+                      );
+                    })}
                   </div>
-                  <div className="rounded-xl p-4 text-center" style={{ background: tier.color, color: '#fff' }}>
-                    <p className="text-xs opacity-75 mb-1">{isAr ? 'تصنيف المورّد' : 'Supplier Tier'}</p>
-                    <p className="text-xl font-extrabold">
-                      {isAr ? TIERS.find(t => t.label === tier.label)?.labelAr : tier.label}
+                  <button
+                    onClick={() => { setEditingCar(newCAR()); setCarFormOpen(true); }}
+                    className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg font-bold bg-primary text-white hover:bg-primary/90 transition-colors shrink-0"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    {isAr ? 'إضافة طلب تصحيح' : 'Add CAR'}
+                  </button>
+                </div>
+
+                {/* Add / Edit form */}
+                {carFormOpen && editingCar && (
+                  <div className="border border-primary/30 rounded-xl p-4 bg-primary/5 space-y-3">
+                    <p className="text-xs font-bold text-primary">
+                      {cars.some(c => c.id === editingCar.id)
+                        ? (isAr ? 'تعديل طلب التصحيح' : 'Edit CAR')
+                        : (isAr ? 'طلب تصحيح جديد' : 'New CAR')}
                     </p>
-                  </div>
-                  <div className="rounded-xl p-4 bg-muted text-xs space-y-1">
-                    <p className="font-bold text-primary mb-2">{isAr ? 'حدود الشرائح' : 'Tier Thresholds'}</p>
-                    {[
-                      { t: TIERS[0], min: config.tiers.strategic },
-                      { t: TIERS[1], min: config.tiers.preferred },
-                      { t: TIERS[2], min: 0 },
-                    ].map(({ t, min }) => (
-                      <div key={t.label} className="flex items-center justify-between">
-                        <span style={{ color: t.color }} className="font-semibold">{isAr ? t.labelAr : t.label}</span>
-                        <span className="text-muted-foreground">≥{min}</span>
+                    <div className="grid sm:grid-cols-2 gap-3">
+                      <div className="sm:col-span-2">
+                        <label className="text-xs font-semibold text-gray-700 mb-1 block">{isAr ? 'العنوان' : 'Title'} *</label>
+                        <input
+                          className="w-full text-sm border border-border rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-primary/30"
+                          placeholder={isAr ? 'وصف موجز للمشكلة' : 'Brief description of the issue'}
+                          value={editingCar.title}
+                          onChange={e => setEditingCar({ ...editingCar, title: e.target.value })}
+                        />
                       </div>
-                    ))}
+                      <div>
+                        <label className="text-xs font-semibold text-gray-700 mb-1 block">{isAr ? 'الفئة' : 'Category'}</label>
+                        <select
+                          className="w-full text-sm border border-border rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-primary/30"
+                          value={editingCar.category}
+                          onChange={e => setEditingCar({ ...editingCar, category: e.target.value as CARCategory })}
+                        >
+                          {CAR_CATEGORIES.map(c => (
+                            <option key={c.id} value={c.id}>{isAr ? c.labelAr : c.label}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-xs font-semibold text-gray-700 mb-1 block">{isAr ? 'الحالة' : 'Status'}</label>
+                        <select
+                          className="w-full text-sm border border-border rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-primary/30"
+                          value={editingCar.status}
+                          onChange={e => setEditingCar({ ...editingCar, status: e.target.value as CARStatus })}
+                        >
+                          {(Object.keys(CAR_STATUS_META) as CARStatus[]).map(s => (
+                            <option key={s} value={s}>{isAr ? CAR_STATUS_META[s].labelAr : CAR_STATUS_META[s].label}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-xs font-semibold text-gray-700 mb-1 block">{isAr ? 'المسؤول' : 'Owner'}</label>
+                        <input
+                          className="w-full text-sm border border-border rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-primary/30"
+                          placeholder={isAr ? 'اسم المسؤول' : 'Responsible person'}
+                          value={editingCar.owner}
+                          onChange={e => setEditingCar({ ...editingCar, owner: e.target.value })}
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-semibold text-gray-700 mb-1 block">{isAr ? 'تاريخ الاستحقاق' : 'Due Date'}</label>
+                        <input
+                          type="date"
+                          className="w-full text-sm border border-border rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-primary/30"
+                          value={editingCar.dueDate}
+                          onChange={e => setEditingCar({ ...editingCar, dueDate: e.target.value })}
+                        />
+                      </div>
+                      <div className="sm:col-span-2">
+                        <label className="text-xs font-semibold text-gray-700 mb-1 block">{isAr ? 'السبب الجذري' : 'Root Cause'}</label>
+                        <textarea
+                          rows={2}
+                          className="w-full text-sm border border-border rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
+                          placeholder={isAr ? 'ما السبب الجذري للمشكلة؟' : 'What is the root cause?'}
+                          value={editingCar.rootCause}
+                          onChange={e => setEditingCar({ ...editingCar, rootCause: e.target.value })}
+                        />
+                      </div>
+                      <div className="sm:col-span-2">
+                        <label className="text-xs font-semibold text-gray-700 mb-1 block">{isAr ? 'الحل / الإجراء' : 'Resolution / Action Taken'}</label>
+                        <textarea
+                          rows={2}
+                          className="w-full text-sm border border-border rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
+                          placeholder={isAr ? 'ما الإجراء المتخذ أو المقترح؟' : 'What action was or will be taken?'}
+                          value={editingCar.resolution}
+                          onChange={e => setEditingCar({ ...editingCar, resolution: e.target.value })}
+                        />
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 justify-end">
+                      <button
+                        onClick={() => { setCarFormOpen(false); setEditingCar(null); }}
+                        className="text-xs px-3 py-1.5 rounded-lg font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors"
+                      >
+                        {isAr ? 'إلغاء' : 'Cancel'}
+                      </button>
+                      <button
+                        onClick={() => { if (editingCar.title.trim()) commitCar(editingCar); }}
+                        disabled={!editingCar.title.trim()}
+                        className="text-xs px-3 py-1.5 rounded-lg font-bold bg-primary text-white hover:bg-primary/90 transition-colors disabled:opacity-40"
+                      >
+                        {isAr ? 'حفظ' : 'Save'}
+                      </button>
+                    </div>
                   </div>
+                )}
+
+                {/* CAR list */}
+                {cars.length === 0 && !carFormOpen ? (
+                  <div className="text-center py-10 text-muted-foreground">
+                    <ClipboardList className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                    <p className="text-sm">{isAr ? 'لا توجد طلبات تصحيح بعد' : 'No CARs yet'}</p>
+                    <p className="text-xs mt-1">{isAr ? 'أضف طلب تصحيح لتتبع مشاكل المورّد' : 'Add a CAR to track supplier issues'}</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {cars.map(car => {
+                      const meta = CAR_STATUS_META[car.status];
+                      const isExpanded = expandedCarIds.has(car.id);
+                      const daysLeft = car.dueDate
+                        ? Math.round((new Date(car.dueDate).getTime() - Date.now()) / 86400000)
+                        : null;
+                      const isOverdue = daysLeft !== null && daysLeft < 0 && car.status !== 'closed';
+                      const catLabel = CAR_CATEGORIES.find(c => c.id === car.category);
+                      return (
+                        <div key={car.id} className={`border rounded-xl overflow-hidden ${isOverdue ? 'border-red-300' : 'border-border'}`}>
+                          {/* Row header */}
+                          <div
+                            className="flex items-center gap-3 px-4 py-2.5 bg-gray-50 cursor-pointer hover:bg-gray-100 transition-colors"
+                            onClick={() => toggleCarExpand(car.id)}
+                          >
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0"
+                              style={{ background: meta.bg, color: meta.color }}>
+                              {isAr ? meta.labelAr : meta.label}
+                            </span>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-semibold truncate">{car.title || (isAr ? 'بدون عنوان' : 'Untitled')}</p>
+                              <p className="text-[10px] text-muted-foreground">
+                                {isAr ? (catLabel?.labelAr ?? '') : (catLabel?.label ?? '')}
+                                {car.owner && ` · ${car.owner}`}
+                                {car.dueDate && ` · ${isAr ? 'الاستحقاق:' : 'Due:'} ${car.dueDate}`}
+                                {isOverdue && (
+                                  <span className="text-red-500 font-bold ml-1">
+                                    {isAr ? ` — متأخر ${Math.abs(daysLeft!)} يوم` : ` — ${Math.abs(daysLeft!)}d overdue`}
+                                  </span>
+                                )}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              {car.status !== 'closed' && (
+                                <button
+                                  onClick={e => { e.stopPropagation(); closeCAR(car.id); }}
+                                  title={isAr ? 'إغلاق الطلب' : 'Mark closed'}
+                                  className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-emerald-100 text-emerald-700 hover:bg-emerald-200 transition-colors"
+                                >
+                                  <CheckCircle2 className="w-3 h-3" />
+                                </button>
+                              )}
+                              <button
+                                onClick={e => { e.stopPropagation(); setEditingCar({ ...car }); setCarFormOpen(true); }}
+                                title={isAr ? 'تعديل' : 'Edit'}
+                                className="text-muted-foreground hover:text-primary transition-colors p-1"
+                              >
+                                <Edit2 className="w-3 h-3" />
+                              </button>
+                              <button
+                                onClick={e => { e.stopPropagation(); deleteCAR(car.id); }}
+                                title={isAr ? 'حذف' : 'Delete'}
+                                className="text-muted-foreground hover:text-red-500 transition-colors p-1"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                              <ChevronRight className={`w-3.5 h-3.5 text-muted-foreground transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
+                            </div>
+                          </div>
+                          {/* Expanded detail */}
+                          {isExpanded && (
+                            <div className="px-4 py-3 bg-white space-y-2 text-xs border-t border-border">
+                              {car.rootCause && (
+                                <div>
+                                  <span className="font-bold text-gray-600">{isAr ? 'السبب الجذري: ' : 'Root Cause: '}</span>
+                                  <span className="text-gray-700">{car.rootCause}</span>
+                                </div>
+                              )}
+                              {car.resolution && (
+                                <div>
+                                  <span className="font-bold text-gray-600">{isAr ? 'الحل: ' : 'Resolution: '}</span>
+                                  <span className="text-gray-700">{car.resolution}</span>
+                                </div>
+                              )}
+                              {car.closedAt && (
+                                <div className="text-emerald-600 font-semibold">
+                                  {isAr ? `تاريخ الإغلاق: ${car.closedAt}` : `Closed: ${car.closedAt}`}
+                                </div>
+                              )}
+                              {!car.rootCause && !car.resolution && !car.closedAt && (
+                                <p className="text-muted-foreground italic">{isAr ? 'لا توجد تفاصيل إضافية' : 'No additional details'}</p>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ══════════════════════════════════════════════════
+                TAB 3 — Development Log
+            ══════════════════════════════════════════════════ */}
+            {scorecardTab === 'devlog' && (
+              <div className="space-y-4">
+                {/* Summary bar */}
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                  <div className="flex items-center gap-3 flex-wrap">
+                    {devLog.length > 0 && (() => {
+                      const totalCost = devLog.reduce((s, e) => s + (e.cost || 0), 0);
+                      const byCurrency: Record<string, number> = {};
+                      devLog.forEach(e => { if (e.cost > 0) byCurrency[e.currency] = (byCurrency[e.currency] ?? 0) + e.cost; });
+                      return (
+                        <>
+                          <span className="text-xs font-semibold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-full">
+                            {devLog.length} {isAr ? 'سجل' : 'entries'}
+                          </span>
+                          {Object.entries(byCurrency).map(([cur, amt]) => (
+                            <span key={cur} className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full">
+                              {cur} {amt.toLocaleString()}
+                            </span>
+                          ))}
+                          {totalCost === 0 && (
+                            <span className="text-xs text-muted-foreground">{isAr ? 'لا توجد تكاليف مسجّلة' : 'No costs recorded'}</span>
+                          )}
+                        </>
+                      );
+                    })()}
+                  </div>
+                  <button
+                    onClick={() => { setEditingDev(newDevEntry()); setDevFormOpen(true); }}
+                    className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg font-bold bg-primary text-white hover:bg-primary/90 transition-colors shrink-0"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    {isAr ? 'إضافة سجل' : 'Add Entry'}
+                  </button>
                 </div>
-                <div>
-                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-2 text-center">
-                    {isAr ? 'ملف الأداء' : 'Performance Profile'}
-                  </p>
-                  <ResponsiveContainer width="100%" height={220}>
-                    <RadarChart data={radarData} cx="50%" cy="50%" outerRadius="70%">
-                      <PolarGrid />
-                      <PolarAngleAxis dataKey="dimension" tick={{ fontSize: 9, fill: '#6b7280' }} />
-                      <Radar
-                        name={active.name || (isAr ? 'المورّد' : 'Supplier')}
-                        dataKey="value"
-                        stroke={tier.color}
-                        fill={tier.color}
-                        fillOpacity={0.25}
-                      />
-                      <Tooltip formatter={(v: number) => [`${v}/100`, isAr ? 'الدرجة' : 'Score']} />
-                    </RadarChart>
-                  </ResponsiveContainer>
-                </div>
+
+                {/* Add / Edit form */}
+                {devFormOpen && editingDev && (
+                  <div className="border border-primary/30 rounded-xl p-4 bg-primary/5 space-y-3">
+                    <p className="text-xs font-bold text-primary">
+                      {devLog.some(e => e.id === editingDev.id)
+                        ? (isAr ? 'تعديل السجل' : 'Edit Entry')
+                        : (isAr ? 'سجل جديد' : 'New Entry')}
+                    </p>
+                    <div className="grid sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-xs font-semibold text-gray-700 mb-1 block">{isAr ? 'النوع' : 'Type'}</label>
+                        <select
+                          className="w-full text-sm border border-border rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-primary/30"
+                          value={editingDev.type}
+                          onChange={e => setEditingDev({ ...editingDev, type: e.target.value as DevLogType })}
+                        >
+                          {DEV_LOG_TYPES.map(t => (
+                            <option key={t.id} value={t.id}>{t.icon} {isAr ? t.labelAr : t.label}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-xs font-semibold text-gray-700 mb-1 block">{isAr ? 'التاريخ' : 'Date'}</label>
+                        <input
+                          type="date"
+                          className="w-full text-sm border border-border rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-primary/30"
+                          value={editingDev.date}
+                          onChange={e => setEditingDev({ ...editingDev, date: e.target.value })}
+                        />
+                      </div>
+                      <div className="sm:col-span-2">
+                        <label className="text-xs font-semibold text-gray-700 mb-1 block">{isAr ? 'الوصف' : 'Description'} *</label>
+                        <input
+                          className="w-full text-sm border border-border rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-primary/30"
+                          placeholder={isAr ? 'وصف موجز للنشاط' : 'Brief description of the activity'}
+                          value={editingDev.description}
+                          onChange={e => setEditingDev({ ...editingDev, description: e.target.value })}
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-semibold text-gray-700 mb-1 block">{isAr ? 'التكلفة (اختياري)' : 'Cost (optional)'}</label>
+                        <input
+                          type="number" min={0} step={1}
+                          className="w-full text-sm border border-border rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-primary/30"
+                          placeholder="0"
+                          value={editingDev.cost || ''}
+                          onChange={e => setEditingDev({ ...editingDev, cost: parseFloat(e.target.value) || 0 })}
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-semibold text-gray-700 mb-1 block">{isAr ? 'العملة' : 'Currency'}</label>
+                        <select
+                          className="w-full text-sm border border-border rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-primary/30"
+                          value={editingDev.currency}
+                          onChange={e => setEditingDev({ ...editingDev, currency: e.target.value as DevLogEntry['currency'] })}
+                        >
+                          {['SAR', 'USD', 'EUR', 'AED'].map(c => <option key={c} value={c}>{c}</option>)}
+                        </select>
+                      </div>
+                      <div className="sm:col-span-2">
+                        <label className="text-xs font-semibold text-gray-700 mb-1 block">{isAr ? 'ملاحظات (اختياري)' : 'Notes (optional)'}</label>
+                        <textarea
+                          rows={2}
+                          className="w-full text-sm border border-border rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
+                          placeholder={isAr ? 'أي تفاصيل إضافية…' : 'Any additional notes…'}
+                          value={editingDev.notes}
+                          onChange={e => setEditingDev({ ...editingDev, notes: e.target.value })}
+                        />
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 justify-end">
+                      <button
+                        onClick={() => { setDevFormOpen(false); setEditingDev(null); }}
+                        className="text-xs px-3 py-1.5 rounded-lg font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors"
+                      >
+                        {isAr ? 'إلغاء' : 'Cancel'}
+                      </button>
+                      <button
+                        onClick={() => { if (editingDev.description.trim()) commitDev(editingDev); }}
+                        disabled={!editingDev.description.trim()}
+                        className="text-xs px-3 py-1.5 rounded-lg font-bold bg-primary text-white hover:bg-primary/90 transition-colors disabled:opacity-40"
+                      >
+                        {isAr ? 'حفظ' : 'Save'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Dev log list */}
+                {devLog.length === 0 && !devFormOpen ? (
+                  <div className="text-center py-10 text-muted-foreground">
+                    <BookOpen className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                    <p className="text-sm">{isAr ? 'لا توجد سجلات تطوير بعد' : 'No development log entries yet'}</p>
+                    <p className="text-xs mt-1">{isAr ? 'سجّل الزيارات والتدريبات والاستثمارات في المورّد' : 'Record audits, training, and investment activities'}</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {[...devLog].sort((a, b) => b.date.localeCompare(a.date)).map(entry => {
+                      const typeInfo = DEV_LOG_TYPES.find(t => t.id === entry.type);
+                      return (
+                        <div key={entry.id} className="border border-border rounded-xl px-4 py-3 bg-white flex items-start gap-3">
+                          <div className="text-xl shrink-0 mt-0.5">{typeInfo?.icon ?? '📌'}</div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-2">
+                              <div>
+                                <p className="text-sm font-semibold leading-snug">{entry.description}</p>
+                                <p className="text-[11px] text-muted-foreground mt-0.5">
+                                  {isAr ? (typeInfo?.labelAr ?? '') : (typeInfo?.label ?? '')}
+                                  <span className="mx-1">·</span>
+                                  <Calendar className="w-3 h-3 inline-block mr-0.5 -mt-0.5" />
+                                  {entry.date}
+                                  {entry.cost > 0 && (
+                                    <>
+                                      <span className="mx-1">·</span>
+                                      <DollarSign className="w-3 h-3 inline-block mr-0.5 -mt-0.5" />
+                                      {entry.currency} {entry.cost.toLocaleString()}
+                                    </>
+                                  )}
+                                </p>
+                                {entry.notes && (
+                                  <p className="text-[11px] text-gray-500 mt-1 italic">{entry.notes}</p>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-1 shrink-0">
+                                <button
+                                  onClick={() => { setEditingDev({ ...entry }); setDevFormOpen(true); }}
+                                  title={isAr ? 'تعديل' : 'Edit'}
+                                  className="text-muted-foreground hover:text-primary transition-colors p-1"
+                                >
+                                  <Edit2 className="w-3 h-3" />
+                                </button>
+                                <button
+                                  onClick={() => deleteDev(entry.id)}
+                                  title={isAr ? 'حذف' : 'Delete'}
+                                  className="text-muted-foreground hover:text-red-500 transition-colors p-1"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             )}
           </>
