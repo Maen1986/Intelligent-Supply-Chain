@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion  } from 'framer-motion';
-import { Link, useLocation } from 'wouter';
+import { Link, useLocation, useSearch } from 'wouter';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
 import { Button } from '@/components/ui/button';
@@ -19,6 +19,7 @@ export function Login() {
   const { lang } = useLanguage();
   const ar = lang === 'ar';
   const [, navigate] = useLocation();
+  const redirectTo = new URLSearchParams(useSearch()).get('from') || '/';
   const [mode, setMode] = useState<'login' | 'register' | 'forgot'>('register');
   const [showPass, setShowPass] = useState(false);
   const [error, setError] = useState('');
@@ -73,9 +74,7 @@ export function Login() {
         });
       } catch {}
 
-      const redirectTo = sessionStorage.getItem('navigateAfterAuth');
-      sessionStorage.removeItem('navigateAfterAuth');
-      navigate(redirectTo || '/');
+      navigate(redirectTo);
     } catch (err) {
       const msg = err instanceof Error ? err.message : '';
       if (msg.toLowerCase().includes('already exists')) {
@@ -173,9 +172,7 @@ export function Login() {
     setLoading(true);
     try {
       await login(form.email, form.password);
-      const redirectTo = sessionStorage.getItem('navigateAfterAuth');
-      sessionStorage.removeItem('navigateAfterAuth');
-      navigate(redirectTo || '/');
+      navigate(redirectTo);
     } catch {
       setError(ar ? 'البريد الإلكتروني أو كلمة المرور غير صحيحة.' : 'Invalid email or password.');
     } finally {

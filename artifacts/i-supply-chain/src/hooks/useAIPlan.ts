@@ -47,6 +47,18 @@ export function useAIPlan(buildPrompt: () => string, isAr: boolean, toolKey?: st
   const [rateLimited, setRateLimited] = useState(false);
   const [savedPlan,   setSavedPlan]   = useState<SavedPlan | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const prevAuthenticated = useRef<boolean>(isAuthenticated);
+
+  /* ── Auto-generate once when the user just logged in ── */
+  useEffect(() => {
+    const wasAuthenticated = prevAuthenticated.current;
+    prevAuthenticated.current = isAuthenticated;
+
+    if (isAuthenticated && !wasAuthenticated && !result && !savedPlan && !loading) {
+      generate();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, result, savedPlan]);
 
   /* ── Auto-generate after login (consume pendingAIPlan_<toolKey> flag) ── */
   const prevAuthRef = useRef<boolean>(false);
