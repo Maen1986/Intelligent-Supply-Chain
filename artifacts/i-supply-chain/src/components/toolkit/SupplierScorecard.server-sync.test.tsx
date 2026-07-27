@@ -389,13 +389,16 @@ describe('user account switch — roster refreshes for new user id', () => {
     // Start with user A (id: 1)
     mockUseAuth.mockReturnValue({ user: { id: 1, fullName: 'Alice' }, isAuthenticated: true, loading: false });
 
+    // Bootstrap fetches roster + config in parallel (Promise.all), so the
+    // mock must account for both calls per user:
+    //   User A: roster GET → ROSTER_A, config GET → no config
+    //   User B: roster GET → ROSTER_B, config GET → no config
     const fetchMock = vi.fn()
-      // First GET: bootstrap for user A
-      .mockResolvedValueOnce({ ok: true, json: async () => ({ ok: true, roster: ROSTER_A }) })
-      // Second GET: bootstrap for user B after auth switch
-      .mockResolvedValueOnce({ ok: true, json: async () => ({ ok: true, roster: ROSTER_B }) })
-      // Any subsequent PUT calls
-      .mockResolvedValue({ ok: true, json: async () => ({ ok: true }) });
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ ok: true, roster: ROSTER_A }) }) // user A roster
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ ok: true, config: null }) })    // user A config
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ ok: true, roster: ROSTER_B }) }) // user B roster
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ ok: true, config: null }) })    // user B config
+      .mockResolvedValue({ ok: true, json: async () => ({ ok: true }) });                     // any PUTs
     vi.stubGlobal('fetch', fetchMock);
 
     const { rerender } = render(<SupplierScorecardTool isAr={false} />);
@@ -419,13 +422,14 @@ describe('user account switch — roster refreshes for new user id', () => {
     mockUseAuth.mockReturnValue({ user: { id: 1, fullName: 'Alice' }, isAuthenticated: true, loading: false });
 
     const fetchMock = vi.fn()
-      .mockResolvedValueOnce({ ok: true, json: async () => ({ ok: true, roster: ROSTER_A }) })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ ok: true, roster: ROSTER_A }) }) // roster GET
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ ok: true, config: null }) })    // config GET
       .mockResolvedValue({ ok: true, json: async () => ({ ok: true }) });
     vi.stubGlobal('fetch', fetchMock);
 
     const { rerender } = render(<SupplierScorecardTool isAr={false} />);
 
-    // Wait for the initial bootstrap GET to complete
+    // Wait for the initial bootstrap GETs to complete
     await waitFor(() => expect(screen.getByText('Supplier A')).toBeInTheDocument());
 
     const getCallsBefore = (fetchMock.mock.calls as Array<[string, RequestInit]>).filter(
@@ -442,5 +446,131 @@ describe('user account switch — roster refreshes for new user id', () => {
 
     // No additional GET should have been fired
     expect(getCallsAfter).toBe(getCallsBefore);
+  });
+});
+
+/* ══════════════════════════════════════════════════════════════════════════
+   7. Bootstrap race — user edits before GETs resolve
+   The roster GET is held in flight via a deferred promise; the config GET
+   resolves immediately.  User edits fire while the roster GET is still
+   pending.  When it finally resolves:
+     a) server data must NOT overwrite the in-progress local edit
+     b) no roster PUT must have fired before the GET settled
+     c) after the GET settles, exactly one deferred PUT fires with latest edit
+   A multi-edit scenario (two edits before GET resolves) is also tested.
+══════════════════════════════════════════════════════════════════════════ */
+
+describe('bootstrap race — user edit before GET resolves', () => {
+  beforeEach(() => { vi.useFakeTimers(); });
+  afterEach(() => { vi.runAllTimers(); vi.useRealTimers(); });
+
+  /**
+   * Build a controlled roster-GET promise plus a fetchMock wired to use it.
+   * The bootstrap now fetches roster + config in parallel via Promise.all:
+   *   call #1 = roster GET  (deferred — we control when it resolves)
+   *   call #2 = config GET  (resolves immediately with no config)
+   *   call #3+ = PUT responses
+   */
+  function makeControlledGet(putOk = true) {
+    let resolveGet!: (value: Response) => void;
+    const getPromise = new Promise<Response>(res => { resolveGet = res; });
+    const fetchMock = vi.fn()
+      .mockImplementationOnce(() => getPromise)   // roster GET (deferred)
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ ok: true, config: null }) }) // config GET
+      .mockResolvedValue({ ok: putOk, json: async () => ({ ok: putOk }) }); // PUT(s)
+    vi.stubGlobal('fetch', fetchMock);
+    return { fetchMock, resolveGet };
+  }
+
+  it('does not overwrite a user edit made while the bootstrap GET is still in flight', async () => {
+    localStorage.setItem(ROSTER_KEY, JSON.stringify(LOCAL_ROSTER));
+    const { resolveGet } = makeControlledGet();
+
+    render(<SupplierScorecardTool isAr={false} />);
+    expect(screen.getByText('Local Supplier')).toBeInTheDocument();
+
+    // User edits before roster GET resolves
+    await act(async () => { fireEvent.click(screen.getByText('Local Supplier')); });
+
+    // Resolve roster GET with server data — should NOT overwrite local edit
+    await act(async () => {
+      resolveGet({ ok: true, json: async () => ({ ok: true, roster: SERVER_ROSTER }) } as unknown as Response);
+      await vi.runAllTimersAsync();
+    });
+
+    expect(screen.getByText('Local Supplier')).toBeInTheDocument();
+    expect(screen.queryByText('Server Supplier')).not.toBeInTheDocument();
+  });
+
+  it('fires zero roster PUTs while the bootstrap GET is in flight (single edit)', async () => {
+    localStorage.setItem(ROSTER_KEY, JSON.stringify(LOCAL_ROSTER));
+    const { fetchMock, resolveGet } = makeControlledGet();
+
+    render(<SupplierScorecardTool isAr={false} />);
+
+    // One user edit before GET resolves
+    await act(async () => { fireEvent.click(screen.getByText('Local Supplier')); });
+
+    // Advance past the debounce — still no roster PUT
+    await act(async () => { await vi.advanceTimersByTimeAsync(600); });
+
+    const putsBefore = (fetchMock.mock.calls as Array<[string, RequestInit]>).filter(
+      ([url, opts]) => url.includes('scorecard-roster') && opts?.method === 'PUT',
+    );
+    expect(putsBefore).toHaveLength(0);
+
+    // Resolve GET to clean up
+    await act(async () => {
+      resolveGet({ ok: true, json: async () => ({ ok: true, roster: null }) } as unknown as Response);
+      await vi.runAllTimersAsync();
+    });
+  });
+
+  it('fires zero roster PUTs while the bootstrap GET is in flight (two edits)', async () => {
+    localStorage.setItem(ROSTER_KEY, JSON.stringify(LOCAL_ROSTER));
+    const { fetchMock, resolveGet } = makeControlledGet();
+
+    render(<SupplierScorecardTool isAr={false} />);
+
+    // Two user edits before GET resolves
+    await act(async () => { fireEvent.click(screen.getByText('Local Supplier')); });
+    await act(async () => { fireEvent.click(screen.getByText('Local Supplier')); });
+
+    // Advance well past the debounce — still no roster PUT
+    await act(async () => { await vi.advanceTimersByTimeAsync(800); });
+
+    const putsBefore = (fetchMock.mock.calls as Array<[string, RequestInit]>).filter(
+      ([url, opts]) => url.includes('scorecard-roster') && opts?.method === 'PUT',
+    );
+    expect(putsBefore).toHaveLength(0);
+
+    // Resolve GET to clean up
+    await act(async () => {
+      resolveGet({ ok: true, json: async () => ({ ok: true, roster: null }) } as unknown as Response);
+      await vi.runAllTimersAsync();
+    });
+  });
+
+  it('fires exactly one deferred PUT after the GET settles, even after two pre-bootstrap edits', async () => {
+    localStorage.setItem(ROSTER_KEY, JSON.stringify(LOCAL_ROSTER));
+    const { fetchMock, resolveGet } = makeControlledGet();
+
+    render(<SupplierScorecardTool isAr={false} />);
+
+    // Two pre-bootstrap edits — both deferred, only latest should replay
+    await act(async () => { fireEvent.click(screen.getByText('Local Supplier')); });
+    await act(async () => { fireEvent.click(screen.getByText('Local Supplier')); });
+
+    // Resolve GET — bootstrap settles, deferred sync fires
+    await act(async () => {
+      resolveGet({ ok: true, json: async () => ({ ok: true, roster: null }) } as unknown as Response);
+      await vi.runAllTimersAsync();
+    });
+
+    const puts = (fetchMock.mock.calls as Array<[string, RequestInit]>).filter(
+      ([url, opts]) => url.includes('scorecard-roster') && opts?.method === 'PUT',
+    );
+    // Exactly one deferred PUT (not two, not zero)
+    expect(puts).toHaveLength(1);
   });
 });

@@ -186,6 +186,22 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
   // Storing the id (not just a boolean) means logging out → logging in as a
   // different user re-runs the bootstrap for the new account.
   const serverLoadedForUserId = useRef<number | null>(null);
+  // Two refs to guard the bootstrap race cleanly:
+  //
+  // bootstrapSettled — flips to true only when the parallel GET(s) fully
+  //   resolve (any branch).  syncToServer is a no-op while this is false so
+  //   no PUT fires before we know the server state.
+  //
+  // localWinsDuringBootstrap — flips to true the first time the user edits
+  //   while the GETs are still in flight.  When the GETs eventually resolve
+  //   the bootstrap effect checks this flag; if set it skips setRoster() so
+  //   the server data doesn't overwrite the in-progress local edit.
+  //
+  // deferredSyncRosterRef — holds the most-recent roster snapshot suppressed
+  //   during bootstrap so it can be replayed once the GETs settle.
+  const bootstrapSettled = useRef(false);
+  const localWinsDuringBootstrap = useRef(false);
+  const deferredSyncRosterRef = useRef<RosterState | null>(null);
   const [importLog, setImportLog] = useState<string[] | null>(null);
   const importInputRef = useRef<HTMLInputElement | null>(null);
   /** Snapshot taken just before a successful import; null once consumed or invalidated. */
@@ -203,6 +219,9 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
       // data from the previous account leaks into the next login.
       if (serverLoadedForUserId.current !== null) {
         serverLoadedForUserId.current = null;
+        bootstrapSettled.current = false;
+        localWinsDuringBootstrap.current = false;
+        deferredSyncRosterRef.current = null;
         if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
         setSyncStatus('idle');
         const freshRoster = loadRoster();
@@ -214,6 +233,9 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
     // Already bootstrapped for this exact user — skip.
     if (serverLoadedForUserId.current === user.id) return;
     serverLoadedForUserId.current = user.id;
+    bootstrapSettled.current = false;
+    localWinsDuringBootstrap.current = false;
+    deferredSyncRosterRef.current = null;
 
     (async () => {
       try {
@@ -227,19 +249,26 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
         if (rosterRes.ok) {
           const data = await rosterRes.json() as { ok: boolean; roster: RosterState | null };
           if (data.ok && data.roster && Array.isArray(data.roster.suppliers) && data.roster.suppliers.length > 0) {
-            // Server has data — use it as source of truth for this account
-            setRoster(data.roster);
-            safeSetItem(ROSTER_KEY, JSON.stringify(data.roster));
+            // Server has data — apply it only if the user hasn't already
+            // made an edit while the GETs were in flight.
+            if (!localWinsDuringBootstrap.current) {
+              setRoster(data.roster);
+              safeSetItem(ROSTER_KEY, JSON.stringify(data.roster));
+            }
           } else {
-            // Server is empty — upload whatever localStorage has as initial value
-            const localRaw = localStorage.getItem(ROSTER_KEY);
-            if (localRaw) {
-              fetch(`${API_BASE}/scorecard-roster`, {
-                method: 'PUT',
-                credentials: 'include',
-                headers: { 'Content-Type': 'application/json' },
-                body: localRaw,
-              }).catch(() => { /* silent — localStorage is still the fallback */ });
+            // Server is empty — upload whatever localStorage has, but only if
+            // the user hasn't already edited (the deferred sync replay below
+            // will carry the current in-memory state instead).
+            if (!localWinsDuringBootstrap.current) {
+              const localRaw = localStorage.getItem(ROSTER_KEY);
+              if (localRaw) {
+                fetch(`${API_BASE}/scorecard-roster`, {
+                  method: 'PUT',
+                  credentials: 'include',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: localRaw,
+                }).catch(() => { /* silent — localStorage is still the fallback */ });
+              }
             }
           }
         }
@@ -265,10 +294,24 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
           }
         }
       } catch { /* network error — localStorage still works */ }
+
+      // Mark bootstrap settled so syncToServer can proceed.
+      bootstrapSettled.current = true;
+
+      // Replay any roster edit that was suppressed while the GETs were in
+      // flight so it reaches the server now that bootstrap is complete.
+      if (localWinsDuringBootstrap.current && deferredSyncRosterRef.current) {
+        const deferred = deferredSyncRosterRef.current;
+        deferredSyncRosterRef.current = null;
+        syncToServerImmediate(deferred);
+      }
     })();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
-  const syncToServer = (next: RosterState) => {
+  /** Internal: fire the debounced PUT.  Shared by syncToServer and the
+   *  bootstrap deferred-replay path so the logic lives in one place. */
+  const syncToServerImmediate = (next: RosterState) => {
     if (!user) return;
     setSyncStatus('saving');
     if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
@@ -286,6 +329,20 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
         setSyncStatus('error');
       }
     }, 400);
+  };
+
+  const syncToServer = (next: RosterState) => {
+    if (!user) return;
+    // If the bootstrap GETs haven't settled yet, record that the user has
+    // edited and defer the PUT.  All subsequent pre-bootstrap edits also defer
+    // (they update deferredSyncRosterRef to the latest state so only one
+    // replay fires after bootstrap settles).
+    if (!bootstrapSettled.current) {
+      localWinsDuringBootstrap.current = true;
+      deferredSyncRosterRef.current = next;
+      return;
+    }
+    syncToServerImmediate(next);
   };
 
   const save = (next: RosterState) => {
