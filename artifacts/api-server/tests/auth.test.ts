@@ -622,6 +622,57 @@ describe('POST /api/auth/update-profile', () => {
     expect(res.status).toBe(500);
     expect(res.body.ok).toBe(false);
   });
+
+  it('never writes role or passwordHash when updating an admin session', async () => {
+    // Simulate an admin session — the route must not demote the role or touch passwordHash.
+    const adminRow = {
+      id: 99,
+      email: 'admin@example.com',
+      fullName: 'Administrator',
+      mobile: null,
+      designation: null,
+      company: 'HQ',
+      role: 'admin',
+      passwordHash: null,
+    };
+    dbState.updateRows = [{ ...adminRow, company: 'NewCo' }];
+
+    const { db } = await import('@workspace/db');
+
+    // Intercept the .set() call so we can inspect the exact fields written to the DB.
+    const capturedSetArgs: any[] = [];
+    (db.update as ReturnType<typeof vi.fn>).mockImplementationOnce(() => {
+      const c: any = {};
+      for (const m of ['from', 'orderBy', 'limit', 'offset', 'values']) {
+        c[m] = () => c;
+      }
+      c.set = (args: any) => { capturedSetArgs.push(args); return c; };
+      c.where = () => c;
+      c.returning = () => c;
+      c.then = (res: any, rej: any) => Promise.resolve(dbState.updateRows).then(res, rej);
+      c.catch = (fn: any) => Promise.resolve(dbState.updateRows).catch(fn);
+      return c;
+    });
+
+    const app = makeApp('/api/auth', authRouter, { userId: 99, userRole: 'admin' });
+    const res = await request(app).post('/api/auth/update-profile')
+      .send({ fullName: 'Administrator', company: 'NewCo' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.ok).toBe(true);
+
+    // The DB update must have been called exactly once.
+    expect(capturedSetArgs).toHaveLength(1);
+    const written = capturedSetArgs[0];
+
+    // role and passwordHash must never appear in the update payload.
+    expect(written).not.toHaveProperty('role');
+    expect(written).not.toHaveProperty('passwordHash');
+
+    // The response must reflect the admin role from the DB row unchanged.
+    expect(res.body.user.role).toBe('admin');
+    expect(res.body.user.passwordHash).toBeUndefined();
+  });
 });
 
 describe('GET /api/auth/me', () => {
