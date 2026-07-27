@@ -39,6 +39,13 @@ export const ISC_EVENTS: IscEventDef[] = [
   // ── Plans ───────────────────────────────────────────────────────────────────
   { name: "plan.saved",             description: "A generated AI plan was saved to a toolkit",                 category: "plan"       },
   { name: "plan.deleted",           description: "A saved AI plan was deleted from a toolkit",                 category: "plan"       },
+  // ── KPI Threshold Alerts ─────────────────────────────────────────────────────
+  { name: "kpi.threshold_breach",   description: "A KPI value crossed a user-defined warn or critical threshold", category: "kpi"    },
+  // ── Scheduled Jobs ───────────────────────────────────────────────────────────
+  { name: "schedule.weekly_kpi_digest",    description: "Weekly KPI summary digest sent to user",               category: "system" },
+  { name: "schedule.monthly_scorecard",    description: "Monthly supplier scorecard digest sent to user",        category: "system" },
+  { name: "schedule.lead_followup",        description: "Uncontacted lead flagged for follow-up after 48 hours", category: "system" },
+  { name: "schedule.stale_data_nudge",     description: "User nudged to re-import KPI data after 14+ days",     category: "system" },
   // ── System ──────────────────────────────────────────────────────────────────
   { name: "webhook.test",           description: "A test ping was sent from the integrations UI",              category: "system"     },
   { name: "test.ping",              description: "A connectivity test from the Automation Hub",                category: "system"     },

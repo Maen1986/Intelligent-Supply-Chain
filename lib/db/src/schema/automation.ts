@@ -21,5 +21,15 @@ export const notificationsTable = pgTable("notifications", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+/** Audit log for every scheduled job run */
+export const scheduleLogTable = pgTable("schedule_log", {
+  id:             serial("id").primaryKey(),
+  jobName:        text("job_name").notNull(),
+  ranAt:          timestamp("ran_at").defaultNow().notNull(),
+  usersProcessed: integer("users_processed").notNull().default(0),
+  errors:         text("errors"),
+});
+
 export type InboundWebhookLog = typeof inboundWebhookLogTable.$inferSelect;
 export type Notification      = typeof notificationsTable.$inferSelect;
+export type ScheduleLog       = typeof scheduleLogTable.$inferSelect;

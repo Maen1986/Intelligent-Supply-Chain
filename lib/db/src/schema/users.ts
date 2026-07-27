@@ -15,6 +15,7 @@ export const usersTable = pgTable("users", {
   resetTokenExpiresAt: timestamp("reset_token_expires_at"),// reset code validity window
   scorecardRoster:     jsonb("scorecard_roster"),           // supplier roster synced from the Scorecard Tool
   toolData:            jsonb("tool_data"),                   // KPI / spend / training / KRI data from toolkit tools
+  lastImportAt:        timestamp("last_import_at"),            // set whenever KPI/KRI/spend data is imported
   createdAt:    timestamp("created_at").defaultNow().notNull(),
 });
 

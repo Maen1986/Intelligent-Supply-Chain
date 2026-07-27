@@ -8,8 +8,9 @@ import { Router } from "express";
 import { sql }    from "drizzle-orm";
 import { db }     from "@workspace/db";
 import { requireApiKeyOrSession } from "../middlewares/requireApiKeyOrSession";
-import { logger } from "../lib/logger";
-import { dispatchEvent } from "../lib/webhookDispatch";
+import { logger }          from "../lib/logger";
+import { dispatchEvent }   from "../lib/webhookDispatch";
+import { checkKpiThresholds, type KpiThresholds } from "../lib/kpiAlerts";
 
 const router = Router();
 router.use(requireApiKeyOrSession);
@@ -191,6 +192,26 @@ router.post("/kpis/import", async (req, res) => {
 
     await patchToolData(userId, { kpis: { slug: slug ?? "unknown", values } });
 
+    // Update last_import_at so the stale-data scheduler can track activity
+    await db.execute(
+      sql`UPDATE users SET last_import_at = NOW() WHERE id = ${userId}`,
+    ).catch(err => logger.error({ err }, "[v1] Failed to update last_import_at"));
+
+    // Check user-defined KPI thresholds and fire kpi.threshold_breach if needed
+    const freshRow = await getUserRow(userId);
+    const userResult = await db.execute(
+      sql`SELECT email, full_name FROM users WHERE id = ${userId}`,
+    ).catch(() => ({ rows: [] }));
+    const userInfo = (userResult.rows?.[0] ?? {}) as { email?: string; full_name?: string };
+    await checkKpiThresholds({
+      userId,
+      userEmail: userInfo.email ?? "",
+      fullName:  userInfo.full_name ?? "",
+      slug:      slug ?? "unknown",
+      values:    values as Record<string, unknown>,
+      toolData:  freshRow?.tool_data ?? null,
+    });
+
     // Dispatch kpi.rag_changed for each KPI that transitions between RAG bands
     const newValues = values as Record<string, unknown>;
     for (const kpiId of Object.keys(newValues)) {
@@ -357,6 +378,70 @@ router.post("/risk-kris/import", async (req, res) => {
     res.json({ ok: true, imported: valid.length, skipped: incoming.length - valid.length, errors });
   } catch (err) {
     logger.error({ err }, "[v1] POST /risk-kris/import");
+    res.status(500).json({ ok: false, error: "Server error" });
+  }
+});
+
+/* ─── KPI Threshold config endpoints ───────────────────────────────────── */
+
+/**
+ * GET /api/v1/kpi-thresholds
+ * Returns the user's current threshold config (or an empty object if none set).
+ */
+router.get("/kpi-thresholds", async (req, res) => {
+  try {
+    const row = await getUserRow(res.locals.userId as number);
+    res.json({ ok: true, data: (row?.tool_data?.kpiThresholds ?? {}) as KpiThresholds });
+  } catch (err) {
+    logger.error({ err }, "[v1] GET /kpi-thresholds");
+    res.status(500).json({ ok: false, error: "Server error" });
+  }
+});
+
+/**
+ * POST /api/v1/kpi-thresholds
+ * Body: Record<kpiKey, { warn: number; critical: number; higherIsBetter?: boolean; label?: string }>
+ * Merges the supplied thresholds into the user's existing config.
+ * Send an empty object {} to clear all thresholds.
+ */
+router.post("/kpi-thresholds", async (req, res) => {
+  const incoming = req.body;
+  if (!incoming || typeof incoming !== "object" || Array.isArray(incoming)) {
+    res.status(400).json({ ok: false, error: "Body must be a JSON object of threshold configs" });
+    return;
+  }
+
+  // Validate each entry
+  const errors: string[] = [];
+  const validated: KpiThresholds = {};
+  for (const [key, val] of Object.entries(incoming)) {
+    if (!val || typeof val !== "object") { errors.push(`${key}: must be an object`); continue; }
+    const v = val as Record<string, unknown>;
+    if (typeof v["warn"] !== "number")     { errors.push(`${key}: warn must be a number`); continue; }
+    if (typeof v["critical"] !== "number") { errors.push(`${key}: critical must be a number`); continue; }
+    validated[key] = {
+      warn:            v["warn"] as number,
+      critical:        v["critical"] as number,
+      higherIsBetter:  typeof v["higherIsBetter"] === "boolean" ? v["higherIsBetter"] : undefined,
+      label:           typeof v["label"] === "string" ? v["label"] : undefined,
+    };
+  }
+
+  if (errors.length > 0 && Object.keys(validated).length === 0) {
+    res.status(400).json({ ok: false, errors });
+    return;
+  }
+
+  try {
+    const userId = res.locals.userId as number;
+    const row    = await getUserRow(userId);
+    const merged = { ...(row?.tool_data ?? {}), kpiThresholds: validated };
+    await db.execute(
+      sql`UPDATE users SET tool_data = ${JSON.stringify(merged)}::jsonb WHERE id = ${userId}`,
+    );
+    res.json({ ok: true, saved: Object.keys(validated).length, errors: errors.length ? errors : undefined });
+  } catch (err) {
+    logger.error({ err }, "[v1] POST /kpi-thresholds");
     res.status(500).json({ ok: false, error: "Server error" });
   }
 });
