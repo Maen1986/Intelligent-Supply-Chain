@@ -32,6 +32,7 @@ interface SupplierRecord {
  *   - pendingName     → string | null
  *   - activeId        → string (from roster.activeId)
  *   - prevActiveId    → string | null (tracks what prevActiveIdRef.current holds)
+ *   - suppliers       → SupplierRecord[] (mutable roster)
  *
  * handleNameBlur() mirrors the component's onBlur handler.
  * switchSupplier()  mirrors calling setActiveId(id) (changes activeId) and then
@@ -43,6 +44,7 @@ function createScorecardState(suppliers: SupplierRecord[], initialActiveId: stri
   let pendingName: string | null = null;
   let activeId = initialActiveId;
   let prevActiveId: string | null = null; // starts at null, first render sets it
+  const roster: SupplierRecord[] = [...suppliers];
 
   // Simulate the first render — useEffect records current activeId as prevActiveId
   // without clearing anything (prevActiveId is null on mount).
@@ -54,8 +56,8 @@ function createScorecardState(suppliers: SupplierRecord[], initialActiveId: stri
    * any other supplier; otherwise commits the name (clears warning, clears pending).
    */
   const handleNameBlur = (typed: string) => {
-    if (hasCaseInsensitiveDuplicate(typed, suppliers, activeId)) {
-      const existing = suppliers.find(
+    if (hasCaseInsensitiveDuplicate(typed, roster, activeId)) {
+      const existing = roster.find(
         s => s.id !== activeId && s.name.toLowerCase() === typed.trim().toLowerCase(),
       )!;
       dupNameWarning = `A supplier named "${existing.name}" already exists. Please choose a different name.`;
@@ -465,4 +467,65 @@ describe('hasCaseInsensitiveDuplicate', () => {
   it('returns false when the roster has only one supplier (no other to collide with)', () => {
     expect(hasCaseInsensitiveDuplicate('Alpha Corp', [SUPPLIER_A], SUPPLIER_A.id)).toBe(false);
   });
+});
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Suite 4 — Warning cannot appear on the only remaining supplier after
+   the conflicting supplier is deleted
+   (the core regression guard for this task)
+
+   Strategy: call hasCaseInsensitiveDuplicate directly on a post-deletion
+   roster (suppliers array with the deleted entry removed).  This tests
+   the exported pure function — the same one the component calls inside
+   deleteSupplier — so the tests cannot diverge from production logic.
+══════════════════════════════════════════════════════════════════════════ */
+
+describe('Scorecard — hasCaseInsensitiveDuplicate returns false after the conflicting supplier is deleted', () => {
+  it('returns false for the active supplier name after deleting the only colliding supplier', () => {
+    // Before deletion: A tries to rename itself to "Beta Ltd" — B causes the collision.
+    expect(hasCaseInsensitiveDuplicate('Beta Ltd', [SUPPLIER_A, SUPPLIER_B], SUPPLIER_A.id)).toBe(true);
+
+    // Simulate deletion of B: filter it out of the roster.
+    const afterDelete = [SUPPLIER_A, SUPPLIER_B].filter(s => s.id !== SUPPLIER_B.id);
+
+    // After deletion: only A remains — no collision possible.
+    expect(hasCaseInsensitiveDuplicate('Beta Ltd', afterDelete, SUPPLIER_A.id)).toBe(false);
+  });
+
+  it('returns false for a mixed-case variant after deleting the colliding supplier', () => {
+    expect(hasCaseInsensitiveDuplicate('BETA LTD', [SUPPLIER_A, SUPPLIER_B], SUPPLIER_A.id)).toBe(true);
+
+    const afterDelete = [SUPPLIER_A, SUPPLIER_B].filter(s => s.id !== SUPPLIER_B.id);
+
+    expect(hasCaseInsensitiveDuplicate('BETA LTD', afterDelete, SUPPLIER_A.id)).toBe(false);
+  });
+
+  it('still returns true if the deleted supplier was NOT the source of the collision', () => {
+    // A (active) tries to use "Beta Ltd" — B is the conflict.  Deleting C leaves B intact.
+    expect(hasCaseInsensitiveDuplicate('Beta Ltd', ALL_SUPPLIERS, SUPPLIER_A.id)).toBe(true);
+
+    const afterDeleteC = ALL_SUPPLIERS.filter(s => s.id !== SUPPLIER_C.id);
+
+    // B is still in the roster, so the collision persists.
+    expect(hasCaseInsensitiveDuplicate('Beta Ltd', afterDeleteC, SUPPLIER_A.id)).toBe(true);
+  });
+
+  it('returns false for any name when the roster is reduced to a single supplier', () => {
+    // After all-but-one deletions the sole remaining supplier can never collide with itself.
+    const soloRoster = [SUPPLIER_A];
+    expect(hasCaseInsensitiveDuplicate('Alpha Corp',  soloRoster, SUPPLIER_A.id)).toBe(false);
+    expect(hasCaseInsensitiveDuplicate('Beta Ltd',    soloRoster, SUPPLIER_A.id)).toBe(false);
+    expect(hasCaseInsensitiveDuplicate('Gamma GmbH',  soloRoster, SUPPLIER_A.id)).toBe(false);
+  });
+
+  it('returns false when deleting reduces a three-supplier roster to two with no remaining collision', () => {
+    // Three suppliers: A (active), B ("Beta Ltd"), C ("Gamma GmbH").
+    // A wants to rename to "Beta Ltd" — collision with B.
+    expect(hasCaseInsensitiveDuplicate('Beta Ltd', ALL_SUPPLIERS, SUPPLIER_A.id)).toBe(true);
+
+    // Delete B; two suppliers remain (A and C) — no collision for "Beta Ltd".
+    const afterDeleteB = ALL_SUPPLIERS.filter(s => s.id !== SUPPLIER_B.id);
+    expect(hasCaseInsensitiveDuplicate('Beta Ltd', afterDeleteB, SUPPLIER_A.id)).toBe(false);
+  });
+
 });

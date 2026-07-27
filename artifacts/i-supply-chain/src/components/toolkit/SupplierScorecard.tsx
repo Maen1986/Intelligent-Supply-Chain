@@ -660,6 +660,18 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
     if (!window.confirm(label)) return;
     clearUndo();
     const remaining = roster.suppliers.filter(s => s.id !== id);
+
+    // If a duplicate-name warning is active, re-evaluate it against the
+    // updated roster.  The deleted supplier may have been the source of the
+    // conflict — if so, clear the warning immediately so it doesn't linger on
+    // the only remaining supplier.
+    if (dupNameWarning !== null) {
+      const nameToCheck = pendingName ?? active?.name ?? '';
+      if (!hasCaseInsensitiveDuplicate(nameToCheck, remaining, active?.id)) {
+        setDupNameWarning(null);
+      }
+    }
+
     if (remaining.length === 0) {
       const blank = newSupplier();
       save({ suppliers: [blank], activeId: blank.id });
