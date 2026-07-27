@@ -1027,7 +1027,7 @@ function EventCatalogItem({
 
 interface TemplateManifestItem {
   id: string;
-  platform: 'n8n' | 'make' | 'zapier';
+  platform: string;
   filename: string;
   downloadPath: string;
   name: string;
@@ -1578,7 +1578,7 @@ function TemplatesTab({ ar }: { ar: boolean }) {
   const [templates, setTemplates] = useState<TemplateManifestItem[]>([]);
   const [loading, setLoading]     = useState(true);
   const [error, setError]         = useState<string | null>(null);
-  const [platformFilter, setPlatformFilter] = useState<'' | 'n8n' | 'make' | 'zapier'>('');
+  const [platformFilter, setPlatformFilter] = useState<string>('');
 
   useEffect(() => {
     setLoading(true);
@@ -1626,7 +1626,7 @@ function TemplatesTab({ ar }: { ar: boolean }) {
       {/* Platform filter */}
       <div className="flex flex-wrap gap-2 items-center">
         <span className="text-xs text-muted-foreground font-medium">{ar ? 'المنصة:' : 'Platform:'}</span>
-        {(['', 'n8n', 'make', 'zapier'] as const).map(p => {
+        {(['', ...Array.from(new Set(templates.map(t => t.platform))).sort()] as string[]).map(p => {
           const label = p === '' ? (ar ? 'الكل' : 'All') : PLATFORM_LABEL[p]?.en ?? p;
           const active = platformFilter === p;
           return (

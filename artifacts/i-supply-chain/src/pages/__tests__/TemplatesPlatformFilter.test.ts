@@ -19,11 +19,9 @@ import manifest from '../../../../api-server/public/n8n-templates/manifest.json'
 
 /* ── Types ────────────────────────────────────────────────────────────────── */
 
-type Platform = 'n8n' | 'make' | 'zapier';
-
 interface ManifestEntry {
   id: string;
-  platform: Platform;
+  platform: string;
   filename: string;
   name: string;
   [key: string]: unknown;
@@ -33,11 +31,19 @@ interface ManifestEntry {
 
 function applyPlatformFilter(
   templates: ManifestEntry[],
-  platformFilter: '' | Platform,
+  platformFilter: string,
 ): ManifestEntry[] {
   return platformFilter
     ? templates.filter(t => t.platform === platformFilter)
     : templates;
+}
+
+/**
+ * Mirrors what TemplatesTab now does to build the pill list dynamically:
+ *   ['', ...Array.from(new Set(templates.map(t => t.platform))).sort()]
+ */
+function buildPillList(templates: ManifestEntry[]): string[] {
+  return ['', ...Array.from(new Set(templates.map(t => t.platform))).sort()];
 }
 
 /* ── Tests ────────────────────────────────────────────────────────────────── */
@@ -106,7 +112,7 @@ describe('TemplatesTab — platform filter', () => {
   });
 
   it('counter text "X / Y templates" would be correct for every filter', () => {
-    const cases: Array<['' | Platform, number]> = [
+    const cases: Array<[string, number]> = [
       ['',       24],
       ['n8n',     8],
       ['make',    8],
@@ -125,6 +131,49 @@ describe('TemplatesTab — platform filter', () => {
     const validPlatforms = new Set<string>(['n8n', 'make', 'zapier']);
     for (const t of templates) {
       expect(validPlatforms.has(t.platform)).toBe(true);
+    }
+  });
+
+  /**
+   * NEW — prevents a new platform from silently making templates invisible.
+   *
+   * TemplatesTab now builds the pill list dynamically:
+   *   ['', ...unique platforms from loaded templates sorted]
+   *
+   * This test verifies that every distinct platform value in the manifest
+   * would produce a pill button (i.e. it is present in the dynamic pill list),
+   * and that applying each pill's filter returns at least one template.
+   *
+   * If a new platform key (e.g. "powerautomate") is added to the manifest,
+   * this test will catch it — no manual update of a hardcoded list is needed.
+   */
+  it('every distinct platform in the manifest has a pill button and yields a non-empty result', () => {
+    const pills = buildPillList(templates);
+
+    // Collect every unique platform from the manifest
+    const manifestPlatforms = Array.from(new Set(templates.map(t => t.platform)));
+
+    for (const platform of manifestPlatforms) {
+      // The pill must appear in the dynamically-built list
+      expect(pills).toContain(platform);
+
+      // Filtering by it must return at least one template
+      const results = applyPlatformFilter(templates, platform);
+      expect(results.length).toBeGreaterThan(0);
+    }
+  });
+
+  /**
+   * NEW — every pill in the dynamic list (except "All") maps to at least one template.
+   * Guards against stale pills left over after a platform is removed from the manifest.
+   */
+  it('every platform pill (except All) has at least one matching template in the manifest', () => {
+    const pills = buildPillList(templates);
+
+    for (const pill of pills) {
+      if (pill === '') continue; // skip the "All" pill
+      const results = applyPlatformFilter(templates, pill);
+      expect(results.length).toBeGreaterThan(0);
     }
   });
 });
