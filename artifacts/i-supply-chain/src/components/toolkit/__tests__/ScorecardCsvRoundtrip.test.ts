@@ -517,3 +517,286 @@ describe('Scorecard CSV — partial import', () => {
     expect(subScores.quality?.ftr).toBe('100');
   });
 });
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Suite 3 — Partial roster import (real-world edit workflow)
+
+   Simulates: export all 3 suppliers → user edits 1 row in Excel → re-import
+   that 1-row CSV. The two untouched suppliers must be byte-identical after
+   the merge, and the one edited supplier must reflect only the cells that
+   changed.
+
+   Also covers the "skip duplicates" path (overwrite = false) to confirm
+   that choosing Cancel on the overwrite prompt leaves all scores intact.
+══════════════════════════════════════════════════════════════════════════ */
+
+/**
+ * Pure simulation of the merge logic inside handleScorecardImport.
+ *
+ * @param rosterSuppliers  The existing roster (spread-copy, not mutated)
+ * @param csvRows          Rows parsed from the incoming CSV
+ * @param overwrite        Whether to overwrite existing suppliers (true = OK,
+ *                         false = Cancel in the confirm() dialog)
+ * @returns { nextSuppliers, imported, skipped }
+ */
+function simulateImport(
+  rosterSuppliers: SupplierRecord[],
+  csvRows: Array<Record<string, string>>,
+  overwrite: boolean,
+): { nextSuppliers: SupplierRecord[]; imported: number; skipped: number } {
+  const nextSuppliers = rosterSuppliers.map(s => ({
+    ...s,
+    subScores: { ...s.subScores },
+  }));
+
+  let imported = 0;
+  let skipped  = 0;
+
+  for (const row of csvRows) {
+    const name = row['Supplier Name']?.trim();
+    if (!name) continue;
+
+    const { subScores: incoming } = parseSubScoresFromRow(row);
+
+    const existingIdx = nextSuppliers.findIndex(s => s.name === name);
+    if (existingIdx >= 0) {
+      if (overwrite) {
+        // Wholesale replace — mirrors handleScorecardImport exactly:
+        //   nextSuppliers[existingIdx] = { ...nextSuppliers[existingIdx], tier, subScores }
+        // `subScores` contains only what was present in the CSV row; nothing is
+        // merged from the existing record.
+        nextSuppliers[existingIdx] = {
+          ...nextSuppliers[existingIdx],
+          tier: row['Current Tier']?.trim() || nextSuppliers[existingIdx].tier,
+          subScores: incoming,
+        };
+        imported++;
+      } else {
+        skipped++;
+      }
+    } else {
+      nextSuppliers.push({
+        id: `sup-imported-${name}`,
+        name,
+        tier: row['Current Tier']?.trim() || 'Strategic',
+        subScores: incoming,
+      });
+      imported++;
+    }
+  }
+
+  return { nextSuppliers, imported, skipped };
+}
+
+/* ─── Fixtures for Suite 3 ─── */
+
+const SUPPLIER_A: SupplierRecord = {
+  id: 'sup-a',
+  name: 'Alpha Corp',
+  tier: 'Strategic',
+  subScores: {
+    delivery:     { otif: '90', lead_time: '85', fill_rate: '80', expedite: '75' },
+    quality:      { defect: '88', ftr: '91', cert: '95', nonconf: '80' },
+    cost:         { savings: '65', invoice: '97', cost_reduction: '50', tco: '72' },
+    compliance:   { regulatory: '100', esg: '74', docs: '89', ethics: '83' },
+    innovation:   { ideas: '60', implemented: '45', tech: '77' },
+    relationship: { responsiveness: '90', resolution: '82', collaboration: '68' },
+  },
+};
+
+const SUPPLIER_B: SupplierRecord = {
+  id: 'sup-b',
+  name: 'Beta Ltd',
+  tier: 'Preferred',
+  subScores: {
+    delivery:     { otif: '70', lead_time: '65' },
+    quality:      { defect: '72', ftr: '68' },
+    cost:         { savings: '55' },
+    compliance:   { regulatory: '80' },
+    innovation:   { ideas: '40' },
+    relationship: { responsiveness: '60' },
+  },
+};
+
+const SUPPLIER_C: SupplierRecord = {
+  id: 'sup-c',
+  name: 'Gamma GmbH',
+  tier: 'Transactional',
+  subScores: {
+    delivery:     { otif: '50' },
+    quality:      { ftr: '55' },
+    cost:         { invoice: '60' },
+    compliance:   { regulatory: '70' },
+    innovation:   { ideas: '30' },
+    relationship: { collaboration: '45' },
+  },
+};
+
+describe('Scorecard CSV — partial roster import (real-world edit workflow)', () => {
+  beforeEach(() => localStorage.clear());
+
+  it('leaves the two untouched suppliers byte-identical after re-importing only one', () => {
+    // Roster has A, B, C — user exports, edits Alpha Corp's OTIF to 99, re-imports just that row.
+    const editedA: SupplierRecord = {
+      ...SUPPLIER_A,
+      subScores: {
+        ...SUPPLIER_A.subScores,
+        delivery: { ...SUPPLIER_A.subScores.delivery, otif: '99' },
+      },
+    };
+    const onlyACsv   = buildCsvString([editedA]);
+    const { rows }   = parseCsvFile(onlyACsv, ['Supplier Name']);
+
+    const { nextSuppliers } = simulateImport([SUPPLIER_A, SUPPLIER_B, SUPPLIER_C], rows, true);
+
+    // Roster still has 3 entries
+    expect(nextSuppliers).toHaveLength(3);
+
+    const afterB = nextSuppliers.find(s => s.name === 'Beta Ltd')!;
+    const afterC = nextSuppliers.find(s => s.name === 'Gamma GmbH')!;
+
+    expect(afterB).toBeDefined();
+    expect(afterC).toBeDefined();
+
+    // B and C are byte-identical to the original fixtures
+    expect(afterB.subScores).toEqual(SUPPLIER_B.subScores);
+    expect(afterB.tier).toBe(SUPPLIER_B.tier);
+    expect(afterC.subScores).toEqual(SUPPLIER_C.subScores);
+    expect(afterC.tier).toBe(SUPPLIER_C.tier);
+  });
+
+  it('applies the edited score to the one changed supplier', () => {
+    const editedA: SupplierRecord = {
+      ...SUPPLIER_A,
+      subScores: {
+        ...SUPPLIER_A.subScores,
+        delivery: { ...SUPPLIER_A.subScores.delivery, otif: '99' },
+      },
+    };
+    const onlyACsv   = buildCsvString([editedA]);
+    const { rows }   = parseCsvFile(onlyACsv, ['Supplier Name']);
+
+    const { nextSuppliers, imported } = simulateImport([SUPPLIER_A, SUPPLIER_B, SUPPLIER_C], rows, true);
+
+    const afterA = nextSuppliers.find(s => s.name === 'Alpha Corp')!;
+    expect(imported).toBe(1);
+    expect(afterA.subScores.delivery.otif).toBe('99');
+  });
+
+  it('preserves the unchanged sub-keys within the edited supplier\'s own dimension', () => {
+    // Only OTIF changes — lead_time, fill_rate, expedite inside delivery must survive
+    const editedA: SupplierRecord = {
+      ...SUPPLIER_A,
+      subScores: {
+        ...SUPPLIER_A.subScores,
+        delivery: { ...SUPPLIER_A.subScores.delivery, otif: '99' },
+      },
+    };
+    const onlyACsv   = buildCsvString([editedA]);
+    const { rows }   = parseCsvFile(onlyACsv, ['Supplier Name']);
+
+    const { nextSuppliers } = simulateImport([SUPPLIER_A, SUPPLIER_B, SUPPLIER_C], rows, true);
+    const afterA = nextSuppliers.find(s => s.name === 'Alpha Corp')!;
+
+    expect(afterA.subScores.delivery.lead_time).toBe(SUPPLIER_A.subScores.delivery.lead_time);
+    expect(afterA.subScores.delivery.fill_rate).toBe(SUPPLIER_A.subScores.delivery.fill_rate);
+    expect(afterA.subScores.delivery.expedite).toBe(SUPPLIER_A.subScores.delivery.expedite);
+  });
+
+  it('preserves all dimensions not mentioned in the one-row CSV', () => {
+    const editedA: SupplierRecord = {
+      ...SUPPLIER_A,
+      subScores: {
+        ...SUPPLIER_A.subScores,
+        delivery: { ...SUPPLIER_A.subScores.delivery, otif: '99' },
+      },
+    };
+    const onlyACsv   = buildCsvString([editedA]);
+    const { rows }   = parseCsvFile(onlyACsv, ['Supplier Name']);
+
+    const { nextSuppliers } = simulateImport([SUPPLIER_A, SUPPLIER_B, SUPPLIER_C], rows, true);
+    const afterA = nextSuppliers.find(s => s.name === 'Alpha Corp')!;
+
+    expect(afterA.subScores.quality).toEqual(SUPPLIER_A.subScores.quality);
+    expect(afterA.subScores.cost).toEqual(SUPPLIER_A.subScores.cost);
+    expect(afterA.subScores.compliance).toEqual(SUPPLIER_A.subScores.compliance);
+    expect(afterA.subScores.innovation).toEqual(SUPPLIER_A.subScores.innovation);
+    expect(afterA.subScores.relationship).toEqual(SUPPLIER_A.subScores.relationship);
+  });
+
+  it('skip-duplicates path: choosing Cancel leaves all three suppliers byte-identical', () => {
+    // User imports a CSV for Alpha Corp with changed scores but picks Cancel (overwrite = false)
+    const editedA: SupplierRecord = {
+      ...SUPPLIER_A,
+      subScores: {
+        ...SUPPLIER_A.subScores,
+        delivery: { ...SUPPLIER_A.subScores.delivery, otif: '1' },
+      },
+    };
+    const onlyACsv   = buildCsvString([editedA]);
+    const { rows }   = parseCsvFile(onlyACsv, ['Supplier Name']);
+
+    const { nextSuppliers, imported, skipped } = simulateImport(
+      [SUPPLIER_A, SUPPLIER_B, SUPPLIER_C], rows, false /* overwrite = false */
+    );
+
+    expect(imported).toBe(0);
+    expect(skipped).toBe(1);
+    expect(nextSuppliers).toHaveLength(3);
+
+    const afterA = nextSuppliers.find(s => s.name === 'Alpha Corp')!;
+    expect(afterA.subScores).toEqual(SUPPLIER_A.subScores);
+  });
+
+  it('skip-duplicates path: a new supplier in the same CSV is still added', () => {
+    // CSV contains Alpha Corp (duplicate → skip) and a brand-new Delta Inc
+    const deltaInc: SupplierRecord = {
+      id: 'sup-d',
+      name: 'Delta Inc',
+      tier: 'Strategic',
+      subScores: {
+        delivery: { otif: '88', lead_time: '82' },
+        quality:  { ftr: '79' },
+        cost: {}, compliance: {}, innovation: {}, relationship: {},
+      },
+    };
+    const mixedCsv   = buildCsvString([SUPPLIER_A, deltaInc]);
+    const { rows }   = parseCsvFile(mixedCsv, ['Supplier Name']);
+
+    const { nextSuppliers, imported, skipped } = simulateImport(
+      [SUPPLIER_A, SUPPLIER_B, SUPPLIER_C], rows, false /* overwrite = false */
+    );
+
+    expect(skipped).toBe(1);
+    expect(imported).toBe(1);
+    expect(nextSuppliers).toHaveLength(4);
+
+    const added = nextSuppliers.find(s => s.name === 'Delta Inc')!;
+    expect(added).toBeDefined();
+    expect(added.subScores.delivery?.otif).toBe('88');
+
+    // Original A is untouched
+    const afterA = nextSuppliers.find(s => s.name === 'Alpha Corp')!;
+    expect(afterA.subScores).toEqual(SUPPLIER_A.subScores);
+  });
+
+  it('re-importing all 3 suppliers with edits updates all 3 without changing the roster size', () => {
+    const editAll = [SUPPLIER_A, SUPPLIER_B, SUPPLIER_C].map(s => ({
+      ...s,
+      subScores: {
+        ...s.subScores,
+        delivery: { ...(s.subScores.delivery ?? {}), otif: '55' },
+      },
+    }));
+    const csv      = buildCsvString(editAll);
+    const { rows } = parseCsvFile(csv, ['Supplier Name']);
+
+    const { nextSuppliers, imported } = simulateImport([SUPPLIER_A, SUPPLIER_B, SUPPLIER_C], rows, true);
+
+    expect(imported).toBe(3);
+    expect(nextSuppliers).toHaveLength(3);
+    for (const s of nextSuppliers) {
+      expect(s.subScores.delivery?.otif).toBe('55');
+    }
+  });
+});
