@@ -89,6 +89,34 @@ interface KpiAlertRow {
 
 /* ─── utility ───────────────────────────────────────────────────────────── */
 
+/**
+ * Pure placeholder-substitution logic used by PrepareDownloadModal.
+ * Exported so it can be unit-tested independently of React / jsdom.
+ *
+ * Rules:
+ *  - apiKey and domain are always substituted (domain falls back to
+ *    `fallbackHostname` when blank so the caller controls the default).
+ *  - n8n URL placeholders are only substituted when `n8nUrl` is non-empty;
+ *    leaving the field blank intentionally preserves them in the output.
+ */
+export function applyTemplatePlaceholders(
+  text: string,
+  {
+    apiKey,
+    domain,
+    n8nUrl,
+    fallbackHostname = '',
+  }: { apiKey: string; domain: string; n8nUrl: string; fallbackHostname?: string },
+): string {
+  text = text.replaceAll('REPLACE_WITH_ISC_API_KEY', apiKey.trim());
+  text = text.replaceAll('YOUR_ISC_DOMAIN', domain.trim() || fallbackHostname);
+  if (n8nUrl.trim()) {
+    text = text.replaceAll('YOUR_N8N_INSTANCE_URL', n8nUrl.trim());
+    text = text.replaceAll('REPLACE_WITH_N8N_INSTANCE_URL', n8nUrl.trim());
+  }
+  return text;
+}
+
 function fmtDate(iso: string | null, ar: boolean) {
   if (!iso) return '—';
   return new Date(iso).toLocaleString(ar ? 'ar' : 'en-GB', {
@@ -1717,12 +1745,12 @@ function PrepareDownloadModal({
       let text = await resp.text();
 
       // Replace known placeholders
-      text = text.replaceAll('REPLACE_WITH_ISC_API_KEY', apiKey.trim());
-      text = text.replaceAll('YOUR_ISC_DOMAIN', domain.trim() || window.location.hostname);
-      if (n8nUrl.trim()) {
-        text = text.replaceAll('YOUR_N8N_INSTANCE_URL', n8nUrl.trim());
-        text = text.replaceAll('REPLACE_WITH_N8N_INSTANCE_URL', n8nUrl.trim());
-      }
+      text = applyTemplatePlaceholders(text, {
+        apiKey,
+        domain,
+        n8nUrl,
+        fallbackHostname: window.location.hostname,
+      });
 
       const blob = new Blob([text], { type: 'application/json' });
       const url  = URL.createObjectURL(blob);
