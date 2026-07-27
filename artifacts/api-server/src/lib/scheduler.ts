@@ -65,7 +65,7 @@ async function getAllActiveUsers(): Promise<UserRow[]> {
    JOB 1 — Weekly KPI Digest (Monday 08:00 UTC)
 ═══════════════════════════════════════════════════════════════════════════ */
 
-async function runWeeklyKpiDigest(): Promise<void> {
+export async function runWeeklyKpiDigest(): Promise<void> {
   logger.info("[scheduler] Running weekly KPI digest");
   const users = await getAllActiveUsers();
   let processed = 0;
@@ -117,7 +117,7 @@ async function runWeeklyKpiDigest(): Promise<void> {
    JOB 2 — Monthly Scorecard Digest (1st of month, 08:00 UTC)
 ═══════════════════════════════════════════════════════════════════════════ */
 
-async function runMonthlyScorecardDigest(): Promise<void> {
+export async function runMonthlyScorecardDigest(): Promise<void> {
   logger.info("[scheduler] Running monthly scorecard digest");
   const users = await getAllActiveUsers();
   let processed = 0;
@@ -169,7 +169,7 @@ async function runMonthlyScorecardDigest(): Promise<void> {
    JOB 3 — Lead Follow-up (daily 09:00 UTC — flags leads older than 48 h)
 ═══════════════════════════════════════════════════════════════════════════ */
 
-async function runLeadFollowup(): Promise<void> {
+export async function runLeadFollowup(): Promise<void> {
   logger.info("[scheduler] Running lead follow-up check");
 
   const result = await db.execute(
@@ -234,7 +234,7 @@ async function runLeadFollowup(): Promise<void> {
    JOB 4 — Stale Data Nudge (daily 09:30 UTC — no import in 14+ days)
 ═══════════════════════════════════════════════════════════════════════════ */
 
-async function runStaleDataNudge(): Promise<void> {
+export async function runStaleDataNudge(): Promise<void> {
   logger.info("[scheduler] Running stale-data nudge check");
   const result = await db.execute(
     sql`SELECT id, email, full_name, company, last_import_at

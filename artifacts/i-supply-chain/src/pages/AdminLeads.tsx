@@ -240,6 +240,12 @@ function LeadsDashboard({ onLogout, ar }: { onLogout: () => Promise<void>; ar: b
                 {ar ? 'مركز التكاملات' : 'Integration Hub'}
               </Button>
             </Link>
+            <Link href="/admin/automations">
+              <Button variant="outline" size="sm">
+                <Zap className="w-4 h-4 me-2" />
+                {ar ? 'مركز الأتمتة' : 'Automation Hub'}
+              </Button>
+            </Link>
             <Button variant="outline" size="sm" onClick={() => { void load(tool); }} data-testid="button-refresh-leads">
               <RefreshCw className="w-4 h-4 me-2" />
               {ar ? 'تحديث' : 'Refresh'}

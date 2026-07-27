@@ -121,16 +121,19 @@ export function AdminIntegrations() {
       </div>
 
       {/* ── Admin nav tabs ── */}
-      <nav className="flex gap-2 border-b border-border pb-2 text-sm">
-        <Link href="/admin/leads" className="px-3 py-1.5 rounded-t-md text-muted-foreground hover:text-primary transition-colors font-medium">
+      <nav className="flex gap-2 border-b border-border pb-2 text-sm flex-wrap">
+        <Link href="/admin/leads" className="px-3 py-1.5 rounded-t-md text-muted-foreground hover:text-primary transition-colors font-medium whitespace-nowrap">
           Leads &amp; Submissions
         </Link>
-        <Link href="/customer-voice" className="px-3 py-1.5 rounded-t-md text-muted-foreground hover:text-primary transition-colors font-medium">
+        <Link href="/customer-voice" className="px-3 py-1.5 rounded-t-md text-muted-foreground hover:text-primary transition-colors font-medium whitespace-nowrap">
           Customer Voice
         </Link>
-        <span className="px-3 py-1.5 rounded-t-md bg-primary text-white font-semibold">
+        <span className="px-3 py-1.5 rounded-t-md bg-primary text-white font-semibold whitespace-nowrap">
           Integration Hub
         </span>
+        <Link href="/admin/automations" className="px-3 py-1.5 rounded-t-md text-muted-foreground hover:text-primary transition-colors font-medium whitespace-nowrap">
+          Automation Hub
+        </Link>
       </nav>
 
       <ApiKeysSection />

@@ -18,6 +18,7 @@ import aiPlanRouter            from "./aiPlan";
 import plansRouter             from "./plans";
 import webhooksInboundRouter   from "./webhooksInbound";
 import notificationsRouter     from "./notifications";
+import adminAutomationsRouter  from "./adminAutomations";
 
 const router: IRouter = Router();
 
@@ -36,6 +37,7 @@ router.use("/v1",                v1Router);
 router.use("/integrations",      integrationsRouter);
 router.use("/plans",             plansRouter);
 router.use("/notifications",     notificationsRouter);
+router.use("/admin/automations", adminAutomationsRouter);
 router.use(aiPlanRouter);
 router.use(intelligenceRouter);
 router.use(assessmentRouter);
