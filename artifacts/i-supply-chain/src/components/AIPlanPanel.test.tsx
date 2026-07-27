@@ -349,6 +349,45 @@ describe('AIPlanPanel — result panel controls (authenticated)', () => {
     });
   });
 
+  it('Copy button writes the exact raw Arabic string (isAr=true, multi-section with priority badges)', async () => {
+    const arabicPlan = [
+      '## خطة تطوير المورد',
+      '',
+      '### القسم الأول: تحسين الجودة',
+      '- إجراء مراجعات ربع سنوية [عالية]',
+      '- مشاركة قائمة ISO 9001 مع المورد [متوسطة]',
+      '- جدولة زيارة ميدانية خلال 30 يومًا [منخفضة]',
+      '',
+      '### القسم الثاني: أداء التسليم',
+      '1. الاتفاق على مواعيد التسليم بنهاية الشهر',
+      '2. تطبيق تتبع الشحنات الأسبوعي [عالية]',
+      '3. تصعيد التأخيرات المتكررة إلى مدير المشتريات',
+    ].join('\n');
+
+    renderPanel({ result: arabicPlan, isAr: true });
+    fireEvent.click(screen.getByTitle('نسخ إلى الحافظة'));
+    await waitFor(() => {
+      expect(navigator.clipboard.writeText).toHaveBeenCalledWith(arabicPlan);
+    });
+  });
+
+  it('Copy button writes the exact raw Arabic string when the panel is collapsed', async () => {
+    const arabicPlan = [
+      '## خطة تطوير المورد',
+      '',
+      '- بند عاجل [عالية]',
+      '- بند متوسط [متوسطة]',
+      '- بند منخفض [منخفضة]',
+    ].join('\n');
+
+    renderPanel({ result: arabicPlan, isAr: true });
+    fireEvent.click(screen.getByTitle('طيّ'));
+    fireEvent.click(screen.getByTitle('نسخ إلى الحافظة'));
+    await waitFor(() => {
+      expect(navigator.clipboard.writeText).toHaveBeenCalledWith(arabicPlan);
+    });
+  });
+
   it('Close button calls onReset', () => {
     const onReset = vi.fn();
     renderPanel({ result: MOCK_RESULT, onReset });
