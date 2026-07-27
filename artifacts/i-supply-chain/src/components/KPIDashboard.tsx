@@ -266,6 +266,7 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [importLog, setImportLog] = useState<string[] | null>(null);
   const importInputRef = useRef<HTMLInputElement | null>(null);
+  const [saveFailed, setSaveFailed] = useState(false);
 
   /* ── AI Plan (hook must be called before the !kpis early return) ── */
   const buildKpiPrompt = useCallback((): string => {
@@ -313,7 +314,7 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
       const next = { ...prev, [id]: raw };
       if (saveTimer.current) clearTimeout(saveTimer.current);
       saveTimer.current = setTimeout(() => {
-        safeSetItem(storageKey, JSON.stringify(next));
+        setSaveFailed(!safeSetItem(storageKey, JSON.stringify(next)));
       }, SAVE_DELAY);
       return next;
     });
@@ -352,7 +353,7 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
         }
       });
       setValues(nextValues);
-      safeSetItem(storageKey, JSON.stringify(nextValues));
+      setSaveFailed(!safeSetItem(storageKey, JSON.stringify(nextValues)));
       log.unshift(isAr ? `✓ تم تحديث ${count} مؤشر(ات).` : `✓ Updated ${count} KPI(s).`);
       setImportLog(log);
     };
@@ -440,10 +441,12 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
               onChange={e => { const f = e.target.files?.[0]; if (f) handleKpiImport(f); e.target.value = ''; }} />
           </div>
         </div>
-        <p className="text-muted-foreground mt-1 text-sm">
-          {isAr
-            ? 'أدخل أرقامك الفعلية — تتحدّث اللوحة لحظياً. تُحفظ قيمك تلقائياً.'
-            : 'Enter your actual numbers — the dashboard updates live. Your values are auto-saved.'}
+        <p className={`mt-1 text-sm ${saveFailed ? 'text-amber-700' : 'text-muted-foreground'}`}>
+          {saveFailed
+            ? (isAr ? '⚠ تعذّر حفظ القيم — التخزين ممتلئ أو محظور.' : '⚠ Values not saved — storage is full or blocked.')
+            : (isAr
+                ? 'أدخل أرقامك الفعلية — تتحدّث اللوحة لحظياً. تُحفظ قيمك تلقائياً.'
+                : 'Enter your actual numbers — the dashboard updates live. Your values are auto-saved.')}
         </p>
         {importLog && (
           <div className={`mt-2 text-xs rounded-lg p-3 border ${importLog[0]?.startsWith('✓') ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-red-50 border-red-200 text-red-800'}`}>

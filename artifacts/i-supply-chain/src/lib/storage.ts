@@ -100,6 +100,11 @@ export function clearAppStorage(): void {
 /**
  * Writes `value` to localStorage under `key`.
  *
+ * Returns `true` when the value was successfully written, or `false` when the
+ * write was silently dropped (storage blocked or quota exceeded).  Callers can
+ * use the return value to suppress misleading success states (e.g. "Saved ✓"
+ * indicators) when the write did not actually land.
+ *
  * • If localStorage is completely unavailable (private/incognito mode) a
  *   toast.warning is shown with id `'storage-private-browsing'` so the user
  *   sees it only once per Sonner deduplication.
@@ -108,9 +113,9 @@ export function clearAppStorage(): void {
  *   `'storage-quota-exceeded'` and a one-tap "Clear saved data" action button.
  *
  * • All other errors are swallowed silently (no regression from previous
- *   behaviour).
+ *   behaviour), and `false` is returned.
  */
-export function safeSetItem(key: string, value: string): void {
+export function safeSetItem(key: string, value: string): boolean {
   // Private-browsing / storage-blocked path
   if (!isLocalStorageAvailable()) {
     toast.warning(
@@ -123,12 +128,13 @@ export function safeSetItem(key: string, value: string): void {
         duration: 8000,
       },
     );
-    return;
+    return false;
   }
 
   // Normal path — localStorage is available
   try {
     localStorage.setItem(key, value);
+    return true;
   } catch (e) {
     if (isQuotaError(e)) {
       toast.error(
@@ -154,5 +160,6 @@ export function safeSetItem(key: string, value: string): void {
       );
     }
     // non-quota errors are swallowed silently
+    return false;
   }
 }

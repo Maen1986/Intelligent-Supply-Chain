@@ -1,12 +1,14 @@
 /**
- * KPIDashboard — quota-exceeded auto-save test.
+ * KPIDashboard — quota-exceeded auto-save tests.
  *
  * Verifies that when the debounced auto-save in handleChange hits a
- * QuotaExceededError, toast.error is called with id="storage-quota-exceeded"
- * so the user is told their KPI values were not saved.
+ * QuotaExceededError:
+ *  1. toast.error is called with id="storage-quota-exceeded"
+ *  2. The inline description switches to the "⚠ Values not saved" warning
+ *     so the user sees in-context feedback, not just the global toast.
  */
 import React from 'react';
-import { render, fireEvent } from '@testing-library/react';
+import { render, fireEvent, screen, act, within } from '@testing-library/react';
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 
 /* ── mock sonner before importing anything that imports it ─────────────── */
@@ -57,5 +59,51 @@ describe('KPIDashboard — handleChange auto-save quota exceeded', () => {
     );
 
     spy.mockRestore();
+  });
+
+  it('shows the inline ⚠ warning text when the debounced save is dropped', () => {
+    const { container } = render(<KPIDashboard slug="supply-chain-strategy" />);
+    const view = within(container);
+
+    // Confirm the normal "auto-saved" description is present before any failure
+    expect(view.getByText(/auto-saved/i)).toBeInTheDocument();
+
+    const spy = vi.spyOn(Storage.prototype, 'setItem')
+      .mockImplementation(() => { throw makeQuotaError(); });
+
+    const input = view.getAllByRole('spinbutton')[0] as HTMLInputElement;
+    fireEvent.change(input, { target: { value: '55' } });
+
+    // Advance past the debounce delay and flush React state updates
+    act(() => { vi.advanceTimersByTime(500); });
+
+    // The inline description must now show the ⚠ warning, not "auto-saved"
+    expect(view.getByText(/Values not saved/i)).toBeInTheDocument();
+    expect(view.queryByText(/auto-saved/i)).not.toBeInTheDocument();
+
+    spy.mockRestore();
+  });
+
+  it('reverts to "auto-saved" after a successful save follows a failed one', () => {
+    const { container } = render(<KPIDashboard slug="supply-chain-strategy" />);
+    const view = within(container);
+
+    // First save fails
+    const failSpy = vi.spyOn(Storage.prototype, 'setItem')
+      .mockImplementation(() => { throw makeQuotaError(); });
+
+    const input = view.getAllByRole('spinbutton')[0] as HTMLInputElement;
+    fireEvent.change(input, { target: { value: '55' } });
+    act(() => { vi.advanceTimersByTime(500); });
+
+    expect(view.getByText(/Values not saved/i)).toBeInTheDocument();
+    failSpy.mockRestore();
+
+    // Second save succeeds — warning should clear
+    fireEvent.change(input, { target: { value: '60' } });
+    act(() => { vi.advanceTimersByTime(500); });
+
+    expect(view.getByText(/auto-saved/i)).toBeInTheDocument();
+    expect(view.queryByText(/Values not saved/i)).not.toBeInTheDocument();
   });
 });

@@ -296,6 +296,7 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
   const [compareMode, setCompareMode] = useState(false);
   const [compareIds, setCompareIds] = useState<string[]>([]);
   const [syncStatus, setSyncStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [localSaveFailed, setLocalSaveFailed] = useState(false);
   const syncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Track which user id we last bootstrapped from the server.
   // Storing the id (not just a boolean) means logging out → logging in as a
@@ -369,7 +370,7 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
 
   const save = (next: RosterState) => {
     setRoster(next);
-    safeSetItem(ROSTER_KEY, JSON.stringify(next));
+    setLocalSaveFailed(!safeSetItem(ROSTER_KEY, JSON.stringify(next)));
     syncToServer(next);
   };
 
@@ -594,6 +595,8 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
                 ? (isAr ? 'تم الحفظ ✓' : 'Saved ✓')
                 : syncStatus === 'error'
                 ? (isAr ? 'تعذّر المزامنة — تم الحفظ محلياً' : 'Could not sync — saved locally')
+                : localSaveFailed
+                ? (isAr ? '⚠ تعذّر الحفظ محلياً' : '⚠ not saved locally')
                 : (isAr ? 'يُحفظ تلقائياً' : 'auto-saved');
               return isAr ? `التقييم: ${active.name} — ${syncLabel}` : `Evaluating: ${active.name} — ${syncLabel}`;
             })() : (isAr ? 'أضف مورّداً أو اختر من القائمة' : 'Add a supplier or select from the roster')}

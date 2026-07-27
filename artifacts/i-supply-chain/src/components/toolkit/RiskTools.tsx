@@ -63,9 +63,10 @@ function KRIDashboard({ isAr }: { isAr: boolean }) {
   });
   const [importLog, setImportLog] = useState<string[] | null>(null);
   const importInputRef = useRef<HTMLInputElement | null>(null);
+  const [saveFailed, setSaveFailed] = useState(false);
   const set = (id: string, val: string) => setValues(prev => {
     const next = { ...prev, [id]: val };
-    safeSetItem(SK, JSON.stringify(next));
+    setSaveFailed(!safeSetItem(SK, JSON.stringify(next)));
     return next;
   });
 
@@ -96,7 +97,7 @@ function KRIDashboard({ isAr }: { isAr: boolean }) {
         }
       });
       setValues(nextValues);
-      safeSetItem(SK, JSON.stringify(nextValues));
+      setSaveFailed(!safeSetItem(SK, JSON.stringify(nextValues)));
       log.unshift(isAr ? `✓ تم تحديث ${count} مؤشر(ات).` : `✓ Updated ${count} KRI(s).`);
       setImportLog(log);
     };
@@ -247,6 +248,12 @@ function KRIDashboard({ isAr }: { isAr: boolean }) {
         </div>
       )}
 
+      {saveFailed && (
+        <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+          {isAr ? '⚠ تعذّر حفظ البيانات — التخزين ممتلئ أو محظور.' : '⚠ Data not saved — storage is full or blocked.'}
+        </p>
+      )}
+
       {/* AI Plan */}
       <AIPlanPanel
         loading={planLoading}
@@ -276,9 +283,10 @@ function SupplierAlertConfig({ isAr }: { isAr: boolean }) {
   const [cfg, setCfg] = useState<{ otif: string; defect: string; financial: string }[]>(() => {
     try { const s = localStorage.getItem(SK); return s ? JSON.parse(s) : DEFAULTS.map(d => ({ otif: String(d.otif), defect: String(d.defect), financial: String(d.financial) })); } catch { return DEFAULTS.map(d => ({ otif: String(d.otif), defect: String(d.defect), financial: String(d.financial) })); }
   });
+  const [saveFailed, setSaveFailed] = useState(false);
   const update = (ti: number, field: 'otif' | 'defect' | 'financial', val: string) => setCfg(prev => {
     const next = prev.map((c, i) => i === ti ? { ...c, [field]: val } : c);
-    safeSetItem(SK, JSON.stringify(next));
+    setSaveFailed(!safeSetItem(SK, JSON.stringify(next)));
     return next;
   });
 
@@ -329,7 +337,11 @@ function SupplierAlertConfig({ isAr }: { isAr: boolean }) {
           ))}</tbody>
         </table>
       </div>
-      <p className="text-xs text-muted-foreground">{isAr ? '✓ تُحفظ التكوينات تلقائياً. أنشئ تنبيهات في نظام ERP أو البريد الإلكتروني بناءً على هذه الحدود.' : '✓ Configuration auto-saved. Create alerts in your ERP or email system based on these thresholds.'}</p>
+      <p className={`text-xs ${saveFailed ? 'text-amber-700' : 'text-muted-foreground'}`}>
+        {saveFailed
+          ? (isAr ? '⚠ تعذّر حفظ الإعدادات — التخزين ممتلئ أو محظور.' : '⚠ Configuration not saved — storage is full or blocked.')
+          : (isAr ? '✓ تُحفظ التكوينات تلقائياً. أنشئ تنبيهات في نظام ERP أو البريد الإلكتروني بناءً على هذه الحدود.' : '✓ Configuration auto-saved. Create alerts in your ERP or email system based on these thresholds.')}
+      </p>
     </div>
   );
 }

@@ -523,3 +523,54 @@ describe('safeSetItem — private browsing (localStorage unavailable)', () => {
     });
   });
 });
+
+/* ══════════════════════════════════════════════════════════════════════════
+   safeSetItem — boolean return value
+   Callers can use the return value to suppress misleading "Saved ✓" states.
+══════════════════════════════════════════════════════════════════════════ */
+
+describe('safeSetItem — boolean return value', () => {
+  it('returns true on a successful write', () => {
+    const result = safeSetItem('test-key', 'hello');
+    expect(result).toBe(true);
+  });
+
+  it('returns false when localStorage is completely blocked (private browsing)', () => {
+    const spy = vi.spyOn(Storage.prototype, 'setItem')
+      .mockImplementation(() => { throw new DOMException('The operation is insecure.', 'SecurityError'); });
+    _resetStorageAvailabilityCache();
+    try {
+      const result = safeSetItem('any-key', 'any-value');
+      expect(result).toBe(false);
+    } finally {
+      spy.mockRestore();
+      _resetStorageAvailabilityCache();
+    }
+  });
+
+  it('returns false when quota is exceeded', () => {
+    // Use a persistent mock (not mockImplementationOnce) so both the
+    // availability probe and the real write throw QuotaExceededError.
+    // The probe handles a quota error by marking storage as available
+    // (full but not blocked), so isLocalStorageAvailable() still returns true
+    // and the real write is attempted — which also throws, giving us false.
+    const spy = vi.spyOn(Storage.prototype, 'setItem')
+      .mockImplementation(() => { throw makeQuotaError(); });
+    const result = safeSetItem('any-key', 'any-value');
+    expect(result).toBe(false);
+    spy.mockRestore();
+  });
+
+  it('returns false for a non-quota DOMException (other write-time error)', () => {
+    const spy = vi.spyOn(Storage.prototype, 'setItem')
+      .mockImplementationOnce(() => { throw makeOtherDOMException(); });
+    const result = safeSetItem('any-key', 'any-value');
+    expect(result).toBe(false);
+    spy.mockRestore();
+  });
+
+  it('returns true even when called multiple times back-to-back', () => {
+    expect(safeSetItem('k1', 'v1')).toBe(true);
+    expect(safeSetItem('k2', 'v2')).toBe(true);
+  });
+});
