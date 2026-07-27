@@ -15,7 +15,7 @@ import { INDUSTRIES, type IndustryKey, getIndustryBenchmark } from '@/lib/kpiBen
 import { SKU_CLASSES, type SkuClassKey, getSkuClassBenchmark } from '@/lib/kpiBenchmarksBySkuClass';
 
 /* ─── KPI definition types ─── */
-interface KpiDef {
+export interface KpiDef {
   id: string;
   label: string; labelAr: string;
   unit: string; unitAr: string;
@@ -229,6 +229,62 @@ export function buildKpiTemplateRows(
   allRows.push(['--- END OF TEMPLATE ---', 'Return the completed file to I Supply Chain or import directly into the KPI Dashboard.', '', '', '', '', '']);
 
   return allRows;
+}
+
+/**
+ * Pure helper: given the raw inputs collected per KPI from a new-format CSV,
+ * calculate each KPI value and return the populated values map plus a log.
+ *
+ * Exported so it can be unit-tested independently of the React component.
+ *
+ * Graceful partial-data handling:
+ *   - If no inputs at all were provided for a KPI → skip with log entry.
+ *   - If some but not all required inputs were provided (partial data) →
+ *     attempt positional fallback; if counts still don't match → skip with log entry.
+ *   - If calculate() returns NaN → skip with log entry.
+ *   - Only fully-computable KPIs are written to `values`.
+ */
+export function calcKpisFromInputs(
+  kpis: KpiDef[],
+  inputsByKpi: Record<string, Record<string, number>>,
+  isAr: boolean,
+): { values: Record<string, string>; log: string[]; count: number } {
+  const values: Record<string, string> = {};
+  const log: string[] = [];
+  let count = 0;
+
+  kpis.forEach(k => {
+    const spec = KPI_DATA_SPECS[k.id];
+    const inputs = inputsByKpi[k.id] ? { ...inputsByKpi[k.id] } : undefined;
+
+    if (!inputs || !spec) {
+      if (spec) log.push(isAr
+        ? `${k.labelAr}: لم يتم تقديم قيم إدخال — تم التخطّي.`
+        : `${k.label}: no input values found — skipped.`);
+      return;
+    }
+
+    const requiredIds = spec.inputs.map(i => i.id);
+    const missingIds = requiredIds.filter(id => inputs[id] === undefined);
+    if (missingIds.length > 0) {
+      // Try positional matching: assign provided values by input order
+      const vals = Object.values(inputs);
+      if (vals.length === requiredIds.length) {
+        requiredIds.forEach((id, idx) => { inputs[id] = vals[idx]; });
+      } else {
+        log.push(`${k.label}: missing inputs (${missingIds.join(', ')}) — skipped.`);
+        return;
+      }
+    }
+
+    const result = spec.calculate(inputs);
+    if (isNaN(result)) { log.push(`${k.label}: calculation returned invalid result — check input values.`); return; }
+    values[k.id] = String(result);
+    log.push(`✓ ${k.label}: calculated ${result} ${k.unit}`);
+    count++;
+  });
+
+  return { values, log, count };
 }
 
 /* ─── Slug aliases: SolutionDetail slugs that map to a shared KPI framework ─── */
@@ -921,35 +977,11 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
         });
 
         // Calculate each KPI from collected inputs
-        kpis.forEach(k => {
-          const spec = KPI_DATA_SPECS[k.id];
-          const inputs = inputsByKpi[k.id];
-          if (!inputs || !spec) {
-            if (spec) log.push(isAr
-              ? `${k.labelAr}: لم يتم تقديم قيم إدخال — تم التخطّي.`
-              : `${k.label}: no input values found — skipped.`);
-            return;
-          }
-
-          const requiredIds = spec.inputs.map(i => i.id);
-          const missingIds = requiredIds.filter(id => inputs[id] === undefined);
-          if (missingIds.length > 0) {
-            // Try positional matching: assign by order
-            const vals = Object.values(inputs);
-            if (vals.length === requiredIds.length) {
-              requiredIds.forEach((id, idx) => { inputs[id] = vals[idx]; });
-            } else {
-              log.push(`${k.label}: missing inputs (${missingIds.join(', ')}) — skipped.`);
-              return;
-            }
-          }
-
-          const result = spec.calculate(inputs);
-          if (isNaN(result)) { log.push(`${k.label}: calculation returned invalid result — check input values.`); return; }
-          nextValues[k.id] = String(result);
-          log.push(`✓ ${k.label}: calculated ${result} ${k.unit}`);
-          count++;
-        });
+        const { values: calcValues, log: calcLog, count: calcCount } =
+          calcKpisFromInputs(kpis, inputsByKpi, isAr);
+        Object.assign(nextValues, calcValues);
+        log.push(...calcLog);
+        count += calcCount;
 
         // Identify KPIs in this framework that have no calculation spec — user must enter them manually
         foundManualKpis = kpis.filter(k => !KPI_DATA_SPECS[k.id]);
