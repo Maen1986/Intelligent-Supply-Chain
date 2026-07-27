@@ -100,6 +100,38 @@ function createScorecardState(suppliers: SupplierRecord[], initialActiveId: stri
   };
 }
 
+/* ─── State factory helpers ─── */
+
+/**
+ * Extends createScorecardState with an addSupplier() helper that mirrors the
+ * component's addSupplier():
+ *
+ *   const s = newSupplier();
+ *   save({ suppliers: [...roster.suppliers, s], activeId: s.id });
+ *
+ * Because save() changes activeId, the useEffect fires and — since the new id
+ * differs from prevActiveId — clears dupNameWarning and pendingName.
+ * We model that here by appending a new supplier record to the list and
+ * delegating to switchSupplier(newId) so the same useEffect logic is applied.
+ */
+function createScorecardStateWithAddSupplier(
+  initialSuppliers: SupplierRecord[],
+  initialActiveId: string,
+) {
+  const suppliers = [...initialSuppliers];
+  let nextIdx = suppliers.length;
+
+  const state = createScorecardState(suppliers, initialActiveId);
+
+  const addSupplier = () => {
+    const newId = `sup-new-${nextIdx++}`;
+    suppliers.push({ id: newId, name: '', tier: 'Strategic', subScores: {} });
+    state.switchSupplier(newId);
+  };
+
+  return { ...state, addSupplier };
+}
+
 /* ─── Fixtures ─── */
 
 const SUPPLIER_A: SupplierRecord = {
@@ -300,6 +332,96 @@ describe('Scorecard — dupNameWarning and pendingName reset on supplier switch'
     // At this point no blur has occurred on supplier C yet — warning must be gone.
     expect(sc.getState().dupNameWarning).toBeNull();
     expect(sc.getState().pendingName).toBeNull();
+  });
+});
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Suite 4 — pendingName resets when a new supplier is added (addSupplier)
+   This specifically guards the addSupplier → new activeId path described in
+   the task: typing a name before clicking "Add Supplier" must NOT carry the
+   in-progress text over to the freshly created supplier's name field.
+══════════════════════════════════════════════════════════════════════════ */
+
+describe('Scorecard — pendingName resets on addSupplier', () => {
+  it('pendingName is null on the new supplier after typing on the previous one', () => {
+    const sc = createScorecardStateWithAddSupplier([SUPPLIER_A, SUPPLIER_B], SUPPLIER_A.id);
+
+    // User types in the name field but has NOT blurred yet
+    sc.handleNameChange('Some Draft Text');
+    expect(sc.getState().pendingName).toBe('Some Draft Text');
+
+    // User clicks "Add Supplier" — activeId becomes the new supplier's id
+    sc.addSupplier();
+
+    // The new supplier's field must start empty
+    expect(sc.getState().pendingName).toBeNull();
+  });
+
+  it('dupNameWarning is also null on the new supplier even when a warning was active', () => {
+    const sc = createScorecardStateWithAddSupplier([SUPPLIER_A, SUPPLIER_B], SUPPLIER_A.id);
+
+    // Trigger a duplicate-name warning on supplier A
+    sc.handleNameChange('Beta Ltd');
+    sc.handleNameBlur('Beta Ltd');
+    expect(sc.getState().dupNameWarning).not.toBeNull();
+    expect(sc.getState().pendingName).toBe('Beta Ltd');
+
+    // User clicks "Add Supplier" without correcting the duplicate first
+    sc.addSupplier();
+
+    expect(sc.getState().dupNameWarning).toBeNull();
+    expect(sc.getState().pendingName).toBeNull();
+  });
+
+  it('pendingName is null even when the typed text was a unique (non-duplicate) in-progress edit', () => {
+    const sc = createScorecardStateWithAddSupplier([SUPPLIER_A, SUPPLIER_B], SUPPLIER_A.id);
+
+    // User types a brand-new unique name but has not blurred (so roster name is unchanged)
+    sc.handleNameChange('Totally Unique Name');
+    expect(sc.getState().pendingName).toBe('Totally Unique Name');
+
+    // User adds a new supplier before blurring
+    sc.addSupplier();
+
+    expect(sc.getState().pendingName).toBeNull();
+  });
+
+  it('pendingName stays null if there was no in-progress edit before addSupplier', () => {
+    const sc = createScorecardStateWithAddSupplier([SUPPLIER_A, SUPPLIER_B], SUPPLIER_A.id);
+
+    // No typing at all — pendingName is already null
+    expect(sc.getState().pendingName).toBeNull();
+
+    sc.addSupplier();
+
+    expect(sc.getState().pendingName).toBeNull();
+  });
+
+  it('activeId changes to the new supplier id after addSupplier', () => {
+    const sc = createScorecardStateWithAddSupplier([SUPPLIER_A], SUPPLIER_A.id);
+
+    sc.handleNameChange('In-Progress Name');
+    sc.addSupplier();
+
+    // activeId must have changed (new supplier is now active)
+    expect(sc.getState().activeId).not.toBe(SUPPLIER_A.id);
+    expect(sc.getState().pendingName).toBeNull();
+  });
+
+  it('multiple addSupplier calls each start with a clean pendingName', () => {
+    const sc = createScorecardStateWithAddSupplier([SUPPLIER_A], SUPPLIER_A.id);
+
+    // First add — with in-progress text
+    sc.handleNameChange('First Draft');
+    sc.addSupplier();
+    expect(sc.getState().pendingName).toBeNull();
+    const firstNewId = sc.getState().activeId;
+
+    // Second add — type on the first new supplier, then add another
+    sc.handleNameChange('Second Draft');
+    sc.addSupplier();
+    expect(sc.getState().pendingName).toBeNull();
+    expect(sc.getState().activeId).not.toBe(firstNewId);
   });
 });
 
