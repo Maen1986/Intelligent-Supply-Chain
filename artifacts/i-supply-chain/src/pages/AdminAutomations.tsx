@@ -1432,17 +1432,217 @@ function TemplatesTab({ ar }: { ar: boolean }) {
   );
 }
 
+interface ApiKeyMeta {
+  id: number;
+  nameLabel: string;
+  keyPrefix: string;
+  scope: string;
+  revokedAt: string | null;
+}
+
+function PrepareDownloadModal({
+  template,
+  ar,
+  onClose,
+}: {
+  template: TemplateManifestItem;
+  ar: boolean;
+  onClose: () => void;
+}) {
+  const [domain, setDomain]       = useState(window.location.hostname);
+  const [apiKey, setApiKey]       = useState('');
+  const [selectedKeyId, setSelectedKeyId] = useState('');
+  const [n8nUrl, setN8nUrl]       = useState('');
+  const [keys, setKeys]           = useState<ApiKeyMeta[]>([]);
+  const [keysLoading, setKeysLoading] = useState(true);
+  const [downloading, setDownloading] = useState(false);
+  const [error, setError]         = useState<string | null>(null);
+
+  const rawUrl = `${API_BASE.replace('/api', '')}/public/${template.downloadPath}`;
+
+  useEffect(() => {
+    fetch(`${API_BASE}/integrations/keys`, { credentials: 'include' })
+      .then(r => r.json())
+      .then(d => {
+        if (d.ok) {
+          const active = (d.keys as ApiKeyMeta[]).filter(k => !k.revokedAt);
+          setKeys(active);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setKeysLoading(false));
+  }, []);
+
+  const handleDownload = async () => {
+    if (!apiKey.trim()) {
+      setError(ar ? 'أدخل قيمة مفتاح API' : 'Please enter an API key value');
+      return;
+    }
+    setError(null);
+    setDownloading(true);
+    try {
+      const resp = await fetch(rawUrl, { credentials: 'include' });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      let text = await resp.text();
+
+      // Replace known placeholders
+      text = text.replaceAll('REPLACE_WITH_ISC_API_KEY', apiKey.trim());
+      text = text.replaceAll('YOUR_ISC_DOMAIN', domain.trim() || window.location.hostname);
+      if (n8nUrl.trim()) {
+        text = text.replaceAll('YOUR_N8N_INSTANCE_URL', n8nUrl.trim());
+        text = text.replaceAll('REPLACE_WITH_N8N_INSTANCE_URL', n8nUrl.trim());
+      }
+
+      const blob = new Blob([text], { type: 'application/json' });
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href = url;
+      a.download = template.filename;
+      a.click();
+      URL.revokeObjectURL(url);
+      onClose();
+    } catch (e) {
+      setError(ar ? 'تعذّر تنزيل القالب' : 'Failed to fetch template — please try again');
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  return (
+    /* Backdrop */
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md space-y-5 p-6" dir={ar ? 'rtl' : 'ltr'}>
+        {/* Header */}
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h2 className="font-bold text-base text-primary">
+              {ar ? 'تجهيز القالب للتنزيل' : 'Prepare & Download Template'}
+            </h2>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {ar
+                ? 'سيتم استبدال العناصر النائبة بالقيم التي تدخلها — كل شيء يحدث في متصفحك فقط.'
+                : 'Placeholders are replaced in your browser — nothing is sent back to the server.'}
+            </p>
+          </div>
+          <button onClick={onClose} className="text-muted-foreground hover:text-primary transition-colors text-lg leading-none mt-0.5">✕</button>
+        </div>
+
+        {/* ISC Domain */}
+        <div className="space-y-1">
+          <label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
+            {ar ? 'نطاق ISC' : 'ISC Domain'}
+          </label>
+          <Input
+            value={domain}
+            onChange={e => setDomain(e.target.value)}
+            placeholder={window.location.hostname}
+            className="text-sm"
+          />
+          <p className="text-xs text-muted-foreground">
+            {ar ? 'يُستبدل بـ YOUR_ISC_DOMAIN في القالب' : 'Replaces YOUR_ISC_DOMAIN in the template'}
+          </p>
+        </div>
+
+        {/* API Key select + paste */}
+        <div className="space-y-1">
+          <label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
+            {ar ? 'مفتاح ISC API' : 'ISC API Key'}
+          </label>
+          {keysLoading ? (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground py-1">
+              <Loader2 className="w-3 h-3 animate-spin" />
+              {ar ? 'جارٍ تحميل المفاتيح…' : 'Loading keys…'}
+            </div>
+          ) : keys.length > 0 ? (
+            <select
+              className="w-full h-9 text-sm border border-border rounded-md px-2 bg-white mb-1"
+              value={selectedKeyId}
+              onChange={e => setSelectedKeyId(e.target.value)}
+            >
+              <option value="">{ar ? '— اختر مفتاحاً للمرجع —' : '— Select a key for reference —'}</option>
+              {keys.map(k => (
+                <option key={k.id} value={String(k.id)}>
+                  {k.nameLabel} ({k.keyPrefix}) · {k.scope}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-1">
+              {ar
+                ? 'لا توجد مفاتيح نشطة. أنشئ واحداً في مركز التكاملات أولاً.'
+                : 'No active keys found. Create one in Integration Hub first.'}
+            </p>
+          )}
+          <Input
+            value={apiKey}
+            onChange={e => setApiKey(e.target.value)}
+            placeholder={ar ? 'الصق قيمة المفتاح هنا…' : 'Paste the raw key value here…'}
+            className="text-sm font-mono"
+            type="password"
+          />
+          <p className="text-xs text-muted-foreground">
+            {ar
+              ? 'المفتاح الخام يظهر مرة واحدة عند الإنشاء. يُستبدل بـ REPLACE_WITH_ISC_API_KEY.'
+              : 'The raw key is shown once at creation. Replaces REPLACE_WITH_ISC_API_KEY.'}
+          </p>
+        </div>
+
+        {/* n8n Instance URL */}
+        <div className="space-y-1">
+          <label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
+            {ar ? 'عنوان n8n (اختياري)' : 'n8n Instance URL (optional)'}
+          </label>
+          <Input
+            value={n8nUrl}
+            onChange={e => setN8nUrl(e.target.value)}
+            placeholder="https://your-n8n.example.com"
+            className="text-sm"
+          />
+          <p className="text-xs text-muted-foreground">
+            {ar ? 'يُستبدل بـ YOUR_N8N_INSTANCE_URL إن وُجد' : 'Replaces YOUR_N8N_INSTANCE_URL if present'}
+          </p>
+        </div>
+
+        {error && (
+          <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+            {error}
+          </p>
+        )}
+
+        {/* Actions */}
+        <div className="flex items-center justify-end gap-2 pt-1">
+          <Button variant="outline" size="sm" onClick={onClose} disabled={downloading}>
+            {ar ? 'إلغاء' : 'Cancel'}
+          </Button>
+          <Button size="sm" onClick={handleDownload} disabled={downloading}>
+            {downloading
+              ? <Loader2 className="w-3.5 h-3.5 animate-spin me-1.5" />
+              : <Download className="w-3.5 h-3.5 me-1.5" />}
+            {ar ? 'تنزيل القالب' : 'Download Template'}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function TemplateCard({ template: t, ar }: { template: TemplateManifestItem; ar: boolean }) {
   const [open, setOpen] = useState(false);
+  const [prepareOpen, setPrepareOpen] = useState(false);
   const badgeClass = CATEGORY_BADGE[t.category] ?? 'bg-slate-100 text-slate-600';
   const guide = SETUP_GUIDES[t.id];
   const steps = ar ? (guide?.ar ?? guide?.en ?? []) : (guide?.en ?? []);
-  const downloadUrl = `${API_BASE.replace('/api', '')}/public/${t.downloadPath}`;
   const platformInfo = PLATFORM_LABEL[t.platform] ?? PLATFORM_LABEL['n8n'];
   const nodesLabel = NODES_LABEL[t.platform] ?? NODES_LABEL['n8n'];
 
   return (
     <div className="border border-border rounded-xl overflow-hidden">
+      {prepareOpen && (
+        <PrepareDownloadModal template={t} ar={ar} onClose={() => setPrepareOpen(false)} />
+      )}
       {/* Card header */}
       <div className="flex items-center gap-3 px-4 py-3.5 bg-white">
         <div className="flex-1 min-w-0">
@@ -1466,14 +1666,13 @@ function TemplateCard({ template: t, ar }: { template: TemplateManifestItem; ar:
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <a
-            href={downloadUrl}
-            download={t.filename}
+          <button
+            onClick={() => setPrepareOpen(true)}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-primary text-white hover:bg-primary/90 transition-colors"
           >
             <Download className="w-3.5 h-3.5" />
-            {ar ? 'تنزيل' : 'Download'}
-          </a>
+            {ar ? 'تجهيز وتنزيل' : 'Prepare & Download'}
+          </button>
           <button
             onClick={() => setOpen(v => !v)}
             className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium border border-border hover:bg-slate-50 transition-colors text-muted-foreground"
