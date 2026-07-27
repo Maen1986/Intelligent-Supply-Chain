@@ -60,8 +60,8 @@ export function AIPlanPanel({
       })
     : null;
 
-  /* Whether to show the "last saved plan" notice (only when idle) */
-  const showSavedNotice = !!savedPlan && !result && !loading && !error;
+  /* Whether to show the "last saved plan" notice (only when idle and form is filled) */
+  const showSavedNotice = !!savedPlan && !result && !loading && !error && !disabled;
 
   return (
     <div className="no-print mt-3 space-y-2">
