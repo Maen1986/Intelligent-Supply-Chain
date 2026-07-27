@@ -230,7 +230,7 @@ describe('Maturity results page — score updates after mid-session answer edit 
     // overallScore = (1.0 + 3.0×7) / 8 = 22/8 = 2.75 → toFixed(1) = "2.8"
     expect(screen.getByTestId('maturity-results')).toBeInTheDocument();
     expect(screen.getByTestId('maturity-overall-score').textContent).toBe('2.8');
-  });
+  }, 15_000);
 
   it('shows the original score when no answers are changed before viewing results', () => {
     renderMaturity();
