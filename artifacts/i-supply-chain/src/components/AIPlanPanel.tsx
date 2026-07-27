@@ -40,7 +40,7 @@ export function AIPlanPanel({
   loading, result, error, onGenerate, onReset, buttonLabel, isAr, disabled,
   savedPlan, onViewSaved, onDeleteSaved, rateLimited, toolKey,
 }: AIPlanPanelProps) {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, loading: authLoading } = useAuth();
   const [location, navigate] = useLocation();
   const [open,   setOpen]   = useState(true);
   const [copied, setCopied] = useState(false);
@@ -92,7 +92,9 @@ export function AIPlanPanel({
       )}
 
       {/* ── Idle: show Generate button (authenticated) or sign-in prompt ── */}
-      {!result && !loading && !error && (
+      {/* authLoading guard: hide both the Generate button and the sign-in prompt
+          while the session check is still in flight — prevents a cold-load flicker */}
+      {!result && !loading && !error && !authLoading && (
         isAuthenticated ? (
           <button
             onClick={onGenerate}
