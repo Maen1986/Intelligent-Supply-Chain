@@ -380,6 +380,56 @@ describe('useAIPlan login auto-generate — edge cases', () => {
     expect(countAIPlanCalls(fetchMock)).toBe(1);
   });
 
+  /* ── Unmount / remount while already authenticated ────────────────────
+     When the component unmounts and remounts while isAuthenticated is already
+     true, both prevAuthenticated and prevAuthRef refs are re-initialised to
+     true (their initial value is the current isAuthenticated at mount time).
+     Therefore the false→true transition is never seen by either effect on the
+     second mount, and auto-generate must NOT fire a second time.
+  ──────────────────────────────────────────────────────────────────────── */
+  it('does NOT auto-generate again when the hook is unmounted and remounted while already authenticated', async () => {
+    // sessionStorage is clear (see beforeEach)
+    const fetchMock = stubAllFetches();
+    vi.stubGlobal('fetch', fetchMock);
+
+    // First mount: unauthenticated
+    const { rerender, unmount } = renderHook(
+      ({ authed }: { authed: boolean }) => {
+        mockIsAuthenticated.value = authed;
+        return useAIPlan(() => 'build me a KPI plan', false, TOOL_KEY);
+      },
+      { initialProps: { authed: false } },
+    );
+
+    // Transition false → true: auto-generate fires exactly once
+    await act(async () => { rerender({ authed: true }); });
+    await waitFor(() => expect(countAIPlanCalls(fetchMock)).toBe(1), { timeout: 500 });
+
+    // Unmount the hook while still authenticated
+    act(() => { unmount(); });
+
+    // Reset the fetch spy counter so we can cleanly count calls from the second mount
+    fetchMock.mockClear();
+
+    // Remount a fresh hook instance with isAuthenticated already true.
+    // Both prevAuthenticated and prevAuthRef initialise to true, so neither
+    // effect sees a false→true transition — auto-generate must NOT fire.
+    const { rerender: rerender2 } = renderHook(
+      ({ authed }: { authed: boolean }) => {
+        mockIsAuthenticated.value = authed;
+        return useAIPlan(() => 'build me a KPI plan', false, TOOL_KEY);
+      },
+      { initialProps: { authed: true } },
+    );
+    void rerender2; // used only to keep the hook alive
+
+    // Allow any pending microtasks / effects to flush
+    await act(async () => { await new Promise(r => setTimeout(r, 100)); });
+
+    // No new generate() call should have been made after remount
+    expect(countAIPlanCalls(fetchMock)).toBe(0);
+  });
+
   it('does NOT auto-generate when toolKey is undefined and no pending flag', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
