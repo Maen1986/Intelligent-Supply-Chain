@@ -697,6 +697,235 @@ describe('ProcurementToolsSection — storage key isolation', () => {
 });
 
 /* ══════════════════════════════════════════════════════════════════════════
+   Suite 8 — CategoryProfileBuilder: Arabic quadrant labels (isAr=true)
+   The auto-recommendation card on the Sourcing Strategy tab must render
+   Arabic strategy labels and quadrant context text for all 4 Kraljic
+   scenarios (Strategic, Leverage, Dual-source/Transitioning, Preferred).
+
+   autoStrategy logic (from component source):
+     highConcentration = top3Pct > 60 || validRows.length <= 2
+     highRisk          = porterAvg >= 3.5
+     highConc  + highRisk                      → strategic-partnership
+     !highConc + !highRisk + totalSpend>500K   → competitive-tender
+     highConc  + !highRisk                     → dual-source
+     !highConc + highRisk                      → preferred-supplier
+══════════════════════════════════════════════════════════════════════════ */
+
+const PORTER_FORCE_IDS = [
+  'supplier_power', 'buyer_power', 'new_entrants', 'substitutes', 'rivalry',
+];
+
+/** Build a Porter seed with every force set to the same score. */
+function makePorterSeed(score: number): Record<string, { score: number; notes: string }> {
+  return Object.fromEntries(PORTER_FORCE_IDS.map(id => [id, { score, notes: '' }]));
+}
+
+/**
+ * 6 valid rows with equal spend → top3Pct = 50 % (≤ 60), validRows.length = 6 (> 2)
+ * → highConcentration = false.  totalSpend = 600 000 > 500 000.
+ */
+function makeSpreadRows() {
+  return [1, 2, 3, 4, 5, 6].map(i => ({
+    id: `r${i}`, supplier: `Supplier ${i}`, category: 'MRO', subcategory: '',
+    annualSpend: 100_000, contracted: false, strategic: false, notes: '',
+  }));
+}
+
+/**
+ * 1 valid row → validRows.length = 1 (≤ 2) → highConcentration = true.
+ */
+function makeSingleRow() {
+  return [{
+    id: 'r1', supplier: 'Alpha Corp', category: 'Raw Materials', subcategory: '',
+    annualSpend: 600_000, contracted: false, strategic: false, notes: '',
+  }];
+}
+
+/** Click the Sourcing Strategy tab (3rd tab, index 2). */
+function goToStrategyTab() {
+  fireEvent.click(screen.getAllByRole('tab')[2]);
+}
+
+describe('ProcurementToolsSection — CategoryProfileBuilder Arabic quadrant labels', () => {
+  /* ── Scenario 1: Strategic quadrant ─────────────────────────────────────
+     highConcentration (1 row) + highRisk (porterAvg = 5)
+     → autoStrategy = 'strategic-partnership'
+     Arabic label: "شراكة استراتيجية"
+     Arabic context (whenAr): contains "ربع استراتيجي"
+  ──────────────────────────────────────────────────────────────────────── */
+  it('shows Arabic label for Strategic quadrant (شراكة استراتيجية)', () => {
+    localStorage.setItem(SK_SPEND,  JSON.stringify(makeSingleRow()));
+    localStorage.setItem(SK_PORTER, JSON.stringify(makePorterSeed(5)));
+
+    render(<ProcurementToolsSection isAr={true} />);
+    goToStrategyTab();
+
+    // The label appears in both the recommendation header and the strategy
+    // explorer card — getAllByText handles both matches.
+    expect(screen.getAllByText('شراكة استراتيجية').length).toBeGreaterThan(0);
+  });
+
+  it('shows Arabic quadrant context "ربع استراتيجي" for Strategic scenario', () => {
+    localStorage.setItem(SK_SPEND,  JSON.stringify(makeSingleRow()));
+    localStorage.setItem(SK_PORTER, JSON.stringify(makePorterSeed(5)));
+
+    render(<ProcurementToolsSection isAr={true} />);
+    goToStrategyTab();
+
+    expect(screen.getAllByText(/ربع استراتيجي/).length).toBeGreaterThan(0);
+  });
+
+  it('shows Arabic description for Strategic quadrant', () => {
+    localStorage.setItem(SK_SPEND,  JSON.stringify(makeSingleRow()));
+    localStorage.setItem(SK_PORTER, JSON.stringify(makePorterSeed(5)));
+
+    render(<ProcurementToolsSection isAr={true} />);
+    goToStrategyTab();
+
+    // descAr for strategic-partnership
+    expect(screen.getAllByText(/شراكة تعاونية طويلة الأمد/).length).toBeGreaterThan(0);
+  });
+
+  /* ── Scenario 2: Leverage quadrant ──────────────────────────────────────
+     !highConcentration (6 spread rows, top3Pct = 50 %)
+     + !highRisk (porterAvg = 2)
+     + totalSpend = 600 000 > 500 000
+     → autoStrategy = 'competitive-tender'
+     Arabic label: "مناقصة تنافسية"
+     Arabic context (whenAr): contains "ربع الرافعة"
+  ──────────────────────────────────────────────────────────────────────── */
+  it('shows Arabic label for Leverage quadrant (مناقصة تنافسية)', () => {
+    localStorage.setItem(SK_SPEND,  JSON.stringify(makeSpreadRows()));
+    localStorage.setItem(SK_PORTER, JSON.stringify(makePorterSeed(2)));
+
+    render(<ProcurementToolsSection isAr={true} />);
+    goToStrategyTab();
+
+    expect(screen.getAllByText('مناقصة تنافسية').length).toBeGreaterThan(0);
+  });
+
+  it('shows Arabic quadrant context "ربع الرافعة" for Leverage scenario', () => {
+    localStorage.setItem(SK_SPEND,  JSON.stringify(makeSpreadRows()));
+    localStorage.setItem(SK_PORTER, JSON.stringify(makePorterSeed(2)));
+
+    render(<ProcurementToolsSection isAr={true} />);
+    goToStrategyTab();
+
+    expect(screen.getAllByText(/ربع الرافعة/).length).toBeGreaterThan(0);
+  });
+
+  it('shows Arabic description for Leverage quadrant', () => {
+    localStorage.setItem(SK_SPEND,  JSON.stringify(makeSpreadRows()));
+    localStorage.setItem(SK_PORTER, JSON.stringify(makePorterSeed(2)));
+
+    render(<ProcurementToolsSection isAr={true} />);
+    goToStrategyTab();
+
+    // descAr for competitive-tender
+    expect(screen.getAllByText(/طرح عروض مفتوح/).length).toBeGreaterThan(0);
+  });
+
+  /* ── Scenario 3: Transitioning / Dual-source quadrant ───────────────────
+     highConcentration (1 row) + !highRisk (porterAvg = 2)
+     → autoStrategy = 'dual-source'
+     Arabic label: "مصدران للتوريد"
+  ──────────────────────────────────────────────────────────────────────── */
+  it('shows Arabic label for Dual-source quadrant (مصدران للتوريد)', () => {
+    localStorage.setItem(SK_SPEND,  JSON.stringify(makeSingleRow()));
+    localStorage.setItem(SK_PORTER, JSON.stringify(makePorterSeed(2)));
+
+    render(<ProcurementToolsSection isAr={true} />);
+    goToStrategyTab();
+
+    expect(screen.getAllByText('مصدران للتوريد').length).toBeGreaterThan(0);
+  });
+
+  it('shows Arabic description for Dual-source quadrant', () => {
+    localStorage.setItem(SK_SPEND,  JSON.stringify(makeSingleRow()));
+    localStorage.setItem(SK_PORTER, JSON.stringify(makePorterSeed(2)));
+
+    render(<ProcurementToolsSection isAr={true} />);
+    goToStrategyTab();
+
+    // descAr for dual-source
+    expect(screen.getAllByText(/مورّدان مؤهّلان مسبقاً/).length).toBeGreaterThan(0);
+  });
+
+  it('shows Arabic whenAr context for Dual-source quadrant', () => {
+    localStorage.setItem(SK_SPEND,  JSON.stringify(makeSingleRow()));
+    localStorage.setItem(SK_PORTER, JSON.stringify(makePorterSeed(2)));
+
+    render(<ProcurementToolsSection isAr={true} />);
+    goToStrategyTab();
+
+    // whenAr: 'إنفاق مرتفع + مخاطر متوسطة'
+    expect(screen.getAllByText(/إنفاق مرتفع.*مخاطر متوسطة/).length).toBeGreaterThan(0);
+  });
+
+  /* ── Scenario 4: Preferred Supplier quadrant ─────────────────────────────
+     !highConcentration (6 spread rows) + highRisk (porterAvg = 5)
+     → autoStrategy = 'preferred-supplier'
+     Arabic label: "برنامج الموردين المفضّلين"
+  ──────────────────────────────────────────────────────────────────────── */
+  it('shows Arabic label for Preferred Supplier quadrant (برنامج الموردين المفضّلين)', () => {
+    localStorage.setItem(SK_SPEND,  JSON.stringify(makeSpreadRows()));
+    localStorage.setItem(SK_PORTER, JSON.stringify(makePorterSeed(5)));
+
+    render(<ProcurementToolsSection isAr={true} />);
+    goToStrategyTab();
+
+    expect(screen.getAllByText('برنامج الموردين المفضّلين').length).toBeGreaterThan(0);
+  });
+
+  it('shows Arabic description for Preferred Supplier quadrant', () => {
+    localStorage.setItem(SK_SPEND,  JSON.stringify(makeSpreadRows()));
+    localStorage.setItem(SK_PORTER, JSON.stringify(makePorterSeed(5)));
+
+    render(<ProcurementToolsSection isAr={true} />);
+    goToStrategyTab();
+
+    // descAr for preferred-supplier
+    expect(screen.getAllByText(/لائحة مؤهّلة مسبقاً/).length).toBeGreaterThan(0);
+  });
+
+  it('shows Arabic whenAr context for Preferred Supplier quadrant', () => {
+    localStorage.setItem(SK_SPEND,  JSON.stringify(makeSpreadRows()));
+    localStorage.setItem(SK_PORTER, JSON.stringify(makePorterSeed(5)));
+
+    render(<ProcurementToolsSection isAr={true} />);
+    goToStrategyTab();
+
+    // whenAr: 'إنفاق متوسط + مخاطر متوسطة'
+    expect(screen.getAllByText(/إنفاق متوسط.*مخاطر متوسطة/).length).toBeGreaterThan(0);
+  });
+
+  /* ── Cross-cutting: English mode must NOT show Arabic labels ─────────────
+     Ensures the isAr guard is actually doing work.
+  ──────────────────────────────────────────────────────────────────────── */
+  it('does NOT show Arabic strategy label when isAr=false (Strategic scenario)', () => {
+    localStorage.setItem(SK_SPEND,  JSON.stringify(makeSingleRow()));
+    localStorage.setItem(SK_PORTER, JSON.stringify(makePorterSeed(5)));
+
+    render(<ProcurementToolsSection isAr={false} />);
+    goToStrategyTab();
+
+    expect(screen.queryAllByText('شراكة استراتيجية')).toHaveLength(0);
+    expect(screen.getAllByText('Strategic Partnership').length).toBeGreaterThan(0);
+  });
+
+  it('does NOT show Arabic strategy label when isAr=false (Leverage scenario)', () => {
+    localStorage.setItem(SK_SPEND,  JSON.stringify(makeSpreadRows()));
+    localStorage.setItem(SK_PORTER, JSON.stringify(makePorterSeed(2)));
+
+    render(<ProcurementToolsSection isAr={false} />);
+    goToStrategyTab();
+
+    expect(screen.queryAllByText('مناقصة تنافسية')).toHaveLength(0);
+    expect(screen.getAllByText('Competitive Tendering').length).toBeGreaterThan(0);
+  });
+});
+
+/* ══════════════════════════════════════════════════════════════════════════
    Suite 6 — Arrow-key tab navigation (ARIA tablist pattern)
    ArrowRight/ArrowLeft must move focus and activate the correct tab.
 ══════════════════════════════════════════════════════════════════════════ */
