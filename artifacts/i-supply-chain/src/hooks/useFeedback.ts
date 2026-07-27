@@ -82,6 +82,14 @@ export function useFeedbackList(filters: FeedbackListFilters) {
   });
 }
 
+export interface SubmitFeedbackResult {
+  ok: boolean;
+  /** True when the server responded 429 (rate limited). */
+  rateLimited: boolean;
+  /** Seconds until the rate-limit window resets (0 when not rate-limited). */
+  retryAfter: number;
+}
+
 export async function submitFeedback(payload: {
   tool: string;
   rating: number;
@@ -89,7 +97,7 @@ export async function submitFeedback(payload: {
   comment?: string;
   company?: string;
   submissionId?: number;
-}): Promise<boolean> {
+}): Promise<SubmitFeedbackResult> {
   try {
     const res = await fetch(`${API_BASE}/feedback`, {
       method: 'POST',
@@ -97,8 +105,18 @@ export async function submitFeedback(payload: {
       credentials: 'include',
       body: JSON.stringify(payload),
     });
-    return res.ok;
+    if (res.ok) return { ok: true, rateLimited: false, retryAfter: 0 };
+    if (res.status === 429) {
+      // Prefer the Retry-After header; fall back to JSON body; default 1 hour.
+      let seconds = Number(res.headers?.get?.('Retry-After'));
+      if (!Number.isFinite(seconds) || seconds <= 0) {
+        const body = await res.json().catch(() => null);
+        seconds = Number(body?.retryAfterSeconds) || 3600;
+      }
+      return { ok: false, rateLimited: true, retryAfter: seconds };
+    }
+    return { ok: false, rateLimited: false, retryAfter: 0 };
   } catch {
-    return false;
+    return { ok: false, rateLimited: false, retryAfter: 0 };
   }
 }

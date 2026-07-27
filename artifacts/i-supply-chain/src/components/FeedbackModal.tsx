@@ -7,6 +7,8 @@ import { Star, CheckCircle2 } from 'lucide-react';
 import { useLanguage } from '@/lib/LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
 import { submitFeedback } from '@/hooks/useFeedback';
+import { useRateLimitCountdown } from '@/hooks/useRateLimitCountdown';
+import { API_BASE } from '@/lib/apiBase';
 
 interface FeedbackModalProps {
   open: boolean;
@@ -27,11 +29,34 @@ export function FeedbackModal({ open, onClose, tool, submissionId }: FeedbackMod
   const [done, setDone] = useState(false);
   const [failed, setFailed] = useState(false);
 
+  // Server-honest retry countdown — resyncs on tab wake/focus and when the
+  // local countdown reaches zero, so the displayed wait time stays accurate.
+  const rateLimit = useRateLimitCountdown(`${API_BASE}/feedback/rate-limit`);
+
+  /** Human-readable countdown based on remaining seconds. */
+  const retryMessage = (seconds: number): string => {
+    if (seconds >= 3600) {
+      const hours = Math.ceil(seconds / 3600);
+      return isAr
+        ? `لقد وصلت إلى الحد الأقصى. يرجى المحاولة مرة أخرى بعد ${hours} ${hours === 1 ? 'ساعة' : 'ساعات'}.`
+        : `You've reached the submission limit. Try again in about ${hours} hour${hours === 1 ? '' : 's'}.`;
+    }
+    if (seconds >= 60) {
+      const minutes = Math.ceil(seconds / 60);
+      return isAr
+        ? `لقد وصلت إلى الحد الأقصى. يرجى المحاولة مرة أخرى بعد ${minutes} ${minutes === 1 ? 'دقيقة' : 'دقائق'}.`
+        : `You've reached the submission limit. Try again in about ${minutes} minute${minutes === 1 ? '' : 's'}.`;
+    }
+    return isAr
+      ? `لقد وصلت إلى الحد الأقصى. يمكنك المحاولة مرة أخرى خلال ${seconds} ${seconds === 1 ? 'ثانية' : 'ثوانٍ'}.`
+      : `You've reached the submission limit. Try again in ${seconds} second${seconds === 1 ? '' : 's'}.`;
+  };
+
   const handleSubmit = async () => {
     if (rating < 1 || submitting) return;
     setSubmitting(true);
     setFailed(false);
-    const ok = await submitFeedback({
+    const result = await submitFeedback({
       tool,
       rating,
       nps,
@@ -40,9 +65,12 @@ export function FeedbackModal({ open, onClose, tool, submissionId }: FeedbackMod
       submissionId,
     });
     setSubmitting(false);
-    if (ok) {
+    if (result.ok) {
+      rateLimit.clear();
       setDone(true);
       setTimeout(() => onClose(), 1500);
+    } else if (result.rateLimited) {
+      rateLimit.start(result.retryAfter);
     } else {
       setFailed(true);
     }
@@ -110,7 +138,15 @@ export function FeedbackModal({ open, onClose, tool, submissionId }: FeedbackMod
               />
             </div>
 
-            {failed && (
+            {/* Rate-limit notice — live countdown driven by useRateLimitCountdown */}
+            {rateLimit.limited && rateLimit.secondsLeft > 0 && (
+              <p className="text-sm text-amber-700" data-testid="text-feedback-rate-limit">
+                {retryMessage(rateLimit.secondsLeft)}
+              </p>
+            )}
+
+            {/* Generic submit error (non-rate-limit failures) */}
+            {failed && !rateLimit.limited && (
               <p className="text-sm text-destructive" data-testid="text-feedback-error">
                 {t('feedback.error')}
               </p>

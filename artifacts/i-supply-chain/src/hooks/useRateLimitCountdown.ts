@@ -62,6 +62,10 @@ export function useRateLimitCountdown(statusUrl: string) {
 
   /** Start (or restart) the countdown, e.g. from a 429's Retry-After. */
   const start = useCallback((seconds: number) => {
+    // Set secondsLeft eagerly so the first render after start() already shows
+    // a non-zero value — the effect-driven ticker would set it asynchronously,
+    // causing a flicker where limited=true but secondsLeft=0.
+    setSecondsLeft(seconds);
     setRetryUntil(Date.now() + seconds * 1000);
   }, []);
 
