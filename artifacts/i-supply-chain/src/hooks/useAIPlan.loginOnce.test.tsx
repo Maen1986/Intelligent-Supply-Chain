@@ -197,6 +197,35 @@ describe('useAIPlan login auto-generate — edge cases', () => {
     expect(countAIPlanCalls(fetchMock)).toBe(0);
   });
 
+  it('does NOT fire a second POST /api/ai/plan on a re-render when isAuthenticated stays true', async () => {
+    // sessionStorage is clear (see beforeEach)
+    const fetchMock = stubAllFetches();
+    vi.stubGlobal('fetch', fetchMock);
+
+    // Use external state to control both authed and a dummy prop that forces re-renders
+    const { rerender } = renderHook(
+      ({ authed, extra }: { authed: boolean; extra: number }) => {
+        mockIsAuthenticated.value = authed;
+        // extra is passed only to force a re-render without changing auth state
+        void extra;
+        return useAIPlan(() => 'build me a KPI plan', false, TOOL_KEY);
+      },
+      { initialProps: { authed: false, extra: 0 } },
+    );
+
+    // Transition: unauthenticated → authenticated → single generate() fires
+    await act(async () => { rerender({ authed: true, extra: 0 }); });
+    await waitFor(() => expect(countAIPlanCalls(fetchMock)).toBeGreaterThan(0), { timeout: 500 });
+    expect(countAIPlanCalls(fetchMock)).toBe(1);
+
+    // Trigger a second re-render with isAuthenticated still true
+    await act(async () => { rerender({ authed: true, extra: 1 }); });
+    await act(async () => { await new Promise(r => setTimeout(r, 60)); });
+
+    // The ref guard must prevent another generate() call
+    expect(countAIPlanCalls(fetchMock)).toBe(1);
+  });
+
   it('does NOT auto-generate when toolKey is undefined and no pending flag', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,

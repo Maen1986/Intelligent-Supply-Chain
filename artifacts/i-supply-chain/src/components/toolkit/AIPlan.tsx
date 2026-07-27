@@ -1,23 +1,24 @@
 /**
- * AIPlan — thin wrapper that bridges an AIPlanState (from useAIPlan) into
- * AIPlanPanel for tools that prefer to pass state as a single prop object.
+ * AIPlan — thin adapter that bridges useAIPlan's AIPlanState object into
+ * AIPlanPanel's individual props.  Used by pages (e.g. KraljicMatrix) that
+ * call useAIPlan themselves and just need to render the panel.
  *
  * Usage:
  *   const aiPlan = useAIPlan(buildPrompt, isAr, 'toolKey', canGenerate);
  *   <AIPlan state={aiPlan} isAr={isAr} toolKey="toolKey" />
  */
+import React from 'react';
 import { AIPlanPanel } from '@/components/AIPlanPanel';
 import { type AIPlanState } from '@/hooks/useAIPlan';
-import { useLanguage } from '@/lib/LanguageContext';
 
 interface AIPlanProps {
-  state:   AIPlanState;
-  isAr:    boolean;
-  toolKey: string;
-  /** Override the default button label */
+  state:        AIPlanState;
+  isAr:         boolean;
+  toolKey?:     string;
+  /** Override the generate button label. Defaults to a generic label. */
   buttonLabel?: string;
-  /** Disable the generate button (e.g. not enough data entered yet) */
-  disabled?: boolean;
+  /** Disable the generate button (e.g. not enough data entered yet). */
+  disabled?:    boolean;
 }
 
 export function AIPlan({ state, isAr, toolKey, buttonLabel, disabled }: AIPlanProps) {
