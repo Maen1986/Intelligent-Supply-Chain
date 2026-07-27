@@ -240,4 +240,22 @@ html[lang="ar"] {
   svg {
     overflow: visible !important;
   }
+
+  /* ── Overflow-hidden clipping fix ────────────────────────────────────────
+     The print zones are absolutely positioned and must escape any ancestor
+     overflow:hidden context. Older Safari and Firefox honour the parent's
+     overflow:hidden during print and clip the output. When a data-print
+     attribute is set on body we force overflow:visible on every common
+     clipping container class so the print zone content is never cut off.
+     .rounded-2xl / .rounded-xl are the outer card wrappers used throughout
+     the toolkit (e.g. RiskToolsSection). .overflow-hidden is used on the
+     tab bar scroll container and several inner card wrappers.
+  ─────────────────────────────────────────────────────────────────────── */
+  body[data-print] .rounded-2xl,
+  body[data-print] .rounded-xl,
+  body[data-print] .overflow-hidden,
+  body[data-print] .overflow-x-auto,
+  body[data-print] .overflow-y-auto {
+    overflow: visible !important;
+  }
 }
