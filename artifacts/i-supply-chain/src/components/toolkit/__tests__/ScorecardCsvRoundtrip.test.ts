@@ -15,108 +15,14 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { parseCsvFile } from '@/lib/importCsv';
 import { DIMS, SUB_INDICATORS, hasCaseInsensitiveDuplicate } from '../SupplierScorecard';
+import {
+  buildScorecardCsvString,
+  parseSubScoresFromRow,
+  type SupplierRecord,
+} from '@/lib/scorecardCsv';
 
-/* ─── Types ─── */
-
-interface SupplierRecord {
-  id: string;
-  name: string;
-  tier: string;
-  subScores: Record<string, Record<string, string>>;
-}
-
-/* ─── Helpers (pure data logic extracted from SupplierScorecard.tsx) ─── */
-
-/**
- * Mirror of the CSV-building logic inside exportToCSV.
- * Returns the raw CSV string without any DOM/download side-effects.
- */
-function buildCsvString(suppliers: SupplierRecord[]): string {
-  const dimHeaders = DIMS.map(d => `${d.label} Score (/100)`);
-  const subHeaders: string[] = [];
-  DIMS.forEach(d => {
-    (SUB_INDICATORS[d.id] ?? []).forEach(sub => {
-      subHeaders.push(`${d.label} — ${sub.label}`);
-    });
-  });
-  const headers = [
-    'Supplier Name', 'Current Tier',
-    ...dimHeaders,
-    ...subHeaders,
-    'Weighted Score (/100)', 'Calculated Tier',
-  ];
-
-  function calcDimScore(dimId: string, subScores: Record<string, Record<string, string>>): number | null {
-    const subs = SUB_INDICATORS[dimId] ?? [];
-    const vals = subs
-      .map(s => parseFloat(subScores[dimId]?.[s.id] ?? ''))
-      .filter(v => !isNaN(v) && v >= 0);
-    if (vals.length === 0) return null;
-    return Math.min(100, Math.max(0, Math.round(vals.reduce((a, b) => a + b, 0) / vals.length)));
-  }
-
-  const rows = suppliers.map(s => {
-    const dimScores = DIMS.map(d => {
-      const sc = calcDimScore(d.id, s.subScores);
-      return sc !== null ? String(sc) : '';
-    });
-    const subVals: string[] = [];
-    DIMS.forEach(d => {
-      (SUB_INDICATORS[d.id] ?? []).forEach(sub => {
-        subVals.push(s.subScores[d.id]?.[sub.id] ?? '');
-      });
-    });
-    return [
-      s.name || 'New Supplier',
-      s.tier,
-      ...dimScores,
-      ...subVals,
-      '',  // Weighted Score — computed, not needed for import round-trip
-      '',  // Calculated Tier — computed, not needed for import round-trip
-    ];
-  });
-
-  const escape = (cell: string) => `"${cell.replace(/"/g, '""')}"`;
-  return [headers, ...rows].map(row => row.map(escape).join(',')).join('\r\n');
-}
-
-/**
- * Mirror of the sub-score parsing logic inside handleScorecardImport.
- * Maps a single CSV row (header → value) back to { dimId → { subId → value } }.
- */
-function parseSubScoresFromRow(row: Record<string, string>): {
-  subScores: Record<string, Record<string, string>>;
-  errors: string[];
-} {
-  const subColToIds: Record<string, { dimId: string; subId: string }> = {};
-  const subHeaders: string[] = [];
-  DIMS.forEach(d => {
-    (SUB_INDICATORS[d.id] ?? []).forEach(sub => {
-      const col = `${d.label} — ${sub.label}`;
-      subHeaders.push(col);
-      subColToIds[col] = { dimId: d.id, subId: sub.id };
-    });
-  });
-
-  const subScores: Record<string, Record<string, string>> = {};
-  const errors: string[] = [];
-
-  subHeaders.forEach(col => {
-    const val = row[col]?.trim();
-    if (val !== undefined && val !== '') {
-      const num = parseFloat(val);
-      if (!isNaN(num) && num >= 0 && num <= 100) {
-        const { dimId, subId } = subColToIds[col];
-        if (!subScores[dimId]) subScores[dimId] = {};
-        subScores[dimId][subId] = val;
-      } else {
-        errors.push(`"${col}" value "${val}" must be 0–100 — ignored.`);
-      }
-    }
-  });
-
-  return { subScores, errors };
-}
+// Alias so all existing test call-sites remain unchanged.
+const buildCsvString = buildScorecardCsvString;
 
 /* ─── Fixtures ─── */
 
