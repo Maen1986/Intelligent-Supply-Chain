@@ -42,6 +42,22 @@ async function saveGeneratedPlans(userId: number, plans: Record<string, { text: 
   );
 }
 
+/* ─── GET /api/plans — return ALL saved plans for the authenticated user ── */
+
+router.get("/", async (req, res) => {
+  try {
+    const plans = await getGeneratedPlans(res.locals.userId as number);
+    // Return as a sorted array (newest first)
+    const entries = Object.entries(plans)
+      .map(([toolKey, plan]) => ({ toolKey, ...plan }))
+      .sort((a, b) => new Date(b.savedAt).getTime() - new Date(a.savedAt).getTime());
+    res.json({ ok: true, plans: entries });
+  } catch (err) {
+    logger.error({ err }, "[plans] GET /");
+    res.status(500).json({ ok: false, error: "Server error" });
+  }
+});
+
 /* ─── GET /api/plans/:toolKey ───────────────────────────────────────────── */
 
 router.get("/:toolKey", async (req, res) => {

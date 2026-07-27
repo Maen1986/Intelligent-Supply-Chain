@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useLanguage } from '@/lib/LanguageContext';
 import { KeyRound, UserPen, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
+import { SavedPlansSection } from '@/components/SavedPlansSection';
 
 export function AccountSettings() {
   const { user, isAuthenticated, loading, changePassword, updateProfile } = useAuth();
@@ -234,6 +235,9 @@ export function AccountSettings() {
             </Button>
           </form>
         </div>
+
+        {/* ── Saved AI Plans card ───────────────────────────────────────── */}
+        <SavedPlansSection isAr={lang === 'ar'} />
 
         {/* ── Change-password card ───────────────────────────────────────── */}
         <div className="bg-white rounded-2xl shadow-sm border border-border p-8">
