@@ -16,7 +16,7 @@ import {
 } from '@/lib/kraljicScoring';
 import { useAIPlan } from '@/hooks/useAIPlan';
 import { Button } from '@/components/ui/button';
-import { AIPlan } from '@/components/toolkit/AIPlan';
+import { AIPlanPanel } from '@/components/AIPlanPanel';
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
@@ -658,7 +658,21 @@ export function KraljicMatrix() {
                 </Button>
               </div>
             ) : (
-              <AIPlan state={aiPlan} isAr={isAr} toolKey="kraljic" />
+              <AIPlanPanel
+                loading={aiPlan.loading}
+                result={aiPlan.result}
+                error={aiPlan.error}
+                onGenerate={aiPlan.generate}
+                onReset={aiPlan.reset}
+                savedPlan={aiPlan.savedPlan}
+                onViewSaved={aiPlan.viewSaved}
+                onDeleteSaved={aiPlan.deleteSaved}
+                rateLimited={aiPlan.rateLimited}
+                buttonLabel={isAr ? 'توليد تقرير المحفظة ✨' : 'Generate Portfolio Brief ✨'}
+                isAr={isAr}
+                toolKey="kraljic"
+                disabled={scored.length < 2}
+              />
             )}
           </div>
         )}

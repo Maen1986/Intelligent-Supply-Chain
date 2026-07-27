@@ -28,6 +28,7 @@ const servicesList = [
   { key: 'nav.lean',         href: '/lean-six-sigma',          label: 'Lean & Six Sigma' },
   { key: 'nav.risk',         href: '/risk-management',         label: 'Risk Management' },
   { key: 'nav.governance',   href: '/governance-compliance',   label: 'Governance & Compliance' },
+  { key: 'nav.kraljic',     href: '/kraljic',                 label: '🧩 Kraljic Matrix' },
   { key: 'nav.caseStudies',  href: '/case-studies',            label: 'Case Studies' },
   { key: 'nav.intelligence', href: '/intelligence',            label: 'Intelligence Hub' },
 ];
@@ -82,6 +83,7 @@ export function Header() {
       'nav.about':       { en: 'About',               ar: 'من نحن' },
       'nav.csr':         { en: 'CSR',                 ar: 'المسؤولية الاجتماعية' },
       'nav.contact':     { en: 'Contact',             ar: 'تواصل معنا' },
+      'nav.kraljic':     { en: '🧩 Kraljic Matrix',   ar: '🧩 مصفوفة كرالجيك' },
     };
     return map[key]?.[lang] ?? key;
   };

@@ -28,6 +28,7 @@ import { LeanSixSigma } from '@/pages/LeanSixSigma';
 import { RiskManagement } from '@/pages/RiskManagement';
 import { GovernanceCompliance } from '@/pages/GovernanceCompliance';
 import { CommandCenter } from '@/pages/CommandCenter';
+import { KraljicMatrix } from '@/pages/KraljicMatrix';
 import { CustomerVoice } from '@/pages/CustomerVoice';
 import { Legal } from '@/pages/Legal';
 import { AdminLeads } from '@/pages/AdminLeads';
@@ -79,6 +80,7 @@ function Router() {
         <Route path="/risk-management" component={RiskManagement} />
         <Route path="/governance-compliance" component={GovernanceCompliance} />
         <Route path="/command-center" component={CommandCenter} />
+        <Route path="/kraljic" component={KraljicMatrix} />
         <Route path="/admin/leads" component={AdminLeads} />
         <Route path="/admin/integrations" component={AdminIntegrations} />
         <Route path="/account" component={AccountSettings} />
