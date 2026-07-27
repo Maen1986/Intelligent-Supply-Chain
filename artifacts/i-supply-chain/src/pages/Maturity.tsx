@@ -1389,7 +1389,7 @@ export function Maturity() {
                 <span className="text-white/50 text-xl">/5.0</span>
               </div>
             </div>
-            <div className={`px-5 py-2 rounded-full text-lg font-extrabold ${overallLevel.bg} ${overallLevel.text} border-2 ${overallLevel.border}`}>
+            <div data-testid="maturity-overall-level" className={`px-5 py-2 rounded-full text-lg font-extrabold ${overallLevel.bg} ${overallLevel.text} border-2 ${overallLevel.border}`}>
               {ar ? overallLevel.labelAr : overallLevel.label}
             </div>
           </div>
