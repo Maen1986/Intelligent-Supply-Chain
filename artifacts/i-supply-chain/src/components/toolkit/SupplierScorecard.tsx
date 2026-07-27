@@ -1245,7 +1245,21 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
                   onBlur={e => handleNameBlur(e.target.value)}
                 />
                 {dupNameWarning && (
-                  <p className="text-[11px] text-red-500 mt-1">{dupNameWarning}</p>
+                  <div className="mt-1 flex flex-wrap items-center gap-2">
+                    <p className="text-[11px] text-red-500">{dupNameWarning}</p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPendingName(null);
+                        setDupNameWarning(null);
+                      }}
+                      className="text-[11px] font-semibold text-primary underline underline-offset-2 hover:opacity-75 transition-opacity whitespace-nowrap"
+                    >
+                      {isAr
+                        ? `استعادة "${active.name}"`
+                        : `Revert to "${active.name}"`}
+                    </button>
+                  </div>
                 )}
               </div>
               <div>
