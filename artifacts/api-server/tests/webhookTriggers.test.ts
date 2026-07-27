@@ -61,7 +61,8 @@ describe('supplier.tier_changed webhook event', () => {
     const res = await request(app).put('/api/scorecard-roster').send(updatedRoster);
 
     expect(res.status).toBe(200);
-    expect(mockDispatchEvent).toHaveBeenCalledOnce();
+    // supplier.tier_changed + supplier.updated (bulk save confirmation)
+    expect(mockDispatchEvent).toHaveBeenCalledTimes(2);
     expect(mockDispatchEvent).toHaveBeenCalledWith(
       1,
       'supplier.tier_changed',
@@ -71,9 +72,14 @@ describe('supplier.tier_changed webhook event', () => {
         newTier: 'Strategic',
       }),
     );
+    expect(mockDispatchEvent).toHaveBeenCalledWith(
+      1,
+      'supplier.updated',
+      expect.objectContaining({ supplierCount: expect.any(Number) }),
+    );
   });
 
-  it('does NOT dispatch when a supplier tier is unchanged', async () => {
+  it('does NOT dispatch supplier.tier_changed when a supplier tier is unchanged', async () => {
     const { db } = await import('@workspace/db');
     const executeMock = db.execute as ReturnType<typeof vi.fn>;
     executeMock
@@ -84,10 +90,13 @@ describe('supplier.tier_changed webhook event', () => {
     // Send the same roster (tier unchanged)
     await request(app).put('/api/scorecard-roster').send(existingRoster);
 
-    expect(mockDispatchEvent).not.toHaveBeenCalled();
+    // supplier.updated always fires on save; supplier.tier_changed must NOT fire
+    expect(mockDispatchEvent).toHaveBeenCalledTimes(1);
+    expect(mockDispatchEvent).toHaveBeenCalledWith(1, 'supplier.updated', expect.any(Object));
+    expect(mockDispatchEvent).not.toHaveBeenCalledWith(1, 'supplier.tier_changed', expect.anything());
   });
 
-  it('does NOT dispatch when there is no prior roster', async () => {
+  it('does NOT dispatch supplier.tier_changed when there is no prior roster', async () => {
     const { db } = await import('@workspace/db');
     const executeMock = db.execute as ReturnType<typeof vi.fn>;
     // No existing roster
@@ -98,7 +107,10 @@ describe('supplier.tier_changed webhook event', () => {
     const app = makeApp('/api/scorecard-roster', scorecardRosterRouter, { userId: 1 });
     await request(app).put('/api/scorecard-roster').send(updatedRoster);
 
-    expect(mockDispatchEvent).not.toHaveBeenCalled();
+    // supplier.updated always fires; no tier_changed without a prior roster to diff against
+    expect(mockDispatchEvent).toHaveBeenCalledTimes(1);
+    expect(mockDispatchEvent).toHaveBeenCalledWith(1, 'supplier.updated', expect.any(Object));
+    expect(mockDispatchEvent).not.toHaveBeenCalledWith(1, 'supplier.tier_changed', expect.anything());
   });
 
   it('dispatches once per changed supplier when multiple tiers change', async () => {
@@ -128,9 +140,11 @@ describe('supplier.tier_changed webhook event', () => {
     const app = makeApp('/api/scorecard-roster', scorecardRosterRouter, { userId: 1 });
     await request(app).put('/api/scorecard-roster').send(multiRosterNew);
 
-    expect(mockDispatchEvent).toHaveBeenCalledTimes(2);
+    // 2x supplier.tier_changed + 1x supplier.updated
+    expect(mockDispatchEvent).toHaveBeenCalledTimes(3);
     const calls = mockDispatchEvent.mock.calls;
-    const ids = calls.map((c: any[]) => c[2].supplierId);
+    const tierChangedCalls = calls.filter((c: any[]) => c[1] === 'supplier.tier_changed');
+    const ids = tierChangedCalls.map((c: any[]) => c[2].supplierId);
     expect(ids).toContain('a');
     expect(ids).toContain('c');
     expect(ids).not.toContain('b');
@@ -165,7 +179,8 @@ describe('kpi.rag_changed webhook event', () => {
       .send({ slug: 'q1', values: { delivery: '75', cost: '8' }, thresholds: THRESHOLDS });
 
     expect(res.status).toBe(200);
-    expect(mockDispatchEvent).toHaveBeenCalledOnce();
+    // kpi.rag_changed + kpi.imported (bulk confirmation)
+    expect(mockDispatchEvent).toHaveBeenCalledTimes(2);
     expect(mockDispatchEvent).toHaveBeenCalledWith(
       1,
       'kpi.rag_changed',
@@ -175,9 +190,14 @@ describe('kpi.rag_changed webhook event', () => {
         newStatus: 'amber',
       }),
     );
+    expect(mockDispatchEvent).toHaveBeenCalledWith(
+      1,
+      'kpi.imported',
+      expect.objectContaining({ slug: 'q1' }),
+    );
   });
 
-  it('does NOT dispatch when a KPI value changes but stays in the same band', async () => {
+  it('does NOT dispatch kpi.rag_changed when a KPI value changes but stays in the same band', async () => {
     const { db } = await import('@workspace/db');
     const executeMock = db.execute as ReturnType<typeof vi.fn>;
     // delivery=85 (green) → 82 (still green)
@@ -193,7 +213,10 @@ describe('kpi.rag_changed webhook event', () => {
       .post('/api/v1/kpis/import')
       .send({ slug: 'q1', values: { delivery: '82' }, thresholds: THRESHOLDS });
 
-    expect(mockDispatchEvent).not.toHaveBeenCalled();
+    // kpi.imported always fires; kpi.rag_changed must NOT fire
+    expect(mockDispatchEvent).toHaveBeenCalledTimes(1);
+    expect(mockDispatchEvent).toHaveBeenCalledWith(1, 'kpi.imported', expect.any(Object));
+    expect(mockDispatchEvent).not.toHaveBeenCalledWith(1, 'kpi.rag_changed', expect.anything());
   });
 
   it('dispatches when a KPI jumps directly from green to red', async () => {
@@ -212,7 +235,8 @@ describe('kpi.rag_changed webhook event', () => {
       .post('/api/v1/kpis/import')
       .send({ slug: 'q1', values: { delivery: '50' }, thresholds: THRESHOLDS });
 
-    expect(mockDispatchEvent).toHaveBeenCalledOnce();
+    // kpi.rag_changed + kpi.imported
+    expect(mockDispatchEvent).toHaveBeenCalledTimes(2);
     expect(mockDispatchEvent).toHaveBeenCalledWith(
       1,
       'kpi.rag_changed',
@@ -236,7 +260,8 @@ describe('kpi.rag_changed webhook event', () => {
       .post('/api/v1/kpis/import')
       .send({ slug: 'q1', values: { delivery: '84' } });
 
-    expect(mockDispatchEvent).toHaveBeenCalledOnce();
+    // kpi.rag_changed + kpi.imported
+    expect(mockDispatchEvent).toHaveBeenCalledTimes(2);
     expect(mockDispatchEvent).toHaveBeenCalledWith(
       1,
       'kpi.rag_changed',
@@ -277,7 +302,8 @@ describe('kri.threshold_breached webhook event', () => {
       .send({ kris: KRI_ROWS_GREEN_TO_AMBER });
 
     expect(res.status).toBe(200);
-    expect(mockDispatchEvent).toHaveBeenCalledOnce();
+    // kri.threshold_breached + risk_kri.imported (bulk confirmation)
+    expect(mockDispatchEvent).toHaveBeenCalledTimes(2);
     expect(mockDispatchEvent).toHaveBeenCalledWith(
       1,
       'kri.threshold_breached',
@@ -288,6 +314,11 @@ describe('kri.threshold_breached webhook event', () => {
         oldValue: 35,
         newValue: 42,
       }),
+    );
+    expect(mockDispatchEvent).toHaveBeenCalledWith(
+      1,
+      'risk_kri.imported',
+      expect.objectContaining({ imported: 1 }),
     );
   });
 
@@ -307,7 +338,8 @@ describe('kri.threshold_breached webhook event', () => {
       .send({ kris: KRI_ROWS_GREEN_TO_RED });
 
     expect(res.status).toBe(200);
-    expect(mockDispatchEvent).toHaveBeenCalledOnce();
+    // kri.threshold_breached + risk_kri.imported
+    expect(mockDispatchEvent).toHaveBeenCalledTimes(2);
     expect(mockDispatchEvent).toHaveBeenCalledWith(
       1,
       'kri.threshold_breached',
@@ -315,7 +347,7 @@ describe('kri.threshold_breached webhook event', () => {
     );
   });
 
-  it('does NOT dispatch when the KRI value stays in the green zone', async () => {
+  it('does NOT dispatch kri.threshold_breached when the KRI value stays in the green zone', async () => {
     const { db } = await import('@workspace/db');
     const executeMock = db.execute as ReturnType<typeof vi.fn>;
     executeMock
@@ -328,10 +360,13 @@ describe('kri.threshold_breached webhook event', () => {
     const app = makeApp('/api/v1', v1Router);
     await request(app).post('/api/v1/risk-kris/import').send({ kris: KRI_ROWS_UNCHANGED });
 
-    expect(mockDispatchEvent).not.toHaveBeenCalled();
+    // risk_kri.imported always fires; threshold_breached must NOT fire
+    expect(mockDispatchEvent).toHaveBeenCalledTimes(1);
+    expect(mockDispatchEvent).toHaveBeenCalledWith(1, 'risk_kri.imported', expect.any(Object));
+    expect(mockDispatchEvent).not.toHaveBeenCalledWith(1, 'kri.threshold_breached', expect.anything());
   });
 
-  it('does NOT dispatch when the KRI was already amber and stays amber', async () => {
+  it('does NOT dispatch kri.threshold_breached when the KRI was already amber and stays amber', async () => {
     const { db } = await import('@workspace/db');
     const executeMock = db.execute as ReturnType<typeof vi.fn>;
     // Old value 42 (amber); new value 45 (still amber)
@@ -347,7 +382,10 @@ describe('kri.threshold_breached webhook event', () => {
       .post('/api/v1/risk-kris/import')
       .send({ kris: [{ id: 'concentration', value: 45, amber: 40, red: 60, higherIsBetter: false }] });
 
-    expect(mockDispatchEvent).not.toHaveBeenCalled();
+    // risk_kri.imported always fires; threshold_breached must NOT fire
+    expect(mockDispatchEvent).toHaveBeenCalledTimes(1);
+    expect(mockDispatchEvent).toHaveBeenCalledWith(1, 'risk_kri.imported', expect.any(Object));
+    expect(mockDispatchEvent).not.toHaveBeenCalledWith(1, 'kri.threshold_breached', expect.anything());
   });
 
   it('dispatches when the KRI moves from amber to red', async () => {
@@ -366,7 +404,8 @@ describe('kri.threshold_breached webhook event', () => {
       .post('/api/v1/risk-kris/import')
       .send({ kris: KRI_ROWS_GREEN_TO_RED });
 
-    expect(mockDispatchEvent).toHaveBeenCalledOnce();
+    // kri.threshold_breached + risk_kri.imported
+    expect(mockDispatchEvent).toHaveBeenCalledTimes(2);
     expect(mockDispatchEvent).toHaveBeenCalledWith(
       1,
       'kri.threshold_breached',
@@ -389,7 +428,8 @@ describe('kri.threshold_breached webhook event', () => {
       .send({ kris: KRI_ROWS_GREEN_TO_AMBER });
 
     expect(res.status).toBe(200);
-    expect(mockDispatchEvent).toHaveBeenCalledOnce();
+    // kri.threshold_breached + risk_kri.imported
+    expect(mockDispatchEvent).toHaveBeenCalledTimes(2);
     expect(mockDispatchEvent).toHaveBeenCalledWith(
       1,
       'kri.threshold_breached',
