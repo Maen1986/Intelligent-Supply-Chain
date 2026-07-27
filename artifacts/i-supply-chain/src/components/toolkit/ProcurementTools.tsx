@@ -4,7 +4,7 @@
  * 2. SpendParetoChart — top-10 supplier spend with live Pareto bar chart
  * 3. MarketIntelligenceScorecard — 6-dimension market risk scoring
  */
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Cell, Line, ComposedChart,
@@ -295,6 +295,22 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
     { id: 'market', label: 'Market Intelligence Scorecard', labelAr: 'بطاقة استخبارات السوق', component: <MarketIntelligenceScorecard isAr={isAr} /> },
   ];
   const [active, setActive] = useState('catprofile');
+  const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
+
+  const handleTabKeyDown = useCallback((e: React.KeyboardEvent<HTMLButtonElement>, currentIndex: number) => {
+    const count = TOOLS.length;
+    if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      const next = (currentIndex + 1) % count;
+      tabRefs.current[next]?.focus();
+      setActive(TOOLS[next].id);
+    } else if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      const prev = (currentIndex - 1 + count) % count;
+      tabRefs.current[prev]?.focus();
+      setActive(TOOLS[prev].id);
+    }
+  }, []);
 
   return (
     <div className="bg-white border border-border rounded-2xl shadow-sm overflow-hidden">
@@ -302,9 +318,16 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
         <p className="text-sm font-bold text-primary">{isAr ? '🛠 أدوات التميّز في المشتريات' : '🛠 Procurement Excellence Tools'}</p>
         <p className="text-xs text-muted-foreground mt-1">{isAr ? 'أدوات تفاعلية — ابدأ التحليل مباشرةً' : 'Interactive tools — start your analysis immediately'}</p>
       </div>
-      <div className="flex border-b border-border overflow-x-auto">
-        {TOOLS.map(t => (
-          <button key={t.id} onClick={() => setActive(t.id)}
+      <div role="tablist" className="flex border-b border-border overflow-x-auto">
+        {TOOLS.map((t, i) => (
+          <button
+            key={t.id}
+            role="tab"
+            aria-selected={active === t.id}
+            tabIndex={active === t.id ? 0 : -1}
+            ref={el => { tabRefs.current[i] = el; }}
+            onClick={() => setActive(t.id)}
+            onKeyDown={e => handleTabKeyDown(e, i)}
             className={`px-4 py-3 text-xs font-semibold whitespace-nowrap shrink-0 border-b-2 transition-all ${active === t.id ? 'border-amber-500 text-amber-700' : 'border-transparent text-muted-foreground hover:text-primary'}`}>
             {isAr ? t.labelAr : t.label}
           </button>

@@ -40,14 +40,14 @@ class ResizeObserverStub {
 /** Mount ProcurementToolsSection in English and activate a named sub-tool tab. */
 function renderAndActivate(tabLabel: string) {
   render(<ProcurementToolsSection isAr={false} />);
-  const tab = screen.getByRole('button', { name: tabLabel });
+  const tab = screen.getByRole('tab', { name: tabLabel });
   fireEvent.click(tab);
 }
 
 /** Mount ProcurementToolsSection in Arabic and activate a named sub-tool tab. */
 function renderAndActivateAr(tabLabel: string) {
   render(<ProcurementToolsSection isAr={true} />);
-  const tab = screen.getByRole('button', { name: tabLabel });
+  const tab = screen.getByRole('tab', { name: tabLabel });
   fireEvent.click(tab);
 }
 
@@ -418,12 +418,12 @@ describe('Dual-tab shared-key consistency', () => {
     expect(screen.getByText('Strategic')).toBeInTheDocument();
 
     // Switch to Spend Pareto
-    fireEvent.click(screen.getByRole('button', { name: 'Spend Pareto Analysis' }));
+    fireEvent.click(screen.getByRole('tab', { name: 'Spend Pareto Analysis' }));
     const supplierInput = screen.getByLabelText('Supplier 1 name') as HTMLInputElement;
     expect(supplierInput.value).toBe('FuelCo');
 
     // Switch to Market Intelligence Scorecard — Low Risk (composite ≈ 2.7 → 3)
-    fireEvent.click(screen.getByRole('button', { name: 'Market Intelligence Scorecard' }));
+    fireEvent.click(screen.getByRole('tab', { name: 'Market Intelligence Scorecard' }));
     expect(screen.getByText('Low Risk')).toBeInTheDocument();
   });
 });
@@ -664,29 +664,21 @@ describe('ProcurementToolsSection — keyboard tab activation', () => {
     fireEvent.click(button); // browser converts keyUp Space → click
   }
 
-  it('all three tab buttons are focusable (tabIndex is not -1)', () => {
+  it('active tab has tabIndex 0; inactive tabs have tabIndex -1 (roving tabindex)', () => {
     render(<ProcurementToolsSection isAr={false} />);
 
-    const tabs = [
-      screen.getByRole('button', { name: 'Category Profile Builder' }),
-      screen.getByRole('button', { name: 'Spend Pareto Analysis' }),
-      screen.getByRole('button', { name: 'Market Intelligence Scorecard' }),
-    ];
+    const [tab1, tab2, tab3] = screen.getAllByRole('tab');
 
-    // Native <button> elements have tabIndex 0 by default — never -1
-    tabs.forEach(tab => {
-      expect(tab.tabIndex).not.toBe(-1);
-    });
+    // Category Profile Builder is active by default
+    expect(tab1.tabIndex).toBe(0);
+    expect(tab2.tabIndex).toBe(-1);
+    expect(tab3.tabIndex).toBe(-1);
   });
 
   it('each tab button receives focus when focused programmatically', () => {
     render(<ProcurementToolsSection isAr={false} />);
 
-    const tabs = [
-      screen.getByRole('button', { name: 'Category Profile Builder' }),
-      screen.getByRole('button', { name: 'Spend Pareto Analysis' }),
-      screen.getByRole('button', { name: 'Market Intelligence Scorecard' }),
-    ];
+    const tabs = screen.getAllByRole('tab');
 
     tabs.forEach(tab => {
       tab.focus();
@@ -697,7 +689,7 @@ describe('ProcurementToolsSection — keyboard tab activation', () => {
   it('Enter on the Spend Pareto Analysis tab shows its panel content', () => {
     render(<ProcurementToolsSection isAr={false} />);
 
-    pressEnter(screen.getByRole('button', { name: 'Spend Pareto Analysis' }));
+    pressEnter(screen.getByRole('tab', { name: 'Spend Pareto Analysis' }));
 
     // Supplier name inputs are unique to the SpendParetoChart panel
     expect(screen.getByLabelText('Supplier 1 name')).toBeInTheDocument();
@@ -707,7 +699,7 @@ describe('ProcurementToolsSection — keyboard tab activation', () => {
   it('Space on the Market Intelligence Scorecard tab shows its panel content', () => {
     render(<ProcurementToolsSection isAr={false} />);
 
-    pressSpace(screen.getByRole('button', { name: 'Market Intelligence Scorecard' }));
+    pressSpace(screen.getByRole('tab', { name: 'Market Intelligence Scorecard' }));
 
     // Dimension sliders are unique to the MarketIntelligenceScorecard panel
     expect(screen.getByLabelText('Supplier Concentration')).toBeInTheDocument();
@@ -717,7 +709,7 @@ describe('ProcurementToolsSection — keyboard tab activation', () => {
   it('Space on the Spend Pareto Analysis tab shows spend inputs', () => {
     render(<ProcurementToolsSection isAr={false} />);
 
-    pressSpace(screen.getByRole('button', { name: 'Spend Pareto Analysis' }));
+    pressSpace(screen.getByRole('tab', { name: 'Spend Pareto Analysis' }));
 
     expect(screen.getByLabelText('Supplier 1 spend')).toBeInTheDocument();
   });
@@ -726,11 +718,11 @@ describe('ProcurementToolsSection — keyboard tab activation', () => {
     render(<ProcurementToolsSection isAr={false} />);
 
     // Navigate away via keyboard
-    pressEnter(screen.getByRole('button', { name: 'Market Intelligence Scorecard' }));
+    pressEnter(screen.getByRole('tab', { name: 'Market Intelligence Scorecard' }));
     expect(screen.getByLabelText('Supplier Concentration')).toBeInTheDocument();
 
     // Return to Category Profile Builder via keyboard Enter
-    pressEnter(screen.getByRole('button', { name: 'Category Profile Builder' }));
+    pressEnter(screen.getByRole('tab', { name: 'Category Profile Builder' }));
 
     expect(screen.getByLabelText('Category Name')).toBeInTheDocument();
     expect(screen.queryByLabelText('Supplier Concentration')).not.toBeInTheDocument();
@@ -740,22 +732,179 @@ describe('ProcurementToolsSection — keyboard tab activation', () => {
     render(<ProcurementToolsSection isAr={false} />);
 
     // Tab 1: Category Profile Builder (active by default — verify with Enter)
-    pressEnter(screen.getByRole('button', { name: 'Category Profile Builder' }));
+    pressEnter(screen.getByRole('tab', { name: 'Category Profile Builder' }));
     expect(screen.getByLabelText('Category Name')).toBeInTheDocument();
 
     // Tab 2: Spend Pareto Analysis via Space
-    pressSpace(screen.getByRole('button', { name: 'Spend Pareto Analysis' }));
+    pressSpace(screen.getByRole('tab', { name: 'Spend Pareto Analysis' }));
     expect(screen.getByLabelText('Supplier 1 name')).toBeInTheDocument();
     expect(screen.queryByLabelText('Category Name')).not.toBeInTheDocument();
 
     // Tab 3: Market Intelligence Scorecard via Enter
-    pressEnter(screen.getByRole('button', { name: 'Market Intelligence Scorecard' }));
+    pressEnter(screen.getByRole('tab', { name: 'Market Intelligence Scorecard' }));
     expect(screen.getByLabelText('Supplier Concentration')).toBeInTheDocument();
     expect(screen.queryByLabelText('Supplier 1 name')).not.toBeInTheDocument();
 
     // Back to Tab 1 via Space
-    pressSpace(screen.getByRole('button', { name: 'Category Profile Builder' }));
+    pressSpace(screen.getByRole('tab', { name: 'Category Profile Builder' }));
     expect(screen.getByLabelText('Category Name')).toBeInTheDocument();
     expect(screen.queryByLabelText('Supplier Concentration')).not.toBeInTheDocument();
+  });
+});
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Suite 9 — Arrow-key navigation (WAI-ARIA tablist pattern)
+   ArrowRight/ArrowLeft must move focus between tabs; focus must wrap at
+   the ends; the active panel must follow focus; Tab key leaves the tablist.
+══════════════════════════════════════════════════════════════════════════ */
+describe('ProcurementToolsSection — arrow-key tab navigation', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    cleanup();
+  });
+
+  /** Get all three tab buttons in DOM order. */
+  function getTabs() {
+    return screen.getAllByRole('tab');
+  }
+
+  it('ArrowRight on the first tab moves focus to the second tab', () => {
+    render(<ProcurementToolsSection isAr={false} />);
+    const [tab1, tab2] = getTabs();
+
+    tab1.focus();
+    expect(document.activeElement).toBe(tab1);
+
+    fireEvent.keyDown(tab1, { key: 'ArrowRight', code: 'ArrowRight', bubbles: true });
+
+    expect(document.activeElement).toBe(tab2);
+  });
+
+  it('ArrowRight on the second tab moves focus to the third tab', () => {
+    render(<ProcurementToolsSection isAr={false} />);
+    const [, tab2, tab3] = getTabs();
+
+    tab2.focus();
+    fireEvent.keyDown(tab2, { key: 'ArrowRight', code: 'ArrowRight', bubbles: true });
+
+    expect(document.activeElement).toBe(tab3);
+  });
+
+  it('ArrowLeft on the second tab moves focus back to the first tab', () => {
+    render(<ProcurementToolsSection isAr={false} />);
+    const [tab1, tab2] = getTabs();
+
+    tab2.focus();
+    fireEvent.keyDown(tab2, { key: 'ArrowLeft', code: 'ArrowLeft', bubbles: true });
+
+    expect(document.activeElement).toBe(tab1);
+  });
+
+  it('ArrowLeft on the third tab moves focus to the second tab', () => {
+    render(<ProcurementToolsSection isAr={false} />);
+    const [, tab2, tab3] = getTabs();
+
+    tab3.focus();
+    fireEvent.keyDown(tab3, { key: 'ArrowLeft', code: 'ArrowLeft', bubbles: true });
+
+    expect(document.activeElement).toBe(tab2);
+  });
+
+  it('ArrowRight on the last tab wraps focus to the first tab', () => {
+    render(<ProcurementToolsSection isAr={false} />);
+    const [tab1, , tab3] = getTabs();
+
+    tab3.focus();
+    fireEvent.keyDown(tab3, { key: 'ArrowRight', code: 'ArrowRight', bubbles: true });
+
+    expect(document.activeElement).toBe(tab1);
+  });
+
+  it('ArrowLeft on the first tab wraps focus to the last tab', () => {
+    render(<ProcurementToolsSection isAr={false} />);
+    const [tab1, , tab3] = getTabs();
+
+    tab1.focus();
+    fireEvent.keyDown(tab1, { key: 'ArrowLeft', code: 'ArrowLeft', bubbles: true });
+
+    expect(document.activeElement).toBe(tab3);
+  });
+
+  it('ArrowRight activates the panel matching the newly focused tab', () => {
+    render(<ProcurementToolsSection isAr={false} />);
+    const [tab1] = getTabs();
+
+    // Start at tab 1 (Category Profile Builder is default active)
+    tab1.focus();
+    fireEvent.keyDown(tab1, { key: 'ArrowRight', code: 'ArrowRight', bubbles: true });
+
+    // Tab 2 (Spend Pareto Analysis) panel should now be visible
+    expect(screen.getByLabelText('Supplier 1 name')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Category Name')).not.toBeInTheDocument();
+  });
+
+  it('ArrowLeft activates the panel matching the newly focused tab', () => {
+    render(<ProcurementToolsSection isAr={false} />);
+    const [, , tab3] = getTabs();
+
+    // Start at tab 3 (Market Intelligence Scorecard)
+    tab3.focus();
+    fireEvent.keyDown(tab3, { key: 'ArrowLeft', code: 'ArrowLeft', bubbles: true });
+
+    // Tab 2 (Spend Pareto Analysis) panel should now be visible
+    expect(screen.getByLabelText('Supplier 1 name')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Supplier Concentration')).not.toBeInTheDocument();
+  });
+
+  it('wrap ArrowRight: last → first activates the first panel', () => {
+    render(<ProcurementToolsSection isAr={false} />);
+    const [, , tab3] = getTabs();
+
+    tab3.focus();
+    fireEvent.keyDown(tab3, { key: 'ArrowRight', code: 'ArrowRight', bubbles: true });
+
+    // Wrapped to tab 1 — Category Profile Builder panel
+    expect(screen.getByLabelText('Category Name')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Supplier Concentration')).not.toBeInTheDocument();
+  });
+
+  it('wrap ArrowLeft: first → last activates the last panel', () => {
+    render(<ProcurementToolsSection isAr={false} />);
+    const [tab1] = getTabs();
+
+    tab1.focus();
+    fireEvent.keyDown(tab1, { key: 'ArrowLeft', code: 'ArrowLeft', bubbles: true });
+
+    // Wrapped to tab 3 — Market Intelligence Scorecard panel
+    expect(screen.getByLabelText('Supplier Concentration')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Category Name')).not.toBeInTheDocument();
+  });
+
+  it('active tab has tabIndex 0; inactive tabs have tabIndex -1', () => {
+    render(<ProcurementToolsSection isAr={false} />);
+    const [tab1, tab2, tab3] = getTabs();
+
+    // Default active is tab 1
+    expect(tab1.tabIndex).toBe(0);
+    expect(tab2.tabIndex).toBe(-1);
+    expect(tab3.tabIndex).toBe(-1);
+
+    // Move to tab 2 via ArrowRight
+    tab1.focus();
+    fireEvent.keyDown(tab1, { key: 'ArrowRight', code: 'ArrowRight', bubbles: true });
+
+    expect(tab1.tabIndex).toBe(-1);
+    expect(tab2.tabIndex).toBe(0);
+    expect(tab3.tabIndex).toBe(-1);
+  });
+
+  it('unrelated keys (e.g. Home) do not move focus', () => {
+    render(<ProcurementToolsSection isAr={false} />);
+    const [tab1] = getTabs();
+
+    tab1.focus();
+    fireEvent.keyDown(tab1, { key: 'Home', code: 'Home', bubbles: true });
+
+    expect(document.activeElement).toBe(tab1);
   });
 });
