@@ -239,6 +239,37 @@ describe('AIPlanPanel — result panel controls (authenticated)', () => {
     });
   });
 
+  it('Copy button delivers the full raw string for a long multi-section plan (##, ###, -, 1.)', async () => {
+    const longPlan = [
+      '## Supplier Development Plan',
+      '',
+      '### Section 1: Quality Improvement',
+      '- Conduct quarterly audits [HIGH]',
+      '- Share ISO 9001 checklist with supplier [MEDIUM]',
+      '- Schedule on-site review within 30 days [LOW]',
+      '',
+      '### Section 2: Delivery Performance',
+      '1. Agree on lead-time targets by end of month',
+      '2. Implement weekly shipment tracking [HIGH]',
+      '3. Escalate chronic delays to procurement director',
+      '',
+      '## Phase 2: Strategic Alignment',
+      '',
+      '### Long-term Goals',
+      '- **Joint roadmap** for capacity expansion [MEDIUM]',
+      '- Annual business review with C-suite',
+      '',
+      '1. Draft partnership agreement',
+      '2. Review after 6 months',
+    ].join('\n');
+
+    renderPanel({ result: longPlan });
+    fireEvent.click(screen.getByTitle('Copy to clipboard'));
+    await waitFor(() => {
+      expect(navigator.clipboard.writeText).toHaveBeenCalledWith(longPlan);
+    });
+  });
+
   it('Regenerate button calls onGenerate', () => {
     const onGenerate = vi.fn();
     renderPanel({ result: MOCK_RESULT, onGenerate });
