@@ -754,6 +754,18 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
     return kpi;
   }, [selectedIndustry, selectedSkuClass]);
 
+  // Re-load values from localStorage whenever the resolved slug (and therefore the storage key) changes
+  // on an already-mounted component.  The lazy initializer only runs once on mount, so without this
+  // effect slug A's values would leak into slug B's inputs on a prop change.
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(storageKey);
+      setValues(saved ? JSON.parse(saved) : {});
+    } catch {
+      setValues({});
+    }
+  }, [storageKey]);
+
   const bannerDismissKey = `isc-kpi-banner-dismissed-${resolvedSlug}`;
   const [bannerDismissed, setBannerDismissed] = useState<boolean>(() => {
     try { return localStorage.getItem(`isc-kpi-banner-dismissed-${resolvedSlug}`) === '1'; } catch { return false; }
