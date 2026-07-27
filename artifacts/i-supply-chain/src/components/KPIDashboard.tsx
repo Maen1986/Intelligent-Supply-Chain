@@ -2,14 +2,15 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { safeSetItem } from '@/lib/storage';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, Cell, PieChart, Pie,
+  ResponsiveContainer, Cell, ReferenceLine,
 } from 'recharts';
 import { useLanguage } from '@/lib/LanguageContext';
-import { Info, TrendingUp, TrendingDown, Download, Upload, LogIn } from 'lucide-react';
+import { Info, TrendingUp, TrendingDown, Download, Upload, LogIn, ChevronDown, ChevronUp } from 'lucide-react';
 import { parseCsvFile, downloadCsv } from '@/lib/importCsv';
 import { useAIPlan } from '@/hooks/useAIPlan';
 import { AIPlanPanel } from '@/components/AIPlanPanel';
 import { useAuth } from '@/lib/AuthContext';
+import { KPI_DATA_SPECS } from '@/lib/kpiDataSpecs';
 
 /* ─── KPI definition types ─── */
 interface KpiDef {
@@ -150,10 +151,22 @@ function scoreKpi(def: KpiDef, value: number): number {
   }
 }
 
+/* ─── 6-tier expert scoring system ─── */
+interface ScoreTier {
+  label: string; labelAr: string;
+  color: string; bg: string; border: string; leftBorderColor: string; badge: string;
+}
+export function scoreTier(score: number): ScoreTier {
+  if (score >= 95) return { label: 'World Class',     labelAr: 'مستوى عالمي',      color: '#059669', bg: 'bg-emerald-50', border: 'border-emerald-200', leftBorderColor: '#059669', badge: '🏆' };
+  if (score >= 80) return { label: 'Best-in-GCC',     labelAr: 'الأفضل خليجياً',   color: '#10b981', bg: 'bg-emerald-50', border: 'border-emerald-200', leftBorderColor: '#10b981', badge: '✅' };
+  if (score >= 65) return { label: 'Competitive',     labelAr: 'تنافسي',            color: '#3b82f6', bg: 'bg-blue-50',    border: 'border-blue-200',    leftBorderColor: '#3b82f6', badge: '📈' };
+  if (score >= 50) return { label: 'Developing',      labelAr: 'في التطوير',        color: '#f59e0b', bg: 'bg-amber-50',   border: 'border-amber-200',   leftBorderColor: '#f59e0b', badge: '⚡' };
+  if (score >= 35) return { label: 'Needs Attention', labelAr: 'يحتاج معالجة',      color: '#f97316', bg: 'bg-orange-50',  border: 'border-orange-200',  leftBorderColor: '#f97316', badge: '⚠️' };
+  return                   { label: 'Critical Gap',   labelAr: 'فجوة حرجة',         color: '#ef4444', bg: 'bg-red-50',     border: 'border-red-200',     leftBorderColor: '#ef4444', badge: '🔴' };
+}
+
 export function scoreColor(score: number): string {
-  if (score >= 80) return '#22c55e';
-  if (score >= 50) return '#f59e0b';
-  return '#ef4444';
+  return scoreTier(score).color;
 }
 
 /** Pure helper — returns the clamped 0-100 score and strokeDasharray values
@@ -170,16 +183,183 @@ export function miniGaugeState(rawScore: number, hasValue: boolean) {
 }
 
 function scoreBg(score: number): string {
-  if (score >= 80) return 'bg-emerald-50 border-emerald-200';
-  if (score >= 50) return 'bg-amber-50 border-amber-200';
-  return 'bg-red-50 border-red-200';
+  const t = scoreTier(score);
+  return `${t.bg} ${t.border}`;
 }
 
 function healthLabel(score: number, isAr: boolean): string {
-  if (score >= 80) return isAr ? 'أداء جيد — فوق المعيار المرجعي' : 'Strong — above GCC benchmark';
-  if (score >= 60) return isAr ? 'متوسط — يحتاج إلى تحسين مُركَّز' : 'Developing — targeted improvement needed';
-  if (score >= 40) return isAr ? 'ضعيف — فجوات أداء حرجة' : 'Weak — critical performance gaps';
-  return isAr ? 'يتطلّب تدخّلاً فورياً' : 'Immediate intervention required';
+  const t = scoreTier(score);
+  return isAr ? t.labelAr : t.label;
+}
+
+/* ─── GCC quartile position ─── */
+function kpiQuartile(def: KpiDef, value: number): 1 | 2 | 3 | 4 {
+  const { targetValue, benchmarkValue, higherIsBetter } = def;
+  const mid = (targetValue + benchmarkValue) / 2;
+  if (higherIsBetter) {
+    if (value >= targetValue) return 1;
+    if (value >= mid)         return 2;
+    if (value >= benchmarkValue) return 3;
+    return 4;
+  } else {
+    if (value <= targetValue) return 1;
+    if (value <= mid)         return 2;
+    if (value <= benchmarkValue) return 3;
+    return 4;
+  }
+}
+
+function quartileLabel(q: 1 | 2 | 3 | 4, isAr: boolean): string {
+  if (isAr) return ['أعلى 25%', 'ربع أعلى', 'ربع أدنى', 'أدنى 25%'][q - 1];
+  return ['Top 25%', 'Upper-Mid', 'Lower-Mid', 'Bottom 25%'][q - 1];
+}
+
+function quartileColor(q: 1 | 2 | 3 | 4): string {
+  return ['#059669', '#3b82f6', '#f59e0b', '#ef4444'][q - 1];
+}
+
+/* ─── Gap annotation ─── */
+function gapText(def: KpiDef, value: number, isAr: boolean): string | null {
+  const { targetValue, benchmarkValue, higherIsBetter, unit } = def;
+  const fmt = (n: number) => Number.isInteger(n) ? String(n) : n.toFixed(1);
+  if (higherIsBetter) {
+    const toTarget = targetValue - value;
+    const toBenchmark = value - benchmarkValue;
+    if (toTarget <= 0) return isAr ? `${fmt(Math.abs(toTarget))} ${unit} فوق الهدف ✓` : `${fmt(Math.abs(toTarget))} ${unit} above target ✓`;
+    if (toBenchmark >= 0) return isAr ? `${fmt(toTarget)} ${unit} للهدف · ${fmt(toBenchmark)} ${unit} فوق المعيار` : `${fmt(toTarget)} ${unit} to target · ${fmt(toBenchmark)} ${unit} above benchmark`;
+    return isAr ? `${fmt(toTarget)} ${unit} للهدف · ${fmt(Math.abs(toBenchmark))} ${unit} دون المعيار` : `${fmt(toTarget)} ${unit} to target · ${fmt(Math.abs(toBenchmark))} ${unit} below benchmark`;
+  } else {
+    const toTarget = value - targetValue;
+    const toBenchmark = benchmarkValue - value;
+    if (toTarget <= 0) return isAr ? `${fmt(Math.abs(toTarget))} ${unit} دون الهدف ✓` : `${fmt(Math.abs(toTarget))} ${unit} below target ✓`;
+    if (toBenchmark >= 0) return isAr ? `${fmt(toTarget)} ${unit} فوق الهدف · ${fmt(toBenchmark)} ${unit} دون المعيار` : `${fmt(toTarget)} ${unit} above target · ${fmt(toBenchmark)} ${unit} below benchmark`;
+    return isAr ? `${fmt(toTarget)} ${unit} فوق الهدف · ${fmt(Math.abs(toBenchmark))} ${unit} فوق المعيار` : `${fmt(toTarget)} ${unit} above target · ${fmt(Math.abs(toBenchmark))} ${unit} above benchmark`;
+  }
+}
+
+/* ─── Expert per-KPI consulting insight (CIPS-practitioner knowledge) ─── */
+function getKpiExpertInsight(kpiId: string, score: number, _value: number, _unit: string, isAr: boolean): string {
+  if (isAr) return '';
+  // tier index 0=Critical(<35) … 5=WorldClass(≥95)
+  const t = score >= 95 ? 5 : score >= 80 ? 4 : score >= 65 ? 3 : score >= 50 ? 2 : score >= 35 ? 1 : 0;
+  const map: Record<string, string[]> = {
+    por: [
+      'Customer attrition risk is acute. Run an emergency Pareto on failure modes — documentation errors and OTIF shortfalls typically account for 80% of imperfect orders.',
+      'Each 1pp improvement in POR recovers ~0.3% of revenue. Isolate the dominant failure mode (OTIF vs pick accuracy vs damage) before spreading effort.',
+      'Below the GCC median. Root cause is typically split between carrier OTIF and WMS pick accuracy. A 90-day focused kaizen on both routinely yields 5–8pp uplift.',
+      'Approaching benchmark. Residual leakage at this level is almost always documentation — audit invoice accuracy and PoD timeliness monthly.',
+      'Above GCC benchmark. Sustain via weekly carrier scorecards and a zero-defect order confirmation workflow.',
+      'World-class fulfilment. Focus shifts to cost-of-quality — reduce the overhead of achieving perfection, not just the defect rate.',
+    ],
+    otif: [
+      'Critical delivery risk — customer trust erosion is accelerating. Triage your top 3 failing routes and suppliers this week.',
+      'Identify whether the gap is transport (timing) or supplier (quantity). The intervention differs fundamentally between the two.',
+      'Below the 82% GCC median. Dynamic safety stock and multi-modal routing optionality typically close 60% of the gap.',
+      'Competitive. Carriers with consistent >94% OTIF should receive volume concentration; underperformers managed out at next review.',
+      'Strong OTIF. Lock in performance with SLA penalty/reward clauses at the next contract renewal.',
+      'World-class delivery performance. Consider monetising reliability as a premium service tier for key customers.',
+    ],
+    c2c: [
+      'Cash cycle this poor is a balance-sheet drag. Immediate lever: extend supplier payment terms to 60 days and tighten AR collection to net-30.',
+      'Every 10-day reduction in C2C releases ~2–3% of annual revenue as working capital. Prioritise debtor days — highest impact, fastest return.',
+      'Above the 48-day GCC benchmark. A supplier payment terms review (targeting net-60) combined with dynamic discounting can close half the gap in one cycle.',
+      'Competitive working capital. Next lever is inventory — each turn improvement reduces C2C by ~8 days on average.',
+      'Efficient cash cycle. Consider supply chain financing programmes to extend terms without damaging supplier relationships.',
+      'World-class working capital management. This is a competitive moat — protect it aggressively in commercial negotiations.',
+    ],
+    savings: [
+      'Below the GCC floor — procurement is likely operating reactively. Establish Category Management before attempting savings targets.',
+      'Implement a structured pipeline of competitive tenders. Even a single category re-bid typically yields 6–12% on addressable spend.',
+      'Category management maturity is the key lever. Organisations that segment spend into 6+ categories consistently achieve 8–12% savings.',
+      'Strong savings delivery. Move the agenda to total cost of ownership — unit price optimisation has diminishing returns above 8%.',
+      'Exceptional performance. Build a savings validation framework to ensure realised savings hit the P&L, not just the procurement report.',
+      'World-class. Focus on value creation beyond cost — innovation pipelines and co-investment with strategic suppliers.',
+    ],
+    pocycle: [
+      'PO cycle times this long signal a broken approval workflow. Map every approval step — over 50% can typically be eliminated or automated.',
+      'Streamline the approval matrix to 2 levels maximum for routine requisitions. This single change reduces cycle time by 40–50%.',
+      'Introduce a self-service catalogue for C-class items targeting same-day PO. This removes low-value transactions from the approval queue.',
+      'Competitive. Next step is straight-through processing — automate PO creation for pre-approved items under contract.',
+      'Strong PO speed. Implement touchless processing for catalogue items to push the mean below 5 days.',
+      'World-class procure-to-pay speed. This is genuinely rare in the GCC — document and benchmark the process.',
+    ],
+    fa: [
+      'Forecast accuracy this low generates excess inventory and stockouts simultaneously. Implement a structured S&OP rhythm before any other improvement.',
+      'A 13-week rolling forecast reviewed weekly with commercial teams typically lifts accuracy by 15–20pp in the first quarter.',
+      'Statistical forecasting (Holt-Winters or moving average) for A-class items outperforms manual judgment at this range.',
+      'Solid accuracy. Segment your SKU portfolio by forecast error quartile and apply differentiated safety-stock policies.',
+      'Strong forecast performance. Layer in demand sensing — POS data or customer order signals — to target above 90%.',
+      'World-class forecasting. Quantify and communicate the working capital benefit to the CFO — this earns sustained investment.',
+    ],
+    turns: [
+      'Turns this low indicate significant dead stock. Run an ABC-XYZ analysis and liquidate Z-class items immediately to free cash.',
+      'Implement a Slow-Moving and Obsolete stock review monthly. Even 1 turn improvement releases significant working capital.',
+      'Demand-driven replenishment (min-max or kanban) for A-class items typically adds 1.5–2 turns within a quarter.',
+      'Competitive. Fine-tune safety stock calculations using statistical service-level targets rather than fixed days-of-supply rules.',
+      'Strong inventory performance. Introduce vendor-managed inventory (VMI) with top suppliers to push turns without service risk.',
+      'World-class inventory management. Your working capital efficiency is exceptional — sustain via weekly S&OP and dynamic reorder points.',
+    ],
+    sigma: [
+      'At 2σ or below, defects are consuming 15–40% of revenue in COPQ. A single focused DMAIC project on your highest-volume process will typically yield 1σ improvement.',
+      'Between 2–3σ. Structured root-cause analysis (Ishikawa + 5-Why) on your top-3 defect types will isolate the vital few causes.',
+      'Approaching 3σ. Statistical Process Control charts identify drift before defects occur — implement on critical parameters first.',
+      'At 3σ+, you are competitive. Design of Experiments on key process variables is the most efficient path to 4σ.',
+      'Strong sigma performance. Focus on design-for-quality to prevent new defect modes as your portfolio evolves.',
+      'World-class quality. At 4σ+, focus shifts to poka-yoke error-proofing to maintain this level as you scale.',
+    ],
+    pce: [
+      'Less than 8% value-added time means over 92% of your process is waste. A Value Stream Mapping workshop will expose dominant waste types immediately.',
+      'Focus on wait time and transport waste — they account for 60%+ of non-value time in most supply chains. Quick wins via pull scheduling.',
+      'A focused Kaizen event on your longest wait step typically doubles PCE within 90 days.',
+      'Competitive. Digitising handoff points (removing paper-based approvals) is the fastest remaining lever at this PCE range.',
+      'Strong process efficiency. Now consider value engineering to eliminate necessary-but-non-value-added steps.',
+      'World-class process design. Your lead time is a genuine competitive advantage — quantify and communicate it.',
+    ],
+    mav: [
+      'Maverick spend above 15% is a compliance crisis. Enforce a PO-mandatory policy with system controls, not just policy documents.',
+      'Target the top 5 non-compliant spend categories — they typically represent 70%+ of total maverick spend.',
+      'An approved supplier catalogue covering 80% of transactional spend eliminates most maverick purchasing. Build the catalogue first.',
+      'Below 10% maverick spend is competitive. Automate flagging of off-contract POs to sustain the discipline.',
+      'Strong compliance posture. Automate approval routing so on-contract purchasing is always the path of least resistance.',
+      'World-class — typically only achieved with a mature P2P system and embedded category management. Protect it.',
+    ],
+    rrc: [
+      'Without a comprehensive risk register, critical single-points-of-failure are invisible. Start with your top 20 suppliers.',
+      'Prioritise risks by probability × impact. The top 10 by score should each have a named owner and mitigation action within 30 days.',
+      'Move from risk identification to quantification. Assign financial exposure to each risk — this transforms leadership conversations.',
+      'Good risk coverage. Integrate the register with supplier scorecards so risk levels update dynamically, not just at annual reviews.',
+      'Strong risk maturity. Stress-test mitigations with tabletop exercises to validate their real-world effectiveness.',
+      'World-class risk governance. Your supply chain resilience is a demonstrable competitive advantage in the GCC market.',
+    ],
+    pocomp: [
+      'PO compliance below 60% means contracts are being bypassed — negotiate leverage is lost and audit risk is high. Enforce at system level.',
+      'Identify the top 5 buyers generating off-contract POs. Training and targeted coaching on this cohort closes 60% of the gap.',
+      'Below 72% GCC benchmark. A contract-first approval workflow (system blocks non-contract POs unless justified) is the fastest fix.',
+      'Competitive compliance. Monthly compliance reports shared with category managers creates accountability that sustains the trend.',
+      'Strong compliance. Audit a random 5% sample monthly to catch emerging gaps before they compound.',
+      'World-class. Compliance at this level delivers maximum contract value and minimum audit risk.',
+    ],
+    sotif: [
+      'Supplier delivery at this level is a direct revenue risk. Issue a formal performance improvement notice to your bottom-quartile suppliers.',
+      'Segment suppliers by OTIF band. The bottom quartile typically drives 80% of delivery failures — intensive management here creates disproportionate improvement.',
+      'Below 80% GCC benchmark. Joint delivery performance reviews with key suppliers, held monthly rather than quarterly, consistently lift OTIF by 8–12pp.',
+      'Competitive supplier delivery. Introduce delivery performance as a weighted criterion in the next tender evaluation.',
+      'Strong. Consider a vendor-managed inventory programme with your top-5 OTIF performers — it deepens the relationship and further improves service.',
+      'World-class supplier delivery. This is a genuine competitive advantage — build it into your SRM value proposition.',
+    ],
+  };
+  const insight = map[kpiId];
+  if (insight) return insight[t] ?? insight[0];
+  // Generic fallback by tier
+  const generic = [
+    'Critical gap — define a corrective action plan with a 30-day horizon and a single named owner.',
+    'Significant gap to benchmark. Diagnose root cause before committing to a solution — symptom-driven fixes rarely hold.',
+    'Below GCC benchmark. A structured improvement initiative with defined milestones will close the gap in 2–3 quarters.',
+    'Competitive performance. Fine-tune through process discipline and measurement cadence to reach best-in-GCC tier.',
+    'Above GCC benchmark. Sustain through governance — benchmark data shifts every 18 months, so keep measuring.',
+    'World-class performance. Document your approach as a repeatable process and export the capability to adjacent areas.',
+  ];
+  return generic[t];
 }
 
 const NAVY = '#082C6B';
@@ -243,6 +423,149 @@ function MiniGauge({ score, hasValue }: { score: number; hasValue: boolean }) {
   );
 }
 
+/* ─── Performance Intelligence Panel ─── */
+interface PIScore { kpi: KpiDef; score: number; value: number; }
+function PerformanceIntelligence({ scores, isAr, kpisTotal }: {
+  scores: PIScore[]; isAr: boolean; kpisTotal: number;
+}) {
+  const entered = scores.filter(s => s.score !== null) as PIScore[];
+  if (entered.length < 3) return null;
+
+  const sorted = [...entered].sort((a, b) => b.score - a.score);
+  const strengths = sorted.slice(0, 3);
+  const gaps      = sorted.slice(-Math.min(3, sorted.length)).reverse()
+                          .filter(g => g.score < 80); // only show genuine gaps
+  const avgScore  = Math.round(entered.reduce((s, e) => s + e.score, 0) / entered.length);
+
+  const verdict = avgScore >= 80
+    ? (isAr
+        ? 'أداء سلسلة الإمداد لديك فوق المعدّل الخليجي — الخطوة التالية هي تعزيز الفجوات المتبقية للانتقال من مشغّل موثوق إلى رائد في السوق.'
+        : 'Your supply chain performance is above the GCC average. The next phase is converting your remaining gaps into structural advantages. Concentrate effort on your bottom-quartile KPIs — they represent the highest ROI improvement opportunity and the most direct path to market leadership.')
+    : avgScore >= 65
+    ? (isAr
+        ? 'أداء تنافسي مع فجوات قابلة للمعالجة. التركيز المنضبط على المؤشرات الحرجة مع مالكين واضحين يُحوّل الوضع خلال ربعين.'
+        : 'Competitive performance with addressable gaps. Disciplined focus on your critical KPIs — with structured root-cause analysis and a single named owner per gap — will shift your GCC ranking significantly within two quarters. Avoid the common trap of launching too many initiatives simultaneously.')
+    : avgScore >= 50
+    ? (isAr
+        ? 'الأداء دون المعيار الخليجي في عدة مجالات. الأولوية هي إصلاح الأساس — البيانات والحوكمة وملكية العمليات — قبل الطموح بالتميّز.'
+        : 'Performance is below the GCC benchmark across multiple areas. The priority is fixing foundations — data quality, governance structures, and clear process ownership — before pursuing best-in-class ambitions. A 90-day stabilisation plan with three focused initiatives is the right starting point; attempting everything in parallel is the most common failure mode.')
+    : (isAr
+        ? 'فجوات أداء حرجة تستدعي تدخّلاً فورياً. ابدأ بأعلى مؤشرَين تأثيراً وعيّن مالكاً واحداً لكل مسار تحسين.'
+        : 'Critical performance gaps require immediate executive intervention. Start with the two highest-impact KPIs, assign single accountable owners, and establish a 30-day crisis review cadence. Attempting to fix everything simultaneously is guaranteed to fail — sequenced, focused effort is what produces results at this stage.');
+
+  return (
+    <div className="rounded-2xl border border-[#082C6B]/12 overflow-hidden shadow-sm">
+      {/* Panel header */}
+      <div className="px-5 py-3.5 flex items-center gap-3" style={{ background: `linear-gradient(135deg, ${NAVY} 0%, #0B3D91 100%)` }}>
+        <div className="w-7 h-7 rounded-lg bg-white/15 flex items-center justify-center shrink-0">
+          <span className="text-sm">🎯</span>
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="font-bold text-white text-sm leading-tight">
+            {isAr ? 'ذكاء الأداء — تحليل ISC' : 'Performance Intelligence — ISC Diagnostic'}
+          </p>
+          <p className="text-white/60 text-[10px] mt-0.5">
+            {isAr
+              ? `بناءً على ${entered.length} من ${kpisTotal} مؤشراً مُدخَلاً`
+              : `${entered.length} of ${kpisTotal} KPIs entered · Ma'in Alhaqash MCIPS CPSM`}
+          </p>
+        </div>
+        <div className="text-right shrink-0">
+          <p className="text-white/50 text-[10px] uppercase tracking-wider">{isAr ? 'متوسط الأداء' : 'Avg Score'}</p>
+          <p className="font-extrabold text-xl leading-tight" style={{ color: scoreColor(avgScore) }}>{avgScore}</p>
+        </div>
+      </div>
+
+      <div className="bg-white p-5">
+        <div className="grid md:grid-cols-2 gap-5 mb-5">
+          {/* Strengths */}
+          <div>
+            <p className="text-[10px] font-bold text-emerald-700 uppercase tracking-widest mb-3 flex items-center gap-1.5">
+              <span className="w-4 h-4 rounded-full bg-emerald-100 inline-flex items-center justify-center">✅</span>
+              {isAr ? 'المزايا التنافسية' : 'Competitive Strengths'}
+            </p>
+            <div className="space-y-2">
+              {strengths.map(({ kpi, score }) => {
+                const t = scoreTier(score);
+                const q = kpiQuartile(kpi, score); // approximate quartile from score
+                return (
+                  <div key={kpi.id} className="flex items-center gap-3 p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+                    <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 font-extrabold text-xs"
+                      style={{ background: t.color + '15', color: t.color }}>
+                      {score}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-bold text-slate-800 leading-snug truncate">{isAr ? kpi.labelAr : kpi.label}</p>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full"
+                          style={{ background: t.color + '15', color: t.color }}>{isAr ? t.labelAr : t.label}</span>
+                        <span className="text-[10px] text-muted-foreground">{kpi.unit}</span>
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="text-[10px] font-bold" style={{ color: t.color }}>{t.badge}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Priority Gaps */}
+          <div>
+            <p className="text-[10px] font-bold text-red-700 uppercase tracking-widest mb-3 flex items-center gap-1.5">
+              <span className="w-4 h-4 rounded-full bg-red-100 inline-flex items-center justify-center text-red-600">⚠</span>
+              {isAr ? 'أولويات التحسين' : 'Priority Improvement Areas'}
+            </p>
+            <div className="space-y-2">
+              {(gaps.length ? gaps : sorted.slice(-3).reverse()).map(({ kpi, score, value }) => {
+                const t = scoreTier(score);
+                const insight = getKpiExpertInsight(kpi.id, score, value, kpi.unit, isAr);
+                return (
+                  <div key={kpi.id} className="p-2.5 rounded-xl border" style={{ borderColor: t.color + '30', background: t.color + '06' }}>
+                    <div className="flex items-center gap-3 mb-1.5">
+                      <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 font-extrabold text-xs"
+                        style={{ background: t.color + '15', color: t.color }}>
+                        {score}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-bold text-slate-800 leading-snug truncate">{isAr ? kpi.labelAr : kpi.label}</p>
+                        <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full inline-block mt-0.5"
+                          style={{ background: t.color + '15', color: t.color }}>{isAr ? t.labelAr : t.label}</span>
+                      </div>
+                    </div>
+                    {!isAr && insight && (
+                      <p className="text-[10px] text-slate-600 leading-relaxed border-t pt-1.5" style={{ borderColor: t.color + '20' }}>
+                        {insight}
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* Expert Verdict */}
+        <div className="rounded-xl p-4 border border-[#082C6B]/10" style={{ background: 'linear-gradient(135deg, #082C6B08, #082C6B03)' }}>
+          <div className="flex items-start gap-2.5">
+            <div className="w-6 h-6 rounded-lg bg-[#082C6B]/10 flex items-center justify-center shrink-0 mt-0.5">
+              <span className="text-xs">💼</span>
+            </div>
+            <div className="flex-1">
+              <div className="flex items-center justify-between gap-2 mb-1.5">
+                <p className="text-xs font-bold text-primary">{isAr ? 'الحكم التنفيذي' : 'Expert Verdict'}</p>
+                <p className="text-[10px] text-muted-foreground/70 italic">Ma'in Alhaqash MCIPS CPSM</p>
+              </div>
+              <p className="text-xs text-slate-700 leading-relaxed">{verdict}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ─── Main component ─── */
 interface KPIDashboardProps { slug: string; }
 
@@ -267,6 +590,7 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
   const [importLog, setImportLog] = useState<string[] | null>(null);
   const importInputRef = useRef<HTMLInputElement | null>(null);
   const [saveFailed, setSaveFailed] = useState(false);
+  const [expandedKpi, setExpandedKpi] = useState<string | null>(null);
 
   /* ── AI Plan (hook must be called before the !kpis early return) ── */
   const buildKpiPrompt = useCallback((): string => {
@@ -325,48 +649,178 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
 
   useEffect(() => () => { if (saveTimer.current) clearTimeout(saveTimer.current); }, []);
 
-  /* ── CSV template ── */
+  /* ── CSV template (professional data-collection format) ── */
   const downloadKpiTemplate = () => {
     if (!kpis) return;
-    const headers = ['KPI ID', 'KPI Name', 'Actual Value', 'Unit', 'Target', 'Benchmark', 'Status'];
-    const rows = kpis.map((k, i) => {
-      const row = i + 2; // row 1 is header
-      // Parse numeric target from targetLabel (e.g. ">95%" → 95, "<28 days" → 28)
-      const targetNum = k.targetValue;
-      // Direction: higherIsBetter → ">", lowerIsBetter → "<"
-      const dir = k.higherIsBetter ? '>' : '<';
-      // Formula: if Actual is empty → blank; compare C against E (Target col)
-      const formula = `=IF(C${row}="","",IF(ISNUMBER(C${row}*1),IF("${dir}"=">",IF(C${row}*1>=${targetNum},"🟢 GREEN","🔴 RED"),IF(C${row}*1<=${targetNum},"🟢 GREEN","🔴 RED")),""))`;
-      return [k.id, k.label, '', k.unit, k.targetLabel, k.benchmarkLabel, formula];
+
+    const frameworkLabel = resolvedSlug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+    const today = new Date().toLocaleDateString('en-GB', { year: 'numeric', month: 'long', day: 'numeric' });
+
+    const allRows: string[][] = [
+      // Branding / title block
+      ['I Supply Chain — KPI Data Collection Template', '', '', '', '', ''],
+      [`Framework: ${frameworkLabel}`, '', '', '', '', ''],
+      [`Generated: ${today} | Ma'in Alhaqash MCIPS CPSM | isupplychain.com`, '', '', '', '', ''],
+      ['', '', '', '', '', ''],
+      ['INSTRUCTIONS:', 'Fill in the "Your Value" column (column C) for EVERY input row.', '', '', '', ''],
+      ['', 'Do NOT modify KPI ID, Input Field, Unit, or Formula columns.', '', '', '', ''],
+      ['', 'When complete, click "Import CSV" in the KPI Dashboard to auto-calculate results.', '', '', '', ''],
+      ['', 'Each KPI section shows what raw data to collect and exactly where to find it.', '', '', '', ''],
+      ['', '', '', '', '', ''],
+      // Column headers
+      ['KPI ID', 'Input Field', 'Your Value', 'Unit', 'Data Source / Where to Find This', 'Calculation Formula'],
+    ];
+
+    kpis.forEach(k => {
+      const spec = KPI_DATA_SPECS[k.id];
+
+      // KPI section header
+      allRows.push(['', '', '', '', '', '']);
+      allRows.push([
+        `=== ${k.label.toUpperCase()} ===`,
+        spec ? spec.methodology.substring(0, 120) + (spec.methodology.length > 120 ? '…' : '') : k.description,
+        '', '', '', spec ? spec.formula : '',
+      ]);
+
+      if (spec) {
+        // One row per raw input
+        spec.inputs.forEach(inp => {
+          allRows.push([
+            k.id,
+            inp.label,
+            '',                        // ← client fills this
+            inp.unit,
+            inp.dataSource,
+            '',
+          ]);
+        });
+        // Notes row
+        if (spec.notes) {
+          allRows.push(['', `📌 Note: ${spec.notes}`, '', '', '', '']);
+        }
+        // Calculated result placeholder
+        allRows.push([
+          `${k.id}__result`,
+          `[AUTO-CALCULATED] ${k.label}`,
+          '← calculated on import',
+          k.unit,
+          `Target: ${k.targetLabel} | GCC Benchmark: ${k.benchmarkLabel}`,
+          spec.formula,
+        ]);
+      } else {
+        // Fallback for KPIs without a spec: simple direct entry
+        allRows.push([k.id, `Enter your ${k.label} value directly`, '', k.unit, k.description, '']);
+        allRows.push([
+          `${k.id}__result`,
+          `[DIRECT ENTRY] ${k.label}`,
+          '',
+          k.unit,
+          `Target: ${k.targetLabel} | Benchmark: ${k.benchmarkLabel}`,
+          'Direct value — no raw inputs required',
+        ]);
+      }
     });
-    downloadCsv([headers, ...rows], `kpi-template-${resolvedSlug}.csv`);
+
+    // Footer
+    allRows.push(['', '', '', '', '', '']);
+    allRows.push(['--- END OF TEMPLATE ---', 'Return the completed file to I Supply Chain or import directly into the KPI Dashboard.', '', '', '', '']);
+
+    downloadCsv(allRows, `ISC-KPI-Data-Collection-${resolvedSlug}-${today.replace(/\s/g, '-')}.csv`);
   };
 
-  /* ── CSV import ── */
+  /* ── CSV import — supports both the new data-collection format and the legacy direct-entry format ── */
   const handleKpiImport = (file: File) => {
     if (!kpis) return;
     const reader = new FileReader();
     reader.onload = (e) => {
       const text = e.target?.result as string;
-      const { rows: csvRows, errors } = parseCsvFile(text, ['KPI ID', 'Actual Value']);
-      if (errors.length > 0 && csvRows.length === 0) { setImportLog([isAr ? 'فشل الاستيراد:' : 'Import failed:', ...errors]); return; }
-      const log: string[] = [...errors];
+      const log: string[] = [];
       const nextValues = { ...values };
       let count = 0;
-      csvRows.forEach((row, i) => {
-        const kpiId = row['KPI ID']?.trim();
-        const val = row['Actual Value']?.trim();
-        const kpiDef = kpis.find(k => k.id === kpiId || k.label === row['KPI Name']?.trim());
-        if (!kpiDef) { if (kpiId) log.push(`Row ${i + 2}: KPI ID "${kpiId}" not in this framework — skipped.`); return; }
-        if (val !== undefined && val !== '') {
-          const num = parseFloat(val);
-          if (isNaN(num)) { log.push(`Row ${i + 2}: Actual Value "${val}" must be a number — skipped.`); return; }
-          nextValues[kpiDef.id] = val; count++;
-        }
-      });
+
+      // Detect format: new data-collection template has "Input Field" and "Your Value" columns
+      const isNewFormat = text.includes('Your Value') && text.includes('Input Field');
+
+      if (isNewFormat) {
+        // ── New format: collect raw inputs per KPI, then calculate ──
+        const { rows: csvRows } = parseCsvFile(text, ['KPI ID', 'Input Field', 'Your Value', 'Unit']);
+        if (!csvRows.length) { setImportLog([isAr ? 'فشل الاستيراد: لا توجد بيانات.' : 'Import failed: no data rows found.']); return; }
+
+        // Group input values by kpiId
+        const inputsByKpi: Record<string, Record<string, number>> = {};
+        csvRows.forEach(row => {
+          const kpiId = row['KPI ID']?.trim().toLowerCase();
+          const inputLabel = row['Input Field']?.trim();
+          const rawVal = row['Your Value']?.trim();
+          if (!kpiId || kpiId.startsWith('===') || kpiId.startsWith('---') || kpiId === '' || kpiId.endsWith('__result')) return;
+          if (!rawVal || rawVal === '← calculated on import') return;
+          const num = parseFloat(rawVal.replace(/,/g, ''));
+          if (isNaN(num)) { log.push(`Skipped "${inputLabel}": "${rawVal}" is not a number.`); return; }
+
+          const spec = KPI_DATA_SPECS[kpiId];
+          if (!spec) return;
+          // Match input field by position / label
+          const inputDef = spec.inputs.find(inp =>
+            inputLabel.toLowerCase().includes(inp.id.toLowerCase()) ||
+            inp.label.toLowerCase().substring(0, 30) === inputLabel.toLowerCase().substring(0, 30),
+          ) ?? spec.inputs.find((_, idx) => {
+            // fallback: match by row order within this KPI's inputs
+            const kpiRows = csvRows.filter(r => r['KPI ID']?.trim().toLowerCase() === kpiId && r['Your Value']?.trim() && r['Your Value']?.trim() !== '← calculated on import');
+            return kpiRows.indexOf(row) === idx;
+          });
+
+          if (!inputDef) return;
+          if (!inputsByKpi[kpiId]) inputsByKpi[kpiId] = {};
+          inputsByKpi[kpiId][inputDef.id] = num;
+        });
+
+        // Calculate each KPI from collected inputs
+        kpis.forEach(k => {
+          const spec = KPI_DATA_SPECS[k.id];
+          const inputs = inputsByKpi[k.id];
+          if (!inputs || !spec) return;
+
+          const requiredIds = spec.inputs.map(i => i.id);
+          const missingIds = requiredIds.filter(id => inputs[id] === undefined);
+          if (missingIds.length > 0) {
+            // Try positional matching: assign by order
+            const vals = Object.values(inputs);
+            if (vals.length === requiredIds.length) {
+              requiredIds.forEach((id, idx) => { inputs[id] = vals[idx]; });
+            } else {
+              log.push(`${k.label}: missing inputs (${missingIds.join(', ')}) — skipped.`);
+              return;
+            }
+          }
+
+          const result = spec.calculate(inputs);
+          if (isNaN(result)) { log.push(`${k.label}: calculation returned invalid result — check input values.`); return; }
+          nextValues[k.id] = String(result);
+          log.push(`✓ ${k.label}: calculated ${result} ${k.unit}`);
+          count++;
+        });
+
+      } else {
+        // ── Legacy format: direct KPI value entry (KPI ID + Actual Value) ──
+        const { rows: csvRows, errors } = parseCsvFile(text, ['KPI ID', 'Actual Value']);
+        if (errors.length > 0 && csvRows.length === 0) { setImportLog([isAr ? 'فشل الاستيراد:' : 'Import failed:', ...errors]); return; }
+        log.push(...errors);
+        csvRows.forEach((row, i) => {
+          const kpiId = row['KPI ID']?.trim();
+          const val = row['Actual Value']?.trim();
+          const kpiDef = kpis.find(k => k.id === kpiId || k.label === row['KPI Name']?.trim());
+          if (!kpiDef) { if (kpiId) log.push(`Row ${i + 2}: KPI ID "${kpiId}" not recognised — skipped.`); return; }
+          if (val !== undefined && val !== '') {
+            const num = parseFloat(val);
+            if (isNaN(num)) { log.push(`Row ${i + 2}: "${val}" must be a number — skipped.`); return; }
+            nextValues[kpiDef.id] = val; count++;
+          }
+        });
+      }
+
       setValues(nextValues);
       setSaveFailed(!safeSetItem(storageKey, JSON.stringify(nextValues)));
-      log.unshift(isAr ? `✓ تم تحديث ${count} مؤشر(ات).` : `✓ Updated ${count} KPI(s).`);
+      log.unshift(isAr ? `✓ تم احتساب ${count} مؤشر(ات) وتحديثها.` : `✓ ${count} KPI(s) calculated and updated.`);
       setImportLog(log);
     };
     reader.readAsText(file);
@@ -401,6 +855,9 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
   const healthScore = scoredKpis.length
     ? Math.round(scoredKpis.reduce((sum, s) => sum + (s.score ?? 0), 0) / scoredKpis.length)
     : 0;
+
+  /* scored entries used by Performance Intelligence */
+  const piScores = scores.filter(s => s.score !== null) as { kpi: KpiDef; score: number; value: number }[];
 
   /* bar chart data */
   const barData = scores.map(s => ({
@@ -491,56 +948,196 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
               {isAr ? 'أدخل أرقامك لرؤية نتيجتك' : 'Enter your numbers to see your score'}
             </p>
           )}
-          <div className="w-full mt-2 space-y-1">
-            {[{ label: isAr ? 'ممتاز ≥80' : 'Strong ≥80', color: '#22c55e' }, { label: isAr ? 'متوسط ≥50' : 'Developing ≥50', color: '#f59e0b' }, { label: isAr ? 'ضعيف <50' : 'Weak <50', color: '#ef4444' }].map(b => (
-              <div key={b.label} className="flex items-center gap-2 text-xs text-muted-foreground">
-                <div className="w-3 h-3 rounded-full shrink-0" style={{ background: b.color }} />
-                {b.label}
-              </div>
-            ))}
+          <div className="w-full mt-3 space-y-1.5">
+            <p className="text-[9px] font-bold text-muted-foreground/60 uppercase tracking-widest mb-1">
+              {isAr ? 'مستويات الأداء' : 'Performance Tiers'}
+            </p>
+            {([95, 80, 65, 50, 35, 0] as const).map(threshold => {
+              const t = scoreTier(threshold);
+              return (
+                <div key={t.label} className="flex items-center gap-2 text-[10px]">
+                  <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: t.color }} />
+                  <span className="text-muted-foreground font-medium">
+                    {isAr ? t.labelAr : t.label}
+                    <span className="opacity-50 ml-1 font-normal">
+                      {threshold === 0 ? (isAr ? '<35' : '<35') : `≥${threshold}`}
+                    </span>
+                  </span>
+                </div>
+              );
+            })}
           </div>
         </div>
 
-        {/* KPI input cards */}
+        {/* KPI input cards — premium design */}
         <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-3">
-          {scores.map(({ kpi, score, value }) => (
-            <div key={kpi.id} className={`bg-white border rounded-xl p-4 shadow-sm ${score !== null ? scoreBg(score) : 'border-border'}`}>
-              <div className="flex items-start justify-between gap-2 mb-2">
-                <label className="text-xs font-bold text-primary leading-snug flex-1" htmlFor={`kpi-${kpi.id}`}>
-                  {isAr ? kpi.labelAr : kpi.label}
-                </label>
-                {score !== null && (
-                  <span className="text-xs font-extrabold shrink-0 px-1.5 py-0.5 rounded-full" style={{ background: scoreColor(score) + '20', color: scoreColor(score) }}>
-                    {score}%
-                  </span>
-                )}
+          {scores.map(({ kpi, score, value }) => {
+            const spec   = KPI_DATA_SPECS[kpi.id];
+            const isExp  = expandedKpi === kpi.id;
+            const t      = score !== null ? scoreTier(score) : null;
+            const q      = (score !== null && !isNaN(value)) ? kpiQuartile(kpi, value) : null;
+            const gap    = (score !== null && !isNaN(value)) ? gapText(kpi, value, isAr) : null;
+            const insight = (score !== null && !isNaN(value))
+              ? getKpiExpertInsight(kpi.id, score, value, kpi.unit, isAr) : null;
+
+            return (
+              <div key={kpi.id}
+                className="bg-white rounded-xl shadow-sm overflow-hidden flex"
+                style={{ border: `1px solid ${t ? t.color + '35' : '#e5e7eb'}` }}>
+
+                {/* Left tier accent bar */}
+                <div className="w-1 shrink-0 rounded-l-xl" style={{ background: t ? t.color : '#e5e7eb' }} />
+
+                <div className="flex-1 min-w-0">
+                  {/* Card header */}
+                  <div className="p-3 pb-0">
+                    <div className="flex items-start gap-1.5 mb-2">
+                      <label className="text-xs font-bold text-primary leading-snug flex-1 cursor-pointer" htmlFor={`kpi-${kpi.id}`}>
+                        {isAr ? kpi.labelAr : kpi.label}
+                      </label>
+                      {/* Tier + quartile badges */}
+                      {t && q && (
+                        <div className="flex items-center gap-1 shrink-0">
+                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap"
+                            style={{ background: t.color + '18', color: t.color }}>
+                            {t.badge} {isAr ? t.labelAr : t.label}
+                          </span>
+                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap"
+                            style={{ background: quartileColor(q) + '15', color: quartileColor(q) }}>
+                            {quartileLabel(q, isAr)}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Input row */}
+                    <div className="flex items-center gap-2 mb-1">
+                      <input id={`kpi-${kpi.id}`} type="number" step="any" min="0"
+                        value={values[kpi.id] ?? ''}
+                        onChange={e => handleChange(kpi.id, e.target.value)}
+                        placeholder={isAr ? `المرجع: ${kpi.benchmarkLabel}` : `Benchmark: ${kpi.benchmarkLabel}`}
+                        className="w-full text-sm border rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:border-transparent bg-white transition-colors"
+                        style={{
+                          borderColor: t ? t.color + '50' : '#e5e7eb',
+                          ['--tw-ring-color' as string]: t ? t.color + '40' : '#e5e7eb',
+                        }}
+                      />
+                      <span className="text-xs text-muted-foreground shrink-0 font-medium">{isAr ? kpi.unitAr : kpi.unit}</span>
+                    </div>
+
+                    {/* Mini gauge */}
+                    <div className="flex justify-center my-0.5">
+                      <MiniGauge score={score ?? 0} hasValue={score !== null} />
+                    </div>
+
+                    {/* Target row */}
+                    <div className="flex items-center justify-between text-[10px] text-muted-foreground mb-1.5">
+                      <span className="font-medium">
+                        {isAr ? `هدف: ${kpi.targetLabelAr ?? kpi.targetLabel}` : `Target: ${kpi.targetLabel}`}
+                      </span>
+                      <span className="flex items-center gap-0.5">
+                        {kpi.higherIsBetter
+                          ? <TrendingUp className="w-2.5 h-2.5 text-emerald-500" />
+                          : <TrendingDown className="w-2.5 h-2.5 text-blue-500" />}
+                        {kpi.higherIsBetter ? (isAr ? 'أعلى أفضل' : 'Higher') : (isAr ? 'أقل أفضل' : 'Lower')}
+                      </span>
+                    </div>
+
+                    {/* Gap annotation */}
+                    {gap && (
+                      <p className="text-[9px] font-semibold mb-1.5 leading-snug"
+                        style={{ color: t ? t.color : '#6b7280' }}>
+                        ↗ {gap}
+                      </p>
+                    )}
+
+                    {/* Expert insight */}
+                    {insight && (
+                      <div className="rounded-lg p-2 mb-2 text-[10px] leading-relaxed"
+                        style={{ background: t ? t.color + '08' : '#f8fafc', borderLeft: `2px solid ${t ? t.color + '40' : '#e5e7eb'}` }}>
+                        <span className="text-slate-600">{insight}</span>
+                      </div>
+                    )}
+
+                    {/* Calc toggle */}
+                    {spec && (
+                      <button
+                        onClick={() => setExpandedKpi(isExp ? null : kpi.id)}
+                        className="flex items-center gap-1 text-[10px] font-semibold transition-colors w-full pb-2.5"
+                        style={{ color: t ? t.color + 'cc' : '#9ca3af' }}>
+                        {isExp ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                        {isAr ? 'كيف نحسب هذا؟' : 'How is this calculated?'}
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Expanded methodology */}
+                  {spec && isExp && (
+                    <div className="border-t bg-slate-50/80 p-3 space-y-3 text-xs"
+                      style={{ borderColor: t ? t.color + '20' : '#e5e7eb' }}>
+
+                      <div>
+                        <p className="font-bold text-primary mb-1">📊 {isAr ? 'ما الذي يقيسه' : 'What it measures'}</p>
+                        <p className="text-muted-foreground leading-relaxed">
+                          {spec.methodology.substring(0, 220)}{spec.methodology.length > 220 ? '…' : ''}
+                        </p>
+                      </div>
+
+                      <div>
+                        <p className="font-bold text-primary mb-1">🧮 {isAr ? 'طريقة الحساب' : 'Formula'}</p>
+                        <pre className="text-[10px] bg-white border border-border rounded-lg p-2 whitespace-pre-wrap font-mono text-slate-700 leading-relaxed">
+                          {spec.formula}
+                        </pre>
+                      </div>
+
+                      <div>
+                        <p className="font-bold text-primary mb-1.5">📋 {isAr ? 'البيانات المطلوبة' : 'Data inputs required'}</p>
+                        <div className="space-y-1.5">
+                          {spec.inputs.map((inp, i) => (
+                            <div key={inp.id} className="bg-white border border-border/60 rounded-lg p-2">
+                              <div className="flex items-start gap-2">
+                                <span className="shrink-0 w-4 h-4 rounded-full font-bold flex items-center justify-center text-[9px] mt-0.5"
+                                  style={{ background: t ? t.color + '15' : '#f1f5f9', color: t ? t.color : '#6b7280' }}>{i + 1}</span>
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-semibold text-slate-800 leading-snug text-[11px]">{inp.label}</p>
+                                  <p className="text-muted-foreground text-[10px] leading-snug mt-0.5">
+                                    <span className="font-medium text-slate-600">Source:</span> {inp.dataSource.substring(0, 110)}{inp.dataSource.length > 110 ? '…' : ''}
+                                  </p>
+                                  <p className="text-slate-400 text-[9px] mt-0.5">{inp.unit} · e.g. {inp.example.toLocaleString()}</p>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {spec.notes && (
+                        <div className="bg-amber-50 border border-amber-200 rounded-lg p-2">
+                          <p className="font-bold text-amber-800 mb-0.5 text-[10px]">💡 {isAr ? 'ملاحظة' : 'Note'}</p>
+                          <p className="text-amber-700 leading-relaxed text-[10px]">{spec.notes}</p>
+                        </div>
+                      )}
+
+                      <p className="text-[9px] text-muted-foreground/60 italic">
+                        {isAr ? 'حمّل قالب CSV لجمع البيانات الخام — تُحسَب النتيجة تلقائياً عند الاستيراد.' : 'Download the CSV Template to collect raw data — results auto-calculate on import.'}
+                      </p>
+                    </div>
+                  )}
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <input id={`kpi-${kpi.id}`} type="number" step="any" min="0"
-                  value={values[kpi.id] ?? ''}
-                  onChange={e => handleChange(kpi.id, e.target.value)}
-                  placeholder={isAr ? `المرجع: ${kpi.benchmarkLabel}` : `Benchmark: ${kpi.benchmarkLabel}`}
-                  className="w-full text-sm border border-border rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary bg-white"
-                />
-                <span className="text-xs text-muted-foreground shrink-0">{isAr ? kpi.unitAr : kpi.unit}</span>
-              </div>
-              {/* Mini speedometer gauge */}
-              <div className="flex justify-center mt-1 mb-0.5">
-                <MiniGauge score={score ?? 0} hasValue={score !== null} />
-              </div>
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span title={isAr ? 'المستهدف' : 'Target'}>
-                  {isAr ? `هدف: ${kpi.targetLabelAr ?? kpi.targetLabel}` : `Target: ${kpi.targetLabel}`}
-                </span>
-                <span className="flex items-center gap-1">
-                  {kpi.higherIsBetter ? <TrendingUp className="w-3 h-3 text-emerald-500" /> : <TrendingDown className="w-3 h-3 text-blue-500" />}
-                  {kpi.higherIsBetter ? (isAr ? 'أعلى أفضل' : 'Higher better') : (isAr ? 'أقل أفضل' : 'Lower better')}
-                </span>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
+
+      {/* Performance Intelligence — appears once ≥3 KPIs are entered */}
+      {hasAnyValue && (
+        <PerformanceIntelligence
+          scores={piScores}
+          isAr={isAr}
+          kpisTotal={kpis.length}
+        />
+      )}
 
       {/* Bar chart — only when values exist */}
       {hasAnyValue && (
@@ -548,30 +1145,55 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
           className="bg-white border border-border rounded-2xl p-6 shadow-sm kpi-chart-wrap"
           style={{ WebkitPrintColorAdjust: 'exact' } as React.CSSProperties}
         >
-          <p className="text-sm font-bold text-primary mb-4">
-            {isAr ? 'مقارنة: قيمتك · المستهدف · المعيار الخليجي' : 'Comparison: Yours · Target · GCC Benchmark'}
-          </p>
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={barData} margin={{ top: 4, right: 8, left: 0, bottom: 60 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-              <XAxis dataKey="nameShort" tick={{ fontSize: 10, fill: '#6b7280' }} angle={-35} textAnchor="end" interval={0} />
-              <YAxis tick={{ fontSize: 10, fill: '#6b7280' }} width={36} />
-              <Tooltip formatter={(v: number, name: string) => [v, name === 'yours' ? (isAr ? 'قيمتك' : 'Yours') : name === 'target' ? (isAr ? 'الهدف' : 'Target') : (isAr ? 'المعيار الخليجي' : 'GCC Benchmark')]} />
-              <Bar dataKey="yours" name="yours" radius={[4, 4, 0, 0]}>
-                {barData.map((_, i) => <Cell key={i} fill={scoreColor(scores[i].score ?? 0)} />)}
+          <div className="flex items-start justify-between gap-3 mb-4 flex-wrap">
+            <div>
+              <p className="text-sm font-bold text-primary">
+                {isAr ? 'مقارنة: قيمتك · المستهدف · المعيار الخليجي' : 'GCC Benchmark Comparison'}
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {isAr ? 'مقارنة أدائك بالأهداف والمعيار الخليجي لكل مؤشر' : 'Your performance vs target and GCC benchmark for each KPI'}
+              </p>
+            </div>
+            <div className="flex items-center gap-3 flex-wrap">
+              {[
+                { color: '#059669', label: isAr ? 'عالمي/أفضل خليجياً' : 'World Class / Best-in-GCC' },
+                { color: '#f59e0b', label: isAr ? 'تنافسي/في التطوير' : 'Competitive / Developing' },
+                { color: '#ef4444', label: isAr ? 'يحتاج تحسين' : 'Needs Attention / Critical' },
+                { color: GOLD,      label: isAr ? 'الهدف' : 'Target', shape: 'square' },
+                { color: '#cbd5e1', label: isAr ? 'المعيار الخليجي' : 'GCC Benchmark', shape: 'square' },
+              ].map(l => (
+                <div key={l.label} className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                  <div className={`w-2.5 h-2.5 shrink-0 ${l.shape === 'square' ? 'rounded-sm' : 'rounded-full'}`} style={{ background: l.color }} />
+                  {l.label}
+                </div>
+              ))}
+            </div>
+          </div>
+          <ResponsiveContainer width="100%" height={240}>
+            <BarChart data={barData} margin={{ top: 4, right: 8, left: 0, bottom: 64 }} barCategoryGap="25%">
+              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+              <XAxis dataKey="nameShort" tick={{ fontSize: 10, fill: '#6b7280' }} angle={-38} textAnchor="end" interval={0} />
+              <YAxis tick={{ fontSize: 10, fill: '#6b7280' }} width={36} axisLine={false} tickLine={false} />
+              <Tooltip
+                contentStyle={{ fontSize: 11, borderRadius: 8, border: '1px solid #e5e7eb', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
+                formatter={(v: number, name: string) => {
+                  const label = name === 'yours'
+                    ? (isAr ? 'قيمتك' : 'Your value')
+                    : name === 'target'
+                      ? (isAr ? 'الهدف' : 'Target')
+                      : (isAr ? 'المعيار الخليجي' : 'GCC Benchmark');
+                  return [v, label];
+                }}
+              />
+              <Bar dataKey="yours" name="yours" radius={[4, 4, 0, 0]} maxBarSize={28}>
+                {barData.map((_, i) => (
+                  <Cell key={i} fill={scoreColor(scores[i].score ?? 0)} fillOpacity={0.9} />
+                ))}
               </Bar>
-              <Bar dataKey="target" name="target" fill={GOLD} radius={[4, 4, 0, 0]} fillOpacity={0.7} />
-              <Bar dataKey="benchmark" name="benchmark" fill="#cbd5e1" radius={[4, 4, 0, 0]} fillOpacity={0.7} />
+              <Bar dataKey="target"    name="target"    fill={GOLD}    radius={[4, 4, 0, 0]} fillOpacity={0.55} maxBarSize={28} />
+              <Bar dataKey="benchmark" name="benchmark" fill="#cbd5e1" radius={[4, 4, 0, 0]} fillOpacity={0.55} maxBarSize={28} />
             </BarChart>
           </ResponsiveContainer>
-          <div className="flex items-center gap-5 mt-2 flex-wrap">
-            {[{ color: '#22c55e', label: isAr ? 'قيمتك (ممتاز)' : 'Yours (strong)', }, { color: '#f59e0b', label: isAr ? 'قيمتك (متوسط)' : 'Yours (developing)' }, { color: GOLD, label: isAr ? 'الهدف' : 'Target' }, { color: '#cbd5e1', label: isAr ? 'المعيار الخليجي' : 'GCC Benchmark' }].map(l => (
-              <div key={l.label} className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                <div className="w-3 h-3 rounded-sm shrink-0" style={{ background: l.color }} />
-                {l.label}
-              </div>
-            ))}
-          </div>
         </div>
       )}
 
