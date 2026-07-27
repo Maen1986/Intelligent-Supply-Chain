@@ -1011,4 +1011,40 @@ describe('POST /api/auth/change-password', () => {
     expect(res.status).toBe(400);
     expect(res.body.ok).toBe(false);
   });
+
+  describe('admin email guard', () => {
+    const ADMIN = 'admin@example.com';
+
+    beforeEach(() => { process.env.ADMIN_EMAIL = ADMIN; });
+    afterEach(() => { delete process.env.ADMIN_EMAIL; });
+
+    it('returns 403 when a signed-in admin session attempts to change the password', async () => {
+      // The admin row has no passwordHash — but the guard must fire before the
+      // DB query so the session email alone is enough to block the request.
+      const app = makeApp('/api/auth', authRouter, { userId: 99, userEmail: ADMIN });
+      const res = await request(app).post('/api/auth/change-password')
+        .send({ currentPassword: 'adminpass', newPassword: 'newadminpass' });
+      expect(res.status).toBe(403);
+      expect(res.body.ok).toBe(false);
+    });
+
+    it('blocks the admin email case-insensitively', async () => {
+      const app = makeApp('/api/auth', authRouter, { userId: 99, userEmail: 'ADMIN@EXAMPLE.COM' });
+      const res = await request(app).post('/api/auth/change-password')
+        .send({ currentPassword: 'adminpass', newPassword: 'newadminpass' });
+      expect(res.status).toBe(403);
+      expect(res.body.ok).toBe(false);
+    });
+
+    it('still allows a non-admin user to change their password', async () => {
+      const passwordHash = await bcrypt.hash('secret6', 4);
+      dbState.selectRows = [{ ...user, passwordHash }];
+      dbState.updateRows = [{ ...user, passwordHash: 'newhash' }];
+      const app = makeApp('/api/auth', authRouter, { userId: 1, userEmail: user.email });
+      const res = await request(app).post('/api/auth/change-password')
+        .send({ currentPassword: 'secret6', newPassword: 'newpass6' });
+      expect(res.status).toBe(200);
+      expect(res.body.ok).toBe(true);
+    });
+  });
 });

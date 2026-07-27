@@ -351,6 +351,14 @@ router.post('/change-password', async (req, res) => {
     return;
   }
 
+  // Block the admin account from rotating its password via the self-service form —
+  // the admin credential is owned exclusively by the ADMIN_PASSWORD env var.
+  const adminEmail = process.env.ADMIN_EMAIL?.trim().toLowerCase();
+  if (adminEmail && req.session.userEmail?.trim().toLowerCase() === adminEmail) {
+    res.status(403).json({ ok: false, error: 'The admin account password cannot be changed via this form.' });
+    return;
+  }
+
   const parsed = ChangePasswordSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ ok: false, error: 'New password must be at least 6 characters.' });
