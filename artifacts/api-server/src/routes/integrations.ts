@@ -31,6 +31,7 @@ router.get("/keys", async (req, res) => {
         id:          apiKeysTable.id,
         nameLabel:   apiKeysTable.nameLabel,
         keyPrefix:   apiKeysTable.keyPrefix,
+        scope:       apiKeysTable.scope,
         createdAt:   apiKeysTable.createdAt,
         lastUsedAt:  apiKeysTable.lastUsedAt,
         revokedAt:   apiKeysTable.revokedAt,
@@ -51,11 +52,12 @@ router.get("/keys", async (req, res) => {
  * Returns the raw key ONCE — not stored, not retrievable again.
  */
 router.post("/keys", async (req, res) => {
-  const { nameLabel } = req.body ?? {};
+  const { nameLabel, scope } = req.body ?? {};
   if (typeof nameLabel !== "string" || !nameLabel.trim()) {
     res.status(400).json({ ok: false, error: "nameLabel is required" });
     return;
   }
+  const resolvedScope = scope === "read" ? "read" : "write";
   try {
     const rawKey  = `isk_${randomBytes(24).toString("base64url")}`;
     const keyHash = createHash("sha256").update(rawKey).digest("hex");
@@ -63,12 +65,12 @@ router.post("/keys", async (req, res) => {
 
     const [row] = await db
       .insert(apiKeysTable)
-      .values({ userId: req.session.userId!, nameLabel: nameLabel.trim(), keyHash, keyPrefix })
+      .values({ userId: req.session.userId!, nameLabel: nameLabel.trim(), keyHash, keyPrefix, scope: resolvedScope })
       .returning({ id: apiKeysTable.id, createdAt: apiKeysTable.createdAt });
 
     res.json({
       ok: true,
-      key: { id: row.id, nameLabel: nameLabel.trim(), keyPrefix, createdAt: row.createdAt, rawKey },
+      key: { id: row.id, nameLabel: nameLabel.trim(), keyPrefix, scope: resolvedScope, createdAt: row.createdAt, rawKey },
     });
   } catch (err) {
     logger.error({ err }, "[integrations] POST /keys");

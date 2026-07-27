@@ -24,6 +24,7 @@ export const requireApiKeyOrSession: RequestHandler = async (req, res, next) => 
         .select({
           id:        apiKeysTable.id,
           userId:    apiKeysTable.userId,
+          scope:     apiKeysTable.scope,
           revokedAt: apiKeysTable.revokedAt,
         })
         .from(apiKeysTable)
@@ -37,6 +38,14 @@ export const requireApiKeyOrSession: RequestHandler = async (req, res, next) => 
       }
       if (key.revokedAt) {
         res.status(401).json({ ok: false, error: "API key has been revoked" });
+        return;
+      }
+
+      // Scope enforcement: read-only keys may not modify data
+      const method = req.method.toUpperCase();
+      const isWriteMethod = method === "POST" || method === "PUT" || method === "PATCH" || method === "DELETE";
+      if (key.scope === "read" && isWriteMethod) {
+        res.status(403).json({ ok: false, error: "This API key is read-only and cannot perform write operations" });
         return;
       }
 

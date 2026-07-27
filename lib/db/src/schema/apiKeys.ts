@@ -7,6 +7,7 @@ export const apiKeysTable = pgTable("api_keys", {
   nameLabel:   text("name_label").notNull(),       // human-readable label
   keyHash:     text("key_hash").notNull().unique(), // SHA-256 hex of raw key
   keyPrefix:   text("key_prefix").notNull(),        // first chars for display ("isk_aB1cXy…")
+  scope:       text("scope").notNull().default("write"), // 'read' | 'write'
   createdAt:   timestamp("created_at").defaultNow().notNull(),
   lastUsedAt:  timestamp("last_used_at"),
   revokedAt:   timestamp("revoked_at"),

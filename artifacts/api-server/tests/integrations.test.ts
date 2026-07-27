@@ -65,7 +65,7 @@ vi.mock('@workspace/db', () => ({
     delete:  (...args: unknown[]) => { mockDelete(...args); return makeDeleteChain(); },
     execute: (...args: unknown[]) => { mockExecute(...args); return Promise.resolve({ rows: [] }); },
   },
-  apiKeysTable:            { id: 'id', userId: 'user_id', keyHash: 'key_hash', revokedAt: 'revoked_at', nameLabel: 'name_label', keyPrefix: 'key_prefix', createdAt: 'created_at', lastUsedAt: 'last_used_at' },
+  apiKeysTable:            { id: 'id', userId: 'user_id', keyHash: 'key_hash', revokedAt: 'revoked_at', nameLabel: 'name_label', keyPrefix: 'key_prefix', scope: 'scope', createdAt: 'created_at', lastUsedAt: 'last_used_at' },
   webhookConfigsTable:     { id: 'id', userId: 'user_id', url: 'url', events: 'events', createdAt: 'created_at' },
   webhookDeliveryLogTable: { id: 'id', webhookConfigId: 'webhook_config_id', event: 'event', statusCode: 'status_code', responseSnippet: 'response_snippet', success: 'success', attemptedAt: 'attempted_at' },
   usersTable:              { id: 'id', email: 'email' },
@@ -114,7 +114,7 @@ describe('requireApiKeyOrSession middleware', () => {
 
   it('returns 401 for a revoked API key', async () => {
     const { raw } = makeKey();
-    apiKeyRows = [{ id: 1, userId: 42, revokedAt: new Date().toISOString() }];
+    apiKeyRows = [{ id: 1, userId: 42, scope: 'write', revokedAt: new Date().toISOString() }];
     const { default: v1Router } = await import('../src/routes/v1');
     const app = makeApp('/api/v1', v1Router);
     const res = await request(app)
@@ -126,7 +126,7 @@ describe('requireApiKeyOrSession middleware', () => {
 
   it('accepts a valid API key and reaches the route handler', async () => {
     const { raw } = makeKey();
-    apiKeyRows = [{ id: 7, userId: 99, revokedAt: null }];
+    apiKeyRows = [{ id: 7, userId: 99, scope: 'write', revokedAt: null }];
     // execute returns empty user row → 200 with null data
     const { default: v1Router } = await import('../src/routes/v1');
     const app = makeApp('/api/v1', v1Router);
@@ -141,6 +141,32 @@ describe('requireApiKeyOrSession middleware', () => {
     const { default: v1Router } = await import('../src/routes/v1');
     const app = makeApp('/api/v1', v1Router, { userId: 5 });
     const res = await request(app).get('/api/v1/kpis');
+    expect(res.status).toBe(200);
+    expect(res.body.ok).toBe(true);
+  });
+
+  it('returns 403 when a read-only key is used on a POST request', async () => {
+    const { raw } = makeKey();
+    apiKeyRows = [{ id: 8, userId: 55, scope: 'read', revokedAt: null }];
+    const { default: v1Router } = await import('../src/routes/v1');
+    const app = makeApp('/api/v1', v1Router);
+    const res = await request(app)
+      .post('/api/v1/suppliers/import')
+      .set('Authorization', `Bearer ${raw}`)
+      .send({ suppliers: [{ id: 's1', name: 'ACME' }] });
+    expect(res.status).toBe(403);
+    expect(res.body.ok).toBe(false);
+    expect(res.body.error).toMatch(/read-only/i);
+  });
+
+  it('allows a read-only key on GET requests', async () => {
+    const { raw } = makeKey();
+    apiKeyRows = [{ id: 9, userId: 55, scope: 'read', revokedAt: null }];
+    const { default: v1Router } = await import('../src/routes/v1');
+    const app = makeApp('/api/v1', v1Router);
+    const res = await request(app)
+      .get('/api/v1/suppliers')
+      .set('Authorization', `Bearer ${raw}`);
     expect(res.status).toBe(200);
     expect(res.body.ok).toBe(true);
   });
@@ -204,7 +230,7 @@ describe('POST /api/v1/suppliers/import', () => {
 
   it('accepts a valid API key for the import endpoint', async () => {
     const { raw } = makeKey();
-    apiKeyRows = [{ id: 3, userId: 10, revokedAt: null }];
+    apiKeyRows = [{ id: 3, userId: 10, scope: 'write', revokedAt: null }];
     const { default: v1Router } = await import('../src/routes/v1');
     const app = makeApp('/api/v1', v1Router);
     const res = await request(app)
