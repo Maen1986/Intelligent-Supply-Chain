@@ -78,6 +78,38 @@ router.post("/keys", async (req, res) => {
   }
 });
 
+/** PATCH /api/integrations/keys/:id — update scope of an active API key */
+router.patch("/keys/:id", async (req, res) => {
+  const keyId = parseInt(req.params.id, 10);
+  if (isNaN(keyId)) { res.status(400).json({ ok: false, error: "Invalid key ID" }); return; }
+  const { scope } = req.body ?? {};
+  if (scope !== "read" && scope !== "write") {
+    res.status(400).json({ ok: false, error: "scope must be 'read' or 'write'" });
+    return;
+  }
+  try {
+    const [updated] = await db
+      .update(apiKeysTable)
+      .set({ scope })
+      .where(
+        and(
+          eq(apiKeysTable.id, keyId),
+          eq(apiKeysTable.userId, req.session.userId!),
+          sql`${apiKeysTable.revokedAt} IS NULL`,
+        ),
+      )
+      .returning({ id: apiKeysTable.id, scope: apiKeysTable.scope });
+    if (!updated) {
+      res.status(404).json({ ok: false, error: "Key not found or already revoked" });
+      return;
+    }
+    res.json({ ok: true, key: updated });
+  } catch (err) {
+    logger.error({ err }, "[integrations] PATCH /keys/:id");
+    res.status(500).json({ ok: false, error: "Server error" });
+  }
+});
+
 /** DELETE /api/integrations/keys/:id — revoke an API key */
 router.delete("/keys/:id", async (req, res) => {
   const keyId = parseInt(req.params.id, 10);

@@ -18,7 +18,7 @@ import { Label } from '@/components/ui/label';
 import {
   Key, Plus, Trash2, Webhook, RefreshCw, Copy, Check,
   ChevronRight, Loader2, ShieldAlert, Activity, BookOpen,
-  ArrowLeft, Eye, EyeOff, Zap,
+  ArrowLeft, Eye, EyeOff, Zap, Pencil,
 } from 'lucide-react';
 import { API_BASE } from '@/lib/apiBase';
 
@@ -151,6 +151,8 @@ function ApiKeysSection() {
   const [rawKey, setRawKey]     = useState<string | null>(null);
   const [showRaw, setShowRaw]   = useState(false);
   const [error, setError]       = useState<string | null>(null);
+  const [editingScopeId, setEditingScopeId] = useState<number | null>(null);
+  const [savingScope, setSavingScope]       = useState<number | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -184,6 +186,27 @@ function ApiKeysSection() {
     if (!confirm('Revoke this API key? Any integrations using it will stop working immediately.')) return;
     await fetch(`${API_BASE}/integrations/keys/${id}`, { method: 'DELETE', credentials: 'include' });
     load();
+  };
+
+  const handleScopeChange = async (id: number, scope: 'read' | 'write') => {
+    setSavingScope(id);
+    try {
+      const r = await fetch(`${API_BASE}/integrations/keys/${id}`, {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ scope }),
+      });
+      const d = await r.json();
+      if (d.ok) {
+        setKeys(prev => prev.map(k => k.id === id ? { ...k, scope } : k));
+      } else {
+        setError(d.error ?? 'Failed to update scope');
+      }
+    } finally {
+      setSavingScope(null);
+      setEditingScopeId(null);
+    }
   };
 
   return (
@@ -291,9 +314,37 @@ function ApiKeysSection() {
                     <td className="py-2 px-3 font-medium">{k.nameLabel}</td>
                     <td className="py-2 px-3 font-mono text-muted-foreground">{k.keyPrefix}</td>
                     <td className="py-2 px-3">
-                      {k.scope === 'read'
-                        ? <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full font-bold">Read-only</span>
-                        : <span className="px-2 py-0.5 bg-slate-100 text-slate-700 rounded-full font-bold">Read+Write</span>}
+                      {!k.revokedAt && editingScopeId === k.id ? (
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => handleScopeChange(k.id, 'read')}
+                            disabled={savingScope === k.id}
+                            className={`text-xs px-2 py-0.5 rounded-md border font-medium transition-colors ${k.scope === 'read' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-muted-foreground border-border hover:border-primary/50'}`}
+                          >Read-only</button>
+                          <button
+                            onClick={() => handleScopeChange(k.id, 'write')}
+                            disabled={savingScope === k.id}
+                            className={`text-xs px-2 py-0.5 rounded-md border font-medium transition-colors ${k.scope === 'write' ? 'bg-slate-600 text-white border-slate-600' : 'bg-white text-muted-foreground border-border hover:border-primary/50'}`}
+                          >Read+Write</button>
+                          {savingScope === k.id && <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />}
+                          <button onClick={() => setEditingScopeId(null)} className="text-xs text-muted-foreground hover:text-primary ml-0.5">✕</button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1 group">
+                          {k.scope === 'read'
+                            ? <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full font-bold">Read-only</span>
+                            : <span className="px-2 py-0.5 bg-slate-100 text-slate-700 rounded-full font-bold">Read+Write</span>}
+                          {!k.revokedAt && (
+                            <button
+                              onClick={() => setEditingScopeId(k.id)}
+                              className="opacity-0 group-hover:opacity-100 p-0.5 rounded text-muted-foreground hover:text-primary transition-opacity"
+                              title="Change scope"
+                            >
+                              <Pencil className="w-3 h-3" />
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </td>
                     <td className="py-2 px-3 text-muted-foreground">{fmtDate(k.createdAt)}</td>
                     <td className="py-2 px-3 text-muted-foreground">{fmtDate(k.lastUsedAt)}</td>

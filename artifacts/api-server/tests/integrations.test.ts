@@ -30,11 +30,11 @@ function makeSelectChain(rows: () => unknown[]) {
   c.catch = (fn: (e: unknown) => void) => Promise.resolve(rows()).catch(fn);
   return c;
 }
-function makeUpdateChain() {
+function makeUpdateChain(returnRows: () => unknown[]) {
   const c: Record<string, unknown> = {};
-  for (const m of ['set', 'where']) { c[m] = () => c; }
-  c.then = (res: (v: unknown) => void) => Promise.resolve([]).then(res);
-  c.catch = (fn: (e: unknown) => void) => Promise.resolve([]).catch(fn);
+  for (const m of ['set', 'where', 'returning']) { c[m] = () => c; }
+  c.then = (res: (v: unknown) => void) => Promise.resolve(returnRows()).then(res);
+  c.catch = (fn: (e: unknown) => void) => Promise.resolve(returnRows()).catch(fn);
   return c;
 }
 function makeInsertChain(rows: unknown[]) {
@@ -55,6 +55,7 @@ function makeDeleteChain() {
 // Shared db state for these tests
 let apiKeyRows: unknown[] = [];
 let webhookRows: unknown[] = [];
+let updateReturn: unknown[] = [];
 let insertReturn: unknown[] = [];
 
 // Sequence support: when selectResponses is non-empty, each select call pops
@@ -70,7 +71,7 @@ vi.mock('@workspace/db', () => ({
       const fn = selectResponses[idx] ?? (() => apiKeyRows);
       return makeSelectChain(fn);
     },
-    update:  (...args: unknown[]) => { mockUpdate(...args); return makeUpdateChain(); },
+    update:  (...args: unknown[]) => { mockUpdate(...args); return makeUpdateChain(() => updateReturn); },
     insert:  (...args: unknown[]) => { mockInsert(...args); return makeInsertChain(insertReturn); },
     delete:  (...args: unknown[]) => { mockDelete(...args); return makeDeleteChain(); },
     execute: (...args: unknown[]) => { mockExecute(...args); return Promise.resolve({ rows: [] }); },
@@ -511,6 +512,62 @@ describe('DELETE /api/integrations/keys/:id', () => {
     const res = await request(app).delete('/api/integrations/keys/7');
     expect(res.status).toBe(200);
     expect(res.body.ok).toBe(true);
+  });
+});
+
+describe('PATCH /api/integrations/keys/:id', () => {
+  beforeEach(() => { updateReturn = []; mockUpdate.mockClear(); });
+
+  it('returns 401 without session', async () => {
+    const { default: intRouter } = await import('../src/routes/integrations');
+    const app = makeApp('/api/integrations', intRouter);
+    const res = await request(app).patch('/api/integrations/keys/7').send({ scope: 'read' });
+    expect(res.status).toBe(401);
+  });
+
+  it('returns 400 for a non-numeric ID', async () => {
+    const { default: intRouter } = await import('../src/routes/integrations');
+    const app = makeApp('/api/integrations', intRouter, ADMIN_SESSION);
+    const res = await request(app).patch('/api/integrations/keys/abc').send({ scope: 'read' });
+    expect(res.status).toBe(400);
+  });
+
+  it('returns 400 for an invalid scope value', async () => {
+    const { default: intRouter } = await import('../src/routes/integrations');
+    const app = makeApp('/api/integrations', intRouter, ADMIN_SESSION);
+    const res = await request(app).patch('/api/integrations/keys/7').send({ scope: 'admin' });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/scope/i);
+  });
+
+  it('returns 404 when the key is not found or already revoked', async () => {
+    updateReturn = [];   // returning() yields no row → key missing or revoked
+    const { default: intRouter } = await import('../src/routes/integrations');
+    const app = makeApp('/api/integrations', intRouter, ADMIN_SESSION);
+    const res = await request(app).patch('/api/integrations/keys/99').send({ scope: 'read' });
+    expect(res.status).toBe(404);
+    expect(res.body.ok).toBe(false);
+  });
+
+  it('returns 200 with updated scope when downgrading write → read', async () => {
+    updateReturn = [{ id: 7, scope: 'read' }];
+    const { default: intRouter } = await import('../src/routes/integrations');
+    const app = makeApp('/api/integrations', intRouter, ADMIN_SESSION);
+    const res = await request(app).patch('/api/integrations/keys/7').send({ scope: 'read' });
+    expect(res.status).toBe(200);
+    expect(res.body.ok).toBe(true);
+    expect(res.body.key.scope).toBe('read');
+    expect(res.body.key.id).toBe(7);
+  });
+
+  it('returns 200 with updated scope when upgrading read → write', async () => {
+    updateReturn = [{ id: 3, scope: 'write' }];
+    const { default: intRouter } = await import('../src/routes/integrations');
+    const app = makeApp('/api/integrations', intRouter, ADMIN_SESSION);
+    const res = await request(app).patch('/api/integrations/keys/3').send({ scope: 'write' });
+    expect(res.status).toBe(200);
+    expect(res.body.ok).toBe(true);
+    expect(res.body.key.scope).toBe('write');
   });
 });
 
