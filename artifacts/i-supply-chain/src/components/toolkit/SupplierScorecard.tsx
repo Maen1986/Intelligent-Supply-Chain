@@ -480,6 +480,7 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
   const weightTotal = DIMS.reduce((s, d) => s + (config.weights[d.id] ?? d.weight), 0);
 
   const active = roster.suppliers.find(s => s.id === roster.activeId) ?? roster.suppliers[0] ?? null;
+  const weightedScore = active ? calcWeightedScore(active.subScores, config) : null;
 
   /* ── AI Plan ── */
   const buildScorecardPrompt = useCallback((): string => {
@@ -510,7 +511,7 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
 
   const { loading: planLoading, result: planResult, error: planError, rateLimited: planRateLimited, generate: generatePlan, reset: resetPlan,
           savedPlan: planSavedPlan, viewSaved: viewSavedPlan, deleteSaved: deleteSavedPlan } =
-    useAIPlan(buildScorecardPrompt, isAr, active?.id ? `scorecard-${active.id}` : undefined);
+    useAIPlan(buildScorecardPrompt, isAr, active?.id ? `scorecard-${active.id}` : undefined, weightedScore !== null);
 
   // Clear any displayed plan result when the user switches to a different supplier
   const prevActiveIdRef = useRef<string | null>(null);
@@ -568,7 +569,6 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
   };
 
   const today = new Date().toLocaleDateString(isAr ? 'ar-SA' : 'en-GB');
-  const weightedScore = active ? calcWeightedScore(active.subScores, config) : null;
   const tier = weightedScore !== null && weightedScore !== undefined ? getTier(weightedScore, config) : null;
   const radarData = DIMS.map(d => ({
     dimension: isAr ? d.labelAr : d.label,

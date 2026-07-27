@@ -305,9 +305,12 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
     ].join('\n');
   }, [kpis, values, resolvedSlug]);
 
+  // Compute hasAnyValue here (before hook) so canGenerate can be passed to useAIPlan
+  const hasAnyValue = !!kpis && kpis.some(k => !isNaN(parseFloat(values[k.id] ?? '')));
+
   const { loading: planLoading, result: planResult, error: planError, rateLimited: planRateLimited, generate: generatePlan, reset: resetPlan,
           savedPlan: planSavedPlan, viewSaved: viewSavedPlan, deleteSaved: deleteSavedPlan } =
-    useAIPlan(buildKpiPrompt, isAr, 'kpi');
+    useAIPlan(buildKpiPrompt, isAr, 'kpi', hasAnyValue);
 
   const handleChange = useCallback((id: string, raw: string) => {
     setValues(prev => {
@@ -407,8 +410,6 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
     target: s.kpi.targetValue,
     benchmark: s.kpi.benchmarkValue,
   }));
-
-  const hasAnyValue = scoredKpis.length > 0;
 
   return (
     <div className="space-y-6">

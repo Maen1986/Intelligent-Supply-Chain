@@ -137,7 +137,7 @@ export function MaturityAssessmentTool({ slug, isAr }: MaturityToolsProps) {
 
   const { loading: planLoading, result: planResult, error: planError, rateLimited: planRateLimited, generate: generatePlan, reset: resetPlan,
           savedPlan: planSavedPlan, viewSaved: viewSavedPlan, deleteSaved: deleteSavedPlan } =
-    useAIPlan(buildMaturityPrompt, isAr, 'maturity');
+    useAIPlan(buildMaturityPrompt, isAr, 'maturity', filled.length > 0);
 
   const LEVEL_COLORS = { 1: '#fca5a5', 2: '#fcd34d', 3: '#6ee7b7', 4: '#34d399', 5: '#059669' };
   const LEVEL_LABELS_AR = { 1: 'تأسيسي', 2: 'ناشئ', 3: 'مؤهَّل', 4: 'متقدّم', 5: 'عالمي' };

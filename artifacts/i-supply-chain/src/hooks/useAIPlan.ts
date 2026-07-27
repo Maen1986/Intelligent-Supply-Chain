@@ -38,7 +38,13 @@ export interface AIPlanState {
   deleteSaved:  () => Promise<void>;
 }
 
-export function useAIPlan(buildPrompt: () => string, isAr: boolean, toolKey?: string): AIPlanState {
+export function useAIPlan(
+  buildPrompt: () => string,
+  isAr: boolean,
+  toolKey?: string,
+  /** When false, auto-generate on login is suppressed (same gate as the disabled prop on the button). Defaults to true. */
+  canGenerate: boolean = true,
+): AIPlanState {
   const { isAuthenticated } = useAuth();
 
   const [loading,     setLoading]     = useState(false);
@@ -54,11 +60,11 @@ export function useAIPlan(buildPrompt: () => string, isAr: boolean, toolKey?: st
     const wasAuthenticated = prevAuthenticated.current;
     prevAuthenticated.current = isAuthenticated;
 
-    if (isAuthenticated && !wasAuthenticated && !result && !savedPlan && !loading) {
+    if (isAuthenticated && !wasAuthenticated && !result && !savedPlan && !loading && canGenerate) {
       generate();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated, result, savedPlan]);
+  }, [isAuthenticated, result, savedPlan, canGenerate]);
 
   /* ── Auto-generate after login (consume pendingAIPlan_<toolKey> flag) ── */
   const prevAuthRef = useRef<boolean>(false);
@@ -66,7 +72,7 @@ export function useAIPlan(buildPrompt: () => string, isAr: boolean, toolKey?: st
     const wasAuthenticated = prevAuthRef.current;
     prevAuthRef.current = isAuthenticated;
 
-    if (isAuthenticated && !wasAuthenticated && toolKey) {
+    if (isAuthenticated && !wasAuthenticated && toolKey && canGenerate) {
       const flagKey = `pendingAIPlan_${toolKey}`;
       if (sessionStorage.getItem(flagKey) === '1') {
         sessionStorage.removeItem(flagKey);
@@ -74,7 +80,7 @@ export function useAIPlan(buildPrompt: () => string, isAr: boolean, toolKey?: st
       }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated, toolKey]);
+  }, [isAuthenticated, toolKey, canGenerate]);
 
   /* ── Load saved plan on mount / when toolKey or auth state changes ── */
   useEffect(() => {

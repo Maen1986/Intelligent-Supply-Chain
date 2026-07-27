@@ -164,7 +164,7 @@ export function TrainingNeedsAssessment({ isAr }: TrainingToolsProps) {
   const hasAnyScores = members.some(m => DOMAINS.some(d => (scores[m]?.[d.id] ?? 0) > 0));
   const { loading: planLoading, result: planResult, error: planError, rateLimited: planRateLimited, generate: generatePlan, reset: resetPlan,
           savedPlan: planSavedPlan, viewSaved: viewSavedPlan, deleteSaved: deleteSavedPlan } =
-    useAIPlan(buildTrainingPrompt, isAr, 'training');
+    useAIPlan(buildTrainingPrompt, isAr, 'training', hasAnyScores);
 
   return (
     <div className="bg-white border border-border rounded-2xl shadow-sm overflow-hidden">

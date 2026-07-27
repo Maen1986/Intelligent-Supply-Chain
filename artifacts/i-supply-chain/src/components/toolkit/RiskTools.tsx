@@ -144,7 +144,7 @@ function KRIDashboard({ isAr }: { isAr: boolean }) {
 
   const { loading: planLoading, result: planResult, error: planError, rateLimited: planRateLimited, generate: generatePlan, reset: resetPlan,
           savedPlan: planSavedPlan, viewSaved: viewSavedPlan, deleteSaved: deleteSavedPlan } =
-    useAIPlan(buildKriPrompt, isAr, 'risk');
+    useAIPlan(buildKriPrompt, isAr, 'risk', filled.length > 0);
 
   const today = new Date().toLocaleDateString(isAr ? 'ar-SA' : 'en-GB');
 
