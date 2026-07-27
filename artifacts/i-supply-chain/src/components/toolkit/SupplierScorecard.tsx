@@ -1004,7 +1004,21 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
         {importLog && (
           <div className={`text-xs rounded-lg p-3 border ${importLog[0]?.startsWith('✓') ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-red-50 border-red-200 text-red-800'}`}>
             <div className="flex items-start justify-between gap-2">
-              <div className="space-y-0.5">{importLog.map((m, i) => <p key={i} className={i === 0 ? 'font-bold' : 'opacity-75'}>{m}</p>)}</div>
+              <div className="space-y-0.5">{importLog.map((m, i) => {
+                const isCaseVariant = i > 0 && m.includes('matched existing');
+                return (
+                  <p key={i} className={
+                    i === 0
+                      ? 'font-bold'
+                      : isCaseVariant
+                        ? 'flex items-center gap-1 font-medium text-amber-700'
+                        : 'opacity-75'
+                  }>
+                    {isCaseVariant && <span aria-hidden="true">⚠️</span>}
+                    {m}
+                  </p>
+                );
+              })}</div>
               <button onClick={() => setImportLog(null)} className="shrink-0 opacity-50 hover:opacity-100 font-bold">✕</button>
             </div>
           </div>
