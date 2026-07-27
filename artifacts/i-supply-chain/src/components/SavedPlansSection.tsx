@@ -3,8 +3,9 @@
  * authenticated user. Rendered inside AccountSettings.
  */
 import React, { useState, useEffect, useCallback } from 'react';
+import { Link } from 'wouter';
 import { API_BASE } from '@/lib/apiBase';
-import { Sparkles, ChevronDown, ChevronUp, Trash2, Loader2, FileText } from 'lucide-react';
+import { Sparkles, ChevronDown, ChevronUp, Trash2, Loader2, FileText, ArrowUpRight } from 'lucide-react';
 
 interface PlanEntry {
   toolKey: string;
@@ -19,15 +20,48 @@ const TOOL_LABELS: Record<string, { en: string; ar: string }> = {
   'risk-register':       { en: 'Risk Register',             ar: 'سجل المخاطر'             },
   'clm-portfolio':       { en: 'Contract Portfolio',        ar: 'محفظة العقود'            },
   'training':            { en: 'Training Plan',             ar: 'خطة التدريب'             },
+  'kpi':                 { en: 'KPI Dashboard',             ar: 'لوحة مؤشرات الأداء'      },
+  'kraljic':             { en: 'Kraljic Matrix',            ar: 'مصفوفة كرالجيتش'         },
 };
 
 function toolLabel(key: string, isAr: boolean): string {
   const entry = TOOL_LABELS[key];
   if (entry) return isAr ? entry.ar : entry.en;
-  // scorecard-<id> or isc-tool-<slug>-… etc.
+  // scorecard-<id>
   if (key.startsWith('scorecard-')) return isAr ? 'بطاقة تقييم المورّد' : 'Supplier Scorecard';
+  // isc-challenge-ai-<slug>-<index>
+  if (key.startsWith('isc-challenge-ai-')) return isAr ? 'خطة عمل التحدي' : 'Challenge Action Plan';
+  // isc-tool-<slug>-… etc.
   if (key.startsWith('isc-tool-')) return isAr ? 'أداة سلسلة الإمداد' : 'Supply-Chain Tool';
   return key;
+}
+
+/* Route for each known static tool key */
+const TOOL_ROUTES: Record<string, string> = {
+  'maturity':            '/maturity',
+  'procurement-catmgmt': '/solutions/procurement-excellence',
+  'risk-register':       '/risk-management',
+  'clm-portfolio':       '/solutions/contract-lifecycle-management',
+  'training':            '/solutions/training-capability-building',
+  'kpi':                 '/command-center',
+  'kraljic':             '/kraljic',
+};
+
+/**
+ * Returns the SPA route for a given toolKey, or null if no route is known.
+ *
+ * Handles:
+ *  - The 7 static tool keys (see TOOL_ROUTES above)
+ *  - scorecard-<supplierId>  → supplier relationship governance solution page
+ *  - isc-challenge-ai-<slug>-<index>  → /solutions/<slug>
+ */
+function toolRoute(key: string): string | null {
+  if (TOOL_ROUTES[key]) return TOOL_ROUTES[key];
+  if (key.startsWith('scorecard-')) return '/solutions/supplier-relationship-governance';
+  // isc-challenge-ai-<slug>-<challengeIndex>: extract slug by stripping prefix + trailing -<digits>
+  const challengeMatch = key.match(/^isc-challenge-ai-(.+)-\d+$/);
+  if (challengeMatch) return `/solutions/${challengeMatch[1]}`;
+  return null;
 }
 
 interface Props {
@@ -155,6 +189,21 @@ export function SavedPlansSection({ isAr }: Props) {
                   </div>
 
                   <div className="flex items-center gap-1 shrink-0">
+                    {/* Go to tool */}
+                    {(() => {
+                      const route = toolRoute(plan.toolKey);
+                      return route ? (
+                        <Link
+                          href={route}
+                          className="flex items-center gap-1 text-xs font-medium text-primary/80 hover:text-primary hover:underline underline-offset-2 px-1.5 py-1 rounded transition-colors"
+                          title={t('Go to tool', 'الانتقال إلى الأداة')}
+                        >
+                          <ArrowUpRight className="w-3.5 h-3.5" />
+                          {t('Go to tool', 'الانتقال إلى الأداة')}
+                        </Link>
+                      ) : null;
+                    })()}
+
                     {/* View / Collapse */}
                     <button
                       onClick={() => toggleExpand(plan.toolKey)}
