@@ -182,6 +182,18 @@ function newSupplier(name = ''): SupplierRecord {
   return { id: makeId(), name, tier: 'Strategic', subScores: {} };
 }
 
+/** Returns true when `name` (trimmed, case-insensitive) matches any supplier
+ *  other than the one with `excludeId`. */
+export function hasCaseInsensitiveDuplicate(
+  name: string,
+  suppliers: SupplierRecord[],
+  excludeId?: string,
+): boolean {
+  const needle = name.trim().toLowerCase();
+  if (!needle) return false;
+  return suppliers.some(s => s.id !== excludeId && s.name.toLowerCase() === needle);
+}
+
 function loadRoster(): RosterState {
   try {
     const raw = localStorage.getItem(ROSTER_KEY);
@@ -304,6 +316,10 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
   const serverLoadedForUserId = useRef<number | null>(null);
   const [importLog, setImportLog] = useState<string[] | null>(null);
   const importInputRef = useRef<HTMLInputElement | null>(null);
+  const [dupNameWarning, setDupNameWarning] = useState<string | null>(null);
+  // pendingName tracks what the user has typed but not yet committed to the roster.
+  // null means "no in-progress edit; use active.name from the roster".
+  const [pendingName, setPendingName] = useState<string | null>(null);
 
   /* ── Server load: per-user bootstrap on login / account switch ── */
   useEffect(() => {
@@ -513,14 +529,42 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
           savedPlan: planSavedPlan, viewSaved: viewSavedPlan, deleteSaved: deleteSavedPlan } =
     useAIPlan(buildScorecardPrompt, isAr, active?.id ? `scorecard-${active.id}` : undefined, weightedScore !== null);
 
-  // Clear any displayed plan result when the user switches to a different supplier
+  // Clear any displayed plan result when the user switches to a different supplier.
+  // Also reset the pending-name edit so the new supplier starts clean.
   const prevActiveIdRef = useRef<string | null>(null);
   useEffect(() => {
     if (active?.id && prevActiveIdRef.current !== null && prevActiveIdRef.current !== active.id) {
       resetPlan();
+      setDupNameWarning(null);
+      setPendingName(null);
     }
     prevActiveIdRef.current = active?.id ?? null;
   }, [active?.id, resetPlan]);
+
+  /**
+   * Called when the name field loses focus.
+   * - If the typed name is a case-insensitive duplicate of another supplier,
+   *   shows a warning and does NOT persist the name to the roster.
+   * - Otherwise commits the name to the roster and clears any prior warning.
+   */
+  const handleNameBlur = (typed: string) => {
+    if (hasCaseInsensitiveDuplicate(typed, roster.suppliers, active?.id)) {
+      const existing = roster.suppliers.find(
+        s => s.id !== active?.id && s.name.toLowerCase() === typed.trim().toLowerCase(),
+      )!;
+      setDupNameWarning(
+        isAr
+          ? `يوجد مورّد بهذا الاسم بالفعل: "${existing.name}". يرجى استخدام اسم مختلف.`
+          : `A supplier named "${existing.name}" already exists. Please choose a different name.`,
+      );
+      // Do NOT call updateActive — the roster keeps the previous (non-duplicate) name.
+    } else {
+      // Safe to commit: persist the typed name and clear local pending state.
+      setDupNameWarning(null);
+      updateActive({ name: typed });
+      setPendingName(null);
+    }
+  };
 
   const setActiveId = (id: string) => save({ ...roster, activeId: id });
 
@@ -1071,11 +1115,20 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
                 </label>
                 <input
                   id="scorecard-supplier-name"
-                  className="w-full text-sm border border-border rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  className={`w-full text-sm border rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-primary/30 ${dupNameWarning ? 'border-red-400' : 'border-border'}`}
                   placeholder={isAr ? 'أدخل اسم المورّد' : 'Enter supplier name'}
-                  value={active.name}
-                  onChange={e => updateActive({ name: e.target.value })}
+                  value={pendingName ?? active.name}
+                  onChange={e => {
+                    // Update the local display only; the roster is NOT written here.
+                    // Commit (or reject) happens in onBlur via handleNameBlur.
+                    setPendingName(e.target.value);
+                    if (dupNameWarning) setDupNameWarning(null);
+                  }}
+                  onBlur={e => handleNameBlur(e.target.value)}
                 />
+                {dupNameWarning && (
+                  <p className="text-[11px] text-red-500 mt-1">{dupNameWarning}</p>
+                )}
               </div>
               <div>
                 <label htmlFor="scorecard-current-tier" className="text-xs font-bold text-primary mb-1 block">

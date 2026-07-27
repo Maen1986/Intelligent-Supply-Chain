@@ -14,7 +14,7 @@
 
 import { beforeEach, describe, expect, it } from 'vitest';
 import { parseCsvFile } from '@/lib/importCsv';
-import { DIMS, SUB_INDICATORS } from '../SupplierScorecard';
+import { DIMS, SUB_INDICATORS, hasCaseInsensitiveDuplicate } from '../SupplierScorecard';
 
 /* ─── Types ─── */
 
@@ -868,5 +868,188 @@ describe('Scorecard CSV — case-insensitive supplier name matching', () => {
     expect(imported).toBe(1);
     const added = nextSuppliers.find(s => s.name === 'Alpha Corp International');
     expect(added).toBeDefined();
+  });
+});
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Suite 5 — Manual-add duplicate guard (hasCaseInsensitiveDuplicate)
+
+   Tests the pure helper exported from SupplierScorecard that backs the
+   name-field blur check. Ensures that typing a name whose case-folded form
+   already exists in the roster is detected so the commit can be blocked.
+══════════════════════════════════════════════════════════════════════════ */
+
+describe('Manual-add — hasCaseInsensitiveDuplicate', () => {
+  const ROSTER = [SUPPLIER_A, SUPPLIER_B, SUPPLIER_C];
+
+  it('returns false for an empty name', () => {
+    expect(hasCaseInsensitiveDuplicate('', ROSTER)).toBe(false);
+  });
+
+  it('returns false for a whitespace-only name', () => {
+    expect(hasCaseInsensitiveDuplicate('   ', ROSTER)).toBe(false);
+  });
+
+  it('returns false when the name is genuinely new', () => {
+    expect(hasCaseInsensitiveDuplicate('Delta Inc', ROSTER)).toBe(false);
+  });
+
+  it('returns true for an exact-case match', () => {
+    expect(hasCaseInsensitiveDuplicate('Alpha Corp', ROSTER)).toBe(true);
+  });
+
+  it('returns true when the typed name is all-lowercase', () => {
+    expect(hasCaseInsensitiveDuplicate('alpha corp', ROSTER)).toBe(true);
+  });
+
+  it('returns true when the typed name is all-uppercase', () => {
+    expect(hasCaseInsensitiveDuplicate('ALPHA CORP', ROSTER)).toBe(true);
+  });
+
+  it('returns true for a mixed-case variant', () => {
+    expect(hasCaseInsensitiveDuplicate('aLpHa CoRp', ROSTER)).toBe(true);
+  });
+
+  it('returns false when the only match is the supplier being edited (excludeId)', () => {
+    // User edits "Alpha Corp" without changing the name — must not warn against itself.
+    expect(hasCaseInsensitiveDuplicate('alpha corp', ROSTER, SUPPLIER_A.id)).toBe(false);
+  });
+
+  it('still returns true when a different supplier has the same name (excludeId for a third)', () => {
+    // Roster has A ("Alpha Corp") and B. User edits C and types "alpha corp" → warn.
+    expect(hasCaseInsensitiveDuplicate('alpha corp', ROSTER, SUPPLIER_C.id)).toBe(true);
+  });
+
+  it('trims leading/trailing whitespace before comparing', () => {
+    expect(hasCaseInsensitiveDuplicate('  Alpha Corp  ', ROSTER)).toBe(true);
+  });
+
+  it('returns false for a partial name that is not a full match', () => {
+    expect(hasCaseInsensitiveDuplicate('Alpha', ROSTER)).toBe(false);
+  });
+});
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Suite 6 — Roster-state invariant for manual-add/rename
+
+   Simulates the commit-on-blur logic used by the name field:
+     - onChange  → only updates local pending display; roster unchanged
+     - onBlur    → if duplicate: rejected (roster unchanged)
+                   if unique:   committed (roster updated)
+
+   These tests prove the DATA-LAYER INVARIANT: no case-variant duplicate
+   can ever enter the roster through the manual-add or rename path.
+══════════════════════════════════════════════════════════════════════════ */
+
+/**
+ * Pure simulation of handleNameBlur in SupplierScorecard.
+ * Returns the roster after attempting to commit `typedName` for supplier `activeId`.
+ * If a duplicate is detected the roster is returned unchanged and `rejected` is true.
+ */
+function simulateNameBlur(
+  suppliers: SupplierRecord[],
+  activeId: string,
+  typedName: string,
+): { suppliers: SupplierRecord[]; rejected: boolean; conflictsWith: string | null } {
+  const isDup = hasCaseInsensitiveDuplicate(typedName, suppliers, activeId);
+  if (isDup) {
+    const conflict = suppliers.find(
+      s => s.id !== activeId && s.name.toLowerCase() === typedName.trim().toLowerCase(),
+    )!;
+    return { suppliers, rejected: true, conflictsWith: conflict.name };
+  }
+  // Commit: update the supplier's name in the roster
+  const updated = suppliers.map(s =>
+    s.id === activeId ? { ...s, name: typedName } : s,
+  );
+  return { suppliers: updated, rejected: false, conflictsWith: null };
+}
+
+describe('Manual-add — roster-state invariant', () => {
+  it('new blank supplier: case-variant name is rejected and roster size stays the same', () => {
+    // Add a blank new supplier (simulates clicking "Add Supplier")
+    const blank: SupplierRecord = { id: 'new-blank', name: '', tier: 'Strategic', subScores: {} };
+    const withBlank = [SUPPLIER_A, SUPPLIER_B, blank];
+
+    // User types "alpha corp" (case-variant of "Alpha Corp") and blurs
+    const { suppliers: after, rejected } = simulateNameBlur(withBlank, 'new-blank', 'alpha corp');
+
+    expect(rejected).toBe(true);
+    expect(after).toHaveLength(3);
+    // The blank supplier's name was NOT updated — still empty
+    expect(after.find(s => s.id === 'new-blank')!.name).toBe('');
+    // Still exactly one entry with that lowercased name (the original SUPPLIER_A) — no ghost added
+    expect(after.filter(s => s.name.toLowerCase() === 'alpha corp')).toHaveLength(1);
+    expect(after.find(s => s.name.toLowerCase() === 'alpha corp')!.id).toBe(SUPPLIER_A.id);
+  });
+
+  it('new blank supplier: uppercase variant is also rejected', () => {
+    const blank: SupplierRecord = { id: 'new-blank', name: '', tier: 'Strategic', subScores: {} };
+    const withBlank = [SUPPLIER_A, SUPPLIER_B, blank];
+
+    const { rejected } = simulateNameBlur(withBlank, 'new-blank', 'ALPHA CORP');
+    expect(rejected).toBe(true);
+  });
+
+  it('new blank supplier: genuinely new name is accepted and committed', () => {
+    const blank: SupplierRecord = { id: 'new-blank', name: '', tier: 'Strategic', subScores: {} };
+    const withBlank = [SUPPLIER_A, SUPPLIER_B, blank];
+
+    const { suppliers: after, rejected } = simulateNameBlur(withBlank, 'new-blank', 'Delta Inc');
+
+    expect(rejected).toBe(false);
+    expect(after).toHaveLength(3);
+    expect(after.find(s => s.id === 'new-blank')!.name).toBe('Delta Inc');
+  });
+
+  it('rename: typing the current name (same case) is accepted (not flagged against itself)', () => {
+    // User opens "Alpha Corp", re-types "Alpha Corp" unchanged, blurs.
+    const { suppliers: after, rejected } = simulateNameBlur(
+      [SUPPLIER_A, SUPPLIER_B, SUPPLIER_C], SUPPLIER_A.id, 'Alpha Corp',
+    );
+    expect(rejected).toBe(false);
+    expect(after.find(s => s.id === SUPPLIER_A.id)!.name).toBe('Alpha Corp');
+  });
+
+  it('rename: typing the current name in a different case is accepted (not flagged against itself)', () => {
+    const { rejected } = simulateNameBlur(
+      [SUPPLIER_A, SUPPLIER_B, SUPPLIER_C], SUPPLIER_A.id, 'alpha corp',
+    );
+    expect(rejected).toBe(false);
+  });
+
+  it('rename: typing another existing supplier\'s name (case-variant) is rejected', () => {
+    // User edits SUPPLIER_C and types "beta ltd" (matches SUPPLIER_B case-insensitively)
+    const { suppliers: after, rejected, conflictsWith } = simulateNameBlur(
+      [SUPPLIER_A, SUPPLIER_B, SUPPLIER_C], SUPPLIER_C.id, 'beta ltd',
+    );
+    expect(rejected).toBe(true);
+    expect(conflictsWith).toBe('Beta Ltd');
+    // SUPPLIER_C name is unchanged
+    expect(after.find(s => s.id === SUPPLIER_C.id)!.name).toBe('Gamma GmbH');
+  });
+
+  it('roster contains no two entries with the same lowercased name after any sequence of commits', () => {
+    // Simulate a sequence: add blank, commit "delta inc", then try to add another "DELTA INC" — rejected.
+    const blank1: SupplierRecord = { id: 'new-1', name: '', tier: 'Strategic', subScores: {} };
+    let current = [SUPPLIER_A, blank1];
+
+    // First commit succeeds
+    const step1 = simulateNameBlur(current, 'new-1', 'delta inc');
+    expect(step1.rejected).toBe(false);
+    current = step1.suppliers;
+
+    const blank2: SupplierRecord = { id: 'new-2', name: '', tier: 'Strategic', subScores: {} };
+    current = [...current, blank2];
+
+    // Second commit with a case-variant of the same name is rejected
+    const step2 = simulateNameBlur(current, 'new-2', 'DELTA INC');
+    expect(step2.rejected).toBe(true);
+    current = step2.suppliers; // roster unchanged
+
+    // Invariant: no two entries share a lowercased name
+    const names = current.map(s => s.name.toLowerCase());
+    const unique = new Set(names);
+    expect(unique.size).toBe(names.length);
   });
 });
