@@ -264,8 +264,10 @@ describe('AdminAutomations — TemplatesTab', () => {
       ).toBeInTheDocument();
     });
 
-    // The node list should also be visible
-    expect(screen.getByText('Webhook')).toBeInTheDocument();
+    // The node list should also be visible (may appear in both the flow preview
+    // and the nodes-chips section, so use getAllByText)
+    const webhookEls = screen.getAllByText('Webhook');
+    expect(webhookEls.length).toBeGreaterThanOrEqual(1);
   });
 
   /* ── C. Prepare & Download button opens the modal ───────────────────────── */

@@ -164,12 +164,12 @@
       "filename": "new-user-welcome.json",
       "name": "New User Welcome",
       "nameAr": "ترحيب بالمستخدم الجديد",
-      "description": "Triggers on user.registered. Two Zaps with Filter steps send bilingual (EN/AR) welcome emails via Gmail.",
-      "descriptionAr": "يُشغَّل عند تسجيل مستخدم جديد. يرسل Zap-ان مع تصفية رسائل ترحيب ثنائية اللغة عبر Gmail.",
+      "description": "Triggers on user.registered. Formatter by Zapier extracts the language field, a Filter routes to the English path, and Gmail sends the welcome email.",
+      "descriptionAr": "يُشغَّل عند تسجيل مستخدم جديد. يستخرج Formatter حقل اللغة، يصفّي Filter المسار الإنجليزي، وGmail يرسل البريد الترحيبي.",
       "triggerEvent": "user.registered",
       "category": "Onboarding",
       "setupTimeMinutes": 4,
-      "nodes": ["Webhooks by Zapier", "Filter", "Gmail"]
+      "nodes": ["Webhooks by Zapier", "Formatter by Zapier", "Filter", "Gmail"]
     },
     {
       "id": "zapier-weekly-kpi-digest",
@@ -190,12 +190,12 @@
       "filename": "lead-nurture-sequence.json",
       "name": "Lead Nurture Sequence",
       "nameAr": "تسلسل رعاية العملاء المحتملين",
-      "description": "Triggers on lead.captured. Sends a personalised intro email, waits 48 h via Make.com Delay, then routes to a discovery-call invite or admin notification based on whether the lead replied.",
-      "descriptionAr": "يُشغَّل عند التقاط عميل محتمل. يرسل بريد ترحيب، ينتظر 48 ساعة عبر Delay، ثم يوجّه إلى دعوة مكالمة اكتشافية أو إشعار المسؤول.",
+      "description": "Triggers on lead.captured. Sends a personalised intro email, waits 48 h via Make.com Delay, then sends a discovery-call follow-up email.",
+      "descriptionAr": "يُشغَّل عند التقاط عميل محتمل. يرسل بريد ترحيب، ينتظر 48 ساعة عبر Delay، ثم يرسل بريد متابعة للمكالمة الاكتشافية.",
       "triggerEvent": "lead.captured",
       "category": "Sales",
       "setupTimeMinutes": 6,
-      "nodes": ["Custom Webhook", "Gmail (Intro)", "Delay", "Basic Router", "Gmail (Follow-up)", "Gmail (Admin Notify)"]
+      "nodes": ["Custom Webhook", "Gmail (Intro)", "Delay", "Gmail (Follow-up)"]
     },
     {
       "id": "make-ai-plan-ready-notification",
@@ -216,12 +216,12 @@
       "filename": "monthly-supplier-scorecard.json",
       "name": "Monthly Supplier Scorecard",
       "nameAr": "بطاقة تقييم الموردين الشهرية",
-      "description": "Triggers on schedule.monthly_scorecard. Calls the ISC supplier API, builds an HTML scorecard table via Set Variable, and emails it via Gmail.",
-      "descriptionAr": "يُشغَّل شهرياً. يستدعي API المورّدين، يبني جدول HTML عبر Set Variable، ويرسله بالبريد.",
+      "description": "Triggers on schedule.monthly_scorecard. Builds an HTML scorecard table from the webhook payload via Set Variable, and emails it via Gmail.",
+      "descriptionAr": "يُشغَّل شهرياً. يبني جدول HTML من بيانات الويب-هوك عبر Set Variable، ويرسله بالبريد.",
       "triggerEvent": "schedule.monthly_scorecard",
       "category": "Reporting",
       "setupTimeMinutes": 5,
-      "nodes": ["Custom Webhook", "HTTP (ISC API)", "Set Variable", "Gmail"]
+      "nodes": ["Custom Webhook", "Set Variable", "Gmail"]
     },
     {
       "id": "make-erp-data-sync",

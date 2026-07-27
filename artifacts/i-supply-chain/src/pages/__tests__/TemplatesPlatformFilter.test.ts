@@ -7,11 +7,8 @@
  *
  * Source of truth: artifacts/api-server/public/n8n-templates/manifest.json
  *
- * Expected counts (from manifest at time of writing):
- *   n8n    — 8 templates
- *   make   — 8 templates
- *   zapier — 8 templates
- *   All    — 24 templates
+ * Counts are derived dynamically from the manifest so this test stays
+ * correct as new templates are added, without requiring manual updates.
  */
 
 import { describe, it, expect } from 'vitest';
@@ -50,28 +47,34 @@ function buildPillList(templates: ManifestEntry[]): string[] {
 
 const templates = manifest.templates as ManifestEntry[];
 
+// Derive platform counts dynamically so tests stay correct as templates are added
+const N8N_COUNT    = templates.filter(t => t.platform === 'n8n').length;
+const MAKE_COUNT   = templates.filter(t => t.platform === 'make').length;
+const ZAPIER_COUNT = templates.filter(t => t.platform === 'zapier').length;
+const TOTAL_COUNT  = templates.length;
+
 describe('TemplatesTab — platform filter', () => {
-  it('All filter returns the full manifest (24 templates)', () => {
+  it('All filter returns the full manifest', () => {
     const visible = applyPlatformFilter(templates, '');
-    expect(visible.length).toBe(24);
+    expect(visible.length).toBe(TOTAL_COUNT);
     expect(visible.length).toBe(templates.length);
   });
 
-  it('n8n filter shows exactly 8 templates', () => {
+  it('n8n filter shows only n8n templates', () => {
     const visible = applyPlatformFilter(templates, 'n8n');
-    expect(visible.length).toBe(8);
+    expect(visible.length).toBe(N8N_COUNT);
     expect(visible.every(t => t.platform === 'n8n')).toBe(true);
   });
 
-  it('Make.com filter shows exactly 8 templates', () => {
+  it('Make.com filter shows only Make.com templates', () => {
     const visible = applyPlatformFilter(templates, 'make');
-    expect(visible.length).toBe(8);
+    expect(visible.length).toBe(MAKE_COUNT);
     expect(visible.every(t => t.platform === 'make')).toBe(true);
   });
 
-  it('Zapier filter shows exactly 8 templates', () => {
+  it('Zapier filter shows only Zapier templates', () => {
     const visible = applyPlatformFilter(templates, 'zapier');
-    expect(visible.length).toBe(8);
+    expect(visible.length).toBe(ZAPIER_COUNT);
     expect(visible.every(t => t.platform === 'zapier')).toBe(true);
   });
 
@@ -92,8 +95,8 @@ describe('TemplatesTab — platform filter', () => {
     const stale = afterZapier.filter(t => afterMake.some(m => m.id === t.id));
     expect(stale).toHaveLength(0);
 
-    // And the counts are correct
-    expect(afterZapier.length).toBe(8);
+    // Zapier count matches manifest
+    expect(afterZapier.length).toBe(ZAPIER_COUNT);
   });
 
   it('switching from n8n to All restores the full set without duplicates', () => {
@@ -112,19 +115,18 @@ describe('TemplatesTab — platform filter', () => {
   });
 
   it('counter text "X / Y templates" would be correct for every filter', () => {
-    const total = templates.length;
-    const cases: Array<['' | Platform, number]> = [
-      ['',       total],
-      ['n8n',        8],
-      ['make',       8],
-      ['zapier',     8],
+    const cases: Array<[string, number]> = [
+      ['',       TOTAL_COUNT],
+      ['n8n',    N8N_COUNT],
+      ['make',   MAKE_COUNT],
+      ['zapier', ZAPIER_COUNT],
     ];
 
     for (const [filter, expectedVisible] of cases) {
       const visible = applyPlatformFilter(templates, filter);
       // The component renders: `${visible.length} / ${templates.length} templates`
       const counterText = `${visible.length} / ${templates.length} templates`;
-      expect(counterText).toBe(`${expectedVisible} / ${total} templates`);
+      expect(counterText).toBe(`${expectedVisible} / ${TOTAL_COUNT} templates`);
     }
   });
 
@@ -136,17 +138,14 @@ describe('TemplatesTab — platform filter', () => {
   });
 
   /**
-   * NEW — prevents a new platform from silently making templates invisible.
+   * Prevents a new platform from silently making templates invisible.
    *
-   * TemplatesTab now builds the pill list dynamically:
+   * TemplatesTab builds the pill list dynamically:
    *   ['', ...unique platforms from loaded templates sorted]
    *
    * This test verifies that every distinct platform value in the manifest
-   * would produce a pill button (i.e. it is present in the dynamic pill list),
-   * and that applying each pill's filter returns at least one template.
-   *
-   * If a new platform key (e.g. "powerautomate") is added to the manifest,
-   * this test will catch it — no manual update of a hardcoded list is needed.
+   * would produce a pill button, and that applying each pill's filter
+   * returns at least one template.
    */
   it('every distinct platform in the manifest has a pill button and yields a non-empty result', () => {
     const pills = buildPillList(templates);
@@ -165,7 +164,7 @@ describe('TemplatesTab — platform filter', () => {
   });
 
   /**
-   * NEW — every pill in the dynamic list (except "All") maps to at least one template.
+   * Every pill in the dynamic list (except "All") maps to at least one template.
    * Guards against stale pills left over after a platform is removed from the manifest.
    */
   it('every platform pill (except All) has at least one matching template in the manifest', () => {
@@ -175,6 +174,13 @@ describe('TemplatesTab — platform filter', () => {
       if (pill === '') continue; // skip the "All" pill
       const results = applyPlatformFilter(templates, pill);
       expect(results.length).toBeGreaterThan(0);
+    }
+  });
+
+  it('every manifest entry has a non-empty nodes array', () => {
+    for (const t of templates) {
+      expect(Array.isArray((t as ManifestEntry & { nodes?: unknown[] }).nodes)).toBe(true);
+      expect(((t as ManifestEntry & { nodes?: unknown[] }).nodes ?? []).length).toBeGreaterThan(0);
     }
   });
 });

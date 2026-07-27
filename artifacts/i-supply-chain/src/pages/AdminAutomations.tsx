@@ -1860,7 +1860,83 @@ function PrepareDownloadModal({
   );
 }
 
-export function TemplateCard({ template: t, ar }: { template: TemplateManifestItem; ar: boolean }) {
+/* ── Flow preview helpers ────────────────────────────────────────────────── */
+
+const NODE_DESCS: Array<{ match: RegExp; en: string; ar: string; icon: React.ElementType }> = [
+  { match: /schedule trigger/i,          icon: Calendar, en: 'Fires the flow on a cron schedule (no ISC webhook needed)',          ar: 'يُشغّل التدفق وفق جدول Cron دون ويب-هوك' },
+  { match: /custom webhook|catch hook|webhooks by zapier/i, icon: Radio,   en: 'Catches the ISC event payload via HTTP POST',    ar: 'يلتقط حمولة حدث ISC عبر HTTP POST' },
+  { match: /webhook/i,                   icon: Radio,    en: 'Receives the ISC event payload via HTTP POST',                        ar: 'يستقبل حمولة حدث ISC عبر HTTP POST' },
+  { match: /wait/i,                      icon: Clock,    en: 'Pauses the flow for a set duration',                                 ar: 'يوقف التدفق لمدة محددة' },
+  { match: /if \(critical only\)/i,      icon: Server,   en: 'Only continues for critical-severity breaches',                      ar: 'يتابع فقط للانتهاكات الحرجة' },
+  { match: /^if$/i,                      icon: Server,   en: 'Branches the flow based on a condition',                             ar: 'يشعّب التدفق بناءً على شرط' },
+  { match: /switch/i,                    icon: Server,   en: 'Routes the flow to one of several branches',                         ar: 'يوجّه التدفق إلى أحد الفروع' },
+  { match: /basic router/i,             icon: Server,   en: 'Splits the flow into parallel routes',                                ar: 'يقسّم التدفق إلى مسارات متوازية' },
+  { match: /filter/i,                    icon: Server,   en: 'Continues only if the filter condition is met',                       ar: 'يتابع فقط إذا تحقق شرط التصفية' },
+  { match: /http request \(slack\)/i,    icon: Zap,      en: 'Posts a message to a Slack channel',                                  ar: 'يرسل رسالة إلى قناة Slack' },
+  { match: /http request \(twilio\)/i,   icon: Zap,      en: 'Sends an SMS via Twilio',                                             ar: 'يرسل رسالة نصية SMS عبر Twilio' },
+  { match: /http request \(whatsapp\)/i, icon: Zap,      en: 'Sends a WhatsApp message via the API',                                ar: 'يرسل رسالة WhatsApp عبر API' },
+  { match: /http request \(erp\)/i,      icon: Zap,      en: 'Fetches data from your ERP REST API',                                 ar: 'يجلب البيانات من واجهة ERP' },
+  { match: /http request \(isc kpis\)/i, icon: Zap,      en: 'Imports KPI values into ISC via the API',                             ar: 'يستورد قيم KPI إلى ISC عبر API' },
+  { match: /http request \(isc suppliers\)/i, icon: Zap, en: 'Imports supplier data into ISC via the API',                          ar: 'يستورد بيانات الموردين إلى ISC عبر API' },
+  { match: /http request \(pdf convert\)/i, icon: Zap,   en: 'Converts the HTML report to a PDF attachment',                        ar: 'يحوّل التقرير HTML إلى مرفق PDF' },
+  { match: /http request \(linear\/jira\)/i, icon: Zap,  en: 'Creates a ticket in Linear or Jira',                                  ar: 'ينشئ تذكرة في Linear أو Jira' },
+  { match: /http request \(isc api\)/i,  icon: Zap,      en: 'Calls the ISC REST API to fetch data',                                ar: 'يستدعي ISC API لجلب البيانات' },
+  { match: /http \(slack\)/i,            icon: Zap,      en: 'Posts a message to a Slack channel',                                  ar: 'يرسل رسالة إلى قناة Slack' },
+  { match: /http \(twilio\)/i,           icon: Zap,      en: 'Sends an SMS via Twilio',                                             ar: 'يرسل رسالة نصية SMS عبر Twilio' },
+  { match: /webhooks post/i,             icon: Zap,      en: 'POSTs data to an external webhook URL',                               ar: 'يرسل البيانات إلى ويب-هوك خارجي' },
+  { match: /http/i,                      icon: Zap,      en: 'Makes an HTTP call to an external service',                           ar: 'يُجري طلب HTTP لخدمة خارجية' },
+  { match: /gmail \(en\)/i,              icon: Server,   en: 'Sends the English-language welcome email via Gmail',                  ar: 'يرسل البريد الترحيبي الإنجليزي عبر Gmail' },
+  { match: /gmail \(ar\)/i,              icon: Server,   en: 'Sends the Arabic-language welcome email via Gmail',                   ar: 'يرسل البريد الترحيبي العربي عبر Gmail' },
+  { match: /gmail/i,                     icon: Server,   en: 'Sends an email via the connected Gmail account',                      ar: 'يرسل بريداً عبر حساب Gmail المربوط' },
+  { match: /sms by zapier/i,             icon: Radio,    en: "Sends an SMS via Zapier's built-in SMS action",                       ar: 'يرسل SMS عبر إجراء Zapier المدمج' },
+  { match: /code by zapier/i,            icon: Server,   en: 'Runs JavaScript to build the email HTML body',                        ar: 'ينفّذ JavaScript لبناء جسم البريد HTML' },
+  { match: /code \(field mapping\)/i,    icon: Server,   en: 'Maps ERP field names to ISC schema',                                  ar: 'يعيّن حقول ERP إلى مخطط ISC' },
+  { match: /code/i,                      icon: Server,   en: 'Runs a JavaScript snippet to format or transform data',               ar: 'ينفّذ كود JavaScript لمعالجة البيانات' },
+  { match: /google sheets/i,             icon: BookOpen, en: 'Looks up the responsible team lead from a Google Sheet',              ar: 'يبحث عن مسؤول الفريق في Google Sheets' },
+  { match: /set variable/i,              icon: Server,   en: 'Sets variables (e.g. builds the email HTML body)',                    ar: 'يضبط متغيرات مثل بناء جسم بريد HTML' },
+  { match: /email/i,                     icon: Server,   en: 'Sends an email',                                                      ar: 'يرسل بريداً إلكترونياً' },
+];
+
+function describeNode(name: string, ar: boolean): { desc: string; Icon: React.ElementType } {
+  for (const entry of NODE_DESCS) {
+    if (entry.match.test(name)) return { desc: ar ? entry.ar : entry.en, Icon: entry.icon };
+  }
+  return { desc: ar ? 'عقدة معالجة أو تحويل' : 'Processing or transformation node', Icon: Server };
+}
+
+function FlowPreview({ nodes, ar }: { nodes: string[]; ar: boolean }) {
+  return (
+    <div>
+      <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-3">
+        {ar ? 'معاينة التدفق' : 'Flow preview'}
+      </p>
+      <div className="relative">
+        {nodes.map((name, i) => {
+          const { desc, Icon } = describeNode(name, ar);
+          const isLast = i === nodes.length - 1;
+          return (
+            <div key={i} className="flex gap-3 items-start">
+              {/* connector column */}
+              <div className="flex flex-col items-center shrink-0">
+                <div className="w-8 h-8 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center">
+                  <Icon className="w-3.5 h-3.5 text-primary" />
+                </div>
+                {!isLast && <div className="w-0.5 bg-border flex-1 min-h-[18px] my-0.5" />}
+              </div>
+              {/* content column */}
+              <div className={`min-w-0 ${isLast ? 'pb-0' : 'pb-3'}`}>
+                <p className="text-xs font-semibold text-slate-800 font-mono leading-tight">{name}</p>
+                <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{desc}</p>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function TemplateCard({ template: t, ar }: { template: TemplateManifestItem; ar: boolean }) {
   const [open, setOpen] = useState(false);
   const [prepareOpen, setPrepareOpen] = useState(false);
   const badgeClass = CATEGORY_BADGE[t.category] ?? 'bg-slate-100 text-slate-600';
@@ -1918,6 +1994,9 @@ export function TemplateCard({ template: t, ar }: { template: TemplateManifestIt
       {/* Expanded setup guide */}
       {open && (
         <div className="border-t border-border bg-slate-50/60 px-4 py-4 space-y-4">
+          {/* Flow preview */}
+          <FlowPreview nodes={t.nodes} ar={ar} />
+
           {/* Nodes / modules / steps used */}
           <div>
             <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-2">
