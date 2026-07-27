@@ -237,7 +237,10 @@ function runNewFormatImport(
   kpis.forEach(k => {
     const spec = KPI_DATA_SPECS[k.id];
     const inputs = inputsByKpi[k.id];
-    if (!inputs || !spec) return;
+    if (!inputs || !spec) {
+      if (spec) log.push(`${k.label}: no input values found — skipped.`);
+      return;
+    }
 
     const requiredIds = spec.inputs.map(i => i.id);
     const missingIds = requiredIds.filter(id => inputs[id] === undefined);
@@ -358,5 +361,99 @@ describe('Excel-mutated template round-trip (lean-six-sigma)', () => {
     const { log } = runNewFormatImport(csvText, 'lean-six-sigma');
     expect(log.filter(l => l.startsWith('✓')).length).toBe(6);
     expect(log.find(l => l.includes('require manual entry'))).toBeUndefined();
+  });
+});
+
+// ─── Risk-management partial import ─────────────────────────────────────────
+//
+//  The risk-management framework has 6 KPIs: rrc, bcpt, rtoa2, crm, srs, rrc2.
+//  This suite verifies that when a user fills in only rrc and bcpt the import:
+//   • calculates the two complete KPIs correctly
+//   • skips the four incomplete KPIs without zeroing them
+//   • records a skip-reason log entry for each uncalculable KPI
+//
+describe('risk-management import — partial inputs (only rrc and bcpt filled)', () => {
+  /**
+   * Build a risk-management template with only rrc and bcpt "Your Value"
+   * cells populated.  All other KPI rows are left blank.
+   */
+  function buildPartialRiskRows(): string[][] {
+    const rows = buildTemplateRows('risk-management');
+    rows.forEach(row => {
+      const kpiId = row[0]?.trim().toLowerCase();
+      if (!['rrc', 'bcpt'].includes(kpiId)) return;
+      const spec = KPI_DATA_SPECS[kpiId];
+      if (!spec) return;
+      const inputDef = spec.inputs.find(inp =>
+        row[1]?.toLowerCase().substring(0, 30) === inp.label.toLowerCase().substring(0, 30),
+      );
+      if (inputDef) row[2] = String(inputDef.example);
+    });
+    return rows;
+  }
+
+  it('calculates rrc correctly from its example inputs', () => {
+    const csvText = rowsToCsvText(buildPartialRiskRows());
+    const { values } = runNewFormatImport(csvText, 'risk-management');
+    // rrc: pct(24, 28) = 85.7
+    expect(values['rrc'], 'rrc').toBeCloseTo(85.7, 0);
+  });
+
+  it('calculates bcpt correctly from its example inputs', () => {
+    const csvText = rowsToCsvText(buildPartialRiskRows());
+    const { values } = runNewFormatImport(csvText, 'risk-management');
+    // bcpt: pct(7, 8) = 87.5
+    expect(values['bcpt'], 'bcpt').toBeCloseTo(87.5, 0);
+  });
+
+  it('skipped KPIs are absent from the values map — not zeroed', () => {
+    const csvText = rowsToCsvText(buildPartialRiskRows());
+    const { values } = runNewFormatImport(csvText, 'risk-management');
+
+    expect(values['rtoa2'], 'rtoa2 should be absent').toBeUndefined();
+    expect(values['crm'],   'crm should be absent').toBeUndefined();
+    expect(values['srs'],   'srs should be absent').toBeUndefined();
+    expect(values['rrc2'],  'rrc2 should be absent').toBeUndefined();
+  });
+
+  it('exactly 2 KPIs are calculated — no more, no less', () => {
+    const csvText = rowsToCsvText(buildPartialRiskRows());
+    const { values } = runNewFormatImport(csvText, 'risk-management');
+
+    expect(Object.keys(values).sort()).toEqual(['bcpt', 'rrc']);
+  });
+
+  it('log contains a skip-reason entry for each uncalculable KPI', () => {
+    const csvText = rowsToCsvText(buildPartialRiskRows());
+    const { log } = runNewFormatImport(csvText, 'risk-management');
+
+    const skipLines = log.filter(l => l.includes('skipped'));
+    // rtoa2, crm, srs, rrc2 — all four should have a skip entry
+    expect(skipLines.length, 'skip-reason log entries').toBeGreaterThanOrEqual(4);
+  });
+
+  it('log contains exactly 2 success lines — one per calculated KPI', () => {
+    const csvText = rowsToCsvText(buildPartialRiskRows());
+    const { log } = runNewFormatImport(csvText, 'risk-management');
+
+    expect(log.filter(l => l.startsWith('✓')).length, 'success log lines').toBe(2);
+  });
+
+  it('skip-reason entries name the skipped KPIs, not the calculated ones', () => {
+    const csvText = rowsToCsvText(buildPartialRiskRows());
+    const { log } = runNewFormatImport(csvText, 'risk-management');
+
+    const skipLines = log.filter(l => l.includes('skipped'));
+    const skipText = skipLines.join('\n');
+
+    // Skipped KPI labels appear in the log
+    expect(skipText).toContain('RTO Attainment');      // rtoa2
+    expect(skipText).toContain('Critical Risk');       // crm
+    expect(skipText).toContain('Supplier Risk Score'); // srs
+    expect(skipText).toContain('Risk Review');         // rrc2
+
+    // Calculated KPI labels must NOT appear in the skip lines
+    expect(skipText).not.toContain('Risk Register Coverage');
+    expect(skipText).not.toContain('BCP Test Pass Rate');
   });
 });

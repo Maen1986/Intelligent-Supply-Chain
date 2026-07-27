@@ -913,7 +913,12 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
         kpis.forEach(k => {
           const spec = KPI_DATA_SPECS[k.id];
           const inputs = inputsByKpi[k.id];
-          if (!inputs || !spec) return;
+          if (!inputs || !spec) {
+            if (spec) log.push(isAr
+              ? `${k.labelAr}: لم يتم تقديم قيم إدخال — تم التخطّي.`
+              : `${k.label}: no input values found — skipped.`);
+            return;
+          }
 
           const requiredIds = spec.inputs.map(i => i.id);
           const missingIds = requiredIds.filter(id => inputs[id] === undefined);
