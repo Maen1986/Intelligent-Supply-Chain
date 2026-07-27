@@ -333,9 +333,24 @@ router.get("/templates", async (_req, res) => {
     const manifest = JSON.parse(raw) as {
       _isc_version: string;
       generatedAt: string;
-      templates: unknown[];
+      templates: Array<{ platform?: string; filename: string; [key: string]: unknown }>;
     };
-    res.json({ ok: true, ...manifest });
+
+    // Annotate each template with its public download path so the client
+    // never has to guess which folder the file lives in.
+    const PLATFORM_FOLDER: Record<string, string> = {
+      n8n:    "n8n-templates",
+      make:   "make-templates",
+      zapier: "zapier-templates",
+    };
+
+    const templates = manifest.templates.map(t => ({
+      ...t,
+      platform: t.platform ?? "n8n",
+      downloadPath: `${PLATFORM_FOLDER[t.platform ?? "n8n"] ?? "n8n-templates"}/${t.filename}`,
+    }));
+
+    res.json({ ok: true, _isc_version: manifest._isc_version, generatedAt: manifest.generatedAt, templates });
   } catch (err) {
     logger.error({ err }, "[admin/automations] GET /templates");
     res.status(500).json({ ok: false, error: "Failed to load template manifest" });

@@ -1,0 +1,189 @@
+{
+  "name": "ISC — KPI Breach Alert",
+  "flow": [
+    {
+      "id": 1,
+      "module": "gateway:CustomWebHook",
+      "version": 1,
+      "parameters": {
+        "hook": "REPLACE_WITH_MAKE_WEBHOOK_ID",
+        "maxResults": 1
+      },
+      "mapper": {},
+      "metadata": {
+        "designer": { "x": 0, "y": 0 },
+        "restore": { "parameters": { "hook": { "label": "ISC KPI Breach Webhook" } } },
+        "parameters": [
+          { "name": "hook", "type": "hook:gateway-webhook", "label": "Webhook", "required": true },
+          { "name": "maxResults", "type": "number", "label": "Maximum number of results" }
+        ]
+      }
+    },
+    {
+      "id": 2,
+      "module": "builtin:BasicRouter",
+      "version": 1,
+      "parameters": {},
+      "mapper": {},
+      "metadata": { "designer": { "x": 300, "y": 0 } },
+      "routes": [
+        {
+          "filter": {
+            "name": "Warn severity",
+            "conditions": [
+              [
+                {
+                  "a": "{{1.body.severity}}",
+                  "b": "warn",
+                  "o": "text:equal"
+                }
+              ]
+            ]
+          },
+          "flow": [
+            {
+              "id": 3,
+              "module": "http:ActionSendData",
+              "version": 3,
+              "parameters": { "handleErrors": false, "useNewZLibDeflate": true },
+              "mapper": {
+                "url": "https://hooks.slack.com/services/REPLACE/WITH/YOUR_SLACK_WEBHOOK",
+                "method": "post",
+                "headers": [],
+                "qs": [],
+                "bodyType": "raw",
+                "parseResponse": false,
+                "authUser": "",
+                "authPass": "",
+                "timeout": "",
+                "shareCookies": false,
+                "ca": "",
+                "cert": "",
+                "key": "",
+                "rejectUnauthorized": true,
+                "followRedirect": true,
+                "useQuerystring": false,
+                "encoding": "json",
+                "serializeUrl": false,
+                "blockedStatus": "",
+                "contentType": "application/json",
+                "data": "{\"text\":\"⚠️ *KPI Warning* — `{{1.body.kpiLabel}}` is at {{1.body.value}} (warn threshold: {{1.body.warnThreshold}}). Review in ISC: https://YOUR_ISC_DOMAIN/\"}"
+              },
+              "metadata": {
+                "designer": { "x": 600, "y": -150 },
+                "restore": { "expect": { "method": { "label": "POST" }, "bodyType": { "label": "Raw" }, "contentType": { "label": "JSON (application/json)" } } },
+                "expect": [
+                  { "name": "url", "type": "url", "label": "URL", "required": true },
+                  { "name": "method", "type": "select", "label": "Method", "required": true },
+                  { "name": "data", "type": "buffer", "label": "Body" }
+                ]
+              }
+            }
+          ],
+          "label": "Warn severity"
+        },
+        {
+          "filter": {
+            "name": "Critical severity",
+            "conditions": [
+              [
+                {
+                  "a": "{{1.body.severity}}",
+                  "b": "critical",
+                  "o": "text:equal"
+                }
+              ]
+            ]
+          },
+          "flow": [
+            {
+              "id": 4,
+              "module": "gmail:ActionSendEmail",
+              "version": 1,
+              "parameters": { "account": "REPLACE_WITH_MAKE_GMAIL_CONNECTION_ID" },
+              "mapper": {
+                "to": "REPLACE_WITH_ALERT_RECIPIENT@example.com",
+                "subject": "🚨 CRITICAL KPI Breach — {{1.body.kpiLabel}}",
+                "bodyType": "html",
+                "body": "<h2 style='color:#dc2626'>🚨 Critical KPI Breach</h2><p><strong>KPI:</strong> {{1.body.kpiLabel}}<br/><strong>Current Value:</strong> {{1.body.value}}<br/><strong>Critical Threshold:</strong> {{1.body.criticalThreshold}}<br/><strong>User:</strong> {{1.body.userId}}</p><p><a href='https://YOUR_ISC_DOMAIN/'>→ View in ISC Platform</a></p>",
+                "from": "alerts@YOUR_ISC_DOMAIN"
+              },
+              "metadata": {
+                "designer": { "x": 600, "y": 0 },
+                "restore": { "parameters": { "account": { "label": "Gmail — ISC Alerts" } }, "expect": { "bodyType": { "label": "HTML" } } },
+                "parameters": [{ "name": "account", "type": "account:google", "label": "Connection", "required": true }],
+                "expect": [
+                  { "name": "to", "type": "email", "label": "To", "required": true },
+                  { "name": "subject", "type": "text", "label": "Subject" },
+                  { "name": "body", "type": "text", "label": "Content" }
+                ]
+              }
+            },
+            {
+              "id": 5,
+              "module": "http:ActionSendData",
+              "version": 3,
+              "parameters": { "handleErrors": false, "useNewZLibDeflate": true },
+              "mapper": {
+                "url": "https://api.twilio.com/2010-04-01/Accounts/REPLACE_ACCOUNT_SID/Messages.json",
+                "method": "post",
+                "headers": [],
+                "qs": [],
+                "bodyType": "x_www_form_urlencoded",
+                "parseResponse": false,
+                "authUser": "REPLACE_ACCOUNT_SID",
+                "authPass": "REPLACE_AUTH_TOKEN",
+                "data": [
+                  { "key": "To", "value": "REPLACE_WITH_RECIPIENT_PHONE" },
+                  { "key": "From", "value": "REPLACE_WITH_TWILIO_PHONE" },
+                  { "key": "Body", "value": "🚨 CRITICAL KPI Breach: {{1.body.kpiLabel}} = {{1.body.value}}. Log in to ISC immediately." }
+                ]
+              },
+              "metadata": {
+                "designer": { "x": 600, "y": 150 },
+                "restore": { "expect": { "method": { "label": "POST" }, "bodyType": { "label": "Application/X-WWW-Form-Urlencoded" } } },
+                "expect": [
+                  { "name": "url", "type": "url", "label": "URL", "required": true },
+                  { "name": "method", "type": "select", "label": "Method", "required": true }
+                ]
+              }
+            }
+          ],
+          "label": "Critical severity"
+        }
+      ]
+    }
+  ],
+  "metadata": {
+    "instant": true,
+    "version": 1,
+    "scenario": {
+      "roundtrips": 1,
+      "maxErrors": 3,
+      "autoCommit": true,
+      "autoCommitTriggerLast": true,
+      "sequential": false,
+      "slots": null,
+      "confidential": false,
+      "dataloss": false,
+      "dlq": false,
+      "freshVariables": false
+    },
+    "designer": { "orphans": [] },
+    "zone": "eu1.make.com"
+  },
+  "isc": {
+    "platform": "make",
+    "triggerEvent": "kpi.threshold_breach",
+    "setupSteps": [
+      "1. In Make.com, create a new scenario and import this JSON (three dots → Import Blueprint).",
+      "2. Click the Webhook module and copy the generated webhook URL.",
+      "3. In ISC → Admin → Integration Hub → Webhooks, create a webhook with event 'kpi.threshold_breach' and paste that URL.",
+      "4. Add your Gmail connection to the Gmail module.",
+      "5. Paste your Slack Incoming Webhook URL into the HTTP (Slack) module.",
+      "6. Replace Twilio credentials and phone numbers in the HTTP (Twilio) module.",
+      "7. Replace YOUR_ISC_DOMAIN and alert recipient email.",
+      "8. Turn the scenario ON."
+    ]
+  }
+}

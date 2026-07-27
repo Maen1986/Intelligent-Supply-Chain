@@ -1,0 +1,96 @@
+{
+  "_isc_version": "1.0.0",
+  "platform": "zapier",
+  "title": "ISC — Weekly KPI Digest",
+  "description": "Triggers when ISC fires the schedule.weekly_kpi_digest webhook every Monday. Formats KPI data into an HTML email and sends it to the client via Gmail.",
+  "steps": [
+    {
+      "type": "trigger",
+      "step_number": 1,
+      "app": "Webhooks by Zapier",
+      "app_slug": "zapier-webhook",
+      "event": "Catch Hook",
+      "event_slug": "catch_hook",
+      "settings": {
+        "note": "Copy the generated Catch Hook URL and paste it into ISC → Admin → Integration Hub → Webhooks with event 'schedule.weekly_kpi_digest'. ISC fires this every Monday at 08:00 UTC — no Zapier schedule trigger needed.",
+        "pick_off": ""
+      },
+      "sample": {
+        "event": "schedule.weekly_kpi_digest",
+        "source": "isc",
+        "version": "1",
+        "timestamp": "2026-01-13T08:00:00Z",
+        "userId": 42,
+        "data": {
+          "recipientEmail": "client@example.com",
+          "recipientName": "Ahmed Al-Mansoori",
+          "weekOf": "2026-01-13",
+          "kpis": [
+            { "label": "On-Time Delivery", "value": 87, "target": 90, "rag": "amber" },
+            { "label": "Cost Savings", "value": 4.2, "target": 5.0, "rag": "amber" },
+            { "label": "Supplier Quality", "value": 96, "target": 90, "rag": "green" }
+          ],
+          "overallRag": "amber"
+        }
+      }
+    },
+    {
+      "type": "action",
+      "step_number": 2,
+      "app": "Formatter by Zapier",
+      "app_slug": "formatter",
+      "event": "Utilities",
+      "event_slug": "utilities",
+      "settings": {
+        "transform": "Line Itemizer",
+        "input": "{{1__data__kpis}}",
+        "note": "Converts the KPI array into individual line items that can be iterated in the email body. Alternatively, use Code by Zapier (step 3) to build the full HTML table."
+      }
+    },
+    {
+      "type": "action",
+      "step_number": 3,
+      "app": "Code by Zapier",
+      "app_slug": "code",
+      "event": "Run Javascript",
+      "event_slug": "run_javascript",
+      "settings": {
+        "code": "const kpis = JSON.parse(inputData.kpisJson || '[]');\nconst ragColor = { green: '#16a34a', amber: '#d97706', red: '#dc2626' };\nconst ragEmoji = { green: '🟢', amber: '🟡', red: '🔴' };\n\nconst rows = kpis.map(k =>\n  `<tr><td style='padding:10px;border-bottom:1px solid #e2e8f0'>${k.label}</td><td style='padding:10px;text-align:center;border-bottom:1px solid #e2e8f0;font-weight:bold'>${k.value}</td><td style='padding:10px;text-align:center;border-bottom:1px solid #e2e8f0;color:#64748b'>${k.target}</td><td style='padding:10px;text-align:center;border-bottom:1px solid #e2e8f0'><span style='color:${ragColor[k.rag]}'>${ragEmoji[k.rag]} ${k.rag.charAt(0).toUpperCase() + k.rag.slice(1)}</span></td></tr>`\n).join('');\n\nconst html = `<!DOCTYPE html><html lang='en'><body style='font-family:Arial,sans-serif;max-width:640px;margin:0 auto;padding:20px;color:#1e293b'><div style='background:linear-gradient(135deg,#1e3a5f,#0ea5e9);padding:24px;border-radius:12px 12px 0 0;color:white'><h1 style='margin:0;font-size:20px'>📊 Weekly KPI Digest</h1><p style='margin:4px 0 0;opacity:0.85;font-size:13px'>Week of ${inputData.weekOf}</p></div><div style='border:1px solid #e2e8f0;border-top:none;padding:24px;border-radius:0 0 12px 12px'><p>Hi ${inputData.recipientName},</p><p>Here is your weekly KPI summary for the period ending <strong>${inputData.weekOf}</strong>:</p><table style='width:100%;border-collapse:collapse;font-size:13px;margin:16px 0'><thead><tr style='background:#f8fafc'><th style='padding:10px;text-align:left;border-bottom:2px solid #e2e8f0'>KPI</th><th style='padding:10px;text-align:center;border-bottom:2px solid #e2e8f0'>Value</th><th style='padding:10px;text-align:center;border-bottom:2px solid #e2e8f0'>Target</th><th style='padding:10px;text-align:center;border-bottom:2px solid #e2e8f0'>Status</th></tr></thead><tbody>${rows}</tbody></table><div style='text-align:center;margin-top:24px'><a href='https://YOUR_ISC_DOMAIN/' style='background:#0ea5e9;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold'>View Full Dashboard →</a></div><p style='color:#94a3b8;font-size:12px;margin-top:24px'>You receive this digest because you have an active ISC account. Sent every Monday.</p></div></body></html>`;\n\nreturn { html };",
+        "input_data": {
+          "kpisJson": "{{1__data__kpis}}",
+          "weekOf": "{{1__data__weekOf}}",
+          "recipientName": "{{1__data__recipientName}}"
+        },
+        "note": "Replace YOUR_ISC_DOMAIN in the code above."
+      }
+    },
+    {
+      "type": "action",
+      "step_number": 4,
+      "app": "Gmail",
+      "app_slug": "gmail",
+      "event": "Send Email",
+      "event_slug": "send_email",
+      "settings": {
+        "to": "{{1__data__recipientEmail}}",
+        "subject": "Your Weekly KPI Digest — Week of {{1__data__weekOf}}",
+        "body": "{{3__html}}",
+        "body_type": "html",
+        "from_name": "I Supply Chain",
+        "note": "Connect your Gmail account. The HTML body comes from the Code step output."
+      }
+    }
+  ],
+  "isc": {
+    "triggerEvent": "schedule.weekly_kpi_digest",
+    "setupSteps": [
+      "1. In Zapier, create a new Zap and choose 'Webhooks by Zapier' as the trigger with event 'Catch Hook'.",
+      "2. Copy the Catch Hook URL and register it in ISC → Admin → Integration Hub → Webhooks with event 'schedule.weekly_kpi_digest'.",
+      "3. Add a 'Code by Zapier' action (Run Javascript) and paste the code from step 3 of this file.",
+      "4. Replace YOUR_ISC_DOMAIN in the code.",
+      "5. Add a Gmail action. Connect your account. Set body to the output of the Code step.",
+      "6. ISC fires this webhook every Monday automatically — no Zapier schedule trigger needed.",
+      "7. Turn the Zap ON."
+    ]
+  }
+}

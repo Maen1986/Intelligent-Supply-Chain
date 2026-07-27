@@ -1,0 +1,132 @@
+{
+  "_isc_version": "1.0.0",
+  "platform": "zapier",
+  "title": "ISC — KPI Breach Alert",
+  "description": "Triggers when ISC fires a kpi.threshold_breach webhook. Routes warn severity to Slack and critical severity to Gmail + SMS via Zapier Webhooks.",
+  "steps": [
+    {
+      "type": "trigger",
+      "step_number": 1,
+      "app": "Webhooks by Zapier",
+      "app_slug": "zapier-webhook",
+      "event": "Catch Hook",
+      "event_slug": "catch_hook",
+      "settings": {
+        "note": "Copy the generated Catch Hook URL and paste it into ISC → Admin → Integration Hub → Webhooks with event 'kpi.threshold_breach'.",
+        "pick_off": ""
+      },
+      "sample": {
+        "event": "kpi.threshold_breach",
+        "source": "isc",
+        "version": "1",
+        "timestamp": "2026-01-13T08:00:00Z",
+        "userId": 42,
+        "data": {
+          "kpiId": "on-time-delivery",
+          "kpiLabel": "On-Time Delivery",
+          "value": 71,
+          "warnThreshold": 80,
+          "criticalThreshold": 70,
+          "severity": "warn"
+        }
+      }
+    },
+    {
+      "type": "filter",
+      "step_number": 2,
+      "name": "Only continue if severity is warn",
+      "conditions": [
+        {
+          "field": "{{1__data__severity}}",
+          "operator": "(Text) Exactly matches",
+          "value": "warn"
+        }
+      ],
+      "note": "This path handles warn-level breaches only. Duplicate the Zap and change this filter to 'critical' for the critical path."
+    },
+    {
+      "type": "action",
+      "step_number": 3,
+      "app": "Webhooks by Zapier",
+      "app_slug": "zapier-webhook",
+      "event": "POST",
+      "event_slug": "post",
+      "settings": {
+        "url": "https://hooks.slack.com/services/REPLACE/WITH/YOUR_SLACK_WEBHOOK",
+        "payload_type": "json",
+        "data": {
+          "text": "⚠️ *KPI Warning* — `{{1__data__kpiLabel}}` is at {{1__data__value}} (warn threshold: {{1__data__warnThreshold}}). Review in ISC: https://YOUR_ISC_DOMAIN/"
+        },
+        "headers": {},
+        "note": "Replace with your Slack Incoming Webhook URL."
+      }
+    }
+  ],
+  "critical_path_steps": [
+    {
+      "type": "trigger",
+      "step_number": 1,
+      "app": "Webhooks by Zapier",
+      "app_slug": "zapier-webhook",
+      "event": "Catch Hook",
+      "event_slug": "catch_hook",
+      "settings": {
+        "note": "Use the same Catch Hook URL as the warn Zap — ISC sends all breaches to one webhook; Zapier filters by severity.",
+        "pick_off": ""
+      }
+    },
+    {
+      "type": "filter",
+      "step_number": 2,
+      "name": "Only continue if severity is critical",
+      "conditions": [
+        {
+          "field": "{{1__data__severity}}",
+          "operator": "(Text) Exactly matches",
+          "value": "critical"
+        }
+      ]
+    },
+    {
+      "type": "action",
+      "step_number": 3,
+      "app": "Gmail",
+      "app_slug": "gmail",
+      "event": "Send Email",
+      "event_slug": "send_email",
+      "settings": {
+        "to": "REPLACE_WITH_ALERT_RECIPIENT@example.com",
+        "subject": "🚨 CRITICAL KPI Breach — {{1__data__kpiLabel}}",
+        "body": "<h2 style='color:#dc2626'>🚨 Critical KPI Breach</h2><p><strong>KPI:</strong> {{1__data__kpiLabel}}<br/><strong>Current Value:</strong> {{1__data__value}}<br/><strong>Critical Threshold:</strong> {{1__data__criticalThreshold}}</p><p><a href='https://YOUR_ISC_DOMAIN/'>→ View in ISC Platform</a></p>",
+        "body_type": "html",
+        "from_name": "ISC Alerts",
+        "note": "Connect your Gmail account and replace the recipient email and YOUR_ISC_DOMAIN."
+      }
+    },
+    {
+      "type": "action",
+      "step_number": 4,
+      "app": "SMS by Zapier",
+      "app_slug": "sms",
+      "event": "Send SMS",
+      "event_slug": "send_sms",
+      "settings": {
+        "to": "REPLACE_WITH_RECIPIENT_PHONE",
+        "body": "🚨 CRITICAL KPI Breach: {{1__data__kpiLabel}} = {{1__data__value}}. Log in to ISC immediately: https://YOUR_ISC_DOMAIN/",
+        "note": "Alternatively, replace this step with the Twilio or Vonage app for production SMS delivery."
+      }
+    }
+  ],
+  "isc": {
+    "triggerEvent": "kpi.threshold_breach",
+    "setupSteps": [
+      "1. In Zapier, create a new Zap and choose 'Webhooks by Zapier' as the trigger with event 'Catch Hook'.",
+      "2. Copy the Catch Hook URL and register it in ISC → Admin → Integration Hub → Webhooks with event 'kpi.threshold_breach'.",
+      "3. Add a Filter step: continue only if severity (Text) Exactly matches 'warn'.",
+      "4. Add a Webhooks POST action and paste your Slack Incoming Webhook URL. Use the payload in this file.",
+      "5. Create a second Zap using the same webhook URL, filter for 'critical', and add Gmail + SMS actions.",
+      "6. Replace YOUR_ISC_DOMAIN, recipient email, and phone number.",
+      "7. Turn both Zaps ON."
+    ]
+  }
+}

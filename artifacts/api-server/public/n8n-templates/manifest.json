@@ -4,6 +4,7 @@
   "templates": [
     {
       "id": "lead-nurture-sequence",
+      "platform": "n8n",
       "filename": "lead-nurture-sequence.json",
       "name": "Lead Nurture Sequence",
       "nameAr": "تسلسل رعاية العملاء المحتملين",
@@ -16,6 +17,7 @@
     },
     {
       "id": "kpi-breach-alert",
+      "platform": "n8n",
       "filename": "kpi-breach-alert.json",
       "name": "KPI Breach Alert",
       "nameAr": "تنبيه خرق مؤشر الأداء",
@@ -28,6 +30,7 @@
     },
     {
       "id": "weekly-kpi-digest",
+      "platform": "n8n",
       "filename": "weekly-kpi-digest.json",
       "name": "Weekly KPI Digest",
       "nameAr": "ملخص مؤشرات الأداء الأسبوعي",
@@ -40,6 +43,7 @@
     },
     {
       "id": "new-user-welcome",
+      "platform": "n8n",
       "filename": "new-user-welcome.json",
       "name": "New User Welcome",
       "nameAr": "ترحيب بالمستخدم الجديد",
@@ -52,6 +56,7 @@
     },
     {
       "id": "ai-plan-ready-notification",
+      "platform": "n8n",
       "filename": "ai-plan-ready-notification.json",
       "name": "AI Plan Ready Notification",
       "nameAr": "إشعار جاهزية خطة الذكاء الاصطناعي",
@@ -64,6 +69,7 @@
     },
     {
       "id": "monthly-supplier-scorecard",
+      "platform": "n8n",
       "filename": "monthly-supplier-scorecard.json",
       "name": "Monthly Supplier Scorecard",
       "nameAr": "بطاقة تقييم الموردين الشهرية",
@@ -76,6 +82,7 @@
     },
     {
       "id": "erp-data-sync",
+      "platform": "n8n",
       "filename": "erp-data-sync.json",
       "name": "ERP Data Sync",
       "nameAr": "مزامنة بيانات نظام ERP",
@@ -88,6 +95,7 @@
     },
     {
       "id": "escalation-router",
+      "platform": "n8n",
       "filename": "escalation-router.json",
       "name": "Escalation Router",
       "nameAr": "موجّه التصعيد",
@@ -97,6 +105,84 @@
       "category": "Escalation",
       "setupTimeMinutes": 5,
       "nodes": ["Webhook", "IF (critical only)", "Google Sheets", "HTTP Request (Linear/Jira)", "Gmail"]
+    },
+    {
+      "id": "make-kpi-breach-alert",
+      "platform": "make",
+      "filename": "kpi-breach-alert.json",
+      "name": "KPI Breach Alert",
+      "nameAr": "تنبيه خرق مؤشر الأداء",
+      "description": "Triggers on kpi.threshold_breach. Routes warn severity to Slack and critical to Gmail + SMS via Make.com router.",
+      "descriptionAr": "يُشغَّل عند خرق عتبة مؤشر الأداء. يوجّه التحذير إلى Slack والحالات الحرجة إلى البريد الإلكتروني + SMS عبر Make.com.",
+      "triggerEvent": "kpi.threshold_breach",
+      "category": "Alerts",
+      "setupTimeMinutes": 5,
+      "nodes": ["Custom Webhook", "Basic Router", "HTTP (Slack)", "Gmail", "HTTP (Twilio)"]
+    },
+    {
+      "id": "make-new-user-welcome",
+      "platform": "make",
+      "filename": "new-user-welcome.json",
+      "name": "New User Welcome",
+      "nameAr": "ترحيب بالمستخدم الجديد",
+      "description": "Triggers on user.registered. Sends a bilingual (EN/AR) welcome email via Gmail, choosing the language automatically from the payload.",
+      "descriptionAr": "يُشغَّل عند تسجيل مستخدم جديد. يرسل بريداً ترحيبياً ثنائي اللغة عبر Gmail، مع اختيار اللغة تلقائياً من البيانات.",
+      "triggerEvent": "user.registered",
+      "category": "Onboarding",
+      "setupTimeMinutes": 3,
+      "nodes": ["Custom Webhook", "Set Variable", "Basic Router", "Gmail (EN)", "Gmail (AR)"]
+    },
+    {
+      "id": "make-weekly-kpi-digest",
+      "platform": "make",
+      "filename": "weekly-kpi-digest.json",
+      "name": "Weekly KPI Digest",
+      "nameAr": "ملخص مؤشرات الأداء الأسبوعي",
+      "description": "Triggers on schedule.weekly_kpi_digest. Builds an HTML KPI digest email via a Set Variable module and sends it via Gmail.",
+      "descriptionAr": "يُشغَّل عبر جدولة أسبوعية. يبني بريد ملخص KPI بصيغة HTML عبر وحدة Set Variable ويرسله عبر Gmail.",
+      "triggerEvent": "schedule.weekly_kpi_digest",
+      "category": "Reporting",
+      "setupTimeMinutes": 4,
+      "nodes": ["Custom Webhook", "Set Variable", "Gmail"]
+    },
+    {
+      "id": "zapier-kpi-breach-alert",
+      "platform": "zapier",
+      "filename": "kpi-breach-alert.json",
+      "name": "KPI Breach Alert",
+      "nameAr": "تنبيه خرق مؤشر الأداء",
+      "description": "Triggers on kpi.threshold_breach. Uses two Zaps with Filter steps to route warn to Slack and critical to Gmail + SMS.",
+      "descriptionAr": "يُشغَّل عند خرق عتبة مؤشر الأداء. يستخدم Zap-ين مع خطوات تصفية لتوجيه التحذير إلى Slack والحرج إلى Gmail + SMS.",
+      "triggerEvent": "kpi.threshold_breach",
+      "category": "Alerts",
+      "setupTimeMinutes": 6,
+      "nodes": ["Webhooks by Zapier", "Filter", "Webhooks POST (Slack)", "Gmail", "SMS by Zapier"]
+    },
+    {
+      "id": "zapier-new-user-welcome",
+      "platform": "zapier",
+      "filename": "new-user-welcome.json",
+      "name": "New User Welcome",
+      "nameAr": "ترحيب بالمستخدم الجديد",
+      "description": "Triggers on user.registered. Two Zaps with Filter steps send bilingual (EN/AR) welcome emails via Gmail.",
+      "descriptionAr": "يُشغَّل عند تسجيل مستخدم جديد. يرسل Zap-ان مع تصفية رسائل ترحيب ثنائية اللغة عبر Gmail.",
+      "triggerEvent": "user.registered",
+      "category": "Onboarding",
+      "setupTimeMinutes": 4,
+      "nodes": ["Webhooks by Zapier", "Filter", "Gmail"]
+    },
+    {
+      "id": "zapier-weekly-kpi-digest",
+      "platform": "zapier",
+      "filename": "weekly-kpi-digest.json",
+      "name": "Weekly KPI Digest",
+      "nameAr": "ملخص مؤشرات الأداء الأسبوعي",
+      "description": "Triggers on schedule.weekly_kpi_digest. Uses Code by Zapier to build an HTML digest email and sends it via Gmail.",
+      "descriptionAr": "يُشغَّل عبر جدولة أسبوعية. يستخدم Code by Zapier لبناء بريد ملخص HTML ويرسله عبر Gmail.",
+      "triggerEvent": "schedule.weekly_kpi_digest",
+      "category": "Reporting",
+      "setupTimeMinutes": 5,
+      "nodes": ["Webhooks by Zapier", "Code by Zapier", "Gmail"]
     }
   ]
 }

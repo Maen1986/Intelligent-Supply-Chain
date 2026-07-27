@@ -1,0 +1,128 @@
+{
+  "_isc_version": "1.0.0",
+  "platform": "zapier",
+  "title": "ISC — New User Welcome (EN/AR)",
+  "description": "Triggers when ISC fires a user.registered webhook. Sends a bilingual welcome email via Gmail, choosing EN or AR based on the lang field.",
+  "steps": [
+    {
+      "type": "trigger",
+      "step_number": 1,
+      "app": "Webhooks by Zapier",
+      "app_slug": "zapier-webhook",
+      "event": "Catch Hook",
+      "event_slug": "catch_hook",
+      "settings": {
+        "note": "Copy the generated Catch Hook URL and paste it into ISC → Admin → Integration Hub → Webhooks with event 'user.registered'.",
+        "pick_off": ""
+      },
+      "sample": {
+        "event": "user.registered",
+        "source": "isc",
+        "version": "1",
+        "timestamp": "2026-01-13T10:00:00Z",
+        "userId": 99,
+        "data": {
+          "name": "Fatima Al-Hassan",
+          "email": "fatima@example.com",
+          "lang": "ar",
+          "role": "user"
+        }
+      }
+    },
+    {
+      "type": "action",
+      "step_number": 2,
+      "app": "Formatter by Zapier",
+      "app_slug": "formatter",
+      "event": "Text",
+      "event_slug": "text_transform",
+      "settings": {
+        "transform": "Default Value",
+        "input": "{{1__data__lang}}",
+        "default_value": "en",
+        "note": "Ensures lang is always 'en' or 'ar'. Pass the output to the Filter step."
+      }
+    },
+    {
+      "type": "filter",
+      "step_number": 3,
+      "name": "Route to English email",
+      "conditions": [
+        {
+          "field": "{{1__data__lang}}",
+          "operator": "(Text) Does not exactly match",
+          "value": "ar"
+        }
+      ],
+      "note": "This path sends the English welcome email. Create a second Zap with the filter reversed for Arabic."
+    },
+    {
+      "type": "action",
+      "step_number": 4,
+      "app": "Gmail",
+      "app_slug": "gmail",
+      "event": "Send Email",
+      "event_slug": "send_email",
+      "settings": {
+        "to": "{{1__data__email}}",
+        "subject": "Welcome to I Supply Chain — {{1__data__name}}",
+        "body": "<!DOCTYPE html><html lang='en'><body style='font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;color:#1e293b'><div style='background:linear-gradient(135deg,#1e3a5f,#0ea5e9);padding:24px;border-radius:12px 12px 0 0;color:white'><h1 style='margin:0;font-size:22px'>🎉 Welcome to I Supply Chain</h1></div><div style='border:1px solid #e2e8f0;border-top:none;padding:24px;border-radius:0 0 12px 12px'><p>Dear {{1__data__name}},</p><p>We are thrilled to have you on board. Here is your onboarding checklist:</p><ul style='line-height:2'><li>✅ Complete your profile</li><li>✅ Add your KPIs to the dashboard</li><li>✅ Explore the AI-generated improvement plan</li><li>✅ Add your supplier roster for scorecard assessment</li></ul><div style='text-align:center;margin-top:24px'><a href='https://YOUR_ISC_DOMAIN/' style='background:#0ea5e9;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold'>Get Started →</a></div></div></body></html>",
+        "body_type": "html",
+        "from_name": "I Supply Chain",
+        "note": "Connect your Gmail account. Replace YOUR_ISC_DOMAIN in the body."
+      }
+    }
+  ],
+  "arabic_path_steps": [
+    {
+      "type": "trigger",
+      "step_number": 1,
+      "app": "Webhooks by Zapier",
+      "app_slug": "zapier-webhook",
+      "event": "Catch Hook",
+      "event_slug": "catch_hook",
+      "settings": {
+        "note": "Use the same Catch Hook URL as the English Zap."
+      }
+    },
+    {
+      "type": "filter",
+      "step_number": 2,
+      "name": "Route to Arabic email",
+      "conditions": [
+        {
+          "field": "{{1__data__lang}}",
+          "operator": "(Text) Exactly matches",
+          "value": "ar"
+        }
+      ]
+    },
+    {
+      "type": "action",
+      "step_number": 3,
+      "app": "Gmail",
+      "app_slug": "gmail",
+      "event": "Send Email",
+      "event_slug": "send_email",
+      "settings": {
+        "to": "{{1__data__email}}",
+        "subject": "مرحباً بك في منصة I Supply Chain — {{1__data__name}}",
+        "body": "<!DOCTYPE html><html dir='rtl' lang='ar'><body style='font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;color:#1e293b;direction:rtl'><div style='background:linear-gradient(135deg,#1e3a5f,#0ea5e9);padding:24px;border-radius:12px 12px 0 0;color:white;text-align:right'><h1 style='margin:0;font-size:22px'>🎉 مرحباً بك في I Supply Chain</h1></div><div style='border:1px solid #e2e8f0;border-top:none;padding:24px;border-radius:0 0 12px 12px'><p>عزيزي {{1__data__name}}،</p><p>يسعدنا انضمامك إلى المنصة. إليك قائمة مراجعة للبدء:</p><ul style='line-height:2'><li>✅ أكمل ملفك الشخصي</li><li>✅ أضف مؤشرات الأداء الخاصة بك</li><li>✅ استكشف خطة الذكاء الاصطناعي</li><li>✅ أضف موردينك لبدء التقييم</li></ul><div style='text-align:center;margin-top:24px'><a href='https://YOUR_ISC_DOMAIN/' style='background:#0ea5e9;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold'>ابدأ الآن →</a></div></div></body></html>",
+        "body_type": "html",
+        "from_name": "I Supply Chain"
+      }
+    }
+  ],
+  "isc": {
+    "triggerEvent": "user.registered",
+    "setupSteps": [
+      "1. In Zapier, create a new Zap and choose 'Webhooks by Zapier' as the trigger with event 'Catch Hook'.",
+      "2. Copy the Catch Hook URL and register it in ISC → Admin → Integration Hub → Webhooks with event 'user.registered'.",
+      "3. Add a Filter step: continue only if lang (Text) Does not exactly match 'ar' — this handles the English path.",
+      "4. Add a Gmail action. Connect your Gmail account and paste the English email HTML from this file.",
+      "5. Create a second Zap with the same webhook URL, filter for lang equals 'ar', and paste the Arabic email HTML.",
+      "6. Replace YOUR_ISC_DOMAIN in both email bodies.",
+      "7. Turn both Zaps ON."
+    ]
+  }
+}

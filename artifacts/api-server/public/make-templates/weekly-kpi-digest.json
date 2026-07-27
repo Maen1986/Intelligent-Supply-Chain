@@ -1,0 +1,99 @@
+{
+  "name": "ISC — Weekly KPI Digest",
+  "flow": [
+    {
+      "id": 1,
+      "module": "gateway:CustomWebHook",
+      "version": 1,
+      "parameters": {
+        "hook": "REPLACE_WITH_MAKE_WEBHOOK_ID",
+        "maxResults": 1
+      },
+      "mapper": {},
+      "metadata": {
+        "designer": { "x": 0, "y": 0 },
+        "restore": { "parameters": { "hook": { "label": "ISC Weekly KPI Digest Webhook" } } },
+        "parameters": [
+          { "name": "hook", "type": "hook:gateway-webhook", "label": "Webhook", "required": true },
+          { "name": "maxResults", "type": "number", "label": "Maximum number of results" }
+        ]
+      }
+    },
+    {
+      "id": 2,
+      "module": "builtin:SetVariable",
+      "version": 1,
+      "parameters": {},
+      "mapper": {
+        "name": "digestHtml",
+        "scope": "roundtrip",
+        "value": "<!DOCTYPE html><html lang='en'><body style='font-family:Arial,sans-serif;max-width:640px;margin:0 auto;padding:20px;color:#1e293b'><div style='background:linear-gradient(135deg,#1e3a5f,#0ea5e9);padding:24px;border-radius:12px 12px 0 0;color:white'><h1 style='margin:0;font-size:20px'>📊 Weekly KPI Digest</h1><p style='margin:4px 0 0;opacity:0.85;font-size:13px'>Week of {{1.body.weekOf}}</p></div><div style='border:1px solid #e2e8f0;border-top:none;padding:24px;border-radius:0 0 12px 12px'><p>Hi {{1.body.recipientName}},</p><p>Here is your weekly KPI summary for the period ending <strong>{{1.body.weekOf}}</strong>:</p><table style='width:100%;border-collapse:collapse;font-size:13px;margin:16px 0'><thead><tr style='background:#f8fafc'><th style='padding:10px;text-align:left;border-bottom:2px solid #e2e8f0'>KPI</th><th style='padding:10px;text-align:center;border-bottom:2px solid #e2e8f0'>Value</th><th style='padding:10px;text-align:center;border-bottom:2px solid #e2e8f0'>Target</th><th style='padding:10px;text-align:center;border-bottom:2px solid #e2e8f0'>Status</th></tr></thead><tbody>{{1.body.kpiTableRows}}</tbody></table><div style='text-align:center;margin-top:24px'><a href='https://YOUR_ISC_DOMAIN/' style='background:#0ea5e9;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold'>View Full Dashboard →</a></div><p style='color:#94a3b8;font-size:12px;margin-top:24px'>You receive this digest because you have an active ISC account. Sent every Monday.</p></div></body></html>"
+      },
+      "metadata": {
+        "designer": { "x": 300, "y": 0 },
+        "expect": [
+          { "name": "name", "type": "text", "label": "Variable name", "required": true },
+          { "name": "scope", "type": "select", "label": "Variable lifetime", "required": true },
+          { "name": "value", "type": "any", "label": "Variable value" }
+        ]
+      }
+    },
+    {
+      "id": 3,
+      "module": "gmail:ActionSendEmail",
+      "version": 1,
+      "parameters": { "account": "REPLACE_WITH_MAKE_GMAIL_CONNECTION_ID" },
+      "mapper": {
+        "to": "{{1.body.recipientEmail}}",
+        "subject": "Your Weekly KPI Digest — Week of {{1.body.weekOf}}",
+        "bodyType": "html",
+        "body": "{{2.digestHtml}}",
+        "from": "digest@YOUR_ISC_DOMAIN"
+      },
+      "metadata": {
+        "designer": { "x": 600, "y": 0 },
+        "restore": {
+          "parameters": { "account": { "label": "Gmail — ISC Digest" } },
+          "expect": { "bodyType": { "label": "HTML" } }
+        },
+        "parameters": [{ "name": "account", "type": "account:google", "label": "Connection", "required": true }],
+        "expect": [
+          { "name": "to", "type": "email", "label": "To", "required": true },
+          { "name": "subject", "type": "text", "label": "Subject" },
+          { "name": "body", "type": "text", "label": "Content" }
+        ]
+      }
+    }
+  ],
+  "metadata": {
+    "instant": true,
+    "version": 1,
+    "scenario": {
+      "roundtrips": 1,
+      "maxErrors": 3,
+      "autoCommit": true,
+      "autoCommitTriggerLast": true,
+      "sequential": false,
+      "slots": null,
+      "confidential": false,
+      "dataloss": false,
+      "dlq": false,
+      "freshVariables": false
+    },
+    "designer": { "orphans": [] },
+    "zone": "eu1.make.com"
+  },
+  "isc": {
+    "platform": "make",
+    "triggerEvent": "schedule.weekly_kpi_digest",
+    "setupSteps": [
+      "1. In Make.com, create a new scenario and import this JSON (three dots → Import Blueprint).",
+      "2. Click the Webhook module and copy the generated webhook URL.",
+      "3. In ISC → Admin → Integration Hub → Webhooks, create a webhook with event 'schedule.weekly_kpi_digest' and paste that URL.",
+      "4. Add your Gmail connection to the Gmail module.",
+      "5. Replace YOUR_ISC_DOMAIN in the email template (Set Variable module).",
+      "6. ISC fires this webhook every Monday automatically — no Make.com schedule needed.",
+      "7. Turn the scenario ON."
+    ]
+  }
+}

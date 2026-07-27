@@ -1027,7 +1027,9 @@ function EventCatalogItem({
 
 interface TemplateManifestItem {
   id: string;
+  platform: 'n8n' | 'make' | 'zapier';
   filename: string;
+  downloadPath: string;
   name: string;
   nameAr: string;
   description: string;
@@ -1048,7 +1050,149 @@ const CATEGORY_BADGE: Record<string, string> = {
   Escalation:   'bg-orange-100 text-orange-700',
 };
 
+/* Platform display helpers */
+const PLATFORM_LABEL: Record<string, { en: string; ar: string; color: string }> = {
+  n8n:    { en: 'n8n',      ar: 'n8n',       color: 'bg-orange-100 text-orange-700' },
+  make:   { en: 'Make.com', ar: 'Make.com',   color: 'bg-violet-100 text-violet-700' },
+  zapier: { en: 'Zapier',   ar: 'Zapier',     color: 'bg-amber-100 text-amber-700'  },
+};
+
+const NODES_LABEL: Record<string, { en: string; ar: string }> = {
+  n8n:    { en: 'Nodes used',    ar: 'العقد المُستخدمة'    },
+  make:   { en: 'Modules used',  ar: 'الوحدات المُستخدمة'  },
+  zapier: { en: 'Steps',         ar: 'الخطوات'              },
+};
+
 const SETUP_GUIDES: Record<string, { en: string[]; ar: string[] }> = {
+  /* ── Make.com ── */
+  'make-kpi-breach-alert': {
+    en: [
+      '1. In Make.com, create a new scenario.',
+      '2. Click the three-dot menu → Import Blueprint and select this file.',
+      '3. Click the Webhook module and copy the generated webhook URL.',
+      '4. In ISC → Admin → Integration Hub → Webhooks, create a webhook with event "kpi.threshold_breach" and paste that URL.',
+      '5. Add your Gmail connection to the Gmail module.',
+      '6. Paste your Slack Incoming Webhook URL into the HTTP (Slack) module.',
+      '7. Replace Twilio credentials and phone numbers in the HTTP (Twilio) module.',
+      '8. Replace YOUR_ISC_DOMAIN and alert recipient email throughout.',
+      '9. Turn the scenario ON.',
+    ],
+    ar: [
+      '١. في Make.com، أنشئ سيناريو جديداً.',
+      '٢. انقر قائمة النقاط الثلاث ← استيراد Blueprint واختر هذا الملف.',
+      '٣. انقر وحدة Webhook وانسخ الرابط المُنشأ.',
+      '٤. في ISC ← الإدارة ← مركز التكاملات ← الويب-هوك، أضف ويب-هوك بحدث "kpi.threshold_breach" والصق الرابط.',
+      '٥. أضف اتصال Gmail إلى وحدة Gmail.',
+      '٦. الصق رابط Slack Incoming Webhook في وحدة HTTP (Slack).',
+      '٧. استبدل بيانات Twilio وأرقام الهاتف في وحدة HTTP (Twilio).',
+      '٨. استبدل YOUR_ISC_DOMAIN وعنوان البريد.',
+      '٩. شغّل السيناريو.',
+    ],
+  },
+  'make-new-user-welcome': {
+    en: [
+      '1. In Make.com, create a new scenario.',
+      '2. Click the three-dot menu → Import Blueprint and select this file.',
+      '3. Click the Webhook module and copy the generated webhook URL.',
+      '4. In ISC → Admin → Integration Hub → Webhooks, create a webhook with event "user.registered" and paste that URL.',
+      '5. Add your Gmail connection to both Gmail modules (EN and AR routes).',
+      '6. Replace YOUR_ISC_DOMAIN in both email body templates.',
+      '7. Turn the scenario ON.',
+    ],
+    ar: [
+      '١. في Make.com، أنشئ سيناريو جديداً.',
+      '٢. انقر قائمة النقاط الثلاث ← استيراد Blueprint واختر هذا الملف.',
+      '٣. انقر وحدة Webhook وانسخ الرابط المُنشأ.',
+      '٤. في ISC ← الإدارة ← مركز التكاملات ← الويب-هوك، أضف ويب-هوك بحدث "user.registered" والصق الرابط.',
+      '٥. أضف اتصال Gmail إلى وحدتَي Gmail (المسار الإنجليزي والعربي).',
+      '٦. استبدل YOUR_ISC_DOMAIN في قالبَي البريد.',
+      '٧. شغّل السيناريو.',
+    ],
+  },
+  'make-weekly-kpi-digest': {
+    en: [
+      '1. In Make.com, create a new scenario.',
+      '2. Click the three-dot menu → Import Blueprint and select this file.',
+      '3. Click the Webhook module and copy the generated webhook URL.',
+      '4. In ISC → Admin → Integration Hub → Webhooks, create a webhook with event "schedule.weekly_kpi_digest" and paste that URL.',
+      '5. Add your Gmail connection to the Gmail module.',
+      '6. Replace YOUR_ISC_DOMAIN in the Set Variable module\'s email template.',
+      '7. ISC fires this every Monday automatically — no Make.com schedule needed.',
+      '8. Turn the scenario ON.',
+    ],
+    ar: [
+      '١. في Make.com، أنشئ سيناريو جديداً.',
+      '٢. انقر قائمة النقاط الثلاث ← استيراد Blueprint واختر هذا الملف.',
+      '٣. انقر وحدة Webhook وانسخ الرابط المُنشأ.',
+      '٤. في ISC ← الإدارة ← مركز التكاملات ← الويب-هوك، أضف ويب-هوك بحدث "schedule.weekly_kpi_digest" والصق الرابط.',
+      '٥. أضف اتصال Gmail إلى وحدة Gmail.',
+      '٦. استبدل YOUR_ISC_DOMAIN في قالب البريد بوحدة Set Variable.',
+      '٧. تُرسل ISC هذا الحدث كل يوم اثنين تلقائياً.',
+      '٨. شغّل السيناريو.',
+    ],
+  },
+  /* ── Zapier ── */
+  'zapier-kpi-breach-alert': {
+    en: [
+      '1. In Zapier, create a new Zap. Choose "Webhooks by Zapier" as the trigger with event "Catch Hook".',
+      '2. Copy the Catch Hook URL and register it in ISC → Admin → Integration Hub → Webhooks with event "kpi.threshold_breach".',
+      '3. Add a Filter step: continue only if severity (Text) Exactly matches "warn".',
+      '4. Add a Webhooks POST action and paste your Slack Incoming Webhook URL.',
+      '5. Create a second Zap using the same hook URL, filter for "critical", and add Gmail + SMS by Zapier actions.',
+      '6. Replace YOUR_ISC_DOMAIN, recipient email, and phone number.',
+      '7. Turn both Zaps ON.',
+    ],
+    ar: [
+      '١. في Zapier، أنشئ Zap جديداً. اختر "Webhooks by Zapier" كمشغّل بحدث "Catch Hook".',
+      '٢. انسخ الرابط وسجّله في ISC ← مركز التكاملات بحدث "kpi.threshold_breach".',
+      '٣. أضف خطوة Filter: استمر فقط إذا كانت severity تطابق "warn".',
+      '٤. أضف إجراء Webhooks POST والصق رابط Slack Incoming Webhook.',
+      '٥. أنشئ Zap ثانياً بنفس الرابط، صفّه لـ "critical"، وأضف Gmail + SMS.',
+      '٦. استبدل YOUR_ISC_DOMAIN والبريد ورقم الهاتف.',
+      '٧. شغّل كلا الـ Zap-ين.',
+    ],
+  },
+  'zapier-new-user-welcome': {
+    en: [
+      '1. In Zapier, create a new Zap. Choose "Webhooks by Zapier" → "Catch Hook".',
+      '2. Copy the Catch Hook URL and register it in ISC → Admin → Integration Hub → Webhooks with event "user.registered".',
+      '3. Add a Filter: continue only if lang (Text) Does not exactly match "ar" — this handles the English path.',
+      '4. Add a Gmail action. Connect your account and paste the English email HTML from this file.',
+      '5. Create a second Zap with the same hook URL, filter for lang equals "ar", and paste the Arabic email HTML.',
+      '6. Replace YOUR_ISC_DOMAIN in both email bodies.',
+      '7. Turn both Zaps ON.',
+    ],
+    ar: [
+      '١. في Zapier، أنشئ Zap جديداً. اختر "Webhooks by Zapier" ← "Catch Hook".',
+      '٢. انسخ الرابط وسجّله في ISC ← مركز التكاملات بحدث "user.registered".',
+      '٣. أضف Filter: استمر فقط إذا كان lang لا يطابق "ar" — هذا المسار الإنجليزي.',
+      '٤. أضف إجراء Gmail واربط حسابك والصق HTML البريد الإنجليزي.',
+      '٥. أنشئ Zap ثانياً بنفس الرابط، صفّه لـ lang = "ar"، والصق HTML البريد العربي.',
+      '٦. استبدل YOUR_ISC_DOMAIN في قالبَي البريد.',
+      '٧. شغّل كلا الـ Zap-ين.',
+    ],
+  },
+  'zapier-weekly-kpi-digest': {
+    en: [
+      '1. In Zapier, create a new Zap. Choose "Webhooks by Zapier" → "Catch Hook".',
+      '2. Copy the Catch Hook URL and register it in ISC → Admin → Integration Hub → Webhooks with event "schedule.weekly_kpi_digest".',
+      '3. Add a "Code by Zapier" step (Run Javascript) and paste the code from this file\'s step 3.',
+      '4. Replace YOUR_ISC_DOMAIN in the code.',
+      '5. Add a Gmail action. Connect your account. Set the body to the output of the Code step.',
+      '6. ISC fires this every Monday automatically — no Zapier schedule trigger needed.',
+      '7. Turn the Zap ON.',
+    ],
+    ar: [
+      '١. في Zapier، أنشئ Zap جديداً. اختر "Webhooks by Zapier" ← "Catch Hook".',
+      '٢. انسخ الرابط وسجّله في ISC ← مركز التكاملات بحدث "schedule.weekly_kpi_digest".',
+      '٣. أضف خطوة "Code by Zapier" (Run Javascript) والصق الكود من الخطوة 3 في هذا الملف.',
+      '٤. استبدل YOUR_ISC_DOMAIN في الكود.',
+      '٥. أضف إجراء Gmail واربط حسابك وضع مخرجات خطوة Code في حقل الجسم.',
+      '٦. تُرسل ISC هذا الحدث كل يوم اثنين تلقائياً.',
+      '٧. شغّل الـ Zap.',
+    ],
+  },
+  /* ── n8n ── */
   'lead-nurture-sequence': {
     en: [
       '1. Import this JSON into n8n: Menu → Workflows → Import from file.',
@@ -1203,6 +1347,7 @@ function TemplatesTab({ ar }: { ar: boolean }) {
   const [templates, setTemplates] = useState<TemplateManifestItem[]>([]);
   const [loading, setLoading]     = useState(true);
   const [error, setError]         = useState<string | null>(null);
+  const [platformFilter, setPlatformFilter] = useState<'' | 'n8n' | 'make' | 'zapier'>('');
 
   useEffect(() => {
     setLoading(true);
@@ -1226,6 +1371,10 @@ function TemplatesTab({ ar }: { ar: boolean }) {
     <p className="text-sm text-red-600 py-4">{error}</p>
   );
 
+  const visible = platformFilter
+    ? templates.filter(t => t.platform === platformFilter)
+    : templates;
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -1233,21 +1382,51 @@ function TemplatesTab({ ar }: { ar: boolean }) {
         <Package className="w-5 h-5 text-indigo-600 shrink-0 mt-0.5" />
         <div>
           <p className="font-semibold text-sm text-indigo-900">
-            {ar ? 'مكتبة قوالب n8n — جاهزة للاستيراد' : 'n8n Workflow Template Library — Ready to Import'}
+            {ar ? 'مكتبة قوالب الأتمتة — جاهزة للاستيراد' : 'Automation Template Library — Ready to Import'}
           </p>
           <p className="text-xs text-indigo-700 mt-0.5">
             {ar
-              ? 'قم بتنزيل أي قالب وفتحه في n8n (القائمة ← سير العمل ← استيراد من ملف). كل قالب يحتوي على تعليمات الإعداد خطوة بخطوة.'
-              : 'Download any template and open it in n8n (Menu → Workflows → Import from file). Each template includes step-by-step setup instructions.'}
+              ? 'تتوفر القوالب لـ n8n وMake.com وZapier. نزّل أي قالب واتبع دليل الإعداد المرفق.'
+              : 'Templates available for n8n, Make.com, and Zapier. Download any template and follow the included setup guide.'}
           </p>
         </div>
       </div>
 
+      {/* Platform filter */}
+      <div className="flex flex-wrap gap-2 items-center">
+        <span className="text-xs text-muted-foreground font-medium">{ar ? 'المنصة:' : 'Platform:'}</span>
+        {(['', 'n8n', 'make', 'zapier'] as const).map(p => {
+          const label = p === '' ? (ar ? 'الكل' : 'All') : PLATFORM_LABEL[p]?.en ?? p;
+          const active = platformFilter === p;
+          return (
+            <button
+              key={p}
+              onClick={() => setPlatformFilter(p)}
+              className={`px-3 py-1 rounded-full text-xs font-semibold border transition-colors ${
+                active
+                  ? 'bg-primary text-white border-primary'
+                  : 'border-border text-muted-foreground hover:border-primary/50 hover:text-primary'
+              }`}
+            >
+              {label}
+            </button>
+          );
+        })}
+        <span className="text-xs text-muted-foreground ms-auto">
+          {visible.length} / {templates.length} {ar ? 'قالب' : 'templates'}
+        </span>
+      </div>
+
       {/* Template cards */}
       <div className="space-y-3">
-        {templates.map(t => (
+        {visible.map(t => (
           <TemplateCard key={t.id} template={t} ar={ar} />
         ))}
+        {visible.length === 0 && (
+          <p className="text-sm text-muted-foreground text-center py-8">
+            {ar ? 'لا توجد قوالب لهذه المنصة.' : 'No templates for this platform.'}
+          </p>
+        )}
       </div>
     </div>
   );
@@ -1258,7 +1437,9 @@ function TemplateCard({ template: t, ar }: { template: TemplateManifestItem; ar:
   const badgeClass = CATEGORY_BADGE[t.category] ?? 'bg-slate-100 text-slate-600';
   const guide = SETUP_GUIDES[t.id];
   const steps = ar ? (guide?.ar ?? guide?.en ?? []) : (guide?.en ?? []);
-  const downloadUrl = `${API_BASE.replace('/api', '')}/public/n8n-templates/${t.filename}`;
+  const downloadUrl = `${API_BASE.replace('/api', '')}/public/${t.downloadPath}`;
+  const platformInfo = PLATFORM_LABEL[t.platform] ?? PLATFORM_LABEL['n8n'];
+  const nodesLabel = NODES_LABEL[t.platform] ?? NODES_LABEL['n8n'];
 
   return (
     <div className="border border-border rounded-xl overflow-hidden">
@@ -1268,6 +1449,9 @@ function TemplateCard({ template: t, ar }: { template: TemplateManifestItem; ar:
           <div className="flex flex-wrap items-center gap-2 mb-0.5">
             <p className="font-semibold text-sm text-primary">{ar ? t.nameAr : t.name}</p>
             <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${badgeClass}`}>{t.category}</span>
+            <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${platformInfo.color}`}>
+              {ar ? platformInfo.ar : platformInfo.en}
+            </span>
           </div>
           <p className="text-xs text-muted-foreground line-clamp-2">{ar ? t.descriptionAr : t.description}</p>
           <div className="flex flex-wrap items-center gap-3 mt-1.5 text-xs text-muted-foreground">
@@ -1304,10 +1488,10 @@ function TemplateCard({ template: t, ar }: { template: TemplateManifestItem; ar:
       {/* Expanded setup guide */}
       {open && (
         <div className="border-t border-border bg-slate-50/60 px-4 py-4 space-y-4">
-          {/* Nodes used */}
+          {/* Nodes / modules / steps used */}
           <div>
             <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-2">
-              {ar ? 'العقد المُستخدمة' : 'Nodes used'}
+              {ar ? nodesLabel.ar : nodesLabel.en}
             </p>
             <div className="flex flex-wrap gap-1.5">
               {t.nodes.map(n => (
@@ -1323,29 +1507,36 @@ function TemplateCard({ template: t, ar }: { template: TemplateManifestItem; ar:
             <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-2">
               {ar ? 'خطوات الإعداد' : 'Setup steps'}
             </p>
-            <ol className="space-y-1.5">
-              {steps.map((step, i) => (
-                <li key={i} className="flex items-start gap-2 text-xs text-slate-700">
-                  <span className="shrink-0 w-5 h-5 rounded-full bg-primary/10 text-primary font-bold text-xs flex items-center justify-center mt-0.5">
-                    {i + 1}
-                  </span>
-                  <span className="leading-relaxed">{step.replace(/^\d+\.\s*/, '')}</span>
-                </li>
-              ))}
-            </ol>
+            {steps.length > 0 ? (
+              <ol className="space-y-1.5">
+                {steps.map((step, i) => (
+                  <li key={i} className="flex items-start gap-2 text-xs text-slate-700">
+                    <span className="shrink-0 w-5 h-5 rounded-full bg-primary/10 text-primary font-bold text-xs flex items-center justify-center mt-0.5">
+                      {i + 1}
+                    </span>
+                    <span className="leading-relaxed">{step.replace(/^\d+\.\s*/, '').replace(/^[٠-٩]+\.\s*/, '')}</span>
+                  </li>
+                ))}
+              </ol>
+            ) : (
+              <p className="text-xs text-muted-foreground italic">
+                {ar ? 'افتح الملف المنزَّل للاطلاع على تعليمات الإعداد.' : 'Open the downloaded file for setup instructions.'}
+              </p>
+            )}
           </div>
 
           {/* Trigger event hint */}
           <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800">
             <Server className="w-3.5 h-3.5 shrink-0 mt-0.5 text-amber-600" />
             <span>
-              {ar
-                ? `سجّل عنوان URL للويب-هوك في ISC → الإدارة → مركز التكاملات → الويب-هوك باستخدام الحدث "${t.triggerEvent}".`
-                : `Register the n8n Webhook URL in ISC → Admin → Integration Hub → Webhooks using event "${t.triggerEvent}".`}
-              {t.triggerEvent === 'cron.daily' && (
-                <span className="block mt-1 font-medium">
-                  {ar ? 'هذا سير عمل بمشغّل مجدول — لا يلزم تسجيل ويب-هوك.' : 'This workflow uses a built-in Schedule Trigger — no webhook registration needed.'}
-                </span>
+              {t.triggerEvent === 'cron.daily' ? (
+                ar
+                  ? 'هذا سير عمل بمشغّل مجدول داخلي — لا يلزم تسجيل ويب-هوك في ISC.'
+                  : 'This workflow uses a built-in Schedule Trigger — no ISC webhook registration needed.'
+              ) : (
+                ar
+                  ? `سجّل عنوان URL للويب-هوك في ISC → الإدارة → مركز التكاملات → الويب-هوك باستخدام الحدث "${t.triggerEvent}".`
+                  : `Register the webhook URL in ISC → Admin → Integration Hub → Webhooks using event "${t.triggerEvent}".`
               )}
             </span>
           </div>

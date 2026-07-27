@@ -1,0 +1,154 @@
+{
+  "name": "ISC — New User Welcome (EN/AR)",
+  "flow": [
+    {
+      "id": 1,
+      "module": "gateway:CustomWebHook",
+      "version": 1,
+      "parameters": {
+        "hook": "REPLACE_WITH_MAKE_WEBHOOK_ID",
+        "maxResults": 1
+      },
+      "mapper": {},
+      "metadata": {
+        "designer": { "x": 0, "y": 0 },
+        "restore": { "parameters": { "hook": { "label": "ISC New User Webhook" } } },
+        "parameters": [
+          { "name": "hook", "type": "hook:gateway-webhook", "label": "Webhook", "required": true },
+          { "name": "maxResults", "type": "number", "label": "Maximum number of results" }
+        ]
+      }
+    },
+    {
+      "id": 2,
+      "module": "builtin:SetVariable",
+      "version": 1,
+      "parameters": {},
+      "mapper": {
+        "name": "emailContent",
+        "scope": "roundtrip",
+        "value": "{{if(1.body.lang = 'ar'; '{\"subject\":\"مرحباً بك في منصة I Supply Chain — ' + 1.body.name + '\",\"isArabic\":true}'; '{\"subject\":\"Welcome to I Supply Chain — ' + 1.body.name + '\",\"isArabic\":false}')}}"
+      },
+      "metadata": {
+        "designer": { "x": 300, "y": 0 },
+        "expect": [
+          { "name": "name", "type": "text", "label": "Variable name", "required": true },
+          { "name": "scope", "type": "select", "label": "Variable lifetime", "required": true },
+          { "name": "value", "type": "any", "label": "Variable value" }
+        ]
+      }
+    },
+    {
+      "id": 3,
+      "module": "builtin:BasicRouter",
+      "version": 1,
+      "parameters": {},
+      "mapper": {},
+      "metadata": { "designer": { "x": 600, "y": 0 } },
+      "routes": [
+        {
+          "flow": [
+            {
+              "id": 4,
+              "module": "gmail:ActionSendEmail",
+              "version": 1,
+              "parameters": { "account": "REPLACE_WITH_MAKE_GMAIL_CONNECTION_ID" },
+              "mapper": {
+                "to": "{{1.body.email}}",
+                "subject": "Welcome to I Supply Chain — {{1.body.name}}",
+                "bodyType": "html",
+                "body": "<!DOCTYPE html><html lang='en'><body style='font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;color:#1e293b'><div style='background:linear-gradient(135deg,#1e3a5f,#0ea5e9);padding:24px;border-radius:12px 12px 0 0;color:white'><h1 style='margin:0;font-size:22px'>🎉 Welcome to I Supply Chain</h1></div><div style='border:1px solid #e2e8f0;border-top:none;padding:24px;border-radius:0 0 12px 12px'><p>Dear {{1.body.name}},</p><p>We are thrilled to have you on board. Here is your onboarding checklist:</p><ul style='line-height:2'><li>✅ Complete your profile</li><li>✅ Add your KPIs to the dashboard</li><li>✅ Explore the AI-generated improvement plan</li><li>✅ Add your supplier roster for scorecard assessment</li></ul><div style='text-align:center;margin-top:24px'><a href='https://YOUR_ISC_DOMAIN/' style='background:#0ea5e9;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold'>Get Started →</a></div></div></body></html>",
+                "from": "welcome@YOUR_ISC_DOMAIN"
+              },
+              "metadata": {
+                "designer": { "x": 900, "y": -100 },
+                "restore": {
+                  "parameters": { "account": { "label": "Gmail — ISC Welcome" } },
+                  "expect": { "bodyType": { "label": "HTML" } }
+                },
+                "parameters": [{ "name": "account", "type": "account:google", "label": "Connection", "required": true }],
+                "expect": [
+                  { "name": "to", "type": "email", "label": "To", "required": true },
+                  { "name": "subject", "type": "text", "label": "Subject" },
+                  { "name": "body", "type": "text", "label": "Content" }
+                ]
+              }
+            }
+          ],
+          "label": "English (default)",
+          "filter": {
+            "name": "Language is EN",
+            "conditions": [[{ "a": "{{1.body.lang}}", "b": "ar", "o": "text:notequal" }]],
+            "logical": "and"
+          }
+        },
+        {
+          "flow": [
+            {
+              "id": 5,
+              "module": "gmail:ActionSendEmail",
+              "version": 1,
+              "parameters": { "account": "REPLACE_WITH_MAKE_GMAIL_CONNECTION_ID" },
+              "mapper": {
+                "to": "{{1.body.email}}",
+                "subject": "مرحباً بك في منصة I Supply Chain — {{1.body.name}}",
+                "bodyType": "html",
+                "body": "<!DOCTYPE html><html dir='rtl' lang='ar'><body style='font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;color:#1e293b;direction:rtl'><div style='background:linear-gradient(135deg,#1e3a5f,#0ea5e9);padding:24px;border-radius:12px 12px 0 0;color:white;text-align:right'><h1 style='margin:0;font-size:22px'>🎉 مرحباً بك في I Supply Chain</h1></div><div style='border:1px solid #e2e8f0;border-top:none;padding:24px;border-radius:0 0 12px 12px'><p>عزيزي {{1.body.name}}،</p><p>يسعدنا انضمامك إلى المنصة. إليك قائمة مراجعة للبدء:</p><ul style='line-height:2'><li>✅ أكمل ملفك الشخصي</li><li>✅ أضف مؤشرات الأداء الخاصة بك</li><li>✅ استكشف خطة الذكاء الاصطناعي</li><li>✅ أضف موردينك لبدء التقييم</li></ul><div style='text-align:center;margin-top:24px'><a href='https://YOUR_ISC_DOMAIN/' style='background:#0ea5e9;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold'>ابدأ الآن →</a></div></div></body></html>",
+                "from": "welcome@YOUR_ISC_DOMAIN"
+              },
+              "metadata": {
+                "designer": { "x": 900, "y": 100 },
+                "restore": {
+                  "parameters": { "account": { "label": "Gmail — ISC Welcome" } },
+                  "expect": { "bodyType": { "label": "HTML" } }
+                },
+                "parameters": [{ "name": "account", "type": "account:google", "label": "Connection", "required": true }],
+                "expect": [
+                  { "name": "to", "type": "email", "label": "To", "required": true },
+                  { "name": "subject", "type": "text", "label": "Subject" },
+                  { "name": "body", "type": "text", "label": "Content" }
+                ]
+              }
+            }
+          ],
+          "label": "Arabic",
+          "filter": {
+            "name": "Language is AR",
+            "conditions": [[{ "a": "{{1.body.lang}}", "b": "ar", "o": "text:equal" }]],
+            "logical": "and"
+          }
+        }
+      ]
+    }
+  ],
+  "metadata": {
+    "instant": true,
+    "version": 1,
+    "scenario": {
+      "roundtrips": 1,
+      "maxErrors": 3,
+      "autoCommit": true,
+      "autoCommitTriggerLast": true,
+      "sequential": false,
+      "slots": null,
+      "confidential": false,
+      "dataloss": false,
+      "dlq": false,
+      "freshVariables": false
+    },
+    "designer": { "orphans": [] },
+    "zone": "eu1.make.com"
+  },
+  "isc": {
+    "platform": "make",
+    "triggerEvent": "user.registered",
+    "setupSteps": [
+      "1. In Make.com, create a new scenario and import this JSON (three dots → Import Blueprint).",
+      "2. Click the Webhook module and copy the generated webhook URL.",
+      "3. In ISC → Admin → Integration Hub → Webhooks, create a webhook with event 'user.registered' and paste that URL.",
+      "4. Add your Gmail connection to both Gmail modules (EN and AR routes).",
+      "5. Replace YOUR_ISC_DOMAIN in both email body templates.",
+      "6. Turn the scenario ON."
+    ]
+  }
+}
