@@ -624,3 +624,113 @@ describe('Arabic import log — risk-management (lang="ar")', () => {
     expect(summary).toContain('3');
   });
 });
+
+// ─── Excel-mutated template round-trip (risk-management) ─────────────────────
+//
+//  Mirrors the lean-six-sigma round-trip suite but for the risk-management
+//  framework, which has a different set of KPIs:
+//    rrc, bcpt, rtoa2, crm, srs, rrc2
+//
+//  Expected values from example inputs (see kpiDataSpecs.ts):
+//    rrc   : pct(24, 28) ≈ 85.7  (Risk Register Coverage %)
+//    bcpt  : pct(7, 8)   = 87.5  (BCP Test Pass Rate %)
+//    rtoa2 : pct(9, 10)  = 90.0  (RTO Attainment %)
+//    crm   : pct(17, 20) = 85.0  (Critical Risk Mitigation Rate %)
+//    srs   : avg(3750, 50) = 75.0 (Avg Supplier Risk Score)
+//    rrc2  : pct(22, 24) ≈ 91.7  (Risk Review Compliance %)
+
+describe('Excel-mutated template round-trip (risk-management)', () => {
+  /** Return risk-management template rows with all example values filled in. */
+  function buildFilledRows(): string[][] {
+    const rows = buildTemplateRows('risk-management');
+    rows.forEach(row => {
+      const kpiId = row[0]?.trim().toLowerCase();
+      if (!kpiId || kpiId === '' || kpiId.startsWith('===') || kpiId.startsWith('---') || kpiId.endsWith('__result')) return;
+      const spec = KPI_DATA_SPECS[kpiId];
+      if (!spec) return;
+      const inputDef = spec.inputs.find(inp =>
+        row[1]?.toLowerCase().substring(0, 30) === inp.label.toLowerCase().substring(0, 30),
+      );
+      if (inputDef) row[2] = String(inputDef.example);
+    });
+    return rows;
+  }
+
+  /** Shared KPI value assertions for all mutation variants. */
+  function assertKpiValues(values: Record<string, number>): void {
+    expect(values['rrc'],   'rrc').toBeCloseTo(85.7, 0);
+    expect(values['bcpt'],  'bcpt').toBeCloseTo(87.5, 0);
+    expect(values['rtoa2'], 'rtoa2').toBeCloseTo(90.0, 0);
+    expect(values['crm'],   'crm').toBeCloseTo(85.0, 0);
+    expect(values['srs'],   'srs').toBeCloseTo(75.0, 0);
+    expect(values['rrc2'],  'rrc2').toBeCloseTo(91.7, 0);
+  }
+
+  it('imports correctly with CRLF line endings (Windows / Excel default)', () => {
+    const rows = buildFilledRows();
+    const csvCrlf = rows.map(r => r.map(escapeCell).join(',')).join('\r\n');
+    const { values } = runNewFormatImport(csvCrlf, 'risk-management');
+    assertKpiValues(values);
+  });
+
+  it('imports correctly when there is no UTF-8 BOM (Excel drops the BOM on re-save)', () => {
+    const rows = buildFilledRows();
+    const csvNoBom = rows.map(r => r.map(escapeCell).join(',')).join('\r\n');
+    expect(csvNoBom.charCodeAt(0)).not.toBe(0xFEFF);
+    const { values } = runNewFormatImport(csvNoBom, 'risk-management');
+    assertKpiValues(values);
+  });
+
+  it('imports correctly when extra blank rows are scattered between sections', () => {
+    const rows = buildFilledRows();
+    const mutated: string[][] = [];
+    for (const row of rows) {
+      mutated.push(row);
+      if (row[0]?.startsWith('===')) {
+        mutated.push(['', '', '', '', '', '']);
+        mutated.push(['', '', '', '', '', '']);
+      }
+    }
+    const csvText = mutated.map(r => r.map(escapeCell).join(',')).join('\r\n');
+    const { values } = runNewFormatImport(csvText, 'risk-management');
+    assertKpiValues(values);
+  });
+
+  it('imports correctly when cell values have leading and trailing whitespace', () => {
+    const rows = buildFilledRows();
+    const padCell = (c: string): string => `"  ${c.replace(/"/g, '""')}  "`;
+    const csvText = rows.map(r => r.map(padCell).join(',')).join('\r\n');
+    const { values } = runNewFormatImport(csvText, 'risk-management');
+    assertKpiValues(values);
+  });
+
+  it('imports correctly with all mutations combined (no BOM + CRLF + blank rows + whitespace padding)', () => {
+    const rows = buildFilledRows();
+    const withBlanks: string[][] = [];
+    for (const row of rows) {
+      withBlanks.push(row);
+      if (row[0]?.startsWith('===')) withBlanks.push(['', '', '', '', '', '']);
+    }
+    const padCell = (c: string): string => `" ${c.replace(/"/g, '""')} "`;
+    const csvText = withBlanks.map(r => r.map(padCell).join(',')).join('\r\n');
+    expect(csvText.charCodeAt(0)).not.toBe(0xFEFF);
+    const { values } = runNewFormatImport(csvText, 'risk-management');
+    assertKpiValues(values);
+  });
+
+  it('all 6 KPIs are calculated — no manual-entry notice — in the mutated file', () => {
+    const rows = buildFilledRows();
+    const mutated: string[][] = [];
+    for (const row of rows) {
+      mutated.push(row);
+      if (row[0]?.startsWith('===')) mutated.push(['', '', '', '', '', '']);
+    }
+    const padCell = (c: string): string => `" ${c.replace(/"/g, '""')} "`;
+    const csvText = mutated.map(r => r.map(padCell).join(',')).join('\r\n');
+    const { log } = runNewFormatImport(csvText, 'risk-management');
+    // log[0] is the auto-calculated summary line; remaining ✓ lines are per-KPI
+    const kpiLines = log.filter(l => l.startsWith('✓') && !l.includes('auto-calculated'));
+    expect(kpiLines.length).toBe(6);
+    expect(log.find(l => l.includes('require manual entry'))).toBeUndefined();
+  });
+});
