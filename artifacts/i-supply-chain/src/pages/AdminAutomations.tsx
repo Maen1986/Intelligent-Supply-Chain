@@ -1063,7 +1063,7 @@ const NODES_LABEL: Record<string, { en: string; ar: string }> = {
   zapier: { en: 'Steps',         ar: 'الخطوات'              },
 };
 
-const SETUP_GUIDES: Record<string, { en: string[]; ar: string[] }> = {
+export const SETUP_GUIDES: Record<string, { en: string[]; ar: string[] }> = {
   /* ── Make.com ── */
   'make-kpi-breach-alert': {
     en: [
@@ -1860,7 +1860,7 @@ function PrepareDownloadModal({
   );
 }
 
-function TemplateCard({ template: t, ar }: { template: TemplateManifestItem; ar: boolean }) {
+export function TemplateCard({ template: t, ar }: { template: TemplateManifestItem; ar: boolean }) {
   const [open, setOpen] = useState(false);
   const [prepareOpen, setPrepareOpen] = useState(false);
   const badgeClass = CATEGORY_BADGE[t.category] ?? 'bg-slate-100 text-slate-600';

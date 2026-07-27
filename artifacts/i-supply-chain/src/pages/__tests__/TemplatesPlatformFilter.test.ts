@@ -112,18 +112,19 @@ describe('TemplatesTab — platform filter', () => {
   });
 
   it('counter text "X / Y templates" would be correct for every filter', () => {
-    const cases: Array<[string, number]> = [
-      ['',       24],
-      ['n8n',     8],
-      ['make',    8],
-      ['zapier',  8],
+    const total = templates.length;
+    const cases: Array<['' | Platform, number]> = [
+      ['',       total],
+      ['n8n',        8],
+      ['make',       8],
+      ['zapier',     8],
     ];
 
     for (const [filter, expectedVisible] of cases) {
       const visible = applyPlatformFilter(templates, filter);
       // The component renders: `${visible.length} / ${templates.length} templates`
       const counterText = `${visible.length} / ${templates.length} templates`;
-      expect(counterText).toBe(`${expectedVisible} / 24 templates`);
+      expect(counterText).toBe(`${expectedVisible} / ${total} templates`);
     }
   });
 
