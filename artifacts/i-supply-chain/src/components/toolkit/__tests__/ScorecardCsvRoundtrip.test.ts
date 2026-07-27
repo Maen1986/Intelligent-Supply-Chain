@@ -14,19 +14,9 @@
 
 import { beforeEach, describe, expect, it } from 'vitest';
 import { parseCsvFile } from '@/lib/importCsv';
+import { DIMS, SUB_INDICATORS } from '../SupplierScorecard';
 
-/* ─── Types (mirrored from SupplierScorecard.tsx — not re-exported) ─── */
-
-interface SubIndicator {
-  id: string;
-  label: string;
-}
-
-interface Dimension {
-  id: string;
-  label: string;
-  weight: number;
-}
+/* ─── Types ─── */
 
 interface SupplierRecord {
   id: string;
@@ -34,54 +24,6 @@ interface SupplierRecord {
   tier: string;
   subScores: Record<string, Record<string, string>>;
 }
-
-/* ─── Static data (mirrored from SupplierScorecard.tsx) ─── */
-
-const DIMS: Dimension[] = [
-  { id: 'delivery',     label: 'Delivery Performance',  weight: 25 },
-  { id: 'quality',      label: 'Quality',               weight: 25 },
-  { id: 'cost',         label: 'Cost Competitiveness',  weight: 20 },
-  { id: 'compliance',   label: 'Compliance',            weight: 15 },
-  { id: 'innovation',   label: 'Innovation',            weight: 10 },
-  { id: 'relationship', label: 'Relationship Quality',  weight:  5 },
-];
-
-const SUB_INDICATORS: Record<string, SubIndicator[]> = {
-  delivery: [
-    { id: 'otif',      label: 'OTIF %' },
-    { id: 'lead_time', label: 'Lead Time Adherence %' },
-    { id: 'fill_rate', label: 'Fill Rate %' },
-    { id: 'expedite',  label: 'Low Expedite Rate score' },
-  ],
-  quality: [
-    { id: 'defect',   label: 'Low Defect / Rejection Rate score' },
-    { id: 'ftr',      label: 'First-Time-Right %' },
-    { id: 'cert',     label: 'Quality Cert Compliance %' },
-    { id: 'nonconf',  label: 'Low Non-conformances score' },
-  ],
-  cost: [
-    { id: 'savings',        label: 'Price vs Market Benchmark (savings score)' },
-    { id: 'invoice',        label: 'Invoice Accuracy %' },
-    { id: 'cost_reduction', label: 'Cost Reduction YoY score' },
-    { id: 'tco',            label: 'TCO Transparency Score' },
-  ],
-  compliance: [
-    { id: 'regulatory', label: 'Regulatory Compliance %' },
-    { id: 'esg',        label: 'ESG Audit Score' },
-    { id: 'docs',       label: 'Document Completeness %' },
-    { id: 'ethics',     label: 'Ethical Trading Score' },
-  ],
-  innovation: [
-    { id: 'ideas',       label: 'Ideas Submitted score' },
-    { id: 'implemented', label: 'Implemented Suggestions %' },
-    { id: 'tech',        label: 'Technology Readiness Score' },
-  ],
-  relationship: [
-    { id: 'responsiveness', label: 'Responsiveness Score' },
-    { id: 'resolution',     label: 'Issue Resolution Speed score' },
-    { id: 'collaboration',  label: 'Collaboration Score' },
-  ],
-};
 
 /* ─── Helpers (pure data logic extracted from SupplierScorecard.tsx) ─── */
 
