@@ -91,9 +91,10 @@ export function useAIPlan(
 
   /* ── Load saved plan on mount / when toolKey or auth state changes ── */
   useEffect(() => {
-    // Always clear stale savedPlan immediately when key or auth changes,
-    // so a previous supplier's plan notice never bleeds into the next.
+    // Always clear stale savedPlan and in-session result immediately when key or auth changes,
+    // so a previous tool's plan never flashes in the UI during tab transitions.
     setSavedPlan(null);
+    setResult(null);
 
     if (!toolKey || !isAuthenticated) return;
 
