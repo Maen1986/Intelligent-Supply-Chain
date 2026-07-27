@@ -11,7 +11,7 @@
  * Both conditions are met by starting each test with an empty localStorage.
  */
 import React from 'react';
-import { render, screen, within, cleanup } from '@testing-library/react';
+import { render, screen, within, cleanup, fireEvent, act } from '@testing-library/react';
 import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest';
 
 /* ── Top-level mocks (hoisted before any imports) ───────────────────────── */
@@ -99,5 +99,35 @@ describe('KPIDashboard banner — Arabic rendering', () => {
     const banner = renderAndGetBanner();
     expect(within(banner).queryByText(/Download Template/i)).not.toBeInTheDocument();
     expect(within(banner).queryByText(/I'll enter numbers manually/i)).not.toBeInTheDocument();
+  });
+
+  it('hides the banner after a CSV import populates KPI values', () => {
+    // Mock FileReader to fire onload synchronously with CSV text.
+    // This mirrors how the component calls reader.readAsText(file) and then
+    // reads e.target.result inside reader.onload.
+    vi.stubGlobal('FileReader', vi.fn().mockImplementation(function(
+      this: { onload: ((e: unknown) => void) | null; readAsText: (f: Blob) => void }
+    ) {
+      this.onload = null;
+      this.readAsText = (_f: Blob) => {
+        // Legacy direct-entry format: KPI ID + Actual Value
+        const csv = 'KPI ID,Actual Value\npor,90\notif,85\nsccost,7\nc2c,25\nfa,80\nturns,12';
+        this.onload?.({ target: { result: csv } });
+      };
+    }));
+
+    render(<KPIDashboard slug="supply-chain-strategy" />);
+
+    // Banner is visible before the import
+    expect(screen.getByText('كيف تُدخل بياناتك بدقة؟')).toBeInTheDocument();
+
+    // Trigger the hidden file input — same path a real user would take
+    const fileInput = document.querySelector('input[accept=".csv"]') as HTMLInputElement;
+    const file = new File([''], 'kpis.csv', { type: 'text/csv' });
+    Object.defineProperty(fileInput, 'files', { value: [file], configurable: true });
+    act(() => { fireEvent.change(fileInput); });
+
+    // Banner should now be gone because hasAnyValue is true (values were imported)
+    expect(screen.queryByText('كيف تُدخل بياناتك بدقة؟')).not.toBeInTheDocument();
   });
 });
