@@ -256,6 +256,21 @@ describe('AIPlanPanel — Arabic priority badges', () => {
     expect(screen.getByText('متوسطة')).toBeInTheDocument();
     expect(screen.getByText('منخفضة')).toBeInTheDocument();
   });
+
+  it('renders [أولوية عالية] badge text (long-form high priority)', () => {
+    renderPanel({ result: '- إجراء مطلوب [أولوية عالية]', isAr: true });
+    expect(screen.getByText('أولوية عالية')).toBeInTheDocument();
+  });
+
+  it('renders [أولوية متوسطة] badge text (long-form medium priority)', () => {
+    renderPanel({ result: '- إجراء مطلوب [أولوية متوسطة]', isAr: true });
+    expect(screen.getByText('أولوية متوسطة')).toBeInTheDocument();
+  });
+
+  it('renders [أولوية منخفضة] badge text (long-form low priority)', () => {
+    renderPanel({ result: '- إجراء مطلوب [أولوية منخفضة]', isAr: true });
+    expect(screen.getByText('أولوية منخفضة')).toBeInTheDocument();
+  });
 });
 
 /* ══════════════════════════════════════════════════════════════════════════
