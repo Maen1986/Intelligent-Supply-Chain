@@ -73,10 +73,13 @@ function createScorecardState(suppliers: SupplierRecord[], initialActiveId: stri
   };
 
   /**
-   * Simulates typing in the name field — sets pendingName (controlled input).
+   * Simulates typing in the name field — sets pendingName (controlled input)
+   * and clears dupNameWarning immediately, mirroring the component's onChange:
+   *   if (dupNameWarning) setDupNameWarning(null);
    */
   const handleNameChange = (value: string) => {
     pendingName = value;
+    if (dupNameWarning) dupNameWarning = null;
   };
 
   /**
@@ -470,6 +473,74 @@ describe('hasCaseInsensitiveDuplicate', () => {
 
   it('returns false when the roster has only one supplier (no other to collide with)', () => {
     expect(hasCaseInsensitiveDuplicate('Alpha Corp', [SUPPLIER_A], SUPPLIER_A.id)).toBe(false);
+  });
+});
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Suite 5 — dupNameWarning clears on onChange (before blur)
+   Guards the `if (dupNameWarning) setDupNameWarning(null)` call inside the
+   name field's onChange handler.  Without it, the red warning would linger
+   while the user is still typing — confusing UX.
+══════════════════════════════════════════════════════════════════════════ */
+
+describe('Scorecard — dupNameWarning clears on onChange before blur', () => {
+  it('clears dupNameWarning immediately when the user starts typing after a warning', () => {
+    const sc = createScorecardState(ALL_SUPPLIERS, SUPPLIER_A.id);
+
+    // Step 1: trigger warning via blur
+    sc.handleNameChange('Beta Ltd');
+    sc.handleNameBlur('Beta Ltd');
+    expect(sc.getState().dupNameWarning).not.toBeNull();
+
+    // Step 2: user starts typing a correction — onChange fires, no blur yet
+    sc.handleNameChange('Beta Ltd X');
+
+    // Warning must be gone immediately — before any blur
+    expect(sc.getState().dupNameWarning).toBeNull();
+  });
+
+  it('clears the warning even for a single character change — not just a full replacement', () => {
+    const sc = createScorecardState(ALL_SUPPLIERS, SUPPLIER_A.id);
+
+    sc.handleNameChange('Gamma GmbH');
+    sc.handleNameBlur('Gamma GmbH');
+    expect(sc.getState().dupNameWarning).not.toBeNull();
+
+    // User adds just one character
+    sc.handleNameChange('Gamma GmbH2');
+
+    expect(sc.getState().dupNameWarning).toBeNull();
+  });
+
+  it('keeps pendingName updated to the new value after the warning clears', () => {
+    const sc = createScorecardState(ALL_SUPPLIERS, SUPPLIER_A.id);
+
+    sc.handleNameChange('Beta Ltd');
+    sc.handleNameBlur('Beta Ltd');
+
+    sc.handleNameChange('Something New');
+
+    expect(sc.getState().dupNameWarning).toBeNull();
+    expect(sc.getState().pendingName).toBe('Something New');
+  });
+
+  it('does not clear the warning prematurely — warning is still present before onChange fires', () => {
+    const sc = createScorecardState(ALL_SUPPLIERS, SUPPLIER_A.id);
+
+    sc.handleNameChange('Beta Ltd');
+    sc.handleNameBlur('Beta Ltd');
+
+    // Warning is set after blur; no onChange yet
+    expect(sc.getState().dupNameWarning).not.toBeNull();
+  });
+
+  it('leaves dupNameWarning null (does not set it) when onChange fires with no prior warning', () => {
+    const sc = createScorecardState(ALL_SUPPLIERS, SUPPLIER_A.id);
+
+    // No blur, no warning — just typing normally
+    sc.handleNameChange('Delta Inc');
+
+    expect(sc.getState().dupNameWarning).toBeNull();
   });
 });
 
