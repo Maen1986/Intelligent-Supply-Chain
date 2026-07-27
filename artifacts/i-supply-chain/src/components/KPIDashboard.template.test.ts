@@ -260,21 +260,21 @@ describe('KPI template structure', () => {
 // ─── 2. Fallback rows for KPIs without a spec ───────────────────────────────
 
 describe('Fallback direct-entry rows for KPIs without a spec', () => {
-  it('risk-management: crm, srs, rrc2 have no spec and get DIRECT ENTRY placeholder rows', () => {
+  it('risk-management: crm, srs, rrc2 now have specs and produce AUTO-CALCULATED rows (not DIRECT ENTRY)', () => {
     const rows = buildTemplateRows('risk-management');
-    // These three KPI IDs exist in the framework but NOT in KPI_DATA_SPECS
+    // All three KPI IDs now have entries in KPI_DATA_SPECS
     for (const kpiId of ['crm', 'srs', 'rrc2']) {
-      expect(KPI_DATA_SPECS[kpiId], `${kpiId} should not have a spec`).toBeUndefined();
+      expect(KPI_DATA_SPECS[kpiId], `${kpiId} should have a spec`).toBeDefined();
 
-      // Should have a direct-entry input row with kpiId as the row ID
-      const directRow = rows.find(r => r[0] === kpiId);
-      expect(directRow, `Missing direct-entry row for "${kpiId}"`).toBeDefined();
-      expect(directRow![2]).toBe(''); // "Your Value" blank
+      // Should have input rows with kpiId as the row ID (not a direct-entry placeholder)
+      const inputRows = rows.filter(r => r[0] === kpiId);
+      expect(inputRows.length, `Expected input rows for "${kpiId}"`).toBeGreaterThan(0);
 
-      // Should have a DIRECT ENTRY result placeholder row
+      // Should have an AUTO-CALCULATED result placeholder row (not DIRECT ENTRY)
       const resultRow = rows.find(r => r[0] === `${kpiId}__result`);
-      expect(resultRow, `Missing __result row for fallback KPI "${kpiId}"`).toBeDefined();
-      expect(resultRow![1]).toContain('[DIRECT ENTRY]');
+      expect(resultRow, `Missing __result row for "${kpiId}"`).toBeDefined();
+      expect(resultRow![1]).toContain('[AUTO-CALCULATED]');
+      expect(resultRow![2]).toBe('← calculated on import');
     }
   });
 });
@@ -327,10 +327,10 @@ describe('Import round-trip: lean-six-sigma', () => {
 // ─── 4. Import round-trip — risk-management ─────────────────────────────────
 
 describe('Import round-trip: risk-management', () => {
-  it('calculates the 3 spec KPIs (rrc, bcpt, rtoa2) and skips the 3 fallback KPIs', () => {
+  it('calculates all 6 KPIs from example input values', () => {
     const rows = buildTemplateRows('risk-management');
 
-    // Fill spec-based KPIs with example values
+    // Fill all spec-based KPIs with their example values
     rows.forEach(row => {
       const kpiId = row[0]?.trim().toLowerCase();
       if (!kpiId || kpiId === '' || kpiId.startsWith('===') || kpiId.startsWith('---') || kpiId.endsWith('__result')) return;
@@ -354,13 +354,17 @@ describe('Import round-trip: risk-management', () => {
     // rtoa2: rto_met=9, total=10 → 90%
     expect(values['rtoa2'], 'rtoa2').toBe(90);
 
-    // crm, srs, rrc2 have no spec — should not appear in results
-    expect(values['crm'], 'crm should be skipped').toBeUndefined();
-    expect(values['srs'], 'srs should be skipped').toBeUndefined();
-    expect(values['rrc2'], 'rrc2 should be skipped').toBeUndefined();
+    // crm: mitigated=17, total=20 → (17/20)*100 = 85%
+    expect(values['crm'], 'crm').toBe(85);
 
-    // Exactly 3 successful calculations
-    expect(log.filter(l => l.startsWith('✓')).length).toBe(3);
+    // srs: sum_scores=3750, count=50 → 3750/50 = 75
+    expect(values['srs'], 'srs').toBe(75);
+
+    // rrc2: completed=22, scheduled=24 → (22/24)*100 = 91.7%
+    expect(values['rrc2'], 'rrc2').toBeCloseTo(91.7, 0);
+
+    // All 6 KPIs should be calculated
+    expect(log.filter(l => l.startsWith('✓')).length).toBe(6);
   });
 });
 

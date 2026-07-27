@@ -1026,6 +1026,42 @@ const RISK_MANAGEMENT: KpiDataSpec[] = [
     calculate: ({ total_disrupt_rm, rto_met_rm }) => pct(safe(rto_met_rm), safe(total_disrupt_rm)),
   },
   {
+    kpiId: 'crm',
+    methodology: 'Critical Risk Mitigation Rate % measures the proportion of identified critical supply chain risks that have active, implemented mitigation controls in place — validating that the highest-priority risks are being actively managed, not just documented.',
+    formula: 'CRM% = (Critical Risks with Active Mitigation Controls ÷ Total Critical Risks Identified) × 100',
+    notes: 'Critical = rated High or Critical on your risk matrix (e.g. likelihood × impact ≥ 16 on a 5×5 scale). "Active" control = implemented, evidenced, and tested — not merely planned or documented. Review monthly with risk owners.',
+    inputs: [
+      { id: 'total_critical_risks', label: 'Total supply chain risks classified as High or Critical (top two tiers of your risk matrix)', unit: 'risks', dataSource: 'Risk register — risks with composite risk rating ≥ 16 (or your equivalent top-tier threshold)', example: 20 },
+      { id: 'mitigated_critical_risks', label: 'Critical risks with a fully implemented and evidenced mitigation control (not just planned)', unit: 'risks', dataSource: 'Risk register — critical risks where control_status = implemented AND supporting evidence is filed', example: 17 },
+    ],
+    calculate: ({ total_critical_risks, mitigated_critical_risks }) =>
+      pct(safe(mitigated_critical_risks), safe(total_critical_risks)),
+  },
+  {
+    kpiId: 'srs',
+    methodology: 'Supplier Risk Score (avg /100) measures the average risk health score across all assessed suppliers — where a higher score means lower risk. Each supplier is assessed on financial stability, operational reliability, geographic concentration, ESG compliance, and single-source dependency.',
+    formula: 'Avg Supplier Risk Score = Σ Individual Supplier Health Scores ÷ Number of Suppliers Assessed\n(Each supplier scored 0–100; higher = lower risk / healthier)',
+    notes: 'Score each supplier on: financial health (e.g. D&B rating), delivery performance, geographic/geopolitical exposure, ESG audit result, and single-source status. Weight dimensions per your risk policy. Update at least quarterly for strategic suppliers.',
+    inputs: [
+      { id: 'sum_supplier_scores', label: 'Sum of individual supplier health scores across all assessed suppliers (each scored 0–100)', unit: 'score-points', dataSource: 'Supplier risk database — sum of health_score field for all suppliers assessed in the period', example: 3750 },
+      { id: 'supplier_count', label: 'Number of suppliers assessed / scored in the period', unit: 'suppliers', dataSource: 'Supplier risk database — count of suppliers with a health_score recorded in the period', example: 50 },
+    ],
+    calculate: ({ sum_supplier_scores, supplier_count }) =>
+      avg(safe(sum_supplier_scores), safe(supplier_count)),
+  },
+  {
+    kpiId: 'rrc2',
+    methodology: 'Risk Review Compliance % measures the proportion of scheduled risk reviews that were actually completed on time — ensuring the risk register stays current and risk owners are held accountable for regular review cadences.',
+    formula: 'Risk Review Compliance% = (Risk Reviews Completed on Schedule ÷ Total Risk Reviews Scheduled) × 100',
+    notes: 'Scheduled reviews = those due in the period per the review calendar (e.g. strategic risks monthly, operational risks quarterly). A review is "on schedule" if completed within the agreed review window. Late completions count as non-compliant.',
+    inputs: [
+      { id: 'total_scheduled_reviews', label: 'Total risk reviews scheduled in the period (per the risk review calendar)', unit: 'reviews', dataSource: 'Risk management calendar / GRC system — reviews with due date in the period', example: 24 },
+      { id: 'completed_scheduled_reviews', label: 'Risk reviews completed on or before the scheduled due date', unit: 'reviews', dataSource: 'Risk register / GRC system — reviews with completion_date ≤ due_date, completed in the period', example: 22 },
+    ],
+    calculate: ({ total_scheduled_reviews, completed_scheduled_reviews }) =>
+      pct(safe(completed_scheduled_reviews), safe(total_scheduled_reviews)),
+  },
+  {
     kpiId: 'ssr',
     methodology: 'Supplier Risk Score measures the weighted average risk rating across your active supplier portfolio — combining financial risk, operational risk, geopolitical risk, and ESG risk into a single portfolio health indicator.',
     formula: 'Portfolio Risk Score = Σ (Supplier Risk Score × Spend Weight) ÷ Total Spend\nwhere each supplier risk score is on a 1–10 scale (10 = highest risk)',
