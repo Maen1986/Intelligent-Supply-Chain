@@ -8,7 +8,7 @@
  * 4. Templates & Tools     — downloadable RFP, evaluation scorecard, TCO calculator
  * 5. AI Category Brief     — AI-generated full category strategy document
  */
-import React, { useState, useCallback, useMemo, useRef } from 'react';
+import React, { useState, useCallback, useMemo, useRef, KeyboardEvent } from 'react';
 import {
   ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Cell, ReferenceLine,
@@ -484,12 +484,51 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
     { id: 'ai',        icon: '✨', label: 'AI Strategy Brief',    labelAr: 'تقرير الاستراتيجية' },
   ];
 
+  const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
+
+  // Arrow-key navigation follows WAI-ARIA tab pattern:
+  // ArrowRight → next tab (wraps), ArrowLeft → previous tab (wraps).
+  // Physical key direction is the same in both LTR and RTL layouts
+  // (matching the WAI-ARIA authoring practices recommendation), so Arabic
+  // users pressing ArrowRight move to the next tab in DOM order, which is
+  // visually left in RTL. This is intentional — screen readers announce
+  // direction relative to the DOM, and reversing physical keys would break
+  // keyboard muscle memory for users who switch languages mid-session.
+  function handleTabKeyDown(e: KeyboardEvent<HTMLButtonElement>, index: number) {
+    const count = tabs.length;
+    if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      const next = (index + 1) % count;
+      setActiveTab(tabs[next].id);
+      tabRefs.current[next]?.focus();
+    } else if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      const prev = (index - 1 + count) % count;
+      setActiveTab(tabs[prev].id);
+      tabRefs.current[prev]?.focus();
+    } else if (e.key === 'Home') {
+      e.preventDefault();
+      setActiveTab(tabs[0].id);
+      tabRefs.current[0]?.focus();
+    } else if (e.key === 'End') {
+      e.preventDefault();
+      setActiveTab(tabs[count - 1].id);
+      tabRefs.current[count - 1]?.focus();
+    }
+  }
+
   return (
     <div className="space-y-4">
       {/* Tab bar */}
-      <div className="flex gap-1 bg-slate-50 border border-slate-200 rounded-2xl p-1 overflow-x-auto">
-        {tabs.map(t => (
-          <button key={t.id} onClick={() => setActiveTab(t.id)}
+      <div role="tablist" className="flex gap-1 bg-slate-50 border border-slate-200 rounded-2xl p-1 overflow-x-auto">
+        {tabs.map((t, i) => (
+          <button key={t.id}
+            role="tab"
+            aria-selected={activeTab === t.id}
+            tabIndex={activeTab === t.id ? 0 : -1}
+            ref={el => { tabRefs.current[i] = el; }}
+            onClick={() => setActiveTab(t.id)}
+            onKeyDown={e => handleTabKeyDown(e, i)}
             className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-[12px] font-semibold whitespace-nowrap transition-all ${activeTab === t.id ? 'bg-[#082C6B] text-white shadow' : 'text-slate-500 hover:bg-slate-100'}`}>
             <span>{t.icon}</span><span className="hidden sm:inline">{isAr ? t.labelAr : t.label}</span>
           </button>

@@ -283,13 +283,13 @@ describe('ProcurementTools — ProcurementToolsSection accessibility', () => {
 
   it('has zero critical violations on the Market Intelligence tab', async () => {
     const { container } = render(<ProcurementToolsSection isAr={false} />);
-    fireEvent.click(screen.getByRole('button', { name: /Market Intelligence/i }));
+    fireEvent.click(screen.getByRole('tab', { name: /Market Intelligence/i }));
     await expectNoCriticalViolations(container);
   });
 
   it('has zero critical violations on the Sourcing Strategy tab', async () => {
     const { container } = render(<ProcurementToolsSection isAr={false} />);
-    fireEvent.click(screen.getByRole('button', { name: /Sourcing Strategy/i }));
+    fireEvent.click(screen.getByRole('tab', { name: /Sourcing Strategy/i }));
     await expectNoCriticalViolations(container);
   });
 

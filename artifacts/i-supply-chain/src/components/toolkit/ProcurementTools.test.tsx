@@ -14,7 +14,7 @@
 
 import React from 'react';
 import { describe, it, expect, beforeEach } from 'vitest';
-import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import { render, screen, fireEvent, cleanup, within } from '@testing-library/react';
 import { ProcurementToolsSection } from './ProcurementTools';
 
 /* ── Current localStorage keys (must match component source) ───────────── */
@@ -34,9 +34,9 @@ beforeEach(() => {
   cleanup();
 });
 
-/* ── helper: click a tab button by partial label text ─────────────────── */
+/* ── helper: click a tab by partial label text ────────────────────────── */
 function goToTab(label: string) {
-  fireEvent.click(screen.getByRole('button', { name: new RegExp(label, 'i') }));
+  fireEvent.click(screen.getByRole('tab', { name: new RegExp(label, 'i') }));
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -304,11 +304,11 @@ describe('ProcurementToolsSection — tab navigation', () => {
 
   it('all 5 tab buttons are rendered', () => {
     render(<ProcurementToolsSection isAr={false} />);
-    expect(screen.getByRole('button', { name: /Spend Analysis/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Market Intelligence/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Sourcing Strategy/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Templates/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /AI Strategy Brief/i })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /Spend Analysis/i })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /Market Intelligence/i })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /Sourcing Strategy/i })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /Templates/i })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /AI Strategy Brief/i })).toBeInTheDocument();
   });
 
   it('Market Intelligence and Spend Analysis contents are mutually exclusive', () => {
@@ -350,31 +350,31 @@ describe('ProcurementToolsSection — Arabic mode', () => {
 
   it('Supplier Power slider has Arabic aria-label in AR mode', () => {
     render(<ProcurementToolsSection isAr={true} />);
-    fireEvent.click(screen.getByRole('button', { name: /استخبارات السوق/i }));
+    fireEvent.click(screen.getByRole('tab', { name: /استخبارات السوق/i }));
     expect(screen.getByLabelText('قوة الموردين')).toBeInTheDocument();
   });
 
   it('Buyer Power slider has Arabic aria-label in AR mode', () => {
     render(<ProcurementToolsSection isAr={true} />);
-    fireEvent.click(screen.getByRole('button', { name: /استخبارات السوق/i }));
+    fireEvent.click(screen.getByRole('tab', { name: /استخبارات السوق/i }));
     expect(screen.getByLabelText('قوة المشترين')).toBeInTheDocument();
   });
 
   it('Threat of New Entrants slider has Arabic aria-label in AR mode', () => {
     render(<ProcurementToolsSection isAr={true} />);
-    fireEvent.click(screen.getByRole('button', { name: /استخبارات السوق/i }));
+    fireEvent.click(screen.getByRole('tab', { name: /استخبارات السوق/i }));
     expect(screen.getByLabelText('تهديد الداخلين الجدد')).toBeInTheDocument();
   });
 
   it('Threat of Substitutes slider has Arabic aria-label in AR mode', () => {
     render(<ProcurementToolsSection isAr={true} />);
-    fireEvent.click(screen.getByRole('button', { name: /استخبارات السوق/i }));
+    fireEvent.click(screen.getByRole('tab', { name: /استخبارات السوق/i }));
     expect(screen.getByLabelText('تهديد المنتجات البديلة')).toBeInTheDocument();
   });
 
   it('Competitive Rivalry slider has Arabic aria-label in AR mode', () => {
     render(<ProcurementToolsSection isAr={true} />);
-    fireEvent.click(screen.getByRole('button', { name: /استخبارات السوق/i }));
+    fireEvent.click(screen.getByRole('tab', { name: /استخبارات السوق/i }));
     expect(screen.getByLabelText('حدة التنافس')).toBeInTheDocument();
   });
 
@@ -394,7 +394,249 @@ describe('ProcurementToolsSection — Arabic mode', () => {
 });
 
 /* ══════════════════════════════════════════════════════════════════════════
-   Suite 5 — Storage key isolation
+   Suite 5 — Arrow-key tab navigation (LTR)
+   ArrowRight/ArrowLeft move focus through the tab list; wrap at both ends.
+══════════════════════════════════════════════════════════════════════════ */
+describe('ProcurementToolsSection — arrow-key tab navigation (LTR)', () => {
+  // Helper: get the tab button that is currently active (aria-selected=true)
+  function activeTabName() {
+    const selected = screen.getAllByRole('tab').find(
+      el => el.getAttribute('aria-selected') === 'true',
+    );
+    return selected?.textContent ?? '';
+  }
+
+  it('tab buttons have role="tab" and the tablist container has role="tablist"', () => {
+    render(<ProcurementToolsSection isAr={false} />);
+    expect(screen.getByRole('tablist')).toBeInTheDocument();
+    const tabs = screen.getAllByRole('tab');
+    expect(tabs).toHaveLength(5);
+  });
+
+  it('first tab is aria-selected on mount', () => {
+    render(<ProcurementToolsSection isAr={false} />);
+    const tabs = screen.getAllByRole('tab');
+    expect(tabs[0].getAttribute('aria-selected')).toBe('true');
+    tabs.slice(1).forEach(t => expect(t.getAttribute('aria-selected')).toBe('false'));
+  });
+
+  it('ArrowRight moves focus from first tab to second tab', () => {
+    render(<ProcurementToolsSection isAr={false} />);
+    const tabs = screen.getAllByRole('tab');
+    fireEvent.keyDown(tabs[0], { key: 'ArrowRight' });
+    expect(tabs[1].getAttribute('aria-selected')).toBe('true');
+  });
+
+  it('ArrowRight advances through all tabs sequentially', () => {
+    render(<ProcurementToolsSection isAr={false} />);
+    const tabs = screen.getAllByRole('tab');
+    // Start at tab 0, press right 4 times → should land on tab 4
+    for (let i = 0; i < 4; i++) {
+      const current = tabs.findIndex(t => t.getAttribute('aria-selected') === 'true');
+      fireEvent.keyDown(tabs[current], { key: 'ArrowRight' });
+    }
+    expect(tabs[4].getAttribute('aria-selected')).toBe('true');
+  });
+
+  it('ArrowRight wraps from last tab back to first tab', () => {
+    render(<ProcurementToolsSection isAr={false} />);
+    const tabs = screen.getAllByRole('tab');
+    // Navigate to the last tab first
+    for (let i = 0; i < 4; i++) {
+      const current = tabs.findIndex(t => t.getAttribute('aria-selected') === 'true');
+      fireEvent.keyDown(tabs[current], { key: 'ArrowRight' });
+    }
+    expect(tabs[4].getAttribute('aria-selected')).toBe('true');
+    // One more ArrowRight should wrap to first
+    fireEvent.keyDown(tabs[4], { key: 'ArrowRight' });
+    expect(tabs[0].getAttribute('aria-selected')).toBe('true');
+  });
+
+  it('ArrowLeft moves focus from second tab back to first tab', () => {
+    render(<ProcurementToolsSection isAr={false} />);
+    const tabs = screen.getAllByRole('tab');
+    fireEvent.keyDown(tabs[0], { key: 'ArrowRight' });
+    expect(tabs[1].getAttribute('aria-selected')).toBe('true');
+    fireEvent.keyDown(tabs[1], { key: 'ArrowLeft' });
+    expect(tabs[0].getAttribute('aria-selected')).toBe('true');
+  });
+
+  it('ArrowLeft wraps from first tab to last tab', () => {
+    render(<ProcurementToolsSection isAr={false} />);
+    const tabs = screen.getAllByRole('tab');
+    fireEvent.keyDown(tabs[0], { key: 'ArrowLeft' });
+    expect(tabs[4].getAttribute('aria-selected')).toBe('true');
+  });
+
+  it('Home key jumps directly to first tab from any position', () => {
+    render(<ProcurementToolsSection isAr={false} />);
+    const tabs = screen.getAllByRole('tab');
+    // Go to tab 3 first
+    fireEvent.keyDown(tabs[0], { key: 'ArrowRight' });
+    fireEvent.keyDown(tabs[1], { key: 'ArrowRight' });
+    fireEvent.keyDown(tabs[2], { key: 'ArrowRight' });
+    expect(tabs[3].getAttribute('aria-selected')).toBe('true');
+    fireEvent.keyDown(tabs[3], { key: 'Home' });
+    expect(tabs[0].getAttribute('aria-selected')).toBe('true');
+  });
+
+  it('End key jumps directly to last tab from any position', () => {
+    render(<ProcurementToolsSection isAr={false} />);
+    const tabs = screen.getAllByRole('tab');
+    fireEvent.keyDown(tabs[0], { key: 'End' });
+    expect(tabs[4].getAttribute('aria-selected')).toBe('true');
+  });
+
+  it('navigating to a tab via ArrowRight shows its panel content', () => {
+    render(<ProcurementToolsSection isAr={false} />);
+    const tabs = screen.getAllByRole('tab');
+    // Default: Spend Analysis panel visible
+    expect(screen.getByLabelText('Supplier: contracted')).toBeInTheDocument();
+    // Press ArrowRight once → Market Intelligence
+    fireEvent.keyDown(tabs[0], { key: 'ArrowRight' });
+    expect(screen.queryByLabelText('Supplier: contracted')).toBeNull();
+    expect(screen.getByLabelText('Supplier Power')).toBeInTheDocument();
+  });
+
+  it('navigating back via ArrowLeft restores the previous panel', () => {
+    render(<ProcurementToolsSection isAr={false} />);
+    const tabs = screen.getAllByRole('tab');
+    fireEvent.keyDown(tabs[0], { key: 'ArrowRight' });
+    fireEvent.keyDown(tabs[1], { key: 'ArrowLeft' });
+    expect(screen.getByLabelText('Supplier: contracted')).toBeInTheDocument();
+  });
+});
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Suite 6 — Arrow-key tab navigation in Arabic (RTL) mode
+   Decision: physical key direction is unchanged in RTL.
+   ArrowRight = next tab in DOM order (wraps), ArrowLeft = previous tab.
+   This matches WAI-ARIA authoring practices and avoids breaking keyboard
+   muscle memory for bilingual users who switch languages mid-session.
+   Screen readers announce tab order by DOM position, not visual position,
+   so swapping keys would create a mismatch.
+══════════════════════════════════════════════════════════════════════════ */
+describe('ProcurementToolsSection — arrow-key tab navigation (Arabic / RTL)', () => {
+  it('tab buttons are present with role="tab" in Arabic mode', () => {
+    render(<ProcurementToolsSection isAr={true} />);
+    const tabs = screen.getAllByRole('tab');
+    expect(tabs).toHaveLength(5);
+  });
+
+  it('first tab is aria-selected on mount in Arabic mode', () => {
+    render(<ProcurementToolsSection isAr={true} />);
+    const tabs = screen.getAllByRole('tab');
+    expect(tabs[0].getAttribute('aria-selected')).toBe('true');
+  });
+
+  it('ArrowRight moves to the next tab in DOM order in Arabic mode', () => {
+    render(<ProcurementToolsSection isAr={true} />);
+    const tabs = screen.getAllByRole('tab');
+    fireEvent.keyDown(tabs[0], { key: 'ArrowRight' });
+    expect(tabs[1].getAttribute('aria-selected')).toBe('true');
+    expect(tabs[0].getAttribute('aria-selected')).toBe('false');
+  });
+
+  it('ArrowRight advances through all 5 tabs in Arabic mode', () => {
+    render(<ProcurementToolsSection isAr={true} />);
+    const tabs = screen.getAllByRole('tab');
+    for (let expected = 1; expected <= 4; expected++) {
+      const current = tabs.findIndex(t => t.getAttribute('aria-selected') === 'true');
+      fireEvent.keyDown(tabs[current], { key: 'ArrowRight' });
+      expect(tabs[expected].getAttribute('aria-selected')).toBe('true');
+    }
+  });
+
+  it('ArrowRight wraps from last tab to first tab in Arabic mode', () => {
+    render(<ProcurementToolsSection isAr={true} />);
+    const tabs = screen.getAllByRole('tab');
+    // Navigate to last tab
+    for (let i = 0; i < 4; i++) {
+      const current = tabs.findIndex(t => t.getAttribute('aria-selected') === 'true');
+      fireEvent.keyDown(tabs[current], { key: 'ArrowRight' });
+    }
+    expect(tabs[4].getAttribute('aria-selected')).toBe('true');
+    // Wrap
+    fireEvent.keyDown(tabs[4], { key: 'ArrowRight' });
+    expect(tabs[0].getAttribute('aria-selected')).toBe('true');
+  });
+
+  it('ArrowLeft moves to the previous tab in DOM order in Arabic mode', () => {
+    render(<ProcurementToolsSection isAr={true} />);
+    const tabs = screen.getAllByRole('tab');
+    fireEvent.keyDown(tabs[0], { key: 'ArrowRight' });
+    expect(tabs[1].getAttribute('aria-selected')).toBe('true');
+    fireEvent.keyDown(tabs[1], { key: 'ArrowLeft' });
+    expect(tabs[0].getAttribute('aria-selected')).toBe('true');
+  });
+
+  it('ArrowLeft wraps from first tab to last tab in Arabic mode', () => {
+    render(<ProcurementToolsSection isAr={true} />);
+    const tabs = screen.getAllByRole('tab');
+    fireEvent.keyDown(tabs[0], { key: 'ArrowLeft' });
+    expect(tabs[4].getAttribute('aria-selected')).toBe('true');
+  });
+
+  it('full round-trip: ArrowRight × 5 returns to the starting tab in Arabic mode', () => {
+    render(<ProcurementToolsSection isAr={true} />);
+    const tabs = screen.getAllByRole('tab');
+    for (let i = 0; i < 5; i++) {
+      const current = tabs.findIndex(t => t.getAttribute('aria-selected') === 'true');
+      fireEvent.keyDown(tabs[current], { key: 'ArrowRight' });
+    }
+    expect(tabs[0].getAttribute('aria-selected')).toBe('true');
+  });
+
+  it('full round-trip: ArrowLeft × 5 returns to the starting tab in Arabic mode', () => {
+    render(<ProcurementToolsSection isAr={true} />);
+    const tabs = screen.getAllByRole('tab');
+    for (let i = 0; i < 5; i++) {
+      const current = tabs.findIndex(t => t.getAttribute('aria-selected') === 'true');
+      fireEvent.keyDown(tabs[current], { key: 'ArrowLeft' });
+    }
+    expect(tabs[0].getAttribute('aria-selected')).toBe('true');
+  });
+
+  it('Home key jumps to first tab in Arabic mode', () => {
+    render(<ProcurementToolsSection isAr={true} />);
+    const tabs = screen.getAllByRole('tab');
+    fireEvent.keyDown(tabs[0], { key: 'ArrowRight' });
+    fireEvent.keyDown(tabs[1], { key: 'ArrowRight' });
+    expect(tabs[2].getAttribute('aria-selected')).toBe('true');
+    fireEvent.keyDown(tabs[2], { key: 'Home' });
+    expect(tabs[0].getAttribute('aria-selected')).toBe('true');
+  });
+
+  it('End key jumps to last tab in Arabic mode', () => {
+    render(<ProcurementToolsSection isAr={true} />);
+    const tabs = screen.getAllByRole('tab');
+    fireEvent.keyDown(tabs[0], { key: 'End' });
+    expect(tabs[4].getAttribute('aria-selected')).toBe('true');
+  });
+
+  it('ArrowRight in Arabic mode switches panel content (Market Intelligence panel appears)', () => {
+    render(<ProcurementToolsSection isAr={true} />);
+    const tabs = screen.getAllByRole('tab');
+    // Default: Spend Analysis panel (Arabic mode shows Arabic aria-labels)
+    expect(screen.getByLabelText(/تحت عقد/)).toBeInTheDocument();
+    // ArrowRight once → Market Intelligence
+    fireEvent.keyDown(tabs[0], { key: 'ArrowRight' });
+    expect(screen.queryByLabelText(/تحت عقد/)).toBeNull();
+    expect(screen.getByLabelText('قوة الموردين')).toBeInTheDocument();
+  });
+
+  it('ArrowLeft from Market Intelligence in Arabic mode returns to Spend Analysis panel', () => {
+    render(<ProcurementToolsSection isAr={true} />);
+    const tabs = screen.getAllByRole('tab');
+    fireEvent.keyDown(tabs[0], { key: 'ArrowRight' });
+    expect(screen.getByLabelText('قوة الموردين')).toBeInTheDocument();
+    fireEvent.keyDown(tabs[1], { key: 'ArrowLeft' });
+    expect(screen.getByLabelText(/تحت عقد/)).toBeInTheDocument();
+  });
+});
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Suite 7 — Storage key isolation
    SK_SPEND and SK_PORTER must be independent keys (no cross-contamination).
 ══════════════════════════════════════════════════════════════════════════ */
 describe('ProcurementToolsSection — storage key isolation', () => {
