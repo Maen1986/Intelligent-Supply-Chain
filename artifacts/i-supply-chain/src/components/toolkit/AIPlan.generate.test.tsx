@@ -116,6 +116,9 @@ describe('KRIDashboard — Generate button', () => {
     });
     fireEvent.click(btn);
 
+    // Spinner appears synchronously before the fetch resolves
+    expect(screen.getByText(/Generating/i)).toBeInTheDocument();
+
     await waitFor(() =>
       expect(screen.getByText('AI-Generated Plan')).toBeInTheDocument(),
     );
@@ -432,6 +435,9 @@ describe('KRIDashboard — Arabic path (isAr=true)', () => {
       return b;
     });
     fireEvent.click(btn);
+
+    // Arabic spinner appears synchronously before the fetch resolves
+    expect(screen.getByText(/جارٍ التوليد/i)).toBeInTheDocument();
 
     await waitFor(() => expect(screen.getByText('الخطة المُولَّدة بالذكاء الاصطناعي')).toBeInTheDocument());
     expect(getAIPlanFetchBody().language).toBe('ar');
