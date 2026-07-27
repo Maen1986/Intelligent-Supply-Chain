@@ -405,7 +405,8 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
       const log: string[] = [...errors];
       const nextSuppliers = [...roster.suppliers];
 
-      const dupNames = csvRows.map(r => r['Supplier Name']?.trim()).filter(n => n && nextSuppliers.some(s => s.name === n));
+      // Case-insensitive duplicate detection: "alpha corp" and "Alpha Corp" are the same supplier.
+      const dupNames = csvRows.map(r => r['Supplier Name']?.trim()).filter(n => n && nextSuppliers.some(s => s.name.toLowerCase() === n.toLowerCase()));
       let overwrite = false;
       if (dupNames.length > 0) {
         overwrite = window.confirm(
@@ -436,7 +437,8 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
           }
         });
 
-        const existingIdx = nextSuppliers.findIndex(s => s.name === name);
+        // Case-insensitive match: treat "alpha corp" and "Alpha Corp" as the same supplier.
+        const existingIdx = nextSuppliers.findIndex(s => s.name.toLowerCase() === name.toLowerCase());
         if (existingIdx >= 0) {
           if (overwrite) { nextSuppliers[existingIdx] = { ...nextSuppliers[existingIdx], tier: row['Current Tier']?.trim() || nextSuppliers[existingIdx].tier, subScores }; imported++; }
           else { skipped++; }

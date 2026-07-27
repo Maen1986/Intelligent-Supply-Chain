@@ -500,7 +500,8 @@ function simulateImport(
 
     const { subScores: incoming } = parseSubScoresFromRow(row);
 
-    const existingIdx = nextSuppliers.findIndex(s => s.name === name);
+    // Case-insensitive match — mirrors the fixed handleScorecardImport behaviour.
+    const existingIdx = nextSuppliers.findIndex(s => s.name.toLowerCase() === name.toLowerCase());
     if (existingIdx >= 0) {
       if (overwrite) {
         // Wholesale replace — mirrors handleScorecardImport exactly:
@@ -740,5 +741,132 @@ describe('Scorecard CSV — partial roster import (real-world edit workflow)', (
     for (const s of nextSuppliers) {
       expect(s.subScores.delivery?.otif).toBe('55');
     }
+  });
+});
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Suite 4 — Case-insensitive supplier name matching
+
+   Intent: a supplier name that differs only in letter case from an existing
+   roster entry must NOT create a silent ghost duplicate. The import logic
+   uses case-insensitive comparison so "alpha corp", "Alpha Corp", and
+   "ALPHA CORP" all resolve to the same roster entry.
+
+   Chosen behaviour: case-insensitive match → treat as the same supplier
+   (merge/overwrite with the same confirm prompt, or skip — no silent add).
+══════════════════════════════════════════════════════════════════════════ */
+
+describe('Scorecard CSV — case-insensitive supplier name matching', () => {
+  beforeEach(() => localStorage.clear());
+
+  it('does not create a duplicate when CSV name is all-lowercase variant', () => {
+    // Roster has "Alpha Corp"; CSV supplies "alpha corp"
+    const lowercaseRow: Record<string, string> = {
+      'Supplier Name': 'alpha corp',
+      'Current Tier': 'Preferred',
+      'Delivery Performance — OTIF %': '77',
+    };
+    const { nextSuppliers, imported, skipped } = simulateImport(
+      [SUPPLIER_A, SUPPLIER_B, SUPPLIER_C],
+      [lowercaseRow],
+      true, // overwrite
+    );
+
+    // Roster must still have exactly 3 entries — no ghost added
+    expect(nextSuppliers).toHaveLength(3);
+    expect(imported).toBe(1);
+    expect(skipped).toBe(0);
+  });
+
+  it('does not create a duplicate when CSV name is all-uppercase variant', () => {
+    const uppercaseRow: Record<string, string> = {
+      'Supplier Name': 'ALPHA CORP',
+      'Current Tier': 'Strategic',
+      'Delivery Performance — OTIF %': '88',
+    };
+    const { nextSuppliers, imported } = simulateImport(
+      [SUPPLIER_A, SUPPLIER_B, SUPPLIER_C],
+      [uppercaseRow],
+      true,
+    );
+
+    expect(nextSuppliers).toHaveLength(3);
+    expect(imported).toBe(1);
+  });
+
+  it('does not create a duplicate when CSV name has mixed case different from the roster', () => {
+    const mixedRow: Record<string, string> = {
+      'Supplier Name': 'aLpHa CoRp',
+      'Current Tier': 'Preferred',
+      'Delivery Performance — OTIF %': '60',
+    };
+    const { nextSuppliers } = simulateImport(
+      [SUPPLIER_A, SUPPLIER_B, SUPPLIER_C],
+      [mixedRow],
+      true,
+    );
+
+    expect(nextSuppliers).toHaveLength(3);
+  });
+
+  it('overwrites the matched existing entry (not adds a new one) on overwrite=true', () => {
+    const lowercaseRow: Record<string, string> = {
+      'Supplier Name': 'alpha corp',
+      'Current Tier': 'Preferred',
+      'Delivery Performance — OTIF %': '42',
+    };
+    const { nextSuppliers } = simulateImport(
+      [SUPPLIER_A, SUPPLIER_B, SUPPLIER_C],
+      [lowercaseRow],
+      true,
+    );
+
+    // The matched entry has the updated score; no ghost with lowercase name
+    const original = nextSuppliers.find(s => s.name === 'Alpha Corp')!;
+    expect(original).toBeDefined();
+    expect(original.subScores.delivery?.otif).toBe('42');
+
+    const ghost = nextSuppliers.find(s => s.name === 'alpha corp');
+    expect(ghost).toBeUndefined();
+  });
+
+  it('skips (does not add) the case-variant when overwrite=false', () => {
+    const lowercaseRow: Record<string, string> = {
+      'Supplier Name': 'alpha corp',
+      'Current Tier': 'Preferred',
+      'Delivery Performance — OTIF %': '42',
+    };
+    const { nextSuppliers, imported, skipped } = simulateImport(
+      [SUPPLIER_A, SUPPLIER_B, SUPPLIER_C],
+      [lowercaseRow],
+      false, // user chose Cancel
+    );
+
+    expect(nextSuppliers).toHaveLength(3);
+    expect(imported).toBe(0);
+    expect(skipped).toBe(1);
+
+    // Original entry is untouched
+    const original = nextSuppliers.find(s => s.name === 'Alpha Corp')!;
+    expect(original.subScores).toEqual(SUPPLIER_A.subScores);
+  });
+
+  it('still adds a genuinely new supplier whose name differs by more than case', () => {
+    const newRow: Record<string, string> = {
+      'Supplier Name': 'Alpha Corp International', // different name, not just case
+      'Current Tier': 'Strategic',
+      'Delivery Performance — OTIF %': '80',
+    };
+    const { nextSuppliers, imported } = simulateImport(
+      [SUPPLIER_A, SUPPLIER_B, SUPPLIER_C],
+      [newRow],
+      true,
+    );
+
+    // Roster grows to 4 — the new name is genuinely different
+    expect(nextSuppliers).toHaveLength(4);
+    expect(imported).toBe(1);
+    const added = nextSuppliers.find(s => s.name === 'Alpha Corp International');
+    expect(added).toBeDefined();
   });
 });
