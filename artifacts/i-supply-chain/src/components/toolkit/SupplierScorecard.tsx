@@ -3,8 +3,8 @@
  * per dimension, weighted scoring, tier badge, RadarChart.
  */
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { RadarChart, Radar, PolarGrid, PolarAngleAxis, ResponsiveContainer, Tooltip } from 'recharts';
-import { Printer, Plus, Trash2, Users, Download, Upload, Settings, ChevronDown, ChevronUp, RotateCcw, Sparkles } from 'lucide-react';
+import { RadarChart, Radar, PolarGrid, PolarAngleAxis, ResponsiveContainer, Tooltip, Legend } from 'recharts';
+import { Printer, Plus, Trash2, Users, Download, Upload, Settings, ChevronDown, ChevronUp, RotateCcw, Sparkles, Columns, X } from 'lucide-react';
 import { safeSetItem } from '@/lib/storage';
 import { useAuth } from '@/lib/AuthContext';
 import { API_BASE } from '@/lib/apiBase';
@@ -160,6 +160,16 @@ function getTier(score: number, config: ScorecardConfig) {
   return TIERS[2];
 }
 
+/* ─── Compare colours (up to 3 suppliers) ─── */
+const COMPARE_COLORS = ['#082C6B', '#dc2626', '#7c3aed'] as const;
+
+function ragColor(score: number | null): string {
+  if (score === null) return '#94a3b8';
+  if (score >= 75) return '#22c55e';
+  if (score >= 55) return '#f59e0b';
+  return '#ef4444';
+}
+
 /* ─── Storage keys ─── */
 const ROSTER_KEY = 'isc-tool-supplier-roster';
 const LEGACY_KEY = 'isc-tool-supplier-scorecard';
@@ -283,6 +293,8 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
   const [roster, setRoster] = useState<RosterState>(loadRoster);
   const [config, setConfig] = useState<ScorecardConfig>(loadConfig);
   const [configOpen, setConfigOpen] = useState(false);
+  const [compareMode, setCompareMode] = useState(false);
+  const [compareIds, setCompareIds] = useState<string[]>([]);
   const [syncStatus, setSyncStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const syncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Track which user id we last bootstrapped from the server.
@@ -508,6 +520,19 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
 
   const setActiveId = (id: string) => save({ ...roster, activeId: id });
 
+  const toggleCompareMode = () => {
+    setCompareMode(m => !m);
+    setCompareIds([]);
+  };
+
+  const toggleCompareId = (id: string) => {
+    setCompareIds(prev => {
+      if (prev.includes(id)) return prev.filter(x => x !== id);
+      if (prev.length >= 3) return prev;
+      return [...prev, id];
+    });
+  };
+
   const updateActive = (patch: Partial<SupplierRecord>) => {
     save({
       ...roster,
@@ -596,6 +621,21 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
               <span className="text-xs text-muted-foreground">({roster.suppliers.length})</span>
             </div>
             <div className="flex items-center gap-2 flex-wrap">
+              {roster.suppliers.length >= 2 && (
+                <button
+                  onClick={toggleCompareMode}
+                  className={`flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg font-bold transition-colors ${
+                    compareMode
+                      ? 'bg-primary text-white hover:bg-primary/90'
+                      : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
+                  }`}
+                >
+                  <Columns className="w-3 h-3" />
+                  {compareMode
+                    ? (isAr ? 'إلغاء المقارنة' : 'Exit Compare')
+                    : (isAr ? 'مقارنة' : 'Compare')}
+                </button>
+              )}
               <button
                 onClick={downloadScorecardTemplate}
                 title={isAr ? 'تنزيل قالب CSV فارغ' : 'Download blank CSV template'}
@@ -634,20 +674,47 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
               />
             </div>
           </div>
+          {compareMode && (
+            <div className="px-4 py-2 bg-blue-50 border-b border-blue-100 text-xs text-blue-700 font-medium">
+              {isAr
+                ? `اختر 2–3 موردين للمقارنة (${compareIds.length} محدد)`
+                : `Select 2–3 suppliers to compare (${compareIds.length} selected)`}
+            </div>
+          )}
           <div className="divide-y divide-border max-h-52 overflow-y-auto">
-            {roster.suppliers.map(s => {
+            {roster.suppliers.map((s, idx) => {
               const sc = calcWeightedScore(s.subScores, config);
               const t = sc !== null ? getTier(sc, config) : null;
               const isActive = s.id === roster.activeId;
+              const compareIdx = compareIds.indexOf(s.id);
+              const isSelected = compareIdx !== -1;
+              const compareColor = isSelected ? COMPARE_COLORS[compareIdx] : undefined;
               return (
                 <div
                   key={s.id}
-                  onClick={() => setActiveId(s.id)}
-                  className={`flex items-center justify-between gap-3 px-4 py-2.5 cursor-pointer transition-colors ${isActive ? 'bg-primary/5' : 'hover:bg-gray-50'}`}
+                  onClick={() => compareMode ? toggleCompareId(s.id) : setActiveId(s.id)}
+                  className={`flex items-center justify-between gap-3 px-4 py-2.5 cursor-pointer transition-colors ${
+                    compareMode
+                      ? isSelected ? 'bg-primary/5' : 'hover:bg-gray-50'
+                      : isActive ? 'bg-primary/5' : 'hover:bg-gray-50'
+                  }`}
                 >
                   <div className="flex items-center gap-2 min-w-0 flex-1">
-                    {isActive && <div className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />}
-                    <span className={`text-sm truncate ${isActive ? 'font-bold text-primary' : 'text-gray-700'}`}>
+                    {compareMode ? (
+                      <div
+                        className="w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors"
+                        style={{
+                          borderColor: isSelected ? compareColor : '#cbd5e1',
+                          background: isSelected ? compareColor : 'transparent',
+                        }}
+                      >
+                        {isSelected && <X className="w-2.5 h-2.5 text-white" />}
+                      </div>
+                    ) : (
+                      isActive && <div className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
+                    )}
+                    <span className={`text-sm truncate ${(!compareMode && isActive) || (compareMode && isSelected) ? 'font-bold' : 'text-gray-700'}`}
+                      style={{ color: compareMode && isSelected ? compareColor : undefined }}>
                       {s.name || (isAr ? 'مورّد جديد' : 'New Supplier')}
                     </span>
                     {t && (
@@ -662,18 +729,215 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
                       </span>
                     )}
                   </div>
-                  <button
-                    onClick={e => { e.stopPropagation(); deleteSupplier(s.id); }}
-                    className="text-muted-foreground hover:text-red-500 transition-colors p-1 rounded shrink-0"
-                    aria-label={isAr ? 'حذف المورّد' : 'Delete supplier'}
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+                  {!compareMode && (
+                    <button
+                      onClick={e => { e.stopPropagation(); deleteSupplier(s.id); }}
+                      className="text-muted-foreground hover:text-red-500 transition-colors p-1 rounded shrink-0"
+                      aria-label={isAr ? 'حذف المورّد' : 'Delete supplier'}
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                 </div>
               );
             })}
           </div>
         </div>
+
+        {/* ── Compare View ── */}
+        {compareMode && compareIds.length >= 2 && (() => {
+          const suppliers = compareIds.map(id => roster.suppliers.find(s => s.id === id)!).filter(Boolean);
+          const dimScoresMatrix = DIMS.map(d =>
+            suppliers.map(s => calcDimScore(d.id, s.subScores))
+          );
+          const weightedScores = suppliers.map(s => calcWeightedScore(s.subScores, config));
+
+          // Radar data: one entry per dimension, one key per supplier
+          const radarCompareData = DIMS.map((d, di) => {
+            const entry: Record<string, unknown> = {
+              dimension: isAr ? d.labelAr : d.label,
+              fullMark: 100,
+            };
+            suppliers.forEach((s, si) => {
+              entry[`s${si}`] = dimScoresMatrix[di][si] ?? 0;
+            });
+            return entry;
+          });
+
+          return (
+            <div className="border border-primary/20 rounded-xl overflow-hidden bg-white">
+              {/* Compare header */}
+              <div className="flex items-center gap-2 px-4 py-2.5 bg-primary/5 border-b border-primary/10">
+                <Columns className="w-3.5 h-3.5 text-primary" />
+                <span className="text-xs font-bold text-primary uppercase tracking-widest">
+                  {isAr ? 'مقارنة المورّدين' : 'Supplier Comparison'}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  {suppliers.map(s => s.name || (isAr ? 'مورّد جديد' : 'New Supplier')).join(' vs ')}
+                </span>
+              </div>
+
+              {/* Dimension table */}
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs border-collapse">
+                  <thead>
+                    <tr className="bg-slate-50 border-b border-border">
+                      <th className="text-left px-4 py-2.5 font-bold text-primary min-w-[140px]">
+                        {isAr ? 'البُعد' : 'Dimension'}
+                      </th>
+                      {suppliers.map((s, si) => (
+                        <th key={s.id} className="px-3 py-2.5 font-bold text-center min-w-[100px]"
+                          style={{ color: COMPARE_COLORS[si] }}>
+                          {s.name || (isAr ? 'مورّد جديد' : 'New Supplier')}
+                        </th>
+                      ))}
+                      <th className="px-3 py-2.5 font-bold text-center text-amber-700 min-w-[80px]">
+                        {isAr ? 'الأفضل' : 'Winner'}
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {DIMS.map((d, di) => {
+                      const scores = dimScoresMatrix[di];
+                      const maxScore = Math.max(...scores.filter(v => v !== null) as number[]);
+                      const hasData = scores.some(v => v !== null);
+                      const winnerCount = scores.filter(v => v === maxScore).length;
+                      return (
+                        <tr key={d.id} className="border-b border-border last:border-0 hover:bg-gray-50/50 transition-colors">
+                          <td className="px-4 py-2.5 font-medium text-gray-700">
+                            <div>{isAr ? d.labelAr : d.label}</div>
+                            <div className="text-[10px] text-muted-foreground">{config.weights[d.id] ?? d.weight}%</div>
+                          </td>
+                          {scores.map((sc, si) => {
+                            const color = ragColor(sc);
+                            const isWinner = sc !== null && sc === maxScore && hasData && winnerCount < suppliers.length;
+                            return (
+                              <td key={suppliers[si].id} className="px-3 py-2.5 text-center">
+                                {sc !== null ? (
+                                  <div className="inline-flex flex-col items-center gap-0.5">
+                                    <span
+                                      className="font-extrabold text-sm px-2.5 py-1 rounded-lg"
+                                      style={{ background: color + '22', color }}
+                                    >
+                                      {sc}
+                                    </span>
+                                    {isWinner && (
+                                      <span className="text-[10px] text-amber-600 font-bold">
+                                        {isAr ? '🏆 الأفضل' : '🏆 Best'}
+                                      </span>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <span className="text-muted-foreground">—</span>
+                                )}
+                              </td>
+                            );
+                          })}
+                          <td className="px-3 py-2.5 text-center">
+                            {(() => {
+                              if (!hasData || winnerCount >= suppliers.length) {
+                                return <span className="text-muted-foreground text-[10px]">{hasData ? (isAr ? 'تعادل' : 'Tie') : '—'}</span>;
+                              }
+                              let winnerIdx = -1;
+                              let winnerScore = -1;
+                              scores.forEach((sc, si) => {
+                                if (sc !== null && sc > winnerScore) { winnerScore = sc; winnerIdx = si; }
+                              });
+                              if (winnerIdx < 0) return <span className="text-muted-foreground">—</span>;
+                              return (
+                                <span className="font-bold text-amber-700">
+                                  {suppliers[winnerIdx]?.name || (isAr ? 'مورّد جديد' : 'New Supplier')}
+                                </span>
+                              );
+                            })()}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                  <tfoot>
+                    <tr className="bg-slate-50 border-t-2 border-border">
+                      <td className="px-4 py-2.5 font-bold text-primary text-xs">
+                        {isAr ? 'الدرجة المرجّحة' : 'Weighted Score'}
+                      </td>
+                      {weightedScores.map((ws, si) => {
+                        const color = ragColor(ws);
+                        const t = ws !== null ? getTier(ws, config) : null;
+                        return (
+                          <td key={suppliers[si].id} className="px-3 py-2.5 text-center">
+                            {ws !== null ? (
+                              <div className="flex flex-col items-center gap-1">
+                                <span className="font-extrabold text-base" style={{ color }}>
+                                  {ws}/100
+                                </span>
+                                {t && (
+                                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full"
+                                    style={{ background: t.bg, color: t.color }}>
+                                    {isAr ? t.labelAr : t.label}
+                                  </span>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-muted-foreground text-xs">
+                                {isAr ? 'غير مكتمل' : 'Incomplete'}
+                              </span>
+                            )}
+                          </td>
+                        );
+                      })}
+                      <td className="px-3 py-2.5 text-center">
+                        {(() => {
+                          const validScores = weightedScores.map((ws, si) => ({ ws, si })).filter(x => x.ws !== null);
+                          if (validScores.length < 2) return <span className="text-muted-foreground">—</span>;
+                          const max = Math.max(...validScores.map(x => x.ws as number));
+                          const winners = validScores.filter(x => x.ws === max);
+                          if (winners.length > 1) return <span className="text-muted-foreground text-[10px]">{isAr ? 'تعادل' : 'Tie'}</span>;
+                          return (
+                            <span className="font-bold text-amber-700">
+                              🏆 {suppliers[winners[0].si]?.name || (isAr ? 'مورّد جديد' : 'New Supplier')}
+                            </span>
+                          );
+                        })()}
+                      </td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+
+              {/* Overlay radar chart */}
+              <div className="p-4 border-t border-border">
+                <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-3 text-center">
+                  {isAr ? 'ملف الأداء المقارن' : 'Comparative Performance Profile'}
+                </p>
+                <ResponsiveContainer width="100%" height={260}>
+                  <RadarChart data={radarCompareData} cx="50%" cy="50%" outerRadius="68%">
+                    <PolarGrid />
+                    <PolarAngleAxis dataKey="dimension" tick={{ fontSize: 9, fill: '#6b7280' }} />
+                    {suppliers.map((s, si) => (
+                      <Radar
+                        key={s.id}
+                        name={s.name || (isAr ? 'مورّد جديد' : 'New Supplier')}
+                        dataKey={`s${si}`}
+                        stroke={COMPARE_COLORS[si]}
+                        fill={COMPARE_COLORS[si]}
+                        fillOpacity={0.15}
+                        strokeWidth={2}
+                      />
+                    ))}
+                    <Legend
+                      iconType="circle"
+                      iconSize={8}
+                      formatter={(value) => <span style={{ fontSize: 11 }}>{value}</span>}
+                    />
+                    <Tooltip
+                      formatter={(v: number, name: string) => [`${v}/100`, name]}
+                    />
+                  </RadarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* ── Import log ── */}
         {importLog && (
