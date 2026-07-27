@@ -218,6 +218,11 @@ html[lang="ar"] {
     overflow: visible !important;
   }
 
+  body[data-print="compare"] .print-zone-compare,
+  body[data-print="compare"] .print-zone-compare * {
+    visibility: visible;
+  }
+
   body[data-print="kpi"] .print-zone-kpi,
   body[data-print="kpi"] .print-zone-kpi * {
     visibility: visible;

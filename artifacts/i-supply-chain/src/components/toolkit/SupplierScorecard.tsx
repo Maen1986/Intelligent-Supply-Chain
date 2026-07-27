@@ -154,6 +154,79 @@ function calcWeightedScore(subScores: Record<string, Record<string, string>>, co
   );
 }
 
+/* ─── Comparison CSV export ─── */
+function exportComparisonToCSV(
+  suppliers: SupplierRecord[],
+  config: ScorecardConfig,
+  isAr: boolean,
+) {
+  const dimScoresMatrix = DIMS.map(d => suppliers.map(s => calcDimScore(d.id, s.subScores)));
+  const weightedScores = suppliers.map(s => calcWeightedScore(s.subScores, config));
+
+  const headerLabel   = isAr ? 'البُعد / المعيار' : 'Dimension / Criterion';
+  const weightLabel   = isAr ? 'الوزن (%)' : 'Weight (%)';
+  const winnerLabel   = isAr ? 'الأفضل' : 'Winner';
+  const weightedLabel = isAr ? 'الدرجة المرجّحة' : 'Weighted Score';
+  const tieLabel      = isAr ? 'تعادل' : 'Tie';
+  const incompleteLabel = isAr ? 'غير مكتمل' : 'Incomplete';
+  const supplierNames = suppliers.map(s => s.name || (isAr ? 'مورّد جديد' : 'New Supplier'));
+
+  const esc = (v: string | number) => {
+    const s = String(v);
+    return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+
+  const rows: string[] = [];
+
+  // Header row
+  rows.push([headerLabel, weightLabel, ...supplierNames, winnerLabel].map(esc).join(','));
+
+  // Dimension rows
+  DIMS.forEach((d, di) => {
+    const scores = dimScoresMatrix[di];
+    const maxScore = Math.max(...scores.filter(v => v !== null) as number[]);
+    const hasData = scores.some(v => v !== null);
+    const winnerCount = scores.filter(v => v === maxScore).length;
+    let winner = '—';
+    if (hasData) {
+      if (winnerCount >= suppliers.length) {
+        winner = tieLabel;
+      } else {
+        let winnerIdx = -1; let winnerScore = -1;
+        scores.forEach((sc, si) => { if (sc !== null && sc > winnerScore) { winnerScore = sc; winnerIdx = si; } });
+        if (winnerIdx >= 0) winner = supplierNames[winnerIdx];
+      }
+    }
+    const dimName = isAr ? d.labelAr : d.label;
+    const weight = config.weights[d.id] ?? d.weight;
+    const scoreCells = scores.map(sc => sc !== null ? String(sc) : '—');
+    rows.push([dimName, String(weight), ...scoreCells, winner].map(esc).join(','));
+  });
+
+  // Weighted score footer row
+  const wsWinnerCount = weightedScores.filter(ws => ws !== null).length;
+  let wsWinner = '—';
+  if (wsWinnerCount >= 2) {
+    const max = Math.max(...weightedScores.filter(ws => ws !== null) as number[]);
+    const winners = weightedScores.map((ws, si) => ({ ws, si })).filter(x => x.ws === max);
+    wsWinner = winners.length > 1 ? tieLabel : (supplierNames[winners[0].si] ?? '—');
+  }
+  const wsCells = weightedScores.map(ws => ws !== null ? `${ws}/100` : incompleteLabel);
+  rows.push([weightedLabel, '100', ...wsCells, wsWinner].map(esc).join(','));
+
+  const csv = rows.join('\r\n');
+  const today = new Date().toISOString().split('T')[0];
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `supplier-comparison-${today}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 /* ─── CSV export ─── */
 function exportToCSV(suppliers: SupplierRecord[], config: ScorecardConfig) {
   const csv = buildScorecardCsvString(suppliers, config);
@@ -791,16 +864,43 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
           });
 
           return (
-            <div className="border border-primary/20 rounded-xl overflow-hidden bg-white">
+            <div className="print-zone-compare border border-primary/20 rounded-xl overflow-hidden bg-white">
+              {/* Print-only header */}
+              <div className="hidden print:block mb-4 pb-3 border-b border-gray-300">
+                <p className="text-lg font-extrabold text-gray-900">{isAr ? '📊 مقارنة المورّدين' : '📊 Supplier Comparison'}</p>
+                <p className="text-sm font-semibold text-gray-700">
+                  {suppliers.map(s => s.name || (isAr ? 'مورّد جديد' : 'New Supplier')).join(' vs ')}
+                </p>
+                <p className="text-xs text-gray-500">{isAr ? `تاريخ التصدير: ${today}` : `Exported: ${today}`}</p>
+              </div>
+
               {/* Compare header */}
-              <div className="flex items-center gap-2 px-4 py-2.5 bg-primary/5 border-b border-primary/10">
-                <Columns className="w-3.5 h-3.5 text-primary" />
-                <span className="text-xs font-bold text-primary uppercase tracking-widest">
+              <div className="no-print flex items-center gap-2 px-4 py-2.5 bg-primary/5 border-b border-primary/10 flex-wrap">
+                <Columns className="w-3.5 h-3.5 text-primary shrink-0" />
+                <span className="text-xs font-bold text-primary uppercase tracking-widest shrink-0">
                   {isAr ? 'مقارنة المورّدين' : 'Supplier Comparison'}
                 </span>
-                <span className="text-xs text-muted-foreground">
+                <span className="text-xs text-muted-foreground flex-1 min-w-0 truncate">
                   {suppliers.map(s => s.name || (isAr ? 'مورّد جديد' : 'New Supplier')).join(' vs ')}
                 </span>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <button
+                    onClick={() => exportComparisonToCSV(suppliers, config, isAr)}
+                    className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg font-bold bg-slate-600 text-white hover:bg-slate-700 transition-colors"
+                    title={isAr ? 'تنزيل المقارنة كملف CSV' : 'Download comparison as CSV'}
+                  >
+                    <Download className="w-3 h-3" />
+                    {isAr ? 'تصدير CSV' : 'Export CSV'}
+                  </button>
+                  <button
+                    onClick={() => printZone('compare')}
+                    className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg font-bold bg-primary text-white hover:bg-primary/90 transition-colors"
+                    title={isAr ? 'طباعة / تصدير PDF' : 'Print / Export PDF'}
+                  >
+                    <Printer className="w-3 h-3" />
+                    {isAr ? 'تصدير PDF' : 'Export PDF'}
+                  </button>
+                </div>
               </div>
 
               {/* Dimension table */}
