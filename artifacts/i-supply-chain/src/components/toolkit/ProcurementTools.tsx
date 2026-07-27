@@ -569,8 +569,10 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
       <div role="tablist" className="flex gap-1 bg-slate-50 border border-slate-200 rounded-2xl p-1 overflow-x-auto">
         {tabs.map((t, i) => (
           <button key={t.id}
+            id={`tab-${t.id}`}
             role="tab"
             aria-selected={activeTab === t.id}
+            aria-controls={`panel-${t.id}`}
             tabIndex={activeTab === t.id ? 0 : -1}
             ref={el => { tabRefs.current[i] = el; }}
             onClick={() => setActiveTab(t.id)}
@@ -583,7 +585,7 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
 
       {/* ── TAB 1: Spend Analysis ── */}
       {activeTab === 'spend' && (
-        <div className="space-y-4">
+        <div id="panel-spend" role="tabpanel" aria-labelledby="tab-spend" className="space-y-4">
           {/* Summary cards */}
           {validRows.length > 0 && (
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -698,7 +700,7 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
 
       {/* ── TAB 2: Market Intelligence ── */}
       {activeTab === 'market' && (
-        <div className="space-y-4">
+        <div id="panel-market" role="tabpanel" aria-labelledby="tab-market" className="space-y-4">
           <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 flex items-start gap-2">
             <Info className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
             <p className="text-xs text-blue-800">{isAr ? 'حلّل قوى بورتر الخمس لهذه الفئة. 1 = قوة/تهديد منخفض، 5 = قوة/تهديد مرتفع.' : 'Analyse Porter\'s Five Forces for this category. 1 = low threat/power, 5 = high threat/power.'}</p>
@@ -763,7 +765,7 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
 
       {/* ── TAB 3: Sourcing Strategy ── */}
       {activeTab === 'strategy' && (
-        <div className="space-y-4">
+        <div id="panel-strategy" role="tabpanel" aria-labelledby="tab-strategy" className="space-y-4">
           {/* Auto-recommendation */}
           <div className="bg-gradient-to-r from-[#082C6B] to-[#0e3d8a] text-white rounded-2xl p-5">
             <p className="text-xs text-white/60 font-semibold uppercase tracking-wider mb-1">{isAr ? 'التوصية التلقائية' : 'Auto-Recommended Strategy'}</p>
@@ -824,7 +826,7 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
 
       {/* ── TAB 4: Templates ── */}
       {activeTab === 'templates' && (
-        <div className="space-y-3">
+        <div id="panel-templates" role="tabpanel" aria-labelledby="tab-templates" className="space-y-3">
           <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 flex items-start gap-2">
             <Info className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
             <p className="text-xs text-blue-800">{isAr ? 'قوالب CIPS-متوافقة جاهزة للتحميل. كل قالب مُصمَّم وفق أفضل الممارسات الدولية في إدارة المشتريات.' : 'CIPS-aligned templates ready to download. Each template is designed to international procurement best-practice standards.'}</p>
@@ -849,6 +851,7 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
 
       {/* ── TAB 5: AI Strategy Brief ── */}
       {activeTab === 'ai' && (
+        <div id="panel-ai" role="tabpanel" aria-labelledby="tab-ai">
         <AIPlanPanel
           loading={aiPlan.loading} result={aiPlan.result} error={aiPlan.error}
           onGenerate={aiPlan.generate} onReset={aiPlan.reset}
@@ -860,6 +863,7 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
           isAr={isAr} toolKey="procurement-catmgmt"
           disabled={validRows.length < 2}
         />
+        </div>
       )}
     </div>
   );
