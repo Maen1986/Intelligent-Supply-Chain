@@ -391,6 +391,7 @@ function simulateImport(
   rosterSuppliers: SupplierRecord[],
   csvRows: Array<Record<string, string>>,
   overwrite: boolean,
+  isAr = false,
 ): { nextSuppliers: SupplierRecord[]; imported: number; skipped: number; log: string[] } {
   const nextSuppliers = rosterSuppliers.map(s => ({
     ...s,
@@ -425,12 +426,20 @@ function simulateImport(
         };
         imported++;
         if (isCaseVariant) {
-          log.push(`Row ${rowNum}: '${name}' matched existing '${existingName}' — merged.`);
+          log.push(
+            isAr
+              ? `الصف ${rowNum}: '${name}' تطابق مع '${existingName}' الموجود — تم الدمج.`
+              : `Row ${rowNum}: '${name}' matched existing '${existingName}' — merged.`
+          );
         }
       } else {
         skipped++;
         if (isCaseVariant) {
-          log.push(`Row ${rowNum}: '${name}' matched existing '${existingName}' — skipped.`);
+          log.push(
+            isAr
+              ? `الصف ${rowNum}: '${name}' تطابق مع '${existingName}' الموجود — تم التخطي.`
+              : `Row ${rowNum}: '${name}' matched existing '${existingName}' — skipped.`
+          );
         }
       }
     } else {
@@ -838,6 +847,68 @@ describe('Scorecard CSV — case-insensitive supplier name matching', () => {
 
     const caseNotice = log.find(m => m.includes('matched existing'));
     expect(caseNotice).toBeUndefined();
+  });
+
+  it('Arabic mode — log includes Arabic case-variant notice when overwrite=true', () => {
+    const lowercaseRow: Record<string, string> = {
+      'Supplier Name': 'alpha corp',
+      'Current Tier': 'Preferred',
+      'Delivery Performance — OTIF %': '77',
+    };
+    const { log } = simulateImport(
+      [SUPPLIER_A, SUPPLIER_B, SUPPLIER_C],
+      [lowercaseRow],
+      true,
+      true, // isAr
+    );
+
+    expect(log.length).toBeGreaterThanOrEqual(1);
+    const notice = log.find(m =>
+      m.includes("'alpha corp'") &&
+      m.includes("'Alpha Corp'") &&
+      m.includes('تم الدمج')
+    );
+    expect(notice).toBeDefined();
+    expect(notice).toMatch(/^الصف 2:/);
+  });
+
+  it('Arabic mode — log includes Arabic case-variant notice when overwrite=false', () => {
+    const lowercaseRow: Record<string, string> = {
+      'Supplier Name': 'alpha corp',
+      'Current Tier': 'Preferred',
+      'Delivery Performance — OTIF %': '77',
+    };
+    const { log } = simulateImport(
+      [SUPPLIER_A, SUPPLIER_B, SUPPLIER_C],
+      [lowercaseRow],
+      false,
+      true, // isAr
+    );
+
+    expect(log.length).toBeGreaterThanOrEqual(1);
+    const notice = log.find(m =>
+      m.includes("'alpha corp'") &&
+      m.includes("'Alpha Corp'") &&
+      m.includes('تم التخطي')
+    );
+    expect(notice).toBeDefined();
+    expect(notice).toMatch(/^الصف 2:/);
+  });
+
+  it('Arabic mode — no notice emitted when the name matches exactly', () => {
+    const exactRow: Record<string, string> = {
+      'Supplier Name': 'Alpha Corp',
+      'Current Tier': 'Strategic',
+      'Delivery Performance — OTIF %': '95',
+    };
+    const { log } = simulateImport(
+      [SUPPLIER_A, SUPPLIER_B, SUPPLIER_C],
+      [exactRow],
+      true,
+      true, // isAr
+    );
+
+    expect(log.find(m => m.includes('تطابق'))).toBeUndefined();
   });
 });
 

@@ -485,12 +485,20 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
             nextSuppliers[existingIdx] = { ...nextSuppliers[existingIdx], tier: row['Current Tier']?.trim() || nextSuppliers[existingIdx].tier, subScores };
             imported++;
             if (isCaseVariant) {
-              log.push(`Row ${rowNum}: '${name}' matched existing '${existingName}' — merged.`);
+              log.push(
+                isAr
+                  ? `الصف ${rowNum}: '${name}' تطابق مع '${existingName}' الموجود — تم الدمج.`
+                  : `Row ${rowNum}: '${name}' matched existing '${existingName}' — merged.`
+              );
             }
           } else {
             skipped++;
             if (isCaseVariant) {
-              log.push(`Row ${rowNum}: '${name}' matched existing '${existingName}' — skipped.`);
+              log.push(
+                isAr
+                  ? `الصف ${rowNum}: '${name}' تطابق مع '${existingName}' الموجود — تم التخطي.`
+                  : `Row ${rowNum}: '${name}' matched existing '${existingName}' — skipped.`
+              );
             }
           }
         } else {
