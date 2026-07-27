@@ -524,6 +524,97 @@ describe('Import duplicate detection — only the right entries change', () => {
 });
 
 /* ══════════════════════════════════════════════════════════════════════════
+   Suite 3b — Case-variant log message detection (English & Arabic)
+══════════════════════════════════════════════════════════════════════════ */
+
+/**
+ * The import log panel uses `m.includes('matched existing') || m.includes('الموجود')`
+ * to decide whether to apply amber/⚠️ styling to a log line.
+ *
+ * These tests verify that:
+ *  - English case-variant messages always contain 'matched existing'
+ *  - Arabic  case-variant messages always contain 'الموجود'
+ *  - Neither substring appears in normal (non-case-variant) log lines
+ *
+ * This prevents the amber styling from silently breaking when isAr = true.
+ */
+describe('Case-variant log message — detection substring presence', () => {
+  const EN_DETECTION = 'matched existing';
+  const AR_DETECTION = 'الموجود';
+
+  // Helper that mirrors the log.push calls in handleScorecardImport
+  function caseVariantMessage(
+    rowNum: number,
+    name: string,
+    existingName: string,
+    action: 'merged' | 'skipped',
+    isAr: boolean,
+  ): string {
+    if (isAr) {
+      return action === 'merged'
+        ? `الصف ${rowNum}: '${name}' تطابق مع '${existingName}' الموجود — تم الدمج.`
+        : `الصف ${rowNum}: '${name}' تطابق مع '${existingName}' الموجود — تم التخطي.`;
+    }
+    return action === 'merged'
+      ? `Row ${rowNum}: '${name}' matched existing '${existingName}' — merged.`
+      : `Row ${rowNum}: '${name}' matched existing '${existingName}' — skipped.`;
+  }
+
+  it('English merge message contains the detection substring', () => {
+    const msg = caseVariantMessage(2, 'alpha corp', 'Alpha Corp', 'merged', false);
+    expect(msg).toContain(EN_DETECTION);
+  });
+
+  it('English skip message contains the detection substring', () => {
+    const msg = caseVariantMessage(2, 'alpha corp', 'Alpha Corp', 'skipped', false);
+    expect(msg).toContain(EN_DETECTION);
+  });
+
+  it('Arabic merge message contains the Arabic detection substring', () => {
+    const msg = caseVariantMessage(2, 'alpha corp', 'Alpha Corp', 'merged', true);
+    expect(msg).toContain(AR_DETECTION);
+  });
+
+  it('Arabic skip message contains the Arabic detection substring', () => {
+    const msg = caseVariantMessage(2, 'alpha corp', 'Alpha Corp', 'skipped', true);
+    expect(msg).toContain(AR_DETECTION);
+  });
+
+  it('Arabic merge message does NOT contain the English detection substring', () => {
+    // The Arabic path must not rely on the English substring
+    const msg = caseVariantMessage(2, 'alpha corp', 'Alpha Corp', 'merged', true);
+    expect(msg).not.toContain(EN_DETECTION);
+  });
+
+  it('Arabic skip message does NOT contain the English detection substring', () => {
+    const msg = caseVariantMessage(2, 'alpha corp', 'Alpha Corp', 'skipped', true);
+    expect(msg).not.toContain(EN_DETECTION);
+  });
+
+  it('a normal (non-case-variant) row message does not trigger either detection substring', () => {
+    const normalEn = `Row 2: Supplier Name is empty — skipped.`;
+    const normalAr = `الصف 2: اسم المورّد فارغ — تم التخطي.`;
+    expect(normalEn).not.toContain(EN_DETECTION);
+    expect(normalEn).not.toContain(AR_DETECTION);
+    expect(normalAr).not.toContain(EN_DETECTION);
+    expect(normalAr).not.toContain(AR_DETECTION);
+  });
+
+  it('simulateImport with a case-variant name (English) emits a detectable log line', () => {
+    const caseVariantRow: Record<string, string> = {
+      'Supplier Name': 'alpha corp', // differs only in case from 'Alpha Corp'
+      'Current Tier': 'Strategic',
+      'Delivery Performance — OTIF %': '80',
+    };
+    const { log } = simulateImport([SUPPLIER_A], [caseVariantRow], true /* overwrite */);
+    const caseVariantLines = log.filter(m => m.includes(EN_DETECTION));
+    expect(caseVariantLines).toHaveLength(1);
+    expect(caseVariantLines[0]).toMatch(/alpha corp/);
+    expect(caseVariantLines[0]).toMatch(/Alpha Corp/);
+  });
+});
+
+/* ══════════════════════════════════════════════════════════════════════════
    Suite 4 — Score validation (out-of-range rejection)
 ══════════════════════════════════════════════════════════════════════════ */
 

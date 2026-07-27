@@ -1078,7 +1078,7 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
           <div className={`text-xs rounded-lg p-3 border ${importLog[0]?.startsWith('✓') ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-red-50 border-red-200 text-red-800'}`}>
             <div className="flex items-start justify-between gap-2">
               <div className="space-y-0.5">{importLog.map((m, i) => {
-                const isCaseVariant = i > 0 && m.includes('matched existing');
+                const isCaseVariant = i > 0 && (m.includes('matched existing') || m.includes('الموجود'));
                 return (
                   <p key={i} className={
                     i === 0
