@@ -12,6 +12,8 @@ import { Router } from 'express';
 import { OPENAI_MODEL, friendlyAIError } from '../lib/aiConfig';
 import { requireApiKeyOrSession } from '../middlewares/requireApiKeyOrSession';
 import { aiPlanRateLimiter } from '../lib/rateLimit';
+import { dispatchEvent } from '../lib/webhookDispatch';
+import { buildEventPayload } from '../lib/eventCatalog';
 
 const router = Router();
 
@@ -60,6 +62,16 @@ router.post('/ai/plan', requireApiKeyOrSession, aiPlanRateLimiter, async (req, r
 
     const data = await resp.json() as { choices: { message: { content: string } }[] };
     const text = data.choices?.[0]?.message?.content ?? '';
+
+    // Fire event — userId comes from requireApiKeyOrSession → res.locals.userId
+    const uid = res.locals.userId as number | undefined;
+    if (uid) {
+      dispatchEvent(uid, 'ai_plan.generated', buildEventPayload('ai_plan.generated', uid, {
+        language: lang,
+        promptLength: (prompt as string).length,
+      }));
+    }
+
     res.json({ ok: true, text });
   } catch (err) {
     console.error('[ai-plan] generation failed', err);

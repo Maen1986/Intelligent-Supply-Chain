@@ -96,6 +96,10 @@ router.put('/', requireAuth, async (req, res) => {
       }
     }
 
+    // Fire supplier.updated for the full save (in addition to per-supplier tier events above)
+    dispatchEvent(userId, 'supplier.updated', {
+      supplierCount: newSuppliers.length,
+    });
     res.json({ ok: true });
   } catch (err) {
     logger.error({ err }, '[scorecard-roster] PUT failed');

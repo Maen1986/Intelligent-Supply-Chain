@@ -4,6 +4,8 @@ import { desc, eq, gte, lte, and, type SQL } from 'drizzle-orm';
 import { FeedbackCreateSchema } from '@workspace/api-zod';
 import { logger } from '../lib/logger';
 import { feedbackRateLimiter, getFeedbackRateLimitStatus } from '../lib/rateLimit';
+import { dispatchEvent } from '../lib/webhookDispatch';
+import { buildEventPayload } from '../lib/eventCatalog';
 
 const router = Router();
 
@@ -45,6 +47,15 @@ router.post('/', feedbackRateLimiter, async (req, res) => {
       })
       .returning();
     logger.info({ feedbackId: row.id, tool: data.tool, rating: data.rating }, '[feedback] Saved');
+    // Fire event — userId may be null for unauthenticated visitors
+    const uid = req.session?.userId ?? null;
+    dispatchEvent(uid ?? 0, 'feedback.submitted', buildEventPayload('feedback.submitted', uid, {
+      feedbackId: row.id,
+      tool:       data.tool,
+      rating:     data.rating,
+      nps:        data.nps ?? null,
+      sentiment:  data.sentiment ?? null,
+    }));
     res.status(201).json({ ok: true, id: row.id });
   } catch (err) {
     logger.error({ err, tool: data.tool }, '[feedback] Save failed');

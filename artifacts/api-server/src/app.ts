@@ -69,7 +69,14 @@ app.use(
 app.use(globalRateLimiter);
 
 // 25mb limit: Command Centre submissions include a base64-encoded PDF briefing
-app.use(express.json({ limit: '25mb' }));
+// The verify callback captures the raw buffer so /api/webhooks/inbound can
+// validate HMAC-SHA256 signatures before parsing the body as JSON.
+app.use(express.json({
+  limit: '25mb',
+  verify: (req, _res, buf) => {
+    (req as unknown as { rawBody: Buffer }).rawBody = buf;
+  },
+}));
 app.use(express.urlencoded({ extended: true }));
 
 // ── Server-side sessions (PostgreSQL-backed via connect-pg-simple) ────────────

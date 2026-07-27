@@ -12,6 +12,8 @@ import { sql }     from "drizzle-orm";
 import { db }      from "@workspace/db";
 import { requireSession } from "../middlewares/requireSession";
 import { logger }  from "../lib/logger";
+import { dispatchEvent } from "../lib/webhookDispatch";
+import { buildEventPayload } from "../lib/eventCatalog";
 
 const router = Router();
 router.use(requireSession);
@@ -76,6 +78,10 @@ router.post("/:toolKey", async (req, res) => {
     const plans  = await getGeneratedPlans(userId);
     plans[toolKey] = { text, savedAt: new Date().toISOString() };
     await saveGeneratedPlans(userId, plans);
+    dispatchEvent(userId, 'plan.saved', buildEventPayload('plan.saved', userId, {
+      toolKey,
+      savedAt: plans[toolKey].savedAt,
+    }));
     res.json({ ok: true, savedAt: plans[toolKey].savedAt });
   } catch (err) {
     logger.error({ err }, "[plans] POST");
@@ -96,6 +102,7 @@ router.delete("/:toolKey", async (req, res) => {
     const plans  = await getGeneratedPlans(userId);
     delete plans[toolKey];
     await saveGeneratedPlans(userId, plans);
+    dispatchEvent(userId, 'plan.deleted', buildEventPayload('plan.deleted', userId, { toolKey }));
     res.json({ ok: true });
   } catch (err) {
     logger.error({ err }, "[plans] DELETE");

@@ -116,6 +116,10 @@ router.post("/suppliers/import", async (req, res) => {
     await db.execute(
       sql`UPDATE users SET scorecard_roster = ${JSON.stringify(roster)}::jsonb WHERE id = ${res.locals.userId}`,
     );
+    dispatchEvent(res.locals.userId as number, 'supplier.imported', {
+      imported: valid.length,
+      skipped:  suppliers.length - valid.length,
+    });
     res.json({ ok: true, imported: valid.length, skipped: suppliers.length - valid.length, errors });
   } catch (err) {
     logger.error({ err }, "[v1] POST /suppliers/import");
@@ -215,6 +219,10 @@ router.post("/kpis/import", async (req, res) => {
       }
     }
 
+    dispatchEvent(userId, 'kpi.imported', {
+      slug:     slug ?? 'unknown',
+      imported: Object.keys(values).length,
+    });
     res.json({ ok: true, imported: Object.keys(values).length, skipped: 0, errors: [] });
   } catch (err) {
     logger.error({ err }, "[v1] POST /kpis/import");
@@ -241,7 +249,9 @@ router.post("/spend/import", async (req, res) => {
   });
 
   try {
-    await patchToolData(res.locals.userId as number, { spend: valid.slice(0, 10) });
+    const spendUserId = res.locals.userId as number;
+    await patchToolData(spendUserId, { spend: valid.slice(0, 10) });
+    dispatchEvent(spendUserId, 'spend.imported', { imported: valid.length, skipped: req.body.rows.length - valid.length });
     res.json({ ok: true, imported: valid.length, skipped: req.body.rows.length - valid.length, errors });
   } catch (err) {
     logger.error({ err }, "[v1] POST /spend/import");
@@ -343,6 +353,7 @@ router.post("/risk-kris/import", async (req, res) => {
       }
     }
 
+    dispatchEvent(userId, 'risk_kri.imported', { imported: valid.length, skipped: incoming.length - valid.length });
     res.json({ ok: true, imported: valid.length, skipped: incoming.length - valid.length, errors });
   } catch (err) {
     logger.error({ err }, "[v1] POST /risk-kris/import");

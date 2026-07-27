@@ -8,6 +8,8 @@ import bcrypt from 'bcryptjs';
 import { logger } from '../lib/logger';
 import { loginRateLimiter, authRateLimiter, registerEmailRateLimiter, forgotPasswordRateLimiter } from '../lib/rateLimit';
 import { sendPasswordResetEmail } from './notify';
+import { dispatchEvent } from '../lib/webhookDispatch';
+import { buildEventPayload } from '../lib/eventCatalog';
 
 // ── Session type augmentation ────────────────────────────────────────────────
 declare module 'express-session' {
@@ -116,6 +118,11 @@ router.post('/register', authRateLimiter, registerEmailRateLimiter, async (req, 
         res.status(500).json({ ok: false, error: 'Session could not be created', detail: String(err) });
         return;
       }
+      // Fire event after session is confirmed saved
+      dispatchEvent(user.id, 'user.registered', buildEventPayload('user.registered', user.id, {
+        email:   user.email,
+        company: user.company ?? null,
+      }));
       res.json({ ok: true, user: publicUser(user) });
     });
   } catch (err) {
@@ -199,6 +206,10 @@ router.post('/login', loginRateLimiter, async (req, res) => {
         return;
       }
       logger.info({ userId: user.id, email }, '[auth] User signed in');
+      dispatchEvent(user.id, 'user.login', buildEventPayload('user.login', user.id, {
+        email:   user.email,
+        company: user.company ?? null,
+      }));
       res.json({ ok: true, user: publicUser(user) });
     });
   } catch (err) {
