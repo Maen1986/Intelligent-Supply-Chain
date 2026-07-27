@@ -1,0 +1,519 @@
+/**
+ * Scorecard CSV round-trip tests
+ *
+ * Verifies that:
+ *  1. Exporting a SupplierRecord to CSV then importing it produces
+ *     byte-identical sub-indicator scores across all 6 dimensions (full round-trip).
+ *  2. A partial import (only some sub-indicator columns filled) merges correctly
+ *     without wiping existing columns.
+ *
+ * No browser APIs needed — runs entirely in jsdom (vitest environment).
+ * The DOM parts of exportToCSV (Blob, URL.createObjectURL, anchor click) are
+ * not exercised here; we test only the pure data transformation.
+ */
+
+import { beforeEach, describe, expect, it } from 'vitest';
+import { parseCsvFile } from '@/lib/importCsv';
+
+/* ─── Types (mirrored from SupplierScorecard.tsx — not re-exported) ─── */
+
+interface SubIndicator {
+  id: string;
+  label: string;
+}
+
+interface Dimension {
+  id: string;
+  label: string;
+  weight: number;
+}
+
+interface SupplierRecord {
+  id: string;
+  name: string;
+  tier: string;
+  subScores: Record<string, Record<string, string>>;
+}
+
+/* ─── Static data (mirrored from SupplierScorecard.tsx) ─── */
+
+const DIMS: Dimension[] = [
+  { id: 'delivery',     label: 'Delivery Performance',  weight: 25 },
+  { id: 'quality',      label: 'Quality',               weight: 25 },
+  { id: 'cost',         label: 'Cost Competitiveness',  weight: 20 },
+  { id: 'compliance',   label: 'Compliance',            weight: 15 },
+  { id: 'innovation',   label: 'Innovation',            weight: 10 },
+  { id: 'relationship', label: 'Relationship Quality',  weight:  5 },
+];
+
+const SUB_INDICATORS: Record<string, SubIndicator[]> = {
+  delivery: [
+    { id: 'otif',      label: 'OTIF %' },
+    { id: 'lead_time', label: 'Lead Time Adherence %' },
+    { id: 'fill_rate', label: 'Fill Rate %' },
+    { id: 'expedite',  label: 'Low Expedite Rate score' },
+  ],
+  quality: [
+    { id: 'defect',   label: 'Low Defect / Rejection Rate score' },
+    { id: 'ftr',      label: 'First-Time-Right %' },
+    { id: 'cert',     label: 'Quality Cert Compliance %' },
+    { id: 'nonconf',  label: 'Low Non-conformances score' },
+  ],
+  cost: [
+    { id: 'savings',        label: 'Price vs Market Benchmark (savings score)' },
+    { id: 'invoice',        label: 'Invoice Accuracy %' },
+    { id: 'cost_reduction', label: 'Cost Reduction YoY score' },
+    { id: 'tco',            label: 'TCO Transparency Score' },
+  ],
+  compliance: [
+    { id: 'regulatory', label: 'Regulatory Compliance %' },
+    { id: 'esg',        label: 'ESG Audit Score' },
+    { id: 'docs',       label: 'Document Completeness %' },
+    { id: 'ethics',     label: 'Ethical Trading Score' },
+  ],
+  innovation: [
+    { id: 'ideas',       label: 'Ideas Submitted score' },
+    { id: 'implemented', label: 'Implemented Suggestions %' },
+    { id: 'tech',        label: 'Technology Readiness Score' },
+  ],
+  relationship: [
+    { id: 'responsiveness', label: 'Responsiveness Score' },
+    { id: 'resolution',     label: 'Issue Resolution Speed score' },
+    { id: 'collaboration',  label: 'Collaboration Score' },
+  ],
+};
+
+/* ─── Helpers (pure data logic extracted from SupplierScorecard.tsx) ─── */
+
+/**
+ * Mirror of the CSV-building logic inside exportToCSV.
+ * Returns the raw CSV string without any DOM/download side-effects.
+ */
+function buildCsvString(suppliers: SupplierRecord[]): string {
+  const dimHeaders = DIMS.map(d => `${d.label} Score (/100)`);
+  const subHeaders: string[] = [];
+  DIMS.forEach(d => {
+    (SUB_INDICATORS[d.id] ?? []).forEach(sub => {
+      subHeaders.push(`${d.label} — ${sub.label}`);
+    });
+  });
+  const headers = [
+    'Supplier Name', 'Current Tier',
+    ...dimHeaders,
+    ...subHeaders,
+    'Weighted Score (/100)', 'Calculated Tier',
+  ];
+
+  function calcDimScore(dimId: string, subScores: Record<string, Record<string, string>>): number | null {
+    const subs = SUB_INDICATORS[dimId] ?? [];
+    const vals = subs
+      .map(s => parseFloat(subScores[dimId]?.[s.id] ?? ''))
+      .filter(v => !isNaN(v) && v >= 0);
+    if (vals.length === 0) return null;
+    return Math.min(100, Math.max(0, Math.round(vals.reduce((a, b) => a + b, 0) / vals.length)));
+  }
+
+  const rows = suppliers.map(s => {
+    const dimScores = DIMS.map(d => {
+      const sc = calcDimScore(d.id, s.subScores);
+      return sc !== null ? String(sc) : '';
+    });
+    const subVals: string[] = [];
+    DIMS.forEach(d => {
+      (SUB_INDICATORS[d.id] ?? []).forEach(sub => {
+        subVals.push(s.subScores[d.id]?.[sub.id] ?? '');
+      });
+    });
+    return [
+      s.name || 'New Supplier',
+      s.tier,
+      ...dimScores,
+      ...subVals,
+      '',  // Weighted Score — computed, not needed for import round-trip
+      '',  // Calculated Tier — computed, not needed for import round-trip
+    ];
+  });
+
+  const escape = (cell: string) => `"${cell.replace(/"/g, '""')}"`;
+  return [headers, ...rows].map(row => row.map(escape).join(',')).join('\r\n');
+}
+
+/**
+ * Mirror of the sub-score parsing logic inside handleScorecardImport.
+ * Maps a single CSV row (header → value) back to { dimId → { subId → value } }.
+ */
+function parseSubScoresFromRow(row: Record<string, string>): {
+  subScores: Record<string, Record<string, string>>;
+  errors: string[];
+} {
+  const subColToIds: Record<string, { dimId: string; subId: string }> = {};
+  const subHeaders: string[] = [];
+  DIMS.forEach(d => {
+    (SUB_INDICATORS[d.id] ?? []).forEach(sub => {
+      const col = `${d.label} — ${sub.label}`;
+      subHeaders.push(col);
+      subColToIds[col] = { dimId: d.id, subId: sub.id };
+    });
+  });
+
+  const subScores: Record<string, Record<string, string>> = {};
+  const errors: string[] = [];
+
+  subHeaders.forEach(col => {
+    const val = row[col]?.trim();
+    if (val !== undefined && val !== '') {
+      const num = parseFloat(val);
+      if (!isNaN(num) && num >= 0 && num <= 100) {
+        const { dimId, subId } = subColToIds[col];
+        if (!subScores[dimId]) subScores[dimId] = {};
+        subScores[dimId][subId] = val;
+      } else {
+        errors.push(`"${col}" value "${val}" must be 0–100 — ignored.`);
+      }
+    }
+  });
+
+  return { subScores, errors };
+}
+
+/* ─── Fixtures ─── */
+
+/** Fully-scored supplier with non-trivial values across all 6 dimensions. */
+const FULL_SUPPLIER: SupplierRecord = {
+  id: 'sup-test-001',
+  name: 'Acme Suppliers',
+  tier: 'Strategic',
+  subScores: {
+    delivery:     { otif: '92', lead_time: '85', fill_rate: '78', expedite: '70' },
+    quality:      { defect: '88', ftr: '91', cert: '95', nonconf: '80' },
+    cost:         { savings: '65', invoice: '97', cost_reduction: '50', tco: '72' },
+    compliance:   { regulatory: '100', esg: '74', docs: '89', ethics: '83' },
+    innovation:   { ideas: '60', implemented: '45', tech: '77' },
+    relationship: { responsiveness: '90', resolution: '82', collaboration: '68' },
+  },
+};
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Suite 1 — Full CSV round-trip
+   export → parseCsvFile → parseSubScoresFromRow → assert exact equality
+══════════════════════════════════════════════════════════════════════════ */
+
+describe('Scorecard CSV — full round-trip', () => {
+  beforeEach(() => localStorage.clear());
+
+  it('produces a CSV that parseCsvFile accepts without errors', () => {
+    const csv = buildCsvString([FULL_SUPPLIER]);
+    const { errors } = parseCsvFile(csv, ['Supplier Name']);
+    expect(errors).toHaveLength(0);
+  });
+
+  it('exports exactly one data row for one supplier', () => {
+    const csv = buildCsvString([FULL_SUPPLIER]);
+    const { rows } = parseCsvFile(csv, ['Supplier Name']);
+    expect(rows).toHaveLength(1);
+  });
+
+  it('includes all expected column headers (spot-check)', () => {
+    const csv = buildCsvString([FULL_SUPPLIER]);
+    const { headers } = parseCsvFile(csv, ['Supplier Name']);
+    expect(headers).toContain('Supplier Name');
+    expect(headers).toContain('Current Tier');
+    expect(headers).toContain('Delivery Performance — OTIF %');
+    expect(headers).toContain('Quality — Low Defect / Rejection Rate score');
+    expect(headers).toContain('Cost Competitiveness — Invoice Accuracy %');
+    expect(headers).toContain('Compliance — ESG Audit Score');
+    expect(headers).toContain('Innovation — Technology Readiness Score');
+    expect(headers).toContain('Relationship Quality — Collaboration Score');
+  });
+
+  it('preserves the supplier name through the round-trip', () => {
+    const csv = buildCsvString([FULL_SUPPLIER]);
+    const { rows } = parseCsvFile(csv, ['Supplier Name']);
+    expect(rows[0]['Supplier Name']).toBe('Acme Suppliers');
+  });
+
+  it('preserves the supplier tier through the round-trip', () => {
+    const csv = buildCsvString([FULL_SUPPLIER]);
+    const { rows } = parseCsvFile(csv, ['Supplier Name']);
+    expect(rows[0]['Current Tier']).toBe('Strategic');
+  });
+
+  it('produces no import errors when re-parsing the exported CSV', () => {
+    const csv = buildCsvString([FULL_SUPPLIER]);
+    const { rows } = parseCsvFile(csv, ['Supplier Name']);
+    const { errors } = parseSubScoresFromRow(rows[0]);
+    expect(errors).toHaveLength(0);
+  });
+
+  it('restores delivery sub-scores exactly', () => {
+    const csv = buildCsvString([FULL_SUPPLIER]);
+    const { rows } = parseCsvFile(csv, ['Supplier Name']);
+    const { subScores } = parseSubScoresFromRow(rows[0]);
+    expect(subScores.delivery).toEqual(FULL_SUPPLIER.subScores.delivery);
+  });
+
+  it('restores quality sub-scores exactly', () => {
+    const csv = buildCsvString([FULL_SUPPLIER]);
+    const { rows } = parseCsvFile(csv, ['Supplier Name']);
+    const { subScores } = parseSubScoresFromRow(rows[0]);
+    expect(subScores.quality).toEqual(FULL_SUPPLIER.subScores.quality);
+  });
+
+  it('restores cost sub-scores exactly', () => {
+    const csv = buildCsvString([FULL_SUPPLIER]);
+    const { rows } = parseCsvFile(csv, ['Supplier Name']);
+    const { subScores } = parseSubScoresFromRow(rows[0]);
+    expect(subScores.cost).toEqual(FULL_SUPPLIER.subScores.cost);
+  });
+
+  it('restores compliance sub-scores exactly', () => {
+    const csv = buildCsvString([FULL_SUPPLIER]);
+    const { rows } = parseCsvFile(csv, ['Supplier Name']);
+    const { subScores } = parseSubScoresFromRow(rows[0]);
+    expect(subScores.compliance).toEqual(FULL_SUPPLIER.subScores.compliance);
+  });
+
+  it('restores innovation sub-scores exactly', () => {
+    const csv = buildCsvString([FULL_SUPPLIER]);
+    const { rows } = parseCsvFile(csv, ['Supplier Name']);
+    const { subScores } = parseSubScoresFromRow(rows[0]);
+    expect(subScores.innovation).toEqual(FULL_SUPPLIER.subScores.innovation);
+  });
+
+  it('restores relationship sub-scores exactly', () => {
+    const csv = buildCsvString([FULL_SUPPLIER]);
+    const { rows } = parseCsvFile(csv, ['Supplier Name']);
+    const { subScores } = parseSubScoresFromRow(rows[0]);
+    expect(subScores.relationship).toEqual(FULL_SUPPLIER.subScores.relationship);
+  });
+
+  it('restores all 22 sub-indicator keys — none missing, none added', () => {
+    const csv = buildCsvString([FULL_SUPPLIER]);
+    const { rows } = parseCsvFile(csv, ['Supplier Name']);
+    const { subScores } = parseSubScoresFromRow(rows[0]);
+
+    const importedKeys = Object.values(subScores).flatMap(Object.keys).sort();
+    const originalKeys = Object.values(FULL_SUPPLIER.subScores).flatMap(Object.keys).sort();
+    expect(importedKeys).toEqual(originalKeys);
+  });
+
+  it('round-trips all 22 sub-indicator values with exact string equality', () => {
+    const csv = buildCsvString([FULL_SUPPLIER]);
+    const { rows } = parseCsvFile(csv, ['Supplier Name']);
+    const { subScores } = parseSubScoresFromRow(rows[0]);
+
+    for (const dim of DIMS) {
+      for (const sub of SUB_INDICATORS[dim.id] ?? []) {
+        const original = FULL_SUPPLIER.subScores[dim.id]?.[sub.id];
+        const restored = subScores[dim.id]?.[sub.id];
+        expect(restored).toBe(original);
+      }
+    }
+  });
+
+  it('handles multi-supplier export without cross-contaminating scores', () => {
+    const supplier2: SupplierRecord = {
+      id: 'sup-test-002',
+      name: 'Beta Logistics',
+      tier: 'Preferred',
+      subScores: {
+        delivery:     { otif: '55', lead_time: '60' },
+        quality:      { defect: '70', ftr: '65' },
+        cost:         { savings: '40' },
+        compliance:   { regulatory: '80' },
+        innovation:   { ideas: '30' },
+        relationship: { responsiveness: '50' },
+      },
+    };
+    const csv = buildCsvString([FULL_SUPPLIER, supplier2]);
+    const { rows } = parseCsvFile(csv, ['Supplier Name']);
+    expect(rows).toHaveLength(2);
+
+    const { subScores: s1 } = parseSubScoresFromRow(rows[0]);
+    const { subScores: s2 } = parseSubScoresFromRow(rows[1]);
+
+    // First supplier's values are unaffected by second supplier
+    expect(s1.delivery.otif).toBe('92');
+    expect(s1.quality.ftr).toBe('91');
+    expect(s1.cost.tco).toBe('72');
+
+    // Second supplier's values are correctly isolated
+    expect(s2.delivery.otif).toBe('55');
+    expect(s2.quality.ftr).toBe('65');
+    expect(s2.cost?.tco).toBeUndefined(); // not filled for supplier2
+  });
+
+  it('handles a supplier name containing a comma (RFC-4180 quoting)', () => {
+    const supplierWithComma: SupplierRecord = {
+      id: 'sup-comma',
+      name: 'Smith, Jones & Co.',
+      tier: 'Preferred',
+      subScores: {
+        delivery: { otif: '88' },
+        quality: { ftr: '79' },
+        cost: {}, compliance: {}, innovation: {}, relationship: {},
+      },
+    };
+    const csv = buildCsvString([supplierWithComma]);
+    const { rows } = parseCsvFile(csv, ['Supplier Name']);
+    expect(rows[0]['Supplier Name']).toBe('Smith, Jones & Co.');
+  });
+
+  it('produces a BOM-prefixed CSV (Excel-friendly) that parseCsvFile strips correctly', () => {
+    const csv = buildCsvString([FULL_SUPPLIER]);
+    // exportToCSV prepends BOM; simulate that here to match the real export
+    const withBom = '\uFEFF' + csv;
+    const { headers, errors } = parseCsvFile(withBom, ['Supplier Name']);
+    expect(errors).toHaveLength(0);
+    expect(headers[0]).toBe('Supplier Name');
+  });
+});
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Suite 2 — Partial import: only some sub-indicator columns filled
+   Asserts the import merges correctly without wiping unrelated columns.
+══════════════════════════════════════════════════════════════════════════ */
+
+describe('Scorecard CSV — partial import', () => {
+  beforeEach(() => localStorage.clear());
+
+  it('imports only the filled sub-indicator columns', () => {
+    const partial: SupplierRecord = {
+      id: 'sup-partial',
+      name: 'Partial Corp',
+      tier: 'Transactional',
+      subScores: {
+        delivery: { otif: '80', fill_rate: '75' },
+        quality:  { ftr: '88' },
+        // cost, compliance, innovation, relationship intentionally absent
+      },
+    };
+    const csv = buildCsvString([partial]);
+    const { rows } = parseCsvFile(csv, ['Supplier Name']);
+    const { subScores, errors } = parseSubScoresFromRow(rows[0]);
+
+    expect(errors).toHaveLength(0);
+    expect(subScores.delivery?.otif).toBe('80');
+    expect(subScores.delivery?.fill_rate).toBe('75');
+    expect(subScores.quality?.ftr).toBe('88');
+  });
+
+  it('does not create phantom keys for unfilled sub-indicators', () => {
+    const partial: SupplierRecord = {
+      id: 'sup-partial-2',
+      name: 'Sparse Inc',
+      tier: 'Preferred',
+      subScores: {
+        delivery: { otif: '80' },
+        // all other dims empty
+      },
+    };
+    const csv = buildCsvString([partial]);
+    const { rows } = parseCsvFile(csv, ['Supplier Name']);
+    const { subScores } = parseSubScoresFromRow(rows[0]);
+
+    // Unfilled sub-indicators within delivery are absent
+    expect(subScores.delivery?.lead_time).toBeUndefined();
+    expect(subScores.delivery?.fill_rate).toBeUndefined();
+    expect(subScores.delivery?.expedite).toBeUndefined();
+
+    // Entirely absent dimensions produce no entry at all
+    expect(subScores.cost).toBeUndefined();
+    expect(subScores.compliance).toBeUndefined();
+    expect(subScores.innovation).toBeUndefined();
+    expect(subScores.relationship).toBeUndefined();
+  });
+
+  it('merging partial incoming scores onto an existing record preserves untouched keys', () => {
+    // Simulate existing full record in the roster
+    const existing: Record<string, Record<string, string>> = {
+      delivery:     { otif: '92', lead_time: '85', fill_rate: '78', expedite: '70' },
+      quality:      { defect: '88', ftr: '91', cert: '95', nonconf: '80' },
+      cost:         { savings: '65', invoice: '97', cost_reduction: '50', tco: '72' },
+      compliance:   { regulatory: '100', esg: '74', docs: '89', ethics: '83' },
+      innovation:   { ideas: '60', implemented: '45', tech: '77' },
+      relationship: { responsiveness: '90', resolution: '82', collaboration: '68' },
+    };
+
+    // CSV row that only updates two cells
+    const incomingRow: Record<string, string> = {
+      'Delivery Performance — OTIF %':       '99',
+      'Quality — First-Time-Right %':         '95',
+      // All other sub-indicator cells absent (not in row)
+    };
+    const { subScores: incoming } = parseSubScoresFromRow(incomingRow);
+
+    // Simulate the overwrite merge used in handleScorecardImport:
+    // spread existing, then per-dimension spread overwrites incoming keys only
+    const merged: Record<string, Record<string, string>> = { ...existing };
+    for (const dimId of Object.keys(incoming)) {
+      merged[dimId] = { ...existing[dimId], ...incoming[dimId] };
+    }
+
+    // Updated values are applied
+    expect(merged.delivery.otif).toBe('99');
+    expect(merged.quality.ftr).toBe('95');
+
+    // Neighbouring keys within the same dimension are not wiped
+    expect(merged.delivery.lead_time).toBe('85');
+    expect(merged.delivery.fill_rate).toBe('78');
+    expect(merged.delivery.expedite).toBe('70');
+    expect(merged.quality.defect).toBe('88');
+    expect(merged.quality.cert).toBe('95');
+    expect(merged.quality.nonconf).toBe('80');
+
+    // Untouched dimensions are completely unchanged
+    expect(merged.cost).toEqual(existing.cost);
+    expect(merged.compliance).toEqual(existing.compliance);
+    expect(merged.innovation).toEqual(existing.innovation);
+    expect(merged.relationship).toEqual(existing.relationship);
+  });
+
+  it('rejects out-of-range values but still imports valid columns from the same row', () => {
+    const incomingRow: Record<string, string> = {
+      'Delivery Performance — OTIF %':                  '85',   // valid
+      'Quality — First-Time-Right %':                    '150',  // invalid — exceeds 100
+      'Cost Competitiveness — Invoice Accuracy %':       '72',   // valid
+      'Compliance — ESG Audit Score':                    '-5',   // invalid — below 0
+    };
+    const { subScores, errors } = parseSubScoresFromRow(incomingRow);
+
+    expect(errors).toHaveLength(2);
+    expect(errors.some(e => e.includes('150'))).toBe(true);
+    expect(errors.some(e => e.includes('-5'))).toBe(true);
+
+    // Valid values are imported
+    expect(subScores.delivery?.otif).toBe('85');
+    expect(subScores.cost?.invoice).toBe('72');
+
+    // Invalid values produce no entry
+    expect(subScores.quality?.ftr).toBeUndefined();
+    expect(subScores.compliance?.esg).toBeUndefined();
+  });
+
+  it('produces no errors and no phantom keys when every sub-indicator cell is blank', () => {
+    const { subScores, errors } = parseSubScoresFromRow({});
+    expect(errors).toHaveLength(0);
+    expect(Object.keys(subScores)).toHaveLength(0);
+  });
+
+  it('accepts decimal sub-scores (e.g. 87.5) and preserves them as-is', () => {
+    const incomingRow: Record<string, string> = {
+      'Delivery Performance — OTIF %': '87.5',
+    };
+    const { subScores, errors } = parseSubScoresFromRow(incomingRow);
+    expect(errors).toHaveLength(0);
+    expect(subScores.delivery?.otif).toBe('87.5');
+  });
+
+  it('accepts boundary values 0 and 100 without error', () => {
+    const incomingRow: Record<string, string> = {
+      'Delivery Performance — OTIF %':       '0',
+      'Quality — First-Time-Right %':         '100',
+    };
+    const { subScores, errors } = parseSubScoresFromRow(incomingRow);
+    expect(errors).toHaveLength(0);
+    expect(subScores.delivery?.otif).toBe('0');
+    expect(subScores.quality?.ftr).toBe('100');
+  });
+});
