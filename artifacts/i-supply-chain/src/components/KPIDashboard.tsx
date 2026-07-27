@@ -5,7 +5,7 @@ import {
   ResponsiveContainer, Cell, ReferenceLine,
 } from 'recharts';
 import { useLanguage } from '@/lib/LanguageContext';
-import { Info, TrendingUp, TrendingDown, Download, Upload, LogIn, ChevronDown, ChevronUp } from 'lucide-react';
+import { Info, TrendingUp, TrendingDown, Download, Upload, LogIn, ChevronDown, ChevronUp, X } from 'lucide-react';
 import { parseCsvFile, downloadCsv } from '@/lib/importCsv';
 import { useAIPlan } from '@/hooks/useAIPlan';
 import { AIPlanPanel } from '@/components/AIPlanPanel';
@@ -592,6 +592,15 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
   const [saveFailed, setSaveFailed] = useState(false);
   const [expandedKpi, setExpandedKpi] = useState<string | null>(null);
 
+  const bannerDismissKey = `isc-kpi-banner-dismissed-${resolvedSlug}`;
+  const [bannerDismissed, setBannerDismissed] = useState<boolean>(() => {
+    try { return localStorage.getItem(`isc-kpi-banner-dismissed-${resolvedSlug}`) === '1'; } catch { return false; }
+  });
+  const dismissBanner = useCallback(() => {
+    try { localStorage.setItem(bannerDismissKey, '1'); } catch {}
+    setBannerDismissed(true);
+  }, [bannerDismissKey]);
+
   /* ── AI Plan (hook must be called before the !kpis early return) ── */
   const buildKpiPrompt = useCallback((): string => {
     if (!kpis) return '';
@@ -924,6 +933,68 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
           </div>
         )}
       </div>
+
+      {/* Data-collection guidance banner — shown once per framework until dismissed or values are entered */}
+      {!bannerDismissed && !hasAnyValue && (
+        <div className="relative rounded-xl border border-blue-200 bg-blue-50 p-4 pr-10 text-sm shadow-sm">
+          <button
+            onClick={dismissBanner}
+            aria-label={isAr ? 'إغلاق' : 'Dismiss'}
+            className="absolute top-3 right-3 text-blue-400 hover:text-blue-700 transition-colors"
+          >
+            <X className="w-4 h-4" />
+          </button>
+          <div className="flex items-start gap-3">
+            <Info className="w-5 h-5 shrink-0 mt-0.5 text-blue-500" />
+            <div className="flex-1 min-w-0">
+              <p className="font-bold text-blue-900 mb-1">
+                {isAr ? 'كيف تُدخل بياناتك بدقة؟' : 'How to get accurate KPI results'}
+              </p>
+              <ol className={`space-y-1 text-blue-800 mb-3 ${isAr ? 'list-none' : 'list-none'}`}>
+                <li className="flex items-start gap-2">
+                  <span className="shrink-0 font-bold text-blue-500">1.</span>
+                  <span>
+                    {isAr
+                      ? 'حمّل نموذج CSV — يحتوي على كل حقل بيانات خام تحتاجه، مع وصف المصدر ومثال.'
+                      : 'Download the CSV Template — it lists every raw data field you need, with source guidance and examples.'}
+                  </span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="shrink-0 font-bold text-blue-500">2.</span>
+                  <span>
+                    {isAr
+                      ? 'أدخل الأرقام الخام في عمود "قيمتك" من تقارير ERP أو المحاسبة أو إدارة الجودة.'
+                      : 'Fill in the raw numbers in the "Your Value" column from your ERP, finance, or quality reports.'}
+                  </span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="shrink-0 font-bold text-blue-500">3.</span>
+                  <span>
+                    {isAr
+                      ? 'استورد الملف — يحتسب النظام قيم مؤشرات الأداء تلقائياً من بياناتك الخام.'
+                      : 'Import the file — the system auto-calculates every KPI value from your raw inputs.'}
+                  </span>
+                </li>
+              </ol>
+              <div className="flex items-center gap-3 flex-wrap">
+                <button
+                  onClick={() => { downloadKpiTemplate(); dismissBanner(); }}
+                  className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors shadow-sm"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  {isAr ? 'تنزيل النموذج' : 'Download Template'}
+                </button>
+                <button
+                  onClick={dismissBanner}
+                  className="text-xs text-blue-500 hover:text-blue-700 transition-colors underline underline-offset-2"
+                >
+                  {isAr ? 'سأدخل الأرقام يدوياً' : "I'll enter numbers manually"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Health score + inputs grid */}
       <div className="grid lg:grid-cols-[200px_1fr] gap-6 items-start">
