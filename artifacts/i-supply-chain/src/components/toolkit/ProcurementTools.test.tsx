@@ -44,6 +44,13 @@ function renderAndActivate(tabLabel: string) {
   fireEvent.click(tab);
 }
 
+/** Mount ProcurementToolsSection in Arabic and activate a named sub-tool tab. */
+function renderAndActivateAr(tabLabel: string) {
+  render(<ProcurementToolsSection isAr={true} />);
+  const tab = screen.getByRole('button', { name: tabLabel });
+  fireEvent.click(tab);
+}
+
 /* ══════════════════════════════════════════════════════════════════════════
    Suite 1 — CategoryProfileBuilder
    All 5 fields must be reachable via getByLabelText.
@@ -418,5 +425,205 @@ describe('Dual-tab shared-key consistency', () => {
     // Switch to Market Intelligence Scorecard — Low Risk (composite ≈ 2.7 → 3)
     fireEvent.click(screen.getByRole('button', { name: 'Market Intelligence Scorecard' }));
     expect(screen.getByText('Low Risk')).toBeInTheDocument();
+  });
+});
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Suite 5 — CategoryProfileBuilder (Arabic mode)
+   All 5 fields must be reachable via getByLabelText when isAr={true}.
+══════════════════════════════════════════════════════════════════════════ */
+describe('CategoryProfileBuilder — Arabic label associations', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    cleanup();
+  });
+
+  it('all 5 Arabic fields are reachable by label text', () => {
+    renderAndActivateAr('بناء ملف الفئة');
+
+    expect(screen.getByLabelText('اسم الفئة')).toBeInTheDocument();
+    expect(screen.getByLabelText('الإنفاق السنوي (ريال)')).toBeInTheDocument();
+    expect(screen.getByLabelText('عدد المورّدين المؤهّلين')).toBeInTheDocument();
+    expect(screen.getByLabelText('الأهمية الاستراتيجية (1–5)')).toBeInTheDocument();
+    expect(screen.getByLabelText('تعقيد السوق (1–5)')).toBeInTheDocument();
+  });
+
+  it('Arabic label for Category Name is wired to the correct input', () => {
+    renderAndActivateAr('بناء ملف الفئة');
+
+    const input = screen.getByLabelText('اسم الفئة') as HTMLInputElement;
+    fireEvent.change(input, { target: { value: 'مواد خام' } });
+
+    const saved = JSON.parse(localStorage.getItem(SK_CATPROFILE) ?? '{}');
+    expect(saved.category).toBe('مواد خام');
+  });
+
+  it('Arabic label for Annual Spend is wired to the correct input', () => {
+    renderAndActivateAr('بناء ملف الفئة');
+
+    const input = screen.getByLabelText('الإنفاق السنوي (ريال)') as HTMLInputElement;
+    fireEvent.change(input, { target: { value: '500000' } });
+
+    const saved = JSON.parse(localStorage.getItem(SK_CATPROFILE) ?? '{}');
+    expect(saved.spend).toBe('500000');
+  });
+
+  it('Arabic label for Number of Qualified Suppliers is wired to the correct input', () => {
+    renderAndActivateAr('بناء ملف الفئة');
+
+    const input = screen.getByLabelText('عدد المورّدين المؤهّلين') as HTMLInputElement;
+    fireEvent.change(input, { target: { value: '3' } });
+
+    const saved = JSON.parse(localStorage.getItem(SK_CATPROFILE) ?? '{}');
+    expect(saved.suppliers).toBe('3');
+  });
+
+  it('Arabic label for Strategic Importance is wired to the correct input', () => {
+    renderAndActivateAr('بناء ملف الفئة');
+
+    const input = screen.getByLabelText('الأهمية الاستراتيجية (1–5)') as HTMLInputElement;
+    fireEvent.change(input, { target: { value: '5' } });
+
+    const saved = JSON.parse(localStorage.getItem(SK_CATPROFILE) ?? '{}');
+    expect(saved.strategic).toBe('5');
+  });
+
+  it('Arabic label for Market Complexity is wired to the correct input', () => {
+    renderAndActivateAr('بناء ملف الفئة');
+
+    const input = screen.getByLabelText('تعقيد السوق (1–5)') as HTMLInputElement;
+    fireEvent.change(input, { target: { value: '2' } });
+
+    const saved = JSON.parse(localStorage.getItem(SK_CATPROFILE) ?? '{}');
+    expect(saved.complexity).toBe('2');
+  });
+});
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Suite 6 — SpendParetoChart (Arabic mode)
+   sr-only Arabic labels must connect to the correct inputs.
+══════════════════════════════════════════════════════════════════════════ */
+describe('SpendParetoChart — Arabic label associations', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    cleanup();
+  });
+
+  it('Arabic supplier name inputs are reachable by label text for rows 1–10', () => {
+    renderAndActivateAr('تحليل باريتو للإنفاق');
+
+    for (let i = 1; i <= 10; i++) {
+      expect(screen.getByLabelText(`اسم المورّد ${i}`)).toBeInTheDocument();
+    }
+  });
+
+  it('Arabic supplier spend inputs are reachable by label text for rows 1–10', () => {
+    renderAndActivateAr('تحليل باريتو للإنفاق');
+
+    for (let i = 1; i <= 10; i++) {
+      expect(screen.getByLabelText(`إنفاق المورّد ${i}`)).toBeInTheDocument();
+    }
+  });
+
+  it('Arabic supplier name label is wired to the correct input', () => {
+    renderAndActivateAr('تحليل باريتو للإنفاق');
+
+    const input = screen.getByLabelText('اسم المورّد 1') as HTMLInputElement;
+    fireEvent.change(input, { target: { value: 'شركة الخليج' } });
+
+    const saved = JSON.parse(localStorage.getItem(SK_PARETO) ?? '[]');
+    expect(saved[0].name).toBe('شركة الخليج');
+  });
+
+  it('Arabic supplier spend label is wired to the correct input', () => {
+    renderAndActivateAr('تحليل باريتو للإنفاق');
+
+    const input = screen.getByLabelText('إنفاق المورّد 1') as HTMLInputElement;
+    fireEvent.change(input, { target: { value: '750000' } });
+
+    const saved = JSON.parse(localStorage.getItem(SK_PARETO) ?? '[]');
+    expect(saved[0].spend).toBe('750000');
+  });
+});
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Suite 7 — MarketIntelligenceScorecard (Arabic mode)
+   All 6 dimension sliders must be reachable via getByLabelText when isAr={true}.
+══════════════════════════════════════════════════════════════════════════ */
+describe('MarketIntelligenceScorecard — Arabic label associations', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    cleanup();
+  });
+
+  it('all 6 Arabic dimension sliders are reachable by label text', () => {
+    renderAndActivateAr('بطاقة استخبارات السوق');
+
+    expect(screen.getByLabelText('تركّز المورّدين')).toBeInTheDocument();
+    expect(screen.getByLabelText('معدّل نمو السوق')).toBeInTheDocument();
+    expect(screen.getByLabelText('معدّل التغيّر التقني')).toBeInTheDocument();
+    expect(screen.getByLabelText('تعقيد التنظيمات')).toBeInTheDocument();
+    expect(screen.getByLabelText('تذبذب الأسعار')).toBeInTheDocument();
+    expect(screen.getByLabelText('مخاطر استمرارية التوريد')).toBeInTheDocument();
+  });
+
+  it('Arabic Supplier Concentration label is wired to the correct slider', () => {
+    renderAndActivateAr('بطاقة استخبارات السوق');
+
+    const slider = screen.getByLabelText('تركّز المورّدين') as HTMLInputElement;
+    fireEvent.change(slider, { target: { value: '9' } });
+
+    const saved = JSON.parse(localStorage.getItem(SK_MARKETINTEL) ?? '{}');
+    expect(saved.concentration).toBe(9);
+  });
+
+  it('Arabic Market Growth Rate label is wired to the correct slider', () => {
+    renderAndActivateAr('بطاقة استخبارات السوق');
+
+    const slider = screen.getByLabelText('معدّل نمو السوق') as HTMLInputElement;
+    fireEvent.change(slider, { target: { value: '6' } });
+
+    const saved = JSON.parse(localStorage.getItem(SK_MARKETINTEL) ?? '{}');
+    expect(saved.growth).toBe(6);
+  });
+
+  it('Arabic Technology Change Rate label is wired to the correct slider', () => {
+    renderAndActivateAr('بطاقة استخبارات السوق');
+
+    const slider = screen.getByLabelText('معدّل التغيّر التقني') as HTMLInputElement;
+    fireEvent.change(slider, { target: { value: '7' } });
+
+    const saved = JSON.parse(localStorage.getItem(SK_MARKETINTEL) ?? '{}');
+    expect(saved.technology).toBe(7);
+  });
+
+  it('Arabic Regulatory Complexity label is wired to the correct slider', () => {
+    renderAndActivateAr('بطاقة استخبارات السوق');
+
+    const slider = screen.getByLabelText('تعقيد التنظيمات') as HTMLInputElement;
+    fireEvent.change(slider, { target: { value: '8' } });
+
+    const saved = JSON.parse(localStorage.getItem(SK_MARKETINTEL) ?? '{}');
+    expect(saved.regulation).toBe(8);
+  });
+
+  it('Arabic Price Volatility label is wired to the correct slider', () => {
+    renderAndActivateAr('بطاقة استخبارات السوق');
+
+    const slider = screen.getByLabelText('تذبذب الأسعار') as HTMLInputElement;
+    fireEvent.change(slider, { target: { value: '4' } });
+
+    const saved = JSON.parse(localStorage.getItem(SK_MARKETINTEL) ?? '{}');
+    expect(saved.price).toBe(4);
+  });
+
+  it('Arabic Supply Continuity Risk label is wired to the correct slider', () => {
+    renderAndActivateAr('بطاقة استخبارات السوق');
+
+    const slider = screen.getByLabelText('مخاطر استمرارية التوريد') as HTMLInputElement;
+    fireEvent.change(slider, { target: { value: '3' } });
+
+    const saved = JSON.parse(localStorage.getItem(SK_MARKETINTEL) ?? '{}');
+    expect(saved.continuity).toBe(3);
   });
 });
