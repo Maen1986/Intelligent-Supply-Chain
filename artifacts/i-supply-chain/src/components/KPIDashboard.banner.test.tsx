@@ -134,4 +134,40 @@ describe('KPIDashboard — data-collection guidance banner', () => {
     const { container: c2 } = render(<KPIDashboard slug="supply-chain-strategy" />);
     expect(bannerVisible(c2)).toBe(false);
   });
+
+  it('reappears after all values are cleared when the dismiss key is absent', () => {
+    const { container } = render(<KPIDashboard slug="supply-chain-strategy" />);
+
+    // Banner must be visible before any value is entered
+    expect(bannerVisible(container)).toBe(true);
+
+    // Enter a value — banner hides because hasAnyValue is true
+    const input = container.querySelector('input[type="number"]') as HTMLInputElement;
+    fireEvent.change(input, { target: { value: '90' } });
+    expect(bannerVisible(container)).toBe(false);
+
+    // Clear the value — banner should reappear because hasAnyValue is now false
+    // and the dismiss key was never set
+    fireEvent.change(input, { target: { value: '' } });
+    expect(bannerVisible(container)).toBe(true);
+  });
+
+  it('stays hidden after all values are cleared when the dismiss key is present', () => {
+    localStorage.setItem(DISMISS_KEY, '1');
+
+    const { container } = render(<KPIDashboard slug="supply-chain-strategy" />);
+
+    // Banner is hidden from the start because the dismiss key is already set
+    expect(bannerVisible(container)).toBe(false);
+
+    // Enter a value — banner remains hidden
+    const input = container.querySelector('input[type="number"]') as HTMLInputElement;
+    fireEvent.change(input, { target: { value: '90' } });
+    expect(bannerVisible(container)).toBe(false);
+
+    // Clear the value — banner must remain hidden even though hasAnyValue is
+    // now false, because the dismiss key takes precedence
+    fireEvent.change(input, { target: { value: '' } });
+    expect(bannerVisible(container)).toBe(false);
+  });
 });
