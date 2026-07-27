@@ -238,16 +238,24 @@ export function useAIPlan(
   /* ── Delete saved plan ── */
   const deleteSaved = useCallback(async () => {
     if (!toolKey) return;
+    const previousPlan = savedPlan;
     setSavedPlan(null); // optimistic
     try {
-      await fetch(`${API_BASE}/plans/${toolKey}`, {
+      const res = await fetch(`${API_BASE}/plans/${toolKey}`, {
         method:      'DELETE',
         credentials: 'include',
       });
+      if (!res.ok) {
+        // Server rejected the delete — restore the saved plan and surface an error
+        setSavedPlan(previousPlan);
+        setError(isAr ? 'تعذّر حذف الخطة — حاول مجدّداً' : 'Could not delete plan — try again');
+      }
     } catch {
-      // Silent — plan may still exist server-side but UI is cleared
+      // Network error — restore the saved plan and surface an error
+      setSavedPlan(previousPlan);
+      setError(isAr ? 'تعذّر حذف الخطة — حاول مجدّداً' : 'Could not delete plan — try again');
     }
-  }, [toolKey]);
+  }, [toolKey, savedPlan, isAr]);
 
   return { loading, result, error, rateLimited, generate, reset, savedPlan, viewSaved, deleteSaved };
 }

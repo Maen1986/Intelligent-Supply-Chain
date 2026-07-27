@@ -341,6 +341,68 @@ describe('useAIPlan persistence — deleteSaved() removes the plan', () => {
 
     expect(fetchMock).not.toHaveBeenCalled();
   });
+
+  it('restores savedPlan when the DELETE request throws (network error)', async () => {
+    vi.stubGlobal('fetch', stubGetOk());
+
+    const { result } = renderHook(() => useAIPlan(() => 'prompt', false, TOOL_KEY));
+    await waitFor(() => expect(result.current.savedPlan).not.toBeNull());
+
+    // Stub a failing DELETE
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('Network error')));
+
+    await act(() => result.current.deleteSaved());
+
+    expect(result.current.savedPlan).not.toBeNull();
+    expect(result.current.savedPlan?.text).toBe(PLAN_TEXT);
+  });
+
+  it('sets an error message when the DELETE request throws (network error)', async () => {
+    vi.stubGlobal('fetch', stubGetOk());
+
+    const { result } = renderHook(() => useAIPlan(() => 'prompt', false, TOOL_KEY));
+    await waitFor(() => expect(result.current.savedPlan).not.toBeNull());
+
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('Network error')));
+
+    await act(() => result.current.deleteSaved());
+
+    expect(result.current.error).toBeTruthy();
+    expect(result.current.error).toContain('delete');
+  });
+
+  it('restores savedPlan when the server returns a non-ok status on DELETE', async () => {
+    vi.stubGlobal('fetch', stubGetOk());
+
+    const { result } = renderHook(() => useAIPlan(() => 'prompt', false, TOOL_KEY));
+    await waitFor(() => expect(result.current.savedPlan).not.toBeNull());
+
+    // Stub a 500 response
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: false, status: 500, json: async () => ({ ok: false }),
+    }));
+
+    await act(() => result.current.deleteSaved());
+
+    expect(result.current.savedPlan).not.toBeNull();
+    expect(result.current.savedPlan?.text).toBe(PLAN_TEXT);
+  });
+
+  it('sets an error message when the server returns a non-ok status on DELETE', async () => {
+    vi.stubGlobal('fetch', stubGetOk());
+
+    const { result } = renderHook(() => useAIPlan(() => 'prompt', false, TOOL_KEY));
+    await waitFor(() => expect(result.current.savedPlan).not.toBeNull());
+
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: false, status: 500, json: async () => ({ ok: false }),
+    }));
+
+    await act(() => result.current.deleteSaved());
+
+    expect(result.current.error).toBeTruthy();
+    expect(result.current.error).toContain('delete');
+  });
 });
 
 /* ══════════════════════════════════════════════════════════════════════════
