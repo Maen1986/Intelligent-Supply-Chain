@@ -238,6 +238,15 @@ router.post('/forgot-password', forgotPasswordRateLimiter, async (req, res) => {
   const { email, lang } = parsed.data;
   const genericResponse = { ok: true, message: 'If an account exists for that email, a reset code has been sent.' };
 
+  // Block the admin email — the admin account is credential-managed via env
+  // vars and must never be reset through the self-service flow.
+  const adminEmail = process.env.ADMIN_EMAIL?.trim().toLowerCase();
+  if (adminEmail && email.trim().toLowerCase() === adminEmail) {
+    // Return the same generic response so the admin email is not enumerable.
+    res.json(genericResponse);
+    return;
+  }
+
   try {
     const [user] = await db.select().from(usersTable).where(eq(usersTable.email, email)).limit(1);
     if (!user || !user.passwordHash) {
@@ -285,6 +294,14 @@ router.post('/reset-password', forgotPasswordRateLimiter, async (req, res) => {
     return;
   }
   const { email, code, newPassword } = parsed.data;
+
+  // Block the admin email — even with a valid code, the admin password is
+  // controlled exclusively by the ADMIN_PASSWORD env var.
+  const adminEmailGuard = process.env.ADMIN_EMAIL?.trim().toLowerCase();
+  if (adminEmailGuard && email.trim().toLowerCase() === adminEmailGuard) {
+    res.status(403).json({ ok: false, error: 'This account cannot use the self-service password reset.' });
+    return;
+  }
 
   try {
     const [user] = await db.select().from(usersTable).where(eq(usersTable.email, email)).limit(1);

@@ -352,6 +352,125 @@ describe('POST /api/auth/forgot-password rate limiting', () => {
   });
 });
 
+describe('POST /api/auth/forgot-password — admin email guard', () => {
+  const ADMIN = 'admin@example.com';
+
+  beforeEach(() => { process.env.ADMIN_EMAIL = ADMIN; });
+  afterEach(() => { delete process.env.ADMIN_EMAIL; });
+
+  it('returns the generic 200 for the admin email but never issues a reset code', async () => {
+    // Even if an admin row exists with a passwordHash, no code should be stored or emailed.
+    const bcrypt = (await import('bcryptjs')).default;
+    dbState.selectRows = [{ ...user, email: ADMIN, role: 'admin', passwordHash: await bcrypt.hash('adminpass', 4) }];
+    sendPasswordResetEmail.mockClear();
+    const app = makeApp('/api/auth', authRouter);
+
+    // Dedicated IP so this test has its own rate-limit bucket.
+    const res = await request(app)
+      .post('/api/auth/forgot-password')
+      .set('X-Forwarded-For', '10.60.0.1')
+      .send({ email: ADMIN });
+
+    // Same generic 200 as an unknown email — does not leak that the address is blocked.
+    expect(res.status).toBe(200);
+    expect(res.body.ok).toBe(true);
+    // The email helper must never have been called.
+    expect(sendPasswordResetEmail).not.toHaveBeenCalled();
+  });
+
+  it('blocks the admin email case-insensitively', async () => {
+    dbState.selectRows = [];
+    sendPasswordResetEmail.mockClear();
+    const app = makeApp('/api/auth', authRouter);
+
+    const res = await request(app)
+      .post('/api/auth/forgot-password')
+      .set('X-Forwarded-For', '10.60.0.2')
+      .send({ email: 'ADMIN@EXAMPLE.COM' });
+    expect(res.status).toBe(200);
+    expect(sendPasswordResetEmail).not.toHaveBeenCalled();
+  });
+
+  it('still issues codes normally for non-admin emails', async () => {
+    const bcrypt = (await import('bcryptjs')).default;
+    dbState.selectRows = [{ ...user, passwordHash: await bcrypt.hash('secret6', 4) }];
+    sendPasswordResetEmail.mockClear();
+    const app = makeApp('/api/auth', authRouter);
+
+    const res = await request(app)
+      .post('/api/auth/forgot-password')
+      .set('X-Forwarded-For', '10.60.0.3')
+      .send({ email: user.email });
+    expect(res.status).toBe(200);
+    expect(sendPasswordResetEmail).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('POST /api/auth/reset-password — admin email guard', () => {
+  const ADMIN = 'admin@example.com';
+
+  beforeEach(() => { process.env.ADMIN_EMAIL = ADMIN; });
+  afterEach(() => { delete process.env.ADMIN_EMAIL; });
+
+  it('returns 403 for the admin email even when a valid reset code is supplied', async () => {
+    const bcrypt = (await import('bcryptjs')).default;
+    const code = '123456';
+    const resetTokenHash = await bcrypt.hash(code, 4);
+    dbState.selectRows = [{
+      ...user,
+      email: ADMIN,
+      role: 'admin',
+      passwordHash: await bcrypt.hash('oldpass', 4),
+      resetTokenHash,
+      resetTokenExpiresAt: new Date(Date.now() + 60_000),
+    }];
+    const app = makeApp('/api/auth', authRouter);
+
+    const res = await request(app)
+      .post('/api/auth/reset-password')
+      .set('X-Forwarded-For', '10.70.0.1')
+      .send({ email: ADMIN, code, newPassword: 'attackerpassword' });
+
+    expect(res.status).toBe(403);
+    expect(res.body.ok).toBe(false);
+  });
+
+  it('blocks the admin email case-insensitively on reset', async () => {
+    dbState.selectRows = [];
+    const app = makeApp('/api/auth', authRouter);
+
+    const res = await request(app)
+      .post('/api/auth/reset-password')
+      .set('X-Forwarded-For', '10.70.0.2')
+      .send({ email: 'ADMIN@EXAMPLE.COM', code: '000000', newPassword: 'attackerpassword' });
+    expect(res.status).toBe(403);
+    expect(res.body.ok).toBe(false);
+  });
+
+  it('still resets passwords normally for non-admin emails', async () => {
+    const bcrypt = (await import('bcryptjs')).default;
+    const code = '654321';
+    const resetTokenHash = await bcrypt.hash(code, 4);
+    dbState.selectRows = [{
+      ...user,
+      passwordHash: await bcrypt.hash('oldpass', 4),
+      resetTokenHash,
+      resetTokenExpiresAt: new Date(Date.now() + 60_000),
+    }];
+    dbState.updateRows = [{ ...user, passwordHash: await bcrypt.hash('newpass6', 4), resetTokenHash: null, resetTokenExpiresAt: null }];
+    const app = makeApp('/api/auth', authRouter);
+
+    // Use a dedicated IP so this test doesn't share the rate-limit bucket with
+    // the admin-guard tests above (which also use forgotPasswordRateLimiter).
+    const res = await request(app)
+      .post('/api/auth/reset-password')
+      .set('X-Forwarded-For', '10.50.0.1')
+      .send({ email: user.email, code, newPassword: 'newpass6' });
+    expect(res.status).toBe(200);
+    expect(res.body.ok).toBe(true);
+  });
+});
+
 describe('POST /api/auth/login rate limiting', () => {
   it('returns 429 after 5 failed attempts for the same email within a minute', async () => {
     const bcrypt = (await import('bcryptjs')).default;
