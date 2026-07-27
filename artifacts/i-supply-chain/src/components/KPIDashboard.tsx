@@ -806,6 +806,7 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
       const log: string[] = [];
       const nextValues = { ...values };
       let count = 0;
+      let manualKpis: KpiDef[] = [];
 
       // Detect format: new data-collection template has "Input Field" and "Your Value" columns
       const isNewFormat = text.includes('Your Value') && text.includes('Input Field');
@@ -869,6 +870,15 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
           count++;
         });
 
+        // Identify KPIs in this framework that have no calculation spec — user must enter them manually
+        manualKpis = kpis.filter(k => !KPI_DATA_SPECS[k.id]);
+        if (manualKpis.length > 0) {
+          const labels = manualKpis.map(k => isAr ? k.labelAr : k.label).join(', ');
+          log.push(isAr
+            ? `📝 ${manualKpis.length} مؤشر(ات) تتطلّب إدخالاً يدوياً: ${labels}`
+            : `📝 ${manualKpis.length} KPI(s) require manual entry: ${labels}`);
+        }
+
       } else {
         // ── Legacy format: direct KPI value entry (KPI ID + Actual Value) ──
         const { rows: csvRows, errors } = parseCsvFile(text, ['KPI ID', 'Actual Value']);
@@ -889,7 +899,16 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
 
       setValues(nextValues);
       setSaveFailed(!safeSetItem(storageKey, JSON.stringify(nextValues)));
-      log.unshift(isAr ? `✓ تم احتساب ${count} مؤشر(ات) وتحديثها.` : `✓ ${count} KPI(s) calculated and updated.`);
+      if (isNewFormat) {
+        const manualSuffix = manualKpis.length > 0
+          ? (isAr ? `، ${manualKpis.length} تتطلّب إدخالاً يدوياً` : `, ${manualKpis.length} require manual entry`)
+          : '';
+        log.unshift(isAr
+          ? `✓ تم احتساب ${count} مؤشر(ات) تلقائياً${manualSuffix}.`
+          : `✓ ${count} KPI(s) auto-calculated${manualSuffix}.`);
+      } else {
+        log.unshift(isAr ? `✓ تم احتساب ${count} مؤشر(ات) وتحديثها.` : `✓ ${count} KPI(s) calculated and updated.`);
+      }
       setImportLog(log);
     };
     reader.readAsText(file);

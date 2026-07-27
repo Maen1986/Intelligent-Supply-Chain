@@ -172,6 +172,13 @@ function runNewFormatImport(
     log.push(`✓ ${k.label}: ${result} ${k.unit}`);
   });
 
+  // Mirror the component: identify KPIs with no calculation spec that need manual entry
+  const manualKpis = kpis.filter(k => !KPI_DATA_SPECS[k.id]);
+  if (manualKpis.length > 0) {
+    const labels = manualKpis.map(k => k.label).join(', ');
+    log.push(`📝 ${manualKpis.length} KPI(s) require manual entry: ${labels}`);
+  }
+
   return { values, log };
 }
 
@@ -321,6 +328,9 @@ describe('Import round-trip: lean-six-sigma', () => {
 
     // All 6 KPIs should be calculated
     expect(log.filter(l => l.startsWith('✓')).length).toBe(6);
+
+    // lean-six-sigma has specs for all KPIs — no manual-entry notice
+    expect(log.find(l => l.includes('require manual entry'))).toBeUndefined();
   });
 });
 
@@ -363,8 +373,9 @@ describe('Import round-trip: risk-management', () => {
     // rrc2: completed=22, scheduled=24 → (22/24)*100 = 91.7%
     expect(values['rrc2'], 'rrc2').toBeCloseTo(91.7, 0);
 
-    // All 6 KPIs should be calculated
+    // All 6 KPIs should be calculated — none require manual entry
     expect(log.filter(l => l.startsWith('✓')).length).toBe(6);
+    expect(log.find(l => l.includes('require manual entry'))).toBeUndefined();
   });
 });
 
