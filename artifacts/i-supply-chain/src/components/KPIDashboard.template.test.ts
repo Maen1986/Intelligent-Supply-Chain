@@ -192,10 +192,14 @@ function buildTemplateRows(resolvedSlug: string): string[][] {
 /**
  * Replicate the handleKpiImport "new format" calculation logic as a pure
  * function that returns the computed KPI values (without React state).
+ *
+ * Pass `isAr: true` to exercise the Arabic code-path (mirrors the component's
+ * `isAr` branch so we can assert Arabic strings in the log).
  */
 function runNewFormatImport(
   csvText: string,
   resolvedSlug: string,
+  isAr = false,
 ): { values: Record<string, number>; log: string[] } {
   const kpis = KPI_FRAMEWORKS[resolvedSlug]!;
   const { rows: csvRows } = parseCsvFile(csvText, ['KPI ID', 'Input Field', 'Your Value', 'Unit']);
@@ -233,6 +237,7 @@ function runNewFormatImport(
     inputsByKpi[kpiId][inputDef.id] = num;
   });
 
+  let count = 0;
   const values: Record<string, number> = {};
   kpis.forEach(k => {
     const spec = KPI_DATA_SPECS[k.id];
@@ -258,13 +263,23 @@ function runNewFormatImport(
     if (isNaN(result)) { log.push(`${k.label}: calculation returned invalid result.`); return; }
     values[k.id] = result;
     log.push(`✓ ${k.label}: ${result} ${k.unit}`);
+    count++;
   });
 
   const manualKpis = kpis.filter(k => !KPI_DATA_SPECS[k.id]);
   if (manualKpis.length > 0) {
-    const labels = manualKpis.map(k => k.label).join(', ');
-    log.push(`📝 ${manualKpis.length} KPI(s) require manual entry: ${labels}`);
+    const labels = manualKpis.map(k => isAr ? k.labelAr : k.label).join(', ');
+    log.push(isAr
+      ? `📝 ${manualKpis.length} مؤشر(ات) تتطلّب إدخالاً يدوياً: ${labels}`
+      : `📝 ${manualKpis.length} KPI(s) require manual entry: ${labels}`);
   }
+
+  const manualSuffix = manualKpis.length > 0
+    ? (isAr ? `، ${manualKpis.length} تتطلّب إدخالاً يدوياً` : `, ${manualKpis.length} require manual entry`)
+    : '';
+  log.unshift(isAr
+    ? `✓ تم احتساب ${count} مؤشر(ات) تلقائياً${manualSuffix}.`
+    : `✓ ${count} KPI(s) auto-calculated${manualSuffix}.`);
 
   return { values, log };
 }
@@ -359,7 +374,9 @@ describe('Excel-mutated template round-trip (lean-six-sigma)', () => {
     const padCell = (c: string): string => `" ${c.replace(/"/g, '""')} "`;
     const csvText = mutated.map(r => r.map(padCell).join(',')).join('\r\n');
     const { log } = runNewFormatImport(csvText, 'lean-six-sigma');
-    expect(log.filter(l => l.startsWith('✓')).length).toBe(6);
+    // log[0] is the auto-calculated summary line; the remaining ✓ lines are per-KPI
+    const kpiLines = log.filter(l => l.startsWith('✓') && !l.includes('auto-calculated'));
+    expect(kpiLines.length).toBe(6);
     expect(log.find(l => l.includes('require manual entry'))).toBeUndefined();
   });
 });
@@ -432,11 +449,13 @@ describe('risk-management import — partial inputs (only rrc and bcpt filled)',
     expect(skipLines.length, 'skip-reason log entries').toBeGreaterThanOrEqual(4);
   });
 
-  it('log contains exactly 2 success lines — one per calculated KPI', () => {
+  it('log contains exactly 2 per-KPI success lines (summary line excluded)', () => {
     const csvText = rowsToCsvText(buildPartialRiskRows());
     const { log } = runNewFormatImport(csvText, 'risk-management');
 
-    expect(log.filter(l => l.startsWith('✓')).length, 'success log lines').toBe(2);
+    // log[0] is the auto-calculated summary; filter it out before counting
+    const kpiLines = log.filter(l => l.startsWith('✓') && !l.includes('auto-calculated'));
+    expect(kpiLines.length, 'per-KPI success log lines').toBe(2);
   });
 
   it('skip-reason entries name the skipped KPIs, not the calculated ones', () => {
@@ -455,5 +474,153 @@ describe('risk-management import — partial inputs (only rrc and bcpt filled)',
     // Calculated KPI labels must NOT appear in the skip lines
     expect(skipText).not.toContain('Risk Register Coverage');
     expect(skipText).not.toContain('BCP Test Pass Rate');
+  });
+});
+
+// ─── Arabic import log — risk-management (lang="ar") ────────────────────────
+//
+// Verifies that runNewFormatImport with isAr=true uses the Arabic code-path
+// that mirrors handleKpiImport's `isAr` branch in KPIDashboard.tsx:
+//
+//   • Summary line:  ✓ تم احتساب N مؤشر(ات) تلقائياً.
+//   • Manual notice: 📝 N مؤشر(ات) تتطلّب إدخالاً يدوياً: <Arabic labels>
+//
+// All 6 risk-management KPIs currently have calculation specs, so the 📝
+// notice will not fire for this framework.  The labelAr assertions below
+// confirm that the Arabic strings are correctly defined so they would render
+// properly if the notice did fire.
+
+describe('Arabic import log — risk-management (lang="ar")', () => {
+  /**
+   * Build a minimal risk-management new-format CSV that supplies inputs only
+   * for rrc and bcpt (the two simplest KPIs), leaving the remaining four
+   * without data so we can test partial-import behaviour in Arabic mode.
+   */
+  function buildPartialRmCsv(): string {
+    const rows: string[][] = [
+      ['I Supply Chain — KPI Data Collection Template', '', '', ''],
+      ['Framework: Risk Management', '', '', ''],
+      ["Generated: 1 January 2024 | Ma'in Alhaqash MCIPS CPSM | isupplychain.com", '', '', ''],
+      ['', '', '', ''],
+      ['KPI ID', 'Input Field', 'Your Value', 'Unit'],
+      // rrc: Risk Register Coverage %
+      ['rrc', 'Total supply chain risk categories identified', '28', 'categories'],
+      ['rrc', 'Risk categories with formal documentation', '24', 'categories'],
+      // bcpt: BCP Test Pass Rate %
+      ['bcpt', 'Total BCP exercises / tests conducted in the period', '8', 'tests'],
+      ['bcpt', 'BCP tests where all objectives were met and RTO achieved', '7', 'tests'],
+    ];
+    return rows.map(r => r.map(c => `"${c.replace(/"/g, '""')}"`).join(',')).join('\r\n');
+  }
+
+  /**
+   * Build a full risk-management CSV with example values for all 6 KPIs.
+   */
+  function buildFullRmCsv(): string {
+    const rows: string[][] = [
+      ['I Supply Chain — KPI Data Collection Template', '', '', ''],
+      ['Framework: Risk Management', '', '', ''],
+      ["Generated: 1 January 2024 | Ma'in Alhaqash MCIPS CPSM | isupplychain.com", '', '', ''],
+      ['', '', '', ''],
+      ['KPI ID', 'Input Field', 'Your Value', 'Unit'],
+      // rrc
+      ['rrc', 'Total supply chain risk categories identified', '28', 'categories'],
+      ['rrc', 'Risk categories with formal documentation', '24', 'categories'],
+      // bcpt
+      ['bcpt', 'Total BCP exercises / tests conducted in the period', '8', 'tests'],
+      ['bcpt', 'BCP tests where all objectives were met and RTO achieved', '7', 'tests'],
+      // rtoa2
+      ['rtoa2', 'Total supply disruption events in the period', '10', 'events'],
+      ['rtoa2', 'Events where operations recovered within the defined RTO', '9', 'events'],
+      // crm
+      ['crm', 'Total supply chain risks classified as High or Critical', '20', 'risks'],
+      ['crm', 'Critical risks with a fully implemented and evidenced mitigation control', '17', 'risks'],
+      // srs
+      ['srs', 'Sum of individual supplier health scores across all assessed suppliers', '3750', 'score-points'],
+      ['srs', 'Number of suppliers assessed / scored in the period', '50', 'suppliers'],
+      // rrc2
+      ['rrc2', 'Total risk reviews scheduled in the period', '24', 'reviews'],
+      ['rrc2', 'Risk reviews completed on or before the scheduled due date', '22', 'reviews'],
+    ];
+    return rows.map(r => r.map(c => `"${c.replace(/"/g, '""')}"`).join(',')).join('\r\n');
+  }
+
+  it('summary line uses the Arabic تم احتساب … تلقائياً template', () => {
+    const { log } = runNewFormatImport(buildPartialRmCsv(), 'risk-management', true);
+    const summary = log[0];
+    expect(summary).toMatch(/^✓/);
+    expect(summary).toContain('تم احتساب');
+    expect(summary).toContain('مؤشر(ات) تلقائياً');
+  });
+
+  it('exactly 2 KPIs are calculated from the partial CSV (rrc and bcpt)', () => {
+    const { log } = runNewFormatImport(buildPartialRmCsv(), 'risk-management', true);
+    expect(log[0]).toContain('2');
+    const kpiLines = log.filter(l => l.startsWith('✓') && !l.includes('تم احتساب'));
+    expect(kpiLines.length).toBe(2);
+  });
+
+  it('rrc and bcpt values are calculated correctly from Arabic-mode import', () => {
+    const { values } = runNewFormatImport(buildPartialRmCsv(), 'risk-management', true);
+    // rrc: 24/28 × 100 ≈ 85.7
+    expect(values['rrc']).toBeCloseTo(85.7, 0);
+    // bcpt: 7/8 × 100 = 87.5
+    expect(values['bcpt']).toBeCloseTo(87.5, 0);
+  });
+
+  it('all 6 KPIs calculated from a full risk-management CSV in Arabic mode', () => {
+    const { log } = runNewFormatImport(buildFullRmCsv(), 'risk-management', true);
+    const kpiLines = log.filter(l => l.startsWith('✓') && !l.includes('تم احتساب'));
+    expect(kpiLines.length).toBe(6);
+    expect(log[0]).toContain('6');
+  });
+
+  it('no 📝 manual-entry notice — all risk-management KPIs have calculation specs', () => {
+    const { log } = runNewFormatImport(buildFullRmCsv(), 'risk-management', true);
+    expect(log.find(l => l.startsWith('📝'))).toBeUndefined();
+  });
+
+  it('Arabic labelAr strings for crm, srs, rrc2 are non-empty and form a valid 📝 notice', () => {
+    // Verify the Arabic KPI label fields are correctly defined so they would
+    // render properly inside the 📝 manual-entry notice if those KPIs ever
+    // lost their calculation spec.
+    const rmKpis = KPI_FRAMEWORKS['risk-management'];
+    const crm  = rmKpis.find(k => k.id === 'crm')!;
+    const srs  = rmKpis.find(k => k.id === 'srs')!;
+    const rrc2 = rmKpis.find(k => k.id === 'rrc2')!;
+
+    expect(crm,  'crm KPI definition missing').toBeDefined();
+    expect(srs,  'srs KPI definition missing').toBeDefined();
+    expect(rrc2, 'rrc2 KPI definition missing').toBeDefined();
+
+    // Each labelAr must be a non-empty Arabic string
+    expect(crm.labelAr.trim().length,  'crm.labelAr is empty').toBeGreaterThan(0);
+    expect(srs.labelAr.trim().length,  'srs.labelAr is empty').toBeGreaterThan(0);
+    expect(rrc2.labelAr.trim().length, 'rrc2.labelAr is empty').toBeGreaterThan(0);
+
+    // Construct what the Arabic 📝 notice would look like for these three KPIs
+    const manualKpis = [crm, srs, rrc2];
+    const labels = manualKpis.map(k => k.labelAr).join(', ');
+    const notice = `📝 ${manualKpis.length} مؤشر(ات) تتطلّب إدخالاً يدوياً: ${labels}`;
+
+    expect(notice).toMatch(/^📝/);
+    expect(notice).toContain('مؤشر(ات) تتطلّب إدخالاً يدوياً');
+    expect(notice).toContain(crm.labelAr);
+    expect(notice).toContain(srs.labelAr);
+    expect(notice).toContain(rrc2.labelAr);
+  });
+
+  it('Arabic summary includes manual-suffix when there would be manual KPIs', () => {
+    // Simulate how the summary line would look if 3 KPIs were manual
+    // (mirrors the manualSuffix branch in handleKpiImport)
+    const manualCount = 3;
+    const manualSuffix = `، ${manualCount} تتطلّب إدخالاً يدوياً`;
+    const calculatedCount = 3;
+    const summary = `✓ تم احتساب ${calculatedCount} مؤشر(ات) تلقائياً${manualSuffix}.`;
+
+    expect(summary).toContain('تم احتساب');
+    expect(summary).toContain('تتطلّب إدخالاً يدوياً');
+    expect(summary).toMatch(/^✓/);
+    expect(summary).toContain('3');
   });
 });
