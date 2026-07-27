@@ -649,11 +649,54 @@ describe('GET /api/auth/me', () => {
 });
 
 describe('POST /api/auth/logout', () => {
-  it('destroys the session and returns ok', async () => {
-    const app = makeApp('/api/auth', authRouter, { userId: 1 });
+  /** Build an app where we can spy on session.destroy directly. */
+  function makeAppWithSpiedSession(sessionSeed: Record<string, unknown> = {}) {
+    const app = express();
+    app.set('trust proxy', 1);
+    app.use(express.json());
+    const destroySpy = vi.fn((cb: (err?: unknown) => void) => cb());
+    const sessionObj: Record<string, any> = {
+      ...sessionSeed,
+      save: (cb: (err?: unknown) => void) => cb(),
+      destroy: destroySpy,
+    };
+    app.use((req: any, _res: any, next: any) => { req.session = sessionObj; next(); });
+    app.use('/api/auth', authRouter);
+    return { app, destroySpy, sessionObj };
+  }
+
+  it('calls session.destroy() — not just clearing session fields — and returns 200 ok', async () => {
+    const { app, destroySpy } = makeAppWithSpiedSession({ userId: 1 });
     const res = await request(app).post('/api/auth/logout');
     expect(res.status).toBe(200);
     expect(res.body.ok).toBe(true);
+    // The server-side session record must be destroyed so a replayed cookie
+    // cannot be re-used after logout.
+    expect(destroySpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('clears the session cookie in the response (Max-Age=0 or Expires in the past)', async () => {
+    const { app } = makeAppWithSpiedSession({ userId: 1 });
+    const res = await request(app).post('/api/auth/logout');
+    expect(res.status).toBe(200);
+    // Express clearCookie() sets Set-Cookie with Max-Age=0 (and an Expires in
+    // the past).  Confirm the header is present and references the cookie name.
+    const setCookie = res.headers['set-cookie'] as string[] | string | undefined;
+    const cookieHeader = Array.isArray(setCookie)
+      ? setCookie.join('; ')
+      : (setCookie ?? '');
+    expect(cookieHeader).toMatch(/isc\.sid/);
+    expect(cookieHeader).toMatch(/[Ee]xpires|[Mm]ax-[Aa]ge=0/);
+  });
+
+  it('works for an unauthenticated request too (no active session)', async () => {
+    // Calling logout without a session should not error — the server still
+    // destroys (the empty) session object and returns ok.
+    const { app, destroySpy } = makeAppWithSpiedSession(); // no userId
+    const res = await request(app).post('/api/auth/logout');
+    expect(res.status).toBe(200);
+    expect(res.body.ok).toBe(true);
+    expect(destroySpy).toHaveBeenCalledTimes(1);
   });
 });
 
