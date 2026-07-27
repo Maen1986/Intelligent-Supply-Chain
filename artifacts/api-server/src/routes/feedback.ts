@@ -215,10 +215,24 @@ export function extractTopKeywords(comments: string[], limit = 20): { word: stri
 }
 
 /* ── GET /api/feedback/analytics ─────────────────────────────────────────────
-   Admin-only aggregated stats for the Customer Voice dashboard.              */
-router.get('/analytics', requireAdmin, async (_req, res) => {
+   Admin-only aggregated stats for the Customer Voice dashboard.
+   Optional query params: tool, from, to (ISO date strings).                  */
+router.get('/analytics', requireAdmin, async (req, res) => {
   try {
-    const rows = await db
+    const { tool, from, to } = req.query as Record<string, string | undefined>;
+
+    const conditions: SQL[] = [];
+    if (tool) conditions.push(eq(feedbackTable.tool, tool));
+    if (from) {
+      const d = new Date(from);
+      if (!Number.isNaN(d.getTime())) conditions.push(gte(feedbackTable.createdAt, d));
+    }
+    if (to) {
+      const d = new Date(to);
+      if (!Number.isNaN(d.getTime())) conditions.push(lte(feedbackTable.createdAt, d));
+    }
+
+    const base = db
       .select({
         tool:      feedbackTable.tool,
         rating:    feedbackTable.rating,
@@ -227,6 +241,7 @@ router.get('/analytics', requireAdmin, async (_req, res) => {
         createdAt: feedbackTable.createdAt,
       })
       .from(feedbackTable);
+    const rows = await (conditions.length ? base.where(and(...conditions)) : base);
 
     const total = rows.length;
     const averageRating = total

@@ -169,6 +169,99 @@ describe('GET /api/feedback/analytics', () => {
     expect(res.body.averageRating).toBeNull();
     expect(res.body.topKeywords).toEqual([]);
   });
+
+  it('passes from/to/tool filter params to the query', async () => {
+    dbState.selectRows = [];
+    const app = makeApp('/api/feedback', feedbackRouter, adminSession);
+    const res = await request(app).get(
+      '/api/feedback/analytics?tool=diagnostic&from=2025-01-01&to=2025-06-30'
+    );
+    expect(res.status).toBe(200);
+    // WHERE clause should have been built with all three conditions
+    expect(dbState.whereArgs).toHaveLength(1);
+    const collectParams = (node: any, acc: any[] = []): any[] => {
+      if (node == null) return acc;
+      if (typeof node !== 'object' || node instanceof Date) { acc.push(node); return acc; }
+      if (Array.isArray(node.queryChunks)) {
+        for (const chunk of node.queryChunks) collectParams(chunk, acc);
+      }
+      return acc;
+    };
+    const params = collectParams(dbState.whereArgs[0]);
+    expect(params).toContain('diagnostic');
+    expect(params.some((p) => p instanceof Date && p.toISOString().startsWith('2025-01-01'))).toBe(true);
+    expect(params.some((p) => p instanceof Date && p.toISOString().startsWith('2025-06-30'))).toBe(true);
+  });
+
+  it('does not add a WHERE clause when no filters are given', async () => {
+    dbState.selectRows = [];
+    const app = makeApp('/api/feedback', feedbackRouter, adminSession);
+    const res = await request(app).get('/api/feedback/analytics');
+    expect(res.status).toBe(200);
+    expect(dbState.whereArgs).toHaveLength(0);
+  });
+
+  it('ignores invalid date filter values', async () => {
+    dbState.selectRows = [];
+    const app = makeApp('/api/feedback', feedbackRouter, adminSession);
+    const res = await request(app).get(
+      '/api/feedback/analytics?from=not-a-date&to=also-bad'
+    );
+    expect(res.status).toBe(200);
+    expect(dbState.whereArgs).toHaveLength(0);
+  });
+
+  it('computes correct totals when only a subset of rows are returned by the date filter', async () => {
+    // Simulate the DB honouring the date filter and returning only the two
+    // rows that fall inside the requested window (2025-Q1).
+    const jan = new Date('2025-01-15T00:00:00Z');
+    const feb = new Date('2025-02-20T00:00:00Z');
+    dbState.selectRows = [
+      { tool: 'diagnostic', rating: 5, nps: 10, comment: 'Superb tool', createdAt: jan },
+      { tool: 'maturity',   rating: 3, nps: 6,  comment: null,           createdAt: feb },
+    ];
+    const app = makeApp('/api/feedback', feedbackRouter, adminSession);
+    const res = await request(app).get(
+      '/api/feedback/analytics?from=2025-01-01&to=2025-03-31'
+    );
+    expect(res.status).toBe(200);
+    expect(res.body.total).toBe(2);
+    // (5 + 3) / 2 = 4.00
+    expect(res.body.averageRating).toBe(4);
+    expect(res.body.npsBreakdown).toEqual({ promoters: 1, passives: 0, detractors: 1 });
+    // rating distribution: one 3-star, one 5-star
+    expect(res.body.ratingDistribution.find((r: any) => r.rating === 5).count).toBe(1);
+    expect(res.body.ratingDistribution.find((r: any) => r.rating === 3).count).toBe(1);
+    expect(res.body.ratingDistribution.find((r: any) => r.rating === 4).count).toBe(0);
+    // byTool: one entry each
+    expect(res.body.byTool).toHaveLength(2);
+    expect(res.body.byTool.find((t: any) => t.tool === 'diagnostic')).toMatchObject({
+      tool: 'diagnostic', count: 1, averageRating: 5,
+    });
+    expect(res.body.byTool.find((t: any) => t.tool === 'maturity')).toMatchObject({
+      tool: 'maturity', count: 1, averageRating: 3,
+    });
+  });
+
+  it('computes correct totals when filtered by a single tool', async () => {
+    const ts = new Date('2025-04-01T00:00:00Z');
+    // DB returns only the rows matching the tool filter
+    dbState.selectRows = [
+      { tool: 'diagnostic', rating: 4, nps: 8,  comment: 'Nice report', createdAt: ts },
+      { tool: 'diagnostic', rating: 4, nps: 9,  comment: 'Great supplier view', createdAt: ts },
+    ];
+    const app = makeApp('/api/feedback', feedbackRouter, adminSession);
+    const res = await request(app).get('/api/feedback/analytics?tool=diagnostic');
+    expect(res.status).toBe(200);
+    expect(res.body.total).toBe(2);
+    expect(res.body.averageRating).toBe(4);
+    expect(res.body.npsBreakdown).toEqual({ promoters: 1, passives: 1, detractors: 0 });
+    expect(res.body.byTool).toEqual([
+      { tool: 'diagnostic', count: 2, averageRating: 4 },
+    ]);
+    const words = res.body.topKeywords.map((k: any) => k.word);
+    expect(words).toContain('supplier');
+  });
 });
 
 describe('GET /api/feedback/export.csv', () => {
