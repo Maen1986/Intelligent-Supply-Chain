@@ -52,9 +52,18 @@ function parseCsvLine(line: string): string[] {
 /**
  * Parse a CSV text string and validate required headers.
  *
+ * When `requiredHeaders` are provided the parser scans all lines (up to the
+ * first 30) to find the row that contains every required column — so files
+ * with leading branding / instruction rows (such as the KPI data-collection
+ * template) are handled correctly without any special pre-processing.
+ *
+ * If no `requiredHeaders` are given, line 0 is used as the header row
+ * (original behaviour, unchanged).
+ *
  * @param text              Raw file content (may start with a UTF-8 BOM).
- * @param requiredHeaders   Column names that must be present in row 1.
- *                          If any are missing, rows is [] and errors is non-empty.
+ * @param requiredHeaders   Column names that must be present somewhere in the
+ *                          first 30 lines.  If none are found there, rows is []
+ *                          and errors is non-empty.
  *
  * @returns `{ headers, rows, errors }` — rows are empty on a fatal header error.
  */

@@ -2,7 +2,7 @@
  * MiniGauge — score and colour logic unit tests.
  *
  * Covers:
- *  • scoreColor  RAG boundaries (0, 49, 50, 79, 80, 100)
+ *  • scoreColor  6-tier colour boundaries (0, 34, 35, 49, 50, 64, 65, 79, 80, 94, 95, 100)
  *  • miniGaugeState  safeScore clamping (below 0, above 100)
  *  • miniGaugeState  strokeDash values at canonical boundaries
  *  • miniGaugeState  grey/neutral state when hasValue is false
@@ -14,29 +14,61 @@ const R = 30;
 const CIRCUMFERENCE = Math.PI * R;
 
 // ─── scoreColor ────────────────────────────────────────────────────────────
-describe('scoreColor — RAG colour boundaries', () => {
-  it('returns green (#22c55e) at score 80', () => {
-    expect(scoreColor(80)).toBe('#22c55e');
+describe('scoreColor — 6-tier colour boundaries', () => {
+  // World Class tier (≥95)
+  it('returns #059669 at score 95 (World Class)', () => {
+    expect(scoreColor(95)).toBe('#059669');
+  });
+  it('returns #059669 at score 100 (World Class)', () => {
+    expect(scoreColor(100)).toBe('#059669');
   });
 
-  it('returns green (#22c55e) at score 100', () => {
-    expect(scoreColor(100)).toBe('#22c55e');
+  // Best-in-GCC tier (80–94)
+  it('returns #10b981 at score 80 (Best-in-GCC)', () => {
+    expect(scoreColor(80)).toBe('#10b981');
+  });
+  it('returns #10b981 at score 94 (Best-in-GCC)', () => {
+    expect(scoreColor(94)).toBe('#10b981');
   });
 
-  it('returns amber (#f59e0b) at score 79 (just below green threshold)', () => {
-    expect(scoreColor(79)).toBe('#f59e0b');
+  // Competitive tier (65–79)
+  it('returns #3b82f6 at score 65 (Competitive)', () => {
+    expect(scoreColor(65)).toBe('#3b82f6');
+  });
+  it('returns #3b82f6 at score 79 (Competitive)', () => {
+    expect(scoreColor(79)).toBe('#3b82f6');
   });
 
-  it('returns amber (#f59e0b) at score 50', () => {
+  // Developing tier (50–64)
+  it('returns #f59e0b at score 50 (Developing)', () => {
     expect(scoreColor(50)).toBe('#f59e0b');
   });
-
-  it('returns red (#ef4444) at score 49 (just below amber threshold)', () => {
-    expect(scoreColor(49)).toBe('#ef4444');
+  it('returns #f59e0b at score 64 (Developing)', () => {
+    expect(scoreColor(64)).toBe('#f59e0b');
   });
 
-  it('returns red (#ef4444) at score 0', () => {
+  // Needs Attention tier (35–49)
+  it('returns #f97316 at score 35 (Needs Attention)', () => {
+    expect(scoreColor(35)).toBe('#f97316');
+  });
+  it('returns #f97316 at score 49 (Needs Attention)', () => {
+    expect(scoreColor(49)).toBe('#f97316');
+  });
+
+  // Critical Gap tier (<35)
+  it('returns #ef4444 at score 34 (Critical Gap)', () => {
+    expect(scoreColor(34)).toBe('#ef4444');
+  });
+  it('returns #ef4444 at score 0 (Critical Gap)', () => {
     expect(scoreColor(0)).toBe('#ef4444');
+  });
+
+  // Only the 6 canonical tier colours are ever produced
+  it('only produces the six canonical tier colours across 0–100', () => {
+    const TIER_COLORS = ['#059669', '#10b981', '#3b82f6', '#f59e0b', '#f97316', '#ef4444'];
+    for (let s = 0; s <= 100; s++) {
+      expect(TIER_COLORS).toContain(scoreColor(s));
+    }
   });
 });
 
@@ -93,8 +125,13 @@ describe('miniGaugeState — grey/neutral state (no value entered)', () => {
     expect(color).toBe('#e5e7eb');
   });
 
-  it('uses RAG colour when hasValue is true', () => {
+  it('uses tier colour when hasValue is true (score 80 → Best-in-GCC #10b981)', () => {
     const { color } = miniGaugeState(80, true);
-    expect(color).toBe('#22c55e'); // green
+    expect(color).toBe('#10b981');
+  });
+
+  it('uses tier colour when hasValue is true (score 95 → World Class #059669)', () => {
+    const { color } = miniGaugeState(95, true);
+    expect(color).toBe('#059669');
   });
 });
