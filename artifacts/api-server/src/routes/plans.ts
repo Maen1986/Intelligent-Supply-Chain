@@ -60,6 +60,9 @@ router.get("/", async (req, res) => {
 
 /* ─── GET /api/plans/:toolKey ───────────────────────────────────────────── */
 
+/** Matches keys like "scorecard-sup-1234567890-abc12" */
+const SCORECARD_KEY_RE = /^scorecard-.+$/;
+
 router.get("/:toolKey", async (req, res) => {
   const { toolKey } = req.params;
   if (!validKey(toolKey)) {
@@ -67,8 +70,21 @@ router.get("/:toolKey", async (req, res) => {
     return;
   }
   try {
-    const plans = await getGeneratedPlans(res.locals.userId as number);
-    const plan  = plans[toolKey] ?? null;
+    const userId = res.locals.userId as number;
+    const plans  = await getGeneratedPlans(userId);
+    let   plan   = plans[toolKey] ?? null;
+
+    // One-time migration: plans saved under the bare "scorecard" key (before
+    // multi-supplier support) are moved to the new "scorecard-{supplierId}"
+    // key on first access.  The old key is deleted so storage stays clean.
+    if (!plan && SCORECARD_KEY_RE.test(toolKey) && plans["scorecard"]) {
+      plan = plans["scorecard"];
+      plans[toolKey] = plan;
+      delete plans["scorecard"];
+      await saveGeneratedPlans(userId, plans);
+      logger.info({ userId, toolKey }, "[plans] migrated legacy 'scorecard' plan to new key");
+    }
+
     res.json({ ok: true, plan });
   } catch (err) {
     logger.error({ err }, "[plans] GET");
