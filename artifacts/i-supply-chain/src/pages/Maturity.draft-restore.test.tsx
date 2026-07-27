@@ -277,3 +277,80 @@ describe('Maturity draft restore — incomplete draft triggers redirect guard', 
     expect(screen.getByTestId('incomplete-warning')).toBeInTheDocument();
   });
 });
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Scenario C — Redirect guard navigates to the EXACT incomplete segment.
+
+   These tests extend Scenario B by asserting not just that the results page
+   is suppressed, but that the component dropped the user on the *correct*
+   segment index — the first incomplete one — rather than always defaulting
+   to segment 0 or some other wrong index.
+══════════════════════════════════════════════════════════════════════════ */
+
+describe('Maturity draft restore — redirect guard lands on the correct segment', () => {
+  beforeEach(() => {
+    sessionStorage.clear();
+    vi.useFakeTimers();
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({ ok: true, status: 201, json: async () => ({}) })) as unknown as typeof fetch,
+    );
+  });
+
+  afterEach(() => {
+    cleanup();
+    _setMaturityTestSeed({});
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+  });
+
+  it('lands on segment 4 when segments 0–3 are complete and 4–7 are missing', () => {
+    // Segments 0–3 fully answered at level 3; segments 4–7 have no answers.
+    const answers: Record<string, number> = {};
+    for (let s = 0; s < 4; s++) {
+      for (let q = 0; q < NUM_QUESTIONS; q++) answers[`${s}-${q}`] = 3;
+    }
+
+    _setMaturityTestSeed({ phase: 'results', answers });
+    renderMaturity();
+
+    // Guard must redirect to questions phase; results must not show.
+    expect(screen.queryByTestId('maturity-results')).toBeNull();
+    expect(screen.getByTestId('incomplete-warning')).toBeInTheDocument();
+
+    // The answer buttons for segment 4 (index 4) must be present, confirming
+    // segIdx was set to 4, not 0 or any other segment.
+    expect(screen.getByTestId('answer-4-0-1')).toBeInTheDocument();
+
+    // Segment 0's answer buttons must NOT be the current segment rendered
+    // (they could exist in the progress rail but not as the active question row).
+    // We assert by confirming segment 5's answer buttons are absent.
+    expect(screen.queryByTestId('answer-5-0-1')).toBeNull();
+  });
+
+  it('lands on segment 2 when it is the only incomplete segment (gap in the middle)', () => {
+    // Segments 0–1 and 3–7 fully answered; segment 2 has only 1 of 5 answers.
+    const answers: Record<string, number> = {};
+    for (let s = 0; s < NUM_SEGMENTS; s++) {
+      if (s === 2) {
+        answers['2-0'] = 4; // only one answer present → incomplete
+      } else {
+        for (let q = 0; q < NUM_QUESTIONS; q++) answers[`${s}-${q}`] = 3;
+      }
+    }
+
+    _setMaturityTestSeed({ phase: 'results', answers });
+    renderMaturity();
+
+    // Guard must redirect; results must not show.
+    expect(screen.queryByTestId('maturity-results')).toBeNull();
+    expect(screen.getByTestId('incomplete-warning')).toBeInTheDocument();
+
+    // The active question pane must be segment 2 (index 2).
+    expect(screen.getByTestId('answer-2-0-1')).toBeInTheDocument();
+
+    // Segment 1 and segment 3 answer buttons must not be the active pane.
+    expect(screen.queryByTestId('answer-1-0-1')).toBeNull();
+    expect(screen.queryByTestId('answer-3-0-1')).toBeNull();
+  });
+});
