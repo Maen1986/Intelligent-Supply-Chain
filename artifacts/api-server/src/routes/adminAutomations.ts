@@ -318,6 +318,30 @@ router.post("/test-webhook/:webhookId", async (req, res) => {
   }
 });
 
+/* ══════════════════════════════════════════════════════════════
+   TEMPLATES MANIFEST — list of n8n workflow templates
+   ══════════════════════════════════════════════════════════════ */
+
+router.get("/templates", async (_req, res) => {
+  try {
+    const { readFile } = await import("fs/promises");
+    const { fileURLToPath } = await import("url");
+    const { dirname, join } = await import("path");
+    const __dir = dirname(fileURLToPath(import.meta.url));
+    const manifestPath = join(__dir, "../../public/n8n-templates/manifest.json");
+    const raw = await readFile(manifestPath, "utf-8");
+    const manifest = JSON.parse(raw) as {
+      _isc_version: string;
+      generatedAt: string;
+      templates: unknown[];
+    };
+    res.json({ ok: true, ...manifest });
+  } catch (err) {
+    logger.error({ err }, "[admin/automations] GET /templates");
+    res.status(500).json({ ok: false, error: "Failed to load template manifest" });
+  }
+});
+
 /* ── helper ──────────────────────────────────────────────────────────────── */
 
 function maskUrl(raw: string): string {

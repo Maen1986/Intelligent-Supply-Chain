@@ -1,0 +1,103 @@
+{
+  "_isc_version": "1.0.0",
+  "name": "ISC — Monthly Supplier Scorecard",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "isc-monthly-scorecard",
+        "responseMode": "onReceived",
+        "responseData": "firstEntryJson",
+        "options": {}
+      },
+      "id": "f6a7b8c9-0006-0006-0006-000000000001",
+      "name": "ISC Webhook — schedule.monthly_scorecard",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300],
+      "webhookId": "REPLACE_WITH_YOUR_WEBHOOK_UUID"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://YOUR_ISC_DOMAIN/api/v1/suppliers",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "x-api-key", "value": "REPLACE_WITH_ISC_API_KEY" }
+          ]
+        }
+      },
+      "id": "f6a7b8c9-0006-0006-0006-000000000002",
+      "name": "Fetch Supplier Roster from ISC",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [480, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const payload = $('ISC Webhook — schedule.monthly_scorecard').first().json.body;\nconst suppliers = $input.first().json.suppliers ?? [];\nconst month = new Date().toLocaleString('en-GB', { month: 'long', year: 'numeric' });\nconst recipientEmail = payload.recipientEmail ?? payload.email ?? 'REPLACE_WITH_RECIPIENT@example.com';\nconst userName = payload.userName ?? payload.name ?? 'Client';\n\nconst getColor = (score) => {\n  if (!score && score !== 0) return '#94a3b8';\n  if (score >= 80) return '#16a34a';\n  if (score >= 60) return '#d97706';\n  return '#dc2626';\n};\n\nconst rows = suppliers.map((s, i) => `\n  <tr style=\"background:${i % 2 === 0 ? '#f8fafc' : 'white'}\">\n    <td style=\"padding:10px 14px;border-bottom:1px solid #e2e8f0\">${s.name ?? '—'}</td>\n    <td style=\"padding:10px 14px;border-bottom:1px solid #e2e8f0;color:#64748b\">${s.category ?? '—'}</td>\n    <td style=\"padding:10px 14px;border-bottom:1px solid #e2e8f0;font-weight:bold;color:${getColor(s.overallScore)}\">${s.overallScore ?? '—'}</td>\n    <td style=\"padding:10px 14px;border-bottom:1px solid #e2e8f0;color:#64748b\">${s.qualityScore ?? '—'}</td>\n    <td style=\"padding:10px 14px;border-bottom:1px solid #e2e8f0;color:#64748b\">${s.deliveryScore ?? '—'}</td>\n    <td style=\"padding:10px 14px;border-bottom:1px solid #e2e8f0;color:#64748b\">${s.costScore ?? '—'}</td>\n  </tr>`).join('');\n\nconst html = `<!DOCTYPE html>\n<html>\n<body style=\"font-family:Arial,sans-serif;max-width:750px;margin:0 auto;padding:20px;color:#1e293b\">\n  <div style=\"background:linear-gradient(135deg,#1e3a5f,#0ea5e9);padding:24px;border-radius:12px 12px 0 0;color:white\">\n    <h1 style=\"margin:0;font-size:22px\">📦 Monthly Supplier Scorecard</h1>\n    <p style=\"margin:8px 0 0;opacity:0.85\">${month}</p>\n  </div>\n  <div style=\"border:1px solid #e2e8f0;border-top:none;padding:24px;border-radius:0 0 12px 12px\">\n    <p>Dear ${userName},</p>\n    <p>Here is your supplier performance scorecard for <strong>${month}</strong>:</p>\n    <table style=\"width:100%;border-collapse:collapse;font-size:13px\">\n      <thead>\n        <tr style=\"background:#1e3a5f;color:white\">\n          <th style=\"padding:10px 14px;text-align:left\">Supplier</th>\n          <th style=\"padding:10px 14px;text-align:left\">Category</th>\n          <th style=\"padding:10px 14px;text-align:left\">Overall</th>\n          <th style=\"padding:10px 14px;text-align:left\">Quality</th>\n          <th style=\"padding:10px 14px;text-align:left\">Delivery</th>\n          <th style=\"padding:10px 14px;text-align:left\">Cost</th>\n        </tr>\n      </thead>\n      <tbody>${rows}</tbody>\n    </table>\n    <div style=\"margin-top:24px;text-align:center\">\n      <a href=\"https://YOUR_ISC_DOMAIN/scorecard\" style=\"background:#0ea5e9;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold\">View Full Scorecard →</a>\n    </div>\n  </div>\n</body>\n</html>`;\n\nreturn [{ json: { html, recipientEmail, month } }];"
+      },
+      "id": "f6a7b8c9-0006-0006-0006-000000000003",
+      "name": "Build Scorecard HTML",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [720, 300]
+    },
+    {
+      "parameters": {
+        "fromEmail": "scorecard@YOUR_ISC_DOMAIN",
+        "toEmail": "={{ $json.recipientEmail }}",
+        "subject": "=Monthly Supplier Scorecard — {{ $json.month }}",
+        "emailType": "html",
+        "html": "={{ $json.html }}"
+      },
+      "id": "f6a7b8c9-0006-0006-0006-000000000004",
+      "name": "Email Scorecard",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2,
+      "position": [960, 300],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "REPLACE_WITH_GMAIL_CREDENTIAL_ID",
+          "name": "Gmail — ISC Scorecard"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "ISC Webhook — schedule.monthly_scorecard": {
+      "main": [
+        [{ "node": "Fetch Supplier Roster from ISC", "type": "main", "index": 0 }]
+      ]
+    },
+    "Fetch Supplier Roster from ISC": {
+      "main": [
+        [{ "node": "Build Scorecard HTML", "type": "main", "index": 0 }]
+      ]
+    },
+    "Build Scorecard HTML": {
+      "main": [
+        [{ "node": "Email Scorecard", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "versionId": "1.0.0",
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "isc": {
+      "triggerEvent": "schedule.monthly_scorecard",
+      "webhookUrlPlaceholder": "https://YOUR_N8N_INSTANCE/webhook/isc-monthly-scorecard",
+      "setupSteps": [
+        "1. Import this JSON into n8n.",
+        "2. Connect your Gmail credential.",
+        "3. Replace YOUR_ISC_DOMAIN and REPLACE_WITH_ISC_API_KEY in the HTTP Request node.",
+        "4. Copy the Webhook URL and register it in ISC → Integration Hub → Webhooks with event 'schedule.monthly_scorecard'.",
+        "5. ISC fires this on the 1st of each month automatically.",
+        "6. Activate the workflow."
+      ]
+    }
+  }
+}

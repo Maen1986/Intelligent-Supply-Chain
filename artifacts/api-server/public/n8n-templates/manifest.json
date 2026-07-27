@@ -1,0 +1,102 @@
+{
+  "_isc_version": "1.0.0",
+  "generatedAt": "2026-07-27T00:00:00Z",
+  "templates": [
+    {
+      "id": "lead-nurture-sequence",
+      "filename": "lead-nurture-sequence.json",
+      "name": "Lead Nurture Sequence",
+      "nameAr": "تسلسل رعاية العملاء المحتملين",
+      "description": "Triggers on lead.captured. Sends a personalised intro email, waits 48 h, sends a discovery call invitation, and notifies admin if no reply.",
+      "descriptionAr": "يُشغَّل عند التقاط عميل محتمل. يرسل بريد ترحيب مخصص، ينتظر 48 ساعة، يرسل دعوة لمكالمة اكتشافية، ويخطر المسؤول إذا لم يكن هناك رد.",
+      "triggerEvent": "lead.captured",
+      "category": "Sales",
+      "setupTimeMinutes": 5,
+      "nodes": ["Webhook", "Email", "Wait", "IF", "HTTP Request"]
+    },
+    {
+      "id": "kpi-breach-alert",
+      "filename": "kpi-breach-alert.json",
+      "name": "KPI Breach Alert",
+      "nameAr": "تنبيه خرق مؤشر الأداء",
+      "description": "Triggers on kpi.threshold_breach. Routes warn to Slack/Teams and critical to email + SMS (Twilio node pre-wired).",
+      "descriptionAr": "يُشغَّل عند خرق عتبة مؤشر الأداء. يوجّه التحذير إلى Slack/Teams والحالات الحرجة إلى البريد الإلكتروني + SMS.",
+      "triggerEvent": "kpi.threshold_breach",
+      "category": "Alerts",
+      "setupTimeMinutes": 5,
+      "nodes": ["Webhook", "Switch", "HTTP Request (Slack)", "Gmail", "HTTP Request (Twilio)"]
+    },
+    {
+      "id": "weekly-kpi-digest",
+      "filename": "weekly-kpi-digest.json",
+      "name": "Weekly KPI Digest",
+      "nameAr": "ملخص مؤشرات الأداء الأسبوعي",
+      "description": "Triggers on schedule.weekly_kpi_digest. Formats KPI data into a beautiful HTML email via a Code node and sends to the client.",
+      "descriptionAr": "يُشغَّل عبر جدولة أسبوعية. يُنسّق بيانات مؤشرات الأداء في بريد HTML جميل عبر عقدة الكود ويرسله إلى العميل.",
+      "triggerEvent": "schedule.weekly_kpi_digest",
+      "category": "Reporting",
+      "setupTimeMinutes": 4,
+      "nodes": ["Webhook", "Code", "Gmail"]
+    },
+    {
+      "id": "new-user-welcome",
+      "filename": "new-user-welcome.json",
+      "name": "New User Welcome",
+      "nameAr": "ترحيب بالمستخدم الجديد",
+      "description": "Triggers on user.registered. Sends a bilingual (EN/AR) welcome email with onboarding checklist and a link to the platform.",
+      "descriptionAr": "يُشغَّل عند تسجيل مستخدم جديد. يرسل بريداً ترحيبياً ثنائي اللغة مع قائمة مراجعة الإعداد ورابط للمنصة.",
+      "triggerEvent": "user.registered",
+      "category": "Onboarding",
+      "setupTimeMinutes": 3,
+      "nodes": ["Webhook", "Code", "Gmail"]
+    },
+    {
+      "id": "ai-plan-ready-notification",
+      "filename": "ai-plan-ready-notification.json",
+      "name": "AI Plan Ready Notification",
+      "nameAr": "إشعار جاهزية خطة الذكاء الاصطناعي",
+      "description": "Triggers on ai_plan.generated. Sends an email and optional WhatsApp message telling the client their AI plan is ready to view.",
+      "descriptionAr": "يُشغَّل عند إنشاء خطة ذكاء اصطناعي. يرسل بريداً إلكترونياً ورسالة WhatsApp اختيارية تخبر العميل بأن خطته جاهزة.",
+      "triggerEvent": "ai_plan.generated",
+      "category": "Notifications",
+      "setupTimeMinutes": 3,
+      "nodes": ["Webhook", "Gmail", "HTTP Request (WhatsApp)"]
+    },
+    {
+      "id": "monthly-supplier-scorecard",
+      "filename": "monthly-supplier-scorecard.json",
+      "name": "Monthly Supplier Scorecard",
+      "nameAr": "بطاقة تقييم الموردين الشهرية",
+      "description": "Triggers on schedule.monthly_scorecard. Formats supplier roster data as an HTML table and emails it as a PDF attachment.",
+      "descriptionAr": "يُشغَّل شهرياً. يُنسّق بيانات الموردين كجدول HTML ويرسلها عبر البريد كمرفق PDF.",
+      "triggerEvent": "schedule.monthly_scorecard",
+      "category": "Reporting",
+      "setupTimeMinutes": 5,
+      "nodes": ["Webhook", "HTTP Request (ISC API)", "Code", "HTTP Request (PDF Convert)", "Gmail"]
+    },
+    {
+      "id": "erp-data-sync",
+      "filename": "erp-data-sync.json",
+      "name": "ERP Data Sync",
+      "nameAr": "مزامنة بيانات نظام ERP",
+      "description": "Scheduled daily trigger that calls your ERP REST API, maps the response, and POSTs to ISC /api/v1/kpis/import and /api/v1/suppliers/import.",
+      "descriptionAr": "مشغّل يومي مجدول يستدعي واجهة ERP ويعيّن البيانات ويرسلها إلى ISC لاستيراد مؤشرات الأداء والموردين.",
+      "triggerEvent": "cron.daily",
+      "category": "Integration",
+      "setupTimeMinutes": 5,
+      "nodes": ["Schedule Trigger", "HTTP Request (ERP)", "Code (Field Mapping)", "HTTP Request (ISC KPIs)", "HTTP Request (ISC Suppliers)"]
+    },
+    {
+      "id": "escalation-router",
+      "filename": "escalation-router.json",
+      "name": "Escalation Router",
+      "nameAr": "موجّه التصعيد",
+      "description": "Triggers on kpi.threshold_breach (critical only). Looks up the responsible team lead from a Google Sheet, creates a Linear/Jira ticket, and sends an escalation email.",
+      "descriptionAr": "يُشغَّل عند خرق حرج. يبحث عن مسؤول الفريق من Google Sheets وينشئ تذكرة في Linear/Jira ويرسل بريد تصعيد.",
+      "triggerEvent": "kpi.threshold_breach",
+      "category": "Escalation",
+      "setupTimeMinutes": 5,
+      "nodes": ["Webhook", "IF (critical only)", "Google Sheets", "HTTP Request (Linear/Jira)", "Gmail"]
+    }
+  ]
+}

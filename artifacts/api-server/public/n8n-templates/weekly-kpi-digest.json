@@ -1,0 +1,81 @@
+{
+  "_isc_version": "1.0.0",
+  "name": "ISC — Weekly KPI Digest",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "isc-weekly-kpi-digest",
+        "responseMode": "onReceived",
+        "responseData": "firstEntryJson",
+        "options": {}
+      },
+      "id": "c3d4e5f6-0003-0003-0003-000000000001",
+      "name": "ISC Webhook — schedule.weekly_kpi_digest",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300],
+      "webhookId": "REPLACE_WITH_YOUR_WEBHOOK_UUID"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Build a beautiful HTML email from the KPI digest payload.\nconst payload = $input.first().json.body;\nconst kpis = payload.kpis ?? [];\nconst recipientEmail = payload.recipientEmail ?? payload.email;\nconst userName = payload.userName ?? payload.name ?? 'Valued Client';\nconst weekOf = payload.weekOf ?? new Date().toISOString().slice(0, 10);\n\nconst rows = kpis.map(k => {\n  const statusColor = k.status === 'ok' ? '#16a34a' : k.status === 'warn' ? '#d97706' : '#dc2626';\n  const trend = k.trend === 'up' ? '↑' : k.trend === 'down' ? '↓' : '→';\n  return `<tr>\n    <td style=\"padding:8px 12px;border-bottom:1px solid #e2e8f0\">${k.label}</td>\n    <td style=\"padding:8px 12px;border-bottom:1px solid #e2e8f0;font-weight:bold;color:${statusColor}\">${k.value}</td>\n    <td style=\"padding:8px 12px;border-bottom:1px solid #e2e8f0;color:#64748b\">${k.target ?? '—'}</td>\n    <td style=\"padding:8px 12px;border-bottom:1px solid #e2e8f0\">${trend}</td>\n  </tr>`;\n}).join('');\n\nconst html = `<!DOCTYPE html>\n<html>\n<body style=\"font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;color:#1e293b\">\n  <div style=\"background:linear-gradient(135deg,#1e3a5f,#0ea5e9);padding:24px;border-radius:12px 12px 0 0;color:white\">\n    <h1 style=\"margin:0;font-size:22px\">📊 Weekly KPI Digest</h1>\n    <p style=\"margin:8px 0 0;opacity:0.85\">Week of ${weekOf}</p>\n  </div>\n  <div style=\"border:1px solid #e2e8f0;border-top:none;padding:24px;border-radius:0 0 12px 12px\">\n    <p>Dear ${userName},</p>\n    <p>Here is your supply chain performance summary for the week:</p>\n    <table style=\"width:100%;border-collapse:collapse;font-size:14px\">\n      <thead>\n        <tr style=\"background:#f8fafc\">\n          <th style=\"padding:8px 12px;text-align:left;color:#64748b;font-weight:600\">KPI</th>\n          <th style=\"padding:8px 12px;text-align:left;color:#64748b;font-weight:600\">Value</th>\n          <th style=\"padding:8px 12px;text-align:left;color:#64748b;font-weight:600\">Target</th>\n          <th style=\"padding:8px 12px;text-align:left;color:#64748b;font-weight:600\">Trend</th>\n        </tr>\n      </thead>\n      <tbody>${rows}</tbody>\n    </table>\n    <div style=\"margin-top:24px;text-align:center\">\n      <a href=\"https://YOUR_ISC_DOMAIN/\" style=\"background:#0ea5e9;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold\">View Full Dashboard →</a>\n    </div>\n    <p style=\"color:#94a3b8;font-size:12px;margin-top:24px\">You are receiving this because you are subscribed to weekly KPI digests. <a href=\"https://YOUR_ISC_DOMAIN/settings\">Manage preferences</a>.</p>\n  </div>\n</body>\n</html>`;\n\nreturn [{ json: { html, recipientEmail, userName, weekOf } }];"
+      },
+      "id": "c3d4e5f6-0003-0003-0003-000000000002",
+      "name": "Format HTML Digest",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [480, 300]
+    },
+    {
+      "parameters": {
+        "fromEmail": "digest@YOUR_ISC_DOMAIN",
+        "toEmail": "={{ $json.recipientEmail }}",
+        "subject": "=Your Weekly KPI Digest — Week of {{ $json.weekOf }}",
+        "emailType": "html",
+        "html": "={{ $json.html }}"
+      },
+      "id": "c3d4e5f6-0003-0003-0003-000000000003",
+      "name": "Send Digest Email",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2,
+      "position": [720, 300],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "REPLACE_WITH_GMAIL_CREDENTIAL_ID",
+          "name": "Gmail — ISC Digest"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "ISC Webhook — schedule.weekly_kpi_digest": {
+      "main": [
+        [{ "node": "Format HTML Digest", "type": "main", "index": 0 }]
+      ]
+    },
+    "Format HTML Digest": {
+      "main": [
+        [{ "node": "Send Digest Email", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "versionId": "1.0.0",
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "isc": {
+      "triggerEvent": "schedule.weekly_kpi_digest",
+      "webhookUrlPlaceholder": "https://YOUR_N8N_INSTANCE/webhook/isc-weekly-kpi-digest",
+      "setupSteps": [
+        "1. Import this JSON into n8n.",
+        "2. Connect your Gmail credential.",
+        "3. Replace YOUR_ISC_DOMAIN in the Code and Email nodes.",
+        "4. Copy the Webhook URL and register it in ISC → Integration Hub → Webhooks with event 'schedule.weekly_kpi_digest'.",
+        "5. ISC fires this webhook every Monday — no cron needed in n8n.",
+        "6. Activate the workflow."
+      ]
+    }
+  }
+}

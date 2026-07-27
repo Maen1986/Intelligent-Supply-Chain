@@ -1,0 +1,81 @@
+{
+  "_isc_version": "1.0.0",
+  "name": "ISC — New User Welcome (EN/AR)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "isc-user-registered",
+        "responseMode": "onReceived",
+        "responseData": "firstEntryJson",
+        "options": {}
+      },
+      "id": "d4e5f6a7-0004-0004-0004-000000000001",
+      "name": "ISC Webhook — user.registered",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300],
+      "webhookId": "REPLACE_WITH_YOUR_WEBHOOK_UUID"
+    },
+    {
+      "parameters": {
+        "jsCode": "const payload = $input.first().json.body;\nconst lang = (payload.lang ?? payload.language ?? 'en').toLowerCase();\nconst name = payload.name ?? payload.userName ?? 'there';\nconst email = payload.email;\nconst platformUrl = 'https://YOUR_ISC_DOMAIN/';\n\nlet subject, html;\n\nif (lang === 'ar') {\n  subject = `مرحباً بك في منصة I Supply Chain — ${name}`;\n  html = `<!DOCTYPE html>\n<html dir=\"rtl\" lang=\"ar\">\n<body style=\"font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;color:#1e293b;direction:rtl\">\n  <div style=\"background:linear-gradient(135deg,#1e3a5f,#0ea5e9);padding:24px;border-radius:12px 12px 0 0;color:white;text-align:right\">\n    <h1 style=\"margin:0;font-size:22px\">🎉 مرحباً بك في I Supply Chain</h1>\n  </div>\n  <div style=\"border:1px solid #e2e8f0;border-top:none;padding:24px;border-radius:0 0 12px 12px\">\n    <p>عزيزي ${name}،</p>\n    <p>يسعدنا انضمامك إلى منصة <strong>I Supply Chain</strong>. إليك قائمة مراجعة للبدء:</p>\n    <ul style=\"line-height:2\">\n      <li>✅ أكمل ملفك الشخصي</li>\n      <li>✅ أضف مؤشرات الأداء الخاصة بك</li>\n      <li>✅ استكشف خطة الذكاء الاصطناعي</li>\n      <li>✅ أضف موردينك لبدء التقييم</li>\n    </ul>\n    <div style=\"text-align:center;margin-top:24px\">\n      <a href=\"${platformUrl}\" style=\"background:#0ea5e9;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold\">ابدأ الآن →</a>\n    </div>\n  </div>\n</body>\n</html>`;\n} else {\n  subject = `Welcome to I Supply Chain — ${name}`;\n  html = `<!DOCTYPE html>\n<html lang=\"en\">\n<body style=\"font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;color:#1e293b\">\n  <div style=\"background:linear-gradient(135deg,#1e3a5f,#0ea5e9);padding:24px;border-radius:12px 12px 0 0;color:white\">\n    <h1 style=\"margin:0;font-size:22px\">🎉 Welcome to I Supply Chain</h1>\n  </div>\n  <div style=\"border:1px solid #e2e8f0;border-top:none;padding:24px;border-radius:0 0 12px 12px\">\n    <p>Dear ${name},</p>\n    <p>We are thrilled to have you on board. Here is your onboarding checklist to get started quickly:</p>\n    <ul style=\"line-height:2\">\n      <li>✅ Complete your profile</li>\n      <li>✅ Add your KPIs to the dashboard</li>\n      <li>✅ Explore the AI-generated improvement plan</li>\n      <li>✅ Add your supplier roster for scorecard assessment</li>\n    </ul>\n    <div style=\"text-align:center;margin-top:24px\">\n      <a href=\"${platformUrl}\" style=\"background:#0ea5e9;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold\">Get Started →</a>\n    </div>\n    <p style=\"color:#94a3b8;font-size:12px;margin-top:24px\">You received this because you just registered on I Supply Chain.</p>\n  </div>\n</body>\n</html>`;\n}\n\nreturn [{ json: { email, subject, html } }];"
+      },
+      "id": "d4e5f6a7-0004-0004-0004-000000000002",
+      "name": "Build Bilingual Email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [480, 300]
+    },
+    {
+      "parameters": {
+        "fromEmail": "welcome@YOUR_ISC_DOMAIN",
+        "toEmail": "={{ $json.email }}",
+        "subject": "={{ $json.subject }}",
+        "emailType": "html",
+        "html": "={{ $json.html }}"
+      },
+      "id": "d4e5f6a7-0004-0004-0004-000000000003",
+      "name": "Send Welcome Email",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2,
+      "position": [720, 300],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "REPLACE_WITH_GMAIL_CREDENTIAL_ID",
+          "name": "Gmail — ISC Welcome"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "ISC Webhook — user.registered": {
+      "main": [
+        [{ "node": "Build Bilingual Email", "type": "main", "index": 0 }]
+      ]
+    },
+    "Build Bilingual Email": {
+      "main": [
+        [{ "node": "Send Welcome Email", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "versionId": "1.0.0",
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "isc": {
+      "triggerEvent": "user.registered",
+      "webhookUrlPlaceholder": "https://YOUR_N8N_INSTANCE/webhook/isc-user-registered",
+      "setupSteps": [
+        "1. Import this JSON into n8n.",
+        "2. Connect your Gmail credential.",
+        "3. Replace YOUR_ISC_DOMAIN in the Code node (platformUrl variable).",
+        "4. Copy the Webhook URL and register it in ISC → Integration Hub → Webhooks with event 'user.registered'.",
+        "5. The email language is automatically chosen based on the 'lang' field in the payload (en or ar).",
+        "6. Activate the workflow."
+      ]
+    }
+  }
+}

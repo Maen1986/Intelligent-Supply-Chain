@@ -1,0 +1,96 @@
+{
+  "_isc_version": "1.0.0",
+  "name": "ISC — AI Plan Ready Notification",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "isc-ai-plan-generated",
+        "responseMode": "onReceived",
+        "responseData": "firstEntryJson",
+        "options": {}
+      },
+      "id": "e5f6a7b8-0005-0005-0005-000000000001",
+      "name": "ISC Webhook — ai_plan.generated",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300],
+      "webhookId": "REPLACE_WITH_YOUR_WEBHOOK_UUID"
+    },
+    {
+      "parameters": {
+        "fromEmail": "plans@YOUR_ISC_DOMAIN",
+        "toEmail": "={{ $json.body.email }}",
+        "subject": "=Your AI Improvement Plan is Ready — {{ $json.body.userName ?? $json.body.name }}",
+        "emailType": "html",
+        "html": "=<html>\n<body style=\"font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;color:#1e293b\">\n  <div style=\"background:linear-gradient(135deg,#4f46e5,#0ea5e9);padding:24px;border-radius:12px 12px 0 0;color:white\">\n    <h1 style=\"margin:0;font-size:22px\">🤖 Your AI Plan is Ready</h1>\n  </div>\n  <div style=\"border:1px solid #e2e8f0;border-top:none;padding:24px;border-radius:0 0 12px 12px\">\n    <p>Dear {{ $json.body.userName ?? $json.body.name }},</p>\n    <p>Great news! Your personalised <strong>AI-generated supply chain improvement plan</strong> has been created and is ready for you to review.</p>\n    <p>The plan includes:</p>\n    <ul style=\"line-height:2\">\n      <li>📋 Prioritised action items tailored to your KPI gaps</li>\n      <li>📊 Benchmark comparisons for your industry</li>\n      <li>🎯 Quick wins and 90-day milestones</li>\n    </ul>\n    <div style=\"text-align:center;margin-top:24px\">\n      <a href=\"https://YOUR_ISC_DOMAIN/plan\" style=\"background:#4f46e5;color:white;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:16px\">View My AI Plan →</a>\n    </div>\n    <p style=\"color:#94a3b8;font-size:12px;margin-top:24px\">Generated on {{ $now.format('MMMM D, YYYY') }} by I Supply Chain AI.</p>\n  </div>\n</body>\n</html>"
+      },
+      "id": "e5f6a7b8-0005-0005-0005-000000000002",
+      "name": "Send Plan Ready Email",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2,
+      "position": [480, 200],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "REPLACE_WITH_GMAIL_CREDENTIAL_ID",
+          "name": "Gmail — ISC Plans"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.whatsapp.com/send",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "Bearer REPLACE_WITH_WHATSAPP_TOKEN" },
+            { "name": "Content-Type",  "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "messaging_product", "value": "whatsapp" },
+            { "name": "to",   "value": "={{ $('ISC Webhook — ai_plan.generated').item.json.body.phone }}" },
+            { "name": "type", "value": "text" },
+            { "name": "text", "value": "={ \"body\": \"Hello {{ $('ISC Webhook — ai_plan.generated').item.json.body.userName }}! Your AI supply chain improvement plan is ready. View it here: https://YOUR_ISC_DOMAIN/plan\" }" }
+          ]
+        }
+      },
+      "id": "e5f6a7b8-0005-0005-0005-000000000003",
+      "name": "WhatsApp Notification (Optional)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [480, 420]
+    }
+  ],
+  "connections": {
+    "ISC Webhook — ai_plan.generated": {
+      "main": [
+        [
+          { "node": "Send Plan Ready Email",          "type": "main", "index": 0 },
+          { "node": "WhatsApp Notification (Optional)", "type": "main", "index": 0 }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "versionId": "1.0.0",
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "isc": {
+      "triggerEvent": "ai_plan.generated",
+      "webhookUrlPlaceholder": "https://YOUR_N8N_INSTANCE/webhook/isc-ai-plan-generated",
+      "setupSteps": [
+        "1. Import this JSON into n8n.",
+        "2. Connect your Gmail credential.",
+        "3. Replace YOUR_ISC_DOMAIN in both nodes.",
+        "4. If you use WhatsApp Business API, replace REPLACE_WITH_WHATSAPP_TOKEN and configure the phone number field. Otherwise, disable the WhatsApp node.",
+        "5. Copy the Webhook URL and register it in ISC → Integration Hub → Webhooks with event 'ai_plan.generated'.",
+        "6. Activate the workflow."
+      ]
+    }
+  }
+}

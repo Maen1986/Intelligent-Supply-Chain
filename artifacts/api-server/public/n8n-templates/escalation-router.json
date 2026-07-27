@@ -1,0 +1,157 @@
+{
+  "_isc_version": "1.0.0",
+  "name": "ISC — Escalation Router (Critical KPI Breach)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "isc-escalation",
+        "responseMode": "onReceived",
+        "responseData": "firstEntryJson",
+        "options": {}
+      },
+      "id": "b8c9d0e1-0008-0008-0008-000000000001",
+      "name": "ISC Webhook — kpi.threshold_breach",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300],
+      "webhookId": "REPLACE_WITH_YOUR_WEBHOOK_UUID"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.body.severity }}",
+              "operation": "equal",
+              "value2": "critical"
+            }
+          ]
+        }
+      },
+      "id": "b8c9d0e1-0008-0008-0008-000000000002",
+      "name": "Critical Only?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [480, 300]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": "REPLACE_WITH_GOOGLE_SHEET_ID",
+        "sheetName": "TeamLeads",
+        "options": {
+          "headerRow": 1,
+          "returnAllMatches": true
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "KPI_Category",
+              "lookupValue": "={{ $('ISC Webhook — kpi.threshold_breach').item.json.body.kpiCategory ?? 'General' }}"
+            }
+          ]
+        }
+      },
+      "id": "b8c9d0e1-0008-0008-0008-000000000003",
+      "name": "Lookup Team Lead (Google Sheets)",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [720, 180],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "REPLACE_WITH_GSHEETS_CREDENTIAL_ID",
+          "name": "Google Sheets — ISC Escalation"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.linear.app/graphql",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "REPLACE_WITH_LINEAR_API_KEY" },
+            { "name": "Content-Type",  "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "query",
+              "value": "=mutation { issueCreate(input: { title: \"CRITICAL KPI Breach: {{ $('ISC Webhook — kpi.threshold_breach').item.json.body.kpiLabel }}\", description: \"KPI {{ $('ISC Webhook — kpi.threshold_breach').item.json.body.kpiLabel }} has breached the critical threshold.\\n\\nValue: {{ $('ISC Webhook — kpi.threshold_breach').item.json.body.value }}\\nCritical threshold: {{ $('ISC Webhook — kpi.threshold_breach').item.json.body.criticalThreshold }}\\nUser ID: {{ $('ISC Webhook — kpi.threshold_breach').item.json.body.userId }}\\n\\nReview in ISC: https://YOUR_ISC_DOMAIN/\", priority: 1, teamId: \\\"REPLACE_WITH_LINEAR_TEAM_ID\\\" }) { issue { id identifier title url } } }"
+            }
+          ]
+        }
+      },
+      "id": "b8c9d0e1-0008-0008-0008-000000000004",
+      "name": "Create Linear Ticket",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [960, 120]
+    },
+    {
+      "parameters": {
+        "fromEmail": "escalations@YOUR_ISC_DOMAIN",
+        "toEmail": "={{ $('Lookup Team Lead (Google Sheets)').first().json.Email ?? 'REPLACE_WITH_FALLBACK@example.com' }}",
+        "subject": "=🚨 ESCALATION — Critical KPI Breach: {{ $('ISC Webhook — kpi.threshold_breach').item.json.body.kpiLabel }}",
+        "emailType": "html",
+        "html": "=<html>\n<body style=\"font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;color:#1e293b\">\n  <div style=\"background:#dc2626;padding:24px;border-radius:12px 12px 0 0;color:white\">\n    <h1 style=\"margin:0;font-size:20px\">🚨 CRITICAL KPI BREACH — ESCALATION REQUIRED</h1>\n  </div>\n  <div style=\"border:1px solid #fecaca;border-top:none;padding:24px;border-radius:0 0 12px 12px;background:#fff5f5\">\n    <p>Dear {{ $('Lookup Team Lead (Google Sheets)').first().json.Name ?? 'Team Lead' }},</p>\n    <p>A critical KPI threshold breach has been detected and requires your immediate attention:</p>\n    <table style=\"width:100%;border-collapse:collapse;font-size:14px;margin:16px 0\">\n      <tr><td style=\"padding:8px;font-weight:bold;color:#64748b\">KPI</td><td style=\"padding:8px\">{{ $('ISC Webhook — kpi.threshold_breach').item.json.body.kpiLabel }}</td></tr>\n      <tr style=\"background:#fef2f2\"><td style=\"padding:8px;font-weight:bold;color:#64748b\">Current Value</td><td style=\"padding:8px;font-weight:bold;color:#dc2626\">{{ $('ISC Webhook — kpi.threshold_breach').item.json.body.value }}</td></tr>\n      <tr><td style=\"padding:8px;font-weight:bold;color:#64748b\">Critical Threshold</td><td style=\"padding:8px\">{{ $('ISC Webhook — kpi.threshold_breach').item.json.body.criticalThreshold }}</td></tr>\n      <tr style=\"background:#fef2f2\"><td style=\"padding:8px;font-weight:bold;color:#64748b\">Affected User</td><td style=\"padding:8px\">{{ $('ISC Webhook — kpi.threshold_breach').item.json.body.userId }}</td></tr>\n    </table>\n    <p>A ticket has been created in Linear for tracking. Please take action within 2 hours.</p>\n    <div style=\"text-align:center;margin-top:20px\">\n      <a href=\"https://YOUR_ISC_DOMAIN/\" style=\"background:#dc2626;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold\">View in ISC Platform →</a>\n    </div>\n  </div>\n</body>\n</html>"
+      },
+      "id": "b8c9d0e1-0008-0008-0008-000000000005",
+      "name": "Send Escalation Email",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2,
+      "position": [960, 320],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "REPLACE_WITH_GMAIL_CREDENTIAL_ID",
+          "name": "Gmail — ISC Escalation"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "ISC Webhook — kpi.threshold_breach": {
+      "main": [
+        [{ "node": "Critical Only?", "type": "main", "index": 0 }]
+      ]
+    },
+    "Critical Only?": {
+      "main": [
+        [{ "node": "Lookup Team Lead (Google Sheets)", "type": "main", "index": 0 }],
+        []
+      ]
+    },
+    "Lookup Team Lead (Google Sheets)": {
+      "main": [
+        [
+          { "node": "Create Linear Ticket",   "type": "main", "index": 0 },
+          { "node": "Send Escalation Email",  "type": "main", "index": 0 }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "versionId": "1.0.0",
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "isc": {
+      "triggerEvent": "kpi.threshold_breach",
+      "webhookUrlPlaceholder": "https://YOUR_N8N_INSTANCE/webhook/isc-escalation",
+      "setupSteps": [
+        "1. Import this JSON into n8n.",
+        "2. Create a Google Sheet named 'TeamLeads' with columns: KPI_Category, Name, Email.",
+        "3. Connect your Google Sheets OAuth2 credential and update the Sheet ID.",
+        "4. Replace REPLACE_WITH_LINEAR_API_KEY and REPLACE_WITH_LINEAR_TEAM_ID with your Linear credentials (or swap the HTTP node for a Jira node).",
+        "5. Connect your Gmail credential and replace YOUR_ISC_DOMAIN.",
+        "6. Copy the Webhook URL and register it in ISC → Integration Hub → Webhooks with event 'kpi.threshold_breach'.",
+        "7. This workflow only fires for 'critical' severity — warn events are silently dropped.",
+        "8. Activate the workflow."
+      ]
+    }
+  }
+}

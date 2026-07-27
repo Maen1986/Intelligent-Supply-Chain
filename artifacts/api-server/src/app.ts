@@ -106,6 +106,12 @@ app.use(
   }),
 );
 
+// ── Static files — n8n templates and other public assets ────────────────────
+import path from "path";
+import { fileURLToPath } from "url";
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+app.use("/public", express.static(path.join(__dirname, "../public")));
+
 // ── Routes ───────────────────────────────────────────────────────────────────
 app.use("/api", router);
 

@@ -1,0 +1,160 @@
+{
+  "_isc_version": "1.0.0",
+  "name": "ISC — Lead Nurture Sequence",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "isc-lead-captured",
+        "responseMode": "onReceived",
+        "responseData": "firstEntryJson",
+        "options": {}
+      },
+      "id": "a1b2c3d4-0001-0001-0001-000000000001",
+      "name": "ISC Webhook — lead.captured",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300],
+      "webhookId": "REPLACE_WITH_YOUR_WEBHOOK_UUID"
+    },
+    {
+      "parameters": {
+        "fromEmail": "YOUR_SENDER@example.com",
+        "toEmail": "={{ $json.body.email }}",
+        "subject": "Welcome to ISC — Let's unlock your supply chain potential",
+        "emailType": "html",
+        "html": "<p>Dear {{ $json.body.name }},</p><p>Thank you for your interest in <strong>I Supply Chain</strong>. We have reviewed your profile and believe we can help you achieve measurable improvements in your supply chain performance.</p><p>Over the next few days, we will share resources tailored to your industry. In the meantime, feel free to <a href='https://YOUR_ISC_DOMAIN/'>explore the platform</a>.</p><p>Warm regards,<br/>The ISC Team</p>"
+      },
+      "id": "a1b2c3d4-0001-0001-0001-000000000002",
+      "name": "Send Intro Email",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2,
+      "position": [480, 300],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "REPLACE_WITH_GMAIL_CREDENTIAL_ID",
+          "name": "Gmail — ISC Sender"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 48,
+        "unit": "hours"
+      },
+      "id": "a1b2c3d4-0001-0001-0001-000000000003",
+      "name": "Wait 48 Hours",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [720, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $('ISC Webhook — lead.captured').item.json.body.replied }}",
+              "operation": "notEqual",
+              "value2": "true"
+            }
+          ]
+        }
+      },
+      "id": "a1b2c3d4-0001-0001-0001-000000000004",
+      "name": "No Reply Yet?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [960, 300]
+    },
+    {
+      "parameters": {
+        "fromEmail": "YOUR_SENDER@example.com",
+        "toEmail": "={{ $('ISC Webhook — lead.captured').item.json.body.email }}",
+        "subject": "Book a free discovery call — {{ $('ISC Webhook — lead.captured').item.json.body.name }}",
+        "emailType": "html",
+        "html": "<p>Hi {{ $('ISC Webhook — lead.captured').item.json.body.name }},</p><p>We would love to learn more about your supply chain challenges. Book a free 30-minute discovery call at a time that suits you:</p><p><a href='https://YOUR_CALENDAR_LINK/'>Schedule a call →</a></p><p>Best,<br/>The ISC Team</p>"
+      },
+      "id": "a1b2c3d4-0001-0001-0001-000000000005",
+      "name": "Send Discovery Call Invite",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2,
+      "position": [1200, 200],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "REPLACE_WITH_GMAIL_CREDENTIAL_ID",
+          "name": "Gmail — ISC Sender"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://YOUR_ISC_DOMAIN/api/admin/notify",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "REPLACE_WITH_ISC_API_KEY"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "message",
+              "value": "=Lead {{ $('ISC Webhook — lead.captured').item.json.body.email }} has not replied after 48h — follow up manually."
+            }
+          ]
+        }
+      },
+      "id": "a1b2c3d4-0001-0001-0001-000000000006",
+      "name": "Notify Admin — No Reply",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1200, 420]
+    }
+  ],
+  "connections": {
+    "ISC Webhook — lead.captured": {
+      "main": [
+        [{ "node": "Send Intro Email", "type": "main", "index": 0 }]
+      ]
+    },
+    "Send Intro Email": {
+      "main": [
+        [{ "node": "Wait 48 Hours", "type": "main", "index": 0 }]
+      ]
+    },
+    "Wait 48 Hours": {
+      "main": [
+        [{ "node": "No Reply Yet?", "type": "main", "index": 0 }]
+      ]
+    },
+    "No Reply Yet?": {
+      "main": [
+        [{ "node": "Send Discovery Call Invite", "type": "main", "index": 0 }],
+        [{ "node": "Notify Admin — No Reply", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "versionId": "1.0.0",
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "isc": {
+      "triggerEvent": "lead.captured",
+      "webhookUrlPlaceholder": "https://YOUR_N8N_INSTANCE/webhook/isc-lead-captured",
+      "setupSteps": [
+        "1. Import this JSON into n8n (Menu → Workflows → Import from file).",
+        "2. Connect your Gmail credential (Credentials → New → Gmail OAuth2).",
+        "3. Copy the Webhook URL shown at the top of the Webhook node.",
+        "4. In ISC → Admin → Integration Hub → Webhooks, create a new webhook with event 'lead.captured' and paste that URL.",
+        "5. Replace YOUR_ISC_DOMAIN with your platform URL and YOUR_CALENDAR_LINK with your booking URL.",
+        "6. Activate the workflow with the toggle at the top right."
+      ]
+    }
+  }
+}

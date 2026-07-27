@@ -20,7 +20,7 @@ import {
   RefreshCw, Loader2, ShieldAlert, Activity, BookOpen,
   Webhook, Calendar, Bell, ArrowLeft, Play, Copy, Check,
   ChevronDown, ChevronUp, Download, AlertTriangle, CheckCircle2,
-  Clock, Zap, Server, Radio,
+  Clock, Zap, Server, Radio, Package,
 } from 'lucide-react';
 import { API_BASE } from '@/lib/apiBase';
 
@@ -183,7 +183,7 @@ function exportCsv(data: Record<string, unknown>[], filename: string) {
    MAIN PAGE
    ════════════════════════════════════════════════════════════════════════════ */
 
-type Tab = 'overview' | 'webhook-log' | 'inbound-log' | 'schedule-log' | 'kpi-alerts' | 'event-catalog';
+type Tab = 'overview' | 'webhook-log' | 'inbound-log' | 'schedule-log' | 'kpi-alerts' | 'event-catalog' | 'templates';
 
 const TABS: { id: Tab; en: string; ar: string; icon: React.ElementType }[] = [
   { id: 'overview',      en: 'Overview',      ar: 'نظرة عامة',        icon: Activity     },
@@ -192,6 +192,7 @@ const TABS: { id: Tab; en: string; ar: string; icon: React.ElementType }[] = [
   { id: 'schedule-log',  en: 'Schedule Log',  ar: 'سجل المهام',       icon: Calendar     },
   { id: 'kpi-alerts',    en: 'KPI Alerts',    ar: 'تنبيهات KPI',      icon: Bell         },
   { id: 'event-catalog', en: 'Event Catalog', ar: 'كتالوج الأحداث',   icon: BookOpen     },
+  { id: 'templates',     en: 'Templates',     ar: 'القوالب',           icon: Package      },
 ];
 
 export function AdminAutomations() {
@@ -290,6 +291,7 @@ export function AdminAutomations() {
         {tab === 'schedule-log'  && <ScheduleLogTab   ar={ar} refresh={lastRefresh} />}
         {tab === 'kpi-alerts'    && <KpiAlertsTab     ar={ar} refresh={lastRefresh} />}
         {tab === 'event-catalog' && <EventCatalogTab  ar={ar} />}
+        {tab === 'templates'     && <TemplatesTab     ar={ar} />}
       </div>
     </div>
   );
@@ -1012,6 +1014,340 @@ function EventCatalogItem({
                 <CopyBtn value={examplePayload} />
               </div>
             </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   TAB 7 — n8n Workflow Templates
+   ════════════════════════════════════════════════════════════════════════════ */
+
+interface TemplateManifestItem {
+  id: string;
+  filename: string;
+  name: string;
+  nameAr: string;
+  description: string;
+  descriptionAr: string;
+  triggerEvent: string;
+  category: string;
+  setupTimeMinutes: number;
+  nodes: string[];
+}
+
+const CATEGORY_BADGE: Record<string, string> = {
+  Sales:        'bg-yellow-100 text-yellow-700',
+  Alerts:       'bg-red-100 text-red-700',
+  Reporting:    'bg-blue-100 text-blue-700',
+  Onboarding:   'bg-green-100 text-green-700',
+  Notifications:'bg-purple-100 text-purple-700',
+  Integration:  'bg-cyan-100 text-cyan-700',
+  Escalation:   'bg-orange-100 text-orange-700',
+};
+
+const SETUP_GUIDES: Record<string, { en: string[]; ar: string[] }> = {
+  'lead-nurture-sequence': {
+    en: [
+      '1. Import this JSON into n8n: Menu → Workflows → Import from file.',
+      '2. Connect your Gmail credential (Credentials → New → Gmail OAuth2).',
+      '3. Copy the Webhook URL shown at the top of the Webhook node.',
+      '4. In ISC → Admin → Integration Hub → Webhooks, create a webhook with event "lead.captured" and paste that URL.',
+      '5. Replace YOUR_ISC_DOMAIN and YOUR_CALENDAR_LINK placeholders in the email nodes.',
+      '6. Activate the workflow using the toggle at the top right.',
+    ],
+    ar: [
+      '١. استورد ملف JSON في n8n: القائمة ← سير العمل ← استيراد من ملف.',
+      '٢. ربط بيانات اعتماد Gmail (بيانات الاعتماد ← جديد ← Gmail OAuth2).',
+      '٣. انسخ عنوان URL للويب-هوك من أعلى عقدة Webhook.',
+      '٤. في ISC ← الإدارة ← مركز التكاملات ← الويب-هوك، أضف ويب-هوك بحدث "lead.captured" والصق الرابط.',
+      '٥. استبدل YOUR_ISC_DOMAIN وYOUR_CALENDAR_LINK في عقد البريد الإلكتروني.',
+      '٦. فعّل سير العمل باستخدام مفتاح التبديل.',
+    ],
+  },
+  'kpi-breach-alert': {
+    en: [
+      '1. Import the JSON into n8n.',
+      '2. Connect Gmail and Twilio credentials (or replace Twilio with your SMS provider).',
+      '3. Paste your Slack Incoming Webhook URL into the Slack HTTP node.',
+      '4. Register the n8n Webhook URL in ISC → Integration Hub with event "kpi.threshold_breach".',
+      '5. Replace placeholder phone numbers and alert email address.',
+      '6. Activate the workflow.',
+    ],
+    ar: [
+      '١. استورد ملف JSON في n8n.',
+      '٢. اربط بيانات اعتماد Gmail وTwilio (أو استبدل Twilio بمزود SMS آخر).',
+      '٣. الصق رابط Slack Incoming Webhook في عقدة HTTP.',
+      '٤. سجّل رابط Webhook في ISC ← مركز التكاملات بحدث "kpi.threshold_breach".',
+      '٥. استبدل أرقام الهاتف وعنوان البريد الإلكتروني.',
+      '٦. فعّل سير العمل.',
+    ],
+  },
+  'weekly-kpi-digest': {
+    en: [
+      '1. Import the JSON into n8n.',
+      '2. Connect your Gmail credential.',
+      '3. Replace YOUR_ISC_DOMAIN in the Code and Email nodes.',
+      '4. Register the Webhook URL in ISC → Integration Hub with event "schedule.weekly_kpi_digest".',
+      '5. ISC fires this every Monday automatically — no n8n cron needed.',
+      '6. Activate the workflow.',
+    ],
+    ar: [
+      '١. استورد ملف JSON في n8n.',
+      '٢. اربط بيانات اعتماد Gmail.',
+      '٣. استبدل YOUR_ISC_DOMAIN في عقدتَي الكود والبريد.',
+      '٤. سجّل رابط Webhook في ISC بحدث "schedule.weekly_kpi_digest".',
+      '٥. تُرسل ISC هذا الحدث كل يوم اثنين تلقائياً.',
+      '٦. فعّل سير العمل.',
+    ],
+  },
+  'new-user-welcome': {
+    en: [
+      '1. Import the JSON into n8n.',
+      '2. Connect your Gmail credential.',
+      '3. Replace YOUR_ISC_DOMAIN in the Code node (platformUrl variable).',
+      '4. Register the Webhook URL in ISC → Integration Hub with event "user.registered".',
+      '5. The email language is chosen automatically from the "lang" field in the payload (en or ar).',
+      '6. Activate the workflow.',
+    ],
+    ar: [
+      '١. استورد ملف JSON في n8n.',
+      '٢. اربط بيانات اعتماد Gmail.',
+      '٣. استبدل YOUR_ISC_DOMAIN في متغير platformUrl بعقدة الكود.',
+      '٤. سجّل رابط Webhook في ISC بحدث "user.registered".',
+      '٥. تُختار لغة البريد تلقائياً من حقل "lang" في الحمولة.',
+      '٦. فعّل سير العمل.',
+    ],
+  },
+  'ai-plan-ready-notification': {
+    en: [
+      '1. Import the JSON into n8n.',
+      '2. Connect your Gmail credential.',
+      '3. Replace YOUR_ISC_DOMAIN in both nodes.',
+      '4. For WhatsApp, replace REPLACE_WITH_WHATSAPP_TOKEN; otherwise disable that node.',
+      '5. Register the Webhook URL in ISC → Integration Hub with event "ai_plan.generated".',
+      '6. Activate the workflow.',
+    ],
+    ar: [
+      '١. استورد ملف JSON في n8n.',
+      '٢. اربط بيانات اعتماد Gmail.',
+      '٣. استبدل YOUR_ISC_DOMAIN في كلتا العقدتين.',
+      '٤. لـ WhatsApp، استبدل REPLACE_WITH_WHATSAPP_TOKEN أو عطّل تلك العقدة.',
+      '٥. سجّل رابط Webhook في ISC بحدث "ai_plan.generated".',
+      '٦. فعّل سير العمل.',
+    ],
+  },
+  'monthly-supplier-scorecard': {
+    en: [
+      '1. Import the JSON into n8n.',
+      '2. Connect your Gmail credential.',
+      '3. Replace YOUR_ISC_DOMAIN and REPLACE_WITH_ISC_API_KEY in the HTTP Request node.',
+      '4. Register the Webhook URL in ISC → Integration Hub with event "schedule.monthly_scorecard".',
+      '5. ISC fires this on the 1st of each month automatically.',
+      '6. Activate the workflow.',
+    ],
+    ar: [
+      '١. استورد ملف JSON في n8n.',
+      '٢. اربط بيانات اعتماد Gmail.',
+      '٣. استبدل YOUR_ISC_DOMAIN وREPLACE_WITH_ISC_API_KEY في عقدة HTTP.',
+      '٤. سجّل رابط Webhook في ISC بحدث "schedule.monthly_scorecard".',
+      '٥. تُرسل ISC هذا الحدث في أول كل شهر تلقائياً.',
+      '٦. فعّل سير العمل.',
+    ],
+  },
+  'erp-data-sync': {
+    en: [
+      '1. Import the JSON into n8n.',
+      '2. Replace YOUR_ERP_BASE_URL and REPLACE_WITH_ERP_API_TOKEN with your ERP credentials.',
+      '3. Replace YOUR_ISC_DOMAIN and REPLACE_WITH_ISC_API_KEY with an ISC API key that has write scope.',
+      '4. Review the Code mapping nodes and adjust field names to match your ERP\'s response schema.',
+      '5. This workflow uses an n8n Schedule Trigger (daily at 02:00 UTC) — no ISC webhook registration needed.',
+      '6. Activate the workflow.',
+    ],
+    ar: [
+      '١. استورد ملف JSON في n8n.',
+      '٢. استبدل YOUR_ERP_BASE_URL وREPLACE_WITH_ERP_API_TOKEN ببيانات ERP الخاصة بك.',
+      '٣. استبدل YOUR_ISC_DOMAIN وREPLACE_WITH_ISC_API_KEY بمفتاح API للكتابة.',
+      '٤. راجع عقد تعيين الحقول وعدّل أسماء الخصائص لتتطابق مع مخطط ERP.',
+      '٥. يستخدم سير العمل مشغّلاً مجدولاً في n8n — لا حاجة لتسجيل ويب-هوك في ISC.',
+      '٦. فعّل سير العمل.',
+    ],
+  },
+  'escalation-router': {
+    en: [
+      '1. Import the JSON into n8n.',
+      '2. Create a Google Sheet named "TeamLeads" with columns: KPI_Category, Name, Email.',
+      '3. Connect your Google Sheets OAuth2 credential and set the Sheet ID.',
+      '4. Replace REPLACE_WITH_LINEAR_API_KEY and REPLACE_WITH_LINEAR_TEAM_ID (or swap the HTTP node for a Jira node).',
+      '5. Connect your Gmail credential and replace YOUR_ISC_DOMAIN.',
+      '6. Register the Webhook URL in ISC → Integration Hub with event "kpi.threshold_breach".',
+      '7. This workflow only escalates "critical" severity — warn events are silently dropped.',
+      '8. Activate the workflow.',
+    ],
+    ar: [
+      '١. استورد ملف JSON في n8n.',
+      '٢. أنشئ جدول Google Sheets باسم "TeamLeads" بأعمدة: KPI_Category، Name، Email.',
+      '٣. اربط بيانات اعتماد Google Sheets وعيّن معرف الجدول.',
+      '٤. استبدل REPLACE_WITH_LINEAR_API_KEY وREPLACE_WITH_LINEAR_TEAM_ID (أو استخدم Jira).',
+      '٥. اربط بيانات اعتماد Gmail واستبدل YOUR_ISC_DOMAIN.',
+      '٦. سجّل رابط Webhook في ISC بحدث "kpi.threshold_breach".',
+      '٧. يُصعَّد الحدث فقط للخطورة "critical" — تنبيهات "warn" تُتجاهل.',
+      '٨. فعّل سير العمل.',
+    ],
+  },
+};
+
+function TemplatesTab({ ar }: { ar: boolean }) {
+  const [templates, setTemplates] = useState<TemplateManifestItem[]>([]);
+  const [loading, setLoading]     = useState(true);
+  const [error, setError]         = useState<string | null>(null);
+
+  useEffect(() => {
+    setLoading(true);
+    fetch(`${API_BASE}/admin/automations/templates`, { credentials: 'include' })
+      .then(r => r.json())
+      .then(d => {
+        if (d.ok) setTemplates(d.templates as TemplateManifestItem[]);
+        else setError(d.error ?? 'Failed to load templates');
+      })
+      .catch(() => setError('Network error'))
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return (
+    <div className="flex justify-center py-16">
+      <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+    </div>
+  );
+
+  if (error) return (
+    <p className="text-sm text-red-600 py-4">{error}</p>
+  );
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-start gap-3 p-4 bg-indigo-50 border border-indigo-200 rounded-xl">
+        <Package className="w-5 h-5 text-indigo-600 shrink-0 mt-0.5" />
+        <div>
+          <p className="font-semibold text-sm text-indigo-900">
+            {ar ? 'مكتبة قوالب n8n — جاهزة للاستيراد' : 'n8n Workflow Template Library — Ready to Import'}
+          </p>
+          <p className="text-xs text-indigo-700 mt-0.5">
+            {ar
+              ? 'قم بتنزيل أي قالب وفتحه في n8n (القائمة ← سير العمل ← استيراد من ملف). كل قالب يحتوي على تعليمات الإعداد خطوة بخطوة.'
+              : 'Download any template and open it in n8n (Menu → Workflows → Import from file). Each template includes step-by-step setup instructions.'}
+          </p>
+        </div>
+      </div>
+
+      {/* Template cards */}
+      <div className="space-y-3">
+        {templates.map(t => (
+          <TemplateCard key={t.id} template={t} ar={ar} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function TemplateCard({ template: t, ar }: { template: TemplateManifestItem; ar: boolean }) {
+  const [open, setOpen] = useState(false);
+  const badgeClass = CATEGORY_BADGE[t.category] ?? 'bg-slate-100 text-slate-600';
+  const guide = SETUP_GUIDES[t.id];
+  const steps = ar ? (guide?.ar ?? guide?.en ?? []) : (guide?.en ?? []);
+  const downloadUrl = `${API_BASE.replace('/api', '')}/public/n8n-templates/${t.filename}`;
+
+  return (
+    <div className="border border-border rounded-xl overflow-hidden">
+      {/* Card header */}
+      <div className="flex items-center gap-3 px-4 py-3.5 bg-white">
+        <div className="flex-1 min-w-0">
+          <div className="flex flex-wrap items-center gap-2 mb-0.5">
+            <p className="font-semibold text-sm text-primary">{ar ? t.nameAr : t.name}</p>
+            <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${badgeClass}`}>{t.category}</span>
+          </div>
+          <p className="text-xs text-muted-foreground line-clamp-2">{ar ? t.descriptionAr : t.description}</p>
+          <div className="flex flex-wrap items-center gap-3 mt-1.5 text-xs text-muted-foreground">
+            <span className="flex items-center gap-1">
+              <Zap className="w-3 h-3" />
+              <code className="bg-slate-100 px-1.5 py-0.5 rounded font-mono text-xs">{t.triggerEvent}</code>
+            </span>
+            <span className="flex items-center gap-1">
+              <Clock className="w-3 h-3" />
+              {ar ? `${t.setupTimeMinutes} دقائق إعداد` : `~${t.setupTimeMinutes} min setup`}
+            </span>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <a
+            href={downloadUrl}
+            download={t.filename}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-primary text-white hover:bg-primary/90 transition-colors"
+          >
+            <Download className="w-3.5 h-3.5" />
+            {ar ? 'تنزيل' : 'Download'}
+          </a>
+          <button
+            onClick={() => setOpen(v => !v)}
+            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium border border-border hover:bg-slate-50 transition-colors text-muted-foreground"
+            title={ar ? 'دليل الإعداد' : 'Setup guide'}
+          >
+            {open ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+            {ar ? 'الإعداد' : 'Setup'}
+          </button>
+        </div>
+      </div>
+
+      {/* Expanded setup guide */}
+      {open && (
+        <div className="border-t border-border bg-slate-50/60 px-4 py-4 space-y-4">
+          {/* Nodes used */}
+          <div>
+            <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-2">
+              {ar ? 'العقد المُستخدمة' : 'Nodes used'}
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {t.nodes.map(n => (
+                <span key={n} className="text-xs bg-white border border-border px-2 py-0.5 rounded-md font-mono text-slate-600">
+                  {n}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          {/* Step-by-step guide */}
+          <div>
+            <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-2">
+              {ar ? 'خطوات الإعداد' : 'Setup steps'}
+            </p>
+            <ol className="space-y-1.5">
+              {steps.map((step, i) => (
+                <li key={i} className="flex items-start gap-2 text-xs text-slate-700">
+                  <span className="shrink-0 w-5 h-5 rounded-full bg-primary/10 text-primary font-bold text-xs flex items-center justify-center mt-0.5">
+                    {i + 1}
+                  </span>
+                  <span className="leading-relaxed">{step.replace(/^\d+\.\s*/, '')}</span>
+                </li>
+              ))}
+            </ol>
+          </div>
+
+          {/* Trigger event hint */}
+          <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800">
+            <Server className="w-3.5 h-3.5 shrink-0 mt-0.5 text-amber-600" />
+            <span>
+              {ar
+                ? `سجّل عنوان URL للويب-هوك في ISC → الإدارة → مركز التكاملات → الويب-هوك باستخدام الحدث "${t.triggerEvent}".`
+                : `Register the n8n Webhook URL in ISC → Admin → Integration Hub → Webhooks using event "${t.triggerEvent}".`}
+              {t.triggerEvent === 'cron.daily' && (
+                <span className="block mt-1 font-medium">
+                  {ar ? 'هذا سير عمل بمشغّل مجدول — لا يلزم تسجيل ويب-هوك.' : 'This workflow uses a built-in Schedule Trigger — no webhook registration needed.'}
+                </span>
+              )}
+            </span>
           </div>
         </div>
       )}
