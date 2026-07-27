@@ -170,4 +170,43 @@ describe('KPIDashboard — data-collection guidance banner', () => {
     fireEvent.change(input, { target: { value: '' } });
     expect(bannerVisible(container)).toBe(false);
   });
+
+  it('dismissing the banner for one framework does not suppress it for a different framework', () => {
+    // Mount framework A and dismiss its banner
+    const { container: cA, unmount: unmountA } = render(<KPIDashboard slug="supply-chain-strategy" />);
+    expect(bannerVisible(cA)).toBe(true);
+    fireEvent.click(within(cA).getByRole('button', { name: /dismiss/i }));
+    expect(bannerVisible(cA)).toBe(false);
+    unmountA();
+
+    // Mount framework B — its banner must still be visible
+    const { container: cB } = render(<KPIDashboard slug="procurement-excellence" />);
+    expect(bannerVisible(cB)).toBe(true);
+  });
+
+  it('each slug produces its own unique localStorage dismiss key', () => {
+    const slugA = 'supply-chain-strategy';
+    const slugB = 'procurement-excellence';
+
+    const keyA = `isc-kpi-banner-dismissed-${slugA}`;
+    const keyB = `isc-kpi-banner-dismissed-${slugB}`;
+
+    // Keys must be distinct
+    expect(keyA).not.toBe(keyB);
+
+    // Dismiss framework A and confirm only its key is written
+    const { container: cA, unmount: unmountA } = render(<KPIDashboard slug={slugA} />);
+    fireEvent.click(within(cA).getByRole('button', { name: /dismiss/i }));
+    unmountA();
+
+    expect(localStorage.getItem(keyA)).toBe('1');
+    expect(localStorage.getItem(keyB)).toBeNull();
+
+    // Dismiss framework B and confirm both keys are now set independently
+    const { container: cB } = render(<KPIDashboard slug={slugB} />);
+    fireEvent.click(within(cB).getByRole('button', { name: /dismiss/i }));
+
+    expect(localStorage.getItem(keyA)).toBe('1');
+    expect(localStorage.getItem(keyB)).toBe('1');
+  });
 });
