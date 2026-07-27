@@ -11,7 +11,15 @@
  * jsdom (vitest environment) provides a real localStorage implementation.
  */
 
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
+
+/* ── mock sonner so toast calls can be asserted without a real DOM ───────── */
+vi.mock('sonner', () => ({
+  toast: { error: vi.fn(), warning: vi.fn(), dismiss: vi.fn() },
+}));
+
+import { toast } from 'sonner';
+import { safeSetItem, _resetStorageAvailabilityCache } from '@/lib/storage';
 
 /* ── helpers mirroring component logic ───────────────────────────────────── */
 
@@ -590,5 +598,172 @@ describe('hardcoded storage keys are globally unique', () => {
 
     expect(kri.concentration).toBe('50');
     expect(scorecard.name).toBe('TestCorp');
+  });
+});
+
+/* ══════════════════════════════════════════════════════════════════════════
+   16. Quota-exceeded auto-save — all auto-saving toolkit tools
+
+   Each test below:
+     1. Arms a spy that makes localStorage.setItem throw a QuotaExceededError.
+     2. Calls safeSetItem with the key that the component writes on every change.
+     3. Asserts toast.error is called with id="storage-quota-exceeded" so the
+        user always sees feedback instead of silently losing data.
+
+   The storage-availability probe inside safeSetItem also throws the same
+   QuotaExceededError, which isLocalStorageAvailable() correctly treats as
+   "storage exists but is full" (returns true), so the quota branch is reached.
+══════════════════════════════════════════════════════════════════════════ */
+
+describe('quota-exceeded auto-save — all auto-saving toolkit tools', () => {
+  function makeQuotaError(): DOMException {
+    return new DOMException('The quota has been exceeded.', 'QuotaExceededError');
+  }
+
+  let setItemSpy: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    localStorage.clear();
+    vi.clearAllMocks();
+    // Reset the cached storage-availability result so the probe re-runs each test.
+    _resetStorageAvailabilityCache();
+    // Arm the spy — every setItem call (probe + real write) throws QuotaExceededError.
+    setItemSpy = vi.spyOn(Storage.prototype, 'setItem')
+      .mockImplementation(() => { throw makeQuotaError(); });
+  });
+
+  afterEach(() => {
+    setItemSpy.mockRestore();
+    _resetStorageAvailabilityCache();
+  });
+
+  // ── ActionTracker (Primitives.tsx) ────────────────────────────────────────
+  it('ActionTracker: shows storage-quota-exceeded toast on debounced write', () => {
+    const key = 'isc-tool-risk-management-solution-actions-0';
+    safeSetItem(key, JSON.stringify([{ id: '1', issue: 'test', owner: 'Alice', dueDate: '2026-09-01', resolved: false }]));
+    expect(toast.error).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({ id: 'storage-quota-exceeded' }),
+    );
+  });
+
+  // ── CategoryProfileBuilder (Primitives.tsx ParamForm) ────────────────────
+  it('CategoryProfileBuilder: shows storage-quota-exceeded toast on debounced write', () => {
+    const key = 'isc-tool-procurement-catprofile';
+    safeSetItem(key, JSON.stringify({ category: 'Packaging', spend: '2500000', suppliers: '4', strategic: '4', complexity: '3' }));
+    expect(toast.error).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({ id: 'storage-quota-exceeded' }),
+    );
+  });
+
+  // ── SpendParetoChart (Primitives.tsx ParamForm) ───────────────────────────
+  it('SpendParetoChart: shows storage-quota-exceeded toast on debounced write', () => {
+    const key = 'isc-tool-procurement-pareto';
+    safeSetItem(key, JSON.stringify([{ name: 'Supplier A', spend: '500000' }]));
+    expect(toast.error).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({ id: 'storage-quota-exceeded' }),
+    );
+  });
+
+  // ── ProcurementTools — spend rows (ProcurementTools.tsx) ─────────────────
+  it('ProcurementTools spend rows: shows storage-quota-exceeded toast on debounced write', () => {
+    const key = 'isc-tool-catmgmt-spend-v2';
+    safeSetItem(key, JSON.stringify([{ id: 'abc', supplier: 'Acme', category: 'MRO', subcategory: '', annualSpend: 10000, contracted: false, strategic: false, notes: '' }]));
+    expect(toast.error).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({ id: 'storage-quota-exceeded' }),
+    );
+  });
+
+  // ── ProcurementTools — Porter's forces (ProcurementTools.tsx) ────────────
+  it('ProcurementTools Porter forces: shows storage-quota-exceeded toast on debounced write', () => {
+    const key = 'isc-tool-catmgmt-porter-v2';
+    safeSetItem(key, JSON.stringify({ supplier_power: { score: 4, notes: '' } }));
+    expect(toast.error).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({ id: 'storage-quota-exceeded' }),
+    );
+  });
+
+  // ── ProcurementTools — strategy selection (ProcurementTools.tsx) ─────────
+  it('ProcurementTools strategy selection: shows storage-quota-exceeded toast on debounced write', () => {
+    const key = 'isc-tool-catmgmt-strategy-v2';
+    safeSetItem(key, 'competitive-tender');
+    expect(toast.error).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({ id: 'storage-quota-exceeded' }),
+    );
+  });
+
+  // ── RiskTools — KRI values (RiskTools.tsx) ────────────────────────────────
+  it('RiskTools KRI values: shows storage-quota-exceeded toast on debounced write', () => {
+    const key = 'isc-tool-risk-kri-v2';
+    safeSetItem(key, JSON.stringify({ concentration: '45', dio: '38' }));
+    expect(toast.error).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({ id: 'storage-quota-exceeded' }),
+    );
+  });
+
+  // ── RiskTools — risk register (RiskTools.tsx) ─────────────────────────────
+  it('RiskTools risk register: shows storage-quota-exceeded toast on debounced write', () => {
+    const key = 'isc-tool-risk-register-v2';
+    safeSetItem(key, JSON.stringify([{ id: '1', risk: 'Supply disruption', likelihood: 3, impact: 4, owner: 'Bob', mitigation: 'Dual source', status: 'Open' }]));
+    expect(toast.error).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({ id: 'storage-quota-exceeded' }),
+    );
+  });
+
+  // ── CLMTools — contracts (CLMTools.tsx) ───────────────────────────────────
+  it('CLMTools contracts: shows storage-quota-exceeded toast on debounced write', () => {
+    const key = 'isc-tool-clm-contracts-v2';
+    safeSetItem(key, JSON.stringify([{ id: '1', supplier: 'Acme', value: 100000, expiry: '2027-01-01', status: 'Active' }]));
+    expect(toast.error).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({ id: 'storage-quota-exceeded' }),
+    );
+  });
+
+  // ── MaturityTools — per-slug answers (MaturityTools.tsx) ─────────────────
+  it('MaturityTools maturity answers: shows storage-quota-exceeded toast on debounced write', () => {
+    const key = 'isc-tool-maturity-supply-chain-strategy';
+    safeSetItem(key, JSON.stringify({ q1: '4', q2: '3', q3: '5' }));
+    expect(toast.error).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({ id: 'storage-quota-exceeded' }),
+    );
+  });
+
+  // ── TrainingTools — team members (TrainingTools.tsx) ─────────────────────
+  it('TrainingTools team members: shows storage-quota-exceeded toast on debounced write', () => {
+    const key = 'isc-tool-training-members';
+    safeSetItem(key, JSON.stringify(['Alice', 'Bob', 'Carol']));
+    expect(toast.error).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({ id: 'storage-quota-exceeded' }),
+    );
+  });
+
+  // ── TrainingTools — competency scores (TrainingTools.tsx) ────────────────
+  it('TrainingTools competency scores: shows storage-quota-exceeded toast on debounced write', () => {
+    const key = 'isc-tool-training-scores';
+    safeSetItem(key, JSON.stringify({ Alice: { strategicSourcing: 3, negotiation: 4 } }));
+    expect(toast.error).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({ id: 'storage-quota-exceeded' }),
+    );
+  });
+
+  // ── Checklist (Primitives.tsx ChecklistTool) ──────────────────────────────
+  it('ChecklistTool: shows storage-quota-exceeded toast on debounced write', () => {
+    const key = 'isc-tool-supply-chain-strategy-challenge-0';
+    safeSetItem(key, JSON.stringify([true, false, true, false, true]));
+    expect(toast.error).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({ id: 'storage-quota-exceeded' }),
+    );
   });
 });
