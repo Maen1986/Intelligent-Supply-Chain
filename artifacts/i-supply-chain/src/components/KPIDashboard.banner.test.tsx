@@ -9,7 +9,7 @@
  *  5. The banner stays hidden across a remount when the dismiss key is set.
  */
 import React from 'react';
-import { render, fireEvent, cleanup, within } from '@testing-library/react';
+import { render, fireEvent, cleanup, within, act, waitFor } from '@testing-library/react';
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 
 /* ── mock sonner before any component import ────────────────────────────── */
@@ -225,6 +225,105 @@ describe('KPIDashboard — data-collection guidance banner', () => {
 
     // Banner must re-appear because slug B was never dismissed
     expect(bannerVisible(container)).toBe(true);
+  });
+
+  // ── CSV import path ──────────────────────────────────────────────────────
+
+  /**
+   * Trigger a CSV import via the hidden file input.
+   * Uses the legacy format (KPI ID + Actual Value) to avoid the new-format
+   * calculation path, which requires KPI_DATA_SPECS entries.
+   *
+   * FileReader is replaced with a synchronous stub so the test works under
+   * vi.useFakeTimers() without any timer advancement or async flushing.
+   */
+  function simulateCsvImport(container: HTMLElement, csvText: string) {
+    const fileInput = container.querySelector('input[type="file"]') as HTMLInputElement;
+    if (!fileInput) throw new Error('simulateCsvImport: file input not found in container');
+
+    // Synchronous FileReader stub — fires onload immediately in readAsText.
+    const OrigFileReader = (globalThis as Record<string, unknown>).FileReader;
+    class SyncFileReader {
+      result: string | null = null;
+      onload: ((e: { target: SyncFileReader }) => void) | null = null;
+      readAsText() {
+        this.result = csvText;
+        this.onload?.({ target: this });
+      }
+    }
+    (globalThis as Record<string, unknown>).FileReader = SyncFileReader;
+
+    try {
+      // Override the read-only `files` property for the test.
+      const file = new File([csvText], 'kpis.csv', { type: 'text/csv' });
+      Object.defineProperty(fileInput, 'files', { value: [file], configurable: true });
+
+      // act() ensures React flushes all synchronous state updates from onload.
+      act(() => {
+        fireEvent.change(fileInput);
+      });
+    } finally {
+      (globalThis as Record<string, unknown>).FileReader = OrigFileReader;
+    }
+  }
+
+  /** Clear every numeric input in the dashboard (simulates "clear all values"). */
+  function clearAllInputs(container: HTMLElement) {
+    const inputs = container.querySelectorAll('input[type="number"]');
+    inputs.forEach(input => {
+      fireEvent.change(input, { target: { value: '' } });
+    });
+  }
+
+  /** Legacy-format CSV that sets a value for every supply-chain-strategy KPI. */
+  const ALL_KPI_CSV = [
+    'KPI ID,Actual Value',
+    'por,90',
+    'otif,85',
+    'sccost,7',
+    'c2c,25',
+    'fa,80',
+    'turns,12',
+  ].join('\n');
+
+  it('hides the banner during a CSV import and reappears after all values are cleared when dismiss key is absent', () => {
+    const { container } = render(<KPIDashboard slug="supply-chain-strategy" />);
+
+    // Banner visible before import (no values, no dismiss key)
+    expect(bannerVisible(container)).toBe(true);
+
+    // Simulate CSV import populating all KPI values via handleKpiImport
+    simulateCsvImport(container, ALL_KPI_CSV);
+
+    // Banner must hide because hasAnyValue is now true
+    expect(bannerVisible(container)).toBe(false);
+
+    // Clear every value — hasAnyValue becomes false again
+    clearAllInputs(container);
+
+    // Banner must reappear because the dismiss key was never set
+    expect(bannerVisible(container)).toBe(true);
+  });
+
+  it('keeps the banner hidden after a CSV import and subsequent clear when the dismiss key is present', () => {
+    localStorage.setItem(DISMISS_KEY, '1');
+
+    const { container } = render(<KPIDashboard slug="supply-chain-strategy" />);
+
+    // Banner hidden from the start due to dismiss key
+    expect(bannerVisible(container)).toBe(false);
+
+    // Simulate CSV import populating all KPI values via handleKpiImport
+    simulateCsvImport(container, ALL_KPI_CSV);
+
+    // Banner must remain hidden
+    expect(bannerVisible(container)).toBe(false);
+
+    // Clear every value — hasAnyValue becomes false
+    clearAllInputs(container);
+
+    // Banner must stay hidden because the dismiss key takes precedence
+    expect(bannerVisible(container)).toBe(false);
   });
 
   it('keeps the banner hidden when switching back to a slug whose banner was already dismissed', () => {
