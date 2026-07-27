@@ -267,6 +267,69 @@ describe('useAIPlan pending-flag — saved plan guard', () => {
 });
 
 /* ══════════════════════════════════════════════════════════════════════════
+   savedPlan fetch resolves after login — no second POST /api/ai/plan
+   The risk: savedPlan is in Effect A's dependency array (line 85 of the hook).
+   When the saved-plan GET (or the save after generate) resolves and sets
+   savedPlan, Effect A re-evaluates. The prevAuthenticated ref must already
+   be true at that point so !wasAuthenticated is false and generate() is
+   NOT called a second time.
+══════════════════════════════════════════════════════════════════════════ */
+describe('useAIPlan — savedPlan fetch resolves after login', () => {
+  it('does NOT fire a second POST /api/ai/plan when savedPlan is populated after the auth transition', async () => {
+    // No pending flag, no existing plan on server — Effect A will fire generate()
+    const fetchMock = stubAllFetches({ hasSavedPlan: false });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { result, rerender } = renderHook(
+      ({ authed }: { authed: boolean }) => {
+        mockIsAuthenticated.value = authed;
+        return useAIPlan(() => 'build me a KPI plan', false, TOOL_KEY);
+      },
+      { initialProps: { authed: false } },
+    );
+
+    // Transition: unauthenticated → authenticated
+    await act(async () => { rerender({ authed: true }); });
+
+    // Wait for generate to complete AND savedPlan to become non-null.
+    // generate() calls setSavedPlan once the POST /plans/:toolKey save succeeds,
+    // which re-evaluates Effect A (savedPlan is in its dep array).
+    await waitFor(() => expect(result.current.savedPlan).not.toBeNull(), { timeout: 1000 });
+
+    // The prevAuthenticated ref is already true at this point, so the
+    // !wasAuthenticated guard in Effect A prevents a second generate() call.
+    expect(countAIPlanCalls(fetchMock)).toBe(1);
+  });
+
+  it('also fires exactly once when the load-saved-plan GET resolves after generate() already ran', async () => {
+    // Simulate a race: the hook's load-effect (Effect C) fetches GET /plans/:toolKey.
+    // Effect A's generate() may complete first, then savedPlan is set by the GET result.
+    // Either way, only one POST /api/ai/plan should ever fire.
+    const fetchMock = stubAllFetches({ hasSavedPlan: false });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { result, rerender } = renderHook(
+      ({ authed }: { authed: boolean }) => {
+        mockIsAuthenticated.value = authed;
+        return useAIPlan(() => 'build me a KPI plan', false, TOOL_KEY);
+      },
+      { initialProps: { authed: false } },
+    );
+
+    await act(async () => { rerender({ authed: true }); });
+
+    // Wait until the hook is fully settled (no loading, result present)
+    await waitFor(() => expect(result.current.loading).toBe(false), { timeout: 1000 });
+    await waitFor(() => expect(result.current.result).not.toBeNull(), { timeout: 1000 });
+
+    // Give any trailing Effect A re-runs a chance to fire a spurious second call
+    await act(async () => { await new Promise(r => setTimeout(r, 80)); });
+
+    expect(countAIPlanCalls(fetchMock)).toBe(1);
+  });
+});
+
+/* ══════════════════════════════════════════════════════════════════════════
    Edge cases
 ══════════════════════════════════════════════════════════════════════════ */
 describe('useAIPlan login auto-generate — edge cases', () => {
