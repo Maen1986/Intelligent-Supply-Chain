@@ -16,6 +16,7 @@ import cron              from "node-cron";
 import { sql }           from "drizzle-orm";
 import { db, scheduleLogTable } from "@workspace/db";
 import { dispatchEvent } from "./webhookDispatch";
+import { runWebhookRetries } from "./webhookRetry";
 import { sendAlertEmail, sendDigestEmail } from "./notifyHelpers";
 import { logger }        from "./logger";
 
@@ -325,6 +326,12 @@ export function startScheduler(): void {
     });
     logger.info("[scheduler] Stale-data nudge scheduled: daily 09:30 UTC");
   }
+
+  // Webhook retry sweep — every minute
+  cron.schedule("* * * * *", () => {
+    runWebhookRetries().catch(err => logger.error({ err }, "[scheduler] Webhook retry sweep uncaught"));
+  });
+  logger.info("[scheduler] Webhook retry sweep scheduled: every minute");
 
   logger.info("[scheduler] Automation engine started");
 }

@@ -1,6 +1,7 @@
 import app              from "./app";
 import { logger }        from "./lib/logger";
 import { startScheduler } from "./lib/scheduler";
+import { runStartupMigrations } from "./lib/migrate";
 
 const rawPort = process.env["PORT"];
 
@@ -16,12 +17,20 @@ if (Number.isNaN(port) || port <= 0) {
   throw new Error(`Invalid PORT value: "${rawPort}"`);
 }
 
-app.listen(port, (err) => {
-  if (err) {
-    logger.error({ err }, "Error listening on port");
-    process.exit(1);
-  }
+// Run additive column migrations before accepting traffic
+runStartupMigrations()
+  .then(() => {
+    app.listen(port, (err) => {
+      if (err) {
+        logger.error({ err }, "Error listening on port");
+        process.exit(1);
+      }
 
-  logger.info({ port }, "Server listening");
-  startScheduler();
-});
+      logger.info({ port }, "Server listening");
+      startScheduler();
+    });
+  })
+  .catch((err) => {
+    logger.error({ err }, "Startup migrations failed — aborting");
+    process.exit(1);
+  });
