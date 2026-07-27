@@ -57,9 +57,19 @@ let apiKeyRows: unknown[] = [];
 let webhookRows: unknown[] = [];
 let insertReturn: unknown[] = [];
 
+// Sequence support: when selectResponses is non-empty, each select call pops
+// the next entry; once exhausted it falls back to apiKeyRows.
+let selectResponses: (() => unknown[])[] = [];
+let selectCallCount = 0;
+
 vi.mock('@workspace/db', () => ({
   db: {
-    select:  (...args: unknown[]) => { mockSelect(...args); return makeSelectChain(() => apiKeyRows); },
+    select:  (...args: unknown[]) => {
+      mockSelect(...args);
+      const idx = selectCallCount++;
+      const fn = selectResponses[idx] ?? (() => apiKeyRows);
+      return makeSelectChain(fn);
+    },
     update:  (...args: unknown[]) => { mockUpdate(...args); return makeUpdateChain(); },
     insert:  (...args: unknown[]) => { mockInsert(...args); return makeInsertChain(insertReturn); },
     delete:  (...args: unknown[]) => { mockDelete(...args); return makeDeleteChain(); },
@@ -91,7 +101,13 @@ function makeKey() {
 /* ─── requireApiKeyOrSession ─────────────────────────────────────────────── */
 
 describe('requireApiKeyOrSession middleware', () => {
-  beforeEach(() => { apiKeyRows = []; mockSelect.mockClear(); mockUpdate.mockClear(); });
+  beforeEach(() => {
+    apiKeyRows = [];
+    selectResponses = [];
+    selectCallCount = 0;
+    mockSelect.mockClear();
+    mockUpdate.mockClear();
+  });
 
   it('returns 401 when no session and no Bearer header', async () => {
     const { default: v1Router } = await import('../src/routes/v1');
@@ -122,6 +138,22 @@ describe('requireApiKeyOrSession middleware', () => {
       .set('Authorization', `Bearer ${raw}`);
     expect(res.status).toBe(401);
     expect(res.body.error).toMatch(/revoked/i);
+  });
+
+  it('returns 401 when the key\'s owning user account has been deleted', async () => {
+    const { raw } = makeKey();
+    // First select: key found; second select: user not found (account deleted)
+    selectResponses = [
+      () => [{ id: 7, userId: 99, scope: 'write', revokedAt: null }],
+      () => [],
+    ];
+    const { default: v1Router } = await import('../src/routes/v1');
+    const app = makeApp('/api/v1', v1Router);
+    const res = await request(app)
+      .get('/api/v1/suppliers')
+      .set('Authorization', `Bearer ${raw}`);
+    expect(res.status).toBe(401);
+    expect(res.body.error).toMatch(/user account/i);
   });
 
   it('accepts a valid API key and reaches the route handler', async () => {

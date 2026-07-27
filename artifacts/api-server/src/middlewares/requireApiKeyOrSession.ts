@@ -1,7 +1,7 @@
 import { createHash } from "crypto";
 import type { RequestHandler } from "express";
 import { eq } from "drizzle-orm";
-import { db, apiKeysTable } from "@workspace/db";
+import { db, apiKeysTable, usersTable } from "@workspace/db";
 import { logger } from "../lib/logger";
 
 /**
@@ -38,6 +38,18 @@ export const requireApiKeyOrSession: RequestHandler = async (req, res, next) => 
       }
       if (key.revokedAt) {
         res.status(401).json({ ok: false, error: "API key has been revoked" });
+        return;
+      }
+
+      // Verify the owning user account still exists (not deleted / deactivated)
+      const userRows = await db
+        .select({ id: usersTable.id })
+        .from(usersTable)
+        .where(eq(usersTable.id, key.userId))
+        .limit(1);
+
+      if (!userRows[0]) {
+        res.status(401).json({ ok: false, error: "User account not found or has been deactivated" });
         return;
       }
 
