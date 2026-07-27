@@ -7,17 +7,22 @@
  *  - Successful round-trip: PUT stores data; subsequent GET returns it
  *  - GET returns null when the user has no stored roster
  *  - 500 on database failure
+ *  - supplier.tier_changed is dispatched when a supplier's tier changes
+ *  - supplier.tier_changed is NOT dispatched when the tier is unchanged
+ *  - supplier.tier_changed is NOT dispatched for brand-new suppliers (no prior tier)
+ *  - supplier.updated is always dispatched on a successful PUT
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import request from 'supertest';
-import { makeApp, dbState, resetDbState, makeDbMock, makeLoggerMock } from './helpers';
+import { makeApp, resetDbState, makeDbMock, makeLoggerMock } from './helpers';
 
 vi.mock('@workspace/db', () => makeDbMock());
 vi.mock('../src/lib/logger', () => makeLoggerMock());
 vi.mock('../src/lib/webhookDispatch', () => ({ dispatchEvent: vi.fn() }));
 
 import scorecardRosterRouter from '../src/routes/scorecardRoster';
+import { dispatchEvent } from '../src/lib/webhookDispatch';
 
 /* ── shared fixture ────────────────────────────────────────────────────── */
 const VALID_ROSTER = {
@@ -35,7 +40,10 @@ const VALID_ROSTER = {
   activeId: 'sup-1',
 };
 
-beforeEach(resetDbState);
+beforeEach(() => {
+  resetDbState();
+  (dispatchEvent as ReturnType<typeof vi.fn>).mockClear();
+});
 
 /* ══════════════════════════════════════════════════════════════════════════
    GET /api/scorecard-roster
@@ -183,5 +191,135 @@ describe('PUT /api/scorecard-roster', () => {
     const res = await request(app).put('/api/scorecard-roster').send(VALID_ROSTER);
     expect(res.status).toBe(500);
     expect(res.body.ok).toBe(false);
+  });
+});
+
+/* ══════════════════════════════════════════════════════════════════════════
+   supplier.tier_changed webhook dispatch
+══════════════════════════════════════════════════════════════════════════ */
+
+describe('PUT /api/scorecard-roster — supplier.tier_changed dispatch', () => {
+  it('dispatches supplier.tier_changed when a supplier tier changes from Tactical to Strategic', async () => {
+    const { db } = await import('@workspace/db');
+    const executeMock = db.execute as ReturnType<typeof vi.fn>;
+
+    // Existing roster has sup-1 at tier "Tactical"
+    const oldRoster = {
+      suppliers: [{ id: 'sup-1', name: 'Acme Corp', tier: 'Tactical' }],
+      activeId: 'sup-1',
+    };
+    executeMock
+      .mockResolvedValueOnce({ rows: [{ scorecard_roster: oldRoster }] }) // pre-read SELECT
+      .mockResolvedValueOnce({ rows: [] });                               // UPDATE
+
+    const app = makeApp('/api/scorecard-roster', scorecardRosterRouter, { userId: 1 });
+    const newRoster = {
+      suppliers: [{ id: 'sup-1', name: 'Acme Corp', tier: 'Strategic' }],
+      activeId: 'sup-1',
+    };
+    const res = await request(app).put('/api/scorecard-roster').send(newRoster);
+
+    expect(res.status).toBe(200);
+    expect(res.body.ok).toBe(true);
+
+    const dispatchMock = dispatchEvent as ReturnType<typeof vi.fn>;
+    const tierChangedCall = dispatchMock.mock.calls.find(([, event]) => event === 'supplier.tier_changed');
+    expect(tierChangedCall).toBeDefined();
+    expect(tierChangedCall![0]).toBe(1);                       // userId
+    expect(tierChangedCall![2]).toMatchObject({
+      supplierId:   'sup-1',
+      supplierName: 'Acme Corp',
+      oldTier:      'Tactical',
+      newTier:      'Strategic',
+    });
+  });
+
+  it('dispatches supplier.tier_changed for every supplier whose tier changed when multiple suppliers change', async () => {
+    const { db } = await import('@workspace/db');
+    const executeMock = db.execute as ReturnType<typeof vi.fn>;
+
+    const oldRoster = {
+      suppliers: [
+        { id: 'sup-1', name: 'Acme Corp',   tier: 'Tactical'  },
+        { id: 'sup-2', name: 'Beta Ltd',    tier: 'Strategic' },
+        { id: 'sup-3', name: 'Gamma Inc',   tier: 'Tactical'  },
+      ],
+      activeId: 'sup-1',
+    };
+    executeMock
+      .mockResolvedValueOnce({ rows: [{ scorecard_roster: oldRoster }] })
+      .mockResolvedValueOnce({ rows: [] });
+
+    const app = makeApp('/api/scorecard-roster', scorecardRosterRouter, { userId: 2 });
+    // sup-1 changes tier; sup-2 stays Strategic; sup-3 changes tier
+    const newRoster = {
+      suppliers: [
+        { id: 'sup-1', name: 'Acme Corp', tier: 'Strategic' },
+        { id: 'sup-2', name: 'Beta Ltd',  tier: 'Strategic' },
+        { id: 'sup-3', name: 'Gamma Inc', tier: 'Strategic' },
+      ],
+      activeId: 'sup-1',
+    };
+    await request(app).put('/api/scorecard-roster').send(newRoster);
+
+    const dispatchMock = dispatchEvent as ReturnType<typeof vi.fn>;
+    const tierChangedCalls = dispatchMock.mock.calls.filter(([, event]) => event === 'supplier.tier_changed');
+    expect(tierChangedCalls).toHaveLength(2);
+
+    const ids = tierChangedCalls.map(([, , data]: [number, string, Record<string, unknown>]) => data.supplierId);
+    expect(ids).toContain('sup-1');
+    expect(ids).toContain('sup-3');
+    expect(ids).not.toContain('sup-2');
+  });
+
+  it('does NOT dispatch supplier.tier_changed when the tier is unchanged', async () => {
+    const { db } = await import('@workspace/db');
+    const executeMock = db.execute as ReturnType<typeof vi.fn>;
+
+    // Existing and new roster have the same tier
+    executeMock
+      .mockResolvedValueOnce({ rows: [{ scorecard_roster: VALID_ROSTER }] })
+      .mockResolvedValueOnce({ rows: [] });
+
+    const app = makeApp('/api/scorecard-roster', scorecardRosterRouter, { userId: 1 });
+    await request(app).put('/api/scorecard-roster').send(VALID_ROSTER);
+
+    const dispatchMock = dispatchEvent as ReturnType<typeof vi.fn>;
+    const tierChangedCall = dispatchMock.mock.calls.find(([, event]) => event === 'supplier.tier_changed');
+    expect(tierChangedCall).toBeUndefined();
+  });
+
+  it('does NOT dispatch supplier.tier_changed for a brand-new supplier (no prior tier)', async () => {
+    const { db } = await import('@workspace/db');
+    const executeMock = db.execute as ReturnType<typeof vi.fn>;
+
+    // No existing roster — first-ever save
+    executeMock
+      .mockResolvedValueOnce({ rows: [] }) // pre-read SELECT returns nothing
+      .mockResolvedValueOnce({ rows: [] }); // UPDATE
+
+    const app = makeApp('/api/scorecard-roster', scorecardRosterRouter, { userId: 1 });
+    await request(app).put('/api/scorecard-roster').send(VALID_ROSTER);
+
+    const dispatchMock = dispatchEvent as ReturnType<typeof vi.fn>;
+    const tierChangedCall = dispatchMock.mock.calls.find(([, event]) => event === 'supplier.tier_changed');
+    expect(tierChangedCall).toBeUndefined();
+  });
+
+  it('always dispatches supplier.updated on a successful PUT regardless of tier changes', async () => {
+    const { db } = await import('@workspace/db');
+    const executeMock = db.execute as ReturnType<typeof vi.fn>;
+
+    executeMock
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] });
+
+    const app = makeApp('/api/scorecard-roster', scorecardRosterRouter, { userId: 1 });
+    await request(app).put('/api/scorecard-roster').send(VALID_ROSTER);
+
+    const dispatchMock = dispatchEvent as ReturnType<typeof vi.fn>;
+    const updatedCall = dispatchMock.mock.calls.find(([, event]) => event === 'supplier.updated');
+    expect(updatedCall).toBeDefined();
+    expect(updatedCall![0]).toBe(1); // userId
   });
 });
