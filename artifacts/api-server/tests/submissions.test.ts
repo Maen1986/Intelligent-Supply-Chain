@@ -114,6 +114,18 @@ describe('GET /api/submissions/by-tool/:tool', () => {
     expect(res.status).toBe(403);
   });
 
+  it('rejects a session with a valid userId but no userRole with 403', async () => {
+    const app = makeApp('/api/submissions', submissionsRouter, { userId: 1 });
+    const res = await request(app).get('/api/submissions/by-tool/lead');
+    expect(res.status).toBe(403);
+  });
+
+  it('rejects a session with an unexpected role (moderator) with 403', async () => {
+    const app = makeApp('/api/submissions', submissionsRouter, { userId: 3, userRole: 'moderator' });
+    const res = await request(app).get('/api/submissions/by-tool/lead');
+    expect(res.status).toBe(403);
+  });
+
   it('filters by tool for an admin', async () => {
     dbState.selectRows = [{ id: 5, tool: 'lead' }];
     const app = makeApp('/api/submissions', submissionsRouter, adminSession);
@@ -215,6 +227,18 @@ describe('GET /api/submissions/:id/briefing-pdf', () => {
     expect(res.status).toBe(403);
   });
 
+  it('rejects a session with a valid userId but no userRole with 403', async () => {
+    const app = makeApp('/api/submissions', submissionsRouter, { userId: 1 });
+    const res = await request(app).get('/api/submissions/1/briefing-pdf');
+    expect(res.status).toBe(403);
+  });
+
+  it('rejects a session with an unexpected role (moderator) with 403', async () => {
+    const app = makeApp('/api/submissions', submissionsRouter, { userId: 3, userRole: 'moderator' });
+    const res = await request(app).get('/api/submissions/1/briefing-pdf');
+    expect(res.status).toBe(403);
+  });
+
   it('streams the stored PDF for an admin', async () => {
     dbState.selectRows = [{ id: 1, pdfObjectPath: '/objects/briefings/1.pdf', pdfFilename: 'b.pdf' }];
     const app = makeApp('/api/submissions', submissionsRouter, adminSession);
@@ -273,6 +297,20 @@ describe('POST /api/submissions/:id/resend-email', () => {
 
   it('rejects non-admin users with 403', async () => {
     const app = makeApp('/api/submissions', submissionsRouter, { userId: 2, userRole: 'user' });
+    const res = await request(app).post('/api/submissions/1/resend-email');
+    expect(res.status).toBe(403);
+    expect(res.body.ok).toBe(false);
+  });
+
+  it('rejects a session with a valid userId but no userRole with 403', async () => {
+    const app = makeApp('/api/submissions', submissionsRouter, { userId: 1 });
+    const res = await request(app).post('/api/submissions/1/resend-email');
+    expect(res.status).toBe(403);
+    expect(res.body.ok).toBe(false);
+  });
+
+  it('rejects a session with an unexpected role (moderator) with 403', async () => {
+    const app = makeApp('/api/submissions', submissionsRouter, { userId: 3, userRole: 'moderator' });
     const res = await request(app).post('/api/submissions/1/resend-email');
     expect(res.status).toBe(403);
     expect(res.body.ok).toBe(false);
