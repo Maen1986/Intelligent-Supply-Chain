@@ -148,13 +148,14 @@ html[lang="ar"] {
     display: none !important;
   }
 
-  /* ── Shared layout for ALL print zones ──────────────────────────────────
+  /* ── Shared layout + typography for ALL print zones ────────────────────
      Any element whose class includes "print-zone-" automatically gets:
        • correct positioning so it fills the page
        • the -webkit-print-color-adjust / print-color-adjust pair that
          prevents Safari and Firefox from stripping background colours
-     To add a new zone: just add one visibility-gate rule below — the
-     shared layout and colour-preserve properties are already inherited.
+       • base typography (font-family, colour, background)
+     To add a new zone: just add one visibility-gate rule below — all
+     layout, colour-preserve, and typography properties are inherited.
   ─────────────────────────────────────────────────────────────────────── */
   [class*="print-zone-"] {
     position: absolute;
@@ -165,6 +166,19 @@ html[lang="ar"] {
     box-sizing: border-box;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: #111;
+    background: #fff;
+  }
+  [class*="print-zone-"] table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  [class*="print-zone-"] th,
+  [class*="print-zone-"] td {
+    border: 1px solid #d1d5db;
+    padding: 6px 10px;
+    font-size: 11px;
   }
 
   /* ── Per-zone visibility gates (one rule per zone, nothing more needed) ── */
@@ -192,65 +206,15 @@ html[lang="ar"] {
   body[data-print="alert-config"] .print-zone-alert-config * {
     visibility: visible;
   }
-  body[data-print="alert-config"] .print-zone-alert-config {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    padding: 24px;
-    box-sizing: border-box;
-  }
-
   body[data-print="weekly-review"] .print-zone-weekly-review,
   body[data-print="weekly-review"] .print-zone-weekly-review * {
     visibility: visible;
-  }
-  body[data-print="weekly-review"] .print-zone-weekly-review {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    padding: 24px;
-    box-sizing: border-box;
   }
   body[data-print="weekly-review"] .print-weekly-template {
     max-height: none !important;
     overflow: visible !important;
   }
 
-  /* Common print typography */
-  .print-zone-scorecard,
-  .print-zone-kri,
-  .print-zone-clm,
-  .print-zone-checklist,
-  .print-zone-alert-config,
-  .print-zone-weekly-review {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    color: #111;
-    background: #fff;
-  }
-  .print-zone-scorecard table,
-  .print-zone-kri table,
-  .print-zone-clm table,
-  .print-zone-checklist table,
-  .print-zone-alert-config table {
-    width: 100%;
-    border-collapse: collapse;
-  }
-  .print-zone-scorecard th,
-  .print-zone-scorecard td,
-  .print-zone-kri th,
-  .print-zone-kri td,
-  .print-zone-clm th,
-  .print-zone-clm td,
-  .print-zone-checklist th,
-  .print-zone-checklist td,
-  .print-zone-alert-config th,
-  .print-zone-alert-config td {
-    border: 1px solid #d1d5db;
-    padding: 6px 10px;
-    font-size: 11px;
-  }
   .print-hide {
     display: none !important;
   }
