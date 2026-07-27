@@ -340,6 +340,22 @@ export function miniGaugeState(rawScore: number, hasValue: boolean) {
 
 /** Pure helper — returns state values used by HealthGauge so they can be
  *  unit-tested independently of the DOM. */
+export function buildBarChartData(
+  scores: Array<{ kpi: KpiDef; score: number | null; value: number }>,
+  isAr: boolean,
+) {
+  return scores.map(s => {
+    const label = isAr ? s.kpi.labelAr : s.kpi.label;
+    return {
+      name: label,
+      nameShort: label.substring(0, 18) + (label.length > 18 ? '…' : ''),
+      yours: s.value || 0,
+      target: s.kpi.targetValue,
+      benchmark: s.kpi.benchmarkValue,
+    };
+  });
+}
+
 export function healthGaugeState(rawScore: number, hasAnyValue: boolean) {
   const r = 72;
   const circumference = Math.PI * r;
@@ -1232,13 +1248,7 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
   const piScores = scores.filter(s => s.score !== null) as { kpi: KpiDef; score: number; value: number }[];
 
   /* bar chart data — uses industry-resolved benchmark via ek stored in scores */
-  const barData = scores.map(s => ({
-    name: isAr ? s.kpi.labelAr : s.kpi.label,
-    nameShort: (isAr ? s.kpi.labelAr : s.kpi.label).substring(0, 18) + ((isAr ? s.kpi.labelAr : s.kpi.label).length > 18 ? '…' : ''),
-    yours: s.value || 0,
-    target: s.kpi.targetValue,
-    benchmark: s.kpi.benchmarkValue,
-  }));
+  const barData = buildBarChartData(scores, isAr);
 
   return (
     <div className="space-y-6 print-zone-kpi">

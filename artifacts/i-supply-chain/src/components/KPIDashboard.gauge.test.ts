@@ -8,7 +8,7 @@
  *  • miniGaugeState  grey/neutral state when hasValue is false
  */
 import { describe, it, expect } from 'vitest';
-import { scoreColor, miniGaugeState, healthGaugeState } from './KPIDashboard';
+import { scoreColor, miniGaugeState, healthGaugeState, buildBarChartData, KPI_FRAMEWORKS, type KpiDef } from './KPIDashboard';
 
 const R = 30;
 const CIRCUMFERENCE = Math.PI * R;
@@ -175,5 +175,91 @@ describe('healthGaugeState — neutral state (no KPI values entered)', () => {
   it('strokeDash equals full circumference at score 100 when hasAnyValue is true', () => {
     const { strokeDash } = healthGaugeState(100, true);
     expect(strokeDash).toBeCloseTo(CIRCUMFERENCE_HEALTH, 5);
+  });
+});
+
+// ─── buildBarChartData — empty state (no KPI values entered) ─────────────
+describe('buildBarChartData — empty state (no KPI values entered)', () => {
+  // Use the supply-chain-strategy framework as representative test data
+  const sampleKpis = KPI_FRAMEWORKS['supply-chain-strategy'];
+
+  // Simulate "no values entered": value is NaN (parseFloat of '' or undefined)
+  const emptyScores = sampleKpis.map((k: KpiDef) => ({
+    kpi: k,
+    score: null as number | null,
+    value: NaN,
+  }));
+
+  it('produces one data entry per KPI even when no values are entered', () => {
+    const data = buildBarChartData(emptyScores, false);
+    expect(data).toHaveLength(sampleKpis.length);
+  });
+
+  it('sets yours to 0 for every KPI when no values have been entered', () => {
+    const data = buildBarChartData(emptyScores, false);
+    data.forEach(d => expect(d.yours).toBe(0));
+  });
+
+  it('preserves target and benchmark values even when yours is 0', () => {
+    const data = buildBarChartData(emptyScores, false);
+    data.forEach((d, i) => {
+      expect(d.target).toBe(sampleKpis[i].targetValue);
+      expect(d.benchmark).toBe(sampleKpis[i].benchmarkValue);
+    });
+  });
+
+  it('uses the English KPI label for name when isAr is false', () => {
+    const data = buildBarChartData(emptyScores, false);
+    data.forEach((d, i) => {
+      expect(d.name).toBe(sampleKpis[i].label);
+    });
+  });
+
+  it('uses the Arabic KPI label for name when isAr is true', () => {
+    const data = buildBarChartData(emptyScores, true);
+    data.forEach((d, i) => {
+      expect(d.name).toBe(sampleKpis[i].labelAr);
+    });
+  });
+
+  it('truncates nameShort to 18 characters with an ellipsis for long labels', () => {
+    const data = buildBarChartData(emptyScores, false);
+    data.forEach((d, i) => {
+      const label = sampleKpis[i].label;
+      if (label.length > 18) {
+        expect(d.nameShort).toBe(label.substring(0, 18) + '…');
+      } else {
+        expect(d.nameShort).toBe(label);
+      }
+    });
+  });
+});
+
+// ─── bar chart visibility guard — hasAnyValue logic ──────────────────────
+describe('bar chart visibility guard — hasAnyValue', () => {
+  const kpis = KPI_FRAMEWORKS['supply-chain-strategy'];
+
+  it('is false when no values object keys match any KPI id', () => {
+    const values: Record<string, string> = {};
+    const hasAnyValue = kpis.some((k: KpiDef) => !isNaN(parseFloat(values[k.id] ?? '')));
+    expect(hasAnyValue).toBe(false);
+  });
+
+  it('is false when all stored strings are empty', () => {
+    const values: Record<string, string> = Object.fromEntries(kpis.map((k: KpiDef) => [k.id, '']));
+    const hasAnyValue = kpis.some((k: KpiDef) => !isNaN(parseFloat(values[k.id] ?? '')));
+    expect(hasAnyValue).toBe(false);
+  });
+
+  it('is true when at least one value string is a valid number', () => {
+    const values: Record<string, string> = { [kpis[0].id]: '85' };
+    const hasAnyValue = kpis.some((k: KpiDef) => !isNaN(parseFloat(values[k.id] ?? '')));
+    expect(hasAnyValue).toBe(true);
+  });
+
+  it('is false when all value strings are non-numeric text', () => {
+    const values: Record<string, string> = Object.fromEntries(kpis.map((k: KpiDef) => [k.id, 'abc']));
+    const hasAnyValue = kpis.some((k: KpiDef) => !isNaN(parseFloat(values[k.id] ?? '')));
+    expect(hasAnyValue).toBe(false);
   });
 });
