@@ -320,6 +320,82 @@ describe('downloadCsv', () => {
 });
 
 /* ══════════════════════════════════════════════════════════════════════════
+   9b. parseCsvFile — 30-row header-scan limit
+       The parser finds the header row among the first 30 non-blank lines only.
+       A header buried deeper than row 30 must NOT be found.
+══════════════════════════════════════════════════════════════════════════ */
+
+describe('parseCsvFile — 30-row header-scan limit', () => {
+  /** Build a CSV with `prefixRows` leading filler rows, then a header row. */
+  function buildCsvWithLeadingRows(prefixRows: number): string {
+    const lines: string[] = [];
+    for (let i = 0; i < prefixRows; i++) {
+      lines.push(`Filler row ${i + 1},,,`);
+    }
+    lines.push('Name,Score,Tier');
+    lines.push('Alpha,80,Strategic');
+    return lines.join('\n');
+  }
+
+  it('finds the header row when it is at row 10 (well within the 30-row limit)', () => {
+    const csv = buildCsvWithLeadingRows(10);
+    const { rows, errors } = parseCsvFile(csv, ['Name', 'Score', 'Tier']);
+    expect(errors).toHaveLength(0);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]['Name']).toBe('Alpha');
+  });
+
+  it('finds the header row when it is at row 15 (within the 30-row limit)', () => {
+    const csv = buildCsvWithLeadingRows(15);
+    const { rows, errors } = parseCsvFile(csv, ['Name', 'Score']);
+    expect(errors).toHaveLength(0);
+    expect(rows[0]['Score']).toBe('80');
+  });
+
+  it('finds the header row when it is at row 29 (last allowed position, 0-based)', () => {
+    // 29 filler rows → header is at index 29 (the 30th line, 0-based)
+    const csv = buildCsvWithLeadingRows(29);
+    const { rows, errors } = parseCsvFile(csv, ['Name', 'Score']);
+    expect(errors).toHaveLength(0);
+    expect(rows).toHaveLength(1);
+  });
+
+  it('does NOT find the header when it is beyond the 30-row limit (row 31)', () => {
+    // 31 filler rows → header is at index 31, outside the scan window
+    const csv = buildCsvWithLeadingRows(31);
+    const { errors, rows } = parseCsvFile(csv, ['Name', 'Score']);
+    // The parser will treat the first filler row as the header and report missing columns
+    expect(errors.length).toBeGreaterThan(0);
+    expect(rows).toHaveLength(0);
+  });
+
+  it('handles a realistic KPI template with 10 branding/instruction rows before the header', () => {
+    const lines = [
+      'I Supply Chain — KPI Data Collection Template,,,',
+      'Framework: Lean Six Sigma,,,',
+      'Generated: 1 January 2026,,,',
+      ',,,',
+      'INSTRUCTIONS:,Fill in the "Your Value" column,,',
+      ',Do NOT modify KPI ID columns,,',
+      ',When complete click Import CSV,,',
+      ',Each KPI section shows what raw data to collect,,',
+      ',,,',
+      'KPI ID,Input Field,Your Value,Unit',
+      'sigma,Defects,230,count',
+      'sigma,Units Produced,5000,units',
+      'sigma,Opportunities per Unit,10,count',
+    ];
+    const csv = lines.join('\n');
+    const { rows, errors } = parseCsvFile(csv, ['KPI ID', 'Input Field', 'Your Value', 'Unit']);
+    expect(errors).toHaveLength(0);
+    // 3 data rows after the header
+    expect(rows).toHaveLength(3);
+    expect(rows[0]['KPI ID']).toBe('sigma');
+    expect(rows[0]['Your Value']).toBe('230');
+  });
+});
+
+/* ══════════════════════════════════════════════════════════════════════════
    10. Scorecard-import score validation logic (0–100 boundary)
        These tests exercise the validation rules that handleScorecardImport
        applies to each sub-indicator cell — implemented inline without

@@ -81,9 +81,11 @@ export function parseCsvFile(
 
   // Find the header row: scan lines until one contains all required headers.
   // This lets templates include branding/instructions rows before the header row.
+  // The scan is capped at 30 lines so a completely wrong file can't stall parsing.
+  const HEADER_SCAN_LIMIT = 30;
   let headerLineIndex = 0;
   if (requiredHeaders.length > 0) {
-    for (let li = 0; li < lines.length; li++) {
+    for (let li = 0; li < Math.min(lines.length, HEADER_SCAN_LIMIT); li++) {
       const candidate = parseCsvLine(lines[li]).map(h => h.trim());
       if (requiredHeaders.every(h => candidate.includes(h))) {
         headerLineIndex = li;
