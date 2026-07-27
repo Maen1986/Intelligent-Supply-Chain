@@ -17,6 +17,7 @@ import integrationsRouter      from "./integrations";
 import aiPlanRouter            from "./aiPlan";
 import plansRouter             from "./plans";
 import webhooksInboundRouter   from "./webhooksInbound";
+import notificationsRouter     from "./notifications";
 
 const router: IRouter = Router();
 
@@ -34,6 +35,7 @@ router.use("/scorecard-config",  scorecardConfigRouter);
 router.use("/v1",                v1Router);
 router.use("/integrations",      integrationsRouter);
 router.use("/plans",             plansRouter);
+router.use("/notifications",     notificationsRouter);
 router.use(aiPlanRouter);
 router.use(intelligenceRouter);
 router.use(assessmentRouter);

@@ -5,6 +5,7 @@ import { useLanguage } from '@/lib/LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
 import { Menu, X, ChevronDown, Phone, LogOut, User, Settings, LayoutDashboard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { NotificationsBell } from './NotificationsBell';
 
 const industryList = [
   { label: 'Manufacturing',           labelAr: 'التصنيع',                    slug: 'manufacturing' },
@@ -119,6 +120,7 @@ export function Header() {
             <Link href="/account" className="flex items-center gap-1 hover:text-[#C9A84C] transition-colors">
               <Settings className="w-3 h-3" /> {lang === 'ar' ? 'إعدادات الحساب' : 'Account'}
             </Link>
+            <NotificationsBell lang={lang} />
             <button onClick={logout} className="flex items-center gap-1 hover:text-[#C9A84C] transition-colors">
               <LogOut className="w-3 h-3" /> {lang === 'ar' ? 'تسجيل الخروج' : 'Sign out'}
             </button>
@@ -221,6 +223,11 @@ export function Header() {
 
         {/* ── Mobile controls ── */}
         <div className="lg:hidden flex items-center gap-2 ml-auto">
+          {user && (
+            <span className="text-gray-700">
+              <NotificationsBell lang={lang} />
+            </span>
+          )}
           <button onClick={toggleLanguage} className="text-sm font-bold text-muted-foreground hover:text-primary px-2 py-1">
             {lang === 'en' ? 'AR' : 'EN'}
           </button>
