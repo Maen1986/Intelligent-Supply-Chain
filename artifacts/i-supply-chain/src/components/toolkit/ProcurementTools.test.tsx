@@ -627,3 +627,135 @@ describe('MarketIntelligenceScorecard — Arabic label associations', () => {
     expect(saved.continuity).toBe(3);
   });
 });
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Suite 8 — Keyboard Tab Activation
+   All three tab buttons must be activatable by keyboard alone.
+
+   Strategy: focus the button via `.focus()`, fire a keyDown event (Enter or
+   Space), then dispatch a synthetic click — exactly what browsers do
+   internally when Enter/Space is pressed on a focused <button> element.
+   No pointer events (mouseDown, mouseUp, pointerDown, etc.) are used.
+══════════════════════════════════════════════════════════════════════════ */
+describe('ProcurementToolsSection — keyboard tab activation', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    cleanup();
+  });
+
+  /**
+   * Simulate pressing Enter on a focused button.
+   * Browsers fire a click event on keyDown Enter for <button> elements.
+   */
+  function pressEnter(button: HTMLElement) {
+    button.focus();
+    fireEvent.keyDown(button, { key: 'Enter', code: 'Enter', bubbles: true });
+    fireEvent.click(button); // browser converts keyDown Enter → click
+  }
+
+  /**
+   * Simulate pressing Space on a focused button.
+   * Browsers fire a click event on keyUp Space for <button> elements.
+   */
+  function pressSpace(button: HTMLElement) {
+    button.focus();
+    fireEvent.keyDown(button, { key: ' ', code: 'Space', bubbles: true });
+    fireEvent.keyUp(button,   { key: ' ', code: 'Space', bubbles: true });
+    fireEvent.click(button); // browser converts keyUp Space → click
+  }
+
+  it('all three tab buttons are focusable (tabIndex is not -1)', () => {
+    render(<ProcurementToolsSection isAr={false} />);
+
+    const tabs = [
+      screen.getByRole('button', { name: 'Category Profile Builder' }),
+      screen.getByRole('button', { name: 'Spend Pareto Analysis' }),
+      screen.getByRole('button', { name: 'Market Intelligence Scorecard' }),
+    ];
+
+    // Native <button> elements have tabIndex 0 by default — never -1
+    tabs.forEach(tab => {
+      expect(tab.tabIndex).not.toBe(-1);
+    });
+  });
+
+  it('each tab button receives focus when focused programmatically', () => {
+    render(<ProcurementToolsSection isAr={false} />);
+
+    const tabs = [
+      screen.getByRole('button', { name: 'Category Profile Builder' }),
+      screen.getByRole('button', { name: 'Spend Pareto Analysis' }),
+      screen.getByRole('button', { name: 'Market Intelligence Scorecard' }),
+    ];
+
+    tabs.forEach(tab => {
+      tab.focus();
+      expect(document.activeElement).toBe(tab);
+    });
+  });
+
+  it('Enter on the Spend Pareto Analysis tab shows its panel content', () => {
+    render(<ProcurementToolsSection isAr={false} />);
+
+    pressEnter(screen.getByRole('button', { name: 'Spend Pareto Analysis' }));
+
+    // Supplier name inputs are unique to the SpendParetoChart panel
+    expect(screen.getByLabelText('Supplier 1 name')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Category Name')).not.toBeInTheDocument();
+  });
+
+  it('Space on the Market Intelligence Scorecard tab shows its panel content', () => {
+    render(<ProcurementToolsSection isAr={false} />);
+
+    pressSpace(screen.getByRole('button', { name: 'Market Intelligence Scorecard' }));
+
+    // Dimension sliders are unique to the MarketIntelligenceScorecard panel
+    expect(screen.getByLabelText('Supplier Concentration')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Supplier 1 name')).not.toBeInTheDocument();
+  });
+
+  it('Space on the Spend Pareto Analysis tab shows spend inputs', () => {
+    render(<ProcurementToolsSection isAr={false} />);
+
+    pressSpace(screen.getByRole('button', { name: 'Spend Pareto Analysis' }));
+
+    expect(screen.getByLabelText('Supplier 1 spend')).toBeInTheDocument();
+  });
+
+  it('Enter on Category Profile Builder returns to its panel from another tab', () => {
+    render(<ProcurementToolsSection isAr={false} />);
+
+    // Navigate away via keyboard
+    pressEnter(screen.getByRole('button', { name: 'Market Intelligence Scorecard' }));
+    expect(screen.getByLabelText('Supplier Concentration')).toBeInTheDocument();
+
+    // Return to Category Profile Builder via keyboard Enter
+    pressEnter(screen.getByRole('button', { name: 'Category Profile Builder' }));
+
+    expect(screen.getByLabelText('Category Name')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Supplier Concentration')).not.toBeInTheDocument();
+  });
+
+  it('cycling through all three tabs by keyboard shows the correct panel each time', () => {
+    render(<ProcurementToolsSection isAr={false} />);
+
+    // Tab 1: Category Profile Builder (active by default — verify with Enter)
+    pressEnter(screen.getByRole('button', { name: 'Category Profile Builder' }));
+    expect(screen.getByLabelText('Category Name')).toBeInTheDocument();
+
+    // Tab 2: Spend Pareto Analysis via Space
+    pressSpace(screen.getByRole('button', { name: 'Spend Pareto Analysis' }));
+    expect(screen.getByLabelText('Supplier 1 name')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Category Name')).not.toBeInTheDocument();
+
+    // Tab 3: Market Intelligence Scorecard via Enter
+    pressEnter(screen.getByRole('button', { name: 'Market Intelligence Scorecard' }));
+    expect(screen.getByLabelText('Supplier Concentration')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Supplier 1 name')).not.toBeInTheDocument();
+
+    // Back to Tab 1 via Space
+    pressSpace(screen.getByRole('button', { name: 'Category Profile Builder' }));
+    expect(screen.getByLabelText('Category Name')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Supplier Concentration')).not.toBeInTheDocument();
+  });
+});
