@@ -179,6 +179,7 @@ export function TrainingNeedsAssessment({ isAr }: TrainingToolsProps) {
               <Upload className="w-3 h-3" />{isAr ? 'استيراد CSV' : 'Import CSV'}
             </button>
             <input type="file" accept=".csv" className="hidden" ref={importInputRef}
+              aria-label={isAr ? 'استيراد ملف CSV' : 'Import CSV file'}
               onChange={e => { const f = e.target.files?.[0]; if (f) handleTrainingImport(f); e.target.value = ''; }} />
           </div>
         </div>

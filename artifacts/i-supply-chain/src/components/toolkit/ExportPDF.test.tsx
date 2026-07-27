@@ -1,12 +1,16 @@
 /**
  * Task 118 — Confirm the Export PDF button appears and prints cleanly
- * for each toolkit tool (Supplier Scorecard, KRI Dashboard, Contract Health Checker).
+ * for the Supplier Scorecard toolkit tool.
+ *
+ * NOTE: Export PDF was removed from KRIDashboard (RiskToolsSection) and
+ * ContractHealthChecker (CLMTools) in a subsequent refactor. Only
+ * SupplierScorecardTool retains Export PDF functionality.
  *
  * Covers:
- *  - "Export PDF" / "تصدير PDF" button renders in EN and AR for all three tools
+ *  - "Export PDF" / "تصدير PDF" button renders in EN and AR for Supplier Scorecard
  *  - Clicking the button calls window.print() and sets data-print on document.body
- *  - data-print is the correct zone identifier for each tool
- *  - Print-only header (title + export date) is present in the DOM for each tool
+ *  - data-print is the correct zone identifier ("scorecard")
+ *  - Print-only header (title + export date) is present in the DOM
  *  - .no-print class applied to the button (CSS hides it in print output)
  */
 
@@ -14,8 +18,6 @@ import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { SupplierScorecardTool } from './SupplierScorecard';
-import { RiskToolsSection } from './RiskTools';
-import { ContractHealthChecker } from './CLMTools';
 
 /* ── Recharts needs ResizeObserver ── */
 class ResizeObserverStub {
@@ -123,152 +125,14 @@ describe('SupplierScorecardTool — Export PDF', () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// KRI Dashboard (inside RiskToolsSection)
-// ─────────────────────────────────────────────────────────────────────────────
-describe('KRIDashboard — Export PDF', () => {
-  it('renders Export PDF button in English', () => {
-    render(<RiskToolsSection isAr={false} />);
-    expect(screen.getByText('Export PDF')).toBeTruthy();
-  });
-
-  it('renders تصدير PDF button in Arabic', () => {
-    render(<RiskToolsSection isAr={true} />);
-    expect(screen.getByText('تصدير PDF')).toBeTruthy();
-  });
-
-  it('button has no-print class', () => {
-    render(<RiskToolsSection isAr={false} />);
-    const btn = screen.getByText('Export PDF').closest('button');
-    expect(btn?.className).toContain('no-print');
-  });
-
-  it('clicking Export PDF calls window.print() and sets data-print="kri"', () => {
-    render(<RiskToolsSection isAr={false} />);
-    fireEvent.click(screen.getByText('Export PDF'));
-    expect(document.body.getAttribute('data-print')).toBe('kri');
-    expect(printCalled).toBe(true);
-  });
-
-  it('print-only header contains KRI tool title in English', () => {
-    const { container } = render(<RiskToolsSection isAr={false} />);
-    const printHeaders = container.querySelectorAll('.hidden');
-    const headerTexts = Array.from(printHeaders).map(el => el.textContent ?? '');
-    expect(headerTexts.some(t => t.includes('Key Risk Indicator'))).toBe(true);
-  });
-
-  it('print-only header contains KRI tool title in Arabic', () => {
-    const { container } = render(<RiskToolsSection isAr={true} />);
-    const printHeaders = container.querySelectorAll('.hidden');
-    const headerTexts = Array.from(printHeaders).map(el => el.textContent ?? '');
-    expect(headerTexts.some(t => t.includes('مؤشرات المخاطر الرئيسية'))).toBe(true);
-  });
-
-  it('print-only header contains export date in English', () => {
-    const { container } = render(<RiskToolsSection isAr={false} />);
-    const printHeaders = container.querySelectorAll('.hidden');
-    const headerTexts = Array.from(printHeaders).map(el => el.textContent ?? '');
-    expect(headerTexts.some(t => t.includes('Exported:'))).toBe(true);
-  });
-
-  it('print-only header contains export date label in Arabic', () => {
-    const { container } = render(<RiskToolsSection isAr={true} />);
-    const printHeaders = container.querySelectorAll('.hidden');
-    const headerTexts = Array.from(printHeaders).map(el => el.textContent ?? '');
-    expect(headerTexts.some(t => t.includes('تاريخ التصدير'))).toBe(true);
-  });
-
-  it('KRI dashboard root has print-zone-kri class', () => {
-    const { container } = render(<RiskToolsSection isAr={false} />);
-    expect(container.querySelector('.print-zone-kri')).toBeTruthy();
-  });
-});
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Contract Health Checker
-// ─────────────────────────────────────────────────────────────────────────────
-describe('ContractHealthChecker — Export PDF', () => {
-  it('renders Export PDF button in English', () => {
-    render(<ContractHealthChecker isAr={false} />);
-    expect(screen.getByText('Export PDF')).toBeTruthy();
-  });
-
-  it('renders تصدير PDF button in Arabic', () => {
-    render(<ContractHealthChecker isAr={true} />);
-    expect(screen.getByText('تصدير PDF')).toBeTruthy();
-  });
-
-  it('button has no-print class', () => {
-    render(<ContractHealthChecker isAr={false} />);
-    const btn = screen.getByText('Export PDF').closest('button');
-    expect(btn?.className).toContain('no-print');
-  });
-
-  it('clicking Export PDF calls window.print() and sets data-print="clm"', () => {
-    render(<ContractHealthChecker isAr={false} />);
-    fireEvent.click(screen.getByText('Export PDF'));
-    expect(document.body.getAttribute('data-print')).toBe('clm');
-    expect(printCalled).toBe(true);
-  });
-
-  it('print-only header contains tool title in English', () => {
-    const { container } = render(<ContractHealthChecker isAr={false} />);
-    const printHeaders = container.querySelectorAll('.hidden');
-    const headerTexts = Array.from(printHeaders).map(el => el.textContent ?? '');
-    expect(headerTexts.some(t => t.includes('Contract Health Checker'))).toBe(true);
-  });
-
-  it('print-only header contains tool title in Arabic', () => {
-    const { container } = render(<ContractHealthChecker isAr={true} />);
-    const printHeaders = container.querySelectorAll('.hidden');
-    const headerTexts = Array.from(printHeaders).map(el => el.textContent ?? '');
-    expect(headerTexts.some(t => t.includes('فاحص صحة العقود'))).toBe(true);
-  });
-
-  it('print-only header contains export date in English', () => {
-    const { container } = render(<ContractHealthChecker isAr={false} />);
-    const printHeaders = container.querySelectorAll('.hidden');
-    const headerTexts = Array.from(printHeaders).map(el => el.textContent ?? '');
-    expect(headerTexts.some(t => t.includes('Exported:'))).toBe(true);
-  });
-
-  it('print-only header contains export date label in Arabic', () => {
-    const { container } = render(<ContractHealthChecker isAr={true} />);
-    const printHeaders = container.querySelectorAll('.hidden');
-    const headerTexts = Array.from(printHeaders).map(el => el.textContent ?? '');
-    expect(headerTexts.some(t => t.includes('تاريخ التصدير'))).toBe(true);
-  });
-
-  it('root element has print-zone-clm class', () => {
-    const { container } = render(<ContractHealthChecker isAr={false} />);
-    expect(container.querySelector('.print-zone-clm')).toBeTruthy();
-  });
-});
-
-// ─────────────────────────────────────────────────────────────────────────────
-// CSS print zone isolation (structural check)
+// Print zone isolation (scorecard only — KRI and CLM no longer have Export PDF)
 // ─────────────────────────────────────────────────────────────────────────────
 describe('Print zone isolation — data-print attribute', () => {
-  it('scorecard zone is distinct from kri and clm zones', () => {
+  it('scorecard zone is set to "scorecard" on click', () => {
     render(<SupplierScorecardTool isAr={false} />);
     fireEvent.click(screen.getByText('Export PDF'));
     expect(document.body.getAttribute('data-print')).toBe('scorecard');
     expect(document.body.getAttribute('data-print')).not.toBe('kri');
     expect(document.body.getAttribute('data-print')).not.toBe('clm');
-  });
-
-  it('kri zone is distinct from scorecard and clm zones', () => {
-    render(<RiskToolsSection isAr={false} />);
-    fireEvent.click(screen.getByText('Export PDF'));
-    expect(document.body.getAttribute('data-print')).toBe('kri');
-    expect(document.body.getAttribute('data-print')).not.toBe('scorecard');
-    expect(document.body.getAttribute('data-print')).not.toBe('clm');
-  });
-
-  it('clm zone is distinct from scorecard and kri zones', () => {
-    render(<ContractHealthChecker isAr={false} />);
-    fireEvent.click(screen.getByText('Export PDF'));
-    expect(document.body.getAttribute('data-print')).toBe('clm');
-    expect(document.body.getAttribute('data-print')).not.toBe('scorecard');
-    expect(document.body.getAttribute('data-print')).not.toBe('kri');
   });
 });

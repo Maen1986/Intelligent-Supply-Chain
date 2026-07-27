@@ -560,9 +560,9 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
                       <td className="px-2 py-1.5"><input value={row.category} onChange={e => updateRow(row.id, 'category', e.target.value)} placeholder={isAr ? 'فئة' : 'Category'} className="w-full text-xs border border-slate-200 rounded px-2 py-1 min-w-[100px] focus:outline-none focus:ring-1 focus:ring-[#082C6B]" /></td>
                       <td className="px-2 py-1.5"><input value={row.subcategory} onChange={e => updateRow(row.id, 'subcategory', e.target.value)} placeholder={isAr ? 'فئة فرعية' : 'Subcategory'} className="w-full text-xs border border-slate-200 rounded px-2 py-1 min-w-[100px] focus:outline-none focus:ring-1 focus:ring-[#082C6B]" /></td>
                       <td className="px-2 py-1.5"><input type="number" value={row.annualSpend || ''} onChange={e => updateRow(row.id, 'annualSpend', parseFloat(e.target.value) || 0)} placeholder="0" className="w-full text-xs border border-slate-200 rounded px-2 py-1 text-right min-w-[120px] focus:outline-none focus:ring-1 focus:ring-[#082C6B]" /></td>
-                      <td className="px-2 py-1.5 text-center"><input type="checkbox" checked={row.contracted} onChange={e => updateRow(row.id, 'contracted', e.target.checked)} className="w-4 h-4 accent-[#082C6B]" /></td>
-                      <td className="px-2 py-1.5 text-center"><input type="checkbox" checked={row.strategic} onChange={e => updateRow(row.id, 'strategic', e.target.checked)} className="w-4 h-4 accent-[#082C6B]" /></td>
-                      <td className="px-2 py-1.5"><button onClick={() => removeRow(row.id)} disabled={rows.length === 1} className="text-slate-300 hover:text-red-500 transition-colors disabled:opacity-20"><Trash2 className="w-3.5 h-3.5" /></button></td>
+                      <td className="px-2 py-1.5 text-center"><input type="checkbox" checked={row.contracted} onChange={e => updateRow(row.id, 'contracted', e.target.checked)} className="w-4 h-4 accent-[#082C6B]" aria-label={isAr ? `${row.supplier || 'مورد'}: تحت عقد` : `${row.supplier || 'Supplier'}: contracted`} /></td>
+                      <td className="px-2 py-1.5 text-center"><input type="checkbox" checked={row.strategic} onChange={e => updateRow(row.id, 'strategic', e.target.checked)} className="w-4 h-4 accent-[#082C6B]" aria-label={isAr ? `${row.supplier || 'مورد'}: استراتيجي` : `${row.supplier || 'Supplier'}: strategic`} /></td>
+                      <td className="px-2 py-1.5"><button onClick={() => removeRow(row.id)} disabled={rows.length === 1} aria-label={isAr ? `حذف ${row.supplier || 'مورد'}` : `Remove ${row.supplier || 'supplier'}`} className="text-slate-300 hover:text-red-500 transition-colors disabled:opacity-20"><Trash2 className="w-3.5 h-3.5" /></button></td>
                     </tr>
                   ))}
                 </tbody>
@@ -627,12 +627,14 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
                     onChange={e => updatePorter(force.id, 'score', parseInt(e.target.value))}
                     className="w-full h-2 rounded-full appearance-none cursor-pointer"
                     style={{ accentColor: color }}
+                    aria-label={isAr ? force.labelAr : force.label}
                   />
                   <div className="flex justify-between text-[10px] text-slate-400 mt-1 px-0.5">
                     <span>{isAr ? 'منخفض' : 'Low'}</span><span>2</span><span>3</span><span>4</span><span>{isAr ? 'مرتفع' : 'High'}</span>
                   </div>
                   <input value={porter[force.id]?.notes ?? ''} onChange={e => updatePorter(force.id, 'notes', e.target.value)}
                     placeholder={isAr ? 'ملاحظات (اختياري)' : 'Notes (optional)'}
+                    aria-label={isAr ? `ملاحظات ${force.labelAr}` : `${force.label} notes`}
                     className="mt-2 w-full text-xs border border-slate-100 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-slate-300 text-slate-600 bg-slate-50" />
                 </div>
               );

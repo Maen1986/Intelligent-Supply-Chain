@@ -69,33 +69,52 @@ afterEach(() => {
    KRI Dashboard (inside RiskToolsSection)
 ══════════════════════════════════════════════════════════════════════════ */
 describe('KRIDashboard — Generate button', () => {
-  const SK = 'isc-tool-risk-kri';
+  const SK = 'isc-tool-risk-kri-v2';
 
-  it('shows sign-in prompt when not authenticated', () => {
+  /** Navigate to the AI Risk Brief tab inside RiskToolsSection */
+  function goToAiTab() {
+    fireEvent.click(screen.getByRole('button', { name: /AI Risk Brief/i }));
+  }
+
+  it('shows sign-in prompt when not authenticated', async () => {
     mockUseAuth.mockReturnValue({ isAuthenticated: false });
     render(<RiskToolsSection isAr={false} />);
-    expect(screen.getByText(/Sign in to generate an AI plan/i)).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /Generate Risk Mitigation Plan/i })).toBeNull();
+    goToAiTab();
+    await waitFor(() =>
+      expect(screen.getByText(/Sign in to generate an AI plan/i)).toBeInTheDocument(),
+    );
+    expect(screen.queryByRole('button', { name: /Generate Risk Assessment/i })).toBeNull();
   });
 
-  it('Generate button is disabled when no KRI values are entered', () => {
+  it('Generate button is disabled when no KRI values are entered', async () => {
     render(<RiskToolsSection isAr={false} />);
-    expect(screen.getByRole('button', { name: /Generate Risk Mitigation Plan/i })).toBeDisabled();
+    goToAiTab();
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: /Generate Risk Assessment/i })).toBeDisabled(),
+    );
   });
 
-  it('Generate button is enabled once KRI values are stored', () => {
+  it('Generate button is enabled once KRI values are stored', async () => {
     localStorage.setItem(SK, JSON.stringify({ concentration: '55', dio: '50' }));
     render(<RiskToolsSection isAr={false} />);
-    expect(screen.getByRole('button', { name: /Generate Risk Mitigation Plan/i })).not.toBeDisabled();
+    goToAiTab();
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: /Generate Risk Assessment/i })).not.toBeDisabled(),
+    );
   });
 
   it('clicking Generate shows spinner then result panel', async () => {
     localStorage.setItem(SK, JSON.stringify({ concentration: '55', dio: '50' }));
     stubFetchOk();
     render(<RiskToolsSection isAr={false} />);
+    goToAiTab();
 
-    fireEvent.click(screen.getByRole('button', { name: /Generate Risk Mitigation Plan/i }));
-    expect(screen.getByText(/Generating/i)).toBeInTheDocument();
+    const btn = await waitFor(() => {
+      const b = screen.getByRole('button', { name: /Generate Risk Assessment/i });
+      expect(b).not.toBeDisabled();
+      return b;
+    });
+    fireEvent.click(btn);
 
     await waitFor(() =>
       expect(screen.getByText('AI-Generated Plan')).toBeInTheDocument(),
@@ -107,8 +126,14 @@ describe('KRIDashboard — Generate button', () => {
     localStorage.setItem(SK, JSON.stringify({ concentration: '55' }));
     stubFetchFail('AI service unavailable');
     render(<RiskToolsSection isAr={false} />);
+    goToAiTab();
 
-    fireEvent.click(screen.getByRole('button', { name: /Generate Risk Mitigation Plan/i }));
+    const btn = await waitFor(() => {
+      const b = screen.getByRole('button', { name: /Generate Risk Assessment/i });
+      expect(b).not.toBeDisabled();
+      return b;
+    });
+    fireEvent.click(btn);
 
     await waitFor(() =>
       expect(screen.getByRole('button', { name: /Retry/i })).toBeInTheDocument(),
@@ -382,20 +407,31 @@ function getAIPlanFetchBody(): Record<string, unknown> {
 }
 
 describe('KRIDashboard — Arabic path (isAr=true)', () => {
-  const SK = 'isc-tool-risk-kri';
+  const SK = 'isc-tool-risk-kri-v2';
+
+  function goToAiTabAr() {
+    fireEvent.click(screen.getByRole('button', { name: /تقرير المخاطر/i }));
+  }
 
   it('shows Arabic generate button label', () => {
     localStorage.setItem(SK, JSON.stringify({ concentration: '55' }));
     render(<RiskToolsSection isAr={true} />);
-    expect(screen.getByRole('button', { name: /توليد خطة تخفيف المخاطر/i })).toBeInTheDocument();
+    goToAiTabAr();
+    expect(screen.getByRole('button', { name: /توليد تقرير المخاطر/i })).toBeInTheDocument();
   });
 
   it('sends language=ar in the fetch body', async () => {
     localStorage.setItem(SK, JSON.stringify({ concentration: '55', dio: '50' }));
     stubFetchOk();
     render(<RiskToolsSection isAr={true} />);
+    goToAiTabAr();
 
-    fireEvent.click(screen.getByRole('button', { name: /توليد خطة تخفيف المخاطر/i }));
+    const btn = await waitFor(() => {
+      const b = screen.getByRole('button', { name: /توليد تقرير المخاطر/i });
+      expect(b).not.toBeDisabled();
+      return b;
+    });
+    fireEvent.click(btn);
 
     await waitFor(() => expect(screen.getByText('الخطة المُولَّدة بالذكاء الاصطناعي')).toBeInTheDocument());
     expect(getAIPlanFetchBody().language).toBe('ar');
@@ -405,8 +441,14 @@ describe('KRIDashboard — Arabic path (isAr=true)', () => {
     localStorage.setItem(SK, JSON.stringify({ concentration: '55', dio: '50' }));
     stubFetchOk();
     const { container } = render(<RiskToolsSection isAr={true} />);
+    goToAiTabAr();
 
-    fireEvent.click(screen.getByRole('button', { name: /توليد خطة تخفيف المخاطر/i }));
+    const btn = await waitFor(() => {
+      const b = screen.getByRole('button', { name: /توليد تقرير المخاطر/i });
+      expect(b).not.toBeDisabled();
+      return b;
+    });
+    fireEvent.click(btn);
 
     await waitFor(() => expect(screen.getByText('الخطة المُولَّدة بالذكاء الاصطناعي')).toBeInTheDocument());
     expect(container.querySelector('[dir="rtl"]')).toBeInTheDocument();

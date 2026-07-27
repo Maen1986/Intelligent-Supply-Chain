@@ -731,6 +731,7 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
               </button>
               <input
                 type="file" accept=".csv" className="hidden" ref={importInputRef}
+                aria-label={isAr ? 'استيراد ملف CSV' : 'Import CSV file'}
                 onChange={e => { const f = e.target.files?.[0]; if (f) handleScorecardImport(f); e.target.value = ''; }}
               />
             </div>

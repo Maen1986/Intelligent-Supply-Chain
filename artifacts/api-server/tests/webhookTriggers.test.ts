@@ -87,7 +87,7 @@ describe('supplier.tier_changed webhook event', () => {
       .mockResolvedValueOnce({ rows: [] });
 
     const app = makeApp('/api/scorecard-roster', scorecardRosterRouter, { userId: 1 });
-    // Send the same roster (tier unchanged)
+    // Send the same roster (tier unchanged) — supplier.updated still fires
     await request(app).put('/api/scorecard-roster').send(existingRoster);
 
     // supplier.updated always fires on save; supplier.tier_changed must NOT fire
