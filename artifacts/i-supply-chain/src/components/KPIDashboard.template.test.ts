@@ -2848,3 +2848,81 @@ describe('Arabic import log — lean-agile-supply-chain (lang="ar")', () => {
     expect(kaizen.labelAr.trim().length, 'kaizen.labelAr is empty').toBeGreaterThan(0);
   });
 });
+
+// ─── Arabic summary count == per-KPI ✓ line count — all six frameworks ────────
+//
+//  The Arabic summary line "✓ تم احتساب N مؤشر(ات) تلقائياً" must report
+//  exactly the same integer N as the number of per-KPI ✓ lines that follow it.
+//  A mismatch would mean users see a misleading Arabic count.
+//
+//  For each framework we:
+//   1. Build the template via buildTemplateRows and fill every input with its
+//      example value (same pattern as buildFilledRows above).
+//   2. Run runNewFormatImport with isAr=true so the Arabic code-path fires.
+//   3. Extract N from the summary line with a regex.
+//   4. Count the per-KPI ✓ lines (everything starting with ✓ except the
+//      summary itself).
+//   5. Assert N === count.
+
+describe('Arabic import summary count matches per-KPI ✓ line count — all frameworks', () => {
+  const FRAMEWORKS = [
+    'supply-chain-strategy',
+    'procurement-excellence',
+    'lean-six-sigma',
+    'risk-management',
+    'digital-transformation',
+    'governance-compliance',
+  ] as const;
+
+  /**
+   * Build a fully-filled CSV for the given framework slug.
+   * Every input row that has a matching KpiDataSpec.inputs entry gets the
+   * spec's example value; everything else is left blank (matching the
+   * behaviour of buildFilledRows used elsewhere in this file).
+   */
+  function buildFullCsvForFramework(slug: string): string {
+    const rows = buildTemplateRows(slug);
+    rows.forEach(row => {
+      const kpiId = row[0]?.trim().toLowerCase();
+      if (
+        !kpiId ||
+        kpiId === '' ||
+        kpiId.startsWith('===') ||
+        kpiId.startsWith('---') ||
+        kpiId.endsWith('__result')
+      ) return;
+      const spec = KPI_DATA_SPECS[kpiId];
+      if (!spec) return;
+      const inputDef = spec.inputs.find(
+        inp => row[1]?.trim().toLowerCase() === inp.label.toLowerCase(),
+      );
+      if (inputDef) row[2] = String(inputDef.example);
+    });
+    return rows.map(r => r.map(c => `"${c.replace(/"/g, '""')}"`).join(',')).join('\r\n');
+  }
+
+  for (const slug of FRAMEWORKS) {
+    it(`${slug}: Arabic summary N equals per-KPI ✓ line count`, () => {
+      const csvText = buildFullCsvForFramework(slug);
+      const { log } = runNewFormatImport(csvText, slug, true);
+
+      // log[0] is always the Arabic summary line when isAr=true
+      const summary = log[0];
+
+      // Extract the integer N from "✓ تم احتساب N مؤشر(ات) تلقائياً"
+      const match = summary.match(/تم احتساب (\d+) مؤشر/);
+      expect(
+        match,
+        `[${slug}] Summary line did not contain Arabic count pattern.\n  Got: "${summary}"`,
+      ).not.toBeNull();
+      const summaryN = parseInt(match![1], 10);
+
+      // Per-KPI ✓ lines are every ✓-prefixed line except the summary itself
+      const kpiLines = log.filter(
+        l => l.startsWith('✓') && !l.includes('تم احتساب'),
+      );
+
+      expect(summaryN, `[${slug}] Arabic summary reports N=${summaryN} but ${kpiLines.length} per-KPI ✓ lines were found`).toBe(kpiLines.length);
+    });
+  }
+});
