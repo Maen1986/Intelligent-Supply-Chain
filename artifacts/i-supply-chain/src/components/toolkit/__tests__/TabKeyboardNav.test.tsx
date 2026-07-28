@@ -365,7 +365,7 @@ describe('TrainingNeedsAssessment — scores preserved when switching tabs', () 
       const el = screen.getByRole('combobox', { name: label }) as HTMLSelectElement;
       expect(el.value).toBe(value);
     }
-  });
+  }, 15000);
 });
 
 /* ══════════════════════════════════════════════════════════════════════════

@@ -50,6 +50,17 @@ const BOB: Record<string, unknown> = {
   mobile: null, designation: null, company: null, role: 'user',
 };
 
+/** Alice with populated optional fields */
+const ALICE_WITH_CONTACT: Record<string, unknown> = {
+  id: 1, fullName: 'Alice', email: 'alice@example.com',
+  mobile: '+1-555-0100', designation: 'Engineer', company: 'Acme', role: 'user',
+};
+/** Updated user returned by the server after a save */
+const ALICE_UPDATED_CONTACT: Record<string, unknown> = {
+  id: 1, fullName: 'Alice', email: 'alice@example.com',
+  mobile: '+1-555-9999', designation: 'Senior Engineer', company: 'Acme', role: 'user',
+};
+
 /* ── Fetch helpers ───────────────────────────────────────────────────────── */
 
 /**
@@ -191,6 +202,133 @@ describe('AccountSettings — fullName input pre-fill', () => {
     // Server returns "Bobby" — the input should show that, not "Bobby Junior"
     await waitFor(() => {
       expect(screen.getByLabelText<HTMLInputElement>(/Full name/i).value).toBe('Bobby');
+    });
+  });
+});
+
+/* ══════════════════════════════════════════════════════════════════════════
+   mobile & designation pre-fill
+══════════════════════════════════════════════════════════════════════════ */
+
+describe('AccountSettings — mobile and designation input pre-fill', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    cleanup();
+  });
+
+  // ── 1. Initial pre-fill for mobile and designation ────────────────────
+  it('pre-fills mobile and designation from the user object on mount', async () => {
+    stubFetch({ meUser: ALICE_WITH_CONTACT, updatedUser: ALICE_UPDATED_CONTACT });
+    renderAccountSettings();
+
+    await waitFor(() => {
+      expect(screen.getByLabelText<HTMLInputElement>(/Mobile/i).value).toBe('+1-555-0100');
+      expect(screen.getByLabelText<HTMLInputElement>(/Job title/i).value).toBe('Engineer');
+    });
+  });
+
+  // ── 2. mobile updates to server-returned value after save ─────────────
+  it('updates the mobile input to the server-returned value after a successful save', async () => {
+    stubFetch({ meUser: ALICE_WITH_CONTACT, updatedUser: ALICE_UPDATED_CONTACT });
+    renderAccountSettings();
+
+    // Wait for initial pre-fill
+    await waitFor(() => {
+      expect(screen.getByLabelText<HTMLInputElement>(/Mobile/i).value).toBe('+1-555-0100');
+    });
+
+    // Edit the mobile field
+    const mobileInput = screen.getByLabelText<HTMLInputElement>(/Mobile/i);
+    fireEvent.change(mobileInput, { target: { value: '+1-555-9999' } });
+    expect(mobileInput.value).toBe('+1-555-9999');
+
+    // Submit
+    fireEvent.click(screen.getByRole('button', { name: /Save changes/i }));
+
+    // After save, useEffect fires with server-returned user → mobile should be server value
+    await waitFor(() => {
+      expect(screen.getByLabelText<HTMLInputElement>(/Mobile/i).value).toBe('+1-555-9999');
+    });
+  });
+
+  // ── 3. designation updates to server-returned value after save ─────────
+  it('updates the designation input to the server-returned value after a successful save', async () => {
+    stubFetch({ meUser: ALICE_WITH_CONTACT, updatedUser: ALICE_UPDATED_CONTACT });
+    renderAccountSettings();
+
+    // Wait for initial pre-fill
+    await waitFor(() => {
+      expect(screen.getByLabelText<HTMLInputElement>(/Job title/i).value).toBe('Engineer');
+    });
+
+    // Edit the designation field
+    const designationInput = screen.getByLabelText<HTMLInputElement>(/Job title/i);
+    fireEvent.change(designationInput, { target: { value: 'Senior Engineer' } });
+    expect(designationInput.value).toBe('Senior Engineer');
+
+    // Submit
+    fireEvent.click(screen.getByRole('button', { name: /Save changes/i }));
+
+    // After save, useEffect fires with server-returned user → designation should be server value
+    await waitFor(() => {
+      expect(screen.getByLabelText<HTMLInputElement>(/Job title/i).value).toBe('Senior Engineer');
+    });
+  });
+
+  // ── 4. server-corrected mobile value overrides what the user typed ─────
+  it('reflects the server-corrected mobile even when it differs from what the user typed', async () => {
+    const serverCorrected = { ...ALICE_WITH_CONTACT, mobile: '+1-555-0000' };
+    stubFetch({ meUser: ALICE_WITH_CONTACT, updatedUser: serverCorrected });
+    renderAccountSettings();
+
+    await waitFor(() => {
+      expect(screen.getByLabelText<HTMLInputElement>(/Mobile/i).value).toBe('+1-555-0100');
+    });
+
+    const mobileInput = screen.getByLabelText<HTMLInputElement>(/Mobile/i);
+    fireEvent.change(mobileInput, { target: { value: '+1-555-1234' } });
+    fireEvent.click(screen.getByRole('button', { name: /Save changes/i }));
+
+    // Server returns '+1-555-0000' — input must reflect that, not the user's typed value
+    await waitFor(() => {
+      expect(screen.getByLabelText<HTMLInputElement>(/Mobile/i).value).toBe('+1-555-0000');
+    });
+  });
+
+  // ── 5. server-corrected designation value overrides what the user typed ─
+  it('reflects the server-corrected designation even when it differs from what the user typed', async () => {
+    const serverCorrected = { ...ALICE_WITH_CONTACT, designation: 'Principal Engineer' };
+    stubFetch({ meUser: ALICE_WITH_CONTACT, updatedUser: serverCorrected });
+    renderAccountSettings();
+
+    await waitFor(() => {
+      expect(screen.getByLabelText<HTMLInputElement>(/Job title/i).value).toBe('Engineer');
+    });
+
+    const designationInput = screen.getByLabelText<HTMLInputElement>(/Job title/i);
+    fireEvent.change(designationInput, { target: { value: 'Staff Engineer' } });
+    fireEvent.click(screen.getByRole('button', { name: /Save changes/i }));
+
+    // Server returns 'Principal Engineer' — input must reflect that
+    await waitFor(() => {
+      expect(screen.getByLabelText<HTMLInputElement>(/Job title/i).value).toBe('Principal Engineer');
+    });
+  });
+
+  // ── 6. null mobile from server clears the mobile input ────────────────
+  it('clears the mobile input when the server returns null for mobile', async () => {
+    const serverCleared = { ...ALICE_WITH_CONTACT, mobile: null };
+    stubFetch({ meUser: ALICE_WITH_CONTACT, updatedUser: serverCleared });
+    renderAccountSettings();
+
+    await waitFor(() => {
+      expect(screen.getByLabelText<HTMLInputElement>(/Mobile/i).value).toBe('+1-555-0100');
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /Save changes/i }));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText<HTMLInputElement>(/Mobile/i).value).toBe('');
     });
   });
 });

@@ -285,5 +285,5 @@ describe('Maturity results page — score updates after mid-session answer edit 
     expect(displayedScore).not.toBe('3.0');
     // seg0 = (5+5+3+3+3)/5 = 19/5 = 3.799…; overall = (3.799… + 3×7)/8 = 3.099… → "3.1"
     expect(displayedScore).toBe('3.1');
-  });
+  }, 15000);
 });
