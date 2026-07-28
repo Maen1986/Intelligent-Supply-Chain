@@ -1215,6 +1215,10 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
 
         // Group input values by kpiId
         const inputsByKpi: Record<string, Record<string, number>> = {};
+        // Track which input slots have already been claimed per KPI so that two
+        // inputs sharing a long common label prefix (e.g. digital-transformation's
+        // "mpr" rows) are never silently double-assigned to the same slot.
+        const usedInputIds: Record<string, Set<string>> = {};
         csvRows.forEach(row => {
           const kpiId = row['KPI ID']?.trim().toLowerCase();
           const inputLabel = row['Input Field']?.trim();
@@ -1226,17 +1230,36 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
 
           const spec = KPI_DATA_SPECS[kpiId];
           if (!spec) return;
-          // Match input field by position / label
-          const inputDef = spec.inputs.find(inp =>
-            inputLabel.toLowerCase().includes(inp.id.toLowerCase()) ||
-            inp.label.toLowerCase().substring(0, 30) === inputLabel.toLowerCase().substring(0, 30),
-          ) ?? spec.inputs.find((_, idx) => {
-            // fallback: match by row order within this KPI's inputs
-            const kpiRows = csvRows.filter(r => r['KPI ID']?.trim().toLowerCase() === kpiId && r['Your Value']?.trim() && r['Your Value']?.trim() !== '← calculated on import');
-            return kpiRows.indexOf(row) === idx;
-          });
+          if (!usedInputIds[kpiId]) usedInputIds[kpiId] = new Set();
+
+          // Match cascade (highest to lowest priority) — order matters:
+          //  1. Exact label match (case-insensitive) — structurally collision-proof
+          //  2. Input-ID substring match (label contains the spec input id)
+          //  3. 30-char prefix match — kept as a last-resort fuzzy fallback
+          //  4. Positional fallback — row order within the KPI matches spec order
+          // Steps 1–3 all respect usedInputIds so the same slot is never claimed
+          // twice even when two labels share a long common prefix.
+          const inputDef =
+            spec.inputs.find(inp =>
+              !usedInputIds[kpiId].has(inp.id) &&
+              inp.label.toLowerCase() === inputLabel.toLowerCase(),
+            ) ??
+            spec.inputs.find(inp =>
+              !usedInputIds[kpiId].has(inp.id) &&
+              inputLabel.toLowerCase().includes(inp.id.toLowerCase()),
+            ) ??
+            spec.inputs.find(inp =>
+              !usedInputIds[kpiId].has(inp.id) &&
+              inp.label.toLowerCase().substring(0, 30) === inputLabel.toLowerCase().substring(0, 30),
+            ) ??
+            spec.inputs.find((_, idx) => {
+              // fallback: match by row order within this KPI's inputs
+              const kpiRows = csvRows.filter(r => r['KPI ID']?.trim().toLowerCase() === kpiId && r['Your Value']?.trim() && r['Your Value']?.trim() !== '← calculated on import');
+              return kpiRows.indexOf(row) === idx;
+            });
 
           if (!inputDef) return;
+          usedInputIds[kpiId].add(inputDef.id);
           if (!inputsByKpi[kpiId]) inputsByKpi[kpiId] = {};
           inputsByKpi[kpiId][inputDef.id] = num;
         });
