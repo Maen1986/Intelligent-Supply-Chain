@@ -2413,6 +2413,219 @@ describe('lean-agile-supply-chain import — partial inputs (only pce and ftr fi
   });
 });
 
+// ─── Excel-mutated template round-trip (governance-compliance) ───────────────
+//
+//  Mirrors the lean-six-sigma / risk-management / procurement-excellence /
+//  digital-transformation round-trip suites but for the governance-compliance
+//  framework, which has 6 KPIs:
+//    pcr, aud, cco, mav, doa, asa
+//
+//  Expected values from example inputs (see kpiDataSpecs.ts):
+//    pcr : pct(267, 300)               = 89.0  (Policy Compliance Rate %)
+//    aud : safe(82)                    = 82    (Audit Score /100)
+//    cco : pct(18_700_000, 22_000_000) = 85.0  (Contract Coverage %)
+//    mav : pct(880_000, 22_000_000)    =  4.0  (Maverick Spend %)
+//    doa : safe(2)                     =  2    (DoA Violations /quarter)
+//    asa : pct(20_900_000, 22_000_000) = 95.0  (Approved Supplier Adherence %)
+
+describe('Excel-mutated template round-trip (governance-compliance)', () => {
+  /** Return governance-compliance template rows with all example values filled in. */
+  function buildFilledRows(): string[][] {
+    const rows = buildTemplateRows('governance-compliance');
+    // Use positional matching: track how many input rows we have seen for each
+    // KPI and assign example values in declaration order.
+    const kpiInputIndex: Record<string, number> = {};
+    rows.forEach(row => {
+      const kpiId = row[0]?.trim().toLowerCase();
+      if (!kpiId || kpiId === '' || kpiId.startsWith('===') || kpiId.startsWith('---') || kpiId.endsWith('__result')) return;
+      const spec = KPI_DATA_SPECS[kpiId];
+      if (!spec) return;
+      if (kpiInputIndex[kpiId] === undefined) kpiInputIndex[kpiId] = 0;
+      const inputDef = spec.inputs[kpiInputIndex[kpiId]];
+      kpiInputIndex[kpiId]++;
+      if (inputDef) row[2] = String(inputDef.example);
+    });
+    return rows;
+  }
+
+  /** Shared KPI value assertions for all mutation variants. */
+  function assertKpiValues(values: Record<string, number>): void {
+    expect(values['pcr'], 'pcr').toBeCloseTo(89.0, 0);
+    expect(values['aud'], 'aud').toBeCloseTo(82.0, 0);
+    expect(values['cco'], 'cco').toBeCloseTo(85.0, 0);
+    expect(values['mav'], 'mav').toBeCloseTo(4.0, 0);
+    expect(values['doa'], 'doa').toBeCloseTo(2.0, 0);
+    expect(values['asa'], 'asa').toBeCloseTo(95.0, 0);
+  }
+
+  it('imports correctly with CRLF line endings (Windows / Excel default)', () => {
+    const rows = buildFilledRows();
+    const csvCrlf = rows.map(r => r.map(escapeCell).join(',')).join('\r\n');
+    const { values } = runNewFormatImport(csvCrlf, 'governance-compliance');
+    assertKpiValues(values);
+  });
+
+  it('imports correctly when there is no UTF-8 BOM (Excel drops the BOM on re-save)', () => {
+    const rows = buildFilledRows();
+    const csvNoBom = rows.map(r => r.map(escapeCell).join(',')).join('\r\n');
+    expect(csvNoBom.charCodeAt(0)).not.toBe(0xFEFF);
+    const { values } = runNewFormatImport(csvNoBom, 'governance-compliance');
+    assertKpiValues(values);
+  });
+
+  it('imports correctly when extra blank rows are scattered between sections', () => {
+    const rows = buildFilledRows();
+    const mutated: string[][] = [];
+    for (const row of rows) {
+      mutated.push(row);
+      if (row[0]?.startsWith('===')) {
+        mutated.push(['', '', '', '', '', '']);
+        mutated.push(['', '', '', '', '', '']);
+      }
+    }
+    const csvText = mutated.map(r => r.map(escapeCell).join(',')).join('\r\n');
+    const { values } = runNewFormatImport(csvText, 'governance-compliance');
+    assertKpiValues(values);
+  });
+
+  it('imports correctly when cell values have leading and trailing whitespace', () => {
+    const rows = buildFilledRows();
+    const padCell = (c: string): string => `"  ${c.replace(/"/g, '""')}  "`;
+    const csvText = rows.map(r => r.map(padCell).join(',')).join('\r\n');
+    const { values } = runNewFormatImport(csvText, 'governance-compliance');
+    assertKpiValues(values);
+  });
+
+  it('imports correctly with all mutations combined (no BOM + CRLF + blank rows + whitespace padding)', () => {
+    const rows = buildFilledRows();
+    const withBlanks: string[][] = [];
+    for (const row of rows) {
+      withBlanks.push(row);
+      if (row[0]?.startsWith('===')) withBlanks.push(['', '', '', '', '', '']);
+    }
+    const padCell = (c: string): string => `" ${c.replace(/"/g, '""')} "`;
+    const csvText = withBlanks.map(r => r.map(padCell).join(',')).join('\r\n');
+    expect(csvText.charCodeAt(0)).not.toBe(0xFEFF);
+    const { values } = runNewFormatImport(csvText, 'governance-compliance');
+    assertKpiValues(values);
+  });
+
+  it('all 6 KPIs are calculated — no manual-entry notice — in the mutated file', () => {
+    const rows = buildFilledRows();
+    const mutated: string[][] = [];
+    for (const row of rows) {
+      mutated.push(row);
+      if (row[0]?.startsWith('===')) mutated.push(['', '', '', '', '', '']);
+    }
+    const padCell = (c: string): string => `" ${c.replace(/"/g, '""')} "`;
+    const csvText = mutated.map(r => r.map(padCell).join(',')).join('\r\n');
+    const { log } = runNewFormatImport(csvText, 'governance-compliance');
+    // log[0] is the auto-calculated summary line; remaining ✓ lines are per-KPI
+    const kpiLines = log.filter(l => l.startsWith('✓') && !l.includes('auto-calculated'));
+    expect(kpiLines.length).toBe(6);
+    expect(log.find(l => l.includes('require manual entry'))).toBeUndefined();
+  });
+});
+
+// ─── Governance-compliance partial import ────────────────────────────────────
+//
+//  The governance-compliance framework has 6 KPIs: pcr, aud, cco, mav, doa, asa.
+//  This suite verifies that when a user fills in only pcr and aud the import:
+//   • calculates the two complete KPIs correctly
+//   • skips the four unfilled KPIs without zeroing them
+//   • records a skip-reason log entry for each uncalculable KPI
+//   • emits exactly 2 per-KPI success lines (summary line excluded)
+//
+describe('governance-compliance import — partial inputs (only pcr and aud filled)', () => {
+  /**
+   * Build a governance-compliance template with only pcr and aud "Your Value"
+   * cells populated.  All other KPI rows are left blank.
+   */
+  function buildPartialGcRows(): string[][] {
+    const rows = buildTemplateRows('governance-compliance');
+    const kpiInputIndex: Record<string, number> = {};
+    rows.forEach(row => {
+      const kpiId = row[0]?.trim().toLowerCase();
+      // Only fill pcr and aud
+      if (!['pcr', 'aud'].includes(kpiId)) return;
+      const spec = KPI_DATA_SPECS[kpiId];
+      if (!spec) return;
+      if (kpiInputIndex[kpiId] === undefined) kpiInputIndex[kpiId] = 0;
+      const inputDef = spec.inputs[kpiInputIndex[kpiId]];
+      kpiInputIndex[kpiId]++;
+      if (inputDef) row[2] = String(inputDef.example);
+    });
+    return rows;
+  }
+
+  it('calculates pcr correctly from its example inputs', () => {
+    const csvText = rowsToCsvText(buildPartialGcRows());
+    const { values } = runNewFormatImport(csvText, 'governance-compliance');
+    // pcr: pct(267, 300) = 89.0
+    expect(values['pcr'], 'pcr').toBeCloseTo(89.0, 0);
+  });
+
+  it('calculates aud correctly from its example inputs', () => {
+    const csvText = rowsToCsvText(buildPartialGcRows());
+    const { values } = runNewFormatImport(csvText, 'governance-compliance');
+    // aud: direct entry = 82
+    expect(values['aud'], 'aud').toBeCloseTo(82.0, 0);
+  });
+
+  it('skipped KPIs are absent from the values map — not zeroed', () => {
+    const csvText = rowsToCsvText(buildPartialGcRows());
+    const { values } = runNewFormatImport(csvText, 'governance-compliance');
+
+    expect(values['cco'], 'cco should be absent').toBeUndefined();
+    expect(values['mav'], 'mav should be absent').toBeUndefined();
+    expect(values['doa'], 'doa should be absent').toBeUndefined();
+    expect(values['asa'], 'asa should be absent').toBeUndefined();
+  });
+
+  it('exactly 2 KPIs are calculated — no more, no less', () => {
+    const csvText = rowsToCsvText(buildPartialGcRows());
+    const { values } = runNewFormatImport(csvText, 'governance-compliance');
+
+    expect(Object.keys(values).sort()).toEqual(['aud', 'pcr']);
+  });
+
+  it('log contains a skip-reason entry for each uncalculable KPI', () => {
+    const csvText = rowsToCsvText(buildPartialGcRows());
+    const { log } = runNewFormatImport(csvText, 'governance-compliance');
+
+    const skipLines = log.filter(l => l.includes('skipped'));
+    // cco, mav, doa, asa — all four should have a skip entry
+    expect(skipLines.length, 'skip-reason log entries').toBeGreaterThanOrEqual(4);
+  });
+
+  it('log contains exactly 2 per-KPI success lines (summary line excluded)', () => {
+    const csvText = rowsToCsvText(buildPartialGcRows());
+    const { log } = runNewFormatImport(csvText, 'governance-compliance');
+
+    // log[0] is the auto-calculated summary; filter it out before counting
+    const kpiLines = log.filter(l => l.startsWith('✓') && !l.includes('auto-calculated'));
+    expect(kpiLines.length, 'per-KPI success log lines').toBe(2);
+  });
+
+  it('skip-reason entries name the skipped KPIs, not the calculated ones', () => {
+    const csvText = rowsToCsvText(buildPartialGcRows());
+    const { log } = runNewFormatImport(csvText, 'governance-compliance');
+
+    const skipLines = log.filter(l => l.includes('skipped'));
+    const skipText = skipLines.join('\n');
+
+    // Skipped KPI labels appear in the log
+    expect(skipText).toContain('Contract Coverage');   // cco
+    expect(skipText).toContain('Maverick Spend');      // mav
+    expect(skipText).toContain('DoA Violations');      // doa
+    expect(skipText).toContain('Approved Supplier');   // asa
+
+    // Calculated KPI labels must NOT appear in the skip lines
+    expect(skipText).not.toContain('Policy Compliance Rate');
+    expect(skipText).not.toContain('Audit Score');
+  });
+});
+
 // ─── KPI spec integrity — label-collision guard ──────────────────────────────
 //
 //  The mpr KPI bug was caused by two inputs sharing the same first-30-char
