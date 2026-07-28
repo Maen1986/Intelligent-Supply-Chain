@@ -1952,3 +1952,40 @@ describe('buildKpiTemplateRows – Status formula embeds correct targetValue', (
     expect(embedded).toBe(LOWER_FALLBACK.targetValue); // 3
   });
 });
+
+// ─── KPI spec integrity — label-collision guard ──────────────────────────────
+//
+//  The mpr KPI bug was caused by two inputs sharing the same first-30-char
+//  label prefix ("Number of manual process steps…"), which made the fuzzy
+//  30-char matching silently assign both CSV rows to the first input slot.
+//
+//  This suite iterates every KPI in every framework and asserts that no two
+//  inputs within the same KPI share the same first-30-character label prefix
+//  (case-insensitive).  It will catch any future author who accidentally
+//  introduces the same collision before it reaches users.
+//
+describe('KPI spec integrity — no two inputs share the same 30-char label prefix', () => {
+  it('every KPI in every framework has collision-free input labels', () => {
+    const collisions: string[] = [];
+
+    for (const [kpiId, spec] of Object.entries(KPI_DATA_SPECS)) {
+      const seen = new Map<string, string>(); // prefix → original label
+
+      for (const inp of spec.inputs) {
+        const prefix = inp.label.toLowerCase().substring(0, 30);
+        if (seen.has(prefix)) {
+          collisions.push(
+            `KPI "${kpiId}": inputs "${seen.get(prefix)}" and "${inp.label}" share the same 30-char prefix "${prefix}"`,
+          );
+        } else {
+          seen.set(prefix, inp.label);
+        }
+      }
+    }
+
+    expect(
+      collisions,
+      `Label collisions found:\n${collisions.join('\n')}`,
+    ).toHaveLength(0);
+  });
+});

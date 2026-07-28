@@ -380,8 +380,8 @@ const DIGITAL_TRANSFORMATION: KpiDataSpec[] = [
     formula: 'Manual Process Reduction% = ((Baseline Manual Steps − Current Manual Steps) ÷ Baseline Manual Steps) × 100',
     notes: 'Count from your pre-digital process map (As-Is VSM). Current state = count manual steps in the same processes today. Include: manual approvals, spreadsheet entries, email-based handoffs, phone confirmations.',
     inputs: [
-      { id: 'baseline_manual_steps', label: 'Number of manual process steps BEFORE digitalisation (from As-Is process map)', unit: 'steps', dataSource: 'Pre-project process documentation / As-Is VSM step count', example: 145 },
-      { id: 'current_manual_steps', label: 'Number of manual process steps currently (from To-Be / current state map)', unit: 'steps', dataSource: 'Current process audit — count remaining manual steps in same processes', example: 52 },
+      { id: 'baseline_manual_steps', label: 'BEFORE-state manual process steps (from As-Is process map, pre-digitalisation)', unit: 'steps', dataSource: 'Pre-project process documentation / As-Is VSM step count', example: 145 },
+      { id: 'current_manual_steps', label: 'CURRENT-state manual process steps (from To-Be / current state map)', unit: 'steps', dataSource: 'Current process audit — count remaining manual steps in same processes', example: 52 },
     ],
     calculate: ({ baseline_manual_steps, current_manual_steps }) => {
       if (!baseline_manual_steps) return NaN;
@@ -444,8 +444,8 @@ const SUSTAINABILITY_ESG: KpiDataSpec[] = [
     formula: 'Carbon Reduction YoY% = ((Prior Year tCO2e − Current Year tCO2e) ÷ Prior Year tCO2e) × 100',
     notes: 'Normalise for revenue growth if applicable (use carbon intensity = tCO2e/SAR revenue). Ensure you are comparing like-for-like boundaries. Report market-based and location-based separately for Scope 2.',
     inputs: [
-      { id: 'prior_year_co2', label: 'Total supply chain GHG emissions in the PRIOR year (tCO2e) — same scope boundary', unit: 'tCO2e', dataSource: 'Prior ESG/sustainability report — verified Scope 1+2+material Scope 3 total', example: 12_400 },
-      { id: 'current_year_co2', label: 'Total supply chain GHG emissions in the CURRENT year (tCO2e) — same scope boundary', unit: 'tCO2e', dataSource: 'Current ESG/sustainability data — same scope and methodology as prior year', example: 10_540 },
+      { id: 'prior_year_co2', label: 'PRIOR-year SC GHG emissions (tCO2e) — same scope boundary as current year', unit: 'tCO2e', dataSource: 'Prior ESG/sustainability report — verified Scope 1+2+material Scope 3 total', example: 12_400 },
+      { id: 'current_year_co2', label: 'CURRENT-year SC GHG emissions (tCO2e) — same scope boundary as prior year', unit: 'tCO2e', dataSource: 'Current ESG/sustainability data — same scope and methodology as prior year', example: 10_540 },
     ],
     calculate: ({ prior_year_co2, current_year_co2 }) => {
       if (!prior_year_co2) return NaN;
