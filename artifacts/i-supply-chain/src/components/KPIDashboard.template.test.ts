@@ -1181,6 +1181,102 @@ describe('sustainability-esg import — partial inputs (only esga and s3 filled)
   });
 });
 
+// ─── Supply-chain-strategy partial import ────────────────────────────────────
+//
+//  The supply-chain-strategy framework has 6 KPIs: por, otif, sccost, c2c, fa, turns.
+//  This suite verifies that when a user fills in only por and otif the import:
+//   • calculates the two complete KPIs correctly
+//   • skips the four incomplete KPIs without zeroing them
+//   • records a skip-reason log entry for each uncalculable KPI
+//
+describe('supply-chain-strategy import — partial inputs (only por and otif filled)', () => {
+  /**
+   * Build a supply-chain-strategy template with only por and otif "Your Value"
+   * cells populated.  All other KPI rows are left blank.
+   */
+  function buildPartialScsRows(): string[][] {
+    const rows = buildTemplateRows('supply-chain-strategy');
+    rows.forEach(row => {
+      const kpiId = row[0]?.trim().toLowerCase();
+      if (!['por', 'otif'].includes(kpiId)) return;
+      const spec = KPI_DATA_SPECS[kpiId];
+      if (!spec) return;
+      const inputDef = spec.inputs.find(inp =>
+        row[1]?.toLowerCase().substring(0, 30) === inp.label.toLowerCase().substring(0, 30),
+      );
+      if (inputDef) row[2] = String(inputDef.example);
+    });
+    return rows;
+  }
+
+  it('calculates por correctly from its example inputs', () => {
+    const csvText = rowsToCsvText(buildPartialScsRows());
+    const { values } = runNewFormatImport(csvText, 'supply-chain-strategy');
+    // por: pct(1098, 1200) = 91.5
+    expect(values['por'], 'por').toBeCloseTo(91.5, 0);
+  });
+
+  it('calculates otif correctly from its example inputs', () => {
+    const csvText = rowsToCsvText(buildPartialScsRows());
+    const { values } = runNewFormatImport(csvText, 'supply-chain-strategy');
+    // otif: pct(782, 850) = 92.0
+    expect(values['otif'], 'otif').toBeCloseTo(92.0, 0);
+  });
+
+  it('skipped KPIs are absent from the values map — not zeroed', () => {
+    const csvText = rowsToCsvText(buildPartialScsRows());
+    const { values } = runNewFormatImport(csvText, 'supply-chain-strategy');
+
+    expect(values['sccost'], 'sccost should be absent').toBeUndefined();
+    expect(values['c2c'],    'c2c should be absent').toBeUndefined();
+    expect(values['fa'],     'fa should be absent').toBeUndefined();
+    expect(values['turns'],  'turns should be absent').toBeUndefined();
+  });
+
+  it('exactly 2 KPIs are calculated — no more, no less', () => {
+    const csvText = rowsToCsvText(buildPartialScsRows());
+    const { values } = runNewFormatImport(csvText, 'supply-chain-strategy');
+
+    expect(Object.keys(values).sort()).toEqual(['otif', 'por']);
+  });
+
+  it('log contains a skip-reason entry for each uncalculable KPI', () => {
+    const csvText = rowsToCsvText(buildPartialScsRows());
+    const { log } = runNewFormatImport(csvText, 'supply-chain-strategy');
+
+    const skipLines = log.filter(l => l.includes('skipped'));
+    // sccost, c2c, fa, turns — all four should have a skip entry
+    expect(skipLines.length, 'skip-reason log entries').toBeGreaterThanOrEqual(4);
+  });
+
+  it('log contains exactly 2 per-KPI success lines (summary line excluded)', () => {
+    const csvText = rowsToCsvText(buildPartialScsRows());
+    const { log } = runNewFormatImport(csvText, 'supply-chain-strategy');
+
+    // log[0] is the auto-calculated summary; filter it out before counting
+    const kpiLines = log.filter(l => l.startsWith('✓') && !l.includes('auto-calculated'));
+    expect(kpiLines.length, 'per-KPI success log lines').toBe(2);
+  });
+
+  it('skip-reason entries name the skipped KPIs, not the calculated ones', () => {
+    const csvText = rowsToCsvText(buildPartialScsRows());
+    const { log } = runNewFormatImport(csvText, 'supply-chain-strategy');
+
+    const skipLines = log.filter(l => l.includes('skipped'));
+    const skipText = skipLines.join('\n');
+
+    // Skipped KPI labels appear in the log
+    expect(skipText).toContain('SC Cost');          // sccost
+    expect(skipText).toContain('Cash-to-Cash');     // c2c
+    expect(skipText).toContain('Forecast Accuracy');// fa
+    expect(skipText).toContain('Inventory Turns');  // turns
+
+    // Calculated KPI labels must NOT appear in the skip lines
+    expect(skipText).not.toContain('Perfect Order Rate');
+    expect(skipText).not.toContain('OTIF');
+  });
+});
+
 // ─── Multi-KPI sequence: Status formula cell reference ───────────────────────
 //
 //  buildKpiTemplateRows tracks the current Excel row number by counting array
