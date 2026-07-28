@@ -747,6 +747,82 @@ describe('PrepareDownloadModal — server error clears on retry (Arabic mode)', 
 });
 
 /* ══════════════════════════════════════════════════════════════════════════════
+   Server (404) error clears on retry — English (ar=false)
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+describe('PrepareDownloadModal — server error clears on retry (English mode)', () => {
+
+  /**
+   * S2 — English: a 404 server error is shown, then the user re-clicks Download
+   * with a valid key and the error disappears (setError(null) fires at the top
+   * of handleDownload before the new fetch even resolves).
+   *
+   * fetch sequence:
+   *   1st call → keys endpoint (mount)           → { ok: true, keys: [] }
+   *   2nd call → download endpoint (first click) → 404
+   *   3rd call → download endpoint (retry)       → 200 OK with template text
+   */
+  it('S2 — ar=false: 404 server error disappears when user retries with a valid key', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn()
+        /* keys endpoint */
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ ok: true, keys: [] }),
+        })
+        /* download endpoint — first click → 404 */
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 404,
+        })
+        /* download endpoint — retry → success */
+        .mockResolvedValueOnce({
+          ok: true,
+          text: async () => '{"name":"test"}',
+        }),
+    );
+
+    render(
+      <PrepareDownloadModal
+        template={makeTemplate('n8n')}
+        ar={false}
+        onClose={() => {}}
+      />,
+    );
+
+    /* Fill in the API key and trigger the first download (→ 404 error) */
+    const apiKeyInput = screen.getByPlaceholderText('Paste the raw key value here…');
+    fireEvent.change(apiKeyInput, { target: { value: 'test-api-key-value' } });
+
+    const downloadBtn = screen.getByRole('button', { name: /download template/i });
+    fireEvent.click(downloadBtn);
+
+    /* English 404 error must be visible */
+    await waitFor(() => {
+      expect(
+        screen.getByText(
+          'Template file is currently unavailable — it may have been removed. Please contact your administrator.',
+        ),
+      ).toBeInTheDocument();
+    });
+
+    /* Click Download again — same key is still in the field */
+    fireEvent.click(downloadBtn);
+
+    /* The server error must no longer be visible once the retry starts */
+    await waitFor(() => {
+      expect(
+        screen.queryByText(
+          'Template file is currently unavailable — it may have been removed. Please contact your administrator.',
+        ),
+      ).toBeNull();
+    });
+  });
+
+});
+
+/* ══════════════════════════════════════════════════════════════════════════════
    Network-throw error clears after recovery + retry — English (ar=false)
    ══════════════════════════════════════════════════════════════════════════════ */
 
