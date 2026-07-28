@@ -3259,3 +3259,369 @@ describe('Arabic import summary count matches per-KPI ✓ line count — all fra
     });
   }
 });
+
+// ─── Excel-mutated template round-trip (resiliency) ──────────────────────────
+//
+//  The resiliency framework has 6 KPIs: rtoa, mttr, dsc, buf, sld, rar.
+//  All 6 have full KPI_DATA_SPECS entries (no manual-entry KPIs).
+//
+//  Expected values from example inputs:
+//    rtoa  = pct(10, 12)                      ≈ 83.3
+//    mttr  = avg(504, 8)                      = 63.0
+//    dsc   = pct(153, 180)                    = 85.0
+//    buf   = round((1 800 000 / 60 000)×10)/10 = 30.0
+//    sld   = pct(272, 320)                    = 85.0
+//    rar   = pct(1 125 000, 37 500 000)        = 3.0
+
+describe('Excel-mutated template round-trip (resiliency)', () => {
+  function buildFilledRows(): string[][] {
+    const rows = buildTemplateRows('resiliency');
+    rows.forEach(row => {
+      const kpiId = row[0]?.trim().toLowerCase();
+      if (!kpiId || kpiId === '' || kpiId.startsWith('===') || kpiId.startsWith('---') || kpiId.endsWith('__result')) return;
+      const spec = KPI_DATA_SPECS[kpiId];
+      if (!spec) return;
+      const inputDef = spec.inputs.find(inp =>
+        row[1]?.trim().toLowerCase() === inp.label.toLowerCase(),
+      );
+      if (inputDef) row[2] = String(inputDef.example);
+    });
+    return rows;
+  }
+
+  function assertKpiValues(values: Record<string, number>): void {
+    expect(values['rtoa'], 'rtoa').toBeCloseTo(83.3, 0);
+    expect(values['mttr'], 'mttr').toBeCloseTo(63, 0);
+    expect(values['dsc'],  'dsc').toBeCloseTo(85, 0);
+    expect(values['buf'],  'buf').toBeCloseTo(30, 0);
+    expect(values['sld'],  'sld').toBeCloseTo(85, 0);
+    expect(values['rar'],  'rar').toBeCloseTo(3, 0);
+  }
+
+  it('imports correctly with CRLF line endings (Windows / Excel default)', () => {
+    const rows = buildFilledRows();
+    const csvCrlf = rows.map(r => r.map(escapeCell).join(',')).join('\r\n');
+    const { values } = runNewFormatImport(csvCrlf, 'resiliency');
+    assertKpiValues(values);
+  });
+
+  it('imports correctly when there is no UTF-8 BOM (Excel drops the BOM on re-save)', () => {
+    const rows = buildFilledRows();
+    const csvNoBom = rows.map(r => r.map(escapeCell).join(',')).join('\r\n');
+    expect(csvNoBom.charCodeAt(0)).not.toBe(0xFEFF);
+    const { values } = runNewFormatImport(csvNoBom, 'resiliency');
+    assertKpiValues(values);
+  });
+
+  it('imports correctly when extra blank rows are scattered between sections', () => {
+    const rows = buildFilledRows();
+    const mutated: string[][] = [];
+    for (const row of rows) {
+      mutated.push(row);
+      if (row[0]?.startsWith('===')) {
+        mutated.push(['', '', '', '', '', '']);
+        mutated.push(['', '', '', '', '', '']);
+      }
+    }
+    const csvText = mutated.map(r => r.map(escapeCell).join(',')).join('\r\n');
+    const { values } = runNewFormatImport(csvText, 'resiliency');
+    assertKpiValues(values);
+  });
+
+  it('imports correctly when cell values have leading and trailing whitespace', () => {
+    const rows = buildFilledRows();
+    const padCell = (c: string): string => `"  ${c.replace(/"/g, '""')}  "`;
+    const csvText = rows.map(r => r.map(padCell).join(',')).join('\r\n');
+    const { values } = runNewFormatImport(csvText, 'resiliency');
+    assertKpiValues(values);
+  });
+
+  it('imports correctly with all mutations combined (no BOM + CRLF + blank rows + whitespace padding)', () => {
+    const rows = buildFilledRows();
+    const withBlanks: string[][] = [];
+    for (const row of rows) {
+      withBlanks.push(row);
+      if (row[0]?.startsWith('===')) withBlanks.push(['', '', '', '', '', '']);
+    }
+    const padCell = (c: string): string => `" ${c.replace(/"/g, '""')} "`;
+    const csvText = withBlanks.map(r => r.map(padCell).join(',')).join('\r\n');
+    expect(csvText.charCodeAt(0)).not.toBe(0xFEFF);
+    const { values } = runNewFormatImport(csvText, 'resiliency');
+    assertKpiValues(values);
+  });
+
+  it('all 6 KPIs are calculated — no manual-entry notice — in the mutated file', () => {
+    const rows = buildFilledRows();
+    const mutated: string[][] = [];
+    for (const row of rows) {
+      mutated.push(row);
+      if (row[0]?.startsWith('===')) mutated.push(['', '', '', '', '', '']);
+    }
+    const padCell = (c: string): string => `" ${c.replace(/"/g, '""')} "`;
+    const csvText = mutated.map(r => r.map(padCell).join(',')).join('\r\n');
+    const { log } = runNewFormatImport(csvText, 'resiliency');
+    const kpiLines = log.filter(l => l.startsWith('✓') && !l.includes('auto-calculated'));
+    expect(kpiLines.length).toBe(6);
+    expect(log.find(l => l.includes('require manual entry'))).toBeUndefined();
+  });
+});
+
+// ─── Resiliency partial import ────────────────────────────────────────────────
+//
+//  Only rtoa and mttr are filled; dsc, buf, sld, rar are left blank.
+//  Verifies the same guarantees as the lean-six-sigma partial suite.
+
+describe('resiliency import — partial inputs (only rtoa and mttr filled)', () => {
+  function buildPartialResiliencyRows(): string[][] {
+    const rows = buildTemplateRows('resiliency');
+    rows.forEach(row => {
+      const kpiId = row[0]?.trim().toLowerCase();
+      if (!['rtoa', 'mttr'].includes(kpiId)) return;
+      const spec = KPI_DATA_SPECS[kpiId];
+      if (!spec) return;
+      const inputDef = spec.inputs.find(inp =>
+        row[1]?.trim().toLowerCase() === inp.label.toLowerCase(),
+      );
+      if (inputDef) row[2] = String(inputDef.example);
+    });
+    return rows;
+  }
+
+  it('calculates rtoa correctly from its example inputs', () => {
+    const csvText = rowsToCsvText(buildPartialResiliencyRows());
+    const { values } = runNewFormatImport(csvText, 'resiliency');
+    // rtoa: pct(10, 12) ≈ 83.3
+    expect(values['rtoa'], 'rtoa').toBeCloseTo(83.3, 0);
+  });
+
+  it('calculates mttr correctly from its example inputs', () => {
+    const csvText = rowsToCsvText(buildPartialResiliencyRows());
+    const { values } = runNewFormatImport(csvText, 'resiliency');
+    // mttr: avg(504, 8) = 63.0
+    expect(values['mttr'], 'mttr').toBeCloseTo(63, 0);
+  });
+
+  it('skipped KPIs are absent from the values map — not zeroed', () => {
+    const csvText = rowsToCsvText(buildPartialResiliencyRows());
+    const { values } = runNewFormatImport(csvText, 'resiliency');
+    expect(values['dsc'], 'dsc should be absent').toBeUndefined();
+    expect(values['buf'], 'buf should be absent').toBeUndefined();
+    expect(values['sld'], 'sld should be absent').toBeUndefined();
+    expect(values['rar'], 'rar should be absent').toBeUndefined();
+  });
+
+  it('exactly 2 KPIs are calculated — no more, no less', () => {
+    const csvText = rowsToCsvText(buildPartialResiliencyRows());
+    const { values } = runNewFormatImport(csvText, 'resiliency');
+    expect(Object.keys(values).sort()).toEqual(['mttr', 'rtoa']);
+  });
+
+  it('log contains a skip-reason entry for each uncalculable KPI', () => {
+    const csvText = rowsToCsvText(buildPartialResiliencyRows());
+    const { log } = runNewFormatImport(csvText, 'resiliency');
+    const skipLines = log.filter(l => l.includes('skipped'));
+    // dsc, buf, sld, rar — all four should have a skip entry
+    expect(skipLines.length, 'skip-reason log entries').toBeGreaterThanOrEqual(4);
+  });
+
+  it('log contains exactly 2 per-KPI success lines (summary line excluded)', () => {
+    const csvText = rowsToCsvText(buildPartialResiliencyRows());
+    const { log } = runNewFormatImport(csvText, 'resiliency');
+    const kpiLines = log.filter(l => l.startsWith('✓') && !l.includes('auto-calculated'));
+    expect(kpiLines.length, 'per-KPI success log lines').toBe(2);
+  });
+
+  it('skip-reason entries name the skipped KPIs, not the calculated ones', () => {
+    const csvText = rowsToCsvText(buildPartialResiliencyRows());
+    const { log } = runNewFormatImport(csvText, 'resiliency');
+    const skipLines = log.filter(l => l.includes('skipped'));
+    const skipText = skipLines.join('\n');
+    expect(skipText).toContain('Dual-Source Coverage');  // dsc
+    expect(skipText).toContain('Buffer Stock');           // buf
+    expect(skipText).toContain('Service Level During');   // sld
+    expect(skipText).toContain('Revenue at Risk');        // rar
+  });
+});
+
+// ─── Excel-mutated template round-trip (value-engineering) ───────────────────
+//
+//  The value-engineering framework has 6 KPIs: ves, scv, iir, spc, tis, ssat.
+//  All 6 have full KPI_DATA_SPECS entries (no manual-entry KPIs).
+//
+//  Expected values from example inputs:
+//    ves  = pct(2 200 000, 22 000 000)                  = 10.0
+//    scv  = round(((8 800 000 − 8 360 000) / 8 360 000)×1000)/10 = 5.3
+//    iir  = pct(51, 80)                                 = 63.8
+//    spc  = pct(43, 45)                                 = 95.6
+//    tis  = avg(4 725, 51)                              = 92.6
+//    ssat = round((378 / 90)×10)/10                     = 4.2
+
+describe('Excel-mutated template round-trip (value-engineering)', () => {
+  function buildFilledRows(): string[][] {
+    const rows = buildTemplateRows('value-engineering');
+    rows.forEach(row => {
+      const kpiId = row[0]?.trim().toLowerCase();
+      if (!kpiId || kpiId === '' || kpiId.startsWith('===') || kpiId.startsWith('---') || kpiId.endsWith('__result')) return;
+      const spec = KPI_DATA_SPECS[kpiId];
+      if (!spec) return;
+      const inputDef = spec.inputs.find(inp =>
+        row[1]?.trim().toLowerCase() === inp.label.toLowerCase(),
+      );
+      if (inputDef) row[2] = String(inputDef.example);
+    });
+    return rows;
+  }
+
+  function assertKpiValues(values: Record<string, number>): void {
+    expect(values['ves'],  'ves').toBeCloseTo(10, 0);
+    expect(values['scv'],  'scv').toBeCloseTo(5.3, 0);
+    expect(values['iir'],  'iir').toBeCloseTo(63.8, 0);
+    expect(values['spc'],  'spc').toBeCloseTo(95.6, 0);
+    expect(values['tis'],  'tis').toBeCloseTo(92.6, 0);
+    expect(values['ssat'], 'ssat').toBeCloseTo(4.2, 0);
+  }
+
+  it('imports correctly with CRLF line endings (Windows / Excel default)', () => {
+    const rows = buildFilledRows();
+    const csvCrlf = rows.map(r => r.map(escapeCell).join(',')).join('\r\n');
+    const { values } = runNewFormatImport(csvCrlf, 'value-engineering');
+    assertKpiValues(values);
+  });
+
+  it('imports correctly when there is no UTF-8 BOM (Excel drops the BOM on re-save)', () => {
+    const rows = buildFilledRows();
+    const csvNoBom = rows.map(r => r.map(escapeCell).join(',')).join('\r\n');
+    expect(csvNoBom.charCodeAt(0)).not.toBe(0xFEFF);
+    const { values } = runNewFormatImport(csvNoBom, 'value-engineering');
+    assertKpiValues(values);
+  });
+
+  it('imports correctly when extra blank rows are scattered between sections', () => {
+    const rows = buildFilledRows();
+    const mutated: string[][] = [];
+    for (const row of rows) {
+      mutated.push(row);
+      if (row[0]?.startsWith('===')) {
+        mutated.push(['', '', '', '', '', '']);
+        mutated.push(['', '', '', '', '', '']);
+      }
+    }
+    const csvText = mutated.map(r => r.map(escapeCell).join(',')).join('\r\n');
+    const { values } = runNewFormatImport(csvText, 'value-engineering');
+    assertKpiValues(values);
+  });
+
+  it('imports correctly when cell values have leading and trailing whitespace', () => {
+    const rows = buildFilledRows();
+    const padCell = (c: string): string => `"  ${c.replace(/"/g, '""')}  "`;
+    const csvText = rows.map(r => r.map(padCell).join(',')).join('\r\n');
+    const { values } = runNewFormatImport(csvText, 'value-engineering');
+    assertKpiValues(values);
+  });
+
+  it('imports correctly with all mutations combined (no BOM + CRLF + blank rows + whitespace padding)', () => {
+    const rows = buildFilledRows();
+    const withBlanks: string[][] = [];
+    for (const row of rows) {
+      withBlanks.push(row);
+      if (row[0]?.startsWith('===')) withBlanks.push(['', '', '', '', '', '']);
+    }
+    const padCell = (c: string): string => `" ${c.replace(/"/g, '""')} "`;
+    const csvText = withBlanks.map(r => r.map(padCell).join(',')).join('\r\n');
+    expect(csvText.charCodeAt(0)).not.toBe(0xFEFF);
+    const { values } = runNewFormatImport(csvText, 'value-engineering');
+    assertKpiValues(values);
+  });
+
+  it('all 6 KPIs are calculated — no manual-entry notice — in the mutated file', () => {
+    const rows = buildFilledRows();
+    const mutated: string[][] = [];
+    for (const row of rows) {
+      mutated.push(row);
+      if (row[0]?.startsWith('===')) mutated.push(['', '', '', '', '', '']);
+    }
+    const padCell = (c: string): string => `" ${c.replace(/"/g, '""')} "`;
+    const csvText = mutated.map(r => r.map(padCell).join(',')).join('\r\n');
+    const { log } = runNewFormatImport(csvText, 'value-engineering');
+    const kpiLines = log.filter(l => l.startsWith('✓') && !l.includes('auto-calculated'));
+    expect(kpiLines.length).toBe(6);
+    expect(log.find(l => l.includes('require manual entry'))).toBeUndefined();
+  });
+});
+
+// ─── Value-engineering partial import ────────────────────────────────────────
+//
+//  Only ves and scv are filled; iir, spc, tis, ssat are left blank.
+//  Verifies the same guarantees as the lean-six-sigma partial suite.
+
+describe('value-engineering import — partial inputs (only ves and scv filled)', () => {
+  function buildPartialVeRows(): string[][] {
+    const rows = buildTemplateRows('value-engineering');
+    rows.forEach(row => {
+      const kpiId = row[0]?.trim().toLowerCase();
+      if (!['ves', 'scv'].includes(kpiId)) return;
+      const spec = KPI_DATA_SPECS[kpiId];
+      if (!spec) return;
+      const inputDef = spec.inputs.find(inp =>
+        row[1]?.trim().toLowerCase() === inp.label.toLowerCase(),
+      );
+      if (inputDef) row[2] = String(inputDef.example);
+    });
+    return rows;
+  }
+
+  it('calculates ves correctly from its example inputs', () => {
+    const csvText = rowsToCsvText(buildPartialVeRows());
+    const { values } = runNewFormatImport(csvText, 'value-engineering');
+    // ves: pct(2_200_000, 22_000_000) = 10.0
+    expect(values['ves'], 'ves').toBeCloseTo(10, 0);
+  });
+
+  it('calculates scv correctly from its example inputs', () => {
+    const csvText = rowsToCsvText(buildPartialVeRows());
+    const { values } = runNewFormatImport(csvText, 'value-engineering');
+    // scv: round(((8_800_000 - 8_360_000) / 8_360_000) * 1000) / 10 = 5.3
+    expect(values['scv'], 'scv').toBeCloseTo(5.3, 0);
+  });
+
+  it('skipped KPIs are absent from the values map — not zeroed', () => {
+    const csvText = rowsToCsvText(buildPartialVeRows());
+    const { values } = runNewFormatImport(csvText, 'value-engineering');
+    expect(values['iir'],  'iir should be absent').toBeUndefined();
+    expect(values['spc'],  'spc should be absent').toBeUndefined();
+    expect(values['tis'],  'tis should be absent').toBeUndefined();
+    expect(values['ssat'], 'ssat should be absent').toBeUndefined();
+  });
+
+  it('exactly 2 KPIs are calculated — no more, no less', () => {
+    const csvText = rowsToCsvText(buildPartialVeRows());
+    const { values } = runNewFormatImport(csvText, 'value-engineering');
+    expect(Object.keys(values).sort()).toEqual(['scv', 'ves']);
+  });
+
+  it('log contains a skip-reason entry for each uncalculable KPI', () => {
+    const csvText = rowsToCsvText(buildPartialVeRows());
+    const { log } = runNewFormatImport(csvText, 'value-engineering');
+    const skipLines = log.filter(l => l.includes('skipped'));
+    // iir, spc, tis, ssat — all four should have a skip entry
+    expect(skipLines.length, 'skip-reason log entries').toBeGreaterThanOrEqual(4);
+  });
+
+  it('log contains exactly 2 per-KPI success lines (summary line excluded)', () => {
+    const csvText = rowsToCsvText(buildPartialVeRows());
+    const { log } = runNewFormatImport(csvText, 'value-engineering');
+    const kpiLines = log.filter(l => l.startsWith('✓') && !l.includes('auto-calculated'));
+    expect(kpiLines.length, 'per-KPI success log lines').toBe(2);
+  });
+
+  it('skip-reason entries name the skipped KPIs, not the calculated ones', () => {
+    const csvText = rowsToCsvText(buildPartialVeRows());
+    const { log } = runNewFormatImport(csvText, 'value-engineering');
+    const skipLines = log.filter(l => l.includes('skipped'));
+    const skipText = skipLines.join('\n');
+    expect(skipText).toContain('Idea-to-Implementation');      // iir
+    expect(skipText).toContain('Specification Compliance');    // spc
+    expect(skipText).toContain('Time to Savings Realisation'); // tis
+    expect(skipText).toContain('Stakeholder Satisfaction');    // ssat
+  });
+});
