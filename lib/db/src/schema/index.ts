@@ -8,3 +8,4 @@ export * from "./appCache";
 export * from "./apiKeys";
 export * from "./webhooks";
 export * from "./automation";
+export * from "./benchmarks";

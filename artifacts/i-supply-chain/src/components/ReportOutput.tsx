@@ -229,7 +229,7 @@ export function ReportOutput({ report }: { report: DiagnosticReport }) {
         {/* Footer of the document */}
         <div className="bg-muted px-4 sm:px-8 py-4 border-t border-border flex flex-col sm:flex-row justify-between sm:items-center gap-1">
           <p className="text-sm font-bold text-primary">{isAr ? 'استشارات I Supply Chain' : 'I Supply Chain Consultancy'}</p>
-          <p className="text-xs text-muted-foreground">{isAr ? 'تم إنشاؤه عبر محرك التشخيص الذكي' : 'Generated via Intelligent Diagnostic Engine'}</p>
+          <p className="text-xs text-muted-foreground">{isAr ? 'تم إنشاؤه بالذكاء الاصطناعي · شخصية معين الحقاش · GPT-4o' : 'AI-generated · Ma\'in Alhaqash persona · GPT-4o'}</p>
         </div>
 
       </div>

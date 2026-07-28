@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { generateReport, DiagnosticReport } from '@/lib/diagnosticEngine';
 import { ReportOutput } from '@/components/ReportOutput';
 import { FeedbackModal, shouldShowFeedback } from '@/components/FeedbackModal';
-import { ChevronRight, ArrowLeft } from 'lucide-react';
+import { ChevronRight, ArrowLeft, Brain, Loader2 } from 'lucide-react';
 
 import { API_BASE } from '@/lib/apiBase';
 import { useRateLimitCountdown } from '@/hooks/useRateLimitCountdown';
@@ -64,20 +64,49 @@ export function Diagnostic() {
   const handleSubmit = async () => {
     setIsGenerating(true);
     rateLimit.clear();
-    await new Promise(r => setTimeout(r, 1200));
-    const generated = generateReport(formData as any, lang);
 
-    // Lead capture is best-effort and runs in the background — never block the report.
+    let generated: DiagnosticReport;
+
+    try {
+      // ── Live AI diagnostic via GPT-4o (Ma'in Alhaqash persona) ────────────
+      const res = await fetch(`${API_BASE}/diagnostic`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          businessSize: formData.businessSize,
+          region:       formData.region,
+          industry:     formData.industry,
+          focusArea:    formData.focusArea,
+          challenge:    formData.challenge,
+          language:     lang,
+        }),
+      });
+
+      // Any non-ok response (including 429 when AI is busy) → use fallback.
+      // The rate-limit UI is only driven by the leads endpoint below.
+      if (!res.ok) throw new Error(`AI diagnostic returned ${res.status}`);
+
+      const data = await res.json();
+      if (!data.report) throw new Error('AI diagnostic: missing report in response');
+      generated = data.report as DiagnosticReport;
+    } catch (err) {
+      // ── Graceful fallback: static engine ensures the client always gets
+      //    a report even if the AI service is temporarily unavailable ────────
+      console.warn('[diagnostic] AI generation failed, using static fallback', err);
+      generated = generateReport(formData as any, lang);
+    }
+
+    // ── Lead capture: best-effort, never blocks the report ─────────────────
     void (async () => {
       try {
         const res = await fetch(`${API_BASE}/leads/diagnostic`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            businessSize: formData.businessSize,
-            region: formData.region,
-            industry: formData.industry,
-            focusArea: formData.focusArea,
+            businessSize:  formData.businessSize,
+            region:        formData.region,
+            industry:      formData.industry,
+            focusArea:     formData.focusArea,
             challengeText: formData.challenge,
             reportSummary: generated.executiveSummary,
           }),
@@ -90,7 +119,7 @@ export function Diagnostic() {
           }
           rateLimit.start(seconds);
         }
-      } catch (e) { /* silent fail — lead capture is best-effort */ }
+      } catch (e) { /* silent fail */ }
     })();
 
     setReport(generated);
@@ -314,7 +343,17 @@ export function Diagnostic() {
                 className="flex-1 sm:flex-none bg-accent hover:bg-accent/90 text-white font-bold h-11 sm:min-w-[200px]"
                 data-testid="button-wizard-submit"
               >
-                {isGenerating ? (isAr ? 'جارٍ التحليل...' : 'Analyzing...') : t('diagnostic.submit')}
+                {isGenerating ? (
+                <span className="flex items-center gap-2">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  {isAr ? 'يُحلّل الذكاء الاصطناعي...' : 'AI is analysing…'}
+                </span>
+              ) : (
+                <span className="flex items-center gap-2">
+                  <Brain className="w-4 h-4" />
+                  {t('diagnostic.submit')}
+                </span>
+              )}
               </Button>
             )}
           </div>

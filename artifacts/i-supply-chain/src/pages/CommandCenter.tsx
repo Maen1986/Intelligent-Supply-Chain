@@ -19,6 +19,7 @@ import { Button } from '@/components/ui/button';
 
 import { API_BASE } from '@/lib/apiBase';
 import { safeSetItem } from '@/lib/storage';
+import { useBenchmarks } from '@/lib/useBenchmarks';
 import {
   SKU_CLASSES, SkuClassKey,
   SKU_CLASS_KPI_BENCHMARKS, SKU_CLASS_KPI_TOP_QUARTILE,
@@ -961,15 +962,58 @@ function SavingsTab({ lang }: { lang: Lang }) {
   const [industry, setIndustry] = useState(Object.keys(INDUSTRY_TREE)[0]);
   const [levers, setLevers] = useState<Record<string, number>>(Object.fromEntries(LEVERS.map(l => [l.id, 40])));
 
-  const spend = revenue * 1_000_000 * spendPct / 100;
-  const calcSaving = (id: string, pct: number) => {
-    const lever = LEVERS.find(l => l.id === id)!;
-    return spend * lever.maxPct * pct / 100;
-  };
-  const totalSaving = useMemo(() => LEVERS.reduce((s, l) => s + calcSaving(l.id, levers[l.id] ?? 40), 0), [levers, spend]);
-  const roi = totalSaving / (revenue * 1_000_000) * 100;
+  // Live DB-sourced benchmark data (maxPct values update silently from DB)
+  const { benchmarks: savingsBenchmarks } = useBenchmarks(industry);
 
+  // AI analysis state
+  const [aiSavings, setAiSavings] = useState<{
+    levers: { id: string; adjustedMaxPct: number; narrative: string; priority: number; keyActions: string[]; quickWin: string }[];
+    paybackMonths: number; totalSavingsNarrative: string; industryContext: string; consultantNote: string;
+  } | null>(null);
+  const [loadingSavingsAI, setLoadingSavingsAI] = useState(false);
+  const [savingsAiErr, setSavingsAiErr] = useState('');
+
+  const spend = revenue * 1_000_000 * spendPct / 100;
+
+  // Effective maxPct: AI-adjusted (per-industry) → DB value (GCC-wide) → hardcoded constant
+  const effectiveMaxPct = useCallback((id: string) => {
+    const aiLever = aiSavings?.levers.find(l => l.id === id);
+    if (aiLever) return aiLever.adjustedMaxPct;
+    return savingsBenchmarks.lever[id]?.maxPct ?? LEVERS.find(l => l.id === id)!.maxPct;
+  }, [aiSavings, savingsBenchmarks.lever]);
+
+  const calcSaving = (id: string, pct: number) => spend * effectiveMaxPct(id) * pct / 100;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const totalSaving = useMemo(() => LEVERS.reduce((s, l) => s + calcSaving(l.id, levers[l.id] ?? 40), 0), [levers, spend, aiSavings, savingsBenchmarks]);
+  const roi = totalSaving / (revenue * 1_000_000) * 100;
   const barData = LEVERS.map(l => ({ name: ar ? l.shortAr : l.short, value: Math.round(calcSaving(l.id, levers[l.id] ?? 40) / 1000) }));
+
+  const aiLeverMap = useMemo(
+    () => Object.fromEntries((aiSavings?.levers ?? []).map(l => [l.id, l])),
+    [aiSavings],
+  );
+
+  const handleGenerateAI = async () => {
+    setLoadingSavingsAI(true); setSavingsAiErr(''); setAiSavings(null);
+    try {
+      const resp = await fetch(`${API_BASE}/command-centre/savings`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ industry, revenue, spendPct, levers, language: lang }),
+      });
+      if (resp.status === 429) {
+        const body = await resp.json().catch(() => null);
+        const secs = body?.retryAfterSeconds;
+        setSavingsAiErr(ar
+          ? `الحد الأقصى للطلبات. حاول بعد ${secs ? Math.ceil(secs / 60) + ' دقيقة' : 'قليل'}.`
+          : `Rate limit reached. Try again${secs ? ` in ${Math.ceil(secs / 60)} min` : ' later'}.`);
+        return;
+      }
+      const data = await resp.json();
+      if (!data.ok) throw new Error(data.error ?? 'AI error');
+      setAiSavings(data.analysis);
+    } catch (e) { setSavingsAiErr(String(e)); }
+    finally { setLoadingSavingsAI(false); }
+  };
 
   return (
     <div className="space-y-7" dir={ar ? 'rtl' : 'ltr'}>
@@ -997,7 +1041,7 @@ function SavingsTab({ lang }: { lang: Lang }) {
           <label className="text-xs font-bold text-[#082C6B] uppercase tracking-wider">
             {ar ? 'القطاع' : 'Industry'}
           </label>
-          <select value={industry} onChange={e => setIndustry(e.target.value)}
+          <select value={industry} onChange={e => { setIndustry(e.target.value); setAiSavings(null); }}
             className="w-full border border-border rounded-lg px-3 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#082C6B]/30">
             {Object.keys(INDUSTRY_TREE).map(i => <option key={i} value={i}>{industryLabel(i, ar)}</option>)}
           </select>
@@ -1015,25 +1059,30 @@ function SavingsTab({ lang }: { lang: Lang }) {
               ? 'اضبط كل محور ليعكس مدى تطبيق المبادرة (0% = لا إجراء، 100% = تطبيق كامل)'
               : 'Slide each lever to indicate how fully you plan to deploy each initiative (0% = no action, 100% = full deployment)'}
           </p>
-          {LEVERS.map(l => (
-            <div key={l.id} className="space-y-1.5">
-              <div className="flex justify-between">
-                <span className="text-sm font-semibold">{ar ? l.labelAr : l.label}</span>
-                <span className="text-sm font-bold" style={{ color: l.color }}>{formatSAR(calcSaving(l.id, levers[l.id] ?? 40))}</span>
+          {LEVERS.map(l => {
+            const aiL = aiLeverMap[l.id];
+            return (
+              <div key={l.id} className="space-y-1.5">
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold">{ar ? l.labelAr : l.label}</span>
+                    {aiL && <span className="text-[10px] font-bold text-[#C9A84C] bg-[#C9A84C]/15 px-1.5 py-0.5 rounded-full leading-none">{ar ? 'ذكاء اصطناعي' : 'AI-adjusted'}</span>}
+                  </div>
+                  <span className="text-sm font-bold" style={{ color: l.color }}>{formatSAR(calcSaving(l.id, levers[l.id] ?? 40))}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input type="range" min={0} max={100} value={levers[l.id] ?? 40}
+                    onChange={e => setLevers(prev => ({ ...prev, [l.id]: +e.target.value }))}
+                    className="flex-1" style={{ accentColor: l.color }} />
+                  <span className="text-xs text-muted-foreground w-10 text-right">{levers[l.id] ?? 40}%</span>
+                </div>
+                {aiL
+                  ? <p className="text-xs text-[#082C6B]/80 bg-[#082C6B]/5 rounded-lg px-2 py-1.5 leading-relaxed">{aiL.narrative}</p>
+                  : <p className="text-xs text-muted-foreground">{ar ? `أقصى إمكانية: ${formatSAR(calcSaving(l.id, 100))} (عند التطبيق الكامل 100%)` : `Max potential: ${formatSAR(calcSaving(l.id, 100))} (at 100% deployment)`}</p>
+                }
               </div>
-              <div className="flex items-center gap-2">
-                <input type="range" min={0} max={100} value={levers[l.id] ?? 40}
-                  onChange={e => setLevers(prev => ({ ...prev, [l.id]: +e.target.value }))}
-                  className="flex-1" style={{ accentColor: l.color }} />
-                <span className="text-xs text-muted-foreground w-10 text-right">{levers[l.id] ?? 40}%</span>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {ar
-                  ? `أقصى إمكانية: ${formatSAR(calcSaving(l.id, 100))} (عند التطبيق الكامل 100%)`
-                  : `Max potential: ${formatSAR(calcSaving(l.id, 100))} (at 100% deployment)`}
-              </p>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Total + Chart */}
@@ -1057,7 +1106,11 @@ function SavingsTab({ lang }: { lang: Lang }) {
               </div>
               <div>
                 <p className="text-white/60 text-xs">{ar ? 'فترة الاسترداد' : 'Payback Period'}</p>
-                <p className="font-bold">{ar ? '6–12 شهراً' : '6–12 months'}</p>
+                <p className="font-bold">
+                  {aiSavings?.paybackMonths
+                    ? (ar ? `~${aiSavings.paybackMonths} شهراً` : `~${aiSavings.paybackMonths} months`)
+                    : (ar ? '6–12 شهراً' : '6–12 months')}
+                </p>
               </div>
             </div>
           </motion.div>
@@ -1079,6 +1132,71 @@ function SavingsTab({ lang }: { lang: Lang }) {
             </ResponsiveContainer>
           </div>
         </div>
+      </div>
+
+      {/* ── AI Savings Analysis panel ─────────────────────────────────── */}
+      <div className="border border-[#082C6B]/20 rounded-2xl p-5 space-y-4 bg-[#082C6B]/[0.02]">
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <div>
+            <h3 className="font-bold text-[#082C6B] text-base">
+              {ar ? 'تحليل الوفورات بالذكاء الاصطناعي' : 'AI Savings Analysis'}
+            </h3>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {ar
+                ? `يُعدِّل الذكاء الاصطناعي نسب الوفورات القصوى لقطاع ${industryLabel(industry, ar)} ويولّد تحليلاً مخصصاً لملفك`
+                : `AI adjusts max savings rates for ${industry} and generates initiative-specific narrative for your profile`}
+            </p>
+          </div>
+          <Button onClick={handleGenerateAI} disabled={loadingSavingsAI}
+            className="bg-[#082C6B] hover:bg-[#0B3D91] text-white font-bold">
+            {loadingSavingsAI
+              ? <><Loader2 className={`w-4 h-4 animate-spin ${ar ? 'ml-2' : 'mr-2'}`} />{ar ? 'يُحلّل...' : 'Analysing...'}</>
+              : <><Brain className={`w-4 h-4 ${ar ? 'ml-2' : 'mr-2'}`} />{ar ? 'تحليل بالذكاء الاصطناعي' : 'Generate AI Analysis'}</>}
+          </Button>
+        </div>
+
+        {savingsAiErr && (
+          <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl p-3 text-sm">{savingsAiErr}</div>
+        )}
+
+        {aiSavings && (
+          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+            {/* Industry context */}
+            <div className="bg-[#082C6B] rounded-xl p-4 text-white">
+              <p className="text-xs uppercase tracking-widest text-white/60 mb-1">{ar ? 'سياق القطاع' : 'Industry Context'}</p>
+              <p className="text-sm leading-relaxed">{aiSavings.industryContext}</p>
+            </div>
+
+            {/* Per-lever priority list */}
+            {[...(aiSavings.levers)].sort((a, b) => a.priority - b.priority).map(lever => {
+              const leverDef = LEVERS.find(l => l.id === lever.id);
+              return (
+                <div key={lever.id} className="flex gap-3 items-start bg-white rounded-xl border border-border p-3">
+                  <span className="w-6 h-6 rounded-full bg-[#082C6B] text-white flex items-center justify-center text-xs font-black shrink-0">{lever.priority}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-bold text-sm">{ar ? leverDef?.labelAr : leverDef?.label}</span>
+                      <span className="text-xs text-[#C9A84C] font-bold">
+                        {ar ? `أقصى وفر: ${(lever.adjustedMaxPct * 100).toFixed(0)}%` : `Max saving: ${(lever.adjustedMaxPct * 100).toFixed(0)}%`}
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-0.5">{lever.narrative}</p>
+                    {lever.quickWin && (
+                      <p className="text-xs text-emerald-700 mt-1 font-semibold flex items-center gap-1">
+                        <Zap className="w-3 h-3 shrink-0" />{ar ? 'مكسب سريع: ' : 'Quick win: '}{lever.quickWin}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* Consultant note */}
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-900">
+              <strong className="font-bold">{ar ? "ملاحظة ما'ين: " : "Ma'in's Note: "}</strong>{aiSavings.consultantNote}
+            </div>
+          </motion.div>
+        )}
       </div>
 
       <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-900">
@@ -1118,6 +1236,18 @@ function RiskTab({ lang }: { lang: Lang }) {
   const [loading, setLoading] = useState(false);
   const [aiErr,   setAiErr]   = useState('');
 
+  // AI risk-score analysis: calibrated industry benchmark + commentary
+  const [aiRiskData, setAiRiskData] = useState<{
+    industryBenchmark: number; targetScore: number; annualExposureCoefficient: number;
+    commentary: { categoryId: string; priority: number; headline: string; narrative: string; industryGcMedian?: number; industryGcTopQ?: number }[];
+    consultantNote: string;
+  } | null>(null);
+  // Annual exposure coefficient: AI-calibrated > hardcoded GCC default
+  const [annualExpCoeff, setAnnualExpCoeff] = useState(0.0003);
+
+  // Live DB benchmark data (gcMedian/gcTopQ per risk category)
+  const { benchmarks: riskBenchmarks } = useBenchmarks(industry);
+
   const exposureScore = useMemo(() => {
     let total = 0;
     RISK_CATEGORIES_DATA.forEach(cat => {
@@ -1129,9 +1259,21 @@ function RiskTab({ lang }: { lang: Lang }) {
     return Math.round(Math.min(100, (total / 200) * 100));
   }, [ratings]);
 
-  const industryBenchmark = Math.round(RISK_CATEGORIES_DATA.reduce((s,c)=>s+c.gcMedian,0)/RISK_CATEGORIES_DATA.length / 2);
-  const targetScore        = Math.round(RISK_CATEGORIES_DATA.reduce((s,c)=>s+c.gcTopQ,0)/RISK_CATEGORIES_DATA.length / 2);
-  const annualExposure     = revenue * 1_000_000 * Math.max(0, exposureScore - targetScore) * 0.0003;
+  // industryBenchmark / targetScore: AI-calibrated (per-industry) → DB values → hardcoded fallback
+  const industryBenchmark = useMemo(() => {
+    if (aiRiskData?.industryBenchmark !== undefined) return aiRiskData.industryBenchmark;
+    const vals = Object.values(riskBenchmarks.risk);
+    return Math.round(vals.reduce((s, r) => s + r.gcMedian, 0) / Math.max(vals.length, 1) / 2);
+  }, [riskBenchmarks.risk, aiRiskData]);
+
+  const targetScore = useMemo(() => {
+    if (aiRiskData?.targetScore !== undefined) return aiRiskData.targetScore;
+    const vals = Object.values(riskBenchmarks.risk);
+    return Math.round(vals.reduce((s, r) => s + r.gcTopQ, 0) / Math.max(vals.length, 1) / 2);
+  }, [riskBenchmarks.risk, aiRiskData]);
+
+  // annualExposureCoefficient: AI-returned (industry-calibrated) or hardcoded GCC default
+  const annualExposure = revenue * 1_000_000 * Math.max(0, exposureScore - targetScore) * annualExpCoeff;
 
   const highRisks = useMemo(() =>
     RISK_CATEGORIES_DATA.filter(cat => {
@@ -1144,8 +1286,26 @@ function RiskTab({ lang }: { lang: Lang }) {
   }, []);
 
   const generatePlan = async () => {
-    setLoading(true); setAiErr(''); setAiPlan(null);
+    setLoading(true); setAiErr(''); setAiPlan(null); setAiRiskData(null);
     try {
+      // Step 1: calibrate industry-specific benchmark numbers + commentary
+      try {
+        const riskResp = await fetch(`${API_BASE}/command-centre/risk-score`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ industry, revenue, ratings, language: lang }),
+        });
+        if (riskResp.ok) {
+          const riskJson = await riskResp.json();
+          if (riskJson.ok && riskJson.analysis) {
+            setAiRiskData(riskJson.analysis);
+            if (typeof riskJson.analysis.annualExposureCoefficient === 'number') {
+              setAnnualExpCoeff(riskJson.analysis.annualExposureCoefficient);
+            }
+          }
+        }
+      } catch { /* risk-score failure is non-fatal — mitigation plan still runs */ }
+
+      // Step 2: generate the ISO 31000-aligned mitigation plan (as before)
       const desc = RISK_CATEGORIES_DATA.map(cat => {
         const r = ratings[cat.id] ?? { likelihood: 3, impact: 3 };
         return `${cat.label}: L${r.likelihood}×I${r.impact}=${r.likelihood*r.impact}`;
@@ -1395,6 +1555,47 @@ function RiskTab({ lang }: { lang: Lang }) {
           </Button>
         </div>
         {aiErr && <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl p-3 text-sm">{aiErr}</div>}
+
+        {/* Industry-calibrated benchmarks + per-category commentary (from risk-score endpoint) */}
+        {aiRiskData && (
+          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-3">
+            {aiRiskData.consultantNote && (
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-900">
+                <strong className="font-bold">{ar ? "ملاحظة ما'ين: " : "Ma'in's Note: "}</strong>{aiRiskData.consultantNote}
+              </div>
+            )}
+            {aiRiskData.commentary && aiRiskData.commentary.length > 0 && (
+              <div className="space-y-2">
+                <h4 className="text-xs font-bold text-[#082C6B] uppercase tracking-wider">
+                  {ar ? `تحليل فئات المخاطر لقطاع ${industryLabel(industry, ar)}` : `Risk Category Analysis · ${industry}`}
+                </h4>
+                {[...aiRiskData.commentary].sort((a, b) => a.priority - b.priority).map(c => {
+                  const catDef = RISK_CATEGORIES_DATA.find(r => r.id === c.categoryId);
+                  return (
+                    <div key={c.categoryId} className="flex gap-3 items-start bg-white rounded-xl border border-border p-3">
+                      <span className="w-6 h-6 rounded-full bg-[#082C6B] text-white flex items-center justify-center text-xs font-black shrink-0">{c.priority}</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-bold text-sm">{ar ? catDef?.labelAr : catDef?.label}</span>
+                          {c.headline && <span className="text-xs font-semibold text-[#C9A84C]">{c.headline}</span>}
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{c.narrative}</p>
+                        {c.industryGcMedian !== undefined && (
+                          <p className="text-xs text-[#082C6B]/60 mt-1">
+                            {ar
+                              ? `معيار قطاعك: ${c.industryGcMedian} نقطة · أفضل ربع: ${c.industryGcTopQ} نقطة`
+                              : `Industry median: ${c.industryGcMedian} pts · Top quartile: ${c.industryGcTopQ} pts`}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </motion.div>
+        )}
+
         {aiPlan && (
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
             <div className="bg-[#082C6B] rounded-xl p-5 text-white">

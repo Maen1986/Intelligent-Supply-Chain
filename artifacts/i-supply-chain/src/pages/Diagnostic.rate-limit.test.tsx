@@ -32,10 +32,14 @@ async function completeWizardAndSubmit() {
   fireEvent.click(screen.getByTestId('button-wizard-next'));
   // Step 5 is optional — submit directly.
   fireEvent.click(screen.getByTestId('button-wizard-submit'));
-  // handleSubmit waits 1200ms before generating the report, then the
-  // background lead-capture fetch resolves with the 429.
+  // handleSubmit now calls the live AI endpoint (stubbed here) then falls
+  // back to generateReport when the stub returns a non-ok response.
+  // All steps are Promise-based so 100 ms is enough to flush every
+  // microtask; we deliberately stay under 1000 ms so the countdown timer
+  // that starts after the leads 429 response hasn't ticked yet when we
+  // first check it.
   await act(async () => {
-    await vi.advanceTimersByTimeAsync(1300);
+    await vi.advanceTimersByTimeAsync(100);
   });
 }
 
