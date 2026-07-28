@@ -306,11 +306,23 @@ export function KraljicMatrix() {
               <Info className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
               <div className="text-xs text-blue-800 space-y-0.5">
                 <p className="font-semibold">{isAr ? 'دليل التقييم (1–5):' : 'Rating guide (1–5):'}</p>
-                <p>• <strong>{isAr ? 'تأثير الجودة' : 'Quality Impact'}</strong>: {isAr ? '1 = لا تأثير، 5 = حرج للعمليات' : '1 = no quality dependency, 5 = critical to product/service quality'}</p>
-                <p>• <strong>{isAr ? 'تأثير الإيراد' : 'Revenue Impact'}</strong>: {isAr ? '1 = لا تأثير، 5 = محرك رئيسي للإيراد' : '1 = marginal, 5 = major revenue driver or cost-of-goods item'}</p>
-                <p>• <strong>{isAr ? 'تنافسية السوق' : 'Market Competitiveness'}</strong>: {isAr ? '1 = احتكار، 5 = سوق تنافسي جداً' : '1 = monopoly/single source, 5 = many competing suppliers'}</p>
-                <p>• <strong>{isAr ? 'الخطر الجغرافي' : 'Geographic Risk'}</strong>: {isAr ? '1 = محلي/منخفض الخطر، 5 = واحدة مصدر أو منطقة عالية الخطر' : '1 = local/low risk, 5 = single-country source or high geopolitical risk'}</p>
-                <p>• <strong>{isAr ? 'قابلية الاستبدال' : 'Substitutability'}</strong>: {isAr ? '1 = لا بديل، 5 = يمكن استبداله بسهولة' : '1 = no substitute exists, 5 = easily replaced with alternative'}</p>
+                {isAr ? (
+                  <>
+                    <p>• <strong>تأثير الجودة</strong>: 1 = لا تأثير · 2 = طفيف يمكن إدارته · 3 = معتدل على بعض العمليات · 4 = كبير على العمليات الأساسية · 5 = حرج للمنتج/جودة الخدمة</p>
+                    <p>• <strong>تأثير الإيراد</strong>: 1 = هامشي · 2 = مساهمة منخفضة · 3 = متوسط التكلفة/الإيراد · 4 = مساهمة عالية · 5 = محرك رئيسي للإيراد أو تكلفة البضاعة</p>
+                    <p>• <strong>تنافسية السوق</strong>: 1 = احتكار/مورد واحد · 2 = موردان أو ثلاثة · 3 = 4–6 موردين · 4 = عدة موردين · 5 = موردون كثيرون متنافسون</p>
+                    <p>• <strong>الخطر الجغرافي</strong>: 1 = محلي/منخفض · 2 = إقليمي، خطر منخفض · 3 = متعدد الدول · 4 = دولة واحدة، خطر مرتفع · 5 = مصدر واحد أو خطر جيوسياسي عالٍ</p>
+                    <p>• <strong>قابلية الاستبدال</strong>: 1 = لا بديل · 2 = بدائل معقدة/مكلفة · 3 = بدائل بجهد معتدل · 4 = بدائل جاهزة بسهولة · 5 = يمكن استبداله بسهولة</p>
+                  </>
+                ) : (
+                  <>
+                    <p>• <strong>Quality Impact</strong>: 1 = no impact · 2 = minor, easily managed · 3 = moderate, affects some processes · 4 = significant, affects core operations · 5 = critical to product/service quality</p>
+                    <p>• <strong>Revenue Impact</strong>: 1 = marginal · 2 = low contribution · 3 = moderate cost/revenue share · 4 = high contribution · 5 = major revenue driver or cost-of-goods item</p>
+                    <p>• <strong>Market Competitiveness</strong>: 1 = monopoly/single source · 2 = 2–3 suppliers · 3 = 4–6 suppliers · 4 = several competing · 5 = many competing suppliers</p>
+                    <p>• <strong>Geographic Risk</strong>: 1 = local/low risk · 2 = regional, low geopolitical risk · 3 = multi-country, moderate risk · 4 = single-country, elevated risk · 5 = high geopolitical/supply risk</p>
+                    <p>• <strong>Substitutability</strong>: 1 = no substitute exists · 2 = substitutes complex/costly · 3 = substitutes with moderate effort · 4 = readily available alternatives · 5 = easily replaced</p>
+                  </>
+                )}
               </div>
             </div>
 
