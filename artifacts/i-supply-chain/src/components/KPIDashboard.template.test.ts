@@ -1285,6 +1285,121 @@ describe('sustainability-esg import — partial inputs (only esga and s3 filled)
   });
 });
 
+// ─── Excel-mutated template round-trip (sustainability-esg) ──────────────────
+//
+//  Mirrors the lean-six-sigma and risk-management round-trip suites but for the
+//  sustainability-esg framework, which has 6 KPIs:
+//    esga, s3, lc, ss, cr, esgs
+//
+//  Expected values from example inputs (see kpiDataSpecs.ts):
+//    esga : pct(102, 120)                    ≈ 85.0  (Supplier ESG Audit Coverage %)
+//    s3   : pct(9, 12)                        = 75.0  (Scope 3 Coverage %)
+//    lc   : pct(8_800_000, 22_000_000)        = 40.0  (Local Content / Iktva %)
+//    ss   : pct(7_700_000, 22_000_000)        = 35.0  (Sustainable Spend %)
+//    cr   : ((12_400−10_540)/12_400)×100      = 15.0  (Carbon Reduction YoY %)
+//    esgs : pct(285, 380)                     = 75.0  (ESG-Compliant Suppliers %)
+//
+//  NOTE: cr's two inputs share the same first-30-char prefix
+//  ("Total supply chain GHG emission") so positional indexing is used
+//  throughout to avoid any fuzzy-match collision.
+
+describe('Excel-mutated template round-trip (sustainability-esg)', () => {
+  /** Return sustainability-esg template rows with all example values filled in. */
+  function buildFilledRows(): string[][] {
+    const rows = buildTemplateRows('sustainability-esg');
+    const kpiInputIndex: Record<string, number> = {};
+    rows.forEach(row => {
+      const kpiId = row[0]?.trim().toLowerCase();
+      if (!kpiId || kpiId === '' || kpiId.startsWith('===') || kpiId.startsWith('---') || kpiId.endsWith('__result')) return;
+      const spec = KPI_DATA_SPECS[kpiId];
+      if (!spec) return;
+      if (kpiInputIndex[kpiId] === undefined) kpiInputIndex[kpiId] = 0;
+      const inputDef = spec.inputs[kpiInputIndex[kpiId]];
+      kpiInputIndex[kpiId]++;
+      if (inputDef) row[2] = String(inputDef.example);
+    });
+    return rows;
+  }
+
+  /** Shared KPI value assertions for all mutation variants. */
+  function assertKpiValues(values: Record<string, number>): void {
+    expect(values['esga'], 'esga').toBeCloseTo(85.0, 0);
+    expect(values['s3'],   's3').toBeCloseTo(75.0, 0);
+    expect(values['lc'],   'lc').toBeCloseTo(40.0, 0);
+    expect(values['ss'],   'ss').toBeCloseTo(35.0, 0);
+    expect(values['cr'],   'cr').toBeCloseTo(15.0, 0);
+    expect(values['esgs'], 'esgs').toBeCloseTo(75.0, 0);
+  }
+
+  it('imports correctly with CRLF line endings (Windows / Excel default)', () => {
+    const rows = buildFilledRows();
+    const csvCrlf = rows.map(r => r.map(escapeCell).join(',')).join('\r\n');
+    const { values } = runNewFormatImport(csvCrlf, 'sustainability-esg');
+    assertKpiValues(values);
+  });
+
+  it('imports correctly when there is no UTF-8 BOM (Excel drops the BOM on re-save)', () => {
+    const rows = buildFilledRows();
+    const csvNoBom = rows.map(r => r.map(escapeCell).join(',')).join('\r\n');
+    expect(csvNoBom.charCodeAt(0)).not.toBe(0xFEFF);
+    const { values } = runNewFormatImport(csvNoBom, 'sustainability-esg');
+    assertKpiValues(values);
+  });
+
+  it('imports correctly when extra blank rows are scattered between sections', () => {
+    const rows = buildFilledRows();
+    const mutated: string[][] = [];
+    for (const row of rows) {
+      mutated.push(row);
+      if (row[0]?.startsWith('===')) {
+        mutated.push(['', '', '', '', '', '']);
+        mutated.push(['', '', '', '', '', '']);
+      }
+    }
+    const csvText = mutated.map(r => r.map(escapeCell).join(',')).join('\r\n');
+    const { values } = runNewFormatImport(csvText, 'sustainability-esg');
+    assertKpiValues(values);
+  });
+
+  it('imports correctly when cell values have leading and trailing whitespace', () => {
+    const rows = buildFilledRows();
+    const padCell = (c: string): string => `"  ${c.replace(/"/g, '""')}  "`;
+    const csvText = rows.map(r => r.map(padCell).join(',')).join('\r\n');
+    const { values } = runNewFormatImport(csvText, 'sustainability-esg');
+    assertKpiValues(values);
+  });
+
+  it('imports correctly with all mutations combined (no BOM + CRLF + blank rows + whitespace padding)', () => {
+    const rows = buildFilledRows();
+    const withBlanks: string[][] = [];
+    for (const row of rows) {
+      withBlanks.push(row);
+      if (row[0]?.startsWith('===')) withBlanks.push(['', '', '', '', '', '']);
+    }
+    const padCell = (c: string): string => `" ${c.replace(/"/g, '""')} "`;
+    const csvText = withBlanks.map(r => r.map(padCell).join(',')).join('\r\n');
+    expect(csvText.charCodeAt(0)).not.toBe(0xFEFF);
+    const { values } = runNewFormatImport(csvText, 'sustainability-esg');
+    assertKpiValues(values);
+  });
+
+  it('all 6 KPIs are calculated — no manual-entry notice — in the mutated file', () => {
+    const rows = buildFilledRows();
+    const mutated: string[][] = [];
+    for (const row of rows) {
+      mutated.push(row);
+      if (row[0]?.startsWith('===')) mutated.push(['', '', '', '', '', '']);
+    }
+    const padCell = (c: string): string => `" ${c.replace(/"/g, '""')} "`;
+    const csvText = mutated.map(r => r.map(padCell).join(',')).join('\r\n');
+    const { log } = runNewFormatImport(csvText, 'sustainability-esg');
+    // log[0] is the auto-calculated summary line; remaining ✓ lines are per-KPI
+    const kpiLines = log.filter(l => l.startsWith('✓') && !l.includes('auto-calculated'));
+    expect(kpiLines.length).toBe(6);
+    expect(log.find(l => l.includes('require manual entry'))).toBeUndefined();
+  });
+});
+
 // ─── Governance-compliance partial import ────────────────────────────────────
 //
 //  The governance-compliance framework has 6 KPIs: pcr, aud, cco, mav, doa, asa.
