@@ -1312,10 +1312,15 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
           const onTarget = k.higherIsBetter ? num >= k.targetValue : num <= k.targetValue;
           const label = isAr ? k.labelAr : k.label;
           const unit  = isAr ? k.unitAr  : k.unit;
+          // Wrap the label in Unicode FSI…PDI (U+2068…U+2069) so that
+          // mixed-script labels containing parentheses, slashes, or "%"
+          // are treated as a self-contained bidi run and cannot reorder
+          // the surrounding emoji, numbers, or Arabic status suffix.
+          const safeLabel = `\u2068${label}\u2069`;
           statusLines.push(
             onTarget
-              ? (isAr ? `✅ ${label}: ${num} ${unit} — حسب الهدف`    : `✅ ${label}: ${num} ${unit} — On Target`)
-              : (isAr ? `❌ ${label}: ${num} ${unit} — دون الهدف` : `❌ ${label}: ${num} ${unit} — Below Target`),
+              ? (isAr ? `✅ ${safeLabel}: ${num} ${unit} — حسب الهدف`    : `✅ ${safeLabel}: ${num} ${unit} — On Target`)
+              : (isAr ? `❌ ${safeLabel}: ${num} ${unit} — دون الهدف` : `❌ ${safeLabel}: ${num} ${unit} — Below Target`),
           );
         });
         if (statusLines.length > 0) log.push(...statusLines);

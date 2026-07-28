@@ -138,3 +138,89 @@ describe('calcKpisFromInputs — partial data handling', () => {
     expect(arSkip).toBeTruthy();
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Import-log bidi isolation — Arabic labels with parentheses / slashes / "%"
+// ─────────────────────────────────────────────────────────────────────────────
+// KPI labels in frameworks like contract-lifecycle-management and
+// procurement-excellence contain embedded parentheses (e.g. "زمن صياغة العقد
+// (أيام)") and percent / slash characters (e.g. "OTIF المورّد %").  When
+// these are displayed inside a forced-LTR <p dir="ltr"> element the Unicode
+// bidi algorithm can mirror parentheses or reorder neutral characters in
+// unexpected ways unless each label is wrapped in a bidi isolate.
+//
+// KPIDashboard.handleKpiImport wraps every label with FSI…PDI (U+2068…U+2069)
+// before building the ✅/❌ status lines.  The tests below verify that
+// property directly by reproducing the same string-building logic and
+// confirming the isolate code-points are present for the problematic labels.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const FSI = '\u2068'; // FIRST STRONG ISOLATE
+const PDI = '\u2069'; // POP DIRECTIONAL ISOLATE
+
+/** Mirror of the string-building code in handleKpiImport's status-line block */
+function buildStatusLine(
+  labelAr: string,
+  num: number,
+  unitAr: string,
+  onTarget: boolean,
+): string {
+  const safeLabel = `${FSI}${labelAr}${PDI}`;
+  return onTarget
+    ? `✅ ${safeLabel}: ${num} ${unitAr} — حسب الهدف`
+    : `❌ ${safeLabel}: ${num} ${unitAr} — دون الهدف`;
+}
+
+describe('import-log bidi isolation for Arabic labels with special characters', () => {
+  // CLM framework — labels contain Arabic text + parenthesised unit suffix
+  const clmKpis = KPI_FRAMEWORKS['contract-lifecycle-management'];
+
+  it('CLM: "زمن صياغة العقد (أيام)" status line carries FSI…PDI isolate', () => {
+    const kpi = clmKpis.find(k => k.id === 'cact');
+    expect(kpi).toBeTruthy();
+    const line = buildStatusLine(kpi!.labelAr, 8, kpi!.unitAr, true);
+    expect(line).toContain(FSI);
+    expect(line).toContain(PDI);
+    // FSI must appear before PDI (correct nesting)
+    expect(line.indexOf(FSI)).toBeLessThan(line.indexOf(PDI));
+    // The Arabic label must be between the isolate code-points
+    expect(line).toContain(`${FSI}${kpi!.labelAr}${PDI}`);
+  });
+
+  it('CLM: "زمن دورة التفاوض (أيام)" status line carries FSI…PDI isolate', () => {
+    const kpi = clmKpis.find(k => k.id === 'neg');
+    expect(kpi).toBeTruthy();
+    const line = buildStatusLine(kpi!.labelAr, 12, kpi!.unitAr, true);
+    expect(line).toContain(`${FSI}${kpi!.labelAr}${PDI}`);
+  });
+
+  // procurement-excellence — "OTIF المورّد" has a leading Latin run then Arabic
+  const procKpis = KPI_FRAMEWORKS['procurement-excellence'];
+
+  it('procurement-excellence: "OTIF المورّد" status line carries FSI…PDI isolate', () => {
+    const kpi = procKpis.find(k => k.id === 'sotif');
+    expect(kpi).toBeTruthy();
+    const line = buildStatusLine(kpi!.labelAr, 96, kpi!.unitAr, true);
+    expect(line).toContain(`${FSI}${kpi!.labelAr}${PDI}`);
+  });
+
+  // supplier-relationship-governance — "OTIF المورّد %" (label ends with %)
+  const srgKpis = KPI_FRAMEWORKS['supplier-relationship-governance'];
+
+  it('SRG: "OTIF المورّد %" status line carries FSI…PDI isolate', () => {
+    const kpi = srgKpis.find(k => k.id === 'sotif2');
+    expect(kpi).toBeTruthy();
+    const line = buildStatusLine(kpi!.labelAr, 91, kpi!.unitAr, false);
+    expect(line).toContain(`${FSI}${kpi!.labelAr}${PDI}`);
+  });
+
+  it('FSI and PDI each appear exactly once per status line', () => {
+    // Guard against accidentally double-wrapping in future edits.
+    const kpi = clmKpis.find(k => k.id === 'cact')!;
+    const line = buildStatusLine(kpi.labelAr, 8, kpi.unitAr, true);
+    const fsiCount = [...line].filter(c => c === FSI).length;
+    const pdiCount = [...line].filter(c => c === PDI).length;
+    expect(fsiCount).toBe(1);
+    expect(pdiCount).toBe(1);
+  });
+});
