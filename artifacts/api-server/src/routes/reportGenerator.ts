@@ -48,7 +48,7 @@ export interface ReportInput {
 
 /* ── POST /api/report/generate ───────────────────────────────────────────── */
 
-router.post('/report/generate', async (req, res) => {
+router.post('/generate', async (req, res) => {
   try {
     const input = req.body as ReportInput;
     if (!input?.contactInfo?.name || !input?.contactInfo?.company) {
