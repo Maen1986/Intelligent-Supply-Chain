@@ -797,4 +797,34 @@ describe('useAIPlan persistence — saveError when plan save fails', () => {
     );
     expect(aiPlanCall).toBeUndefined();
   });
+
+  it('does NOT call generate() when the hook mounts while already authenticated and the flag is set', async () => {
+    // Scenario: user opens the tool page while already logged in, or a different tab
+    // set the flag. isAuthenticated starts as true — there is no false→true transition,
+    // so Effect B's auth-transition branch never fires and the flag must NOT trigger generate().
+    mockIsAuthenticated.value = true;
+    sessionStorage.setItem(`pendingAIPlan_${TOOL_KEY}`, '1');
+
+    // GET /plans returns no saved plan; POST /ai/plan must NOT be called
+    const fetchMock = vi.fn().mockImplementation((url: string, opts?: RequestInit) => {
+      const method = opts?.method ?? 'GET';
+      if (method === 'GET' && url.includes(`/plans/${TOOL_KEY}`)) {
+        return Promise.resolve({ ok: true, json: async () => ({ ok: true, plan: null }) });
+      }
+      return Promise.resolve({ ok: true, json: async () => ({ ok: true }) });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    renderHook(() => useAIPlan(() => 'prompt', false, TOOL_KEY, true));
+
+    // Allow all effects to settle
+    await act(async () => { await new Promise(r => setTimeout(r, 50)); });
+
+    // generate() must NOT have been called
+    const aiPlanCall = fetchMock.mock.calls.find(
+      ([url, o]: [string, RequestInit]) =>
+        url.includes('/ai/plan') && o?.method === 'POST',
+    );
+    expect(aiPlanCall).toBeUndefined();
+  });
 });
