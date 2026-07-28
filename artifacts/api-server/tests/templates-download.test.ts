@@ -76,10 +76,20 @@ const MANIFEST_PATH = join(
 );
 
 let firstId: string;
+let makeId: string;
+let zapierId: string;
 
 beforeAll(() => {
-  const manifest = JSON.parse(readFileSync(MANIFEST_PATH, 'utf-8'));
-  firstId = manifest.templates[0].id as string;
+  const manifest = JSON.parse(readFileSync(MANIFEST_PATH, 'utf-8')) as {
+    templates: Array<{ id: string; platform?: string }>;
+  };
+  firstId = manifest.templates[0].id;
+  const makeEntry = manifest.templates.find(t => t.platform === 'make');
+  const zapierEntry = manifest.templates.find(t => t.platform === 'zapier');
+  if (!makeEntry) throw new Error('No make template found in manifest');
+  if (!zapierEntry) throw new Error('No zapier template found in manifest');
+  makeId = makeEntry.id;
+  zapierId = zapierEntry.id;
 });
 
 /* ── tests ───────────────────────────────────────────────────────────────── */
@@ -110,6 +120,30 @@ describe('GET /api/admin/automations/templates/:id/download', () => {
     expect(res.body.ok).toBe(false);
     expect(typeof res.body.error).toBe('string');
     expect(res.body.error.length).toBeGreaterThan(0);
+  });
+
+  it('returns 200 and parseable JSON for a make template ID', async () => {
+    const adminRouter = (await import('../src/routes/adminAutomations')).default;
+    const app = makeApp('/api/admin/automations', adminRouter, { userId: 1, role: 'admin' });
+
+    const res = await request(app).get(
+      `/api/admin/automations/templates/${makeId}/download`,
+    );
+
+    expect(res.status).toBe(200);
+    expect(() => JSON.parse(res.text)).not.toThrow();
+  });
+
+  it('returns 200 and parseable JSON for a zapier template ID', async () => {
+    const adminRouter = (await import('../src/routes/adminAutomations')).default;
+    const app = makeApp('/api/admin/automations', adminRouter, { userId: 1, role: 'admin' });
+
+    const res = await request(app).get(
+      `/api/admin/automations/templates/${zapierId}/download`,
+    );
+
+    expect(res.status).toBe(200);
+    expect(() => JSON.parse(res.text)).not.toThrow();
   });
 
   it('returns 404 with a clear user-readable JSON error when the file is missing from disk', async () => {
