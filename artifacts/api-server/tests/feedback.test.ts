@@ -262,6 +262,97 @@ describe('GET /api/feedback/analytics', () => {
     const words = res.body.topKeywords.map((k: any) => k.word);
     expect(words).toContain('supplier');
   });
+
+  /* Walk a drizzle SQL node tree and collect bound parameter values (Dates,
+     strings, numbers) that appear as direct chunk values — not raw SQL text. */
+  const collectAnalyticsParams = (node: any, acc: any[] = []): any[] => {
+    if (node == null) return acc;
+    if (typeof node !== 'object' || node instanceof Date) { acc.push(node); return acc; }
+    if (Array.isArray(node.queryChunks)) {
+      for (const chunk of node.queryChunks) collectAnalyticsParams(chunk, acc);
+    }
+    return acc;
+  };
+
+  /* Walk a drizzle SQL node tree and collect every raw SQL text fragment that
+     lives inside a StringChunk ({ value: string[] }).  These contain operator
+     tokens such as ' >= ' and ' <= ' so we can assert inclusive vs exclusive. */
+  const collectSqlText = (node: any, acc: string[] = []): string[] => {
+    if (node == null || typeof node !== 'object' || node instanceof Date) return acc;
+    // StringChunk: { value: string[] } — contains raw SQL text between params
+    if (Array.isArray(node.value)) {
+      for (const v of node.value) {
+        if (typeof v === 'string') acc.push(v);
+      }
+    }
+    if (Array.isArray(node.queryChunks)) {
+      for (const chunk of node.queryChunks) collectSqlText(chunk, acc);
+    }
+    return acc;
+  };
+
+  it('only counts the row whose createdAt falls inside the window', async () => {
+    // Conceptually three rows exist: one before the window, one inside, one after.
+    // The DB mock simulates the database having applied the WHERE clause and
+    // returning only the single row inside [2025-03-01, 2025-03-31].
+    const insideTs = new Date('2025-03-15T12:00:00Z');
+    dbState.selectRows = [
+      { tool: 'diagnostic', rating: 4, nps: 8, comment: null, createdAt: insideTs },
+    ];
+    const app = makeApp('/api/feedback', feedbackRouter, adminSession);
+    const res = await request(app).get(
+      '/api/feedback/analytics?from=2025-03-01&to=2025-03-31'
+    );
+    expect(res.status).toBe(200);
+    // Only the one row inside the window should be counted.
+    expect(res.body.total).toBe(1);
+    expect(res.body.averageRating).toBe(4);
+    // The WHERE clause must have been built with both boundary dates.
+    expect(dbState.whereArgs).toHaveLength(1);
+    const params = collectAnalyticsParams(dbState.whereArgs[0]);
+    expect(params.some((p) => p instanceof Date && p.toISOString().startsWith('2025-03-01'))).toBe(true);
+    expect(params.some((p) => p instanceof Date && p.toISOString().startsWith('2025-03-31'))).toBe(true);
+    // Confirm rows before and after the window are excluded: the WHERE clause
+    // must not silently widen the window by using ±1-day off-by-one dates.
+    expect(params.some((p) => p instanceof Date && p.toISOString().startsWith('2025-02-28'))).toBe(false);
+    expect(params.some((p) => p instanceof Date && p.toISOString().startsWith('2025-04-01'))).toBe(false);
+  });
+
+  it('treats the from and to boundary dates as inclusive (gte / lte, not gt / lt)', async () => {
+    // Rows timestamped exactly on the boundary dates must be included.
+    // This test would fail if the implementation used gt/lt (exclusive) instead
+    // of gte/lte (inclusive) because the SQL text would then contain ' > ' / ' < '
+    // rather than ' >= ' / ' <= '.
+    const fromTs = new Date('2025-03-01T00:00:00Z');
+    const toTs   = new Date('2025-03-31T23:59:59Z');
+    dbState.selectRows = [
+      { tool: 'diagnostic', rating: 5, nps: 9, comment: null, createdAt: fromTs },
+      { tool: 'maturity',   rating: 3, nps: 5, comment: null, createdAt: toTs   },
+    ];
+    const app = makeApp('/api/feedback', feedbackRouter, adminSession);
+    const res = await request(app).get(
+      '/api/feedback/analytics?from=2025-03-01&to=2025-03-31'
+    );
+    expect(res.status).toBe(200);
+    // Both boundary rows are in-scope; the total must be 2.
+    expect(res.body.total).toBe(2);
+    // Inspect the raw SQL operator tokens emitted by drizzle.
+    // StringChunk nodes inside the WHERE tree hold text such as ' >= ' or ' > '.
+    expect(dbState.whereArgs).toHaveLength(1);
+    const sqlFragments = collectSqlText(dbState.whereArgs[0]);
+    // The from-date predicate must use '>=' (inclusive lower bound).
+    expect(sqlFragments.some((s) => s.includes('>=')))
+      .toBe(true);   // fails if gt() was used instead of gte()
+    // The to-date predicate must use '<=' (inclusive upper bound).
+    expect(sqlFragments.some((s) => s.includes('<=')))
+      .toBe(true);   // fails if lt() was used instead of lte()
+    // Sanity: neither exclusive variant appears without the '=' suffix.
+    const joined = sqlFragments.join('');
+    // Strip all '>=' and '<=' occurrences, then confirm bare '>' and '<' are absent.
+    const strippedEq = joined.replace(/>=/g, '').replace(/<=/g, '');
+    expect(strippedEq).not.toMatch(/[^!<>]>[^=]/);  // no bare ' > '
+    expect(strippedEq).not.toMatch(/[^!<]<[^=]/);   // no bare ' < '
+  });
 });
 
 describe('GET /api/feedback/export.csv', () => {
