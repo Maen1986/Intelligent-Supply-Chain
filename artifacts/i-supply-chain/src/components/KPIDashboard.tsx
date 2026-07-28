@@ -13,6 +13,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { KPI_DATA_SPECS } from '@/lib/kpiDataSpecs';
 import { INDUSTRIES, type IndustryKey, getIndustryBenchmark } from '@/lib/kpiBenchmarksByIndustry';
 import { SKU_CLASSES, type SkuClassKey, getSkuClassBenchmark } from '@/lib/kpiBenchmarksBySkuClass';
+import { getContextualTarget } from '@/lib/kpiTargetsByContext';
 
 /* ─── KPI definition types ─── */
 export interface KpiDef {
@@ -990,11 +991,30 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
    * Industry wins for process/operational KPIs not covered by SKU class.
    */
   const withIndustryBenchmark = useCallback((kpi: KpiDef): KpiDef => {
+    // ── Step 1: Resolve benchmark (SKU-class overrides industry for inventory KPIs) ──
     const skuOverride = getSkuClassBenchmark(kpi.id, selectedSkuClass);
-    if (skuOverride) return { ...kpi, benchmarkValue: skuOverride.value, benchmarkLabel: skuOverride.label, benchmarkLabelAr: skuOverride.labelAr };
     const indOverride = getIndustryBenchmark(kpi.id, selectedIndustry);
-    if (indOverride) return { ...kpi, benchmarkValue: indOverride.value, benchmarkLabel: indOverride.label, benchmarkLabelAr: indOverride.labelAr };
-    return kpi;
+
+    let result: KpiDef = kpi;
+    if (skuOverride) {
+      result = { ...result, benchmarkValue: skuOverride.value, benchmarkLabel: skuOverride.label, benchmarkLabelAr: skuOverride.labelAr };
+    } else if (indOverride) {
+      result = { ...result, benchmarkValue: indOverride.value, benchmarkLabel: indOverride.label, benchmarkLabelAr: indOverride.labelAr };
+    }
+
+    // ── Step 2: Resolve target (most-specific context wins) ──
+    // combined [industry+SKU] > industry-only > SKU-only > static KPI_FRAMEWORKS default
+    const contextTarget = getContextualTarget(kpi.id, selectedIndustry, selectedSkuClass);
+    if (contextTarget) {
+      result = {
+        ...result,
+        targetValue: contextTarget.value,
+        targetLabel: contextTarget.label,
+        targetLabelAr: contextTarget.labelAr,
+      };
+    }
+
+    return result;
   }, [selectedIndustry, selectedSkuClass]);
 
   // Re-load values from localStorage whenever the resolved slug (and therefore the storage key) changes
@@ -1035,7 +1055,7 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
         : raw > 0 ? Math.min(100, Math.round((ek.targetValue / raw) * 100)) : 0;
       const tier = score >= 95 ? 'WORLD CLASS' : score >= 80 ? 'BEST-IN-GCC' : score >= 65 ? 'COMPETITIVE' : score >= 50 ? 'DEVELOPING' : score >= 35 ? 'NEEDS ATTENTION' : 'CRITICAL GAP';
       const bLabel = industryMeta ? `${ek.benchmarkLabel} (${industryMeta.label} sector median)` : `${ek.benchmarkLabel} (GCC general median)`;
-      return `- **${k.label}**: ${raw} ${k.unit} vs target ${k.targetLabel} | peer benchmark: ${bLabel} → ${tier}`;
+      return `- **${k.label}**: ${raw} ${k.unit} vs target ${ek.targetLabel} | peer benchmark: ${bLabel} → ${tier}`;
     }).filter(Boolean).join('\n');
     const entered = kpis.filter(k => !isNaN(parseFloat(values[k.id] ?? ''))).length;
     const rawScores = kpis.map(k => {

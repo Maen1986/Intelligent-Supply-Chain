@@ -1965,7 +1965,7 @@ function FlowPreview({ nodes, ar }: { nodes: string[]; ar: boolean }) {
   );
 }
 
-function TemplateCard({ template: t, ar }: { template: TemplateManifestItem; ar: boolean }) {
+export function TemplateCard({ template: t, ar }: { template: TemplateManifestItem; ar: boolean }) {
   const [open, setOpen] = useState(false);
   const [prepareOpen, setPrepareOpen] = useState(false);
   const badgeClass = CATEGORY_BADGE[t.category] ?? 'bg-slate-100 text-slate-600';
