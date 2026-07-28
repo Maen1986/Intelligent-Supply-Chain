@@ -3625,3 +3625,213 @@ describe('value-engineering import — partial inputs (only ves and scv filled)'
     expect(skipText).toContain('Stakeholder Satisfaction');    // ssat
   });
 });
+
+// ─── Excel-mutated template round-trip (supplier-relationship-governance) ────
+//
+//  The supplier-relationship-governance framework has 6 KPIs:
+//    sotif2, ppm, ss2, jbp, esga2, sc2
+//
+//  Labels include "OTIF" and "ESG" — terms that Excel may mutate with
+//  whitespace changes on re-save.  This suite verifies all 6 KPIs survive:
+//    • CRLF line endings
+//    • No UTF-8 BOM
+//    • Extra blank rows scattered between sections
+//    • Leading/trailing whitespace inside cells
+//    • All mutations combined
+
+describe('Excel-mutated template round-trip (supplier-relationship-governance)', () => {
+  /** Return the supplier-relationship-governance template rows with example values filled in. */
+  function buildFilledRows(): string[][] {
+    const rows = buildTemplateRows('supplier-relationship-governance');
+    rows.forEach(row => {
+      const kpiId = row[0]?.trim().toLowerCase();
+      if (!kpiId || kpiId === '' || kpiId.startsWith('===') || kpiId.startsWith('---') || kpiId.endsWith('__result')) return;
+      const spec = KPI_DATA_SPECS[kpiId];
+      if (!spec) return;
+      const inputDef = spec.inputs.find(inp =>
+        row[1]?.trim().toLowerCase() === inp.label.toLowerCase(),
+      );
+      if (inputDef) row[2] = String(inputDef.example);
+    });
+    return rows;
+  }
+
+  /**
+   * Shared KPI value assertions for all mutation variants.
+   *
+   * Expected values from example inputs:
+   *   sotif2:  pct(799, 850)               = 94.0
+   *   ppm:     round(230/460000 * 1e6)     = 500
+   *   ss2:     pct(2_640_000, 8_800_000)   = 30.0
+   *   jbp:     pct(22, 25)                 = 88.0
+   *   esga2:   pct(23, 25)                 = 92.0
+   *   sc2:     pct(44, 48)                 = 91.7
+   */
+  function assertKpiValues(values: Record<string, number>): void {
+    expect(values['sotif2'], 'sotif2').toBeCloseTo(94.0, 0);
+    expect(values['ppm'],    'ppm').toBe(500);
+    expect(values['ss2'],    'ss2').toBeCloseTo(30.0, 0);
+    expect(values['jbp'],    'jbp').toBeCloseTo(88.0, 0);
+    expect(values['esga2'],  'esga2').toBeCloseTo(92.0, 0);
+    expect(values['sc2'],    'sc2').toBeCloseTo(91.7, 0);
+  }
+
+  it('imports correctly with CRLF line endings (Windows / Excel default)', () => {
+    const rows = buildFilledRows();
+    const csvCrlf = rows.map(r => r.map(escapeCell).join(',')).join('\r\n');
+    const { values } = runNewFormatImport(csvCrlf, 'supplier-relationship-governance');
+    assertKpiValues(values);
+  });
+
+  it('imports correctly when there is no UTF-8 BOM (Excel drops the BOM on re-save)', () => {
+    const rows = buildFilledRows();
+    const csvNoBom = rows.map(r => r.map(escapeCell).join(',')).join('\r\n');
+    expect(csvNoBom.charCodeAt(0)).not.toBe(0xFEFF);
+    const { values } = runNewFormatImport(csvNoBom, 'supplier-relationship-governance');
+    assertKpiValues(values);
+  });
+
+  it('imports correctly when extra blank rows are scattered between sections', () => {
+    const rows = buildFilledRows();
+    const mutated: string[][] = [];
+    for (const row of rows) {
+      mutated.push(row);
+      if (row[0]?.startsWith('===')) {
+        mutated.push(['', '', '', '', '', '']);
+        mutated.push(['', '', '', '', '', '']);
+      }
+    }
+    const csvText = mutated.map(r => r.map(escapeCell).join(',')).join('\r\n');
+    const { values } = runNewFormatImport(csvText, 'supplier-relationship-governance');
+    assertKpiValues(values);
+  });
+
+  it('imports correctly when cell values have leading and trailing whitespace', () => {
+    const rows = buildFilledRows();
+    const padCell = (c: string): string => `"  ${c.replace(/"/g, '""')}  "`;
+    const csvText = rows.map(r => r.map(padCell).join(',')).join('\r\n');
+    const { values } = runNewFormatImport(csvText, 'supplier-relationship-governance');
+    assertKpiValues(values);
+  });
+
+  it('imports correctly with all mutations combined (no BOM + CRLF + blank rows + whitespace padding)', () => {
+    const rows = buildFilledRows();
+    const withBlanks: string[][] = [];
+    for (const row of rows) {
+      withBlanks.push(row);
+      if (row[0]?.startsWith('===')) withBlanks.push(['', '', '', '', '', '']);
+    }
+    const padCell = (c: string): string => `" ${c.replace(/"/g, '""')} "`;
+    const csvText = withBlanks.map(r => r.map(padCell).join(',')).join('\r\n');
+    expect(csvText.charCodeAt(0)).not.toBe(0xFEFF);
+    const { values } = runNewFormatImport(csvText, 'supplier-relationship-governance');
+    assertKpiValues(values);
+  });
+
+  it('all 6 KPIs are calculated — no manual-entry notice — in the mutated file', () => {
+    const rows = buildFilledRows();
+    const mutated: string[][] = [];
+    for (const row of rows) {
+      mutated.push(row);
+      if (row[0]?.startsWith('===')) mutated.push(['', '', '', '', '', '']);
+    }
+    const padCell = (c: string): string => `" ${c.replace(/"/g, '""')} "`;
+    const csvText = mutated.map(r => r.map(padCell).join(',')).join('\r\n');
+    const { log } = runNewFormatImport(csvText, 'supplier-relationship-governance');
+    const kpiLines = log.filter(l => l.startsWith('✓') && !l.includes('auto-calculated'));
+    expect(kpiLines.length).toBe(6);
+    expect(log.find(l => l.includes('require manual entry'))).toBeUndefined();
+  });
+});
+
+// ─── Supplier-relationship-governance partial import ─────────────────────────
+//
+//  This suite verifies that when only sotif2 and ppm inputs are filled in the
+//  import:
+//   • calculates sotif2 and ppm correctly
+//   • skips ss2, jbp, esga2, sc2 without zeroing them
+//   • records a skip-reason log entry for each uncalculable KPI
+//   • emits exactly 2 per-KPI success lines (summary line excluded)
+//
+describe('supplier-relationship-governance import — partial inputs (only sotif2 and ppm filled)', () => {
+  /**
+   * Build a template with only sotif2 and ppm "Your Value" cells populated.
+   * All other KPI rows are left blank.
+   */
+  function buildPartialSrgRows(): string[][] {
+    const rows = buildTemplateRows('supplier-relationship-governance');
+    rows.forEach(row => {
+      const kpiId = row[0]?.trim().toLowerCase();
+      if (!['sotif2', 'ppm'].includes(kpiId)) return;
+      const spec = KPI_DATA_SPECS[kpiId];
+      if (!spec) return;
+      const inputDef = spec.inputs.find(inp =>
+        row[1]?.trim().toLowerCase() === inp.label.toLowerCase(),
+      );
+      if (inputDef) row[2] = String(inputDef.example);
+    });
+    return rows;
+  }
+
+  it('calculates sotif2 correctly from its example inputs', () => {
+    const csvText = rowsToCsvText(buildPartialSrgRows());
+    const { values } = runNewFormatImport(csvText, 'supplier-relationship-governance');
+    // sotif2: pct(799, 850) = 94.0
+    expect(values['sotif2'], 'sotif2').toBeCloseTo(94.0, 0);
+  });
+
+  it('calculates ppm correctly from its example inputs', () => {
+    const csvText = rowsToCsvText(buildPartialSrgRows());
+    const { values } = runNewFormatImport(csvText, 'supplier-relationship-governance');
+    // ppm: round(230 / 460000 * 1_000_000) = 500
+    expect(values['ppm'], 'ppm').toBe(500);
+  });
+
+  it('skipped KPIs are absent from the values map — not zeroed', () => {
+    const csvText = rowsToCsvText(buildPartialSrgRows());
+    const { values } = runNewFormatImport(csvText, 'supplier-relationship-governance');
+
+    expect(values['ss2'],   'ss2 should be absent').toBeUndefined();
+    expect(values['jbp'],   'jbp should be absent').toBeUndefined();
+    expect(values['esga2'], 'esga2 should be absent').toBeUndefined();
+    expect(values['sc2'],   'sc2 should be absent').toBeUndefined();
+  });
+
+  it('exactly 2 KPIs are calculated — no more, no less', () => {
+    const csvText = rowsToCsvText(buildPartialSrgRows());
+    const { values } = runNewFormatImport(csvText, 'supplier-relationship-governance');
+
+    expect(Object.keys(values).sort()).toEqual(['ppm', 'sotif2']);
+  });
+
+  it('log contains a skip-reason entry for each uncalculable KPI', () => {
+    const csvText = rowsToCsvText(buildPartialSrgRows());
+    const { log } = runNewFormatImport(csvText, 'supplier-relationship-governance');
+
+    const skipLines = log.filter(l => l.includes('skipped'));
+    // ss2, jbp, esga2, sc2 — all four should have a skip entry
+    expect(skipLines.length, 'skip-reason log entries').toBeGreaterThanOrEqual(4);
+  });
+
+  it('log contains exactly 2 per-KPI success lines (summary line excluded)', () => {
+    const csvText = rowsToCsvText(buildPartialSrgRows());
+    const { log } = runNewFormatImport(csvText, 'supplier-relationship-governance');
+
+    const kpiLines = log.filter(l => l.startsWith('✓') && !l.includes('auto-calculated'));
+    expect(kpiLines.length, 'per-KPI success log lines').toBe(2);
+  });
+
+  it('skip-reason entries name the skipped KPIs, not the calculated ones', () => {
+    const csvText = rowsToCsvText(buildPartialSrgRows());
+    const { log } = runNewFormatImport(csvText, 'supplier-relationship-governance');
+
+    const skipLines = log.filter(l => l.includes('skipped'));
+    const skipText = skipLines.join('\n');
+
+    // Skipped KPI labels appear in the log
+    expect(skipText).toContain('Single-Source Dependency');  // ss2
+    expect(skipText).toContain('JBP Coverage');              // jbp
+    expect(skipText).toContain('ESG Audit Coverage');        // esga2
+    expect(skipText).toContain('On-Time Scorecard Review');  // sc2
+  });
+});
