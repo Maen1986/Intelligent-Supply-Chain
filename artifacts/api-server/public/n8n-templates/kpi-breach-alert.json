@@ -134,6 +134,13 @@
         "4. Copy the n8n Webhook URL and register it in ISC → Integration Hub → Webhooks with event 'kpi.threshold_breach'.",
         "5. Replace placeholder phone numbers and email addresses.",
         "6. Activate the workflow."
+      ],
+      "nodeDetails": [
+        { "nodeName": "ISC Webhook — kpi.threshold_breach", "detail": "Listens for the kpi.threshold_breach event on path /isc-kpi-breach" },
+        { "nodeName": "Route by Severity", "detail": "Routes on body.severity — 'warn' → Slack only, 'critical' → Gmail + Twilio SMS" },
+        { "nodeName": "Slack — Warn Notification", "detail": "POSTs to your Slack Incoming Webhook URL with the KPI label and warn threshold value" },
+        { "nodeName": "Email — Critical Alert", "detail": "Sends subject: \"🚨 CRITICAL KPI Breach — {kpiLabel}\" to your configured alert recipient" },
+        { "nodeName": "Twilio — Critical SMS", "detail": "Sends a critical-alert SMS via Twilio API with the KPI name and current value" }
       ]
     }
   }

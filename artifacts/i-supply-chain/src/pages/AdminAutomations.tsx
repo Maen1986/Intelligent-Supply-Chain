@@ -1327,6 +1327,11 @@ function EventCatalogItem({
    TAB 7 — n8n Workflow Templates
    ════════════════════════════════════════════════════════════════════════════ */
 
+interface NodeDetail {
+  nodeName: string;
+  detail: string;
+}
+
 interface TemplateManifestItem {
   id: string;
   platform: string;
@@ -1340,6 +1345,7 @@ interface TemplateManifestItem {
   category: string;
   setupTimeMinutes: number;
   nodes: string[];
+  nodeDetails?: NodeDetail[];
 }
 
 const CATEGORY_BADGE: Record<string, string> = {
@@ -2300,7 +2306,7 @@ function describeNode(name: string, ar: boolean): { desc: string; Icon: React.El
   return { desc: ar ? 'عقدة معالجة أو تحويل' : 'Processing or transformation node', Icon: Server };
 }
 
-function FlowPreview({ nodes, ar }: { nodes: string[]; ar: boolean }) {
+function FlowPreview({ nodes, nodeDetails, ar }: { nodes: string[]; nodeDetails?: NodeDetail[]; ar: boolean }) {
   return (
     <div>
       <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-3">
@@ -2308,7 +2314,8 @@ function FlowPreview({ nodes, ar }: { nodes: string[]; ar: boolean }) {
       </p>
       <div className="relative">
         {nodes.map((name, i) => {
-          const { desc, Icon } = describeNode(name, ar);
+          const { desc: genericDesc, Icon } = describeNode(name, ar);
+          const runtimeDetail = nodeDetails?.find(d => d.nodeName === name)?.detail ?? null;
           const isLast = i === nodes.length - 1;
           return (
             <div key={i} className="flex gap-3 items-start">
@@ -2322,7 +2329,9 @@ function FlowPreview({ nodes, ar }: { nodes: string[]; ar: boolean }) {
               {/* content column */}
               <div className={`min-w-0 ${isLast ? 'pb-0' : 'pb-3'}`}>
                 <p className="text-xs font-semibold text-slate-800 font-mono leading-tight">{name}</p>
-                <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{desc}</p>
+                <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
+                  {runtimeDetail ?? genericDesc}
+                </p>
               </div>
             </div>
           );
@@ -2391,7 +2400,7 @@ export function TemplateCard({ template: t, ar }: { template: TemplateManifestIt
       {open && (
         <div className="border-t border-border bg-slate-50/60 px-4 py-4 space-y-4">
           {/* Flow preview */}
-          <FlowPreview nodes={t.nodes} ar={ar} />
+          <FlowPreview nodes={t.nodes} nodeDetails={t.nodeDetails} ar={ar} />
 
           {/* Nodes / modules / steps used */}
           <div>

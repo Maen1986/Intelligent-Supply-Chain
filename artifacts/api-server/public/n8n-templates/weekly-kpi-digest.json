@@ -75,6 +75,11 @@
         "4. Copy the Webhook URL and register it in ISC → Integration Hub → Webhooks with event 'schedule.weekly_kpi_digest'.",
         "5. ISC fires this webhook every Monday — no cron needed in n8n.",
         "6. Activate the workflow."
+      ],
+      "nodeDetails": [
+        { "nodeName": "ISC Webhook — schedule.weekly_kpi_digest", "detail": "Listens for the schedule.weekly_kpi_digest event on path /isc-weekly-kpi-digest" },
+        { "nodeName": "Format HTML Digest", "detail": "Builds an HTML table from the kpis[] array — columns: KPI label, value (colour-coded by status), target, and trend arrow" },
+        { "nodeName": "Send Digest Email", "detail": "Sends subject: \"Your Weekly KPI Digest — Week of {weekOf}\" to body.recipientEmail" }
       ]
     }
   }

@@ -13,7 +13,14 @@
       "triggerEvent": "lead.captured",
       "category": "Sales",
       "setupTimeMinutes": 5,
-      "nodes": ["Webhook", "Email", "Wait", "IF", "HTTP Request"]
+      "nodes": ["Webhook", "Email", "Wait", "IF", "HTTP Request"],
+      "nodeDetails": [
+        { "nodeName": "Webhook",      "detail": "Listens for the lead.captured event on path /isc-lead-captured" },
+        { "nodeName": "Email",        "detail": "Sends a personalised intro email with subject: \"Welcome to ISC — Let's unlock your supply chain potential\"" },
+        { "nodeName": "Wait",         "detail": "Pauses the flow for 48 hours before checking for a reply" },
+        { "nodeName": "IF",           "detail": "Checks whether body.replied === 'true' — true branch sends the discovery invite, false branch notifies admin" },
+        { "nodeName": "HTTP Request", "detail": "POSTs to /api/admin/notify if no reply was received after 48 h" }
+      ]
     },
     {
       "id": "kpi-breach-alert",
@@ -26,7 +33,14 @@
       "triggerEvent": "kpi.threshold_breach",
       "category": "Alerts",
       "setupTimeMinutes": 5,
-      "nodes": ["Webhook", "Switch", "HTTP Request (Slack)", "Gmail", "HTTP Request (Twilio)"]
+      "nodes": ["Webhook", "Switch", "HTTP Request (Slack)", "Gmail", "HTTP Request (Twilio)"],
+      "nodeDetails": [
+        { "nodeName": "Webhook",               "detail": "Listens for the kpi.threshold_breach event on path /isc-kpi-breach" },
+        { "nodeName": "Switch",                "detail": "Routes on body.severity — 'warn' → Slack only, 'critical' → Gmail + Twilio SMS" },
+        { "nodeName": "HTTP Request (Slack)",  "detail": "POSTs to your Slack Incoming Webhook URL with the KPI label and warn threshold value" },
+        { "nodeName": "Gmail",                 "detail": "Sends subject: \"🚨 CRITICAL KPI Breach — {kpiLabel}\" to your configured alert recipient" },
+        { "nodeName": "HTTP Request (Twilio)", "detail": "Sends a critical-alert SMS via Twilio API with the KPI name and current value" }
+      ]
     },
     {
       "id": "weekly-kpi-digest",
@@ -39,7 +53,12 @@
       "triggerEvent": "schedule.weekly_kpi_digest",
       "category": "Reporting",
       "setupTimeMinutes": 4,
-      "nodes": ["Webhook", "Code", "Gmail"]
+      "nodes": ["Webhook", "Code", "Gmail"],
+      "nodeDetails": [
+        { "nodeName": "Webhook", "detail": "Listens for the schedule.weekly_kpi_digest event on path /isc-weekly-kpi-digest" },
+        { "nodeName": "Code",    "detail": "Builds an HTML table from the kpis[] array in the payload — columns: KPI label, value (colour-coded), target, and trend arrow" },
+        { "nodeName": "Gmail",   "detail": "Sends subject: \"Your Weekly KPI Digest — Week of {weekOf}\" to body.recipientEmail" }
+      ]
     },
     {
       "id": "new-user-welcome",

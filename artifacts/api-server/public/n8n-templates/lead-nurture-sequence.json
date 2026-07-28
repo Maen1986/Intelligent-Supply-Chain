@@ -154,6 +154,14 @@
         "4. In ISC → Admin → Integration Hub → Webhooks, create a new webhook with event 'lead.captured' and paste that URL.",
         "5. Replace YOUR_ISC_DOMAIN with your platform URL and YOUR_CALENDAR_LINK with your booking URL.",
         "6. Activate the workflow with the toggle at the top right."
+      ],
+      "nodeDetails": [
+        { "nodeName": "Webhook",      "detail": "Listens for the lead.captured event on path /isc-lead-captured" },
+        { "nodeName": "Send Intro Email", "detail": "Sends subject: \"Welcome to ISC — Let's unlock your supply chain potential\" to the captured lead's email" },
+        { "nodeName": "Wait 48 Hours", "detail": "Pauses the flow for 48 hours before checking for a reply" },
+        { "nodeName": "No Reply Yet?", "detail": "Checks whether body.replied === 'true' — true branch sends the discovery invite, false branch notifies admin" },
+        { "nodeName": "Send Discovery Call Invite", "detail": "Sends subject: \"Book a free discovery call — {name}\" with a calendar booking link" },
+        { "nodeName": "Notify Admin — No Reply", "detail": "POSTs to /api/admin/notify if the lead has not replied after 48 h" }
       ]
     }
   }
