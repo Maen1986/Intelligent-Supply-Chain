@@ -1492,4 +1492,31 @@ describe('Scorecard CSV — weighted score and calculated tier columns', () => {
     expect(rows[0]['Weighted Score (/100)']).toBe('60');
     expect(rows[0]['Calculated Tier']).toBe('Transactional');
   });
+
+  it('all-zero sub-scores: Weighted Score cell is "0" (not blank) and Calculated Tier is "Transactional"', () => {
+    // Regression guard: calcWeightedScore returns 0 (a valid number) when every
+    // sub-indicator is entered as 0. A future change that treats 0 as "missing"
+    // would silently produce blank cells — this test catches that regression.
+    //
+    // All dim averages = 0, weighted score = Math.round(0/100 * 100) = 0.
+    // 0 < tiers.preferred (55), so getTier resolves to 'Transactional'.
+    const allZeroSupplier: SupplierRecord = {
+      id: 'sup-all-zero',
+      name: 'All Zero Supplier',
+      tier: 'Transactional',
+      subScores: {
+        delivery:     { otif: '0', lead_time: '0', fill_rate: '0', expedite: '0' },
+        quality:      { defect: '0', ftr: '0', cert: '0', nonconf: '0' },
+        cost:         { savings: '0', invoice: '0', cost_reduction: '0', tco: '0' },
+        compliance:   { regulatory: '0', esg: '0', docs: '0', ethics: '0' },
+        innovation:   { ideas: '0', implemented: '0', tech: '0' },
+        relationship: { responsiveness: '0', resolution: '0', collaboration: '0' },
+      },
+    };
+
+    const csv = buildScorecardCsvString([allZeroSupplier], DEFAULT_CONFIG);
+    const { rows } = parseCsvFile(csv, ['Supplier Name']);
+    expect(rows[0]['Weighted Score (/100)']).toBe('0');
+    expect(rows[0]['Calculated Tier']).toBe('Transactional');
+  });
 });
