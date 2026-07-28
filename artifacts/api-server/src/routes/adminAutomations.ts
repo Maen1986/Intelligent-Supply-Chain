@@ -176,21 +176,27 @@ router.get("/webhook-log", async (req, res) => {
    ══════════════════════════════════════════════════════════════ */
 
 router.get("/inbound-log", async (req, res) => {
-  const limit  = Math.min(parseInt(String(req.query.limit  ?? "50"), 10) || 50, 200);
-  const offset = parseInt(String(req.query.offset ?? "0"), 10) || 0;
+  // export=1 fetches ALL matching rows with no row cap; interactive table stays at ≤200.
+  const isExport = req.query.export === "1" || req.query.export === "true";
+  const limit  = isExport ? null : Math.min(parseInt(String(req.query.limit  ?? "50"), 10) || 50, 200);
+  const offset = isExport ? 0    : parseInt(String(req.query.offset ?? "0"), 10) || 0;
   const action = typeof req.query.action === "string" ? req.query.action : null;
   const status = typeof req.query.status === "string" ? req.query.status : null;
 
   try {
     const actionFilter = action ? sql`AND action ILIKE ${'%' + action + '%'}` : sql``;
     const statusFilter = status ? sql`AND status = ${status}` : sql``;
+    // For export requests, omit LIMIT/OFFSET so all matching rows are returned.
+    const paginationClause = limit === null
+      ? sql``
+      : sql`LIMIT ${limit} OFFSET ${offset}`;
 
     const rows = await db.execute(sql`
       SELECT id, action, body_snippet AS "bodySnippet", status, error, received_at AS "receivedAt"
       FROM inbound_webhook_log
       WHERE 1=1 ${actionFilter} ${statusFilter}
       ORDER BY received_at DESC
-      LIMIT ${limit} OFFSET ${offset}
+      ${paginationClause}
     `);
 
     const totalRow = await db.execute(sql`
@@ -199,7 +205,7 @@ router.get("/inbound-log", async (req, res) => {
       WHERE 1=1 ${actionFilter} ${statusFilter}
     `);
 
-    res.json({ ok: true, logs: rows.rows, total: (totalRow.rows[0] as { total: number }).total, limit, offset });
+    res.json({ ok: true, logs: rows.rows, total: (totalRow.rows[0] as { total: number }).total, limit: limit ?? rows.rows.length, offset });
   } catch (err) {
     logger.error({ err }, "[admin/automations] GET /inbound-log");
     res.status(500).json({ ok: false, error: "Server error" });
@@ -211,20 +217,24 @@ router.get("/inbound-log", async (req, res) => {
    ══════════════════════════════════════════════════════════════ */
 
 router.get("/schedule-log", async (req, res) => {
-  const limit  = Math.min(parseInt(String(req.query.limit  ?? "50"), 10) || 50, 200);
-  const offset = parseInt(String(req.query.offset ?? "0"), 10) || 0;
+  // export=1 fetches ALL matching rows with no row cap; interactive table stays at ≤200.
+  const isExport = req.query.export === "1" || req.query.export === "true";
+  const limit  = isExport ? null : Math.min(parseInt(String(req.query.limit  ?? "50"), 10) || 50, 200);
+  const offset = isExport ? 0    : parseInt(String(req.query.offset ?? "0"), 10) || 0;
 
   try {
-    const rows = await db
+    const baseQuery = db
       .select()
       .from(scheduleLogTable)
-      .orderBy(desc(scheduleLogTable.ranAt))
-      .limit(limit)
-      .offset(offset);
+      .orderBy(desc(scheduleLogTable.ranAt));
+
+    const rows = isExport
+      ? await baseQuery
+      : await baseQuery.limit(limit as number).offset(offset);
 
     const totalRow = await db.execute(sql`SELECT COUNT(*)::int AS total FROM schedule_log`);
 
-    res.json({ ok: true, logs: rows, total: (totalRow.rows[0] as { total: number }).total, limit, offset });
+    res.json({ ok: true, logs: rows, total: (totalRow.rows[0] as { total: number }).total, limit: limit ?? rows.length, offset });
   } catch (err) {
     logger.error({ err }, "[admin/automations] GET /schedule-log");
     res.status(500).json({ ok: false, error: "Server error" });

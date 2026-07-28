@@ -850,6 +850,7 @@ export function InboundLogTab({ ar, refresh }: { ar: boolean; refresh: number })
   const [rows, setRows]       = useState<InboundLogRow[]>([]);
   const [total, setTotal]     = useState(0);
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
   const [page, setPage]       = useState(0);
   const [actionFilter, setActionFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -868,6 +869,23 @@ export function InboundLogTab({ ar, refresh }: { ar: boolean; refresh: number })
   }, [page, actionFilter, statusFilter]);
 
   useEffect(() => { load(); }, [load, refresh]);
+
+  /** Fetch every matching row (no server-side cap) then trigger a CSV download. */
+  const handleExportCsv = useCallback(async () => {
+    setExporting(true);
+    try {
+      const params = new URLSearchParams({ export: '1' });
+      if (actionFilter.trim()) params.set('action', actionFilter.trim());
+      if (statusFilter)        params.set('status', statusFilter);
+      const d = await fetch(`${API_BASE}/admin/automations/inbound-log?${params}`, { credentials: 'include' })
+        .then(r => r.json());
+      if (d.ok && d.logs.length > 0) {
+        exportCsv(d.logs as Record<string, unknown>[], `inbound-log-${d.logs.length}.csv`);
+      }
+    } catch { /* silent */ } finally {
+      setExporting(false);
+    }
+  }, [actionFilter, statusFilter]);
 
   return (
     <div className="space-y-4">
@@ -888,8 +906,15 @@ export function InboundLogTab({ ar, refresh }: { ar: boolean; refresh: number })
           <option value="error">Error</option>
         </select>
         <span className="text-xs text-muted-foreground ms-auto">{total} {ar ? 'سجل' : 'records'}</span>
-        <Button variant="outline" size="sm" className="h-8 text-xs" onClick={() => exportCsv(rows as unknown as Record<string, unknown>[], 'inbound-log.csv')}>
-          <Download className="w-3 h-3 me-1" /> {ar ? 'تصدير' : 'Export CSV'}
+        <Button
+          variant="outline" size="sm" className="h-8 text-xs"
+          disabled={exporting || total === 0}
+          onClick={() => void handleExportCsv()}
+        >
+          {exporting
+            ? <Loader2 className="w-3 h-3 me-1 animate-spin" />
+            : <Download className="w-3 h-3 me-1" />}
+          {ar ? 'تصدير' : 'Export CSV'}
         </Button>
       </div>
 
@@ -961,6 +986,7 @@ function ScheduleLogTab({ ar, refresh }: { ar: boolean; refresh: number }) {
   const [rows, setRows]     = useState<ScheduleLogRow[]>([]);
   const [total, setTotal]   = useState(0);
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
   const [page, setPage]     = useState(0);
   const [triggering, setTriggering] = useState<string | null>(null);
   const [triggerMsg, setTriggerMsg] = useState<{ job: string; msg: string; ok: boolean } | null>(null);
@@ -977,6 +1003,20 @@ function ScheduleLogTab({ ar, refresh }: { ar: boolean; refresh: number }) {
   }, [page]);
 
   useEffect(() => { loadRows(); }, [loadRows, refresh]);
+
+  /** Fetch every row (no server-side cap) then trigger a CSV download. */
+  const handleExportCsv = useCallback(async () => {
+    setExporting(true);
+    try {
+      const d = await fetch(`${API_BASE}/admin/automations/schedule-log?export=1`, { credentials: 'include' })
+        .then(r => r.json());
+      if (d.ok && d.logs.length > 0) {
+        exportCsv(d.logs as Record<string, unknown>[], `schedule-log-${d.logs.length}.csv`);
+      }
+    } catch { /* silent */ } finally {
+      setExporting(false);
+    }
+  }, []);
 
   const runNow = async (jobKey: string) => {
     setTriggering(jobKey);
@@ -1032,9 +1072,21 @@ function ScheduleLogTab({ ar, refresh }: { ar: boolean; refresh: number }) {
       )}
 
       {/* Log table */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
         <h3 className="font-bold text-sm">{ar ? 'سجل التشغيل' : 'Run History'}</h3>
-        <p className="text-xs text-muted-foreground">{total} {ar ? 'سجل' : 'records'}</p>
+        <div className="flex items-center gap-2">
+          <p className="text-xs text-muted-foreground">{total} {ar ? 'سجل' : 'records'}</p>
+          <Button
+            variant="outline" size="sm" className="h-8 text-xs"
+            disabled={exporting || total === 0}
+            onClick={() => void handleExportCsv()}
+          >
+            {exporting
+              ? <Loader2 className="w-3 h-3 me-1 animate-spin" />
+              : <Download className="w-3 h-3 me-1" />}
+            {ar ? 'تصدير' : 'Export CSV'}
+          </Button>
+        </div>
       </div>
 
       {loading ? (
