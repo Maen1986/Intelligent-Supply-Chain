@@ -20,7 +20,7 @@ import {
   RefreshCw, Loader2, ShieldAlert, Activity, BookOpen,
   Webhook, Calendar, Bell, ArrowLeft, Play, Copy, Check,
   ChevronDown, ChevronUp, Download, AlertTriangle, CheckCircle2,
-  Clock, Zap, Server, Radio, Package, Wifi, WifiOff, Globe, X,
+  Clock, Zap, Server, Radio, Package, Wifi, WifiOff, Globe, X, Plus, KeyRound,
 } from 'lucide-react';
 import { API_BASE } from '@/lib/apiBase';
 
@@ -1966,8 +1966,45 @@ export function PrepareDownloadModal({
   const [keysLoading, setKeysLoading] = useState(true);
   const [downloading, setDownloading] = useState(false);
   const [error, setError]         = useState<string | null>(null);
+  const [creatingKey, setCreatingKey] = useState(false);
+  const [newRawKey, setNewRawKey] = useState<string | null>(null);
+  const [newKeyCopied, setNewKeyCopied] = useState(false);
+  const [createKeyError, setCreateKeyError] = useState<string | null>(null);
 
   const rawUrl = `${API_BASE.replace('/api', '')}/public/${template.downloadPath}`;
+
+  const handleCreateKey = async () => {
+    setCreatingKey(true);
+    setCreateKeyError(null);
+    setNewRawKey(null);
+    try {
+      const nameLabel = `Template: ${template.name}`;
+      const r = await fetch(`${API_BASE}/integrations/keys`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nameLabel, scope: 'read' }),
+      });
+      const d = await r.json();
+      if (!d.ok) {
+        setCreateKeyError(d.error ?? (ar ? 'تعذّر إنشاء المفتاح' : 'Failed to create key'));
+        return;
+      }
+      const raw: string = d.key.rawKey;
+      setNewRawKey(raw);
+      setApiKey(raw);
+      // Add the new key to the list so the select also shows it
+      setKeys(prev => [
+        { id: d.key.id, nameLabel: d.key.nameLabel, keyPrefix: d.key.keyPrefix, scope: d.key.scope, revokedAt: null },
+        ...prev,
+      ]);
+      setSelectedKeyId(String(d.key.id));
+    } catch {
+      setCreateKeyError(ar ? 'خطأ في الشبكة' : 'Network error — please try again');
+    } finally {
+      setCreatingKey(false);
+    }
+  };
 
   useEffect(() => {
     fetch(`${API_BASE}/integrations/keys`, { credentials: 'include' })
@@ -2056,7 +2093,7 @@ export function PrepareDownloadModal({
         </div>
 
         {/* API Key select + paste */}
-        <div className="space-y-1">
+        <div className="space-y-1.5">
           <label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
             {ar ? 'مفتاح ISC API' : 'ISC API Key'}
           </label>
@@ -2067,7 +2104,7 @@ export function PrepareDownloadModal({
             </div>
           ) : keys.length > 0 ? (
             <select
-              className="w-full h-9 text-sm border border-border rounded-md px-2 bg-white mb-1"
+              className="w-full h-9 text-sm border border-border rounded-md px-2 bg-white"
               value={selectedKeyId}
               onChange={e => setSelectedKeyId(e.target.value)}
             >
@@ -2078,13 +2115,36 @@ export function PrepareDownloadModal({
                 </option>
               ))}
             </select>
-          ) : (
-            <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-1">
-              {ar
-                ? 'لا توجد مفاتيح نشطة. أنشئ واحداً في مركز التكاملات أولاً.'
-                : 'No active keys found. Create one in Integration Hub first.'}
-            </p>
+          ) : null}
+
+          {/* One-time raw-key reveal after creation */}
+          {newRawKey && (
+            <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2.5 space-y-1.5">
+              <p className="text-xs font-semibold text-emerald-800 flex items-center gap-1.5">
+                <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                {ar ? 'تم إنشاء المفتاح — انسخه الآن، لن يُعرض مجدداً' : 'Key created — copy it now, it won\'t be shown again'}
+              </p>
+              <div className="flex items-center gap-2">
+                <code className="flex-1 text-xs font-mono bg-white border border-emerald-200 rounded px-2 py-1 break-all select-all">
+                  {newRawKey}
+                </code>
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard.writeText(newRawKey).then(() => {
+                      setNewKeyCopied(true);
+                      setTimeout(() => setNewKeyCopied(false), 2000);
+                    });
+                  }}
+                  className="shrink-0 inline-flex items-center gap-1 text-xs px-2 py-1 rounded bg-emerald-100 hover:bg-emerald-200 text-emerald-700 transition-colors"
+                >
+                  {newKeyCopied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                  {newKeyCopied ? (ar ? 'تم' : 'Copied') : (ar ? 'نسخ' : 'Copy')}
+                </button>
+              </div>
+            </div>
           )}
+
           <Input
             value={apiKey}
             onChange={e => setApiKey(e.target.value)}
@@ -2097,6 +2157,26 @@ export function PrepareDownloadModal({
               ? 'المفتاح الخام يظهر مرة واحدة عند الإنشاء. يُستبدل بـ REPLACE_WITH_ISC_API_KEY.'
               : 'The raw key is shown once at creation. Replaces REPLACE_WITH_ISC_API_KEY.'}
           </p>
+
+          {/* Create new key shortcut */}
+          {!keysLoading && (
+            <div className="pt-0.5">
+              <button
+                type="button"
+                disabled={creatingKey}
+                onClick={() => void handleCreateKey()}
+                className="inline-flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 disabled:opacity-50 transition-colors"
+              >
+                {creatingKey
+                  ? <Loader2 className="w-3 h-3 animate-spin" />
+                  : <Plus className="w-3 h-3" />}
+                {ar ? 'إنشاء مفتاح جديد لهذا القالب' : 'Create a new key for this template'}
+              </button>
+              {createKeyError && (
+                <p className="mt-1 text-xs text-red-600">{createKeyError}</p>
+              )}
+            </div>
+          )}
         </div>
 
         {/* n8n Instance URL — only relevant for n8n templates */}
