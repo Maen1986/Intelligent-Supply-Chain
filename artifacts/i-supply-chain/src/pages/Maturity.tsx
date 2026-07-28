@@ -1014,22 +1014,74 @@ const SEGMENTS: Segment[] = [
 type Phase = 'intro' | 'questions' | 'results';
 
 /**
- * @internal Test-only escape hatch.
- * Call `_setMaturityTestSeed` before rendering to start the component in a
- * specific phase / with specific answers without changing the public props
- * signature (which would break wouter's Route typing).
+ * localStorage key under which in-progress draft answers and phase are
+ * persisted so returning users can resume where they left off.
  */
+export const MATURITY_DRAFT_KEY = 'maturity_draft_v1';
+
+/**
+ * @internal Test-only escape hatch.
+ *
+ * `_setMaturityTestSeed` — activate test mode and inject specific state.
+ *   When test mode is active the component skips all localStorage reads and
+ *   writes so tests remain deterministic regardless of stored state.
+ *
+ * `_clearMaturityTestSeed` — deactivate test mode so localStorage reads and
+ *   writes resume.  Use this in tests that exercise the real localStorage
+ *   restore path (write to localStorage directly, then mount without a seed).
+ */
+// Default to true in the test environment so existing tests that never touch
+// the seed API remain deterministic (localStorage reads/writes are suppressed).
+// In production/dev this is false and the real localStorage path is active.
+let _testSeedActive: boolean = import.meta.env.MODE === 'test';
 let _testSeed: { phase?: Phase; answers?: Record<string, number> } = {};
+
 export function _setMaturityTestSeed(seed: typeof _testSeed) {
+  _testSeedActive = true;
   _testSeed = seed;
+}
+
+export function _clearMaturityTestSeed() {
+  _testSeedActive = false;
+  _testSeed = {};
+}
+
+/** Read a saved draft from localStorage (returns null if absent or invalid). */
+function readDraft(): { phase: Phase; answers: Record<string, number> } | null {
+  try {
+    const raw = localStorage.getItem(MATURITY_DRAFT_KEY);
+    if (!raw) return null;
+    const saved = JSON.parse(raw) as { phase?: unknown; answers?: unknown };
+    if (
+      (saved.phase === 'questions' || saved.phase === 'results') &&
+      saved.answers !== null &&
+      typeof saved.answers === 'object' &&
+      !Array.isArray(saved.answers)
+    ) {
+      return {
+        phase: saved.phase as Phase,
+        answers: saved.answers as Record<string, number>,
+      };
+    }
+  } catch { /* corrupted — ignore */ }
+  return null;
 }
 
 export function Maturity() {
   const { lang } = useLanguage();
   const ar = lang === 'ar';
-  const [phase, setPhase]     = useState<Phase>(_testSeed.phase ?? 'intro');
+
+  const [phase, setPhase] = useState<Phase>(() => {
+    if (_testSeedActive) return _testSeed.phase ?? 'intro';
+    return readDraft()?.phase ?? 'intro';
+  });
+
   const [segIdx, setSegIdx]   = useState(0);
-  const [answers, setAnswers] = useState<Record<string, number>>(_testSeed.answers ?? {});
+
+  const [answers, setAnswers] = useState<Record<string, number>>(() => {
+    if (_testSeedActive) return _testSeed.answers ?? {};
+    return readDraft()?.answers ?? {};
+  });
   const topRef = useRef<HTMLDivElement>(null);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [incompleteWarning, setIncompleteWarning] = useState(false);
@@ -1055,6 +1107,17 @@ export function Maturity() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase]); // answers excluded intentionally: guard only needs to fire on phase transition
 
+  // Persist draft to localStorage so returning users can resume where they left
+  // off. Skipped when in the 'intro' phase (nothing worth saving yet) and when
+  // test mode is active so unit tests never pollute one another via storage.
+  useEffect(() => {
+    if (phase === 'intro') return;
+    if (_testSeedActive) return;
+    try {
+      localStorage.setItem(MATURITY_DRAFT_KEY, JSON.stringify({ phase, answers }));
+    } catch { /* storage quota — silently ignore */ }
+  }, [phase, answers]);
+
   const scrollUp = () => setTimeout(() => topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60);
 
   const totalQuestions = SEGMENTS.length * 5;
@@ -1077,7 +1140,15 @@ export function Maturity() {
     if (segIdx > 0) { setSegIdx(s => s - 1); scrollUp(); }
     else { setPhase('intro'); scrollUp(); }
   };
-  const handleReset = () => { setAnswers({}); setSegIdx(0); setPhase('intro'); setIncompleteWarning(false); setEditingFromResults(false); scrollUp(); };
+  const handleReset = () => {
+    try { localStorage.removeItem(MATURITY_DRAFT_KEY); } catch { /* ignore */ }
+    setAnswers({});
+    setSegIdx(0);
+    setPhase('intro');
+    setIncompleteWarning(false);
+    setEditingFromResults(false);
+    scrollUp();
+  };
   const handleEditSegment = (i: number) => { setSegIdx(i); setEditingFromResults(true); setPhase('questions'); scrollUp(); };
   const handleBackToResults = () => { setEditingFromResults(false); setPhase('results'); scrollUp(); };
 

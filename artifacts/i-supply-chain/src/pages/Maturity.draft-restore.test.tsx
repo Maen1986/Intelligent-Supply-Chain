@@ -22,7 +22,7 @@ import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, cleanup } from '@testing-library/react';
 import { LanguageProvider } from '@/lib/LanguageContext';
-import { Maturity, _setMaturityTestSeed } from '@/pages/Maturity';
+import { Maturity, _setMaturityTestSeed, _clearMaturityTestSeed, MATURITY_DRAFT_KEY } from '@/pages/Maturity';
 
 /* ── jsdom stubs ─────────────────────────────────────────────────────────── */
 class ResizeObserverStub {
@@ -350,6 +350,96 @@ describe('Maturity draft restore — redirect guard lands on the correct segment
     expect(screen.getByTestId('answer-2-0-1')).toBeInTheDocument();
 
     // Segment 1 and segment 3 answer buttons must not be the active pane.
+    expect(screen.queryByTestId('answer-1-0-1')).toBeNull();
+    expect(screen.queryByTestId('answer-3-0-1')).toBeNull();
+  });
+});
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Scenario D — Real localStorage restore path (no _setMaturityTestSeed).
+
+   These tests exercise the genuine user-return journey: a partial draft is
+   written to localStorage under MATURITY_DRAFT_KEY, then the component is
+   mounted without any test seed.  The same redirect guard that fires on the
+   seeded path must also fire here — confirming the real restore path is wired
+   correctly end-to-end.
+
+   Two scenarios required by the task spec:
+     • Trailing segments missing  — segments 0–3 answered, 4–7 absent
+     • Gap in the middle          — segment 2 incomplete, all others answered
+══════════════════════════════════════════════════════════════════════════ */
+
+describe('Maturity draft restore — real localStorage restore path (no seed)', () => {
+  beforeEach(() => {
+    // Deactivate test mode so the component reads from localStorage as a real
+    // user would. Each test writes its own draft directly to localStorage.
+    _clearMaturityTestSeed();
+    localStorage.clear();
+    sessionStorage.clear();
+    vi.useFakeTimers();
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({ ok: true, status: 201, json: async () => ({}) })) as unknown as typeof fetch,
+    );
+  });
+
+  afterEach(() => {
+    cleanup();
+    // Leave test mode deactivated between Scenario D tests; clear storage so
+    // nothing leaks into the next test.
+    _clearMaturityTestSeed();
+    localStorage.clear();
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+  });
+
+  it('trailing segments missing — lands on segment 4, shows incomplete-warning, hides results', () => {
+    // Segments 0–3 fully answered; segments 4–7 have no answers at all.
+    const answers: Record<string, number> = {};
+    for (let s = 0; s < 4; s++) {
+      for (let q = 0; q < NUM_QUESTIONS; q++) answers[`${s}-${q}`] = 3;
+    }
+
+    // Write the draft directly to localStorage — no _setMaturityTestSeed.
+    localStorage.setItem(MATURITY_DRAFT_KEY, JSON.stringify({ phase: 'results', answers }));
+
+    renderMaturity();
+
+    // Guard must redirect; results page must not render.
+    expect(screen.queryByTestId('maturity-results')).toBeNull();
+    expect(screen.getByTestId('incomplete-warning')).toBeInTheDocument();
+
+    // The active question pane must show segment 4 (the first incomplete one).
+    expect(screen.getByTestId('answer-4-0-1')).toBeInTheDocument();
+
+    // Segment 5 answer buttons must be absent — we are on segment 4, not further.
+    expect(screen.queryByTestId('answer-5-0-1')).toBeNull();
+  });
+
+  it('gap in the middle — lands on segment 2, shows incomplete-warning, hides results', () => {
+    // Segments 0–1 and 3–7 fully answered; segment 2 has only 1 answer.
+    const answers: Record<string, number> = {};
+    for (let s = 0; s < NUM_SEGMENTS; s++) {
+      if (s === 2) {
+        answers['2-0'] = 4; // deliberately incomplete
+      } else {
+        for (let q = 0; q < NUM_QUESTIONS; q++) answers[`${s}-${q}`] = 3;
+      }
+    }
+
+    // Write the draft directly to localStorage — no _setMaturityTestSeed.
+    localStorage.setItem(MATURITY_DRAFT_KEY, JSON.stringify({ phase: 'results', answers }));
+
+    renderMaturity();
+
+    // Guard must redirect; results page must not render.
+    expect(screen.queryByTestId('maturity-results')).toBeNull();
+    expect(screen.getByTestId('incomplete-warning')).toBeInTheDocument();
+
+    // The active question pane must show segment 2.
+    expect(screen.getByTestId('answer-2-0-1')).toBeInTheDocument();
+
+    // Neighbouring segments must not be the active pane.
     expect(screen.queryByTestId('answer-1-0-1')).toBeNull();
     expect(screen.queryByTestId('answer-3-0-1')).toBeNull();
   });
