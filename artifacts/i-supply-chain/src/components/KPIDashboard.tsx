@@ -1433,7 +1433,7 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
                   if (m.startsWith('✅') || m.startsWith('❌')) {
                     const ok = m.startsWith('✅');
                     return (
-                      <p key={i} className={`font-medium ${ok ? 'text-emerald-700' : 'text-red-700'}`}>{m}</p>
+                      <p key={i} dir="ltr" className={`font-medium ${ok ? 'text-emerald-700' : 'text-red-700'}`}>{m}</p>
                     );
                   }
                   return <p key={i} className={i === 0 ? 'font-bold' : 'opacity-75'}>{m}</p>;
