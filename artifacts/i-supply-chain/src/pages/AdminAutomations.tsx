@@ -20,7 +20,7 @@ import {
   RefreshCw, Loader2, ShieldAlert, Activity, BookOpen,
   Webhook, Calendar, Bell, ArrowLeft, Play, Copy, Check,
   ChevronDown, ChevronUp, Download, AlertTriangle, CheckCircle2,
-  Clock, Zap, Server, Radio, Package,
+  Clock, Zap, Server, Radio, Package, Wifi, WifiOff, Globe, X,
 } from 'lucide-react';
 import { API_BASE } from '@/lib/apiBase';
 
@@ -85,6 +85,25 @@ interface KpiAlertRow {
   critical_threshold: string | null;
   attempted_at: string;
   user_id: number;
+}
+
+interface WebhookConfigRow {
+  id: number;
+  userId: number;
+  maskedUrl: string;
+  events: string[];
+  createdAt: string;
+}
+
+interface HealthCheckResult {
+  latencyMs: number;
+  statusCode: number | null;
+  error: string | null;
+}
+
+interface TestFireResult {
+  maskedUrl: string;
+  result: unknown;
 }
 
 /* ─── utility ───────────────────────────────────────────────────────────── */
@@ -452,6 +471,9 @@ function OverviewTab({ ar, refresh }: { ar: boolean; refresh: number }) {
           })}
         </div>
       </div>
+
+      {/* Row 4: Connection Health Checker */}
+      <ConnectionHealthPanel ar={ar} />
     </div>
   );
 }
@@ -462,6 +484,229 @@ function StatItem({ label, value, className }: { label: string; value: string; c
       <p className="text-xs text-muted-foreground">{label}</p>
       <p className={`font-bold text-base ${className ?? ''}`}>{value}</p>
     </div>
+  );
+}
+
+/* ─── TestFireModal ──────────────────────────────────────────────────────── */
+
+function TestFireModal({ ar, result, onClose }: { ar: boolean; result: TestFireResult; onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
+      <div
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 p-6 space-y-4"
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between">
+          <h3 className="font-bold text-base flex items-center gap-2">
+            <Zap className="w-4 h-4 text-primary" />
+            {ar ? 'نتيجة الاختبار' : 'Test Fire Result'}
+          </h3>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+        <p className="text-xs text-muted-foreground font-mono break-all">{result.maskedUrl}</p>
+        <pre className="text-xs bg-slate-50 border border-border rounded-lg p-3 overflow-x-auto max-h-72 whitespace-pre-wrap break-all">
+          {JSON.stringify(result.result, null, 2)}
+        </pre>
+        <div className="flex justify-end">
+          <Button size="sm" variant="outline" onClick={onClose}>
+            {ar ? 'إغلاق' : 'Close'}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── ConnectionHealthPanel ──────────────────────────────────────────────── */
+
+function ConnectionHealthPanel({ ar }: { ar: boolean }) {
+  const [webhooks, setWebhooks]   = useState<WebhookConfigRow[] | null>(null);
+  const [loading, setLoading]     = useState(true);
+  const [error, setError]         = useState<string | null>(null);
+
+  // Per-webhook ping state
+  const [pinging, setPinging]     = useState<Record<number, boolean>>({});
+  const [pingResults, setPingResults] = useState<Record<number, HealthCheckResult>>({});
+
+  // Per-webhook test-fire state
+  const [testing, setTesting]     = useState<Record<number, boolean>>({});
+  const [testModal, setTestModal] = useState<TestFireResult | null>(null);
+
+  useEffect(() => {
+    setLoading(true);
+    fetch(`${API_BASE}/admin/automations/webhooks`, { credentials: 'include' })
+      .then(r => r.json())
+      .then(d => { if (d.ok) setWebhooks(d.webhooks); else setError(d.error ?? 'Failed'); })
+      .catch(() => setError('Network error'))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const ping = async (id: number) => {
+    setPinging(p => ({ ...p, [id]: true }));
+    try {
+      const r = await fetch(`${API_BASE}/admin/automations/health-check/${id}`, { credentials: 'include' });
+      const d = await r.json();
+      if (d.ok) {
+        setPingResults(p => ({ ...p, [id]: { latencyMs: d.latencyMs, statusCode: d.statusCode, error: d.error } }));
+      }
+    } catch {
+      setPingResults(p => ({ ...p, [id]: { latencyMs: 0, statusCode: null, error: 'Network error' } }));
+    } finally {
+      setPinging(p => ({ ...p, [id]: false }));
+    }
+  };
+
+  const testFire = async (id: number, maskedUrl: string) => {
+    setTesting(t => ({ ...t, [id]: true }));
+    try {
+      const r = await fetch(`${API_BASE}/admin/automations/test-webhook/${id}`, {
+        method: 'POST', credentials: 'include',
+      });
+      const d = await r.json();
+      setTestModal({ maskedUrl, result: d });
+    } catch {
+      setTestModal({ maskedUrl, result: { ok: false, error: 'Network error' } });
+    } finally {
+      setTesting(t => ({ ...t, [id]: false }));
+    }
+  };
+
+  function latencyColor(ms: number) {
+    if (ms < 400)  return 'text-emerald-600';
+    if (ms < 1200) return 'text-amber-600';
+    return 'text-red-600';
+  }
+
+  function statusColor(code: number | null) {
+    if (code === null)       return 'text-muted-foreground';
+    if (code >= 200 && code < 300) return 'text-emerald-600';
+    if (code >= 300 && code < 400) return 'text-amber-600';
+    return 'text-red-600';
+  }
+
+  return (
+    <>
+      {testModal && <TestFireModal ar={ar} result={testModal} onClose={() => setTestModal(null)} />}
+
+      <div className="space-y-3">
+        <h3 className="font-bold text-sm text-muted-foreground uppercase tracking-widest flex items-center gap-1.5">
+          <Globe className="w-3.5 h-3.5" />
+          {ar ? 'فحص صحة الاتصال' : 'Connection Health Checker'}
+        </h3>
+
+        {loading && (
+          <div className="flex justify-center py-6">
+            <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+          </div>
+        )}
+        {error && <p className="text-sm text-red-600">{error}</p>}
+
+        {!loading && !error && webhooks !== null && webhooks.length === 0 && (
+          <p className="text-sm text-muted-foreground py-3">
+            {ar ? 'لا توجد ويب-هوكات مُعدَّة.' : 'No webhook endpoints configured yet.'}
+          </p>
+        )}
+
+        {!loading && !error && webhooks && webhooks.length > 0 && (
+          <div className="border border-border rounded-xl overflow-x-auto">
+            <table className="w-full text-xs min-w-[560px]">
+              <thead>
+                <tr className="border-b bg-slate-50">
+                  <th className="py-2 px-3 text-start font-bold text-muted-foreground">ID</th>
+                  <th className="py-2 px-3 text-start font-bold text-muted-foreground">
+                    {ar ? 'المستخدم' : 'User'}
+                  </th>
+                  <th className="py-2 px-3 text-start font-bold text-muted-foreground">URL</th>
+                  <th className="py-2 px-3 text-start font-bold text-muted-foreground">
+                    {ar ? 'نتيجة Ping' : 'Ping Result'}
+                  </th>
+                  <th className="py-2 px-3 text-start font-bold text-muted-foreground">
+                    {ar ? 'الإجراءات' : 'Actions'}
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {webhooks.map(wh => {
+                  const res = pingResults[wh.id];
+                  const isPinging = pinging[wh.id] ?? false;
+                  const isTesting = testing[wh.id] ?? false;
+                  return (
+                    <tr key={wh.id} className="border-b last:border-0 align-middle">
+                      <td className="py-2 px-3 text-muted-foreground">{wh.id}</td>
+                      <td className="py-2 px-3 text-muted-foreground">{wh.userId}</td>
+                      <td className="py-2 px-3 font-mono text-muted-foreground break-all">{wh.maskedUrl}</td>
+                      <td className="py-2 px-3">
+                        {!res && !isPinging && (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                        {isPinging && (
+                          <span className="flex items-center gap-1 text-muted-foreground">
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                            {ar ? 'جارٍ الاختبار…' : 'Pinging…'}
+                          </span>
+                        )}
+                        {!isPinging && res && (
+                          <span className="flex items-center gap-2 flex-wrap">
+                            {res.error ? (
+                              <span className="flex items-center gap-1 text-red-600">
+                                <WifiOff className="w-3 h-3" />
+                                {res.error}
+                              </span>
+                            ) : (
+                              <span className="flex items-center gap-1">
+                                <Wifi className="w-3 h-3 text-emerald-500" />
+                                <span className={`font-bold ${latencyColor(res.latencyMs)}`}>
+                                  {res.latencyMs}ms
+                                </span>
+                              </span>
+                            )}
+                            {res.statusCode !== null && (
+                              <span className={`font-mono font-bold ${statusColor(res.statusCode)}`}>
+                                HTTP {res.statusCode}
+                              </span>
+                            )}
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-2 px-3">
+                        <div className="flex items-center gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 text-xs px-2.5"
+                            disabled={isPinging}
+                            onClick={() => void ping(wh.id)}
+                          >
+                            {isPinging
+                              ? <Loader2 className="w-3 h-3 animate-spin" />
+                              : <Wifi className="w-3 h-3 me-1" />}
+                            {ar ? 'Ping' : 'Ping'}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 text-xs px-2.5"
+                            disabled={isTesting}
+                            onClick={() => void testFire(wh.id, wh.maskedUrl)}
+                          >
+                            {isTesting
+                              ? <Loader2 className="w-3 h-3 animate-spin" />
+                              : <Zap className="w-3 h-3 me-1" />}
+                            {ar ? 'اختبار' : 'Test fire'}
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </>
   );
 }
 

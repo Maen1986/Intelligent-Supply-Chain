@@ -319,6 +319,89 @@ router.post("/test-webhook/:webhookId", async (req, res) => {
 });
 
 /* ══════════════════════════════════════════════════════════════
+   WEBHOOK LIST — all configured webhooks (for health checker)
+   ══════════════════════════════════════════════════════════════ */
+
+router.get("/webhooks", async (_req, res) => {
+  try {
+    const rows = await db
+      .select()
+      .from(webhookConfigsTable)
+      .orderBy(webhookConfigsTable.userId);
+
+    const webhooks = rows.map(r => ({
+      id:        r.id,
+      userId:    r.userId,
+      maskedUrl: maskUrl(r.url),
+      events:    r.events,
+      createdAt: r.createdAt,
+    }));
+
+    res.json({ ok: true, webhooks });
+  } catch (err) {
+    logger.error({ err }, "[admin/automations] GET /webhooks");
+    res.status(500).json({ ok: false, error: "Server error" });
+  }
+});
+
+/* ══════════════════════════════════════════════════════════════
+   HEALTH CHECK — HEAD-ping a webhook URL, return latency
+   ══════════════════════════════════════════════════════════════ */
+
+router.get("/health-check/:webhookId", async (req, res) => {
+  const whId = parseInt(req.params.webhookId, 10);
+  if (isNaN(whId)) { res.status(400).json({ ok: false, error: "Invalid webhook ID" }); return; }
+
+  try {
+    const rows = await db
+      .select()
+      .from(webhookConfigsTable)
+      .where(sql`${webhookConfigsTable.id} = ${whId}`)
+      .limit(1);
+
+    const wh = rows[0];
+    if (!wh) { res.status(404).json({ ok: false, error: "Webhook not found" }); return; }
+
+    const start = Date.now();
+    let statusCode: number | null = null;
+    let error: string | null = null;
+
+    try {
+      const controller = new AbortController();
+      const timeoutId  = setTimeout(() => controller.abort(), 10_000);
+
+      const resp = await fetch(wh.url, {
+        method: "HEAD",
+        signal: controller.signal,
+        headers: { "User-Agent": "ISC-HealthCheck/1.0" },
+      });
+      clearTimeout(timeoutId);
+      statusCode = resp.status;
+    } catch (fetchErr: unknown) {
+      if (fetchErr instanceof Error && fetchErr.name === "AbortError") {
+        error = "Timed out after 10s";
+      } else {
+        error = fetchErr instanceof Error ? fetchErr.message : "Network error";
+      }
+    }
+
+    const latencyMs = Date.now() - start;
+
+    res.json({
+      ok:         true,
+      webhookId:  whId,
+      maskedUrl:  maskUrl(wh.url),
+      latencyMs,
+      statusCode,
+      error,
+    });
+  } catch (err) {
+    logger.error({ err }, "[admin/automations] GET /health-check/:id");
+    res.status(500).json({ ok: false, error: "Server error" });
+  }
+});
+
+/* ══════════════════════════════════════════════════════════════
    TEMPLATES MANIFEST — list of n8n workflow templates
    ══════════════════════════════════════════════════════════════ */
 
