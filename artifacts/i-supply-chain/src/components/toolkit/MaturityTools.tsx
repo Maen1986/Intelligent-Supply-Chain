@@ -319,8 +319,10 @@ export function MaturityAssessmentTool({ slug, isAr }: MaturityToolsProps) {
       <div role="tablist" ref={tabListRef} className="flex gap-1 bg-slate-50 border-b border-slate-200 px-4 pt-3 overflow-x-auto">
         {MATURITY_TABS.map((t, idx) => (
           <button key={t.id}
+            id={`${t.id}-tab`}
             role="tab"
             aria-selected={activeTab === t.id}
+            aria-controls={`${t.id}-panel`}
             tabIndex={activeTab === t.id ? 0 : -1}
             onClick={() => setActiveTab(t.id)}
             onKeyDown={e => handleTabKey(e, idx)}
@@ -330,10 +332,10 @@ export function MaturityAssessmentTool({ slug, isAr }: MaturityToolsProps) {
         ))}
       </div>
 
-      <div className="p-5 space-y-5">
+      <div className="p-5">
 
         {/* ── Tab: Assessment ── */}
-        {activeTab === 'assess' && <>
+        {activeTab === 'assess' && <div role="tabpanel" id="assess-panel" aria-labelledby="assess-tab" className="space-y-5">
 
         {/* ── Dimension rating buttons ── */}
         <div className="space-y-3">
@@ -385,10 +387,10 @@ export function MaturityAssessmentTool({ slug, isAr }: MaturityToolsProps) {
           </div>
         )}
 
-        </>} {/* end assess tab */}
+        </div>} {/* end assess tab */}
 
         {/* ── Tab: Gap Analysis ── */}
-        {activeTab === 'analysis' && <>
+        {activeTab === 'analysis' && <div role="tabpanel" id="analysis-panel" aria-labelledby="analysis-tab" className="space-y-5">
 
         {/* ── Radar chart: Current vs Target ── */}
         {filled.length >= 2 && (
@@ -477,10 +479,10 @@ export function MaturityAssessmentTool({ slug, isAr }: MaturityToolsProps) {
           </p>
         )}
 
-        </>} {/* end analysis tab */}
+        </div>} {/* end analysis tab */}
 
         {/* ── Tab: AI Roadmap ── */}
-        {activeTab === 'ai' && <>
+        {activeTab === 'ai' && <div role="tabpanel" id="ai-panel" aria-labelledby="ai-tab" className="space-y-5">
         <AIPlanPanel
           loading={planLoading}
           result={planResult}
@@ -499,7 +501,7 @@ export function MaturityAssessmentTool({ slug, isAr }: MaturityToolsProps) {
           toolKey="maturity"
         />
         <ActionTracker storageKey={`isc-tool-actions-maturity-${slug ?? 'generic'}`} isAr={isAr} />
-        </>} {/* end ai tab */}
+        </div>} {/* end ai tab */}
 
       </div>
     </div>

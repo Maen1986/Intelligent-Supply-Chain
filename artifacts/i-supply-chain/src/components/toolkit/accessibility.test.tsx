@@ -237,6 +237,120 @@ describe('MaturityTools — MaturityAssessmentTool accessibility', () => {
 });
 
 /* ══════════════════════════════════════════════════════════════════════════
+   RiskTools — ARIA tab↔panel linkage
+   Structural checks that every tab button carries aria-controls pointing to
+   a panel with role="tabpanel" and the matching id / aria-labelledby.
+══════════════════════════════════════════════════════════════════════════ */
+describe('RiskTools — ARIA tab↔panel linkage', () => {
+  beforeEach(() => { localStorage.clear(); cleanup(); });
+
+  it('each tab button has aria-controls matching a rendered tabpanel', () => {
+    const { container } = render(<RiskToolsSection isAr={false} />);
+    const tabs = container.querySelectorAll<HTMLElement>('[role="tab"]');
+    expect(tabs.length).toBeGreaterThan(0);
+    tabs.forEach(tab => {
+      const panelId = tab.getAttribute('aria-controls');
+      expect(panelId).toBeTruthy();
+      // Only the active panel is in the DOM — verify the tab button id is set
+      const tabId = tab.getAttribute('id');
+      expect(tabId).toBeTruthy();
+      expect(tabId).toBe(`${tab.getAttribute('aria-controls')!.replace('-panel', '')}-tab`);
+    });
+  });
+
+  it('the active tabpanel has role, id, and aria-labelledby on initial render', () => {
+    const { container } = render(<RiskToolsSection isAr={false} />);
+    const panel = container.querySelector('[role="tabpanel"]');
+    expect(panel).not.toBeNull();
+    expect(panel!.getAttribute('id')).toBe('kri-panel');
+    expect(panel!.getAttribute('aria-labelledby')).toBe('kri-tab');
+  });
+
+  it('switching tab renders the new panel with correct linkage', () => {
+    const { container } = render(<RiskToolsSection isAr={false} />);
+    fireEvent.click(screen.getByRole('tab', { name: /Risk Register/i }));
+    const panel = container.querySelector('[role="tabpanel"]');
+    expect(panel).not.toBeNull();
+    expect(panel!.getAttribute('id')).toBe('register-panel');
+    expect(panel!.getAttribute('aria-labelledby')).toBe('register-tab');
+  });
+});
+
+/* ══════════════════════════════════════════════════════════════════════════
+   TrainingTools — ARIA tab↔panel linkage
+══════════════════════════════════════════════════════════════════════════ */
+describe('TrainingTools — ARIA tab↔panel linkage', () => {
+  beforeEach(() => { localStorage.clear(); cleanup(); });
+
+  it('each tab button has id and aria-controls attributes', () => {
+    const { container } = render(<TrainingNeedsAssessment isAr={false} />);
+    const tabs = container.querySelectorAll<HTMLElement>('[role="tab"]');
+    expect(tabs.length).toBe(4);
+    tabs.forEach(tab => {
+      expect(tab.getAttribute('id')).toBeTruthy();
+      expect(tab.getAttribute('aria-controls')).toBeTruthy();
+      expect(tab.getAttribute('id')).toBe(
+        `${tab.getAttribute('aria-controls')!.replace('-panel', '')}-tab`,
+      );
+    });
+  });
+
+  it('the active tabpanel has role, id, and aria-labelledby on initial render', () => {
+    const { container } = render(<TrainingNeedsAssessment isAr={false} />);
+    const panel = container.querySelector('[role="tabpanel"]');
+    expect(panel).not.toBeNull();
+    expect(panel!.getAttribute('id')).toBe('matrix-panel');
+    expect(panel!.getAttribute('aria-labelledby')).toBe('matrix-tab');
+  });
+
+  it('switching to Radar tab renders correct tabpanel linkage', () => {
+    const { container } = render(<TrainingNeedsAssessment isAr={false} />);
+    fireEvent.click(screen.getByRole('tab', { name: /Skill-Gap Radar/i }));
+    const panel = container.querySelector('[role="tabpanel"]');
+    expect(panel).not.toBeNull();
+    expect(panel!.getAttribute('id')).toBe('radar-panel');
+    expect(panel!.getAttribute('aria-labelledby')).toBe('radar-tab');
+  });
+});
+
+/* ══════════════════════════════════════════════════════════════════════════
+   MaturityTools — ARIA tab↔panel linkage
+══════════════════════════════════════════════════════════════════════════ */
+describe('MaturityTools — ARIA tab↔panel linkage', () => {
+  beforeEach(() => { localStorage.clear(); cleanup(); });
+
+  it('each tab button has id and aria-controls attributes', () => {
+    const { container } = render(<MaturityAssessmentTool slug="resiliency" isAr={false} />);
+    const tabs = container.querySelectorAll<HTMLElement>('[role="tab"]');
+    expect(tabs.length).toBe(3);
+    tabs.forEach(tab => {
+      expect(tab.getAttribute('id')).toBeTruthy();
+      expect(tab.getAttribute('aria-controls')).toBeTruthy();
+      expect(tab.getAttribute('id')).toBe(
+        `${tab.getAttribute('aria-controls')!.replace('-panel', '')}-tab`,
+      );
+    });
+  });
+
+  it('the active tabpanel has role, id, and aria-labelledby on initial render', () => {
+    const { container } = render(<MaturityAssessmentTool slug="resiliency" isAr={false} />);
+    const panel = container.querySelector('[role="tabpanel"]');
+    expect(panel).not.toBeNull();
+    expect(panel!.getAttribute('id')).toBe('assess-panel');
+    expect(panel!.getAttribute('aria-labelledby')).toBe('assess-tab');
+  });
+
+  it('switching to Gap Analysis tab renders correct tabpanel linkage', () => {
+    const { container } = render(<MaturityAssessmentTool slug="resiliency" isAr={false} />);
+    fireEvent.click(screen.getByRole('tab', { name: /Gap Analysis/i }));
+    const panel = container.querySelector('[role="tabpanel"]');
+    expect(panel).not.toBeNull();
+    expect(panel!.getAttribute('id')).toBe('analysis-panel');
+    expect(panel!.getAttribute('aria-labelledby')).toBe('analysis-tab');
+  });
+});
+
+/* ══════════════════════════════════════════════════════════════════════════
    SupplierScorecard — SupplierScorecardTool
 ══════════════════════════════════════════════════════════════════════════ */
 describe('SupplierScorecard — SupplierScorecardTool accessibility', () => {

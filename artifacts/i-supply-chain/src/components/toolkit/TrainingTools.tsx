@@ -405,8 +405,10 @@ export function TrainingNeedsAssessment({ isAr }: TrainingToolsProps) {
       <div role="tablist" ref={tabListRef} className="flex gap-1 bg-slate-50 border-b border-slate-200 px-4 pt-3 overflow-x-auto">
         {TRAINING_TABS.map((t, idx) => (
           <button key={t.id}
+            id={`${t.id}-tab`}
             role="tab"
             aria-selected={activeTab === t.id}
+            aria-controls={`${t.id}-panel`}
             tabIndex={activeTab === t.id ? 0 : -1}
             onClick={() => setActiveTab(t.id)}
             onKeyDown={e => handleTabKey(e, idx)}
@@ -416,10 +418,10 @@ export function TrainingNeedsAssessment({ isAr }: TrainingToolsProps) {
         ))}
       </div>
 
-      <div className="p-5 space-y-5">
+      <div className="p-5">
 
         {/* ── Tab: Matrix ── */}
-        {activeTab === 'matrix' && <>
+        {activeTab === 'matrix' && <div role="tabpanel" id="matrix-panel" aria-labelledby="matrix-tab" className="space-y-5">
 
         {/* ── Legend ── */}
         <div className="flex flex-wrap gap-2">
@@ -542,10 +544,10 @@ export function TrainingNeedsAssessment({ isAr }: TrainingToolsProps) {
           </table>
         </div>
 
-        </>} {/* end matrix tab */}
+        </div>} {/* end matrix tab */}
 
         {/* ── Tab: Radar ── */}
-        {activeTab === 'radar' && <>
+        {activeTab === 'radar' && <div role="tabpanel" id="radar-panel" aria-labelledby="radar-tab" className="space-y-5">
         {!hasSelfScores && (
           <p className="text-xs text-muted-foreground text-center py-8">
             {isAr ? 'أدخل التقييمات في علامة التبويب "مصفوفة التقييم" لعرض الرادار.' : 'Enter scores in the Assessment Matrix tab to display the radar.'}
@@ -592,10 +594,10 @@ export function TrainingNeedsAssessment({ isAr }: TrainingToolsProps) {
           </div>
         )}
 
-        </>} {/* end radar tab */}
+        </div>} {/* end radar tab */}
 
         {/* ── Tab: Development Actions ── */}
-        {activeTab === 'actions' && <>
+        {activeTab === 'actions' && <div role="tabpanel" id="actions-panel" aria-labelledby="actions-tab" className="space-y-5">
         {priorityGaps.length > 0 && (
           <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
             <p className="text-xs font-bold text-amber-800 uppercase tracking-widest mb-3">
@@ -651,10 +653,11 @@ export function TrainingNeedsAssessment({ isAr }: TrainingToolsProps) {
             {isAr ? 'أدخل التقييمات في علامة التبويب "مصفوفة التقييم" لعرض الإجراءات.' : 'Enter scores in the Assessment Matrix tab to see development actions.'}
           </p>
         )}
-        </>} {/* end actions tab */}
+        </div>} {/* end actions tab */}
 
         {/* ── Tab: AI Learning Plan ── */}
         {activeTab === 'ai' && (
+          <div role="tabpanel" id="ai-panel" aria-labelledby="ai-tab">
           <AIPlanPanel
             loading={planLoading}
             result={planResult}
@@ -672,6 +675,7 @@ export function TrainingNeedsAssessment({ isAr }: TrainingToolsProps) {
             onDismissSaveError={dismissPlanSaveError}
             toolKey="training"
           />
+          </div>
         )}
 
       </div>

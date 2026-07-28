@@ -417,8 +417,10 @@ export function RiskToolsSection({ isAr }: RiskToolsProps) {
       <div role="tablist" ref={tabListRef} className="flex gap-1 bg-slate-50 border border-slate-200 rounded-2xl p-1 overflow-x-auto">
         {tabs.map((t, idx) => (
           <button key={t.id}
+            id={`${t.id}-tab`}
             role="tab"
             aria-selected={activeTab === t.id}
+            aria-controls={`${t.id}-panel`}
             tabIndex={activeTab === t.id ? 0 : -1}
             onClick={() => setActiveTab(t.id)}
             onKeyDown={e => handleTabKey(e, idx)}
@@ -430,7 +432,7 @@ export function RiskToolsSection({ isAr }: RiskToolsProps) {
 
       {/* ── TAB 1: KRI Monitor ── */}
       {activeTab === 'kri' && (
-        <div className="space-y-4">
+        <div role="tabpanel" id="kri-panel" aria-labelledby="kri-tab" className="space-y-4">
           {kriAlerts.length > 0 && (
             <div className="bg-red-50 border border-red-200 rounded-xl p-3 flex items-start gap-2">
               <AlertTriangle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
@@ -491,7 +493,7 @@ export function RiskToolsSection({ isAr }: RiskToolsProps) {
 
       {/* ── TAB 2: Risk Register ── */}
       {activeTab === 'register' && (
-        <div className="space-y-3">
+        <div role="tabpanel" id="register-panel" aria-labelledby="register-tab" className="space-y-3">
           {/* Summary */}
           {risks.length > 0 && (
             <div className="grid grid-cols-4 gap-3">
@@ -654,7 +656,7 @@ export function RiskToolsSection({ isAr }: RiskToolsProps) {
 
       {/* ── TAB 3: Heat Map ── */}
       {activeTab === 'heatmap' && (
-        <div className="space-y-4">
+        <div role="tabpanel" id="heatmap-panel" aria-labelledby="heatmap-tab" className="space-y-4">
           <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
             <h3 className="font-bold text-slate-800 text-sm mb-1">{isAr ? 'خريطة حرارة المخاطر (5×5)' : 'Risk Heat Map (5×5)'}</h3>
             <p className="text-[11px] text-slate-400 mb-4">{isAr ? 'المحور الأفقي = الأثر، المحور الرأسي = الاحتمالية. انقر على خلية لتصفية السجل.' : 'X-axis = Impact · Y-axis = Likelihood. Click a cell to filter the register.'}</p>
@@ -738,7 +740,7 @@ export function RiskToolsSection({ isAr }: RiskToolsProps) {
 
       {/* ── TAB 4: Mitigation Plans ── */}
       {activeTab === 'mitigation' && (
-        <div className="space-y-3">
+        <div role="tabpanel" id="mitigation-panel" aria-labelledby="mitigation-tab" className="space-y-3">
           {risks.length === 0 ? (
             <div className="bg-slate-50 border border-dashed border-slate-300 rounded-2xl p-8 text-center">
               <Shield className="w-8 h-8 text-slate-300 mx-auto mb-2" />
@@ -802,7 +804,7 @@ export function RiskToolsSection({ isAr }: RiskToolsProps) {
 
       {/* ── TAB 5: Templates ── */}
       {activeTab === 'templates' && (
-        <div className="space-y-3">
+        <div role="tabpanel" id="templates-panel" aria-labelledby="templates-tab" className="space-y-3">
           <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 flex items-start gap-2">
             <Info className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
             <p className="text-xs text-blue-800">{isAr ? 'قوالب متوافقة مع ISO 31000 وISO 22301 جاهزة للتحميل والتخصيص.' : 'ISO 31000 and ISO 22301-aligned templates ready to download and customise.'}</p>
@@ -827,7 +829,7 @@ export function RiskToolsSection({ isAr }: RiskToolsProps) {
 
       {/* ── TAB 6: Supplier Alert Config ── */}
       {activeTab === 'alert-config' && (
-        <div className="space-y-4">
+        <div role="tabpanel" id="alert-config-panel" aria-labelledby="alert-config-tab" className="space-y-4">
           {/* Export PDF button — hidden when printing */}
           <div className="flex justify-end print-hide">
             <button
@@ -942,6 +944,7 @@ export function RiskToolsSection({ isAr }: RiskToolsProps) {
 
       {/* ── TAB 7: AI Risk Brief ── */}
       {activeTab === 'ai' && (
+        <div role="tabpanel" id="ai-panel" aria-labelledby="ai-tab">
         <AIPlanPanel
           loading={aiPlan.loading} result={aiPlan.result} error={aiPlan.error}
           onGenerate={aiPlan.generate} onReset={aiPlan.reset}
@@ -953,6 +956,7 @@ export function RiskToolsSection({ isAr }: RiskToolsProps) {
           isAr={isAr} toolKey="risk-register"
           disabled={risks.length === 0 && !Object.values(kriValues).some(v => v)}
         />
+        </div>
       )}
     </div>
   );
