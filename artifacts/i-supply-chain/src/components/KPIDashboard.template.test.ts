@@ -1595,6 +1595,19 @@ describe('governance-compliance import — partial inputs (only pcr and asa fill
     expect(skipText).not.toContain('Policy Compliance Rate');
     expect(skipText).not.toContain('Approved Supplier Adherence');
   });
+
+  it('summary line (log[0]) reports exactly 2 KPIs auto-calculated', () => {
+    const csvText = rowsToCsvText(buildPartialGcRows());
+    const { log } = runNewFormatImport(csvText, 'governance-compliance');
+
+    const summary = log[0];
+    // Must start with the ✓ marker and mention "2"
+    expect(summary).toMatch(/^✓/);
+    expect(summary).toContain('2');
+    expect(summary).toContain('auto-calculated');
+    // Must NOT claim more KPIs were calculated
+    expect(summary).not.toMatch(/[3-9]\s+KPI/);
+  });
 });
 
 // ─── Supply-chain-strategy partial import ────────────────────────────────────
