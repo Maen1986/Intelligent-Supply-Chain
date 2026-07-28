@@ -206,6 +206,11 @@ function runNewFormatImport(
   const log: string[] = [];
 
   const inputsByKpi: Record<string, Record<string, number>> = {};
+  // Track which input ids have already been matched for each KPI so that when
+  // two inputs share the same first-30-char label prefix (e.g. mpr's two
+  // "Number of manual process steps…" rows) the second row isn't silently
+  // double-assigned to the first input.
+  const usedInputIds: Record<string, Set<string>> = {};
   csvRows.forEach(row => {
     const kpiId = row['KPI ID']?.trim().toLowerCase();
     const inputLabel = row['Input Field']?.trim();
@@ -218,10 +223,14 @@ function runNewFormatImport(
     const spec = KPI_DATA_SPECS[kpiId];
     if (!spec) return;
 
+    if (!usedInputIds[kpiId]) usedInputIds[kpiId] = new Set();
+
     const inputDef =
       spec.inputs.find(inp =>
-        inputLabel.toLowerCase().includes(inp.id.toLowerCase()) ||
-        inp.label.toLowerCase().substring(0, 30) === inputLabel.toLowerCase().substring(0, 30),
+        !usedInputIds[kpiId].has(inp.id) && (
+          inputLabel.toLowerCase().includes(inp.id.toLowerCase()) ||
+          inp.label.toLowerCase().substring(0, 30) === inputLabel.toLowerCase().substring(0, 30)
+        ),
       ) ??
       spec.inputs.find((_, idx) => {
         const kpiRows = csvRows.filter(
@@ -233,6 +242,7 @@ function runNewFormatImport(
       });
 
     if (!inputDef) return;
+    usedInputIds[kpiId].add(inputDef.id);
     if (!inputsByKpi[kpiId]) inputsByKpi[kpiId] = {};
     inputsByKpi[kpiId][inputDef.id] = num;
   });
@@ -753,14 +763,15 @@ describe('Excel-mutated template round-trip (procurement-excellence)', () => {
   /** Return procurement-excellence template rows with all example values filled in. */
   function buildFilledRows(): string[][] {
     const rows = buildTemplateRows('procurement-excellence');
+    const kpiInputIndex: Record<string, number> = {};
     rows.forEach(row => {
       const kpiId = row[0]?.trim().toLowerCase();
       if (!kpiId || kpiId === '' || kpiId.startsWith('===') || kpiId.startsWith('---') || kpiId.endsWith('__result')) return;
       const spec = KPI_DATA_SPECS[kpiId];
       if (!spec) return;
-      const inputDef = spec.inputs.find(inp =>
-        row[1]?.toLowerCase().substring(0, 30) === inp.label.toLowerCase().substring(0, 30),
-      );
+      if (kpiInputIndex[kpiId] === undefined) kpiInputIndex[kpiId] = 0;
+      const inputDef = spec.inputs[kpiInputIndex[kpiId]];
+      kpiInputIndex[kpiId]++;
       if (inputDef) row[2] = String(inputDef.example);
     });
     return rows;
@@ -838,6 +849,121 @@ describe('Excel-mutated template round-trip (procurement-excellence)', () => {
     const padCell = (c: string): string => `" ${c.replace(/"/g, '""')} "`;
     const csvText = mutated.map(r => r.map(padCell).join(',')).join('\r\n');
     const { log } = runNewFormatImport(csvText, 'procurement-excellence');
+    // log[0] is the auto-calculated summary line; remaining ✓ lines are per-KPI
+    const kpiLines = log.filter(l => l.startsWith('✓') && !l.includes('auto-calculated'));
+    expect(kpiLines.length).toBe(6);
+    expect(log.find(l => l.includes('require manual entry'))).toBeUndefined();
+  });
+});
+
+// ─── Excel-mutated template round-trip (digital-transformation) ──────────────
+//
+//  Mirrors the lean-six-sigma and risk-management round-trip suites but for the
+//  digital-transformation framework, which has 6 KPIs:
+//    erpu, auto, stp, da, dar, mpr
+//
+//  Expected values from example inputs (see kpiDataSpecs.ts):
+//    erpu : pct(14, 18)     ≈ 77.8  (ERP Module Utilisation %)
+//    auto : pct(22, 35)     ≈ 62.9  (Process Automation Rate %)
+//    stp  : pct(308, 440)   = 70.0  (Straight-Through PO Rate %)
+//    da   : pct(468, 500)   = 93.6  (Data Accuracy Rate %)
+//    dar  : pct(72, 85)     ≈ 84.7  (Digital Adoption Rate %)
+//    mpr  : ((145−52)/145)×100 ≈ 64.1  (Manual Process Reduction %)
+
+describe('Excel-mutated template round-trip (digital-transformation)', () => {
+  /** Return digital-transformation template rows with all example values filled in. */
+  function buildFilledRows(): string[][] {
+    const rows = buildTemplateRows('digital-transformation');
+    // Use positional matching: track how many input rows we have seen for each
+    // KPI and assign example values in order.  This avoids failures when two
+    // inputs of the same KPI share the same first 30 characters (e.g. mpr's
+    // "Number of manual process steps BEFORE…" vs "…currently…").
+    const kpiInputIndex: Record<string, number> = {};
+    rows.forEach(row => {
+      const kpiId = row[0]?.trim().toLowerCase();
+      if (!kpiId || kpiId === '' || kpiId.startsWith('===') || kpiId.startsWith('---') || kpiId.endsWith('__result')) return;
+      const spec = KPI_DATA_SPECS[kpiId];
+      if (!spec) return;
+      if (kpiInputIndex[kpiId] === undefined) kpiInputIndex[kpiId] = 0;
+      const inputDef = spec.inputs[kpiInputIndex[kpiId]];
+      kpiInputIndex[kpiId]++;
+      if (inputDef) row[2] = String(inputDef.example);
+    });
+    return rows;
+  }
+
+  /** Shared KPI value assertions for all mutation variants. */
+  function assertKpiValues(values: Record<string, number>): void {
+    expect(values['erpu'], 'erpu').toBeCloseTo(77.8, 0);
+    expect(values['auto'], 'auto').toBeCloseTo(62.9, 0);
+    expect(values['stp'],  'stp').toBeCloseTo(70.0, 0);
+    expect(values['da'],   'da').toBeCloseTo(93.6, 0);
+    expect(values['dar'],  'dar').toBeCloseTo(84.7, 0);
+    expect(values['mpr'],  'mpr').toBeCloseTo(64.1, 0);
+  }
+
+  it('imports correctly with CRLF line endings (Windows / Excel default)', () => {
+    const rows = buildFilledRows();
+    const csvCrlf = rows.map(r => r.map(escapeCell).join(',')).join('\r\n');
+    const { values } = runNewFormatImport(csvCrlf, 'digital-transformation');
+    assertKpiValues(values);
+  });
+
+  it('imports correctly when there is no UTF-8 BOM (Excel drops the BOM on re-save)', () => {
+    const rows = buildFilledRows();
+    const csvNoBom = rows.map(r => r.map(escapeCell).join(',')).join('\r\n');
+    expect(csvNoBom.charCodeAt(0)).not.toBe(0xFEFF);
+    const { values } = runNewFormatImport(csvNoBom, 'digital-transformation');
+    assertKpiValues(values);
+  });
+
+  it('imports correctly when extra blank rows are scattered between sections', () => {
+    const rows = buildFilledRows();
+    const mutated: string[][] = [];
+    for (const row of rows) {
+      mutated.push(row);
+      if (row[0]?.startsWith('===')) {
+        mutated.push(['', '', '', '', '', '']);
+        mutated.push(['', '', '', '', '', '']);
+      }
+    }
+    const csvText = mutated.map(r => r.map(escapeCell).join(',')).join('\r\n');
+    const { values } = runNewFormatImport(csvText, 'digital-transformation');
+    assertKpiValues(values);
+  });
+
+  it('imports correctly when cell values have leading and trailing whitespace', () => {
+    const rows = buildFilledRows();
+    const padCell = (c: string): string => `"  ${c.replace(/"/g, '""')}  "`;
+    const csvText = rows.map(r => r.map(padCell).join(',')).join('\r\n');
+    const { values } = runNewFormatImport(csvText, 'digital-transformation');
+    assertKpiValues(values);
+  });
+
+  it('imports correctly with all mutations combined (no BOM + CRLF + blank rows + whitespace padding)', () => {
+    const rows = buildFilledRows();
+    const withBlanks: string[][] = [];
+    for (const row of rows) {
+      withBlanks.push(row);
+      if (row[0]?.startsWith('===')) withBlanks.push(['', '', '', '', '', '']);
+    }
+    const padCell = (c: string): string => `" ${c.replace(/"/g, '""')} "`;
+    const csvText = withBlanks.map(r => r.map(padCell).join(',')).join('\r\n');
+    expect(csvText.charCodeAt(0)).not.toBe(0xFEFF);
+    const { values } = runNewFormatImport(csvText, 'digital-transformation');
+    assertKpiValues(values);
+  });
+
+  it('all 6 KPIs are calculated — no manual-entry notice — in the mutated file', () => {
+    const rows = buildFilledRows();
+    const mutated: string[][] = [];
+    for (const row of rows) {
+      mutated.push(row);
+      if (row[0]?.startsWith('===')) mutated.push(['', '', '', '', '', '']);
+    }
+    const padCell = (c: string): string => `" ${c.replace(/"/g, '""')} "`;
+    const csvText = mutated.map(r => r.map(padCell).join(',')).join('\r\n');
+    const { log } = runNewFormatImport(csvText, 'digital-transformation');
     // log[0] is the auto-calculated summary line; remaining ✓ lines are per-KPI
     const kpiLines = log.filter(l => l.startsWith('✓') && !l.includes('auto-calculated'));
     expect(kpiLines.length).toBe(6);
