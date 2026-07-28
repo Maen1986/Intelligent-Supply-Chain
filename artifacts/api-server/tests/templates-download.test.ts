@@ -146,6 +146,36 @@ describe('GET /api/admin/automations/templates/:id/download', () => {
     expect(() => JSON.parse(res.text)).not.toThrow();
   });
 
+  it('serves a make template from the make-templates folder — content has make schema keys', async () => {
+    const adminRouter = (await import('../src/routes/adminAutomations')).default;
+    const app = makeApp('/api/admin/automations', adminRouter, { userId: 1, role: 'admin' });
+
+    const res = await request(app).get(
+      `/api/admin/automations/templates/${makeId}/download`,
+    );
+
+    expect(res.status).toBe(200);
+    const body = JSON.parse(res.text);
+    // Make templates have a `flow` key (scenario steps); zapier templates use `steps` instead.
+    expect(body).toHaveProperty('flow');
+    expect(body).not.toHaveProperty('steps');
+  });
+
+  it('serves a zapier template from the zapier-templates folder — content has zapier schema keys', async () => {
+    const adminRouter = (await import('../src/routes/adminAutomations')).default;
+    const app = makeApp('/api/admin/automations', adminRouter, { userId: 1, role: 'admin' });
+
+    const res = await request(app).get(
+      `/api/admin/automations/templates/${zapierId}/download`,
+    );
+
+    expect(res.status).toBe(200);
+    const body = JSON.parse(res.text);
+    // Zapier templates have a `steps` array; make templates use `flow` instead.
+    expect(body).toHaveProperty('steps');
+    expect(body).not.toHaveProperty('flow');
+  });
+
   it('returns 404 with a clear user-readable JSON error when the file is missing from disk', async () => {
     // The next `access` call in the route will reject (file deleted scenario).
     _simulateMissingFile = true;
