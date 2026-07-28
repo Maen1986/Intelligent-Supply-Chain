@@ -735,6 +735,116 @@ describe('Excel-mutated template round-trip (risk-management)', () => {
   });
 });
 
+// ─── Excel-mutated template round-trip (procurement-excellence) ──────────────
+//
+//  Mirrors the lean-six-sigma and risk-management round-trip suites but for
+//  the procurement-excellence framework, which has its own distinct KPI set:
+//    savings, pocycle, pocomp, sotif, ccov, ttc
+//
+//  Expected values from example inputs (see kpiDataSpecs.ts):
+//    savings : pct(1_800_000, 22_000_000) ≈ 8.2  (Procurement Savings %)
+//    pocycle : avg(3_850, 440)            = 8.8  (PO Cycle Time, days)
+//    pocomp  : pct(405, 440)             = 92.0  (PO Compliance Rate %)
+//    sotif   : pct(1_128, 1_200)         = 94.0  (Supplier OTIF %)
+//    ccov    : pct(17_600_000, 22_000_000) = 80.0 (Contract Coverage %)
+//    ttc     : avg(1_680, 60)            = 28.0  (Time-to-Contract, days)
+
+describe('Excel-mutated template round-trip (procurement-excellence)', () => {
+  /** Return procurement-excellence template rows with all example values filled in. */
+  function buildFilledRows(): string[][] {
+    const rows = buildTemplateRows('procurement-excellence');
+    rows.forEach(row => {
+      const kpiId = row[0]?.trim().toLowerCase();
+      if (!kpiId || kpiId === '' || kpiId.startsWith('===') || kpiId.startsWith('---') || kpiId.endsWith('__result')) return;
+      const spec = KPI_DATA_SPECS[kpiId];
+      if (!spec) return;
+      const inputDef = spec.inputs.find(inp =>
+        row[1]?.toLowerCase().substring(0, 30) === inp.label.toLowerCase().substring(0, 30),
+      );
+      if (inputDef) row[2] = String(inputDef.example);
+    });
+    return rows;
+  }
+
+  /** Shared KPI value assertions for all mutation variants. */
+  function assertKpiValues(values: Record<string, number>): void {
+    expect(values['savings'], 'savings').toBeCloseTo(8.2, 0);
+    expect(values['pocycle'], 'pocycle').toBeCloseTo(8.8, 0);
+    expect(values['pocomp'],  'pocomp').toBeCloseTo(92.0, 0);
+    expect(values['sotif'],   'sotif').toBeCloseTo(94.0, 0);
+    expect(values['ccov'],    'ccov').toBeCloseTo(80.0, 0);
+    expect(values['ttc'],     'ttc').toBeCloseTo(28.0, 0);
+  }
+
+  it('imports correctly with CRLF line endings (Windows / Excel default)', () => {
+    const rows = buildFilledRows();
+    const csvCrlf = rows.map(r => r.map(escapeCell).join(',')).join('\r\n');
+    const { values } = runNewFormatImport(csvCrlf, 'procurement-excellence');
+    assertKpiValues(values);
+  });
+
+  it('imports correctly when there is no UTF-8 BOM (Excel drops the BOM on re-save)', () => {
+    const rows = buildFilledRows();
+    const csvNoBom = rows.map(r => r.map(escapeCell).join(',')).join('\r\n');
+    expect(csvNoBom.charCodeAt(0)).not.toBe(0xFEFF);
+    const { values } = runNewFormatImport(csvNoBom, 'procurement-excellence');
+    assertKpiValues(values);
+  });
+
+  it('imports correctly when extra blank rows are scattered between sections', () => {
+    const rows = buildFilledRows();
+    const mutated: string[][] = [];
+    for (const row of rows) {
+      mutated.push(row);
+      if (row[0]?.startsWith('===')) {
+        mutated.push(['', '', '', '', '', '']);
+        mutated.push(['', '', '', '', '', '']);
+      }
+    }
+    const csvText = mutated.map(r => r.map(escapeCell).join(',')).join('\r\n');
+    const { values } = runNewFormatImport(csvText, 'procurement-excellence');
+    assertKpiValues(values);
+  });
+
+  it('imports correctly when cell values have leading and trailing whitespace', () => {
+    const rows = buildFilledRows();
+    const padCell = (c: string): string => `"  ${c.replace(/"/g, '""')}  "`;
+    const csvText = rows.map(r => r.map(padCell).join(',')).join('\r\n');
+    const { values } = runNewFormatImport(csvText, 'procurement-excellence');
+    assertKpiValues(values);
+  });
+
+  it('imports correctly with all mutations combined (no BOM + CRLF + blank rows + whitespace padding)', () => {
+    const rows = buildFilledRows();
+    const withBlanks: string[][] = [];
+    for (const row of rows) {
+      withBlanks.push(row);
+      if (row[0]?.startsWith('===')) withBlanks.push(['', '', '', '', '', '']);
+    }
+    const padCell = (c: string): string => `" ${c.replace(/"/g, '""')} "`;
+    const csvText = withBlanks.map(r => r.map(padCell).join(',')).join('\r\n');
+    expect(csvText.charCodeAt(0)).not.toBe(0xFEFF);
+    const { values } = runNewFormatImport(csvText, 'procurement-excellence');
+    assertKpiValues(values);
+  });
+
+  it('all 6 KPIs are calculated — no manual-entry notice — in the mutated file', () => {
+    const rows = buildFilledRows();
+    const mutated: string[][] = [];
+    for (const row of rows) {
+      mutated.push(row);
+      if (row[0]?.startsWith('===')) mutated.push(['', '', '', '', '', '']);
+    }
+    const padCell = (c: string): string => `" ${c.replace(/"/g, '""')} "`;
+    const csvText = mutated.map(r => r.map(padCell).join(',')).join('\r\n');
+    const { log } = runNewFormatImport(csvText, 'procurement-excellence');
+    // log[0] is the auto-calculated summary line; remaining ✓ lines are per-KPI
+    const kpiLines = log.filter(l => l.startsWith('✓') && !l.includes('auto-calculated'));
+    expect(kpiLines.length).toBe(6);
+    expect(log.find(l => l.includes('require manual entry'))).toBeUndefined();
+  });
+});
+
 // ─── Multi-KPI sequence: Status formula cell reference ───────────────────────
 //
 //  buildKpiTemplateRows tracks the current Excel row number by counting array
