@@ -1032,3 +1032,145 @@ describe('PrepareDownloadModal — 404 error clears on retry (English mode)', ()
   });
 
 });
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   500 server error clears after server recovers + retry — Arabic (ar=true)
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+describe('PrepareDownloadModal — 500 server error clears on retry (Arabic mode)', () => {
+
+  /**
+   * W — Arabic: server returns 500 (first download attempt) → Arabic
+   * generic-failure message appears; a second click with a succeeding fetch
+   * mock clears the error (setError(null) fires at the top of handleDownload).
+   *
+   * fetch sequence:
+   *   1st call → keys endpoint (mount)        → { ok: true, keys: [] }
+   *   2nd call → download endpoint (500)       → { ok: false, status: 500 }
+   *   3rd call → download endpoint (recovered) → 200 OK with template text
+   */
+  it('W — ar=true: 500 shows Arabic generic-failure error; retry success clears it', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn()
+        /* keys endpoint */
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ ok: true, keys: [] }),
+        })
+        /* download endpoint — 500 */
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 500,
+        })
+        /* download endpoint — recovered */
+        .mockResolvedValueOnce({
+          ok: true,
+          text: async () => '{"name":"test"}',
+        }),
+    );
+
+    render(
+      <PrepareDownloadModal
+        template={makeTemplate('n8n')}
+        ar={true}
+        onClose={() => {}}
+      />,
+    );
+
+    /* Fill in the required API key field */
+    const apiKeyInput = screen.getByPlaceholderText('الصق قيمة المفتاح هنا…');
+    fireEvent.change(apiKeyInput, { target: { value: 'test-api-key-value' } });
+
+    /* First click — server returns 500 → Arabic generic-failure message appears */
+    const downloadBtn = screen.getByRole('button', { name: /تنزيل القالب/i });
+    fireEvent.click(downloadBtn);
+
+    await waitFor(() => {
+      expect(
+        screen.getByText('تعذّر تنزيل القالب'),
+      ).toBeInTheDocument();
+    });
+
+    /* Second click — fetch succeeds → generic-failure error is gone */
+    fireEvent.click(downloadBtn);
+
+    await waitFor(() => {
+      expect(
+        screen.queryByText('تعذّر تنزيل القالب'),
+      ).toBeNull();
+    });
+  });
+
+});
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   500 server error clears after server recovers + retry — English (ar=false)
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+describe('PrepareDownloadModal — 500 server error clears on retry (English mode)', () => {
+
+  /**
+   * X — English: server returns 500 (first download attempt) → English
+   * generic-failure message appears; a second click with a succeeding fetch
+   * mock clears the error (setError(null) fires at the top of handleDownload).
+   *
+   * fetch sequence:
+   *   1st call → keys endpoint (mount)        → { ok: true, keys: [] }
+   *   2nd call → download endpoint (500)       → { ok: false, status: 500 }
+   *   3rd call → download endpoint (recovered) → 200 OK with template text
+   */
+  it('X — ar=false: 500 shows English generic-failure error; retry success clears it', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn()
+        /* keys endpoint */
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ ok: true, keys: [] }),
+        })
+        /* download endpoint — 500 */
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 500,
+        })
+        /* download endpoint — recovered */
+        .mockResolvedValueOnce({
+          ok: true,
+          text: async () => '{"name":"test"}',
+        }),
+    );
+
+    render(
+      <PrepareDownloadModal
+        template={makeTemplate('n8n')}
+        ar={false}
+        onClose={() => {}}
+      />,
+    );
+
+    /* Fill in the required API key field */
+    const apiKeyInput = screen.getByPlaceholderText('Paste the raw key value here…');
+    fireEvent.change(apiKeyInput, { target: { value: 'test-api-key-value' } });
+
+    /* First click — server returns 500 → English generic-failure message appears */
+    const downloadBtn = screen.getByRole('button', { name: /download template/i });
+    fireEvent.click(downloadBtn);
+
+    await waitFor(() => {
+      expect(
+        screen.getByText('Failed to fetch template — please try again'),
+      ).toBeInTheDocument();
+    });
+
+    /* Second click — fetch succeeds → generic-failure error is gone */
+    fireEvent.click(downloadBtn);
+
+    await waitFor(() => {
+      expect(
+        screen.queryByText('Failed to fetch template — please try again'),
+      ).toBeNull();
+    });
+  });
+
+});
