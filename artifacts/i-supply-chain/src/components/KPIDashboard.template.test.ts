@@ -1181,6 +1181,103 @@ describe('sustainability-esg import — partial inputs (only esga and s3 filled)
   });
 });
 
+// ─── Governance-compliance partial import ────────────────────────────────────
+//
+//  The governance-compliance framework has 6 KPIs: pcr, aud, cco, mav, doa, asa.
+//  This suite verifies that when a user fills in only pcr and asa the import:
+//   • calculates the two complete KPIs correctly
+//   • skips the four incomplete KPIs without zeroing them
+//   • records a skip-reason log entry for each uncalculable KPI
+//   • reports exactly 2 KPIs in the values object
+//
+describe('governance-compliance import — partial inputs (only pcr and asa filled)', () => {
+  /**
+   * Build a governance-compliance template with only pcr and asa "Your Value"
+   * cells populated.  All other KPI rows are left blank.
+   */
+  function buildPartialGcRows(): string[][] {
+    const rows = buildTemplateRows('governance-compliance');
+    rows.forEach(row => {
+      const kpiId = row[0]?.trim().toLowerCase();
+      if (!['pcr', 'asa'].includes(kpiId)) return;
+      const spec = KPI_DATA_SPECS[kpiId];
+      if (!spec) return;
+      const inputDef = spec.inputs.find(inp =>
+        row[1]?.toLowerCase().substring(0, 30) === inp.label.toLowerCase().substring(0, 30),
+      );
+      if (inputDef) row[2] = String(inputDef.example);
+    });
+    return rows;
+  }
+
+  it('calculates pcr correctly from its example inputs', () => {
+    const csvText = rowsToCsvText(buildPartialGcRows());
+    const { values } = runNewFormatImport(csvText, 'governance-compliance');
+    // pcr: pct(267, 300) = 89.0
+    expect(values['pcr'], 'pcr').toBeCloseTo(89.0, 0);
+  });
+
+  it('calculates asa correctly from its example inputs', () => {
+    const csvText = rowsToCsvText(buildPartialGcRows());
+    const { values } = runNewFormatImport(csvText, 'governance-compliance');
+    // asa: pct(20_900_000, 22_000_000) = 95.0
+    expect(values['asa'], 'asa').toBeCloseTo(95.0, 0);
+  });
+
+  it('skipped KPIs are absent from the values map — not zeroed', () => {
+    const csvText = rowsToCsvText(buildPartialGcRows());
+    const { values } = runNewFormatImport(csvText, 'governance-compliance');
+
+    expect(values['aud'], 'aud should be absent').toBeUndefined();
+    expect(values['cco'], 'cco should be absent').toBeUndefined();
+    expect(values['mav'], 'mav should be absent').toBeUndefined();
+    expect(values['doa'], 'doa should be absent').toBeUndefined();
+  });
+
+  it('exactly 2 KPIs are calculated — no more, no less', () => {
+    const csvText = rowsToCsvText(buildPartialGcRows());
+    const { values } = runNewFormatImport(csvText, 'governance-compliance');
+
+    expect(Object.keys(values).sort()).toEqual(['asa', 'pcr']);
+  });
+
+  it('log contains a skip-reason entry for each uncalculable KPI', () => {
+    const csvText = rowsToCsvText(buildPartialGcRows());
+    const { log } = runNewFormatImport(csvText, 'governance-compliance');
+
+    const skipLines = log.filter(l => l.includes('skipped'));
+    // aud, cco, mav, doa — all four should have a skip entry
+    expect(skipLines.length, 'skip-reason log entries').toBeGreaterThanOrEqual(4);
+  });
+
+  it('log contains exactly 2 per-KPI success lines (summary line excluded)', () => {
+    const csvText = rowsToCsvText(buildPartialGcRows());
+    const { log } = runNewFormatImport(csvText, 'governance-compliance');
+
+    // log[0] is the auto-calculated summary; filter it out before counting
+    const kpiLines = log.filter(l => l.startsWith('✓') && !l.includes('auto-calculated'));
+    expect(kpiLines.length, 'per-KPI success log lines').toBe(2);
+  });
+
+  it('skip-reason entries name the skipped KPIs, not the calculated ones', () => {
+    const csvText = rowsToCsvText(buildPartialGcRows());
+    const { log } = runNewFormatImport(csvText, 'governance-compliance');
+
+    const skipLines = log.filter(l => l.includes('skipped'));
+    const skipText = skipLines.join('\n');
+
+    // Skipped KPI labels appear in the log
+    expect(skipText).toContain('Audit Score');           // aud
+    expect(skipText).toContain('Contract Coverage');     // cco
+    expect(skipText).toContain('Maverick Spend');        // mav
+    expect(skipText).toContain('DoA Violations');        // doa
+
+    // Calculated KPI labels must NOT appear in the skip lines
+    expect(skipText).not.toContain('Policy Compliance Rate');
+    expect(skipText).not.toContain('Approved Supplier Adherence');
+  });
+});
+
 // ─── Supply-chain-strategy partial import ────────────────────────────────────
 //
 //  The supply-chain-strategy framework has 6 KPIs: por, otif, sccost, c2c, fa, turns.
