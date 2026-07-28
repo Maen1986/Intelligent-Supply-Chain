@@ -8,8 +8,8 @@
  */
 
 import React from 'react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, cleanup } from '@testing-library/react';
 import { PrepareDownloadModal } from './AdminAutomations';
 
 /* ── Module mocks ─────────────────────────────────────────────────────────── */
@@ -51,6 +51,10 @@ beforeEach(() => {
       json: async () => ({ ok: true, keys: [] }),
     }),
   );
+});
+
+afterEach(() => {
+  cleanup();
 });
 
 /* ══════════════════════════════════════════════════════════════════════════════
@@ -116,6 +120,74 @@ describe('PrepareDownloadModal — n8n URL field visibility', () => {
 
     expect(
       screen.getByText('n8n Instance URL (optional)'),
+    ).toBeInTheDocument();
+  });
+
+});
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   Arabic mode (ar=true) — n8n URL field visibility
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+describe('PrepareDownloadModal — n8n URL field visibility (Arabic mode)', () => {
+
+  /* ── H. Make.com template ──────────────────────────────────────────────── */
+
+  it('H — Make.com template (ar=true): Arabic n8n label is absent', () => {
+    render(
+      <PrepareDownloadModal
+        template={makeTemplate('make')}
+        ar={true}
+        onClose={() => {}}
+      />,
+    );
+
+    expect(
+      screen.queryByPlaceholderText('https://your-n8n.example.com'),
+    ).toBeNull();
+
+    expect(
+      screen.queryByText('عنوان n8n (اختياري)'),
+    ).toBeNull();
+  });
+
+  /* ── I. Zapier template ────────────────────────────────────────────────── */
+
+  it('I — Zapier template (ar=true): Arabic n8n label is absent', () => {
+    render(
+      <PrepareDownloadModal
+        template={makeTemplate('zapier')}
+        ar={true}
+        onClose={() => {}}
+      />,
+    );
+
+    expect(
+      screen.queryByPlaceholderText('https://your-n8n.example.com'),
+    ).toBeNull();
+
+    expect(
+      screen.queryByText('عنوان n8n (اختياري)'),
+    ).toBeNull();
+  });
+
+  /* ── J. n8n template ───────────────────────────────────────────────────── */
+
+  it('J — n8n template (ar=true): Arabic n8n label IS present', () => {
+    render(
+      <PrepareDownloadModal
+        template={makeTemplate('n8n')}
+        ar={true}
+        onClose={() => {}}
+      />,
+    );
+
+    expect(
+      screen.getByPlaceholderText('https://your-n8n.example.com'),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByText('عنوان n8n (اختياري)'),
     ).toBeInTheDocument();
   });
 
