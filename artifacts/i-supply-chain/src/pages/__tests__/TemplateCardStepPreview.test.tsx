@@ -4,44 +4,76 @@
  * Confirms that clicking the "Setup" expand button on a TemplateCard
  * renders the correct steps from SETUP_GUIDES for Make.com and Zapier
  * templates — and NOT the steps belonging to a different platform's entry.
+ *
+ * Coverage:
+ *   • Spot-check tests for the two original template IDs (unchanged).
+ *   • Data-driven tests that iterate over every Make.com and Zapier ID
+ *     in the manifest, asserting step count and cross-platform bleed.
  */
 
 import React from 'react';
+import fs from 'node:fs';
+import path from 'node:path';
 import { describe, it, expect } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, fireEvent } from '@testing-library/react';
 import { TemplateCard, SETUP_GUIDES } from '../AdminAutomations';
 
-/* ── Minimal TemplateManifestItem fixtures ─────────────────────────────── */
-
-const makeTemplate = {
-  id: 'make-kpi-breach-alert',
-  platform: 'make' as const,
-  filename: 'make-kpi-breach-alert.json',
-  downloadPath: '/n8n-templates/make-kpi-breach-alert.json',
-  name: 'KPI Breach Alert',
-  nameAr: 'تنبيه خرق KPI',
-  description: 'Sends alerts when a KPI threshold is breached.',
-  descriptionAr: 'يرسل تنبيهات عند تجاوز حد KPI.',
-  triggerEvent: 'kpi.threshold_breach',
-  category: 'Alerts',
-  setupTimeMinutes: 15,
-  nodes: ['Webhook', 'Gmail', 'HTTP (Slack)', 'HTTP (Twilio)'],
+/* Load manifest via Node fs so it works regardless of Vite's root boundary */
+const manifestPath = path.resolve(
+  __dirname,
+  '../../../../../artifacts/api-server/public/n8n-templates/manifest.json',
+);
+const manifestJson = JSON.parse(fs.readFileSync(manifestPath, 'utf-8')) as {
+  templates: ManifestTemplate[];
 };
 
-const zapierTemplate = {
-  id: 'zapier-new-user-welcome',
-  platform: 'zapier' as const,
-  filename: 'zapier-new-user-welcome.json',
-  downloadPath: '/n8n-templates/zapier-new-user-welcome.json',
-  name: 'New User Welcome',
-  nameAr: 'ترحيب بالمستخدم الجديد',
-  description: 'Sends a bilingual welcome email when a new user registers.',
-  descriptionAr: 'يرسل بريد ترحيب ثنائي اللغة عند تسجيل مستخدم جديد.',
-  triggerEvent: 'user.registered',
-  category: 'Onboarding',
-  setupTimeMinutes: 10,
-  nodes: ['Webhooks by Zapier', 'Filter', 'Gmail'],
-};
+/* ── Manifest types ─────────────────────────────────────────────────────── */
+
+interface ManifestTemplate {
+  id: string;
+  platform: string;
+  filename: string;
+  name: string;
+  nameAr: string;
+  description: string;
+  descriptionAr: string;
+  triggerEvent: string;
+  category: string;
+  setupTimeMinutes: number;
+  nodes: string[];
+}
+
+const allTemplates: ManifestTemplate[] = (manifestJson as { templates: ManifestTemplate[] }).templates;
+
+/** All Make.com templates from the manifest */
+const makeTemplates = allTemplates.filter(t => t.platform === 'make');
+
+/** All Zapier templates from the manifest */
+const zapierTemplates = allTemplates.filter(t => t.platform === 'zapier');
+
+/* ── Minimal fixture builder ─────────────────────────────────────────────── */
+
+function toFixture(t: ManifestTemplate) {
+  return {
+    id: t.id,
+    platform: t.platform as 'make' | 'zapier',
+    filename: t.filename,
+    downloadPath: `/n8n-templates/${t.filename}`,
+    name: t.name,
+    nameAr: t.nameAr,
+    description: t.description,
+    descriptionAr: t.descriptionAr,
+    triggerEvent: t.triggerEvent,
+    category: t.category,
+    setupTimeMinutes: t.setupTimeMinutes,
+    nodes: t.nodes,
+  };
+}
+
+/* ── Minimal TemplateManifestItem fixtures for the spot-check tests ──────── */
+
+const makeTemplate = toFixture(makeTemplates.find(t => t.id === 'make-kpi-breach-alert')!);
+const zapierTemplate = toFixture(zapierTemplates.find(t => t.id === 'zapier-new-user-welcome')!);
 
 /* ── Helpers ────────────────────────────────────────────────────────────── */
 
@@ -59,7 +91,15 @@ function openSetupPanel(container: HTMLElement) {
   fireEvent.click(btn);
 }
 
-/* ── Tests ─────────────────────────────────────────────────────────────── */
+function openSetupPanelAr(container: HTMLElement) {
+  const btn = container.querySelector('button[title="دليل الإعداد"]') as HTMLButtonElement;
+  expect(btn).not.toBeNull();
+  fireEvent.click(btn);
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   SPOT-CHECK TESTS — original two template IDs (unchanged)
+   ════════════════════════════════════════════════════════════════════════════ */
 
 describe('TemplateCard — Setup step preview', () => {
   describe('Make.com template (make-kpi-breach-alert)', () => {
@@ -147,10 +187,7 @@ describe('TemplateCard — Setup step preview', () => {
   describe('Arabic (ar=true) step rendering', () => {
     it('Make.com template renders Arabic steps when ar=true', () => {
       const { container } = render(<TemplateCard template={makeTemplate} ar={true} />);
-      // Setup button uses title="دليل الإعداد" in Arabic
-      const btn = container.querySelector('button[title="دليل الإعداد"]') as HTMLButtonElement;
-      expect(btn).not.toBeNull();
-      fireEvent.click(btn);
+      openSetupPanelAr(container);
 
       const items = container.querySelectorAll('ol li');
       const expected = SETUP_GUIDES['make-kpi-breach-alert'].ar;
@@ -159,13 +196,123 @@ describe('TemplateCard — Setup step preview', () => {
 
     it('Zapier template renders Arabic steps when ar=true', () => {
       const { container } = render(<TemplateCard template={zapierTemplate} ar={true} />);
-      const btn = container.querySelector('button[title="دليل الإعداد"]') as HTMLButtonElement;
-      expect(btn).not.toBeNull();
-      fireEvent.click(btn);
+      openSetupPanelAr(container);
 
       const items = container.querySelectorAll('ol li');
       const expected = SETUP_GUIDES['zapier-new-user-welcome'].ar;
       expect(items.length).toBe(expected.length);
+    });
+  });
+});
+
+/* ════════════════════════════════════════════════════════════════════════════
+   DATA-DRIVEN TESTS — all 8 Make.com templates
+   ════════════════════════════════════════════════════════════════════════════ */
+
+describe('TemplateCard — all Make.com templates from manifest', () => {
+  it('manifest contains exactly 8 Make.com templates', () => {
+    expect(makeTemplates).toHaveLength(8);
+  });
+
+  makeTemplates.forEach(raw => {
+    const template = toFixture(raw);
+    const guide = SETUP_GUIDES[raw.id];
+
+    describe(`make template: ${raw.id}`, () => {
+      it('has a SETUP_GUIDES entry', () => {
+        expect(guide).toBeDefined();
+        expect(guide.en.length).toBeGreaterThan(0);
+        expect(guide.ar.length).toBeGreaterThan(0);
+      });
+
+      it('renders the correct EN step count after clicking Setup', () => {
+        const { container } = render(<TemplateCard template={template} ar={false} />);
+        openSetupPanel(container);
+
+        const items = container.querySelectorAll('ol li');
+        expect(items.length).toBe(guide.en.length);
+      });
+
+      it('renders the correct AR step count when ar=true', () => {
+        const { container } = render(<TemplateCard template={template} ar={true} />);
+        openSetupPanelAr(container);
+
+        const items = container.querySelectorAll('ol li');
+        expect(items.length).toBe(guide.ar.length);
+      });
+
+      it('does NOT bleed n8n steps into a Make.com template', () => {
+        const { container } = render(<TemplateCard template={template} ar={false} />);
+        openSetupPanel(container);
+
+        const text = container.textContent ?? '';
+        expect(text).not.toContain('Import this JSON into n8n');
+      });
+
+      it('does NOT bleed Zapier steps into a Make.com template', () => {
+        const { container } = render(<TemplateCard template={template} ar={false} />);
+        openSetupPanel(container);
+
+        const text = container.textContent ?? '';
+        // All Zapier setup guides begin with "In Zapier, create a new Zap"
+        expect(text).not.toContain('In Zapier, create a new Zap');
+      });
+    });
+  });
+});
+
+/* ════════════════════════════════════════════════════════════════════════════
+   DATA-DRIVEN TESTS — all 8 Zapier templates
+   ════════════════════════════════════════════════════════════════════════════ */
+
+describe('TemplateCard — all Zapier templates from manifest', () => {
+  it('manifest contains exactly 8 Zapier templates', () => {
+    expect(zapierTemplates).toHaveLength(8);
+  });
+
+  zapierTemplates.forEach(raw => {
+    const template = toFixture(raw);
+    const guide = SETUP_GUIDES[raw.id];
+
+    describe(`zapier template: ${raw.id}`, () => {
+      it('has a SETUP_GUIDES entry', () => {
+        expect(guide).toBeDefined();
+        expect(guide.en.length).toBeGreaterThan(0);
+        expect(guide.ar.length).toBeGreaterThan(0);
+      });
+
+      it('renders the correct EN step count after clicking Setup', () => {
+        const { container } = render(<TemplateCard template={template} ar={false} />);
+        openSetupPanel(container);
+
+        const items = container.querySelectorAll('ol li');
+        expect(items.length).toBe(guide.en.length);
+      });
+
+      it('renders the correct AR step count when ar=true', () => {
+        const { container } = render(<TemplateCard template={template} ar={true} />);
+        openSetupPanelAr(container);
+
+        const items = container.querySelectorAll('ol li');
+        expect(items.length).toBe(guide.ar.length);
+      });
+
+      it('does NOT bleed n8n steps into a Zapier template', () => {
+        const { container } = render(<TemplateCard template={template} ar={false} />);
+        openSetupPanel(container);
+
+        const text = container.textContent ?? '';
+        expect(text).not.toContain('Import this JSON into n8n');
+      });
+
+      it('does NOT bleed Make.com steps into a Zapier template', () => {
+        const { container } = render(<TemplateCard template={template} ar={false} />);
+        openSetupPanel(container);
+
+        const text = container.textContent ?? '';
+        // All Make.com setup guides include "Import Blueprint"
+        expect(text).not.toContain('Import Blueprint');
+      });
     });
   });
 });
