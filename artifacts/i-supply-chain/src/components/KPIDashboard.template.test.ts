@@ -225,12 +225,25 @@ function runNewFormatImport(
 
     if (!usedInputIds[kpiId]) usedInputIds[kpiId] = new Set();
 
+    // Match priority (highest to lowest):
+    //  1. Exact label match (case-insensitive) — structurally collision-proof
+    //  2. Input-ID substring match (label contains the spec input id)
+    //  3. 30-char prefix match — kept as a last-resort fuzzy fallback
+    //  4. Positional fallback — order in CSV matches order in spec
+    // Steps 1-3 all respect the usedInputIds guard so the same input slot is
+    // never claimed twice even when two labels share a common prefix.
     const inputDef =
       spec.inputs.find(inp =>
-        !usedInputIds[kpiId].has(inp.id) && (
-          inputLabel.toLowerCase().includes(inp.id.toLowerCase()) ||
-          inp.label.toLowerCase().substring(0, 30) === inputLabel.toLowerCase().substring(0, 30)
-        ),
+        !usedInputIds[kpiId].has(inp.id) &&
+        inp.label.toLowerCase() === inputLabel.toLowerCase(),
+      ) ??
+      spec.inputs.find(inp =>
+        !usedInputIds[kpiId].has(inp.id) &&
+        inputLabel.toLowerCase().includes(inp.id.toLowerCase()),
+      ) ??
+      spec.inputs.find(inp =>
+        !usedInputIds[kpiId].has(inp.id) &&
+        inp.label.toLowerCase().substring(0, 30) === inputLabel.toLowerCase().substring(0, 30),
       ) ??
       spec.inputs.find((_, idx) => {
         const kpiRows = csvRows.filter(
@@ -304,7 +317,7 @@ describe('Excel-mutated template round-trip (lean-six-sigma)', () => {
       const spec = KPI_DATA_SPECS[kpiId];
       if (!spec) return;
       const inputDef = spec.inputs.find(inp =>
-        row[1]?.toLowerCase().substring(0, 30) === inp.label.toLowerCase().substring(0, 30),
+        row[1]?.trim().toLowerCase() === inp.label.toLowerCase(),
       );
       if (inputDef) row[2] = String(inputDef.example);
     });
@@ -412,7 +425,7 @@ describe('risk-management import — partial inputs (only rrc and bcpt filled)',
       const spec = KPI_DATA_SPECS[kpiId];
       if (!spec) return;
       const inputDef = spec.inputs.find(inp =>
-        row[1]?.toLowerCase().substring(0, 30) === inp.label.toLowerCase().substring(0, 30),
+        row[1]?.trim().toLowerCase() === inp.label.toLowerCase(),
       );
       if (inputDef) row[2] = String(inputDef.example);
     });
@@ -659,7 +672,7 @@ describe('Excel-mutated template round-trip (risk-management)', () => {
       const spec = KPI_DATA_SPECS[kpiId];
       if (!spec) return;
       const inputDef = spec.inputs.find(inp =>
-        row[1]?.toLowerCase().substring(0, 30) === inp.label.toLowerCase().substring(0, 30),
+        row[1]?.trim().toLowerCase() === inp.label.toLowerCase(),
       );
       if (inputDef) row[2] = String(inputDef.example);
     });
