@@ -404,6 +404,106 @@ describe('Excel-mutated template round-trip (lean-six-sigma)', () => {
   });
 });
 
+// ─── Lean-six-sigma partial import ───────────────────────────────────────────
+//
+//  The lean-six-sigma framework has 6 KPIs: pce, sigma, ftr, ltr, copq, kaizen.
+//  This suite verifies that when a user fills in only pce and sigma the import:
+//   • calculates the two complete KPIs correctly
+//   • skips the four incomplete KPIs without zeroing them
+//   • records a skip-reason log entry for each uncalculable KPI
+//   • emits exactly 2 per-KPI success lines (summary line excluded)
+//
+describe('lean-six-sigma import — partial inputs (only pce and sigma filled)', () => {
+  /**
+   * Build a lean-six-sigma template with only pce and sigma "Your Value"
+   * cells populated.  All other KPI rows (ftr, ltr, copq, kaizen) are left
+   * blank.
+   */
+  function buildPartialLssRows(): string[][] {
+    const rows = buildTemplateRows('lean-six-sigma');
+    rows.forEach(row => {
+      const kpiId = row[0]?.trim().toLowerCase();
+      if (!['pce', 'sigma'].includes(kpiId)) return;
+      const spec = KPI_DATA_SPECS[kpiId];
+      if (!spec) return;
+      const inputDef = spec.inputs.find(inp =>
+        row[1]?.trim().toLowerCase() === inp.label.toLowerCase(),
+      );
+      if (inputDef) row[2] = String(inputDef.example);
+    });
+    return rows;
+  }
+
+  it('calculates pce correctly from its example inputs', () => {
+    const csvText = rowsToCsvText(buildPartialLssRows());
+    const { values } = runNewFormatImport(csvText, 'lean-six-sigma');
+    // pce: pct(42, 380) = 11.1
+    expect(values['pce'], 'pce').toBeCloseTo(11.1, 0);
+  });
+
+  it('calculates sigma correctly from its example inputs', () => {
+    const csvText = rowsToCsvText(buildPartialLssRows());
+    const { values } = runNewFormatImport(csvText, 'lean-six-sigma');
+    // sigma: dpmo = (230 / (5000 * 10)) * 1_000_000 = 4600
+    //        → dpmoToSigma(4600) ≈ 4.1 (between 3.5 and 5)
+    expect(values['sigma'], 'sigma').toBeGreaterThan(3.5);
+    expect(values['sigma'], 'sigma').toBeLessThan(5);
+  });
+
+  it('skipped KPIs are absent from the values map — not zeroed', () => {
+    const csvText = rowsToCsvText(buildPartialLssRows());
+    const { values } = runNewFormatImport(csvText, 'lean-six-sigma');
+
+    expect(values['ftr'],   'ftr should be absent').toBeUndefined();
+    expect(values['ltr'],   'ltr should be absent').toBeUndefined();
+    expect(values['copq'],  'copq should be absent').toBeUndefined();
+    expect(values['kaizen'], 'kaizen should be absent').toBeUndefined();
+  });
+
+  it('exactly 2 KPIs are calculated — no more, no less', () => {
+    const csvText = rowsToCsvText(buildPartialLssRows());
+    const { values } = runNewFormatImport(csvText, 'lean-six-sigma');
+
+    expect(Object.keys(values).sort()).toEqual(['pce', 'sigma']);
+  });
+
+  it('log contains a skip-reason entry for each uncalculable KPI', () => {
+    const csvText = rowsToCsvText(buildPartialLssRows());
+    const { log } = runNewFormatImport(csvText, 'lean-six-sigma');
+
+    const skipLines = log.filter(l => l.includes('skipped'));
+    // ftr, ltr, copq, kaizen — all four should have a skip entry
+    expect(skipLines.length, 'skip-reason log entries').toBeGreaterThanOrEqual(4);
+  });
+
+  it('log contains exactly 2 per-KPI success lines (summary line excluded)', () => {
+    const csvText = rowsToCsvText(buildPartialLssRows());
+    const { log } = runNewFormatImport(csvText, 'lean-six-sigma');
+
+    // log[0] is the auto-calculated summary; filter it out before counting
+    const kpiLines = log.filter(l => l.startsWith('✓') && !l.includes('auto-calculated'));
+    expect(kpiLines.length, 'per-KPI success log lines').toBe(2);
+  });
+
+  it('skip-reason entries name the skipped KPIs, not the calculated ones', () => {
+    const csvText = rowsToCsvText(buildPartialLssRows());
+    const { log } = runNewFormatImport(csvText, 'lean-six-sigma');
+
+    const skipLines = log.filter(l => l.includes('skipped'));
+    const skipText = skipLines.join('\n');
+
+    // Skipped KPI labels appear in the log
+    expect(skipText).toContain('First-Time-Right');  // ftr
+    expect(skipText).toContain('Lead Time Reduction'); // ltr
+    expect(skipText).toContain('Cost of Poor Quality'); // copq
+    expect(skipText).toContain('Kaizen');              // kaizen
+
+    // Calculated KPI labels must NOT appear in the skip lines
+    expect(skipText).not.toContain('Process Cycle Efficiency');
+    expect(skipText).not.toContain('Sigma Level');
+  });
+});
+
 // ─── Risk-management partial import ─────────────────────────────────────────
 //
 //  The risk-management framework has 6 KPIs: rrc, bcpt, rtoa2, crm, srs, rrc2.
