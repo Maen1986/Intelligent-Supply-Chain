@@ -1596,3 +1596,222 @@ describe('buildKpiTemplateRows – Status formula cell reference in multi-KPI se
     }
   });
 });
+
+// ─── Excel-mutated template round-trip (supply-chain-strategy) ───────────────
+//
+//  Mirrors the lean-six-sigma, risk-management, procurement-excellence, and
+//  digital-transformation round-trip suites for the supply-chain-strategy
+//  framework, which has 6 KPIs:
+//    por, otif, sccost, c2c, fa, turns
+//
+//  Expected values from example inputs (see kpiDataSpecs.ts):
+//    por    : pct(1_098, 1_200)              ≈ 91.5  (Perfect Order Rate %)
+//    otif   : pct(782, 850)                 = 92.0  (On-Time In-Full %)
+//    sccost : pct(3_000_000, 37_500_000)    =  8.0  (SC Cost % Revenue)
+//    c2c    : DIO + DSO − DPO              ≈ 63.2  (Cash-to-Cash days)
+//             DIO = (4_500_000 / 22_000_000) × 365 ≈ 74.7
+//             DSO = (3_200_000 / 37_500_000) × 365 ≈ 31.1
+//             DPO = (2_100_000 / 18_000_000) × 365 ≈ 42.6
+//    fa     : (1 − 8_160/48_000) × 100     = 83.0  (Forecast Accuracy %)
+//    turns  : 22_000_000 / 2_200_000        = 10.0  (Inventory Turns/yr)
+
+describe('Excel-mutated template round-trip (supply-chain-strategy)', () => {
+  /**
+   * Return supply-chain-strategy template rows with all example values filled in.
+   *
+   * Uses positional-index matching (consistent with other multi-input suites)
+   * so each input row is assigned its example value in declaration order,
+   * avoiding any reliance on first-30-char label prefix uniqueness.
+   */
+  function buildFilledRows(): string[][] {
+    const rows = buildTemplateRows('supply-chain-strategy');
+    const kpiInputIndex: Record<string, number> = {};
+    rows.forEach(row => {
+      const kpiId = row[0]?.trim().toLowerCase();
+      if (!kpiId || kpiId === '' || kpiId.startsWith('===') || kpiId.startsWith('---') || kpiId.endsWith('__result')) return;
+      const spec = KPI_DATA_SPECS[kpiId];
+      if (!spec) return;
+      if (kpiInputIndex[kpiId] === undefined) kpiInputIndex[kpiId] = 0;
+      const inputDef = spec.inputs[kpiInputIndex[kpiId]];
+      kpiInputIndex[kpiId]++;
+      if (inputDef) row[2] = String(inputDef.example);
+    });
+    return rows;
+  }
+
+  /** Shared KPI value assertions for all mutation variants. */
+  function assertKpiValues(values: Record<string, number>): void {
+    expect(values['por'],    'por').toBeCloseTo(91.5, 0);
+    expect(values['otif'],   'otif').toBeCloseTo(92.0, 0);
+    expect(values['sccost'], 'sccost').toBeCloseTo(8.0, 0);
+    expect(values['c2c'],    'c2c').toBeCloseTo(63.2, 0);
+    expect(values['fa'],     'fa').toBeCloseTo(83.0, 0);
+    expect(values['turns'],  'turns').toBeCloseTo(10.0, 0);
+  }
+
+  it('imports correctly with CRLF line endings (Windows / Excel default)', () => {
+    const rows = buildFilledRows();
+    const csvCrlf = rows.map(r => r.map(escapeCell).join(',')).join('\r\n');
+    const { values } = runNewFormatImport(csvCrlf, 'supply-chain-strategy');
+    assertKpiValues(values);
+  });
+
+  it('imports correctly when there is no UTF-8 BOM (Excel drops the BOM on re-save)', () => {
+    const rows = buildFilledRows();
+    const csvNoBom = rows.map(r => r.map(escapeCell).join(',')).join('\r\n');
+    expect(csvNoBom.charCodeAt(0)).not.toBe(0xFEFF);
+    const { values } = runNewFormatImport(csvNoBom, 'supply-chain-strategy');
+    assertKpiValues(values);
+  });
+
+  it('imports correctly when extra blank rows are scattered between sections', () => {
+    const rows = buildFilledRows();
+    const mutated: string[][] = [];
+    for (const row of rows) {
+      mutated.push(row);
+      if (row[0]?.startsWith('===')) {
+        mutated.push(['', '', '', '', '', '']);
+        mutated.push(['', '', '', '', '', '']);
+      }
+    }
+    const csvText = mutated.map(r => r.map(escapeCell).join(',')).join('\r\n');
+    const { values } = runNewFormatImport(csvText, 'supply-chain-strategy');
+    assertKpiValues(values);
+  });
+
+  it('imports correctly when cell values have leading and trailing whitespace', () => {
+    const rows = buildFilledRows();
+    const padCell = (c: string): string => `"  ${c.replace(/"/g, '""')}  "`;
+    const csvText = rows.map(r => r.map(padCell).join(',')).join('\r\n');
+    const { values } = runNewFormatImport(csvText, 'supply-chain-strategy');
+    assertKpiValues(values);
+  });
+
+  it('imports correctly with all mutations combined (no BOM + CRLF + blank rows + whitespace padding)', () => {
+    const rows = buildFilledRows();
+    const withBlanks: string[][] = [];
+    for (const row of rows) {
+      withBlanks.push(row);
+      if (row[0]?.startsWith('===')) withBlanks.push(['', '', '', '', '', '']);
+    }
+    const padCell = (c: string): string => `" ${c.replace(/"/g, '""')} "`;
+    const csvText = withBlanks.map(r => r.map(padCell).join(',')).join('\r\n');
+    expect(csvText.charCodeAt(0)).not.toBe(0xFEFF);
+    const { values } = runNewFormatImport(csvText, 'supply-chain-strategy');
+    assertKpiValues(values);
+  });
+
+  it('all 6 KPIs are calculated — no manual-entry notice — in the mutated file', () => {
+    const rows = buildFilledRows();
+    const mutated: string[][] = [];
+    for (const row of rows) {
+      mutated.push(row);
+      if (row[0]?.startsWith('===')) mutated.push(['', '', '', '', '', '']);
+    }
+    const padCell = (c: string): string => `" ${c.replace(/"/g, '""')} "`;
+    const csvText = mutated.map(r => r.map(padCell).join(',')).join('\r\n');
+    const { log } = runNewFormatImport(csvText, 'supply-chain-strategy');
+    // log[0] is the auto-calculated summary line; remaining ✓ lines are per-KPI
+    const kpiLines = log.filter(l => l.startsWith('✓') && !l.includes('auto-calculated'));
+    expect(kpiLines.length).toBe(6);
+    expect(log.find(l => l.includes('require manual entry'))).toBeUndefined();
+  });
+});
+
+// ─── Supply-chain-strategy partial import ────────────────────────────────────
+//
+//  The supply-chain-strategy framework has 6 KPIs: por, otif, sccost, c2c, fa, turns.
+//  This suite verifies that when a user fills in only por and otif the import:
+//   • calculates the two complete KPIs correctly
+//   • skips the four incomplete KPIs without zeroing them
+//   • records a skip-reason log entry for each uncalculable KPI
+//   • emits exactly 2 per-KPI success lines (summary line excluded)
+//
+describe('supply-chain-strategy import — partial inputs (only por and otif filled)', () => {
+  /**
+   * Build a supply-chain-strategy template with only por and otif "Your Value"
+   * cells populated.  All other KPI rows are left blank.
+   */
+  function buildPartialScsRows(): string[][] {
+    const rows = buildTemplateRows('supply-chain-strategy');
+    const kpiInputIndex: Record<string, number> = {};
+    rows.forEach(row => {
+      const kpiId = row[0]?.trim().toLowerCase();
+      if (!['por', 'otif'].includes(kpiId)) return;
+      const spec = KPI_DATA_SPECS[kpiId];
+      if (!spec) return;
+      if (kpiInputIndex[kpiId] === undefined) kpiInputIndex[kpiId] = 0;
+      const inputDef = spec.inputs[kpiInputIndex[kpiId]];
+      kpiInputIndex[kpiId]++;
+      if (inputDef) row[2] = String(inputDef.example);
+    });
+    return rows;
+  }
+
+  it('calculates por correctly from its example inputs', () => {
+    const csvText = rowsToCsvText(buildPartialScsRows());
+    const { values } = runNewFormatImport(csvText, 'supply-chain-strategy');
+    // por: pct(1_098, 1_200) = 91.5
+    expect(values['por'], 'por').toBeCloseTo(91.5, 0);
+  });
+
+  it('calculates otif correctly from its example inputs', () => {
+    const csvText = rowsToCsvText(buildPartialScsRows());
+    const { values } = runNewFormatImport(csvText, 'supply-chain-strategy');
+    // otif: pct(782, 850) = 92.0
+    expect(values['otif'], 'otif').toBeCloseTo(92.0, 0);
+  });
+
+  it('skipped KPIs are absent from the values map — not zeroed', () => {
+    const csvText = rowsToCsvText(buildPartialScsRows());
+    const { values } = runNewFormatImport(csvText, 'supply-chain-strategy');
+
+    expect(values['sccost'], 'sccost should be absent').toBeUndefined();
+    expect(values['c2c'],    'c2c should be absent').toBeUndefined();
+    expect(values['fa'],     'fa should be absent').toBeUndefined();
+    expect(values['turns'],  'turns should be absent').toBeUndefined();
+  });
+
+  it('exactly 2 KPIs are calculated — no more, no less', () => {
+    const csvText = rowsToCsvText(buildPartialScsRows());
+    const { values } = runNewFormatImport(csvText, 'supply-chain-strategy');
+
+    expect(Object.keys(values).sort()).toEqual(['otif', 'por']);
+  });
+
+  it('log contains a skip-reason entry for each uncalculable KPI', () => {
+    const csvText = rowsToCsvText(buildPartialScsRows());
+    const { log } = runNewFormatImport(csvText, 'supply-chain-strategy');
+
+    const skipLines = log.filter(l => l.includes('skipped'));
+    // sccost, c2c, fa, turns — all four should have a skip entry
+    expect(skipLines.length, 'skip-reason log entries').toBeGreaterThanOrEqual(4);
+  });
+
+  it('log contains exactly 2 per-KPI success lines (summary line excluded)', () => {
+    const csvText = rowsToCsvText(buildPartialScsRows());
+    const { log } = runNewFormatImport(csvText, 'supply-chain-strategy');
+
+    // log[0] is the auto-calculated summary; filter it out before counting
+    const kpiLines = log.filter(l => l.startsWith('✓') && !l.includes('auto-calculated'));
+    expect(kpiLines.length, 'per-KPI success log lines').toBe(2);
+  });
+
+  it('skip-reason entries name the skipped KPIs, not the calculated ones', () => {
+    const csvText = rowsToCsvText(buildPartialScsRows());
+    const { log } = runNewFormatImport(csvText, 'supply-chain-strategy');
+
+    const skipLines = log.filter(l => l.includes('skipped'));
+    const skipText = skipLines.join('\n');
+
+    // Skipped KPI labels appear in the log
+    expect(skipText).toContain('SC Cost');          // sccost
+    expect(skipText).toContain('Cash-to-Cash');     // c2c
+    expect(skipText).toContain('Forecast Accuracy'); // fa
+    expect(skipText).toContain('Inventory Turns');   // turns
+
+    // Calculated KPI labels must NOT appear in the skip lines
+    expect(skipText).not.toContain('Perfect Order');
+    expect(skipText).not.toContain('On-Time In-Full');
+  });
+});
