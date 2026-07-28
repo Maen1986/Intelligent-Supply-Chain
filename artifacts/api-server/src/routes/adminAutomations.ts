@@ -124,11 +124,10 @@ router.get("/overview", async (_req, res) => {
    ══════════════════════════════════════════════════════════════ */
 
 router.get("/webhook-log", async (req, res) => {
-  // export=1 raises the cap to 2 000 for full CSV downloads; interactive table stays at ≤200.
+  // export=1 fetches ALL matching rows with no row cap; interactive table stays at ≤200.
   const isExport = req.query.export === "1" || req.query.export === "true";
-  const maxLimit = isExport ? 2_000 : 200;
-  const limit  = Math.min(parseInt(String(req.query.limit  ?? "50"), 10) || 50, maxLimit);
-  const offset = parseInt(String(req.query.offset ?? "0"), 10) || 0;
+  const limit  = isExport ? null : Math.min(parseInt(String(req.query.limit  ?? "50"), 10) || 50, 200);
+  const offset = isExport ? 0    : parseInt(String(req.query.offset ?? "0"), 10) || 0;
   const event  = typeof req.query.event  === "string" ? req.query.event  : null;
   const status = typeof req.query.status === "string" ? req.query.status : null;
 
@@ -136,6 +135,10 @@ router.get("/webhook-log", async (req, res) => {
     // Partial-match filter: "kpi" matches "kpi.rag_changed", "kpi.threshold_breach", etc.
     const eventFilter  = event  ? sql`AND wdl.event   ILIKE ${'%' + event + '%'}` : sql``;
     const statusFilter = status ? sql`AND wdl.success = ${status}` : sql``;
+    // For export requests, omit LIMIT/OFFSET so all matching rows are returned.
+    const paginationClause = limit === null
+      ? sql``
+      : sql`LIMIT ${limit} OFFSET ${offset}`;
 
     const rows = await db.execute(sql`
       SELECT wdl.id, wdl.event, wdl.status_code, wdl.success,
@@ -145,7 +148,7 @@ router.get("/webhook-log", async (req, res) => {
       JOIN   webhook_configs wc ON wc.id = wdl.webhook_config_id
       WHERE  1=1 ${eventFilter} ${statusFilter}
       ORDER  BY wdl.attempted_at DESC
-      LIMIT  ${limit} OFFSET ${offset}
+      ${paginationClause}
     `);
 
     const totalRow = await db.execute(sql`
@@ -161,7 +164,7 @@ router.get("/webhook-log", async (req, res) => {
       url: maskUrl(String(r.url ?? "")),
     }));
 
-    res.json({ ok: true, logs, total: (totalRow.rows[0] as { total: number }).total, limit, offset });
+    res.json({ ok: true, logs, total: (totalRow.rows[0] as { total: number }).total, limit: limit ?? logs.length, offset });
   } catch (err) {
     logger.error({ err }, "[admin/automations] GET /webhook-log");
     res.status(500).json({ ok: false, error: "Server error" });

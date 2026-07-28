@@ -740,17 +740,17 @@ function WebhookLogTab({ ar, refresh }: { ar: boolean; refresh: number }) {
 
   useEffect(() => { load(); }, [load, refresh]);
 
-  /** Fetch every matching row (up to 2 000) then trigger a CSV download. */
+  /** Fetch every matching row (no server-side cap) then trigger a CSV download. */
   const handleExportCsv = useCallback(async () => {
     setExporting(true);
     try {
-      const params = new URLSearchParams({ limit: '2000', offset: '0', export: '1' });
+      const params = new URLSearchParams({ export: '1' });
       if (eventFilter.trim()) params.set('event', eventFilter.trim());
       if (statusFilter)       params.set('status', statusFilter);
       const d = await fetch(`${API_BASE}/admin/automations/webhook-log?${params}`, { credentials: 'include' })
         .then(r => r.json());
       if (d.ok && d.logs.length > 0) {
-        exportCsv(d.logs as Record<string, unknown>[], 'webhook-log.csv');
+        exportCsv(d.logs as Record<string, unknown>[], `webhook-log-${d.logs.length}.csv`);
       }
     } catch { /* silent */ } finally {
       setExporting(false);
