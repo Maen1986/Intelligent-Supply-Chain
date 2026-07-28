@@ -971,6 +971,107 @@ describe('Excel-mutated template round-trip (digital-transformation)', () => {
   });
 });
 
+// ─── Digital-transformation partial import ───────────────────────────────────
+//
+//  The digital-transformation framework has 6 KPIs: erpu, auto, stp, da, dar, mpr.
+//  This suite verifies that when a user fills in only erpu and auto the import:
+//   • calculates the two complete KPIs correctly
+//   • skips the four incomplete KPIs without zeroing them
+//   • records a skip-reason log entry for each uncalculable KPI
+//
+describe('digital-transformation import — partial inputs (only erpu and auto filled)', () => {
+  /**
+   * Build a digital-transformation template with only erpu and auto "Your Value"
+   * cells populated.  All other KPI rows are left blank.
+   *
+   * Uses the same positional-index matching as the round-trip suite because
+   * mpr's two inputs share the same first-30-char prefix.
+   */
+  function buildPartialDtRows(): string[][] {
+    const rows = buildTemplateRows('digital-transformation');
+    const kpiInputIndex: Record<string, number> = {};
+    rows.forEach(row => {
+      const kpiId = row[0]?.trim().toLowerCase();
+      // Only fill erpu and auto
+      if (!['erpu', 'auto'].includes(kpiId)) return;
+      const spec = KPI_DATA_SPECS[kpiId];
+      if (!spec) return;
+      if (kpiInputIndex[kpiId] === undefined) kpiInputIndex[kpiId] = 0;
+      const inputDef = spec.inputs[kpiInputIndex[kpiId]];
+      kpiInputIndex[kpiId]++;
+      if (inputDef) row[2] = String(inputDef.example);
+    });
+    return rows;
+  }
+
+  it('calculates erpu correctly from its example inputs', () => {
+    const csvText = rowsToCsvText(buildPartialDtRows());
+    const { values } = runNewFormatImport(csvText, 'digital-transformation');
+    // erpu: pct(14, 18) ≈ 77.8
+    expect(values['erpu'], 'erpu').toBeCloseTo(77.8, 0);
+  });
+
+  it('calculates auto correctly from its example inputs', () => {
+    const csvText = rowsToCsvText(buildPartialDtRows());
+    const { values } = runNewFormatImport(csvText, 'digital-transformation');
+    // auto: pct(22, 35) ≈ 62.9
+    expect(values['auto'], 'auto').toBeCloseTo(62.9, 0);
+  });
+
+  it('skipped KPIs are absent from the values map — not zeroed', () => {
+    const csvText = rowsToCsvText(buildPartialDtRows());
+    const { values } = runNewFormatImport(csvText, 'digital-transformation');
+
+    expect(values['stp'], 'stp should be absent').toBeUndefined();
+    expect(values['da'],  'da should be absent').toBeUndefined();
+    expect(values['dar'], 'dar should be absent').toBeUndefined();
+    expect(values['mpr'], 'mpr should be absent').toBeUndefined();
+  });
+
+  it('exactly 2 KPIs are calculated — no more, no less', () => {
+    const csvText = rowsToCsvText(buildPartialDtRows());
+    const { values } = runNewFormatImport(csvText, 'digital-transformation');
+
+    expect(Object.keys(values).sort()).toEqual(['auto', 'erpu']);
+  });
+
+  it('log contains a skip-reason entry for each uncalculable KPI', () => {
+    const csvText = rowsToCsvText(buildPartialDtRows());
+    const { log } = runNewFormatImport(csvText, 'digital-transformation');
+
+    const skipLines = log.filter(l => l.includes('skipped'));
+    // stp, da, dar, mpr — all four should have a skip entry
+    expect(skipLines.length, 'skip-reason log entries').toBeGreaterThanOrEqual(4);
+  });
+
+  it('log contains exactly 2 per-KPI success lines (summary line excluded)', () => {
+    const csvText = rowsToCsvText(buildPartialDtRows());
+    const { log } = runNewFormatImport(csvText, 'digital-transformation');
+
+    // log[0] is the auto-calculated summary; filter it out before counting
+    const kpiLines = log.filter(l => l.startsWith('✓') && !l.includes('auto-calculated'));
+    expect(kpiLines.length, 'per-KPI success log lines').toBe(2);
+  });
+
+  it('skip-reason entries name the skipped KPIs, not the calculated ones', () => {
+    const csvText = rowsToCsvText(buildPartialDtRows());
+    const { log } = runNewFormatImport(csvText, 'digital-transformation');
+
+    const skipLines = log.filter(l => l.includes('skipped'));
+    const skipText = skipLines.join('\n');
+
+    // Skipped KPI labels appear in the log
+    expect(skipText).toContain('Straight-Through PO Rate'); // stp
+    expect(skipText).toContain('Data Accuracy Rate');       // da
+    expect(skipText).toContain('Digital Adoption Rate');    // dar
+    expect(skipText).toContain('Manual Process Reduction'); // mpr
+
+    // Calculated KPI labels must NOT appear in the skip lines
+    expect(skipText).not.toContain('ERP Module Utilisation');
+    expect(skipText).not.toContain('Process Automation Rate');
+  });
+});
+
 // ─── Multi-KPI sequence: Status formula cell reference ───────────────────────
 //
 //  buildKpiTemplateRows tracks the current Excel row number by counting array
