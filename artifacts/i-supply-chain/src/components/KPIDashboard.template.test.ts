@@ -3273,6 +3273,82 @@ describe('Arabic import summary count matches per-KPI ✓ line count — all fra
   }
 });
 
+// ─── Arabic summary count == KPI_FRAMEWORKS[slug].length − manual-entry KPIs ─
+//
+//  The existing suite above confirms N matches the live per-KPI ✓ line count.
+//  This complementary suite confirms N also equals the framework definition
+//  itself: KPI_FRAMEWORKS[slug].length minus the number of KPIs that have no
+//  KPI_DATA_SPECS entry (manual-entry KPIs, which are never auto-calculated).
+//
+//  This prevents the Arabic summary from silently diverging when a KPI is
+//  added or removed from a framework definition without updating the specs.
+
+describe('Arabic summary count matches KPI_FRAMEWORKS length minus manual-entry KPIs — all frameworks', () => {
+  const FRAMEWORKS = [
+    'supply-chain-strategy',
+    'procurement-excellence',
+    'lean-six-sigma',
+    'risk-management',
+    'digital-transformation',
+    'governance-compliance',
+  ] as const;
+
+  /**
+   * Build a fully-filled CSV for the given framework slug.
+   * Every input row that has a matching KpiDataSpec.inputs entry gets the
+   * spec's example value; manual-entry KPI rows are left blank.
+   */
+  function buildFullCsvForFramework(slug: string): string {
+    const rows = buildTemplateRows(slug);
+    rows.forEach(row => {
+      const kpiId = row[0]?.trim().toLowerCase();
+      if (
+        !kpiId ||
+        kpiId === '' ||
+        kpiId.startsWith('===') ||
+        kpiId.startsWith('---') ||
+        kpiId.endsWith('__result')
+      ) return;
+      const spec = KPI_DATA_SPECS[kpiId];
+      if (!spec) return;
+      const inputDef = spec.inputs.find(
+        inp => row[1]?.trim().toLowerCase() === inp.label.toLowerCase(),
+      );
+      if (inputDef) row[2] = String(inputDef.example);
+    });
+    return rows.map(r => r.map(c => `"${c.replace(/"/g, '""')}"`).join(',')).join('\r\n');
+  }
+
+  for (const slug of FRAMEWORKS) {
+    it(`${slug}: Arabic summary N equals KPI_FRAMEWORKS length minus manual-entry KPI count`, () => {
+      const kpis = KPI_FRAMEWORKS[slug];
+
+      // Manual-entry KPIs = those without a KPI_DATA_SPECS entry
+      const manualCount = kpis.filter(k => !KPI_DATA_SPECS[k.id]).length;
+      const expectedAutoCount = kpis.length - manualCount;
+
+      const csvText = buildFullCsvForFramework(slug);
+      const { log } = runNewFormatImport(csvText, slug, true);
+
+      // log[0] is always the Arabic summary line when isAr=true
+      const summary = log[0];
+
+      // Extract the integer N from "✓ تم احتساب N مؤشر(ات) تلقائياً"
+      const match = summary.match(/تم احتساب (\d+) مؤشر/);
+      expect(
+        match,
+        `[${slug}] Summary line did not contain Arabic count pattern.\n  Got: "${summary}"`,
+      ).not.toBeNull();
+      const summaryN = parseInt(match![1], 10);
+
+      expect(
+        summaryN,
+        `[${slug}] Arabic summary N=${summaryN} but KPI_FRAMEWORKS has ${kpis.length} KPIs, ${manualCount} manual-entry → expected auto-count ${expectedAutoCount}`,
+      ).toBe(expectedAutoCount);
+    });
+  }
+});
+
 // ─── Excel-mutated template round-trip (resiliency) ──────────────────────────
 //
 //  The resiliency framework has 6 KPIs: rtoa, mttr, dsc, buf, sld, rar.
