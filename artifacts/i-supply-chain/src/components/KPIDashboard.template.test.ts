@@ -3958,3 +3958,401 @@ describe('lean-agile-supply-chain Arabic partial import (only pce and ftr filled
     expect(englishSkips.length, 'English "skipped" entries in Arabic mode').toBe(0);
   });
 });
+
+// ─── Excel-mutated template round-trip (governance-compliance) ───────────────
+//
+//  governance-compliance has 6 KPIs: pcr, aud, cco, mav, doa, asa
+//
+//  Expected values from example inputs (see kpiDataSpecs.ts):
+//    pcr : pct(267, 300)                 =  89.0  (Policy Compliance Rate %)
+//    aud : safe(82)                      =  82.0  (Audit Score /100)
+//    cco : pct(18_700_000, 22_000_000)   =  85.0  (Contract Coverage %)
+//    mav : pct(880_000, 22_000_000)      =   4.0  (Maverick Spend %)
+//    doa : safe(2)                       =   2.0  (DoA Violations /quarter)
+//    asa : pct(20_900_000, 22_000_000)   =  95.0  (Approved Supplier Adherence %)
+
+describe('Excel-mutated template round-trip (governance-compliance)', () => {
+  /** Return the governance-compliance template rows with all example values filled in. */
+  function buildFilledRows(): string[][] {
+    const rows = buildTemplateRows('governance-compliance');
+    rows.forEach(row => {
+      const kpiId = row[0]?.trim().toLowerCase();
+      if (!kpiId || kpiId === '' || kpiId.startsWith('===') || kpiId.startsWith('---') || kpiId.endsWith('__result')) return;
+      const spec = KPI_DATA_SPECS[kpiId];
+      if (!spec) return;
+      const inputDef = spec.inputs.find(inp =>
+        row[1]?.trim().toLowerCase() === inp.label.toLowerCase(),
+      );
+      if (inputDef) row[2] = String(inputDef.example);
+    });
+    return rows;
+  }
+
+  /** Shared KPI value assertions for all mutation variants. */
+  function assertKpiValues(values: Record<string, number>): void {
+    expect(values['pcr'], 'pcr').toBeCloseTo(89.0, 0);
+    expect(values['aud'], 'aud').toBe(82);
+    expect(values['cco'], 'cco').toBeCloseTo(85.0, 0);
+    expect(values['mav'], 'mav').toBeCloseTo(4.0, 0);
+    expect(values['doa'], 'doa').toBe(2);
+    expect(values['asa'], 'asa').toBeCloseTo(95.0, 0);
+  }
+
+  it('imports correctly with CRLF line endings (Windows / Excel default)', () => {
+    const rows = buildFilledRows();
+    const csvCrlf = rows.map(r => r.map(escapeCell).join(',')).join('\r\n');
+    const { values } = runNewFormatImport(csvCrlf, 'governance-compliance');
+    assertKpiValues(values);
+  });
+
+  it('imports correctly when there is no UTF-8 BOM (Excel drops the BOM on re-save)', () => {
+    const rows = buildFilledRows();
+    const csvNoBom = rows.map(r => r.map(escapeCell).join(',')).join('\r\n');
+    expect(csvNoBom.charCodeAt(0)).not.toBe(0xFEFF);
+    const { values } = runNewFormatImport(csvNoBom, 'governance-compliance');
+    assertKpiValues(values);
+  });
+
+  it('imports correctly when extra blank rows are scattered between sections', () => {
+    const rows = buildFilledRows();
+    const mutated: string[][] = [];
+    for (const row of rows) {
+      mutated.push(row);
+      if (row[0]?.startsWith('===')) {
+        mutated.push(['', '', '', '', '', '']);
+        mutated.push(['', '', '', '', '', '']);
+      }
+    }
+    const csvText = mutated.map(r => r.map(escapeCell).join(',')).join('\r\n');
+    const { values } = runNewFormatImport(csvText, 'governance-compliance');
+    assertKpiValues(values);
+  });
+
+  it('imports correctly when cell values have leading and trailing whitespace', () => {
+    const rows = buildFilledRows();
+    const padCell = (c: string): string => `"  ${c.replace(/"/g, '""')}  "`;
+    const csvText = rows.map(r => r.map(padCell).join(',')).join('\r\n');
+    const { values } = runNewFormatImport(csvText, 'governance-compliance');
+    assertKpiValues(values);
+  });
+
+  it('imports correctly with all mutations combined (no BOM + CRLF + blank rows + whitespace padding)', () => {
+    const rows = buildFilledRows();
+    const withBlanks: string[][] = [];
+    for (const row of rows) {
+      withBlanks.push(row);
+      if (row[0]?.startsWith('===')) withBlanks.push(['', '', '', '', '', '']);
+    }
+    const padCell = (c: string): string => `" ${c.replace(/"/g, '""')} "`;
+    const csvText = withBlanks.map(r => r.map(padCell).join(',')).join('\r\n');
+    expect(csvText.charCodeAt(0)).not.toBe(0xFEFF);
+    const { values } = runNewFormatImport(csvText, 'governance-compliance');
+    assertKpiValues(values);
+  });
+
+  it('all 6 KPIs are calculated — no manual-entry notice — in the mutated file', () => {
+    const rows = buildFilledRows();
+    const mutated: string[][] = [];
+    for (const row of rows) {
+      mutated.push(row);
+      if (row[0]?.startsWith('===')) mutated.push(['', '', '', '', '', '']);
+    }
+    const padCell = (c: string): string => `" ${c.replace(/"/g, '""')} "`;
+    const csvText = mutated.map(r => r.map(padCell).join(',')).join('\r\n');
+    const { log } = runNewFormatImport(csvText, 'governance-compliance');
+    const kpiLines = log.filter(l => l.startsWith('✓') && !l.includes('auto-calculated'));
+    expect(kpiLines.length).toBe(6);
+    expect(log.find(l => l.includes('require manual entry'))).toBeUndefined();
+  });
+});
+
+// ─── governance-compliance partial import ────────────────────────────────────
+//
+//  Fills in only pcr and aud; leaves cco, mav, doa, asa blank.
+//  Verifies that:
+//   • pcr and aud are calculated correctly
+//   • the four unfilled KPIs are absent (not zeroed)
+//   • a skip-reason log entry is emitted for each unfilled KPI
+//
+
+describe('governance-compliance import — partial inputs (only pcr and aud filled)', () => {
+  function buildPartialGcRows(): string[][] {
+    const rows = buildTemplateRows('governance-compliance');
+    rows.forEach(row => {
+      const kpiId = row[0]?.trim().toLowerCase();
+      if (!['pcr', 'aud'].includes(kpiId)) return;
+      const spec = KPI_DATA_SPECS[kpiId];
+      if (!spec) return;
+      const inputDef = spec.inputs.find(inp =>
+        row[1]?.trim().toLowerCase() === inp.label.toLowerCase(),
+      );
+      if (inputDef) row[2] = String(inputDef.example);
+    });
+    return rows;
+  }
+
+  it('calculates pcr correctly from its example inputs', () => {
+    const csvText = rowsToCsvText(buildPartialGcRows());
+    const { values } = runNewFormatImport(csvText, 'governance-compliance');
+    // pcr: pct(267, 300) = 89.0
+    expect(values['pcr'], 'pcr').toBeCloseTo(89.0, 0);
+  });
+
+  it('calculates aud correctly from its example input', () => {
+    const csvText = rowsToCsvText(buildPartialGcRows());
+    const { values } = runNewFormatImport(csvText, 'governance-compliance');
+    // aud: safe(82) = 82
+    expect(values['aud'], 'aud').toBe(82);
+  });
+
+  it('skipped KPIs are absent from the values map — not zeroed', () => {
+    const csvText = rowsToCsvText(buildPartialGcRows());
+    const { values } = runNewFormatImport(csvText, 'governance-compliance');
+
+    expect(values['cco'], 'cco should be absent').toBeUndefined();
+    expect(values['mav'], 'mav should be absent').toBeUndefined();
+    expect(values['doa'], 'doa should be absent').toBeUndefined();
+    expect(values['asa'], 'asa should be absent').toBeUndefined();
+  });
+
+  it('exactly 2 KPIs are calculated — no more, no less', () => {
+    const csvText = rowsToCsvText(buildPartialGcRows());
+    const { values } = runNewFormatImport(csvText, 'governance-compliance');
+
+    expect(Object.keys(values).sort()).toEqual(['aud', 'pcr']);
+  });
+
+  it('log contains a skip-reason entry for each uncalculable KPI', () => {
+    const csvText = rowsToCsvText(buildPartialGcRows());
+    const { log } = runNewFormatImport(csvText, 'governance-compliance');
+
+    const skipLines = log.filter(l => l.includes('skipped'));
+    // cco, mav, doa, asa — all four should have a skip entry
+    expect(skipLines.length, 'skip-reason log entries').toBeGreaterThanOrEqual(4);
+  });
+
+  it('log contains exactly 2 per-KPI success lines (summary line excluded)', () => {
+    const csvText = rowsToCsvText(buildPartialGcRows());
+    const { log } = runNewFormatImport(csvText, 'governance-compliance');
+
+    const kpiLines = log.filter(l => l.startsWith('✓') && !l.includes('auto-calculated'));
+    expect(kpiLines.length, 'per-KPI success log lines').toBe(2);
+  });
+
+  it('skip-reason entries name the skipped KPIs, not the calculated ones', () => {
+    const csvText = rowsToCsvText(buildPartialGcRows());
+    const { log } = runNewFormatImport(csvText, 'governance-compliance');
+
+    const skipLines = log.filter(l => l.includes('skipped'));
+    const skipText = skipLines.join('\n');
+
+    // Skipped KPI labels appear in the log
+    expect(skipText).toContain('Contract Coverage');  // cco
+    expect(skipText).toContain('Maverick Spend');      // mav
+    expect(skipText).toContain('DoA Violations');      // doa
+    expect(skipText).toContain('Approved Supplier');   // asa
+
+    // Calculated KPI labels must NOT appear in the skip lines
+    expect(skipText).not.toContain('Policy Compliance Rate');
+    expect(skipText).not.toContain('Audit Score');
+  });
+});
+
+// ─── Excel-mutated template round-trip (training-capability-building) ─────────
+//
+//  training-capability-building has 6 KPIs: asi, tcr, cepr, bcs, kpii, roi
+//
+//  Expected values from example inputs (see kpiDataSpecs.ts):
+//    asi  : round((79 − 52) × 10) / 10          =  27.0  (Assessment Score Improvement, pts)
+//    tcr  : pct(104, 120)                        =  86.7  (Training Completion Rate %)
+//    cepr : pct(36, 45)                          =  80.0  (CIPS Exam Pass Rate %)
+//    bcs  : pct(630, 840)                        =  75.0  (Behaviour Change Score %)
+//    kpii : round(((79−68)/68) × 1000) / 10     =  16.2  (Post-Training KPI Improvement %)
+//    roi  : round(((882k−180k)/180k) × 1000)/10 = 390.0  (Training ROI %)
+
+describe('Excel-mutated template round-trip (training-capability-building)', () => {
+  /** Return the training-capability-building template rows with all example values filled in. */
+  function buildFilledRows(): string[][] {
+    const rows = buildTemplateRows('training-capability-building');
+    rows.forEach(row => {
+      const kpiId = row[0]?.trim().toLowerCase();
+      if (!kpiId || kpiId === '' || kpiId.startsWith('===') || kpiId.startsWith('---') || kpiId.endsWith('__result')) return;
+      const spec = KPI_DATA_SPECS[kpiId];
+      if (!spec) return;
+      const inputDef = spec.inputs.find(inp =>
+        row[1]?.trim().toLowerCase() === inp.label.toLowerCase(),
+      );
+      if (inputDef) row[2] = String(inputDef.example);
+    });
+    return rows;
+  }
+
+  /** Shared KPI value assertions for all mutation variants. */
+  function assertKpiValues(values: Record<string, number>): void {
+    expect(values['asi'],  'asi').toBeCloseTo(27.0, 0);
+    expect(values['tcr'],  'tcr').toBeCloseTo(86.7, 0);
+    expect(values['cepr'], 'cepr').toBeCloseTo(80.0, 0);
+    expect(values['bcs'],  'bcs').toBeCloseTo(75.0, 0);
+    expect(values['kpii'], 'kpii').toBeCloseTo(16.2, 0);
+    expect(values['roi'],  'roi').toBeCloseTo(390.0, 0);
+  }
+
+  it('imports correctly with CRLF line endings (Windows / Excel default)', () => {
+    const rows = buildFilledRows();
+    const csvCrlf = rows.map(r => r.map(escapeCell).join(',')).join('\r\n');
+    const { values } = runNewFormatImport(csvCrlf, 'training-capability-building');
+    assertKpiValues(values);
+  });
+
+  it('imports correctly when there is no UTF-8 BOM (Excel drops the BOM on re-save)', () => {
+    const rows = buildFilledRows();
+    const csvNoBom = rows.map(r => r.map(escapeCell).join(',')).join('\r\n');
+    expect(csvNoBom.charCodeAt(0)).not.toBe(0xFEFF);
+    const { values } = runNewFormatImport(csvNoBom, 'training-capability-building');
+    assertKpiValues(values);
+  });
+
+  it('imports correctly when extra blank rows are scattered between sections', () => {
+    const rows = buildFilledRows();
+    const mutated: string[][] = [];
+    for (const row of rows) {
+      mutated.push(row);
+      if (row[0]?.startsWith('===')) {
+        mutated.push(['', '', '', '', '', '']);
+        mutated.push(['', '', '', '', '', '']);
+      }
+    }
+    const csvText = mutated.map(r => r.map(escapeCell).join(',')).join('\r\n');
+    const { values } = runNewFormatImport(csvText, 'training-capability-building');
+    assertKpiValues(values);
+  });
+
+  it('imports correctly when cell values have leading and trailing whitespace', () => {
+    const rows = buildFilledRows();
+    const padCell = (c: string): string => `"  ${c.replace(/"/g, '""')}  "`;
+    const csvText = rows.map(r => r.map(padCell).join(',')).join('\r\n');
+    const { values } = runNewFormatImport(csvText, 'training-capability-building');
+    assertKpiValues(values);
+  });
+
+  it('imports correctly with all mutations combined (no BOM + CRLF + blank rows + whitespace padding)', () => {
+    const rows = buildFilledRows();
+    const withBlanks: string[][] = [];
+    for (const row of rows) {
+      withBlanks.push(row);
+      if (row[0]?.startsWith('===')) withBlanks.push(['', '', '', '', '', '']);
+    }
+    const padCell = (c: string): string => `" ${c.replace(/"/g, '""')} "`;
+    const csvText = withBlanks.map(r => r.map(padCell).join(',')).join('\r\n');
+    expect(csvText.charCodeAt(0)).not.toBe(0xFEFF);
+    const { values } = runNewFormatImport(csvText, 'training-capability-building');
+    assertKpiValues(values);
+  });
+
+  it('all 6 KPIs are calculated — no manual-entry notice — in the mutated file', () => {
+    const rows = buildFilledRows();
+    const mutated: string[][] = [];
+    for (const row of rows) {
+      mutated.push(row);
+      if (row[0]?.startsWith('===')) mutated.push(['', '', '', '', '', '']);
+    }
+    const padCell = (c: string): string => `" ${c.replace(/"/g, '""')} "`;
+    const csvText = mutated.map(r => r.map(padCell).join(',')).join('\r\n');
+    const { log } = runNewFormatImport(csvText, 'training-capability-building');
+    const kpiLines = log.filter(l => l.startsWith('✓') && !l.includes('auto-calculated'));
+    expect(kpiLines.length).toBe(6);
+    expect(log.find(l => l.includes('require manual entry'))).toBeUndefined();
+  });
+});
+
+// ─── training-capability-building partial import ──────────────────────────────
+//
+//  Fills in only asi and tcr; leaves cepr, bcs, kpii, roi blank.
+//  Verifies that:
+//   • asi and tcr are calculated correctly
+//   • the four unfilled KPIs are absent (not zeroed)
+//   • a skip-reason log entry is emitted for each unfilled KPI
+//
+
+describe('training-capability-building import — partial inputs (only asi and tcr filled)', () => {
+  function buildPartialTcbRows(): string[][] {
+    const rows = buildTemplateRows('training-capability-building');
+    rows.forEach(row => {
+      const kpiId = row[0]?.trim().toLowerCase();
+      if (!['asi', 'tcr'].includes(kpiId)) return;
+      const spec = KPI_DATA_SPECS[kpiId];
+      if (!spec) return;
+      const inputDef = spec.inputs.find(inp =>
+        row[1]?.trim().toLowerCase() === inp.label.toLowerCase(),
+      );
+      if (inputDef) row[2] = String(inputDef.example);
+    });
+    return rows;
+  }
+
+  it('calculates asi correctly from its example inputs', () => {
+    const csvText = rowsToCsvText(buildPartialTcbRows());
+    const { values } = runNewFormatImport(csvText, 'training-capability-building');
+    // asi: round((79 − 52) × 10) / 10 = 27.0
+    expect(values['asi'], 'asi').toBeCloseTo(27.0, 0);
+  });
+
+  it('calculates tcr correctly from its example inputs', () => {
+    const csvText = rowsToCsvText(buildPartialTcbRows());
+    const { values } = runNewFormatImport(csvText, 'training-capability-building');
+    // tcr: pct(104, 120) ≈ 86.7
+    expect(values['tcr'], 'tcr').toBeCloseTo(86.7, 0);
+  });
+
+  it('skipped KPIs are absent from the values map — not zeroed', () => {
+    const csvText = rowsToCsvText(buildPartialTcbRows());
+    const { values } = runNewFormatImport(csvText, 'training-capability-building');
+
+    expect(values['cepr'], 'cepr should be absent').toBeUndefined();
+    expect(values['bcs'],  'bcs should be absent').toBeUndefined();
+    expect(values['kpii'], 'kpii should be absent').toBeUndefined();
+    expect(values['roi'],  'roi should be absent').toBeUndefined();
+  });
+
+  it('exactly 2 KPIs are calculated — no more, no less', () => {
+    const csvText = rowsToCsvText(buildPartialTcbRows());
+    const { values } = runNewFormatImport(csvText, 'training-capability-building');
+
+    expect(Object.keys(values).sort()).toEqual(['asi', 'tcr']);
+  });
+
+  it('log contains a skip-reason entry for each uncalculable KPI', () => {
+    const csvText = rowsToCsvText(buildPartialTcbRows());
+    const { log } = runNewFormatImport(csvText, 'training-capability-building');
+
+    const skipLines = log.filter(l => l.includes('skipped'));
+    // cepr, bcs, kpii, roi — all four should have a skip entry
+    expect(skipLines.length, 'skip-reason log entries').toBeGreaterThanOrEqual(4);
+  });
+
+  it('log contains exactly 2 per-KPI success lines (summary line excluded)', () => {
+    const csvText = rowsToCsvText(buildPartialTcbRows());
+    const { log } = runNewFormatImport(csvText, 'training-capability-building');
+
+    const kpiLines = log.filter(l => l.startsWith('✓') && !l.includes('auto-calculated'));
+    expect(kpiLines.length, 'per-KPI success log lines').toBe(2);
+  });
+
+  it('skip-reason entries name the skipped KPIs, not the calculated ones', () => {
+    const csvText = rowsToCsvText(buildPartialTcbRows());
+    const { log } = runNewFormatImport(csvText, 'training-capability-building');
+
+    const skipLines = log.filter(l => l.includes('skipped'));
+    const skipText = skipLines.join('\n');
+
+    // Skipped KPI labels appear in the log
+    expect(skipText).toContain('CIPS Exam');           // cepr
+    expect(skipText).toContain('Behaviour Change');    // bcs
+    expect(skipText).toContain('Post-Training KPI');   // kpii
+    expect(skipText).toContain('Training ROI');        // roi
+
+    // Calculated KPI labels must NOT appear in the skip lines
+    expect(skipText).not.toContain('Assessment Score Improvement');
+    expect(skipText).not.toContain('Training Completion Rate');
+  });
+});
