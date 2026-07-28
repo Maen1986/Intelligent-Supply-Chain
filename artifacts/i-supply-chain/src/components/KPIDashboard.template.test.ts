@@ -2761,6 +2761,339 @@ describe('procurement-excellence import — partial inputs (only ttc, the last K
 //
 // Mirrors the structure of 'Arabic import log — risk-management (lang="ar")'.
 
+// ─── Excel-mutated template round-trip (contract-lifecycle-management) ────────
+//
+//  Mirrors the lean-six-sigma and risk-management round-trip suites but for
+//  the contract-lifecycle-management framework, which has 6 KPIs:
+//    cact, neg, ccomp, ren, vl, slab
+//
+//  Expected values from example inputs (see kpiDataSpecs.ts):
+//    cact  : avg(350, 48)               ≈ 7.3  (Contract Authoring Time, days)
+//    neg   : avg(720, 48)               = 15.0 (Negotiation Cycle Time, days)
+//    ccomp : pct(74, 80)                = 92.5 (Contract Compliance Rate %)
+//    ren   : pct(38, 42)                ≈ 90.5 (On-Time Renewal Rate %)
+//    vl    : pct(440_000, 22_000_000)   = 2.0  (Value Leakage %)
+//    slab  : pct(17, 280)               ≈ 6.1  (SLA Breach Rate %)
+
+describe('Excel-mutated template round-trip (contract-lifecycle-management)', () => {
+  /** Return contract-lifecycle-management template rows with all example values filled in. */
+  function buildFilledRows(): string[][] {
+    const rows = buildTemplateRows('contract-lifecycle-management');
+    rows.forEach(row => {
+      const kpiId = row[0]?.trim().toLowerCase();
+      if (!kpiId || kpiId === '' || kpiId.startsWith('===') || kpiId.startsWith('---') || kpiId.endsWith('__result')) return;
+      const spec = KPI_DATA_SPECS[kpiId];
+      if (!spec) return;
+      const inputDef = spec.inputs.find(inp =>
+        row[1]?.trim().toLowerCase() === inp.label.toLowerCase(),
+      );
+      if (inputDef) row[2] = String(inputDef.example);
+    });
+    return rows;
+  }
+
+  /** Shared KPI value assertions for all mutation variants. */
+  function assertKpiValues(values: Record<string, number>): void {
+    expect(values['cact'],  'cact').toBeCloseTo(7.3, 0);
+    expect(values['neg'],   'neg').toBeCloseTo(15.0, 0);
+    expect(values['ccomp'], 'ccomp').toBeCloseTo(92.5, 0);
+    expect(values['ren'],   'ren').toBeCloseTo(90.5, 0);
+    expect(values['vl'],    'vl').toBeCloseTo(2.0, 0);
+    expect(values['slab'],  'slab').toBeCloseTo(6.1, 0);
+  }
+
+  it('imports correctly with CRLF line endings (Windows / Excel default)', () => {
+    const rows = buildFilledRows();
+    const csvCrlf = rows.map(r => r.map(escapeCell).join(',')).join('\r\n');
+    const { values } = runNewFormatImport(csvCrlf, 'contract-lifecycle-management');
+    assertKpiValues(values);
+  });
+
+  it('imports correctly when there is no UTF-8 BOM (Excel drops the BOM on re-save)', () => {
+    const rows = buildFilledRows();
+    const csvNoBom = rows.map(r => r.map(escapeCell).join(',')).join('\r\n');
+    expect(csvNoBom.charCodeAt(0)).not.toBe(0xFEFF);
+    const { values } = runNewFormatImport(csvNoBom, 'contract-lifecycle-management');
+    assertKpiValues(values);
+  });
+
+  it('imports correctly when extra blank rows are scattered between sections', () => {
+    const rows = buildFilledRows();
+    const mutated: string[][] = [];
+    for (const row of rows) {
+      mutated.push(row);
+      if (row[0]?.startsWith('===')) {
+        mutated.push(['', '', '', '', '', '']);
+        mutated.push(['', '', '', '', '', '']);
+      }
+    }
+    const csvText = mutated.map(r => r.map(escapeCell).join(',')).join('\r\n');
+    const { values } = runNewFormatImport(csvText, 'contract-lifecycle-management');
+    assertKpiValues(values);
+  });
+
+  it('imports correctly when cell values have leading and trailing whitespace', () => {
+    const rows = buildFilledRows();
+    const padCell = (c: string): string => `"  ${c.replace(/"/g, '""')}  "`;
+    const csvText = rows.map(r => r.map(padCell).join(',')).join('\r\n');
+    const { values } = runNewFormatImport(csvText, 'contract-lifecycle-management');
+    assertKpiValues(values);
+  });
+
+  it('imports correctly with all mutations combined (no BOM + CRLF + blank rows + whitespace padding)', () => {
+    const rows = buildFilledRows();
+    const withBlanks: string[][] = [];
+    for (const row of rows) {
+      withBlanks.push(row);
+      if (row[0]?.startsWith('===')) withBlanks.push(['', '', '', '', '', '']);
+    }
+    const padCell = (c: string): string => `" ${c.replace(/"/g, '""')} "`;
+    const csvText = withBlanks.map(r => r.map(padCell).join(',')).join('\r\n');
+    expect(csvText.charCodeAt(0)).not.toBe(0xFEFF);
+    const { values } = runNewFormatImport(csvText, 'contract-lifecycle-management');
+    assertKpiValues(values);
+  });
+
+  it('all 6 KPIs are calculated — no manual-entry notice — in the mutated file', () => {
+    const rows = buildFilledRows();
+    const mutated: string[][] = [];
+    for (const row of rows) {
+      mutated.push(row);
+      if (row[0]?.startsWith('===')) mutated.push(['', '', '', '', '', '']);
+    }
+    const padCell = (c: string): string => `" ${c.replace(/"/g, '""')} "`;
+    const csvText = mutated.map(r => r.map(padCell).join(',')).join('\r\n');
+    const { log } = runNewFormatImport(csvText, 'contract-lifecycle-management');
+    // log[0] is the auto-calculated summary line; remaining ✓ lines are per-KPI
+    const kpiLines = log.filter(l => l.startsWith('✓') && !l.includes('auto-calculated'));
+    expect(kpiLines.length).toBe(6);
+    expect(log.find(l => l.includes('require manual entry'))).toBeUndefined();
+  });
+});
+
+// ─── contract-lifecycle-management partial import ─────────────────────────────
+//
+//  The contract-lifecycle-management framework has 6 KPIs: cact, neg, ccomp,
+//  ren, vl, slab.
+//  This suite verifies that when a user fills in only cact and neg the import:
+//   • calculates the two complete KPIs correctly
+//   • skips the four incomplete KPIs without zeroing them
+//   • records a skip-reason log entry for each uncalculable KPI
+//   • emits exactly 2 per-KPI success lines (summary line excluded)
+//
+describe('contract-lifecycle-management import — partial inputs (only cact and neg filled)', () => {
+  /**
+   * Build a contract-lifecycle-management template with only cact and neg
+   * "Your Value" cells populated.  All other KPI rows are left blank.
+   */
+  function buildPartialClmRows(): string[][] {
+    const rows = buildTemplateRows('contract-lifecycle-management');
+    rows.forEach(row => {
+      const kpiId = row[0]?.trim().toLowerCase();
+      if (!['cact', 'neg'].includes(kpiId)) return;
+      const spec = KPI_DATA_SPECS[kpiId];
+      if (!spec) return;
+      const inputDef = spec.inputs.find(inp =>
+        row[1]?.trim().toLowerCase() === inp.label.toLowerCase(),
+      );
+      if (inputDef) row[2] = String(inputDef.example);
+    });
+    return rows;
+  }
+
+  it('calculates cact correctly from its example inputs', () => {
+    const csvText = rowsToCsvText(buildPartialClmRows());
+    const { values } = runNewFormatImport(csvText, 'contract-lifecycle-management');
+    // cact: avg(350, 48) = Math.round((350/48)*10)/10 ≈ 7.3
+    expect(values['cact'], 'cact').toBeCloseTo(7.3, 0);
+  });
+
+  it('calculates neg correctly from its example inputs', () => {
+    const csvText = rowsToCsvText(buildPartialClmRows());
+    const { values } = runNewFormatImport(csvText, 'contract-lifecycle-management');
+    // neg: avg(720, 48) = 15.0
+    expect(values['neg'], 'neg').toBeCloseTo(15.0, 0);
+  });
+
+  it('skipped KPIs are absent from the values map — not zeroed', () => {
+    const csvText = rowsToCsvText(buildPartialClmRows());
+    const { values } = runNewFormatImport(csvText, 'contract-lifecycle-management');
+
+    expect(values['ccomp'], 'ccomp should be absent').toBeUndefined();
+    expect(values['ren'],   'ren should be absent').toBeUndefined();
+    expect(values['vl'],    'vl should be absent').toBeUndefined();
+    expect(values['slab'],  'slab should be absent').toBeUndefined();
+  });
+
+  it('exactly 2 KPIs are calculated — no more, no less', () => {
+    const csvText = rowsToCsvText(buildPartialClmRows());
+    const { values } = runNewFormatImport(csvText, 'contract-lifecycle-management');
+
+    expect(Object.keys(values).sort()).toEqual(['cact', 'neg']);
+  });
+
+  it('log contains a skip-reason entry for each uncalculable KPI', () => {
+    const csvText = rowsToCsvText(buildPartialClmRows());
+    const { log } = runNewFormatImport(csvText, 'contract-lifecycle-management');
+
+    const skipLines = log.filter(l => l.includes('skipped'));
+    // ccomp, ren, vl, slab — all four should have a skip entry
+    expect(skipLines.length, 'skip-reason log entries').toBeGreaterThanOrEqual(4);
+  });
+
+  it('log contains exactly 2 per-KPI success lines (summary line excluded)', () => {
+    const csvText = rowsToCsvText(buildPartialClmRows());
+    const { log } = runNewFormatImport(csvText, 'contract-lifecycle-management');
+
+    // log[0] is the auto-calculated summary; filter it out before counting
+    const kpiLines = log.filter(l => l.startsWith('✓') && !l.includes('auto-calculated'));
+    expect(kpiLines.length, 'per-KPI success log lines').toBe(2);
+  });
+
+  it('skip-reason entries name the skipped KPIs, not the calculated ones', () => {
+    const csvText = rowsToCsvText(buildPartialClmRows());
+    const { log } = runNewFormatImport(csvText, 'contract-lifecycle-management');
+
+    const skipLines = log.filter(l => l.includes('skipped'));
+    const skipText = skipLines.join('\n');
+
+    // Skipped KPI labels appear in the log
+    expect(skipText).toContain('Contract Compliance Rate'); // ccomp
+    expect(skipText).toContain('On-Time Renewal Rate');     // ren
+    expect(skipText).toContain('Value Leakage');            // vl
+    expect(skipText).toContain('SLA Breach Rate');          // slab
+
+    // Calculated KPI labels must NOT appear in the skip lines
+    expect(skipText).not.toContain('Contract Authoring Time');
+    expect(skipText).not.toContain('Negotiation Cycle Time');
+  });
+});
+
+// ─── Arabic import log — contract-lifecycle-management (lang="ar") ────────────
+//
+// Verifies that runNewFormatImport with isAr=true uses the Arabic code-path
+// that mirrors handleKpiImport's `isAr` branch in KPIDashboard.tsx:
+//
+//   • Summary line:  ✓ تم احتساب N مؤشر(ات) تلقائياً.
+//   • No 📝 manual-entry notice — all 6 CLM KPIs have calculation specs.
+//
+// Mirrors the structure of 'Arabic import log — risk-management (lang="ar")'.
+
+describe('Arabic import log — contract-lifecycle-management (lang="ar")', () => {
+  /**
+   * Build a minimal CLM new-format CSV that supplies inputs only for cact
+   * and neg, leaving the other four KPIs without data.
+   */
+  function buildPartialClmCsv(): string {
+    const rows: string[][] = [
+      ['I Supply Chain — KPI Data Collection Template', '', '', ''],
+      ['Framework: Contract Lifecycle Management', '', '', ''],
+      ["Generated: 1 January 2024 | Ma'in Alhaqash MCIPS CPSM | isupplychain.com", '', '', ''],
+      ['', '', '', ''],
+      ['KPI ID', 'Input Field', 'Your Value', 'Unit'],
+      // cact: avg(350, 48) ≈ 7.3
+      ['cact', 'Sum of days from scope sign-off to first draft completion across all contracts in the period', '350', 'days'],
+      ['cact', 'Number of contracts where first draft was completed in the period', '48', 'contracts'],
+      // neg: avg(720, 48) = 15.0
+      ['neg', 'Sum of days from first draft sent to terms agreed across all contracts negotiated in the period', '720', 'days'],
+      ['neg', 'Number of contracts where terms were agreed in the period', '48', 'contracts'],
+    ];
+    return rows.map(r => r.map(c => `"${c.replace(/"/g, '""')}"`).join(',')).join('\r\n');
+  }
+
+  /**
+   * Build a full CLM CSV with example values for all 6 KPIs.
+   */
+  function buildFullClmCsv(): string {
+    const rows: string[][] = [
+      ['I Supply Chain — KPI Data Collection Template', '', '', ''],
+      ['Framework: Contract Lifecycle Management', '', '', ''],
+      ["Generated: 1 January 2024 | Ma'in Alhaqash MCIPS CPSM | isupplychain.com", '', '', ''],
+      ['', '', '', ''],
+      ['KPI ID', 'Input Field', 'Your Value', 'Unit'],
+      // cact
+      ['cact', 'Sum of days from scope sign-off to first draft completion across all contracts in the period', '350', 'days'],
+      ['cact', 'Number of contracts where first draft was completed in the period', '48', 'contracts'],
+      // neg
+      ['neg', 'Sum of days from first draft sent to terms agreed across all contracts negotiated in the period', '720', 'days'],
+      ['neg', 'Number of contracts where terms were agreed in the period', '48', 'contracts'],
+      // ccomp
+      ['ccomp', 'Total contracts reviewed / audited for compliance in the period', '80', 'contracts'],
+      ['ccomp', 'Contracts fully compliant with all regulatory and corporate governance requirements', '74', 'contracts'],
+      // ren
+      ['ren', 'Total contracts that expired or were due for renewal in the period', '42', 'contracts'],
+      ['ren', 'Contracts renewed or replaced before the expiry date', '38', 'contracts'],
+      // vl
+      ['vl', 'Total estimated value leakage from unrecovered credits, penalties, rebates, and overcharges in the period', '440000', 'SAR'],
+      ['vl', 'Total contract value under active management in the period', '22000000', 'SAR'],
+      // slab
+      ['slab', 'Total SLA obligations measured across all active contracts in the period', '280', 'SLA obligations'],
+      ['slab', 'SLA obligations where supplier performance was below the contractual threshold', '17', 'breaches'],
+    ];
+    return rows.map(r => r.map(c => `"${c.replace(/"/g, '""')}"`).join(',')).join('\r\n');
+  }
+
+  it('summary line uses the Arabic تم احتساب … تلقائياً template', () => {
+    const { log } = runNewFormatImport(buildPartialClmCsv(), 'contract-lifecycle-management', true);
+    const summary = log[0];
+    expect(summary).toMatch(/^✓/);
+    expect(summary).toContain('تم احتساب');
+    expect(summary).toContain('مؤشر(ات) تلقائياً');
+  });
+
+  it('exactly 2 KPIs are calculated from the partial CSV (cact and neg)', () => {
+    const { log } = runNewFormatImport(buildPartialClmCsv(), 'contract-lifecycle-management', true);
+    expect(log[0]).toContain('2');
+    const kpiLines = log.filter(l => l.startsWith('✓') && !l.includes('تم احتساب'));
+    expect(kpiLines.length).toBe(2);
+  });
+
+  it('cact and neg values are calculated correctly from Arabic-mode import', () => {
+    const { values } = runNewFormatImport(buildPartialClmCsv(), 'contract-lifecycle-management', true);
+    // cact: avg(350, 48) ≈ 7.3
+    expect(values['cact']).toBeCloseTo(7.3, 0);
+    // neg: avg(720, 48) = 15.0
+    expect(values['neg']).toBeCloseTo(15.0, 0);
+  });
+
+  it('all 6 KPIs calculated from a full CLM CSV in Arabic mode', () => {
+    const { log } = runNewFormatImport(buildFullClmCsv(), 'contract-lifecycle-management', true);
+    const kpiLines = log.filter(l => l.startsWith('✓') && !l.includes('تم احتساب'));
+    expect(kpiLines.length).toBe(6);
+    expect(log[0]).toContain('6');
+  });
+
+  it('no 📝 manual-entry notice — all CLM KPIs have calculation specs', () => {
+    const { log } = runNewFormatImport(buildFullClmCsv(), 'contract-lifecycle-management', true);
+    expect(log.find(l => l.startsWith('📝'))).toBeUndefined();
+  });
+
+  it('Arabic labelAr strings for all 6 CLM KPIs are non-empty', () => {
+    const clmKpis = KPI_FRAMEWORKS['contract-lifecycle-management'];
+
+    const cact  = clmKpis.find(k => k.id === 'cact')!;
+    const neg   = clmKpis.find(k => k.id === 'neg')!;
+    const ccomp = clmKpis.find(k => k.id === 'ccomp')!;
+    const ren   = clmKpis.find(k => k.id === 'ren')!;
+    const vl    = clmKpis.find(k => k.id === 'vl')!;
+    const slab  = clmKpis.find(k => k.id === 'slab')!;
+
+    expect(cact,  'cact KPI definition missing').toBeDefined();
+    expect(neg,   'neg KPI definition missing').toBeDefined();
+    expect(ccomp, 'ccomp KPI definition missing').toBeDefined();
+    expect(ren,   'ren KPI definition missing').toBeDefined();
+    expect(vl,    'vl KPI definition missing').toBeDefined();
+    expect(slab,  'slab KPI definition missing').toBeDefined();
+
+    expect(cact.labelAr.trim().length,  'cact.labelAr is empty').toBeGreaterThan(0);
+    expect(neg.labelAr.trim().length,   'neg.labelAr is empty').toBeGreaterThan(0);
+    expect(ccomp.labelAr.trim().length, 'ccomp.labelAr is empty').toBeGreaterThan(0);
+    expect(ren.labelAr.trim().length,   'ren.labelAr is empty').toBeGreaterThan(0);
+    expect(vl.labelAr.trim().length,    'vl.labelAr is empty').toBeGreaterThan(0);
+    expect(slab.labelAr.trim().length,  'slab.labelAr is empty').toBeGreaterThan(0);
+  });
+});
+
 describe('Arabic import log — lean-agile-supply-chain (lang="ar")', () => {
   /**
    * Build a full lean-six-sigma CSV with example values for all 6 KPIs.
