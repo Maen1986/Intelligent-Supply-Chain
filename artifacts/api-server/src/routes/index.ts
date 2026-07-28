@@ -22,6 +22,7 @@ import adminAutomationsRouter  from "./adminAutomations";
 import diagnosticRouter        from "./diagnostic";
 import commandCentreRouter     from "./commandCentre";
 import adminBenchmarksRouter   from "./adminBenchmarks";
+import maturityRemediesRouter  from "./maturityRemedies";
 
 const router: IRouter = Router();
 
@@ -43,6 +44,7 @@ router.use("/notifications",     notificationsRouter);
 router.use("/admin/automations",  adminAutomationsRouter);
 router.use("/admin/benchmarks",   adminBenchmarksRouter);
 router.use(commandCentreRouter);
+router.use(maturityRemediesRouter);
 router.use(aiPlanRouter);
 router.use(intelligenceRouter);
 router.use(assessmentRouter);
