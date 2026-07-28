@@ -718,6 +718,7 @@ function WebhookLogTab({ ar, refresh }: { ar: boolean; refresh: number }) {
   const [rows, setRows]     = useState<DeliveryLogRow[]>([]);
   const [total, setTotal]   = useState(0);
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
   const [page, setPage]     = useState(0);
   const [eventFilter, setEventFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -736,6 +737,23 @@ function WebhookLogTab({ ar, refresh }: { ar: boolean; refresh: number }) {
   }, [page, eventFilter, statusFilter]);
 
   useEffect(() => { load(); }, [load, refresh]);
+
+  /** Fetch every matching row (up to 2 000) then trigger a CSV download. */
+  const handleExportCsv = useCallback(async () => {
+    setExporting(true);
+    try {
+      const params = new URLSearchParams({ limit: '2000', offset: '0', export: '1' });
+      if (eventFilter.trim()) params.set('event', eventFilter.trim());
+      if (statusFilter)       params.set('status', statusFilter);
+      const d = await fetch(`${API_BASE}/admin/automations/webhook-log?${params}`, { credentials: 'include' })
+        .then(r => r.json());
+      if (d.ok && d.logs.length > 0) {
+        exportCsv(d.logs as Record<string, unknown>[], 'webhook-log.csv');
+      }
+    } catch { /* silent */ } finally {
+      setExporting(false);
+    }
+  }, [eventFilter, statusFilter]);
 
   return (
     <div className="space-y-4">
@@ -758,8 +776,15 @@ function WebhookLogTab({ ar, refresh }: { ar: boolean; refresh: number }) {
           <option value="pending">Pending</option>
         </select>
         <span className="text-xs text-muted-foreground ms-auto">{total} {ar ? 'سجل' : 'records'}</span>
-        <Button variant="outline" size="sm" className="h-8 text-xs" onClick={() => exportCsv(rows as unknown as Record<string, unknown>[], 'webhook-log.csv')}>
-          <Download className="w-3 h-3 me-1" /> {ar ? 'تصدير' : 'Export CSV'}
+        <Button
+          variant="outline" size="sm" className="h-8 text-xs"
+          disabled={exporting || total === 0}
+          onClick={() => void handleExportCsv()}
+        >
+          {exporting
+            ? <Loader2 className="w-3 h-3 me-1 animate-spin" />
+            : <Download className="w-3 h-3 me-1" />}
+          {ar ? 'تصدير' : 'Export CSV'}
         </Button>
       </div>
 

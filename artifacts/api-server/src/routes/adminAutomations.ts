@@ -124,13 +124,17 @@ router.get("/overview", async (_req, res) => {
    ══════════════════════════════════════════════════════════════ */
 
 router.get("/webhook-log", async (req, res) => {
-  const limit  = Math.min(parseInt(String(req.query.limit  ?? "50"), 10) || 50, 200);
+  // export=1 raises the cap to 2 000 for full CSV downloads; interactive table stays at ≤200.
+  const isExport = req.query.export === "1" || req.query.export === "true";
+  const maxLimit = isExport ? 2_000 : 200;
+  const limit  = Math.min(parseInt(String(req.query.limit  ?? "50"), 10) || 50, maxLimit);
   const offset = parseInt(String(req.query.offset ?? "0"), 10) || 0;
   const event  = typeof req.query.event  === "string" ? req.query.event  : null;
   const status = typeof req.query.status === "string" ? req.query.status : null;
 
   try {
-    const eventFilter  = event  ? sql`AND wdl.event   = ${event}`  : sql``;
+    // Partial-match filter: "kpi" matches "kpi.rag_changed", "kpi.threshold_breach", etc.
+    const eventFilter  = event  ? sql`AND wdl.event   ILIKE ${'%' + event + '%'}` : sql``;
     const statusFilter = status ? sql`AND wdl.success = ${status}` : sql``;
 
     const rows = await db.execute(sql`
