@@ -1850,21 +1850,23 @@ function PrepareDownloadModal({
           </p>
         </div>
 
-        {/* n8n Instance URL */}
-        <div className="space-y-1">
-          <label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
-            {ar ? 'عنوان n8n (اختياري)' : 'n8n Instance URL (optional)'}
-          </label>
-          <Input
-            value={n8nUrl}
-            onChange={e => setN8nUrl(e.target.value)}
-            placeholder="https://your-n8n.example.com"
-            className="text-sm"
-          />
-          <p className="text-xs text-muted-foreground">
-            {ar ? 'يُستبدل بـ YOUR_N8N_INSTANCE_URL إن وُجد' : 'Replaces YOUR_N8N_INSTANCE_URL if present'}
-          </p>
-        </div>
+        {/* n8n Instance URL — only relevant for n8n templates */}
+        {template.platform !== 'make' && template.platform !== 'zapier' && (
+          <div className="space-y-1">
+            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
+              {ar ? 'عنوان n8n (اختياري)' : 'n8n Instance URL (optional)'}
+            </label>
+            <Input
+              value={n8nUrl}
+              onChange={e => setN8nUrl(e.target.value)}
+              placeholder="https://your-n8n.example.com"
+              className="text-sm"
+            />
+            <p className="text-xs text-muted-foreground">
+              {ar ? 'يُستبدل بـ YOUR_N8N_INSTANCE_URL إن وُجد' : 'Replaces YOUR_N8N_INSTANCE_URL if present'}
+            </p>
+          </div>
+        )}
 
         {error && (
           <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
