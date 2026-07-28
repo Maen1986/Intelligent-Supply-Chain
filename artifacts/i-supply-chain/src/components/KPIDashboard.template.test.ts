@@ -4035,22 +4035,22 @@ describe('lean-agile-supply-chain Arabic partial import (only pce and ftr filled
   });
 });
 
-// ─── Excel-mutated template round-trip (governance-compliance) ───────────────
+// ─── Excel-mutated template round-trip (process-improvement-policy) ───────────
 //
-//  governance-compliance has 6 KPIs: pcr, aud, cco, mav, doa, asa
+//  The process-improvement-policy framework has 6 KPIs:
+//    pce2, ltr2, ftr2, pcr2, afct, rfr
 //
-//  Expected values from example inputs (see kpiDataSpecs.ts):
-//    pcr : pct(267, 300)                 =  89.0  (Policy Compliance Rate %)
-//    aud : safe(82)                      =  82.0  (Audit Score /100)
-//    cco : pct(18_700_000, 22_000_000)   =  85.0  (Contract Coverage %)
-//    mav : pct(880_000, 22_000_000)      =   4.0  (Maverick Spend %)
-//    doa : safe(2)                       =   2.0  (DoA Violations /quarter)
-//    asa : pct(20_900_000, 22_000_000)   =  95.0  (Approved Supplier Adherence %)
+//  This suite verifies all 6 KPIs survive:
+//    • CRLF line endings
+//    • No UTF-8 BOM
+//    • Extra blank rows scattered between sections
+//    • Leading/trailing whitespace inside cells
+//    • All mutations combined
 
-describe('Excel-mutated template round-trip (governance-compliance)', () => {
-  /** Return the governance-compliance template rows with all example values filled in. */
+describe('Excel-mutated template round-trip (process-improvement-policy)', () => {
+  /** Return the process-improvement-policy template rows with example values filled in. */
   function buildFilledRows(): string[][] {
-    const rows = buildTemplateRows('governance-compliance');
+    const rows = buildTemplateRows('process-improvement-policy');
     rows.forEach(row => {
       const kpiId = row[0]?.trim().toLowerCase();
       if (!kpiId || kpiId === '' || kpiId.startsWith('===') || kpiId.startsWith('---') || kpiId.endsWith('__result')) return;
@@ -4064,20 +4064,30 @@ describe('Excel-mutated template round-trip (governance-compliance)', () => {
     return rows;
   }
 
-  /** Shared KPI value assertions for all mutation variants. */
+  /**
+   * Shared KPI value assertions for all mutation variants.
+   *
+   * Expected values from example inputs:
+   *   pce2:  pct(38, 320)                              = 11.9
+   *   ltr2:  round(((96-52)/96)*1000)/10               = 45.8
+   *   ftr2:  pct(1638, 1800)                           = 91.0
+   *   pcr2:  pct(232, 250)                             = 92.8
+   *   afct:  avg(1860, 62)                             = 30.0
+   *   rfr:   pct(8, 62)                                = 12.9
+   */
   function assertKpiValues(values: Record<string, number>): void {
-    expect(values['pcr'], 'pcr').toBeCloseTo(89.0, 0);
-    expect(values['aud'], 'aud').toBe(82);
-    expect(values['cco'], 'cco').toBeCloseTo(85.0, 0);
-    expect(values['mav'], 'mav').toBeCloseTo(4.0, 0);
-    expect(values['doa'], 'doa').toBe(2);
-    expect(values['asa'], 'asa').toBeCloseTo(95.0, 0);
+    expect(values['pce2'], 'pce2').toBeCloseTo(11.9, 0);
+    expect(values['ltr2'], 'ltr2').toBeCloseTo(45.8, 0);
+    expect(values['ftr2'], 'ftr2').toBeCloseTo(91.0, 0);
+    expect(values['pcr2'], 'pcr2').toBeCloseTo(92.8, 0);
+    expect(values['afct'], 'afct').toBeCloseTo(30.0, 0);
+    expect(values['rfr'],  'rfr').toBeCloseTo(12.9, 0);
   }
 
   it('imports correctly with CRLF line endings (Windows / Excel default)', () => {
     const rows = buildFilledRows();
     const csvCrlf = rows.map(r => r.map(escapeCell).join(',')).join('\r\n');
-    const { values } = runNewFormatImport(csvCrlf, 'governance-compliance');
+    const { values } = runNewFormatImport(csvCrlf, 'process-improvement-policy');
     assertKpiValues(values);
   });
 
@@ -4085,7 +4095,7 @@ describe('Excel-mutated template round-trip (governance-compliance)', () => {
     const rows = buildFilledRows();
     const csvNoBom = rows.map(r => r.map(escapeCell).join(',')).join('\r\n');
     expect(csvNoBom.charCodeAt(0)).not.toBe(0xFEFF);
-    const { values } = runNewFormatImport(csvNoBom, 'governance-compliance');
+    const { values } = runNewFormatImport(csvNoBom, 'process-improvement-policy');
     assertKpiValues(values);
   });
 
@@ -4100,7 +4110,7 @@ describe('Excel-mutated template round-trip (governance-compliance)', () => {
       }
     }
     const csvText = mutated.map(r => r.map(escapeCell).join(',')).join('\r\n');
-    const { values } = runNewFormatImport(csvText, 'governance-compliance');
+    const { values } = runNewFormatImport(csvText, 'process-improvement-policy');
     assertKpiValues(values);
   });
 
@@ -4108,7 +4118,7 @@ describe('Excel-mutated template round-trip (governance-compliance)', () => {
     const rows = buildFilledRows();
     const padCell = (c: string): string => `"  ${c.replace(/"/g, '""')}  "`;
     const csvText = rows.map(r => r.map(padCell).join(',')).join('\r\n');
-    const { values } = runNewFormatImport(csvText, 'governance-compliance');
+    const { values } = runNewFormatImport(csvText, 'process-improvement-policy');
     assertKpiValues(values);
   });
 
@@ -4122,7 +4132,7 @@ describe('Excel-mutated template round-trip (governance-compliance)', () => {
     const padCell = (c: string): string => `" ${c.replace(/"/g, '""')} "`;
     const csvText = withBlanks.map(r => r.map(padCell).join(',')).join('\r\n');
     expect(csvText.charCodeAt(0)).not.toBe(0xFEFF);
-    const { values } = runNewFormatImport(csvText, 'governance-compliance');
+    const { values } = runNewFormatImport(csvText, 'process-improvement-policy');
     assertKpiValues(values);
   });
 
@@ -4135,28 +4145,32 @@ describe('Excel-mutated template round-trip (governance-compliance)', () => {
     }
     const padCell = (c: string): string => `" ${c.replace(/"/g, '""')} "`;
     const csvText = mutated.map(r => r.map(padCell).join(',')).join('\r\n');
-    const { log } = runNewFormatImport(csvText, 'governance-compliance');
+    const { log } = runNewFormatImport(csvText, 'process-improvement-policy');
     const kpiLines = log.filter(l => l.startsWith('✓') && !l.includes('auto-calculated'));
     expect(kpiLines.length).toBe(6);
     expect(log.find(l => l.includes('require manual entry'))).toBeUndefined();
   });
 });
 
-// ─── governance-compliance partial import ────────────────────────────────────
+// ─── Process-improvement-policy partial import ────────────────────────────────
 //
-//  Fills in only pcr and aud; leaves cco, mav, doa, asa blank.
-//  Verifies that:
-//   • pcr and aud are calculated correctly
-//   • the four unfilled KPIs are absent (not zeroed)
-//   • a skip-reason log entry is emitted for each unfilled KPI
+//  This suite verifies that when only pce2 and ftr2 inputs are filled in the
+//  import:
+//   • calculates pce2 and ftr2 correctly
+//   • skips ltr2, pcr2, afct, rfr without zeroing them
+//   • records a skip-reason log entry for each uncalculable KPI
+//   • emits exactly 2 per-KPI success lines (summary line excluded)
 //
-
-describe('governance-compliance import — partial inputs (only pcr and aud filled)', () => {
-  function buildPartialGcRows(): string[][] {
-    const rows = buildTemplateRows('governance-compliance');
+describe('process-improvement-policy import — partial inputs (only pce2 and ftr2 filled)', () => {
+  /**
+   * Build a template with only pce2 and ftr2 "Your Value" cells populated.
+   * All other KPI rows are left blank.
+   */
+  function buildPartialPipRows(): string[][] {
+    const rows = buildTemplateRows('process-improvement-policy');
     rows.forEach(row => {
       const kpiId = row[0]?.trim().toLowerCase();
-      if (!['pcr', 'aud'].includes(kpiId)) return;
+      if (!['pce2', 'ftr2'].includes(kpiId)) return;
       const spec = KPI_DATA_SPECS[kpiId];
       if (!spec) return;
       const inputDef = spec.inputs.find(inp =>
@@ -4167,87 +4181,83 @@ describe('governance-compliance import — partial inputs (only pcr and aud fill
     return rows;
   }
 
-  it('calculates pcr correctly from its example inputs', () => {
-    const csvText = rowsToCsvText(buildPartialGcRows());
-    const { values } = runNewFormatImport(csvText, 'governance-compliance');
-    // pcr: pct(267, 300) = 89.0
-    expect(values['pcr'], 'pcr').toBeCloseTo(89.0, 0);
+  it('calculates pce2 correctly from its example inputs', () => {
+    const csvText = rowsToCsvText(buildPartialPipRows());
+    const { values } = runNewFormatImport(csvText, 'process-improvement-policy');
+    // pce2: pct(38, 320) = 11.9
+    expect(values['pce2'], 'pce2').toBeCloseTo(11.9, 0);
   });
 
-  it('calculates aud correctly from its example input', () => {
-    const csvText = rowsToCsvText(buildPartialGcRows());
-    const { values } = runNewFormatImport(csvText, 'governance-compliance');
-    // aud: safe(82) = 82
-    expect(values['aud'], 'aud').toBe(82);
+  it('calculates ftr2 correctly from its example inputs', () => {
+    const csvText = rowsToCsvText(buildPartialPipRows());
+    const { values } = runNewFormatImport(csvText, 'process-improvement-policy');
+    // ftr2: pct(1638, 1800) = 91.0
+    expect(values['ftr2'], 'ftr2').toBeCloseTo(91.0, 0);
   });
 
   it('skipped KPIs are absent from the values map — not zeroed', () => {
-    const csvText = rowsToCsvText(buildPartialGcRows());
-    const { values } = runNewFormatImport(csvText, 'governance-compliance');
+    const csvText = rowsToCsvText(buildPartialPipRows());
+    const { values } = runNewFormatImport(csvText, 'process-improvement-policy');
 
-    expect(values['cco'], 'cco should be absent').toBeUndefined();
-    expect(values['mav'], 'mav should be absent').toBeUndefined();
-    expect(values['doa'], 'doa should be absent').toBeUndefined();
-    expect(values['asa'], 'asa should be absent').toBeUndefined();
+    expect(values['ltr2'], 'ltr2 should be absent').toBeUndefined();
+    expect(values['pcr2'], 'pcr2 should be absent').toBeUndefined();
+    expect(values['afct'], 'afct should be absent').toBeUndefined();
+    expect(values['rfr'],  'rfr should be absent').toBeUndefined();
   });
 
   it('exactly 2 KPIs are calculated — no more, no less', () => {
-    const csvText = rowsToCsvText(buildPartialGcRows());
-    const { values } = runNewFormatImport(csvText, 'governance-compliance');
+    const csvText = rowsToCsvText(buildPartialPipRows());
+    const { values } = runNewFormatImport(csvText, 'process-improvement-policy');
 
-    expect(Object.keys(values).sort()).toEqual(['aud', 'pcr']);
+    expect(Object.keys(values).sort()).toEqual(['ftr2', 'pce2']);
   });
 
   it('log contains a skip-reason entry for each uncalculable KPI', () => {
-    const csvText = rowsToCsvText(buildPartialGcRows());
-    const { log } = runNewFormatImport(csvText, 'governance-compliance');
+    const csvText = rowsToCsvText(buildPartialPipRows());
+    const { log } = runNewFormatImport(csvText, 'process-improvement-policy');
 
     const skipLines = log.filter(l => l.includes('skipped'));
-    // cco, mav, doa, asa — all four should have a skip entry
+    // ltr2, pcr2, afct, rfr — all four should have a skip entry
     expect(skipLines.length, 'skip-reason log entries').toBeGreaterThanOrEqual(4);
   });
 
   it('log contains exactly 2 per-KPI success lines (summary line excluded)', () => {
-    const csvText = rowsToCsvText(buildPartialGcRows());
-    const { log } = runNewFormatImport(csvText, 'governance-compliance');
+    const csvText = rowsToCsvText(buildPartialPipRows());
+    const { log } = runNewFormatImport(csvText, 'process-improvement-policy');
 
     const kpiLines = log.filter(l => l.startsWith('✓') && !l.includes('auto-calculated'));
     expect(kpiLines.length, 'per-KPI success log lines').toBe(2);
   });
 
   it('skip-reason entries name the skipped KPIs, not the calculated ones', () => {
-    const csvText = rowsToCsvText(buildPartialGcRows());
-    const { log } = runNewFormatImport(csvText, 'governance-compliance');
+    const csvText = rowsToCsvText(buildPartialPipRows());
+    const { log } = runNewFormatImport(csvText, 'process-improvement-policy');
 
     const skipLines = log.filter(l => l.includes('skipped'));
     const skipText = skipLines.join('\n');
 
     // Skipped KPI labels appear in the log
-    expect(skipText).toContain('Contract Coverage');  // cco
-    expect(skipText).toContain('Maverick Spend');      // mav
-    expect(skipText).toContain('DoA Violations');      // doa
-    expect(skipText).toContain('Approved Supplier');   // asa
-
-    // Calculated KPI labels must NOT appear in the skip lines
-    expect(skipText).not.toContain('Policy Compliance Rate');
-    expect(skipText).not.toContain('Audit Score');
+    expect(skipText).toContain('Lead Time Reduction');       // ltr2
+    expect(skipText).toContain('Policy Compliance');         // pcr2
+    expect(skipText).toContain('Audit Finding Closure');     // afct
+    expect(skipText).toContain('Repeat Finding Rate');       // rfr
   });
 });
 
 // ─── Excel-mutated template round-trip (training-capability-building) ─────────
 //
-//  training-capability-building has 6 KPIs: asi, tcr, cepr, bcs, kpii, roi
+//  The training-capability-building framework has 6 KPIs:
+//    asi, tcr, cepr, bcs, kpii, roi
 //
-//  Expected values from example inputs (see kpiDataSpecs.ts):
-//    asi  : round((79 − 52) × 10) / 10          =  27.0  (Assessment Score Improvement, pts)
-//    tcr  : pct(104, 120)                        =  86.7  (Training Completion Rate %)
-//    cepr : pct(36, 45)                          =  80.0  (CIPS Exam Pass Rate %)
-//    bcs  : pct(630, 840)                        =  75.0  (Behaviour Change Score %)
-//    kpii : round(((79−68)/68) × 1000) / 10     =  16.2  (Post-Training KPI Improvement %)
-//    roi  : round(((882k−180k)/180k) × 1000)/10 = 390.0  (Training ROI %)
+//  This suite verifies all 6 KPIs survive:
+//    • CRLF line endings
+//    • No UTF-8 BOM
+//    • Extra blank rows scattered between sections
+//    • Leading/trailing whitespace inside cells
+//    • All mutations combined
 
 describe('Excel-mutated template round-trip (training-capability-building)', () => {
-  /** Return the training-capability-building template rows with all example values filled in. */
+  /** Return the training-capability-building template rows with example values filled in. */
   function buildFilledRows(): string[][] {
     const rows = buildTemplateRows('training-capability-building');
     rows.forEach(row => {
@@ -4263,7 +4273,17 @@ describe('Excel-mutated template round-trip (training-capability-building)', () 
     return rows;
   }
 
-  /** Shared KPI value assertions for all mutation variants. */
+  /**
+   * Shared KPI value assertions for all mutation variants.
+   *
+   * Expected values from example inputs:
+   *   asi:   round((79-52)*10)/10                             = 27.0
+   *   tcr:   pct(104, 120)                                   = 86.7
+   *   cepr:  pct(36, 45)                                     = 80.0
+   *   bcs:   pct(630, 840)                                   = 75.0
+   *   kpii:  round(((79-68)/68)*1000)/10                     = 16.2
+   *   roi:   round(((882000-180000)/180000)*1000)/10         = 390.0
+   */
   function assertKpiValues(values: Record<string, number>): void {
     expect(values['asi'],  'asi').toBeCloseTo(27.0, 0);
     expect(values['tcr'],  'tcr').toBeCloseTo(86.7, 0);
@@ -4341,16 +4361,20 @@ describe('Excel-mutated template round-trip (training-capability-building)', () 
   });
 });
 
-// ─── training-capability-building partial import ──────────────────────────────
+// ─── Training-capability-building partial import ───────────────────────────────
 //
-//  Fills in only asi and tcr; leaves cepr, bcs, kpii, roi blank.
-//  Verifies that:
-//   • asi and tcr are calculated correctly
-//   • the four unfilled KPIs are absent (not zeroed)
-//   • a skip-reason log entry is emitted for each unfilled KPI
+//  This suite verifies that when only asi and tcr inputs are filled in the
+//  import:
+//   • calculates asi and tcr correctly
+//   • skips cepr, bcs, kpii, roi without zeroing them
+//   • records a skip-reason log entry for each uncalculable KPI
+//   • emits exactly 2 per-KPI success lines (summary line excluded)
 //
-
 describe('training-capability-building import — partial inputs (only asi and tcr filled)', () => {
+  /**
+   * Build a template with only asi and tcr "Your Value" cells populated.
+   * All other KPI rows are left blank.
+   */
   function buildPartialTcbRows(): string[][] {
     const rows = buildTemplateRows('training-capability-building');
     rows.forEach(row => {
@@ -4369,14 +4393,14 @@ describe('training-capability-building import — partial inputs (only asi and t
   it('calculates asi correctly from its example inputs', () => {
     const csvText = rowsToCsvText(buildPartialTcbRows());
     const { values } = runNewFormatImport(csvText, 'training-capability-building');
-    // asi: round((79 − 52) × 10) / 10 = 27.0
+    // asi: round((79-52)*10)/10 = 27.0
     expect(values['asi'], 'asi').toBeCloseTo(27.0, 0);
   });
 
   it('calculates tcr correctly from its example inputs', () => {
     const csvText = rowsToCsvText(buildPartialTcbRows());
     const { values } = runNewFormatImport(csvText, 'training-capability-building');
-    // tcr: pct(104, 120) ≈ 86.7
+    // tcr: pct(104, 120) = 86.7
     expect(values['tcr'], 'tcr').toBeCloseTo(86.7, 0);
   });
 
@@ -4422,13 +4446,9 @@ describe('training-capability-building import — partial inputs (only asi and t
     const skipText = skipLines.join('\n');
 
     // Skipped KPI labels appear in the log
-    expect(skipText).toContain('CIPS Exam');           // cepr
-    expect(skipText).toContain('Behaviour Change');    // bcs
-    expect(skipText).toContain('Post-Training KPI');   // kpii
-    expect(skipText).toContain('Training ROI');        // roi
-
-    // Calculated KPI labels must NOT appear in the skip lines
-    expect(skipText).not.toContain('Assessment Score Improvement');
-    expect(skipText).not.toContain('Training Completion Rate');
+    expect(skipText).toContain('CIPS Exam Pass Rate');         // cepr
+    expect(skipText).toContain('Behaviour Change Score');      // bcs
+    expect(skipText).toContain('Post-Training KPI');           // kpii
+    expect(skipText).toContain('Training ROI');                // roi
   });
 });
