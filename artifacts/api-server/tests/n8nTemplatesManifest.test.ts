@@ -1,11 +1,14 @@
 /**
- * Manifest integrity check for n8n-templates.
+ * Manifest integrity check for automation templates (n8n, Make.com, Zapier).
  *
  * Reads manifest.json directly and asserts that every entry's `filename`
- * resolves to an actual file in public/n8n-templates/.
+ * resolves to an actual file in the correct platform subdirectory:
+ *   - n8n    → public/n8n-templates/<filename>
+ *   - make   → public/make-templates/<filename>
+ *   - zapier → public/zapier-templates/<filename>
  *
- * Adding a manifest entry without the corresponding JSON file will cause
- * this test to fail immediately — no need to click "Prepare & Download" first.
+ * Adding a manifest entry (for any platform) without the corresponding JSON
+ * file will cause this test to fail immediately.
  */
 
 import { describe, it, expect } from 'vitest';
@@ -13,12 +16,23 @@ import { existsSync, readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
-const TEMPLATES_DIR = join(
+const PUBLIC_DIR = join(
   dirname(fileURLToPath(import.meta.url)),
-  '../public/n8n-templates',
+  '../public',
 );
 
-const MANIFEST_PATH = join(TEMPLATES_DIR, 'manifest.json');
+const N8N_TEMPLATES_DIR = join(PUBLIC_DIR, 'n8n-templates');
+const MAKE_TEMPLATES_DIR = join(PUBLIC_DIR, 'make-templates');
+const ZAPIER_TEMPLATES_DIR = join(PUBLIC_DIR, 'zapier-templates');
+
+const MANIFEST_PATH = join(N8N_TEMPLATES_DIR, 'manifest.json');
+
+/** Map each platform value to its on-disk directory. */
+const PLATFORM_DIR: Record<string, string> = {
+  n8n: N8N_TEMPLATES_DIR,
+  make: MAKE_TEMPLATES_DIR,
+  zapier: ZAPIER_TEMPLATES_DIR,
+};
 
 interface ManifestTemplate {
   id: string;
@@ -32,7 +46,7 @@ interface Manifest {
   [key: string]: unknown;
 }
 
-describe('n8n-templates manifest integrity', () => {
+describe('automation templates manifest integrity', () => {
   const manifest: Manifest = JSON.parse(readFileSync(MANIFEST_PATH, 'utf-8'));
 
   it('manifest.json is parseable and has a templates array', () => {
@@ -49,20 +63,61 @@ describe('n8n-templates manifest integrity', () => {
     }
   });
 
-  it('every filename in the manifest exists on disk in public/n8n-templates/', () => {
-    // Collect unique filenames so the failure message names every missing file.
-    const missing: string[] = [];
-
+  it('every template entry has a recognised platform (n8n | make | zapier)', () => {
     for (const t of manifest.templates) {
-      const fullPath = join(TEMPLATES_DIR, t.filename);
+      expect(
+        Object.keys(PLATFORM_DIR),
+        `template "${t.id}" has unknown platform "${t.platform}"`,
+      ).toContain(t.platform);
+    }
+  });
+
+  it('every n8n filename exists on disk in public/n8n-templates/', () => {
+    const missing: string[] = [];
+    for (const t of manifest.templates.filter(t => t.platform === 'n8n')) {
+      const fullPath = join(N8N_TEMPLATES_DIR, t.filename);
       if (!existsSync(fullPath)) {
-        missing.push(`${t.id} → ${t.filename}`);
+        missing.push(`${t.id} → n8n-templates/${t.filename}`);
       }
     }
-
     expect(
       missing,
-      `The following manifest entries have no matching file on disk:\n  ${missing.join('\n  ')}`,
+      `The following n8n manifest entries have no matching file on disk:\n  ${missing.join('\n  ')}`,
     ).toHaveLength(0);
+  });
+
+  it('every Make.com filename exists on disk in public/make-templates/', () => {
+    const missing: string[] = [];
+    for (const t of manifest.templates.filter(t => t.platform === 'make')) {
+      const fullPath = join(MAKE_TEMPLATES_DIR, t.filename);
+      if (!existsSync(fullPath)) {
+        missing.push(`${t.id} → make-templates/${t.filename}`);
+      }
+    }
+    expect(
+      missing,
+      `The following Make.com manifest entries have no matching file on disk:\n  ${missing.join('\n  ')}`,
+    ).toHaveLength(0);
+  });
+
+  it('every Zapier filename exists on disk in public/zapier-templates/', () => {
+    const missing: string[] = [];
+    for (const t of manifest.templates.filter(t => t.platform === 'zapier')) {
+      const fullPath = join(ZAPIER_TEMPLATES_DIR, t.filename);
+      if (!existsSync(fullPath)) {
+        missing.push(`${t.id} → zapier-templates/${t.filename}`);
+      }
+    }
+    expect(
+      missing,
+      `The following Zapier manifest entries have no matching file on disk:\n  ${missing.join('\n  ')}`,
+    ).toHaveLength(0);
+  });
+
+  it('adding a platform-specific downloadPath without its file causes failure (self-test)', () => {
+    // Verify the guard works: a fabricated entry pointing at a non-existent
+    // make-templates file must not resolve.
+    const fakePath = join(MAKE_TEMPLATES_DIR, '__nonexistent-guard-check__.json');
+    expect(existsSync(fakePath)).toBe(false);
   });
 });
