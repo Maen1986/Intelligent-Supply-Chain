@@ -648,14 +648,19 @@ function BenchmarkTab({ lang }: { lang: Lang }) {
 
   const getVal = (k: KPIDef) => vals[k.id] ?? k.def;
 
-  // Override gcMedian / gcTopQ / display strings for KPIs that have SKU-class data
+  // Override gcMedian / gcTopQ / display strings for KPIs that have SKU-class data.
+  // Lookup order: sub-sector-specific entry → industry-wide '*' fallback → original value.
   const adjustedKpis = useMemo(() => {
     if (!skuClass) return kpis;
     return kpis.map(k => {
       const skuKey   = SKU_KPI_MAP[k.id];
       if (!skuKey) return k;
-      const medEntry = SKU_CLASS_KPI_BENCHMARKS[skuKey]?.[skuClass];
-      const tqEntry  = SKU_CLASS_KPI_TOP_QUARTILE[skuKey]?.[skuClass];
+      const medEntry =
+        SKU_CLASS_KPI_BENCHMARKS[skuKey]?.[subIndustry]?.[skuClass]
+        ?? SKU_CLASS_KPI_BENCHMARKS[skuKey]?.['*']?.[skuClass];
+      const tqEntry  =
+        SKU_CLASS_KPI_TOP_QUARTILE[skuKey]?.[subIndustry]?.[skuClass]
+        ?? SKU_CLASS_KPI_TOP_QUARTILE[skuKey]?.['*']?.[skuClass];
       if (!medEntry) return k;
       const newMedian = Math.round(Math.max(0, Math.min(100, k.norm(medEntry.value))));
       const newTopQ   = tqEntry
@@ -669,7 +674,7 @@ function BenchmarkTab({ lang }: { lang: Lang }) {
         gcTopQRaw:   tqEntry ? (ar ? tqEntry.labelAr : tqEntry.label) + ' ✦' : k.gcTopQRaw,
       };
     });
-  }, [kpis, skuClass, ar]);
+  }, [kpis, skuClass, subIndustry, ar]);
 
   const radarData = useMemo(() => adjustedKpis.map(k => ({
     metric: ar ? k.labelAr : k.label,
