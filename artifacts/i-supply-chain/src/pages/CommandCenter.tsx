@@ -19,6 +19,11 @@ import { Button } from '@/components/ui/button';
 
 import { API_BASE } from '@/lib/apiBase';
 import { safeSetItem } from '@/lib/storage';
+import {
+  SKU_CLASSES, SkuClassKey,
+  SKU_CLASS_KPI_BENCHMARKS, SKU_CLASS_KPI_TOP_QUARTILE,
+  INDUSTRY_SKU_CLASSES, SUB_SECTOR_DEFAULT_SKU, SKU_KPI_MAP,
+} from '@/lib/kpiBenchmarksBySkuClass';
 
 // ─── KPI Configuration ────────────────────────────────────────────────────────
 const KPI_CONFIG = [
@@ -433,101 +438,175 @@ type KPIDef = {
 
 const INDUSTRY_KPIS: Record<string, KPIDef[]> = {
   'Manufacturing': [
+    // norm(85%)=85 ✓  norm(95%)=95 ✓
     { id:'otif',         label:'OTIF %',                  labelAr:'نسبة OTIF',                   unit:'%',    min:50,max:100,def:76, gcMedian:85,gcTopQ:95, gcMedianRaw:'85%',    gcTopQRaw:'95%',    norm:v=>v,                            impactPct:0.20, howToClose:'Implement VMI/Kanban with top-10 suppliers; set contractual OTIF KPIs with penalty clauses (CIPS Level 4).', howToCloseAr:'طبّق نموذج VMI/Kanban مع أفضل 10 موردين بمؤشرات أداء تعاقدية (CIPS المستوى 4).' },
-    { id:'invTurns',     label:'Inventory Turns',          labelAr:'معدل دوران المخزون',           unit:'×/yr',min:1, max:25, def:5,  gcMedian:60,gcTopQ:88, gcMedianRaw:'8×',     gcTopQRaw:'14×',    norm:v=>Math.min(100,(v/20)*100),     impactPct:0.15, howToClose:'Introduce demand-driven MRP with 12-week rolling forecast; reduce safety stock using statistical models (APICS CPIM).', howToCloseAr:'طبّق MRP بتحفيز الطلب وقلّص مخزون الأمان بالنماذج الإحصائية.' },
-    { id:'procCycle',    label:'Procurement Cycle Time',   labelAr:'دورة المشتريات',               unit:'days',min:3, max:90, def:28, gcMedian:70,gcTopQ:92, gcMedianRaw:'18d',    gcTopQRaw:'8d',     norm:v=>Math.max(0,((90-v)/82)*100),  impactPct:0.08, howToClose:'Deploy e-procurement with pre-approved vendor panels and dynamic purchasing (CIPS eSourcing).', howToCloseAr:'طبّق المشتريات الإلكترونية مع قوائم الموردين المعتمدين.' },
+    // norm(8×)=(8/20)×100=40  norm(14×)=(14/20)×100=70
+    { id:'invTurns',     label:'Inventory Turns',          labelAr:'معدل دوران المخزون',           unit:'×/yr',min:1, max:25, def:5,  gcMedian:40,gcTopQ:70, gcMedianRaw:'8×',     gcTopQRaw:'14×',    norm:v=>Math.min(100,(v/20)*100),     impactPct:0.15, howToClose:'Introduce demand-driven MRP with 12-week rolling forecast; reduce safety stock using statistical models (APICS CPIM).', howToCloseAr:'طبّق MRP بتحفيز الطلب وقلّص مخزون الأمان بالنماذج الإحصائية.' },
+    // norm(18d)=((90-18)/82)×100=88  norm(8d)=((90-8)/82)×100=100→99
+    { id:'procCycle',    label:'Procurement Cycle Time',   labelAr:'دورة المشتريات',               unit:'days',min:3, max:90, def:28, gcMedian:88,gcTopQ:99, gcMedianRaw:'18d',    gcTopQRaw:'8d',     norm:v=>Math.max(0,((90-v)/82)*100),  impactPct:0.08, howToClose:'Deploy e-procurement with pre-approved vendor panels and dynamic purchasing (CIPS eSourcing).', howToCloseAr:'طبّق المشتريات الإلكترونية مع قوائم الموردين المعتمدين.' },
+    // norm(72%)=72 ✓  norm(88%)=88 ✓
     { id:'forecastAcc',  label:'Forecast Accuracy',        labelAr:'دقة التنبؤ بالطلب',            unit:'%',   min:30,max:99, def:63, gcMedian:72,gcTopQ:88, gcMedianRaw:'72%',    gcTopQRaw:'88%',    norm:v=>v,                            impactPct:0.20, howToClose:'Implement collaborative S&OP with AI/ML demand sensing (APICS IBF).', howToCloseAr:'طبّق S&OP التعاوني مع استشعار الطلب بالذكاء الاصطناعي.' },
-    { id:'procCost',     label:'Procurement Cost % Rev',   labelAr:'تكلفة المشتريات %',            unit:'%rev',min:3, max:30, def:15, gcMedian:60,gcTopQ:88, gcMedianRaw:'12% rev',gcTopQRaw:'8% rev', norm:v=>Math.max(0,((30-v)/27)*100),  impactPct:0.40, howToClose:'Launch strategic category management; negotiate multi-year framework agreements.', howToCloseAr:'أطلق إدارة الفئات الاستراتيجية وتفاوض على اتفاقيات إطارية.' },
+    // norm(12%)=((30-12)/27)×100=67  norm(8%)=((30-8)/27)×100=82
+    { id:'procCost',     label:'Procurement Cost % Rev',   labelAr:'تكلفة المشتريات %',            unit:'%rev',min:3, max:30, def:15, gcMedian:67,gcTopQ:82, gcMedianRaw:'12% rev',gcTopQRaw:'8% rev', norm:v=>Math.max(0,((30-v)/27)*100),  impactPct:0.40, howToClose:'Launch strategic category management; negotiate multi-year framework agreements.', howToCloseAr:'أطلق إدارة الفئات الاستراتيجية وتفاوض على اتفاقيات إطارية.' },
+    // norm(85%)=85 ✓  norm(96%)=96 ✓
     { id:'perfOrder',    label:'Perfect Order Rate',       labelAr:'معدل الطلب المثالي',           unit:'%',   min:50,max:100,def:73, gcMedian:85,gcTopQ:96, gcMedianRaw:'85%',    gcTopQRaw:'96%',    norm:v=>v,                            impactPct:0.12, howToClose:'Implement E2E order management with quality checkpoints at each SCOR Deliver milestone.', howToCloseAr:'طبّق إدارة الطلبيات الشاملة مع نقاط تفتيش SCOR Deliver.' },
-    { id:'wasteRate',    label:'Waste / Scrap Rate',       labelAr:'معدل الهدر والنفايات',         unit:'%',   min:0, max:15, def:5.8,gcMedian:65,gcTopQ:90, gcMedianRaw:'3.5%',   gcTopQRaw:'1.2%',   norm:v=>Math.max(0,((15-v)/15)*100),  impactPct:0.30, howToClose:'Deploy Lean Six Sigma DMAIC: value stream mapping, waste identification, kaizen events.', howToCloseAr:'طبّق Lean Six Sigma DMAIC: خرطشة القيمة وجلسات Kaizen.' },
+    // norm(3.5%)=((15-3.5)/15)×100=77  norm(1.2%)=((15-1.2)/15)×100=92
+    { id:'wasteRate',    label:'Waste / Scrap Rate',       labelAr:'معدل الهدر والنفايات',         unit:'%',   min:0, max:15, def:5.8,gcMedian:77,gcTopQ:92, gcMedianRaw:'3.5%',   gcTopQRaw:'1.2%',   norm:v=>Math.max(0,((15-v)/15)*100),  impactPct:0.30, howToClose:'Deploy Lean Six Sigma DMAIC: value stream mapping, waste identification, kaizen events.', howToCloseAr:'طبّق Lean Six Sigma DMAIC: خرطشة القيمة وجلسات Kaizen.' },
   ],
   'Energy & Oil': [
+    // norm(82%)=82 ✓  norm(95%)=95 ✓
     { id:'matAvail',     label:'Material/Spares Availability',labelAr:'توافر المواد وقطع الغيار', unit:'%',   min:50,max:100,def:74, gcMedian:82,gcTopQ:95, gcMedianRaw:'82%',    gcTopQRaw:'95%',    norm:v=>v,                            impactPct:0.30, howToClose:'Implement critical spare parts ABCD analysis with min/max stock levels at site.', howToCloseAr:'طبّق تصنيف قطع الغيار الحرجة (ABCD) مع مستويات الحد الأدنى في الموقع.' },
-    { id:'downtime',     label:'Unplanned Downtime %',     labelAr:'التوقف غير المخطط',            unit:'%',   min:0, max:20, def:7.8,gcMedian:68,gcTopQ:92, gcMedianRaw:'4.5%',   gcTopQRaw:'1.2%',   norm:v=>Math.max(0,((20-v)/20)*100),  impactPct:0.50, howToClose:'Deploy reliability-centred maintenance (RCM) with predictive sensors; reduce MTTR by 40%.', howToCloseAr:'طبّق الصيانة المتمحورة حول الموثوقية (RCM) مع أجهزة استشعار تنبؤية.' },
-    { id:'procCycle',    label:'Procurement Cycle Time',   labelAr:'دورة المشتريات',               unit:'days',min:5, max:120,def:42, gcMedian:65,gcTopQ:90, gcMedianRaw:'28d',    gcTopQRaw:'12d',    norm:v=>Math.max(0,((120-v)/115)*100),impactPct:0.08, howToClose:'Pre-qualify and pre-price critical materials; deploy blanket purchase orders with call-off.', howToCloseAr:'أهّل وسعّر المواد الحرجة مسبقاً؛ أصدر أوامر شراء إطارية.' },
+    // norm(4.5%)=((20-4.5)/20)×100=78  norm(1.2%)=((20-1.2)/20)×100=94
+    { id:'downtime',     label:'Unplanned Downtime %',     labelAr:'التوقف غير المخطط',            unit:'%',   min:0, max:20, def:7.8,gcMedian:78,gcTopQ:94, gcMedianRaw:'4.5%',   gcTopQRaw:'1.2%',   norm:v=>Math.max(0,((20-v)/20)*100),  impactPct:0.50, howToClose:'Deploy reliability-centred maintenance (RCM) with predictive sensors; reduce MTTR by 40%.', howToCloseAr:'طبّق الصيانة المتمحورة حول الموثوقية (RCM) مع أجهزة استشعار تنبؤية.' },
+    // norm(28d)=((120-28)/115)×100=80  norm(12d)=((120-12)/115)×100=94
+    { id:'procCycle',    label:'Procurement Cycle Time',   labelAr:'دورة المشتريات',               unit:'days',min:5, max:120,def:42, gcMedian:80,gcTopQ:94, gcMedianRaw:'28d',    gcTopQRaw:'12d',    norm:v=>Math.max(0,((120-v)/115)*100),impactPct:0.08, howToClose:'Pre-qualify and pre-price critical materials; deploy blanket purchase orders with call-off.', howToCloseAr:'أهّل وسعّر المواد الحرجة مسبقاً؛ أصدر أوامر شراء إطارية.' },
+    // norm(80%)=80 ✓  norm(95%)=95 ✓
     { id:'supplierComp', label:'Supplier Compliance Rate', labelAr:'امتثال الموردين',              unit:'%',   min:40,max:100,def:70, gcMedian:80,gcTopQ:95, gcMedianRaw:'80%',    gcTopQRaw:'95%',    norm:v=>v,                            impactPct:0.20, howToClose:'Implement supplier development programme (SDP) with quarterly KPI reviews; CIPS SRM Level 4.', howToCloseAr:'طبّق برنامج تطوير الموردين مع مراجعات ربع سنوية (CIPS SRM المستوى 4).' },
+    // norm(40%)=40 ✓  norm(62%)=62 ✓
     { id:'iktva',        label:'IKTVA Local Content %',    labelAr:'نسبة المحتوى المحلي IKTVA',   unit:'%',   min:0, max:100,def:28, gcMedian:40,gcTopQ:62, gcMedianRaw:'40%',    gcTopQRaw:'62%',    norm:v=>v,                            impactPct:0.10, howToClose:'Map sourcing categories against IKTVA scorecard; develop SME local supplier pipeline.', howToCloseAr:'خرطشة فئات التوريد مقابل بطاقة IKTVA؛ طوّر خط أنابيب موردين محليين.' },
+    // norm(82%)=82 ✓  norm(97%)=97 ✓
     { id:'contractComp', label:'Contract Compliance Rate', labelAr:'الامتثال التعاقدي',            unit:'%',   min:40,max:100,def:72, gcMedian:82,gcTopQ:97, gcMedianRaw:'82%',    gcTopQRaw:'97%',    norm:v=>v,                            impactPct:0.18, howToClose:'Deploy CLM system with automated milestone alerts and deviation management workflow.', howToCloseAr:'طبّق نظام CLM مع تنبيهات آلية للمعالم وسير عمل الانحرافات.' },
   ],
   'Government / Public Sector': [
+    // norm(72%)=72 ✓  norm(94%)=94 ✓
     { id:'contractComp', label:'Contract Compliance Rate', labelAr:'الامتثال التعاقدي',            unit:'%',   min:30,max:100,def:60, gcMedian:72,gcTopQ:94, gcMedianRaw:'72%',    gcTopQRaw:'94%',    norm:v=>v,                            impactPct:0.25, howToClose:'Implement CLM with GTPL-aligned workflow; train staff to CIPS Level 4 contract management.', howToCloseAr:'طبّق CLM بسير عمل متوافق مع نظام المنافسات؛ درّب الموظفين على CIPS المستوى 4.' },
-    { id:'procCycle',    label:'Procurement Cycle Time',   labelAr:'دورة المشتريات',               unit:'days',min:10,max:180,def:65, gcMedian:58,gcTopQ:84, gcMedianRaw:'45d',    gcTopQRaw:'22d',    norm:v=>Math.max(0,((180-v)/170)*100),impactPct:0.06, howToClose:'Pre-approve framework agreements for repeat purchases; deploy e-procurement per GTPL Chapter 5.', howToCloseAr:'أقرّ اتفاقيات إطارية للمشتريات المتكررة؛ طبّق المشتريات الإلكترونية وفق نظام المنافسات.' },
+    // norm(45d)=((180-45)/170)×100=79  norm(22d)=((180-22)/170)×100=93
+    { id:'procCycle',    label:'Procurement Cycle Time',   labelAr:'دورة المشتريات',               unit:'days',min:10,max:180,def:65, gcMedian:79,gcTopQ:93, gcMedianRaw:'45d',    gcTopQRaw:'22d',    norm:v=>Math.max(0,((180-v)/170)*100),impactPct:0.06, howToClose:'Pre-approve framework agreements for repeat purchases; deploy e-procurement per GTPL Chapter 5.', howToCloseAr:'أقرّ اتفاقيات إطارية للمشتريات المتكررة؛ طبّق المشتريات الإلكترونية وفق نظام المنافسات.' },
+    // norm(78%)=78 ✓  norm(96%)=96 ✓
     { id:'poaAdherence', label:'Policy / DoA Adherence',  labelAr:'الالتزام بجدول التفويض',       unit:'%',   min:30,max:100,def:65, gcMedian:78,gcTopQ:96, gcMedianRaw:'78%',    gcTopQRaw:'96%',    norm:v=>v,                            impactPct:0.20, howToClose:'Publish clear DoA matrix; automate approvals in ERP with policy guards (CIPS Governance).', howToCloseAr:'انشر مصفوفة تفويض واضحة؛ أتمتة الاعتمادات في نظام ERP.' },
+    // norm(68)=68 ✓  norm(88)=88 ✓
     { id:'suppPerf',     label:'Supplier Performance Score',labelAr:'أداء الموردين',              unit:'/100',min:0, max:100,def:55, gcMedian:68,gcTopQ:88, gcMedianRaw:'68/100',  gcTopQRaw:'88/100', norm:v=>v,                            impactPct:0.18, howToClose:'Implement KPI-based SRM programme; conduct bi-annual supplier reviews with corrective plans.', howToCloseAr:'طبّق برنامج SRM قائم على المؤشرات ومراجعات أداء نصف سنوية.' },
+    // norm(32%)=32 ✓  norm(55%)=55 ✓
     { id:'localContent', label:'Local Content / IKTVA %', labelAr:'المحتوى المحلي',               unit:'%',   min:0, max:100,def:22, gcMedian:32,gcTopQ:55, gcMedianRaw:'32%',    gcTopQRaw:'55%',    norm:v=>v,                            impactPct:0.10, howToClose:'Map spend categories to Nitaqat/IKTVA; shift non-critical commodities to SME local suppliers.', howToCloseAr:'خرطشة فئات الإنفاق مع بطاقة نطاقات/IKTVA؛ وجّه الاستهلاك نحو الموردين المحليين.' },
-    { id:'savings',      label:'Budget Savings Achieved',  labelAr:'الوفورات المحققة',             unit:'%',   min:0, max:20, def:4,  gcMedian:40,gcTopQ:75, gcMedianRaw:'7%',     gcTopQRaw:'14%',    norm:v=>Math.min(100,(v/20)*100),     impactPct:0.50, howToClose:'Launch strategic category management; negotiate multi-year framework agreements with re-tendering.', howToCloseAr:'أطلق إدارة الفئات وتفاوض على اتفاقيات إطارية متعددة السنوات.' },
+    // norm(7%)=(7/20)×100=35  norm(14%)=(14/20)×100=70
+    { id:'savings',      label:'Budget Savings Achieved',  labelAr:'الوفورات المحققة',             unit:'%',   min:0, max:20, def:4,  gcMedian:35,gcTopQ:70, gcMedianRaw:'7%',     gcTopQRaw:'14%',    norm:v=>Math.min(100,(v/20)*100),     impactPct:0.50, howToClose:'Launch strategic category management; negotiate multi-year framework agreements with re-tendering.', howToCloseAr:'أطلق إدارة الفئات وتفاوض على اتفاقيات إطارية متعددة السنوات.' },
+    // norm(75%)=75 ✓  norm(95%)=95 ✓
     { id:'auditComp',    label:'Audit Compliance Rate',    labelAr:'الامتثال للتدقيق',             unit:'%',   min:30,max:100,def:62, gcMedian:75,gcTopQ:95, gcMedianRaw:'75%',    gcTopQRaw:'95%',    norm:v=>v,                            impactPct:0.15, howToClose:'Implement continuous compliance monitoring dashboard; schedule quarterly procurement audits (GTPL Article 65).', howToCloseAr:'طبّق لوحة متابعة الامتثال وجدوِّل تدقيقات مشتريات ربع سنوية.' },
   ],
   'Pharmaceutical': [
+    // norm(95%)=95 ✓  norm(99.5%)=99 (capped) ✓
     { id:'supplyContinu',label:'Supply Continuity Rate',   labelAr:'معدل استمرارية التوريد',       unit:'%',   min:50,max:100,def:88, gcMedian:95,gcTopQ:99, gcMedianRaw:'95%',    gcTopQRaw:'99.5%',  norm:v=>v,                            impactPct:0.40, howToClose:'Dual-source all critical APIs; maintain 12-week strategic reserve for top-20 essential medicines.', howToCloseAr:'استخدم مزودين بديلين للمكونات الفعّالة؛ احتفظ باحتياطي 12 أسبوعاً.' },
+    // norm(88%)=88 ✓  norm(99%)=99 ✓
     { id:'regComp',      label:'GMP/Regulatory Compliance',labelAr:'الامتثال التنظيمي GMP',       unit:'%',   min:50,max:100,def:79, gcMedian:88,gcTopQ:99, gcMedianRaw:'88%',    gcTopQRaw:'99%',    norm:v=>v,                            impactPct:0.50, howToClose:'Implement QMS aligned to ICH Q10; automate batch record management and CAPA tracking.', howToCloseAr:'طبّق نظام إدارة الجودة ICH Q10؛ أتمتة سجلات الدفعات وتتبع الإجراءات التصحيحية.' },
-    { id:'invTurns',     label:'Inventory Turns',          labelAr:'معدل دوران المخزون',           unit:'×/yr',min:1, max:20, def:3.5,gcMedian:40,gcTopQ:70, gcMedianRaw:'5×',     gcTopQRaw:'9×',     norm:v=>Math.min(100,(v/18)*100),     impactPct:0.20, howToClose:'Implement demand-driven replenishment with 26-week rolling forecasts; reduce expired inventory.', howToCloseAr:'طبّق التجديد بتحفيز الطلب مع توقع 26 أسبوعاً؛ قلّص المخزون منتهي الصلاحية.' },
-    { id:'procCycle',    label:'Procurement Cycle Time',   labelAr:'دورة المشتريات',               unit:'days',min:5, max:90, def:38, gcMedian:60,gcTopQ:85, gcMedianRaw:'25d',    gcTopQRaw:'12d',    norm:v=>Math.max(0,((90-v)/85)*100),  impactPct:0.10, howToClose:'Pre-qualify and pre-price approved suppliers; deploy e-auction for commodity APIs.', howToCloseAr:'أهّل وسعّر الموردين المعتمدين مسبقاً؛ طبّق المزادات الإلكترونية.' },
+    // norm(5×)=(5/18)×100=28  norm(9×)=(9/18)×100=50
+    { id:'invTurns',     label:'Inventory Turns',          labelAr:'معدل دوران المخزون',           unit:'×/yr',min:1, max:20, def:3.5,gcMedian:28,gcTopQ:50, gcMedianRaw:'5×',     gcTopQRaw:'9×',     norm:v=>Math.min(100,(v/18)*100),     impactPct:0.20, howToClose:'Implement demand-driven replenishment with 26-week rolling forecasts; reduce expired inventory.', howToCloseAr:'طبّق التجديد بتحفيز الطلب مع توقع 26 أسبوعاً؛ قلّص المخزون منتهي الصلاحية.' },
+    // norm(25d)=((90-25)/85)×100=77  norm(12d)=((90-12)/85)×100=92
+    { id:'procCycle',    label:'Procurement Cycle Time',   labelAr:'دورة المشتريات',               unit:'days',min:5, max:90, def:38, gcMedian:77,gcTopQ:92, gcMedianRaw:'25d',    gcTopQRaw:'12d',    norm:v=>Math.max(0,((90-v)/85)*100),  impactPct:0.10, howToClose:'Pre-qualify and pre-price approved suppliers; deploy e-auction for commodity APIs.', howToCloseAr:'أهّل وسعّر الموردين المعتمدين مسبقاً؛ طبّق المزادات الإلكترونية.' },
+    // norm(82)=82 ✓  norm(97)=97 ✓
     { id:'suppQuality',  label:'Supplier Quality Score',   labelAr:'مؤشر جودة الموردين',          unit:'/100',min:0, max:100,def:70, gcMedian:82,gcTopQ:97, gcMedianRaw:'82/100',  gcTopQRaw:'97/100', norm:v=>v,                            impactPct:0.30, howToClose:'Implement supplier qualification programme (SQP) with GMP audit checklist; require CoA per batch.', howToCloseAr:'طبّق برنامج تأهيل الموردين مع قائمة تدقيق GMP وشهادة التحليل لكل دفعة.' },
+    // norm(90%)=90 ✓  norm(99.5%)=99 ✓
     { id:'coldChain',    label:'Cold Chain Compliance',    labelAr:'الامتثال للسلسلة الباردة',     unit:'%',   min:50,max:100,def:83, gcMedian:90,gcTopQ:99, gcMedianRaw:'90%',    gcTopQRaw:'99.5%',  norm:v=>v,                            impactPct:0.40, howToClose:'Deploy IoT temperature monitoring with automated alerts; qualify carriers to GDP standards.', howToCloseAr:'طبّق مراقبة IoT للحرارة مع تنبيهات آلية؛ أهّل الناقلين بمعايير GDP.' },
   ],
   'Retail & FMCG': [
+    // norm(87%)=87 ✓  norm(96%)=96 ✓
     { id:'otif',         label:'OTIF %',                   labelAr:'نسبة OTIF',                   unit:'%',   min:50,max:100,def:80, gcMedian:87,gcTopQ:96, gcMedianRaw:'87%',    gcTopQRaw:'96%',    norm:v=>v,                            impactPct:0.20, howToClose:'Implement EDI with top-20 suppliers; enforce 48-hour advance shipping notices with automated OTIF reporting.', howToCloseAr:'طبّق EDI مع أفضل 20 مورد وإشعارات الشحن المسبقة مع تقارير OTIF.' },
-    { id:'invTurns',     label:'Inventory Turns',          labelAr:'معدل دوران المخزون',           unit:'×/yr',min:3, max:40, def:9,  gcMedian:52,gcTopQ:82, gcMedianRaw:'14×',    gcTopQRaw:'24×',    norm:v=>Math.min(100,(v/36)*100),     impactPct:0.20, howToClose:'Switch to demand-driven replenishment (CPFR); reduce assortment complexity 20% using Pareto.', howToCloseAr:'انتقل إلى التجديد بتحفيز الطلب (CPFR)؛ قلّص تعقيد التشكيلة 20%.' },
+    // norm(14×)=(14/36)×100=39  norm(24×)=(24/36)×100=67
+    { id:'invTurns',     label:'Inventory Turns',          labelAr:'معدل دوران المخزون',           unit:'×/yr',min:3, max:40, def:9,  gcMedian:39,gcTopQ:67, gcMedianRaw:'14×',    gcTopQRaw:'24×',    norm:v=>Math.min(100,(v/36)*100),     impactPct:0.20, howToClose:'Switch to demand-driven replenishment (CPFR); reduce assortment complexity 20% using Pareto.', howToCloseAr:'انتقل إلى التجديد بتحفيز الطلب (CPFR)؛ قلّص تعقيد التشكيلة 20%.' },
+    // norm(86%)=86 ✓  norm(97%)=97 ✓
     { id:'fillRate',     label:'Fill Rate %',              labelAr:'معدل الاستيفاء',               unit:'%',   min:50,max:100,def:78, gcMedian:86,gcTopQ:97, gcMedianRaw:'86%',    gcTopQRaw:'97%',    norm:v=>v,                            impactPct:0.25, howToClose:'Implement min/max reorder points with automatic PO generation; improve demand forecast accuracy.', howToCloseAr:'طبّق نقاط إعادة الطلب التلقائية وحسّن دقة التنبؤ بالطلب.' },
-    { id:'daysSupply',   label:'Days of Supply',           labelAr:'أيام التوريد',                 unit:'days',min:5, max:90, def:35, gcMedian:60,gcTopQ:85, gcMedianRaw:'24d',    gcTopQRaw:'12d',    norm:v=>Math.max(0,((90-v)/85)*100),  impactPct:0.15, howToClose:'Align safety stock to statistical demand variability; implement seasonal buffer stock planning.', howToCloseAr:'اضبط مخزون الأمان مع تقلب الطلب الإحصائي؛ طبّق التخطيط الموسمي.' },
-    { id:'shrinkage',    label:'Shrinkage / Waste Rate',   labelAr:'معدل الاختلاس والهدر',         unit:'%',   min:0, max:15, def:4.5,gcMedian:65,gcTopQ:90, gcMedianRaw:'2.8%',   gcTopQRaw:'0.9%',   norm:v=>Math.max(0,((15-v)/15)*100),  impactPct:0.40, howToClose:'Deploy RFID inventory tracking; implement cycle counting programme; strengthen receiving controls.', howToCloseAr:'طبّق تتبع RFID للمخزون؛ نفّذ برنامج الجرد الدوري وعزّز ضوابط الاستقبال.' },
+    // norm(24d)=((90-24)/85)×100=78  norm(12d)=((90-12)/85)×100=92
+    { id:'daysSupply',   label:'Days of Supply',           labelAr:'أيام التوريد',                 unit:'days',min:5, max:90, def:35, gcMedian:78,gcTopQ:92, gcMedianRaw:'24d',    gcTopQRaw:'12d',    norm:v=>Math.max(0,((90-v)/85)*100),  impactPct:0.15, howToClose:'Align safety stock to statistical demand variability; implement seasonal buffer stock planning.', howToCloseAr:'اضبط مخزون الأمان مع تقلب الطلب الإحصائي؛ طبّق التخطيط الموسمي.' },
+    // norm(2.8%)=((15-2.8)/15)×100=81  norm(0.9%)=((15-0.9)/15)×100=94
+    { id:'shrinkage',    label:'Shrinkage / Waste Rate',   labelAr:'معدل الاختلاس والهدر',         unit:'%',   min:0, max:15, def:4.5,gcMedian:81,gcTopQ:94, gcMedianRaw:'2.8%',   gcTopQRaw:'0.9%',   norm:v=>Math.max(0,((15-v)/15)*100),  impactPct:0.40, howToClose:'Deploy RFID inventory tracking; implement cycle counting programme; strengthen receiving controls.', howToCloseAr:'طبّق تتبع RFID للمخزون؛ نفّذ برنامج الجرد الدوري وعزّز ضوابط الاستقبال.' },
+    // norm(76%)=76 ✓  norm(91%)=91 ✓
     { id:'forecastAcc',  label:'Forecast Accuracy',        labelAr:'دقة التنبؤ',                   unit:'%',   min:30,max:99, def:65, gcMedian:76,gcTopQ:91, gcMedianRaw:'76%',    gcTopQRaw:'91%',    norm:v=>v,                            impactPct:0.20, howToClose:'Implement statistical forecasting (ARIMA/ML) with promotional lift factors; run monthly S&OP.', howToCloseAr:'طبّق التنبؤ الإحصائي مع عوامل العروض الترويجية ومراجعة S&OP شهرية.' },
   ],
   'Logistics & Transportation': [
+    // norm(90%)=90 ✓  norm(98%)=98 ✓
     { id:'otif',         label:'OTIF %',                   labelAr:'نسبة OTIF',                   unit:'%',   min:50,max:100,def:83, gcMedian:90,gcTopQ:98, gcMedianRaw:'90%',    gcTopQRaw:'98%',    norm:v=>v,                            impactPct:0.30, howToClose:'Implement real-time GPS tracking with automated ETA updates; enforce carrier KPIs with bonuses.', howToCloseAr:'طبّق تتبع GPS مع تحديثات ETA آلية ومؤشرات أداء الناقلين.' },
+    // norm(97%)=97 ✓  norm(99.8%)=99 ✓
     { id:'orderAccuracy',label:'Order Accuracy Rate',      labelAr:'معدل دقة الطلبيات',            unit:'%',   min:80,max:100,def:94, gcMedian:97,gcTopQ:99, gcMedianRaw:'97%',    gcTopQRaw:'99.8%',  norm:v=>v,                            impactPct:0.20, howToClose:'Deploy barcode/RFID scanning at all pick/pack stations; implement WMS.', howToCloseAr:'طبّق مسح الباركود/RFID في محطات الالتقاط والتعبئة؛ نفّذ نظام WMS.' },
+    // norm(74%)=74 ✓  norm(89%)=89 ✓
     { id:'whUtil',       label:'Warehouse Utilization',    labelAr:'استغلال المستودع',              unit:'%',   min:20,max:100,def:65, gcMedian:74,gcTopQ:89, gcMedianRaw:'74%',    gcTopQRaw:'89%',    norm:v=>v,                            impactPct:0.20, howToClose:'Re-slot warehouse using ABC velocity analysis; implement dynamic slotting algorithms.', howToCloseAr:'أعد تخصيص المستودع باستخدام تحليل ABC وخوارزميات التخصيص الديناميكي.' },
-    { id:'damageRate',   label:'Damage / Loss Rate',       labelAr:'معدل التلف والفقدان',           unit:'%',   min:0, max:5,  def:1.2,gcMedian:68,gcTopQ:94, gcMedianRaw:'0.6%',   gcTopQRaw:'0.1%',   norm:v=>Math.max(0,((5-v)/5)*100),    impactPct:0.50, howToClose:'Implement carrier liability KPIs; standardise packing specs; deploy claims management system.', howToCloseAr:'طبّق مؤشرات مسؤولية الناقلين وقيّس مواصفات التعبئة ونظام إدارة المطالبات.' },
-    { id:'transitVar',   label:'Transit Time Variance',    labelAr:'تباين وقت العبور',              unit:'days',min:0, max:10, def:3.2,gcMedian:64,gcTopQ:92, gcMedianRaw:'1.8d',   gcTopQRaw:'0.4d',   norm:v=>Math.max(0,((10-v)/10)*100),  impactPct:0.20, howToClose:'Optimise routing with TMS; negotiate dedicated capacity with key carriers for critical lanes.', howToCloseAr:'حسّن مسارات الشحن بنظام TMS؛ تفاوض على طاقة مخصصة مع الناقلين.' },
+    // norm(0.6%)=((5-0.6)/5)×100=88  norm(0.1%)=((5-0.1)/5)×100=98
+    { id:'damageRate',   label:'Damage / Loss Rate',       labelAr:'معدل التلف والفقدان',           unit:'%',   min:0, max:5,  def:1.2,gcMedian:88,gcTopQ:98, gcMedianRaw:'0.6%',   gcTopQRaw:'0.1%',   norm:v=>Math.max(0,((5-v)/5)*100),    impactPct:0.50, howToClose:'Implement carrier liability KPIs; standardise packing specs; deploy claims management system.', howToCloseAr:'طبّق مؤشرات مسؤولية الناقلين وقيّس مواصفات التعبئة ونظام إدارة المطالبات.' },
+    // norm(1.8d)=((10-1.8)/10)×100=82  norm(0.4d)=((10-0.4)/10)×100=96
+    { id:'transitVar',   label:'Transit Time Variance',    labelAr:'تباين وقت العبور',              unit:'days',min:0, max:10, def:3.2,gcMedian:82,gcTopQ:96, gcMedianRaw:'1.8d',   gcTopQRaw:'0.4d',   norm:v=>Math.max(0,((10-v)/10)*100),  impactPct:0.20, howToClose:'Optimise routing with TMS; negotiate dedicated capacity with key carriers for critical lanes.', howToCloseAr:'حسّن مسارات الشحن بنظام TMS؛ تفاوض على طاقة مخصصة مع الناقلين.' },
+    // norm(62)=62 ✓  norm(88)=88 ✓
     { id:'costEff',      label:'Cost Efficiency Score',    labelAr:'مؤشر كفاءة التكلفة',           unit:'/100',min:0, max:100,def:50, gcMedian:62,gcTopQ:88, gcMedianRaw:'62/100',  gcTopQRaw:'88/100', norm:v=>v,                            impactPct:0.30, howToClose:'Consolidate shipments; implement multi-drop routing optimisation; automate last-mile dispatch.', howToCloseAr:'دمج الشحنات؛ طبّق تحسين مسارات التوزيع المتعدد وأتمتة المرحلة الأخيرة.' },
   ],
   'Construction & EPC': [
+    // norm(78%)=78 ✓  norm(95%)=95 ✓
     { id:'matAvail',     label:'Material Availability On Schedule',labelAr:'توافر المواد في الموعد',unit:'%', min:30,max:100,def:68, gcMedian:78,gcTopQ:95, gcMedianRaw:'78%',    gcTopQRaw:'95%',    norm:v=>v,                            impactPct:0.40, howToClose:'Implement MRP linked to project schedule; apply SCOR Plan-Source integration.', howToCloseAr:'طبّق تخطيط متطلبات المواد المرتبط بجدول المشروع (SCOR Plan-Source).' },
-    { id:'procCycle',    label:'Procurement Cycle Time',   labelAr:'دورة المشتريات',               unit:'days',min:5, max:120,def:52, gcMedian:63,gcTopQ:85, gcMedianRaw:'35d',    gcTopQRaw:'15d',    norm:v=>Math.max(0,((120-v)/115)*100),impactPct:0.10, howToClose:'Pre-qualify tier-1 contractors; deploy blanket orders for standard materials with fast-track approval.', howToCloseAr:'أهّل مقاولي الدرجة الأولى وأصدر أوامر إطارية للمواد المعيارية.' },
+    // norm(35d)=((120-35)/115)×100=74  norm(15d)=((120-15)/115)×100=91
+    { id:'procCycle',    label:'Procurement Cycle Time',   labelAr:'دورة المشتريات',               unit:'days',min:5, max:120,def:52, gcMedian:74,gcTopQ:91, gcMedianRaw:'35d',    gcTopQRaw:'15d',    norm:v=>Math.max(0,((120-v)/115)*100),impactPct:0.10, howToClose:'Pre-qualify tier-1 contractors; deploy blanket orders for standard materials with fast-track approval.', howToCloseAr:'أهّل مقاولي الدرجة الأولى وأصدر أوامر إطارية للمواد المعيارية.' },
+    // norm(82%)=82 ✓  norm(97%)=97 ✓
     { id:'contractComp', label:'Contract Compliance Rate', labelAr:'الامتثال التعاقدي',            unit:'%',   min:40,max:100,def:70, gcMedian:82,gcTopQ:97, gcMedianRaw:'82%',    gcTopQRaw:'97%',    norm:v=>v,                            impactPct:0.20, howToClose:'Implement CLM with milestone tracking; deploy variation order management per FIDIC standards.', howToCloseAr:'طبّق CLM مع تتبع المعالم وأوامر التغيير وفق معايير FIDIC.' },
+    // norm(93%)=93 ✓  norm(99%)=99 ✓
     { id:'costAdherence',label:'Cost vs Budget Adherence', labelAr:'الالتزام بالميزانية',          unit:'%',   min:50,max:100,def:85, gcMedian:93,gcTopQ:99, gcMedianRaw:'93%',    gcTopQRaw:'99%',    norm:v=>v,                            impactPct:0.50, howToClose:'Implement earned value management (EVM); deploy cost engineering and change management.', howToCloseAr:'طبّق إدارة القيمة المكتسبة (EVM) وهندسة التكلفة وبروتوكولات التغيير.' },
+    // norm(32%)=32 ✓  norm(55%)=55 ✓
     { id:'localContent', label:'Local Content / IKTVA %', labelAr:'المحتوى المحلي',               unit:'%',   min:0, max:100,def:21, gcMedian:32,gcTopQ:55, gcMedianRaw:'32%',    gcTopQRaw:'55%',    norm:v=>v,                            impactPct:0.10, howToClose:'Map subcontracts against Saudi IKTVA scorecard; develop SME supplier panel for civil works.', howToCloseAr:'خرطشة عقود الباطن مع بطاقة IKTVA؛ طوّر لوحة موردين محليين للأعمال المدنية.' },
+    // norm(75%)=75 ✓  norm(94%)=94 ✓
     { id:'schedAdherence',label:'Schedule Adherence Rate', labelAr:'الالتزام بالجدول',             unit:'%',   min:30,max:100,def:62, gcMedian:75,gcTopQ:94, gcMedianRaw:'75%',    gcTopQRaw:'94%',    norm:v=>v,                            impactPct:0.40, howToClose:'Deploy CPM with weekly lookahead scheduling; implement weekly material flow meetings.', howToCloseAr:'طبّق طريقة المسار الحرج (CPM) مع جدولة أسبوعية ومراجعات تدفق المواد.' },
   ],
   'Healthcare': [
+    // norm(93%)=93 ✓  norm(99%)=99 ✓
     { id:'supplyAvail',  label:'Drug/Supply Availability', labelAr:'توافر الأدوية والمستلزمات',    unit:'%',   min:50,max:100,def:87, gcMedian:93,gcTopQ:99, gcMedianRaw:'93%',    gcTopQRaw:'99%',    norm:v=>v,                            impactPct:0.40, howToClose:'Implement demand-driven pharmaceutical inventory with safety stock based on lead time variability.', howToCloseAr:'طبّق مخزون دوائي بتحفيز الطلب مع مخزون أمان مبني على تباين التوريد.' },
-    { id:'stockoutRate', label:'Stockout Incidence Rate',  labelAr:'معدل نفاد المخزون',            unit:'%',   min:0, max:20, def:7,  gcMedian:73,gcTopQ:94, gcMedianRaw:'4%',     gcTopQRaw:'0.6%',   norm:v=>Math.max(0,((20-v)/20)*100),  impactPct:0.60, howToClose:'Classify medications by criticality (ABC/VED analysis); set higher safety stock for vital medications.', howToCloseAr:'صنّف الأدوية حسب الأهمية (ABC/VED)؛ اضبط مخزوناً أمانياً للأدوية الحيوية.' },
-    { id:'invTurns',     label:'Inventory Turns',          labelAr:'معدل دوران المخزون',           unit:'×/yr',min:1, max:20, def:4,  gcMedian:40,gcTopQ:70, gcMedianRaw:'6×',     gcTopQRaw:'11×',    norm:v=>Math.min(100,(v/18)*100),     impactPct:0.20, howToClose:'Implement consignment stock for high-value implants; automate reorder points in HIS.', howToCloseAr:'طبّق مخزون الأمانة للمستلزمات عالية القيمة؛ أتمتة نقاط إعادة الطلب.' },
-    { id:'procCycle',    label:'Procurement Cycle Time',   labelAr:'دورة المشتريات',               unit:'days',min:3, max:60, def:30, gcMedian:65,gcTopQ:85, gcMedianRaw:'20d',    gcTopQRaw:'9d',     norm:v=>Math.max(0,((60-v)/57)*100),  impactPct:0.10, howToClose:'Pre-qualify and centrally contract with top suppliers; deploy e-catalog for standard consumables.', howToCloseAr:'أهّل الموردين وتعاقد مركزياً؛ طبّق الكتالوج الإلكتروني للمستهلكات.' },
+    // norm(4%)=((20-4)/20)×100=80  norm(0.6%)=((20-0.6)/20)×100=97
+    { id:'stockoutRate', label:'Stockout Incidence Rate',  labelAr:'معدل نفاد المخزون',            unit:'%',   min:0, max:20, def:7,  gcMedian:80,gcTopQ:97, gcMedianRaw:'4%',     gcTopQRaw:'0.6%',   norm:v=>Math.max(0,((20-v)/20)*100),  impactPct:0.60, howToClose:'Classify medications by criticality (ABC/VED analysis); set higher safety stock for vital medications.', howToCloseAr:'صنّف الأدوية حسب الأهمية (ABC/VED)؛ اضبط مخزوناً أمانياً للأدوية الحيوية.' },
+    // norm(6×)=(6/18)×100=33  norm(11×)=(11/18)×100=61
+    { id:'invTurns',     label:'Inventory Turns',          labelAr:'معدل دوران المخزون',           unit:'×/yr',min:1, max:20, def:4,  gcMedian:33,gcTopQ:61, gcMedianRaw:'6×',     gcTopQRaw:'11×',    norm:v=>Math.min(100,(v/18)*100),     impactPct:0.20, howToClose:'Implement consignment stock for high-value implants; automate reorder points in HIS.', howToCloseAr:'طبّق مخزون الأمانة للمستلزمات عالية القيمة؛ أتمتة نقاط إعادة الطلب.' },
+    // norm(20d)=((60-20)/57)×100=70  norm(9d)=((60-9)/57)×100=90
+    { id:'procCycle',    label:'Procurement Cycle Time',   labelAr:'دورة المشتريات',               unit:'days',min:3, max:60, def:30, gcMedian:70,gcTopQ:90, gcMedianRaw:'20d',    gcTopQRaw:'9d',     norm:v=>Math.max(0,((60-v)/57)*100),  impactPct:0.10, howToClose:'Pre-qualify and centrally contract with top suppliers; deploy e-catalog for standard consumables.', howToCloseAr:'أهّل الموردين وتعاقد مركزياً؛ طبّق الكتالوج الإلكتروني للمستهلكات.' },
+    // norm(79)=79 ✓  norm(95)=95 ✓
     { id:'suppQuality',  label:'Supplier Quality Score',   labelAr:'مؤشر جودة الموردين',          unit:'/100',min:0, max:100,def:68, gcMedian:79,gcTopQ:95, gcMedianRaw:'79/100',  gcTopQRaw:'95/100', norm:v=>v,                            impactPct:0.30, howToClose:'Implement vendor qualification programme; require quality certificates and post-market reports.', howToCloseAr:'طبّق برنامج تأهيل الموردين واشترط شهادات الجودة وتقارير المراقبة.' },
+    // norm(90%)=90 ✓  norm(99.5%)=99 ✓
     { id:'coldChain',    label:'Cold Chain Compliance',    labelAr:'الامتثال للسلسلة الباردة',     unit:'%',   min:50,max:100,def:83, gcMedian:90,gcTopQ:99, gcMedianRaw:'90%',    gcTopQRaw:'99.5%',  norm:v=>v,                            impactPct:0.40, howToClose:'Deploy IoT temperature monitoring; qualify all cold-chain providers to GDP standards (SFDA/MOH).', howToCloseAr:'طبّق مراقبة IoT للحرارة؛ أهّل مزودي السلسلة الباردة بمعايير GDP.' },
   ],
   'Technology & ICT': [
+    // norm(76)=76 ✓  norm(94)=94 ✓
     { id:'vendorPerf',   label:'Vendor Performance Score', labelAr:'مؤشر أداء البائعين',           unit:'/100',min:0, max:100,def:65, gcMedian:76,gcTopQ:94, gcMedianRaw:'76/100',  gcTopQRaw:'94/100', norm:v=>v,                            impactPct:0.20, howToClose:'Implement vendor management office (VMO) with quarterly balanced scorecard reviews.', howToCloseAr:'أنشئ مكتب إدارة البائعين (VMO) مع مراجعات ربع سنوية ببطاقة أداء.' },
+    // norm(82%)=82 ✓  norm(97%)=97 ✓
     { id:'contractComp', label:'Contract Compliance Rate', labelAr:'الامتثال التعاقدي',            unit:'%',   min:40,max:100,def:72, gcMedian:82,gcTopQ:97, gcMedianRaw:'82%',    gcTopQRaw:'97%',    norm:v=>v,                            impactPct:0.25, howToClose:'Deploy IT-specific CLM with auto-renewal alerts, SLA tracking, and license reconciliation.', howToCloseAr:'طبّق CLM مخصص لتقنية المعلومات مع تنبيهات التجديد وتتبع SLA.' },
-    { id:'itProcCycle',  label:'IT Procurement Cycle',     labelAr:'دورة مشتريات تقنية المعلومات',unit:'days',min:3, max:60, def:24, gcMedian:63,gcTopQ:87, gcMedianRaw:'16d',    gcTopQRaw:'7d',     norm:v=>Math.max(0,((60-v)/57)*100),  impactPct:0.08, howToClose:'Standardise equipment catalogue; deploy e-procurement with pre-approved IT vendor panel.', howToCloseAr:'وحّد كتالوج المعدات؛ طبّق المشتريات الإلكترونية مع لوحة موردين IT معتمدين.' },
+    // norm(16d)=((60-16)/57)×100=77  norm(7d)=((60-7)/57)×100=93
+    { id:'itProcCycle',  label:'IT Procurement Cycle',     labelAr:'دورة مشتريات تقنية المعلومات',unit:'days',min:3, max:60, def:24, gcMedian:77,gcTopQ:93, gcMedianRaw:'16d',    gcTopQRaw:'7d',     norm:v=>Math.max(0,((60-v)/57)*100),  impactPct:0.08, howToClose:'Standardise equipment catalogue; deploy e-procurement with pre-approved IT vendor panel.', howToCloseAr:'وحّد كتالوج المعدات؛ طبّق المشتريات الإلكترونية مع لوحة موردين IT معتمدين.' },
+    // norm(89%)=89 ✓  norm(98%)=98 ✓
     { id:'slaComp',      label:'SLA Compliance Rate',      labelAr:'الامتثال لاتفاقيات الخدمة',    unit:'%',   min:50,max:100,def:80, gcMedian:89,gcTopQ:98, gcMedianRaw:'89%',    gcTopQRaw:'98%',    norm:v=>v,                            impactPct:0.30, howToClose:'Implement ITSM platform; enforce SLA breach escalation matrix with financial penalties.', howToCloseAr:'طبّق منصة ITSM؛ اشترط مصفوفة تصعيد خرق SLA مع عقوبات مالية.' },
+    // norm(70%)=70 ✓  norm(90%)=90 ✓
     { id:'assetUtil',    label:'Asset / License Utilization',labelAr:'استغلال الأصول والتراخيص',  unit:'%',   min:20,max:100,def:58, gcMedian:70,gcTopQ:90, gcMedianRaw:'70%',    gcTopQRaw:'90%',    norm:v=>v,                            impactPct:0.20, howToClose:'Conduct SAM audit; implement license harvesting for unused seats; consolidate vendors.', howToCloseAr:'أجرِ تدقيق SAM؛ طبّق حصاد التراخيص وادمج الموردين.' },
-    { id:'itSavings',    label:'IT Savings vs Budget %',   labelAr:'الوفورات مقابل ميزانية IT',    unit:'%',   min:0, max:25, def:4,  gcMedian:42,gcTopQ:72, gcMedianRaw:'8%',     gcTopQRaw:'16%',    norm:v=>Math.min(100,(v/25)*100),     impactPct:0.40, howToClose:'Leverage cloud economies of scale; consolidate vendors; negotiate volume discounts.', howToCloseAr:'استفد من اقتصاديات السحابة؛ دمج الموردين وتفاوض على خصومات الحجم.' },
+    // norm(8%)=(8/25)×100=32  norm(16%)=(16/25)×100=64
+    { id:'itSavings',    label:'IT Savings vs Budget %',   labelAr:'الوفورات مقابل ميزانية IT',    unit:'%',   min:0, max:25, def:4,  gcMedian:32,gcTopQ:64, gcMedianRaw:'8%',     gcTopQRaw:'16%',    norm:v=>Math.min(100,(v/25)*100),     impactPct:0.40, howToClose:'Leverage cloud economies of scale; consolidate vendors; negotiate volume discounts.', howToCloseAr:'استفد من اقتصاديات السحابة؛ دمج الموردين وتفاوض على خصومات الحجم.' },
   ],
   'Food & Beverage': [
+    // norm(86%)=86 ✓  norm(95%)=95 ✓
     { id:'otif',         label:'OTIF %',                   labelAr:'نسبة OTIF',                   unit:'%',   min:50,max:100,def:78, gcMedian:86,gcTopQ:95, gcMedianRaw:'86%',    gcTopQRaw:'95%',    norm:v=>v,                            impactPct:0.20, howToClose:'Implement EDI with top suppliers; enforce 24-hour advance shipping notice for fresh categories.', howToCloseAr:'طبّق EDI مع الموردين الرئيسيين وإشعار الشحن المسبق 24 ساعة.' },
+    // norm(90%)=90 ✓  norm(99%)=99 ✓
     { id:'foodSafety',   label:'Food Safety Compliance',   labelAr:'الامتثال لسلامة الغذاء SFDA', unit:'%',   min:50,max:100,def:82, gcMedian:90,gcTopQ:99, gcMedianRaw:'90%',    gcTopQRaw:'99%',    norm:v=>v,                            impactPct:0.50, howToClose:'Implement HACCP-based QMS; automate supplier food safety certification tracking (SFDA).', howToCloseAr:'طبّق نظام HACCP؛ أتمتة تتبع شهادات سلامة الغذاء للموردين (SFDA).' },
-    { id:'invTurns',     label:'Inventory Turns',          labelAr:'معدل دوران المخزون',           unit:'×/yr',min:4, max:52, def:10, gcMedian:48,gcTopQ:78, gcMedianRaw:'16×',    gcTopQRaw:'28×',    norm:v=>Math.min(100,(v/50)*100),     impactPct:0.20, howToClose:'Implement FEFO warehouse management; reduce SKU complexity using Pareto analysis.', howToCloseAr:'طبّق إدارة FEFO للمستودعات؛ قلّص تعقيد SKU باستخدام باريتو.' },
-    { id:'spoilage',     label:'Waste / Spoilage Rate',    labelAr:'معدل الهدر والتلف',            unit:'%',   min:0, max:20, def:3.8,gcMedian:65,gcTopQ:90, gcMedianRaw:'2.2%',   gcTopQRaw:'0.7%',   norm:v=>Math.max(0,((20-v)/20)*100),  impactPct:0.50, howToClose:'Implement dynamic pricing for near-expiry products; establish redistribution channels.', howToCloseAr:'طبّق التسعير الديناميكي للمنتجات القريبة من الانتهاء؛ أنشئ قنوات إعادة التوزيع.' },
+    // norm(16×)=(16/50)×100=32  norm(28×)=(28/50)×100=56
+    { id:'invTurns',     label:'Inventory Turns',          labelAr:'معدل دوران المخزون',           unit:'×/yr',min:4, max:52, def:10, gcMedian:32,gcTopQ:56, gcMedianRaw:'16×',    gcTopQRaw:'28×',    norm:v=>Math.min(100,(v/50)*100),     impactPct:0.20, howToClose:'Implement FEFO warehouse management; reduce SKU complexity using Pareto analysis.', howToCloseAr:'طبّق إدارة FEFO للمستودعات؛ قلّص تعقيد SKU باستخدام باريتو.' },
+    // norm(2.2%)=((20-2.2)/20)×100=89  norm(0.7%)=((20-0.7)/20)×100=97
+    { id:'spoilage',     label:'Waste / Spoilage Rate',    labelAr:'معدل الهدر والتلف',            unit:'%',   min:0, max:20, def:3.8,gcMedian:89,gcTopQ:97, gcMedianRaw:'2.2%',   gcTopQRaw:'0.7%',   norm:v=>Math.max(0,((20-v)/20)*100),  impactPct:0.50, howToClose:'Implement dynamic pricing for near-expiry products; establish redistribution channels.', howToCloseAr:'طبّق التسعير الديناميكي للمنتجات القريبة من الانتهاء؛ أنشئ قنوات إعادة التوزيع.' },
+    // norm(87%)=87 ✓  norm(97%)=97 ✓
     { id:'fillRate',     label:'Fill Rate %',              labelAr:'معدل الاستيفاء',               unit:'%',   min:50,max:100,def:79, gcMedian:87,gcTopQ:97, gcMedianRaw:'87%',    gcTopQRaw:'97%',    norm:v=>v,                            impactPct:0.25, howToClose:'Reduce minimum order quantities with key suppliers; improve SKU-level demand forecasting.', howToCloseAr:'قلّص الحد الأدنى لكميات الطلب؛ حسّن التنبؤ بالطلب على مستوى SKU.' },
+    // norm(78%)=78 ✓  norm(92%)=92 ✓
     { id:'forecastAcc',  label:'Forecast Accuracy',        labelAr:'دقة التنبؤ',                   unit:'%',   min:30,max:99, def:68, gcMedian:78,gcTopQ:92, gcMedianRaw:'78%',    gcTopQRaw:'92%',    norm:v=>v,                            impactPct:0.20, howToClose:'Implement collaborative forecasting with top-10 distributors (CPFR); apply promotional uplift modelling.', howToCloseAr:'طبّق CPFR مع أفضل 10 موزعين ونمذجة رفع العروض الترويجية.' },
   ],
   'E-commerce': [
+    // norm(94%)=94 ✓  norm(99%)=99 ✓
     { id:'fillRate',     label:'Order Fill Rate %',        labelAr:'معدل استيفاء الطلبيات',        unit:'%',   min:50,max:100,def:88, gcMedian:94,gcTopQ:99, gcMedianRaw:'94%',    gcTopQRaw:'99%',    norm:v=>v,                            impactPct:0.30, howToClose:'Implement real-time inventory visibility across all nodes; use available-to-promise (ATP) at checkout.', howToCloseAr:'طبّق رؤية فورية للمخزون عبر جميع العقد وكيانات ATP عند الدفع.' },
+    // norm(88%)=88 ✓  norm(97%)=97 ✓
     { id:'otd',          label:'On-Time Delivery %',       labelAr:'التسليم في الوقت المحدد',      unit:'%',   min:50,max:100,def:80, gcMedian:88,gcTopQ:97, gcMedianRaw:'88%',    gcTopQRaw:'97%',    norm:v=>v,                            impactPct:0.30, howToClose:'Multi-carrier routing optimisation; implement last-mile tracking with customer notifications.', howToCloseAr:'تحسين التوجيه متعدد الناقلين وتتبع المرحلة الأخيرة مع إشعارات العملاء.' },
-    { id:'returnRate',   label:'Return / Refund Rate',     labelAr:'معدل الإرجاع',                 unit:'%',   min:0, max:30, def:14, gcMedian:64,gcTopQ:90, gcMedianRaw:'8%',     gcTopQRaw:'2%',     norm:v=>Math.max(0,((30-v)/30)*100),  impactPct:0.40, howToClose:'Improve product listing accuracy; QC at fulfilment centre; launch returns analytics programme.', howToCloseAr:'حسّن دقة قوائم المنتجات؛ ضبط الجودة في مراكز التلبية وتحليلات الإرجاع.' },
+    // norm(8%)=((30-8)/30)×100=73  norm(2%)=((30-2)/30)×100=93
+    { id:'returnRate',   label:'Return / Refund Rate',     labelAr:'معدل الإرجاع',                 unit:'%',   min:0, max:30, def:14, gcMedian:73,gcTopQ:93, gcMedianRaw:'8%',     gcTopQRaw:'2%',     norm:v=>Math.max(0,((30-v)/30)*100),  impactPct:0.40, howToClose:'Improve product listing accuracy; QC at fulfilment centre; launch returns analytics programme.', howToCloseAr:'حسّن دقة قوائم المنتجات؛ ضبط الجودة في مراكز التلبية وتحليلات الإرجاع.' },
+    // norm(96%)=96 ✓  norm(99.5%)=99 ✓
     { id:'invAccuracy',  label:'Inventory Accuracy',       labelAr:'دقة المخزون',                  unit:'%',   min:60,max:100,def:91, gcMedian:96,gcTopQ:99, gcMedianRaw:'96%',    gcTopQRaw:'99.5%',  norm:v=>v,                            impactPct:0.20, howToClose:'Deploy RFID or barcode scanning; implement daily cycle count programme at fulfilment centres.', howToCloseAr:'طبّق مسح RFID أو الباركود؛ نفّذ برنامج الجرد الدوري اليومي.' },
-    { id:'daysSupply',   label:'Days of Supply',           labelAr:'أيام التوريد',                 unit:'days',min:3, max:60, def:32, gcMedian:67,gcTopQ:87, gcMedianRaw:'20d',    gcTopQRaw:'10d',    norm:v=>Math.max(0,((60-v)/57)*100),  impactPct:0.15, howToClose:'Implement demand-driven reorder with ML-based demand sensing; reduce minimum order quantities.', howToCloseAr:'طبّق إعادة الطلب بتحفيز ML؛ قلّص الحد الأدنى لكميات الطلب.' },
+    // norm(20d)=((60-20)/57)×100=70  norm(10d)=((60-10)/57)×100=88
+    { id:'daysSupply',   label:'Days of Supply',           labelAr:'أيام التوريد',                 unit:'days',min:3, max:60, def:32, gcMedian:70,gcTopQ:88, gcMedianRaw:'20d',    gcTopQRaw:'10d',    norm:v=>Math.max(0,((60-v)/57)*100),  impactPct:0.15, howToClose:'Implement demand-driven reorder with ML-based demand sensing; reduce minimum order quantities.', howToCloseAr:'طبّق إعادة الطلب بتحفيز ML؛ قلّص الحد الأدنى لكميات الطلب.' },
+    // norm(87%)=87 ✓  norm(96%)=96 ✓
     { id:'perfOrder',    label:'Perfect Order Rate',       labelAr:'معدل الطلب المثالي',           unit:'%',   min:50,max:100,def:79, gcMedian:87,gcTopQ:96, gcMedianRaw:'87%',    gcTopQRaw:'96%',    norm:v=>v,                            impactPct:0.30, howToClose:'Integrate order management, WMS and TMS for E2E visibility; automate exception management.', howToCloseAr:'ادمج إدارة الطلبيات وWMS وTMS للرؤية الشاملة؛ أتمتة إدارة الاستثناءات.' },
   ],
   'Services': [
+    // norm(80%)=80 ✓  norm(96%)=96 ✓
     { id:'contractComp', label:'Contract Compliance Rate', labelAr:'الامتثال التعاقدي',            unit:'%',   min:30,max:100,def:68, gcMedian:80,gcTopQ:96, gcMedianRaw:'80%',    gcTopQRaw:'96%',    norm:v=>v,                            impactPct:0.30, howToClose:'Deploy CLM platform with automated milestone tracking and renewal alerts; align to CIPS standards.', howToCloseAr:'طبّق CLM مع تتبع المعالم وتنبيهات التجديد؛ توافق مع معايير CIPS.' },
-    { id:'procCycle',    label:'Procurement Cycle Time',   labelAr:'دورة المشتريات',               unit:'days',min:5, max:90, def:35, gcMedian:65,gcTopQ:87, gcMedianRaw:'22d',    gcTopQRaw:'9d',     norm:v=>Math.max(0,((90-v)/85)*100),  impactPct:0.10, howToClose:'Pre-qualify service providers; deploy e-procurement with digital RFP/RFQ templates.', howToCloseAr:'أهّل مزودي الخدمات مسبقاً؛ طبّق المشتريات الإلكترونية مع قوالب RFP/RFQ.' },
+    // norm(22d)=((90-22)/85)×100=80  norm(9d)=((90-9)/85)×100=95
+    { id:'procCycle',    label:'Procurement Cycle Time',   labelAr:'دورة المشتريات',               unit:'days',min:5, max:90, def:35, gcMedian:80,gcTopQ:95, gcMedianRaw:'22d',    gcTopQRaw:'9d',     norm:v=>Math.max(0,((90-v)/85)*100),  impactPct:0.10, howToClose:'Pre-qualify service providers; deploy e-procurement with digital RFP/RFQ templates.', howToCloseAr:'أهّل مزودي الخدمات مسبقاً؛ طبّق المشتريات الإلكترونية مع قوالب RFP/RFQ.' },
+    // norm(74)=74 ✓  norm(92)=92 ✓
     { id:'suppPerf',     label:'Supplier Performance',     labelAr:'أداء الموردين',                unit:'/100',min:0, max:100,def:62, gcMedian:74,gcTopQ:92, gcMedianRaw:'74/100',  gcTopQRaw:'92/100', norm:v=>v,                            impactPct:0.20, howToClose:'Implement quarterly supplier performance reviews with balanced scorecard (quality, delivery, cost).', howToCloseAr:'نفّذ مراجعات أداء ربع سنوية للموردين ببطاقة الأداء المتوازن.' },
+    // norm(85%)=85 ✓  norm(97%)=97 ✓
     { id:'slaComp',      label:'SLA Delivery Rate',        labelAr:'الوفاء باتفاقيات الخدمة',     unit:'%',   min:50,max:100,def:74, gcMedian:85,gcTopQ:97, gcMedianRaw:'85%',    gcTopQRaw:'97%',    norm:v=>v,                            impactPct:0.30, howToClose:'Establish SLA management office; implement automated SLA monitoring with breach escalation.', howToCloseAr:'أنشئ مكتب إدارة SLA؛ طبّق المراقبة الآلية مع تصعيد الخرق.' },
-    { id:'savings',      label:'Cost Savings vs Budget %', labelAr:'الوفورات مقابل الميزانية',     unit:'%',   min:0, max:20, def:3,  gcMedian:38,gcTopQ:72, gcMedianRaw:'7%',     gcTopQRaw:'14%',    norm:v=>Math.min(100,(v/20)*100),     impactPct:0.50, howToClose:'Launch strategic sourcing programme; negotiate framework agreements for top-20 spend categories.', howToCloseAr:'أطلق الشراء الاستراتيجي وتفاوض على اتفاقيات إطارية لأفضل 20 فئة إنفاق.' },
+    // norm(7%)=(7/20)×100=35  norm(14%)=(14/20)×100=70
+    { id:'savings',      label:'Cost Savings vs Budget %', labelAr:'الوفورات مقابل الميزانية',     unit:'%',   min:0, max:20, def:3,  gcMedian:35,gcTopQ:70, gcMedianRaw:'7%',     gcTopQRaw:'14%',    norm:v=>Math.min(100,(v/20)*100),     impactPct:0.50, howToClose:'Launch strategic sourcing programme; negotiate framework agreements for top-20 spend categories.', howToCloseAr:'أطلق الشراء الاستراتيجي وتفاوض على اتفاقيات إطارية لأفضل 20 فئة إنفاق.' },
+    // norm(65%)=65 ✓  norm(92%)=92 ✓
     { id:'riskCoverage', label:'Vendor Risk Coverage',     labelAr:'تغطية مخاطر البائعين',         unit:'%',   min:0, max:100,def:45, gcMedian:65,gcTopQ:92, gcMedianRaw:'65%',    gcTopQRaw:'92%',    norm:v=>v,                            impactPct:0.20, howToClose:'Implement annual vendor risk assessment for all strategic vendors; score against ISO 31000.', howToCloseAr:'طبّق تقييم مخاطر سنوي للبائعين الاستراتيجيين مقابل معايير ISO 31000.' },
   ],
 };
@@ -541,65 +620,154 @@ function BenchmarkTab({ lang }: { lang: Lang }) {
   const ar = lang === 'ar';
   const [industry, setIndustry]       = useState(Object.keys(INDUSTRY_TREE)[0]);
   const [subIndustry, setSubIndustry] = useState('');
+  const [skuClass, setSkuClass]       = useState<SkuClassKey | null>(null);
   const [revenue, setRevenue]         = useState(200); // SAR M
   const [vals, setVals]               = useState<Record<string, number>>({});
   const [targets, setTargets]         = useState<Record<string, number>>({});
 
   const kpis = useMemo(() => getIndustryKPIs(industry), [industry]);
 
+  // SKU classes that are meaningful for this industry
+  const availableSkuClasses = useMemo(
+    () => INDUSTRY_SKU_CLASSES[industry] ?? [],
+    [industry],
+  );
+
   const handleIndustryChange = useCallback((ind: string) => {
-    setIndustry(ind); setSubIndustry(''); setVals({}); setTargets({});
+    setIndustry(ind); setSubIndustry(''); setSkuClass(null); setVals({}); setTargets({});
+  }, []);
+
+  // When sub-sector changes, auto-suggest the most relevant SKU class
+  const handleSubSectorChange = useCallback((sub: string) => {
+    setSubIndustry(sub);
+    if (sub) {
+      const suggestion = SUB_SECTOR_DEFAULT_SKU[sub];
+      if (suggestion) setSkuClass(suggestion);
+    }
   }, []);
 
   const getVal = (k: KPIDef) => vals[k.id] ?? k.def;
 
-  const radarData = useMemo(() => kpis.map(k => ({
+  // Override gcMedian / gcTopQ / display strings for KPIs that have SKU-class data
+  const adjustedKpis = useMemo(() => {
+    if (!skuClass) return kpis;
+    return kpis.map(k => {
+      const skuKey   = SKU_KPI_MAP[k.id];
+      if (!skuKey) return k;
+      const medEntry = SKU_CLASS_KPI_BENCHMARKS[skuKey]?.[skuClass];
+      const tqEntry  = SKU_CLASS_KPI_TOP_QUARTILE[skuKey]?.[skuClass];
+      if (!medEntry) return k;
+      const newMedian = Math.round(Math.max(0, Math.min(100, k.norm(medEntry.value))));
+      const newTopQ   = tqEntry
+        ? Math.round(Math.max(0, Math.min(100, k.norm(tqEntry.value))))
+        : k.gcTopQ;
+      return {
+        ...k,
+        gcMedian:    newMedian,
+        gcTopQ:      newTopQ,
+        gcMedianRaw: (ar ? medEntry.labelAr : medEntry.label) + ' ✦',
+        gcTopQRaw:   tqEntry ? (ar ? tqEntry.labelAr : tqEntry.label) + ' ✦' : k.gcTopQRaw,
+      };
+    });
+  }, [kpis, skuClass, ar]);
+
+  const radarData = useMemo(() => adjustedKpis.map(k => ({
     metric: ar ? k.labelAr : k.label,
     'As-Is':        Math.round(k.norm(getVal(k))),
     'GCC Median':   k.gcMedian,
     'Top Quartile': k.gcTopQ,
-  })), [kpis, vals, ar]);
+  })), [adjustedKpis, vals, ar]);
 
-  const gaps = useMemo(() => kpis.map(k => {
+  const gaps = useMemo(() => adjustedKpis.map(k => {
     const asIs       = Math.round(k.norm(getVal(k)));
     const targetNorm = targets[k.id] ?? k.gcTopQ;
     const gapToMed   = k.gcMedian - asIs;
     const gapToTgt   = targetNorm - asIs;
     const sarImpact  = Math.max(0, gapToTgt) * revenue * 1_000_000 * k.impactPct / 100;
     return { ...k, asIs, targetNorm, gapToMed, gapToTgt, sarImpact };
-  }), [kpis, vals, targets, revenue]);
+  }), [adjustedKpis, vals, targets, revenue]);
 
   const totalImpact = gaps.reduce((s, g) => s + g.sarImpact, 0);
   const avgAsIs     = Math.round(gaps.reduce((s, g) => s + g.asIs, 0) / Math.max(gaps.length, 1));
-  const avgMedian   = Math.round(kpis.reduce((s, k) => s + k.gcMedian, 0) / Math.max(kpis.length, 1));
-  const avgTopQ     = Math.round(kpis.reduce((s, k) => s + k.gcTopQ, 0) / Math.max(kpis.length, 1));
+  const avgMedian   = Math.round(adjustedKpis.reduce((s, k) => s + k.gcMedian, 0) / Math.max(adjustedKpis.length, 1));
+  const avgTopQ     = Math.round(adjustedKpis.reduce((s, k) => s + k.gcTopQ, 0) / Math.max(adjustedKpis.length, 1));
+
+  const skuLabel = skuClass ? (SKU_CLASSES.find(c => c.id === skuClass)?.[ar ? 'labelAr' : 'label'] ?? skuClass) : null;
 
   return (
     <div className="space-y-8" dir={ar ? 'rtl' : 'ltr'}>
-      {/* Company Profile */}
-      <div className="grid sm:grid-cols-3 gap-4 bg-[#082C6B]/5 border border-[#082C6B]/20 rounded-xl p-5">
-        <div className="space-y-1.5">
-          <label className="text-xs font-bold text-[#082C6B] uppercase tracking-wider">{ar ? 'القطاع الصناعي' : 'Industry Sector'}</label>
-          <select value={industry} onChange={e => handleIndustryChange(e.target.value)}
-            className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#082C6B]/30">
-            {Object.keys(INDUSTRY_TREE).map(i => <option key={i} value={i}>{industryLabel(i, ar)}</option>)}
-          </select>
-        </div>
-        <div className="space-y-1.5">
-          <label className="text-xs font-bold text-[#082C6B] uppercase tracking-wider">{ar ? 'القطاع الفرعي' : 'Sub-Sector'}</label>
-          <select value={subIndustry} onChange={e => setSubIndustry(e.target.value)}
-            className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#082C6B]/30">
-            <option value="">{ar ? '— الكل —' : '— All sub-sectors —'}</option>
-            {(INDUSTRY_TREE[industry] ?? []).map(s => <option key={s} value={s}>{subSectorLabel(industry, s, ar)}</option>)}
-          </select>
-        </div>
-        <div className="space-y-1.5">
-          <label className="text-xs font-bold text-[#082C6B] uppercase tracking-wider">{ar ? 'الإيرادات السنوية' : 'Annual Revenue'}</label>
-          <div className="flex items-center gap-2">
-            <input type="range" min={10} max={5000} step={10} value={revenue} onChange={e => setRevenue(+e.target.value)} className="flex-1 accent-[#C9A84C]" />
-            <span className="text-sm font-bold text-[#C9A84C] whitespace-nowrap w-24 text-right">
-              {revenue >= 1000 ? `SAR ${(revenue/1000).toFixed(1)}B` : `SAR ${revenue}M`}
-            </span>
+      {/* Company Profile — 4-column filter bar */}
+      <div className="bg-[#082C6B]/5 border border-[#082C6B]/20 rounded-xl p-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+
+          {/* 1 — Industry Sector */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-[#082C6B] uppercase tracking-wider">
+              {ar ? 'القطاع الصناعي' : 'Industry Sector'}
+            </label>
+            <select value={industry} onChange={e => handleIndustryChange(e.target.value)}
+              className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#082C6B]/30">
+              {Object.keys(INDUSTRY_TREE).map(i => <option key={i} value={i}>{industryLabel(i, ar)}</option>)}
+            </select>
+          </div>
+
+          {/* 2 — Sub-Sector */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-[#082C6B] uppercase tracking-wider">
+              {ar ? 'القطاع الفرعي' : 'Sub-Sector'}
+            </label>
+            <select value={subIndustry} onChange={e => handleSubSectorChange(e.target.value)}
+              className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#082C6B]/30">
+              <option value="">{ar ? '— الكل —' : '— All sub-sectors —'}</option>
+              {(INDUSTRY_TREE[industry] ?? []).map(s => <option key={s} value={s}>{subSectorLabel(industry, s, ar)}</option>)}
+            </select>
+          </div>
+
+          {/* 3 — SKU / Inventory Class */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-[#082C6B] uppercase tracking-wider flex items-center gap-1.5">
+              {ar ? 'فئة المخزون / SKU' : 'SKU / Inventory Class'}
+              {skuClass && (
+                <span className="text-[10px] font-bold text-[#C9A84C] bg-[#C9A84C]/15 px-1.5 py-0.5 rounded-full leading-none">
+                  {ar ? 'معدّل' : 'adjusted'}
+                </span>
+              )}
+            </label>
+            <select
+              value={skuClass ?? ''}
+              onChange={e => setSkuClass((e.target.value as SkuClassKey) || null)}
+              className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#082C6B]/30"
+            >
+              <option value="">{ar ? '— كل الفئات (قطاعي) —' : '— All classes (sector-wide) —'}</option>
+              {availableSkuClasses.map(cls => {
+                const info = SKU_CLASSES.find(c => c.id === cls);
+                return (
+                  <option key={cls} value={cls}>
+                    {ar ? (info?.labelAr ?? cls) : (info?.label ?? cls)}
+                  </option>
+                );
+              })}
+            </select>
+            {skuClass && (
+              <p className="text-[11px] text-[#C9A84C] leading-tight">
+                {ar ? '✦ الوسيط والهدف معدَّلان لهذه الفئة' : '✦ Median & Target adjusted for this class'}
+              </p>
+            )}
+          </div>
+
+          {/* 4 — Annual Revenue */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-[#082C6B] uppercase tracking-wider">
+              {ar ? 'الإيرادات السنوية' : 'Annual Revenue'}
+            </label>
+            <div className="flex items-center gap-2">
+              <input type="range" min={10} max={5000} step={10} value={revenue}
+                onChange={e => setRevenue(+e.target.value)}
+                className="flex-1 accent-[#C9A84C]" />
+              <span className="text-sm font-bold text-[#C9A84C] whitespace-nowrap w-24 text-right">
+                {revenue >= 1000 ? `SAR ${(revenue/1000).toFixed(1)}B` : `SAR ${revenue}M`}
+              </span>
+            </div>
           </div>
         </div>
       </div>
@@ -608,7 +776,9 @@ function BenchmarkTab({ lang }: { lang: Lang }) {
       <div className="flex items-center gap-3">
         <div className="flex-1 h-px bg-border" />
         <span className="text-xs font-bold text-[#082C6B] uppercase tracking-widest px-3 py-1 bg-[#082C6B]/8 rounded-full whitespace-nowrap">
-          {ar ? 'مؤشرات قطاع:' : 'KPIs for:'} {industry}{subIndustry ? ` — ${subIndustry}` : ''}
+          {ar ? 'مؤشرات قطاع:' : 'KPIs for:'} {industry}
+          {subIndustry ? ` — ${subIndustry}` : ''}
+          {skuLabel ? ` · ${skuLabel}` : ''}
         </span>
         <div className="flex-1 h-px bg-border" />
       </div>
@@ -616,8 +786,10 @@ function BenchmarkTab({ lang }: { lang: Lang }) {
       <div className="grid lg:grid-cols-2 gap-8">
         {/* KPI Sliders — As-Is inputs */}
         <div className="space-y-4">
-          <h3 className="font-bold text-[#082C6B] text-sm uppercase tracking-wider">{ar ? 'أدخل أرقامك الحالية (As-Is)' : 'Your Current Numbers — As-Is'}</h3>
-          {kpis.map(k => {
+          <h3 className="font-bold text-[#082C6B] text-sm uppercase tracking-wider">
+            {ar ? 'أدخل أرقامك الحالية (As-Is)' : 'Your Current Numbers — As-Is'}
+          </h3>
+          {adjustedKpis.map(k => {
             const v     = getVal(k);
             const normV = Math.round(k.norm(v));
             const ok    = normV >= k.gcMedian;
@@ -627,7 +799,9 @@ function BenchmarkTab({ lang }: { lang: Lang }) {
                   <span className="text-sm font-semibold">{ar ? k.labelAr : k.label}</span>
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-bold text-[#C9A84C]">{v}{k.unit}</span>
-                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${ok ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>{normV}/100</span>
+                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${ok ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
+                      {normV}/100
+                    </span>
                   </div>
                 </div>
                 <input type="range" min={k.min} max={k.max} step={(k.max - k.min) < 5 ? 0.1 : 1}
@@ -644,7 +818,9 @@ function BenchmarkTab({ lang }: { lang: Lang }) {
 
         {/* Radar + 3-number summary */}
         <div className="space-y-5">
-          <h3 className="font-bold text-[#082C6B] text-sm uppercase tracking-wider">{ar ? 'رادار المقارنة (As-Is / وسيط الخليج / أفضل ربع)' : 'Benchmark Radar (As-Is / GCC Median / Top Quartile)'}</h3>
+          <h3 className="font-bold text-[#082C6B] text-sm uppercase tracking-wider">
+            {ar ? 'رادار المقارنة (As-Is / وسيط الخليج / أفضل ربع)' : 'Benchmark Radar (As-Is / GCC Median / Top Quartile)'}
+          </h3>
           <ResponsiveContainer width="100%" height={300}>
             <RadarChart data={radarData}>
               <PolarGrid stroke="#E5E7EB" />
@@ -659,9 +835,9 @@ function BenchmarkTab({ lang }: { lang: Lang }) {
           {/* 3-number score cards */}
           <div className="grid grid-cols-3 gap-3">
             {[
-              { label: ar ? 'As-Is (أداؤك)' : 'As-Is', value: avgAsIs,  color: '#C9A84C' },
-              { label: ar ? 'وسيط الخليج' : 'GCC Median', value: avgMedian, color: '#082C6B' },
-              { label: ar ? 'الهدف (Top Q)' : 'Target (Top Q)', value: avgTopQ,  color: '#10b981' },
+              { label: ar ? 'As-Is (أداؤك)' : 'As-Is',          value: avgAsIs,   color: '#C9A84C' },
+              { label: ar ? 'وسيط الخليج'   : 'GCC Median',      value: avgMedian, color: '#082C6B' },
+              { label: ar ? 'الهدف (Top Q)' : 'Target (Top Q)',  value: avgTopQ,   color: '#10b981' },
             ].map(c => (
               <div key={c.label} className="text-center rounded-xl border border-border p-3">
                 <p className="text-xs text-muted-foreground mb-1 leading-tight">{c.label}</p>
@@ -670,12 +846,23 @@ function BenchmarkTab({ lang }: { lang: Lang }) {
               </div>
             ))}
           </div>
+
+          {/* SKU class note */}
+          {skuClass && (
+            <p className="text-xs text-[#C9A84C] bg-[#C9A84C]/8 rounded-lg px-3 py-2">
+              {ar
+                ? `✦ وسيط الخليج وهدف الربع الأعلى معدَّلان لفئة "${skuLabel}" وفق بيانات APICS/ASCM وGartner 2024.`
+                : `✦ GCC Median & Top-Quartile target adjusted for "${skuLabel}" class (APICS/ASCM & Gartner 2024 data).`}
+            </p>
+          )}
         </div>
       </div>
 
       {/* Gap Analysis Table */}
       <div>
-        <h3 className="font-bold text-[#082C6B] text-sm uppercase tracking-wider mb-3">{ar ? 'تحليل الفجوات والأثر المالي' : 'Gap Analysis & Financial Impact'}</h3>
+        <h3 className="font-bold text-[#082C6B] text-sm uppercase tracking-wider mb-3">
+          {ar ? 'تحليل الفجوات والأثر المالي' : 'Gap Analysis & Financial Impact'}
+        </h3>
         <div className="overflow-x-auto rounded-xl border border-border">
           <table className="w-full text-xs">
             <thead className="bg-[#082C6B] text-white">
@@ -720,7 +907,9 @@ function BenchmarkTab({ lang }: { lang: Lang }) {
             </tbody>
             <tfoot className="bg-[#082C6B]/8 border-t-2 border-[#082C6B]/20">
               <tr>
-                <td colSpan={6} className="px-3 py-3 font-black text-[#082C6B] text-sm">{ar ? 'إجمالي الفرصة السنوية' : 'Total Annual Improvement Opportunity'}</td>
+                <td colSpan={6} className="px-3 py-3 font-black text-[#082C6B] text-sm">
+                  {ar ? 'إجمالي الفرصة السنوية' : 'Total Annual Improvement Opportunity'}
+                </td>
                 <td className="px-3 py-3 font-black text-[#C9A84C] text-base">{formatSAR(totalImpact)}</td>
                 <td />
               </tr>
@@ -728,7 +917,10 @@ function BenchmarkTab({ lang }: { lang: Lang }) {
           </table>
         </div>
         <p className="text-xs text-muted-foreground mt-2">
-          {ar ? '* التقديرات مبنية على قاعدة بيانات ISC الخليجية. يمكنك تعديل هدفك في عمود Target.' : '* Estimates based on ISC GCC benchmark database. Adjust your target in the table above.'}
+          {ar
+            ? '* التقديرات مبنية على قاعدة بيانات ISC الخليجية. يمكنك تعديل هدفك في عمود Target.'
+            : '* Estimates based on ISC GCC benchmark database. Adjust your target in the table above.'}
+          {skuClass && (ar ? ' ✦ الأرقام المعدّلة تعكس فئة المخزون المختارة.' : ' ✦ Adjusted figures reflect the selected SKU class.')}
         </p>
       </div>
 
@@ -736,10 +928,14 @@ function BenchmarkTab({ lang }: { lang: Lang }) {
       <div className="bg-[#082C6B] rounded-2xl p-6 flex items-start justify-between gap-4 flex-wrap">
         <div>
           <p className="text-white font-black text-base">
-            {ar ? `مع ISC، تُغلق شركات قطاع ${industry} هذه الفجوات خلال 3–6 أشهر.` : `With ISC, ${industry} organisations close these gaps in 3–6 months.`}
+            {ar
+              ? `مع ISC، تُغلق شركات قطاع ${industry} هذه الفجوات خلال 3–6 أشهر.`
+              : `With ISC, ${industry} organisations close these gaps in 3–6 months.`}
           </p>
           <p className="text-white/70 text-sm mt-1">
-            {ar ? `فرصتك المحددة: ${formatSAR(totalImpact)} سنوياً — دعنا نحوّل هذه الأرقام إلى خطة عمل.` : `Your identified opportunity: ${formatSAR(totalImpact)} annually. Let us build an action plan together.`}
+            {ar
+              ? `فرصتك المحددة: ${formatSAR(totalImpact)} سنوياً — دعنا نحوّل هذه الأرقام إلى خطة عمل.`
+              : `Your identified opportunity: ${formatSAR(totalImpact)} annually. Let us build an action plan together.`}
           </p>
         </div>
         <Link href="/consultant">

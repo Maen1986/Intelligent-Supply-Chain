@@ -209,7 +209,7 @@ export const SKU_CLASS_KPI_BENCHMARKS: Record<string, KpiSkuBenchmarks> = {
 };
 
 /**
- * Returns the SKU-class-specific benchmark for a given KPI ID,
+ * Returns the SKU-class-specific GCC median benchmark for a given KPI ID,
  * or `null` if no SKU-class override exists for this KPI.
  */
 export function getSkuClassBenchmark(
@@ -219,3 +219,229 @@ export function getSkuClassBenchmark(
   if (!skuClass) return null;
   return SKU_CLASS_KPI_BENCHMARKS[kpiId]?.[skuClass] ?? null;
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Top-Quartile targets by SKU class
+//
+// GCC top-25% performance for each inventory class.
+// Used in the Benchmark Radar "Top Quartile" polygon when a SKU class is set.
+//
+// Sources: APICS/ASCM SCOR v12 Benchmarking 2024, Gartner Inventory Analytics
+// 2024, Hackett Group World-Class Procurement 2024, ISC GCC practitioner data.
+// ─────────────────────────────────────────────────────────────────────────────
+export const SKU_CLASS_KPI_TOP_QUARTILE: Record<string, KpiSkuBenchmarks> = {
+
+  turns: {
+    'finished-goods':    { value: 14,   label: '14/yr',   labelAr: '١٤/سنة'   },
+    'raw-materials':     { value: 12,   label: '12/yr',   labelAr: '١٢/سنة'   },
+    'work-in-progress':  { value: 26,   label: '26/yr',   labelAr: '٢٦/سنة'   },
+    'spare-parts-mro':   { value: 2.5,  label: '2.5/yr',  labelAr: '٢.٥/سنة'  },
+    'indirect-general':  { value: 8,    label: '8/yr',    labelAr: '٨/سنة'    },
+    'packaging':         { value: 18,   label: '18/yr',   labelAr: '١٨/سنة'   },
+    'commodities':       { value: 6,    label: '6/yr',    labelAr: '٦/سنة'    },
+  },
+
+  fa: {
+    'finished-goods':    { value: 88,   label: '88%',     labelAr: '٨٨٪'      },
+    'raw-materials':     { value: 80,   label: '80%',     labelAr: '٨٠٪'      },
+    'work-in-progress':  { value: 85,   label: '85%',     labelAr: '٨٥٪'      },
+    'spare-parts-mro':   { value: 55,   label: '55%',     labelAr: '٥٥٪'      },
+    'indirect-general':  { value: 70,   label: '70%',     labelAr: '٧٠٪'      },
+    'packaging':         { value: 84,   label: '84%',     labelAr: '٨٤٪'      },
+    'commodities':       { value: 78,   label: '78%',     labelAr: '٧٨٪'      },
+  },
+
+  pocycle: {
+    'finished-goods':    { value: 7,    label: '7 days',  labelAr: '٧ أيام'   },
+    'raw-materials':     { value: 10,   label: '10 days', labelAr: '١٠ أيام'  },
+    'work-in-progress':  { value: 5,    label: '5 days',  labelAr: '٥ أيام'   },
+    'spare-parts-mro':   { value: 18,   label: '18 days', labelAr: '١٨ يوماً' },
+    'indirect-general':  { value: 3,    label: '3 days',  labelAr: '٣ أيام'   },
+    'packaging':         { value: 7,    label: '7 days',  labelAr: '٧ أيام'   },
+    'commodities':       { value: 10,   label: '10 days', labelAr: '١٠ أيام'  },
+  },
+
+  buf: {
+    'finished-goods':    { value: 10,   label: '10 days', labelAr: '١٠ أيام'  },
+    'raw-materials':     { value: 21,   label: '21 days', labelAr: '٢١ يوماً' },
+    'work-in-progress':  { value: 3,    label: '3 days',  labelAr: '٣ أيام'   },
+    'spare-parts-mro':   { value: 60,   label: '60 days', labelAr: '٦٠ يوماً' },
+    'indirect-general':  { value: 14,   label: '14 days', labelAr: '١٤ يوماً' },
+    'packaging':         { value: 14,   label: '14 days', labelAr: '١٤ يوماً' },
+    'commodities':       { value: 30,   label: '30 days', labelAr: '٣٠ يوماً' },
+  },
+
+  ppm: {
+    'finished-goods':    { value: 800,  label: '800 ppm',  labelAr: '٨٠٠ ppm'  },
+    'raw-materials':     { value: 1200, label: '1200 ppm', labelAr: '١٢٠٠ ppm' },
+    'work-in-progress':  { value: 600,  label: '600 ppm',  labelAr: '٦٠٠ ppm'  },
+    'spare-parts-mro':   { value: 150,  label: '150 ppm',  labelAr: '١٥٠ ppm'  },
+    'indirect-general':  { value: 2000, label: '2000 ppm', labelAr: '٢٠٠٠ ppm' },
+    'packaging':         { value: 1000, label: '1000 ppm', labelAr: '١٠٠٠ ppm' },
+    'commodities':       { value: 400,  label: '400 ppm',  labelAr: '٤٠٠ ppm'  },
+  },
+
+  mav: {
+    'finished-goods':    { value: 3,    label: '3%',      labelAr: '٣٪'       },
+    'raw-materials':     { value: 4,    label: '4%',      labelAr: '٤٪'       },
+    'work-in-progress':  { value: 2,    label: '2%',      labelAr: '٢٪'       },
+    'spare-parts-mro':   { value: 10,   label: '10%',     labelAr: '١٠٪'      },
+    'indirect-general':  { value: 15,   label: '15%',     labelAr: '١٥٪'      },
+    'packaging':         { value: 4,    label: '4%',      labelAr: '٤٪'       },
+    'commodities':       { value: 2,    label: '2%',      labelAr: '٢٪'       },
+  },
+
+  sld: {
+    'finished-goods':    { value: 65,   label: '65%',     labelAr: '٦٥٪'      },
+    'raw-materials':     { value: 60,   label: '60%',     labelAr: '٦٠٪'      },
+    'work-in-progress':  { value: 70,   label: '70%',     labelAr: '٧٠٪'      },
+    'spare-parts-mro':   { value: 55,   label: '55%',     labelAr: '٥٥٪'      },
+    'indirect-general':  { value: 80,   label: '80%',     labelAr: '٨٠٪'      },
+    'packaging':         { value: 68,   label: '68%',     labelAr: '٦٨٪'      },
+    'commodities':       { value: 58,   label: '58%',     labelAr: '٥٨٪'      },
+  },
+
+  ss2: {
+    'finished-goods':    { value: 18,   label: '18%',     labelAr: '١٨٪'      },
+    'raw-materials':     { value: 22,   label: '22%',     labelAr: '٢٢٪'      },
+    'work-in-progress':  { value: 14,   label: '14%',     labelAr: '١٤٪'      },
+    'spare-parts-mro':   { value: 45,   label: '45%',     labelAr: '٤٥٪'      },
+    'indirect-general':  { value: 10,   label: '10%',     labelAr: '١٠٪'      },
+    'packaging':         { value: 20,   label: '20%',     labelAr: '٢٠٪'      },
+    'commodities':       { value: 28,   label: '28%',     labelAr: '٢٨٪'      },
+  },
+
+  dsc: {
+    'finished-goods':    { value: 65,   label: '65%',     labelAr: '٦٥٪'      },
+    'raw-materials':     { value: 58,   label: '58%',     labelAr: '٥٨٪'      },
+    'work-in-progress':  { value: 68,   label: '68%',     labelAr: '٦٨٪'      },
+    'spare-parts-mro':   { value: 35,   label: '35%',     labelAr: '٣٥٪'      },
+    'indirect-general':  { value: 78,   label: '78%',     labelAr: '٧٨٪'      },
+    'packaging':         { value: 62,   label: '62%',     labelAr: '٦٢٪'      },
+    'commodities':       { value: 50,   label: '50%',     labelAr: '٥٠٪'      },
+  },
+
+  scv: {
+    'finished-goods':    { value: 6,    label: '6%',      labelAr: '٦٪'       },
+    'raw-materials':     { value: 4,    label: '4%',      labelAr: '٤٪'       },
+    'work-in-progress':  { value: 4,    label: '4%',      labelAr: '٤٪'       },
+    'spare-parts-mro':   { value: 12,   label: '12%',     labelAr: '١٢٪'      },
+    'indirect-general':  { value: 8,    label: '8%',      labelAr: '٨٪'       },
+    'packaging':         { value: 5,    label: '5%',      labelAr: '٥٪'       },
+    'commodities':       { value: 3,    label: '3%',      labelAr: '٣٪'       },
+  },
+};
+
+/**
+ * Returns the SKU-class top-quartile target for a given KPI ID,
+ * or `null` if no override exists.
+ */
+export function getSkuClassTopQuartile(
+  kpiId: string,
+  skuClass: SkuClassKey | null,
+): SkuBenchmarkEntry | null {
+  if (!skuClass) return null;
+  return SKU_CLASS_KPI_TOP_QUARTILE[kpiId]?.[skuClass] ?? null;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Industry → available SKU classes
+// Limits the SKU class dropdown to classes that are relevant per sector.
+// ─────────────────────────────────────────────────────────────────────────────
+export const INDUSTRY_SKU_CLASSES: Record<string, SkuClassKey[]> = {
+  'Manufacturing':              ['finished-goods', 'raw-materials', 'work-in-progress', 'spare-parts-mro', 'packaging', 'commodities'],
+  'Energy & Oil':               ['spare-parts-mro', 'raw-materials', 'commodities', 'indirect-general'],
+  'Government / Public Sector': ['indirect-general', 'spare-parts-mro'],
+  'Pharmaceutical':             ['finished-goods', 'raw-materials', 'packaging', 'commodities'],
+  'Retail & FMCG':              ['finished-goods', 'packaging', 'indirect-general'],
+  'Logistics & Transportation': ['finished-goods', 'indirect-general', 'spare-parts-mro'],
+  'Construction & EPC':         ['raw-materials', 'spare-parts-mro', 'indirect-general', 'commodities'],
+  'Healthcare':                 ['finished-goods', 'spare-parts-mro', 'indirect-general'],
+  'Technology & ICT':           ['finished-goods', 'indirect-general'],
+  'Food & Beverage':            ['finished-goods', 'raw-materials', 'packaging', 'commodities'],
+  'E-commerce':                 ['finished-goods', 'packaging', 'indirect-general'],
+  'Services':                   ['indirect-general'],
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Sub-sector → suggested default SKU class
+// Auto-suggested when user picks a specific sub-sector.
+// ─────────────────────────────────────────────────────────────────────────────
+export const SUB_SECTOR_DEFAULT_SKU: Partial<Record<string, SkuClassKey>> = {
+  'Automotive & Assembly':                              'work-in-progress',
+  'Aerospace & Defense':                               'spare-parts-mro',
+  'Electronics & Semiconductors':                      'finished-goods',
+  'FMCG Manufacturing':                                'packaging',
+  'Heavy Industry & Steel':                            'raw-materials',
+  'Chemicals & Petrochemicals':                        'commodities',
+  'Plastics & Composites':                             'raw-materials',
+  'Textiles & Apparel':                                'finished-goods',
+  'Furniture & Wood Products':                         'raw-materials',
+  'Medical Devices':                                   'finished-goods',
+  'Oil & Gas Upstream':                                'spare-parts-mro',
+  'Oil & Gas Midstream / Pipelines':                   'spare-parts-mro',
+  'Oil & Gas Downstream / Refining':                   'commodities',
+  'Petrochemicals':                                    'commodities',
+  'Renewable Energy (Solar/Wind)':                     'spare-parts-mro',
+  'Power Generation & Utilities':                      'spare-parts-mro',
+  'Mining & Extractives':                              'commodities',
+  'Defense & Security':                                'spare-parts-mro',
+  'Healthcare Authorities':                            'finished-goods',
+  'Infrastructure & Transport':                        'indirect-general',
+  'Branded Pharmaceuticals':                           'finished-goods',
+  'Generic Pharmaceuticals':                           'finished-goods',
+  'Medical Devices & Diagnostics':                     'finished-goods',
+  'Biotechnology':                                     'raw-materials',
+  'Healthcare Distribution':                           'finished-goods',
+  'Grocery & Supermarkets':                            'finished-goods',
+  'Fashion & Apparel':                                 'finished-goods',
+  'Electronics & Technology Retail':                   'finished-goods',
+  'Health & Beauty':                                   'finished-goods',
+  'Wholesale & Distribution':                          'finished-goods',
+  'Hypermarkets & Department Stores':                  'finished-goods',
+  '3PL / 4PL Providers':                              'finished-goods',
+  'Cold Chain Logistics':                              'finished-goods',
+  'Warehousing & Distribution Centers':                'finished-goods',
+  'Port & Customs Operations':                         'commodities',
+  'Residential Construction':                          'raw-materials',
+  'Commercial & Office Construction':                  'raw-materials',
+  'Infrastructure & Mega Projects':                    'raw-materials',
+  'Oil & Gas EPC':                                     'spare-parts-mro',
+  'Industrial Facilities':                             'spare-parts-mro',
+  'Roads & Bridges':                                   'commodities',
+  'Hospitals & Medical Centers':                       'spare-parts-mro',
+  'Diagnostics & Laboratories':                        'spare-parts-mro',
+  'Medical & Surgical Supplies':                       'finished-goods',
+  'Home Healthcare':                                   'indirect-general',
+  'Software & SaaS':                                   'indirect-general',
+  'Hardware & Electronics':                            'finished-goods',
+  'Food Processing & Manufacturing':                   'raw-materials',
+  'Dairy Products':                                    'raw-materials',
+  'Bakery & Confectionery':                            'raw-materials',
+  'Beverages (Non-Alcoholic)':                         'raw-materials',
+  'Halal Food Production':                             'raw-materials',
+  'Agricultural Products & Trading':                   'commodities',
+  'B2C E-Commerce Platform':                           'finished-goods',
+  'B2B E-Commerce':                                    'finished-goods',
+  'Marketplace & Aggregators':                         'finished-goods',
+  'Facilities Management (FM)':                        'indirect-general',
+  'Professional Services (Consulting, Legal, Audit)':  'indirect-general',
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// INDUSTRY_KPIS KPI id → SKU_CLASS_KPI_BENCHMARKS key
+// Only KPIs that have meaningful SKU-class adjustments are listed.
+// ─────────────────────────────────────────────────────────────────────────────
+export const SKU_KPI_MAP: Record<string, string> = {
+  invTurns:    'turns',
+  forecastAcc: 'fa',
+  procCycle:   'pocycle',
+  itProcCycle: 'pocycle',
+  daysSupply:  'buf',
+  // wasteRate / shrinkage / spoilage intentionally omitted:
+  // INDUSTRY_KPIS norm() for those KPIs expects a % value (0–15 range),
+  // but SKU_CLASS_KPI_BENCHMARKS['ppm'] stores parts-per-million integers
+  // (800–2000). Passing e.g. 800 into norm: v=>((15-v)/15)*100 yields −5233
+  // which clamps to 0 (worst possible score). Until a unit-conversion bridge
+  // exists, leave these KPIs on sector-wide data when a SKU class is active.
+};
