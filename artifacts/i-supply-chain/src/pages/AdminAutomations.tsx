@@ -846,7 +846,7 @@ function WebhookLogTab({ ar, refresh }: { ar: boolean; refresh: number }) {
    TAB 3 — Inbound Webhook Log
    ════════════════════════════════════════════════════════════════════════════ */
 
-function InboundLogTab({ ar, refresh }: { ar: boolean; refresh: number }) {
+export function InboundLogTab({ ar, refresh }: { ar: boolean; refresh: number }) {
   const [rows, setRows]       = useState<InboundLogRow[]>([]);
   const [total, setTotal]     = useState(0);
   const [loading, setLoading] = useState(true);
