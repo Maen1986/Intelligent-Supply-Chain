@@ -812,3 +812,147 @@ describe('PrepareDownloadModal — network-throw error clears on retry (English 
   });
 
 });
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   404 error clears after server recovers + retry — Arabic (ar=true)
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+describe('PrepareDownloadModal — 404 error clears on retry (Arabic mode)', () => {
+
+  /**
+   * U — Arabic: server returns 404 (first download) → Arabic unavailability
+   * message appears; a follow-up click with a succeeding fetch mock clears it.
+   *
+   * fetch sequence:
+   *   1st call → keys endpoint (mount)        → { ok: true, keys: [] }
+   *   2nd call → download endpoint (404)       → { ok: false, status: 404 }
+   *   3rd call → download endpoint (recovered) → 200 OK with template text
+   */
+  it('U — ar=true: 404 shows Arabic unavailability error; retry success clears it', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn()
+        /* keys endpoint */
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ ok: true, keys: [] }),
+        })
+        /* download endpoint — 404 */
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 404,
+        })
+        /* download endpoint — recovered */
+        .mockResolvedValueOnce({
+          ok: true,
+          text: async () => '{"name":"test"}',
+        }),
+    );
+
+    render(
+      <PrepareDownloadModal
+        template={makeTemplate('n8n')}
+        ar={true}
+        onClose={() => {}}
+      />,
+    );
+
+    /* Fill in the required API key field */
+    const apiKeyInput = screen.getByPlaceholderText('الصق قيمة المفتاح هنا…');
+    fireEvent.change(apiKeyInput, { target: { value: 'test-api-key-value' } });
+
+    /* First click — server returns 404 → Arabic unavailability message appears */
+    const downloadBtn = screen.getByRole('button', { name: /تنزيل القالب/i });
+    fireEvent.click(downloadBtn);
+
+    await waitFor(() => {
+      expect(
+        screen.getByText('ملف القالب غير متوفر حالياً — ربما تم حذفه. يُرجى التواصل مع المسؤول.'),
+      ).toBeInTheDocument();
+    });
+
+    /* Second click — fetch succeeds → 404 error is gone */
+    fireEvent.click(downloadBtn);
+
+    await waitFor(() => {
+      expect(
+        screen.queryByText('ملف القالب غير متوفر حالياً — ربما تم حذفه. يُرجى التواصل مع المسؤول.'),
+      ).toBeNull();
+    });
+  });
+
+});
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   404 error clears after server recovers + retry — English (ar=false)
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+describe('PrepareDownloadModal — 404 error clears on retry (English mode)', () => {
+
+  /**
+   * V — English: server returns 404 (first download) → English unavailability
+   * message appears; a follow-up click with a succeeding fetch mock clears it.
+   *
+   * fetch sequence:
+   *   1st call → keys endpoint (mount)        → { ok: true, keys: [] }
+   *   2nd call → download endpoint (404)       → { ok: false, status: 404 }
+   *   3rd call → download endpoint (recovered) → 200 OK with template text
+   */
+  it('V — ar=false: 404 shows English unavailability error; retry success clears it', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn()
+        /* keys endpoint */
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ ok: true, keys: [] }),
+        })
+        /* download endpoint — 404 */
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 404,
+        })
+        /* download endpoint — recovered */
+        .mockResolvedValueOnce({
+          ok: true,
+          text: async () => '{"name":"test"}',
+        }),
+    );
+
+    render(
+      <PrepareDownloadModal
+        template={makeTemplate('n8n')}
+        ar={false}
+        onClose={() => {}}
+      />,
+    );
+
+    /* Fill in the required API key field */
+    const apiKeyInput = screen.getByPlaceholderText('Paste the raw key value here…');
+    fireEvent.change(apiKeyInput, { target: { value: 'test-api-key-value' } });
+
+    /* First click — server returns 404 → English unavailability message appears */
+    const downloadBtn = screen.getByRole('button', { name: /download template/i });
+    fireEvent.click(downloadBtn);
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(
+          'Template file is currently unavailable — it may have been removed. Please contact your administrator.',
+        ),
+      ).toBeInTheDocument();
+    });
+
+    /* Second click — fetch succeeds → 404 error is gone */
+    fireEvent.click(downloadBtn);
+
+    await waitFor(() => {
+      expect(
+        screen.queryByText(
+          'Template file is currently unavailable — it may have been removed. Please contact your administrator.',
+        ),
+      ).toBeNull();
+    });
+  });
+
+});
