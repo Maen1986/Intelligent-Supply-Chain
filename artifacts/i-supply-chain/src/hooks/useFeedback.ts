@@ -54,12 +54,23 @@ export function useIsAdmin(): boolean {
   return user?.role === 'admin';
 }
 
-export function useFeedbackAnalytics() {
+export interface FeedbackAnalyticsFilters {
+  tool?: string;
+  from?: string;
+  to?: string;
+}
+
+export function useFeedbackAnalytics(filters: FeedbackAnalyticsFilters = {}) {
   const isAdmin = useIsAdmin();
+  const params = new URLSearchParams();
+  if (filters.tool) params.set('tool', filters.tool);
+  if (filters.from) params.set('from', filters.from);
+  if (filters.to) params.set('to', filters.to);
+  const qs = params.toString();
   return useQuery<FeedbackAnalytics>({
-    queryKey: ['feedback-analytics'],
+    queryKey: ['feedback-analytics', filters],
     enabled: isAdmin,
-    queryFn: () => fetchJson<FeedbackAnalytics>(`${API_BASE}/feedback/analytics`),
+    queryFn: () => fetchJson<FeedbackAnalytics>(`${API_BASE}/feedback/analytics${qs ? `?${qs}` : ''}`),
     staleTime: 60_000,
   });
 }
