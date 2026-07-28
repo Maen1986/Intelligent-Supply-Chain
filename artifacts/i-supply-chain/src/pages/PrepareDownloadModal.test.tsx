@@ -302,3 +302,75 @@ describe('PrepareDownloadModal — 404 download error (English mode)', () => {
   });
 
 });
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   Missing API key validation — Arabic (ar=true)
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+describe('PrepareDownloadModal — missing API key validation (Arabic mode)', () => {
+
+  /**
+   * M — Arabic: clicking Download with a blank API key field shows the
+   * Arabic validation error immediately and does NOT make a download fetch.
+   *
+   * The beforeEach stub resolves one fetch call for the keys endpoint on mount.
+   * After the click, fetch must still have been called exactly once —
+   * no additional network call for the download.
+   */
+  it('M — ar=true, blank key: shows Arabic validation error without fetching', async () => {
+    render(
+      <PrepareDownloadModal
+        template={makeTemplate('n8n')}
+        ar={true}
+        onClose={() => {}}
+      />,
+    );
+
+    /* Click Download without entering an API key */
+    const downloadBtn = screen.getByRole('button', { name: /تنزيل القالب/i });
+    fireEvent.click(downloadBtn);
+
+    /* Arabic validation error must appear immediately */
+    expect(
+      screen.getByText('أدخل قيمة مفتاح API'),
+    ).toBeInTheDocument();
+
+    /* fetch was only called once — for the keys endpoint on mount, not for download */
+    expect(vi.mocked(fetch)).toHaveBeenCalledTimes(1);
+  });
+
+});
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   Missing API key validation — English (ar=false)
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+describe('PrepareDownloadModal — missing API key validation (English mode)', () => {
+
+  /**
+   * N — English: clicking Download with a blank API key field shows the
+   * English validation error immediately and does NOT make a download fetch.
+   */
+  it('N — ar=false, blank key: shows English validation error without fetching', async () => {
+    render(
+      <PrepareDownloadModal
+        template={makeTemplate('n8n')}
+        ar={false}
+        onClose={() => {}}
+      />,
+    );
+
+    /* Click Download without entering an API key */
+    const downloadBtn = screen.getByRole('button', { name: /download template/i });
+    fireEvent.click(downloadBtn);
+
+    /* English validation error must appear immediately */
+    expect(
+      screen.getByText('Please enter an API key value'),
+    ).toBeInTheDocument();
+
+    /* fetch was only called once — for the keys endpoint on mount, not for download */
+    expect(vi.mocked(fetch)).toHaveBeenCalledTimes(1);
+  });
+
+});
