@@ -1428,4 +1428,68 @@ describe('Scorecard CSV — weighted score and calculated tier columns', () => {
     expect(rows[0]['Weighted Score (/100)']).toBe('80');
     expect(rows[0]['Calculated Tier']).toBe('Preferred');
   });
+
+  it('Calculated Tier is "Preferred" when score equals the preferred threshold exactly (tiers.preferred = 60)', () => {
+    // A supplier with all sub-indicators set to 60 yields a weighted score of 60
+    // (each dim average is 60; weighted sum = 60/100 * 100 = 60).
+    // Setting tiers.preferred = 60 places the score exactly on the boundary.
+    // getTier uses >=, so 60 >= 60 must resolve to Preferred.
+    const supplierAt60: SupplierRecord = {
+      id: 'sup-preferred-boundary',
+      name: 'Preferred Boundary Supplier',
+      tier: 'Preferred',
+      subScores: {
+        delivery:     { otif: '60', lead_time: '60', fill_rate: '60', expedite: '60' },
+        quality:      { defect: '60', ftr: '60', cert: '60', nonconf: '60' },
+        cost:         { savings: '60', invoice: '60', cost_reduction: '60', tco: '60' },
+        compliance:   { regulatory: '60', esg: '60', docs: '60', ethics: '60' },
+        innovation:   { ideas: '60', implemented: '60', tech: '60' },
+        relationship: { responsiveness: '60', resolution: '60', collaboration: '60' },
+      },
+    };
+
+    const configPreferredAt60: ScorecardConfig = {
+      ...DEFAULT_CONFIG,
+      tiers: { strategic: 75, preferred: 60 },
+    };
+
+    const score = calcWeightedScore(supplierAt60.subScores, configPreferredAt60);
+    expect(score).toBe(60); // precondition: weighted score is exactly 60
+
+    const csv = buildScorecardCsvString([supplierAt60], configPreferredAt60);
+    const { rows } = parseCsvFile(csv, ['Supplier Name']);
+    expect(rows[0]['Weighted Score (/100)']).toBe('60');
+    expect(rows[0]['Calculated Tier']).toBe('Preferred');
+  });
+
+  it('Calculated Tier is "Transactional" when score falls one point below the preferred threshold (tiers.preferred = 61)', () => {
+    // With preferred threshold raised to 61, score 60 no longer qualifies for Preferred.
+    // 60 < 61, so getTier must fall through to Transactional.
+    const supplierAt60: SupplierRecord = {
+      id: 'sup-transactional-boundary',
+      name: 'Transactional Boundary Supplier',
+      tier: 'Transactional',
+      subScores: {
+        delivery:     { otif: '60', lead_time: '60', fill_rate: '60', expedite: '60' },
+        quality:      { defect: '60', ftr: '60', cert: '60', nonconf: '60' },
+        cost:         { savings: '60', invoice: '60', cost_reduction: '60', tco: '60' },
+        compliance:   { regulatory: '60', esg: '60', docs: '60', ethics: '60' },
+        innovation:   { ideas: '60', implemented: '60', tech: '60' },
+        relationship: { responsiveness: '60', resolution: '60', collaboration: '60' },
+      },
+    };
+
+    const configPreferredAt61: ScorecardConfig = {
+      ...DEFAULT_CONFIG,
+      tiers: { strategic: 75, preferred: 61 },
+    };
+
+    const score = calcWeightedScore(supplierAt60.subScores, configPreferredAt61);
+    expect(score).toBe(60); // precondition: score is unchanged (weights are the same)
+
+    const csv = buildScorecardCsvString([supplierAt60], configPreferredAt61);
+    const { rows } = parseCsvFile(csv, ['Supplier Name']);
+    expect(rows[0]['Weighted Score (/100)']).toBe('60');
+    expect(rows[0]['Calculated Tier']).toBe('Transactional');
+  });
 });
