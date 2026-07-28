@@ -374,3 +374,129 @@ describe('PrepareDownloadModal — missing API key validation (English mode)', (
   });
 
 });
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   Blank-key error clears after user fills in the key and retries — Arabic
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+describe('PrepareDownloadModal — blank-key error clears on retry (Arabic mode)', () => {
+
+  /**
+   * O — Arabic: error shown when key is blank, then cleared once the user
+   * fills in the key and clicks Download again (download succeeds on retry).
+   *
+   * fetch sequence:
+   *   1st call → keys endpoint (mount)       → { ok: true, keys: [] }
+   *   2nd call → download endpoint (retry)   → 200 OK with template text
+   */
+  it('O — ar=true: blank-key error disappears after user fills key and retries', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn()
+        /* keys endpoint */
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ ok: true, keys: [] }),
+        })
+        /* download endpoint — succeeds on retry */
+        .mockResolvedValueOnce({
+          ok: true,
+          text: async () => '{"name":"test"}',
+        }),
+    );
+
+    render(
+      <PrepareDownloadModal
+        template={makeTemplate('n8n')}
+        ar={true}
+        onClose={() => {}}
+      />,
+    );
+
+    /* Click Download without entering an API key → error appears */
+    const downloadBtn = screen.getByRole('button', { name: /تنزيل القالب/i });
+    fireEvent.click(downloadBtn);
+
+    expect(
+      screen.getByText('أدخل قيمة مفتاح API'),
+    ).toBeInTheDocument();
+
+    /* Now fill in the API key field */
+    const apiKeyInput = screen.getByPlaceholderText('الصق قيمة المفتاح هنا…');
+    fireEvent.change(apiKeyInput, { target: { value: 'valid-api-key' } });
+
+    /* Click Download again */
+    fireEvent.click(downloadBtn);
+
+    /* Validation error must no longer be visible */
+    await waitFor(() => {
+      expect(
+        screen.queryByText('أدخل قيمة مفتاح API'),
+      ).toBeNull();
+    });
+  });
+
+});
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   Blank-key error clears after user fills in the key and retries — English
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+describe('PrepareDownloadModal — blank-key error clears on retry (English mode)', () => {
+
+  /**
+   * P — English: error shown when key is blank, then cleared once the user
+   * fills in the key and clicks Download again (download succeeds on retry).
+   *
+   * fetch sequence:
+   *   1st call → keys endpoint (mount)       → { ok: true, keys: [] }
+   *   2nd call → download endpoint (retry)   → 200 OK with template text
+   */
+  it('P — ar=false: blank-key error disappears after user fills key and retries', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn()
+        /* keys endpoint */
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ ok: true, keys: [] }),
+        })
+        /* download endpoint — succeeds on retry */
+        .mockResolvedValueOnce({
+          ok: true,
+          text: async () => '{"name":"test"}',
+        }),
+    );
+
+    render(
+      <PrepareDownloadModal
+        template={makeTemplate('n8n')}
+        ar={false}
+        onClose={() => {}}
+      />,
+    );
+
+    /* Click Download without entering an API key → error appears */
+    const downloadBtn = screen.getByRole('button', { name: /download template/i });
+    fireEvent.click(downloadBtn);
+
+    expect(
+      screen.getByText('Please enter an API key value'),
+    ).toBeInTheDocument();
+
+    /* Now fill in the API key field */
+    const apiKeyInput = screen.getByPlaceholderText('Paste the raw key value here…');
+    fireEvent.change(apiKeyInput, { target: { value: 'valid-api-key' } });
+
+    /* Click Download again */
+    fireEvent.click(downloadBtn);
+
+    /* Validation error must no longer be visible */
+    await waitFor(() => {
+      expect(
+        screen.queryByText('Please enter an API key value'),
+      ).toBeNull();
+    });
+  });
+
+});
