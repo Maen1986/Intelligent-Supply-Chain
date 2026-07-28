@@ -1,9 +1,9 @@
-import { pgTable, serial, text, timestamp, integer, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, integer, boolean } from "drizzle-orm/pg-core";
 import { usersTable } from "./users";
 
 /** Records every inbound webhook call received at POST /api/webhooks/inbound */
 export const inboundWebhookLogTable = pgTable("inbound_webhook_log", {
-  id:          serial("id").primaryKey(),
+  id:          integer("id").primaryKey().generatedByDefaultAsIdentity(),
   action:      text("action").notNull(),
   bodySnippet: text("body_snippet"),
   status:      text("status").notNull().default("ok"), // 'ok' | 'error'
@@ -13,7 +13,7 @@ export const inboundWebhookLogTable = pgTable("inbound_webhook_log", {
 
 /** In-app notifications written by inbound webhook or scheduled jobs */
 export const notificationsTable = pgTable("notifications", {
-  id:        serial("id").primaryKey(),
+  id:        integer("id").primaryKey().generatedByDefaultAsIdentity(),
   userId:    integer("user_id").notNull().references(() => usersTable.id, { onDelete: "cascade" }),
   title:     text("title").notNull(),
   body:      text("body").notNull(),
@@ -23,7 +23,7 @@ export const notificationsTable = pgTable("notifications", {
 
 /** Audit log for every scheduled job run */
 export const scheduleLogTable = pgTable("schedule_log", {
-  id:             serial("id").primaryKey(),
+  id:             integer("id").primaryKey().generatedByDefaultAsIdentity(),
   jobName:        text("job_name").notNull(),
   ranAt:          timestamp("ran_at").defaultNow().notNull(),
   usersProcessed: integer("users_processed").notNull().default(0),
