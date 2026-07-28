@@ -184,3 +184,127 @@ describe('TemplatesTab — dynamic platform pill from API response', () => {
     expect(getPillButton(/^make\.com$/i)).toBeInTheDocument();
   });
 });
+
+/* ════════════════════════════════════════════════════════════════════════════
+   Edge-case platform keys — unknown / malformed values must not crash or
+   silently drop templates.
+   ════════════════════════════════════════════════════════════════════════════ */
+
+describe('TemplatesTab — edge-case platform keys produce clickable pills', () => {
+  /**
+   * Builds a minimal template fixture with the given platform key.
+   */
+  function makeTemplate(id: string, platform: string, name: string) {
+    return {
+      ...baseTemplate,
+      id,
+      platform,
+      name,
+      description: `Template for platform "${platform}"`,
+    };
+  }
+
+  const EDGE_CASE_TEMPLATES = [
+    makeTemplate('spaced-platform',    'power automate', 'Spaced Platform Template'),
+    makeTemplate('upper-platform',     'POWERAUTOMATE',  'Uppercase Platform Template'),
+    makeTemplate('numeric-platform',   '42',             'Numeric Platform Template'),
+  ];
+
+  it('renders a clickable pill for a platform value that contains a space ("power automate")', async () => {
+    mockFetchWithTemplates([EDGE_CASE_TEMPLATES[0]]);
+
+    render(<TemplatesTab ar={false} />);
+
+    await waitFor(() => {
+      expect(getPillButton(/power automate/i)).toBeInTheDocument();
+    });
+
+    const pill = getPillButton(/power automate/i);
+    expect(pill.tagName).toBe('BUTTON');
+
+    // Clicking does not crash and shows the correct card
+    fireEvent.click(pill);
+    expect(screen.getByText('Spaced Platform Template')).toBeInTheDocument();
+  });
+
+  it('renders a clickable pill for an all-uppercase platform value ("POWERAUTOMATE")', async () => {
+    mockFetchWithTemplates([EDGE_CASE_TEMPLATES[1]]);
+
+    render(<TemplatesTab ar={false} />);
+
+    await waitFor(() => {
+      // The raw key is used as the label since PLATFORM_LABEL has no entry for it
+      expect(getPillButton(/POWERAUTOMATE/i)).toBeInTheDocument();
+    });
+
+    const pill = getPillButton(/POWERAUTOMATE/i);
+    expect(pill.tagName).toBe('BUTTON');
+
+    fireEvent.click(pill);
+    expect(screen.getByText('Uppercase Platform Template')).toBeInTheDocument();
+  });
+
+  it('renders a clickable pill for a numeric string platform value ("42")', async () => {
+    mockFetchWithTemplates([EDGE_CASE_TEMPLATES[2]]);
+
+    render(<TemplatesTab ar={false} />);
+
+    await waitFor(() => {
+      expect(getPillButton(/^42$/)).toBeInTheDocument();
+    });
+
+    const pill = getPillButton(/^42$/);
+    expect(pill.tagName).toBe('BUTTON');
+
+    fireEvent.click(pill);
+    expect(screen.getByText('Numeric Platform Template')).toBeInTheDocument();
+  });
+
+  it('clicking an edge-case pill filters to only that platform\'s card', async () => {
+    // Mix an edge-case platform with a known one to confirm filtering works
+    const templates = [
+      makeTemplate('known-n8n', 'n8n', 'N8N Template'),
+      EDGE_CASE_TEMPLATES[0], // "power automate" with a space
+    ];
+    mockFetchWithTemplates(templates);
+
+    const { container } = render(<TemplatesTab ar={false} />);
+
+    await waitFor(() => {
+      expect(getPillButton(/power automate/i)).toBeInTheDocument();
+    });
+
+    const cardArea = container.querySelector('.space-y-3:last-child')!;
+
+    // Before clicking: both cards are visible
+    expect(within(cardArea as HTMLElement).getByText('N8N Template')).toBeInTheDocument();
+    expect(within(cardArea as HTMLElement).getByText('Spaced Platform Template')).toBeInTheDocument();
+
+    // Click the edge-case pill
+    fireEvent.click(getPillButton(/power automate/i));
+
+    // After clicking: only the "power automate" card remains
+    expect(within(cardArea as HTMLElement).getByText('Spaced Platform Template')).toBeInTheDocument();
+    expect(within(cardArea as HTMLElement).queryByText('N8N Template')).not.toBeInTheDocument();
+  });
+
+  it('renders each edge-case platform as exactly its raw key when not in PLATFORM_LABEL', async () => {
+    mockFetchWithTemplates(EDGE_CASE_TEMPLATES);
+
+    render(<TemplatesTab ar={false} />);
+
+    await waitFor(() => {
+      expect(getPillButton(/^All$/i)).toBeInTheDocument();
+    });
+
+    // All three edge-case pills should be present using their raw key as label
+    expect(getPillButton(/power automate/i)).toBeInTheDocument();
+    expect(getPillButton(/POWERAUTOMATE/i)).toBeInTheDocument();
+    expect(getPillButton(/^42$/)).toBeInTheDocument();
+
+    // Total: 1 "All" + 3 edge-case pills
+    const pillBar = getPillBar();
+    const pillButtons = within(pillBar).getAllByRole('button');
+    expect(pillButtons).toHaveLength(4);
+  });
+});
