@@ -21,6 +21,7 @@ import { CaseStudies } from '@/pages/CaseStudies';
 import { Insights } from '@/pages/Insights';
 import { Intelligence } from '@/pages/Intelligence';
 import { Maturity } from '@/pages/Maturity';
+import { ReportGenerator } from '@/pages/ReportGenerator';
 import { Login } from '@/pages/Login';
 import { IndustryPage } from '@/pages/IndustryPage';
 import { SolutionDetail } from '@/pages/SolutionDetail';
@@ -75,6 +76,7 @@ function Router() {
         <Route path="/insights" component={Insights} />
         <Route path="/intelligence" component={Intelligence} />
         <Route path="/maturity" component={Maturity} />
+        <Route path="/report-generator" component={ReportGenerator} />
         <Route path="/login" component={Login} />
         <Route path="/industry/:slug" component={IndustryPage} />
         <Route path="/solutions/:slug" component={SolutionDetail} />
