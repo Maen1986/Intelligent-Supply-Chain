@@ -1603,7 +1603,7 @@ export const SETUP_GUIDES: Record<string, { en: string[]; ar: string[] }> = {
   },
 };
 
-function TemplatesTab({ ar }: { ar: boolean }) {
+export function TemplatesTab({ ar }: { ar: boolean }) {
   const [templates, setTemplates] = useState<TemplateManifestItem[]>([]);
   const [loading, setLoading]     = useState(true);
   const [error, setError]         = useState<string | null>(null);
