@@ -2134,6 +2134,19 @@ describe('buildKpiTemplateRows – Status formula embeds correct targetValue', (
     assertAllTargetValues('resiliency');
   });
 
+  // ── lean-agile-supply-chain: alias for lean-six-sigma ────────────────────
+  //  SLUG_ALIAS maps 'lean-agile-supply-chain' → 'lean-six-sigma'.  Confirm
+  //  the alias still points at lean-six-sigma AND that the resolved framework
+  //  produces correct Status-formula thresholds (same 6 KPIs as lean-six-sigma).
+  it('lean-agile-supply-chain – alias resolves to lean-six-sigma and all 6 KPIs embed the correct targetValue', () => {
+    expect(
+      SLUG_ALIAS['lean-agile-supply-chain'],
+      'SLUG_ALIAS[\'lean-agile-supply-chain\'] must still point at lean-six-sigma',
+    ).toBe('lean-six-sigma');
+
+    assertAllTargetValues(SLUG_ALIAS['lean-agile-supply-chain']);
+  });
+
   // ── direct-entry KPIs (no KPI_DATA_SPEC) also embed the correct targetValue
   //
   //  KPI_FALLBACK is a synthetic KpiDef whose id is not in KPI_DATA_SPECS, so
