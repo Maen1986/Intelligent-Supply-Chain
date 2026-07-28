@@ -51,12 +51,15 @@ const makeTemplates = allTemplates.filter(t => t.platform === 'make');
 /** All Zapier templates from the manifest */
 const zapierTemplates = allTemplates.filter(t => t.platform === 'zapier');
 
+/** All n8n templates from the manifest */
+const n8nTemplates = allTemplates.filter(t => t.platform === 'n8n');
+
 /* ── Minimal fixture builder ─────────────────────────────────────────────── */
 
 function toFixture(t: ManifestTemplate) {
   return {
     id: t.id,
-    platform: t.platform as 'make' | 'zapier',
+    platform: t.platform as 'make' | 'zapier' | 'n8n',
     filename: t.filename,
     downloadPath: `/n8n-templates/${t.filename}`,
     name: t.name,
@@ -312,6 +315,63 @@ describe('TemplateCard — all Zapier templates from manifest', () => {
         const text = container.textContent ?? '';
         // All Make.com setup guides include "Import Blueprint"
         expect(text).not.toContain('Import Blueprint');
+      });
+    });
+  });
+});
+
+/* ════════════════════════════════════════════════════════════════════════════
+   DATA-DRIVEN TESTS — all 8 n8n templates
+   ════════════════════════════════════════════════════════════════════════════ */
+
+describe('TemplateCard — all n8n templates from manifest', () => {
+  it('manifest contains exactly 8 n8n templates', () => {
+    expect(n8nTemplates).toHaveLength(8);
+  });
+
+  n8nTemplates.forEach(raw => {
+    const template = toFixture(raw);
+    const guide = SETUP_GUIDES[raw.id];
+
+    describe(`n8n template: ${raw.id}`, () => {
+      it('has a SETUP_GUIDES entry', () => {
+        expect(guide).toBeDefined();
+        expect(guide.en.length).toBeGreaterThan(0);
+        expect(guide.ar.length).toBeGreaterThan(0);
+      });
+
+      it('renders the correct EN step count after clicking Setup', () => {
+        const { container } = render(<TemplateCard template={template} ar={false} />);
+        openSetupPanel(container);
+
+        const items = container.querySelectorAll('ol li');
+        expect(items.length).toBe(guide.en.length);
+      });
+
+      it('renders the correct AR step count when ar=true', () => {
+        const { container } = render(<TemplateCard template={template} ar={true} />);
+        openSetupPanelAr(container);
+
+        const items = container.querySelectorAll('ol li');
+        expect(items.length).toBe(guide.ar.length);
+      });
+
+      it('does NOT bleed Make.com steps into an n8n template', () => {
+        const { container } = render(<TemplateCard template={template} ar={false} />);
+        openSetupPanel(container);
+
+        const text = container.textContent ?? '';
+        // All Make.com setup guides include "Import Blueprint"
+        expect(text).not.toContain('Import Blueprint');
+      });
+
+      it('does NOT bleed Zapier steps into an n8n template', () => {
+        const { container } = render(<TemplateCard template={template} ar={false} />);
+        openSetupPanel(container);
+
+        const text = container.textContent ?? '';
+        // All Zapier setup guides begin with "In Zapier, create a new Zap"
+        expect(text).not.toContain('In Zapier, create a new Zap');
       });
     });
   });
