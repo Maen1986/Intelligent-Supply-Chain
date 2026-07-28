@@ -500,3 +500,109 @@ describe('PrepareDownloadModal — blank-key error clears on retry (English mode
   });
 
 });
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   Non-404 server error — Arabic (ar=true)
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+describe('PrepareDownloadModal — non-404 server error (Arabic mode)', () => {
+
+  /**
+   * Q — Arabic: server returns 500 → Arabic generic-failure string is shown
+   *
+   * fetch is called twice:
+   *   1st call  → keys endpoint  → resolves with { ok: true, keys: [] }
+   *   2nd call  → download endpoint → resolves with a 500 Response
+   */
+  it('Q — ar=true, server 500: shows Arabic generic-failure message', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn()
+        /* keys endpoint */
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ ok: true, keys: [] }),
+        })
+        /* download endpoint */
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 500,
+        }),
+    );
+
+    render(
+      <PrepareDownloadModal
+        template={makeTemplate('n8n')}
+        ar={true}
+        onClose={() => {}}
+      />,
+    );
+
+    /* Fill in the required API key field */
+    const apiKeyInput = screen.getByPlaceholderText('الصق قيمة المفتاح هنا…');
+    fireEvent.change(apiKeyInput, { target: { value: 'test-api-key-value' } });
+
+    /* Click the Download button */
+    const downloadBtn = screen.getByRole('button', { name: /تنزيل القالب/i });
+    fireEvent.click(downloadBtn);
+
+    /* Arabic generic-failure message must appear in the error panel */
+    await waitFor(() => {
+      expect(
+        screen.getByText('تعذّر تنزيل القالب'),
+      ).toBeInTheDocument();
+    });
+  });
+
+});
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   Non-404 server error — English (ar=false)
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+describe('PrepareDownloadModal — non-404 server error (English mode)', () => {
+
+  /**
+   * R — English: server returns 500 → English generic-failure string is shown
+   */
+  it('R — ar=false, server 500: shows English generic-failure message', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn()
+        /* keys endpoint */
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ ok: true, keys: [] }),
+        })
+        /* download endpoint */
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 500,
+        }),
+    );
+
+    render(
+      <PrepareDownloadModal
+        template={makeTemplate('n8n')}
+        ar={false}
+        onClose={() => {}}
+      />,
+    );
+
+    /* Fill in the required API key field */
+    const apiKeyInput = screen.getByPlaceholderText('Paste the raw key value here…');
+    fireEvent.change(apiKeyInput, { target: { value: 'test-api-key-value' } });
+
+    /* Click the Download button */
+    const downloadBtn = screen.getByRole('button', { name: /download template/i });
+    fireEvent.click(downloadBtn);
+
+    /* English generic-failure message must appear in the error panel */
+    await waitFor(() => {
+      expect(
+        screen.getByText('Failed to fetch template — please try again'),
+      ).toBeInTheDocument();
+    });
+  });
+
+});
