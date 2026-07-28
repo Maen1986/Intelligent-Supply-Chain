@@ -70,8 +70,10 @@ function verifySignature(
 }
 
 function logInbound(action: string, bodySnippet: string, status: "ok" | "error", error?: string) {
+  // id is a text primary key (production table has text column from original schema)
+  const id = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
   db.insert(inboundWebhookLogTable)
-    .values({ action, bodySnippet: bodySnippet.slice(0, 300), status, error: error ?? null })
+    .values({ id, action, bodySnippet: bodySnippet.slice(0, 300), status, error: error ?? null })
     .catch(err => logger.error({ err }, "[webhooks/inbound] Log insert failed"));
 }
 

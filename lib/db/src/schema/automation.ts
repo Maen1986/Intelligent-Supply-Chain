@@ -1,9 +1,16 @@
 import { pgTable, text, timestamp, integer, boolean } from "drizzle-orm/pg-core";
 import { usersTable } from "./users";
 
-/** Records every inbound webhook call received at POST /api/webhooks/inbound */
+/**
+ * Records every inbound webhook call received at POST /api/webhooks/inbound.
+ *
+ * NOTE: the production table was created with `id text` in an older deployment.
+ * The table is excluded from drizzle-kit migrations via tablesFilter in
+ * drizzle.config.ts so Drizzle never tries to ALTER the column type.
+ * The app supplies an explicit text id on every insert (see webhooksInbound.ts).
+ */
 export const inboundWebhookLogTable = pgTable("inbound_webhook_log", {
-  id:          integer("id").primaryKey().generatedByDefaultAsIdentity(),
+  id:          text("id").primaryKey(),
   action:      text("action").notNull(),
   bodySnippet: text("body_snippet"),
   status:      text("status").notNull().default("ok"), // 'ok' | 'error'
