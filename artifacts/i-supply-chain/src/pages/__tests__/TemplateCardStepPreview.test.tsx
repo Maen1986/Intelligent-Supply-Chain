@@ -260,6 +260,30 @@ describe('TemplateCard — all Make.com templates from manifest', () => {
         // All Zapier setup guides begin with "In Zapier, create a new Zap"
         expect(text).not.toContain('In Zapier, create a new Zap');
       });
+
+      it('each rendered step text matches the SETUP_GUIDES entry (EN)', () => {
+        const { container } = render(<TemplateCard template={template} ar={false} />);
+        openSetupPanel(container);
+
+        const items = Array.from(container.querySelectorAll('ol li span:last-child'));
+        const expected = guide.en.map(stripPrefix);
+
+        items.forEach((item, i) => {
+          expect(item.textContent).toBe(expected[i]);
+        });
+      });
+
+      it('each rendered step text matches the SETUP_GUIDES entry (AR)', () => {
+        const { container } = render(<TemplateCard template={template} ar={true} />);
+        openSetupPanelAr(container);
+
+        const items = Array.from(container.querySelectorAll('ol li span:last-child'));
+        const expected = guide.ar.map(stripPrefix);
+
+        items.forEach((item, i) => {
+          expect(item.textContent).toBe(expected[i]);
+        });
+      });
     });
   });
 });
@@ -315,6 +339,30 @@ describe('TemplateCard — all Zapier templates from manifest', () => {
         const text = container.textContent ?? '';
         // All Make.com setup guides include "Import Blueprint"
         expect(text).not.toContain('Import Blueprint');
+      });
+
+      it('each rendered step text matches the SETUP_GUIDES entry (EN)', () => {
+        const { container } = render(<TemplateCard template={template} ar={false} />);
+        openSetupPanel(container);
+
+        const items = Array.from(container.querySelectorAll('ol li span:last-child'));
+        const expected = guide.en.map(stripPrefix);
+
+        items.forEach((item, i) => {
+          expect(item.textContent).toBe(expected[i]);
+        });
+      });
+
+      it('each rendered step text matches the SETUP_GUIDES entry (AR)', () => {
+        const { container } = render(<TemplateCard template={template} ar={true} />);
+        openSetupPanelAr(container);
+
+        const items = Array.from(container.querySelectorAll('ol li span:last-child'));
+        const expected = guide.ar.map(stripPrefix);
+
+        items.forEach((item, i) => {
+          expect(item.textContent).toBe(expected[i]);
+        });
       });
     });
   });
