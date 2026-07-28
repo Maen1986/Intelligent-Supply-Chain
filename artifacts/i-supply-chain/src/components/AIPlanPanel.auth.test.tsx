@@ -572,3 +572,102 @@ describe('AIPlanPanel — cross-tab login via visibilitychange (Task 318)', () =
     expect(screen.queryByText('Generate Plan ✨')).toBeNull();
   });
 });
+
+// ─── Tab-switch throttle tests (Task 489) ────────────────────────────────────
+//
+// A user who rapidly switches between many tabs should not flood the server
+// with /auth/me round-trips. AuthContext skips any re-validation that would
+// occur within 30 s of the previous visibility-triggered check.
+
+describe('AuthContext — visibilitychange throttle (30 s)', () => {
+  let fetchSpy: ReturnType<typeof vi.spyOn>;
+  let nowSpy:   ReturnType<typeof vi.spyOn>;
+  let fakeNow = 0;
+
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    fakeNow = 1_000_000; // arbitrary starting point (ms)
+    nowSpy = vi.spyOn(Date, 'now').mockImplementation(() => fakeNow);
+
+    fetchSpy = vi.spyOn(globalThis, 'fetch')
+      // 1st call: mount-time /auth/me → no session
+      .mockResolvedValueOnce(makeMeResponse(false))
+      // 2nd call: first visibilitychange /auth/me → no session (still logged out)
+      .mockResolvedValueOnce(makeMeResponse(false))
+      // Guard: should never be reached within the throttle window
+      .mockResolvedValue(makeMeResponse(false));
+  });
+
+  afterEach(() => {
+    fetchSpy?.mockRestore();
+    nowSpy?.mockRestore();
+    cleanup();
+    Object.defineProperty(document, 'visibilityState', {
+      configurable: true,
+      get: () => 'visible',
+    });
+  });
+
+  it('does NOT fire a second /auth/me when the tab becomes visible again within 30 s', async () => {
+    // Mount — triggers the initial /auth/me (call #1)
+    await act(async () => {
+      render(
+        <AuthProvider>
+          <AIPlanPanel
+            loading={false}
+            result={null}
+            error={null}
+            onGenerate={vi.fn()}
+            onReset={vi.fn()}
+            buttonLabel="Generate Plan ✨"
+            isAr={false}
+          />
+        </AuthProvider>,
+      );
+    });
+
+    const afterMount = fetchSpy.mock.calls.length; // should be 1
+
+    // First tab-switch: lastVisibilityCheckRef is 0 → check fires (call #2)
+    await act(async () => { fireVisibilityChange('visible'); });
+    const afterFirst = fetchSpy.mock.calls.length;
+    expect(afterFirst).toBe(afterMount + 1);
+
+    // Advance fake clock by only 10 s — still within the 30 s throttle window
+    fakeNow += 10_000;
+
+    // Second rapid tab-switch: must be skipped (no new fetch)
+    await act(async () => { fireVisibilityChange('visible'); });
+    expect(fetchSpy.mock.calls.length).toBe(afterFirst);
+  });
+
+  it('DOES fire again after the 30 s throttle window has elapsed', async () => {
+    // Mount — call #1
+    await act(async () => {
+      render(
+        <AuthProvider>
+          <AIPlanPanel
+            loading={false}
+            result={null}
+            error={null}
+            onGenerate={vi.fn()}
+            onReset={vi.fn()}
+            buttonLabel="Generate Plan ✨"
+            isAr={false}
+          />
+        </AuthProvider>,
+      );
+    });
+
+    // First tab-switch fires — call #2
+    await act(async () => { fireVisibilityChange('visible'); });
+    const afterFirst = fetchSpy.mock.calls.length;
+
+    // Advance fake clock by 31 s — window has expired
+    fakeNow += 31_000;
+
+    // Third tab-switch: throttle has expired, fetch must fire again
+    await act(async () => { fireVisibilityChange('visible'); });
+    expect(fetchSpy.mock.calls.length).toBe(afterFirst + 1);
+  });
+});

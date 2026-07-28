@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 
 export interface UserProfile {
   id:          number;
@@ -65,13 +65,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     revalidateSession({ setLoadingTrue: false });
   }, [revalidateSession]);
 
+  // ── Throttle: track when the last visibility-triggered check ran ──────────
+  // Initialised to 0 so the very first visibilitychange always fires.
+  // The mount-time check does NOT update this ref — only the handler below
+  // does — so a cross-tab login seen right after page load still works.
+  const lastVisibilityCheckRef = useRef<number>(0);
+
   // ── Cross-tab login: re-validate when this tab regains visibility ─────────
   // If the user logs in on another tab, their session cookie is now valid.
   // When they switch back here, the visibilitychange event lets us pick up
   // the new session without requiring a full page reload.
+  // A 30-second throttle prevents a flood of round-trips when the user
+  // rapidly switches between many tabs.
   useEffect(() => {
     const handleVisibility = () => {
       if (document.visibilityState === 'visible') {
+        const now = Date.now();
+        if (now - lastVisibilityCheckRef.current < 30_000) return;
+        lastVisibilityCheckRef.current = now;
         revalidateSession();
       }
     };
