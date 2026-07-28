@@ -458,6 +458,68 @@ router.get("/templates", async (_req, res) => {
   }
 });
 
+/* ══════════════════════════════════════════════════════════════
+   TEMPLATE DOWNLOAD — serve a single template file by manifest ID
+   ══════════════════════════════════════════════════════════════ */
+
+router.get("/templates/:id/download", async (req, res) => {
+  const { id } = req.params;
+  try {
+    const { readFile, access } = await import("fs/promises");
+    const { fileURLToPath } = await import("url");
+    const { dirname, join } = await import("path");
+    const __dir = dirname(fileURLToPath(import.meta.url));
+
+    // Load manifest to look up the template entry
+    const manifestPath = join(__dir, "../../public/n8n-templates/manifest.json");
+    let manifestRaw: string;
+    try {
+      manifestRaw = await readFile(manifestPath, "utf-8");
+    } catch {
+      res.status(500).json({ ok: false, error: "Template manifest is unavailable" });
+      return;
+    }
+
+    const manifest = JSON.parse(manifestRaw) as {
+      templates: Array<{ id: string; platform?: string; filename: string }>;
+    };
+
+    const PLATFORM_FOLDER: Record<string, string> = {
+      n8n:    "n8n-templates",
+      make:   "make-templates",
+      zapier: "zapier-templates",
+    };
+
+    const template = manifest.templates.find(t => t.id === id);
+    if (!template) {
+      res.status(404).json({ ok: false, error: "Template not found" });
+      return;
+    }
+
+    const folder   = PLATFORM_FOLDER[template.platform ?? "n8n"] ?? "n8n-templates";
+    const filePath = join(__dir, "../../public", folder, template.filename);
+
+    try {
+      await access(filePath);
+    } catch {
+      logger.error({ id, filePath }, "[admin/automations] Template file missing from disk");
+      res.status(404).json({
+        ok: false,
+        error: "Template file is currently unavailable — it may have been removed. Please contact your administrator.",
+      });
+      return;
+    }
+
+    const content = await readFile(filePath, "utf-8");
+    res.setHeader("Content-Type", "application/json");
+    res.setHeader("Content-Disposition", `attachment; filename="${template.filename}"`);
+    res.send(content);
+  } catch (err) {
+    logger.error({ err }, "[admin/automations] GET /templates/:id/download");
+    res.status(500).json({ ok: false, error: "Server error" });
+  }
+});
+
 /* ── helper ──────────────────────────────────────────────────────────────── */
 
 function maskUrl(raw: string): string {

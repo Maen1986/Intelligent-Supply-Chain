@@ -8,6 +8,8 @@
  *     file on disk (no 404s).
  *  3. Platform filter counts: make === 8, zapier === 8, n8n === 8.
  *  4. The 10 new template IDs are present in the response.
+ *  5. GET /api/admin/automations/templates/:id/download returns 404 with a
+ *     clear JSON error when the underlying file is missing from disk.
  */
 
 import { describe, it, expect, vi, beforeAll } from 'vitest';
@@ -166,3 +168,4 @@ describe('GET /api/admin/automations/templates', () => {
     }
   });
 });
+

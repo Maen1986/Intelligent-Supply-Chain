@@ -1996,8 +1996,6 @@ export function PrepareDownloadModal({
   const [newKeyCopied, setNewKeyCopied] = useState(false);
   const [createKeyError, setCreateKeyError] = useState<string | null>(null);
 
-  const rawUrl = `${API_BASE.replace('/api', '')}/public/${template.downloadPath}`;
-
   const handleCreateKey = async () => {
     setCreatingKey(true);
     setCreateKeyError(null);
@@ -2052,8 +2050,21 @@ export function PrepareDownloadModal({
     setError(null);
     setDownloading(true);
     try {
-      const resp = await fetch(rawUrl, { credentials: 'include' });
-      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const resp = await fetch(`${API_BASE}/admin/automations/templates/${template.id}/download`, {
+        credentials: 'include',
+      });
+      if (!resp.ok) {
+        let msg: string;
+        if (resp.status === 404) {
+          msg = ar
+            ? 'ملف القالب غير متوفر حالياً — ربما تم حذفه. يُرجى التواصل مع المسؤول.'
+            : 'Template file is currently unavailable — it may have been removed. Please contact your administrator.';
+        } else {
+          msg = ar ? 'تعذّر تنزيل القالب' : 'Failed to fetch template — please try again';
+        }
+        setError(msg);
+        return;
+      }
       let text = await resp.text();
 
       // Replace known placeholders
