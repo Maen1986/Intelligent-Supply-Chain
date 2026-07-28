@@ -131,3 +131,62 @@ describe('KPI on-target status — supply-chain-strategy mixed framework', () =>
     expect(isOnTarget(por, 90)).toBe(false);
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Arabic-mode status labels
+// Mirrors the ternary at KPIDashboard.tsx ~line 1292–1296.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Replicates the status-line string built inside handleKpiImport for one KPI. */
+function buildStatusLine(kpi: KpiDef, value: number, isAr: boolean): string {
+  const onTarget = kpi.higherIsBetter ? value >= kpi.targetValue : value <= kpi.targetValue;
+  const label = isAr ? kpi.labelAr : kpi.label;
+  const unit  = isAr ? kpi.unitAr  : kpi.unit;
+  if (onTarget) {
+    return isAr
+      ? `✅ ${label}: ${value} ${unit} — حسب الهدف`
+      : `✅ ${label}: ${value} ${unit} — On Target`;
+  }
+  return isAr
+    ? `❌ ${label}: ${value} ${unit} — دون الهدف`
+    : `❌ ${label}: ${value} ${unit} — Below Target`;
+}
+
+describe('KPI on-target status — Arabic mode labels', () => {
+  // pocycle: PO Cycle Time — higherIsBetter: false, targetValue: 7 days
+  // A lower-is-better KPI so that we can exercise both branches clearly.
+  const framework = KPI_FRAMEWORKS['procurement-excellence'];
+  const pocycle = framework.find(k => k.id === 'pocycle')!;  // lower is better
+
+  it('lower-is-better KPI below target shows ✅ with Arabic on-target label', () => {
+    // 5 days < 7 day target → on-target in Arabic
+    const line = buildStatusLine(pocycle, 5, true);
+    expect(line).toContain('✅');
+    expect(line).toContain('حسب الهدف');
+    expect(line).not.toContain('دون الهدف');
+    expect(line).not.toContain('On Target');
+  });
+
+  it('lower-is-better KPI above target shows ❌ with Arabic off-target label', () => {
+    // 10 days > 7 day target → off-target in Arabic
+    const line = buildStatusLine(pocycle, 10, true);
+    expect(line).toContain('❌');
+    expect(line).toContain('دون الهدف');
+    expect(line).not.toContain('حسب الهدف');
+    expect(line).not.toContain('Below Target');
+  });
+
+  it('Arabic on-target line uses the Arabic label and unit, not English', () => {
+    const line = buildStatusLine(pocycle, 5, true);
+    expect(line).toContain(pocycle.labelAr);
+    expect(line).toContain(pocycle.unitAr);
+    expect(line).not.toContain(pocycle.label);
+  });
+
+  it('Arabic off-target line uses the Arabic label and unit, not English', () => {
+    const line = buildStatusLine(pocycle, 10, true);
+    expect(line).toContain(pocycle.labelAr);
+    expect(line).toContain(pocycle.unitAr);
+    expect(line).not.toContain(pocycle.label);
+  });
+});
