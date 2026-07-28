@@ -1393,4 +1393,39 @@ describe('Scorecard CSV — weighted score and calculated tier columns', () => {
     expect(rows[1]['Calculated Tier']).toBe(getTier(score2, DEFAULT_CONFIG).label);
     expect(rows[1]['Calculated Tier']).toBe('Transactional');
   });
+
+  it('Calculated Tier is "Strategic" when score equals the strategic threshold exactly (tiers.strategic = 80)', () => {
+    // FULL_SUPPLIER scores 80 with DEFAULT_CONFIG weights. Raising the strategic
+    // threshold to exactly 80 puts the score right on the boundary.
+    // getTier uses >=, so 80 >= 80 must still resolve to Strategic.
+    const configStrategicAt80: ScorecardConfig = {
+      ...DEFAULT_CONFIG,
+      tiers: { strategic: 80, preferred: 55 },
+    };
+
+    const score = calcWeightedScore(FULL_SUPPLIER.subScores, configStrategicAt80);
+    expect(score).toBe(80); // precondition: score is unchanged (weights are the same)
+
+    const csv = buildScorecardCsvString([FULL_SUPPLIER], configStrategicAt80);
+    const { rows } = parseCsvFile(csv, ['Supplier Name']);
+    expect(rows[0]['Weighted Score (/100)']).toBe('80');
+    expect(rows[0]['Calculated Tier']).toBe('Strategic');
+  });
+
+  it('Calculated Tier is "Preferred" when score falls one point below the strategic threshold (tiers.strategic = 81)', () => {
+    // With strategic threshold at 81, score 80 no longer qualifies for Strategic.
+    // 80 >= preferred threshold (55), so the tier must be Preferred.
+    const configStrategicAt81: ScorecardConfig = {
+      ...DEFAULT_CONFIG,
+      tiers: { strategic: 81, preferred: 55 },
+    };
+
+    const score = calcWeightedScore(FULL_SUPPLIER.subScores, configStrategicAt81);
+    expect(score).toBe(80); // precondition: score is unchanged (weights are the same)
+
+    const csv = buildScorecardCsvString([FULL_SUPPLIER], configStrategicAt81);
+    const { rows } = parseCsvFile(csv, ['Supplier Name']);
+    expect(rows[0]['Weighted Score (/100)']).toBe('80');
+    expect(rows[0]['Calculated Tier']).toBe('Preferred');
+  });
 });
