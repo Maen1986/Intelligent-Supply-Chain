@@ -606,3 +606,137 @@ describe('PrepareDownloadModal — non-404 server error (English mode)', () => {
   });
 
 });
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   Network-throw error clears after recovery + retry — Arabic (ar=true)
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+describe('PrepareDownloadModal — network-throw error clears on retry (Arabic mode)', () => {
+
+  /**
+   * S — Arabic: fetch throws (simulating a network drop) → Arabic generic-failure
+   * message appears; a follow-up click with a succeeding fetch mock clears it.
+   *
+   * fetch sequence:
+   *   1st call → keys endpoint (mount)           → { ok: true, keys: [] }
+   *   2nd call → download endpoint (network drop) → throws Error('Network failure')
+   *   3rd call → download endpoint (recovered)    → 200 OK with template text
+   */
+  it('S — ar=true: network-throw shows Arabic error; retry success clears it', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn()
+        /* keys endpoint */
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ ok: true, keys: [] }),
+        })
+        /* download endpoint — network drop */
+        .mockRejectedValueOnce(new Error('Network failure'))
+        /* download endpoint — recovered */
+        .mockResolvedValueOnce({
+          ok: true,
+          text: async () => '{"name":"test"}',
+        }),
+    );
+
+    render(
+      <PrepareDownloadModal
+        template={makeTemplate('n8n')}
+        ar={true}
+        onClose={() => {}}
+      />,
+    );
+
+    /* Fill in the required API key field */
+    const apiKeyInput = screen.getByPlaceholderText('الصق قيمة المفتاح هنا…');
+    fireEvent.change(apiKeyInput, { target: { value: 'test-api-key-value' } });
+
+    /* First click — network throws → Arabic error appears */
+    const downloadBtn = screen.getByRole('button', { name: /تنزيل القالب/i });
+    fireEvent.click(downloadBtn);
+
+    await waitFor(() => {
+      expect(
+        screen.getByText('تعذّر تنزيل القالب'),
+      ).toBeInTheDocument();
+    });
+
+    /* Second click — fetch succeeds → error is gone */
+    fireEvent.click(downloadBtn);
+
+    await waitFor(() => {
+      expect(
+        screen.queryByText('تعذّر تنزيل القالب'),
+      ).toBeNull();
+    });
+  });
+
+});
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   Network-throw error clears after recovery + retry — English (ar=false)
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+describe('PrepareDownloadModal — network-throw error clears on retry (English mode)', () => {
+
+  /**
+   * T — English: fetch throws (simulating a network drop) → English generic-failure
+   * message appears; a follow-up click with a succeeding fetch mock clears it.
+   *
+   * fetch sequence:
+   *   1st call → keys endpoint (mount)           → { ok: true, keys: [] }
+   *   2nd call → download endpoint (network drop) → throws Error('Network failure')
+   *   3rd call → download endpoint (recovered)    → 200 OK with template text
+   */
+  it('T — ar=false: network-throw shows English error; retry success clears it', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn()
+        /* keys endpoint */
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ ok: true, keys: [] }),
+        })
+        /* download endpoint — network drop */
+        .mockRejectedValueOnce(new Error('Network failure'))
+        /* download endpoint — recovered */
+        .mockResolvedValueOnce({
+          ok: true,
+          text: async () => '{"name":"test"}',
+        }),
+    );
+
+    render(
+      <PrepareDownloadModal
+        template={makeTemplate('n8n')}
+        ar={false}
+        onClose={() => {}}
+      />,
+    );
+
+    /* Fill in the required API key field */
+    const apiKeyInput = screen.getByPlaceholderText('Paste the raw key value here…');
+    fireEvent.change(apiKeyInput, { target: { value: 'test-api-key-value' } });
+
+    /* First click — network throws → English error appears */
+    const downloadBtn = screen.getByRole('button', { name: /download template/i });
+    fireEvent.click(downloadBtn);
+
+    await waitFor(() => {
+      expect(
+        screen.getByText('Failed to fetch template — please try again'),
+      ).toBeInTheDocument();
+    });
+
+    /* Second click — fetch succeeds → error is gone */
+    fireEvent.click(downloadBtn);
+
+    await waitFor(() => {
+      expect(
+        screen.queryByText('Failed to fetch template — please try again'),
+      ).toBeNull();
+    });
+  });
+
+});
