@@ -869,6 +869,110 @@ describe('Excel-mutated template round-trip (procurement-excellence)', () => {
   });
 });
 
+// ─── Procurement-excellence partial import ───────────────────────────────────
+//
+//  The procurement-excellence framework has 6 KPIs:
+//    savings, pocycle, pocomp, sotif, ccov, ttc
+//  This suite verifies that when a user fills in only savings and pocycle the
+//  import:
+//   • calculates the two filled KPIs correctly
+//   • skips the four unfilled KPIs without zeroing them
+//   • records a skip-reason log entry for each uncalculable KPI
+//   • emits exactly 2 per-KPI success lines (summary line excluded)
+//
+describe('procurement-excellence import — partial inputs (only savings and pocycle filled)', () => {
+  /**
+   * Build a procurement-excellence template with only savings and pocycle
+   * "Your Value" cells populated.  All other KPI rows are left blank.
+   *
+   * Uses positional-index matching (consistent with the round-trip suite)
+   * so input rows are assigned in declaration order.
+   */
+  function buildPartialPeRows(): string[][] {
+    const rows = buildTemplateRows('procurement-excellence');
+    const kpiInputIndex: Record<string, number> = {};
+    rows.forEach(row => {
+      const kpiId = row[0]?.trim().toLowerCase();
+      // Only fill savings and pocycle
+      if (!['savings', 'pocycle'].includes(kpiId)) return;
+      const spec = KPI_DATA_SPECS[kpiId];
+      if (!spec) return;
+      if (kpiInputIndex[kpiId] === undefined) kpiInputIndex[kpiId] = 0;
+      const inputDef = spec.inputs[kpiInputIndex[kpiId]];
+      kpiInputIndex[kpiId]++;
+      if (inputDef) row[2] = String(inputDef.example);
+    });
+    return rows;
+  }
+
+  it('calculates savings correctly from its example inputs', () => {
+    const csvText = rowsToCsvText(buildPartialPeRows());
+    const { values } = runNewFormatImport(csvText, 'procurement-excellence');
+    // savings: pct(1_800_000, 22_000_000) ≈ 8.2
+    expect(values['savings'], 'savings').toBeCloseTo(8.2, 0);
+  });
+
+  it('calculates pocycle correctly from its example inputs', () => {
+    const csvText = rowsToCsvText(buildPartialPeRows());
+    const { values } = runNewFormatImport(csvText, 'procurement-excellence');
+    // pocycle: avg(3_850, 440) = 8.75 → rounds to 8.8
+    expect(values['pocycle'], 'pocycle').toBeCloseTo(8.8, 0);
+  });
+
+  it('skipped KPIs are absent from the values map — not zeroed', () => {
+    const csvText = rowsToCsvText(buildPartialPeRows());
+    const { values } = runNewFormatImport(csvText, 'procurement-excellence');
+
+    expect(values['pocomp'], 'pocomp should be absent').toBeUndefined();
+    expect(values['sotif'],  'sotif should be absent').toBeUndefined();
+    expect(values['ccov'],   'ccov should be absent').toBeUndefined();
+    expect(values['ttc'],    'ttc should be absent').toBeUndefined();
+  });
+
+  it('exactly 2 KPIs are calculated — no more, no less', () => {
+    const csvText = rowsToCsvText(buildPartialPeRows());
+    const { values } = runNewFormatImport(csvText, 'procurement-excellence');
+
+    expect(Object.keys(values).sort()).toEqual(['pocycle', 'savings']);
+  });
+
+  it('log contains a skip-reason entry for each uncalculable KPI', () => {
+    const csvText = rowsToCsvText(buildPartialPeRows());
+    const { log } = runNewFormatImport(csvText, 'procurement-excellence');
+
+    const skipLines = log.filter(l => l.includes('skipped'));
+    // pocomp, sotif, ccov, ttc — all four should have a skip entry
+    expect(skipLines.length, 'skip-reason log entries').toBeGreaterThanOrEqual(4);
+  });
+
+  it('log contains exactly 2 per-KPI success lines (summary line excluded)', () => {
+    const csvText = rowsToCsvText(buildPartialPeRows());
+    const { log } = runNewFormatImport(csvText, 'procurement-excellence');
+
+    // log[0] is the auto-calculated summary; filter it out before counting
+    const kpiLines = log.filter(l => l.startsWith('✓') && !l.includes('auto-calculated'));
+    expect(kpiLines.length, 'per-KPI success log lines').toBe(2);
+  });
+
+  it('skip-reason entries name the skipped KPIs, not the calculated ones', () => {
+    const csvText = rowsToCsvText(buildPartialPeRows());
+    const { log } = runNewFormatImport(csvText, 'procurement-excellence');
+
+    const skipLines = log.filter(l => l.includes('skipped'));
+    const skipText = skipLines.join('\n');
+
+    // Skipped KPI labels appear in the log
+    expect(skipText).toContain('PO Compliance Rate');      // pocomp
+    expect(skipText).toContain('Supplier OTIF');           // sotif
+    expect(skipText).toContain('Contract Coverage');       // ccov
+    expect(skipText).toContain('Time-to-Contract');        // ttc
+
+    // Calculated KPI labels must NOT appear in the skip lines
+    expect(skipText).not.toContain('Procurement Savings');
+    expect(skipText).not.toContain('PO Cycle Time');
+  });
+});
+
 // ─── Excel-mutated template round-trip (digital-transformation) ──────────────
 //
 //  Mirrors the lean-six-sigma and risk-management round-trip suites but for the
