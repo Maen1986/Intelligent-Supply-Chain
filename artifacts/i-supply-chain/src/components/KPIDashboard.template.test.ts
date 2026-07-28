@@ -2736,3 +2736,102 @@ describe('procurement-excellence import — partial inputs (only ttc, the last K
     expect(kpiLines.length, 'per-KPI success log lines').toBe(1);
   });
 });
+
+// ─── Arabic import log — lean-agile-supply-chain (lang="ar") ─────────────────
+//
+// Verifies that runNewFormatImport with isAr=true produces the correct Arabic
+// summary line when the lean-agile-supply-chain slug resolves to lean-six-sigma.
+//
+//   • Summary line:  ✓ تم احتساب N مؤشر(ات) تلقائياً.
+//   • No 📝 manual-entry notice — all 6 lean-six-sigma KPIs have specs.
+//   • All 6 KPI labelAr strings are non-empty.
+//
+// Mirrors the structure of 'Arabic import log — risk-management (lang="ar")'.
+
+describe('Arabic import log — lean-agile-supply-chain (lang="ar")', () => {
+  /**
+   * Build a full lean-six-sigma CSV with example values for all 6 KPIs.
+   * The lean-agile-supply-chain slug resolves to lean-six-sigma at runtime;
+   * we pass 'lean-six-sigma' directly to runNewFormatImport (matching what
+   * SolutionDetail does after alias resolution).
+   */
+  function buildFullLasCsv(): string {
+    const rows: string[][] = [
+      ['I Supply Chain — KPI Data Collection Template', '', '', ''],
+      ['Framework: Lean Agile Supply Chain', '', '', ''],
+      ["Generated: 1 January 2024 | Ma'in Alhaqash MCIPS CPSM | isupplychain.com", '', '', ''],
+      ['', '', '', ''],
+      ['KPI ID', 'Input Field', 'Your Value', 'Unit'],
+      // pce: Process Cycle Efficiency — pct(42, 380) ≈ 11.1
+      ['pce', 'Total value-added time per unit / transaction (from VSM)', '42', 'minutes'],
+      ['pce', 'Total end-to-end lead time per unit / transaction (door-to-door)', '380', 'minutes'],
+      // sigma: dpmoToSigma((230/(5000×10))×1e6) ∈ (3.5, 5)
+      ['sigma', 'Total defects observed in the period', '230', 'defects'],
+      ['sigma', 'Total units / transactions produced or processed', '5000', 'units'],
+      ['sigma', 'Number of defect opportunities per unit / transaction', '10', 'opportunities'],
+      // ftr: pct(1840, 2000) = 92.0
+      ['ftr', 'Total units / transactions processed in the period', '2000', 'units'],
+      ['ftr', 'Units / transactions that passed all checks on the first attempt (no rework or correction)', '1840', 'units'],
+      // ltr: ((72−28)/72)×100 ≈ 61.1
+      ['ltr', 'Baseline end-to-end lead time BEFORE improvement (from initial VSM)', '72', 'hours'],
+      ['ltr', 'Current end-to-end lead time AFTER improvement (measured same way)', '28', 'hours'],
+      // copq: pct(180000+120000+60000, 37500000) ≈ 1.0
+      ['copq', 'Internal failure costs (scrap, rework, re-inspection, production delays from quality issues)', '180000', 'SAR'],
+      ['copq', 'External failure costs (customer returns, warranty claims, recalls, customer compensation)', '120000', 'SAR'],
+      ['copq', 'Appraisal costs (inspection, testing, quality audits, calibration)', '60000', 'SAR'],
+      ['copq', 'Total company revenue for the same period', '37500000', 'SAR'],
+      // kaizen: direct count = 7
+      ['kaizen', 'Number of completed structured Kaizen / rapid-improvement events in the quarter', '7', 'events'],
+    ];
+    return rows.map(r => r.map(c => `"${c.replace(/"/g, '""')}"`).join(',')).join('\r\n');
+  }
+
+  it('summary line uses the Arabic تم احتساب … تلقائياً template', () => {
+    const { log } = runNewFormatImport(buildFullLasCsv(), 'lean-six-sigma', true);
+    const summary = log[0];
+    expect(summary).toMatch(/^✓/);
+    expect(summary).toContain('تم احتساب');
+    expect(summary).toContain('مؤشر(ات) تلقائياً');
+  });
+
+  it('summary line reports 6 KPIs calculated', () => {
+    const { log } = runNewFormatImport(buildFullLasCsv(), 'lean-six-sigma', true);
+    expect(log[0]).toContain('6');
+  });
+
+  it('all 6 KPIs are calculated — per-KPI success lines present', () => {
+    const { log } = runNewFormatImport(buildFullLasCsv(), 'lean-six-sigma', true);
+    const kpiLines = log.filter(l => l.startsWith('✓') && !l.includes('تم احتساب'));
+    expect(kpiLines.length).toBe(6);
+  });
+
+  it('no 📝 manual-entry notice — all lean-six-sigma KPIs have calculation specs', () => {
+    const { log } = runNewFormatImport(buildFullLasCsv(), 'lean-six-sigma', true);
+    expect(log.find(l => l.startsWith('📝'))).toBeUndefined();
+  });
+
+  it('Arabic labelAr strings for all 6 lean-six-sigma KPIs are non-empty', () => {
+    const lssKpis = KPI_FRAMEWORKS['lean-six-sigma'];
+
+    const pce    = lssKpis.find(k => k.id === 'pce')!;
+    const sigma  = lssKpis.find(k => k.id === 'sigma')!;
+    const ftr    = lssKpis.find(k => k.id === 'ftr')!;
+    const ltr    = lssKpis.find(k => k.id === 'ltr')!;
+    const copq   = lssKpis.find(k => k.id === 'copq')!;
+    const kaizen = lssKpis.find(k => k.id === 'kaizen')!;
+
+    expect(pce,    'pce KPI definition missing').toBeDefined();
+    expect(sigma,  'sigma KPI definition missing').toBeDefined();
+    expect(ftr,    'ftr KPI definition missing').toBeDefined();
+    expect(ltr,    'ltr KPI definition missing').toBeDefined();
+    expect(copq,   'copq KPI definition missing').toBeDefined();
+    expect(kaizen, 'kaizen KPI definition missing').toBeDefined();
+
+    expect(pce.labelAr.trim().length,    'pce.labelAr is empty').toBeGreaterThan(0);
+    expect(sigma.labelAr.trim().length,  'sigma.labelAr is empty').toBeGreaterThan(0);
+    expect(ftr.labelAr.trim().length,    'ftr.labelAr is empty').toBeGreaterThan(0);
+    expect(ltr.labelAr.trim().length,    'ltr.labelAr is empty').toBeGreaterThan(0);
+    expect(copq.labelAr.trim().length,   'copq.labelAr is empty').toBeGreaterThan(0);
+    expect(kaizen.labelAr.trim().length, 'kaizen.labelAr is empty').toBeGreaterThan(0);
+  });
+});
