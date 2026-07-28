@@ -847,26 +847,47 @@ function WebhookLogTab({ ar, refresh }: { ar: boolean; refresh: number }) {
    ════════════════════════════════════════════════════════════════════════════ */
 
 function InboundLogTab({ ar, refresh }: { ar: boolean; refresh: number }) {
-  const [rows, setRows]     = useState<InboundLogRow[]>([]);
-  const [total, setTotal]   = useState(0);
+  const [rows, setRows]       = useState<InboundLogRow[]>([]);
+  const [total, setTotal]     = useState(0);
   const [loading, setLoading] = useState(true);
-  const [page, setPage]     = useState(0);
+  const [page, setPage]       = useState(0);
+  const [actionFilter, setActionFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
   const PAGE = 50;
 
-  useEffect(() => {
+  const load = useCallback(() => {
     setLoading(true);
     const params = new URLSearchParams({ limit: String(PAGE), offset: String(page * PAGE) });
+    if (actionFilter.trim()) params.set('action', actionFilter.trim());
+    if (statusFilter)        params.set('status', statusFilter);
     fetch(`${API_BASE}/admin/automations/inbound-log?${params}`, { credentials: 'include' })
       .then(r => r.json())
       .then(d => { if (d.ok) { setRows(d.logs); setTotal(d.total); } })
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, [page, refresh]);
+  }, [page, actionFilter, statusFilter]);
+
+  useEffect(() => { load(); }, [load, refresh]);
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <p className="text-xs text-muted-foreground">{total} {ar ? 'سجل' : 'records total'}</p>
+      <div className="flex flex-wrap gap-2 items-center">
+        <Input
+          className="w-48 h-8 text-xs"
+          placeholder={ar ? 'تصفية حسب الإجراء…' : 'Filter by action…'}
+          value={actionFilter}
+          onChange={e => { setActionFilter(e.target.value); setPage(0); }}
+        />
+        <select
+          className="h-8 text-xs border border-border rounded-md px-2 bg-white"
+          value={statusFilter}
+          onChange={e => { setStatusFilter(e.target.value); setPage(0); }}
+        >
+          <option value="">{ar ? 'كل الحالات' : 'All statuses'}</option>
+          <option value="ok">OK</option>
+          <option value="error">Error</option>
+        </select>
+        <span className="text-xs text-muted-foreground ms-auto">{total} {ar ? 'سجل' : 'records'}</span>
         <Button variant="outline" size="sm" className="h-8 text-xs" onClick={() => exportCsv(rows as unknown as Record<string, unknown>[], 'inbound-log.csv')}>
           <Download className="w-3 h-3 me-1" /> {ar ? 'تصدير' : 'Export CSV'}
         </Button>

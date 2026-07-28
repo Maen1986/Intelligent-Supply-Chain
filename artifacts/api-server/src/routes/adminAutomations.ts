@@ -175,18 +175,28 @@ router.get("/webhook-log", async (req, res) => {
 router.get("/inbound-log", async (req, res) => {
   const limit  = Math.min(parseInt(String(req.query.limit  ?? "50"), 10) || 50, 200);
   const offset = parseInt(String(req.query.offset ?? "0"), 10) || 0;
+  const action = typeof req.query.action === "string" ? req.query.action : null;
+  const status = typeof req.query.status === "string" ? req.query.status : null;
 
   try {
-    const rows = await db
-      .select()
-      .from(inboundWebhookLogTable)
-      .orderBy(desc(inboundWebhookLogTable.receivedAt))
-      .limit(limit)
-      .offset(offset);
+    const actionFilter = action ? sql`AND action ILIKE ${'%' + action + '%'}` : sql``;
+    const statusFilter = status ? sql`AND status = ${status}` : sql``;
 
-    const totalRow = await db.execute(sql`SELECT COUNT(*)::int AS total FROM inbound_webhook_log`);
+    const rows = await db.execute(sql`
+      SELECT id, action, body_snippet AS "bodySnippet", status, error, received_at AS "receivedAt"
+      FROM inbound_webhook_log
+      WHERE 1=1 ${actionFilter} ${statusFilter}
+      ORDER BY received_at DESC
+      LIMIT ${limit} OFFSET ${offset}
+    `);
 
-    res.json({ ok: true, logs: rows, total: (totalRow.rows[0] as { total: number }).total, limit, offset });
+    const totalRow = await db.execute(sql`
+      SELECT COUNT(*)::int AS total
+      FROM inbound_webhook_log
+      WHERE 1=1 ${actionFilter} ${statusFilter}
+    `);
+
+    res.json({ ok: true, logs: rows.rows, total: (totalRow.rows[0] as { total: number }).total, limit, offset });
   } catch (err) {
     logger.error({ err }, "[admin/automations] GET /inbound-log");
     res.status(500).json({ ok: false, error: "Server error" });
