@@ -266,7 +266,9 @@ function runNewFormatImport(
     const spec = KPI_DATA_SPECS[k.id];
     const inputs = inputsByKpi[k.id];
     if (!inputs || !spec) {
-      if (spec) log.push(`${k.label}: no input values found — skipped.`);
+      if (spec) log.push(isAr
+        ? `${k.labelAr}: لم يتم تقديم قيم إدخال — تم التخطّي.`
+        : `${k.label}: no input values found — skipped.`);
       return;
     }
 
@@ -277,15 +279,26 @@ function runNewFormatImport(
       if (vals.length === requiredIds.length) {
         requiredIds.forEach((id, idx) => { inputs[id] = vals[idx]; });
       } else {
-        log.push(`${k.label}: missing inputs (${missingIds.join(', ')}) — skipped.`);
+        const kLabel = isAr ? k.labelAr : k.label;
+        log.push(isAr
+          ? `${kLabel}: مدخلات ناقصة (${missingIds.join(', ')}) — تم التخطّي.`
+          : `${kLabel}: missing inputs (${missingIds.join(', ')}) — skipped.`);
         return;
       }
     }
 
     const result = spec.calculate(inputs);
-    if (isNaN(result)) { log.push(`${k.label}: calculation returned invalid result.`); return; }
+    if (isNaN(result)) {
+      const kLabel = isAr ? k.labelAr : k.label;
+      log.push(isAr
+        ? `${kLabel}: أعادت الحسابات نتيجة غير صالحة — تحقّق من قيم الإدخال.`
+        : `${kLabel}: calculation returned invalid result.`);
+      return;
+    }
     values[k.id] = result;
-    log.push(`✓ ${k.label}: ${result} ${k.unit}`);
+    const kLabel = isAr ? k.labelAr : k.label;
+    const kUnit  = isAr ? k.unitAr  : k.unit;
+    log.push(`✓ ${kLabel}: ${result} ${kUnit}`);
     count++;
   });
 
@@ -3833,5 +3846,115 @@ describe('supplier-relationship-governance import — partial inputs (only sotif
     expect(skipText).toContain('JBP Coverage');              // jbp
     expect(skipText).toContain('ESG Audit Coverage');        // esga2
     expect(skipText).toContain('On-Time Scorecard Review');  // sc2
+  });
+});
+
+// ─── lean-agile-supply-chain Arabic partial import ───────────────────────────
+//
+// lean-agile-supply-chain is an alias for lean-six-sigma (6 KPIs: pce, sigma,
+// ftr, ltr, copq, kaizen).  This suite imports only pce and ftr with isAr=true
+// and verifies:
+//   1. Arabic summary: ✓ تم احتساب 2 مؤشر(ات) تلقائياً.
+//   2. Two per-KPI success lines that carry Arabic KPI labels (labelAr)
+//   3. Four Arabic skip-reason entries for sigma, ltr, copq, and kaizen
+
+describe('lean-agile-supply-chain Arabic partial import (only pce and ftr filled)', () => {
+  /**
+   * Build a minimal CSV containing only pce and ftr input rows — all other
+   * lean-six-sigma KPIs (sigma, ltr, copq, kaizen) are intentionally absent.
+   * isAr=true is passed to runNewFormatImport to exercise the Arabic code-path.
+   *
+   * pce: value_added_time=42 min, total_lead_time=380 min → PCE ≈ 11.1 %
+   * ftr: total_units_ftr=2000, first_time_right=1840     → FTR = 92.0 %
+   */
+  function buildPartialArCsv(): string {
+    const rows: string[][] = [
+      ['KPI ID', 'Input Field', 'Your Value', 'Unit'],
+      // pce inputs
+      ['pce', 'Total value-added time per unit / transaction (from VSM)', '42', 'minutes'],
+      ['pce', 'Total end-to-end lead time per unit / transaction (door-to-door)', '380', 'minutes'],
+      // ftr inputs
+      ['ftr', 'Total units / transactions processed in the period', '2000', 'units'],
+      ['ftr', 'Units / transactions that passed all checks on the first attempt (no rework or correction)', '1840', 'units'],
+      // sigma, ltr, copq, kaizen intentionally omitted
+    ];
+    return rows.map(r => r.map(c => `"${c.replace(/"/g, '""')}"`).join(',')).join('\r\n');
+  }
+
+  it('Arabic summary line reads "✓ تم احتساب 2 مؤشر(ات) تلقائياً."', () => {
+    const { log } = runNewFormatImport(buildPartialArCsv(), 'lean-six-sigma', true);
+    expect(log[0]).toBe('✓ تم احتساب 2 مؤشر(ات) تلقائياً.');
+  });
+
+  it('exactly 2 per-KPI success lines are present', () => {
+    const { log } = runNewFormatImport(buildPartialArCsv(), 'lean-six-sigma', true);
+    // Filter out the summary line (contains "تم احتساب") to count only per-KPI lines
+    const successLines = log.filter(l => l.startsWith('✓') && !l.includes('تم احتساب'));
+    expect(successLines.length, 'per-KPI success lines').toBe(2);
+  });
+
+  it('per-KPI success lines carry Arabic KPI labels (labelAr), not English', () => {
+    const { log } = runNewFormatImport(buildPartialArCsv(), 'lean-six-sigma', true);
+    const successLines = log.filter(l => l.startsWith('✓') && !l.includes('تم احتساب'));
+    const successText = successLines.join('\n');
+
+    const lssKpis = KPI_FRAMEWORKS['lean-six-sigma'];
+    const pce = lssKpis.find(k => k.id === 'pce')!;
+    const ftr = lssKpis.find(k => k.id === 'ftr')!;
+
+    expect(successText).toContain(pce.labelAr);
+    expect(successText).toContain(ftr.labelAr);
+    // English labels must NOT appear in the success lines when isAr=true
+    expect(successText).not.toContain(pce.label);
+    expect(successText).not.toContain(ftr.label);
+  });
+
+  it('pce is calculated correctly from its example inputs', () => {
+    const { values } = runNewFormatImport(buildPartialArCsv(), 'lean-six-sigma', true);
+    // pct(42, 380) ≈ 11.1
+    expect(values['pce'], 'pce').toBeCloseTo(11.1, 0);
+  });
+
+  it('ftr is calculated correctly from its example inputs', () => {
+    const { values } = runNewFormatImport(buildPartialArCsv(), 'lean-six-sigma', true);
+    // pct(1840, 2000) = 92.0
+    expect(values['ftr'], 'ftr').toBe(92);
+  });
+
+  it('skipped KPIs are absent from the values map — not zeroed', () => {
+    const { values } = runNewFormatImport(buildPartialArCsv(), 'lean-six-sigma', true);
+    expect(values['sigma'],  'sigma should be absent').toBeUndefined();
+    expect(values['ltr'],    'ltr should be absent').toBeUndefined();
+    expect(values['copq'],   'copq should be absent').toBeUndefined();
+    expect(values['kaizen'], 'kaizen should be absent').toBeUndefined();
+  });
+
+  it('Arabic skip-reason entries are generated for all four unprovided KPIs', () => {
+    const { log } = runNewFormatImport(buildPartialArCsv(), 'lean-six-sigma', true);
+    // Arabic skip entries contain "تم التخطّي" (the Arabic skip marker)
+    const skipLines = log.filter(l => l.includes('تم التخطّي'));
+    expect(skipLines.length, 'Arabic skip-reason entries').toBeGreaterThanOrEqual(4);
+  });
+
+  it('Arabic skip entries carry Arabic KPI labels for sigma, ltr, copq and kaizen', () => {
+    const { log } = runNewFormatImport(buildPartialArCsv(), 'lean-six-sigma', true);
+    const skipText = log.filter(l => l.includes('تم التخطّي')).join('\n');
+
+    const lssKpis = KPI_FRAMEWORKS['lean-six-sigma'];
+    const sigma  = lssKpis.find(k => k.id === 'sigma')!;
+    const ltr    = lssKpis.find(k => k.id === 'ltr')!;
+    const copq   = lssKpis.find(k => k.id === 'copq')!;
+    const kaizen = lssKpis.find(k => k.id === 'kaizen')!;
+
+    expect(skipText).toContain(sigma.labelAr);
+    expect(skipText).toContain(ltr.labelAr);
+    expect(skipText).toContain(copq.labelAr);
+    expect(skipText).toContain(kaizen.labelAr);
+  });
+
+  it('no English skip markers ("skipped") appear in the Arabic import log', () => {
+    const { log } = runNewFormatImport(buildPartialArCsv(), 'lean-six-sigma', true);
+    const englishSkips = log.filter(l => l.includes('skipped'));
+    expect(englishSkips.length, 'English "skipped" entries in Arabic mode').toBe(0);
   });
 });

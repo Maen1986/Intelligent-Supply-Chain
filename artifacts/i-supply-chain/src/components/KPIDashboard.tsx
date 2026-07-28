@@ -273,15 +273,26 @@ export function calcKpisFromInputs(
       if (vals.length === requiredIds.length) {
         requiredIds.forEach((id, idx) => { inputs[id] = vals[idx]; });
       } else {
-        log.push(`${k.label}: missing inputs (${missingIds.join(', ')}) — skipped.`);
+        const kLabel = isAr ? k.labelAr : k.label;
+        log.push(isAr
+          ? `${kLabel}: مدخلات ناقصة (${missingIds.join(', ')}) — تم التخطّي.`
+          : `${kLabel}: missing inputs (${missingIds.join(', ')}) — skipped.`);
         return;
       }
     }
 
     const result = spec.calculate(inputs);
-    if (isNaN(result)) { log.push(`${k.label}: calculation returned invalid result — check input values.`); return; }
+    if (isNaN(result)) {
+      const kLabel = isAr ? k.labelAr : k.label;
+      log.push(isAr
+        ? `${kLabel}: أعادت الحسابات نتيجة غير صالحة — تحقّق من قيم الإدخال.`
+        : `${kLabel}: calculation returned invalid result — check input values.`);
+      return;
+    }
     values[k.id] = String(result);
-    log.push(`✓ ${k.label}: calculated ${result} ${k.unit}`);
+    const kLabel = isAr ? k.labelAr : k.label;
+    const kUnit  = isAr ? k.unitAr  : k.unit;
+    log.push(`✓ ${kLabel}: calculated ${result} ${kUnit}`);
     count++;
   });
 
