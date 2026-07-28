@@ -273,3 +273,182 @@ describe('MaturityAssessmentTool — tab-bar keyboard navigation', () => {
     expect(tabs[tabs.length - 1]).toHaveAttribute('aria-selected', 'true');
   });
 });
+
+/* ══════════════════════════════════════════════════════════════════════════
+   TrainingNeedsAssessment — score persistence across tab switches
+   Entering scores on Assessment Matrix → switch to AI Learning Plan → back
+   → scores must still be visible in the matrix selects
+══════════════════════════════════════════════════════════════════════════ */
+describe('TrainingNeedsAssessment — scores preserved when switching tabs', () => {
+  beforeEach(() => { localStorage.clear(); cleanup(); });
+
+  it('self score entered on Matrix tab is still present after switching to AI tab and back', () => {
+    render(<TrainingNeedsAssessment isAr={false} />);
+    const tabs = screen.getAllByRole('tab');
+
+    // ── We start on the Assessment Matrix tab ──
+    expect(tabs[0]).toHaveAttribute('aria-selected', 'true');
+
+    // Enter a self-score of 3 for "Team Member 1 — Strategy & Planning"
+    const selfSelect = screen.getByRole('combobox', {
+      name: 'Team Member 1 — Strategy & Planning — Self',
+    }) as HTMLSelectElement;
+    fireEvent.change(selfSelect, { target: { value: '3' } });
+    expect(selfSelect.value).toBe('3');
+
+    // ── Switch to AI Learning Plan tab (index 3) ──
+    fireEvent.click(tabs[3]);
+    expect(tabs[3]).toHaveAttribute('aria-selected', 'true');
+    // The matrix panel is no longer rendered
+    expect(screen.queryByRole('combobox', {
+      name: 'Team Member 1 — Strategy & Planning — Self',
+    })).toBeNull();
+
+    // ── Switch back to Assessment Matrix tab ──
+    fireEvent.click(tabs[0]);
+    expect(tabs[0]).toHaveAttribute('aria-selected', 'true');
+
+    // The select must still show the previously entered value
+    const selfSelectAfter = screen.getByRole('combobox', {
+      name: 'Team Member 1 — Strategy & Planning — Self',
+    }) as HTMLSelectElement;
+    expect(selfSelectAfter.value).toBe('3');
+  });
+
+  it('manager score survives a Matrix → Radar → Matrix round-trip', () => {
+    render(<TrainingNeedsAssessment isAr={false} />);
+    const tabs = screen.getAllByRole('tab');
+
+    // Enter a manager score of 4 for the first domain
+    const mgrSelect = screen.getByRole('combobox', {
+      name: 'Team Member 1 — Strategy & Planning — Manager',
+    }) as HTMLSelectElement;
+    fireEvent.change(mgrSelect, { target: { value: '4' } });
+    expect(mgrSelect.value).toBe('4');
+
+    // Switch to Skill-Gap Radar tab (index 1) then back
+    fireEvent.click(tabs[1]);
+    expect(tabs[1]).toHaveAttribute('aria-selected', 'true');
+    fireEvent.click(tabs[0]);
+    expect(tabs[0]).toHaveAttribute('aria-selected', 'true');
+
+    const mgrSelectAfter = screen.getByRole('combobox', {
+      name: 'Team Member 1 — Strategy & Planning — Manager',
+    }) as HTMLSelectElement;
+    expect(mgrSelectAfter.value).toBe('4');
+  });
+
+  it('multiple domain scores all survive the tab round-trip', () => {
+    render(<TrainingNeedsAssessment isAr={false} />);
+    const tabs = screen.getAllByRole('tab');
+
+    const pairs: [string, string][] = [
+      ['Team Member 1 — Strategy & Planning — Self', '2'],
+      ['Team Member 1 — Procurement & Sourcing — Self', '5'],
+      ['Team Member 1 — Risk Management — Self', '1'],
+    ];
+
+    // Set scores
+    for (const [label, value] of pairs) {
+      fireEvent.change(
+        screen.getByRole('combobox', { name: label }) as HTMLSelectElement,
+        { target: { value } },
+      );
+    }
+
+    // Tab away to Development Actions (index 2) and back
+    fireEvent.click(tabs[2]);
+    fireEvent.click(tabs[0]);
+
+    // All scores intact
+    for (const [label, value] of pairs) {
+      const el = screen.getByRole('combobox', { name: label }) as HTMLSelectElement;
+      expect(el.value).toBe(value);
+    }
+  });
+});
+
+/* ══════════════════════════════════════════════════════════════════════════
+   MaturityAssessmentTool — rating persistence across tab switches
+   Rate dimensions on Assessment tab → switch to Gap Analysis → back →
+   ratings must still be reflected in the button aria-pressed state
+══════════════════════════════════════════════════════════════════════════ */
+describe('MaturityAssessmentTool — ratings preserved when switching tabs', () => {
+  beforeEach(() => { localStorage.clear(); cleanup(); });
+
+  it('a dimension rating survives Assessment → Gap Analysis → Assessment', () => {
+    render(<MaturityAssessmentTool isAr={false} />);
+    const tabs = screen.getAllByRole('tab');
+
+    // We start on the Assessment tab
+    expect(tabs[0]).toHaveAttribute('aria-selected', 'true');
+
+    // Click level-3 button for "Strategy & Planning"
+    const btn3 = screen.getByRole('button', {
+      name: 'Strategy & Planning: Competent (3)',
+    });
+    fireEvent.click(btn3);
+    expect(btn3).toHaveAttribute('aria-pressed', 'true');
+
+    // Switch to Gap Analysis tab (index 1)
+    fireEvent.click(tabs[1]);
+    expect(tabs[1]).toHaveAttribute('aria-selected', 'true');
+
+    // Switch back to Assessment tab
+    fireEvent.click(tabs[0]);
+    expect(tabs[0]).toHaveAttribute('aria-selected', 'true');
+
+    // Level-3 button must still be pressed
+    const btn3After = screen.getByRole('button', {
+      name: 'Strategy & Planning: Competent (3)',
+    });
+    expect(btn3After).toHaveAttribute('aria-pressed', 'true');
+    // Level-4 button must NOT be pressed
+    const btn4After = screen.getByRole('button', {
+      name: 'Strategy & Planning: Advanced (4)',
+    });
+    expect(btn4After).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  it('ratings for multiple dimensions survive Assessment → AI Roadmap → Assessment', () => {
+    render(<MaturityAssessmentTool isAr={false} />);
+    const tabs = screen.getAllByRole('tab');
+
+    // Rate two dimensions
+    fireEvent.click(screen.getByRole('button', { name: 'Strategy & Planning: Advanced (4)' }));
+    fireEvent.click(screen.getByRole('button', { name: 'People & Capability: Developing (2)' }));
+
+    // Switch to AI Roadmap (index 2) and back
+    fireEvent.click(tabs[2]);
+    fireEvent.click(tabs[0]);
+
+    // Both pressed states must be intact (fill-up: val>=l is pressed)
+    expect(screen.getByRole('button', { name: 'Strategy & Planning: Advanced (4)' }))
+      .toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: 'People & Capability: Developing (2)' }))
+      .toHaveAttribute('aria-pressed', 'true');
+
+    // Levels ABOVE the selected value must NOT be pressed
+    expect(screen.getByRole('button', { name: 'Strategy & Planning: World Class (5)' }))
+      .toHaveAttribute('aria-pressed', 'false');
+    expect(screen.getByRole('button', { name: 'People & Capability: Competent (3)' }))
+      .toHaveAttribute('aria-pressed', 'false');
+  });
+
+  it('works for a slug-specific assessment (resiliency)', () => {
+    render(<MaturityAssessmentTool slug="resiliency" isAr={false} />);
+    const tabs = screen.getAllByRole('tab');
+
+    // Rate "BCP Maturity" dimension at level 2
+    fireEvent.click(screen.getByRole('button', { name: 'BCP Maturity: Developing (2)' }));
+
+    // Tab to Gap Analysis and back
+    fireEvent.click(tabs[1]);
+    fireEvent.click(tabs[0]);
+
+    expect(screen.getByRole('button', { name: 'BCP Maturity: Developing (2)' }))
+      .toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: 'BCP Maturity: Competent (3)' }))
+      .toHaveAttribute('aria-pressed', 'false');
+  });
+});
