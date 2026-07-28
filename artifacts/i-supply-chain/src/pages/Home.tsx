@@ -248,14 +248,6 @@ const consultants = [
     sublabelAr: 'مستشار استراتيجي',
   },
   {
-    src: '/brand/consultant-euro.jpg',
-    alt: 'European Supply Chain Consultant',
-    label: 'European Markets Expert',
-    labelAr: 'خبير الأسواق الأوروبية',
-    sublabel: 'Senior Consultant',
-    sublabelAr: 'مستشار أول',
-  },
-  {
     src: '/brand/consultant-female.jpg',
     alt: 'Female Supply Chain Consultant',
     label: 'Global Strategy Advisor',
@@ -1011,8 +1003,8 @@ export function Home() {
                 stars: 5,
               },
               {
-                quote: "Sophie and James brought European best practice and adapted it perfectly to our local market context. Our ESG supplier framework opened three international tender opportunities within six months of completion.",
-                quoteAr: "جلب صوفي وجيمس أفضل الممارسات الأوروبية وكيّفاها بإتقان مع سياق سوقنا المحلي. فتح إطار موردينا المتوافق مع معايير ESG ثلاث فرص لمناقصات دولية خلال ستة أشهر من الإنجاز.",
+                quote: "Ma'in built our ESG supplier framework from scratch — mapping Scope 3 exposure across 140 vendors against GHG Protocol Category 1 requirements. Within six months of completion, the framework unlocked three international tender opportunities we had previously been screened out of.",
+                quoteAr: "بنى ما'ين إطار الموردين الخاص بنا المتوافق مع معايير ESG من الصفر، وعمل على رسم خريطة تعرّضنا لانبعاثات النطاق الثالث لدى 140 مورداً وفق متطلبات الفئة الأولى من بروتوكول GHG. وخلال ستة أشهر من الإنجاز، فتح هذا الإطار أمامنا ثلاث فرص لمناقصات دولية كنا نُستبعد منها في السابق.",
                 name: "Sustainability Director",
                 nameAr: "مدير الاستدامة",
                 company: "Saudi Energy Services Company",
