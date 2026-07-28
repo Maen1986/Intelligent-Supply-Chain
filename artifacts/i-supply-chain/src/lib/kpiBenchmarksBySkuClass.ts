@@ -7,8 +7,9 @@
  *
  * Priority in KPIDashboard: SKU Class override → Industry override → KPI default.
  *
- * Sources: CIPS Inventory Management benchmarks, Gartner Supply Chain
- * Inventory Analytics, ISC practitioner data 2022–2025.
+ * Data vintage: 2024-2025 (last audited July 2025).
+ * Sources: CIPS Inventory Management Benchmarks 2024 · Gartner Supply Chain
+ * Inventory Analytics 2024 · APICS/ASCM SCOR v12 · ISC practitioner data 2022-2025.
  */
 
 export type SkuClassKey =

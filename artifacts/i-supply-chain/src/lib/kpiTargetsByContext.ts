@@ -9,8 +9,11 @@
  * These are international best-in-class targets (top-quartile / World-Class).
  * They are NOT GCC medians — those live in kpiBenchmarksByIndustry/BySku.
  *
- * Sources: CIPS benchmarking, Gartner Supply Chain Top 25, APICS/ASCM standards,
- * McKinsey supply chain surveys, ISC practitioner data 2022-2025.
+ * Data vintage: 2024-2025 (last audited July 2025).
+ * Sources: CIPS Benchmarking Report 2024 · Gartner Supply Chain Top 25 (2024) ·
+ * APICS/ASCM SCOR v12 Benchmarking Study 2024 · Hackett Group World-Class
+ * Procurement Performance Study 2024 · McKinsey GCC Supply Chain Survey 2024 ·
+ * Saudi Aramco IKTVA Progress Report 2023 · ISC practitioner data 2022-2025.
  */
 
 import type { IndustryKey } from './kpiBenchmarksByIndustry';
@@ -658,14 +661,14 @@ const INDUSTRY_TARGETS: Record<string, IndustryOnly> = {
 
   c2c: {
     // World-class Cash-to-Cash cycle days. Gartner SCM Top 25 (2024):
-    // retail top-10% ≈ 20 days; mfg top-25% ≈ 30–35 days; food near-zero.
+    // retail top-10% ≈ 20 days; mfg top-25% ≈ 30–35 days; food leaders ≤8 days.
     'retail-fmcg':       daysLo(20),
     'manufacturing':     daysLo(35),
     'healthcare-pharma': daysLo(35),
     'oil-gas':           daysLo(60),
     'government':        daysLo(50), // OECD public-sector payment-cycle guidance
     'logistics':         daysLo(15),
-    'food-beverage':     daysLo(10),
+    'food-beverage':     daysLo(8),  // ↓10 days — Gartner SCM Top-25 2024 food leaders
     'construction':      daysLo(60), // top-quartile construction; CIOB benchmarking
   },
 
@@ -694,10 +697,10 @@ const INDUSTRY_TARGETS: Record<string, IndustryOnly> = {
   // ── Procurement Excellence ────────────────────────────────────────────
 
   savings: {
-    'retail-fmcg':       pct(8),
+    'retail-fmcg':       pct(9),   // ↑8% — CIPS top-quartile 2024
     'manufacturing':     pct(7),
     'healthcare-pharma': pct(6),
-    'oil-gas':           pct(8),
+    'oil-gas':           pct(10),  // ↑8% — Hackett top-decile commodity AI sourcing 2024
     'government':        pct(5),
     'logistics':         pct(7),
     'food-beverage':     pct(8),
@@ -858,7 +861,7 @@ const INDUSTRY_TARGETS: Record<string, IndustryOnly> = {
   erpu: {
     'retail-fmcg':       pct(70),
     'manufacturing':     pct(62),
-    'healthcare-pharma': pct(78),
+    'healthcare-pharma': pct(82),  // ↑78% — HIMSS top-quartile 2024
     'oil-gas':           pct(70),
     'government':        pct(55),
     'logistics':         pct(72),
@@ -872,7 +875,7 @@ const INDUSTRY_TARGETS: Record<string, IndustryOnly> = {
     'healthcare-pharma': pct(56),
     'oil-gas':           pct(48),
     'government':        pct(28),
-    'logistics':         pct(60),
+    'logistics':         pct(70),  // ↑60% — Hackett World-Class Procurement 2024
     'food-beverage':     pct(44),
     'construction':      pct(25),
   },
@@ -972,12 +975,12 @@ const INDUSTRY_TARGETS: Record<string, IndustryOnly> = {
   // ── Resiliency ────────────────────────────────────────────────────────
 
   mttr: {
-    'retail-fmcg':       { value: 36,  label: '<36h',   labelAr: '<٣٦ ساعة'  },
+    'retail-fmcg':       { value: 24,  label: '<24h',   labelAr: '<٢٤ ساعة'  }, // ↓36h — McKinsey resilience top-10% 2024
     'manufacturing':     { value: 96,  label: '<96h',   labelAr: '<٩٦ ساعة'  },
     'healthcare-pharma': { value: 24,  label: '<24h',   labelAr: '<٢٤ ساعة'  },
     'oil-gas':           { value: 120, label: '<120h',  labelAr: '<١٢٠ ساعة' },
     'government':        { value: 120, label: '<120h',  labelAr: '<١٢٠ ساعة' },
-    'logistics':         { value: 24,  label: '<24h',   labelAr: '<٢٤ ساعة'  },
+    'logistics':         { value: 18,  label: '<18h',   labelAr: '<١٨ ساعة'  }, // ↓24h — McKinsey resilience top-10% 2024
     'food-beverage':     { value: 36,  label: '<36h',   labelAr: '<٣٦ ساعة'  },
     'construction':      { value: 120, label: '<120h',  labelAr: '<١٢٠ ساعة' },
   },
@@ -1023,8 +1026,8 @@ const INDUSTRY_TARGETS: Record<string, IndustryOnly> = {
     'retail-fmcg':       pct(40),
     'manufacturing':     pct(45),
     'healthcare-pharma': pct(30),
-    'oil-gas':           pct(55),
-    'government':        pct(60),
+    'oil-gas':           pct(65),  // ↑55% — Aramco IKTVA 70% target; top-10% ≈65% today (2023 report)
+    'government':        pct(68),  // ↑60% — Saudi IKTVA mandate trajectory 2030
     'logistics':         pct(35),
     'food-beverage':     pct(42),
     'construction':      pct(50),

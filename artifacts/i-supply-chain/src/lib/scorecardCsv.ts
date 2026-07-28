@@ -5,6 +5,12 @@
  * real transformation logic instead of hand-rolled mirrors that risk drifting.
  *
  * No DOM / side-effect imports — safe to use in Node/jsdom test environments.
+ *
+ * Dimension weights (data vintage July 2025):
+ * Cross-referenced against CIPS Supplier Scorecard Benchmark 2024 and
+ * ISM Best-Practice Supplier Evaluation Framework 2024. ESG/Compliance
+ * elevated to 18% to reflect its rise to near-equal weight with Cost
+ * across leading GCC procurement functions.
  */
 
 /* ─── Types ─── */
@@ -41,9 +47,9 @@ export interface ScorecardConfig {
 export const DIMS: Dimension[] = [
   { id: 'delivery',     label: 'Delivery Performance',  labelAr: 'أداء التسليم',          weight: 25 },
   { id: 'quality',      label: 'Quality',               labelAr: 'الجودة',                weight: 25 },
-  { id: 'cost',         label: 'Cost Competitiveness',  labelAr: 'التنافسية السعرية',     weight: 20 },
-  { id: 'compliance',   label: 'Compliance',            labelAr: 'الامتثال',              weight: 15 },
-  { id: 'innovation',   label: 'Innovation',            labelAr: 'الابتكار',              weight: 10 },
+  { id: 'cost',         label: 'Cost Competitiveness',  labelAr: 'التنافسية السعرية',     weight: 18 }, // ↓20% — CIPS 2024: ESG now co-equal with Cost
+  { id: 'compliance',   label: 'Compliance',            labelAr: 'الامتثال',              weight: 18 }, // ↑15% — CIPS Supplier Scorecard Benchmark 2024
+  { id: 'innovation',   label: 'Innovation',            labelAr: 'الابتكار',              weight:  9 }, // ↓10% — minor rebalance; total = 100
   { id: 'relationship', label: 'Relationship Quality',  labelAr: 'جودة العلاقة',          weight:  5 },
 ];
 

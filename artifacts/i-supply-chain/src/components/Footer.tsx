@@ -144,6 +144,7 @@ export function Footer() {
             <Link href="/legal" className="hover:text-white/70 transition-colors">{ar ? 'الإشعار القانوني والملكية الفكرية' : 'Legal & IP Notice'}</Link>
             <Link href="/legal" className="hover:text-white/70 transition-colors">{ar ? 'شروط الاستخدام' : 'Terms of Use'}</Link>
             <Link href="/csr" className="hover:text-white/70 transition-colors">{ar ? 'برنامج المسؤولية الاجتماعية' : 'CSR Programme'}</Link>
+            <Link href="/data-sources" className="hover:text-white/70 transition-colors">{ar ? 'مصادر البيانات' : 'Data Sources'}</Link>
           </div>
         </div>
       </div>

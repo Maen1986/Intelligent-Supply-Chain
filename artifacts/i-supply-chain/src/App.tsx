@@ -31,6 +31,7 @@ import { CommandCenter } from '@/pages/CommandCenter';
 import { KraljicMatrix } from '@/pages/KraljicMatrix';
 import { CustomerVoice } from '@/pages/CustomerVoice';
 import { Legal } from '@/pages/Legal';
+import { DataSources } from '@/pages/DataSources';
 import { AdminLeads } from '@/pages/AdminLeads';
 import { AdminIntegrations } from '@/pages/AdminIntegrations';
 import { AdminAutomations } from '@/pages/AdminAutomations';
@@ -88,6 +89,7 @@ function Router() {
         <Route path="/account" component={AccountSettings} />
         <Route path="/customer-voice" component={CustomerVoice} />
         <Route path="/legal" component={Legal} />
+        <Route path="/data-sources" component={DataSources} />
         <Route path="/admin" component={AdminLeads} />
         <Route component={NotFound} />
       </Switch>

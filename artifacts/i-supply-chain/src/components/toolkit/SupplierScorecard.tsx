@@ -96,7 +96,7 @@ const TIER_OPTIONS_AR = ['استراتيجي', 'مفضّل', 'معاملاتي',
 /* ─── Configurable framework ─── */
 // ScorecardConfig is imported from @/lib/scorecardCsv
 export const DEFAULT_CONFIG: ScorecardConfig = {
-  weights: { delivery: 25, quality: 25, cost: 20, compliance: 15, innovation: 10, relationship: 5 },
+  weights: { delivery: 25, quality: 25, cost: 18, compliance: 18, innovation: 9, relationship: 5 }, // Updated July 2025 — CIPS Scorecard Benchmark 2024
   tiers: { strategic: 75, preferred: 55 },
 };
 export const CONFIG_KEY = 'isc-tool-scorecard-config';

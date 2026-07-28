@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import {
   Shield, Lock, Mail, Download, RefreshCw, Search, LogOut,
   FileText, Users, ClipboardList, CalendarCheck, Gauge, Loader2,
-  AlertTriangle, CheckCircle2, ShieldAlert, FileDown, Zap,
+  AlertTriangle, CheckCircle2, ShieldAlert, FileDown, Zap, Database,
 } from 'lucide-react';
 
 import { API_BASE } from '@/lib/apiBase';
@@ -244,6 +244,12 @@ function LeadsDashboard({ onLogout, ar }: { onLogout: () => Promise<void>; ar: b
               <Button variant="outline" size="sm">
                 <Zap className="w-4 h-4 me-2" />
                 {ar ? 'مركز الأتمتة' : 'Automation Hub'}
+              </Button>
+            </Link>
+            <Link href="/data-sources">
+              <Button variant="outline" size="sm">
+                <Database className="w-4 h-4 me-2" />
+                {ar ? 'مصادر البيانات' : 'Data Sources'}
               </Button>
             </Link>
             <Button variant="outline" size="sm" onClick={() => { void load(tool); }} data-testid="button-refresh-leads">
