@@ -1072,6 +1072,102 @@ describe('digital-transformation import — partial inputs (only erpu and auto f
   });
 });
 
+// ─── Sustainability-ESG partial import ───────────────────────────────────────
+//
+//  The sustainability-esg framework has 6 KPIs: esga, s3, lc, ss, cr, esgs.
+//  This suite verifies that when a user fills in only esga and s3 the import:
+//   • calculates the two complete KPIs correctly
+//   • skips the four incomplete KPIs without zeroing them
+//   • records a skip-reason log entry for each uncalculable KPI
+//
+describe('sustainability-esg import — partial inputs (only esga and s3 filled)', () => {
+  /**
+   * Build a sustainability-esg template with only esga and s3 "Your Value"
+   * cells populated.  All other KPI rows are left blank.
+   */
+  function buildPartialEsgRows(): string[][] {
+    const rows = buildTemplateRows('sustainability-esg');
+    rows.forEach(row => {
+      const kpiId = row[0]?.trim().toLowerCase();
+      if (!['esga', 's3'].includes(kpiId)) return;
+      const spec = KPI_DATA_SPECS[kpiId];
+      if (!spec) return;
+      const inputDef = spec.inputs.find(inp =>
+        row[1]?.toLowerCase().substring(0, 30) === inp.label.toLowerCase().substring(0, 30),
+      );
+      if (inputDef) row[2] = String(inputDef.example);
+    });
+    return rows;
+  }
+
+  it('calculates esga correctly from its example inputs', () => {
+    const csvText = rowsToCsvText(buildPartialEsgRows());
+    const { values } = runNewFormatImport(csvText, 'sustainability-esg');
+    // esga: pct(102, 120) = 85.0
+    expect(values['esga'], 'esga').toBeCloseTo(85.0, 0);
+  });
+
+  it('calculates s3 correctly from its example inputs', () => {
+    const csvText = rowsToCsvText(buildPartialEsgRows());
+    const { values } = runNewFormatImport(csvText, 'sustainability-esg');
+    // s3: pct(9, 12) = 75.0
+    expect(values['s3'], 's3').toBeCloseTo(75.0, 0);
+  });
+
+  it('skipped KPIs are absent from the values map — not zeroed', () => {
+    const csvText = rowsToCsvText(buildPartialEsgRows());
+    const { values } = runNewFormatImport(csvText, 'sustainability-esg');
+
+    expect(values['lc'],   'lc should be absent').toBeUndefined();
+    expect(values['ss'],   'ss should be absent').toBeUndefined();
+    expect(values['cr'],   'cr should be absent').toBeUndefined();
+    expect(values['esgs'], 'esgs should be absent').toBeUndefined();
+  });
+
+  it('exactly 2 KPIs are calculated — no more, no less', () => {
+    const csvText = rowsToCsvText(buildPartialEsgRows());
+    const { values } = runNewFormatImport(csvText, 'sustainability-esg');
+
+    expect(Object.keys(values).sort()).toEqual(['esga', 's3']);
+  });
+
+  it('log contains a skip-reason entry for each uncalculable KPI', () => {
+    const csvText = rowsToCsvText(buildPartialEsgRows());
+    const { log } = runNewFormatImport(csvText, 'sustainability-esg');
+
+    const skipLines = log.filter(l => l.includes('skipped'));
+    // lc, ss, cr, esgs — all four should have a skip entry
+    expect(skipLines.length, 'skip-reason log entries').toBeGreaterThanOrEqual(4);
+  });
+
+  it('log contains exactly 2 per-KPI success lines (summary line excluded)', () => {
+    const csvText = rowsToCsvText(buildPartialEsgRows());
+    const { log } = runNewFormatImport(csvText, 'sustainability-esg');
+
+    // log[0] is the auto-calculated summary; filter it out before counting
+    const kpiLines = log.filter(l => l.startsWith('✓') && !l.includes('auto-calculated'));
+    expect(kpiLines.length, 'per-KPI success log lines').toBe(2);
+  });
+
+  it('skip-reason entries name the skipped KPIs, not the calculated ones', () => {
+    const csvText = rowsToCsvText(buildPartialEsgRows());
+    const { log } = runNewFormatImport(csvText, 'sustainability-esg');
+
+    const skipLines = log.filter(l => l.includes('skipped'));
+    const skipText = skipLines.join('\n');
+
+    // Skipped KPI labels appear in the log
+    expect(skipText).toContain('Local Content');          // lc
+    expect(skipText).toContain('Sustainable Spend');      // ss
+    expect(skipText).toContain('Carbon Reduction');       // cr
+    expect(skipText).toContain('ESG-Compliant Suppliers'); // esgs
+
+    // Calculated KPI labels must NOT appear in the skip lines
+    expect(skipText).not.toContain('Supplier ESG Audit Coverage');
+    expect(skipText).not.toContain('Scope 3 Coverage');
+  });
+});
+
 // ─── Multi-KPI sequence: Status formula cell reference ───────────────────────
 //
 //  buildKpiTemplateRows tracks the current Excel row number by counting array
