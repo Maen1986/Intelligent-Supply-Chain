@@ -369,6 +369,83 @@ describe('TrainingNeedsAssessment — scores preserved when switching tabs', () 
 });
 
 /* ══════════════════════════════════════════════════════════════════════════
+   TrainingNeedsAssessment — localStorage persistence across a page reload
+   Scores written to localStorage during one mount must be restored when the
+   component is unmounted and remounted (localStorage is NOT cleared between
+   the two renders, simulating a browser hard-reload).
+══════════════════════════════════════════════════════════════════════════ */
+describe('TrainingNeedsAssessment — scores restored from localStorage after remount', () => {
+  beforeEach(() => { localStorage.clear(); cleanup(); });
+
+  it('a self-score entered before unmount is shown after remount', () => {
+    // ── First mount ──────────────────────────────────────────────────────
+    render(<TrainingNeedsAssessment isAr={false} />);
+
+    const selfSelect = screen.getByRole('combobox', {
+      name: 'Team Member 1 — Strategy & Planning — Self',
+    }) as HTMLSelectElement;
+    fireEvent.change(selfSelect, { target: { value: '3' } });
+    expect(selfSelect.value).toBe('3');
+
+    // Unmount — localStorage is preserved; this simulates the page unloading
+    cleanup();
+
+    // ── Second mount (simulated reload) ─────────────────────────────────
+    render(<TrainingNeedsAssessment isAr={false} />);
+
+    const selfSelectAfter = screen.getByRole('combobox', {
+      name: 'Team Member 1 — Strategy & Planning — Self',
+    }) as HTMLSelectElement;
+    expect(selfSelectAfter.value).toBe('3');
+  });
+
+  it('a manager score entered before unmount is shown after remount', () => {
+    render(<TrainingNeedsAssessment isAr={false} />);
+
+    const mgrSelect = screen.getByRole('combobox', {
+      name: 'Team Member 1 — Procurement & Sourcing — Manager',
+    }) as HTMLSelectElement;
+    fireEvent.change(mgrSelect, { target: { value: '5' } });
+    expect(mgrSelect.value).toBe('5');
+
+    cleanup();
+
+    render(<TrainingNeedsAssessment isAr={false} />);
+
+    const mgrSelectAfter = screen.getByRole('combobox', {
+      name: 'Team Member 1 — Procurement & Sourcing — Manager',
+    }) as HTMLSelectElement;
+    expect(mgrSelectAfter.value).toBe('5');
+  });
+
+  it('scores across multiple domains all survive remount', () => {
+    render(<TrainingNeedsAssessment isAr={false} />);
+
+    const pairs: [string, string][] = [
+      ['Team Member 1 — Strategy & Planning — Self', '2'],
+      ['Team Member 1 — Risk Management — Self', '4'],
+      ['Team Member 1 — Data & Analytics — Manager', '1'],
+    ];
+
+    for (const [label, value] of pairs) {
+      fireEvent.change(
+        screen.getByRole('combobox', { name: label }) as HTMLSelectElement,
+        { target: { value } },
+      );
+    }
+
+    cleanup();
+
+    render(<TrainingNeedsAssessment isAr={false} />);
+
+    for (const [label, value] of pairs) {
+      const el = screen.getByRole('combobox', { name: label }) as HTMLSelectElement;
+      expect(el.value).toBe(value);
+    }
+  });
+});
+
+/* ══════════════════════════════════════════════════════════════════════════
    MaturityAssessmentTool — rating persistence across tab switches
    Rate dimensions on Assessment tab → switch to Gap Analysis → back →
    ratings must still be reflected in the button aria-pressed state
