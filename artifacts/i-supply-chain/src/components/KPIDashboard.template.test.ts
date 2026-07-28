@@ -1815,3 +1815,140 @@ describe('supply-chain-strategy import — partial inputs (only por and otif fil
     expect(skipText).not.toContain('On-Time In-Full');
   });
 });
+
+// ─── Status formula target value (threshold) correctness ────────────────────
+//
+//  The Status formula embeds k.targetValue directly, e.g.
+//    =IF(C12="","",IF(C12>=95,"✅ On Target","❌ Below Target"))
+//
+//  These tests assert the embedded numeric threshold equals k.targetValue for
+//  every KPI across six diverse frameworks, covering the following unit types:
+//    %  days  PPM  /100  /qtr  events  σ  /5  turns  pts  hrs
+//  Both spec-backed (auto-calculated) and direct-entry KPIs are covered.
+//
+
+describe('buildKpiTemplateRows – Status formula embeds correct targetValue', () => {
+  /**
+   * Extract the numeric threshold from an Excel IF formula of the form
+   *   =IF(Cn="","",IF(Cn>=VALUE,"✅ On Target","❌ Below Target"))
+   * Returns null if no threshold is found (e.g. empty formula string).
+   */
+  function extractThreshold(formula: string): number | null {
+    const m = formula.match(/(?:>=|<=)([\d.]+)/);
+    return m ? parseFloat(m[1]) : null;
+  }
+
+  /**
+   * For every KPI in the given framework slug, assert that the threshold
+   * embedded in the Status formula equals k.targetValue.
+   */
+  function assertAllTargetValues(slug: string): void {
+    const kpis = KPI_FRAMEWORKS[slug];
+    expect(kpis, `No KPI framework for slug "${slug}"`).toBeDefined();
+
+    const label = slug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+    const rows = buildKpiTemplateRows(kpis, label, TODAY);
+
+    kpis.forEach(k => {
+      const resultRow = getResultRow(rows, k.id);
+      expect(resultRow, `No __result row for KPI "${k.id}" in "${slug}"`).toBeDefined();
+
+      const formula = resultRow![6];
+      const embedded = extractThreshold(formula);
+
+      expect(
+        embedded,
+        `KPI "${k.id}" (unit: ${k.unit}) in "${slug}": ` +
+        `formula threshold ${embedded} should equal targetValue ${k.targetValue}`,
+      ).toBe(k.targetValue);
+    });
+  }
+
+  // ── supply-chain-strategy: %, days, turns ─────────────────────────────────
+  // por 95%, otif 92%, sccost 8%, c2c 28 days, fa 85%, turns 10
+  it('supply-chain-strategy – all 6 KPIs embed the correct targetValue (%, days, turns)', () => {
+    assertAllTargetValues('supply-chain-strategy');
+  });
+
+  // ── lean-six-sigma: %, σ, events ──────────────────────────────────────────
+  // pce 25%, sigma 4.0σ, ftr 92%, ltr 35%, copq 2%, kaizen 6 events
+  it('lean-six-sigma – all 6 KPIs embed the correct targetValue (%, σ, events)', () => {
+    assertAllTargetValues('lean-six-sigma');
+  });
+
+  // ── supplier-relationship-governance: %, PPM, /100 ────────────────────────
+  // sotif2 94%, ppm 500 PPM, ss2 20%, jbp 100%, esga2 100%, sc2 95%
+  it('supplier-relationship-governance – all 6 KPIs embed the correct targetValue (%, PPM)', () => {
+    assertAllTargetValues('supplier-relationship-governance');
+  });
+
+  // ── governance-compliance: %, /100, /qtr ─────────────────────────────────
+  // pcr 92%, aud 85/100, cco 90%, mav 5%, doa 0/qtr, asa 95%
+  it('governance-compliance – all 6 KPIs embed the correct targetValue (%, /100, /qtr)', () => {
+    assertAllTargetValues('governance-compliance');
+  });
+
+  // ── value-engineering: %, days, /5 ───────────────────────────────────────
+  // ves 10%, scv 5%, iir 60%, spc 98%, tis 90 days, ssat 4.2/5
+  it('value-engineering – all 6 KPIs embed the correct targetValue (%, days, /5)', () => {
+    assertAllTargetValues('value-engineering');
+  });
+
+  // ── training-capability-building: %, pts ─────────────────────────────────
+  // asi 25 pts, tcr 90%, cepr 80%, bcs 70%, kpii 15%, roi 400%
+  it('training-capability-building – all 6 KPIs embed the correct targetValue (%, pts)', () => {
+    assertAllTargetValues('training-capability-building');
+  });
+
+  // ── resiliency: %, days, hrs ─────────────────────────────────────────────
+  // rtoa 95%, mttr 72 hrs, dsc 90%, buf 30 days, sld 80%, rar 3%
+  it('resiliency – all 6 KPIs embed the correct targetValue (%, days, hrs)', () => {
+    assertAllTargetValues('resiliency');
+  });
+
+  // ── direct-entry KPIs (no KPI_DATA_SPEC) also embed the correct targetValue
+  //
+  //  KPI_FALLBACK is a synthetic KpiDef whose id is not in KPI_DATA_SPECS, so
+  //  buildKpiTemplateRows takes the else-branch (direct-entry path). Its
+  //  targetValue is 50 and higherIsBetter is true, so the expected formula
+  //  is: =IF(C…="","",IF(C…>=50,"✅ On Target","❌ Below Target"))
+  it('direct-entry path (no spec): Status formula embeds the correct targetValue', () => {
+    // KPI_FALLBACK has no entry in KPI_DATA_SPECS — confirmed by design
+    expect(KPI_DATA_SPECS[KPI_FALLBACK.id], 'KPI_FALLBACK must not have a spec').toBeUndefined();
+
+    const rows = buildKpiTemplateRows([KPI_FALLBACK], FRAMEWORK_LABEL, TODAY);
+    const resultRow = getResultRow(rows, KPI_FALLBACK.id);
+
+    expect(resultRow, 'No __result row for KPI_FALLBACK').toBeDefined();
+
+    const formula = resultRow![6];
+    const embedded = extractThreshold(formula);
+
+    expect(
+      embedded,
+      `Direct-entry KPI_FALLBACK: formula threshold ${embedded} should equal targetValue ${KPI_FALLBACK.targetValue}`,
+    ).toBe(KPI_FALLBACK.targetValue); // 50
+  });
+
+  // ── lower-is-better direct-entry KPI: threshold is still the raw targetValue
+  it('direct-entry lower-is-better KPI: formula embeds the correct targetValue', () => {
+    const LOWER_FALLBACK: KpiDef = {
+      ...KPI_FALLBACK,
+      id: '__test_fallback_lower__',
+      targetValue: 3,
+      targetLabel: '<3%',
+      higherIsBetter: false,
+    };
+    expect(KPI_DATA_SPECS[LOWER_FALLBACK.id], 'LOWER_FALLBACK must not have a spec').toBeUndefined();
+
+    const rows = buildKpiTemplateRows([LOWER_FALLBACK], FRAMEWORK_LABEL, TODAY);
+    const resultRow = getResultRow(rows, LOWER_FALLBACK.id);
+
+    expect(resultRow, 'No __result row for LOWER_FALLBACK').toBeDefined();
+
+    const formula = resultRow![6];
+    expect(formula).toContain('<=');
+    const embedded = extractThreshold(formula);
+    expect(embedded).toBe(LOWER_FALLBACK.targetValue); // 3
+  });
+});
