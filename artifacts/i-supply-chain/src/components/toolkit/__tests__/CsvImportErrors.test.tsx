@@ -151,6 +151,75 @@ describe('parseCsvFile — missing required column error message', () => {
   });
 });
 
+/* ══════════════════════════════════════════════════════════════════════════
+   A2. parseCsvFile — KRI import: header-scan exhaustion (31+ filler rows)
+
+   The KRI import flow calls parseCsvFile with ['KRI ID', 'Value'].
+   Files that have more than 30 annotation rows before the real header row
+   should return the specific "Could not locate…" message, not a generic
+   failure.  Files whose header row lands within the first 30 lines must
+   still be parsed without error.
+══════════════════════════════════════════════════════════════════════════ */
+
+/** Build a CSV string with `fillerCount` annotation rows before the KRI header. */
+function kriCsvWithFillerRows(fillerCount: number, dataRows: string[] = ['kri-001,42']): string {
+  const filler = Array.from({ length: fillerCount }, (_, i) => `Annotation row ${i + 1},`);
+  return [...filler, 'KRI ID,Value', ...dataRows].join('\n');
+}
+
+describe('parseCsvFile — KRI import: 31 filler rows exhaust the header scan', () => {
+  it('returns the specific header-not-found error when 30 filler rows precede the KRI header', () => {
+    // 30 filler rows → header is at line index 30 (the 31st line), outside the 30-row scan window
+    const csv = kriCsvWithFillerRows(30);
+    const { errors } = parseCsvFile(csv, ['KRI ID', 'Value']);
+    expect(errors).toHaveLength(1);
+    expect(errors[0]).toMatch(/Could not locate the required column headers in the first 30 rows/);
+  });
+
+  it('rows is empty when 30 filler rows push the header past the scan limit', () => {
+    const csv = kriCsvWithFillerRows(30);
+    expect(parseCsvFile(csv, ['KRI ID', 'Value']).rows).toHaveLength(0);
+  });
+
+  it('headers is empty when the scan is exhausted', () => {
+    const csv = kriCsvWithFillerRows(30);
+    expect(parseCsvFile(csv, ['KRI ID', 'Value']).headers).toHaveLength(0);
+  });
+
+  it('still fails with 50 filler rows (well past the limit)', () => {
+    const csv = kriCsvWithFillerRows(50);
+    const { errors } = parseCsvFile(csv, ['KRI ID', 'Value']);
+    expect(errors[0]).toMatch(/Could not locate the required column headers in the first 30 rows/);
+  });
+});
+
+describe('parseCsvFile — KRI import: header within first 30 rows succeeds', () => {
+  it('parses successfully when the KRI header is at row 1 (no filler rows)', () => {
+    const csv = kriCsvWithFillerRows(0);
+    const { errors, rows } = parseCsvFile(csv, ['KRI ID', 'Value']);
+    expect(errors).toHaveLength(0);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]['KRI ID']).toBe('kri-001');
+  });
+
+  it('parses successfully when the KRI header is at row 29 (29 filler rows — last valid position)', () => {
+    // 29 filler rows → header is at line index 29 (the 30th line), the last position the scan checks
+    const csv = kriCsvWithFillerRows(29);
+    const { errors, rows } = parseCsvFile(csv, ['KRI ID', 'Value']);
+    expect(errors).toHaveLength(0);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]['Value']).toBe('42');
+  });
+
+  it('returns all data rows after the KRI header when the header is preceded by filler', () => {
+    const csv = kriCsvWithFillerRows(10, ['kri-001,10', 'kri-002,20', 'kri-003,30']);
+    const { errors, rows } = parseCsvFile(csv, ['KRI ID', 'Value']);
+    expect(errors).toHaveLength(0);
+    expect(rows).toHaveLength(3);
+    expect(rows[2]['KRI ID']).toBe('kri-003');
+  });
+});
+
 describe('parseCsvFile — BOM stripped before header detection', () => {
   it('first header name does not start with the BOM character', () => {
     const { headers } = parseCsvFile('\uFEFFSupplier Name,Score\nAlpha,75', ['Supplier Name']);
