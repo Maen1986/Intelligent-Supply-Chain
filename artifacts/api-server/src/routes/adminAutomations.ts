@@ -279,9 +279,23 @@ router.post("/trigger/:jobName", async (req, res) => {
     return;
   }
 
-  // Fire and forget — respond immediately, job runs async
+  // Fire and forget — respond immediately, job runs async.
+  // If the job itself throws before reaching its own logJobRun call (e.g. DB
+  // connection failure before the user loop), we write a fallback error row so
+  // the Schedule Log always reflects that the trigger was attempted.
   const startedAt = new Date().toISOString();
-  runner().catch(err => logger.error({ err, jobName }, "[admin/automations] Manual trigger error"));
+  runner().catch(async (err) => {
+    logger.error({ err, jobName }, "[admin/automations] Manual trigger error");
+    try {
+      await db.insert(scheduleLogTable).values({
+        jobName,
+        usersProcessed: 0,
+        errors: (err as Error)?.message ?? String(err),
+      });
+    } catch (logErr) {
+      logger.error({ logErr, jobName }, "[admin/automations] Failed to write fallback schedule_log entry");
+    }
+  });
 
   res.json({ ok: true, jobName, startedAt, message: `Job '${jobName}' started` });
 });

@@ -939,7 +939,11 @@ function ScheduleLogTab({ ar, refresh }: { ar: boolean; refresh: number }) {
       });
       const d = await r.json();
       setTriggerMsg({ job: jobKey, ok: d.ok, msg: d.ok ? (ar ? 'بدأت المهمة بنجاح' : 'Job started successfully') : (d.error ?? 'Failed') });
-      if (d.ok) setTimeout(loadRows, 3000); // Reload logs after a short delay
+      if (d.ok) {
+        // First reload at 5 s — covers fast jobs; second at 10 s catches slower runs
+        setTimeout(loadRows, 5000);
+        setTimeout(loadRows, 10000);
+      }
     } catch {
       setTriggerMsg({ job: jobKey, ok: false, msg: ar ? 'تعذّر الاتصال' : 'Network error' });
     } finally {
