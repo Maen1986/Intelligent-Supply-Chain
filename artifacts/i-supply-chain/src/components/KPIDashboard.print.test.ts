@@ -18,68 +18,81 @@ import { scoreColor } from './KPIDashboard';
 // ─── Colour consistency: bar chart Cell == gauge scoreColor ───────────────
 
 /**
- * The six canonical tier colours used across bar chart Cells and MiniGauge.
+ * Seven canonical tier colours (industry-percentile system).
  * scoreColor() delegates to scoreTier() which maps score ranges to these colours.
+ *
+ *   ≥ 90  #b45309  Top 10 % — Market Leaders (gold)
+ *   ≥ 75  #059669  Top 25 %                   (dark emerald)
+ *   ≥ 55  #10b981  Top 50 % — Above Average   (green)
+ *   ≥ 40  #3b82f6  Industry Benchmark          (blue — accepted)
+ *   ≥ 25  #f59e0b  Bottom 50 % — Below Avg     (amber)
+ *   ≥ 10  #ef4444  Bottom 25 % — Far Below     (red)
+ *    < 10  #b91c1c  Bottom 10 % — Critical      (dark red)
  */
 const TIER = {
-  worldClass:    '#059669', // ≥95
-  bestInGCC:     '#10b981', // 80–94
-  competitive:   '#3b82f6', // 65–79
-  developing:    '#f59e0b', // 50–64
-  needsAttention:'#f97316', // 35–49
-  criticalGap:   '#ef4444', // <35
+  marketLeaders:  '#b45309', // ≥ 90
+  topQuartile:    '#059669', // 75–89
+  aboveAverage:   '#10b981', // 55–74
+  atBenchmark:    '#3b82f6', // 40–54
+  belowAverage:   '#f59e0b', // 25–39
+  farBelow:       '#ef4444', // 10–24
+  critical:       '#b91c1c', // < 10
 } as const;
 
 describe('Bar chart Cell colours match gauge tier colours', () => {
-  it('scoreColor(95) → World Class (#059669)', () => {
-    expect(scoreColor(95)).toBe(TIER.worldClass);
+  it('scoreColor(90)  → Top 10% Market Leaders (#b45309)', () => {
+    expect(scoreColor(90)).toBe(TIER.marketLeaders);
+  });
+  it('scoreColor(100) → Top 10% Market Leaders (#b45309)', () => {
+    expect(scoreColor(100)).toBe(TIER.marketLeaders);
   });
 
-  it('scoreColor(100) → World Class (#059669)', () => {
-    expect(scoreColor(100)).toBe(TIER.worldClass);
+  it('scoreColor(75) → Top 25% (#059669)', () => {
+    expect(scoreColor(75)).toBe(TIER.topQuartile);
+  });
+  it('scoreColor(89) → Top 25% (#059669)', () => {
+    expect(scoreColor(89)).toBe(TIER.topQuartile);
   });
 
-  it('scoreColor(80) → Best-in-GCC (#10b981)', () => {
-    expect(scoreColor(80)).toBe(TIER.bestInGCC);
+  it('scoreColor(55) → Top 50% Above Average (#10b981)', () => {
+    expect(scoreColor(55)).toBe(TIER.aboveAverage);
+  });
+  it('scoreColor(74) → Top 50% Above Average (#10b981)', () => {
+    expect(scoreColor(74)).toBe(TIER.aboveAverage);
   });
 
-  it('scoreColor(94) → Best-in-GCC (#10b981)', () => {
-    expect(scoreColor(94)).toBe(TIER.bestInGCC);
+  it('scoreColor(50) → Industry Benchmark (#3b82f6)', () => {
+    expect(scoreColor(50)).toBe(TIER.atBenchmark);
+  });
+  it('scoreColor(40) → Industry Benchmark (#3b82f6)', () => {
+    expect(scoreColor(40)).toBe(TIER.atBenchmark);
+  });
+  it('scoreColor(54) → Industry Benchmark (#3b82f6)', () => {
+    expect(scoreColor(54)).toBe(TIER.atBenchmark);
   });
 
-  it('scoreColor(65) → Competitive (#3b82f6)', () => {
-    expect(scoreColor(65)).toBe(TIER.competitive);
+  it('scoreColor(25) → Bottom 50% Below Avg (#f59e0b)', () => {
+    expect(scoreColor(25)).toBe(TIER.belowAverage);
+  });
+  it('scoreColor(39) → Bottom 50% Below Avg (#f59e0b)', () => {
+    expect(scoreColor(39)).toBe(TIER.belowAverage);
   });
 
-  it('scoreColor(79) → Competitive (#3b82f6)', () => {
-    expect(scoreColor(79)).toBe(TIER.competitive);
+  it('scoreColor(10) → Bottom 25% Far Below (#ef4444)', () => {
+    expect(scoreColor(10)).toBe(TIER.farBelow);
+  });
+  it('scoreColor(24) → Bottom 25% Far Below (#ef4444)', () => {
+    expect(scoreColor(24)).toBe(TIER.farBelow);
   });
 
-  it('scoreColor(50) → Developing (#f59e0b)', () => {
-    expect(scoreColor(50)).toBe(TIER.developing);
+  it('scoreColor(9) → Bottom 10% Critical (#b91c1c)', () => {
+    expect(scoreColor(9)).toBe(TIER.critical);
+  });
+  it('scoreColor(0) → Bottom 10% Critical (#b91c1c)', () => {
+    expect(scoreColor(0)).toBe(TIER.critical);
   });
 
-  it('scoreColor(64) → Developing (#f59e0b)', () => {
-    expect(scoreColor(64)).toBe(TIER.developing);
-  });
-
-  it('scoreColor(35) → Needs Attention (#f97316)', () => {
-    expect(scoreColor(35)).toBe(TIER.needsAttention);
-  });
-
-  it('scoreColor(49) → Needs Attention (#f97316)', () => {
-    expect(scoreColor(49)).toBe(TIER.needsAttention);
-  });
-
-  it('scoreColor(34) → Critical Gap (#ef4444)', () => {
-    expect(scoreColor(34)).toBe(TIER.criticalGap);
-  });
-
-  it('scoreColor(0) → Critical Gap (#ef4444)', () => {
-    expect(scoreColor(0)).toBe(TIER.criticalGap);
-  });
-
-  it('only produces the six canonical tier colours across 0–100', () => {
+  it('only produces the seven canonical tier colours across 0–100', () => {
     const all = Object.values(TIER);
     for (let s = 0; s <= 100; s++) {
       expect(all, `scoreColor(${s}) = ${scoreColor(s)} is not a known tier colour`).toContain(scoreColor(s));

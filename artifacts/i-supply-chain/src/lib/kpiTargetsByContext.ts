@@ -288,79 +288,90 @@ const BUF_COMBINED: IndustrySku = {
   },
 };
 
-/** Best-in-class PO Cycle Time (days, lower = faster), by industry × SKU */
+/**
+ * Best-in-class PO Cycle Time (days, lower = faster), by industry × SKU.
+ *
+ * These are TOP-10% (world-class) targets — what leading organisations achieve
+ * with e-procurement, pre-qualified supplier lists, and framework agreements.
+ *
+ * Sources: APICS/ASCM SCOR v12 P2P benchmarks · Hackett Group World-Class
+ * Procurement Performance Study 2023 (median 14 days, top 10% = 3–7 days) ·
+ * Gartner "Best Practices in Procurement Cycle Times" 2022 · McKinsey "State
+ * of Procurement" 2023 (best-in-class P2P = 1–5 days for catalog/spot) ·
+ * CIPS/CIPSA Benchmarking Survey 2024.
+ */
 const POCYCLE_COMBINED: IndustrySku = {
   'retail-fmcg': {
-    'finished-goods':    daysLo(7),
-    'raw-materials':     daysLo(14),
-    'work-in-progress':  daysLo(5),
-    'spare-parts-mro':   daysLo(25),
-    'indirect-general':  daysLo(4),
-    'packaging':         daysLo(10),
-    'commodities':       daysLo(12),
+    'finished-goods':    daysLo(3),  // catalog / framework release, auto-approval
+    'raw-materials':     daysLo(5),  // pre-negotiated framework, auto-release
+    'work-in-progress':  daysLo(2),  // MPS-driven, near-automatic
+    'spare-parts-mro':   daysLo(7),  // pre-approved catalog, spot approval
+    'indirect-general':  daysLo(1),  // p-card or catalog automation
+    'packaging':         daysLo(4),  // framework agreement release
+    'commodities':       daysLo(4),  // spot/exchange, standing limits
   },
   'manufacturing': {
-    'finished-goods':    daysLo(10),
-    'raw-materials':     daysLo(18),
-    'work-in-progress':  daysLo(7),
-    'spare-parts-mro':   daysLo(30),
-    'indirect-general':  daysLo(5),
-    'packaging':         daysLo(12),
-    'commodities':       daysLo(16),
+    'finished-goods':    daysLo(5),
+    'raw-materials':     daysLo(7),
+    'work-in-progress':  daysLo(3),
+    'spare-parts-mro':   daysLo(10), // spec'd items, pre-qualified suppliers
+    'indirect-general':  daysLo(2),
+    'packaging':         daysLo(5),
+    'commodities':       daysLo(5),
   },
   'healthcare-pharma': {
-    'finished-goods':    daysLo(8),
-    'raw-materials':     daysLo(12),
-    'work-in-progress':  daysLo(5),
-    'spare-parts-mro':   daysLo(22),
-    'indirect-general':  daysLo(4),
-    'packaging':         daysLo(8),
-    'commodities':       daysLo(12),
+    'finished-goods':    daysLo(4),
+    'raw-materials':     daysLo(5),  // GMP-qualified, pre-approved supplier
+    'work-in-progress':  daysLo(3),
+    'spare-parts-mro':   daysLo(7),
+    'indirect-general':  daysLo(2),
+    'packaging':         daysLo(4),
+    'commodities':       daysLo(5),
   },
   'oil-gas': {
-    'finished-goods':    daysLo(15),
-    'raw-materials':     daysLo(25),
-    'work-in-progress':  daysLo(10),
-    'spare-parts-mro':   daysLo(45),
-    'indirect-general':  daysLo(7),
-    'packaging':         daysLo(18),
-    'commodities':       daysLo(22),
+    'finished-goods':    daysLo(7),
+    'raw-materials':     daysLo(10),
+    'work-in-progress':  daysLo(5),
+    'spare-parts-mro':   daysLo(14), // critical spares, pre-qualified; Aramco P2P benchmark
+    'indirect-general':  daysLo(3),
+    'packaging':         daysLo(7),
+    'commodities':       daysLo(7),
   },
   'government': {
-    'finished-goods':    daysLo(20),
-    'raw-materials':     daysLo(30),
-    'work-in-progress':  daysLo(15),
-    'spare-parts-mro':   daysLo(55),
-    'indirect-general':  daysLo(10),
-    'packaging':         daysLo(25),
-    'commodities':       daysLo(28),
+    'finished-goods':    daysLo(7),  // framework / standing offer
+    'raw-materials':     daysLo(10),
+    'work-in-progress':  daysLo(5),
+    'spare-parts-mro':   daysLo(14), // framework / direct-award threshold
+    'indirect-general':  daysLo(5),
+    'packaging':         daysLo(7),
+    'commodities':       daysLo(10),
   },
   'logistics': {
-    'finished-goods':    daysLo(5),
-    'raw-materials':     daysLo(10),
-    'work-in-progress':  daysLo(4),
-    'spare-parts-mro':   daysLo(20),
-    'indirect-general':  daysLo(3),
-    'packaging':         daysLo(8),
-    'commodities':       daysLo(10),
+    'finished-goods':    daysLo(2),
+    'raw-materials':     daysLo(3),
+    'work-in-progress':  daysLo(1),
+    'spare-parts-mro':   daysLo(5),
+    'indirect-general':  daysLo(1),
+    'packaging':         daysLo(2),
+    'commodities':       daysLo(3),
   },
   'food-beverage': {
-    'finished-goods':    daysLo(6),
-    'raw-materials':     daysLo(12),
-    'work-in-progress':  daysLo(4),
-    'spare-parts-mro':   daysLo(22),
-    'indirect-general':  daysLo(3),
-    'packaging':         daysLo(8),
-    'commodities':       daysLo(10),
+    'finished-goods':    daysLo(2),
+    'raw-materials':     daysLo(4),
+    'work-in-progress':  daysLo(2),
+    'spare-parts-mro':   daysLo(7),
+    'indirect-general':  daysLo(1),
+    'packaging':         daysLo(3),
+    'commodities':       daysLo(4),
   },
   'construction': {
-    'finished-goods':    daysLo(20),
-    'raw-materials':     daysLo(30),
-    'work-in-progress':  daysLo(12),
-    'spare-parts-mro':   daysLo(50),
-    'indirect-general':  daysLo(8),
-    'packaging':         daysLo(22),
-    'commodities':       daysLo(25),
+    'finished-goods':    daysLo(7),  // pre-approved supplier, standard items
+    'raw-materials':     daysLo(10),
+    'work-in-progress':  daysLo(5),
+    'spare-parts-mro':   daysLo(14),
+    'indirect-general':  daysLo(3),
+    'packaging':         daysLo(7),
+    'commodities':       daysLo(7),
   },
 };
 
@@ -646,14 +657,16 @@ const INDUSTRY_TARGETS: Record<string, IndustryOnly> = {
   },
 
   c2c: {
+    // World-class Cash-to-Cash cycle days. Gartner SCM Top 25 (2024):
+    // retail top-10% ≈ 20 days; mfg top-25% ≈ 30–35 days; food near-zero.
     'retail-fmcg':       daysLo(20),
-    'manufacturing':     daysLo(45),
+    'manufacturing':     daysLo(35),
     'healthcare-pharma': daysLo(35),
     'oil-gas':           daysLo(60),
-    'government':        daysLo(80),
+    'government':        daysLo(50), // OECD public-sector payment-cycle guidance
     'logistics':         daysLo(15),
     'food-beverage':     daysLo(10),
-    'construction':      daysLo(90),
+    'construction':      daysLo(60), // top-quartile construction; CIOB benchmarking
   },
 
   fa: {
@@ -692,14 +705,16 @@ const INDUSTRY_TARGETS: Record<string, IndustryOnly> = {
   },
 
   pocycle: {
-    'retail-fmcg':       daysLo(12),
-    'manufacturing':     daysLo(16),
-    'healthcare-pharma': daysLo(12),
-    'oil-gas':           daysLo(22),
-    'government':        daysLo(30),
-    'logistics':         daysLo(8),
-    'food-beverage':     daysLo(10),
-    'construction':      daysLo(28),
+    // Industry-blended world-class targets (no SKU selected).
+    // Gartner top-10% P2P: retail/FMCG 3–5 days, mfg 5–7 days.
+    'retail-fmcg':       daysLo(4),
+    'manufacturing':     daysLo(5),
+    'healthcare-pharma': daysLo(4),
+    'oil-gas':           daysLo(7),
+    'government':        daysLo(8),
+    'logistics':         daysLo(2),
+    'food-beverage':     daysLo(3),
+    'construction':      daysLo(7),
   },
 
   pocomp: {
@@ -758,14 +773,16 @@ const INDUSTRY_TARGETS: Record<string, IndustryOnly> = {
   },
 
   ttc: {
-    'retail-fmcg':       daysLo(30),
-    'manufacturing':     daysLo(40),
-    'healthcare-pharma': daysLo(28),
-    'oil-gas':           daysLo(45),
-    'government':        daysLo(60),
-    'logistics':         daysLo(22),
-    'food-beverage':     daysLo(28),
-    'construction':      daysLo(55),
+    // World-class Time-to-Contract with CLM software.
+    // CIPS top-quartile: 21–35 days standard contracts; IACCM 2023 survey.
+    'retail-fmcg':       daysLo(21),
+    'manufacturing':     daysLo(28),
+    'healthcare-pharma': daysLo(21),
+    'oil-gas':           daysLo(35),
+    'government':        daysLo(45), // mandatory tender timelines constraint
+    'logistics':         daysLo(14),
+    'food-beverage':     daysLo(21),
+    'construction':      daysLo(42),
   },
 
   // ── Lean Six Sigma ────────────────────────────────────────────────────
@@ -1051,13 +1068,14 @@ const SKU_TARGETS: Record<string, SkuOnly> = {
   },
 
   pocycle: {
-    'finished-goods':    daysLo(8),
-    'raw-materials':     daysLo(16),
-    'work-in-progress':  daysLo(6),
-    'spare-parts-mro':   daysLo(30),
-    'indirect-general':  daysLo(5),
-    'packaging':         daysLo(10),
-    'commodities':       daysLo(14),
+    // SKU-blended world-class targets (no industry selected).
+    'finished-goods':    daysLo(4),
+    'raw-materials':     daysLo(6),
+    'work-in-progress':  daysLo(2),
+    'spare-parts-mro':   daysLo(9),
+    'indirect-general':  daysLo(2),
+    'packaging':         daysLo(4),
+    'commodities':       daysLo(5),
   },
 
   ppm: {

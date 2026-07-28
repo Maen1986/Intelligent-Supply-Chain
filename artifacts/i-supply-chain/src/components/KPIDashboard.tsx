@@ -38,15 +38,15 @@ export const KPI_FRAMEWORKS: Record<string, KpiDef[]> = {
   ],
   'procurement-excellence': [
     { id: 'savings', label: 'Procurement Savings %', labelAr: 'وفورات المشتريات %', unit: '%', unitAr: '%', targetValue: 10, targetLabel: '8–15%', benchmarkValue: 4, benchmarkLabel: '4%', higherIsBetter: true, description: 'Savings captured as % of managed spend.', descriptionAr: 'الوفورات المحقّقة كنسبة من الإنفاق المُدار.' },
-    { id: 'pocycle', label: 'PO Cycle Time', labelAr: 'زمن دورة أمر الشراء', unit: 'days', unitAr: 'أيام', targetValue: 10, targetLabel: '<10 days', benchmarkValue: 22, benchmarkLabel: '22 days', higherIsBetter: false, description: 'End-to-end time from requisition to PO issued.', descriptionAr: 'الزمن الكلي من الطلب إلى إصدار أمر الشراء.' },
+    { id: 'pocycle', label: 'PO Cycle Time', labelAr: 'زمن دورة أمر الشراء', unit: 'days', unitAr: 'أيام', targetValue: 7, targetLabel: '<7 days', benchmarkValue: 18, benchmarkLabel: '18 days', higherIsBetter: false, description: 'End-to-end time from requisition to PO issued.', descriptionAr: 'الزمن الكلي من الطلب إلى إصدار أمر الشراء.' },
     { id: 'pocomp', label: 'PO Compliance Rate', labelAr: 'معدّل امتثال أوامر الشراء', unit: '%', unitAr: '%', targetValue: 92, targetLabel: '>92%', benchmarkValue: 72, benchmarkLabel: '72%', higherIsBetter: true, description: 'POs raised against approved contracts vs total POs.', descriptionAr: 'أوامر الشراء مقابل العقود المعتمدة من إجمالي أوامر الشراء.' },
     { id: 'sotif', label: 'Supplier OTIF', labelAr: 'OTIF المورّد', unit: '%', unitAr: '%', targetValue: 94, targetLabel: '>94%', benchmarkValue: 80, benchmarkLabel: '80%', higherIsBetter: true, description: 'Supplier delivery on-time and in-full.', descriptionAr: 'تسليم المورّد في الوقت وبالكامل.' },
     { id: 'ccov', label: 'Contract Coverage %', labelAr: 'تغطية العقود %', unit: '%', unitAr: '%', targetValue: 88, targetLabel: '>88%', benchmarkValue: 58, benchmarkLabel: '58%', higherIsBetter: true, description: 'Spend covered by active contracts vs total spend.', descriptionAr: 'الإنفاق المغطّى بعقود نشطة من الإجمالي.' },
-    { id: 'ttc', label: 'Time-to-Contract (days)', labelAr: 'الزمن حتى التعاقد (أيام)', unit: 'days', unitAr: 'أيام', targetValue: 28, targetLabel: '<28 days', benchmarkValue: 52, benchmarkLabel: '52 days', higherIsBetter: false, description: 'Days from RFQ issue to signed contract.', descriptionAr: 'الأيام من إصدار RFQ إلى التوقيع على العقد.' },
+    { id: 'ttc', label: 'Time-to-Contract (days)', labelAr: 'الزمن حتى التعاقد (أيام)', unit: 'days', unitAr: 'أيام', targetValue: 21, targetLabel: '<21 days', benchmarkValue: 48, benchmarkLabel: '48 days', higherIsBetter: false, description: 'Days from RFQ issue to signed contract.', descriptionAr: 'الأيام من إصدار RFQ إلى التوقيع على العقد.' },
   ],
   'lean-six-sigma': [
     { id: 'pce', label: 'Process Cycle Efficiency', labelAr: 'كفاءة دورة العملية', unit: '%', unitAr: '%', targetValue: 25, targetLabel: '>25%', benchmarkValue: 8, benchmarkLabel: '8%', higherIsBetter: true, description: 'Value-added time as % of total lead time.', descriptionAr: 'الوقت المضيف للقيمة كنسبة من إجمالي مهلة التوريد.' },
-    { id: 'sigma', label: 'Sigma Level', labelAr: 'مستوى سيجما', unit: 'σ', unitAr: 'σ', targetValue: 4.0, targetLabel: '>4.0σ', benchmarkValue: 2.5, benchmarkLabel: '2.5σ', higherIsBetter: true, description: 'Defects per million opportunities converted to sigma scale.', descriptionAr: 'العيوب لكل مليون فرصة محوّلة إلى مقياس سيجما.' },
+    { id: 'sigma', label: 'Sigma Level', labelAr: 'مستوى سيجما', unit: 'σ', unitAr: 'σ', targetValue: 4.0, targetLabel: '>4.0σ', benchmarkValue: 3.0, benchmarkLabel: '3.0σ', higherIsBetter: true, description: 'Defects per million opportunities converted to sigma scale.', descriptionAr: 'العيوب لكل مليون فرصة محوّلة إلى مقياس سيجما.' },
     { id: 'ftr', label: 'First-Time-Right Rate', labelAr: 'معدّل الصحة من أول مرة', unit: '%', unitAr: '%', targetValue: 92, targetLabel: '>92%', benchmarkValue: 70, benchmarkLabel: '70%', higherIsBetter: true, description: 'Processes completed correctly on the first attempt.', descriptionAr: 'العمليات المنجزة بصواب من المحاولة الأولى.' },
     { id: 'ltr', label: 'Lead Time Reduction %', labelAr: 'خفض مهلة التوريد %', unit: '%', unitAr: '%', targetValue: 35, targetLabel: '>35%', benchmarkValue: 10, benchmarkLabel: '10%', higherIsBetter: true, description: 'Lead time reduction vs pre-lean baseline.', descriptionAr: 'خفض مهلة التوريد مقابل الخط الأساسي قبل Lean.' },
     { id: 'copq', label: 'Cost of Poor Quality %', labelAr: 'تكلفة الجودة الرديئة %', unit: '%', unitAr: '%', targetValue: 2, targetLabel: '<2%', benchmarkValue: 8, benchmarkLabel: '8%', higherIsBetter: false, description: 'Cost of defects, rework, and warranty as % of revenue.', descriptionAr: 'تكلفة العيوب وإعادة العمل والضمان كنسبة من الإيراد.' },
@@ -297,29 +297,50 @@ export const SLUG_ALIAS: Record<string, string> = {
 };
 
 /* ─── Scoring helpers ─── */
+/**
+ * Maps a raw KPI value to a 0–100 score using the industry benchmark as the
+ * midpoint (score = 50), so the gauge centre always represents "industry average".
+ *
+ *   score 100 ≈ best-in-class target  (top ~10–15 %)   — Sources: APICS/ASCM SCOR v12,
+ *   score  50 = industry benchmark     (50th percentile)   Hackett Group World-Class Procurement
+ *   score   0 ≈ bottom ~5–10 %                             Study 2023, Gartner SC Top 25,
+ *                                                          CIPS/CIPSA Benchmarking Survey 2024.
+ */
 function scoreKpi(def: KpiDef, value: number): number {
   if (isNaN(value) || value < 0) return 0;
-  if (def.higherIsBetter) {
-    return Math.min(100, Math.round((value / def.targetValue) * 100));
-  } else {
-    if (value <= def.targetValue) return 100;
-    if (value >= def.benchmarkValue) return 0;
-    return Math.round(((def.benchmarkValue - value) / (def.benchmarkValue - def.targetValue)) * 100);
-  }
+  const spread = Math.abs(def.targetValue - def.benchmarkValue);
+  if (spread === 0) return 50;
+  const raw = def.higherIsBetter
+    ? 50 + 50 * (value - def.benchmarkValue) / spread
+    : 50 + 50 * (def.benchmarkValue - value) / spread;
+  return Math.max(0, Math.min(100, Math.round(raw)));
 }
 
-/* ─── 6-tier expert scoring system ─── */
+/**
+ * 7-tier industry-percentile classification.
+ *
+ * Score  Approx. percentile   Meaning
+ * ─────  ──────────────────   ───────────────────────────────────────
+ *  ≥ 90  Top 10 %             Market Leaders / World Class  (gold)
+ *  ≥ 75  Top 25 %             Top Quartile                  (dark emerald)
+ *  ≥ 55  Top 50 %             Above Average                 (green)
+ *  ≥ 40  ~50th percentile     At Industry Benchmark         (blue — accepted)
+ *  ≥ 25  Bottom 25–50 %       Below Average                 (amber)
+ *  ≥ 10  Bottom 10–25 %       Far Below — action needed     (red)
+ *   < 10  Bottom 10 %          Critical — urgent gap        (dark red)
+ */
 interface ScoreTier {
   label: string; labelAr: string;
   color: string; bg: string; border: string; leftBorderColor: string; badge: string;
 }
 export function scoreTier(score: number): ScoreTier {
-  if (score >= 95) return { label: 'World Class',     labelAr: 'مستوى عالمي',      color: '#059669', bg: 'bg-emerald-50', border: 'border-emerald-200', leftBorderColor: '#059669', badge: '🏆' };
-  if (score >= 80) return { label: 'Best-in-GCC',     labelAr: 'الأفضل خليجياً',   color: '#10b981', bg: 'bg-emerald-50', border: 'border-emerald-200', leftBorderColor: '#10b981', badge: '✅' };
-  if (score >= 65) return { label: 'Competitive',     labelAr: 'تنافسي',            color: '#3b82f6', bg: 'bg-blue-50',    border: 'border-blue-200',    leftBorderColor: '#3b82f6', badge: '📈' };
-  if (score >= 50) return { label: 'Developing',      labelAr: 'في التطوير',        color: '#f59e0b', bg: 'bg-amber-50',   border: 'border-amber-200',   leftBorderColor: '#f59e0b', badge: '⚡' };
-  if (score >= 35) return { label: 'Needs Attention', labelAr: 'يحتاج معالجة',      color: '#f97316', bg: 'bg-orange-50',  border: 'border-orange-200',  leftBorderColor: '#f97316', badge: '⚠️' };
-  return                   { label: 'Critical Gap',   labelAr: 'فجوة حرجة',         color: '#ef4444', bg: 'bg-red-50',     border: 'border-red-200',     leftBorderColor: '#ef4444', badge: '🔴' };
+  if (score >= 90) return { label: 'Top 10% — Market Leaders', labelAr: 'أفضل ١٠٪ — قادة السوق',   color: '#b45309', bg: 'bg-amber-50',   border: 'border-amber-300',   leftBorderColor: '#b45309', badge: '🏆' };
+  if (score >= 75) return { label: 'Top 25%',                  labelAr: 'الربع الأعلى',             color: '#059669', bg: 'bg-emerald-50', border: 'border-emerald-200', leftBorderColor: '#059669', badge: '🏅' };
+  if (score >= 55) return { label: 'Top 50% — Above Average',  labelAr: 'النصف الأعلى',             color: '#10b981', bg: 'bg-green-50',   border: 'border-green-200',   leftBorderColor: '#10b981', badge: '📈' };
+  if (score >= 40) return { label: 'Industry Benchmark',       labelAr: 'المعيار الصناعي',           color: '#3b82f6', bg: 'bg-blue-50',    border: 'border-blue-200',    leftBorderColor: '#3b82f6', badge: '✅' };
+  if (score >= 25) return { label: 'Bottom 50% — Below Avg',   labelAr: 'النصف الأدنى',             color: '#f59e0b', bg: 'bg-amber-50',   border: 'border-amber-200',   leftBorderColor: '#f59e0b', badge: '⚠️' };
+  if (score >= 10) return { label: 'Bottom 25% — Far Below',   labelAr: 'الربع الأدنى',             color: '#ef4444', bg: 'bg-red-50',     border: 'border-red-200',     leftBorderColor: '#ef4444', badge: '🔻' };
+  return                   { label: 'Bottom 10% — Critical',   labelAr: 'أدنى ١٠٪ — وضع حرج',     color: '#b91c1c', bg: 'bg-red-100',    border: 'border-red-400',     leftBorderColor: '#b91c1c', badge: '🔴' };
 }
 
 export function scoreColor(score: number): string {
@@ -425,21 +446,26 @@ function gapText(def: KpiDef, value: number, isAr: boolean): string | null {
 
 /* ─── Expert per-KPI consulting insight (CIPS-practitioner knowledge) ─── */
 function getKpiExpertInsight(kpiId: string, score: number, _value: number, _unit: string, isAr: boolean): string {
-  // tier index 0=Critical(<35) … 5=WorldClass(≥95)
-  const t = score >= 95 ? 5 : score >= 80 ? 4 : score >= 65 ? 3 : score >= 50 ? 2 : score >= 35 ? 1 : 0;
+  // 7-tier percentile index
+  // 0 = Bottom 10% Critical (<10)  1 = Bottom 25% Far Below (10–24)
+  // 2 = Bottom 50% Below Avg (25–39)  3 = Industry Benchmark (40–54)
+  // 4 = Top 50% Above Avg (55–74)  5 = Top 25% (75–89)  6 = Top 10% Market Leaders (≥90)
+  const t = score >= 90 ? 6 : score >= 75 ? 5 : score >= 55 ? 4 : score >= 40 ? 3 : score >= 25 ? 2 : score >= 10 ? 1 : 0;
 
   if (isAr) {
     const mapAr: Record<string, string[]> = {
       por: [
         'خطر حرج على ولاء العملاء في السوق الخليجي. أجرِ تحليل باريتو عاجلاً على فئات الأخطاء — أخطاء التوثيق وانحرافات OTIF تمثّل عادةً 80% من الطلبات غير المثالية.',
+        'معظم خطوط الطلبات متأثرة بشكل منهجي. جمّد أي تغييرات جارية في العمليات وافرِض غرفة حرب يومية مع الفرق التشغيلية والتجارية حتى يتعافى المؤشر.',
         'كل نقطة تحسين في POR تسترد نحو 0.3% من الإيراد. حدّد سبب الإخفاق الرئيسي أولاً — هل هو OTIF أم دقة الانتقاء أم التلف؟',
-        'دون المعدّل الخليجي. الجذر المشترك للمشكلة عادةً بين أداء الناقل ودقة نظام WMS. مبادرة كايزن لمدة 90 يوماً على الاثنين تحقق تحسناً 5–8 نقاط عادةً.',
         'قريب من المعيار. التسرّب المتبقّي عند هذا المستوى غالباً في دقة الفواتير وتوقيت إيصالات التسليم — راجعهما شهرياً.',
+        'دون المعدّل الخليجي. الجذر المشترك للمشكلة عادةً بين أداء الناقل ودقة نظام WMS. مبادرة كايزن لمدة 90 يوماً على الاثنين تحقق تحسناً 5–8 نقاط عادةً.',
         'فوق المعيار الخليجي. اثبّت الأداء ببطاقات تقييم أسبوعية للناقلين وسير عمل تأكيد الطلبات الخالي من الأخطاء.',
         'خدمة عالمية المستوى. انتقل من تقليل العيوب إلى تحسين تكلفة الجودة — خفّض التكلفة الضرورية لتحقيق التميّز لا معدّل العيوب فحسب.',
       ],
       otif: [
         'خطر حاد على العلاقات مع العملاء. صنّف أسوأ 3 خطوط توريد ومورّدين هذا الأسبوع وضع خطة تصحيح عاجلة.',
+        'ضعف مزمن في هذا المستوى يدلّ على مشكلة هيكلية — مزيج من موردين غير موثوقين وشبكة لوجستية غير مرنة. وفّر مصدراً بديلاً لأعلى 5 خطوط مخاطرة هذا الربع.',
         'حدّد ما إذا كانت المشكلة في النقل (التوقيت) أم في المورّد (الكميات). التدخّل في الحالتين يختلف جوهرياً.',
         'دون المعيار الخليجي 82%. المخزون الاحتياطي الديناميكي وتنويع خيارات الشحن يغلق نحو 60% من الفجوة.',
         'تنافسي. ركّز الحجم على الناقلين بأداء >94% في OTIF وأدِر المتدنّيين في مراجعة العقد القادمة.',
@@ -448,14 +474,16 @@ function getKpiExpertInsight(kpiId: string, score: number, _value: number, _unit
       ],
       c2c: [
         'دورة النقد بهذا المستوى تُثقل الميزانية العمومية. الرافعة الفورية: تمديد شروط دفع الموردين إلى 60 يوماً وتشديد تحصيل الذمم المدينة لـ 30 يوماً.',
-        'كل 10 أيام تخفيض في C2C تُحرّر 2–3% من الإيراد السنوي رأس مالاً عاملاً. ابدأ بأيام الذمم المدينة — أعلى أثر وأسرع عائد.',
+        'كل 10 أيام تخفيض في C2C تُحرّر 2–3% من الإيراد السنوي رأس مالاً عاملاً. أبدأ بأيام الذمم المدينة — أعلى أثر وأسرع عائد.',
         'فوق المعيار الخليجي 48 يوماً. مراجعة شروط الدفع مع الموردين مقرونةً بالخصم الديناميكي يغلق نصف الفجوة في دورة واحدة.',
-        'رأس مال عامل تنافسي. الرافعة التالية هي المخزون — كل دورة إضافية تُقلّص C2C نحو 8 أيام في المتوسط.',
-        'دورة نقد كفؤة. فكّر في برامج تمويل سلسلة الإمداد لتمديد الشروط دون الإضرار بعلاقات الموردين.',
+        'رأس مال عامل عند المعيار. الرافعة التالية هي المخزون — كل دورة إضافية تُقلّص C2C نحو 8 أيام في المتوسط.',
+        'رأس مال عامل فوق المعيار. فكّر في برامج تمويل سلسلة الإمداد لتمديد الشروط دون الإضرار بعلاقات الموردين.',
+        'دورة نقد كفؤة جداً. حافظ على هذا المستوى بعناية في كل مفاوضة تجارية.',
         'إدارة رأس مال عامل عالمية المستوى. هذه ميزة تنافسية حقيقية — احمِها بقوة في كل مفاوضة تجارية.',
       ],
       savings: [
         'دون الحدّ الأدنى الخليجي — المشتريات تعمل بشكل رد فعلي. أسّس إدارة الفئات أولاً قبل وضع أي أهداف وفورات.',
+        'تحليل سريع للإنفاق على 3 فئات كبرى يكشف فرص إعادة المناقصة ذات العائد السريع. حتى فئة واحدة معادة الطرح تُحقق عادةً 6–12% وفورات.',
         'طبّق خط أنابيب منظّم للمناقصات التنافسية. إعادة طرح مناقصة فئة واحدة فحسب تُحقق عادةً 6–12% وفورات على الإنفاق المُدار.',
         'نضج إدارة الفئات هو الرافعة الرئيسية. المؤسسات التي تُقسّم إنفاقها إلى 6 فئات أو أكثر تحقق باستمرار وفورات 8–12%.',
         'أداء وفورات قوي. انتقل إلى أجندة التكلفة الإجمالية للملكية — تحسين سعر الوحدة يتراجع عائده فوق 8%.',
@@ -464,14 +492,16 @@ function getKpiExpertInsight(kpiId: string, score: number, _value: number, _unit
       ],
       pocycle: [
         'زمن دورة الشراء هذا يدلّ على سير عمل موافقات مكسور. حدّد كل خطوة موافقة — يمكن عادةً إلغاء أو أتمتة أكثر من 50% منها.',
+        'أطلق مساراً سريعاً طارئاً للمشتريات التكتيكية تحت حدّ قيمي محدّد ريثما تكتمل إصلاحات مصفوفة الموافقات الشاملة.',
         'بسّط مصفوفة الموافقات إلى مستويين كحدّ أقصى للطلبات الاعتيادية. هذا التغيير وحده يُقلّص زمن الدورة 40–50%.',
         'أدرِج كتالوجاً ذاتياً للأصناف منخفضة القيمة بهدف إصدار أمر الشراء خلال يوم واحد. هذا يُزيل المعاملات التشغيلية من قائمة الموافقات.',
-        'تنافسي. الخطوة التالية هي المعالجة المباشرة — أتمتة إنشاء أوامر الشراء للأصناف المعتمدة مسبقاً تحت العقود.',
+        'سرعة شراء فوق المعيار. الخطوة التالية هي المعالجة المباشرة — أتمتة إنشاء أوامر الشراء للأصناف المعتمدة مسبقاً تحت العقود.',
         'سرعة شراء قوية. طبّق المعالجة اللمسية الصفرية لأصناف الكتالوج لدفع المتوسط دون 5 أيام.',
         'سرعة دورة توريد-دفع عالمية المستوى. نادر جداً في السوق الخليجي — وثّق هذه العملية وقارنها مع الأقران.',
       ],
       fa: [
         'دقة التوقّع بهذا المستوى تُولّد في آنٍ واحد مخزوناً زائداً ونقصاً في الأصناف. طبّق إيقاع S&OP منظّم قبل أي تحسين آخر.',
+        'حدّد أعلى 3 أصناف بخطأ توقّع وطبّق عليها نموذج متوسط متحرك بسيط — حتى الإحصاء الأساسي يتفوّق على الوضع الراهن.',
         'توقّع متدحرج لـ 13 أسبوعاً يُراجَع أسبوعياً مع الفرق التجارية يرفع الدقة 15–20 نقطة في الربع الأول عادةً.',
         'التوقّع الإحصائي (Holt-Winters أو المتوسط المتحرك) للأصناف الفئة A يتفوّق على التحكيم اليدوي في هذا النطاق.',
         'دقة صلبة. قسّم محفظة المنتجات حسب ربع الخطأ التوقّعي وطبّق سياسات مخزون أمان متمايزة.',
@@ -480,95 +510,106 @@ function getKpiExpertInsight(kpiId: string, score: number, _value: number, _unit
       ],
       turns: [
         'دوران منخفض كهذا يدلّ على مخزون راكد كبير. أجرِ تحليل ABC-XYZ وتصرّف في أصناف الفئة Z فوراً لتحرير السيولة.',
+        'تحليل ABC-XYZ هو التشخيص الأول؛ أجرِه هذا الأسبوع وعزِل تجديد فئة Z ريثما يُقرَّر مصيرها.',
         'طبّق مراجعة شهرية للمخزون بطيء الحركة والمتقادم. حتى تحسين دورة واحدة يُحرّر رأس مال عامل ذا قيمة.',
         'التجديد المدفوع بالطلب (الحدّ الأدنى/الأقصى أو كانبان) للأصناف A عادةً يُضيف 1.5–2 دورة خلال ربع سنة.',
-        'تنافسي. دقّق حسابات المخزون الاحتياطي باستخدام أهداف مستوى خدمة إحصائية بدلاً من قواعد الأيام الثابتة.',
+        'دوران فوق المعيار. دقّق حسابات المخزون الاحتياطي باستخدام أهداف مستوى خدمة إحصائية بدلاً من قواعد الأيام الثابتة.',
         'أداء مخزوني قوي. أدرِج مخزوناً مُداراً من قِبَل المورّد (VMI) مع كبار الموردين لدفع الدورات دون المخاطرة بمستوى الخدمة.',
         'إدارة مخزون عالمية المستوى. كفاءتك في رأس المال العامل استثنائية — اثبّتها عبر S&OP أسبوعي ونقاط إعادة طلب ديناميكية.',
       ],
       sigma: [
         'عند 2σ أو دون، تستهلك العيوب 15–40% من الإيراد كتكلفة جودة رديئة. مشروع DMAIC واحد مُركَّز على عمليتك الأعلى حجماً يحقق تحسين σ واحد عادةً.',
+        'تكلفة الجودة الرديئة في هذا النطاق تتجاوز 20% من الإيراد عادةً. مشروع DMAIC واحد على أعلى نوع عيوب — قبل أي استثمار في الأنظمة — يُثبت المنهجية ويُحقق مكاسب مبكرة.',
         'بين 2–3σ. تحليل منظّم للأسباب الجذرية (مخطط إيشيكاوا + 5 لماذا) على أبرز 3 أنواع عيوب يُعزل الأسباب الحيوية القليلة.',
         'نحو 3σ. مخططات ضبط العمليات الإحصائي تكتشف الانجراف قبل وقوع العيوب — طبّقها على المعاملات الحرجة أولاً.',
-        'عند 3σ+، أنت تنافسي. تصميم التجارب على متغيرات العمليات الرئيسية هو الطريق الأكفأ للوصول إلى 4σ.',
+        'فوق المعيار. تصميم التجارب على متغيرات العمليات الرئيسية هو الطريق الأكفأ للوصول إلى 4σ.',
         'أداء سيجما قوي. ركّز على التصميم من أجل الجودة لمنع أنماط عيوب جديدة مع تطور محفظة المنتجات.',
         'جودة عالمية المستوى. عند 4σ+، ينتقل التركيز إلى التحقّق من الأخطاء (Poka-Yoke) للمحافظة على هذا المستوى مع التوسع.',
       ],
       pce: [
         'أقل من 8% وقت مضيف للقيمة يعني أن 92% من وقت العملية هدر خالص. ورشة رسم تدفق القيمة تكشف أنواع الهدر الرئيسية فوراً.',
+        'ورشة رسم تدفق القيمة ليوم واحد مع فرق متعددة الوظائف تكشف عادةً 2–3 إزالات سريعة تقلّص مهلة التوريد 30%+ دون رأس مال.',
         'ركّز على وقت الانتظار والنقل — يمثّلان أكثر من 60% من الوقت غير المضيف للقيمة في معظم سلاسل الإمداد. مكاسب سريعة عبر جدولة السحب.',
         'حدث كايزن مُركَّز على أطول خطوة انتظار يضاعف PCE عادةً خلال 90 يوماً.',
-        'تنافسي. رقمنة نقاط الإحالة وإزالة الموافقات الورقية هي أسرع رافعة متبقية في هذا النطاق.',
+        'فوق المعيار. رقمنة نقاط الإحالة وإزالة الموافقات الورقية هي أسرع رافعة متبقية في هذا النطاق.',
         'كفاءة عملية قوية. الآن فكّر في هندسة القيمة للتخلص من الخطوات الضرورية لكنها غير مضيفة للقيمة.',
         'تصميم عملية عالمي المستوى. مهلة توريدك ميزة تنافسية حقيقية — قيّمها وأبلّغ بها القيادة.',
       ],
       mav: [
         'إنفاق متمرّد فوق 15% هو أزمة امتثال. طبّق سياسة أمر شراء إلزامية بضوابط النظام لا بالوثائق فقط.',
+        'الإنفاق غير المنضبط عند هذا المستوى يُمثّل خللاً جوهرياً في الضوابط المالية. طبّق سياسة أمر شراء إلزامية مطبَّقة بالنظام هذا الربع بلا استثناء.',
         'استهدف أعلى 5 فئات إنفاق غير متوافقة — تمثّل عادةً أكثر من 70% من الإنفاق المتمرّد الكلي.',
         'كتالوج موردين معتمد يغطي 80% من الإنفاق التعاملي يُقضي على معظم المشتريات المتمرّدة. ابنِ الكتالوج أولاً.',
-        'دون 10% إنفاق متمرّد تنافسي. أتمتِ الإبلاغ عن أوامر الشراء خارج العقد للمحافظة على الانضباط.',
+        'دون 10% إنفاق متمرّد — فوق المعيار. أتمتِ الإبلاغ عن أوامر الشراء خارج العقد للمحافظة على الانضباط.',
         'وضع امتثال قوي. أتمتِ توجيه الموافقات بحيث يكون الشراء تحت العقد دائماً مسار المقاومة الأدنى.',
         'مستوى عالمي — يُحقَّق عادةً فقط بنظام P2P ناضج وإدارة فئات راسخة. احمِه بعناية.',
       ],
       rrc: [
         'بدون سجل مخاطر شامل، نقاط الفشل الفردية الحرجة غير مرئية. ابدأ بأكبر 20 مورّداً لديك.',
+        'جلسة موجَّهة لمدة ساعتين مع مديري الفئات لتعيين ملكية أعلى 10 مخاطر تُنتج قيمة أكثر من شهر كامل من التحليل غير المنظَّم.',
         'صنّف المخاطر حسب الاحتمالية × الأثر. أعلى 10 مخاطر يجب أن يكون لكل منها مالك مُعيَّن وإجراء تخفيف خلال 30 يوماً.',
         'انتقل من تحديد المخاطر إلى تكميمها. خصّص التعرّض المالي لكل مخاطرة — هذا يُحوّل محادثات القيادة.',
-        'تغطية مخاطر جيدة. دمِج السجل مع بطاقات تقييم الموردين لتحديث مستويات المخاطر ديناميكياً لا في المراجعات السنوية فحسب.',
+        'تغطية مخاطر فوق المعيار. دمِج السجل مع بطاقات تقييم الموردين لتحديث مستويات المخاطر ديناميكياً لا في المراجعات السنوية فحسب.',
         'نضج عالٍ في إدارة المخاطر. اختبر فاعلية التخفيف بتمارين محاكاة على الطاولة للتحقّق من صمودها في الواقع.',
         'حوكمة مخاطر عالمية المستوى. مرونة سلسلة إمداديك ميزة تنافسية ملموسة في السوق الخليجي.',
       ],
       crm: [
         'معدّل تخفيف المخاطر الحرجة دون 35% يعني أن معظم المخاطر عالية الخطورة لا تملك ضوابط نشطة. عيّن فوراً مالكاً مُسمّىً لكل مخاطرة حرجة وأوجِب إجراء تخفيف خلال أسبوعين.',
+        'ثلثا المخاطر الحرجة لديك دون أي ضوابط. ركّز فقط على المخاطر فوق حدّ مالي محدّد — حتى ضوابط أساسية على أعلى 3 مخاطر هي أولوية اليوم.',
         'أكثر من نصف المخاطر الحرجة لديك غير مُخفَّفة. صنّفها حسب التعرّض المالي — حتى ضوابط أساسية (التوريد المزدوج، المخزون الاحتياطي، بنود العقد) على أعلى 5 مخاطر تُغلق الفجوات الأخطر بسرعة.',
         'دون المعيار الخليجي 48%. أجرِ فحص صحة ربع سنوي للتخفيف: لكل مخاطرة حرجة، تحقّق من أن الضابط يعمل فعلياً لا أنه موثَّق فحسب. الضوابط الورقية تفشل بصمت.',
-        'وضع تخفيف تنافسي. ارتقِ بالجودة بتحويل الضوابط التفاعلية إلى مؤشرات إنذار مبكر — اربط كل تخفيف بمقياس تشغيلي يُنبّه قبل تحقّق المخاطرة.',
+        'وضع تخفيف فوق المعيار. ارتقِ بالجودة بتحويل الضوابط التفاعلية إلى مؤشرات إنذار مبكر — اربط كل تخفيف بمقياس تشغيلي يُنبّه قبل تحقّق المخاطرة.',
         'تغطية تخفيف قوية. أجرِ اختباراً سنوياً لفاعلية الضوابط: محاكاة أعلى 3 سيناريوهات مخاطر والتحقّق من أن كل تخفيف يُقيّد الأثر ضمن الحدود المقبولة.',
         'إدارة مخاطر حرجة عالمية المستوى. أأسِّس النهج مؤسسياً — وثّق مكتبة ضوابط المخاطر كإطار قابل لإعادة الاستخدام وامتدّ إلى موردي المستوى الثاني حيث تكون مخاطر التركّز أعلى.',
       ],
       srs: [
         'متوسط درجة مخاطر الموردين دون 35 يُشير إلى تعرّض منهجي عبر قاعدة التوريد. صنّف الموردين في شرائح مخاطر فوراً وافرِض دورات مراجعة ربع سنوية على الربع الأسفل.',
+        'أجرِ فرز سريع للاستقرار المالي على أكبر 20 مورّداً بالإنفاق: أي مورّد في المرتبة عالية المخاطرة يستوجب فوراً خطة توريد احتياطي.',
         'دون مستوى الصحة المتوسط للموردين في الخليج. أدرِج تقييماً منظّماً لمخاطر الموردين يشمل الاستقرار المالي والتعرّض الجيوسياسي والاعتماد على مصدر وحيد وبُعد ESG — قيّم كل مورّد سنوياً على الأقل.',
         'قريب من المعيار. أكبر رافعة في هذا النطاق هي جودة البيانات: درجات المخاطر المبنية على معلومات متقادمة أو معلَنة ذاتياً مُضلِّلة. تحقّق ببيانات مالية من طرف ثالث للموردين الاستراتيجيين.',
-        'وضع مخاطر موردين تنافسي. ميّز استجابتك حسب الشريحة — خصّص الإدارة المكثّفة للموردين الاستراتيجيين والحرجين؛ استخدم المراقبة الآلية (تنبيهات ائتمان، تغذية إخبارية) للقاعدة الأوسع.',
+        'وضع مخاطر موردين فوق المعيار. ميّز استجابتك حسب الشريحة — خصّص الإدارة المكثّفة للموردين الاستراتيجيين والحرجين؛ استخدم المراقبة الآلية (تنبيهات ائتمان، تغذية إخبارية) للقاعدة الأوسع.',
         'صحة مخاطر موردين قوية. شارك الدرجات مباشرةً مع الموردين الرئيسيين في مراجعات الأعمال الربع سنوية — الشفافية تُسرّع تحسينهم وتُشير إلى أنك تأخذ أمان التوريد بجدية.',
         'إدارة مخاطر موردين عالمية المستوى. استخدم نموذج التقييم دليلاً لاستثمار تطوير الموردين: استهدف الاستثمار المشترك في تقليل المخاطر حيث يكون تركّز إنفاقك الأعلى.',
       ],
       rrc2: [
         'امتثال مراجعة المخاطر دون 35% يعني أن سجل المخاطر مجرّد ديكور — المخاطر لا تُعاد تقييمها مع تغيّر الظروف. طبّق المراجعات عبر حوكمة مقيَّدة بالتقويم لا بالمبادرة العشوائية.',
+        'مراجعات المخاطر لا تُنجَز في الغالب. السبب الجذري هو غموض الملكية — عيّن مالكاً واحداً لكل فئة واجعل اكتمال المراجعة مؤشر أداء للمدير المباشر.',
         'معظم مراجعات المخاطر المجدولة لا تُنجَز. السبب الجذري غالباً غموض الملكية: عيّن مالك مخاطر واحد مُسمّىً لكل فئة واجعل اكتمال المراجعة مؤشر أداء لمدير المباشر.',
         'دون المعيار الخليجي 52%. قلّل الاحتكاك — مراجعة منظّمة لمدة 30 دقيقة بقالب معياري أكثر احتمالاً للحدوث من غوص عميق غير منظّم. الحجم أهم من العمق في هذه المرحلة.',
-        'إيقاع مراجعة تنافسي. ارتقِ بالجودة بإلزام كل مراجعة بإنتاج تحديث واحد على الأقل لتقييم مخاطرة أو إجراء تخفيف مفتوح/مُغلَق. المراجعات التي لا تُنتج مخرجات مجرّد شكليات حوكمة.',
+        'إيقاع مراجعة فوق المعيار. ارتقِ بالجودة بإلزام كل مراجعة بإنتاج تحديث واحد على الأقل لتقييم مخاطرة أو إجراء تخفيف مفتوح/مُغلَق. المراجعات التي لا تُنتج مخرجات مجرّد شكليات حوكمة.',
         'امتثال مراجعة قوي. أدرِج لوحة اتجاه مخاطر تُظهر كيف تحرّكت تقييمات المخاطر الفردية خلال الأربعة أرباع الماضية — هذا يُجلّي قيمة المراجعات للقيادة.',
         'حوكمة مراجعة مخاطر عالمية المستوى. سجل المخاطر لديك أداة إدارة حية لا وثيقة ثابتة. امتدّ بالإيقاع إلى مخاطر موردي المستوى الثاني وتأكّد من تغذية النتائج مباشرةً في تحديثات استراتيجية الفئات.',
       ],
       pocomp: [
         'امتثال أوامر الشراء دون 60% يعني تجاوز العقود — تُفقد القوة التفاوضية ويرتفع خطر التدقيق. طبّق الامتثال على مستوى النظام.',
+        'الإنفاق خارج العقد عند هذا المستوى يعني تسرّباً مالياً وأقصى تعرّض للتدقيق. طبّق سياسة أمر شراء إلزامية مطبَّقة بالنظام هذا الربع دون استثناء.',
         'حدّد أعلى 5 موظفين مشتريات يُصدرون أوامر شراء خارج العقود. التدريب والتوجيه المُستهدَف لهذه المجموعة يُغلق 60% من الفجوة.',
         'دون المعيار الخليجي 72%. سير عمل يضع العقد أولاً — النظام يمنع أوامر الشراء خارج العقد بلا مبرّر — هو الإصلاح الأسرع.',
-        'امتثال تنافسي. التقارير الشهرية للامتثال التي تُشاركها مع مديري الفئات تُنشئ مساءلة تُديم الاتجاه.',
+        'امتثال فوق المعيار. التقارير الشهرية للامتثال التي تُشاركها مع مديري الفئات تُنشئ مساءلة تُديم الاتجاه.',
         'امتثال قوي. دقّق عيّنة عشوائية 5% شهرياً لاكتشاف الفجوات الناشئة قبل أن تتفاقم.',
         'مستوى عالمي. الامتثال عند هذا المستوى يحقّق أقصى قيمة للعقود وأدنى مخاطر للتدقيق.',
       ],
       sotif: [
         'تسليم الموردين عند هذا المستوى يمثّل خطراً مباشراً على الإيراد. أصدِر إشعار تحسين أداء رسمياً للموردين في الربع الأسفل.',
+        'إخفاق التسليم عند هذا المستوى يُسبّب على الأرجح فشلاً في خدمة العملاء في المرحلة اللاحقة. فعّل إجراء إشعار تحسين الأداء التعاقدي لجميع الموردين دون 70% OTIF فوراً.',
         'صنّف الموردين حسب شريحة OTIF. الربع الأسفل يتسبّب عادةً في 80% من إخفاقات التسليم — إدارته المكثّفة تحقق تحسناً غير متناسب.',
         'دون المعيار الخليجي 80%. مراجعات أداء التسليم المشتركة مع الموردين الرئيسيين شهرياً بدلاً من ربع سنوي ترفع OTIF 8–12 نقطة باستمرار.',
-        'تسليم موردين تنافسي. أدرِج أداء التسليم معياراً موزوناً في تقييم المناقصات القادمة.',
+        'تسليم موردين فوق المعيار. أدرِج أداء التسليم معياراً موزوناً في تقييم المناقصات القادمة.',
         'قوي. فكّر في برنامج مخزون مُدار من قِبَل المورّد (VMI) مع أفضل 5 موردين بأداء OTIF — يُعمّق العلاقة ويُحسّن الخدمة أكثر.',
         'مستوى عالمي في تسليم الموردين. هذه ميزة تنافسية حقيقية — ادمجها في مقترح قيمة إدارة علاقات الموردين.',
       ],
     };
     const insightAr = mapAr[kpiId];
     if (insightAr) return insightAr[t] ?? insightAr[0];
-    // Generic Arabic fallback by tier
+    // Generic Arabic fallback — 7 tiers
     const genericAr = [
       'فجوة حرجة — حدّد خطة إجراءات تصحيحية بأفق 30 يوماً ومالك واحد مُعيَّن.',
-      'فجوة كبيرة عن المعيار. شخّص السبب الجذري قبل الالتزام بحل — الإصلاحات المبنية على الأعراض نادراً ما تصمد.',
+      'بعيد جداً عن المعيار. شخّص السبب الجذري قبل الالتزام بحل — الإصلاحات المبنية على الأعراض نادراً ما تصمد.',
       'دون المعيار الخليجي. مبادرة تحسين منظّمة بمعالم محدّدة ستُغلق الفجوة في ربعين إلى ثلاثة أرباع.',
-      'أداء تنافسي. دقّق عبر انضباط العمليات وإيقاعات القياس للوصول إلى المستوى الأفضل خليجياً.',
-      'فوق المعيار الخليجي. اثبّت عبر الحوكمة — بيانات المعيار تتغيّر كل 18 شهراً، فاستمر في القياس.',
-      'أداء عالمي المستوى. وثّق منهجيتك كعملية قابلة للتكرار وانقل هذه الكفاءة إلى مجالات مجاورة.',
+      'عند المعيار الصناعي. دقّق عبر انضباط العمليات وإيقاعات القياس للانتقال إلى الربع الأعلى.',
+      'فوق المعيار الصناعي. اثبّت عبر الحوكمة — بيانات المعيار تتغيّر كل 18 شهراً، فاستمر في القياس.',
+      'أداء قوي في الربع الأعلى. وثّق منهجيتك كعملية قابلة للتكرار وانقل هذه الكفاءة إلى مجالات مجاورة.',
+      'أداء عالمي المستوى. وثّق منهجيتك كعملية قابلة للتكرار وابحث عن فرص خلق قيمة تتجاوز تحسين المؤشر نفسه.',
     ];
     return genericAr[t];
   }
@@ -576,143 +617,160 @@ function getKpiExpertInsight(kpiId: string, score: number, _value: number, _unit
   const map: Record<string, string[]> = {
     por: [
       'Customer attrition risk is acute. Run an emergency Pareto on failure modes — documentation errors and OTIF shortfalls typically account for 80% of imperfect orders.',
+      'Systemic fulfilment failure — most order lines are affected. Freeze ongoing process changes and run a daily war-room with operations, logistics, and commercial until the KPI recovers.',
       'Each 1pp improvement in POR recovers ~0.3% of revenue. Isolate the dominant failure mode (OTIF vs pick accuracy vs damage) before spreading effort.',
-      'Below the GCC median. Root cause is typically split between carrier OTIF and WMS pick accuracy. A 90-day focused kaizen on both routinely yields 5–8pp uplift.',
       'Approaching benchmark. Residual leakage at this level is almost always documentation — audit invoice accuracy and PoD timeliness monthly.',
+      'Below the GCC median. Root cause is typically split between carrier OTIF and WMS pick accuracy. A 90-day focused kaizen on both routinely yields 5–8pp uplift.',
       'Above GCC benchmark. Sustain via weekly carrier scorecards and a zero-defect order confirmation workflow.',
-      'World-class fulfilment. Focus shifts to cost-of-quality — reduce the overhead of achieving perfection, not just the defect rate.',
+      'Top-tier fulfilment. Focus shifts to cost-of-quality — reduce the overhead of achieving perfection, not just the defect rate.',
     ],
     otif: [
       'Critical delivery risk — customer trust erosion is accelerating. Triage your top 3 failing routes and suppliers this week.',
+      'Persistent underperformance signals a structural problem — likely unreliable suppliers combined with an inflexible logistics network. Dual-source your 5 highest-risk lanes this quarter.',
       'Identify whether the gap is transport (timing) or supplier (quantity). The intervention differs fundamentally between the two.',
-      'Below the 82% GCC median. Dynamic safety stock and multi-modal routing optionality typically close 60% of the gap.',
-      'Competitive. Carriers with consistent >94% OTIF should receive volume concentration; underperformers managed out at next review.',
+      'Below the 82% industry median. Dynamic safety stock and multi-modal routing optionality typically close 60% of the gap.',
+      'Above average OTIF. Carriers with consistent >94% OTIF should receive volume concentration; underperformers managed out at next review.',
       'Strong OTIF. Lock in performance with SLA penalty/reward clauses at the next contract renewal.',
-      'World-class delivery performance. Consider monetising reliability as a premium service tier for key customers.',
+      'Top-tier delivery performance. Consider monetising reliability as a premium service tier for key customers.',
     ],
     c2c: [
       'Cash cycle this poor is a balance-sheet drag. Immediate lever: extend supplier payment terms to 60 days and tighten AR collection to net-30.',
+      'Working capital at this level funds operations at a heavy cost. First lever is receivables — even a 5-day improvement in DSO releases significant cash before any supplier term negotiations begin.',
       'Every 10-day reduction in C2C releases ~2–3% of annual revenue as working capital. Prioritise debtor days — highest impact, fastest return.',
-      'Above the 48-day GCC benchmark. A supplier payment terms review (targeting net-60) combined with dynamic discounting can close half the gap in one cycle.',
-      'Competitive working capital. Next lever is inventory — each turn improvement reduces C2C by ~8 days on average.',
+      'At industry benchmark. A supplier payment terms review (targeting net-60) combined with dynamic discounting can close half the remaining gap in one cycle.',
+      'Above average cash cycle. Next lever is inventory — each turn improvement reduces C2C by ~8 days on average.',
       'Efficient cash cycle. Consider supply chain financing programmes to extend terms without damaging supplier relationships.',
-      'World-class working capital management. This is a competitive moat — protect it aggressively in commercial negotiations.',
+      'Top-tier working capital management. This is a competitive moat — protect it aggressively in commercial negotiations.',
     ],
     savings: [
-      'Below the GCC floor — procurement is likely operating reactively. Establish Category Management before attempting savings targets.',
+      'Below the industry floor — procurement is likely operating reactively. Establish Category Management before attempting savings targets.',
+      'A rapid spend-cube analysis across the top 3 categories (covering ~50% of addressable spend) will surface the fastest-payback re-bid opportunities. Even one re-bid typically yields 6–12% savings.',
       'Implement a structured pipeline of competitive tenders. Even a single category re-bid typically yields 6–12% on addressable spend.',
       'Category management maturity is the key lever. Organisations that segment spend into 6+ categories consistently achieve 8–12% savings.',
       'Strong savings delivery. Move the agenda to total cost of ownership — unit price optimisation has diminishing returns above 8%.',
       'Exceptional performance. Build a savings validation framework to ensure realised savings hit the P&L, not just the procurement report.',
-      'World-class. Focus on value creation beyond cost — innovation pipelines and co-investment with strategic suppliers.',
+      'Top-tier. Focus on value creation beyond cost — innovation pipelines and co-investment with strategic suppliers.',
     ],
     pocycle: [
       'PO cycle times this long signal a broken approval workflow. Map every approval step — over 50% can typically be eliminated or automated.',
+      'Launch an emergency fast-track path for tactical purchases under a defined value threshold while the full approval-matrix reform is scoped.',
       'Streamline the approval matrix to 2 levels maximum for routine requisitions. This single change reduces cycle time by 40–50%.',
       'Introduce a self-service catalogue for C-class items targeting same-day PO. This removes low-value transactions from the approval queue.',
-      'Competitive. Next step is straight-through processing — automate PO creation for pre-approved items under contract.',
+      'Above industry average. Next step is straight-through processing — automate PO creation for pre-approved items under contract.',
       'Strong PO speed. Implement touchless processing for catalogue items to push the mean below 5 days.',
-      'World-class procure-to-pay speed. This is genuinely rare in the GCC — document and benchmark the process.',
+      'Top-tier procure-to-pay speed. This is genuinely rare in the region — document and benchmark the process.',
     ],
     fa: [
       'Forecast accuracy this low generates excess inventory and stockouts simultaneously. Implement a structured S&OP rhythm before any other improvement.',
+      'Identify your 3 highest-error SKUs and apply a simple moving-average model immediately — even basic statistics outperform the status quo at this level.',
       'A 13-week rolling forecast reviewed weekly with commercial teams typically lifts accuracy by 15–20pp in the first quarter.',
       'Statistical forecasting (Holt-Winters or moving average) for A-class items outperforms manual judgment at this range.',
       'Solid accuracy. Segment your SKU portfolio by forecast error quartile and apply differentiated safety-stock policies.',
       'Strong forecast performance. Layer in demand sensing — POS data or customer order signals — to target above 90%.',
-      'World-class forecasting. Quantify and communicate the working capital benefit to the CFO — this earns sustained investment.',
+      'Top-tier forecasting. Quantify and communicate the working capital benefit to the CFO — this earns sustained investment.',
     ],
     turns: [
       'Turns this low indicate significant dead stock. Run an ABC-XYZ analysis and liquidate Z-class items immediately to free cash.',
+      'ABC-XYZ segmentation is the diagnostic — run it this week and quarantine Z-class replenishment immediately.',
       'Implement a Slow-Moving and Obsolete stock review monthly. Even 1 turn improvement releases significant working capital.',
       'Demand-driven replenishment (min-max or kanban) for A-class items typically adds 1.5–2 turns within a quarter.',
-      'Competitive. Fine-tune safety stock calculations using statistical service-level targets rather than fixed days-of-supply rules.',
+      'Above average inventory performance. Fine-tune safety stock calculations using statistical service-level targets rather than fixed days-of-supply rules.',
       'Strong inventory performance. Introduce vendor-managed inventory (VMI) with top suppliers to push turns without service risk.',
-      'World-class inventory management. Your working capital efficiency is exceptional — sustain via weekly S&OP and dynamic reorder points.',
+      'Top-tier inventory management. Your working capital efficiency is exceptional — sustain via weekly S&OP and dynamic reorder points.',
     ],
     sigma: [
       'At 2σ or below, defects are consuming 15–40% of revenue in COPQ. A single focused DMAIC project on your highest-volume process will typically yield 1σ improvement.',
+      'COPQ at this level typically exceeds 20% of revenues. A single DMAIC project on your highest-volume defect type — before any systems investment — demonstrates the method and achieves early wins.',
       'Between 2–3σ. Structured root-cause analysis (Ishikawa + 5-Why) on your top-3 defect types will isolate the vital few causes.',
       'Approaching 3σ. Statistical Process Control charts identify drift before defects occur — implement on critical parameters first.',
-      'At 3σ+, you are competitive. Design of Experiments on key process variables is the most efficient path to 4σ.',
+      'Above industry average. Design of Experiments on key process variables is the most efficient path to 4σ.',
       'Strong sigma performance. Focus on design-for-quality to prevent new defect modes as your portfolio evolves.',
-      'World-class quality. At 4σ+, focus shifts to poka-yoke error-proofing to maintain this level as you scale.',
+      'Top-tier quality. At 4σ+, focus shifts to poka-yoke error-proofing to maintain this level as you scale.',
     ],
     pce: [
       'Less than 8% value-added time means over 92% of your process is waste. A Value Stream Mapping workshop will expose dominant waste types immediately.',
+      'A one-day Value Stream Mapping workshop with mixed-function teams typically surfaces 2–3 quick-win eliminations that cut lead time by 30%+ without capital.',
       'Focus on wait time and transport waste — they account for 60%+ of non-value time in most supply chains. Quick wins via pull scheduling.',
       'A focused Kaizen event on your longest wait step typically doubles PCE within 90 days.',
-      'Competitive. Digitising handoff points (removing paper-based approvals) is the fastest remaining lever at this PCE range.',
+      'Above average process efficiency. Digitising handoff points (removing paper-based approvals) is the fastest remaining lever at this PCE range.',
       'Strong process efficiency. Now consider value engineering to eliminate necessary-but-non-value-added steps.',
-      'World-class process design. Your lead time is a genuine competitive advantage — quantify and communicate it.',
+      'Top-tier process design. Your lead time is a genuine competitive advantage — quantify and communicate it.',
     ],
     mav: [
       'Maverick spend above 15% is a compliance crisis. Enforce a PO-mandatory policy with system controls, not just policy documents.',
+      'Uncontrolled spend at this level represents a significant financial-control failure. A PO-mandate policy enforced via system controls (not just policy) should be implemented this quarter with zero exceptions.',
       'Target the top 5 non-compliant spend categories — they typically represent 70%+ of total maverick spend.',
       'An approved supplier catalogue covering 80% of transactional spend eliminates most maverick purchasing. Build the catalogue first.',
-      'Below 10% maverick spend is competitive. Automate flagging of off-contract POs to sustain the discipline.',
+      'Above average compliance. Automate flagging of off-contract POs to sustain the discipline.',
       'Strong compliance posture. Automate approval routing so on-contract purchasing is always the path of least resistance.',
-      'World-class — typically only achieved with a mature P2P system and embedded category management. Protect it.',
+      'Top-tier — typically only achieved with a mature P2P system and embedded category management. Protect it.',
     ],
     rrc: [
       'Without a comprehensive risk register, critical single-points-of-failure are invisible. Start with your top 20 suppliers.',
+      'A 2-hour structured session with category managers to assign ownership to the top 10 risks creates more value than a month of unsupported analysis.',
       'Prioritise risks by probability × impact. The top 10 by score should each have a named owner and mitigation action within 30 days.',
       'Move from risk identification to quantification. Assign financial exposure to each risk — this transforms leadership conversations.',
-      'Good risk coverage. Integrate the register with supplier scorecards so risk levels update dynamically, not just at annual reviews.',
+      'Above average risk coverage. Integrate the register with supplier scorecards so risk levels update dynamically, not just at annual reviews.',
       'Strong risk maturity. Stress-test mitigations with tabletop exercises to validate their real-world effectiveness.',
-      'World-class risk governance. Your supply chain resilience is a demonstrable competitive advantage in the GCC market.',
+      'Top-tier risk governance. Your supply chain resilience is a demonstrable competitive advantage in the market.',
     ],
     crm: [
       'Critical risk mitigation rate below 35% means most high-severity risks have no active controls. Immediately assign a named owner to every critical risk and mandate a mitigation action within two weeks.',
+      'Over two-thirds of your critical risks are completely unmitigated. Focus only on risks above a defined financial threshold — even basic controls (buffer stock, secondary supplier, contract clause) on your top-3 risks is today\'s priority.',
       'Over half of your critical risks are unmitigated. Triage by financial exposure — even basic controls (dual sourcing, safety stock, contract clauses) on the top-5 risks close the most dangerous gaps quickly.',
-      'Below the 48% GCC benchmark. Run a quarterly mitigation health-check: for each critical risk, verify the control is operational, not just documented. Paper controls fail silently.',
-      'Competitive mitigation posture. Elevate quality by converting reactive controls into proactive early-warning indicators — link each mitigation to a trigger metric that fires before the risk materialises.',
+      'Below the industry benchmark. Run a quarterly mitigation health-check: for each critical risk, verify the control is operational, not just documented. Paper controls fail silently.',
+      'Above average mitigation posture. Elevate quality by converting reactive controls into proactive early-warning indicators — link each mitigation to a trigger metric that fires before the risk materialises.',
       'Strong mitigation coverage. Conduct an annual control-effectiveness test: simulate the top-3 risk scenarios and confirm each mitigation actually limits impact to acceptable levels.',
-      'World-class critical risk management. Institutionalise the approach — document your risk-control library as a reusable framework and extend it to Tier-2 suppliers where concentration risk is highest.',
+      'Top-tier critical risk management. Institutionalise the approach — document your risk-control library as a reusable framework and extend it to Tier-2 suppliers where concentration risk is highest.',
     ],
     srs: [
       'Average supplier risk score below 35 signals systemic exposure across the supply base. Segment suppliers into risk tiers immediately and impose quarterly review cadences on the bottom quartile.',
-      'Below the GCC median supplier health level. Introduce a structured supplier risk assessment covering financial stability, geopolitical exposure, single-source dependency, and ESG — score each annually at minimum.',
+      'Run a rapid financial-stability triage on your top-20 suppliers by spend — any supplier rated high-risk should trigger an immediate dual-source contingency plan.',
+      'Below the industry median supplier health level. Introduce a structured supplier risk assessment covering financial stability, geopolitical exposure, single-source dependency, and ESG — score each annually at minimum.',
       'Approaching benchmark. The biggest lever at this range is data quality: risk scores built on stale or self-reported information are misleading. Validate with third-party financial data for strategic suppliers.',
-      'Competitive supplier risk posture. Differentiate your response by tier — reserve intensive management for strategic and critical suppliers; use automated monitoring (credit alerts, news feeds) for the broader base.',
+      'Above average supplier risk posture. Differentiate your response by tier — reserve intensive management for strategic and critical suppliers; use automated monitoring (credit alerts, news feeds) for the broader base.',
       'Strong supplier risk health. Share risk scores directly with key suppliers at quarterly business reviews — transparency accelerates their own improvement and signals that you take supply security seriously.',
-      'World-class supplier risk management. Use your scoring model as a supplier development investment guide: target co-investment in risk reduction where your spend concentration is highest.',
+      'Top-tier supplier risk management. Use your scoring model as a supplier development investment guide: target co-investment in risk reduction where your spend concentration is highest.',
     ],
     rrc2: [
       'Risk review compliance below 35% means your risk register is decorative — risks are not being reassessed as conditions change. Enforce reviews via calendar-locked governance, not ad-hoc initiative.',
+      'Risk reviews are rarely completed — the register is effectively inactive. The root fix is calendar-locked 30-minute reviews with a mandatory output: one risk rating update per session, nothing more.',
       'Most scheduled risk reviews are being skipped. Root cause is typically ownership ambiguity: assign a single named risk owner per category and make review completion a line-manager KPI.',
-      'Below the 52% GCC benchmark. Reduce friction — a 30-minute structured review using a standardised template is far more likely to happen than an unstructured deep-dive. Volume of reviews matters at this stage.',
-      'Competitive review cadence. Upgrade quality by requiring each review to produce at least one updated risk rating or one new/closed mitigation action. Reviews with no output are a governance formality, not a risk-management activity.',
+      'Below the industry benchmark. Reduce friction — a 30-minute structured review using a standardised template is far more likely to happen than an unstructured deep-dive. Volume of reviews matters at this stage.',
+      'Above average review cadence. Upgrade quality by requiring each review to produce at least one updated risk rating or one new/closed mitigation action. Reviews with no output are a governance formality.',
       'Strong review compliance. Introduce a risk-trend dashboard that visualises how individual risk ratings have moved over the past four quarters — this makes the value of reviews visible to leadership.',
-      'World-class risk review governance. Your risk register is a living management tool, not a static document. Extend the cadence to Tier-2 supplier risks and ensure findings feed directly into category strategy updates.',
+      'Top-tier risk review governance. Your risk register is a living management tool, not a static document. Extend the cadence to Tier-2 supplier risks and ensure findings feed directly into category strategy updates.',
     ],
     pocomp: [
       'PO compliance below 60% means contracts are being bypassed — negotiate leverage is lost and audit risk is high. Enforce at system level.',
+      'Off-contract spend at this level means budget leakage and maximum audit exposure. Implement a system-enforced PO mandate this quarter: no purchase processed without a valid contract or approved exception.',
       'Identify the top 5 buyers generating off-contract POs. Training and targeted coaching on this cohort closes 60% of the gap.',
-      'Below 72% GCC benchmark. A contract-first approval workflow (system blocks non-contract POs unless justified) is the fastest fix.',
-      'Competitive compliance. Monthly compliance reports shared with category managers creates accountability that sustains the trend.',
+      'Below industry benchmark. A contract-first approval workflow (system blocks non-contract POs unless justified) is the fastest fix.',
+      'Above average compliance. Monthly compliance reports shared with category managers creates accountability that sustains the trend.',
       'Strong compliance. Audit a random 5% sample monthly to catch emerging gaps before they compound.',
-      'World-class. Compliance at this level delivers maximum contract value and minimum audit risk.',
+      'Top-tier. Compliance at this level delivers maximum contract value and minimum audit risk.',
     ],
     sotif: [
       'Supplier delivery at this level is a direct revenue risk. Issue a formal performance improvement notice to your bottom-quartile suppliers.',
+      'Supplier delivery failure at this level is likely causing customer service failures downstream. Invoke your contractual performance improvement notice process for all suppliers below 70% OTIF immediately.',
       'Segment suppliers by OTIF band. The bottom quartile typically drives 80% of delivery failures — intensive management here creates disproportionate improvement.',
-      'Below 80% GCC benchmark. Joint delivery performance reviews with key suppliers, held monthly rather than quarterly, consistently lift OTIF by 8–12pp.',
-      'Competitive supplier delivery. Introduce delivery performance as a weighted criterion in the next tender evaluation.',
+      'Below 80% industry benchmark. Joint delivery performance reviews with key suppliers, held monthly rather than quarterly, consistently lift OTIF by 8–12pp.',
+      'Above average supplier delivery. Introduce delivery performance as a weighted criterion in the next tender evaluation.',
       'Strong. Consider a vendor-managed inventory programme with your top-5 OTIF performers — it deepens the relationship and further improves service.',
-      'World-class supplier delivery. This is a genuine competitive advantage — build it into your SRM value proposition.',
+      'Top-tier supplier delivery. This is a genuine competitive advantage — build it into your SRM value proposition.',
     ],
   };
   const insight = map[kpiId];
   if (insight) return insight[t] ?? insight[0];
-  // Generic fallback by tier
+  // Generic fallback — 7 tiers
   const generic = [
     'Critical gap — define a corrective action plan with a 30-day horizon and a single named owner.',
-    'Significant gap to benchmark. Diagnose root cause before committing to a solution — symptom-driven fixes rarely hold.',
-    'Below GCC benchmark. A structured improvement initiative with defined milestones will close the gap in 2–3 quarters.',
-    'Competitive performance. Fine-tune through process discipline and measurement cadence to reach best-in-GCC tier.',
-    'Above GCC benchmark. Sustain through governance — benchmark data shifts every 18 months, so keep measuring.',
-    'World-class performance. Document your approach as a repeatable process and export the capability to adjacent areas.',
+    'Far below benchmark. Diagnose root cause before committing to a solution — symptom-driven fixes rarely hold.',
+    'Below industry benchmark. A structured improvement initiative with defined milestones will close the gap in 2–3 quarters.',
+    'At industry benchmark. Fine-tune through process discipline and measurement cadence to reach the top quartile.',
+    'Above industry benchmark. Sustain through governance — benchmark data shifts every 18 months, so keep measuring.',
+    'Top-quartile performance. Document your approach as a repeatable process and export the capability to adjacent areas.',
+    'Top-decile performance. Document your methodology and look for value-creation opportunities beyond the metric itself.',
   ];
   return generic[t];
 }
@@ -1080,7 +1138,7 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
       industryContext,
       skuContext,
       '',
-      '## KPI Status (6-tier: World Class / Best-in-GCC / Competitive / Developing / Needs Attention / Critical Gap)',
+      '## KPI Status (7-tier percentile: Top 10% Market Leaders / Top 25% / Top 50% Above Average / Industry Benchmark / Bottom 50% Below Average / Bottom 25% Far Below / Bottom 10% Critical)',
       kpiLines || '(no KPI values entered)',
       '',
       '## Your Task',
@@ -1578,7 +1636,7 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
             <p className="text-[9px] font-bold text-muted-foreground/60 uppercase tracking-widest mb-1">
               {isAr ? 'مستويات الأداء' : 'Performance Tiers'}
             </p>
-            {([95, 80, 65, 50, 35, 0] as const).map(threshold => {
+            {([90, 75, 55, 40, 25, 10, 0] as const).map(threshold => {
               const t = scoreTier(threshold);
               return (
                 <div key={t.label} className="flex items-center gap-2 text-[10px]">
@@ -1586,7 +1644,7 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
                   <span className="text-muted-foreground font-medium">
                     {isAr ? t.labelAr : t.label}
                     <span className="opacity-50 ml-1 font-normal">
-                      {threshold === 0 ? (isAr ? '<35' : '<35') : `≥${threshold}`}
+                      {threshold === 0 ? (isAr ? '<10' : '<10') : `≥${threshold}`}
                     </span>
                   </span>
                 </div>
@@ -1789,9 +1847,9 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
             </div>
             <div className="flex items-center gap-3 flex-wrap">
               {[
-                { color: '#059669', label: isAr ? 'عالمي/أفضل خليجياً' : 'World Class / Best-in-GCC' },
-                { color: '#f59e0b', label: isAr ? 'تنافسي/في التطوير' : 'Competitive / Developing' },
-                { color: '#ef4444', label: isAr ? 'يحتاج تحسين' : 'Needs Attention / Critical' },
+                { color: '#b45309', label: isAr ? 'أفضل ١٠٪ — قادة السوق' : 'Top 10% — Market Leaders' },
+                { color: '#10b981', label: isAr ? 'النصف الأعلى — فوق المعيار' : 'Top 50% — Above Average' },
+                { color: '#ef4444', label: isAr ? 'النصف الأدنى — دون المعيار' : 'Bottom 50% — Below Average' },
                 { color: GOLD,      label: isAr ? 'الهدف' : 'Target', shape: 'square' },
                 { color: '#cbd5e1', label: isAr ? 'المعيار الخليجي' : 'GCC Benchmark', shape: 'square' },
               ].map(l => (

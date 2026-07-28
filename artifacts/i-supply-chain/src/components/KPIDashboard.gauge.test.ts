@@ -1,78 +1,104 @@
 /**
  * MiniGauge — score and colour logic unit tests.
  *
- * Covers:
- *  • scoreColor  6-tier colour boundaries (0, 34, 35, 49, 50, 64, 65, 79, 80, 94, 95, 100)
- *  • miniGaugeState  safeScore clamping (below 0, above 100)
- *  • miniGaugeState  strokeDash values at canonical boundaries
- *  • miniGaugeState  grey/neutral state when hasValue is false
+ * Scoring model (scoreKpi):
+ *   score = 50 at industry benchmark (50th percentile)
+ *   score = 100 at best-in-class target (≈ top 10 %)
+ *   score = 0 when value is as far BELOW benchmark as benchmark is ABOVE target
+ *
+ * 7-tier colour map (scoreTier / scoreColor):
+ *   ≥ 90  #b45309  Top 10 % — Market Leaders (gold)
+ *   ≥ 75  #059669  Top 25 %                   (dark emerald)
+ *   ≥ 55  #10b981  Top 50 % — Above Average   (green)
+ *   ≥ 40  #3b82f6  Industry Benchmark          (blue — accepted)
+ *   ≥ 25  #f59e0b  Bottom 50 % — Below Avg     (amber)
+ *   ≥ 10  #ef4444  Bottom 25 % — Far Below     (red)
+ *    < 10  #b91c1c  Bottom 10 % — Critical      (dark red)
+ *
+ * Sources: APICS/ASCM SCOR v12, Hackett Group WC Procurement 2023,
+ * Gartner SC Top 25 2024, CIPS/CIPSA Benchmarking Survey 2024.
  */
 import { describe, it, expect } from 'vitest';
-import { scoreColor, miniGaugeState, healthGaugeState, buildBarChartData, KPI_FRAMEWORKS, type KpiDef } from './KPIDashboard';
+import {
+  scoreColor, miniGaugeState, healthGaugeState,
+  buildBarChartData, KPI_FRAMEWORKS, type KpiDef,
+} from './KPIDashboard';
 
-const R = 30;
+const R            = 30;
 const CIRCUMFERENCE = Math.PI * R;
 
-// ─── scoreColor ────────────────────────────────────────────────────────────
-describe('scoreColor — 6-tier colour boundaries', () => {
-  // World Class tier (≥95)
-  it('returns #059669 at score 95 (World Class)', () => {
-    expect(scoreColor(95)).toBe('#059669');
+// ─── scoreColor — 7-tier industry-percentile colour boundaries ───────────────
+describe('scoreColor — 7-tier industry-percentile colour boundaries', () => {
+
+  // Top 10 % — Market Leaders (≥ 90)
+  it('returns #b45309 at score 90 (Top 10% — Market Leaders)', () => {
+    expect(scoreColor(90)).toBe('#b45309');
   });
-  it('returns #059669 at score 100 (World Class)', () => {
-    expect(scoreColor(100)).toBe('#059669');
+  it('returns #b45309 at score 100 (Top 10% — Market Leaders)', () => {
+    expect(scoreColor(100)).toBe('#b45309');
   });
 
-  // Best-in-GCC tier (80–94)
-  it('returns #10b981 at score 80 (Best-in-GCC)', () => {
-    expect(scoreColor(80)).toBe('#10b981');
+  // Top 25 % (75–89)
+  it('returns #059669 at score 75 (Top 25%)', () => {
+    expect(scoreColor(75)).toBe('#059669');
   });
-  it('returns #10b981 at score 94 (Best-in-GCC)', () => {
-    expect(scoreColor(94)).toBe('#10b981');
-  });
-
-  // Competitive tier (65–79)
-  it('returns #3b82f6 at score 65 (Competitive)', () => {
-    expect(scoreColor(65)).toBe('#3b82f6');
-  });
-  it('returns #3b82f6 at score 79 (Competitive)', () => {
-    expect(scoreColor(79)).toBe('#3b82f6');
+  it('returns #059669 at score 89 (Top 25%)', () => {
+    expect(scoreColor(89)).toBe('#059669');
   });
 
-  // Developing tier (50–64)
-  it('returns #f59e0b at score 50 (Developing)', () => {
-    expect(scoreColor(50)).toBe('#f59e0b');
+  // Top 50 % — Above Average (55–74)
+  it('returns #10b981 at score 55 (Top 50% — Above Average)', () => {
+    expect(scoreColor(55)).toBe('#10b981');
   });
-  it('returns #f59e0b at score 64 (Developing)', () => {
-    expect(scoreColor(64)).toBe('#f59e0b');
-  });
-
-  // Needs Attention tier (35–49)
-  it('returns #f97316 at score 35 (Needs Attention)', () => {
-    expect(scoreColor(35)).toBe('#f97316');
-  });
-  it('returns #f97316 at score 49 (Needs Attention)', () => {
-    expect(scoreColor(49)).toBe('#f97316');
+  it('returns #10b981 at score 74 (Top 50% — Above Average)', () => {
+    expect(scoreColor(74)).toBe('#10b981');
   });
 
-  // Critical Gap tier (<35)
-  it('returns #ef4444 at score 34 (Critical Gap)', () => {
-    expect(scoreColor(34)).toBe('#ef4444');
+  // Industry Benchmark (40–54)
+  it('returns #3b82f6 at score 50 (Industry Benchmark — midpoint)', () => {
+    expect(scoreColor(50)).toBe('#3b82f6');
   });
-  it('returns #ef4444 at score 0 (Critical Gap)', () => {
-    expect(scoreColor(0)).toBe('#ef4444');
+  it('returns #3b82f6 at score 40 (Industry Benchmark — lower edge)', () => {
+    expect(scoreColor(40)).toBe('#3b82f6');
+  });
+  it('returns #3b82f6 at score 54 (Industry Benchmark — upper edge)', () => {
+    expect(scoreColor(54)).toBe('#3b82f6');
   });
 
-  // Only the 6 canonical tier colours are ever produced
-  it('only produces the six canonical tier colours across 0–100', () => {
-    const TIER_COLORS = ['#059669', '#10b981', '#3b82f6', '#f59e0b', '#f97316', '#ef4444'];
+  // Bottom 50 % — Below Average (25–39)
+  it('returns #f59e0b at score 25 (Bottom 50% — Below Avg)', () => {
+    expect(scoreColor(25)).toBe('#f59e0b');
+  });
+  it('returns #f59e0b at score 39 (Bottom 50% — Below Avg)', () => {
+    expect(scoreColor(39)).toBe('#f59e0b');
+  });
+
+  // Bottom 25 % — Far Below (10–24)
+  it('returns #ef4444 at score 10 (Bottom 25% — Far Below)', () => {
+    expect(scoreColor(10)).toBe('#ef4444');
+  });
+  it('returns #ef4444 at score 24 (Bottom 25% — Far Below)', () => {
+    expect(scoreColor(24)).toBe('#ef4444');
+  });
+
+  // Bottom 10 % — Critical (< 10)
+  it('returns #b91c1c at score 9 (Bottom 10% — Critical)', () => {
+    expect(scoreColor(9)).toBe('#b91c1c');
+  });
+  it('returns #b91c1c at score 0 (Bottom 10% — Critical)', () => {
+    expect(scoreColor(0)).toBe('#b91c1c');
+  });
+
+  // Exhaustive: only the seven canonical tier colours appear across 0–100
+  it('only produces the seven canonical tier colours across 0–100', () => {
+    const TIER_COLORS = ['#b45309', '#059669', '#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#b91c1c'];
     for (let s = 0; s <= 100; s++) {
-      expect(TIER_COLORS).toContain(scoreColor(s));
+      expect(TIER_COLORS, `score ${s} produced an unexpected colour`).toContain(scoreColor(s));
     }
   });
 });
 
-// ─── miniGaugeState — safeScore clamping ──────────────────────────────────
+// ─── miniGaugeState — safeScore clamping ────────────────────────────────────
 describe('miniGaugeState — safeScore clamping', () => {
   it('clamps negative rawScore to 0', () => {
     const { safeScore } = miniGaugeState(-10, true);
@@ -90,7 +116,7 @@ describe('miniGaugeState — safeScore clamping', () => {
   });
 });
 
-// ─── miniGaugeState — strokeDash at boundaries ───────────────────────────
+// ─── miniGaugeState — strokeDash at score boundaries ───────────────────────
 describe('miniGaugeState — strokeDash at score boundaries', () => {
   it('strokeDash is 0 when score is 0', () => {
     const { strokeDash } = miniGaugeState(0, true);
@@ -102,18 +128,18 @@ describe('miniGaugeState — strokeDash at score boundaries', () => {
     expect(strokeDash).toBeCloseTo(CIRCUMFERENCE, 5);
   });
 
-  it('strokeDash is half circumference when score is 50', () => {
+  it('strokeDash is half circumference when score is 50 (= industry benchmark)', () => {
     const { strokeDash } = miniGaugeState(50, true);
     expect(strokeDash).toBeCloseTo(CIRCUMFERENCE * 0.5, 5);
   });
 
-  it('strokeDash is 80% of circumference when score is 80', () => {
+  it('strokeDash is 80 % of circumference when score is 80', () => {
     const { strokeDash } = miniGaugeState(80, true);
     expect(strokeDash).toBeCloseTo(CIRCUMFERENCE * 0.8, 5);
   });
 });
 
-// ─── miniGaugeState — grey/neutral state ─────────────────────────────────
+// ─── miniGaugeState — grey/neutral state ────────────────────────────────────
 describe('miniGaugeState — grey/neutral state (no value entered)', () => {
   it('uses grey (#e5e7eb) track colour when hasValue is false', () => {
     const { color } = miniGaugeState(0, false);
@@ -125,19 +151,24 @@ describe('miniGaugeState — grey/neutral state (no value entered)', () => {
     expect(color).toBe('#e5e7eb');
   });
 
-  it('uses tier colour when hasValue is true (score 80 → Best-in-GCC #10b981)', () => {
-    const { color } = miniGaugeState(80, true);
-    expect(color).toBe('#10b981');
+  it('uses tier colour when hasValue is true (score 75 → Top 25% #059669)', () => {
+    const { color } = miniGaugeState(75, true);
+    expect(color).toBe('#059669');
   });
 
-  it('uses tier colour when hasValue is true (score 95 → World Class #059669)', () => {
-    const { color } = miniGaugeState(95, true);
-    expect(color).toBe('#059669');
+  it('uses tier colour when hasValue is true (score 90 → Top 10% Market Leaders #b45309)', () => {
+    const { color } = miniGaugeState(90, true);
+    expect(color).toBe('#b45309');
+  });
+
+  it('uses tier colour when hasValue is true (score 50 → Industry Benchmark #3b82f6)', () => {
+    const { color } = miniGaugeState(50, true);
+    expect(color).toBe('#3b82f6');
   });
 });
 
-// ─── healthGaugeState — neutral state when hasAnyValue is false ───────────
-const R_HEALTH = 72;
+// ─── healthGaugeState — neutral state when hasAnyValue is false ─────────────
+const R_HEALTH          = 72;
 const CIRCUMFERENCE_HEALTH = Math.PI * R_HEALTH;
 
 describe('healthGaugeState — neutral state (no KPI values entered)', () => {
@@ -157,17 +188,17 @@ describe('healthGaugeState — neutral state (no KPI values entered)', () => {
     expect(strokeDash).toBe(0);
   });
 
-  it('uses tier colour when hasAnyValue is true (score 80 → Best-in-GCC #10b981)', () => {
-    const { color } = healthGaugeState(80, true);
-    expect(color).toBe('#10b981');
-  });
-
-  it('uses tier colour when hasAnyValue is true (score 95 → World Class #059669)', () => {
-    const { color } = healthGaugeState(95, true);
+  it('uses tier colour when hasAnyValue is true (score 75 → Top 25% #059669)', () => {
+    const { color } = healthGaugeState(75, true);
     expect(color).toBe('#059669');
   });
 
-  it('strokeDash is proportional to score when hasAnyValue is true', () => {
+  it('uses tier colour when hasAnyValue is true (score 90 → Top 10% Market Leaders #b45309)', () => {
+    const { color } = healthGaugeState(90, true);
+    expect(color).toBe('#b45309');
+  });
+
+  it('strokeDash is proportional to score when hasAnyValue is true (50 % fill at score 50)', () => {
     const { strokeDash } = healthGaugeState(50, true);
     expect(strokeDash).toBeCloseTo(CIRCUMFERENCE_HEALTH * 0.5, 5);
   });
@@ -178,14 +209,11 @@ describe('healthGaugeState — neutral state (no KPI values entered)', () => {
   });
 });
 
-// ─── buildBarChartData — empty state (no KPI values entered) ─────────────
+// ─── buildBarChartData — empty state (no KPI values entered) ─────────────────
 describe('buildBarChartData — empty state (no KPI values entered)', () => {
-  // Use the supply-chain-strategy framework as representative test data
-  const sampleKpis = KPI_FRAMEWORKS['supply-chain-strategy'];
-
-  // Simulate "no values entered": value is NaN (parseFloat of '' or undefined)
-  const emptyScores = sampleKpis.map((k: KpiDef) => ({
-    kpi: k,
+  const sampleKpis   = KPI_FRAMEWORKS['supply-chain-strategy'];
+  const emptyScores  = sampleKpis.map((k: KpiDef) => ({
+    kpi:   k,
     score: null as number | null,
     value: NaN,
   }));
@@ -235,7 +263,7 @@ describe('buildBarChartData — empty state (no KPI values entered)', () => {
   });
 });
 
-// ─── bar chart visibility guard — hasAnyValue logic ──────────────────────
+// ─── bar chart visibility guard — hasAnyValue logic ─────────────────────────
 describe('bar chart visibility guard — hasAnyValue', () => {
   const kpis = KPI_FRAMEWORKS['supply-chain-strategy'];
 
