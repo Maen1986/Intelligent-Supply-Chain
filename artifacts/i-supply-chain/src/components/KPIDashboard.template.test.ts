@@ -2217,3 +2217,77 @@ describe('KPI spec integrity — no two inputs share the same 30-char label pref
     ).toHaveLength(0);
   });
 });
+
+// ─── Procurement-excellence partial import — only the LAST KPI filled ─────────
+//
+//  All existing partial-import tests fill the FIRST KPIs and leave later ones
+//  blank.  This suite exercises the reverse pattern: all earlier KPIs are left
+//  blank and only ttc (the 6th / last KPI in procurement-excellence) is filled.
+//
+//  Framework KPI order: savings, pocycle, pocomp, sotif, ccov, ttc
+//
+//  ttc example inputs (from kpiDataSpecs.ts):
+//    total_contract_days = 1_680
+//    total_contracts     = 60
+//    → avg(1_680, 60) = 28.0 days
+//
+describe('procurement-excellence import — partial inputs (only ttc, the last KPI, filled)', () => {
+  /**
+   * Build a procurement-excellence template with only ttc "Your Value" cells
+   * populated.  All earlier KPI rows (savings, pocycle, pocomp, sotif, ccov)
+   * are left blank.
+   *
+   * Uses positional-index matching consistent with the round-trip suite.
+   */
+  function buildLastOnlyRows(): string[][] {
+    const rows = buildTemplateRows('procurement-excellence');
+    const kpiInputIndex: Record<string, number> = {};
+    rows.forEach(row => {
+      const kpiId = row[0]?.trim().toLowerCase();
+      // Fill only ttc — leave all other KPIs blank
+      if (kpiId !== 'ttc') return;
+      const spec = KPI_DATA_SPECS[kpiId];
+      if (!spec) return;
+      if (kpiInputIndex[kpiId] === undefined) kpiInputIndex[kpiId] = 0;
+      const inputDef = spec.inputs[kpiInputIndex[kpiId]];
+      kpiInputIndex[kpiId]++;
+      if (inputDef) row[2] = String(inputDef.example);
+    });
+    return rows;
+  }
+
+  it('calculates ttc correctly from its example inputs', () => {
+    const csvText = rowsToCsvText(buildLastOnlyRows());
+    const { values } = runNewFormatImport(csvText, 'procurement-excellence');
+    // ttc: avg(1_680, 60) = 28.0
+    expect(values['ttc'], 'ttc').toBeCloseTo(28.0, 0);
+  });
+
+  it('the five unfilled KPIs are absent from the values map — not zeroed', () => {
+    const csvText = rowsToCsvText(buildLastOnlyRows());
+    const { values } = runNewFormatImport(csvText, 'procurement-excellence');
+
+    expect(values['savings'], 'savings should be absent').toBeUndefined();
+    expect(values['pocycle'], 'pocycle should be absent').toBeUndefined();
+    expect(values['pocomp'],  'pocomp should be absent').toBeUndefined();
+    expect(values['sotif'],   'sotif should be absent').toBeUndefined();
+    expect(values['ccov'],    'ccov should be absent').toBeUndefined();
+  });
+
+  it('log contains exactly 5 skip-reason entries (one per unfilled KPI)', () => {
+    const csvText = rowsToCsvText(buildLastOnlyRows());
+    const { log } = runNewFormatImport(csvText, 'procurement-excellence');
+
+    const skipLines = log.filter(l => l.includes('skipped'));
+    expect(skipLines.length, 'skip-reason log entries').toBe(5);
+  });
+
+  it('log contains exactly 1 per-KPI success line (summary line excluded)', () => {
+    const csvText = rowsToCsvText(buildLastOnlyRows());
+    const { log } = runNewFormatImport(csvText, 'procurement-excellence');
+
+    // log[0] is the auto-calculated summary; filter it out before counting
+    const kpiLines = log.filter(l => l.startsWith('✓') && !l.includes('auto-calculated'));
+    expect(kpiLines.length, 'per-KPI success log lines').toBe(1);
+  });
+});
