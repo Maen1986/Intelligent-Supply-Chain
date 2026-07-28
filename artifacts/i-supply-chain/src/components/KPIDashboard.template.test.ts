@@ -11,7 +11,7 @@
  * 5. The column-header row contains exactly 7 columns
  */
 import { describe, it, expect } from 'vitest';
-import { buildKpiTemplateRows, KPI_FRAMEWORKS, type KpiDef } from './KPIDashboard';
+import { buildKpiTemplateRows, KPI_FRAMEWORKS, SLUG_ALIAS, type KpiDef } from './KPIDashboard';
 import { KPI_DATA_SPECS, KpiDataSpec } from '@/lib/kpiDataSpecs';
 import { parseCsvFile } from '@/lib/importCsv';
 
@@ -2178,6 +2178,238 @@ describe('buildKpiTemplateRows – Status formula embeds correct targetValue', (
     expect(formula).toContain('<=');
     const embedded = extractThreshold(formula);
     expect(embedded).toBe(LOWER_FALLBACK.targetValue); // 3
+  });
+});
+
+// ─── Excel-mutated template round-trip (lean-agile-supply-chain) ─────────────
+//
+//  SolutionDetail routes "lean-agile-supply-chain" to the lean-six-sigma
+//  framework via the KPI_FRAMEWORKS alias entry:
+//    'lean-agile-supply-chain': 'lean-six-sigma'
+//
+//  When a user downloads the template through the lean-agile-supply-chain slug
+//  the underlying KPI definitions are identical to lean-six-sigma, so the
+//  same six KPIs are generated:
+//    pce, sigma, ftr, ltr, copq, kaizen
+//
+//  Expected values from example inputs (see kpiDataSpecs.ts):
+//    pce    : pct(42, 380)                      ≈ 11.1
+//    sigma  : dpmoToSigma((230/(5000×10))×1e6)  ∈ (3.5, 5)
+//    ftr    : pct(1840, 2000)                   = 92.0
+//    ltr    : ((72−28)/72)×100                  ≈ 61.1
+//    copq   : pct(180000+120000+60000, 37500000) ≈ 1.0
+//    kaizen : 7 (direct count)
+//
+//  This suite is distinct from the lean-six-sigma suite: it starts from the
+//  alias slug, confirms the alias resolves correctly, and independently
+//  exercises the full Excel mutation path so that any future decoupling of
+//  the two frameworks is caught immediately.
+
+describe('Excel-mutated template round-trip (lean-agile-supply-chain)', () => {
+  /** Verify the SLUG_ALIAS entry is correctly wired. */
+  it('lean-agile-supply-chain alias resolves to lean-six-sigma', () => {
+    // SLUG_ALIAS maps UI-facing slugs to canonical KPI_FRAMEWORKS keys.
+    // SolutionDetail resolves aliases before passing the slug to helpers.
+    expect(SLUG_ALIAS['lean-agile-supply-chain'], 'alias entry missing from SLUG_ALIAS').toBeDefined();
+    expect(SLUG_ALIAS['lean-agile-supply-chain']).toBe('lean-six-sigma');
+  });
+
+  /**
+   * Build template rows via the resolved slug 'lean-six-sigma'.
+   * This mirrors what the app does after resolving the alias in SolutionDetail.
+   */
+  function buildFilledRows(): string[][] {
+    const rows = buildTemplateRows('lean-six-sigma');
+    rows.forEach(row => {
+      const kpiId = row[0]?.trim().toLowerCase();
+      if (!kpiId || kpiId === '' || kpiId.startsWith('===') || kpiId.startsWith('---') || kpiId.endsWith('__result')) return;
+      const spec = KPI_DATA_SPECS[kpiId];
+      if (!spec) return;
+      const inputDef = spec.inputs.find(inp =>
+        row[1]?.trim().toLowerCase() === inp.label.toLowerCase(),
+      );
+      if (inputDef) row[2] = String(inputDef.example);
+    });
+    return rows;
+  }
+
+  /** Shared KPI value assertions for all mutation variants. */
+  function assertKpiValues(values: Record<string, number>): void {
+    expect(values['pce'],    'pce').toBeCloseTo(11.1, 0);
+    expect(values['sigma'],  'sigma').toBeGreaterThan(3.5);
+    expect(values['sigma'],  'sigma').toBeLessThan(5);
+    expect(values['ftr'],    'ftr').toBe(92);
+    expect(values['ltr'],    'ltr').toBeCloseTo(61.1, 0);
+    expect(values['copq'],   'copq').toBeCloseTo(1, 0);
+    expect(values['kaizen'], 'kaizen').toBe(7);
+  }
+
+  it('imports correctly with CRLF line endings (Windows / Excel default)', () => {
+    const rows = buildFilledRows();
+    const csvCrlf = rows.map(r => r.map(escapeCell).join(',')).join('\r\n');
+    const { values } = runNewFormatImport(csvCrlf, 'lean-six-sigma');
+    assertKpiValues(values);
+  });
+
+  it('imports correctly when there is no UTF-8 BOM (Excel drops the BOM on re-save)', () => {
+    const rows = buildFilledRows();
+    const csvNoBom = rows.map(r => r.map(escapeCell).join(',')).join('\r\n');
+    expect(csvNoBom.charCodeAt(0)).not.toBe(0xFEFF);
+    const { values } = runNewFormatImport(csvNoBom, 'lean-six-sigma');
+    assertKpiValues(values);
+  });
+
+  it('imports correctly when extra blank rows are scattered between sections', () => {
+    const rows = buildFilledRows();
+    const mutated: string[][] = [];
+    for (const row of rows) {
+      mutated.push(row);
+      if (row[0]?.startsWith('===')) {
+        mutated.push(['', '', '', '', '', '']);
+        mutated.push(['', '', '', '', '', '']);
+      }
+    }
+    const csvText = mutated.map(r => r.map(escapeCell).join(',')).join('\r\n');
+    const { values } = runNewFormatImport(csvText, 'lean-six-sigma');
+    assertKpiValues(values);
+  });
+
+  it('imports correctly when cell values have leading and trailing whitespace', () => {
+    const rows = buildFilledRows();
+    const padCell = (c: string): string => `"  ${c.replace(/"/g, '""')}  "`;
+    const csvText = rows.map(r => r.map(padCell).join(',')).join('\r\n');
+    const { values } = runNewFormatImport(csvText, 'lean-six-sigma');
+    assertKpiValues(values);
+  });
+
+  it('imports correctly with all mutations combined (no BOM + CRLF + blank rows + whitespace padding)', () => {
+    const rows = buildFilledRows();
+    const withBlanks: string[][] = [];
+    for (const row of rows) {
+      withBlanks.push(row);
+      if (row[0]?.startsWith('===')) withBlanks.push(['', '', '', '', '', '']);
+    }
+    const padCell = (c: string): string => `" ${c.replace(/"/g, '""')} "`;
+    const csvText = withBlanks.map(r => r.map(padCell).join(',')).join('\r\n');
+    expect(csvText.charCodeAt(0)).not.toBe(0xFEFF);
+    const { values } = runNewFormatImport(csvText, 'lean-six-sigma');
+    assertKpiValues(values);
+  });
+
+  it('all 6 KPIs are calculated — no manual-entry notice — in the mutated file', () => {
+    const rows = buildFilledRows();
+    const mutated: string[][] = [];
+    for (const row of rows) {
+      mutated.push(row);
+      if (row[0]?.startsWith('===')) mutated.push(['', '', '', '', '', '']);
+    }
+    const padCell = (c: string): string => `" ${c.replace(/"/g, '""')} "`;
+    const csvText = mutated.map(r => r.map(padCell).join(',')).join('\r\n');
+    const { log } = runNewFormatImport(csvText, 'lean-six-sigma');
+    // log[0] is the auto-calculated summary line; remaining ✓ lines are per-KPI
+    const kpiLines = log.filter(l => l.startsWith('✓') && !l.includes('auto-calculated'));
+    expect(kpiLines.length).toBe(6);
+    expect(log.find(l => l.includes('require manual entry'))).toBeUndefined();
+  });
+});
+
+// ─── lean-agile-supply-chain partial import ───────────────────────────────────
+//
+//  The lean-agile-supply-chain framework (resolved to lean-six-sigma) has 6 KPIs:
+//    pce, sigma, ftr, ltr, copq, kaizen
+//
+//  This suite verifies that when a user fills in only pce and ftr the import:
+//   • calculates the two complete KPIs correctly
+//   • skips the four incomplete KPIs without zeroing them
+//   • records a skip-reason log entry for each uncalculable KPI
+//   • emits exactly 2 per-KPI success lines (summary line excluded)
+//
+describe('lean-agile-supply-chain import — partial inputs (only pce and ftr filled)', () => {
+  /**
+   * Build a lean-agile-supply-chain template (via the resolved slug lean-six-sigma)
+   * with only pce and ftr "Your Value" cells populated.
+   * All other KPI rows are left blank.
+   */
+  function buildPartialLasRows(): string[][] {
+    const rows = buildTemplateRows('lean-six-sigma');
+    rows.forEach(row => {
+      const kpiId = row[0]?.trim().toLowerCase();
+      if (!['pce', 'ftr'].includes(kpiId)) return;
+      const spec = KPI_DATA_SPECS[kpiId];
+      if (!spec) return;
+      const inputDef = spec.inputs.find(inp =>
+        row[1]?.trim().toLowerCase() === inp.label.toLowerCase(),
+      );
+      if (inputDef) row[2] = String(inputDef.example);
+    });
+    return rows;
+  }
+
+  it('calculates pce correctly from its example inputs', () => {
+    const csvText = rowsToCsvText(buildPartialLasRows());
+    const { values } = runNewFormatImport(csvText, 'lean-six-sigma');
+    // pce: pct(42, 380) ≈ 11.1
+    expect(values['pce'], 'pce').toBeCloseTo(11.1, 0);
+  });
+
+  it('calculates ftr correctly from its example inputs', () => {
+    const csvText = rowsToCsvText(buildPartialLasRows());
+    const { values } = runNewFormatImport(csvText, 'lean-six-sigma');
+    // ftr: pct(1840, 2000) = 92.0
+    expect(values['ftr'], 'ftr').toBe(92);
+  });
+
+  it('skipped KPIs are absent from the values map — not zeroed', () => {
+    const csvText = rowsToCsvText(buildPartialLasRows());
+    const { values } = runNewFormatImport(csvText, 'lean-six-sigma');
+
+    expect(values['sigma'],  'sigma should be absent').toBeUndefined();
+    expect(values['ltr'],    'ltr should be absent').toBeUndefined();
+    expect(values['copq'],   'copq should be absent').toBeUndefined();
+    expect(values['kaizen'], 'kaizen should be absent').toBeUndefined();
+  });
+
+  it('exactly 2 KPIs are calculated — no more, no less', () => {
+    const csvText = rowsToCsvText(buildPartialLasRows());
+    const { values } = runNewFormatImport(csvText, 'lean-six-sigma');
+
+    expect(Object.keys(values).sort()).toEqual(['ftr', 'pce']);
+  });
+
+  it('log contains a skip-reason entry for each uncalculable KPI', () => {
+    const csvText = rowsToCsvText(buildPartialLasRows());
+    const { log } = runNewFormatImport(csvText, 'lean-six-sigma');
+
+    const skipLines = log.filter(l => l.includes('skipped'));
+    // sigma, ltr, copq, kaizen — all four should have a skip entry
+    expect(skipLines.length, 'skip-reason log entries').toBeGreaterThanOrEqual(4);
+  });
+
+  it('log contains exactly 2 per-KPI success lines (summary line excluded)', () => {
+    const csvText = rowsToCsvText(buildPartialLasRows());
+    const { log } = runNewFormatImport(csvText, 'lean-six-sigma');
+
+    // log[0] is the auto-calculated summary; filter it out before counting
+    const kpiLines = log.filter(l => l.startsWith('✓') && !l.includes('auto-calculated'));
+    expect(kpiLines.length, 'per-KPI success log lines').toBe(2);
+  });
+
+  it('skip-reason entries name the skipped KPIs, not the calculated ones', () => {
+    const csvText = rowsToCsvText(buildPartialLasRows());
+    const { log } = runNewFormatImport(csvText, 'lean-six-sigma');
+
+    const skipLines = log.filter(l => l.includes('skipped'));
+    const skipText = skipLines.join('\n');
+
+    // Skipped KPI labels appear in the log
+    expect(skipText).toContain('Sigma Level');          // sigma
+    expect(skipText).toContain('Lead Time Reduction');  // ltr
+    expect(skipText).toContain('Cost of Poor Quality'); // copq
+    expect(skipText).toContain('Kaizen Events');        // kaizen
+
+    // Calculated KPI labels must NOT appear in the skip lines
+    expect(skipText).not.toContain('Process Cycle Efficiency');
+    expect(skipText).not.toContain('First-Time-Right');
   });
 });
 
