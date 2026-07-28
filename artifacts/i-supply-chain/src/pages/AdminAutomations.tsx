@@ -1700,7 +1700,7 @@ interface ApiKeyMeta {
   revokedAt: string | null;
 }
 
-function PrepareDownloadModal({
+export function PrepareDownloadModal({
   template,
   ar,
   onClose,
