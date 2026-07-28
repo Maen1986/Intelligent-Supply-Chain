@@ -675,13 +675,85 @@ describe('PrepareDownloadModal — network-throw error clears on retry (Arabic m
 });
 
 /* ══════════════════════════════════════════════════════════════════════════════
+   Server error clears on retry — Arabic (ar=true)
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+describe('PrepareDownloadModal — server error clears on retry (Arabic mode)', () => {
+
+  /**
+   * T — Arabic: a 404 server error is shown, then the user re-clicks Download
+   * with a valid key and the error disappears (setError(null) fires at the top
+   * of handleDownload before the new fetch even resolves).
+   *
+   * fetch sequence:
+   *   1st call → keys endpoint (mount)           → { ok: true, keys: [] }
+   *   2nd call → download endpoint (first click) → 404
+   *   3rd call → download endpoint (retry)       → 200 OK with template text
+   */
+  it('T — ar=true: 404 server error disappears when user retries with a valid key', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn()
+        /* keys endpoint */
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ ok: true, keys: [] }),
+        })
+        /* download endpoint — first click → 404 */
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 404,
+        })
+        /* download endpoint — retry → success */
+        .mockResolvedValueOnce({
+          ok: true,
+          text: async () => '{"name":"test"}',
+        }),
+    );
+
+    render(
+      <PrepareDownloadModal
+        template={makeTemplate('n8n')}
+        ar={true}
+        onClose={() => {}}
+      />,
+    );
+
+    /* Fill in the API key and trigger the first download (→ 404 error) */
+    const apiKeyInput = screen.getByPlaceholderText('الصق قيمة المفتاح هنا…');
+    fireEvent.change(apiKeyInput, { target: { value: 'test-api-key-value' } });
+
+    const downloadBtn = screen.getByRole('button', { name: /تنزيل القالب/i });
+    fireEvent.click(downloadBtn);
+
+    /* Arabic 404 error must be visible */
+    await waitFor(() => {
+      expect(
+        screen.getByText('ملف القالب غير متوفر حالياً — ربما تم حذفه. يُرجى التواصل مع المسؤول.'),
+      ).toBeInTheDocument();
+    });
+
+    /* Click Download again — same key is still in the field */
+    fireEvent.click(downloadBtn);
+
+    /* The server error must no longer be visible once the retry starts */
+    await waitFor(() => {
+      expect(
+        screen.queryByText('ملف القالب غير متوفر حالياً — ربما تم حذفه. يُرجى التواصل مع المسؤول.'),
+      ).toBeNull();
+    });
+  });
+
+});
+
+/* ══════════════════════════════════════════════════════════════════════════════
    Network-throw error clears after recovery + retry — English (ar=false)
    ══════════════════════════════════════════════════════════════════════════════ */
 
 describe('PrepareDownloadModal — network-throw error clears on retry (English mode)', () => {
 
   /**
-   * T — English: fetch throws (simulating a network drop) → English generic-failure
+   * U — English: fetch throws (simulating a network drop) → English generic-failure
    * message appears; a follow-up click with a succeeding fetch mock clears it.
    *
    * fetch sequence:
@@ -689,7 +761,7 @@ describe('PrepareDownloadModal — network-throw error clears on retry (English 
    *   2nd call → download endpoint (network drop) → throws Error('Network failure')
    *   3rd call → download endpoint (recovered)    → 200 OK with template text
    */
-  it('T — ar=false: network-throw shows English error; retry success clears it', async () => {
+  it('U — ar=false: network-throw shows English error; retry success clears it', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn()
