@@ -13,6 +13,7 @@
 
 import { describe, it, expect } from 'vitest';
 import manifest from '../../../../api-server/public/n8n-templates/manifest.json';
+import { PLATFORM_LABEL } from '../../lib/platformLabel';
 
 /* ── Types ────────────────────────────────────────────────────────────────── */
 
@@ -173,6 +174,22 @@ describe('TemplatesTab — platform filter', () => {
       if (pill === '') continue; // skip the "All" pill
       const results = applyPlatformFilter(templates, pill);
       expect(results.length).toBeGreaterThan(0);
+    }
+  });
+
+  /**
+   * Guards against a new platform value being added to the manifest
+   * without a matching PLATFORM_LABEL entry.  If this test fails,
+   * add the missing platform to src/lib/platformLabel.ts.
+   */
+  it('every manifest platform has a PLATFORM_LABEL entry', () => {
+    const manifestPlatforms = Array.from(new Set(templates.map(t => t.platform)));
+    for (const platform of manifestPlatforms) {
+      expect(
+        PLATFORM_LABEL,
+        `PLATFORM_LABEL is missing an entry for platform "${platform}". ` +
+        `Add it to src/lib/platformLabel.ts.`,
+      ).toHaveProperty(platform);
     }
   });
 

@@ -23,6 +23,8 @@ import {
   Clock, Zap, Server, Radio, Package, Wifi, WifiOff, Globe, X, Plus, KeyRound,
 } from 'lucide-react';
 import { API_BASE } from '@/lib/apiBase';
+import { PLATFORM_LABEL } from '@/lib/platformLabel';
+export { PLATFORM_LABEL } from '@/lib/platformLabel';
 
 /* ─── types ──────────────────────────────────────────────────────────────── */
 
@@ -1359,11 +1361,8 @@ const CATEGORY_BADGE: Record<string, string> = {
 };
 
 /* Platform display helpers */
-const PLATFORM_LABEL: Record<string, { en: string; ar: string; color: string }> = {
-  n8n:    { en: 'n8n',      ar: 'n8n',       color: 'bg-orange-100 text-orange-700' },
-  make:   { en: 'Make.com', ar: 'Make.com',   color: 'bg-violet-100 text-violet-700' },
-  zapier: { en: 'Zapier',   ar: 'Zapier',     color: 'bg-amber-100 text-amber-700'  },
-};
+// PLATFORM_LABEL is imported from @/lib/platformLabel — see that file
+// for the canonical map and the unit-test that guards against gaps.
 
 const NODES_LABEL: Record<string, { en: string; ar: string }> = {
   n8n:    { en: 'Nodes used',    ar: 'العقد المُستخدمة'    },
