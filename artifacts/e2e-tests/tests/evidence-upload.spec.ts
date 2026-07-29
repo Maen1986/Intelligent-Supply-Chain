@@ -489,3 +489,83 @@ test('re-upload: remove existing evidence and upload a replacement — badge app
   fs.unlinkSync(pdfPath);
   fs.unlinkSync(replacementPath);
 });
+
+/* ── Consultant-validated — remove button hidden ────────────────────────── */
+
+const EVIDENCE_RECORD_CONSULTANT = {
+  id: 10,
+  segId: 'strategy',
+  subSegId: 'strategy-align',
+  subSegLabel: 'Strategic Alignment',
+  originalFilename: 'consultant-validated.pdf',
+  mimeType: 'application/pdf',
+  confidenceTier: 'consultant_validated',
+  aiEvaluation: null,
+  createdAt: new Date().toISOString(),
+};
+
+test('remove button is absent when evidence is consultant-validated', async ({ page }) => {
+
+  /* 1 — Catch-all first */
+  await page.route('**/api/**', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json',
+      body: JSON.stringify({ ok: true }) }));
+
+  /* 2 — Auth */
+  await page.route('**/api/auth/me', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json',
+      body: JSON.stringify({ ok: true, user: MOCK_USER }) }));
+
+  /* 3 — Snapshots */
+  await page.route('**/api/maturity/snapshots', async (route) => {
+    if (route.request().method() === 'POST') {
+      return route.fulfill({ status: 201, contentType: 'application/json',
+        body: JSON.stringify({ ok: true, id: MOCK_SNAPSHOT.id }) });
+    }
+    return route.fulfill({ status: 200, contentType: 'application/json',
+      body: JSON.stringify({ ok: true, snapshots: [MOCK_SNAPSHOT] }) });
+  });
+
+  /* 4 — Evidence: always return the consultant-validated record */
+  await page.route('**/api/maturity/evidence**', async (route) => {
+    const meth = route.request().method();
+    if (meth === 'GET') {
+      return route.fulfill({ status: 200, contentType: 'application/json',
+        body: JSON.stringify({ ok: true, evidence: [EVIDENCE_RECORD_CONSULTANT] }) });
+    }
+    return route.fulfill({ status: 200, contentType: 'application/json',
+      body: JSON.stringify({ ok: true }) });
+  });
+
+  /* 5 — Seed localStorage */
+  await page.addInitScript((draft: string) => {
+    localStorage.setItem('maturity_draft_v2', draft);
+  }, JSON.stringify({
+    phase: 'results',
+    answers: buildAnswers(),
+    intakeData: { industry: '', companySize: 'enterprise' },
+  }));
+
+  /* 6 — Navigate and wait for results */
+  await page.goto('/maturity');
+  await expect(page.locator('[data-testid="maturity-results"]')).toBeVisible({ timeout: 15_000 });
+
+  /* 7 — Dismiss feedback modal if it appears */
+  const feedbackDialog = page.getByRole('dialog', { name: /how was your experience/i });
+  try {
+    await feedbackDialog.waitFor({ state: 'visible', timeout: 5_000 });
+    await feedbackDialog.getByRole('button', { name: /not now/i }).click();
+    await feedbackDialog.waitFor({ state: 'hidden', timeout: 3_000 });
+  } catch { /* did not appear */ }
+
+  /* 8 — Open evidence accordion */
+  const accordionBtn = page.getByText('Add supporting evidence').first();
+  await expect(accordionBtn).toBeVisible({ timeout: 10_000 });
+  await accordionBtn.click();
+
+  /* 9 — Consultant-validated badge must appear */
+  await expect(page.getByText('Consultant-validated')).toBeVisible({ timeout: 8_000 });
+
+  /* 10 — Remove button must NOT be in the DOM */
+  await expect(page.getByRole('button', { name: /remove evidence/i })).not.toBeAttached();
+});
