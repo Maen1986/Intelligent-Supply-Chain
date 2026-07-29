@@ -34,7 +34,8 @@ _Describe the high-level user-facing capabilities of this app once they exist._
 
 ## User preferences
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
+- **Bilingual — standing requirement.** All new content and UI must ship in English and Arabic simultaneously — never English-first with Arabic retrofitted later. Arabic must be independently authored formal Gulf professional register (فصحى), appropriate for C-level GCC executives, with correct procurement/supply-chain terminology. Machine-translated Arabic is not acceptable. A deliverable without complete, professionally authored Arabic content is incomplete. RTL layout must be verified for every new UI section.
+- **No implementation-level decisions escalated.** Use professional judgment on technical choices (naming, approach, tooling); document the decision in the completion note. Only escalate scope changes, destructive actions, or architectural tradeoffs with significant downstream consequences.
 
 ## Gotchas
 

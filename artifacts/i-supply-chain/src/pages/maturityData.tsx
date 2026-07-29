@@ -9,6 +9,13 @@ import {
   BarChart2, Package, Truck, GraduationCap,
   Factory, Ship, Scale,
 } from 'lucide-react';
+import {
+  STRATEGY_SUB_SEGMENTS,
+  PROCUREMENT_SUB_SEGMENTS,
+  CLM_SUB_SEGMENTS,
+  SRM_SUB_SEGMENTS,
+  RISK_SUB_SEGMENTS,
+} from './maturitySubSegData1to5';
 
 /* ── Interfaces ──────────────────────────────────────────────────────────── */
 
@@ -17,6 +24,39 @@ export interface Question {
   qAr: string;
   levels:   [string, string, string, string, string];
   levelsAr: [string, string, string, string, string];
+}
+
+/**
+ * A named sub-dimension within a Segment.
+ * Answer keys: "{segIdx}-{subIdx}-{questionIdx}"  (3-part format)
+ * Distinct from the legacy 5 flat questions which use "{segIdx}-{questionIdx}" (2-part).
+ */
+export interface SubSegment {
+  id: string;
+  title: string;
+  titleAr: string;
+  /** Optional hint shown to the user before they answer this sub-segment */
+  hint?: string;
+  hintAr?: string;
+  questions: Question[];
+  /** Sub-segment level benchmarks — distinct from parent segment benchmarks */
+  benchmarks: { gcc: number; topQuartile: number };
+  /**
+   * Industry relevance weights: 0.5 = low, 1.0 = baseline, 1.5 = high.
+   * Missing industry keys default to 1.0 in the scoring engine.
+   */
+  industryWeights: Record<string, number>;
+  /**
+   * Present on ~30–40 qualifying sub-segments where a documentable artefact
+   * plausibly exists (frameworks, registers, scorecards, policy documents).
+   * Populated by the evidence & confidence tier feature (#710).
+   */
+  evidence?: {
+    label: string;
+    labelAr: string;
+    hint: string;
+    hintAr: string;
+  };
 }
 
 export interface Segment {
@@ -28,6 +68,8 @@ export interface Segment {
   icon: React.ElementType;
   color: string;
   questions: Question[];
+  /** Named sub-segments (6 per segment). Populated via maturitySubSegData1to5.ts */
+  subSegments?: SubSegment[];
   benchmarks: { gcc: number; global: number; best: number };
   recommendations:   Record<string, string>;
   recommendationsAr: Record<string, string>;
@@ -193,6 +235,7 @@ export const CORE_SEGMENTS: Segment[] = [
       Managed:   'تطبيق التحليلات المتقدمة وقدرات التوأم الرقمي لنمذجة الشبكة. ربط مقاييس استراتيجية سلسلة الإمداد مباشرةً بتعويضات المديرين التنفيذيين.',
       Optimised: 'المقارنة المعيارية مع النظراء عالميًا وتحديد المجالات التي يمكن فيها الاستفادة من سلسلة الإمداد كميزة تنافسية ومصدر لنمو الإيرادات.',
     },
+    subSegments: STRATEGY_SUB_SEGMENTS as unknown as SubSegment[],
   },
 
   /* ── 2. PROCUREMENT ──────────────────────────────────────────────────── */
@@ -311,6 +354,7 @@ export const CORE_SEGMENTS: Segment[] = [
       Managed:   'نشر التحليلات المتقدمة واستخبارات الإنفاق المدعومة بالذكاء الاصطناعي. تطبيق بطاقة أداء للمشتريات مرتبطة بنتائج الأعمال بما يتجاوز وفورات التكلفة.',
       Optimised: 'تحويل القيمة المقترَحة للمشتريات من خفض التكلفة إلى خلق القيمة — يجب أن يكون التوريد الابتكاري واستدامة سلسلة الإمداد والبحث والتطوير بقيادة الموردين أنشطة ذات أولوية.',
     },
+    subSegments: PROCUREMENT_SUB_SEGMENTS as unknown as SubSegment[],
   },
 
   /* ── 3. CLM ──────────────────────────────────────────────────────────── */
@@ -429,6 +473,7 @@ export const CORE_SEGMENTS: Segment[] = [
       Managed:   'تطبيق تحليلات العقود المدعومة بالذكاء الاصطناعي لتحديد المخاطر واستخلاص الالتزامات وتتبّع التزامات الإنفاق. ربط CLM بنظام ERP.',
       Optimised: 'نشر تقييم تنبؤي لمخاطر العقود والاستفادة من بيانات العقود كمصدر استخباراتي استراتيجي لقرارات التوريد وإدارة أداء الموردين.',
     },
+    subSegments: CLM_SUB_SEGMENTS as unknown as SubSegment[],
   },
 
   /* ── 4. SRM ──────────────────────────────────────────────────────────── */
@@ -547,6 +592,7 @@ export const CORE_SEGMENTS: Segment[] = [
       Managed:   'نشر منصة رقمية لإدارة علاقات الموردين بلوحات أداء آنية. توسيع التعاون مع الموردين ليشمل نمذجة التكلفة المشتركة ومشاركة رؤية الطلب والابتكار المشترك.',
       Optimised: 'تموضع قاعدة التوريد لديكم كأصل تنافسي استراتيجي. قيادة منظومات ابتكار الموردين والاستثمار المشترك في قدرة الموردين كاستراتيجية نمو.',
     },
+    subSegments: SRM_SUB_SEGMENTS as unknown as SubSegment[],
   },
 
   /* ── 5. RISK ─────────────────────────────────────────────────────────── */
@@ -665,6 +711,7 @@ export const CORE_SEGMENTS: Segment[] = [
       Managed:   'تطبيق مراقبة مخاطر آنية مدعومة بالذكاء الاصطناعي. توسيع التوريد المزدوج ليشمل جميع الفئات الحرجة والبدء برسم مخاطر سلسلة الإمداد للمستوى الثاني.',
       Optimised: 'توظيف التحليلات التنبؤية لاستباق الاضطرابات قبل وقوعها. بناء مرونة سلسلة الإمداد كميزة تنافسية تُبلَّغ للعملاء.',
     },
+    subSegments: RISK_SUB_SEGMENTS as unknown as SubSegment[],
   },
 
   /* ── 6. ESG ──────────────────────────────────────────────────────────── */
