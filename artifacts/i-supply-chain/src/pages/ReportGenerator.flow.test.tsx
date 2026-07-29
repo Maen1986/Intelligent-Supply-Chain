@@ -340,4 +340,53 @@ describe('ReportGenerator — full browser flow', () => {
     // Must be back on the form phase
     expect(screen.getByRole('button', { name: /Generate My Report/i })).toBeInTheDocument();
   });
+
+  /* ── Phase E2 — session expiry (401) ─────────────────────────────────── */
+  it('E2: 401 response returns to form phase with a sign-in-again message', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({}), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    );
+
+    renderPage();
+    fillRequiredFields();
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /Generate My Report/i }));
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText(/Generation failed/i)).toBeInTheDocument();
+    });
+
+    // Error message must be actionable — not a raw status code
+    expect(screen.getByText(/Please sign in again/i)).toBeInTheDocument();
+
+    // Must be back on the form phase so the user can re-authenticate and retry
+    expect(screen.getByRole('button', { name: /Generate My Report/i })).toBeInTheDocument();
+  });
+
+  /* ── Phase E3 — network failure (TypeError) ───────────────────────────── */
+  it('E3: network failure returns to form phase without crashing', async () => {
+    vi.spyOn(globalThis, 'fetch').mockRejectedValue(new TypeError('Failed to fetch'));
+
+    renderPage();
+    fillRequiredFields();
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /Generate My Report/i }));
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText(/Generation failed/i)).toBeInTheDocument();
+    });
+
+    // The raw TypeError message should surface so the user knows it's a connectivity issue
+    expect(screen.getByText(/Failed to fetch/i)).toBeInTheDocument();
+
+    // Must be back on the form phase (not stuck in generating, not crashed)
+    expect(screen.getByRole('button', { name: /Generate My Report/i })).toBeInTheDocument();
+  });
 });

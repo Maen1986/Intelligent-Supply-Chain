@@ -433,6 +433,9 @@ export function ReportGenerator() {
           language: ar ? 'ar' : 'en',
         }),
       });
+      if (resp.status === 401) {
+        throw new Error('Please sign in again to generate your report');
+      }
       if (!resp.ok) {
         const data = await resp.json() as { error?: string };
         throw new Error(data.error ?? `HTTP ${resp.status}`);
