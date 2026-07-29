@@ -10,6 +10,16 @@
  *
  *  2. A segment whose sub-segments are evidence-eligible but have no returned
  *     evidence records shows the "Add" placeholder instead of a badge.
+ *
+ * Task 776 — consultant_validated tier:
+ *
+ *  3. When the fetch returns a consultant_validated evidence record, the
+ *     "Consultant-validated" pill appears in the Evidence column on mount
+ *     (without user interaction).
+ *
+ *  4. When both ai_evaluated and consultant_validated records are present,
+ *     getSegmentTier() promotes consultant_validated — the
+ *     "Consultant-validated" pill wins over "AI-evaluated".
  */
 
 import React from 'react';
@@ -102,6 +112,22 @@ const AI_EVALUATED_EVIDENCE = {
     flag_reason: null,
     summary: 'Document clearly supports the claimed maturity level.',
   },
+};
+
+/**
+ * A consultant_validated evidence record for the "strategy" segment.
+ * getSegmentTier() returns 'consultant_validated' whenever any record in the
+ * segment carries this tier — regardless of other tiers present.
+ */
+const CONSULTANT_VALIDATED_EVIDENCE = {
+  id: 2,
+  segId: 'strategy',
+  subSegId: 'strategy-align',
+  subSegLabel: 'Supply chain strategy document',
+  originalFilename: 'strategy-validated.pdf',
+  mimeType: 'application/pdf',
+  confidenceTier: 'consultant_validated' as const,
+  aiEvaluation: null,
 };
 
 /* ── Fetch stub ──────────────────────────────────────────────────────────── */
@@ -231,6 +257,50 @@ describe('MaturityDetail — ConfidenceTierBadge appears on initial mount', () =
     expect(screen.queryByText('AI-evaluated')).toBeNull();
     // No "Self-reported" badge either (no evidence of any kind).
     expect(screen.queryByText('Self-reported')).toBeNull();
+  });
+
+  /* ── Test 5 (Task 776) ───────────────────────────────────────────────────
+     When the evidence fetch returns a consultant_validated record for a
+     segment, the "Consultant-validated" pill must appear in the Evidence
+     column on mount — without any user interaction.
+  ─────────────────────────────────────────────────────────────────────────── */
+  it('shows the Consultant-validated badge for a segment with a consultant_validated record', async () => {
+    stubFetch([CONSULTANT_VALIDATED_EVIDENCE]);
+
+    render(<MyAssessments />);
+
+    await waitFor(
+      () => {
+        expect(screen.getByText('Consultant-validated')).toBeInTheDocument();
+      },
+      { timeout: 3000 },
+    );
+
+    // AI-evaluated badge must NOT appear — only consultant_validated.
+    expect(screen.queryByText('AI-evaluated')).toBeNull();
+  });
+
+  /* ── Test 6 (Task 776) ───────────────────────────────────────────────────
+     When both ai_evaluated and consultant_validated records are returned for
+     the same segment, getSegmentTier() must promote to consultant_validated.
+     Only the "Consultant-validated" pill should appear; "AI-evaluated" must
+     not be rendered for that segment.
+  ─────────────────────────────────────────────────────────────────────────── */
+  it('shows Consultant-validated (not AI-evaluated) when both tiers are present', async () => {
+    // Return both tiers for the "strategy" segment.
+    stubFetch([AI_EVALUATED_EVIDENCE, CONSULTANT_VALIDATED_EVIDENCE]);
+
+    render(<MyAssessments />);
+
+    await waitFor(
+      () => {
+        expect(screen.getByText('Consultant-validated')).toBeInTheDocument();
+      },
+      { timeout: 3000 },
+    );
+
+    // "AI-evaluated" must not win — consultant_validated takes precedence.
+    expect(screen.queryByText('AI-evaluated')).toBeNull();
   });
 });
 
