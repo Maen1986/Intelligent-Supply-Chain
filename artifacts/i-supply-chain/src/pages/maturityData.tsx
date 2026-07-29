@@ -16,6 +16,17 @@ import {
   SRM_SUB_SEGMENTS,
   RISK_SUB_SEGMENTS,
 } from './maturitySubSegData1to5';
+import {
+  ESG_SUB_SEGMENTS,
+  DIGITAL_SUB_SEGMENTS,
+  DEMAND_SUB_SEGMENTS,
+  INVENTORY_SUB_SEGMENTS,
+  LOGISTICS_SUB_SEGMENTS,
+  ORG_TALENT_SUB_SEGMENTS,
+  MFG_OPS_SUB_SEGMENTS,
+  FLEET_OPS_SUB_SEGMENTS,
+  REGULATORY_SUB_SEGMENTS,
+} from './maturitySubSegData6to11';
 
 /* ── Interfaces ──────────────────────────────────────────────────────────── */
 
@@ -830,6 +841,7 @@ export const CORE_SEGMENTS: Segment[] = [
       Managed:   'نشر منصة استدامة للموردين لجمع البيانات البيئية والاجتماعية والحوكمية آنيًا. تطوير سياسة مشتريات دائرية ودمج مؤشرات الأداء البيئي والاجتماعي والحوكمي في بطاقات أداء الموردين.',
       Optimised: 'قيادة الشفافية البيئية والاجتماعية والحوكمية لسلسلة الإمداد بتقارير مضمونة خارجيًا. استخدام الريادة في هذا المجال كميزة تنافسية في تأهيل المناقصات الحكومية والدولية.',
     },
+    subSegments: ESG_SUB_SEGMENTS as unknown as SubSegment[],
   },
 
   /* ── 7. DIGITAL ──────────────────────────────────────────────────────── */
@@ -948,6 +960,7 @@ export const CORE_SEGMENTS: Segment[] = [
       Managed:   'توسيع تبني الذكاء الاصطناعي/تعلّم الآلة ليشمل مراقبة مخاطر الموردين والذكاء التوليدي لصياغة طلبات عروض الأسعار. العمل نحو منصة بيانات موحّدة.',
       Optimised: 'توظيف الذكاء الاصطناعي الوكيلي لمهام المشتريات المستقلة في فئات الإنفاق الطرفية. بناء أصول بيانات وقدرات تحليلات خاصة كميزة تنافسية.',
     },
+    subSegments: DIGITAL_SUB_SEGMENTS as unknown as SubSegment[],
   },
 
   /* ── 8. DEMAND PLANNING & S&OP (new) ─────────────────────────────────── */
@@ -1066,6 +1079,7 @@ export const CORE_SEGMENTS: Segment[] = [
       Managed:   'نشر أداة تخطيط الطلب بنمذجة إحصائية. تضمين تكامل آني للطلب والإمداد وتحديد مستهدفات MAPE على مستوى SKU بمراجعات دقة شهرية.',
       Optimised: 'تجربة تنبؤ الطلب بتعلّم الآلة مع دمج الإشارات الخارجية. تحقيق MAPE ≤12% على أصناف الفئة A ودمج استشعار الطلب مباشرةً في التزامات الشراء.',
     },
+    subSegments: DEMAND_SUB_SEGMENTS as unknown as SubSegment[],
   },
 
   /* ── 9. INVENTORY MANAGEMENT (new) ──────────────────────────────────── */
@@ -1184,6 +1198,7 @@ export const CORE_SEGMENTS: Segment[] = [
       Managed:   'نشر WMS أو وحدة تحسين المخزون. دمج تخطيط الطلب والإمداد لتحديث آلي لمعاملات إعادة الطلب وإطلاق لوحة معلومات آنية لتقادم SLOB.',
       Optimised: 'تطبيق مخزون أمان ديناميكي بإعادة معايرة آنية. رفع معدلات دوران المخزون إلى مستويات الأفضل في الفئة وربط DIO مباشرةً ببطاقات الأداء التنفيذية ومراجعات تخصيص رأس المال.',
     },
+    subSegments: INVENTORY_SUB_SEGMENTS as unknown as SubSegment[],
   },
 
   /* ── 10. LOGISTICS & DISTRIBUTION (new) ─────────────────────────────── */
@@ -1302,6 +1317,7 @@ export const CORE_SEGMENTS: Segment[] = [
       Managed:   'توسيع TMS ليشمل التحسين متعدد الوسائل. تحقيق OTIF ≥90% عبر المسارات الرئيسية ودمج الامتثال الجمركي في دورة تخطيط الشراء واللوجستيات.',
       Optimised: 'نشر تتبّع الشحنات آنيًا بتحليلات OTIF التنبؤية. تحقيق حالة AEO للجمارك وبناء منصة لوجستيات عكسية تعظّم قيمة الاسترداد.',
     },
+    subSegments: LOGISTICS_SUB_SEGMENTS as unknown as SubSegment[],
   },
 
   /* ── 11. ORGANISATION & TALENT (new) ────────────────────────────────── */
@@ -1420,6 +1436,7 @@ export const CORE_SEGMENTS: Segment[] = [
       Managed:   'نشر منهجية منظمة لإدارة التغيير (Prosci ADKAR) لجميع برامج التحول الكبرى. توسيع شهادات CIPS/APICS لتشمل جميع مستويات سلسلة الإمداد.',
       Optimised: 'المقارنة المعيارية لنموذج مواهب سلسلة الإمداد مع أفضل الممارسات في الخليج. الاستثمار في التوجيه التنفيذي لسلسلة الإمداد وبناء أكاديمية قدرات خاصة كميّزة تنافسية في المواهب.',
     },
+    subSegments: ORG_TALENT_SUB_SEGMENTS as unknown as SubSegment[],
   },
 ];
 
@@ -1546,6 +1563,7 @@ export const INDUSTRY_MODULES: Segment[] = [
       Managed:   'نشر APS للجدولة القائمة على القيود وتحقيق الالتزام بالجدول ≥90%. دمج بيانات جودة الموردين في منصة SRM ومتابعة CoQ كمؤشر قيادي.',
       Optimised: 'قيادة OEE ≥80% بـ TPM مدعومة بالذكاء الاصطناعي. نشر برامج Six Sigma عبر العمليات الرئيسية وبناء منصة ذكاء تصنيعي رقمي للرؤية الآنية.',
     },
+    subSegments: MFG_OPS_SUB_SEGMENTS as unknown as SubSegment[],
   },
 
   /* ── MODULE B: Fleet, Port & Distribution Operations ────────────────── */
@@ -1665,6 +1683,7 @@ export const INDUSTRY_MODULES: Segment[] = [
       Managed:   'دمج الرؤية متعددة الوسائط عبر جميع أوضاع اللوجستيات. نشر محرّك تحسين مسار مدفوع بالذكاء الاصطناعي ومقارنة مؤشرات الميناء معياريًا بالقادة الإقليميين في الخليج.',
       Optimised: 'تحقيق امتثال معدوم الحوادث لـ DG وتسليم من أول محاولة ≥97%. تطبيق خيارات الميل الأخير المستدامة وبناء توأم رقمي لتحسين شبكة اللوجستيات من طرف إلى طرف.',
     },
+    subSegments: FLEET_OPS_SUB_SEGMENTS as unknown as SubSegment[],
   },
 
   /* ── MODULE C: Regulatory & Localisation Compliance ─────────────────── */
@@ -1784,5 +1803,6 @@ export const INDUSTRY_MODULES: Segment[] = [
       Managed:   'إطلاق برنامج متخصص لتطوير الموردين المحليين يستهدف تحسين IKTVA. تحقيق نتائج تدقيق معدومة في الامتثال لـ GTPL وربط نطاقات ببطاقات الأداء التنفيذية.',
       Optimised: 'قيادة أفضل الممارسات الخليجية في حوكمة المشتريات الحكومية. نشر أداء المحتوى المحلي لـ IKTVA واستهداف حالة نطاقات المتميّزة كميزة تنافسية في المواهب والمناقصات.',
     },
+    subSegments: REGULATORY_SUB_SEGMENTS as unknown as SubSegment[],
   },
 ];
