@@ -46,6 +46,35 @@ interface PhaseData { title: string; objective: string; activities: string[]; mi
 type Phase = 'form' | 'generating' | 'ready';
 
 /* ═══════════════════════════════════════════════════════════════════════════
+   CACHE HELPERS
+═══════════════════════════════════════════════════════════════════════════ */
+
+const REPORT_CACHE_KEY = 'isc_report_cache_v1';
+
+interface ReportCache {
+  contactInfo: { name: string; email: string; company: string; industry: string; companySize: string };
+  report: ReportData;
+  generatedAt: string;
+  maturity: MaturitySnapshot | null;
+}
+
+function saveReportCache(cache: ReportCache) {
+  try { localStorage.setItem(REPORT_CACHE_KEY, JSON.stringify(cache)); } catch { /* quota exceeded — ignore */ }
+}
+
+function loadReportCache(): ReportCache | null {
+  try {
+    const raw = localStorage.getItem(REPORT_CACHE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as ReportCache;
+  } catch { return null; }
+}
+
+function clearReportCache() {
+  try { localStorage.removeItem(REPORT_CACHE_KEY); } catch { /* ignore */ }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
    PRINT LAYOUT
 ═══════════════════════════════════════════════════════════════════════════ */
 
@@ -395,7 +424,15 @@ export function ReportGenerator() {
   const [maturity, setMaturity] = useState<MaturitySnapshot | null>(null);
   const [maturityLoaded, setMaturityLoaded] = useState(false);
 
+  /* ── Cached report restore ── */
+  const [cachedReport, setCachedReport] = useState<ReportCache | null>(null);
+
   useEffect(() => {
+    // Load cached report
+    const cache = loadReportCache();
+    if (cache) setCachedReport(cache);
+
+    // Load maturity draft
     try {
       const raw = localStorage.getItem(MATURITY_DRAFT_KEY);
       if (!raw) { setMaturityLoaded(true); return; }
@@ -423,12 +460,13 @@ export function ReportGenerator() {
     setError(null);
     setPhase('generating');
     try {
+      const contactInfo = { name: name.trim(), email: email.trim(), company: company.trim(), industry, companySize };
       const resp = await fetch(`${API_BASE}/report/generate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           tier: 'sme_growth',
-          contactInfo: { name: name.trim(), email: email.trim(), company: company.trim(), industry, companySize },
+          contactInfo,
           maturityData: maturity ?? undefined,
           language: ar ? 'ar' : 'en',
         }),
@@ -445,10 +483,33 @@ export function ReportGenerator() {
       setReport(data.report);
       setGeneratedAt(data.generatedAt);
       setPhase('ready');
+      // Persist to localStorage so the user can restore without regenerating
+      const cache: ReportCache = { contactInfo, report: data.report, generatedAt: data.generatedAt, maturity };
+      saveReportCache(cache);
+      setCachedReport(cache);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to generate report');
       setPhase('form');
     }
+  };
+
+  const handleRestoreCache = () => {
+    if (!cachedReport) return;
+    const { contactInfo, report: r, generatedAt: ga, maturity: m } = cachedReport;
+    setName(contactInfo.name);
+    setEmail(contactInfo.email);
+    setCompany(contactInfo.company);
+    setIndustry(contactInfo.industry);
+    setCompanySize(contactInfo.companySize);
+    if (m) setMaturity(m);
+    setReport(r);
+    setGeneratedAt(ga);
+    setPhase('ready');
+  };
+
+  const handleClearCache = () => {
+    clearReportCache();
+    setCachedReport(null);
   };
 
   const handlePrint = () => window.print();
@@ -493,6 +554,32 @@ export function ReportGenerator() {
             {/* ── FORM PHASE ── */}
             {phase === 'form' && (
               <motion.div key="form" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+
+                {/* Restore previous report banner */}
+                {cachedReport && (
+                  <div className="mb-6 flex items-start gap-3 rounded-xl border border-primary/30 bg-primary/5 p-4">
+                    <BookOpen className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-primary text-sm">Previous report available</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        A report for <span className="font-medium">{cachedReport.contactInfo.company}</span> was generated on{' '}
+                        {new Date(cachedReport.generatedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}.
+                        Restore it instantly — no AI call needed.
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        onClick={handleClearCache}
+                        className="text-xs text-muted-foreground hover:text-destructive underline">
+                        Clear
+                      </button>
+                      <Button size="sm" onClick={handleRestoreCache} className="bg-primary hover:bg-primary/90 text-white gap-1.5">
+                        <Download className="w-3.5 h-3.5" />
+                        Restore
+                      </Button>
+                    </div>
+                  </div>
+                )}
 
                 {error && (
                   <div className="mb-6 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4">
@@ -717,9 +804,9 @@ export function ReportGenerator() {
                 </div>
 
                 <div className="flex items-center justify-between flex-wrap gap-3">
-                  <Button variant="outline" onClick={() => { setPhase('form'); setReport(null); }} className="gap-2">
+                  <Button variant="outline" onClick={() => { handleClearCache(); setPhase('form'); setReport(null); }} className="gap-2">
                     <RotateCcw className="w-4 h-4" />
-                    Regenerate
+                    Clear &amp; Regenerate
                   </Button>
                   <div className="flex gap-3">
                     <Link href="/consultant">
