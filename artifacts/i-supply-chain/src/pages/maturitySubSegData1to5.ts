@@ -262,7 +262,7 @@ export const STRATEGY_SUB_SEGMENTS: SubSegmentData[] = [
       },
       {
         q: 'How consistently do the decisions made in the S&OP or IBP process translate into binding, tracked actions for procurement, production, and inventory management within the same planning cycle?',
-        qAr: 'ما مدى اتساق ترجمة القرارات المتخذة في عملية S&OP أو IBP إلى إجراءات ملزمة ومتابَعة للمشتريات والإنتاج وإدارة المخزون خلال دورة التخطيط ذاتها؟',
+        qAr: 'ما مدى اتساق ترجمة القرارات المتخذة في عملية S&OP أو IBP إلى إجراءات ملزمة ومتابَعة للمشتريات والإنتاج وإدارة المخزون ضمن دورة التخطيط ذاتها؟',
         levels: [
           'S&OP decisions are discussed but rarely acted upon. Procurement and production plans continue largely unchanged regardless of the S&OP output.',
           'Some decisions lead to informal adjustments but there is no formal mechanism to translate S&OP outputs into binding operational changes with assigned owners.',
