@@ -89,7 +89,7 @@ function toolColor(tool: string) {
 
 /* ── Maturity detail sub-component ─────────────────────────────────────────── */
 
-function MaturityDetail({ inputs, outputs, ar, snapshotId, lang, expandedEvSeg, setExpandedEvSeg }: {
+function MaturityDetail({ inputs, outputs, ar, snapshotId, lang, expandedEvSeg, setExpandedEvSeg, evScrollPosRef }: {
   inputs:            MaturityInputs;
   outputs:           MaturityOutputs;
   ar:                boolean;
@@ -97,6 +97,7 @@ function MaturityDetail({ inputs, outputs, ar, snapshotId, lang, expandedEvSeg, 
   lang:              'en' | 'ar';
   expandedEvSeg:     Set<string>;
   setExpandedEvSeg:  React.Dispatch<React.SetStateAction<Set<string>>>;
+  evScrollPosRef:    React.MutableRefObject<Record<string, number>>;
 }) {
   const segs: SegScore[] = outputs.segmentScores ?? [];
   const score  = parseFloat(String(outputs.overallScore ?? 0));
@@ -316,7 +317,17 @@ function MaturityDetail({ inputs, outputs, ar, snapshotId, lang, expandedEvSeg, 
                     {isEvOpen && qualSubs.length > 0 && (
                       <tr className="border-t border-border bg-muted/20">
                         <td colSpan={4} className="px-4 py-3">
-                          <div className="space-y-3">
+                          <div
+                            className="space-y-3 overflow-y-auto max-h-[420px]"
+                            ref={el => {
+                              if (el && evScrollPosRef.current[s.id]) {
+                                el.scrollTop = evScrollPosRef.current[s.id];
+                              }
+                            }}
+                            onScroll={e => {
+                              evScrollPosRef.current[s.id] = (e.currentTarget as HTMLDivElement).scrollTop;
+                            }}
+                          >
                             <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">
                               {ar ? 'أدلة داعمة' : 'Supporting Evidence'}
                               {' — '}
@@ -450,10 +461,12 @@ function CommandCentreDetail({ inputs, outputs, ar }: {
 
 /* ── Submission card ────────────────────────────────────────────────────────── */
 
-function SubmissionCard({ sub, ar, defaultOpen }: { sub: Submission; ar: boolean; defaultOpen?: boolean }) {
+export function SubmissionCard({ sub, ar, defaultOpen }: { sub: Submission; ar: boolean; defaultOpen?: boolean }) {
   const [open, setOpen] = useState(defaultOpen ?? false);
   /* Lifted from MaturityDetail so accordion state survives card collapse/re-expand */
   const [expandedEvSeg, setExpandedEvSeg] = useState<Set<string>>(new Set());
+  /* Scroll position per segment — mutable ref so onScroll writes don't cause re-renders */
+  const evScrollPosRef = React.useRef<Record<string, number>>({});
   const color  = toolColor(sub.tool);
   const inputs  = (sub.inputs  ?? {}) as AnyInputs;
   const outputs = (sub.outputs ?? {}) as AnyOutputs;
@@ -532,6 +545,7 @@ function SubmissionCard({ sub, ar, defaultOpen }: { sub: Submission; ar: boolean
                   lang={ar ? 'ar' : 'en'}
                   expandedEvSeg={expandedEvSeg}
                   setExpandedEvSeg={setExpandedEvSeg}
+                  evScrollPosRef={evScrollPosRef}
                 />
               )}
               {sub.tool === 'diagnostic' && (
