@@ -1416,11 +1416,12 @@ export function Maturity() {
           <p className="text-muted-foreground text-sm mb-6">{ar ? "إرشادات مصممة لكل مجال بناءً على مستوى نضجكم، من مَعِين الحقش MCIPS · CPSM." : "Tailored guidance for each segment based on your maturity level, from Ma'in Alhaqash MCIPS · CPSM."}</p>
           <div className="grid md:grid-cols-2 gap-5">
             {activeSegments.map((seg, i) => {
-              const score     = segScore(i) ?? 0;
-              const level     = getLevel(score);
-              const rec       = ar ? seg.recommendationsAr[level.label] : seg.recommendations[level.label];
-              const gapToBest = seg.benchmarks.best - score;
-              const gapToGcc  = score - seg.benchmarks.gcc;
+              const score       = segScore(i) ?? 0;
+              const level       = getLevel(score);
+              const rec         = ar ? seg.recommendationsAr[level.label] : seg.recommendations[level.label];
+              const gapToBest   = seg.benchmarks.best - score;
+              const gapToGcc    = score - seg.benchmarks.gcc;
+              const segEvidence = evidenceList.filter(e => e.segId === seg.id);
               return (
                 <div key={seg.id} className={`bg-white rounded-2xl border shadow-sm overflow-hidden ${level.border}`}>
                   <div className="flex items-center gap-3 px-5 py-4 border-b border-border">
@@ -1433,6 +1434,9 @@ export function Maturity() {
                         <span className="text-primary font-extrabold">{score.toFixed(2)}</span>
                         <span className="text-muted-foreground text-xs">/5.0</span>
                         <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${level.bg} ${level.text} border ${level.border}`}>{ar ? level.labelAr : level.label}</span>
+                        {segEvidence.length > 0 && (
+                          <ConfidenceTierBadge lang={lang} evidence={segEvidence} asPill />
+                        )}
                       </div>
                     </div>
                     <div className="flex-shrink-0 w-20">
@@ -1494,7 +1498,6 @@ export function Maturity() {
                       const qualifyingSubs = (seg.subSegments ?? []).filter(ss => ss.evidence);
                       if (qualifyingSubs.length === 0) return null;
                       const isOpen = expandedEvSeg.has(seg.id);
-                      const segEvidence = evidenceList.filter(e => e.segId === seg.id);
                       const tier = segEvidence.length > 0 ? getSegmentTier(segEvidence) : null;
                       return (
                         <div className="mt-3">
