@@ -196,3 +196,139 @@ test('uploads a PDF and sees the AI-verified badge on the results page', async (
   /* Cleanup */
   fs.unlinkSync(pdfPath);
 });
+
+/* ── Flagged-evidence test ──────────────────────────────────────────────────── */
+
+const AI_EVALUATION_FLAGGED = {
+  plausible_support: false,
+  confidence: 'low',
+  flag_reason: 'generic_template',
+  summary: 'Document appears to be an unmodified generic template.',
+};
+
+const EVIDENCE_RECORD_FLAGGED = {
+  id: 2,
+  segId: 'strategy',
+  subSegId: 'strategy-align',
+  subSegLabel: 'Strategic Alignment',
+  originalFilename: 'flagged.pdf',
+  mimeType: 'application/pdf',
+  confidenceTier: 'ai_evaluated',
+  aiEvaluation: AI_EVALUATION_FLAGGED,
+  createdAt: new Date().toISOString(),
+};
+
+test('uploads a PDF and sees the Flagged badge — not AI-verified — when plausible_support is false', async ({ page }) => {
+
+  /* 1 — Catch-all first */
+  await page.route('**/api/**', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json',
+      body: JSON.stringify({ ok: true }) }));
+
+  /* 2 — Specific handlers */
+
+  await page.route('**/api/auth/me', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json',
+      body: JSON.stringify({ ok: true, user: MOCK_USER }) }));
+
+  await page.route('**/api/maturity/snapshots', async (route) => {
+    if (route.request().method() === 'POST') {
+      return route.fulfill({ status: 201, contentType: 'application/json',
+        body: JSON.stringify({ ok: true, id: MOCK_SNAPSHOT.id }) });
+    }
+    return route.fulfill({ status: 200, contentType: 'application/json',
+      body: JSON.stringify({ ok: true, snapshots: [MOCK_SNAPSHOT] }) });
+  });
+
+  /* Evidence routes — confirm returns plausible_support: false */
+  let evidenceGetCount = 0;
+  await page.route('**/api/maturity/evidence**', async (route) => {
+    const url  = route.request().url();
+    const meth = route.request().method();
+
+    if (meth === 'POST' && url.includes('/confirm')) {
+      await new Promise(r => setTimeout(r, 400));
+      return route.fulfill({ status: 200, contentType: 'application/json',
+        body: JSON.stringify({
+          ok: true,
+          confidence_tier: 'ai_evaluated',
+          ai_evaluation: AI_EVALUATION_FLAGGED,
+        }) });
+    }
+    if (meth === 'POST' && url.includes('/upload-url')) {
+      return route.fulfill({ status: 201, contentType: 'application/json',
+        body: JSON.stringify({ ok: true, evidence_id: 2,
+          upload_url: 'https://storage.example.com/presigned-put' }) });
+    }
+    if (meth === 'GET') {
+      evidenceGetCount++;
+      const records = evidenceGetCount > 1 ? [EVIDENCE_RECORD_FLAGGED] : [];
+      return route.fulfill({ status: 200, contentType: 'application/json',
+        body: JSON.stringify({ ok: true, evidence: records }) });
+    }
+    return route.fulfill({ status: 200, contentType: 'application/json',
+      body: JSON.stringify({ ok: true }) });
+  });
+
+  /* GCS presigned PUT */
+  await page.route('https://storage.example.com/**', (route) =>
+    route.fulfill({ status: 200 }));
+
+  /* 3 — Seed localStorage */
+  await page.addInitScript((draft: string) => {
+    localStorage.setItem('maturity_draft_v2', draft);
+  }, JSON.stringify({
+    phase: 'results',
+    answers: buildAnswers(),
+    intakeData: { industry: '', companySize: 'enterprise' },
+  }));
+
+  /* 4 — Navigate */
+  await page.goto('/maturity');
+
+  /* 5 — Wait for results */
+  await expect(page.locator('[data-testid="maturity-results"]')).toBeVisible({ timeout: 15_000 });
+
+  /* 6 — Dismiss feedback modal if it appears */
+  const feedbackDialog = page.getByRole('dialog', { name: /how was your experience/i });
+  try {
+    await feedbackDialog.waitFor({ state: 'visible', timeout: 5_000 });
+    await feedbackDialog.getByRole('button', { name: /not now/i }).click();
+    await feedbackDialog.waitFor({ state: 'hidden', timeout: 3_000 });
+  } catch {
+    // Dialog did not appear — proceed.
+  }
+
+  /* 7 — Open accordion */
+  const accordionBtn = page.getByText('Add supporting evidence').first();
+  await expect(accordionBtn).toBeVisible({ timeout: 10_000 });
+  await accordionBtn.click();
+
+  /* 8 — Upload zone visible */
+  const uploadZone = page.getByText(
+    'Add supporting evidence (optional) — PDF, Word, or image',
+  ).first();
+  await expect(uploadZone).toBeVisible({ timeout: 5_000 });
+
+  /* 9 — Create a minimal PDF */
+  const pdfPath = path.join(os.tmpdir(), 'e2e-evidence-flagged.pdf');
+  fs.writeFileSync(pdfPath, '%PDF-1.4\n1 0 obj<</Type/Catalog>>endobj\n%%EOF\n');
+
+  /* 10 — Trigger upload */
+  const [fileChooser] = await Promise.all([
+    page.waitForEvent('filechooser'),
+    uploadZone.click(),
+  ]);
+  await fileChooser.setFiles(pdfPath);
+
+  /* 11 — Progress states */
+  await expect(page.getByText('Uploading…')).toBeVisible({ timeout: 5_000 });
+  await expect(page.getByText('AI evaluation in progress…')).toBeVisible({ timeout: 10_000 });
+
+  /* 12 — Flagged badge must appear; AI-verified badge must NOT */
+  await expect(page.getByText(/Flagged/)).toBeVisible({ timeout: 10_000 });
+  await expect(page.getByText('AI-verified ✓')).not.toBeVisible();
+
+  /* Cleanup */
+  fs.unlinkSync(pdfPath);
+});
