@@ -24,8 +24,11 @@ vi.mock('@/lib/AuthContext', () => ({
   useAuth: () => ({ isAuthenticated: true, user: { id: 1 }, loading: false }),
 }));
 
+/* langMode is mutated per describe block to switch between en/ar */
+let langMode: { lang: 'en' | 'ar'; ar: boolean } = { lang: 'en', ar: false };
+
 vi.mock('@/lib/LanguageContext', () => ({
-  useLanguage: () => ({ lang: 'en', ar: false }),
+  useLanguage: () => langMode,
 }));
 
 vi.mock('wouter', () => ({
@@ -135,6 +138,10 @@ function stubFetch(evidenceRecords: object[] = [AI_EVALUATED_EVIDENCE]) {
 ════════════════════════════════════════════════════════════════════════════ */
 
 describe('MaturityDetail — ConfidenceTierBadge appears on initial mount', () => {
+  beforeEach(() => {
+    langMode = { lang: 'en', ar: false };
+  });
+
   afterEach(() => {
     vi.unstubAllGlobals();
     cleanup();
@@ -224,5 +231,79 @@ describe('MaturityDetail — ConfidenceTierBadge appears on initial mount', () =
     expect(screen.queryByText('AI-evaluated')).toBeNull();
     // No "Self-reported" badge either (no evidence of any kind).
     expect(screen.queryByText('Self-reported')).toBeNull();
+  });
+});
+
+/* ════════════════════════════════════════════════════════════════════════════
+   Arabic-mode tests — Task 775
+   Confirms the ai_evaluated badge renders its Arabic label in lang="ar" mode
+   and that the English label never leaks through.
+════════════════════════════════════════════════════════════════════════════ */
+
+describe('MaturityDetail — ConfidenceTierBadge in Arabic mode (lang="ar")', () => {
+  beforeEach(() => {
+    langMode = { lang: 'ar', ar: true };
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    cleanup();
+  });
+
+  /* ── Arabic Test 1 ───────────────────────────────────────────────────────
+     When the page is rendered in Arabic mode and the evidence fetch returns
+     an ai_evaluated record, the Arabic badge label
+     "مُقيَّم بالذكاء الاصطناعي" must appear in the Evidence column on mount
+     without any user interaction.
+  ──────────────────────────────────────────────────────────────────────────── */
+  it('shows the Arabic AI-evaluated badge label for a segment with an ai_evaluated record', async () => {
+    stubFetch([AI_EVALUATED_EVIDENCE]);
+
+    render(<MyAssessments />);
+
+    await waitFor(
+      () => {
+        expect(screen.getByText('مُقيَّم بالذكاء الاصطناعي')).toBeInTheDocument();
+      },
+      { timeout: 3000 },
+    );
+  });
+
+  /* ── Arabic Test 2 ───────────────────────────────────────────────────────
+     The English label "AI-evaluated" must NOT appear anywhere in the DOM
+     when the interface is in Arabic mode — even though the same component
+     renders it in English mode.
+  ──────────────────────────────────────────────────────────────────────────── */
+  it('does NOT show the English "AI-evaluated" label when lang is Arabic', async () => {
+    stubFetch([AI_EVALUATED_EVIDENCE]);
+
+    render(<MyAssessments />);
+
+    // Wait until the Arabic badge appears (evidence fetch resolved).
+    await waitFor(
+      () => expect(screen.getByText('مُقيَّم بالذكاء الاصطناعي')).toBeInTheDocument(),
+      { timeout: 3000 },
+    );
+
+    // The English label must be absent.
+    expect(screen.queryByText('AI-evaluated')).toBeNull();
+  });
+
+  /* ── Arabic Test 3 ───────────────────────────────────────────────────────
+     The Arabic badge must also be a pill element (rounded-full styling),
+     consistent with the English pill in asPill mode.
+  ──────────────────────────────────────────────────────────────────────────── */
+  it('renders the Arabic badge as a pill (rounded-full class)', async () => {
+    stubFetch([AI_EVALUATED_EVIDENCE]);
+
+    render(<MyAssessments />);
+
+    await waitFor(
+      () => {
+        const badge = screen.getByText('مُقيَّم بالذكاء الاصطناعي');
+        expect(badge.className).toContain('rounded-full');
+      },
+      { timeout: 3000 },
+    );
   });
 });
