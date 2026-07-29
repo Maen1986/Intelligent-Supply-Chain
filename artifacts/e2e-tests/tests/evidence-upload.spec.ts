@@ -332,3 +332,160 @@ test('uploads a PDF and sees the Flagged badge — not AI-verified — when plau
   /* Cleanup */
   fs.unlinkSync(pdfPath);
 });
+
+test('re-upload: remove existing evidence and upload a replacement — badge appears again', async ({ page }) => {
+
+  /* 1 — Catch-all first */
+  await page.route('**/api/**', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json',
+      body: JSON.stringify({ ok: true }) }));
+
+  /* 2 — Auth */
+  await page.route('**/api/auth/me', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json',
+      body: JSON.stringify({ ok: true, user: MOCK_USER }) }));
+
+  /* 3 — Snapshots */
+  await page.route('**/api/maturity/snapshots', async (route) => {
+    if (route.request().method() === 'POST') {
+      return route.fulfill({ status: 201, contentType: 'application/json',
+        body: JSON.stringify({ ok: true, id: MOCK_SNAPSHOT.id }) });
+    }
+    return route.fulfill({ status: 200, contentType: 'application/json',
+      body: JSON.stringify({ ok: true, snapshots: [MOCK_SNAPSHOT] }) });
+  });
+
+  /* 4 — Evidence routes: GET cycles through 4 states, DELETE returns 204,
+         upload-url issues id=1 then id=2 for the replacement, confirm works
+         for both ids.
+         GET sequence:
+           call 1 → []               (initial page load — nothing uploaded yet)
+           call 2 → [EVIDENCE_RECORD] (after first upload confirm → onChanged re-fetch)
+           call 3 → []               (after remove → onChanged re-fetch)
+           call 4 → [EVIDENCE_RECORD] (after second upload confirm → onChanged re-fetch)
+  */
+  let evidenceGetCount   = 0;
+  let uploadUrlCallCount = 0;
+
+  const EVIDENCE_RECORD_2 = { ...EVIDENCE_RECORD, id: 2, originalFilename: 'replacement.pdf' };
+
+  await page.route('**/api/maturity/evidence**', async (route) => {
+    const url  = route.request().url();
+    const meth = route.request().method();
+
+    if (meth === 'DELETE') {
+      return route.fulfill({ status: 204 });
+    }
+
+    if (meth === 'POST' && url.includes('/confirm')) {
+      await new Promise(r => setTimeout(r, 400));
+      return route.fulfill({ status: 200, contentType: 'application/json',
+        body: JSON.stringify({ ok: true, confidence_tier: 'ai_evaluated',
+          ai_evaluation: AI_EVALUATION }) });
+    }
+
+    if (meth === 'POST' && url.includes('/upload-url')) {
+      uploadUrlCallCount++;
+      const evidenceId = uploadUrlCallCount === 1 ? 1 : 2;
+      return route.fulfill({ status: 201, contentType: 'application/json',
+        body: JSON.stringify({ ok: true, evidence_id: evidenceId,
+          upload_url: 'https://storage.example.com/presigned-put' }) });
+    }
+
+    if (meth === 'GET') {
+      evidenceGetCount++;
+      let records: typeof EVIDENCE_RECORD[] = [];
+      if (evidenceGetCount === 2) records = [EVIDENCE_RECORD];
+      else if (evidenceGetCount === 4) records = [EVIDENCE_RECORD_2];
+      return route.fulfill({ status: 200, contentType: 'application/json',
+        body: JSON.stringify({ ok: true, evidence: records }) });
+    }
+
+    return route.fulfill({ status: 200, contentType: 'application/json',
+      body: JSON.stringify({ ok: true }) });
+  });
+
+  /* 5 — GCS presigned PUT */
+  await page.route('https://storage.example.com/**', (route) =>
+    route.fulfill({ status: 200 }));
+
+  /* 6 — Seed localStorage */
+  await page.addInitScript((draft: string) => {
+    localStorage.setItem('maturity_draft_v2', draft);
+  }, JSON.stringify({
+    phase: 'results',
+    answers: buildAnswers(),
+    intakeData: { industry: '', companySize: 'enterprise' },
+  }));
+
+  /* 7 — Navigate and wait for results */
+  await page.goto('/maturity');
+  await expect(page.locator('[data-testid="maturity-results"]')).toBeVisible({ timeout: 15_000 });
+
+  /* 8 — Dismiss feedback modal if it appears */
+  const feedbackDialog = page.getByRole('dialog', { name: /how was your experience/i });
+  try {
+    await feedbackDialog.waitFor({ state: 'visible', timeout: 5_000 });
+    await feedbackDialog.getByRole('button', { name: /not now/i }).click();
+    await feedbackDialog.waitFor({ state: 'hidden', timeout: 3_000 });
+  } catch { /* did not appear */ }
+
+  /* 9 — Open evidence accordion */
+  const accordionBtn = page.getByText('Add supporting evidence').first();
+  await expect(accordionBtn).toBeVisible({ timeout: 10_000 });
+  await accordionBtn.click();
+
+  /* 10 — Upload zone is visible */
+  const uploadZone = page.getByText(
+    'Add supporting evidence (optional) — PDF, Word, or image',
+  ).first();
+  await expect(uploadZone).toBeVisible({ timeout: 5_000 });
+
+  /* 11 — First upload */
+  const pdfPath = path.join(os.tmpdir(), 'e2e-evidence-reupload.pdf');
+  fs.writeFileSync(pdfPath, '%PDF-1.4\n1 0 obj<</Type/Catalog>>endobj\n%%EOF\n');
+
+  const [chooser1] = await Promise.all([
+    page.waitForEvent('filechooser'),
+    uploadZone.click(),
+  ]);
+  await chooser1.setFiles(pdfPath);
+
+  /* 12 — Wait for first AI-verified badge */
+  await expect(page.getByText('Uploading…')).toBeVisible({ timeout: 5_000 });
+  await expect(page.getByText('AI evaluation in progress…')).toBeVisible({ timeout: 10_000 });
+  await expect(page.getByText('AI-verified ✓')).toBeVisible({ timeout: 10_000 });
+
+  /* 13 — Click the remove (×) button */
+  const removeBtn = page.getByRole('button', { name: /remove evidence/i }).first();
+  await expect(removeBtn).toBeVisible({ timeout: 5_000 });
+  await removeBtn.click();
+
+  /* 14 — Upload zone reappears after removal */
+  await expect(page.getByText(
+    'Add supporting evidence (optional) — PDF, Word, or image',
+  ).first()).toBeVisible({ timeout: 8_000 });
+
+  /* 15 — Second upload (replacement file) */
+  const replacementPath = path.join(os.tmpdir(), 'e2e-replacement.pdf');
+  fs.writeFileSync(replacementPath, '%PDF-1.4\n1 0 obj<</Type/Catalog>>endobj\n%%EOF\n');
+
+  const uploadZone2 = page.getByText(
+    'Add supporting evidence (optional) — PDF, Word, or image',
+  ).first();
+
+  const [chooser2] = await Promise.all([
+    page.waitForEvent('filechooser'),
+    uploadZone2.click(),
+  ]);
+  await chooser2.setFiles(replacementPath);
+
+  /* 16 — AI-verified badge appears again for the replacement */
+  await expect(page.getByText('Uploading…')).toBeVisible({ timeout: 5_000 });
+  await expect(page.getByText('AI evaluation in progress…')).toBeVisible({ timeout: 10_000 });
+  await expect(page.getByText('AI-verified ✓')).toBeVisible({ timeout: 10_000 });
+
+  /* Cleanup */
+  fs.unlinkSync(pdfPath);
+  fs.unlinkSync(replacementPath);
+});
