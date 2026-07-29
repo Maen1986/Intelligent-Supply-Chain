@@ -13,6 +13,8 @@ import {
 } from '@/lib/maturityScoring';
 import { MaturityCoverage } from '@/components/MaturityCoverage';
 import { MaturityTrend, type SnapshotRecord, type SegmentMeta } from '@/components/MaturityTrend';
+import { EvidenceUploadZone, type EvidenceRecord } from '@/components/EvidenceUploadZone';
+import { ConfidenceTierBadge, getSegmentTier } from '@/components/ConfidenceTierBadge';
 import { FeedbackModal, shouldShowFeedback } from '@/components/FeedbackModal';
 import { API_BASE } from '@/lib/apiBase';
 import { useAuth } from '@/lib/AuthContext';
@@ -167,6 +169,10 @@ export function Maturity() {
   const [snapshots,          setSnapshots]          = useState<SnapshotRecord[]>([]);
   const [currentSnapshotId,  setCurrentSnapshotId]  = useState<number | null>(null);
 
+  // Evidence: confidence tier & document upload state (results only)
+  const [evidenceList,  setEvidenceList]  = useState<EvidenceRecord[]>([]);
+  const [expandedEvSeg, setExpandedEvSeg] = useState<Set<string>>(new Set());
+
   /* Active segments depend on the chosen industry */
   const activeModule   = intakeData.industry ? getActiveModule(intakeData.industry) : null;
   let   activeSegments: Segment[] = [...CORE_SEGMENTS, ...(activeModule ? [activeModule] : [])];
@@ -281,6 +287,23 @@ export function Maturity() {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase]);
+
+  /* ── Load evidence when a snapshot is available (logged-in only) ─────────
+     Fires whenever currentSnapshotId changes from null → a real ID.         */
+  const fetchEvidence = () => {
+    if (!user || !currentSnapshotId || _testSeedActive) return;
+    fetch(`${API_BASE}/maturity/evidence?snapshot_id=${currentSnapshotId}`, { credentials: 'include' })
+      .then(r => r.json())
+      .then((data: { ok: boolean; evidence?: EvidenceRecord[] }) => {
+        if (data.ok && data.evidence) setEvidenceList(data.evidence);
+      })
+      .catch(() => { /* best-effort */ });
+  };
+
+  useEffect(() => {
+    if (currentSnapshotId) fetchEvidence();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentSnapshotId]);
 
   /* ── Load existing snapshot history whenever results are shown ───────────
      Runs unconditionally on every results entry for authenticated users so
@@ -422,15 +445,24 @@ export function Maturity() {
         gccAvg:   seg.benchmarks.gcc,
         bestClass:seg.benchmarks.best,
       }));
+      const evidenceableSubs = activeSegments.reduce(
+        (sum, seg) => sum + (seg.subSegments ?? []).filter(ss => ss.evidence).length, 0,
+      );
+      const evidenceBackedCount = evidenceList.filter(
+        e => (e.confidenceTier === 'ai_evaluated' || e.confidenceTier === 'consultant_validated')
+          && e.aiEvaluation?.plausible_support,
+      ).length;
       sessionStorage.setItem(ISC_MATURITY_CONTEXT_KEY, JSON.stringify({
-        overallScore:   +overallScore.toFixed(2),
-        overallLevel:   overallLevel.label,
-        overallLevelAr: overallLevel.labelAr,
-        segmentScores:  segScores,
-        remedies:       remediesData ?? undefined,
+        overallScore:    +overallScore.toFixed(2),
+        overallLevel:    overallLevel.label,
+        overallLevelAr:  overallLevel.labelAr,
+        segmentScores:   segScores,
+        remedies:        remediesData ?? undefined,
         intakeData,
-        coveragePct:    totalSubSegs > 0 ? +(coveredSubSegs / totalSubSegs * 100).toFixed(1) : undefined,
-        lang:           ar ? 'ar' : 'en',
+        coveragePct:     totalSubSegs > 0 ? +(coveredSubSegs / totalSubSegs * 100).toFixed(1) : undefined,
+        lang:            ar ? 'ar' : 'en',
+        evidencePct:     evidenceableSubs > 0 ? +(evidenceBackedCount / evidenceableSubs * 100).toFixed(1) : undefined,
+        evidenceTiers:   evidenceList.map(e => ({ subSegId: e.subSegId, segId: e.segId, tier: e.confidenceTier })),
       }));
     } catch { /* quota or SSR — navigation still proceeds */ }
   };
@@ -1303,6 +1335,7 @@ export function Maturity() {
                   <th className="px-4 py-3 font-bold text-center text-slate-600">{ar ? 'المتوسط العالمي' : 'Global Avg'}</th>
                   <th className="px-4 py-3 font-bold text-center" style={{ color: '#C9A84C' }}>{ar ? 'الأفضل في الفئة' : 'Best-in-Class'}</th>
                   <th className="px-4 py-3 font-bold text-primary text-center">{ar ? 'المستوى' : 'Level'}</th>
+                  <th className="px-4 py-3 font-bold text-primary text-center">{ar ? 'الثقة' : 'Confidence'}</th>
                   <th className="px-4 py-3 font-bold text-primary text-center">{ar ? 'تعديل' : 'Edit'}</th>
                 </tr>
               </thead>
@@ -1334,6 +1367,16 @@ export function Maturity() {
                       </td>
                       <td className="px-4 py-3.5 text-center">
                         <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${level.bg} ${level.text} border ${level.border}`}>{ar ? level.labelAr : level.label}</span>
+                      </td>
+                      <td className="px-4 py-3.5 text-center">
+                        {evidenceList.some(e => e.segId === seg.id) ? (
+                          <ConfidenceTierBadge
+                            lang={lang}
+                            evidence={evidenceList.filter(e => e.segId === seg.id)}
+                          />
+                        ) : (
+                          <span className="text-[10px] text-muted-foreground">—</span>
+                        )}
                       </td>
                       <td className="px-4 py-3.5 text-center">
                         <button
@@ -1445,6 +1488,57 @@ export function Maturity() {
                       </ResponsiveContainer>
                     </div>
                     <p className="text-muted-foreground text-sm leading-relaxed">{rec}</p>
+
+                    {/* ── Evidence upload accordion ──────────────────────── */}
+                    {user && currentSnapshotId && (() => {
+                      const qualifyingSubs = (seg.subSegments ?? []).filter(ss => ss.evidence);
+                      if (qualifyingSubs.length === 0) return null;
+                      const isOpen = expandedEvSeg.has(seg.id);
+                      const segEvidence = evidenceList.filter(e => e.segId === seg.id);
+                      const tier = segEvidence.length > 0 ? getSegmentTier(segEvidence) : null;
+                      return (
+                        <div className="mt-3">
+                          <button
+                            onClick={() => setExpandedEvSeg(prev => {
+                              const next = new Set(prev);
+                              if (next.has(seg.id)) next.delete(seg.id); else next.add(seg.id);
+                              return next;
+                            })}
+                            className="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-muted/50 hover:bg-muted/80 transition-colors text-xs font-semibold text-muted-foreground hover:text-foreground"
+                          >
+                            <span className="flex items-center gap-2">
+                              {ar ? 'إضافة أدلة داعمة' : 'Add supporting evidence'}
+                              <span className="px-1.5 py-0.5 rounded-full bg-muted text-[10px] font-bold text-muted-foreground border border-border">
+                                {qualifyingSubs.length}
+                              </span>
+                              {tier && tier !== 'self_reported' && (
+                                <ConfidenceTierBadge lang={lang} evidence={segEvidence} asPill={false} />
+                              )}
+                            </span>
+                            <span className="text-muted-foreground">{isOpen ? '▲' : '▼'}</span>
+                          </button>
+                          {isOpen && (
+                            <div className="mt-2 space-y-3 px-1">
+                              {qualifyingSubs.map(ss => (
+                                <EvidenceUploadZone
+                                  key={ss.id}
+                                  lang={lang}
+                                  snapshotId={currentSnapshotId}
+                                  segId={seg.id}
+                                  subSegId={ss.id}
+                                  subSegLabel={ss.title}
+                                  subSegLabelAr={ss.titleAr}
+                                  subSegHint={ss.evidence!.hint}
+                                  subSegHintAr={ss.evidence!.hintAr}
+                                  existing={evidenceList.find(e => e.subSegId === ss.id) ?? null}
+                                  onChanged={fetchEvidence}
+                                />
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </div>
                 </div>
               );

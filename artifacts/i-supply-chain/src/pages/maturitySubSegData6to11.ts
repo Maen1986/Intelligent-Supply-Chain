@@ -127,6 +127,12 @@ export const ESG_SUB_SEGMENTS: SubSegmentData[] = [
       logistics: 1.5, marine: 1.5, construction: 1.5, oil_gas: 1.5,
       government: 1.0, technology: 1.0, banking: 1.0, other: 1.0,
     },
+    evidence: {
+      label:   'GHG inventory / emissions report',
+      labelAr: 'جرد غازات الدفيئة / تقرير الانبعاثات',
+      hint:    'Upload your most recent Scope 1 & 2 GHG inventory or sustainability report showing emissions data.',
+      hintAr:  'ارفع أحدث جرد غازات الدفيئة (النطاقين 1 و2) أو تقرير الاستدامة الذي يُظهر بيانات الانبعاثات.',
+    },
     questions: [
       {
         q: 'How rigorously do you measure and manage Scope 1 and Scope 2 greenhouse gas emissions — including data completeness, calculation methodology, and internal verification?',
@@ -250,6 +256,12 @@ export const ESG_SUB_SEGMENTS: SubSegmentData[] = [
       manufacturing: 1.5, fmcg: 1.5, pharma: 1.5, retail: 1.5,
       logistics: 1.0, marine: 1.0, construction: 1.5, oil_gas: 1.5,
       government: 1.5, technology: 1.0, banking: 1.0, other: 1.0,
+    },
+    evidence: {
+      label:   'Supplier sustainability audit or EcoVadis scorecard',
+      labelAr: 'تقرير تدقيق الاستدامة أو بطاقة EcoVadis للمورد',
+      hint:    'Upload a supplier sustainability audit report, EcoVadis scorecard, or supplier code of conduct acknowledgement.',
+      hintAr:  'ارفع تقرير تدقيق الاستدامة للمورد أو بطاقة EcoVadis أو إقرار الالتزام بمدونة سلوك الموردين.',
     },
     questions: [
       {
@@ -496,6 +508,12 @@ export const DIGITAL_SUB_SEGMENTS: SubSegmentData[] = [
       logistics: 1.5, marine: 1.0, construction: 1.0, oil_gas: 1.5,
       government: 1.5, technology: 1.5, banking: 1.0, other: 1.0,
     },
+    evidence: {
+      label:   'ERP system screenshot or implementation contract',
+      labelAr: 'لقطة شاشة من نظام ERP أو عقد التطبيق',
+      hint:    'Upload a screenshot of your ERP system dashboard or the implementation/maintenance contract showing the modules deployed.',
+      hintAr:  'ارفع لقطة شاشة من لوحة تحكم نظام ERP أو عقد التطبيق/الصيانة الذي يُظهر الوحدات المُنشأة.',
+    },
     questions: [
       {
         q: 'How effectively is your ERP system configured and utilised for supply chain processes — including purchasing, inventory, demand planning, and order management — with minimal reliance on shadow spreadsheets?',
@@ -566,6 +584,12 @@ export const DIGITAL_SUB_SEGMENTS: SubSegmentData[] = [
       manufacturing: 1.5, fmcg: 1.5, pharma: 1.5, retail: 1.5,
       logistics: 1.5, marine: 1.5, construction: 1.0, oil_gas: 1.5,
       government: 1.0, technology: 1.0, banking: 0.5, other: 1.0,
+    },
+    evidence: {
+      label:   'Supply chain visibility dashboard or platform contract',
+      labelAr: 'لوحة تحكم رؤية سلسلة التوريد أو عقد المنصة',
+      hint:    'Upload a screenshot of your supply chain visibility platform or the vendor contract confirming real-time tracking capability.',
+      hintAr:  'ارفع لقطة شاشة من منصة رؤية سلسلة التوريد أو عقد البائع الذي يؤكد قدرة التتبع الآني.',
     },
     questions: [
       {
@@ -793,6 +817,12 @@ export const DEMAND_SUB_SEGMENTS: SubSegmentData[] = [
       manufacturing: 1.5, fmcg: 1.5, pharma: 1.5, retail: 1.5,
       logistics: 1.0, marine: 0.5, construction: 1.0, oil_gas: 1.0,
       government: 1.0, technology: 1.0, banking: 0.5, other: 1.0,
+    },
+    evidence: {
+      label:   'Forecast accuracy report or MAPE trend data',
+      labelAr: 'تقرير دقة التنبؤ أو بيانات MAPE',
+      hint:    'Upload your most recent demand forecast accuracy report showing MAPE, bias, and trend data.',
+      hintAr:  'ارفع أحدث تقرير دقة التنبؤ بالطلب يُظهر MAPE والتحيز وبيانات الاتجاه.',
     },
     questions: [
       {
@@ -1072,6 +1102,12 @@ export const INVENTORY_SUB_SEGMENTS: SubSegmentData[] = [
       manufacturing: 1.5, fmcg: 1.5, pharma: 1.5, retail: 1.5,
       logistics: 1.0, marine: 1.0, construction: 1.0, oil_gas: 1.5,
       government: 1.0, technology: 1.0, banking: 0.5, other: 1.0,
+    },
+    evidence: {
+      label:   'ABC / XYZ inventory analysis report',
+      labelAr: 'تقرير تحليل المخزون ABC / XYZ',
+      hint:    'Upload your most recent inventory classification report (ABC, XYZ, or similar) showing item segmentation and policy outcomes.',
+      hintAr:  'ارفع أحدث تقرير تصنيف المخزون (ABC أو XYZ أو ما يماثلها) يُظهر تصنيف البنود ونتائج السياسة.',
     },
     questions: [
       {
@@ -1474,6 +1510,12 @@ export const LOGISTICS_SUB_SEGMENTS: SubSegmentData[] = [
       logistics: 1.5, marine: 1.5, construction: 1.5, oil_gas: 1.5,
       government: 1.5, technology: 1.0, banking: 0.5, other: 1.0,
     },
+    evidence: {
+      label:   'Customs compliance certificate or AEO authorisation',
+      labelAr: 'شهادة الامتثال الجمركي أو ترخيص AEO',
+      hint:    'Upload your Authorised Economic Operator (AEO) certificate, customs compliance audit report, or equivalent authorisation.',
+      hintAr:  'ارفع شهادة المشغّل الاقتصادي المعتمد (AEO) أو تقرير تدقيق الامتثال الجمركي أو ما يعادلها.',
+    },
     questions: [
       {
         q: 'How mature is your customs and trade compliance programme — in terms of documentation completeness, HS code accuracy, import/export licensing, and proactive regulatory monitoring?',
@@ -1612,6 +1654,12 @@ export const ORG_TALENT_SUB_SEGMENTS: SubSegmentData[] = [
       logistics: 1.5, marine: 1.5, construction: 1.0, oil_gas: 1.5,
       government: 1.5, technology: 1.0, banking: 0.5, other: 1.0,
     },
+    evidence: {
+      label:   'Supply chain competency framework document',
+      labelAr: 'وثيقة إطار الكفاءات لسلسلة التوريد',
+      hint:    'Upload your documented supply chain competency framework, role profiles, or competency assessment results.',
+      hintAr:  'ارفع إطار الكفاءات الموثّق لسلسلة التوريد أو ملفات الأدوار أو نتائج تقييم الكفاءات.',
+    },
     questions: [
       {
         q: 'How comprehensively is a supply chain competency framework defined and applied — covering technical skills, leadership behaviours, digital literacy, and sustainability knowledge across all supply chain roles?',
@@ -1646,6 +1694,12 @@ export const ORG_TALENT_SUB_SEGMENTS: SubSegmentData[] = [
       manufacturing: 1.5, fmcg: 1.5, pharma: 1.5, retail: 1.0,
       logistics: 1.5, marine: 1.5, construction: 1.0, oil_gas: 1.5,
       government: 1.5, technology: 1.0, banking: 0.5, other: 1.0,
+    },
+    evidence: {
+      label:   'Learning & development programme plan or training records',
+      labelAr: 'خطة برنامج التعلّم والتطوير أو سجلات التدريب',
+      hint:    'Upload your L&D programme calendar, training completion records, or formal development plan for supply chain staff.',
+      hintAr:  'ارفع تقويم برنامج التعلّم والتطوير أو سجلات إتمام التدريب أو خطة التطوير الرسمية لموظفي سلسلة التوريد.',
     },
     questions: [
       {
@@ -1856,6 +1910,12 @@ export const MFG_OPS_SUB_SEGMENTS: SubSegmentData[] = [
       logistics: 0.5, marine: 0.5, construction: 1.5, oil_gas: 1.0,
       government: 0.5, technology: 0.5, banking: 0.5, other: 0.5,
     },
+    evidence: {
+      label:   'Quality management system certificate (ISO 9001 or equivalent)',
+      labelAr: 'شهادة نظام إدارة الجودة (ISO 9001 أو ما يعادلها)',
+      hint:    'Upload your ISO 9001 or equivalent quality management certificate, or a recent internal/external quality audit report.',
+      hintAr:  'ارفع شهادة ISO 9001 أو ما يعادلها لنظام إدارة الجودة أو تقرير تدقيق جودة داخلي/خارجي حديث.',
+    },
     questions: [
       {
         q: 'How effectively is production quality controlled — including in-process inspection, First Pass Yield (FPY) measurement, defect root-cause analysis, and supplier quality linkage?',
@@ -1890,6 +1950,12 @@ export const MFG_OPS_SUB_SEGMENTS: SubSegmentData[] = [
       manufacturing: 1.5, fmcg: 1.5, pharma: 1.5, retail: 0.5,
       logistics: 0.5, marine: 1.0, construction: 1.5, oil_gas: 1.5,
       government: 0.5, technology: 0.5, banking: 0.5, other: 0.5,
+    },
+    evidence: {
+      label:   'OEE dashboard or plant performance report',
+      labelAr: 'لوحة تحكم OEE أو تقرير أداء المصنع',
+      hint:    'Upload your OEE dashboard screenshot or a plant performance report showing Availability, Performance, and Quality metrics.',
+      hintAr:  'ارفع لقطة شاشة من لوحة تحكم OEE أو تقرير أداء المصنع يُظهر مقاييس التوافرية والأداء والجودة.',
     },
     questions: [
       {
@@ -2273,6 +2339,12 @@ export const REGULATORY_SUB_SEGMENTS: SubSegmentData[] = [
       logistics: 1.5, marine: 1.5, construction: 1.5, oil_gas: 1.5,
       government: 1.5, technology: 1.5, banking: 1.5, other: 1.5,
     },
+    evidence: {
+      label:   'Nitaqat / Saudisation certificate (Absher/Qiwa)',
+      labelAr: 'شهادة نطاقات / السعودة (أبشر / قوى)',
+      hint:    'Upload your most recent Nitaqat compliance certificate from Absher Business or Qiwa showing your Saudisation tier.',
+      hintAr:  'ارفع أحدث شهادة الامتثال لنطاقات من أبشر للأعمال أو قوى يُظهر درجة السعودة.',
+    },
     questions: [
       {
         q: 'How proactively does your organisation manage Nitaqat (Saudization) requirements — tracking localisation percentages by supply chain function, maintaining target band status, and linking procurement hiring to Saudi workforce plans?',
@@ -2326,6 +2398,12 @@ export const REGULATORY_SUB_SEGMENTS: SubSegmentData[] = [
       logistics: 1.5, marine: 1.5, construction: 1.5, oil_gas: 1.5,
       government: 1.5, technology: 1.5, banking: 1.0, other: 1.0,
     },
+    evidence: {
+      label:   'IKTVA scorecard or in-kingdom value-add report',
+      labelAr: 'بطاقة IKTVA أو تقرير القيمة المضافة الوطنية',
+      hint:    'Upload your most recent IKTVA scorecard issued by Saudi Aramco or the relevant authority.',
+      hintAr:  'ارفع أحدث بطاقة IKTVA الصادرة من أرامكو السعودية أو الجهة المختصة.',
+    },
     questions: [
       {
         q: 'How rigorously does your organisation measure, manage, and maximise IKTVA (or equivalent local content) performance — including supplier local content data collection, reporting accuracy, and strategic local content development plans?',
@@ -2360,6 +2438,12 @@ export const REGULATORY_SUB_SEGMENTS: SubSegmentData[] = [
       manufacturing: 1.5, fmcg: 1.5, pharma: 1.5, retail: 1.0,
       logistics: 1.5, marine: 1.5, construction: 1.5, oil_gas: 1.5,
       government: 1.5, technology: 1.5, banking: 1.0, other: 1.0,
+    },
+    evidence: {
+      label:   'Import/export licence or customs broker authorisation',
+      labelAr: 'رخصة الاستيراد/التصدير أو تفويض الوكيل الجمركي',
+      hint:    'Upload your import/export licence, customs broker authorisation letter, or most recent trade compliance audit.',
+      hintAr:  'ارفع رخصة الاستيراد/التصدير أو خطاب تفويض الوكيل الجمركي أو أحدث تدقيق امتثال تجاري.',
     },
     questions: [
       {
@@ -2465,6 +2549,12 @@ export const REGULATORY_SUB_SEGMENTS: SubSegmentData[] = [
       manufacturing: 1.5, fmcg: 1.5, pharma: 1.5, retail: 1.5,
       logistics: 1.5, marine: 1.0, construction: 1.0, oil_gas: 1.0,
       government: 1.5, technology: 0.5, banking: 1.5, other: 1.0,
+    },
+    evidence: {
+      label:   'Halal certification (SASO / GCC-approved body)',
+      labelAr: 'شهادة الحلال (هيئة SASO / هيئة معتمدة من دول الخليج)',
+      hint:    'Upload your current Halal certification issued by SASO or a GCC-approved certification body.',
+      hintAr:  'ارفع شهادة الحلال الحالية الصادرة من هيئة SASO أو هيئة اعتماد معتمدة من دول مجلس التعاون.',
     },
     questions: [
       {

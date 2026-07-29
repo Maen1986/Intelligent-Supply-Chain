@@ -194,6 +194,26 @@ export class ObjectStorageService {
     return normalizedPath;
   }
 
+  /**
+   * Generates a presigned GCS PUT URL for an evidence file stored at
+   * a deterministic path under the private object dir.
+   *
+   * @param storagePath  Object path beginning with "/objects/", e.g.
+   *   "/objects/maturity-evidence/1/42/strategy/strategy-align/uuid.pdf"
+   * @param ttlSec       Validity window in seconds (default 15 minutes)
+   */
+  async signEvidencePutURL(storagePath: string, ttlSec = 900): Promise<string> {
+    if (!storagePath.startsWith('/objects/')) {
+      throw new Error('storagePath must start with /objects/');
+    }
+    const entityId = storagePath.slice('/objects/'.length);
+    let entityDir = this.getPrivateObjectDir();
+    if (!entityDir.endsWith('/')) entityDir = `${entityDir}/`;
+    const fullPath = `${entityDir}${entityId}`;
+    const { bucketName, objectName } = parseObjectPath(fullPath);
+    return signObjectURL({ bucketName, objectName, method: 'PUT', ttlSec });
+  }
+
   async canAccessObjectEntity({
     userId,
     objectFile,

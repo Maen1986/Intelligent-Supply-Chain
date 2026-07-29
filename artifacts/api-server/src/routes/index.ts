@@ -26,6 +26,8 @@ import maturityRemediesRouter    from "./maturityRemedies";
 import maturityGuestRouter       from "./maturityGuest";
 import maturitySnapshotsRouter   from "./maturitySnapshots";
 import reportGeneratorRouter   from "./reportGenerator";
+import maturityEvidenceRouter  from "./maturityEvidence";
+import adminEvidenceRouter     from "./adminEvidence";
 
 const router: IRouter = Router();
 
@@ -55,6 +57,8 @@ router.use(aiPlanRouter);
 router.use(intelligenceRouter);
 router.use(assessmentRouter);
 router.use(diagnosticRouter);
+router.use(maturityEvidenceRouter);
+router.use(adminEvidenceRouter);
 router.use(webhooksInboundRouter);
 
 export default router;

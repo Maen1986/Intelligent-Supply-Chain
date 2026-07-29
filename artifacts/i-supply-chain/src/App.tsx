@@ -36,6 +36,7 @@ import { DataSources } from '@/pages/DataSources';
 import { AdminLeads } from '@/pages/AdminLeads';
 import { AdminIntegrations } from '@/pages/AdminIntegrations';
 import { AdminAutomations } from '@/pages/AdminAutomations';
+import { AdminEvidenceReview } from '@/pages/AdminEvidenceReview';
 import { AccountSettings } from '@/pages/AccountSettings';
 import { MyAssessments } from '@/pages/MyAssessments';
 import { useIPProtection } from '@/hooks/useIPProtection';
@@ -89,6 +90,7 @@ function Router() {
         <Route path="/admin/leads" component={AdminLeads} />
         <Route path="/admin/integrations" component={AdminIntegrations} />
         <Route path="/admin/automations" component={AdminAutomations} />
+        <Route path="/admin/evidence-review" component={AdminEvidenceReview} />
         <Route path="/account" component={AccountSettings} />
         <Route path="/my-assessments" component={MyAssessments} />
         <Route path="/customer-voice" component={CustomerVoice} />
