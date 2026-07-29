@@ -207,6 +207,144 @@ describe('MaturitySummarySection — Arabic (isAr=true)', () => {
   });
 });
 
+/* ── Evidence coverage & tier badges ────────────────────────────────────── */
+
+describe('MaturitySummarySection — evidence coverage row', () => {
+  it('renders mss-evidence-coverage when evidencePct is provided', () => {
+    render(<MaturitySummarySection maturity={makeContext({ evidencePct: 75 })} />);
+    expect(screen.getByTestId('mss-evidence-coverage')).toBeTruthy();
+  });
+
+  it('shows the correct rounded percentage in the evidence coverage row', () => {
+    render(<MaturitySummarySection maturity={makeContext({ evidencePct: 75.6 })} />);
+    const row = screen.getByTestId('mss-evidence-coverage');
+    expect(row.textContent).toContain('76');
+  });
+
+  it('shows the English "Evidence Coverage" label by default', () => {
+    render(<MaturitySummarySection maturity={makeContext({ evidencePct: 50 })} />);
+    const row = screen.getByTestId('mss-evidence-coverage');
+    expect(row.textContent).toContain('Evidence Coverage');
+  });
+
+  it('shows the Arabic "تغطية الأدلة" label when isAr=true', () => {
+    render(<MaturitySummarySection maturity={makeContext({ evidencePct: 50 })} isAr />);
+    const row = screen.getByTestId('mss-evidence-coverage');
+    expect(row.textContent).toContain('تغطية الأدلة');
+  });
+
+  it('shows "evidence-backed" suffix in English mode', () => {
+    render(<MaturitySummarySection maturity={makeContext({ evidencePct: 40 })} />);
+    const row = screen.getByTestId('mss-evidence-coverage');
+    expect(row.textContent).toContain('evidence-backed');
+  });
+
+  it('shows Arabic "مُوثَّق بأدلة" suffix in Arabic mode', () => {
+    render(<MaturitySummarySection maturity={makeContext({ evidencePct: 40 })} isAr />);
+    const row = screen.getByTestId('mss-evidence-coverage');
+    expect(row.textContent).toContain('مُوثَّق بأدلة');
+  });
+
+  it('does not render mss-evidence-coverage when evidencePct is absent', () => {
+    render(<MaturitySummarySection maturity={makeContext({ evidencePct: undefined })} />);
+    expect(screen.queryByTestId('mss-evidence-coverage')).toBeNull();
+  });
+
+  it('renders without crashing when both evidencePct and evidenceTiers are absent', () => {
+    render(
+      <MaturitySummarySection
+        maturity={makeContext({ evidencePct: undefined, evidenceTiers: undefined })}
+      />,
+    );
+    expect(screen.getByTestId('maturity-summary-section')).toBeTruthy();
+  });
+});
+
+describe('MaturitySummarySection — per-segment tier badges', () => {
+  it('renders no tier badges when evidenceTiers is absent', () => {
+    render(<MaturitySummarySection maturity={makeContext({ evidenceTiers: undefined })} />);
+    // Tier badge labels should not appear in any weak-segment slot
+    expect(screen.queryByText('Self-reported')).toBeNull();
+    expect(screen.queryByText('AI-evaluated')).toBeNull();
+    expect(screen.queryByText('Consultant-validated')).toBeNull();
+  });
+
+  it('renders no tier badges when evidenceTiers is an empty array', () => {
+    render(<MaturitySummarySection maturity={makeContext({ evidenceTiers: [] })} />);
+    expect(screen.queryByText('Self-reported')).toBeNull();
+    expect(screen.queryByText('AI-evaluated')).toBeNull();
+    expect(screen.queryByText('Consultant-validated')).toBeNull();
+  });
+
+  it('shows the correct self_reported label for a segment with that tier', () => {
+    // Strategy is weakest (rank 0); give it self_reported tier
+    const tiers = [{ segId: 'strategy', subSegId: 'strategy-1', tier: 'self_reported' as const }];
+    render(<MaturitySummarySection maturity={makeContext({ evidenceTiers: tiers })} />);
+    const slot = screen.getByTestId('mss-weak-segment-0');
+    expect(slot.textContent).toContain('Self-reported');
+  });
+
+  it('shows the correct ai_evaluated label for a segment with that tier', () => {
+    const tiers = [{ segId: 'strategy', subSegId: 'strategy-1', tier: 'ai_evaluated' as const }];
+    render(<MaturitySummarySection maturity={makeContext({ evidenceTiers: tiers })} />);
+    const slot = screen.getByTestId('mss-weak-segment-0');
+    expect(slot.textContent).toContain('AI-evaluated');
+  });
+
+  it('shows the correct consultant_validated label for a segment with that tier', () => {
+    const tiers = [{ segId: 'strategy', subSegId: 'strategy-1', tier: 'consultant_validated' as const }];
+    render(<MaturitySummarySection maturity={makeContext({ evidenceTiers: tiers })} />);
+    const slot = screen.getByTestId('mss-weak-segment-0');
+    expect(slot.textContent).toContain('Consultant-validated');
+  });
+
+  it('picks the highest-rank tier when a segment has multiple sub-segment entries', () => {
+    // self_reported + ai_evaluated → should show ai_evaluated
+    const tiers = [
+      { segId: 'strategy', subSegId: 'strategy-1', tier: 'self_reported' as const },
+      { segId: 'strategy', subSegId: 'strategy-2', tier: 'ai_evaluated' as const },
+    ];
+    render(<MaturitySummarySection maturity={makeContext({ evidenceTiers: tiers })} />);
+    const slot = screen.getByTestId('mss-weak-segment-0');
+    expect(slot.textContent).toContain('AI-evaluated');
+    expect(slot.textContent).not.toContain('Self-reported');
+  });
+
+  it('shows no badge for a segment that has no matching evidenceTiers entry', () => {
+    // Only procurement and logistics have tiers; Strategy (rank 0) has none
+    const tiers = [
+      { segId: 'procurement', subSegId: 'proc-1', tier: 'ai_evaluated' as const },
+      { segId: 'logistics',   subSegId: 'log-1',  tier: 'consultant_validated' as const },
+    ];
+    render(<MaturitySummarySection maturity={makeContext({ evidenceTiers: tiers })} />);
+    const rank0 = screen.getByTestId('mss-weak-segment-0'); // Strategy
+    expect(rank0.textContent).not.toContain('Self-reported');
+    expect(rank0.textContent).not.toContain('AI-evaluated');
+    expect(rank0.textContent).not.toContain('Consultant-validated');
+  });
+
+  it('shows Arabic self_reported label in AR mode', () => {
+    const tiers = [{ segId: 'strategy', subSegId: 'strategy-1', tier: 'self_reported' as const }];
+    render(<MaturitySummarySection maturity={makeContext({ evidenceTiers: tiers })} isAr />);
+    const slot = screen.getByTestId('mss-weak-segment-0');
+    expect(slot.textContent).toContain('مُبلَّغ ذاتياً');
+  });
+
+  it('shows Arabic ai_evaluated label in AR mode', () => {
+    const tiers = [{ segId: 'strategy', subSegId: 'strategy-1', tier: 'ai_evaluated' as const }];
+    render(<MaturitySummarySection maturity={makeContext({ evidenceTiers: tiers })} isAr />);
+    const slot = screen.getByTestId('mss-weak-segment-0');
+    expect(slot.textContent).toContain('مُقيَّم بالذكاء الاصطناعي');
+  });
+
+  it('shows Arabic consultant_validated label in AR mode', () => {
+    const tiers = [{ segId: 'strategy', subSegId: 'strategy-1', tier: 'consultant_validated' as const }];
+    render(<MaturitySummarySection maturity={makeContext({ evidenceTiers: tiers })} isAr />);
+    const slot = screen.getByTestId('mss-weak-segment-0');
+    expect(slot.textContent).toContain('مُعتمَد من الاستشاري');
+  });
+});
+
 /* ── Edge cases ──────────────────────────────────────────────────────────── */
 
 describe('MaturitySummarySection — edge cases', () => {
