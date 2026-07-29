@@ -6,6 +6,8 @@ import { useLanguage } from '@/lib/LanguageContext';
 import { API_BASE } from '@/lib/apiBase';
 import { getLevel, MATURITY_LEVELS } from '@/lib/maturityScoring';
 import { CORE_SEGMENTS, INDUSTRY_MODULES } from './maturityData';
+import { EvidenceUploadZone, type EvidenceRecord } from '@/components/EvidenceUploadZone';
+import { ConfidenceTierBadge, getSegmentTier } from '@/components/ConfidenceTierBadge';
 import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
   ResponsiveContainer, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, Cell, CartesianGrid,
@@ -13,7 +15,7 @@ import {
 import {
   BarChart3, FileText, ClipboardList, ChevronDown, ChevronUp, Award, Loader2,
   CalendarDays, RotateCcw, TrendingUp, Building2, Users2, Sparkles,
-  AlertCircle, Clock, ChevronRight,
+  AlertCircle, Clock, ChevronRight, ShieldCheck,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -87,14 +89,35 @@ function toolColor(tool: string) {
 
 /* ── Maturity detail sub-component ─────────────────────────────────────────── */
 
-function MaturityDetail({ inputs, outputs, ar }: {
-  inputs:  MaturityInputs;
-  outputs: MaturityOutputs;
-  ar:      boolean;
+function MaturityDetail({ inputs, outputs, ar, snapshotId, lang }: {
+  inputs:     MaturityInputs;
+  outputs:    MaturityOutputs;
+  ar:         boolean;
+  snapshotId: number;
+  lang:       'en' | 'ar';
 }) {
   const segs: SegScore[] = outputs.segmentScores ?? [];
   const score  = parseFloat(String(outputs.overallScore ?? 0));
   const level  = getLevel(score);
+
+  /* ── Evidence state ──────────────────────────────────────────────────── */
+  const [evidenceList,    setEvidenceList]    = useState<EvidenceRecord[]>([]);
+  const [evidenceLoading, setEvidenceLoading] = useState(false);
+  const [expandedEvSeg,   setExpandedEvSeg]   = useState<Set<string>>(new Set());
+
+  const loadEvidence = () => {
+    if (!snapshotId) return;
+    setEvidenceLoading(true);
+    fetch(`${API_BASE}/maturity/evidence?snapshot_id=${snapshotId}`, { credentials: 'include' })
+      .then(r => r.json())
+      .then((data: { ok: boolean; evidence?: EvidenceRecord[] }) => {
+        if (data.ok && data.evidence) setEvidenceList(data.evidence);
+      })
+      .catch(() => {/* silent — evidence is optional */})
+      .finally(() => setEvidenceLoading(false));
+  };
+
+  useEffect(() => { loadEvidence(); }, [snapshotId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /* Build radar data by matching stored segment IDs to CORE_SEGMENTS/modules */
   const asIsLabel  = ar ? 'نتيجتك (الوضع الراهن)' : 'Your Score (As-Is)';
@@ -215,7 +238,7 @@ function MaturityDetail({ inputs, outputs, ar }: {
         </div>
       )}
 
-      {/* Segment score table */}
+      {/* Segment score table + per-segment evidence accordions */}
       {segs.length > 0 && (
         <div className="bg-white rounded-xl border border-border overflow-hidden">
           <table className="w-full text-sm">
@@ -224,36 +247,103 @@ function MaturityDetail({ inputs, outputs, ar }: {
                 <th className="px-4 py-2.5 font-bold text-primary text-xs">{ar ? 'المجال' : 'Segment'}</th>
                 <th className="px-4 py-2.5 font-bold text-primary text-xs text-center">{ar ? 'النتيجة' : 'Score'}</th>
                 <th className="px-4 py-2.5 font-bold text-primary text-xs text-center">{ar ? 'المستوى' : 'Level'}</th>
+                <th className="px-4 py-2.5 font-bold text-primary text-xs text-center">{ar ? 'الثقة' : 'Evidence'}</th>
               </tr>
             </thead>
             <tbody>
               {segs.map((s, i) => {
-                const lvl  = getLevel(s.score);
-                const def  = ALL_SEGMENTS[s.id];
+                const lvl        = getLevel(s.score);
+                const def        = ALL_SEGMENTS[s.id];
+                const segEv      = evidenceList.filter(e => e.segId === s.id);
+                const qualSubs   = (def?.subSegments ?? []).filter((ss: { evidence?: unknown }) => ss.evidence);
+                const isEvOpen   = expandedEvSeg.has(s.id);
+                const toggleEv   = () => setExpandedEvSeg(prev => {
+                  const next = new Set(prev);
+                  if (next.has(s.id)) next.delete(s.id); else next.add(s.id);
+                  return next;
+                });
                 return (
-                  <tr key={i} className="border-t border-border hover:bg-muted/30 transition-colors">
-                    <td className="px-4 py-2.5">
-                      <div className="flex items-center gap-2">
-                        {def && (
-                          <div className="w-6 h-6 rounded-md flex items-center justify-center shrink-0"
-                            style={{ backgroundColor: def.color + '20' }}>
-                            <def.icon className="w-3.5 h-3.5" style={{ color: def.color }} />
-                          </div>
-                        )}
-                        <span className="font-medium text-foreground text-xs">
-                          {ar ? (def?.shortTitleAr ?? s.title) : (def?.shortTitle ?? s.title)}
+                  <React.Fragment key={i}>
+                    <tr className="border-t border-border hover:bg-muted/30 transition-colors">
+                      <td className="px-4 py-2.5">
+                        <div className="flex items-center gap-2">
+                          {def && (
+                            <div className="w-6 h-6 rounded-md flex items-center justify-center shrink-0"
+                              style={{ backgroundColor: def.color + '20' }}>
+                              <def.icon className="w-3.5 h-3.5" style={{ color: def.color }} />
+                            </div>
+                          )}
+                          <span className="font-medium text-foreground text-xs">
+                            {ar ? (def?.shortTitleAr ?? s.title) : (def?.shortTitle ?? s.title)}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-2.5 text-center">
+                        <span className="font-extrabold text-primary text-sm">{s.score.toFixed(2)}</span>
+                      </td>
+                      <td className="px-4 py-2.5 text-center">
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${lvl.bg} ${lvl.text} border ${lvl.border}`}>
+                          {ar ? lvl.labelAr : lvl.label}
                         </span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-2.5 text-center">
-                      <span className="font-extrabold text-primary text-sm">{s.score.toFixed(2)}</span>
-                    </td>
-                    <td className="px-4 py-2.5 text-center">
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${lvl.bg} ${lvl.text} border ${lvl.border}`}>
-                        {ar ? lvl.labelAr : lvl.label}
-                      </span>
-                    </td>
-                  </tr>
+                      </td>
+                      <td className="px-4 py-2.5 text-center">
+                        {evidenceLoading ? (
+                          <Loader2 className="w-3 h-3 animate-spin text-muted-foreground mx-auto" />
+                        ) : qualSubs.length > 0 ? (
+                          <button
+                            onClick={toggleEv}
+                            className="inline-flex items-center gap-1 group"
+                            title={ar ? 'إدارة الأدلة' : 'Manage evidence'}
+                          >
+                            {segEv.length > 0 ? (
+                              <ConfidenceTierBadge lang={lang} evidence={segEv} asPill />
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border bg-muted/50 text-muted-foreground border-border hover:bg-primary/5 hover:text-primary hover:border-primary/30 transition-colors">
+                                <ShieldCheck className="w-3 h-3" />
+                                {ar ? 'أضف دليلاً' : 'Add'}
+                              </span>
+                            )}
+                            <span className="text-muted-foreground text-[10px]">{isEvOpen ? '▲' : '▼'}</span>
+                          </button>
+                        ) : (
+                          <span className="text-[10px] text-muted-foreground/50">—</span>
+                        )}
+                      </td>
+                    </tr>
+
+                    {/* Evidence accordion row */}
+                    {isEvOpen && qualSubs.length > 0 && (
+                      <tr className="border-t border-border bg-muted/20">
+                        <td colSpan={4} className="px-4 py-3">
+                          <div className="space-y-3">
+                            <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                              {ar ? 'أدلة داعمة' : 'Supporting Evidence'}
+                              {' — '}
+                              {ar ? (def?.shortTitleAr ?? s.title) : (def?.shortTitle ?? s.title)}
+                            </p>
+                            {(qualSubs as Array<{
+                              id: string; title: string; titleAr: string;
+                              evidence: { hint: string; hintAr: string };
+                            }>).map(ss => (
+                              <EvidenceUploadZone
+                                key={ss.id}
+                                lang={lang}
+                                snapshotId={snapshotId}
+                                segId={s.id}
+                                subSegId={ss.id}
+                                subSegLabel={ss.title}
+                                subSegLabelAr={ss.titleAr}
+                                subSegHint={ss.evidence.hint}
+                                subSegHintAr={ss.evidence.hintAr}
+                                existing={evidenceList.find(e => e.subSegId === ss.id) ?? null}
+                                onChanged={loadEvidence}
+                              />
+                            ))}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
                 );
               })}
             </tbody>
@@ -435,6 +525,8 @@ function SubmissionCard({ sub, ar, defaultOpen }: { sub: Submission; ar: boolean
                   inputs={inputs as MaturityInputs}
                   outputs={outputs as MaturityOutputs}
                   ar={ar}
+                  snapshotId={sub.id}
+                  lang={ar ? 'ar' : 'en'}
                 />
               )}
               {sub.tool === 'diagnostic' && (
