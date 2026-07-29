@@ -4,7 +4,14 @@ import { Link, useSearch } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/lib/LanguageContext';
 import { rankWeakest } from '@/lib/weakestAreas';
-import { MATURITY_LEVELS, getLevel, segScore as calcSegScore, overallScore as calcOverallScore } from '@/lib/maturityScoring';
+import {
+  MATURITY_LEVELS, getLevel,
+  segScore as calcSegScore,
+  overallScore as calcOverallScore,
+  weightedOverallScore as calcWeightedOverallScore,
+  countCoveredSubSegments,
+} from '@/lib/maturityScoring';
+import { MaturityCoverage } from '@/components/MaturityCoverage';
 import { FeedbackModal, shouldShowFeedback } from '@/components/FeedbackModal';
 import { API_BASE } from '@/lib/apiBase';
 import { useAuth } from '@/lib/AuthContext';
@@ -353,8 +360,22 @@ export function Maturity() {
     (a, b) => (a[L.asIs] as number) - (b[L.asIs] as number),
   );
 
-  const overallScore = calcOverallScore(answers, activeSegments.length);
-  const overallLevel = getLevel(overallScore);
+  const _unweightedScore = calcOverallScore(answers, activeSegments.length);
+  const _weightedScore   = (!_testSeedActive && intakeData.industry)
+    ? calcWeightedOverallScore(answers, activeSegments, intakeData.industry)
+    : 0;
+  const isWeightedScore  = _weightedScore > 0;
+  const overallScore     = isWeightedScore ? _weightedScore : _unweightedScore;
+  const overallLevel     = getLevel(overallScore);
+
+  /* ── Coverage stats (used by MaturityCoverage) ───────────────────────── */
+  // segsAssessed: segments where all flat (2-part key) questions are answered
+  const segsAssessed   = activeSegments.filter((_, i) => calcSegScore(answers, i) !== null).length;
+  // totalSubSegs / coveredSubSegs: uses 3-part key completeness only.
+  // Flat segment answers do NOT count as sub-segment coverage — this ensures
+  // the indicator honestly reflects whether granular sub-segment data exists.
+  const totalSubSegs   = activeSegments.reduce((s, seg) => s + (seg.subSegments?.length ?? 0), 0);
+  const coveredSubSegs = countCoveredSubSegments(answers, activeSegments);
 
   /* ── AI Remedies fetcher ──────────────────────────────────────────────── */
   const fetchRemedies = async () => {
@@ -883,6 +904,22 @@ export function Maturity() {
             </div>
           </div>
 
+          {/* Weighted-score indicator — shown only when sub-segment answers drive the score */}
+          {isWeightedScore && selectedIndustryLabel && (
+            <p
+              data-testid="weighted-score-badge"
+              className="mt-3 text-white/55 text-xs flex items-center justify-center gap-1.5"
+              title={ar
+                ? `مُرجَّح لقطاع ${selectedIndustryLabel.labelAr} — المجالات الفرعية الأكثر أهمية لقطاعكم تحمل وزناً أعلى.`
+                : `Weighted for ${selectedIndustryLabel.label} — sub-segments most relevant to your sector carry higher weight.`}
+            >
+              <span aria-hidden>⚖</span>
+              {ar
+                ? `مُرجَّح لقطاع ${selectedIndustryLabel.labelAr} — المجالات الفرعية الأكثر أهمية لقطاعكم تحمل وزناً أعلى.`
+                : `Weighted for ${selectedIndustryLabel.label} — sub-segments most relevant to your sector carry higher weight.`}
+            </p>
+          )}
+
           <div className="mt-5 flex justify-center gap-6 flex-wrap text-sm">
             {[
               { label: ar ? 'مقابل متوسط الخليج' : 'vs GCC Average',    value: (overallScore - 2.3).toFixed(1), positive: overallScore >= 2.3 },
@@ -968,6 +1005,18 @@ export function Maturity() {
           </div>
         )}
 
+        {/* ── Coverage indicator ────────────────────────────────────────── */}
+        {totalSubSegs > 0 && (
+          <MaturityCoverage
+            assessedSegments={segsAssessed}
+            totalSegments={activeSegments.length}
+            coveredSubSegments={coveredSubSegs}
+            totalSubSegments={totalSubSegs}
+            industryId={intakeData.industry || undefined}
+            industryLabel={ar ? selectedIndustryLabel?.labelAr : selectedIndustryLabel?.label}
+          />
+        )}
+
         {/* ── Radar — Command Centre style ─────────────────────────────────── */}
         <div className="bg-white rounded-2xl border border-border shadow-sm p-6">
           <h2 className="text-xl font-bold text-primary mb-1">
@@ -980,6 +1029,18 @@ export function Maturity() {
               ? 'نتائجكم (الوضع الراهن) مقارنةً بوسيط الخليج وأفضل ربع — نفس الأسلوب البصري لمركز القيادة.'
               : 'Your scores (As-Is) vs GCC Median and Top Quartile — same visual treatment as the Command Centre.'}
           </p>
+          {/* Weighted-score tooltip note — visible when sub-segment weights are active */}
+          {isWeightedScore && selectedIndustryLabel && (
+            <p
+              data-testid="radar-weighted-note"
+              className="text-xs text-primary/60 font-medium mb-3 flex items-center gap-1.5"
+            >
+              <span aria-hidden>⚖</span>
+              {ar
+                ? `مُرجَّح لقطاع ${selectedIndustryLabel.labelAr} — المجالات الفرعية الأكثر أهمية لقطاعكم تحمل وزناً أعلى.`
+                : `Weighted for ${selectedIndustryLabel.label} — sub-segments most relevant to your sector carry higher weight.`}
+            </p>
+          )}
           <ResponsiveContainer width="100%" height={400}>
             <RadarChart data={radarData} margin={{ top: 10, right: 30, bottom: 10, left: 30 }}>
               <PolarGrid stroke="#E5E7EB" />
@@ -1018,6 +1079,18 @@ export function Maturity() {
               ? 'مرتّب من الأضعف إلى الأقوى. الوصول إلى وسيط الخليج هو الهدف الأول؛ أفضل ربع هو الهدف الطموح.'
               : 'Ordered weakest-to-strongest. GCC Median is the first improvement milestone; Top Quartile is the stretch target.'}
           </p>
+          {/* Weighted-score tooltip note */}
+          {isWeightedScore && selectedIndustryLabel && (
+            <p
+              data-testid="gap-weighted-note"
+              className="text-xs text-primary/60 font-medium mb-3 flex items-center gap-1.5"
+            >
+              <span aria-hidden>⚖</span>
+              {ar
+                ? `مُرجَّح لقطاع ${selectedIndustryLabel.labelAr} — المجالات الفرعية الأكثر أهمية لقطاعكم تحمل وزناً أعلى.`
+                : `Weighted for ${selectedIndustryLabel.label} — sub-segments most relevant to your sector carry higher weight.`}
+            </p>
+          )}
           <ResponsiveContainer width="100%" height={Math.max(280, activeSegments.length * 50 + 50)}>
             <BarChart
               layout="vertical"

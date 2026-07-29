@@ -15,6 +15,12 @@ import {
   getLevel,
   segScore,
   overallScore,
+  subSegScore,
+  weightedSegScore,
+  weightedOverallScore,
+  countCoveredSubSegments,
+  type SubSegmentLike,
+  type SegmentLike,
 } from './maturityScoring';
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -524,5 +530,311 @@ describe('recommendation text resolution', () => {
       expect(typeof rec).toBe('string');
       expect(rec.length).toBeGreaterThan(0);
     }
+  });
+});
+
+/* ══════════════════════════════════════════════════════════════════════════
+   subSegScore — sub-segment scoring via 3-part answer keys
+   Answer key format: "{segIdx}-{subIdx}-{qIdx}"
+══════════════════════════════════════════════════════════════════════════ */
+
+describe('subSegScore', () => {
+  it('returns the mean when all questions in the sub-segment are answered', () => {
+    // Segment 0, sub-segment 1, 2 questions — both answered 4
+    const answers = { '0-1-0': 4, '0-1-1': 4 };
+    expect(subSegScore(answers, 0, 1, 2)).toBe(4);
+  });
+
+  it('returns null when no questions are answered', () => {
+    expect(subSegScore({}, 0, 0, 2)).toBeNull();
+  });
+
+  it('returns null when only some questions are answered (partial)', () => {
+    // 1 of 2 questions answered
+    const answers = { '0-0-0': 3 };
+    expect(subSegScore(answers, 0, 0, 2)).toBeNull();
+  });
+
+  it('returns null when questionCount is 0', () => {
+    expect(subSegScore({}, 0, 0, 0)).toBeNull();
+  });
+
+  it('computes the correct mean for a single question sub-segment', () => {
+    const answers = { '2-3-0': 5 };
+    expect(subSegScore(answers, 2, 3, 1)).toBe(5);
+  });
+
+  it('computes the correct mean for mixed-level answers', () => {
+    // (1 + 3 + 5) / 3 = 3
+    const answers = { '1-0-0': 1, '1-0-1': 3, '1-0-2': 5 };
+    expect(subSegScore(answers, 1, 0, 3)).toBeCloseTo(3);
+  });
+
+  it('does not bleed across segment or sub-segment boundaries', () => {
+    // Only seg 0 / sub 0 answered; seg 0 / sub 1 and seg 1 / sub 0 unanswered
+    const answers = { '0-0-0': 4, '0-0-1': 4 };
+    expect(subSegScore(answers, 0, 0, 2)).toBe(4);     // answered
+    expect(subSegScore(answers, 0, 1, 2)).toBeNull();  // different sub
+    expect(subSegScore(answers, 1, 0, 2)).toBeNull();  // different seg
+  });
+
+  it('returns 1.0 when all answers are at the lowest level', () => {
+    const answers = { '0-0-0': 1, '0-0-1': 1, '0-0-2': 1 };
+    expect(subSegScore(answers, 0, 0, 3)).toBe(1);
+  });
+
+  it('returns 5.0 when all answers are at the highest level', () => {
+    const answers = { '0-0-0': 5, '0-0-1': 5 };
+    expect(subSegScore(answers, 0, 0, 2)).toBe(5);
+  });
+});
+
+/* ══════════════════════════════════════════════════════════════════════════
+   weightedSegScore & weightedOverallScore — industry-weighted path
+   Pharma fixture:
+     Sub-segment 0: 2 questions, pharma weight = 1.5
+     Sub-segment 1: 2 questions, pharma weight = 0.5
+     Answers (seg 0): sub0 → [4, 4] → score 4.0
+                      sub1 → [2, 2] → score 2.0
+     Expected weighted mean = (4.0×1.5 + 2.0×0.5) / (1.5+0.5) = 7/2 = 3.5
+══════════════════════════════════════════════════════════════════════════ */
+
+/** Build a SubSegmentLike stub with `questionCount` questions and given weights. */
+function makeSubSeg(questionCount: number, weights: Record<string, number>): SubSegmentLike {
+  return {
+    questions: Array.from({ length: questionCount }, () => ({})),
+    industryWeights: weights,
+  };
+}
+
+describe('weightedSegScore', () => {
+  const pharmaAnswers: Record<string, number> = {
+    // Segment 0, sub-segment 0 (2 questions)
+    '0-0-0': 4, '0-0-1': 4,
+    // Segment 0, sub-segment 1 (2 questions)
+    '0-1-0': 2, '0-1-1': 2,
+  };
+
+  const pharmaSegment: SegmentLike = {
+    subSegments: [
+      makeSubSeg(2, { pharma: 1.5, retail: 0.8 }),
+      makeSubSeg(2, { pharma: 0.5 }),
+    ],
+  };
+
+  it('returns the industry-weighted mean of completed sub-segments (pharma fixture)', () => {
+    // (4.0×1.5 + 2.0×0.5) / (1.5+0.5) = 7/2 = 3.5
+    expect(weightedSegScore(pharmaAnswers, pharmaSegment, 0, 'pharma')).toBeCloseTo(3.5);
+  });
+
+  it('applies default weight 1.0 for an industry not in the weights map', () => {
+    // sub0 score=4.0, weight=1.0 (default); sub1 score=2.0, weight=1.0 (default)
+    // weighted mean = (4.0+2.0)/2 = 3.0
+    expect(weightedSegScore(pharmaAnswers, pharmaSegment, 0, 'oil_gas')).toBeCloseTo(3.0);
+  });
+
+  it('uses the correct industry weight for retail (sub0=0.8, sub1=1.0 default)', () => {
+    // sub0 weight 0.8, sub1 weight 1.0 (default — retail not in sub1 weights)
+    // (4.0×0.8 + 2.0×1.0) / (0.8+1.0) = (3.2+2.0)/1.8 = 5.2/1.8 ≈ 2.889
+    const expected = (4.0 * 0.8 + 2.0 * 1.0) / (0.8 + 1.0);
+    expect(weightedSegScore(pharmaAnswers, pharmaSegment, 0, 'retail')).toBeCloseTo(expected);
+  });
+
+  it('returns null when no sub-segment answers exist', () => {
+    expect(weightedSegScore({}, pharmaSegment, 0, 'pharma')).toBeNull();
+  });
+
+  it('returns null for a segment with no subSegments', () => {
+    expect(weightedSegScore(pharmaAnswers, {}, 0, 'pharma')).toBeNull();
+    expect(weightedSegScore(pharmaAnswers, { subSegments: [] }, 0, 'pharma')).toBeNull();
+  });
+
+  it('excludes partially-answered sub-segments from the weighted mean', () => {
+    // Only sub-segment 0 is fully answered; sub-segment 1 has only 1 of 2 questions
+    const partialAnswers: Record<string, number> = {
+      '0-0-0': 4, '0-0-1': 4,  // sub0 complete → score 4.0
+      '0-1-0': 2,               // sub1 partial → excluded
+    };
+    // Only sub0 contributes: weighted mean = 4.0 (sole contributor)
+    expect(weightedSegScore(partialAnswers, pharmaSegment, 0, 'pharma')).toBeCloseTo(4.0);
+  });
+
+  it('returns null when all sub-segments are only partially answered', () => {
+    const partialAnswers = { '0-0-0': 4, '0-1-0': 2 }; // 1 of 2 each
+    expect(weightedSegScore(partialAnswers, pharmaSegment, 0, 'pharma')).toBeNull();
+  });
+});
+
+describe('weightedOverallScore', () => {
+  const seg0Answers: Record<string, number> = {
+    '0-0-0': 4, '0-0-1': 4,  // seg0 / sub0 → 4.0, pharma weight 1.5
+    '0-1-0': 2, '0-1-1': 2,  // seg0 / sub1 → 2.0, pharma weight 0.5
+  };
+
+  const seg1Answers: Record<string, number> = {
+    '1-0-0': 5, '1-0-1': 5,  // seg1 / sub0 → 5.0, pharma weight 1.0
+  };
+
+  const pharmaSegment: SegmentLike = {
+    subSegments: [
+      makeSubSeg(2, { pharma: 1.5 }),
+      makeSubSeg(2, { pharma: 0.5 }),
+    ],
+  };
+
+  const retailSegment: SegmentLike = {
+    subSegments: [
+      makeSubSeg(2, { pharma: 1.0 }),
+    ],
+  };
+
+  it('returns 0 when no segment has any sub-segment answers', () => {
+    expect(weightedOverallScore({}, [pharmaSegment, retailSegment], 'pharma')).toBe(0);
+  });
+
+  it('equals the single segment weighted score when only one segment is answered', () => {
+    // seg0 weighted score = 3.5 (as computed by pharma fixture above)
+    const result = weightedOverallScore(seg0Answers, [pharmaSegment, retailSegment], 'pharma');
+    expect(result).toBeCloseTo(3.5);
+  });
+
+  it('averages weighted scores across all completed segments', () => {
+    const answers = { ...seg0Answers, ...seg1Answers };
+    // seg0 weighted pharma = 3.5
+    // seg1: sub0 score=5.0, weight pharma=1.0 → weighted = 5.0
+    // overall = (3.5 + 5.0) / 2 = 4.25
+    const result = weightedOverallScore(answers, [pharmaSegment, retailSegment], 'pharma');
+    expect(result).toBeCloseTo(4.25);
+  });
+
+  it('excludes segments with no completed sub-segments from the average', () => {
+    // Only seg1 answered (retailSegment); pharmaSegment has no answers
+    const result = weightedOverallScore(seg1Answers, [pharmaSegment, retailSegment], 'pharma');
+    // Only seg1 contributes: 5.0
+    expect(result).toBeCloseTo(5.0);
+  });
+
+  it('returns 0 for an empty segments array', () => {
+    expect(weightedOverallScore(seg0Answers, [], 'pharma')).toBe(0);
+  });
+});
+
+/* ══════════════════════════════════════════════════════════════════════════
+   countCoveredSubSegments — sub-segment coverage using 3-part keys only
+
+   Critical invariant: 2-part flat segment answers MUST NOT count as
+   sub-segment coverage.  Tests here verify both the pure 3-part-key path
+   and the mixed 2-part/3-part answer map that occurs in normal app flow
+   (legacy flat questions answered; sub-segment questions not yet answered).
+══════════════════════════════════════════════════════════════════════════ */
+
+describe('countCoveredSubSegments — 3-part key coverage', () => {
+  const twoSubSegs: SegmentLike = {
+    subSegments: [
+      makeSubSeg(2, { pharma: 1.0 }),
+      makeSubSeg(2, { pharma: 1.0 }),
+    ],
+  };
+  const oneSubSeg: SegmentLike = {
+    subSegments: [makeSubSeg(1, { pharma: 1.0 })],
+  };
+
+  it('returns 0 when no answers exist at all', () => {
+    expect(countCoveredSubSegments({}, [twoSubSegs, oneSubSeg])).toBe(0);
+  });
+
+  it('returns 0 when only 2-part flat answers exist (the normal assessment flow)', () => {
+    // Simulates the common case: user answered all flat segment questions
+    // via the standard assessment UI but no sub-segment (3-part) answers exist.
+    const flatAnswers: Record<string, number> = {};
+    for (let q = 0; q < 5; q++) {
+      flatAnswers[`0-${q}`] = 3;  // 2-part keys only
+      flatAnswers[`1-${q}`] = 4;
+    }
+    // Flat answers MUST NOT count — coverage should remain 0.
+    expect(countCoveredSubSegments(flatAnswers, [twoSubSegs, oneSubSeg])).toBe(0);
+  });
+
+  it('counts only fully-answered sub-segments (not partial)', () => {
+    // Sub-segment 0 fully answered; sub-segment 1 partial (1 of 2 questions)
+    const answers: Record<string, number> = {
+      '0-0-0': 4, '0-0-1': 4,  // sub0 complete
+      '0-1-0': 3,               // sub1 partial — should NOT count
+    };
+    expect(countCoveredSubSegments(answers, [twoSubSegs])).toBe(1);
+  });
+
+  it('counts all fully-answered sub-segments across multiple segments', () => {
+    const answers: Record<string, number> = {
+      '0-0-0': 4, '0-0-1': 4,  // seg0 / sub0 complete
+      '0-1-0': 2, '0-1-1': 2,  // seg0 / sub1 complete
+      '1-0-0': 5,               // seg1 / sub0 complete (only 1 question)
+    };
+    // 2 from twoSubSegs + 1 from oneSubSeg = 3 covered
+    expect(countCoveredSubSegments(answers, [twoSubSegs, oneSubSeg])).toBe(3);
+  });
+
+  it('correctly handles a mixed answer map (flat 2-part + partial 3-part)', () => {
+    // Flat answers for seg 0 (2-part) AND one sub-segment 3-part answer
+    const mixedAnswers: Record<string, number> = {
+      '0-0': 3, '0-1': 3, '0-2': 3, '0-3': 3, '0-4': 3,  // flat segment answers
+      '0-0-0': 4, '0-0-1': 4,                               // sub-segment 0 answered
+    };
+    // Only the 3-part key sub-segment counts → 1 covered (sub0 of seg0)
+    // sub1 of seg0 and all of seg1 (oneSubSeg) are not answered
+    expect(countCoveredSubSegments(mixedAnswers, [twoSubSegs, oneSubSeg])).toBe(1);
+  });
+
+  it('returns 0 for segments with no subSegments defined', () => {
+    const segNoSubs: SegmentLike = {};
+    const answers = { '0-0-0': 5 };
+    expect(countCoveredSubSegments(answers, [segNoSubs])).toBe(0);
+  });
+
+  it('returns 0 for an empty segments array', () => {
+    expect(countCoveredSubSegments({ '0-0-0': 5 }, [])).toBe(0);
+  });
+});
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Weighted-score fallback — verifies that weighted scoring returns 0
+   (triggering flat-score fallback in the UI) when only flat 2-part answers
+   exist.  This is the normal state before sub-segment questions are answered.
+══════════════════════════════════════════════════════════════════════════ */
+
+describe('weighted score is 0 (flat fallback) with only 2-part answers', () => {
+  const segment: SegmentLike = {
+    subSegments: [
+      makeSubSeg(2, { pharma: 1.5 }),
+      makeSubSeg(2, { pharma: 0.5 }),
+    ],
+  };
+
+  it('weightedSegScore returns null when only flat (2-part) answers exist', () => {
+    // All 5 flat questions answered for segment 0 — no 3-part sub-segment answers
+    const flatAnswers: Record<string, number> = {
+      '0-0': 4, '0-1': 3, '0-2': 3, '0-3': 4, '0-4': 5,
+    };
+    expect(weightedSegScore(flatAnswers, segment, 0, 'pharma')).toBeNull();
+  });
+
+  it('weightedOverallScore returns 0 when only flat answers exist (UI uses flat fallback)', () => {
+    const flatAnswers: Record<string, number> = {};
+    for (let q = 0; q < 5; q++) flatAnswers[`0-${q}`] = 3;
+    // isWeightedScore = (weightedOverallScore > 0) → false → UI falls back to segScore
+    expect(weightedOverallScore(flatAnswers, [segment], 'pharma')).toBe(0);
+  });
+
+  it('weighted path activates only when 3-part keys are present', () => {
+    // Mix: flat answers (should not activate weighted) + one full sub-seg (should activate)
+    const mixedAnswers: Record<string, number> = {
+      '0-0': 3, '0-1': 3, '0-2': 3, '0-3': 3, '0-4': 3,  // flat
+      '0-0-0': 4, '0-0-1': 4,                               // sub0 answered
+    };
+    // sub0 score=4, weight=1.5; sub1 null (excluded)
+    // weightedSegScore = 4.0 (only sub0 contributes)
+    expect(weightedSegScore(mixedAnswers, segment, 0, 'pharma')).toBeCloseTo(4.0);
+    expect(weightedOverallScore(mixedAnswers, [segment], 'pharma')).toBeCloseTo(4.0);
+    expect(weightedOverallScore(mixedAnswers, [segment], 'pharma')).toBeGreaterThan(0);
   });
 });
