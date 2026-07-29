@@ -569,3 +569,149 @@ test('remove button is absent when evidence is consultant-validated', async ({ p
   /* 10 — Remove button must NOT be in the DOM */
   await expect(page.getByRole('button', { name: /remove evidence/i })).not.toBeAttached();
 });
+
+/* ── Parameterised flag_reason badge test ───────────────────────────────────── */
+
+const FLAG_REASON_CASES: Array<{
+  flag_reason: 'blank_or_irrelevant' | 'generic_template' | 'contradicts_claimed_level';
+  expectedBadge: string;
+}> = [
+  { flag_reason: 'blank_or_irrelevant',        expectedBadge: 'Flagged — blank or irrelevant'        },
+  { flag_reason: 'generic_template',            expectedBadge: 'Flagged — generic template'            },
+  { flag_reason: 'contradicts_claimed_level',   expectedBadge: 'Flagged — contradicts claimed level'  },
+];
+
+for (const { flag_reason, expectedBadge } of FLAG_REASON_CASES) {
+  test(`badge shows correct flag reason label for flag_reason="${flag_reason}"`, async ({ page }) => {
+
+    const AI_EVAL_FLAGGED_VARIANT = {
+      plausible_support: false,
+      confidence: 'low' as const,
+      flag_reason,
+      summary: `Document flagged: ${flag_reason.replace(/_/g, ' ')}.`,
+    };
+
+    const EVIDENCE_RECORD_FLAGGED_VARIANT = {
+      id: 10,
+      segId: 'strategy',
+      subSegId: 'strategy-align',
+      subSegLabel: 'Strategic Alignment',
+      originalFilename: `flagged-${flag_reason}.pdf`,
+      mimeType: 'application/pdf',
+      confidenceTier: 'ai_evaluated',
+      aiEvaluation: AI_EVAL_FLAGGED_VARIANT,
+      createdAt: new Date().toISOString(),
+    };
+
+    /* 1 — Catch-all */
+    await page.route('**/api/**', (route) =>
+      route.fulfill({ status: 200, contentType: 'application/json',
+        body: JSON.stringify({ ok: true }) }));
+
+    /* 2 — Specific handlers */
+    await page.route('**/api/auth/me', (route) =>
+      route.fulfill({ status: 200, contentType: 'application/json',
+        body: JSON.stringify({ ok: true, user: MOCK_USER }) }));
+
+    await page.route('**/api/maturity/snapshots', async (route) => {
+      if (route.request().method() === 'POST') {
+        return route.fulfill({ status: 201, contentType: 'application/json',
+          body: JSON.stringify({ ok: true, id: MOCK_SNAPSHOT.id }) });
+      }
+      return route.fulfill({ status: 200, contentType: 'application/json',
+        body: JSON.stringify({ ok: true, snapshots: [MOCK_SNAPSHOT] }) });
+    });
+
+    let evidenceGetCount = 0;
+    await page.route('**/api/maturity/evidence**', async (route) => {
+      const url  = route.request().url();
+      const meth = route.request().method();
+
+      if (meth === 'POST' && url.includes('/confirm')) {
+        await new Promise(r => setTimeout(r, 400));
+        return route.fulfill({ status: 200, contentType: 'application/json',
+          body: JSON.stringify({
+            ok: true,
+            confidence_tier: 'ai_evaluated',
+            ai_evaluation: AI_EVAL_FLAGGED_VARIANT,
+          }) });
+      }
+      if (meth === 'POST' && url.includes('/upload-url')) {
+        return route.fulfill({ status: 201, contentType: 'application/json',
+          body: JSON.stringify({ ok: true, evidence_id: 10,
+            upload_url: 'https://storage.example.com/presigned-put' }) });
+      }
+      if (meth === 'GET') {
+        evidenceGetCount++;
+        const records = evidenceGetCount > 1 ? [EVIDENCE_RECORD_FLAGGED_VARIANT] : [];
+        return route.fulfill({ status: 200, contentType: 'application/json',
+          body: JSON.stringify({ ok: true, evidence: records }) });
+      }
+      return route.fulfill({ status: 200, contentType: 'application/json',
+        body: JSON.stringify({ ok: true }) });
+    });
+
+    await page.route('https://storage.example.com/**', (route) =>
+      route.fulfill({ status: 200 }));
+
+    /* 3 — Seed localStorage */
+    await page.addInitScript((draft: string) => {
+      localStorage.setItem('maturity_draft_v2', draft);
+    }, JSON.stringify({
+      phase: 'results',
+      answers: buildAnswers(),
+      intakeData: { industry: '', companySize: 'enterprise' },
+    }));
+
+    /* 4 — Navigate */
+    await page.goto('/maturity');
+
+    /* 5 — Wait for results */
+    await expect(page.locator('[data-testid="maturity-results"]')).toBeVisible({ timeout: 15_000 });
+
+    /* 6 — Dismiss feedback modal if it appears */
+    const feedbackDialog = page.getByRole('dialog', { name: /how was your experience/i });
+    try {
+      await feedbackDialog.waitFor({ state: 'visible', timeout: 5_000 });
+      await feedbackDialog.getByRole('button', { name: /not now/i }).click();
+      await feedbackDialog.waitFor({ state: 'hidden', timeout: 3_000 });
+    } catch {
+      // Dialog did not appear — proceed.
+    }
+
+    /* 7 — Open evidence accordion */
+    const accordionBtn = page.getByText('Add supporting evidence').first();
+    await expect(accordionBtn).toBeVisible({ timeout: 10_000 });
+    await accordionBtn.click();
+
+    /* 8 — Upload zone visible */
+    const uploadZone = page.getByText(
+      'Add supporting evidence (optional) — PDF, Word, or image',
+    ).first();
+    await expect(uploadZone).toBeVisible({ timeout: 5_000 });
+
+    /* 9 — Create a minimal PDF */
+    const pdfPath = path.join(os.tmpdir(), `e2e-flagged-${flag_reason}.pdf`);
+    fs.writeFileSync(pdfPath, '%PDF-1.4\n1 0 obj<</Type/Catalog>>endobj\n%%EOF\n');
+
+    /* 10 — Trigger upload */
+    const [fileChooser] = await Promise.all([
+      page.waitForEvent('filechooser'),
+      uploadZone.click(),
+    ]);
+    await fileChooser.setFiles(pdfPath);
+
+    /* 11 — Progress states */
+    await expect(page.getByText('Uploading…')).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByText('AI evaluation in progress…')).toBeVisible({ timeout: 10_000 });
+
+    /* 12 — Exact badge label must match the flag_reason with underscores replaced by spaces */
+    await expect(page.getByText(expectedBadge)).toBeVisible({ timeout: 10_000 });
+
+    /* 13 — AI-verified badge must NOT appear */
+    await expect(page.getByText('AI-verified ✓')).not.toBeVisible();
+
+    /* Cleanup */
+    fs.unlinkSync(pdfPath);
+  });
+}
