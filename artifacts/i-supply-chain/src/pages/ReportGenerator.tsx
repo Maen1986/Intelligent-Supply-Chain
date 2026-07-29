@@ -21,6 +21,8 @@ interface SegmentScore { id: string; title: string; titleAr?: string; score: num
 interface RemedyItem   { segmentTitle: string; action: string; framework?: string; measurableTarget?: string; effort?: string; }
 interface Remedies     { executiveSummary?: string; days30?: RemedyItem[]; days60?: RemedyItem[]; days90?: RemedyItem[]; estimatedImpact?: string; }
 
+interface EvidenceTierEntry { segId: string; subSegId: string; tier: 'self_reported' | 'ai_evaluated' | 'consultant_validated'; }
+
 interface MaturitySnapshot {
   overallScore:    number;
   overallLevel:    string;
@@ -30,6 +32,8 @@ interface MaturitySnapshot {
   intakeData?:     { industry: string; companySize: string };
   coveragePct?:    number;
   lang?:           'en' | 'ar';
+  evidencePct?:    number;
+  evidenceTiers?:  EvidenceTierEntry[];
 }
 
 interface ReportData {
@@ -235,6 +239,8 @@ function ReportPrintLayout({ report, contactInfo, maturity, generatedAt }: {
               segmentScores:   maturity.segmentScores,
               remedies:        maturity.remedies,
               coveragePct:     maturity.coveragePct,
+              evidencePct:     maturity.evidencePct,
+              evidenceTiers:   maturity.evidenceTiers,
             } satisfies MSSContext}
             isAr={maturity.lang === 'ar'}
           />

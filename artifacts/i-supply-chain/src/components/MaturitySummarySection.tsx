@@ -42,6 +42,13 @@ export interface MSSRemedies {
   days90?: MSSRemedyItem[];
 }
 
+/** Per-segment evidence tier entry (shape mirrors what handleGoToReport writes) */
+export interface MSSEvidenceTierEntry {
+  segId:    string;
+  subSegId: string;
+  tier:     'self_reported' | 'ai_evaluated' | 'consultant_validated';
+}
+
 export interface MSSContext {
   overallScore: number;
   overallLevel: string;
@@ -49,6 +56,75 @@ export interface MSSContext {
   segmentScores: MSSSegmentScore[];
   remedies?: MSSRemedies;
   coveragePct?: number;
+  /** % of evidence-able sub-segments that are backed by AI or consultant evidence */
+  evidencePct?: number;
+  /** Per-sub-segment tier entries (used to derive per-segment effective tier) */
+  evidenceTiers?: MSSEvidenceTierEntry[];
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Evidence tier helpers (inline-styles only — no Tailwind in print PDF)
+───────────────────────────────────────────────────────────────────────────── */
+
+type EvidenceTier = 'self_reported' | 'ai_evaluated' | 'consultant_validated';
+
+const TIER_RANK: Record<EvidenceTier, number> = {
+  self_reported:        0,
+  ai_evaluated:        1,
+  consultant_validated: 2,
+};
+
+const TIER_STYLE: Record<EvidenceTier, { bg: string; color: string; border: string; labelEn: string; labelAr: string }> = {
+  self_reported: {
+    bg: '#f1f5f9', color: '#475569', border: '#cbd5e1',
+    labelEn: 'Self-reported',
+    labelAr: 'مُبلَّغ ذاتياً',
+  },
+  ai_evaluated: {
+    bg: '#eff6ff', color: '#1d4ed8', border: '#bfdbfe',
+    labelEn: 'AI-evaluated',
+    labelAr: 'مُقيَّم بالذكاء الاصطناعي',
+  },
+  consultant_validated: {
+    bg: '#fffbeb', color: '#92400e', border: '#fcd34d',
+    labelEn: 'Consultant-validated',
+    labelAr: 'مُعتمَد من الاستشاري',
+  },
+};
+
+/** Derive the best (highest-rank) evidence tier for a given segId */
+function bestTierForSeg(
+  segId: string,
+  tiers: MSSEvidenceTierEntry[] | undefined,
+): EvidenceTier | null {
+  if (!tiers || tiers.length === 0) return null;
+  const relevant = tiers.filter(t => t.segId === segId);
+  if (relevant.length === 0) return null;
+  return relevant.reduce<EvidenceTier>((best, t) => {
+    const tier = t.tier as EvidenceTier;
+    return TIER_RANK[tier] > TIER_RANK[best] ? tier : best;
+  }, relevant[0].tier as EvidenceTier);
+}
+
+/** Inline-style pill badge for print PDF */
+function TierBadgePrint({ tier, isAr }: { tier: EvidenceTier; isAr: boolean }) {
+  const cfg = TIER_STYLE[tier];
+  return (
+    <span style={{
+      display: 'inline-block',
+      background: cfg.bg,
+      color: cfg.color,
+      border: `1px solid ${cfg.border}`,
+      borderRadius: '100px',
+      padding: '1px 7px',
+      fontSize: '7.5px',
+      fontWeight: 700,
+      lineHeight: 1.5,
+      whiteSpace: 'nowrap',
+    }}>
+      {isAr ? cfg.labelAr : cfg.labelEn}
+    </span>
+  );
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -200,7 +276,7 @@ interface MaturitySummarySectionProps {
 }
 
 export function MaturitySummarySection({ maturity, isAr = false }: MaturitySummarySectionProps) {
-  const { overallScore, overallLevel, overallLevelAr, segmentScores, remedies, coveragePct } = maturity;
+  const { overallScore, overallLevel, overallLevelAr, segmentScores, remedies, coveragePct, evidencePct, evidenceTiers } = maturity;
 
   // Top-3 weakest
   const weakest = [...segmentScores]
@@ -309,6 +385,31 @@ export function MaturitySummarySection({ maturity, isAr = false }: MaturitySumma
               </>
             )}
           </div>
+
+          {/* Evidence coverage row */}
+          {evidencePct != null && (
+            <div
+              style={{ marginTop: '6px', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}
+              data-testid="mss-evidence-coverage"
+            >
+              <span style={{ fontSize: '9px', fontWeight: 700, color: '#555', textTransform: 'uppercase', letterSpacing: '0.5px', whiteSpace: 'nowrap' }}>
+                {isAr ? 'تغطية الأدلة' : 'Evidence Coverage'}
+              </span>
+              <div style={{ width: '80px', background: '#e5e7eb', borderRadius: '4px', height: '5px', overflow: 'hidden' }}>
+                <div style={{
+                  height: '100%',
+                  width: `${Math.min(100, evidencePct)}%`,
+                  background: evidencePct >= 60 ? '#0B3D91' : '#F97316',
+                  borderRadius: '4px',
+                }} />
+              </div>
+              <span style={{ fontSize: '9.5px', fontWeight: 700, color: evidencePct >= 60 ? '#0B3D91' : '#F97316', whiteSpace: 'nowrap' }}>
+                {evidencePct.toFixed(0)}%
+                {' '}
+                {isAr ? 'مُوثَّق بأدلة' : 'evidence-backed'}
+              </span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -343,6 +444,7 @@ export function MaturitySummarySection({ maturity, isAr = false }: MaturitySumma
             const gccGap = seg.gccAvg != null ? seg.score - seg.gccAvg : null;
             const bestGap = seg.bestClass != null ? seg.score - seg.bestClass : null;
             const col = levelColour(seg.score);
+            const segTier = bestTierForSeg(seg.id, evidenceTiers);
             return (
               <div key={seg.id} style={{
                 border: `1px solid ${col}30`,
@@ -355,7 +457,7 @@ export function MaturitySummarySection({ maturity, isAr = false }: MaturitySumma
                 data-testid={`mss-weak-segment-${rank}`}
               >
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                     <span style={{
                       width: '16px', height: '16px', borderRadius: '50%',
                       background: col, color: '#fff', fontSize: '9px', fontWeight: 700,
@@ -364,6 +466,12 @@ export function MaturitySummarySection({ maturity, isAr = false }: MaturitySumma
                     <span style={{ fontSize: '10px', fontWeight: 700, color: '#082C6B' }}>
                       {isAr ? (seg.titleAr ?? seg.title) : seg.title}
                     </span>
+                    {segTier && (
+                      <TierBadgePrint
+                        tier={segTier}
+                        isAr={isAr}
+                      />
+                    )}
                   </div>
                   <span style={{ fontSize: '12px', fontWeight: 900, color: col }}>{seg.score.toFixed(2)}</span>
                 </div>
