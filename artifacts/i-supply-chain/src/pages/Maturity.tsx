@@ -57,6 +57,7 @@ type Phase = 'intro' | 'intake' | 'questions' | 'results';
  * v2 because the assessment now has 11 core segments (vs 8 in v1).
  */
 export const MATURITY_DRAFT_KEY = 'maturity_draft_v2';
+export const ISC_MATURITY_CONTEXT_KEY = 'isc_maturity_ctx_v1';
 
 /**
  * @internal Test-only escape hatch.
@@ -407,6 +408,32 @@ export function Maturity() {
   };
   const handleEditSegment = (i: number) => { setSegIdx(i); setEditingFromResults(true); setPhase('questions'); scrollUp(); };
   const handleBackToResults = () => { setEditingFromResults(false); setPhase('results'); scrollUp(); };
+
+  /** Write enriched maturity context to sessionStorage before navigating to /report-generator */
+  const handleGoToReport = () => {
+    try {
+      const segScores = activeSegments.map((seg, i) => ({
+        id:       seg.id,
+        title:    seg.title,
+        titleAr:  seg.titleAr,
+        score:    +(segScore(i) ?? 0).toFixed(2),
+        level:    getLevel(segScore(i) ?? 0).label,
+        levelAr:  getLevel(segScore(i) ?? 0).labelAr,
+        gccAvg:   seg.benchmarks.gcc,
+        bestClass:seg.benchmarks.best,
+      }));
+      sessionStorage.setItem(ISC_MATURITY_CONTEXT_KEY, JSON.stringify({
+        overallScore:   +overallScore.toFixed(2),
+        overallLevel:   overallLevel.label,
+        overallLevelAr: overallLevel.labelAr,
+        segmentScores:  segScores,
+        remedies:       remediesData ?? undefined,
+        intakeData,
+        coveragePct:    totalSubSegs > 0 ? +(coveredSubSegs / totalSubSegs * 100).toFixed(1) : undefined,
+        lang:           ar ? 'ar' : 'en',
+      }));
+    } catch { /* quota or SSR — navigation still proceeds */ }
+  };
 
   /* ── Guest result-persistence: email the tokenised link ──────────────── */
   const handleGuestSave = async () => {
@@ -964,6 +991,42 @@ export function Maturity() {
 
   return (
     <div ref={topRef} className="w-full" data-testid="maturity-results">
+
+      {/* ── Print-only page header (hidden on screen) ────────────────────── */}
+      <div
+        className="print-only"
+        dir={ar ? 'rtl' : 'ltr'}
+        style={{
+          padding: '0 0 14px',
+          borderBottom: '3px solid #082C6B',
+          marginBottom: '18px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '8px',
+        }}
+      >
+        <div>
+          <div style={{ fontWeight: 900, fontSize: '18px', color: '#082C6B', letterSpacing: '-0.5px' }}>
+            I Supply Chain · ISC
+          </div>
+          <div style={{ fontSize: '10px', color: '#888', letterSpacing: '1px', textTransform: 'uppercase' }}>
+            Ma'in Alhaqash MCIPS · CPSM · MSc · MIPP
+          </div>
+        </div>
+        <div style={{ textAlign: ar ? 'left' : 'right' }}>
+          <div style={{ fontSize: '12px', fontWeight: 700, color: '#C9A84C' }}>
+            {ar ? 'سري — للاستخدام الداخلي فقط' : 'Confidential — Internal Use Only'}
+          </div>
+          <div style={{ fontSize: '10px', color: '#888' }}>
+            {new Date().toLocaleDateString(ar ? 'ar-SA' : 'en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
+            {selectedIndustryLabel ? ` · ${ar ? selectedIndustryLabel.labelAr : selectedIndustryLabel.label}` : null}
+            {selectedSizeLabel ? ` · ${ar ? selectedSizeLabel.labelAr : selectedSizeLabel.label}` : null}
+          </div>
+        </div>
+      </div>
+
       <div className="bg-[#082C6B] text-white">
         <div className="container mx-auto px-4 py-10 max-w-5xl text-center">
           <div className="inline-flex items-center gap-2 bg-white/10 rounded-full px-4 py-1.5 mb-4">
@@ -1125,7 +1188,7 @@ export function Maturity() {
         )}
 
         {/* ── Radar — Command Centre style ─────────────────────────────────── */}
-        <div className="bg-white rounded-2xl border border-border shadow-sm p-6">
+        <div className="bg-white rounded-2xl border border-border shadow-sm p-6 print-break-before">
           <h2 className="text-xl font-bold text-primary mb-1">
             {ar
               ? `رادار النضج — مقارنة معيارية عبر ${activeSegments.length} مجالات`
@@ -1177,7 +1240,7 @@ export function Maturity() {
         </div>
 
         {/* ── Gap Analysis — horizontal, weakest-first ─────────────────────── */}
-        <div className="bg-white rounded-2xl border border-border shadow-sm p-6">
+        <div className="bg-white rounded-2xl border border-border shadow-sm p-6 print-break-before">
           <h2 className="text-xl font-bold text-primary mb-1">
             {ar ? 'تحليل فجوة النضج — الأضعف أولاً' : 'Maturity Gap Analysis — Weakest First'}
           </h2>
@@ -1225,7 +1288,7 @@ export function Maturity() {
         </div>
 
         {/* Benchmark table */}
-        <div className="bg-white rounded-2xl border border-border shadow-sm overflow-hidden">
+        <div className="bg-white rounded-2xl border border-border shadow-sm overflow-hidden print-break-before">
           <div className="p-6 border-b border-border">
             <h2 className="text-xl font-bold text-primary">{ar ? 'المقارنة المعيارية الكاملة' : 'Full Benchmark Comparison'}</h2>
             <p className="text-muted-foreground text-sm mt-1">{ar ? 'مقارنة مجالاً بمجال عبر جميع النقاط المرجعية الأربع.' : 'Segment-by-segment comparison across all four reference points.'}</p>
@@ -1390,7 +1453,7 @@ export function Maturity() {
         </div>
 
         {/* ── AI Remedies Panel ───────────────────────────────────────────── */}
-        <div className="rounded-3xl border-2 border-accent/40 bg-gradient-to-br from-accent/5 to-white overflow-hidden">
+        <div className="rounded-3xl border-2 border-accent/40 bg-gradient-to-br from-accent/5 to-white overflow-hidden print-break-before">
           <div className="p-6 border-b border-accent/20">
             <div className="flex items-start justify-between gap-4 flex-wrap">
               <div>
@@ -1587,7 +1650,7 @@ export function Maturity() {
         )}
 
         {/* Priority action plan */}
-        <div className="bg-[#082C6B] rounded-3xl p-8 text-white">
+        <div className="bg-[#082C6B] rounded-3xl p-8 text-white print-break-before">
           <div className="flex items-center gap-3 mb-6">
             <TrendingUp className="w-6 h-6 text-accent" />
             <h2 className="text-xl font-bold">{ar ? 'خطة العمل ذات الأولوية' : 'Priority Action Plan'}</h2>
@@ -1609,7 +1672,7 @@ export function Maturity() {
             ))}
           </div>
           <div className="flex flex-col sm:flex-row gap-3 justify-center flex-wrap">
-            <Link href="/report-generator">
+            <Link href="/report-generator" onClick={handleGoToReport}>
               <Button size="lg" className="bg-accent hover:bg-accent/90 text-white font-bold px-8 gap-2">
                 <FileText className="w-4 h-4" />
                 {ar ? 'توليد تقرير الاستراتيجية' : 'Generate Strategy Report'}
@@ -1632,7 +1695,52 @@ export function Maturity() {
               <RotateCcw className="w-4 h-4 mr-2" /> {ar ? 'إعادة التقييم' : 'Retake Assessment'}
             </Button>
           </div>
-          <style>{`@media print{header,nav,.no-print{display:none!important}body{-webkit-print-color-adjust:exact;print-color-adjust:exact}@page{margin:12mm}}`}</style>
+          <style>{`
+            /* ── Print: hide screen-only chrome ── */
+            @media print {
+              header, nav, .no-print,
+              [data-testid="feedback-modal"],
+              [data-testid="button-generate-remedies"],
+              [data-testid="button-maturity-next"],
+              .maturity-intro, .maturity-questions { display: none !important; }
+
+              /* Page geometry */
+              @page { size: A4; margin: 14mm 18mm; }
+
+              /* Colour fidelity — force backgrounds and colours to print */
+              body, html {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                color-adjust: exact !important;
+              }
+
+              /* Kill all animations so SVGs render synchronously */
+              *, *::before, *::after {
+                animation-duration: 0.001s !important;
+                animation-delay: 0s !important;
+                transition-duration: 0.001s !important;
+                transition-delay: 0s !important;
+              }
+
+              /* Recharts SVG fix — overflow: hidden clips at print boundaries */
+              .recharts-wrapper,
+              .recharts-surface { overflow: visible !important; }
+              .recharts-responsive-container { width: 100% !important; }
+              svg { overflow: visible !important; display: block !important; }
+
+              /* Page breaks declared on major sections */
+              .print-break-before {
+                break-before: page !important;
+                page-break-before: always !important;
+              }
+
+              /* Show print-only content, hide it on screen */
+              .print-only { display: flex !important; }
+            }
+
+            /* Hide print-only elements on screen */
+            @media screen { .print-only { display: none !important; } }
+          `}</style>
         </div>
 
       </div>

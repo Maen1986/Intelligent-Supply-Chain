@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
 import { API_BASE } from '@/lib/apiBase';
-import { MATURITY_DRAFT_KEY } from './Maturity';
+import { MATURITY_DRAFT_KEY, ISC_MATURITY_CONTEXT_KEY } from './Maturity';
+import { MaturitySummarySection, type MSSContext } from '@/components/MaturitySummarySection';
 import {
   FileText, Sparkles, Loader2, Download, ChevronRight, ChevronLeft,
   Building2, Users2, BarChart3, AlertCircle, CheckCircle2, RotateCcw,
@@ -16,16 +17,19 @@ import {
    TYPES
 ═══════════════════════════════════════════════════════════════════════════ */
 
-interface SegmentScore { id: string; title: string; score: number; level: string; gccAvg?: number; globalAvg?: number; bestClass?: number; }
+interface SegmentScore { id: string; title: string; titleAr?: string; score: number; level: string; levelAr?: string; gccAvg?: number; globalAvg?: number; bestClass?: number; }
 interface RemedyItem   { segmentTitle: string; action: string; framework?: string; measurableTarget?: string; effort?: string; }
 interface Remedies     { executiveSummary?: string; days30?: RemedyItem[]; days60?: RemedyItem[]; days90?: RemedyItem[]; estimatedImpact?: string; }
 
 interface MaturitySnapshot {
-  overallScore:   number;
-  overallLevel:   string;
-  segmentScores:  SegmentScore[];
-  remedies?:      Remedies;
-  intakeData?:    { industry: string; companySize: string };
+  overallScore:    number;
+  overallLevel:    string;
+  overallLevelAr?: string;
+  segmentScores:   SegmentScore[];
+  remedies?:       Remedies;
+  intakeData?:     { industry: string; companySize: string };
+  coveragePct?:    number;
+  lang?:           'en' | 'ar';
 }
 
 interface ReportData {
@@ -223,15 +227,17 @@ function ReportPrintLayout({ report, contactInfo, maturity, generatedAt }: {
       {/* ── 3. Maturity Analysis ── */}
       <Section title={`3. ${report.maturityAnalysis.headline}`}>
         {maturity && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', marginBottom: '16px' }}>
-            {maturity.segmentScores.slice(0, 8).map((s) => (
-              <div key={s.id} style={{ background: '#f5f8ff', border: '1px solid #dde4f0', borderRadius: '4px', padding: '8px', textAlign: 'center' }}>
-                <div style={{ fontSize: '16px', fontWeight: 800, color: '#082C6B' }}>{s.score.toFixed(1)}</div>
-                <div style={{ fontSize: '9px', color: '#666', marginTop: '2px' }}>{s.title}</div>
-                <div style={{ fontSize: '9px', color: '#888' }}>{s.level}</div>
-              </div>
-            ))}
-          </div>
+          <MaturitySummarySection
+            maturity={{
+              overallScore:    maturity.overallScore,
+              overallLevel:    maturity.overallLevel,
+              overallLevelAr:  maturity.overallLevelAr,
+              segmentScores:   maturity.segmentScores,
+              remedies:        maturity.remedies,
+              coveragePct:     maturity.coveragePct,
+            } satisfies MSSContext}
+            isAr={maturity.lang === 'ar'}
+          />
         )}
         {report.maturityAnalysis.body.split('\n\n').map((para, i) => (
           <PrintP key={i}>{para}</PrintP>
@@ -432,15 +438,26 @@ export function ReportGenerator() {
     const cache = loadReportCache();
     if (cache) setCachedReport(cache);
 
-    // Load maturity draft
+    // 1. Prefer rich maturity context from sessionStorage (written by Maturity.tsx on link click)
+    try {
+      const sessionRaw = sessionStorage.getItem(ISC_MATURITY_CONTEXT_KEY);
+      if (sessionRaw) {
+        const ctx = JSON.parse(sessionRaw) as MaturitySnapshot;
+        setMaturity(ctx);
+        if (ctx.intakeData?.industry)     setIndustry(ctx.intakeData.industry);
+        if (ctx.intakeData?.companySize)  setCompanySize(ctx.intakeData.companySize);
+        setMaturityLoaded(true);
+        return;
+      }
+    } catch { /* malformed JSON — fall through to localStorage */ }
+
+    // 2. Fall back to localStorage draft (older path — intakeData only)
     try {
       const raw = localStorage.getItem(MATURITY_DRAFT_KEY);
       if (!raw) { setMaturityLoaded(true); return; }
       const draft = JSON.parse(raw) as { answers?: Record<string,number>; intakeData?: { industry: string; companySize: string } };
-      if (draft.intakeData?.industry) setIndustry(draft.intakeData.industry);
+      if (draft.intakeData?.industry)    setIndustry(draft.intakeData.industry);
       if (draft.intakeData?.companySize) setCompanySize(draft.intakeData.companySize);
-      // We'll just store the intakeData for now - full scores computed server-side from answers isn't available client-side here
-      // but we CAN read any remedies that were saved, and show a summary
     } catch { /* ignore */ }
     setMaturityLoaded(true);
   }, []);
