@@ -293,6 +293,95 @@ export async function sendBriefingEmail(params: {
   );
 }
 
+// ── Exported helper: sendGuestResultsEmail ───────────────────────────────────
+// Sends the guest their assessment results link so they can return to it later.
+export async function sendGuestResultsEmail(params: {
+  email:          string;
+  token:          string;
+  lang?:          string;
+  overallScore?:  number;
+  overallLevel?:  string;
+  expiresInDays:  number;
+}): Promise<{ sent: boolean; reason?: string }> {
+  const transporter = createTransporter();
+  if (!transporter) {
+    const msg = 'GMAIL_APP_PASSWORD not configured — guest results email NOT sent.';
+    logger.error({ to: params.email }, `[notify] BLOCKED: ${msg}`);
+    return { sent: false, reason: msg };
+  }
+
+  const ar = params.lang === 'ar';
+  const appDomain = process.env.REPLIT_DEV_DOMAIN
+    ? `https://${process.env.REPLIT_DEV_DOMAIN}`
+    : 'https://isupplychain.replit.app';
+  const resultsUrl = `${appDomain}/maturity?token=${params.token}`;
+
+  const subject = ar
+    ? 'نتائج تقييمكم — I Supply Chain'
+    : 'Your Maturity Assessment Results — I Supply Chain';
+
+  const scoreBlock = (params.overallScore !== undefined && params.overallLevel)
+    ? (ar
+        ? `<p style="font-size:28px;font-weight:bold;color:#082C6B;text-align:center;background:#f5f8ff;border:1px solid #dde4f0;border-radius:8px;padding:12px 0">
+             ${params.overallScore.toFixed(1)}/5.0 · ${params.overallLevel}
+           </p>`
+        : `<p style="font-size:28px;font-weight:bold;color:#082C6B;text-align:center;background:#f5f8ff;border:1px solid #dde4f0;border-radius:8px;padding:12px 0">
+             ${params.overallScore.toFixed(1)}/5.0 · ${params.overallLevel}
+           </p>`)
+    : '';
+
+  const html = `
+    <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto"${ar ? ' dir="rtl"' : ''}>
+      <div style="background:#082C6B;padding:24px 32px;border-radius:8px 8px 0 0">
+        <h1 style="color:#fff;margin:0;font-size:20px">I Supply Chain</h1>
+        <p style="color:#C9A84C;margin:4px 0 0;font-size:14px">
+          ${ar ? 'تقييم نضج سلسلة الإمداد والمشتريات' : 'Supply Chain & Procurement Maturity Assessment'}
+        </p>
+      </div>
+      <div style="background:#fff;padding:24px 32px;border:1px solid #dde4f0;border-top:none">
+        <p style="color:#333">
+          ${ar
+            ? 'لقد أكملتم تقييم نضج سلسلة الإمداد والمشتريات. استخدموا الرابط أدناه للعودة إلى نتائجكم في أي وقت.'
+            : 'You\'ve completed the Supply Chain & Procurement Maturity Assessment. Use the link below to return to your results at any time.'}
+        </p>
+        ${scoreBlock}
+        <div style="text-align:center;margin:24px 0">
+          <a href="${resultsUrl}"
+             style="display:inline-block;background:#C9A84C;color:#fff;font-weight:bold;font-size:16px;padding:14px 32px;border-radius:8px;text-decoration:none">
+            ${ar ? 'عرض نتائجكم' : 'View My Results'}
+          </a>
+        </div>
+        <p style="color:#666;font-size:12px;border-top:1px solid #eee;padding-top:12px;margin-top:12px">
+          ${ar
+            ? `هذا الرابط صالح لمدة ${params.expiresInDays} يومًا. لحفظ نتائجكم بشكل دائم، يُنصح بإنشاء حساب مجاني.`
+            : `This link is valid for ${params.expiresInDays} days. To permanently save your results, consider creating a free account.`}
+        </p>
+        <p style="color:#aaa;font-size:11px">
+          ${ar ? 'إذا لم تطلبوا هذا الرابط، يمكنكم تجاهل هذه الرسالة.' : "If you didn't request this link, you can safely ignore this email."}
+        </p>
+      </div>
+    </div>`;
+
+  const from = `"I Supply Chain" <${process.env.GMAIL_USER || 'haqash.maen@gmail.com'}>`;
+  try {
+    await transporter.sendMail({ from, to: params.email, subject, html });
+    logger.info({ to: params.email }, '[notify] Guest results email sent');
+    return { sent: true };
+  } catch (firstErr) {
+    logger.warn({ to: params.email, err: (firstErr as Error)?.message }, '[notify] Guest results email failed — retrying once');
+    await new Promise(r => setTimeout(r, EMAIL_RETRY_DELAY_MS));
+    try {
+      await transporter.sendMail({ from, to: params.email, subject, html });
+      logger.info({ to: params.email }, '[notify] Guest results email sent on retry');
+      return { sent: true };
+    } catch (err) {
+      const reason = (err as Error)?.message ?? String(err);
+      logger.error({ to: params.email, reason }, '[notify] Guest results email failed after retry');
+      return { sent: false, reason };
+    }
+  }
+}
+
 // ── Exported helper: sendEscalationEmail ─────────────────────────────────────
 // Called by the consultancy escalation endpoint.
 export async function sendEscalationEmail(params: {

@@ -9,3 +9,4 @@ export * from "./apiKeys";
 export * from "./webhooks";
 export * from "./automation";
 export * from "./benchmarks";
+export * from "./maturityGuestSnapshots";

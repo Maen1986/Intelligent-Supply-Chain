@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Link } from 'wouter';
+import { Link, useSearch } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/lib/LanguageContext';
 import { rankWeakest } from '@/lib/weakestAreas';
@@ -17,7 +17,7 @@ import {
   ChevronRight, ChevronLeft, BarChart3, Award,
   TrendingUp, RotateCcw, Pencil, Sparkles, Loader2,
   CheckCircle2, Clock, Target, AlertCircle, Building2, Users2,
-  Download, FileText,
+  Download, FileText, Mail,
 } from 'lucide-react';
 import {
   CORE_SEGMENTS, INDUSTRY_MODULES, INTAKE_INDUSTRIES, INTAKE_SIZES,
@@ -116,6 +116,7 @@ export function Maturity() {
   const { lang } = useLanguage();
   const ar = lang === 'ar';
   const { user } = useAuth();
+  const searchString = useSearch();
 
   const [phase, setPhase] = useState<Phase>(() => {
     if (_testSeedActive) return _testSeed.phase ?? 'intro';
@@ -144,6 +145,14 @@ export function Maturity() {
   const [remediesData,     setRemediesData]     = useState<RemediesResponse | null>(null);
   const [remediesError,    setRemediesError]    = useState<string | null>(null);
   const [remediesShown,    setRemediesShown]    = useState(false);
+
+  // Guest result persistence state
+  const [guestEmail,        setGuestEmail]        = useState('');
+  const [guestSaveLoading,  setGuestSaveLoading]  = useState(false);
+  const [guestSaveDone,     setGuestSaveDone]     = useState(false);
+  const [guestSaveError,    setGuestSaveError]    = useState<string | null>(null);
+  /** True when the current view was restored from a tokenised link */
+  const [restoredFromToken, setRestoredFromToken] = useState(false);
 
   /* Active segments depend on the chosen industry */
   const activeModule   = intakeData.industry ? getActiveModule(intakeData.industry) : null;
@@ -183,6 +192,29 @@ export function Maturity() {
       localStorage.setItem(MATURITY_DRAFT_KEY, JSON.stringify({ phase, answers, intakeData }));
     } catch { /* quota — ignore */ }
   }, [phase, answers, intakeData]);
+
+  /* ── Token-based restore: load guest snapshot from API when ?token= present */
+  const tokenRestoreAttempted = useRef(false);
+  useEffect(() => {
+    if (_testSeedActive) return;
+    if (tokenRestoreAttempted.current) return;
+    const params = new URLSearchParams(searchString);
+    const token = params.get('token');
+    if (!token) return;
+    tokenRestoreAttempted.current = true;
+
+    fetch(`${API_BASE}/maturity/guest-results/${encodeURIComponent(token)}`)
+      .then(r => r.json())
+      .then((data: { ok: boolean; answers?: Record<string, number>; intakeData?: { industry: string; companySize: string }; lang?: string }) => {
+        if (!data.ok || !data.answers || !data.intakeData) return;
+        setAnswers(data.answers);
+        setIntakeData(data.intakeData);
+        setPhase('results');
+        setRestoredFromToken(true);
+      })
+      .catch(() => { /* best-effort */ });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   /* ── Lead capture: record submission + notify admin on results ─────────── */
   const submissionFiredRef = useRef(false);
@@ -269,6 +301,34 @@ export function Maturity() {
   };
   const handleEditSegment = (i: number) => { setSegIdx(i); setEditingFromResults(true); setPhase('questions'); scrollUp(); };
   const handleBackToResults = () => { setEditingFromResults(false); setPhase('results'); scrollUp(); };
+
+  /* ── Guest result-persistence: email the tokenised link ──────────────── */
+  const handleGuestSave = async () => {
+    if (!guestEmail.trim()) return;
+    setGuestSaveLoading(true);
+    setGuestSaveError(null);
+    try {
+      const resp = await fetch(`${API_BASE}/maturity/save-guest`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email:        guestEmail.trim(),
+          answers,
+          intakeData,
+          lang:         ar ? 'ar' : 'en',
+          overallScore,
+          overallLevel: overallLevel.label,
+        }),
+      });
+      const data = await resp.json() as { ok: boolean; error?: string };
+      if (!data.ok) throw new Error(data.error ?? 'Save failed');
+      setGuestSaveDone(true);
+    } catch (err) {
+      setGuestSaveError(err instanceof Error ? err.message : 'Could not send email');
+    } finally {
+      setGuestSaveLoading(false);
+    }
+  };
 
   const L = {
     asIs:        ar ? 'نتيجتك (الوضع الراهن)' : 'Your Score (As-Is)',
@@ -841,6 +901,72 @@ export function Maturity() {
       </div>
 
       <div className="container mx-auto px-4 py-10 max-w-6xl space-y-10">
+
+        {/* ── Restored-from-link notice ─────────────────────────────────────── */}
+        {restoredFromToken && (
+          <div className="flex items-start gap-3 rounded-2xl border border-green-200 bg-green-50 px-5 py-4">
+            <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0 mt-0.5" />
+            <p className="text-sm text-green-800 font-medium">
+              {ar
+                ? 'تمت استعادة نتائجكم بنجاح عبر الرابط المرسل إلى بريدكم الإلكتروني.'
+                : 'Your results have been restored from your saved link.'}
+            </p>
+          </div>
+        )}
+
+        {/* ── Guest email-my-results banner (unauthenticated users only) ──── */}
+        {!user && !_testSeedActive && (
+          <div className="rounded-2xl border border-primary/25 bg-primary/5 px-5 py-5">
+            <div className="flex items-start gap-3 mb-3">
+              <Mail className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+              <div>
+                <p className="font-bold text-primary text-sm">
+                  {ar ? 'احفظ نتائجكم — ستُفقد عند إغلاق المتصفح' : 'Save your results — they\'ll be lost when you close this tab'}
+                </p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {ar
+                    ? 'أدخل بريدكم الإلكتروني وسنرسل لكم رابطًا للوصول إلى النتائج لمدة 30 يومًا.'
+                    : 'Enter your email and we\'ll send you a link to access your results for 30 days.'}
+                </p>
+              </div>
+            </div>
+            {guestSaveDone ? (
+              <div className="flex items-center gap-2 text-green-700 text-sm font-medium">
+                <CheckCircle2 className="w-4 h-4" />
+                {ar
+                  ? 'تم الإرسال! تحقق من بريدكم الإلكتروني للحصول على الرابط.'
+                  : 'Sent! Check your inbox for your results link.'}
+              </div>
+            ) : (
+              <div className="flex gap-2 flex-col sm:flex-row">
+                <input
+                  type="email"
+                  value={guestEmail}
+                  onChange={e => setGuestEmail(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') handleGuestSave(); }}
+                  placeholder={ar ? 'بريدكم الإلكتروني' : 'your@email.com'}
+                  className="flex-1 min-w-0 rounded-lg border border-border bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+                  dir={ar ? 'rtl' : 'ltr'}
+                />
+                <Button
+                  onClick={handleGuestSave}
+                  disabled={guestSaveLoading || !guestEmail.trim()}
+                  className="bg-primary hover:bg-primary/90 text-white font-bold gap-2 shrink-0"
+                >
+                  {guestSaveLoading
+                    ? <Loader2 className="w-4 h-4 animate-spin" />
+                    : <Mail className="w-4 h-4" />}
+                  {ar ? 'أرسل الرابط' : 'Email my results'}
+                </Button>
+              </div>
+            )}
+            {guestSaveError && (
+              <p className="text-xs text-red-600 mt-2">
+                {ar ? `خطأ: ${guestSaveError}` : `Error: ${guestSaveError}`}
+              </p>
+            )}
+          </div>
+        )}
 
         {/* ── Radar — Command Centre style ─────────────────────────────────── */}
         <div className="bg-white rounded-2xl border border-border shadow-sm p-6">
