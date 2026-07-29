@@ -12,6 +12,7 @@ import {
   countCoveredSubSegments,
 } from '@/lib/maturityScoring';
 import { MaturityCoverage } from '@/components/MaturityCoverage';
+import { MaturityTrend, type SnapshotRecord, type SegmentMeta } from '@/components/MaturityTrend';
 import { FeedbackModal, shouldShowFeedback } from '@/components/FeedbackModal';
 import { API_BASE } from '@/lib/apiBase';
 import { useAuth } from '@/lib/AuthContext';
@@ -161,6 +162,10 @@ export function Maturity() {
   /** True when the current view was restored from a tokenised link */
   const [restoredFromToken, setRestoredFromToken] = useState(false);
 
+  // Snapshot trend state
+  const [snapshots,          setSnapshots]          = useState<SnapshotRecord[]>([]);
+  const [currentSnapshotId,  setCurrentSnapshotId]  = useState<number | null>(null);
+
   /* Active segments depend on the chosen industry */
   const activeModule   = intakeData.industry ? getActiveModule(intakeData.industry) : null;
   let   activeSegments: Segment[] = [...CORE_SEGMENTS, ...(activeModule ? [activeModule] : [])];
@@ -276,6 +281,97 @@ export function Maturity() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase]);
 
+  /* ── Load existing snapshot history whenever results are shown ───────────
+     Runs unconditionally on every results entry for authenticated users so
+     that history is always visible — regardless of whether a new POST
+     succeeds, is rate-limited, or fails.                                    */
+  const fetchSnapshots = () => {
+    if (!user || _testSeedActive) return;
+    fetch(`${API_BASE}/maturity/snapshots`, { credentials: 'include' })
+      .then(r => r.json())
+      .then((data: { ok: boolean; snapshots?: SnapshotRecord[] }) => {
+        if (data.ok && data.snapshots) setSnapshots(data.snapshots);
+      })
+      .catch(() => { /* best-effort */ });
+  };
+
+  useEffect(() => {
+    if (phase !== 'results') return;
+    fetchSnapshots();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, user]);
+
+  /* ── Auto-save snapshot when phase → results (logged-in users only) ─────
+     Fires at most once per results visit. On success, re-fetches the full
+     list so the newly saved entry appears in the trend panel. On 429/error,
+     the history fetch above already populated the trend from prior snapshots. */
+  const snapshotFiredRef = useRef(false);
+  useEffect(() => {
+    if (phase !== 'results' || !user || _testSeedActive) return;
+    if (snapshotFiredRef.current) return;
+    snapshotFiredRef.current = true;
+
+    const segScores = activeSegments.map((seg, i) => ({
+      id:      seg.id,
+      title:   seg.title,
+      titleAr: seg.titleAr,
+      score:   +(calcSegScore(answers, i) ?? 0).toFixed(2),
+      level:   getLevel(calcSegScore(answers, i) ?? 0).label,
+    }));
+    const coveragePctVal = totalSubSegs > 0
+      ? +(coveredSubSegs / totalSubSegs * 100).toFixed(2)
+      : 0;
+
+    fetch(`${API_BASE}/maturity/snapshots`, {
+      method:      'POST',
+      headers:     { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({
+        answers,
+        intakeData,
+        numSegments:   activeSegments.length,
+        segmentScores: segScores,
+        coveragePct:   coveragePctVal,
+      }),
+    })
+    .then(r => r.json())
+    .then((data: { ok: boolean; id?: number }) => {
+      if (data.ok && data.id) {
+        setCurrentSnapshotId(data.id);
+        // Re-fetch so the trend panel includes the newly saved snapshot
+        fetchSnapshots();
+      }
+      // 429 or validation error: history already loaded from the independent
+      // fetch above — no action needed here (follow-up #726 will surface
+      // user-facing feedback for the rate-limit case)
+      return undefined;
+    })
+    .catch(() => { /* best-effort — history remains from independent fetch */ });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, user]);
+
+  /* ── Patch snapshot with remedy actions once AI plan resolves ─────────── */
+  useEffect(() => {
+    if (!remediesData || !currentSnapshotId || !user || _testSeedActive) return;
+    fetch(`${API_BASE}/maturity/snapshots/${currentSnapshotId}/remedies`, {
+      method:      'PATCH',
+      headers:     { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ remedyActions: remediesData }),
+    })
+    .then(r => r.json())
+    .then((data: { ok: boolean }) => {
+      if (data.ok) {
+        // Update local snapshot so the current run's remedies appear in correlation
+        setSnapshots(prev => prev.map(s =>
+          s.id === currentSnapshotId ? { ...s, remedyActions: remediesData as SnapshotRecord['remedyActions'] } : s,
+        ));
+      }
+    })
+    .catch(() => { /* best-effort */ });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [remediesData, currentSnapshotId]);
+
   const scrollUp = () => setTimeout(() => topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60);
 
   const setAnswer = (seg: number, q: number, val: number) =>
@@ -304,6 +400,9 @@ export function Maturity() {
     setRemediesData(null);
     setRemediesError(null);
     setRemediesShown(false);
+    // Reset snapshot tracking so the next results visit auto-saves fresh
+    snapshotFiredRef.current = false;
+    setCurrentSnapshotId(null);
     scrollUp();
   };
   const handleEditSegment = (i: number) => { setSegIdx(i); setEditingFromResults(true); setPhase('questions'); scrollUp(); };
@@ -367,6 +466,14 @@ export function Maturity() {
   const isWeightedScore  = _weightedScore > 0;
   const overallScore     = isWeightedScore ? _weightedScore : _unweightedScore;
   const overallLevel     = getLevel(overallScore);
+
+  /* ── Segment metadata list passed to MaturityTrend ──────────────────── */
+  const segmentList: SegmentMeta[] = activeSegments.map(seg => ({
+    id:           seg.id,
+    color:        seg.color,
+    shortTitle:   seg.shortTitle,
+    shortTitleAr: seg.shortTitleAr,
+  }));
 
   /* ── Coverage stats (used by MaturityCoverage) ───────────────────────── */
   // segsAssessed: segments where all flat (2-part key) questions are answered
@@ -1468,6 +1575,16 @@ export function Maturity() {
             </div>
           )}
         </div>
+
+        {/* ── Trend tracking panel (logged-in users with ≥1 snapshot) ── */}
+        {user && snapshots.length > 0 && (
+          <MaturityTrend
+            snapshots={snapshots}
+            segmentList={segmentList}
+            ar={ar}
+            onRetake={handleReset}
+          />
+        )}
 
         {/* Priority action plan */}
         <div className="bg-[#082C6B] rounded-3xl p-8 text-white">

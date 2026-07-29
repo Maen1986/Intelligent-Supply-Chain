@@ -223,6 +223,38 @@ export const aiPlanRateLimiter = rateLimit({
  * Backed by PostgreSQL outside tests so the limit survives restarts. */
 const LOGIN_FAIL_LIMIT = 5;
 
+/* Maturity snapshot: 1 per 24 h per authenticated user.
+ * Keyed by userId (from session) so the throttle is per-person, not per-IP.
+ * Falls back to IP key if the request somehow arrives without a session user. */
+const SNAPSHOT_LIMIT = 1;
+
+export const snapshotRateLimiter = rateLimit({
+  windowMs: 24 * 60 * 60_000, // 24 hours
+  limit: SNAPSHOT_LIMIT,
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+  keyGenerator: (req: Request) => {
+    const userId = (req as any).session?.userId;
+    return userId
+      ? `snapshot:user:${userId}`
+      : `snapshot:ip:${ipKeyGenerator(req.ip ?? "")}`;
+  },
+  handler: (_req, res) => {
+    const resetTime: Date | undefined = (_req as any).rateLimit?.resetTime;
+    const retryAfterSeconds = resetTime
+      ? Math.max(1, Math.ceil((resetTime.getTime() - Date.now()) / 1000))
+      : 86400;
+    const retryAfterHours = Math.ceil(retryAfterSeconds / 3600);
+    res.set("Retry-After", String(retryAfterSeconds));
+    res.status(429).json({
+      ok: false,
+      error: `One assessment per day. Please try again in ${retryAfterHours} hour(s).`,
+      retryAfterSeconds,
+    });
+  },
+  ...(isTest ? {} : { store: new PgRateLimitStore(pgPool, "maturity-snapshot") }),
+});
+
 export const loginRateLimiter = rateLimit({
   windowMs: 60_000,
   limit: LOGIN_FAIL_LIMIT,

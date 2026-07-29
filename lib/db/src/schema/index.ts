@@ -10,3 +10,4 @@ export * from "./webhooks";
 export * from "./automation";
 export * from "./benchmarks";
 export * from "./maturityGuestSnapshots";
+export * from "./maturitySnapshots";

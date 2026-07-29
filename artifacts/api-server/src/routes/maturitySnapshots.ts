@@ -1,0 +1,190 @@
+/**
+ * Maturity Snapshot routes
+ *
+ * POST   /api/maturity/snapshots              — save a completed assessment (1/day per user)
+ * GET    /api/maturity/snapshots              — list all saved assessments for the session user
+ * PATCH  /api/maturity/snapshots/:id/remedies — attach AI remedy actions once they resolve
+ *
+ * Ownership is enforced at the DB query level on every operation so that
+ * user A cannot read or modify user B's data even with a valid session.
+ */
+import { Router }          from 'express';
+import { db }              from '@workspace/db';
+import { sql }             from 'drizzle-orm';
+import { z }               from 'zod';
+import { requireSession }  from '../middlewares/requireSession';
+import { snapshotRateLimiter } from '../lib/rateLimit';
+import { logger }          from '../lib/logger';
+
+const router = Router();
+
+/* ── Zod schema for POST body ──────────────────────────────────────────────
+   The client submits answers + pre-computed per-segment scores (with titles
+   for display). The server recomputes and validates the overall score to
+   prevent tampering.                                                         */
+
+const SegmentScoreSchema = z.object({
+  id:      z.string(),
+  title:   z.string(),
+  titleAr: z.string().optional(),
+  score:   z.number().min(0).max(5),
+  level:   z.string(),
+});
+
+const PostSnapshotSchema = z.object({
+  answers:       z.record(z.string(), z.number()),
+  intakeData:    z.object({
+    industry:    z.string().optional().default(''),
+    companySize: z.string().optional().default(''),
+  }),
+  numSegments:   z.number().int().min(1).max(20),
+  segmentScores: z.array(SegmentScoreSchema).min(1).max(20),
+  coveragePct:   z.number().min(0).max(100).default(0),
+  remedyActions: z.record(z.string(), z.unknown()).optional().nullable(),
+});
+
+/* ── Server-side score recomputation ───────────────────────────────────────
+   Mirrors maturityScoring.segScore / overallScore pure functions.           */
+function serverSegScore(answers: Record<string, number>, segIdx: number): number | null {
+  const vals   = [0, 1, 2, 3, 4].map(q => answers[`${segIdx}-${q}`] ?? 0);
+  const filled = vals.filter(v => v > 0);
+  return filled.length === 5 ? filled.reduce((a, b) => a + b, 0) / 5 : null;
+}
+
+function serverOverallScore(answers: Record<string, number>, numSegments: number): number {
+  const scores: number[] = [];
+  for (let i = 0; i < numSegments; i++) {
+    const s = serverSegScore(answers, i);
+    if (s !== null) scores.push(s);
+  }
+  return scores.length === 0 ? 0 : scores.reduce((a, b) => a + b, 0) / scores.length;
+}
+
+/* ── POST /api/maturity/snapshots ───────────────────────────────────────── */
+router.post(
+  '/maturity/snapshots',
+  requireSession,
+  snapshotRateLimiter,
+  async (req, res) => {
+    const userId = res.locals.userId as number;
+
+    const parsed = PostSnapshotSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ ok: false, error: 'Invalid snapshot data', details: parsed.error.format() });
+      return;
+    }
+
+    const { answers, intakeData, numSegments, segmentScores, coveragePct, remedyActions } = parsed.data;
+
+    // Recompute overall score server-side to prevent score inflation from clients
+    const computedOverall = serverOverallScore(answers, numSegments);
+
+    try {
+      const result = await db.execute(sql`
+        INSERT INTO maturity_snapshots
+          (user_id, industry, company_size, answers, segment_scores,
+           overall_score, coverage_pct, remedy_actions)
+        VALUES (
+          ${userId},
+          ${intakeData.industry || null},
+          ${intakeData.companySize || null},
+          ${JSON.stringify(answers)}::jsonb,
+          ${JSON.stringify(segmentScores)}::jsonb,
+          ${computedOverall.toFixed(2)},
+          ${coveragePct.toFixed(2)},
+          ${remedyActions ? JSON.stringify(remedyActions) : null}::jsonb
+        )
+        RETURNING id, taken_at
+      `);
+
+      const rows = (result as any).rows ?? (result as any);
+      const row  = Array.isArray(rows) ? rows[0] : rows;
+      logger.info({ userId, snapshotId: row?.id }, '[maturitySnapshots] Snapshot saved');
+
+      res.json({ ok: true, id: row?.id, takenAt: row?.taken_at });
+    } catch (err) {
+      logger.error({ err, userId }, '[maturitySnapshots] Save failed');
+      res.status(500).json({ ok: false, error: 'Could not save snapshot' });
+    }
+  },
+);
+
+/* ── GET /api/maturity/snapshots ────────────────────────────────────────── */
+
+/**
+ * Normalise a raw DB row (snake_case) into the camelCase shape that
+ * MaturityTrend / SnapshotRecord expects. This is the single place where
+ * the contract is enforced; the frontend never sees raw DB column names.
+ */
+function normaliseSnapshot(row: Record<string, unknown>) {
+  return {
+    id:            row.id,
+    takenAt:       row.taken_at,
+    industry:      row.industry ?? null,
+    companySize:   row.company_size ?? null,
+    segmentScores: row.segment_scores ?? [],
+    overallScore:  row.overall_score,
+    coveragePct:   row.coverage_pct,
+    remedyActions: row.remedy_actions ?? null,
+  };
+}
+
+router.get('/maturity/snapshots', requireSession, async (req, res) => {
+  const userId = res.locals.userId as number;
+
+  try {
+    const result = await db.execute(sql`
+      SELECT id, user_id, taken_at, industry, company_size,
+             answers, segment_scores, overall_score, coverage_pct,
+             remedy_actions, created_at
+      FROM maturity_snapshots
+      WHERE user_id = ${userId}
+      ORDER BY taken_at ASC
+    `);
+
+    const rows: Record<string, unknown>[] = (result as any).rows ?? result;
+    res.json({ ok: true, snapshots: rows.map(normaliseSnapshot) });
+  } catch (err) {
+    logger.error({ err, userId }, '[maturitySnapshots] Fetch failed');
+    res.status(500).json({ ok: false, error: 'Could not fetch snapshots' });
+  }
+});
+
+/* ── PATCH /api/maturity/snapshots/:id/remedies ─────────────────────────── */
+router.patch('/maturity/snapshots/:id/remedies', requireSession, async (req, res) => {
+  const userId = res.locals.userId as number;
+  const id     = parseInt(String(req.params.id), 10);
+
+  if (isNaN(id) || id < 1) {
+    res.status(400).json({ ok: false, error: 'Invalid snapshot ID' });
+    return;
+  }
+
+  const { remedyActions } = req.body as { remedyActions?: unknown };
+  if (!remedyActions || typeof remedyActions !== 'object') {
+    res.status(400).json({ ok: false, error: 'Missing or invalid remedyActions' });
+    return;
+  }
+
+  try {
+    const result = await db.execute(sql`
+      UPDATE maturity_snapshots
+      SET remedy_actions = ${JSON.stringify(remedyActions)}::jsonb
+      WHERE id = ${id} AND user_id = ${userId}
+      RETURNING id
+    `);
+
+    const rows = (result as any).rows ?? result;
+    if (rows.length === 0) {
+      res.status(404).json({ ok: false, error: 'Snapshot not found or access denied' });
+      return;
+    }
+
+    res.json({ ok: true });
+  } catch (err) {
+    logger.error({ err, userId, id }, '[maturitySnapshots] Remedies patch failed');
+    res.status(500).json({ ok: false, error: 'Could not update snapshot' });
+  }
+});
+
+export default router;
