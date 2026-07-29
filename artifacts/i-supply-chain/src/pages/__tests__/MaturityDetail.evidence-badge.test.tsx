@@ -115,6 +115,22 @@ const AI_EVALUATED_EVIDENCE = {
 };
 
 /**
+ * A self_reported evidence record for the "strategy" segment.
+ * getSegmentTier() returns 'self_reported' when no ai_evaluated (with
+ * plausible_support: true) or consultant_validated record is present.
+ */
+const SELF_REPORTED_EVIDENCE = {
+  id: 3,
+  segId: 'strategy',
+  subSegId: 'strategy-align',
+  subSegLabel: 'Supply chain strategy document',
+  originalFilename: 'strategy-self.pdf',
+  mimeType: 'application/pdf',
+  confidenceTier: 'self_reported' as const,
+  aiEvaluation: null,
+};
+
+/**
  * A consultant_validated evidence record for the "strategy" segment.
  * getSegmentTier() returns 'consultant_validated' whenever any record in the
  * segment carries this tier — regardless of other tiers present.
@@ -371,6 +387,79 @@ describe('MaturityDetail — ConfidenceTierBadge in Arabic mode (lang="ar")', ()
     await waitFor(
       () => {
         const badge = screen.getByText('مُقيَّم بالذكاء الاصطناعي');
+        expect(badge.className).toContain('rounded-full');
+      },
+      { timeout: 3000 },
+    );
+  });
+});
+
+/* ════════════════════════════════════════════════════════════════════════════
+   Arabic-mode tests — Task 784
+   Confirms the self_reported badge renders its Arabic label ("مُبلَّغ ذاتياً")
+   in lang="ar" mode and that the English label never leaks through.
+════════════════════════════════════════════════════════════════════════════ */
+
+describe('MaturityDetail — ConfidenceTierBadge Arabic self-reported badge (Task 784)', () => {
+  beforeEach(() => {
+    langMode = { lang: 'ar', ar: true };
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    cleanup();
+  });
+
+  /* ── Arabic self-reported Test 1 ─────────────────────────────────────────
+     When the page is in Arabic mode and the evidence fetch returns a
+     self_reported record (no aiEvaluation), the Arabic label
+     "مُبلَّغ ذاتياً" must appear in the Evidence column on mount —
+     without any user interaction.
+  ──────────────────────────────────────────────────────────────────────────── */
+  it('shows the Arabic self-reported badge label for a segment with a self_reported record', async () => {
+    stubFetch([SELF_REPORTED_EVIDENCE]);
+
+    render(<MyAssessments />);
+
+    await waitFor(
+      () => {
+        expect(screen.getByText('مُبلَّغ ذاتياً')).toBeInTheDocument();
+      },
+      { timeout: 3000 },
+    );
+  });
+
+  /* ── Arabic self-reported Test 2 ─────────────────────────────────────────
+     The English label "Self-reported" must NOT appear anywhere in the DOM
+     when the interface is in Arabic mode.
+  ──────────────────────────────────────────────────────────────────────────── */
+  it('does NOT show the English "Self-reported" label when lang is Arabic', async () => {
+    stubFetch([SELF_REPORTED_EVIDENCE]);
+
+    render(<MyAssessments />);
+
+    // Wait until the Arabic badge appears (evidence fetch resolved).
+    await waitFor(
+      () => expect(screen.getByText('مُبلَّغ ذاتياً')).toBeInTheDocument(),
+      { timeout: 3000 },
+    );
+
+    // The English label must be absent.
+    expect(screen.queryByText('Self-reported')).toBeNull();
+  });
+
+  /* ── Arabic self-reported Test 3 ─────────────────────────────────────────
+     The Arabic self-reported badge must also be a pill (rounded-full),
+     consistent with the pill rendering used for other tiers.
+  ──────────────────────────────────────────────────────────────────────────── */
+  it('renders the Arabic self-reported badge as a pill (rounded-full class)', async () => {
+    stubFetch([SELF_REPORTED_EVIDENCE]);
+
+    render(<MyAssessments />);
+
+    await waitFor(
+      () => {
+        const badge = screen.getByText('مُبلَّغ ذاتياً');
         expect(badge.className).toContain('rounded-full');
       },
       { timeout: 3000 },
