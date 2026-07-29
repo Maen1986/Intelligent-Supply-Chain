@@ -2,9 +2,10 @@ import { Router, type IRouter } from "express";
 import { z } from "zod";
 import { db } from "@workspace/db";
 import { conversations, messages } from "@workspace/db/schema";
-import { eq, asc } from "drizzle-orm";
+import { eq, asc, and } from "drizzle-orm";
 import { openai } from "@workspace/integrations-openai-ai-server";
 import { OPENAI_MODEL, OPENAI_TTS_MODEL, friendlyAIError } from "../../lib/aiConfig";
+import { requireSession } from "../../middlewares/requireSession";
 
 const router: IRouter = Router();
 
@@ -66,21 +67,50 @@ const SendMessageBody = z.object({
   content: z.string().min(1, "Message cannot be empty"),
 });
 
-// GET /openai/conversations
-router.get("/conversations", async (_req, res) => {
+/* ── Helper: look up a conversation that belongs to the requesting user.
+   Returns the row, or sends a 404 and returns null. Leaking the existence
+   of another user's conversation is itself an information-disclosure issue,
+   so we always return 404 (not 403) on ownership mismatch.                  */
+async function findOwnedConversation(
+  id: number,
+  userId: number,
+  res: import("express").Response,
+) {
+  const [conv] = await db
+    .select()
+    .from(conversations)
+    .where(and(eq(conversations.id, id), eq(conversations.userId, userId)));
+  if (!conv) {
+    res.status(404).json({ error: "Conversation not found" });
+    return null;
+  }
+  return conv;
+}
+
+// GET /openai/conversations — list the authenticated user's conversations
+router.get("/conversations", requireSession, async (req, res) => {
+  const userId = req.session.userId!;
   try {
-    const rows = await db.select().from(conversations).orderBy(asc(conversations.createdAt));
+    const rows = await db
+      .select()
+      .from(conversations)
+      .where(eq(conversations.userId, userId))
+      .orderBy(asc(conversations.createdAt));
     res.json(rows);
   } catch (e) {
     res.status(500).json({ error: "Failed to list conversations" });
   }
 });
 
-// POST /openai/conversations
-router.post("/conversations", async (req, res) => {
+// POST /openai/conversations — create a new conversation owned by the authenticated user
+router.post("/conversations", requireSession, async (req, res) => {
+  const userId = req.session.userId!;
   try {
     const { title } = CreateConversationBody.parse(req.body);
-    const [conv] = await db.insert(conversations).values({ title }).returning();
+    const [conv] = await db
+      .insert(conversations)
+      .values({ title, userId })
+      .returning();
     res.status(201).json(conv);
   } catch (e) {
     if (e instanceof z.ZodError) {
@@ -91,15 +121,13 @@ router.post("/conversations", async (req, res) => {
   }
 });
 
-// GET /openai/conversations/:id
-router.get("/conversations/:id", async (req, res) => {
+// GET /openai/conversations/:id — return conversation + messages (owner only)
+router.get("/conversations/:id", requireSession, async (req, res) => {
+  const userId = req.session.userId!;
+  const id = parseInt(req.params.id as string);
   try {
-    const id = parseInt(req.params.id);
-    const [conv] = await db.select().from(conversations).where(eq(conversations.id, id));
-    if (!conv) {
-      res.status(404).json({ error: "Conversation not found" });
-      return;
-    }
+    const conv = await findOwnedConversation(id, userId, res);
+    if (!conv) return;
     const msgs = await db
       .select()
       .from(messages)
@@ -111,15 +139,13 @@ router.get("/conversations/:id", async (req, res) => {
   }
 });
 
-// DELETE /openai/conversations/:id
-router.delete("/conversations/:id", async (req, res) => {
+// DELETE /openai/conversations/:id — owner only; 404 on mismatch
+router.delete("/conversations/:id", requireSession, async (req, res) => {
+  const userId = req.session.userId!;
+  const id = parseInt(req.params.id as string);
   try {
-    const id = parseInt(req.params.id);
-    const [conv] = await db.select().from(conversations).where(eq(conversations.id, id));
-    if (!conv) {
-      res.status(404).json({ error: "Conversation not found" });
-      return;
-    }
+    const conv = await findOwnedConversation(id, userId, res);
+    if (!conv) return;
     await db.delete(conversations).where(eq(conversations.id, id));
     res.status(204).send();
   } catch (e) {
@@ -127,10 +153,13 @@ router.delete("/conversations/:id", async (req, res) => {
   }
 });
 
-// GET /openai/conversations/:id/messages
-router.get("/conversations/:id/messages", async (req, res) => {
+// GET /openai/conversations/:id/messages — owner only
+router.get("/conversations/:id/messages", requireSession, async (req, res) => {
+  const userId = req.session.userId!;
+  const id = parseInt(req.params.id as string);
   try {
-    const id = parseInt(req.params.id);
+    const conv = await findOwnedConversation(id, userId, res);
+    if (!conv) return;
     const msgs = await db
       .select()
       .from(messages)
@@ -142,9 +171,10 @@ router.get("/conversations/:id/messages", async (req, res) => {
   }
 });
 
-// POST /openai/conversations/:id/messages — SSE streaming
-router.post("/conversations/:id/messages", async (req, res) => {
-  const id = parseInt(req.params.id);
+// POST /openai/conversations/:id/messages — SSE streaming, owner only
+router.post("/conversations/:id/messages", requireSession, async (req, res) => {
+  const userId = req.session.userId!;
+  const id = parseInt(req.params.id as string);
 
   let content: string;
   try {
@@ -158,8 +188,11 @@ router.post("/conversations/:id/messages", async (req, res) => {
     return;
   }
 
-  // Verify conversation exists
-  const [conv] = await db.select().from(conversations).where(eq(conversations.id, id));
+  // Verify the conversation exists and belongs to the requesting user
+  const [conv] = await db
+    .select()
+    .from(conversations)
+    .where(and(eq(conversations.id, id), eq(conversations.userId, userId)));
   if (!conv) {
     res.status(404).json({ error: "Conversation not found" });
     return;
@@ -221,7 +254,7 @@ router.post("/conversations/:id/messages", async (req, res) => {
   }
 });
 
-// POST /openai/tts — text-to-speech with onyx male voice
+// POST /openai/tts — text-to-speech with onyx male voice (no auth required — stateless)
 router.post("/tts", async (req, res) => {
   const { text } = req.body as { text?: string };
   if (!text || typeof text !== "string" || !text.trim()) {

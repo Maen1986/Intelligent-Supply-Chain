@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { db } from '@workspace/db';
 import { submissionsTable } from '@workspace/db';
-import { desc, eq } from 'drizzle-orm';
+import { desc, eq, and } from 'drizzle-orm';
 import { z } from 'zod';
 import { logger } from '../lib/logger';
 import { sendBriefingEmail } from './notify';
@@ -205,6 +205,39 @@ router.get('/mine', requireAuth, async (req, res) => {
   } catch (err) {
     logger.error({ err }, '[submissions/mine] List failed');
     res.status(500).json({ ok: false, error: 'Failed to fetch submissions' });
+  }
+});
+
+/* ── GET /api/submissions/mine/:id ──────────────────────────────────────────
+   Returns a single submission for the authenticated user.
+   Returns 404 (not 403) when the submission id does not belong to the caller
+   — leaking existence is itself an information disclosure.                   */
+router.get('/mine/:id', requireAuth, async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id) || id <= 0) {
+    res.status(400).json({ ok: false, error: 'Invalid submission id' });
+    return;
+  }
+  try {
+    const [row] = await db
+      .select({
+        id:        submissionsTable.id,
+        tool:      submissionsTable.tool,
+        inputs:    submissionsTable.inputs,
+        outputs:   submissionsTable.outputs,
+        createdAt: submissionsTable.createdAt,
+      })
+      .from(submissionsTable)
+      .where(and(eq(submissionsTable.id, id), eq(submissionsTable.userId, req.session.userId!)))
+      .limit(1);
+    if (!row) {
+      res.status(404).json({ ok: false, error: 'Submission not found' });
+      return;
+    }
+    res.json({ ok: true, submission: row });
+  } catch (err) {
+    logger.error({ err }, '[submissions/mine/:id] Fetch failed');
+    res.status(500).json({ ok: false, error: 'Failed to fetch submission' });
   }
 });
 
