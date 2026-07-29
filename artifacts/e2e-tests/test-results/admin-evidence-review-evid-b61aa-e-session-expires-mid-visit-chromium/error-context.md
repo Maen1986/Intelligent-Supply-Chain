@@ -6,8 +6,8 @@
 
 # Test info
 
-- Name: admin-evidence-review.spec.ts >> admin validates an AI-evaluated record and sees Consultant-validated badge
-- Location: tests/admin-evidence-review.spec.ts:101:1
+- Name: admin-evidence-review.spec.ts >> evidence review queue disappears when the session expires mid-visit
+- Location: tests/admin-evidence-review.spec.ts:176:1
 
 # Error details
 
@@ -43,67 +43,6 @@ Call log:
 # Test source
 
 ```ts
-  47  |     summary: 'Document clearly evidences the claimed maturity level.',
-  48  |   },
-  49  |   consultantNotes: null,
-  50  |   reviewedBy: null,
-  51  |   reviewedAt: null,
-  52  |   createdAt: new Date(Date.now() - 3600_000).toISOString(),
-  53  | };
-  54  | 
-  55  | const VALIDATED_RECORD = {
-  56  |   ...AI_EVALUATED_RECORD,
-  57  |   confidenceTier: 'consultant_validated',
-  58  |   consultantNotes: 'Reviewed and approved.',
-  59  |   reviewedBy: 2,
-  60  |   reviewedAt: new Date().toISOString(),
-  61  | };
-  62  | 
-  63  | /* ── Fixtures (non-admin) ───────────────────────────────────────────────────── */
-  64  | 
-  65  | const MOCK_REGULAR_USER = {
-  66  |   id: 5,
-  67  |   email: 'user@example.com',
-  68  |   fullName: 'Regular User',
-  69  |   role: 'user',
-  70  |   mobile: '+966500000005',
-  71  |   designation: 'Analyst',
-  72  |   company: 'I Supply Chain',
-  73  | };
-  74  | 
-  75  | /* ── Tests ──────────────────────────────────────────────────────────────────── */
-  76  | 
-  77  | test('non-admin user is blocked from seeing the evidence review queue', async ({ page }) => {
-  78  | 
-  79  |   /* 1 — Catch-all for any stray API calls */
-  80  |   await page.route('**/api/**', (route) =>
-  81  |     route.fulfill({ status: 200, contentType: 'application/json',
-  82  |       body: JSON.stringify({ ok: true }) }));
-  83  | 
-  84  |   /* 2 — Auth: regular (non-admin) session */
-  85  |   await page.route('**/api/auth/me', (route) =>
-  86  |     route.fulfill({ status: 200, contentType: 'application/json',
-  87  |       body: JSON.stringify({ ok: true, user: MOCK_REGULAR_USER }) }));
-  88  | 
-  89  |   /* 3 — Navigate to the admin review queue */
-  90  |   await page.goto('/admin/evidence-review');
-  91  | 
-  92  |   /* 4 — The "Evidence Review Queue" heading must NOT be visible */
-  93  |   await expect(page.getByText('Evidence Review Queue')).not.toBeVisible({ timeout: 10_000 });
-  94  | 
-  95  |   /* 5 — An access-denied message is shown instead */
-  96  |   await expect(
-  97  |     page.getByText(/administrators only|للمديرين فقط/i)
-  98  |   ).toBeVisible({ timeout: 10_000 });
-  99  | });
-  100 | 
-  101 | test('admin validates an AI-evaluated record and sees Consultant-validated badge', async ({ page }) => {
-  102 | 
-  103 |   /* 1 — Catch-all first (registered first = lowest LIFO priority) */
-  104 |   await page.route('**/api/**', (route) =>
-  105 |     route.fulfill({ status: 200, contentType: 'application/json',
-  106 |       body: JSON.stringify({ ok: true }) }));
-  107 | 
   108 |   /* 2 — Auth: admin session */
   109 |   await page.route('**/api/auth/me', (route) =>
   110 |     route.fulfill({ status: 200, contentType: 'application/json',
@@ -143,8 +82,7 @@ Call log:
   144 |   });
   145 | 
   146 |   /* 4 — Navigate to the admin review queue */
-> 147 |   await page.goto('/admin/evidence-review');
-      |              ^ Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:18807/admin/evidence-review
+  147 |   await page.goto('/admin/evidence-review');
   148 | 
   149 |   /* 5 — Page header */
   150 |   await expect(page.getByText('Evidence Review Queue')).toBeVisible({ timeout: 10_000 });
@@ -205,7 +143,8 @@ Call log:
   205 |   });
   206 | 
   207 |   /* 4 — Navigate to the admin review queue */
-  208 |   await page.goto('/admin/evidence-review');
+> 208 |   await page.goto('/admin/evidence-review');
+      |              ^ Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:18807/admin/evidence-review
   209 | 
   210 |   /* 5 — The queue is visible while the session is valid */
   211 |   await expect(page.getByText('Evidence Review Queue')).toBeVisible({ timeout: 10_000 });

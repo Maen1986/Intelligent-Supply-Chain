@@ -6,8 +6,8 @@
 
 # Test info
 
-- Name: admin-evidence-review.spec.ts >> admin validates an AI-evaluated record and sees Consultant-validated badge
-- Location: tests/admin-evidence-review.spec.ts:101:1
+- Name: admin-evidence-review.spec.ts >> non-admin user is blocked from seeing the evidence review queue
+- Location: tests/admin-evidence-review.spec.ts:77:1
 
 # Error details
 
@@ -43,6 +43,52 @@ Call log:
 # Test source
 
 ```ts
+  1   | /**
+  2   |  * E2E — Admin evidence review queue.
+  3   |  *
+  4   |  * Scenario:
+  5   |  *   An admin navigates to /admin/evidence-review, sees an AI-evaluated record
+  6   |  *   in the queue, clicks "Validate ✓", and confirms the status badge updates
+  7   |  *   to "Consultant-validated".
+  8   |  *
+  9   |  * All API calls are intercepted via page.route().
+  10  |  * Route ordering: Playwright is LIFO — register catch-all first so specific
+  11  |  * handlers (registered after) take priority.
+  12  |  *
+  13  |  * Important: the page also renders a filter button labelled "Consultant-validated"
+  14  |  * which matches /validate/i.  Always use exact text ('Validate ✓') or scope
+  15  |  * locators to the table body when targeting the action button.
+  16  |  */
+  17  | 
+  18  | import { test, expect } from '@playwright/test';
+  19  | 
+  20  | /* ── Fixtures ───────────────────────────────────────────────────────────────── */
+  21  | 
+  22  | const MOCK_ADMIN = {
+  23  |   id: 2,
+  24  |   email: 'admin@example.com',
+  25  |   fullName: 'Administrator',
+  26  |   role: 'admin',
+  27  |   mobile: '+966500000002',
+  28  |   designation: 'Administrator',
+  29  |   company: 'I Supply Chain',
+  30  | };
+  31  | 
+  32  | const AI_EVALUATED_RECORD = {
+  33  |   id: 1,
+  34  |   userId: 10,
+  35  |   snapshotId: 42,
+  36  |   segId: 'strategy',
+  37  |   subSegId: 'strategy-sub-1',
+  38  |   subSegLabel: 'Supply Chain Strategy Document',
+  39  |   originalFilename: 'strategy-doc.pdf',
+  40  |   mimeType: 'application/pdf',
+  41  |   storagePath: '/objects/maturity-evidence/10/42/strategy/strategy-sub-1/uuid.pdf',
+  42  |   confidenceTier: 'ai_evaluated',
+  43  |   aiEvaluation: {
+  44  |     plausible_support: true,
+  45  |     confidence: 'high',
+  46  |     flag_reason: null,
   47  |     summary: 'Document clearly evidences the claimed maturity level.',
   48  |   },
   49  |   consultantNotes: null,
@@ -86,7 +132,8 @@ Call log:
   87  |       body: JSON.stringify({ ok: true, user: MOCK_REGULAR_USER }) }));
   88  | 
   89  |   /* 3 — Navigate to the admin review queue */
-  90  |   await page.goto('/admin/evidence-review');
+> 90  |   await page.goto('/admin/evidence-review');
+      |              ^ Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:18807/admin/evidence-review
   91  | 
   92  |   /* 4 — The "Evidence Review Queue" heading must NOT be visible */
   93  |   await expect(page.getByText('Evidence Review Queue')).not.toBeVisible({ timeout: 10_000 });
@@ -143,8 +190,7 @@ Call log:
   144 |   });
   145 | 
   146 |   /* 4 — Navigate to the admin review queue */
-> 147 |   await page.goto('/admin/evidence-review');
-      |              ^ Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:18807/admin/evidence-review
+  147 |   await page.goto('/admin/evidence-review');
   148 | 
   149 |   /* 5 — Page header */
   150 |   await expect(page.getByText('Evidence Review Queue')).toBeVisible({ timeout: 10_000 });
@@ -188,57 +234,4 @@ Call log:
   188 |   /* 3 — Initial queue load returns the AI-evaluated record */
   189 |   let sessionExpired = false;
   190 | 
-  191 |   await page.route('**/api/admin/evidence-review**', (route) => {
-  192 |     if (sessionExpired) {
-  193 |       /* Once the session has "expired", the backend rejects the request */
-  194 |       return route.fulfill({
-  195 |         status: 401,
-  196 |         contentType: 'application/json',
-  197 |         body: JSON.stringify({ ok: false, error: 'Session expired' }),
-  198 |       });
-  199 |     }
-  200 |     return route.fulfill({
-  201 |       status: 200,
-  202 |       contentType: 'application/json',
-  203 |       body: JSON.stringify({ ok: true, records: [AI_EVALUATED_RECORD], total: 1 }),
-  204 |     });
-  205 |   });
-  206 | 
-  207 |   /* 4 — Navigate to the admin review queue */
-  208 |   await page.goto('/admin/evidence-review');
-  209 | 
-  210 |   /* 5 — The queue is visible while the session is valid */
-  211 |   await expect(page.getByText('Evidence Review Queue')).toBeVisible({ timeout: 10_000 });
-  212 |   await expect(page.getByText('strategy-doc.pdf')).toBeVisible({ timeout: 8_000 });
-  213 | 
-  214 |   /* 6 — Simulate session expiry: /api/auth/me now returns a non-admin user
-  215 |           and the evidence-review API will start returning 401               */
-  216 |   sessionExpired = true;
-  217 |   await page.unroute('**/api/auth/me');
-  218 |   await page.route('**/api/auth/me', (route) =>
-  219 |     route.fulfill({ status: 200, contentType: 'application/json',
-  220 |       body: JSON.stringify({ ok: true, user: MOCK_REGULAR_USER }) }));
-  221 | 
-  222 |   /* 7 — Click Refresh to trigger a re-fetch with the expired session */
-  223 |   const refreshBtn = page.getByRole('button', { name: /refresh|تحديث/i });
-  224 |   await expect(refreshBtn).toBeVisible();
-  225 |   await refreshBtn.click();
-  226 | 
-  227 |   /* 8 — The evidence queue table / file row must no longer be visible */
-  228 |   await expect(page.getByText('strategy-doc.pdf')).not.toBeVisible({ timeout: 10_000 });
-  229 | 
-  230 |   /* 9 — Either an access-denied message or a fetch error is shown instead —
-  231 |           both indicate the page correctly blocked the stale/expired session  */
-  232 |   const accessDenied = page.getByText(/administrators only|للمديرين فقط/i);
-  233 |   const fetchError   = page.getByText(/session expired|fetch failed|unknown error/i);
-  234 |   const eitherVisible = await Promise.race([
-  235 |     accessDenied.isVisible().then(v => v),
-  236 |     fetchError.isVisible().then(v => v),
-  237 |   ]);
-  238 |   // Poll briefly if neither is immediately true
-  239 |   if (!eitherVisible) {
-  240 |     await expect(accessDenied.or(fetchError)).toBeVisible({ timeout: 10_000 });
-  241 |   }
-  242 | });
-  243 | 
 ```

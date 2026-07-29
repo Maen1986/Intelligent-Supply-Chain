@@ -333,6 +333,125 @@ test('uploads a PDF and sees the Flagged badge — not AI-verified — when plau
   fs.unlinkSync(pdfPath);
 });
 
+/* ── Arabic Flagged-evidence test ──────────────────────────────────────────── */
+
+test('Arabic mode: uploads a PDF and sees the Arabic Flagged badge — not AI-verified — when plausible_support is false', async ({ page }) => {
+
+  /* 1 — Catch-all first */
+  await page.route('**/api/**', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json',
+      body: JSON.stringify({ ok: true }) }));
+
+  /* 2 — Specific handlers */
+
+  await page.route('**/api/auth/me', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json',
+      body: JSON.stringify({ ok: true, user: MOCK_USER }) }));
+
+  await page.route('**/api/maturity/snapshots', async (route) => {
+    if (route.request().method() === 'POST') {
+      return route.fulfill({ status: 201, contentType: 'application/json',
+        body: JSON.stringify({ ok: true, id: MOCK_SNAPSHOT.id }) });
+    }
+    return route.fulfill({ status: 200, contentType: 'application/json',
+      body: JSON.stringify({ ok: true, snapshots: [MOCK_SNAPSHOT] }) });
+  });
+
+  /* Evidence routes — confirm returns plausible_support: false */
+  let evidenceGetCount = 0;
+  await page.route('**/api/maturity/evidence**', async (route) => {
+    const url  = route.request().url();
+    const meth = route.request().method();
+
+    if (meth === 'POST' && url.includes('/confirm')) {
+      await new Promise(r => setTimeout(r, 400));
+      return route.fulfill({ status: 200, contentType: 'application/json',
+        body: JSON.stringify({
+          ok: true,
+          confidence_tier: 'ai_evaluated',
+          ai_evaluation: AI_EVALUATION_FLAGGED,
+        }) });
+    }
+    if (meth === 'POST' && url.includes('/upload-url')) {
+      return route.fulfill({ status: 201, contentType: 'application/json',
+        body: JSON.stringify({ ok: true, evidence_id: 3,
+          upload_url: 'https://storage.example.com/presigned-put' }) });
+    }
+    if (meth === 'GET') {
+      evidenceGetCount++;
+      const records = evidenceGetCount > 1 ? [{ ...EVIDENCE_RECORD_FLAGGED, id: 3 }] : [];
+      return route.fulfill({ status: 200, contentType: 'application/json',
+        body: JSON.stringify({ ok: true, evidence: records }) });
+    }
+    return route.fulfill({ status: 200, contentType: 'application/json',
+      body: JSON.stringify({ ok: true }) });
+  });
+
+  /* GCS presigned PUT */
+  await page.route('https://storage.example.com/**', (route) =>
+    route.fulfill({ status: 200 }));
+
+  /* 3 — Seed localStorage with Arabic language and results-phase draft */
+  await page.addInitScript((draft: string) => {
+    localStorage.setItem('isc-lang', 'ar');
+    localStorage.setItem('maturity_draft_v2', draft);
+  }, JSON.stringify({
+    phase: 'results',
+    answers: buildAnswers(),
+    intakeData: { industry: '', companySize: 'enterprise' },
+  }));
+
+  /* 4 — Navigate */
+  await page.goto('/maturity');
+
+  /* 5 — Wait for results */
+  await expect(page.locator('[data-testid="maturity-results"]')).toBeVisible({ timeout: 15_000 });
+
+  /* 6 — Dismiss feedback modal if it appears (title differs by language) */
+  const feedbackDialog = page.getByRole('dialog', { name: /how was your experience|كيف كانت تجربتك/i });
+  try {
+    await feedbackDialog.waitFor({ state: 'visible', timeout: 5_000 });
+    const notNowBtn = feedbackDialog.getByRole('button').filter({ hasText: /not now|ليس الآن/i }).first();
+    await notNowBtn.click();
+    await feedbackDialog.waitFor({ state: 'hidden', timeout: 3_000 });
+  } catch {
+    // Dialog did not appear — proceed.
+  }
+
+  /* 7 — Open Arabic accordion trigger */
+  const accordionBtn = page.getByText('إضافة أدلة داعمة').first();
+  await expect(accordionBtn).toBeVisible({ timeout: 10_000 });
+  await accordionBtn.click();
+
+  /* 8 — Arabic upload zone is visible */
+  const uploadZone = page.getByText(
+    'أضف دليلاً داعماً (اختياري) — PDF، Word، أو صورة',
+  ).first();
+  await expect(uploadZone).toBeVisible({ timeout: 5_000 });
+
+  /* 9 — Create a minimal PDF */
+  const pdfPath = path.join(os.tmpdir(), 'e2e-evidence-ar-flagged.pdf');
+  fs.writeFileSync(pdfPath, '%PDF-1.4\n1 0 obj<</Type/Catalog>>endobj\n%%EOF\n');
+
+  /* 10 — Trigger upload */
+  const [fileChooser] = await Promise.all([
+    page.waitForEvent('filechooser'),
+    uploadZone.click(),
+  ]);
+  await fileChooser.setFiles(pdfPath);
+
+  /* 11 — Progress states (Arabic labels) */
+  await expect(page.getByText('جارٍ رفع الملف…')).toBeVisible({ timeout: 5_000 });
+  await expect(page.getByText('يُقيَّم بالذكاء الاصطناعي…')).toBeVisible({ timeout: 10_000 });
+
+  /* 12 — Arabic Flagged badge must appear; Arabic AI-verified badge must NOT */
+  await expect(page.getByText('مُحدَّد — نموذج عام غير مُعدَّل')).toBeVisible({ timeout: 10_000 });
+  await expect(page.getByText('مُتحقَّق منه بالذكاء الاصطناعي ✓')).not.toBeVisible();
+
+  /* Cleanup */
+  fs.unlinkSync(pdfPath);
+});
+
 test('re-upload: remove existing evidence and upload a replacement — badge appears again', async ({ page }) => {
 
   /* 1 — Catch-all first */

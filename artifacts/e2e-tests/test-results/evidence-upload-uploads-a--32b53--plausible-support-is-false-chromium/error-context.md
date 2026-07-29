@@ -193,4 +193,56 @@ Call log:
   333 |   fs.unlinkSync(pdfPath);
   334 | });
   335 | 
+  336 | /* ── Arabic Flagged-evidence test ──────────────────────────────────────────── */
+  337 | 
+  338 | test('Arabic mode: uploads a PDF and sees the Arabic Flagged badge — not AI-verified — when plausible_support is false', async ({ page }) => {
+  339 | 
+  340 |   /* 1 — Catch-all first */
+  341 |   await page.route('**/api/**', (route) =>
+  342 |     route.fulfill({ status: 200, contentType: 'application/json',
+  343 |       body: JSON.stringify({ ok: true }) }));
+  344 | 
+  345 |   /* 2 — Specific handlers */
+  346 | 
+  347 |   await page.route('**/api/auth/me', (route) =>
+  348 |     route.fulfill({ status: 200, contentType: 'application/json',
+  349 |       body: JSON.stringify({ ok: true, user: MOCK_USER }) }));
+  350 | 
+  351 |   await page.route('**/api/maturity/snapshots', async (route) => {
+  352 |     if (route.request().method() === 'POST') {
+  353 |       return route.fulfill({ status: 201, contentType: 'application/json',
+  354 |         body: JSON.stringify({ ok: true, id: MOCK_SNAPSHOT.id }) });
+  355 |     }
+  356 |     return route.fulfill({ status: 200, contentType: 'application/json',
+  357 |       body: JSON.stringify({ ok: true, snapshots: [MOCK_SNAPSHOT] }) });
+  358 |   });
+  359 | 
+  360 |   /* Evidence routes — confirm returns plausible_support: false */
+  361 |   let evidenceGetCount = 0;
+  362 |   await page.route('**/api/maturity/evidence**', async (route) => {
+  363 |     const url  = route.request().url();
+  364 |     const meth = route.request().method();
+  365 | 
+  366 |     if (meth === 'POST' && url.includes('/confirm')) {
+  367 |       await new Promise(r => setTimeout(r, 400));
+  368 |       return route.fulfill({ status: 200, contentType: 'application/json',
+  369 |         body: JSON.stringify({
+  370 |           ok: true,
+  371 |           confidence_tier: 'ai_evaluated',
+  372 |           ai_evaluation: AI_EVALUATION_FLAGGED,
+  373 |         }) });
+  374 |     }
+  375 |     if (meth === 'POST' && url.includes('/upload-url')) {
+  376 |       return route.fulfill({ status: 201, contentType: 'application/json',
+  377 |         body: JSON.stringify({ ok: true, evidence_id: 3,
+  378 |           upload_url: 'https://storage.example.com/presigned-put' }) });
+  379 |     }
+  380 |     if (meth === 'GET') {
+  381 |       evidenceGetCount++;
+  382 |       const records = evidenceGetCount > 1 ? [{ ...EVIDENCE_RECORD_FLAGGED, id: 3 }] : [];
+  383 |       return route.fulfill({ status: 200, contentType: 'application/json',
+  384 |         body: JSON.stringify({ ok: true, evidence: records }) });
+  385 |     }
+  386 |     return route.fulfill({ status: 200, contentType: 'application/json',
+  387 |       body: JSON.stringify({ ok: true }) });
 ```
