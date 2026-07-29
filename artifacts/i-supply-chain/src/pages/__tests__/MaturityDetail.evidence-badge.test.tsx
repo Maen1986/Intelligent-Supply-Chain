@@ -466,3 +466,96 @@ describe('MaturityDetail — ConfidenceTierBadge Arabic self-reported badge (Tas
     );
   });
 });
+
+/* ════════════════════════════════════════════════════════════════════════════
+   Arabic-mode tests — Task 787
+   Confirms the consultant_validated badge renders its Arabic label
+   ("مُعتمَد من الاستشاري") and amber styling in lang="ar" mode.
+════════════════════════════════════════════════════════════════════════════ */
+
+describe('MaturityDetail — Consultant-validated badge in Arabic mode (lang="ar")', () => {
+  beforeEach(() => {
+    langMode = { lang: 'ar', ar: true };
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    cleanup();
+  });
+
+  /* ── Arabic Consultant Test 1 ────────────────────────────────────────────
+     When the page is rendered in Arabic mode and the evidence fetch returns
+     a consultant_validated record, the Arabic badge label
+     "مُعتمَد من الاستشاري" must appear in the Evidence column on mount
+     without any user interaction.
+  ──────────────────────────────────────────────────────────────────────────── */
+  it('shows the Arabic Consultant-validated badge label on mount', async () => {
+    stubFetch([CONSULTANT_VALIDATED_EVIDENCE]);
+
+    render(<MyAssessments />);
+
+    await waitFor(
+      () => {
+        expect(screen.getByText('مُعتمَد من الاستشاري')).toBeInTheDocument();
+      },
+      { timeout: 3000 },
+    );
+  });
+
+  /* ── Arabic Consultant Test 2 ────────────────────────────────────────────
+     The English label "Consultant-validated" must NOT appear in the DOM
+     when the interface is in Arabic mode.
+  ──────────────────────────────────────────────────────────────────────────── */
+  it('does NOT show the English "Consultant-validated" label when lang is Arabic', async () => {
+    stubFetch([CONSULTANT_VALIDATED_EVIDENCE]);
+
+    render(<MyAssessments />);
+
+    // Wait until the Arabic badge appears (evidence fetch resolved).
+    await waitFor(
+      () => expect(screen.getByText('مُعتمَد من الاستشاري')).toBeInTheDocument(),
+      { timeout: 3000 },
+    );
+
+    // The English label must be absent.
+    expect(screen.queryByText('Consultant-validated')).toBeNull();
+  });
+
+  /* ── Arabic Consultant Test 3 ────────────────────────────────────────────
+     The Arabic Consultant-validated badge must carry amber styling
+     (bg-amber-100 and text-amber-800) so the tier colour is preserved
+     across locales.
+  ──────────────────────────────────────────────────────────────────────────── */
+  it('renders the Arabic Consultant-validated badge with amber styling', async () => {
+    stubFetch([CONSULTANT_VALIDATED_EVIDENCE]);
+
+    render(<MyAssessments />);
+
+    await waitFor(
+      () => {
+        const badge = screen.getByText('مُعتمَد من الاستشاري');
+        expect(badge.className).toContain('bg-amber-100');
+        expect(badge.className).toContain('text-amber-800');
+      },
+      { timeout: 3000 },
+    );
+  });
+
+  /* ── Arabic Consultant Test 4 ────────────────────────────────────────────
+     The Arabic Consultant-validated badge must render as a pill
+     (rounded-full class), consistent with all other badge tiers in pill mode.
+  ──────────────────────────────────────────────────────────────────────────── */
+  it('renders the Arabic Consultant-validated badge as a pill (rounded-full class)', async () => {
+    stubFetch([CONSULTANT_VALIDATED_EVIDENCE]);
+
+    render(<MyAssessments />);
+
+    await waitFor(
+      () => {
+        const badge = screen.getByText('مُعتمَد من الاستشاري');
+        expect(badge.className).toContain('rounded-full');
+      },
+      { timeout: 3000 },
+    );
+  });
+});
