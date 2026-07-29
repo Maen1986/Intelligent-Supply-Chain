@@ -310,6 +310,30 @@ describe('MaturitySummarySection — per-segment tier badges', () => {
     expect(slot.textContent).not.toContain('Self-reported');
   });
 
+  it('consultant_validated beats ai_evaluated when both appear for the same segment (EN)', () => {
+    // ai_evaluated + consultant_validated → should show consultant_validated
+    const tiers = [
+      { segId: 'strategy', subSegId: 'strategy-1', tier: 'ai_evaluated' as const },
+      { segId: 'strategy', subSegId: 'strategy-2', tier: 'consultant_validated' as const },
+    ];
+    render(<MaturitySummarySection maturity={makeContext({ evidenceTiers: tiers })} />);
+    const slot = screen.getByTestId('mss-weak-segment-0');
+    expect(slot.textContent).toContain('Consultant-validated');
+    expect(slot.textContent).not.toContain('AI-evaluated');
+  });
+
+  it('consultant_validated beats ai_evaluated when both appear for the same segment (AR)', () => {
+    // ai_evaluated + consultant_validated → should show مُعتمَد من الاستشاري in AR mode
+    const tiers = [
+      { segId: 'strategy', subSegId: 'strategy-1', tier: 'ai_evaluated' as const },
+      { segId: 'strategy', subSegId: 'strategy-2', tier: 'consultant_validated' as const },
+    ];
+    render(<MaturitySummarySection maturity={makeContext({ evidenceTiers: tiers })} isAr />);
+    const slot = screen.getByTestId('mss-weak-segment-0');
+    expect(slot.textContent).toContain('مُعتمَد من الاستشاري');
+    expect(slot.textContent).not.toContain('مُقيَّم بالذكاء الاصطناعي');
+  });
+
   it('shows no badge for a segment that has no matching evidenceTiers entry', () => {
     // Only procurement and logistics have tiers; Strategy (rank 0) has none
     const tiers = [
