@@ -690,6 +690,89 @@ test('failed DELETE shows error message and keeps the AI-verified badge visible'
   await expect(page.getByText('AI-verified ✓')).toBeVisible();
 });
 
+/* ── Arabic: failed DELETE shows Arabic error, badge stays visible ──────── */
+
+test('Arabic mode: failed DELETE shows Arabic error message and keeps the Arabic AI-verified badge visible', async ({ page }) => {
+
+  /* 1 — Catch-all first */
+  await page.route('**/api/**', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json',
+      body: JSON.stringify({ ok: true }) }));
+
+  /* 2 — Auth */
+  await page.route('**/api/auth/me', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json',
+      body: JSON.stringify({ ok: true, user: MOCK_USER }) }));
+
+  /* 3 — Snapshots */
+  await page.route('**/api/maturity/snapshots', async (route) => {
+    if (route.request().method() === 'POST') {
+      return route.fulfill({ status: 201, contentType: 'application/json',
+        body: JSON.stringify({ ok: true, id: MOCK_SNAPSHOT.id }) });
+    }
+    return route.fulfill({ status: 200, contentType: 'application/json',
+      body: JSON.stringify({ ok: true, snapshots: [MOCK_SNAPSHOT] }) });
+  });
+
+  /* 4 — Evidence: GET always returns the AI-verified record; DELETE returns 500 */
+  await page.route('**/api/maturity/evidence**', async (route) => {
+    const meth = route.request().method();
+
+    if (meth === 'DELETE') {
+      return route.fulfill({ status: 500, contentType: 'application/json',
+        body: JSON.stringify({ ok: false, error: 'Internal server error' }) });
+    }
+    if (meth === 'GET') {
+      return route.fulfill({ status: 200, contentType: 'application/json',
+        body: JSON.stringify({ ok: true, evidence: [EVIDENCE_RECORD] }) });
+    }
+    return route.fulfill({ status: 200, contentType: 'application/json',
+      body: JSON.stringify({ ok: true }) });
+  });
+
+  /* 5 — Seed localStorage with Arabic language and results-phase draft */
+  await page.addInitScript((draft: string) => {
+    localStorage.setItem('isc-lang', 'ar');
+    localStorage.setItem('maturity_draft_v2', draft);
+  }, JSON.stringify({
+    phase: 'results',
+    answers: buildAnswers(),
+    intakeData: { industry: '', companySize: 'enterprise' },
+  }));
+
+  /* 6 — Navigate and wait for results */
+  await page.goto('/maturity');
+  await expect(page.locator('[data-testid="maturity-results"]')).toBeVisible({ timeout: 15_000 });
+
+  /* 7 — Dismiss feedback modal if it appears */
+  const feedbackDialog = page.getByRole('dialog', { name: /how was your experience|كيف كانت تجربتك/i });
+  try {
+    await feedbackDialog.waitFor({ state: 'visible', timeout: 5_000 });
+    const notNowBtn = feedbackDialog.getByRole('button').filter({ hasText: /not now|ليس الآن/i }).first();
+    await notNowBtn.click();
+    await feedbackDialog.waitFor({ state: 'hidden', timeout: 3_000 });
+  } catch { /* did not appear */ }
+
+  /* 8 — Open Arabic evidence accordion */
+  const accordionBtn = page.getByText('إضافة أدلة داعمة').first();
+  await expect(accordionBtn).toBeVisible({ timeout: 10_000 });
+  await accordionBtn.click();
+
+  /* 9 — Arabic AI-verified badge is visible before attempting removal */
+  await expect(page.getByText('مُتحقَّق منه بالذكاء الاصطناعي ✓')).toBeVisible({ timeout: 8_000 });
+
+  /* 10 — Click the remove (×) button */
+  const removeBtn = page.getByRole('button', { name: /إزالة الدليل/i }).first();
+  await expect(removeBtn).toBeVisible({ timeout: 5_000 });
+  await removeBtn.click();
+
+  /* 11 — Arabic error message appears */
+  await expect(page.getByText('تعذّر حذف الملف. حاول مجدداً.')).toBeVisible({ timeout: 8_000 });
+
+  /* 12 — Arabic AI-verified badge is still visible (badge was not removed) */
+  await expect(page.getByText('مُتحقَّق منه بالذكاء الاصطناعي ✓')).toBeVisible();
+});
+
 /* ── Consultant-validated — remove button hidden ────────────────────────── */
 
 const EVIDENCE_RECORD_CONSULTANT = {
