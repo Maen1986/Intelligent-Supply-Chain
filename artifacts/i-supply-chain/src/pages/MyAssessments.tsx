@@ -89,12 +89,14 @@ function toolColor(tool: string) {
 
 /* ── Maturity detail sub-component ─────────────────────────────────────────── */
 
-function MaturityDetail({ inputs, outputs, ar, snapshotId, lang }: {
-  inputs:     MaturityInputs;
-  outputs:    MaturityOutputs;
-  ar:         boolean;
-  snapshotId: number;
-  lang:       'en' | 'ar';
+function MaturityDetail({ inputs, outputs, ar, snapshotId, lang, expandedEvSeg, setExpandedEvSeg }: {
+  inputs:            MaturityInputs;
+  outputs:           MaturityOutputs;
+  ar:                boolean;
+  snapshotId:        number;
+  lang:              'en' | 'ar';
+  expandedEvSeg:     Set<string>;
+  setExpandedEvSeg:  React.Dispatch<React.SetStateAction<Set<string>>>;
 }) {
   const segs: SegScore[] = outputs.segmentScores ?? [];
   const score  = parseFloat(String(outputs.overallScore ?? 0));
@@ -103,7 +105,6 @@ function MaturityDetail({ inputs, outputs, ar, snapshotId, lang }: {
   /* ── Evidence state ──────────────────────────────────────────────────── */
   const [evidenceList,    setEvidenceList]    = useState<EvidenceRecord[]>([]);
   const [evidenceLoading, setEvidenceLoading] = useState(false);
-  const [expandedEvSeg,   setExpandedEvSeg]   = useState<Set<string>>(new Set());
 
   const loadEvidence = () => {
     if (!snapshotId) return;
@@ -451,6 +452,8 @@ function CommandCentreDetail({ inputs, outputs, ar }: {
 
 function SubmissionCard({ sub, ar, defaultOpen }: { sub: Submission; ar: boolean; defaultOpen?: boolean }) {
   const [open, setOpen] = useState(defaultOpen ?? false);
+  /* Lifted from MaturityDetail so accordion state survives card collapse/re-expand */
+  const [expandedEvSeg, setExpandedEvSeg] = useState<Set<string>>(new Set());
   const color  = toolColor(sub.tool);
   const inputs  = (sub.inputs  ?? {}) as AnyInputs;
   const outputs = (sub.outputs ?? {}) as AnyOutputs;
@@ -527,6 +530,8 @@ function SubmissionCard({ sub, ar, defaultOpen }: { sub: Submission; ar: boolean
                   ar={ar}
                   snapshotId={sub.id}
                   lang={ar ? 'ar' : 'en'}
+                  expandedEvSeg={expandedEvSeg}
+                  setExpandedEvSeg={setExpandedEvSeg}
                 />
               )}
               {sub.tool === 'diagnostic' && (
