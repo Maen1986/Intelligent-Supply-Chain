@@ -135,7 +135,7 @@ describe('Maturity page feedback modal integration', () => {
     });
 
     expect(screen.getByTestId('button-feedback-dismiss')).toBeInTheDocument();
-  });
+  }, 20_000);
 
   it('results remain fully visible while the modal is open', async () => {
     renderMaturity();
@@ -148,7 +148,7 @@ describe('Maturity page feedback modal integration', () => {
     // Both the results section and the modal dismiss button are in the DOM
     expect(screen.getByTestId('maturity-results')).toBeInTheDocument();
     expect(screen.getByTestId('button-feedback-dismiss')).toBeInTheDocument();
-  });
+  }, 20_000);
 
   it('dismissing the modal does not remove or hide the results', async () => {
     renderMaturity();

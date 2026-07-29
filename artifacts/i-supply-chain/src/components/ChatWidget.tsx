@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Send, RotateCcw, Volume2, VolumeX } from 'lucide-react';
 import { useLanguage } from '@/lib/LanguageContext';
+import { useAuth } from '@/lib/AuthContext';
 
 interface ChatMessage {
   role: 'user' | 'assistant';
@@ -25,6 +26,7 @@ const QUICK_SUGGESTIONS_AR = [
 
 export function ChatWidget() {
   const { lang } = useLanguage();
+  const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
@@ -36,6 +38,9 @@ export function ChatWidget() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const abortRef = useRef<AbortController | null>(null);
+  // Track the previous user id so we can detect identity changes (sign-out or
+  // a different user signing in on the same browser tab).
+  const prevUserIdRef = useRef<number | undefined>(undefined);
 
   // Ref to the Chrome keep-alive interval (fixes the ~15s auto-pause bug)
   const ttsWatchdogRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -294,7 +299,7 @@ export function ChatWidget() {
     }
   };
 
-  const resetChat = () => {
+  const resetChat = useCallback(() => {
     // Kill any in-flight stream so its callbacks don't write back into the cleared messages
     abortRef.current?.abort();
     abortRef.current = null;
@@ -305,7 +310,22 @@ export function ChatWidget() {
     setMessages([]);
     setConversationId(null);
     setError(null);
-  };
+  }, [stopSpeaking]);
+
+  // ── Clear chat when the authenticated identity changes ───────────────────
+  // If User A signs out and User B signs in on the same browser tab without a
+  // hard reload, the ChatWidget component stays mounted.  Watching `user.id`
+  // lets us wipe the in-memory conversation the moment the identity shifts,
+  // preventing User A's messages from leaking into User B's session.
+  useEffect(() => {
+    const prev = prevUserIdRef.current;
+    const curr = user?.id;
+    prevUserIdRef.current = curr;
+    // Only fire on actual identity changes, not on the very first mount.
+    if (prev !== undefined && prev !== curr) {
+      resetChat();
+    }
+  }, [user?.id, resetChat]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const suggestions = lang === 'ar' ? QUICK_SUGGESTIONS_AR : QUICK_SUGGESTIONS;
   const isRtl = lang === 'ar';

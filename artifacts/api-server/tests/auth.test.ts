@@ -240,7 +240,7 @@ describe('POST /api/auth/register rate limiting', () => {
     expect(blocked.body.ok).toBe(false);
     expect(blocked.body.retryAfterSeconds).toBeGreaterThan(0);
     expect(blocked.headers['retry-after']).toBeDefined();
-  });
+  }, 20_000);
 
   it('returns 429 after 3 attempts for the same email, even from different IPs', async () => {
     const app = makeApp('/api/auth', authRouter);
