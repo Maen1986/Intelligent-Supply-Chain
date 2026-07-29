@@ -11,7 +11,7 @@ import { useAuth } from '@/lib/AuthContext';
 import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
   ResponsiveContainer, Tooltip, Legend, BarChart, Bar, XAxis, YAxis,
-  CartesianGrid,
+  CartesianGrid, Cell,
 } from 'recharts';
 import {
   ChevronRight, ChevronLeft, BarChart3, Award,
@@ -271,19 +271,27 @@ export function Maturity() {
   const handleBackToResults = () => { setEditingFromResults(false); setPhase('results'); scrollUp(); };
 
   const L = {
-    yourScore: ar ? 'نتيجتك' : 'Your Score',
-    gccAvg:    ar ? 'متوسط دول الخليج' : 'GCC Average',
-    globalAvg: ar ? 'المتوسط العالمي' : 'Global Average',
-    bestClass: ar ? 'الأفضل في فئته' : 'Best-in-Class',
+    asIs:        ar ? 'نتيجتك (الوضع الراهن)' : 'Your Score (As-Is)',
+    gccMedian:   ar ? 'وسيط الخليج'           : 'GCC Median',
+    topQuartile: ar ? 'أفضل ربع (الهدف)'      : 'Top Quartile',
   };
 
   const radarData = activeSegments.map((seg, i) => ({
-    segment:        ar ? seg.shortTitleAr : seg.shortTitle,
-    [L.yourScore]:  +(segScore(i) ?? 0).toFixed(2),
-    [L.gccAvg]:     seg.benchmarks.gcc,
-    [L.globalAvg]:  seg.benchmarks.global,
-    [L.bestClass]:  seg.benchmarks.best,
+    segment:          ar ? seg.shortTitleAr : seg.shortTitle,
+    [L.asIs]:         +(segScore(i) ?? 0).toFixed(2),
+    [L.gccMedian]:    seg.benchmarks.gcc,
+    [L.topQuartile]:  seg.benchmarks.best,
   }));
+
+  const avgGccMedian   = activeSegments.length
+    ? activeSegments.reduce((s, seg) => s + seg.benchmarks.gcc,  0) / activeSegments.length
+    : 0;
+  const avgTopQuartile = activeSegments.length
+    ? activeSegments.reduce((s, seg) => s + seg.benchmarks.best, 0) / activeSegments.length
+    : 0;
+  const gapData = [...radarData].sort(
+    (a, b) => (a[L.asIs] as number) - (b[L.asIs] as number),
+  );
 
   const overallScore = calcOverallScore(answers, activeSegments.length);
   const overallLevel = getLevel(overallScore);
@@ -834,50 +842,80 @@ export function Maturity() {
 
       <div className="container mx-auto px-4 py-10 max-w-6xl space-y-10">
 
-        {/* Radar */}
+        {/* ── Radar — Command Centre style ─────────────────────────────────── */}
         <div className="bg-white rounded-2xl border border-border shadow-sm p-6">
           <h2 className="text-xl font-bold text-primary mb-1">
             {ar
               ? `رادار النضج — مقارنة معيارية عبر ${activeSegments.length} مجالات`
               : `Maturity Radar — ${activeSegments.length}-Segment Benchmark Comparison`}
           </h2>
-          <p className="text-muted-foreground text-sm mb-6">{ar ? 'نتائجكم مرسومة مقابل متوسط الخليج والمتوسط العالمي ومعايير الأفضل في الفئة.' : 'Your scores plotted against GCC average, global average, and best-in-class benchmarks.'}</p>
-          <div style={{ height: 420 }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <RadarChart data={radarData} margin={{ top: 10, right: 30, bottom: 10, left: 30 }}>
-                <PolarGrid stroke="#E2E8F0" />
-                <PolarAngleAxis dataKey="segment" tick={{ fontSize: 11, fontWeight: 600, fill: '#1E3A5F' }} />
-                <PolarRadiusAxis angle={90} domain={[0, 5]} tick={{ fontSize: 10, fill: '#94A3B8' }} tickCount={6} />
-                <Radar name={L.bestClass}  dataKey={L.bestClass}  stroke="#C9A84C" fill="#C9A84C" fillOpacity={0.08} strokeWidth={1.5} strokeDasharray="4 3" />
-                <Radar name={L.globalAvg}  dataKey={L.globalAvg}  stroke="#94A3B8" fill="#94A3B8" fillOpacity={0.08} strokeWidth={1.5} strokeDasharray="3 2" />
-                <Radar name={L.gccAvg}     dataKey={L.gccAvg}     stroke="#22C55E" fill="#22C55E" fillOpacity={0.08} strokeWidth={1.5} strokeDasharray="3 2" />
-                <Radar name={L.yourScore}  dataKey={L.yourScore}  stroke="#0B3D91" fill="#0B3D91" fillOpacity={0.2}  strokeWidth={2.5} />
-                <Legend wrapperStyle={{ fontSize: 12, fontWeight: 600 }} />
-                <Tooltip formatter={(v: number) => v.toFixed(2)} />
-              </RadarChart>
-            </ResponsiveContainer>
+          <p className="text-muted-foreground text-sm mb-4">
+            {ar
+              ? 'نتائجكم (الوضع الراهن) مقارنةً بوسيط الخليج وأفضل ربع — نفس الأسلوب البصري لمركز القيادة.'
+              : 'Your scores (As-Is) vs GCC Median and Top Quartile — same visual treatment as the Command Centre.'}
+          </p>
+          <ResponsiveContainer width="100%" height={400}>
+            <RadarChart data={radarData} margin={{ top: 10, right: 30, bottom: 10, left: 30 }}>
+              <PolarGrid stroke="#E5E7EB" />
+              <PolarAngleAxis dataKey="segment" tick={{ fontSize: 11, fontWeight: 600, fill: '#1E3A5F' }} />
+              <PolarRadiusAxis angle={90} domain={[0, 5]} tick={{ fontSize: 10, fill: '#94A3B8' }} tickCount={6} />
+              <Radar name={L.topQuartile} dataKey={L.topQuartile} stroke="#10b981" fill="none"    strokeDasharray="3 2" strokeWidth={1.2} />
+              <Radar name={L.gccMedian}   dataKey={L.gccMedian}   stroke="#082C6B" fill="none"    strokeDasharray="6 3" strokeWidth={1.5} />
+              <Radar name={L.asIs}        dataKey={L.asIs}        stroke="#C9A84C" fill="#C9A84C" fillOpacity={0.4}  strokeWidth={2} />
+              <Legend iconSize={10} iconType="circle" wrapperStyle={{ fontSize: 12, fontWeight: 600 }} />
+              <Tooltip formatter={(v: number) => v.toFixed(2)} />
+            </RadarChart>
+          </ResponsiveContainer>
+          {/* 3-number score summary — mirrors Command Centre BenchmarkTab */}
+          <div className="grid grid-cols-3 gap-3 mt-5">
+            {[
+              { label: ar ? 'نتيجتك (الوضع الراهن)' : 'Your Score (As-Is)', value: overallScore.toFixed(2), color: '#C9A84C' },
+              { label: ar ? 'وسيط الخليج'            : 'GCC Median',         value: avgGccMedian.toFixed(2), color: '#082C6B' },
+              { label: ar ? 'أفضل ربع (الهدف)'       : 'Top Quartile',       value: avgTopQuartile.toFixed(2), color: '#10b981' },
+            ].map(c => (
+              <div key={c.label} className="text-center rounded-xl border border-border p-3 bg-muted/30">
+                <p className="text-xs text-muted-foreground mb-1 leading-tight">{c.label}</p>
+                <p className="text-2xl font-black" style={{ color: c.color }}>{c.value}</p>
+                <p className="text-xs text-muted-foreground">{ar ? '/ 5.0 درجة' : '/ 5.0 pts'}</p>
+              </div>
+            ))}
           </div>
         </div>
 
-        {/* Bar chart */}
+        {/* ── Gap Analysis — horizontal, weakest-first ─────────────────────── */}
         <div className="bg-white rounded-2xl border border-border shadow-sm p-6">
-          <h2 className="text-xl font-bold text-primary mb-1">{ar ? 'تفصيل نتائج المجالات' : 'Segment Score Breakdown'}</h2>
-          <p className="text-muted-foreground text-sm mb-6">{ar ? 'نتيجتكم لكل مجال مقارنةً بمتوسط الخليج والمتوسط العالمي والأفضل في الفئة.' : 'Your score per segment compared to GCC average, global average, and best-in-class.'}</p>
-          <div style={{ height: 360 }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={radarData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
-                <XAxis dataKey="segment" tick={{ fontSize: 10, fontWeight: 600, fill: '#1E3A5F' }} />
-                <YAxis domain={[0, 5]} tickCount={6} tick={{ fontSize: 11, fill: '#94A3B8' }} />
-                <Tooltip formatter={(v: number) => v.toFixed(2)} />
-                <Legend wrapperStyle={{ fontSize: 12 }} />
-                <Bar dataKey={L.yourScore}  fill="#0B3D91" radius={[4,4,0,0]} />
-                <Bar dataKey={L.gccAvg}     fill="#22C55E" radius={[4,4,0,0]} opacity={0.7} />
-                <Bar dataKey={L.globalAvg}  fill="#94A3B8" radius={[4,4,0,0]} opacity={0.6} />
-                <Bar dataKey={L.bestClass}  fill="#C9A84C" radius={[4,4,0,0]} opacity={0.5} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+          <h2 className="text-xl font-bold text-primary mb-1">
+            {ar ? 'تحليل فجوة النضج — الأضعف أولاً' : 'Maturity Gap Analysis — Weakest First'}
+          </h2>
+          <p className="text-muted-foreground text-sm mb-4">
+            {ar
+              ? 'مرتّب من الأضعف إلى الأقوى. الوصول إلى وسيط الخليج هو الهدف الأول؛ أفضل ربع هو الهدف الطموح.'
+              : 'Ordered weakest-to-strongest. GCC Median is the first improvement milestone; Top Quartile is the stretch target.'}
+          </p>
+          <ResponsiveContainer width="100%" height={Math.max(280, activeSegments.length * 50 + 50)}>
+            <BarChart
+              layout="vertical"
+              data={gapData}
+              margin={{ top: 5, right: 55, left: 8, bottom: 5 }}
+              barCategoryGap="28%"
+              barGap={3}
+            >
+              <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" horizontal={false} />
+              <XAxis type="number" domain={[0, 5]} tickCount={6} tick={{ fontSize: 10, fill: '#94A3B8' }} />
+              <YAxis dataKey="segment" type="category" width={94} tick={{ fontSize: 10, fontWeight: 600, fill: '#1E3A5F' }} />
+              <Tooltip formatter={(v: number) => v.toFixed(2)} />
+              <Legend iconSize={10} iconType="circle" wrapperStyle={{ fontSize: 11 }} />
+              <Bar dataKey={L.topQuartile} fill="#10b981" radius={[0, 2, 2, 0]} barSize={5}  opacity={0.55} />
+              <Bar dataKey={L.gccMedian}   fill="#082C6B" radius={[0, 2, 2, 0]} barSize={9}  opacity={0.55} />
+              <Bar dataKey={L.asIs}        fill="#C9A84C" radius={[0, 3, 3, 0]} barSize={14}
+                label={{ position: 'right', fontSize: 10, fill: '#475569',
+                  formatter: (v: number) => (v > 0 ? v.toFixed(1) : '') }}>
+                {gapData.map((entry, idx) => (
+                  <Cell key={`gap-cell-${idx}`} fill={getLevel(entry[L.asIs] as number).color} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
         </div>
 
         {/* Benchmark table */}
@@ -1004,9 +1042,38 @@ export function Maturity() {
                   <div className="px-5 py-4">
                     <div className="flex gap-3 mb-3">
                       <span className={`text-xs font-bold ${gapToGcc >= 0 ? 'text-green-600' : 'text-red-500'}`}>
-                        {gapToGcc >= 0 ? '↑' : '↓'} {Math.abs(gapToGcc).toFixed(1)} {ar ? 'مقابل متوسط الخليج' : 'vs GCC avg'}
+                        {gapToGcc >= 0 ? '↑' : '↓'} {Math.abs(gapToGcc).toFixed(1)} {ar ? 'مقابل وسيط الخليج' : 'vs GCC Median'}
                       </span>
-                      <span className="text-xs font-bold text-muted-foreground">↑ {gapToBest.toFixed(1)} {ar ? 'للوصول إلى الأفضل في الفئة' : 'to best-in-class'}</span>
+                      <span className="text-xs font-bold text-muted-foreground">↑ {gapToBest.toFixed(1)} {ar ? 'للوصول إلى أفضل ربع' : 'to Top Quartile'}</span>
+                    </div>
+                    {/* ── Mini question-score bar chart ───────────────────────────── */}
+                    <div className="mb-3 bg-muted/30 rounded-xl p-3">
+                      <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">
+                        {ar ? 'أداء الأسئلة الفرعية (Q1–Q5)' : 'Sub-dimension scores (Q1–Q5)'}
+                      </p>
+                      <ResponsiveContainer width="100%" height={64}>
+                        <BarChart
+                          data={[0,1,2,3,4].map(q => ({
+                            name: ar ? `س${q+1}` : `Q${q+1}`,
+                            score: answers[`${i}-${q}`] ?? 0,
+                          }))}
+                          margin={{ top: 0, right: 0, left: -20, bottom: 0 }}
+                        >
+                          <YAxis domain={[0, 5]} hide />
+                          <XAxis dataKey="name" tick={{ fontSize: 9, fill: '#94A3B8' }} axisLine={false} tickLine={false} />
+                          <Tooltip
+                            formatter={(v: number) => [v.toFixed(0), ar ? 'المستوى' : 'Level']}
+                            contentStyle={{ fontSize: 11 }}
+                          />
+                          <Bar dataKey="score" radius={[2, 2, 0, 0]} barSize={20}
+                            label={{ position: 'top', fontSize: 8, fill: '#64748b',
+                              formatter: (v: number) => (v > 0 ? String(v) : '') }}>
+                            {[0,1,2,3,4].map(q => (
+                              <Cell key={`q-cell-${i}-${q}`} fill={getLevel(answers[`${i}-${q}`] ?? 1).color} />
+                            ))}
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
                     </div>
                     <p className="text-muted-foreground text-sm leading-relaxed">{rec}</p>
                   </div>
@@ -1083,51 +1150,105 @@ export function Maturity() {
                 )}
               </div>
 
-              {/* 30/60/90 columns */}
-              {[
-                { days: 30,  items: remediesData.days30,  label: ar ? '30 يومًا' : '30 Days',  color: '#EF4444', bg: '#FEF2F2', border: '#FECACA', icon: Target },
-                { days: 60,  items: remediesData.days60,  label: ar ? '60 يومًا' : '60 Days',  color: '#F97316', bg: '#FFF7ED', border: '#FED7AA', icon: Clock },
-                { days: 90,  items: remediesData.days90,  label: ar ? '90 يومًا' : '90 Days',  color: '#0B3D91', bg: '#EFF6FF', border: '#BFDBFE', icon: CheckCircle2 },
-              ].map(col => (
-                <div key={col.days}>
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: col.bg, border: `2px solid ${col.border}` }}>
-                      <col.icon className="w-4 h-4" style={{ color: col.color }} />
-                    </div>
-                    <h3 className="font-bold text-primary">{ar ? `إجراءات` : 'Actions for'} {col.label}</h3>
-                  </div>
-                  <div className="space-y-3">
-                    {col.items.map((item, idx) => (
-                      <div key={idx} className="rounded-xl border p-4" style={{ backgroundColor: col.bg + '80', borderColor: col.border }}>
-                        <div className="flex items-start justify-between gap-3 mb-1.5 flex-wrap">
-                          <p className="font-semibold text-foreground text-sm flex-1">{item.action}</p>
-                          <div className="flex items-center gap-2 shrink-0 flex-wrap">
-                            {item.effort && (
-                              <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-white border" style={{ borderColor: col.border, color: col.color }}>
-                                {item.effort}
-                              </span>
-                            )}
-                            {item.framework && (
-                              <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-primary/10 text-primary border border-primary/20">
-                                {item.framework}
-                              </span>
-                            )}
+              {/* ── 30/60/90 visual timeline ────────────────────────────────────── */}
+              {(() => {
+                const phases = [
+                  { days: 30, items: remediesData.days30, label: ar ? '30 يومًا' : '30 Days', sublabel: ar ? 'الأسس السريعة' : 'Quick Foundations',    color: '#EF4444', bg: '#FEF2F2', border: '#FECACA',  icon: Target },
+                  { days: 60, items: remediesData.days60, label: ar ? '60 يومًا' : '60 Days', sublabel: ar ? 'العمليات الرسمية' : 'Formalised Processes', color: '#F97316', bg: '#FFF7ED', border: '#FED7AA',  icon: Clock },
+                  { days: 90, items: remediesData.days90, label: ar ? '90 يومًا' : '90 Days', sublabel: ar ? 'التوسّع والقدرة' : 'Scaled Capability',     color: '#0B3D91', bg: '#EFF6FF', border: '#BFDBFE',  icon: CheckCircle2 },
+                ];
+                return (
+                  <>
+                    {/* Visual timeline connector */}
+                    <div className="relative flex items-start justify-between mb-8 px-6">
+                      {/* Gradient line */}
+                      <div
+                        className="absolute top-5 left-10 right-10 h-0.5"
+                        style={{ background: 'linear-gradient(to right, #FECACA, #FED7AA, #BFDBFE)' }}
+                      />
+                      {phases.map(phase => (
+                        <div key={phase.days} className="relative flex flex-col items-center gap-1.5 z-10 flex-1">
+                          <div
+                            className="w-10 h-10 rounded-full border-2 flex items-center justify-center bg-white shadow-sm"
+                            style={{ borderColor: phase.border, backgroundColor: phase.bg }}
+                          >
+                            <phase.icon className="w-4 h-4" style={{ color: phase.color }} />
                           </div>
+                          <p className="text-sm font-extrabold" style={{ color: phase.color }}>{phase.label}</p>
+                          <p className="text-[10px] text-muted-foreground font-medium text-center leading-tight">{phase.sublabel}</p>
+                          <span
+                            className="text-[10px] font-bold px-2 py-0.5 rounded-full text-white"
+                            style={{ backgroundColor: phase.color }}
+                          >
+                            {phase.items.length} {ar
+                              ? (phase.items.length === 1 ? 'إجراء' : 'إجراءات')
+                              : (phase.items.length === 1 ? 'action' : 'actions')}
+                          </span>
                         </div>
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-[11px] font-semibold text-muted-foreground px-2 py-0.5 bg-white rounded-full border border-border">{item.segmentTitle}</span>
-                          {item.measurableTarget && (
-                            <span className="text-[11px] text-muted-foreground flex items-center gap-1">
-                              <Target className="w-3 h-3 text-accent" />
-                              {item.measurableTarget}
-                            </span>
+                      ))}
+                    </div>
+
+                    {/* 3-column card grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {phases.map(col => (
+                        <div key={col.days} className="space-y-3">
+                          {col.items.map((item, idx) => (
+                            <div
+                              key={idx}
+                              className="rounded-xl border p-4"
+                              style={{ backgroundColor: col.bg + '99', borderColor: col.border }}
+                            >
+                              {/* Action title + step number */}
+                              <div className="flex items-start gap-2 mb-2">
+                                <span
+                                  className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0 mt-0.5"
+                                  style={{ backgroundColor: col.color }}
+                                >
+                                  {idx + 1}
+                                </span>
+                                <p className="font-semibold text-foreground text-sm leading-snug flex-1">{item.action}</p>
+                              </div>
+                              {/* Badges */}
+                              <div className="flex flex-wrap gap-1.5 mb-2">
+                                {item.framework && (
+                                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary/10 text-primary border border-primary/20">
+                                    {item.framework}
+                                  </span>
+                                )}
+                                {item.effort && (
+                                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-white border" style={{ borderColor: col.border, color: col.color }}>
+                                    {item.effort}
+                                  </span>
+                                )}
+                              </div>
+                              {/* Segment + measurable target */}
+                              <div className="flex items-start gap-1.5 flex-wrap">
+                                <span className="text-[10px] font-semibold text-muted-foreground px-2 py-0.5 bg-white rounded-full border border-border whitespace-nowrap">
+                                  {item.segmentTitle}
+                                </span>
+                                {item.measurableTarget && (
+                                  <span className="text-[10px] text-muted-foreground flex items-start gap-1">
+                                    <Target className="w-2.5 h-2.5 text-accent shrink-0 mt-0.5" />
+                                    <span>{item.measurableTarget}</span>
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                          {col.items.length === 0 && (
+                            <div
+                              className="rounded-xl border border-dashed p-4 text-center text-xs text-muted-foreground"
+                              style={{ borderColor: col.border }}
+                            >
+                              {ar ? 'لا توجد إجراءات في هذه المرحلة' : 'No actions in this phase'}
+                            </div>
                           )}
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
+                      ))}
+                    </div>
+                  </>
+                );
+              })()}
 
               {/* Regenerate */}
               <div className="flex justify-center pt-2">

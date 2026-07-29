@@ -66,11 +66,24 @@ ${segSummary}
 WEAK SUB-QUESTIONS (score ≤ 3) — the specific capability gaps to address:
 ${weakSummary}
 
+AUTHORITATIVE BODY-OF-KNOWLEDGE MAP — use the correct body for each segment:
+• Strategy & Network Design          → CSCMP (network design), Gartner Supply Chain Institute (maturity/operating model), APICS/ASCM SCOR Plan/Enable, ISM/CPSM (make-or-buy)
+• Procurement & Sourcing             → ISM/CPSM (CPSM Modules 1–3: spend analysis, sourcing strategy, negotiation, P2P); CIPS (category management, 5-rights framework, DoA governance); NAPM purchasing fundamentals
+• Contract Lifecycle Management      → CIPS Contract Management Standard; IACCM/World Commerce & Contracting (commercial best practice, obligations management, risk clauses)
+• Supplier Relationship Management   → CIPS SRM Standard (Kraljic segmentation, supplier development); ISM/CPSM (supplier selection, scorecards)
+• Supply Chain Risk Management       → CIPS Risk Management Standard; ISO 31000; APICS/ASCM SCOR Resilience; CSCMP supply chain resilience research; Gartner (geopolitical/digital risk)
+• ESG & Sustainability               → ISO 20400 (sustainable procurement); CIPS Sustainability & Ethical Trading Standards; GHG Protocol Scope 3; ISM/CPSM (supplier ESG assessment)
+• Digital & Technology               → Gartner Supply Chain Institute (technology maturity, AI/automation, Magic Quadrant research); APICS/ASCM (digital transformation guidance)
+• Demand Planning & Forecasting      → APICS/ASCM CPIM (forecasting, S&OP/IBP, NPI, MAPE/bias measurement); ASCM IBP Standard (Ross/Wallace methodology); Gartner (demand sensing)
+• Inventory Management               → APICS/ASCM CPIM (safety stock, EOQ/ROP, ABC/XYZ, cycle counting, SLOB); CSCMP (multi-echelon, warehousing benchmarks)
+• Logistics & Warehousing            → CSCMP (definitive authority: WERC benchmarks, State of Logistics Report, warehousing/transportation/last-mile/reverse logistics); Gartner Magic Quadrant for WMS; NOT CIPS for logistics remedies
+• Organisation & Talent              → CIPS Professionalism Framework (MCIPS/FCIPS); ISM/CPSM competency model; APICS/ASCM SCOR People; CSCMP talent research; Prosci ADKAR/Kotter (change management)
+
 Build a dependency-aware 30/60/90-day improvement roadmap that targets the specific weak sub-questions above.
 
 CRITICAL RULES:
 1. Every remedy must trace to a SPECIFIC weak sub-question by name — not a segment average. Two organisations with the same segment score but different weak questions must receive different remedies.
-2. Every remedy MUST name a specific real framework, standard, or tool. Examples: CIPS Category Cube, APICS SCOR-P Source domain, Kraljic Matrix, ISO 31000, DMAIC, GHG Protocol Scope 3 Category 1, ISO 20400, CIPS Level 4, ABC/XYZ classification, statistical EOQ/ROP, S&OP Demand Review, Prosci ADKAR, ISO 22301, GTPL Article 62, IKTVA local-content methodology. Never write "category management" — always name the specific tool or framework.
+2. Every remedy MUST cite the correctly-mapped body of knowledge (see map above) — never default to CIPS or APICS/SCOR when CSCMP, Gartner, ISM/CPSM, IACCM, or ISO 20400 is the authoritative body for that segment. Name the specific tool or standard: e.g. "CSCMP WERC warehouse slotting methodology", "APICS/ASCM CPIM S&OP Demand Review cadence", "ISM/CPSM CPSM Module 1 spend segmentation", "Gartner Supply Chain Technology Maturity curve", "ISO 20400 sustainable procurement policy framework", "IACCM contract obligation management best practice". Never write generic labels like "best practice" or "industry standard" without naming the body.
 3. Scale to ${input.companySize}: do not recommend enterprise-grade platforms to SMEs; do not under-scope Enterprises or Government entities.
 4. Each remedy MUST end with a specific measurable target (metric, current state, target, timeframe).
 5. Sequence by dependencies: 30-day = quick foundations; 60-day = formalised processes; 90-day = scaled capability.

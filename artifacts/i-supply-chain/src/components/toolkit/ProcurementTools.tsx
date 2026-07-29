@@ -113,7 +113,7 @@ const TEMPLATES = [
   },
   {
     id: 'savings', icon: '📈', label: 'Savings Tracker', labelAr: 'متتبّع الوفورات',
-    desc: 'Monthly savings pipeline tracker aligned to CIPS savings categories (hard, soft, cost avoidance).', descAr: 'متتبّع مسار الوفورات الشهري متوافق مع تصنيفات CIPS (حقيقية، ناعمة، تجنّب التكاليف).',
+    desc: 'Monthly savings pipeline tracker aligned to ISM/CPSM and CIPS savings classifications (hard, soft, cost avoidance).', descAr: 'متتبّع مسار الوفورات الشهري متوافق مع تصنيفات ISM/CPSM وCIPS (حقيقية، ناعمة، تجنّب التكاليف).',
     generate: () => downloadCsvText('savings-tracker.csv', SAVINGS_CSV),
   },
   {
@@ -130,7 +130,7 @@ const HR80 = '='.repeat(80);
 const RFP_TEMPLATE = `${HR80}
 REQUEST FOR PROPOSAL (RFP) — TEMPLATE
 I Supply Chain | Category Management Toolkit
-CIPS-Aligned | Version 1.0
+ISM/CPSM & CIPS-Aligned | Version 1.0
 ${HR80}
 
 SECTION 1 — OVERVIEW
@@ -221,7 +221,7 @@ ${HR80}
 END OF RFP TEMPLATE — Customise all [bracketed] fields before issue.
 ${HR80}`;
 
-const SCORECARD_CSV = `Supplier Evaluation Scorecard — CIPS Aligned
+const SCORECARD_CSV = `Supplier Evaluation Scorecard — ISM/CPSM & CIPS Aligned
 ,,,,,,,,,
 CRITERION,WEIGHT,Max Score,Supplier A,Supplier A Score,Supplier B,Supplier B Score,Supplier C,Supplier C Score
 ,,,,,,,,,
@@ -289,7 +289,7 @@ TOTAL TCO (ANNUAL SAR),,=SUM,=SUM,=SUM
 TCO per unit,,=FORMULA,=FORMULA,=FORMULA
 TCO vs. lowest (%),,BASE,=FORMULA,=FORMULA`;
 
-const SAVINGS_CSV = `Procurement Savings Tracker — CIPS Categories
+const SAVINGS_CSV = `Procurement Savings Tracker — ISM/CPSM & CIPS Savings Classifications
 Annual Target: SAR [Enter Target],,,,,,,
 ,,,,,,,
 SAVING DESCRIPTION,CATEGORY,SUPPLIER / CATEGORY,ANNUAL BASELINE (SAR),NEW PRICE / COST (SAR),SAVING (SAR),SAVING %,STATUS,OWNER,DELIVERY DATE
