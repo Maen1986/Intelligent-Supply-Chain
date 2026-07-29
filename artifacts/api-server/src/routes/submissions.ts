@@ -175,6 +175,39 @@ router.post('/', async (req, res) => {
   }
 });
 
+/* ── GET /api/submissions/mine ───────────────────────────────────────────────
+   Returns the authenticated user's own submissions, newest first.
+   Only available to logged-in users; returns a curated subset of columns
+   (no IP address, email error, or PDF storage paths).                        */
+const requireAuth: import('express').RequestHandler = (req, res, next) => {
+  if (!req.session.userId) {
+    res.status(401).json({ ok: false, error: 'Authentication required' });
+    return;
+  }
+  next();
+};
+
+router.get('/mine', requireAuth, async (req, res) => {
+  try {
+    const rows = await db
+      .select({
+        id:        submissionsTable.id,
+        tool:      submissionsTable.tool,
+        inputs:    submissionsTable.inputs,
+        outputs:   submissionsTable.outputs,
+        createdAt: submissionsTable.createdAt,
+      })
+      .from(submissionsTable)
+      .where(eq(submissionsTable.userId, req.session.userId!))
+      .orderBy(desc(submissionsTable.createdAt))
+      .limit(100);
+    res.json({ ok: true, submissions: rows, total: rows.length });
+  } catch (err) {
+    logger.error({ err }, '[submissions/mine] List failed');
+    res.status(500).json({ ok: false, error: 'Failed to fetch submissions' });
+  }
+});
+
 /* Admin guard: lead contact details and stored briefings are sensitive, so
    only an authenticated admin session may access them.                        */
 const requireAdmin: import('express').RequestHandler = (req, res, next) => {

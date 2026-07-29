@@ -37,6 +37,7 @@ import { AdminLeads } from '@/pages/AdminLeads';
 import { AdminIntegrations } from '@/pages/AdminIntegrations';
 import { AdminAutomations } from '@/pages/AdminAutomations';
 import { AccountSettings } from '@/pages/AccountSettings';
+import { MyAssessments } from '@/pages/MyAssessments';
 import { useIPProtection } from '@/hooks/useIPProtection';
 import { ChatWidget } from '@/components/ChatWidget';
 import { WhatsAppButton } from '@/components/WhatsAppButton';
@@ -89,6 +90,7 @@ function Router() {
         <Route path="/admin/integrations" component={AdminIntegrations} />
         <Route path="/admin/automations" component={AdminAutomations} />
         <Route path="/account" component={AccountSettings} />
+        <Route path="/my-assessments" component={MyAssessments} />
         <Route path="/customer-voice" component={CustomerVoice} />
         <Route path="/legal" component={Legal} />
         <Route path="/data-sources" component={DataSources} />
