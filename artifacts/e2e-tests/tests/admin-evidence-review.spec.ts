@@ -172,3 +172,71 @@ test('admin validates an AI-evaluated record and sees Consultant-validated badge
   /* 10 — With confidenceTier = consultant_validated the action button is gone */
   await expect(page.getByRole('button', { name: 'Validate ✓' })).toHaveCount(0);
 });
+
+test('evidence review queue disappears when the session expires mid-visit', async ({ page }) => {
+
+  /* 1 — Catch-all for any stray API calls */
+  await page.route('**/api/**', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json',
+      body: JSON.stringify({ ok: true }) }));
+
+  /* 2 — Start with a valid admin session */
+  await page.route('**/api/auth/me', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json',
+      body: JSON.stringify({ ok: true, user: MOCK_ADMIN }) }));
+
+  /* 3 — Initial queue load returns the AI-evaluated record */
+  let sessionExpired = false;
+
+  await page.route('**/api/admin/evidence-review**', (route) => {
+    if (sessionExpired) {
+      /* Once the session has "expired", the backend rejects the request */
+      return route.fulfill({
+        status: 401,
+        contentType: 'application/json',
+        body: JSON.stringify({ ok: false, error: 'Session expired' }),
+      });
+    }
+    return route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ ok: true, records: [AI_EVALUATED_RECORD], total: 1 }),
+    });
+  });
+
+  /* 4 — Navigate to the admin review queue */
+  await page.goto('/admin/evidence-review');
+
+  /* 5 — The queue is visible while the session is valid */
+  await expect(page.getByText('Evidence Review Queue')).toBeVisible({ timeout: 10_000 });
+  await expect(page.getByText('strategy-doc.pdf')).toBeVisible({ timeout: 8_000 });
+
+  /* 6 — Simulate session expiry: /api/auth/me now returns a non-admin user
+          and the evidence-review API will start returning 401               */
+  sessionExpired = true;
+  await page.unroute('**/api/auth/me');
+  await page.route('**/api/auth/me', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json',
+      body: JSON.stringify({ ok: true, user: MOCK_REGULAR_USER }) }));
+
+  /* 7 — Click Refresh to trigger a re-fetch with the expired session */
+  const refreshBtn = page.getByRole('button', { name: /refresh|تحديث/i });
+  await expect(refreshBtn).toBeVisible();
+  await refreshBtn.click();
+
+  /* 8 — The evidence queue table / file row must no longer be visible */
+  await expect(page.getByText('strategy-doc.pdf')).not.toBeVisible({ timeout: 10_000 });
+
+  /* 9 — Either an access-denied message or a fetch error is shown instead —
+          both indicate the page correctly blocked the stale/expired session  */
+  const accessDenied = page.getByText(/administrators only|للمديرين فقط/i);
+  const fetchError   = page.getByText(/session expired|fetch failed|unknown error/i);
+  const eitherVisible = await Promise.race([
+    accessDenied.isVisible().then(v => v),
+    fetchError.isVisible().then(v => v),
+  ]);
+  // Poll briefly if neither is immediately true
+  if (!eitherVisible) {
+    await expect(accessDenied.or(fetchError)).toBeVisible({ timeout: 10_000 });
+  }
+});
