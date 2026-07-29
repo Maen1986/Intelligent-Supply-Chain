@@ -60,7 +60,43 @@ const VALIDATED_RECORD = {
   reviewedAt: new Date().toISOString(),
 };
 
-/* ── Test ───────────────────────────────────────────────────────────────────── */
+/* ── Fixtures (non-admin) ───────────────────────────────────────────────────── */
+
+const MOCK_REGULAR_USER = {
+  id: 5,
+  email: 'user@example.com',
+  fullName: 'Regular User',
+  role: 'user',
+  mobile: '+966500000005',
+  designation: 'Analyst',
+  company: 'I Supply Chain',
+};
+
+/* ── Tests ──────────────────────────────────────────────────────────────────── */
+
+test('non-admin user is blocked from seeing the evidence review queue', async ({ page }) => {
+
+  /* 1 — Catch-all for any stray API calls */
+  await page.route('**/api/**', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json',
+      body: JSON.stringify({ ok: true }) }));
+
+  /* 2 — Auth: regular (non-admin) session */
+  await page.route('**/api/auth/me', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json',
+      body: JSON.stringify({ ok: true, user: MOCK_REGULAR_USER }) }));
+
+  /* 3 — Navigate to the admin review queue */
+  await page.goto('/admin/evidence-review');
+
+  /* 4 — The "Evidence Review Queue" heading must NOT be visible */
+  await expect(page.getByText('Evidence Review Queue')).not.toBeVisible({ timeout: 10_000 });
+
+  /* 5 — An access-denied message is shown instead */
+  await expect(
+    page.getByText(/administrators only|للمديرين فقط/i)
+  ).toBeVisible({ timeout: 10_000 });
+});
 
 test('admin validates an AI-evaluated record and sees Consultant-validated badge', async ({ page }) => {
 
