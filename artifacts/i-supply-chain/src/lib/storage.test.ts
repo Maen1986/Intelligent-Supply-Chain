@@ -622,12 +622,14 @@ describe('clearAppStorage — full toolkit key coverage', () => {
    *  - FeedbackModal   → FeedbackModal.tsx         isc-feedback-shown-<tool>
    */
   const TOOLKIT_KEYS: Record<string, string> = {
-    // ChecklistTool (challenge checklist items)
+    // ChecklistTool (challenge checklist items) — isc-tool-${slug}-challenge-${index}
     'ChecklistTool':            'isc-tool-checklist-challenge-0',
-    // ActionTracker (challenge action items)
+    // ActionTracker (challenge action items) — isc-tool-${slug}-actions-${index}
     'ActionTracker':            'isc-tool-checklist-actions-0',
-    // ParamForm / calculator
+    // ParamForm / calculator — isc-tool-${slug}-calc-${index}
     'ParamForm':                'isc-tool-checklist-calc-0',
+    // ChallengeChecklists AI plan — isc-challenge-ai-${slug}-${index}
+    'ChallengeAIPlan':          'isc-challenge-ai-checklist-0',
     // ProcurementTools
     'ProcurementTools-spend':   'isc-tool-catmgmt-spend-v2',
     'ProcurementTools-porter':  'isc-tool-catmgmt-porter-v2',
@@ -635,13 +637,19 @@ describe('clearAppStorage — full toolkit key coverage', () => {
     // RiskTools
     'RiskTools-register':       'isc-tool-risk-register-v2',
     'RiskTools-kri':            'isc-tool-risk-kri-v2',
-    // SupplierScorecard
+    'RiskTools-alerts':         'isc-tool-risk-alerts',
+    // SupplierScorecard — static keys
     'SupplierScorecard-config': 'isc-tool-scorecard-config',
     'SupplierScorecard-roster': 'isc-tool-supplier-roster',
     'SupplierScorecard-legacy': 'isc-tool-supplier-scorecard',
+    // SupplierScorecard — per-supplier dynamic keys: isc-tool-scorecard-{cars|devlog|trend}-${id}
+    'SupplierScorecard-cars':   'isc-tool-scorecard-cars-supplier-1',
+    'SupplierScorecard-devlog': 'isc-tool-scorecard-devlog-supplier-1',
+    'SupplierScorecard-trend':  'isc-tool-scorecard-trend-supplier-1',
     // TrainingTools
     'TrainingTools-members':    'isc-tool-training-members',
     'TrainingTools-scores':     'isc-tool-training-scores',
+    'TrainingTools-mgr-scores': 'isc-tool-training-mgr-scores',
     // CLMTools
     'CLMTools-contracts':       'isc-tool-clm-contracts-v2',
     // MaturityTools
@@ -700,5 +708,172 @@ describe('clearAppStorage — full toolkit key coverage', () => {
     expect(localStorage.getItem('_ga')).toBe('analytics-id');
     expect(localStorage.getItem('intercom.user')).toBe('{}');
     expect(localStorage.getItem('other-app-pref')).toBe('dark');
+  });
+});
+
+/* ══════════════════════════════════════════════════════════════════════════
+   clearAppStorage — dynamic key template coverage
+
+   Toolkit components build storage keys at runtime using variable parts such
+   as a supplier id, a slug, or a challenge index:
+
+     isc-tool-scorecard-cars-${id}         SupplierScorecard — corrective actions
+     isc-tool-scorecard-devlog-${id}       SupplierScorecard — development log
+     isc-tool-scorecard-trend-${id}        SupplierScorecard — trend snapshot
+     isc-tool-maturity-${slug}             MaturityTools — scores
+     isc-tool-actions-maturity-${slug}     MaturityTools — action tracker
+     isc-challenge-ai-${slug}-${index}     ChallengeChecklists — AI plan result
+     isc-tool-${slug}-challenge-${index}   ChallengeChecklists — checklist state
+     isc-tool-${slug}-actions-${index}     ChallengeChecklists — action tracker state
+     isc-tool-${slug}-calc-${index}        ChallengeChecklists — calculator state
+
+   clearAppStorage() scans by prefix, not by a hardcoded list, so every key
+   whose variable part is unknown at clear-time must still be erased.  These
+   tests confirm that no dynamically-keyed entry survives the clear.
+
+   sessionStorage note:
+     useAIPlan writes `pendingAIPlan_${toolKey}` to sessionStorage.  That key
+     does NOT use the isc- prefix and is therefore intentionally outside the
+     scope of clearAppStorage(), which only manages localStorage.  Sign-out
+     handling is responsible for wiping sessionStorage keys (see the companion
+     task covering sign-out session cleanup).
+══════════════════════════════════════════════════════════════════════════ */
+
+describe('clearAppStorage — dynamic key templates', () => {
+  /**
+   * Representative instantiations of every dynamic localStorage key template
+   * used across toolkit components.  Each entry seeds a key with a specific
+   * variable-part value that clearAppStorage() has never seen at compile time.
+   *
+   * The test uses several distinct values per template to confirm the prefix
+   * scan (not any hardcoded list) is what drives the removal.
+   */
+
+  it('wipes per-supplier SupplierScorecard keys regardless of the supplier id', () => {
+    const supplierIds = ['abc-123', 'XYZ', 'supplier with spaces', '42'];
+    for (const id of supplierIds) {
+      localStorage.setItem(`isc-tool-scorecard-cars-${id}`, JSON.stringify([{ action: 'fix it' }]));
+      localStorage.setItem(`isc-tool-scorecard-devlog-${id}`, JSON.stringify([{ note: 'log entry' }]));
+      localStorage.setItem(`isc-tool-scorecard-trend-${id}`, JSON.stringify({ q1: 80 }));
+    }
+
+    clearAppStorage();
+
+    for (const id of supplierIds) {
+      expect(
+        localStorage.getItem(`isc-tool-scorecard-cars-${id}`),
+        `cars key for id "${id}" survived clearAppStorage()`,
+      ).toBeNull();
+      expect(
+        localStorage.getItem(`isc-tool-scorecard-devlog-${id}`),
+        `devlog key for id "${id}" survived clearAppStorage()`,
+      ).toBeNull();
+      expect(
+        localStorage.getItem(`isc-tool-scorecard-trend-${id}`),
+        `trend key for id "${id}" survived clearAppStorage()`,
+      ).toBeNull();
+    }
+  });
+
+  it('wipes MaturityTools keys for every slug', () => {
+    const slugs = ['procurement', 'logistics', 'generic', 'custom-tool'];
+    for (const slug of slugs) {
+      localStorage.setItem(`isc-tool-maturity-${slug}`, JSON.stringify({ score: 3 }));
+      localStorage.setItem(`isc-tool-actions-maturity-${slug}`, JSON.stringify([{ text: 'improve' }]));
+    }
+
+    clearAppStorage();
+
+    for (const slug of slugs) {
+      expect(
+        localStorage.getItem(`isc-tool-maturity-${slug}`),
+        `maturity scores key for slug "${slug}" survived clearAppStorage()`,
+      ).toBeNull();
+      expect(
+        localStorage.getItem(`isc-tool-actions-maturity-${slug}`),
+        `maturity actions key for slug "${slug}" survived clearAppStorage()`,
+      ).toBeNull();
+    }
+  });
+
+  it('wipes ChallengeChecklists keys for every slug × challengeIndex combination', () => {
+    const combos: Array<[string, number]> = [
+      ['checklist', 0],
+      ['checklist', 1],
+      ['procurement', 0],
+      ['risk', 2],
+    ];
+    for (const [slug, index] of combos) {
+      localStorage.setItem(`isc-challenge-ai-${slug}-${index}`, 'AI plan text');
+      localStorage.setItem(`isc-tool-${slug}-challenge-${index}`, JSON.stringify([false, true]));
+      localStorage.setItem(`isc-tool-${slug}-actions-${index}`, JSON.stringify([{ text: 'action' }]));
+      localStorage.setItem(`isc-tool-${slug}-calc-${index}`, JSON.stringify({ param: 42 }));
+    }
+
+    clearAppStorage();
+
+    for (const [slug, index] of combos) {
+      expect(
+        localStorage.getItem(`isc-challenge-ai-${slug}-${index}`),
+        `AI plan key for "${slug}-${index}" survived clearAppStorage()`,
+      ).toBeNull();
+      expect(
+        localStorage.getItem(`isc-tool-${slug}-challenge-${index}`),
+        `checklist key for "${slug}-${index}" survived clearAppStorage()`,
+      ).toBeNull();
+      expect(
+        localStorage.getItem(`isc-tool-${slug}-actions-${index}`),
+        `actions key for "${slug}-${index}" survived clearAppStorage()`,
+      ).toBeNull();
+      expect(
+        localStorage.getItem(`isc-tool-${slug}-calc-${index}`),
+        `calc key for "${slug}-${index}" survived clearAppStorage()`,
+      ).toBeNull();
+    }
+  });
+
+  it('wipes dynamic keys even when intermixed with non-app keys', () => {
+    // Seed a realistic mix: dynamic app keys alongside keys from third-party libs
+    localStorage.setItem('isc-tool-scorecard-cars-s1', '[{"action":"review"}]');
+    localStorage.setItem('isc-tool-maturity-logistics', '{"score":2}');
+    localStorage.setItem('isc-challenge-ai-risk-3', 'plan text');
+    localStorage.setItem('_ga', 'UA-12345');
+    localStorage.setItem('analytics.session', '{}');
+
+    clearAppStorage();
+
+    expect(localStorage.getItem('isc-tool-scorecard-cars-s1')).toBeNull();
+    expect(localStorage.getItem('isc-tool-maturity-logistics')).toBeNull();
+    expect(localStorage.getItem('isc-challenge-ai-risk-3')).toBeNull();
+
+    // Third-party keys must survive
+    expect(localStorage.getItem('_ga')).toBe('UA-12345');
+    expect(localStorage.getItem('analytics.session')).toBe('{}');
+  });
+
+  it('sessionStorage pendingAIPlan_ keys are NOT in localStorage and are outside clearAppStorage scope', () => {
+    // useAIPlan writes `pendingAIPlan_${toolKey}` to sessionStorage, not localStorage.
+    // clearAppStorage() only scans localStorage, so these keys are intentionally
+    // unaffected.  This test documents that boundary explicitly so future changes
+    // to the clear logic are made deliberately.
+    const toolKeys = ['procurement', 'risk', 'clm'];
+    for (const key of toolKeys) {
+      sessionStorage.setItem(`pendingAIPlan_${key}`, '1');
+    }
+
+    clearAppStorage(); // operates on localStorage only
+
+    for (const key of toolKeys) {
+      // sessionStorage entries must be untouched — they are not in localStorage
+      expect(
+        sessionStorage.getItem(`pendingAIPlan_${key}`),
+        `pendingAIPlan_${key} was unexpectedly removed from sessionStorage by clearAppStorage()`,
+      ).toBe('1');
+    }
+
+    // Clean up sessionStorage so other tests are not affected
+    for (const key of toolKeys) {
+      sessionStorage.removeItem(`pendingAIPlan_${key}`);
+    }
   });
 });
