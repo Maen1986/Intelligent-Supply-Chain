@@ -574,6 +574,69 @@ describe('MaturityDetail — ConfidenceTierBadge survives a full en→ar→en la
 });
 
 /* ════════════════════════════════════════════════════════════════════════════
+   Task 805 — Full round-trip language toggle for consultant_validated
+   Mirrors the ai_evaluated round-trip test (Task 785) for the consultant tier.
+   A stale closure or memoisation bug could cause the wrong Arabic or English
+   label to persist after an en→ar→en toggle.
+════════════════════════════════════════════════════════════════════════════ */
+
+describe('MaturityDetail — consultant_validated badge survives a full en→ar→en language toggle', () => {
+  beforeEach(() => {
+    langMode = { lang: 'en', ar: false };
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    cleanup();
+  });
+
+  /* ── Round-trip Test 1 ───────────────────────────────────────────────────
+     Start in English, confirm "Consultant-validated" appears.
+     Switch to Arabic via context — "مُعتمَد من الاستشاري" must appear and
+     the English label must be gone.
+     Switch back to English — "Consultant-validated" must return.
+  ──────────────────────────────────────────────────────────────────────────── */
+  it('consultant_validated badge label updates correctly across en→ar→en language toggles', async () => {
+    stubFetch([CONSULTANT_VALIDATED_EVIDENCE]);
+
+    const { rerender } = render(<MyAssessments />);
+
+    // ── Step 1: English — badge must show "Consultant-validated"
+    await waitFor(
+      () => {
+        expect(screen.getByText('Consultant-validated')).toBeInTheDocument();
+      },
+      { timeout: 3000 },
+    );
+    expect(screen.queryByText('مُعتمَد من الاستشاري')).toBeNull();
+
+    // ── Step 2: Switch to Arabic
+    langMode = { lang: 'ar', ar: true };
+    rerender(<MyAssessments />);
+
+    await waitFor(
+      () => {
+        expect(screen.getByText('مُعتمَد من الاستشاري')).toBeInTheDocument();
+      },
+      { timeout: 3000 },
+    );
+    expect(screen.queryByText('Consultant-validated')).toBeNull();
+
+    // ── Step 3: Switch back to English
+    langMode = { lang: 'en', ar: false };
+    rerender(<MyAssessments />);
+
+    await waitFor(
+      () => {
+        expect(screen.getByText('Consultant-validated')).toBeInTheDocument();
+      },
+      { timeout: 3000 },
+    );
+    expect(screen.queryByText('مُعتمَد من الاستشاري')).toBeNull();
+  });
+});
+
+/* ════════════════════════════════════════════════════════════════════════════
    Task 790 — Arabic self-reported badge on the MaturityDetail segment
    detail page (the drill-down rendered inside an expanded SubmissionCard)
 ════════════════════════════════════════════════════════════════════════════ */
