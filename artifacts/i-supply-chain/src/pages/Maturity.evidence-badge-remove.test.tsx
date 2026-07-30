@@ -88,6 +88,22 @@ const SELF_REPORTED_RECORD: EvidenceRecord = {
   aiEvaluation:     null,
 };
 
+const CONSULTANT_VALIDATED_RECORD: EvidenceRecord = {
+  id:               5,
+  segId:            SEG_ID,
+  subSegId:         SUBSEG_ID,
+  subSegLabel:      'Supply chain strategy document',
+  originalFilename: 'consultant-review.pdf',
+  mimeType:         'application/pdf',
+  confidenceTier:   'consultant_validated',
+  aiEvaluation: {
+    plausible_support: true,
+    confidence:        'high',
+    flag_reason:       null,
+    summary:           'Formally validated by a consultant.',
+  },
+};
+
 /* ═══════════════════════════════════════════════════════════════════════════
    Test Harness
    ───────────────────────────────────────────────────────────────────────────
@@ -411,5 +427,22 @@ describe('Maturity results page — ConfidenceTierBadge disappears after evidenc
         (opts?.method ?? '').toUpperCase() === 'DELETE',
     );
     expect(deleteCalls.length).toBe(1);
+  });
+
+  /* ── Test 9 ──────────────────────────────────────────────────────────────
+     For a consultant_validated record the remove button must be absent from
+     the DOM entirely — not just disabled — so the action is not triggerable
+     from the UI.  The Consultant-validated badge must still be rendered.
+  ─────────────────────────────────────────────────────────────────────────── */
+  it('remove button is absent from the DOM for a consultant_validated record', () => {
+    stubRemoveFlow([]);   // fetch not called; stub present for safety
+
+    render(<SegmentCardRemoveHarness initialEvidence={[CONSULTANT_VALIDATED_RECORD]} />);
+
+    /* The remove button must not exist in the DOM at all */
+    expect(screen.queryByTitle('Remove evidence')).toBeNull();
+
+    /* The Consultant-validated badge must still be rendered */
+    expect(screen.getByText('Consultant-validated')).toBeInTheDocument();
   });
 });
