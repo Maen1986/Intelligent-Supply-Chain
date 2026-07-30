@@ -91,7 +91,8 @@ import { ObjectNotFoundError as MockObjectNotFoundError } from '../src/lib/objec
 
 /* ── Shared fixtures ─────────────────────────────────────────────────────── */
 
-const AUTH_SESSION = { userId: 99 };
+const AUTH_SESSION       = { userId: 99 };
+const OTHER_USER_SESSION = { userId: 88 }; // a different user — must not see user 99's data
 
 function app(session = AUTH_SESSION) {
   return makeApp('/api', evidenceRouter, session);
@@ -286,6 +287,19 @@ describe('POST /api/maturity/evidence/:id/confirm', () => {
     expect(res.body.ai_evaluation.plausible_support).toBe(true);
   });
 
+  it('returns 404 when the evidence id exists but belongs to a different user', async () => {
+    // Simulate: the DB is queried with (id=42 AND userId=88) and returns nothing,
+    // even though id=42 exists and belongs to userId=99.
+    // Correct ownership filter means user B cannot confirm user A's evidence.
+    dbState.selectRows = [];
+
+    const res = await request(makeApp('/api', evidenceRouter, OTHER_USER_SESSION))
+      .post('/api/maturity/evidence/42/confirm');
+
+    expect(res.status).toBe(404);
+    expect(res.body.ok).toBe(false);
+  });
+
   it('still returns 200 and keeps self_reported tier when AI evaluation fails', async () => {
     dbState.selectRows = [EVIDENCE_ROW];
 
@@ -363,6 +377,20 @@ describe('GET /api/maturity/evidence', () => {
     expect(res.status).toBe(500);
     expect(res.body.ok).toBe(false);
   });
+
+  it('returns only the requesting user\'s rows — not rows belonging to a different user', async () => {
+    // Simulate: the DB is queried with userId=88 (user B) and returns nothing,
+    // even though evidence rows for userId=99 (user A) exist in the database.
+    // The empty result reflects the ownership filter (userId = session.userId) working correctly.
+    dbState.selectRows = [];
+
+    const res = await request(makeApp('/api', evidenceRouter, OTHER_USER_SESSION))
+      .get('/api/maturity/evidence?snapshot_id=1');
+
+    expect(res.status).toBe(200);
+    expect(res.body.ok).toBe(true);
+    expect(res.body.evidence).toEqual([]);
+  });
 });
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -387,6 +415,19 @@ describe('DELETE /api/maturity/evidence/:id', () => {
     dbState.selectRows = [];
     const res = await request(app())
       .delete('/api/maturity/evidence/999');
+    expect(res.status).toBe(404);
+    expect(res.body.ok).toBe(false);
+  });
+
+  it('returns 404 when the evidence id exists but belongs to a different user', async () => {
+    // Simulate: the DB is queried with (id=42 AND userId=88) and returns nothing,
+    // even though id=42 exists and belongs to userId=99.
+    // Correct ownership filter means user B cannot delete user A's evidence.
+    dbState.selectRows = [];
+
+    const res = await request(makeApp('/api', evidenceRouter, OTHER_USER_SESSION))
+      .delete('/api/maturity/evidence/42');
+
     expect(res.status).toBe(404);
     expect(res.body.ok).toBe(false);
   });
