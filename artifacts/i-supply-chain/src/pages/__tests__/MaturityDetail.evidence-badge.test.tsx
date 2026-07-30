@@ -157,6 +157,27 @@ const CONSULTANT_VALIDATED_EVIDENCE = {
   aiEvaluation: null,
 };
 
+/**
+ * A consultant_validated evidence record where aiEvaluation.plausible_support
+ * is explicitly false — this triggers hasFlag() and should cause the ⚠
+ * warning overlay to appear alongside the "Consultant-validated" label.
+ */
+const FLAGGED_CONSULTANT_VALIDATED_EVIDENCE = {
+  id: 3,
+  segId: 'strategy',
+  subSegId: 'strategy-align',
+  subSegLabel: 'Supply chain strategy document',
+  originalFilename: 'strategy-validated-flagged.pdf',
+  mimeType: 'application/pdf',
+  confidenceTier: 'consultant_validated' as const,
+  aiEvaluation: {
+    plausible_support: false,
+    confidence: 'low' as const,
+    flag_reason: 'Evidence does not support claimed maturity level.',
+    summary: 'Document does not align with the stated maturity level.',
+  },
+};
+
 /* ── Fetch stub ──────────────────────────────────────────────────────────── */
 
 /**
@@ -402,6 +423,71 @@ describe('MaturityDetail — ConfidenceTierBadge in Arabic mode (lang="ar")', ()
       },
       { timeout: 3000 },
     );
+  });
+});
+
+/* ════════════════════════════════════════════════════════════════════════════
+   Flagged consultant_validated evidence — Task 789
+   Confirms the ⚠ warning overlay is rendered when a consultant_validated
+   record has aiEvaluation.plausible_support === false (hasFlag() === true).
+════════════════════════════════════════════════════════════════════════════ */
+
+describe('MaturityDetail — ConfidenceTierBadge ⚠ overlay for flagged consultant_validated evidence', () => {
+  beforeEach(() => {
+    langMode = { lang: 'en', ar: false };
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    cleanup();
+  });
+
+  /* ── Test 1 (Task 789) ───────────────────────────────────────────────────
+     When a consultant_validated evidence record has
+     aiEvaluation.plausible_support === false, hasFlag() returns true and the
+     ⚠ symbol must appear alongside the "Consultant-validated" label in the
+     rendered pill.
+  ──────────────────────────────────────────────────────────────────────────── */
+  it('shows the ⚠ symbol alongside "Consultant-validated" when evidence is flagged', async () => {
+    stubFetch([FLAGGED_CONSULTANT_VALIDATED_EVIDENCE]);
+
+    render(<MyAssessments />);
+
+    // Wait for the evidence fetch to resolve and the badge to appear.
+    // The pill outer span contains both ⚠ and "Consultant-validated" text,
+    // so we match with a regex to account for the combined textContent.
+    await waitFor(
+      () => {
+        expect(screen.getByText(/Consultant-validated/)).toBeInTheDocument();
+      },
+      { timeout: 3000 },
+    );
+
+    // The badge element (outer pill span) must contain the ⚠ symbol in its
+    // textContent — it is rendered as a child span with aria-hidden.
+    const badge = screen.getByText(/Consultant-validated/);
+    expect(badge.textContent).toContain('⚠');
+  });
+
+  /* ── Test 2 (Task 789) ───────────────────────────────────────────────────
+     The outer pill span must carry
+     title="Flagged evidence — review recommended" when hasFlag() is true,
+     so screen-readers and hover tooltips communicate the warning.
+  ──────────────────────────────────────────────────────────────────────────── */
+  it('sets the title attribute to the flagged-evidence warning text', async () => {
+    stubFetch([FLAGGED_CONSULTANT_VALIDATED_EVIDENCE]);
+
+    render(<MyAssessments />);
+
+    await waitFor(
+      () => {
+        expect(screen.getByText(/Consultant-validated/)).toBeInTheDocument();
+      },
+      { timeout: 3000 },
+    );
+
+    const badge = screen.getByText(/Consultant-validated/);
+    expect(badge).toHaveAttribute('title', 'Flagged evidence — review recommended');
   });
 });
 
