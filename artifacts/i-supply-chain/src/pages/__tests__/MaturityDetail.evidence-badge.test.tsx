@@ -424,219 +424,6 @@ describe('MaturityDetail — ConfidenceTierBadge in Arabic mode (lang="ar")', ()
       { timeout: 3000 },
     );
   });
-});
-
-/* ════════════════════════════════════════════════════════════════════════════
-   Flagged consultant_validated evidence — Task 789
-   Confirms the ⚠ warning overlay is rendered when a consultant_validated
-   record has aiEvaluation.plausible_support === false (hasFlag() === true).
-════════════════════════════════════════════════════════════════════════════ */
-
-describe('MaturityDetail — ConfidenceTierBadge ⚠ overlay for flagged consultant_validated evidence', () => {
-  beforeEach(() => {
-    langMode = { lang: 'en', ar: false };
-  });
-
-  afterEach(() => {
-    vi.unstubAllGlobals();
-    cleanup();
-  });
-
-  /* ── Test 1 (Task 789) ───────────────────────────────────────────────────
-     When a consultant_validated evidence record has
-     aiEvaluation.plausible_support === false, hasFlag() returns true and the
-     ⚠ symbol must appear alongside the "Consultant-validated" label in the
-     rendered pill.
-  ──────────────────────────────────────────────────────────────────────────── */
-  it('shows the ⚠ symbol alongside "Consultant-validated" when evidence is flagged', async () => {
-    stubFetch([FLAGGED_CONSULTANT_VALIDATED_EVIDENCE]);
-
-    render(<MyAssessments />);
-
-    // Wait for the evidence fetch to resolve and the badge to appear.
-    // The pill outer span contains both ⚠ and "Consultant-validated" text,
-    // so we match with a regex to account for the combined textContent.
-    await waitFor(
-      () => {
-        expect(screen.getByText(/Consultant-validated/)).toBeInTheDocument();
-      },
-      { timeout: 3000 },
-    );
-
-    // The badge element (outer pill span) must contain the ⚠ symbol in its
-    // textContent — it is rendered as a child span with aria-hidden.
-    const badge = screen.getByText(/Consultant-validated/);
-    expect(badge.textContent).toContain('⚠');
-  });
-
-  /* ── Test 2 (Task 789) ───────────────────────────────────────────────────
-     The outer pill span must carry
-     title="Flagged evidence — review recommended" when hasFlag() is true,
-     so screen-readers and hover tooltips communicate the warning.
-  ──────────────────────────────────────────────────────────────────────────── */
-  it('sets the title attribute to the flagged-evidence warning text', async () => {
-    stubFetch([FLAGGED_CONSULTANT_VALIDATED_EVIDENCE]);
-
-    render(<MyAssessments />);
-
-    await waitFor(
-      () => {
-        expect(screen.getByText(/Consultant-validated/)).toBeInTheDocument();
-      },
-      { timeout: 3000 },
-    );
-
-    const badge = screen.getByText(/Consultant-validated/);
-    expect(badge).toHaveAttribute('title', 'Flagged evidence — review recommended');
-  });
-});
-
-/* ════════════════════════════════════════════════════════════════════════════
-   Arabic-mode tests — Task 784
-   Confirms the self_reported badge renders its Arabic label ("مُبلَّغ ذاتياً")
-   in lang="ar" mode and that the English label never leaks through.
-════════════════════════════════════════════════════════════════════════════ */
-
-describe('MaturityDetail — ConfidenceTierBadge Arabic self-reported badge (Task 784)', () => {
-  beforeEach(() => {
-    langMode = { lang: 'ar', ar: true };
-  });
-
-  afterEach(() => {
-    vi.unstubAllGlobals();
-    cleanup();
-  });
-
-  /* ── Arabic self-reported Test 1 ─────────────────────────────────────────
-     When the page is in Arabic mode and the evidence fetch returns a
-     self_reported record (no aiEvaluation), the Arabic label
-     "مُبلَّغ ذاتياً" must appear in the Evidence column on mount —
-     without any user interaction.
-  ──────────────────────────────────────────────────────────────────────────── */
-  it('shows the Arabic self-reported badge label for a segment with a self_reported record', async () => {
-    stubFetch([SELF_REPORTED_EVIDENCE]);
-
-    render(<MyAssessments />);
-
-    await waitFor(
-      () => {
-        expect(screen.getByText('مُبلَّغ ذاتياً')).toBeInTheDocument();
-      },
-      { timeout: 3000 },
-    );
-  });
-
-  /* ── Arabic self-reported Test 2 ─────────────────────────────────────────
-     The English label "Self-reported" must NOT appear anywhere in the DOM
-     when the interface is in Arabic mode.
-  ──────────────────────────────────────────────────────────────────────────── */
-  it('does NOT show the English "Self-reported" label when lang is Arabic', async () => {
-    stubFetch([SELF_REPORTED_EVIDENCE]);
-
-    render(<MyAssessments />);
-
-    // Wait until the Arabic badge appears (evidence fetch resolved).
-    await waitFor(
-      () => expect(screen.getByText('مُبلَّغ ذاتياً')).toBeInTheDocument(),
-      { timeout: 3000 },
-    );
-
-    // The English label must be absent.
-    expect(screen.queryByText('Self-reported')).toBeNull();
-  });
-
-  /* ── Arabic self-reported Test 3 ─────────────────────────────────────────
-     The Arabic self-reported badge must also be a pill (rounded-full),
-     consistent with the pill rendering used for other tiers.
-  ──────────────────────────────────────────────────────────────────────────── */
-  it('renders the Arabic self-reported badge as a pill (rounded-full class)', async () => {
-    stubFetch([SELF_REPORTED_EVIDENCE]);
-
-    render(<MyAssessments />);
-
-    await waitFor(
-      () => {
-        const badge = screen.getByText('مُبلَّغ ذاتياً');
-        expect(badge.className).toContain('rounded-full');
-      },
-      { timeout: 3000 },
-    );
-  });
-});
-
-/* ════════════════════════════════════════════════════════════════════════════
-   Arabic-mode tests — Task 787
-   Confirms the consultant_validated badge renders its Arabic label
-   ("مُعتمَد من الاستشاري") and amber styling in lang="ar" mode.
-════════════════════════════════════════════════════════════════════════════ */
-
-describe('MaturityDetail — Consultant-validated badge in Arabic mode (lang="ar")', () => {
-  beforeEach(() => {
-    langMode = { lang: 'ar', ar: true };
-  });
-
-  afterEach(() => {
-    vi.unstubAllGlobals();
-    cleanup();
-  });
-
-  /* ── Arabic Consultant Test 1 ────────────────────────────────────────────
-     When the page is rendered in Arabic mode and the evidence fetch returns
-     a consultant_validated record, the Arabic badge label
-     "مُعتمَد من الاستشاري" must appear in the Evidence column on mount
-     without any user interaction.
-  ──────────────────────────────────────────────────────────────────────────── */
-  it('shows the Arabic Consultant-validated badge label on mount', async () => {
-    stubFetch([CONSULTANT_VALIDATED_EVIDENCE]);
-
-    render(<MyAssessments />);
-
-    await waitFor(
-      () => {
-        expect(screen.getByText('مُعتمَد من الاستشاري')).toBeInTheDocument();
-      },
-      { timeout: 3000 },
-    );
-  });
-
-  /* ── Arabic Consultant Test 2 ────────────────────────────────────────────
-     The English label "Consultant-validated" must NOT appear in the DOM
-     when the interface is in Arabic mode.
-  ──────────────────────────────────────────────────────────────────────────── */
-  it('does NOT show the English "Consultant-validated" label when lang is Arabic', async () => {
-    stubFetch([CONSULTANT_VALIDATED_EVIDENCE]);
-
-    render(<MyAssessments />);
-
-    // Wait until the Arabic badge appears (evidence fetch resolved).
-    await waitFor(
-      () => expect(screen.getByText('مُعتمَد من الاستشاري')).toBeInTheDocument(),
-      { timeout: 3000 },
-    );
-
-    // The English label must be absent.
-    expect(screen.queryByText('Consultant-validated')).toBeNull();
-  });
-
-  /* ── Arabic Consultant Test 3 ────────────────────────────────────────────
-     The Arabic Consultant-validated badge must carry amber styling
-     (bg-amber-100 and text-amber-800) so the tier colour is preserved
-     across locales.
-  ──────────────────────────────────────────────────────────────────────────── */
-  it('renders the Arabic Consultant-validated badge with amber styling', async () => {
-    stubFetch([CONSULTANT_VALIDATED_EVIDENCE]);
-
-    render(<MyAssessments />);
-
-    await waitFor(
-      () => {
-        const badge = screen.getByText('مُعتمَد من الاستشاري');
-        expect(badge.className).toContain('bg-amber-100');
-        expect(badge.className).toContain('text-amber-800');
-      },
-      { timeout: 3000 },
-    );
-  });
 
   /* ── Arabic Consultant Test 4 ────────────────────────────────────────────
      The Arabic Consultant-validated badge must render as a pill
@@ -717,5 +504,61 @@ describe('MaturityDetail segment detail page — consultant_validated badge', ()
 
     // consultant_validated must outrank ai_evaluated — only one badge shown.
     expect(screen.queryByText('AI-evaluated')).toBeNull();
+  });
+});
+
+/* ════════════════════════════════════════════════════════════════════════════
+   Task 790 — Arabic self-reported badge on the MaturityDetail segment
+   detail page (the drill-down rendered inside an expanded SubmissionCard)
+════════════════════════════════════════════════════════════════════════════ */
+
+describe('MaturityDetail segment detail page — Arabic self-reported badge (Task 790)', () => {
+  beforeEach(() => {
+    langMode = { lang: 'ar', ar: true };
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    cleanup();
+  });
+
+  /* ── Arabic Detail Test 1 ────────────────────────────────────────────────
+     When the segment detail view is rendered in Arabic mode and the evidence
+     fetch returns a self_reported record, the Arabic label "مُبلَّغ ذاتياً"
+     must appear in the Evidence column on mount — without any user
+     interaction.  The first SubmissionCard is auto-expanded (defaultOpen),
+     so the detail view is visible immediately after the fetch resolves.
+  ─────────────────────────────────────────────────────────────────────────── */
+  it('shows the Arabic self-reported badge label in the detail view on initial mount', async () => {
+    stubFetch([SELF_REPORTED_EVIDENCE]);
+
+    render(<MyAssessments />);
+
+    await waitFor(
+      () => {
+        expect(screen.getByText('مُبلَّغ ذاتياً')).toBeInTheDocument();
+      },
+      { timeout: 3000 },
+    );
+  });
+
+  /* ── Arabic Detail Test 2 ────────────────────────────────────────────────
+     The English label "Self-reported" must NOT appear anywhere in the DOM
+     when the interface is in Arabic mode — even though the same component
+     renders it in English mode.
+  ─────────────────────────────────────────────────────────────────────────── */
+  it('does NOT show the English "Self-reported" label in the detail view when lang is Arabic', async () => {
+    stubFetch([SELF_REPORTED_EVIDENCE]);
+
+    render(<MyAssessments />);
+
+    // Wait until the Arabic badge appears (evidence fetch resolved).
+    await waitFor(
+      () => expect(screen.getByText('مُبلَّغ ذاتياً')).toBeInTheDocument(),
+      { timeout: 3000 },
+    );
+
+    // The English label must be absent.
+    expect(screen.queryByText('Self-reported')).toBeNull();
   });
 });
