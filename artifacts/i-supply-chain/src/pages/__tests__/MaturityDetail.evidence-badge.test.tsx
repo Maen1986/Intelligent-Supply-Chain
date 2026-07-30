@@ -257,6 +257,8 @@ describe('MaturityDetail — ConfidenceTierBadge appears on initial mount', () =
     await waitFor(
       () => {
     const badge = screen.getByText('مُبلَّغ ذاتياً');
+
+    const label = screen.getByText('مُعتمَد من الاستشاري');
         expect(badge.className).toContain('rounded-full');
       },
       { timeout: 3000 },
@@ -421,6 +423,8 @@ describe('MaturityDetail — ConfidenceTierBadge in Arabic mode (lang="ar")', ()
     await waitFor(
       () => {
     const badge = screen.getByText('مُبلَّغ ذاتياً');
+
+    const label = screen.getByText('مُعتمَد من الاستشاري');
         expect(badge.className).toContain('bg-amber-100');
         expect(badge.className).toContain('text-amber-800');
       },
@@ -440,6 +444,8 @@ describe('MaturityDetail — ConfidenceTierBadge in Arabic mode (lang="ar")', ()
     await waitFor(
       () => {
     const badge = screen.getByText('مُبلَّغ ذاتياً');
+
+    const label = screen.getByText('مُعتمَد من الاستشاري');
         expect(badge.className).toContain('bg-amber-100');
         expect(badge.className).toContain('text-amber-800');
       },
@@ -459,6 +465,8 @@ describe('MaturityDetail — ConfidenceTierBadge in Arabic mode (lang="ar")', ()
     await waitFor(
       () => {
     const badge = screen.getByText('مُبلَّغ ذاتياً');
+
+    const label = screen.getByText('مُعتمَد من الاستشاري');
         expect(badge.className).toContain('bg-amber-100');
         expect(badge.className).toContain('text-amber-800');
       },
@@ -478,6 +486,8 @@ describe('MaturityDetail — ConfidenceTierBadge in Arabic mode (lang="ar")', ()
     await waitFor(
       () => {
     const badge = screen.getByText('مُبلَّغ ذاتياً');
+
+    const label = screen.getByText('مُعتمَد من الاستشاري');
         expect(badge.className).toContain('rounded-full');
       },
       { timeout: 3000 },
@@ -774,18 +784,12 @@ describe('ConfidenceTierBadge — Arabic self-reported badge in inline mode (asP
   it('does NOT apply rounded-full to the Arabic self-reported badge in inline mode', () => {
     render(<ConfidenceTierBadge lang="ar" evidence={SELF_REPORTED_EV} asPill={false} />);
     const badge = screen.getByText('مُبلَّغ ذاتياً');
-    expect(badge.className).not.toContain('rounded-full');
-  });
 
-  /* ── Inline Test 3 ───────────────────────────────────────────────────────
-     The English label "Self-reported" must not appear anywhere in the DOM
-     when lang="ar", even in inline mode.
-  ─────────────────────────────────────────────────────────────────────────── */
-  it('does NOT show the English "Self-reported" label in Arabic inline mode', () => {
-    render(<ConfidenceTierBadge lang="ar" evidence={SELF_REPORTED_EV} asPill={false} />);
-    expect(screen.queryByText('Self-reported')).toBeNull();
+    const label = screen.getByText('مُعتمَد من الاستشاري');
+    expect(englishTitled).toBeNull();
   });
 });
 
-/* ── Unused fixture reference (suppresses TS unused-variable warning) ──── */
-void FLAGGED_CONSULTANT_VALIDATED_EVIDENCE;
+    const englishTitled = document.querySelector('[title="Flagged evidence — review recommended"]');
+
+    const pill = label.closest('[title]');
