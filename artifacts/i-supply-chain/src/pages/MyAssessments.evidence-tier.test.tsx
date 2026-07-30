@@ -313,3 +313,109 @@ describe('getSegmentTier — best-tier selection across multiple records', () =>
     expect(getSegmentTier([selfReported, flaggedAi])).toBe('self_reported');
   });
 });
+
+/* ══════════════════════════════════════════════════════════════════════════
+   getSegmentTier() — order-independence / permutation tests (Task 840)
+
+   The function uses Array.some() which short-circuits on the first match.
+   These tests verify that the *best* tier always wins regardless of the
+   order records arrive from the API.
+══════════════════════════════════════════════════════════════════════════ */
+describe('getSegmentTier — order-independence: two-record permutations [self_reported, ai_evaluated]', () => {
+  const selfReported: EvidenceRecord = {
+    id:               10,
+    segId:            'strategy',
+    subSegId:         'strategy-align',
+    subSegLabel:      'Strategic Alignment',
+    originalFilename: 'doc_a.pdf',
+    mimeType:         'application/pdf',
+    confidenceTier:   'self_reported',
+    aiEvaluation:     null,
+  };
+
+  const aiEvaluated: EvidenceRecord = {
+    id:               11,
+    segId:            'strategy',
+    subSegId:         'strategy-risk',
+    subSegLabel:      'Risk Management',
+    originalFilename: 'doc_b.pdf',
+    mimeType:         'application/pdf',
+    confidenceTier:   'ai_evaluated',
+    aiEvaluation: {
+      plausible_support: true,
+      confidence:        'high',
+      flag_reason:       null,
+      summary:           'Supports the claimed level.',
+    },
+  };
+
+  // Both permutations of [self_reported, ai_evaluated]
+  const permutations: Array<[string, EvidenceRecord[]]> = [
+    ['[self_reported, ai_evaluated]', [selfReported, aiEvaluated]],
+    ['[ai_evaluated, self_reported]', [aiEvaluated, selfReported]],
+  ];
+
+  it.each(permutations)(
+    'returns ai_evaluated for permutation %s',
+    (_label, records) => {
+      expect(getSegmentTier(records)).toBe('ai_evaluated');
+    },
+  );
+});
+
+describe('getSegmentTier — order-independence: all six permutations of [self_reported, ai_evaluated, consultant_validated]', () => {
+  const selfReported: EvidenceRecord = {
+    id:               20,
+    segId:            'strategy',
+    subSegId:         'strategy-align',
+    subSegLabel:      'Strategic Alignment',
+    originalFilename: 'doc_a.pdf',
+    mimeType:         'application/pdf',
+    confidenceTier:   'self_reported',
+    aiEvaluation:     null,
+  };
+
+  const aiEvaluated: EvidenceRecord = {
+    id:               21,
+    segId:            'strategy',
+    subSegId:         'strategy-risk',
+    subSegLabel:      'Risk Management',
+    originalFilename: 'doc_b.pdf',
+    mimeType:         'application/pdf',
+    confidenceTier:   'ai_evaluated',
+    aiEvaluation: {
+      plausible_support: true,
+      confidence:        'high',
+      flag_reason:       null,
+      summary:           'Supports the claimed level.',
+    },
+  };
+
+  const consultantValidated: EvidenceRecord = {
+    id:               22,
+    segId:            'strategy',
+    subSegId:         'strategy-goals',
+    subSegLabel:      'Strategic Goals',
+    originalFilename: 'doc_c.pdf',
+    mimeType:         'application/pdf',
+    confidenceTier:   'consultant_validated',
+    aiEvaluation:     null,
+  };
+
+  // All six permutations of three distinct elements
+  const permutations: Array<[string, EvidenceRecord[]]> = [
+    ['[self_reported, ai_evaluated, consultant_validated]',   [selfReported, aiEvaluated, consultantValidated]],
+    ['[self_reported, consultant_validated, ai_evaluated]',   [selfReported, consultantValidated, aiEvaluated]],
+    ['[ai_evaluated, self_reported, consultant_validated]',   [aiEvaluated, selfReported, consultantValidated]],
+    ['[ai_evaluated, consultant_validated, self_reported]',   [aiEvaluated, consultantValidated, selfReported]],
+    ['[consultant_validated, self_reported, ai_evaluated]',   [consultantValidated, selfReported, aiEvaluated]],
+    ['[consultant_validated, ai_evaluated, self_reported]',   [consultantValidated, aiEvaluated, selfReported]],
+  ];
+
+  it.each(permutations)(
+    'returns consultant_validated for permutation %s',
+    (_label, records) => {
+      expect(getSegmentTier(records)).toBe('consultant_validated');
+    },
+  );
+});
