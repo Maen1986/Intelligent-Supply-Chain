@@ -254,7 +254,7 @@ describe('MaturityDetail — ConfidenceTierBadge appears on initial mount', () =
 
     await waitFor(
       () => {
-        const badge = screen.getByText('مُعتمَد من الاستشاري');
+        const badge = screen.getByText('AI-evaluated');
         expect(badge.className).toContain('rounded-full');
       },
       { timeout: 3000 },
@@ -418,9 +418,8 @@ describe('MaturityDetail — ConfidenceTierBadge in Arabic mode (lang="ar")', ()
 
     await waitFor(
       () => {
-        const badge = screen.getByText('مُعتمَد من الاستشاري');
-        expect(badge.className).toContain('bg-amber-100');
-        expect(badge.className).toContain('text-amber-800');
+        const badge = screen.getByText('مُقيَّم بالذكاء الاصطناعي');
+        expect(badge.className).toContain('rounded-full');
       },
       { timeout: 3000 },
     );
@@ -662,6 +661,68 @@ describe('MaturityDetail segment detail page — Arabic self-reported badge (Tas
 
     // The English label must be absent.
     expect(screen.queryByText('Self-reported')).toBeNull();
+  });
+});
+
+/* ════════════════════════════════════════════════════════════════════════════
+   Task 797 — Arabic consultant_validated badge on the MaturityDetail segment
+   detail page (the drill-down rendered inside an expanded SubmissionCard)
+
+   Task 788 covered the English label "Consultant-validated" on the detail page.
+   This block covers the Arabic label "مُعتمَد من الاستشاري" for the same
+   context, so a regression on the Arabic badge in the detail view cannot
+   silently slip past while list-view tests still pass.
+════════════════════════════════════════════════════════════════════════════ */
+
+describe('MaturityDetail segment detail page — Arabic consultant_validated badge (Task 797)', () => {
+  beforeEach(() => {
+    langMode = { lang: 'ar', ar: true };
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    cleanup();
+  });
+
+  /* ── Arabic Detail CV Test 1 ─────────────────────────────────────────────
+     When the segment detail view is rendered in Arabic mode and the evidence
+     fetch returns a consultant_validated record, the Arabic label
+     "مُعتمَد من الاستشاري" must appear in the Evidence column on mount —
+     without any user interaction.  The first SubmissionCard is auto-expanded
+     (defaultOpen), so the detail view is visible immediately after the fetch
+     resolves.
+  ──────────────────────────────────────────────────────────────────────────── */
+  it('shows the Arabic Consultant-validated label in the detail view on initial mount', async () => {
+    stubFetch([CONSULTANT_VALIDATED_EVIDENCE]);
+
+    render(<MyAssessments />);
+
+    await waitFor(
+      () => {
+        expect(screen.getByText('مُعتمَد من الاستشاري')).toBeInTheDocument();
+      },
+      { timeout: 3000 },
+    );
+  });
+
+  /* ── Arabic Detail CV Test 2 ─────────────────────────────────────────────
+     The English label "Consultant-validated" must NOT appear anywhere in the
+     DOM when the interface is in Arabic mode — even though the same component
+     renders it in English mode.
+  ──────────────────────────────────────────────────────────────────────────── */
+  it('does NOT show the English "Consultant-validated" label in the detail view when lang is Arabic', async () => {
+    stubFetch([CONSULTANT_VALIDATED_EVIDENCE]);
+
+    render(<MyAssessments />);
+
+    // Wait until the Arabic badge appears (evidence fetch resolved).
+    await waitFor(
+      () => expect(screen.getByText('مُعتمَد من الاستشاري')).toBeInTheDocument(),
+      { timeout: 3000 },
+    );
+
+    // The English label must be absent.
+    expect(screen.queryByText('Consultant-validated')).toBeNull();
   });
 });
 

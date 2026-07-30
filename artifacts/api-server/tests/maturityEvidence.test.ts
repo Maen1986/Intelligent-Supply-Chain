@@ -8,8 +8,10 @@
 import 
 {
 
+
  describe, it, expect, beforeEach, vi 
 }
+
 
  from 'vitest'
 ;
@@ -22,8 +24,10 @@ import request from 'supertest'
 import 
 {
 
+
  makeApp, dbState, resetDbState, makeLoggerMock 
 }
+
 
  from './helpers'
 ;
@@ -38,7 +42,9 @@ function chain(rowsGetter: () => any[], recordValues = false)
   const c: any = 
 {
 
+
 }
+
 
 ;
 
@@ -57,14 +63,17 @@ function chain(rowsGetter: () => any[], recordValues = false)
   c.where = (arg: any) => 
 {
 
+
  dbState.whereArgs.push(arg)
 ;
+
 
  return c
 ;
 
- 
+
 }
+
 
 ;
 
@@ -72,14 +81,17 @@ function chain(rowsGetter: () => any[], recordValues = false)
   c.values = (v: any) => 
 {
 
+
  if (recordValues) dbState.insertedValues.push(v)
 ;
+
 
  return c
 ;
 
- 
+
 }
+
 
 ;
 
@@ -108,6 +120,7 @@ function chain(rowsGetter: () => any[], recordValues = false)
 
 
 }
+
 
 ;
 
@@ -142,8 +155,10 @@ vi.mock('@workspace/db', () => (
   
 }
 
+
 ,
 }
+
 
 ))
 ;
@@ -166,8 +181,10 @@ vi.mock('@workspace/db/schema', () => (
   
 }
 
+
 ,
 }
+
 
 ))
 ;
@@ -184,8 +201,10 @@ vi.mock('../src/lib/logger', () => makeLoggerMock())
 const 
 {
 
+
  mockSignEvidencePutURL, mockGetObjectEntityFile 
 }
+
 
  = vi.hoisted(() => (
 {
@@ -194,6 +213,7 @@ const
   mockSignEvidencePutURL:  vi.fn(),
   mockGetObjectEntityFile: vi.fn(),
 }
+
 
 ))
 ;
@@ -229,15 +249,29 @@ vi.mock('../src/lib/objectStorage', () =>
 }
 
 
-  return {
+  return 
+{
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    ObjectStorageService: vi.fn(function (this: any) {
-      this.signEvidencePutURL  = mockSignEvidencePutURL;
-      this.getObjectEntityFile = mockGetObjectEntityFile;
-    }),
+    ObjectStorageService: vi.fn(function (this: any) 
+{
+
+      this.signEvidencePutURL  = mockSignEvidencePutURL
+;
+
+      this.getObjectEntityFile = mockGetObjectEntityFile
+;
+
+    
+}
+),
     ObjectNotFoundError,
-  };
-})
+  
+}
+;
+
+}
+)
 ;
 
 
@@ -254,23 +288,28 @@ vi.mock('@workspace/integrations-openai-ai-server', () => (
   openai: 
 {
 
+
  chat: 
 {
+
 
  completions: 
 {
 
+
  create: (...args: unknown[]) => createMock(...args) 
 }
 
- 
+
 }
 
- 
+
 }
+
 
 ,
 }
+
 
 ))
 ;
@@ -283,8 +322,10 @@ import evidenceRouter from '../src/routes/maturityEvidence'
 import 
 {
 
+
  ObjectNotFoundError as MockObjectNotFoundError 
 }
+
 
  from '../src/lib/objectStorage'
 ;
@@ -295,8 +336,10 @@ import
 const AUTH_SESSION       = 
 {
 
+
  userId: 99 
 }
+
 
 ;
 
@@ -304,10 +347,13 @@ const AUTH_SESSION       =
 const OTHER_USER_SESSION = 
 {
 
+
  userId: 88 
 }
 
+
 ;
+
 
  // a different user — must not see user 99's data
 
@@ -527,6 +573,7 @@ describe('POST /api/maturity/evidence/:id/confirm', () => {
 
 }
 
+
 )
 ;
 
@@ -546,12 +593,15 @@ describe('POST /api/maturity/evidence/:id/confirm', () => {
       getMetadata: vi.fn().mockResolvedValue([
 {
 
+
  size: 11 * 1024 * 1024 
 }
+
 
 ]),
     
 }
+
 
 ;
 
@@ -563,8 +613,10 @@ describe('POST /api/maturity/evidence/:id/confirm', () => {
     const 
 {
 
+
  db 
 }
+
 
  = await import('@workspace/db')
 ;
@@ -593,6 +645,7 @@ describe('POST /api/maturity/evidence/:id/confirm', () => {
 
 }
 
+
 )
 ;
 
@@ -612,12 +665,15 @@ describe('POST /api/maturity/evidence/:id/confirm', () => {
       getMetadata: vi.fn().mockResolvedValue([
 {
 
+
  size: 100_000 
 }
+
 
 ]),
     
 }
+
 
 ;
 
@@ -633,8 +689,10 @@ describe('POST /api/maturity/evidence/:id/confirm', () => {
     dbState.updateRows = [
 {
 
+
  ...EVIDENCE_ROW, confidenceTier: 'self_reported', aiEvaluation: null 
 }
+
 
 ]
 ;
@@ -659,11 +717,13 @@ describe('POST /api/maturity/evidence/:id/confirm', () => {
 
 }
 
+
 )
 ;
 
 
 }
+
 
 )
 ;
@@ -684,7 +744,9 @@ describe('GET /api/maturity/evidence', () =>
     const res = await request(app(
 {
 
+
 }
+
 
 ))
       .get('/api/maturity/evidence?snapshot_id=1')
@@ -696,6 +758,7 @@ describe('GET /api/maturity/evidence', () =>
 
 
 }
+
 
 )
 ;
@@ -724,6 +787,7 @@ describe('GET /api/maturity/evidence', () =>
 
 }
 
+
 )
 ;
 
@@ -747,6 +811,7 @@ describe('GET /api/maturity/evidence', () =>
 
 }
 
+
 )
 ;
 
@@ -758,8 +823,10 @@ describe('GET /api/maturity/evidence', () =>
     const row1 = 
 {
 
+
  id: 10, segId: 'procurement', subSegId: 'clm', confidenceTier: 'self_reported' 
 }
+
 
 ;
 
@@ -767,8 +834,10 @@ describe('GET /api/maturity/evidence', () =>
     const row2 = 
 {
 
+
  id: 11, segId: 'planning',    subSegId: 's&op', confidenceTier: 'ai_evaluated' 
 }
+
 
 ;
 
@@ -804,6 +873,7 @@ describe('GET /api/maturity/evidence', () =>
 
 }
 
+
 )
 ;
 
@@ -831,6 +901,7 @@ describe('GET /api/maturity/evidence', () =>
 
 }
 
+
 )
 ;
 
@@ -857,6 +928,7 @@ describe('GET /api/maturity/evidence', () =>
 
 
 }
+
 
 )
 ;
@@ -892,11 +964,13 @@ describe('GET /api/maturity/evidence', () =>
 
 }
 
+
 )
 ;
 
 
 }
+
 
 )
 ;
@@ -917,7 +991,9 @@ describe('DELETE /api/maturity/evidence/:id', () =>
     const res = await request(app(
 {
 
+
 }
+
 
 ))
       .delete('/api/maturity/evidence/42')
@@ -929,6 +1005,7 @@ describe('DELETE /api/maturity/evidence/:id', () =>
 
 
 }
+
 
 )
 ;
@@ -952,6 +1029,7 @@ describe('DELETE /api/maturity/evidence/:id', () =>
 
 
 }
+
 
 )
 ;
@@ -979,6 +1057,7 @@ describe('DELETE /api/maturity/evidence/:id', () =>
 
 
 }
+
 
 )
 ;
@@ -1014,37 +1093,97 @@ describe('DELETE /api/maturity/evidence/:id', () =>
   it('returns 403 when a consultant-role user tries to delete their own consultant_validated evidence', async () => {
     // The ownership check (userId filter) passes because the consultant owns the row.
     // The tier guard must still fire and block deletion regardless of the caller's role.
-    const CONSULTANT_SESSION = { userId: 99, role: 'consultant' };
-    dbState.selectRows = [{ ...EVIDENCE_ROW, confidenceTier: 'consultant_validated' }];
+    const CONSULTANT_SESSION = 
+{
+ userId: 99, role: 'consultant' 
+}
+;
+
+    dbState.selectRows = [
+{
+ ...EVIDENCE_ROW, confidenceTier: 'consultant_validated' 
+}
+]
+;
+
 
     const res = await request(makeApp('/api', evidenceRouter, CONSULTANT_SESSION))
-      .delete('/api/maturity/evidence/42');
+      .delete('/api/maturity/evidence/42')
+;
 
-    expect(res.status).toBe(403);
-    expect(res.body.ok).toBe(false);
-    expect(res.body.error).toMatch(/consultant.validated/i);
-  });
 
-  it('returns 204 and removes the file on a successful delete', async () => {
-    dbState.selectRows = [EVIDENCE_ROW];
+    expect(res.status).toBe(403)
+;
 
-    const mockFile = { delete: vi.fn().mockResolvedValue(undefined) };
-    mockGetObjectEntityFile.mockResolvedValue(mockFile);
+    expect(res.body.ok).toBe(false)
+;
+
+    expect(res.body.error).toMatch(/consultant.validated/i)
+;
+
+  
+}
+)
+;
+
+
+  it('returns 204 and removes the file on a successful delete', async () => 
+{
+
+    dbState.selectRows = [EVIDENCE_ROW]
+;
+
+
+    const mockFile = 
+{
+ delete: vi.fn().mockResolvedValue(undefined) 
+}
+;
+
+    mockGetObjectEntityFile.mockResolvedValue(mockFile)
+;
+
 
     const res = await request(app())
-      .delete('/api/maturity/evidence/42');
+      .delete('/api/maturity/evidence/42')
+;
 
-    expect(res.status).toBe(204);
-    expect(mockFile.delete).toHaveBeenCalledOnce();
-  });
 
-  it('still returns 204 when the GCS file is already gone', async () => {
-    dbState.selectRows = [EVIDENCE_ROW];
-    mockGetObjectEntityFile.mockRejectedValue(new MockObjectNotFoundError());
+    expect(res.status).toBe(204)
+;
+
+    expect(mockFile.delete).toHaveBeenCalledOnce()
+;
+
+  
+}
+)
+;
+
+
+  it('still returns 204 when the GCS file is already gone', async () => 
+{
+
+    dbState.selectRows = [EVIDENCE_ROW]
+;
+
+    mockGetObjectEntityFile.mockRejectedValue(new MockObjectNotFoundError())
+;
+
 
     const res = await request(app())
-      .delete('/api/maturity/evidence/42');
+      .delete('/api/maturity/evidence/42')
+;
 
-    expect(res.status).toBe(204);
-  });
-});
+
+    expect(res.status).toBe(204)
+;
+
+  
+}
+)
+;
+
+}
+)
+;
