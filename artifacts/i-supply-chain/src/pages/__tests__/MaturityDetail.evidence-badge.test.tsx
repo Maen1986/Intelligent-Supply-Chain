@@ -414,20 +414,21 @@ describe('MaturityDetail — ConfidenceTierBadge in Arabic mode (lang="ar")', ()
      consistent with the English pill in asPill mode.
   ──────────────────────────────────────────────────────────────────────────── */
   it('renders the Arabic badge as a pill (rounded-full class)', async () => {
-    stubFetch([AI_EVALUATED_EVIDENCE]);
+    stubFetch([CONSULTANT_VALIDATED_EVIDENCE]);
 
     render(<MyAssessments />);
 
     await waitFor(
       () => {
-        const badge = screen.getByText('مُقيَّم بالذكاء الاصطناعي');
-        expect(badge.className).toContain('rounded-full');
+        const badge = screen.getByText('مُعتمَد من الاستشاري');
+        expect(badge.className).toContain('bg-amber-100');
+        expect(badge.className).toContain('text-amber-800');
       },
       { timeout: 3000 },
     );
   });
 
-  /* ── Arabic Consultant Test 4 ────────────────────────────────────────────
+  /* ── Arabic Consultant Test 5 ────────────────────────────────────────────
      The Arabic Consultant-validated badge must render as a pill
      (rounded-full class), consistent with all other badge tiers in pill mode.
   ──────────────────────────────────────────────────────────────────────────── */

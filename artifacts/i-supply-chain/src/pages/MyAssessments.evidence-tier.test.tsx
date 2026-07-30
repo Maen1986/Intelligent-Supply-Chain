@@ -8,6 +8,8 @@
  *   2. After uploading a file (onChanged fires) → badge upgrades to "AI-evaluated"
  *   3. After removing the file (onChanged fires again) → badge reverts; row
  *      shows the "Add" placeholder instead
+ *
+ * Also tests getSegmentTier() directly for the multi-record best-tier scenario.
  */
 
 import React, { useState } from 'react';
@@ -15,6 +17,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, act, cleanup } from '@testing-library/react';
 import { LanguageProvider } from '@/lib/LanguageContext';
 import { MaturityDetail } from '@/pages/MyAssessments';
+import { getSegmentTier } from '@/components/ConfidenceTierBadge';
 import type { EvidenceRecord } from '@/components/EvidenceUploadZone';
 
 /* ── EvidenceUploadZone stub ────────────────────────────────────────────────
@@ -233,5 +236,80 @@ describe('MaturityDetail — evidence tier badge live updates', () => {
       expect(screen.getByText('Self-reported')).toBeInTheDocument();
       expect(screen.queryByText('Add')).not.toBeInTheDocument();
     });
+  });
+});
+
+/* ══════════════════════════════════════════════════════════════════════════
+   getSegmentTier() — multi-record best-tier unit tests
+   Confirms the function picks the highest-ranked tier across all evidence
+   records, so a regression in the ranking logic won't be invisible.
+══════════════════════════════════════════════════════════════════════════ */
+describe('getSegmentTier — best-tier selection across multiple records', () => {
+  const selfReported: EvidenceRecord = {
+    id:               1,
+    segId:            'strategy',
+    subSegId:         'strategy-align',
+    subSegLabel:      'Strategic Alignment',
+    originalFilename: 'doc_a.pdf',
+    mimeType:         'application/pdf',
+    confidenceTier:   'self_reported',
+    aiEvaluation:     null,
+  };
+
+  const aiEvaluated: EvidenceRecord = {
+    id:               2,
+    segId:            'strategy',
+    subSegId:         'strategy-risk',
+    subSegLabel:      'Risk Management',
+    originalFilename: 'doc_b.pdf',
+    mimeType:         'application/pdf',
+    confidenceTier:   'ai_evaluated',
+    aiEvaluation: {
+      plausible_support: true,
+      confidence:        'high',
+      flag_reason:       null,
+      summary:           'Supports the claimed level.',
+    },
+  };
+
+  const consultantValidated: EvidenceRecord = {
+    id:               3,
+    segId:            'strategy',
+    subSegId:         'strategy-goals',
+    subSegLabel:      'Strategic Goals',
+    originalFilename: 'doc_c.pdf',
+    mimeType:         'application/pdf',
+    confidenceTier:   'consultant_validated',
+    aiEvaluation:     null,
+  };
+
+  it('returns ai_evaluated when one record is self_reported and another is ai_evaluated', () => {
+    expect(getSegmentTier([selfReported, aiEvaluated])).toBe('ai_evaluated');
+  });
+
+  it('returns ai_evaluated regardless of record order (ai_evaluated first)', () => {
+    expect(getSegmentTier([aiEvaluated, selfReported])).toBe('ai_evaluated');
+  });
+
+  it('upgrades to consultant_validated when a third record with that tier is added', () => {
+    expect(getSegmentTier([selfReported, aiEvaluated, consultantValidated])).toBe('consultant_validated');
+  });
+
+  it('returns consultant_validated even when it is the only record present', () => {
+    expect(getSegmentTier([consultantValidated])).toBe('consultant_validated');
+  });
+
+  it('returns self_reported when ai_evaluated record has plausible_support: false', () => {
+    const flaggedAi: EvidenceRecord = {
+      ...aiEvaluated,
+      id: 4,
+      aiEvaluation: {
+        plausible_support: false,
+        confidence:        'low',
+        flag_reason:       'Insufficient detail.',
+        summary:           'Does not support the claimed level.',
+      },
+    };
+    expect(getSegmentTier([selfReported, flaggedAi])).toBe('self_reported');
   });
 });
