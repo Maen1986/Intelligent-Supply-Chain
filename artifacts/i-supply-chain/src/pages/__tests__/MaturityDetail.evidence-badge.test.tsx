@@ -20,6 +20,17 @@
  *  4. When both ai_evaluated and consultant_validated records are present,
  *     getSegmentTier() promotes consultant_validated — the
  *     "Consultant-validated" pill wins over "AI-evaluated".
+ *
+ * Task 788 — consultant_validated badge on the segment detail page:
+ *
+ *  5. The MaturityDetail segment detail view (the drill-down rendered when
+ *     a submission card is expanded) shows "Consultant-validated" in its
+ *     Evidence column when the fetch returns a consultant_validated record —
+ *     without any user interaction.
+ *
+ *  6. When both ai_evaluated and consultant_validated records are present
+ *     for the same segment, the detail view's Evidence column shows only
+ *     "Consultant-validated" (consultant_validated beats ai_evaluated).
  */
 
 import React from 'react';
@@ -557,5 +568,68 @@ describe('MaturityDetail — Consultant-validated badge in Arabic mode (lang="ar
       },
       { timeout: 3000 },
     );
+  });
+});
+
+/* ════════════════════════════════════════════════════════════════════════════
+   Task 788 — consultant_validated badge on the MaturityDetail segment
+   detail page (the drill-down rendered inside an expanded SubmissionCard)
+════════════════════════════════════════════════════════════════════════════ */
+
+describe('MaturityDetail segment detail page — consultant_validated badge', () => {
+  beforeEach(() => {
+    langMode = { lang: 'en', ar: false };
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    cleanup();
+  });
+
+  /* ── Detail Test 1 ───────────────────────────────────────────────────────
+     The MaturityDetail component is rendered inside an expanded
+     SubmissionCard (defaultOpen={true} for the first card).  When the
+     evidence fetch resolves with a consultant_validated record the
+     "Consultant-validated" pill must appear in the Evidence column of that
+     detail view without any user interaction.
+  ─────────────────────────────────────────────────────────────────────────── */
+  it('shows the Consultant-validated badge in the detail view on initial mount', async () => {
+    stubFetch([CONSULTANT_VALIDATED_EVIDENCE]);
+
+    render(<MyAssessments />);
+
+    // Wait for the evidence fetch to resolve and the badge to appear inside
+    // the MaturityDetail segment table (first card is auto-expanded).
+    await waitFor(
+      () => {
+        expect(screen.getByText('Consultant-validated')).toBeInTheDocument();
+      },
+      { timeout: 3000 },
+    );
+
+    // The AI-evaluated badge must not appear — only the consultant tier.
+    expect(screen.queryByText('AI-evaluated')).toBeNull();
+  });
+
+  /* ── Detail Test 2 ───────────────────────────────────────────────────────
+     When both ai_evaluated and consultant_validated evidence records are
+     returned for the same segment, the detail view's Evidence column must
+     show only "Consultant-validated" — getSegmentTier() promotes the
+     higher tier, so "AI-evaluated" must not be rendered at all.
+  ─────────────────────────────────────────────────────────────────────────── */
+  it('shows Consultant-validated (not AI-evaluated) in the detail view when both tiers are present', async () => {
+    stubFetch([AI_EVALUATED_EVIDENCE, CONSULTANT_VALIDATED_EVIDENCE]);
+
+    render(<MyAssessments />);
+
+    await waitFor(
+      () => {
+        expect(screen.getByText('Consultant-validated')).toBeInTheDocument();
+      },
+      { timeout: 3000 },
+    );
+
+    // consultant_validated must outrank ai_evaluated — only one badge shown.
+    expect(screen.queryByText('AI-evaluated')).toBeNull();
   });
 });
