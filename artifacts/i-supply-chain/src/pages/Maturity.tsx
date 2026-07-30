@@ -1788,7 +1788,7 @@ export function Maturity() {
                     </div>
                     <div className="flex-1">
                       <h3 className="font-bold text-primary text-sm">{ar ? seg.titleAr : seg.title}</h3>
-                      <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                      <div className="flex items-center gap-2 mt-0.5 flex-wrap" data-testid={`score-row-${i}`}>
                         <span className="text-primary font-extrabold">{score.toFixed(2)}</span>
                         <span className="text-muted-foreground text-xs">/5.0</span>
                         <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${level.bg} ${level.text} border ${level.border}`}>{ar ? level.labelAr : level.label}</span>

@@ -38,7 +38,9 @@ import
 // Queue for tests that need sequential selects to return different rows.
 // When populated, each awaited select chain shifts the first element instead
 // of falling back to dbState.selectRows.
-let selectQueue: any[][] = [];
+let selectQueue: any[][] = []
+;
+
 
 function chain(rowsGetter: () => any[], recordValues = false) 
 {
@@ -120,9 +122,15 @@ function chain(rowsGetter: () => any[], recordValues = false)
 }
 
 
-    if (selectQueue.length > 0) {
-      return Promise.resolve(selectQueue.shift()!);
-    }
+    if (selectQueue.length > 0) 
+{
+
+      return Promise.resolve(selectQueue.shift()!)
+;
+
+    
+}
+
     return Promise.resolve(rowsGetter())
 ;
 
@@ -191,7 +199,11 @@ vi.mock('@workspace/db/schema', () => (
 
 
 ,
-  maturitySnapshotsTable: { id: 'id', userId: 'userId' },
+  maturitySnapshotsTable: 
+{
+ id: 'id', userId: 'userId' 
+}
+,
 }
 
 
@@ -258,7 +270,8 @@ vi.mock('../src/lib/objectStorage', () =>
 }
 
 
-  return {
+  return 
+{
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     ObjectStorageService: vi.fn(function (this: any) 
@@ -278,7 +291,9 @@ vi.mock('../src/lib/objectStorage', () =>
 }
 ;
 
+
 }
+
 )
 ;
 
@@ -1121,14 +1136,19 @@ describe('DELETE /api/maturity/evidence/:id', () =>
     // The tier guard must still fire and block deletion regardless of the caller's role.
     const CONSULTANT_SESSION = 
 {
+
  userId: 99, role: 'consultant' 
 }
+
 ;
+
 
     dbState.selectRows = [
 {
+
  ...EVIDENCE_ROW, confidenceTier: 'consultant_validated' 
 }
+
 ]
 ;
 
@@ -1141,14 +1161,17 @@ describe('DELETE /api/maturity/evidence/:id', () =>
     expect(res.status).toBe(403)
 ;
 
+
     expect(res.body.ok).toBe(false)
 ;
+
 
     expect(res.body.error).toMatch(/consultant.validated/i)
 ;
 
-  
+
 }
+
 )
 ;
 
@@ -1156,15 +1179,19 @@ describe('DELETE /api/maturity/evidence/:id', () =>
   it('returns 204 and removes the file on a successful delete', async () => 
 {
 
+
     dbState.selectRows = [EVIDENCE_ROW]
 ;
 
 
     const mockFile = 
 {
+
  delete: vi.fn().mockResolvedValue(undefined) 
 }
+
 ;
+
 
     mockGetObjectEntityFile.mockResolvedValue(mockFile)
 ;
@@ -1178,11 +1205,13 @@ describe('DELETE /api/maturity/evidence/:id', () =>
     expect(res.status).toBe(204)
 ;
 
+
     expect(mockFile.delete).toHaveBeenCalledOnce()
 ;
 
-  
+
 }
+
 )
 ;
 
@@ -1190,8 +1219,10 @@ describe('DELETE /api/maturity/evidence/:id', () =>
   it('still returns 204 when the GCS file is already gone', async () => 
 {
 
+
     dbState.selectRows = [EVIDENCE_ROW]
 ;
+
 
     mockGetObjectEntityFile.mockRejectedValue(new MockObjectNotFoundError())
 ;
@@ -1205,11 +1236,14 @@ describe('DELETE /api/maturity/evidence/:id', () =>
     expect(res.status).toBe(204)
 ;
 
-  
+
 }
+
 )
 ;
 
+
 }
+
 )
 ;
