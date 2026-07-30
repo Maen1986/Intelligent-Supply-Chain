@@ -458,3 +458,83 @@ describe('Maturity results page — ConfidenceTierBadge in Arabic mode', () => {
     expect(screen.queryByText('AI-evaluated')).toBeNull();
   });
 });
+
+/* ════════════════════════════════════════════════════════════════════════════
+   Task 827 — Arabic-mode tests scoped to the per-segment recommendation card
+   Confirms that the Arabic badge label "مُعتمَد من الاستشاري" appears *inside*
+   data-testid="score-row-0" when lang="ar" is active, and that lower-tier
+   Arabic labels are absent when a higher tier is present.
+════════════════════════════════════════════════════════════════════════════ */
+
+describe('Maturity results page — ConfidenceTierBadge in recommendation card (Arabic mode)', () => {
+  beforeEach(() => {
+    langMode  = { lang: 'ar', ar: true };
+    authUser  = { id: 1, fullName: 'Test User', email: 'test@example.com' };
+    prepareDraft();
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    localStorage.clear();
+    _setMaturityTestSeed({});
+    cleanup();
+  });
+
+  /* ── Arabic Card Test 1 ─────────────────────────────────────────────────
+     The recommendation card for the first segment ("strategy") must render
+     the Arabic consultant-validated label inside data-testid="score-row-0"
+     when the evidence fetch returns a consultant_validated record.
+  ─────────────────────────────────────────────────────────────────────────── */
+  it('shows the Arabic label "مُعتمَد من الاستشاري" inside the recommendation card (score-row-0)', async () => {
+    stubFetch([CONSULTANT_VALIDATED_EVIDENCE]);
+
+    render(<Maturity />);
+
+    /* Wait for the card container to appear */
+    const scoreRow = await waitFor(
+      () => screen.getByTestId('score-row-0'),
+      { timeout: 4000 },
+    );
+
+    /* Arabic badge must be inside the card, not just somewhere on the page */
+    await waitFor(
+      () => {
+        const badge = within(scoreRow).getByText('مُعتمَد من الاستشاري');
+        expect(badge).toBeTruthy();
+      },
+      { timeout: 4000 },
+    );
+
+    /* English label must not appear when Arabic mode is active */
+    expect(within(scoreRow).queryByText('Consultant-validated')).toBeNull();
+  });
+
+  /* ── Arabic Card Test 2 ─────────────────────────────────────────────────
+     When both ai_evaluated and consultant_validated records are present,
+     only the Arabic consultant-validated label should appear inside the
+     recommendation card — the lower-tier Arabic label must be absent.
+  ─────────────────────────────────────────────────────────────────────────── */
+  it('shows "مُعتمَد من الاستشاري" (not the AI Arabic label) inside the card when both tiers are present', async () => {
+    stubFetch([AI_EVALUATED_EVIDENCE, CONSULTANT_VALIDATED_EVIDENCE]);
+
+    render(<Maturity />);
+
+    const scoreRow = await waitFor(
+      () => screen.getByTestId('score-row-0'),
+      { timeout: 4000 },
+    );
+
+    await waitFor(
+      () => {
+        expect(within(scoreRow).getByText('مُعتمَد من الاستشاري')).toBeTruthy();
+      },
+      { timeout: 4000 },
+    );
+
+    /* Lower-tier Arabic label must not appear inside the card */
+    expect(within(scoreRow).queryByText('مُقيَّم بالذكاء الاصطناعي')).toBeNull();
+    /* English labels must not appear in Arabic mode */
+    expect(within(scoreRow).queryByText('Consultant-validated')).toBeNull();
+    expect(within(scoreRow).queryByText('AI-evaluated')).toBeNull();
+  });
+});
