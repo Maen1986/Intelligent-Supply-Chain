@@ -440,6 +440,8 @@ describe('MaturityDetail — ConfidenceTierBadge in Arabic mode (lang="ar")', ()
     await waitFor(
       () => {
         const badge = screen.getByText('مُعتمَد من الاستشاري');
+        expect(badge.className).toContain('bg-amber-100');
+        expect(badge.className).toContain('text-amber-800');
         expect(badge.className).toContain('rounded-full');
       },
       { timeout: 3000 },
