@@ -535,6 +535,82 @@ function stubReUploadFlow() {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
+   Fetch stub — re-upload to consultant_validated (Task 846)
+   ───────────────────────────────────────────────────────────────────────────
+   Same three-phase pattern as stubReUploadFlow but the confirm endpoint
+   returns consultant_validated and the post-confirm GET returns
+   CONSULTANT_VALIDATED_RECORD.
+═══════════════════════════════════════════════════════════════════════════ */
+
+function stubReUploadFlowToConsultantValidated() {
+  type Phase = 'initial' | 'deleted' | 'confirmed';
+  let phase: Phase = 'initial';
+
+  vi.stubGlobal(
+    'fetch',
+    vi.fn().mockImplementation((url: string, opts?: RequestInit) => {
+      const method = (opts?.method ?? 'GET').toUpperCase();
+
+      /* DELETE existing evidence record ─────────────────────────────── */
+      if (url.includes('/maturity/evidence/') && method === 'DELETE') {
+        phase = 'deleted';
+        return Promise.resolve({ ok: true, status: 204, text: async () => '' });
+      }
+
+      /* POST upload-url ──────────────────────────────────────────────── */
+      if (url.includes('/maturity/evidence/upload-url') && method === 'POST') {
+        return Promise.resolve({
+          ok:   true,
+          json: async () => ({
+            ok:          true,
+            evidence_id: 99,
+            upload_url:  'https://storage.test/upload',
+          }),
+        });
+      }
+
+      /* PUT to presigned GCS URL ─────────────────────────────────────── */
+      if (url.startsWith('https://storage.test/') && method === 'PUT') {
+        return Promise.resolve({ ok: true });
+      }
+
+      /* POST confirm — returns consultant_validated ───────────────────── */
+      if (url.includes('/maturity/evidence/') && url.includes('/confirm') && method === 'POST') {
+        phase = 'confirmed';
+        return Promise.resolve({
+          ok:   true,
+          json: async () => ({ ok: true, confidence_tier: 'consultant_validated' }),
+        });
+      }
+
+      /* GET /evidence (fetchEvidence) ────────────────────────────────── */
+      if (url.includes('/maturity/evidence') && method === 'GET') {
+        if (phase === 'initial') {
+          return Promise.resolve({
+            ok:   true,
+            json: async () => ({ ok: true, evidence: [SELF_REPORTED_RECORD] }),
+          });
+        }
+        if (phase === 'deleted') {
+          return Promise.resolve({
+            ok:   true,
+            json: async () => ({ ok: true, evidence: [] }),
+          });
+        }
+        /* phase === 'confirmed' */
+        return Promise.resolve({
+          ok:   true,
+          json: async () => ({ ok: true, evidence: [CONSULTANT_VALIDATED_RECORD] }),
+        });
+      }
+
+      /* Fallback */
+      return Promise.resolve({ ok: true, json: async () => ({ ok: true }) });
+    }),
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
    Tests — badge tier promotion via re-upload (Task 804)
 ═══════════════════════════════════════════════════════════════════════════ */
 
@@ -608,5 +684,72 @@ describe('Maturity results page — badge tier updates when a second file replac
     /* Badge must be inside the score header — no page reload needed */
     const header = screen.getByTestId('segment-header');
     expect(header).toContainElement(screen.getByText('AI-evaluated'));
+  });
+
+  /* ── Test 8 ──────────────────────────────────────────────────────────────
+     Tier-promotion path: self_reported → consultant_validated via re-upload.
+
+     Start: evidenceList already contains one self_reported record so the
+       "Self-reported" badge is visible next to the score.
+     Action 1: user clicks the remove (×) button — triggers DELETE then
+       fetchEvidence(), which returns [] so evidenceList clears, `existing`
+       becomes null, and the upload zone renders.
+     Action 2: user picks a new file — triggers the three-step upload flow
+       then fetchEvidence(), which returns the CONSULTANT_VALIDATED_RECORD.
+     End: badge upgrades to "Consultant-validated" (not "AI-evaluated") without
+       a page reload. Exercises the consultant_validated branch of getSegmentTier.
+  ─────────────────────────────────────────────────────────────────────────── */
+  it('upgrades badge from Self-reported to Consultant-validated after remove + re-upload', async () => {
+    stubReUploadFlowToConsultantValidated();
+
+    render(
+      <SegmentCardHarnessWithInitialEvidence
+        initialEvidence={[SELF_REPORTED_RECORD]}
+      />,
+    );
+
+    /* Initial state: "Self-reported" badge is visible */
+    expect(screen.getAllByText('Self-reported').length).toBeGreaterThan(0);
+    expect(screen.queryByText('Consultant-validated')).toBeNull();
+    expect(screen.queryByText('AI-evaluated')).toBeNull();
+
+    /* ── Step 1: remove the existing self_reported record ───────────── */
+    const removeBtn = screen.getByTitle('Remove evidence');
+    await act(async () => {
+      fireEvent.click(removeBtn);
+    });
+
+    /* After deletion + fetchEvidence ALL "Self-reported" labels must be gone */
+    await waitFor(
+      () => expect(screen.queryAllByText('Self-reported')).toHaveLength(0),
+      { timeout: 5000 },
+    );
+
+    /* The upload zone is now visible (no `existing` record) */
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    expect(input).not.toBeNull();
+
+    /* ── Step 2: upload a replacement file ─────────────────────────── */
+    await act(async () => {
+      fireEvent.change(input, { target: { files: [makePdf('strategy-validated.pdf')] } });
+    });
+
+    /* After confirm + fetchEvidence the badge must upgrade to "Consultant-validated" */
+    await waitFor(
+      () => {
+        expect(screen.getByText('Consultant-validated')).toBeInTheDocument();
+      },
+      { timeout: 5000 },
+    );
+
+    /* "AI-evaluated" must be absent — tier must match the consultant_validated record */
+    expect(screen.queryByText('AI-evaluated')).toBeNull();
+
+    /* "Self-reported" must not linger */
+    expect(screen.queryAllByText('Self-reported')).toHaveLength(0);
+
+    /* Badge must live in the score header */
+    const header = screen.getByTestId('segment-header');
+    expect(header).toContainElement(screen.getByText('Consultant-validated'));
   });
 });
