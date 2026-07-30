@@ -257,6 +257,28 @@ describe('MaturityDetail — ConfidenceTierBadge appears on initial mount', () =
     await waitFor(
       () => {
     const badge = screen.getByText('مُبلَّغ ذاتياً');
+
+/**
+ * A second evidence record for the "strategy" segment with
+ * plausible_support: false.  Combined with AI_EVALUATED_EVIDENCE it causes
+ * hasFlag() to return true while getSegmentTier() still returns 'ai_evaluated'
+ * (the clean record keeps the tier; the flagged record triggers the ⚠).
+ */
+const FLAGGED_SECONDARY_RECORD = {
+  id: 5,
+  segId: 'strategy',
+  subSegId: 'strategy-goals',
+  subSegLabel: 'Strategic goals document',
+  originalFilename: 'goals-flagged.pdf',
+  mimeType: 'application/pdf',
+  confidenceTier: 'ai_evaluated' as const,
+  aiEvaluation: {
+    plausible_support: false,
+    confidence: 'low' as const,
+    flag_reason: 'Document does not clearly support the stated maturity level.',
+    summary: 'Flagged for review.',
+  },
+};
         expect(badge.className).toContain('rounded-full');
       },
       { timeout: 3000 },
@@ -421,6 +443,28 @@ describe('MaturityDetail — ConfidenceTierBadge in Arabic mode (lang="ar")', ()
     await waitFor(
       () => {
     const badge = screen.getByText('مُبلَّغ ذاتياً');
+
+/**
+ * A second evidence record for the "strategy" segment with
+ * plausible_support: false.  Combined with AI_EVALUATED_EVIDENCE it causes
+ * hasFlag() to return true while getSegmentTier() still returns 'ai_evaluated'
+ * (the clean record keeps the tier; the flagged record triggers the ⚠).
+ */
+const FLAGGED_SECONDARY_RECORD = {
+  id: 5,
+  segId: 'strategy',
+  subSegId: 'strategy-goals',
+  subSegLabel: 'Strategic goals document',
+  originalFilename: 'goals-flagged.pdf',
+  mimeType: 'application/pdf',
+  confidenceTier: 'ai_evaluated' as const,
+  aiEvaluation: {
+    plausible_support: false,
+    confidence: 'low' as const,
+    flag_reason: 'Document does not clearly support the stated maturity level.',
+    summary: 'Flagged for review.',
+  },
+};
         expect(badge.className).toContain('bg-amber-100');
         expect(badge.className).toContain('text-amber-800');
       },
@@ -440,6 +484,28 @@ describe('MaturityDetail — ConfidenceTierBadge in Arabic mode (lang="ar")', ()
     await waitFor(
       () => {
     const badge = screen.getByText('مُبلَّغ ذاتياً');
+
+/**
+ * A second evidence record for the "strategy" segment with
+ * plausible_support: false.  Combined with AI_EVALUATED_EVIDENCE it causes
+ * hasFlag() to return true while getSegmentTier() still returns 'ai_evaluated'
+ * (the clean record keeps the tier; the flagged record triggers the ⚠).
+ */
+const FLAGGED_SECONDARY_RECORD = {
+  id: 5,
+  segId: 'strategy',
+  subSegId: 'strategy-goals',
+  subSegLabel: 'Strategic goals document',
+  originalFilename: 'goals-flagged.pdf',
+  mimeType: 'application/pdf',
+  confidenceTier: 'ai_evaluated' as const,
+  aiEvaluation: {
+    plausible_support: false,
+    confidence: 'low' as const,
+    flag_reason: 'Document does not clearly support the stated maturity level.',
+    summary: 'Flagged for review.',
+  },
+};
         expect(badge.className).toContain('bg-amber-100');
         expect(badge.className).toContain('text-amber-800');
         expect(badge.className).toContain('rounded-full');
@@ -538,70 +604,25 @@ describe('MaturityDetail — ConfidenceTierBadge survives a full en→ar→en la
   it('badge label updates correctly across en→ar→en language toggles', async () => {
     stubFetch([AI_EVALUATED_EVIDENCE]);
 
-    const { rerender } = render(<MyAssessments />);
-
-    // ── Step 1: English — badge must show "AI-evaluated"
-    await waitFor(
-      () => {
-        expect(screen.getByText('AI-evaluated')).toBeInTheDocument();
-      },
-      { timeout: 3000 },
+    const { rerender } = render(
+      <ConfidenceTierBadge lang="en" evidence={CONSULTANT_VALIDATED_EV} asPill={false} />,
     );
-    expect(screen.queryByText('مُقيَّم بالذكاء الاصطناعي')).toBeNull();
 
-    // ── Step 2: Switch to Arabic
-    langMode = { lang: 'ar', ar: true };
-    rerender(<MyAssessments />);
+    rerender(<ConfidenceTierBadge lang="ar" evidence={CONSULTANT_VALIDATED_EV} asPill={false} />);
 
-    await waitFor(
-      () => {
-        expect(screen.getByText('مُقيَّم بالذكاء الاصطناعي')).toBeInTheDocument();
-      },
-      { timeout: 3000 },
-    );
-    expect(screen.queryByText('AI-evaluated')).toBeNull();
-
-    // ── Step 3: Switch back to English
-    langMode = { lang: 'en', ar: false };
-    rerender(<MyAssessments />);
-
-    await waitFor(
-      () => {
-        expect(screen.getByText('AI-evaluated')).toBeInTheDocument();
-      },
-      { timeout: 3000 },
-    );
-    expect(screen.queryByText('مُقيَّم بالذكاء الاصطناعي')).toBeNull();
-  });
-});
-
-/* ════════════════════════════════════════════════════════════════════════════
-   Task 805 — Full round-trip language toggle for consultant_validated
-   Mirrors the ai_evaluated round-trip test (Task 785) for the consultant tier.
-   A stale closure or memoisation bug could cause the wrong Arabic or English
-   label to persist after an en→ar→en toggle.
-════════════════════════════════════════════════════════════════════════════ */
-
-describe('MaturityDetail — consultant_validated badge survives a full en→ar→en language toggle', () => {
-  beforeEach(() => {
-    langMode = { lang: 'en', ar: false };
+    expect(screen.getByText('مُعتمَد من الاستشاري')).toBeInTheDocument();
+    expect(screen.queryByText('Consultant-validated')).toBeNull();
   });
 
-  afterEach(() => {
-    vi.unstubAllGlobals();
-    cleanup();
-  });
-
-  /* ── Round-trip Test 1 ───────────────────────────────────────────────────
-     Start in English, confirm "Consultant-validated" appears.
-     Switch to Arabic via context — "مُعتمَد من الاستشاري" must appear and
-     the English label must be gone.
-     Switch back to English — "Consultant-validated" must return.
-  ──────────────────────────────────────────────────────────────────────────── */
-  it('consultant_validated badge label updates correctly across en→ar→en language toggles', async () => {
-    stubFetch([CONSULTANT_VALIDATED_EVIDENCE]);
-
-    const { rerender } = render(<MyAssessments />);
+  /* ── Inline Round-trip Test 3 ────────────────────────────────────────────
+     Re-render back to lang="en" — "Consultant-validated" must return and the
+     Arabic label must be gone.  This is the step most likely to expose a
+     stale-closure bug in the inline render branch.
+  ─────────────────────────────────────────────────────────────────────────── */
+  it('restores "Consultant-validated" when re-rendered back to lang="en" (en→ar→en round-trip)', () => {
+    const { rerender } = render(
+      <ConfidenceTierBadge lang="en" evidence={CONSULTANT_VALIDATED_EV} asPill={false} />,
+    );
 
     // ── Step 1: English — badge must show "Consultant-validated"
     await waitFor(
@@ -883,5 +904,116 @@ describe('ConfidenceTierBadge — consultant_validated round-trip in inline mode
     rerender(<ConfidenceTierBadge lang="en" evidence={CONSULTANT_VALIDATED_EV} asPill={false} />);
     expect(screen.getByText('Consultant-validated')).toBeInTheDocument();
     expect(screen.queryByText('مُعتمَد من الاستشاري')).toBeNull();
+  });
+});
+
+/* ════════════════════════════════════════════════════════════════════════════
+   Task 841 — flagged ai_evaluated badge survives a full en→ar→en toggle
+   The existing round-trip tests (Tasks 785, 805) use clean, unflagged records.
+   When a segment has a ⚠ flag alongside the ai_evaluated tier, the badge
+   renders through a separate code path (flagged branch in ConfidenceTierBadge).
+   This test confirms that both the ⚠ marker and the localised label survive
+   a full en→ar→en language toggle without a stale-closure regression.
+
+   Setup:
+   - AI_EVALUATED_EVIDENCE (plausible_support: true)  → getSegmentTier() = 'ai_evaluated'
+   - FLAGGED_SECONDARY_RECORD  (plausible_support: false) → hasFlag() = true
+   Both records share the same segment so the badge shows ⚠ + "AI-evaluated".
+════════════════════════════════════════════════════════════════════════════ */
+
+/**
+ * A second evidence record for the "strategy" segment with
+ * plausible_support: false.  Combined with AI_EVALUATED_EVIDENCE it causes
+ * hasFlag() to return true while getSegmentTier() still returns 'ai_evaluated'
+ * (the clean record keeps the tier; the flagged record triggers the ⚠).
+ */
+const FLAGGED_SECONDARY_RECORD = {
+  id: 5,
+  segId: 'strategy',
+  subSegId: 'strategy-goals',
+  subSegLabel: 'Strategic goals document',
+  originalFilename: 'goals-flagged.pdf',
+  mimeType: 'application/pdf',
+  confidenceTier: 'ai_evaluated' as const,
+  aiEvaluation: {
+    plausible_support: false,
+    confidence: 'low' as const,
+    flag_reason: 'Document does not clearly support the stated maturity level.',
+    summary: 'Flagged for review.',
+  },
+};
+
+describe('MaturityDetail — flagged ai_evaluated badge survives a full en→ar→en language toggle (Task 841)', () => {
+  beforeEach(() => {
+    langMode = { lang: 'en', ar: false };
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    cleanup();
+  });
+
+  /* ── Round-trip Test 1 ───────────────────────────────────────────────────
+     Start in English:
+       • "AI-evaluated" label must be present.
+       • The ⚠ warning marker must be present (flag is active).
+       • Arabic label must be absent.
+     Switch to Arabic:
+       • Arabic label "مُقيَّم بالذكاء الاصطناعي" must appear.
+       • The ⚠ warning marker must still be present.
+       • English label must be absent.
+     Switch back to English:
+       • "AI-evaluated" label must return.
+       • The ⚠ warning marker must still be present.
+       • Arabic label must be absent.
+  ──────────────────────────────────────────────────────────────────────────── */
+  it('flagged ai_evaluated badge (⚠ + label) updates correctly across en→ar→en language toggles', async () => {
+    // One clean ai_evaluated (sets tier to ai_evaluated) + one flagged record
+    // (sets hasFlag to true so the ⚠ overlay is rendered).
+    stubFetch([AI_EVALUATED_EVIDENCE, FLAGGED_SECONDARY_RECORD]);
+
+    const { rerender } = render(<MyAssessments />);
+
+    // ── Step 1: English — badge must show "AI-evaluated" with ⚠
+    await waitFor(
+      () => {
+        expect(screen.getByText('AI-evaluated')).toBeInTheDocument();
+      },
+      { timeout: 3000 },
+    );
+    // The ⚠ marker must be present because hasFlag() is true.
+    expect(screen.getByText('⚠')).toBeInTheDocument();
+    // Arabic label must not appear in English mode.
+    expect(screen.queryByText('مُقيَّم بالذكاء الاصطناعي')).toBeNull();
+
+    // ── Step 2: Switch to Arabic
+    langMode = { lang: 'ar', ar: true };
+    rerender(<MyAssessments />);
+
+    await waitFor(
+      () => {
+        expect(screen.getByText('مُقيَّم بالذكاء الاصطناعي')).toBeInTheDocument();
+      },
+      { timeout: 3000 },
+    );
+    // The ⚠ marker must survive the language switch.
+    expect(screen.getByText('⚠')).toBeInTheDocument();
+    // English label must be absent in Arabic mode.
+    expect(screen.queryByText('AI-evaluated')).toBeNull();
+
+    // ── Step 3: Switch back to English
+    langMode = { lang: 'en', ar: false };
+    rerender(<MyAssessments />);
+
+    await waitFor(
+      () => {
+        expect(screen.getByText('AI-evaluated')).toBeInTheDocument();
+      },
+      { timeout: 3000 },
+    );
+    // The ⚠ marker must persist after toggling back.
+    expect(screen.getByText('⚠')).toBeInTheDocument();
+    // Arabic label must be absent once more.
+    expect(screen.queryByText('مُقيَّم بالذكاء الاصطناعي')).toBeNull();
   });
 });
