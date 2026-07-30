@@ -275,14 +275,9 @@ vi.mock('../src/lib/objectStorage', () =>
 }
 ),
     ObjectNotFoundError,
-  
+  };
 }
-;
-
-}
-)
-;
-
+);
 
 /* ── OpenAI mock ─────────────────────────────────────────────────────────── */
 
@@ -625,6 +620,21 @@ describe('POST /api/maturity/evidence/:id/confirm', () => {
 )
 ;
 
+
+  it('returns 404 when a consultant-role session tries to confirm evidence owned by a different user', async () => {
+    // A consultant whose userId does not match the evidence owner must be denied.
+    // The DB is queried with (id=42 AND userId=77) and returns nothing because
+    // the row belongs to userId=99 — the ownership filter prevents cross-user access
+    // regardless of the caller's role.
+    const CONSULTANT_SESSION = { userId: 77, role: 'consultant' };
+    dbState.selectRows = [];
+
+    const res = await request(makeApp('/api', evidenceRouter, CONSULTANT_SESSION))
+      .post('/api/maturity/evidence/42/confirm');
+
+    expect(res.status).toBe(404);
+    expect(res.body.ok).toBe(false);
+  });
 
   it('returns 400 and deletes the DB row when the uploaded file exceeds 10 MB', async () => 
 {
