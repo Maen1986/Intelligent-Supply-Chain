@@ -35,7 +35,7 @@
 
 import React from 'react';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { render, screen, cleanup, waitFor } from '@testing-library/react';
+import { render, screen, cleanup, waitFor, within } from '@testing-library/react';
 
 /* ── Module mocks (must precede the imports they affect) ─────────────────── */
 
@@ -284,5 +284,109 @@ describe('Maturity results page — ConfidenceTierBadge in segment score table',
 
     /* consultant_validated must outrank ai_evaluated */
     expect(screen.queryByText('AI-evaluated')).toBeNull();
+  });
+});
+
+/* ════════════════════════════════════════════════════════════════════════════
+   Task 814 — ConfidenceTierBadge inside the per-segment recommendation cards
+   ════════════════════════════════════════════════════════════════════════════
+   The Maturity results page renders ConfidenceTierBadge in two distinct places:
+     1. The segment score table (~line 1731 in Maturity.tsx)
+     2. The per-segment recommendation card header (~line 1796 in Maturity.tsx),
+        inside the div with data-testid="score-row-{i}"
+   These tests scope queries to data-testid="score-row-0" (the first segment,
+   'strategy') so a regression that removes the badge only from the cards is
+   detected independently of the score-table render.
+════════════════════════════════════════════════════════════════════════════ */
+
+describe('Maturity results page — ConfidenceTierBadge in per-segment recommendation cards', () => {
+  beforeEach(() => {
+    langMode = { lang: 'en', ar: false };
+    authUser = { id: 1, fullName: 'Test User', email: 'test@example.com' };
+    prepareDraft();
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    localStorage.clear();
+    _setMaturityTestSeed({});
+    cleanup();
+  });
+
+  /* ── Test 1 ────────────────────────────────────────────────────────────────
+     The recommendation card for the first segment renders a ConfidenceTierBadge
+     when that segment has evidence. The badge must be found *inside*
+     data-testid="score-row-0", not just somewhere on the page.
+  ─────────────────────────────────────────────────────────────────────────── */
+  it('shows the badge inside the recommendation card (score-row-0) for a consultant_validated segment', async () => {
+    stubFetch([CONSULTANT_VALIDATED_EVIDENCE]);
+
+    render(<Maturity />);
+
+    /* Wait for the card container to appear */
+    const scoreRow = await waitFor(
+      () => screen.getByTestId('score-row-0'),
+      { timeout: 4000 },
+    );
+
+    /* Badge must be inside the card, not just somewhere on the page */
+    await waitFor(
+      () => {
+        const badge = within(scoreRow).getByText('Consultant-validated');
+        expect(badge).toBeTruthy();
+      },
+      { timeout: 4000 },
+    );
+  });
+
+  /* ── Test 2 ────────────────────────────────────────────────────────────────
+     When both ai_evaluated and consultant_validated records are present,
+     the recommendation card must show only "Consultant-validated".
+  ─────────────────────────────────────────────────────────────────────────── */
+  it('shows "Consultant-validated" in the card when both tiers are present for the segment', async () => {
+    stubFetch([AI_EVALUATED_EVIDENCE, CONSULTANT_VALIDATED_EVIDENCE]);
+
+    render(<Maturity />);
+
+    const scoreRow = await waitFor(
+      () => screen.getByTestId('score-row-0'),
+      { timeout: 4000 },
+    );
+
+    await waitFor(
+      () => {
+        expect(within(scoreRow).getByText('Consultant-validated')).toBeTruthy();
+      },
+      { timeout: 4000 },
+    );
+
+    /* Lower tier must not appear inside the card */
+    expect(within(scoreRow).queryByText('AI-evaluated')).toBeNull();
+  });
+
+  /* ── Test 3 ────────────────────────────────────────────────────────────────
+     When a segment has no evidence at all, no ConfidenceTierBadge should
+     appear in its recommendation card.
+  ─────────────────────────────────────────────────────────────────────────── */
+  it('shows no badge in the recommendation card when the segment has no evidence', async () => {
+    /* Fetch returns evidence for a different segment — not 'strategy' */
+    stubFetch([{ ...CONSULTANT_VALIDATED_EVIDENCE, segId: 'sourcing' }]);
+
+    render(<Maturity />);
+
+    const scoreRow = await waitFor(
+      () => screen.getByTestId('score-row-0'),
+      { timeout: 4000 },
+    );
+
+    /* Give any async state time to settle */
+    await waitFor(
+      () => expect(screen.getByTestId('score-row-0')).toBeTruthy(),
+      { timeout: 4000 },
+    );
+
+    expect(within(scoreRow).queryByText('Consultant-validated')).toBeNull();
+    expect(within(scoreRow).queryByText('AI-evaluated')).toBeNull();
+    expect(within(scoreRow).queryByText('Self-reported')).toBeNull();
   });
 });
