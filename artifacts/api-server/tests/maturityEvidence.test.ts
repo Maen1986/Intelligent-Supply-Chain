@@ -575,6 +575,32 @@ describe('POST /api/maturity/evidence/:id/confirm', () => {
     expect(res.status).toBe(404);
   });
 
+  it('returns 409 without calling AI when the row is already ai_evaluated', async () => {
+    const alreadyEvaluatedRow = {
+      ...EVIDENCE_ROW,
+      confidenceTier: 'ai_evaluated',
+      aiEvaluation: {
+        plausible_support: true,
+        confidence:        'high',
+        flag_reason:       null,
+        summary:           'Previously evaluated.',
+      },
+    };
+    dbState.selectRows = [alreadyEvaluatedRow];
+
+    const res = await request(app())
+      .post('/api/maturity/evidence/42/confirm');
+
+    expect(res.status).toBe(409);
+    expect(res.body.ok).toBe(false);
+    expect(res.body.error).toMatch(/already been AI-evaluated/i);
+    // Existing evaluation is echoed back
+    expect(res.body.confidence_tier).toBe('ai_evaluated');
+    expect(res.body.ai_evaluation.plausible_support).toBe(true);
+    // AI must NOT have been invoked
+    expect(createMock).not.toHaveBeenCalled();
+  });
+
   it('returns 422 when the file is not found in storage', async () => {
     dbState.selectRows = [EVIDENCE_ROW];
     mockGetObjectEntityFile.mockRejectedValue(new MockObjectNotFoundError());

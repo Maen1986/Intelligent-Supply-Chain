@@ -248,6 +248,17 @@ router.post('/maturity/evidence/:id/confirm', requireSession, async (req, res) =
     return;
   }
 
+  // Guard: already AI-evaluated — return the existing result without re-running
+  if (evidenceRow.confidenceTier === 'ai_evaluated') {
+    res.status(409).json({
+      ok: false,
+      error: 'Evidence has already been AI-evaluated. Remove and re-upload the file to trigger a new evaluation.',
+      confidence_tier: evidenceRow.confidenceTier,
+      ai_evaluation:   evidenceRow.aiEvaluation,
+    });
+    return;
+  }
+
   // Verify file exists in GCS and check size
   let fileSize = 0;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -314,7 +325,7 @@ router.post('/maturity/evidence/:id/confirm', requireSession, async (req, res) =
 /* ── GET /api/maturity/evidence ─────────────────────────────────────────── */
 
 router.get('/maturity/evidence', requireSession, async (req, res) => {
-  const userId     = req.session.userId!;
+  const userId = req.session.userId!;
   const snapshotId = Number(req.query.snapshot_id);
   if (!Number.isInteger(snapshotId) || snapshotId <= 0) {
     res.status(400).json({ ok: false, error: 'snapshot_id is required' });
