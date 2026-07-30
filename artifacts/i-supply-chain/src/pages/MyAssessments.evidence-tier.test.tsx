@@ -17,7 +17,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, act, cleanup } from '@testing-library/react';
 import { LanguageProvider } from '@/lib/LanguageContext';
 import { MaturityDetail } from '@/pages/MyAssessments';
-import { getSegmentTier } from '@/components/ConfidenceTierBadge';
+import { getSegmentTier, ConfidenceTierBadge } from '@/components/ConfidenceTierBadge';
 import type { EvidenceRecord } from '@/components/EvidenceUploadZone';
 
 /* ── EvidenceUploadZone stub ────────────────────────────────────────────────
@@ -246,7 +246,7 @@ describe('MaturityDetail — evidence tier badge live updates', () => {
 ══════════════════════════════════════════════════════════════════════════ */
 describe('getSegmentTier — best-tier selection across multiple records', () => {
   const selfReported: EvidenceRecord = {
-    id:               1,
+    id:               20,
     segId:            'strategy',
     subSegId:         'strategy-align',
     subSegLabel:      'Strategic Alignment',
@@ -257,7 +257,7 @@ describe('getSegmentTier — best-tier selection across multiple records', () =>
   };
 
   const aiEvaluated: EvidenceRecord = {
-    id:               2,
+    id:               21,
     segId:            'strategy',
     subSegId:         'strategy-risk',
     subSegLabel:      'Risk Management',
@@ -273,7 +273,7 @@ describe('getSegmentTier — best-tier selection across multiple records', () =>
   };
 
   const consultantValidated: EvidenceRecord = {
-    id:               3,
+    id:               22,
     segId:            'strategy',
     subSegId:         'strategy-goals',
     subSegLabel:      'Strategic Goals',
@@ -323,7 +323,7 @@ describe('getSegmentTier — best-tier selection across multiple records', () =>
 ══════════════════════════════════════════════════════════════════════════ */
 describe('getSegmentTier — order-independence: two-record permutations [self_reported, ai_evaluated]', () => {
   const selfReported: EvidenceRecord = {
-    id:               10,
+    id:               20,
     segId:            'strategy',
     subSegId:         'strategy-align',
     subSegLabel:      'Strategic Alignment',
@@ -334,7 +334,7 @@ describe('getSegmentTier — order-independence: two-record permutations [self_r
   };
 
   const aiEvaluated: EvidenceRecord = {
-    id:               11,
+    id:               21,
     segId:            'strategy',
     subSegId:         'strategy-risk',
     subSegLabel:      'Risk Management',
@@ -418,4 +418,62 @@ describe('getSegmentTier — order-independence: all six permutations of [self_r
       expect(getSegmentTier(records)).toBe('consultant_validated');
     },
   );
+});
+
+/* ══════════════════════════════════════════════════════════════════════════
+   ConfidenceTierBadge — Arabic label for mixed-tier evidence (Task 839)
+   Confirms that when evidence spans two sub-segments (self_reported +
+   ai_evaluated), the badge rendered with lang="ar" shows the Arabic
+   ai_evaluated label and does NOT show the Arabic self_reported label.
+══════════════════════════════════════════════════════════════════════════ */
+describe('ConfidenceTierBadge — Arabic label with mixed-tier multi-sub-segment evidence', () => {
+  const selfReportedRecord: EvidenceRecord = {
+    id:               10,
+    segId:            'strategy',
+    subSegId:         'strategy-align',
+    subSegLabel:      'Strategic Alignment',
+    originalFilename: 'doc_a.pdf',
+    mimeType:         'application/pdf',
+    confidenceTier:   'self_reported',
+    aiEvaluation:     null,
+  };
+
+  const aiEvaluatedRecord: EvidenceRecord = {
+    id:               11,
+    segId:            'strategy',
+    subSegId:         'strategy-risk',
+    subSegLabel:      'Risk Management',
+    originalFilename: 'doc_b.pdf',
+    mimeType:         'application/pdf',
+    confidenceTier:   'ai_evaluated',
+    aiEvaluation: {
+      plausible_support: true,
+      confidence:        'high',
+      flag_reason:       null,
+      summary:           'Supports the claimed level.',
+    },
+  };
+
+  afterEach(() => {
+    cleanup();
+  });
+
+  it('shows the Arabic ai_evaluated label when one record is self_reported and another is ai_evaluated', () => {
+    const mixedEvidence = [selfReportedRecord, aiEvaluatedRecord];
+    render(<ConfidenceTierBadge lang="ar" evidence={mixedEvidence} />);
+
+    // Arabic AI-evaluated label must be present
+    expect(screen.getByText('مُقيَّم بالذكاء الاصطناعي')).toBeInTheDocument();
+
+    // Arabic self-reported label must be absent — the best tier wins
+    expect(screen.queryByText('مُبلَّغ ذاتياً')).not.toBeInTheDocument();
+  });
+
+  it('shows the Arabic ai_evaluated label regardless of record order (ai_evaluated first)', () => {
+    const mixedEvidence = [aiEvaluatedRecord, selfReportedRecord];
+    render(<ConfidenceTierBadge lang="ar" evidence={mixedEvidence} />);
+
+    expect(screen.getByText('مُقيَّم بالذكاء الاصطناعي')).toBeInTheDocument();
+    expect(screen.queryByText('مُبلَّغ ذاتياً')).not.toBeInTheDocument();
+  });
 });
