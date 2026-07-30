@@ -79,6 +79,30 @@ describe('segScore', () => {
     const answers = { '2-0': 1, '2-1': 2, '2-2': 3, '2-3': 4, '2-4': 4 };
     expect(segScore(answers, 2)).toBeCloseTo(2.8);
   });
+
+  // Picker scope: custom questionIndices subset
+  it('scores only the selected question indices when a subset is provided', () => {
+    // Segment 0: q0=5, q2=3, q4=1 answered; q1 and q3 not in scope
+    const answers = { '0-0': 5, '0-1': 99, '0-2': 3, '0-3': 99, '0-4': 1 };
+    // Selected: [0, 2, 4] → values [5, 3, 1] → mean = 3
+    expect(segScore(answers, 0, [0, 2, 4])).toBeCloseTo(3);
+  });
+
+  it('returns null for a partial subset (some selected questions unanswered)', () => {
+    // Only q0 answered; q2 missing → incomplete
+    const answers = { '0-0': 5 };
+    expect(segScore(answers, 0, [0, 2])).toBeNull();
+  });
+
+  it('returns null — not NaN — when questionIndices is empty (segment excluded from scope)', () => {
+    // A segment with zero selected sub-dimensions should be treated as excluded/incomplete,
+    // never produce NaN that would corrupt overall scoring.
+    const answers = { '0-0': 5, '0-1': 4, '0-2': 3, '0-3': 2, '0-4': 1 };
+    const result = segScore(answers, 0, []);
+    expect(result).toBeNull();
+    // Explicitly guard against NaN — this was the crash path before the fix
+    expect(result).not.toBeNaN();
+  });
 });
 
 /* ══════════════════════════════════════════════════════════════════════════

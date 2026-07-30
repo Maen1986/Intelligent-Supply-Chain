@@ -51,7 +51,7 @@ const SCALE_LABELS = [
    MAIN COMPONENT
 ═══════════════════════════════════════════════════════════════════════════ */
 
-type Phase = 'intro' | 'intake' | 'questions' | 'results';
+type Phase = 'intro' | 'intake' | 'picker' | 'questions' | 'results';
 
 /**
  * localStorage key under which in-progress draft answers and phase are
@@ -81,14 +81,38 @@ export function _clearMaturityTestSeed() {
   _testSeed = {};
 }
 
+/**
+ * Compute a stable string key representing a picker scope selection.
+ * Two scopes that select the same segments and same questions produce
+ * identical keys; any difference produces a different key.
+ * Used to detect when re-confirming the picker after going back from
+ * questions would misattribute existing answers.
+ */
+function computeScopeKey(segIds: string[], subSegIds: Record<string, number[]>): string {
+  const sorted = [...segIds].sort();
+  const parts  = sorted.map(id => `${id}:[${(subSegIds[id] ?? [0,1,2,3,4]).slice().sort((a,b)=>a-b).join(',')}]`);
+  return parts.join('|');
+}
+
 /** Read a saved draft from localStorage (returns null if absent or invalid). */
-function readDraft(): { phase: Phase; answers: Record<string, number>; intakeData: IntakeData } | null {
+function readDraft(): {
+  phase: Phase;
+  answers: Record<string, number>;
+  intakeData: IntakeData;
+  selectedSegmentIds?: string[];
+  selectedSubSegIds?: Record<string, number[]>;
+  committedScopeKey?: string;
+} | null {
   try {
     const raw = localStorage.getItem(MATURITY_DRAFT_KEY);
     if (!raw) return null;
-    const saved = JSON.parse(raw) as { phase?: unknown; answers?: unknown; intakeData?: unknown };
+    const saved = JSON.parse(raw) as {
+      phase?: unknown; answers?: unknown; intakeData?: unknown;
+      selectedSegmentIds?: unknown; selectedSubSegIds?: unknown;
+      committedScopeKey?: unknown;
+    };
     if (
-      (saved.phase === 'intake' || saved.phase === 'questions' || saved.phase === 'results') &&
+      (saved.phase === 'intake' || saved.phase === 'picker' || saved.phase === 'questions' || saved.phase === 'results') &&
       saved.answers !== null &&
       typeof saved.answers === 'object' &&
       !Array.isArray(saved.answers)
@@ -97,6 +121,15 @@ function readDraft(): { phase: Phase; answers: Record<string, number>; intakeDat
         phase: saved.phase as Phase,
         answers: saved.answers as Record<string, number>,
         intakeData: (saved.intakeData as IntakeData) ?? { industry: '', companySize: '' },
+        selectedSegmentIds: Array.isArray(saved.selectedSegmentIds)
+          ? (saved.selectedSegmentIds as string[])
+          : undefined,
+        selectedSubSegIds: (saved.selectedSubSegIds && typeof saved.selectedSubSegIds === 'object' && !Array.isArray(saved.selectedSubSegIds))
+          ? (saved.selectedSubSegIds as Record<string, number[]>)
+          : undefined,
+        committedScopeKey: typeof saved.committedScopeKey === 'string'
+          ? saved.committedScopeKey
+          : undefined,
       };
     }
   } catch { /* corrupted — ignore */ }
@@ -146,6 +179,41 @@ export function Maturity() {
     return readDraft()?.intakeData ?? { industry: '', companySize: '' };
   });
 
+  /** Picker: which segment IDs the user chose to include in this run. */
+  const [selectedSegmentIds, setSelectedSegmentIds] = useState<string[]>(() => {
+    if (_testSeedActive) return [...CORE_SEGMENTS, ...INDUSTRY_MODULES].map(s => s.id);
+    const draft = readDraft();
+    if (draft?.selectedSegmentIds?.length) return draft.selectedSegmentIds;
+    return [...CORE_SEGMENTS, ...INDUSTRY_MODULES].map(s => s.id);
+  });
+
+  /** Picker: per-segment map of original question indices (0–4) to include. */
+  const [selectedSubSegIds, setSelectedSubSegIds] = useState<Record<string, number[]>>(() => {
+    if (_testSeedActive) {
+      const init: Record<string, number[]> = {};
+      [...CORE_SEGMENTS, ...INDUSTRY_MODULES].forEach(s => { init[s.id] = [0, 1, 2, 3, 4]; });
+      return init;
+    }
+    const draft = readDraft();
+    if (draft?.selectedSubSegIds && Object.keys(draft.selectedSubSegIds).length > 0) return draft.selectedSubSegIds;
+    const init: Record<string, number[]> = {};
+    [...CORE_SEGMENTS, ...INDUSTRY_MODULES].forEach(s => { init[s.id] = [0, 1, 2, 3, 4]; });
+    return init;
+  });
+
+  /**
+   * The scope key that was in effect when the current `answers` were entered.
+   * Persisted in draft so a page-refresh + resume doesn't falsely mark the
+   * scope as "changed". Cleared when answers are wiped.
+   */
+  const [committedScopeKey, setCommittedScopeKey] = useState<string>(() => {
+    if (_testSeedActive) return '';
+    return readDraft()?.committedScopeKey ?? '';
+  });
+
+  /** Picker UI: which segment cards are expanded to show sub-question toggles. */
+  const [expandedPickerSegs, setExpandedPickerSegs] = useState<Set<string>>(new Set());
+
   const topRef               = useRef<HTMLDivElement>(null);
   const [feedbackOpen,        setFeedbackOpen]        = useState(false);
   const [incompleteWarning,   setIncompleteWarning]   = useState(false);
@@ -180,9 +248,26 @@ export function Maturity() {
   // cap to 8 so their answer maps, segment counts, and navigation assertions all stay valid.
   if (_testSeedActive && !_testSeed.intakeData) activeSegments = activeSegments.slice(0, 8);
 
-  const totalQuestions = activeSegments.length * 5;
-  const answeredCount  = Object.keys(answers).length;
-  const progress       = answeredCount / totalQuestions;
+  /**
+   * The working set for questions/results — activeSegments filtered by the
+   * user's picker selection. Defaults to all activeSegments until the user
+   * has confirmed a custom scope.
+   */
+  const scopedSegments: Segment[] = selectedSegmentIds.length > 0
+    ? activeSegments.filter(s => selectedSegmentIds.includes(s.id))
+    : activeSegments;
+
+  /** Helper: question indices selected for a given segment (default all 5). */
+  const segQuestionIndices = (segId: string): number[] =>
+    selectedSubSegIds[segId] ?? [0, 1, 2, 3, 4];
+
+  const totalQuestions = scopedSegments.reduce(
+    (sum, seg) => sum + segQuestionIndices(seg.id).length, 0,
+  );
+  const answeredCount = scopedSegments.reduce((sum, seg, si) =>
+    sum + segQuestionIndices(seg.id).filter(qi => answers[`${si}-${qi}`]).length, 0,
+  );
+  const progress       = totalQuestions > 0 ? answeredCount / totalQuestions : 0;
 
   /* ── Feedback modal after results ─────────────────────────────────────── */
   useEffect(() => {
@@ -195,7 +280,9 @@ export function Maturity() {
   /* ── Guard: redirect to first incomplete segment before showing results ─ */
   useEffect(() => {
     if (phase !== 'results') return;
-    const firstIncomplete = activeSegments.findIndex((_, i) => calcSegScore(answers, i) === null);
+    const firstIncomplete = scopedSegments.findIndex((seg, i) =>
+      calcSegScore(answers, i, segQuestionIndices(seg.id)) === null,
+    );
     if (firstIncomplete === -1) return;
     setSegIdx(firstIncomplete);
     setPhase('questions');
@@ -208,9 +295,11 @@ export function Maturity() {
     if (phase === 'intro') return;
     if (_testSeedActive) return;
     try {
-      localStorage.setItem(MATURITY_DRAFT_KEY, JSON.stringify({ phase, answers, intakeData }));
+      localStorage.setItem(MATURITY_DRAFT_KEY, JSON.stringify({
+        phase, answers, intakeData, selectedSegmentIds, selectedSubSegIds, committedScopeKey,
+      }));
     } catch { /* quota — ignore */ }
-  }, [phase, answers, intakeData]);
+  }, [phase, answers, intakeData, selectedSegmentIds, selectedSubSegIds, committedScopeKey]);
 
   /* ── Token-based restore: load guest snapshot from API when ?token= present */
   const tokenRestoreAttempted = useRef(false);
@@ -243,13 +332,13 @@ export function Maturity() {
     if (submissionFiredRef.current) return;
     submissionFiredRef.current = true;
 
-    const score = calcOverallScore(answers, activeSegments.length);
+    const score = calcOverallScore(answers, scopedSegments.length, scopedSegments.map(s => segQuestionIndices(s.id)));
     const level = getLevel(score);
-    const segScoresSnap = activeSegments.map((seg, i) => ({
+    const segScoresSnap = scopedSegments.map((seg, i) => ({
       id:    seg.id,
       title: ar ? seg.titleAr : seg.title,
-      score: +(calcSegScore(answers, i) ?? 0).toFixed(2),
-      level: getLevel(calcSegScore(answers, i) ?? 0).label,
+      score: +(calcSegScore(answers, i, segQuestionIndices(seg.id)) ?? 0).toFixed(2),
+      level: getLevel(calcSegScore(answers, i, segQuestionIndices(seg.id)) ?? 0).label,
     }));
 
     // Always record the submission (best-effort)
@@ -263,7 +352,7 @@ export function Maturity() {
         contactMobile:      (user as any)?.mobile ?? null,
         contactDesignation: (user as any)?.designation ?? null,
         contactCompany:     (user as any)?.company    ?? null,
-        inputs:  { intakeData, segmentCount: activeSegments.length },
+        inputs:  { intakeData, segmentCount: scopedSegments.length },
         outputs: { overallScore: score.toFixed(2), overallLevel: level.label, segmentScores: segScoresSnap },
         language: ar ? 'ar' : 'en',
       }),
@@ -335,12 +424,12 @@ export function Maturity() {
     if (snapshotFiredRef.current) return;
     snapshotFiredRef.current = true;
 
-    const segScores = activeSegments.map((seg, i) => ({
+    const segScores = scopedSegments.map((seg, i) => ({
       id:      seg.id,
       title:   seg.title,
       titleAr: seg.titleAr,
-      score:   +(calcSegScore(answers, i) ?? 0).toFixed(2),
-      level:   getLevel(calcSegScore(answers, i) ?? 0).label,
+      score:   +(calcSegScore(answers, i, segQuestionIndices(seg.id)) ?? 0).toFixed(2),
+      level:   getLevel(calcSegScore(answers, i, segQuestionIndices(seg.id)) ?? 0).label,
     }));
     const coveragePctVal = totalSubSegs > 0
       ? +(coveredSubSegs / totalSubSegs * 100).toFixed(2)
@@ -353,7 +442,7 @@ export function Maturity() {
       body: JSON.stringify({
         answers,
         intakeData,
-        numSegments:   activeSegments.length,
+        numSegments:   scopedSegments.length,
         segmentScores: segScores,
         coveragePct:   coveragePctVal,
       }),
@@ -401,18 +490,33 @@ export function Maturity() {
   const setAnswer = (seg: number, q: number, val: number) =>
     setAnswers(prev => ({ ...prev, [`${seg}-${q}`]: val }));
 
-  const segScore = (seg: number) => calcSegScore(answers, seg);
+  const segScore = (seg: number) =>
+    calcSegScore(answers, seg, segQuestionIndices(scopedSegments[seg]?.id ?? ''));
 
-  const currentSegComplete = () => [0, 1, 2, 3, 4].every(q => answers[`${segIdx}-${q}`]);
+  const currentSegComplete = () => {
+    const seg = scopedSegments[segIdx];
+    if (!seg) return false;
+    return segQuestionIndices(seg.id).every(q => answers[`${segIdx}-${q}`]);
+  };
 
   const handleNext = () => {
-    if (segIdx < activeSegments.length - 1) { setSegIdx(s => s + 1); scrollUp(); }
+    if (segIdx < scopedSegments.length - 1) { setSegIdx(s => s + 1); scrollUp(); }
     else { setEditingFromResults(false); setPhase('results'); scrollUp(); }
   };
   const handleBack = () => {
     if (segIdx > 0) { setSegIdx(s => s - 1); scrollUp(); }
-    else { setPhase('intake'); scrollUp(); }
+    else { setPhase('picker'); scrollUp(); }
   };
+
+  /** Reset picker selections to the full current active-segment set. */
+  const resetPickerSelections = (segs: Segment[]) => {
+    setSelectedSegmentIds(segs.map(s => s.id));
+    const subs: Record<string, number[]> = {};
+    segs.forEach(s => { subs[s.id] = [0, 1, 2, 3, 4]; });
+    setSelectedSubSegIds(subs);
+    setExpandedPickerSegs(new Set());
+  };
+
   const handleReset = () => {
     try { localStorage.removeItem(MATURITY_DRAFT_KEY); } catch { /* ignore */ }
     setAnswers({});
@@ -427,6 +531,7 @@ export function Maturity() {
     // Reset snapshot tracking so the next results visit auto-saves fresh
     snapshotFiredRef.current = false;
     setCurrentSnapshotId(null);
+    resetPickerSelections([...CORE_SEGMENTS, ...(activeModule ? [activeModule] : [])]);
     scrollUp();
   };
   const handleEditSegment = (i: number) => { setSegIdx(i); setEditingFromResults(true); setPhase('questions'); scrollUp(); };
@@ -435,7 +540,7 @@ export function Maturity() {
   /** Write enriched maturity context to sessionStorage before navigating to /report-generator */
   const handleGoToReport = () => {
     try {
-      const segScores = activeSegments.map((seg, i) => ({
+      const segScores = scopedSegments.map((seg, i) => ({
         id:       seg.id,
         title:    seg.title,
         titleAr:  seg.titleAr,
@@ -445,7 +550,7 @@ export function Maturity() {
         gccAvg:   seg.benchmarks.gcc,
         bestClass:seg.benchmarks.best,
       }));
-      const evidenceableSubs = activeSegments.reduce(
+      const evidenceableSubs = scopedSegments.reduce(
         (sum, seg) => sum + (seg.subSegments ?? []).filter(ss => ss.evidence).length, 0,
       );
       const evidenceBackedCount = evidenceList.filter(
@@ -501,33 +606,35 @@ export function Maturity() {
     topQuartile: ar ? 'أفضل ربع (الهدف)'      : 'Top Quartile',
   };
 
-  const radarData = activeSegments.map((seg, i) => ({
+  const radarData = scopedSegments.map((seg, i) => ({
     segment:          ar ? seg.shortTitleAr : seg.shortTitle,
     [L.asIs]:         +(segScore(i) ?? 0).toFixed(2),
     [L.gccMedian]:    seg.benchmarks.gcc,
     [L.topQuartile]:  seg.benchmarks.best,
   }));
 
-  const avgGccMedian   = activeSegments.length
-    ? activeSegments.reduce((s, seg) => s + seg.benchmarks.gcc,  0) / activeSegments.length
+  const avgGccMedian   = scopedSegments.length
+    ? scopedSegments.reduce((s, seg) => s + seg.benchmarks.gcc,  0) / scopedSegments.length
     : 0;
-  const avgTopQuartile = activeSegments.length
-    ? activeSegments.reduce((s, seg) => s + seg.benchmarks.best, 0) / activeSegments.length
+  const avgTopQuartile = scopedSegments.length
+    ? scopedSegments.reduce((s, seg) => s + seg.benchmarks.best, 0) / scopedSegments.length
     : 0;
   const gapData = [...radarData].sort(
     (a, b) => (a[L.asIs] as number) - (b[L.asIs] as number),
   );
 
-  const _unweightedScore = calcOverallScore(answers, activeSegments.length);
+  const _unweightedScore = calcOverallScore(
+    answers, scopedSegments.length, scopedSegments.map(s => segQuestionIndices(s.id)),
+  );
   const _weightedScore   = (!_testSeedActive && intakeData.industry)
-    ? calcWeightedOverallScore(answers, activeSegments, intakeData.industry)
+    ? calcWeightedOverallScore(answers, scopedSegments, intakeData.industry)
     : 0;
   const isWeightedScore  = _weightedScore > 0;
   const overallScore     = isWeightedScore ? _weightedScore : _unweightedScore;
   const overallLevel     = getLevel(overallScore);
 
   /* ── Segment metadata list passed to MaturityTrend ──────────────────── */
-  const segmentList: SegmentMeta[] = activeSegments.map(seg => ({
+  const segmentList: SegmentMeta[] = scopedSegments.map(seg => ({
     id:           seg.id,
     color:        seg.color,
     shortTitle:   seg.shortTitle,
@@ -535,13 +642,15 @@ export function Maturity() {
   }));
 
   /* ── Coverage stats (used by MaturityCoverage) ───────────────────────── */
-  // segsAssessed: segments where all flat (2-part key) questions are answered
-  const segsAssessed   = activeSegments.filter((_, i) => calcSegScore(answers, i) !== null).length;
+  // segsAssessed: segments where all selected flat questions are answered
+  const segsAssessed = scopedSegments.filter((seg, i) =>
+    calcSegScore(answers, i, segQuestionIndices(seg.id)) !== null,
+  ).length;
   // totalSubSegs / coveredSubSegs: uses 3-part key completeness only.
   // Flat segment answers do NOT count as sub-segment coverage — this ensures
   // the indicator honestly reflects whether granular sub-segment data exists.
-  const totalSubSegs   = activeSegments.reduce((s, seg) => s + (seg.subSegments?.length ?? 0), 0);
-  const coveredSubSegs = countCoveredSubSegments(answers, activeSegments);
+  const totalSubSegs   = scopedSegments.reduce((s, seg) => s + (seg.subSegments?.length ?? 0), 0);
+  const coveredSubSegs = countCoveredSubSegments(answers, scopedSegments);
 
   /* ── AI Remedies fetcher ──────────────────────────────────────────────── */
   const fetchRemedies = async () => {
@@ -550,8 +659,9 @@ export function Maturity() {
     setRemediesShown(true);
 
     // Build weak sub-questions (score ≤ 3) with full context
-    const weakItems = activeSegments.flatMap((seg, si) =>
-      seg.questions.flatMap((q, qi) => {
+    const weakItems = scopedSegments.flatMap((seg, si) =>
+      segQuestionIndices(seg.id).flatMap(qi => {
+        const q     = seg.questions[qi];
         const score = answers[`${si}-${qi}`];
         if (!score || score > 3) return [];
         return [{
@@ -564,7 +674,7 @@ export function Maturity() {
       })
     );
 
-    const segScores = activeSegments.map((seg, i) => ({
+    const segScores = scopedSegments.map((seg, i) => ({
       id:           seg.id,
       segmentTitle: ar ? seg.titleAr : seg.title,
       score:        +(segScore(i) ?? 0).toFixed(2),
@@ -815,7 +925,13 @@ export function Maturity() {
               {ar ? 'العودة' : 'Back'}
             </Button>
             <Button
-              onClick={() => { setPhase('questions'); setSegIdx(0); scrollUp(); }}
+              onClick={() => {
+                // Preserve existing picker scope and answers — clearing happens only
+                // in the picker confirm handler when the scope key actually changes.
+                setPhase('picker');
+                setSegIdx(0);
+                scrollUp();
+              }}
               disabled={!intakeComplete}
               data-testid="button-intake-continue"
               className="bg-primary hover:bg-primary/90 text-white font-bold gap-2">
@@ -829,10 +945,251 @@ export function Maturity() {
   }
 
   /* ════════════════════════════════════════════════════════════════════════
+     PICKER — segment & sub-dimension scope selection
+  ════════════════════════════════════════════════════════════════════════ */
+  if (phase === 'picker') {
+    const canConfirm = selectedSegmentIds.length > 0 &&
+      selectedSegmentIds.every(id => (selectedSubSegIds[id]?.length ?? 0) > 0);
+
+    const totalSelectedQuestions = activeSegments
+      .filter(s => selectedSegmentIds.includes(s.id))
+      .reduce((sum, s) => sum + (selectedSubSegIds[s.id]?.length ?? 5), 0);
+
+    return (
+      <div ref={topRef} className="w-full bg-muted min-h-screen" style={{ scrollMarginTop: 80 }}>
+        <div className="container mx-auto px-4 py-10 max-w-3xl">
+
+          {/* Header card */}
+          <div className="bg-white rounded-2xl border border-border shadow-sm p-6 mb-6">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                <Target className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <h2 className="text-xl font-extrabold text-primary">
+                  {ar ? 'نطاق التقييم' : 'Assessment Scope'}
+                </h2>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {ar
+                    ? 'اختر المجالات والأبعاد التي تريد تقييمها — يمكنك تقييم الكل أو التركيز على ما يهمّك.'
+                    : 'Choose which segments and dimensions to include — assess all or focus on what matters most.'}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center justify-between pt-3 border-t border-border">
+              <p className="text-sm text-muted-foreground">
+                <span className="font-bold text-primary">{selectedSegmentIds.length}</span>
+                {' '}{ar ? 'من' : 'of'}{' '}
+                <span className="font-bold">{activeSegments.length}</span>
+                {' '}{ar ? 'مجالات' : 'segments'}{' · '}
+                <span className="font-bold text-primary">{totalSelectedQuestions}</span>
+                {' '}{ar ? 'سؤالاً' : 'questions'}
+              </p>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => {
+                    setSelectedSegmentIds(activeSegments.map(s => s.id));
+                    setSelectedSubSegIds(prev => {
+                      const next = { ...prev };
+                      activeSegments.forEach(s => { next[s.id] = [0, 1, 2, 3, 4]; });
+                      return next;
+                    });
+                  }}
+                  className="text-xs font-semibold text-primary hover:underline"
+                >
+                  {ar ? 'تحديد الكل' : 'Select all'}
+                </button>
+                <span className="text-muted-foreground text-xs">·</span>
+                <button
+                  onClick={() => setSelectedSegmentIds([])}
+                  className="text-xs font-semibold text-muted-foreground hover:text-foreground hover:underline"
+                >
+                  {ar ? 'إلغاء الكل' : 'Clear all'}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Segment cards */}
+          <div className="space-y-2.5 mb-8">
+            {activeSegments.map(seg => {
+              const isSelected = selectedSegmentIds.includes(seg.id);
+              const selQs      = selectedSubSegIds[seg.id] ?? [0, 1, 2, 3, 4];
+              const isExpanded = expandedPickerSegs.has(seg.id);
+
+              return (
+                <div
+                  key={seg.id}
+                  className={`bg-white rounded-2xl border shadow-sm transition-all ${isSelected ? 'border-primary/30' : 'border-border opacity-60'}`}
+                >
+                  {/* Segment row */}
+                  <div className="flex items-center gap-3 px-4 py-3.5">
+
+                    {/* Checkbox */}
+                    <button
+                      onClick={() => {
+                        if (isSelected) {
+                          setSelectedSegmentIds(prev => prev.filter(id => id !== seg.id));
+                        } else {
+                          setSelectedSegmentIds(prev => [...prev, seg.id]);
+                          setSelectedSubSegIds(prev => ({ ...prev, [seg.id]: [0, 1, 2, 3, 4] }));
+                        }
+                      }}
+                      className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-all ${isSelected ? 'border-primary bg-primary' : 'border-border'}`}
+                    >
+                      {isSelected && <CheckCircle2 className="w-3 h-3 text-white" />}
+                    </button>
+
+                    {/* Icon */}
+                    <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: seg.color + '18' }}>
+                      <seg.icon className="w-4 h-4" style={{ color: seg.color }} />
+                    </div>
+
+                    {/* Title + sub-count */}
+                    <div className="flex-1 min-w-0">
+                      <p className={`font-semibold text-sm leading-snug ${isSelected ? 'text-foreground' : 'text-muted-foreground'}`}>
+                        {ar ? seg.titleAr : seg.title}
+                      </p>
+                      {isSelected && (
+                        <p className="text-xs text-muted-foreground">
+                          {selQs.length}{' '}{ar ? 'من 5 أبعاد' : 'of 5 dimensions'}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Expand toggle */}
+                    {isSelected && (
+                      <button
+                        onClick={() => setExpandedPickerSegs(prev => {
+                          const next = new Set(prev);
+                          if (next.has(seg.id)) next.delete(seg.id); else next.add(seg.id);
+                          return next;
+                        })}
+                        className="flex items-center gap-1 text-xs font-semibold text-muted-foreground hover:text-foreground px-2 py-1 rounded-lg hover:bg-muted transition-colors shrink-0"
+                      >
+                        {ar ? 'الأبعاد' : 'Dimensions'}
+                        {isExpanded
+                          ? <ChevronLeft className="w-3 h-3 rotate-90 rtl:rotate-90" />
+                          : <ChevronRight className="w-3 h-3 rtl:-rotate-90" />}
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Sub-question toggles */}
+                  {isSelected && isExpanded && (
+                    <div className="border-t border-border px-4 py-3 space-y-2">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+                          {ar ? 'الأبعاد الفرعية' : 'Sub-dimensions'}
+                        </p>
+                        <div className="flex items-center gap-3">
+                          <button
+                            onClick={() => setSelectedSubSegIds(prev => ({ ...prev, [seg.id]: [0, 1, 2, 3, 4] }))}
+                            className="text-[11px] font-semibold text-primary hover:underline"
+                          >{ar ? 'الكل' : 'All'}</button>
+                          <button
+                            onClick={() => setSelectedSubSegIds(prev => ({ ...prev, [seg.id]: [] }))}
+                            className="text-[11px] font-semibold text-muted-foreground hover:text-foreground hover:underline"
+                          >{ar ? 'لا شيء' : 'None'}</button>
+                        </div>
+                      </div>
+                      {[0, 1, 2, 3, 4].map(qi => {
+                        const subSeg   = seg.subSegments?.[qi];
+                        const label    = subSeg ? (ar ? subSeg.titleAr : subSeg.title) : (ar ? `السؤال ${qi + 1}` : `Question ${qi + 1}`);
+                        const qSelected = selQs.includes(qi);
+                        return (
+                          <button
+                            key={qi}
+                            onClick={() => {
+                              setSelectedSubSegIds(prev => {
+                                const cur  = prev[seg.id] ?? [0, 1, 2, 3, 4];
+                                const next = qSelected
+                                  ? cur.filter(q => q !== qi)
+                                  : [...cur, qi].sort((a, b) => a - b);
+                                return { ...prev, [seg.id]: next };
+                              });
+                            }}
+                            className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-left transition-colors ${qSelected ? 'bg-primary/5 border border-primary/20' : 'bg-muted/40 border border-transparent hover:bg-muted'}`}
+                          >
+                            <div className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-all ${qSelected ? 'border-primary bg-primary' : 'border-border'}`}>
+                              {qSelected && <div className="w-2 h-2 rounded-sm bg-white" />}
+                            </div>
+                            <div className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-extrabold text-white shrink-0" style={{ backgroundColor: seg.color + 'CC' }}>
+                              {qi + 1}
+                            </div>
+                            <span className={`text-xs font-medium leading-tight flex-1 text-start ${qSelected ? 'text-foreground' : 'text-muted-foreground'}`}>
+                              {label}
+                            </span>
+                          </button>
+                        );
+                      })}
+                      {selQs.length === 0 && (
+                        <p className="text-xs text-amber-600 font-medium pt-1">
+                          {ar ? '⚠ حدّد بُعداً واحداً على الأقل، أو أزل تحديد هذا المجال.' : '⚠ Select at least one dimension, or deselect this segment.'}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Navigation */}
+          <div className="flex items-center justify-between gap-4">
+            <Button variant="outline" onClick={() => { setPhase('intake'); scrollUp(); }} className="gap-2">
+              {ar ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+              {ar ? 'بيانات المؤسسة' : 'Organisation Info'}
+            </Button>
+            <div className="text-center">
+              {selectedSegmentIds.length === 0 && (
+                <p className="text-xs text-amber-600 font-medium">
+                  {ar ? 'حدد مجالاً واحداً على الأقل.' : 'Select at least one segment.'}
+                </p>
+              )}
+              {selectedSegmentIds.length > 0 && !canConfirm && (
+                <p className="text-xs text-amber-600 font-medium">
+                  {ar ? 'كل مجال محدد يحتاج بُعداً واحداً على الأقل.' : 'Each selected segment needs at least one dimension.'}
+                </p>
+              )}
+              {canConfirm && Object.keys(answers).length > 0 &&
+               computeScopeKey(selectedSegmentIds, selectedSubSegIds) !== committedScopeKey && (
+                <p className="text-xs text-amber-600 font-medium" data-testid="picker-scope-change-warning">
+                  {ar
+                    ? '⚠ تغيير النطاق سيمسح إجاباتك الحالية.'
+                    : '⚠ Changing scope will clear your current answers.'}
+                </p>
+              )}
+            </div>
+            <Button
+              onClick={() => {
+                const newKey = computeScopeKey(selectedSegmentIds, selectedSubSegIds);
+                if (newKey !== committedScopeKey && Object.keys(answers).length > 0) {
+                  setAnswers({});
+                }
+                setCommittedScopeKey(newKey);
+                setPhase('questions');
+                setSegIdx(0);
+                scrollUp();
+              }}
+              disabled={!canConfirm}
+              data-testid="button-picker-confirm"
+              className="bg-primary hover:bg-primary/90 text-white font-bold gap-2">
+              {ar ? 'ابدأ التقييم' : 'Start Assessment'}
+              {ar ? <ChevronLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+            </Button>
+          </div>
+
+        </div>
+      </div>
+    );
+  }
+
+  /* ════════════════════════════════════════════════════════════════════════
      QUESTIONS
   ════════════════════════════════════════════════════════════════════════ */
   if (phase === 'questions') {
-    const seg         = activeSegments[segIdx];
+    const seg         = scopedSegments[segIdx];
     const segComplete = currentSegComplete();
 
     return (
@@ -848,7 +1205,7 @@ export function Maturity() {
                 <seg.icon className="w-4 h-4" style={{ color: seg.color }} />
               </div>
               <div>
-                <p className="text-xs text-muted-foreground font-medium">{ar ? `المجال ${segIdx + 1} من ${activeSegments.length}` : `Segment ${segIdx + 1} of ${activeSegments.length}`}</p>
+                <p className="text-xs text-muted-foreground font-medium">{ar ? `المجال ${segIdx + 1} من ${scopedSegments.length}` : `Segment ${segIdx + 1} of ${scopedSegments.length}`}</p>
                 <p className="font-bold text-primary text-sm">{ar ? seg.titleAr : seg.title}</p>
               </div>
             </div>
@@ -857,7 +1214,7 @@ export function Maturity() {
             </div>
           </div>
           <div className="container mx-auto px-4 pb-2.5 flex gap-1.5">
-            {activeSegments.map((s, i) => {
+            {scopedSegments.map((s, i) => {
               const done   = segScore(i) !== null;
               const active = i === segIdx;
               return (
@@ -888,13 +1245,13 @@ export function Maturity() {
           )}
 
           {/* Industry module badge */}
-          {activeModule && segIdx === CORE_SEGMENTS.length && (
+          {seg.moduleFor && (
             <div className="mb-5 flex items-center gap-2 rounded-xl border border-accent/30 bg-accent/5 px-4 py-2.5">
               <Sparkles className="w-4 h-4 text-accent shrink-0" />
               <p className="text-xs font-semibold text-accent">
                 {ar
-                  ? `وحدة ${activeModule.shortTitleAr} — مُضافة بناءً على قطاعكم`
-                  : `${activeModule.shortTitle} Module — added based on your industry`}
+                  ? `وحدة ${seg.shortTitleAr} — مُضافة بناءً على قطاعكم`
+                  : `${seg.shortTitle} Module — added based on your industry`}
               </p>
             </div>
           )}
@@ -916,12 +1273,13 @@ export function Maturity() {
               </div>
 
               {/* Questions */}
-              {seg.questions.map((question, qi) => {
+              {segQuestionIndices(seg.id).map((qi, displayIdx) => {
+                const question = seg.questions[qi];
                 const val = answers[`${segIdx}-${qi}`];
                 return (
                   <div key={qi} className="bg-white rounded-2xl border border-border shadow-sm mb-5 overflow-hidden">
                     <div className="flex items-start gap-3 p-5 pb-4 border-b border-border">
-                      <span className="w-7 h-7 rounded-full bg-primary text-white text-xs flex items-center justify-center font-bold shrink-0 mt-0.5">{qi + 1}</span>
+                      <span className="w-7 h-7 rounded-full bg-primary text-white text-xs flex items-center justify-center font-bold shrink-0 mt-0.5">{displayIdx + 1}</span>
                       <p className="font-semibold text-foreground text-sm leading-relaxed">{ar ? question.qAr : question.q}</p>
                     </div>
 
@@ -993,17 +1351,17 @@ export function Maturity() {
               <div className="flex items-center justify-between mt-6 gap-4">
                 <Button variant="outline" onClick={handleBack} className="gap-2">
                   {ar ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
-                  {segIdx === 0 ? (ar ? 'بيانات المؤسسة' : 'Organisation Info') : (ar ? 'السابق' : 'Previous')}
+                  {segIdx === 0 ? (ar ? 'نطاق التقييم' : 'Assessment Scope') : (ar ? 'السابق' : 'Previous')}
                 </Button>
                 <div className="text-center">
                   {!segComplete && (
-                    <p className="text-xs text-muted-foreground">{ar ? 'أجب عن جميع الأسئلة الخمسة للمتابعة' : 'Answer all 5 questions to continue'}</p>
+                    <p className="text-xs text-muted-foreground">{ar ? 'أجب عن جميع الأسئلة للمتابعة' : `Answer all ${segQuestionIndices(seg.id).length} questions to continue`}</p>
                   )}
                 </div>
                 <Button onClick={handleNext} disabled={!segComplete}
                   data-testid="button-maturity-next"
-                  className={`gap-2 ${segIdx === activeSegments.length - 1 ? 'bg-accent hover:bg-accent/90' : 'bg-primary hover:bg-primary/90'} text-white font-bold`}>
-                  {segIdx === activeSegments.length - 1
+                  className={`gap-2 ${segIdx === scopedSegments.length - 1 ? 'bg-accent hover:bg-accent/90' : 'bg-primary hover:bg-primary/90'} text-white font-bold`}>
+                  {segIdx === scopedSegments.length - 1
                     ? <><Award className="w-4 h-4" /> {ar ? 'عرض النتائج' : 'View Results'}</>
                     : <>{ar ? 'المجال التالي' : 'Next Segment'} {ar ? <ChevronLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}</>}
                 </Button>
@@ -1211,7 +1569,7 @@ export function Maturity() {
         {totalSubSegs > 0 && (
           <MaturityCoverage
             assessedSegments={segsAssessed}
-            totalSegments={activeSegments.length}
+            totalSegments={scopedSegments.length}
             coveredSubSegments={coveredSubSegs}
             totalSubSegments={totalSubSegs}
             industryId={intakeData.industry || undefined}
@@ -1223,8 +1581,8 @@ export function Maturity() {
         <div className="bg-white rounded-2xl border border-border shadow-sm p-6 print-break-before">
           <h2 className="text-xl font-bold text-primary mb-1">
             {ar
-              ? `رادار النضج — مقارنة معيارية عبر ${activeSegments.length} مجالات`
-              : `Maturity Radar — ${activeSegments.length}-Segment Benchmark Comparison`}
+              ? `رادار النضج — مقارنة معيارية عبر ${scopedSegments.length} مجالات`
+              : `Maturity Radar — ${scopedSegments.length}-Segment Benchmark Comparison`}
           </h2>
           <p className="text-muted-foreground text-sm mb-4">
             {ar
@@ -1293,7 +1651,7 @@ export function Maturity() {
                 : `Weighted for ${selectedIndustryLabel.label} — sub-segments most relevant to your sector carry higher weight.`}
             </p>
           )}
-          <ResponsiveContainer width="100%" height={Math.max(280, activeSegments.length * 50 + 50)}>
+          <ResponsiveContainer width="100%" height={Math.max(280, scopedSegments.length * 50 + 50)}>
             <BarChart
               layout="vertical"
               data={gapData}
@@ -1340,7 +1698,7 @@ export function Maturity() {
                 </tr>
               </thead>
               <tbody>
-                {activeSegments.map((seg, i) => {
+                {scopedSegments.map((seg, i) => {
                   const score  = segScore(i) ?? 0;
                   const level  = getLevel(score);
                   const vsGcc  = score - seg.benchmarks.gcc;
@@ -1415,7 +1773,7 @@ export function Maturity() {
           <h2 className="text-xl font-bold text-primary mb-2">{ar ? 'توصيات على مستوى المجال' : 'Segment-Level Recommendations'}</h2>
           <p className="text-muted-foreground text-sm mb-6">{ar ? "إرشادات مصممة لكل مجال بناءً على مستوى نضجكم، من مَعِين الحقش MCIPS · CPSM." : "Tailored guidance for each segment based on your maturity level, from Ma'in Alhaqash MCIPS · CPSM."}</p>
           <div className="grid md:grid-cols-2 gap-5">
-            {activeSegments.map((seg, i) => {
+            {scopedSegments.map((seg, i) => {
               const score       = segScore(i) ?? 0;
               const level       = getLevel(score);
               const rec         = ar ? seg.recommendationsAr[level.label] : seg.recommendations[level.label];
@@ -1465,12 +1823,12 @@ export function Maturity() {
                     {/* ── Mini question-score bar chart ───────────────────────────── */}
                     <div className="mb-3 bg-muted/30 rounded-xl p-3">
                       <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">
-                        {ar ? 'أداء الأسئلة الفرعية (Q1–Q5)' : 'Sub-dimension scores (Q1–Q5)'}
+                        {ar ? 'أداء الأسئلة الفرعية' : 'Sub-dimension scores'}
                       </p>
                       <ResponsiveContainer width="100%" height={64}>
                         <BarChart
-                          data={[0,1,2,3,4].map(q => ({
-                            name: ar ? `س${q+1}` : `Q${q+1}`,
+                          data={segQuestionIndices(seg.id).map((q, di) => ({
+                            name: ar ? `س${di+1}` : `Q${di+1}`,
                             score: answers[`${i}-${q}`] ?? 0,
                           }))}
                           margin={{ top: 0, right: 0, left: -20, bottom: 0 }}
@@ -1484,8 +1842,8 @@ export function Maturity() {
                           <Bar dataKey="score" radius={[2, 2, 0, 0]} barSize={20}
                             label={{ position: 'top', fontSize: 8, fill: '#64748b',
                               formatter: (v: number) => (v > 0 ? String(v) : '') }}>
-                            {[0,1,2,3,4].map(q => (
-                              <Cell key={`q-cell-${i}-${q}`} fill={getLevel(answers[`${i}-${q}`] ?? 1).color} />
+                            {segQuestionIndices(seg.id).map((q, di) => (
+                              <Cell key={`q-cell-${i}-${di}`} fill={getLevel(answers[`${i}-${q}`] ?? 1).color} />
                             ))}
                           </Bar>
                         </BarChart>
@@ -1754,7 +2112,7 @@ export function Maturity() {
           </div>
           <div className="grid md:grid-cols-3 gap-5 mb-8">
             {rankWeakest(
-              activeSegments.map((seg, i) => ({ seg, i, score: segScore(i) ?? 0 })),
+              scopedSegments.map((seg, i) => ({ seg, i, score: segScore(i) ?? 0 })),
               item => item.score,
               3,
             ).map((item, rank) => (

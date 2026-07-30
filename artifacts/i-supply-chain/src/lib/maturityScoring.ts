@@ -33,10 +33,18 @@ export function getLevel(score: number) {
  * @param answers  Flat answer map keyed as `"<segIdx>-<questionIdx>"`.
  * @param seg      Zero-based segment index.
  */
-export function segScore(answers: Record<string, number>, seg: number): number | null {
-  const vals   = [0, 1, 2, 3, 4].map(q => answers[`${seg}-${q}`] ?? 0);
+export function segScore(
+  answers: Record<string, number>,
+  seg: number,
+  questionIndices: number[] = [0, 1, 2, 3, 4],
+): number | null {
+  // An empty selection means the segment was excluded — treat as incomplete.
+  if (questionIndices.length === 0) return null;
+  const vals   = questionIndices.map(q => answers[`${seg}-${q}`] ?? 0);
   const filled = vals.filter(v => v > 0);
-  return filled.length === 5 ? filled.reduce((a, b) => a + b, 0) / 5 : null;
+  return filled.length === questionIndices.length
+    ? filled.reduce((a, b) => a + b, 0) / questionIndices.length
+    : null;
 }
 
 /**
@@ -49,10 +57,14 @@ export function segScore(answers: Record<string, number>, seg: number): number |
  * @param answers      Flat answer map.
  * @param numSegments  Total number of segments (8 in the current assessment).
  */
-export function overallScore(answers: Record<string, number>, numSegments: number): number {
+export function overallScore(
+  answers: Record<string, number>,
+  numSegments: number,
+  questionIndicesPerSeg?: number[][],
+): number {
   const scores: number[] = [];
   for (let i = 0; i < numSegments; i++) {
-    const s = segScore(answers, i);
+    const s = segScore(answers, i, questionIndicesPerSeg?.[i]);
     if (s !== null) scores.push(s);
   }
   return scores.length === 0 ? 0 : scores.reduce((a, b) => a + b, 0) / scores.length;
