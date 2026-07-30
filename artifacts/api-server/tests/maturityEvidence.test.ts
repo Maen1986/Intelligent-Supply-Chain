@@ -5,94 +5,258 @@
  *          DELETE /api/maturity/evidence/:id
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import request from 'supertest';
-import { makeApp, dbState, resetDbState, makeLoggerMock } from './helpers';
+import 
+{
+ describe, it, expect, beforeEach, vi 
+}
+ from 'vitest'
+;
+
+import request from 'supertest'
+;
+
+import 
+{
+ makeApp, dbState, resetDbState, makeLoggerMock 
+}
+ from './helpers'
+;
+
 
 /* ── DB mock (extends helpers with delete support) ──────────────────────── */
 
-function chain(rowsGetter: () => any[], recordValues = false) {
-  const c: any = {};
-  for (const m of ['from', 'orderBy', 'limit', 'offset', 'set', 'returning']) {
-    c[m] = () => c;
-  }
-  c.where = (arg: any) => { dbState.whereArgs.push(arg); return c; };
-  c.values = (v: any) => { if (recordValues) dbState.insertedValues.push(v); return c; };
-  const exec = (): Promise<any[]> => {
-    if (dbState.failNext) {
-      dbState.failNext = false;
-      return Promise.reject(new Error('db failure (test)'));
-    }
-    return Promise.resolve(rowsGetter());
-  };
-  c.then = (res: any, rej: any) => exec().then(res, rej);
-  c.catch = (fn: any) => exec().catch(fn);
-  return c;
+function chain(rowsGetter: () => any[], recordValues = false) 
+{
+
+  const c: any = 
+{
+}
+;
+
+  for (const m of ['from', 'orderBy', 'limit', 'offset', 'set', 'returning']) 
+{
+
+    c[m] = () => c
+;
+
+  
 }
 
-vi.mock('@workspace/db', () => ({
-  db: {
+  c.where = (arg: any) => 
+{
+ dbState.whereArgs.push(arg)
+;
+ return c
+;
+ 
+}
+;
+
+  c.values = (v: any) => 
+{
+ if (recordValues) dbState.insertedValues.push(v)
+;
+ return c
+;
+ 
+}
+;
+
+  const exec = (): Promise<any[]> => 
+{
+
+    if (dbState.failNext) 
+{
+
+      dbState.failNext = false
+;
+
+      return Promise.reject(new Error('db failure (test)'))
+;
+
+    
+}
+
+    return Promise.resolve(rowsGetter())
+;
+
+  
+}
+;
+
+  c.then = (res: any, rej: any) => exec().then(res, rej)
+;
+
+  c.catch = (fn: any) => exec().catch(fn)
+;
+
+  return c
+;
+
+}
+
+
+vi.mock('@workspace/db', () => (
+{
+
+  db: 
+{
+
     select: vi.fn(() => chain(() => dbState.selectRows)),
     insert: vi.fn(() => chain(() => dbState.insertRows, true)),
     update: vi.fn(() => chain(() => dbState.updateRows)),
     delete: vi.fn(() => chain(() => [])),
-  },
-}));
+  
+}
+,
+}
+))
+;
 
-vi.mock('@workspace/db/schema', () => ({
-  maturityEvidenceTable: {
+
+vi.mock('@workspace/db/schema', () => (
+{
+
+  maturityEvidenceTable: 
+{
+
     id:             'id',
     userId:         'userId',
     snapshotId:     'snapshotId',
     segId:          'segId',
     subSegId:       'subSegId',
     confidenceTier: 'confidenceTier',
-  },
-}));
+  
+}
+,
+}
+))
+;
 
-vi.mock('../src/lib/logger', () => makeLoggerMock());
+
+vi.mock('../src/lib/logger', () => makeLoggerMock())
+;
+
 
 /* ── objectStorage mock ─────────────────────────────────────────────────── */
 
 // vi.hoisted ensures these exist before any vi.mock factory runs, which is
 // necessary because new ObjectStorageService() is called at module-import time.
-const { mockSignEvidencePutURL, mockGetObjectEntityFile } = vi.hoisted(() => ({
+const 
+{
+ mockSignEvidencePutURL, mockGetObjectEntityFile 
+}
+ = vi.hoisted(() => (
+{
+
   mockSignEvidencePutURL:  vi.fn(),
   mockGetObjectEntityFile: vi.fn(),
-}));
+}
+))
+;
 
-vi.mock('../src/lib/objectStorage', () => {
-  class ObjectNotFoundError extends Error {
-    constructor() {
-      super('Object not found');
-      this.name = 'ObjectNotFoundError';
-      Object.setPrototypeOf(this, ObjectNotFoundError.prototype);
-    }
-  }
-  return {
+
+vi.mock('../src/lib/objectStorage', () => 
+{
+
+  class ObjectNotFoundError extends Error 
+{
+
+    constructor() 
+{
+
+      super('Object not found')
+;
+
+      this.name = 'ObjectNotFoundError'
+;
+
+      Object.setPrototypeOf(this, ObjectNotFoundError.prototype)
+;
+
+    
+}
+
+  
+}
+
+  return 
+{
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    ObjectStorageService: vi.fn(function (this: any) {
-      this.signEvidencePutURL  = mockSignEvidencePutURL;
-      this.getObjectEntityFile = mockGetObjectEntityFile;
-    }),
+    ObjectStorageService: vi.fn(function (this: any) 
+{
+
+      this.signEvidencePutURL  = mockSignEvidencePutURL
+;
+
+      this.getObjectEntityFile = mockGetObjectEntityFile
+;
+
+    
+}
+),
     ObjectNotFoundError,
-  };
-});
+  
+}
+;
+
+}
+)
+;
+
 
 /* ── OpenAI mock ─────────────────────────────────────────────────────────── */
 
-const createMock = vi.fn();
-vi.mock('@workspace/integrations-openai-ai-server', () => ({
-  openai: { chat: { completions: { create: (...args: unknown[]) => createMock(...args) } } },
-}));
+const createMock = vi.fn()
+;
 
-import evidenceRouter from '../src/routes/maturityEvidence';
-import { ObjectNotFoundError as MockObjectNotFoundError } from '../src/lib/objectStorage';
+vi.mock('@workspace/integrations-openai-ai-server', () => (
+{
+
+  openai: 
+{
+ chat: 
+{
+ completions: 
+{
+ create: (...args: unknown[]) => createMock(...args) 
+}
+ 
+}
+ 
+}
+,
+}
+))
+;
+
+
+import evidenceRouter from '../src/routes/maturityEvidence'
+;
+
+import 
+{
+ ObjectNotFoundError as MockObjectNotFoundError 
+}
+ from '../src/lib/objectStorage'
+;
+
 
 /* ── Shared fixtures ─────────────────────────────────────────────────────── */
 
-const AUTH_SESSION       = { userId: 99 };
-const OTHER_USER_SESSION = { userId: 88 }; // a different user — must not see user 99's data
+const AUTH_SESSION       = 
+{
+ userId: 99 
+}
+;
+
+const OTHER_USER_SESSION = 
+{
+ userId: 88 
+}
+;
+ // a different user — must not see user 99's data
 
 function app(session = AUTH_SESSION) {
   return makeApp('/api', evidenceRouter, session);
@@ -291,135 +455,400 @@ describe('POST /api/maturity/evidence/:id/confirm', () => {
     // Simulate: the DB is queried with (id=42 AND userId=88) and returns nothing,
     // even though id=42 exists and belongs to userId=99.
     // Correct ownership filter means user B cannot confirm user A's evidence.
-    dbState.selectRows = [];
+    dbState.selectRows = []
+;
+
 
     const res = await request(makeApp('/api', evidenceRouter, OTHER_USER_SESSION))
-      .post('/api/maturity/evidence/42/confirm');
+      .post('/api/maturity/evidence/42/confirm')
+;
 
-    expect(res.status).toBe(404);
-    expect(res.body.ok).toBe(false);
-  });
 
-  it('still returns 200 and keeps self_reported tier when AI evaluation fails', async () => {
-    dbState.selectRows = [EVIDENCE_ROW];
+    expect(res.status).toBe(404)
+;
 
-    const mockFile = {
-      getMetadata: vi.fn().mockResolvedValue([{ size: 100_000 }]),
-    };
-    mockGetObjectEntityFile.mockResolvedValue(mockFile);
+    expect(res.body.ok).toBe(false)
+;
 
-    createMock.mockRejectedValue(new Error('OpenAI unavailable'));
+  
+}
+)
+;
 
-    dbState.updateRows = [{ ...EVIDENCE_ROW, confidenceTier: 'self_reported', aiEvaluation: null }];
+
+  it('returns 400 and deletes the DB row when the uploaded file exceeds 10 MB', async () => 
+{
+
+    dbState.selectRows = [EVIDENCE_ROW]
+;
+
+
+    const mockFile = 
+{
+
+      getMetadata: vi.fn().mockResolvedValue([
+{
+ size: 11 * 1024 * 1024 
+}
+]),
+    
+}
+;
+
+    mockGetObjectEntityFile.mockResolvedValue(mockFile)
+;
+
+
+    const 
+{
+ db 
+}
+ = await import('@workspace/db')
+;
+
 
     const res = await request(app())
-      .post('/api/maturity/evidence/42/confirm');
+      .post('/api/maturity/evidence/42/confirm')
+;
 
-    expect(res.status).toBe(200);
-    expect(res.body.ok).toBe(true);
-    expect(res.body.confidence_tier).toBe('self_reported');
-  });
-});
+
+    expect(res.status).toBe(400)
+;
+
+    expect(res.body.ok).toBe(false)
+;
+
+    expect(res.body.error).toMatch(/10 MB/i)
+;
+
+    expect(db.delete).toHaveBeenCalled()
+;
+
+  
+}
+)
+;
+
+
+  it('still returns 200 and keeps self_reported tier when AI evaluation fails', async () => 
+{
+
+    dbState.selectRows = [EVIDENCE_ROW]
+;
+
+
+    const mockFile = 
+{
+
+      getMetadata: vi.fn().mockResolvedValue([
+{
+ size: 100_000 
+}
+]),
+    
+}
+;
+
+    mockGetObjectEntityFile.mockResolvedValue(mockFile)
+;
+
+
+    createMock.mockRejectedValue(new Error('OpenAI unavailable'))
+;
+
+
+    dbState.updateRows = [
+{
+ ...EVIDENCE_ROW, confidenceTier: 'self_reported', aiEvaluation: null 
+}
+]
+;
+
+
+    const res = await request(app())
+      .post('/api/maturity/evidence/42/confirm')
+;
+
+
+    expect(res.status).toBe(200)
+;
+
+    expect(res.body.ok).toBe(true)
+;
+
+    expect(res.body.confidence_tier).toBe('self_reported')
+;
+
+  
+}
+)
+;
+
+}
+)
+;
+
 
 /* ══════════════════════════════════════════════════════════════════════════
    GET /api/maturity/evidence
    ══════════════════════════════════════════════════════════════════════════ */
 
-describe('GET /api/maturity/evidence', () => {
-  it('returns 401 when unauthenticated', async () => {
-    const res = await request(app({}))
-      .get('/api/maturity/evidence?snapshot_id=1');
-    expect(res.status).toBe(401);
-  });
+describe('GET /api/maturity/evidence', () => 
+{
 
-  it('returns 400 when snapshot_id is missing', async () => {
-    const res = await request(app())
-      .get('/api/maturity/evidence');
-    expect(res.status).toBe(400);
-    expect(res.body.ok).toBe(false);
-    expect(res.body.error).toMatch(/snapshot_id is required/i);
-  });
+  it('returns 401 when unauthenticated', async () => 
+{
 
-  it('returns 400 when snapshot_id is not a valid integer', async () => {
-    const res = await request(app())
-      .get('/api/maturity/evidence?snapshot_id=abc');
-    expect(res.status).toBe(400);
-    expect(res.body.ok).toBe(false);
-  });
+    const res = await request(app(
+{
+}
+))
+      .get('/api/maturity/evidence?snapshot_id=1')
+;
 
-  it('returns owner-scoped evidence rows for a valid snapshot_id', async () => {
-    const row1 = { id: 10, segId: 'procurement', subSegId: 'clm', confidenceTier: 'self_reported' };
-    const row2 = { id: 11, segId: 'planning',    subSegId: 's&op', confidenceTier: 'ai_evaluated' };
-    dbState.selectRows = [row1, row2];
+    expect(res.status).toBe(401)
+;
+
+  
+}
+)
+;
+
+
+  it('returns 400 when snapshot_id is missing', async () => 
+{
 
     const res = await request(app())
-      .get('/api/maturity/evidence?snapshot_id=1');
+      .get('/api/maturity/evidence')
+;
 
-    expect(res.status).toBe(200);
-    expect(res.body.ok).toBe(true);
-    expect(res.body.evidence).toHaveLength(2);
-    expect(res.body.evidence[0].id).toBe(10);
-    expect(res.body.evidence[1].id).toBe(11);
-  });
+    expect(res.status).toBe(400)
+;
 
-  it('returns an empty array when the snapshot has no evidence', async () => {
-    dbState.selectRows = [];
+    expect(res.body.ok).toBe(false)
+;
+
+    expect(res.body.error).toMatch(/snapshot_id is required/i)
+;
+
+  
+}
+)
+;
+
+
+  it('returns 400 when snapshot_id is not a valid integer', async () => 
+{
+
     const res = await request(app())
-      .get('/api/maturity/evidence?snapshot_id=99');
-    expect(res.status).toBe(200);
-    expect(res.body.evidence).toEqual([]);
-  });
+      .get('/api/maturity/evidence?snapshot_id=abc')
+;
 
-  it('returns 500 when the database query fails', async () => {
-    dbState.failNext = true;
+    expect(res.status).toBe(400)
+;
+
+    expect(res.body.ok).toBe(false)
+;
+
+  
+}
+)
+;
+
+
+  it('returns owner-scoped evidence rows for a valid snapshot_id', async () => 
+{
+
+    const row1 = 
+{
+ id: 10, segId: 'procurement', subSegId: 'clm', confidenceTier: 'self_reported' 
+}
+;
+
+    const row2 = 
+{
+ id: 11, segId: 'planning',    subSegId: 's&op', confidenceTier: 'ai_evaluated' 
+}
+;
+
+    dbState.selectRows = [row1, row2]
+;
+
+
     const res = await request(app())
-      .get('/api/maturity/evidence?snapshot_id=1');
-    expect(res.status).toBe(500);
-    expect(res.body.ok).toBe(false);
-  });
+      .get('/api/maturity/evidence?snapshot_id=1')
+;
 
-  it('returns only the requesting user\'s rows — not rows belonging to a different user', async () => {
+
+    expect(res.status).toBe(200)
+;
+
+    expect(res.body.ok).toBe(true)
+;
+
+    expect(res.body.evidence).toHaveLength(2)
+;
+
+    expect(res.body.evidence[0].id).toBe(10)
+;
+
+    expect(res.body.evidence[1].id).toBe(11)
+;
+
+  
+}
+)
+;
+
+
+  it('returns an empty array when the snapshot has no evidence', async () => 
+{
+
+    dbState.selectRows = []
+;
+
+    const res = await request(app())
+      .get('/api/maturity/evidence?snapshot_id=99')
+;
+
+    expect(res.status).toBe(200)
+;
+
+    expect(res.body.evidence).toEqual([])
+;
+
+  
+}
+)
+;
+
+
+  it('returns 500 when the database query fails', async () => 
+{
+
+    dbState.failNext = true
+;
+
+    const res = await request(app())
+      .get('/api/maturity/evidence?snapshot_id=1')
+;
+
+    expect(res.status).toBe(500)
+;
+
+    expect(res.body.ok).toBe(false)
+;
+
+  
+}
+)
+;
+
+
+  it('returns only the requesting user\'s rows — not rows belonging to a different user', async () => 
+{
+
     // Simulate: the DB is queried with userId=88 (user B) and returns nothing,
     // even though evidence rows for userId=99 (user A) exist in the database.
     // The empty result reflects the ownership filter (userId = session.userId) working correctly.
-    dbState.selectRows = [];
+    dbState.selectRows = []
+;
+
 
     const res = await request(makeApp('/api', evidenceRouter, OTHER_USER_SESSION))
-      .get('/api/maturity/evidence?snapshot_id=1');
+      .get('/api/maturity/evidence?snapshot_id=1')
+;
 
-    expect(res.status).toBe(200);
-    expect(res.body.ok).toBe(true);
-    expect(res.body.evidence).toEqual([]);
-  });
-});
+
+    expect(res.status).toBe(200)
+;
+
+    expect(res.body.ok).toBe(true)
+;
+
+    expect(res.body.evidence).toEqual([])
+;
+
+  
+}
+)
+;
+
+}
+)
+;
+
 
 /* ══════════════════════════════════════════════════════════════════════════
    DELETE /api/maturity/evidence/:id
    ══════════════════════════════════════════════════════════════════════════ */
 
-describe('DELETE /api/maturity/evidence/:id', () => {
-  it('returns 401 when unauthenticated', async () => {
-    const res = await request(app({}))
-      .delete('/api/maturity/evidence/42');
-    expect(res.status).toBe(401);
-  });
+describe('DELETE /api/maturity/evidence/:id', () => 
+{
 
-  it('returns 400 for a non-integer evidence id', async () => {
+  it('returns 401 when unauthenticated', async () => 
+{
+
+    const res = await request(app(
+{
+}
+))
+      .delete('/api/maturity/evidence/42')
+;
+
+    expect(res.status).toBe(401)
+;
+
+  
+}
+)
+;
+
+
+  it('returns 400 for a non-integer evidence id', async () => 
+{
+
     const res = await request(app())
-      .delete('/api/maturity/evidence/not-a-number');
-    expect(res.status).toBe(400);
-    expect(res.body.error).toMatch(/Invalid evidence id/i);
-  });
+      .delete('/api/maturity/evidence/not-a-number')
+;
 
-  it('returns 404 when no evidence row belongs to the user', async () => {
-    dbState.selectRows = [];
+    expect(res.status).toBe(400)
+;
+
+    expect(res.body.error).toMatch(/Invalid evidence id/i)
+;
+
+  
+}
+)
+;
+
+
+  it('returns 404 when no evidence row belongs to the user', async () => 
+{
+
+    dbState.selectRows = []
+;
+
     const res = await request(app())
-      .delete('/api/maturity/evidence/999');
-    expect(res.status).toBe(404);
-    expect(res.body.ok).toBe(false);
-  });
+      .delete('/api/maturity/evidence/999')
+;
 
-  it('returns 404 when the evidence id exists but belongs to a different user', async () => {
+    expect(res.status).toBe(404)
+;
+
+    expect(res.body.ok).toBe(false)
+;
+
+  
+}
+)
+;
+
+
+  it('returns 404 when the evidence id exists but belongs to a different user', async () => 
+{
+
     // Simulate: the DB is queried with (id=42 AND userId=88) and returns nothing,
     // even though id=42 exists and belongs to userId=99.
     // Correct ownership filter means user B cannot delete user A's evidence.
