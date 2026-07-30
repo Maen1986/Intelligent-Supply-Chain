@@ -78,6 +78,8 @@ vi.mock('framer-motion', async (importOriginal) => {
 /* ── Component under test ────────────────────────────────────────────────── */
 
 import { MyAssessments } from '../MyAssessments';
+import { ConfidenceTierBadge } from '@/components/ConfidenceTierBadge';
+import type { EvidenceRecord } from '@/components/EvidenceUploadZone';
 
 /* ── Fixtures ────────────────────────────────────────────────────────────── */
 
@@ -254,7 +256,7 @@ describe('MaturityDetail — ConfidenceTierBadge appears on initial mount', () =
 
     await waitFor(
       () => {
-        const badge = screen.getByText('مُعتمَد من الاستشاري');
+        const badge = screen.getByText('AI-evaluated');
         expect(badge.className).toContain('rounded-full');
       },
       { timeout: 3000 },
@@ -418,9 +420,9 @@ describe('MaturityDetail — ConfidenceTierBadge in Arabic mode (lang="ar")', ()
 
     await waitFor(
       () => {
-        const badge = screen.getByText('مُعتمَد من الاستشاري');
-        expect(badge.className).toContain('bg-amber-100');
-        expect(badge.className).toContain('text-amber-800');
+        const badge = screen.getByText('مُقيَّم بالذكاء الاصطناعي');
+        expect(badge.className).toContain('bg-blue-100');
+        expect(badge.className).toContain('text-blue-800');
       },
       { timeout: 3000 },
     );
@@ -724,6 +726,64 @@ describe('MaturityDetail segment detail page — Arabic consultant_validated bad
 
     // The English label must be absent.
     expect(screen.queryByText('Consultant-validated')).toBeNull();
+  });
+});
+
+/* ════════════════════════════════════════════════════════════════════════════
+   Task 806 — Arabic self-reported badge in the evidence detail drawer
+   (inline mode: asPill=false)
+
+   The evidence detail drawer accordion header uses asPill={false}, which
+   renders the badge as an inline span rather than a rounded pill.  These
+   tests confirm that when lang="ar" and the evidence tier is self_reported:
+
+    1. The Arabic label "مُبلَّغ ذاتياً" is rendered.
+    2. The element does NOT carry the rounded-full class (inline, not a pill).
+    3. The English label "Self-reported" is absent.
+════════════════════════════════════════════════════════════════════════════ */
+
+const SELF_REPORTED_EV: EvidenceRecord[] = [
+  {
+    id:               3,
+    segId:            'strategy',
+    subSegId:         'strategy-align',
+    subSegLabel:      'Supply chain strategy document',
+    originalFilename: 'strategy-self.pdf',
+    mimeType:         'application/pdf',
+    confidenceTier:   'self_reported',
+    aiEvaluation:     null,
+  },
+];
+
+describe('ConfidenceTierBadge — Arabic self-reported badge in inline mode (asPill=false, Task 806)', () => {
+  afterEach(() => cleanup());
+
+  /* ── Inline Test 1 ───────────────────────────────────────────────────────
+     When rendered with asPill=false and lang="ar", the Arabic self-reported
+     label "مُبلَّغ ذاتياً" must appear in the DOM.
+  ─────────────────────────────────────────────────────────────────────────── */
+  it('shows "مُبلَّغ ذاتياً" for self_reported evidence in Arabic inline mode', () => {
+    render(<ConfidenceTierBadge lang="ar" evidence={SELF_REPORTED_EV} asPill={false} />);
+    expect(screen.getByText('مُبلَّغ ذاتياً')).toBeInTheDocument();
+  });
+
+  /* ── Inline Test 2 ───────────────────────────────────────────────────────
+     The element must NOT carry the rounded-full CSS class — the inline
+     variant is a plain span, not a pill shape.
+  ─────────────────────────────────────────────────────────────────────────── */
+  it('does NOT apply rounded-full to the Arabic self-reported badge in inline mode', () => {
+    render(<ConfidenceTierBadge lang="ar" evidence={SELF_REPORTED_EV} asPill={false} />);
+    const badge = screen.getByText('مُبلَّغ ذاتياً');
+    expect(badge.className).not.toContain('rounded-full');
+  });
+
+  /* ── Inline Test 3 ───────────────────────────────────────────────────────
+     The English label "Self-reported" must not appear anywhere in the DOM
+     when lang="ar", even in inline mode.
+  ─────────────────────────────────────────────────────────────────────────── */
+  it('does NOT show the English "Self-reported" label in Arabic inline mode', () => {
+    render(<ConfidenceTierBadge lang="ar" evidence={SELF_REPORTED_EV} asPill={false} />);
+    expect(screen.queryByText('Self-reported')).toBeNull();
   });
 });
 
