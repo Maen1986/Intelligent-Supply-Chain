@@ -256,7 +256,7 @@ describe('MaturityDetail — ConfidenceTierBadge appears on initial mount', () =
 
     await waitFor(
       () => {
-        const badge = screen.getByText('Consultant-validated');
+    const badge = screen.getByText('مُبلَّغ ذاتياً');
         expect(badge.className).toContain('rounded-full');
       },
       { timeout: 3000 },
@@ -420,7 +420,7 @@ describe('MaturityDetail — ConfidenceTierBadge in Arabic mode (lang="ar")', ()
 
     await waitFor(
       () => {
-        const badge = screen.getByText('مُعتمَد من الاستشاري');
+    const badge = screen.getByText('مُبلَّغ ذاتياً');
         expect(badge.className).toContain('bg-amber-100');
         expect(badge.className).toContain('text-amber-800');
       },
@@ -439,7 +439,7 @@ describe('MaturityDetail — ConfidenceTierBadge in Arabic mode (lang="ar")', ()
 
     await waitFor(
       () => {
-        const badge = screen.getByText('مُعتمَد من الاستشاري');
+    const badge = screen.getByText('مُبلَّغ ذاتياً');
         expect(badge.className).toContain('bg-amber-100');
         expect(badge.className).toContain('text-amber-800');
         expect(badge.className).toContain('rounded-full');
@@ -796,11 +796,17 @@ describe('ConfidenceTierBadge — Arabic self-reported badge in inline mode (asP
 
   /* ── Inline Test 2 ───────────────────────────────────────────────────────
      The element must NOT carry the rounded-full CSS class — the inline
-     variant is a plain span, not a pill shape.
+     variant is a plain span, not a pill shape.  It must carry the inline-
+     specific styling classes (font-semibold, text-slate-600) so the
+     assertion is non-trivial even when className is empty.
   ─────────────────────────────────────────────────────────────────────────── */
   it('does NOT apply rounded-full to the Arabic self-reported badge in inline mode', () => {
     render(<ConfidenceTierBadge lang="ar" evidence={SELF_REPORTED_EV} asPill={false} />);
     const badge = screen.getByText('مُبلَّغ ذاتياً');
+    // Inline mode must NOT be a pill.
     expect(badge).not.toHaveClass('rounded-full');
+    // Inline mode MUST carry the inline-specific weight and tier colour.
+    expect(badge).toHaveClass('font-semibold');
+    expect(badge).toHaveClass('text-slate-600');
   });
 });
