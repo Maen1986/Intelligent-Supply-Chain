@@ -104,6 +104,11 @@ export function useAIPlan(
         }
         // If !canGenerate: flag is discarded, generate() is NOT called.
       }
+    } else if (!isAuthenticated && wasAuthenticated && toolKey) {
+      // Sign-out: wipe any pending-plan flag so it cannot be picked up by the
+      // next user who signs in on the same tab (prevents cross-user leakage).
+      sessionStorage.removeItem(`pendingAIPlan_${toolKey}`);
+      pendingFlagConsumed.current = false;
     } else {
       // Auth didn't just transition false→true (e.g. toolKey or canGenerate changed
       // while already authenticated). Clear any stale deferred-generate marker so it

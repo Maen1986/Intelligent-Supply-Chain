@@ -144,6 +144,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch {
       // Best-effort
     }
+    // Wipe all pending AI-plan flags so they cannot be consumed by the next
+    // user who signs in on the same tab (guaranteed cleanup at the logout
+    // boundary, regardless of which hook instances are currently mounted).
+    for (let i = sessionStorage.length - 1; i >= 0; i--) {
+      const key = sessionStorage.key(i);
+      if (key?.startsWith('pendingAIPlan_')) {
+        sessionStorage.removeItem(key);
+      }
+    }
     setUser(null);
   }, []);
 
