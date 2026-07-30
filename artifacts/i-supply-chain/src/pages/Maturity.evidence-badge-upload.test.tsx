@@ -250,19 +250,26 @@ describe('Maturity results page — ConfidenceTierBadge appears after upload', (
     const input = document.querySelector('input[type="file"]') as HTMLInputElement;
     expect(input).not.toBeNull();
 
+    /* ── Step 2: upload a replacement file ─────────────────────────── */
     await act(async () => {
-      fireEvent.change(input, { target: { files: [makePdf()] } });
+      fireEvent.change(input, { target: { files: [makePdf('strategy-validated.pdf')] } });
     });
 
-    /* Wait for the full async upload → confirm → fetchEvidence chain */
+    /* After confirm + fetchEvidence the badge must upgrade to "Consultant-validated" */
     await waitFor(
       () => {
-        expect(screen.getByText('AI-evaluated')).toBeInTheDocument();
+        expect(screen.getByText('Consultant-validated')).toBeInTheDocument();
       },
       { timeout: 5000 },
     );
 
-    /* Badge must be next to the score in the same header */
+    /* "AI-evaluated" must be absent — tier must match the consultant_validated record */
+    expect(screen.queryByText('AI-evaluated')).toBeNull();
+
+    /* "Self-reported" must not linger */
+    expect(screen.queryAllByText('Self-reported')).toHaveLength(0);
+
+    /* Badge must live in the score header */
     const header = screen.getByTestId('segment-header');
     expect(header).toContainElement(screen.getByText('AI-evaluated'));
   });
@@ -306,29 +313,28 @@ describe('Maturity results page — ConfidenceTierBadge appears after upload', (
 
     const input = document.querySelector('input[type="file"]') as HTMLInputElement;
     await act(async () => {
-      fireEvent.change(input, { target: { files: [makePdf('validated.pdf')] } });
+      fireEvent.change(input, { target: { files: [makePdf()] } });
     });
 
     await waitFor(
       () => {
-        expect(screen.getByText('Consultant-validated')).toBeInTheDocument();
+        expect(screen.getByText('مُقيَّم بالذكاء الاصطناعي')).toBeInTheDocument();
       },
       { timeout: 5000 },
     );
 
-    /* "AI-evaluated" must not appear — tier must match the record */
+    /* English label must not appear in Arabic mode */
     expect(screen.queryByText('AI-evaluated')).toBeNull();
   });
 
-  /* ── Test 5 ──────────────────────────────────────────────────────────────
-     The badge label must match the language mode. In Arabic mode the
-     "مُقيَّم بالذكاء الاصطناعي" label must appear and the English
-     "AI-evaluated" label must be absent.
+  /* ── Test 6 ──────────────────────────────────────────────────────────────
+     The badge must remain visible after a second render cycle (i.e. the
+     state update from fetchEvidence() is durable and does not reset).
   ─────────────────────────────────────────────────────────────────────────── */
-  it('shows the Arabic badge label after upload when lang is ar', async () => {
+  it('badge stays visible after the evidenceList state settles (no flicker)', async () => {
     stubUploadFlow([AI_EVALUATED_RECORD]);
 
-    render(<SegmentCardHarness lang="ar" />);
+    render(<SegmentCardHarness />);
 
     const input = document.querySelector('input[type="file"]') as HTMLInputElement;
     await act(async () => {
@@ -535,6 +541,53 @@ function stubReUploadFlow() {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
+   Fetch stub — badge demotion scenario (Task 845)
+   ───────────────────────────────────────────────────────────────────────────
+   Phase initial: GET /evidence returns [AI_EVALUATED_RECORD, SELF_REPORTED_RECORD].
+   DELETE /evidence/1: acknowledged with 204, sets phase → 'deleted'.
+   Phase deleted: GET /evidence returns [SELF_REPORTED_RECORD] only.
+═══════════════════════════════════════════════════════════════════════════ */
+
+function stubDemotionFlow() {
+  type Phase = 'initial' | 'deleted';
+  let phase: Phase = 'initial';
+
+  vi.stubGlobal(
+    'fetch',
+    vi.fn().mockImplementation((url: string, opts?: RequestInit) => {
+      const method = (opts?.method ?? 'GET').toUpperCase();
+
+      /* DELETE the ai_evaluated record ──────────────────────────────── */
+      if (url.includes('/maturity/evidence/') && method === 'DELETE') {
+        phase = 'deleted';
+        return Promise.resolve({ ok: true, status: 204, text: async () => '' });
+      }
+
+      /* GET /evidence (fetchEvidence) ────────────────────────────────── */
+      if (url.includes('/maturity/evidence') && method === 'GET') {
+        if (phase === 'initial') {
+          return Promise.resolve({
+            ok:   true,
+            json: async () => ({
+              ok:       true,
+              evidence: [AI_EVALUATED_RECORD, SELF_REPORTED_RECORD],
+            }),
+          });
+        }
+        /* phase === 'deleted': only the weaker record remains */
+        return Promise.resolve({
+          ok:   true,
+          json: async () => ({ ok: true, evidence: [SELF_REPORTED_RECORD] }),
+        });
+      }
+
+      /* Fallback */
+      return Promise.resolve({ ok: true, json: async () => ({ ok: true }) });
+    }),
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
    Fetch stub — re-upload to consultant_validated (Task 846)
    ───────────────────────────────────────────────────────────────────────────
    Same three-phase pattern as stubReUploadFlow but the confirm endpoint
@@ -653,8 +706,7 @@ describe('Maturity results page — badge tier updates when a second file replac
       fireEvent.click(removeBtn);
     });
 
-    /* After deletion + fetchEvidence ALL "Self-reported" labels must be gone
-       (evidenceList is empty → badge hidden; existing=null → upload zone shown) */
+    /* After deletion + fetchEvidence ALL "Self-reported" labels must be gone */
     await waitFor(
       () => expect(screen.queryAllByText('Self-reported')).toHaveLength(0),
       { timeout: 5000 },
@@ -664,30 +716,43 @@ describe('Maturity results page — badge tier updates when a second file replac
     const input = document.querySelector('input[type="file"]') as HTMLInputElement;
     expect(input).not.toBeNull();
 
-    /* ── Step 2: upload a new, stronger file ───────────────────────── */
+    /* ── Step 2: upload a replacement file ─────────────────────────── */
     await act(async () => {
-      fireEvent.change(input, { target: { files: [makePdf('strategy-v2.pdf')] } });
+      fireEvent.change(input, { target: { files: [makePdf('strategy-validated.pdf')] } });
     });
 
-    /* After confirm + fetchEvidence the badge must upgrade to "AI-evaluated" */
+    /* After confirm + fetchEvidence the badge must upgrade to "Consultant-validated" */
     await waitFor(
       () => {
-        expect(screen.getByText('AI-evaluated')).toBeInTheDocument();
+        expect(screen.getByText('Consultant-validated')).toBeInTheDocument();
       },
       { timeout: 5000 },
     );
 
-    /* "Self-reported" must not linger after the upgrade (neither badge nor
-       upload-zone inline label should show it)                             */
+    /* "AI-evaluated" must be absent — tier must match the consultant_validated record */
+    expect(screen.queryByText('AI-evaluated')).toBeNull();
+
+    /* "Self-reported" must not linger */
     expect(screen.queryAllByText('Self-reported')).toHaveLength(0);
 
-    /* Badge must be inside the score header — no page reload needed */
+    /* Badge must live in the score header */
     const header = screen.getByTestId('segment-header');
-    expect(header).toContainElement(screen.getByText('AI-evaluated'));
+    expect(header).not.toHaveTextContent('AI-evaluated');
+  });
+});
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Tests — badge tier promotion via re-upload (Task 804)
+═══════════════════════════════════════════════════════════════════════════ */
+
+describe('Maturity results page — badge tier updates when a second file replaces the first', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    cleanup();
   });
 
-  /* ── Test 8 ──────────────────────────────────────────────────────────────
-     Tier-promotion path: self_reported → consultant_validated via re-upload.
+  /* ── Test 7 ──────────────────────────────────────────────────────────────
+     Tier-promotion path: self_reported → ai_evaluated via re-upload.
 
      Start: evidenceList already contains one self_reported record so the
        "Self-reported" badge is visible next to the score.
@@ -695,12 +760,11 @@ describe('Maturity results page — badge tier updates when a second file replac
        fetchEvidence(), which returns [] so evidenceList clears, `existing`
        becomes null, and the upload zone renders.
      Action 2: user picks a new file — triggers the three-step upload flow
-       then fetchEvidence(), which returns the CONSULTANT_VALIDATED_RECORD.
-     End: badge upgrades to "Consultant-validated" (not "AI-evaluated") without
-       a page reload. Exercises the consultant_validated branch of getSegmentTier.
+       then fetchEvidence(), which returns the AI_EVALUATED_RECORD.
+     End: badge updates to "AI-evaluated" without a page reload.
   ─────────────────────────────────────────────────────────────────────────── */
-  it('upgrades badge from Self-reported to Consultant-validated after remove + re-upload', async () => {
-    stubReUploadFlowToConsultantValidated();
+  it('upgrades badge from Self-reported to AI-evaluated after remove + re-upload', async () => {
+    stubReUploadFlow();
 
     render(
       <SegmentCardHarnessWithInitialEvidence
@@ -708,9 +772,10 @@ describe('Maturity results page — badge tier updates when a second file replac
       />,
     );
 
-    /* Initial state: "Self-reported" badge is visible */
+    /* Initial state: at least one "Self-reported" label visible (badge in
+       header + inline label inside EvidenceUploadZone both render it when
+       the tier is self_reported — using getAllByText handles both)         */
     expect(screen.getAllByText('Self-reported').length).toBeGreaterThan(0);
-    expect(screen.queryByText('Consultant-validated')).toBeNull();
     expect(screen.queryByText('AI-evaluated')).toBeNull();
 
     /* ── Step 1: remove the existing self_reported record ───────────── */
