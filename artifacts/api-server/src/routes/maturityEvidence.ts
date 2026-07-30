@@ -250,9 +250,11 @@ router.post('/maturity/evidence/:id/confirm', requireSession, async (req, res) =
 
   // Verify file exists in GCS and check size
   let fileSize = 0;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let gcsFile: any = null;
   try {
-    const file = await objectStorage.getObjectEntityFile(evidenceRow.storagePath);
-    const [metadata] = await file.getMetadata();
+    gcsFile = await objectStorage.getObjectEntityFile(evidenceRow.storagePath);
+    const [metadata] = await gcsFile.getMetadata();
     fileSize = Number(metadata.size ?? 0);
   } catch (fileErr) {
     if (fileErr instanceof ObjectNotFoundError) {
@@ -265,6 +267,13 @@ router.post('/maturity/evidence/:id/confirm', requireSession, async (req, res) =
   if (fileSize > MAX_FILE_BYTES) {
     // File exceeded limit — delete the DB row and GCS object
     await db.delete(maturityEvidenceTable).where(eq(maturityEvidenceTable.id, id));
+    if (gcsFile) {
+      try {
+        await gcsFile.delete();
+      } catch (delErr) {
+        logger.warn({ err: delErr, evidenceId: id }, '[evidence/confirm] Failed to delete oversized GCS object');
+      }
+    }
     res.status(400).json({ ok: false, error: 'Uploaded file exceeds the 10 MB size limit.' });
     return;
   }

@@ -803,6 +803,6 @@ describe('ConfidenceTierBadge — Arabic self-reported badge in inline mode (asP
   it('does NOT apply rounded-full to the Arabic self-reported badge in inline mode', () => {
     render(<ConfidenceTierBadge lang="ar" evidence={SELF_REPORTED_EV} asPill={false} />);
     const badge = screen.getByText('مُبلَّغ ذاتياً');
-    expect(badge.className).not.toContain('rounded-full');
+    expect(badge).not.toHaveClass('rounded-full');
   });
 });

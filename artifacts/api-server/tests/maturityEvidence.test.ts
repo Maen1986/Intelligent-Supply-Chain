@@ -276,15 +276,30 @@ vi.mock('../src/lib/objectStorage', () =>
 }
 
 
-  return {
+  return 
+{
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    ObjectStorageService: vi.fn(function (this: any) {
-      this.signEvidencePutURL  = mockSignEvidencePutURL;
-      this.getObjectEntityFile = mockGetObjectEntityFile;
-    }),
+    ObjectStorageService: vi.fn(function (this: any) 
+{
+
+      this.signEvidencePutURL  = mockSignEvidencePutURL
+;
+
+      this.getObjectEntityFile = mockGetObjectEntityFile
+;
+
+    
+}
+),
     ObjectNotFoundError,
-  };
-});
+  
+}
+;
+
+}
+)
+;
 
 
 /* ── OpenAI mock ─────────────────────────────────────────────────────────── */
@@ -644,6 +659,7 @@ describe('POST /api/maturity/evidence/:id/confirm', () => {
   it('returns 404 when a consultant-role session tries to confirm evidence owned by a different user', async () => 
 {
 
+
     // A consultant whose userId does not match the evidence owner must be denied.
     // The DB is queried with (id=42 AND userId=77) and returns nothing because
     // the row belongs to userId=99 — the ownership filter prevents cross-user access
@@ -677,6 +693,7 @@ describe('POST /api/maturity/evidence/:id/confirm', () => {
 }
 
 ]),
+      delete: vi.fn().mockResolvedValue(undefined),
     
 }
 
@@ -718,6 +735,10 @@ describe('POST /api/maturity/evidence/:id/confirm', () => {
 ;
 
 
+    expect(mockFile.delete).toHaveBeenCalledOnce()
+;
+
+  
 }
 
 )
