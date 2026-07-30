@@ -200,4 +200,38 @@ describe('MaturityDetail — evidence tier badge live updates', () => {
       expect(screen.getByText('Add')).toBeInTheDocument();
     });
   });
+
+  /* ── 4. Zero → first file: badge appears when there was no evidence ──────── */
+  it('shows the Self-reported badge after the very first upload when the segment had no evidence', async () => {
+    // Override the beforeEach stub: start with no evidence
+    stubFetch([]);
+
+    render(<Wrapper />);
+
+    // The evidence cell should show the "Add" placeholder, not any badge
+    await waitFor(() => {
+      expect(screen.getByText('Add')).toBeInTheDocument();
+      expect(screen.queryByText('Self-reported')).not.toBeInTheDocument();
+      expect(screen.queryByText('AI-evaluated')).not.toBeInTheDocument();
+    });
+
+    // Open the evidence accordion so EvidenceUploadZone instances are mounted
+    const accordionButton = screen.getByTitle('Manage evidence');
+    fireEvent.click(accordionButton);
+
+    // Now update the fetch stub to return one self_reported record
+    stubFetch(SELF_REPORTED_EVIDENCE);
+
+    // Simulate the first upload completing
+    const uploadButton = screen.getAllByTestId('mock-upload-zone')[0];
+    await act(async () => {
+      fireEvent.click(uploadButton);
+    });
+
+    await waitFor(() => {
+      // Badge has appeared; "Add" placeholder is gone
+      expect(screen.getByText('Self-reported')).toBeInTheDocument();
+      expect(screen.queryByText('Add')).not.toBeInTheDocument();
+    });
+  });
 });
