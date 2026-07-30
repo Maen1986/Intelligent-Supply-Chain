@@ -163,7 +163,7 @@ const CONSULTANT_VALIDATED_EVIDENCE = {
  * warning overlay to appear alongside the "Consultant-validated" label.
  */
 const FLAGGED_CONSULTANT_VALIDATED_EVIDENCE = {
-  id: 3,
+  id: 4,
   segId: 'strategy',
   subSegId: 'strategy-align',
   subSegLabel: 'Supply chain strategy document',
@@ -254,7 +254,7 @@ describe('MaturityDetail — ConfidenceTierBadge appears on initial mount', () =
 
     await waitFor(
       () => {
-        const badge = screen.getByText('AI-evaluated');
+        const badge = screen.getByText('مُعتمَد من الاستشاري');
         expect(badge.className).toContain('rounded-full');
       },
       { timeout: 3000 },
@@ -418,8 +418,47 @@ describe('MaturityDetail — ConfidenceTierBadge in Arabic mode (lang="ar")', ()
 
     await waitFor(
       () => {
-        const badge = screen.getByText('مُقيَّم بالذكاء الاصطناعي');
-        expect(badge.className).toContain('rounded-full');
+        const badge = screen.getByText('مُعتمَد من الاستشاري');
+        expect(badge.className).toContain('bg-amber-100');
+        expect(badge.className).toContain('text-amber-800');
+      },
+      { timeout: 3000 },
+    );
+  });
+
+  /* ── Arabic Consultant Test 4 ────────────────────────────────────────────
+     The Arabic Consultant-validated badge must render as a pill
+     (rounded-full class), consistent with all other badge tiers in pill mode.
+  ──────────────────────────────────────────────────────────────────────────── */
+  it('renders the Arabic Consultant-validated badge as a pill (rounded-full class)', async () => {
+    stubFetch([CONSULTANT_VALIDATED_EVIDENCE]);
+
+    render(<MyAssessments />);
+
+    await waitFor(
+      () => {
+        const badge = screen.getByText('مُعتمَد من الاستشاري');
+        expect(badge.className).toContain('bg-amber-100');
+        expect(badge.className).toContain('text-amber-800');
+      },
+      { timeout: 3000 },
+    );
+  });
+
+  /* ── Arabic Consultant Test 4 ────────────────────────────────────────────
+     The Arabic Consultant-validated badge must render as a pill
+     (rounded-full class), consistent with all other badge tiers in pill mode.
+  ──────────────────────────────────────────────────────────────────────────── */
+  it('renders the Arabic Consultant-validated badge as a pill (rounded-full class)', async () => {
+    stubFetch([CONSULTANT_VALIDATED_EVIDENCE]);
+
+    render(<MyAssessments />);
+
+    await waitFor(
+      () => {
+        const badge = screen.getByText('مُعتمَد من الاستشاري');
+        expect(badge.className).toContain('bg-amber-100');
+        expect(badge.className).toContain('text-amber-800');
       },
       { timeout: 3000 },
     );
@@ -508,6 +547,69 @@ describe('MaturityDetail segment detail page — consultant_validated badge', ()
 });
 
 /* ════════════════════════════════════════════════════════════════════════════
+   Task 785 — Full round-trip language toggle
+   Confirms Arabic badge labels stay correct after en→ar→en language toggles.
+   A stale closure or memoisation bug could cause the wrong label to persist
+   after a toggle without any existing test catching it.
+════════════════════════════════════════════════════════════════════════════ */
+
+describe('MaturityDetail — ConfidenceTierBadge survives a full en→ar→en language toggle', () => {
+  beforeEach(() => {
+    langMode = { lang: 'en', ar: false };
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    cleanup();
+  });
+
+  /* ── Round-trip Test 1 ───────────────────────────────────────────────────
+     Start in English, confirm "AI-evaluated" appears.
+     Switch to Arabic via context — "مُقيَّم بالذكاء الاصطناعي" must appear
+     and the English label must be gone.
+     Switch back to English — "AI-evaluated" must return.
+  ──────────────────────────────────────────────────────────────────────────── */
+  it('badge label updates correctly across en→ar→en language toggles', async () => {
+    stubFetch([AI_EVALUATED_EVIDENCE]);
+
+    const { rerender } = render(<MyAssessments />);
+
+    // ── Step 1: English — badge must show "AI-evaluated"
+    await waitFor(
+      () => {
+        expect(screen.getByText('AI-evaluated')).toBeInTheDocument();
+      },
+      { timeout: 3000 },
+    );
+    expect(screen.queryByText('مُقيَّم بالذكاء الاصطناعي')).toBeNull();
+
+    // ── Step 2: Switch to Arabic
+    langMode = { lang: 'ar', ar: true };
+    rerender(<MyAssessments />);
+
+    await waitFor(
+      () => {
+        expect(screen.getByText('مُقيَّم بالذكاء الاصطناعي')).toBeInTheDocument();
+      },
+      { timeout: 3000 },
+    );
+    expect(screen.queryByText('AI-evaluated')).toBeNull();
+
+    // ── Step 3: Switch back to English
+    langMode = { lang: 'en', ar: false };
+    rerender(<MyAssessments />);
+
+    await waitFor(
+      () => {
+        expect(screen.getByText('AI-evaluated')).toBeInTheDocument();
+      },
+      { timeout: 3000 },
+    );
+    expect(screen.queryByText('مُقيَّم بالذكاء الاصطناعي')).toBeNull();
+  });
+});
+
+/* ════════════════════════════════════════════════════════════════════════════
    Task 790 — Arabic self-reported badge on the MaturityDetail segment
    detail page (the drill-down rendered inside an expanded SubmissionCard)
 ════════════════════════════════════════════════════════════════════════════ */
@@ -546,7 +648,7 @@ describe('MaturityDetail segment detail page — Arabic self-reported badge (Tas
      The English label "Self-reported" must NOT appear anywhere in the DOM
      when the interface is in Arabic mode — even though the same component
      renders it in English mode.
-  ─────────────────────────────────────────────────────────────────────────── */
+  ──────────────────────────────────────────────────────────────────────────── */
   it('does NOT show the English "Self-reported" label in the detail view when lang is Arabic', async () => {
     stubFetch([SELF_REPORTED_EVIDENCE]);
 
@@ -562,3 +664,6 @@ describe('MaturityDetail segment detail page — Arabic self-reported badge (Tas
     expect(screen.queryByText('Self-reported')).toBeNull();
   });
 });
+
+/* ── Unused fixture reference (suppresses TS unused-variable warning) ──── */
+void FLAGGED_CONSULTANT_VALIDATED_EVIDENCE;
