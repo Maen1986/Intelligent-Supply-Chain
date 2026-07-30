@@ -7,18 +7,24 @@
 
 import 
 {
+
  describe, it, expect, beforeEach, vi 
 }
+
  from 'vitest'
 ;
+
 
 import request from 'supertest'
 ;
 
+
 import 
 {
+
  makeApp, dbState, resetDbState, makeLoggerMock 
 }
+
  from './helpers'
 ;
 
@@ -28,70 +34,95 @@ import
 function chain(rowsGetter: () => any[], recordValues = false) 
 {
 
+
   const c: any = 
 {
+
 }
+
 ;
+
 
   for (const m of ['from', 'orderBy', 'limit', 'offset', 'set', 'returning']) 
 {
 
+
     c[m] = () => c
 ;
 
-  
+
 }
+
 
   c.where = (arg: any) => 
 {
+
  dbState.whereArgs.push(arg)
 ;
+
  return c
 ;
+
  
 }
+
 ;
+
 
   c.values = (v: any) => 
 {
+
  if (recordValues) dbState.insertedValues.push(v)
 ;
+
  return c
 ;
+
  
 }
+
 ;
+
 
   const exec = (): Promise<any[]> => 
 {
 
+
     if (dbState.failNext) 
 {
+
 
       dbState.failNext = false
 ;
 
+
       return Promise.reject(new Error('db failure (test)'))
 ;
 
-    
+
 }
+
 
     return Promise.resolve(rowsGetter())
 ;
 
-  
+
 }
+
 ;
+
 
   c.then = (res: any, rej: any) => exec().then(res, rej)
 ;
 
+
   c.catch = (fn: any) => exec().catch(fn)
 ;
 
+
   return c
 ;
+
 
 }
 
@@ -99,8 +130,10 @@ function chain(rowsGetter: () => any[], recordValues = false)
 vi.mock('@workspace/db', () => (
 {
 
+
   db: 
 {
+
 
     select: vi.fn(() => chain(() => dbState.selectRows)),
     insert: vi.fn(() => chain(() => dbState.insertRows, true)),
@@ -108,8 +141,10 @@ vi.mock('@workspace/db', () => (
     delete: vi.fn(() => chain(() => [])),
   
 }
+
 ,
 }
+
 ))
 ;
 
@@ -117,8 +152,10 @@ vi.mock('@workspace/db', () => (
 vi.mock('@workspace/db/schema', () => (
 {
 
+
   maturityEvidenceTable: 
 {
+
 
     id:             'id',
     userId:         'userId',
@@ -128,8 +165,10 @@ vi.mock('@workspace/db/schema', () => (
     confidenceTier: 'confidenceTier',
   
 }
+
 ,
 }
+
 ))
 ;
 
@@ -144,14 +183,18 @@ vi.mock('../src/lib/logger', () => makeLoggerMock())
 // necessary because new ObjectStorageService() is called at module-import time.
 const 
 {
+
  mockSignEvidencePutURL, mockGetObjectEntityFile 
 }
+
  = vi.hoisted(() => (
 {
+
 
   mockSignEvidencePutURL:  vi.fn(),
   mockGetObjectEntityFile: vi.fn(),
 }
+
 ))
 ;
 
@@ -159,48 +202,61 @@ const
 vi.mock('../src/lib/objectStorage', () => 
 {
 
+
   class ObjectNotFoundError extends Error 
 {
+
 
     constructor() 
 {
 
+
       super('Object not found')
 ;
+
 
       this.name = 'ObjectNotFoundError'
 ;
 
+
       Object.setPrototypeOf(this, ObjectNotFoundError.prototype)
 ;
 
-    
+
 }
 
-  
+
 }
 
-  return {
+
+  return 
+{
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     ObjectStorageService: vi.fn(function (this: any) 
 {
 
+
       this.signEvidencePutURL  = mockSignEvidencePutURL
 ;
+
 
       this.getObjectEntityFile = mockGetObjectEntityFile
 ;
 
-    
+
 }
+
 ),
     ObjectNotFoundError,
   
 }
+
 ;
 
+
 }
+
 )
 ;
 
@@ -210,23 +266,32 @@ vi.mock('../src/lib/objectStorage', () =>
 const createMock = vi.fn()
 ;
 
+
 vi.mock('@workspace/integrations-openai-ai-server', () => (
 {
 
+
   openai: 
 {
+
  chat: 
 {
+
  completions: 
 {
+
  create: (...args: unknown[]) => createMock(...args) 
 }
+
  
 }
+
  
 }
+
 ,
 }
+
 ))
 ;
 
@@ -234,10 +299,13 @@ vi.mock('@workspace/integrations-openai-ai-server', () => (
 import evidenceRouter from '../src/routes/maturityEvidence'
 ;
 
+
 import 
 {
+
  ObjectNotFoundError as MockObjectNotFoundError 
 }
+
  from '../src/lib/objectStorage'
 ;
 
@@ -246,15 +314,21 @@ import
 
 const AUTH_SESSION       = 
 {
+
  userId: 99 
 }
+
 ;
+
 
 const OTHER_USER_SESSION = 
 {
+
  userId: 88 
 }
+
 ;
+
  // a different user — must not see user 99's data
 
 function app(session = AUTH_SESSION) {
@@ -466,17 +540,20 @@ describe('POST /api/maturity/evidence/:id/confirm', () => {
     expect(res.status).toBe(404)
 ;
 
+
     expect(res.body.ok).toBe(false)
 ;
 
-  
+
 }
+
 )
 ;
 
 
   it('returns 400 and deletes the DB row when the uploaded file exceeds 10 MB', async () => 
 {
+
 
     dbState.selectRows = [EVIDENCE_ROW]
 ;
@@ -485,14 +562,19 @@ describe('POST /api/maturity/evidence/:id/confirm', () => {
     const mockFile = 
 {
 
+
       getMetadata: vi.fn().mockResolvedValue([
 {
+
  size: 11 * 1024 * 1024 
 }
+
 ]),
     
 }
+
 ;
+
 
     mockGetObjectEntityFile.mockResolvedValue(mockFile)
 ;
@@ -500,8 +582,10 @@ describe('POST /api/maturity/evidence/:id/confirm', () => {
 
     const 
 {
+
  db 
 }
+
  = await import('@workspace/db')
 ;
 
@@ -514,23 +598,28 @@ describe('POST /api/maturity/evidence/:id/confirm', () => {
     expect(res.status).toBe(400)
 ;
 
+
     expect(res.body.ok).toBe(false)
 ;
+
 
     expect(res.body.error).toMatch(/10 MB/i)
 ;
 
+
     expect(db.delete).toHaveBeenCalled()
 ;
 
-  
+
 }
+
 )
 ;
 
 
   it('still returns 200 and keeps self_reported tier when AI evaluation fails', async () => 
 {
+
 
     dbState.selectRows = [EVIDENCE_ROW]
 ;
@@ -539,14 +628,19 @@ describe('POST /api/maturity/evidence/:id/confirm', () => {
     const mockFile = 
 {
 
+
       getMetadata: vi.fn().mockResolvedValue([
 {
+
  size: 100_000 
 }
+
 ]),
     
 }
+
 ;
+
 
     mockGetObjectEntityFile.mockResolvedValue(mockFile)
 ;
@@ -558,8 +652,10 @@ describe('POST /api/maturity/evidence/:id/confirm', () => {
 
     dbState.updateRows = [
 {
+
  ...EVIDENCE_ROW, confidenceTier: 'self_reported', aiEvaluation: null 
 }
+
 ]
 ;
 
@@ -572,18 +668,23 @@ describe('POST /api/maturity/evidence/:id/confirm', () => {
     expect(res.status).toBe(200)
 ;
 
+
     expect(res.body.ok).toBe(true)
 ;
+
 
     expect(res.body.confidence_tier).toBe('self_reported')
 ;
 
-  
+
 }
+
 )
 ;
 
+
 }
+
 )
 ;
 
@@ -595,21 +696,27 @@ describe('POST /api/maturity/evidence/:id/confirm', () => {
 describe('GET /api/maturity/evidence', () => 
 {
 
+
   it('returns 401 when unauthenticated', async () => 
 {
 
+
     const res = await request(app(
 {
+
 }
+
 ))
       .get('/api/maturity/evidence?snapshot_id=1')
 ;
 
+
     expect(res.status).toBe(401)
 ;
 
-  
+
 }
+
 )
 ;
 
@@ -617,21 +724,26 @@ describe('GET /api/maturity/evidence', () =>
   it('returns 400 when snapshot_id is missing', async () => 
 {
 
+
     const res = await request(app())
       .get('/api/maturity/evidence')
 ;
 
+
     expect(res.status).toBe(400)
 ;
+
 
     expect(res.body.ok).toBe(false)
 ;
 
+
     expect(res.body.error).toMatch(/snapshot_id is required/i)
 ;
 
-  
+
 }
+
 )
 ;
 
@@ -639,18 +751,22 @@ describe('GET /api/maturity/evidence', () =>
   it('returns 400 when snapshot_id is not a valid integer', async () => 
 {
 
+
     const res = await request(app())
       .get('/api/maturity/evidence?snapshot_id=abc')
 ;
 
+
     expect(res.status).toBe(400)
 ;
+
 
     expect(res.body.ok).toBe(false)
 ;
 
-  
+
 }
+
 )
 ;
 
@@ -658,17 +774,24 @@ describe('GET /api/maturity/evidence', () =>
   it('returns owner-scoped evidence rows for a valid snapshot_id', async () => 
 {
 
+
     const row1 = 
 {
+
  id: 10, segId: 'procurement', subSegId: 'clm', confidenceTier: 'self_reported' 
 }
+
 ;
+
 
     const row2 = 
 {
+
  id: 11, segId: 'planning',    subSegId: 's&op', confidenceTier: 'ai_evaluated' 
 }
+
 ;
+
 
     dbState.selectRows = [row1, row2]
 ;
@@ -682,20 +805,25 @@ describe('GET /api/maturity/evidence', () =>
     expect(res.status).toBe(200)
 ;
 
+
     expect(res.body.ok).toBe(true)
 ;
+
 
     expect(res.body.evidence).toHaveLength(2)
 ;
 
+
     expect(res.body.evidence[0].id).toBe(10)
 ;
+
 
     expect(res.body.evidence[1].id).toBe(11)
 ;
 
-  
+
 }
+
 )
 ;
 
@@ -703,21 +831,26 @@ describe('GET /api/maturity/evidence', () =>
   it('returns an empty array when the snapshot has no evidence', async () => 
 {
 
+
     dbState.selectRows = []
 ;
+
 
     const res = await request(app())
       .get('/api/maturity/evidence?snapshot_id=99')
 ;
 
+
     expect(res.status).toBe(200)
 ;
+
 
     expect(res.body.evidence).toEqual([])
 ;
 
-  
+
 }
+
 )
 ;
 
@@ -725,27 +858,33 @@ describe('GET /api/maturity/evidence', () =>
   it('returns 500 when the database query fails', async () => 
 {
 
+
     dbState.failNext = true
 ;
+
 
     const res = await request(app())
       .get('/api/maturity/evidence?snapshot_id=1')
 ;
 
+
     expect(res.status).toBe(500)
 ;
+
 
     expect(res.body.ok).toBe(false)
 ;
 
-  
+
 }
+
 )
 ;
 
 
   it('returns only the requesting user\'s rows — not rows belonging to a different user', async () => 
 {
+
 
     // Simulate: the DB is queried with userId=88 (user B) and returns nothing,
     // even though evidence rows for userId=99 (user A) exist in the database.
@@ -762,18 +901,23 @@ describe('GET /api/maturity/evidence', () =>
     expect(res.status).toBe(200)
 ;
 
+
     expect(res.body.ok).toBe(true)
 ;
+
 
     expect(res.body.evidence).toEqual([])
 ;
 
-  
+
 }
+
 )
 ;
 
+
 }
+
 )
 ;
 
@@ -785,21 +929,27 @@ describe('GET /api/maturity/evidence', () =>
 describe('DELETE /api/maturity/evidence/:id', () => 
 {
 
+
   it('returns 401 when unauthenticated', async () => 
 {
 
+
     const res = await request(app(
 {
+
 }
+
 ))
       .delete('/api/maturity/evidence/42')
 ;
 
+
     expect(res.status).toBe(401)
 ;
 
-  
+
 }
+
 )
 ;
 
@@ -807,18 +957,22 @@ describe('DELETE /api/maturity/evidence/:id', () =>
   it('returns 400 for a non-integer evidence id', async () => 
 {
 
+
     const res = await request(app())
       .delete('/api/maturity/evidence/not-a-number')
 ;
 
+
     expect(res.status).toBe(400)
 ;
+
 
     expect(res.body.error).toMatch(/Invalid evidence id/i)
 ;
 
-  
+
 }
+
 )
 ;
 
@@ -826,27 +980,33 @@ describe('DELETE /api/maturity/evidence/:id', () =>
   it('returns 404 when no evidence row belongs to the user', async () => 
 {
 
+
     dbState.selectRows = []
 ;
+
 
     const res = await request(app())
       .delete('/api/maturity/evidence/999')
 ;
 
+
     expect(res.status).toBe(404)
 ;
+
 
     expect(res.body.ok).toBe(false)
 ;
 
-  
+
 }
+
 )
 ;
 
 
   it('returns 404 when the evidence id exists but belongs to a different user', async () => 
 {
+
 
     // Simulate: the DB is queried with (id=42 AND userId=88) and returns nothing,
     // even though id=42 exists and belongs to userId=99.
