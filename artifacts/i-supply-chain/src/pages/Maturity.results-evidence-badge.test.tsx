@@ -390,3 +390,71 @@ describe('Maturity results page — ConfidenceTierBadge in per-segment recommend
     expect(within(scoreRow).queryByText('Self-reported')).toBeNull();
   });
 });
+
+/* ════════════════════════════════════════════════════════════════════════════
+   Task 813 — Arabic-mode tests
+   Confirms the Arabic badge label "مُعتمَد من الاستشاري" appears on the
+   Maturity results page (not just history) when lang="ar" is active.
+════════════════════════════════════════════════════════════════════════════ */
+
+describe('Maturity results page — ConfidenceTierBadge in Arabic mode', () => {
+  beforeEach(() => {
+    langMode  = { lang: 'ar', ar: true };
+    authUser  = { id: 1, fullName: 'Test User', email: 'test@example.com' };
+    prepareDraft();
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    localStorage.clear();
+    _setMaturityTestSeed({});
+    cleanup();
+  });
+
+  /* ── Arabic Test 1 ───────────────────────────────────────────────────────
+     When lang="ar", the badge must show the Arabic label
+     "مُعتمَد من الاستشاري" for a consultant_validated evidence record.
+     The English label "Consultant-validated" must NOT appear.
+  ─────────────────────────────────────────────────────────────────────────── */
+  it('shows the Arabic label "مُعتمَد من الاستشاري" on mount in Arabic mode', async () => {
+    stubFetch([CONSULTANT_VALIDATED_EVIDENCE]);
+
+    render(<Maturity />);
+
+    await waitFor(
+      () => {
+        const badges = screen.getAllByText('مُعتمَد من الاستشاري');
+        expect(badges.length).toBeGreaterThanOrEqual(1);
+      },
+      { timeout: 4000 },
+    );
+
+    /* English label must not appear when Arabic mode is active */
+    expect(screen.queryByText('Consultant-validated')).toBeNull();
+  });
+
+  /* ── Arabic Test 2 ───────────────────────────────────────────────────────
+     When both ai_evaluated and consultant_validated evidence records are
+     present, the Arabic label for the winning tier (consultant_validated)
+     is shown and the AI-evaluated Arabic label is not rendered.
+  ─────────────────────────────────────────────────────────────────────────── */
+  it('shows "مُعتمَد من الاستشاري" (not the AI Arabic label) when both tiers are present', async () => {
+    stubFetch([AI_EVALUATED_EVIDENCE, CONSULTANT_VALIDATED_EVIDENCE]);
+
+    render(<Maturity />);
+
+    await waitFor(
+      () => {
+        const badges = screen.getAllByText('مُعتمَد من الاستشاري');
+        expect(badges.length).toBeGreaterThanOrEqual(1);
+      },
+      { timeout: 4000 },
+    );
+
+    /* Lower-tier Arabic label must not bleed through */
+    expect(screen.queryByText('مُقيَّم بالذكاء الاصطناعي')).toBeNull();
+    /* English labels must not appear in Arabic mode */
+    expect(screen.queryByText('Consultant-validated')).toBeNull();
+    expect(screen.queryByText('AI-evaluated')).toBeNull();
+  });
+});
