@@ -353,4 +353,48 @@ describe('SubmissionCard — evidence accordion state preserved across card togg
     // At least one evidence panel is still visible (procurement's)
     expect(accordionPanelOpen()).toBe(true);
   });
+
+  /* ── Test 5 ─────────────────────────────────────────────────────────────── */
+
+  it('closing all open accordions in sequence leaves none unexpectedly open', async () => {
+    stubFetch(TWO_SEGMENT_SUBMISSION);
+
+    render(<MyAssessments />);
+    await waitForAccordionToggle();
+
+    // Both segments start closed
+    await waitFor(() => expect(closedCount()).toBe(2));
+
+    // Open all accordions by clicking every ▼ toggle
+    const firstClosed = () =>
+      Array.from(document.querySelectorAll('button')).find(
+        b => b.textContent?.includes('▼'),
+      )!;
+
+    fireEvent.click(firstClosed());
+    await waitFor(() => expect(openCount()).toBe(1));
+
+    fireEvent.click(firstClosed());
+    await waitFor(() => {
+      expect(openCount()).toBe(2);
+      expect(closedCount()).toBe(0);
+    });
+
+    // Close each open accordion in sequence
+    const nextOpen = () =>
+      Array.from(document.querySelectorAll('button')).find(
+        b => b.textContent?.includes('▲'),
+      )!;
+
+    fireEvent.click(nextOpen());
+    await waitFor(() => expect(openCount()).toBe(1));
+
+    fireEvent.click(nextOpen());
+    await waitFor(() => expect(openCount()).toBe(0));
+
+    // No accordion panels should remain visible
+    expect(accordionPanelOpen()).toBe(false);
+    // All toggles should show ▼ (closed)
+    expect(closedCount()).toBe(2);
+  });
 });
