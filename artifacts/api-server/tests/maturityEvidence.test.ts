@@ -229,35 +229,15 @@ vi.mock('../src/lib/objectStorage', () =>
 }
 
 
-  return 
-{
-
+  return {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    ObjectStorageService: vi.fn(function (this: any) 
-{
-
-
-      this.signEvidencePutURL  = mockSignEvidencePutURL
-;
-
-
-      this.getObjectEntityFile = mockGetObjectEntityFile
-;
-
-
-}
-
-),
+    ObjectStorageService: vi.fn(function (this: any) {
+      this.signEvidencePutURL  = mockSignEvidencePutURL;
+      this.getObjectEntityFile = mockGetObjectEntityFile;
+    }),
     ObjectNotFoundError,
-  
-}
-
-;
-
-
-}
-
-)
+  };
+})
 ;
 
 
@@ -1024,6 +1004,20 @@ describe('DELETE /api/maturity/evidence/:id', () =>
     dbState.selectRows = [{ ...EVIDENCE_ROW, confidenceTier: 'consultant_validated' }];
 
     const res = await request(app())
+      .delete('/api/maturity/evidence/42');
+
+    expect(res.status).toBe(403);
+    expect(res.body.ok).toBe(false);
+    expect(res.body.error).toMatch(/consultant.validated/i);
+  });
+
+  it('returns 403 when a consultant-role user tries to delete their own consultant_validated evidence', async () => {
+    // The ownership check (userId filter) passes because the consultant owns the row.
+    // The tier guard must still fire and block deletion regardless of the caller's role.
+    const CONSULTANT_SESSION = { userId: 99, role: 'consultant' };
+    dbState.selectRows = [{ ...EVIDENCE_ROW, confidenceTier: 'consultant_validated' }];
+
+    const res = await request(makeApp('/api', evidenceRouter, CONSULTANT_SESSION))
       .delete('/api/maturity/evidence/42');
 
     expect(res.status).toBe(403);
