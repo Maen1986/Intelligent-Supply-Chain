@@ -35,6 +35,11 @@ import
 
 /* ── DB mock (extends helpers with delete support) ──────────────────────── */
 
+// Queue for tests that need sequential selects to return different rows.
+// When populated, each awaited select chain shifts the first element instead
+// of falling back to dbState.selectRows.
+let selectQueue: any[][] = [];
+
 function chain(rowsGetter: () => any[], recordValues = false) 
 {
 
@@ -115,6 +120,9 @@ function chain(rowsGetter: () => any[], recordValues = false)
 }
 
 
+    if (selectQueue.length > 0) {
+      return Promise.resolve(selectQueue.shift()!);
+    }
     return Promise.resolve(rowsGetter())
 ;
 
@@ -183,6 +191,7 @@ vi.mock('@workspace/db/schema', () => (
 
 
 ,
+  maturitySnapshotsTable: { id: 'id', userId: 'userId' },
 }
 
 
@@ -249,8 +258,7 @@ vi.mock('../src/lib/objectStorage', () =>
 }
 
 
-  return 
-{
+  return {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     ObjectStorageService: vi.fn(function (this: any) 
@@ -389,6 +397,7 @@ const EVIDENCE_ROW = {
 
 beforeEach(() => {
   resetDbState();
+  selectQueue = [];
   mockSignEvidencePutURL.mockReset();
   mockGetObjectEntityFile.mockReset();
   createMock.mockReset();
@@ -444,8 +453,24 @@ describe('POST /api/maturity/evidence/upload-url', () => {
     expect(res.body.error).toMatch(/already uploaded/i);
   });
 
+  it('returns 403 when snapshot_id belongs to a different user', async () => {
+    // Ownership check returns nothing — the snapshot exists but belongs to
+    // another user, so the session user must be denied.
+    selectQueue = [[]];
+
+    const res = await request(app())
+      .post('/api/maturity/evidence/upload-url')
+      .send(UPLOAD_BODY);
+
+    expect(res.status).toBe(403);
+    expect(res.body.ok).toBe(false);
+    expect(res.body.error).toMatch(/does not belong/i);
+  });
+
   it('returns 201 with evidence_id and upload_url on success', async () => {
-    dbState.selectRows = [];                        // no duplicate
+    // First select: ownership check passes (snapshot found).
+    // Second select: no duplicate evidence for this sub-segment.
+    selectQueue = [[{ id: 1 }], []];
     dbState.insertRows = [{ id: 55 }];              // newly created row
     mockSignEvidencePutURL.mockResolvedValue('https://storage.example.com/upload?sig=abc');
 
@@ -460,7 +485,8 @@ describe('POST /api/maturity/evidence/upload-url', () => {
   });
 
   it('returns 500 when the storage service throws', async () => {
-    dbState.selectRows = [];
+    // First select: ownership check passes. Second select: no duplicate.
+    selectQueue = [[{ id: 1 }], []];
     mockSignEvidencePutURL.mockRejectedValue(new Error('GCS unavailable'));
 
     const res = await request(app())

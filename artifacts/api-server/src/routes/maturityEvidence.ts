@@ -13,7 +13,7 @@
 
 import { Router }                from 'express';
 import { db }                    from '@workspace/db';
-import { maturityEvidenceTable } from '@workspace/db/schema';
+import { maturityEvidenceTable, maturitySnapshotsTable } from '@workspace/db/schema';
 import { eq, and }               from 'drizzle-orm';
 import { randomUUID }            from 'crypto';
 import { openai }                from '@workspace/integrations-openai-ai-server';
@@ -158,6 +158,21 @@ router.post('/maturity/evidence/upload-url', requireSession, async (req, res) =>
   const fileBytes = Number(file_size);
   if (Number.isFinite(fileBytes) && fileBytes > MAX_FILE_BYTES) {
     res.status(400).json({ ok: false, error: 'File exceeds 10 MB limit.' });
+    return;
+  }
+
+  // Verify the snapshot exists and belongs to the requesting user
+  const [ownedSnapshot] = await db
+    .select({ id: maturitySnapshotsTable.id })
+    .from(maturitySnapshotsTable)
+    .where(and(
+      eq(maturitySnapshotsTable.id,     Number(snapshot_id)),
+      eq(maturitySnapshotsTable.userId, userId),
+    ))
+    .limit(1);
+
+  if (!ownedSnapshot) {
+    res.status(403).json({ ok: false, error: 'Snapshot not found or does not belong to you' });
     return;
   }
 
