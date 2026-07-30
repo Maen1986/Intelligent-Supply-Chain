@@ -810,3 +810,78 @@ describe('ConfidenceTierBadge — Arabic self-reported badge in inline mode (asP
     expect(badge).toHaveClass('text-slate-600');
   });
 });
+
+/* ════════════════════════════════════════════════════════════════════════════
+   Task 842 — consultant_validated badge round-trip in inline mode (asPill=false)
+
+   The round-trip toggle tests (Tasks 785, 805) use asPill=true (the pill
+   variant).  The evidence detail drawer uses asPill=false, which follows a
+   different render branch.  A stale-closure bug in that branch would not be
+   caught by the existing pill-mode round-trip tests.
+
+   These tests render ConfidenceTierBadge directly with asPill=false and a
+   consultant_validated evidence record, then cycle through en→ar→en to
+   confirm the label updates correctly in the inline branch.
+════════════════════════════════════════════════════════════════════════════ */
+
+const CONSULTANT_VALIDATED_EV: EvidenceRecord[] = [
+  {
+    id:               2,
+    segId:            'strategy',
+    subSegId:         'strategy-align',
+    subSegLabel:      'Supply chain strategy document',
+    originalFilename: 'strategy-validated.pdf',
+    mimeType:         'application/pdf',
+    confidenceTier:   'consultant_validated',
+    aiEvaluation:     null,
+  },
+];
+
+describe('ConfidenceTierBadge — consultant_validated round-trip in inline mode (asPill=false, Task 842)', () => {
+  afterEach(() => cleanup());
+
+  /* ── Inline Round-trip Test 1 ────────────────────────────────────────────
+     Render with lang="en" — the English label "Consultant-validated" must
+     appear in the DOM.
+  ─────────────────────────────────────────────────────────────────────────── */
+  it('shows "Consultant-validated" for consultant_validated evidence in English inline mode', () => {
+    render(<ConfidenceTierBadge lang="en" evidence={CONSULTANT_VALIDATED_EV} asPill={false} />);
+    expect(screen.getByText('Consultant-validated')).toBeInTheDocument();
+    expect(screen.queryByText('مُعتمَد من الاستشاري')).toBeNull();
+  });
+
+  /* ── Inline Round-trip Test 2 ────────────────────────────────────────────
+     Re-render with lang="ar" — the Arabic label "مُعتمَد من الاستشاري" must
+     appear and the English label "Consultant-validated" must be gone.
+  ─────────────────────────────────────────────────────────────────────────── */
+  it('shows "مُعتمَد من الاستشاري" (not "Consultant-validated") when re-rendered with lang="ar"', () => {
+    const { rerender } = render(
+      <ConfidenceTierBadge lang="en" evidence={CONSULTANT_VALIDATED_EV} asPill={false} />,
+    );
+
+    rerender(<ConfidenceTierBadge lang="ar" evidence={CONSULTANT_VALIDATED_EV} asPill={false} />);
+
+    expect(screen.getByText('مُعتمَد من الاستشاري')).toBeInTheDocument();
+    expect(screen.queryByText('Consultant-validated')).toBeNull();
+  });
+
+  /* ── Inline Round-trip Test 3 ────────────────────────────────────────────
+     Re-render back to lang="en" — "Consultant-validated" must return and the
+     Arabic label must be gone.  This is the step most likely to expose a
+     stale-closure bug in the inline render branch.
+  ─────────────────────────────────────────────────────────────────────────── */
+  it('restores "Consultant-validated" when re-rendered back to lang="en" (en→ar→en round-trip)', () => {
+    const { rerender } = render(
+      <ConfidenceTierBadge lang="en" evidence={CONSULTANT_VALIDATED_EV} asPill={false} />,
+    );
+
+    // Step 2: switch to Arabic
+    rerender(<ConfidenceTierBadge lang="ar" evidence={CONSULTANT_VALIDATED_EV} asPill={false} />);
+    expect(screen.getByText('مُعتمَد من الاستشاري')).toBeInTheDocument();
+
+    // Step 3: switch back to English
+    rerender(<ConfidenceTierBadge lang="en" evidence={CONSULTANT_VALIDATED_EV} asPill={false} />);
+    expect(screen.getByText('Consultant-validated')).toBeInTheDocument();
+    expect(screen.queryByText('مُعتمَد من الاستشاري')).toBeNull();
+  });
+});
