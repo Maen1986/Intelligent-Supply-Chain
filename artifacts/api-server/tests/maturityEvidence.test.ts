@@ -8,8 +8,10 @@
 import 
 {
 
+
  describe, it, expect, beforeEach, vi 
 }
+
 
  from 'vitest'
 ;
@@ -22,8 +24,10 @@ import request from 'supertest'
 import 
 {
 
+
  makeApp, dbState, resetDbState, makeLoggerMock 
 }
+
 
  from './helpers'
 ;
@@ -45,7 +49,9 @@ function chain(rowsGetter: () => any[], recordValues = false)
   const c: any = 
 {
 
+
 }
+
 
 ;
 
@@ -75,6 +81,7 @@ function chain(rowsGetter: () => any[], recordValues = false)
 
 }
 
+
 ;
 
 
@@ -91,6 +98,7 @@ function chain(rowsGetter: () => any[], recordValues = false)
 
 
 }
+
 
 ;
 
@@ -131,6 +139,7 @@ function chain(rowsGetter: () => any[], recordValues = false)
 
 }
 
+
 ;
 
 
@@ -164,8 +173,10 @@ vi.mock('@workspace/db', () => (
   
 }
 
+
 ,
 }
+
 
 ))
 ;
@@ -188,15 +199,19 @@ vi.mock('@workspace/db/schema', () => (
   
 }
 
+
 ,
   maturitySnapshotsTable: 
 {
 
+
  id: 'id', userId: 'userId' 
 }
 
+
 ,
 }
+
 
 ))
 ;
@@ -213,8 +228,10 @@ vi.mock('../src/lib/logger', () => makeLoggerMock())
 const 
 {
 
+
  mockSignEvidencePutURL, mockGetObjectEntityFile 
 }
+
 
  = vi.hoisted(() => (
 {
@@ -223,6 +240,7 @@ const
   mockSignEvidencePutURL:  vi.fn(),
   mockGetObjectEntityFile: vi.fn(),
 }
+
 
 ))
 ;
@@ -258,10 +276,12 @@ vi.mock('../src/lib/objectStorage', () =>
 }
 
 
-  return {
+  return 
+{
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    ObjectStorageService: vi.fn(function (this: any) {
+    ObjectStorageService: vi.fn(function (this: any) 
+{
 
       this.signEvidencePutURL  = mockSignEvidencePutURL
 ;
@@ -273,9 +293,14 @@ vi.mock('../src/lib/objectStorage', () =>
 }
 ),
     ObjectNotFoundError,
-  };
+  
 }
-);
+;
+
+}
+)
+;
+
 
 /* ── OpenAI mock ─────────────────────────────────────────────────────────── */
 
@@ -303,16 +328,20 @@ vi.mock('@workspace/integrations-openai-ai-server', () => (
       
 }
 
+
 ,
     
 }
+
 
 ,
   
 }
 
+
 ,
 }
+
 
 ))
 ;
@@ -325,8 +354,10 @@ import evidenceRouter from '../src/routes/maturityEvidence'
 import 
 {
 
+
  ObjectNotFoundError as MockObjectNotFoundError 
 }
+
 
  from '../src/lib/objectStorage'
 ;
@@ -337,8 +368,10 @@ import
 const AUTH_SESSION       = 
 {
 
+
  userId: 99 
 }
+
 
 ;
 
@@ -346,10 +379,13 @@ const AUTH_SESSION       =
 const OTHER_USER_SESSION = 
 {
 
+
  userId: 88 
 }
 
+
 ;
+
 
  // a different user — must not see user 99's data
 
@@ -615,11 +651,14 @@ describe('POST /api/maturity/evidence/:id/confirm', () => {
 
 }
 
+
 )
 ;
 
 
-  it('returns 404 when a consultant-role session tries to confirm evidence owned by a different user', async () => {
+  it('returns 404 when a consultant-role session tries to confirm evidence owned by a different user', async () => 
+{
+
     // A consultant whose userId does not match the evidence owner must be denied.
     // The DB is queried with (id=42 AND userId=77) and returns nothing because
     // the row belongs to userId=99 — the ownership filter prevents cross-user access
