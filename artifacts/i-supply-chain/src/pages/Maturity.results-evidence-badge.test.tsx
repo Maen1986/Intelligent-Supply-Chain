@@ -150,6 +150,17 @@ const AI_EVALUATED_EVIDENCE = {
   },
 };
 
+const SELF_REPORTED_EVIDENCE = {
+  id:               3,
+  segId:            SEG_ID,
+  subSegId:         SUBSEG_ID,
+  subSegLabel:      'Supply chain strategy document',
+  originalFilename: 'strategy-self.pdf',
+  mimeType:         'application/pdf',
+  confidenceTier:   'self_reported' as const,
+  aiEvaluation:     null,
+};
+
 /* ── Auth mock helpers ───────────────────────────────────────────────────── */
 
 let authUser: object | null = null;
@@ -456,6 +467,57 @@ describe('Maturity results page — ConfidenceTierBadge in Arabic mode', () => {
     /* English labels must not appear in Arabic mode */
     expect(screen.queryByText('Consultant-validated')).toBeNull();
     expect(screen.queryByText('AI-evaluated')).toBeNull();
+  });
+
+  /* ── Arabic Test 3 ───────────────────────────────────────────────────────
+     Task 825 — self_reported tier in Arabic mode.
+     When lang="ar" and the evidence is self_reported, the badge must show
+     "مُبلَّغ ذاتياً" and the English label "Self-reported" must not appear.
+  ─────────────────────────────────────────────────────────────────────────── */
+  it('shows "مُبلَّغ ذاتياً" for a self_reported evidence record in Arabic mode', async () => {
+    stubFetch([SELF_REPORTED_EVIDENCE]);
+
+    render(<Maturity />);
+
+    await waitFor(
+      () => {
+        const badges = screen.getAllByText('مُبلَّغ ذاتياً');
+        expect(badges.length).toBeGreaterThanOrEqual(1);
+      },
+      { timeout: 4000 },
+    );
+
+    /* English label must not appear in Arabic mode */
+    expect(screen.queryByText('Self-reported')).toBeNull();
+    /* Higher-tier labels must not appear */
+    expect(screen.queryByText('AI-evaluated')).toBeNull();
+    expect(screen.queryByText('مُقيَّم بالذكاء الاصطناعي')).toBeNull();
+  });
+
+  /* ── Arabic Test 4 ───────────────────────────────────────────────────────
+     Task 825 — ai_evaluated tier in Arabic mode.
+     When lang="ar" and the evidence is ai_evaluated with plausible_support:true,
+     the badge must show "مُقيَّم بالذكاء الاصطناعي" and the English label
+     "AI-evaluated" must not appear.
+  ─────────────────────────────────────────────────────────────────────────── */
+  it('shows "مُقيَّم بالذكاء الاصطناعي" for an ai_evaluated evidence record in Arabic mode', async () => {
+    stubFetch([AI_EVALUATED_EVIDENCE]);
+
+    render(<Maturity />);
+
+    await waitFor(
+      () => {
+        const badges = screen.getAllByText('مُقيَّم بالذكاء الاصطناعي');
+        expect(badges.length).toBeGreaterThanOrEqual(1);
+      },
+      { timeout: 4000 },
+    );
+
+    /* English label must not appear in Arabic mode */
+    expect(screen.queryByText('AI-evaluated')).toBeNull();
+    /* Other English labels must not appear */
+    expect(screen.queryByText('Self-reported')).toBeNull();
+    expect(screen.queryByText('Consultant-validated')).toBeNull();
   });
 });
 

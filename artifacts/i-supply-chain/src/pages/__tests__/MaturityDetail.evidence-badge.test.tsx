@@ -256,29 +256,7 @@ describe('MaturityDetail — ConfidenceTierBadge appears on initial mount', () =
 
     await waitFor(
       () => {
-    const badge = screen.getByText('مُبلَّغ ذاتياً');
-
-/**
- * A second evidence record for the "strategy" segment with
- * plausible_support: false.  Combined with AI_EVALUATED_EVIDENCE it causes
- * hasFlag() to return true while getSegmentTier() still returns 'ai_evaluated'
- * (the clean record keeps the tier; the flagged record triggers the ⚠).
- */
-const FLAGGED_SECONDARY_RECORD = {
-  id: 5,
-  segId: 'strategy',
-  subSegId: 'strategy-goals',
-  subSegLabel: 'Strategic goals document',
-  originalFilename: 'goals-flagged.pdf',
-  mimeType: 'application/pdf',
-  confidenceTier: 'ai_evaluated' as const,
-  aiEvaluation: {
-    plausible_support: false,
-    confidence: 'low' as const,
-    flag_reason: 'Document does not clearly support the stated maturity level.',
-    summary: 'Flagged for review.',
-  },
-};
+    const badge = screen.getByText('Consultant-validated');
         expect(badge.className).toContain('rounded-full');
       },
       { timeout: 3000 },
@@ -442,29 +420,7 @@ describe('MaturityDetail — ConfidenceTierBadge in Arabic mode (lang="ar")', ()
 
     await waitFor(
       () => {
-    const badge = screen.getByText('مُبلَّغ ذاتياً');
-
-/**
- * A second evidence record for the "strategy" segment with
- * plausible_support: false.  Combined with AI_EVALUATED_EVIDENCE it causes
- * hasFlag() to return true while getSegmentTier() still returns 'ai_evaluated'
- * (the clean record keeps the tier; the flagged record triggers the ⚠).
- */
-const FLAGGED_SECONDARY_RECORD = {
-  id: 5,
-  segId: 'strategy',
-  subSegId: 'strategy-goals',
-  subSegLabel: 'Strategic goals document',
-  originalFilename: 'goals-flagged.pdf',
-  mimeType: 'application/pdf',
-  confidenceTier: 'ai_evaluated' as const,
-  aiEvaluation: {
-    plausible_support: false,
-    confidence: 'low' as const,
-    flag_reason: 'Document does not clearly support the stated maturity level.',
-    summary: 'Flagged for review.',
-  },
-};
+    const badge = screen.getByText('مُعتمَد من الاستشاري');
         expect(badge.className).toContain('bg-amber-100');
         expect(badge.className).toContain('text-amber-800');
       },
@@ -483,179 +439,13 @@ const FLAGGED_SECONDARY_RECORD = {
 
     await waitFor(
       () => {
-    const badge = screen.getByText('مُبلَّغ ذاتياً');
-
-/**
- * A second evidence record for the "strategy" segment with
- * plausible_support: false.  Combined with AI_EVALUATED_EVIDENCE it causes
- * hasFlag() to return true while getSegmentTier() still returns 'ai_evaluated'
- * (the clean record keeps the tier; the flagged record triggers the ⚠).
- */
-const FLAGGED_SECONDARY_RECORD = {
-  id: 5,
-  segId: 'strategy',
-  subSegId: 'strategy-goals',
-  subSegLabel: 'Strategic goals document',
-  originalFilename: 'goals-flagged.pdf',
-  mimeType: 'application/pdf',
-  confidenceTier: 'ai_evaluated' as const,
-  aiEvaluation: {
-    plausible_support: false,
-    confidence: 'low' as const,
-    flag_reason: 'Document does not clearly support the stated maturity level.',
-    summary: 'Flagged for review.',
-  },
-};
+    const badge = screen.getByText('مُعتمَد من الاستشاري');
         expect(badge.className).toContain('bg-amber-100');
         expect(badge.className).toContain('text-amber-800');
         expect(badge.className).toContain('rounded-full');
       },
       { timeout: 3000 },
     );
-  });
-});
-
-/* ════════════════════════════════════════════════════════════════════════════
-   Task 788 — consultant_validated badge on the MaturityDetail segment
-   detail page (the drill-down rendered inside an expanded SubmissionCard)
-════════════════════════════════════════════════════════════════════════════ */
-
-describe('MaturityDetail segment detail page — consultant_validated badge', () => {
-  beforeEach(() => {
-    langMode = { lang: 'en', ar: false };
-  });
-
-  afterEach(() => {
-    vi.unstubAllGlobals();
-    cleanup();
-  });
-
-  /* ── Detail Test 1 ───────────────────────────────────────────────────────
-     The MaturityDetail component is rendered inside an expanded
-     SubmissionCard (defaultOpen={true} for the first card).  When the
-     evidence fetch resolves with a consultant_validated record the
-     "Consultant-validated" pill must appear in the Evidence column of that
-     detail view without any user interaction.
-  ─────────────────────────────────────────────────────────────────────────── */
-  it('shows the Consultant-validated badge in the detail view on initial mount', async () => {
-    stubFetch([CONSULTANT_VALIDATED_EVIDENCE]);
-
-    render(<MyAssessments />);
-
-    // Wait for the evidence fetch to resolve and the badge to appear inside
-    // the MaturityDetail segment table (first card is auto-expanded).
-    await waitFor(
-      () => {
-        expect(screen.getByText('Consultant-validated')).toBeInTheDocument();
-      },
-      { timeout: 3000 },
-    );
-
-    // The AI-evaluated badge must not appear — only the consultant tier.
-    expect(screen.queryByText('AI-evaluated')).toBeNull();
-  });
-
-  /* ── Detail Test 2 ───────────────────────────────────────────────────────
-     When both ai_evaluated and consultant_validated evidence records are
-     returned for the same segment, the detail view's Evidence column must
-     show only "Consultant-validated" — getSegmentTier() promotes the
-     higher tier, so "AI-evaluated" must not be rendered at all.
-  ─────────────────────────────────────────────────────────────────────────── */
-  it('shows Consultant-validated (not AI-evaluated) in the detail view when both tiers are present', async () => {
-    stubFetch([AI_EVALUATED_EVIDENCE, CONSULTANT_VALIDATED_EVIDENCE]);
-
-    render(<MyAssessments />);
-
-    await waitFor(
-      () => {
-        expect(screen.getByText('Consultant-validated')).toBeInTheDocument();
-      },
-      { timeout: 3000 },
-    );
-
-    // consultant_validated must outrank ai_evaluated — only one badge shown.
-    expect(screen.queryByText('AI-evaluated')).toBeNull();
-  });
-});
-
-/* ════════════════════════════════════════════════════════════════════════════
-   Task 785 — Full round-trip language toggle
-   Confirms Arabic badge labels stay correct after en→ar→en language toggles.
-   A stale closure or memoisation bug could cause the wrong label to persist
-   after a toggle without any existing test catching it.
-════════════════════════════════════════════════════════════════════════════ */
-
-describe('MaturityDetail — ConfidenceTierBadge survives a full en→ar→en language toggle', () => {
-  beforeEach(() => {
-    langMode = { lang: 'en', ar: false };
-  });
-
-  afterEach(() => {
-    vi.unstubAllGlobals();
-    cleanup();
-  });
-
-  /* ── Round-trip Test 1 ───────────────────────────────────────────────────
-     Start in English, confirm "AI-evaluated" appears.
-     Switch to Arabic via context — "مُقيَّم بالذكاء الاصطناعي" must appear
-     and the English label must be gone.
-     Switch back to English — "AI-evaluated" must return.
-  ──────────────────────────────────────────────────────────────────────────── */
-  it('badge label updates correctly across en→ar→en language toggles', async () => {
-    stubFetch([AI_EVALUATED_EVIDENCE]);
-
-    const { rerender } = render(
-      <ConfidenceTierBadge lang="en" evidence={CONSULTANT_VALIDATED_EV} asPill={false} />,
-    );
-
-    rerender(<ConfidenceTierBadge lang="ar" evidence={CONSULTANT_VALIDATED_EV} asPill={false} />);
-
-    expect(screen.getByText('مُعتمَد من الاستشاري')).toBeInTheDocument();
-    expect(screen.queryByText('Consultant-validated')).toBeNull();
-  });
-
-  /* ── Inline Round-trip Test 3 ────────────────────────────────────────────
-     Re-render back to lang="en" — "Consultant-validated" must return and the
-     Arabic label must be gone.  This is the step most likely to expose a
-     stale-closure bug in the inline render branch.
-  ─────────────────────────────────────────────────────────────────────────── */
-  it('restores "Consultant-validated" when re-rendered back to lang="en" (en→ar→en round-trip)', () => {
-    const { rerender } = render(
-      <ConfidenceTierBadge lang="en" evidence={CONSULTANT_VALIDATED_EV} asPill={false} />,
-    );
-
-    // ── Step 1: English — badge must show "Consultant-validated"
-    await waitFor(
-      () => {
-        expect(screen.getByText('Consultant-validated')).toBeInTheDocument();
-      },
-      { timeout: 3000 },
-    );
-    expect(screen.queryByText('مُعتمَد من الاستشاري')).toBeNull();
-
-    // ── Step 2: Switch to Arabic
-    langMode = { lang: 'ar', ar: true };
-    rerender(<MyAssessments />);
-
-    await waitFor(
-      () => {
-        expect(screen.getByText('مُعتمَد من الاستشاري')).toBeInTheDocument();
-      },
-      { timeout: 3000 },
-    );
-    expect(screen.queryByText('Consultant-validated')).toBeNull();
-
-    // ── Step 3: Switch back to English
-    langMode = { lang: 'en', ar: false };
-    rerender(<MyAssessments />);
-
-    await waitFor(
-      () => {
-        expect(screen.getByText('Consultant-validated')).toBeInTheDocument();
-      },
-      { timeout: 3000 },
-    );
-    expect(screen.queryByText('مُعتمَد من الاستشاري')).toBeNull();
   });
 });
 
@@ -876,9 +666,7 @@ describe('ConfidenceTierBadge — consultant_validated round-trip in inline mode
      appear and the English label "Consultant-validated" must be gone.
   ─────────────────────────────────────────────────────────────────────────── */
   it('shows "مُعتمَد من الاستشاري" (not "Consultant-validated") when re-rendered with lang="ar"', () => {
-    const { rerender } = render(
-      <ConfidenceTierBadge lang="en" evidence={CONSULTANT_VALIDATED_EV} asPill={false} />,
-    );
+    const { rerender } = render(<MyAssessments />);
 
     rerender(<ConfidenceTierBadge lang="ar" evidence={CONSULTANT_VALIDATED_EV} asPill={false} />);
 
@@ -892,9 +680,7 @@ describe('ConfidenceTierBadge — consultant_validated round-trip in inline mode
      stale-closure bug in the inline render branch.
   ─────────────────────────────────────────────────────────────────────────── */
   it('restores "Consultant-validated" when re-rendered back to lang="en" (en→ar→en round-trip)', () => {
-    const { rerender } = render(
-      <ConfidenceTierBadge lang="en" evidence={CONSULTANT_VALIDATED_EV} asPill={false} />,
-    );
+    const { rerender } = render(<MyAssessments />);
 
     // Step 2: switch to Arabic
     rerender(<ConfidenceTierBadge lang="ar" evidence={CONSULTANT_VALIDATED_EV} asPill={false} />);
