@@ -276,30 +276,15 @@ vi.mock('../src/lib/objectStorage', () =>
 }
 
 
-  return 
-{
-
+  return {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    ObjectStorageService: vi.fn(function (this: any) 
-{
-
-      this.signEvidencePutURL  = mockSignEvidencePutURL
-;
-
-      this.getObjectEntityFile = mockGetObjectEntityFile
-;
-
-    
-}
-),
+    ObjectStorageService: vi.fn(function (this: any) {
+      this.signEvidencePutURL  = mockSignEvidencePutURL;
+      this.getObjectEntityFile = mockGetObjectEntityFile;
+    }),
     ObjectNotFoundError,
-  
-}
-;
-
-}
-)
-;
+  };
+});
 
 
 /* ── OpenAI mock ─────────────────────────────────────────────────────────── */

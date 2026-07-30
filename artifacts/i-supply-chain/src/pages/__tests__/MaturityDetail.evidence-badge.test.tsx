@@ -256,7 +256,7 @@ describe('MaturityDetail — ConfidenceTierBadge appears on initial mount', () =
 
     await waitFor(
       () => {
-        const badge = screen.getByText('Consultant-validated');
+    const badge = screen.getByText('مُبلَّغ ذاتياً');
         expect(badge.className).toContain('rounded-full');
       },
       { timeout: 3000 },
@@ -420,7 +420,7 @@ describe('MaturityDetail — ConfidenceTierBadge in Arabic mode (lang="ar")', ()
 
     await waitFor(
       () => {
-        const badge = screen.getByText('مُعتمَد من الاستشاري');
+    const badge = screen.getByText('مُبلَّغ ذاتياً');
         expect(badge.className).toContain('bg-amber-100');
         expect(badge.className).toContain('text-amber-800');
       },
@@ -439,10 +439,12 @@ describe('MaturityDetail — ConfidenceTierBadge in Arabic mode (lang="ar")', ()
 
     await waitFor(
       () => {
-        const badge = screen.getByText('مُعتمَد من الاستشاري');
+    const badge = screen.getByText('مُبلَّغ ذاتياً');
         expect(badge.className).toContain('bg-amber-100');
         expect(badge.className).toContain('text-amber-800');
         expect(badge.className).toContain('rounded-full');
+        expect(badge.className).toContain('bg-amber-100');
+        expect(badge.className).toContain('text-amber-800');
       },
       { timeout: 3000 },
     );

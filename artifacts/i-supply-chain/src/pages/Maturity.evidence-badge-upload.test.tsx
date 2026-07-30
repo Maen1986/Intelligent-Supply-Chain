@@ -373,3 +373,240 @@ describe('Maturity results page — ConfidenceTierBadge appears after upload', (
     );
   });
 });
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Fixtures — tier promotion scenario (Task 804)
+═══════════════════════════════════════════════════════════════════════════ */
+
+const SELF_REPORTED_RECORD: EvidenceRecord = {
+  id:               10,
+  segId:            SEG_ID,
+  subSegId:         SUBSEG_ID,
+  subSegLabel:      'Supply chain strategy document',
+  originalFilename: 'strategy-draft.pdf',
+  mimeType:         'application/pdf',
+  confidenceTier:   'self_reported',
+  aiEvaluation:     null,
+};
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Extended Harness — starts with seeded evidenceList
+   ───────────────────────────────────────────────────────────────────────────
+   Mirrors the same Maturity.tsx pattern as SegmentCardHarness but accepts an
+   initialEvidence prop so the evidenceList is non-empty at mount. The
+   `existing` prop passed to EvidenceUploadZone is derived from evidenceList
+   (mirrors the real Maturity.tsx data-flow where `existing` comes from the
+   same evidenceList state, not a separate store).
+═══════════════════════════════════════════════════════════════════════════ */
+
+interface HarnessWithInitialProps {
+  lang?:            'en' | 'ar';
+  initialEvidence:  EvidenceRecord[];
+}
+
+function SegmentCardHarnessWithInitialEvidence({
+  lang = 'en',
+  initialEvidence,
+}: HarnessWithInitialProps) {
+  const [evidenceList, setEvidenceList] = React.useState<EvidenceRecord[]>(initialEvidence);
+
+  const fetchEvidence = React.useCallback(() => {
+    fetch(`http://test/api/maturity/evidence?snapshot_id=${SNAPSHOT_ID}`, { credentials: 'include' })
+      .then(r => r.json())
+      .then((data: { ok: boolean; evidence?: EvidenceRecord[] }) => {
+        if (data.ok && data.evidence) setEvidenceList(data.evidence);
+      })
+      .catch(() => { /* best-effort */ });
+  }, []);
+
+  /* Derive badge evidence and the per-subseg existing record from the same
+     evidenceList — exactly as Maturity.tsx does (lines 1418–1424, 1526-1530) */
+  const segEvidence = evidenceList.filter(e => e.segId === SEG_ID);
+  const existing    = segEvidence.find(e => e.subSegId === SUBSEG_ID) ?? null;
+
+  return (
+    <div>
+      {/* ── Score + badge header ──────────────────────────────────────── */}
+      <div data-testid="segment-header" className="flex items-center gap-2">
+        <span data-testid="segment-score">3.50</span>
+        <span>/5.0</span>
+        {segEvidence.length > 0 && (
+          <ConfidenceTierBadge
+            lang={lang}
+            evidence={segEvidence}
+            asPill
+          />
+        )}
+      </div>
+
+      {/* ── Upload zone ───────────────────────────────────────────────── */}
+      <EvidenceUploadZone
+        lang={lang}
+        snapshotId={SNAPSHOT_ID}
+        segId={SEG_ID}
+        subSegId={SUBSEG_ID}
+        subSegLabel="Supply chain strategy document"
+        subSegLabelAr="وثيقة استراتيجية سلسلة الإمداد"
+        subSegHint="Upload evidence that supports your strategy maturity claim."
+        subSegHintAr="ارفع دليلاً يدعم ادعاءك بمستوى نضج الاستراتيجية."
+        existing={existing}
+        onChanged={fetchEvidence}
+      />
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Fetch stub — two-phase re-upload scenario
+   ───────────────────────────────────────────────────────────────────────────
+   Phase A (before deletion): GET /evidence returns the self_reported record.
+   Deletion (DELETE /evidence/:id): acknowledged with 204, sets phase → B.
+   Phase B (after deletion, before new upload): GET returns [].
+   Upload flow (POST upload-url → PUT GCS → POST confirm): completes upload.
+   Phase C (after confirm): GET returns [AI_EVALUATED_RECORD].
+═══════════════════════════════════════════════════════════════════════════ */
+
+function stubReUploadFlow() {
+  type Phase = 'initial' | 'deleted' | 'confirmed';
+  let phase: Phase = 'initial';
+
+  vi.stubGlobal(
+    'fetch',
+    vi.fn().mockImplementation((url: string, opts?: RequestInit) => {
+      const method = (opts?.method ?? 'GET').toUpperCase();
+
+      /* DELETE existing evidence record ─────────────────────────────── */
+      if (url.includes('/maturity/evidence/') && method === 'DELETE') {
+        phase = 'deleted';
+        return Promise.resolve({ ok: true, status: 204, text: async () => '' });
+      }
+
+      /* POST upload-url ──────────────────────────────────────────────── */
+      if (url.includes('/maturity/evidence/upload-url') && method === 'POST') {
+        return Promise.resolve({
+          ok:   true,
+          json: async () => ({
+            ok:          true,
+            evidence_id: 99,
+            upload_url:  'https://storage.test/upload',
+          }),
+        });
+      }
+
+      /* PUT to presigned GCS URL ─────────────────────────────────────── */
+      if (url.startsWith('https://storage.test/') && method === 'PUT') {
+        return Promise.resolve({ ok: true });
+      }
+
+      /* POST confirm ─────────────────────────────────────────────────── */
+      if (url.includes('/maturity/evidence/') && url.includes('/confirm') && method === 'POST') {
+        phase = 'confirmed';
+        return Promise.resolve({
+          ok:   true,
+          json: async () => ({ ok: true, confidence_tier: 'ai_evaluated' }),
+        });
+      }
+
+      /* GET /evidence (fetchEvidence) ────────────────────────────────── */
+      if (url.includes('/maturity/evidence') && method === 'GET') {
+        if (phase === 'initial') {
+          return Promise.resolve({
+            ok:   true,
+            json: async () => ({ ok: true, evidence: [SELF_REPORTED_RECORD] }),
+          });
+        }
+        if (phase === 'deleted') {
+          return Promise.resolve({
+            ok:   true,
+            json: async () => ({ ok: true, evidence: [] }),
+          });
+        }
+        /* phase === 'confirmed' */
+        return Promise.resolve({
+          ok:   true,
+          json: async () => ({ ok: true, evidence: [AI_EVALUATED_RECORD] }),
+        });
+      }
+
+      /* Fallback */
+      return Promise.resolve({ ok: true, json: async () => ({ ok: true }) });
+    }),
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Tests — badge tier promotion via re-upload (Task 804)
+═══════════════════════════════════════════════════════════════════════════ */
+
+describe('Maturity results page — badge tier updates when a second file replaces the first', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    cleanup();
+  });
+
+  /* ── Test 7 ──────────────────────────────────────────────────────────────
+     Tier-promotion path: self_reported → ai_evaluated via re-upload.
+
+     Start: evidenceList already contains one self_reported record so the
+       "Self-reported" badge is visible next to the score.
+     Action 1: user clicks the remove (×) button — triggers DELETE then
+       fetchEvidence(), which returns [] so evidenceList clears, `existing`
+       becomes null, and the upload zone renders.
+     Action 2: user picks a new file — triggers the three-step upload flow
+       then fetchEvidence(), which returns the AI_EVALUATED_RECORD.
+     End: badge updates to "AI-evaluated" without a page reload.
+  ─────────────────────────────────────────────────────────────────────────── */
+  it('upgrades badge from Self-reported to AI-evaluated after remove + re-upload', async () => {
+    stubReUploadFlow();
+
+    render(
+      <SegmentCardHarnessWithInitialEvidence
+        initialEvidence={[SELF_REPORTED_RECORD]}
+      />,
+    );
+
+    /* Initial state: at least one "Self-reported" label visible (badge in
+       header + inline label inside EvidenceUploadZone both render it when
+       the tier is self_reported — using getAllByText handles both)         */
+    expect(screen.getAllByText('Self-reported').length).toBeGreaterThan(0);
+    expect(screen.queryByText('AI-evaluated')).toBeNull();
+
+    /* ── Step 1: remove the existing self_reported record ───────────── */
+    const removeBtn = screen.getByTitle('Remove evidence');
+    await act(async () => {
+      fireEvent.click(removeBtn);
+    });
+
+    /* After deletion + fetchEvidence ALL "Self-reported" labels must be gone
+       (evidenceList is empty → badge hidden; existing=null → upload zone shown) */
+    await waitFor(
+      () => expect(screen.queryAllByText('Self-reported')).toHaveLength(0),
+      { timeout: 5000 },
+    );
+
+    /* The upload zone is now visible (no `existing` record) */
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    expect(input).not.toBeNull();
+
+    /* ── Step 2: upload a new, stronger file ───────────────────────── */
+    await act(async () => {
+      fireEvent.change(input, { target: { files: [makePdf('strategy-v2.pdf')] } });
+    });
+
+    /* After confirm + fetchEvidence the badge must upgrade to "AI-evaluated" */
+    await waitFor(
+      () => {
+        expect(screen.getByText('AI-evaluated')).toBeInTheDocument();
+      },
+      { timeout: 5000 },
+    );
+
+    /* "Self-reported" must not linger after the upgrade (neither badge nor
+       upload-zone inline label should show it)                             */
+    expect(screen.queryAllByText('Self-reported')).toHaveLength(0);
+
+    /* Badge must be inside the score header — no page reload needed */
+    const header = screen.getByTestId('segment-header');
+    expect(header).toContainElement(screen.getByText('AI-evaluated'));
+  });
+});
