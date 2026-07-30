@@ -89,7 +89,7 @@ function toolColor(tool: string) {
 
 /* ── Maturity detail sub-component ─────────────────────────────────────────── */
 
-function MaturityDetail({ inputs, outputs, ar, snapshotId, lang, expandedEvSeg, setExpandedEvSeg, evScrollPosRef }: {
+export function MaturityDetail({ inputs, outputs, ar, snapshotId, lang, expandedEvSeg, setExpandedEvSeg, evScrollPosRef }: {
   inputs:            MaturityInputs;
   outputs:           MaturityOutputs;
   ar:                boolean;
