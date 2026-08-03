@@ -249,9 +249,11 @@ export function calcKpisFromInputs(
   kpis: KpiDef[],
   inputsByKpi: Record<string, Record<string, number>>,
   isAr: boolean,
-): { values: Record<string, string>; log: string[]; count: number } {
+): { values: Record<string, string>; log: string[]; count: number; failedKpis: KpiDef[] } {
   const values: Record<string, string> = {};
   const log: string[] = [];
+  /** KPIs whose calculate() returned NaN — surfaced for click-to-jump (Task 423). */
+  const failedKpis: KpiDef[] = [];
   let count = 0;
 
   kpis.forEach(k => {
@@ -285,8 +287,9 @@ export function calcKpisFromInputs(
     if (isNaN(result)) {
       const kLabel = isAr ? k.labelAr : k.label;
       log.push(isAr
-        ? `${kLabel}: أعادت الحسابات نتيجة غير صالحة — تحقّق من قيم الإدخال.`
-        : `${kLabel}: calculation returned invalid result — check input values.`);
+        ? `⚠️ ${kLabel}: أعادت الحسابات نتيجة غير صالحة — تحقّق من قيم الإدخال.`
+        : `⚠️ ${kLabel}: calculation returned invalid result — check input values.`);
+      failedKpis.push(k);
       return;
     }
     values[k.id] = String(result);
@@ -296,7 +299,7 @@ export function calcKpisFromInputs(
     count++;
   });
 
-  return { values, log, count };
+  return { values, log, count, failedKpis };
 }
 
 /* ─── Slug aliases: SolutionDetail slugs that map to a shared KPI framework ─── */
@@ -1025,6 +1028,8 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
   const [saveFailed, setSaveFailed] = useState(false);
   const [expandedKpi, setExpandedKpi] = useState<string | null>(null);
   const [manualKpis, setManualKpis] = useState<KpiDef[]>([]);
+  /** KPIs whose calculate() returned NaN — displayed with click-to-jump in the import log (Task 423). */
+  const [failedCalcKpis, setFailedCalcKpis] = useState<KpiDef[]>([]);
   const [highlightedKpi, setHighlightedKpi] = useState<string | null>(null);
 
   /* ── Industry benchmark selection ── */
@@ -1213,6 +1218,8 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
       const nextValues = { ...values };
       let count = 0;
       let foundManualKpis: KpiDef[] = [];
+      /** KPIs whose calculate() returned NaN — tracked for click-to-jump (Task 423). */
+      let foundFailedKpis: KpiDef[] = [];
       const importedKpiIds: string[] = [];
 
       // Detect format: new data-collection template has "Input Field" and "Your Value" columns
@@ -1276,12 +1283,20 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
         });
 
         // Calculate each KPI from collected inputs
-        const { values: calcValues, log: calcLog, count: calcCount } =
+        const { values: calcValues, log: calcLog, count: calcCount, failedKpis: calcFailedKpis } =
           calcKpisFromInputs(kpis, inputsByKpi, isAr);
         Object.assign(nextValues, calcValues);
         log.push(...calcLog);
         count += calcCount;
         importedKpiIds.push(...Object.keys(calcValues));
+        // Surface failed-calculation KPIs for click-to-jump (Task 423)
+        foundFailedKpis = calcFailedKpis;
+        if (foundFailedKpis.length > 0) {
+          const labels = foundFailedKpis.map(k => isAr ? k.labelAr : k.label).join(', ');
+          log.push(isAr
+            ? `⚠️ ${foundFailedKpis.length} مؤشر(ات) أعادت نتيجة غير صالحة: ${labels}`
+            : `⚠️ ${foundFailedKpis.length} KPI(s) returned an invalid result: ${labels}`);
+        }
 
         // Identify KPIs in this framework that have no calculation spec — user must enter them manually
         foundManualKpis = kpis.filter(k => !KPI_DATA_SPECS[k.id]);
@@ -1350,6 +1365,7 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
         log.unshift(isAr ? `✓ تم احتساب ${count} مؤشر(ات) وتحديثها.` : `✓ ${count} KPI(s) calculated and updated.`);
       }
       setManualKpis(foundManualKpis);
+      setFailedCalcKpis(foundFailedKpis);
       setImportLog(log);
     };
     reader.readAsText(file);
@@ -1448,6 +1464,28 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
               <div className="space-y-0.5">
                 {importLog.map((m, i) => {
                   // Render the manual-entry line with clickable KPI labels
+                  // ── Failed-calculation KPIs: clickable jump labels (Task 423) ──
+                  if (m.startsWith('⚠️') && failedCalcKpis.length > 0 && (m.includes('returned an invalid result') || m.includes('أعادت نتيجة غير صالحة'))) {
+                    const prefix = isAr
+                      ? `⚠️ ${failedCalcKpis.length} مؤشر(ات) أعادت نتيجة غير صالحة: `
+                      : `⚠️ ${failedCalcKpis.length} KPI(s) returned an invalid result: `;
+                    return (
+                      <p key={i} className="opacity-75 text-amber-700">
+                        {prefix}
+                        {failedCalcKpis.map((k, ki) => (
+                          <React.Fragment key={k.id}>
+                            <button
+                              onClick={() => scrollToKpi(k.id)}
+                              className="underline font-semibold hover:opacity-70 transition-opacity focus:outline-none"
+                            >
+                              {isAr ? k.labelAr : k.label}
+                            </button>
+                            {ki < failedCalcKpis.length - 1 && ', '}
+                          </React.Fragment>
+                        ))}
+                      </p>
+                    );
+                  }
                   if (m.startsWith('📝') && manualKpis.length > 0) {
                     const prefix = isAr
                       ? `📝 ${manualKpis.length} مؤشر(ات) تتطلّب إدخالاً يدوياً: `
@@ -1478,7 +1516,7 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
                   return <p key={i} className={i === 0 ? 'font-bold' : 'opacity-75'}>{m}</p>;
                 })}
               </div>
-              <button onClick={() => { setImportLog(null); setManualKpis([]); }} className="shrink-0 opacity-50 hover:opacity-100 font-bold">✕</button>
+              <button onClick={() => { setImportLog(null); setManualKpis([]); setFailedCalcKpis([]); }} className="shrink-0 opacity-50 hover:opacity-100 font-bold">✕</button>
             </div>
           </div>
         )}

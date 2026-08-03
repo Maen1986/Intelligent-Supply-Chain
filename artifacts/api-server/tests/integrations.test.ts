@@ -571,6 +571,70 @@ describe('PATCH /api/integrations/keys/:id', () => {
   });
 });
 
+/* ─── Task 478 — scope downgrade takes effect on the next API call ──────── */
+
+describe('API key scope downgrade — change takes effect on next v1 request (Task 478)', () => {
+  beforeEach(() => {
+    updateReturn = [];
+    mockUpdate.mockClear();
+    apiKeyRows = [];
+    selectResponses = [];
+    selectCallCount = 0;
+    mockSelect.mockClear();
+  });
+
+  it('a write-scoped key succeeds on POST before the downgrade', async () => {
+    const { raw } = makeKey();
+    apiKeyRows = [{ id: 7, userId: 42, scope: 'write', revokedAt: null }];
+    const { default: v1Router } = await import('../src/routes/v1');
+    const app = makeApp('/api/v1', v1Router);
+    const res = await request(app)
+      .post('/api/v1/suppliers/import')
+      .set('Authorization', `Bearer ${raw}`)
+      .send({ suppliers: [{ id: 's1', name: 'ACME' }] });
+    // write-scoped key: POST is allowed (middleware passes, route may 200 or 4xx on data)
+    expect(res.status).not.toBe(403);
+  });
+
+  it('the PATCH downgrade route returns the updated read scope', async () => {
+    updateReturn = [{ id: 7, scope: 'read' }];
+    const { default: intRouter } = await import('../src/routes/integrations');
+    const app = makeApp('/api/integrations', intRouter, ADMIN_SESSION);
+    const res = await request(app).patch('/api/integrations/keys/7').send({ scope: 'read' });
+    expect(res.status).toBe(200);
+    expect(res.body.ok).toBe(true);
+    expect(res.body.key.scope).toBe('read');
+  });
+
+  it('after scope is downgraded to read, the next POST with the same key is 403', async () => {
+    const { raw } = makeKey();
+    // Simulate what the DB looks like after the PATCH has committed:
+    // the key now has scope:'read'.
+    apiKeyRows = [{ id: 7, userId: 42, scope: 'read', revokedAt: null }];
+    const { default: v1Router } = await import('../src/routes/v1');
+    const app = makeApp('/api/v1', v1Router);
+    const res = await request(app)
+      .post('/api/v1/suppliers/import')
+      .set('Authorization', `Bearer ${raw}`)
+      .send({ suppliers: [{ id: 's1', name: 'ACME' }] });
+    expect(res.status).toBe(403);
+    expect(res.body.ok).toBe(false);
+    expect(res.body.error).toMatch(/read-only/i);
+  });
+
+  it('after scope is downgraded to read, GET requests are still allowed', async () => {
+    const { raw } = makeKey();
+    apiKeyRows = [{ id: 7, userId: 42, scope: 'read', revokedAt: null }];
+    const { default: v1Router } = await import('../src/routes/v1');
+    const app = makeApp('/api/v1', v1Router);
+    const res = await request(app)
+      .get('/api/v1/suppliers')
+      .set('Authorization', `Bearer ${raw}`);
+    expect(res.status).toBe(200);
+    expect(res.body.ok).toBe(true);
+  });
+});
+
 /* ─── /api/integrations/webhooks — URL validation ───────────────────────── */
 
 describe('Webhook URL validation', () => {

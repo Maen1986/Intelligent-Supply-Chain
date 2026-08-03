@@ -190,3 +190,47 @@ describe('KPI on-target status — Arabic mode labels', () => {
     expect(line).not.toContain(pocycle.label);
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Task 568 — English status words ('Below Target', 'On Target') must NEVER
+// appear in Arabic-mode status lines across every KPI in every framework.
+//
+// The ternary at KPIDashboard.tsx ~1292–1296 uses isAr to pick the label.
+// A regression that swaps the condition would silently serve English strings
+// to Arabic users. This test iterates every KPI in every framework so a
+// single typo cannot hide behind untested KPIs.
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('KPI status lines — no English labels in Arabic mode (Task 568, all frameworks)', () => {
+  // Build on-target and off-target status lines for every KPI using a value
+  // that is guaranteed to be on-target (targetValue itself) for the on-target
+  // branch, and one unit off target for the off-target branch.
+  const ENGLISH_STATUS_WORDS = ['Below Target', 'On Target'];
+
+  for (const [frameworkKey, kpis] of Object.entries(KPI_FRAMEWORKS)) {
+    for (const kpi of kpis) {
+      // on-target value: exactly at threshold
+      const onTargetValue = kpi.targetValue;
+      // off-target value: one unit past the threshold (wrong direction)
+      const offTargetValue = kpi.higherIsBetter
+        ? kpi.targetValue - 1
+        : kpi.targetValue + 1;
+
+      it(`[${frameworkKey}] "${kpi.id}" on-target line contains no English status words in Arabic mode`, () => {
+        const line = buildStatusLine(kpi, onTargetValue, true);
+        for (const word of ENGLISH_STATUS_WORDS) {
+          expect(line, `"${word}" must not appear in Arabic status line for ${kpi.id}`).not.toContain(word);
+        }
+        expect(line).toContain('حسب الهدف');
+      });
+
+      it(`[${frameworkKey}] "${kpi.id}" off-target line contains no English status words in Arabic mode`, () => {
+        const line = buildStatusLine(kpi, offTargetValue, true);
+        for (const word of ENGLISH_STATUS_WORDS) {
+          expect(line, `"${word}" must not appear in Arabic status line for ${kpi.id}`).not.toContain(word);
+        }
+        expect(line).toContain('دون الهدف');
+      });
+    }
+  }
+});

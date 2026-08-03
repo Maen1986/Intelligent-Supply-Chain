@@ -387,6 +387,18 @@ describe('EvidenceUploadZone — remove existing evidence', () => {
     });
     expect(screen.queryByTitle('Remove evidence')).toBeNull();
   });
+
+  it('does not show the Arabic remove button for consultant_validated evidence in Arabic mode (Task 750)', () => {
+    // In Arabic mode the remove button carries the title 'إزالة الدليل'.
+    // Consultant-validated evidence must suppress it regardless of language.
+    renderZone({
+      lang: 'ar' as const,
+      existing: { ...EXISTING, confidenceTier: 'consultant_validated' },
+    });
+    expect(screen.queryByTitle('إزالة الدليل')).toBeNull();
+    // English title must also be absent (button is not rendered at all)
+    expect(screen.queryByTitle('Remove evidence')).toBeNull();
+  });
 });
 
 /* ══════════════════════════════════════════════════════════════════════════

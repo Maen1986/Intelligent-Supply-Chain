@@ -214,6 +214,105 @@ describe('import-log bidi isolation for Arabic labels with special characters', 
     expect(line).toContain(`${FSI}${kpi!.labelAr}${PDI}`);
   });
 
+  /* Task 567 — Arabic on-target and off-target labels appear in import log ── */
+
+  it('Arabic on-target line contains "حسب الهدف" and no English "On Target"', () => {
+    const kpi = clmKpis.find(k => k.id === 'cact')!;
+    const line = buildStatusLine(kpi.labelAr, 8, kpi.unitAr, true);
+    expect(line).toContain('حسب الهدف');
+    expect(line).not.toContain('On Target');
+    expect(line).not.toContain('Below Target');
+  });
+
+  it('Arabic off-target line contains "دون الهدف" and no English "Below Target"', () => {
+    const kpi = clmKpis.find(k => k.id === 'cact')!;
+    const line = buildStatusLine(kpi.labelAr, 8, kpi.unitAr, false);
+    expect(line).toContain('دون الهدف');
+    expect(line).not.toContain('Below Target');
+    expect(line).not.toContain('On Target');
+  });
+
+  it('calcKpisFromInputs uses the Arabic label in its calculation log entry when isAr=true', () => {
+    // calcKpisFromInputs produces "✓ <label>: calculated <result> <unit>" lines.
+    // In Arabic mode it must use labelAr, not the English label.
+    const crmKpi = kpiById('crm');
+    const inputsByKpi = {
+      crm: { total_critical_risks: 20, mitigated_critical_risks: 17 }, // 85%
+    };
+
+    const { log } = calcKpisFromInputs([crmKpi], inputsByKpi, true);
+
+    const calcLine = log.find(l => l.startsWith('✓'));
+    expect(calcLine).toBeTruthy();
+    // Must include the Arabic label, never the English one
+    expect(calcLine).toContain(crmKpi.labelAr);
+    expect(calcLine).not.toContain(crmKpi.label);
+  });
+
+  it('calcKpisFromInputs uses the English label in its calculation log entry when isAr=false', () => {
+    const crmKpi = kpiById('crm');
+    const inputsByKpi = {
+      crm: { total_critical_risks: 20, mitigated_critical_risks: 17 },
+    };
+
+    const { log } = calcKpisFromInputs([crmKpi], inputsByKpi, false);
+
+    const calcLine = log.find(l => l.startsWith('✓'));
+    expect(calcLine).toBeTruthy();
+    expect(calcLine).toContain(crmKpi.label);
+    expect(calcLine).not.toContain(crmKpi.labelAr);
+  });
+
+  /* Task 423 — calcKpisFromInputs returns failedKpis when calculate() returns NaN ── */
+
+  it('Task 423 — calcKpisFromInputs returns the failed KPI in failedKpis when its formula returns NaN', () => {
+    // crm formula: pct(mitigated_critical_risks, total_critical_risks)
+    // When total_critical_risks = 0, pct() returns NaN (denominator guard).
+    const inputsByKpi = {
+      crm: { total_critical_risks: 0, mitigated_critical_risks: 0 },
+    };
+
+    const { values, failedKpis, log } = calcKpisFromInputs([kpiById('crm')], inputsByKpi, false);
+
+    // crm must not appear in calculated values (NaN is not stored)
+    expect(values.crm).toBeUndefined();
+
+    // failedKpis must contain exactly crm
+    expect(failedKpis).toHaveLength(1);
+    expect(failedKpis[0].id).toBe('crm');
+
+    // The log must contain a '⚠️' entry for the failed calculation
+    const warnLine = log.find(l => l.startsWith('⚠️'));
+    expect(warnLine).toBeTruthy();
+    expect(warnLine).toContain('calculation returned invalid result');
+  });
+
+  it('Task 423 — failedKpis is empty when all calculations succeed', () => {
+    const inputsByKpi = {
+      crm: { total_critical_risks: 20, mitigated_critical_risks: 17 }, // 85%
+    };
+
+    const { failedKpis } = calcKpisFromInputs([kpiById('crm')], inputsByKpi, false);
+
+    expect(failedKpis).toHaveLength(0);
+  });
+
+  it('Task 423 — Arabic failedKpis log line starts with ⚠️ and contains the Arabic label', () => {
+    const inputsByKpi = {
+      crm: { total_critical_risks: 0, mitigated_critical_risks: 0 },
+    };
+
+    const { failedKpis, log } = calcKpisFromInputs([kpiById('crm')], inputsByKpi, true);
+
+    expect(failedKpis).toHaveLength(1);
+    const warnLine = log.find(l => l.startsWith('⚠️'));
+    expect(warnLine).toBeTruthy();
+    // Arabic fail message must contain the Arabic label and the Arabic error phrase
+    expect(warnLine).toContain(kpiById('crm').labelAr);
+    expect(warnLine).toContain('أعادت الحسابات نتيجة غير صالحة');
+    expect(warnLine).not.toContain('calculation returned invalid result');
+  });
+
   it('FSI and PDI each appear exactly once per status line', () => {
     // Guard against accidentally double-wrapping in future edits.
     const kpi = clmKpis.find(k => k.id === 'cact')!;

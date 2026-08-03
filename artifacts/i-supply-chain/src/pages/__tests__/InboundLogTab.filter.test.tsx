@@ -15,7 +15,7 @@
  */
 
 import React from 'react';
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react';
 import { InboundLogTab } from '../AdminAutomations';
 
@@ -247,5 +247,108 @@ describe('InboundLogTab — action filter', () => {
       .filter(u => u.includes('inbound-log') && u.includes('status=error'));
 
     expect(inboundCalls.length).toBeGreaterThan(0);
+  });
+});
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Task 679 — CSV export carries active filters in the request URL
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+describe('InboundLogTab — CSV export carries active filters (Task 679)', () => {
+  beforeEach(() => {
+    // jsdom does not implement URL.createObjectURL / revokeObjectURL.
+    // Patch only the missing static methods so exportCsv can complete
+    // without throwing — the URL constructor itself must remain intact.
+    if (!URL.createObjectURL) {
+      URL.createObjectURL = vi.fn().mockReturnValue('blob:test-url');
+    } else {
+      vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:test-url');
+    }
+    if (!URL.revokeObjectURL) {
+      URL.revokeObjectURL = vi.fn();
+    } else {
+      vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
+    }
+  });
+
+  /* ── G — export with action filter active ─────────────────────────────── */
+
+  it('G — Export CSV sends export=1 AND action=supplier when action filter is active', async () => {
+    mockInboundFetch();
+
+    render(<InboundLogTab ar={false} refresh={0} />);
+
+    // Wait for initial load
+    await waitFor(() => {
+      expect(screen.getByText('supplier.update')).toBeInTheDocument();
+    });
+
+    // Apply action filter
+    const input = screen.getByPlaceholderText('Filter by action…');
+    fireEvent.change(input, { target: { value: 'supplier' } });
+
+    await waitFor(() => {
+      expect(screen.queryByText('kpi.import')).not.toBeInTheDocument();
+    });
+
+    // Click export
+    fireEvent.click(screen.getByText('Export CSV'));
+
+    // Wait for the export fetch (it is async)
+    await waitFor(() => {
+      const exportCalls = vi.mocked(global.fetch).mock.calls
+        .map(args => String(args[0]))
+        .filter(u => u.includes('inbound-log') && u.includes('export=1'));
+      expect(exportCalls.length).toBeGreaterThan(0);
+    });
+
+    // The export URL must carry the active action filter
+    const exportUrl = vi.mocked(global.fetch).mock.calls
+      .map(args => String(args[0]))
+      .find(u => u.includes('inbound-log') && u.includes('export=1'));
+
+    expect(exportUrl).toContain('action=supplier');
+  });
+
+  /* ── H — export with both filters active ──────────────────────────────── */
+
+  it('H — Export CSV sends both action=supplier and status=error when both filters are active', async () => {
+    mockInboundFetch();
+
+    render(<InboundLogTab ar={false} refresh={0} />);
+
+    await waitFor(() => {
+      expect(screen.getByText('supplier.update')).toBeInTheDocument();
+    });
+
+    // Apply action filter
+    const input = screen.getByPlaceholderText('Filter by action…');
+    fireEvent.change(input, { target: { value: 'supplier' } });
+    await waitFor(() => expect(screen.queryByText('kpi.import')).not.toBeInTheDocument());
+
+    // Apply status filter
+    const select = screen.getByRole('combobox');
+    fireEvent.change(select, { target: { value: 'error' } });
+    await waitFor(() => expect(screen.queryByText('supplier.update')).not.toBeInTheDocument());
+
+    // Click export
+    fireEvent.click(screen.getByText('Export CSV'));
+
+    await waitFor(() => {
+      const exportCalls = vi.mocked(global.fetch).mock.calls
+        .map(args => String(args[0]))
+        .filter(u => u.includes('inbound-log') && u.includes('export=1'));
+      expect(exportCalls.length).toBeGreaterThan(0);
+    });
+
+    const exportUrl = vi.mocked(global.fetch).mock.calls
+      .map(args => String(args[0]))
+      .find(u => u.includes('inbound-log') && u.includes('export=1'));
+
+    expect(exportUrl).toContain('action=supplier');
+    expect(exportUrl).toContain('status=error');
+    // Page-limiting params must be absent from the export URL
+    expect(exportUrl).not.toContain('limit=');
+    expect(exportUrl).not.toContain('offset=');
   });
 });

@@ -147,6 +147,47 @@ describe('SupplierScorecardTool — all-zero sub-scores', () => {
     ).toBeNull();
   });
 
+  /* ── Arabic render path (Task 645) ──────────────────────────────────── */
+
+  it('shows "الدرجة المرجّحة" (Arabic Weighted Score label) — not blank', async () => {
+    seedSupplierWithScore('0');
+
+    render(<SupplierScorecardTool isAr={true} />);
+
+    await act(async () => {
+      await new Promise(r => setTimeout(r, 30));
+    });
+
+    // Arabic label must be present
+    expect(screen.getByText('الدرجة المرجّحة')).toBeInTheDocument();
+
+    // Numeric score must still show "0/100"
+    const scoreEl = screen.getByText((content, element) => {
+      if (!element) return false;
+      return element.tagName === 'P' && element.textContent === '0/100';
+    });
+    expect(scoreEl).toBeInTheDocument();
+  });
+
+  it('shows "معاملاتي" as the Arabic Supplier Tier — not blank', async () => {
+    seedSupplierWithScore('0');
+
+    render(<SupplierScorecardTool isAr={true} />);
+
+    await act(async () => {
+      await new Promise(r => setTimeout(r, 30));
+    });
+
+    // Arabic tier label container must be present
+    const tierLabel = screen.getByText('تصنيف المورّد');
+    expect(tierLabel).toBeInTheDocument();
+
+    // Arabic Transactional label must appear inside the tier card
+    const tierCard = tierLabel.closest('div') as HTMLElement;
+    expect(tierCard).not.toBeNull();
+    expect(tierCard.textContent).toContain('معاملاتي');
+  });
+
   it('score card is absent (not "0") when sub-scores are genuinely missing', async () => {
     // Supplier with no sub-scores — calcWeightedScore returns null
     localStorage.setItem(

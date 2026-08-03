@@ -1,3 +1,4 @@
 - [connect-pg-simple esbuild fix](connect-pg-simple-esbuild.md) — createTableIfMissing: true crashes in esbuild bundles; own the table via Drizzle instead.
 - [Stale TS project-reference output](stale-project-refs.md) — phantom TS2305 from @workspace libs means stale dist; rebuild lib with `tsc -b --force`.
 - [Dev DB schema push](dev-db-schema-push.md) — drizzle-kit push fails without a TTY on new tables; apply dev DDL via executeSql instead, prod syncs at Publish.
+- [KPI Dashboard and import test conventions](kpi-dashboard-api-notes.md) — calcKpisFromInputs now returns failedKpis; Arabic label/confirm stub gotchas in CsvImportErrors tests.

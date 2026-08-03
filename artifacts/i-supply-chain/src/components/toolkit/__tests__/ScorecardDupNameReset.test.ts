@@ -687,6 +687,42 @@ describe('Scorecard — duplicate-name warning text in Arabic mode (isAr = true)
     expect(sc.getState().dupNameWarning).toBeNull();
   });
 
+  /* ── Task 484: onChange immediately clears the Arabic warning ─────────── */
+
+  it('clears the Arabic warning immediately when the user starts typing a correction (onChange, before blur)', () => {
+    // Step 1: set an Arabic duplicate-name warning via blur
+    const sc = createScorecardState(ALL_SUPPLIERS, SUPPLIER_A.id, /* isAr */ true);
+    sc.handleNameChange('Beta Ltd');
+    sc.handleNameBlur('Beta Ltd');
+    expect(sc.getState().dupNameWarning).not.toBeNull();
+    expect(sc.getState().dupNameWarning).toContain('يوجد مورّد بهذا الاسم بالفعل');
+
+    // Step 2: user starts typing a correction — onChange fires (no blur yet)
+    sc.handleNameChange('Beta Ltda');
+
+    // Step 3: warning must vanish immediately, before any subsequent blur
+    expect(sc.getState().dupNameWarning).toBeNull();
+  });
+
+  it('Arabic warning cleared by onChange does not reappear until the next blur with a duplicate', () => {
+    const sc = createScorecardState(ALL_SUPPLIERS, SUPPLIER_A.id, /* isAr */ true);
+    sc.handleNameChange('Beta Ltd');
+    sc.handleNameBlur('Beta Ltd');
+    expect(sc.getState().dupNameWarning).not.toBeNull();
+
+    // onChange: clear warning
+    sc.handleNameChange('X');
+    expect(sc.getState().dupNameWarning).toBeNull();
+
+    // Further typing: still null (no blur has fired)
+    sc.handleNameChange('XY');
+    expect(sc.getState().dupNameWarning).toBeNull();
+
+    // Blur with unique name: stays null
+    sc.handleNameBlur('XY');
+    expect(sc.getState().dupNameWarning).toBeNull();
+  });
+
   it('Arabic warning clears on supplier switch, same as English mode', () => {
     const sc = createScorecardState(ALL_SUPPLIERS, SUPPLIER_A.id, /* isAr */ true);
     sc.handleNameChange('Beta Ltd');

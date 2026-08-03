@@ -87,11 +87,13 @@ function mockFileReaderWith(text: string) {
 }
 
 /**
- * Find the hidden file input labelled "Import CSV file" and fire a
- * change event with a fake File so the component's onChange handler runs.
+ * Find the hidden file input labelled "Import CSV file" (English) or
+ * "استيراد ملف CSV" (Arabic) and fire a change event so the component's
+ * onChange handler runs.
  */
-function fireImportFile(csvText: string) {
-  const input = screen.getByLabelText('Import CSV file');
+function fireImportFile(csvText: string, ar = false) {
+  const label = ar ? 'استيراد ملف CSV' : 'Import CSV file';
+  const input = screen.getByLabelText(label);
   const file  = new File([csvText], 'test.csv', { type: 'text/csv' });
   Object.defineProperty(input, 'files', { value: [file], configurable: true });
   fireEvent.change(input);
@@ -408,6 +410,188 @@ describe('SupplierScorecardTool — non-numeric sub-score column', () => {
     await waitFor(() =>
       expect(
         screen.getByText((txt) => txt.startsWith('✓') && txt.includes('Imported')),
+      ).toBeInTheDocument(),
+    );
+  });
+});
+
+/* ── Task 408: Arabic case-variant notice renders in log panel (isAr=true) ── */
+
+describe('SupplierScorecardTool — Arabic case-variant notice in import log panel (Task 408)', () => {
+  it('renders the Arabic case-variant detection string when isAr=true and name casing differs', async () => {
+    // Pre-load an existing supplier named 'Alpha Corp'
+    localStorage.setItem(
+      'isc-tool-supplier-roster',
+      JSON.stringify({
+        suppliers: [{ id: 's-alpha', name: 'Alpha Corp', tier: 'Strategic', subScores: {} }],
+        activeId: 's-alpha',
+      }),
+    );
+
+    // Upload a CSV with 'alpha corp' (lower-case variant of 'Alpha Corp').
+    // The beforeEach confirm stub returns false → row is skipped rather than overwritten.
+    // Arabic skip message: "الصف 2: 'alpha corp' تطابق مع 'Alpha Corp' الموجود — تم التخطي."
+    const csv = 'Supplier Name,Current Tier\nalpha corp,Preferred';
+    mockFileReaderWith(csv);
+    render(<SupplierScorecardTool isAr={true} />);
+    fireImportFile(csv, true);
+
+    // The Arabic case-variant detection substring ('الموجود') must appear in
+    // the rendered import log panel. The amber styling in SupplierScorecard.tsx
+    // also depends on this substring — so its presence also verifies the
+    // correct styling branch fires.
+    await waitFor(() =>
+      expect(
+        screen.getByText((txt) => txt.includes('الموجود')),
+      ).toBeInTheDocument(),
+    );
+  });
+
+  it('does not show English case-variant text when isAr=true', async () => {
+    localStorage.setItem(
+      'isc-tool-supplier-roster',
+      JSON.stringify({
+        suppliers: [{ id: 's-beta', name: 'Beta Ltd', tier: 'Preferred', subScores: {} }],
+        activeId: 's-beta',
+      }),
+    );
+
+    const csv = 'Supplier Name,Current Tier\nbeta ltd,Strategic';
+    mockFileReaderWith(csv);
+    render(<SupplierScorecardTool isAr={true} />);
+    fireImportFile(csv, true);
+
+    // Wait for the log to appear
+    await waitFor(() =>
+      expect(screen.getByText((txt) => txt.includes('الموجود'))).toBeInTheDocument(),
+    );
+
+    // The English 'matched existing' phrase must be absent
+    expect(screen.queryByText((txt) => txt.includes('matched existing'))).toBeNull();
+  });
+});
+
+/* ── Task 425: header-only blank template doesn't crash ──────────────────── */
+
+describe('SupplierScorecardTool — completely blank template (headers only) import (Task 425)', () => {
+  it('does not crash when the CSV has headers but no data rows', async () => {
+    // A template downloaded with only the header row and no supplier data
+    const csv = 'Supplier Name,Current Tier';
+    mockFileReaderWith(csv);
+    render(<SupplierScorecardTool isAr={false} />);
+    fireImportFile(csv);
+    // Must show the result of importing 0 suppliers, never an unhandled error
+    await waitFor(() =>
+      expect(
+        screen.getByText((txt) => txt.includes('Imported 0') || txt.includes('Import failed:')),
+      ).toBeInTheDocument(),
+    );
+  });
+
+  it('shows 0 in the import summary, not a misleading non-zero count', async () => {
+    const csv = 'Supplier Name,Current Tier';
+    mockFileReaderWith(csv);
+    render(<SupplierScorecardTool isAr={false} />);
+    fireImportFile(csv);
+    await waitFor(() =>
+      expect(
+        screen.getByText((txt) => txt.includes('0 supplier')),
+      ).toBeInTheDocument(),
+    );
+  });
+});
+
+/* ── Task 435: import log panel is visible and shows skip messages ────────── */
+
+describe('SupplierScorecardTool — import log panel visible with skip messages (Task 435)', () => {
+  it('renders the import log panel when a partial CSV is uploaded', async () => {
+    // One empty-name row (skipped) + one valid row (imported)
+    const csv = scorecardCsv([',Strategic', 'Alpha Corp,Strategic']);
+    mockFileReaderWith(csv);
+    render(<SupplierScorecardTool isAr={false} />);
+    fireImportFile(csv);
+
+    // The import log panel must appear — success banner starts with ✓
+    await waitFor(() =>
+      expect(
+        screen.getByText((txt) => txt.startsWith('✓') && txt.includes('Imported')),
+      ).toBeInTheDocument(),
+    );
+
+    // The skip message for row 2 must also be visible inside the log panel
+    expect(
+      screen.getByText((txt) => txt.includes('Row 2') && txt.toLowerCase().includes('empty')),
+    ).toBeInTheDocument();
+  });
+
+  it('import log shows both the skip count and the imported count on a partial upload', async () => {
+    // Two empty-name rows (skipped) + one valid row (imported)
+    const csv = scorecardCsv([',Strategic', ',Preferred', 'Delta Corp,Transactional']);
+    mockFileReaderWith(csv);
+    render(<SupplierScorecardTool isAr={false} />);
+    fireImportFile(csv);
+
+    await waitFor(() =>
+      expect(
+        screen.getByText((txt) => txt.startsWith('✓') && txt.includes('Imported')),
+      ).toBeInTheDocument(),
+    );
+
+    // Both row-2 and row-3 skip messages must appear
+    expect(
+      screen.getByText((txt) => txt.includes('Row 2') && txt.toLowerCase().includes('empty')),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText((txt) => txt.includes('Row 3') && txt.toLowerCase().includes('empty')),
+    ).toBeInTheDocument();
+  });
+});
+
+/* ── Task 335: partial import exercises the real production merge handler ─── */
+
+/**
+ * Drift-prevention test (Task 335).
+ *
+ * ScorecardCsvRoundtrip.test.ts contains a local reimplementation of the merge
+ * loop at lines ~299-301 that can silently drift from the production code in
+ * SupplierScorecard.tsx if someone changes one without the other. This test
+ * exercises the actual component handler (handleScorecardImport) through the
+ * rendered UI, so any change to the production merge logic that breaks partial
+ * imports will fail here immediately.
+ */
+describe('SupplierScorecardTool — partial CSV import uses real production merge handler (Task 335 drift guard)', () => {
+  beforeEach(() => {
+    // Override the shared "cancel all overwrites" stub so that when the
+    // component asks "Overwrite existing supplier?" the answer is yes.
+    // This lets us exercise the real production merge path.
+    vi.stubGlobal('confirm', vi.fn().mockReturnValue(true));
+  });
+
+  it('a partial import for an existing supplier reports "Imported 1" — production merge path exercised', async () => {
+    // Pre-load a supplier with a delivery score so we have a baseline.
+    localStorage.setItem(
+      'isc-tool-supplier-roster',
+      JSON.stringify({
+        suppliers: [
+          { id: 's-dt335', name: 'Delta Corp', tier: 'Strategic', subScores: { delivery: { otif: '90' } } },
+        ],
+        activeId: 's-dt335',
+      }),
+    );
+
+    // Partial CSV: only the OTIF column is updated (same supplier name → exact match → overwrite/merge).
+    const col = deliveryOtifCol();
+    const csv = [`Supplier Name,Current Tier,${col}`, `Delta Corp,Preferred,99`].join('\n');
+    mockFileReaderWith(csv);
+    render(<SupplierScorecardTool isAr={false} />);
+    fireImportFile(csv);
+
+    // The production merge handler must report 1 imported supplier, not 0.
+    // If the merge code were accidentally replaced with a skip, this count would
+    // drop to 0 and the test would immediately catch the drift.
+    await waitFor(() =>
+      expect(
+        screen.getByText((txt) => txt.startsWith('✓') && txt.includes('Imported 1')),
       ).toBeInTheDocument(),
     );
   });

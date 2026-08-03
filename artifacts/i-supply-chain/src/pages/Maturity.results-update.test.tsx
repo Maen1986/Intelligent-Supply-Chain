@@ -248,6 +248,72 @@ describe('Maturity results page — score updates after mid-session answer edit 
     expect(screen.getByTestId('maturity-overall-score').textContent).toBe('3.0');
   });
 
+  /* ── Task 457 — per-segment Edit link and Back to Results round-trip ───── */
+
+  it('Task 457 — clicking the Edit link for segment 3 enters questions mode for that segment, and Back to Results restores the results page with all scores intact', () => {
+    // Seed the results phase with a known score: all segments at level 4.
+    // overallScore = mean(4×8) = 4.0 → displayed "4.0"
+    _setMaturityTestSeed({ phase: 'results', answers: buildAnswers(4) });
+    renderMaturity();
+
+    // Verify we start in results phase with the expected score
+    expect(screen.getByTestId('maturity-results')).toBeInTheDocument();
+    const scoreBefore = screen.getByTestId('maturity-overall-score').textContent;
+    expect(scoreBefore).toBe('4.0');
+
+    // Click the Edit link for segment 3 (score table row, not the recommendation card)
+    fireEvent.click(screen.getByTestId('button-edit-segment-3'));
+
+    // We should now be in questions mode (results panel gone)
+    expect(screen.queryByTestId('maturity-results')).toBeNull();
+
+    // The "Back to Results" button must be visible — confirming editingFromResults=true
+    expect(screen.getByTestId('button-back-to-results')).toBeInTheDocument();
+
+    // Segment 3 questions must be rendered. The seeded answers are all level 4,
+    // so the answer button for q0 at level 4 should exist in the DOM.
+    expect(screen.getByTestId('answer-3-0-4')).toBeInTheDocument();
+
+    // Click Back to Results
+    fireEvent.click(screen.getByTestId('button-back-to-results'));
+
+    // Results page must return
+    expect(screen.getByTestId('maturity-results')).toBeInTheDocument();
+
+    // Overall score must be unchanged — no answers were modified during the edit
+    const scoreAfter = screen.getByTestId('maturity-overall-score').textContent;
+    expect(scoreAfter).toBe('4.0');
+    expect(scoreAfter).toBe(scoreBefore);
+  });
+
+  it('Task 457 — Edit link index wiring: clicking Edit for segment 1 shows segment 1 questions, not segment 0', () => {
+    // Seed with segment 1 at level 2, all others at level 4, so we can
+    // distinguish segments by their answer level in the questions panel.
+    _setMaturityTestSeed({
+      phase: 'results',
+      answers: buildAnswers(4, { seg: 1, level: 2 }),
+    });
+    renderMaturity();
+
+    expect(screen.getByTestId('maturity-results')).toBeInTheDocument();
+
+    // Click Edit for segment 1
+    fireEvent.click(screen.getByTestId('button-edit-segment-1'));
+
+    // Segment 1 has level 2 answers → the level-2 answer button for question 0
+    // of segment 1 must exist. If the index were wired to segment 0 (level 4),
+    // this assertion would fail because answer-1-0-2 wouldn't be in the DOM.
+    expect(screen.getByTestId('answer-1-0-2')).toBeInTheDocument();
+
+    // And segment 0's question is NOT the one shown (its level-4 button would
+    // still exist but we confirm we're on segment 1 by the Back to Results btn)
+    expect(screen.getByTestId('button-back-to-results')).toBeInTheDocument();
+
+    // Clicking Back to Results restores the results view
+    fireEvent.click(screen.getByTestId('button-back-to-results'));
+    expect(screen.getByTestId('maturity-results')).toBeInTheDocument();
+  });
+
   it('reflects an answer edit: score differs from the unedited baseline', () => {
     renderMaturity();
 

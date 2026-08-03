@@ -262,3 +262,31 @@ describe('TemplateCard — FlowPreview Arabic render (all n8n templates)', () =>
     });
   });
 });
+
+/* ════════════════════════════════════════════════════════════════════════════
+   SECTION 7 — FlowPreview never silently shows an empty node list (Task 620)
+   ════════════════════════════════════════════════════════════════════════════ */
+
+describe('TemplateCard — FlowPreview never renders zero node chips (Task 620)', () => {
+  /**
+   * For every n8n template in the manifest, the rendered FlowPreview must
+   * contain at least one node chip. An empty `nodes: []` in the manifest
+   * would silently produce a blank preview — this test catches that.
+   *
+   * This is distinct from the "node count matches manifest" assertion in
+   * Section 6: if nodes were [], both `nameEls.length` and `raw.nodes.length`
+   * would be 0 and the equality check would pass silently. The `> 0` guard
+   * here prevents that false positive.
+   */
+  const n8nTemplates = allTemplates.filter(t => t.platform === 'n8n');
+
+  n8nTemplates.forEach(raw => {
+    it(`"${raw.id}" renders at least one node chip (not silently empty)`, () => {
+      const template = toFixture(raw);
+      const { container } = render(<TemplateCard template={template} ar={false} />);
+      clickSetupEN(container);
+      const nameEls = getNodeNameElements(container);
+      expect(nameEls.length).toBeGreaterThan(0);
+    });
+  });
+});

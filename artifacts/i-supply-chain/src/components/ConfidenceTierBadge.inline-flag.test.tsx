@@ -24,6 +24,52 @@ import type { EvidenceRecord } from './EvidenceUploadZone';
 
 /* ── Evidence fixtures ───────────────────────────────────────────────────── */
 
+/**
+ * ai_evaluated tier with a flagged sub-segment:
+ *   - record A: ai_evaluated + plausible_support:true  → establishes the tier
+ *   - record B: ai_evaluated + plausible_support:false → triggers hasFlag
+ */
+const FLAGGED_AI_EVALUATED_EV: EvidenceRecord[] = [
+  {
+    id: 3,
+    segId: 'strategy',
+    subSegId: 'strategy-align',
+    subSegLabel: 'Strategy doc',
+    originalFilename: 'ai-good.pdf',
+    mimeType: 'application/pdf',
+    confidenceTier: 'ai_evaluated',
+    aiEvaluation: { plausible_support: true, confidence: 'high', flag_reason: null, summary: 'Looks good' },
+  },
+  {
+    id: 4,
+    segId: 'strategy',
+    subSegId: 'strategy-align2',
+    subSegLabel: 'Another doc',
+    originalFilename: 'ai-flagged.pdf',
+    mimeType: 'application/pdf',
+    confidenceTier: 'ai_evaluated',
+    aiEvaluation: { plausible_support: false, confidence: 'low', flag_reason: 'scope mismatch', summary: 'Flagged' },
+  },
+];
+
+/**
+ * self_reported tier with a flagged evaluation.
+ * Tier is self_reported because there is no ai_evaluated record with
+ * plausible_support:true; hasFlag is true because plausible_support=false.
+ */
+const FLAGGED_SELF_REPORTED_EV: EvidenceRecord[] = [
+  {
+    id: 5,
+    segId: 'strategy',
+    subSegId: 'strategy-align',
+    subSegLabel: 'Self-reported doc',
+    originalFilename: 'self-flagged.pdf',
+    mimeType: 'application/pdf',
+    confidenceTier: 'self_reported',
+    aiEvaluation: { plausible_support: false, confidence: 'low', flag_reason: 'unrelated document', summary: 'Flagged' },
+  },
+];
+
 /** consultant_validated tier with a flagged evaluation (plausible_support=false) */
 const FLAGGED_CONSULTANT_EV: EvidenceRecord[] = [
   {
@@ -125,5 +171,69 @@ describe('ConfidenceTierBadge — ⚠ overlay in non-pill (inline) mode', () => 
       />,
     );
     expect(screen.queryByText('⚠')).toBeNull();
+  });
+});
+
+/* ════════════════════════════════════════════════════════════════════════════
+   Task 831 — ⚠ overlay in inline mode: ai_evaluated and self_reported tiers
+   ════════════════════════════════════════════════════════════════════════════ */
+
+describe('ConfidenceTierBadge — ⚠ overlay in non-pill mode (ai_evaluated and self_reported tiers)', () => {
+  afterEach(() => cleanup());
+
+  /* ── ai_evaluated tier ───────────────────────────────────────────────── */
+
+  it('renders ⚠ with Arabic warning title for ai_evaluated flagged evidence (asPill=false, lang=ar)', () => {
+    render(
+      <ConfidenceTierBadge
+        lang="ar"
+        evidence={FLAGGED_AI_EVALUATED_EV}
+        asPill={false}
+      />,
+    );
+    const warningSpan = screen.getByText('⚠');
+    expect(warningSpan).toBeInTheDocument();
+    expect(warningSpan.getAttribute('title')).toBe('دليل مُحدَّد يتطلب مراجعة');
+  });
+
+  it('renders ⚠ with English warning title for ai_evaluated flagged evidence (asPill=false, lang=en)', () => {
+    render(
+      <ConfidenceTierBadge
+        lang="en"
+        evidence={FLAGGED_AI_EVALUATED_EV}
+        asPill={false}
+      />,
+    );
+    const warningSpan = screen.getByText('⚠');
+    expect(warningSpan).toBeInTheDocument();
+    expect(warningSpan.getAttribute('title')).toBe('Flagged evidence — review recommended');
+  });
+
+  /* ── self_reported tier ──────────────────────────────────────────────── */
+
+  it('renders ⚠ with Arabic warning title for self_reported flagged evidence (asPill=false, lang=ar)', () => {
+    render(
+      <ConfidenceTierBadge
+        lang="ar"
+        evidence={FLAGGED_SELF_REPORTED_EV}
+        asPill={false}
+      />,
+    );
+    const warningSpan = screen.getByText('⚠');
+    expect(warningSpan).toBeInTheDocument();
+    expect(warningSpan.getAttribute('title')).toBe('دليل مُحدَّد يتطلب مراجعة');
+  });
+
+  it('renders ⚠ with English warning title for self_reported flagged evidence (asPill=false, lang=en)', () => {
+    render(
+      <ConfidenceTierBadge
+        lang="en"
+        evidence={FLAGGED_SELF_REPORTED_EV}
+        asPill={false}
+      />,
+    );
+    const warningSpan = screen.getByText('⚠');
+    expect(warningSpan).toBeInTheDocument();
+    expect(warningSpan.getAttribute('title')).toBe('Flagged evidence — review recommended');
   });
 });

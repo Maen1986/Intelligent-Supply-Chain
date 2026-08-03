@@ -1,5 +1,19 @@
 import '@testing-library/jest-dom/vitest';
-import { vi } from 'vitest';
+import { vi, afterEach } from 'vitest';
+import { cleanup } from '@testing-library/react';
+
+/**
+ * Task 627 — Prevent stale DOM from leaking between test groups.
+ *
+ * vitest globals are off in this project, so @testing-library/react's
+ * automatic cleanup-on-afterEach does not fire unless explicitly wired.
+ * Running cleanup() here guarantees every rendered component is unmounted
+ * after each test regardless of whether the individual test file remembers
+ * to import and call it.
+ */
+afterEach(() => {
+  cleanup();
+});
 
 /* ── jsdom doesn't ship ResizeObserver; stub it globally for recharts ───── */
 global.ResizeObserver = class ResizeObserver {
