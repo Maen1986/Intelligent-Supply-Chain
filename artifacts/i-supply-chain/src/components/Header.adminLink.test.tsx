@@ -5,6 +5,9 @@
  *   1. Is present when logged in as an admin user
  *   2. Disappears immediately after logout — no page reload required
  *   3. Is absent for a logged-in non-admin (regular) user
+ *
+ * Also confirms the same three guarantees for the mobile menu's
+ * "Admin Dashboard" link (a separate rendering path in Header.tsx).
  */
 
 import React, { useState } from 'react';
@@ -14,6 +17,9 @@ import { render, screen, fireEvent, cleanup, act } from '@testing-library/react'
 /* ── Module stubs ──────────────────────────────────────────────────────────── */
 
 vi.mock('@/lib/apiBase', () => ({ API_BASE: 'http://test-server/api' }));
+
+// NotificationsBell renders nothing meaningful in tests
+vi.mock('./NotificationsBell', () => ({ NotificationsBell: () => null }));
 
 // Logo renders nothing meaningful in tests
 vi.mock('./Logo', () => ({ Logo: () => <div data-testid="logo" /> }));
@@ -152,6 +158,110 @@ describe('Header — Admin link, non-admin user', () => {
     render(<Header />);
 
     const adminLinks = screen.queryAllByRole('link', { name: /admin/i });
+    expect(adminLinks.filter(el => (el as HTMLAnchorElement).href.includes('/admin'))).toHaveLength(0);
+  });
+});
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   Suite 4 — Mobile menu: Admin Dashboard link present for admin user
+══════════════════════════════════════════════════════════════════════════════ */
+describe('Header — Mobile menu: Admin Dashboard link, admin user', () => {
+  it('renders the Admin Dashboard link inside the mobile menu when logged in as admin', async () => {
+    mockUseAuth.mockReturnValue({ user: ADMIN_USER, isAuthenticated: true, loading: false, logout: mockLogout });
+    const Header = await getHeader();
+    render(<Header />);
+
+    // Open the mobile menu
+    const toggleBtn = screen.getByRole('button', { name: /toggle menu/i });
+    await act(async () => { fireEvent.click(toggleBtn); });
+
+    // The mobile menu renders a link with text "Admin Dashboard" pointing to /admin
+    const adminDashboardLinks = screen.getAllByRole('link', { name: /admin dashboard/i });
+    expect(adminDashboardLinks.length).toBeGreaterThanOrEqual(1);
+    expect(adminDashboardLinks.some(el => (el as HTMLAnchorElement).href.includes('/admin'))).toBe(true);
+  });
+});
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   Suite 5 — Mobile menu: Admin Dashboard link vanishes immediately after logout
+══════════════════════════════════════════════════════════════════════════════ */
+describe('Header — Mobile menu: Admin Dashboard link disappears on logout without a page reload', () => {
+  it('hides the Admin Dashboard link as soon as the auth state transitions to logged-out', async () => {
+    /**
+     * Same controller pattern as the desktop Suite 2, but we exercise the
+     * mobile menu path.  Clicking the mobile "Sign Out" button calls both
+     * logout() (which sets user → null) and setMobileMenuOpen(false).
+     * After logout we reopen the mobile menu and confirm the link is gone.
+     */
+    const Header = await getHeader();
+
+    function AuthController() {
+      const [authed, setAuthed] = useState(true);
+
+      mockUseAuth.mockReturnValue({
+        user:            authed ? ADMIN_USER : null,
+        isAuthenticated: authed,
+        loading:         false,
+        logout: async () => { setAuthed(false); },
+      });
+
+      return <Header />;
+    }
+
+    render(<AuthController />);
+
+    // Open the mobile menu
+    const toggleBtn = screen.getByRole('button', { name: /toggle menu/i });
+    await act(async () => { fireEvent.click(toggleBtn); });
+
+    // Before logout: Admin Dashboard link must be present in the mobile menu
+    const before = screen.getAllByRole('link', { name: /admin dashboard/i });
+    expect(before.some(el => (el as HTMLAnchorElement).href.includes('/admin'))).toBe(true);
+
+    // Click the mobile "Sign Out" button (closes menu and logs out).
+    // The desktop button reads "Sign out" (lowercase o); the mobile button
+    // reads "Sign Out" (capital O).  Use exact-string matching so we target
+    // only the mobile button even though both are in the jsdom tree.
+    const signOutBtn = screen.getByRole('button', { name: 'Sign Out' });
+    await act(async () => { fireEvent.click(signOutBtn); });
+
+    // Reopen the mobile menu (user is now null — shows Sign In instead)
+    const toggleBtnAfter = screen.getByRole('button', { name: /toggle menu/i });
+    await act(async () => { fireEvent.click(toggleBtnAfter); });
+
+    // After logout (no reload): Admin Dashboard link must be gone
+    const adminLinks = screen.queryAllByRole('link', { name: /admin dashboard/i });
+    expect(adminLinks.filter(el => (el as HTMLAnchorElement).href.includes('/admin'))).toHaveLength(0);
+  });
+});
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   Suite 6 — Mobile menu: link absent for non-admin and logged-out users
+══════════════════════════════════════════════════════════════════════════════ */
+describe('Header — Mobile menu: Admin Dashboard link, non-admin user', () => {
+  it('does not render the Admin Dashboard link for a logged-in user with role "user"', async () => {
+    mockUseAuth.mockReturnValue({ user: REGULAR_USER, isAuthenticated: true, loading: false, logout: mockLogout });
+    const Header = await getHeader();
+    render(<Header />);
+
+    // Open the mobile menu
+    const toggleBtn = screen.getByRole('button', { name: /toggle menu/i });
+    await act(async () => { fireEvent.click(toggleBtn); });
+
+    const adminLinks = screen.queryAllByRole('link', { name: /admin dashboard/i });
+    expect(adminLinks.filter(el => (el as HTMLAnchorElement).href.includes('/admin'))).toHaveLength(0);
+  });
+
+  it('does not render the Admin Dashboard link in the mobile menu when no user is logged in', async () => {
+    mockUseAuth.mockReturnValue({ user: null, isAuthenticated: false, loading: false, logout: mockLogout });
+    const Header = await getHeader();
+    render(<Header />);
+
+    // Open the mobile menu
+    const toggleBtn = screen.getByRole('button', { name: /toggle menu/i });
+    await act(async () => { fireEvent.click(toggleBtn); });
+
+    const adminLinks = screen.queryAllByRole('link', { name: /admin dashboard/i });
     expect(adminLinks.filter(el => (el as HTMLAnchorElement).href.includes('/admin'))).toHaveLength(0);
   });
 });
