@@ -675,6 +675,7 @@ export function KraljicMatrix() {
                 result={aiPlan.result}
                 error={aiPlan.error}
                 rateLimited={aiPlan.rateLimited}
+                retryAfterSeconds={aiPlan.retryAfterSeconds}
                 onGenerate={aiPlan.generate}
                 onReset={aiPlan.reset}
                 savedPlan={aiPlan.savedPlan}

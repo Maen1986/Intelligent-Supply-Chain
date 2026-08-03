@@ -282,7 +282,8 @@ export function MaturityAssessmentTool({ slug, isAr }: MaturityToolsProps) {
     ].join('\n');
   }, [slug, scores, dims, avg, band]);
 
-  const { loading: planLoading, result: planResult, error: planError, rateLimited: planRateLimited, generate: generatePlan, reset: resetPlan,
+  const { loading: planLoading, result: planResult, error: planError, rateLimited: planRateLimited,
+          retryAfterSeconds: planRetryAfterSeconds, generate: generatePlan, reset: resetPlan,
           savedPlan: planSavedPlan, viewSaved: viewSavedPlan, deleteSaved: deleteSavedPlan,
           saveError: planSaveError, dismissSaveError: dismissPlanSaveError } =
     useAIPlan(buildMaturityPrompt, isAr, 'maturity', filled.length > 0);
@@ -496,6 +497,7 @@ export function MaturityAssessmentTool({ slug, isAr }: MaturityToolsProps) {
           onViewSaved={viewSavedPlan}
           onDeleteSaved={deleteSavedPlan}
           rateLimited={planRateLimited}
+          retryAfterSeconds={planRetryAfterSeconds}
           saveError={planSaveError}
           onDismissSaveError={dismissPlanSaveError}
           toolKey="maturity"

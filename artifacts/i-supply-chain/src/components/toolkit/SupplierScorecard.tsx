@@ -688,7 +688,8 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
     ].join('\n');
   }, [active, config]);
 
-  const { loading: planLoading, result: planResult, error: planError, rateLimited: planRateLimited, generate: generatePlan, reset: resetPlan,
+  const { loading: planLoading, result: planResult, error: planError, rateLimited: planRateLimited,
+          retryAfterSeconds: planRetryAfterSeconds, generate: generatePlan, reset: resetPlan,
           savedPlan: planSavedPlan, viewSaved: viewSavedPlan, deleteSaved: deleteSavedPlan,
           saveError: planSaveError, dismissSaveError: dismissPlanSaveError } =
     useAIPlan(buildScorecardPrompt, isAr, active?.id ? `scorecard-${active.id}` : undefined, weightedScore !== null);
@@ -1621,6 +1622,7 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
                     onViewSaved={viewSavedPlan}
                     onDeleteSaved={deleteSavedPlan}
                     rateLimited={planRateLimited}
+                    retryAfterSeconds={planRetryAfterSeconds}
                     saveError={planSaveError}
                     onDismissSaveError={dismissPlanSaveError}
                     toolKey={active?.id ? `scorecard-${active.id}` : undefined}

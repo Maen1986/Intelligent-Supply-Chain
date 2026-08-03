@@ -31,6 +31,11 @@ export interface AIPlanState {
   error:        string | null;
   /** True when the last request was rejected with a 429 rate-limit response. */
   rateLimited:  boolean;
+  /**
+   * Remaining seconds until the rate-limit window expires.
+   * Counts down live while rateLimited===true; null when not rate-limited.
+   */
+  retryAfterSeconds: number | null;
   /** True when generation succeeded but the server-side save failed — plan is shown but not persisted. */
   saveError:    boolean;
   generate:     () => Promise<void>;
@@ -50,12 +55,13 @@ export function useAIPlan(
 ): AIPlanState {
   const { isAuthenticated } = useAuth();
 
-  const [loading,     setLoading]     = useState(false);
-  const [result,      setResult]      = useState<string | null>(null);
-  const [error,       setError]       = useState<string | null>(null);
-  const [rateLimited, setRateLimited] = useState(false);
-  const [saveError,   setSaveError]   = useState(false);
-  const [savedPlan,   setSavedPlan]   = useState<SavedPlan | null>(null);
+  const [loading,            setLoading]            = useState(false);
+  const [result,             setResult]             = useState<string | null>(null);
+  const [error,              setError]              = useState<string | null>(null);
+  const [rateLimited,        setRateLimited]        = useState(false);
+  const [retryAfterSeconds,  setRetryAfterSeconds]  = useState<number | null>(null);
+  const [saveError,          setSaveError]          = useState(false);
+  const [savedPlan,          setSavedPlan]          = useState<SavedPlan | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const prevAuthRef = useRef<boolean>(isAuthenticated);
 
@@ -187,7 +193,9 @@ export function useAIPlan(
 
       if (res.status === 429) {
         setRateLimited(true);
-        const mins = data.retryAfterSeconds ? Math.ceil(data.retryAfterSeconds / 60) : 60;
+        const secs = data.retryAfterSeconds ?? 3600;
+        setRetryAfterSeconds(secs);
+        const mins = Math.ceil(secs / 60);
         throw new Error(
           data.error ??
           (isAr
@@ -236,6 +244,23 @@ export function useAIPlan(
     }
   }, [buildPrompt, isAr, toolKey, isAuthenticated]);
 
+  /* ── Countdown while rate-limited ── */
+  useEffect(() => {
+    if (!rateLimited || retryAfterSeconds === null || retryAfterSeconds <= 0) return;
+    const id = setInterval(() => {
+      setRetryAfterSeconds(prev => {
+        if (prev === null || prev <= 1) {
+          // Window expired — auto-clear the rate-limit state
+          setRateLimited(false);
+          setError(null);
+          return null;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(id);
+  }, [rateLimited, retryAfterSeconds]);
+
   /* ── Reset (clear current session result/error; leave savedPlan intact) ── */
   const reset = useCallback(() => {
     abortRef.current?.abort();
@@ -243,6 +268,7 @@ export function useAIPlan(
     setError(null);
     setLoading(false);
     setRateLimited(false);
+    setRetryAfterSeconds(null);
     setSaveError(false);
   }, []);
 
@@ -276,5 +302,5 @@ export function useAIPlan(
     }
   }, [toolKey, savedPlan, isAr]);
 
-  return { loading, result, error, rateLimited, saveError, generate, reset, savedPlan, viewSaved, deleteSaved, dismissSaveError };
+  return { loading, result, error, rateLimited, retryAfterSeconds, saveError, generate, reset, savedPlan, viewSaved, deleteSaved, dismissSaveError };
 }

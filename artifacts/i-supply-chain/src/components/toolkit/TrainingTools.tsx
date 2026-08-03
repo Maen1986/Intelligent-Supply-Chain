@@ -358,7 +358,8 @@ export function TrainingNeedsAssessment({ isAr }: TrainingToolsProps) {
     ].join('\n');
   }, [members, scores, mgrScores, domainStats, hasAnyScores]);
 
-  const { loading: planLoading, result: planResult, error: planError, rateLimited: planRateLimited, generate: generatePlan, reset: resetPlan,
+  const { loading: planLoading, result: planResult, error: planError, rateLimited: planRateLimited,
+          retryAfterSeconds: planRetryAfterSeconds, generate: generatePlan, reset: resetPlan,
           savedPlan: planSavedPlan, viewSaved: viewSavedPlan, deleteSaved: deleteSavedPlan,
           saveError: planSaveError, dismissSaveError: dismissPlanSaveError } =
     useAIPlan(buildTrainingPrompt, isAr, 'training', hasAnyScores);
@@ -671,6 +672,7 @@ export function TrainingNeedsAssessment({ isAr }: TrainingToolsProps) {
             onViewSaved={viewSavedPlan}
             onDeleteSaved={deleteSavedPlan}
             rateLimited={planRateLimited}
+            retryAfterSeconds={planRetryAfterSeconds}
             saveError={planSaveError}
             onDismissSaveError={dismissPlanSaveError}
             toolKey="training"

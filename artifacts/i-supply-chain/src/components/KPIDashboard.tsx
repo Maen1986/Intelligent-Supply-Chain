@@ -1170,7 +1170,8 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
   // Compute hasAnyValue here (before hook) so canGenerate can be passed to useAIPlan
   const hasAnyValue = !!kpis && kpis.some(k => !isNaN(parseFloat(values[k.id] ?? '')));
 
-  const { loading: planLoading, result: planResult, error: planError, rateLimited: planRateLimited, generate: generatePlan, reset: resetPlan,
+  const { loading: planLoading, result: planResult, error: planError, rateLimited: planRateLimited,
+          retryAfterSeconds: planRetryAfterSeconds, generate: generatePlan, reset: resetPlan,
           savedPlan: planSavedPlan, viewSaved: viewSavedPlan, deleteSaved: deleteSavedPlan,
           saveError: planSaveError, dismissSaveError: dismissPlanSaveError } =
     useAIPlan(buildKpiPrompt, isAr, 'kpi', hasAnyValue);
@@ -1979,6 +1980,7 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
           onViewSaved={viewSavedPlan}
           onDeleteSaved={deleteSavedPlan}
           rateLimited={planRateLimited}
+          retryAfterSeconds={planRetryAfterSeconds}
           saveError={planSaveError}
           onDismissSaveError={dismissPlanSaveError}
           toolKey="kpi"

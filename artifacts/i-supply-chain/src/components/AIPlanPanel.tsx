@@ -11,7 +11,7 @@
  */
 import React, { useState } from 'react';
 import { useLocation } from 'wouter';
-import { Sparkles, Loader2, Copy, Check, ChevronDown, ChevronUp, RefreshCw, AlertCircle, LogIn, History, Trash2, CloudOff } from 'lucide-react';
+import { Sparkles, Loader2, Copy, Check, ChevronDown, ChevronUp, RefreshCw, AlertCircle, LogIn, History, Trash2, CloudOff, Clock } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 import { type SavedPlan } from '@/hooks/useAIPlan';
 
@@ -30,8 +30,13 @@ interface AIPlanPanelProps {
   savedPlan?:    SavedPlan | null;
   onViewSaved?:  () => void;
   onDeleteSaved?: () => void;
-  /** True when the last request was rejected with a 429 — hides Retry */
+  /** True when the last request was rejected with a 429 — hides Retry and shows countdown */
   rateLimited?: boolean;
+  /**
+   * Remaining seconds until the rate-limit window expires (live countdown from the hook).
+   * null when not rate-limited.
+   */
+  retryAfterSeconds?: number | null;
   /** Tool key used to set a pending-generate flag in sessionStorage before redirecting to login */
   toolKey?: string;
   /** True when the plan was generated but the server-side save failed */
@@ -41,7 +46,7 @@ interface AIPlanPanelProps {
 
 export function AIPlanPanel({
   loading, result, error, onGenerate, onReset, buttonLabel, isAr, disabled,
-  savedPlan, onViewSaved, onDeleteSaved, rateLimited, toolKey, saveError, onDismissSaveError,
+  savedPlan, onViewSaved, onDeleteSaved, rateLimited, retryAfterSeconds, toolKey, saveError, onDismissSaveError,
 }: AIPlanPanelProps) {
   const { isAuthenticated, loading: authLoading } = useAuth();
   const [location, navigate] = useLocation();
@@ -101,7 +106,7 @@ export function AIPlanPanel({
         isAuthenticated ? (
           <button
             onClick={onGenerate}
-            disabled={disabled}
+            disabled={disabled || !!rateLimited}
             className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg font-bold bg-gradient-to-r from-[#082C6B] to-[#1a4a9e] text-white hover:opacity-90 active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-sm"
           >
             <Sparkles className="w-3.5 h-3.5" />
@@ -135,12 +140,39 @@ export function AIPlanPanel({
         </div>
       )}
 
-      {/* ── Error state ── */}
-      {error && !loading && (
+      {/* ── Rate-limit banner (amber, distinct from generic errors) ── */}
+      {rateLimited && error && !loading && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="flex items-start gap-2 bg-amber-50 border border-amber-300 rounded-lg px-3 py-2.5 text-xs text-amber-800 max-w-xl"
+        >
+          <Clock className="w-3.5 h-3.5 shrink-0 mt-0.5 text-amber-600" />
+          <span className="flex-1">
+            {retryAfterSeconds != null && retryAfterSeconds > 0
+              ? (isAr
+                  ? `تجاوزت الحد المسموح — يُرجى المحاولة بعد ${Math.ceil(retryAfterSeconds / 60)} دقيقة (${retryAfterSeconds} ث)`
+                  : `AI plan limit reached — try again in ${Math.ceil(retryAfterSeconds / 60)} min (${retryAfterSeconds}s)`)
+              : (isAr
+                  ? 'تجاوزت الحد المسموح — يُرجى المحاولة لاحقاً'
+                  : 'AI plan limit reached — please try again later')}
+          </span>
+          <button
+            onClick={onReset}
+            className="font-bold opacity-50 hover:opacity-100 shrink-0"
+            title={isAr ? 'إغلاق' : 'Dismiss'}
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
+      {/* ── Generic error state (not rate-limit) ── */}
+      {error && !rateLimited && !loading && (
         <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-xs text-red-700 max-w-xl">
           <AlertCircle className="w-3.5 h-3.5 shrink-0" />
           <span className="flex-1">{error}</span>
-          {isAuthenticated && !rateLimited && (
+          {isAuthenticated && (
             <button
               onClick={onGenerate}
               className="font-bold underline underline-offset-2 shrink-0 hover:opacity-80"
