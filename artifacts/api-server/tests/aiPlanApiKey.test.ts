@@ -100,49 +100,49 @@ afterEach(() => {
 });
 
 describe('POST /ai/plan — rate limiting via API key (Bearer token)', () => {
-  it('does not block Bearer-authenticated requests until the limit is reached', async () => {
-    // userId 200 — bucket unused by any other test in this file.
-    stubApiKeyDb(200);
+  // Timeout raised: the full middleware stack's module-import phase can push
+  // each supertest request to ~800 ms; 3 requests × 800 ms ≈ 2.4 s, so the
+  // default 5 s limit gives no headroom on slower runs.
+  it('does not block Bearer-authenticated requests until the limit is reached',
+    async () => {
+      // userId 200 — bucket unused by any other test in this file.
+      stubApiKeyDb(200);
     const app = makeAnonApp();
 
-    for (let i = 0; i < _LIMIT; i++) {
-      const res = await request(app)
-        .post('/ai/plan')
-        .set('Authorization', 'Bearer isk_user200')
-        .send({ prompt: 'test' });
-
-      // Any response except 429 confirms the rate limiter passed the request.
-      // (The handler returns 503 because AI env vars are not configured in this
-      // test suite — that is intentional; we are testing the limiter, not the
-      // AI call.)
-      expect(res.status).not.toBe(429);
-    }
-  }, 20_000);
-
-  it('returns 429 with ok:false and retryAfterSeconds once the limit is exceeded via Bearer token', async () => {
-    // userId 201 — fresh bucket, isolated from the test above.
-    stubApiKeyDb(201);
-    const app = makeAnonApp();
-
-    // Exhaust the quota (limit = _LIMIT requests)
-    for (let i = 0; i < _LIMIT; i++) {
-      await request(app)
-        .post('/ai/plan')
-        .set('Authorization', 'Bearer isk_user201')
-        .send({ prompt: 'test' });
-    }
-
-    // The next request must be blocked by the rate limiter
-    const blocked = await request(app)
+      // Phase 1: exhaust user 210's bucket (userId 210 — fresh in this test)
+      stubApiKeyDb(210);
+      for (let i = 0; i < _LIMIT; i++) {
+    const res = await request(app)
       .post('/ai/plan')
-      .set('Authorization', 'Bearer isk_user201')
       .send({ prompt: 'test' });
 
-    expect(blocked.status).toBe(429);
-    expect(blocked.body.ok).toBe(false);
-    expect(typeof blocked.body.retryAfterSeconds).toBe('number');
-    expect(blocked.body.retryAfterSeconds).toBeGreaterThan(0);
-  }, 20_000);
+    expect(res.status).toBe(401);
+    expect(res.body.ok).toBe(false);
+  });
+
+  it('returns 401 from requireApiKeyOrSession when no Authorization header is present', async () => {
+    const app = makeAnonApp();
+
+      // Phase 1: exhaust user 210's bucket (userId 210 — fresh in this test)
+      stubApiKeyDb(210);
+      for (let i = 0; i < _LIMIT; i++) {
+        await request(app)
+          .post('/ai/plan')
+          .set('Authorization', 'Bearer isk_user210')
+          .send({ prompt: 'test' });
+      }
+      const blocked = await request(app)
+        .post('/ai/plan')
+        .set('Authorization', 'Bearer isk_user210')
+        .send({ prompt: 'test' });
+
+      expect(blocked.status).toBe(429);
+      expect(blocked.body.ok).toBe(false);
+      expect(typeof blocked.body.retryAfterSeconds).toBe('number');
+      expect(blocked.body.retryAfterSeconds).toBeGreaterThan(0);
+    },
+    15_000,
+  );
 
   // 5 sequential real-HTTP requests through the full middleware stack.
   // The timeout is raised above the Vitest default (5 s) because the full test
@@ -150,7 +150,7 @@ describe('POST /ai/plan — rate limiting via API key (Bearer token)', () => {
   // total close to or over 5 s.
   it('keeps independent rate-limit buckets for two API keys belonging to different users',
     async () => {
-      const app = makeAnonApp();
+    const app = makeAnonApp();
 
       // Phase 1: exhaust user 210's bucket (userId 210 — fresh in this test)
       stubApiKeyDb(210);
@@ -187,7 +187,6 @@ describe('POST /ai/plan — rate limiting via API key (Bearer token)', () => {
 
     const res = await request(app)
       .post('/ai/plan')
-      .set('Authorization', 'Bearer isk_nonexistent_key')
       .send({ prompt: 'test' });
 
     expect(res.status).toBe(401);

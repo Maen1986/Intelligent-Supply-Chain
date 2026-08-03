@@ -18,10 +18,12 @@ vi.mock('@/lib/AuthContext', () => ({
 
 /**
  * Mock useRateLimitCountdown with real React state so that calling start()
- * properly triggers a re-render inside the test.  The tick/resync behaviour
- * is already covered by the Diagnostic.rate-limit tests; here we only care
- * that FeedbackModal reacts correctly to the hook's limited/secondsLeft values.
+ * properly triggers a re-render inside the test.  We also expose a module-level
+ * `simulateClearCountdown` helper so tests can simulate the server confirming
+ * the window is over (as the real hook does on focus/expiry).
  */
+let simulateClearCountdown: (() => void) | null = null;
+
 vi.mock('@/hooks/useRateLimitCountdown', async () => {
   const { useState, useCallback } = await import('react');
   return {
@@ -36,6 +38,8 @@ vi.mock('@/hooks/useRateLimitCountdown', async () => {
         setLimited(false);
         setSecondsLeft(0);
       }, []);
+      // Expose clear so tests can simulate countdown expiry / server confirmation.
+      simulateClearCountdown = clear;
       return { limited, secondsLeft, start, clear, resync: () => Promise.resolve() };
     },
   };
@@ -53,6 +57,7 @@ function renderModal(onClose = vi.fn()) {
 describe('FeedbackModal failed submission', () => {
   beforeEach(() => {
     vi.useFakeTimers();
+    simulateClearCountdown = null;
   });
   afterEach(() => {
     cleanup();
@@ -71,7 +76,7 @@ describe('FeedbackModal failed submission', () => {
 
     expect(screen.getByTestId('text-feedback-error')).toBeTruthy();
     expect(screen.queryByTestId('feedback-success')).toBeNull();
-    // Retry button is still available and enabled
+    // After a plain server error (not rate-limit) the button stays enabled so users can retry.
     const submit = screen.getByTestId('button-feedback-submit') as HTMLButtonElement;
     expect(submit.disabled).toBe(false);
     // Modal was not auto-closed
@@ -81,17 +86,17 @@ describe('FeedbackModal failed submission', () => {
     expect(onClose).not.toHaveBeenCalled();
   });
 
-  it('shows a live rate-limit countdown (429) and succeeds on retry', async () => {
+  it('shows amber countdown and disables submit on 429, re-enables when window expires', async () => {
     const fetchMock = vi
       .fn()
-      // First call: POST /feedback → 429 (empty JSON body, no Retry-After header — fallback to 3600 s)
+      // First call: POST /feedback → 429 (no Retry-After header, body fallback → 3600 s)
       .mockResolvedValueOnce({
         ok: false,
         status: 429,
         headers: { get: (_: string) => null },
         json: async () => null,
       })
-      // Second call: POST /feedback → success
+      // Second call (after countdown clears): POST /feedback → success
       .mockResolvedValueOnce({ ok: true, status: 201, json: async () => ({ ok: true, id: 1 }) });
     vi.stubGlobal('fetch', fetchMock as unknown as typeof fetch);
     const onClose = renderModal();
@@ -101,18 +106,26 @@ describe('FeedbackModal failed submission', () => {
       fireEvent.click(screen.getByTestId('button-feedback-submit'));
     });
 
-    // The honest countdown notice is shown (mock hook: limited=true, secondsLeft=3600).
-    // The generic error is NOT shown.
+    // The server-honest countdown notice is shown; generic error is NOT shown.
     expect(screen.getByTestId('text-feedback-rate-limit')).toBeTruthy();
     expect(screen.queryByTestId('text-feedback-error')).toBeNull();
 
-    // Submit is still enabled — the server decides whether to accept a retry.
+    // Submit is DISABLED while the countdown is active — prevents premature retries.
     const submit = screen.getByTestId('button-feedback-submit') as HTMLButtonElement;
-    expect(submit.disabled).toBe(false);
+    expect(submit.disabled).toBe(true);
 
-    // Retry succeeds → success state is shown, onClose fires after 1.5 s.
+    // Simulate the server confirming the window has elapsed (real hook: focus/expiry resync).
     await act(async () => {
-      fireEvent.click(screen.getByTestId('button-feedback-submit'));
+      simulateClearCountdown?.();
+    });
+
+    // Button is now enabled and the countdown banner is gone.
+    expect(submit.disabled).toBe(false);
+    expect(screen.queryByTestId('text-feedback-rate-limit')).toBeNull();
+
+    // A retry now goes through and shows the success state.
+    await act(async () => {
+      fireEvent.click(submit);
     });
     expect(screen.getByTestId('feedback-success')).toBeTruthy();
     await act(async () => {

@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Slider } from '@/components/ui/slider';
-import { Star, CheckCircle2 } from 'lucide-react';
+import { Star, CheckCircle2, Clock } from 'lucide-react';
 import { useLanguage } from '@/lib/LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
 import { submitFeedback } from '@/hooks/useFeedback';
@@ -138,11 +138,24 @@ export function FeedbackModal({ open, onClose, tool, submissionId }: FeedbackMod
               />
             </div>
 
-            {/* Rate-limit notice — live countdown driven by useRateLimitCountdown */}
-            {rateLimit.limited && rateLimit.secondsLeft > 0 && (
-              <p className="text-sm text-amber-700" data-testid="text-feedback-rate-limit">
-                {retryMessage(rateLimit.secondsLeft)}
-              </p>
+            {/* Rate-limit notice — shown whenever limited=true, including while
+                the post-expiry server confirmation is in-flight (secondsLeft=0).
+                The button stays disabled until the server confirms the window is over. */}
+            {rateLimit.limited && (
+              <div
+                className="flex items-start gap-2 rounded-md bg-amber-50 border border-amber-200 px-3 py-2 text-sm text-amber-800"
+                role="status"
+                data-testid="text-feedback-rate-limit"
+              >
+                <Clock className="w-4 h-4 mt-0.5 shrink-0" />
+                <span>
+                  {rateLimit.secondsLeft > 0
+                    ? retryMessage(rateLimit.secondsLeft)
+                    : isAr
+                      ? 'جارٍ التحقق مع الخادم…'
+                      : 'Checking with server…'}
+                </span>
+              </div>
             )}
 
             {/* Generic submit error (non-rate-limit failures) */}
@@ -158,7 +171,7 @@ export function FeedbackModal({ open, onClose, tool, submissionId }: FeedbackMod
               </Button>
               <Button
                 onClick={handleSubmit}
-                disabled={rating < 1 || submitting}
+                disabled={rating < 1 || submitting || rateLimit.limited}
                 className="bg-primary text-white font-bold"
                 data-testid="button-feedback-submit"
               >
