@@ -430,3 +430,4 @@ describe('POST /ai/plan — rate limiting', () => {
     expect(allowed.status).toBe(200);
   });
 });
+
