@@ -158,4 +158,28 @@ describe('ContractHealthChecker — arrow-key tab navigation', () => {
     expect(screen.getByRole('tab', { name: /Portfolio Health/i }))
       .toHaveAttribute('aria-selected', 'true');
   });
+
+  it('Home key jumps directly to the first tab from any position', () => {
+    render(<ContractHealthChecker isAr={false} />);
+    // Navigate to the last tab first
+    const last = screen.getByRole('tab', { name: /AI Portfolio Brief/i });
+    fireEvent.click(last);
+    last.focus();
+    expect(last).toHaveAttribute('aria-selected', 'true');
+    // Home should jump straight to the first tab
+    fireEvent.keyDown(last, { key: 'Home' });
+    expect(screen.getByRole('tab', { name: /Contract Inventory/i }))
+      .toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('End key jumps directly to the last tab from any position', () => {
+    render(<ContractHealthChecker isAr={false} />);
+    const first = screen.getByRole('tab', { name: /Contract Inventory/i });
+    first.focus();
+    expect(first).toHaveAttribute('aria-selected', 'true');
+    // End should jump straight to the last tab
+    fireEvent.keyDown(first, { key: 'End' });
+    expect(screen.getByRole('tab', { name: /AI Portfolio Brief/i }))
+      .toHaveAttribute('aria-selected', 'true');
+  });
 });

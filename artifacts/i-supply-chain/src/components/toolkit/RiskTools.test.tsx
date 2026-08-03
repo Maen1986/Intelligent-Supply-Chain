@@ -199,8 +199,32 @@ describe('RiskToolsSection — arrow-key tab navigation', () => {
     render(<RiskToolsSection isAr={false} />);
     const first = screen.getByRole('tab', { name: /KRI Monitor/i });
     first.focus();
-    fireEvent.keyDown(first, { key: 'Home' });
+    fireEvent.keyDown(first, { key: 'Tab' });
     expect(first).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('Home key jumps directly to the first tab from any position', () => {
+    render(<RiskToolsSection isAr={false} />);
+    // Navigate to a middle tab first
+    const last = screen.getByRole('tab', { name: /AI Risk Brief/i });
+    fireEvent.click(last);
+    last.focus();
+    expect(last).toHaveAttribute('aria-selected', 'true');
+    // Home should jump straight to the first tab
+    fireEvent.keyDown(last, { key: 'Home' });
+    expect(screen.getByRole('tab', { name: /KRI Monitor/i }))
+      .toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('End key jumps directly to the last tab from any position', () => {
+    render(<RiskToolsSection isAr={false} />);
+    const first = screen.getByRole('tab', { name: /KRI Monitor/i });
+    first.focus();
+    expect(first).toHaveAttribute('aria-selected', 'true');
+    // End should jump straight to the last tab
+    fireEvent.keyDown(first, { key: 'End' });
+    expect(screen.getByRole('tab', { name: /AI Risk Brief/i }))
+      .toHaveAttribute('aria-selected', 'true');
   });
 
   it('tab navigation sequence: first → second → third via ArrowRight', () => {

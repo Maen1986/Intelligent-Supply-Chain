@@ -397,11 +397,19 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
 
   const tabListRef = useRef<HTMLDivElement>(null);
   const handleTabKey = useCallback((e: React.KeyboardEvent, idx: number) => {
-    if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+    let next: number | null = null;
+    if (e.key === 'ArrowRight') {
+      next = (idx + 1) % tabs.length;
+    } else if (e.key === 'ArrowLeft') {
+      next = (idx - 1 + tabs.length) % tabs.length;
+    } else if (e.key === 'Home') {
+      next = 0;
+    } else if (e.key === 'End') {
+      next = tabs.length - 1;
+    } else {
+      return;
+    }
     e.preventDefault();
-    const next = e.key === 'ArrowRight'
-      ? (idx + 1) % tabs.length
-      : (idx - 1 + tabs.length) % tabs.length;
     setActiveTab(tabs[next].id);
     (tabListRef.current?.querySelectorAll('[role="tab"]')[next] as HTMLElement | undefined)?.focus();
   }, [tabs]);
