@@ -3059,7 +3059,6 @@ function BriefingTab({ lang }: { lang: Lang }) {
     </div>
   );
 }
-
 // ─── Tab 5: AI Consultancy Engine ────────────────────────────────────────────
 type ConsultStage = 'input' | 'diagnosing' | 'diagnosis' | 'solving' | 'solution' | 'refining';
 
