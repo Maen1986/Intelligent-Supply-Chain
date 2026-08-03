@@ -15,7 +15,7 @@ import {
 } from 'recharts';
 import { Upload, Download, Plus, Trash2, ChevronDown, ChevronUp,
   BarChart3, Globe, Target, FileDown, Sparkles, TrendingUp,
-  AlertTriangle, CheckCircle, Info } from 'lucide-react';
+  AlertTriangle, CheckCircle, Info, Bell, Save } from 'lucide-react';
 import { safeSetItem } from '@/lib/storage';
 import { parseCsvFile, downloadCsv } from '@/lib/importCsv';
 import { useAIPlan } from '@/hooks/useAIPlan';
@@ -64,6 +64,75 @@ const STRATEGIES = [
   { id: 'consortium',            icon: '🤜', label: 'Consortium / GPO Buying', labelAr: 'شراء مشترك / مجموعة الشراء', when: 'Low-medium spend + commodity items', whenAr: 'إنفاق منخفض–متوسط + سلع نمطية', desc: 'Join a Group Purchasing Organisation or buying consortium to aggregate volume and access framework pricing.', descAr: 'الانضمام إلى مجموعة شراء لتجميع الحجم والوصول إلى أسعار الإطار.', actions: ['Identify and evaluate relevant GPO/consortium for this category', 'Compare GPO pricing vs own direct negotiation baseline', 'Assess admin fee vs savings — ensure net benefit is positive', 'Integrate GPO catalogue into e-procurement / ERP punchout', 'Review annually — categories may graduate to direct sourcing'] },
   { id: 'insource',              icon: '🏭', label: 'Insource / Make Internally', labelAr: 'التصنيع الداخلي', when: 'Critical capability + acceptable investment case', whenAr: 'قدرة حرجة + جدوى استثمار مقبولة', desc: 'Build the capability internally when external supply is too risky, too expensive, or strategically sensitive.', descAr: 'بناء القدرة داخلياً عندما يكون التوريد الخارجي شديد الخطورة أو مكلفاً أو حساساً استراتيجياً.', actions: ['Complete make-vs-buy analysis with full TCO comparison', 'Assess capital investment, payback period, and internal competency', 'Identify talent/equipment requirements', 'Plan transition — do not exit supply market abruptly', 'Maintain at least one external qualified supplier as a benchmark'] },
 ];
+
+// ─── KPI Alert Threshold definitions ─────────────────────────────────────────
+
+interface KpiThresholdCfg {
+  warn:            number;
+  critical:        number;
+  higherIsBetter?: boolean;
+  label?:          string;
+}
+
+/** Draft shape — both fields are optional while the user is typing. */
+interface KpiThresholdDraft {
+  warn?:     number;
+  critical?: number;
+}
+
+/** The three derived KPIs that users can configure alert thresholds for. */
+const KPI_THRESHOLD_DEFS = [
+  {
+    key:            'contractedPct',
+    label:          'Contracted %',
+    labelAr:        'الإنفاق المتعاقد %',
+    hint:           'Warn when contracted spend falls below this level.',
+    hintAr:         'تحذير عند انخفاض الإنفاق المتعاقد عن هذا المستوى.',
+    higherIsBetter: true,
+    unit:           '%',
+    min:            0,
+    max:            100,
+  },
+  {
+    key:            'top3Pct',
+    label:          'Top-3 Concentration %',
+    labelAr:        'تركّز أعلى 3 موردين %',
+    hint:           'Warn when the top-3 supplier spend share exceeds this level.',
+    hintAr:         'تحذير عند تجاوز نسبة الإنفاق مع أعلى 3 موردين.',
+    higherIsBetter: false,
+    unit:           '%',
+    min:            0,
+    max:            100,
+  },
+  {
+    key:            'porterAvg',
+    label:          'Market Risk Score',
+    labelAr:        'درجة مخاطر السوق',
+    hint:           'Warn when the average Porter\'s Five Forces score exceeds this level.',
+    hintAr:         'تحذير عند تجاوز متوسط قوى بورتر الخمس.',
+    higherIsBetter: false,
+    unit:           '/5',
+    min:            1,
+    max:            5,
+  },
+] as const;
+
+type KpiKey = typeof KPI_THRESHOLD_DEFS[number]['key'];
+
+/**
+ * Compute breach severity for a single KPI value against its threshold.
+ * Returns null when within acceptable limits.
+ */
+function kpiBreachLevel(value: number, cfg: KpiThresholdCfg): 'warn' | 'critical' | null {
+  if (cfg.higherIsBetter) {
+    if (value <= cfg.critical) return 'critical';
+    if (value <= cfg.warn)     return 'warn';
+  } else {
+    if (value >= cfg.critical) return 'critical';
+    if (value >= cfg.warn)     return 'warn';
+  }
+  return null;
+}
 
 function nid() { return Math.random().toString(36).slice(2, 10); }
 
@@ -375,9 +444,10 @@ ${HR80}`;
 
 // ─── Storage helpers ──────────────────────────────────────────────────────────
 
-const SK_SPEND    = 'isc-tool-catmgmt-spend-v2';
-const SK_PORTER   = 'isc-tool-catmgmt-porter-v2';
-const SK_STRATEGY = 'isc-tool-catmgmt-strategy-v2';
+const SK_SPEND      = 'isc-tool-catmgmt-spend-v2';
+const SK_PORTER     = 'isc-tool-catmgmt-porter-v2';
+const SK_STRATEGY   = 'isc-tool-catmgmt-strategy-v2';
+const SK_THRESHOLDS = 'isc-tool-catmgmt-thresholds-v1';
 
 function loadJson<T>(key: string, fallback: T): T {
   try { const s = localStorage.getItem(key); return s ? JSON.parse(s) : fallback; } catch { return fallback; }
@@ -385,7 +455,7 @@ function loadJson<T>(key: string, fallback: T): T {
 
 // ─── Tab type ─────────────────────────────────────────────────────────────────
 
-type Tab = 'spend' | 'market' | 'strategy' | 'templates' | 'ai';
+type Tab = 'spend' | 'market' | 'strategy' | 'templates' | 'ai' | 'alerts';
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
@@ -453,6 +523,79 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
   const [selectedStrategy, setSelectedStrategy] = useState<string>(() => loadJson(SK_STRATEGY, ''));
   const saveStrategy = (s: string) => { setSelectedStrategy(s); safeSetItem(SK_STRATEGY, s); };
 
+  // KPI Alert Thresholds — stored in localStorage only.
+  // Values are loaded synchronously on mount and written on every save.
+  const [thresholds, setThresholds]         = useState<Partial<Record<KpiKey, KpiThresholdCfg>>>(
+    () => loadJson(SK_THRESHOLDS, {}),
+  );
+  // Draft uses optional fields so partially-filled inputs don't silently default to 0
+  const [thresholdDraft, setThresholdDraft] = useState<Partial<Record<KpiKey, KpiThresholdDraft>>>(
+    () => loadJson(SK_THRESHOLDS, {}),
+  );
+  const [thresholdErrors, setThresholdErrors] = useState<Partial<Record<KpiKey, string>>>({});
+
+  const updateThresholdDraft = useCallback((key: KpiKey, field: 'warn' | 'critical', value: string) => {
+    const num = parseFloat(value);
+    setThresholdDraft(prev => {
+      const existing = prev[key] ?? {};
+      return { ...prev, [key]: { ...existing, [field]: isNaN(num) ? undefined : num } };
+    });
+    // Clear any validation error for this key when the user edits it
+    setThresholdErrors(prev => { const { [key]: _, ...rest } = prev; return rest; });
+  }, []);
+
+  const saveThresholds = useCallback(() => {
+    const next: Partial<Record<KpiKey, KpiThresholdCfg>> = {};
+    const errors: Partial<Record<KpiKey, string>> = {};
+
+    for (const def of KPI_THRESHOLD_DEFS) {
+      const draft = thresholdDraft[def.key];
+      if (!draft) continue;
+      const { warn, critical } = draft;
+
+      // Skip KPIs where neither field has been set
+      if (warn === undefined && critical === undefined) continue;
+
+      // Both fields required to form a complete threshold
+      if (warn === undefined || critical === undefined) {
+        errors[def.key] = isAr ? 'يرجى تعبئة كلا الحقلين (تحذير وبالغ).' : 'Both warn and critical values are required.';
+        continue;
+      }
+
+      // Enforce severity ordering
+      if (def.higherIsBetter) {
+        // e.g. contracted %: warn must be strictly above critical
+        if (warn <= critical) {
+          errors[def.key] = isAr
+            ? 'الأعلى أفضل: يجب أن يكون حد التحذير أكبر من حد الإنذار الحرج.'
+            : 'Higher is better: warn must be greater than critical.';
+          continue;
+        }
+      } else {
+        // e.g. concentration: warn must be strictly below critical
+        if (warn >= critical) {
+          errors[def.key] = isAr
+            ? 'الأقل أفضل: يجب أن يكون حد التحذير أصغر من حد الإنذار الحرج.'
+            : 'Lower is better: warn must be less than critical.';
+          continue;
+        }
+      }
+
+      next[def.key] = { warn, critical, higherIsBetter: def.higherIsBetter, label: def.label };
+    }
+
+    setThresholdErrors(errors);
+
+    if (Object.keys(errors).length > 0) {
+      toast.error(isAr ? 'يرجى تصحيح الأخطاء قبل الحفظ.' : 'Fix validation errors before saving.');
+      return;
+    }
+
+    setThresholds(next);
+    safeSetItem(SK_THRESHOLDS, JSON.stringify(next));
+    toast.success(isAr ? 'تم حفظ حدود التنبيه ✓' : 'Alert thresholds saved ✓');
+  }, [thresholdDraft, isAr]);
+
   // Derived metrics
   const validRows = useMemo(() => rows.filter(r => r.supplier && r.annualSpend > 0), [rows]);
   const totalSpend = useMemo(() => validRows.reduce((s, r) => s + r.annualSpend, 0), [validRows]);
@@ -490,6 +633,13 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
 
   const chosenStrategy = STRATEGIES.find(s => s.id === (selectedStrategy || autoStrategy));
 
+  // Breach levels for current KPI values against saved thresholds
+  const breachLevels = useMemo(() => ({
+    contractedPct: thresholds.contractedPct ? kpiBreachLevel(contractedPct, thresholds.contractedPct) : null,
+    top3Pct:       thresholds.top3Pct       ? kpiBreachLevel(top3Pct,       thresholds.top3Pct)       : null,
+    porterAvg:     thresholds.porterAvg     ? kpiBreachLevel(porterAvg,     thresholds.porterAvg)     : null,
+  }), [contractedPct, top3Pct, porterAvg, thresholds]);
+
   // AI prompt
   const buildPrompt = useCallback(() => {
     const topSuppliers = paretoData.slice(0, 5).map(r => `${r.name}: SAR ${r.spend.toLocaleString()} (${r.cumPct}% cumulative)`).join(', ');
@@ -522,12 +672,15 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
 
   const aiPlan = useAIPlan(buildPrompt, isAr, 'procurement-catmgmt', validRows.length >= 2);
 
+  const anyBreach = Object.values(breachLevels).some(v => v !== null);
+
   const tabs: { id: Tab; icon: string; label: string; labelAr: string }[] = [
     { id: 'spend',     icon: '📊', label: 'Spend Analysis',      labelAr: 'تحليل الإنفاق'      },
     { id: 'market',    icon: '🌍', label: 'Market Intelligence',  labelAr: 'استخبارات السوق'    },
     { id: 'strategy',  icon: '🎯', label: 'Sourcing Strategy',    labelAr: 'استراتيجية التوريد' },
     { id: 'templates', icon: '📥', label: 'Templates & Tools',    labelAr: 'القوالب والأدوات'   },
     { id: 'ai',        icon: '✨', label: 'AI Strategy Brief',    labelAr: 'تقرير الاستراتيجية' },
+    { id: 'alerts',    icon: '🔔', label: 'Alert Thresholds',     labelAr: 'حدود التنبيه'       },
   ];
 
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
@@ -589,17 +742,51 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
           {/* Summary cards */}
           {validRows.length > 0 && (
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {[
-                { label: isAr ? 'إجمالي الإنفاق' : 'Total Spend', value: `SAR ${(totalSpend/1000).toFixed(0)}K`, color: '#082C6B' },
-                { label: isAr ? 'عدد الموردين' : 'Suppliers', value: validRows.length.toString(), color: '#4f46e5' },
-                { label: isAr ? 'الإنفاق المتعاقد' : 'Contracted', value: `${contractedPct}%`, color: contractedPct >= 70 ? '#059669' : contractedPct >= 40 ? '#d97706' : '#dc2626' },
-                { label: isAr ? 'تركّز أعلى 3 موردين' : 'Top-3 Concentration', value: `${top3Pct}%`, color: top3Pct > 70 ? '#dc2626' : top3Pct > 50 ? '#d97706' : '#059669' },
-              ].map(c => (
-                <div key={c.label} className="bg-white border border-slate-200 rounded-xl p-3 text-center shadow-sm">
-                  <p className="text-[11px] text-slate-500 font-medium">{c.label}</p>
-                  <p className="text-xl font-black mt-1" style={{ color: c.color }}>{c.value}</p>
-                </div>
-              ))}
+              {/* Total Spend */}
+              <div className="bg-white border border-slate-200 rounded-xl p-3 text-center shadow-sm">
+                <p className="text-[11px] text-slate-500 font-medium">{isAr ? 'إجمالي الإنفاق' : 'Total Spend'}</p>
+                <p className="text-xl font-black mt-1" style={{ color: '#082C6B' }}>SAR {(totalSpend/1000).toFixed(0)}K</p>
+              </div>
+              {/* Suppliers */}
+              <div className="bg-white border border-slate-200 rounded-xl p-3 text-center shadow-sm">
+                <p className="text-[11px] text-slate-500 font-medium">{isAr ? 'عدد الموردين' : 'Suppliers'}</p>
+                <p className="text-xl font-black mt-1" style={{ color: '#4f46e5' }}>{validRows.length}</p>
+              </div>
+              {/* Contracted % — with breach badge */}
+              <div className={`bg-white border rounded-xl p-3 text-center shadow-sm relative ${breachLevels.contractedPct === 'critical' ? 'border-red-400 bg-red-50' : breachLevels.contractedPct === 'warn' ? 'border-amber-400 bg-amber-50' : 'border-slate-200'}`}>
+                {breachLevels.contractedPct && (
+                  <span className={`absolute top-1.5 right-1.5 flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full ${breachLevels.contractedPct === 'critical' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>
+                    <AlertTriangle className="w-2.5 h-2.5" />{breachLevels.contractedPct === 'critical' ? (isAr ? 'بالغ' : 'CRIT') : (isAr ? 'تحذير' : 'WARN')}
+                  </span>
+                )}
+                <p className="text-[11px] text-slate-500 font-medium">{isAr ? 'الإنفاق المتعاقد' : 'Contracted'}</p>
+                <p className="text-xl font-black mt-1" style={{ color: contractedPct >= 70 ? '#059669' : contractedPct >= 40 ? '#d97706' : '#dc2626' }}>{contractedPct}%</p>
+              </div>
+              {/* Top-3 Concentration % — with breach badge */}
+              <div className={`bg-white border rounded-xl p-3 text-center shadow-sm relative ${breachLevels.top3Pct === 'critical' ? 'border-red-400 bg-red-50' : breachLevels.top3Pct === 'warn' ? 'border-amber-400 bg-amber-50' : 'border-slate-200'}`}>
+                {breachLevels.top3Pct && (
+                  <span className={`absolute top-1.5 right-1.5 flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full ${breachLevels.top3Pct === 'critical' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>
+                    <AlertTriangle className="w-2.5 h-2.5" />{breachLevels.top3Pct === 'critical' ? (isAr ? 'بالغ' : 'CRIT') : (isAr ? 'تحذير' : 'WARN')}
+                  </span>
+                )}
+                <p className="text-[11px] text-slate-500 font-medium">{isAr ? 'تركّز أعلى 3 موردين' : 'Top-3 Concentration'}</p>
+                <p className="text-xl font-black mt-1" style={{ color: top3Pct > 70 ? '#dc2626' : top3Pct > 50 ? '#d97706' : '#059669' }}>{top3Pct}%</p>
+              </div>
+            </div>
+          )}
+
+          {/* Breach alert banner */}
+          {anyBreach && validRows.length > 0 && (
+            <div className="bg-amber-50 border border-amber-300 rounded-xl p-3 flex items-center gap-2">
+              <Bell className="w-4 h-4 text-amber-600 shrink-0" />
+              <p className="text-xs text-amber-800 font-medium">
+                {isAr
+                  ? 'تم اكتشاف تنبيهات على بعض مؤشرات الأداء. راجع تبويب حدود التنبيه.'
+                  : 'One or more KPIs are breaching alert thresholds. Review the Alert Thresholds tab.'}
+              </p>
+              <button onClick={() => setActiveTab('alerts')} className="ml-auto shrink-0 text-xs text-amber-700 font-bold underline hover:text-amber-900">
+                {isAr ? 'عرض' : 'View'}
+              </button>
             </div>
           )}
 
@@ -864,6 +1051,130 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
           isAr={isAr} toolKey="procurement-catmgmt"
           disabled={validRows.length < 2}
         />
+        </div>
+      )}
+
+      {/* ── TAB 6: Alert Thresholds ── */}
+      {activeTab === 'alerts' && (
+        <div id="panel-alerts" role="tabpanel" aria-labelledby="tab-alerts" className="space-y-4">
+
+          {/* Info callout */}
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 flex items-start gap-2">
+            <Info className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
+            <p className="text-xs text-blue-800">
+              {isAr
+                ? 'حدّد قيم التحذير والإنذار الحرج لكل مؤشر أداء. ستظهر شارات التنبيه على بطاقات الملخص عند تجاوز هذه القيم.'
+                : 'Set warn and critical thresholds for each KPI. Alert badges will appear on the summary cards when values breach these levels. Thresholds are saved in your browser and survive page reloads.'}
+            </p>
+          </div>
+
+          {/* Threshold cards */}
+          {(
+            <div className="space-y-3">
+              {KPI_THRESHOLD_DEFS.map(def => {
+                const draft  = thresholdDraft[def.key];
+                const live   = thresholds[def.key];
+                const breach = live ? kpiBreachLevel(
+                  def.key === 'contractedPct' ? contractedPct :
+                  def.key === 'top3Pct'       ? top3Pct       :
+                  porterAvg,
+                  live,
+                ) : null;
+
+                return (
+                  <div key={def.key} className={`bg-white border rounded-2xl p-4 shadow-sm ${breach === 'critical' ? 'border-red-300' : breach === 'warn' ? 'border-amber-300' : 'border-slate-200'}`}>
+                    <div className="flex items-start justify-between gap-3 mb-3">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <p className="font-bold text-sm text-slate-800">{isAr ? def.labelAr : def.label}</p>
+                          {breach && (
+                            <span className={`flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded-full ${breach === 'critical' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>
+                              <AlertTriangle className="w-2.5 h-2.5" />
+                              {breach === 'critical' ? (isAr ? 'بالغ' : 'CRITICAL') : (isAr ? 'تحذير' : 'WARNING')}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[11px] text-slate-400 mt-0.5">{isAr ? def.hintAr : def.hint}</p>
+                        <p className="text-[10px] text-slate-400 mt-0.5">
+                          {isAr ? 'القيمة الحالية:' : 'Current value:'}{' '}
+                          <strong className="text-slate-600">
+                            {def.key === 'contractedPct' ? `${contractedPct}${def.unit}` :
+                             def.key === 'top3Pct'       ? `${top3Pct}${def.unit}` :
+                             `${porterAvg.toFixed(1)}${def.unit}`}
+                          </strong>
+                          {' · '}{isAr ? (def.higherIsBetter ? 'الأعلى أفضل' : 'الأقل أفضل') : (def.higherIsBetter ? 'higher is better' : 'lower is better')}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      {/* Warn threshold */}
+                      <div>
+                        <label className="block text-[10px] font-semibold text-amber-600 mb-1" htmlFor={`thresh-warn-${def.key}`}>
+                          {isAr ? `⚠ تحذير ${def.unit}` : `⚠ Warn ${def.unit}`}
+                        </label>
+                        <input
+                          id={`thresh-warn-${def.key}`}
+                          type="number"
+                          min={def.min}
+                          max={def.max}
+                          step={def.key === 'porterAvg' ? 0.1 : 1}
+                          value={draft?.warn ?? ''}
+                          placeholder={isAr ? 'غير محدد' : 'Not set'}
+                          onChange={e => updateThresholdDraft(def.key, 'warn', e.target.value)}
+                          className="w-full text-xs border border-amber-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-amber-300 bg-amber-50"
+                          aria-label={isAr ? `حد التحذير لـ ${def.labelAr}` : `Warn threshold for ${def.label}`}
+                        />
+                      </div>
+
+                      {/* Critical threshold */}
+                      <div>
+                        <label className="block text-[10px] font-semibold text-red-600 mb-1" htmlFor={`thresh-crit-${def.key}`}>
+                          {isAr ? `🚨 بالغ ${def.unit}` : `🚨 Critical ${def.unit}`}
+                        </label>
+                        <input
+                          id={`thresh-crit-${def.key}`}
+                          type="number"
+                          min={def.min}
+                          max={def.max}
+                          step={def.key === 'porterAvg' ? 0.1 : 1}
+                          value={draft?.critical ?? ''}
+                          placeholder={isAr ? 'غير محدد' : 'Not set'}
+                          onChange={e => updateThresholdDraft(def.key, 'critical', e.target.value)}
+                          className="w-full text-xs border border-red-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-red-300 bg-red-50"
+                          aria-label={isAr ? `حد الإنذار الحرج لـ ${def.labelAr}` : `Critical threshold for ${def.label}`}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Inline validation error */}
+                    {thresholdErrors[def.key] && (
+                      <p className="mt-2 text-[11px] text-red-600 flex items-center gap-1" role="alert">
+                        <AlertTriangle className="w-3 h-3 shrink-0" />
+                        {thresholdErrors[def.key]}
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
+
+              {/* Save button */}
+              <button
+                onClick={saveThresholds}
+                className="w-full flex items-center justify-center gap-2 bg-[#082C6B] text-white text-sm font-semibold px-4 py-2.5 rounded-xl hover:opacity-90 transition-opacity"
+                aria-label={isAr ? 'حفظ حدود التنبيه' : 'Save alert thresholds'}
+              >
+                <Save className="w-4 h-4" />{isAr ? 'حفظ حدود التنبيه' : 'Save Alert Thresholds'}
+              </button>
+
+              {/* Guidance note */}
+              <p className="text-[11px] text-slate-400 text-center">
+                {isAr
+                  ? 'تُطبَّق الحدود على مؤشرات الأداء الحالية وتُحفظ في المتصفح وتبقى بعد إعادة التحميل.'
+                  : 'Thresholds apply to current KPI values and are saved in your browser — they survive page reloads.'}
+              </p>
+            </div>
+          )}
         </div>
       )}
     </div>

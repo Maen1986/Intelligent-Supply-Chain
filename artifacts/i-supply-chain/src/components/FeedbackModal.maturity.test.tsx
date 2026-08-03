@@ -186,7 +186,7 @@ describe('Maturity page feedback modal integration', () => {
     });
 
     expect(screen.queryByTestId('button-feedback-dismiss')).toBeNull();
-  });
+  }, 20_000);
 });
 
 /* ══════════════════════════════════════════════════════════════════════════

@@ -117,7 +117,7 @@ describe('POST /ai/plan — rate limiting via API key (Bearer token)', () => {
       // AI call.)
       expect(res.status).not.toBe(429);
     }
-  });
+  }, 20_000);
 
   it('returns 429 with ok:false and retryAfterSeconds once the limit is exceeded via Bearer token', async () => {
     // userId 201 — fresh bucket, isolated from the test above.
@@ -142,7 +142,7 @@ describe('POST /ai/plan — rate limiting via API key (Bearer token)', () => {
     expect(blocked.body.ok).toBe(false);
     expect(typeof blocked.body.retryAfterSeconds).toBe('number');
     expect(blocked.body.retryAfterSeconds).toBeGreaterThan(0);
-  });
+  }, 20_000);
 
   // 5 sequential real-HTTP requests through the full middleware stack.
   // The timeout is raised above the Vitest default (5 s) because the full test

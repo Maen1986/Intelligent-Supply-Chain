@@ -13,8 +13,8 @@
  */
 
 import React from 'react';
-import { describe, it, expect, beforeEach } from 'vitest';
-import { render, screen, fireEvent, cleanup, within } from '@testing-library/react';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { render, screen, fireEvent, cleanup, within, waitFor } from '@testing-library/react';
 import { ProcurementToolsSection } from './ProcurementTools';
 
 /* ── Current localStorage keys (must match component source) ───────────── */
@@ -420,7 +420,7 @@ describe('ProcurementToolsSection — arrow-key tab navigation (LTR)', () => {
     render(<ProcurementToolsSection isAr={false} />);
     expect(screen.getByRole('tablist')).toBeInTheDocument();
     const tabs = screen.getAllByRole('tab');
-    expect(tabs).toHaveLength(5);
+    expect(tabs).toHaveLength(6);
   });
 
   it('first tab is aria-selected on mount', () => {
@@ -440,25 +440,25 @@ describe('ProcurementToolsSection — arrow-key tab navigation (LTR)', () => {
   it('ArrowRight advances through all tabs sequentially', () => {
     render(<ProcurementToolsSection isAr={false} />);
     const tabs = screen.getAllByRole('tab');
-    // Start at tab 0, press right 4 times → should land on tab 4
-    for (let i = 0; i < 4; i++) {
+    // Start at tab 0, press right 5 times → should land on tab 5 (last)
+    for (let i = 0; i < 5; i++) {
       const current = tabs.findIndex(t => t.getAttribute('aria-selected') === 'true');
       fireEvent.keyDown(tabs[current], { key: 'ArrowRight' });
     }
-    expect(tabs[4].getAttribute('aria-selected')).toBe('true');
+    expect(tabs[5].getAttribute('aria-selected')).toBe('true');
   });
 
   it('ArrowRight wraps from last tab back to first tab', () => {
     render(<ProcurementToolsSection isAr={false} />);
     const tabs = screen.getAllByRole('tab');
     // Navigate to the last tab first
-    for (let i = 0; i < 4; i++) {
+    for (let i = 0; i < 5; i++) {
       const current = tabs.findIndex(t => t.getAttribute('aria-selected') === 'true');
       fireEvent.keyDown(tabs[current], { key: 'ArrowRight' });
     }
-    expect(tabs[4].getAttribute('aria-selected')).toBe('true');
+    expect(tabs[5].getAttribute('aria-selected')).toBe('true');
     // One more ArrowRight should wrap to first
-    fireEvent.keyDown(tabs[4], { key: 'ArrowRight' });
+    fireEvent.keyDown(tabs[5], { key: 'ArrowRight' });
     expect(tabs[0].getAttribute('aria-selected')).toBe('true');
   });
 
@@ -475,7 +475,7 @@ describe('ProcurementToolsSection — arrow-key tab navigation (LTR)', () => {
     render(<ProcurementToolsSection isAr={false} />);
     const tabs = screen.getAllByRole('tab');
     fireEvent.keyDown(tabs[0], { key: 'ArrowLeft' });
-    expect(tabs[4].getAttribute('aria-selected')).toBe('true');
+    expect(tabs[5].getAttribute('aria-selected')).toBe('true');
   });
 
   it('Home key jumps directly to first tab from any position', () => {
@@ -494,7 +494,7 @@ describe('ProcurementToolsSection — arrow-key tab navigation (LTR)', () => {
     render(<ProcurementToolsSection isAr={false} />);
     const tabs = screen.getAllByRole('tab');
     fireEvent.keyDown(tabs[0], { key: 'End' });
-    expect(tabs[4].getAttribute('aria-selected')).toBe('true');
+    expect(tabs[5].getAttribute('aria-selected')).toBe('true');
   });
 
   it('navigating to a tab via ArrowRight shows its panel content', () => {
@@ -530,7 +530,7 @@ describe('ProcurementToolsSection — arrow-key tab navigation (Arabic / RTL)', 
   it('tab buttons are present with role="tab" in Arabic mode', () => {
     render(<ProcurementToolsSection isAr={true} />);
     const tabs = screen.getAllByRole('tab');
-    expect(tabs).toHaveLength(5);
+    expect(tabs).toHaveLength(6);
   });
 
   it('first tab is aria-selected on mount in Arabic mode', () => {
@@ -547,10 +547,10 @@ describe('ProcurementToolsSection — arrow-key tab navigation (Arabic / RTL)', 
     expect(tabs[0].getAttribute('aria-selected')).toBe('false');
   });
 
-  it('ArrowRight advances through all 5 tabs in Arabic mode', () => {
+  it('ArrowRight advances through all 6 tabs in Arabic mode', () => {
     render(<ProcurementToolsSection isAr={true} />);
     const tabs = screen.getAllByRole('tab');
-    for (let expected = 1; expected <= 4; expected++) {
+    for (let expected = 1; expected <= 5; expected++) {
       const current = tabs.findIndex(t => t.getAttribute('aria-selected') === 'true');
       fireEvent.keyDown(tabs[current], { key: 'ArrowRight' });
       expect(tabs[expected].getAttribute('aria-selected')).toBe('true');
@@ -561,13 +561,13 @@ describe('ProcurementToolsSection — arrow-key tab navigation (Arabic / RTL)', 
     render(<ProcurementToolsSection isAr={true} />);
     const tabs = screen.getAllByRole('tab');
     // Navigate to last tab
-    for (let i = 0; i < 4; i++) {
+    for (let i = 0; i < 5; i++) {
       const current = tabs.findIndex(t => t.getAttribute('aria-selected') === 'true');
       fireEvent.keyDown(tabs[current], { key: 'ArrowRight' });
     }
-    expect(tabs[4].getAttribute('aria-selected')).toBe('true');
+    expect(tabs[5].getAttribute('aria-selected')).toBe('true');
     // Wrap
-    fireEvent.keyDown(tabs[4], { key: 'ArrowRight' });
+    fireEvent.keyDown(tabs[5], { key: 'ArrowRight' });
     expect(tabs[0].getAttribute('aria-selected')).toBe('true');
   });
 
@@ -584,23 +584,23 @@ describe('ProcurementToolsSection — arrow-key tab navigation (Arabic / RTL)', 
     render(<ProcurementToolsSection isAr={true} />);
     const tabs = screen.getAllByRole('tab');
     fireEvent.keyDown(tabs[0], { key: 'ArrowLeft' });
-    expect(tabs[4].getAttribute('aria-selected')).toBe('true');
+    expect(tabs[5].getAttribute('aria-selected')).toBe('true');
   });
 
-  it('full round-trip: ArrowRight × 5 returns to the starting tab in Arabic mode', () => {
+  it('full round-trip: ArrowRight × 6 returns to the starting tab in Arabic mode', () => {
     render(<ProcurementToolsSection isAr={true} />);
     const tabs = screen.getAllByRole('tab');
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 6; i++) {
       const current = tabs.findIndex(t => t.getAttribute('aria-selected') === 'true');
       fireEvent.keyDown(tabs[current], { key: 'ArrowRight' });
     }
     expect(tabs[0].getAttribute('aria-selected')).toBe('true');
   });
 
-  it('full round-trip: ArrowLeft × 5 returns to the starting tab in Arabic mode', () => {
+  it('full round-trip: ArrowLeft × 6 returns to the starting tab in Arabic mode', () => {
     render(<ProcurementToolsSection isAr={true} />);
     const tabs = screen.getAllByRole('tab');
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 6; i++) {
       const current = tabs.findIndex(t => t.getAttribute('aria-selected') === 'true');
       fireEvent.keyDown(tabs[current], { key: 'ArrowLeft' });
     }
@@ -621,7 +621,7 @@ describe('ProcurementToolsSection — arrow-key tab navigation (Arabic / RTL)', 
     render(<ProcurementToolsSection isAr={true} />);
     const tabs = screen.getAllByRole('tab');
     fireEvent.keyDown(tabs[0], { key: 'End' });
-    expect(tabs[4].getAttribute('aria-selected')).toBe('true');
+    expect(tabs[5].getAttribute('aria-selected')).toBe('true');
   });
 
   it('ArrowRight in Arabic mode switches panel content (Market Intelligence panel appears)', () => {
@@ -1060,9 +1060,9 @@ describe('ProcurementToolsSection — arrow-key tab navigation', () => {
     expect(screen.getByRole('tablist')).toBeInTheDocument();
   });
 
-  it('all 5 tabs have role="tab"', () => {
+  it('all 6 tabs have role="tab"', () => {
     render(<ProcurementToolsSection isAr={false} />);
-    expect(screen.getAllByRole('tab').length).toBe(5);
+    expect(screen.getAllByRole('tab').length).toBe(6);
   });
 
   it('default tab is aria-selected and has tabIndex 0', () => {
@@ -1102,7 +1102,7 @@ describe('ProcurementToolsSection — arrow-key tab navigation', () => {
 
   it('ArrowRight wraps from last tab to first', () => {
     render(<ProcurementToolsSection isAr={false} />);
-    const last = screen.getByRole('tab', { name: /AI Strategy Brief/i });
+    const last = screen.getByRole('tab', { name: /Alert Thresholds/i });
     fireEvent.click(last);
     last.focus();
     fireEvent.keyDown(last, { key: 'ArrowRight' });
@@ -1114,7 +1114,7 @@ describe('ProcurementToolsSection — arrow-key tab navigation', () => {
     const first = screen.getByRole('tab', { name: /Spend Analysis/i });
     first.focus();
     fireEvent.keyDown(first, { key: 'ArrowLeft' });
-    expect(screen.getByRole('tab', { name: /AI Strategy Brief/i })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tab', { name: /Alert Thresholds/i })).toHaveAttribute('aria-selected', 'true');
   });
 
   it('ArrowRight then panel content reflects the newly active tab', () => {
@@ -1203,14 +1203,14 @@ describe('ProcurementToolsSection — arrow-key navigation to Sourcing Strategy 
     const tabs = screen.getAllByRole('tab');
 
     // Navigate all the way to the last tab
-    for (let i = 0; i < 4; i++) {
+    for (let i = 0; i < 5; i++) {
       const current = tabs.findIndex(t => t.getAttribute('aria-selected') === 'true');
       fireEvent.keyDown(tabs[current], { key: 'ArrowRight' });
     }
-    expect(tabs[4].getAttribute('aria-selected')).toBe('true');
+    expect(tabs[5].getAttribute('aria-selected')).toBe('true');
 
     // One more ArrowRight should wrap to first tab
-    fireEvent.keyDown(tabs[4], { key: 'ArrowRight' });
+    fireEvent.keyDown(tabs[5], { key: 'ArrowRight' });
     expect(tabs[0].getAttribute('aria-selected')).toBe('true');
     expect(screen.getByLabelText('Supplier: contracted')).toBeInTheDocument();
   });
@@ -1288,14 +1288,14 @@ describe('ProcurementToolsSection — arrow-key navigation to Sourcing Strategy 
     const tabs = screen.getAllByRole('tab');
 
     // Navigate all the way to the last tab
-    for (let i = 0; i < 4; i++) {
+    for (let i = 0; i < 5; i++) {
       const current = tabs.findIndex(t => t.getAttribute('aria-selected') === 'true');
       fireEvent.keyDown(tabs[current], { key: 'ArrowRight' });
     }
-    expect(tabs[4].getAttribute('aria-selected')).toBe('true');
+    expect(tabs[5].getAttribute('aria-selected')).toBe('true');
 
     // One more ArrowRight should wrap to first tab
-    fireEvent.keyDown(tabs[4], { key: 'ArrowRight' });
+    fireEvent.keyDown(tabs[5], { key: 'ArrowRight' });
     expect(tabs[0].getAttribute('aria-selected')).toBe('true');
     // Spend Analysis panel content visible in Arabic mode
     expect(screen.getByLabelText(/تحت عقد/)).toBeInTheDocument();
@@ -1311,5 +1311,204 @@ describe('ProcurementToolsSection — arrow-key navigation to Sourcing Strategy 
     fireEvent.keyDown(tabs[3], { key: 'ArrowLeft' });
     expect(tabs[2].getAttribute('aria-selected')).toBe('true');
     expect(screen.getByText(/استكشف جميع الاستراتيجيات/)).toBeInTheDocument();
+  });
+});
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Suite 11 — KPI Alert Thresholds panel
+   Covers: tab presence, input fields, localStorage initial load,
+           breach badge rendering, breach banner, save persistence.
+══════════════════════════════════════════════════════════════════════════ */
+
+const SK_THRESHOLDS = 'isc-tool-catmgmt-thresholds-v1';
+
+/** Pre-populate localStorage spend data for breach tests. */
+function seedSpend(contracted: boolean, annualSpend = 10000) {
+  const spend = [{ id: 'r1', supplier: 'ACME', category: '', subcategory: '', annualSpend, contracted, strategic: false, notes: '' }];
+  localStorage.setItem('isc-tool-catmgmt-spend-v2', JSON.stringify(spend));
+}
+
+describe('ProcurementToolsSection — KPI Alert Thresholds', () => {
+  /* ── Tab presence ───────────────────────────────────────────────────── */
+
+  it('Alert Thresholds tab exists in the tab list (LTR)', () => {
+    render(<ProcurementToolsSection isAr={false} />);
+    expect(screen.getByRole('tab', { name: /Alert Thresholds/i })).toBeInTheDocument();
+  });
+
+  it('Alert Thresholds tab exists in Arabic mode', () => {
+    render(<ProcurementToolsSection isAr={true} />);
+    expect(screen.getByRole('tab', { name: /حدود التنبيه/i })).toBeInTheDocument();
+  });
+
+  /* ── Panel content ──────────────────────────────────────────────────── */
+
+  it('panel shows warn and critical inputs for all three KPIs', () => {
+    render(<ProcurementToolsSection isAr={false} />);
+    fireEvent.click(screen.getByRole('tab', { name: /Alert Thresholds/i }));
+    expect(screen.getByLabelText(/Warn threshold for Contracted %/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Critical threshold for Contracted %/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Warn threshold for Top-3 Concentration %/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Critical threshold for Top-3 Concentration %/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Warn threshold for Market Risk Score/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Critical threshold for Market Risk Score/i)).toBeInTheDocument();
+  });
+
+  it('panel shows Arabic aria-labels in Arabic mode', () => {
+    render(<ProcurementToolsSection isAr={true} />);
+    fireEvent.click(screen.getByRole('tab', { name: /حدود التنبيه/i }));
+    expect(screen.getByLabelText(/حد التحذير لـ الإنفاق المتعاقد %/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/حد الإنذار الحرج لـ درجة مخاطر السوق/i)).toBeInTheDocument();
+  });
+
+  /* ── localStorage initial load ──────────────────────────────────────── */
+
+  it('draft input values are pre-filled from localStorage on mount', () => {
+    const stored = { contractedPct: { warn: 65, critical: 35, higherIsBetter: true, label: 'Contracted %' } };
+    localStorage.setItem(SK_THRESHOLDS, JSON.stringify(stored));
+    render(<ProcurementToolsSection isAr={false} />);
+    fireEvent.click(screen.getByRole('tab', { name: /Alert Thresholds/i }));
+    const warnInput = screen.getByLabelText(/Warn threshold for Contracted %/i) as HTMLInputElement;
+    expect(warnInput.value).toBe('65');
+    const critInput = screen.getByLabelText(/Critical threshold for Contracted %/i) as HTMLInputElement;
+    expect(critInput.value).toBe('35');
+  });
+
+  it('all three KPI drafts are restored from localStorage on mount', () => {
+    const stored = {
+      contractedPct: { warn: 70, critical: 40, higherIsBetter: true },
+      top3Pct:       { warn: 55, critical: 75, higherIsBetter: false },
+      porterAvg:     { warn: 3.5, critical: 4.5, higherIsBetter: false },
+    };
+    localStorage.setItem(SK_THRESHOLDS, JSON.stringify(stored));
+    render(<ProcurementToolsSection isAr={false} />);
+    fireEvent.click(screen.getByRole('tab', { name: /Alert Thresholds/i }));
+    expect((screen.getByLabelText(/Warn threshold for Contracted %/i) as HTMLInputElement).value).toBe('70');
+    expect((screen.getByLabelText(/Warn threshold for Top-3 Concentration %/i) as HTMLInputElement).value).toBe('55');
+    expect((screen.getByLabelText(/Warn threshold for Market Risk Score/i) as HTMLInputElement).value).toBe('3.5');
+  });
+
+  /* ── Breach badges on summary cards ────────────────────────────────── */
+
+  it('CRIT badge appears on Contracted % card when value is at or below the critical threshold', () => {
+    // higherIsBetter=true, critical=40 → contractedPct=0 is critical
+    const stored = { contractedPct: { warn: 70, critical: 40, higherIsBetter: true } };
+    localStorage.setItem(SK_THRESHOLDS, JSON.stringify(stored));
+    seedSpend(false); // 0% contracted
+    render(<ProcurementToolsSection isAr={false} />);
+    expect(screen.getAllByText('CRIT').length).toBeGreaterThan(0);
+  });
+
+  it('WARN badge appears on Contracted % card when value is between warn and critical', () => {
+    // warn=30, critical=−1 → contractedPct=0 is between: 0 <= 30 (warn) but 0 > -1 (not critical)
+    const stored = { contractedPct: { warn: 30, critical: -1, higherIsBetter: true } };
+    localStorage.setItem(SK_THRESHOLDS, JSON.stringify(stored));
+    seedSpend(false); // 0% contracted
+    render(<ProcurementToolsSection isAr={false} />);
+    expect(screen.getAllByText('WARN').length).toBeGreaterThan(0);
+    expect(screen.queryByText('CRIT')).toBeNull();
+  });
+
+  it('no breach badge when contracted % is above warn threshold', () => {
+    // 100% contracted, warn=70 → no breach
+    const stored = { contractedPct: { warn: 70, critical: 40, higherIsBetter: true } };
+    localStorage.setItem(SK_THRESHOLDS, JSON.stringify(stored));
+    seedSpend(true); // 100% contracted
+    render(<ProcurementToolsSection isAr={false} />);
+    expect(screen.queryByText('CRIT')).toBeNull();
+    expect(screen.queryByText('WARN')).toBeNull();
+  });
+
+  it('CRIT badge appears on Top-3 Concentration card when top3Pct exceeds critical threshold', () => {
+    // higherIsBetter=false, critical=70 → top3Pct=100 (single supplier) is critical
+    const stored = { top3Pct: { warn: 50, critical: 70, higherIsBetter: false } };
+    localStorage.setItem(SK_THRESHOLDS, JSON.stringify(stored));
+    seedSpend(false, 10000); // single supplier → top3Pct = 100%
+    render(<ProcurementToolsSection isAr={false} />);
+    expect(screen.getAllByText('CRIT').length).toBeGreaterThan(0);
+  });
+
+  it('no badge when no thresholds are configured', () => {
+    seedSpend(false);
+    render(<ProcurementToolsSection isAr={false} />);
+    expect(screen.queryByText('CRIT')).toBeNull();
+    expect(screen.queryByText('WARN')).toBeNull();
+  });
+
+  /* ── Breach banner ──────────────────────────────────────────────────── */
+
+  it('amber breach banner appears when any KPI is in breach', () => {
+    const stored = { contractedPct: { warn: 70, critical: 40, higherIsBetter: true } };
+    localStorage.setItem(SK_THRESHOLDS, JSON.stringify(stored));
+    seedSpend(false); // 0% contracted → breach
+    render(<ProcurementToolsSection isAr={false} />);
+    expect(screen.getByText(/One or more KPIs are breaching alert thresholds/i)).toBeInTheDocument();
+  });
+
+  it('breach banner does not appear when no thresholds are configured', () => {
+    seedSpend(false);
+    render(<ProcurementToolsSection isAr={false} />);
+    expect(screen.queryByText(/breaching alert thresholds/i)).toBeNull();
+  });
+
+  it('breach banner does not appear when all KPIs are within thresholds', () => {
+    const stored = { contractedPct: { warn: 30, critical: 10, higherIsBetter: true } };
+    localStorage.setItem(SK_THRESHOLDS, JSON.stringify(stored));
+    seedSpend(true); // 100% contracted → no breach (100 > 30)
+    render(<ProcurementToolsSection isAr={false} />);
+    expect(screen.queryByText(/breaching alert thresholds/i)).toBeNull();
+  });
+
+  /* ── Save persists to localStorage (no network call) ───────────────── */
+
+  it('clicking Save writes entered thresholds to localStorage synchronously', () => {
+    render(<ProcurementToolsSection isAr={false} />);
+    fireEvent.click(screen.getByRole('tab', { name: /Alert Thresholds/i }));
+    const warnInput = screen.getByLabelText(/Warn threshold for Contracted %/i);
+    const critInput = screen.getByLabelText(/Critical threshold for Contracted %/i);
+    fireEvent.change(warnInput, { target: { value: '65' } });
+    fireEvent.change(critInput, { target: { value: '35' } });
+    fireEvent.click(screen.getByRole('button', { name: /Save Alert Thresholds/i }));
+    const raw  = localStorage.getItem(SK_THRESHOLDS);
+    const saved = JSON.parse(raw ?? '{}');
+    expect(saved.contractedPct?.warn).toBe(65);
+    expect(saved.contractedPct?.critical).toBe(35);
+  });
+
+  it('saved thresholds immediately activate breach badges without a page reload', () => {
+    seedSpend(false); // 0% contracted
+    render(<ProcurementToolsSection isAr={false} />);
+    // No badges before setting thresholds
+    expect(screen.queryByText('CRIT')).toBeNull();
+    // Open thresholds tab, enter values, save
+    fireEvent.click(screen.getByRole('tab', { name: /Alert Thresholds/i }));
+    fireEvent.change(screen.getByLabelText(/Warn threshold for Contracted %/i), { target: { value: '70' } });
+    fireEvent.change(screen.getByLabelText(/Critical threshold for Contracted %/i), { target: { value: '40' } });
+    fireEvent.click(screen.getByRole('button', { name: /Save Alert Thresholds/i }));
+    // Navigate back to Spend Analysis to see badges
+    fireEvent.click(screen.getByRole('tab', { name: /Spend Analysis/i }));
+    expect(screen.getAllByText('CRIT').length).toBeGreaterThan(0);
+  });
+
+  it('Top-3 Concentration warn and critical inputs are correctly saved', () => {
+    render(<ProcurementToolsSection isAr={false} />);
+    fireEvent.click(screen.getByRole('tab', { name: /Alert Thresholds/i }));
+    fireEvent.change(screen.getByLabelText(/Warn threshold for Top-3 Concentration %/i), { target: { value: '55' } });
+    fireEvent.change(screen.getByLabelText(/Critical threshold for Top-3 Concentration %/i), { target: { value: '80' } });
+    fireEvent.click(screen.getByRole('button', { name: /Save Alert Thresholds/i }));
+    const saved = JSON.parse(localStorage.getItem(SK_THRESHOLDS) ?? '{}');
+    expect(saved.top3Pct?.warn).toBe(55);
+    expect(saved.top3Pct?.critical).toBe(80);
+  });
+
+  it('Market Risk Score warn threshold is correctly saved', () => {
+    render(<ProcurementToolsSection isAr={false} />);
+    fireEvent.click(screen.getByRole('tab', { name: /Alert Thresholds/i }));
+    fireEvent.change(screen.getByLabelText(/Warn threshold for Market Risk Score/i), { target: { value: '3.5' } });
+    fireEvent.change(screen.getByLabelText(/Critical threshold for Market Risk Score/i), { target: { value: '4.5' } });
+    fireEvent.click(screen.getByRole('button', { name: /Save Alert Thresholds/i }));
+    const saved = JSON.parse(localStorage.getItem(SK_THRESHOLDS) ?? '{}');
+    expect(saved.porterAvg?.warn).toBe(3.5);
+    expect(saved.porterAvg?.critical).toBe(4.5);
   });
 });
