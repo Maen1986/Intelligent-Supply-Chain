@@ -599,6 +599,31 @@ describe('POST /api/maturity/evidence/:id/confirm', () => {
     expect(createMock).not.toHaveBeenCalled();
   });
 
+  it('returns 409 without calling AI when the row is consultant_validated', async () => {
+    const consultantValidatedRow = {
+      ...EVIDENCE_ROW,
+      confidenceTier: 'consultant_validated',
+      aiEvaluation: {
+        plausible_support: true,
+        confidence:        'high',
+        flag_reason:       null,
+        summary:           'Consultant-verified document.',
+      },
+    };
+    dbState.selectRows = [consultantValidatedRow];
+
+    const res = await request(app())
+      .post('/api/maturity/evidence/42/confirm');
+
+    expect(res.status).toBe(409);
+    expect(res.body.ok).toBe(false);
+    expect(res.body.error).toMatch(/consultant.validated/i);
+    // Existing tier is echoed back
+    expect(res.body.confidence_tier).toBe('consultant_validated');
+    // AI must NOT have been invoked
+    expect(createMock).not.toHaveBeenCalled();
+  });
+
   it('returns 422 when the file is not found in storage', async () => {
     dbState.selectRows = [EVIDENCE_ROW];
     mockGetObjectEntityFile.mockRejectedValue(new MockObjectNotFoundError());

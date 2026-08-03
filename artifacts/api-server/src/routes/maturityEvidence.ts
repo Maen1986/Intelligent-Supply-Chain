@@ -248,6 +248,17 @@ router.post('/maturity/evidence/:id/confirm', requireSession, async (req, res) =
     return;
   }
 
+  // Guard: consultant-validated — must not be overwritten by AI re-evaluation
+  if (evidenceRow.confidenceTier === 'consultant_validated') {
+    res.status(409).json({
+      ok: false,
+      error: 'Evidence has been consultant-validated and cannot be re-confirmed. Contact your consultant to release it.',
+      confidence_tier: evidenceRow.confidenceTier,
+      ai_evaluation:   evidenceRow.aiEvaluation,
+    });
+    return;
+  }
+
   // Guard: already AI-evaluated — return the existing result without re-running
   if (evidenceRow.confidenceTier === 'ai_evaluated') {
     res.status(409).json({
