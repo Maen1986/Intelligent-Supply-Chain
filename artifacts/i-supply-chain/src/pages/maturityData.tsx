@@ -35,6 +35,8 @@ export interface Question {
   qAr: string;
   levels:   [string, string, string, string, string];
   levelsAr: [string, string, string, string, string];
+  /** 1–4 industry framework/standard abbreviations most relevant to this question */
+  frameworks?: string[];
 }
 
 /**
@@ -49,6 +51,8 @@ export interface SubSegment {
   /** Optional hint shown to the user before they answer this sub-segment */
   hint?: string;
   hintAr?: string;
+  /** 1–4 industry framework/standard abbreviations most relevant to this sub-segment */
+  frameworks?: string[];
   questions: Question[];
   /** Sub-segment level benchmarks — distinct from parent segment benchmarks */
   benchmarks: { gcc: number; topQuartile: number };
@@ -78,6 +82,8 @@ export interface Segment {
   shortTitleAr: string;
   icon: React.ElementType;
   color: string;
+  /** 1–4 industry framework/standard abbreviations most relevant to this segment */
+  frameworks?: string[];
   questions: Question[];
   /** Named sub-segments (6 per segment). Populated via maturitySubSegData1to5.ts */
   subSegments?: SubSegment[];
@@ -140,6 +146,7 @@ export const CORE_SEGMENTS: Segment[] = [
     icon: GitBranch,
     color: '#0B3D91',
     benchmarks: { gcc: 2.4, global: 2.9, best: 4.6 },
+    frameworks: ['ASCM/SCOR', 'Gartner', 'IBP'],
     questions: [
       {
         q: 'How well-defined and documented is your supply chain strategy, including its alignment to corporate goals and a 3–5 year roadmap?',
@@ -259,6 +266,7 @@ export const CORE_SEGMENTS: Segment[] = [
     icon: ShoppingCart,
     color: '#C9A84C',
     benchmarks: { gcc: 2.6, global: 3.1, best: 4.5 },
+    frameworks: ['CIPS', 'ISM/CPSM', 'APICS'],
     questions: [
       {
         q: 'How structured and consistently applied is your category management approach across all direct and indirect spend categories?',
@@ -378,6 +386,7 @@ export const CORE_SEGMENTS: Segment[] = [
     icon: FileText,
     color: '#0B6E4F',
     benchmarks: { gcc: 2.0, global: 2.7, best: 4.4 },
+    frameworks: ['IACCM/WCC', 'ISO 9001', 'CIPS'],
     questions: [
       {
         q: 'How effectively do you manage the full contract lifecycle — from initiation and drafting through approval, execution, obligation tracking, and renewal or expiry?',
@@ -497,6 +506,7 @@ export const CORE_SEGMENTS: Segment[] = [
     icon: Users,
     color: '#7B2D8B',
     benchmarks: { gcc: 2.2, global: 2.8, best: 4.5 },
+    frameworks: ['CIPS', 'ISO 44001', 'APICS'],
     questions: [
       {
         q: 'How formalised is your supplier segmentation model — distinguishing strategic, preferred, approved, and transactional suppliers by criticality and spend?',
@@ -616,6 +626,7 @@ export const CORE_SEGMENTS: Segment[] = [
     icon: Shield,
     color: '#B91C1C',
     benchmarks: { gcc: 2.1, global: 2.7, best: 4.3 },
+    frameworks: ['ISO 31000', 'CIPS', 'APICS SCOR'],
     questions: [
       {
         q: 'How comprehensively have you mapped supply chain risks at tier 1 and tier 2 supplier level, including concentration, single-source, and geographic risk?',
@@ -735,6 +746,7 @@ export const CORE_SEGMENTS: Segment[] = [
     icon: Leaf,
     color: '#15803D',
     benchmarks: { gcc: 1.8, global: 2.5, best: 4.2 },
+    frameworks: ['ISO 14001', 'ISO 45001', 'GRI'],
     questions: [
       {
         q: 'How comprehensively have you assessed and measured Scope 3 (supply chain) greenhouse gas emissions, including methodology, data quality, and coverage of spend categories?',
@@ -854,6 +866,7 @@ export const CORE_SEGMENTS: Segment[] = [
     icon: Cpu,
     color: '#5B21B6',
     benchmarks: { gcc: 2.3, global: 3.0, best: 4.6 },
+    frameworks: ['Gartner', 'ISO 27001', 'ASCM'],
     questions: [
       {
         q: 'How fully digitised is your procure-to-pay (P2P) process — from purchase requisition through purchase order, goods receipt, invoice, and payment?',
@@ -973,6 +986,7 @@ export const CORE_SEGMENTS: Segment[] = [
     icon: BarChart2,
     color: '#0369A1',
     benchmarks: { gcc: 2.3, global: 2.9, best: 4.5 },
+    frameworks: ['ASCM', 'APICS', 'IBP'],
     questions: [
       {
         q: 'How formal, accurate, and statistically rigorous is your demand forecasting process — including methodology, forecast accuracy measurement (MAPE/bias), and external signal integration?',
@@ -1092,6 +1106,7 @@ export const CORE_SEGMENTS: Segment[] = [
     icon: Package,
     color: '#059669',
     benchmarks: { gcc: 2.4, global: 3.0, best: 4.5 },
+    frameworks: ['ASCM', 'APICS', 'ABC-XYZ'],
     questions: [
       {
         q: 'How rigorously is your inventory policy defined — covering safety stock methodology, reorder point logic, and min/max levels — and how regularly is it reviewed and updated?',
@@ -1211,6 +1226,7 @@ export const CORE_SEGMENTS: Segment[] = [
     icon: Truck,
     color: '#0E7490',
     benchmarks: { gcc: 2.5, global: 3.1, best: 4.4 },
+    frameworks: ['CSCMP', 'FIATA', 'Incoterms'],
     questions: [
       {
         q: 'How formally are your logistics carriers and 3PLs governed — in terms of SLA agreements, KPI definitions, performance review cadence, and consequences for non-performance?',
@@ -1330,6 +1346,7 @@ export const CORE_SEGMENTS: Segment[] = [
     icon: GraduationCap,
     color: '#7C3AED',
     benchmarks: { gcc: 2.2, global: 2.8, best: 4.4 },
+    frameworks: ['CIPS', 'CSCMP', 'SHRM'],
     questions: [
       {
         q: 'How clearly defined is your supply chain organisation structure — in terms of reporting lines, role clarity, functional boundaries, and alignment to your supply chain strategy?',
@@ -1457,6 +1474,7 @@ export const INDUSTRY_MODULES: Segment[] = [
     color: '#B45309',
     benchmarks: { gcc: 2.4, global: 3.0, best: 4.5 },
     moduleFor: ['manufacturing', 'pharma', 'fmcg', 'construction'],
+    frameworks: ['ISO 9001', 'IATF 16949', 'OEE', 'TPM'],
     questions: [
       {
         q: 'How mature is your production planning and scheduling — in terms of Master Production Schedule (MPS) accuracy, capacity planning, and schedule adherence?',
@@ -1577,6 +1595,7 @@ export const INDUSTRY_MODULES: Segment[] = [
     color: '#0369A1',
     benchmarks: { gcc: 2.3, global: 2.9, best: 4.4 },
     moduleFor: ['logistics', 'marine'],
+    frameworks: ['IATA', 'FIATA', 'ISO 28001'],
     questions: [
       {
         q: 'How effectively is your fleet managed — in terms of utilisation, route efficiency, maintenance scheduling, cost-per-km tracking, and driver performance management?',
@@ -1697,6 +1716,7 @@ export const INDUSTRY_MODULES: Segment[] = [
     color: '#1D4ED8',
     benchmarks: { gcc: 2.0, global: 2.5, best: 4.3 },
     moduleFor: ['government'],
+    frameworks: ['Saudi Vision 2030', 'IKTVA', 'Nitaqat'],
     questions: [
       {
         q: 'How proactively does your organisation manage Saudi Nitaqat (Saudization) requirements — tracking localisation percentages by function, maintaining target status, and linking procurement hiring to workforce plans?',

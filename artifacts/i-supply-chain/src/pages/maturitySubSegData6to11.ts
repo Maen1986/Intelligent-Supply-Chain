@@ -56,6 +56,7 @@ export const ESG_SUB_SEGMENTS: SubSegmentData[] = [
       hint: 'Upload your most recent environmental performance report showing energy, water, and waste baselines.',
       hintAr: 'ارفع أحدث تقرير أداء بيئي يُظهر خطوط الأساس للطاقة والمياه والنفايات.',
     },
+    frameworks: ['ISO 14001', 'ISO 45001', 'GRI'],
     questions: [
       {
         q: 'How comprehensively has your organisation established and documented an environmental performance baseline — covering energy consumption, water usage, waste generation, and air emissions?',
@@ -133,6 +134,7 @@ export const ESG_SUB_SEGMENTS: SubSegmentData[] = [
       hint:    'Upload your most recent Scope 1 & 2 GHG inventory or sustainability report showing emissions data.',
       hintAr:  'ارفع أحدث جرد غازات الدفيئة (النطاقين 1 و2) أو تقرير الاستدامة الذي يُظهر بيانات الانبعاثات.',
     },
+    frameworks: ['ISO 14001', 'ISO 45001', 'GRI'],
     questions: [
       {
         q: 'How rigorously do you measure and manage Scope 1 and Scope 2 greenhouse gas emissions — including data completeness, calculation methodology, and internal verification?',
@@ -204,6 +206,7 @@ export const ESG_SUB_SEGMENTS: SubSegmentData[] = [
       logistics: 1.5, marine: 1.5, construction: 1.5, oil_gas: 1.5,
       government: 1.5, technology: 1.0, banking: 1.0, other: 1.0,
     },
+    frameworks: ['ISO 14001', 'ISO 45001', 'GRI'],
     questions: [
       {
         q: 'How comprehensively does your organisation monitor and enforce labour standards across its own operations — including working hours, wages, health and safety, and freedom of association?',
@@ -263,6 +266,7 @@ export const ESG_SUB_SEGMENTS: SubSegmentData[] = [
       hint:    'Upload a supplier sustainability audit report, EcoVadis scorecard, or supplier code of conduct acknowledgement.',
       hintAr:  'ارفع تقرير تدقيق الاستدامة للمورد أو بطاقة EcoVadis أو إقرار الالتزام بمدونة سلوك الموردين.',
     },
+    frameworks: ['ISO 14001', 'ISO 45001', 'GRI'],
     questions: [
       {
         q: 'How comprehensively are environmental, social, and governance (ESG) criteria embedded in your supplier selection and evaluation methodology — including weighting in RFQ scoring and contract award decisions?',
@@ -334,6 +338,7 @@ export const ESG_SUB_SEGMENTS: SubSegmentData[] = [
       logistics: 1.0, marine: 1.0, construction: 1.5, oil_gas: 1.0,
       government: 1.0, technology: 1.0, banking: 0.5, other: 1.0,
     },
+    frameworks: ['ISO 14001', 'ISO 45001', 'GRI'],
     questions: [
       {
         q: 'How systematically does your organisation reduce operational waste — measuring waste generation by type, diverting waste from landfill, and embedding waste reduction targets in operational improvement plans?',
@@ -387,6 +392,7 @@ export const ESG_SUB_SEGMENTS: SubSegmentData[] = [
       logistics: 1.0, marine: 1.0, construction: 1.0, oil_gas: 1.5,
       government: 1.5, technology: 1.0, banking: 1.5, other: 1.0,
     },
+    frameworks: ['ISO 14001', 'ISO 45001', 'GRI'],
     questions: [
       {
         q: 'How effectively is ESG governance structured at board and executive level — including board oversight of supply chain ESG risks, executive ownership, and ESG-linked executive remuneration?',
@@ -455,6 +461,7 @@ export const DIGITAL_SUB_SEGMENTS: SubSegmentData[] = [
       logistics: 1.0, marine: 1.0, construction: 1.0, oil_gas: 1.0,
       government: 1.0, technology: 1.5, banking: 1.0, other: 1.0,
     },
+    frameworks: ['Gartner', 'ISO 27001', 'ASCM'],
     questions: [
       {
         q: 'How comprehensively have you assessed your current supply chain technology landscape — identifying the systems in use, integration gaps, redundant tools, and overall capability shortfalls?',
@@ -514,6 +521,7 @@ export const DIGITAL_SUB_SEGMENTS: SubSegmentData[] = [
       hint:    'Upload a screenshot of your ERP system dashboard or the implementation/maintenance contract showing the modules deployed.',
       hintAr:  'ارفع لقطة شاشة من لوحة تحكم نظام ERP أو عقد التطبيق/الصيانة الذي يُظهر الوحدات المُنشأة.',
     },
+    frameworks: ['Gartner', 'ISO 27001', 'ASCM'],
     questions: [
       {
         q: 'How effectively is your ERP system configured and utilised for supply chain processes — including purchasing, inventory, demand planning, and order management — with minimal reliance on shadow spreadsheets?',
@@ -591,6 +599,7 @@ export const DIGITAL_SUB_SEGMENTS: SubSegmentData[] = [
       hint:    'Upload a screenshot of your supply chain visibility platform or the vendor contract confirming real-time tracking capability.',
       hintAr:  'ارفع لقطة شاشة من منصة رؤية سلسلة التوريد أو عقد البائع الذي يؤكد قدرة التتبع الآني.',
     },
+    frameworks: ['Gartner', 'ISO 27001', 'ASCM'],
     questions: [
       {
         q: 'How much end-to-end real-time visibility do you have across your supply chain — from upstream supplier inventory to in-transit stock and customer delivery status?',
@@ -644,6 +653,7 @@ export const DIGITAL_SUB_SEGMENTS: SubSegmentData[] = [
       logistics: 1.5, marine: 1.0, construction: 1.0, oil_gas: 1.5,
       government: 1.0, technology: 1.5, banking: 1.0, other: 1.0,
     },
+    frameworks: ['Gartner', 'ISO 27001', 'ASCM'],
     questions: [
       {
         q: 'How sophisticated is your use of data analytics for supply chain performance management — moving beyond descriptive reporting towards predictive and prescriptive analytics?',
@@ -697,6 +707,7 @@ export const DIGITAL_SUB_SEGMENTS: SubSegmentData[] = [
       logistics: 1.5, marine: 1.0, construction: 1.0, oil_gas: 1.5,
       government: 1.5, technology: 1.5, banking: 1.0, other: 1.0,
     },
+    frameworks: ['Gartner', 'ISO 27001', 'ASCM'],
     questions: [
       {
         q: 'How automated are your procure-to-pay and order-to-cash processes — including purchase requisition approval, PO creation, invoice processing, and payment initiation?',
@@ -750,6 +761,7 @@ export const DIGITAL_SUB_SEGMENTS: SubSegmentData[] = [
       logistics: 1.5, marine: 1.5, construction: 1.0, oil_gas: 1.5,
       government: 1.5, technology: 1.5, banking: 1.5, other: 1.0,
     },
+    frameworks: ['Gartner', 'ISO 27001', 'ASCM'],
     questions: [
       {
         q: 'How robustly is supply chain cybersecurity governed — covering information security policies, access controls for supply chain systems, incident response plans, and regular penetration testing?',
@@ -824,6 +836,7 @@ export const DEMAND_SUB_SEGMENTS: SubSegmentData[] = [
       hint:    'Upload your most recent demand forecast accuracy report showing MAPE, bias, and trend data.',
       hintAr:  'ارفع أحدث تقرير دقة التنبؤ بالطلب يُظهر MAPE والتحيز وبيانات الاتجاه.',
     },
+    frameworks: ['ASCM', 'APICS', 'IBP'],
     questions: [
       {
         q: 'How sophisticated are the statistical methods used to generate demand forecasts — and how consistently is forecast accuracy (MAPE, BIAS) measured, reported, and improved?',
@@ -877,6 +890,7 @@ export const DEMAND_SUB_SEGMENTS: SubSegmentData[] = [
       logistics: 1.0, marine: 0.5, construction: 1.0, oil_gas: 1.5,
       government: 1.0, technology: 1.0, banking: 0.5, other: 1.0,
     },
+    frameworks: ['ASCM', 'APICS', 'IBP'],
     questions: [
       {
         q: 'How mature and disciplined is your S&OP process — in terms of cross-functional participation, meeting cadence, data quality, decision-making authority, and executive sponsorship?',
@@ -930,6 +944,7 @@ export const DEMAND_SUB_SEGMENTS: SubSegmentData[] = [
       logistics: 1.0, marine: 0.5, construction: 0.5, oil_gas: 1.0,
       government: 0.5, technology: 1.5, banking: 0.5, other: 1.0,
     },
+    frameworks: ['ASCM', 'APICS', 'IBP'],
     questions: [
       {
         q: 'How effectively does your organisation use near-real-time demand signals — such as point-of-sale data, distributor sell-out, e-commerce trends, and web analytics — to adjust short-term demand plans?',
@@ -983,6 +998,7 @@ export const DEMAND_SUB_SEGMENTS: SubSegmentData[] = [
       logistics: 1.0, marine: 0.5, construction: 0.5, oil_gas: 1.0,
       government: 0.5, technology: 1.0, banking: 0.5, other: 1.0,
     },
+    frameworks: ['ASCM', 'APICS', 'IBP'],
     questions: [
       {
         q: 'How mature is your collaborative planning, forecasting, and replenishment (CPFR) programme with key customers — in terms of data sharing, joint forecast reconciliation, and supply commitment protocols?',
@@ -1018,6 +1034,7 @@ export const DEMAND_SUB_SEGMENTS: SubSegmentData[] = [
       logistics: 1.5, marine: 1.0, construction: 1.0, oil_gas: 1.0,
       government: 0.5, technology: 1.0, banking: 0.5, other: 1.0,
     },
+    frameworks: ['ASCM', 'APICS', 'IBP'],
     questions: [
       {
         q: 'How rigorously are peak season and major promotional events planned from a supply chain perspective — covering pre-build inventory, supplier capacity confirmation, logistics capacity booking, and post-event performance review?',
@@ -1053,6 +1070,7 @@ export const DEMAND_SUB_SEGMENTS: SubSegmentData[] = [
       logistics: 0.5, marine: 0.5, construction: 0.5, oil_gas: 1.0,
       government: 0.5, technology: 1.5, banking: 0.5, other: 1.0,
     },
+    frameworks: ['ASCM', 'APICS', 'IBP'],
     questions: [
       {
         q: 'How formally is supply chain planning integrated into the new product introduction (NPI) process — covering supply chain readiness reviews, launch inventory build, supplier qualification timelines, and ramp-up monitoring?',
@@ -1109,6 +1127,7 @@ export const INVENTORY_SUB_SEGMENTS: SubSegmentData[] = [
       hint:    'Upload your most recent inventory classification report (ABC, XYZ, or similar) showing item segmentation and policy outcomes.',
       hintAr:  'ارفع أحدث تقرير تصنيف المخزون (ABC أو XYZ أو ما يماثلها) يُظهر تصنيف البنود ونتائج السياسة.',
     },
+    frameworks: ['ASCM', 'APICS', 'ABC-XYZ'],
     questions: [
       {
         q: 'How comprehensively is your inventory segmented using ABC (value) and XYZ (demand variability) classification — and how are differentiated policies applied by segment?',
@@ -1162,6 +1181,7 @@ export const INVENTORY_SUB_SEGMENTS: SubSegmentData[] = [
       logistics: 1.0, marine: 1.0, construction: 1.0, oil_gas: 1.5,
       government: 1.0, technology: 1.0, banking: 0.5, other: 1.0,
     },
+    frameworks: ['ASCM', 'APICS', 'ABC-XYZ'],
     questions: [
       {
         q: 'How rigorously is safety stock calculated — using statistical methods that account for demand variability, lead time variability, and required service levels — rather than fixed days-of-stock rules?',
@@ -1197,6 +1217,7 @@ export const INVENTORY_SUB_SEGMENTS: SubSegmentData[] = [
       logistics: 1.0, marine: 1.0, construction: 1.0, oil_gas: 1.5,
       government: 1.0, technology: 1.0, banking: 0.5, other: 1.0,
     },
+    frameworks: ['ASCM', 'APICS', 'ABC-XYZ'],
     questions: [
       {
         q: 'How formally are replenishment policies defined — including reorder point (ROP), economic order quantity (EOQ), and min/max parameters — and how consistently are they applied and reviewed across the SKU portfolio?',
@@ -1232,6 +1253,7 @@ export const INVENTORY_SUB_SEGMENTS: SubSegmentData[] = [
       logistics: 1.0, marine: 1.0, construction: 1.0, oil_gas: 1.5,
       government: 1.0, technology: 1.5, banking: 0.5, other: 1.0,
     },
+    frameworks: ['ASCM', 'APICS', 'ABC-XYZ'],
     questions: [
       {
         q: 'How systematically is slow-moving and obsolete inventory identified, reported to management, and acted upon — through write-down provisioning, disposal, or recovery programmes?',
@@ -1267,6 +1289,7 @@ export const INVENTORY_SUB_SEGMENTS: SubSegmentData[] = [
       logistics: 1.5, marine: 1.0, construction: 1.0, oil_gas: 1.5,
       government: 1.0, technology: 1.0, banking: 0.5, other: 1.0,
     },
+    frameworks: ['ASCM', 'APICS', 'ABC-XYZ'],
     questions: [
       {
         q: 'How effectively is inventory optimised across your distribution network — balancing stock across locations to minimise total holding cost while protecting service levels?',
@@ -1302,6 +1325,7 @@ export const INVENTORY_SUB_SEGMENTS: SubSegmentData[] = [
       logistics: 1.5, marine: 1.0, construction: 1.0, oil_gas: 1.5,
       government: 1.0, technology: 1.0, banking: 0.5, other: 1.0,
     },
+    frameworks: ['ASCM', 'APICS', 'ABC-XYZ'],
     questions: [
       {
         q: 'How advanced is your warehouse management system (WMS) and inventory tracking technology — in terms of real-time stock accuracy, putaway/picking optimisation, and integration with supply chain systems?',
@@ -1352,6 +1376,7 @@ export const LOGISTICS_SUB_SEGMENTS: SubSegmentData[] = [
       logistics: 1.5, marine: 1.5, construction: 1.5, oil_gas: 1.5,
       government: 1.0, technology: 1.0, banking: 0.5, other: 1.0,
     },
+    frameworks: ['CSCMP', 'FIATA', 'Incoterms'],
     questions: [
       {
         q: 'How systematically are transport mode decisions made — balancing total cost (freight, inventory-in-transit, tariffs), speed, reliability, and carbon footprint across your inbound and outbound freight?',
@@ -1405,6 +1430,7 @@ export const LOGISTICS_SUB_SEGMENTS: SubSegmentData[] = [
       logistics: 1.5, marine: 1.5, construction: 1.5, oil_gas: 1.5,
       government: 1.0, technology: 1.0, banking: 0.5, other: 1.0,
     },
+    frameworks: ['CSCMP', 'FIATA', 'Incoterms'],
     questions: [
       {
         q: 'How formally are your logistics carriers and 3PL providers governed — in terms of SLA completeness, KPI definition, performance review cadence, and escalation and exit protocols?',
@@ -1440,6 +1466,7 @@ export const LOGISTICS_SUB_SEGMENTS: SubSegmentData[] = [
       logistics: 1.5, marine: 1.0, construction: 1.0, oil_gas: 1.0,
       government: 1.0, technology: 1.5, banking: 0.5, other: 1.0,
     },
+    frameworks: ['CSCMP', 'FIATA', 'Incoterms'],
     questions: [
       {
         q: 'How deliberately is your last-mile distribution network designed — covering hub-spoke vs. direct delivery trade-offs, delivery zone assignments, multi-carrier orchestration, and service-level differentiation by customer segment?',
@@ -1475,6 +1502,7 @@ export const LOGISTICS_SUB_SEGMENTS: SubSegmentData[] = [
       logistics: 1.5, marine: 1.0, construction: 1.0, oil_gas: 1.5,
       government: 1.0, technology: 1.0, banking: 0.5, other: 1.0,
     },
+    frameworks: ['CSCMP', 'FIATA', 'Incoterms'],
     questions: [
       {
         q: 'How efficiently are your warehouse operations managed — measuring space utilisation, pick accuracy, order cycle time, labour productivity, and the use of automation?',
@@ -1516,6 +1544,7 @@ export const LOGISTICS_SUB_SEGMENTS: SubSegmentData[] = [
       hint:    'Upload your Authorised Economic Operator (AEO) certificate, customs compliance audit report, or equivalent authorisation.',
       hintAr:  'ارفع شهادة المشغّل الاقتصادي المعتمد (AEO) أو تقرير تدقيق الامتثال الجمركي أو ما يعادلها.',
     },
+    frameworks: ['CSCMP', 'FIATA', 'Incoterms'],
     questions: [
       {
         q: 'How mature is your customs and trade compliance programme — in terms of documentation completeness, HS code accuracy, import/export licensing, and proactive regulatory monitoring?',
@@ -1551,6 +1580,7 @@ export const LOGISTICS_SUB_SEGMENTS: SubSegmentData[] = [
       logistics: 1.5, marine: 1.0, construction: 1.0, oil_gas: 1.0,
       government: 1.0, technology: 1.5, banking: 0.5, other: 1.0,
     },
+    frameworks: ['CSCMP', 'FIATA', 'Incoterms'],
     questions: [
       {
         q: 'How mature is your reverse logistics operation — covering returns authorisation, product recovery grading, refurbishment, disposal, and customer credits — and how effectively are return costs tracked?',
@@ -1601,6 +1631,7 @@ export const ORG_TALENT_SUB_SEGMENTS: SubSegmentData[] = [
       logistics: 1.5, marine: 1.5, construction: 1.0, oil_gas: 1.5,
       government: 1.5, technology: 1.0, banking: 0.5, other: 1.0,
     },
+    frameworks: ['CIPS', 'CSCMP', 'SHRM'],
     questions: [
       {
         q: 'How well is your supply chain organisation structured — with clearly defined roles, appropriate spans of control, unambiguous reporting lines, and cross-functional coordination mechanisms?',
@@ -1660,6 +1691,7 @@ export const ORG_TALENT_SUB_SEGMENTS: SubSegmentData[] = [
       hint:    'Upload your documented supply chain competency framework, role profiles, or competency assessment results.',
       hintAr:  'ارفع إطار الكفاءات الموثّق لسلسلة التوريد أو ملفات الأدوار أو نتائج تقييم الكفاءات.',
     },
+    frameworks: ['CIPS', 'CSCMP', 'SHRM'],
     questions: [
       {
         q: 'How comprehensively is a supply chain competency framework defined and applied — covering technical skills, leadership behaviours, digital literacy, and sustainability knowledge across all supply chain roles?',
@@ -1701,6 +1733,7 @@ export const ORG_TALENT_SUB_SEGMENTS: SubSegmentData[] = [
       hint:    'Upload your L&D programme calendar, training completion records, or formal development plan for supply chain staff.',
       hintAr:  'ارفع تقويم برنامج التعلّم والتطوير أو سجلات إتمام التدريب أو خطة التطوير الرسمية لموظفي سلسلة التوريد.',
     },
+    frameworks: ['CIPS', 'CSCMP', 'SHRM'],
     questions: [
       {
         q: 'How structured and effective are supply chain learning and development programmes — covering training needs analysis, programme delivery (formal, digital, on-the-job), and measured outcomes?',
@@ -1736,6 +1769,7 @@ export const ORG_TALENT_SUB_SEGMENTS: SubSegmentData[] = [
       logistics: 1.5, marine: 1.5, construction: 1.0, oil_gas: 1.5,
       government: 1.5, technology: 1.5, banking: 0.5, other: 1.0,
     },
+    frameworks: ['CIPS', 'CSCMP', 'SHRM'],
     questions: [
       {
         q: 'How effective is your organisation at attracting qualified supply chain talent — including employer brand, university partnerships, Saudization pipeline, and competitive compensation benchmarking?',
@@ -1789,6 +1823,7 @@ export const ORG_TALENT_SUB_SEGMENTS: SubSegmentData[] = [
       logistics: 1.5, marine: 1.5, construction: 1.0, oil_gas: 1.5,
       government: 1.5, technology: 1.0, banking: 0.5, other: 1.0,
     },
+    frameworks: ['CIPS', 'CSCMP', 'SHRM'],
     questions: [
       {
         q: 'How formally and rigorously is supply chain succession planning managed — identifying critical roles, assessing successor readiness (Ready Now / 1-2 years / 3-5 years), and developing accelerated pathways for high-potential talent?',
@@ -1824,6 +1859,7 @@ export const ORG_TALENT_SUB_SEGMENTS: SubSegmentData[] = [
       logistics: 1.5, marine: 1.5, construction: 1.0, oil_gas: 1.5,
       government: 1.5, technology: 1.5, banking: 0.5, other: 1.0,
     },
+    frameworks: ['CIPS', 'CSCMP', 'SHRM'],
     questions: [
       {
         q: 'How effectively does your organisation manage the people and culture dimension of supply chain transformation — using structured change management methodologies, stakeholder engagement plans, and adoption measurement?',
@@ -1875,6 +1911,7 @@ export const MFG_OPS_SUB_SEGMENTS: SubSegmentData[] = [
       logistics: 0.5, marine: 0.5, construction: 1.5, oil_gas: 1.0,
       government: 0.5, technology: 0.5, banking: 0.5, other: 0.5,
     },
+    frameworks: ['ISO 9001', 'IATF 16949', 'OEE', 'TPM'],
     questions: [
       {
         q: 'How mature is your production planning and scheduling — including Master Production Schedule accuracy, capacity planning integration with the S&OP cycle, and schedule adherence measurement?',
@@ -1916,6 +1953,7 @@ export const MFG_OPS_SUB_SEGMENTS: SubSegmentData[] = [
       hint:    'Upload your ISO 9001 or equivalent quality management certificate, or a recent internal/external quality audit report.',
       hintAr:  'ارفع شهادة ISO 9001 أو ما يعادلها لنظام إدارة الجودة أو تقرير تدقيق جودة داخلي/خارجي حديث.',
     },
+    frameworks: ['ISO 9001', 'IATF 16949', 'OEE', 'TPM'],
     questions: [
       {
         q: 'How effectively is production quality controlled — including in-process inspection, First Pass Yield (FPY) measurement, defect root-cause analysis, and supplier quality linkage?',
@@ -1957,6 +1995,7 @@ export const MFG_OPS_SUB_SEGMENTS: SubSegmentData[] = [
       hint:    'Upload your OEE dashboard screenshot or a plant performance report showing Availability, Performance, and Quality metrics.',
       hintAr:  'ارفع لقطة شاشة من لوحة تحكم OEE أو تقرير أداء المصنع يُظهر مقاييس التوافرية والأداء والجودة.',
     },
+    frameworks: ['ISO 9001', 'IATF 16949', 'OEE', 'TPM'],
     questions: [
       {
         q: 'How well do you measure and manage Overall Equipment Effectiveness (OEE) — and how systematically are availability, performance, and quality losses analysed and reduced through a TPM programme?',
@@ -1992,6 +2031,7 @@ export const MFG_OPS_SUB_SEGMENTS: SubSegmentData[] = [
       logistics: 0.5, marine: 0.5, construction: 1.0, oil_gas: 1.0,
       government: 0.5, technology: 1.5, banking: 0.5, other: 0.5,
     },
+    frameworks: ['ISO 9001', 'IATF 16949', 'OEE', 'TPM'],
     questions: [
       {
         q: 'How accurately is your Bill of Materials (BOM) maintained — and how effectively is engineering change management controlled to prevent production disruptions and material waste?',
@@ -2027,6 +2067,7 @@ export const MFG_OPS_SUB_SEGMENTS: SubSegmentData[] = [
       logistics: 1.0, marine: 1.0, construction: 1.5, oil_gas: 1.0,
       government: 0.5, technology: 0.5, banking: 0.5, other: 0.5,
     },
+    frameworks: ['ISO 9001', 'IATF 16949', 'OEE', 'TPM'],
     questions: [
       {
         q: 'How deeply are Lean manufacturing principles and continuous improvement methodologies embedded — including 5S, Kaizen events, Value Stream Mapping, and systematic waste elimination across production operations?',
@@ -2062,6 +2103,7 @@ export const MFG_OPS_SUB_SEGMENTS: SubSegmentData[] = [
       logistics: 0.5, marine: 0.5, construction: 1.5, oil_gas: 1.5,
       government: 0.5, technology: 1.0, banking: 0.5, other: 0.5,
     },
+    frameworks: ['ISO 9001', 'IATF 16949', 'OEE', 'TPM'],
     questions: [
       {
         q: 'How rigorously do you analyse make-or-buy decisions and govern outsourced manufacturing relationships — ensuring strategic alignment, cost competitiveness, quality control, and resilience?',
@@ -2113,6 +2155,7 @@ export const FLEET_OPS_SUB_SEGMENTS: SubSegmentData[] = [
       logistics: 1.5, marine: 1.5, construction: 1.5, oil_gas: 1.5,
       government: 1.0, technology: 0.5, banking: 0.5, other: 1.0,
     },
+    frameworks: ['IATA', 'FIATA', 'ISO 28001'],
     questions: [
       {
         q: 'How effectively is your fleet managed — in terms of utilisation, route efficiency, cost-per-km tracking, driver performance management, and use of TMS/fleet telematics?',
@@ -2148,6 +2191,7 @@ export const FLEET_OPS_SUB_SEGMENTS: SubSegmentData[] = [
       logistics: 1.5, marine: 1.5, construction: 1.0, oil_gas: 1.5,
       government: 1.0, technology: 0.5, banking: 0.5, other: 1.0,
     },
+    frameworks: ['IATA', 'FIATA', 'ISO 28001'],
     questions: [
       {
         q: 'How efficiently are your port or hub operations managed — tracking berth utilisation, dwell time, cargo handling rates, and turnaround times against GCC benchmarks?',
@@ -2183,6 +2227,7 @@ export const FLEET_OPS_SUB_SEGMENTS: SubSegmentData[] = [
       logistics: 1.5, marine: 1.5, construction: 1.5, oil_gas: 1.5,
       government: 1.5, technology: 0.5, banking: 0.5, other: 1.0,
     },
+    frameworks: ['IATA', 'FIATA', 'ISO 28001'],
     questions: [
       {
         q: 'How effectively do you manage dangerous goods (DG) and hazardous materials — in terms of IMDG/IATA/ADR regulatory compliance, staff certification, incident prevention, and third-party audit performance?',
@@ -2218,6 +2263,7 @@ export const FLEET_OPS_SUB_SEGMENTS: SubSegmentData[] = [
       logistics: 1.5, marine: 1.5, construction: 1.0, oil_gas: 1.5,
       government: 1.0, technology: 0.5, banking: 0.5, other: 1.0,
     },
+    frameworks: ['IATA', 'FIATA', 'ISO 28001'],
     questions: [
       {
         q: 'How well coordinated is your intermodal and multimodal logistics — enabling seamless cargo transfer between sea, road, rail, and air with near-zero handoff delays and full visibility across all modes?',
@@ -2253,6 +2299,7 @@ export const FLEET_OPS_SUB_SEGMENTS: SubSegmentData[] = [
       logistics: 1.5, marine: 0.5, construction: 0.5, oil_gas: 0.5,
       government: 1.0, technology: 1.5, banking: 0.5, other: 1.0,
     },
+    frameworks: ['IATA', 'FIATA', 'ISO 28001'],
     questions: [
       {
         q: 'How mature is your urban delivery operation at the vehicle and driver level — measuring telematics utilisation, driver behaviour scoring, first-attempt delivery rate, cost-per-stop, and adoption of sustainable urban delivery modes (EVs, cargo bikes, micro-hubs)?',
@@ -2288,6 +2335,7 @@ export const FLEET_OPS_SUB_SEGMENTS: SubSegmentData[] = [
       logistics: 1.5, marine: 1.5, construction: 1.5, oil_gas: 1.5,
       government: 1.0, technology: 0.5, banking: 0.5, other: 1.0,
     },
+    frameworks: ['IATA', 'FIATA', 'ISO 28001'],
     questions: [
       {
         q: 'How mature is your fleet and asset maintenance strategy — moving beyond reactive break-fix and preventive maintenance towards condition-based and predictive maintenance using telematics and IoT data?',
@@ -2345,6 +2393,7 @@ export const REGULATORY_SUB_SEGMENTS: SubSegmentData[] = [
       hint:    'Upload your most recent Nitaqat compliance certificate from Absher Business or Qiwa showing your Saudisation tier.',
       hintAr:  'ارفع أحدث شهادة الامتثال لنطاقات من أبشر للأعمال أو قوى يُظهر درجة السعودة.',
     },
+    frameworks: ['Saudi Vision 2030', 'IKTVA', 'Nitaqat'],
     questions: [
       {
         q: 'How proactively does your organisation manage Nitaqat (Saudization) requirements — tracking localisation percentages by supply chain function, maintaining target band status, and linking procurement hiring to Saudi workforce plans?',
@@ -2404,6 +2453,7 @@ export const REGULATORY_SUB_SEGMENTS: SubSegmentData[] = [
       hint:    'Upload your most recent IKTVA scorecard issued by Saudi Aramco or the relevant authority.',
       hintAr:  'ارفع أحدث بطاقة IKTVA الصادرة من أرامكو السعودية أو الجهة المختصة.',
     },
+    frameworks: ['Saudi Vision 2030', 'IKTVA', 'Nitaqat'],
     questions: [
       {
         q: 'How rigorously does your organisation measure, manage, and maximise IKTVA (or equivalent local content) performance — including supplier local content data collection, reporting accuracy, and strategic local content development plans?',
@@ -2445,6 +2495,7 @@ export const REGULATORY_SUB_SEGMENTS: SubSegmentData[] = [
       hint:    'Upload your import/export licence, customs broker authorisation letter, or most recent trade compliance audit.',
       hintAr:  'ارفع رخصة الاستيراد/التصدير أو خطاب تفويض الوكيل الجمركي أو أحدث تدقيق امتثال تجاري.',
     },
+    frameworks: ['Saudi Vision 2030', 'IKTVA', 'Nitaqat'],
     questions: [
       {
         q: 'How comprehensively are import and export licences managed — covering licence tracking, renewal scheduling, dual-use item controls, international sanctions screening, and customs broker governance?',
@@ -2480,6 +2531,7 @@ export const REGULATORY_SUB_SEGMENTS: SubSegmentData[] = [
       logistics: 1.0, marine: 0.5, construction: 1.5, oil_gas: 1.5,
       government: 1.5, technology: 1.5, banking: 0.5, other: 1.0,
     },
+    frameworks: ['Saudi Vision 2030', 'IKTVA', 'Nitaqat'],
     questions: [
       {
         q: 'How comprehensively is product regulatory compliance managed — including SASO/SFDA/GSO certification tracking, product labelling compliance, shelf-life management, and product recall readiness?',
@@ -2515,6 +2567,7 @@ export const REGULATORY_SUB_SEGMENTS: SubSegmentData[] = [
       logistics: 1.5, marine: 1.5, construction: 1.5, oil_gas: 1.5,
       government: 1.5, technology: 1.5, banking: 1.0, other: 1.0,
     },
+    frameworks: ['Saudi Vision 2030', 'IKTVA', 'Nitaqat'],
     questions: [
       {
         q: 'How rigorously does your organisation comply with Saudi government procurement laws and regulations — including Regulation of Government Tenders & Procurement, ETIMAD portal requirements, mandatory local content, and public sector contract governance?',
@@ -2556,6 +2609,7 @@ export const REGULATORY_SUB_SEGMENTS: SubSegmentData[] = [
       hint:    'Upload your current Halal certification issued by SASO or a GCC-approved certification body.',
       hintAr:  'ارفع شهادة الحلال الحالية الصادرة من هيئة SASO أو هيئة اعتماد معتمدة من دول مجلس التعاون.',
     },
+    frameworks: ['Saudi Vision 2030', 'IKTVA', 'Nitaqat'],
     questions: [
       {
         q: 'How comprehensively is Halal certification managed across your supply chain — covering raw material supplier certification, production segregation, cold chain integrity, logistics Halal controls, and end-to-end traceability?',

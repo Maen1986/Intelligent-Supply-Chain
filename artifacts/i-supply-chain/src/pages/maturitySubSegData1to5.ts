@@ -29,6 +29,8 @@ export interface SubSegmentData {
   titleAr: string;
   hint?: string;
   hintAr?: string;
+  /** 1–4 industry framework/standard abbreviations most relevant to this sub-segment */
+  frameworks?: string[];
   questions: {
     q: string;
     qAr: string;
@@ -69,6 +71,7 @@ export const STRATEGY_SUB_SEGMENTS: SubSegmentData[] = [
       hint: 'Upload your supply chain strategy document (board-approved, dated within the last 12 months).',
       hintAr: 'ارفع وثيقة استراتيجية سلسلة الإمداد (معتمدة من مجلس الإدارة، خلال آخر 12 شهرًا).',
     },
+    frameworks: ['ASCM/SCOR', 'Gartner', 'IBP'],
     questions: [
       {
         q: 'How clearly is your supply chain strategy documented and explicitly linked to the organisation\'s corporate strategic objectives?',
@@ -146,6 +149,7 @@ export const STRATEGY_SUB_SEGMENTS: SubSegmentData[] = [
       hint: 'Upload a network design report or executive summary of a footprint review conducted within the last 3 years.',
       hintAr: 'ارفع تقرير تصميم الشبكة أو ملخصًا تنفيذيًا لمراجعة البصمة التشغيلية أُجريت خلال السنوات الثلاث الأخيرة.',
     },
+    frameworks: ['ASCM/SCOR', 'Gartner', 'IBP'],
     questions: [
       {
         q: 'How rigorously and regularly do you review your supply chain network design — covering facility locations, distribution channels, and transportation models — against evolving business requirements?',
@@ -223,6 +227,7 @@ export const STRATEGY_SUB_SEGMENTS: SubSegmentData[] = [
       hint: 'Upload an S&OP or IBP process charter, meeting agenda template, or monthly executive pack sample.',
       hintAr: 'ارفع ميثاق عملية S&OP أو IBP أو نموذج جدول اجتماع أو نموذجًا للحزمة التنفيذية الشهرية.',
     },
+    frameworks: ['ASCM/SCOR', 'Gartner', 'IBP'],
     questions: [
       {
         q: 'How mature is your S&OP or IBP process in integrating supply chain plans with financial forecasting and strategic capital allocation decisions?',
@@ -294,6 +299,7 @@ export const STRATEGY_SUB_SEGMENTS: SubSegmentData[] = [
       logistics: 1.0, marine: 1.5, construction: 1.0, oil_gas: 1.5,
       government: 1.5, technology: 1.0, banking: 1.0, other: 1.0,
     },
+    frameworks: ['ASCM/SCOR', 'Gartner', 'IBP'],
     questions: [
       {
         q: 'How systematically do you apply scenario planning to evaluate major strategic supply chain options before committing to capital or structural decisions?',
@@ -371,6 +377,7 @@ export const STRATEGY_SUB_SEGMENTS: SubSegmentData[] = [
       hint: 'Upload a sample KPI dashboard or scorecard report showing supply chain metrics, owners, and targets.',
       hintAr: 'ارفع نموذجًا للوحة مؤشرات الأداء أو تقرير بطاقة الأداء يُظهر مقاييس سلسلة الإمداد ومالكيها ومستهدفاتها.',
     },
+    frameworks: ['ASCM/SCOR', 'Gartner', 'IBP'],
     questions: [
       {
         q: 'How comprehensive and well-cascaded is your supply chain KPI framework — from board-level strategic metrics down to operational team targets?',
@@ -442,6 +449,7 @@ export const STRATEGY_SUB_SEGMENTS: SubSegmentData[] = [
       logistics: 1.0, marine: 1.0, construction: 1.0, oil_gas: 1.0,
       government: 1.0, technology: 1.5, banking: 1.5, other: 1.0,
     },
+    frameworks: ['ASCM/SCOR', 'Gartner', 'IBP'],
     questions: [
       {
         q: 'How mature and specific is your supply chain digital transformation roadmap — with clear technology priorities, investment cases, delivery timelines, and benefit realisation milestones?',
@@ -530,6 +538,7 @@ export const PROCUREMENT_SUB_SEGMENTS: SubSegmentData[] = [
       hint: 'Upload a category strategy or sourcing plan for one of your strategic spend categories.',
       hintAr: 'ارفع استراتيجية فئة أو خطة توريد لإحدى فئات الإنفاق الاستراتيجية لديكم.',
     },
+    frameworks: ['CIPS', 'ISM/CPSM', 'APICS'],
     questions: [
       {
         q: 'How structured and consistently applied is your category management approach — with documented category strategies, defined sourcing levers, and market intelligence informing decisions?',
@@ -607,6 +616,7 @@ export const PROCUREMENT_SUB_SEGMENTS: SubSegmentData[] = [
       hint: 'Upload an anonymised RFP evaluation scorecard or tender award summary.',
       hintAr: 'ارفع بطاقة تقييم مُجهَّلة لـ RFP أو ملخص ترسية المناقصة.',
     },
+    frameworks: ['CIPS', 'ISM/CPSM', 'APICS'],
     questions: [
       {
         q: 'How consistently do you apply a formal, multi-stage sourcing methodology — covering market sounding, RFI, RFQ/RFP, evaluation, negotiation, and award — when selecting or renewing strategic suppliers?',
@@ -678,6 +688,7 @@ export const PROCUREMENT_SUB_SEGMENTS: SubSegmentData[] = [
       logistics: 1.0, marine: 1.0, construction: 1.0, oil_gas: 1.5,
       government: 1.5, technology: 1.0, banking: 1.0, other: 1.0,
     },
+    frameworks: ['CIPS', 'ISM/CPSM', 'APICS'],
     questions: [
       {
         q: 'How advanced and frequently refreshed is your spend analytics capability — including spend classification accuracy, coverage across all spend categories, and insight generation?',
@@ -755,6 +766,7 @@ export const PROCUREMENT_SUB_SEGMENTS: SubSegmentData[] = [
       hint: 'Upload a TCO model, analysis template, or sourcing decision document that applies TCO methodology.',
       hintAr: 'ارفع نموذج TCO أو قالب تحليل أو وثيقة قرار توريد تُطبّق منهجية التكلفة الإجمالية للملكية.',
     },
+    frameworks: ['CIPS', 'ISM/CPSM', 'APICS'],
     questions: [
       {
         q: 'How consistently do you apply Total Cost of Ownership analysis — accounting for logistics, quality defects, lifecycle maintenance, supplier risk, and import duties — in preference to purchase price alone?',
@@ -832,6 +844,7 @@ export const PROCUREMENT_SUB_SEGMENTS: SubSegmentData[] = [
       hint: 'Upload an authority matrix, contract award approval template, or SLA schedule from a supplier contract.',
       hintAr: 'ارفع مصفوفة الصلاحيات أو قالب اعتماد ترسية العقد أو جدول اتفاقية مستوى الخدمة من عقد مورد.',
     },
+    frameworks: ['CIPS', 'ISM/CPSM', 'APICS'],
     questions: [
       {
         q: 'How well-defined are your contract award authority thresholds and governance process — ensuring that award decisions are made at the appropriate level with documented rationale and audit trail?',
@@ -903,6 +916,7 @@ export const PROCUREMENT_SUB_SEGMENTS: SubSegmentData[] = [
       logistics: 1.0, marine: 1.0, construction: 1.0, oil_gas: 1.0,
       government: 1.0, technology: 1.5, banking: 1.0, other: 1.0,
     },
+    frameworks: ['CIPS', 'ISM/CPSM', 'APICS'],
     questions: [
       {
         q: 'How advanced is your procurement technology stack — and how well-integrated are your e-sourcing, e-procurement, contract management, and spend analytics systems?',
@@ -991,6 +1005,7 @@ export const CLM_SUB_SEGMENTS: SubSegmentData[] = [
       hint: 'Upload a standard contract template, negotiation playbook, or approved fallback positions document.',
       hintAr: 'ارفع قالب عقد معياري أو دليل تفاوض أو وثيقة مواقف احتياطية معتمدة.',
     },
+    frameworks: ['IACCM/WCC', 'ISO 9001', 'CIPS'],
     questions: [
       {
         q: 'How mature are your standard contract templates — covering key risk protections, liability caps, IP rights, termination provisions, and data security obligations — and how consistently are they used?',
@@ -1068,6 +1083,7 @@ export const CLM_SUB_SEGMENTS: SubSegmentData[] = [
       hint: 'Upload an obligation register, SLA monitoring dashboard, or compliance report from a key supplier contract.',
       hintAr: 'ارفع سجل التزامات أو لوحة مراقبة اتفاقية مستوى الخدمة أو تقرير امتثال من عقد مورد رئيسي.',
     },
+    frameworks: ['IACCM/WCC', 'ISO 9001', 'CIPS'],
     questions: [
       {
         q: 'How consistently are contract obligations and SLA commitments tracked post-signature — and how well does the organisation know, in real time, whether key contractual obligations are being met?',
@@ -1139,6 +1155,7 @@ export const CLM_SUB_SEGMENTS: SubSegmentData[] = [
       logistics: 1.0, marine: 1.0, construction: 1.5, oil_gas: 1.5,
       government: 1.5, technology: 1.0, banking: 1.0, other: 1.0,
     },
+    frameworks: ['IACCM/WCC', 'ISO 9001', 'CIPS'],
     questions: [
       {
         q: 'How rigorously is contract change control managed — ensuring all scope, specification, and price changes are formally documented, evaluated, and approved before being accepted?',
@@ -1210,6 +1227,7 @@ export const CLM_SUB_SEGMENTS: SubSegmentData[] = [
       logistics: 1.0, marine: 1.0, construction: 1.0, oil_gas: 1.0,
       government: 1.0, technology: 1.0, banking: 1.0, other: 1.0,
     },
+    frameworks: ['IACCM/WCC', 'ISO 9001', 'CIPS'],
     questions: [
       {
         q: 'How proactively and consistently do you manage the contract renewal pipeline — ensuring all material contracts are reviewed, benchmarked, and renegotiated well before their expiry date?',
@@ -1287,6 +1305,7 @@ export const CLM_SUB_SEGMENTS: SubSegmentData[] = [
       hint: 'Upload a compliance monitoring report, internal audit finding, or contract compliance dashboard.',
       hintAr: 'ارفع تقرير مراقبة امتثال أو نتيجة تدقيق داخلي أو لوحة امتثال عقود.',
     },
+    frameworks: ['IACCM/WCC', 'ISO 9001', 'CIPS'],
     questions: [
       {
         q: 'How comprehensively is contract compliance monitored — covering supplier regulatory certifications, insurance requirements, data protection obligations, and export control restrictions?',
@@ -1358,6 +1377,7 @@ export const CLM_SUB_SEGMENTS: SubSegmentData[] = [
       logistics: 1.0, marine: 1.0, construction: 1.0, oil_gas: 1.0,
       government: 1.0, technology: 1.0, banking: 1.0, other: 1.0,
     },
+    frameworks: ['IACCM/WCC', 'ISO 9001', 'CIPS'],
     questions: [
       {
         q: 'How centralised, searchable, and well-governed is your contract repository — and what percentage of active contracts are stored in a single, controlled location with role-based access?',
@@ -1446,6 +1466,7 @@ export const SRM_SUB_SEGMENTS: SubSegmentData[] = [
       hint: 'Upload your supplier segmentation framework, tier definitions, or classified supplier list.',
       hintAr: 'ارفع إطار تقسيم الموردين أو تعريفات الفئات أو قائمة الموردين المُصنَّفة.',
     },
+    frameworks: ['CIPS', 'ISO 44001', 'APICS'],
     questions: [
       {
         q: 'How rigorously is your supplier base segmented using a multi-factor model — covering spend, strategic importance, risk exposure, and supply market complexity — with clearly defined tiers and differentiated management approaches?',
@@ -1523,6 +1544,7 @@ export const SRM_SUB_SEGMENTS: SubSegmentData[] = [
       hint: 'Upload your supplier onboarding process document, pre-qualification checklist, or due diligence questionnaire.',
       hintAr: 'ارفع وثيقة عملية ضمّ الموردين أو قائمة التحقق من التأهيل المسبق أو استبيان العناية الواجبة.',
     },
+    frameworks: ['CIPS', 'ISO 44001', 'APICS'],
     questions: [
       {
         q: 'How rigorous and consistently applied is your supplier pre-qualification process — covering financial health, legal standing, ESG compliance, operational capability, and risk scoring before a supplier is approved?',
@@ -1600,6 +1622,7 @@ export const SRM_SUB_SEGMENTS: SubSegmentData[] = [
       hint: 'Upload a completed supplier scorecard or quarterly business review pack for a strategic supplier.',
       hintAr: 'ارفع بطاقة أداء مورد مُكتملة أو حزمة مراجعة أعمال فصلية لمورد استراتيجي.',
     },
+    frameworks: ['CIPS', 'ISO 44001', 'APICS'],
     questions: [
       {
         q: 'How regularly and formally do you conduct structured, two-way performance reviews with strategic and preferred suppliers — using balanced scorecards covering quality, delivery, commercial, and relationship dimensions?',
@@ -1671,6 +1694,7 @@ export const SRM_SUB_SEGMENTS: SubSegmentData[] = [
       logistics: 1.0, marine: 1.0, construction: 1.0, oil_gas: 1.5,
       government: 1.0, technology: 1.0, banking: 1.0, other: 1.0,
     },
+    frameworks: ['CIPS', 'ISO 44001', 'APICS'],
     questions: [
       {
         q: 'How effectively do you invest in building strategic supplier relationships beyond transactional interactions — including senior executive engagement, relationship health assessments, and joint agenda-setting?',
@@ -1742,6 +1766,7 @@ export const SRM_SUB_SEGMENTS: SubSegmentData[] = [
       logistics: 1.0, marine: 1.0, construction: 1.0, oil_gas: 1.5,
       government: 1.0, technology: 1.0, banking: 1.0, other: 1.0,
     },
+    frameworks: ['CIPS', 'ISO 44001', 'APICS'],
     questions: [
       {
         q: 'How proactively do you invest in developing the capabilities of strategic suppliers — including technical support, process audits, training, and joint improvement projects — beyond simply managing performance?',
@@ -1813,6 +1838,7 @@ export const SRM_SUB_SEGMENTS: SubSegmentData[] = [
       logistics: 1.0, marine: 1.0, construction: 1.0, oil_gas: 1.5,
       government: 1.0, technology: 1.0, banking: 1.0, other: 1.0,
     },
+    frameworks: ['CIPS', 'ISO 44001', 'APICS'],
     questions: [
       {
         q: 'How actively do you co-innovate with strategic suppliers — including structured innovation sessions, early involvement in product or process development, and formal tracking of innovation value delivered?',
@@ -1901,6 +1927,7 @@ export const RISK_SUB_SEGMENTS: SubSegmentData[] = [
       hint: 'Upload your supply chain risk register or risk assessment report (risks, owners, ratings).',
       hintAr: 'ارفع سجل مخاطر سلسلة الإمداد أو تقرير تقييم المخاطر (المخاطر والمالكون والتقييمات).',
     },
+    frameworks: ['ISO 31000', 'CIPS', 'APICS SCOR'],
     questions: [
       {
         q: 'How comprehensively and systematically have supply chain risks been identified and catalogued — including all major risk categories such as supplier concentration, geographic, geopolitical, and climate risk?',
@@ -1972,6 +1999,7 @@ export const RISK_SUB_SEGMENTS: SubSegmentData[] = [
       logistics: 1.0, marine: 1.0, construction: 1.0, oil_gas: 1.0,
       government: 1.0, technology: 1.0, banking: 1.0, other: 1.0,
     },
+    frameworks: ['ISO 31000', 'CIPS', 'APICS SCOR'],
     questions: [
       {
         q: 'How rigorously and consistently are supply chain risks scored for probability and financial impact — using a defined methodology that enables meaningful prioritisation and comparison across risk categories?',
@@ -2049,6 +2077,7 @@ export const RISK_SUB_SEGMENTS: SubSegmentData[] = [
       hint: 'Upload a supply continuity plan, BCP extract, or alternative sourcing strategy for a critical category.',
       hintAr: 'ارفع خطة استمرارية إمداد أو مقتطفًا من خطة استمرارية الأعمال أو استراتيجية توريد بديل لفئة حرجة.',
     },
+    frameworks: ['ISO 31000', 'CIPS', 'APICS SCOR'],
     questions: [
       {
         q: 'How robust and consistently maintained are your supply continuity plans for critical categories — covering identified and qualified alternative sources, inventory buffer policies, and recovery time objectives?',
@@ -2120,6 +2149,7 @@ export const RISK_SUB_SEGMENTS: SubSegmentData[] = [
       logistics: 1.5, marine: 1.5, construction: 1.0, oil_gas: 1.5,
       government: 1.5, technology: 1.0, banking: 1.0, other: 1.0,
     },
+    frameworks: ['ISO 31000', 'CIPS', 'APICS SCOR'],
     questions: [
       {
         q: 'How well-defined and consistently followed are your supply chain crisis response protocols — including incident declaration triggers, escalation pathways, command structures, and communication plans?',
@@ -2191,6 +2221,7 @@ export const RISK_SUB_SEGMENTS: SubSegmentData[] = [
       logistics: 1.5, marine: 1.5, construction: 1.0, oil_gas: 1.5,
       government: 1.0, technology: 1.0, banking: 1.0, other: 1.0,
     },
+    frameworks: ['ISO 31000', 'CIPS', 'APICS SCOR'],
     questions: [
       {
         q: 'How actively do you monitor the financial health of critical suppliers — using financial statements, credit risk scores, payment behaviour analysis, and early warning indicators?',
@@ -2268,6 +2299,7 @@ export const RISK_SUB_SEGMENTS: SubSegmentData[] = [
       hint: 'Upload your trade compliance policy, sanctions screening process, or supply chain regulatory risk assessment.',
       hintAr: 'ارفع سياسة الامتثال التجاري أو عملية فحص العقوبات أو تقييم مخاطر تنظيمية لسلسلة الإمداد.',
     },
+    frameworks: ['ISO 31000', 'CIPS', 'APICS SCOR'],
     questions: [
       {
         q: 'How comprehensively and consistently are supply chain regulatory compliance obligations managed — including customs, trade controls, sanctions screening, and sector-specific requirements?',

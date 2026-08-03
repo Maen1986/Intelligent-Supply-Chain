@@ -16,6 +16,7 @@ import { MaturityTrend, type SnapshotRecord, type SegmentMeta } from '@/componen
 import { EvidenceUploadZone, type EvidenceRecord } from '@/components/EvidenceUploadZone';
 import { ConfidenceTierBadge, getSegmentTier } from '@/components/ConfidenceTierBadge';
 import { FeedbackModal, shouldShowFeedback } from '@/components/FeedbackModal';
+import { FrameworkBadge } from '@/components/FrameworkBadge';
 import { API_BASE } from '@/lib/apiBase';
 import { useAuth } from '@/lib/AuthContext';
 import {
@@ -1280,7 +1281,10 @@ export function Maturity() {
                   <div key={qi} className="bg-white rounded-2xl border border-border shadow-sm mb-5 overflow-hidden">
                     <div className="flex items-start gap-3 p-5 pb-4 border-b border-border">
                       <span className="w-7 h-7 rounded-full bg-primary text-white text-xs flex items-center justify-center font-bold shrink-0 mt-0.5">{displayIdx + 1}</span>
-                      <p className="font-semibold text-foreground text-sm leading-relaxed">{ar ? question.qAr : question.q}</p>
+                      <div className="flex-1">
+                        <p className="font-semibold text-foreground text-sm leading-relaxed">{ar ? question.qAr : question.q}</p>
+                        <FrameworkBadge frameworks={question.frameworks ?? seg.frameworks} lang={ar ? 'ar' : 'en'} />
+                      </div>
                     </div>
 
                     <div className="divide-y divide-border">

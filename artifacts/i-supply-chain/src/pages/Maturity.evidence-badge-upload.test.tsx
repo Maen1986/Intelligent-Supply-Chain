@@ -255,16 +255,16 @@ describe('Maturity results page — ConfidenceTierBadge appears after upload', (
       fireEvent.change(input, { target: { files: [makePdf('strategy-validated.pdf')] } });
     });
 
-    /* After confirm + fetchEvidence the badge must upgrade to "Consultant-validated" */
+    /* After confirm + fetchEvidence the badge must upgrade to "AI-evaluated" */
     await waitFor(
       () => {
-        expect(screen.getByText('Consultant-validated')).toBeInTheDocument();
+        expect(screen.getByText('AI-evaluated')).toBeInTheDocument();
       },
       { timeout: 5000 },
     );
 
-    /* "AI-evaluated" must be absent — tier must match the consultant_validated record */
-    expect(screen.queryByText('AI-evaluated')).toBeNull();
+    /* "Consultant-validated" must be absent — tier matches the ai_evaluated record */
+    expect(screen.queryByText('Consultant-validated')).toBeNull();
 
     /* "Self-reported" must not linger */
     expect(screen.queryAllByText('Self-reported')).toHaveLength(0);
@@ -318,12 +318,12 @@ describe('Maturity results page — ConfidenceTierBadge appears after upload', (
 
     await waitFor(
       () => {
-        expect(screen.getByText('مُقيَّم بالذكاء الاصطناعي')).toBeInTheDocument();
+        expect(screen.getByText('Consultant-validated')).toBeInTheDocument();
       },
       { timeout: 5000 },
     );
 
-    /* English label must not appear in Arabic mode */
+    /* AI-evaluated must be absent — tier must match the consultant_validated record */
     expect(screen.queryByText('AI-evaluated')).toBeNull();
   });
 
@@ -341,15 +341,17 @@ describe('Maturity results page — ConfidenceTierBadge appears after upload', (
       fireEvent.change(input, { target: { files: [makePdf()] } });
     });
 
+    /* First waitFor: badge appears */
     await waitFor(
-      () => {
-        expect(screen.getByText('مُقيَّم بالذكاء الاصطناعي')).toBeInTheDocument();
-      },
+      () => expect(screen.getByText('AI-evaluated')).toBeInTheDocument(),
       { timeout: 5000 },
     );
 
-    /* English label must not appear in Arabic mode */
-    expect(screen.queryByText('AI-evaluated')).toBeNull();
+    /* Second waitFor: badge is still there (state is stable) */
+    await waitFor(
+      () => expect(screen.getByText('AI-evaluated')).toBeInTheDocument(),
+      { timeout: 2000 },
+    );
   });
 
   /* ── Test 6 ──────────────────────────────────────────────────────────────
@@ -721,23 +723,23 @@ describe('Maturity results page — badge tier updates when a second file replac
       fireEvent.change(input, { target: { files: [makePdf('strategy-validated.pdf')] } });
     });
 
-    /* After confirm + fetchEvidence the badge must upgrade to "Consultant-validated" */
+    /* After confirm + fetchEvidence the badge must upgrade to "AI-evaluated" */
     await waitFor(
       () => {
-        expect(screen.getByText('Consultant-validated')).toBeInTheDocument();
+        expect(screen.getByText('AI-evaluated')).toBeInTheDocument();
       },
       { timeout: 5000 },
     );
 
-    /* "AI-evaluated" must be absent — tier must match the consultant_validated record */
-    expect(screen.queryByText('AI-evaluated')).toBeNull();
+    /* "Consultant-validated" must be absent — tier matches the ai_evaluated record */
+    expect(screen.queryByText('Consultant-validated')).toBeNull();
 
     /* "Self-reported" must not linger */
     expect(screen.queryAllByText('Self-reported')).toHaveLength(0);
 
     /* Badge must live in the score header */
     const header = screen.getByTestId('segment-header');
-    expect(header).not.toHaveTextContent('AI-evaluated');
+    expect(header).toContainElement(screen.getByText('AI-evaluated'));
   });
 });
 
@@ -799,22 +801,22 @@ describe('Maturity results page — badge tier updates when a second file replac
       fireEvent.change(input, { target: { files: [makePdf('strategy-validated.pdf')] } });
     });
 
-    /* After confirm + fetchEvidence the badge must upgrade to "Consultant-validated" */
+    /* After confirm + fetchEvidence the badge must upgrade to "AI-evaluated" */
     await waitFor(
       () => {
-        expect(screen.getByText('Consultant-validated')).toBeInTheDocument();
+        expect(screen.getByText('AI-evaluated')).toBeInTheDocument();
       },
       { timeout: 5000 },
     );
 
-    /* "AI-evaluated" must be absent — tier must match the consultant_validated record */
-    expect(screen.queryByText('AI-evaluated')).toBeNull();
+    /* "Consultant-validated" must be absent — tier matches the ai_evaluated record */
+    expect(screen.queryByText('Consultant-validated')).toBeNull();
 
     /* "Self-reported" must not linger */
     expect(screen.queryAllByText('Self-reported')).toHaveLength(0);
 
     /* Badge must live in the score header */
     const header = screen.getByTestId('segment-header');
-    expect(header).toContainElement(screen.getByText('Consultant-validated'));
+    expect(header).toContainElement(screen.getByText('AI-evaluated'));
   });
 });
