@@ -529,3 +529,67 @@ describe('MaturityAssessmentTool — ratings preserved when switching tabs', () 
       .toHaveAttribute('aria-pressed', 'false');
   });
 });
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Tasks 586 / 640 — MaturityAssessmentTool dimension ratings survive a
+   simulated page reload (component unmount + remount with localStorage intact)
+══════════════════════════════════════════════════════════════════════════ */
+describe('MaturityAssessmentTool — dimension ratings restored from localStorage after remount (Tasks 586 & 640)', () => {
+  beforeEach(() => { localStorage.clear(); cleanup(); });
+
+  it('a single dimension rating entered before unmount is shown after remount', () => {
+    // ── First mount ───────────────────────────────────────────────────────
+    render(<MaturityAssessmentTool isAr={false} />);
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Strategy & Planning: Competent (3)' }),
+    );
+    expect(
+      screen.getByRole('button', { name: 'Strategy & Planning: Competent (3)' }),
+    ).toHaveAttribute('aria-pressed', 'true');
+
+    // Unmount — localStorage is preserved; simulates the page unloading
+    cleanup();
+
+    // ── Second mount (simulated reload) ──────────────────────────────────
+    render(<MaturityAssessmentTool isAr={false} />);
+    expect(
+      screen.getByRole('button', { name: 'Strategy & Planning: Competent (3)' }),
+    ).toHaveAttribute('aria-pressed', 'true');
+    expect(
+      screen.getByRole('button', { name: 'Strategy & Planning: Advanced (4)' }),
+    ).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  it('ratings for two dimensions both survive remount', () => {
+    render(<MaturityAssessmentTool isAr={false} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Strategy & Planning: Advanced (4)' }));
+    fireEvent.click(screen.getByRole('button', { name: 'People & Capability: Developing (2)' }));
+    cleanup();
+
+    render(<MaturityAssessmentTool isAr={false} />);
+    expect(
+      screen.getByRole('button', { name: 'Strategy & Planning: Advanced (4)' }),
+    ).toHaveAttribute('aria-pressed', 'true');
+    expect(
+      screen.getByRole('button', { name: 'People & Capability: Developing (2)' }),
+    ).toHaveAttribute('aria-pressed', 'true');
+    // Levels above the saved value must not be pressed
+    expect(
+      screen.getByRole('button', { name: 'Strategy & Planning: World Class (5)' }),
+    ).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  it('slug-scoped storage is independent — resiliency rating does not bleed into default slug', () => {
+    // Rate "BCP Maturity" on the resiliency slug
+    render(<MaturityAssessmentTool slug="resiliency" isAr={false} />);
+    fireEvent.click(screen.getByRole('button', { name: 'BCP Maturity: Advanced (4)' }));
+    cleanup();
+
+    // Remount with default slug — resiliency data must not appear
+    render(<MaturityAssessmentTool isAr={false} />);
+    // "BCP Maturity" is a resiliency-specific dimension — it should not even render here
+    expect(
+      screen.queryByRole('button', { name: 'BCP Maturity: Advanced (4)' }),
+    ).toBeNull();
+  });
+});

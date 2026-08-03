@@ -517,6 +517,56 @@ describe('POST /api/maturity/evidence/upload-url', () => {
     expect(mockSignEvidencePutURL).not.toHaveBeenCalled();
   });
 
+  /* ── Task 821 — ownership check blocks cross-user even with many snapshot rows ── */
+
+  it('returns 403 when the snapshot table has many rows but none belong to the calling user (Task 821)', async () => {
+    // Simulate: DB returns 5 snapshot rows, all belonging to OTHER users.
+    // A query that accidentally fetched by snapshot_id alone (ignoring userId)
+    // would return a row and grant access. The correct query returns nothing.
+    selectQueue = [[]];
+
+    const res = await request(app())
+      .post('/api/maturity/evidence/upload-url')
+      .send({ ...UPLOAD_BODY, snapshot_id: 999 });
+
+    expect(res.status).toBe(403);
+    expect(res.body.ok).toBe(false);
+    expect(res.body.error).toMatch(/does not belong/i);
+  });
+
+  /* ── Task 822 — missing file_size returns 400 even when snapshot_id is valid ── */
+
+  it('returns 400 when file_size is omitted even though snapshot_id is valid (Task 822)', async () => {
+    // Ownership check must pass so validation can run.
+    // If file_size is absent the route should reject before writing any DB rows.
+    selectQueue = [[{ id: 1 }], []];
+    const { file_size: _omit, ...bodyWithoutFileSize } = UPLOAD_BODY;
+
+    const res = await request(app())
+      .post('/api/maturity/evidence/upload-url')
+      .send(bodyWithoutFileSize);
+
+    expect(res.status).toBe(400);
+    expect(res.body.ok).toBe(false);
+  });
+
+  /* ── Task 823 — consultant session cannot upload to a snapshot they don't own ── */
+
+  it('returns 403 for a consultant whose userId does not match the snapshot owner (Task 823)', async () => {
+    // selectQueue = [[]] means the ownership check (WHERE snapshot_id=X AND userId=77)
+    // returns nothing — the snapshot belongs to userId=99, not the consultant.
+    const CONSULTANT_SESSION = { userId: 77, role: 'consultant' };
+    selectQueue = [[]];
+
+    const res = await request(makeApp('/api', evidenceRouter, CONSULTANT_SESSION))
+      .post('/api/maturity/evidence/upload-url')
+      .send(UPLOAD_BODY);
+
+    expect(res.status).toBe(403);
+    expect(res.body.ok).toBe(false);
+    expect(res.body.error).toMatch(/does not belong/i);
+  });
+
   it('returns 201 with evidence_id and upload_url on success', async () => {
     // First select: ownership check passes (snapshot found).
     // Second select: no duplicate evidence for this sub-segment.
@@ -784,15 +834,32 @@ describe('POST /api/maturity/evidence/:id/confirm', () => {
 ;
 
 
-    expect(mockFile.delete).toHaveBeenCalledOnce()
-;
+    expect(mockFile.delete).toHaveBeenCalledOnce();
+  });
 
-  
-}
+  it('still returns 400 when the GCS delete throws during oversize cleanup (Task 836)', async () => {
+    dbState.selectRows = [EVIDENCE_ROW];
 
-)
-;
+    const mockFile = {
+      getMetadata: vi.fn().mockResolvedValue([{ size: 11 * 1024 * 1024 }]),
+      delete: vi.fn().mockRejectedValue(new Error('GCS unavailable')),
+    };
+    mockGetObjectEntityFile.mockResolvedValue(mockFile);
 
+    const { db } = await import('@workspace/db');
+
+    const res = await request(app())
+      .post('/api/maturity/evidence/42/confirm');
+
+    // Route must still respond 400 even though GCS delete threw
+    expect(res.status).toBe(400);
+    expect(res.body.ok).toBe(false);
+    expect(res.body.error).toMatch(/10 MB/i);
+    // DB row must still be deleted
+    expect(db.delete).toHaveBeenCalled();
+    // GCS delete was attempted
+    expect(mockFile.delete).toHaveBeenCalledOnce();
+  });
 
   it('still returns 200 and keeps self_reported tier when AI evaluation fails', async () => 
 {

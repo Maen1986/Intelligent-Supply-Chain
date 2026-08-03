@@ -326,6 +326,26 @@ describe('KPIDashboard — data-collection guidance banner', () => {
     expect(bannerVisible(container)).toBe(false);
   });
 
+  it('stays hidden after a page reload when KPI values were saved before unmount (Task 410)', () => {
+    // First mount — enter a value so it gets saved to localStorage
+    const { container: c1, unmount } = render(<KPIDashboard slug="supply-chain-strategy" />);
+    const input = c1.querySelector('input[type="number"]') as HTMLInputElement;
+    expect(input).not.toBeNull();
+    fireEvent.change(input, { target: { value: '90' } });
+
+    // Banner must be hidden because hasAnyValue is true
+    expect(bannerVisible(c1)).toBe(false);
+
+    // Advance timers so the debounced safeSetItem fires
+    vi.advanceTimersByTime(500);
+    unmount();
+
+    // Second mount (simulate page reload) — the value is still in localStorage,
+    // so hasAnyValue must be true immediately and the banner must not appear.
+    const { container: c2 } = render(<KPIDashboard slug="supply-chain-strategy" />);
+    expect(bannerVisible(c2)).toBe(false);
+  });
+
   it('keeps the banner hidden when switching back to a slug whose banner was already dismissed', () => {
     const slugA = 'supply-chain-strategy';
     const slugB = 'procurement-excellence';

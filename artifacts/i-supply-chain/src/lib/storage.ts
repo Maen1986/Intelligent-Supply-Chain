@@ -30,6 +30,13 @@ const QUOTA_NAMES = new Set([
 /** Key prefixes that belong exclusively to this app. */
 const APP_PREFIXES = ['isc-', 'isc_'];
 
+/**
+ * Keys that are excluded from clearAppStorage even though they carry an app
+ * prefix.  The language preference is preserved so the user's locale is not
+ * wiped when they clear tool data (Task 346).
+ */
+const PRESERVE_KEYS = new Set(['isc-lang']);
+
 function isQuotaError(e: unknown): boolean {
   if (!(e instanceof DOMException)) return false;
   // code 22 is the legacy numeric constant for QuotaExceededError
@@ -88,7 +95,7 @@ export function clearAppStorage(): void {
   const toRemove: string[] = [];
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
-    if (key && APP_PREFIXES.some(p => key.startsWith(p))) {
+    if (key && APP_PREFIXES.some(p => key.startsWith(p)) && !PRESERVE_KEYS.has(key)) {
       toRemove.push(key);
     }
   }

@@ -13,6 +13,9 @@ import {
 import { safeSetItem } from '@/lib/storage';
 import { parseCsvFile, downloadCsv } from '@/lib/importCsv';
 import { useAIPlan } from '@/hooks/useAIPlan';
+
+/** Stable server-side key for the Training AI plan slot. */
+export const TRAINING_TOOL_KEY = 'training' as const;
 import { AIPlanPanel } from '@/components/AIPlanPanel';
 
 interface TrainingToolsProps { isAr: boolean; }
@@ -362,7 +365,7 @@ export function TrainingNeedsAssessment({ isAr }: TrainingToolsProps) {
           retryAfterSeconds: planRetryAfterSeconds, generate: generatePlan, reset: resetPlan,
           savedPlan: planSavedPlan, viewSaved: viewSavedPlan, deleteSaved: deleteSavedPlan,
           saveError: planSaveError, dismissSaveError: dismissPlanSaveError } =
-    useAIPlan(buildTrainingPrompt, isAr, 'training', hasAnyScores);
+    useAIPlan(buildTrainingPrompt, isAr, TRAINING_TOOL_KEY, hasAnyScores);
 
   return (
     <div className="bg-white border border-border rounded-2xl shadow-sm overflow-hidden">

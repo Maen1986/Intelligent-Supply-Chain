@@ -194,7 +194,7 @@ export function SavedPlansSection({ isAr }: Props) {
                       const route = toolRoute(plan.toolKey);
                       return route ? (
                         <Link
-                          href={route}
+                          href={`${route}#ai-plan-tool`}
                           className="flex items-center gap-1 text-xs font-medium text-primary/80 hover:text-primary hover:underline underline-offset-2 px-1.5 py-1 rounded transition-colors"
                           title={t('Go to tool', 'الانتقال إلى الأداة')}
                         >

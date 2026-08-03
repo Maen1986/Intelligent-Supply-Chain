@@ -32,6 +32,8 @@ interface Overrides {
   buttonLabel?: string;
   isAr?: boolean;
   disabled?: boolean;
+  rateLimited?: boolean;
+  retryAfterSeconds?: number | null;
 }
 
 function renderPanel(overrides: Overrides = {}) {
@@ -45,6 +47,8 @@ function renderPanel(overrides: Overrides = {}) {
       buttonLabel={overrides.buttonLabel ?? 'Generate Plan ✨'}
       isAr={overrides.isAr ?? false}
       disabled={overrides.disabled}
+      rateLimited={overrides.rateLimited}
+      retryAfterSeconds={overrides.retryAfterSeconds}
     />,
   );
 }
@@ -451,5 +455,66 @@ describe('AIPlanPanel — error state (authenticated)', () => {
   it('shows Arabic Retry label when isAr=true', () => {
     renderPanel({ error: 'خطأ', isAr: true });
     expect(screen.getByRole('button', { name: /إعادة المحاولة/i })).toBeInTheDocument();
+  });
+});
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Task 872 — amber rate-limit banner appears instead of red error when
+   the AI plan limit is hit (rateLimited=true)
+══════════════════════════════════════════════════════════════════════════ */
+
+describe('AIPlanPanel — amber rate-limit banner (Task 872)', () => {
+  it('shows the amber banner when rateLimited=true, not the red error panel', () => {
+    renderPanel({ rateLimited: true, error: 'limit', retryAfterSeconds: 3600 });
+
+    // Amber banner with role="status" must be present
+    expect(screen.getByRole('status')).toBeInTheDocument();
+    expect(
+      screen.getByText((txt) => txt.includes('AI plan limit reached') && txt.includes('min')),
+    ).toBeInTheDocument();
+
+    // Red error panel must NOT be present (no AlertCircle / Retry button)
+    expect(screen.queryByRole('button', { name: /Retry/i })).toBeNull();
+  });
+
+  it('shows "please try again later" fallback when retryAfterSeconds is 0', () => {
+    renderPanel({ rateLimited: true, error: 'limit', retryAfterSeconds: 0 });
+
+    expect(
+      screen.getByText((txt) => txt.includes('AI plan limit reached') && txt.includes('later')),
+    ).toBeInTheDocument();
+  });
+
+  it('shows "please try again later" fallback when retryAfterSeconds is null', () => {
+    renderPanel({ rateLimited: true, error: 'limit', retryAfterSeconds: null });
+
+    expect(
+      screen.getByText((txt) => txt.includes('AI plan limit reached') && txt.includes('later')),
+    ).toBeInTheDocument();
+  });
+
+  it('shows the red error panel (not amber) when rateLimited is false', () => {
+    renderPanel({ rateLimited: false, error: 'Network error' });
+
+    // Red error panel renders; amber rate-limit banner must not
+    expect(screen.queryByRole('status')).toBeNull();
+    expect(screen.getByText('Network error')).toBeInTheDocument();
+  });
+
+  it('dismiss button in amber banner calls onReset', () => {
+    const onReset = vi.fn();
+    renderPanel({ rateLimited: true, error: 'limit', retryAfterSeconds: 120, onReset });
+
+    const dismissBtn = screen.getAllByRole('button').find(b => b.textContent?.trim() === '✕');
+    fireEvent.click(dismissBtn!);
+    expect(onReset).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows Arabic rate-limit text when isAr=true', () => {
+    renderPanel({ rateLimited: true, error: 'limit', retryAfterSeconds: 3600, isAr: true });
+
+    expect(
+      screen.getByText((txt) => txt.includes('تجاوزت الحد المسموح') && txt.includes('دقيقة')),
+    ).toBeInTheDocument();
   });
 });

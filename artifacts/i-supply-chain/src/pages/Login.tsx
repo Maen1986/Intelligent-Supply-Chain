@@ -111,6 +111,16 @@ export function Login() {
         body: JSON.stringify({ email: form.email, lang }),
       });
       const data = await res.json().catch(() => ({}));
+      if (res.status === 429) {
+        const secs = data?.retryAfterSeconds;
+        if (typeof secs === 'number' && secs > 0) {
+          const mins = Math.ceil(secs / 60);
+          setError(ar
+            ? `محاولات كثيرة جداً — حاول مرة أخرى بعد ${mins} دقيقة تقريباً.`
+            : `Too many attempts — try again in ~${mins} minute${mins === 1 ? '' : 's'}.`);
+          return;
+        }
+      }
       if (!res.ok) throw new Error(data?.error || '');
       setResetStep('verify');
       setNotice(ar

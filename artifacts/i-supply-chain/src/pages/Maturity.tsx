@@ -647,11 +647,18 @@ export function Maturity() {
   const segsAssessed = scopedSegments.filter((seg, i) =>
     calcSegScore(answers, i, segQuestionIndices(seg.id)) !== null,
   ).length;
-  // totalSubSegs / coveredSubSegs: uses 3-part key completeness only.
-  // Flat segment answers do NOT count as sub-segment coverage — this ensures
-  // the indicator honestly reflects whether granular sub-segment data exists.
-  const totalSubSegs   = scopedSegments.reduce((s, seg) => s + (seg.subSegments?.length ?? 0), 0);
-  const coveredSubSegs = countCoveredSubSegments(answers, scopedSegments);
+  // totalSubSegs: total selected sub-segment slots across scoped segments.
+  // coveredSubSegs: how many of those slots have been answered (2-part key > 0).
+  // We use the flat 2-part answer keys (segIdx-qi) here because that is what
+  // the question phase produces. countCoveredSubSegments expects 3-part keys
+  // (only generated when scoring from the sub-segment question bank) and would
+  // always return 0 in the current flat-question flow.
+  const totalSubSegs   = scopedSegments.reduce(
+    (s, seg) => s + segQuestionIndices(seg.id).length, 0,
+  );
+  const coveredSubSegs = scopedSegments.reduce((sum, seg, si) =>
+    sum + segQuestionIndices(seg.id).filter(qi => (answers[`${si}-${qi}`] ?? 0) > 0).length, 0,
+  );
 
   /* ── AI Remedies fetcher ──────────────────────────────────────────────── */
   const fetchRemedies = async () => {
@@ -1283,7 +1290,7 @@ export function Maturity() {
                       <span className="w-7 h-7 rounded-full bg-primary text-white text-xs flex items-center justify-center font-bold shrink-0 mt-0.5">{displayIdx + 1}</span>
                       <div className="flex-1">
                         <p className="font-semibold text-foreground text-sm leading-relaxed">{ar ? question.qAr : question.q}</p>
-                        <FrameworkBadge frameworks={question.frameworks ?? seg.frameworks} lang={ar ? 'ar' : 'en'} />
+                        <FrameworkBadge frameworks={seg.subSegments?.[qi]?.frameworks ?? question.frameworks ?? seg.frameworks} lang={ar ? 'ar' : 'en'} />
                       </div>
                     </div>
 

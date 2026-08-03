@@ -14,8 +14,8 @@
 import React from 'react';
 import fs from 'node:fs';
 import path from 'node:path';
-import { describe, it, expect } from 'vitest';
-import { render, fireEvent } from '@testing-library/react';
+import { describe, it, expect, afterEach } from 'vitest';
+import { render, fireEvent, cleanup } from '@testing-library/react';
 import { TemplateCard, SETUP_GUIDES } from '../AdminAutomations';
 
 /* Load manifest via Node fs so it works regardless of Vite's root boundary */
@@ -103,6 +103,8 @@ function openSetupPanelAr(container: HTMLElement) {
 /* ════════════════════════════════════════════════════════════════════════════
    SPOT-CHECK TESTS — original two template IDs (unchanged)
    ════════════════════════════════════════════════════════════════════════════ */
+
+afterEach(() => { cleanup(); });
 
 describe('TemplateCard — Setup step preview', () => {
   describe('Make.com template (make-kpi-breach-alert)', () => {

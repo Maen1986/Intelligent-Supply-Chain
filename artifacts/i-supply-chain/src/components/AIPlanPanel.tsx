@@ -42,11 +42,18 @@ interface AIPlanPanelProps {
   /** True when the plan was generated but the server-side save failed */
   saveError?: boolean;
   onDismissSaveError?: () => void;
+  /** Allows the user to retry saving without re-generating (Task 375) */
+  onRetrySave?: () => void;
+  /** Delete-failure message — separate from generation `error` so the Generate button stays visible (Task 373) */
+  deleteError?: string | null;
+  onDismissDeleteError?: () => void;
 }
 
 export function AIPlanPanel({
   loading, result, error, onGenerate, onReset, buttonLabel, isAr, disabled,
-  savedPlan, onViewSaved, onDeleteSaved, rateLimited, retryAfterSeconds, toolKey, saveError, onDismissSaveError,
+  savedPlan, onViewSaved, onDeleteSaved, rateLimited, retryAfterSeconds, toolKey,
+  saveError, onDismissSaveError, onRetrySave,
+  deleteError, onDismissDeleteError,
 }: AIPlanPanelProps) {
   const { isAuthenticated, loading: authLoading } = useAuth();
   const [location, navigate] = useLocation();
@@ -199,8 +206,32 @@ export function AIPlanPanel({
               ? 'تعذّر حفظ الخطة — قد تُفقد عند تحديث الصفحة'
               : 'Plan not saved — refresh may lose it'}
           </span>
+          {onRetrySave && (
+            <button
+              onClick={onRetrySave}
+              className="underline underline-offset-2 font-semibold opacity-80 hover:opacity-100 shrink-0"
+              title={isAr ? 'إعادة الحفظ' : 'Retry save'}
+            >
+              {isAr ? 'إعادة الحفظ' : 'Retry save'}
+            </button>
+          )}
           <button
             onClick={onDismissSaveError}
+            className="font-bold opacity-50 hover:opacity-100 shrink-0"
+            title={isAr ? 'إغلاق' : 'Dismiss'}
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
+      {/* ── Delete-error banner (separate from generation error so Generate stays visible — Task 373) ── */}
+      {deleteError && !loading && (
+        <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-xs text-red-800 max-w-3xl">
+          <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+          <span className="flex-1">{deleteError}</span>
+          <button
+            onClick={onDismissDeleteError}
             className="font-bold opacity-50 hover:opacity-100 shrink-0"
             title={isAr ? 'إغلاق' : 'Dismiss'}
           >

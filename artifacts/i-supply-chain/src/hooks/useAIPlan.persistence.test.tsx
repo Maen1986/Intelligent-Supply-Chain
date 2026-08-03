@@ -12,7 +12,7 @@
  *   Unauthenticated → no fetch, savedPlan stays null, ephemeral generate still works
  */
 import { describe, it, expect, afterEach, vi, beforeEach } from 'vitest';
-import { renderHook, act, waitFor } from '@testing-library/react';
+import { renderHook, act, waitFor, cleanup } from '@testing-library/react';
 import { useAIPlan } from './useAIPlan';
 
 vi.mock('@/lib/apiBase', () => ({ API_BASE: 'http://test-server/api' }));
@@ -86,6 +86,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  cleanup();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
   sessionStorage.clear();
@@ -357,7 +358,7 @@ describe('useAIPlan persistence — deleteSaved() removes the plan', () => {
     expect(result.current.savedPlan?.text).toBe(PLAN_TEXT);
   });
 
-  it('sets an error message when the DELETE request throws (network error)', async () => {
+  it('sets deleteError (not generation error) when the DELETE request throws (network error)', async () => {
     vi.stubGlobal('fetch', stubGetOk());
 
     const { result } = renderHook(() => useAIPlan(() => 'prompt', false, TOOL_KEY));
@@ -367,8 +368,10 @@ describe('useAIPlan persistence — deleteSaved() removes the plan', () => {
 
     await act(() => result.current.deleteSaved());
 
-    expect(result.current.error).toBeTruthy();
-    expect(result.current.error).toContain('delete');
+    // #373: delete failure uses deleteError, not the shared generation `error`
+    expect(result.current.deleteError).toBeTruthy();
+    expect(result.current.deleteError).toContain('delete');
+    expect(result.current.error).toBeNull(); // generation error unchanged
   });
 
   it('restores savedPlan when the server returns a non-ok status on DELETE', async () => {
@@ -388,7 +391,7 @@ describe('useAIPlan persistence — deleteSaved() removes the plan', () => {
     expect(result.current.savedPlan?.text).toBe(PLAN_TEXT);
   });
 
-  it('sets an error message when the server returns a non-ok status on DELETE', async () => {
+  it('sets deleteError (not generation error) when the server returns a non-ok status on DELETE', async () => {
     vi.stubGlobal('fetch', stubGetOk());
 
     const { result } = renderHook(() => useAIPlan(() => 'prompt', false, TOOL_KEY));
@@ -400,8 +403,167 @@ describe('useAIPlan persistence — deleteSaved() removes the plan', () => {
 
     await act(() => result.current.deleteSaved());
 
-    expect(result.current.error).toBeTruthy();
-    expect(result.current.error).toContain('delete');
+    // #373: delete failure uses deleteError, not the shared generation `error`
+    expect(result.current.deleteError).toBeTruthy();
+    expect(result.current.deleteError).toContain('delete');
+    expect(result.current.error).toBeNull(); // generation error unchanged
+  });
+});
+
+/* ══════════════════════════════════════════════════════════════════════════
+   4b. retrySave — re-POST current result without re-generating (Task 375)
+══════════════════════════════════════════════════════════════════════════ */
+describe('useAIPlan persistence — retrySave (Task 375)', () => {
+  /** Stub where the FIRST save fails, SECOND succeeds */
+  function stubSaveFailThenOk() {
+    let saveCount = 0;
+    return vi.fn().mockImplementation((url: string, opts?: RequestInit) => {
+      const method = opts?.method ?? 'GET';
+      if (method === 'GET' && url.includes(`/plans/${TOOL_KEY}`)) {
+        return Promise.resolve({ ok: true, json: async () => ({ ok: true, plan: null }) });
+      }
+      if (method === 'POST' && url.includes('/ai/plan')) {
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ ok: true, text: PLAN_TEXT }) });
+      }
+      if (method === 'POST' && url.includes(`/plans/${TOOL_KEY}`)) {
+        saveCount++;
+        if (saveCount === 1) {
+          return Promise.resolve({ ok: false, status: 500, json: async () => ({ ok: false }) });
+        }
+        return Promise.resolve({ ok: true, json: async () => ({ ok: true, savedAt: new Date().toISOString() }) });
+      }
+      return Promise.resolve({ ok: true, json: async () => ({ ok: true }) });
+    });
+  }
+
+  it('clears saveError and sets savedPlan after a successful retrySave()', async () => {
+    vi.stubGlobal('fetch', stubSaveFailThenOk());
+
+    const { result } = renderHook(() => useAIPlan(() => 'prompt', false, TOOL_KEY));
+    await act(() => result.current.generate());
+
+    expect(result.current.saveError).toBe(true);
+    expect(result.current.savedPlan).toBeNull();
+
+    await act(() => result.current.retrySave());
+
+    expect(result.current.saveError).toBe(false);
+    expect(result.current.savedPlan).not.toBeNull();
+    expect(result.current.result).toBe(PLAN_TEXT); // result unchanged
+  });
+
+  it('sets saveError again when retrySave() POST also fails', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockImplementation((url: string, opts?: RequestInit) => {
+      const method = opts?.method ?? 'GET';
+      if (method === 'GET' && url.includes(`/plans/${TOOL_KEY}`)) {
+        return Promise.resolve({ ok: true, json: async () => ({ ok: true, plan: null }) });
+      }
+      if (method === 'POST' && url.includes('/ai/plan')) {
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ ok: true, text: PLAN_TEXT }) });
+      }
+      // All saves fail
+      return Promise.resolve({ ok: false, status: 500, json: async () => ({ ok: false }) });
+    }));
+
+    const { result } = renderHook(() => useAIPlan(() => 'prompt', false, TOOL_KEY));
+    await act(() => result.current.generate());
+    expect(result.current.saveError).toBe(true);
+
+    await act(() => result.current.retrySave());
+    expect(result.current.saveError).toBe(true); // still failing
+    expect(result.current.savedPlan).toBeNull();
+    expect(result.current.result).toBe(PLAN_TEXT); // result unchanged
+  });
+
+  it('is a no-op when result is null', async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', stubGetEmpty());
+    const { result } = renderHook(() => useAIPlan(() => 'prompt', false, TOOL_KEY));
+    await act(async () => { await new Promise(r => setTimeout(r, 20)); });
+
+    vi.stubGlobal('fetch', fetchMock);
+    await act(() => result.current.retrySave());
+
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+});
+
+/* ══════════════════════════════════════════════════════════════════════════
+   4c. deleteError — separate from generation error; clears on retry (Task 372/373)
+══════════════════════════════════════════════════════════════════════════ */
+describe('useAIPlan persistence — deleteError (Tasks 372, 373)', () => {
+  it('deleteError is null initially', async () => {
+    vi.stubGlobal('fetch', stubGetEmpty());
+    const { result } = renderHook(() => useAIPlan(() => 'prompt', false, TOOL_KEY));
+    await act(async () => { await new Promise(r => setTimeout(r, 20)); });
+    expect(result.current.deleteError).toBeNull();
+  });
+
+  it('deleteError does NOT set the generation error state (Generate button stays visible)', async () => {
+    vi.stubGlobal('fetch', stubGetOk());
+    const { result } = renderHook(() => useAIPlan(() => 'prompt', false, TOOL_KEY));
+    await waitFor(() => expect(result.current.savedPlan).not.toBeNull());
+
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: false, status: 500, json: async () => ({ ok: false }),
+    }));
+    await act(() => result.current.deleteSaved());
+
+    expect(result.current.error).toBeNull();      // generation error untouched
+    expect(result.current.deleteError).toBeTruthy(); // only deleteError is set
+  });
+
+  it('deleteError clears when the user retries deleteSaved() and it succeeds (Task 372)', async () => {
+    let deleteCallCount = 0;
+    vi.stubGlobal('fetch', vi.fn().mockImplementation((url: string, opts?: RequestInit) => {
+      const method = opts?.method ?? 'GET';
+      if (method === 'GET' && url.includes(`/plans/${TOOL_KEY}`)) {
+        return Promise.resolve({ ok: true, json: async () => ({ ok: true, plan: SAVED_PLAN }) });
+      }
+      if (method === 'DELETE') {
+        deleteCallCount++;
+        // First DELETE fails; second succeeds
+        if (deleteCallCount === 1) {
+          return Promise.resolve({ ok: false, status: 500, json: async () => ({ ok: false }) });
+        }
+        return Promise.resolve({ ok: true, json: async () => ({ ok: true }) });
+      }
+      return Promise.resolve({ ok: true, json: async () => ({ ok: true }) });
+    }));
+
+    const { result } = renderHook(() => useAIPlan(() => 'prompt', false, TOOL_KEY));
+    await waitFor(() => expect(result.current.savedPlan).not.toBeNull());
+
+    // First delete — fails
+    await act(() => result.current.deleteSaved());
+    expect(result.current.deleteError).toBeTruthy();
+    expect(result.current.savedPlan).not.toBeNull(); // restored on failure
+
+    // Second delete — succeeds; error must clear
+    await act(() => result.current.deleteSaved());
+    expect(result.current.deleteError).toBeNull();
+    expect(result.current.savedPlan).toBeNull();
+  });
+
+  it('dismissDeleteError clears deleteError without affecting savedPlan', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockImplementation((url: string, opts?: RequestInit) => {
+      const method = opts?.method ?? 'GET';
+      if (method === 'GET') {
+        return Promise.resolve({ ok: true, json: async () => ({ ok: true, plan: SAVED_PLAN }) });
+      }
+      return Promise.resolve({ ok: false, status: 500, json: async () => ({ ok: false }) });
+    }));
+
+    const { result } = renderHook(() => useAIPlan(() => 'prompt', false, TOOL_KEY));
+    await waitFor(() => expect(result.current.savedPlan).not.toBeNull());
+
+    await act(() => result.current.deleteSaved());
+    expect(result.current.deleteError).toBeTruthy();
+    expect(result.current.savedPlan).not.toBeNull();
+
+    act(() => result.current.dismissDeleteError());
+    expect(result.current.deleteError).toBeNull();
+    expect(result.current.savedPlan).not.toBeNull(); // still intact
   });
 });
 

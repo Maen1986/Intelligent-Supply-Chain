@@ -257,3 +257,62 @@ describe('useAIPlan sign-out — toolKey undefined: no crash', () => {
     ).resolves.not.toThrow();
   });
 });
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Task 431 — pending flag is removed from sessionStorage after auto-generate fires.
+   Effect B removes the flag immediately on login; Effect C fires generate()
+   after confirming no existing plan exists on the server.
+══════════════════════════════════════════════════════════════════════════ */
+
+describe('useAIPlan — pending flag consumed (removed) when auto-generate fires (Task 431)', () => {
+  it('removes pendingAIPlan_<toolKey> from sessionStorage once auto-generate fires', async () => {
+    sessionStorage.setItem(FLAG_KEY, '1');
+    vi.stubGlobal('fetch', stubNoSavedPlan());
+
+    const { rerender } = renderHook(
+      ({ authed }: { authed: boolean }) => {
+        mockAuth.isAuthenticated = authed;
+        return useAIPlan(() => 'test prompt', false, TOOL_KEY, true);
+      },
+      { initialProps: { authed: false } },
+    );
+
+    // Flag must still be set before sign-in
+    await act(async () => { await new Promise(r => setTimeout(r, 20)); });
+    expect(sessionStorage.getItem(FLAG_KEY)).toBe('1');
+
+    // Sign in — Effect B removes the flag immediately
+    await act(async () => { rerender({ authed: true }); });
+
+    await waitFor(() => {
+      expect(sessionStorage.getItem(FLAG_KEY)).toBeNull();
+    });
+  });
+
+  it('fires generate() (POST /ai/plan) after the pending flag is consumed', async () => {
+    sessionStorage.setItem(FLAG_KEY, '1');
+    const fetchMock = stubNoSavedPlan();
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { rerender } = renderHook(
+      ({ authed }: { authed: boolean }) => {
+        mockAuth.isAuthenticated = authed;
+        return useAIPlan(() => 'test prompt', false, TOOL_KEY, true);
+      },
+      { initialProps: { authed: false } },
+    );
+
+    await act(async () => { rerender({ authed: true }); });
+
+    await waitFor(() => {
+      const aiCall = fetchMock.mock.calls.find(
+        ([url, opts]: [string, RequestInit]) =>
+          (url as string).includes('/ai/plan') &&
+          (opts?.method ?? 'GET').toUpperCase() === 'POST',
+      );
+      expect(aiCall).toBeDefined();
+    });
+
+    expect(sessionStorage.getItem(FLAG_KEY)).toBeNull();
+  });
+});

@@ -12,8 +12,8 @@
  *   8. reset() clears all state
  *   9. Second generate() aborts the first in-flight request
  */
-import { describe, it, expect, afterEach, vi } from 'vitest';
-import { renderHook, act } from '@testing-library/react';
+import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest';
+import { renderHook, act, cleanup } from '@testing-library/react';
 import { useAIPlan } from './useAIPlan';
 
 vi.mock('@/lib/apiBase', () => ({ API_BASE: 'http://test-server/api' }));
@@ -45,6 +45,7 @@ function stubFetchNetworkError(msg = 'Network failure') {
 }
 
 afterEach(() => {
+  cleanup();
   vi.unstubAllGlobals();
 });
 
@@ -195,6 +196,126 @@ describe('useAIPlan — reset()', () => {
     act(() => result.current.reset());
 
     expect(result.current.error).toBeNull();
+  });
+});
+
+/* ── Task 873 — rate-limit countdown auto-clears ─────────────────────────── */
+
+function stubFetch429(retryAfterSeconds = 3) {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn().mockResolvedValue({
+      ok:     false,
+      status: 429,
+      json:   async () => ({ ok: false, retryAfterSeconds, error: 'AI plan limit reached.' }),
+    }),
+  );
+}
+
+describe('useAIPlan — rate-limit countdown auto-clears (Task 873)', () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  it('rateLimited becomes false after the countdown expires', async () => {
+    stubFetch429(3);
+    const { result } = renderHook(() => useAIPlan(() => 'prompt', false));
+
+    await act(async () => { await result.current.generate(); });
+
+    expect(result.current.rateLimited).toBe(true);
+    expect(result.current.retryAfterSeconds).toBe(3);
+
+    // Advance past the 3-second window
+    await act(async () => { vi.advanceTimersByTime(4000); });
+
+    expect(result.current.rateLimited).toBe(false);
+    expect(result.current.retryAfterSeconds).toBeNull();
+  });
+
+  it('error is also cleared when the countdown expires', async () => {
+    stubFetch429(2);
+    const { result } = renderHook(() => useAIPlan(() => 'prompt', false));
+
+    await act(async () => { await result.current.generate(); });
+    expect(result.current.error).not.toBeNull();
+
+    await act(async () => { vi.advanceTimersByTime(3000); });
+    expect(result.current.error).toBeNull();
+  });
+
+  it('countdown decrements by one each second until it clears', async () => {
+    stubFetch429(3);
+    const { result } = renderHook(() => useAIPlan(() => 'prompt', false));
+
+    await act(async () => { await result.current.generate(); });
+    expect(result.current.retryAfterSeconds).toBe(3);
+
+    await act(async () => { vi.advanceTimersByTime(1000); });
+    expect(result.current.retryAfterSeconds).toBe(2);
+
+    await act(async () => { vi.advanceTimersByTime(1000); });
+    expect(result.current.retryAfterSeconds).toBe(1);
+
+    await act(async () => { vi.advanceTimersByTime(1000); });
+    expect(result.current.retryAfterSeconds).toBeNull();
+    expect(result.current.rateLimited).toBe(false);
+  });
+});
+
+/* ── Task 372 — deleteSaved retry success clears deleteError ── */
+
+describe('useAIPlan — deleteSaved: error clears on retry success (Task 372)', () => {
+  // No savedPlan on mount (isAuthenticated=false by default — no mount fetch).
+  // deleteSaved() proceeds as long as toolKey is set; when the server rejects,
+  // deleteError is set. On the next call (server succeeds) it must be cleared.
+
+  it('deleteError is set after a failed DELETE request', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, json: async () => ({ ok: false }) }));
+
+    const { result } = renderHook(() => useAIPlan(() => 'prompt', false, 'kpi'));
+
+    await act(async () => { await result.current.deleteSaved(); });
+
+    expect(result.current.deleteError).toBeTruthy();
+  });
+
+  it('deleteError clears after a successful retry', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn()
+        .mockResolvedValueOnce({ ok: false, json: async () => ({ ok: false }) }) // fail
+        .mockResolvedValueOnce({ ok: true,  json: async () => ({ ok: true }) }), // succeed
+    );
+
+    const { result } = renderHook(() => useAIPlan(() => 'prompt', false, 'kpi'));
+
+    // First delete — fails
+    await act(async () => { await result.current.deleteSaved(); });
+    expect(result.current.deleteError).toBeTruthy();
+
+    // Second delete — succeeds, deleteError must be null
+    await act(async () => { await result.current.deleteSaved(); });
+    expect(result.current.deleteError).toBeNull();
+  });
+
+  it('savedPlan is null after a successful delete retry', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn()
+        .mockResolvedValueOnce({ ok: false, json: async () => ({ ok: false }) })
+        .mockResolvedValueOnce({ ok: true,  json: async () => ({ ok: true }) }),
+    );
+
+    const { result } = renderHook(() => useAIPlan(() => 'prompt', false, 'kpi'));
+
+    await act(async () => { await result.current.deleteSaved(); }); // fail
+    await act(async () => { await result.current.deleteSaved(); }); // succeed
+
+    expect(result.current.savedPlan).toBeNull();
+    expect(result.current.deleteError).toBeNull();
   });
 });
 

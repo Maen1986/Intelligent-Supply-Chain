@@ -38,12 +38,19 @@ export interface AIPlanState {
   retryAfterSeconds: number | null;
   /** True when generation succeeded but the server-side save failed — plan is shown but not persisted. */
   saveError:    boolean;
+  /** Separate from the generation `error` so a failed delete does NOT hide the
+   *  Generate button (Task 373). Null when no delete error is active. */
+  deleteError:  string | null;
   generate:     () => Promise<void>;
   reset:        () => void;
   savedPlan:    SavedPlan | null;
   viewSaved:    () => void;
   deleteSaved:  () => Promise<void>;
   dismissSaveError: () => void;
+  /** Clears the delete-failure banner (Task 373). */
+  dismissDeleteError: () => void;
+  /** Re-posts the current result text without re-generating (Task 375). */
+  retrySave: () => Promise<void>;
 }
 
 export function useAIPlan(
@@ -61,6 +68,7 @@ export function useAIPlan(
   const [rateLimited,        setRateLimited]        = useState(false);
   const [retryAfterSeconds,  setRetryAfterSeconds]  = useState<number | null>(null);
   const [saveError,          setSaveError]          = useState(false);
+  const [deleteError,        setDeleteError]        = useState<string | null>(null);
   const [savedPlan,          setSavedPlan]          = useState<SavedPlan | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const prevAuthRef = useRef<boolean>(isAuthenticated);
@@ -71,6 +79,14 @@ export function useAIPlan(
    * generate() when no existing plan was found — preventing overwrites.
    */
   const pendingFlagConsumed = useRef(false);
+  /**
+   * Tracks whether Effect B has run at least once. Used to detect the initial
+   * mount scenario where `isAuthenticated` is already `true` on first render —
+   * in that case there is no false→true transition, so the normal transition
+   * branch never fires. The first-run cleanup ensures a stale pending flag
+   * (left over from a previous session) is always removed on mount.
+   */
+  const effectBFirstRunRef = useRef(true);
 
   /* ── Auto-generate once when the user just logged in ── */
   useEffect(() => {
@@ -97,6 +113,9 @@ export function useAIPlan(
     const wasAuthenticated = prevAuthRef.current;
     prevAuthRef.current = isAuthenticated;
 
+    const isFirstRun = effectBFirstRunRef.current;
+    effectBFirstRunRef.current = false;
+
     if (isAuthenticated && !wasAuthenticated && toolKey) {
       const flagKey = `pendingAIPlan_${toolKey}`;
       if (sessionStorage.getItem(flagKey) === '1') {
@@ -120,6 +139,12 @@ export function useAIPlan(
       // while already authenticated). Clear any stale deferred-generate marker so it
       // can't fire unexpectedly on a subsequent Effect C run.
       pendingFlagConsumed.current = false;
+      // First-mount cleanup (Task 584): if we mount while already authenticated,
+      // there is no false→true transition so the removal branch above never runs.
+      // Discard any stale pending flag immediately so it cannot linger across sessions.
+      if (isFirstRun && isAuthenticated && toolKey) {
+        sessionStorage.removeItem(`pendingAIPlan_${toolKey}`);
+      }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, toolKey, canGenerate]);
@@ -275,6 +300,9 @@ export function useAIPlan(
   /* ── Dismiss save-error warning without clearing the result ── */
   const dismissSaveError = useCallback(() => setSaveError(false), []);
 
+  /* ── Dismiss delete-error banner (Task 373) ── */
+  const dismissDeleteError = useCallback(() => setDeleteError(null), []);
+
   /* ── View saved plan ── */
   const viewSaved = useCallback(() => {
     if (savedPlan) setResult(savedPlan.text);
@@ -285,6 +313,7 @@ export function useAIPlan(
     if (!toolKey) return;
     const previousPlan = savedPlan;
     setSavedPlan(null); // optimistic
+    setDeleteError(null); // clear any previous delete error
     try {
       const res = await fetch(`${API_BASE}/plans/${toolKey}`, {
         method:      'DELETE',
@@ -292,15 +321,39 @@ export function useAIPlan(
       });
       if (!res.ok) {
         // Server rejected the delete — restore the saved plan and surface an error
+        // Uses a SEPARATE state from generation `error` so the Generate button
+        // stays visible (Task 373).
         setSavedPlan(previousPlan);
-        setError(isAr ? 'تعذّر حذف الخطة — حاول مجدّداً' : 'Could not delete plan — try again');
+        setDeleteError(isAr ? 'تعذّر حذف الخطة — حاول مجدّداً' : 'Could not delete plan — try again');
       }
     } catch {
       // Network error — restore the saved plan and surface an error
       setSavedPlan(previousPlan);
-      setError(isAr ? 'تعذّر حذف الخطة — حاول مجدّداً' : 'Could not delete plan — try again');
+      setDeleteError(isAr ? 'تعذّر حذف الخطة — حاول مجدّداً' : 'Could not delete plan — try again');
     }
   }, [toolKey, savedPlan, isAr]);
 
-  return { loading, result, error, rateLimited, retryAfterSeconds, saveError, generate, reset, savedPlan, viewSaved, deleteSaved, dismissSaveError };
+  /* ── Retry save: re-POST the current result without re-generating (Task 375) ── */
+  const retrySave = useCallback(async () => {
+    if (!toolKey || !result || !isAuthenticated) return;
+    setSaveError(false);
+    try {
+      const saveRes  = await fetch(`${API_BASE}/plans/${toolKey}`, {
+        method:      'POST',
+        credentials: 'include',
+        headers:     { 'Content-Type': 'application/json' },
+        body:        JSON.stringify({ text: result }),
+      });
+      const saveData = await saveRes.json() as { ok: boolean; savedAt?: string };
+      if (saveRes.ok && saveData.ok && saveData.savedAt) {
+        setSavedPlan({ text: result, savedAt: saveData.savedAt });
+      } else {
+        setSaveError(true);
+      }
+    } catch {
+      setSaveError(true);
+    }
+  }, [toolKey, result, isAuthenticated]);
+
+  return { loading, result, error, rateLimited, retryAfterSeconds, saveError, deleteError, generate, reset, savedPlan, viewSaved, deleteSaved, dismissSaveError, dismissDeleteError, retrySave };
 }

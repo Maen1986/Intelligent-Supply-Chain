@@ -260,3 +260,84 @@ export function parseSubScoresFromRow(row: Record<string, string>): {
 
   return { subScores, errors };
 }
+
+/**
+ * mergeImportRoster — pure merge logic extracted from handleScorecardImport.
+ *
+ * Applies a set of parsed CSV rows to an existing supplier roster:
+ *  - Matches by name (case-insensitive).
+ *  - If a match is found and `overwrite=true`, replaces tier + subScores wholesale.
+ *  - If a match is found and `overwrite=false`, skips the row.
+ *  - If no match is found, appends a new supplier.
+ *
+ * Returns the mutated roster copy plus import counters and log messages.
+ * Extracted so that the round-trip test can call the real implementation
+ * directly instead of maintaining a hand-rolled parallel copy (Task 335).
+ */
+export function mergeImportRoster(
+  rosterSuppliers: SupplierRecord[],
+  csvRows: Array<Record<string, string>>,
+  overwrite: boolean,
+  isAr = false,
+): { nextSuppliers: SupplierRecord[]; imported: number; skipped: number; log: string[] } {
+  const nextSuppliers = rosterSuppliers.map(s => ({
+    ...s,
+    subScores: { ...s.subScores },
+  }));
+
+  let imported = 0;
+  let skipped  = 0;
+  const log: string[] = [];
+
+  csvRows.forEach((row, ri) => {
+    const rowNum = ri + 2; // 1-based header + 1-based data rows
+    const name = row['Supplier Name']?.trim();
+    if (!name) return;
+
+    const { subScores: incoming } = parseSubScoresFromRow(row);
+
+    // Case-insensitive match
+    const existingIdx = nextSuppliers.findIndex(
+      s => s.name.toLowerCase() === name.toLowerCase(),
+    );
+    if (existingIdx >= 0) {
+      const existingName = nextSuppliers[existingIdx].name;
+      const isCaseVariant = existingName !== name;
+      if (overwrite) {
+        // Wholesale replace — mirrors handleScorecardImport exactly.
+        nextSuppliers[existingIdx] = {
+          ...nextSuppliers[existingIdx],
+          tier: row['Current Tier']?.trim() || nextSuppliers[existingIdx].tier,
+          subScores: incoming,
+        };
+        imported++;
+        if (isCaseVariant) {
+          log.push(
+            isAr
+              ? `الصف ${rowNum}: '${name}' تطابق مع '${existingName}' الموجود — تم الدمج.`
+              : `Row ${rowNum}: '${name}' matched existing '${existingName}' — merged.`,
+          );
+        }
+      } else {
+        skipped++;
+        if (isCaseVariant) {
+          log.push(
+            isAr
+              ? `الصف ${rowNum}: '${name}' تطابق مع '${existingName}' الموجود — تم التخطي.`
+              : `Row ${rowNum}: '${name}' matched existing '${existingName}' — skipped.`,
+          );
+        }
+      }
+    } else {
+      nextSuppliers.push({
+        id: `sup-imported-${name}`,
+        name,
+        tier: row['Current Tier']?.trim() || 'Strategic',
+        subScores: incoming,
+      });
+      imported++;
+    }
+  });
+
+  return { nextSuppliers, imported, skipped, log };
+}

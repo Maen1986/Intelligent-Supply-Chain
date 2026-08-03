@@ -20,8 +20,8 @@
 import React from 'react';
 import fs from 'node:fs';
 import path from 'node:path';
-import { describe, it, expect } from 'vitest';
-import { render, fireEvent } from '@testing-library/react';
+import { describe, it, expect, afterEach } from 'vitest';
+import { render, fireEvent, cleanup } from '@testing-library/react';
 import { TemplateCard } from '../AdminAutomations';
 
 /* ── Load manifest ──────────────────────────────────────────────────────── */
@@ -122,6 +122,8 @@ function getNodeDesc(container: HTMLElement, nodeName: string): string | null {
 /* ════════════════════════════════════════════════════════════════════════════
    SECTION 1 — Flow preview heading
    ════════════════════════════════════════════════════════════════════════════ */
+
+afterEach(() => { cleanup(); });
 
 describe('TemplateCard — FlowPreview heading', () => {
   it('does NOT show "Flow preview" before the Setup button is clicked', () => {

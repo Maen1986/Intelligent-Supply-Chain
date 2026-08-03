@@ -132,3 +132,114 @@ describe('ConfidenceTierBadge — Arabic labels in results page card header (asP
     expect(badge.className).toContain('rounded-full');
   });
 });
+
+/* ════════════════════════════════════════════════════════════════════════════
+   Task 832 — ⚠ overlay for ai_evaluated and self_reported tiers in Arabic
+   pill mode (asPill=true, lang="ar").
+   Task 793 covered consultant_validated; the same hasFlag() path fires for
+   all three tiers.
+════════════════════════════════════════════════════════════════════════════ */
+
+/**
+ * ai_evaluated tier with a flagged sub-segment (second record has
+ * plausible_support:false → hasFlag returns true).
+ */
+const FLAGGED_AI_EV_AR: EvidenceRecord[] = [
+  {
+    id: 10, segId: 'strategy', subSegId: 'strategy-align', subSegLabel: 'Strategy doc',
+    originalFilename: 'ai-good.pdf', mimeType: 'application/pdf',
+    confidenceTier: 'ai_evaluated',
+    aiEvaluation: { plausible_support: true, confidence: 'high', flag_reason: null, summary: 'Good' },
+  },
+  {
+    id: 11, segId: 'strategy', subSegId: 'strategy-align2', subSegLabel: 'Strategy doc 2',
+    originalFilename: 'ai-bad.pdf', mimeType: 'application/pdf',
+    confidenceTier: 'ai_evaluated',
+    aiEvaluation: { plausible_support: false, confidence: 'low', flag_reason: 'scope mismatch', summary: '' },
+  },
+];
+
+/**
+ * self_reported tier with a flagged evaluation.
+ */
+const FLAGGED_SR_EV_AR: EvidenceRecord[] = [
+  {
+    id: 12, segId: 'strategy', subSegId: 'strategy-align', subSegLabel: 'Strategy doc',
+    originalFilename: 'sr-flagged.pdf', mimeType: 'application/pdf',
+    confidenceTier: 'self_reported',
+    aiEvaluation: { plausible_support: false, confidence: 'low', flag_reason: 'unrelated', summary: '' },
+  },
+];
+
+describe('ConfidenceTierBadge — ⚠ overlay in Arabic pill mode for ai_evaluated and self_reported (Task 832)', () => {
+  afterEach(() => cleanup());
+
+  it('shows ⚠ in the pill for flagged ai_evaluated evidence in Arabic mode', () => {
+    render(<ConfidenceTierBadge lang="ar" evidence={FLAGGED_AI_EV_AR} asPill />);
+    expect(screen.getByText('⚠')).toBeInTheDocument();
+  });
+
+  it('pill carries Arabic title attribute for flagged ai_evaluated in Arabic mode', () => {
+    const { container } = render(<ConfidenceTierBadge lang="ar" evidence={FLAGGED_AI_EV_AR} asPill />);
+    const pill = container.querySelector('span.rounded-full') as HTMLElement;
+    expect(pill).not.toBeNull();
+    expect(pill.getAttribute('title')).toBe('دليل مُحدَّد يتطلب مراجعة');
+  });
+
+  it('shows ⚠ in the pill for flagged self_reported evidence in Arabic mode', () => {
+    render(<ConfidenceTierBadge lang="ar" evidence={FLAGGED_SR_EV_AR} asPill />);
+    expect(screen.getByText('⚠')).toBeInTheDocument();
+  });
+
+  it('pill carries Arabic title attribute for flagged self_reported in Arabic mode', () => {
+    const { container } = render(<ConfidenceTierBadge lang="ar" evidence={FLAGGED_SR_EV_AR} asPill />);
+    const pill = container.querySelector('span.rounded-full') as HTMLElement;
+    expect(pill).not.toBeNull();
+    expect(pill.getAttribute('title')).toBe('دليل مُحدَّد يتطلب مراجعة');
+  });
+
+  it('no ⚠ appears in the Arabic pill when evidence is not flagged (ai_evaluated, Task 832)', () => {
+    render(<ConfidenceTierBadge lang="ar" evidence={AI_EVALUATED_EV} asPill />);
+    expect(screen.queryByText('⚠')).toBeNull();
+  });
+});
+
+/* ════════════════════════════════════════════════════════════════════════════
+   Task 854 — Arabic ⚠ overlay for mixed-tier evidence with a flagged record.
+   When one record is ai_evaluated with plausible_support:false alongside
+   a consultant_validated winner, the ⚠ overlay must still appear in Arabic.
+════════════════════════════════════════════════════════════════════════════ */
+
+const MIXED_TIER_WITH_FLAG_AR: EvidenceRecord[] = [
+  {
+    id: 20, segId: 'strategy', subSegId: 'strategy-align', subSegLabel: 'Strategy doc',
+    originalFilename: 'cv.pdf', mimeType: 'application/pdf',
+    confidenceTier: 'consultant_validated',
+    aiEvaluation: null,
+  },
+  {
+    id: 21, segId: 'strategy', subSegId: 'strategy-align2', subSegLabel: 'Strategy doc 2',
+    originalFilename: 'ai-flagged.pdf', mimeType: 'application/pdf',
+    confidenceTier: 'ai_evaluated',
+    aiEvaluation: { plausible_support: false, confidence: 'low', flag_reason: 'scope mismatch', summary: '' },
+  },
+];
+
+describe('ConfidenceTierBadge — Arabic ⚠ for mixed-tier with flagged record (Task 854)', () => {
+  afterEach(() => cleanup());
+
+  it('shows ⚠ in Arabic pill when a flagged ai_evaluated record accompanies a consultant_validated winner', () => {
+    render(<ConfidenceTierBadge lang="ar" evidence={MIXED_TIER_WITH_FLAG_AR} asPill />);
+    // Tier is consultant_validated (wins), but hasFlag is true → ⚠ must appear
+    expect(screen.getByText('مُعتمَد من الاستشاري')).toBeInTheDocument();
+    expect(screen.getByText('⚠')).toBeInTheDocument();
+  });
+
+  it('pill carries the Arabic flag title in mixed-tier + flagged scenario', () => {
+    const { container } = render(
+      <ConfidenceTierBadge lang="ar" evidence={MIXED_TIER_WITH_FLAG_AR} asPill />,
+    );
+    const pill = container.querySelector('span.rounded-full') as HTMLElement;
+    expect(pill.getAttribute('title')).toBe('دليل مُحدَّد يتطلب مراجعة');
+  });
+});

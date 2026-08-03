@@ -623,6 +623,90 @@ describe('ConfidenceTierBadge — Arabic self-reported badge in inline mode (asP
 });
 
 /* ════════════════════════════════════════════════════════════════════════════
+   Task 829 — Arabic ai_evaluated and consultant_validated badges in inline mode
+   (asPill=false)
+
+   Task 806 added tests for the self_reported tier in asPill=false Arabic mode.
+   The ai_evaluated and consultant_validated tiers have not yet been verified in
+   inline mode.  The evidence detail drawer accordion header uses asPill=false,
+   so a regression in those tiers would go undetected.
+════════════════════════════════════════════════════════════════════════════ */
+
+const AI_EVALUATED_EV: EvidenceRecord[] = [
+  {
+    id:               10,
+    segId:            'strategy',
+    subSegId:         'strategy-align',
+    subSegLabel:      'Supply chain strategy document',
+    originalFilename: 'strategy-ai.pdf',
+    mimeType:         'application/pdf',
+    confidenceTier:   'ai_evaluated',
+    aiEvaluation:     { plausible_support: true, confidence: 'high', flag_reason: null, summary: 'Looks good.' },
+  },
+];
+
+describe('ConfidenceTierBadge — Arabic ai_evaluated badge in inline mode (asPill=false, Task 829)', () => {
+  afterEach(() => cleanup());
+
+  /* ── Inline AI Test 1 ────────────────────────────────────────────────────
+     When rendered with asPill=false and lang="ar", the Arabic ai_evaluated
+     label "مُقيَّم بالذكاء الاصطناعي" must appear in the DOM.
+  ─────────────────────────────────────────────────────────────────────────── */
+  it('shows "مُقيَّم بالذكاء الاصطناعي" for ai_evaluated evidence in Arabic inline mode', () => {
+    render(<ConfidenceTierBadge lang="ar" evidence={AI_EVALUATED_EV} asPill={false} />);
+    expect(screen.getByText('مُقيَّم بالذكاء الاصطناعي')).toBeInTheDocument();
+  });
+
+  /* ── Inline AI Test 2 ────────────────────────────────────────────────────
+     The element must NOT carry the rounded-full CSS class in inline mode.
+  ─────────────────────────────────────────────────────────────────────────── */
+  it('does NOT apply rounded-full to the Arabic ai_evaluated badge in inline mode', () => {
+    render(<ConfidenceTierBadge lang="ar" evidence={AI_EVALUATED_EV} asPill={false} />);
+    const badge = screen.getByText('مُقيَّم بالذكاء الاصطناعي');
+    expect(badge).not.toHaveClass('rounded-full');
+    expect(badge).toHaveClass('font-semibold');
+    expect(badge).toHaveClass('text-blue-800');
+  });
+});
+
+const CONSULTANT_VALIDATED_INLINE_EV: EvidenceRecord[] = [
+  {
+    id:               11,
+    segId:            'strategy',
+    subSegId:         'strategy-align',
+    subSegLabel:      'Supply chain strategy document',
+    originalFilename: 'strategy-cv.pdf',
+    mimeType:         'application/pdf',
+    confidenceTier:   'consultant_validated',
+    aiEvaluation:     null,
+  },
+];
+
+describe('ConfidenceTierBadge — Arabic consultant_validated badge in inline mode (asPill=false, Task 829)', () => {
+  afterEach(() => cleanup());
+
+  /* ── Inline CV Test 1 ────────────────────────────────────────────────────
+     When rendered with asPill=false and lang="ar", the Arabic
+     consultant_validated label "مُعتمَد من الاستشاري" must appear.
+  ─────────────────────────────────────────────────────────────────────────── */
+  it('shows "مُعتمَد من الاستشاري" for consultant_validated evidence in Arabic inline mode', () => {
+    render(<ConfidenceTierBadge lang="ar" evidence={CONSULTANT_VALIDATED_INLINE_EV} asPill={false} />);
+    expect(screen.getByText('مُعتمَد من الاستشاري')).toBeInTheDocument();
+  });
+
+  /* ── Inline CV Test 2 ────────────────────────────────────────────────────
+     The element must NOT carry the rounded-full CSS class in inline mode.
+  ─────────────────────────────────────────────────────────────────────────── */
+  it('does NOT apply rounded-full to the Arabic consultant_validated badge in inline mode', () => {
+    render(<ConfidenceTierBadge lang="ar" evidence={CONSULTANT_VALIDATED_INLINE_EV} asPill={false} />);
+    const badge = screen.getByText('مُعتمَد من الاستشاري');
+    expect(badge).not.toHaveClass('rounded-full');
+    expect(badge).toHaveClass('font-semibold');
+    expect(badge).toHaveClass('text-amber-800');
+  });
+});
+
+/* ════════════════════════════════════════════════════════════════════════════
    Task 842 — consultant_validated badge round-trip in inline mode (asPill=false)
 
    The round-trip toggle tests (Tasks 785, 805) use asPill=true (the pill

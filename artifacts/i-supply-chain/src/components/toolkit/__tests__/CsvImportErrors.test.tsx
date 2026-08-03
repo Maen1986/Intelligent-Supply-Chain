@@ -45,6 +45,7 @@ vi.mock('@/components/AIPlanPanel', () => ({ AIPlanPanel: () => null }));
 
 /* ── lazy imports (after mocks are registered) ───────────────────────── */
 
+import { safeSetItem } from '@/lib/storage';
 import { parseCsvFile } from '@/lib/importCsv';
 import {
   DIMS,
@@ -593,6 +594,232 @@ describe('SupplierScorecardTool — partial CSV import uses real production merg
       expect(
         screen.getByText((txt) => txt.startsWith('✓') && txt.includes('Imported 1')),
       ).toBeInTheDocument(),
+    );
+  });
+});
+
+/* ── Task 362: undo snapshot is persisted to localStorage after import ────────── */
+
+describe('SupplierScorecardTool — undo snapshot saved to localStorage after import (Task 362)', () => {
+  beforeEach(() => {
+    vi.stubGlobal('confirm', vi.fn().mockReturnValue(true));
+  });
+
+  it('localStorage key "isc-tool-supplier-roster-undo" is set after a successful import', async () => {
+    localStorage.setItem(
+      'isc-tool-supplier-roster',
+      JSON.stringify({
+        suppliers: [{ id: 's-362', name: 'Persisted Corp', tier: 'Strategic', subScores: {} }],
+        activeId: 's-362',
+      }),
+    );
+
+    const col = deliveryOtifCol();
+    const csv = [`Supplier Name,Current Tier,${col}`, `New Supplier,Preferred,90`].join('\n');
+    mockFileReaderWith(csv);
+    render(<SupplierScorecardTool isAr={false} />);
+    fireImportFile(csv);
+
+    // Wait for import success
+    await waitFor(() =>
+      expect(
+        screen.getByText((txt) => txt.startsWith('✓') && txt.includes('Imported 1')),
+      ).toBeInTheDocument(),
+    );
+
+    // safeSetItem must have been called with the UNDO_KEY and the pre-import snapshot.
+    // (The storage mock intercepts the call; we verify it received the right key.)
+    const calls = vi.mocked(safeSetItem).mock.calls;
+    const undoCall = calls.find(([key]) => key === 'isc-tool-supplier-roster-undo');
+    expect(undoCall).toBeDefined();
+    const snapshot = JSON.parse(undoCall![1] as string);
+    expect(snapshot.suppliers).toHaveLength(1);
+    expect(snapshot.suppliers[0].name).toBe('Persisted Corp');
+  });
+});
+
+/* ── Task 359: import confirm message includes exact duplicate names ──────────── */
+
+describe('SupplierScorecardTool — import confirm message lists duplicate names (Task 359)', () => {
+  it('confirm() is called with a message containing the duplicate supplier name', async () => {
+    const confirmSpy = vi.fn().mockReturnValue(false);
+    vi.stubGlobal('confirm', confirmSpy);
+
+    localStorage.setItem(
+      'isc-tool-supplier-roster',
+      JSON.stringify({
+        suppliers: [{ id: 's-359', name: 'Acme Corp', tier: 'Strategic', subScores: {} }],
+        activeId: 's-359',
+      }),
+    );
+
+    const col = deliveryOtifCol();
+    const csv = [`Supplier Name,Current Tier,${col}`, `Acme Corp,Strategic,80`].join('\n');
+    mockFileReaderWith(csv);
+    render(<SupplierScorecardTool isAr={false} />);
+    fireImportFile(csv);
+
+    // Wait for the import to settle
+    await waitFor(() =>
+      expect(confirmSpy).toHaveBeenCalled(),
+    );
+
+    const [message] = confirmSpy.mock.calls[0];
+    expect(message).toMatch(/supplier\(s\) already exist/i);
+    expect(message).toContain('Acme Corp');
+    expect(message).toMatch(/overwrite/i);
+  });
+});
+
+/* ── Task 357: case-insensitive duplicate detection exercises the real import path ── */
+
+describe('SupplierScorecardTool — case-insensitive duplicate detection in import (Task 357)', () => {
+  it('a CSV row whose name is all-lowercase variant of an existing entry is detected as duplicate', async () => {
+    localStorage.setItem(
+      'isc-tool-supplier-roster',
+      JSON.stringify({
+        suppliers: [{ id: 's-ci357', name: 'Alpha Corp', tier: 'Strategic', subScores: {} }],
+        activeId: 's-ci357',
+      }),
+    );
+
+    const col = deliveryOtifCol();
+    // 'alpha corp' (lowercase) should match 'Alpha Corp' → confirm prompt fires → returns false → skipped
+    const csv = [`Supplier Name,Current Tier,${col}`, `alpha corp,Preferred,77`].join('\n');
+    mockFileReaderWith(csv);
+    render(<SupplierScorecardTool isAr={false} />);
+    fireImportFile(csv);
+
+    // confirm=false (beforeEach stub) → skipped, NOT added as a new entry
+    await waitFor(() =>
+      expect(
+        screen.getByText((txt) => txt.startsWith('✓') && txt.includes('Imported 0')),
+      ).toBeInTheDocument(),
+    );
+  });
+
+  it('all-uppercase variant is also detected as duplicate and skipped when confirm returns false', async () => {
+    localStorage.setItem(
+      'isc-tool-supplier-roster',
+      JSON.stringify({
+        suppliers: [{ id: 's-ci357b', name: 'Beta Inc', tier: 'Preferred', subScores: {} }],
+        activeId: 's-ci357b',
+      }),
+    );
+
+    const col = deliveryOtifCol();
+    const csv = [`Supplier Name,Current Tier,${col}`, `BETA INC,Approved,88`].join('\n');
+    mockFileReaderWith(csv);
+    render(<SupplierScorecardTool isAr={false} />);
+    fireImportFile(csv);
+
+    await waitFor(() =>
+      expect(
+        screen.getByText((txt) => txt.startsWith('✓') && txt.includes('Imported 0')),
+      ).toBeInTheDocument(),
+    );
+  });
+});
+
+/* ── Task 366: mixed new + duplicate import count is accurate ─────────────── */
+
+describe('SupplierScorecardTool — mixed new and duplicate import count (Task 366)', () => {
+  it('"Imported 1" counts the new row; the skipped duplicate is reported separately', async () => {
+    localStorage.setItem(
+      'isc-tool-supplier-roster',
+      JSON.stringify({
+        suppliers: [{ id: 's-mix366', name: 'Alpha Corp', tier: 'Strategic', subScores: {} }],
+        activeId: 's-mix366',
+      }),
+    );
+
+    const col = deliveryOtifCol();
+    // Alpha Corp = duplicate (skipped — confirm=false); Beta Corp = genuinely new
+    const csv = [`Supplier Name,Current Tier,${col}`, `Alpha Corp,Strategic,80`, `Beta Corp,Preferred,95`].join('\n');
+    mockFileReaderWith(csv);
+    render(<SupplierScorecardTool isAr={false} />);
+    fireImportFile(csv);
+
+    // Imported 1 (Beta Corp); 1 skipped (Alpha Corp)
+    await waitFor(() =>
+      expect(
+        screen.getByText((txt) =>
+          txt.startsWith('✓') && txt.includes('Imported 1') && txt.includes('1 skipped'),
+        ),
+      ).toBeInTheDocument(),
+    );
+  });
+});
+
+/* ── Task 361: undo button restores the supplier list ─────────────────────── */
+
+describe('SupplierScorecardTool — undo import restores pre-import roster (Task 361)', () => {
+  beforeEach(() => {
+    vi.stubGlobal('confirm', vi.fn().mockReturnValue(true));
+  });
+
+  it('clicking "Undo import" removes the newly-imported supplier and restores the original list', async () => {
+    // Start with one supplier
+    localStorage.setItem(
+      'isc-tool-supplier-roster',
+      JSON.stringify({
+        suppliers: [{ id: 's-undo-orig', name: 'Original Corp', tier: 'Strategic', subScores: {} }],
+        activeId: 's-undo-orig',
+      }),
+    );
+
+    const col = deliveryOtifCol();
+    // Import a genuinely new supplier
+    const csv = [`Supplier Name,Current Tier,${col}`, `Newcomer Inc,Preferred,88`].join('\n');
+    mockFileReaderWith(csv);
+    render(<SupplierScorecardTool isAr={false} />);
+    fireImportFile(csv);
+
+    // Wait for import success
+    await waitFor(() =>
+      expect(
+        screen.getByText((txt) => txt.startsWith('✓') && txt.includes('Imported 1')),
+      ).toBeInTheDocument(),
+    );
+
+    // "Newcomer Inc" should now appear in the roster list (sidebar text, not the name input
+    // which shows the active supplier "Original Corp")
+    expect(screen.getByText('Newcomer Inc')).toBeInTheDocument();
+
+    // Click the undo button
+    const undoBtn = screen.getByRole('button', { name: /undo import/i });
+    fireEvent.click(undoBtn);
+
+    // Original supplier restored; newcomer is gone from the roster list
+    await waitFor(() =>
+      expect(screen.queryByText('Newcomer Inc')).toBeNull(),
+    );
+    expect(screen.getByText('Original Corp')).toBeInTheDocument();
+  });
+
+  it('the undo button disappears after it is clicked', async () => {
+    localStorage.setItem(
+      'isc-tool-supplier-roster',
+      JSON.stringify({
+        suppliers: [{ id: 's-undo-orig2', name: 'Stable Corp', tier: 'Strategic', subScores: {} }],
+        activeId: 's-undo-orig2',
+      }),
+    );
+
+    const col = deliveryOtifCol();
+    const csv = [`Supplier Name,Current Tier,${col}`, `Temp Supplier,Preferred,72`].join('\n');
+    mockFileReaderWith(csv);
+    render(<SupplierScorecardTool isAr={false} />);
+    fireImportFile(csv);
+
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: /undo import/i })).toBeInTheDocument(),
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /undo import/i }));
+
+    await waitFor(() =>
+      expect(screen.queryByRole('button', { name: /undo import/i })).toBeNull(),
     );
   });
 });

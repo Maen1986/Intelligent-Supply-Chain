@@ -151,12 +151,16 @@ router.post('/maturity/evidence/upload-url', requireSession, async (req, res) =>
     res.status(400).json({ ok: false, error: 'Missing required fields' });
     return;
   }
+  const fileBytes = Number(file_size);
+  if (!Number.isFinite(fileBytes) || fileBytes <= 0) {
+    res.status(400).json({ ok: false, error: 'file_size must be a positive number' });
+    return;
+  }
   if (!ALLOWED_MIME_TYPES.has(mime_type as string)) {
     res.status(400).json({ ok: false, error: `File type not allowed. Accepted: PDF, Word, PNG, JPEG, WebP.` });
     return;
   }
-  const fileBytes = Number(file_size);
-  if (Number.isFinite(fileBytes) && fileBytes > MAX_FILE_BYTES) {
+  if (fileBytes > MAX_FILE_BYTES) {
     res.status(400).json({ ok: false, error: 'File exceeds 10 MB limit.' });
     return;
   }

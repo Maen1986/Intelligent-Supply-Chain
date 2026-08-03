@@ -237,3 +237,135 @@ describe('ConfidenceTierBadge — ⚠ overlay in non-pill mode (ai_evaluated and
     expect(warningSpan.getAttribute('title')).toBe('Flagged evidence — review recommended');
   });
 });
+
+/* ════════════════════════════════════════════════════════════════════════════
+   Task 855 — inline Arabic badge for mixed-tier evidence
+   The inline (asPill=false) path must render the correct Arabic label even
+   when the segment has multiple records of different tiers.
+════════════════════════════════════════════════════════════════════════════ */
+
+/** Mixed-tier: one self_reported + one consultant_validated — tier = consultant_validated */
+const MIXED_CV_SR: EvidenceRecord[] = [
+  {
+    id: 50, segId: 'strategy', subSegId: 'ss1', subSegLabel: 'SS1',
+    originalFilename: 'cv.pdf', mimeType: 'application/pdf',
+    confidenceTier: 'consultant_validated',
+    aiEvaluation: null,
+  },
+  {
+    id: 51, segId: 'strategy', subSegId: 'ss2', subSegLabel: 'SS2',
+    originalFilename: 'sr.pdf', mimeType: 'application/pdf',
+    confidenceTier: 'self_reported',
+    aiEvaluation: null,
+  },
+];
+
+/** Mixed-tier: one self_reported + one ai_evaluated — tier = ai_evaluated */
+const MIXED_AI_SR: EvidenceRecord[] = [
+  {
+    id: 52, segId: 'strategy', subSegId: 'ss1', subSegLabel: 'SS1',
+    originalFilename: 'ai.pdf', mimeType: 'application/pdf',
+    confidenceTier: 'ai_evaluated',
+    aiEvaluation: { plausible_support: true, confidence: 'high', flag_reason: null, summary: '' },
+  },
+  {
+    id: 53, segId: 'strategy', subSegId: 'ss2', subSegLabel: 'SS2',
+    originalFilename: 'sr.pdf', mimeType: 'application/pdf',
+    confidenceTier: 'self_reported',
+    aiEvaluation: null,
+  },
+];
+
+describe('ConfidenceTierBadge — inline Arabic label for mixed-tier evidence (Task 855)', () => {
+  afterEach(() => cleanup());
+
+  it('inline Arabic label is "مُعتمَد من الاستشاري" for consultant_validated+self_reported mix', () => {
+    render(<ConfidenceTierBadge lang="ar" evidence={MIXED_CV_SR} asPill={false} />);
+    expect(screen.getByText('مُعتمَد من الاستشاري')).toBeInTheDocument();
+    expect(screen.queryByText('مُبلَّغ ذاتياً')).toBeNull();
+  });
+
+  it('inline Arabic label is "مُقيَّم بالذكاء الاصطناعي" for ai_evaluated+self_reported mix', () => {
+    render(<ConfidenceTierBadge lang="ar" evidence={MIXED_AI_SR} asPill={false} />);
+    expect(screen.getByText('مُقيَّم بالذكاء الاصطناعي')).toBeInTheDocument();
+    expect(screen.queryByText('مُبلَّغ ذاتياً')).toBeNull();
+  });
+});
+
+/* ════════════════════════════════════════════════════════════════════════════
+   Task 858 — stronger inline assertions for ai_evaluated and consultant_validated
+   The inline span must carry the tier-specific text-colour class.
+════════════════════════════════════════════════════════════════════════════ */
+
+describe('ConfidenceTierBadge — inline tier-specific classes (Task 858)', () => {
+  afterEach(() => cleanup());
+
+  it('ai_evaluated inline span carries text-blue-800', () => {
+    render(<ConfidenceTierBadge lang="en" evidence={FLAGGED_AI_EVALUATED_EV} asPill={false} />);
+    const span = screen.getByText('AI-evaluated').closest('span') as HTMLElement;
+    expect(span.className).toContain('text-blue-800');
+  });
+
+  it('consultant_validated inline span carries text-amber-800', () => {
+    render(<ConfidenceTierBadge lang="en" evidence={FLAGGED_CONSULTANT_EV} asPill={false} />);
+    const span = screen.getByText('Consultant-validated').closest('span') as HTMLElement;
+    expect(span.className).toContain('text-amber-800');
+  });
+
+  it('self_reported inline span carries text-slate-600 (baseline sanity)', () => {
+    render(<ConfidenceTierBadge lang="en" evidence={FLAGGED_SELF_REPORTED_EV} asPill={false} />);
+    const span = screen.getByText('Self-reported').closest('span') as HTMLElement;
+    expect(span.className).toContain('text-slate-600');
+  });
+});
+
+/* ════════════════════════════════════════════════════════════════════════════
+   Task 862 — inline badge for consultant_validated has no rounded-full class
+════════════════════════════════════════════════════════════════════════════ */
+
+describe('ConfidenceTierBadge — inline mode has no pill styling for consultant_validated (Task 862)', () => {
+  afterEach(() => cleanup());
+
+  it('consultant_validated inline badge has no rounded-full class', () => {
+    const { container } = render(
+      <ConfidenceTierBadge lang="en" evidence={CLEAN_CONSULTANT_EV} asPill={false} />,
+    );
+    // The rendered span must not carry pill/bubble styling
+    const spans = container.querySelectorAll('span');
+    spans.forEach(s => {
+      expect(s.className).not.toContain('rounded-full');
+    });
+  });
+
+  it('consultant_validated inline badge carries font-semibold (inline structural class)', () => {
+    const { container } = render(
+      <ConfidenceTierBadge lang="en" evidence={CLEAN_CONSULTANT_EV} asPill={false} />,
+    );
+    const outerSpan = container.querySelector('span') as HTMLElement;
+    expect(outerSpan.className).toContain('font-semibold');
+  });
+});
+
+/* ════════════════════════════════════════════════════════════════════════════
+   Task 863 — ⚠ flag overlay in inline mode for consultant_validated (English)
+════════════════════════════════════════════════════════════════════════════ */
+
+describe('ConfidenceTierBadge — ⚠ overlay in inline mode for flagged consultant_validated (Task 863)', () => {
+  afterEach(() => cleanup());
+
+  it('renders ⚠ in inline mode when consultant_validated evidence is flagged (English)', () => {
+    render(<ConfidenceTierBadge lang="en" evidence={FLAGGED_CONSULTANT_EV} asPill={false} />);
+    expect(screen.getByText('⚠')).toBeInTheDocument();
+  });
+
+  it('⚠ span carries the English warning title in inline mode for consultant_validated', () => {
+    render(<ConfidenceTierBadge lang="en" evidence={FLAGGED_CONSULTANT_EV} asPill={false} />);
+    const warningSpan = screen.getByText('⚠');
+    expect(warningSpan.getAttribute('title')).toBe('Flagged evidence — review recommended');
+  });
+
+  it('no ⚠ appears in inline mode for a clean (non-flagged) consultant_validated record', () => {
+    render(<ConfidenceTierBadge lang="en" evidence={CLEAN_CONSULTANT_EV} asPill={false} />);
+    expect(screen.queryByText('⚠')).toBeNull();
+  });
+});

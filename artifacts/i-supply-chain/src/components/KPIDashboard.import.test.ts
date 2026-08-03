@@ -137,6 +137,59 @@ describe('calcKpisFromInputs — partial data handling', () => {
     const arSkip = log.find(l => l.includes('تم التخطّي'));
     expect(arSkip).toBeTruthy();
   });
+
+  /* ── Task 677: Arabic "مدخلات ناقصة" message for partial inputs ─────────
+     When a KPI has some — but not all — required inputs filled, the skip log
+     entry must use the Arabic "partial inputs" form:
+       "<label>: مدخلات ناقصة (<missing ids>) — تم التخطّي."
+     The existing test above covers the "no inputs at all" case (where the
+     message begins with the KPI label + "لم يتم تقديم"). This test covers
+     the distinct case where at least one required input is present but at
+     least one is missing (missingIds.length > 0 but partial).                */
+
+  it('Task 677 — emits Arabic "مدخلات ناقصة" message when a KPI has some but not all required inputs (isAr=true)', () => {
+    // crm requires: total_critical_risks AND mitigated_critical_risks.
+    // Provide only total_critical_risks → missingIds = ['mitigated_critical_risks']
+    const inputsByKpi = {
+      crm: { total_critical_risks: 20 },          // partial — mitigated_critical_risks absent
+    };
+
+    const { log } = calcKpisFromInputs(
+      [kpiById('crm')],
+      inputsByKpi,
+      true, // Arabic mode
+    );
+
+    // Must contain the Arabic "partial inputs" skip marker
+    const partialSkip = log.find(l => l.includes('مدخلات ناقصة'));
+    expect(partialSkip).toBeDefined();
+
+    // Must also contain the generic Arabic skip suffix
+    expect(partialSkip).toContain('تم التخطّي');
+
+    // The missing field id must be named in the message
+    expect(partialSkip).toContain('mitigated_critical_risks');
+
+    // Must NOT be the "no inputs at all" variant (which starts differently)
+    expect(partialSkip).not.toContain('لم يتم تقديم');
+  });
+
+  it('Task 677 — English partial-inputs message is unchanged in English mode', () => {
+    const inputsByKpi = {
+      crm: { total_critical_risks: 20 },
+    };
+
+    const { log } = calcKpisFromInputs(
+      [kpiById('crm')],
+      inputsByKpi,
+      false, // English mode
+    );
+
+    const partialSkip = log.find(l => l.includes('missing inputs'));
+    expect(partialSkip).toBeDefined();
+    expect(partialSkip).toContain('skipped');
+    expect(partialSkip).toContain('mitigated_critical_risks');
+  });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────

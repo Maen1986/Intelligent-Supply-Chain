@@ -348,6 +348,100 @@ describe('SupplierScorecardTool — switching supplier clears the AI plan panel'
 });
 
 /* ══════════════════════════════════════════════════════════════════════════
+   Task 363 — plan still generating is cancelled on supplier switch
+   Task 364 — name-edit field and duplicate warning reset on switch
+══════════════════════════════════════════════════════════════════════════ */
+
+describe('SupplierScorecardTool — in-progress plan is cancelled when switching suppliers (Task 363)', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    cleanup();
+    mockUseAuth.mockReturnValue({ isAuthenticated: true, user: { id: 1 }, loading: false });
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('loading indicator disappears after switching to a different supplier', async () => {
+    seedTwoSuppliers();
+    // Keep fetch pending so the plan generation never finishes
+    stubFetchPending();
+
+    render(<SupplierScorecardTool isAr={false} />);
+
+    // Start generating a plan — button click kicks off the pending fetch
+    fireEvent.click(screen.getByRole('button', { name: /Generate Development Plan/i }));
+
+    // Plan should be loading (spinner or disabled generate button)
+    // The generate button typically becomes disabled or changes text during loading
+    // We just verify the in-progress state exists, then switch
+    await act(async () => { await new Promise(r => setTimeout(r, 10)); });
+
+    // Switch to Supplier B — this should cancel the in-progress plan
+    stubFetchOk(); // allow the new supplier's plan GET to settle
+    fireEvent.click(screen.getByText('Supplier B'));
+
+    // After switching, there must be no AI-Generated Plan heading
+    await waitFor(() =>
+      expect(screen.queryByText('AI-Generated Plan')).toBeNull(),
+    );
+
+    // And the generate button for the new supplier must be available again (not stuck loading)
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: /Generate Development Plan/i }),
+      ).toBeInTheDocument(),
+    );
+  });
+});
+
+describe('SupplierScorecardTool — name-edit field and warning reset on supplier switch (Task 364)', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    cleanup();
+    mockUseAuth.mockReturnValue({ isAuthenticated: true, user: { id: 1 }, loading: false });
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('duplicate-name warning is cleared when the user switches to a different supplier', async () => {
+    seedTwoSuppliers();
+    stubFetchOk();
+
+    render(<SupplierScorecardTool isAr={false} />);
+    await act(async () => { await new Promise(r => setTimeout(r, 10)); });
+
+    // Trigger a duplicate-name warning: type the other supplier's name then blur
+    // (handleNameBlur fires on onBlur, not onChange)
+    const nameInput = screen.getByDisplayValue('Supplier A');
+    fireEvent.change(nameInput, { target: { value: 'Supplier B' } });
+    fireEvent.blur(nameInput);
+
+    // The warning should appear — text: `A supplier named "Supplier B" already exists…`
+    await waitFor(() =>
+      expect(
+        screen.getByText((txt) => txt.includes('already exists')),
+      ).toBeInTheDocument(),
+    );
+
+    // Switch to Supplier B using the roster list item
+    const rosterItems = screen.getAllByText('Supplier B');
+    // The last matching element is the roster list button (not the name input)
+    fireEvent.click(rosterItems[rosterItems.length - 1]);
+
+    // Warning must be cleared
+    await waitFor(() =>
+      expect(
+        screen.queryByText((txt) => txt.includes('already exists')),
+      ).toBeNull(),
+    );
+  });
+});
+
+/* ══════════════════════════════════════════════════════════════════════════
    4. SupplierScorecardTool integration — toolKey format verification
       Confirms the correct scorecard-{supplierId} key is used per supplier
 ══════════════════════════════════════════════════════════════════════════ */
@@ -408,5 +502,78 @@ describe('SupplierScorecardTool — per-supplier toolKey is used', () => {
       );
       expect(getCall).toBeDefined();
     });
+  });
+});
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Task 370 — deleting a supplier also cleans up their server-side AI plan
+   Confirms that deleteSupplier fires DELETE /api/plans/scorecard-${id}
+   so orphaned plan entries don't accumulate on the server.
+══════════════════════════════════════════════════════════════════════════ */
+
+describe('SupplierScorecardTool — delete supplier fires DELETE /api/plans/scorecard-{id} (Task 370)', () => {
+  beforeEach(() => {
+    seedTwoSuppliers();
+    stubFetchOk();
+    // Stub window.confirm so the deletion proceeds without a real dialog
+    vi.stubGlobal('confirm', vi.fn(() => true));
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    localStorage.clear();
+    cleanup();
+  });
+
+  it('fires DELETE /api/plans/scorecard-sup-b when Supplier B is deleted', async () => {
+    render(<SupplierScorecardTool isAr={false} />);
+
+    // Allow mount effects to settle
+    await act(async () => { await new Promise(r => setTimeout(r, 30)); });
+
+    const fetchMock = fetch as ReturnType<typeof vi.fn>;
+    fetchMock.mockClear();
+
+    // Click the "Delete supplier" button next to Supplier B
+    const deleteButtons = screen.getAllByRole('button', { name: /Delete supplier/i });
+    // Two suppliers in roster — deleteButtons[0] is Supplier A, [1] is Supplier B
+    await act(async () => { fireEvent.click(deleteButtons[1]); });
+
+    // Expect a DELETE call for scorecard-sup-b
+    await waitFor(() => {
+      const deleteCall = fetchMock.mock.calls.find(
+        ([url, opts]: [string, RequestInit]) =>
+          (url as string).includes('/plans/scorecard-sup-b') &&
+          (opts?.method ?? '').toUpperCase() === 'DELETE',
+      );
+      expect(deleteCall).toBeDefined();
+    });
+  });
+
+  it('does NOT fire a DELETE plan call when unauthenticated user deletes a supplier', async () => {
+    // Override auth: user = null (unauthenticated)
+    mockUseAuth.mockReturnValue({ isAuthenticated: false, user: null, loading: false });
+
+    render(<SupplierScorecardTool isAr={false} />);
+
+    await act(async () => { await new Promise(r => setTimeout(r, 30)); });
+
+    const fetchMock = fetch as ReturnType<typeof vi.fn>;
+    fetchMock.mockClear();
+
+    const deleteButtons = screen.getAllByRole('button', { name: /Delete supplier/i });
+    await act(async () => { fireEvent.click(deleteButtons[1]); });
+
+    // No DELETE /plans/* call should have been made
+    await act(async () => { await new Promise(r => setTimeout(r, 20)); });
+    const deleteCall = fetchMock.mock.calls.find(
+      ([url, opts]: [string, RequestInit]) =>
+        (url as string).includes('/plans/scorecard-') &&
+        (opts?.method ?? '').toUpperCase() === 'DELETE',
+    );
+    expect(deleteCall).toBeUndefined();
+
+    // Restore default mock
+    mockUseAuth.mockReturnValue({ isAuthenticated: true, user: { id: 1 }, loading: false });
   });
 });

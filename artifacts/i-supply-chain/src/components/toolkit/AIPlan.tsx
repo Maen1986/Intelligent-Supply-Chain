@@ -37,6 +37,9 @@ export function AIPlan({ state, isAr, toolKey, buttonLabel, disabled }: AIPlanPr
       onDeleteSaved={state.deleteSaved}
       saveError={state.saveError}
       onDismissSaveError={state.dismissSaveError}
+      onRetrySave={state.retrySave}
+      deleteError={state.deleteError}
+      onDismissDeleteError={state.dismissDeleteError}
       buttonLabel={label}
       isAr={isAr}
       toolKey={toolKey}

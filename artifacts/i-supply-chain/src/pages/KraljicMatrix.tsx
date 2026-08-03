@@ -660,6 +660,8 @@ export function KraljicMatrix() {
         {/* ════════════════════════════════════════════════════════════════════ */}
         {activeTab === 'ai' && (
           <div className="max-w-3xl mx-auto">
+            {/* id anchor for "Go to tool" deep-link scroll (Task 472) */}
+            <div id="ai-plan-tool" />
             {scored.length < 2 ? (
               <div className="bg-white border border-dashed border-slate-300 rounded-2xl p-12 text-center">
                 <Sparkles className="w-10 h-10 text-slate-300 mx-auto mb-3" />

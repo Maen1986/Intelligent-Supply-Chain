@@ -8,6 +8,10 @@ import { useLanguage } from '@/lib/LanguageContext';
 import { Info, TrendingUp, TrendingDown, Download, Upload, LogIn, ChevronDown, ChevronUp, X, Printer } from 'lucide-react';
 import { parseCsvFile, downloadCsv } from '@/lib/importCsv';
 import { useAIPlan } from '@/hooks/useAIPlan';
+
+/** Stable server-side key for the KPI AI plan slot. Export kept here so the
+ *  toolKey-uniqueness test can import it — any rename is caught immediately. */
+export const KPI_TOOL_KEY = 'kpi' as const;
 import { AIPlanPanel } from '@/components/AIPlanPanel';
 import { useAuth } from '@/lib/AuthContext';
 import { KPI_DATA_SPECS } from '@/lib/kpiDataSpecs';
@@ -359,6 +363,15 @@ export function scoreTier(score: number): ScoreTier {
 
 export function scoreColor(score: number): string {
   return scoreTier(score).color;
+}
+
+/**
+ * Returns true when a KPI value crosses its user-set alert threshold.
+ * Exported so tests can exercise the logic without rendering the dashboard.
+ */
+export function isThresholdBreached(kpi: KpiDef, value: number, threshold: number): boolean {
+  if (isNaN(value) || isNaN(threshold)) return false;
+  return kpi.higherIsBetter ? value < threshold : value > threshold;
 }
 
 /** Pure helper — returns the clamped 0-100 score and strokeDasharray values
@@ -1032,6 +1045,28 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
   const [failedCalcKpis, setFailedCalcKpis] = useState<KpiDef[]>([]);
   const [highlightedKpi, setHighlightedKpi] = useState<string | null>(null);
 
+  /* ── Alert thresholds (Task 319) — per-KPI user-defined breach thresholds ── */
+  const thresholdStorageKey = `isc-kpi-thresholds-${resolvedSlug}`;
+  const [alertThresholds, setAlertThresholds] = useState<Record<string, number>>(() => {
+    try {
+      const saved = localStorage.getItem(thresholdStorageKey);
+      return saved ? JSON.parse(saved) : {};
+    } catch { return {}; }
+  });
+  const handleThresholdChange = useCallback((kpiId: string, rawVal: string) => {
+    setAlertThresholds(prev => {
+      const next = { ...prev };
+      const n = parseFloat(rawVal);
+      if (rawVal === '' || isNaN(n)) {
+        delete next[kpiId];
+      } else {
+        next[kpiId] = n;
+      }
+      try { localStorage.setItem(thresholdStorageKey, JSON.stringify(next)); } catch {}
+      return next;
+    });
+  }, [thresholdStorageKey]);
+
   /* ── Industry benchmark selection ── */
   const industryStorageKey = 'isc-kpi-industry';
   const [selectedIndustry, setSelectedIndustry] = useState<IndustryKey | null>(() => {
@@ -1174,7 +1209,7 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
           retryAfterSeconds: planRetryAfterSeconds, generate: generatePlan, reset: resetPlan,
           savedPlan: planSavedPlan, viewSaved: viewSavedPlan, deleteSaved: deleteSavedPlan,
           saveError: planSaveError, dismissSaveError: dismissPlanSaveError } =
-    useAIPlan(buildKpiPrompt, isAr, 'kpi', hasAnyValue);
+    useAIPlan(buildKpiPrompt, isAr, KPI_TOOL_KEY, hasAnyValue);
 
   const scrollToKpi = useCallback((kpiId: string) => {
     const el = document.getElementById(`kpi-card-${kpiId}`);
@@ -1764,9 +1799,9 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
                       <label className="text-xs font-bold text-primary leading-snug flex-1 cursor-pointer" htmlFor={`kpi-${kpi.id}`}>
                         {isAr ? kpi.labelAr : kpi.label}
                       </label>
-                      {/* Tier + quartile badges */}
-                      {t && q && (
-                        <div className="flex items-center gap-1 shrink-0">
+                      {/* Tier + quartile badges + alert-threshold breach badge */}
+                      <div className="flex items-center gap-1 shrink-0 flex-wrap justify-end">
+                        {t && q && (<>
                           <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap"
                             style={{ background: t.color + '18', color: t.color }}>
                             {t.badge} {isAr ? t.labelAr : t.label}
@@ -1775,8 +1810,16 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
                             style={{ background: quartileColor(q) + '15', color: quartileColor(q) }}>
                             {quartileLabel(q, isAr)}
                           </span>
-                        </div>
-                      )}
+                        </>)}
+                        {/* Show breach badge when value crosses the user-set alert threshold */}
+                        {alertThresholds[kpi.id] !== undefined && !isNaN(value) &&
+                          isThresholdBreached(kpi, value, alertThresholds[kpi.id]) && (
+                          <span data-testid={`kpi-alert-badge-${kpi.id}`}
+                            className="text-[9px] font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap bg-red-100 text-red-700">
+                            🔔 {isAr ? 'تنبيه' : 'Alert'}
+                          </span>
+                        )}
+                      </div>
                     </div>
 
                     {/* Input row */}
@@ -1810,6 +1853,31 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
                           : <TrendingDown className="w-2.5 h-2.5 text-blue-500" />}
                         {kpi.higherIsBetter ? (isAr ? 'أعلى أفضل' : 'Higher') : (isAr ? 'أقل أفضل' : 'Lower')}
                       </span>
+                    </div>
+
+                    {/* Alert threshold input (Task 319) — user sets a breach level; no API needed */}
+                    <div className="flex items-center gap-1.5 mb-1.5">
+                      <label
+                        htmlFor={`kpi-threshold-${kpi.id}`}
+                        className="text-[9px] font-semibold text-muted-foreground/70 whitespace-nowrap shrink-0"
+                      >
+                        {isAr
+                          ? `🔔 تنبيه إذا ${kpi.higherIsBetter ? 'انخفض عن' : 'تجاوز'}:`
+                          : `🔔 Alert if ${kpi.higherIsBetter ? 'below' : 'above'}:`}
+                      </label>
+                      <input
+                        id={`kpi-threshold-${kpi.id}`}
+                        data-testid={`kpi-threshold-${kpi.id}`}
+                        type="number"
+                        step="any"
+                        min="0"
+                        value={alertThresholds[kpi.id] ?? ''}
+                        onChange={e => handleThresholdChange(kpi.id, e.target.value)}
+                        placeholder="—"
+                        className="w-16 text-[10px] border rounded-md px-1.5 py-0.5 focus:outline-none focus:ring-1 bg-white"
+                        style={{ borderColor: alertThresholds[kpi.id] !== undefined && !isNaN(value) && isThresholdBreached(kpi, value, alertThresholds[kpi.id]) ? '#ef4444' : '#e5e7eb' }}
+                      />
+                      <span className="text-[9px] text-muted-foreground">{isAr ? kpi.unitAr : kpi.unit}</span>
                     </div>
 
                     {/* Gap annotation */}
@@ -1966,7 +2034,8 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
         </div>
       )}
 
-      {/* AI Plan panel */}
+      {/* AI Plan panel — id anchor lets "Go to tool" deep-link scroll here (Task 472) */}
+      <div id="ai-plan-tool" />
       {(planLoading || planResult || planError || planSavedPlan) && (
         <AIPlanPanel
           loading={planLoading}

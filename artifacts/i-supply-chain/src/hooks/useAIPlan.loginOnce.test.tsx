@@ -14,7 +14,7 @@
  * both effects from firing simultaneously.
  */
 import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest';
-import { renderHook, act, waitFor } from '@testing-library/react';
+import { renderHook, act, waitFor, cleanup } from '@testing-library/react';
 import { useAIPlan } from './useAIPlan';
 
 vi.mock('@/lib/apiBase', () => ({ API_BASE: 'http://test-server/api' }));
@@ -81,6 +81,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  cleanup();
   vi.unstubAllGlobals();
 });
 

@@ -365,6 +365,39 @@ describe('safeSetItem — action button', () => {
     spy.mockRestore();
     vi.useRealTimers();
   });
+
+  // Task 345 — The success toast must mention "reloading" so users know the
+  // page is about to reload. "Cleared" alone is insufficient — it doesn't
+  // communicate the automatic page reload that follows.
+  it('success toast message includes "reloading" so users know the page will reload (Task 345)', () => {
+    vi.useFakeTimers();
+    const reloadSpy = vi.fn();
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: { ...window.location, reload: reloadSpy },
+    });
+
+    const spy = vi.spyOn(Storage.prototype, 'setItem')
+      .mockImplementationOnce(() => { throw makeQuotaError(); });
+    vi.spyOn(window, 'confirm').mockReturnValueOnce(true);
+
+    safeSetItem('any-key', 'any-value');
+    const [, options] = (toast.error as ReturnType<typeof vi.fn>).mock.calls[0] as [
+      string,
+      { action?: { label: string; onClick: () => void } },
+    ];
+
+    options.action!.onClick();
+
+    // The message must contain both "Cleared" and "reloading" (case-insensitive)
+    const successArgs = (toast.success as ReturnType<typeof vi.fn>).mock.calls[0];
+    const message: string = successArgs[0];
+    expect(message.toLowerCase()).toContain('cleared');
+    expect(message.toLowerCase()).toContain('reloading');
+
+    spy.mockRestore();
+    vi.useRealTimers();
+  });
 });
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -399,6 +432,33 @@ describe('safeSetItem — non-quota errors', () => {
 /* ══════════════════════════════════════════════════════════════════════════
    clearAppStorage
 ══════════════════════════════════════════════════════════════════════════ */
+
+describe('clearAppStorage — language preference preserved (Task 346)', () => {
+  it('preserves isc-lang when clearing app storage', () => {
+    localStorage.setItem('isc-lang', 'ar');
+    localStorage.setItem('isc-tool-checklist', '[]');
+    clearAppStorage();
+    expect(localStorage.getItem('isc-lang')).toBe('ar');
+    expect(localStorage.getItem('isc-tool-checklist')).toBeNull();
+  });
+
+  it('preserves the exact language value (ar or en) after a clear', () => {
+    localStorage.setItem('isc-lang', 'ar');
+    localStorage.setItem('isc-kpi-procurement', JSON.stringify({ kpis: [] }));
+    clearAppStorage();
+    expect(localStorage.getItem('isc-lang')).toBe('ar');
+  });
+
+  it('still removes all non-preserved isc- keys when isc-lang is set', () => {
+    localStorage.setItem('isc-lang', 'en');
+    localStorage.setItem('isc-tool-maturity-risk', JSON.stringify({ score: 2 }));
+    localStorage.setItem('isc-challenge-ai-checklist-0', 'Plan text');
+    clearAppStorage();
+    expect(localStorage.getItem('isc-tool-maturity-risk')).toBeNull();
+    expect(localStorage.getItem('isc-challenge-ai-checklist-0')).toBeNull();
+    expect(localStorage.getItem('isc-lang')).toBe('en'); // language survives
+  });
+});
 
 describe('clearAppStorage', () => {
   it('removes keys with the isc- prefix', () => {
@@ -662,13 +722,30 @@ describe('clearAppStorage — full toolkit key coverage', () => {
     'KPIDashboard-banner':      'isc-kpi-banner-dismissed-procurement',
     // CommandCenter draft
     'CommandCenter-draft':      'isc-briefing-draft-v1',
-    // Language preference
-    'LanguagePref':             'isc-lang',
+    // Language preference (isc-lang) is intentionally excluded: clearAppStorage()
+    // now PRESERVES it (Task 346).  Its behaviour is tested in the
+    // 'clearAppStorage — language preference preserved (Task 346)' describe block above.
     // Announcement banner (uses isc_ prefix)
     'AnnouncementBanner':       'isc_banner_dismissed_v2',
     // Feedback modal
     'FeedbackModal':            'isc-feedback-shown-checklist',
   };
+
+  // Task 778 — Every toolkit localStorage key must start with 'isc-' or 'isc_'.
+  // clearAppStorage() scans by prefix; a key that uses any other prefix would
+  // silently survive a storage-clear. This test makes the contract explicit so
+  // a future developer who adds a new key with the wrong prefix gets an
+  // immediate failure rather than a silent data-leak.
+  it('every toolkit localStorage key in the registry starts with the isc- or isc_ prefix (Task 778)', () => {
+    const VALID_PREFIXES = ['isc-', 'isc_'];
+    for (const [component, key] of Object.entries(TOOLKIT_KEYS)) {
+      expect(
+        VALID_PREFIXES.some(p => key.startsWith(p)),
+        `${component} uses key "${key}" which does not start with "isc-" or "isc_". ` +
+        `Keys must use one of these prefixes so clearAppStorage() wipes them correctly.`,
+      ).toBe(true);
+    }
+  });
 
   it('wipes every toolkit component key after clearAppStorage()', () => {
     // Seed every key with a non-empty value

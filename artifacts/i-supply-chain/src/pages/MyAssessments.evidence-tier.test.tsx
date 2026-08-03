@@ -124,6 +124,30 @@ function Wrapper() {
   );
 }
 
+/** Arabic variant — passes ar=true and lang="ar" to MaturityDetail */
+function ArabicWrapper() {
+  const [expandedEvSeg, setExpandedEvSeg] = useState<Set<string>>(new Set());
+  const evScrollPosRef = React.useRef<Record<string, number>>({});
+  return (
+    <LanguageProvider>
+      <MaturityDetail
+        inputs={{}}
+        outputs={{
+          overallScore:   3.5,
+          overallLevel:   'Developing',
+          segmentScores:  [{ id: SEG_ID, title: 'Strategy', score: 3.5, level: 'Developing' }],
+        }}
+        ar={true}
+        snapshotId={SNAPSHOT_ID}
+        lang="ar"
+        expandedEvSeg={expandedEvSeg}
+        setExpandedEvSeg={setExpandedEvSeg}
+        evScrollPosRef={evScrollPosRef}
+      />
+    </LanguageProvider>
+  );
+}
+
 /* ══════════════════════════════════════════════════════════════════════════
    Tests
 ══════════════════════════════════════════════════════════════════════════ */
@@ -234,6 +258,58 @@ describe('MaturityDetail — evidence tier badge live updates', () => {
     await waitFor(() => {
       // Badge has appeared; "Add" placeholder is gone
       expect(screen.getByText('Self-reported')).toBeInTheDocument();
+      expect(screen.queryByText('Add')).not.toBeInTheDocument();
+    });
+  });
+});
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Task 824 — Arabic badge on the very first upload
+   When ar=true the placeholder reads 'أضف دليلاً' (not 'Add').
+   After the first upload the badge must show the Arabic label 'مُبلَّغ ذاتياً'.
+══════════════════════════════════════════════════════════════════════════ */
+
+describe('MaturityDetail — Arabic badge on zero-to-first upload (Task 824)', () => {
+  beforeEach(() => {
+    stubFetch([]);
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    cleanup();
+  });
+
+  it('shows Arabic placeholder "أضف دليلاً" when there is no evidence', async () => {
+    render(<ArabicWrapper />);
+
+    await waitFor(() => {
+      expect(screen.getByText('أضف دليلاً')).toBeInTheDocument();
+      expect(screen.queryByText('Add')).not.toBeInTheDocument();
+    });
+  });
+
+  it('shows Arabic "مُبلَّغ ذاتياً" badge after the very first upload (Task 824)', async () => {
+    render(<ArabicWrapper />);
+
+    await waitFor(() => {
+      expect(screen.getByText('أضف دليلاً')).toBeInTheDocument();
+    });
+
+    // Arabic mode renders 'إدارة الأدلة' as the accordion title (not 'Manage evidence')
+    const accordionButton = screen.getByTitle('إدارة الأدلة');
+    fireEvent.click(accordionButton);
+
+    // Switch fetch stub to return self_reported evidence
+    stubFetch(SELF_REPORTED_EVIDENCE);
+
+    const uploadButton = screen.getAllByTestId('mock-upload-zone')[0];
+    await act(async () => {
+      fireEvent.click(uploadButton);
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('مُبلَّغ ذاتياً')).toBeInTheDocument();
+      expect(screen.queryByText('أضف دليلاً')).not.toBeInTheDocument();
       expect(screen.queryByText('Add')).not.toBeInTheDocument();
     });
   });

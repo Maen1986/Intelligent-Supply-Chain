@@ -14,6 +14,9 @@ import { AlertTriangle, Plus, Trash2, ChevronDown, ChevronUp,
   FileDown, Sparkles, Shield, Activity, Info, CheckCircle } from 'lucide-react';
 import { safeSetItem } from '@/lib/storage';
 import { useAIPlan } from '@/hooks/useAIPlan';
+
+/** Stable server-side key for the Risk Register AI plan slot. */
+export const RISK_TOOL_KEY = 'risk-register' as const;
 import { AIPlanPanel } from '@/components/AIPlanPanel';
 import { toast } from 'sonner';
 
@@ -321,6 +324,73 @@ export function RiskToolsSection({ isAr }: RiskToolsProps) {
   const addRisk = () => saveRisks([...risks, defaultRisk()]);
   const removeRisk = (id: string) => saveRisks(risks.filter(r => r.id !== id));
 
+  // CSV import for the register (Task #358)
+  const importFileRef = useRef<HTMLInputElement>(null);
+  const [riskImportLog, setRiskImportLog] = useState<string | null>(null);
+
+  const handleRiskCsvImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = ''; // reset so re-uploading the same file fires onChange again
+    const reader = new FileReader();
+    reader.onload = () => {
+      const text = reader.result as string;
+      const rawLines = text.split('\n').map(l => l.trim()).filter(Boolean);
+      if (rawLines.length < 2) {
+        setRiskImportLog(isAr ? '✗ فشل الاستيراد: الملف فارغ.' : '✗ Import failed: file is empty.');
+        return;
+      }
+      const headers = rawLines[0].split(',').map(h => h.trim());
+      const VALID_CATEGORIES = ['supply','demand','operational','financial','geopolitical','regulatory','cyber','environmental'];
+      const VALID_STATUSES   = ['open','in-progress','closed','accepted'];
+      const VALID_VELOCITIES = ['slow','medium','fast'];
+      const clamp15 = (v: number): 1|2|3|4|5 => (isNaN(v) ? 3 : Math.max(1, Math.min(5, v))) as 1|2|3|4|5;
+
+      let imported = 0, skipped = 0;
+      const newRisks: RiskItem[] = [];
+
+      for (let i = 1; i < rawLines.length; i++) {
+        const vals = rawLines[i].split(',');
+        const row: Record<string, string> = {};
+        headers.forEach((h, j) => { row[h] = (vals[j] ?? '').trim(); });
+
+        const desc = row['Description']?.trim();
+        if (!desc) { skipped++; continue; }
+
+        const cat = row['Category']?.toLowerCase() as RiskCategory;
+        const vel = row['Velocity']?.toLowerCase();
+        const sts = row['Status']?.toLowerCase();
+
+        newRisks.push({
+          id:                  row['ID']?.trim() || nid(),
+          category:            VALID_CATEGORIES.includes(cat) ? cat : 'supply',
+          description:         desc,
+          driver:              row['Risk Driver'] ?? '',
+          affectedArea:        row['Affected Area'] ?? '',
+          likelihood:          clamp15(parseInt(row['Likelihood (1-5)'] ?? '3', 10)),
+          impact:              clamp15(parseInt(row['Impact (1-5)'] ?? '3', 10)),
+          velocity:            VALID_VELOCITIES.includes(vel) ? (vel as 'slow'|'medium'|'fast') : 'medium',
+          mitigationAction:    row['Mitigation Action'] ?? '',
+          owner:               row['Owner'] ?? '',
+          dueDate:             row['Due Date'] ?? '',
+          status:              VALID_STATUSES.includes(sts) ? (sts as RiskStatus) : 'open',
+          mitigationStatus:    'not-started',
+          residualLikelihood:  clamp15(parseInt(row['Residual Likelihood'] ?? '2', 10)),
+          residualImpact:      clamp15(parseInt(row['Residual Impact'] ?? '2', 10)),
+        });
+        imported++;
+      }
+
+      saveRisks([...risks, ...newRisks]);
+      setRiskImportLog(
+        isAr
+          ? `✓ تم استيراد ${imported} مخاطرة(ات).${skipped > 0 ? ` تخطّي ${skipped}.` : ''}`
+          : `✓ Imported ${imported} risk(s).${skipped > 0 ? ` ${skipped} skipped.` : ''}`,
+      );
+    };
+    reader.readAsText(file);
+  };
+
   // Expanded rows in register
   const [expandedRisks, setExpandedRisks] = useState<Set<string>>(new Set());
   const toggleExpand = (id: string) => setExpandedRisks(prev => {
@@ -370,7 +440,7 @@ export function RiskToolsSection({ isAr }: RiskToolsProps) {
     ].filter(Boolean).join('\n');
   }, [risks, kriValues, criticalRisks, highRisks, openRisks, overdueRisks]);
 
-  const aiPlan = useAIPlan(buildPrompt, isAr, 'risk-register', risks.length > 0 || Object.values(kriValues).some(v => v));
+  const aiPlan = useAIPlan(buildPrompt, isAr, RISK_TOOL_KEY, risks.length > 0 || Object.values(kriValues).some(v => v));
 
   const tabs: { id: Tab; icon: string; label: string; labelAr: string }[] = [
     { id: 'kri',          icon: '🚨', label: 'KRI Monitor',      labelAr: 'مؤشرات المخاطر'      },
@@ -648,9 +718,32 @@ export function RiskToolsSection({ isAr }: RiskToolsProps) {
             })}
           </div>
 
-          <button onClick={addRisk} className="flex items-center gap-2 text-sm text-[#082C6B] font-semibold border border-[#082C6B] rounded-xl px-4 py-2 hover:bg-[#082C6B]/5 transition-colors">
-            <Plus className="w-4 h-4" />{isAr ? 'إضافة مخاطرة' : 'Add Risk'}
-          </button>
+          <div className="flex items-center gap-2 flex-wrap">
+            <button onClick={addRisk} className="flex items-center gap-2 text-sm text-[#082C6B] font-semibold border border-[#082C6B] rounded-xl px-4 py-2 hover:bg-[#082C6B]/5 transition-colors">
+              <Plus className="w-4 h-4" />{isAr ? 'إضافة مخاطرة' : 'Add Risk'}
+            </button>
+            {/* CSV bulk-import (Task #358) */}
+            <input
+              ref={importFileRef}
+              type="file"
+              accept=".csv"
+              aria-label={isAr ? 'استيراد ملف CSV للمخاطر' : 'Import risks CSV file'}
+              className="hidden"
+              onChange={handleRiskCsvImport}
+            />
+            <button
+              onClick={() => importFileRef.current?.click()}
+              className="flex items-center gap-2 text-sm text-emerald-700 font-semibold border border-emerald-300 rounded-xl px-4 py-2 hover:bg-emerald-50 transition-colors"
+            >
+              <FileDown className="w-4 h-4" />{isAr ? 'استيراد CSV' : 'Import CSV'}
+            </button>
+          </div>
+          {riskImportLog && (
+            <div className={`flex items-center justify-between gap-2 text-xs rounded-xl px-3 py-2 ${riskImportLog.startsWith('✓') ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>
+              <span>{riskImportLog}</span>
+              <button onClick={() => setRiskImportLog(null)} className="opacity-60 hover:opacity-100 font-bold">✕</button>
+            </div>
+          )}
         </div>
       )}
 

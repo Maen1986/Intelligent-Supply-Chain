@@ -458,12 +458,19 @@ describe('Scorecard import — score range validation', () => {
        Tests for the name-matching logic used to decide overwrite vs. skip.
 ══════════════════════════════════════════════════════════════════════════ */
 
-describe('Scorecard import — duplicate-name detection', () => {
+describe('Scorecard import — duplicate-name detection (Task 357 — case-insensitive)', () => {
   interface Supplier { id: string; name: string }
 
-  /** Mirror the duplicate check used in handleScorecardImport */
+  /**
+   * Mirror the ACTUAL duplicate check used in handleScorecardImport.
+   *
+   * Task 357: the original helper used strict equality (`s.name === n`) which
+   * masked the fact that the live code does a case-insensitive comparison
+   * (`s.name.toLowerCase() === n.toLowerCase()`). The helper now matches the
+   * real implementation so a future change to either side will be caught.
+   */
   function findDuplicates(incoming: string[], existing: Supplier[]): string[] {
-    return incoming.filter(n => n && existing.some(s => s.name === n));
+    return incoming.filter(n => n && existing.some(s => s.name.toLowerCase() === n.toLowerCase()));
   }
 
   const existing: Supplier[] = [
@@ -476,7 +483,7 @@ describe('Scorecard import — duplicate-name detection', () => {
     expect(dups).toHaveLength(0);
   });
 
-  it('detects one duplicate when one incoming name matches an existing supplier', () => {
+  it('detects one duplicate when one incoming name matches an existing supplier (exact case)', () => {
     const dups = findDuplicates(['Alpha Corp', 'Gamma Inc'], existing);
     expect(dups).toEqual(['Alpha Corp']);
   });
@@ -486,14 +493,142 @@ describe('Scorecard import — duplicate-name detection', () => {
     expect(dups).toHaveLength(2);
   });
 
-  it('is case-sensitive — "alpha corp" does not match "Alpha Corp"', () => {
+  it('is case-INSENSITIVE — "alpha corp" matches "Alpha Corp" (live behaviour)', () => {
+    // Task 357: the live code does toLowerCase() comparison, so this MUST detect a duplicate
     const dups = findDuplicates(['alpha corp'], existing);
-    expect(dups).toHaveLength(0);
+    expect(dups).toHaveLength(1);
+    expect(dups[0]).toBe('alpha corp');
+  });
+
+  it('is case-INSENSITIVE — "BETA LTD" matches "Beta Ltd"', () => {
+    const dups = findDuplicates(['BETA LTD'], existing);
+    expect(dups).toHaveLength(1);
   });
 
   it('ignores empty-string supplier names (row with missing name is skipped)', () => {
     const dups = findDuplicates(['', 'Alpha Corp'], existing);
     // Empty string must not be treated as a duplicate
     expect(dups).toEqual(['Alpha Corp']);
+  });
+});
+
+/* ══════════════════════════════════════════════════════════════════════════
+   12. Scorecard CSV import — Excel mutation variants (Task 333)
+
+   The scorecard CSV template uses 'Supplier Name' as its required header.
+   parseCsvFile is the shared parser, so the Excel mutations that are known
+   to affect KPI imports (BOM, CRLF, whitespace padding, trailing blank rows,
+   branding rows before the header) also apply here.  These tests confirm that
+   scorecard-shaped CSVs survive all of them intact.
+══════════════════════════════════════════════════════════════════════════ */
+
+describe('parseCsvFile — scorecard CSV Excel mutation variants (Task 333)', () => {
+  /* ── baseline: a minimal valid scorecard CSV ── */
+  const BASELINE =
+    'Supplier Name,Current Tier,Quality Score (/100),Delivery Score (/100)\n' +
+    'Alpha Corp,Strategic,88,92\n' +
+    'Beta Ltd,Preferred,75,80';
+
+  it('parses a baseline scorecard CSV without errors', () => {
+    const { rows, errors } = parseCsvFile(BASELINE, ['Supplier Name']);
+    expect(errors).toHaveLength(0);
+    expect(rows).toHaveLength(2);
+    expect(rows[0]['Supplier Name']).toBe('Alpha Corp');
+    expect(rows[1]['Supplier Name']).toBe('Beta Ltd');
+  });
+
+  it('handles CRLF line endings (Excel default on Windows)', () => {
+    const crlf = BASELINE.replace(/\n/g, '\r\n');
+    const { rows, errors } = parseCsvFile(crlf, ['Supplier Name']);
+    expect(errors).toHaveLength(0);
+    expect(rows).toHaveLength(2);
+    expect(rows[0]['Supplier Name']).toBe('Alpha Corp');
+  });
+
+  it('strips a leading UTF-8 BOM character before parsing', () => {
+    const bom = '\uFEFF' + BASELINE;
+    const { headers, rows, errors } = parseCsvFile(bom, ['Supplier Name']);
+    expect(errors).toHaveLength(0);
+    expect(headers[0]).toBe('Supplier Name');
+    expect(rows[0]['Supplier Name']).toBe('Alpha Corp');
+  });
+
+  it('handles CRLF endings AND a leading BOM together', () => {
+    const both = '\uFEFF' + BASELINE.replace(/\n/g, '\r\n');
+    const { rows, errors } = parseCsvFile(both, ['Supplier Name']);
+    expect(errors).toHaveLength(0);
+    expect(rows[0]['Supplier Name']).toBe('Alpha Corp');
+    expect(rows[1]['Supplier Name']).toBe('Beta Ltd');
+  });
+
+  it('trims leading/trailing whitespace from Supplier Name cells', () => {
+    const padded =
+      'Supplier Name,Current Tier\n' +
+      '  Alpha Corp  ,  Strategic  \n' +
+      '  Beta Ltd  ,  Preferred  ';
+    const { rows } = parseCsvFile(padded, ['Supplier Name']);
+    expect(rows[0]['Supplier Name']).toBe('Alpha Corp');
+    expect(rows[0]['Current Tier']).toBe('Strategic');
+    expect(rows[1]['Supplier Name']).toBe('Beta Ltd');
+  });
+
+  it('trims leading/trailing whitespace from header names', () => {
+    const padded =
+      '  Supplier Name  ,  Current Tier  \n' +
+      'Alpha Corp,Strategic';
+    const { headers, errors } = parseCsvFile(padded, ['Supplier Name']);
+    expect(errors).toHaveLength(0);
+    expect(headers[0]).toBe('Supplier Name');
+  });
+
+  it('ignores trailing blank rows (Excel often adds them on re-save)', () => {
+    const withBlanks = BASELINE + '\n\n   \n';
+    const { rows, errors } = parseCsvFile(withBlanks, ['Supplier Name']);
+    expect(errors).toHaveLength(0);
+    expect(rows).toHaveLength(2);
+  });
+
+  it('finds the header row when there are branding/instruction rows above it', () => {
+    const withBranding =
+      'ISC Supplier Scorecard Template\n' +
+      'Generated by I Supply Chain\n' +
+      'Supplier Name,Current Tier,Quality Score (/100)\n' +
+      'Alpha Corp,Strategic,88';
+    const { rows, errors } = parseCsvFile(withBranding, ['Supplier Name']);
+    expect(errors).toHaveLength(0);
+    expect(rows[0]['Supplier Name']).toBe('Alpha Corp');
+    expect(rows[0]['Quality Score (/100)']).toBe('88');
+  });
+
+  it('returns an error (and no rows) when Supplier Name header is absent', () => {
+    const noHeader = 'Name,Tier\nAlpha Corp,Strategic';
+    const { rows, errors } = parseCsvFile(noHeader, ['Supplier Name']);
+    expect(errors.length).toBeGreaterThan(0);
+    expect(rows).toHaveLength(0);
+  });
+
+  it('parses Tier values correctly when cells have leading/trailing spaces', () => {
+    const csv =
+      'Supplier Name,Current Tier\n' +
+      'Alpha Corp, Strategic \n' +
+      'Beta Ltd, Preferred ';
+    const { rows } = parseCsvFile(csv, ['Supplier Name']);
+    expect(rows[0]['Current Tier']).toBe('Strategic');
+    expect(rows[1]['Current Tier']).toBe('Preferred');
+  });
+
+  it('produces correct row count for CRLF + BOM + trailing blanks combined', () => {
+    const combined =
+      '\uFEFF' +
+      'Supplier Name,Current Tier\r\n' +
+      '  Alpha Corp  ,Strategic\r\n' +
+      '  Beta Ltd  ,Preferred\r\n' +
+      '\r\n' +
+      '   \r\n';
+    const { rows, errors } = parseCsvFile(combined, ['Supplier Name']);
+    expect(errors).toHaveLength(0);
+    expect(rows).toHaveLength(2);
+    expect(rows[0]['Supplier Name']).toBe('Alpha Corp');
+    expect(rows[1]['Supplier Name']).toBe('Beta Ltd');
   });
 });

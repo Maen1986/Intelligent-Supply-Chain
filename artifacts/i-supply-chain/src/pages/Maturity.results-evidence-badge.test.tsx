@@ -161,6 +161,23 @@ const SELF_REPORTED_EVIDENCE = {
   aiEvaluation:     null,
 };
 
+/** ai_evaluated evidence with plausible_support:false — triggers the ⚠ overlay */
+const FLAGGED_AI_EVIDENCE = {
+  id:               4,
+  segId:            SEG_ID,
+  subSegId:         SUBSEG_ID,
+  subSegLabel:      'Supply chain strategy document',
+  originalFilename: 'strategy-flagged.pdf',
+  mimeType:         'application/pdf',
+  confidenceTier:   'ai_evaluated' as const,
+  aiEvaluation: {
+    plausible_support: false,
+    confidence:        'low' as const,
+    flag_reason:       'scope mismatch',
+    summary:           '',
+  },
+};
+
 /* ── Auth mock helpers ───────────────────────────────────────────────────── */
 
 let authUser: object | null = null;
@@ -598,5 +615,161 @@ describe('Maturity results page — ConfidenceTierBadge in recommendation card (
     /* English labels must not appear in Arabic mode */
     expect(within(scoreRow).queryByText('Consultant-validated')).toBeNull();
     expect(within(scoreRow).queryByText('AI-evaluated')).toBeNull();
+  });
+});
+
+/* ════════════════════════════════════════════════════════════════════════════
+   Task 865 / Task 868 — Scoped score-row-0 assertions for self_reported and
+   ai_evaluated tiers in Arabic mode.
+   Task 827 added the consultant_validated scoped test; these two lower tiers
+   still need equivalent `within(scoreRow)` guards.
+════════════════════════════════════════════════════════════════════════════ */
+
+describe('Maturity results page — self_reported Arabic badge scoped to score-row-0 (Task 868)', () => {
+  beforeEach(() => {
+    langMode  = { lang: 'ar', ar: true };
+    authUser  = { id: 1, fullName: 'Test User', email: 'test@example.com' };
+    prepareDraft();
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    localStorage.clear();
+    _setMaturityTestSeed({});
+    cleanup();
+  });
+
+  it('shows the Arabic label "مُبلَّغ ذاتياً" inside the recommendation card (score-row-0)', async () => {
+    stubFetch([SELF_REPORTED_EVIDENCE]);
+
+    render(<Maturity />);
+
+    const scoreRow = await waitFor(
+      () => screen.getByTestId('score-row-0'),
+      { timeout: 4000 },
+    );
+
+    await waitFor(
+      () => {
+        const badge = within(scoreRow).getByText('مُبلَّغ ذاتياً');
+        expect(badge).toBeTruthy();
+      },
+      { timeout: 4000 },
+    );
+
+    /* English label must not appear inside the scoped row */
+    expect(within(scoreRow).queryByText('Self-reported')).toBeNull();
+    /* Higher-tier labels must not appear */
+    expect(within(scoreRow).queryByText('مُقيَّم بالذكاء الاصطناعي')).toBeNull();
+    expect(within(scoreRow).queryByText('مُعتمَد من الاستشاري')).toBeNull();
+  });
+});
+
+describe('Maturity results page — ai_evaluated Arabic badge scoped to score-row-0 (Task 865)', () => {
+  beforeEach(() => {
+    langMode  = { lang: 'ar', ar: true };
+    authUser  = { id: 1, fullName: 'Test User', email: 'test@example.com' };
+    prepareDraft();
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    localStorage.clear();
+    _setMaturityTestSeed({});
+    cleanup();
+  });
+
+  it('shows the Arabic label "مُقيَّم بالذكاء الاصطناعي" inside the recommendation card (score-row-0)', async () => {
+    stubFetch([AI_EVALUATED_EVIDENCE]);
+
+    render(<Maturity />);
+
+    const scoreRow = await waitFor(
+      () => screen.getByTestId('score-row-0'),
+      { timeout: 4000 },
+    );
+
+    await waitFor(
+      () => {
+        const badge = within(scoreRow).getByText('مُقيَّم بالذكاء الاصطناعي');
+        expect(badge).toBeTruthy();
+      },
+      { timeout: 4000 },
+    );
+
+    /* English label must not appear when Arabic mode is active */
+    expect(within(scoreRow).queryByText('AI-evaluated')).toBeNull();
+    /* Lower-tier Arabic label must not appear */
+    expect(within(scoreRow).queryByText('مُبلَّغ ذاتياً')).toBeNull();
+  });
+
+  it('shows "مُقيَّم بالذكاء الاصطناعي" (not consultant Arabic) inside the card when only ai_evaluated is present', async () => {
+    stubFetch([AI_EVALUATED_EVIDENCE]);
+
+    render(<Maturity />);
+
+    const scoreRow = await waitFor(
+      () => screen.getByTestId('score-row-0'),
+      { timeout: 4000 },
+    );
+
+    await waitFor(
+      () => expect(within(scoreRow).getByText('مُقيَّم بالذكاء الاصطناعي')).toBeTruthy(),
+      { timeout: 4000 },
+    );
+
+    expect(within(scoreRow).queryByText('مُعتمَد من الاستشاري')).toBeNull();
+    expect(within(scoreRow).queryByText('Consultant-validated')).toBeNull();
+  });
+});
+
+/* ════════════════════════════════════════════════════════════════════════════
+   Task 826 — ⚠ overlay appears in Arabic mode on the Maturity results page
+   for flagged evidence (plausible_support: false).  The component-level badge
+   tests (Task 832) prove the pill renders ⚠; this test proves the full page
+   wires up the evidence and renders it correctly in Arabic mode.
+════════════════════════════════════════════════════════════════════════════ */
+
+describe('Maturity results page — ⚠ overlay in Arabic mode for flagged evidence (Task 826)', () => {
+  beforeEach(() => {
+    langMode  = { lang: 'ar', ar: true };
+    authUser  = { id: 1, fullName: 'Test User', email: 'test@example.com' };
+    prepareDraft();
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    localStorage.clear();
+    _setMaturityTestSeed({});
+    cleanup();
+  });
+
+  it('⚠ overlay appears for flagged ai_evaluated evidence in Arabic mode', async () => {
+    stubFetch([FLAGGED_AI_EVIDENCE]);
+
+    render(<Maturity />);
+
+    await waitFor(
+      () => expect(screen.getAllByText('⚠')[0]).toBeTruthy(),
+      { timeout: 4000 },
+    );
+
+    /* Arabic badge label must also be present; English labels must be absent */
+    expect(screen.queryByText('AI-evaluated')).toBeNull();
+    expect(screen.queryByText('Self-reported')).toBeNull();
+  });
+
+  it('no ⚠ overlay when evidence is not flagged in Arabic mode', async () => {
+    stubFetch([AI_EVALUATED_EVIDENCE]); // plausible_support: true
+
+    render(<Maturity />);
+
+    /* Wait for the Arabic badge label to confirm evidence loaded */
+    await waitFor(
+      () => expect(screen.getAllByText('مُقيَّم بالذكاء الاصطناعي')[0]).toBeTruthy(),
+      { timeout: 4000 },
+    );
+
+    expect(screen.queryByText('⚠')).toBeNull();
   });
 });

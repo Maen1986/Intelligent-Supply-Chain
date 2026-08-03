@@ -186,7 +186,7 @@ export function EvidenceUploadZone({
               <p className="text-[11px] text-muted-foreground mt-1 leading-snug max-w-xs">{existing.aiEvaluation.summary}</p>
             )}
           </div>
-          {existing.confidenceTier !== 'consultant_validated' && (
+          {existing.confidenceTier?.toLowerCase() !== 'consultant_validated' && (
             <button
               onClick={handleRemove}
               disabled={removing}
@@ -197,6 +197,11 @@ export function EvidenceUploadZone({
             </button>
           )}
         </div>
+        {/* Remove-error feedback — shown inside the file card so users know
+            the deletion failed without the card disappearing (Task 838).  */}
+        {errorMsg && (
+          <p className="mt-2 text-xs text-red-600">{errorMsg}</p>
+        )}
       </div>
     );
   }

@@ -228,6 +228,35 @@ describe('loadRoster — migration from legacy single-supplier key', () => {
   });
 });
 
+/* ── Task 360: migration removes the legacy key so it only fires once ─────── */
+
+describe('loadRoster — legacy key is removed after migration (Task 360)', () => {
+  it('LEGACY_KEY is absent from localStorage after a successful migration', () => {
+    const legacy = { name: 'Old Corp', tier: 'Strategic', scores: { delivery: '80' } };
+    localStorage.setItem(LEGACY_KEY, JSON.stringify(legacy));
+
+    // Trigger migration
+    loadRoster();
+
+    // Legacy key must have been removed so a second call does NOT re-migrate
+    expect(localStorage.getItem(LEGACY_KEY)).toBeNull();
+  });
+
+  it('calling loadRoster twice with a legacy key only migrates once (idempotent)', () => {
+    const legacy = { name: 'Once Corp', tier: 'Preferred', scores: {} };
+    localStorage.setItem(LEGACY_KEY, JSON.stringify(legacy));
+
+    // First call: migrates and removes LEGACY_KEY
+    const first = loadRoster();
+    expect(first.suppliers[0].name).toBe('Once Corp');
+
+    // Second call: LEGACY_KEY is gone; returns a blank roster (no migration)
+    const second = loadRoster();
+    // A fresh blank roster has a different (generated) supplier id — not 'Once Corp'
+    expect(second.suppliers[0].name).not.toBe('Once Corp');
+  });
+});
+
 describe('loadRoster — corrupted / invalid localStorage', () => {
   it('falls back to a blank single-supplier roster when ROSTER_KEY is not valid JSON', () => {
     localStorage.setItem(ROSTER_KEY, 'NOT_VALID_JSON!!!');

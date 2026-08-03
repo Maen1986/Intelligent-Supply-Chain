@@ -312,7 +312,156 @@ describe('ConfidenceTierBadge — tier reflects evidence state', () => {
     ];
     expect(getSegmentTier(evidence)).toBe('consultant_validated');
   });
+
+  /* ── Task 852 — flagged ai_evaluated must NOT suppress consultant_validated ── */
+
+  const FLAGGED_AI_EV: EvidenceRecord = {
+    id: 201, segId: 'p', subSegId: 'ss', subSegLabel: 'SS',
+    originalFilename: 'flagged-ai.pdf', mimeType: 'application/pdf',
+    confidenceTier: 'ai_evaluated',
+    aiEvaluation: { plausible_support: false, confidence: 'low', flag_reason: 'scope mismatch', summary: '' },
+  };
+
+  const CONSULTANT_EV: EvidenceRecord = {
+    id: 202, segId: 'p', subSegId: 'ss2', subSegLabel: 'SS2',
+    originalFilename: 'cv.pdf', mimeType: 'application/pdf',
+    confidenceTier: 'consultant_validated',
+  };
+
+  it('getSegmentTier returns consultant_validated when ai_evaluated is flagged and consultant_validated is also present', () => {
+    // getSegmentTier checks consultant_validated first; a flagged ai_evaluated
+    // record (plausible_support:false) must never suppress the consultant tier.
+    expect(getSegmentTier([FLAGGED_AI_EV, CONSULTANT_EV])).toBe('consultant_validated');
+  });
+
+  it('getSegmentTier returns consultant_validated regardless of record order (Task 852)', () => {
+    // Order should not matter — consultant_validated must win in both permutations.
+    expect(getSegmentTier([CONSULTANT_EV, FLAGGED_AI_EV])).toBe('consultant_validated');
+  });
+
+  it('getSegmentTier returns self_reported (not ai_evaluated) when the only ai_evaluated record is flagged', () => {
+    // Flagged ai_evaluated (plausible_support:false) does not qualify as ai_evaluated tier.
+    expect(getSegmentTier([FLAGGED_AI_EV])).toBe('self_reported');
+  });
+
+  /* ── Task 848 — consultant_validated → ai_evaluated demotion ──────────── */
+
+  const AI_EV: EvidenceRecord = {
+    id: 203, segId: 'p', subSegId: 'ss3', subSegLabel: 'SS3',
+    originalFilename: 'ai.pdf', mimeType: 'application/pdf',
+    confidenceTier: 'ai_evaluated',
+    aiEvaluation: { plausible_support: true, confidence: 'high', flag_reason: null, summary: '' },
+  };
+
+  it('getSegmentTier returns ai_evaluated when consultant_validated is removed and only ai_evaluated remains (Task 848)', () => {
+    // Before removal: consultant_validated wins
+    expect(getSegmentTier([CONSULTANT_EV, AI_EV])).toBe('consultant_validated');
+    // After removal: only the ai_evaluated record remains — tier demotes
+    expect(getSegmentTier([AI_EV])).toBe('ai_evaluated');
+  });
+
+  it('removing the consultant_validated record does not leave a stale tier (Task 848)', () => {
+    // The function must re-evaluate the list on every call — no caching
+    const before = [CONSULTANT_EV, AI_EV];
+    const after  = [AI_EV];
+    expect(getSegmentTier(before)).toBe('consultant_validated');
+    expect(getSegmentTier(after)).toBe('ai_evaluated');
+  });
+
+  /* ── Task 849 — empty evidence array ─────────────────────────────────── */
+
+  it('getSegmentTier returns self_reported when evidenceList is empty — does not crash (Task 849)', () => {
+    expect(getSegmentTier([])).toBe('self_reported');
+  });
+
+  it('getSegmentTier with empty array returns a defined string, never undefined or null (Task 849)', () => {
+    const result = getSegmentTier([]);
+    expect(result).toBeDefined();
+    expect(result).not.toBeNull();
+    expect(typeof result).toBe('string');
+  });
+
+  /* ── Task 853 — duplicate sub-segment IDs don't confuse tier resolution ─ */
+
+  it('getSegmentTier returns the best tier when duplicate sub-segment IDs exist (Task 853)', () => {
+    // Two records share the same subSegId — an older self_reported and a newer ai_evaluated.
+    // getSegmentTier iterates all records; the best tier must still win.
+    const older: EvidenceRecord = {
+      id: 300, segId: 'p', subSegId: 'dup-sub', subSegLabel: 'Dup',
+      originalFilename: 'old.pdf', mimeType: 'application/pdf',
+      confidenceTier: 'self_reported',
+    };
+    const newer: EvidenceRecord = {
+      id: 301, segId: 'p', subSegId: 'dup-sub', subSegLabel: 'Dup',
+      originalFilename: 'new.pdf', mimeType: 'application/pdf',
+      confidenceTier: 'ai_evaluated',
+      aiEvaluation: { plausible_support: true, confidence: 'high', flag_reason: null, summary: '' },
+    };
+    expect(getSegmentTier([older, newer])).toBe('ai_evaluated');
+  });
+
+  it('consultant_validated wins even when a duplicate sub-segment also has a self_reported record (Task 853)', () => {
+    const srDup: EvidenceRecord = {
+      id: 302, segId: 'p', subSegId: 'dup-sub', subSegLabel: 'Dup',
+      originalFilename: 'old.pdf', mimeType: 'application/pdf',
+      confidenceTier: 'self_reported',
+    };
+    const cvDup: EvidenceRecord = {
+      id: 303, segId: 'p', subSegId: 'dup-sub', subSegLabel: 'Dup',
+      originalFilename: 'new.pdf', mimeType: 'application/pdf',
+      confidenceTier: 'consultant_validated',
+    };
+    expect(getSegmentTier([srDup, cvDup])).toBe('consultant_validated');
+  });
 });
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Task 861 — getSegmentTier stays correct when aiEvaluation is null on an
+   ai_evaluated record (e.g. a partially-migrated row from the API).
+   The function must not crash and must fall back to self_reported rather
+   than treating the null field as a valid plausible_support: true entry.
+══════════════════════════════════════════════════════════════════════════ */
+describe('getSegmentTier — null aiEvaluation on ai_evaluated record (Task 861)', () => {
+  const NULL_AI_EV: EvidenceRecord = {
+    id: 901, segId: 'p', subSegId: 'ss', subSegLabel: 'SS',
+    originalFilename: 'partial.pdf', mimeType: 'application/pdf',
+    confidenceTier: 'ai_evaluated',
+    aiEvaluation: null,
+  };
+
+  it('returns self_reported when the only record is ai_evaluated with null aiEvaluation', () => {
+    // aiEvaluation is null → plausible_support is undefined → does NOT qualify
+    // as ai_evaluated tier → falls back to self_reported
+    expect(getSegmentTier([NULL_AI_EV])).toBe('self_reported');
+  });
+
+  it('does not crash when aiEvaluation is null', () => {
+    expect(() => getSegmentTier([NULL_AI_EV])).not.toThrow();
+  });
+
+  it('consultant_validated still wins even when one record has null aiEvaluation', () => {
+    const cv: EvidenceRecord = {
+      id: 902, segId: 'p', subSegId: 'ss2', subSegLabel: 'SS2',
+      originalFilename: 'cv.pdf', mimeType: 'application/pdf',
+      confidenceTier: 'consultant_validated',
+    };
+    expect(getSegmentTier([NULL_AI_EV, cv])).toBe('consultant_validated');
+  });
+});
+
+/** Stub for DELETE — returns a non-ok status (simulates server error) */
+function stubDeleteFail(status = 500) {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn().mockImplementation((_url: string, opts?: RequestInit) => {
+      const method = (opts?.method ?? 'GET').toUpperCase();
+      if (method === 'DELETE') {
+        return Promise.resolve({ ok: false, status });
+      }
+      return Promise.resolve({ ok: true, json: async () => ({}) });
+    }),
+  );
+}
 
 /* ══════════════════════════════════════════════════════════════════════════
    3. Remove flow — existing evidence
@@ -381,6 +530,44 @@ describe('EvidenceUploadZone — remove existing evidence', () => {
     expect(screen.queryByText('my-doc.pdf')).toBeNull();
   });
 
+  /* ── Task 838 — DELETE fails: badge stays and error message appears ───────
+     When the DELETE call returns a non-ok response (e.g. 500), handleRemove
+     catches the failure, sets an error message, and does NOT call onChanged.
+     The file card (and badge) must remain visible.
+  ─────────────────────────────────────────────────────────────────────────── */
+  it('shows an error message and does NOT call onChanged when DELETE returns 500 (Task 838)', async () => {
+    stubDeleteFail(500);
+    const { onChanged } = renderZone({ existing: EXISTING });
+
+    // File card visible before the failed remove
+    expect(screen.getByText('my-doc.pdf')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByTitle('Remove evidence'));
+    });
+
+    // onChanged must NOT be called — the evidence is still on the server
+    expect(onChanged).not.toHaveBeenCalled();
+
+    // An error message must appear so the user knows the removal failed
+    await waitFor(() =>
+      expect(screen.getByText(/Could not remove file/i)).toBeInTheDocument(),
+    );
+  });
+
+  it('file card stays visible after a failed DELETE (badge is not removed, Task 838)', async () => {
+    stubDeleteFail(500);
+    const { onChanged } = renderZone({ existing: EXISTING });
+
+    await act(async () => {
+      fireEvent.click(screen.getByTitle('Remove evidence'));
+    });
+
+    // File card must still be in the DOM — parent was never asked to reload
+    expect(onChanged).not.toHaveBeenCalled();
+    expect(screen.getByText('my-doc.pdf')).toBeInTheDocument();
+  });
+
   it('does not show the remove button for consultant_validated evidence', () => {
     renderZone({
       existing: { ...EXISTING, confidenceTier: 'consultant_validated' },
@@ -397,6 +584,21 @@ describe('EvidenceUploadZone — remove existing evidence', () => {
     });
     expect(screen.queryByTitle('إزالة الدليل')).toBeNull();
     // English title must also be absent (button is not rendered at all)
+    expect(screen.queryByTitle('Remove evidence')).toBeNull();
+  });
+
+  it('does not show the remove button when tier arrives with non-canonical casing (Task 857)', () => {
+    // The API should always return lowercase tier strings, but the guard must
+    // be robust to casing differences (e.g. 'Consultant_Validated') so an
+    // inconsistent API response cannot inadvertently re-expose the button.
+    renderZone({
+      existing: {
+        ...EXISTING,
+        // Simulate a raw API string with different casing
+        confidenceTier: 'Consultant_Validated' as 'consultant_validated',
+      },
+    });
+    // The remove button must be absent even with non-lowercase tier
     expect(screen.queryByTitle('Remove evidence')).toBeNull();
   });
 });
@@ -419,6 +621,51 @@ describe('EvidenceUploadZone — upload error handling', () => {
     await waitFor(() =>
       expect(screen.getByText(/Network error/i)).toBeInTheDocument(),
     );
+    expect(screen.getByText('Retry')).toBeInTheDocument();
+  });
+
+  it('shows a friendly 409 message when the confirm endpoint rejects the re-confirm (Task 834)', async () => {
+    // Stub: upload-url succeeds, GCS PUT succeeds, but POST /confirm returns 409
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation((url: string, opts?: RequestInit) => {
+        const method = (opts?.method ?? 'GET').toUpperCase();
+        if (method === 'POST' && String(url).includes('/upload-url')) {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({ ok: true, evidence_id: 55, upload_url: 'https://storage.example.com/put?tok=x' }),
+          });
+        }
+        if (method === 'PUT' && String(url).includes('storage.example.com')) {
+          return Promise.resolve({ ok: true, status: 200 });
+        }
+        if (method === 'POST' && String(url).includes('/confirm')) {
+          // API returns 409 when evidence is already AI-evaluated
+          return Promise.resolve({
+            ok: false,
+            status: 409,
+            json: async () => ({
+              ok:    false,
+              error: 'Evidence is already AI-evaluated and cannot be re-confirmed. Remove the file first.',
+              confidence_tier: 'ai_evaluated',
+            }),
+          });
+        }
+        return Promise.resolve({ ok: true, json: async () => ({}) });
+      }),
+    );
+
+    renderZone();
+    await act(async () => { pickFile(mkFile()); });
+
+    // The friendly API error message must appear — not a raw status code, not silent
+    await waitFor(() =>
+      expect(
+        screen.getByText(/Evidence is already AI-evaluated/i),
+      ).toBeInTheDocument(),
+    );
+
+    // Retry link must be offered so the user can try again
     expect(screen.getByText('Retry')).toBeInTheDocument();
   });
 
@@ -530,6 +777,47 @@ describe('EvidenceUploadZone — badge upgrade after upload round-trip', () => {
     // File card is now visible
     expect(screen.getByText('evidence.pdf')).toBeInTheDocument();
     expect(screen.getByText('AI-verified ✓')).toBeInTheDocument();
+  });
+
+  /* ── Task 850 — Arabic consultant_validated label after re-upload promotion ─ */
+  it('Arabic "مُعتمَد من الاستشاري" label appears in the file card after consultant_validated upload (Task 850)', async () => {
+    stubHappyPath('consultant_validated');
+
+    let evidenceList: EvidenceRecord[] = [];
+    const onChanged = vi.fn().mockImplementation(() => {
+      evidenceList = [{
+        id:               102,
+        segId:            'procurement',
+        subSegId:         'supplier_selection',
+        subSegLabel:      'Supplier Selection',
+        originalFilename: 'validated.pdf',
+        mimeType:         'application/pdf',
+        confidenceTier:   'consultant_validated',
+        aiEvaluation:     null,
+      }];
+    });
+
+    const { rerender } = render(
+      <EvidenceUploadZone {...BASE_PROPS} lang="ar" existing={null} onChanged={onChanged} />,
+    );
+
+    // Upload
+    await act(async () => { pickFile(mkFile()); });
+    await waitFor(() => expect(onChanged).toHaveBeenCalledOnce());
+
+    // Parent re-renders with the consultant_validated record
+    rerender(
+      <EvidenceUploadZone
+        {...BASE_PROPS}
+        lang="ar"
+        existing={evidenceList[0]}
+        onChanged={onChanged}
+      />,
+    );
+
+    // Arabic consultant_validated label must appear — not the English one
+    expect(screen.getByText(/مُعتمَد من الاستشاري/)).toBeInTheDocument();
+    expect(screen.queryByText('Consultant-validated')).toBeNull();
   });
 
   it('ConfidenceTierBadge returns to "Add" state after remove + reload', async () => {

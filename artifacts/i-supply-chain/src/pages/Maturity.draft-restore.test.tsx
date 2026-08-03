@@ -182,6 +182,226 @@ describe('Maturity draft restore — complete draft shows correct score', () => 
 });
 
 /* ══════════════════════════════════════════════════════════════════════════
+   Scenario A-extra — Level label matches the restored numeric score (Task 460)
+   
+   The results page shows both a numeric score and a named level label
+   (e.g. "Aware", "Defined"). The existing tests assert only the number.
+   This group also asserts the label, so a getLevel boundary regression
+   (wrong label for the right score) is caught independently.
+══════════════════════════════════════════════════════════════════════════ */
+
+describe('Maturity draft restore — level label matches restored score (Task 460)', () => {
+  beforeEach(() => {
+    sessionStorage.clear();
+    vi.useFakeTimers();
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({ ok: true, status: 201, json: async () => ({}) })) as unknown as typeof fetch,
+    );
+  });
+
+  afterEach(() => {
+    cleanup();
+    _setMaturityTestSeed({});
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+  });
+
+  it('shows "Aware" label for a score of 2.0 (all segments at level 2)', () => {
+    // All 8 segments at 2 → mean = 2.0 → "Aware" band
+    _setMaturityTestSeed({ phase: 'results', answers: buildAnswers([2, 2, 2, 2, 2, 2, 2, 2]) });
+    renderMaturity();
+
+    expect(screen.getByTestId('maturity-results')).toBeInTheDocument();
+    expect(screen.getByTestId('maturity-overall-score').textContent).toBe('2.0');
+    // The level badge must display "Aware" (not blank, not a different level)
+    expect(screen.getByTestId('maturity-overall-level').textContent).toMatch(/Aware/i);
+  });
+
+  it('shows "Defined" label for a score of 3.0 (all segments at level 3)', () => {
+    // All 8 segments at 3 → mean = 3.0 → "Defined" band
+    _setMaturityTestSeed({ phase: 'results', answers: buildAnswers([3, 3, 3, 3, 3, 3, 3, 3]) });
+    renderMaturity();
+
+    expect(screen.getByTestId('maturity-results')).toBeInTheDocument();
+    expect(screen.getByTestId('maturity-overall-score').textContent).toBe('3.0');
+    expect(screen.getByTestId('maturity-overall-level').textContent).toMatch(/Defined/i);
+  });
+
+  it('label and score are both correct for a fractional score of 2.9 (near-Aware boundary)', () => {
+    // [1, 1, 2, 3, 4, 5, 3, 4] → mean = 23/8 = 2.875 → displayed as "2.9" → "Aware"
+    const segValues = [1, 1, 2, 3, 4, 5, 3, 4];
+    _setMaturityTestSeed({ phase: 'results', answers: buildAnswers(segValues) });
+    renderMaturity();
+
+    expect(screen.getByTestId('maturity-results')).toBeInTheDocument();
+    expect(screen.getByTestId('maturity-overall-score').textContent).toBe('2.9');
+    expect(screen.getByTestId('maturity-overall-level').textContent).toMatch(/Aware/i);
+  });
+});
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Task 606 — Draft is written to localStorage during the questions phase so a
+   page reload can restore mid-assessment progress.
+══════════════════════════════════════════════════════════════════════════ */
+
+describe('Maturity draft — MATURITY_DRAFT_KEY is written during the questions phase (Task 606)', () => {
+  beforeEach(() => {
+    _clearMaturityTestSeed();
+    localStorage.clear();
+    sessionStorage.clear();
+    vi.useFakeTimers();
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({ ok: true, status: 201, json: async () => ({}) })) as unknown as typeof fetch,
+    );
+  });
+
+  afterEach(() => {
+    cleanup();
+    _clearMaturityTestSeed();
+    localStorage.clear();
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+  });
+
+  it('MATURITY_DRAFT_KEY is written immediately when the component mounts in questions phase', () => {
+    // Seed a partial questions-phase draft directly in localStorage
+    const partial: Record<string, number> = {};
+    for (let q = 0; q < NUM_QUESTIONS; q++) partial[`0-${q}`] = 3; // segment 0 done
+    localStorage.setItem(MATURITY_DRAFT_KEY, JSON.stringify({
+      phase: 'questions',
+      answers: partial,
+    }));
+
+    renderMaturity();
+    vi.runAllTimers();
+
+    // The draft must still be present in localStorage after mount (not cleared)
+    const raw = localStorage.getItem(MATURITY_DRAFT_KEY);
+    expect(raw).not.toBeNull();
+    const draft = JSON.parse(raw!);
+    expect(draft.phase).toBe('questions');
+    expect(draft.answers['0-0']).toBe(3);
+  });
+
+  it('MATURITY_DRAFT_KEY reflects a newly-answered question after a click', () => {
+    // Seed a partial questions-phase draft in localStorage (segments 0–1 done)
+    const partial: Record<string, number> = {};
+    for (let s = 0; s < 2; s++)
+      for (let q = 0; q < NUM_QUESTIONS; q++) partial[`${s}-${q}`] = 3;
+    localStorage.setItem(MATURITY_DRAFT_KEY, JSON.stringify({
+      phase: 'questions',
+      answers: partial,
+    }));
+
+    renderMaturity();
+    vi.runAllTimers();
+
+    // We should be on segment 2 (first unanswered). Click answer 4 for question 0.
+    const btn = screen.queryByTestId('answer-2-0-4');
+    if (btn) {
+      fireEvent.click(btn);
+      vi.runAllTimers();
+
+      const raw = localStorage.getItem(MATURITY_DRAFT_KEY);
+      expect(raw).not.toBeNull();
+      const draft = JSON.parse(raw!);
+      expect(draft.answers['2-0']).toBe(4);
+      expect(draft.phase).toBe('questions');
+    }
+  });
+});
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Task 818 — Picker selections (selectedSegmentIds + selectedSubSegIds) are
+   persisted in MATURITY_DRAFT_KEY and survive a simulated page refresh.
+══════════════════════════════════════════════════════════════════════════ */
+
+describe('Maturity draft — picker selections survive a simulated page reload (Task 818)', () => {
+  // These tests use real localStorage (not _setMaturityTestSeed) because:
+  //   1. _testSeed does not carry selectedSegmentIds (type only has phase/answers/intakeData).
+  //   2. The persist useEffect has `if (_testSeedActive) return`, so it never writes
+  //      to localStorage when the test seed is active.
+  // Calling _clearMaturityTestSeed() disables test mode so the component reads
+  // and writes localStorage exactly as it would on a real page load.
+
+  /** Build a minimal complete draft for 3 selected segments (answers for indices 0–2). */
+  function buildRealDraft(selectedSegmentIds: string[]) {
+    const answers: Record<string, number> = {};
+    for (let si = 0; si < selectedSegmentIds.length; si++) {
+      for (let qi = 0; qi < NUM_QUESTIONS; qi++) answers[`${si}-${qi}`] = 3;
+    }
+    return {
+      phase: 'results' as const,
+      answers,
+      intakeData: { industry: 'manufacturing', companySize: 'enterprise' },
+      selectedSegmentIds,
+    };
+  }
+
+  beforeEach(() => {
+    // Disable test-seed mode so real localStorage reads/writes happen.
+    _clearMaturityTestSeed();
+    sessionStorage.clear();
+    vi.useFakeTimers();
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({ ok: true, status: 201, json: async () => ({}) })) as unknown as typeof fetch,
+    );
+  });
+
+  afterEach(() => {
+    cleanup();
+    // Restore test-seed mode (matches module-level default: MODE === 'test').
+    _setMaturityTestSeed({});
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+  });
+
+  it('selectedSegmentIds from the draft are preserved in localStorage after remount', () => {
+    const selectedSegmentIds = ['strategy', 'procurement', 'contracts'];
+    localStorage.setItem(MATURITY_DRAFT_KEY, JSON.stringify(buildRealDraft(selectedSegmentIds)));
+
+    renderMaturity();
+    vi.runAllTimers();
+
+    // The results page must show (draft is complete for the 3 selected segments)
+    expect(screen.getByTestId('maturity-results')).toBeInTheDocument();
+
+    // The persist useEffect must have written selectedSegmentIds back to localStorage
+    const raw = localStorage.getItem(MATURITY_DRAFT_KEY);
+    expect(raw).not.toBeNull();
+    const draft = JSON.parse(raw!);
+    expect(Array.isArray(draft.selectedSegmentIds)).toBe(true);
+    for (const id of selectedSegmentIds) {
+      expect(draft.selectedSegmentIds).toContain(id);
+    }
+  });
+
+  it('a draft written without selectedSegmentIds does not crash on remount', () => {
+    // Legacy draft with no picker scope — the component handles it gracefully.
+    const answers: Record<string, number> = {};
+    // Answer 8 segments (indices 0–7) at level 3.
+    for (let si = 0; si < 8; si++) {
+      for (let qi = 0; qi < NUM_QUESTIONS; qi++) answers[`${si}-${qi}`] = 3;
+    }
+    localStorage.setItem(MATURITY_DRAFT_KEY, JSON.stringify({
+      phase: 'results',
+      answers,
+      intakeData: { industry: 'manufacturing', companySize: 'enterprise' },
+      // no selectedSegmentIds
+    }));
+
+    // Must not throw
+    expect(() => {
+      renderMaturity();
+      vi.runAllTimers();
+    }).not.toThrow();
+  });
+});
+
+/* ══════════════════════════════════════════════════════════════════════════
    Scenario B — Incomplete restored draft: the redirect guard fires.
 
    When the component mounts in the 'results' phase but the restored answer

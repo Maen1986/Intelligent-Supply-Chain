@@ -10,11 +10,15 @@ import { useAuth } from '@/lib/AuthContext';
 import { API_BASE } from '@/lib/apiBase';
 import { parseCsvFile, downloadCsv } from '@/lib/importCsv';
 import { useAIPlan } from '@/hooks/useAIPlan';
+
+/** Prefix for per-supplier AI plan keys: `${SCORECARD_TOOL_KEY_PREFIX}-${supplier.id}` */
+export const SCORECARD_TOOL_KEY_PREFIX = 'scorecard' as const;
 import { AIPlanPanel } from '@/components/AIPlanPanel';
 import {
   DIMS,
   SUB_INDICATORS,
   calcDimScore,
+  calcWeightedScore,
   buildScorecardCsvString,
   parseSubScoresFromRow,
   type Dimension,
@@ -40,8 +44,12 @@ function printZone(zone: string) {
 // SubIndicator, Dimension, SupplierRecord are imported from @/lib/scorecardCsv
 
 interface RosterState {
-  suppliers: SupplierRecord[];
-  activeId: string;
+  suppliers:     SupplierRecord[];
+  activeId:      string;
+  /** ISO timestamp set whenever the user makes a local edit (Task 385). */
+  lastEditedAt?: string;
+  /** ISO timestamp set after each successful PUT to the server (Task 385). */
+  lastSyncAt?:   string;
 }
 
 /* ─── CAR (Corrective Action Request) ─── */
@@ -128,8 +136,10 @@ function ragColor(score: number | null): string {
 }
 
 /* ─── Storage keys ─── */
-const ROSTER_KEY = 'isc-tool-supplier-roster';
-const LEGACY_KEY = 'isc-tool-supplier-scorecard';
+const ROSTER_KEY    = 'isc-tool-supplier-roster';
+/** Persisted pre-import snapshot so undo survives a page refresh (Task #362). */
+const UNDO_KEY      = 'isc-tool-supplier-roster-undo';
+const LEGACY_KEY    = 'isc-tool-supplier-scorecard';
 const carKey     = (id: string) => `isc-tool-scorecard-cars-${id}`;
 const devKey     = (id: string) => `isc-tool-scorecard-devlog-${id}`;
 const trendKey   = (id: string) => `isc-tool-scorecard-trend-${id}`;
@@ -226,6 +236,8 @@ export function loadRoster(): RosterState {
       const migrated = newSupplier(old.name ?? '');
       migrated.tier = old.tier ?? 'Strategic';
       migrated.subScores = subScores;
+      // Clean up the legacy key so the migration doesn't fire again on next load (Task #360).
+      try { localStorage.removeItem(LEGACY_KEY); } catch {}
       return { suppliers: [migrated], activeId: migrated.id };
     }
   } catch { /* fall through */ }
@@ -234,17 +246,7 @@ export function loadRoster(): RosterState {
 }
 
 /* ─── Score helpers ─── */
-// calcDimScore is imported from @/lib/scorecardCsv
-
-function calcWeightedScore(subScores: Record<string, Record<string, string>>, config: ScorecardConfig): number | null {
-  const dimScores = DIMS.map(d => calcDimScore(d.id, subScores));
-  if (dimScores.some(s => s === null)) return null;
-  const totalWeight = DIMS.reduce((s, d) => s + (config.weights[d.id] ?? d.weight), 0);
-  if (totalWeight === 0) return null;
-  return Math.round(
-    DIMS.reduce((sum, d, i) => sum + ((dimScores[i] as number) / 100) * (config.weights[d.id] ?? d.weight), 0) / totalWeight * 100,
-  );
-}
+// calcDimScore and calcWeightedScore are both imported from @/lib/scorecardCsv (Task #353 — single source of truth).
 
 /* ─── Comparison CSV export ─── */
 function exportComparisonToCSV(
@@ -420,6 +422,12 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
     localWinsDuringBootstrap.current = false;
     deferredSyncRosterRef.current = null;
 
+    // Capture the user id before entering the async IIFE so we can guard
+    // against a fast account-switch (Task 379): if the user changes while
+    // the GETs are in flight the response is silently discarded rather than
+    // overwriting the new user's roster.
+    const bootstrapUserId = user.id;
+
     (async () => {
       try {
         // Bootstrap roster and config in parallel
@@ -428,13 +436,33 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
           fetch(`${API_BASE}/scorecard-config`, { credentials: 'include' }),
         ]);
 
+        // Stale-response guard (Task 379): discard this response if the active
+        // user has changed since the fetch was started.
+        if (serverLoadedForUserId.current !== bootstrapUserId) return;
+
         // ── Roster ──
         if (rosterRes.ok) {
           const data = await rosterRes.json() as { ok: boolean; roster: RosterState | null };
           if (data.ok && data.roster && Array.isArray(data.roster.suppliers) && data.roster.suppliers.length > 0) {
             // Server has data — apply it only if the user hasn't already
-            // made an edit while the GETs were in flight.
-            if (!localWinsDuringBootstrap.current) {
+            // made an edit while the GETs were in flight, AND there are no
+            // local edits that haven't been synced yet.
+            //
+            // The remount guard (Task 385): after SPA navigation away and back,
+            // all in-memory refs reset, so localWinsDuringBootstrap is always
+            // false on remount.  We additionally check whether localStorage has
+            // a lastEditedAt that's newer than lastSyncAt — meaning unsaved
+            // local edits exist — and decline to overwrite them.
+            const localHasUnsavedEdits = (() => {
+              const raw = localStorage.getItem(ROSTER_KEY);
+              if (!raw) return false;
+              try {
+                const local = JSON.parse(raw) as RosterState;
+                const { lastEditedAt, lastSyncAt } = local;
+                return !!(lastEditedAt && (!lastSyncAt || lastEditedAt > lastSyncAt));
+              } catch { return false; }
+            })();
+            if (!localWinsDuringBootstrap.current && !localHasUnsavedEdits) {
               setRoster(data.roster);
               safeSetItem(ROSTER_KEY, JSON.stringify(data.roster));
             }
@@ -507,7 +535,20 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
           body: JSON.stringify(next),
         });
         setSyncStatus(res.ok ? 'saved' : 'error');
-        if (res.ok) setTimeout(() => setSyncStatus('idle'), 2500);
+        if (res.ok) {
+          // Stamp lastSyncAt in localStorage so a future remount-bootstrap can
+          // tell that all edits up to this moment have already reached the server
+          // and it is safe to apply fresh server data (Task 385).
+          const syncedAt = new Date().toISOString();
+          const raw = localStorage.getItem(ROSTER_KEY);
+          if (raw) {
+            try {
+              const stored = JSON.parse(raw) as RosterState;
+              safeSetItem(ROSTER_KEY, JSON.stringify({ ...stored, lastSyncAt: syncedAt }));
+            } catch { /* ignore parse error */ }
+          }
+          setTimeout(() => setSyncStatus('idle'), 2500);
+        }
       } catch {
         setSyncStatus('error');
       }
@@ -529,16 +570,34 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
   };
 
   const save = (next: RosterState) => {
-    setRoster(next);
-    setLocalSaveFailed(!safeSetItem(ROSTER_KEY, JSON.stringify(next)));
-    syncToServer(next);
+    // Stamp lastEditedAt so a post-remount bootstrap can detect unsaved edits
+    // even after the component has unmounted and reset its in-memory refs (Task 385).
+    const stamped: RosterState = { ...next, lastEditedAt: new Date().toISOString() };
+    setRoster(stamped);
+    setLocalSaveFailed(!safeSetItem(ROSTER_KEY, JSON.stringify(stamped)));
+    syncToServer(stamped);
   };
 
   /** Invalidate the undo snapshot whenever the user makes a manual roster change. */
   const clearUndo = () => {
     preImportRosterRef.current = null;
     setImportUndoAvailable(false);
+    try { localStorage.removeItem(UNDO_KEY); } catch {}
   };
+
+  // Restore the persisted undo snapshot on mount so the Undo button survives
+  // a page refresh immediately after an import (Task #362).
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    const raw = localStorage.getItem(UNDO_KEY);
+    if (!raw) return;
+    try {
+      preImportRosterRef.current = JSON.parse(raw) as RosterState;
+      setImportUndoAvailable(true);
+    } catch {
+      localStorage.removeItem(UNDO_KEY);
+    }
+  }, []); // mount only
 
   /* ── CSV template download ── */
   const downloadScorecardTemplate = () => {
@@ -620,6 +679,7 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
       const nextActiveId = nextSuppliers.find(s => s.id === roster.activeId) ? roster.activeId : (nextSuppliers[0]?.id ?? roster.activeId);
       preImportRosterRef.current = snapshotBeforeImport;
       setImportUndoAvailable(true);
+      safeSetItem(UNDO_KEY, JSON.stringify(snapshotBeforeImport)); // persist for page refresh (Task #362)
       save({ suppliers: nextSuppliers, activeId: nextActiveId });
       log.unshift(isAr ? `✓ تم استيراد ${imported} مورّد(ين)${skipped > 0 ? `، تخطّي ${skipped}` : ''}.` : `✓ Imported ${imported} supplier(s).${skipped > 0 ? ` ${skipped} skipped.` : ''}`);
       setImportLog(log);
@@ -691,8 +751,10 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
   const { loading: planLoading, result: planResult, error: planError, rateLimited: planRateLimited,
           retryAfterSeconds: planRetryAfterSeconds, generate: generatePlan, reset: resetPlan,
           savedPlan: planSavedPlan, viewSaved: viewSavedPlan, deleteSaved: deleteSavedPlan,
-          saveError: planSaveError, dismissSaveError: dismissPlanSaveError } =
-    useAIPlan(buildScorecardPrompt, isAr, active?.id ? `scorecard-${active.id}` : undefined, weightedScore !== null);
+          saveError: planSaveError, dismissSaveError: dismissPlanSaveError,
+          deleteError: planDeleteError, dismissDeleteError: dismissPlanDeleteError,
+          retrySave: retrySavedPlan } =
+    useAIPlan(buildScorecardPrompt, isAr, active?.id ? `${SCORECARD_TOOL_KEY_PREFIX}-${active.id}` : undefined, weightedScore !== null);
 
   // Clear any displayed plan result when the user switches to a different supplier.
   // Also reset the pending-name edit so the new supplier starts clean.
@@ -858,6 +920,13 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
     const label = isAr ? 'هل تريد حذف هذا المورّد؟' : 'Delete this supplier? This cannot be undone.';
     if (!window.confirm(label)) return;
     clearUndo();
+
+    // Fire-and-forget: clean up the server-side AI plan for this supplier (Task 370).
+    // Failure is silently ignored — orphaned plan entries are harmless but waste storage.
+    if (user) {
+      fetch(`${API_BASE}/plans/scorecard-${id}`, { method: 'DELETE', credentials: 'include' }).catch(() => {});
+    }
+
     const remaining = roster.suppliers.filter(s => s.id !== id);
 
     // If a duplicate-name warning is active, re-evaluate it against the
@@ -1319,6 +1388,7 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
                         preImportRosterRef.current = null;
                         setImportUndoAvailable(false);
                         setImportLog(null);
+                        try { localStorage.removeItem(UNDO_KEY); } catch {}
                       }
                     }}
                     className="flex items-center gap-1 px-2 py-1 rounded-lg font-bold bg-white border border-emerald-300 text-emerald-700 hover:bg-emerald-100 transition-colors"
@@ -1625,6 +1695,9 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
                     retryAfterSeconds={planRetryAfterSeconds}
                     saveError={planSaveError}
                     onDismissSaveError={dismissPlanSaveError}
+                    onRetrySave={retrySavedPlan}
+                    deleteError={planDeleteError}
+                    onDismissDeleteError={dismissPlanDeleteError}
                     toolKey={active?.id ? `scorecard-${active.id}` : undefined}
                   />
                 )}

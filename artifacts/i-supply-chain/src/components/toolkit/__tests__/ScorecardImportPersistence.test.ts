@@ -738,6 +738,85 @@ describe('Score validation — out-of-range values', () => {
     expect(log[1]).toMatch(/Row 3/);
   });
 
+  /* ── Task 366 — import success count is accurate for mixed CSV ────────── */
+
+  it('imported counter equals only the genuinely new suppliers (Task 366)', () => {
+    // Starting roster: Alpha Corp, Beta Ltd
+    const roster = [SUPPLIER_A, SUPPLIER_B];
+    // CSV: 1 duplicate (Alpha Corp, skip mode) + 2 new names
+    const rows: Array<Record<string, string>> = [
+      { 'Supplier Name': 'Alpha Corp',  'Current Tier': 'Strategic' },  // duplicate
+      { 'Supplier Name': 'Gamma Inc',   'Current Tier': 'Preferred' },  // new
+      { 'Supplier Name': 'Delta Co',    'Current Tier': 'Strategic' },  // new
+    ];
+    const { imported, skipped } = simulateImport(roster, rows, false);
+    expect(imported).toBe(2);
+    expect(skipped).toBe(1);
+  });
+
+  it('skipped counter equals all duplicates when overwrite=false (Task 366)', () => {
+    const roster = [SUPPLIER_A, SUPPLIER_B];
+    const rows: Array<Record<string, string>> = [
+      { 'Supplier Name': 'Alpha Corp', 'Current Tier': 'Strategic' },
+      { 'Supplier Name': 'Beta Ltd',   'Current Tier': 'Strategic' },
+    ];
+    const { imported, skipped } = simulateImport(roster, rows, false);
+    expect(imported).toBe(0);
+    expect(skipped).toBe(2);
+  });
+
+  it('all rows count as imported when there are no duplicates (Task 366)', () => {
+    const roster = [SUPPLIER_A];
+    const rows: Array<Record<string, string>> = [
+      { 'Supplier Name': 'Gamma Inc', 'Current Tier': 'Strategic' },
+      { 'Supplier Name': 'Delta Co',  'Current Tier': 'Preferred' },
+      { 'Supplier Name': 'Epsilon',   'Current Tier': 'Strategic' },
+    ];
+    const { imported, skipped } = simulateImport(roster, rows, false);
+    expect(imported).toBe(3);
+    expect(skipped).toBe(0);
+  });
+
+  /* ── Task 367 — tier from CSV is used, not the template default ────────── */
+
+  it('uses the "Current Tier" value from the CSV row, not the fallback default (Task 367)', () => {
+    const roster: SupplierRecord[] = [];
+    const rows: Array<Record<string, string>> = [
+      { 'Supplier Name': 'New Supplier', 'Current Tier': 'Preferred' },
+    ];
+    const { nextSuppliers } = simulateImport(roster, rows, false);
+    expect(nextSuppliers[0].tier).toBe('Preferred');
+    // Confirm it is NOT the fallback 'Strategic'
+    expect(nextSuppliers[0].tier).not.toBe('Strategic');
+  });
+
+  it('falls back to "Strategic" when the "Current Tier" cell is blank (Task 367)', () => {
+    const roster: SupplierRecord[] = [];
+    const rows: Array<Record<string, string>> = [
+      { 'Supplier Name': 'New Supplier', 'Current Tier': '' },
+    ];
+    const { nextSuppliers } = simulateImport(roster, rows, false);
+    expect(nextSuppliers[0].tier).toBe('Strategic');
+  });
+
+  it('falls back to "Strategic" when the "Current Tier" cell is whitespace-only (Task 367)', () => {
+    const roster: SupplierRecord[] = [];
+    const rows: Array<Record<string, string>> = [
+      { 'Supplier Name': 'New Supplier', 'Current Tier': '   ' },
+    ];
+    const { nextSuppliers } = simulateImport(roster, rows, false);
+    expect(nextSuppliers[0].tier).toBe('Strategic');
+  });
+
+  it('uses "Transactional" tier from CSV correctly (Task 367)', () => {
+    const roster: SupplierRecord[] = [];
+    const rows: Array<Record<string, string>> = [
+      { 'Supplier Name': 'New Supplier', 'Current Tier': 'Transactional' },
+    ];
+    const { nextSuppliers } = simulateImport(roster, rows, false);
+    expect(nextSuppliers[0].tier).toBe('Transactional');
+  });
+
   it('import handler skips a row with an empty Supplier Name and logs it', () => {
     // Simulates the "if (!name) { log.push(...); return; }" guard in handleScorecardImport
     const rows: Array<Record<string, string>> = [

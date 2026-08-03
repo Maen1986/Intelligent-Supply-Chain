@@ -17,7 +17,7 @@
  *   4. An unrecognised Bearer token gets 401 from requireApiKeyOrSession
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import type { RequestHandler } from 'express';
 import request from 'supertest';
 import { makeApp, makeDbMock, makeLoggerMock, resetDbState, dbState } from './helpers';
@@ -83,6 +83,20 @@ function makeAnonApp() {
 
 beforeEach(() => {
   resetDbState();
+  // The AI_INTEGRATIONS_OPENAI_* env vars may be configured in this environment,
+  // causing outbound fetch calls that hang and time out.  Stub fetch so the
+  // route returns quickly with a non-200 status — we are testing the rate
+  // limiter, not the AI call.
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+    ok: false,
+    status: 503,
+    json: async () => ({ error: 'AI stub' }),
+    text: async () => 'stub',
+  }));
+});
+
+afterEach(() => {
+  vi.unstubAllGlobals();
 });
 
 describe('POST /ai/plan — rate limiting via API key (Bearer token)', () => {

@@ -14,6 +14,9 @@ import { Download } from 'lucide-react';
 import { ActionTracker } from './Primitives';
 import { safeSetItem } from '@/lib/storage';
 import { useAIPlan } from '@/hooks/useAIPlan';
+
+/** Stable server-side key for the Maturity AI plan slot. */
+export const MATURITY_TOOL_KEY = 'maturity' as const;
 import { AIPlanPanel } from '@/components/AIPlanPanel';
 
 interface MaturityToolsProps { slug?: string; isAr: boolean; }
@@ -286,7 +289,7 @@ export function MaturityAssessmentTool({ slug, isAr }: MaturityToolsProps) {
           retryAfterSeconds: planRetryAfterSeconds, generate: generatePlan, reset: resetPlan,
           savedPlan: planSavedPlan, viewSaved: viewSavedPlan, deleteSaved: deleteSavedPlan,
           saveError: planSaveError, dismissSaveError: dismissPlanSaveError } =
-    useAIPlan(buildMaturityPrompt, isAr, 'maturity', filled.length > 0);
+    useAIPlan(buildMaturityPrompt, isAr, MATURITY_TOOL_KEY, filled.length > 0);
 
   const LEVEL_COLORS = { 1: '#fca5a5', 2: '#fcd34d', 3: '#6ee7b7', 4: '#34d399', 5: '#059669' };
   const LEVEL_LABELS_AR = { 1: 'تأسيسي', 2: 'ناشئ', 3: 'مؤهَّل', 4: 'متقدّم', 5: 'عالمي' };

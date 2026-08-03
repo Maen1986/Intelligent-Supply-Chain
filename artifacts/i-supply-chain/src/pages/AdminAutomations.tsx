@@ -716,7 +716,7 @@ function ConnectionHealthPanel({ ar }: { ar: boolean }) {
    TAB 2 — Webhook Delivery Log
    ════════════════════════════════════════════════════════════════════════════ */
 
-function WebhookLogTab({ ar, refresh }: { ar: boolean; refresh: number }) {
+export function WebhookLogTab({ ar, refresh }: { ar: boolean; refresh: number }) {
   const [rows, setRows]     = useState<DeliveryLogRow[]>([]);
   const [total, setTotal]   = useState(0);
   const [loading, setLoading] = useState(true);
@@ -2080,6 +2080,17 @@ export function PrepareDownloadModal({
     setNewRawKey(null);
     try {
       const nameLabel = `Template: ${template.name}`;
+      // De-duplication check: warn if a key with this label already exists (Task 609).
+      const duplicate = keys.find(k => k.nameLabel === nameLabel && !k.revokedAt);
+      if (duplicate) {
+        setCreateKeyError(
+          ar
+            ? `مفتاح بهذا الاسم موجود بالفعل — اختره من القائمة أعلاه.`
+            : `A key named "${nameLabel}" already exists — select it from the list above.`
+        );
+        setCreatingKey(false);
+        return;
+      }
       const r = await fetch(`${API_BASE}/integrations/keys`, {
         method: 'POST',
         credentials: 'include',

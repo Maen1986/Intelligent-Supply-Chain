@@ -22,6 +22,7 @@ import {
   parseSubScoresFromRow,
   type ScorecardConfig,
   type SupplierRecord,
+  mergeImportRoster,
 } from '@/lib/scorecardCsv';
 
 // Alias so all existing test call-sites remain unchanged.
@@ -381,83 +382,8 @@ describe('Scorecard CSV — partial import', () => {
    that choosing Cancel on the overwrite prompt leaves all scores intact.
 ══════════════════════════════════════════════════════════════════════════ */
 
-/**
- * Pure simulation of the merge logic inside handleScorecardImport.
- *
- * @param rosterSuppliers  The existing roster (spread-copy, not mutated)
- * @param csvRows          Rows parsed from the incoming CSV
- * @param overwrite        Whether to overwrite existing suppliers (true = OK,
- *                         false = Cancel in the confirm() dialog)
- * @returns { nextSuppliers, imported, skipped }
- */
-function simulateImport(
-  rosterSuppliers: SupplierRecord[],
-  csvRows: Array<Record<string, string>>,
-  overwrite: boolean,
-  isAr = false,
-): { nextSuppliers: SupplierRecord[]; imported: number; skipped: number; log: string[] } {
-  const nextSuppliers = rosterSuppliers.map(s => ({
-    ...s,
-    subScores: { ...s.subScores },
-  }));
-
-  let imported = 0;
-  let skipped  = 0;
-  const log: string[] = [];
-
-  csvRows.forEach((row, ri) => {
-    const rowNum = ri + 2; // 1-based header + 1-based data rows
-    const name = row['Supplier Name']?.trim();
-    if (!name) return;
-
-    const { subScores: incoming } = parseSubScoresFromRow(row);
-
-    // Case-insensitive match — mirrors the fixed handleScorecardImport behaviour.
-    const existingIdx = nextSuppliers.findIndex(s => s.name.toLowerCase() === name.toLowerCase());
-    if (existingIdx >= 0) {
-      const existingName = nextSuppliers[existingIdx].name;
-      const isCaseVariant = existingName !== name;
-      if (overwrite) {
-        // Wholesale replace — mirrors handleScorecardImport exactly:
-        //   nextSuppliers[existingIdx] = { ...nextSuppliers[existingIdx], tier, subScores }
-        // `subScores` contains only what was present in the CSV row; nothing is
-        // merged from the existing record.
-        nextSuppliers[existingIdx] = {
-          ...nextSuppliers[existingIdx],
-          tier: row['Current Tier']?.trim() || nextSuppliers[existingIdx].tier,
-          subScores: incoming,
-        };
-        imported++;
-        if (isCaseVariant) {
-          log.push(
-            isAr
-              ? `الصف ${rowNum}: '${name}' تطابق مع '${existingName}' الموجود — تم الدمج.`
-              : `Row ${rowNum}: '${name}' matched existing '${existingName}' — merged.`
-          );
-        }
-      } else {
-        skipped++;
-        if (isCaseVariant) {
-          log.push(
-            isAr
-              ? `الصف ${rowNum}: '${name}' تطابق مع '${existingName}' الموجود — تم التخطي.`
-              : `Row ${rowNum}: '${name}' matched existing '${existingName}' — skipped.`
-          );
-        }
-      }
-    } else {
-      nextSuppliers.push({
-        id: `sup-imported-${name}`,
-        name,
-        tier: row['Current Tier']?.trim() || 'Strategic',
-        subScores: incoming,
-      });
-      imported++;
-    }
-  });
-
-  return { nextSuppliers, imported, skipped, log };
-}
+// mergeImportRoster is now imported from @/lib/scorecardCsv (Task 335).
+// The hand-rolled local copy was removed to eliminate drift risk.
 
 /* ─── Fixtures for Suite 3 ─── */
 
@@ -518,7 +444,7 @@ describe('Scorecard CSV — partial roster import (real-world edit workflow)', (
     const onlyACsv   = buildCsvString([editedA]);
     const { rows }   = parseCsvFile(onlyACsv, ['Supplier Name']);
 
-    const { nextSuppliers } = simulateImport([SUPPLIER_A, SUPPLIER_B, SUPPLIER_C], rows, true);
+    const { nextSuppliers } = mergeImportRoster([SUPPLIER_A, SUPPLIER_B, SUPPLIER_C], rows, true);
 
     // Roster still has 3 entries
     expect(nextSuppliers).toHaveLength(3);
@@ -547,7 +473,7 @@ describe('Scorecard CSV — partial roster import (real-world edit workflow)', (
     const onlyACsv   = buildCsvString([editedA]);
     const { rows }   = parseCsvFile(onlyACsv, ['Supplier Name']);
 
-    const { nextSuppliers, imported } = simulateImport([SUPPLIER_A, SUPPLIER_B, SUPPLIER_C], rows, true);
+    const { nextSuppliers, imported } = mergeImportRoster([SUPPLIER_A, SUPPLIER_B, SUPPLIER_C], rows, true);
 
     const afterA = nextSuppliers.find(s => s.name === 'Alpha Corp')!;
     expect(imported).toBe(1);
@@ -566,7 +492,7 @@ describe('Scorecard CSV — partial roster import (real-world edit workflow)', (
     const onlyACsv   = buildCsvString([editedA]);
     const { rows }   = parseCsvFile(onlyACsv, ['Supplier Name']);
 
-    const { nextSuppliers } = simulateImport([SUPPLIER_A, SUPPLIER_B, SUPPLIER_C], rows, true);
+    const { nextSuppliers } = mergeImportRoster([SUPPLIER_A, SUPPLIER_B, SUPPLIER_C], rows, true);
     const afterA = nextSuppliers.find(s => s.name === 'Alpha Corp')!;
 
     expect(afterA.subScores.delivery.lead_time).toBe(SUPPLIER_A.subScores.delivery.lead_time);
@@ -585,7 +511,7 @@ describe('Scorecard CSV — partial roster import (real-world edit workflow)', (
     const onlyACsv   = buildCsvString([editedA]);
     const { rows }   = parseCsvFile(onlyACsv, ['Supplier Name']);
 
-    const { nextSuppliers } = simulateImport([SUPPLIER_A, SUPPLIER_B, SUPPLIER_C], rows, true);
+    const { nextSuppliers } = mergeImportRoster([SUPPLIER_A, SUPPLIER_B, SUPPLIER_C], rows, true);
     const afterA = nextSuppliers.find(s => s.name === 'Alpha Corp')!;
 
     expect(afterA.subScores.quality).toEqual(SUPPLIER_A.subScores.quality);
@@ -607,7 +533,7 @@ describe('Scorecard CSV — partial roster import (real-world edit workflow)', (
     const onlyACsv   = buildCsvString([editedA]);
     const { rows }   = parseCsvFile(onlyACsv, ['Supplier Name']);
 
-    const { nextSuppliers, imported, skipped } = simulateImport(
+    const { nextSuppliers, imported, skipped } = mergeImportRoster(
       [SUPPLIER_A, SUPPLIER_B, SUPPLIER_C], rows, false /* overwrite = false */
     );
 
@@ -634,7 +560,7 @@ describe('Scorecard CSV — partial roster import (real-world edit workflow)', (
     const mixedCsv   = buildCsvString([SUPPLIER_A, deltaInc]);
     const { rows }   = parseCsvFile(mixedCsv, ['Supplier Name']);
 
-    const { nextSuppliers, imported, skipped } = simulateImport(
+    const { nextSuppliers, imported, skipped } = mergeImportRoster(
       [SUPPLIER_A, SUPPLIER_B, SUPPLIER_C], rows, false /* overwrite = false */
     );
 
@@ -662,7 +588,7 @@ describe('Scorecard CSV — partial roster import (real-world edit workflow)', (
     const csv      = buildCsvString(editAll);
     const { rows } = parseCsvFile(csv, ['Supplier Name']);
 
-    const { nextSuppliers, imported } = simulateImport([SUPPLIER_A, SUPPLIER_B, SUPPLIER_C], rows, true);
+    const { nextSuppliers, imported } = mergeImportRoster([SUPPLIER_A, SUPPLIER_B, SUPPLIER_C], rows, true);
 
     expect(imported).toBe(3);
     expect(nextSuppliers).toHaveLength(3);
@@ -694,7 +620,7 @@ describe('Scorecard CSV — case-insensitive supplier name matching', () => {
       'Current Tier': 'Preferred',
       'Delivery Performance — OTIF %': '77',
     };
-    const { nextSuppliers, imported, skipped } = simulateImport(
+    const { nextSuppliers, imported, skipped } = mergeImportRoster(
       [SUPPLIER_A, SUPPLIER_B, SUPPLIER_C],
       [lowercaseRow],
       true, // overwrite
@@ -712,7 +638,7 @@ describe('Scorecard CSV — case-insensitive supplier name matching', () => {
       'Current Tier': 'Strategic',
       'Delivery Performance — OTIF %': '88',
     };
-    const { nextSuppliers, imported } = simulateImport(
+    const { nextSuppliers, imported } = mergeImportRoster(
       [SUPPLIER_A, SUPPLIER_B, SUPPLIER_C],
       [uppercaseRow],
       true,
@@ -728,7 +654,7 @@ describe('Scorecard CSV — case-insensitive supplier name matching', () => {
       'Current Tier': 'Preferred',
       'Delivery Performance — OTIF %': '60',
     };
-    const { nextSuppliers } = simulateImport(
+    const { nextSuppliers } = mergeImportRoster(
       [SUPPLIER_A, SUPPLIER_B, SUPPLIER_C],
       [mixedRow],
       true,
@@ -743,7 +669,7 @@ describe('Scorecard CSV — case-insensitive supplier name matching', () => {
       'Current Tier': 'Preferred',
       'Delivery Performance — OTIF %': '42',
     };
-    const { nextSuppliers } = simulateImport(
+    const { nextSuppliers } = mergeImportRoster(
       [SUPPLIER_A, SUPPLIER_B, SUPPLIER_C],
       [lowercaseRow],
       true,
@@ -764,7 +690,7 @@ describe('Scorecard CSV — case-insensitive supplier name matching', () => {
       'Current Tier': 'Preferred',
       'Delivery Performance — OTIF %': '42',
     };
-    const { nextSuppliers, imported, skipped } = simulateImport(
+    const { nextSuppliers, imported, skipped } = mergeImportRoster(
       [SUPPLIER_A, SUPPLIER_B, SUPPLIER_C],
       [lowercaseRow],
       false, // user chose Cancel
@@ -785,7 +711,7 @@ describe('Scorecard CSV — case-insensitive supplier name matching', () => {
       'Current Tier': 'Strategic',
       'Delivery Performance — OTIF %': '80',
     };
-    const { nextSuppliers, imported } = simulateImport(
+    const { nextSuppliers, imported } = mergeImportRoster(
       [SUPPLIER_A, SUPPLIER_B, SUPPLIER_C],
       [newRow],
       true,
@@ -804,7 +730,7 @@ describe('Scorecard CSV — case-insensitive supplier name matching', () => {
       'Current Tier': 'Preferred',
       'Delivery Performance — OTIF %': '77',
     };
-    const { log } = simulateImport(
+    const { log } = mergeImportRoster(
       [SUPPLIER_A, SUPPLIER_B, SUPPLIER_C],
       [lowercaseRow],
       true,
@@ -823,7 +749,7 @@ describe('Scorecard CSV — case-insensitive supplier name matching', () => {
       'Current Tier': 'Preferred',
       'Delivery Performance — OTIF %': '77',
     };
-    const { log } = simulateImport(
+    const { log } = mergeImportRoster(
       [SUPPLIER_A, SUPPLIER_B, SUPPLIER_C],
       [lowercaseRow],
       false,
@@ -842,7 +768,7 @@ describe('Scorecard CSV — case-insensitive supplier name matching', () => {
       'Current Tier': 'Strategic',
       'Delivery Performance — OTIF %': '95',
     };
-    const { log } = simulateImport(
+    const { log } = mergeImportRoster(
       [SUPPLIER_A, SUPPLIER_B, SUPPLIER_C],
       [exactRow],
       true,
@@ -858,7 +784,7 @@ describe('Scorecard CSV — case-insensitive supplier name matching', () => {
       'Current Tier': 'Preferred',
       'Delivery Performance — OTIF %': '77',
     };
-    const { log } = simulateImport(
+    const { log } = mergeImportRoster(
       [SUPPLIER_A, SUPPLIER_B, SUPPLIER_C],
       [lowercaseRow],
       true,
@@ -881,7 +807,7 @@ describe('Scorecard CSV — case-insensitive supplier name matching', () => {
       'Current Tier': 'Preferred',
       'Delivery Performance — OTIF %': '77',
     };
-    const { log } = simulateImport(
+    const { log } = mergeImportRoster(
       [SUPPLIER_A, SUPPLIER_B, SUPPLIER_C],
       [lowercaseRow],
       false,
@@ -904,7 +830,7 @@ describe('Scorecard CSV — case-insensitive supplier name matching', () => {
       'Current Tier': 'Strategic',
       'Delivery Performance — OTIF %': '95',
     };
-    const { log } = simulateImport(
+    const { log } = mergeImportRoster(
       [SUPPLIER_A, SUPPLIER_B, SUPPLIER_C],
       [exactRow],
       true,
@@ -1126,7 +1052,7 @@ describe('Scorecard CSV — tier preservation on re-import', () => {
       'Delivery Performance — OTIF %': '90',
     };
 
-    const { nextSuppliers } = simulateImport([existing], [csvRowBlankTier], true);
+    const { nextSuppliers } = mergeImportRoster([existing], [csvRowBlankTier], true);
 
     const after = nextSuppliers.find(s => s.name === 'Tier Test Supplier')!;
     expect(after).toBeDefined();
@@ -1148,7 +1074,7 @@ describe('Scorecard CSV — tier preservation on re-import', () => {
       'Delivery Performance — OTIF %': '75',
     };
 
-    const { nextSuppliers } = simulateImport([existing], [csvRowWhitespaceTier], true);
+    const { nextSuppliers } = mergeImportRoster([existing], [csvRowWhitespaceTier], true);
 
     const after = nextSuppliers.find(s => s.name === 'Whitespace Tier Supplier')!;
     expect(after.tier).toBe('Preferred');
@@ -1170,7 +1096,7 @@ describe('Scorecard CSV — tier preservation on re-import', () => {
       'Delivery Performance — OTIF %': '65',
     };
 
-    const { nextSuppliers } = simulateImport([existing], [csvRowWithTier], true);
+    const { nextSuppliers } = mergeImportRoster([existing], [csvRowWithTier], true);
 
     const after = nextSuppliers.find(s => s.name === 'Tier Update Supplier')!;
     expect(after).toBeDefined();
@@ -1200,7 +1126,7 @@ describe('Scorecard CSV — new-supplier tier default when "Current Tier" is abs
       'Delivery Performance — OTIF %': '80',
     };
 
-    const { nextSuppliers, imported } = simulateImport([], [csvRow], true);
+    const { nextSuppliers, imported } = mergeImportRoster([], [csvRow], true);
 
     expect(imported).toBe(1);
     expect(nextSuppliers).toHaveLength(1);
@@ -1217,7 +1143,7 @@ describe('Scorecard CSV — new-supplier tier default when "Current Tier" is abs
       'Delivery Performance — OTIF %': '70',
     };
 
-    const { nextSuppliers, imported } = simulateImport([], [csvRow], true);
+    const { nextSuppliers, imported } = mergeImportRoster([], [csvRow], true);
 
     expect(imported).toBe(1);
     expect(nextSuppliers).toHaveLength(1);
@@ -1493,6 +1419,59 @@ describe('Scorecard CSV — weighted score and calculated tier columns', () => {
     expect(rows[0]['Calculated Tier']).toBe('Transactional');
   });
 
+  /* ── Task 356 — CSV export reflects CUSTOM (non-default) framework weights ─ */
+
+  it('Weighted Score in CSV changes when custom weights are applied vs default weights (Task 356)', () => {
+    // FULL_SUPPLIER has all sub-scores at 80. With default weights the
+    // weighted score is 80. With a config that puts 100% weight on delivery
+    // (where FULL_SUPPLIER also scores 80), it should still be 80.
+    // Use asymmetric weights so the two scores differ.
+    const heavyQuality: ScorecardConfig = {
+      weights: { delivery: 0, quality: 100, cost: 0, compliance: 0, innovation: 0, relationship: 0 },
+      tiers:   { ...DEFAULT_CONFIG.tiers },
+    };
+
+    const csvDefault = buildCsvString([FULL_SUPPLIER], DEFAULT_CONFIG);
+    const csvCustom  = buildCsvString([FULL_SUPPLIER], heavyQuality);
+
+    const { rows: rowsDefault } = parseCsvFile(csvDefault, []);
+    const { rows: rowsCustom  } = parseCsvFile(csvCustom,  []);
+
+    // With DEFAULT_CONFIG the weighted score is a blend; with heavy-quality
+    // it is the average of the quality sub-scores only. They must not be the same
+    // unless FULL_SUPPLIER happens to score identically on all dimensions
+    // (it doesn't — delivery avg ≠ quality avg in the fixture).
+    const defaultWS = rowsDefault[0]['Weighted Score (/100)'];
+    const customWS  = rowsCustom[0]['Weighted Score (/100)'];
+    // Both must be present (not blank)
+    expect(defaultWS).toBeTruthy();
+    expect(customWS).toBeTruthy();
+    // They must differ — proving the custom config is actually used
+    expect(customWS).not.toBe(defaultWS);
+  });
+
+  it('Calculated Tier changes when custom tier thresholds are applied (Task 356)', () => {
+    // FULL_SUPPLIER scores 80 with DEFAULT_CONFIG → "Strategic" (threshold ≥75).
+    // Raise the strategic threshold to 90 so it falls to "Preferred".
+    const highThreshold: ScorecardConfig = {
+      weights: { ...DEFAULT_CONFIG.weights },
+      tiers:   { strategic: 90, preferred: 55 },
+    };
+
+    const csvDefault = buildCsvString([FULL_SUPPLIER], DEFAULT_CONFIG);
+    const csvCustom  = buildCsvString([FULL_SUPPLIER], highThreshold);
+
+    const { rows: rowsDefault } = parseCsvFile(csvDefault, []);
+    const { rows: rowsCustom  } = parseCsvFile(csvCustom,  []);
+
+    const defaultTier = rowsDefault[0]['Calculated Tier'];
+    const customTier  = rowsCustom[0]['Calculated Tier'];
+
+    expect(defaultTier).toBeTruthy();
+    expect(customTier).toBeTruthy();
+    expect(defaultTier).not.toBe(customTier);
+  });
+
   it('all-zero sub-scores: Weighted Score cell is "0" (not blank) and Calculated Tier is "Transactional"', () => {
     // Regression guard: calcWeightedScore returns 0 (a valid number) when every
     // sub-indicator is entered as 0. A future change that treats 0 as "missing"
@@ -1518,5 +1497,46 @@ describe('Scorecard CSV — weighted score and calculated tier columns', () => {
     const { rows } = parseCsvFile(csv, ['Supplier Name']);
     expect(rows[0]['Weighted Score (/100)']).toBe('0');
     expect(rows[0]['Calculated Tier']).toBe('Transactional');
+  });
+});
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Task 425 — Importing a completely blank template doesn't crash
+   A blank template (CSV with header only, no data rows) must be handled
+   gracefully: no throw, counters stay 0, roster remains unchanged.
+══════════════════════════════════════════════════════════════════════════ */
+
+describe('mergeImportRoster — blank template: header-only CSV (Task 425)', () => {
+  const DEFAULT_CONFIG: ScorecardConfig = {
+    weights: { delivery: 30, quality: 25, cost: 20, compliance: 10, innovation: 5, relationship: 10 },
+    tiers: { strategic: 80, preferred: 60 },
+  };
+
+  it('returns 0 imported and 0 skipped when the CSV has no data rows', () => {
+    // Build a CSV with just the header row (no supplier data)
+    const headerCsv = buildScorecardCsvString([], DEFAULT_CONFIG);
+    const { rows } = parseCsvFile(headerCsv, ['Supplier Name']);
+
+    // rows should be empty since no suppliers were exported
+    const initial: SupplierRecord[] = [FULL_SUPPLIER];
+    const { nextSuppliers, imported, skipped } = mergeImportRoster(initial, rows, true);
+
+    expect(imported).toBe(0);
+    expect(skipped).toBe(0);
+    expect(nextSuppliers).toHaveLength(initial.length);
+    // Roster contents should be unchanged
+    expect(nextSuppliers[0].id).toBe(FULL_SUPPLIER.id);
+  });
+
+  it('does not throw when called with an empty rows array directly', () => {
+    const initial: SupplierRecord[] = [FULL_SUPPLIER];
+    expect(() => mergeImportRoster(initial, [], true)).not.toThrow();
+  });
+
+  it('returns the original roster unchanged when called with an empty rows array', () => {
+    const initial: SupplierRecord[] = [FULL_SUPPLIER];
+    const { nextSuppliers } = mergeImportRoster(initial, [], true);
+    expect(nextSuppliers).toHaveLength(1);
+    expect(nextSuppliers[0].name).toBe(FULL_SUPPLIER.name);
   });
 });

@@ -308,3 +308,84 @@ describe('TemplatesTab — edge-case platform keys produce clickable pills', () 
     expect(pillButtons).toHaveLength(4);
   });
 });
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Task 620 — template nodes list never silently shows an empty array
+   Confirms the TemplateCard component actually renders node names from
+   the API response when the Setup guide is expanded.
+══════════════════════════════════════════════════════════════════════════ */
+
+describe('TemplatesTab — template card renders nodes list (Task 620)', () => {
+  it('expanding Setup guide shows the node names from the template manifest', async () => {
+    mockFetchWithTemplates([
+      {
+        ...baseTemplate,
+        id: 'nodes-test-single',
+        platform: 'n8n',
+        name: 'Nodes Test Single',
+        description: 'desc',
+        nodes: ['Webhook'],
+      },
+    ]);
+
+    render(<TemplatesTab ar={false} />);
+
+    await waitFor(() => screen.getByText('Nodes Test Single'));
+
+    // Expand the Setup guide
+    fireEvent.click(screen.getByTitle('Setup guide'));
+
+    // The node name must appear — both in FlowPreview (p tag) and in the
+    // nodes-used chip list (span tag).  Use getAllByText since it appears twice.
+    const nodeEls = screen.getAllByText('Webhook');
+    expect(nodeEls.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('all nodes from a multi-node template appear after expanding Setup', async () => {
+    mockFetchWithTemplates([
+      {
+        ...baseTemplate,
+        id: 'nodes-test-multi',
+        platform: 'n8n',
+        name: 'Multi Node Template',
+        description: 'desc',
+        nodes: ['Webhook', 'HTTP Request', 'Set'],
+      },
+    ]);
+
+    render(<TemplatesTab ar={false} />);
+
+    await waitFor(() => screen.getByText('Multi Node Template'));
+
+    fireEvent.click(screen.getByTitle('Setup guide'));
+
+    // Every node from the manifest must be rendered at least once
+    expect(screen.getAllByText('Webhook').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('HTTP Request').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Set').length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('a template with an empty nodes array renders no node chips after expanding Setup', async () => {
+    mockFetchWithTemplates([
+      {
+        ...baseTemplate,
+        id: 'nodes-test-empty',
+        platform: 'n8n',
+        name: 'Empty Nodes Template',
+        description: 'desc',
+        nodes: [],
+      },
+    ]);
+
+    const { container } = render(<TemplatesTab ar={false} />);
+
+    await waitFor(() => screen.getByText('Empty Nodes Template'));
+
+    fireEvent.click(screen.getByTitle('Setup guide'));
+
+    // The nodes chip list container exists but contains no <span> chips
+    // (each non-empty node renders as a <span class="...font-mono...">)
+    const monoChips = container.querySelectorAll('span.font-mono');
+    expect(monoChips.length).toBe(0);
+  });
+});

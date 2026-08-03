@@ -15,9 +15,9 @@
  */
 
 import { beforeEach, describe, expect, it } from 'vitest';
-import { calcWeightedScore, getTier } from '@/lib/scorecardCsv';
+import { calcWeightedScore, getTier, buildScorecardCsvString } from '@/lib/scorecardCsv';
 import { loadConfig, DEFAULT_CONFIG, CONFIG_KEY } from '../SupplierScorecard';
-import type { ScorecardConfig } from '@/lib/scorecardCsv';
+import type { ScorecardConfig, SupplierRecord } from '@/lib/scorecardCsv';
 
 /* ── helpers ──────────────────────────────────────────────────────────────── */
 
@@ -56,8 +56,102 @@ const ALL_DIMS_SCORED: Record<string, Record<string, string>> = {
   relationship: { responsiveness:'100' },
 };
 
+/** Minimal supplier fixture — one filled sub-indicator per dimension. */
+const SUPPLIER_FIXTURE: SupplierRecord = {
+  id: 's-test',
+  name: 'Test Supplier',
+  tier: 'Strategic',
+  subScores: {
+    delivery:     { otif:          '80' },
+    quality:      { ftr:           '60' },
+    cost:         { savings:       '70' },
+    compliance:   { regulatory:    '90' },
+    innovation:   { ideas:         '50' },
+    relationship: { responsiveness:'100' },
+  },
+};
+
 beforeEach(() => {
   localStorage.clear();
+});
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Task 354 — config survives a page refresh (explicit round-trip)
+══════════════════════════════════════════════════════════════════════════ */
+
+describe('Task 354 — scorecard config survives a page refresh', () => {
+  it('custom weights persist across a simulated page reload (loadConfig reads what was saved)', () => {
+    const custom: ScorecardConfig = {
+      weights: { delivery: 40, quality: 30, cost: 10, compliance: 10, innovation: 5, relationship: 5 },
+      tiers:   { strategic: 80, preferred: 60 },
+    };
+    localStorage.setItem(CONFIG_KEY, JSON.stringify(custom));
+    // Simulate page reload — loadConfig re-reads from localStorage
+    const reloaded = loadConfig();
+    expect(reloaded.weights).toEqual(custom.weights);
+    expect(reloaded.tiers).toEqual(custom.tiers);
+  });
+});
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Task 355 — resetConfig restores all DEFAULT_CONFIG values
+══════════════════════════════════════════════════════════════════════════ */
+
+describe('Task 355 — resetConfig logic restores all DEFAULT_CONFIG values in one step', () => {
+  it('saving DEFAULT_CONFIG after custom config returns exact default weights', () => {
+    const custom: ScorecardConfig = {
+      weights: { delivery: 100, quality: 0, cost: 0, compliance: 0, innovation: 0, relationship: 0 },
+      tiers:   { strategic: 90, preferred: 70 },
+    };
+    localStorage.setItem(CONFIG_KEY, JSON.stringify(custom));
+    expect(loadConfig().weights.delivery).toBe(100);
+
+    // Simulate resetConfig calling saveConfig({ ...DEFAULT_CONFIG })
+    localStorage.setItem(CONFIG_KEY, JSON.stringify(DEFAULT_CONFIG));
+
+    const reset = loadConfig();
+    expect(reset.weights).toEqual(DEFAULT_CONFIG.weights);
+    expect(reset.tiers).toEqual(DEFAULT_CONFIG.tiers);
+  });
+
+  it('reset restores tier thresholds as well as weights', () => {
+    const custom = { ...DEFAULT_CONFIG, tiers: { strategic: 95, preferred: 80 } };
+    localStorage.setItem(CONFIG_KEY, JSON.stringify(custom));
+    expect(loadConfig().tiers.strategic).toBe(95);
+
+    localStorage.setItem(CONFIG_KEY, JSON.stringify(DEFAULT_CONFIG));
+    expect(loadConfig().tiers).toEqual(DEFAULT_CONFIG.tiers);
+  });
+});
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Task 356 — CSV export reflects custom weights, not built-in defaults
+══════════════════════════════════════════════════════════════════════════ */
+
+describe('Task 356 — buildScorecardCsvString uses live config weights', () => {
+  it('delivery-only config produces a weighted score equal to the delivery dim score', () => {
+    const deliveryOnly: ScorecardConfig = {
+      ...DEFAULT_CONFIG,
+      weights: { delivery: 100, quality: 0, cost: 0, compliance: 0, innovation: 0, relationship: 0 },
+    };
+    // delivery sub-score = 80 → dim score = 80 → weighted score must be 80
+    const score = calcWeightedScore(ALL_DIMS_SCORED, deliveryOnly);
+    expect(score).toBe(80);
+
+    // Default weights blend all dims — result will differ from 80
+    const defaultScore = calcWeightedScore(ALL_DIMS_SCORED, DEFAULT_CONFIG);
+    expect(defaultScore).not.toBe(80);
+  });
+
+  it('buildScorecardCsvString CSV differs between default and custom weights', () => {
+    const deliveryOnly: ScorecardConfig = {
+      ...DEFAULT_CONFIG,
+      weights: { delivery: 100, quality: 0, cost: 0, compliance: 0, innovation: 0, relationship: 0 },
+    };
+    const csvDefault = buildScorecardCsvString([SUPPLIER_FIXTURE], DEFAULT_CONFIG);
+    const csvCustom  = buildScorecardCsvString([SUPPLIER_FIXTURE], deliveryOnly);
+    expect(csvDefault).not.toBe(csvCustom);
+  });
 });
 
 /* ══════════════════════════════════════════════════════════════════════════
