@@ -272,6 +272,18 @@ html[lang="ar"] {
     overflow: visible !important;
   }
 
+  /* ── max-height clipping fix ─────────────────────────────────────────────
+     Tailwind max-h-* utilities (e.g. max-h-96, max-h-screen) on ancestor
+     wrappers can clip absolutely-positioned print zones even when the zone
+     itself is overflow:visible. The weekly-review print zone inner template
+     already has max-height:none, but any outer wrapper carrying a max-h-*
+     class would still truncate the output. Override them all at once using
+     the substring class selector.
+  ─────────────────────────────────────────────────────────────────────── */
+  body[data-print] [class*="max-h-"] {
+    max-height: none !important;
+  }
+
   /* ── Supplier Alert Config input print fix ───────────────────────────
      Firefox and older Safari do not print the value inside
      <input type="number">; the box renders blank. Each threshold cell
