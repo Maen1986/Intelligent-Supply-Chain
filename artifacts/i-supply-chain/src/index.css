@@ -263,6 +263,19 @@ html[lang="ar"] {
      .rounded-2xl / .rounded-xl are the outer card wrappers used throughout
      the toolkit (e.g. RiskToolsSection). .overflow-hidden is used on the
      tab bar scroll container and several inner card wrappers.
+
+     iOS Safari additionally creates a new CSS containing block for any
+     element that has a transform (even transform:none from a transition).
+     A position:absolute print zone inside a transformed ancestor is clipped
+     to that ancestor's bounds instead of escaping to the page.  Resetting
+     transform to none on the same container classes removes the containing
+     block so the print zone can fill the page correctly.
+
+     iOS Safari also isolates elements with -webkit-overflow-scrolling:touch
+     into a separate GPU compositor layer; during print this layer renders
+     independently and clips any absolutely-positioned content that extends
+     beyond the element.  Resetting to auto collapses the layer so the print
+     zone renders in the normal document flow.
   ─────────────────────────────────────────────────────────────────────── */
   body[data-print] .rounded-2xl,
   body[data-print] .rounded-xl,
@@ -270,6 +283,14 @@ html[lang="ar"] {
   body[data-print] .overflow-x-auto,
   body[data-print] .overflow-y-auto {
     overflow: visible !important;
+    /* iOS Safari: reset transforms so no new containing block is created */
+    -webkit-transform: none !important;
+    transform: none !important;
+  }
+
+  /* iOS Safari: kill GPU compositor layers that clip print zones */
+  body[data-print] * {
+    -webkit-overflow-scrolling: auto !important;
   }
 
   /* ── max-height clipping fix ─────────────────────────────────────────────
