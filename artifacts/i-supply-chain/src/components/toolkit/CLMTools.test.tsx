@@ -183,3 +183,88 @@ describe('ContractHealthChecker — arrow-key tab navigation', () => {
       .toHaveAttribute('aria-selected', 'true');
   });
 });
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Suite 3 — Arabic mode arrow-key navigation (isAr=true)
+══════════════════════════════════════════════════════════════════════════ */
+describe('ContractHealthChecker — Arabic mode arrow-key navigation', () => {
+  it('first Arabic tab (مخزون العقود) is aria-selected by default', () => {
+    render(<ContractHealthChecker isAr={true} />);
+    expect(screen.getByRole('tab', { name: /مخزون العقود/ }))
+      .toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('ArrowRight activates the second Arabic tab (مسار التجديد)', () => {
+    render(<ContractHealthChecker isAr={true} />);
+    const first = screen.getByRole('tab', { name: /مخزون العقود/ });
+    first.focus();
+    fireEvent.keyDown(first, { key: 'ArrowRight' });
+    expect(screen.getByRole('tab', { name: /مسار التجديد/ }))
+      .toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('ArrowRight moves DOM focus to the second Arabic tab', () => {
+    render(<ContractHealthChecker isAr={true} />);
+    const first = screen.getByRole('tab', { name: /مخزون العقود/ });
+    first.focus();
+    fireEvent.keyDown(first, { key: 'ArrowRight' });
+    expect(document.activeElement).toBe(
+      screen.getByRole('tab', { name: /مسار التجديد/ }),
+    );
+  });
+
+  it('ArrowLeft activates the previous Arabic tab', () => {
+    render(<ContractHealthChecker isAr={true} />);
+    fireEvent.click(screen.getByRole('tab', { name: /مسار التجديد/ }));
+    const second = screen.getByRole('tab', { name: /مسار التجديد/ });
+    second.focus();
+    fireEvent.keyDown(second, { key: 'ArrowLeft' });
+    expect(screen.getByRole('tab', { name: /مخزون العقود/ }))
+      .toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('ArrowLeft moves DOM focus to the previous Arabic tab', () => {
+    render(<ContractHealthChecker isAr={true} />);
+    fireEvent.click(screen.getByRole('tab', { name: /مسار التجديد/ }));
+    const second = screen.getByRole('tab', { name: /مسار التجديد/ });
+    second.focus();
+    fireEvent.keyDown(second, { key: 'ArrowLeft' });
+    expect(document.activeElement).toBe(
+      screen.getByRole('tab', { name: /مخزون العقود/ }),
+    );
+  });
+
+  it('ArrowRight wraps from last Arabic tab back to first', () => {
+    render(<ContractHealthChecker isAr={true} />);
+    const last = screen.getByRole('tab', { name: /تقرير المحفظة AI/ });
+    fireEvent.click(last);
+    last.focus();
+    fireEvent.keyDown(last, { key: 'ArrowRight' });
+    expect(screen.getByRole('tab', { name: /مخزون العقود/ }))
+      .toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('ArrowLeft wraps from first Arabic tab to last', () => {
+    render(<ContractHealthChecker isAr={true} />);
+    const first = screen.getByRole('tab', { name: /مخزون العقود/ });
+    first.focus();
+    fireEvent.keyDown(first, { key: 'ArrowLeft' });
+    expect(screen.getByRole('tab', { name: /تقرير المحفظة AI/ }))
+      .toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('Arabic tab navigation sequence: first → second → third via ArrowRight', () => {
+    render(<ContractHealthChecker isAr={true} />);
+    const first = screen.getByRole('tab', { name: /مخزون العقود/ });
+    first.focus();
+
+    fireEvent.keyDown(first, { key: 'ArrowRight' });
+    const second = screen.getByRole('tab', { name: /مسار التجديد/ });
+    expect(second).toHaveAttribute('aria-selected', 'true');
+    second.focus();
+
+    fireEvent.keyDown(second, { key: 'ArrowRight' });
+    expect(screen.getByRole('tab', { name: /صحة المحفظة/ }))
+      .toHaveAttribute('aria-selected', 'true');
+  });
+});
