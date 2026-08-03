@@ -86,11 +86,15 @@ export async function runWeeklyKpiDigest(): Promise<void> {
         rows[kpiId] = String(value ?? "—");
       }
 
-      await sendDigestEmail({
+      const result = await sendDigestEmail({
         to:      user.email,
         subject: `📊 Your Weekly KPI Summary — I Supply Chain`,
         rows,
       });
+
+      if (!result.sent) {
+        throw new Error(result.reason ?? "sendDigestEmail returned sent:false");
+      }
 
       dispatchEvent(user.id, "schedule.weekly_kpi_digest", {
         slug:      kpis.slug,
@@ -133,7 +137,7 @@ export async function runMonthlyScorecardDigest(): Promise<void> {
         supplierRows[s.name ?? s.id] = s.tier ?? "Unclassified";
       }
 
-      await sendDigestEmail({
+      const result = await sendDigestEmail({
         to:      user.email,
         subject: `📋 Monthly Supplier Scorecard Digest — I Supply Chain`,
         rows: {
@@ -144,6 +148,10 @@ export async function runMonthlyScorecardDigest(): Promise<void> {
           ...supplierRows,
         },
       });
+
+      if (!result.sent) {
+        throw new Error(result.reason ?? "sendDigestEmail returned sent:false");
+      }
 
       dispatchEvent(user.id, "schedule.monthly_scorecard", {
         supplierCount: roster.suppliers.length,
@@ -258,7 +266,7 @@ export async function runStaleDataNudge(): Promise<void> {
         ? new Date(user.last_import_at).toLocaleDateString("en-GB")
         : "Never";
 
-      await sendDigestEmail({
+      const result = await sendDigestEmail({
         to:      user.email,
         subject: "📥 Your KPI data may be out of date — I Supply Chain",
         rows: {
@@ -271,6 +279,10 @@ export async function runStaleDataNudge(): Promise<void> {
           "Platform":       "https://isupplychain.io/toolkit",
         },
       });
+
+      if (!result.sent) {
+        throw new Error(result.reason ?? "sendDigestEmail returned sent:false");
+      }
 
       dispatchEvent(user.id, "schedule.stale_data_nudge", {
         lastImportAt: user.last_import_at,
