@@ -107,23 +107,25 @@ describe('POST /ai/plan — rate limiting via API key (Bearer token)', () => {
     async () => {
       // userId 200 — bucket unused by any other test in this file.
       stubApiKeyDb(200);
-    const app = makeAnonApp();
+      const app = makeAnonApp();
 
-      // Phase 1: exhaust user 210's bucket (userId 210 — fresh in this test)
-      stubApiKeyDb(210);
       for (let i = 0; i < _LIMIT; i++) {
-    const res = await request(app)
-      .post('/ai/plan')
-      .send({ prompt: 'test' });
+        const res = await request(app)
+          .post('/ai/plan')
+          .set('Authorization', 'Bearer isk_user200')
+          .send({ prompt: 'test' });
 
-    expect(res.status).toBe(401);
-    expect(res.body.ok).toBe(false);
-  });
+        expect(res.status).not.toBe(429);
+      }
+    },
+    15_000,
+  );
 
-  it('returns 401 from requireApiKeyOrSession when no Authorization header is present', async () => {
-    const app = makeAnonApp();
+  it('blocks Bearer requests with 429 after the rate limit is reached',
+    async () => {
+      const app = makeAnonApp();
 
-      // Phase 1: exhaust user 210's bucket (userId 210 — fresh in this test)
+      // Exhaust user 210's bucket (userId 210 — fresh in this test)
       stubApiKeyDb(210);
       for (let i = 0; i < _LIMIT; i++) {
         await request(app)
