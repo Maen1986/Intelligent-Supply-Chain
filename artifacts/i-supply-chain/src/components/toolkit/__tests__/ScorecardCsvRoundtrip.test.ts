@@ -1540,3 +1540,66 @@ describe('mergeImportRoster — blank template: header-only CSV (Task 425)', () 
     expect(nextSuppliers[0].name).toBe(FULL_SUPPLIER.name);
   });
 });
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Suite — mergeImportRoster ID uniqueness
+
+   Confirms that new suppliers appended via import receive unique IDs when a
+   custom ID factory is injected, and that importing the same new-supplier
+   CSV twice does not create duplicate entries (name-match prevents it).
+══════════════════════════════════════════════════════════════════════════ */
+
+describe('mergeImportRoster — ID uniqueness via injected factory', () => {
+  /** Counter-based factory: each new supplier gets a distinct id. */
+  function makeCounterFactory() {
+    let n = 0;
+    return (_name: string) => `sup-unique-${++n}`;
+  }
+
+  it('assigns unique IDs to multiple new suppliers in one import', () => {
+    const rows: Array<Record<string, string>> = [
+      { 'Supplier Name': 'New Corp A', 'Current Tier': 'Strategic' },
+      { 'Supplier Name': 'New Corp B', 'Current Tier': 'Preferred' },
+      { 'Supplier Name': 'New Corp C', 'Current Tier': 'Transactional' },
+    ];
+
+    const { nextSuppliers } = mergeImportRoster([], rows, true, false, makeCounterFactory());
+
+    const ids = nextSuppliers.map(s => s.id);
+    const uniqueIds = new Set(ids);
+    expect(uniqueIds.size).toBe(ids.length);
+  });
+
+  it('importing the same new-supplier CSV twice produces exactly one roster entry, not two', () => {
+    const rows: Array<Record<string, string>> = [
+      { 'Supplier Name': 'New Corp A', 'Current Tier': 'Strategic' },
+    ];
+
+    // First import — empty roster, adds the new supplier
+    const { nextSuppliers: afterFirst } = mergeImportRoster([], rows, true, false, makeCounterFactory());
+    expect(afterFirst).toHaveLength(1);
+
+    // Second import — roster already has the supplier; overwrite=true replaces rather than duplicates
+    const { nextSuppliers: afterSecond, imported, skipped } = mergeImportRoster(
+      afterFirst, rows, true, false, makeCounterFactory(),
+    );
+    expect(afterSecond).toHaveLength(1);
+    expect(imported).toBe(1);
+    expect(skipped).toBe(0);
+  });
+
+  it('importing with overwrite=false on a re-import skips the duplicate, not adds it', () => {
+    const rows: Array<Record<string, string>> = [
+      { 'Supplier Name': 'New Corp A', 'Current Tier': 'Strategic' },
+    ];
+
+    const { nextSuppliers: afterFirst } = mergeImportRoster([], rows, true, false, makeCounterFactory());
+    const { nextSuppliers: afterSecond, imported, skipped } = mergeImportRoster(
+      afterFirst, rows, false, false, makeCounterFactory(),
+    );
+
+    expect(afterSecond).toHaveLength(1);
+    expect(imported).toBe(0);
+    expect(skipped).toBe(1);
+  });
+});

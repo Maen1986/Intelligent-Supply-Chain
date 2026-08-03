@@ -21,6 +21,7 @@ import {
   calcWeightedScore,
   buildScorecardCsvString,
   parseSubScoresFromRow,
+  mergeImportRoster,
   type Dimension,
   type SubIndicator,
   type SupplierRecord,
@@ -621,11 +622,19 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
       // Snapshot the roster before making any changes so undo can restore it.
       const snapshotBeforeImport: RosterState = { suppliers: roster.suppliers.map(s => ({ ...s })), activeId: roster.activeId };
 
-      const log: string[] = [...errors];
-      const nextSuppliers = [...roster.suppliers];
+      // Collect per-row parse errors for the import log before delegating to the
+      // shared merge function (same function exercised by the round-trip tests).
+      const rowLog: string[] = [...errors];
+      csvRows.forEach((row, ri) => {
+        const rowNum = ri + 2;
+        const name = row['Supplier Name']?.trim();
+        if (!name) { rowLog.push(`Row ${rowNum}: Supplier Name is empty — skipped.`); return; }
+        const { errors: rowErrors } = parseSubScoresFromRow(row);
+        rowErrors.forEach(e => rowLog.push(`Row ${rowNum}: ${e}`));
+      });
 
       // Case-insensitive duplicate detection: "alpha corp" and "Alpha Corp" are the same supplier.
-      const dupNames = csvRows.map(r => r['Supplier Name']?.trim()).filter(n => n && nextSuppliers.some(s => s.name.toLowerCase() === n.toLowerCase()));
+      const dupNames = csvRows.map(r => r['Supplier Name']?.trim()).filter(n => n && roster.suppliers.some(s => s.name.toLowerCase() === n.toLowerCase()));
       let overwrite = false;
       if (dupNames.length > 0) {
         overwrite = window.confirm(
@@ -635,53 +644,22 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
         );
       }
 
-      let imported = 0; let skipped = 0;
-      csvRows.forEach((row, ri) => {
-        const rowNum = ri + 2;
-        const name = row['Supplier Name']?.trim();
-        if (!name) { log.push(`Row ${rowNum}: Supplier Name is empty — skipped.`); return; }
-
-        // Use the shared pure function from @/lib/scorecardCsv to parse sub-scores.
-        const { subScores, errors: rowErrors } = parseSubScoresFromRow(row);
-        rowErrors.forEach(e => log.push(`Row ${rowNum}: ${e}`));
-
-        // Case-insensitive match: treat "alpha corp" and "Alpha Corp" as the same supplier.
-        const existingIdx = nextSuppliers.findIndex(s => s.name.toLowerCase() === name.toLowerCase());
-        if (existingIdx >= 0) {
-          const existingName = nextSuppliers[existingIdx].name;
-          const isCaseVariant = existingName !== name;
-          if (overwrite) {
-            nextSuppliers[existingIdx] = { ...nextSuppliers[existingIdx], tier: row['Current Tier']?.trim() || nextSuppliers[existingIdx].tier, subScores };
-            imported++;
-            if (isCaseVariant) {
-              log.push(
-                isAr
-                  ? `الصف ${rowNum}: '${name}' تطابق مع '${existingName}' الموجود — تم الدمج.`
-                  : `Row ${rowNum}: '${name}' matched existing '${existingName}' — merged.`
-              );
-            }
-          } else {
-            skipped++;
-            if (isCaseVariant) {
-              log.push(
-                isAr
-                  ? `الصف ${rowNum}: '${name}' تطابق مع '${existingName}' الموجود — تم التخطي.`
-                  : `Row ${rowNum}: '${name}' matched existing '${existingName}' — skipped.`
-              );
-            }
-          }
-        } else {
-          nextSuppliers.push({ id: makeId(), name, tier: row['Current Tier']?.trim() || 'Strategic', subScores });
-          imported++;
-        }
-      });
+      // Delegate merge logic to the shared pure function — same implementation the tests exercise.
+      // Pass the component's makeId so new suppliers receive unique random IDs (not deterministic ones).
+      const { nextSuppliers, imported, skipped, log: mergeLog } = mergeImportRoster(
+        roster.suppliers, csvRows, overwrite, isAr, () => makeId(),
+      );
 
       const nextActiveId = nextSuppliers.find(s => s.id === roster.activeId) ? roster.activeId : (nextSuppliers[0]?.id ?? roster.activeId);
       preImportRosterRef.current = snapshotBeforeImport;
       setImportUndoAvailable(true);
       safeSetItem(UNDO_KEY, JSON.stringify(snapshotBeforeImport)); // persist for page refresh (Task #362)
       save({ suppliers: nextSuppliers, activeId: nextActiveId });
-      log.unshift(isAr ? `✓ تم استيراد ${imported} مورّد(ين)${skipped > 0 ? `، تخطّي ${skipped}` : ''}.` : `✓ Imported ${imported} supplier(s).${skipped > 0 ? ` ${skipped} skipped.` : ''}`);
+      const log = [
+        isAr ? `✓ تم استيراد ${imported} مورّد(ين)${skipped > 0 ? `، تخطّي ${skipped}` : ''}.` : `✓ Imported ${imported} supplier(s).${skipped > 0 ? ` ${skipped} skipped.` : ''}`,
+        ...rowLog,
+        ...mergeLog,
+      ];
       setImportLog(log);
     };
     reader.readAsText(file);

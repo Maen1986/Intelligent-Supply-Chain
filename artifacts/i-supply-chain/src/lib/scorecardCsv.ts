@@ -274,11 +274,21 @@ export function parseSubScoresFromRow(row: Record<string, string>): {
  * Extracted so that the round-trip test can call the real implementation
  * directly instead of maintaining a hand-rolled parallel copy (Task 335).
  */
+/**
+ * Default ID generator for new suppliers added during import.
+ * Uses a deterministic prefix + name so tests can use it without mocking;
+ * the production path injects its own `makeId()` to guarantee uniqueness.
+ */
+function defaultImportId(name: string): string {
+  return `sup-imported-${name}`;
+}
+
 export function mergeImportRoster(
   rosterSuppliers: SupplierRecord[],
   csvRows: Array<Record<string, string>>,
   overwrite: boolean,
   isAr = false,
+  makeId: (name: string) => string = defaultImportId,
 ): { nextSuppliers: SupplierRecord[]; imported: number; skipped: number; log: string[] } {
   const nextSuppliers = rosterSuppliers.map(s => ({
     ...s,
@@ -330,7 +340,7 @@ export function mergeImportRoster(
       }
     } else {
       nextSuppliers.push({
-        id: `sup-imported-${name}`,
+        id: makeId(name),
         name,
         tier: row['Current Tier']?.trim() || 'Strategic',
         subScores: incoming,
