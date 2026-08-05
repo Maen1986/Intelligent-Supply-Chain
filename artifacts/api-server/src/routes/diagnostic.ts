@@ -50,13 +50,19 @@ async function generateDiagnosticViaAI(input: DiagnosticInput): Promise<Record<s
 - Saudi Vision 2030, GTPL, IKTVA, GCC Procurement Laws
 - Digital Transformation (ERP, e-Procurement, AI/ML, Digital Twins)
 
-You produce confidential diagnostic assessments that match the rigour and depth of McKinsey, BCG, Kearney, and Accenture supply chain practices. Every finding is grounded in professional frameworks, GCC market data, and real-world benchmarks. You sound like a senior consultant who has audited hundreds of organisations — never generic.
+You produce confidential diagnostic assessments that match the rigour and depth of McKinsey, BCG, Kearney, and Accenture supply chain practices. Every finding is grounded in professional frameworks, GCC market data, and real-world benchmarks. You sound like a senior consultant who has audited hundreds of organisations — never generic. You are also scrupulously honest about the limits of what a short self-assessment can reveal: you never dress up category-level generalities as if they were specific findings about a real organisation.
 
 LANGUAGE INSTRUCTION: Generate ALL text values in ${lang}.`;
 
-  const challengeBlock = input.challenge?.trim()
-    ? `\nCLIENT'S STATED CHALLENGE:\n"${input.challenge.trim()}"\n`
+  const hasChallenge = Boolean(input.challenge?.trim());
+
+  const challengeBlock = hasChallenge
+    ? `\nCLIENT'S STATED CHALLENGE (this is the single most important input you have — every section of the report must directly engage with it, referencing its specific details rather than restating it back generically):\n"${input.challenge!.trim()}"\n`
     : '';
+
+  const specificityInstruction = hasChallenge
+    ? `The client has described their specific challenge above. You MUST ground the executiveSummary, diagnosis, and rootCauses directly in that stated challenge — reference its specific details, not just the industry/region/size category. Findings that ignore the stated challenge and only restate the organisation's category are a failure.`
+    : `The client did NOT describe a specific challenge — only their organisation category (size, region, industry, focus area). Because of this, be transparent about scope: the final sentence of executiveSummary must plainly note that this is a directional, framework-based assessment based on their organisation profile alone, and that sharing specific operational details (or booking a live consultation) would sharpen it into a truly personalised diagnosis. Do not present category-level generalities as if they were specific findings about their organisation.`;
 
   const regionContext: Record<string, string> = {
     'Saudi Arabia': 'Saudi Arabia — subject to GTPL, IKTVA, Vision 2030 localisation targets, Zakat authority requirements',
@@ -73,7 +79,9 @@ OPERATING REGION: ${regionFull}
 INDUSTRY SECTOR: ${input.industry}
 PRIMARY FOCUS AREA: ${input.focusArea}
 ${challengeBlock}
-Using your deep ${input.industry} sector knowledge for the ${input.region} market and applying SCOR, CIPS, APICS, ISO 31000, Lean/Six Sigma, and GCC regulatory frameworks, produce a personalised confidential supply chain diagnostic report.
+${specificityInstruction}
+
+Using your deep ${input.industry} sector knowledge for the ${input.region} market and applying SCOR, CIPS, APICS, ISO 31000, Lean/Six Sigma, and GCC regulatory frameworks, produce a confidential supply chain diagnostic report.
 
 Be specific to the ${input.industry} sector in ${input.region}. Reference industry-specific GCC benchmarks where relevant (e.g. OTIF%, procurement cost as % of revenue, inventory turns, forecast accuracy). Scale all SAR/USD figures to a ${input.businessSize} organisation. Do NOT produce generic supply chain advice — every finding must reflect the specific realities of a ${input.businessSize} ${input.industry} organisation in ${input.region} with a ${input.focusArea} focus.
 
