@@ -287,6 +287,11 @@ export function GovernanceCompliance() {
               </div>
             </Reveal>
             <Reveal>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="px-2.5 py-1 rounded-full text-xs font-extrabold bg-primary text-white">{isAr ? '🛠 أداة تفاعلية' : '🛠 Interactive Tool'}</span>
+                <h3 className="font-bold text-primary">{isAr ? 'قيّم نضج حوكمتك والامتثال' : 'Assess Your Governance & Compliance Maturity'}</h3>
+              </div>
+              <p className="text-sm text-muted-foreground mb-4">{isAr ? 'أجب عن أسئلة موجزة لتحصل على درجة نضج فورية عبر ركائز المنع والكشف والاستجابة والتحسين، مع توصيات مُرتّبة حسب الأولوية.' : 'Answer a short set of questions for an instant maturity score across the Prevent, Detect, Respond, and Improve pillars, with prioritised recommendations.'}</p>
               <MaturityAssessmentTool slug="governance-compliance" isAr={isAr} />
             </Reveal>
           </div>
