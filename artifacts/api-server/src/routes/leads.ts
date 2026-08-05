@@ -66,6 +66,44 @@ router.post('/diagnostic', leadsRateLimiter, async (req, res) => {
   return res.json({ ok: true });
 });
 
+// ── Newsletter signup ─────────────────────────────────────────────────────
+const newsletterLeadSchema = z.object({
+  email: z.string().email().max(200),
+});
+
+/* ── POST /api/leads/newsletter ──
+ * Was previously a decorative form with onSubmit={(e) => e.preventDefault()}
+ * on the Insights page — every submitted email was silently discarded.
+ * This forwards real signups into the same n8n lead pipeline as the
+ * diagnostic tool, tagged submissionType: 'newsletter', so they land
+ * wherever the founder already monitors leads. Same rate limiter, same
+ * best-effort-200 contract as /diagnostic above. */
+router.post('/newsletter', leadsRateLimiter, async (req, res) => {
+  const parsed = newsletterLeadSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ ok: false, error: 'Please enter a valid email address.' });
+  }
+
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  const secret = process.env.N8N_WEBHOOK_SECRET;
+  if (secret) headers['Authorization'] = `Bearer ${secret}`;
+
+  try {
+    const upstream = await fetch(LEAD_WEBHOOK_URL, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ submissionType: 'newsletter', ...parsed.data }),
+    });
+    if (!upstream.ok) {
+      logger.warn({ status: upstream.status }, '[leads] n8n webhook returned non-OK status (newsletter)');
+    }
+  } catch (err) {
+    logger.error({ err }, '[leads] Failed to forward newsletter signup to n8n webhook');
+  }
+
+  return res.json({ ok: true });
+});
+
 /* ── GET /api/leads/diagnostic/rate-limit ──
  * Read-only rate-limit status for the caller's IP; does NOT consume quota.
  * The frontend uses it to keep its retry countdown honest even when the
