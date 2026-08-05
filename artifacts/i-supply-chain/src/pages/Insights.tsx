@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Clock, ChevronRight, BookOpen , ChevronLeft } from 'lucide-react';
 import { useLanguage } from '@/lib/LanguageContext';
 import { articles } from './insightsData';
+import { API_BASE } from '@/lib/apiBase';
 
 function RevealSection({ children, className = '', delay = 0 }: { children: React.ReactNode; className?: string; delay?: number }) {
   return (
@@ -83,6 +84,28 @@ export function Insights() {
   const filtered = filter === 'All' ? articles : articles.filter((a) => a.category === filter);
   const featured = articles.find((a) => a.featured);
   const rest = filtered.filter((a) => !a.featured || filter !== 'All');
+
+  // ── Newsletter signup — was a decorative form that discarded every submission ──
+  const [newsletterEmail, setNewsletterEmail] = useState('');
+  const [subscribeStatus, setSubscribeStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+
+  const handleSubscribe = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newsletterEmail.trim() || subscribeStatus === 'loading') return;
+    setSubscribeStatus('loading');
+    try {
+      const res = await fetch(`${API_BASE}/leads/newsletter`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: newsletterEmail.trim() }),
+      });
+      if (!res.ok) throw new Error('Subscription failed');
+      setSubscribeStatus('success');
+      setNewsletterEmail('');
+    } catch {
+      setSubscribeStatus('error');
+    }
+  };
 
   return (
     <div className="w-full">
@@ -199,16 +222,29 @@ export function Insights() {
           <p className="text-muted-foreground mb-6 max-w-xl mx-auto">
             {isAr ? 'احصل على نشرتنا الشهرية لذكاء سلسلة الإمداد — تحديثات السوق الخليجي والتغيّرات التنظيمية ورؤى المشتريات العملية تصلك إلى بريدك.' : 'Get our monthly supply chain intelligence briefing — GCC market updates, regulatory changes, and practical procurement insights delivered to your inbox.'}
           </p>
-          <form className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto" onSubmit={(e) => e.preventDefault()}>
-            <input
-              type="email"
-              placeholder={isAr ? 'بريدك الإلكتروني المهني' : 'Your work email'}
-              className="flex-1 px-4 py-3 rounded-xl border border-border focus:outline-none focus:ring-2 focus:ring-primary/30 text-sm"
-            />
-            <Button type="submit" className="bg-primary hover:bg-primary/90 text-white font-semibold px-6 shrink-0">
-              {isAr ? 'اشترك' : 'Subscribe'}
-            </Button>
-          </form>
+          {subscribeStatus === 'success' ? (
+            <p className="max-w-md mx-auto px-4 py-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm font-semibold">
+              {isAr ? 'تم الاشتراك بنجاح — شكراً لك!' : "You're subscribed — thank you!"}
+            </p>
+          ) : (
+            <form className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto" onSubmit={handleSubscribe}>
+              <input
+                type="email"
+                required
+                value={newsletterEmail}
+                onChange={(e) => setNewsletterEmail(e.target.value)}
+                disabled={subscribeStatus === 'loading'}
+                placeholder={isAr ? 'بريدك الإلكتروني المهني' : 'Your work email'}
+                className="flex-1 px-4 py-3 rounded-xl border border-border focus:outline-none focus:ring-2 focus:ring-primary/30 text-sm disabled:opacity-60"
+              />
+              <Button type="submit" disabled={subscribeStatus === 'loading'} className="bg-primary hover:bg-primary/90 text-white font-semibold px-6 shrink-0 disabled:opacity-60">
+                {subscribeStatus === 'loading' ? (isAr ? 'جارٍ الإرسال...' : 'Subscribing...') : (isAr ? 'اشترك' : 'Subscribe')}
+              </Button>
+            </form>
+          )}
+          {subscribeStatus === 'error' && (
+            <p className="text-xs text-red-600 mt-3 font-medium">{isAr ? 'تعذّر الاشتراك، يرجى المحاولة مرة أخرى.' : "Something went wrong — please try again."}</p>
+          )}
           <p className="text-xs text-muted-foreground mt-3">{isAr ? 'بلا رسائل مزعجة. يمكنك إلغاء الاشتراك في أي وقت.' : 'No spam. Unsubscribe at any time.'}</p>
         </RevealSection>
       </div>
