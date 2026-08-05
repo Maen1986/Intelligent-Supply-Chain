@@ -4,16 +4,35 @@ import { useLanguage } from '@/lib/LanguageContext';
 import { Link } from 'wouter';
 import { Linkedin, Twitter, Mail, Phone, MapPin, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { API_BASE } from '@/lib/apiBase';
 
 export function Footer() {
   const { t, lang } = useLanguage();
   const ar = lang === 'ar';
   const [email, setEmail] = useState('');
   const [subscribed, setSubscribed] = useState(false);
+  const [subscribing, setSubscribing] = useState(false);
+  const [subscribeError, setSubscribeError] = useState(false);
 
-  const handleSubscribe = (e: React.FormEvent) => {
+  const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (email) { setSubscribed(true); setEmail(''); }
+    if (!email || subscribing) return;
+    setSubscribing(true);
+    setSubscribeError(false);
+    try {
+      const res = await fetch(`${API_BASE}/leads/newsletter`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      if (!res.ok) throw new Error('Subscription failed');
+      setSubscribed(true);
+      setEmail('');
+    } catch {
+      setSubscribeError(true);
+    } finally {
+      setSubscribing(false);
+    }
   };
 
   return (
@@ -114,19 +133,25 @@ export function Footer() {
                   {ar ? '✓ تم اشتراكك — شكراً لك!' : "✓ You're subscribed — thank you!"}
                 </div>
               ) : (
-                <form onSubmit={handleSubscribe} className="flex gap-2">
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder={ar ? 'بريدك الإلكتروني' : 'Your email'}
-                    required
-                    className="flex-1 bg-white/10 border border-white/20 rounded-xl px-3 py-2.5 text-sm text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-accent/50 min-w-0"
-                  />
-                  <Button type="submit" size="sm" className="bg-accent hover:bg-accent/90 text-white px-3 shrink-0">
-                    <Send className="w-4 h-4" />
-                  </Button>
-                </form>
+                <>
+                  <form onSubmit={handleSubscribe} className="flex gap-2">
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder={ar ? 'بريدك الإلكتروني' : 'Your email'}
+                      required
+                      disabled={subscribing}
+                      className="flex-1 bg-white/10 border border-white/20 rounded-xl px-3 py-2.5 text-sm text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-accent/50 min-w-0 disabled:opacity-60"
+                    />
+                    <Button type="submit" size="sm" disabled={subscribing} className="bg-accent hover:bg-accent/90 text-white px-3 shrink-0 disabled:opacity-60">
+                      <Send className="w-4 h-4" />
+                    </Button>
+                  </form>
+                  {subscribeError && (
+                    <p className="text-red-300 text-xs mt-2">{ar ? 'تعذّر الاشتراك، حاول مرة أخرى.' : 'Something went wrong — please try again.'}</p>
+                  )}
+                </>
               )}
             </div>
           </div>
