@@ -3,7 +3,7 @@ import { motion  } from 'framer-motion';
 import { Link } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/lib/LanguageContext';
-import { ChevronRight, TrendingDown, TrendingUp, Clock, Shield, Leaf, Cpu , ChevronLeft } from 'lucide-react';
+import { ChevronRight, TrendingDown, TrendingUp, Clock, Shield, Leaf, Cpu, Info , ChevronLeft } from 'lucide-react';
 
 function RevealSection({ children, className = '', delay = 0 }: { children: React.ReactNode; className?: string; delay?: number }) {
   return (
@@ -29,6 +29,11 @@ const industries = [
   { key: 'Energy', en: 'Energy', ar: 'الطاقة' },
 ];
 
+// ── Representative scenarios, not verified past engagements ────────────────
+// These illustrate how ISC's frameworks apply to realistic GCC supply chain
+// challenges, with outcome ranges grounded in industry benchmarks. They are
+// NOT documented client case studies. As real, verifiable engagements are
+// completed, they will replace these one at a time — see task tracker.
 const cases = [
   {
     id: 1,
@@ -184,17 +189,29 @@ export function CaseStudies() {
         <div className="absolute inset-0 opacity-10"
           style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, rgba(201,168,76,0.4) 0%, transparent 60%), radial-gradient(circle at 80% 20%, rgba(255,255,255,0.1) 0%, transparent 50%)' }} />
         <div className="relative z-10 h-full flex flex-col items-center justify-center text-center px-4">
-          <span className="text-accent font-bold text-sm uppercase tracking-widest mb-3">{ar ? 'نتائج مثبتة' : 'Proven Results'}</span>
-          <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-white mb-3">{ar ? 'دراسات الحالة' : 'Case Studies'}</h1>
+          <span className="text-accent font-bold text-sm uppercase tracking-widest mb-3">{ar ? 'سيناريوهات تطبيقية' : 'Representative Scenarios'}</span>
+          <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-white mb-3">{ar ? 'سيناريوهات تطبيقية للمشاركات' : 'Illustrative Engagement Scenarios'}</h1>
           <p className="text-white/80 text-base md:text-lg max-w-2xl">
             {ar
-              ? 'تحديات حقيقية. نتائج قابلة للقياس. اكتشف كيف ساعدنا المؤسسات على تحويل سلاسل الإمداد لديها عبر دول الخليج وخارجها.'
-              : 'Real challenges. Measurable outcomes. Explore how we have helped organisations transform their supply chains across the GCC and beyond.'}
+              ? 'أمثلة توضيحية لكيفية تطبيق أطر عمل ISC على تحديات واقعية لسلسلة الإمداد في الخليج، بنتائج مبنية على المعايير المرجعية للقطاع.'
+              : 'Illustrative examples of how ISC\'s frameworks apply to realistic GCC supply chain challenges, with outcomes grounded in industry benchmarks.'}
           </p>
         </div>
       </div>
 
       <div className="container mx-auto px-4 py-14 max-w-6xl">
+        {/* Honesty disclaimer — these are illustrative, not verified past engagements */}
+        <RevealSection className="mb-10">
+          <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-2xl px-5 py-4 max-w-3xl mx-auto">
+            <Info className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+            <p className="text-sm text-amber-900 leading-relaxed">
+              {ar
+                ? 'هذه سيناريوهات توضيحية مبنية على منهجية ISC ومعايير القطاع الخليجي المرجعية — وليست مشاركات عملاء موثّقة أو تم التحقّق منها. سنستبدلها تدريجيًا بدراسات حالة حقيقية موثّقة مع اكتمال المشاركات الفعلية.'
+                : "These are illustrative scenarios built on ISC's methodology and GCC industry benchmarks — not documented or verified client engagements. As real engagements are completed, they will replace these one at a time."}
+            </p>
+          </div>
+        </RevealSection>
+
         {/* Filter */}
         <RevealSection className="flex flex-wrap gap-2 mb-12 justify-center">
           {industries.map((ind) => (
@@ -229,7 +246,7 @@ export function CaseStudies() {
                       </span>
                     </div>
                     <div>
-                      <p className="text-xs text-muted-foreground font-medium uppercase tracking-widest mb-1">{ar ? 'العميل' : 'Client'}</p>
+                      <p className="text-xs text-muted-foreground font-medium uppercase tracking-widest mb-1">{ar ? 'نوع المؤسسة' : 'Organisation Type'}</p>
                       <p className="font-bold text-primary text-lg leading-tight">{ar ? c.clientAr : c.client}</p>
                     </div>
                     <div>
