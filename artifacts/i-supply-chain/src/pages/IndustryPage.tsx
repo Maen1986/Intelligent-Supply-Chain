@@ -757,7 +757,7 @@ const industryData: Record<string, IndustryInfo> = {
           "تصميم عمليات مستودع رشيقة: 5S ورسم خرائط تدفّق القيمة وإزالة الهدر (منهجية جائزة شينغو)",
         ],
         flow: ["Network Baseline", "Gravity Model", "Footprint Decision", "WMS Go-Live", "WERC KPI Monitoring"],
-        flowAr: ["خط أساس الشبكة", "النموذج الجاذبي", "قرار البصمة", "إطلاق نظام إدارة المستودعات", "مراقبة مؤشرات WERC"],
+        flowAr: ["خط أساس الشبكة", "النموذج الجاذبي", "قرار النطاق التشغيلي", "إطلاق نظام إدارة المستودعات", "مراقبة مؤشرات WERC"],
         challenges: [
           "Fleet utilisation averaging 58–65% across Saudi 3PLs is significantly below the WERC benchmark of 80–85% — indicating poor route planning, imbalanced load scheduling, and absence of a TMS; closing this gap alone reduces cost-per-pallet by 15–20%.",
           "Manual, paper-based warehouse operations with pick accuracy of 92–95% vs. the WERC WMS-enabled benchmark of 99.5%+ create customer SLA breaches and rework cost — WERC data shows WMS investment has a median payback of 14 months in operations above 50 picks/hour.",
