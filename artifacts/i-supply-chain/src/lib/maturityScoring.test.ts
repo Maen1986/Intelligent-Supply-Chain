@@ -821,6 +821,98 @@ describe('countCoveredSubSegments — 3-part key coverage', () => {
 });
 
 /* ══════════════════════════════════════════════════════════════════════════
+   Weighted per-question scoring + core/bonus partial-credit completion
+   (added after the expert-panel review flagged flat averaging and
+   all-or-nothing completion as real risks once sub-segments grew past ~6
+   questions — see Maturity_Assessment_Expert_Panel_Review.md, findings 1-2)
+══════════════════════════════════════════════════════════════════════════ */
+
+describe('subSegScore — weighted mean via options.weights', () => {
+  it('uses per-question weights instead of a flat average when provided', () => {
+    // (5*3 + 1*1) / (3+1) = 16/4 = 4 -- flat average would have been 3
+    const answers = { '0-0-0': 5, '0-0-1': 1 };
+    const score = subSegScore(answers, 0, 0, 2, { weights: [3, 1], coreCount: 2 });
+    expect(score).toBeCloseTo(4);
+    expect(score).not.toBe(3);
+  });
+
+  it('defaults every question to weight 1.0 (flat mean) when options are omitted', () => {
+    // Preserves the exact old behaviour for every existing call site.
+    const answers = { '0-0-0': 2, '0-0-1': 4 };
+    expect(subSegScore(answers, 0, 0, 2)).toBe(3);
+  });
+});
+
+describe('subSegScore — core/bonus partial-credit completion', () => {
+  it('scores once the core questions are answered, even if trailing bonus questions are skipped', () => {
+    // 5 questions, only the first 3 are core.
+    const answers = { '0-0-0': 4, '0-0-1': 4, '0-0-2': 4 };
+    expect(subSegScore(answers, 0, 0, 5, { coreCount: 3 })).toBe(4);
+  });
+
+  it('still returns null if a core question is missing, even when a bonus question is answered', () => {
+    // q1 (core) missing; q3 (bonus) answered — must not be scoreable.
+    const answers = { '0-0-0': 4, '0-0-2': 4, '0-0-3': 5 };
+    expect(subSegScore(answers, 0, 0, 5, { coreCount: 3 })).toBeNull();
+  });
+
+  it('answered bonus questions refine the score rather than being ignored', () => {
+    const coreOnly = { '0-0-0': 3, '0-0-1': 3, '0-0-2': 3 };
+    const coreAndBonus = { '0-0-0': 3, '0-0-1': 3, '0-0-2': 3, '0-0-3': 5 };
+    expect(subSegScore(coreOnly, 0, 0, 5, { coreCount: 3 })).toBe(3);
+    expect(subSegScore(coreAndBonus, 0, 0, 5, { coreCount: 3 })).toBeCloseTo(3.5);
+  });
+
+  it('regression: an 11-question sub-segment with 6 core questions scores on 10/11 answered (not null)', () => {
+    // This is the exact scenario the expert panel flagged: a respondent who
+    // answers 10 of 11 questions in a deepened sub-segment must not get
+    // zero credit for the whole sub-segment.
+    const answers: Record<string, number> = {};
+    for (let q = 0; q < 10; q++) answers[`0-0-${q}`] = 3; // q10 skipped
+    expect(subSegScore(answers, 0, 0, 11, { coreCount: 6 })).toBe(3);
+  });
+
+  it('with no options, remains fully all-or-nothing (old behaviour, unchanged)', () => {
+    const answers = { '0-0-0': 2 }; // 1 of 2 answered
+    expect(subSegScore(answers, 0, 0, 2)).toBeNull();
+  });
+});
+
+describe('weightedSegScore & countCoveredSubSegments honour coreQuestionCount / per-question weight from real sub-segment data', () => {
+  it('weightedSegScore scores a sub-segment once its core questions are answered', () => {
+    const sub: SubSegmentLike = {
+      questions: Array.from({ length: 5 }, () => ({})),
+      industryWeights: { pharma: 1.0 },
+      coreQuestionCount: 3,
+    };
+    const seg: SegmentLike = { subSegments: [sub] };
+    const answers = { '0-0-0': 4, '0-0-1': 4, '0-0-2': 4 };
+    expect(weightedSegScore(answers, seg, 0, 'pharma')).toBeCloseTo(4.0);
+  });
+
+  it('countCoveredSubSegments counts a sub-segment as covered once its core is answered', () => {
+    const sub: SubSegmentLike = {
+      questions: Array.from({ length: 5 }, () => ({})),
+      industryWeights: {},
+      coreQuestionCount: 3,
+    };
+    const seg: SegmentLike = { subSegments: [sub] };
+    const answers = { '0-0-0': 4, '0-0-1': 4, '0-0-2': 4 };
+    expect(countCoveredSubSegments(answers, [seg])).toBe(1);
+  });
+
+  it('weightedSegScore applies each question\'s own weight, not just the sub-segment industry weight', () => {
+    const sub: SubSegmentLike = {
+      questions: [{ weight: 2 }, { weight: 1 }],
+      industryWeights: { pharma: 1.0 },
+    };
+    const seg: SegmentLike = { subSegments: [sub] };
+    const answers = { '0-0-0': 5, '0-0-1': 1 }; // (5*2+1*1)/3 = 11/3
+    expect(weightedSegScore(answers, seg, 0, 'pharma')).toBeCloseTo(11 / 3);
+  });
+});
+
+/* ══════════════════════════════════════════════════════════════════════════
    Weighted-score fallback — verifies that weighted scoring returns 0
    (triggering flat-score fallback in the UI) when only flat 2-part answers
    exist.  This is the normal state before sub-segment questions are answered.

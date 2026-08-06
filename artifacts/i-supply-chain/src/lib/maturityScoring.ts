@@ -73,13 +73,33 @@ export function overallScore(
 /* ── Sub-segment & industry-weighted scoring ────────────────────────────── */
 
 /**
+ * Minimal shape of a question needed by the weighted scoring engine.
+ * `weight` lets a question count for more or less than 1.0 in its
+ * sub-segment's mean -- defaults to 1.0 (flat) when omitted, which is the
+ * behaviour every sub-segment had before per-question weighting existed.
+ */
+export interface QuestionLike {
+  weight?: number;
+}
+
+/**
  * Minimal shape of a sub-segment needed by the weighted scoring engine.
  * Avoids importing from maturityData.tsx (which is a React module) so this
  * file remains pure and independently testable.
  */
 export interface SubSegmentLike {
-  questions: readonly unknown[];      // only .length is used
+  questions: readonly QuestionLike[];
   industryWeights: Record<string, number>;
+  /**
+   * Number of leading questions (in array order) required for this
+   * sub-segment to be scored at all -- the "core" set. Defaults to
+   * `questions.length` (every question required) when omitted, which is
+   * the original all-or-nothing behaviour. Set this lower than
+   * `questions.length` to mark the remaining trailing questions as
+   * optional "bonus depth": they refine the score when answered but never
+   * block scoring on their own.
+   */
+  coreQuestionCount?: number;
 }
 
 export interface SegmentLike {
@@ -87,34 +107,73 @@ export interface SegmentLike {
 }
 
 /**
- * Compute the mean score for a single sub-segment.
+ * Extract the `{ weights, coreCount }` scoring options implied by a
+ * sub-segment's data. Shared by `weightedSegScore` and
+ * `countCoveredSubSegments` so both honour the same per-question weights
+ * and core/bonus split as `subSegScore`.
+ */
+function subSegOptionsFrom(sub: SubSegmentLike): { weights: readonly number[]; coreCount: number } {
+  return {
+    weights: sub.questions.map(q => q.weight ?? 1.0),
+    coreCount: sub.coreQuestionCount ?? sub.questions.length,
+  };
+}
+
+/**
+ * Compute the score for a single sub-segment.
  *
  * Answer keys follow the 3-part format `"{segIdx}-{subIdx}-{questionIdx}"`,
  * distinct from the legacy 2-part flat-question keys used by `segScore`.
  *
- * Returns `null` if any question in the sub-segment is unanswered (0 or
- * missing), so the caller can exclude incomplete sub-segments from weighted
- * averages without deflating results.
+ * Scoring model:
+ *  - The first `options.coreCount` questions (default: all of them, for
+ *    backward compatibility) are "core" -- every one must be answered or
+ *    the sub-segment returns `null` ("not yet assessed"). This preserves a
+ *    meaningful incomplete state.
+ *  - Once the core is complete, the returned score is the weighted mean of
+ *    every ANSWERED question (core + any answered bonus-depth questions),
+ *    using `options.weights[i]` (default 1.0) as each question's weight.
+ *    Unanswered bonus-depth questions are excluded rather than penalised --
+ *    a respondent who skips optional depth still gets full credit for what
+ *    they did answer, instead of the whole sub-segment nulling out.
  *
  * @param answers       Flat answer map (may contain both 2-part and 3-part keys).
  * @param segIdx        Zero-based segment index.
  * @param subIdx        Zero-based sub-segment index within the segment.
  * @param questionCount Number of questions in this sub-segment.
+ * @param options       Optional per-question weights and core-question count.
  */
 export function subSegScore(
   answers: Record<string, number>,
   segIdx: number,
   subIdx: number,
   questionCount: number,
+  options?: { weights?: readonly number[]; coreCount?: number },
 ): number | null {
   if (questionCount === 0) return null;
+
+  const coreCount = options?.coreCount ?? questionCount;
+  const weights = options?.weights;
+
   const vals = Array.from({ length: questionCount }, (_, q) =>
     answers[`${segIdx}-${subIdx}-${q}`] ?? 0,
   );
-  const filled = vals.filter(v => v > 0);
-  return filled.length === questionCount
-    ? filled.reduce((a, b) => a + b, 0) / questionCount
-    : null;
+
+  // Every core question must be answered, or the sub-segment isn't scored yet.
+  const coreVals = vals.slice(0, Math.min(coreCount, questionCount));
+  if (coreVals.some(v => v === 0)) return null;
+
+  // Weighted mean over every answered question (core + answered bonus depth).
+  let weightedSum = 0;
+  let weightSum = 0;
+  vals.forEach((v, i) => {
+    if (v === 0) return;
+    const w = weights?.[i] ?? 1.0;
+    weightedSum += v * w;
+    weightSum += w;
+  });
+
+  return weightSum === 0 ? null : weightedSum / weightSum;
 }
 
 /**
@@ -144,7 +203,7 @@ export function weightedSegScore(
 
   for (let si = 0; si < subs.length; si++) {
     const sub   = subs[si];
-    const score = subSegScore(answers, segIdx, si, sub.questions.length);
+    const score = subSegScore(answers, segIdx, si, sub.questions.length, subSegOptionsFrom(sub));
     if (score === null) continue;
 
     const weight  = sub.industryWeights[industryId] ?? 1.0;
@@ -199,7 +258,8 @@ export function countCoveredSubSegments(
     const subs = segments[i].subSegments;
     if (!subs) continue;
     for (let si = 0; si < subs.length; si++) {
-      if (subSegScore(answers, i, si, subs[si].questions.length) !== null) {
+      const sub = subs[si];
+      if (subSegScore(answers, i, si, sub.questions.length, subSegOptionsFrom(sub)) !== null) {
         covered++;
       }
     }
