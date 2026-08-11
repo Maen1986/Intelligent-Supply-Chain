@@ -12,6 +12,7 @@ import { db } from '@workspace/db';
 import { submissionsTable } from '@workspace/db';
 import { logger } from '../lib/logger';
 import { OPENAI_MODEL, friendlyAIError } from '../lib/aiConfig';
+import { leadsRateLimiter } from '../lib/rateLimit';
 import { sendEscalationEmail } from './notify';
 
 const router = Router();
@@ -37,7 +38,7 @@ You apply SCOR's five performance attributes: Reliability, Responsiveness, Agili
 You speak with authority, warmth, and commercial precision. No generic advice. No vague platitudes. Every output must be industry-specific, process-specific, region-specific, and maturity-specific.`;
 
 // ── POST /api/consultancy/diagnose ────────────────────────────────────────────
-router.post('/diagnose', async (req, res) => {
+router.post('/diagnose', leadsRateLimiter, async (req, res) => {
   const { industry, subIndustry, challenge, companySize, maturityHint, language } = req.body as {
     industry:      string;
     subIndustry?:  string;
@@ -139,7 +140,7 @@ Rules:
 });
 
 // ── POST /api/consultancy/solution ────────────────────────────────────────────
-router.post('/solution', async (req, res) => {
+router.post('/solution', leadsRateLimiter, async (req, res) => {
   const { industry, subIndustry, challenge, diagnosis, language } = req.body as {
     industry:     string;
     subIndustry?: string;
@@ -237,7 +238,7 @@ Rules:
 });
 
 // ── POST /api/consultancy/refine ──────────────────────────────────────────────
-router.post('/refine', async (req, res) => {
+router.post('/refine', leadsRateLimiter, async (req, res) => {
   const { industry, subIndustry, challenge, previousSolution, feedback, language } = req.body as {
     industry:         string;
     subIndustry?:     string;
