@@ -75,14 +75,18 @@ export function CommandCentreFloat() {
               <span className="text-[#C9A84C] font-bold">{ar ? ' معايير مقارنة، نموذج توفير، مؤشر مخاطر وخطة 90 يوماً.' : ' benchmarks, savings model, risk score & 90-day plan.'}</span>
             </p>
 
-            {/* Pricing + speed badge */}
+            {/* Time-to-complete + pricing badge */}
             <div className="flex items-center gap-1.5 mb-1">
               <Clock className="w-3.5 h-3.5 text-[#C9A84C]" />
-              <span className="text-white/60 text-xs">{ar ? <>جاهز خلال <span className="text-white font-bold">60 ثانية</span></> : <>Ready in <span className="text-white font-bold">60 seconds</span></>}</span>
+              <span className="text-white/60 text-xs">{ar ? <>يستغرق حوالي <span className="text-white font-bold">5-7 دقائق</span> لإكمال التقييم</> : <>Takes about <span className="text-white font-bold">5-7 minutes</span> to complete the assessment</>}</span>
             </div>
-            <div className="flex items-center gap-1.5 mb-4">
+            <div className="flex items-center gap-1.5 mb-1">
               <span className="text-[#C9A84C] text-xs">💰</span>
               <span className="text-white/60 text-xs">{ar ? <>تبدأ من <span className="text-white font-bold">250 ريال / شهرياً</span> · حسب حجم منشأتك</> : <>From <span className="text-white font-bold">SAR 250 / mo</span> · sized to your organisation</>}</span>
+            </div>
+            <div className="flex items-center gap-1.5 mb-4">
+              <span className="text-[#C9A84C] text-xs">🔓</span>
+              <span className="text-white/60 text-xs">{ar ? 'حساب مجاني لإنشاء إحاطتك الكاملة' : 'Free account to generate your full briefing'}</span>
             </div>
 
             {/* CTA */}
