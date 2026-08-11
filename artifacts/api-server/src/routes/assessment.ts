@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { openai } from '@workspace/integrations-openai-ai-server';
 import { OPENAI_MODEL, friendlyAIError } from '../lib/aiConfig';
+import { leadsRateLimiter } from '../lib/rateLimit';
 
 const router = Router();
 
@@ -136,7 +137,7 @@ Rules:
 }
 
 /* POST /api/assessment */
-router.post('/assessment', async (req, res) => {
+router.post('/assessment', leadsRateLimiter, async (req, res) => {
   try {
     const input = req.body as AssessmentInput;
     if (!input.industry || !input.revenueBand || !input.painPoints) {
