@@ -49,7 +49,7 @@ export function AnnouncementBanner() {
                   transition={{ duration: 0.6, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
                 >
                   {ar ? 'مركز قيادة سلسلة الإمداد الذكي الأول في الخليج متاح الآن — ' : "The GCC's only AI Supply Chain Command Centre is live —"}
-                  <span className="text-[#C9A84C] font-bold">{ar ? ' تقرير تنفيذي خلال 60 ثانية — باقات تبدأ من 250 ريال شهرياً.' : ' executive briefing in 60 seconds — plans from SAR 250 / mo.'}</span>
+                  <span className="text-[#C9A84C] font-bold">{ar ? ' إحاطة تنفيذية خلال دقائق — باقات تبدأ من 250 ريال شهرياً.' : ' executive briefing in minutes — plans from SAR 250 / mo.'}</span>
                 </motion.p>
               </div>
             </div>
