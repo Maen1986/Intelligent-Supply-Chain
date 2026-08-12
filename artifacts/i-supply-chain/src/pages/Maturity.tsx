@@ -986,7 +986,7 @@ export function Maturity() {
             </div>
             <div className="flex items-center justify-between pt-3 border-t border-border">
               <p className="text-sm text-muted-foreground">
-                <span className="font-bold text-primary">{selectedSegmentIds.length}</span>
+                <span className="font-bold text-primary">{selectedSegmentIds.filter(id => activeSegments.some(s => s.id === id)).length}</span>
                 {' '}{ar ? 'من' : 'of'}{' '}
                 <span className="font-bold">{activeSegments.length}</span>
                 {' '}{ar ? 'مجالات' : 'segments'}{' · '}
