@@ -1828,10 +1828,10 @@ export const INDUSTRY_MODULES: Segment[] = [
   /* ── MODULE C: Regulatory & Localisation Compliance ─────────────────── */
   {
     id: 'regulatory',
-    title: 'Regulatory & Localisation Compliance',
-    titleAr: 'الامتثال التنظيمي والتوطين',
-    shortTitle: 'Regulatory',
-    shortTitleAr: 'الامتثال التنظيمي',
+    title: 'Regulatory & Localisation Compliance (Saudi Arabia)',
+    titleAr: 'الامتثال التنظيمي والتوطين (المملكة العربية السعودية)',
+    shortTitle: 'Regulatory (KSA)',
+    shortTitleAr: 'الامتثال التنظيمي (السعودية)',
     icon: Scale,
     color: '#1D4ED8',
     benchmarks: { gcc: 2.0, global: 2.5, best: 4.3 },
