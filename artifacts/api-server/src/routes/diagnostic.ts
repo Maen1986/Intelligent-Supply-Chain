@@ -13,6 +13,8 @@ import { Router }            from 'express';
 import { openai }            from '@workspace/integrations-openai-ai-server';
 import { OPENAI_MODEL, friendlyAIError } from '../lib/aiConfig';
 import { leadsRateLimiter }  from '../lib/rateLimit';
+import { db, gccBenchmarksTable } from '@workspace/db';
+import { sql }                from 'drizzle-orm';
 
 const router = Router();
 
@@ -33,6 +35,53 @@ const REVENUE_HINTS: Record<string, string> = {
   'Enterprise':      'SAR 1B+ annual revenue (large enterprise)',
   'Government Entity': 'Government / public sector budget holder',
 };
+
+/**
+ * Canonical GCC-wide KPI benchmarks — same six metrics and same fallback
+ * numbers as useBenchmarks.ts on the client, so the free Diagnostic never
+ * quotes a different "GCC benchmark" for OTIF / inventory turns / procurement
+ * cost / forecast accuracy than what Command Centre and the Maturity
+ * Assessment show for the same metric. Live values are pulled from the same
+ * gcc_benchmarks table Command Centre reads; these constants are only the
+ * safety-net fallback if the DB is unreachable.
+ */
+const KPI_LABELS: Record<string, string> = {
+  otif:        'On-Time-In-Full (OTIF) delivery rate',
+  invTurns:    'Inventory turns (annualised, normalised 0-100 score)',
+  procCycle:   'Procurement cycle time (normalised 0-100 score, higher = faster)',
+  forecastAcc: 'Forecast accuracy',
+  procCost:    'Procurement cost as % of spend under management (normalised 0-100 score, higher = leaner)',
+  perfOrder:   'Perfect order rate',
+};
+const KPI_FALLBACK: Record<string, { median: number; topQ: number }> = {
+  otif:        { median: 88, topQ: 95  },
+  invTurns:    { median: 57, topQ: 100 },
+  procCycle:   { median: 61, topQ: 100 },
+  forecastAcc: { median: 73, topQ: 88  },
+  procCost:    { median: 56, topQ: 100 },
+  perfOrder:   { median: 87, topQ: 96  },
+};
+
+async function fetchKpiGrounding(): Promise<string> {
+  const merged: Record<string, { median: number; topQ: number }> = { ...KPI_FALLBACK };
+  try {
+    const rows = await db
+      .select()
+      .from(gccBenchmarksTable)
+      .where(sql`category = 'kpi' AND industry IS NULL`);
+    for (const r of rows) {
+      const d = r.data as { median?: number; topQ?: number };
+      if (typeof d.median === 'number' && typeof d.topQ === 'number') {
+        merged[r.itemId] = { median: d.median, topQ: d.topQ };
+      }
+    }
+  } catch {
+    // DB unreachable — proceed with the same fallback figures Command Centre uses
+  }
+  return Object.entries(merged)
+    .map(([id, v]) => `  • ${KPI_LABELS[id] ?? id}: GCC median ${v.median}, top quartile ${v.topQ} (0-100 normalised score, same scale as the Command Centre Benchmark Radar)`)
+    .join('\n');
+}
 
 async function generateDiagnosticViaAI(input: DiagnosticInput): Promise<Record<string, unknown>> {
   const lang = input.language === 'ar' ? 'Arabic' : 'English';
@@ -72,6 +121,8 @@ LANGUAGE INSTRUCTION: Generate ALL text values in ${lang}.`;
   };
   const regionFull = regionContext[input.region] ?? input.region;
 
+  const kpiGrounding = await fetchKpiGrounding();
+
   const userPrompt = `A prospective client has submitted a 5-step supply chain self-assessment:
 
 ORGANISATION TYPE: ${input.businessSize} (${revHint})
@@ -84,6 +135,10 @@ ${specificityInstruction}
 Using your deep ${input.industry} sector knowledge for the ${input.region} market and applying SCOR, CIPS, APICS, ISO 31000, Lean/Six Sigma, and GCC regulatory frameworks, produce a confidential supply chain diagnostic report.
 
 Be specific to the ${input.industry} sector in ${input.region}. Reference industry-specific GCC benchmarks where relevant (e.g. OTIF%, procurement cost as % of revenue, inventory turns, forecast accuracy). Scale all SAR/USD figures to a ${input.businessSize} organisation. Do NOT produce generic supply chain advice — every finding must reflect the specific realities of a ${input.businessSize} ${input.industry} organisation in ${input.region} with a ${input.focusArea} focus.
+
+AUTHORITATIVE GCC BENCHMARK DATA — this is ISC's own curated benchmark dataset, the same data shown live in the Command Centre Benchmark Radar and used across the Maturity Assessment. If your KPI list includes any of these six universal metrics, you MUST use these exact figures rather than estimating your own — a client must never see a different "GCC benchmark" for the same metric in different ISC tools:
+${kpiGrounding}
+For any KPI outside this list (e.g. contract cycle time, ESG audit coverage, digital adoption rate), apply your own ${input.industry}-specific expertise as normal.
 
 Return ONLY valid JSON (no markdown, no code fences) matching this EXACT structure:
 {
@@ -155,7 +210,8 @@ Rules:
 - roadmap phases: exactly 4 actions each
 - regionalAlignment: include only if there is genuinely relevant regulatory/policy content for this region; set to empty string "" otherwise
 - Every item must be ${input.industry}-specific and ${input.focusArea}-focused — no generic supply chain filler
-- All SAR figures calibrated to a ${input.businessSize} (${revHint})`;
+- All SAR figures calibrated to a ${input.businessSize} (${revHint})
+- Where a kpis entry corresponds to one of the six universal metrics in AUTHORITATIVE GCC BENCHMARK DATA above, the number cited MUST match that data exactly — do not round, adjust, or invent a different figure`;
 
   const response = await openai.chat.completions.create({
     model:           OPENAI_MODEL,
