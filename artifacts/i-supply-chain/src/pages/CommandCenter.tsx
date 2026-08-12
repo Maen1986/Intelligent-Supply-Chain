@@ -260,6 +260,26 @@ function allSubKeys(): string[] {
   return MATURITY_DOMAINS_EX.flatMap(d => d.subs.map(s => `${d.id}__${s.id}`));
 }
 
+/**
+ * Maps each of this widget's 8 self-rating domains to the id(s) of the real
+ * Maturity Assessment segment(s) that cover the same ground (see
+ * pages/maturityData.tsx CORE_SEGMENTS). 'operations' folds together three
+ * real segments (demand, inventory, logistics) since this widget doesn't
+ * split them. 'Organisation & Talent' and 'Quality Management & CI' have no
+ * counterpart here and are intentionally left out — those two stay
+ * manually-rated even after an import.
+ */
+const CC_DOMAIN_TO_SEGMENTS: Record<MaturityDomainId, string[]> = {
+  strategy:    ['strategy'],
+  procurement: ['procurement'],
+  clm:         ['contracts'],
+  srm:         ['suppliers'],
+  operations:  ['demand', 'inventory', 'logistics'],
+  risk:        ['risk'],
+  digital:     ['digital'],
+  esg:         ['sustainability'],
+};
+
 /** Compute per-domain average from flat sub-ratings */
 function domainAverages(ratings: Record<string, number>): Record<string, number> {
   return Object.fromEntries(
@@ -1938,6 +1958,42 @@ function BriefingTab({ lang }: { lang: Lang }) {
     };
   });
   const [expandedDomains, setExpandedDomains] = useState<Record<string, boolean>>(Object.fromEntries(MATURITY_DOMAINS_EX.map(d => [d.id, d.id === 'strategy'])));
+
+  /* ── Real Maturity Assessment snapshot: offer to import instead of manual self-rating ──
+     Logged-in users who have completed the real Maturity Assessment get an
+     "Import my results" affordance that pre-fills these sliders from their
+     actual segment scores, instead of guessing on a 1-5 scale from memory. */
+  const [latestSnapshot, setLatestSnapshot] = useState<{ id: number; takenAt: string; segmentScores: { id: string; score: number }[] } | null>(null);
+  const [importedAt, setImportedAt] = useState<string | null>(null);
+  useEffect(() => {
+    if (!user) return;
+    fetch(`${API_BASE}/maturity/snapshots`, { credentials: 'include' })
+      .then(r => r.json())
+      .then((data: { ok: boolean; snapshots?: { id: number; takenAt: string; segmentScores: { id: string; score: number }[] }[] }) => {
+        if (!data.ok || !data.snapshots || data.snapshots.length === 0) return;
+        const newest = [...data.snapshots].sort((a, b) => new Date(b.takenAt).getTime() - new Date(a.takenAt).getTime())[0];
+        setLatestSnapshot(newest);
+      })
+      .catch(() => { /* best-effort — manual sliders remain available */ });
+  }, [user]);
+
+  const importMaturityFromAssessment = () => {
+    if (!latestSnapshot) return;
+    const scoreById = Object.fromEntries(latestSnapshot.segmentScores.map(s => [s.id, s.score]));
+    setMaturityRatings(prev => {
+      const next = { ...prev };
+      (Object.keys(CC_DOMAIN_TO_SEGMENTS) as MaturityDomainId[]).forEach(domainId => {
+        const segIds = CC_DOMAIN_TO_SEGMENTS[domainId];
+        const vals = segIds.map(id => scoreById[id]).filter((v): v is number => typeof v === 'number' && v > 0);
+        if (vals.length === 0) return; // this domain has no real-assessment coverage — leave as-is
+        const rounded = Math.max(1, Math.min(5, Math.round(vals.reduce((a, b) => a + b, 0) / vals.length)));
+        const domain = MATURITY_DOMAINS_EX.find(d => d.id === domainId);
+        domain?.subs.forEach(sub => { next[`${domainId}__${sub.id}`] = rounded; });
+      });
+      return next;
+    });
+    setImportedAt(latestSnapshot.takenAt);
+  };
   const toggleDomain = (id: string) => setExpandedDomains(prev => ({ ...prev, [id]: !prev[id] }));
   // True when the component mounted with a non-empty saved draft so we can
   // show the "restored" banner. Dismissed independently of clearDraft.
@@ -2978,6 +3034,32 @@ function BriefingTab({ lang }: { lang: Lang }) {
                 </h4>
                 <span className="text-xs text-muted-foreground">{ar ? 'انقر لتوسيع كل مجال' : 'Click domain to expand'}</span>
               </div>
+
+              {/* Import real Maturity Assessment scores instead of manual self-rating */}
+              {user && latestSnapshot && (
+                <div className="flex items-center justify-between gap-3 rounded-xl border border-accent/30 bg-accent/5 px-4 py-3">
+                  <div className="flex items-start gap-2 text-xs text-[#082C6B] leading-snug">
+                    <Sparkles className="w-4 h-4 text-accent shrink-0 mt-0.5" />
+                    <span>
+                      {importedAt
+                        ? (ar
+                            ? `تم الاستيراد من تقييم النضج الفعلي بتاريخ ${new Date(importedAt).toLocaleDateString('ar')}. المجالان "التنظيم والمواهب" و"إدارة الجودة" غير مغطاة هنا وتبقى تقديرية.`
+                            : `Imported from your real Maturity Assessment, taken ${new Date(importedAt).toLocaleDateString()}. "Organisation & Talent" and "Quality" aren't covered here and stay manual.`)
+                        : (ar
+                            ? 'لديكم تقييم نضج فعلي محفوظ — استوردوا نتائجه الحقيقية بدلاً من التقدير اليدوي أدناه.'
+                            : 'You have a saved real Maturity Assessment — import its actual scores instead of estimating manually below.')}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={importMaturityFromAssessment}
+                    className="shrink-0 text-xs font-bold px-3 py-1.5 rounded-lg bg-accent text-white hover:bg-accent/90 transition-colors"
+                  >
+                    {importedAt ? (ar ? 'إعادة الاستيراد' : 'Re-import') : (ar ? 'استيراد نتائجي' : 'Import my results')}
+                  </button>
+                </div>
+              )}
+
               {MATURITY_DOMAINS_EX.map(domain => {
                 const domainVals = domain.subs.map(s => maturityRatings[`${domain.id}__${s.id}`] ?? 2);
                 const domainAvg = Math.round((domainVals.reduce((a, b) => a + b, 0) / domainVals.length) * 10) / 10;
