@@ -8004,7 +8004,7 @@ export const LOGISTICS_SUB_SEGMENTS: SubSegmentData[] = [
 ];
 export const ORG_TALENT_SUB_SEGMENTS: SubSegmentData[] = [
 
-  /* ── 10-0  Structure & Span of Control ───────────────────────────────── */
+  /* ── 11-0  Structure & Span of Control ──────────────────────────── */
   {
     id: 'org-structure',
     title: 'Structure & Span of Control',
@@ -8055,10 +8055,154 @@ export const ORG_TALENT_SUB_SEGMENTS: SubSegmentData[] = [
           'CPO/CSCO شريك استراتيجي رئيسي في اللجنة التنفيذية؛ ومرونة سلسلة الإمداد وESG والتحول الرقمي بنود على أجندة مجلس الإدارة؛ وسلسلة الإمداد معترَف بها كمصدر للميزة التنافسية.',
         ],
       },
+      {
+        q: 'How rigorously are spans of control reviewed and rebalanced against actual workload and role complexity, rather than left static once set?',
+        qAr: 'ما مدى صرامة مراجعة وإعادة موازنة نطاقات الإشراف مقابل عبء العمل الفعلي وتعقيد الدور، بدلاً من تركها ثابتة بعد تحديدها؟',
+        levels: [
+          'Spans of control are never reviewed after the organisation chart is first drawn. Some supervisors carry two or three times the workload of others, and no one tracks or corrects the imbalance.',
+          'Span imbalances are noticed occasionally when a manager complains of being overloaded, but there is no periodic review — adjustments happen only when the pressure becomes visible to senior leadership.',
+          'Spans of control are reviewed on a defined cycle (e.g., annually) against headcount and workload data, and imbalances beyond an agreed tolerance are flagged for correction.',
+          'Span reviews are triggered both by the periodic cycle and by material headcount or workload changes (restructuring, growth, attrition spikes), and rebalancing decisions are documented and actioned within a defined timeframe.',
+          'Span-of-control analytics (workload, complexity-weighted headcount, decision volume) continuously inform structure decisions, and the organisation can demonstrate that span rebalancing has measurably improved manager capacity and decision speed.',
+        ],
+        levelsAr: [
+          'نطاقات الإشراف لا تُراجَع أبداً بعد رسم الهيكل التنظيمي الأول. بعض المشرفين يتحملون ضعفي أو ثلاثة أضعاف عبء عمل غيرهم، ولا أحد يتتبّع الخلل أو يصححه.',
+          'اختلالات النطاق تُلاحَظ أحياناً عندما يشتكي مدير من الحمل الزائد، لكن لا توجد مراجعة دورية — التعديلات تحدث فقط عندما يصبح الضغط ملحوظاً للقيادة العليا.',
+          'نطاقات الإشراف تُراجَع وفق دورة محددة (سنوياً مثلاً) مقابل بيانات القوى العاملة وعبء العمل، والاختلالات التي تتجاوز حداً مقبولاً تُرصَد للتصحيح.',
+          'مراجعات النطاق تُستحث بالدورة الدورية وبالتغيرات الجوهرية في القوى العاملة أو عبء العمل (إعادة الهيكلة، النمو، ارتفاع معدل الاستقالة)، وقرارات إعادة التوازن موثّقة ومُنفَّذة ضمن إطار زمني محدد.',
+          'تحليلات نطاق الإشراف (عبء العمل، القوى العاملة المرجَّحة بالتعقيد، حجم القرارات) تُغذّي قرارات الهيكل باستمرار، والمؤسسة قادرة على إثبات أن إعادة توازن النطاق حسّنت قدرة المدراء وسرعة القرار بشكل ملموس.',
+        ],
+      },
+      {
+        q: 'How current, unambiguous, and free of overlap or gaps are documented role/job descriptions across the supply chain organisation?',
+        qAr: 'ما مدى حداثة الوصف الوظيفي الموثّق لأدوار سلسلة الإمداد ووضوحه وخلوّه من التداخل أو الفجوات؟',
+        levels: [
+          'Job descriptions, where they exist at all, are years out of date and bear little resemblance to what people actually do. Overlaps and gaps between roles are discovered only when something falls through the cracks.',
+          'Job descriptions exist for most positions but are written generically, are rarely updated, and are not checked against neighbouring roles for overlap or gaps.',
+          'Job descriptions are documented for all supply chain roles, reviewed on a defined cycle, and a boundary check against adjacent roles is performed when a role is created or materially changed.',
+          'Job descriptions are actively maintained, explicitly cross-referenced to avoid duplication or accountability gaps between roles, and are used as the reference point in onboarding, performance reviews, and dispute resolution over "whose job is this."',
+          'Role clarity is measured directly (e.g., through employee survey or role-conflict incident tracking), gaps or overlaps surfaced by that data trigger a structural review, and the organisation can show a measurable downward trend in role-boundary disputes over time.',
+        ],
+        levelsAr: [
+          'الوصف الوظيفي، حيثما وُجد أصلاً، متقادم منذ سنوات ولا يمت بصلة لما يفعله الأشخاص فعلياً. التداخلات والفجوات بين الأدوار تُكتشَف فقط عندما تسقط مهمة بين الأدوار.',
+          'الوصف الوظيفي موجود لمعظم المناصب لكنه مكتوب بصيغة عامة ونادراً ما يُحدَّث ولا يُراجَع مقابل الأدوار المجاورة للتحقق من التداخل أو الفجوات.',
+          'الوصف الوظيفي موثّق لجميع أدوار سلسلة الإمداد ويُراجَع وفق دورة محددة، ويُجرى فحص حدود مقابل الأدوار المجاورة عند إنشاء دور جديد أو تعديله جوهرياً.',
+          'الوصف الوظيفي يُصان بفعالية ويُربَط صراحةً لتجنّب الازدواجية أو فجوات المساءلة بين الأدوار، ويُستخدَم كمرجع في التوجيه ومراجعات الأداء وحل الخلافات حول "مسؤولية من هذه".',
+          'وضوح الأدوار يُقاس مباشرةً (عبر استبيان الموظفين أو تتبّع حوادث تعارض الأدوار)، والفجوات أو التداخلات التي تكشفها البيانات تُطلق مراجعة هيكلية، والمؤسسة قادرة على إظهار اتجاه تنازلي ملموس في نزاعات حدود الأدوار عبر الزمن.',
+        ],
+      },
+      {
+        q: 'When a new hire joins or an employee transfers internally, how quickly and clearly do they understand their actual reporting line and the practical boundaries of their role?',
+        qAr: 'عند انضمام موظف جديد أو انتقاله داخلياً، ما مدى سرعة ووضوح فهمه لخط تقاريره الفعلي والحدود العملية لدوره؟',
+        levels: [
+          'New joiners and transfers are typically confused for weeks about who they report to and what falls inside versus outside their remit — this is discovered informally, if at all.',
+          'A reporting line is stated at hiring, but role boundaries are explained inconsistently by whichever manager happens to onboard the person, leading to visible early confusion.',
+          'A structured onboarding step confirms reporting line, immediate team, and role scope in writing, and the new joiner\'s manager is accountable for walking through it in the first week.',
+          'Reporting-line and role-scope clarity is formally verified against the org chart/HRIS record within the first two weeks; any discrepancy between the documented structure and day-to-day reality is corrected at the structural level, not just explained verbally.',
+          'Reporting-line and role clarity for new joiners/transfers is tracked as an onboarding-quality metric, consistently scores well, and feeds back into job-description and structure refinement when patterns of confusion emerge.',
+        ],
+        levelsAr: [
+          'الموظفون الجدد والمنقولون عادةً ما يبقون في حيرة لأسابيع بشأن التبعية الإدارية وما يقع ضمن مسؤولياتهم أو خارجها — يُكتشَف ذلك بشكل غير رسمي إن حدث أصلاً.',
+          'خط التقارير يُذكَر عند التعيين، لكن حدود الدور تُشرَح بشكل غير متسق حسب المدير الذي يتولى التوجيه، مما يؤدي إلى ارتباك مبكر ملحوظ.',
+          'خطوة توجيه منظمة تؤكد خط التقارير والفريق المباشر ونطاق الدور كتابياً، ومدير الموظف الجديد مسؤول عن شرحها خلال الأسبوع الأول.',
+          'وضوح خط التقارير ونطاق الدور يُتحقَّق منه رسمياً مقابل سجل الهيكل التنظيمي/نظام معلومات الموارد البشرية خلال أسبوعين من الانضمام؛ وأي تباين بين الهيكل الموثق والواقع اليومي يُصحَّح على المستوى الهيكلي، وليس بالشرح الشفهي فقط.',
+          'وضوح خط التقارير والدور للموظفين الجدد/المنقولين يُتابَع كمقياس جودة توجيه، ويُسجّل نتائج جيدة باستمرار، ويُغذّي تحسين الوصف الوظيفي والهيكل عند ظهور أنماط ارتباك.',
+        ],
+      },
+      {
+        q: 'How effectively do the day-to-day handoffs between supply chain sub-functions (e.g., procurement to logistics, planning to warehousing) actually work at the working level?',
+        qAr: 'ما مدى فعالية عمليات التسليم اليومية بين الوظائف الفرعية لسلسلة الإمداد (كالمشتريات إلى اللوجستيات، أو التخطيط إلى المستودعات) على المستوى التنفيذي؟',
+        levels: [
+          'Handoffs between sub-functions happen informally and inconsistently — work is frequently dropped, duplicated, or delayed because no one owns the interface between teams.',
+          'Some working-level relationships compensate for the lack of formal handoff design, but this depends entirely on individual goodwill and breaks down when key people are absent or leave.',
+          'Defined handoff points between major sub-functions (what is passed, in what format, by when) are documented for the highest-volume or highest-risk processes.',
+          'Handoff performance is measured (on-time handoff rate, rework caused by incomplete handoff) and reviewed regularly by the relevant sub-function leads, with corrective action taken on recurring failure points.',
+          'Cross-functional handoffs are designed end-to-end with explicit service levels, are monitored through a shared dashboard, and breakdowns trigger a joint root-cause review rather than one-sided blame.',
+        ],
+        levelsAr: [
+          'التسليم بين الوظائف الفرعية يحدث بشكل غير رسمي وغير متسق — العمل يُفقَد أو يُكرَّر أو يتأخر باستمرار لأن لا أحد يملك واجهة التنسيق بين الفرق.',
+          'بعض العلاقات على المستوى التنفيذي تعوّض غياب تصميم التسليم الرسمي، لكن هذا يعتمد كلياً على النوايا الحسنة الفردية وينهار عند غياب الأشخاص الرئيسيين أو مغادرتهم.',
+          'نقاط تسليم محددة بين الوظائف الفرعية الرئيسية (ماذا يُسلَّم، بأي صيغة، وبحلول متى) موثّقة للعمليات الأعلى حجماً أو مخاطرة.',
+          'أداء التسليم يُقاس (معدل التسليم في الوقت المحدد، إعادة العمل الناتجة عن تسليم غير مكتمل) ويُراجَع دورياً من قادة الوظائف الفرعية المعنية، مع اتخاذ إجراءات تصحيحية على نقاط الفشل المتكررة.',
+          'عمليات التسليم متعددة الوظائف مُصمَّمة من طرف إلى طرف بمستويات خدمة صريحة، وتُراقَب عبر لوحة معلومات مشتركة، وأي انهيار يُطلق مراجعة سبب جذري مشتركة بدلاً من إلقاء اللوم الأحادي.',
+        ],
+      },
+      {
+        q: 'How well does the organisation structure itself prevent excessively wide spans of control from turning approval and review steps into rubber-stamping?',
+        qAr: 'ما مدى نجاح الهيكل التنظيمي نفسه في منع اتساع نطاقات الإشراف المفرط من تحويل خطوات الاعتماد والمراجعة إلى مجرد توقيع شكلي؟',
+        levels: [
+          'Some approvers are responsible for so many direct reports or such high transaction volume that meaningful review is impossible — approvals are effectively automatic regardless of what is submitted.',
+          'Wide-span risk is recognised informally for one or two roles, but no threshold defines what span is "too wide" for a control-bearing position, and no corrective action is taken.',
+          'A defined maximum span of control applies to roles carrying approval or review authority, based on the realistic time needed to exercise genuine oversight.',
+          'Approval quality (not just volume) is spot-checked for roles near the span ceiling, and spans are adjusted downward where evidence shows review has become superficial.',
+          'Span-of-control limits for control-bearing roles are periodically stress-tested against actual approval turnaround times and error/exception rates, and findings feed directly into structure redesign.',
+        ],
+        levelsAr: [
+          'بعض المُعتمِدين مسؤولون عن عدد كبير جداً من المرؤوسين المباشرين أو حجم معاملات مرتفع لدرجة تستحيل معها المراجعة الفعلية — الاعتمادات تتم تلقائياً عملياً بصرف النظر عن المُقدَّم.',
+          'مخاطر اتساع النطاق المفرط معروفة بشكل غير رسمي لدور أو دورين، لكن لا يوجد حد يُعرّف النطاق "الواسع جداً" للأدوار الحاملة لصلاحية ضبط، ولا يُتخذ إجراء تصحيحي.',
+          'حد أقصى محدد لنطاق الإشراف يُطبَّق على الأدوار التي تحمل صلاحية اعتماد أو مراجعة، استناداً إلى الوقت الواقعي اللازم لممارسة رقابة حقيقية.',
+          'جودة الاعتماد (لا الحجم فقط) تُدقَّق عشوائياً للأدوار القريبة من سقف النطاق، والنطاقات تُخفَّض حيثما تُظهر الأدلة أن المراجعة أصبحت سطحية.',
+          'حدود نطاق الإشراف للأدوار الحاملة لصلاحية الضبط تُختبَر دورياً تحت الضغط مقابل أوقات إنجاز الاعتماد الفعلية ومعدلات الأخطاء/الاستثناءات، والنتائج تُغذّي إعادة تصميم الهيكل مباشرةً.',
+        ],
+      },
+      {
+        q: 'How well is the organisation structure maintained as a live, system-of-record dataset (HRIS-driven org chart) rather than a manually updated slide or document?',
+        qAr: 'ما مدى صيانة الهيكل التنظيمي كمجموعة بيانات حية في نظام السجل (هيكل تنظيمي مُشتَق من نظام الموارد البشرية) بدلاً من شريحة عرض أو وثيقة تُحدَّث يدوياً؟',
+        levels: [
+          'The org chart lives in a single slide or spreadsheet, updated irregularly by one person — most staff cannot say with confidence whether it reflects reality.',
+          'An org-chart tool exists, but updates lag behind actual moves, hires, and departures by weeks or months, and there is no owner accountable for keeping it current.',
+          'The org chart is maintained in the HRIS as the single source of truth, updated within a defined SLA of any structural change, and accessible to relevant stakeholders.',
+          'The HRIS-driven org chart automatically feeds downstream systems (directory, access provisioning, span-of-control reporting), removing manual re-entry and reducing the risk of stale data propagating.',
+          'Organisation structure data is a live analytics input — span, layers, and role data are queried in real time to support workforce planning and structure-scenario modelling, not just displayed as a static chart.',
+        ],
+        levelsAr: [
+          'الهيكل التنظيمي موجود في شريحة عرض أو جدول بيانات واحد، يُحدَّث بشكل غير منتظم من شخص واحد — معظم الموظفين لا يستطيعون التأكيد بثقة أنه يعكس الواقع.',
+          'توجد أداة للهيكل التنظيمي، لكن التحديثات تتأخر عن التنقلات والتعيينات والمغادرات الفعلية بأسابيع أو أشهر، ولا يوجد مالك مسؤول عن إبقائها محدّثة.',
+          'الهيكل التنظيمي يُصان في نظام معلومات الموارد البشرية كمصدر وحيد للحقيقة، ويُحدَّث ضمن اتفاقية مستوى خدمة محددة لأي تغيير هيكلي، ومتاح لأصحاب المصلحة المعنيين.',
+          'الهيكل التنظيمي المُشتَق من نظام الموارد البشرية يُغذّي تلقائياً الأنظمة التابعة (الدليل، تزويد الصلاحيات، تقارير نطاق الإشراف)، مما يُلغي إعادة الإدخال اليدوي ويقلّل مخاطر انتشار بيانات قديمة.',
+          'بيانات الهيكل التنظيمي مُدخَل تحليلي حي — بيانات النطاق والطبقات والأدوار تُستعلَم آنياً لدعم تخطيط القوى العاملة ونمذجة سيناريوهات الهيكل، لا مجرد عرضها كمخطط ثابت.',
+        ],
+      },
+      {
+        q: 'How well is financial and operational approval authority mapped consistently to the organisation structure — so that who can approve what is derived from role and level, not informal precedent?',
+        qAr: 'ما مدى اتساق ربط صلاحية الاعتماد المالي والتشغيلي بالهيكل التنظيمي — بحيث تُشتَق صلاحية الاعتماد من الدور والدرجة لا من سوابق غير رسمية؟',
+        levels: [
+          'Approval authority is not tied to the organisation structure at all — who can approve what is a matter of informal precedent ("he\'s always signed these") rather than a documented rule.',
+          'A delegation-of-authority document exists in principle, but it is not consistently cross-checked against the actual organisation structure, so gaps (approvers who left, roles with no assigned authority) go unnoticed.',
+          'Approval authority is formally mapped to defined roles and grades in the organisation structure, and the mapping is reviewed whenever the structure changes materially.',
+          'The approval-authority-to-structure mapping is enforced in the relevant workflow/ERP system, so a person cannot approve outside their role\'s authorised limit regardless of who they know.',
+          'Authority mapping is periodically audited against actual structure and transaction data to confirm no orphaned, excessive, or informally expanded approval rights exist, with findings reported to a governance body.',
+        ],
+        levelsAr: [
+          'صلاحية الاعتماد المالي والتشغيلي غير مرتبطة بالهيكل التنظيمي إطلاقاً — من يستطيع اعتماد ماذا مسألة سابقة غير رسمية ("هو دائماً من يوقّع هذه") بدلاً من قاعدة موثّقة.',
+          'وثيقة تفويض صلاحيات موجودة من حيث المبدأ، لكنها لا تُقارَن باستمرار مع الهيكل التنظيمي الفعلي، فتمر فجوات (معتمدون غادروا، أدوار دون صلاحية مُسندة) دون ملاحظة.',
+          'صلاحية الاعتماد مُربَطة رسمياً بالأدوار والدرجات المحددة في الهيكل التنظيمي، ويُراجَع الربط كلما تغيّر الهيكل جوهرياً.',
+          'ربط صلاحية الاعتماد بالهيكل يُنفَّذ إلزامياً في نظام سير العمل/تخطيط موارد المؤسسة المعني، بحيث لا يستطيع أي شخص الاعتماد خارج الحد المخوَّل لدوره بصرف النظر عن معارفه.',
+          'ربط الصلاحيات يُدقَّق دورياً مقابل الهيكل والبيانات الفعلية للمعاملات للتأكد من عدم وجود حقوق اعتماد يتيمة أو مفرطة أو موسَّعة بشكل غير رسمي، والنتائج تُرفَع إلى جهة حوكمة.',
+        ],
+      },
+      {
+        q: 'How well does the organisation structure withstand the sudden vacancy of a key role — is coverage genuinely planned, or does the structure only work when everyone is present?',
+        qAr: 'ما مدى صمود الهيكل التنظيمي أمام شغور مفاجئ لدور رئيسي — هل التغطية مُخطَّطة فعلياً، أم أن الهيكل يعمل فقط عند حضور الجميع؟',
+        levels: [
+          'The structure has no built-in resilience — when a key role becomes vacant unexpectedly, the surrounding team has no defined coverage plan and the work simply stalls.',
+          'Coverage happens informally through whoever has spare capacity, but this is never planned in advance and the quality of coverage is inconsistent.',
+          'Each critical role has a designated backup or coverage arrangement documented as part of the organisation design, even if the backup has not been tested in practice.',
+          'Coverage arrangements for critical roles are periodically exercised (e.g., planned absence, job shadowing) so the backup has demonstrated, not just documented, capability.',
+          'Structural resiliency is formally assessed across the organisation (which roles have no viable backup, which teams are single-point-of-failure dependent) and closing those gaps is an active, tracked priority.',
+        ],
+        levelsAr: [
+          'الهيكل لا يحتوي على مرونة مدمجة — عند شغور دور رئيسي فجأة، لا تملك الفرق المحيطة خطة تغطية محددة، والعمل يتوقف ببساطة.',
+          'التغطية تحدث بشكل غير رسمي حسب من لديه طاقة فائضة، لكن هذا لا يُخطَّط له مسبقاً أبداً وجودة التغطية غير متسقة.',
+          'كل دور حرج لديه ترتيب بديل أو تغطية مُعيَّن وموثّق كجزء من التصميم التنظيمي، حتى لو لم يُختبَر البديل عملياً.',
+          'ترتيبات التغطية للأدوار الحرجة تُمارَس دورياً (كالغياب المخطط أو المرافقة الوظيفية) بحيث يُظهر البديل قدرة مُثبَتة لا موثّقة فقط.',
+          'المرونة الهيكلية تُقيَّم رسمياً عبر المؤسسة (أي الأدوار دون بديل قابل للتطبيق، أي الفرق تعتمد على نقطة فشل واحدة) وسد تلك الفجوات أولوية فعّالة ومتابَعة.',
+        ],
+      },
     ],
   },
 
-  /* ── 10-1  Competency Framework ──────────────────────────────────────── */
+  /* ── 11-1  Competency Framework ──────────────────────────── */
   {
     id: 'org-competency',
     title: 'Competency Framework',
@@ -8097,10 +8241,172 @@ export const ORG_TALENT_SUB_SEGMENTS: SubSegmentData[] = [
           'إطار كفاءات سلسلة إمداد بمستوى الأفضل في الفئة مواءَم مع معايير CIPS/APICS — يشمل صراحةً الأخلاقيات وسلطة التعاقد والامتثال القانوني — يُحدَّث سنويًا؛ والكفاءات الرقمية والاستدامة تتطوّر مع احتياجات العمل؛ والإطار يُوجّه قرارات المواهب عبر دورة الحياة الكاملة.',
         ],
       },
+      {
+        q: 'How clearly is ownership of the supply chain competency framework assigned, and how directly is the framework\'s content kept aligned to shifts in business and functional strategy?',
+        qAr: 'ما مدى وضوح إسناد ملكية إطار كفاءات سلسلة الإمداد، وما مدى ارتباط محتواه المباشر بتحولات استراتيجية الأعمال والوظيفة؟',
+        levels: [
+          'No one owns the competency framework. If it exists at all, it was built once by an external consultant or a since-departed HR contact and has not been touched since.',
+          'A framework owner is nominally assigned (usually HR), but updates happen only when someone happens to raise an issue, and the content bears no visible link to current business priorities.',
+          'A named owner (jointly HR and supply chain leadership) is accountable for the framework, and it is reviewed on a defined cycle to confirm it still reflects current role requirements.',
+          'Framework review is explicitly triggered by strategic shifts (new technology adoption, market expansion, service-model change), not just the calendar, and updates are approved jointly by supply chain and HR leadership.',
+          'The competency framework is treated as a strategic asset — its content is benchmarked against evolving industry standards (CIPS/APICS updates, emerging digital/sustainability skill demands) and changes are proactively planned ahead of business need, not reactively.',
+        ],
+        levelsAr: [
+          'لا أحد يملك إطار الكفاءات. إن وُجد أصلاً، فقد بُني مرة واحدة من استشاري خارجي أو موظف موارد بشرية غادر منذ ذلك الحين ولم يُمَس منذ ذلك الوقت.',
+          'مالك للإطار مُعيَّن اسمياً (عادةً الموارد البشرية)، لكن التحديثات تحدث فقط عندما يُثير أحدهم مشكلة، والمحتوى لا يظهر أي ارتباط بأولويات الأعمال الحالية.',
+          'مالك مُسمّى (الموارد البشرية وقيادة سلسلة الإمداد معاً) مسؤول عن الإطار، ويُراجَع وفق دورة محددة للتأكد من أنه لا يزال يعكس متطلبات الأدوار الحالية.',
+          'مراجعة الإطار تُستحث صراحةً بالتحولات الاستراتيجية (تبنّي تقنية جديدة، توسع في السوق، تغيّر نموذج الخدمة)، لا بالتقويم فقط، والتحديثات تُعتمَد بشكل مشترك من قيادة سلسلة الإمداد والموارد البشرية.',
+          'إطار الكفاءات يُعامَل كأصل استراتيجي — محتواه يُقارَن معيارياً بالمعايير الصناعية المتطورة (تحديثات CIPS/APICS ومتطلبات المهارات الرقمية والاستدامة الناشئة) والتغييرات تُخطَّط استباقياً قبل حاجة الأعمال، لا كرد فعل.',
+        ],
+      },
+      {
+        q: 'How rigorously are individual employees actually assessed against the competency framework, as opposed to the framework existing only as a reference document?',
+        qAr: 'ما مدى صرامة تقييم الموظفين الأفراد فعلياً مقابل إطار الكفاءات، بدلاً من أن يبقى الإطار مجرد وثيقة مرجعية؟',
+        levels: [
+          'Individuals are never formally assessed against the competency framework. Any sense of someone\'s strengths or gaps is purely anecdotal.',
+          'Self-assessment against the framework happens occasionally, but there is no manager validation and results are not consolidated or acted upon.',
+          'A structured assessment (self plus manager rating) against the competency framework is conducted at least annually for all supply chain staff, with results recorded.',
+          'Assessment results are calibrated across managers (to control for rating inflation or leniency bias) and are consolidated into a function-wide gap analysis that informs the L&D plan.',
+          'Competency assessment uses multiple evidence sources (manager rating, peer/360 input, demonstrated work output, certification status) beyond self-report, and gap trends are tracked over time to prove the framework is closing real skill gaps.',
+        ],
+        levelsAr: [
+          'الأفراد لا يُقيَّمون رسمياً أبداً مقابل إطار الكفاءات. أي تصوّر عن نقاط قوة أو فجوات شخص ما ظرفي بحت.',
+          'التقييم الذاتي مقابل الإطار يحدث أحياناً، لكن دون تحقق من المدير ودون تجميع النتائج أو التصرف بناءً عليها.',
+          'تقييم منظم (تقييم ذاتي وتقييم المدير) مقابل إطار الكفاءات يُجرى سنوياً على الأقل لجميع موظفي سلسلة الإمداد، والنتائج تُسجَّل.',
+          'نتائج التقييم تُعايَر عبر المدراء (للتحكم في تضخم التقييم أو التساهل)، وتُجمَّع في تحليل فجوات على مستوى الوظيفة يُغذّي خطة التعلّم والتطوير.',
+          'تقييم الكفاءات يستخدم مصادر أدلة متعددة (تقييم المدير، مدخلات الأقران/360 درجة، مخرجات العمل المُثبَتة، حالة الاعتماد المهني) وليس التقرير الذاتي فقط، واتجاهات الفجوات تُتابَع عبر الزمن لإثبات أن الإطار يُغلق فجوات المهارات الحقيقية.',
+        ],
+      },
+      {
+        q: 'How specifically are competency profiles differentiated by role family and seniority level, rather than a single generic profile applied across very different jobs?',
+        qAr: 'ما مدى دقة تمايز ملفات الكفاءات حسب عائلة الأدوار ومستوى الأقدمية، بدلاً من ملف عام واحد يُطبَّق على وظائف مختلفة جداً؟',
+        levels: [
+          'A single generic competency list is applied to every supply chain role regardless of whether the person is a junior buyer, a category manager, or a planner.',
+          'Some informal distinction is made between "junior" and "senior" expectations, but there is no documented, role-family-specific competency profile.',
+          'Distinct competency profiles are documented for the major role families (e.g., procurement, planning, logistics, warehousing) and for at least junior/mid/senior levels within each.',
+          'Role-family profiles are validated against actual job content (task analysis or role-holder input), kept current as roles evolve, and used consistently in recruitment and assessment for that family.',
+          'Competency profiles are granular enough to distinguish between closely related roles, are benchmarked against external role-family standards (CIPS/APICS role maps), and are refreshed whenever a role family materially changes.',
+        ],
+        levelsAr: [
+          'قائمة كفاءات عامة واحدة تُطبَّق على كل دور في سلسلة الإمداد بصرف النظر عمّا إذا كان الشخص مشترياً مبتدئاً أو مدير فئة أو مخططاً.',
+          'يوجد تمييز غير رسمي بين توقعات "المبتدئ" و"الأول"، لكن لا يوجد ملف كفاءات موثّق خاص بعائلة الأدوار.',
+          'ملفات كفاءات مميزة موثّقة لعائلات الأدوار الرئيسية (كالمشتريات والتخطيط واللوجستيات والمستودعات) ولمستويات مبتدئ/متوسط/أول على الأقل ضمن كل عائلة.',
+          'ملفات عائلات الأدوار تُتحقَّق منها مقابل محتوى العمل الفعلي (تحليل المهام أو مدخلات شاغلي الأدوار)، وتُبقى محدَّثة مع تطور الأدوار، وتُستخدَم باتساق في التعيين والتقييم لتلك العائلة.',
+          'ملفات الكفاءات دقيقة بما يكفي للتمييز بين الأدوار المتقاربة، وتُقارَن معيارياً بمعايير عائلات الأدوار الخارجية (خرائط أدوار CIPS/APICS)، وتُحدَّث كلما تغيّرت عائلة الأدوار جوهرياً.',
+        ],
+      },
+      {
+        q: 'How consistently is the competency framework actually used at the point of hiring decisions and performance reviews, versus existing as a document no one references in practice?',
+        qAr: 'ما مدى اتساق استخدام إطار الكفاءات فعلياً عند قرارات التوظيف ومراجعات الأداء، بدلاً من أن يبقى وثيقة لا يرجع إليها أحد عملياً؟',
+        levels: [
+          'Hiring interviews and performance reviews make no reference to the competency framework — decisions are based on gut feel and generic conversation.',
+          'Some managers reference the framework informally when they remember to, but there is no structured tool (interview scorecard, review template) that operationalises it.',
+          'Structured interview scorecards and performance review templates are explicitly built around the competency framework and are used for supply chain hiring and reviews.',
+          'Use of the framework-based tools is monitored for completion and consistency across managers, and hiring/review decisions are expected to reference specific competency evidence, not general impressions.',
+          'Framework-based hiring and review data is analysed to validate that competency ratings predict actual on-the-job performance, and the framework/tools are refined based on that evidence.',
+        ],
+        levelsAr: [
+          'مقابلات التوظيف ومراجعات الأداء لا تُشير إطلاقاً إلى إطار الكفاءات — القرارات تُبنى على الحدس والمحادثة العامة.',
+          'بعض المدراء يُشيرون إلى الإطار بشكل غير رسمي عندما يتذكرون، لكن لا توجد أداة منظمة (بطاقة تقييم مقابلة، قالب مراجعة) تُفعّله عملياً.',
+          'بطاقات تقييم مقابلات منظمة وقوالب مراجعة أداء مبنية صراحةً حول إطار الكفاءات وتُستخدَم في توظيف ومراجعات سلسلة الإمداد.',
+          'استخدام الأدوات المبنية على الإطار يُراقَب من حيث الاكتمال والاتساق عبر المدراء، وقرارات التوظيف/المراجعة يُتوقَّع أن تستند إلى أدلة كفاءة محددة لا انطباعات عامة.',
+          'بيانات التوظيف والمراجعة المبنية على الإطار تُحلَّل للتحقق من أن تقييمات الكفاءة تتنبأ فعلياً بالأداء الوظيفي، والإطار/الأدوات تُحسَّن استناداً إلى تلك الأدلة.',
+        ],
+      },
+      {
+        q: 'How consistently do individual development plans (IDPs) actually get created from identified competency gaps and get tracked to completion, rather than sitting unused after the assessment conversation?',
+        qAr: 'ما مدى اتساق إنشاء خطط التطوير الفردية فعلياً من فجوات الكفاءة المُحدَّدة ومتابعتها حتى الإنجاز، بدلاً من إهمالها بعد محادثة التقييم؟',
+        levels: [
+          'Competency gaps identified in an assessment, if any assessment happens at all, are never translated into a written individual development plan.',
+          'IDPs are created for some employees following an assessment, but they are generic, not tied to the specific competency gaps identified, and are rarely revisited.',
+          'An IDP tied to specific competency gaps is created for every assessed employee, with defined development actions and target dates.',
+          'IDP progress is tracked at a defined cadence (e.g., quarterly check-ins), completion rates are reported to leadership, and stalled IDPs are escalated.',
+          'IDP completion and its effect on subsequent competency ratings is analysed to confirm development actions actually close gaps, and the IDP process itself is refined based on what proves effective.',
+        ],
+        levelsAr: [
+          'فجوات الكفاءة المُحدَّدة في التقييم، إن حدث أي تقييم أصلاً، لا تُترجَم أبداً إلى خطة تطوير فردية مكتوبة.',
+          'خطط تطوير فردية تُنشأ لبعض الموظفين بعد التقييم، لكنها عامة وغير مرتبطة بفجوات الكفاءة المحددة، ونادراً ما تُراجَع لاحقاً.',
+          'خطة تطوير فردية مرتبطة بفجوات كفاءة محددة تُنشأ لكل موظف مُقيَّم، بإجراءات تطوير وتواريخ مستهدفة محددة.',
+          'تقدّم خطط التطوير الفردية يُتابَع وفق إيقاع محدد (كمراجعات فصلية)، ومعدلات الإنجاز تُرفَع للقيادة، والخطط المتعثرة تُصعَّد.',
+          'إنجاز خطط التطوير الفردية وأثرها على تقييمات الكفاءة اللاحقة يُحلَّل للتحقق من أن إجراءات التطوير تُغلق الفجوات فعلياً، وعملية الخطة نفسها تُحسَّن استناداً إلى ما يثبت فعاليته.',
+        ],
+      },
+      {
+        q: 'How well controlled is competency rating consistency across different managers — is there a calibration mechanism to catch systematic leniency, harshness, or bias, or is each manager\'s rating taken at face value?',
+        qAr: 'ما مدى ضبط اتساق تقييم الكفاءات عبر المدراء المختلفين — هل توجد آلية معايرة لرصد التساهل أو القسوة أو التحيز المنهجي، أم تُقبَل تقييمات كل مدير كما هي؟',
+        levels: [
+          'Competency ratings are accepted exactly as each manager submits them, with no cross-check. Some managers are known informally to rate everyone highly and others harshly, and this is never corrected.',
+          'Rating disparities between managers are occasionally noticed in passing conversation, but there is no formal calibration session or mechanism to address them.',
+          'A calibration session brings relevant managers together to compare and adjust ratings against common evidence before competency results are finalised.',
+          'Calibration is a mandatory, documented step before ratings are finalised, with a defined escalation path when managers cannot agree, and outlier rating patterns are tracked by manager over time.',
+          'Rating calibration data is analysed statistically across cycles to identify and address systematic bias (by manager, department, or demographic pattern), and calibration effectiveness itself is periodically reviewed.',
+        ],
+        levelsAr: [
+          'تقييمات الكفاءة تُقبَل كما يقدّمها كل مدير دون أي تدقيق مقارن. بعض المدراء معروفون بشكل غير رسمي بتقييم الجميع بدرجات عالية وآخرون بقسوة، ولا يُصحَّح ذلك أبداً.',
+          'تفاوتات التقييم بين المدراء تُلاحَظ أحياناً في محادثة عابرة، لكن لا توجد جلسة معايرة رسمية أو آلية لمعالجتها.',
+          'جلسة معايرة تجمع المدراء المعنيين لمقارنة وتعديل التقييمات مقابل أدلة مشتركة قبل تثبيت نتائج الكفاءة.',
+          'المعايرة خطوة إلزامية وموثّقة قبل تثبيت التقييمات، مع مسار تصعيد محدد عند عدم اتفاق المدراء، وأنماط التقييم الشاذة تُتابَع حسب المدير عبر الزمن.',
+          'بيانات معايرة التقييم تُحلَّل إحصائياً عبر الدورات لتحديد ومعالجة التحيز النظامي (حسب المدير أو القسم أو النمط الديموغرافي)، وفعالية المعايرة نفسها تُراجَع دورياً.',
+        ],
+      },
+      {
+        q: 'How much of competency tracking — assessment records, gap analysis, certification status — runs through an automated skills-management system rather than spreadsheets maintained by hand?',
+        qAr: 'ما مدى إدارة تتبّع الكفاءات — سجلات التقييم وتحليل الفجوات وحالة الاعتماد — عبر نظام إدارة مهارات آلي بدلاً من جداول بيانات تُصان يدوياً؟',
+        levels: [
+          'Competency data lives in scattered spreadsheets maintained inconsistently by different managers. There is no single, reliable picture of organisational skills.',
+          'A central spreadsheet or basic tool consolidates competency data, but updates are manual, infrequent, and prone to becoming stale.',
+          'A dedicated skills-management or competency module (standalone or within the HRIS) holds assessment results, gap analysis, and certification status in one system.',
+          'The competency system integrates with the L&D/LMS platform so that identified gaps automatically suggest or trigger relevant training, closing the loop without manual handoff.',
+          'The competency data platform supports real-time organisational skills-matrix reporting (searchable by skill, role, location) and automated alerts when critical-skill coverage drops below a defined threshold.',
+        ],
+        levelsAr: [
+          'بيانات الكفاءات موجودة في جداول بيانات مبعثرة يصونها مدراء مختلفون بشكل غير متسق. لا توجد صورة مركزية وموثوقة لمهارات المؤسسة.',
+          'جدول بيانات مركزي أو أداة أساسية تُجمّع بيانات الكفاءات، لكن التحديثات يدوية ونادرة وعرضة للتقادم.',
+          'وحدة إدارة مهارات أو كفاءات مخصصة (مستقلة أو ضمن نظام الموارد البشرية) تحتفظ بنتائج التقييم وتحليل الفجوات وحالة الاعتماد في نظام واحد.',
+          'نظام الكفاءات يتكامل مع منصة التعلّم والتطوير بحيث تقترح الفجوات المُحدَّدة أو تُطلق تلقائياً تدريباً ذا صلة، مما يُغلق الحلقة دون تسليم يدوي.',
+          'منصة بيانات الكفاءات تدعم تقارير مصفوفة مهارات تنظيمية آنية (قابلة للبحث حسب المهارة والدور والموقع) وتنبيهات آلية عند انخفاض تغطية المهارات الحرجة دون حد محدد.',
+        ],
+      },
+      {
+        q: 'How rigorously does the competency framework enforce mandatory professional certification or ethics-standard compliance for roles that legally or contractually require it — as opposed to certification being merely encouraged?',
+        qAr: 'ما مدى صرامة فرض إطار الكفاءات للاعتماد المهني الإلزامي أو الامتثال لمعايير الأخلاقيات للأدوار التي تتطلبه قانونياً أو تعاقدياً — بخلاف كون الاعتماد مجرد أمر مُشجَّع؟',
+        levels: [
+          'There is no distinction between roles that legally/contractually require professional certification (e.g., customs, safety-critical logistics roles) and those that do not — certification is treated as a nice-to-have across the board.',
+          'Certification requirements for specific regulated roles are known informally but are not tracked systematically, so gaps in mandatory compliance can go undetected.',
+          'Roles with mandatory certification or ethics-standard requirements are explicitly flagged in the competency framework, and certification status is tracked for those roles.',
+          'Certification compliance for mandatory roles is monitored proactively with renewal reminders, and a person cannot be placed or remain in a mandatory-certification role without current, valid certification.',
+          'Certification compliance is audited periodically against the regulatory/contractual requirement, non-compliance triggers immediate remediation (training, role reassignment), and the audit trail would withstand external regulatory review.',
+        ],
+        levelsAr: [
+          'لا يوجد تمييز بين الأدوار التي تتطلب قانونياً/تعاقدياً اعتماداً مهنياً (كالجمارك أو أدوار اللوجستيات الحرجة للسلامة) وتلك التي لا تتطلب ذلك — الاعتماد يُعامَل كميزة إضافية على نطاق واسع.',
+          'متطلبات الاعتماد للأدوار المنظَّمة المحددة معروفة بشكل غير رسمي لكنها لا تُتابَع منهجياً، فتمر فجوات الامتثال الإلزامي دون اكتشاف.',
+          'الأدوار ذات متطلبات الاعتماد الإلزامي أو معايير الأخلاقيات تُوسَم صراحةً في إطار الكفاءات، وحالة الاعتماد تُتابَع لتلك الأدوار.',
+          'الامتثال للاعتماد للأدوار الإلزامية يُراقَب استباقياً بتذكيرات التجديد، ولا يمكن تعيين أو إبقاء شخص في دور يتطلب اعتماداً إلزامياً دون اعتماد صالح وحالي.',
+          'الامتثال للاعتماد يُدقَّق دورياً مقابل المتطلب التنظيمي/التعاقدي، وعدم الامتثال يُطلق معالجة فورية (تدريب أو إعادة تعيين دور)، ومسار التدقيق يصمد أمام مراجعة تنظيمية خارجية.',
+        ],
+      },
+      {
+        q: 'How well does the organisation know where a critical competency exists in only one or two people — and how deliberately is that concentration risk being reduced?',
+        qAr: 'ما مدى معرفة المؤسسة بالمواضع التي تتركّز فيها كفاءة حرجة في شخص أو شخصين فقط — وما مدى تعمّد تقليل مخاطر ذلك التركّز؟',
+        levels: [
+          'No one has ever mapped which critical competencies exist in only one or two people. If that person leaves, the gap is discovered only after the fact.',
+          'Single-point-of-failure competency risk is recognised anecdotally for a few well-known cases, but there is no systematic mapping or mitigation plan.',
+          'A competency-concentration analysis identifies which critical skills are held by very few people, and a basic mitigation plan (cross-training, hiring) exists for the highest-risk cases.',
+          'Competency-concentration risk is reviewed on a defined cycle alongside workforce planning, and mitigation actions are tracked to completion, not just identified.',
+          'Competency redundancy is a tracked organisational KPI (e.g., minimum of two capable people per critical skill), and the organisation can demonstrate that concentration risk has measurably reduced over time.',
+        ],
+        levelsAr: [
+          'لم يُخطِّط أحد أبداً لمعرفة أي الكفاءات الحرجة موجودة لدى شخص أو شخصين فقط. إذا غادر ذلك الشخص، تُكتشَف الفجوة بعد وقوعها فقط.',
+          'مخاطر تركّز الكفاءة في نقطة فشل واحدة معروفة بشكل عرَضي لبضع حالات مشهورة، لكن لا يوجد رسم خرائط منهجي أو خطة تخفيف.',
+          'تحليل تركّز الكفاءات يُحدّد أي المهارات الحرجة يحملها عدد قليل جداً من الأشخاص، وخطة تخفيف أساسية (تدريب متبادل، توظيف) موجودة لأعلى الحالات مخاطرة.',
+          'مخاطر تركّز الكفاءات تُراجَع وفق دورة محددة إلى جانب تخطيط القوى العاملة، وإجراءات التخفيف تُتابَع حتى الإنجاز لا مجرد تحديدها.',
+          'تكرار الكفاءات مؤشر أداء تنظيمي متابَع (كحد أدنى شخصين قادرين لكل مهارة حرجة)، والمؤسسة قادرة على إثبات أن مخاطر التركّز انخفضت بشكل ملموس عبر الزمن.',
+        ],
+      },
     ],
   },
 
-  /* ── 10-2  Learning & Development ───────────────────────────────────── */
+  /* ── 11-2  Learning & Development ──────────────────────────── */
   {
     id: 'org-learning',
     title: 'Learning & Development',
@@ -8139,10 +8445,172 @@ export const ORG_TALENT_SUB_SEGMENTS: SubSegmentData[] = [
           'أكاديمية تعلّم سلسلة إمداد تقدّم منهجًا منتقى مواءَمًا لمسارات الوظائف؛ ومنصات التعلّم الرقمي تُقدّم محتوى مُخصَّصًا؛ وعائد استثمار التدريب مقيس؛ وبرامج تسريع أفضل المواهب واعتمادات CIPS/APICS ممولة.',
         ],
       },
+      {
+        q: 'How deliberately is L&D investment prioritised against identified business risk and skill gaps, rather than allocated as an equal, generic amount per head regardless of need?',
+        qAr: 'ما مدى تعمّد ترتيب أولويات استثمار التعلّم والتطوير مقابل مخاطر الأعمال وفجوات المهارات المحددة، بدلاً من تخصيصه كمبلغ ثابت وعام لكل فرد بصرف النظر عن الحاجة؟',
+        levels: [
+          'There is no defined L&D budget for supply chain. Training spend, when it happens, is whatever is left over or approved ad hoc with no link to identified need.',
+          'A training budget exists but is allocated as a flat amount per employee or department, without reference to which skill gaps or business risks matter most.',
+          'L&D budget allocation is informed by the competency gap analysis and prioritised toward the roles and skills with the greatest identified need.',
+          'L&D investment is explicitly linked to business risk (e.g., critical-skill shortages, upcoming technology rollouts) and is co-approved by supply chain leadership and finance as part of the annual planning cycle.',
+          'L&D investment is tracked for return (capability improvement, retention impact, performance uplift) and reallocated dynamically toward the highest-value interventions, benchmarked against GCC peer investment levels.',
+        ],
+        levelsAr: [
+          'لا توجد ميزانية محددة للتعلّم والتطوير في سلسلة الإمداد. إنفاق التدريب، حين يحدث، هو ما تبقى أو يُعتمَد بشكل ظرفي دون ارتباط بحاجة محددة.',
+          'توجد ميزانية تدريب لكنها تُخصَّص كمبلغ ثابت لكل موظف أو قسم، دون الرجوع إلى أي فجوات مهارات أو مخاطر أعمال هي الأهم.',
+          'تخصيص ميزانية التعلّم والتطوير يستند إلى تحليل فجوة الكفاءات ويُعطى أولوية للأدوار والمهارات ذات الحاجة الأعلى المحددة.',
+          'استثمار التعلّم والتطوير مرتبط صراحةً بمخاطر الأعمال (كنقص المهارات الحرجة أو طرح تقنيات قادمة) ويُعتمَد بشكل مشترك من قيادة سلسلة الإمداد والمالية كجزء من دورة التخطيط السنوية.',
+          'عائد استثمار التعلّم والتطوير يُتابَع (تحسّن القدرات، أثر الاحتفاظ، رفع الأداء) ويُعاد تخصيصه ديناميكياً نحو أعلى التدخلات قيمة، ويُقارَن معيارياً بمستويات استثمار نظراء الخليج.',
+        ],
+      },
+      {
+        q: 'How structured is the organisation\'s approach to sponsoring and incentivising professional certification (CIPS, APICS/ASCM, SHRM or equivalent) for supply chain staff?',
+        qAr: 'ما مدى منهجية نهج المؤسسة في رعاية الاعتماد المهني (CIPS، APICS/ASCM، SHRM أو ما يعادلها) لموظفي سلسلة الإمداد والتحفيز عليه؟',
+        levels: [
+          'Professional certification is entirely a personal choice — the organisation neither sponsors, tracks, nor incentivises it in any way.',
+          'Certification sponsorship happens occasionally on an individual, case-by-case basis when someone specifically requests it, with no defined policy or target.',
+          'A defined certification sponsorship policy exists (which roles are eligible, what is funded) and certification uptake is tracked across the supply chain function.',
+          'Certification completion is linked to career progression pathways (e.g., certain grades require or strongly favour certification) and pass rates/uptake are reported as a workforce-development KPI.',
+          'Certification strategy is benchmarked against GCC/global peer organisations, targets a defined percentage of the workforce holding relevant credentials, and demonstrably correlates with measured performance or promotion outcomes.',
+        ],
+        levelsAr: [
+          'الاعتماد المهني خيار شخصي بحت — المؤسسة لا تموّله أو تتابعه أو تُحفّز عليه بأي شكل.',
+          'رعاية الاعتماد تحدث أحياناً على أساس فردي عندما يطلبها أحدهم تحديداً، دون سياسة أو مستهدف محدد.',
+          'سياسة رعاية اعتماد محددة قائمة (أي الأدوار مؤهلة، وما المُموَّل) واستقطاب الاعتماد يُتابَع عبر وظيفة سلسلة الإمداد.',
+          'إتمام الاعتماد مرتبط بمسارات التطور الوظيفي (كأن تتطلب درجات معينة الاعتماد أو تُفضّله بقوة)، ومعدلات النجاح/الاستقطاب تُرفَع كمؤشر تطوير قوى عاملة.',
+          'استراتيجية الاعتماد تُقارَن معيارياً بنظراء الخليج/العالم، وتستهدف نسبة محددة من القوى العاملة تحمل شهادات ذات صلة، وتترابط بشكل قابل للإثبات مع نتائج الأداء أو الترقية المقيسة.',
+        ],
+      },
+      {
+        q: 'How effectively is a digital learning platform (LMS) deployed to make relevant, curated content accessible to supply chain staff wherever and whenever they need it?',
+        qAr: 'ما مدى فعالية نشر منصة تعلّم رقمية لإتاحة محتوى منتقى وذي صلة لموظفي سلسلة الإمداد أينما وحيثما احتاجوه؟',
+        levels: [
+          'No digital learning platform exists. All training is delivered in person, at fixed times, with no self-paced or remote option.',
+          'An LMS exists but supply chain-specific content is sparse or generic, and adoption is low because staff are not actively directed to use it.',
+          'The LMS hosts a defined library of supply chain-relevant content (technical, compliance, leadership) mapped to the competency framework, with usage tracked.',
+          'LMS content is curated and recommended based on individual competency gaps, is accessible on mobile for field/warehouse-based staff, and completion feeds into the development record.',
+          'The digital learning platform uses adaptive or personalised learning paths, engagement and completion data are analysed to continuously improve content relevance, and usage is benchmarked as a leading indicator of capability growth.',
+        ],
+        levelsAr: [
+          'لا توجد منصة تعلّم رقمية. كل التدريب يُقدَّم حضورياً في أوقات ثابتة، دون خيار ذاتي الوتيرة أو عن بُعد.',
+          'توجد منصة تعلّم إلكتروني لكن المحتوى الخاص بسلسلة الإمداد محدود أو عام، والتبنّي منخفض لأن الموظفين لا يُوجَّهون بفعالية لاستخدامها.',
+          'منصة التعلّم الإلكتروني تستضيف مكتبة محددة من المحتوى ذي الصلة بسلسلة الإمداد (تقني، امتثال، قيادي) مربوطة بإطار الكفاءات، والاستخدام مُتابَع.',
+          'محتوى المنصة يُنتقى ويُوصى به استناداً إلى فجوات الكفاءة الفردية، ومتاح على الجوال للموظفين الميدانيين/في المستودعات، والإنجاز يُغذّي سجل التطوير.',
+          'منصة التعلّم الرقمي تستخدم مسارات تعلّم تكيفية أو مُخصَّصة، وبيانات المشاركة والإنجاز تُحلَّل لتحسين ملاءمة المحتوى باستمرار، والاستخدام يُقارَن معيارياً كمؤشر رائد لنمو القدرات.',
+        ],
+      },
+      {
+        q: 'How disciplined is day-to-day tracking of individual and team training completion, and how directly are managers held accountable for their team completing required training?',
+        qAr: 'ما مدى انضباط التتبّع اليومي لإنجاز التدريب الفردي والجماعي، وما مدى مساءلة المدراء المباشرة عن إكمال فرقهم للتدريب المطلوب؟',
+        levels: [
+          'No one tracks whether individuals actually complete assigned or required training. Attendance sheets, if kept, are filed and never reviewed.',
+          'Completion is tracked in a basic way (a spreadsheet or LMS report exists), but no one reviews it regularly, and overdue training carries no consequence.',
+          'Training completion is tracked per individual against required courses, with overdue items flagged to the individual and their manager on a defined cadence.',
+          'Manager dashboards show team-level training completion status, completion rates are part of manager performance conversations, and persistent non-completion is escalated.',
+          'Training completion is a tracked organisational KPI reported to leadership, correlates positively with performance/safety outcomes where analysed, and near-100% completion for mandatory training is consistently achieved and sustained.',
+        ],
+        levelsAr: [
+          'لا أحد يتتبّع ما إذا كان الأفراد قد أكملوا فعلياً التدريب المُسنَد أو الإلزامي. سجلات الحضور، إن حُفظت، تُؤرشَف ولا تُراجَع أبداً.',
+          'الإنجاز يُتابَع بشكل أساسي (يوجد جدول بيانات أو تقرير منصة تعلّم)، لكن لا أحد يراجعه بانتظام، والتدريب المتأخر لا يترتب عليه أي أثر.',
+          'إنجاز التدريب يُتابَع لكل فرد مقابل الدورات المطلوبة، والبنود المتأخرة تُرصَد للفرد ومديره وفق إيقاع محدد.',
+          'لوحات معلومات المدراء تُظهر حالة إنجاز التدريب على مستوى الفريق، ومعدلات الإنجاز جزء من محادثات أداء المدير، وعدم الإنجاز المستمر يُصعَّد.',
+          'إنجاز التدريب مؤشر أداء تنظيمي متابَع يُرفَع للقيادة، ويترابط إيجابياً مع نتائج الأداء/السلامة حيثما حُلِّل، ونسبة إنجاز شبه كاملة للتدريب الإلزامي تُحقَّق وتُستدام باستمرار.',
+        ],
+      },
+      {
+        q: 'How structured are on-the-job and experiential learning mechanisms — job rotations, stretch assignments, formal mentoring — as opposed to learning happening only through classroom or e-learning content?',
+        qAr: 'ما مدى منهجية آليات التعلّم أثناء العمل والتجريبي — التناوب الوظيفي والمهام التطويرية والإرشاد الرسمي — مقابل اقتصار التعلّم على المحتوى الصفي أو الإلكتروني؟',
+        levels: [
+          'All development happens through formal courses. There is no structured job rotation, stretch assignment, or mentoring programme — any on-the-job learning is purely incidental.',
+          'Job rotations or mentoring happen occasionally for a few individuals informally, usually depending on a manager\'s personal initiative, with no consistent structure or availability.',
+          'A defined mentoring programme and/or job rotation scheme exists for supply chain staff, with clear eligibility, structure, and duration.',
+          'Experiential learning assignments (stretch projects, rotations, mentoring) are explicitly matched to individual development plans and competency gaps, and participation is tracked.',
+          'The effectiveness of experiential learning is measured (skill growth, subsequent performance, retention of participants), and the programme is expanded or refined based on that evidence.',
+        ],
+        levelsAr: [
+          'كل التطوير يحدث عبر الدورات الرسمية. لا يوجد تناوب وظيفي منظم أو مهام تطويرية أو برنامج إرشاد — أي تعلّم أثناء العمل عرَضي بحت.',
+          'التناوب الوظيفي أو الإرشاد يحدث أحياناً لبعض الأفراد بشكل غير رسمي، عادةً حسب مبادرة شخصية من المدير، دون هيكل أو توفر متسق.',
+          'برنامج إرشاد محدد و/أو مخطط تناوب وظيفي قائم لموظفي سلسلة الإمداد، بأهلية وهيكل ومدة واضحة.',
+          'مهام التعلّم التجريبي (المشاريع التطويرية، التناوب، الإرشاد) تُطابَق صراحةً مع خطط التطوير الفردية وفجوات الكفاءة، والمشاركة تُتابَع.',
+          'فعالية التعلّم التجريبي تُقاس (نمو المهارات، الأداء اللاحق، احتفاظ المشاركين)، والبرنامج يُوسَّع أو يُحسَّن استناداً إلى تلك الأدلة.',
+        ],
+      },
+      {
+        q: 'How well are training completion records verified against what actually happened, guarding against completion being falsely recorded or certificates being unverified?',
+        qAr: 'ما مدى جودة التحقق من سجلات إنجاز التدريب مقابل ما حدث فعلياً، للحماية من تسجيل إنجاز زائف أو شهادات غير مُتحقَّق منها؟',
+        levels: [
+          'Training completion is self-reported with no verification whatsoever — anyone could mark a course "complete" without having engaged with it at all.',
+          'Some spot-checking of completion happens informally, but there is no systematic verification process, and external certification claims are taken at face value.',
+          'LMS-based courses require a passing assessment score to be marked complete, and external certification claims are verified against the certifying body where practical.',
+          'Completion and certification records are periodically audited on a sample basis against underlying evidence (assessment logs, certificate numbers), with discrepancies investigated.',
+          'Verification of training and certification records is systematic and covers the full population, not just samples, and the control has demonstrably caught and corrected instances of inaccurate or fraudulent records.',
+        ],
+        levelsAr: [
+          'إنجاز التدريب يُبلَّغ عنه ذاتياً دون أي تحقق إطلاقاً — يمكن لأي شخص تحديد دورة كـ"مكتملة" دون التفاعل معها إطلاقاً.',
+          'بعض التدقيق العشوائي للإنجاز يحدث بشكل غير رسمي، لكن لا توجد عملية تحقق منهجية، وادعاءات الاعتماد الخارجي تُقبَل كما هي.',
+          'الدورات المعتمدة على منصة التعلّم تتطلب درجة تقييم ناجحة لتُعتبَر مكتملة، وادعاءات الاعتماد الخارجي تُتحقَّق منها مقابل الجهة المانحة حيثما أمكن عملياً.',
+          'سجلات الإنجاز والاعتماد تُدقَّق دورياً على أساس عيّنة مقابل الأدلة الأساسية (سجلات التقييم، أرقام الشهادات)، والتباينات تُحقَّق فيها.',
+          'التحقق من سجلات التدريب والاعتماد منهجي ويغطي المجتمع الكامل لا العينات فقط، والضابط أثبت بشكل ملموس اكتشاف وتصحيح حالات سجلات غير دقيقة أو احتيالية.',
+        ],
+      },
+      {
+        q: 'How much does the learning platform automatically assign relevant training based on role and identified competency gap, versus requiring the employee to search and self-select every course?',
+        qAr: 'ما مدى تعيين منصة التعلّم آلياً للتدريب ذي الصلة استناداً إلى الدور وفجوة الكفاءة المُحدَّدة، مقابل مطالبة الموظف بالبحث واختيار كل دورة بنفسه؟',
+        levels: [
+          'Employees must find and enrol in every course themselves with no guidance — there is no linkage between role, competency gap, and recommended content.',
+          'Some mandatory courses are auto-assigned (e.g., basic compliance training), but role- or gap-specific development content still requires manual search and self-selection.',
+          'The LMS auto-enrols employees into a defined curriculum based on their role, and gap-driven recommendations are provided following a competency assessment.',
+          'Auto-enrollment and recommendation logic is refreshed automatically whenever a role change or a new assessment result is recorded, keeping assignments current without manual intervention.',
+          'Learning-path automation uses predictive logic (anticipating future skill needs based on career pathway or planned technology change) to proactively assign development content ahead of need.',
+        ],
+        levelsAr: [
+          'يجب على الموظفين إيجاد كل دورة والتسجيل بها بأنفسهم دون توجيه — لا يوجد ربط بين الدور وفجوة الكفاءة والمحتوى الموصى به.',
+          'بعض الدورات الإلزامية تُسجَّل تلقائياً (كتدريب الامتثال الأساسي)، لكن المحتوى التطويري الخاص بالدور أو الفجوة لا يزال يتطلب بحثاً واختياراً ذاتياً يدوياً.',
+          'منصة التعلّم تُسجّل الموظفين تلقائياً في منهج محدد بناءً على دورهم، وتوصيات مبنية على الفجوات تُقدَّم بعد تقييم الكفاءات.',
+          'منطق التسجيل التلقائي والتوصية يُحدَّث آلياً كلما سُجِّل تغيير دور أو نتيجة تقييم جديدة، مما يُبقي التعيينات محدَّثة دون تدخل يدوي.',
+          'أتمتة مسار التعلّم تستخدم منطقاً تنبؤياً (توقّع احتياجات المهارات المستقبلية استناداً إلى المسار الوظيفي أو التغيير التقني المخطَّط) لتعيين محتوى تطويري استباقياً قبل الحاجة.',
+        ],
+      },
+      {
+        q: 'How rigorously is completion of mandatory regulatory or compliance training (anti-corruption, safety, ethics, data protection) tracked and enforced across the supply chain workforce?',
+        qAr: 'ما مدى صرامة تتبّع وإنفاذ إنجاز التدريب التنظيمي/الامتثالي الإلزامي (مكافحة الفساد، السلامة، الأخلاقيات، حماية البيانات) عبر القوى العاملة لسلسلة الإمداد؟',
+        levels: [
+          'Mandatory compliance training is not distinguished from optional development content — there is no tracked list of who is required to complete what, or by when.',
+          'Compliance training is delivered periodically, but completion is not systematically tracked, and there is no enforcement when staff fail to complete it.',
+          'A defined list of mandatory compliance training by role is tracked, with completion deadlines and reminders issued.',
+          'Non-completion of mandatory compliance training beyond the deadline triggers escalation (to the individual\'s manager and HR), and completion rates are reported as a compliance KPI.',
+          'Mandatory compliance training completion is audit-ready at all times, is cross-referenced against regulatory requirements applicable to each role, and the organisation can demonstrate a defensible record in the event of an external compliance review.',
+        ],
+        levelsAr: [
+          'التدريب الامتثالي الإلزامي غير مميَّز عن المحتوى التطويري الاختياري — لا توجد قائمة متابَعة لمن يجب أن يُكمل ماذا وبحلول متى.',
+          'التدريب الامتثالي يُقدَّم دورياً، لكن الإنجاز لا يُتابَع منهجياً، ولا يوجد إنفاذ عند فشل الموظفين في إكماله.',
+          'قائمة محددة للتدريب الامتثالي الإلزامي حسب الدور تُتابَع، بمواعيد إنجاز نهائية وتذكيرات تُصدَر.',
+          'عدم إنجاز التدريب الامتثالي الإلزامي بعد الموعد النهائي يُطلق تصعيداً (لمدير الفرد والموارد البشرية)، ومعدلات الإنجاز تُرفَع كمؤشر امتثال.',
+          'إنجاز التدريب الامتثالي الإلزامي جاهز للتدقيق في كل وقت، ويُقارَن مع المتطلبات التنظيمية السارية لكل دور، والمؤسسة قادرة على إثبات سجل قابل للدفاع عنه في حال مراجعة امتثال خارجية.',
+        ],
+      },
+      {
+        q: 'How deliberately does the L&D programme build cross-trained bench depth for critical roles, so that capability — not just headcount — genuinely survives a key person\'s absence or departure?',
+        qAr: 'ما مدى تعمّد بناء برنامج التعلّم والتطوير عمقاً احتياطياً مُدرَّباً تبادلياً للأدوار الحرجة، بحيث تصمد القدرة — لا العدد فقط — أمام غياب أو مغادرة شخص رئيسي؟',
+        levels: [
+          'L&D is designed purely around individual current-role competence. No one is deliberately cross-trained to cover a critical role beyond their own.',
+          'Cross-training happens informally and inconsistently, dependent on individual initiative rather than a planned programme tied to identified critical roles.',
+          'A defined cross-training plan identifies critical roles and designates at least one other trained person capable of covering each, with training tracked to completion.',
+          'Cross-trained coverage is periodically tested (planned absence, shadowing exercise) to confirm the backup\'s capability is real, not just recorded as "trained."',
+          'Bench depth for critical roles is a tracked resiliency metric, cross-training investment is prioritised based on business-impact analysis of role vacancy, and the organisation can point to at least one real instance where cross-training prevented material disruption.',
+        ],
+        levelsAr: [
+          'التعلّم والتطوير مُصمَّم بحتاً حول كفاءة الفرد في دوره الحالي. لا أحد يُدرَّب تبادلياً عمداً لتغطية دور حرج يتجاوز دوره الخاص.',
+          'التدريب التبادلي يحدث بشكل غير رسمي وغير متسق، معتمداً على المبادرة الفردية بدلاً من برنامج مخطَّط مرتبط بأدوار حرجة محددة.',
+          'خطة تدريب تبادلي محددة تُحدّد الأدوار الحرجة وتُعيّن شخصاً مُدرَّباً آخر قادراً على تغطية كل منها على الأقل، والتدريب يُتابَع حتى الإنجاز.',
+          'التغطية بالتدريب التبادلي تُختبَر دورياً (غياب مخطط، تمرين مرافقة) للتأكد من أن قدرة البديل حقيقية لا مجرد "مُدرَّب" مسجَّلاً.',
+          'عمق الاحتياطي للأدوار الحرجة مقياس مرونة متابَع، واستثمار التدريب التبادلي يُعطى أولوية استناداً إلى تحليل أثر الأعمال لشغور الدور، والمؤسسة قادرة على الإشارة إلى حالة واقعية واحدة على الأقل منع فيها التدريب التبادلي اضطراباً جوهرياً.',
+        ],
+      },
     ],
   },
 
-  /* ── 10-3  Talent Attraction & Retention ─────────────────────────────── */
+  /* ── 11-3  Talent Attraction & Retention ──────────────────────────── */
   {
     id: 'org-talent',
     title: 'Talent Attraction & Retention',
@@ -8159,7 +8627,7 @@ export const ORG_TALENT_SUB_SEGMENTS: SubSegmentData[] = [
     questions: [
       {
         q: 'How effective is your organisation at attracting qualified supply chain talent — including employer brand, university partnerships, Saudization pipeline, and competitive compensation benchmarking?',
-        qAr: 'ما مدى فعالية مؤسستكم في استقطاب المواهب المؤهلة لسلسلة الإمداد — شاملًا العلامة التجارية لأصحاب العمل والشراكات الجامعية ومسار السعودة في الأدوار التقنية والمقارنة التعويضية التنافسية؟',
+        qAr: 'ما مدى فعالية مؤسستكم في استقطاب المواهب المؤهلة لسلسلة الإمداد — شاملًا العلامة التجارية لأصحاب العمل والشراكات الجامعية ومسار السعودة والمقارنة التعويضية التنافسية؟',
         levels: [
           'No proactive talent attraction strategy for supply chain. Vacancies are filled reactively through job boards without any employer branding or pipeline development.',
           'Recruitment is managed through standard channels (LinkedIn, recruitment agencies) but no employer brand or supply chain-specific talent pipeline is in place.',
@@ -8170,9 +8638,9 @@ export const ORG_TALENT_SUB_SEGMENTS: SubSegmentData[] = [
         levelsAr: [
           'لا استراتيجية استباقية لاستقطاب مواهب سلسلة الإمداد. الوظائف الشاغرة تُملأ بشكل تفاعلي عبر لوحات الوظائف دون علامة تجارية لأصحاب العمل أو بناء مسار استقطاب منظم.',
           'التوظيف يُدار عبر القنوات القياسية (LinkedIn ووكالات توظيف) لكن لا علامة تجارية لأصحاب العمل أو مسار مواهب مخصص لسلسلة الإمداد.',
-          'علامة تجارية محددة لأصحاب العمل في سلسلة الإمداد تُوصَّل عبر التوظيف الموجَّه؛ وعلاقات مع 2-3 جامعات تُخرّج خريجي سلسلة الإمداد مُحافَظ عليها؛ ومسار توظيف السعودة في الأدوار التقنية متابَع.',
+          'علامة تجارية محددة لأصحاب العمل في سلسلة الإمداد تُوصَّل عبر التوظيف الموجَّه؛ وعلاقات مع 2-3 جامعات تُخرّج خريجي سلسلة الإمداد مُحافَظ عليها؛ ومسار توظيف السعودة متابَع.',
           'برنامج استقطاب مواهب سلسلة الإمداد يشمل العلامة التجارية والشراكات الجامعية ومخطط الخريجين والتعويض التنافسي المُقارَن معياريًا ببيانات سوق الخليج؛ ومستهدفات السعودة مدمجة في خطة التوظيف.',
-          'علامة تجارية لأصحاب العمل في سلسلة الإمداد بمستوى الأفضل في الفئة بتقدير وطني؛ وبرامج منظمة للخريجين والمتدربين؛ واستهداف المواهب بالذكاء الاصطناعي؛ ومقارنة الإجمالي التعويضي مُحدَّثة سنويًا؛ ومسار السعودة في الأدوار التقنية يتجاوز المستهدفات التنظيمية.',
+          'علامة تجارية لأصحاب العمل في سلسلة الإمداد بمستوى الأفضل في الفئة بتقدير وطني؛ وبرامج منظمة للخريجين والمتدربين؛ واستهداف المواهب بالذكاء الاصطناعي؛ ومقارنة الإجمالي التعويضي مُحدَّثة سنويًا؛ ومسار السعودة يتجاوز المستهدفات التنظيمية.',
         ],
       },
       {
@@ -8193,10 +8661,154 @@ export const ORG_TALENT_SUB_SEGMENTS: SubSegmentData[] = [
           'نمذجة آنية لمخاطر الاستقالة تتنبأ بمخاطر الانسحاب لمواهب سلسلة الإمداد الحرجة؛ ومحادثات احتفاظ استباقية تُطلَق آليًا؛ ومعدل الاستقالة للأدوار الرئيسية في الربع الأعلى من مقاييس الخليج.',
         ],
       },
+      {
+        q: 'How well is the supply chain recruitment process measured and managed for time-to-fill and quality-of-hire, rather than being judged only on whether a vacancy eventually gets filled?',
+        qAr: 'ما مدى قياس وإدارة عملية توظيف سلسلة الإمداد من حيث زمن الشغل وجودة التعيين، بدلاً من الحكم عليها فقط بناءً على ما إذا كان الشاغر قد شُغل في النهاية؟',
+        levels: [
+          'Recruitment outcomes are not measured at all. No one tracks how long vacancies stay open or whether hires turn out to be a good fit.',
+          'Time-to-fill is tracked loosely for a few senior roles, but there is no consistent measurement across the function and no quality-of-hire follow-up.',
+          'Time-to-fill and basic quality-of-hire indicators (e.g., probation pass rate) are tracked consistently for all supply chain roles, with targets defined by role level.',
+          'Recruitment metrics are reviewed regularly against targets, bottleneck stages in the hiring process are identified and actively addressed, and hiring manager satisfaction is captured.',
+          'Quality-of-hire is tracked through to actual on-the-job performance and retention at 12/24 months, recruitment sourcing channels are evaluated for return on that outcome, and the process is continuously refined based on the evidence.',
+        ],
+        levelsAr: [
+          'نتائج التوظيف لا تُقاس إطلاقاً. لا أحد يتتبّع مدة بقاء الشواغر مفتوحة أو ما إذا كان التعيينات تُثبت ملاءمتها.',
+          'زمن الشغل يُتابَع بشكل فضفاض لبعض الأدوار العليا، لكن لا يوجد قياس متسق عبر الوظيفة ولا متابعة لجودة التعيين.',
+          'زمن الشغل ومؤشرات جودة تعيين أساسية (كمعدل اجتياز فترة التجربة) تُتابَع باتساق لجميع أدوار سلسلة الإمداد، بمستهدفات محددة حسب مستوى الدور.',
+          'مقاييس التوظيف تُراجَع بانتظام مقابل المستهدفات، ومراحل الاختناق في عملية التوظيف تُحدَّد وتُعالَج بفعالية، ورضا مدير التوظيف يُقاس.',
+          'جودة التعيين تُتابَع حتى الأداء الوظيفي الفعلي والاستبقاء عند 12/24 شهراً، وقنوات استقطاب التوظيف تُقيَّم لعائدها على تلك النتيجة، والعملية تُحسَّن باستمرار استناداً إلى الأدلة.',
+        ],
+      },
+      {
+        q: 'How structured is the onboarding programme for new supply chain hires — beyond day-one orientation — in accelerating genuine time-to-productivity?',
+        qAr: 'ما مدى منهجية برنامج توجيه موظفي سلسلة الإمداد الجدد — بما يتجاوز توجيه اليوم الأول — في تسريع زمن الوصول الفعلي للإنتاجية؟',
+        levels: [
+          'Onboarding consists of a single-day orientation covering HR paperwork. After that, new hires are left to figure out their role largely on their own.',
+          'A basic onboarding checklist exists, but it is inconsistently followed, varies significantly by manager, and stops after the first week or two.',
+          'A structured onboarding programme (e.g., a defined 30/60/90-day plan) is applied consistently to new supply chain hires, covering role-specific orientation, systems training, and key stakeholder introductions.',
+          'Onboarding effectiveness is checked at defined milestones with the new hire directly, a buddy or mentor is assigned, and time-to-productivity is tracked as an outcome measure.',
+          'Onboarding is continuously refined based on new-hire feedback and time-to-productivity data, is tailored by role complexity, and demonstrably correlates with stronger early retention and performance outcomes.',
+        ],
+        levelsAr: [
+          'التوجيه يقتصر على توجيه يوم واحد يغطي الأوراق الإدارية. بعد ذلك، يُترَك الموظفون الجدد لاكتشاف أدوارهم بأنفسهم إلى حد كبير.',
+          'قائمة توجيه أساسية موجودة، لكنها تُتَّبَع بشكل غير متسق، وتتفاوت بشكل كبير حسب المدير، وتتوقف بعد الأسبوع أو الأسبوعين الأولين.',
+          'برنامج توجيه منظم (كخطة 30/60/90 يوماً محددة) يُطبَّق باتساق على موظفي سلسلة الإمداد الجدد، يغطي التوجيه الخاص بالدور وتدريب الأنظمة والتعريف بأصحاب المصلحة الرئيسيين.',
+          'فعالية التوجيه تُتحقَّق منها في نقاط علام محددة مباشرةً مع الموظف الجديد، ومرافق أو موجّه يُعيَّن، وزمن الوصول للإنتاجية يُتابَع كمقياس نتيجة.',
+          'التوجيه يُحسَّن باستمرار استناداً إلى تعليقات الموظفين الجدد وبيانات زمن الإنتاجية، ويُخصَّص حسب تعقيد الدور، ويترابط بشكل قابل للإثبات مع استبقاء وأداء مبكرين أقوى.',
+        ],
+      },
+      {
+        q: 'How consistently do hiring managers actually conduct structured, calibrated interviews for supply chain roles at the working level, versus relying on unstructured conversation and gut feel?',
+        qAr: 'ما مدى اتساق إجراء مدراء التوظيف فعلياً لمقابلات منظمة ومُعايَرة لأدوار سلسلة الإمداد على المستوى التنفيذي، مقابل الاعتماد على محادثة غير منظمة وحدس؟',
+        levels: [
+          'Interviews are entirely unstructured. Different interviewers ask whatever comes to mind, there is no shared scorecard, and hiring decisions rest on gut feel.',
+          'A basic set of suggested interview questions exists, but hiring managers use it inconsistently, and panel members rarely compare notes systematically before deciding.',
+          'Structured interview scorecards tied to the competency framework are used consistently for supply chain hiring, and panel members score independently before discussing.',
+          'Interview panels are trained in structured interviewing and bias awareness, panel composition is deliberately diverse, and scoring discrepancies are reconciled through discussion of specific evidence.',
+          'Interview and hiring decision quality is tracked back to actual on-the-job performance to validate the interview approach, and interviewers are periodically recalibrated based on that evidence.',
+        ],
+        levelsAr: [
+          'المقابلات غير منظمة إطلاقاً. المُقابِلون المختلفون يسألون ما يخطر ببالهم، ولا توجد بطاقة تقييم مشتركة، وقرارات التوظيف تعتمد على الحدس.',
+          'مجموعة أساسية من أسئلة المقابلة المقترحة موجودة، لكن مدراء التوظيف يستخدمونها بشكل غير متسق، وأعضاء اللجنة نادراً ما يقارنون ملاحظاتهم منهجياً قبل القرار.',
+          'بطاقات تقييم مقابلات منظمة مرتبطة بإطار الكفاءات تُستخدَم باتساق في توظيف سلسلة الإمداد، وأعضاء اللجنة يُقيّمون بشكل مستقل قبل النقاش.',
+          'لجان المقابلات مُدرَّبة على المقابلات المنظمة والوعي بالتحيز، وتشكيل اللجنة متنوع عمداً، وتباينات التسجيل تُسوَّى عبر مناقشة أدلة محددة.',
+          'جودة قرار المقابلة والتوظيف تُتابَع حتى الأداء الوظيفي الفعلي للتحقق من صحة أسلوب المقابلة، والمُقابِلون تُعاد معايرتهم دورياً استناداً إلى تلك الأدلة.',
+        ],
+      },
+      {
+        q: 'How effectively is compensation and recognition administered operationally — pay equity maintained, market adjustments executed on time, recognition actually delivered at the working level?',
+        qAr: 'ما مدى فعالية إدارة التعويض والتقدير تشغيلياً — الحفاظ على عدالة الأجور، تنفيذ تعديلات السوق في الوقت المحدد، إيصال التقدير فعلياً على المستوى التنفيذي؟',
+        levels: [
+          'Compensation adjustments and recognition happen inconsistently and without any defined process — pay inequities go unnoticed and recognition depends entirely on individual manager habits.',
+          'A pay structure exists, but market adjustments are infrequent and reactive, and recognition is informal and applied unevenly across teams.',
+          'A defined process reviews supply chain compensation against market data on a regular cycle, and a structured recognition programme (e.g., a formal awards or spot-bonus mechanism) is in place.',
+          'Pay equity is actively monitored (by gender, nationality, tenure) with corrective action taken where unexplained gaps are found, and recognition programme participation/usage is tracked across teams.',
+          'Compensation and recognition data are analysed together against retention and engagement outcomes, informing continuous refinement, and the organisation can demonstrate closed or explained pay-equity gaps.',
+        ],
+        levelsAr: [
+          'تعديلات التعويض والتقدير تحدث بشكل غير متسق ودون عملية محددة — فجوات الأجور تمر دون ملاحظة والتقدير يعتمد كلياً على عادات المدير الفردية.',
+          'هيكل أجور موجود، لكن تعديلات السوق نادرة وتفاعلية، والتقدير غير رسمي ويُطبَّق بشكل متفاوت عبر الفرق.',
+          'عملية محددة تراجع تعويض سلسلة الإمداد مقابل بيانات السوق وفق دورة منتظمة، وبرنامج تقدير منظم (كآلية جوائز رسمية أو مكافأة فورية) قائم.',
+          'عدالة الأجور تُراقَب بفعالية (حسب الجنس والجنسية ومدة الخدمة) مع اتخاذ إجراء تصحيحي حيثما وُجدت فجوات غير مُبرَّرة، ومشاركة/استخدام برنامج التقدير يُتابَع عبر الفرق.',
+          'بيانات التعويض والتقدير تُحلَّل معاً مقابل نتائج الاستبقاء والمشاركة، مما يُغذّي التحسين المستمر، والمؤسسة قادرة على إثبات إغلاق أو تفسير فجوات عدالة الأجور.',
+        ],
+      },
+      {
+        q: 'How rigorously are candidate credentials, references, and background information actually verified before a supply chain hire is finalised, versus taken on trust?',
+        qAr: 'ما مدى صرامة التحقق فعلياً من مؤهلات المرشحين ومراجعهم ومعلومات خلفيتهم قبل تثبيت تعيين في سلسلة الإمداد، مقابل قبولها على الثقة؟',
+        levels: [
+          'Candidate claims (qualifications, prior employment, references) are accepted at face value with no verification whatsoever before an offer is made.',
+          'Verification happens inconsistently — sometimes a reference is checked, sometimes not — with no defined standard applied across all hires.',
+          'A defined verification process (qualification check, reference check, employment history) is applied consistently before an offer is confirmed for all supply chain roles.',
+          'Verification is risk-differentiated — roles with financial authority, safety responsibility, or regulatory exposure receive enhanced background screening — and results are documented before start date.',
+          'Verification processes are periodically audited for completeness and consistency, discrepancies found are systematically investigated, and the control has demonstrably caught misrepresented credentials before they became a hire.',
+        ],
+        levelsAr: [
+          'ادعاءات المرشحين (المؤهلات، التوظيف السابق، المراجع) تُقبَل كما هي دون أي تحقق إطلاقاً قبل تقديم العرض.',
+          'التحقق يحدث بشكل غير متسق — أحياناً تُراجَع مرجعية وأحياناً لا — دون معيار محدد يُطبَّق على جميع التعيينات.',
+          'عملية تحقق محددة (فحص المؤهلات، فحص المرجعية، تاريخ التوظيف) تُطبَّق باتساق قبل تأكيد العرض لجميع أدوار سلسلة الإمداد.',
+          'التحقق متمايز حسب المخاطر — الأدوار ذات الصلاحية المالية أو مسؤولية السلامة أو التعرض التنظيمي تخضع لفحص خلفية معزز — والنتائج تُوثَّق قبل تاريخ المباشرة.',
+          'عمليات التحقق تُدقَّق دورياً للاكتمال والاتساق، والتباينات المكتشفة تُحقَّق فيها منهجياً، والضابط أثبت بشكل ملموس اكتشاف مؤهلات مُحرَّفة قبل أن تصبح تعييناً.',
+        ],
+      },
+      {
+        q: 'How much of the recruitment workflow — sourcing, screening, interview scheduling — runs through an automated applicant tracking system rather than manual email and spreadsheet coordination?',
+        qAr: 'ما مدى إدارة سير عمل التوظيف — الاستقطاب والفرز وجدولة المقابلات — عبر نظام تتبّع مرشحين آلي بدلاً من التنسيق اليدوي بالبريد الإلكتروني وجداول البيانات؟',
+        levels: [
+          'Recruitment is coordinated entirely by email and spreadsheets. There is no applicant tracking system, and candidate status is easily lost or duplicated.',
+          'An ATS exists but is used only for job posting; screening, scheduling, and candidate communication still happen manually outside the system.',
+          'The ATS manages the full pipeline (posting, application intake, basic screening, interview scheduling) for supply chain roles, reducing manual coordination materially.',
+          'The ATS integrates with the HRIS and calendar systems so candidate progression, interview scheduling, and offer generation flow automatically without re-entry.',
+          'AI-assisted screening and matching tools support (not replace) recruiter judgement, screening criteria are periodically audited for bias, and system efficiency metrics (time saved, screening accuracy) are tracked.',
+        ],
+        levelsAr: [
+          'التوظيف يُنسَّق بالكامل عبر البريد الإلكتروني وجداول البيانات. لا يوجد نظام تتبّع مرشحين، وحالة المرشح تُفقَد أو تتكرر بسهولة.',
+          'نظام تتبّع مرشحين موجود لكنه يُستخدَم فقط لنشر الوظائف؛ الفرز والجدولة والتواصل مع المرشحين لا تزال تحدث يدوياً خارج النظام.',
+          'نظام تتبّع المرشحين يُدير خط الأنابيب الكامل (النشر، استقبال الطلبات، الفرز الأساسي، جدولة المقابلات) لأدوار سلسلة الإمداد، مما يُقلّل التنسيق اليدوي بشكل معتبر.',
+          'نظام تتبّع المرشحين يتكامل مع نظام الموارد البشرية والتقويم بحيث تتدفق مسارات المرشح وجدولة المقابلات وإصدار العروض آلياً دون إعادة إدخال.',
+          'أدوات الفرز والمطابقة المدعومة بالذكاء الاصطناعي تدعم (لا تُحل محل) حكم المُوظِّف، ومعايير الفرز تُدقَّق دورياً للتحيز، ومقاييس كفاءة النظام (الوقت الموفَّر، دقة الفرز) تُتابَع.',
+        ],
+      },
+      {
+        q: 'How systematically does supply chain workforce planning track and manage compliance with national workforce localisation requirements (Saudization/Nitaqat or GCC-equivalent) as an ongoing discipline rather than a periodic scramble?',
+        qAr: 'ما مدى منهجية تتبّع وإدارة تخطيط القوى العاملة لسلسلة الإمداد لمتطلبات التوطين الوطني (السعودة/النطاقات أو ما يعادلها خليجياً) كانضباط مستمر بدلاً من استعجال دوري؟',
+        levels: [
+          'Localisation/Nitaqat status is not actively tracked. Compliance, if achieved, happens by coincidence rather than deliberate workforce planning.',
+          'Localisation ratios are checked reactively, usually only when a compliance deadline or government audit is imminent, causing scramble hiring rather than planned pipeline development.',
+          'A defined localisation tracking process monitors supply chain workforce composition against required targets on a regular cycle, with gaps flagged to leadership.',
+          'Localisation targets are integrated into the recruitment and workforce plan proactively, with a national-talent development pipeline (graduate programmes, training) supporting sustainable compliance rather than reactive hiring.',
+          'Localisation performance is benchmarked and reported at the executive/board level, exceeds minimum regulatory requirements, and the organisation can demonstrate a sustainable, self-reinforcing national-talent pipeline rather than dependency on last-minute hiring.',
+        ],
+        levelsAr: [
+          'حالة التوطين/النطاقات لا تُتابَع بفعالية. الامتثال، إن تحقق، يحدث مصادفة لا نتيجة تخطيط قوى عاملة متعمد.',
+          'نسب التوطين تُراجَع بشكل تفاعلي، عادةً فقط عند اقتراب موعد امتثال أو تدقيق حكومي، مما يُسبب توظيفاً استعجالياً بدلاً من تطوير مسار مخطَّط.',
+          'عملية تتبّع توطين محددة تراقب تركيبة القوى العاملة في سلسلة الإمداد مقابل المستهدفات المطلوبة وفق دورة منتظمة، والفجوات تُرصَد للقيادة.',
+          'مستهدفات التوطين مدمجة استباقياً في خطة التوظيف والقوى العاملة، بمسار تطوير مواهب وطنية (برامج خريجين، تدريب) يدعم امتثالاً مستداماً بدلاً من التوظيف التفاعلي.',
+          'أداء التوطين يُقارَن معيارياً ويُرفَع على المستوى التنفيذي/مجلس الإدارة، ويتجاوز الحد الأدنى للمتطلبات التنظيمية، والمؤسسة قادرة على إثبات مسار مواهب وطني مستدام وذاتي التعزيز بدلاً من الاعتماد على التوظيف اللحظي.',
+        ],
+      },
+      {
+        q: 'How prepared is the organisation to sustain supply chain operations through a period of unusually high attrition or a sudden critical-role vacancy — is there a genuine contingency bench, or does everything depend on filling the gap fast enough?',
+        qAr: 'ما مدى استعداد المؤسسة لاستدامة عمليات سلسلة الإمداد خلال فترة استقالة مرتفعة بشكل غير معتاد أو شغور مفاجئ لدور حرج — هل يوجد احتياطي طوارئ حقيقي، أم يعتمد كل شيء على سد الفجوة بسرعة كافية؟',
+        levels: [
+          'There is no contingency plan for high attrition or a critical vacancy. When it happens, operations are simply disrupted until a replacement is eventually hired.',
+          'Contingency coverage is improvised case-by-case (overtime, temporary reassignment) with no pre-planned resource or interim staffing option.',
+          'A defined contingency plan identifies interim coverage options (interim/contract staffing, temporary internal reassignment) for the most critical supply chain roles.',
+          'Contingency arrangements are periodically reviewed and pre-negotiated where practical (e.g., standing relationships with interim-staffing providers), reducing activation lead time when a vacancy occurs.',
+          'Workforce continuity risk is modelled proactively (attrition-risk scoring by role, scenario planning for concurrent departures), contingency plans have been tested in a real event, and recovery time from a critical vacancy is tracked and improving.',
+        ],
+        levelsAr: [
+          'لا توجد خطة طوارئ للاستقالة المرتفعة أو الشغور الحرج. عند حدوثه، تتعطل العمليات ببساطة حتى يُوظَّف بديل في نهاية المطاف.',
+          'التغطية الطارئة تُرتجَل حالة بحالة (عمل إضافي، إعادة تكليف مؤقتة) دون مورد مُخطَّط له مسبقاً أو خيار توظيف مؤقت.',
+          'خطة طوارئ محددة تُحدّد خيارات تغطية مؤقتة (توظيف مؤقت/تعاقدي، إعادة تكليف داخلية مؤقتة) لأكثر أدوار سلسلة الإمداد حرجية.',
+          'ترتيبات الطوارئ تُراجَع دورياً وتُبرَم مسبقاً حيثما أمكن عملياً (كعلاقات قائمة مع مزودي التوظيف المؤقت)، مما يُقلّل زمن التفعيل عند حدوث الشغور.',
+          'مخاطر استمرارية القوى العاملة تُنمذَج استباقياً (تسجيل مخاطر الاستقالة حسب الدور، تخطيط سيناريوهات للمغادرات المتزامنة)، وخطط الطوارئ اختُبرت في حدث فعلي، وزمن التعافي من الشغور الحرج يُتابَع ويتحسّن.',
+        ],
+      },
     ],
   },
 
-  /* ── 10-4  Succession Planning ───────────────────────────────────────── */
+  /* ── 11-4  Succession Planning ──────────────────────────── */
   {
     id: 'org-succession',
     title: 'Succession Planning',
@@ -8229,10 +8841,172 @@ export const ORG_TALENT_SUB_SEGMENTS: SubSegmentData[] = [
           'تخطيط التعاقب يغطي جميع أدوار سلسلة الإمداد الحرجة؛ و80%+ من الشواغر العليا تُشغَل داخليًا؛ ودورة مراجعة مواهب منظمة تربط التعاقب بالتعلّم والتطوير والحراك ومعطيات الأداء؛ ومجلس الإدارة يراجع عمق التعاقب سنويًا.',
         ],
       },
+      {
+        q: 'How rigorous and evidence-based is the methodology used to identify which supply chain roles are genuinely "critical" for succession purposes, rather than defaulting to job title or organisational level alone?',
+        qAr: 'ما مدى صرامة واستناد المنهجية المستخدمة لتحديد أي أدوار سلسلة الإمداد "حرجة" فعليًا لأغراض التعاقب إلى أدلة، بدلاً من الاعتماد على المسمى الوظيفي أو المستوى التنظيمي فقط؟',
+        levels: [
+          'Critical roles are never formally identified — succession discussions, when they happen, default to whoever holds the most senior title at the time.',
+          'A list of "critical roles" exists but was defined once, informally, based on title/seniority alone, without reference to business impact, scarcity of skill, or replacement difficulty.',
+          'Critical roles are identified using defined criteria (business impact if vacant, scarcity of required skill, time-to-replace), reviewed and confirmed by supply chain leadership.',
+          'The critical-role methodology is applied consistently across the function, is cross-checked against actual vacancy-impact history, and is refreshed whenever the organisation structure or strategy changes materially.',
+          'Critical-role identification is data-driven (impact modelling, market scarcity data, internal mobility analytics), independently validated, and demonstrably distinguishes genuinely irreplaceable roles from merely senior ones.',
+        ],
+        levelsAr: [
+          'الأدوار الحرجة لا تُحدَّد رسميًا أبدًا — نقاشات التعاقب، إن حدثت، تلجأ افتراضيًا لصاحب أعلى مسمى وظيفي في ذلك الوقت.',
+          'قائمة "الأدوار الحرجة" موجودة لكنها حُدِّدت مرة واحدة بشكل غير رسمي بناءً على المسمى/الأقدمية فقط، دون الرجوع إلى الأثر على الأعمال أو ندرة المهارة أو صعوبة الاستبدال.',
+          'الأدوار الحرجة تُحدَّد باستخدام معايير محددة (الأثر على الأعمال عند الشغور، ندرة المهارة المطلوبة، زمن الاستبدال)، وتُراجَع وتُعتمَد من قيادة سلسلة الإمداد.',
+          'منهجية تحديد الأدوار الحرجة تُطبَّق باتساق عبر الوظيفة، وتُقارَن مقابل تاريخ الأثر الفعلي للشواغر، وتُحدَّث كلما تغيّر الهيكل التنظيمي أو الاستراتيجية جوهريًا.',
+          'تحديد الأدوار الحرجة قائم على البيانات (نمذجة الأثر، بيانات ندرة السوق، تحليلات الحراك الداخلي)، ويُتحقَّق منه بشكل مستقل، ويُميّز بشكل قابل للإثبات بين الأدوار التي لا بديل حقيقي عنها وتلك العليا فقط بالمسمى.',
+        ],
+      },
+      {
+        q: 'How rigorously are successor "readiness" ratings (Ready Now / 1-2 years / 3-5 years) validated against actual evidence, rather than reflecting a manager\'s optimistic impression of a favoured team member?',
+        qAr: 'ما مدى صرامة التحقق من تقييمات "جاهزية" الخلفاء (جاهز الآن / 1-2 سنة / 3-5 سنوات) مقابل أدلة فعلية، بدلاً من عكسها لانطباع تفاؤلي من مدير تجاه عضو فريق مفضّل؟',
+        levels: [
+          'Readiness ratings, where they exist, are assigned by a single manager\'s gut feel with no supporting evidence and no cross-check by anyone else.',
+          'Readiness ratings are recorded but rely entirely on the nominating manager\'s opinion; there is no calibration and ratings vary widely in reliability across the organisation.',
+          'Readiness ratings are supported by defined evidence (performance history, competency assessment results, stretch-assignment outcomes) and reviewed by more than one senior leader before being finalised.',
+          'Readiness ratings are calibrated in a formal talent review session across multiple leaders, inconsistent or unsupported ratings are challenged and corrected, and the rating history is tracked over time per successor.',
+          'Readiness-rating accuracy is validated retrospectively — the organisation tracks how often a "Ready Now" successor actually performed successfully when placed — and the rating methodology is refined based on that evidence.',
+        ],
+        levelsAr: [
+          'تقييمات الجاهزية، حيثما وُجدت، يُسندها مدير واحد بالحدس دون أدلة داعمة أو تحقق من أي طرف آخر.',
+          'تقييمات الجاهزية تُسجَّل لكنها تعتمد كليًا على رأي المدير المُرشِّح؛ ولا توجد معايرة وتتفاوت موثوقية التقييمات بشكل كبير عبر المؤسسة.',
+          'تقييمات الجاهزية مدعومة بأدلة محددة (تاريخ الأداء، نتائج تقييم الكفاءات، نتائج المهام التطويرية الموسَّعة) وتُراجَع من أكثر من قائد أول قبل تثبيتها.',
+          'تقييمات الجاهزية تُعايَر في جلسة مراجعة مواهب رسمية عبر عدة قادة، والتقييمات غير المتسقة أو غير المدعومة تُعارَض وتُصحَّح، وتاريخ التقييم يُتابَع عبر الزمن لكل خليفة.',
+          'دقة تقييم الجاهزية تُتحقَّق منها بأثر رجعي — المؤسسة تتتبّع مدى نجاح الخليفة "الجاهز الآن" فعليًا عند تعيينه — ومنهجية التقييم تُحسَّن استنادًا إلى تلك الأدلة.',
+        ],
+      },
+      {
+        q: 'How rigorously is the internal fill rate for critical supply chain vacancies tracked and used to hold the succession process accountable for actually producing ready successors?',
+        qAr: 'ما مدى صرامة تتبّع معدل الشغل الداخلي للشواغر الحرجة في سلسلة الإمداد واستخدامه لمساءلة عملية التعاقب عن إنتاج خلفاء جاهزين فعليًا؟',
+        levels: [
+          'No one tracks whether critical vacancies are filled internally or externally — the succession plan\'s actual track record is completely unknown.',
+          'Internal fill rate is known anecdotally for a few high-profile cases but is not measured systematically across all critical roles.',
+          'Internal fill rate for critical roles is calculated and reported on a defined cycle (e.g., annually), giving a baseline picture of succession-plan effectiveness.',
+          'Internal fill rate is tracked by role family and trended over time, and a materially low or declining rate triggers a review of why the succession pipeline is not converting into actual placements.',
+          'Internal fill rate is a tracked governance KPI benchmarked against GCC peers, is reported to executive leadership, and directly informs succession-programme investment decisions.',
+        ],
+        levelsAr: [
+          'لا أحد يتتبّع ما إذا كانت الشواغر الحرجة تُشغَل داخليًا أو خارجيًا — السجل الفعلي لخطة التعاقب مجهول تمامًا.',
+          'معدل الشغل الداخلي معروف بشكل عرَضي لبضع حالات بارزة لكنه لا يُقاس منهجيًا عبر جميع الأدوار الحرجة.',
+          'معدل الشغل الداخلي للأدوار الحرجة يُحسَب ويُرفَع وفق دورة محددة (سنويًا مثلًا)، مما يعطي صورة أساسية لفعالية خطة التعاقب.',
+          'معدل الشغل الداخلي يُتابَع حسب عائلة الأدوار ويُرصَد اتجاهه عبر الزمن، والانخفاض الجوهري أو المتراجع يُطلق مراجعة لسبب عدم تحوّل مسار التعاقب إلى تعيينات فعلية.',
+          'معدل الشغل الداخلي مؤشر حوكمة متابَع ومُقارَن معياريًا بنظراء الخليج، ويُرفَع للقيادة التنفيذية، ويُغذّي مباشرةً قرارات الاستثمار في برنامج التعاقب.',
+        ],
+      },
+      {
+        q: 'At the working level, how consistently do named successors actually receive and complete the development actions (stretch assignments, mentoring, targeted training) set out in their development plan?',
+        qAr: 'على المستوى التنفيذي، ما مدى اتساق حصول الخلفاء المُسمّين فعليًا على إجراءات التطوير (المهام الموسَّعة، التوجيه، التدريب المستهدف) المحددة في خطة تطويرهم وإتمامها؟',
+        levels: [
+          'Development plans for named successors are written and then filed away — stretch assignments, mentoring, or targeted training rarely if ever materialise in practice.',
+          'Some development actions happen, but inconsistently, dependent on whether the successor\'s current manager is willing to release them for the opportunity.',
+          'Development actions for named successors are tracked against the plan, and managers are expected to support release for agreed assignments within a defined timeframe.',
+          'Development-plan completion is monitored at a defined cadence (e.g., quarterly), stalled actions are escalated, and managers who block successor development are held accountable.',
+          'Development-plan completion rates are analysed against subsequent readiness-rating improvement and actual promotion/placement outcomes, and the development process is refined based on what demonstrably accelerates readiness.',
+        ],
+        levelsAr: [
+          'خطط التطوير للخلفاء المُسمّين تُكتَب ثم تُحفَظ جانبًا — المهام الموسَّعة أو التوجيه أو التدريب المستهدف نادرًا ما يتحقق عمليًا إن حدث أصلًا.',
+          'بعض إجراءات التطوير تحدث، لكن بشكل غير متسق، ويعتمد ذلك على استعداد مدير الخليفة الحالي للسماح له بالمشاركة في الفرصة.',
+          'إجراءات التطوير للخلفاء المُسمّين تُتابَع مقابل الخطة، ويُتوقَّع من المدراء دعم الإفراج عن الموظف للمهام المتفق عليها ضمن إطار زمني محدد.',
+          'إنجاز خطة التطوير يُراقَب وفق إيقاع محدد (فصليًا مثلًا)، والإجراءات المتعثرة تُصعَّد، والمدراء الذين يعرقلون تطوير الخلفاء يُساءَلون.',
+          'معدلات إنجاز خطة التطوير تُحلَّل مقابل تحسّن تقييم الجاهزية اللاحق ونتائج الترقية/التعيين الفعلية، وعملية التطوير تُحسَّن استنادًا إلى ما يُثبت تسريع الجاهزية فعليًا.',
+        ],
+      },
+      {
+        q: 'How openly and consistently are named successors actually told about their status and involved in shaping their own development pathway, rather than being managed through an undisclosed plan?',
+        qAr: 'ما مدى انفتاح واتساق إخبار الخلفاء المُسمّين فعليًا بوضعهم وإشراكهم في تشكيل مسار تطويرهم الخاص، بدلاً من إدارتهم عبر خطة غير مُعلَنة؟',
+        levels: [
+          'Succession status is kept entirely confidential from the individuals concerned — successors are never told they have been identified, and development activity is disguised as generic opportunity.',
+          'Disclosure happens inconsistently and informally — some successors are told by a manager who happens to mention it, others are never informed, with no defined organisational stance.',
+          'A defined policy establishes whether and how successor status is disclosed, and the approach is applied consistently for all named successors at a given level.',
+          'Where disclosed, successors are actively involved in a structured conversation about their development pathway, timeline expectations, and what readiness would require, not just informed of the label.',
+          'Successor engagement in the process is tracked as an outcome measure (successor-reported clarity and satisfaction with the pathway), and disclosure/engagement practice is refined based on evidence of what best sustains motivation and retention.',
+        ],
+        levelsAr: [
+          'حالة التعاقب تُبقى سرية تمامًا عن الأفراد المعنيين — الخلفاء لا يُخبَرون أبدًا بأنهم مُحدَّدون، ونشاط التطوير يُقدَّم على أنه فرصة عامة.',
+          'الإفصاح يحدث بشكل غير متسق وغير رسمي — بعض الخلفاء يُخبَرهم مدير يذكر الأمر عرَضًا، وآخرون لا يُخبَرون أبدًا، دون موقف تنظيمي محدد.',
+          'سياسة محددة تُقرّر ما إذا كانت حالة الخليفة تُفصَح وكيفية ذلك، والنهج يُطبَّق باتساق لجميع الخلفاء المُسمّين في مستوى معين.',
+          'عند الإفصاح، يُشرَك الخلفاء فعليًا في محادثة منظمة حول مسار تطويرهم وتوقعات الجدول الزمني وما تتطلبه الجاهزية، لا مجرد إبلاغهم بالتصنيف.',
+          'مشاركة الخليفة في العملية تُتابَع كمقياس نتيجة (وضوح ورضا الخليفة المُبلَّغ عنه ذاتيًا تجاه المسار)، وممارسة الإفصاح/الإشراك تُحسَّن استنادًا إلى أدلة ما يديم التحفيز والاستبقاء بأفضل شكل.',
+        ],
+      },
+      {
+        q: 'How well does the succession process guard against nepotism, favouritism, or single-manager bias in who gets nominated as a successor?',
+        qAr: 'ما مدى نجاح عملية التعاقب في الحماية من المحسوبية أو التحيز الفردي للمدير فيمن يُرشَّح كخليفة؟',
+        levels: [
+          'Successor nominations are made unilaterally by a single manager with no oversight, and patterns of favouring particular individuals (relatives, personal favourites) are never questioned.',
+          'Nominations are reviewed informally by a second person occasionally, but there is no defined objective criteria and no systematic check for bias patterns.',
+          'Successor nominations require documented justification against defined criteria and sign-off from more than one senior leader before being accepted into the succession plan.',
+          'Nomination patterns are periodically analysed for concentration (e.g., repeated nomination of relatives, one department consistently overrepresented) and flagged for review.',
+          'Succession nomination integrity is independently audited, bias patterns identified are actively corrected, and the organisation can demonstrate the succession pool reflects merit-based, not relationship-based, selection.',
+        ],
+        levelsAr: [
+          'ترشيحات الخلفاء تتم منفردة من مدير واحد دون رقابة، وأنماط تفضيل أفراد بعينهم (أقارب، مفضّلون شخصيًا) لا تُساءَل أبدًا.',
+          'الترشيحات تُراجَع بشكل غير رسمي من شخص ثانٍ أحيانًا، لكن لا توجد معايير موضوعية محددة ولا فحص منهجي لأنماط التحيز.',
+          'ترشيحات الخلفاء تستلزم مبررًا موثّقًا مقابل معايير محددة واعتمادًا من أكثر من قائد أول قبل قبولها في خطة التعاقب.',
+          'أنماط الترشيح تُحلَّل دوريًا للكشف عن التركّز (كتكرار ترشيح الأقارب أو هيمنة قسم واحد باستمرار) وتُرصَد للمراجعة.',
+          'نزاهة ترشيح التعاقب تُدقَّق بشكل مستقل، وأنماط التحيز المكتشفة تُصحَّح بفعالية، والمؤسسة قادرة على إثبات أن مجمع التعاقب يعكس اختيارًا قائمًا على الجدارة لا العلاقات.',
+        ],
+      },
+      {
+        q: 'How much of succession planning data — critical-role maps, successor names, readiness ratings, development plans — is managed through a dedicated talent management system rather than static spreadsheets or PowerPoint slides?',
+        qAr: 'ما مدى إدارة بيانات تخطيط التعاقب — خرائط الأدوار الحرجة وأسماء الخلفاء وتقييمات الجاهزية وخطط التطوير — عبر نظام إدارة مواهب مخصص بدلاً من جداول بيانات أو شرائح عرض ثابتة؟',
+        levels: [
+          'Succession data lives in a single PowerPoint deck or spreadsheet updated once a year by HR, with no link to any other people data.',
+          'A basic digital file consolidates succession information, but it is manually maintained, quickly goes out of date, and is not connected to performance or competency data.',
+          'A dedicated succession/talent module (standalone or within the HRIS) holds critical-role maps, successor names, and readiness ratings in one system of record.',
+          'The succession system integrates with performance, competency, and L&D data so readiness ratings and development-plan progress update automatically rather than requiring manual re-entry.',
+          'The talent management platform supports real-time succession-depth reporting (searchable by role, readiness, risk) and automated alerts when a critical role has no viable successor or a rating has gone stale.',
+        ],
+        levelsAr: [
+          'بيانات التعاقب موجودة في شريحة عرض أو جدول بيانات واحد تُحدّثه الموارد البشرية مرة سنويًا، دون ارتباط بأي بيانات أخرى للموظفين.',
+          'ملف رقمي أساسي يُجمّع معلومات التعاقب، لكنه يُصان يدويًا ويتقادم بسرعة وغير مرتبط ببيانات الأداء أو الكفاءات.',
+          'وحدة تعاقب/مواهب مخصصة (مستقلة أو ضمن نظام الموارد البشرية) تحتفظ بخرائط الأدوار الحرجة وأسماء الخلفاء وتقييمات الجاهزية في نظام سجل واحد.',
+          'نظام التعاقب يتكامل مع بيانات الأداء والكفاءات والتعلّم والتطوير بحيث تُحدَّث تقييمات الجاهزية وتقدّم خطة التطوير آليًا دون إعادة إدخال يدوي.',
+          'منصة إدارة المواهب تدعم تقارير عمق التعاقب الآنية (قابلة للبحث حسب الدور والجاهزية والمخاطر) وتنبيهات آلية عند عدم وجود خليفة قابل للتطبيق لدور حرج أو تقادم تقييم.',
+        ],
+      },
+      {
+        q: 'How formally does board or executive-level governance oversee succession depth for the most senior supply chain roles (CPO/CSCO and direct reports), as opposed to succession being treated as an internal HR administrative matter?',
+        qAr: 'ما مدى رسمية إشراف حوكمة مجلس الإدارة أو المستوى التنفيذي على عمق التعاقب لأعلى أدوار سلسلة الإمداد (CPO/CSCO ومرؤوسيهم المباشرين)، بدلاً من معاملة التعاقب كمسألة إدارية داخلية للموارد البشرية؟',
+        levels: [
+          'Succession for the most senior supply chain roles is never discussed at board or executive committee level — it is treated purely as an internal HR file, if it exists at all.',
+          'Senior succession is mentioned occasionally in executive conversation, but there is no formal governance requirement, no standing agenda item, and no documented expectation of review.',
+          'Succession depth for CPO/CSCO and direct-report roles is formally reviewed by executive leadership on a defined cycle, with findings documented.',
+          'Board or audit/nomination committee formally receives a succession-depth report for the most senior supply chain roles at least annually, and gaps identified require a documented remediation plan.',
+          'Senior succession governance is independently benchmarked, meets or exceeds applicable regulatory/governance-code expectations for the entity type (listed, government, or private), and the organisation can evidence board-level accountability for closing succession gaps.',
+        ],
+        levelsAr: [
+          'التعاقب لأعلى أدوار سلسلة الإمداد لا يُناقَش أبدًا على مستوى مجلس الإدارة أو اللجنة التنفيذية — يُعامَل كملف إداري داخلي للموارد البشرية فقط، إن وُجد أصلًا.',
+          'التعاقب للأدوار العليا يُذكَر أحيانًا في محادثة تنفيذية، لكن لا يوجد متطلب حوكمة رسمي أو بند أجندة ثابت أو توقع موثّق للمراجعة.',
+          'عمق التعاقب لأدوار CPO/CSCO ومرؤوسيهم المباشرين يُراجَع رسميًا من القيادة التنفيذية وفق دورة محددة، والنتائج تُوثَّق.',
+          'مجلس الإدارة أو لجنة التدقيق/الترشيحات يتلقى رسميًا تقرير عمق تعاقب لأعلى أدوار سلسلة الإمداد سنويًا على الأقل، والفجوات المُحدَّدة تستلزم خطة معالجة موثّقة.',
+          'حوكمة التعاقب للأدوار العليا تُقارَن معياريًا بشكل مستقل، وتلبي أو تتجاوز توقعات اللائحة التنظيمية/مدونة الحوكمة المعمول بها لنوع الكيان (مُدرَج أو حكومي أو خاص)، والمؤسسة قادرة على إثبات مساءلة على مستوى مجلس الإدارة عن سد فجوات التعاقب.',
+        ],
+      },
+      {
+        q: 'How well prepared is the organisation for the sudden, unplanned departure of a senior supply chain leader — is there a genuine emergency succession plan, or does succession planning only cover orderly, foreseeable transitions?',
+        qAr: 'ما مدى استعداد المؤسسة لمغادرة مفاجئة وغير مخطَّطة لقائد أول في سلسلة الإمداد — هل توجد خطة تعاقب طارئة حقيقية، أم يغطي تخطيط التعاقب فقط الانتقالات المنظمة والمتوقعة؟',
+        levels: [
+          'Succession planning, where it exists, assumes an orderly, planned departure (retirement, resignation with notice) — a sudden unplanned exit would leave the role with no coverage plan whatsoever.',
+          'An emergency-coverage option is discussed informally for one or two of the most senior roles, but it is not documented and has never been tested.',
+          'A documented emergency succession plan (interim coverage arrangement, activation trigger) exists for the most critical supply chain roles, distinct from the standard long-term succession map.',
+          'Emergency succession plans are reviewed and refreshed on a defined cycle, are known in advance to the named interim covers, and are integrated with the organisation\'s wider business continuity plan.',
+          'Emergency succession readiness has been tested (simulation or an actual sudden departure), the transition was managed without material disruption, and lessons learned have been fed back into the plan.',
+        ],
+        levelsAr: [
+          'تخطيط التعاقب، حيثما وُجد، يفترض مغادرة منظمة ومخطَّطة (تقاعد، استقالة بإشعار) — الخروج المفاجئ وغير المخطَّط سيترك الدور دون أي خطة تغطية إطلاقًا.',
+          'خيار تغطية طارئ يُناقَش بشكل غير رسمي لدور أو دورين من الأعلى أقدمية، لكنه غير موثّق ولم يُختبَر أبدًا.',
+          'خطة تعاقب طارئة موثّقة (ترتيب تغطية مؤقت، مُحفِّز تفعيل) موجودة لأكثر أدوار سلسلة الإمداد حرجية، متمايزة عن خريطة التعاقب طويلة الأمد القياسية.',
+          'خطط التعاقب الطارئة تُراجَع وتُحدَّث وفق دورة محددة، ومعروفة مسبقًا لمن سيتولون التغطية المؤقتة المُسمّاة، ومُدمَجة مع خطة استمرارية الأعمال الأوسع للمؤسسة.',
+          'جاهزية التعاقب الطارئ اختُبرت (محاكاة أو مغادرة مفاجئة فعلية)، وأُديرَ الانتقال دون اضطراب جوهري، والدروس المستفادة أُدمِجت في الخطة.',
+        ],
+      },
     ],
   },
 
-  /* ── 10-5  Change Management Capability ──────────────────────────────── */
+  /* ── 11-5  Change Management Capability ──────────────────────────── */
   {
     id: 'org-change',
     title: 'Change Management Capability',
@@ -8265,23 +9039,172 @@ export const ORG_TALENT_SUB_SEGMENTS: SubSegmentData[] = [
           'إدارة التغيير قدرة تنظيمية متجذّرة؛ وممارسو إدارة التغيير المعتمدون يقودون جميع تحولات سلسلة الإمداد الكبرى؛ وتقييمات جاهزية التغيير ولوحات معلومات التبنّي وتتبّع تحقيق الفوائد معيارية.',
         ],
       },
+      {
+        q: 'How consistently is a defined change management methodology actually applied across different supply chain transformation programmes, rather than depending on whichever project leader happens to be running each initiative?',
+        qAr: 'ما مدى اتساق تطبيق منهجية إدارة تغيير محددة فعليًا عبر برامج تحول سلسلة الإمداد المختلفة، بدلاً من الاعتماد على أي قائد مشروع يتولى كل مبادرة؟',
+        levels: [
+          'Each project leader manages change however they personally see fit. There is no organisational standard, and the quality of change management varies wildly from one programme to the next.',
+          'A preferred methodology is loosely known within the organisation, but its application is optional and inconsistent — some programmes use it fully, others ignore it entirely.',
+          'A defined change management methodology is mandated for significant supply chain transformation programmes, and programme leaders are expected to follow its core steps.',
+          'Methodology adherence is checked at defined programme gates (e.g., stage-gate reviews), deviations require justification, and a central change function supports consistent application across programmes.',
+          'Methodology consistency is tracked as a portfolio-level metric across all supply chain transformation programmes, and the approach is refined centrally based on what demonstrably improves adoption outcomes across programmes.',
+        ],
+        levelsAr: [
+          'كل قائد مشروع يدير التغيير كما يراه مناسبًا شخصيًا. لا يوجد معيار تنظيمي، وجودة إدارة التغيير تتفاوت بشكل كبير من برنامج لآخر.',
+          'منهجية مفضّلة معروفة بشكل فضفاض داخل المؤسسة، لكن تطبيقها اختياري وغير متسق — بعض البرامج تستخدمها بالكامل وأخرى تتجاهلها تمامًا.',
+          'منهجية إدارة تغيير محددة إلزامية لبرامج تحول سلسلة الإمداد الجوهرية، ويُتوقَّع من قادة البرامج اتباع خطواتها الأساسية.',
+          'الالتزام بالمنهجية يُتحقَّق منه في نقاط علام محددة للبرنامج (كمراجعات البوابات المرحلية)، والانحرافات تستلزم تبريرًا، ووظيفة تغيير مركزية تدعم التطبيق المتسق عبر البرامج.',
+          'اتساق المنهجية يُتابَع كمقياس على مستوى المحفظة عبر جميع برامج تحول سلسلة الإمداد، والنهج يُحسَّن مركزيًا استنادًا إلى ما يُثبت تحسين نتائج التبنّي عبر البرامج.',
+        ],
+      },
+      {
+        q: 'How systematically is stakeholder resistance to supply chain change actually identified and managed, rather than being addressed only once it becomes visibly disruptive?',
+        qAr: 'ما مدى منهجية تحديد وإدارة مقاومة أصحاب المصلحة لتغيير سلسلة الإمداد فعليًا، بدلاً من معالجتها فقط عندما تصبح مُعطِّلة بشكل ملحوظ؟',
+        levels: [
+          'Resistance is not actively looked for — it is only addressed after it has already caused visible delay, conflict, or programme failure.',
+          'Resistance is recognised informally by programme leaders when it becomes obvious, but there is no structured stakeholder analysis and no defined approach to managing it.',
+          'A structured stakeholder analysis identifies likely sources and levels of resistance before rollout, and a defined engagement approach is planned for higher-resistance groups.',
+          'Resistance levels are actively monitored throughout the programme (surveys, sentiment tracking, direct feedback channels), and engagement tactics are adjusted based on what is actually observed.',
+          'Resistance management effectiveness is measured against adoption outcomes, patterns of resistance across programmes are analysed to anticipate future resistance earlier, and the approach is continuously refined.',
+        ],
+        levelsAr: [
+          'المقاومة لا تُرصَد بفعالية — تُعالَج فقط بعد أن تُسبب بالفعل تأخيرًا أو تعارضًا أو فشل برنامج ملحوظًا.',
+          'المقاومة تُلاحَظ بشكل غير رسمي من قادة البرنامج عندما تصبح واضحة، لكن لا يوجد تحليل أصحاب مصلحة منظم ولا نهج محدد لإدارتها.',
+          'تحليل أصحاب مصلحة منظم يُحدّد مصادر ومستويات المقاومة المحتملة قبل التطبيق، ونهج تفاعل محدد يُخطَّط للمجموعات الأعلى مقاومة.',
+          'مستويات المقاومة تُراقَب بفعالية طوال البرنامج (استبيانات، تتبّع المشاعر، قنوات تغذية راجعة مباشرة)، وأساليب التفاعل تُعدَّل بناءً على ما يُلاحَظ فعليًا.',
+          'فعالية إدارة المقاومة تُقاس مقابل نتائج التبنّي، وأنماط المقاومة عبر البرامج تُحلَّل لتوقّع المقاومة المستقبلية مبكرًا، والنهج يُحسَّن باستمرار.',
+        ],
+      },
+      {
+        q: 'Beyond the existence of a communication and training plan on paper, how well is it actually executed — reaching the right people, at the right depth, at the right time?',
+        qAr: 'بخلاف وجود خطة تواصل وتدريب على الورق، ما مدى جودة تنفيذها فعليًا — بحيث تصل للأشخاص الصحيحين، بالعمق الصحيح، في الوقت الصحيح؟',
+        levels: [
+          'Communication and training plans, where written, are rarely executed as designed — messages go out late or not at all, and training sessions are poorly attended with no follow-up.',
+          'Execution happens but is inconsistent — some stakeholder groups receive thorough communication and training while others are missed or under-served, with no tracking of who received what.',
+          'Communication and training execution is tracked against the plan (delivery dates, attendance, completion), and gaps in coverage are identified.',
+          'Execution quality is actively checked — not just completion but comprehension (e.g., post-training assessment, follow-up surveys) — and gaps are closed before go-live rather than left as residual risk.',
+          'Communication and training execution effectiveness is measured against actual adoption and error-rate outcomes post-go-live, and the delivery approach is refined programme-to-programme based on that evidence.',
+        ],
+        levelsAr: [
+          'خطط التواصل والتدريب، حيثما كُتبت، نادرًا ما تُنفَّذ كما صُمِّمت — الرسائل تُرسَل متأخرة أو لا تُرسَل إطلاقًا، وجلسات التدريب يكون حضورها ضعيفًا دون متابعة.',
+          'التنفيذ يحدث لكنه غير متسق — بعض مجموعات أصحاب المصلحة تتلقى تواصلًا وتدريبًا شاملًا بينما أخرى تُهمَل أو تُخدَم جزئيًا، دون تتبّع لمن تلقى ماذا.',
+          'تنفيذ التواصل والتدريب يُتابَع مقابل الخطة (تواريخ التسليم، الحضور، الإتمام)، وفجوات التغطية تُحدَّد.',
+          'جودة التنفيذ تُتحقَّق منها بفعالية — لا الإتمام فقط بل الاستيعاب أيضًا (كتقييم ما بعد التدريب، استبيانات المتابعة) — والفجوات تُغلَق قبل البدء الفعلي بدلاً من تركها كمخاطر متبقية.',
+          'فعالية تنفيذ التواصل والتدريب تُقاس مقابل نتائج التبنّي ومعدل الأخطاء الفعلية بعد البدء، وأسلوب التنفيذ يُحسَّن من برنامج لآخر استنادًا إلى تلك الأدلة.',
+        ],
+      },
+      {
+        q: 'Once a supply chain change programme goes live, how rigorously are the promised benefits actually tracked and confirmed, rather than the programme being declared "done" at go-live?',
+        qAr: 'بمجرد بدء برنامج تغيير سلسلة الإمداد فعليًا، ما مدى صرامة تتبّع الفوائد الموعودة والتأكد منها فعليًا، بدلاً من إعلان البرنامج "منتهيًا" عند البدء الفعلي؟',
+        levels: [
+          'No one tracks whether the benefits promised in the business case for a change programme were actually realised — the programme is considered complete once the new system or process is live.',
+          'Benefits are checked informally, sometime after go-live, by whoever happens to remember the original business case, with no structured tracking.',
+          'A defined post-go-live review compares actual outcomes against the original benefits case at a set point in time (e.g., 6 months) for major programmes.',
+          'Benefits realisation is tracked continuously against a baseline for a defined period post-go-live, shortfalls trigger a root-cause review, and corrective action is taken to close the gap.',
+          'Benefits-realisation data across all change programmes is consolidated and reported to leadership, systematically informing which types of change deliver reliable value and which do not, and shaping future business-case discipline.',
+        ],
+        levelsAr: [
+          'لا أحد يتتبّع ما إذا كانت الفوائد الموعودة في مبرر أعمال برنامج التغيير قد تحققت فعليًا — يُعتبَر البرنامج مكتملًا بمجرد بدء تشغيل النظام أو العملية الجديدة.',
+          'الفوائد تُراجَع بشكل غير رسمي بعد فترة من البدء الفعلي، من قِبل من يتذكر مبرر الأعمال الأصلي، دون تتبّع منظم.',
+          'مراجعة رسمية بعد البدء الفعلي تقارن النتائج الفعلية مقابل مبرر الفوائد الأصلي في نقطة زمنية محددة (6 أشهر مثلًا) للبرامج الكبرى.',
+          'تحقيق الفوائد يُتابَع باستمرار مقابل خط أساس لفترة محددة بعد البدء الفعلي، والنقص يُطلق مراجعة سبب جذري، ويُتخذ إجراء تصحيحي لسد الفجوة.',
+          'بيانات تحقيق الفوائد عبر جميع برامج التغيير تُجمَّع وتُرفَع للقيادة، مما يُثري منهجيًا معرفة أي أنواع التغيير تُحقق قيمة موثوقة وأيها لا يفعل، ويُشكّل انضباط مبررات الأعمال المستقبلية.',
+        ],
+      },
+      {
+        q: 'Beyond formal training sessions, how effectively does a network of local change champions or "super users" reinforce new ways of working in day-to-day supply chain operations?',
+        qAr: 'بخلاف جلسات التدريب الرسمية، ما مدى فعالية شبكة سفراء التغيير المحليين أو "المستخدمين المتقدمين" في ترسيخ أساليب العمل الجديدة في عمليات سلسلة الإمداد اليومية؟',
+        levels: [
+          'There is no local champion network. Once formal training ends, staff are left to revert to old habits or figure out the new way alone.',
+          'Informal "go-to" colleagues emerge naturally in some teams, but this is not a designed role, receives no support or recognition, and coverage is patchy across the organisation.',
+          'A defined change-champion or super-user network is designated across relevant teams, given specific reinforcement responsibilities, and provided with additional guidance materials.',
+          'Champions are actively supported (regular check-ins, direct line to the change team, visible recognition) and their day-to-day reinforcement activity is tracked, not just their initial appointment.',
+          'Champion-network effectiveness is measured against actual sustained adoption in their areas, high performers\' practices are captured and spread, and the network model is refined based on what demonstrably sustains new behaviours.',
+        ],
+        levelsAr: [
+          'لا توجد شبكة سفراء تغيير محلية. بمجرد انتهاء التدريب الرسمي، يُترَك الموظفون للعودة إلى العادات القديمة أو اكتشاف الطريقة الجديدة بمفردهم.',
+          'زملاء "مرجعيون" غير رسميين يظهرون طبيعيًا في بعض الفرق، لكن هذا ليس دورًا مصمَّمًا، ولا يحظى بدعم أو تقدير، والتغطية متفاوتة عبر المؤسسة.',
+          'شبكة سفراء تغيير أو مستخدمين متقدمين محددة تُعيَّن عبر الفرق المعنية، وتُمنَح مسؤوليات ترسيخ محددة، وتُزوَّد بمواد إرشادية إضافية.',
+          'السفراء يُدعَمون بفعالية (متابعات دورية، خط تواصل مباشر مع فريق التغيير، تقدير ملحوظ) ونشاط الترسيخ اليومي لديهم يُتابَع، لا مجرد تعيينهم الأولي.',
+          'فعالية شبكة السفراء تُقاس مقابل التبنّي المستدام الفعلي في مجالاتهم، وممارسات الأداء العالي تُوثَّق وتُنشَر، ونموذج الشبكة يُحسَّن استنادًا إلى ما يُثبت استدامة السلوكيات الجديدة فعليًا.',
+        ],
+      },
+      {
+        q: 'How well does formal change governance actually prevent process or system changes from being pushed live without going through the defined change management gate?',
+        qAr: 'ما مدى نجاح حوكمة التغيير الرسمية فعليًا في منع تغييرات العمليات أو الأنظمة من الانتقال للتشغيل الفعلي دون المرور ببوابة إدارة التغيير المحددة؟',
+        levels: [
+          'Anyone with sufficient system access can push a process or configuration change live with no requirement to route it through change management at all.',
+          'A change governance requirement exists on paper, but it is routinely bypassed under time pressure, and there is no mechanism that would actually catch an unauthorised change.',
+          'A defined change-approval gate is required before any significant process or system change goes live, and this is enforced for the majority of changes.',
+          'Change-gate compliance is actively monitored (e.g., reconciling system change logs against approved change records), and unauthorised changes are investigated when detected.',
+          'Change governance controls are periodically audited for completeness, gaps between policy and actual practice are proactively closed, and the organisation can evidence that the control has caught and reversed an unauthorised change.',
+        ],
+        levelsAr: [
+          'أي شخص لديه صلاحية وصول كافية للنظام يستطيع تشغيل تغيير عملية أو تهيئة فعليًا دون أي متطلب لتوجيهه عبر إدارة التغيير إطلاقًا.',
+          'متطلب حوكمة تغيير موجود على الورق، لكنه يُتجاوَز بشكل روتيني تحت ضغط الوقت، ولا توجد آلية تكتشف فعليًا تغييرًا غير مصرَّح به.',
+          'بوابة اعتماد تغيير محددة مطلوبة قبل تشغيل أي تغيير جوهري في العملية أو النظام فعليًا، ويُنفَّذ ذلك لغالبية التغييرات.',
+          'الالتزام ببوابة التغيير يُراقَب بفعالية (كمطابقة سجلات تغيير النظام مقابل سجلات التغيير المعتمدة)، والتغييرات غير المصرَّح بها تُحقَّق فيها عند اكتشافها.',
+          'ضوابط حوكمة التغيير تُدقَّق دوريًا للاكتمال، والفجوات بين السياسة والممارسة الفعلية تُغلَق استباقيًا، والمؤسسة قادرة على إثبات أن الضابط اكتشف وعكس تغييرًا غير مصرَّح به.',
+        ],
+      },
+      {
+        q: 'How much of change management execution — stakeholder tracking, adoption measurement, training completion — runs through a dedicated change management platform rather than manual spreadsheets and email?',
+        qAr: 'ما مدى إدارة تنفيذ إدارة التغيير — تتبّع أصحاب المصلحة وقياس التبنّي وإتمام التدريب — عبر منصة إدارة تغيير مخصصة بدلاً من جداول بيانات وبريد إلكتروني يدوي؟',
+        levels: [
+          'Change management activity is coordinated entirely through email and ad-hoc spreadsheets, with no central system tracking stakeholder status or adoption.',
+          'A basic shared spreadsheet consolidates change tracking, but it is manually updated, easily out of date, and gives no real visibility into adoption progress.',
+          'A dedicated change management or project tool tracks stakeholder engagement status, training completion, and key milestones for major programmes.',
+          'The change management platform integrates with L&D/LMS and communication systems so training completion and engagement data update automatically, and adoption dashboards are generated without manual compilation.',
+          'The platform supports real-time, programme-level adoption analytics (by stakeholder group, geography, or role) and automated alerts when adoption in a specific area is lagging, enabling early intervention.',
+        ],
+        levelsAr: [
+          'نشاط إدارة التغيير يُنسَّق بالكامل عبر البريد الإلكتروني وجداول بيانات ارتجالية، دون نظام مركزي يتتبّع حالة أصحاب المصلحة أو التبنّي.',
+          'جدول بيانات مشترك أساسي يُجمّع تتبّع التغيير، لكنه يُحدَّث يدويًا ويتقادم بسهولة ولا يُعطي رؤية حقيقية لتقدم التبنّي.',
+          'أداة إدارة تغيير أو مشروع مخصصة تتتبّع حالة تفاعل أصحاب المصلحة وإتمام التدريب ونقاط العلام الرئيسية للبرامج الكبرى.',
+          'منصة إدارة التغيير تتكامل مع أنظمة التعلّم والتطوير والتواصل بحيث تُحدَّث بيانات إتمام التدريب والتفاعل آليًا، ولوحات معلومات التبنّي تُولَّد دون تجميع يدوي.',
+          'المنصة تدعم تحليلات تبنّي آنية على مستوى البرنامج (حسب مجموعة أصحاب المصلحة أو الجغرافيا أو الدور) وتنبيهات آلية عند تأخر التبنّي في مجال معين، مما يُمكّن من التدخل المبكر.',
+        ],
+      },
+      {
+        q: 'How rigorously does change governance require a formal compliance/regulatory sign-off before a process change with legal or regulatory implications goes live?',
+        qAr: 'ما مدى صرامة استلزام حوكمة التغيير لاعتماد امتثال/تنظيمي رسمي قبل تشغيل تغيير عملية ذي تبعات قانونية أو تنظيمية فعليًا؟',
+        levels: [
+          'Process or system changes go live with no consideration of whether they have legal, regulatory, or internal-control implications — compliance is not part of the change process at all.',
+          'Compliance implications are considered informally by the project team if someone happens to raise the question, but there is no mandatory sign-off step.',
+          'A defined change-governance step requires compliance or legal review and sign-off for changes flagged as having regulatory or control implications before go-live.',
+          'The compliance sign-off requirement is enforced as a mandatory gate in the change process (change cannot proceed to go-live without it), and sign-off decisions are documented and auditable.',
+          'Compliance sign-off effectiveness is periodically reviewed against actual post-go-live regulatory or audit findings, and the change-governance process is refined to close any gaps identified.',
+        ],
+        levelsAr: [
+          'تغييرات العمليات أو الأنظمة تُشغَّل فعليًا دون أي اعتبار لما إذا كانت لها تبعات قانونية أو تنظيمية أو على الضبط الداخلي — الامتثال ليس جزءًا من عملية التغيير إطلاقًا.',
+          'التبعات الامتثالية تُؤخَذ بعين الاعتبار بشكل غير رسمي من فريق المشروع إذا أثار أحدهم السؤال، لكن لا توجد خطوة اعتماد إلزامية.',
+          'خطوة حوكمة تغيير محددة تستلزم مراجعة واعتماد الامتثال أو القانونية للتغييرات المُوسَمة بتبعات تنظيمية أو ضبطية قبل البدء الفعلي.',
+          'متطلب اعتماد الامتثال يُنفَّذ كبوابة إلزامية في عملية التغيير (لا يمكن للتغيير المضي نحو البدء الفعلي دونها)، وقرارات الاعتماد تُوثَّق وتكون قابلة للتدقيق.',
+          'فعالية اعتماد الامتثال تُراجَع دوريًا مقابل نتائج التدقيق أو التنظيم الفعلية بعد البدء، وعملية حوكمة التغيير تُحسَّن لسد أي فجوات مُحدَّدة.',
+        ],
+      },
+      {
+        q: 'When a supply chain change programme fails to achieve adoption or has to be partially reversed, how well prepared is the organisation to roll back cleanly and learn from the failure, rather than being stuck with a half-adopted, unstable state?',
+        qAr: 'عندما يفشل برنامج تغيير سلسلة الإمداد في تحقيق التبنّي أو يستلزم عكسًا جزئيًا، ما مدى استعداد المؤسسة للتراجع بشكل نظيف والتعلّم من الفشل، بدلاً من التعلّق في حالة غير مستقرة نصف مُتبنّاة؟',
+        levels: [
+          'There is no rollback plan for a failing change programme — if adoption fails, the organisation is left with a half-implemented, unstable mix of old and new ways of working.',
+          'Rollback is improvised reactively if a programme clearly fails, with no pre-defined plan and significant disruption during the reversal.',
+          'A defined rollback/reversion plan is prepared alongside the implementation plan for significant programmes, specifying how to revert cleanly if adoption thresholds are not met.',
+          'Rollback readiness is actively tested or rehearsed for high-risk programmes, and a decision framework defines the specific conditions that would trigger invoking the rollback plan.',
+          'Failed or partially reversed change programmes are formally reviewed for root cause, lessons learned are documented and fed into the change management methodology, and the organisation can demonstrate improved success rates over successive programmes as a result.',
+        ],
+        levelsAr: [
+          'لا توجد خطة تراجع لبرنامج تغيير فاشل — إذا فشل التبنّي، تبقى المؤسسة في مزيج غير مستقر ونصف مُنفَّذ بين أساليب العمل القديمة والجديدة.',
+          'التراجع يُرتجَل بشكل تفاعلي إذا فشل البرنامج بوضوح، دون خطة محددة مسبقًا واضطراب كبير أثناء العكس.',
+          'خطة تراجع/عكس محددة تُعَد جنبًا إلى جنب مع خطة التنفيذ للبرامج الجوهرية، تُحدّد كيفية التراجع بشكل نظيف إذا لم تُحقَّق حدود التبنّي.',
+          'جاهزية التراجع تُختبَر أو تُمارَس فعليًا للبرامج عالية المخاطر، وإطار قرار يُحدّد الظروف المحددة التي تستدعي تفعيل خطة التراجع.',
+          'برامج التغيير الفاشلة أو المُعادة جزئيًا تُراجَع رسميًا للسبب الجذري، والدروس المستفادة تُوثَّق وتُغذّي منهجية إدارة التغيير، والمؤسسة قادرة على إثبات تحسّن معدلات النجاح عبر البرامج المتتالية نتيجة ذلك.',
+        ],
+      },
     ],
   },
 
 ];
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   INDUSTRY MODULE A — MANUFACTURING & PRODUCTION OPERATIONS
-   Module ID: mfg_ops
-   Sub-segments:
-     0 Production Planning & Scheduling
-     1 Quality Management System
-     2 OEE & Asset Effectiveness
-     3 BOM Accuracy & Engineering Change Control
-     4 Lean & Continuous Improvement
-     5 Make-or-Buy & Outsourcing Governance
-═══════════════════════════════════════════════════════════════════════════ */
-
 export const MFG_OPS_SUB_SEGMENTS: SubSegmentData[] = [
 
   /* ── mfg_ops-0  Production Planning & Scheduling ─────────────────────── */
