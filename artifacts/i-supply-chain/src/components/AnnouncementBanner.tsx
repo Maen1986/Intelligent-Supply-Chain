@@ -37,7 +37,7 @@ export function AnnouncementBanner() {
             <div className="flex items-center gap-3 min-w-0">
               <span className="flex items-center gap-1.5 bg-[#C9A84C] text-white text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full shrink-0 shadow-lg">
                 <Zap className="w-3 h-3" />
-                {ar ? 'الأول خليجياً' : 'GCC First'}
+                {ar ? 'مباشر الآن' : 'Live Now'}
               </span>
 
               {/* Scrolling marquee on mobile, static on desktop */}
@@ -48,7 +48,7 @@ export function AnnouncementBanner() {
                   animate={{ x: 0 }}
                   transition={{ duration: 0.6, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
                 >
-                  {ar ? 'مركز قيادة سلسلة الإمداد الذكي الأول في الخليج متاح الآن — ' : "The GCC's only AI Supply Chain Command Centre is live —"}
+                  {ar ? 'مركز القيادة الذكي من آي سبلاي تشين متاح الآن — ' : "I Supply Chain's AI Command Centre is live —"}
                   <span className="text-[#C9A84C] font-bold">{ar ? ' إحاطة تنفيذية خلال دقائق — باقات تبدأ من 250 ريال شهرياً.' : ' executive briefing in minutes — plans from SAR 250 / mo.'}</span>
                 </motion.p>
               </div>

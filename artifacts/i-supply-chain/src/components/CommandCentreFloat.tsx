@@ -56,7 +56,7 @@ export function CommandCentreFloat() {
                 </div>
                 <div>
                   <span className="flex items-center gap-1 text-[10px] font-black uppercase tracking-widest text-[#C9A84C]">
-                    <Zap className="w-3 h-3" /> {ar ? 'الأول خليجياً' : 'GCC First'}
+                    <Zap className="w-3 h-3" /> {ar ? 'مدعوم بالذكاء الاصطناعي' : 'AI-Powered'}
                   </span>
                   <p className="text-white font-bold text-sm leading-tight">{ar ? 'مركز القيادة الذكي' : 'AI Command Centre'}</p>
                 </div>
@@ -71,7 +71,7 @@ export function CommandCentreFloat() {
 
             {/* Body */}
             <p className="text-white/80 text-xs leading-relaxed mb-3">
-              {ar ? 'احصل على تقرير تنفيذي مخصص لسلسلة الإمداد في الخليج — ' : 'Get a personalised GCC supply chain executive briefing —'}
+              {ar ? 'احصل على تقرير تنفيذي مخصص لسلسلة الإمداد — ' : 'Get a personalised supply chain executive briefing —'}
               <span className="text-[#C9A84C] font-bold">{ar ? ' معايير مقارنة، نموذج توفير، مؤشر مخاطر وخطة 90 يوماً.' : ' benchmarks, savings model, risk score & 90-day plan.'}</span>
             </p>
 
