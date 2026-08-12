@@ -20,6 +20,7 @@ import { Button } from '@/components/ui/button';
 import { API_BASE } from '@/lib/apiBase';
 import { safeSetItem } from '@/lib/storage';
 import { useBenchmarks } from '@/lib/useBenchmarks';
+import { computeImportPlan, CC_DOMAIN_TO_SEGMENTS } from '@/lib/maturityImport';
 import {
   SKU_CLASSES, SkuClassKey,
   SKU_CLASS_KPI_BENCHMARKS, SKU_CLASS_KPI_TOP_QUARTILE,
@@ -260,25 +261,10 @@ function allSubKeys(): string[] {
   return MATURITY_DOMAINS_EX.flatMap(d => d.subs.map(s => `${d.id}__${s.id}`));
 }
 
-/**
- * Maps each of this widget's 8 self-rating domains to the id(s) of the real
- * Maturity Assessment segment(s) that cover the same ground (see
- * pages/maturityData.tsx CORE_SEGMENTS). 'operations' folds together three
- * real segments (demand, inventory, logistics) since this widget doesn't
- * split them. 'Organisation & Talent' and 'Quality Management & CI' have no
- * counterpart here and are intentionally left out — those two stay
- * manually-rated even after an import.
- */
-const CC_DOMAIN_TO_SEGMENTS: Record<MaturityDomainId, string[]> = {
-  strategy:    ['strategy'],
-  procurement: ['procurement'],
-  clm:         ['contracts'],
-  srm:         ['suppliers'],
-  operations:  ['demand', 'inventory', 'logistics'],
-  risk:        ['risk'],
-  digital:     ['digital'],
-  esg:         ['sustainability'],
-};
+/** Number of sliders per domain, keyed for computeImportPlan (5 for every domain today). */
+const SUBS_PER_DOMAIN: Record<MaturityDomainId, number> = Object.fromEntries(
+  MATURITY_DOMAINS_EX.map(d => [d.id, d.subs.length]),
+) as Record<MaturityDomainId, number>;
 
 /** Compute per-domain average from flat sub-ratings */
 function domainAverages(ratings: Record<string, number>): Record<string, number> {
@@ -1689,6 +1675,10 @@ interface BriefingDraft {
   painPoints?: string[];
   kpiRatings?: Record<string, number>;
   maturityRatings?: Record<string, number>;
+  /** Which domains' ratings came from a real Maturity Assessment import, vs manual entry. */
+  importedDomainIds?: string[];
+  /** ISO timestamp of the Maturity Assessment snapshot the import came from. */
+  importedAt?: string | null;
   step?: string;
   savedAt?: number;
 }
@@ -1723,13 +1713,15 @@ const PDF_GRAY = '#6B7280';
 const PDF_BORDER = '#E5E7EB';
 
 function BriefingPrintable({
-  briefing, maturityRatings, industry, revenueBand, lang,
+  briefing, maturityRatings, industry, revenueBand, lang, verifiedDomainLabels,
 }: {
   briefing: Briefing;
   maturityRatings: Record<string, number>;
   industry: string;
   revenueBand: string;
   lang: Lang;
+  /** English domain labels grounded in a real, completed Maturity Assessment (not self-estimated). */
+  verifiedDomainLabels?: string[];
 }) {
   const ar = lang === 'ar';
   const radarData = MATURITY_DOMAINS_EX.map(d => {
@@ -1805,6 +1797,13 @@ function BriefingPrintable({
         {/* Radar + domain maturity breakdown */}
         <div data-pdf-block="">
           <h2 style={sectionTitle}>{ar ? 'نضج المجالات' : 'Domain Maturity'}</h2>
+          {verifiedDomainLabels && verifiedDomainLabels.length > 0 && (
+            <p style={{ margin: '-6px 0 10px', fontSize: 10, fontWeight: 700, color: PDF_GOLD }}>
+              {ar
+                ? `✓ ${verifiedDomainLabels.length} من 8 مجالات مبنية على تقييم النضج الفعلي والمكتمل للعميل — وليست تقديرًا ذاتيًا`
+                : `✓ ${verifiedDomainLabels.length} of 8 domains grounded in the client's real, completed Maturity Assessment — not self-estimated`}
+            </p>
+          )}
           <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
             <div dir="ltr" style={{ flexShrink: 0 }}>
               <RadarChart width={380} height={300} data={radarData} outerRadius="68%">
@@ -1964,7 +1963,17 @@ function BriefingTab({ lang }: { lang: Lang }) {
      "Import my results" affordance that pre-fills these sliders from their
      actual segment scores, instead of guessing on a 1-5 scale from memory. */
   const [latestSnapshot, setLatestSnapshot] = useState<{ id: number; takenAt: string; segmentScores: { id: string; score: number }[] } | null>(null);
-  const [importedAt, setImportedAt] = useState<string | null>(null);
+  const [importedAt, setImportedAt] = useState<string | null>(() => draft.importedAt ?? null);
+  /**
+   * Domains currently populated from the real Maturity Assessment rather
+   * than typed in by hand. Shown as a "Verified" badge on the domain header.
+   * A domain drops out of this set the instant any of its sliders is
+   * manually clicked — once edited, that domain's data is a mix of real and
+   * guessed, so it must stop claiming to be verified.
+   */
+  const [importedDomainIds, setImportedDomainIds] = useState<Set<MaturityDomainId>>(
+    () => new Set((draft.importedDomainIds ?? []) as MaturityDomainId[]),
+  );
   useEffect(() => {
     if (!user) return;
     fetch(`${API_BASE}/maturity/snapshots`, { credentials: 'include' })
@@ -1979,20 +1988,29 @@ function BriefingTab({ lang }: { lang: Lang }) {
 
   const importMaturityFromAssessment = () => {
     if (!latestSnapshot) return;
-    const scoreById = Object.fromEntries(latestSnapshot.segmentScores.map(s => [s.id, s.score]));
+    const plan = computeImportPlan(latestSnapshot.segmentScores, SUBS_PER_DOMAIN);
     setMaturityRatings(prev => {
       const next = { ...prev };
-      (Object.keys(CC_DOMAIN_TO_SEGMENTS) as MaturityDomainId[]).forEach(domainId => {
-        const segIds = CC_DOMAIN_TO_SEGMENTS[domainId];
-        const vals = segIds.map(id => scoreById[id]).filter((v): v is number => typeof v === 'number' && v > 0);
-        if (vals.length === 0) return; // this domain has no real-assessment coverage — leave as-is
-        const rounded = Math.max(1, Math.min(5, Math.round(vals.reduce((a, b) => a + b, 0) / vals.length)));
+      (Object.keys(plan) as MaturityDomainId[]).forEach(domainId => {
         const domain = MATURITY_DOMAINS_EX.find(d => d.id === domainId);
-        domain?.subs.forEach(sub => { next[`${domainId}__${sub.id}`] = rounded; });
+        const vals = plan[domainId]!;
+        domain?.subs.forEach((sub, i) => { next[`${domainId}__${sub.id}`] = vals[i]; });
       });
       return next;
     });
+    setImportedDomainIds(new Set(Object.keys(plan) as MaturityDomainId[]));
     setImportedAt(latestSnapshot.takenAt);
+  };
+
+  /** Manual edit to any slider in an imported domain demotes it back to "manual". */
+  const setMaturitySubRating = (domainId: MaturityDomainId, key: string, val: number) => {
+    setMaturityRatings(prev => ({ ...prev, [key]: val }));
+    setImportedDomainIds(prev => {
+      if (!prev.has(domainId)) return prev;
+      const next = new Set(prev);
+      next.delete(domainId);
+      return next;
+    });
   };
   const toggleDomain = (id: string) => setExpandedDomains(prev => ({ ...prev, [id]: !prev[id] }));
   // True when the component mounted with a non-empty saved draft so we can
@@ -2408,8 +2426,8 @@ function BriefingTab({ lang }: { lang: Lang }) {
   // Auto-save draft on every change
   useEffect(() => {
     const savedStep = RESUMABLE_STEPS.includes(step) ? step : 'step3';
-    safeSetItem(BRIEFING_DRAFT_KEY, JSON.stringify({ companyName, industry, subIndustry, revenueBand, painPoints, kpiRatings, maturityRatings, step: savedStep, savedAt: Date.now() } satisfies BriefingDraft));
-  }, [companyName, industry, subIndustry, revenueBand, painPoints, kpiRatings, maturityRatings, step]);
+    safeSetItem(BRIEFING_DRAFT_KEY, JSON.stringify({ companyName, industry, subIndustry, revenueBand, painPoints, kpiRatings, maturityRatings, importedDomainIds: Array.from(importedDomainIds), importedAt, step: savedStep, savedAt: Date.now() } satisfies BriefingDraft));
+  }, [companyName, industry, subIndustry, revenueBand, painPoints, kpiRatings, maturityRatings, importedDomainIds, importedAt, step]);
 
   const clearDraft = () => {
     try { localStorage.removeItem(BRIEFING_DRAFT_KEY); } catch { /* ignore */ }
@@ -2444,11 +2462,17 @@ function BriefingTab({ lang }: { lang: Lang }) {
             return idx >= 0 ? PAIN_POINTS_AR[idx] : p;
           })
         : painPoints;
+      // Domains still marked "Verified" (imported and unedited) get flagged to the
+      // AI so the briefing can note which findings are grounded in the client's real,
+      // completed Maturity Assessment rather than self-estimated on the spot.
+      const verifiedDomainLabels = MATURITY_DOMAINS_EX
+        .filter(d => importedDomainIds.has(d.id))
+        .map(d => d.label);
       const resp = await fetch(`${API_BASE}/assessment`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ industry, subIndustry: subIndustry || undefined, revenueBand, painPoints: localizedPainPoints, kpiRatings: localizedKpiRatings, maturityRatings: domainAverages(maturityRatings), subDimensionRatings: subDimensionScores(maturityRatings, lang), language: lang }),
+        body: JSON.stringify({ industry, subIndustry: subIndustry || undefined, revenueBand, painPoints: localizedPainPoints, kpiRatings: localizedKpiRatings, maturityRatings: domainAverages(maturityRatings), subDimensionRatings: subDimensionScores(maturityRatings, lang), verifiedDomainLabels, language: lang }),
       });
       const data = await resp.json() as { success: boolean; briefing: Briefing; error?: string };
       if (!data.success || !data.briefing) throw new Error(data.error || 'No briefing returned');
@@ -2548,7 +2572,7 @@ function BriefingTab({ lang }: { lang: Lang }) {
         {/* Hidden branded layout captured for PDF export */}
         <div style={{ position: 'fixed', left: -10000, top: 0, pointerEvents: 'none' }} aria-hidden="true">
           <div ref={pdfRef}>
-            <BriefingPrintable briefing={briefing} maturityRatings={maturityRatings} industry={industry} revenueBand={revenueBand} lang={lang} />
+            <BriefingPrintable briefing={briefing} maturityRatings={maturityRatings} industry={industry} revenueBand={revenueBand} lang={lang} verifiedDomainLabels={MATURITY_DOMAINS_EX.filter(d => importedDomainIds.has(d.id)).map(d => d.label)} />
           </div>
         </div>
         {/* PDF page preview modal */}
@@ -2679,6 +2703,13 @@ function BriefingTab({ lang }: { lang: Lang }) {
           <p className="text-xs text-muted-foreground mb-2">
             {lang === 'ar' ? 'متوسط درجات النضج لكل مجال (مقياس ١–٥)' : 'Average maturity score per domain (1–5 scale)'}
           </p>
+          {importedDomainIds.size > 0 && (
+            <p className="text-xs font-bold mb-2" style={{ color: '#C9A84C' }}>
+              {ar
+                ? `✓ ${importedDomainIds.size} من 8 مجالات مبنية على تقييم النضج الفعلي والمكتمل — وليست تقديرًا ذاتيًا`
+                : `✓ ${importedDomainIds.size} of 8 domains grounded in your real, completed Maturity Assessment — not self-estimated`}
+            </p>
+          )}
           <div className="w-full h-80" dir="ltr">
             <ResponsiveContainer width="100%" height="100%">
               <RadarChart data={radarData} outerRadius="70%">
@@ -3074,8 +3105,17 @@ function BriefingTab({ lang }: { lang: Lang }) {
                       className="w-full flex items-center gap-3 px-4 py-3 bg-[#082C6B]/5 hover:bg-[#082C6B]/10 transition-colors text-left"
                     >
                       <span className="text-lg leading-none">{domain.icon}</span>
-                      <span className="flex-1 font-bold text-sm text-[#082C6B]">
+                      <span className="flex-1 font-bold text-sm text-[#082C6B] flex items-center gap-2">
                         {ar ? domain.labelAr : domain.label}
+                        {importedDomainIds.has(domain.id) && (
+                          <span
+                            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide bg-accent/15 text-accent"
+                            title={ar ? 'مستورد من تقييم النضج الفعلي — لم يُعدَّل' : 'Imported from your real Maturity Assessment — unedited'}
+                          >
+                            <Sparkles className="w-2.5 h-2.5" />
+                            {ar ? 'موثّق' : 'Verified'}
+                          </span>
+                        )}
                       </span>
                       <span className="text-xs font-bold px-2 py-0.5 rounded-full text-white" style={{ backgroundColor: avgColor }}>
                         {domainAvg} / 5
@@ -3109,7 +3149,7 @@ function BriefingTab({ lang }: { lang: Lang }) {
                                       <button
                                         key={n}
                                         type="button"
-                                        onClick={() => setMaturityRatings(prev => ({ ...prev, [key]: n }))}
+                                        onClick={() => setMaturitySubRating(domain.id, key, n)}
                                         className={`w-8 h-8 rounded-md text-xs font-bold border transition-all ${val >= n ? 'bg-[#C9A84C] text-white border-[#C9A84C]' : 'bg-white text-muted-foreground border-border hover:border-[#C9A84C]/40'}`}
                                       >
                                         {n}
