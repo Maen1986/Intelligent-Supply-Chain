@@ -737,15 +737,15 @@ export function Home() {
           {/* Label + Headline */}
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }} className="text-center mb-14">
             <span className="inline-flex items-center gap-2 bg-[#C9A84C]/15 border border-[#C9A84C]/30 text-[#C9A84C] text-xs font-black uppercase tracking-[0.2em] px-4 py-1.5 rounded-full mb-5">
-              {isAr ? '⚡ سابقة غير مسبوقة — الأول في الخليج' : '⚡ Unprecedented — GCC First'}
+              {isAr ? '⚡ ذكاء اصطناعي لسلسلة الإمداد' : '⚡ AI-Powered Supply Chain Intelligence'}
             </span>
             <h2 className="text-4xl md:text-5xl font-black text-white leading-tight mb-4">
               {isAr ? (<>رؤى كانت تستغرق أسابيع.<br /><span className="text-[#C9A84C]">أصبحت تستغرق 60 ثانية.</span></>) : (<>Insights that took weeks.<br /><span className="text-[#C9A84C]">Now take 60 seconds.</span></>)}
             </h2>
             <p className="text-white/60 text-lg max-w-2xl mx-auto leading-relaxed">
               {isAr
-                ? 'مركز القيادة من ISC هو منصة ذكاء سلسلة الإمداد المدعومة بالذكاء الاصطناعي الوحيدة المصممة خصيصاً لمنظمات الخليج — مبنية على CIPS وAPICS SCOR و20 عاماً من الخبرة الإقليمية. خطط بأسعار مناسبة تُصمَّم بحسب حجم منشأتك.'
-                : 'The ISC Command Centre is the only AI-powered supply chain intelligence platform built specifically for GCC organisations — grounded in CIPS, APICS SCOR, and 20 years of regional expertise. Affordable plans sized to your organisation.'}
+                ? 'مركز القيادة هو محرك الذكاء الاصطناعي من آي سبلاي تشين — مصمم للمؤسسات حول العالم، ومبني على أسس CIPS وAPICS SCOR وخبرة 20 عاماً متجذرة في الخليج. خطط بأسعار مناسبة تُصمَّم بحسب حجم منشأتك.'
+                : "The Command Centre is I Supply Chain's AI-powered intelligence engine — built for enterprises worldwide, grounded in CIPS, APICS SCOR, and 20 years of GCC-rooted expertise. Affordable plans sized to your organisation."}
             </p>
           </motion.div>
 
@@ -828,7 +828,7 @@ export function Home() {
                 <ChevronRight className="w-5 h-5 rtl:rotate-180" />
               </motion.button>
             </Link>
-            <p className="text-white/30 text-xs mt-3">{isAr ? 'بدون تسجيل · بدون بطاقة ائتمان · الأداة الوحيدة من نوعها في الخليج' : "No sign-up · No credit card · GCC's only tool of its kind"}</p>
+            <p className="text-white/30 text-xs mt-3">{isAr ? 'بدون تسجيل · بدون بطاقة ائتمان · مجاني للتجربة' : "No sign-up · No credit card · Free to try"}</p>
           </motion.div>
 
         </div>
