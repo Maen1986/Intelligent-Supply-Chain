@@ -38,6 +38,20 @@ export interface Question {
   levelsAr: [string, string, string, string, string];
   /** 1–4 industry framework/standard abbreviations most relevant to this question */
   frameworks?: string[];
+  /**
+   * Which management layer this specific capability question probes —
+   * independent of which segment it lives in. A segment like "Strategy"
+   * can still contain a Tactical question (KPI cascade), and an
+   * "Operational" segment like Logistics can contain a Tactical one
+   * (network optimisation). Used by the AI remedy engine (#38) to
+   * sequence a dependency-aware 30/60/90-day roadmap: Operational gaps
+   * are quick wins, Tactical gaps need process/capability build, and
+   * Strategic gaps need leadership sponsorship and typically anchor the
+   * 90-day horizon. Only populated on the 12 core segments' + 3 industry
+   * modules' flat 5-question set (the set currently fed to remedies);
+   * sub-segment (deep-mode) questions are not yet tagged.
+   */
+  layer?: 'strategic' | 'tactical' | 'operational';
 }
 
 /**
@@ -151,6 +165,7 @@ export const CORE_SEGMENTS: Segment[] = [
     questions: [
       {
         q: 'How well-defined and documented is your supply chain strategy, including its alignment to corporate goals and a 3–5 year roadmap?',
+        layer: 'strategic',
         qAr: 'ما مدى وضوح استراتيجية سلسلة الإمداد لديكم وتوثيقها، بما في ذلك مواءمتها مع الأهداف المؤسسية ووجود خارطة طريق لمدة 3–5 سنوات؟',
         levels: [
           'No formal strategy exists. Decisions are made reactively based on immediate operational pressures with no documented direction.',
@@ -169,6 +184,7 @@ export const CORE_SEGMENTS: Segment[] = [
       },
       {
         q: 'How regularly do you conduct end-to-end supply chain network design reviews, including footprint, transportation lanes, and distribution models?',
+        layer: 'strategic',
         qAr: 'ما مدى انتظامكم في إجراء مراجعات لتصميم شبكة سلسلة الإمداد من طرف إلى طرف، بما في ذلك النطاق التشغيلي ومسارات النقل ونماذج التوزيع؟',
         levels: [
           'The supply chain network has never been formally mapped or evaluated for optimisation opportunities.',
@@ -187,6 +203,7 @@ export const CORE_SEGMENTS: Segment[] = [
       },
       {
         q: 'How effectively is your supply chain strategy linked to financial planning and capital allocation through an executive IBP or S&OP governance process?',
+        layer: 'strategic',
         qAr: 'ما مدى فعالية ربط استراتيجية سلسلة الإمداد بالتخطيط المالي وتخصيص رأس المال من خلال عملية IBP أو S&OP تنفيذية؟',
         levels: [
           'No linkage exists between supply chain planning and financial planning. Capital allocation decisions are made independently of supply chain strategy.',
@@ -205,6 +222,7 @@ export const CORE_SEGMENTS: Segment[] = [
       },
       {
         q: 'How effectively do you use scenario planning and supply chain simulation to evaluate strategic options (e.g., nearshoring, new markets, disruptions)?',
+        layer: 'strategic',
         qAr: 'ما مدى فعالية استخدامكم لتخطيط السيناريوهات ومحاكاة سلسلة الإمداد لتقييم الخيارات الاستراتيجية (مثل التوطين القريب والأسواق الجديدة والاضطرابات)؟',
         levels: [
           'No scenario planning is conducted. Major strategic decisions rely entirely on intuition and past experience.',
@@ -223,6 +241,7 @@ export const CORE_SEGMENTS: Segment[] = [
       },
       {
         q: 'How well are supply chain KPIs defined, cascaded to teams, and tracked against targets with clear ownership and accountability?',
+        layer: 'tactical',
         qAr: 'ما مدى جودة تعريف مؤشرات أداء سلسلة الإمداد وتوزيعها على الفرق ومتابعتها مقابل المستهدفات مع وضوح الملكية والمساءلة؟',
         levels: [
           'No KPIs are defined for supply chain performance. There is no formal measurement framework or performance reporting.',
@@ -271,6 +290,7 @@ export const CORE_SEGMENTS: Segment[] = [
     questions: [
       {
         q: 'How structured and consistently applied is your category management approach across all direct and indirect spend categories?',
+        layer: 'tactical',
         qAr: 'ما مدى تنظيم نهج إدارة الفئات لديكم واتساق تطبيقه عبر جميع فئات الإنفاق المباشر وغير المباشر؟',
         levels: [
           'No category management exists. All spend categories are managed reactively using identical, tactical approaches regardless of strategic value.',
@@ -289,6 +309,7 @@ export const CORE_SEGMENTS: Segment[] = [
       },
       {
         q: 'How consistently do you apply formal strategic sourcing methodology (RFQ, RFP, e-auctions, multi-criteria evaluation) when selecting or renewing suppliers?',
+        layer: 'tactical',
         qAr: 'ما مدى اتساق تطبيقكم لمنهجية التوريد الاستراتيجي الرسمية (RFQ، RFP، المزادات الإلكترونية، التقييم متعدد المعايير) عند اختيار الموردين أو تجديد التعاقد معهم؟',
         levels: [
           'Supplier selection is informal and based on existing relationships or convenience. No defined sourcing process or evaluation criteria exists.',
@@ -307,6 +328,7 @@ export const CORE_SEGMENTS: Segment[] = [
       },
       {
         q: 'How advanced and frequently refreshed is your spend analysis capability — including spend classification, maverick spend detection, and savings opportunity identification?',
+        layer: 'tactical',
         qAr: 'ما مدى تقدّم قدرتكم على تحليل الإنفاق وتكرار تحديثها — بما في ذلك تصنيف الإنفاق واكتشاف الإنفاق الخارج عن السياسات وتحديد فرص التوفير؟',
         levels: [
           'Spend data is not centrally available or analysed. The organisation does not know what it buys, from whom, or at what price.',
@@ -325,6 +347,7 @@ export const CORE_SEGMENTS: Segment[] = [
       },
       {
         q: 'How effectively do you apply Total Cost of Ownership (TCO) analysis — including quality, logistics, risk, and lifecycle costs — in sourcing decisions rather than purchase price alone?',
+        layer: 'tactical',
         qAr: 'ما مدى فعالية تطبيقكم لتحليل التكلفة الإجمالية للملكية (TCO) — بما في ذلك الجودة والخدمات اللوجستية والمخاطر وتكاليف دورة الحياة — في قرارات التوريد بدلاً من سعر الشراء وحده؟',
         levels: [
           'All sourcing decisions are based on unit purchase price only. Hidden costs, quality implications, and lifecycle costs are never considered.',
@@ -343,6 +366,7 @@ export const CORE_SEGMENTS: Segment[] = [
       },
       {
         q: 'How effectively does your procurement function operate against defined savings targets, track realised savings, and demonstrate value delivered to the business?',
+        layer: 'operational',
         qAr: 'ما مدى فعالية عمل وظيفة المشتريات مقابل مستهدفات توفير محددة، وتتبّع الوفورات المحققة، وإثبات القيمة المقدَّمة للأعمال؟',
         levels: [
           'Procurement has no savings targets and does not track, validate, or report cost savings or value delivered to the business.',
@@ -391,6 +415,7 @@ export const CORE_SEGMENTS: Segment[] = [
     questions: [
       {
         q: 'How effectively do you manage the full contract lifecycle — from initiation and drafting through approval, execution, obligation tracking, and renewal or expiry?',
+        layer: 'tactical',
         qAr: 'ما مدى فعالية إدارتكم لدورة حياة العقد الكاملة — من الاستهلال والصياغة مرورًا بالموافقة والتنفيذ وتتبّع الالتزامات وحتى التجديد أو الانتهاء؟',
         levels: [
           'Contracts are drafted ad-hoc with no standard templates, no defined approval workflow, and no post-signature tracking or obligation management.',
@@ -409,6 +434,7 @@ export const CORE_SEGMENTS: Segment[] = [
       },
       {
         q: 'Do you have a centralised, searchable contract repository with metadata tagging, milestone alerts, and role-based access for all active contracts?',
+        layer: 'operational',
         qAr: 'هل لديكم مستودع عقود مركزي قابل للبحث مع وسم بالبيانات الوصفية وتنبيهات للمراحل وصلاحيات وصول قائمة على الأدوار لجميع العقود السارية؟',
         levels: [
           'Contracts are stored in personal email folders or physical filing cabinets. There is no central repository or consistent filing system.',
@@ -427,6 +453,7 @@ export const CORE_SEGMENTS: Segment[] = [
       },
       {
         q: 'How consistently are contract obligations, SLAs, and performance KPIs tracked and enforced post-signature, and how quickly are breaches identified and escalated?',
+        layer: 'operational',
         qAr: 'ما مدى اتساق تتبّع وإنفاذ التزامات العقود واتفاقيات مستوى الخدمة ومؤشرات الأداء بعد التوقيع، وما سرعة اكتشاف الإخلالات وتصعيدها؟',
         levels: [
           'Contract terms are largely forgotten once signed. Supplier SLAs and obligations are never monitored and breaches go undetected until a crisis occurs.',
@@ -445,6 +472,7 @@ export const CORE_SEGMENTS: Segment[] = [
       },
       {
         q: 'How structured is your contract negotiation process, including use of a commercial playbook, fallback positions, red-line authority, and lessons learned capture?',
+        layer: 'tactical',
         qAr: 'ما مدى تنظيم عملية التفاوض على العقود لديكم، بما في ذلك استخدام دليل تفاوض تجاري ومواقف احتياطية وصلاحيات الخطوط الحمراء وتوثيق الدروس المستفادة؟',
         levels: [
           'Negotiation is conducted informally based on individual style and personal judgement. No playbook, authority matrix, or structured framework exists.',
@@ -463,6 +491,7 @@ export const CORE_SEGMENTS: Segment[] = [
       },
       {
         q: 'How proactively do you manage contract renewals, renegotiations, and exits — including market testing, benchmarking, and leveraging competitive tension at renewal?',
+        layer: 'tactical',
         qAr: 'ما مدى استباقيتكم في إدارة تجديد العقود وإعادة التفاوض عليها والخروج منها — بما في ذلك اختبار السوق والمقارنة المعيارية وتوظيف المنافسة عند التجديد؟',
         levels: [
           'Most contracts auto-renew on existing terms without review. Procurement is not involved until a crisis or significant problem has already arisen.',
@@ -511,6 +540,7 @@ export const CORE_SEGMENTS: Segment[] = [
     questions: [
       {
         q: 'How formalised is your supplier segmentation model — distinguishing strategic, preferred, approved, and transactional suppliers by criticality and spend?',
+        layer: 'strategic',
         qAr: 'ما مدى رسمية نموذج تقسيم الموردين لديكم — الذي يميّز بين الموردين الاستراتيجيين والمفضّلين والمعتمدين والمعامليين حسب الأهمية الحرجة والإنفاق؟',
         levels: [
           'All suppliers are treated identically regardless of spend, strategic importance, or risk profile. No segmentation model exists.',
@@ -529,6 +559,7 @@ export const CORE_SEGMENTS: Segment[] = [
       },
       {
         q: 'How regularly do you conduct structured, two-way supplier performance reviews using defined scorecards covering quality, delivery, commercial, and relationship dimensions?',
+        layer: 'operational',
         qAr: 'ما مدى انتظامكم في إجراء مراجعات منظمة ثنائية الاتجاه لأداء الموردين باستخدام بطاقات أداء محددة تغطي أبعاد الجودة والتسليم والجوانب التجارية والعلاقة؟',
         levels: [
           'Supplier performance is never formally reviewed. Issues are only addressed reactively when they escalate into operational crises.',
@@ -547,6 +578,7 @@ export const CORE_SEGMENTS: Segment[] = [
       },
       {
         q: 'How actively do you invest in supplier development — including training, capability-building, technology access, and collaborative problem-solving — to improve supplier performance?',
+        layer: 'tactical',
         qAr: 'ما مدى فاعلية استثماركم في تطوير الموردين — بما في ذلك التدريب وبناء القدرات وإتاحة التقنية وحل المشكلات التشاركي — لتحسين أداء الموردين؟',
         levels: [
           'No investment is made in supplier development. The organisation expects suppliers to self-improve without any support or structured engagement.',
@@ -565,6 +597,7 @@ export const CORE_SEGMENTS: Segment[] = [
       },
       {
         q: 'How effectively do you collaborate with strategic suppliers on innovation, joint product development, cost reduction, and shared value creation beyond transactional buying?',
+        layer: 'strategic',
         qAr: 'ما مدى فعالية تعاونكم مع الموردين الاستراتيجيين في الابتكار والتطوير المشترك للمنتجات وخفض التكلفة وخلق القيمة المشتركة بما يتجاوز الشراء المعاملي؟',
         levels: [
           'Supplier relationships are purely transactional. Innovation and collaboration are not actively pursued with any supplier in any category.',
@@ -583,6 +616,7 @@ export const CORE_SEGMENTS: Segment[] = [
       },
       {
         q: 'How mature is your supplier onboarding, qualification, and exit process — including financial vetting, ESG compliance, capability assessment, and risk scoring?',
+        layer: 'operational',
         qAr: 'ما مدى نضج عملية تأهيل الموردين وضمّهم والخروج منهم — بما في ذلك الفحص المالي والامتثال البيئي والاجتماعي والحوكمي وتقييم القدرات وتسجيل المخاطر؟',
         levels: [
           'Supplier onboarding is entirely informal. New suppliers are added to the system without any formal qualification, vetting, or risk assessment.',
@@ -631,6 +665,7 @@ export const CORE_SEGMENTS: Segment[] = [
     questions: [
       {
         q: 'How comprehensively have you mapped supply chain risks at tier 1 and tier 2 supplier level, including concentration, single-source, and geographic risk?',
+        layer: 'strategic',
         qAr: 'ما مدى شمولية رسمكم لمخاطر سلسلة الإمداد على مستوى الموردين من المستوى الأول والثاني، بما في ذلك مخاطر التركّز والمصدر الوحيد والمخاطر الجغرافية؟',
         levels: [
           'No formal risk mapping has been conducted. The organisation has little to no visibility of supply chain risk below its tier-1 suppliers.',
@@ -649,6 +684,7 @@ export const CORE_SEGMENTS: Segment[] = [
       },
       {
         q: 'How actively do you monitor supply chain risks in real time — including supplier financial health, geopolitical events, ESG risk signals, and capacity constraints?',
+        layer: 'operational',
         qAr: 'ما مدى فاعلية مراقبتكم لمخاطر سلسلة الإمداد آنيًا — بما في ذلك السلامة المالية للموردين والأحداث الجيوسياسية وإشارات المخاطر البيئية والاجتماعية والحوكمية وقيود الطاقة؟',
         levels: [
           'Risk monitoring is entirely reactive. The organisation only becomes aware of supplier risk after a disruption has already occurred and caused impact.',
@@ -667,6 +703,7 @@ export const CORE_SEGMENTS: Segment[] = [
       },
       {
         q: 'How robust are your business continuity and supply chain resilience plans, including documented alternative sourcing options, inventory buffers, and recovery time objectives?',
+        layer: 'tactical',
         qAr: 'ما مدى متانة خطط استمرارية الأعمال ومرونة سلسلة الإمداد لديكم، بما في ذلك خيارات التوريد البديلة الموثّقة ومخزونات الأمان وأهداف زمن التعافي؟',
         levels: [
           'No business continuity plans exist for supply chain. There are no documented recovery options for a major supplier failure or disruption event.',
@@ -685,6 +722,7 @@ export const CORE_SEGMENTS: Segment[] = [
       },
       {
         q: 'How effectively do you apply dual-sourcing or multi-sourcing strategies for critical categories, and how regularly do you validate the independence and capability of contingency sources?',
+        layer: 'tactical',
         qAr: 'ما مدى فعالية تطبيقكم لاستراتيجيات التوريد المزدوج أو المتعدد للفئات الحرجة، وما مدى انتظامكم في التحقق من استقلالية وقدرة المصادر الاحتياطية؟',
         levels: [
           'Many critical categories have a single source of supply with no validated alternative. Single-source dependency is not tracked or actively managed.',
@@ -703,6 +741,7 @@ export const CORE_SEGMENTS: Segment[] = [
       },
       {
         q: 'How regularly do you conduct supply chain risk exercises, stress tests, or tabletop simulations — and how quickly are findings translated into plan updates and mitigations?',
+        layer: 'operational',
         qAr: 'ما مدى انتظامكم في إجراء تمارين مخاطر سلسلة الإمداد أو اختبارات الإجهاد أو التمارين النظرية (Tabletop) — وما سرعة ترجمة النتائج إلى تحديثات للخطط وإجراءات تخفيف؟',
         levels: [
           'Risk plans have never been tested. The organisation has never conducted a supply chain stress test, tabletop simulation, or disruption exercise.',
@@ -751,6 +790,7 @@ export const CORE_SEGMENTS: Segment[] = [
     questions: [
       {
         q: 'How comprehensively have you assessed and measured Scope 3 (supply chain) greenhouse gas emissions, including methodology, data quality, and coverage of spend categories?',
+        layer: 'tactical',
         qAr: 'ما مدى شمولية تقييمكم وقياسكم لانبعاثات الغازات الدفيئة من النطاق الثالث (سلسلة الإمداد)، بما في ذلك المنهجية وجودة البيانات وتغطية فئات الإنفاق؟',
         levels: [
           'Scope 3 emissions have not been measured or estimated. The organisation has no visibility of its supply chain carbon footprint.',
@@ -769,6 +809,7 @@ export const CORE_SEGMENTS: Segment[] = [
       },
       {
         q: 'How systematically are ESG and sustainability criteria integrated into your supplier selection, evaluation, and sourcing decisions?',
+        layer: 'tactical',
         qAr: 'ما مدى منهجية دمج معايير الاستدامة والحوكمة البيئية والاجتماعية في اختيار الموردين وتقييمهم وقرارات التوريد لديكم؟',
         levels: [
           'ESG is not a factor in any supplier selection or sourcing decision. Cost and quality are the only evaluation criteria applied.',
@@ -787,6 +828,7 @@ export const CORE_SEGMENTS: Segment[] = [
       },
       {
         q: 'How actively do you require, verify, and support supplier ESG compliance — including codes of conduct, audit programmes, and supplier capacity-building?',
+        layer: 'operational',
         qAr: 'ما مدى فاعلية اشتراطكم للامتثال البيئي والاجتماعي والحوكمي للموردين والتحقق منه ودعمه — بما في ذلك مواثيق السلوك وبرامج التدقيق وبناء قدرات الموردين؟',
         levels: [
           'No ESG requirements are placed on suppliers. No code of conduct, audit programme, or disclosure requirement of any kind exists.',
@@ -805,6 +847,7 @@ export const CORE_SEGMENTS: Segment[] = [
       },
       {
         q: 'How mature is your circular procurement practice — including specifications for recycled content, take-back requirements, product lifecycle design, and waste reduction?',
+        layer: 'strategic',
         qAr: 'ما مدى نضج ممارسة المشتريات الدائرية لديكم — بما في ذلك مواصفات المحتوى المُعاد تدويره ومتطلبات الاسترجاع وتصميم دورة حياة المنتج وخفض النفايات؟',
         levels: [
           'Circular economy principles have no influence on procurement specifications, supplier requirements, or purchasing decisions of any kind.',
@@ -823,6 +866,7 @@ export const CORE_SEGMENTS: Segment[] = [
       },
       {
         q: 'How transparently and comprehensively do you report supply chain sustainability performance to internal and external stakeholders, including customers, regulators, and investors?',
+        layer: 'operational',
         qAr: 'ما مدى شفافية وشمولية رفعكم لتقارير أداء استدامة سلسلة الإمداد لأصحاب المصلحة الداخليين والخارجيين، بما في ذلك العملاء والجهات التنظيمية والمستثمرين؟',
         levels: [
           'No supply chain sustainability reporting is produced. ESG performance is not tracked, measured, or disclosed to any stakeholder.',
@@ -871,6 +915,7 @@ export const CORE_SEGMENTS: Segment[] = [
     questions: [
       {
         q: 'How fully digitised is your procure-to-pay (P2P) process — from purchase requisition through purchase order, goods receipt, invoice, and payment?',
+        layer: 'operational',
         qAr: 'ما مدى الرقمنة الكاملة لعملية الشراء حتى السداد (P2P) لديكم — من طلب الشراء مرورًا بأمر الشراء واستلام البضائع والفاتورة وحتى الدفع؟',
         levels: [
           'The P2P process is largely manual (paper, email, spreadsheets). There is no e-procurement system and no digital workflow in use.',
@@ -889,6 +934,7 @@ export const CORE_SEGMENTS: Segment[] = [
       },
       {
         q: 'How effectively do you use data analytics, dashboards, and business intelligence tools to support procurement and supply chain decision-making?',
+        layer: 'tactical',
         qAr: 'ما مدى فعالية استخدامكم لتحليلات البيانات ولوحات المعلومات وأدوات ذكاء الأعمال لدعم اتخاذ القرار في المشتريات وسلسلة الإمداد؟',
         levels: [
           'Reporting is manual and infrequent. Decisions are made without reliable data and rely primarily on intuition, experience, or spreadsheets.',
@@ -907,6 +953,7 @@ export const CORE_SEGMENTS: Segment[] = [
       },
       {
         q: 'How advanced is your use of AI and machine learning — including demand forecasting, supplier risk scoring, spend classification, anomaly detection, or generative AI for drafting?',
+        layer: 'tactical',
         qAr: 'ما مدى تقدّم استخدامكم للذكاء الاصطناعي وتعلّم الآلة — بما في ذلك التنبؤ بالطلب وتسجيل مخاطر الموردين وتصنيف الإنفاق واكتشاف الشذوذ أو الذكاء الاصطناعي التوليدي للصياغة؟',
         levels: [
           'No AI or machine learning tools are in use in procurement or supply chain. There is no active exploration or roadmap for AI adoption.',
@@ -925,6 +972,7 @@ export const CORE_SEGMENTS: Segment[] = [
       },
       {
         q: 'How well-integrated are your supply chain and procurement technology systems (ERP, SRM, CLM, WMS, TMS) — and how reliably do they share data to support end-to-end visibility?',
+        layer: 'operational',
         qAr: 'ما مدى تكامل أنظمة تقنية سلسلة الإمداد والمشتريات لديكم (ERP، SRM، CLM، WMS، TMS) — وما مدى موثوقية مشاركتها للبيانات لدعم الرؤية من طرف إلى طرف؟',
         levels: [
           'Systems are completely fragmented silos with no integration. Data must be manually exported and reconciled across platforms on a regular basis.',
@@ -943,6 +991,7 @@ export const CORE_SEGMENTS: Segment[] = [
       },
       {
         q: 'How well does your technology roadmap support your supply chain strategy — with defined investments, clear business cases, and governance for prioritisation?',
+        layer: 'strategic',
         qAr: 'ما مدى دعم خارطة طريقكم التقنية لاستراتيجية سلسلة الإمداد لديكم — باستثمارات محددة ودراسات جدوى واضحة وحوكمة لتحديد الأولويات؟',
         levels: [
           'No technology roadmap exists for supply chain or procurement. Technology decisions are reactive and driven by vendor relationships rather than strategy.',
@@ -991,6 +1040,7 @@ export const CORE_SEGMENTS: Segment[] = [
     questions: [
       {
         q: 'How formal, accurate, and statistically rigorous is your demand forecasting process — including methodology, forecast accuracy measurement (MAPE/bias), and external signal integration?',
+        layer: 'tactical',
         qAr: 'ما مدى رسمية وصحة ودقة عملية التنبؤ بالطلب لديكم — بما في ذلك المنهجية وقياس دقة التنبؤ (MAPE/الانحياز) ودمج إشارات السوق الخارجية؟',
         levels: [
           'No demand forecasting exists. Replenishment is purely reactive based on stock-outs or manager intuition, with no forward-looking plan.',
@@ -1009,6 +1059,7 @@ export const CORE_SEGMENTS: Segment[] = [
       },
       {
         q: 'How mature and cross-functional is your S&OP cycle — in terms of inputs from sales, operations, and finance, meeting cadence, and translation of decisions into procurement and production actions?',
+        layer: 'tactical',
         qAr: 'ما مدى نضج وتعددية وظائف دورة S&OP لديكم — من حيث مدخلات المبيعات والعمليات والمالية ووتيرة الاجتماعات وترجمة القرارات إلى إجراءات شراء وإنتاج؟',
         levels: [
           'No S&OP process exists. Supply and demand plans are siloed with no cross-functional reconciliation or alignment.',
@@ -1027,6 +1078,7 @@ export const CORE_SEGMENTS: Segment[] = [
       },
       {
         q: 'How effectively do you manage demand variability from promotions, seasonal peaks, and new product introductions — and how well do you track forecast error by root cause?',
+        layer: 'operational',
         qAr: 'ما مدى فعالية إدارتكم لتقلّبات الطلب الناجمة عن الترويج والذروات الموسمية وإطلاق المنتجات الجديدة — وما مدى تتبّعكم لأخطاء التنبؤ حسب السبب الجذري؟',
         levels: [
           'Demand variability is not planned for. Promotions and seasonal surges regularly cause stock-outs or significant overstock with no structured response.',
@@ -1045,6 +1097,7 @@ export const CORE_SEGMENTS: Segment[] = [
       },
       {
         q: 'How well-integrated is your demand plan with supply-side constraints — covering supplier lead times, production capacity, and procurement commitments in near-real time?',
+        layer: 'operational',
         qAr: 'ما مدى تكامل خطة الطلب لديكم مع قيود جانب العرض — بما في ذلك مهل موردين وطاقة الإنتاج والتزامات الشراء في شبه الوقت الحقيقي؟',
         levels: [
           'Demand plans and supply plans are completely disconnected. Supply constraints are only discovered when shortages or production stoppages occur.',
@@ -1063,6 +1116,7 @@ export const CORE_SEGMENTS: Segment[] = [
       },
       {
         q: 'How reliably do you measure and continuously improve forecast accuracy — with defined accuracy KPIs, structured root-cause analysis, and a process for applying learnings?',
+        layer: 'operational',
         qAr: 'ما مدى موثوقية قياسكم وتحسينكم المستمر لدقة التنبؤ — بمؤشرات دقة محددة وتحليل منظم للسبب الجذري وعملية لتطبيق الدروس المستفادة؟',
         levels: [
           'Forecast accuracy is never measured. There is no baseline understanding of how far actuals deviate from plans.',
@@ -1111,6 +1165,7 @@ export const CORE_SEGMENTS: Segment[] = [
     questions: [
       {
         q: 'How rigorously is your inventory policy defined — covering safety stock methodology, reorder point logic, and min/max levels — and how regularly is it reviewed and updated?',
+        layer: 'tactical',
         qAr: 'ما مدى صرامة تعريف سياسة المخزون لديكم — بما في ذلك منهجية مخزون الأمان ومنطق نقطة إعادة الطلب والحدود الدنيا والقصوى — وما مدى انتظام مراجعتها وتحديثها؟',
         levels: [
           'No formal inventory policy exists. Order quantities and timing are based on habit or manager intuition with no documented logic.',
@@ -1129,6 +1184,7 @@ export const CORE_SEGMENTS: Segment[] = [
       },
       {
         q: 'How effectively is your inventory segmented and managed by ABC/XYZ or equivalent classification — ensuring differentiated service levels, ordering rules, and review frequencies by tier?',
+        layer: 'tactical',
         qAr: 'ما مدى فعالية تقسيم مخزونكم وإدارته وفق تصنيف ABC/XYZ أو ما يعادله — مما يضمن مستويات خدمة متمايزة وقواعد طلب وترددات مراجعة حسب الفئة؟',
         levels: [
           'All SKUs are managed with identical policies regardless of value, volume, or criticality. No formal classification model is in use.',
@@ -1147,6 +1203,7 @@ export const CORE_SEGMENTS: Segment[] = [
       },
       {
         q: 'How accurate is your inventory data — in terms of location accuracy, quantity accuracy, and the frequency and rigour of your cycle-count programme?',
+        layer: 'operational',
         qAr: 'ما مدى دقة بيانات مخزونكم — من حيث دقة الموقع والكمية ووتيرة وصرامة برنامج الجرد الدوري لديكم؟',
         levels: [
           'Inventory records are frequently inaccurate. There is no cycle-count programme and discrepancies are only discovered when a stock-out or audit occurs.',
@@ -1165,6 +1222,7 @@ export const CORE_SEGMENTS: Segment[] = [
       },
       {
         q: 'How effectively do you identify, manage, and disposition slow-moving, obsolete, and excess inventory (SLOB) — with structured governance and transparent leadership reporting?',
+        layer: 'operational',
         qAr: 'ما مدى فعالية تحديدكم وإدارتكم والتصرف في مخزون الأصناف البطيئة الحركة والمتقادمة والزائدة (SLOB) — بحوكمة منظمة وتقارير شفافة للقيادة؟',
         levels: [
           'SLOB inventory is not tracked or managed. Obsolete stock accumulates indefinitely with no systematic review, governance, or write-off process.',
@@ -1183,6 +1241,7 @@ export const CORE_SEGMENTS: Segment[] = [
       },
       {
         q: 'How well are inventory levels optimised to balance service-level targets against working capital efficiency — and how is inventory performance reported to leadership?',
+        layer: 'strategic',
         qAr: 'ما مدى تحسين مستويات المخزون لتحقيق التوازن بين مستهدفات مستوى الخدمة وكفاءة رأس المال العامل — وكيف يُرفَع أداء المخزون للقيادة؟',
         levels: [
           'No connection exists between inventory levels and working capital management. Inventory is not reported as a financial metric to leadership.',
@@ -1231,6 +1290,7 @@ export const CORE_SEGMENTS: Segment[] = [
     questions: [
       {
         q: 'How formally are your logistics carriers and 3PLs governed — in terms of SLA agreements, KPI definitions, performance review cadence, and consequences for non-performance?',
+        layer: 'operational',
         qAr: 'ما مدى رسمية حوكمة ناقليكم ومزوّدي الخدمات اللوجستية من الطرف الثالث (3PL) — من حيث اتفاقيات مستوى الخدمة وتعريفات مؤشرات الأداء ووتيرة مراجعة الأداء وعواقب ضعف الأداء؟',
         levels: [
           'Carrier and 3PL relationships are informal with no SLA agreements, no KPIs defined, and no governance process of any kind.',
@@ -1249,6 +1309,7 @@ export const CORE_SEGMENTS: Segment[] = [
       },
       {
         q: 'How mature is your transportation network optimisation — covering mode selection, route planning, load consolidation, and cost-per-unit-shipped analysis?',
+        layer: 'tactical',
         qAr: 'ما مدى نضج تحسين شبكة النقل لديكم — بما يشمل اختيار الوسيلة وتخطيط المسار وتوحيد الأحمال وتحليل تكلفة الشحنة الواحدة؟',
         levels: [
           'Transportation decisions are made reactively and individually without any network analysis, mode optimisation, or cost-per-shipment tracking.',
@@ -1267,6 +1328,7 @@ export const CORE_SEGMENTS: Segment[] = [
       },
       {
         q: 'How effectively do you measure and manage OTIF (on-time in-full) delivery performance at customer and shipment level — with root-cause analysis and continuous improvement?',
+        layer: 'operational',
         qAr: 'ما مدى فعالية قياسكم وإدارتكم لأداء OTIF (التسليم في الوقت المحدد وبالكمية الكاملة) على مستوى العميل والشحنة — مع تحليل السبب الجذري والتحسين المستمر؟',
         levels: [
           'OTIF is not measured. Delivery performance is unknown and customer complaints about delivery are handled reactively.',
@@ -1285,6 +1347,7 @@ export const CORE_SEGMENTS: Segment[] = [
       },
       {
         q: 'How effectively do you manage customs, trade compliance, and import/export documentation — minimising delays, demurrage costs, and regulatory penalties?',
+        layer: 'operational',
         qAr: 'ما مدى فعالية إدارتكم للجمارك والامتثال التجاري ووثائق الاستيراد/التصدير — مما يُقلّل التأخيرات وتكاليف الإقامة والغرامات التنظيمية؟',
         levels: [
           'Customs and trade compliance are managed reactively. Documentation errors, delays, and demurrage costs are frequent and not systematically tracked.',
@@ -1303,6 +1366,7 @@ export const CORE_SEGMENTS: Segment[] = [
       },
       {
         q: 'How mature is your reverse logistics and returns management capability — covering customer returns authorisation, condition assessment, disposition routing, and recovery value optimisation?',
+        layer: 'tactical',
         qAr: 'ما مدى نضج قدرتكم على اللوجستيات العكسية وإدارة المرتجعات — بما في ذلك تفويض مرتجعات العملاء وتقييم الحالة وتوجيه التصرف وتحسين قيمة الاسترداد؟',
         levels: [
           'Returns are handled ad-hoc with no defined process, no returns policy, and no tracking of return volumes, costs, or recovery value.',
@@ -1351,6 +1415,7 @@ export const CORE_SEGMENTS: Segment[] = [
     questions: [
       {
         q: 'How clearly defined is your supply chain organisation structure — in terms of reporting lines, role clarity, functional boundaries, and alignment to your supply chain strategy?',
+        layer: 'strategic',
         qAr: 'ما مدى وضوح هيكل مؤسسة سلسلة الإمداد لديكم — من حيث خطوط الإبلاغ ووضوح الأدوار والحدود الوظيفية والمواءمة مع استراتيجية سلسلة الإمداد؟',
         levels: [
           'Supply chain responsibilities are fragmented across departments with no dedicated function, unclear ownership, and significant gaps or overlaps in accountability.',
@@ -1369,6 +1434,7 @@ export const CORE_SEGMENTS: Segment[] = [
       },
       {
         q: 'How comprehensively have you defined the supply chain skills and competencies required for each role — and how regularly do you assess and close the capability gap?',
+        layer: 'tactical',
         qAr: 'ما مدى شمولية تعريفكم للمهارات والكفاءات المطلوبة لكل دور في سلسلة الإمداد — وما مدى انتظامكم في تقييم وسدّ فجوة القدرات؟',
         levels: [
           'No competency framework exists for supply chain roles. Hiring and development decisions are based on intuition with no structured skills assessment.',
@@ -1387,6 +1453,7 @@ export const CORE_SEGMENTS: Segment[] = [
       },
       {
         q: 'How structured and well-funded is your supply chain learning & development programme — covering professional certifications (CIPS/APICS), on-the-job development, and external benchmarking?',
+        layer: 'tactical',
         qAr: 'ما مدى تنظيم وتمويل برنامج التعلّم والتطوير في سلسلة الإمداد لديكم — بما يشمل الشهادات المهنية (CIPS/APICS) والتطوير أثناء العمل والمقارنة المعيارية الخارجية؟',
         levels: [
           'No formal supply chain training programme exists. Capability development is entirely ad-hoc and relies on self-initiative with no budget or structure.',
@@ -1405,6 +1472,7 @@ export const CORE_SEGMENTS: Segment[] = [
       },
       {
         q: 'How mature is your supply chain succession planning — ensuring critical-role dependencies are mapped, successors are identified, and readiness is actively developed and reviewed?',
+        layer: 'strategic',
         qAr: 'ما مدى نضج التخطيط للخلافة في سلسلة الإمداد لديكم — مما يضمن رسم اعتماديات الأدوار الحرجة وتحديد الخلفاء وتطوير جاهزيتهم ومراجعتها بفاعلية؟',
         levels: [
           'No succession planning exists. The organisation is heavily dependent on a small number of key individuals with no documented handover or backup coverage.',
@@ -1423,6 +1491,7 @@ export const CORE_SEGMENTS: Segment[] = [
       },
       {
         q: 'How effectively does your supply chain function manage organisational change — including system implementations, process redesigns, and restructuring — through a structured change management methodology?',
+        layer: 'tactical',
         qAr: 'ما مدى فعالية إدارة وظيفة سلسلة الإمداد للتغيير التنظيمي — بما في ذلك تطبيقات الأنظمة وإعادة تصميم العمليات وإعادة الهيكلة — من خلال منهجية منظمة لإدارة التغيير؟',
         levels: [
           'Change management is not practised. System and process changes are imposed without communication plans, training programmes, or adoption tracking.',
@@ -1470,6 +1539,7 @@ export const CORE_SEGMENTS: Segment[] = [
     questions: [
       {
         q: 'Does the organization maintain a documented quality policy with strategic quality objectives that are genuinely integrated into overall business strategy, rather than existing as a standalone QA-department document?',
+        layer: 'strategic',
         qAr: 'هل تحتفظ المؤسسة بسياسة جودة موثقة وأهداف جودة استراتيجية مندمجة فعلياً في الاستراتيجية العامة للأعمال، بدلاً من كونها وثيقة معزولة تخص إدارة الجودة فقط؟',
         levels: [
           'No documented quality policy exists, and quality is never referenced in strategic planning discussions.',
@@ -1488,6 +1558,7 @@ export const CORE_SEGMENTS: Segment[] = [
       },
       {
         q: 'Does the organization have an enterprise-wide Lean/Six Sigma deployment strategy sponsored at executive/board level, as opposed to isolated departmental pilots?',
+        layer: 'strategic',
         qAr: 'هل تمتلك المؤسسة استراتيجية نشر للتصنيع الرشيق/ستة سيجما على مستوى المؤسسة بأكملها وبرعاية تنفيذية/مجلس إدارة، بدلاً من مشاريع تجريبية معزولة على مستوى الأقسام؟',
         levels: [
           'No Lean or Six Sigma activity exists anywhere in the organization.',
@@ -1506,6 +1577,7 @@ export const CORE_SEGMENTS: Segment[] = [
       },
       {
         q: 'Is cost of poor quality (COPQ) formally measured, tracked, and reported to leadership as a strategic metric, rather than being an anecdotal or "felt sense" issue?',
+        layer: 'tactical',
         qAr: 'هل تُقاس تكلفة الجودة الرديئة (COPQ) وتُتابَع وتُرفَع تقاريرها إلى الإدارة العليا كمؤشر استراتيجي رسمي، بدلاً من كونها قضية تُستشعر بشكل غير موثق؟',
         levels: [
           'COPQ is never measured; quality-related losses are invisible to leadership.',
@@ -1524,6 +1596,7 @@ export const CORE_SEGMENTS: Segment[] = [
       },
       {
         q: 'Is continuous improvement recognized and resourced by executive leadership as a strategic priority — with dedicated budget, headcount, and visible sponsorship — rather than an unfunded aspiration?',
+        layer: 'strategic',
         qAr: 'هل يُعترَف بالتحسين المستمر ويُخصَّص له الدعم من الإدارة التنفيذية كأولوية استراتيجية — بميزانية وكوادر ورعاية واضحة — بدلاً من كونه طموحاً غير مموَّل؟',
         levels: [
           'Continuous improvement is not recognized as a priority; there is no budget, headcount, or executive attention allocated to it.',
@@ -1542,6 +1615,7 @@ export const CORE_SEGMENTS: Segment[] = [
       },
       {
         q: 'How mature is your end-to-end supply chain traceability — the ability to track a lot/batch/serial number forward from raw material through production and distribution to the point of sale, and backward from a finished-goods issue to the originating material lot?',
+        layer: 'operational',
         qAr: 'ما مدى نضج تتبّع سلسلة الإمداد الشاملة لديكم — القدرة على تتبّع رقم الدفعة/التشغيلة/المسلسل تصاعدياً من المادة الخام عبر الإنتاج والتوزيع حتى نقطة البيع، وتنازلياً من مشكلة في المنتج النهائي إلى دفعة المادة الأصلية؟',
         levels: [
           'No lot/batch traceability exists. If a quality issue arose, there would be no reliable way to identify which other products or customers were affected.',
@@ -1598,6 +1672,7 @@ export const INDUSTRY_MODULES: Segment[] = [
     questions: [
       {
         q: 'How mature is your production planning and scheduling — in terms of Master Production Schedule (MPS) accuracy, capacity planning, and schedule adherence?',
+        layer: 'tactical',
         qAr: 'ما مدى نضج تخطيط الإنتاج وجدولته — من حيث دقة خطة الإنتاج الرئيسية (MPS) وتخطيط الطاقة والالتزام بالجدول الزمني؟',
         levels: [
           'Production planning is reactive and ad-hoc. There is no master production schedule; work is scheduled informally based on immediate orders with no capacity visibility.',
@@ -1616,6 +1691,7 @@ export const INDUSTRY_MODULES: Segment[] = [
       },
       {
         q: 'How effectively is production quality controlled — including in-process inspection, First Pass Yield (FPY) measurement, defect root-cause analysis, and supplier quality linkage?',
+        layer: 'operational',
         qAr: 'ما مدى فعالية ضبط جودة الإنتاج — بما في ذلك الفحص أثناء العملية وقياس معدل النجاح من أول مرور (FPY) وتحليل السبب الجذري للعيوب وربط جودة الموردين؟',
         levels: [
           'Quality inspection is informal and end-of-line only. First Pass Yield and defect rates are not measured and quality feedback to suppliers is absent.',
@@ -1634,6 +1710,7 @@ export const INDUSTRY_MODULES: Segment[] = [
       },
       {
         q: 'How well do you measure and manage Overall Equipment Effectiveness (OEE) — and how systematically are availability, performance, and quality losses analysed and reduced?',
+        layer: 'operational',
         qAr: 'ما مدى جودة قياسكم وإدارتكم للفعالية الكلية للمعدات (OEE) — وما مدى منهجية تحليل وتقليص خسائر التوافر والأداء والجودة؟',
         levels: [
           'OEE is not measured. Downtime, speed losses, and quality rejects are not tracked systematically and maintenance is break-fix only.',
@@ -1652,6 +1729,7 @@ export const INDUSTRY_MODULES: Segment[] = [
       },
       {
         q: 'How accurately is your Bill of Materials (BOM) maintained — and how effectively is engineering change management controlled to prevent production disruptions?',
+        layer: 'operational',
         qAr: 'ما مدى دقة الحفاظ على قائمة مكوّنات المواد (BOM) لديكم — وما مدى فعالية ضبط إدارة التغييرات الهندسية لمنع اضطرابات الإنتاج؟',
         levels: [
           'BOMs are incomplete, inaccurate, or outdated. Engineering changes are implemented informally, often causing material shortages or over-purchasing.',
@@ -1670,6 +1748,7 @@ export const INDUSTRY_MODULES: Segment[] = [
       },
       {
         q: 'How rigorously do you analyse make-or-buy decisions and govern outsourcing relationships — ensuring strategic alignment, quality control, and cost competitiveness?',
+        layer: 'strategic',
         qAr: 'ما مدى صرامة تحليلكم لقرارات التصنيع أو الشراء وحوكمة علاقات الاستعانة بمصادر خارجية — مما يضمن المواءمة الاستراتيجية وضبط الجودة والتنافسية التكليفية؟',
         levels: [
           'Make-or-buy decisions are never formally analysed. Outsourcing decisions are based on convenience or precedent with no TCO analysis or strategic review.',
@@ -1719,6 +1798,7 @@ export const INDUSTRY_MODULES: Segment[] = [
     questions: [
       {
         q: 'How effectively is your fleet managed — in terms of utilisation, route efficiency, maintenance scheduling, cost-per-km tracking, and driver performance management?',
+        layer: 'operational',
         qAr: 'ما مدى فعالية إدارة أسطولكم — من حيث معدل الاستخدام وكفاءة المسار وجدولة الصيانة وتتبّع التكلفة لكل كيلومتر وإدارة أداء السائقين؟',
         levels: [
           'Fleet management is reactive. No utilisation KPIs, route planning tools, cost-per-km tracking, or maintenance scheduling exists; maintenance is break-fix only.',
@@ -1737,6 +1817,7 @@ export const INDUSTRY_MODULES: Segment[] = [
       },
       {
         q: 'How efficiently are your port or hub operations managed — in terms of berth utilisation, dwell time, cargo handling rates, and turnaround time benchmarking?',
+        layer: 'operational',
         qAr: 'ما مدى كفاءة إدارة عمليات الموانئ أو المراكز لديكم — من حيث استخدام الأرصفة وزمن الإقامة ومعدلات معالجة البضائع ومقارنة أوقات التحوّل المعيارية؟',
         levels: [
           'Port/hub operations are not formally measured beyond invoice reconciliation. Dwell time, berth utilisation, and handling rates are unknown.',
@@ -1755,6 +1836,7 @@ export const INDUSTRY_MODULES: Segment[] = [
       },
       {
         q: 'How effectively do you manage dangerous goods (DG), hazardous materials, or temperature-sensitive cargo — in terms of regulatory compliance, staff certification, and incident prevention?',
+        layer: 'operational',
         qAr: 'ما مدى فعالية إدارتكم للبضائع الخطرة (DG) أو المواد الخطرة أو البضائع الحساسة للحرارة — من حيث الامتثال التنظيمي وشهادات الموظفين والوقاية من الحوادث؟',
         levels: [
           'DG/hazmat compliance is not formally managed. Handling, labelling, and documentation are based on operator knowledge with no formal programme or training.',
@@ -1773,6 +1855,7 @@ export const INDUSTRY_MODULES: Segment[] = [
       },
       {
         q: 'How effectively is your intermodal and multimodal integration managed — enabling seamless cargo transfer between sea, road, rail, and air modes with minimal handoff delays?',
+        layer: 'tactical',
         qAr: 'ما مدى فعالية إدارة تكاملكم متعدد الوسائط — مما يُتيح نقلاً سلسًا للبضائع بين وسائل البحر والطريق والسكة الحديد والجو بأدنى تأخيرات عند نقاط التسليم؟',
         levels: [
           'Intermodal coordination is ad-hoc. Mode changes involve significant manual effort, data re-entry, and frequent delays at handoff points.',
@@ -1791,6 +1874,7 @@ export const INDUSTRY_MODULES: Segment[] = [
       },
       {
         q: 'How mature is your last-mile and urban delivery management — in terms of route density optimisation, first-attempt delivery rate, customer communication, and sustainability of delivery options?',
+        layer: 'tactical',
         qAr: 'ما مدى نضج إدارة التوصيل للميل الأخير والتوصيل الحضري لديكم — من حيث تحسين كثافة المسار ومعدل التسليم من أول محاولة وتواصل العملاء واستدامة خيارات التوصيل؟',
         levels: [
           'Last-mile delivery is outsourced entirely with no performance tracking. Customer delivery issues are handled reactively with no SLA.',
@@ -1840,6 +1924,7 @@ export const INDUSTRY_MODULES: Segment[] = [
     questions: [
       {
         q: 'How proactively does your organisation manage Saudi Nitaqat (Saudization) requirements — tracking localisation percentages by function, maintaining target status, and linking procurement hiring to workforce plans?',
+        layer: 'tactical',
         qAr: 'ما مدى استباقية مؤسستكم في إدارة متطلبات نطاقات (السعودة) — بتتبّع نسب التوطين حسب الوظيفة والحفاظ على حالة المستهدف وربط توظيف المشتريات بخطط القوى العاملة؟',
         levels: [
           'Nitaqat compliance is tracked reactively — only when an inspection or renewal is due. Current Saudization percentages for supply chain roles are unknown.',
@@ -1858,6 +1943,7 @@ export const INDUSTRY_MODULES: Segment[] = [
       },
       {
         q: 'How rigorously does your organisation track and maximise IKTVA (In-Kingdom Total Value Add) local content — with a proactive local supplier development programme and verified reporting?',
+        layer: 'tactical',
         qAr: 'ما مدى صرامة مؤسستكم في تتبّع وتعظيم المحتوى المحلي IKTVA (القيمة المضافة الإجمالية داخل المملكة) — ببرنامج استباقي لتطوير الموردين المحليين وتقارير موثّقة؟',
         levels: [
           'IKTVA is not tracked or reported. There is no understanding of the current local-content percentage or how procurement decisions affect it.',
@@ -1876,6 +1962,7 @@ export const INDUSTRY_MODULES: Segment[] = [
       },
       {
         q: 'How comprehensively does your procurement function comply with the Government Tendering and Procurement Law (GTPL) — including tendering thresholds, documentation standards, and audit-ready award justifications?',
+        layer: 'operational',
         qAr: 'ما مدى شمولية امتثال وظيفة المشتريات لديكم لنظام المنافسات والمشتريات الحكومية (GTPL) — بما في ذلك حدود المنافسة ومعايير الوثائق ومبررات ترسية قابلة للتدقيق؟',
         levels: [
           'GTPL compliance is not systematically managed. Procurement staff have limited knowledge of legal requirements and documentation is frequently incomplete.',
@@ -1894,6 +1981,7 @@ export const INDUSTRY_MODULES: Segment[] = [
       },
       {
         q: 'How effectively does your organisation use the Monafasat/NCA procurement platform — including registration accuracy, bid quality, compliance with publication requirements, and use of platform analytics?',
+        layer: 'operational',
         qAr: 'ما مدى فعالية استخدام مؤسستكم لمنصة منافسات/هيئة المنافسة — بما في ذلك دقة التسجيل وجودة العروض والامتثال لمتطلبات النشر واستخدام تحليلات المنصة؟',
         levels: [
           'Monafasat/NCA platform usage is minimal or inconsistent. Tender registrations and submissions frequently contain errors or omissions.',
@@ -1912,6 +2000,7 @@ export const INDUSTRY_MODULES: Segment[] = [
       },
       {
         q: 'How comprehensively is your supply chain governance documented and audit-ready — including policies, delegation of authority, conflict-of-interest management, and supplier code of conduct?',
+        layer: 'strategic',
         qAr: 'ما مدى شمولية توثيق حوكمة سلسلة الإمداد لديكم وجاهزيتها للتدقيق — بما في ذلك السياسات وتفويض الصلاحيات وإدارة تضارب المصالح وميثاق سلوك الموردين؟',
         levels: [
           'Supply chain governance documentation is absent or severely incomplete. Audits regularly surface undocumented decisions and informal processes.',

@@ -730,6 +730,12 @@ export function Maturity() {
           questionText:     ar ? q.qAr : q.q,
           score,
           levelDescription: ar ? q.levelsAr[score - 1] : q.levels[score - 1],
+          // Strategic/Tactical/Operational tag (#38) — lets the remedy AI
+          // sequence a dependency-aware 30/60/90-day roadmap instead of
+          // treating every weak item as equally "fixable now". Omitted
+          // (undefined) for the rare flat question authored without one;
+          // the backend treats missing layer as unclassified, not an error.
+          layer:            q.layer,
         }];
       })
     );
