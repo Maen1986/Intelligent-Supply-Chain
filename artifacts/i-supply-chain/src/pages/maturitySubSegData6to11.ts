@@ -10806,7 +10806,7 @@ export const MFG_OPS_SUB_SEGMENTS: SubSegmentData[] = [
 ];
 export const FLEET_OPS_SUB_SEGMENTS: SubSegmentData[] = [
 
-  /* ── fleet_ops-0  Fleet Utilisation & Cost Management ───────────────── */
+  /* ── 13-0  Fleet Utilisation & Cost Management ──────────────────────────── */
   {
     id: 'fleet-utilisation',
     title: 'Fleet Utilisation & Cost Management',
@@ -10839,10 +10839,172 @@ export const FLEET_OPS_SUB_SEGMENTS: SubSegmentData[] = [
           'منصة إدارة أسطول متصلة بالكامل توفر تتبّع GPS والصيانة التنبؤية وتحسين المسار الآلي وتحليلات سلوك السائقين؛ وتكلفة/كم تُقارَن معياريًا بأسعار السوق.',
         ],
       },
+      {
+        q: 'How strategically is fleet size and asset ownership mix (owned vs. leased vs. outsourced/3PL capacity) planned against demand forecasts and total cost of ownership?',
+        qAr: 'ما مدى الاستراتيجية في تخطيط حجم الأسطول ومزيج ملكية الأصول (مملوكة مقابل مستأجرة مقابل قدرة طرف ثالث مُستعانة) في ضوء توقعات الطلب وإجمالي تكلفة الملكية؟',
+        levels: [
+          'No formal fleet sizing process exists; vehicles are added or retired reactively as breakdowns or complaints occur, with no total cost of ownership (TCO) analysis.',
+          'Fleet size decisions are made annually based on budget availability rather than demand forecasts; owned vs. leased vs. outsourced mix is not formally evaluated.',
+          'Fleet sizing is reviewed annually against demand forecasts; a basic TCO comparison of owned vs. leased options informs major capital decisions.',
+          'Fleet mix (owned/leased/outsourced) is optimised quarterly using demand forecasts, utilisation data, and TCO modelling; capacity flexes with seasonal demand.',
+          'Fleet size and asset mix are dynamically optimised using predictive demand modelling and TCO analytics; the owned/leased/outsourced balance is rebalanced in near-real-time to minimise total cost while maintaining service levels.',
+        ],
+        levelsAr: [
+          'لا توجد عملية رسمية لتحديد حجم الأسطول؛ تُضاف المركبات أو تُسحَب بشكل تفاعلي عند الأعطال أو الشكاوى، دون تحليل لإجمالي تكلفة الملكية.',
+          'تُتخذ قرارات حجم الأسطول سنويًا بناءً على توفر الميزانية وليس توقعات الطلب؛ ومزيج الملكية مقابل الاستئجار مقابل الاستعانة بمصادر خارجية لا يُقيَّم رسميًا.',
+          'يُراجَع حجم الأسطول سنويًا مقابل توقعات الطلب؛ ومقارنة أساسية لإجمالي تكلفة الملكية بين الخيارات المملوكة والمستأجرة تُوجّه القرارات الرأسمالية الكبرى.',
+          'يُحسَّن مزيج الأسطول (مملوك/مستأجر/مُستعان به) ربع سنويًا باستخدام توقعات الطلب وبيانات الاستخدام ونمذجة إجمالي تكلفة الملكية؛ وتتكيف القدرة مع الطلب الموسمي.',
+          'يُحسَّن حجم الأسطول ومزيج الأصول ديناميكيًا باستخدام نمذجة تنبؤية للطلب وتحليلات إجمالي تكلفة الملكية؛ ويُعاد توازن المزيج بين المملوك والمستأجر والمُستعان به في شبه الوقت الحقيقي لتقليل التكلفة الإجمالية مع الحفاظ على مستويات الخدمة.',
+        ],
+      },
+      {
+        q: 'How is fuel consumption and fuel spend managed across the fleet — tracking, benchmarking, and driving efficiency initiatives?',
+        qAr: 'كيف تُدار كمية استهلاك الوقود والإنفاق عليه عبر الأسطول — من حيث التتبّع والمقارنة المعيارية ومبادرات تحسين الكفاءة؟',
+        levels: [
+          'Fuel purchases are paid on invoice with no consumption tracking per vehicle or driver; fuel fraud/leakage risk is not monitored.',
+          'Fuel consumption is tracked in aggregate at the fleet level; no per-vehicle or per-driver benchmarking exists; fuel cards are used but not reconciled against trip data.',
+          'Fuel consumption is tracked per vehicle monthly and reconciled against fuel card data; outlier vehicles/drivers are flagged for review.',
+          'Fuel efficiency (L/100km or km/L) is benchmarked per vehicle and driver monthly; efficiency initiatives (driver coaching, route optimisation) are tracked against a fuel cost-per-km reduction target.',
+          'Real-time fuel telematics integrated with route and load data enables automated anomaly detection for fraud/leakage; fuel efficiency is a published KPI with year-on-year cost-per-km reduction targets achieved consistently.',
+        ],
+        levelsAr: [
+          'تُسدَّد مشتريات الوقود بناءً على الفاتورة دون تتبّع الاستهلاك لكل مركبة أو سائق؛ ومخاطر الاحتيال أو التسرب في الوقود لا تُراقَب.',
+          'يُتابَع استهلاك الوقود إجماليًا على مستوى الأسطول؛ ولا توجد مقارنة معيارية لكل مركبة أو سائق؛ وتُستخدَم بطاقات الوقود دون مطابقتها ببيانات الرحلات.',
+          'يُتابَع استهلاك الوقود لكل مركبة شهريًا ويُطابَق مع بيانات بطاقة الوقود؛ وتُرصَد المركبات/السائقون المتجاوزون للمعدل للمراجعة.',
+          'تُقارَن كفاءة الوقود (لتر/100كم أو كم/لتر) معياريًا لكل مركبة وسائق شهريًا؛ ومبادرات الكفاءة (تدريب السائقين وتحسين المسار) تُتابَع مقابل هدف لخفض تكلفة الوقود لكل كيلومتر.',
+          'تتيح بيانات التتبّع الإلكتروني الآنية للوقود المدمجة مع بيانات المسار والحمولة كشفًا آليًا للشذوذ الدال على الاحتيال أو التسرب؛ وكفاءة الوقود مؤشر أداء منشور مع تحقيق مستهدفات خفض التكلفة لكل كيلومتر سنويًا بثبات.',
+        ],
+      },
+      {
+        q: 'How effectively is driver and vehicle capacity planned against seasonal or peak demand fluctuations?',
+        qAr: 'ما مدى فعالية تخطيط قدرة السائقين والمركبات في مواجهة تقلبات الطلب الموسمية أو الذروة؟',
+        levels: [
+          'Peak demand is handled reactively by scrambling for spot-hire vehicles/drivers or delaying deliveries; no seasonal capacity plan exists.',
+          'Historical peak periods are known informally; some ad-hoc arrangements with spot carriers are made close to peak, often at premium cost.',
+          'An annual seasonal capacity plan forecasts peak-period demand and pre-books flex capacity (temporary drivers, rental vehicles) at agreed rates.',
+          'Seasonal capacity planning is integrated with demand forecasting and reviewed quarterly; flex-capacity contracts with backup carriers are pre-negotiated and triggered automatically at defined volume thresholds.',
+          'Dynamic capacity planning uses predictive demand analytics to flex owned, leased, and on-demand capacity in real time; peak-period service levels match or exceed baseline with no premium cost escalation.',
+        ],
+        levelsAr: [
+          'يُتعامَل مع طلب الذروة بشكل تفاعلي عبر البحث المستعجل عن مركبات/سائقين بالاستئجار الفوري أو تأخير التسليمات؛ ولا توجد خطة قدرة موسمية.',
+          'فترات الذروة التاريخية معروفة بشكل غير رسمي؛ وتُعقَد بعض الترتيبات الظرفية مع ناقلين فوريين قرب الذروة، غالبًا بتكلفة إضافية.',
+          'تتوقع خطة قدرة موسمية سنوية طلب فترة الذروة وتحجز مسبقًا قدرة مرنة (سائقون مؤقتون ومركبات مستأجرة) بأسعار متفق عليها.',
+          'يُدمَج تخطيط القدرة الموسمية مع توقعات الطلب ويُراجَع ربع سنويًا؛ وعقود القدرة المرنة مع ناقلين احتياطيين مُفاوَض عليها مسبقًا وتُفعَّل آليًا عند عتبات حجم محددة.',
+          'يستخدم التخطيط الديناميكي للقدرة تحليلات تنبؤية للطلب لتعديل القدرة المملوكة والمستأجرة والفورية آنيًا؛ ومستويات الخدمة في فترة الذروة تُضاهي أو تتجاوز المستوى الأساسي دون تصاعد في التكلفة الإضافية.',
+        ],
+      },
+      {
+        q: 'How are daily dispatch, load consolidation, and vehicle assignment decisions made?',
+        qAr: 'كيف تُتخذ قرارات الإرسال اليومي وتوحيد الحمولات وتخصيص المركبات؟',
+        levels: [
+          'Dispatch decisions are made manually and informally by a dispatcher based on driver availability, with no load consolidation logic.',
+          'A basic dispatch sheet or spreadsheet is used daily; load consolidation happens occasionally when a dispatcher notices overlapping routes.',
+          'A dispatch system assigns vehicles and consolidates loads based on defined rules (zone, capacity, delivery window); consolidation rate is tracked monthly.',
+          'Dispatch and load consolidation are software-assisted with optimisation logic (multi-drop routing, capacity utilisation); vehicle fill rate and consolidation savings are tracked against targets.',
+          'Automated dispatch and load-building algorithms optimise vehicle assignment and consolidation in real time across the full network; fill rate and empty-running are tracked and continuously improved against best-in-class benchmarks.',
+        ],
+        levelsAr: [
+          'تُتخذ قرارات الإرسال يدويًا وبشكل غير رسمي من قبل موظف الإرسال بناءً على توفر السائق، دون منطق لتوحيد الحمولات.',
+          'تُستخدَم ورقة إرسال أو جدول بيانات أساسي يوميًا؛ ويحدث توحيد الحمولات أحيانًا عندما يلاحظ موظف الإرسال تداخل المسارات.',
+          'يُخصِّص نظام إرسال المركبات ويوحّد الحمولات وفق قواعد محددة (المنطقة والسعة ونافذة التسليم)؛ ومعدل التوحيد متابَع شهريًا.',
+          'الإرسال وتوحيد الحمولات مدعومان ببرمجيات ذات منطق تحسين (التوجيه متعدد النقاط واستخدام السعة)؛ ومعدل امتلاء المركبة ووفورات التوحيد متابَعان مقابل مستهدفات.',
+          'خوارزميات إرسال وبناء حمولات آلية تُحسّن تخصيص المركبات والتوحيد آنيًا عبر الشبكة الكاملة؛ ومعدل الامتلاء والتشغيل الفارغ متابَعان ويُحسَّنان باستمرار مقابل معايير الأفضل في فئتها.',
+        ],
+      },
+      {
+        q: 'How is daily vehicle pre-trip inspection and roadworthiness compliance managed?',
+        qAr: 'كيف تُدار عملية فحص المركبة قبل الرحلة يوميًا والامتثال للجاهزية للسير؟',
+        levels: [
+          'Pre-trip inspections are not required or documented; vehicles are dispatched regardless of condition unless a driver reports an obvious fault.',
+          'Paper-based pre-trip checklists exist for some vehicles but completion is inconsistent and not verified by supervisors.',
+          'Standardised pre-trip inspection checklists are completed for all vehicles daily and filed; non-compliant vehicles are held from dispatch.',
+          'Digital pre-trip inspections (mobile app) are completed and logged for every vehicle before dispatch; defects trigger automatic maintenance work orders and dispatch holds.',
+          'Digital pre-trip inspections are integrated with telematics and maintenance systems; defect trends are analysed to predict recurring issues; roadworthiness compliance is at or near 100% with full audit trail.',
+        ],
+        levelsAr: [
+          'فحوصات ما قبل الرحلة غير مطلوبة أو موثقة؛ وتُرسَل المركبات بصرف النظر عن حالتها ما لم يُبلِّغ السائق عن عطل واضح.',
+          'توجد قوائم فحص ورقية لما قبل الرحلة لبعض المركبات لكن استكمالها غير متسق ولا يتحقق منه المشرفون.',
+          'تُستكمَل قوائم فحص موحدة لما قبل الرحلة لجميع المركبات يوميًا وتُحفَظ؛ وتُمنَع المركبات غير الملتزمة من الإرسال.',
+          'تُستكمَل الفحوصات الرقمية لما قبل الرحلة (عبر تطبيق جوال) وتُسجَّل لكل مركبة قبل الإرسال؛ والأعطال تُطلِق أوامر عمل صيانة آلية وتوقف الإرسال.',
+          'الفحوصات الرقمية لما قبل الرحلة مدمجة مع أنظمة التتبّع والصيانة؛ وتُحلَّل اتجاهات الأعطال للتنبؤ بالمشكلات المتكررة؛ والامتثال للجاهزية للسير عند 100% أو قريب منه مع مسار تدقيق كامل.',
+        ],
+      },
+      {
+        q: 'How are fleet operating costs controlled against budget, including fuel card usage, tolls, and maintenance spend variance?',
+        qAr: 'كيف تُضبَط تكاليف تشغيل الأسطول مقابل الميزانية، بما في ذلك استخدام بطاقات الوقود والرسوم وتباين إنفاق الصيانة؟',
+        levels: [
+          'No budget-vs-actual tracking exists for fleet costs; fuel card and toll spend are paid without review; overspend is discovered only at year-end reconciliation.',
+          'Fleet costs are reviewed against budget quarterly at an aggregate level; fuel card statements are reviewed for obvious anomalies only.',
+          'Monthly budget-vs-actual tracking by cost category (fuel, tolls, maintenance, insurance) with variance thresholds that trigger review.',
+          'Automated spend controls flag fuel card and toll transactions outside expected patterns (time, location, amount) in near-real-time; variance analysis drives corrective action within the month.',
+          'Real-time cost control dashboards integrate fuel card, toll, and maintenance spend with predictive budget-variance alerts; anomalies are auto-flagged and investigated within 24 hours; cost-per-km variance is held within ±3% of budget.',
+        ],
+        levelsAr: [
+          'لا يوجد تتبّع للميزانية مقابل الفعلي لتكاليف الأسطول؛ ويُسدَّد إنفاق بطاقة الوقود والرسوم دون مراجعة؛ ويُكتشَف تجاوز الإنفاق فقط عند التسوية السنوية.',
+          'تُراجَع تكاليف الأسطول مقابل الميزانية ربع سنويًا على المستوى الإجمالي؛ وتُراجَع كشوف بطاقة الوقود بحثًا عن الحالات الشاذة الواضحة فقط.',
+          'تتبّع شهري للميزانية مقابل الفعلي حسب فئة التكلفة (الوقود والرسوم والصيانة والتأمين) مع عتبات تباين تُطلِق المراجعة.',
+          'ضوابط إنفاق آلية تُرصد معاملات بطاقة الوقود والرسوم الخارجة عن الأنماط المتوقعة (الوقت والموقع والمبلغ) في شبه الوقت الحقيقي؛ وتحليل التباين يُوجّه إجراءً تصحيحيًا خلال الشهر نفسه.',
+          'لوحات تحكم آنية للتكلفة تدمج إنفاق بطاقة الوقود والرسوم والصيانة مع تنبيهات تنبؤية لتباين الميزانية؛ وتُرصَد الحالات الشاذة آليًا وتُحقَّق خلال 24 ساعة؛ ويُحافَظ على تباين تكلفة الكيلومتر ضمن ±3% من الميزانية.',
+        ],
+      },
+      {
+        q: 'To what extent is fleet dispatch, tracking, and proof-of-delivery automated via telematics/TMS systems?',
+        qAr: 'إلى أي مدى يُعد إرسال الأسطول وتتبعه وإثبات التسليم مؤتمتًا عبر أنظمة التتبّع الإلكتروني/إدارة النقل؟',
+        levels: [
+          'No telematics or TMS is used; dispatch is verbal/manual and proof of delivery is a paper signature filed locally with no central visibility.',
+          'Basic GPS tracking exists on some vehicles; proof of delivery is still paper-based and manually scanned/filed after the fact.',
+          'A TMS covers dispatch and tracking for the core fleet; proof of delivery is captured digitally (photo/signature on a driver app) for most deliveries.',
+          'Dispatch, tracking, and proof-of-delivery are fully integrated in a TMS/telematics platform with automated customer notifications and exception alerts for delays.',
+          'End-to-end automation connects dispatch, real-time tracking, digital proof-of-delivery, and customer-facing visibility in one platform; exceptions trigger automated workflows with minimal manual intervention.',
+        ],
+        levelsAr: [
+          'لا يُستخدَم أي نظام تتبّع إلكتروني أو إدارة نقل؛ والإرسال شفهي/يدوي وإثبات التسليم توقيع ورقي يُحفَظ محليًا دون رؤية مركزية.',
+          'يوجد تتبّع GPS أساسي على بعض المركبات؛ ولا يزال إثبات التسليم ورقيًا ويُمسَح/يُحفَظ يدويًا بعد الواقعة.',
+          'يغطي نظام إدارة نقل الإرسال والتتبّع للأسطول الأساسي؛ ويُلتقَط إثبات التسليم رقميًا (صورة/توقيع عبر تطبيق السائق) لمعظم التسليمات.',
+          'الإرسال والتتبّع وإثبات التسليم مدمجة بالكامل في منصة إدارة نقل/تتبّع إلكتروني مع إشعارات آلية للعملاء وتنبيهات استثناء للتأخيرات.',
+          'أتمتة شاملة تربط الإرسال والتتبّع الآني وإثبات التسليم الرقمي والرؤية المتاحة للعملاء في منصة واحدة؛ والاستثناءات تُطلِق مسارات عمل آلية بأدنى تدخل يدوي.',
+        ],
+      },
+      {
+        q: 'How is compliance with driver licensing, vehicle registration, insurance, and HSE (health, safety, environment) requirements governed?',
+        qAr: 'كيف يُدار الامتثال لمتطلبات ترخيص السائقين وتسجيل المركبات والتأمين والصحة والسلامة والبيئة؟',
+        levels: [
+          'Compliance documentation (licences, registration, insurance) is tracked informally or not at all; expired documents are discovered only during incidents or roadside checks.',
+          'A basic spreadsheet tracks expiry dates for licences, registration, and insurance, but renewal is reactive and lapses occur occasionally.',
+          'A formal compliance calendar with automated reminders tracks all licensing, registration, insurance, and HSE certification renewals; a designated owner is accountable.',
+          'Compliance status is tracked in a system with automated alerts, dashboard visibility for management, and vehicles/drivers are automatically flagged for suspension if documentation lapses.',
+          'Compliance governance is fully automated and integrated with dispatch systems, which block assignment of any vehicle or driver with lapsed documentation; HSE compliance is audited quarterly with zero-lapse performance.',
+        ],
+        levelsAr: [
+          'وثائق الامتثال (التراخيص والتسجيل والتأمين) تُتابَع بشكل غير رسمي أو لا تُتابَع إطلاقًا؛ وتُكتشَف الوثائق منتهية الصلاحية فقط أثناء الحوادث أو نقاط التفتيش.',
+          'يتتبّع جدول بيانات أساسي تواريخ انتهاء التراخيص والتسجيل والتأمين، لكن التجديد تفاعلي وتحدث انقطاعات أحيانًا.',
+          'تقويم امتثال رسمي بتذكيرات آلية يتتبّع جميع تجديدات التراخيص والتسجيل والتأمين وشهادات الصحة والسلامة والبيئة؛ ومسؤول مُحدَّد يتحمل المساءلة.',
+          'حالة الامتثال متابَعة في نظام بتنبيهات آلية ورؤية عبر لوحة تحكم للإدارة، وتُعلَّم المركبات/السائقون آليًا للإيقاف عند انقطاع الوثائق.',
+          'حوكمة الامتثال مؤتمتة بالكامل ومدمجة مع أنظمة الإرسال التي تمنع تخصيص أي مركبة أو سائق بوثائق منتهية؛ ويُدقَّق الامتثال للصحة والسلامة والبيئة ربع سنويًا بأداء معدوم الانقطاعات.',
+        ],
+      },
+      {
+        q: 'How resilient is the fleet operation to disruptions — vehicle breakdowns, driver shortages, or fuel supply interruptions — through contingency and backup capacity planning?',
+        qAr: 'ما مدى مرونة تشغيل الأسطول في مواجهة الاضطرابات — أعطال المركبات ونقص السائقين أو انقطاعات إمداد الوقود — عبر التخطيط للطوارئ والقدرة الاحتياطية؟',
+        levels: [
+          'There is no contingency plan for fleet disruptions; a breakdown or driver absence causes immediate delivery failure with no backup arrangement.',
+          'Informal backup arrangements exist (calling a nearby driver or renting a vehicle) but are not documented or pre-negotiated.',
+          'A documented contingency plan identifies backup vehicles, spot-hire contacts, and alternate fuel sources for common disruption scenarios.',
+          'Contingency plans are pre-negotiated with backup carriers/rental providers and tested annually; disruption response time targets are tracked (e.g., backup vehicle deployed within 4 hours).',
+          'A resilience programme includes pre-positioned backup capacity, multi-supplier fuel contracts, and scenario-tested response playbooks; disruption impact on service levels is near-zero and reviewed after every incident for continuous improvement.',
+        ],
+        levelsAr: [
+          'لا توجد خطة طوارئ لاضطرابات الأسطول؛ ويؤدي العطل أو غياب السائق إلى فشل فوري في التسليم دون ترتيب احتياطي.',
+          'توجد ترتيبات احتياطية غير رسمية (الاتصال بسائق قريب أو استئجار مركبة) لكنها غير موثقة أو متفق عليها مسبقًا.',
+          'خطة طوارئ موثقة تحدد المركبات الاحتياطية وجهات الاتصال للاستئجار الفوري ومصادر وقود بديلة لسيناريوهات الاضطراب الشائعة.',
+          'خطط الطوارئ متفق عليها مسبقًا مع ناقلين/مزودي تأجير احتياطيين وتُختبَر سنويًا؛ ومستهدفات زمن الاستجابة للاضطراب متابَعة (مثل نشر مركبة احتياطية خلال 4 ساعات).',
+          'يشمل برنامج المرونة قدرة احتياطية مُموضَعة مسبقًا وعقود وقود متعددة الموردين وأدلة استجابة مُختبَرة بسيناريوهات؛ وتأثير الاضطراب على مستويات الخدمة شبه معدوم ويُراجَع بعد كل حادثة للتحسين المستمر.',
+        ],
+      },
     ],
   },
 
-  /* ── fleet_ops-1  Port/Hub Operational Performance ──────────────────── */
+  /* ── 13-1  Port/Hub Operational Performance ──────────────────────────── */
   {
     id: 'fleet-port',
     title: 'Port/Hub Operational Performance',
@@ -10875,10 +11037,172 @@ export const FLEET_OPS_SUB_SEGMENTS: SubSegmentData[] = [
           'يُحسّن تشغيل الميناء المدفوع بالذكاء الاصطناعي جدولة الأرصفة وتخصيص الرافعات وتخطيط الساحة آنيًا؛ والأداء يتجاوز معايير الخليج؛ ويُراجَع على مستوى مجلس الإدارة.',
         ],
       },
+      {
+        q: 'How strategically is berth scheduling and terminal/hub capacity planned against vessel/truck arrival forecasts and throughput targets?',
+        qAr: 'ما مدى الاستراتيجية في تخطيط جدولة الأرصفة وقدرة المحطة/المركز في ضوء توقعات وصول السفن/الشاحنات ومستهدفات الإنتاجية؟',
+        levels: [
+          'No formal berth/capacity planning exists; vessels and trucks are accommodated on a first-come basis with no forecast of arrival volumes.',
+          'Berth/capacity planning is done informally based on historical patterns known to a few staff; no formal capacity model exists.',
+          'An annual berth/terminal capacity plan is developed using arrival forecasts and historical throughput data, reviewed with terminal operators.',
+          'Berth scheduling is optimised quarterly using arrival forecasts, throughput targets, and equipment availability; capacity constraints are flagged proactively.',
+          'Dynamic berth-scheduling algorithms optimise allocation in near-real-time using predictive arrival data across the full network of hubs; capacity utilisation is maximised while turnaround time is minimised against a published target.',
+        ],
+        levelsAr: [
+          'لا يوجد تخطيط رسمي للأرصفة/القدرة؛ تُستقبَل السفن والشاحنات وفق مبدأ الأسبقية دون توقع لحجوم الوصول.',
+          'يُخطَّط للأرصفة/القدرة بشكل غير رسمي بناءً على أنماط تاريخية يعرفها عدد محدود من الموظفين؛ ولا يوجد نموذج قدرة رسمي.',
+          'تُوضع خطة سنوية لقدرة الأرصفة/المحطة باستخدام توقعات الوصول وبيانات الإنتاجية التاريخية، وتُراجَع مع مشغّلي المحطة.',
+          'تُحسَّن جدولة الأرصفة ربع سنويًا باستخدام توقعات الوصول ومستهدفات الإنتاجية وتوافر المعدات؛ وتُرصَد قيود القدرة استباقيًا.',
+          'خوارزميات جدولة أرصفة ديناميكية تُحسّن التخصيص في شبه الوقت الحقيقي باستخدام بيانات وصول تنبؤية عبر شبكة المراكز الكاملة؛ ويُعظَّم استخدام القدرة مع تقليل زمن التحوّل مقابل هدف منشور.',
+        ],
+      },
+      {
+        q: 'How is demurrage and detention exposure tracked and managed at the operational level?',
+        qAr: 'كيف تُتابَع مخاطر رسوم التأخير والاحتجاز وتُدار على المستوى التشغيلي؟',
+        levels: [
+          'Demurrage/detention charges are paid on invoice with no root-cause tracking of which shipments or processes drive them.',
+          'Demurrage/detention charges are logged in aggregate monthly; no analysis links charges to specific terminals, carriers, or internal delays.',
+          'Demurrage/detention is tracked per shipment and terminal, with free-time windows monitored proactively to avoid avoidable charges.',
+          'Automated alerts flag containers approaching free-time expiry; demurrage/detention cost-per-container is tracked against a reduction target and reviewed monthly with terminal operators.',
+          'Real-time container-tracking integrated with terminal free-time data drives automated pull/return scheduling; demurrage/detention cost-per-container is a published KPI held near-zero through predictive scheduling.',
+        ],
+        levelsAr: [
+          'تُسدَّد رسوم التأخير والاحتجاز بناءً على الفاتورة دون تتبّع للسبب الجذري للشحنات أو العمليات المسبِّبة لها.',
+          'تُسجَّل رسوم التأخير والاحتجاز إجماليًا شهريًا؛ ولا يوجد تحليل يربط الرسوم بمحطات أو ناقلين أو تأخيرات داخلية محددة.',
+          'تُتابَع رسوم التأخير والاحتجاز لكل شحنة ومحطة، مع مراقبة استباقية لفترات السماح لتفادي الرسوم القابلة للتجنب.',
+          'تنبيهات آلية تُحذّر عند اقتراب انتهاء فترة السماح للحاويات؛ وتكلفة التأخير/الاحتجاز لكل حاوية متابَعة مقابل هدف خفض وتُراجَع شهريًا مع مشغّلي المحطة.',
+          'تتبّع آني للحاويات مدمج مع بيانات فترة السماح للمحطة يُوجّه جدولة السحب/الإرجاع آليًا؛ وتكلفة التأخير/الاحتجاز لكل حاوية مؤشر أداء منشور يُبقى شبه معدوم عبر الجدولة التنبؤية.',
+        ],
+      },
+      {
+        q: 'How is cargo/container handling equipment (cranes, forklifts, yard trucks) utilisation and productivity managed?',
+        qAr: 'كيف يُدار استخدام معدات مناولة البضائع/الحاويات (الرافعات والشاحنات الرافعة ومعدات الساحة) وإنتاجيتها؟',
+        levels: [
+          'Handling equipment utilisation is not tracked; equipment is deployed based on immediate need with no productivity measurement.',
+          'Equipment usage hours are logged informally for maintenance purposes only; productivity (moves per hour) is not benchmarked.',
+          'Equipment productivity (moves per hour per crane/forklift) is tracked monthly and reviewed against terminal operator targets.',
+          'Equipment productivity and utilisation are tracked in near-real-time via terminal operating system (TOS) data; underperforming equipment/shifts are flagged for corrective action.',
+          'Predictive equipment-deployment algorithms optimise crane/yard-equipment allocation against forecast vessel/truck volumes in real-time; productivity per move is benchmarked against top-quartile GCC terminals and consistently met or exceeded.',
+        ],
+        levelsAr: [
+          'استخدام معدات المناولة لا يُتابَع؛ وتُنشَر المعدات بناءً على الحاجة الفورية دون قياس للإنتاجية.',
+          'تُسجَّل ساعات استخدام المعدات بشكل غير رسمي لأغراض الصيانة فقط؛ والإنتاجية (الحركات في الساعة) لا تُقارَن معياريًا.',
+          'تُتابَع إنتاجية المعدات (الحركات في الساعة لكل رافعة/شاحنة رافعة) شهريًا وتُراجَع مقابل مستهدفات مشغّل المحطة.',
+          'إنتاجية المعدات واستخدامها متابَعان في شبه الوقت الحقيقي عبر بيانات نظام تشغيل المحطة؛ والمعدات/الورديات ذات الأداء المتدني تُرصَد لاتخاذ إجراء تصحيحي.',
+          'خوارزميات نشر معدات تنبؤية تُحسّن تخصيص الرافعات/معدات الساحة مقابل أحجام السفن/الشاحنات المتوقعة آنيًا؛ والإنتاجية لكل حركة تُقارَن معياريًا بأفضل الأرباع في محطات الخليج وتُحقَّق أو تُتجاوَز باستمرار.',
+        ],
+      },
+      {
+        q: 'How are daily berth allocation and vessel/truck queue management decisions made?',
+        qAr: 'كيف تُتخذ قرارات التخصيص اليومي للأرصفة وإدارة طوابير السفن/الشاحنات؟',
+        levels: [
+          'Berth/queue allocation is decided manually and informally by an operations supervisor with no defined sequencing rules.',
+          'A basic first-come-first-served sequencing is applied; priority exceptions are handled ad-hoc without documented criteria.',
+          'Defined berth/queue allocation rules (priority by cargo type, contract commitment, or arrival window) are applied and logged daily.',
+          'A berth-planning system assigns and sequences vessels/trucks using defined optimisation rules; queue/waiting time is tracked against a target and reviewed daily.',
+          'Automated berth-allocation algorithms optimise sequencing across the full terminal network in real time, minimising waiting time and maximising throughput; queue time and berth productivity are tracked and continuously improved against best-in-class benchmarks.',
+        ],
+        levelsAr: [
+          'يُقرَّر تخصيص الأرصفة/الطوابير يدويًا وبشكل غير رسمي من قبل مشرف العمليات دون قواعد تسلسل محددة.',
+          'يُطبَّق تسلسل أساسي وفق مبدأ الأسبقية؛ وتُعالَج استثناءات الأولوية ارتجاليًا دون معايير موثقة.',
+          'تُطبَّق قواعد محددة لتخصيص الأرصفة/الطوابير (الأولوية حسب نوع البضاعة أو الالتزام التعاقدي أو نافذة الوصول) وتُسجَّل يوميًا.',
+          'يُخصِّص نظام تخطيط الأرصفة السفن/الشاحنات ويُرتّبها وفق قواعد تحسين محددة؛ ووقت الانتظار في الطابور متابَع مقابل هدف ويُراجَع يوميًا.',
+          'خوارزميات تخصيص أرصفة آلية تُحسّن الترتيب عبر شبكة المحطات الكاملة آنيًا، مما يقلل وقت الانتظار ويُعظّم الإنتاجية؛ ووقت الطابور وإنتاجية الرصيف متابَعان ويُحسَّنان باستمرار مقابل معايير الأفضل في فئتها.',
+        ],
+      },
+      {
+        q: 'How is yard/container stacking and positioning managed to minimise re-handling and retrieval time?',
+        qAr: 'كيف تُدار عملية تكديس/تموضع الحاويات في الساحة لتقليل إعادة المناولة ووقت الاسترجاع؟',
+        levels: [
+          'Container positioning in the yard is decided on the spot with no plan; re-handling (moving containers to access others) is frequent and untracked.',
+          'Basic yard zoning exists (import/export/empty areas) but positioning within zones is unplanned; re-handling rate is not measured.',
+          'A yard management plan positions containers by expected retrieval date/priority; re-handling rate is tracked monthly against a target.',
+          'A yard management system (YMS) optimises container positioning based on retrieval priority and vessel/truck loading sequence; re-handling rate and retrieval time are tracked against reduction targets.',
+          'AI-driven yard optimisation dynamically repositions containers ahead of anticipated retrieval, integrated with berth and gate schedules; re-handling rate is near-zero and retrieval time is a published KPI benchmarked against top-quartile GCC terminals.',
+        ],
+        levelsAr: [
+          'يُحدَّد تموضع الحاويات في الساحة على الفور دون خطة؛ وإعادة المناولة (نقل الحاويات للوصول لأخرى) متكررة وغير متابَعة.',
+          'توجد تقسيمات ساحة أساسية (مناطق الاستيراد/التصدير/الفارغة) لكن التموضع داخل المناطق غير مخطط؛ ومعدل إعادة المناولة غير مقاس.',
+          'تُموضِع خطة إدارة الساحة الحاويات وفق تاريخ الاسترجاع المتوقع/الأولوية؛ ومعدل إعادة المناولة متابَع شهريًا مقابل هدف.',
+          'نظام إدارة ساحة يُحسّن تموضع الحاويات بناءً على أولوية الاسترجاع وتسلسل تحميل السفن/الشاحنات؛ ومعدل إعادة المناولة ووقت الاسترجاع متابَعان مقابل مستهدفات خفض.',
+          'تحسين ساحة مدفوع بالذكاء الاصطناعي يُعيد تموضع الحاويات ديناميكيًا قبل الاسترجاع المتوقع، مدمج مع جداول الأرصفة والبوابات؛ ومعدل إعادة المناولة شبه معدوم ووقت الاسترجاع مؤشر أداء منشور يُقارَن معياريًا بأفضل الأرباع في محطات الخليج.',
+        ],
+      },
+      {
+        q: 'How are terminal handling charges (THC) and accessorial fees controlled against contracted rates and budget?',
+        qAr: 'كيف تُضبَط رسوم مناولة المحطة والرسوم الإضافية مقابل الأسعار التعاقدية والميزانية؟',
+        levels: [
+          'THC and accessorial invoices are paid without verification against contracted rates; overcharges are not detected.',
+          'Invoices are spot-checked occasionally against contracted rates; systematic reconciliation is not performed.',
+          'Monthly reconciliation of THC and accessorial charges against contracted rate cards identifies and disputes discrepancies.',
+          'Automated invoice-matching against contracted rate cards flags discrepancies before payment; dispute recovery rate is tracked against a target.',
+          'Real-time rate-compliance dashboards integrate THC/accessorial invoicing with contract terms across all terminals; overcharge detection is automated and disputed within 48 hours; leakage is held below a published threshold (e.g., <1% of spend).',
+        ],
+        levelsAr: [
+          'تُسدَّد فواتير رسوم مناولة المحطة والرسوم الإضافية دون التحقق من مطابقتها للأسعار التعاقدية؛ والرسوم الزائدة لا تُكتشَف.',
+          'تُدقَّق الفواتير عشوائيًا أحيانًا مقابل الأسعار التعاقدية؛ ولا تُجرى مطابقة منهجية.',
+          'مطابقة شهرية لرسوم مناولة المحطة والرسوم الإضافية مقابل بطاقات الأسعار التعاقدية تحدد التباينات وتُنازَع عليها.',
+          'مطابقة آلية للفواتير مقابل بطاقات الأسعار التعاقدية تُرصد التباينات قبل السداد؛ ومعدل استرداد النزاعات متابَع مقابل هدف.',
+          'لوحات تحكم آنية للامتثال السعري تدمج فوترة رسوم المناولة/الرسوم الإضافية مع شروط العقد عبر جميع المحطات؛ وكشف الرسوم الزائدة مؤتمت ويُنازَع عليه خلال 48 ساعة؛ ويُبقى التسرب دون عتبة منشورة (مثل أقل من 1% من الإنفاق).',
+        ],
+      },
+      {
+        q: 'To what extent are berth scheduling, gate operations, and terminal operating processes automated via a TOS (terminal operating system)?',
+        qAr: 'إلى أي مدى تُعد عمليات جدولة الأرصفة والبوابات وتشغيل المحطة مؤتمتة عبر نظام تشغيل المحطة؟',
+        levels: [
+          'No TOS is used; berth scheduling and gate processing are entirely manual and paper-based.',
+          'A basic TOS covers gate transactions only; berth scheduling and yard planning remain manual.',
+          'A TOS covers gate, yard, and berth scheduling for the core terminal; data is used for daily operational decisions.',
+          'The TOS is fully integrated with gate automation (OCR/RFID), automated crane scheduling, and yard planning, with exception alerts for delays.',
+          'End-to-end terminal automation connects berth scheduling, automated gate processing, yard optimisation, and customer-facing visibility in one platform; exceptions trigger automated workflows with minimal manual intervention.',
+        ],
+        levelsAr: [
+          'لا يُستخدَم نظام تشغيل محطة؛ وجدولة الأرصفة ومعالجة البوابات يدوية وورقية بالكامل.',
+          'يغطي نظام تشغيل محطة أساسي معاملات البوابة فقط؛ وتظل جدولة الأرصفة وتخطيط الساحة يدويين.',
+          'يغطي نظام تشغيل محطة البوابة والساحة وجدولة الأرصفة للمحطة الأساسية؛ وتُستخدَم البيانات في القرارات التشغيلية اليومية.',
+          'نظام تشغيل المحطة مدمج بالكامل مع أتمتة البوابة (التعرف الضوئي/RFID) وجدولة الرافعات الآلية وتخطيط الساحة، مع تنبيهات استثناء للتأخيرات.',
+          'أتمتة شاملة للمحطة تربط جدولة الأرصفة ومعالجة البوابة الآلية وتحسين الساحة والرؤية المتاحة للعملاء في منصة واحدة؛ والاستثناءات تُطلِق مسارات عمل آلية بأدنى تدخل يدوي.',
+        ],
+      },
+      {
+        q: 'How is governance of terminal operator SLAs and physical safety/HSE performance at the port/hub managed?',
+        qAr: 'كيف تُدار حوكمة اتفاقيات مستوى الخدمة مع مشغّلي المحطات وأداء السلامة الفعلية/الصحة والسلامة والبيئة في الميناء/المركز؟',
+        levels: [
+          'Terminal operator SLAs and safety performance are not formally monitored; incidents are addressed only when raised by the operator.',
+          'SLA metrics and safety incidents are reviewed informally in periodic meetings with the terminal operator, without a formal scorecard.',
+          'A formal SLA scorecard tracks terminal operator performance (turnaround, handling rate, safety incidents) quarterly with a designated accountable owner.',
+          'SLA and HSE performance are tracked in a system with automated alerts and management dashboard visibility; non-conformances trigger formal corrective action with the terminal operator.',
+          'Governance is fully integrated with real-time SLA/safety dashboards shared with terminal operators; safety performance is audited quarterly with a zero-serious-incident target, and SLA non-conformance triggers automated escalation and contractual remedy clauses.',
+        ],
+        levelsAr: [
+          'اتفاقيات مستوى الخدمة مع مشغّلي المحطات وأداء السلامة لا تُراقَب رسميًا؛ وتُعالَج الحوادث فقط عند إثارتها من قبل المشغّل.',
+          'تُراجَع مقاييس اتفاقية مستوى الخدمة والحوادث الأمنية بشكل غير رسمي في اجتماعات دورية مع مشغّل المحطة، دون بطاقة أداء رسمية.',
+          'بطاقة أداء رسمية لاتفاقية مستوى الخدمة تتتبّع أداء مشغّل المحطة (زمن التحوّل ومعدل المناولة وحوادث السلامة) ربع سنويًا مع مسؤول مُحدَّد للمساءلة.',
+          'أداء اتفاقية مستوى الخدمة والصحة والسلامة والبيئة متابَع في نظام بتنبيهات آلية ورؤية عبر لوحة تحكم للإدارة؛ وحالات عدم المطابقة تُطلِق إجراءً تصحيحيًا رسميًا مع مشغّل المحطة.',
+          'الحوكمة مدمجة بالكامل مع لوحات تحكم آنية لاتفاقية مستوى الخدمة/السلامة تُشارَك مع مشغّلي المحطات؛ ويُدقَّق أداء السلامة ربع سنويًا بهدف معدوم الحوادث الجسيمة، وعدم مطابقة اتفاقية مستوى الخدمة يُطلِق تصعيدًا آليًا وبنود تعويض تعاقدية.',
+        ],
+      },
+      {
+        q: 'How resilient are port/hub operations to disruptions — congestion, equipment breakdown, or severe weather — through contingency and backup planning?',
+        qAr: 'ما مدى مرونة عمليات الميناء/المركز في مواجهة الاضطرابات — الازدحام أو أعطال المعدات أو الأحوال الجوية القاسية — عبر التخطيط للطوارئ والقدرة الاحتياطية؟',
+        levels: [
+          'There is no contingency plan for port/hub disruptions; congestion or equipment failure causes cascading delays with no defined response.',
+          'Informal workarounds (rerouting to a nearby terminal, calling for backup equipment) are used but not documented or pre-arranged.',
+          'A documented contingency plan identifies alternate terminals, backup equipment sources, and weather-response procedures for common disruption scenarios.',
+          'Contingency arrangements are pre-negotiated with alternate terminals/equipment providers and tested annually; disruption response time targets are tracked (e.g., alternate berth secured within 6 hours).',
+          'A resilience programme includes pre-positioned backup equipment, multi-terminal contingency contracts, and scenario-tested response playbooks; disruption impact on throughput is near-zero and reviewed after every incident for continuous improvement.',
+        ],
+        levelsAr: [
+          'لا توجد خطة طوارئ لاضطرابات الميناء/المركز؛ ويتسبب الازدحام أو عطل المعدات في تأخيرات متتالية دون استجابة محددة.',
+          'تُستخدَم حلول بديلة غير رسمية (إعادة التوجيه إلى محطة قريبة أو طلب معدات احتياطية) لكنها غير موثقة أو مُرتَّبة مسبقًا.',
+          'خطة طوارئ موثقة تحدد محطات بديلة ومصادر معدات احتياطية وإجراءات استجابة للأحوال الجوية لسيناريوهات الاضطراب الشائعة.',
+          'ترتيبات الطوارئ متفق عليها مسبقًا مع محطات/مزودي معدات بديلين وتُختبَر سنويًا؛ ومستهدفات زمن الاستجابة للاضطراب متابَعة (مثل تأمين رصيف بديل خلال 6 ساعات).',
+          'يشمل برنامج المرونة معدات احتياطية مُموضَعة مسبقًا وعقود طوارئ متعددة المحطات وأدلة استجابة مُختبَرة بسيناريوهات؛ وتأثير الاضطراب على الإنتاجية شبه معدوم ويُراجَع بعد كل حادثة للتحسين المستمر.',
+        ],
+      },
     ],
   },
 
-  /* ── fleet_ops-2  Dangerous Goods & Hazmat Compliance ───────────────── */
+  /* ── 13-2  Dangerous Goods & Hazmat Compliance ──────────────────────────── */
   {
     id: 'fleet-dg',
     title: 'Dangerous Goods & Hazmat Compliance',
@@ -10911,10 +11235,172 @@ export const FLEET_OPS_SUB_SEGMENTS: SubSegmentData[] = [
           'يُحافَظ على أداء معدوم الحوادث في DG/hazmat عبر إجراءات صارمة وموظفين معتمدين وتدقيقات طرف ثالث وتحسين سلامة مستمر؛ مُقارَن معياريًا بالقادة العالميين.',
         ],
       },
+      {
+        q: 'How strategically is DG/hazmat capability positioned as a differentiator or gating requirement for winning and retaining business in regulated sectors (chemicals, pharma, oil & gas)?',
+        qAr: 'ما مدى الاستراتيجية في تموضع قدرة التعامل مع البضائع الخطرة كميزة تنافسية أو شرط بوابي للفوز بالأعمال والاحتفاظ بها في القطاعات المنظمة (الكيماويات والأدوية والنفط والغاز)؟',
+        levels: [
+          'DG capability is not considered in business development; regulated-sector opportunities are declined or subcontracted due to lack of certification.',
+          'Basic DG certification is held to satisfy minimum client requirements, but is not actively marketed as a capability.',
+          'DG/hazmat certification and track record are used in proposals for regulated-sector clients; certification scope is reviewed annually against target markets.',
+          'DG capability is a defined strategic differentiator with investment in expanded certification scope (additional classes, modes); win-rate in regulated-sector bids is tracked.',
+          'DG/hazmat excellence is a core brand differentiator with published safety performance, driving premium pricing and preferred-provider status with regulated-sector clients; capability roadmap is reviewed at board level.',
+        ],
+        levelsAr: [
+          'قدرة التعامل مع البضائع الخطرة لا تُراعى في تطوير الأعمال؛ وتُرفَض فرص القطاعات المنظمة أو تُسنَد من الباطن لعدم توفر الشهادات.',
+          'تُحمَل شهادة أساسية للبضائع الخطرة لتلبية الحد الأدنى من متطلبات العملاء، لكنها لا تُسوَّق بفعالية كقدرة تنافسية.',
+          'تُستخدَم شهادة وسجل أداء البضائع الخطرة في عروض عملاء القطاعات المنظمة؛ ونطاق الشهادة يُراجَع سنويًا مقابل الأسواق المستهدفة.',
+          'قدرة البضائع الخطرة ميزة تنافسية استراتيجية محددة باستثمار في توسيع نطاق الشهادة (فئات ووسائط إضافية)؛ ومعدل الفوز بمناقصات القطاعات المنظمة متابَع.',
+          'التميّز في البضائع الخطرة ميزة أساسية للعلامة التجارية بأداء سلامة منشور، يدفع لتسعير مميز ومكانة مزود مفضّل لدى عملاء القطاعات المنظمة؛ وخارطة طريق القدرة تُراجَع على مستوى مجلس الإدارة.',
+        ],
+      },
+      {
+        q: 'How rigorous is staff DG/hazmat certification management — tracking who is certified, for which classes, and certification expiry?',
+        qAr: 'ما مدى صرامة إدارة شهادات الموظفين للبضائع الخطرة — من حيث تتبّع الحاصلين على الشهادة وفئاتها وتواريخ انتهائها؟',
+        levels: [
+          'No record of which staff hold DG certification or for which classes; certification lapses are discovered only during incidents or audits.',
+          'A basic list of certified staff exists but is not actively maintained; renewal is the individual\'s responsibility with no organisational tracking.',
+          'A certification tracking register records staff, DG classes, and expiry dates, with reminders sent ahead of renewal deadlines.',
+          'A system-based certification register triggers automated renewal reminders and flags staff for reassignment if certification lapses; certification coverage vs. operational need is reviewed quarterly.',
+          'Certification management is fully integrated with workforce scheduling, automatically excluding uncertified staff from DG-handling assignments; certification coverage exceeds operational need by a planned buffer, audited quarterly with zero-lapse performance.',
+        ],
+        levelsAr: [
+          'لا يوجد سجل بالموظفين الحاصلين على شهادة البضائع الخطرة أو فئاتها؛ وتُكتشَف الشهادات منتهية الصلاحية فقط أثناء الحوادث أو التدقيقات.',
+          'توجد قائمة أساسية بالموظفين المعتمدين لكنها لا تُحدَّث بفعالية؛ والتجديد مسؤولية فردية دون تتبّع مؤسسي.',
+          'سجل تتبّع الشهادات يُدوّن الموظفين وفئات البضائع الخطرة وتواريخ الانتهاء، مع تذكيرات تُرسَل قبل مواعيد التجديد.',
+          'سجل شهادات قائم على نظام يُطلِق تذكيرات تجديد آلية ويُعلِّم الموظفين لإعادة التكليف عند انقطاع الشهادة؛ وتغطية الشهادات مقابل الحاجة التشغيلية تُراجَع ربع سنويًا.',
+          'إدارة الشهادات مدمجة بالكامل مع جدولة القوى العاملة، وتستبعد آليًا الموظفين غير المعتمدين من مهام مناولة البضائع الخطرة؛ وتغطية الشهادات تتجاوز الحاجة التشغيلية بهامش مخطط، وتُدقَّق ربع سنويًا بأداء معدوم الانقطاعات.',
+        ],
+      },
+      {
+        q: 'How is DG/hazmat incident and near-miss data captured, analysed, and used to drive corrective action?',
+        qAr: 'كيف تُجمَع بيانات حوادث البضائع الخطرة والحالات شبه الحرجة وتُحلَّل وتُستخدَم لدفع إجراءات تصحيحية؟',
+        levels: [
+          'Incidents are handled in the moment with no documentation; near-misses are not reported or tracked at all.',
+          'Serious incidents are logged after the fact in a basic register; near-misses are rarely reported due to lack of a reporting culture.',
+          'A formal incident and near-miss reporting system is in place; monthly review identifies trends and assigns corrective actions.',
+          'Incident/near-miss data feeds a root-cause analysis process with tracked corrective-action closure; leading indicators (near-miss rate) are monitored to predict risk before incidents occur.',
+          'A predictive safety analytics programme correlates near-miss and incident data with operational variables to pre-emptively flag high-risk conditions; corrective actions are closed within a published SLA; safety performance is reported to the board quarterly.',
+        ],
+        levelsAr: [
+          'تُعالَج الحوادث لحظيًا دون توثيق؛ والحالات شبه الحرجة لا تُبلَّغ أو تُتابَع إطلاقًا.',
+          'تُسجَّل الحوادث الجسيمة بعد وقوعها في سجل أساسي؛ ونادرًا ما تُبلَّغ الحالات شبه الحرجة لغياب ثقافة الإبلاغ.',
+          'نظام رسمي للإبلاغ عن الحوادث والحالات شبه الحرجة قائم؛ والمراجعة الشهرية تحدد الاتجاهات وتُسنِد إجراءات تصحيحية.',
+          'تُغذّي بيانات الحوادث/الحالات شبه الحرجة عملية تحليل السبب الجذري مع تتبّع إغلاق الإجراءات التصحيحية؛ والمؤشرات القائدة (معدل الحالات شبه الحرجة) تُراقَب للتنبؤ بالمخاطر قبل وقوع الحوادث.',
+          'برنامج تحليلات سلامة تنبؤي يربط بيانات الحالات شبه الحرجة والحوادث بمتغيرات التشغيل للإنذار الاستباقي بالظروف عالية الخطورة؛ وتُغلَق الإجراءات التصحيحية ضمن اتفاقية مستوى خدمة منشورة؛ ويُبلَّغ أداء السلامة لمجلس الإدارة ربع سنويًا.',
+        ],
+      },
+      {
+        q: 'How is DG/hazmat labelling, packaging, and documentation verified before each shipment is dispatched?',
+        qAr: 'كيف يُتحقَّق من تسمية وتغليف ووثائق البضائع الخطرة قبل إرسال كل شحنة؟',
+        levels: [
+          'Labelling and documentation are prepared by whoever packs the shipment with no independent verification before dispatch.',
+          'A basic visual check of labelling occurs before dispatch for some shipments, but documentation completeness is not systematically verified.',
+          'A documented pre-dispatch checklist verifies labelling, packaging, and documentation against IMDG/IATA/ADR requirements for every DG shipment.',
+          'A certified DG officer independently verifies and signs off every shipment against a digital checklist before dispatch; non-conforming shipments are held automatically.',
+          'Verification is digitised end-to-end with barcode/RFID cross-checks against the DG database, automated regulatory-rule validation, and a full audit trail; verification error rate is a published KPI held near-zero.',
+        ],
+        levelsAr: [
+          'تُعَدّ التسمية والوثائق من قبل من يُعبِّئ الشحنة دون تحقق مستقل قبل الإرسال.',
+          'يُجرى فحص بصري أساسي للتسمية قبل الإرسال لبعض الشحنات، لكن اكتمال الوثائق لا يُتحقَّق منه منهجيًا.',
+          'قائمة تحقق موثقة قبل الإرسال تتحقق من التسمية والتغليف والوثائق مقابل متطلبات IMDG/IATA/ADR لكل شحنة بضائع خطرة.',
+          'ضابط بضائع خطرة معتمد يتحقق ويوقّع بشكل مستقل على كل شحنة مقابل قائمة تحقق رقمية قبل الإرسال؛ والشحنات غير المطابقة تُحتجَز آليًا.',
+          'التحقق مؤتمت شاملًا مع مطابقة الباركود/RFID مقابل قاعدة بيانات البضائع الخطرة والتحقق الآلي من القواعد التنظيمية ومسار تدقيق كامل؛ ومعدل خطأ التحقق مؤشر أداء منشور يُبقى شبه معدوم.',
+        ],
+      },
+      {
+        q: 'How is DG/hazmat storage segregation and warehouse safety (incompatible materials, ventilation, spill response equipment) managed day-to-day?',
+        qAr: 'كيف تُدار يوميًا عملية فصل تخزين البضائع الخطرة وسلامة المستودع (المواد غير المتوافقة والتهوية ومعدات الاستجابة للانسكاب)؟',
+        levels: [
+          'DG materials are stored without formal segregation; incompatible materials risk being stored together; spill response equipment is not maintained.',
+          'Basic segregation zones exist based on general knowledge; spill kits are present but not regularly checked or restocked.',
+          'A documented segregation plan follows IMDG/ADR compatibility tables; spill response equipment is checked and restocked on a defined schedule.',
+          'Segregation compliance is verified through regular internal audits with corrective action tracking; spill response drills are conducted and staff response time is measured.',
+          'Storage segregation is monitored via sensor-based systems (e.g., proximity alerts for incompatible materials); spill response readiness is audited quarterly with response-time targets consistently met; zero segregation non-conformances over the past 12 months.',
+        ],
+        levelsAr: [
+          'تُخزَّن المواد الخطرة دون فصل رسمي؛ والمواد غير المتوافقة مُعرَّضة لخطر التخزين معًا؛ ومعدات الاستجابة للانسكاب غير مصانة.',
+          'توجد مناطق فصل أساسية بناءً على معرفة عامة؛ وأطقم الانسكاب موجودة لكن لا تُفحَص أو تُعاد تعبئتها بانتظام.',
+          'خطة فصل موثقة تتبع جداول توافق IMDG/ADR؛ ومعدات الاستجابة للانسكاب تُفحَص وتُعاد تعبئتها وفق جدول محدد.',
+          'يُتحقَّق من الامتثال للفصل عبر تدقيقات داخلية منتظمة مع تتبّع الإجراءات التصحيحية؛ وتُجرى تمارين استجابة للانسكاب ويُقاس زمن استجابة الموظفين.',
+          'يُراقَب فصل التخزين عبر أنظمة قائمة على المستشعرات (مثل تنبيهات القرب للمواد غير المتوافقة)؛ وجاهزية الاستجابة للانسكاب تُدقَّق ربع سنويًا مع تحقيق مستهدفات زمن الاستجابة باستمرار؛ ولا توجد حالات عدم مطابقة للفصل خلال آخر 12 شهرًا.',
+        ],
+      },
+      {
+        q: 'How are DG/hazmat compliance costs (certification, specialised packaging, insurance premiums) controlled and tracked against budget?',
+        qAr: 'كيف تُضبَط تكاليف الامتثال للبضائع الخطرة (الشهادات والتغليف المتخصص وأقساط التأمين) وتُتابَع مقابل الميزانية؟',
+        levels: [
+          'DG-related costs are not separately tracked from general operating costs; there is no visibility into the true cost of DG compliance.',
+          'DG costs are estimated annually at a high level for budgeting purposes but are not reconciled against actuals.',
+          'DG-specific cost categories (certification, packaging, insurance) are tracked monthly against budget with variance review.',
+          'DG cost tracking is integrated with operational volume data to calculate cost-per-DG-shipment; trends inform pricing and certification-scope decisions.',
+          'Real-time cost dashboards link DG compliance spend to shipment profitability; cost-per-shipment is benchmarked against industry peers and used to inform strategic capability investment decisions.',
+        ],
+        levelsAr: [
+          'تكاليف البضائع الخطرة لا تُتابَع بشكل منفصل عن تكاليف التشغيل العامة؛ ولا رؤية للتكلفة الحقيقية للامتثال.',
+          'تُقدَّر تكاليف البضائع الخطرة سنويًا على مستوى عام لأغراض الميزانية لكنها لا تُطابَق مع الفعلي.',
+          'فئات تكلفة خاصة بالبضائع الخطرة (الشهادات والتغليف والتأمين) متابَعة شهريًا مقابل الميزانية مع مراجعة التباين.',
+          'تتبّع تكلفة البضائع الخطرة مدمج مع بيانات الحجم التشغيلي لحساب التكلفة لكل شحنة بضائع خطرة؛ والاتجاهات تُوجّه قرارات التسعير ونطاق الشهادة.',
+          'لوحات تحكم آنية للتكلفة تربط إنفاق الامتثال للبضائع الخطرة بربحية الشحنة؛ والتكلفة لكل شحنة تُقارَن معياريًا بنظراء الصناعة وتُستخدَم لتوجيه قرارات الاستثمار الاستراتيجي في القدرات.',
+        ],
+      },
+      {
+        q: 'To what extent is DG/hazmat classification, documentation, and regulatory-rule checking automated via software?',
+        qAr: 'إلى أي مدى يُعد تصنيف البضائع الخطرة وتوثيقها والتحقق من القواعد التنظيمية مؤتمتًا عبر البرمجيات؟',
+        levels: [
+          'DG classification and documentation are entirely manual, relying on staff knowledge of regulations with printed reference tables.',
+          'A basic spreadsheet or template assists with documentation but classification decisions remain manual and unverified against a live rules database.',
+          'DG software classifies materials and generates compliant documentation for the majority of shipments, with periodic rule-database updates.',
+          'DG software is integrated with the TMS/WMS, automatically flagging DG shipments, applying current IMDG/IATA/ADR rules, and generating documentation with minimal manual input.',
+          'End-to-end automation classifies, documents, and regulatory-checks every DG shipment in real time, with automatic updates as regulations change and zero manual classification error over the past 12 months.',
+        ],
+        levelsAr: [
+          'تصنيف البضائع الخطرة وتوثيقها يدويان بالكامل، معتمدين على معرفة الموظفين بالأنظمة وجداول مرجعية مطبوعة.',
+          'يساعد جدول بيانات أو نموذج أساسي في التوثيق لكن قرارات التصنيف تبقى يدوية وغير مُتحقَّق منها مقابل قاعدة قواعد حية.',
+          'تُصنِّف برمجية بضائع خطرة المواد وتُنشئ وثائق ممتثلة لغالبية الشحنات، مع تحديثات دورية لقاعدة القواعد.',
+          'برمجية البضائع الخطرة مدمجة مع نظام إدارة النقل/المستودع، وتُعلِّم آليًا شحنات البضائع الخطرة وتُطبِّق قواعد IMDG/IATA/ADR الحالية وتُنشئ الوثائق بأدنى مدخل يدوي.',
+          'أتمتة شاملة تُصنِّف وتُوثّق وتتحقق تنظيميًا من كل شحنة بضائع خطرة آنيًا، مع تحديثات آلية عند تغيّر الأنظمة وخطأ تصنيف يدوي معدوم خلال آخر 12 شهرًا.',
+        ],
+      },
+      {
+        q: 'How is board/senior-management oversight of DG/hazmat regulatory compliance and safety performance structured?',
+        qAr: 'كيف يُهيكَل إشراف مجلس الإدارة/الإدارة العليا على الامتثال التنظيمي للبضائع الخطرة وأداء السلامة؟',
+        levels: [
+          'Senior management has no visibility into DG/hazmat compliance status; it is treated purely as an operational matter.',
+          'DG compliance is mentioned informally in operations updates but has no dedicated reporting line to senior management.',
+          'A formal DG compliance report (certification status, incidents, audit findings) is presented to senior management quarterly.',
+          'DG compliance and safety performance are a standing agenda item at senior-management/risk-committee meetings, with defined escalation triggers for serious findings.',
+          'Board-level oversight includes a published DG/hazmat safety scorecard with zero-incident targets, independent third-party audit results, and direct accountability assigned to a named executive.',
+        ],
+        levelsAr: [
+          'ليس لدى الإدارة العليا رؤية لحالة الامتثال للبضائع الخطرة؛ وتُعامَل كمسألة تشغيلية بحتة.',
+          'يُذكَر الامتثال للبضائع الخطرة بشكل غير رسمي في تحديثات العمليات لكن دون خط تقرير مخصص للإدارة العليا.',
+          'تقرير امتثال رسمي للبضائع الخطرة (حالة الشهادات والحوادث ونتائج التدقيق) يُقدَّم للإدارة العليا ربع سنويًا.',
+          'الامتثال للبضائع الخطرة وأداء السلامة بند ثابت في اجتماعات الإدارة العليا/لجنة المخاطر، مع محفزات تصعيد محددة للنتائج الجسيمة.',
+          'إشراف على مستوى مجلس الإدارة يشمل بطاقة أداء سلامة منشورة للبضائع الخطرة بمستهدفات معدومة الحوادث ونتائج تدقيق طرف ثالث مستقل ومساءلة مباشرة مُسنَدة لتنفيذي مُسمّى.',
+        ],
+      },
+      {
+        q: 'How prepared is the organisation to respond to a serious DG/hazmat incident (spill, fire, regulatory shutdown) with minimal business disruption?',
+        qAr: 'ما مدى استعداد المؤسسة للاستجابة لحادث جسيم للبضائع الخطرة (انسكاب أو حريق أو إيقاف تنظيمي) بأدنى اضطراب للأعمال؟',
+        levels: [
+          'No DG/hazmat emergency response plan exists; a serious incident would require improvising a response with no defined roles or external contacts.',
+          'A basic emergency contact list exists but is not integrated with a formal response plan or tested through drills.',
+          'A documented emergency response plan defines roles, external agency contacts, and immediate containment steps for common DG incident scenarios.',
+          'The emergency response plan is tested through annual drills with local authorities; response-time targets are tracked and post-drill lessons are incorporated into plan updates.',
+          'A mature crisis-response programme includes pre-established relationships with regulators and emergency services, business-continuity provisions for regulatory shutdown scenarios, and is reviewed and stress-tested annually against near-miss and industry incident data.',
+        ],
+        levelsAr: [
+          'لا توجد خطة استجابة طوارئ للبضائع الخطرة؛ ويتطلب الحادث الجسيم ارتجال استجابة دون أدوار محددة أو جهات اتصال خارجية.',
+          'توجد قائمة اتصال طوارئ أساسية لكنها غير مدمجة مع خطة استجابة رسمية أو مُختبَرة عبر تمارين.',
+          'خطة استجابة طوارئ موثقة تحدد الأدوار وجهات اتصال الجهات الخارجية وخطوات الاحتواء الفورية لسيناريوهات حوادث البضائع الخطرة الشائعة.',
+          'خطة الاستجابة للطوارئ تُختبَر عبر تمارين سنوية مع السلطات المحلية؛ ومستهدفات زمن الاستجابة متابَعة وتُدمَج دروس ما بعد التمرين في تحديثات الخطة.',
+          'برنامج استجابة أزمات ناضج يشمل علاقات مُؤسَّسة مسبقًا مع الجهات التنظيمية وخدمات الطوارئ وأحكام استمرارية أعمال لسيناريوهات الإيقاف التنظيمي، ويُراجَع ويُختبَر إجهاديًا سنويًا مقابل بيانات الحالات شبه الحرجة وحوادث الصناعة.',
+        ],
+      },
     ],
   },
 
-  /* ── fleet_ops-3  Intermodal & Multimodal Coordination ──────────────── */
+  /* ── 13-3  Intermodal & Multimodal Coordination ──────────────────────────── */
   {
     id: 'fleet-intermodal',
     title: 'Intermodal & Multimodal Coordination',
@@ -10947,10 +11433,172 @@ export const FLEET_OPS_SUB_SEGMENTS: SubSegmentData[] = [
           'منصة رؤية متعددة الوسائط متكاملة بالكامل توفر تتبّعًا آنيًا؛ وأوقات الوصول التنبؤية تُشارَك مع العملاء؛ وتأخيرات التسليم شبه معدومة على الممرات المُدارة.',
         ],
       },
+      {
+        q: 'How strategically is mode selection (sea/road/rail/air) optimised across the network to balance cost, transit time, and carbon footprint?',
+        qAr: 'ما مدى الاستراتيجية في تحسين اختيار الوسيلة (بحر/طريق/سكة حديد/جو) عبر الشبكة لموازنة التكلفة وزمن العبور والبصمة الكربونية؟',
+        levels: [
+          'Mode selection defaults to habit or whichever carrier is easiest to book, with no formal cost/transit-time/carbon comparison.',
+          'Mode selection is reviewed occasionally for major lanes when costs spike, but no structured framework guides the decision.',
+          'A documented mode-selection framework weighs cost, transit time, and reliability for major lanes, reviewed annually.',
+          'Mode optimisation is modelled quarterly using total landed cost, service-level requirements, and carbon footprint data across the full network.',
+          'Dynamic mode-optimisation algorithms continuously rebalance the network across sea/road/rail/air using live cost, capacity, and emissions data to minimise total cost while meeting service and sustainability targets.',
+        ],
+        levelsAr: [
+          'يعتمد اختيار الوسيلة على العادة أو أسهل ناقل للحجز، دون مقارنة رسمية للتكلفة وزمن العبور والبصمة الكربونية.',
+          'يُراجَع اختيار الوسيلة أحيانًا للخطوط الرئيسية عند ارتفاع التكاليف، لكن لا يوجد إطار منظم يوجّه القرار.',
+          'إطار موثق لاختيار الوسيلة يوازن التكلفة وزمن العبور والموثوقية للخطوط الرئيسية، يُراجَع سنويًا.',
+          'يُنمذَج تحسين الوسيلة ربع سنويًا باستخدام إجمالي التكلفة المُسلَّمة ومتطلبات مستوى الخدمة وبيانات البصمة الكربونية عبر الشبكة الكاملة.',
+          'خوارزميات تحسين ديناميكي للوسيلة تُعيد موازنة الشبكة باستمرار عبر البحر/الطريق/السكة الحديد/الجو باستخدام بيانات آنية للتكلفة والقدرة والانبعاثات لتقليل التكلفة الإجمالية مع تحقيق أهداف الخدمة والاستدامة.',
+        ],
+      },
+      {
+        q: 'How are cross-mode handoff SLAs (e.g., port-to-rail, rail-to-road) negotiated, documented, and monitored with modal partners?',
+        qAr: 'كيف تُفاوَض اتفاقيات مستوى الخدمة لنقاط التسليم بين الوسائط (مثل الميناء إلى السكة الحديد أو السكة الحديد إلى الطريق) وتُوثَّق وتُراقَب مع الشركاء؟',
+        levels: [
+          'No formal handoff SLAs exist with modal partners; handoff timing is whatever the partner\'s default process delivers.',
+          'Informal handoff time expectations are understood but not documented or contractually committed.',
+          'Documented handoff SLAs exist for key corridors with defined time windows; performance is reviewed with partners quarterly.',
+          'Handoff SLA performance is tracked systematically per corridor and partner, with automated non-conformance alerts and a formal remediation process.',
+          'Handoff SLAs are integrated into a shared real-time performance dashboard with all modal partners; non-conformance triggers automated escalation and contractual remedy clauses; handoff reliability is benchmarked against best-in-class corridors.',
+        ],
+        levelsAr: [
+          'لا توجد اتفاقيات مستوى خدمة رسمية لنقاط التسليم مع الشركاء؛ وتوقيت التسليم هو ما توفره العملية الافتراضية للشريك.',
+          'تُفهَم توقعات زمن التسليم بشكل غير رسمي لكنها غير موثقة أو مُلزَمة تعاقديًا.',
+          'اتفاقيات مستوى خدمة موثقة لنقاط التسليم قائمة للممرات الرئيسية بنوافذ زمنية محددة؛ ويُراجَع الأداء مع الشركاء ربع سنويًا.',
+          'يُتابَع أداء اتفاقية مستوى خدمة التسليم بشكل منهجي حسب الممر والشريك، مع تنبيهات آلية لعدم المطابقة وعملية معالجة رسمية.',
+          'اتفاقيات مستوى خدمة التسليم مدمجة في لوحة تحكم أداء آنية مشتركة مع جميع الشركاء؛ وعدم المطابقة يُطلِق تصعيدًا آليًا وبنود تعويض تعاقدية؛ وموثوقية التسليم تُقارَن معياريًا بأفضل الممرات في فئتها.',
+        ],
+      },
+      {
+        q: 'How is data (booking, tracking, documentation) synchronised across the different systems used by each mode operator in an intermodal move?',
+        qAr: 'كيف تُزامَن البيانات (الحجز والتتبّع والتوثيق) عبر الأنظمة المختلفة التي يستخدمها كل مشغّل وسيلة في حركة متعددة الوسائط؟',
+        levels: [
+          'Data is manually re-entered at each mode transition; no shared reference number links the shipment across systems, causing frequent reconciliation errors.',
+          'A shared reference number is used manually across modes, but underlying data (status, documents) still requires manual re-entry into each system.',
+          'Key data fields (booking, ETA, document status) are synchronised via file transfer or basic API between the primary systems used across modes.',
+          'A control-tower or integration layer synchronises data in near-real-time across all modal systems, with a single shipment view accessible to all parties.',
+          'A fully integrated digital platform provides a single source of truth for every intermodal shipment, with automated data synchronisation, zero manual re-entry, and real-time exception management across all modes and partners.',
+        ],
+        levelsAr: [
+          'تُعاد إدخال البيانات يدويًا عند كل انتقال وسيلة؛ ولا يوجد رقم مرجعي مشترك يربط الشحنة عبر الأنظمة، مما يسبب أخطاء مطابقة متكررة.',
+          'يُستخدَم رقم مرجعي مشترك يدويًا عبر الوسائط، لكن البيانات الأساسية (الحالة والوثائق) لا تزال تتطلب إعادة إدخال يدوي في كل نظام.',
+          'تُزامَن حقول البيانات الرئيسية (الحجز والوصول المتوقع وحالة الوثيقة) عبر نقل ملفات أو واجهة برمجية أساسية بين الأنظمة الرئيسية المستخدمة عبر الوسائط.',
+          'طبقة تحكم أو تكامل تُزامِن البيانات في شبه الوقت الحقيقي عبر جميع أنظمة الوسائط، مع رؤية موحدة للشحنة متاحة لجميع الأطراف.',
+          'منصة رقمية متكاملة بالكامل توفر مصدرًا وحيدًا للحقيقة لكل شحنة متعددة الوسائط، مع مزامنة بيانات آلية وإعادة إدخال يدوي معدومة وإدارة استثناءات آنية عبر جميع الوسائط والشركاء.',
+        ],
+      },
+      {
+        q: 'How are day-to-day handoff exceptions (missed connections, documentation gaps at transfer points) identified and resolved?',
+        qAr: 'كيف تُحدَّد استثناءات التسليم اليومية (الاتصالات الفائتة وفجوات التوثيق عند نقاط النقل) وتُحَل؟',
+        levels: [
+          'Handoff exceptions are discovered only when a customer complains or cargo is found missing at the next leg; there is no proactive detection.',
+          'Staff manually check status at each handoff point periodically, but detection is inconsistent and often after the fact.',
+          'A defined checklist and handoff confirmation process flags exceptions within a set window (e.g., same business day) for resolution.',
+          'Automated exception alerts trigger when an expected handoff confirmation is not received within a defined time window, routing immediately to an accountable owner.',
+          'Predictive exception management flags at-risk handoffs before they occur based on historical patterns and live tracking data; resolution time is a published KPI, held consistently below a defined threshold.',
+        ],
+        levelsAr: [
+          'تُكتشَف استثناءات التسليم فقط عند شكوى العميل أو اكتشاف فقدان البضاعة في المرحلة التالية؛ ولا يوجد كشف استباقي.',
+          'يتحقق الموظفون يدويًا من الحالة عند كل نقطة تسليم بشكل دوري، لكن الكشف غير متسق وغالبًا بعد وقوع المشكلة.',
+          'قائمة تحقق محددة وعملية تأكيد تسليم تُبلّغ عن الاستثناءات ضمن نافذة محددة (مثل نفس يوم العمل) لحلها.',
+          'تنبيهات استثناء آلية تُطلَق عند عدم استلام تأكيد التسليم المتوقع ضمن نافذة زمنية محددة، وتُوجَّه فورًا لمسؤول مُحدَّد.',
+          'إدارة استثناءات تنبؤية تُبلّغ عن التسليمات المعرّضة للخطر قبل وقوعها بناءً على الأنماط التاريخية وبيانات التتبّع الحية؛ ووقت الحل مؤشر أداء منشور يُبقى باستمرار دون عتبة محددة.',
+        ],
+      },
+      {
+        q: 'How is documentation (bills of lading, customs paperwork, delivery orders) transferred and verified at each modal handoff point?',
+        qAr: 'كيف تُنقَل وثائق (سندات الشحن ووثائق الجمارك وأوامر التسليم) وتُتحقَّق منها عند كل نقطة تسليم بين الوسائط؟',
+        levels: [
+          'Physical paper documents accompany the cargo and are handed over manually; loss or damage of documents causes handoff delays.',
+          'Documents are scanned and emailed ahead of the physical handoff in some cases, but this is not a consistent process.',
+          'A defined process requires digital documentation to be uploaded and verified before physical handoff is scheduled, reducing handoff-blocking document issues.',
+          'A digital document platform shared with all modal partners provides real-time document status visibility; missing/incomplete documents automatically block handoff scheduling.',
+          'Blockchain or equivalent tamper-proof digital documentation is used across the full intermodal chain, with automated verification against customs and carrier systems; document-related handoff delays are near-zero.',
+        ],
+        levelsAr: [
+          'مستندات ورقية فعلية تُرافِق البضاعة وتُسلَّم يدويًا؛ وفقدان أو تلف المستندات يسبب تأخيرات في التسليم.',
+          'تُمسَح المستندات ضوئيًا وتُرسَل بالبريد الإلكتروني قبل التسليم الفعلي في بعض الحالات، لكن هذه ليست عملية متسقة.',
+          'عملية محددة تتطلب رفع الوثائق الرقمية والتحقق منها قبل جدولة التسليم الفعلي، مما يقلل مشكلات الوثائق المُعطِّلة للتسليم.',
+          'منصة وثائق رقمية مشتركة مع جميع الشركاء توفر رؤية آنية لحالة الوثائق؛ والوثائق الناقصة/غير المكتملة تمنع آليًا جدولة التسليم.',
+          'تُستخدَم وثائق رقمية غير قابلة للتلاعب (بلوك تشين أو ما يعادلها) عبر السلسلة الكاملة متعددة الوسائط، مع تحقق آلي مقابل أنظمة الجمارك والناقل؛ وتأخيرات التسليم المرتبطة بالوثائق شبه معدومة.',
+        ],
+      },
+      {
+        q: 'How is total intermodal cost (all modal legs plus handoff fees) tracked and controlled against quoted rates?',
+        qAr: 'كيف تُتابَع وتُضبَط التكلفة الإجمالية متعددة الوسائط (جميع مراحل الوسائط ورسوم التسليم) مقابل الأسعار المُقتبَسة؟',
+        levels: [
+          'Costs from each modal leg are invoiced and paid separately with no consolidated view of total intermodal cost per shipment.',
+          'Total cost is reconciled manually and periodically at an aggregate level, not tracked shipment-by-shipment against the original quote.',
+          'Total landed cost per intermodal shipment is tracked against the quoted rate, with variances above a threshold flagged for review.',
+          'Automated cost aggregation across all modal legs and handoff fees provides real-time cost-vs-quote visibility per shipment, with variance alerts routed for approval before payment.',
+          'Real-time cost-control dashboards integrate every modal leg\'s cost with the original quote and margin target; overrun triggers automated escalation; total intermodal cost variance is held within a published threshold (e.g., ±2%).',
+        ],
+        levelsAr: [
+          'تُفوَتَر تكاليف كل مرحلة وسيلة وتُسدَّد بشكل منفصل دون رؤية موحدة لإجمالي التكلفة متعددة الوسائط لكل شحنة.',
+          'تُطابَق التكلفة الإجمالية يدويًا ودوريًا على مستوى إجمالي، دون تتبّع لكل شحنة مقابل الاقتباس الأصلي.',
+          'تُتابَع التكلفة الإجمالية المُسلَّمة لكل شحنة متعددة الوسائط مقابل السعر المُقتبَس، مع رصد التباينات فوق عتبة محددة للمراجعة.',
+          'تجميع تكلفة آلي عبر جميع مراحل الوسائط ورسوم التسليم يوفر رؤية آنية للتكلفة مقابل الاقتباس لكل شحنة، مع تنبيهات تباين تُوجَّه للموافقة قبل السداد.',
+          'لوحات تحكم آنية للتكلفة تدمج تكلفة كل مرحلة وسيلة مع الاقتباس الأصلي وهدف الهامش؛ وتجاوز التكلفة يُطلِق تصعيدًا آليًا؛ ويُبقى تباين التكلفة الإجمالية متعددة الوسائط ضمن عتبة منشورة (مثل ±2%).',
+        ],
+      },
+      {
+        q: 'To what extent is intermodal booking, tracking, and documentation automated across modal systems?',
+        qAr: 'إلى أي مدى يُعد حجز وتتبّع وتوثيق النقل متعدد الوسائط مؤتمتًا عبر أنظمة الوسائط؟',
+        levels: [
+          'Booking each modal leg requires separate manual processes with different carriers/operators, with no system integration.',
+          'Some modal legs can be booked online individually, but there is no unified booking or tracking view across the full intermodal journey.',
+          'A control-tower system provides a consolidated tracking view across modes, though booking of individual legs remains largely manual.',
+          'An integrated platform automates booking and tracking across most modal partners via API connections, with manual intervention needed only for exceptions.',
+          'End-to-end automation books, tracks, and documents the full intermodal journey across all partners and modes via a single integrated platform, with predictive ETA updates and minimal manual intervention.',
+        ],
+        levelsAr: [
+          'يتطلب حجز كل مرحلة وسيلة عمليات يدوية منفصلة مع ناقلين/مشغّلين مختلفين، دون تكامل بين الأنظمة.',
+          'يمكن حجز بعض مراحل الوسائط عبر الإنترنت بشكل فردي، لكن لا توجد رؤية حجز أو تتبّع موحدة عبر الرحلة الكاملة متعددة الوسائط.',
+          'نظام برج تحكم يوفر رؤية تتبّع موحدة عبر الوسائط، رغم أن حجز المراحل الفردية يظل يدويًا إلى حد كبير.',
+          'منصة متكاملة تُؤتمِت الحجز والتتبّع عبر معظم شركاء الوسائط عبر اتصالات واجهة برمجية، مع تدخل يدوي مطلوب فقط للاستثناءات.',
+          'أتمتة شاملة تحجز وتتبّع وتوثّق الرحلة الكاملة متعددة الوسائط عبر جميع الشركاء والوسائط عبر منصة متكاملة واحدة، مع تحديثات وصول متوقعة تنبؤية وأدنى تدخل يدوي.',
+        ],
+      },
+      {
+        q: 'How is regulatory and contractual compliance (e.g., cross-border documentation, liability handoff between modal carriers) governed across the intermodal chain?',
+        qAr: 'كيف يُحكَم الامتثال التنظيمي والتعاقدي (مثل وثائق العبور الحدودي ونقل المسؤولية بين الناقلين) عبر السلسلة متعددة الوسائط؟',
+        levels: [
+          'Liability and compliance responsibility at each handoff point is unclear or undocumented, creating disputes when cargo is damaged or lost in transit.',
+          'Liability terms exist in individual carrier contracts but are not harmonised or reviewed as a coherent chain across the full intermodal journey.',
+          'A documented liability and compliance matrix clarifies responsibility at each handoff point, reviewed annually against all modal partner contracts.',
+          'Liability and compliance governance is actively managed with legal review of all modal partner contracts for consistency, and disputes are tracked and resolved against defined SLAs.',
+          'A fully governed intermodal liability framework, reviewed by legal and risk functions, minimises coverage gaps across the chain; compliance performance is audited quarterly and reported to senior management with zero unresolved liability disputes.',
+        ],
+        levelsAr: [
+          'مسؤولية الالتزام والامتثال عند كل نقطة تسليم غير واضحة أو غير موثقة، مما يخلق نزاعات عند تلف أو فقدان البضاعة أثناء النقل.',
+          'توجد شروط المسؤولية في عقود الناقلين الفردية لكنها غير مُنسَّقة أو مُراجَعة كسلسلة متماسكة عبر الرحلة الكاملة متعددة الوسائط.',
+          'مصفوفة مسؤولية وامتثال موثقة توضح المسؤولية عند كل نقطة تسليم، تُراجَع سنويًا مقابل جميع عقود الشركاء.',
+          'حوكمة المسؤولية والامتثال تُدار بفعالية بمراجعة قانونية لجميع عقود الشركاء لضمان الاتساق، وتُتابَع النزاعات وتُحَل مقابل اتفاقيات مستوى خدمة محددة.',
+          'إطار مسؤولية متعدد الوسائط محكوم بالكامل، تُراجعه وظيفتا القانون والمخاطر، يُقلِّل فجوات التغطية عبر السلسلة؛ ويُدقَّق أداء الامتثال ربع سنويًا ويُبلَّغ للإدارة العليا بلا نزاعات مسؤولية غير محلولة.',
+        ],
+      },
+      {
+        q: 'How resilient is the intermodal network to disruption at any single mode or handoff point (port closure, rail strike, road blockage)?',
+        qAr: 'ما مدى مرونة الشبكة متعددة الوسائط في مواجهة اضطراب في أي وسيلة أو نقطة تسليم واحدة (إغلاق ميناء أو إضراب سكة حديد أو إغلاق طريق)؟',
+        levels: [
+          'A disruption at any single mode or handoff point halts the entire shipment with no alternative routing identified in advance.',
+          'Alternative routing options are known informally to experienced staff but are not documented or pre-arranged with backup partners.',
+          'Documented alternative routing plans exist for the most critical intermodal corridors, identifying backup modes and partners for common disruption scenarios.',
+          'Alternative routing plans are pre-negotiated with backup modal partners and tested periodically; rerouting decision time is tracked against a target.',
+          'A network resilience programme maintains pre-qualified alternative modes/partners for every critical corridor, with scenario-tested rerouting playbooks; disruption impact on delivered service levels is near-zero and reviewed after every incident for continuous improvement.',
+        ],
+        levelsAr: [
+          'يوقف اضطراب أي وسيلة أو نقطة تسليم واحدة الشحنة بأكملها دون تحديد مسار بديل مسبقًا.',
+          'خيارات التوجيه البديلة معروفة بشكل غير رسمي للموظفين ذوي الخبرة لكنها غير موثقة أو مُرتَّبة مسبقًا مع شركاء احتياطيين.',
+          'خطط توجيه بديلة موثقة قائمة لأهم الممرات متعددة الوسائط، تحدد الوسائط والشركاء الاحتياطيين لسيناريوهات الاضطراب الشائعة.',
+          'خطط التوجيه البديلة متفق عليها مسبقًا مع شركاء وسائط احتياطيين وتُختبَر دوريًا؛ ووقت قرار إعادة التوجيه متابَع مقابل هدف.',
+          'برنامج مرونة شبكة يحافظ على وسائط/شركاء بديلين مؤهلين مسبقًا لكل ممر حرج، مع أدلة إعادة توجيه مُختبَرة بسيناريوهات؛ وتأثير الاضطراب على مستويات الخدمة المُسلَّمة شبه معدوم ويُراجَع بعد كل حادثة للتحسين المستمر.',
+        ],
+      },
     ],
   },
 
-  /* ── fleet_ops-4  Last-mile & Urban Delivery ─────────────────────────── */
+  /* ── 13-4  Last-mile & Urban Delivery ──────────────────────────── */
   {
     id: 'fleet-lastmile',
     title: 'Last-mile & Urban Delivery',
@@ -10983,10 +11631,172 @@ export const FLEET_OPS_SUB_SEGMENTS: SubSegmentData[] = [
           'توجيه سائقين مدفوع بالذكاء الاصطناعي يستخدم التتبّع الإلكتروني الآني؛ ومراكز مصغّرة أو نقاط توحيد تخدم المناطق الحضرية الكثيفة؛ والمركبات الكهربائية أو المنخفضة الانبعاثات تغطي ≥30% من التوقفات الحضرية؛ وCO₂ لكل توصيل مؤشر استدامة منشور.',
         ],
       },
+      {
+        q: 'How strategically is the urban delivery network designed — micro-hub placement, fleet mix (van/bike/EV), and delivery-window strategy — against urban density, congestion patterns, and customer expectations?',
+        qAr: 'ما مدى الاستراتيجية في تصميم شبكة التوصيل الحضري — تموضع المراكز المصغّرة ومزيج الأسطول (شاحنة/دراجة/مركبة كهربائية) واستراتيجية نافذة التسليم — في ضوء الكثافة الحضرية وأنماط الازدحام وتوقعات العملاء؟',
+        levels: [
+          'Urban delivery network design is not formally planned; vehicles and routes are assigned the same way regardless of zone density or congestion.',
+          'Some zone-based adjustments are made informally (e.g., smaller vehicles in dense areas) but without a documented network design methodology.',
+          'A documented network design considers zone density and congestion to assign fleet mix and delivery windows, reviewed annually.',
+          'Network design is data-driven, using delivery density heatmaps and congestion pattern analysis to optimise micro-hub placement and fleet mix quarterly.',
+          'Dynamic network optimisation continuously reconfigures micro-hub placement, fleet mix, and delivery-window strategy using real-time demand and congestion data to minimise cost-per-stop while meeting sustainability targets.',
+        ],
+        levelsAr: [
+          'تصميم شبكة التوصيل الحضري غير مخطط رسميًا؛ وتُخصَّص المركبات والمسارات بالطريقة نفسها بصرف النظر عن كثافة المنطقة أو الازدحام.',
+          'تُجرى بعض التعديلات القائمة على المنطقة بشكل غير رسمي (مثل استخدام مركبات أصغر في المناطق الكثيفة) لكن دون منهجية تصميم شبكة موثقة.',
+          'تصميم شبكة موثق يراعي كثافة المنطقة والازدحام لتخصيص مزيج الأسطول ونوافذ التسليم، يُراجَع سنويًا.',
+          'تصميم الشبكة قائم على البيانات، ويستخدم خرائط كثافة التوصيل الحرارية وتحليل أنماط الازدحام لتحسين تموضع المراكز المصغّرة ومزيج الأسطول ربع سنويًا.',
+          'تحسين ديناميكي للشبكة يُعيد تشكيل تموضع المراكز المصغّرة ومزيج الأسطول واستراتيجية نافذة التسليم باستمرار باستخدام بيانات الطلب والازدحام الآنية لتقليل التكلفة لكل توقف مع تحقيق أهداف الاستدامة.',
+        ],
+      },
+      {
+        q: 'How is route planning and stop sequencing optimised for urban delivery — accounting for time windows, traffic patterns, and vehicle capacity?',
+        qAr: 'كيف يُحسَّن تخطيط المسار وترتيب التوقفات للتوصيل الحضري — مع مراعاة النوافذ الزمنية وأنماط المرور وسعة المركبة؟',
+        levels: [
+          'Routes are planned manually by drivers or dispatchers based on familiarity, with no systematic sequencing logic or time-window consideration.',
+          'A basic route-planning tool suggests sequences, but drivers frequently deviate and time-window compliance is not measured.',
+          'Route optimisation software sequences stops considering time windows and basic traffic patterns; on-time delivery within window is tracked monthly.',
+          'Dynamic route optimisation incorporates real-time traffic data and vehicle capacity constraints, re-sequencing stops as conditions change during the day.',
+          'AI-driven route optimisation continuously re-plans in real time using live traffic, weather, and demand data across the full fleet; time-window compliance and cost-per-stop are published KPIs consistently at top-quartile levels.',
+        ],
+        levelsAr: [
+          'تُخطَّط المسارات يدويًا من قبل السائقين أو موظفي الإرسال بناءً على الإلمام، دون منطق ترتيب منهجي أو مراعاة للنافذة الزمنية.',
+          'تقترح أداة تخطيط مسار أساسية تسلسلات، لكن السائقين ينحرفون عنها بشكل متكرر وامتثال النافذة الزمنية غير مقاس.',
+          'برمجية تحسين مسار تُرتِّب التوقفات مع مراعاة النوافذ الزمنية وأنماط المرور الأساسية؛ ويُتابَع التسليم في الوقت المحدد ضمن النافذة شهريًا.',
+          'تحسين مسار ديناميكي يدمج بيانات المرور الآنية وقيود سعة المركبة، ويُعيد ترتيب التوقفات مع تغيّر الظروف خلال اليوم.',
+          'تحسين مسار مدفوع بالذكاء الاصطناعي يُعيد التخطيط باستمرار آنيًا باستخدام بيانات المرور والطقس والطلب الحية عبر الأسطول الكامل؛ وامتثال النافذة الزمنية والتكلفة لكل توقف مؤشرات أداء منشورة عند مستويات الربع الأعلى باستمرار.',
+        ],
+      },
+      {
+        q: 'How is failed/missed delivery (customer not present, wrong address, refused) managed and its root causes addressed?',
+        qAr: 'كيف تُدار حالات التسليم الفاشل/الفائت (غياب العميل أو خطأ العنوان أو الرفض) وتُعالَج أسبابها الجذرية؟',
+        levels: [
+          'Failed deliveries are re-attempted with no tracking of root cause or pattern; each failure is handled as an isolated event.',
+          'Failed deliveries are logged with a basic reason code, but the data is not analysed for recurring patterns or systemic causes.',
+          'Monthly analysis of failed-delivery reason codes identifies top causes (address issues, time-window misses) and assigns corrective actions.',
+          'Predictive flagging identifies deliveries at high risk of failure (based on address history, customer pattern) before dispatch, enabling proactive customer contact.',
+          'An integrated failed-delivery prevention system combines predictive risk flagging, automated customer notifications/rescheduling, and root-cause analytics; first-attempt failure rate is a published KPI held at or below a top-quartile benchmark.',
+        ],
+        levelsAr: [
+          'تُعاد محاولة التسليمات الفاشلة دون تتبّع للسبب الجذري أو النمط؛ ويُعامَل كل فشل كحدث منعزل.',
+          'تُسجَّل التسليمات الفاشلة برمز سبب أساسي، لكن البيانات لا تُحلَّل بحثًا عن أنماط متكررة أو أسباب منهجية.',
+          'تحليل شهري لرموز أسباب التسليم الفاشل يحدد أهم الأسباب (مشكلات العنوان وفوات النافذة الزمنية) ويُسنِد إجراءات تصحيحية.',
+          'تحديد تنبؤي يُبلّغ عن التسليمات عالية الخطورة للفشل (بناءً على تاريخ العنوان ونمط العميل) قبل الإرسال، مما يُتيح تواصلاً استباقيًا مع العميل.',
+          'نظام متكامل للوقاية من التسليم الفاشل يجمع بين التحديد التنبؤي للمخاطر والإشعارات/إعادة الجدولة الآلية للعملاء وتحليلات السبب الجذري؛ ومعدل فشل أول محاولة مؤشر أداء منشور يُبقى عند أو دون معيار الربع الأعلى.',
+        ],
+      },
+      {
+        q: 'How is proof-of-delivery captured and customer notification managed for each urban delivery stop?',
+        qAr: 'كيف يُلتقَط إثبات التسليم وتُدار إشعارات العملاء لكل توقف توصيل حضري؟',
+        levels: [
+          'Proof of delivery is a paper signature or nothing at all; customers are not notified of delivery status or timing.',
+          'Proof of delivery is captured digitally (photo or signature on a driver app) for most stops, but customer notifications are inconsistent.',
+          'Digital proof-of-delivery is standard for all stops; automated SMS/email notifications inform customers of delivery windows and completion.',
+          'Real-time delivery tracking is shared with customers (live map/ETA); proof-of-delivery data feeds directly into a customer-facing portal with delivery history.',
+          'A fully integrated last-mile visibility platform provides live tracking, predictive ETA updates, and digital proof-of-delivery with signature/photo/geotag captured automatically; customer satisfaction with delivery experience is tracked as a formal KPI.',
+        ],
+        levelsAr: [
+          'إثبات التسليم توقيع ورقي أو لا شيء إطلاقًا؛ ولا يُشعَر العملاء بحالة التسليم أو توقيته.',
+          'يُلتقَط إثبات التسليم رقميًا (صورة أو توقيع عبر تطبيق السائق) لمعظم التوقفات، لكن إشعارات العملاء غير متسقة.',
+          'إثبات التسليم الرقمي معيار لجميع التوقفات؛ وإشعارات الرسائل النصية/البريد الإلكتروني الآلية تُبلِغ العملاء بنوافذ التسليم والإتمام.',
+          'تتبّع تسليم آني يُشارَك مع العملاء (خريطة حية/وقت وصول متوقع)؛ وبيانات إثبات التسليم تُغذّي مباشرة بوابة عملاء بها سجل التسليم.',
+          'منصة رؤية ميل أخير متكاملة بالكامل توفر تتبّعًا حيًا وتحديثات وقت وصول متوقع تنبؤية وإثبات تسليم رقمي بتوقيع/صورة/وسم جغرافي يُلتقَط آليًا؛ ورضا العملاء عن تجربة التسليم متابَع كمؤشر أداء رسمي.',
+        ],
+      },
+      {
+        q: 'How is daily driver workload (stops, weight, time) balanced and monitored to avoid overload or underutilisation?',
+        qAr: 'كيف يُوازَن عبء عمل السائق اليومي (التوقفات والوزن والوقت) ويُراقَب لتجنب الإفراط أو نقص الاستخدام؟',
+        levels: [
+          'Driver workload is assigned manually with no systematic balancing; some drivers are consistently overloaded while others are underutilised.',
+          'Workload is loosely monitored by dispatchers based on experience, with occasional manual rebalancing when problems are noticed.',
+          'A defined workload-balancing methodology (stops-per-route, weight limits, time budgets) is applied when assigning routes daily.',
+          'Route-planning software automatically balances workload across drivers using historical performance data and real-time capacity constraints; overload incidents are tracked.',
+          'Dynamic workload balancing continuously adjusts driver assignments in real time based on live traffic, delivery volume, and driver capacity, maximising utilisation while maintaining a published maximum workload threshold with zero chronic overload incidents.',
+        ],
+        levelsAr: [
+          'يُخصَّص عبء عمل السائق يدويًا دون توازن منهجي؛ ويُفرَط في تحميل بعض السائقين باستمرار بينما يُستخدَم آخرون بشكل ناقص.',
+          'يُراقَب عبء العمل بشكل فضفاض من قبل موظفي الإرسال بناءً على الخبرة، مع إعادة توازن يدوية أحيانًا عند ملاحظة المشكلات.',
+          'منهجية موازنة عبء عمل محددة (توقفات لكل مسار وحدود وزن وميزانيات وقت) تُطبَّق عند تخصيص المسارات يوميًا.',
+          'برمجية تخطيط مسار تُوازِن عبء العمل تلقائيًا عبر السائقين باستخدام بيانات الأداء التاريخية وقيود السعة الآنية؛ وحوادث الإفراط في التحميل متابَعة.',
+          'موازنة عبء عمل ديناميكية تُعدِّل تخصيصات السائقين باستمرار آنيًا بناءً على المرور الحي وحجم التسليم وسعة السائق، مما يُعظِّم الاستخدام مع الحفاظ على عتبة حد أقصى منشورة لعبء العمل بلا حوادث إفراط مزمن.',
+        ],
+      },
+      {
+        q: 'How is cost-per-stop and cost-per-delivery controlled and benchmarked across the urban delivery network?',
+        qAr: 'كيف تُضبَط التكلفة لكل توقف والتكلفة لكل توصيلة وتُقارَن معياريًا عبر شبكة التوصيل الحضري؟',
+        levels: [
+          'Cost-per-stop is not calculated; urban delivery cost is only visible as a total operating expense with no per-delivery breakdown.',
+          'Cost-per-stop is estimated periodically at an aggregate/zone level but not tracked consistently or benchmarked.',
+          'Cost-per-stop is calculated monthly by zone/route type and compared against an internal target.',
+          'Cost-per-stop is tracked weekly with automated variance alerts, and benchmarked against comparable urban delivery operators or industry data.',
+          'Real-time cost-per-stop dashboards integrate fuel, labour, and vehicle costs by route and zone, benchmarked continuously against top-quartile urban logistics operators, with automated flagging of routes exceeding target cost.',
+        ],
+        levelsAr: [
+          'التكلفة لكل توقف لا تُحسَب؛ وتكلفة التوصيل الحضري مرئية فقط كمصروف تشغيلي إجمالي دون تفصيل لكل توصيلة.',
+          'تُقدَّر التكلفة لكل توقف دوريًا على مستوى إجمالي/منطقة لكنها لا تُتابَع باتساق أو تُقارَن معياريًا.',
+          'تُحسَب التكلفة لكل توقف شهريًا حسب المنطقة/نوع المسار وتُقارَن مقابل هدف داخلي.',
+          'تُتابَع التكلفة لكل توقف أسبوعيًا مع تنبيهات تباين آلية، وتُقارَن معياريًا مع مشغّلي توصيل حضري مماثلين أو بيانات الصناعة.',
+          'لوحات تحكم آنية للتكلفة لكل توقف تدمج تكاليف الوقود والعمالة والمركبات حسب المسار والمنطقة، وتُقارَن معياريًا باستمرار بأفضل مشغّلي اللوجستيات الحضرية في فئتهم، مع رصد آلي للمسارات المتجاوزة للتكلفة المستهدفة.',
+        ],
+      },
+      {
+        q: 'To what extent is urban delivery dispatch, route optimisation, and driver coaching automated?',
+        qAr: 'إلى أي مدى يُعد إرسال التوصيل الحضري وتحسين المسار وتوجيه السائقين مؤتمتًا؟',
+        levels: [
+          'Dispatch and route planning are entirely manual; driver coaching, if it happens, is informal and reactive to complaints.',
+          'Basic route-planning software assists dispatch, but coaching and performance feedback to drivers remain manual and inconsistent.',
+          'Route optimisation software automates daily route planning; driver scorecards are generated periodically and reviewed manually with drivers.',
+          'Dispatch, route optimisation, and driver scorecarding are integrated and largely automated, with exception-based manual intervention only.',
+          'End-to-end automation covers dispatch, dynamic route optimisation, real-time driver coaching (via app-based alerts), and performance scorecarding, with minimal manual intervention across the entire urban delivery operation.',
+        ],
+        levelsAr: [
+          'الإرسال وتخطيط المسار يدويان بالكامل؛ وتوجيه السائقين، إن حدث، غير رسمي وتفاعلي استجابةً للشكاوى.',
+          'برمجية تخطيط مسار أساسية تساعد الإرسال، لكن التوجيه والتغذية الراجعة لأداء السائقين تظل يدوية وغير متسقة.',
+          'برمجية تحسين مسار تُؤتمِت التخطيط اليومي للمسار؛ وبطاقات أداء السائقين تُولَّد دوريًا وتُراجَع يدويًا مع السائقين.',
+          'الإرسال وتحسين المسار وبطاقات أداء السائقين مدمجة ومؤتمتة إلى حد كبير، مع تدخل يدوي قائم على الاستثناء فقط.',
+          'أتمتة شاملة تغطي الإرسال وتحسين المسار الديناميكي والتوجيه الآني للسائقين (عبر تنبيهات التطبيق) وبطاقات الأداء، بأدنى تدخل يدوي عبر عملية التوصيل الحضري بأكملها.',
+        ],
+      },
+      {
+        q: 'How is compliance with urban delivery regulations (low-emission zones, delivery-window restrictions, driver working-hour limits) governed?',
+        qAr: 'كيف يُحكَم الامتثال لأنظمة التوصيل الحضري (مناطق الانبعاثات المنخفضة وقيود نافذة التسليم وحدود ساعات عمل السائقين)؟',
+        levels: [
+          'Urban delivery regulations are not actively tracked; compliance gaps (e.g., entering restricted zones, exceeding driver hours) are discovered only when penalised.',
+          'Awareness of key regulations exists among dispatchers, but there is no systematic route-planning check against restricted zones or hour limits.',
+          'Route-planning tools flag low-emission zones and delivery-window restrictions; driver hours are tracked manually against regulatory limits.',
+          'Compliance checks (zone restrictions, driver hours, vehicle emissions class) are automated within the route-planning/dispatch system, blocking non-compliant assignments.',
+          'A fully governed compliance framework automatically enforces all urban delivery regulations across dispatch and routing, is updated as regulations change, and is audited quarterly with zero regulatory penalties over the past 12 months.',
+        ],
+        levelsAr: [
+          'أنظمة التوصيل الحضري لا تُتابَع بفعالية؛ وتُكتشَف فجوات الامتثال (مثل دخول مناطق مقيدة أو تجاوز ساعات السائق) فقط عند تلقي عقوبة.',
+          'يوجد وعي بالأنظمة الرئيسية لدى موظفي الإرسال، لكن لا يوجد فحص منهجي لتخطيط المسار مقابل المناطق المقيدة أو حدود الساعات.',
+          'أدوات تخطيط المسار تُبلّغ عن مناطق الانبعاثات المنخفضة وقيود نافذة التسليم؛ وساعات السائق تُتابَع يدويًا مقابل الحدود التنظيمية.',
+          'فحوصات الامتثال (قيود المنطقة وساعات السائق وفئة انبعاثات المركبة) مؤتمتة ضمن نظام تخطيط المسار/الإرسال، وتمنع التخصيصات غير الممتثلة.',
+          'إطار امتثال محكوم بالكامل يفرض تلقائيًا جميع أنظمة التوصيل الحضري عبر الإرسال والتوجيه، ويُحدَّث مع تغيّر الأنظمة، ويُدقَّق ربع سنويًا بلا عقوبات تنظيمية خلال آخر 12 شهرًا.',
+        ],
+      },
+      {
+        q: 'How resilient is the urban delivery operation to disruptions — driver shortage, vehicle breakdown, sudden demand spikes — through backup capacity and contingency planning?',
+        qAr: 'ما مدى مرونة عملية التوصيل الحضري في مواجهة الاضطرابات — نقص السائقين أو عطل المركبة أو ارتفاعات الطلب المفاجئة — عبر القدرة الاحتياطية والتخطيط للطوارئ؟',
+        levels: [
+          'A driver shortage or vehicle breakdown causes same-day deliveries to fail with no backup capacity or contingency plan.',
+          'Informal backup arrangements (calling in an off-duty driver, using a personal vehicle) exist but are not documented or reliable.',
+          'A documented contingency plan identifies backup drivers, spare vehicles, and gig-economy/on-demand courier partners for common disruption scenarios.',
+          'Backup capacity (on-demand courier network, flex-driver pool) is pre-negotiated and can be activated within a defined response time; disruption response is tested periodically.',
+          'A resilience programme dynamically activates on-demand courier capacity and flex drivers in response to real-time demand spikes or disruptions, maintaining service-level continuity; disruption impact on delivery performance is near-zero and reviewed after every incident.',
+        ],
+        levelsAr: [
+          'يتسبب نقص السائقين أو عطل المركبة في فشل تسليمات اليوم نفسه دون قدرة احتياطية أو خطة طوارئ.',
+          'ترتيبات احتياطية غير رسمية (استدعاء سائق خارج الدوام أو استخدام مركبة شخصية) موجودة لكنها غير موثقة أو موثوقة.',
+          'خطة طوارئ موثقة تحدد سائقين احتياطيين ومركبات إضافية وشركاء توصيل عند الطلب/اقتصاد الوظائف المؤقتة لسيناريوهات الاضطراب الشائعة.',
+          'القدرة الاحتياطية (شبكة توصيل عند الطلب أو مجموعة سائقين مرنة) متفق عليها مسبقًا ويمكن تفعيلها ضمن زمن استجابة محدد؛ وتُختبَر الاستجابة للاضطراب دوريًا.',
+          'برنامج مرونة يُفعِّل ديناميكيًا قدرة التوصيل عند الطلب والسائقين المرنين استجابةً لارتفاعات الطلب الآنية أو الاضطرابات، مع الحفاظ على استمرارية مستوى الخدمة؛ وتأثير الاضطراب على أداء التسليم شبه معدوم ويُراجَع بعد كل حادثة.',
+        ],
+      },
     ],
   },
 
-  /* ── fleet_ops-5  Predictive Maintenance & Asset Health ─────────────── */
+  /* ── 13-5  Predictive Maintenance & Asset Health ──────────────────────────── */
   {
     id: 'fleet-predictive-maint',
     title: 'Predictive Maintenance & Asset Health',
@@ -11019,23 +11829,172 @@ export const FLEET_OPS_SUB_SEGMENTS: SubSegmentData[] = [
           'الصيانة التنبؤية بالذكاء الاصطناعي تستخدم بيانات أجهزة استشعار IoT الآنية للتنبؤ بأعطال المكوّنات قبل وقوعها؛ وجداول الصيانة مُحسَّنة بالكامل؛ ومعدل الأعطال شبه معدوم؛ وتكاليف دورة حياة الأصول تُدار على المستوى الاستراتيجي.',
         ],
       },
+      {
+        q: 'How strategically is fleet/asset replacement and lifecycle investment planned using total cost of ownership and reliability data, rather than age or budget cycle alone?',
+        qAr: 'ما مدى الاستراتيجية في تخطيط استبدال الأسطول/الأصول والاستثمار في دورة الحياة باستخدام بيانات إجمالي تكلفة الملكية والموثوقية، بدلاً من الاعتماد فقط على العمر أو دورة الميزانية؟',
+        levels: [
+          'Asset replacement decisions are made reactively when an asset fails repeatedly, with no total cost of ownership (TCO) or reliability analysis.',
+          'Replacement is loosely tied to asset age or a fixed budget cycle, without systematically comparing maintenance cost trends to replacement cost.',
+          'An annual asset review compares maintenance cost trends and reliability data against replacement cost to inform the capital plan.',
+          'TCO modelling, incorporating maintenance history, downtime cost, and residual value, is used quarterly to optimise the replacement schedule across the fleet/asset base.',
+          'Predictive TCO analytics, integrated with real-time asset health data, dynamically recommend optimal replacement timing per asset to minimise total lifecycle cost; the replacement strategy is reviewed at board level annually.',
+        ],
+        levelsAr: [
+          'تُتخذ قرارات استبدال الأصول بشكل تفاعلي عند تكرار عطل الأصل، دون تحليل لإجمالي تكلفة الملكية أو الموثوقية.',
+          'يرتبط الاستبدال بشكل فضفاض بعمر الأصل أو دورة ميزانية ثابتة، دون مقارنة منهجية لاتجاهات تكلفة الصيانة بتكلفة الاستبدال.',
+          'مراجعة سنوية للأصول تقارن اتجاهات تكلفة الصيانة وبيانات الموثوقية مقابل تكلفة الاستبدال لتوجيه الخطة الرأسمالية.',
+          'نمذجة إجمالي تكلفة الملكية، بدمج تاريخ الصيانة وتكلفة التوقف والقيمة المتبقية، تُستخدَم ربع سنويًا لتحسين جدول الاستبدال عبر قاعدة الأسطول/الأصول.',
+          'تحليلات إجمالي تكلفة الملكية التنبؤية، المدمجة مع بيانات صحة الأصول الآنية، توصي ديناميكيًا بالتوقيت الأمثل للاستبدال لكل أصل لتقليل إجمالي تكلفة دورة الحياة؛ وتُراجَع استراتيجية الاستبدال على مستوى مجلس الإدارة سنويًا.',
+        ],
+      },
+      {
+        q: 'How is spare-parts inventory for maintenance managed to balance stockout risk (causing extended downtime) against excess inventory carrying cost?',
+        qAr: 'كيف تُدار مخزونات قطع الغيار للصيانة لموازنة مخاطر نفاد المخزون (المسبِّب لتوقف ممتد) مقابل تكلفة حمل المخزون الزائد؟',
+        levels: [
+          'Spare parts are ordered reactively when a repair is needed, frequently causing extended downtime while waiting for parts to arrive.',
+          'A basic stock of common spare parts is kept based on general experience, without formal min/max levels or demand analysis.',
+          'Min/max inventory levels for critical spare parts are defined based on historical usage and lead time, with regular replenishment.',
+          'Spare-parts planning is integrated with predictive maintenance data to pre-position parts ahead of anticipated failures; stockout rate and carrying cost are both tracked against targets.',
+          'AI-driven spare-parts optimisation dynamically balances stockout risk against carrying cost across the full parts catalogue, informed by predictive failure models; downtime attributable to parts unavailability is near-zero.',
+        ],
+        levelsAr: [
+          'تُطلَب قطع الغيار بشكل تفاعلي عند الحاجة لإصلاح، مما يسبب توقفًا ممتدًا بشكل متكرر أثناء انتظار وصول القطع.',
+          'يُحتفَظ بمخزون أساسي من قطع الغيار الشائعة بناءً على خبرة عامة، دون مستويات حد أدنى/أقصى رسمية أو تحليل طلب.',
+          'مستويات مخزون الحد الأدنى/الأقصى لقطع الغيار الحرجة محددة بناءً على الاستخدام التاريخي ومهلة التوريد، مع إعادة تعبئة منتظمة.',
+          'تخطيط قطع الغيار مدمج مع بيانات الصيانة التنبؤية لتموضع القطع مسبقًا قبل الأعطال المتوقعة؛ ومعدل نفاد المخزون وتكلفة الحمل كلاهما متابَعان مقابل مستهدفات.',
+          'تحسين قطع غيار مدفوع بالذكاء الاصطناعي يُوازِن ديناميكيًا مخاطر نفاد المخزون مقابل تكلفة الحمل عبر كتالوج القطع الكامل، مسترشدًا بنماذج الفشل التنبؤية؛ والتوقف العائد لعدم توفر القطع شبه معدوم.',
+        ],
+      },
+      {
+        q: 'How is maintenance technician capacity and skill coverage planned against the fleet/asset maintenance workload?',
+        qAr: 'كيف تُخطَّط قدرة ومهارات فنيي الصيانة في ضوء عبء عمل صيانة الأسطول/الأصول؟',
+        levels: [
+          'Technician capacity is not planned; maintenance backlogs build up with no visibility into workload versus available skilled staff.',
+          'Technician headcount is set based on historical staffing levels without formal analysis of workload or skill-gap against the current fleet/asset base.',
+          'Annual workforce planning compares technician capacity and skill coverage against the maintenance workload, identifying gaps for training or hiring.',
+          'Technician scheduling is optimised against a rolling maintenance workload forecast, with skill-specific coverage tracked (e.g., % of fleet with a certified technician for its specific systems).',
+          'Predictive workload modelling, combined with skill-gap analytics, dynamically informs technician hiring, training, and scheduling to maintain optimal coverage; technician utilisation and maintenance backlog are published KPIs held at top-quartile levels.',
+        ],
+        levelsAr: [
+          'قدرة الفنيين غير مخططة؛ وتتراكم قوائم انتظار الصيانة دون رؤية لعبء العمل مقابل الموظفين المهرة المتاحين.',
+          'يُحدَّد عدد الفنيين بناءً على مستويات التوظيف التاريخية دون تحليل رسمي لعبء العمل أو فجوة المهارات مقابل قاعدة الأسطول/الأصول الحالية.',
+          'تخطيط القوى العاملة السنوي يقارن قدرة ومهارات الفنيين مقابل عبء عمل الصيانة، ويحدد الفجوات للتدريب أو التوظيف.',
+          'جدولة الفنيين مُحسَّنة مقابل توقع متجدد لعبء عمل الصيانة، مع تتبّع تغطية مهارات محددة (مثل نسبة الأسطول الذي يوجد له فني معتمد لأنظمته المحددة).',
+          'نمذجة عبء عمل تنبؤية، مدمجة مع تحليلات فجوة المهارات، تُوجِّه ديناميكيًا توظيف الفنيين وتدريبهم وجدولتهم للحفاظ على تغطية مثلى؛ واستخدام الفنيين وتراكم الصيانة مؤشرات أداء منشورة تُبقى عند مستويات الربع الأعلى.',
+        ],
+      },
+      {
+        q: 'How are daily maintenance work orders created, prioritised, and tracked to closure?',
+        qAr: 'كيف تُنشَأ أوامر عمل الصيانة اليومية وتُرتَّب أولوياتها وتُتابَع حتى الإغلاق؟',
+        levels: [
+          'Maintenance requests are communicated verbally or via informal messages with no work-order system; tracking to closure is inconsistent.',
+          'A basic work-order log records requests, but prioritisation is informal and closure tracking relies on manual follow-up.',
+          'A maintenance management system generates, prioritises (by criticality), and tracks work orders to closure, with a defined SLA for critical repairs.',
+          'Work orders are automatically generated from condition-based triggers (telematics alerts) as well as scheduled maintenance, with real-time status visibility and closure-time tracking against targets.',
+          'A fully integrated maintenance platform auto-generates, prioritises, and dispatches work orders based on predictive failure risk and technician availability; closure-time SLA compliance is a published KPI held near 100%.',
+        ],
+        levelsAr: [
+          'تُبلَّغ طلبات الصيانة شفهيًا أو عبر رسائل غير رسمية دون نظام أوامر عمل؛ والتتبّع حتى الإغلاق غير متسق.',
+          'يُسجِّل سجل أوامر عمل أساسي الطلبات، لكن ترتيب الأولويات غير رسمي والتتبّع حتى الإغلاق يعتمد على متابعة يدوية.',
+          'نظام إدارة صيانة يُنشئ أوامر العمل ويُرتِّب أولوياتها (حسب الأهمية) ويتابعها حتى الإغلاق، مع اتفاقية مستوى خدمة محددة للإصلاحات الحرجة.',
+          'تُنشَأ أوامر العمل آليًا من محفزات قائمة على الحالة (تنبيهات التتبّع الإلكتروني) وكذلك الصيانة المجدولة، مع رؤية آنية للحالة وتتبّع وقت الإغلاق مقابل مستهدفات.',
+          'منصة صيانة متكاملة بالكامل تُنشئ وتُرتِّب أولويات وتُرسِل أوامر العمل تلقائيًا بناءً على مخاطر الفشل التنبؤية وتوافر الفنيين؛ والامتثال لاتفاقية مستوى خدمة وقت الإغلاق مؤشر أداء منشور يُبقى قرب 100%.',
+        ],
+      },
+      {
+        q: 'How is asset downtime tracked and its impact on service delivery (missed deliveries, idle capacity) quantified?',
+        qAr: 'كيف يُتابَع توقف الأصول ويُقاس تأثيره على تقديم الخدمة (تسليمات فائتة أو قدرة خاملة)؟',
+        levels: [
+          'Asset downtime is not tracked as a distinct metric; its impact on missed deliveries or idle capacity is not quantified.',
+          'Downtime is logged informally when an asset is out of service, but is not systematically linked to service or cost impact.',
+          'Downtime hours per asset are tracked monthly, with a basic estimate of associated cost (lost capacity, standby costs).',
+          'Downtime tracking is integrated with dispatch/service data to precisely quantify missed-delivery and idle-capacity cost per downtime event, reviewed monthly.',
+          'Real-time downtime dashboards automatically calculate service and cost impact as it occurs, feeding directly into predictive maintenance prioritisation; total downtime cost is a published KPI trending toward a top-quartile benchmark.',
+        ],
+        levelsAr: [
+          'توقف الأصول لا يُتابَع كمقياس مستقل؛ وتأثيره على التسليمات الفائتة أو القدرة الخاملة لا يُقاس.',
+          'يُسجَّل التوقف بشكل غير رسمي عندما يكون الأصل خارج الخدمة، لكن لا يُربَط منهجيًا بالتأثير على الخدمة أو التكلفة.',
+          'تُتابَع ساعات التوقف لكل أصل شهريًا، مع تقدير أساسي للتكلفة المرتبطة (القدرة المفقودة وتكاليف الاحتياط).',
+          'تتبّع التوقف مدمج مع بيانات الإرسال/الخدمة لقياس دقيق لتكلفة التسليم الفائت والقدرة الخاملة لكل حدث توقف، يُراجَع شهريًا.',
+          'لوحات تحكم آنية للتوقف تحسب تلقائيًا التأثير على الخدمة والتكلفة عند حدوثه، وتُغذّي مباشرة أولويات الصيانة التنبؤية؛ وإجمالي تكلفة التوقف مؤشر أداء منشور يتجه نحو معيار الربع الأعلى.',
+        ],
+      },
+      {
+        q: 'How is maintenance spend controlled against budget, including labour, parts, and third-party service costs?',
+        qAr: 'كيف يُضبَط إنفاق الصيانة مقابل الميزانية، بما يشمل تكاليف العمالة وقطع الغيار وخدمات الطرف الثالث؟',
+        levels: [
+          'Maintenance spend is paid as it is invoiced with no budget comparison; overspend is discovered only at year-end.',
+          'Maintenance spend is reviewed against budget quarterly at an aggregate level, without breakdown by labour, parts, or third-party cost.',
+          'Monthly budget-vs-actual tracking by cost category (labour, parts, third-party) with variance thresholds that trigger review.',
+          'Automated cost tracking flags maintenance spend anomalies (e.g., unusually high repair cost for an asset) in near-real-time for review before payment approval.',
+          'Real-time maintenance cost dashboards integrate labour, parts, and third-party spend by asset, benchmarked against fleet-wide and industry cost-per-asset norms, with automated escalation for outliers.',
+        ],
+        levelsAr: [
+          'يُسدَّد إنفاق الصيانة عند الفوترة دون مقارنة بالميزانية؛ ويُكتشَف تجاوز الإنفاق فقط في نهاية العام.',
+          'يُراجَع إنفاق الصيانة مقابل الميزانية ربع سنويًا على مستوى إجمالي، دون تفصيل حسب العمالة أو القطع أو تكلفة الطرف الثالث.',
+          'تتبّع شهري للميزانية مقابل الفعلي حسب فئة التكلفة (العمالة والقطع والطرف الثالث) مع عتبات تباين تُطلِق المراجعة.',
+          'تتبّع تكلفة آلي يُرصد حالات الشذوذ في إنفاق الصيانة (مثل تكلفة إصلاح مرتفعة بشكل غير معتاد لأصل) في شبه الوقت الحقيقي للمراجعة قبل الموافقة على السداد.',
+          'لوحات تحكم آنية لتكلفة الصيانة تدمج إنفاق العمالة والقطع والطرف الثالث حسب الأصل، وتُقارَن معياريًا بمعايير التكلفة لكل أصل على مستوى الأسطول والصناعة، مع تصعيد آلي للحالات الشاذة.',
+        ],
+      },
+      {
+        q: 'To what extent is maintenance scheduling, work-order generation, and asset condition monitoring automated via telematics/IoT and a CMMS (computerised maintenance management system)?',
+        qAr: 'إلى أي مدى تُعد جدولة الصيانة وإنشاء أوامر العمل ومراقبة حالة الأصول مؤتمتة عبر التتبّع الإلكتروني/إنترنت الأشياء ونظام إدارة صيانة محوسب؟',
+        levels: [
+          'No CMMS or telematics-based condition monitoring is used; maintenance scheduling and work orders are entirely manual and paper-based.',
+          'A basic CMMS tracks scheduled maintenance dates, but condition monitoring and automatic work-order triggering are not in place.',
+          'A CMMS integrated with basic telematics data automatically schedules preventive maintenance and generates work orders for most of the fleet/asset base.',
+          'The CMMS is fully integrated with real-time telematics/IoT condition data, automatically triggering condition-based work orders and flagging anomalies for technician review.',
+          'End-to-end automation connects IoT sensor data, AI-driven failure prediction, automated work-order generation and technician dispatch, and spare-parts pre-positioning in one integrated platform, with minimal manual intervention across the maintenance lifecycle.',
+        ],
+        levelsAr: [
+          'لا يُستخدَم نظام إدارة صيانة محوسب أو مراقبة حالة قائمة على التتبّع الإلكتروني؛ وجدولة الصيانة وأوامر العمل يدوية وورقية بالكامل.',
+          'نظام إدارة صيانة محوسب أساسي يتتبّع تواريخ الصيانة المجدولة، لكن مراقبة الحالة وإطلاق أوامر العمل الآلي غير متوفرين.',
+          'نظام إدارة صيانة محوسب مدمج مع بيانات تتبّع أساسية يُجدوِل الصيانة الوقائية تلقائيًا ويُنشئ أوامر العمل لمعظم قاعدة الأسطول/الأصول.',
+          'نظام إدارة الصيانة المحوسب مدمج بالكامل مع بيانات حالة التتبّع/إنترنت الأشياء الآنية، ويُطلِق آليًا أوامر عمل قائمة على الحالة ويُبلّغ عن الحالات الشاذة لمراجعة الفني.',
+          'أتمتة شاملة تربط بيانات أجهزة استشعار إنترنت الأشياء والتنبؤ بالفشل المدفوع بالذكاء الاصطناعي وإنشاء أوامر العمل الآلي وإرسال الفنيين وتموضع قطع الغيار المسبق في منصة متكاملة واحدة، بأدنى تدخل يدوي عبر دورة حياة الصيانة.',
+        ],
+      },
+      {
+        q: 'How is governance of statutory/regulatory maintenance and safety inspection requirements (roadworthiness certificates, port equipment safety certification) managed?',
+        qAr: 'كيف تُدار حوكمة متطلبات الصيانة النظامية/التنظيمية وفحوصات السلامة (شهادات الجاهزية للسير وشهادات سلامة معدات الميناء)؟',
+        levels: [
+          'Statutory maintenance and safety inspection requirements are not centrally tracked; lapses are discovered only during audits or incidents.',
+          'A basic list of statutory requirements and due dates exists but relies on individual staff to track and action.',
+          'A compliance calendar with reminders tracks all statutory maintenance and safety inspection deadlines, with a designated accountable owner.',
+          'Statutory compliance status is tracked in the CMMS with automated alerts and dashboard visibility; assets are automatically flagged for suspension if inspection/certification lapses.',
+          'Statutory compliance governance is fully automated and integrated with dispatch systems, blocking use of any asset with lapsed certification; compliance is audited quarterly with zero-lapse performance over the past 12 months.',
+        ],
+        levelsAr: [
+          'متطلبات الصيانة النظامية وفحوصات السلامة لا تُتابَع مركزيًا؛ وتُكتشَف الانقطاعات فقط أثناء التدقيقات أو الحوادث.',
+          'توجد قائمة أساسية بالمتطلبات النظامية ومواعيد استحقاقها لكنها تعتمد على تتبّع الموظفين الأفراد وتنفيذها.',
+          'تقويم امتثال بتذكيرات يتتبّع جميع مواعيد الصيانة النظامية وفحوصات السلامة، مع مسؤول مُحدَّد للمساءلة.',
+          'حالة الامتثال النظامي متابَعة في نظام إدارة الصيانة المحوسب بتنبيهات آلية ورؤية عبر لوحة تحكم؛ وتُعلَّم الأصول آليًا للإيقاف عند انقطاع الفحص/الشهادة.',
+          'حوكمة الامتثال النظامي مؤتمتة بالكامل ومدمجة مع أنظمة الإرسال، وتمنع استخدام أي أصل بشهادة منتهية؛ ويُدقَّق الامتثال ربع سنويًا بأداء معدوم الانقطاعات خلال آخر 12 شهرًا.',
+        ],
+      },
+      {
+        q: 'How resilient is the maintenance function to disruptions — critical parts shortages, technician unavailability, or workshop capacity constraints — through contingency planning?',
+        qAr: 'ما مدى مرونة وظيفة الصيانة في مواجهة الاضطرابات — نقص القطع الحرجة أو عدم توفر الفنيين أو قيود سعة الورشة — عبر التخطيط للطوارئ؟',
+        levels: [
+          'There is no contingency plan for maintenance disruptions; a critical parts shortage or technician absence causes extended, unmanaged asset downtime.',
+          'Informal workarounds (sourcing parts from another site, calling a freelance technician) are used but not documented or pre-arranged.',
+          'A documented contingency plan identifies alternate parts suppliers, backup technician resources, and external workshop partners for common disruption scenarios.',
+          'Contingency arrangements (alternate suppliers, external workshop capacity) are pre-negotiated and tested annually; disruption response time targets are tracked.',
+          'A resilience programme includes multi-sourced critical parts, a flexible technician network (including certified third-party partners), and scenario-tested response playbooks; disruption impact on fleet/asset availability is near-zero and reviewed after every incident for continuous improvement.',
+        ],
+        levelsAr: [
+          'لا توجد خطة طوارئ لاضطرابات الصيانة؛ ويتسبب نقص القطع الحرجة أو غياب الفني في توقف أصول ممتد وغير مُدار.',
+          'تُستخدَم حلول بديلة غير رسمية (توفير القطع من موقع آخر أو الاستعانة بفني مستقل) لكنها غير موثقة أو مُرتَّبة مسبقًا.',
+          'خطة طوارئ موثقة تحدد موردي قطع بديلين وموارد فنيين احتياطية وشركاء ورش خارجية لسيناريوهات الاضطراب الشائعة.',
+          'ترتيبات الطوارئ (موردون بديلون وسعة ورشة خارجية) متفق عليها مسبقًا وتُختبَر سنويًا؛ ومستهدفات زمن الاستجابة للاضطراب متابَعة.',
+          'برنامج مرونة يشمل قطعًا حرجة متعددة المصادر وشبكة فنيين مرنة (تشمل شركاء طرف ثالث معتمدين) وأدلة استجابة مُختبَرة بسيناريوهات؛ وتأثير الاضطراب على توافر الأسطول/الأصول شبه معدوم ويُراجَع بعد كل حادثة للتحسين المستمر.',
+        ],
+      },
     ],
   },
 
 ];
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   INDUSTRY MODULE C — REGULATORY & LOCALISATION COMPLIANCE
-   Module ID: regulatory
-   Sub-segments:
-     0 Nitaqat / Saudization Compliance
-     1 IKTVA & Local Content
-     2 Import / Export Licensing & Controls
-     3 Product Regulatory Compliance
-     4 Government Procurement Regulations
-     5 Halal & Islamic Commerce Standards
-═══════════════════════════════════════════════════════════════════════════ */
-
 export const REGULATORY_SUB_SEGMENTS: SubSegmentData[] = [
 
   /* ── regulatory-0  Nitaqat / Saudization Compliance ─────────────────── */
