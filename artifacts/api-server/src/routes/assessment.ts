@@ -13,6 +13,12 @@ interface AssessmentInput {
   kpiRatings:       Record<string, number>;
   maturityRatings:  Record<string, number>;
   subDimensionRatings?: Record<string, number>;
+  /**
+   * English labels of the self-rating domains that were imported from the
+   * client's real, completed Maturity Assessment rather than typed in on
+   * the spot. Absent or empty means every domain here is self-estimated.
+   */
+  verifiedDomainLabels?: string[];
   language?:        'en' | 'ar';
 }
 
@@ -61,6 +67,9 @@ SUB-DIMENSION ANALYSIS INSTRUCTIONS:
 - Each critical gap MUST cite the specific sub-dimension(s) by name with their score (e.g. "CLM System & Automation rated 1/5").
 - Prioritise sub-dimensions scoring 1-2/5, especially those that correlate with the stated pain points.
 - Quick wins and strategic priorities should target the specific weakest sub-dimensions where possible.` : ''}
+
+${input.verifiedDomainLabels && input.verifiedDomainLabels.length > 0 ? `
+DATA CONFIDENCE: The following process maturity domains are grounded in the client's real, completed Maturity Assessment (evidence-based, not a spot self-estimate): ${input.verifiedDomainLabels.join(', ')}. Treat findings in these domains with higher confidence than the remaining self-estimated domains, and where natural, note in the executive summary or relevant critical gap that the finding is grounded in their verified assessment data — this is a genuine credibility signal for the client, not boilerplate to force into every section.` : ''}
 
 DERIVED SCORES: KPI avg=${avgKpi.toFixed(1)}/5, Maturity avg=${avgMaturity.toFixed(1)}/5
 
