@@ -9,6 +9,7 @@ import {
   segScore as calcSegScore,
   overallScore as calcOverallScore,
   weightedOverallScore as calcWeightedOverallScore,
+  weightedSegScore as calcWeightedSegScore,
   countCoveredSubSegments,
 } from '@/lib/maturityScoring';
 import { MaturityCoverage } from '@/components/MaturityCoverage';
@@ -89,9 +90,9 @@ export function _clearMaturityTestSeed() {
  * Used to detect when re-confirming the picker after going back from
  * questions would misattribute existing answers.
  */
-function computeScopeKey(segIds: string[], subSegIds: Record<string, number[]>): string {
+function computeScopeKey(segIds: string[], subSegIds: Record<string, number[]>, deepIds?: Set<string>): string {
   const sorted = [...segIds].sort();
-  const parts  = sorted.map(id => `${id}:[${(subSegIds[id] ?? [0,1,2,3,4]).slice().sort((a,b)=>a-b).join(',')}]`);
+  const parts  = sorted.map(id => `${id}:[${(subSegIds[id] ?? [0,1,2,3,4]).slice().sort((a,b)=>a-b).join(',')}]${deepIds?.has(id) ? ':deep' : ''}`);
   return parts.join('|');
 }
 
@@ -103,6 +104,7 @@ function readDraft(): {
   selectedSegmentIds?: string[];
   selectedSubSegIds?: Record<string, number[]>;
   committedScopeKey?: string;
+  deepSegIds?: string[];
 } | null {
   try {
     const raw = localStorage.getItem(MATURITY_DRAFT_KEY);
@@ -110,7 +112,7 @@ function readDraft(): {
     const saved = JSON.parse(raw) as {
       phase?: unknown; answers?: unknown; intakeData?: unknown;
       selectedSegmentIds?: unknown; selectedSubSegIds?: unknown;
-      committedScopeKey?: unknown;
+      committedScopeKey?: unknown; deepSegIds?: unknown;
     };
     if (
       (saved.phase === 'intake' || saved.phase === 'picker' || saved.phase === 'questions' || saved.phase === 'results') &&
@@ -131,6 +133,7 @@ function readDraft(): {
         committedScopeKey: typeof saved.committedScopeKey === 'string'
           ? saved.committedScopeKey
           : undefined,
+        deepSegIds: Array.isArray(saved.deepSegIds) ? (saved.deepSegIds as string[]) : undefined,
       };
     }
   } catch { /* corrupted — ignore */ }
@@ -215,6 +218,21 @@ export function Maturity() {
   /** Picker UI: which segment cards are expanded to show sub-question toggles. */
   const [expandedPickerSegs, setExpandedPickerSegs] = useState<Set<string>>(new Set());
 
+  /**
+   * Deep mode: per-segment opt-in. Segments in this set render their full
+   * sub-segment question bank (6-8 subs, 60-80 Q) in the quiz instead of the
+   * flat 5-question layer. Quick (not in this set) is the default for every
+   * segment. Answers use 3-part keys "{segIdx}-{subIdx}-{qIdx}" for deep
+   * segments vs the legacy 2-part "{segIdx}-{qIdx}" for quick ones — the
+   * scoring engine (lib/maturityScoring.ts) already auto-detects and
+   * weights whichever key format is present.
+   */
+  const [deepSegIds, setDeepSegIds] = useState<Set<string>>(() => {
+    if (_testSeedActive) return new Set();
+    const draft = readDraft();
+    return draft?.deepSegIds?.length ? new Set(draft.deepSegIds) : new Set();
+  });
+
   const topRef               = useRef<HTMLDivElement>(null);
   const [feedbackOpen,        setFeedbackOpen]        = useState(false);
   const [incompleteWarning,   setIncompleteWarning]   = useState(false);
@@ -262,11 +280,24 @@ export function Maturity() {
   const segQuestionIndices = (segId: string): number[] =>
     selectedSubSegIds[segId] ?? [0, 1, 2, 3, 4];
 
+  /** Total question count for a segment, honouring its Quick/Deep mode. */
+  const segQuestionCount = (seg: Segment): number =>
+    (seg.subSegments && deepSegIds.has(seg.id))
+      ? seg.subSegments.reduce((s, sub) => s + sub.questions.length, 0)
+      : segQuestionIndices(seg.id).length;
+
+  /** Answered-question count for a segment, honouring its Quick/Deep mode. */
+  const segAnsweredCount = (seg: Segment, si: number): number =>
+    (seg.subSegments && deepSegIds.has(seg.id))
+      ? seg.subSegments.reduce((s, sub, subIdx) =>
+          s + sub.questions.filter((_, qi) => answers[`${si}-${subIdx}-${qi}`]).length, 0)
+      : segQuestionIndices(seg.id).filter(qi => answers[`${si}-${qi}`]).length;
+
   const totalQuestions = scopedSegments.reduce(
-    (sum, seg) => sum + segQuestionIndices(seg.id).length, 0,
+    (sum, seg) => sum + segQuestionCount(seg), 0,
   );
   const answeredCount = scopedSegments.reduce((sum, seg, si) =>
-    sum + segQuestionIndices(seg.id).filter(qi => answers[`${si}-${qi}`]).length, 0,
+    sum + segAnsweredCount(seg, si), 0,
   );
   const progress       = totalQuestions > 0 ? answeredCount / totalQuestions : 0;
 
@@ -298,9 +329,10 @@ export function Maturity() {
     try {
       localStorage.setItem(MATURITY_DRAFT_KEY, JSON.stringify({
         phase, answers, intakeData, selectedSegmentIds, selectedSubSegIds, committedScopeKey,
+        deepSegIds: Array.from(deepSegIds),
       }));
     } catch { /* quota — ignore */ }
-  }, [phase, answers, intakeData, selectedSegmentIds, selectedSubSegIds, committedScopeKey]);
+  }, [phase, answers, intakeData, selectedSegmentIds, selectedSubSegIds, committedScopeKey, deepSegIds]);
 
   /* ── Token-based restore: load guest snapshot from API when ?token= present */
   const tokenRestoreAttempted = useRef(false);
@@ -338,8 +370,8 @@ export function Maturity() {
     const segScoresSnap = scopedSegments.map((seg, i) => ({
       id:    seg.id,
       title: ar ? seg.titleAr : seg.title,
-      score: +(calcSegScore(answers, i, segQuestionIndices(seg.id)) ?? 0).toFixed(2),
-      level: getLevel(calcSegScore(answers, i, segQuestionIndices(seg.id)) ?? 0).label,
+      score: +(segScore(i) ?? 0).toFixed(2),
+      level: getLevel(segScore(i) ?? 0).label,
     }));
 
     // Always record the submission (best-effort)
@@ -429,8 +461,8 @@ export function Maturity() {
       id:      seg.id,
       title:   seg.title,
       titleAr: seg.titleAr,
-      score:   +(calcSegScore(answers, i, segQuestionIndices(seg.id)) ?? 0).toFixed(2),
-      level:   getLevel(calcSegScore(answers, i, segQuestionIndices(seg.id)) ?? 0).label,
+      score:   +(segScore(i) ?? 0).toFixed(2),
+      level:   getLevel(segScore(i) ?? 0).label,
     }));
     const coveragePctVal = totalSubSegs > 0
       ? +(coveredSubSegs / totalSubSegs * 100).toFixed(2)
@@ -491,12 +523,23 @@ export function Maturity() {
   const setAnswer = (seg: number, q: number, val: number) =>
     setAnswers(prev => ({ ...prev, [`${seg}-${q}`]: val }));
 
-  const segScore = (seg: number) =>
-    calcSegScore(answers, seg, segQuestionIndices(scopedSegments[seg]?.id ?? ''));
+  const segScore = (seg: number): number | null => {
+    const s = scopedSegments[seg];
+    if (!s) return null;
+    if (s.subSegments && deepSegIds.has(s.id)) {
+      return calcWeightedSegScore(answers, s, seg, intakeData.industry || 'other');
+    }
+    return calcSegScore(answers, seg, segQuestionIndices(s.id));
+  };
 
   const currentSegComplete = () => {
     const seg = scopedSegments[segIdx];
     if (!seg) return false;
+    if (seg.subSegments && deepSegIds.has(seg.id)) {
+      return seg.subSegments.every((sub, si) =>
+        sub.questions.every((_, qi) => answers[`${segIdx}-${si}-${qi}`]),
+      );
+    }
     return segQuestionIndices(seg.id).every(q => answers[`${segIdx}-${q}`]);
   };
 
@@ -537,6 +580,16 @@ export function Maturity() {
   };
   const handleEditSegment = (i: number) => { setSegIdx(i); setEditingFromResults(true); setPhase('questions'); scrollUp(); };
   const handleBackToResults = () => { setEditingFromResults(false); setPhase('results'); scrollUp(); };
+  /** "Deepen this segment": opt it into Deep mode and jump straight into its (now expanded) question set. */
+  const handleDeepenSegment = (i: number) => {
+    const seg = scopedSegments[i];
+    if (!seg) return;
+    setDeepSegIds(prev => new Set(prev).add(seg.id));
+    setSegIdx(i);
+    setEditingFromResults(true);
+    setPhase('questions');
+    scrollUp();
+  };
 
   /** Write enriched maturity context to sessionStorage before navigating to /report-generator */
   const handleGoToReport = () => {
@@ -647,17 +700,16 @@ export function Maturity() {
   const segsAssessed = scopedSegments.filter((seg, i) =>
     calcSegScore(answers, i, segQuestionIndices(seg.id)) !== null,
   ).length;
-  // totalSubSegs: total selected sub-segment slots across scoped segments.
-  // coveredSubSegs: how many of those slots have been answered (2-part key > 0).
-  // We use the flat 2-part answer keys (segIdx-qi) here because that is what
-  // the question phase produces. countCoveredSubSegments expects 3-part keys
-  // (only generated when scoring from the sub-segment question bank) and would
-  // always return 0 in the current flat-question flow.
+  // totalSubSegs: total answerable question slots across scoped segments,
+  // honouring each segment's Quick/Deep mode via segQuestionCount.
+  // coveredSubSegs: how many of those slots have a non-zero answer, via
+  // segAnsweredCount — deep segments count against their full sub-segment
+  // bank (3-part keys), quick segments against the flat 5 (2-part keys).
   const totalSubSegs   = scopedSegments.reduce(
-    (s, seg) => s + segQuestionIndices(seg.id).length, 0,
+    (s, seg) => s + segQuestionCount(seg), 0,
   );
   const coveredSubSegs = scopedSegments.reduce((sum, seg, si) =>
-    sum + segQuestionIndices(seg.id).filter(qi => (answers[`${si}-${qi}`] ?? 0) > 0).length, 0,
+    sum + segAnsweredCount(seg, si), 0,
   );
 
   /* ── AI Remedies fetcher ──────────────────────────────────────────────── */
@@ -731,8 +783,8 @@ export function Maturity() {
           </h1>
           <p className="text-white/75 text-base md:text-lg leading-relaxed">
             {ar
-              ? 'تشخيص منظم عبر 12 مجالاً محورياً. يقدّم كل سؤال خمسة مستويات نضج موصوفة بوضوح — اختر المستوى الذي يصف مؤسستكم اليوم بأدق صورة.'
-              : 'A structured diagnostic across 12 core segments. Each question presents five clearly described maturity levels — select the one that most accurately describes your organisation today.'}
+              ? 'تشخيص منظم عبر 12 مجالاً محورياً. ابدأ بتقييم سريع (~20 دقيقة)، ثم تعمّق في أي مجال تختاره لتحليل أكثر تفصيلاً يصل إلى 80 سؤالاً — أنتم من يحدد العمق.'
+              : 'A structured diagnostic across 12 core segments. Start Quick (~20 minutes), then go Deep on any segment you choose for a far more detailed read — up to 80 questions per segment. You control the depth.'}
           </p>
         </div>
       </div>
@@ -741,15 +793,15 @@ export function Maturity() {
         <div className="container mx-auto px-4 py-8 max-w-5xl">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {(ar ? [
-              { label: '12 مجالاً',           sub: 'نطاق سلسلة الإمداد الكامل' },
-              { label: '60 سؤالاً',            sub: '5 لكل مجال' },
-              { label: '5 مستويات لكل سؤال',  sub: 'معايير صريحة لكل مستوى' },
-              { label: '~20 دقيقة',            sub: 'لإكمال التقييم الكامل' },
+              { label: '12 مجالاً',            sub: 'نطاق سلسلة الإمداد الكامل' },
+              { label: 'سريع أو معمّق',        sub: 'أنتم تختارون، لكل مجال' },
+              { label: '5 أو حتى 80 سؤالاً',   sub: 'حسب العمق المختار لكل مجال' },
+              { label: '~20 دقيقة',            sub: 'للتقييم السريع — المعمّق يستغرق وقتاً أطول' },
             ] : [
-              { label: '12 Segments',   sub: 'Full supply chain scope' },
-              { label: '60 Questions',  sub: '5 per segment' },
-              { label: '5 Levels Each', sub: 'Explicit criteria per level' },
-              { label: '~20 Minutes',   sub: 'Complete assessment' },
+              { label: '12 Segments',       sub: 'Full supply chain scope' },
+              { label: 'Quick or Deep',     sub: 'You choose, segment by segment' },
+              { label: '5 or up to 80 Qs',  sub: 'Depending on depth per segment' },
+              { label: '~20 Minutes',       sub: 'Quick mode — Deep takes longer' },
             ]).map(item => (
               <div key={item.label} className="text-center p-4 rounded-xl bg-muted">
                 <p className="text-2xl font-extrabold text-primary">{item.label}</p>
@@ -771,7 +823,14 @@ export function Maturity() {
               </div>
               <div>
                 <p className="font-bold text-sm text-primary leading-tight">{ar ? seg.shortTitleAr : seg.shortTitle}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">{seg.questions.length} {ar ? 'أسئلة · 5 مستويات لكل سؤال' : 'questions · 5 levels each'}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {seg.questions.length} {ar ? 'أسئلة سريعة' : 'Quick questions'}
+                  {seg.subSegments && seg.subSegments.length > 0 && (
+                    <> · {ar
+                      ? `أو تعميق إلى ${seg.subSegments.reduce((s, x) => s + x.questions.length, 0)} سؤالاً عبر ${seg.subSegments.length} أبعاد`
+                      : `or go Deep: up to ${seg.subSegments.reduce((s, x) => s + x.questions.length, 0)} across ${seg.subSegments.length} sub-dimensions`}</>
+                  )}
+                </p>
               </div>
             </div>
           ))}
@@ -1024,6 +1083,9 @@ export function Maturity() {
               const isSelected = selectedSegmentIds.includes(seg.id);
               const selQs      = selectedSubSegIds[seg.id] ?? [0, 1, 2, 3, 4];
               const isExpanded = expandedPickerSegs.has(seg.id);
+              const isDeep      = deepSegIds.has(seg.id);
+              const canGoDeep   = !!seg.subSegments && seg.subSegments.length > 0;
+              const deepQTotal  = canGoDeep ? seg.subSegments!.reduce((s, sub) => s + sub.questions.length, 0) : 0;
 
               return (
                 <div
@@ -1060,13 +1122,37 @@ export function Maturity() {
                       </p>
                       {isSelected && (
                         <p className="text-xs text-muted-foreground">
-                          {selQs.length}{' '}{ar ? 'من 5 أبعاد' : 'of 5 dimensions'}
+                          {isDeep
+                            ? (ar
+                                ? `تقييم معمّق · ${seg.subSegments!.length} أبعاد فرعية · ${deepQTotal} سؤالاً`
+                                : `Deep · ${seg.subSegments!.length} sub-dimensions · ${deepQTotal} questions`)
+                            : `${selQs.length}${' '}${ar ? 'من 5 أبعاد' : 'of 5 dimensions'}`}
                         </p>
                       )}
                     </div>
 
-                    {/* Expand toggle */}
-                    {isSelected && (
+                    {/* Go deeper toggle */}
+                    {isSelected && canGoDeep && (
+                      <button
+                        onClick={() => setDeepSegIds(prev => {
+                          const next = new Set(prev);
+                          if (next.has(seg.id)) next.delete(seg.id); else next.add(seg.id);
+                          return next;
+                        })}
+                        title={ar
+                          ? `${seg.subSegments!.length} أبعاد فرعية · ${deepQTotal} سؤالاً`
+                          : `${seg.subSegments!.length} sub-dimensions · ${deepQTotal} questions`}
+                        className={`flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full border transition-colors shrink-0 ${
+                          isDeep ? 'bg-accent text-white border-accent' : 'bg-white text-muted-foreground border-border hover:border-accent/50 hover:text-accent'
+                        }`}
+                      >
+                        <Sparkles className="w-3 h-3" />
+                        {isDeep ? (ar ? 'معمّق' : 'Deep') : (ar ? 'تعميق' : 'Go deeper')}
+                      </button>
+                    )}
+
+                    {/* Expand toggle (flat-question subset — Quick mode only) */}
+                    {isSelected && !isDeep && (
                       <button
                         onClick={() => setExpandedPickerSegs(prev => {
                           const next = new Set(prev);
@@ -1083,8 +1169,8 @@ export function Maturity() {
                     )}
                   </div>
 
-                  {/* Sub-question toggles */}
-                  {isSelected && isExpanded && (
+                  {/* Sub-question toggles (Quick mode only) */}
+                  {isSelected && isExpanded && !isDeep && (
                     <div className="border-t border-border px-4 py-3 space-y-2">
                       <div className="flex items-center justify-between mb-1.5">
                         <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
@@ -1161,7 +1247,7 @@ export function Maturity() {
                 </p>
               )}
               {canConfirm && Object.keys(answers).length > 0 &&
-               computeScopeKey(selectedSegmentIds, selectedSubSegIds) !== committedScopeKey && (
+               computeScopeKey(selectedSegmentIds, selectedSubSegIds, deepSegIds) !== committedScopeKey && (
                 <p className="text-xs text-amber-600 font-medium" data-testid="picker-scope-change-warning">
                   {ar
                     ? '⚠ تغيير النطاق سيمسح إجاباتك الحالية.'
@@ -1171,7 +1257,7 @@ export function Maturity() {
             </div>
             <Button
               onClick={() => {
-                const newKey = computeScopeKey(selectedSegmentIds, selectedSubSegIds);
+                const newKey = computeScopeKey(selectedSegmentIds, selectedSubSegIds, deepSegIds);
                 if (newKey !== committedScopeKey && Object.keys(answers).length > 0) {
                   setAnswers({});
                 }
@@ -1199,6 +1285,7 @@ export function Maturity() {
   if (phase === 'questions') {
     const seg         = scopedSegments[segIdx];
     const segComplete = currentSegComplete();
+    const isSegDeep    = !!seg?.subSegments && deepSegIds.has(seg.id);
 
     return (
       <div ref={topRef} className="w-full bg-muted min-h-screen" style={{ scrollMarginTop: 80 }}>
@@ -1274,14 +1361,96 @@ export function Maturity() {
                 <div className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0" style={{ backgroundColor: seg.color + '18' }}>
                   <seg.icon className="w-7 h-7" style={{ color: seg.color }} />
                 </div>
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">{ar ? `المجال ${segIdx + 1}` : `Segment ${segIdx + 1}`}</p>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">{ar ? `المجال ${segIdx + 1}` : `Segment ${segIdx + 1}`}</p>
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wide ${isSegDeep ? 'bg-accent/15 text-accent' : 'bg-muted text-muted-foreground'}`}>
+                      {isSegDeep ? (ar ? 'تقييم معمّق' : 'Deep') : (ar ? 'تقييم سريع' : 'Quick')}
+                    </span>
+                  </div>
                   <h2 className="text-xl font-extrabold text-primary">{ar ? seg.titleAr : seg.title}</h2>
                 </div>
               </div>
 
-              {/* Questions */}
-              {segQuestionIndices(seg.id).map((qi, displayIdx) => {
+              {/* Questions — Deep mode: grouped by sub-segment, 3-part answer keys */}
+              {isSegDeep && seg.subSegments && seg.subSegments.map((sub, subIdx) => (
+                <div key={sub.id} className="mb-7">
+                  <div className="flex items-center gap-2 mb-3 px-1">
+                    <div className="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-extrabold text-white shrink-0" style={{ backgroundColor: seg.color + 'CC' }}>
+                      {subIdx + 1}
+                    </div>
+                    <h3 className="font-bold text-primary text-sm">{ar ? sub.titleAr : sub.title}</h3>
+                    <FrameworkBadge frameworks={sub.frameworks} lang={ar ? 'ar' : 'en'} />
+                  </div>
+                  {(sub.hint || sub.hintAr) && (
+                    <p className="text-xs text-muted-foreground mb-3 px-1">{ar ? sub.hintAr : sub.hint}</p>
+                  )}
+                  {sub.questions.map((question, qi) => {
+                    const val = answers[`${segIdx}-${subIdx}-${qi}`];
+                    return (
+                      <div key={qi} className="bg-white rounded-2xl border border-border shadow-sm mb-5 overflow-hidden">
+                        <div className="flex items-start gap-3 p-5 pb-4 border-b border-border">
+                          <span className="w-7 h-7 rounded-full bg-primary text-white text-xs flex items-center justify-center font-bold shrink-0 mt-0.5">{qi + 1}</span>
+                          <div className="flex-1">
+                            <p className="font-semibold text-foreground text-sm leading-relaxed">{ar ? question.qAr : question.q}</p>
+                            <FrameworkBadge frameworks={question.frameworks ?? sub.frameworks} lang={ar ? 'ar' : 'en'} />
+                          </div>
+                        </div>
+
+                        <div className="divide-y divide-border">
+                          {SCALE_LABELS.map((s, li) => {
+                            const selected = val === s.value;
+                            return (
+                              <button
+                                key={s.value}
+                                data-testid={`answer-${segIdx}-${subIdx}-${qi}-${s.value}`}
+                                onClick={() => setAnswers(prev => ({ ...prev, [`${segIdx}-${subIdx}-${qi}`]: s.value }))}
+                                className={`w-full text-left flex items-start gap-4 px-5 py-4 transition-all duration-150 group
+                                  ${selected ? 'ring-2 ring-inset' : 'hover:bg-muted/60'}`}
+                                style={selected ? { backgroundColor: s.bg, '--tw-ring-color': s.color } as React.CSSProperties : {}}
+                              >
+                                <div className="shrink-0 flex flex-col items-center gap-1 w-16">
+                                  <div className={`w-9 h-9 rounded-full flex items-center justify-center font-extrabold text-base transition-all
+                                    ${selected ? 'text-white scale-110 shadow-md' : 'text-white/80'}`}
+                                    style={{ backgroundColor: selected ? s.color : s.color + 'AA' }}>
+                                    {s.value}
+                                  </div>
+                                  <span className={`text-[11px] font-bold leading-tight text-center transition-colors
+                                    ${selected ? '' : 'text-muted-foreground group-hover:text-foreground'}`}
+                                    style={selected ? { color: s.color } : {}}>
+                                    {ar ? s.shortAr : s.short}
+                                  </span>
+                                </div>
+                                <p className={`text-sm leading-relaxed pt-1 flex-1 transition-colors
+                                  ${selected ? 'font-medium text-foreground' : 'text-muted-foreground group-hover:text-foreground'}`}>
+                                  {ar ? question.levelsAr[li] : question.levels[li]}
+                                </p>
+                                <div className={`shrink-0 mt-1.5 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all
+                                  ${selected ? 'border-current' : 'border-border group-hover:border-muted-foreground'}`}
+                                  style={selected ? { borderColor: s.color } : {}}>
+                                  {selected && <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: s.color }} />}
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+
+                        {val && (
+                          <div className="px-5 py-2.5 flex items-center gap-2 border-t border-border" style={{ backgroundColor: SCALE_LABELS[val - 1].bg }}>
+                            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: SCALE_LABELS[val - 1].color }} />
+                            <p className="text-xs font-semibold" style={{ color: SCALE_LABELS[val - 1].color }}>
+                              {ar ? `المختار: المستوى ${val} — ${SCALE_LABELS[val - 1].shortAr}` : `Selected: Level ${val} — ${SCALE_LABELS[val - 1].short}`}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              ))}
+
+              {/* Questions — Quick mode: flat 5-question layer, 2-part answer keys */}
+              {!isSegDeep && segQuestionIndices(seg.id).map((qi, displayIdx) => {
                 const question = seg.questions[qi];
                 const val = answers[`${segIdx}-${qi}`];
                 return (
@@ -1366,7 +1535,7 @@ export function Maturity() {
                 </Button>
                 <div className="text-center">
                   {!segComplete && (
-                    <p className="text-xs text-muted-foreground">{ar ? 'أجب عن جميع الأسئلة للمتابعة' : `Answer all ${segQuestionIndices(seg.id).length} questions to continue`}</p>
+                    <p className="text-xs text-muted-foreground">{ar ? 'أجب عن جميع الأسئلة للمتابعة' : `Answer all ${segQuestionCount(seg)} questions to continue`}</p>
                   )}
                 </div>
                 <Button onClick={handleNext} disabled={!segComplete}
@@ -1803,10 +1972,25 @@ export function Maturity() {
                         <span className="text-primary font-extrabold">{score.toFixed(2)}</span>
                         <span className="text-muted-foreground text-xs">/5.0</span>
                         <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${level.bg} ${level.text} border ${level.border}`}>{ar ? level.labelAr : level.label}</span>
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide ${deepSegIds.has(seg.id) ? 'bg-accent/15 text-accent' : 'bg-muted text-muted-foreground'}`}>
+                          {deepSegIds.has(seg.id)
+                            ? (ar ? 'معمّق · قابل للتوثيق' : 'Deep · evidence-eligible')
+                            : (ar ? 'سريع · إرشادي' : 'Quick · directional')}
+                        </span>
                         {segEvidence.length > 0 && (
                           <ConfidenceTierBadge lang={lang} evidence={segEvidence} asPill />
                         )}
                       </div>
+                      {!deepSegIds.has(seg.id) && seg.subSegments && seg.subSegments.length > 0 && score > 0 && score < 3.5 && (
+                        <button
+                          onClick={() => handleDeepenSegment(i)}
+                          data-testid={`button-deepen-segment-${i}`}
+                          className="inline-flex items-center gap-1 mt-1.5 text-xs font-bold text-accent hover:underline"
+                        >
+                          <Sparkles className="w-3 h-3" />
+                          {ar ? 'تعميق هذا المجال — تحليل أدق لأولوياتكم' : 'Deepen this segment — sharper read on your priority area'}
+                        </button>
+                      )}
                     </div>
                     <div className="flex-shrink-0 w-20">
                       <div className="h-1.5 bg-muted rounded-full overflow-hidden">
@@ -1831,31 +2015,50 @@ export function Maturity() {
                       </span>
                       <span className="text-xs font-bold text-muted-foreground">↑ {gapToBest.toFixed(1)} {ar ? 'للوصول إلى أفضل ربع' : 'to Top Quartile'}</span>
                     </div>
-                    {/* ── Mini question-score bar chart ───────────────────────────── */}
+                    {/* ── Mini question/sub-dimension score bar chart ─────────────── */}
                     <div className="mb-3 bg-muted/30 rounded-xl p-3">
                       <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">
-                        {ar ? 'أداء الأسئلة الفرعية' : 'Sub-dimension scores'}
+                        {deepSegIds.has(seg.id)
+                          ? (ar ? `أداء الأبعاد الفرعية (${seg.subSegments?.length ?? 0})` : `Sub-dimension scores (${seg.subSegments?.length ?? 0})`)
+                          : (ar ? 'أداء الأسئلة الفرعية' : 'Sub-dimension scores')}
                       </p>
                       <ResponsiveContainer width="100%" height={64}>
                         <BarChart
-                          data={segQuestionIndices(seg.id).map((q, di) => ({
-                            name: ar ? `س${di+1}` : `Q${di+1}`,
-                            score: answers[`${i}-${q}`] ?? 0,
-                          }))}
+                          data={
+                            deepSegIds.has(seg.id) && seg.subSegments
+                              ? seg.subSegments.map((sub, subIdx) => {
+                                  const vals = sub.questions.map((_, qi) => answers[`${i}-${subIdx}-${qi}`] ?? 0).filter(v => v > 0);
+                                  return {
+                                    name: ar ? `ب${subIdx + 1}` : `S${subIdx + 1}`,
+                                    score: vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0,
+                                  };
+                                })
+                              : segQuestionIndices(seg.id).map((q, di) => ({
+                                  name: ar ? `س${di+1}` : `Q${di+1}`,
+                                  score: answers[`${i}-${q}`] ?? 0,
+                                }))
+                          }
                           margin={{ top: 0, right: 0, left: -20, bottom: 0 }}
                         >
                           <YAxis domain={[0, 5]} hide />
                           <XAxis dataKey="name" tick={{ fontSize: 9, fill: '#94A3B8' }} axisLine={false} tickLine={false} />
                           <Tooltip
-                            formatter={(v: number) => [v.toFixed(0), ar ? 'المستوى' : 'Level']}
+                            formatter={(v: number) => [v.toFixed(1), ar ? 'المستوى' : 'Level']}
                             contentStyle={{ fontSize: 11 }}
                           />
                           <Bar dataKey="score" radius={[2, 2, 0, 0]} barSize={20}
                             label={{ position: 'top', fontSize: 8, fill: '#64748b',
-                              formatter: (v: number) => (v > 0 ? String(v) : '') }}>
-                            {segQuestionIndices(seg.id).map((q, di) => (
-                              <Cell key={`q-cell-${i}-${di}`} fill={getLevel(answers[`${i}-${q}`] ?? 1).color} />
-                            ))}
+                              formatter: (v: number) => (v > 0 ? v.toFixed(v % 1 === 0 ? 0 : 1) : '') }}>
+                            {(deepSegIds.has(seg.id) && seg.subSegments ? seg.subSegments : segQuestionIndices(seg.id)).map((_, di) => {
+                              const val = deepSegIds.has(seg.id) && seg.subSegments
+                                ? (() => {
+                                    const sub = seg.subSegments![di];
+                                    const vals = sub.questions.map((__, qi) => answers[`${i}-${di}-${qi}`] ?? 0).filter(v => v > 0);
+                                    return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 1;
+                                  })()
+                                : answers[`${i}-${segQuestionIndices(seg.id)[di]}`] ?? 1;
+                              return <Cell key={`q-cell-${i}-${di}`} fill={getLevel(val).color} />;
+                            })}
                           </Bar>
                         </BarChart>
                       </ResponsiveContainer>
