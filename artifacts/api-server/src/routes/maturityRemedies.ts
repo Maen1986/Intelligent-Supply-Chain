@@ -11,6 +11,16 @@ interface WeakSubQuestion {
   questionText: string;
   score: number;          // 1–3
   levelDescription: string; // exact text of the chosen level criterion
+  /**
+   * Strategic/Tactical/Operational classification of this specific
+   * question (#38) — independent of which segment it lives in. Used to
+   * sequence a dependency-aware 30/60/90-day roadmap: Operational gaps
+   * are typically quick 30-day wins, Tactical gaps need process/capability
+   * build (60-day), and Strategic gaps need leadership sponsorship and
+   * commonly anchor the 90-day horizon. Optional — older weak items or
+   * sub-segment (deep-mode) questions may not carry this tag yet.
+   */
+  layer?: 'strategic' | 'tactical' | 'operational';
 }
 
 interface MaturityRemediesInput {
@@ -39,11 +49,14 @@ router.post('/maturity/remedies', async (req, res) => {
       (weakBySegment[item.segmentTitle] ??= []).push(item);
     }
 
+    const layerLabel = (l?: WeakSubQuestion['layer']) =>
+      l === 'strategic' ? 'STRATEGIC' : l === 'tactical' ? 'TACTICAL' : l === 'operational' ? 'OPERATIONAL' : 'UNCLASSIFIED';
+
     const weakSummary = Object.entries(weakBySegment)
       .map(([seg, items]) =>
         `${seg}:\n${items
           .sort((a, b) => a.score - b.score)
-          .map(i => `  • "${i.questionText}" → Score ${i.score}/5. Current state: "${i.levelDescription}"`)
+          .map(i => `  • [${layerLabel(i.layer)}] "${i.questionText}" → Score ${i.score}/5. Current state: "${i.levelDescription}"`)
           .join('\n')}`
       )
       .join('\n\n');
@@ -87,6 +100,7 @@ CRITICAL RULES:
 3. Scale to ${input.companySize}: do not recommend enterprise-grade platforms to SMEs; do not under-scope Enterprises or Government entities.
 4. Each remedy MUST end with a specific measurable target (metric, current state, target, timeframe).
 5. Sequence by dependencies: 30-day = quick foundations; 60-day = formalised processes; 90-day = scaled capability.
+5b. Each weak sub-question above is prefixed with its management layer — [OPERATIONAL], [TACTICAL], or [STRATEGIC]. Use it as a strong (not absolute) sequencing signal: [OPERATIONAL] gaps are usually the right 30-day quick wins (they need execution, not new mandate); [TACTICAL] gaps usually belong in the 60-day phase (they need a designed process or capability); [STRATEGIC] gaps usually belong in the 90-day phase (they need leadership sponsorship, budget, or a policy decision before they can move) — unless a specific dependency clearly overrides this (e.g. a foundational Strategic gap that blocks everything else may need to start on day 1 even if it only closes at day 90). [UNCLASSIFIED] items should be sequenced on their content alone, same as before.
 6. Prioritise the 6–9 most impactful gaps (2–3 per phase). Quality over quantity.
 7. Be ${input.industry}-specific throughout — no generic advice.
 
