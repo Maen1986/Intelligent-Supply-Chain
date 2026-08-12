@@ -7,7 +7,7 @@
 import {
   GitBranch, ShoppingCart, FileText, Users, Shield, Leaf, Cpu,
   BarChart2, Package, Truck, GraduationCap,
-  Factory, Ship, Scale,
+  Factory, Ship, Scale, BadgeCheck,
 } from 'lucide-react';
 import {
   STRATEGY_SUB_SEGMENTS,
@@ -26,6 +26,7 @@ import {
   MFG_OPS_SUB_SEGMENTS,
   FLEET_OPS_SUB_SEGMENTS,
   REGULATORY_SUB_SEGMENTS,
+  QUALITY_SUB_SEGMENTS,
 } from './maturitySubSegData6to11';
 
 /* ── Interfaces ──────────────────────────────────────────────────────────── */
@@ -1454,6 +1455,125 @@ export const CORE_SEGMENTS: Segment[] = [
       Optimised: 'المقارنة المعيارية لنموذج مواهب سلسلة الإمداد مع أفضل الممارسات في الخليج. الاستثمار في التوجيه التنفيذي لسلسلة الإمداد وبناء أكاديمية قدرات خاصة كميّزة تنافسية في المواهب.',
     },
     subSegments: ORG_TALENT_SUB_SEGMENTS as unknown as SubSegment[],
+  },
+  /* ── MODULE: Quality Management & Continuous Improvement ─────────────── */
+  {
+    id: 'quality_ci',
+    title: 'Quality Management & Continuous Improvement',
+    titleAr: 'إدارة الجودة والتحسين المستمر',
+    shortTitle: 'Quality & CI',
+    shortTitleAr: 'الجودة والتحسين',
+    icon: BadgeCheck,
+    color: '#0F766E',
+    benchmarks: { gcc: 2.1, global: 2.6, best: 4.4 },
+    frameworks: ['ISO 9001', 'Six Sigma', 'Lean/TPS'],
+    questions: [
+      {
+        q: 'Does the organization maintain a documented quality policy with strategic quality objectives that are genuinely integrated into overall business strategy, rather than existing as a standalone QA-department document?',
+        qAr: 'هل تحتفظ المؤسسة بسياسة جودة موثقة وأهداف جودة استراتيجية مندمجة فعلياً في الاستراتيجية العامة للأعمال، بدلاً من كونها وثيقة معزولة تخص إدارة الجودة فقط؟',
+        levels: [
+          'No documented quality policy exists, and quality is never referenced in strategic planning discussions.',
+          'A quality policy exists on paper but is generic or copied from a template, disconnected from actual business objectives.',
+          'A quality policy with defined objectives exists and is reviewed periodically, but integration with the overall business strategy is inconsistent across functions.',
+          'Quality policy and objectives are formally integrated into the strategic plan, with defined KPIs, timelines, and accountable owners.',
+          'Quality strategy is fully embedded in enterprise strategy, cascaded to all business units, reviewed at executive/board level, and explicitly linked to competitive positioning and customer value.',
+        ],
+        levelsAr: [
+          'لا توجد سياسة جودة موثقة، ولا يُشار إلى الجودة إطلاقاً في مناقشات التخطيط الاستراتيجي.',
+          'توجد سياسة جودة على الورق لكنها عامة أو منسوخة من نموذج جاهز، ومنفصلة عن أهداف العمل الفعلية.',
+          'توجد سياسة جودة بأهداف محددة تُراجَع دورياً، لكن اندماجها مع الاستراتيجية العامة للأعمال متفاوت بين الوظائف المختلفة.',
+          'تُدمج سياسة وأهداف الجودة رسمياً ضمن الخطة الاستراتيجية، مع مؤشرات أداء رئيسية وجداول زمنية ومسؤولين محددين.',
+          'تُدمج استراتيجية الجودة بالكامل ضمن استراتيجية المؤسسة، وتُنقل إلى جميع وحدات الأعمال، وتُراجَع على مستوى الإدارة التنفيذية/مجلس الإدارة، وترتبط صراحة بالموقع التنافسي وقيمة العميل.',
+        ],
+      },
+      {
+        q: 'Does the organization have an enterprise-wide Lean/Six Sigma deployment strategy sponsored at executive/board level, as opposed to isolated departmental pilots?',
+        qAr: 'هل تمتلك المؤسسة استراتيجية نشر للتصنيع الرشيق/ستة سيجما على مستوى المؤسسة بأكملها وبرعاية تنفيذية/مجلس إدارة، بدلاً من مشاريع تجريبية معزولة على مستوى الأقسام؟',
+        levels: [
+          'No Lean or Six Sigma activity exists anywhere in the organization.',
+          'Isolated Lean/Six Sigma pilots have been attempted in one department, with no enterprise strategy or executive sponsorship.',
+          'A documented deployment strategy exists and covers more than one function, but executive sponsorship is nominal rather than active.',
+          'An enterprise-wide deployment strategy is actively sponsored by executives, with defined targets, resourcing, and a multi-year roadmap.',
+          'Lean/Six Sigma deployment is a board-level strategic pillar, integrated into the operating model across all functions, with sponsorship that survives leadership transitions.',
+        ],
+        levelsAr: [
+          'لا يوجد أي نشاط للتصنيع الرشيق أو ستة سيجما في أي جزء من المؤسسة.',
+          'جرت محاولات تجريبية معزولة للتصنيع الرشيق/ستة سيجما في قسم واحد، دون استراتيجية مؤسسية أو رعاية تنفيذية.',
+          'توجد استراتيجية نشر موثقة تغطي أكثر من وظيفة واحدة، لكن الرعاية التنفيذية شكلية وليست فعّالة.',
+          'تُدعم استراتيجية النشر على مستوى المؤسسة بشكل فعّال من قبل الإدارة التنفيذية، بأهداف محددة وموارد وخارطة طريق متعددة السنوات.',
+          'يشكّل نشر التصنيع الرشيق/ستة سيجما ركيزة استراتيجية على مستوى مجلس الإدارة، ومندمجاً في نموذج التشغيل عبر جميع الوظائف، وتستمر رعايته حتى مع تغيّر القيادات.',
+        ],
+      },
+      {
+        q: 'Is cost of poor quality (COPQ) formally measured, tracked, and reported to leadership as a strategic metric, rather than being an anecdotal or "felt sense" issue?',
+        qAr: 'هل تُقاس تكلفة الجودة الرديئة (COPQ) وتُتابَع وتُرفَع تقاريرها إلى الإدارة العليا كمؤشر استراتيجي رسمي، بدلاً من كونها قضية تُستشعر بشكل غير موثق؟',
+        levels: [
+          'COPQ is never measured; quality-related losses are invisible to leadership.',
+          'COPQ is discussed anecdotally ("we know rework is expensive") but never quantified or reported.',
+          'COPQ is measured for some categories (e.g., scrap, warranty claims) but not comprehensively across prevention/appraisal/failure costs.',
+          'COPQ is comprehensively measured across all major categories and reported to leadership on a regular cadence with trend analysis.',
+          'COPQ is a standing board-level metric, benchmarked against external research (industry averages of roughly 15–20% of sales, with world-class organizations below 5%), and directly informs investment and pricing decisions.',
+        ],
+        levelsAr: [
+          'لا تُقاس تكلفة الجودة الرديئة إطلاقاً؛ وتكون الخسائر المرتبطة بالجودة غير مرئية للإدارة العليا.',
+          'تُناقَش تكلفة الجودة الرديئة بشكل غير موثق ("نعلم أن إعادة العمل مكلفة") لكن دون قياسها أو رفع تقاريرها.',
+          'تُقاس تكلفة الجودة الرديئة لبعض الفئات (كالهالك ومطالبات الضمان) لكن دون شمولية عبر تكاليف الوقاية والتقييم والفشل.',
+          'تُقاس تكلفة الجودة الرديئة بشكل شامل عبر جميع الفئات الرئيسية وتُرفَع تقاريرها للإدارة العليا بوتيرة منتظمة مع تحليل الاتجاهات.',
+          'تكون تكلفة الجودة الرديئة مؤشراً ثابتاً على مستوى مجلس الإدارة، ويُقارَن بأبحاث خارجية (متوسطات صناعية تتراوح بين 15-20% من المبيعات، فيما تحافظ المؤسسات الرائدة عالمياً على مستوى أقل من 5%)، ويُوجّه مباشرة قرارات الاستثمار والتسعير.',
+        ],
+      },
+      {
+        q: 'Is continuous improvement recognized and resourced by executive leadership as a strategic priority — with dedicated budget, headcount, and visible sponsorship — rather than an unfunded aspiration?',
+        qAr: 'هل يُعترَف بالتحسين المستمر ويُخصَّص له الدعم من الإدارة التنفيذية كأولوية استراتيجية — بميزانية وكوادر ورعاية واضحة — بدلاً من كونه طموحاً غير مموَّل؟',
+        levels: [
+          'Continuous improvement is not recognized as a priority; there is no budget, headcount, or executive attention allocated to it.',
+          'CI is mentioned in aspirational statements but receives negligible resourcing and no defined ownership.',
+          'CI has a small dedicated budget and team, but resourcing is vulnerable to being cut during downturns.',
+          'CI is resourced as a durable strategic function with a protected budget, dedicated headcount, and visible executive sponsorship.',
+          'CI investment is treated as core infrastructure, scaling with the organization\'s growth, with executives publicly and consistently championing it as a defining element of the company\'s identity.',
+        ],
+        levelsAr: [
+          'لا يُعترَف بالتحسين المستمر كأولوية؛ ولا تُخصَّص له أي ميزانية أو كوادر أو اهتمام تنفيذي.',
+          'يُذكَر التحسين المستمر في تصريحات طموحة لكنه يحصل على موارد ضئيلة ودون ملكية محددة.',
+          'يمتلك التحسين المستمر ميزانية وفريقاً مخصصاً صغيراً، لكن هذه الموارد عرضة للتخفيض خلال فترات التراجع.',
+          'يُموَّل التحسين المستمر كوظيفة استراتيجية مستدامة بميزانية محمية وكوادر مخصصة ورعاية تنفيذية واضحة.',
+          'يُعامَل الاستثمار في التحسين المستمر كبنية تحتية أساسية، تتوسع مع نمو المؤسسة، وتروّج له الإدارة التنفيذية علناً وباستمرار كعنصر مُعرِّف لهوية الشركة.',
+        ],
+      },
+      {
+        q: 'How mature is your end-to-end supply chain traceability — the ability to track a lot/batch/serial number forward from raw material through production and distribution to the point of sale, and backward from a finished-goods issue to the originating material lot?',
+        qAr: 'ما مدى نضج تتبّع سلسلة الإمداد الشاملة لديكم — القدرة على تتبّع رقم الدفعة/التشغيلة/المسلسل تصاعدياً من المادة الخام عبر الإنتاج والتوزيع حتى نقطة البيع، وتنازلياً من مشكلة في المنتج النهائي إلى دفعة المادة الأصلية؟',
+        levels: [
+          'No lot/batch traceability exists. If a quality issue arose, there would be no reliable way to identify which other products or customers were affected.',
+          'Basic lot records exist at the production stage only; forward traceability to customer/distribution and backward traceability to raw material are both manual and unreliable.',
+          'One-up-one-back traceability is documented at each stage (supplier to receiving, production to shipment), meeting a basic regulatory standard, though full end-to-end trace requires manual reconciliation across systems.',
+          'A digital traceability system links lot data across production, warehousing, and distribution in one platform, enabling an end-to-end trace to be assembled within hours rather than days.',
+          'Real-time, system-integrated traceability spans the full network from multi-tier suppliers through to the end customer; a full forward-and-backward trace can be generated in minutes and is tested regularly as part of recall readiness.',
+        ],
+        levelsAr: [
+          'لا يوجد تتبّع للدفعات/التشغيلات. إذا نشأت مشكلة جودة، فلا توجد طريقة موثوقة لتحديد المنتجات أو العملاء الآخرين المتأثرين.',
+          'توجد سجلات دفعات أساسية عند مرحلة الإنتاج فقط؛ والتتبّع التصاعدي للعميل/التوزيع والتنازلي للمادة الخام كلاهما يدوي وغير موثوق.',
+          'يُوثَّق التتبّع "خطوة للأمام وخطوة للخلف" في كل مرحلة (المورد إلى الاستلام والإنتاج إلى الشحن)، بما يلبي معياراً تنظيمياً أساسياً، رغم أن التتبّع الشامل من طرف لطرف يتطلب مطابقة يدوية عبر الأنظمة.',
+          'نظام تتبّع رقمي يربط بيانات الدفعات عبر الإنتاج والتخزين والتوزيع في منصة واحدة، مما يُتيح تجميع تتبّع شامل من طرف لطرف خلال ساعات بدلاً من أيام.',
+          'تتبّع آني متكامل مع الأنظمة يمتد عبر الشبكة الكاملة من الموردين متعددي المستويات حتى العميل النهائي؛ ويمكن توليد تتبّع تصاعدي وتنازلي كامل خلال دقائق ويُختبَر بانتظام كجزء من جاهزية الاستدعاء.',
+        ],
+      },
+    ],
+    recommendations: {
+      Reactive:  'Establish a documented quality policy and pursue ISO 9001 certification for your core operations. Begin tracking cost of poor quality (COPQ) as a first step toward CAPA discipline.',
+      Aware:  'Build a structured internal audit programme aligned to ISO 19011 and formalise a CAPA process with root-cause tools (5-Why, 8D). Launch a pilot Lean/Six Sigma project with executive sponsorship.',
+      Defined:  'Digitise your QMS through a dedicated e-QMS platform and formalise a belt-based Lean/Six Sigma programme with a tracked project pipeline. Extend traceability beyond Tier-1 suppliers and run your first mock recall.',
+      Managed:  'Embed continuous improvement as a distributed capability with active employee suggestion systems and cross-functional Kaizen cadence. Achieve consistent multi-site certification scope and closure-velocity targets for CAPA.',
+      Optimised: 'Lead GCC best practice in enterprise quality governance — publish COPQ trends, sustain sub-4-hour trace times, and treat quality and CI maturity as board-level, externally benchmarked capabilities integrated into corporate strategy.',
+    },
+    recommendationsAr: {
+      Reactive:  'إرساء سياسة جودة موثقة والسعي لاعتماد الأيزو 9001 لعملياتكم الأساسية. البدء بتتبّع تكلفة الجودة الرديئة (COPQ) كخطوة أولى نحو انضباط CAPA.',
+      Aware:  'بناء برنامج تدقيق داخلي منظم متوافق مع الأيزو 19011 وإضفاء الطابع الرسمي على عملية CAPA بأدوات تحديد السبب الجذري (لماذا الخماسي و8D). إطلاق مشروع تجريبي للتصنيع الرشيق/ستة سيجما برعاية تنفيذية.',
+      Defined:  'رقمنة نظام إدارة الجودة عبر منصة e-QMS مخصصة وإضفاء الطابع الرسمي على برنامج أحزمة للتصنيع الرشيق/ستة سيجما بخط أنابيب مشاريع متابَع. توسيع التتبّع لما بعد موردي المستوى الأول وإجراء أول استدعاء تجريبي.',
+      Managed:  'ترسيخ التحسين المستمر كقدرة موزّعة بأنظمة اقتراحات موظفين نشطة ووتيرة كايزن متعددة الوظائف. تحقيق نطاق اعتماد متسق متعدد المواقع ومستهدفات سرعة إغلاق لـ CAPA.',
+      Optimised: 'قيادة أفضل الممارسات الخليجية في حوكمة الجودة المؤسسية — نشر اتجاهات COPQ والحفاظ على أوقات تتبّع أقل من 4 ساعات ومعاملة نضج الجودة والتحسين المستمر كقدرات على مستوى مجلس الإدارة مُقارَنة معياريًا خارجيًا ومدمجة في الاستراتيجية المؤسسية.',
+    },
+    subSegments: QUALITY_SUB_SEGMENTS as unknown as SubSegment[],
   },
 ];
 

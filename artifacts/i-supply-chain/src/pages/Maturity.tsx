@@ -57,7 +57,7 @@ type Phase = 'intro' | 'intake' | 'picker' | 'questions' | 'results';
 /**
  * localStorage key under which in-progress draft answers and phase are
  * persisted so returning users can resume where they left off.
- * v2 because the assessment now has 11 core segments (vs 8 in v1).
+ * v2 because the assessment now has 12 core segments (vs 8 in v1).
  */
 export const MATURITY_DRAFT_KEY = 'maturity_draft_v2';
 export const ISC_MATURITY_CONTEXT_KEY = 'isc_maturity_ctx_v1';
@@ -731,8 +731,8 @@ export function Maturity() {
           </h1>
           <p className="text-white/75 text-base md:text-lg leading-relaxed">
             {ar
-              ? 'تشخيص منظم عبر 11 مجالاً محورياً. يقدّم كل سؤال خمسة مستويات نضج موصوفة بوضوح — اختر المستوى الذي يصف مؤسستكم اليوم بأدق صورة.'
-              : 'A structured diagnostic across 11 critical segments. Each question presents five clearly described maturity levels — select the one that most accurately describes your organisation today.'}
+              ? 'تشخيص منظم عبر 12 مجالاً محورياً. يقدّم كل سؤال خمسة مستويات نضج موصوفة بوضوح — اختر المستوى الذي يصف مؤسستكم اليوم بأدق صورة.'
+              : 'A structured diagnostic across 12 core segments. Each question presents five clearly described maturity levels — select the one that most accurately describes your organisation today.'}
           </p>
         </div>
       </div>
@@ -741,13 +741,13 @@ export function Maturity() {
         <div className="container mx-auto px-4 py-8 max-w-5xl">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {(ar ? [
-              { label: '11 مجالاً',           sub: 'نطاق سلسلة الإمداد الكامل' },
-              { label: '55 سؤالاً',            sub: '5 لكل مجال' },
+              { label: '12 مجالاً',           sub: 'نطاق سلسلة الإمداد الكامل' },
+              { label: '60 سؤالاً',            sub: '5 لكل مجال' },
               { label: '5 مستويات لكل سؤال',  sub: 'معايير صريحة لكل مستوى' },
               { label: '~20 دقيقة',            sub: 'لإكمال التقييم الكامل' },
             ] : [
-              { label: '11 Segments',   sub: 'Full supply chain scope' },
-              { label: '55 Questions',  sub: '5 per segment' },
+              { label: '12 Segments',   sub: 'Full supply chain scope' },
+              { label: '60 Questions',  sub: '5 per segment' },
               { label: '5 Levels Each', sub: 'Explicit criteria per level' },
               { label: '~20 Minutes',   sub: 'Complete assessment' },
             ]).map(item => (
@@ -762,7 +762,7 @@ export function Maturity() {
 
       <div className="container mx-auto px-4 py-12 max-w-5xl">
         <h2 className="text-xl font-bold text-primary mb-2 text-center">{ar ? 'ما الذي يغطيه هذا التقييم' : 'What This Assessment Covers'}</h2>
-        <p className="text-muted-foreground text-sm text-center mb-6">{ar ? '11 مجالاً أساسياً + وحدات صناعية اختيارية بناءً على قطاعكم' : '11 core segments + optional industry module based on your sector'}</p>
+        <p className="text-muted-foreground text-sm text-center mb-6">{ar ? '12 مجالاً أساسياً يغطي كامل نطاق سلسلة الإمداد والمشتريات والجودة، بالإضافة إلى وحدة صناعية واحدة من أصل 3 وحدات متخصصة بحسب قطاعكم — أي 15 مجالاً متخصصاً على مستوى المنصة' : '12 core segments spanning the full supply chain, procurement, and quality landscape, plus one of 3 industry-specific modules based on your sector — 15 specialised domains across the platform'}</p>
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
           {CORE_SEGMENTS.map(seg => (
             <div key={seg.id} className="flex items-start gap-3 p-4 bg-white border border-border rounded-xl shadow-sm">
