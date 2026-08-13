@@ -39,6 +39,7 @@ import { AdminAutomations } from '@/pages/AdminAutomations';
 import { AdminEvidenceReview } from '@/pages/AdminEvidenceReview';
 import { AccountSettings } from '@/pages/AccountSettings';
 import { MyAssessments } from '@/pages/MyAssessments';
+import { ActionTracker } from '@/pages/ActionTracker';
 import { useIPProtection } from '@/hooks/useIPProtection';
 import { ChatWidget } from '@/components/ChatWidget';
 import { WhatsAppButton } from '@/components/WhatsAppButton';
@@ -93,6 +94,7 @@ function Router() {
         <Route path="/admin/evidence-review" component={AdminEvidenceReview} />
         <Route path="/account" component={AccountSettings} />
         <Route path="/my-assessments" component={MyAssessments} />
+        <Route path="/action-tracker" component={ActionTracker} />
         <Route path="/customer-voice" component={CustomerVoice} />
         <Route path="/legal" component={Legal} />
         <Route path="/data-sources" component={DataSources} />
