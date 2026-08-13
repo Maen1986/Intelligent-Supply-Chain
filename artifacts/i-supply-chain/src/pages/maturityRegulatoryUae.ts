@@ -275,3 +275,117 @@ export const UAE_REGULATORY_SUB_SEGMENTS: SubSegmentData[] = [
     ],
   },
 
+  /* ── 14U.3  Customs & Trade Compliance ──────────────────────── */
+  {
+    id: 'uae-reg-customs',
+    title: 'Customs & Trade Compliance',
+    titleAr: 'الامتثال الجمركي والتجاري',
+    hint: 'Source: Federal Customs Authority (FCA) + Emirate-level customs (Dubai Customs, Abu Dhabi Customs, etc.), GCC Common Customs Tariff. Requires both a trade license and separate FCA customs registration. Free-zone goods are duty-free until transferred to the mainland (5% standard duty + VAT applies at that point).',
+    hintAr: 'المصدر: الهيئة الاتحادية للجمارك + الجمارك على مستوى الإمارات (جمارك دبي، جمارك أبوظبي، إلخ)، والتعريفة الجمركية الموحدة الخليجية. يتطلب ترخيصًا تجاريًا وتسجيلًا جمركيًا منفصلًا لدى الهيئة الاتحادية. بضائع المناطق الحرة معفاة من الرسوم حتى تُنقَل إلى البر الرئيسي (تُطبّق الرسوم القياسية 5% + ضريبة القيمة المضافة عند ذلك).',
+    benchmarks: { gcc: 2.4, topQuartile: 4.1 },
+    industryWeights: {
+      manufacturing: 1.5, fmcg: 1.4, pharma: 1.4, retail: 1.3,
+      logistics: 1.5, marine: 1.5, construction: 1.2, oil_gas: 1.3,
+      government: 1.0, technology: 1.0, banking: 0.5, other: 1.0,
+    },
+    evidence: {
+      label:   'FCA customs registration + trade license',
+      labelAr: 'التسجيل الجمركي الاتحادي والترخيص التجاري',
+      hint:    'Upload your current Federal Customs Authority registration and trade license.',
+      hintAr:  'ارفع تسجيلكم الحالي لدى الهيئة الاتحادية للجمارك والترخيص التجاري.',
+    },
+    frameworks: ['FCA', 'GCC Common Customs Tariff', 'Mirsal 2'],
+    questions: [
+      {
+        q: 'How completely does your organisation maintain both the trade license and the separate Federal Customs Authority registration required to legally clear goods through UAE ports?',
+        qAr: 'ما مدى اكتمال احتفاظ مؤسستكم بالترخيص التجاري والتسجيل الجمركي المنفصل لدى الهيئة الاتحادية للجمارك المطلوبين لتخليص البضائع قانونيًا عبر الموانئ الإماراتية؟',
+        levels: [
+          'Customs registration status is unknown; shipments have been held or delayed due to missing or lapsed registration.',
+          'Both registrations exist but are tracked informally, with renewal dates not proactively monitored.',
+          'A defined process tracks trade license and FCA registration renewal dates with advance reminders.',
+          'Registration status is monitored across all operating entities and Emirates with automated renewal alerts.',
+          'Trade license and customs registration compliance is fully governed with zero shipment delays attributable to registration lapses over the past 24 months.',
+        ],
+        levelsAr: [
+          'حالة التسجيل الجمركي مجهولة؛ وتعرضّت شحنات للاحتجاز أو التأخير بسبب تسجيل مفقود أو منتهٍ.',
+          'يوجد التسجيلان لكن يُتابَعان بشكل غير رسمي، ودون مراقبة استباقية لتواريخ التجديد.',
+          'عملية محددة تتابع تواريخ تجديد الترخيص التجاري والتسجيل الجمركي مع تذكيرات مسبقة.',
+          'حالة التسجيل تُراقَب عبر جميع الكيانات التشغيلية والإمارات مع تنبيهات تجديد آلية.',
+          'الامتثال للترخيص التجاري والتسجيل الجمركي محوكَم بالكامل دون أي تأخير في الشحنات يُعزى لانتهاء التسجيل خلال آخر 24 شهرًا.',
+        ],
+      },
+      {
+        q: 'How accurately does your organisation classify goods under the GCC Common Customs Tariff (HS codes) and apply the correct duty treatment for mainland vs. free-zone movements?',
+        qAr: 'ما مدى دقة تصنيف مؤسستكم للبضائع بموجب التعريفة الجمركية الموحدة الخليجية (رموز التنسيق) وتطبيق المعاملة الجمركية الصحيحة لحركة البضائع بين البر الرئيسي والمناطق الحرة؟',
+        levels: [
+          'HS code classification is done ad hoc, often by the freight forwarder, with no internal review or accountability.',
+          'A basic HS code reference list exists but is not consistently applied or updated against tariff changes.',
+          'HS classification is reviewed by a trained internal resource before shipment, with free-zone/mainland duty treatment explicitly checked.',
+          'Classification accuracy is audited periodically, with corrective processes for any misclassification found.',
+          'HS classification and duty-treatment determination are systematised with built-in tariff-change monitoring, achieving a sustained record of zero classification-driven customs disputes.',
+        ],
+        levelsAr: [
+          'تصنيف رموز التنسيق يتم بشكل غير منتظم، غالبًا من وكيل الشحن، دون مراجعة أو مساءلة داخلية.',
+          'توجد قائمة مرجعية أساسية للرموز لكنها لا تُطبّق باستمرار أو تُحدّث مقابل تغييرات التعريفة.',
+          'يُراجع التصنيف من موظف داخلي مُدرّب قبل الشحن، مع فحص صريح لمعاملة الرسوم بين البر الرئيسي والمنطقة الحرة.',
+          'دقة التصنيف تُدقّق دوريًا، مع عمليات تصحيحية لأي تصنيف خاطئ يُكتشَف.',
+          'تحديد التصنيف ومعاملة الرسوم مُمنهَجان مع مراقبة مدمجة لتغييرات التعريفة، محققَين سجلاً مستدامًا من عدم وجود نزاعات جمركية بسبب التصنيف.',
+        ],
+      },
+      {
+        q: 'For organisations operating through a free zone, how well is the FZ Transit Out process (via Mirsal 2) managed when goods move to the mainland market?',
+        qAr: 'بالنسبة للمؤسسات العاملة عبر منطقة حرة، ما مدى جودة إدارة عملية النقل الخارج من المنطقة الحرة (عبر مرسال 2) عند انتقال البضائع إلى السوق المحلي؟',
+        levels: [
+          'Free-zone-to-mainland transfers happen without formal Transit Out declarations, creating compliance exposure.',
+          'Transit Out declarations are filed, but duty and VAT calculations are checked only occasionally for accuracy.',
+          'A defined process files Transit Out declarations through Mirsal 2 with duty (5%) and VAT calculated and verified for every mainland transfer.',
+          'Transit Out volume and cost are tracked and reconciled against finance records monthly.',
+          'Free-zone-to-mainland transfer compliance is fully systematised with automated Mirsal 2 integration and a sustained record of zero duty/VAT discrepancies.',
+        ],
+        levelsAr: [
+          'تنتقل البضائع من المنطقة الحرة إلى البر الرئيسي دون إقرارات نقل رسمية، مما يخلق تعرّضًا للمخاطر.',
+          'تُقدّم إقرارات النقل، لكن حسابات الرسوم وضريبة القيمة المضافة تُفحَص أحيانًا فقط للدقة.',
+          'عملية محددة تُقدّم إقرارات النقل عبر مرسال 2 مع حساب الرسوم (5%) والضريبة والتحقق منها لكل نقل إلى البر الرئيسي.',
+          'حجم وتكلفة عمليات النقل تُتابَع وتُطابَق مع سجلات المالية شهريًا.',
+          'الامتثال لنقل البضائع من المنطقة الحرة إلى البر الرئيسي مُمنهَج بالكامل مع تكامل آلي مع مرسال 2 وسجل مستدام من عدم وجود تباينات في الرسوم أو الضريبة.',
+        ],
+      },
+      {
+        q: 'How complete and audit-ready is your organisation\'s customs documentation (commercial invoices, certificates of origin, packing lists) across shipments?',
+        qAr: 'ما مدى اكتمال وجاهزية التدقيق لمستندات الجمارك لدى مؤسستكم (الفواتير التجارية، شهادات المنشأ، قوائم التعبئة) عبر الشحنات؟',
+        levels: [
+          'Customs documentation is incomplete or inconsistent, causing frequent clearance delays.',
+          'Documentation is generally complete but assembled reactively per shipment with no standard template.',
+          'A standardised documentation package is used for every shipment, reviewed before submission.',
+          'Documentation completeness is tracked as a KPI, with root-cause analysis for any clearance delay.',
+          'Customs documentation is fully digitised and audit-ready at all times, supporting a sustained record of first-time clearance with no documentation-driven delays.',
+        ],
+        levelsAr: [
+          'مستندات الجمارك غير مكتملة أو غير متسقة، مما يسبب تأخيرات متكررة في التخليص.',
+          'المستندات مكتملة عمومًا لكن تُجمّع بشكل تفاعلي لكل شحنة دون نموذج موحد.',
+          'حزمة مستندات موحدة تُستخدَم لكل شحنة، وتُراجَع قبل التقديم.',
+          'اكتمال المستندات يُتابَع كمؤشر أداء، مع تحليل السبب الجذري لأي تأخير في التخليص.',
+          'مستندات الجمارك رقمية بالكامل وجاهزة للتدقيق في كل وقت، وتدعم سجلاً مستدامًا من التخليص من أول مرة دون تأخيرات بسبب المستندات.',
+        ],
+      },
+      {
+        q: 'How proactively does your organisation monitor changes to UAE customs duty rules, tariff classifications, and free-zone regulations that could affect landed cost?',
+        qAr: 'ما مدى استباقية مراقبة مؤسستكم للتغيرات في قواعد الرسوم الجمركية الإماراتية وتصنيفات التعريفة ولوائح المناطق الحرة التي قد تؤثر على التكلفة الإجمالية للوصول؟',
+        levels: [
+          'Regulatory changes are learned about only when a shipment is affected at the port.',
+          'Some monitoring occurs informally through customs brokers or industry news, without a defined process.',
+          'A designated function periodically reviews FCA and Emirate-level customs updates relevant to the organisation\'s trade lanes.',
+          'Regulatory-change monitoring is proactive and systematic, with landed-cost impact assessed before changes take effect.',
+          'Customs regulatory horizon-scanning is a governed function integrated into sourcing and pricing strategy, with external customs advisors engaged for material changes.',
+        ],
+        levelsAr: [
+          'يُعرَف بالتغيرات النظامية فقط عندما تتأثر شحنة عند الميناء.',
+          'تحدث بعض المراقبة بشكل غير رسمي عبر الوسطاء الجمركيين أو أخبار القطاع، دون عملية محددة.',
+          'جهة محددة تراجع تحديثات الهيئة الاتحادية والجمارك على مستوى الإمارات ذات الصلة بمسارات تجارة المؤسسة دوريًا.',
+          'مراقبة التغيرات النظامية استباقية ومنهجية، مع تقييم الأثر على التكلفة الإجمالية قبل سريان التغييرات.',
+          'استشراف التغيرات الجمركية وظيفة محوكَمة ومُدمَجة في استراتيجية التوريد والتسعير، مع الاستعانة بمستشارين جمركيين خارجيين للتغيرات الجوهرية.',
+        ],
+      },
+    ],
+  },
+
