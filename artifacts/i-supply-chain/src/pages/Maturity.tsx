@@ -255,6 +255,13 @@ export function Maturity() {
   // Snapshot trend state
   const [snapshots,          setSnapshots]          = useState<SnapshotRecord[]>([]);
   const [currentSnapshotId,  setCurrentSnapshotId]  = useState<number | null>(null);
+  /* The 'submissions' table row id for this results visit's lead-capture
+     POST (see below). Captured so it can be linked to the richer
+     maturity_snapshots row once that POST also resolves — the two rows
+     live in independent tables with unrelated ID sequences, and without
+     this link My Assessments has no way to find a submission's
+     evidence/remedies data. */
+  const [submissionRowId,    setSubmissionRowId]    = useState<number | null>(null);
 
   // Evidence: confidence tier & document upload state (results only)
   const [evidenceList,  setEvidenceList]  = useState<EvidenceRecord[]>([]);
@@ -374,7 +381,11 @@ export function Maturity() {
       level: getLevel(segScore(i) ?? 0).label,
     }));
 
-    // Always record the submission (best-effort)
+    // Always record the submission (best-effort). For logged-in users, also
+    // capture the returned row id so it can be linked to the corresponding
+    // maturity_snapshots row once that POST resolves (see the linking effect
+    // below) — closes the gap where My Assessments couldn't find a
+    // submission's evidence/remedies data.
     fetch(`${API_BASE}/submissions`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -389,7 +400,12 @@ export function Maturity() {
         outputs: { overallScore: score.toFixed(2), overallLevel: level.label, segmentScores: segScoresSnap },
         language: ar ? 'ar' : 'en',
       }),
-    }).catch(() => {/* best-effort */});
+    })
+    .then(r => r.json())
+    .then((data: { ok: boolean; id?: number }) => {
+      if (data.ok && data.id) setSubmissionRowId(data.id);
+    })
+    .catch(() => {/* best-effort */});
 
     // Notify admin with full breakdown (only when user session available)
     if (user?.email) {
@@ -496,6 +512,25 @@ export function Maturity() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, user]);
 
+  /* ── Link the lead-capture submission to its maturity_snapshots row ──────
+     Fires once both independent POSTs above have resolved. Without this,
+     My Assessments (which reads from the 'submissions' table) has no
+     reliable way to find the matching maturity_snapshots row that evidence
+     uploads and the Action Tracker are keyed to — best-effort, never
+     blocks or surfaces an error to the user.                               */
+  const linkFiredRef = useRef(false);
+  useEffect(() => {
+    if (linkFiredRef.current) return;
+    if (!submissionRowId || !currentSnapshotId || !user) return;
+    linkFiredRef.current = true;
+    fetch(`${API_BASE}/submissions/${submissionRowId}/link-maturity-snapshot`, {
+      method:      'PATCH',
+      headers:     { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ snapshotId: currentSnapshotId }),
+    }).catch(() => {/* best-effort */});
+  }, [submissionRowId, currentSnapshotId, user]);
+
   /* ── Patch snapshot with remedy actions once AI plan resolves ─────────── */
   useEffect(() => {
     if (!remediesData || !currentSnapshotId || !user || _testSeedActive) return;
@@ -575,6 +610,8 @@ export function Maturity() {
     // Reset snapshot tracking so the next results visit auto-saves fresh
     snapshotFiredRef.current = false;
     setCurrentSnapshotId(null);
+    setSubmissionRowId(null);
+    linkFiredRef.current = false;
     resetPickerSelections([...CORE_SEGMENTS, ...(activeModule ? [activeModule] : [])]);
     scrollUp();
   };

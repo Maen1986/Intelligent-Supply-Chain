@@ -29,7 +29,15 @@ interface SegScore {
 }
 
 interface MaturityInputs  { intakeData?: { industry?: string; companySize?: string }; segmentCount?: number }
-interface MaturityOutputs { overallScore?: string | number; overallLevel?: string; segmentScores?: SegScore[] }
+interface MaturityOutputs {
+  overallScore?: string | number; overallLevel?: string; segmentScores?: SegScore[];
+  /** Links this submissions-table record to its richer maturity_snapshots row
+   *  (set server-side by POST /api/submissions/:id/link-maturity-snapshot once
+   *  both rows exist — see Maturity.tsx's linking effect). Records saved
+   *  before this fix shipped won't have it; the evidence UI below degrades
+   *  gracefully rather than pointing at the wrong (or a nonexistent) snapshot. */
+  maturitySnapshotId?: number;
+}
 
 interface DiagnosticInputs  { businessSize?: string; region?: string; industry?: string; focusArea?: string }
 interface DiagnosticOutputs { executiveSummary?: string }
@@ -93,7 +101,9 @@ export function MaturityDetail({ inputs, outputs, ar, snapshotId, lang, expanded
   inputs:            MaturityInputs;
   outputs:           MaturityOutputs;
   ar:                boolean;
-  snapshotId:        number;
+  /** null when this record predates the submission<->snapshot link (see
+   *  MaturityOutputs.maturitySnapshotId) — evidence UI is hidden in that case. */
+  snapshotId:        number | null;
   lang:              'en' | 'ar';
   expandedEvSeg:     Set<string>;
   setExpandedEvSeg:  React.Dispatch<React.SetStateAction<Set<string>>>;
@@ -291,7 +301,7 @@ export function MaturityDetail({ inputs, outputs, ar, snapshotId, lang, expanded
                       <td className="px-4 py-2.5 text-center">
                         {evidenceLoading ? (
                           <Loader2 className="w-3 h-3 animate-spin text-muted-foreground mx-auto" />
-                        ) : qualSubs.length > 0 ? (
+                        ) : qualSubs.length > 0 && snapshotId ? (
                           <button
                             onClick={toggleEv}
                             className="inline-flex items-center gap-1 group"
@@ -307,14 +317,24 @@ export function MaturityDetail({ inputs, outputs, ar, snapshotId, lang, expanded
                             )}
                             <span className="text-muted-foreground text-[10px]">{isEvOpen ? '▲' : '▼'}</span>
                           </button>
+                        ) : qualSubs.length > 0 ? (
+                          <span
+                            className="text-[10px] text-muted-foreground/60 cursor-help"
+                            title={ar
+                              ? 'تتبّع الأدلة غير متاح لهذه النتيجة المحفوظة — أعد التقييم لتفعيله'
+                              : 'Evidence tracking unavailable for this saved result — retake the assessment to enable it'}
+                          >
+                            —
+                          </span>
                         ) : (
                           <span className="text-[10px] text-muted-foreground/50">—</span>
                         )}
                       </td>
                     </tr>
 
-                    {/* Evidence accordion row */}
-                    {isEvOpen && qualSubs.length > 0 && (
+                    {/* Evidence accordion row — snapshotId is guaranteed truthy here since
+                        the toggle button that opens it is only rendered when snapshotId is set */}
+                    {isEvOpen && qualSubs.length > 0 && snapshotId && (
                       <tr className="border-t border-border bg-muted/20">
                         <td colSpan={4} className="px-4 py-3">
                           <div
@@ -541,7 +561,7 @@ export function SubmissionCard({ sub, ar, defaultOpen }: { sub: Submission; ar: 
                   inputs={inputs as MaturityInputs}
                   outputs={outputs as MaturityOutputs}
                   ar={ar}
-                  snapshotId={sub.id}
+                  snapshotId={(outputs as MaturityOutputs).maturitySnapshotId ?? null}
                   lang={ar ? 'ar' : 'en'}
                   expandedEvSeg={expandedEvSeg}
                   setExpandedEvSeg={setExpandedEvSeg}
