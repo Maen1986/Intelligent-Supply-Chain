@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { db } from '@workspace/db';
-import { submissionsTable } from '@workspace/db';
+import { submissionsTable, maturitySnapshotsTable } from '@workspace/db';
 import { desc, eq, and } from 'drizzle-orm';
 import { z } from 'zod';
 import { logger } from '../lib/logger';
@@ -238,6 +238,73 @@ router.get('/mine/:id', requireAuth, async (req, res) => {
   } catch (err) {
     logger.error({ err }, '[submissions/mine/:id] Fetch failed');
     res.status(500).json({ ok: false, error: 'Failed to fetch submission' });
+  }
+});
+
+/* ── PATCH /api/submissions/:id/link-maturity-snapshot ──────────────────────
+   Links a 'maturity' submissions row (the lead-capture record My Assessments
+   reads from) to its corresponding maturity_snapshots row (the record that
+   evidence uploads, AI remedies, and the Action Tracker are keyed to). The
+   two rows are created by two independent POSTs into two separate tables
+   with unrelated auto-increment ID sequences — this is the only point where
+   they're tied together. Embeds { maturitySnapshotId } into the
+   submission's existing outputs JSONB column, so no schema change or
+   migration is required. Best-effort from the client; failures here just
+   mean My Assessments falls back to not showing evidence for that record. */
+const LinkSnapshotSchema = z.object({
+  snapshotId: z.number().int().positive(),
+});
+
+router.patch('/:id/link-maturity-snapshot', requireAuth, async (req, res) => {
+  const userId = req.session.userId!;
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id) || id <= 0) {
+    res.status(400).json({ ok: false, error: 'Invalid submission id' });
+    return;
+  }
+  const parsed = LinkSnapshotSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ ok: false, error: 'Invalid link payload' });
+    return;
+  }
+  const { snapshotId } = parsed.data;
+
+  try {
+    // The submission must belong to this user and be a maturity submission.
+    const [sub] = await db
+      .select({ id: submissionsTable.id, tool: submissionsTable.tool, outputs: submissionsTable.outputs })
+      .from(submissionsTable)
+      .where(and(eq(submissionsTable.id, id), eq(submissionsTable.userId, userId)))
+      .limit(1);
+    if (!sub) {
+      res.status(404).json({ ok: false, error: 'Submission not found' });
+      return;
+    }
+    if (sub.tool !== 'maturity') {
+      res.status(400).json({ ok: false, error: 'Only maturity submissions can be linked to a snapshot' });
+      return;
+    }
+
+    // The snapshot must also belong to this user — prevents a submission
+    // from ever being linked to another user's maturity data.
+    const [snap] = await db
+      .select({ id: maturitySnapshotsTable.id })
+      .from(maturitySnapshotsTable)
+      .where(and(eq(maturitySnapshotsTable.id, snapshotId), eq(maturitySnapshotsTable.userId, userId)))
+      .limit(1);
+    if (!snap) {
+      res.status(403).json({ ok: false, error: 'Snapshot not found or does not belong to you' });
+      return;
+    }
+
+    const outputs = { ...(sub.outputs as Record<string, unknown> ?? {}), maturitySnapshotId: snapshotId };
+    await db.update(submissionsTable).set({ outputs }).where(eq(submissionsTable.id, id));
+
+    logger.info({ submissionId: id, snapshotId, userId }, '[submissions] Linked to maturity snapshot');
+    res.json({ ok: true });
+  } catch (err) {
+    logger.error({ err, userId, id, snapshotId }, '[submissions] Link-maturity-snapshot failed');
+    res.status(500).json({ ok: false, error: 'Failed to link snapshot' });
   }
 });
 
