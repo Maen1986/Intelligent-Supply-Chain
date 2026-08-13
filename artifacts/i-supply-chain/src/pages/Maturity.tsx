@@ -34,7 +34,7 @@ import {
 } from 'lucide-react';
 import {
   CORE_SEGMENTS, INDUSTRY_MODULES, INTAKE_INDUSTRIES, INTAKE_SIZES,
-  getActiveModule,
+  getActiveModules,
   type Segment, type IntakeData,
 } from './maturityData';
 
@@ -269,8 +269,8 @@ export function Maturity() {
   const [expandedEvSeg, setExpandedEvSeg] = useState<Set<string>>(new Set());
 
   /* Active segments depend on the chosen industry */
-  const activeModule   = intakeData.industry ? getActiveModule(intakeData.industry) : null;
-  let   activeSegments: Segment[] = [...CORE_SEGMENTS, ...(activeModule ? [activeModule] : [])];
+  const activeModules  = intakeData.industry ? getActiveModules(intakeData.industry) : [];
+  let   activeSegments: Segment[] = [...CORE_SEGMENTS, ...activeModules];
   // Tests that don't provide intakeData were written against the 8-segment assessment;
   // cap to 8 so their answer maps, segment counts, and navigation assertions all stay valid.
   if (_testSeedActive && !_testSeed.intakeData) activeSegments = activeSegments.slice(0, 8);
@@ -613,7 +613,7 @@ export function Maturity() {
     setCurrentSnapshotId(null);
     setSubmissionRowId(null);
     linkFiredRef.current = false;
-    resetPickerSelections([...CORE_SEGMENTS, ...(activeModule ? [activeModule] : [])]);
+    resetPickerSelections([...CORE_SEGMENTS, ...activeModules]);
     scrollUp();
   };
   const handleEditSegment = (i: number) => { setSegIdx(i); setEditingFromResults(true); setPhase('questions'); scrollUp(); };
@@ -992,7 +992,7 @@ export function Maturity() {
   ════════════════════════════════════════════════════════════════════════ */
   if (phase === 'intake') {
     const intakeComplete = intakeData.industry !== '' && intakeData.companySize !== '';
-    const selectedModule = intakeData.industry ? getActiveModule(intakeData.industry) : null;
+    const selectedModules = intakeData.industry ? getActiveModules(intakeData.industry) : [];
 
     return (
       <div ref={topRef} className="w-full bg-muted min-h-screen">
@@ -1023,7 +1023,7 @@ export function Maturity() {
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               {INTAKE_INDUSTRIES.map(ind => {
                 const selected = intakeData.industry === ind.id;
-                const module   = getActiveModule(ind.id);
+                const modules  = getActiveModules(ind.id);
                 return (
                   <button
                     key={ind.id}
@@ -1037,10 +1037,10 @@ export function Maturity() {
                     <p className={`font-semibold text-sm leading-tight ${selected ? 'text-primary' : 'text-foreground'}`}>
                       {ar ? ind.labelAr : ind.label}
                     </p>
-                    {module && (
-                      <p className="text-[10px] text-accent font-bold mt-1 flex items-center gap-1">
-                        <Sparkles className="w-3 h-3" />
-                        {ar ? `+ ${module.shortTitleAr}` : `+ ${module.shortTitle}`}
+                    {modules.length > 0 && (
+                      <p className="text-[10px] text-accent font-bold mt-1 flex items-center gap-1 flex-wrap">
+                        <Sparkles className="w-3 h-3 shrink-0" />
+                        {modules.map((m, i) => (ar ? m.shortTitleAr : m.shortTitle)).join(' · ')}
                       </p>
                     )}
                     {selected && (
@@ -1052,13 +1052,17 @@ export function Maturity() {
                 );
               })}
             </div>
-            {selectedModule && (
-              <div className="mt-4 flex items-start gap-3 rounded-xl border border-accent/30 bg-accent/5 px-4 py-3">
-                <selectedModule.icon className="w-4 h-4 mt-0.5 shrink-0" style={{ color: selectedModule.color }} />
-                <p className="text-sm text-foreground">
-                  <span className="font-bold text-accent">{ar ? `وحدة ${selectedModule.shortTitleAr}` : `${selectedModule.shortTitle} module`}</span>
-                  {ar ? ' ستُضاف تلقائيًا إلى تقييمكم.' : ' will be automatically added to your assessment.'}
-                </p>
+            {selectedModules.length > 0 && (
+              <div className="mt-4 space-y-2">
+                {selectedModules.map(m => (
+                  <div key={m.id} className="flex items-start gap-3 rounded-xl border border-accent/30 bg-accent/5 px-4 py-3">
+                    <m.icon className="w-4 h-4 mt-0.5 shrink-0" style={{ color: m.color }} />
+                    <p className="text-sm text-foreground">
+                      <span className="font-bold text-accent">{ar ? `وحدة ${m.shortTitleAr}` : `${m.shortTitle} module`}</span>
+                      {ar ? ' ستُضاف تلقائيًا إلى تقييمكم.' : ' will be automatically added to your assessment.'}
+                    </p>
+                  </div>
+                ))}
               </div>
             )}
           </div>
@@ -1756,12 +1760,12 @@ export function Maturity() {
                   {ar ? selectedSizeLabel.labelAr : selectedSizeLabel.label}
                 </span>
               )}
-              {activeModule && (
-                <span className="inline-flex items-center gap-1.5 bg-accent/30 rounded-full px-3 py-1 text-xs font-semibold text-accent">
+              {activeModules.map(m => (
+                <span key={m.id} className="inline-flex items-center gap-1.5 bg-accent/30 rounded-full px-3 py-1 text-xs font-semibold text-accent">
                   <Sparkles className="w-3 h-3" />
-                  {ar ? `+ ${activeModule.shortTitleAr}` : `+ ${activeModule.shortTitle}`}
+                  {ar ? `+ ${m.shortTitleAr}` : `+ ${m.shortTitle}`}
                 </span>
-              )}
+              ))}
             </div>
           )}
 

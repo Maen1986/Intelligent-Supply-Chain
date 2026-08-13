@@ -141,8 +141,15 @@ export const INTAKE_SIZES = [
 
 /* ── Helper: select the active industry module ───────────────────────────── */
 
-export function getActiveModule(industryId: string): Segment | null {
-  return INDUSTRY_MODULES.find(m => m.moduleFor?.includes(industryId)) ?? null;
+/**
+ * A company's industry can trigger MULTIPLE conditional modules at once —
+ * e.g. a Saudi manufacturer needs both Manufacturing & Production Operations
+ * (industry-specific) AND Regulatory & Localisation Compliance (country-
+ * specific, applies across nearly every sector, not just government). Returns
+ * all matches, not just the first.
+ */
+export function getActiveModules(industryId: string): Segment[] {
+  return INDUSTRY_MODULES.filter(m => m.moduleFor?.includes(industryId));
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -1919,7 +1926,14 @@ export const INDUSTRY_MODULES: Segment[] = [
     icon: Scale,
     color: '#1D4ED8',
     benchmarks: { gcc: 2.0, global: 2.5, best: 4.3 },
-    moduleFor: ['government'],
+    // Applies across every sector operating in Saudi Arabia, not just government:
+    // Nitaqat/Saudization, IKTVA, import/export licensing, product compliance,
+    // Halal & Islamic commerce standards, and PDPL bind private-sector companies
+    // too. Only 1 of this module's 7 sub-segments (GTPL, government tendering
+    // law) is government-specific — that nuance is handled inside the
+    // sub-segment content itself, not by gating the whole module to one sector.
+    moduleFor: ['manufacturing', 'fmcg', 'pharma', 'retail', 'logistics', 'marine',
+                'construction', 'oil_gas', 'government', 'technology', 'banking', 'other'],
     frameworks: ['Saudi Vision 2030', 'IKTVA', 'Nitaqat'],
     questions: [
       {
