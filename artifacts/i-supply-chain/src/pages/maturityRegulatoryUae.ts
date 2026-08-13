@@ -1,208 +1,161 @@
-  /* ── 14U.4  Product Conformity & Standards (ESMA) ──────────────── */
-  {
-    id: 'uae-reg-conformity',
-    title: 'Product Conformity & Standards (ESMA)',
-    titleAr: 'مطابقة المنتجات والمعايير (هيئة الإمارات للمواصفات والمقاييس)',
-    hint: 'Source: Emirates Authority for Standardisation and Metrology (ESMA) — the federal body for national standards, conformity assessment, and metrology.',
-    hintAr: 'المصدر: هيئة الإمارات للمواصفات والمقاييس — الجهة الاتحادية للمعايير الوطنية وتقييم المطابقة والمقاييس.',
-    benchmarks: { gcc: 2.3, topQuartile: 4.0 },
-    industryWeights: {
-      manufacturing: 1.5, fmcg: 1.5, pharma: 1.5, retail: 1.3,
-      logistics: 0.5, marine: 0.5, construction: 1.3, oil_gas: 1.0,
-      government: 0.5, technology: 1.0, banking: 0.5, other: 1.0,
-    },
-    evidence: {
-      label:   'ESMA conformity/product registration certificates',
-      labelAr: 'شهادات المطابقة/تسجيل المنتجات من الهيئة',
-      hint:    'Upload current ESMA conformity assessment or product registration certificates for your product portfolio.',
-      hintAr:  'ارفع شهادات تقييم المطابقة أو تسجيل المنتجات الحالية من الهيئة لمحفظة منتجاتكم.',
-    },
-    frameworks: ['ESMA', 'UAE.S Standards'],
-    questions: [
-      {
-        q: 'How systematically does your organisation identify which of its products require ESMA conformity assessment or registration before entering the UAE market?',
-        qAr: 'ما مدى منهجية تحديد مؤسستكم للمنتجات التي تتطلب تقييم مطابقة أو تسجيلًا من الهيئة قبل دخول السوق الإماراتي؟',
-        levels: [
-          'Product-level ESMA applicability is unknown; conformity requirements are discovered only when a shipment is rejected.',
-          'Some products are known to require certification, but there is no systematic review of the full product portfolio.',
-          'A defined process reviews every new product against ESMA conformity requirements before market entry.',
-          'ESMA applicability review is embedded in the product-launch and supplier-onboarding process, with tracking across the full portfolio.',
-          'Product conformity classification is proactively managed with a governed register, achieving zero market-entry rejections due to missing certification.',
-        ],
-        levelsAr: [
-          'انطباق متطلبات الهيئة على المنتجات مجهول؛ وتُكتشَف متطلبات المطابقة فقط عند رفض شحنة.',
-          'بعض المنتجات معروف أنها تتطلب شهادة، لكن دون مراجعة منهجية لكامل محفظة المنتجات.',
-          'عملية محددة تراجع كل منتج جديد مقابل متطلبات مطابقة الهيئة قبل دخول السوق.',
-          'مراجعة الانطباق مُدمَجة في عملية إطلاق المنتج وتأهيل الموردين، مع تتبّع عبر كامل المحفظة.',
-          'تصنيف مطابقة المنتجات يُدار استباقيًا بسجل محوكَم، محققًا صفر رفض عند دخول السوق بسبب نقص الشهادات.',
-        ],
-      },
-      {
-        q: 'How well does your organisation manage the ESMA-accredited conformity certification process (application, inspection, certificate issuance) end-to-end?',
-        qAr: 'ما مدى جودة إدارة مؤسستكم لعملية شهادة المطابقة المعتمدة من الهيئة (التقديم، التفتيش، إصدار الشهادة) من البداية للنهاية؟',
-        levels: [
-          'Certification is handled reactively, often by a supplier or agent, with no internal visibility into status or validity.',
-          'Certificates exist but validity periods and renewal dates are not proactively tracked.',
-          'A defined owner manages the certification process end-to-end, with renewal dates tracked and reminders set.',
-          'The certification pipeline is actively managed across the full product portfolio, with pre-audit facility reviews to avoid inspection failures.',
-          'ESMA certification management is a governed function with a sustained record of on-time renewals and zero certification-driven market disruptions.',
-        ],
-        levelsAr: [
-          'تُدار الشهادات بشكل تفاعلي، غالبًا من مورد أو وكيل، دون رؤية داخلية لحالتها أو صلاحيتها.',
-          'الشهادات موجودة لكن فترات الصلاحية وتواريخ التجديد لا تُتابَع استباقيًا.',
-          'مالك محدد يدير عملية الشهادة من البداية للنهاية، مع متابعة تواريخ التجديد وتحديد تذكيرات.',
-          'مسار الشهادات يُدار فعليًا عبر كامل محفظة المنتجات، مع مراجعات ما قبل التفتيش للمنشآت لتجنب فشل التفتيش.',
-          'إدارة شهادات الهيئة وظيفة محوكَمة بسجل مستدام من التجديد في الوقت المحدد وصفر اضطرابات في السوق بسبب الشهادات.',
-        ],
-      },
-      {
-        q: 'How effectively does your organisation ensure supplier/manufacturer facilities meet ESMA inspection requirements ahead of certification or renewal?',
-        qAr: 'ما مدى فعالية ضمان مؤسستكم لاستيفاء منشآت الموردين/المصنّعين لمتطلبات تفتيش الهيئة قبل الشهادة أو التجديد؟',
-        levels: [
-          'Supplier facility readiness for ESMA inspection is not assessed by the organisation; failures are discovered at inspection.',
-          'Facility readiness is checked informally, often relying on the supplier\'s own assurance.',
-          'A defined pre-inspection checklist is applied to key supplier facilities ahead of scheduled ESMA inspections.',
-          'Facility readiness is actively managed with periodic self-audits against ESMA criteria between formal inspections.',
-          'Supplier facility conformity readiness is a governed supplier-management KPI, with a sustained record of first-time inspection passes.',
-        ],
-        levelsAr: [
-          'جاهزية منشآت الموردين لتفتيش الهيئة لا تُقيَّم من قبل المؤسسة؛ وتُكتشَف الإخفاقات عند التفتيش.',
-          'تُفحَص جاهزية المنشآت بشكل غير رسمي، غالبًا بالاعتماد على تأكيد المورّد نفسه.',
-          'قائمة تحقق محددة قبل التفتيش تُطبّق على منشآت الموردين الرئيسية قبل مواعيد التفتيش المجدولة من الهيئة.',
-          'جاهزية المنشآت تُدار فعليًا مع تدقيق ذاتي دوري مقابل معايير الهيئة بين التفتيشات الرسمية.',
-          'جاهزية مطابقة منشآت الموردين مؤشر أداء محوكَم لإدارة الموردين، بسجل مستدام من اجتياز التفتيش من أول مرة.',
-        ],
-      },
-      {
-        q: 'How well does your organisation track and respond to ESMA standard updates (UAE.S standards) that could change product compliance requirements?',
-        qAr: 'ما مدى جودة تتبّع واستجابة مؤسستكم لتحديثات معايير الهيئة (معايير الإمارات) التي قد تُغيّر متطلبات مطابقة المنتجات؟',
-        levels: [
-          'Standard updates are learned about only when a product is rejected or flagged at customs.',
-          'Some monitoring of ESMA updates occurs informally through industry contacts, without a defined process.',
-          'A designated function periodically reviews ESMA standard updates relevant to the product portfolio.',
-          'Standard-change monitoring is proactive and systematic, with product-impact assessments performed before changes take effect.',
-          'ESMA regulatory horizon-scanning is a governed function integrated into product development, with material standard changes flagged to leadership before they take effect.',
-        ],
-        levelsAr: [
-          'يُعرَف بتحديثات المعايير فقط عند رفض منتج أو الإشارة إليه في الجمارك.',
-          'تحدث بعض مراقبة تحديثات الهيئة بشكل غير رسمي عبر جهات اتصال في القطاع، دون عملية محددة.',
-          'جهة محددة تراجع تحديثات معايير الهيئة ذات الصلة بمحفظة المنتجات دوريًا.',
-          'مراقبة تغيّر المعايير استباقية ومنهجية، مع تقييمات أثر على المنتجات تُجرى قبل سريان التغييرات.',
-          'استشراف تغيرات معايير الهيئة وظيفة محوكَمة مُدمَجة في تطوير المنتجات، مع رفع التغييرات الجوهرية للقيادة قبل سريانها.',
-        ],
-      },
-      {
-        q: 'How complete is your organisation\'s documentation trail (test reports, certificates, technical files) supporting product conformity claims across your portfolio?',
-        qAr: 'ما مدى اكتمال سجل مستندات مؤسستكم (تقارير الفحص، الشهادات، الملفات الفنية) الداعمة لمزاعم مطابقة المنتجات عبر المحفظة؟',
-        levels: [
-          'Conformity documentation is incomplete or scattered, with no central repository.',
-          'Documentation exists for most products but is not consistently organised or readily retrievable.',
-          'A central, organised documentation repository covers all products requiring ESMA conformity.',
-          'Documentation completeness is tracked as a KPI, with gap-closure plans for any missing evidence.',
-          'Conformity documentation is fully digitised, audit-ready, and integrated into a governed product-compliance system with zero documentation gaps.',
-        ],
-        levelsAr: [
-          'مستندات المطابقة غير مكتملة أو متفرقة، دون مستودع مركزي.',
-          'المستندات موجودة لمعظم المنتجات لكن غير منظمة باستمرار أو سهلة الاسترجاع.',
-          'مستودع مستندات مركزي ومنظم يغطي جميع المنتجات التي تتطلب مطابقة الهيئة.',
-          'اكتمال المستندات يُتابَع كمؤشر أداء، مع خطط لسد أي أدلة مفقودة.',
-          'مستندات المطابقة رقمية بالكامل وجاهزة للتدقيق ومُدمَجة في نظام امتثال منتجات محوكَم دون أي فجوات مستندية.',
-        ],
-      },
-    ],
-  },
+/**
+ * maturityRegulatoryUae.ts
+ *
+ * Sub-segment content for the UAE Regulatory & Localisation Compliance module
+ * (industry module id: 'regulatory-uae', countryFor: ['uae']).
+ *
+ * Status: AUTHORED, PENDING INDEPENDENT LEGAL/EXPERT REVIEW.
+ * This content was drafted from public regulator sources (MOHRE/Nafis, MOIAT,
+ * Federal Customs Authority, ESMA, UAE Data Office, federal + Emirate-level
+ * procurement law) as of August 2026. It has NOT yet been signed off by a
+ * named human legal/compliance reviewer, per the platform's content-trust
+ * model (see /api/regulatory/countries — status stays 'pending_review' until
+ * a reviewer signs off with a date). Do not mark 'verified' without that
+ * step. Sources cited inline per sub-segment for traceability.
+ *
+ * Mirrors the structure of REGULATORY_SUB_SEGMENTS (Saudi) in
+ * maturitySubSegData6to11.ts, scoped to 5 questions per sub-segment (25 vs
+ * Saudi's 70) for a first authored pass — depth can be extended per
+ * sub-segment later without breaking the answer-key format.
+ *
+ * All Arabic is independently authored formal Gulf professional register
+ * (فصحى), not machine-translated.
+ *
+ * LIVE PRIMARY-SOURCE CHECK (2026-08-13): every specific figure/threshold
+ * cited across all 7 sub-segments was re-checked against current public
+ * regulator pages and law texts (MOHRE/Nafis/WPS guidance, MOIAT ICV
+ * certification guidelines, Cabinet Resolution No. 122 of 2024 on Federal
+ * Decree-Law No. 11/2023, Dubai Law No. 12/2020, ESMA UAE.S 2055 guidance,
+ * Federal Decree-Law No. 45/2021 + UAE Data Office). This is primary-source
+ * verification, NOT a named human reviewer sign-off — status stays
+ * 'pending_review' until that happens. One correction was made as a result:
+ * the government-procurement sub-segment's "minimum three years' experience"
+ * question asserted a specific figure that does not appear in Federal
+ * Decree-Law No. 11/2023 or its Cabinet Resolution No. 122/2024 executive
+ * regulation (the actual prequalification criteria in Article 8 are
+ * financial solvency, technical capability, expertise, and track record on
+ * similar completed/ongoing projects — no fixed "3 years" threshold is
+ * specified at the federal level). The question was rewritten to reflect
+ * the real criteria instead of the unverified figure.
+ */
 
-  /* ── 14U.5  Government Procurement (Federal / Abu Dhabi / Dubai) ─── */
+import type { SubSegmentData } from './maturitySubSegData1to5';
+
+/* ════════════════════════════════════════════════════════════════════════════════
+   UAE REGULATORY & LOCALISATION COMPLIANCE — 7 sub-segments × 5 questions
+════════════════════════════════════════════════════════════════════════════════ */
+
+export const UAE_REGULATORY_SUB_SEGMENTS: SubSegmentData[] = [
+
+  /* ── 14U.1  Emiratisation & Nafis Compliance ──────────────────────── */
   {
-    id: 'uae-reg-procurement',
-    title: 'Government Procurement (Federal / Abu Dhabi / Dubai)',
-    titleAr: 'المشتريات الحكومية (الاتحادية / أبوظبي / دبي)',
-    hint: 'Source: Federal Decree-Law No. 11 of 2023 on Federal Government Procurement; Abu Dhabi Government Procurement Gate (Department of Finance); Dubai Law No. 12 of 2020 on Contracts and Warehouse Management. Each jurisdiction has separate registration and evaluation rules — federal registration does not automatically qualify a bidder for Abu Dhabi or Dubai tenders.',
-    hintAr: 'المصدر: المرسوم بقانون اتحادي رقم 11 لسنة 2023 بشأن المشتريات الحكومية الاتحادية؛ بوابة المشتريات الحكومية لأبوظبي (دائرة المالية)؛ قانون دبي رقم 12 لسنة 2020 بشأن العقود وإدارة المخازن. لكل جهة قواعد تسجيل وتقييم منفصلة — والتسجيل الاتحادي لا يؤهل تلقائيًا للمشاركة في مناقصات أبوظبي أو دبي.',
-    benchmarks: { gcc: 2.1, topQuartile: 3.9 },
+    id: 'uae-reg-emiratisation',
+    title: 'Emiratisation & Nafis Compliance',
+    titleAr: 'الامتثال للتوطين وبرنامج نافس',
+    hint: 'Source: MOHRE / Nafis programme. Private mainland companies with 50+ skilled employees face rising annual Emiratisation quotas (10% by end-2026); 20–49-employee companies in 14 targeted sectors must employ at least 2 Emiratis. Non-compliance fines run AED 9,000/month per unfilled role.',
+    hintAr: 'المصدر: وزارة الموارد البشرية والتوطين / برنامج نافس. الشركات الخاصة في البر الرئيسي التي تضم 50 موظفًا ماهرًا فأكثر تواجه حصص توطين سنوية متصاعدة (10% بنهاية 2026)؛ والشركات من 20-49 موظفًا في 14 قطاعًا مستهدفًا يجب أن توظّف إماراتيّن على الأقل. غرامات عدم الامتثال تصل إلى 9,000 درهم شهريًا لكل وظيفة شاغرة.',
+    benchmarks: { gcc: 2.0, topQuartile: 3.9 },
     industryWeights: {
-      manufacturing: 1.0, fmcg: 0.5, pharma: 1.0, retail: 0.5,
-      logistics: 1.0, marine: 1.0, construction: 1.5, oil_gas: 1.3,
-      government: 1.5, technology: 1.2, banking: 0.5, other: 0.5,
+      manufacturing: 1.5, fmcg: 1.3, pharma: 1.3, retail: 1.2,
+      logistics: 1.3, marine: 1.2, construction: 1.5, oil_gas: 1.5,
+      government: 1.5, technology: 1.3, banking: 1.5, other: 1.0,
     },
     evidence: {
-      label:   'Government procurement portal registration(s)',
-      labelAr: 'تسجيل بوابة (بوابات) المشتريات الحكومية',
-      hint:    'Upload proof of active registration on the federal and/or relevant Emirate-level procurement portal(s) you bid through.',
-      hintAr:  'ارفع إثبات التسجيل النشط في البوابة الاتحادية و/أو بوابات المشتريات على مستوى الإمارات ذات الصلة التي تقدّمون من خلالها.',
+      label:   'MOHRE Emiratisation compliance status / Nafis registration',
+      labelAr: 'حالة الامتثال للتوطين من وزارة الموارد البشرية / تسجيل نافس',
+      hint:    'Upload your most recent MOHRE Emiratisation compliance report or Nafis portal registration confirmation.',
+      hintAr:  'ارفع أحدث تقرير امتثال للتوطين من وزارة الموارد البشرية أو تأكيد التسجيل في منصة نافس.',
     },
-    frameworks: ['Federal Decree-Law No. 11/2023', 'Abu Dhabi Procurement Gate', 'Dubai Law No. 12/2020'],
+    frameworks: ['MOHRE', 'Nafis', 'WPS'],
     questions: [
       {
-        q: 'How clearly does your organisation understand and maintain registration across the specific government procurement jurisdictions it bids into (federal, Abu Dhabi, Dubai, or other Emirates)?',
-        qAr: 'ما مدى وضوح فهم مؤسستكم واحتفاظها بالتسجيل عبر جهات المشتريات الحكومية المحددة التي تتقدّم إليها (الاتحادية، أبوظبي، دبي، أو إمارات أخرى)؟',
+        q: 'How proactively does your organisation track its Emiratisation quota against the rising annual threshold — by role, by skill classification, and against the mid-year checkpoint?',
+        qAr: 'ما مدى استباقية مؤسستكم في تتبّع حصة التوطين مقابل العتبة السنوية المتصاعدة — حسب الوظيفة والتصنيف المهاري ومقابل نقطة المراجعة النصف سنوية؟',
         levels: [
-          'Registration status across jurisdictions is unclear; bids have been rejected due to missing or lapsed registration.',
-          'Registration exists for at least one jurisdiction but is not systematically tracked across all jurisdictions bid into.',
-          'A defined process tracks active registration status across every jurisdiction the organisation bids into.',
-          'Registration is proactively maintained and expanded ahead of anticipated bidding activity in new jurisdictions.',
-          'Multi-jurisdiction registration is a governed capability with zero bid disqualifications due to registration issues over the past 24 months.',
+          'Emiratisation status is unknown until MOHRE flags a shortfall or a fine is issued.',
+          'Headcount is tracked at company level but not reconciled against the skilled-role definition or the current-year threshold.',
+          'A defined owner checks Emiratisation status against the current threshold quarterly, with the mid-year checkpoint tracked explicitly.',
+          'Emiratisation tracking is automated via WPS/MOHRE data, reviewed monthly, and tied to a hiring plan that anticipates the next annual increase.',
+          'Emiratisation performance is a standing executive KPI; hiring, succession, and Nafis wage-subsidy planning are integrated years ahead of each threshold increase.',
         ],
         levelsAr: [
-          'حالة التسجيل عبر الجهات غير واضحة؛ ورُفضت مناقصات بسبب تسجيل مفقود أو منتهٍ.',
-          'التسجيل موجود لجهة واحدة على الأقل لكن دون تتبّع منهجي عبر جميع الجهات المُتقدَّم إليها.',
-          'عملية محددة تتابع حالة التسجيل النشط عبر كل جهة تتقدّم إليها المؤسسة.',
-          'التسجيل يُحافَظ عليه ويُوسَّع استباقيًا قبل نشاط المناقصات المتوقع في جهات جديدة.',
-          'التسجيل متعدد الجهات قدرة محوكَمة دون أي استبعاد من مناقصات بسبب مشكلات تسجيل خلال آخر 24 شهرًا.',
+          'حالة التوطين مجهولة إلى أن تُنبّه وزارة الموارد البشرية بنقص أو تصدر غرامة.',
+          'يُتابَع عدد الموظفين على مستوى الشركة دون مطابقته مع تعريف الوظيفة الماهرة أو عتبة العام الحالي.',
+          'مالك محدد يتحقّق من حالة التوطين مقابل العتبة الحالية فصليًا، مع متابعة نقطة المراجعة النصف سنوية صراحة.',
+          'تتبّع التوطين آلي عبر بيانات نظام حماية الأجور/الوزارة، ويُراجع شهريًا، ومرتبط بخطة توظيف تستبق الزيادة السنوية القادمة.',
+          'أداء التوطين مؤشر تنفيذي ثابت؛ والتوظيف والتعاقب وتخطيط دعم أجور نافس مُدمجة قبل سنوات من كل زيادة في العتبة.',
         ],
       },
       {
-        q: 'How completely does your organisation maintain the prequalification evidence (completed-contract records, technical and financial capacity documentation, track record on similar projects) that UAE federal and Emirate-level tenders evaluate under criteria like financial solvency, technical capability, and project experience?',
-        qAr: 'ما مدى اكتمال احتفاظ مؤسستكم بأدلة التأهيل المسبق (سجلات العقود المُنجزة، وثائق القدرة الفنية والمالية، السجل الحافل بمشاريع مماثلة) التي تُقيّم بموجبها المناقصات الاتحادية والمحلية في الإمارات وفق معايير مثل الملاءة المالية والقدرة الفنية والخبرة بالمشاريع؟',
+        q: 'How effectively does your organisation use the Nafis programme (wage subsidies, pension contribution support, verified candidate database) to reduce the cost and risk of Emiratisation compliance?',
+        qAr: 'ما مدى فعالية استخدام مؤسستكم لبرنامج نافس (دعم الأجور، دعم اشتراكات التقاعد، قاعدة بيانات المرشحين المعتمدين) لتقليل تكلفة ومخاطر الامتثال للتوطين؟',
         levels: [
-          'Prequalification evidence (completed-contract records, technical/financial capacity documentation) is scattered or incomplete; prequalification or eligibility has been questioned or bids rejected as a result.',
-          'Documentation exists but is assembled reactively per bid rather than maintained on an ongoing basis.',
-          'A central, organised record of completed-contract evidence and technical/financial-capacity documentation supports prequalification for every relevant tender.',
-          'This evidence is proactively updated as projects complete, ready for immediate use in any qualifying prequalification or bid.',
-          'Prequalification-evidence management is a governed capability integrated with project closeout, with a sustained record of zero prequalification challenges.',
+          'Nafis benefits are not used; Emirati hiring, where it happens, receives no wage-subsidy or pension support.',
+          'Awareness of Nafis exists but no active application has been made for wage subsidies or pension contribution support.',
+          'Nafis wage subsidies and pension support are claimed for newly hired Emiratis on an ad hoc basis.',
+          'Nafis benefits are systematically claimed for all eligible hires, and the verified candidate database is used as a standing recruitment channel.',
+          'Nafis subsidy and pension support are fully integrated into workforce cost planning; the organisation is recognised as a preferred Nafis employer partner.',
         ],
         levelsAr: [
-          'أدلة التأهيل المسبق (سجلات العقود المُنجزة، وثائق القدرة الفنية والمالية) متفرقة أو غير مكتملة؛ وتم التشكيك في التأهيل أو رفض مناقصات نتيجة لذلك.',
-          'المستندات موجودة لكن تُجمّع بشكل تفاعلي لكل مناقصة بدلًا من الحفاظ عليها باستمرار.',
-          'سجل مركزي ومنظم لأدلة العقود المُنجزة ووثائق القدرة الفنية والمالية يدعم التأهيل المسبق لكل مناقصة ذات صلة.',
-          'هذه الأدلة تُحدّث استباقيًا مع إنجاز المشاريع، وجاهزة للاستخدام الفوري في أي تأهيل مسبق أو مناقصة مؤهلة.',
-          'إدارة أدلة التأهيل المسبق قدرة محوكَمة مُدمَجة مع إغلاق المشاريع، بسجل مستدام من عدم وجود تحديات في التأهيل المسبق.',
+          'مزايا نافس غير مستخدمة؛ وتوظيف الإماراتيين، إن حدث، لا يحصل على دعم أجور أو تقاعد.',
+          'يوجد وعي ببرنامج نافس لكن لم يُقدّم طلب فعلي للحصول على دعم الأجور أو اشتراكات التقاعد.',
+          'دعم أجور نافس واشتراكات التقاعد تُطلَب للموظفين الإماراتيين الجدد بشكل غير منتظم.',
+          'مزايا نافس تُطلَب بشكل منهجي لجميع التوظيفات المؤهلة، وقاعدة بيانات المرشحين المعتمدين قناة توظيف ثابتة.',
+          'دعم أجور وتقاعد نافس مُدمَج بالكامل في تخطيط تكلفة القوى العاملة؛ والمؤسسة مُعترَف بها كشريك توظيف مفضّل لدى نافس.',
         ],
       },
       {
-        q: 'How well does your organisation understand the distinctions between federal, Abu Dhabi, and Dubai procurement rules when structuring bids and contracts across jurisdictions?',
-        qAr: 'ما مدى جودة فهم مؤسستكم للفروقات بين قواعد المشتريات الاتحادية وأبوظبي ودبي عند هيكلة المناقصات والعقود عبر الجهات؟',
+        q: 'How well does your organisation verify and maintain WPS (Wage Protection System) compliance for Emirati employees counted toward the quota — including the minimum AED 6,000/month salary threshold?',
+        qAr: 'ما مدى جودة تحقّق مؤسستكم من امتثال نظام حماية الأجور للموظفين الإماراتيين المحتسَبين ضمن الحصة والحفاظ عليه — بما يشمل حد الراتب الأدنى 6,000 درهم شهريًا؟',
         levels: [
-          'Bids and contracts are prepared using a single generic template regardless of jurisdiction, risking non-compliance with jurisdiction-specific rules.',
-          'Awareness of jurisdictional differences exists but is not consistently applied in bid/contract preparation.',
-          'Jurisdiction-specific bid and contract templates are used, reflecting the relevant federal, Abu Dhabi, or Dubai procurement rules.',
-          'Legal or procurement specialists review jurisdiction-specific compliance before every major submission.',
-          'Multi-jurisdiction procurement expertise is a governed organisational capability, with a documented record of successfully navigating federal, Abu Dhabi, and Dubai requirements without dispute.',
+          'WPS registration and salary-threshold compliance for Emirati staff are not actively verified.',
+          'WPS status is checked only when an issue is flagged by payroll or MOHRE.',
+          'A defined payroll process confirms WPS registration and the AED 6,000 minimum salary threshold for every Emirati counted toward the quota before quota submission.',
+          'WPS compliance is monitored continuously with automated alerts for any Emirati falling below the salary threshold or lapsing in registration.',
+          'WPS and salary-threshold compliance are fully automated and audited quarterly, with zero quota-invalidating discrepancies over the past 24 months.',
         ],
         levelsAr: [
-          'تُعَّد المناقصات والعقود بقالب عام موحد بغض النظر عن الجهة، مما يُخاطر بعدم الامتثال لقواعد خاصة بكل جهة.',
-          'يوجد وعي بالفروقات بين الجهات لكن دون تطبيقه باستمرار عند إعداد المناقصات/العقود.',
-          'تُستخدَم قوالب مناقصات وعقود خاصة بكل جهة، تعكس قواعد المشتريات الاتحادية أو أبوظبي أو دبي ذات الصلة.',
-          'متخصصون قانونيون أو في المشتريات يراجعون الامتثال الخاص بكل جهة قبل كل تقديم رئيسي.',
-          'الخبرة في المشتريات متعددة الجهات قدرة تنظيمية محوكَمة، بسجل موثّق من التعامل الناجح مع متطلبات الجهة الاتحادية وأبوظبي ودبي دون نزاع.',
+          'تسجيل نظام حماية الأجور والامتثال لحد الراتب للموظفين الإماراتيين لا يُتحقّق منهما بشكل فعّال.',
+          'تُفحَص حالة نظام حماية الأجور فقط عند رصد مشكلة من الرواتب أو الوزارة.',
+          'عملية رواتب محددة تؤكد تسجيل نظام حماية الأجور وحد الراتب الأدنى 6,000 درهم لكل إماراتي محتسَب ضمن الحصة قبل تقديمها.',
+          'الامتثال لنظام حماية الأجور يُراقَب باستمرار مع تنبيهات آلية لأي إماراتي ينخفض راتبه عن الحد أو ينقطع تسجيله.',
+          'الامتثال لنظام حماية الأجور وحد الراتب آلي بالكامل ويُدقّق فصليًا، دون أي تباينات تُبطل الحصة خلال آخر 24 شهرًا.',
         ],
       },
       {
-        q: 'How proactively does your organisation monitor changes to federal and Emirate-level procurement law that could affect bidding eligibility or contract terms?',
-        qAr: 'ما مدى استباقية مراقبة مؤسستكم لتغيرات قانون المشتريات الاتحادي وعلى مستوى الإمارات التي قد تؤثر على أهلية المناقصة أو شروط العقد؟',
+        q: 'How rigorously does your organisation assess Emiratisation exposure across outsourced supply chain labour (3PL, contractors) whose headcount can affect group-level compliance calculations?',
+        qAr: 'ما مدى صرامة تقييم مؤسستكم للتعرّض لالتزامات التوطين عبر العمالة المُستعان بها في سلسلة الإمداد (مزودو الخدمات اللوجستية، المقاولون) والتي قد يؤثر عددها على حسابات الامتثال على مستوى المجموعة؟',
         levels: [
-          'Procurement law changes are learned about only when a bid is affected or rejected.',
-          'Some monitoring occurs informally through industry contacts, without a defined process.',
-          'A designated function periodically reviews federal and relevant Emirate-level procurement law updates.',
-          'Regulatory-change monitoring is proactive and systematic, with bid-strategy impact assessed before changes take effect.',
-          'Procurement regulatory horizon-scanning is a governed function integrated into business development strategy, with legal advisors engaged for material changes across all jurisdictions bid into.',
+          'Outsourced labour is never assessed for Emiratisation impact, even where it is legally relevant to group headcount.',
+          'Awareness exists that outsourced labour may matter, but no systematic contractor/3PL headcount review occurs.',
+          'A defined check reviews the Emiratisation-relevant headcount of significant contractors and 3PLs before contract award.',
+          'Contractor and 3PL Emiratisation exposure is monitored on an ongoing basis, with contractual clauses addressing compliance risk.',
+          'Extended-workforce Emiratisation exposure is modelled as part of workforce planning; sourcing decisions explicitly weigh compliance impact alongside cost.',
         ],
         levelsAr: [
-          'يُعرَف بتغيرات قانون المشتريات فقط عندما تتأثر مناقصة أو تُرفَض.',
-          'تحدث بعض المراقبة بشكل غير رسمي عبر جهات اتصال في القطاع، دون عملية محددة.',
-          'جهة محددة تراجع تحديثات قانون المشتريات الاتحادي وعلى مستوى الإمارة ذات الصلة دوريًا.',
-          'مراقبة التغيرات النظامية استباقية ومنهجية، مع تقييم أثرها على استراتيجية المناقصات قبل سريانها.',
-          'استشراف تغيرات قانون المشتريات وظيفة محوكَمة مُدمَجة في استراتيجية تطوير الأعمال، مع الاستعانة بمستشارين قانونيين للتغيرات الجوهرية عبر كل الجهات المُتقدَّم إليها.',
+          'العمالة المُستعان بها من الخارج لا تُقيَّم أبدًا من حيث أثر التوطين، حتى عندما تكون ذات صلة قانونية بعدد المجموعة.',
+          'يوجد وعي بأن العمالة الخارجية قد تكون ذات أهمية، لكن لا مراجعة منهجية لعدد موظفي المقاولين/مزودي الخدمات اللوجستية.',
+          'فحص محدد يراجع العدد ذا الصلة بالتوطين للمقاولين ومزودي الخدمات اللوجستية الجوهريين قبل الترسية.',
+          'التعرّض لالتزامات التوطين لدى المقاولين ومزودي الخدمات اللوجستية يُراقَب باستمرار، مع بنود تعاقدية تعالج مخاطر الامتثال.',
+          'التعرّض لالتزامات التوطين عبر القوى العاملة الممتدة يُنمذَج كجزء من تخطيط القوى العاملة؛ وقرارات التعاقد تُوازن صراحة بين الأثر والتكلفة.',
+        ],
+      },
+      {
+        q: 'How well does your organisation plan for the operational and financial impact of a compliance shortfall — including the AED 9,000/month per-role fine and its effect on renewal/licensing?',
+        qAr: 'ما مدى جودة تخطيط مؤسستكم للأثر التشغيلي والمالي لأي نقص في الامتثال — بما يشمل غرامة 9,000 درهم شهريًا لكل وظيفة وأثرها على التجديد/الترخيص؟',
+        levels: [
+          'No contingency exists for a compliance shortfall; fines and licensing consequences are discovered after the fact.',
+          'Leadership is generally aware fines apply, but no documented early-warning threshold or corrective-hiring plan exists.',
+          'A defined threshold triggers a documented corrective hiring plan before a shortfall becomes a fineable gap.',
+          'Shortfall risk is modelled quarterly against workforce plans and known attrition trends, with pre-approved contingency actions.',
+          'Emiratisation compliance resiliency is a standing input to workforce and licensing risk planning, stress-tested against a simulated shortfall scenario.',
+        ],
+        levelsAr: [
+          'لا توجد خطة طوارئ لنقص الامتثال؛ وتُكتشَف الغرامات وتبعات الترخيص بعد وقوعها.',
+          'القيادة على وعي عام بوجود غرامات، لكن لا يوجد حد إنذار مبكر موثّق أو خطة توظيف تصحيحي.',
+          'حد محدد يُفعّل خطة توظيف تصحيحي موثّقة قبل أن يتحول النقص إلى فجوة مُغرّمة.',
+          'مخاطر النقص تُنمَذَف فصليًا مقابل خطط القوى العاملة واتجاهات الاستنزاف المعروفة، مع إجراءات طوارئ مُعتمَدة مسبقًا.',
+          'مرونة الامتثال للتوطين مُدخَل ثابت في تخطيط مخاطر القوى العاملة والترخيص، وتم اختبارها مقابل سيناريو نقص محاكى.',
         ],
       },
     ],
