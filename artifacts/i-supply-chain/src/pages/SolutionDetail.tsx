@@ -19,6 +19,7 @@ import { SupplierScorecardTool } from '@/components/toolkit/SupplierScorecard';
 import { ContractHealthChecker } from '@/components/toolkit/CLMTools';
 import { TrainingNeedsAssessment } from '@/components/toolkit/TrainingTools';
 import { MaturityAssessmentTool } from '@/components/toolkit/MaturityTools';
+import { StrategyToolsSection } from '@/components/toolkit/StrategyTools';
 
 function Reveal({ children, delay = 0, className = '' }: { children: React.ReactNode; delay?: number; className?: string }) {
   return (
@@ -1044,7 +1045,8 @@ export function SolutionDetail() {
             {sol.slug === 'contract-lifecycle-management' && <Reveal><ContractHealthChecker isAr={isAr} /></Reveal>}
             {sol.slug === 'supplier-relationship-governance' && <Reveal><SupplierScorecardTool isAr={isAr} /></Reveal>}
             {sol.slug === 'training-capability-building' && <Reveal><TrainingNeedsAssessment isAr={isAr} /></Reveal>}
-            {(sol.slug === 'resiliency' || sol.slug === 'value-engineering' || sol.slug === 'process-improvement-policy' || sol.slug === 'lean-agile-supply-chain' || sol.slug === 'supply-chain-strategy' || sol.slug === 'sustainability-esg' || sol.slug === 'digital-transformation') && (
+            {sol.slug === 'supply-chain-strategy' && <Reveal><StrategyToolsSection isAr={isAr} /></Reveal>}
+            {(sol.slug === 'resiliency' || sol.slug === 'value-engineering' || sol.slug === 'process-improvement-policy' || sol.slug === 'lean-agile-supply-chain' || sol.slug === 'sustainability-esg' || sol.slug === 'digital-transformation') && (
               <Reveal><MaturityAssessmentTool slug={sol.slug} isAr={isAr} /></Reveal>
             )}
           </div>
