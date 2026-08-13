@@ -175,6 +175,20 @@ const MIGRATIONS: string[] = [
    ) AS v(country_id, code, name, name_ar, regulator_body, regulator_body_ar, applies_to_industries, description, source_url, status, sort_order)
    WHERE NOT EXISTS (SELECT 1 FROM regulatory_frameworks LIMIT 1)`,
 
+  // #157 — UAE regulatory maturity-scale question content has now been
+  // authored (7 sub-segments, 35 questions, 5-level bilingual maturity
+  // scale — see maturityRegulatoryUae.ts on the frontend), so bump UAE's
+  // coverage_level from 'roadmap' to 'partial'. Deliberately NOT 'full':
+  // the content has not yet been signed off by a named human legal/expert
+  // reviewer, unlike Saudi Arabia's reviewed content. This UPDATE is
+  // idempotent and safe to run on every boot, including against a database
+  // that was already seeded with the original 'roadmap' row.
+  `UPDATE regulatory_countries
+     SET coverage_level = 'partial',
+         notes = 'Maturity-scale question content authored (7 sub-segments, 35 questions: Emiratisation/Nafis, ICV, customs, ESMA product conformity, government procurement, halal certification, PDPL data privacy). Pending independent legal/expert review before being marked fully verified.',
+         notes_ar = 'تمت صياغة أسئلة مقياس النضج (7 وحدات فرعية، 35 سؤالاً: التوطين/نافس، القيمة المضافة المحلية، الجمارك، مطابقة المنتجات (الهيئة)، المشتريات الحكومية، شهادة الحلال، حماية البيانات). قيد المراجعة القانونية/الخبيرة المستقلة قبل اعتمادها بشكل كامل.'
+   WHERE id = 'uae' AND coverage_level = 'roadmap'`,
+
 ];
 
 export async function runStartupMigrations(): Promise<void> {
