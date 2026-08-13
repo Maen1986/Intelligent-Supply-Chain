@@ -107,11 +107,21 @@ export interface Segment {
   recommendationsAr: Record<string, string>;
   /** Present only on industry modules — which industryId values trigger it */
   moduleFor?: string[];
+  /**
+   * Present only on country-specific modules — which country ids trigger it.
+   * Undefined means the module is country-agnostic (applies regardless of
+   * the selected country, gated by industry only). Regulatory content is
+   * inherently country-specific, so 'regulatory' restricts this to ['ksa']
+   * until other countries' question content is authored and reviewed (#151).
+   */
+  countryFor?: string[];
 }
 
 export interface IntakeData {
   industry:    string;
   companySize: string;
+  /** ISO-ish country id (e.g. 'ksa', 'uae') driving regulatory personalisation. Optional for backward compatibility with saved drafts/guest links predating this field — callers should fall back to 'ksa'. */
+  country?: string;
 }
 
 /* ── Intake options ──────────────────────────────────────────────────────── */
@@ -148,8 +158,11 @@ export const INTAKE_SIZES = [
  * specific, applies across nearly every sector, not just government). Returns
  * all matches, not just the first.
  */
-export function getActiveModules(industryId: string): Segment[] {
-  return INDUSTRY_MODULES.filter(m => m.moduleFor?.includes(industryId));
+export function getActiveModules(industryId: string, countryId: string = 'ksa'): Segment[] {
+  return INDUSTRY_MODULES.filter(m =>
+    m.moduleFor?.includes(industryId) &&
+    (!m.countryFor || m.countryFor.includes(countryId))
+  );
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -1934,6 +1947,14 @@ export const INDUSTRY_MODULES: Segment[] = [
     // sub-segment content itself, not by gating the whole module to one sector.
     moduleFor: ['manufacturing', 'fmcg', 'pharma', 'retail', 'logistics', 'marine',
                 'construction', 'oil_gas', 'government', 'technology', 'banking', 'other'],
+    // Only Saudi Arabia has authored, reviewed maturity-scale question content
+    // today (#150). Other seeded countries (UAE/Qatar/Oman/Bahrain/Jordan)
+    // have researched regulator/framework metadata in the DB (see
+    // /api/regulatory/countries) but not yet question content — showing this
+    // KSA-specific 70-question module for them would misrepresent their
+    // actual regulatory obligations. The intake screen shows a "content
+    // coming soon" notice for those countries instead (#151 tracks authoring).
+    countryFor: ['ksa'],
     frameworks: ['Saudi Vision 2030', 'IKTVA', 'Nitaqat'],
     questions: [
       {

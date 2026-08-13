@@ -18,7 +18,6 @@ import { EvidenceUploadZone, type EvidenceRecord } from '@/components/EvidenceUp
 import { ConfidenceTierBadge, getSegmentTier } from '@/components/ConfidenceTierBadge';
 import { FeedbackModal, shouldShowFeedback } from '@/components/FeedbackModal';
 import { FrameworkBadge } from '@/components/FrameworkBadge';
-import { REGULATORY_REGIONS } from '@/lib/regions';
 import { API_BASE } from '@/lib/apiBase';
 import { useAuth } from '@/lib/AuthContext';
 import {
@@ -30,7 +29,7 @@ import {
   ChevronRight, ChevronLeft, BarChart3, Award,
   TrendingUp, RotateCcw, Pencil, Sparkles, Loader2,
   CheckCircle2, Clock, Target, AlertCircle, Building2, Users2,
-  Download, FileText, Mail, ListChecks,
+  Download, FileText, Mail, ListChecks, Globe,
 } from 'lucide-react';
 import {
   CORE_SEGMENTS, INDUSTRY_MODULES, INTAKE_INDUSTRIES, INTAKE_SIZES,
@@ -124,7 +123,7 @@ function readDraft(): {
       return {
         phase: saved.phase as Phase,
         answers: saved.answers as Record<string, number>,
-        intakeData: (saved.intakeData as IntakeData) ?? { industry: '', companySize: '' },
+        intakeData: (saved.intakeData as IntakeData) ?? { industry: '', companySize: '', country: 'ksa' },
         selectedSegmentIds: Array.isArray(saved.selectedSegmentIds)
           ? (saved.selectedSegmentIds as string[])
           : undefined,
@@ -159,6 +158,21 @@ interface RemediesResponse {
   estimatedImpact?: string;
 }
 
+/* ── Regulatory country registry (#150, DB-backed via /api/regulatory) ──── */
+interface RegCountry {
+  id: string;
+  name: string;
+  nameAr: string;
+  isoCode: string;
+  region: string;
+  coverageLevel: 'full' | 'partial' | 'roadmap';
+  isDefault: boolean;
+  sourceUrl?: string | null;
+  notes?: string | null;
+  notesAr?: string | null;
+  sortOrder: number;
+}
+
 /* ─────────────────────────────────────────────────────────────────────────── */
 
 export function Maturity() {
@@ -180,8 +194,8 @@ export function Maturity() {
   });
 
   const [intakeData, setIntakeData] = useState<IntakeData>(() => {
-    if (_testSeedActive) return _testSeed.intakeData ?? { industry: '', companySize: '' };
-    return readDraft()?.intakeData ?? { industry: '', companySize: '' };
+    if (_testSeedActive) return _testSeed.intakeData ?? { industry: '', companySize: '', country: 'ksa' };
+    return readDraft()?.intakeData ?? { industry: '', companySize: '', country: 'ksa' };
   });
 
   /** Picker: which segment IDs the user chose to include in this run. */
@@ -268,8 +282,23 @@ export function Maturity() {
   const [evidenceList,  setEvidenceList]  = useState<EvidenceRecord[]>([]);
   const [expandedEvSeg, setExpandedEvSeg] = useState<Set<string>>(new Set());
 
-  /* Active segments depend on the chosen industry */
-  const activeModules  = intakeData.industry ? getActiveModules(intakeData.industry) : [];
+  // Regulatory country coverage (#150) — live from the DB-backed registry,
+  // not a hardcoded list, so new countries appear here the moment they're
+  // seeded server-side with no frontend redeploy needed for the data itself.
+  const [regCountries, setRegCountries] = useState<RegCountry[]>([]);
+  useEffect(() => {
+    if (_testSeedActive) return;
+    fetch(`${API_BASE}/regulatory/countries`)
+      .then(r => r.json())
+      .then((data: { ok: boolean; countries?: RegCountry[] }) => {
+        if (data.ok && data.countries) setRegCountries(data.countries);
+      })
+      .catch(() => { /* best-effort — country selector falls back to KSA-only default */ });
+  }, []);
+  const selectedCountryId = intakeData.country || 'ksa';
+
+  /* Active segments depend on the chosen industry AND country (#150) */
+  const activeModules  = intakeData.industry ? getActiveModules(intakeData.industry, selectedCountryId) : [];
   let   activeSegments: Segment[] = [...CORE_SEGMENTS, ...activeModules];
   // Tests that don't provide intakeData were written against the 8-segment assessment;
   // cap to 8 so their answer maps, segment counts, and navigation assertions all stay valid.
@@ -600,7 +629,7 @@ export function Maturity() {
   const handleReset = () => {
     try { localStorage.removeItem(MATURITY_DRAFT_KEY); } catch { /* ignore */ }
     setAnswers({});
-    setIntakeData({ industry: '', companySize: '' });
+    setIntakeData({ industry: '', companySize: '', country: 'ksa' });
     setSegIdx(0);
     setPhase('intro');
     setIncompleteWarning(false);
@@ -992,7 +1021,17 @@ export function Maturity() {
   ════════════════════════════════════════════════════════════════════════ */
   if (phase === 'intake') {
     const intakeComplete = intakeData.industry !== '' && intakeData.companySize !== '';
-    const selectedModules = intakeData.industry ? getActiveModules(intakeData.industry) : [];
+    const selectedModules = intakeData.industry ? getActiveModules(intakeData.industry, selectedCountryId) : [];
+    const sortedCountries  = [...regCountries].sort((a, b) => a.sortOrder - b.sortOrder);
+    const selectedCountryRecord = regCountries.find(c => c.id === selectedCountryId);
+    // True when the chosen industry would normally trigger the Regulatory
+    // module, but it's suppressed because full question content only exists
+    // for Saudi Arabia today (#150/#151) — surface this honestly instead of
+    // silently doing nothing.
+    const regulatoryModuleDef = INDUSTRY_MODULES.find(m => m.id === 'regulatory');
+    const regulatorySuppressed = !!intakeData.industry
+      && !!regulatoryModuleDef?.moduleFor?.includes(intakeData.industry)
+      && selectedCountryId !== 'ksa';
 
     return (
       <div ref={topRef} className="w-full bg-muted min-h-screen">
@@ -1014,6 +1053,56 @@ export function Maturity() {
             </p>
           </div>
 
+          {/* Country selection (#150) — drives which regulatory content is personalised in below */}
+          <div className="bg-white rounded-2xl border border-border shadow-sm p-6 mb-6">
+            <div className="flex items-center gap-2 mb-4">
+              <Globe className="w-4 h-4 text-primary" />
+              <h3 className="font-bold text-primary">{ar ? 'الدولة' : 'Country'}</h3>
+            </div>
+            {sortedCountries.length === 0 ? (
+              <p className="text-sm text-muted-foreground">{ar ? 'جارٍ تحميل قائمة الدول...' : 'Loading countries...'}</p>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {sortedCountries.map(c => {
+                  const selected = selectedCountryId === c.id;
+                  return (
+                    <button
+                      key={c.id}
+                      data-testid={`intake-country-${c.id}`}
+                      onClick={() => setIntakeData(d => ({ ...d, country: c.id }))}
+                      className={`relative p-3.5 rounded-xl border-2 text-left transition-all duration-150
+                        ${selected
+                          ? 'border-primary bg-primary/5 shadow-sm'
+                          : 'border-border hover:border-primary/40 hover:bg-muted/50'}`}
+                    >
+                      <p className={`font-semibold text-sm leading-tight ${selected ? 'text-primary' : 'text-foreground'}`}>
+                        {ar ? c.nameAr : c.name}
+                      </p>
+                      <p className={`text-[10px] font-bold mt-1 ${c.coverageLevel === 'full' ? 'text-accent' : 'text-muted-foreground'}`}>
+                        {c.coverageLevel === 'full'
+                          ? (ar ? 'تغطية تنظيمية كاملة' : 'Full regulatory coverage')
+                          : (ar ? 'قريبًا' : 'Coming soon')}
+                      </p>
+                      {selected && (
+                        <div className="absolute top-2 right-2 w-4 h-4 rounded-full bg-primary flex items-center justify-center">
+                          <div className="w-2 h-2 rounded-full bg-white" />
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+            {regulatorySuppressed && selectedCountryRecord && (
+              <div className="mt-4 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+                <AlertCircle className="w-4 h-4 mt-0.5 shrink-0 text-amber-600" />
+                <p className="text-sm text-amber-900">
+                  {ar ? (selectedCountryRecord.notesAr || selectedCountryRecord.notes) : (selectedCountryRecord.notes)}
+                </p>
+              </div>
+            )}
+          </div>
+
           {/* Industry selection */}
           <div className="bg-white rounded-2xl border border-border shadow-sm p-6 mb-6">
             <div className="flex items-center gap-2 mb-4">
@@ -1023,7 +1112,7 @@ export function Maturity() {
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               {INTAKE_INDUSTRIES.map(ind => {
                 const selected = intakeData.industry === ind.id;
-                const modules  = getActiveModules(ind.id);
+                const modules  = getActiveModules(ind.id, selectedCountryId);
                 return (
                   <button
                     key={ind.id}
@@ -1485,22 +1574,24 @@ export function Maturity() {
                 </div>
               </div>
 
-              {/* Regional coverage note — regulatory content is inherently country-specific (#118) */}
+              {/* Regional coverage note — regulatory content is inherently country-specific (#118, #150).
+                  Live from /api/regulatory/countries rather than a hardcoded list, so this reflects
+                  the actual DB-backed Verified/Pending-Review/Roadmap status per country (#154). */}
               {seg.id === 'regulatory' && (
                 <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 mb-6">
                   <p className="text-xs font-bold uppercase tracking-widest text-blue-700 mb-2">
-                    {ar ? 'تغطية إقليمية' : 'Regional Coverage'}
+                    {ar ? 'تغطية الدول' : 'Country Coverage'}
                   </p>
                   <div className="flex flex-wrap gap-2">
-                    {REGULATORY_REGIONS.map((r) => (
-                      <span key={r.id}
+                    {[...regCountries].sort((a, b) => a.sortOrder - b.sortOrder).map((c) => (
+                      <span key={c.id}
                         className={`px-2.5 py-1 rounded-full text-[11px] font-bold ${
-                          r.coverage === 'full' ? 'bg-emerald-100 text-emerald-700' :
-                          r.coverage === 'partial' ? 'bg-amber-100 text-amber-700' :
+                          c.coverageLevel === 'full' ? 'bg-emerald-100 text-emerald-700' :
+                          c.coverageLevel === 'partial' ? 'bg-amber-100 text-amber-700' :
                           'bg-slate-200 text-slate-600'
                         }`}
-                        title={ar ? r.noteAr : r.note}>
-                        {ar ? r.labelAr : r.label} — {r.coverage === 'full' ? (ar ? 'كامل' : 'Full') : r.coverage === 'partial' ? (ar ? 'جزئي' : 'Partial') : (ar ? 'قيد التطوير' : 'Roadmap')}
+                        title={ar ? (c.notesAr || c.notes || '') : (c.notes || '')}>
+                        {ar ? c.nameAr : c.name} — {c.coverageLevel === 'full' ? (ar ? 'كامل' : 'Full') : c.coverageLevel === 'partial' ? (ar ? 'جزئي' : 'Partial') : (ar ? 'قيد التطوير' : 'Roadmap')}
                       </span>
                     ))}
                   </div>
