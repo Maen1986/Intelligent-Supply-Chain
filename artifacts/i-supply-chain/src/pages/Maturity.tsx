@@ -718,9 +718,47 @@ export function Maturity() {
     setRemediesError(null);
     setRemediesShown(true);
 
-    // Build weak sub-questions (score ≤ 3) with full context
-    const weakItems = scopedSegments.flatMap((seg, si) =>
-      segQuestionIndices(seg.id).flatMap(qi => {
+    // Build weak sub-questions (score ≤ 3) with full context.
+    //
+    // Deep-mode gap fix: a segment answered in Deep mode (subSegments,
+    // 3-part keys, up to 80 questions) previously fell through to the
+    // flat-5 branch below regardless — meaning a client who did the extra
+    // work of Deep mode got remedies based only on 5 generic questions,
+    // identical to a Quick-mode client. We now read weak items from the
+    // actual sub-segment answers for any segment in deepSegIds, prefixing
+    // each question with its sub-segment title for AI context (e.g.
+    // "CLM System & Automation: <question>"), and cap each deep segment
+    // to its 10 weakest items via rankWeakest — an uncapped Deep segment
+    // can carry up to 80 questions, and with 12 segments all in Deep mode
+    // that's up to 960 potential weak items, which would blow up prompt
+    // size/cost for no proportional gain in remedy quality. Sub-segment
+    // questions aren't yet tagged with a Strategic/Tactical/Operational
+    // layer (#38 only tagged the 75 flat questions), so layer is left
+    // undefined here — the backend already treats that as "unclassified"
+    // rather than an error.
+    const weakItems = scopedSegments.flatMap((seg, si) => {
+      const isDeep = !!(seg.subSegments && deepSegIds.has(seg.id));
+
+      if (isDeep) {
+        const deepWeak = seg.subSegments!.flatMap((sub, subIdx) =>
+          sub.questions.flatMap((q, qi) => {
+            const score = answers[`${si}-${subIdx}-${qi}`];
+            if (!score || score > 3) return [];
+            const subTitle = ar ? sub.titleAr : sub.title;
+            return [{
+              segmentTitle:     ar ? seg.titleAr : seg.title,
+              segmentId:        seg.id,
+              questionText:     `${subTitle}: ${ar ? q.qAr : q.q}`,
+              score,
+              levelDescription: ar ? q.levelsAr[score - 1] : q.levels[score - 1],
+              layer:            undefined as ('strategic' | 'tactical' | 'operational' | undefined),
+            }];
+          })
+        );
+        return rankWeakest(deepWeak, item => item.score, 10);
+      }
+
+      return segQuestionIndices(seg.id).flatMap(qi => {
         const q     = seg.questions[qi];
         const score = answers[`${si}-${qi}`];
         if (!score || score > 3) return [];
@@ -737,8 +775,8 @@ export function Maturity() {
           // the backend treats missing layer as unclassified, not an error.
           layer:            q.layer,
         }];
-      })
-    );
+      });
+    });
 
     const segScores = scopedSegments.map((seg, i) => ({
       id:           seg.id,
