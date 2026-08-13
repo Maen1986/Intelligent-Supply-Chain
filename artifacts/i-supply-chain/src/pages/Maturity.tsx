@@ -1097,6 +1097,11 @@ export function Maturity() {
               <div className="mt-4 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
                 <AlertCircle className="w-4 h-4 mt-0.5 shrink-0 text-amber-600" />
                 <p className="text-sm text-amber-900">
+                  <span className="font-bold">
+                    {ar
+                      ? 'تمت إضافة وحدة "الامتثال العامة (دولي)" — أسئلة عامة غير مرتبطة بقانون سعودي، وليست بديلاً عن الاستشارة القانونية المحلية. '
+                      : 'A general "Compliance (International)" module has been added — country-agnostic questions, not Saudi rules, and not a substitute for local legal advice. '}
+                  </span>
                   {ar ? (selectedCountryRecord.notesAr || selectedCountryRecord.notes) : (selectedCountryRecord.notes)}
                 </p>
               </div>
@@ -1577,7 +1582,7 @@ export function Maturity() {
               {/* Regional coverage note — regulatory content is inherently country-specific (#118, #150).
                   Live from /api/regulatory/countries rather than a hardcoded list, so this reflects
                   the actual DB-backed Verified/Pending-Review/Roadmap status per country (#154). */}
-              {seg.id === 'regulatory' && (
+              {(seg.id === 'regulatory' || seg.id === 'regulatory-general') && (
                 <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 mb-6">
                   <p className="text-xs font-bold uppercase tracking-widest text-blue-700 mb-2">
                     {ar ? 'تغطية الدول' : 'Country Coverage'}
@@ -1595,11 +1600,19 @@ export function Maturity() {
                       </span>
                     ))}
                   </div>
-                  <p className="text-xs text-blue-700/80 mt-2">
-                    {ar
-                      ? 'وحدة الامتثال التنظيمي هذه مبنية بعمق للسعودية اليوم؛ بقية الوحدات الـ14 تستخدم أطراً عالمية (ISO وSCOR وDMAIC وغيرها) وتنطبق عالميًا فعليًا.'
-                      : "This regulatory module is built deep for Saudi Arabia today; the other 14 segments use globally portable frameworks (ISO, SCOR, DMAIC, and others) and already apply worldwide."}
-                  </p>
+                  {seg.id === 'regulatory' ? (
+                    <p className="text-xs text-blue-700/80 mt-2">
+                      {ar
+                        ? 'وحدة الامتثال التنظيمي هذه مبنية بعمق للسعودية اليوم؛ بقية الوحدات الـ14 تستخدم أطراً عالمية (ISO وSCOR وDMAIC وغيرها) وتنطبق عالميًا فعليًا.'
+                        : "This regulatory module is built deep for Saudi Arabia today; the other 14 segments use globally portable frameworks (ISO, SCOR, DMAIC, and others) and already apply worldwide."}
+                    </p>
+                  ) : (
+                    <p className="text-xs text-blue-700/80 mt-2">
+                      {ar
+                        ? 'هذه وحدة امتثال عامة دولية — أسئلة غير مرتبطة بقانون أي دولة محددة، وليست بديلاً عن استشارة قانونية محلية. ستُستبدَل تدريجيًا بمحتوى مُعتمَد خاص بكل دولة (الإمارات أولاً) مع اكتماله ومراجعته.'
+                        : "This is a general international compliance module — country-agnostic questions, not tied to any specific nation's law, and not a substitute for local legal advice. It will be progressively replaced by reviewed, country-specific content (UAE first) as each is completed."}
+                    </p>
+                  )}
                 </div>
               )}
 

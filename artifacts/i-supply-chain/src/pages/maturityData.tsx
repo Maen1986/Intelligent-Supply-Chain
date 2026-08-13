@@ -115,6 +115,15 @@ export interface Segment {
    * until other countries' question content is authored and reviewed (#151).
    */
   countryFor?: string[];
+  /**
+   * Present only on fallback/generic modules — country ids EXCLUDED from
+   * triggering this module (typically because those countries already have
+   * their own dedicated, authored module instead). Used by the generic
+   * international compliance fallback (#151b) so it shows for every country
+   * except the ones with real authored content (starts as just ['ksa'];
+   * grows as UAE, Qatar, etc. get their own modules per the #33 roadmap).
+   */
+  countryExcept?: string[];
 }
 
 export interface IntakeData {
@@ -161,7 +170,8 @@ export const INTAKE_SIZES = [
 export function getActiveModules(industryId: string, countryId: string = 'ksa'): Segment[] {
   return INDUSTRY_MODULES.filter(m =>
     m.moduleFor?.includes(industryId) &&
-    (!m.countryFor || m.countryFor.includes(countryId))
+    (!m.countryFor || m.countryFor.includes(countryId)) &&
+    (!m.countryExcept || !m.countryExcept.includes(countryId))
   );
 }
 
@@ -2068,5 +2078,125 @@ export const INDUSTRY_MODULES: Segment[] = [
       Optimised: 'قيادة أفضل الممارسات الخليجية في حوكمة المشتريات الحكومية. نشر أداء المحتوى المحلي لـ IKTVA واستهداف حالة نطاقات المتميّزة كميزة تنافسية في المواهب والمناقصات.',
     },
     subSegments: REGULATORY_SUB_SEGMENTS as unknown as SubSegment[],
+  },
+
+  /* ── MODULE D: General Compliance Practices (International fallback) ── */
+  {
+    id: 'regulatory-general',
+    title: 'General Compliance Practices (International)',
+    titleAr: 'ممارسات الامتثال العامة (دولي)',
+    shortTitle: 'Compliance (General)',
+    shortTitleAr: 'الامتثال (عام)',
+    icon: Scale,
+    color: '#64748B',
+    benchmarks: { gcc: 2.2, global: 2.6, best: 4.2 },
+    // Shown for every country that does NOT yet have its own authored,
+    // reviewed regulatory module (today: everyone except Saudi Arabia).
+    // Deliberately generic — no named-law claims (no "Nitaqat", no specific
+    // statute numbers) so it never misrepresents a country's actual
+    // requirements. As each country gets real content (UAE next, per the
+    // #33/#153 roadmap), add its own module with countryFor:['<id>'] and
+    // extend this module's countryExcept list so the real module takes over.
+    moduleFor: ['manufacturing', 'fmcg', 'pharma', 'retail', 'logistics', 'marine',
+                'construction', 'oil_gas', 'government', 'technology', 'banking', 'other'],
+    countryExcept: ['ksa'],
+    frameworks: ['ISO 37301', 'WCO SAFE Framework'],
+    questions: [
+      {
+        q: 'Does your organisation maintain a documented process for tracking import/export licensing, customs classification, and cross-border trade compliance in the markets where you operate?',
+        layer: 'operational',
+        qAr: 'هل تحتفظ مؤسستكم بعملية موثّقة لتتبّع تراخيص الاستيراد والتصدير والتصنيف الجمركي والامتثال التجاري عبر الحدود في الأسواق التي تعملون بها؟',
+        levels: [
+          'No documented process exists; customs and trade compliance is handled reactively per shipment, often by a freight forwarder with no internal oversight.',
+          'A basic checklist exists for licensing and customs documentation, but it is not consistently applied across all shipments or markets.',
+          'A documented trade-compliance process is followed consistently, with a named owner and periodic review of licensing status.',
+          'Trade compliance is actively monitored with defined KPIs (clearance time, documentation error rate) and integrated into supplier/logistics contracts.',
+          'Trade compliance is a governed, audited function with automated documentation checks, proactive regulatory-change monitoring, and board-level visibility on cross-border risk.',
+        ],
+        levelsAr: [
+          'لا توجد عملية موثّقة؛ يُدار الامتثال الجمركي والتجاري بشكل تفاعلي لكل شحنة، غالبًا عبر وكيل شحن دون رقابة داخلية.',
+          'توجد قائمة تحقق أساسية للتراخيص والمستندات الجمركية، لكنها لا تُطبَّق باستمرار عبر جميع الشحنات أو الأسواق.',
+          'تُتَّبع عملية امتثال تجاري موثّقة باستمرار، مع مالك محدد ومراجعة دورية لحالة التراخيص.',
+          'يُراقَب الامتثال التجاري بمؤشرات أداء محددة (زمن التخليص، نسبة أخطاء المستندات) ويُدمَج في عقود الموردين/اللوجستيات.',
+          'الامتثال التجاري وظيفة محوكمة ومُدقَّقة بفحوصات مستندية آلية ومراقبة استباقية للتغييرات التنظيمية ورؤية على مستوى مجلس الإدارة لمخاطر الحدود.',
+        ],
+      },
+      {
+        q: 'How does your organisation handle personal data collected through supply chain operations (supplier records, employee data, customer shipment details) relative to internationally recognised data-protection principles?',
+        layer: 'tactical',
+        qAr: 'كيف تتعامل مؤسستكم مع البيانات الشخصية التي تُجمَع عبر عمليات سلسلة الإمداد (سجلات الموردين، بيانات الموظفين، تفاصيل شحن العملاء) بالنسبة لمبادئ حماية البيانات المعترف بها دوليًا؟',
+        levels: [
+          'Personal data is collected and stored without a defined policy; there is no awareness of data-protection obligations in the markets served.',
+          'An informal data-handling practice exists, but no written policy, no data inventory, and no assigned accountability.',
+          'A written data-protection policy exists covering supply chain data, with a designated point of contact for data queries.',
+          'Data protection is actively managed: a data inventory is maintained, retention rules applied, and third-party processors (logistics, customs brokers) are contractually bound.',
+          'Data protection is a governed programme with regular audits, breach-response procedures, and alignment tracked against the specific regulations of each market served.',
+        ],
+        levelsAr: [
+          'تُجمَع البيانات الشخصية وتُخزَّن دون سياسة محددة؛ لا يوجد وعي بالتزامات حماية البيانات في الأسواق المخدومة.',
+          'توجد ممارسة غير رسمية للتعامل مع البيانات، لكن دون سياسة مكتوبة أو جرد للبيانات أو مسؤولية محددة.',
+          'توجد سياسة مكتوبة لحماية البيانات تغطي بيانات سلسلة الإمداد، مع جهة اتصال محددة للاستفسارات.',
+          'تُدار حماية البيانات بفعالية: يُحفَظ جرد للبيانات، وتُطبَّق قواعد احتفاظ، ويُلزَم المعالجون من الأطراف الثالثة (اللوجستيات، الوسطاء الجمركيون) تعاقديًا.',
+          'حماية البيانات برنامج محوكم بمراجعات دورية وإجراءات استجابة للاختراقات، وتُتابَع المواءمة مع لوائح كل سوق مخدوم تحديدًا.',
+        ],
+      },
+      {
+        q: 'Where local-content, workforce-nationalisation, or in-country value requirements apply in your operating market, how systematically does your organisation track and plan for them?',
+        layer: 'strategic',
+        qAr: 'حيثما تنطبق متطلبات المحتوى المحلي أو توطين القوى العاملة أو القيمة المضافة المحلية في سوقكم، ما مدى منهجية تتبّع مؤسستكم وتخطيطها لها؟',
+        levels: [
+          'No tracking of local-content or workforce-localisation requirements; the organisation is unaware whether such requirements apply to its market.',
+          'Awareness exists that requirements may apply, but there is no active measurement or target-setting.',
+          'Local-content or localisation status is measured periodically and reported informally to leadership.',
+          'A structured plan tracks progress against defined local-content/localisation targets, with hiring and sourcing decisions informed by it.',
+          'Local-content strategy is integrated into workforce and supplier planning, actively benchmarked, and used as a competitive differentiator in bids and contracts.',
+        ],
+        levelsAr: [
+          'لا يوجد تتبّع لمتطلبات المحتوى المحلي أو توطين القوى العاملة؛ المؤسسة غير مدركة إن كانت هذه المتطلبات تنطبق على سوقها.',
+          'يوجد وعي بأن المتطلبات قد تنطبق، لكن دون قياس فعلي أو تحديد مستهدفات.',
+          'تُقاس حالة المحتوى المحلي أو التوطين دوريًا وتُرفَع بشكل غير رسمي للإدارة.',
+          'تتبع خطة منظمة التقدم مقابل مستهدفات محددة للمحتوى المحلي/التوطين، وتسترشد بها قرارات التوظيف والتوريد.',
+          'استراتيجية المحتوى المحلي مدمجة في تخطيط القوى العاملة والموردين، وتُقاس مرجعيًا بفعالية، وتُستخدم كميزة تنافسية في العطاءات والعقود.',
+        ],
+      },
+      {
+        q: 'How current and complete are your organisation\'s business licences, permits, and regulatory registrations required to operate and trade in each market you serve?',
+        layer: 'operational',
+        qAr: 'ما مدى حداثة واكتمال التراخيص التجارية والتصاريح والتسجيلات النظامية اللازمة لمؤسستكم للعمل والتجارة في كل سوق تخدمونه؟',
+        levels: [
+          'Licence and registration status is not centrally tracked; renewals are handled reactively, sometimes after expiry.',
+          'A basic list of licences exists, but renewal dates are not proactively monitored.',
+          'Licences and registrations are tracked in a central register with renewal reminders set.',
+          'Licence compliance is actively managed with an owner per licence type and audit trail of renewals and changes.',
+          'Licence and regulatory-registration compliance is a governed function with automated renewal tracking, proactive monitoring of new market-entry requirements, and zero lapses in the past 24 months.',
+        ],
+        levelsAr: [
+          'لا تُتابَع حالة التراخيص والتسجيلات مركزيًا؛ تُعالَج التجديدات بشكل تفاعلي، أحيانًا بعد انتهاء الصلاحية.',
+          'توجد قائمة أساسية للتراخيص، لكن مواعيد التجديد لا تُراقَب استباقيًا.',
+          'تُتابَع التراخيص والتسجيلات في سجل مركزي مع تذكيرات للتجديد.',
+          'يُدار الامتثال للتراخيص بفعالية مع مالك لكل نوع ترخيص وسجل تدقيق للتجديدات والتغييرات.',
+          'الامتثال للتراخيص والتسجيلات النظامية وظيفة محوكمة بتتبع آلي للتجديد ومراقبة استباقية لمتطلبات دخول أسواق جديدة، ودون أي انقطاع خلال آخر 24 شهرًا.',
+        ],
+      },
+      {
+        q: 'How does your organisation monitor and respond to changes in the regulatory environment (trade, labour, data, sector-specific) across the markets it operates in?',
+        layer: 'strategic',
+        qAr: 'كيف تُراقب مؤسستكم وتستجيب للتغيرات في البيئة التنظيمية (التجارة، العمل، البيانات، القطاعية) عبر الأسواق التي تعمل بها؟',
+        levels: [
+          'Regulatory changes are learned about after the fact, typically through an incident, audit finding, or customer complaint.',
+          'Some monitoring occurs informally (industry news, advisor updates) but without a defined process or owner.',
+          'A designated function periodically reviews regulatory updates relevant to the markets served and briefs leadership.',
+          'Regulatory-change monitoring is proactive and systematic, with impact assessments performed before changes take effect.',
+          'Regulatory horizon-scanning is a governed, resourced function integrated into strategic planning, with external legal/compliance advisors engaged per market and board-level reporting.',
+        ],
+        levelsAr: [
+          'يُعرَف بالتغيرات التنظيمية بعد وقوعها، عادةً عبر حادثة أو ملاحظة تدقيق أو شكوى عميل.',
+          'تحدث بعض المراقبة بشكل غير رسمي (أخبار القطاع، تحديثات المستشارين) لكن دون عملية أو مالك محدد.',
+          'تراجع جهة محددة التحديثات التنظيمية ذات الصلة بالأسواق المخدومة دوريًا وتُطلع الإدارة.',
+          'مراقبة التغيرات التنظيمية استباقية ومنهجية، مع تقييمات أثر تُجرى قبل سريان التغييرات.',
+          'استشراف التغيرات التنظيمية وظيفة محوكمة ومُزوَّدة بالموارد ومدمجة في التخطيط الاستراتيجي، مع الاستعانة بمستشارين قانونيين/امتثال خارجيين لكل سوق ورفع تقارير لمجلس الإدارة.',
+        ],
+      },
+    ],
   },
 ];
