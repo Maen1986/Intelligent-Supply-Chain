@@ -20,6 +20,12 @@ import { ContractHealthChecker } from '@/components/toolkit/CLMTools';
 import { TrainingNeedsAssessment } from '@/components/toolkit/TrainingTools';
 import { MaturityAssessmentTool } from '@/components/toolkit/MaturityTools';
 import { StrategyToolsSection } from '@/components/toolkit/StrategyTools';
+import { ResiliencyToolsSection } from '@/components/toolkit/ResiliencyTools';
+import { ValueEngineeringToolsSection } from '@/components/toolkit/ValueEngineeringTools';
+import { ProcessImprovementToolsSection } from '@/components/toolkit/ProcessImprovementTools';
+import { LeanAgileToolsSection } from '@/components/toolkit/LeanAgileTools';
+import { SustainabilityESGToolsSection } from '@/components/toolkit/SustainabilityESGTools';
+import { DigitalTransformationToolsSection } from '@/components/toolkit/DigitalTransformationTools';
 
 function Reveal({ children, delay = 0, className = '' }: { children: React.ReactNode; delay?: number; className?: string }) {
   return (
@@ -1046,9 +1052,12 @@ export function SolutionDetail() {
             {sol.slug === 'supplier-relationship-governance' && <Reveal><SupplierScorecardTool isAr={isAr} /></Reveal>}
             {sol.slug === 'training-capability-building' && <Reveal><TrainingNeedsAssessment isAr={isAr} /></Reveal>}
             {sol.slug === 'supply-chain-strategy' && <Reveal><StrategyToolsSection isAr={isAr} /></Reveal>}
-            {(sol.slug === 'resiliency' || sol.slug === 'value-engineering' || sol.slug === 'process-improvement-policy' || sol.slug === 'lean-agile-supply-chain' || sol.slug === 'sustainability-esg' || sol.slug === 'digital-transformation') && (
-              <Reveal><MaturityAssessmentTool slug={sol.slug} isAr={isAr} /></Reveal>
-            )}
+            {sol.slug === 'resiliency' && <Reveal><ResiliencyToolsSection isAr={isAr} /></Reveal>}
+            {sol.slug === 'value-engineering' && <Reveal><ValueEngineeringToolsSection isAr={isAr} /></Reveal>}
+            {sol.slug === 'process-improvement-policy' && <Reveal><ProcessImprovementToolsSection isAr={isAr} /></Reveal>}
+            {sol.slug === 'lean-agile-supply-chain' && <Reveal><LeanAgileToolsSection isAr={isAr} /></Reveal>}
+            {sol.slug === 'sustainability-esg' && <Reveal><SustainabilityESGToolsSection isAr={isAr} /></Reveal>}
+            {sol.slug === 'digital-transformation' && <Reveal><DigitalTransformationToolsSection isAr={isAr} /></Reveal>}
           </div>
         )}
 
