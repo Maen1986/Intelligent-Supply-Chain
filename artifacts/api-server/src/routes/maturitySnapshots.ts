@@ -1,9 +1,10 @@
 /**
  * Maturity Snapshot routes
  *
- * POST   /api/maturity/snapshots              — save a completed assessment (1/day per user)
- * GET    /api/maturity/snapshots              — list all saved assessments for the session user
- * PATCH  /api/maturity/snapshots/:id/remedies — attach AI remedy actions once they resolve
+ * POST   /api/maturity/snapshots                    — save a completed assessment (1/day per user)
+ * GET    /api/maturity/snapshots                     — list all saved assessments for the session user
+ * PATCH  /api/maturity/snapshots/:id/remedies        — attach AI remedy actions once they resolve
+ * PATCH  /api/maturity/snapshots/:id/action-status   — update one Action Tracker item's status (#19)
  *
  * Ownership is enforced at the DB query level on every operation so that
  * user A cannot read or modify user B's data even with a valid session.
@@ -184,6 +185,79 @@ router.patch('/maturity/snapshots/:id/remedies', requireSession, async (req, res
   } catch (err) {
     logger.error({ err, userId, id }, '[maturitySnapshots] Remedies patch failed');
     res.status(500).json({ ok: false, error: 'Could not update snapshot' });
+  }
+});
+
+/* ── PATCH /api/maturity/snapshots/:id/action-status ────────────────────────
+ * Action Tracker (#19) — updates the status of ONE remedy item without
+ * requiring a new table/migration. Deliberately reuses the existing
+ * remedy_actions JSONB column rather than a dedicated action_tracker
+ * table: this repo's schema changes require a manual `drizzle-kit push`
+ * against production that isn't wired into the deploy pipeline, so a new
+ * table would ship as dead code until someone runs that by hand. Storing
+ * status inside remedy_actions.actionStatus (a plain key→status map,
+ * additive to the existing executiveSummary/days30/days60/days90/
+ * estimatedImpact shape) works the moment this deploys — no operator
+ * step required — while staying fully backward compatible with every
+ * other reader of remedy_actions (MaturityTrend, remedy correlation).
+ *
+ * itemKey is a deterministic "{phase}-{index}" composite (e.g. "days30-2"),
+ * computed identically on the client from array position — no server-side
+ * id needs to be persisted into the days30/60/90 arrays themselves.
+ */
+const ActionStatusSchema = z.object({
+  itemKey: z.string().min(1).max(40),
+  status:  z.enum(['not_started', 'in_progress', 'done']),
+  notes:   z.string().max(2000).optional().nullable(),
+});
+
+router.patch('/maturity/snapshots/:id/action-status', requireSession, async (req, res) => {
+  const userId = res.locals.userId as number;
+  const id     = parseInt(String(req.params.id), 10);
+
+  if (isNaN(id) || id < 1) {
+    res.status(400).json({ ok: false, error: 'Invalid snapshot ID' });
+    return;
+  }
+
+  const parsed = ActionStatusSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ ok: false, error: 'Invalid action-status payload', details: parsed.error.format() });
+    return;
+  }
+  const { itemKey, status, notes } = parsed.data;
+
+  try {
+    const current = await db.execute(sql`
+      SELECT remedy_actions FROM maturity_snapshots
+      WHERE id = ${id} AND user_id = ${userId}
+    `);
+    const currentRows = (current as any).rows ?? current;
+    if (currentRows.length === 0) {
+      res.status(404).json({ ok: false, error: 'Snapshot not found or access denied' });
+      return;
+    }
+
+    const remedyActions = (currentRows[0].remedy_actions ?? {}) as Record<string, unknown>;
+    const actionStatus = (remedyActions.actionStatus ?? {}) as Record<string, unknown>;
+    actionStatus[itemKey] = {
+      status,
+      notes: notes ?? null,
+      completedAt: status === 'done' ? new Date().toISOString() : null,
+      updatedAt: new Date().toISOString(),
+    };
+    remedyActions.actionStatus = actionStatus;
+
+    await db.execute(sql`
+      UPDATE maturity_snapshots
+      SET remedy_actions = ${JSON.stringify(remedyActions)}::jsonb
+      WHERE id = ${id} AND user_id = ${userId}
+    `);
+
+    res.json({ ok: true, actionStatus: actionStatus[itemKey] });
+  } catch (err) {
+    logger.error({ err, userId, id }, '[maturitySnapshots] Action-status patch failed');
+    res.status(500).json({ ok: false, error: 'Could not update action status' });
   }
 });
 
