@@ -101,7 +101,7 @@ export function RiskManagement() {
             <span className="text-[#C9A84C] font-bold text-sm uppercase tracking-widest">{isAr ? 'إدارة المخاطر' : 'Risk Management'}</span>
           </div>
           <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-white mb-3">{isAr ? 'إدارة مخاطر سلسلة الإمداد' : 'Supply Chain Risk Management'}</h1>
-          <p className="text-white/75 text-lg max-w-2xl">{isAr ? 'تحديد وتقييم وتخفيف استباقي لمخاطر سلسلة الإمداد بما يتوافق مع ISO 31000 — لحماية الإيرادات والعمليات والسمعة عبر الخليج.' : 'Proactive, ISO 31000-aligned identification, assessment, and mitigation of supply chain risks — protecting revenue, operations, and reputation across the GCC.'}</p>
+          <p className="text-white/75 text-lg max-w-2xl">{isAr ? 'تحديد وتقييم وتخفيف استباقي لمخاطر سلسلة الإمداد بما يتوافق مع ISO 31000 — لحماية الإيرادات والعمليات والسمعة عبر الخليج والعالم.' : 'Proactive, ISO 31000-aligned identification, assessment, and mitigation of supply chain risks — protecting revenue, operations, and reputation across the GCC and worldwide.'}</p>
           <div className="flex gap-3 mt-6 flex-wrap">
             <Link href="/consultant"><Button className="bg-[#C9A84C] hover:bg-[#b8943d] text-white font-bold">{isAr ? 'استشارة تقييم المخاطر' : 'Risk Assessment Consultation'}</Button></Link>
             <Link href="/diagnostic"><Button variant="outline" className="border-white text-white hover:bg-white hover:text-primary font-bold">{isAr ? 'تشخيص مجاني' : 'Free Diagnostic'}</Button></Link>

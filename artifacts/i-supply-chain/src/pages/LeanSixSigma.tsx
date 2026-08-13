@@ -197,7 +197,7 @@ export function LeanSixSigma() {
             <span className="text-[#C9A84C] font-bold text-sm uppercase tracking-widest">{isAr ? 'التميّز التشغيلي' : 'Operational Excellence'}</span>
           </div>
           <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-white mb-3">{isAr ? 'Lean وSix Sigma وتميّز الجودة' : <>Lean, Six Sigma &amp; Quality Excellence</>}</h1>
-          <p className="text-white/75 text-lg max-w-2xl">{isAr ? 'أزِل الهدر، وقلّل التباين، وابنِ الجودة في كل عملية بسلسلة الإمداد — من الاستراتيجية إلى التنفيذ التشغيلي عبر الخليج.' : 'Eliminate waste, reduce variation, and build quality into every supply chain process — from strategy to operational execution across the GCC.'}</p>
+          <p className="text-white/75 text-lg max-w-2xl">{isAr ? 'أزِل الهدر، وقلّل التباين، وابنِ الجودة في كل عملية بسلسلة الإمداد — من الاستراتيجية إلى التنفيذ التشغيلي عبر الخليج والعالم.' : 'Eliminate waste, reduce variation, and build quality into every supply chain process — from strategy to operational execution across the GCC and worldwide.'}</p>
           <div className="flex gap-3 mt-6 flex-wrap">
             <Link href="/consultant"><Button className="bg-[#C9A84C] hover:bg-[#b8943d] text-white font-bold">{isAr ? 'احجز استشارة LSS' : 'Book LSS Consultation'}</Button></Link>
             <Link href="/diagnostic"><Button variant="outline" className="border-white text-white hover:bg-white hover:text-primary font-bold">{isAr ? 'تشخيص مجاني' : 'Free Diagnostic'}</Button></Link>

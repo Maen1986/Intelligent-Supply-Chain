@@ -77,7 +77,7 @@ export function GovernanceCompliance() {
             <span className="text-[#C9A84C] font-bold text-sm uppercase tracking-widest">{isAr ? 'الحوكمة والامتثال' : 'Governance & Compliance'}</span>
           </div>
           <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-white mb-3">{isAr ? 'إطار الحوكمة والامتثال' : <>Governance &amp; Compliance Framework</>}</h1>
-          <p className="text-white/75 text-lg max-w-2xl">{isAr ? 'حوكمة منظّمة تحمي وتمكّن وتخلق القيمة — من هيكل السياسات إلى الإشراف على مستوى المجلس — عبر المشهد التنظيمي الخليجي.' : 'Structured governance that protects, enables, and creates value — from policy architecture to board-level oversight — across the GCC regulatory landscape.'}</p>
+          <p className="text-white/75 text-lg max-w-2xl">{isAr ? 'حوكمة منظّمة تحمي وتمكّن وتخلق القيمة — من هيكل السياسات إلى الإشراف على مستوى المجلس — عبر المشهد التنظيمي الخليجي والعالمي.' : 'Structured governance that protects, enables, and creates value — from policy architecture to board-level oversight — across the GCC and global regulatory landscape.'}</p>
           <div className="flex gap-3 mt-6 flex-wrap">
             <Link href="/consultant"><Button className="bg-[#C9A84C] hover:bg-[#b8943d] text-white font-bold">{isAr ? 'تقييم الحوكمة' : 'Governance Assessment'}</Button></Link>
             <Link href="/diagnostic"><Button variant="outline" className="border-white text-white hover:bg-white hover:text-primary font-bold">{isAr ? 'تشخيص مجاني' : 'Free Diagnostic'}</Button></Link>
@@ -178,7 +178,7 @@ export function GovernanceCompliance() {
           <div className="space-y-6">
             <Reveal>
               <h2 className="text-2xl font-bold text-primary">{isAr ? 'المشهد التنظيمي — الخليج والأردن' : <>Regulatory Landscape — GCC &amp; Jordan</>}</h2>
-              <p className="text-muted-foreground mt-1">{isAr ? 'ترصد ISC وتفسّر لوائح المشتريات وسلسلة الإمداد عبر الخليج — لضمان بقاء العملاء ملتزمين في بيئة سريعة التطوّر.' : 'ISC monitors and interprets procurement and supply chain regulations across the GCC — ensuring clients stay compliant in a rapidly evolving environment.'}</p>
+              <p className="text-muted-foreground mt-1">{isAr ? 'ترصد ISC وتفسّر لوائح المشتريات وسلسلة الإمداد عبر الخليج ودوليًا — لضمان بقاء العملاء ملتزمين في بيئة سريعة التطوّر.' : 'ISC monitors and interprets procurement and supply chain regulations across the GCC and internationally — ensuring clients stay compliant in a rapidly evolving environment.'}</p>
             </Reveal>
             <div className="grid md:grid-cols-2 gap-5">
               {[{

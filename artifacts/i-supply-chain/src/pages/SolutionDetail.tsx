@@ -57,8 +57,8 @@ const SOLUTIONS: SolutionData[] = [
     slug: 'supply-chain-strategy', title: 'Supply Chain Strategy', titleAr: 'استراتيجية سلسلة الإمداد', icon: Target, color: 'text-blue-600', bgGrad: 'from-blue-600 to-blue-800',
     tagline: 'End-to-end supply chain design aligned to your business objectives and Vision 2030.',
     taglineAr: 'تصميم سلسلة إمداد من طرف لطرف متوائم مع أهداف أعمالك ورؤية 2030.',
-    description: 'A robust supply chain strategy defines how your organisation plans, sources, makes, delivers, and returns — aligned to corporate objectives and competitive requirements. ISC deploys APICS SCOR, network design, and S&OP frameworks to build strategies that are resilient, cost-effective, and built for the GCC growth trajectory.',
-    descriptionAr: 'تحدّد استراتيجية سلسلة الإمداد المتينة كيف تخطّط مؤسستك وتورّد وتصنّع وتسلّم وتُرجِع — بمواءمة مع الأهداف المؤسسية والمتطلبات التنافسية. تنشر ISC أطر APICS SCOR وتصميم الشبكة وS&OP لبناء استراتيجيات مرنة وفعّالة من حيث التكلفة ومصمّمة لمسار النمو الخليجي.',
+    description: 'A robust supply chain strategy defines how your organisation plans, sources, makes, delivers, and returns — aligned to corporate objectives and competitive requirements. ISC deploys APICS SCOR, network design, and S&OP frameworks to build strategies that are resilient, cost-effective, and built for the GCC and applicable worldwide.',
+    descriptionAr: 'تحدّد استراتيجية سلسلة الإمداد المتينة كيف تخطّط مؤسستك وتورّد وتصنّع وتسلّم وتُرجِع — بمواءمة مع الأهداف المؤسسية والمتطلبات التنافسية. تنشر ISC أطر APICS SCOR وتصميم الشبكة وS&OP لبناء استراتيجيات مرنة وفعّالة من حيث التكلفة ومصمّمة لمسار النمو الخليجي وقابلة للتطبيق عالميًا.',
     frameworks: {
       strategic: [
         { name: 'APICS SCOR Model', nameAr: 'نموذج APICS SCOR', desc: 'Supply Chain Operations Reference framework covering Plan-Source-Make-Deliver-Return-Enable at executive level.', descAr: 'إطار مرجعي لعمليات سلسلة الإمداد يغطّي التخطيط-التوريد-التصنيع-التسليم-الإرجاع-التمكين على المستوى التنفيذي.', tools: ['Process benchmarking', 'Performance metrics', 'Best-practice gap analysis'], toolsAr: ['المقارنة المرجعية للعمليات', 'مقاييس الأداء', 'تحليل فجوات أفضل الممارسات'], standard: 'APICS SCOR 12.0' },
@@ -406,8 +406,8 @@ const SOLUTIONS: SolutionData[] = [
   {
     slug: 'contract-lifecycle-management',
     title: 'Contract Lifecycle Management', titleAr: 'إدارة دورة حياة العقود',
-    tagline: 'From contract authoring to renewal — full CLM that protects value, ensures compliance, and eliminates leakage across the GCC.',
-    taglineAr: 'من صياغة العقد إلى تجديده — إدارة متكاملة لدورة حياة العقد تحمي القيمة وتضمن الامتثال وتلغي التسرّب عبر الخليج.',
+    tagline: 'From contract authoring to renewal — full CLM that protects value, ensures compliance, and eliminates leakage across the GCC and worldwide.',
+    taglineAr: 'من صياغة العقد إلى تجديده — إدارة متكاملة لدورة حياة العقد تحمي القيمة وتضمن الامتثال وتلغي التسرّب عبر الخليج والعالم.',
     description: 'Most GCC organisations manage contracts in email folders and spreadsheets — losing track of obligations, missing renewal windows, and exposing themselves to regulatory non-compliance. ISC deploys the IACCM CLM framework to transform contract management from an administrative task into a strategic commercial capability: structured authoring, obligation tracking, risk allocation, and renewal intelligence.',
     descriptionAr: 'تدير معظم المنشآت الخليجية عقودها عبر صناديق البريد والجداول الحسابية — مما يُفقدها متابعة الالتزامات، ويُفوّتها نوافذ التجديد، ويُعرّضها لعدم الامتثال التنظيمي. تنشر ISC إطار IACCM لإدارة دورة حياة العقود لتحويل إدارة العقود من مهمة إدارية إلى قدرة تجارية استراتيجية: صياغة منظّمة، وتتبّع الالتزامات، وتوزيع المخاطر، وذكاء التجديد.',
     icon: FileText, color: 'text-violet-600', bgGrad: 'from-violet-700 to-violet-900',
@@ -528,8 +528,8 @@ const SOLUTIONS: SolutionData[] = [
   {
     slug: 'resiliency',
     title: 'Resiliency', titleAr: 'المرونة التشغيلية',
-    tagline: 'Build supply chains that absorb disruption, recover fast, and emerge stronger — designed for the GCC\'s unique geopolitical and logistical realities.',
-    taglineAr: 'ابنِ سلاسل إمداد تمتصّ الاضطرابات وتتعافى بسرعة وتخرج أقوى — مصمَّمة لخصوصية الواقع الجيوسياسي واللوجستي في الخليج.',
+    tagline: 'Build supply chains that absorb disruption, recover fast, and emerge stronger — battle-tested on the GCC\'s unique geopolitical and logistical realities, and built to scale worldwide.',
+    taglineAr: 'ابنِ سلاسل إمداد تمتصّ الاضطرابات وتتعافى بسرعة وتخرج أقوى — مصمَّمة أصلًا لخصوصية الواقع الجيوسياسي واللوجستي في الخليج، وقابلة للتطبيق عالميًا.',
     description: 'The GCC operates in one of the world\'s most complex supply chain environments: Red Sea shipping disruptions, geopolitical volatility, single-corridor dependencies, and rapid regulatory change. ISC applies APICS SCOR Reliability principles, ISO 22301 Business Continuity, and GCC-specific scenario planning to build supply chains that are engineered for disruption — not destroyed by it.',
     descriptionAr: 'يعمل الخليج في واحدة من أكثر بيئات سلاسل الإمداد تعقيداً في العالم: اضطرابات الشحن في البحر الأحمر، والتقلّب الجيوسياسي، والاعتماد على ممرّ واحد، والتغيير التنظيمي السريع. تطبّق ISC مبادئ موثوقية APICS SCOR واستمرارية الأعمال وفق ISO 22301 والتخطيط للسيناريوهات الخاصة بالخليج لبناء سلاسل إمداد مصمَّمة للاضطراب — لا مُدمَّرة به.',
     icon: RefreshCw, color: 'text-emerald-600', bgGrad: 'from-emerald-700 to-emerald-900',
@@ -707,8 +707,8 @@ const SOLUTIONS: SolutionData[] = [
   {
     slug: 'training-capability-building',
     title: 'Training & Capability Building', titleAr: 'التدريب وبناء القدرات',
-    tagline: 'CIPS-aligned procurement and supply chain learning programmes — designed for the GCC workforce, delivered in Arabic and English, and built to stick.',
-    taglineAr: 'برامج تعلّم متوائمة مع CIPS في المشتريات وسلسلة الإمداد — مصمَّمة للقوى العاملة الخليجية، تُقدَّم بالعربية والإنجليزية، ومبنية لتدوم.',
+    tagline: 'CIPS-aligned procurement and supply chain learning programmes — designed for the GCC workforce and adaptable for teams worldwide, delivered in Arabic and English, and built to stick.',
+    taglineAr: 'برامج تعلّم متوائمة مع CIPS في المشتريات وسلسلة الإمداد — مصمَّمة للقوى العاملة الخليجية وقابلة للتكيّف مع فرق العمل حول العالم، تُقدَّم بالعربية والإنجليزية، ومبنية لتدوم.',
     description: 'Most GCC supply chain and procurement teams carry significant capability gaps — in strategic sourcing, category management, contract governance, and digital tools. ISC delivers structured learning pathways built around CIPS/MCIPS standards, the Saudi Tamheer/Hadaf frameworks, and real GCC business cases. Training that moves from theory to application — with coaching, assessment, and measurable behaviour change.',
     descriptionAr: 'تحمل معظم فرق سلسلة الإمداد والمشتريات الخليجية فجوات كبيرة في القدرات — في التوريد الاستراتيجي وإدارة الفئات وحوكمة العقود والأدوات الرقمية. تقدّم ISC مسارات تعلّم منظّمة مبنية حول معايير CIPS/MCIPS وأطر تمهير/حافز السعودية وحالات أعمال خليجية حقيقية. تدريب ينتقل من النظرية إلى التطبيق — مع إرشاد وتقييم وتغيير سلوكي قابل للقياس.',
     icon: BookOpen, color: 'text-rose-600', bgGrad: 'from-rose-700 to-rose-900',

@@ -18,6 +18,7 @@ import { EvidenceUploadZone, type EvidenceRecord } from '@/components/EvidenceUp
 import { ConfidenceTierBadge, getSegmentTier } from '@/components/ConfidenceTierBadge';
 import { FeedbackModal, shouldShowFeedback } from '@/components/FeedbackModal';
 import { FrameworkBadge } from '@/components/FrameworkBadge';
+import { REGULATORY_REGIONS } from '@/lib/regions';
 import { API_BASE } from '@/lib/apiBase';
 import { useAuth } from '@/lib/AuthContext';
 import {
@@ -1479,6 +1480,33 @@ export function Maturity() {
                   <h2 className="text-xl font-extrabold text-primary">{ar ? seg.titleAr : seg.title}</h2>
                 </div>
               </div>
+
+              {/* Regional coverage note — regulatory content is inherently country-specific (#118) */}
+              {seg.id === 'regulatory' && (
+                <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 mb-6">
+                  <p className="text-xs font-bold uppercase tracking-widest text-blue-700 mb-2">
+                    {ar ? 'تغطية إقليمية' : 'Regional Coverage'}
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {REGULATORY_REGIONS.map((r) => (
+                      <span key={r.id}
+                        className={`px-2.5 py-1 rounded-full text-[11px] font-bold ${
+                          r.coverage === 'full' ? 'bg-emerald-100 text-emerald-700' :
+                          r.coverage === 'partial' ? 'bg-amber-100 text-amber-700' :
+                          'bg-slate-200 text-slate-600'
+                        }`}
+                        title={ar ? r.noteAr : r.note}>
+                        {ar ? r.labelAr : r.label} — {r.coverage === 'full' ? (ar ? 'كامل' : 'Full') : r.coverage === 'partial' ? (ar ? 'جزئي' : 'Partial') : (ar ? 'قيد التطوير' : 'Roadmap')}
+                      </span>
+                    ))}
+                  </div>
+                  <p className="text-xs text-blue-700/80 mt-2">
+                    {ar
+                      ? 'وحدة الامتثال التنظيمي هذه مبنية بعمق للسعودية اليوم؛ بقية الوحدات الـ14 تستخدم أطراً عالمية (ISO وSCOR وDMAIC وغيرها) وتنطبق عالميًا فعليًا.'
+                      : "This regulatory module is built deep for Saudi Arabia today; the other 14 segments use globally portable frameworks (ISO, SCOR, DMAIC, and others) and already apply worldwide."}
+                  </p>
+                </div>
+              )}
 
               {/* Questions — Deep mode: grouped by sub-segment, 3-part answer keys */}
               {isSegDeep && seg.subSegments && seg.subSegments.map((sub, subIdx) => (

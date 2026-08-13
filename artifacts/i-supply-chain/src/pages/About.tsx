@@ -113,8 +113,8 @@ export function About() {
           </h1>
           <p className="text-white/80 text-base md:text-lg max-w-2xl">
             {ar
-              ? 'مكتب استشارات متخصّص في سلاسل الإمداد مُصمَّم لدول الخليج — يجمع بين الخبرة العالمية والمعرفة الإقليمية العميقة.'
-              : 'A boutique supply chain consultancy built for the GCC — combining global expertise with deep regional intelligence.'}
+              ? 'مكتب استشارات متخصّص في سلاسل الإمداد مُصمَّم لدول الخليج والعالم — يجمع بين الخبرة العالمية والمعرفة الإقليمية العميقة.'
+              : 'A boutique supply chain consultancy built for the GCC and worldwide — combining global expertise with deep regional intelligence.'}
           </p>
         </div>
       </div>
