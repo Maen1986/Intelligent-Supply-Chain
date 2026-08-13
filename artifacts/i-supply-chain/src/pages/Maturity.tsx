@@ -29,7 +29,7 @@ import {
   ChevronRight, ChevronLeft, BarChart3, Award,
   TrendingUp, RotateCcw, Pencil, Sparkles, Loader2,
   CheckCircle2, Clock, Target, AlertCircle, Building2, Users2,
-  Download, FileText, Mail,
+  Download, FileText, Mail, ListChecks,
 } from 'lucide-react';
 import {
   CORE_SEGMENTS, INDUSTRY_MODULES, INTAKE_INDUSTRIES, INTAKE_SIZES,
@@ -2359,8 +2359,18 @@ export function Maturity() {
                 );
               })()}
 
-              {/* Regenerate */}
-              <div className="flex justify-center pt-2">
+              {/* Track roadmap + Regenerate — tracking only makes sense once the
+                  plan is actually persisted server-side (logged-in user with a
+                  saved snapshot); guests still get Regenerate. */}
+              <div className="flex justify-center items-center gap-3 pt-2 flex-wrap">
+                {user && currentSnapshotId && (
+                  <Link href="/action-tracker">
+                    <Button size="sm" className="gap-1.5 text-xs bg-accent hover:bg-accent/90 text-white">
+                      <ListChecks className="w-3.5 h-3.5" />
+                      {ar ? 'تتبّع خطة العمل هذه' : 'Track This Roadmap'}
+                    </Button>
+                  </Link>
+                )}
                 <Button size="sm" variant="outline" onClick={fetchRemedies}
                   className="gap-1.5 text-xs border-accent/30 text-accent hover:bg-accent/5">
                   <RotateCcw className="w-3 h-3" />
