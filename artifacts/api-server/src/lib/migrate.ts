@@ -189,6 +189,24 @@ const MIGRATIONS: string[] = [
          notes_ar = 'تمت صياغة أسئلة مقياس النضج (7 وحدات فرعية، 35 سؤالاً: التوطين/نافس، القيمة المضافة المحلية، الجمارك، مطابقة المنتجات (الهيئة)، المشتريات الحكومية، شهادة الحلال، حماية البيانات). قيد المراجعة القانونية/الخبيرة المستقلة قبل اعتمادها بشكل كامل.'
    WHERE id = 'uae' AND coverage_level = 'roadmap'`,
 
+  // #160 — Live primary-source check of the UAE regulatory content
+  // (2026-08-13): every specific figure/threshold across all 7 sub-segments
+  // was re-checked against current public regulator pages and law texts.
+  // One correction was made (a fabricated "3 years' experience" tender
+  // criterion was rewritten to reflect the actual prequalification criteria
+  // in Cabinet Resolution No. 122/2024 Article 8 — financial solvency,
+  // technical capability, track record). This is primary-source
+  // verification, NOT a named human reviewer sign-off — coverage_level
+  // stays 'partial', not 'full', and no verified_by value is set. Notes
+  // are updated to disclose this distinction transparently. Idempotent:
+  // guarded by a marker string so it only runs once even though it no
+  // longer matches on the original 'roadmap' state.
+  `UPDATE regulatory_countries
+     SET notes = 'Maturity-scale question content authored (7 sub-segments, 35 questions: Emiratisation/Nafis, ICV, customs, ESMA product conformity, government procurement, halal certification, PDPL data privacy). Primary-source-checked against current regulator pages/law texts on 2026-08-13 (one figure corrected). Still pending independent named human legal/expert review before being marked fully verified.',
+         notes_ar = 'تمت صياغة أسئلة مقياس النضج (7 وحدات فرعية، 35 سؤالاً: التوطين/نافس، القيمة المضافة المحلية، الجمارك، مطابقة المنتجات (الهيئة)، المشتريات الحكومية، شهادة الحلال، حماية البيانات). جرى التحقق من المصادر الأولية مقابل صفحات الجهات التنظيمية الحالية بتاريخ 2026-08-13 (مع تصحيح رقم واحد). لا تزال قيد المراجعة القانونية/الخبيرة المستقلة من مراجع بشري مُسمّى قبل اعتمادها بشكل كامل.'
+   WHERE id = 'uae' AND coverage_level = 'partial'
+     AND notes NOT LIKE '%Primary-source-checked%'`,
+
 ];
 
 export async function runStartupMigrations(): Promise<void> {
