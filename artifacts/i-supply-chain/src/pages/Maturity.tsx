@@ -611,6 +611,32 @@ export function Maturity() {
         e => (e.confidenceTier === 'ai_evaluated' || e.confidenceTier === 'consultant_validated')
           && e.aiEvaluation?.plausible_support,
       ).length;
+      // Evidence Appendix (#39) — the tier-only evidenceTiers array below
+      // only carries enough to render the inline "AI-evaluated" style
+      // badges on segment score rows. A credibility-adding appendix needs
+      // the actual document list: which file, for which sub-segment, at
+      // what tier, with what AI assessment. Resolve each evidence item
+      // against activeSegments (not scopedSegments — a client may have
+      // uploaded evidence for a segment no longer in their current picker
+      // scope) to attach bilingual segment/sub-segment titles at write
+      // time, since the DB only stores the English subSegLabel.
+      const evidenceAppendix = evidenceList.map(e => {
+        const seg    = activeSegments.find(s => s.id === e.segId);
+        const subSeg = seg?.subSegments?.find(ss => ss.id === e.subSegId);
+        return {
+          segId:            e.segId,
+          segTitle:         seg?.title   ?? e.segId,
+          segTitleAr:       seg?.titleAr ?? e.segId,
+          subSegId:         e.subSegId,
+          subSegLabel:      subSeg?.title   ?? e.subSegLabel,
+          subSegLabelAr:    subSeg?.titleAr ?? e.subSegLabel,
+          originalFilename: e.originalFilename,
+          mimeType:         e.mimeType,
+          confidenceTier:   e.confidenceTier,
+          aiEvaluation:     e.aiEvaluation ?? null,
+        };
+      });
+
       sessionStorage.setItem(ISC_MATURITY_CONTEXT_KEY, JSON.stringify({
         overallScore:    +overallScore.toFixed(2),
         overallLevel:    overallLevel.label,
@@ -622,6 +648,7 @@ export function Maturity() {
         lang:            ar ? 'ar' : 'en',
         evidencePct:     evidenceableSubs > 0 ? +(evidenceBackedCount / evidenceableSubs * 100).toFixed(1) : undefined,
         evidenceTiers:   evidenceList.map(e => ({ subSegId: e.subSegId, segId: e.segId, tier: e.confidenceTier })),
+        evidenceAppendix,
       }));
     } catch { /* quota or SSR — navigation still proceeds */ }
   };

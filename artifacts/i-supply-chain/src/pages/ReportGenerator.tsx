@@ -23,6 +23,32 @@ interface Remedies     { executiveSummary?: string; days30?: RemedyItem[]; days6
 
 interface EvidenceTierEntry { segId: string; subSegId: string; tier: 'self_reported' | 'ai_evaluated' | 'consultant_validated'; }
 
+/**
+ * A single uploaded evidence document, resolved with bilingual segment/
+ * sub-segment titles at write time (see Maturity.tsx handleGoToReport).
+ * Distinct from EvidenceTierEntry above, which only carries enough to
+ * drive the inline tier badges — this carries what's needed to render an
+ * actual, checkable Evidence Appendix (#39): which document, for which
+ * capability, assessed how.
+ */
+interface EvidenceAppendixEntry {
+  segId:            string;
+  segTitle:         string;
+  segTitleAr:       string;
+  subSegId:         string;
+  subSegLabel:      string;
+  subSegLabelAr:    string;
+  originalFilename: string;
+  mimeType:         string;
+  confidenceTier:   'self_reported' | 'ai_evaluated' | 'consultant_validated';
+  aiEvaluation?: {
+    plausible_support: boolean;
+    confidence:        'high' | 'medium' | 'low';
+    flag_reason:        'generic_template' | 'blank_or_irrelevant' | 'contradicts_claimed_level' | null;
+    summary:            string;
+  } | null;
+}
+
 interface MaturitySnapshot {
   overallScore:    number;
   overallLevel:    string;
@@ -34,6 +60,7 @@ interface MaturitySnapshot {
   lang?:           'en' | 'ar';
   evidencePct?:    number;
   evidenceTiers?:  EvidenceTierEntry[];
+  evidenceAppendix?: EvidenceAppendixEntry[];
 }
 
 interface ReportData {
@@ -206,6 +233,9 @@ function ReportPrintLayout({ report, contactInfo, maturity, generatedAt }: {
             '6. 6-Month Implementation Roadmap',
             '7. Investment & Return Projection',
             '8. Conclusion & Next Steps',
+            ...(maturity?.evidenceAppendix && maturity.evidenceAppendix.length > 0
+              ? ['Appendix A: Evidence Register']
+              : []),
           ].map((item, i) => (
             <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px dotted #dde4f0' }}>
               <span style={{ fontSize: '12px', color: '#082C6B', fontWeight: 600 }}>{item}</span>
@@ -407,6 +437,73 @@ function ReportPrintLayout({ report, contactInfo, maturity, generatedAt }: {
           </div>
         </div>
       </Section>
+
+      {/* ── Appendix A: Evidence Register (#39) ──────────────────────────
+          Deliberately NOT AI-generated — this is a factual document
+          register, not narrative, so it lists exactly what the client
+          uploaded with zero risk of the AI paraphrasing or hallucinating
+          a claim about a file it never saw. Only renders when at least
+          one evidence item exists — a client who uploaded nothing gets
+          no broken or empty section. */}
+      {maturity?.evidenceAppendix && maturity.evidenceAppendix.length > 0 && (
+        <Section title="Appendix A: Evidence Register">
+          <PrintP style={{ color: '#555' }}>
+            The following documents were submitted by {contactInfo.company} to support specific self-assessed maturity ratings.
+            Each item was independently reviewed by an AI evaluator for plausibility against the stated maturity level;
+            items marked <strong>Consultant-validated</strong> have additionally been reviewed by an I Supply Chain consultant.
+            This register exists so that any finding in this report grounded in uploaded evidence can be traced back to its
+            source document.
+          </PrintP>
+          <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '12px' }}>
+            <thead>
+              <tr style={{ borderBottom: '2px solid #082C6B' }}>
+                <th style={{ textAlign: 'left', fontSize: '10px', color: '#082C6B', padding: '6px 8px', fontWeight: 700 }}>Segment</th>
+                <th style={{ textAlign: 'left', fontSize: '10px', color: '#082C6B', padding: '6px 8px', fontWeight: 700 }}>Sub-dimension</th>
+                <th style={{ textAlign: 'left', fontSize: '10px', color: '#082C6B', padding: '6px 8px', fontWeight: 700 }}>Document</th>
+                <th style={{ textAlign: 'left', fontSize: '10px', color: '#082C6B', padding: '6px 8px', fontWeight: 700 }}>Tier</th>
+                <th style={{ textAlign: 'left', fontSize: '10px', color: '#082C6B', padding: '6px 8px', fontWeight: 700 }}>AI Assessment</th>
+              </tr>
+            </thead>
+            <tbody>
+              {maturity.evidenceAppendix.map((e, i) => {
+                const tierLabel = e.confidenceTier === 'consultant_validated'
+                  ? 'Consultant-validated'
+                  : e.confidenceTier === 'ai_evaluated'
+                    ? 'AI-evaluated'
+                    : 'Self-reported';
+                const tierColor = e.confidenceTier === 'consultant_validated'
+                  ? '#C9A84C'
+                  : e.confidenceTier === 'ai_evaluated'
+                    ? '#0B3D91'
+                    : '#888';
+                const flagged = e.aiEvaluation && !e.aiEvaluation.plausible_support;
+                return (
+                  <tr key={i} style={{ borderBottom: '1px solid #eee' }}>
+                    <td style={{ fontSize: '10px', color: '#1a1a1a', padding: '6px 8px', verticalAlign: 'top' }}>{e.segTitle}</td>
+                    <td style={{ fontSize: '10px', color: '#1a1a1a', padding: '6px 8px', verticalAlign: 'top' }}>{e.subSegLabel}</td>
+                    <td style={{ fontSize: '10px', color: '#1a1a1a', padding: '6px 8px', verticalAlign: 'top', wordBreak: 'break-word' }}>{e.originalFilename}</td>
+                    <td style={{ fontSize: '10px', color: tierColor, padding: '6px 8px', verticalAlign: 'top', fontWeight: 700 }}>
+                      {flagged && <span aria-hidden>⚠ </span>}
+                      {tierLabel}
+                    </td>
+                    <td style={{ fontSize: '10px', color: '#555', padding: '6px 8px', verticalAlign: 'top' }}>
+                      {e.aiEvaluation?.summary ?? 'Pending evaluation'}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          <div style={{ marginTop: '32px', borderTop: '2px solid #082C6B', paddingTop: '16px', textAlign: 'center' }}>
+            <div style={{ fontSize: '13px', fontWeight: 700, color: '#082C6B' }}>I Supply Chain — Ma'in Alhaqash MCIPS · CPSM · MSc · MIPP</div>
+            <div style={{ fontSize: '11px', color: '#666', marginTop: '4px' }}>+966 549 479 722 · www.isupplychain.com</div>
+            <div style={{ fontSize: '10px', color: '#888', marginTop: '8px' }}>
+              This report is confidential and prepared exclusively for {contactInfo.company}.
+              © {new Date().getFullYear()} I Supply Chain. All Rights Reserved.
+            </div>
+          </div>
+        </Section>
+      )}
     </div>
   );
 }
