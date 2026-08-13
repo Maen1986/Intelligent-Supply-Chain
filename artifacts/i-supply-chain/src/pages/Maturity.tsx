@@ -1029,9 +1029,22 @@ export function Maturity() {
     // for Saudi Arabia today (#150/#151) — surface this honestly instead of
     // silently doing nothing.
     const regulatoryModuleDef = INDUSTRY_MODULES.find(m => m.id === 'regulatory');
+    // True when the chosen industry would normally trigger the Regulatory
+    // module, but only the generic international fallback applies because
+    // no country-specific content has been authored yet (#151/#153) — i.e.
+    // any country other than Saudi Arabia (has full content, #150) or UAE
+    // (has authored, pending-review content, #157).
     const regulatorySuppressed = !!intakeData.industry
       && !!regulatoryModuleDef?.moduleFor?.includes(intakeData.industry)
-      && selectedCountryId !== 'ksa';
+      && selectedCountryId !== 'ksa'
+      && selectedCountryId !== 'uae';
+    // True when UAE is selected and the industry triggers the Regulatory
+    // module — UAE now has its own authored module (#157), but it is
+    // pending independent legal/expert review, so we surface that status
+    // honestly rather than implying it carries the same sign-off as Saudi.
+    const uaeRegulatoryPendingReview = !!intakeData.industry
+      && !!regulatoryModuleDef?.moduleFor?.includes(intakeData.industry)
+      && selectedCountryId === 'uae';
 
     return (
       <div ref={topRef} className="w-full bg-muted min-h-screen">
@@ -1103,6 +1116,21 @@ export function Maturity() {
                       : 'A general "Compliance (International)" module has been added — country-agnostic questions, not Saudi rules, and not a substitute for local legal advice. '}
                   </span>
                   {ar ? (selectedCountryRecord.notesAr || selectedCountryRecord.notes) : (selectedCountryRecord.notes)}
+                </p>
+              </div>
+            )}
+            {uaeRegulatoryPendingReview && (
+              <div className="mt-4 flex items-start gap-3 rounded-xl border border-teal-200 bg-teal-50 px-4 py-3">
+                <AlertCircle className="w-4 h-4 mt-0.5 shrink-0 text-teal-700" />
+                <p className="text-sm text-teal-900">
+                  <span className="font-bold">
+                    {ar
+                      ? 'تمت إضافة وحدة امتثال خاصة بالإمارات (نفاس، القيمة المضافة المحلية، الجمارك، ESMA، المشتريات الحكومية، الحلال، حماية البيانات). '
+                      : 'A UAE-specific compliance module has been added (Emiratisation/Nafis, ICV, customs, ESMA, government procurement, halal, data protection). '}
+                  </span>
+                  {ar
+                    ? 'المحتوى مُعَدّ من مصادر رسمية للجهات التنظيمية لكنه قيد المراجعة القانونية/الخبيرة المستقلة، وليس بديلاً عن الاستشارة القانونية المحلية.'
+                    : 'Content is drawn from official regulator sources but is pending independent legal/expert review, and is not a substitute for local legal advice.'}
                 </p>
               </div>
             )}
@@ -1582,7 +1610,7 @@ export function Maturity() {
               {/* Regional coverage note — regulatory content is inherently country-specific (#118, #150).
                   Live from /api/regulatory/countries rather than a hardcoded list, so this reflects
                   the actual DB-backed Verified/Pending-Review/Roadmap status per country (#154). */}
-              {(seg.id === 'regulatory' || seg.id === 'regulatory-general') && (
+              {(seg.id === 'regulatory' || seg.id === 'regulatory-uae' || seg.id === 'regulatory-general') && (
                 <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 mb-6">
                   <p className="text-xs font-bold uppercase tracking-widest text-blue-700 mb-2">
                     {ar ? 'تغطية الدول' : 'Country Coverage'}
@@ -1606,11 +1634,17 @@ export function Maturity() {
                         ? 'وحدة الامتثال التنظيمي هذه مبنية بعمق للسعودية اليوم؛ بقية الوحدات الـ14 تستخدم أطراً عالمية (ISO وSCOR وDMAIC وغيرها) وتنطبق عالميًا فعليًا.'
                         : "This regulatory module is built deep for Saudi Arabia today; the other 14 segments use globally portable frameworks (ISO, SCOR, DMAIC, and others) and already apply worldwide."}
                     </p>
+                  ) : seg.id === 'regulatory-uae' ? (
+                    <p className="text-xs text-blue-700/80 mt-2">
+                      {ar
+                        ? 'هذه وحدة امتثال خاصة بالإمارات (نفاس/التوطين، القيمة المضافة المحلية، الجمارك، ESMA، المشتريات الحكومية، الحلال، قانون حماية البيانات) مبنية من مصادر رسمية للجهات التنظيمية. تنبيه: المحتوى مُعَدّ حديثًا وقيد المراجعة القانونية/الخبيرة المستقلة — ولم يوقّع عليه بعد مراجع بشري مُسمّى، وليس بديلاً عن الاستشارة القانونية المحلية.'
+                        : "This is a UAE-specific compliance module (Emiratisation/Nafis, ICV, customs, ESMA, government procurement, halal, PDPL) built from official regulator sources. Flag: this content was freshly authored and is pending independent legal/expert review — no named human reviewer has signed off yet, and it is not a substitute for local legal advice."}
+                    </p>
                   ) : (
                     <p className="text-xs text-blue-700/80 mt-2">
                       {ar
-                        ? 'هذه وحدة امتثال عامة دولية — أسئلة غير مرتبطة بقانون أي دولة محددة، وليست بديلاً عن استشارة قانونية محلية. ستُستبدَل تدريجيًا بمحتوى مُعتمَد خاص بكل دولة (الإمارات أولاً) مع اكتماله ومراجعته.'
-                        : "This is a general international compliance module — country-agnostic questions, not tied to any specific nation's law, and not a substitute for local legal advice. It will be progressively replaced by reviewed, country-specific content (UAE first) as each is completed."}
+                        ? 'هذه وحدة امتثال عامة دولية — أسئلة غير مرتبطة بقانون أي دولة محددة، وليست بديلاً عن استشارة قانونية محلية. ستُستبدَل تدريجيًا بمحتوى مُعتمَد خاص بكل دولة (قطر والأردن وعُمان والبحرين تاليًا) مع اكتماله ومراجعته.'
+                        : "This is a general international compliance module — country-agnostic questions, not tied to any specific nation's law, and not a substitute for local legal advice. It will be progressively replaced by reviewed, country-specific content (Qatar, Jordan, Oman, Bahrain next) as each is completed."}
                     </p>
                   )}
                 </div>

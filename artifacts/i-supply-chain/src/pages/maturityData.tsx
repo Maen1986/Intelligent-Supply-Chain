@@ -28,6 +28,7 @@ import {
   REGULATORY_SUB_SEGMENTS,
   QUALITY_SUB_SEGMENTS,
 } from './maturitySubSegData6to11';
+import { UAE_REGULATORY_SUB_SEGMENTS } from './maturityRegulatoryUae';
 
 /* ── Interfaces ──────────────────────────────────────────────────────────── */
 
@@ -2091,15 +2092,17 @@ export const INDUSTRY_MODULES: Segment[] = [
     color: '#64748B',
     benchmarks: { gcc: 2.2, global: 2.6, best: 4.2 },
     // Shown for every country that does NOT yet have its own authored,
-    // reviewed regulatory module (today: everyone except Saudi Arabia).
-    // Deliberately generic — no named-law claims (no "Nitaqat", no specific
-    // statute numbers) so it never misrepresents a country's actual
-    // requirements. As each country gets real content (UAE next, per the
-    // #33/#153 roadmap), add its own module with countryFor:['<id>'] and
-    // extend this module's countryExcept list so the real module takes over.
+    // reviewed regulatory module (today: everyone except Saudi Arabia and
+    // UAE — UAE got its own authored module, see 'regulatory-uae' below,
+    // per #157). Deliberately generic — no named-law claims (no "Nitaqat",
+    // no specific statute numbers) so it never misrepresents a country's
+    // actual requirements. As each remaining country gets real content
+    // (Qatar/Jordan/Oman/Bahrain next, per the #33/#153 roadmap), add its
+    // own module with countryFor:['<id>'] and extend this module's
+    // countryExcept list so the real module takes over.
     moduleFor: ['manufacturing', 'fmcg', 'pharma', 'retail', 'logistics', 'marine',
                 'construction', 'oil_gas', 'government', 'technology', 'banking', 'other'],
-    countryExcept: ['ksa'],
+    countryExcept: ['ksa', 'uae'],
     frameworks: ['ISO 37301', 'WCO SAFE Framework'],
     questions: [
       {
@@ -2198,5 +2201,145 @@ export const INDUSTRY_MODULES: Segment[] = [
         ],
       },
     ],
+  },
+
+  /* ── MODULE E: Regulatory & Localisation Compliance (UAE) ───────────── */
+  {
+    id: 'regulatory-uae',
+    title: 'Regulatory & Localisation Compliance (UAE)',
+    titleAr: 'الامتثال التنظيمي والتوطين (الإمارات العربية المتحدة)',
+    shortTitle: 'Regulatory (UAE)',
+    shortTitleAr: 'الامتثال التنظيمي (الإمارات)',
+    icon: Scale,
+    color: '#0F766E',
+    benchmarks: { gcc: 2.2, global: 2.6, best: 4.1 },
+    // First country-specific regulatory module built after Saudi Arabia
+    // (#157), per the user-confirmed rollout order: UAE -> Qatar -> Jordan
+    // -> Oman -> Bahrain -> other countries with clear regulation -> generic
+    // fallback for the long tail. Content authored from public regulator
+    // sources (MOHRE/Nafis, MOIAT/ICV, Federal Customs Authority, ESMA,
+    // federal + Abu Dhabi + Dubai government procurement law, UAE Data
+    // Office/PDPL) as of August 2026. STATUS: authored, PENDING INDEPENDENT
+    // LEGAL/EXPERT REVIEW — see maturityRegulatoryUae.ts header and the
+    // in-quiz Country Coverage disclaimer for seg.id === 'regulatory-uae'.
+    // Applies broadly (not just government) because Emiratisation, ICV,
+    // customs, PDPL and halal/product-conformity rules bind most
+    // private-sector operators, not only public entities.
+    moduleFor: ['manufacturing', 'fmcg', 'pharma', 'retail', 'logistics', 'marine',
+                'construction', 'oil_gas', 'government', 'technology', 'banking', 'other'],
+    countryFor: ['uae'],
+    frameworks: ['MOHRE/Nafis', 'MOIAT ICV', 'FCA', 'ESMA', 'PDPL'],
+    questions: [
+      {
+        q: 'How proactively does your organisation manage UAE Emiratisation requirements — tracking quota status against the rising annual threshold, using Nafis wage-subsidy support, and linking hiring plans to workforce nationalisation targets?',
+        layer: 'tactical',
+        qAr: 'ما مدى استباقية مؤسستكم في إدارة متطلبات التوطين الإماراتي — بتتبّع حالة الحصة مقابل العتبة السنوية المتصاعدة، واستخدام دعم أجور نافس، وربط خطط التوظيف بمستهدفات توطين القوى العاملة؟',
+        levels: [
+          'Emiratisation status is unknown until MOHRE flags a shortfall or a fine is issued; Nafis benefits are not used.',
+          'Headcount is tracked at company level but not reconciled against the skilled-role definition, the current-year threshold, or Nafis eligibility.',
+          'A defined owner checks Emiratisation status against the current threshold quarterly and claims Nafis wage subsidies for eligible hires.',
+          'Emiratisation tracking is automated via WPS/MOHRE data, reviewed monthly, and tied to a hiring plan anticipating the next annual increase.',
+          'Emiratisation performance is a standing executive KPI; hiring, succession, and Nafis subsidy planning are integrated years ahead of each threshold increase.',
+        ],
+        levelsAr: [
+          'حالة التوطين مجهولة إلى أن تُنبّه وزارة الموارد البشرية بنقص أو تصدر غرامة؛ ومزايا نافس غير مستخدمة.',
+          'يُتابَع عدد الموظفين على مستوى الشركة دون مطابقته مع تعريف الوظيفة الماهرة أو عتبة العام الحالي أو أهلية نافس.',
+          'مالك محدد يتحقّق من حالة التوطين مقابل العتبة الحالية فصليًا ويطلب دعم أجور نافس للتوظيفات المؤهلة.',
+          'تتبّع التوطين آلي عبر بيانات نظام حماية الأجور/الوزارة، ويُراجَع شهريًا، ومرتبط بخطة توظيف تستبق الزيادة السنوية القادمة.',
+          'أداء التوطين مؤشر تنفيذي ثابت؛ والتوظيف والتعاقب وتخطيط دعم نافس مُدمَجة قبل سنوات من كل زيادة في العتبة.',
+        ],
+      },
+      {
+        q: 'How rigorously does your organisation track and maximise its ICV (In-Country Value) score through MOIAT-certified reporting and local procurement strategy?',
+        layer: 'tactical',
+        qAr: 'ما مدى صرامة مؤسستكم في تتبّع وتعظيم درجة القيمة المضافة المحلية عبر التقارير المعتمدة من الوزارة واستراتيجية الشراء المحلي؟',
+        levels: [
+          'ICV is not tracked or certified; stand-alone audited financial statements required for certification do not exist.',
+          'ICV certification exists but is renewed reactively, with minimal management attention to the underlying score drivers.',
+          'ICV certification is maintained on a defined annual cycle; local-procurement spend is reviewed against pillar weightings.',
+          'ICV score is actively managed ahead of major tender cycles, with sourcing decisions weighing ICV impact alongside cost.',
+          'A top-tier ICV score is a marketed competitive advantage; the organisation actively develops UAE-based suppliers to expand its ICV-eligible base.',
+        ],
+        levelsAr: [
+          'القيمة المضافة المحلية لا تُتابَع أو تُعتمَد؛ والقوائم المالية المدققة المستقلة المطلوبة للشهادة غير موجودة.',
+          'شهادة القيمة المضافة موجودة لكنها تُجدَّد بشكل تفاعلي، باهتمام إداري ضئيل بمحركات الدرجة الأساسية.',
+          'شهادة القيمة المضافة تُحافَظ عليها وفق دورة سنوية محددة؛ ويُراجَع إنفاق الشراء المحلي مقابل أوزان الركائز.',
+          'درجة القيمة المضافة تُدار فعليًا قبل دورات المناقصات الكبرى، مع ترجيح قرارات التوريد لأثرها إلى جانب التكلفة.',
+          'الدرجة المتقدمة ميزة تنافسية تُسوَّق فعليًا؛ والمؤسسة تطوّر فعليًا موردين إماراتيين لتوسيع قاعدتها المؤهلة.',
+        ],
+      },
+      {
+        q: 'How completely does your organisation maintain Federal Customs Authority registration and correctly apply mainland vs. free-zone duty treatment (including Transit Out via Mirsal 2)?',
+        layer: 'operational',
+        qAr: 'ما مدى اكتمال احتفاظ مؤسستكم بالتسجيل لدى الهيئة الاتحادية للجمارك والتطبيق الصحيح لمعاملة الرسوم بين البر الرئيسي والمنطقة الحرة (بما يشمل النقل الخارج عبر مرسال 2)؟',
+        levels: [
+          'Customs registration status is unknown; shipments have been held or delayed due to missing registration or misapplied duty treatment.',
+          'Registration exists but renewal is tracked informally; free-zone/mainland duty distinctions are applied inconsistently.',
+          'A defined process tracks FCA registration renewal and correctly applies duty (5%) and VAT on free-zone-to-mainland transfers via Mirsal 2.',
+          'Registration and duty-treatment accuracy are monitored across all operating entities and Emirates, reconciled monthly against finance records.',
+          'Customs and duty-treatment compliance is fully governed with zero shipment delays or duty discrepancies over the past 24 months.',
+        ],
+        levelsAr: [
+          'حالة التسجيل الجمركي مجهولة؛ وتعرّضت شحنات للاحتجاز أو التأخير بسبب تسجيل مفقود أو معاملة رسوم خاطئة.',
+          'التسجيل موجود لكن تجديده يُتابَع بشكل غير رسمي؛ وتُطبَّق فروقات الرسوم بين البر الرئيسي والمنطقة الحرة بشكل غير متسق.',
+          'عملية محددة تتابع تجديد التسجيل الجمركي وتُطبّق الرسوم (5%) والضريبة بشكل صحيح على عمليات النقل من المنطقة الحرة للبر الرئيسي عبر مرسال 2.',
+          'دقة التسجيل ومعاملة الرسوم تُراقَب عبر جميع الكيانات التشغيلية والإمارات، وتُطابَق شهريًا مع سجلات المالية.',
+          'الامتثال الجمركي ومعاملة الرسوم محوكَم بالكامل دون أي تأخير في الشحنات أو تباينات في الرسوم خلال آخر 24 شهرًا.',
+        ],
+      },
+      {
+        q: 'How well does your organisation navigate government procurement across the jurisdictions it bids into (federal, Abu Dhabi, Dubai), each with distinct registration and evaluation rules?',
+        layer: 'operational',
+        qAr: 'ما مدى جودة تعامل مؤسستكم مع المشتريات الحكومية عبر الجهات التي تتقدّم إليها (الاتحادية، أبوظبي، دبي)، ولكل منها قواعد تسجيل وتقييم مختلفة؟',
+        levels: [
+          'Registration status across jurisdictions is unclear; bids have been rejected due to missing registration or jurisdiction-mismatched documentation.',
+          'Registration exists for at least one jurisdiction but is not systematically tracked or tailored across all jurisdictions bid into.',
+          'A defined process tracks active registration and uses jurisdiction-specific bid templates reflecting federal, Abu Dhabi, or Dubai rules.',
+          'Bid quality is actively benchmarked against past evaluation feedback (ICV scoring, bilingual readiness, HSE governance) across jurisdictions.',
+          'Multi-jurisdiction procurement expertise is a governed capability with a sustained high win-rate and zero eligibility disqualifications.',
+        ],
+        levelsAr: [
+          'حالة التسجيل عبر الجهات غير واضحة؛ ورُفضت مناقصات بسبب تسجيل مفقود أو مستندات غير متوافقة مع الجهة.',
+          'التسجيل موجود لجهة واحدة على الأقل لكن دون تتبّع منهجي أو تخصيص عبر جميع الجهات المُتقدَّم إليها.',
+          'عملية محددة تتابع التسجيل النشط وتستخدم قوالب مناقصات خاصة بكل جهة تعكس قواعد الجهة الاتحادية أو أبوظبي أو دبي.',
+          'جودة المناقصات تُقاس فعليًا مقابل ملاحظات التقييم السابقة (تقييم القيمة المضافة، الجاهزية ثنائية اللغة، حوكمة السلامة) عبر الجهات.',
+          'الخبرة في المشتريات متعددة الجهات قدرة محوكَمة بمعدل فوز مرتفع مستدام وصفر استبعاد من الأهلية.',
+        ],
+      },
+      {
+        q: 'How well does your organisation govern personal data processing (supplier, employee, customer shipment records) under the UAE PDPL, including correctly distinguishing federal vs. free-zone (DIFC/ADGM) regimes?',
+        layer: 'strategic',
+        qAr: 'ما مدى جودة حوكمة مؤسستكم لمعالجة البيانات الشخصية (سجلات الموردين والموظفين وشحنات العملاء) بموجب قانون حماية البيانات الإماراتي، بما يشمل التمييز الصحيح بين النظام الاتحادي وأنظمة المناطق الحرة (مركز دبي المالي/سوق أبوظبي العالمي)؟',
+        levels: [
+          'The applicable data-protection regime is not determined; personal data is processed without a documented lawful basis.',
+          'General awareness of PDPL exists, but no formal per-entity regime determination or data inventory has been completed.',
+          'A documented assessment identifies which regime applies per entity, with a data inventory covering main supply chain systems.',
+          'Consent/lawful-basis records are actively maintained and auditable; third-party processors are bound by PDPL-compliant contract clauses.',
+          'Data-protection governance is a mature, continuously monitored capability with automated breach-detection and a demonstrated ability to meet PDPL reporting timelines.',
+        ],
+        levelsAr: [
+          'النظام المُطبَّق لحماية البيانات غير محدد؛ وتُعالَج البيانات الشخصية دون أساس نظامي موثّق.',
+          'يوجد وعي عام بقانون حماية البيانات، لكن دون تحديد رسمي للنظام لكل كيان أو جرد بيانات مكتمل.',
+          'تقييم موثّق يحدد أي نظام ينطبق على كل كيان، مع جرد بيانات يغطي أنظمة سلسلة الإمداد الرئيسية.',
+          'سجلات الموافقة/الأساس النظامي تُحافَظ عليها فعليًا وقابلة للتدقيق؛ والمعالجون من الأطراف الثالثة مُلزَمون ببنود تعاقدية متوافقة مع القانون.',
+          'حوكمة حماية البيانات قدرة ناضجة ومراقَبة باستمرار باكتشاف اختراقات آلي وقدرة مُثبَتة على الوفاء بالمهل الزمنية للإبلاغ بموجب القانون.',
+        ],
+      },
+    ],
+    recommendations: {
+      Reactive:  'Immediately confirm MOHRE Emiratisation status and Nafis eligibility, verify Federal Customs Authority registration is current, and complete a UAE PDPL data inventory for supply chain systems.',
+      Aware:     'Formalise ICV certification with audited stand-alone financial statements. Build a jurisdiction-specific government procurement bid template for each Emirate you bid into.',
+      Defined:   'Automate Emiratisation and WPS tracking by department. Systematise Mirsal 2 Transit Out duty/VAT verification and bind third-party processors to PDPL-compliant clauses.',
+      Managed:   'Link ICV score improvement to major tender cycles. Build a multi-jurisdiction procurement playbook (federal/Abu Dhabi/Dubai) and implement automated PDPL breach-detection.',
+      Optimised: 'Position Emiratisation and ICV performance as a competitive differentiator in tenders and talent. Achieve zero registration, duty, or data-protection compliance findings across all operating Emirates.',
+    },
+    recommendationsAr: {
+      Reactive:  'تأكيد حالة التوطين لدى وزارة الموارد البشرية وأهلية نافس فورًا، والتحقق من سريان التسجيل لدى الهيئة الاتحادية للجمارك، وإكمال جرد بيانات قانون حماية البيانات لأنظمة سلسلة الإمداد.',
+      Aware:     'إضفاء الطابع الرسمي على شهادة القيمة المضافة المحلية بقوائم مالية مدققة مستقلة. بناء قالب مناقصات خاص بكل جهة حكومية تتقدّمون إليها.',
+      Defined:   'أتمتة تتبّع التوطين ونظام حماية الأجور حسب الإدارة. منهجة التحقق من الرسوم والضريبة لعمليات النقل عبر مرسال 2 وإلزام معالجي البيانات من الأطراف الثالثة ببنود متوافقة مع القانون.',
+      Managed:   'ربط تحسين درجة القيمة المضافة بدورات المناقصات الكبرى. بناء دليل مشتريات متعدد الجهات (الاتحادية/أبوظبي/دبي) وتطبيق اكتشاف اختراقات آلي لحماية البيانات.',
+      Optimised: 'وضع أداء التوطين والقيمة المضافة المحلية كميزة تنافسية في المناقصات والمواهب. تحقيق صفر نتائج امتثال متعلقة بالتسجيل أو الرسوم أو حماية البيانات عبر جميع الإمارات العاملة بها.',
+    },
+    subSegments: UAE_REGULATORY_SUB_SEGMENTS as unknown as SubSegment[],
   },
 ];
