@@ -2108,7 +2108,7 @@ export const INDUSTRY_MODULES: Segment[] = [
     // the real module takes over.
     moduleFor: ['manufacturing', 'fmcg', 'pharma', 'retail', 'logistics', 'marine',
                 'construction', 'oil_gas', 'government', 'technology', 'banking', 'other'],
-    countryExcept: ['ksa', 'uae', 'qatar', 'jordan', 'oman', 'bahrain'],
+    countryExcept: ['ksa', 'uae', 'qat', 'jor', 'omn', 'bhr'],
     frameworks: ['ISO 37301', 'WCO SAFE Framework'],
     questions: [
       {
@@ -2375,7 +2375,7 @@ export const INDUSTRY_MODULES: Segment[] = [
     // not only public entities.
     moduleFor: ['manufacturing', 'fmcg', 'pharma', 'retail', 'logistics', 'marine',
                 'construction', 'oil_gas', 'government', 'technology', 'banking', 'other'],
-    countryFor: ['qatar'],
+    countryFor: ['qat'],
     frameworks: ['Law No. 12/2024', 'Tawteen/ICV', 'GAC', 'Monaqasat', 'PDPPL'],
     questions: [
       {
@@ -2517,7 +2517,7 @@ export const INDUSTRY_MODULES: Segment[] = [
     // private-sector operators, not only public entities.
     moduleFor: ['manufacturing', 'fmcg', 'pharma', 'retail', 'logistics', 'marine',
                 'construction', 'oil_gas', 'government', 'technology', 'banking', 'other'],
-    countryFor: ['jordan'],
+    countryFor: ['jor'],
     frameworks: ['Ministry of Labour', 'QIZ Rules of Origin', 'Jordan Customs', 'Bylaw No. 8/2022', 'PDPL'],
     questions: [
       {
@@ -2659,7 +2659,7 @@ export const INDUSTRY_MODULES: Segment[] = [
     // not only public entities.
     moduleFor: ['manufacturing', 'fmcg', 'pharma', 'retail', 'logistics', 'marine',
                 'construction', 'oil_gas', 'government', 'technology', 'banking', 'other'],
-    countryFor: ['oman'],
+    countryFor: ['omn'],
     frameworks: ['Sultani Decree 53/2023', 'PTLC/ICV', 'DGSM', 'e-Tendering', 'PDPL'],
     questions: [
       {
@@ -2802,7 +2802,7 @@ export const INDUSTRY_MODULES: Segment[] = [
     // private-sector operators, not only public entities.
     moduleFor: ['manufacturing', 'fmcg', 'pharma', 'retail', 'logistics', 'marine',
                 'construction', 'oil_gas', 'government', 'technology', 'banking', 'other'],
-    countryFor: ['bahrain'],
+    countryFor: ['bhr'],
     frameworks: ['LMRA', 'Tamkeen', 'BSMD', 'Legislative Decree No. 36/2002', 'PDPA'],
     questions: [
       {
