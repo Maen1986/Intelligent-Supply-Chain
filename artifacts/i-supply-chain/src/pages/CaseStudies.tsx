@@ -299,8 +299,8 @@ export function CaseStudies() {
           <h2 className="text-3xl font-bold mb-3">{ar ? 'هل أنت مستعد لكتابة قصة نجاحك؟' : 'Ready to Write Your Own Success Story?'}</h2>
           <p className="text-white/70 text-lg max-w-xl mx-auto mb-8">
             {ar
-              ? 'ابدأ بتشخيصنا الذكي المجاني — تقييم من 5 خطوات يقدّم تقريرًا استراتيجيًا مصمّمًا لمؤسستك في أقل من 5 دقائق.'
-              : 'Start with our free AI diagnostic — a 5-step assessment that delivers a strategic report tailored to your organisation in under 5 minutes.'}
+              ? 'ابدأ بتشخيصنا الذكي المجاني — تقييم من 7 خطوات يقدّم تقريرًا استراتيجيًا مصمّمًا لمؤسستك خلال دقائق.'
+              : 'Start with our free AI diagnostic — a 7-step assessment that delivers a strategic report tailored to your organisation in minutes.'}
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/diagnostic">
