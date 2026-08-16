@@ -240,7 +240,6 @@ export function Diagnostic() {
     'Enterprise': 'مؤسسة كبرى',
     'Government Entity': 'جهة حكومية',
     // Region / country
-    'International': 'دولي',
     'Saudi Arabia': 'المملكة العربية السعودية',
     'United Arab Emirates': 'الإمارات العربية المتحدة',
     'Qatar': 'قطر',
@@ -248,6 +247,12 @@ export function Diagnostic() {
     'Oman': 'عُمان',
     'Bahrain': 'البحرين',
     'Other GCC': 'دول الخليج الأخرى',
+    'North America': 'أمريكا الشمالية',
+    'Europe': 'أوروبا',
+    'Africa': 'أفريقيا',
+    'Asia-Pacific': 'آسيا والمحيط الهادئ',
+    'Latin America': 'أمريكا اللاتينية',
+    'International (Other)': 'دولي (أخرى)',
     // Industry
     'Manufacturing': 'التصنيع',
     'Marine': 'القطاع البحري',
@@ -344,7 +349,7 @@ export function Diagnostic() {
               <div className="animate-in fade-in slide-in-from-right-4 duration-300">
                 <h2 className="text-xl sm:text-2xl font-bold text-foreground mb-5 sm:mb-6">{t('diagnostic.step2')}</h2>
                 <RadioGroup value={formData.region} onValueChange={(val) => setFormData(p => ({ ...p, region: val }))} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {['Saudi Arabia', 'United Arab Emirates', 'Qatar', 'Jordan', 'Oman', 'Bahrain', 'Other GCC', 'International'].map((opt) => (
+                  {['Saudi Arabia', 'United Arab Emirates', 'Qatar', 'Jordan', 'Oman', 'Bahrain', 'Other GCC', 'North America', 'Europe', 'Africa', 'Asia-Pacific', 'Latin America', 'International (Other)'].map((opt) => (
                     <label key={opt} htmlFor={`rg-${opt}`} className={radioItemCls}>
                       <RadioGroupItem value={opt} id={`rg-${opt}`} />
                       <span className="flex-1 font-medium text-base">{optLabel(opt)}</span>
