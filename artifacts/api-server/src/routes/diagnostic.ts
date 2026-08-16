@@ -210,6 +210,13 @@ LANGUAGE INSTRUCTION: Generate ALL text values in ${lang}.`;
   };
   const regionFull = regionContext[input.region] ?? input.region;
 
+  // Only the 6 GCC/Levant countries + "Other GCC" have primary-source-grounded ISC benchmark data.
+  // For the 5 world regions added later, presenting the same GCC figures as "this client's regional
+  // benchmark" would repeat the exact mislabeling bug we fixed for the regulatory content — so those
+  // regions get the GCC dataset only as an explicit comparison reference, never as their own standard.
+  const GCC_LEVANT_REGIONS = new Set(['Saudi Arabia', 'United Arab Emirates', 'Qatar', 'Jordan', 'Oman', 'Bahrain', 'Other GCC']);
+  const isGccRegion = GCC_LEVANT_REGIONS.has(input.region);
+
   const kpiGrounding = await fetchKpiGrounding();
 
   const supplyChainBlock = supplyChainHint
@@ -233,9 +240,10 @@ Using your deep ${input.industry} sector knowledge for the ${input.region} marke
 
 Be specific to the ${input.industry} sector in ${input.region}. Reference industry-specific GCC benchmarks where relevant (e.g. OTIF%, procurement cost as % of revenue, inventory turns, forecast accuracy). Scale all SAR/USD figures to a ${input.businessSize} organisation. Do NOT produce generic supply chain advice — every finding must reflect the specific realities of a ${input.businessSize} ${input.industry} organisation in ${input.region} with a ${input.focusArea} focus${input.supplyChainType ? `, operating ${input.supplyChainType}` : ''}${input.dataMaturity ? `, at a "${input.dataMaturity}" data maturity level` : ''}.
 
-AUTHORITATIVE GCC BENCHMARK DATA — this is ISC's own curated benchmark dataset, the same data shown live in the Command Centre Benchmark Radar and used across the Maturity Assessment. If your KPI list includes any of these six universal metrics, you MUST use these exact figures rather than estimating your own — a client must never see a different "GCC benchmark" for the same metric in different ISC tools:
-${kpiGrounding}
-For any KPI outside this list (e.g. contract cycle time, ESG audit coverage, digital adoption rate), apply your own ${input.industry}-specific expertise as normal.
+${isGccRegion
+  ? `AUTHORITATIVE GCC BENCHMARK DATA — this is ISC's own curated benchmark dataset, the same data shown live in the Command Centre Benchmark Radar and used across the Maturity Assessment. If your KPI list includes any of these six universal metrics, you MUST use these exact figures rather than estimating your own — a client must never see a different "GCC benchmark" for the same metric in different ISC tools:\n${kpiGrounding}\nFor any KPI outside this list (e.g. contract cycle time, ESG audit coverage, digital adoption rate), apply your own ${input.industry}-specific expertise as normal.`
+  : `REFERENCE BENCHMARK DATA (GCC-sourced, for comparison only) — this is ISC's own curated GCC benchmark dataset, the same data shown live in the Command Centre Benchmark Radar and used across the Maturity Assessment. This client is based in ${input.region}, not the GCC, so do NOT present these figures as if they describe this client's own regional benchmark. For any KPI in this list, use your own general/global ${input.industry}-specific expertise to state a realistic global (or ${input.region}-relevant) benchmark range instead — you may optionally cite the GCC figure below purely as an explicit side-by-side comparison point (e.g. "global median is approximately X, versus a GCC median of Y"), but never as if it is this client's own standard:\n${kpiGrounding}\nFor any KPI outside this list, apply your own ${input.industry}-specific expertise as normal.`
+}
 
 Return ONLY valid JSON (no markdown, no code fences) matching this EXACT structure:
 {
@@ -308,7 +316,10 @@ Rules:
 - regionalAlignment: include only if there is genuinely relevant regulatory/policy content for this region; set to empty string "" otherwise
 - Every item must be ${input.industry}-specific and ${input.focusArea}-focused — no generic supply chain filler
 - All SAR figures calibrated to a ${input.businessSize} (${revHint})
-- Where a kpis entry corresponds to one of the six universal metrics in AUTHORITATIVE GCC BENCHMARK DATA above, the number cited MUST match that data exactly — do not round, adjust, or invent a different figure`;
+${isGccRegion
+  ? `- Where a kpis entry corresponds to one of the six universal metrics in AUTHORITATIVE GCC BENCHMARK DATA above, the number cited MUST match that data exactly — do not round, adjust, or invent a different figure`
+  : `- The REFERENCE BENCHMARK DATA above is GCC-sourced; do not present it as this client's own regional benchmark. If you cite it, label it explicitly as a GCC comparison point alongside your own global figure`
+}`;
 
   const response = await openai.chat.completions.create({
     model:           OPENAI_MODEL,
