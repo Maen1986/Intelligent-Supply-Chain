@@ -20,6 +20,114 @@ export type AllowedInsightAuthor = (typeof ALLOWED_INSIGHT_AUTHORS)[number];
 
 export const articles = [
   {
+    id: 7,
+    title: "IKTVA at 70%: What Aramco's Local-Content Milestone Means for the Next Phase of Supplier Qualification",
+    titleAr: "اكتفاء عند 70%: ماذا يعني إنجاز أرامكو للمحتوى المحلي للمرحلة القادمة من تأهيل المورّدين؟",
+    category: "GCC Policy",
+    readTime: "6 min read",
+    readTimeAr: "قراءة 6 دقائق",
+    date: "May 2026",
+    dateAr: "مايو 2026",
+    excerpt: "Aramco's IKTVA programme has reached its 70% local-content target and set a new 75% goal for 2030. For suppliers across the Kingdom's energy, construction, and logistics sectors, the milestone changes what 'compliant' actually means going forward.",
+    excerptAr: "بلغ برنامج اكتفاء التابع لأرامكو هدفه في تحقيق 70% من المحتوى المحلي، ووضع هدفاً جديداً بـ75% بحلول 2030. وبالنسبة للمورّدين في قطاعات الطاقة والإنشاءات والخدمات اللوجستية بالمملكة، يُغيّر هذا الإنجاز ما يعنيه \"الامتثال\" فعلياً في المرحلة المقبلة.",
+    body: `Aramco confirmed in early 2026 that its In-Kingdom Total Value Add (IKTVA) programme has reached its initial 70% local-content target across the company's supply chains — a milestone that has added more than $280 billion to the Saudi economy and supported over 200,000 direct and indirect jobs since the programme's launch. A new target of 75% localisation by 2030 has now been set, extending a trajectory that has been tightening steadily since IKTVA's introduction.
+
+For procurement and supply chain leaders, the practical implication is less about the headline number and more about what it signals: localisation targets in Saudi Arabia are not static compliance thresholds that, once met, stay fixed. They ratchet upward, and the qualification bar for "local content" — verified Saudi ownership, manufacturing presence, workforce composition, and reinvestment — tends to tighten alongside the target itself. Suppliers who treated their current IKTVA score as a finished project rather than a moving baseline are likely to find themselves falling behind as the 75% goalpost approaches.
+
+The organisations best positioned for the next phase are those already building supplier development capability rather than simply sourcing pre-qualified local vendors: co-investment in local manufacturing capacity, structured technology transfer, and long-term workforce Saudization plans that go beyond headcount to actual skills development. As IKTVA's scope has expanded well beyond Aramco's own direct ecosystem — influencing procurement expectations across the broader energy, construction, and industrial sectors — the programme has effectively become the reference model for what "localisation done well" looks like across Vision 2030-aligned industries.`,
+    bodyAr: `أكدت أرامكو في مطلع عام 2026 أن برنامج القيمة المضافة المحلية الشامل (اكتفاء) بلغ هدفه الأولي المتمثل في 70% من المحتوى المحلي عبر سلاسل إمداد الشركة — وهو إنجاز أسهم بأكثر من 280 مليار دولار في الاقتصاد السعودي ودعم أكثر من 200,000 وظيفة مباشرة وغير مباشرة منذ إطلاق البرنامج. وتم الآن تحديد هدف جديد بنسبة 75% للتوطين بحلول 2030، في استمرار لمسار كان يتشدّد باطّراد منذ إطلاق اكتفاء.
+
+بالنسبة لقادة المشتريات وسلسلة الإمداد، فإن الأثر العملي لا يكمن كثيراً في الرقم بحد ذاته، بل فيما يدل عليه: أهداف التوطين في المملكة العربية السعودية ليست عتبات امتثال ثابتة تبقى كما هي بمجرد تحقيقها، بل ترتفع تدريجياً، وغالباً ما يتشدّد سقف تأهيل "المحتوى المحلي" — من ملكية سعودية موثّقة، وحضور تصنيعي، وتركيبة قوى عاملة، وإعادة استثمار — بالتوازي مع ارتفاع الهدف نفسه. والمورّدون الذين تعاملوا مع درجة اكتفاء الحالية كمشروع مُنجَز لا كخط أساس متحرّك، مرشّحون للتخلف عن الركب مع اقتراب هدف الـ75%.
+
+والمنشآت الأفضل استعداداً للمرحلة القادمة هي تلك التي تبني بالفعل قدرات تطوير المورّدين بدلاً من الاكتفاء بالتوريد من بائعين محليين مؤهّلين مسبقاً: من خلال الاستثمار المشترك في القدرة التصنيعية المحلية، ونقل التقنية المنظّم، وخطط توطين طويلة الأمد تتجاوز مجرد أعداد التوظيف إلى تطوير المهارات الفعلي. ومع توسّع نطاق اكتفاء ليتجاوز منظومة أرامكو المباشرة — والتأثير في توقعات المشتريات عبر قطاعات الطاقة والإنشاءات والصناعة الأوسع — أصبح البرنامج فعلياً النموذج المرجعي لما يعنيه "التوطين المُنفَّذ بشكل صحيح" عبر الصناعات المتوافقة مع رؤية 2030.`,
+    author: "ISC Editorial Team",
+    authorTitle: "I Supply Chain",
+    authorTitleAr: "فريق تحرير I Supply Chain",
+    bgColor: "bg-amber-600",
+    featured: false,
+  },
+  {
+    id: 8,
+    title: "From Insight to Action: What AI Agents in Procurement Actually Do in 2026",
+    titleAr: "من الرؤية إلى الفعل: ماذا يفعل الوكلاء الذكيّون في المشتريات فعلياً في 2026؟",
+    category: "Technology",
+    readTime: "7 min read",
+    readTimeAr: "قراءة 7 دقائق",
+    date: "July 2026",
+    dateAr: "يوليو 2026",
+    excerpt: "Procurement's AI conversation has shifted from dashboards and forecasts to systems that draft, negotiate, and execute. Here's what that shift actually looks like inside a mid-sized organisation — and where the human still has to stay in the loop.",
+    excerptAr: "انتقل الحديث عن الذكاء الاصطناعي في المشتريات من لوحات المعلومات والتوقعات إلى أنظمة تصيغ وتفاوض وتُنفّذ. إليكم كيف يبدو هذا التحوّل فعلياً داخل مؤسسة متوسطة الحجم — وأين يجب أن يبقى الإنسان جزءاً من الحلقة.",
+    body: `For years, "AI in procurement" meant better dashboards: spend visibility, demand forecasts, supplier scorecards that updated themselves. That era is ending. By 2026, the more consequential shift is agentic — AI systems embedded directly in procurement workflows that draft contract language, generate negotiation recommendations, and execute routine renewals within pre-approved policy limits, without a human touching every step. Industry surveys now put weekly generative AI use among procurement executives at 94%, up 44 percentage points in a single year.
+
+What's notable is not the enthusiasm — that's been present since 2023 — but the gap between it and actual adoption. Procurement still accounts for only around 6% of enterprise AI use cases, the lowest of any major business function tracked by BCG. The reason isn't a lack of ambition; it's that procurement data is messier and more fragmented than almost any other function's, spread across ERP systems, supplier portals, contract repositories, and email threads that were never designed to talk to each other. Agentic AI amplifies whatever data quality already exists — it does not fix bad data on its own.
+
+The organisations actually capturing value are the ones that resisted the instinct to automate everything at once. They started with narrow, high-confidence use cases — spend classification, invoice matching, first-pass supplier risk scoring — where an AI error is cheap to catch and correct, and kept a human explicitly in the approval loop for anything with real commercial or contractual consequence. That discipline, not the sophistication of the model, is what separates procurement teams that are genuinely faster in 2026 from the ones still waiting for AI to "figure it out."`,
+    bodyAr: `لسنوات، كان مفهوم "الذكاء الاصطناعي في المشتريات" يعني لوحات معلومات أفضل: رؤية للإنفاق، وتوقعات للطلب، وبطاقات أداء للمورّدين تُحدَّث تلقائياً. تلك المرحلة تقترب من نهايتها. فبحلول 2026، أصبح التحوّل الأكثر أهمية "وكيلياً" — أنظمة ذكاء اصطناعي مدمجة مباشرة في مهام سير عمل المشتريات، تصيغ بنود العقود، وتولّد توصيات التفاوض، وتُنفّذ عمليات التجديد الروتينية ضمن حدود سياسات مُعتمَدة مسبقاً، دون تدخّل بشري في كل خطوة. وتشير الاستطلاعات القطاعية الآن إلى أن الاستخدام الأسبوعي للذكاء الاصطناعي التوليدي بين مسؤولي المشتريات بلغ 94%، بزيادة 44 نقطة مئوية خلال عام واحد فقط.
+
+واللافت ليس الحماس — فهو موجود منذ 2023 — بل الفجوة بينه وبين التبنّي الفعلي. إذ لا تزال المشتريات تمثّل نحو 6% فقط من حالات استخدام الذكاء الاصطناعي المؤسسي، وهي الأدنى بين جميع وظائف الأعمال الرئيسية التي رصدتها BCG. والسبب ليس نقص الطموح، بل أن بيانات المشتريات أكثر تشتتاً وفوضوية من بيانات أي وظيفة أخرى تقريباً، موزّعة بين أنظمة تخطيط الموارد المؤسسية، وبوابات المورّدين، ومستودعات العقود، وسلاسل البريد الإلكتروني التي لم تُصمَّم أصلاً للتواصل فيما بينها. والذكاء الاصطناعي الوكيلي يُضخّم جودة البيانات القائمة أياً كانت — ولا يُصلح البيانات الرديئة من تلقاء نفسه.
+
+والمؤسسات التي تحقّق قيمة فعلية هي تلك التي قاومت غريزة أتمتة كل شيء دفعة واحدة. فقد بدأت بحالات استخدام ضيّقة النطاق وعالية الثقة — تصنيف الإنفاق، مطابقة الفواتير، التقييم الأولي لمخاطر المورّدين — حيث يكون تصحيح خطأ الذكاء الاصطناعي فيها منخفض الكلفة، وأبقت الإنسان جزءاً صريحاً من حلقة الموافقة على أي قرار ذي أثر تجاري أو تعاقدي حقيقي. وهذا الانضباط، لا تطوّر النموذج، هو ما يميّز فرق المشتريات الأسرع فعلياً في 2026 عن تلك التي لا تزال تنتظر من الذكاء الاصطناعي أن "يتدبّر الأمر" بنفسه.`,
+    author: "Maen Haqash",
+    authorTitle: "Founder & Lead Consultant",
+    authorTitleAr: "المؤسّس وكبير الاستشاريين",
+    bgColor: "bg-teal-600",
+    featured: false,
+  },
+  {
+    id: 9,
+    title: "Tariff Volatility and the Regional Reset: What 2026's Trade Fragmentation Means for Sourcing Strategy",
+    titleAr: "تقلبات التعريفات الجمركية وإعادة التموضع الإقليمي: ماذا يعني تفتّت التجارة في 2026 لاستراتيجية التوريد؟",
+    category: "Strategy",
+    readTime: "6 min read",
+    readTimeAr: "قراءة 6 دقائق",
+    date: "June 2026",
+    dateAr: "يونيو 2026",
+    excerpt: "Tariff volatility has overtaken almost every other regulatory risk on procurement leaders' radar in 2026. The response reshaping sourcing strategy isn't reshoring — it's a harder-edged regional diversification.",
+    excerptAr: "تجاوزت تقلبات التعريفات الجمركية كل المخاطر التنظيمية الأخرى تقريباً على رادار قادة المشتريات في 2026. والاستجابة التي تُعيد تشكيل استراتيجية التوريد ليست إعادة التصنيع محلياً، بل تنويعاً إقليمياً أكثر حدّة.",
+    body: `Tariff volatility has moved from a background planning risk to the single most disruptive force procurement leaders are managing in 2026. A February 2026 survey of 225 senior trade professionals found 72% now name U.S. tariff volatility the most impactful regulatory change of the year — sharply up from 41% who said the same just twelve months earlier. Eighty-two percent of surveyed organisations report their supply chains have been directly affected, and 39% are absorbing higher supplier and material costs as a direct result.
+
+What's changing structurally is not just cost, but geography. The three major trading circles — East Asia, North America, and Europe — are hardening into more independent regional blocs, with global trade increasingly organised around regional rather than global optimisation. Despite the disruption, global trade volumes have not collapsed: both US imports and Chinese exports have reached new highs even as tariff regimes tighten, meaning the story is realignment rather than retreat.
+
+For procurement and sourcing leaders operating in or through the GCC, the practical response most organisations are converging on is multi-sourcing paired with regional inventory positioning — treating "which region" as a first-order sourcing decision rather than an afterthought to unit cost. Companies that invested in supply chain visibility and scenario-planning tools during the pandemic years are, by most accounts, weathering 2026's volatility considerably better than those now scrambling to build that capability from scratch.`,
+    bodyAr: `انتقلت تقلبات التعريفات الجمركية من كونها مخاطرة تخطيطية في الخلفية إلى أكثر القوى تعطيلاً التي يديرها قادة المشتريات في 2026. فقد كشف استطلاع أُجري في فبراير 2026 شمل 225 من كبار المتخصصين في التجارة أن 72% منهم يعتبرون الآن تقلّب التعريفات الجمركية الأمريكية أكثر التغيّرات التنظيمية تأثيراً هذا العام — بارتفاع حاد من 41% قالوا الأمر ذاته قبل اثني عشر شهراً فقط. وأفادت 82% من المؤسسات المشمولة بالاستطلاع بأن سلاسل إمدادها تأثّرت بشكل مباشر، فيما استوعبت 39% منها ارتفاعاً في تكاليف المورّدين والمواد كنتيجة مباشرة لذلك.
+
+والتغيّر البنيوي الحقيقي لا يقتصر على الكلفة، بل يمتد إلى الجغرافيا. فالتكتلات التجارية الكبرى الثلاثة — شرق آسيا، وأمريكا الشمالية، وأوروبا — تتجه نحو الاستقلالية بشكل متزايد، مع تنظيم التجارة العالمية حول التحسين الإقليمي أكثر من التحسين العالمي. ورغم هذا الاضطراب، لم تنهَر أحجام التجارة العالمية: إذ سجّلت كل من الواردات الأمريكية والصادرات الصينية مستويات قياسية جديدة حتى مع تشدّد أنظمة التعريفات الجمركية، ما يعني أن القصة هي إعادة تموضع لا انكماش.
+
+وبالنسبة لقادة المشتريات والتوريد العاملين في منطقة الخليج أو عبرها، فإن الاستجابة العملية التي تتقارب حولها معظم المؤسسات هي الجمع بين تعدد مصادر التوريد والتموضع الإقليمي للمخزون — بمعاملة "أي منطقة" كقرار توريد من الدرجة الأولى بدلاً من اعتباره تفصيلاً ثانوياً بعد تكلفة الوحدة. والشركات التي استثمرت في أدوات رؤية سلسلة الإمداد والتخطيط للسيناريوهات خلال سنوات الجائحة تتجاوز، بحسب معظم التقديرات، اضطرابات 2026 بشكل أفضل بكثير من تلك التي تسعى الآن لبناء هذه القدرة من الصفر.`,
+    author: "ISC Editorial Team",
+    authorTitle: "I Supply Chain",
+    authorTitleAr: "فريق تحرير I Supply Chain",
+    bgColor: "bg-rose-600",
+    featured: false,
+  },
+  {
+    id: 10,
+    title: "From Reactive to Predictive: The 2026 Shift in Supplier Risk Management",
+    titleAr: "من التفاعل إلى التنبؤ: التحوّل في إدارة مخاطر المورّدين لعام 2026",
+    category: "Risk",
+    readTime: "6 min read",
+    readTimeAr: "قراءة 6 دقائق",
+    date: "August 2026",
+    dateAr: "أغسطس 2026",
+    excerpt: "Supplier risk management is no longer about reacting faster to disruptions after they happen. In 2026, the leading organisations are building the data foundations to see risk coming — across geopolitical, cyber, climate, and regulatory dimensions at once.",
+    excerptAr: "لم تعد إدارة مخاطر المورّدين تتعلق بالتفاعل الأسرع مع الاضطرابات بعد وقوعها. ففي 2026، تبني المؤسسات الرائدة الأسس البيانية لرؤية المخاطر قبل حدوثها — عبر الأبعاد الجيوسياسية والسيبرانية والمناخية والتنظيمية في آنٍ واحد.",
+    body: `Supplier risk management has spent the last two decades largely reactive: a disruption occurs, the organisation scrambles to assess exposure, and a mitigation plan follows after the fact. That model is giving way in 2026 to something more deliberately predictive. New industry research finds 42% of risk leaders now believe AI alone can reduce third-party financial exposure by at least 20%, and by 2031 an estimated 60% of supply chain disruptions are expected to be resolved without human intervention at all — a trajectory that starts with the predictive tooling organisations are building today.
+
+The shift is multi-dimensional by necessity. Sixty-five percent of large companies now name third-party and supply-chain vulnerabilities a leading cybersecurity challenge, while extreme weather events — floods, droughts, heatwaves, storms — are increasingly cited as a source of cascading delays across interconnected supplier networks. Geopolitical, cyber, climate, and regulatory risk used to be tracked in separate spreadsheets, owned by separate teams, reviewed on separate cycles. Predictive risk management treats them as one integrated view of a single supplier relationship, because in practice they compound rather than occur in isolation.
+
+None of this works without a foundation most organisations still underinvest in: data quality. Predictive models are only as reliable as the supplier master data, spend history, and performance records feeding them — and for many procurement functions, that data still lives across disconnected ERP systems, supplier portals, and manually maintained spreadsheets. The organisations moving fastest toward genuinely predictive risk management are, almost without exception, the ones that treated data consolidation as the first project rather than an afterthought to the AI layer sitting on top of it.`,
+    bodyAr: `أمضت إدارة مخاطر المورّدين العقدين الماضيين في نمط تفاعلي إلى حد كبير: يقع الاضطراب، فتُسارع المؤسسة لتقييم التعرّض له، وتتبع ذلك خطة تخفيف لاحقة. وهذا النموذج يتراجع في 2026 لصالح نهج أكثر تنبؤاً بشكل متعمّد. تُظهر أبحاث صناعية جديدة أن 42% من قادة إدارة المخاطر يرون الآن أن الذكاء الاصطناعي وحده قادر على خفض التعرّض المالي لمخاطر الأطراف الثالثة بنسبة 20% على الأقل، ومن المتوقع بحلول 2031 أن يُحلّ نحو 60% من اضطرابات سلسلة الإمداد دون أي تدخّل بشري على الإطلاق — وهو مسار يبدأ بأدوات التنبؤ التي تبنيها المؤسسات اليوم.
+
+والتحوّل متعدد الأبعاد بالضرورة. إذ تُصنّف 65% من الشركات الكبرى الآن نقاط ضعف الأطراف الثالثة وسلسلة الإمداد ضمن أبرز تحدياتها في الأمن السيبراني، فيما يُشار بشكل متزايد إلى الظواهر الجوية المتطرفة — الفيضانات والجفاف وموجات الحر والعواصف — كمصدر لتأخيرات متسلسلة عبر شبكات المورّدين المترابطة. وكانت مخاطر الجغرافيا السياسية والأمن السيبراني والمناخ والتنظيم تُتابَع سابقاً في جداول بيانات منفصلة، تملكها فرق مختلفة، وتُراجَع بدورات مختلفة. أما إدارة المخاطر التنبؤية فتتعامل معها كرؤية واحدة متكاملة لعلاقة مورّد واحدة، لأنها في الواقع الفعلي تتراكم ولا تحدث بمعزل عن بعضها.
+
+ولا شيء من هذا يعمل دون أساس لا تزال معظم المؤسسات تستثمر فيه بشكل غير كافٍ: جودة البيانات. فالنماذج التنبؤية لا تكون موثوقة إلا بقدر موثوقية بيانات المورّدين الأساسية، وسجل الإنفاق، وسجلات الأداء التي تُغذّيها — وبالنسبة لكثير من وظائف المشتريات، لا تزال هذه البيانات موزّعة بين أنظمة تخطيط موارد مؤسسية منفصلة، وبوابات مورّدين، وجداول بيانات تُدار يدوياً. والمؤسسات الأسرع تقدّماً نحو إدارة مخاطر تنبؤية حقيقية هي، بلا استثناء تقريباً، تلك التي تعاملت مع توحيد البيانات كمشروع أول وليس كتفصيل لاحق لطبقة الذكاء الاصطناعي التي تُبنى فوقه.`,
+    author: "ISC Editorial Team",
+    authorTitle: "I Supply Chain",
+    authorTitleAr: "فريق تحرير I Supply Chain",
+    bgColor: "bg-violet-600",
+    featured: false,
+  },
+  {
     id: 1,
     title: "Vision 2030 and the Transformation of Saudi Supply Chains",
     titleAr: "رؤية 2030 وتحوّل سلاسل الإمداد السعودية",
