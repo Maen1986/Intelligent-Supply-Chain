@@ -10,12 +10,21 @@
  *   -> frameworks for one country, filtered to those that apply to the
  *      given industry (or universal frameworks, applies_to_industries=["*"]).
  *      Omit ?industry to get the full unfiltered list for that country.
+ *
+ * PATCH /api/regulatory/countries/:id  (#168, admin-only)
+ *   -> update a country's coverage_level / notes / notes_ar / source_url /
+ *      last_verified_at / verified_by. Added so coverage status can be
+ *      corrected as content is authored/reviewed without a code deploy or
+ *      a raw DB migration each time (the pattern used for the one-off
+ *      #169 fix). Whitelisted fields only; every write is logged with the
+ *      admin's user id for accountability.
  */
 
 import { Router } from 'express';
 import { asc, eq } from 'drizzle-orm';
 import { db, regulatoryCountriesTable, regulatoryFrameworksTable } from '@workspace/db';
 import { logger } from '../lib/logger';
+import { requireAdmin } from '../middlewares/requireAdmin';
 
 const router = Router();
 
@@ -56,6 +65,69 @@ router.get('/countries/:id/frameworks', async (req, res) => {
   } catch (err) {
     logger.error({ err, countryId }, '[regulatory] GET /countries/:id/frameworks failed');
     res.status(500).json({ ok: false, error: 'Failed to load frameworks' });
+  }
+});
+
+// ── PATCH /api/regulatory/countries/:id ─────────────────────────────────────
+router.patch('/countries/:id', requireAdmin, async (req, res) => {
+  const countryId = req.params.id;
+  const adminUserId = req.session.userId!;
+
+  const ALLOWED_FIELDS = [
+    'coverageLevel',
+    'notes',
+    'notesAr',
+    'sourceUrl',
+    'lastVerifiedAt',
+    'verifiedBy',
+  ] as const;
+
+  const body = req.body as Record<string, unknown>;
+  const updates: Record<string, unknown> = {};
+
+  for (const field of ALLOWED_FIELDS) {
+    if (field in body) {
+      if (field === 'coverageLevel') {
+        if (body[field] !== 'full' && body[field] !== 'partial' && body[field] !== 'roadmap') {
+          res.status(400).json({ ok: false, error: "coverageLevel must be 'full', 'partial', or 'roadmap'" });
+          return;
+        }
+      }
+      if (field === 'lastVerifiedAt') {
+        const parsed = body[field] === null ? null : new Date(body[field] as string);
+        if (parsed !== null && Number.isNaN(parsed.getTime())) {
+          res.status(400).json({ ok: false, error: 'lastVerifiedAt must be a valid date or null' });
+          return;
+        }
+        updates.lastVerifiedAt = parsed;
+        continue;
+      }
+      updates[field] = body[field];
+    }
+  }
+
+  if (Object.keys(updates).length === 0) {
+    res.status(400).json({ ok: false, error: 'No recognised fields to update. Allowed: ' + ALLOWED_FIELDS.join(', ') });
+    return;
+  }
+
+  try {
+    const [updated] = await db
+      .update(regulatoryCountriesTable)
+      .set(updates)
+      .where(eq(regulatoryCountriesTable.id, countryId))
+      .returning();
+
+    if (!updated) {
+      res.status(404).json({ ok: false, error: 'Country not found' });
+      return;
+    }
+
+    logger.info({ countryId, updates, adminUserId }, '[regulatory] Admin updated country coverage');
+    res.json({ ok: true, country: updated });
+  } catch (err) {
+    logger.error({ err, countryId }, '[regulatory] PATCH /countries/:id failed');
+    res.status(500).json({ ok: false, error: 'Failed to update country' });
   }
 });
 
