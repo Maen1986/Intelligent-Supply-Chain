@@ -207,6 +207,40 @@ const MIGRATIONS: string[] = [
    WHERE id = 'uae' AND coverage_level = 'partial'
      AND notes NOT LIKE '%Primary-source-checked%'`,
 
+  // #169 (2026-08-16) — Qatar/Jordan/Oman/Bahrain regulatory content was
+  // authored and wired live (#161-#166) but these rows were still left at
+  // coverage_level = 'roadmap' with the original "not yet authored" seed
+  // notes, so the country picker kept showing "Coming soon" for content
+  // that was in fact live — flagged as a documentation/trust gap in Site
+  // Map v8 Section 3.2. These UPDATEs bring the DB label in line with
+  // reality, matching the exact same 'partial' (not 'full') treatment UAE
+  // already received: content is authored and live, but not yet signed off
+  // by a named independent human legal/expert reviewer. Idempotent — each
+  // is guarded by coverage_level = 'roadmap' so it only fires once.
+  `UPDATE regulatory_countries
+     SET coverage_level = 'partial',
+         notes = 'Maturity-scale question content authored (7 sub-segments, 35 questions: Qatarization & Workforce Nationalization, Tawteen/ICV, customs & trade compliance, QS product conformity, government procurement, halal certification, PDPPL data privacy). Pending independent legal/expert review before being marked fully verified.',
+         notes_ar = 'تمت صياغة أسئلة مقياس النضج (7 وحدات فرعية، 35 سؤالاً: القطرنة وتوطين القوى العاملة، التوطين/القيمة المضافة المحلية، الامتثال الجمركي والتجاري، مطابقة المنتجات والمواصفات، المشتريات الحكومية، شهادة الحلال، حماية البيانات الشخصية). قيد المراجعة القانونية/الخبيرة المستقلة قبل اعتمادها بشكل كامل.'
+   WHERE id = 'qat' AND coverage_level = 'roadmap'`,
+
+  `UPDATE regulatory_countries
+     SET coverage_level = 'partial',
+         notes = 'Maturity-scale question content authored (7 sub-segments, 35 questions: Jordanization & labor localization, QIZ local content & rules of origin, customs & trade compliance, JSMO product conformity, government procurement, halal certification, PDPL data privacy). Pending independent legal/expert review before being marked fully verified.',
+         notes_ar = 'تمت صياغة أسئلة مقياس النضج (7 وحدات فرعية، 35 سؤالاً: الأردنة وتوطين العمالة، المحتوى المحلي وقواعد المنشأ، الامتثال الجمركي والتجاري، مطابقة المنتجات والمواصفات، المشتريات الحكومية، شهادة الحلال، قانون حماية البيانات الشخصية). قيد المراجعة القانونية/الخبيرة المستقلة قبل اعتمادها بشكل كامل.'
+   WHERE id = 'jor' AND coverage_level = 'roadmap'`,
+
+  `UPDATE regulatory_countries
+     SET coverage_level = 'partial',
+         notes = 'Maturity-scale question content authored (7 sub-segments, 35 questions: Omanisation & workforce nationalization, In-Country Value (ICV) programme, customs & trade compliance, DGSM product conformity, government procurement, halal certification, PDPL data privacy). Pending independent legal/expert review before being marked fully verified.',
+         notes_ar = 'تمت صياغة أسئلة مقياس النضج (7 وحدات فرعية، 35 سؤالاً: التعمين وتوطين القوى العاملة، برنامج القيمة المضافة المحلية، الامتثال الجمركي والتجاري، مطابقة المنتجات والمواصفات، المشتريات الحكومية، شهادة الحلال، قانون حماية البيانات الشخصية). قيد المراجعة القانونية/الخبيرة المستقلة قبل اعتمادها بشكل كامل.'
+   WHERE id = 'omn' AND coverage_level = 'roadmap'`,
+
+  `UPDATE regulatory_countries
+     SET coverage_level = 'partial',
+         notes = 'Maturity-scale question content authored (7 sub-segments, 35 questions: Bahrainisation & workforce localization, local content & national preference, customs & trade compliance, BSMD product conformity, government procurement, halal certification, PDPL data privacy). Pending independent legal/expert review before being marked fully verified.',
+         notes_ar = 'تمت صياغة أسئلة مقياس النضج (7 وحدات فرعية، 35 سؤالاً: البحرنة وتوطين القوى العاملة، المحتوى المحلي والأفضلية الوطنية، الامتثال الجمركي والتجاري، مطابقة المنتجات والمواصفات، المشتريات الحكومية، شهادة الحلال، قانون حماية البيانات الشخصية). قيد المراجعة القانونية/الخبيرة المستقلة قبل اعتمادها بشكل كامل.'
+   WHERE id = 'bhr' AND coverage_level = 'roadmap'`,
+
 ];
 
 export async function runStartupMigrations(): Promise<void> {
