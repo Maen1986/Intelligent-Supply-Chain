@@ -241,6 +241,24 @@ const MIGRATIONS: string[] = [
          notes_ar = 'تمت صياغة أسئلة مقياس النضج (7 وحدات فرعية، 35 سؤالاً: البحرنة وتوطين القوى العاملة، المحتوى المحلي والأفضلية الوطنية، الامتثال الجمركي والتجاري، مطابقة المنتجات والمواصفات، المشتريات الحكومية، شهادة الحلال، قانون حماية البيانات الشخصية). قيد المراجعة القانونية/الخبيرة المستقلة قبل اعتمادها بشكل كامل.'
    WHERE id = 'bhr' AND coverage_level = 'roadmap'`,
 
+  // Engine 1 (Platform Strategy Review v5, Task #204) -- organizations entity.
+  // Foundation table: replaces the free-text users.company field as the real
+  // account users can share. Deliberately minimal (name only) -- suppliers,
+  // spend, and contracts get scoped against this once the shared data graph
+  // (Engine 3) exists. Additive and idempotent; safe on every boot.
+  `CREATE TABLE IF NOT EXISTS organizations (
+     id          SERIAL PRIMARY KEY,
+     name        TEXT        NOT NULL,
+     created_at  TIMESTAMP   NOT NULL DEFAULT NOW()
+   )`,
+
+  // Engine 1 -- link users to organizations. Nullable: existing users are
+  // NOT backfilled with a personal org by this migration; Engine 4's
+  // self-serve signup flow is responsible for creating an organization and
+  // setting this on account creation going forward.
+  `ALTER TABLE users
+     ADD COLUMN IF NOT EXISTS organization_id INTEGER REFERENCES organizations(id)`,
+
 ];
 
 export async function runStartupMigrations(): Promise<void> {

@@ -1,6 +1,7 @@
-import { pgTable, serial, text, timestamp, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, timestamp, jsonb, integer } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
+import { organizationsTable } from "./organizations";
 
 export const usersTable = pgTable("users", {
   id:           serial("id").primaryKey(),
@@ -9,6 +10,10 @@ export const usersTable = pgTable("users", {
   mobile:       text("mobile"),
   designation:  text("designation"),
   company:      text("company"),
+  /** FK -> organizations(id). Nullable: set by self-serve signup (Engine 4)
+   *  going forward; existing users are not backfilled by the Engine 1
+   *  migration. Platform Strategy Review v5, Task #204. */
+  organizationId: integer("organization_id").references(() => organizationsTable.id),
   role:         text("role").notNull().default("user"),  // 'user' | 'admin'
   passwordHash: text("password_hash"),                    // bcrypt hash; null for legacy profile-only accounts
   resetTokenHash:      text("reset_token_hash"),           // bcrypt hash of the one-time password-reset code
