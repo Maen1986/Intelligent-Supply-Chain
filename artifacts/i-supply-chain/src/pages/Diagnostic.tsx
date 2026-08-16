@@ -11,6 +11,37 @@ import { ChevronRight, ArrowLeft, Brain, Loader2 } from 'lucide-react';
 import { API_BASE } from '@/lib/apiBase';
 import { useRateLimitCountdown } from '@/hooks/useRateLimitCountdown';
 
+// ── Symptom picker options (grounded in the real-world supply-chain problem
+//    library — Section 12 Symptom-to-Root-Cause Library — so the free-text
+//    box is no longer the only way a user can hand the AI something specific
+//    to reason about). Keep ids stable: the backend keys off these exact ids. ──
+const SYMPTOM_OPTIONS = [
+  { id: 'stockouts',            en: 'Stockouts / cannot fulfil orders',                        ar: 'نفاد المخزون / تعذّر تلبية الطلبات' },
+  { id: 'excess_inventory',     en: 'Excess inventory / slow-moving stock',                     ar: 'مخزون زائد / بطيء الحركة' },
+  { id: 'late_deliveries',      en: 'Late customer deliveries',                                 ar: 'تأخر التسليم للعملاء' },
+  { id: 'high_cost',            en: 'High procurement / purchasing cost',                       ar: 'ارتفاع تكلفة الشراء/المشتريات' },
+  { id: 'supplier_reliability', en: 'Supplier reliability issues (late, inconsistent, capacity)', ar: 'مشاكل موثوقية الموردين (تأخر، عدم اتساق، طاقة إنتاجية)' },
+  { id: 'quality_defects',      en: 'Quality / defect issues',                                  ar: 'مشاكل الجودة / العيوب' },
+  { id: 'data_visibility',      en: 'Data & visibility gaps (spreadsheets, ERP mismatches)',     ar: 'فجوات البيانات والرؤية (جداول بيانات، عدم تطابق ERP)' },
+  { id: 'other',                en: 'Something else / not sure yet',                            ar: 'شيء آخر / لست متأكداً بعد' },
+] as const;
+
+const FREQUENCY_OPTIONS = [
+  { id: 'rare',       en: 'Rare',       ar: 'نادر' },
+  { id: 'occasional', en: 'Occasional', ar: 'أحياناً' },
+  { id: 'frequent',   en: 'Frequent',   ar: 'متكرر' },
+  { id: 'constant',   en: 'Constant',   ar: 'مستمر' },
+] as const;
+
+const IMPACT_OPTIONS = [
+  { id: 'not_sure', en: 'Not sure',  ar: 'غير متأكد' },
+  { id: 'minor',    en: 'Minor',     ar: 'طفيف' },
+  { id: 'moderate', en: 'Moderate',  ar: 'متوسط' },
+  { id: 'severe',   en: 'Severe',    ar: 'كبير' },
+] as const;
+
+interface SymptomDetail { frequency: string; impact: string; }
+
 export function Diagnostic() {
   const { t, lang } = useLanguage();
   const isAr = lang === 'ar';
@@ -35,14 +66,49 @@ export function Diagnostic() {
     businessSize: '',
     region: '',
     industry: '',
+    supplyChainType: '',
     focusArea: '',
-    challenge: ''
+    dataMaturity: '',
+    challenge: '',
   });
+  const [symptoms, setSymptoms] = useState<string[]>([]);
+  const [symptomDetails, setSymptomDetails] = useState<Record<string, SymptomDetail>>({});
 
-  const totalSteps = 5;
+  const totalSteps = 7;
 
   const handleNext = () => { if (step < totalSteps) setStep(step + 1); };
   const handleBack = () => { if (step > 1) setStep(step - 1); };
+
+  const toggleSymptom = (id: string) => {
+    setSymptoms((prev) => {
+      if (prev.includes(id)) {
+        setSymptomDetails((d) => { const next = { ...d }; delete next[id]; return next; });
+        return prev.filter((s) => s !== id);
+      }
+      setSymptomDetails((d) => ({ ...d, [id]: { frequency: '', impact: '' } }));
+      return [...prev, id];
+    });
+  };
+
+  const setSymptomField = (id: string, field: 'frequency' | 'impact', value: string) => {
+    setSymptomDetails((d) => ({ ...d, [id]: { ...d[id], [field]: value } }));
+  };
+
+  // Compose the structured symptom picks into a plain-language block appended
+  // to the free-text challenge, so the AI always has something concrete to
+  // reason about even if the user skips the textarea entirely.
+  const buildSymptomSummary = (): string => {
+    if (symptoms.length === 0) return '';
+    const lines = symptoms.map((id) => {
+      const opt = SYMPTOM_OPTIONS.find((s) => s.id === id);
+      const detail = symptomDetails[id];
+      const freq = FREQUENCY_OPTIONS.find((f) => f.id === detail?.frequency)?.en;
+      const imp = IMPACT_OPTIONS.find((i) => i.id === detail?.impact)?.en;
+      const qualifiers = [freq && `frequency: ${freq}`, imp && `impact: ${imp}`].filter(Boolean).join(', ');
+      return `- ${opt?.en}${qualifiers ? ` (${qualifiers})` : ''}`;
+    });
+    return `Reported symptoms:\n${lines.join('\n')}`;
+  };
 
   const retryMessage = (seconds: number) => {
     if (seconds >= 3600) {
@@ -65,6 +131,9 @@ export function Diagnostic() {
     setIsGenerating(true);
     rateLimit.clear();
 
+    const symptomSummary = buildSymptomSummary();
+    const composedChallenge = [symptomSummary, formData.challenge.trim()].filter(Boolean).join('\n\n');
+
     let generated: DiagnosticReport;
 
     try {
@@ -73,12 +142,20 @@ export function Diagnostic() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          businessSize: formData.businessSize,
-          region:       formData.region,
-          industry:     formData.industry,
-          focusArea:    formData.focusArea,
-          challenge:    formData.challenge,
-          language:     lang,
+          businessSize:    formData.businessSize,
+          region:          formData.region,
+          industry:        formData.industry,
+          supplyChainType: formData.supplyChainType,
+          focusArea:       formData.focusArea,
+          dataMaturity:    formData.dataMaturity,
+          symptoms:        symptoms.map((id) => ({
+            id,
+            label:     SYMPTOM_OPTIONS.find((s) => s.id === id)?.en ?? id,
+            frequency: symptomDetails[id]?.frequency || undefined,
+            impact:    symptomDetails[id]?.impact || undefined,
+          })),
+          challenge:       composedChallenge,
+          language:        lang,
         }),
       });
 
@@ -93,7 +170,7 @@ export function Diagnostic() {
       // ── Graceful fallback: static engine ensures the client always gets
       //    a report even if the AI service is temporarily unavailable ────────
       console.warn('[diagnostic] AI generation failed, using static fallback', err);
-      generated = generateReport(formData as any, lang);
+      generated = generateReport({ ...formData, challenge: composedChallenge } as any, lang);
     }
 
     // ── Lead capture: best-effort, never blocks the report ─────────────────
@@ -107,7 +184,7 @@ export function Diagnostic() {
             region:        formData.region,
             industry:      formData.industry,
             focusArea:     formData.focusArea,
-            challengeText: formData.challenge,
+            challengeText: composedChallenge,
             reportSummary: generated.executiveSummary,
           }),
         });
@@ -145,8 +222,10 @@ export function Diagnostic() {
       case 1: return !!formData.businessSize;
       case 2: return !!formData.region;
       case 3: return !!formData.industry;
-      case 4: return !!formData.focusArea;
-      case 5: return true;
+      case 4: return !!formData.supplyChainType;
+      case 5: return !!formData.focusArea;
+      case 6: return !!formData.dataMaturity;
+      case 7: return true;
       default: return false;
     }
   };
@@ -160,10 +239,14 @@ export function Diagnostic() {
     'Mid-Market': 'الشركات المتوسطة',
     'Enterprise': 'مؤسسة كبرى',
     'Government Entity': 'جهة حكومية',
-    // Region
+    // Region / country
     'International': 'دولي',
     'Saudi Arabia': 'المملكة العربية السعودية',
+    'United Arab Emirates': 'الإمارات العربية المتحدة',
+    'Qatar': 'قطر',
     'Jordan': 'الأردن',
+    'Oman': 'عُمان',
+    'Bahrain': 'البحرين',
     'Other GCC': 'دول الخليج الأخرى',
     // Industry
     'Manufacturing': 'التصنيع',
@@ -179,6 +262,11 @@ export function Diagnostic() {
     'Ecommerce': 'التجارة الإلكترونية',
     'Food & Beverage': 'الأغذية والمشروبات',
     'Healthcare': 'الرعاية الصحية',
+    // Supply chain type
+    'Make-to-Stock': 'الإنتاج للمخزون',
+    'Make-to-Order': 'الإنتاج حسب الطلب',
+    'Engineer-to-Order / Project-based': 'الهندسة حسب الطلب / قائم على المشاريع',
+    'Distribution & Retail (no manufacturing)': 'التوزيع والتجزئة (بدون تصنيع)',
     // Focus area
     'Supply Chain Strategy': 'استراتيجية سلسلة الإمداد',
     'Procurement': 'المشتريات',
@@ -190,6 +278,11 @@ export function Diagnostic() {
     'Digital Transformation': 'التحول الرقمي',
     'Organizational Design': 'التصميم المؤسسي',
     'Government Compliance': 'الامتثال الحكومي',
+    // Data & systems maturity
+    'Spreadsheets & email-driven': 'جداول بيانات وبريد إلكتروني بشكل أساسي',
+    'Core ERP, limited integration': 'نظام ERP أساسي، تكامل محدود',
+    'Integrated ERP + WMS/TMS': 'تكامل ERP مع أنظمة المستودعات/النقل',
+    'Advanced analytics & AI-enabled': 'تحليلات متقدمة ومدعومة بالذكاء الاصطناعي',
   };
   const optLabel = (opt: string) => (isAr ? labelAr[opt] ?? opt : opt);
 
@@ -207,8 +300,8 @@ export function Diagnostic() {
           <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-white mb-3">{t('diagnostic.title')}</h1>
           <p className="text-white/80 text-base md:text-lg max-w-2xl">
             {isAr
-              ? 'أكمل هذا التقييم المكوّن من خمس خطوات لتحصل فوراً على تقرير استراتيجي مُعد بالذكاء الاصطناعي ومصمم خصيصاً لمنشأتك.'
-              : 'Complete this 5-step assessment to receive an instant, AI-generated strategic report tailored to your organization.'}
+              ? 'أكمل هذا التقييم المكوّن من سبع خطوات لتحصل فوراً على تقرير استراتيجي مُعد بالذكاء الاصطناعي ومصمم خصيصاً لمنشأتك.'
+              : 'Complete this 7-step assessment to receive an instant, AI-generated strategic report tailored to your organization.'}
           </p>
         </div>
       </div>
@@ -250,8 +343,8 @@ export function Diagnostic() {
             {step === 2 && (
               <div className="animate-in fade-in slide-in-from-right-4 duration-300">
                 <h2 className="text-xl sm:text-2xl font-bold text-foreground mb-5 sm:mb-6">{t('diagnostic.step2')}</h2>
-                <RadioGroup value={formData.region} onValueChange={(val) => setFormData(p => ({ ...p, region: val }))} className="grid gap-3">
-                  {['International', 'Saudi Arabia', 'Jordan', 'Other GCC'].map((opt) => (
+                <RadioGroup value={formData.region} onValueChange={(val) => setFormData(p => ({ ...p, region: val }))} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {['Saudi Arabia', 'United Arab Emirates', 'Qatar', 'Jordan', 'Oman', 'Bahrain', 'Other GCC', 'International'].map((opt) => (
                     <label key={opt} htmlFor={`rg-${opt}`} className={radioItemCls}>
                       <RadioGroupItem value={opt} id={`rg-${opt}`} />
                       <span className="flex-1 font-medium text-base">{optLabel(opt)}</span>
@@ -277,7 +370,24 @@ export function Diagnostic() {
 
             {step === 4 && (
               <div className="animate-in fade-in slide-in-from-right-4 duration-300">
-                <h2 className="text-xl sm:text-2xl font-bold text-foreground mb-5 sm:mb-6">{t('diagnostic.step4')}</h2>
+                <h2 className="text-xl sm:text-2xl font-bold text-foreground mb-2">{t('diagnostic.step4')}</h2>
+                <p className="text-muted-foreground mb-5 sm:mb-6 text-sm sm:text-base">
+                  {isAr ? 'هذا يحدد نوع المخاطر والتوصيات الأنسب لعملياتك.' : "This shapes which risks and remedies actually apply to how you operate."}
+                </p>
+                <RadioGroup value={formData.supplyChainType} onValueChange={(val) => setFormData(p => ({ ...p, supplyChainType: val }))} className="grid gap-3">
+                  {['Make-to-Stock', 'Make-to-Order', 'Engineer-to-Order / Project-based', 'Distribution & Retail (no manufacturing)'].map((opt) => (
+                    <label key={opt} htmlFor={`sct-${opt}`} className={radioItemCls}>
+                      <RadioGroupItem value={opt} id={`sct-${opt}`} />
+                      <span className="flex-1 font-medium text-base">{optLabel(opt)}</span>
+                    </label>
+                  ))}
+                </RadioGroup>
+              </div>
+            )}
+
+            {step === 5 && (
+              <div className="animate-in fade-in slide-in-from-right-4 duration-300">
+                <h2 className="text-xl sm:text-2xl font-bold text-foreground mb-5 sm:mb-6">{t('diagnostic.step5')}</h2>
                 <RadioGroup value={formData.focusArea} onValueChange={(val) => setFormData(p => ({ ...p, focusArea: val }))} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {['Supply Chain Strategy', 'Procurement', 'CLM', 'Supplier Governance', 'Risk Management', 'Sustainability', 'Resiliency', 'Digital Transformation', 'Organizational Design', 'Government Compliance'].map((opt) => (
                     <label key={opt} htmlFor={`fa-${opt}`} className={radioItemCls}>
@@ -289,13 +399,106 @@ export function Diagnostic() {
               </div>
             )}
 
-            {step === 5 && (
+            {step === 6 && (
               <div className="animate-in fade-in slide-in-from-right-4 duration-300">
-                <h2 className="text-xl sm:text-2xl font-bold text-foreground mb-2">{t('diagnostic.step5')}</h2>
-                <p className="text-muted-foreground mb-5 sm:mb-6 text-sm sm:text-base">{isAr ? 'اختياري: أضف سياقاً محدداً لتحسين تقريرك.' : 'Optional: Add specific context to improve your report.'}</p>
+                <h2 className="text-xl sm:text-2xl font-bold text-foreground mb-2">{t('diagnostic.step6')}</h2>
+                <p className="text-muted-foreground mb-5 sm:mb-6 text-sm sm:text-base">
+                  {isAr ? 'مدى نضج بياناتك يغيّر أي جذور المشاكل هي الأكثر ترجيحاً.' : "How mature your data/systems are changes which root causes are actually likely."}
+                </p>
+                <RadioGroup value={formData.dataMaturity} onValueChange={(val) => setFormData(p => ({ ...p, dataMaturity: val }))} className="grid gap-3">
+                  {['Spreadsheets & email-driven', 'Core ERP, limited integration', 'Integrated ERP + WMS/TMS', 'Advanced analytics & AI-enabled'].map((opt) => (
+                    <label key={opt} htmlFor={`dm-${opt}`} className={radioItemCls}>
+                      <RadioGroupItem value={opt} id={`dm-${opt}`} />
+                      <span className="flex-1 font-medium text-base">{optLabel(opt)}</span>
+                    </label>
+                  ))}
+                </RadioGroup>
+              </div>
+            )}
+
+            {step === 7 && (
+              <div className="animate-in fade-in slide-in-from-right-4 duration-300">
+                <h2 className="text-xl sm:text-2xl font-bold text-foreground mb-2">{t('diagnostic.step7')}</h2>
+                <p className="text-muted-foreground mb-4 text-sm sm:text-base">
+                  {isAr
+                    ? 'اختر ما ينطبق عليك — هذا هو أهم مُدخل نملكه لتخصيص تقريرك فعلياً.'
+                    : "Pick what applies to you — this is the single most important input we have for actually personalizing your report."}
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+                  {SYMPTOM_OPTIONS.map((opt) => {
+                    const active = symptoms.includes(opt.id);
+                    return (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        onClick={() => toggleSymptom(opt.id)}
+                        data-testid={`symptom-${opt.id}`}
+                        className={`text-left p-3.5 rounded-xl border-2 text-sm font-medium transition-colors ${
+                          active ? 'border-primary bg-primary/5 text-primary' : 'border-border hover:border-primary/40'
+                        }`}
+                      >
+                        {isAr ? opt.ar : opt.en}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {symptoms.length > 0 && (
+                  <div className="space-y-3 mb-5">
+                    {symptoms.map((id) => {
+                      const opt = SYMPTOM_OPTIONS.find((s) => s.id === id)!;
+                      const detail = symptomDetails[id] || { frequency: '', impact: '' };
+                      return (
+                        <div key={id} className="rounded-xl border border-border bg-muted/30 p-3.5">
+                          <p className="font-semibold text-sm mb-2.5">{isAr ? opt.ar : opt.en}</p>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <p className="text-xs text-muted-foreground mb-1.5">{isAr ? 'التكرار' : 'Frequency'}</p>
+                              <div className="flex flex-wrap gap-1.5">
+                                {FREQUENCY_OPTIONS.map((f) => (
+                                  <button
+                                    key={f.id}
+                                    type="button"
+                                    onClick={() => setSymptomField(id, 'frequency', f.id)}
+                                    className={`px-2.5 py-1 rounded-full text-xs font-semibold border transition-colors ${
+                                      detail.frequency === f.id ? 'border-primary bg-primary text-white' : 'border-border text-muted-foreground hover:border-primary/40'
+                                    }`}
+                                  >
+                                    {isAr ? f.ar : f.en}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                            <div>
+                              <p className="text-xs text-muted-foreground mb-1.5">{isAr ? 'الأثر' : 'Impact'}</p>
+                              <div className="flex flex-wrap gap-1.5">
+                                {IMPACT_OPTIONS.map((imp) => (
+                                  <button
+                                    key={imp.id}
+                                    type="button"
+                                    onClick={() => setSymptomField(id, 'impact', imp.id)}
+                                    className={`px-2.5 py-1 rounded-full text-xs font-semibold border transition-colors ${
+                                      detail.impact === imp.id ? 'border-primary bg-primary text-white' : 'border-border text-muted-foreground hover:border-primary/40'
+                                    }`}
+                                  >
+                                    {isAr ? imp.ar : imp.en}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                <p className="text-sm font-medium text-foreground mb-2">
+                  {isAr ? 'تفاصيل إضافية (اختياري)' : 'Anything else specific? (optional)'}
+                </p>
                 <Textarea
-                  placeholder={isAr ? 'في بضع جمل، صف التحدي الحالي الذي تواجهه سلسلة الإمداد لديك...' : 'In a few sentences, describe your current supply chain challenge...'}
-                  className="min-h-[140px] sm:min-h-[150px] resize-none text-base"
+                  placeholder={isAr ? 'مثال: رقم القطعة، اسم المورد، الكمية، منذ متى...' : 'e.g. specific SKU, supplier name, quantities involved, how long this has been going on...'}
+                  className="min-h-[110px] resize-none text-base"
                   value={formData.challenge}
                   onChange={(e) => setFormData(p => ({ ...p, challenge: e.target.value }))}
                 />
