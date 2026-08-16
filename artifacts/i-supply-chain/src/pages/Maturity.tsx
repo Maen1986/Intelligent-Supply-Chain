@@ -1091,9 +1091,11 @@ export function Maturity() {
                       <p className={`font-semibold text-sm leading-tight ${selected ? 'text-primary' : 'text-foreground'}`}>
                         {ar ? c.nameAr : c.name}
                       </p>
-                      <p className={`text-[10px] font-bold mt-1 ${c.coverageLevel === 'full' ? 'text-accent' : 'text-muted-foreground'}`}>
+                      <p className={`text-[10px] font-bold mt-1 ${c.coverageLevel === 'full' ? 'text-accent' : c.coverageLevel === 'partial' ? 'text-amber-600' : 'text-muted-foreground'}`}>
                         {c.coverageLevel === 'full'
                           ? (ar ? 'تغطية تنظيمية كاملة' : 'Full regulatory coverage')
+                          : c.coverageLevel === 'partial'
+                          ? (ar ? 'محتوى متاح — قيد المراجعة' : 'Live — pending review')
                           : (ar ? 'قريبًا' : 'Coming soon')}
                       </p>
                       {selected && (
