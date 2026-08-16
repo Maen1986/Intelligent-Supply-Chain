@@ -29,6 +29,10 @@ import {
   QUALITY_SUB_SEGMENTS,
 } from './maturitySubSegData6to11';
 import { UAE_REGULATORY_SUB_SEGMENTS } from './maturityRegulatoryUae';
+import { QATAR_REGULATORY_SUB_SEGMENTS } from './maturityRegulatoryQatar';
+import { JORDAN_REGULATORY_SUB_SEGMENTS } from './maturityRegulatoryJordan';
+import { OMAN_REGULATORY_SUB_SEGMENTS } from './maturityRegulatoryOman';
+import { BAHRAIN_REGULATORY_SUB_SEGMENTS } from './maturityRegulatoryBahrain';
 
 /* ── Interfaces ──────────────────────────────────────────────────────────── */
 
@@ -2092,17 +2096,19 @@ export const INDUSTRY_MODULES: Segment[] = [
     color: '#64748B',
     benchmarks: { gcc: 2.2, global: 2.6, best: 4.2 },
     // Shown for every country that does NOT yet have its own authored,
-    // reviewed regulatory module (today: everyone except Saudi Arabia and
-    // UAE — UAE got its own authored module, see 'regulatory-uae' below,
-    // per #157). Deliberately generic — no named-law claims (no "Nitaqat",
-    // no specific statute numbers) so it never misrepresents a country's
-    // actual requirements. As each remaining country gets real content
-    // (Qatar/Jordan/Oman/Bahrain next, per the #33/#153 roadmap), add its
-    // own module with countryFor:['<id>'] and extend this module's
-    // countryExcept list so the real module takes over.
+    // reviewed regulatory module (today: everyone except Saudi Arabia, UAE,
+    // Qatar, Jordan, Oman, and Bahrain — each of those six got its own
+    // authored module, see 'regulatory-uae' / 'regulatory-qatar' /
+    // 'regulatory-jordan' / 'regulatory-oman' / 'regulatory-bahrain' below,
+    // per #157/#161/#162/#163/#164). Deliberately generic — no named-law
+    // claims (no "Nitaqat", no specific statute numbers) so it never
+    // misrepresents a country's actual requirements. As each remaining
+    // country gets real content, add its own module with
+    // countryFor:['<id>'] and extend this module's countryExcept list so
+    // the real module takes over.
     moduleFor: ['manufacturing', 'fmcg', 'pharma', 'retail', 'logistics', 'marine',
                 'construction', 'oil_gas', 'government', 'technology', 'banking', 'other'],
-    countryExcept: ['ksa', 'uae'],
+    countryExcept: ['ksa', 'uae', 'qatar', 'jordan', 'oman', 'bahrain'],
     frameworks: ['ISO 37301', 'WCO SAFE Framework'],
     questions: [
       {
@@ -2341,5 +2347,574 @@ export const INDUSTRY_MODULES: Segment[] = [
       Optimised: 'وضع أداء التوطين والقيمة المضافة المحلية كميزة تنافسية في المناقصات والمواهب. تحقيق صفر نتائج امتثال متعلقة بالتسجيل أو الرسوم أو حماية البيانات عبر جميع الإمارات العاملة بها.',
     },
     subSegments: UAE_REGULATORY_SUB_SEGMENTS as unknown as SubSegment[],
+  },
+
+  /* ── MODULE F: Regulatory & Localisation Compliance (Qatar) ─────────── */
+  {
+    id: 'regulatory-qatar',
+    title: 'Regulatory & Localisation Compliance (Qatar)',
+    titleAr: 'الامتثال التنظيمي والتوطين (قطر)',
+    shortTitle: 'Regulatory (Qatar)',
+    shortTitleAr: 'الامتثال التنظيمي (قطر)',
+    icon: Scale,
+    color: '#7C2D48',
+    benchmarks: { gcc: 2.2, global: 2.6, best: 4.1 },
+    // Second country-specific regulatory module, per the user-confirmed
+    // rollout order: UAE -> Qatar -> Jordan -> Oman -> Bahrain -> other
+    // countries with clear regulation -> generic fallback for the long
+    // tail (#153). Content authored from public regulator sources
+    // (Ministry of Labour, Tawteen/ICV Programme, General Authority of
+    // Customs, Qatar General Organization for Standardization, Ministry
+    // of Finance/Monaqasat, Ministry of Public Health, Qatar Data
+    // Protection Authority) as of August 2026. STATUS: authored, PENDING
+    // INDEPENDENT LEGAL/EXPERT REVIEW -- see maturityRegulatoryQatar.ts
+    // header and the in-quiz Country Coverage disclaimer for
+    // seg.id === 'regulatory-qatar'. Applies broadly (not just
+    // government) because Qatarization, Tawteen/ICV, customs, PDPPL and
+    // halal/product-conformity rules bind most private-sector operators,
+    // not only public entities.
+    moduleFor: ['manufacturing', 'fmcg', 'pharma', 'retail', 'logistics', 'marine',
+                'construction', 'oil_gas', 'government', 'technology', 'banking', 'other'],
+    countryFor: ['qatar'],
+    frameworks: ['Law No. 12/2024', 'Tawteen/ICV', 'GAC', 'Monaqasat', 'PDPPL'],
+    questions: [
+      {
+        q: 'How proactively does your organisation track and meet its obligations under Law No. 12 of 2024 on Qatarization of Jobs -- notifying the Ministry of Labour of vacancies within the required one-month window and submitting biannual workforce-composition reports?',
+        layer: 'tactical',
+        qAr: 'ما مدى استباقية مؤسستكم في تتبّع والوفاء بالتزاماتها بموجب القانون رقم 12 لسنة 2024 بشأن تقطير الوظائف -- إخطار وزارة العمل بالشواغر خلال المهلة المطلوبة البالغة شهرًا واحدًا وتقديم تقارير نصف سنوية عن تكوين القوى العاملة؟',
+        levels: [
+          'Vacancy notifications and biannual reports are not tracked; the one-month notification window has been missed on multiple occasions and no fines have been anticipated or budgeted for.',
+          'Notifications are submitted inconsistently, and biannual workforce-composition reports are compiled only when the Ministry follows up directly.',
+          'A defined process tracks vacancy notifications and submits biannual reports on schedule, with a named HR owner.',
+          'Qatarization progress toward the 20% national target is actively measured and reported to leadership, with hiring plans adjusted to close gaps.',
+          'Qatarization compliance is a governed, audited function with automated vacancy-notification tracking, zero missed filings, and workforce planning aligned years ahead of the 2030 national target.',
+        ],
+        levelsAr: [
+          'لا تُتابَع إخطارات الشواغر ولا التقارير النصف سنوية؛ وفُوِّتت مهلة الإخطار الشهرية في مناسبات متعددة ودون توقّع أو رصد ميزانية للغرامات.',
+          'تُقدَّم الإخطارات بشكل غير متسق، وتُجمَّع التقارير النصف سنوية لتكوين القوى العاملة فقط عند متابعة الوزارة المباشرة.',
+          'عملية محددة تتابع إخطارات الشواغر وتُقدِّم التقارير النصف سنوية في مواعيدها، مع مالك محدد من الموارد البشرية.',
+          'يُقاس التقدم نحو الهدف الوطني 20% فعليًا ويُرفَع للإدارة، مع تعديل خطط التوظيف لسد الفجوات.',
+          'الامتثال للتقطير وظيفة محوكمة ومُدقَّقة بتتبع آلي لإخطارات الشواغر، ودون أي تقارير فائتة، وتخطيط قوى عاملة مُواءَم قبل سنوات من الهدف الوطني لعام 2030.',
+        ],
+      },
+      {
+        q: 'How rigorously does your organisation prepare and maintain the operational and financial records the Tawteen ICV formula requires (local purchases, workforce upskilling, supplier development, capital investment), and pursue third-party ICV certification?',
+        layer: 'tactical',
+        qAr: 'ما مدى صرامة إعداد ومؤسستكم للسجلات التشغيلية والمالية التي تتطلبها معادلة توطين القيمة المضافة المحلية (الشراء المحلي، تطوير مهارات القوى العاملة، تطوير الموردين، الاستثمار الرأسمالي)، ومتابعة الحصول على شهادة معتمدة من طرف ثالث؟',
+        levels: [
+          'No ICV certification exists and no records supporting the formula categories are maintained in usable form.',
+          'Records are assembled reactively only when an ICV renewal or bid submission is imminent, causing certification delays.',
+          'ICV certification is maintained on a defined annual cycle through an approved Tawteen certifier, with local-purchase records reviewed periodically.',
+          'ICV score is actively managed ahead of major energy-sector tender cycles, with sourcing decisions weighing ICV impact alongside cost.',
+          'A top-tier ICV score is a marketed competitive advantage, actively benchmarked, with the organisation developing Qatari suppliers to expand its ICV-eligible base.',
+        ],
+        levelsAr: [
+          'لا توجد شهادة قيمة مضافة محلية ولا سجلات تدعم فئات المعادلة بشكل قابل للاستخدام.',
+          'تُجمَع السجلات بشكل تفاعلي فقط عند اقتراب موعد تجديد الشهادة أو تقديم عطاء، مما يتسبب في تأخير الشهادة.',
+          'تُحافَظ شهادة القيمة المضافة المحلية وفق دورة سنوية محددة عبر جهة معتمدة من برنامج توطين، وتُراجَع سجلات الشراء المحلي دوريًا.',
+          'تُدار درجة القيمة المضافة المحلية فعليًا قبل دورات مناقصات قطاع الطاقة الكبرى، مع ترجيح قرارات التوريد لأثرها إلى جانب التكلفة.',
+          'الدرجة المتقدمة ميزة تنافسية تُسوَّق فعليًا وتُقاس مرجعيًا، والمؤسسة تطوّر موردين قطريين لتوسيع قاعدتها المؤهلة.',
+        ],
+      },
+      {
+        q: 'How completely does your organisation maintain both its trade license and the separate General Authority of Customs registration required to clear goods through Qatari ports, and correctly apply Free Zone vs. mainland duty treatment?',
+        layer: 'operational',
+        qAr: 'ما مدى اكتمال احتفاظ مؤسستكم بالترخيص التجاري والتسجيل الجمركي المنفصل لدى الهيئة العامة للجمارك المطلوبَين لتخليص البضائع عبر الموانئ القطرية، والتطبيق الصحيح لمعاملة الرسوم بين المنطقة الحرة والبر الرئيسي؟',
+        levels: [
+          'Customs registration status is unknown; shipments have been held or delayed due to missing or lapsed GAC registration.',
+          'Both registrations exist but are tracked informally, and Free Zone-to-mainland duty distinctions are applied inconsistently.',
+          'A defined process tracks trade license and GAC registration renewal dates and correctly applies the standard 5% duty on mainland-bound goods.',
+          'Registration and duty-treatment accuracy are monitored across all operating entities, reconciled monthly against finance records.',
+          'Customs and duty-treatment compliance is fully governed with zero shipment delays or duty discrepancies over the past 24 months.',
+        ],
+        levelsAr: [
+          'حالة التسجيل الجمركي مجهولة؛ وتعرّضت شحنات للاحتجاز أو التأخير بسبب تسجيل مفقود أو منتهٍ لدى الهيئة العامة للجمارك.',
+          'التسجيلان موجودان لكن يُتابَعان بشكل غير رسمي، وتُطبَّق فروقات الرسوم بين المنطقة الحرة والبر الرئيسي بشكل غير متسق.',
+          'عملية محددة تتابع مواعيد تجديد الترخيص التجاري والتسجيل الجمركي وتُطبّق الرسم القياسي 5% على البضائع المتجهة للبر الرئيسي بشكل صحيح.',
+          'دقة التسجيل ومعاملة الرسوم تُراقَب عبر جميع الكيانات التشغيلية، وتُطابَق شهريًا مع سجلات المالية.',
+          'الامتثال الجمركي ومعاملة الرسوم محوكَم بالكامل دون أي تأخير في الشحنات أو تباينات في الرسوم خلال آخر 24 شهرًا.',
+        ],
+      },
+      {
+        q: 'How clearly does your organisation understand and maintain its registration and classification status on the Monaqasat e-tendering portal, including awareness of SME performance-bond exemptions under Law No. 24 of 2015?',
+        layer: 'operational',
+        qAr: 'ما مدى وضوح فهم مؤسستكم واحتفاظها بحالة التسجيل والتصنيف على بوابة مناقصات الإلكترونية، بما يشمل الوعي بإعفاءات ضمانات حسن الأداء للمنشآت الصغيرة والمتوسطة بموجب القانون رقم 24 لسنة 2015؟',
+        levels: [
+          'Registration and classification status on Monaqasat is unclear; bids have been rejected due to missing or lapsed registration.',
+          'Registration exists but classification status is not systematically tracked or renewed ahead of tender cycles.',
+          'A defined process maintains active Monaqasat registration and current contractor/supplier classification, with bid templates reflecting Tender Committee requirements.',
+          'Bid quality is actively benchmarked against past evaluation outcomes, and SME-eligible benefits are claimed where applicable.',
+          'Monaqasat procurement expertise is a governed capability with a sustained high win-rate and zero eligibility disqualifications.',
+        ],
+        levelsAr: [
+          'حالة التسجيل والتصنيف على بوابة مناقصات غير واضحة؛ ورُفضت عطاءات بسبب تسجيل مفقود أو منتهٍ.',
+          'التسجيل موجود لكن حالة التصنيف لا تُتابَع أو تُجدَّد منهجيًا قبل دورات المناقصات.',
+          'عملية محددة تحافظ على تسجيل نشط في بوابة مناقصات وتصنيف حالي كمقاول/مورد، مع قوالب عطاءات تعكس متطلبات لجنة المناقصات.',
+          'جودة العطاءات تُقاس فعليًا مقابل نتائج التقييم السابقة، وتُطالَب المزايا المخصصة للمنشآت الصغيرة والمتوسطة عند الانطباق.',
+          'الخبرة في مشتريات بوابة مناقصات قدرة محوكَمة بمعدل فوز مرتفع مستدام وصفر استبعاد من الأهلية.',
+        ],
+      },
+      {
+        q: 'Has your organisation appointed a Data Protection Officer or designated a responsible compliance function as the Qatari PDPPL (Law No. 13 of 2016) expects, and does it complete Data Protection Impact Assessments for cross-border data flows?',
+        layer: 'strategic',
+        qAr: 'هل عيّنت مؤسستكم مسؤول حماية بيانات أو حدّدت وظيفة امتثال مسؤولة كما يتوقعه قانون حماية الخصوصية وحماية البيانات الشخصية القطري (القانون رقم 13 لسنة 2016)، وهل تُنجز تقييمات أثر حماية البيانات للتدفقات العابرة للحدود؟',
+        levels: [
+          'No individual or function is responsible for data-privacy compliance; PDPPL obligations are unowned and DPIAs are not performed.',
+          'A function is informally responsible for data privacy but without a defined mandate, documented authority, or DPIA process.',
+          'A designated Data Protection Officer maintains a processing-activity record and performs DPIAs for major cross-border transfers.',
+          'Data protection is actively managed: Transfer Impact Assessments are routine, and third-party processors are contractually bound to PDPPL-compliant clauses.',
+          'Data-protection governance is a mature, continuously monitored capability with automated breach-detection and demonstrated ability to meet QDPA reporting timelines.',
+        ],
+        levelsAr: [
+          'لا توجد جهة أو فرد مسؤول عن الامتثال لخصوصية البيانات؛ التزامات القانون غير مملوكة ولا تُنجَز تقييمات أثر حماية البيانات.',
+          'وظيفة مسؤولة بشكل غير رسمي عن خصوصية البيانات لكن دون تفويض محدد أو سلطة موثّقة أو عملية تقييم أثر.',
+          'مسؤول حماية بيانات معيّن يحتفظ بسجل أنشطة المعالجة ويُنجز تقييمات أثر حماية البيانات للتحويلات الكبرى العابرة للحدود.',
+          'تُدار حماية البيانات فعليًا: تقييمات أثر النقل روتينية، والمعالجون من الأطراف الثالثة مُلزَمون تعاقديًا ببنود متوافقة مع القانون.',
+          'حوكمة حماية البيانات قدرة ناضجة ومراقَبة باستمرار باكتشاف اختراقات آلي وقدرة مُثبَتة على الوفاء بالمهل الزمنية لهيئة حماية البيانات.',
+        ],
+      },
+    ],
+    recommendations: {
+      Reactive:  'Immediately establish a Ministry of Labour vacancy-notification tracker, confirm General Authority of Customs registration is current, and appoint a Data Protection Officer or responsible compliance function for PDPPL.',
+      Aware:     'Formalise ICV certification through an approved Tawteen certifier with auditable local-purchase records. Register and classify on the Monaqasat portal ahead of your next bid cycle.',
+      Defined:   'Automate biannual workforce-composition reporting and Free Zone-to-mainland duty verification. Build a documented DPIA process for cross-border data transfers.',
+      Managed:   'Link ICV score improvement to major energy-sector tender cycles. Benchmark Monaqasat bid outcomes and implement routine Transfer Impact Assessments.',
+      Optimised: 'Position Qatarization and ICV performance as a competitive differentiator in tenders and talent. Achieve zero missed filings, duty discrepancies, or data-protection findings.',
+    },
+    recommendationsAr: {
+      Reactive:  'إنشاء متتبّع فوري لإخطارات الشواغر لوزارة العمل، والتحقق من سريان التسجيل لدى الهيئة العامة للجمارك، وتعيين مسؤول حماية بيانات أو وظيفة امتثال مسؤولة بموجب قانون حماية الخصوصية.',
+      Aware:     'إضفاء الطابع الرسمي على شهادة القيمة المضافة المحلية عبر جهة معتمدة من برنامج توطين بسجلات شراء محلي قابلة للتدقيق. التسجيل والتصنيف في بوابة مناقصات قبل دورة العطاءات القادمة.',
+      Defined:   'أتمتة التقارير النصف سنوية لتكوين القوى العاملة والتحقق من رسوم المنطقة الحرة والبر الرئيسي. بناء عملية موثّقة لتقييم أثر حماية البيانات للتحويلات العابرة للحدود.',
+      Managed:   'ربط تحسين درجة القيمة المضافة المحلية بدورات مناقصات قطاع الطاقة الكبرى. قياس نتائج عطاءات بوابة مناقصات مرجعيًا وتطبيق تقييمات أثر النقل الروتينية.',
+      Optimised: 'وضع أداء التقطير والقيمة المضافة المحلية كميزة تنافسية في المناقصات والمواهب. تحقيق صفر تأخير في الإخطارات أو تباينات في الرسوم أو ملاحظات حماية بيانات.',
+    },
+    subSegments: QATAR_REGULATORY_SUB_SEGMENTS as unknown as SubSegment[],
+  },
+
+  /* ── MODULE G: Regulatory & Localisation Compliance (Jordan) ────────── */
+  {
+    id: 'regulatory-jordan',
+    title: 'Regulatory & Localisation Compliance (Jordan)',
+    titleAr: 'الامتثال التنظيمي والتوطين (الأردن)',
+    shortTitle: 'Regulatory (Jordan)',
+    shortTitleAr: 'الامتثال التنظيمي (الأردن)',
+    icon: Scale,
+    color: '#166534',
+    benchmarks: { gcc: 2.0, global: 2.4, best: 3.9 },
+    // Third country-specific regulatory module, per the user-confirmed
+    // rollout order: UAE -> Qatar -> Jordan -> Oman -> Bahrain -> other
+    // countries with clear regulation -> generic fallback for the long
+    // tail (#153). Content authored from public regulator sources
+    // (Ministry of Labour, Jordan Customs Department, Jordan Standards
+    // and Metrology Organization, Jordan Food and Drug Administration,
+    // Government Tenders Unit / Bylaw No. 8 of 2022, Ministry of Digital
+    // Economy and Entrepreneurship) as of August 2026. STATUS: authored,
+    // PENDING INDEPENDENT LEGAL/EXPERT REVIEW -- see
+    // maturityRegulatoryJordan.ts header and the in-quiz Country Coverage
+    // disclaimer for seg.id === 'regulatory-jordan'. Applies broadly (not
+    // just government) because Jordanization, QIZ rules of origin,
+    // customs, PDPL and halal/product-conformity rules bind most
+    // private-sector operators, not only public entities.
+    moduleFor: ['manufacturing', 'fmcg', 'pharma', 'retail', 'logistics', 'marine',
+                'construction', 'oil_gas', 'government', 'technology', 'banking', 'other'],
+    countryFor: ['jordan'],
+    frameworks: ['Ministry of Labour', 'QIZ Rules of Origin', 'Jordan Customs', 'Bylaw No. 8/2022', 'PDPL'],
+    questions: [
+      {
+        q: 'How proactively does your organisation track its exposure to the work-permit freeze for non-Jordanian workers (in effect since 1 June 2025), including which roles qualify for QIZ, free-zone, or skills-shortage exemptions?',
+        layer: 'tactical',
+        qAr: 'ما مدى استباقية مؤسستكم في تتبّع مدى تأثرها بتجميد تصاريح العمل للعمال غير الأردنيين (النافذ منذ 1 يونيو 2025)، بما يشمل تحديد الأدوار المؤهلة للإعفاءات الخاصة بالمناطق الصناعية المؤهلة أو المناطق الحرة أو نقص المهارات؟',
+        levels: [
+          'Work-permit exposure is not tracked; the organisation is unaware whether its roles qualify for QIZ, free-zone, or skills-shortage exemptions from the freeze.',
+          'Awareness exists that a freeze applies, but exemption eligibility has not been formally assessed for its specific roles.',
+          'A defined process identifies which roles qualify for exemptions and tracks existing work-permit renewal status against the freeze.',
+          'Workforce planning actively incorporates the freeze and the parallel regularization campaign (through 30 September 2026), with hiring plans adjusted to prioritise Jordanian candidates.',
+          'Jordanization compliance is a governed function with proactive Ministry of Labour engagement, zero permit-related production disruptions, and workforce planning aligned to the national employment-priority policy.',
+        ],
+        levelsAr: [
+          'مدى التأثر بتصاريح العمل غير مُتابَع؛ والمؤسسة غير مدركة ما إذا كانت أدوارها مؤهلة لإعفاءات المناطق الصناعية المؤهلة أو المناطق الحرة أو نقص المهارات من التجميد.',
+          'يوجد وعي بوجود تجميد، لكن أهلية الإعفاء لم تُقيَّم رسميًا للأدوار الخاصة بالمؤسسة.',
+          'عملية محددة تحدد الأدوار المؤهلة للإعفاءات وتتابع حالة تجديد تصاريح العمل القائمة مقابل التجميد.',
+          'يُدمَج التجميد وحملة تسوية الأوضاع الموازية (حتى 30 سبتمبر 2026) فعليًا في تخطيط القوى العاملة، مع تعديل خطط التوظيف لإعطاء الأولوية للمرشحين الأردنيين.',
+          'الامتثال للأردنة وظيفة محوكمة بتواصل استباقي مع وزارة العمل، ودون أي تعطل إنتاجي متعلق بالتصاريح، وتخطيط قوى عاملة مُواءَم مع سياسة أولوية التوظيف الوطنية.',
+        ],
+      },
+      {
+        q: 'How rigorously does your organisation calculate and document the minimum 35% value-add and mandated Israeli-input share required under QIZ rules of origin to sustain duty-free, quota-free access to the US market?',
+        layer: 'tactical',
+        qAr: 'ما مدى صرامة حساب وتوثيق مؤسستكم للحد الأدنى للقيمة المضافة 35% ونسبة المدخلات الإسرائيلية الإلزامية المطلوبة بموجب قواعد المنشأ للمناطق الصناعية المؤهلة للحفاظ على الوصول للسوق الأمريكي بدون رسوم أو حصص؟',
+        levels: [
+          'No value-add or rules-of-origin documentation exists; QIZ preferential access has been challenged or denied due to missing evidence.',
+          'A value-add worksheet exists but is completed reactively, only when a shipment or customs query requires it.',
+          'Value-add and Israeli-input-share calculations are documented systematically for each QIZ-eligible product line, with a named owner.',
+          'QIZ compliance is actively monitored against sourcing changes, with sourcing decisions weighing rules-of-origin impact on US market access.',
+          'QIZ rules-of-origin compliance is a governed, audited capability with zero preferential-access denials and rules-of-origin data integrated into sourcing strategy.',
+        ],
+        levelsAr: [
+          'لا توجد وثائق للقيمة المضافة أو قواعد المنشأ؛ وتعرّض الوصول التفضيلي للمناطق الصناعية المؤهلة للطعن أو الرفض بسبب غياب الأدلة.',
+          'توجد ورقة عمل للقيمة المضافة لكنها تُستكمَل بشكل تفاعلي، فقط عند الحاجة لشحنة أو استفسار جمركي.',
+          'تُوثَّق حسابات القيمة المضافة ونسبة المدخلات الإسرائيلية منهجيًا لكل خط منتج مؤهل للمناطق الصناعية المؤهلة، مع مالك محدد.',
+          'يُراقَب الامتثال للمناطق الصناعية المؤهلة فعليًا مقابل تغييرات التوريد، مع ترجيح قرارات التوريد لأثر قواعد المنشأ على الوصول للسوق الأمريكي.',
+          'الامتثال لقواعد منشأ المناطق الصناعية المؤهلة قدرة محوكمة ومُدقَّقة دون أي رفض للوصول التفضيلي، وبيانات قواعد المنشأ مُدمَجة في استراتيجية التوريد.',
+        ],
+      },
+      {
+        q: 'How completely does your organisation maintain its Jordan Customs Department registration and import/export licence under Regulation No. 114 of 2004, and correctly apply the annually-updated Harmonized Tariff Schedule?',
+        layer: 'operational',
+        qAr: 'ما مدى اكتمال احتفاظ مؤسستكم بتسجيلها لدى دائرة الجمارك الأردنية وإجازة الاستيراد/التصدير بموجب النظام رقم 114 لسنة 2004، والتطبيق الصحيح للجدول التعريفي المنسق المُحدَّث سنويًا؟',
+        levels: [
+          'Customs registration and import/export licence status are unknown; shipments have been held due to missing or lapsed documentation.',
+          'Registration and licence exist but tariff-schedule updates published in the Official Gazette are not proactively monitored.',
+          'A defined process tracks licence renewal and reviews Official Gazette tariff amendments as they are published.',
+          'Customs compliance is actively managed with duty classification reconciled monthly against finance records, and Free Zone/Aqaba SEZ treatment applied correctly where relevant.',
+          'Customs and tariff-classification compliance is fully governed with zero shipment delays or duty discrepancies over the past 24 months.',
+        ],
+        levelsAr: [
+          'حالة التسجيل الجمركي وإجازة الاستيراد/التصدير مجهولة؛ وتعرّضت شحنات للاحتجاز بسبب مستندات مفقودة أو منتهية.',
+          'التسجيل والإجازة موجودان لكن تحديثات الجدول التعريفي المنشورة في الجريدة الرسمية لا تُراقَب استباقيًا.',
+          'عملية محددة تتابع تجديد الإجازة وتراجع تعديلات التعريفة الجمركية المنشورة في الجريدة الرسمية فور صدورها.',
+          'يُدار الامتثال الجمركي فعليًا مع مطابقة تصنيف الرسوم شهريًا مع سجلات المالية، وتطبيق معاملة المنطقة الحرة/العقبة الخاصة بشكل صحيح عند الانطباق.',
+          'الامتثال الجمركي وتصنيف التعريفة محوكَم بالكامل دون أي تأخير في الشحنات أو تباينات في الرسوم خلال آخر 24 شهرًا.',
+        ],
+      },
+      {
+        q: 'How clearly does your organisation understand and maintain registration on the Government Tenders Unit portal (gtu.gov.jo), following the tender lifecycle defined under Bylaw No. 8 of 2022?',
+        layer: 'operational',
+        qAr: 'ما مدى وضوح فهم مؤسستكم واحتفاظها بالتسجيل على بوابة وحدة المشتريات الحكومية، باتباع دورة حياة المناقصة المحددة بموجب النظام رقم 8 لسنة 2022؟',
+        levels: [
+          'Registration status on the Government Tenders Unit portal is unclear; bids have been rejected due to missing or lapsed registration.',
+          'Registration exists but the tender lifecycle stages (technical/financial evaluation) are not systematically tracked.',
+          'A defined process maintains active gtu.gov.jo registration and tracks each tender through publication, submission, and evaluation.',
+          'Bid quality is actively benchmarked against past evaluation outcomes across government entities bid into.',
+          'Government Tenders Unit procurement expertise is a governed capability with a sustained high win-rate and zero eligibility disqualifications.',
+        ],
+        levelsAr: [
+          'حالة التسجيل على بوابة وحدة المشتريات الحكومية غير واضحة؛ ورُفضت عطاءات بسبب تسجيل مفقود أو منتهٍ.',
+          'التسجيل موجود لكن مراحل دورة حياة المناقصة (التقييم الفني/المالي) لا تُتابَع منهجيًا.',
+          'عملية محددة تحافظ على تسجيل نشط في بوابة gtu.gov.jo وتتابع كل مناقصة عبر مراحل النشر والتقديم والتقييم.',
+          'جودة العطاءات تُقاس فعليًا مقابل نتائج التقييم السابقة عبر الجهات الحكومية المُتقدَّم إليها.',
+          'الخبرة في مشتريات وحدة المشتريات الحكومية قدرة محوكَمة بمعدل فوز مرتفع مستدام وصفر استبعاد من الأهلية.',
+        ],
+      },
+      {
+        q: 'Has your organisation completed the transition required under the Jordanian PDPL (Law No. 24 of 2023, full compliance due 17 March 2025), including appointing a Data Protection Officer where large-scale sensitive-data processing applies?',
+        layer: 'strategic',
+        qAr: 'هل أكملت مؤسستكم فترة الانتقال المطلوبة بموجب قانون حماية البيانات الشخصية الأردني (القانون رقم 24 لسنة 2023، مع اشتراط الامتثال الكامل بحلول 17 مارس 2025)، بما يشمل تعيين مسؤول حماية بيانات حيثما تنطبق معالجة البيانات الحساسة على نطاق واسع؟',
+        levels: [
+          'No transition activity has occurred; the organisation is not aware of its PDPL obligations or the 17 March 2025 compliance deadline.',
+          'General awareness of the PDPL exists, but consent processes, breach-notification procedures, and DPO appointment have not been formalised.',
+          'A documented PDPL compliance policy is in place, including informed-consent processes and a defined breach-notification procedure meeting the 72-hour regulator / 24-hour data-subject timelines.',
+          'Cross-border data-transfer safeguards are actively assessed, and a Data Protection Officer is appointed where large-scale sensitive-data processing applies.',
+          'PDPL governance is a mature, continuously monitored capability with automated breach-detection and a demonstrated ability to meet all statutory notification timelines.',
+        ],
+        levelsAr: [
+          'لا يوجد نشاط انتقالي؛ والمؤسسة غير مدركة لالتزاماتها بموجب قانون حماية البيانات الشخصية أو الموعد النهائي للامتثال في 17 مارس 2025.',
+          'يوجد وعي عام بالقانون، لكن عمليات الموافقة المستنيرة وإجراءات الإبلاغ عن الاختراقات وتعيين مسؤول حماية البيانات لم تُضفَ عليها الصفة الرسمية بعد.',
+          'توجد سياسة امتثال موثّقة للقانون، تشمل عمليات موافقة مستنيرة وإجراء إبلاغ محدد عن الاختراقات يفي بمهل 72 ساعة للجهة الرقابية و24 ساعة لأصحاب البيانات.',
+          'تُقيَّم ضمانات نقل البيانات عبر الحدود فعليًا، ويُعيَّن مسؤول حماية بيانات حيثما تنطبق معالجة البيانات الحساسة على نطاق واسع.',
+          'حوكمة قانون حماية البيانات الشخصية قدرة ناضجة ومراقَبة باستمرار باكتشاف اختراقات آلي وقدرة مُثبَتة على الوفاء بجميع المهل النظامية للإبلاغ.',
+        ],
+      },
+    ],
+    recommendations: {
+      Reactive:  'Immediately assess which roles qualify for exemptions from the 2025 work-permit freeze, confirm Jordan Customs Department registration is current, and begin a PDPL compliance-policy draft.',
+      Aware:     'Formalise QIZ value-add and rules-of-origin documentation for each eligible product line. Register and track your tender lifecycle on the Government Tenders Unit portal.',
+      Defined:   'Systematise Official Gazette tariff-amendment monitoring. Appoint a Data Protection Officer where large-scale sensitive-data processing applies and formalise breach-notification procedures.',
+      Managed:   'Benchmark Government Tenders Unit bid outcomes across entities. Actively assess cross-border data-transfer safeguards and reconcile QIZ compliance against sourcing changes.',
+      Optimised: 'Position Jordanization compliance and QIZ market access as a competitive differentiator. Achieve zero missed filings, preferential-access denials, or data-protection findings.',
+    },
+    recommendationsAr: {
+      Reactive:  'تقييم فوري للأدوار المؤهلة للإعفاء من تجميد تصاريح العمل لعام 2025، والتحقق من سريان التسجيل لدى دائرة الجمارك الأردنية، والبدء بمسودة سياسة امتثال لقانون حماية البيانات.',
+      Aware:     'إضفاء الطابع الرسمي على توثيق القيمة المضافة وقواعد المنشأ للمناطق الصناعية المؤهلة لكل خط منتج مؤهل. التسجيل ومتابعة دورة حياة المناقصة على بوابة وحدة المشتريات الحكومية.',
+      Defined:   'منهجة مراقبة تعديلات التعريفة الجمركية في الجريدة الرسمية. تعيين مسؤول حماية بيانات حيثما تنطبق معالجة البيانات الحساسة على نطاق واسع وإضفاء الطابع الرسمي على إجراءات الإبلاغ عن الاختراقات.',
+      Managed:   'قياس نتائج عطاءات وحدة المشتريات الحكومية مرجعيًا عبر الجهات. تقييم ضمانات نقل البيانات عبر الحدود فعليًا ومطابقة الامتثال للمناطق الصناعية المؤهلة مقابل تغييرات التوريد.',
+      Optimised: 'وضع الامتثال للأردنة والوصول لسوق المناطق الصناعية المؤهلة كميزة تنافسية. تحقيق صفر تأخير في الإخطارات أو رفض للوصول التفضيلي أو ملاحظات حماية بيانات.',
+    },
+    subSegments: JORDAN_REGULATORY_SUB_SEGMENTS as unknown as SubSegment[],
+  },
+
+  /* ── MODULE H: Regulatory & Localisation Compliance (Oman) ──────────── */
+  {
+    id: 'regulatory-oman',
+    title: 'Regulatory & Localisation Compliance (Oman)',
+    titleAr: 'الامتثال التنظيمي والتوطين (عُمان)',
+    shortTitle: 'Regulatory (Oman)',
+    shortTitleAr: 'الامتثال التنظيمي (عُمان)',
+    icon: Scale,
+    color: '#9A3412',
+    benchmarks: { gcc: 2.2, global: 2.6, best: 4.0 },
+    // Fourth country-specific regulatory module, per the user-confirmed
+    // rollout order: UAE -> Qatar -> Jordan -> Oman -> Bahrain -> other
+    // countries with clear regulation -> generic fallback for the long
+    // tail (#153). Content authored from public regulator sources
+    // (Ministry of Labour, Authority for Projects Tenders and Local
+    // Content, Directorate General of Customs, DGSM, Ministry of
+    // Agriculture Fisheries and Water Resources, Ministry of Endowments
+    // and Religious Affairs, MTCIT) as of August 2026. STATUS: authored,
+    // PENDING INDEPENDENT LEGAL/EXPERT REVIEW -- see
+    // maturityRegulatoryOman.ts header and the in-quiz Country Coverage
+    // disclaimer for seg.id === 'regulatory-oman'. Applies broadly (not
+    // just government) because Omanisation, ICV, customs, PDPL and
+    // halal/product-conformity rules bind most private-sector operators,
+    // not only public entities.
+    moduleFor: ['manufacturing', 'fmcg', 'pharma', 'retail', 'logistics', 'marine',
+                'construction', 'oil_gas', 'government', 'technology', 'banking', 'other'],
+    countryFor: ['oman'],
+    frameworks: ['Sultani Decree 53/2023', 'PTLC/ICV', 'DGSM', 'e-Tendering', 'PDPL'],
+    questions: [
+      {
+        q: 'How proactively does your organisation manage Omanisation requirements -- tracking reserved-occupation compliance, the one-Omani-national-within-one-year rule for wholly foreign-owned entities, and the fee-linkage introduced under Ministerial Decision 602/2025?',
+        layer: 'tactical',
+        qAr: 'ما مدى استباقية مؤسستكم في إدارة متطلبات التعمين -- تتبّع الامتثال لقائمة المهن المحجوزة، وقاعدة توظيف عماني واحد خلال سنة للكيانات المملوكة بالكامل لأجانب، وربط الرسوم المُستحدَث بموجب القرار الوزاري 602/2025؟',
+        levels: [
+          'Omanisation status is unknown until the Ministry of Labour flags a shortfall or doubled fees are applied under MD 602/2025.',
+          'Headcount is tracked at company level but not reconciled against the reserved-occupations list or the one-year national-hire deadline.',
+          'A defined owner checks Omanisation status quarterly against sector quotas and confirms compliance with the one-national-within-one-year rule.',
+          'Omanisation tracking is proactive, with the 30% fee-reduction incentive under MD 602/2025 actively pursued and hiring plans anticipating reserved-occupations-list expansion.',
+          'Omanisation performance is a standing executive KPI; hiring and succession planning are integrated years ahead of quota changes, sustaining the compliant-employer fee discount continuously.',
+        ],
+        levelsAr: [
+          'حالة التعمين مجهولة إلى أن تُنبّه وزارة العمل بنقص أو تُطبَّق مضاعفة الرسوم بموجب القرار الوزاري 602/2025.',
+          'يُتابَع عدد الموظفين على مستوى الشركة دون مطابقته مع قائمة المهن المحجوزة أو موعد توظيف العماني الواحد خلال سنة.',
+          'مالك محدد يتحقّق من حالة التعمين فصليًا مقابل الحصص القطاعية ويؤكد الامتثال لقاعدة توظيف عماني واحد خلال سنة.',
+          'تتبّع التعمين استباقي، مع السعي الفعلي للحصول على حافز تخفيض الرسوم 30% بموجب القرار الوزاري 602/2025 وخطط توظيف تستبق توسّع قائمة المهن المحجوزة.',
+          'أداء التعمين مؤشر تنفيذي ثابت؛ والتوظيف والتعاقب مُدمَجان قبل سنوات من تغييرات الحصص، مع الحفاظ المستمر على خصم رسوم صاحب العمل الملتزم.',
+        ],
+      },
+      {
+        q: 'How rigorously does your organisation track its In-Country Value contribution across the four ICV pillars (Omani employment/training, local expenditure retention, local supplier development, use of Omani goods/services) overseen by the Authority for Projects, Tenders and Local Content?',
+        layer: 'tactical',
+        qAr: 'ما مدى صرامة تتبّع مؤسستكم لمساهمتها في القيمة المضافة المحلية عبر الركائز الأربع (توظيف/تدريب العمانيين، الاحتفاظ بالإنفاق المحلي، تطوير الموردين المحليين، استخدام السلع/الخدمات العمانية) تحت إشراف هيئة المشاريع والمناقصات والمحتوى المحلي؟',
+        levels: [
+          'ICV contribution is not tracked across any of the four pillars; the organisation has no visibility into its local-content standing.',
+          'Some pillar data is collected informally (e.g., local hiring), but no consolidated ICV score or declaration is maintained.',
+          'ICV contribution is measured and declared periodically across all four pillars, with sector-specific requirements (e.g., ICT-sector 40% ICV / 20% subcontracting) tracked where applicable.',
+          'ICV performance is actively managed ahead of major tender cycles, with sourcing and hiring decisions weighing pillar impact toward the 2026-2030 plan target of exceeding 40% GDP contribution.',
+          'A top-tier ICV contribution is a marketed competitive advantage, actively benchmarked, with the organisation developing Omani suppliers to expand its ICV-eligible base.',
+        ],
+        levelsAr: [
+          'لا تُتابَع مساهمة القيمة المضافة المحلية عبر أي من الركائز الأربع؛ ولا رؤية للمؤسسة على وضعها في المحتوى المحلي.',
+          'تُجمَع بعض بيانات الركائز بشكل غير رسمي (مثل التوظيف المحلي)، لكن دون درجة أو إقرار قيمة مضافة موحّد.',
+          'تُقاس وتُقَر مساهمة القيمة المضافة دوريًا عبر الركائز الأربع، مع تتبّع المتطلبات القطاعية المحددة (مثل 40% قيمة مضافة/20% تعاقد من الباطن لقطاع تقنية المعلومات) عند الانطباق.',
+          'يُدار أداء القيمة المضافة فعليًا قبل دورات المناقصات الكبرى، مع ترجيح قرارات التوريد والتوظيف لأثر الركائز نحو هدف خطة 2026-2030 بتجاوز 40% من الناتج المحلي.',
+          'المساهمة المتقدمة في القيمة المضافة ميزة تنافسية تُسوَّق فعليًا وتُقاس مرجعيًا، والمؤسسة تطوّر موردين عمانيين لتوسيع قاعدتها المؤهلة.',
+        ],
+      },
+      {
+        q: 'How completely does your organisation maintain Directorate General of Customs registration and Bayan system access, and correctly apply Duqm/Salalah free-zone duty exemptions versus mainland treatment?',
+        layer: 'operational',
+        qAr: 'ما مدى اكتمال احتفاظ مؤسستكم بالتسجيل لدى دائرة الجمارك العامة والوصول لنظام بيان، والتطبيق الصحيح لإعفاءات الرسوم في منطقتي الدقم وصلالة الحرتين مقابل معاملة البر الرئيسي؟',
+        levels: [
+          'Bayan system registration status is unknown; shipments have been held or delayed due to missing or lapsed customs registration.',
+          'Registration exists but is tracked informally, and free-zone-to-mainland duty distinctions are applied inconsistently.',
+          'A defined process tracks Bayan registration renewal and correctly applies the standard 5% duty on mainland-bound goods.',
+          'Registration and duty-treatment accuracy are monitored across all operating entities, reconciled monthly against finance records.',
+          'Customs and duty-treatment compliance is fully governed with zero shipment delays or duty discrepancies over the past 24 months.',
+        ],
+        levelsAr: [
+          'حالة التسجيل في نظام بيان مجهولة؛ وتعرّضت شحنات للاحتجاز أو التأخير بسبب تسجيل جمركي مفقود أو منتهٍ.',
+          'التسجيل موجود لكنه يُتابَع بشكل غير رسمي، وتُطبَّق فروقات الرسوم بين المنطقة الحرة والبر الرئيسي بشكل غير متسق.',
+          'عملية محددة تتابع تجديد تسجيل بيان وتُطبّق الرسم القياسي 5% على البضائع المتجهة للبر الرئيسي بشكل صحيح.',
+          'دقة التسجيل ومعاملة الرسوم تُراقَب عبر جميع الكيانات التشغيلية، وتُطابَق شهريًا مع سجلات المالية.',
+          'الامتثال الجمركي ومعاملة الرسوم محوكَم بالكامل دون أي تأخير في الشحنات أو تباينات في الرسوم خلال آخر 24 شهرًا.',
+        ],
+      },
+      {
+        q: 'How clearly does your organisation understand and maintain registration on the e-Tendering portal under the Authority for Projects, Tenders and Local Content (PTLC), including awareness of the Royal Decree 59/2024 Ministry of Finance sign-off requirement where applicable?',
+        layer: 'operational',
+        qAr: 'ما مدى وضوح فهم مؤسستكم واحتفاظها بالتسجيل على بوابة المناقصات الإلكترونية التابعة لهيئة المشاريع والمناقصات والمحتوى المحلي، بما يشمل الوعي بمتطلب توقيع وزارة المالية بموجب المرسوم السلطاني 59/2024 عند الانطباق؟',
+        levels: [
+          'Registration status on the e-Tendering portal is unclear; bids have been rejected due to missing or lapsed registration.',
+          'Registration exists but classification status is not systematically tracked or renewed ahead of tender cycles.',
+          'A defined process maintains active e-Tendering registration and current contractor/supplier classification.',
+          'Bid quality is actively benchmarked against past evaluation outcomes, with Ministry of Finance sign-off requirements identified early for applicable bond/guarantee/investment-project bids.',
+          'PTLC procurement expertise is a governed capability with a sustained high win-rate and zero eligibility disqualifications.',
+        ],
+        levelsAr: [
+          'حالة التسجيل على بوابة المناقصات الإلكترونية غير واضحة؛ ورُفضت عطاءات بسبب تسجيل مفقود أو منتهٍ.',
+          'التسجيل موجود لكن حالة التصنيف لا تُتابَع أو تُجدَّد منهجيًا قبل دورات المناقصات.',
+          'عملية محددة تحافظ على تسجيل نشط في بوابة المناقصات الإلكترونية وتصنيف حالي كمقاول/مورد.',
+          'جودة العطاءات تُقاس فعليًا مقابل نتائج التقييم السابقة، مع تحديد متطلبات توقيع وزارة المالية مبكرًا للعطاءات المتعلقة بالسندات/الضمانات/المشاريع الاستثمارية عند الانطباق.',
+          'الخبرة في مشتريات الهيئة قدرة محوكَمة بمعدل فوز مرتفع مستدام وصفر استبعاد من الأهلية.',
+        ],
+      },
+      {
+        q: 'Has your organisation appointed a Data Protection Officer as a data controller under the Omani PDPL (Royal Decree 6/2022), and engaged an MTCIT-approved external auditor to evaluate its data-protection mechanisms?',
+        layer: 'strategic',
+        qAr: 'هل عيّنت مؤسستكم مسؤول حماية بيانات بصفتها متحكمًا في البيانات بموجب قانون حماية البيانات الشخصية العُماني (المرسوم السلطاني 6/2022)، واستعانت بمدقق خارجي معتمد من وزارة النقل والاتصالات وتقنية المعلومات لتقييم آليات حماية البيانات لديها؟',
+        levels: [
+          'No Data Protection Officer is appointed, and no MTCIT-approved external audit has ever been engaged; data-protection obligations are unowned.',
+          'General awareness of the PDPL exists, but no formal controller/processor determination or external audit has been completed.',
+          'A Data Protection Officer is appointed and a documented data inventory covers main supply chain systems, with an MTCIT-approved audit scheduled.',
+          'Cross-border transfer harm-assessments are actively performed before any transfer proceeds, and audit findings are tracked to closure.',
+          'Data-protection governance is a mature, continuously monitored capability with automated breach-detection and a demonstrated record of clean MTCIT-approved external audits.',
+        ],
+        levelsAr: [
+          'لا يوجد مسؤول حماية بيانات معيّن، ولم يُستعَن بأي تدقيق خارجي معتمد من الوزارة؛ التزامات حماية البيانات غير مملوكة.',
+          'يوجد وعي عام بالقانون، لكن دون تحديد رسمي لصفة المتحكم/المعالج أو إنجاز تدقيق خارجي.',
+          'مسؤول حماية بيانات معيّن وجرد بيانات موثّق يغطي أنظمة سلسلة الإمداد الرئيسية، مع جدولة تدقيق معتمد من الوزارة.',
+          'تُنجَز تقييمات ضرر النقل عبر الحدود فعليًا قبل أي عملية نقل، وتُتابَع نتائج التدقيق حتى إغلاقها.',
+          'حوكمة حماية البيانات قدرة ناضجة ومراقَبة باستمرار باكتشاف اختراقات آلي وسجل مُثبَت من عمليات تدقيق نظيفة معتمدة من الوزارة.',
+        ],
+      },
+    ],
+    recommendations: {
+      Reactive:  'Immediately confirm reserved-occupations compliance and the one-Omani-national-within-one-year status, verify Directorate General of Customs/Bayan registration is current, and appoint a Data Protection Officer under the PDPL.',
+      Aware:     'Formalise ICV declarations across all four pillars with an approved local-content certifier. Register and classify on the e-Tendering portal ahead of your next bid cycle.',
+      Defined:   'Pursue the 30% MD 602/2025 fee-reduction incentive by sustaining Omanisation compliance. Schedule your first MTCIT-approved external data-protection audit.',
+      Managed:   'Link ICV contribution improvement to major tender cycles toward the 2026-2030 GDP target. Benchmark e-Tendering bid outcomes and perform routine cross-border transfer harm-assessments.',
+      Optimised: 'Position Omanisation and ICV performance as a competitive differentiator in tenders and talent. Achieve zero registration, duty, or data-protection compliance findings.',
+    },
+    recommendationsAr: {
+      Reactive:  'التأكد الفوري من الامتثال لقائمة المهن المحجوزة وحالة توظيف عماني واحد خلال سنة، والتحقق من سريان تسجيل دائرة الجمارك/نظام بيان، وتعيين مسؤول حماية بيانات بموجب القانون.',
+      Aware:     'إضفاء الطابع الرسمي على إقرارات القيمة المضافة عبر الركائز الأربع مع جهة معتمدة للمحتوى المحلي. التسجيل والتصنيف في بوابة المناقصات الإلكترونية قبل دورة العطاءات القادمة.',
+      Defined:   'السعي للحصول على حافز تخفيض الرسوم 30% بموجب القرار الوزاري 602/2025 بالحفاظ على الامتثال للتعمين. جدولة أول تدقيق خارجي لحماية البيانات معتمد من الوزارة.',
+      Managed:   'ربط تحسين مساهمة القيمة المضافة بدورات المناقصات الكبرى نحو هدف الناتج المحلي للخطة 2026-2030. قياس نتائج عطاءات بوابة المناقصات مرجعيًا وإجراء تقييمات ضرر النقل عبر الحدود الروتينية.',
+      Optimised: 'وضع أداء التعمين والقيمة المضافة كميزة تنافسية في المناقصات والمواهب. تحقيق صفر نتائج امتثال متعلقة بالتسجيل أو الرسوم أو حماية البيانات.',
+    },
+    subSegments: OMAN_REGULATORY_SUB_SEGMENTS as unknown as SubSegment[],
+  },
+
+  /* ── MODULE I: Regulatory & Localisation Compliance (Bahrain) ───────── */
+  {
+    id: 'regulatory-bahrain',
+    title: 'Regulatory & Localisation Compliance (Bahrain)',
+    titleAr: 'الامتثال التنظيمي والتوطين (البحرين)',
+    shortTitle: 'Regulatory (Bahrain)',
+    shortTitleAr: 'الامتثال التنظيمي (البحرين)',
+    icon: Scale,
+    color: '#B91C1C',
+    benchmarks: { gcc: 2.2, global: 2.6, best: 4.1 },
+    // Fifth country-specific regulatory module, per the user-confirmed
+    // rollout order: UAE -> Qatar -> Jordan -> Oman -> Bahrain -> other
+    // countries with clear regulation -> generic fallback for the long
+    // tail (#153). Content authored from public regulator sources
+    // (Labour Market Regulatory Authority, Tamkeen/Labour Fund, Bahrain
+    // Customs Affairs, BSMD/Ministry of Industry and Commerce, Tender
+    // Board/Legislative Decree No. 36/2002, Animal Health Directorate/
+    // Ministry of Municipalities Affairs and Agriculture, Personal Data
+    // Protection Authority) as of August 2026. STATUS: authored, PENDING
+    // INDEPENDENT LEGAL/EXPERT REVIEW -- see maturityRegulatoryBahrain.ts
+    // header and the in-quiz Country Coverage disclaimer for
+    // seg.id === 'regulatory-bahrain'. Applies broadly (not just
+    // government) because Bahrainisation, local-content preference,
+    // customs, PDPA and halal/product-conformity rules bind most
+    // private-sector operators, not only public entities.
+    moduleFor: ['manufacturing', 'fmcg', 'pharma', 'retail', 'logistics', 'marine',
+                'construction', 'oil_gas', 'government', 'technology', 'banking', 'other'],
+    countryFor: ['bahrain'],
+    frameworks: ['LMRA', 'Tamkeen', 'BSMD', 'Legislative Decree No. 36/2002', 'PDPA'],
+    questions: [
+      {
+        q: 'How proactively does your organisation manage Bahrainisation requirements -- processing salaries through the Enhanced WPS/EMS, tracking electronically-monitored sector quotas, and avoiding the BHD 500 non-compliance penalty and tender blocklist?',
+        layer: 'tactical',
+        qAr: 'ما مدى استباقية مؤسستكم في إدارة متطلبات التبحرين -- معالجة الرواتب عبر نظام حماية الأجور المُحسَّن/نظام إدارة العمالة الوافدة، وتتبّع الحصص القطاعية المُراقَبة إلكترونيًا، وتجنّب رسم عدم الامتثال 500 دينار بحريني والحظر من المناقصات الحكومية؟',
+        levels: [
+          'Bahrainisation status is unknown until LMRA flags a shortfall; Enhanced WPS/EMS payroll processing is not fully implemented.',
+          'Headcount is tracked at company level but not reconciled against sector-specific quotas (up to 50%) or EMS payroll requirements.',
+          'A defined owner checks Bahrainisation status quarterly against sector quotas and confirms Enhanced WPS/EMS salary processing compliance.',
+          'Bahrainisation tracking is automated via LMRA/EMS data, reviewed monthly, and tied to a hiring plan that avoids the BHD 500 penalty and tender blocklist.',
+          'Bahrainisation performance is a standing executive KPI, contributing to the National Plan target of 20,000 Bahraini hires annually, with zero penalty incidents or tender blocklisting.',
+        ],
+        levelsAr: [
+          'حالة التبحرين مجهولة إلى أن تُنبّه هيئة تنظيم سوق العمل بنقص؛ ومعالجة الرواتب عبر نظام حماية الأجور المُحسَّن/نظام إدارة العمالة الوافدة غير مُطبَّقة بالكامل.',
+          'يُتابَع عدد الموظفين على مستوى الشركة دون مطابقته مع الحصص القطاعية المحددة (حتى 50%) أو متطلبات معالجة رواتب نظام إدارة العمالة الوافدة.',
+          'مالك محدد يتحقّق من حالة التبحرين فصليًا مقابل الحصص القطاعية ويؤكد الامتثال لمعالجة الرواتب عبر نظام حماية الأجور المُحسَّن.',
+          'تتبّع التبحرين آلي عبر بيانات الهيئة/نظام إدارة العمالة الوافدة، ويُراجَع شهريًا، ومرتبط بخطة توظيف تتجنّب رسم 500 دينار والحظر من المناقصات.',
+          'أداء التبحرين مؤشر تنفيذي ثابت، يُسهم في هدف الخطة الوطنية لتوظيف 20,000 بحريني سنويًا، دون أي حوادث غرامات أو حظر من المناقصات.',
+        ],
+      },
+      {
+        q: 'How systematically does your organisation pursue Tender Board price preference for Bahraini-manufactured goods and access the minimum 20% SME set-aside on BTB tenders, including any required Bahraini subsidiary or local-partner arrangements?',
+        layer: 'tactical',
+        qAr: 'ما مدى منهجية سعي مؤسستكم للحصول على الأفضلية السعرية لدى مجلس المناقصات للمنتجات المصنّعة بحرينيًا والوصول للحد الأدنى 20% المُخصَّص للمنشآت الصغيرة والمتوسطة في مناقصات المجلس، بما يشمل أي ترتيبات مطلوبة لشركة تابعة بحرينية أو شريك محلي؟',
+        levels: [
+          'No awareness exists of Tender Board price-preference eligibility or the SME set-aside; no Bahraini subsidiary or local-partner arrangement is in place.',
+          'Awareness exists that preferences may apply, but eligibility has not been formally assessed or claimed on recent bids.',
+          'A defined process identifies Bahraini-manufactured product lines eligible for price preference and tracks SME set-aside eligibility.',
+          'Local-content strategy is actively pursued, including Tamkeen enrolment and a registered Bahraini subsidiary or partner where required for SME-earmarked opportunities.',
+          'Local-content positioning is a competitive differentiator, with sustained SME-tender wins and price-preference benefits actively tracked and maximised.',
+        ],
+        levelsAr: [
+          'لا يوجد وعي بأهلية الأفضلية السعرية لدى مجلس المناقصات أو التخصيص للمنشآت الصغيرة والمتوسطة؛ ولا توجد شركة تابعة بحرينية أو ترتيب شريك محلي.',
+          'يوجد وعي بإمكانية انطباق الأفضليات، لكن الأهلية لم تُقيَّم رسميًا أو تُطالَب بها في العطاءات الأخيرة.',
+          'عملية محددة تحدد خطوط المنتجات المصنّعة بحرينيًا المؤهلة للأفضلية السعرية وتتابع أهلية التخصيص للمنشآت الصغيرة والمتوسطة.',
+          'استراتيجية المحتوى المحلي تُتَّبع فعليًا، بما يشمل التسجيل لدى تمكين وشركة تابعة بحرينية مسجلة أو شريك عند الحاجة للوصول للفرص المخصصة للمنشآت الصغيرة والمتوسطة.',
+          'وضع المحتوى المحلي ميزة تنافسية، مع فوز مستدام بمناقصات المنشآت الصغيرة والمتوسطة ومزايا الأفضلية السعرية تُتابَع وتُعظَّم فعليًا.',
+        ],
+      },
+      {
+        q: 'How completely does your organisation maintain Bahrain Customs Affairs registration and correctly apply the standard 5% GCC duty, including tracking the Decree No. 23/2026 amendments to valuation, documentation, and clearance procedures?',
+        layer: 'operational',
+        qAr: 'ما مدى اكتمال احتفاظ مؤسستكم بالتسجيل لدى إدارة الجمارك البحرينية والتطبيق الصحيح للرسم القياسي الخليجي 5%، بما يشمل تتبّع تعديلات المرسوم رقم 23/2026 على عتبات التقييم ومتطلبات المستندات وإجراءات التخليص؟',
+        levels: [
+          'Customs registration status is unknown; shipments have been held or delayed due to missing or lapsed registration, or non-compliance with new Decree No. 23/2026 requirements.',
+          'Registration exists but is tracked informally, and awareness of the May 2026 Decree No. 23/2026 amendments is limited.',
+          'A defined process tracks registration renewal and has reviewed Decree No. 23/2026 valuation-threshold and documentation changes.',
+          'Customs compliance is actively managed with duty classification reconciled monthly against finance records, incorporating the updated clearance procedures.',
+          'Customs and duty-treatment compliance is fully governed with zero shipment delays, penalties, or duty discrepancies over the past 24 months.',
+        ],
+        levelsAr: [
+          'حالة التسجيل الجمركي مجهولة؛ وتعرّضت شحنات للاحتجاز أو التأخير بسبب تسجيل مفقود أو منتهٍ، أو عدم الامتثال لمتطلبات المرسوم رقم 23/2026 الجديدة.',
+          'التسجيل موجود لكنه يُتابَع بشكل غير رسمي، والوعي بتعديلات المرسوم رقم 23/2026 الصادر في مايو 2026 محدود.',
+          'عملية محددة تتابع تجديد التسجيل وراجعت تغييرات عتبات التقييم والمستندات بموجب المرسوم رقم 23/2026.',
+          'يُدار الامتثال الجمركي فعليًا مع مطابقة تصنيف الرسوم شهريًا مع سجلات المالية، بما يتضمن إجراءات التخليص المُحدَّثة.',
+          'الامتثال الجمركي ومعاملة الرسوم محوكَم بالكامل دون أي تأخير في الشحنات أو غرامات أو تباينات في الرسوم خلال آخر 24 شهرًا.',
+        ],
+      },
+      {
+        q: 'How well does your organisation track eProcurement portal registration and Tender Board bid history, including awareness of the 2025-2026 amendments raising internal-purchase thresholds and introducing Cabinet-approved negotiation provisions?',
+        layer: 'operational',
+        qAr: 'ما مدى جودة تتبّع مؤسستكم لتسجيل بوابة المشتريات الإلكترونية وسجل مناقصات مجلس المناقصات، بما يشمل الوعي بتعديلات 2025-2026 التي ترفع عتبات الشراء الداخلي وتُدخِل أحكام تفاوض بموافقة مجلس الوزراء؟',
+        levels: [
+          'eProcurement registration status is unclear; bids have been rejected due to missing or lapsed registration.',
+          'Registration exists but bid history and classification are not systematically tracked or renewed ahead of tender cycles.',
+          'A defined process maintains active eProcurement registration and tracks bid outcomes against Tender Board classification requirements.',
+          'Bid strategy actively accounts for the 2025-2026 threshold changes and negotiation provisions, with bid quality benchmarked against past evaluation outcomes.',
+          'Tender Board procurement expertise is a governed capability with a sustained high win-rate and zero eligibility disqualifications.',
+        ],
+        levelsAr: [
+          'حالة التسجيل في بوابة المشتريات الإلكترونية غير واضحة؛ ورُفضت عطاءات بسبب تسجيل مفقود أو منتهٍ.',
+          'التسجيل موجود لكن سجل العطاءات والتصنيف لا يُتابَعان أو يُجدَّدان منهجيًا قبل دورات المناقصات.',
+          'عملية محددة تحافظ على تسجيل نشط في بوابة المشتريات الإلكترونية وتتابع نتائج العطاءات مقابل متطلبات تصنيف مجلس المناقصات.',
+          'تراعي استراتيجية العطاءات فعليًا تغييرات عتبات 2025-2026 وأحكام التفاوض، مع قياس جودة العطاءات مقابل نتائج التقييم السابقة.',
+          'الخبرة في مشتريات مجلس المناقصات قدرة محوكَمة بمعدل فوز مرتفع مستدام وصفر استبعاد من الأهلية.',
+        ],
+      },
+      {
+        q: 'Has your organisation registered with or been audited by the Bahraini Personal Data Protection Authority (PDPA) under Law No. 30 of 2018, incorporating the 10 supplementary ministerial resolutions issued in March 2022?',
+        layer: 'strategic',
+        qAr: 'هل سجّلت مؤسستكم لدى هيئة حماية البيانات الشخصية البحرينية أو خضعت لتدقيقها بموجب القانون رقم 30 لسنة 2018، بما يتضمن القرارات الوزارية العشرة المكمّلة الصادرة في مارس 2022؟',
+        levels: [
+          'No engagement with the PDPA has occurred; the organisation is unaware of its obligations under Law No. 30 of 2018 or the 2022 ministerial resolutions.',
+          'General awareness of the PDPL exists, but no formal compliance policy, data inventory, or PDPA engagement has been completed.',
+          'A documented PDPA compliance policy is in place, covering the 10 ministerial resolutions, with a data inventory covering main supply chain systems.',
+          'Compliance is actively monitored, with the organisation prepared for PDPA investigations or audits and tracking the pending Cybercrime Law amendment for relevance.',
+          'PDPA governance is a mature, continuously monitored capability with automated breach-detection and a demonstrated record of clean PDPA audits.',
+        ],
+        levelsAr: [
+          'لا يوجد تعامل مع هيئة حماية البيانات الشخصية؛ والمؤسسة غير مدركة لالتزاماتها بموجب القانون رقم 30 لسنة 2018 أو القرارات الوزارية لعام 2022.',
+          'يوجد وعي عام بالقانون، لكن دون سياسة امتثال رسمية أو جرد بيانات أو تعامل مع الهيئة.',
+          'توجد سياسة امتثال موثّقة للهيئة، تغطي القرارات الوزارية العشرة، مع جرد بيانات يغطي أنظمة سلسلة الإمداد الرئيسية.',
+          'يُراقَب الامتثال فعليًا، والمؤسسة مستعدة لتحقيقات أو تدقيقات الهيئة، وتتابع تعديل قانون الجرائم الإلكترونية المُعلَّق لمعرفة مدى صلته.',
+          'حوكمة الهيئة قدرة ناضجة ومراقَبة باستمرار باكتشاف اختراقات آلي وسجل مُثبَت من تدقيقات نظيفة للهيئة.',
+        ],
+      },
+    ],
+    recommendations: {
+      Reactive:  'Immediately implement Enhanced WPS/EMS payroll processing, verify Bahrain Customs Affairs registration is current, and begin a PDPA compliance-policy draft covering the 10 ministerial resolutions.',
+      Aware:     'Formalise Tamkeen enrolment and assess eligibility for Tender Board price preference and the 20% SME set-aside. Register on the eProcurement portal ahead of your next bid cycle.',
+      Defined:   'Systematise Decree No. 23/2026 valuation and documentation compliance. Complete a PDPA data inventory and formalise breach-notification procedures.',
+      Managed:   'Benchmark eProcurement bid outcomes against 2025-2026 threshold and negotiation-provision changes. Actively pursue price-preference and SME-set-aside benefits across product lines.',
+      Optimised: 'Position Bahrainisation and local-content performance as a competitive differentiator in tenders and talent. Achieve zero penalty, tender-blocklist, or data-protection compliance findings.',
+    },
+    recommendationsAr: {
+      Reactive:  'التطبيق الفوري لمعالجة الرواتب عبر نظام حماية الأجور المُحسَّن/نظام إدارة العمالة الوافدة، والتحقق من سريان التسجيل لدى إدارة الجمارك البحرينية، والبدء بمسودة سياسة امتثال لهيئة حماية البيانات تغطي القرارات الوزارية العشرة.',
+      Aware:     'إضفاء الطابع الرسمي على التسجيل لدى تمكين وتقييم الأهلية للأفضلية السعرية لدى مجلس المناقصات والتخصيص 20% للمنشآت الصغيرة والمتوسطة. التسجيل في بوابة المشتريات الإلكترونية قبل دورة العطاءات القادمة.',
+      Defined:   'منهجة الامتثال لعتبات التقييم والمستندات بموجب المرسوم رقم 23/2026. إكمال جرد بيانات لهيئة حماية البيانات وإضفاء الطابع الرسمي على إجراءات الإبلاغ عن الاختراقات.',
+      Managed:   'قياس نتائج عطاءات بوابة المشتريات الإلكترونية مرجعيًا مقابل تغييرات عتبات وأحكام تفاوض 2025-2026. السعي الفعلي لمزايا الأفضلية السعرية والتخصيص للمنشآت الصغيرة والمتوسطة عبر خطوط المنتجات.',
+      Optimised: 'وضع أداء التبحرين والمحتوى المحلي كميزة تنافسية في المناقصات والمواهب. تحقيق صفر غرامات أو حظر من المناقصات أو ملاحظات امتثال لحماية البيانات.',
+    },
+    subSegments: BAHRAIN_REGULATORY_SUB_SEGMENTS as unknown as SubSegment[],
   },
 ];
