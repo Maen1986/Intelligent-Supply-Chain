@@ -182,6 +182,17 @@ LANGUAGE INSTRUCTION: Generate ALL text values in ${lang}.`;
     ? `The client has given you concrete signal above (selected symptoms and/or free-text detail). You MUST ground the executiveSummary, diagnosis, and rootCauses directly in that — reference the specific symptoms, their reported frequency/impact, and any free-text detail, not just the industry/region/size category. Findings that ignore the reported symptoms and only restate the organisation's category are a failure.`
     : `The client did NOT report any specific symptoms or describe a challenge — only their organisation category (size, region, industry, supply chain type, focus area, data maturity). Because of this, be transparent about scope: the final sentence of executiveSummary must plainly note that this is a directional, framework-based assessment based on their organisation profile alone, and that sharing specific symptoms (or booking a live consultation) would sharpen it into a truly personalised diagnosis. Do not present category-level generalities as if they were specific findings about their organisation.`;
 
+  // GCC/Levant entries below are grounded in named statutes because ISC has
+  // done primary-source research for these six countries (see the platform's
+  // regulatory_countries DB registry). Non-GCC regions deliberately do NOT
+  // invent named national laws — they use the same honest, generic-but-real
+  // treatment as maturityData.tsx's "General Compliance Practices
+  // (International)" fallback module (ISO 37301 compliance management +
+  // WCO SAFE Framework trade security), plus the real supranational trade
+  // bloc that actually applies, so a non-GCC client still gets substance
+  // instead of a thin "International" label.
+  const UNIVERSAL_FALLBACK_FRAMEWORKS = 'general ISO 37301 compliance-management practice and the WCO SAFE Framework for trade security — the same universal, country-agnostic baseline ISC applies on its Maturity Assessment for any market without a dedicated researched regulatory module';
+
   const regionContext: Record<string, string> = {
     'Saudi Arabia':          'Saudi Arabia — subject to GTPL, IKTVA local-content targets, Nitaqat/Saudization, Vision 2030 localisation, ZATCA customs/tax requirements',
     'United Arab Emirates':  'the UAE — subject to Emiratisation/Nafis quotas, MOIAT In-Country Value (ICV), Federal Customs Authority requirements, and (if applicable) free-zone vs. mainland distinctions',
@@ -190,7 +201,12 @@ LANGUAGE INSTRUCTION: Generate ALL text values in ${lang}.`;
     'Oman':                  'Oman — subject to Omanisation workforce quotas, the national In-Country Value (ICV) programme administered by the Authority for Projects, Tenders and Local Content, and DGSM product-conformity standards',
     'Bahrain':                'Bahrain — subject to Bahrainisation/LMRA workforce localisation, Tamkeen-administered local-content preference in government tenders, and BSMD product-conformity standards',
     'Other GCC':             'the wider GCC region — subject to applicable national procurement laws, GCC Common Customs Law, and Vision-2030-aligned localisation frameworks',
-    'International':         'international operations with GCC headquarters or significant GCC exposure',
+    'North America':         `North America — subject to USMCA regional trade rules and national customs/harmonised-tariff regimes (varies by whether the client is US/Canada/Mexico-based); apply ${UNIVERSAL_FALLBACK_FRAMEWORKS}`,
+    'Europe':                `Europe — subject to EU Customs Union rules (or UK/EFTA equivalents outside the EU), CE-marking product-conformity requirements, and GDPR-grade data-protection obligations; apply ${UNIVERSAL_FALLBACK_FRAMEWORKS}`,
+    'Africa':                `Africa — subject to the African Continental Free Trade Area (AfCFTA) where applicable, plus national customs and import/export licensing regimes that vary significantly by country; apply ${UNIVERSAL_FALLBACK_FRAMEWORKS}`,
+    'Asia-Pacific':          `Asia-Pacific — subject to RCEP and/or ASEAN trade-bloc rules where applicable, plus national customs and import/export licensing regimes that vary significantly by country; apply ${UNIVERSAL_FALLBACK_FRAMEWORKS}`,
+    'Latin America':         `Latin America — subject to Mercosur and/or Pacific Alliance trade-bloc rules where applicable, plus national customs and import/export licensing regimes that vary significantly by country; apply ${UNIVERSAL_FALLBACK_FRAMEWORKS}`,
+    'International (Other)': `a market outside the GCC and the broad regions above; apply ${UNIVERSAL_FALLBACK_FRAMEWORKS}, and be transparent in regionalAlignment that country-specific regulatory citations were not researched for this market`,
   };
   const regionFull = regionContext[input.region] ?? input.region;
 
@@ -279,7 +295,7 @@ Return ONLY valid JSON (no markdown, no code fences) matching this EXACT structu
       "actions": ["Action 1", "Action 2", "Action 3", "Action 4"]
     }
   },
-  "regionalAlignment": "One paragraph on specific ${input.region} regulatory, policy, or compliance requirements relevant to this ${input.businessSize} ${input.industry} organisation's ${input.focusArea} agenda — e.g. GTPL, IKTVA, Vision 2030 for Saudi; Emiratisation/ICV for UAE; Qatarization/Tawteen for Qatar; Jordanization/QIZ for Jordan; Omanisation/ICV for Oman; Bahrainisation/Tamkeen for Bahrain. Omit if region is International and there is nothing specific to say."
+  "regionalAlignment": "One paragraph on specific ${input.region} regulatory, policy, or compliance requirements relevant to this ${input.businessSize} ${input.industry} organisation's ${input.focusArea} agenda — e.g. GTPL, IKTVA, Vision 2030 for Saudi; Emiratisation/ICV for UAE; Qatarization/Tawteen for Qatar; Jordanization/QIZ for Jordan; Omanisation/ICV for Oman; Bahrainisation/Tamkeen for Bahrain; for North America/Europe/Africa/Asia-Pacific/Latin America/International (Other), cite the real trade bloc noted above (USMCA, EU Customs Union, AfCFTA, RCEP/ASEAN, Mercosur, etc.) plus ISO 37301 / WCO SAFE Framework, and be explicit that these are general frameworks rather than researched national statutes the way the GCC/Jordan content is. Set to empty string only if truly nothing relevant applies."
 }
 
 Rules:
