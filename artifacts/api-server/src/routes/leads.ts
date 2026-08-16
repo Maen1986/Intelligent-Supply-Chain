@@ -13,7 +13,14 @@ const LEAD_WEBHOOK_URL =
 
 // ── Validation: closed enums for structured fields, hard caps on free text ───
 const BUSINESS_SIZES = ['Startup', 'SME', 'Mid-Market', 'Enterprise', 'Government Entity'] as const;
-const REGIONS = ['International', 'Saudi Arabia', 'Jordan', 'Other GCC'] as const;
+// Kept in sync with the Diagnostic wizard's region list (Diagnostic.tsx step 2).
+// Was stale at just 4 values before this fix — every other region (all 6
+// GCC/Levant countries individually, plus the 5 world regions added later)
+// was silently failing Zod validation and dropping the lead.
+const REGIONS = [
+  'Saudi Arabia', 'United Arab Emirates', 'Qatar', 'Jordan', 'Oman', 'Bahrain', 'Other GCC',
+  'North America', 'Europe', 'Africa', 'Asia-Pacific', 'Latin America', 'International (Other)',
+] as const;
 const INDUSTRIES = [
   'Manufacturing', 'Marine', 'Retail', 'FMCG', 'Pharma', 'Logistics', 'Energy',
   'Construction', 'Tech', 'Government', 'Ecommerce', 'Food & Beverage', 'Healthcare',
