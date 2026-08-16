@@ -199,6 +199,33 @@ export function Diagnostic() {
       } catch (e) { /* silent fail */ }
     })();
 
+    // ── Usage logging: best-effort, never blocks the report ────────────────
+    //    Persists every submission (region/industry/focus/etc.) to Postgres
+    //    via the shared submissions table (tool: 'diagnostic'), so we have
+    //    real data on how often non-GCC world regions are actually selected
+    //    before investing in curated regional benchmark data for them.
+    void fetch(`${API_BASE}/submissions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        tool: 'diagnostic',
+        inputs: {
+          businessSize:    formData.businessSize,
+          region:          formData.region,
+          industry:        formData.industry,
+          supplyChainType: formData.supplyChainType,
+          focusArea:       formData.focusArea,
+          dataMaturity:    formData.dataMaturity,
+          symptoms,
+          challenge:       composedChallenge,
+        },
+        outputs: {
+          executiveSummary: generated.executiveSummary,
+        },
+        language: lang,
+      }),
+    }).catch(() => { /* silent fail — logging must never block the report */ });
+
     setReport(generated);
     setIsGenerating(false);
   };
