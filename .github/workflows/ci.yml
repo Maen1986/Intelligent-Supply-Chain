@@ -9,6 +9,26 @@ on:
 jobs:
   typecheck-and-test:
     runs-on: ubuntu-latest
+    # Postgres service for artifacts/api-server's DB-backed tests
+    # (tests/pgRateLimitStore.test.ts). The store creates its own table on
+    # first use (CREATE TABLE IF NOT EXISTS rate_limit_hits), so no schema
+    # push/migration step is needed here — just a reachable database.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: isc_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/isc_test
     steps:
       - uses: actions/checkout@v4
 
