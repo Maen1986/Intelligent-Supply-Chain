@@ -820,7 +820,7 @@ function BenchmarkTab({ lang }: { lang: Lang }) {
                   value={v} onChange={e => setVals(p => ({ ...p, [k.id]: +e.target.value }))}
                   className="w-full accent-[#082C6B]" />
                 <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>{ar ? 'وسيط الخليج:' : 'GCC Median:'} {k.gcMedianRaw}</span>
+                  <span>{ar ? 'المؤشر المرجعي:' : 'Reference Score:'} {k.gcMedianRaw}</span>
                   <span>{ar ? 'أفضل ربع:' : 'Top Quartile:'} {k.gcTopQRaw}</span>
                 </div>
               </div>
@@ -831,14 +831,14 @@ function BenchmarkTab({ lang }: { lang: Lang }) {
         {/* Radar + 3-number summary */}
         <div className="space-y-5">
           <h3 className="font-bold text-[#082C6B] text-sm uppercase tracking-wider">
-            {ar ? 'رادار المقارنة (As-Is / وسيط الخليج / أفضل ربع)' : 'Benchmark Radar (As-Is / GCC Median / Top Quartile)'}
+            {ar ? 'رادار المقارنة (أداؤك / المؤشر المرجعي / أفضل ربع)' : 'Benchmark Radar (As-Is / Reference Score / Top Quartile)'}
           </h3>
           <ResponsiveContainer width="100%" height={300}>
             <RadarChart data={radarData}>
               <PolarGrid stroke="#E5E7EB" />
               <PolarAngleAxis dataKey="metric" tick={{ fontSize: 8, fill: '#6B7280' }} />
               <Radar name={ar ? 'أداؤك' : 'Your Score (As-Is)'}    dataKey="As-Is"        stroke="#C9A84C" fill="#C9A84C" fillOpacity={0.4} strokeWidth={2} />
-              <Radar name={ar ? 'وسيط الخليج' : 'GCC Median'}       dataKey="GCC Median"   stroke="#082C6B" fill="none"    strokeDasharray="6 3" strokeWidth={1.5} />
+              <Radar name={ar ? 'المؤشر المرجعي' : 'Reference Score'}       dataKey="GCC Median"   stroke="#082C6B" fill="none"    strokeDasharray="6 3" strokeWidth={1.5} />
               <Radar name={ar ? 'أفضل ربع (الهدف)' : 'Top Quartile Target'} dataKey="Top Quartile" stroke="#10b981" fill="none" strokeDasharray="3 2" strokeWidth={1.2} />
               <Legend iconSize={10} iconType="circle" />
             </RadarChart>
@@ -848,7 +848,7 @@ function BenchmarkTab({ lang }: { lang: Lang }) {
           <div className="grid grid-cols-3 gap-3">
             {[
               { label: ar ? 'As-Is (أداؤك)' : 'As-Is',          value: avgAsIs,   color: '#C9A84C' },
-              { label: ar ? 'وسيط الخليج'   : 'GCC Median',      value: avgMedian, color: '#082C6B' },
+              { label: ar ? 'المؤشر المرجعي'   : 'Reference Score',      value: avgMedian, color: '#082C6B' },
               { label: ar ? 'الهدف (Top Q)' : 'Target (Top Q)',  value: avgTopQ,   color: '#10b981' },
             ].map(c => (
               <div key={c.label} className="text-center rounded-xl border border-border p-3">
@@ -863,8 +863,8 @@ function BenchmarkTab({ lang }: { lang: Lang }) {
           {skuClass && (
             <p className="text-xs text-[#C9A84C] bg-[#C9A84C]/8 rounded-lg px-3 py-2">
               {ar
-                ? `✦ وسيط الخليج وهدف الربع الأعلى معدَّلان لفئة "${skuLabel}" وفق بيانات APICS/ASCM وGartner 2024.`
-                : `✦ GCC Median & Top-Quartile target adjusted for "${skuLabel}" class (APICS/ASCM & Gartner 2024 data).`}
+                ? `✦ المؤشر المرجعي وهدف الربع الأعلى معدَّلان لفئة "${skuLabel}" استرشاداً بمنهجيات APICS/ASCM وGartner.`
+                : `✦ Reference score & Top-Quartile target adjusted for "${skuLabel}" class (informed by APICS/ASCM & Gartner methodology).`}
             </p>
           )}
         </div>
@@ -880,8 +880,8 @@ function BenchmarkTab({ lang }: { lang: Lang }) {
             <thead className="bg-[#082C6B] text-white">
               <tr>
                 {(ar
-                  ? ['مؤشر الأداء','As-Is','وسيط الخليج','هدفك (Top Q)','الفجوة للوسيط','الفجوة للهدف','الأثر السنوي (ريال)','كيف تسدّها؟']
-                  : ['KPI','As-Is','GCC Median','Your Target','Gap to Median','Gap to Target','Annual SAR Impact','How to Close']
+                  ? ['مؤشر الأداء','As-Is','المؤشر المرجعي','هدفك (Top Q)','الفجوة للمرجعي','الفجوة للهدف','الأثر السنوي (ريال)','كيف تسدّها؟']
+                  : ['KPI','As-Is','Reference Score','Your Target','Gap to Reference','Gap to Target','Annual SAR Impact','How to Close']
                 ).map(h => <th key={h} className="px-3 py-2.5 text-left font-semibold whitespace-nowrap">{h}</th>)}
               </tr>
             </thead>
@@ -930,8 +930,8 @@ function BenchmarkTab({ lang }: { lang: Lang }) {
         </div>
         <p className="text-xs text-muted-foreground mt-2">
           {ar
-            ? '* التقديرات مبنية على قاعدة بيانات ISC الخليجية. يمكنك تعديل هدفك في عمود Target.'
-            : '* Estimates based on ISC GCC benchmark database. Adjust your target in the table above.'}
+            ? '* التقديرات مبنية على مؤشرات مرجعية مركّبة استرشادية (راجع منهجية ISC) وبانتظار مراجعة خبير مستقل. يمكنك تعديل هدفك في عمود Target.'
+            : '* Estimates based on ISC composite reference scores (see methodology), pending independent expert review. Adjust your target in the table above.'}
           {skuClass && (ar ? ' ✦ الأرقام المعدّلة تعكس فئة المخزون المختارة.' : ' ✦ Adjusted figures reflect the selected SKU class.')}
         </p>
       </div>
@@ -1207,9 +1207,9 @@ function SavingsTab({ lang }: { lang: Lang }) {
 
       <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-900">
         {ar ? (
-          <><strong className="font-bold">ملاحظة ISC:</strong> تستند هذه التقديرات إلى قاعدة بيانات معايير الخليج الخاصة بـ ISC ومنحنيات وفورات إدارة الفئات من CIPS لقطاع {industry}. تعتمد الوفورات الفعلية على الجاهزية التنظيمية ونضج المشتريات وجودة التنفيذ. احجز استشارة للحصول على تقييم دقيق للفرص.</>
+          <><strong className="font-bold">ملاحظة ISC:</strong> تستند هذه التقديرات إلى مؤشر ISC المرجعي المركّب، استرشاداً بأدبيات إدارة الفئات لدى CIPS لقطاع {industry}، وهي بانتظار مراجعة خبير مستقل. تعتمد الوفورات الفعلية على الجاهزية التنظيمية ونضج المشتريات وجودة التنفيذ. احجز استشارة للحصول على تقييم دقيق للفرص.</>
         ) : (
-          <><strong className="font-bold">ISC Note:</strong> These estimates are based on ISC's GCC benchmark database and CIPS Category Management savings curves for {industry}. Actual savings depend on organisational readiness, procurement maturity, and implementation quality. Book a consultation for a precise opportunity assessment.</>
+          <><strong className="font-bold">ISC Note:</strong> These estimates are based on ISC's composite reference index, informed by CIPS Category Management savings literature for {industry}, pending independent expert review. Actual savings depend on organisational readiness, procurement maturity, and implementation quality. Book a consultation for a precise opportunity assessment.</>
         )}
       </div>
     </div>
@@ -1360,7 +1360,7 @@ function RiskTab({ lang }: { lang: Lang }) {
         <div className="grid grid-cols-3 gap-4">
         {[
           { label: ar ? 'مؤشر تعرضك (As-Is)' : 'Your Exposure Score (As-Is)', value: exposureScore, color: riskColor(exposureScore), sub: riskLabel(exposureScore, ar) },
-          { label: ar ? 'معيار الخليج' : 'GCC Industry Benchmark', value: industryBenchmark, color: '#082C6B', sub: ar ? 'متوسط القطاع' : 'Sector median' },
+          { label: ar ? 'مؤشر ISC المرجعي' : 'ISC Reference Index', value: industryBenchmark, color: '#082C6B', sub: ar ? 'مؤشر تقديري داخلي' : 'Internal composite estimate' },
           { label: ar ? 'الهدف (Top Quartile)' : 'Target (Top Quartile)', value: targetScore, color: '#10b981', sub: ar ? 'أفضل ربع' : 'Top quartile' },
         ].map(s => (
           <div key={s.label} className="text-center rounded-xl border border-border p-4">
@@ -2543,7 +2543,7 @@ function BriefingTab({ lang }: { lang: Lang }) {
             {ar ? 'جارٍ إنشاء إحاطتك التنفيذية…' : 'Generating your Executive Briefing…'}
           </p>
           <p className="text-muted-foreground text-sm mt-1">
-            {ar ? 'يحلّل الذكاء الاصطناعي ملفك مقارنةً بمعايير الخليج' : "Ma'in's AI is analysing your profile against GCC benchmarks"}
+            {ar ? 'يحلّل الذكاء الاصطناعي ملفك مقارنةً بالمؤشرات المرجعية' : "Ma'in's AI is analysing your profile against reference benchmarks"}
           </p>
         </div>
         {genSteps.map((t, i) => (
@@ -3554,7 +3554,7 @@ const TABS = [
 type TabId = typeof TABS[number]['id'];
 
 const TAB_LABELS_AR: Record<string, { label: string; desc: string }> = {
-  benchmark:   { label: 'رادار المعيار الخليجي',   desc: 'قارن مؤشراتك بنظراء الخليج' },
+  benchmark:   { label: 'رادار المؤشرات المرجعية',   desc: 'قارن مؤشراتك بمعايير مرجعية عالمية' },
   savings:     { label: 'حاسبة التوفير',            desc: 'احسب إمكانات التوفير المحتملة' },
   risk:        { label: 'مؤشر المخاطر',             desc: 'قيّم مخاطر سلسلة التوريد' },
   briefing:    { label: 'التقرير التنفيذي الذكي',   desc: 'تقرير استراتيجي مخصص بالذكاء الاصطناعي' },
@@ -3692,7 +3692,7 @@ export function CommandCenter() {
         <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4 bg-muted rounded-2xl p-6">
           <div className="flex items-center gap-3">
             <Star className="w-5 h-5 text-[#C9A84C]" />
-            <p className="text-sm text-muted-foreground">These tools are powered by ISC's GCC benchmark database and 20+ years of hands-on transformation experience.</p>
+            <p className="text-sm text-muted-foreground">These tools are powered by ISC's composite reference-benchmark index and 20+ years of hands-on transformation experience.</p>
           </div>
           <Link href="/consultant">
             <Button className="bg-[#082C6B] hover:bg-[#0B3D91] text-white shrink-0">
