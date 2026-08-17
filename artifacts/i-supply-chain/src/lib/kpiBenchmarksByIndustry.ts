@@ -1,24 +1,23 @@
 /**
- * GCC Industry-Specific KPI Benchmarks
+ * Industry-Specific KPI Reference Benchmarks
  *
- * Benchmarks represent the GCC sector median observed in practice.
+ * Represents ISC's calibrated sector-median reference point, not a raw pull
+ * from a single external study.
  *
- * Data vintage: 2024-2025 (last audited July 2025).
- * Sources:
- *   · Gartner Supply Chain Top 25 (2024) — inventory, C2C, OTIF, perfect order
- *   · Hackett Group World-Class Procurement Performance Study 2024 — P2P, savings, automation, STP
- *   · APICS/ASCM SCOR v12 Benchmarking Study 2024 — cross-industry norms
- *   · IACCM / World Commerce & Contracting Annual Survey 2024 — time-to-contract
- *   · CIPS Benchmarking Report 2024 — procurement savings, policy compliance
- *   · McKinsey Global Supply Chain Survey 2024 (GCC edition) — digitisation, resilience
- *   · Saudi Aramco IKTVA Progress Report 2023 — local content actuals and trajectory
- *   · World Bank Logistics Performance Index 2023 — logistics delivery norms
- *   · ISM Report on Business 2024 — quality/FTR rates
- *   · ISC proprietary GCC practitioner data 2022-2025
+ * Content-honesty note (#183, follow-up pass, 2026-08-17): the figures below
+ * are ISC's own calibration, informed by the general methodology and public
+ * findings of named industry benchmarking programmes (Gartner Supply Chain
+ * Top 25, Hackett Group World-Class Procurement, APICS/ASCM SCOR, IACCM,
+ * CIPS, World Bank Logistics Performance Index, ISM Report on Business) --
+ * not a literal, audited extraction from each paywalled report for every
+ * one of the 280 individual figures below. A basic range/plausibility pass
+ * found nothing implausible (values fall in expected ranges, including PPM
+ * defect-rate figures correctly in the hundreds-to-thousands range). Status:
+ * pending independent expert review before being labelled "verified" --
+ * same trust model as regulatory_countries and gcc_benchmarks.
  *
- * Targets remain universal best-practice figures in kpiTargetsByContext.
- * These benchmarks reflect where GCC organisations in each sector
- * typically sit today — giving users a peer-relevant comparison point.
+ * Last reviewed: 2026-08-17. Next review due: 2027-02-17 (6 months) or
+ * sooner if a named subject-matter expert signs off earlier.
  */
 
 export type IndustryKey =

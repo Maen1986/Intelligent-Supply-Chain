@@ -148,7 +148,7 @@ export const KPI_FRAMEWORKS: Record<string, KpiDef[]> = {
  *   2  Your Value
  *   3  Unit
  *   4  Target
- *   5  GCC Benchmark
+ *   5  Reference Benchmark
  *   6  Status  ← Excel IF formula; uses >= for higherIsBetter, <= otherwise
  */
 export function buildKpiTemplateRows(
@@ -170,7 +170,7 @@ export function buildKpiTemplateRows(
     ['', 'Each KPI section shows what raw data to collect and exactly where to find it.', '', '', '', '', ''],
     [...EMPTY7],
     // Column headers
-    ['KPI ID', 'Input Field', 'Your Value', 'Unit', 'Target', 'GCC Benchmark', 'Status'],
+    ['KPI ID', 'Input Field', 'Your Value', 'Unit', 'Target', 'Reference Benchmark', 'Status'],
   ];
 
   kpis.forEach(k => {
@@ -426,7 +426,7 @@ function healthLabel(score: number, isAr: boolean): string {
   return isAr ? t.labelAr : t.label;
 }
 
-/* ─── GCC quartile position ─── */
+/* ─── Reference quartile position ─── */
 function kpiQuartile(def: KpiDef, value: number): 1 | 2 | 3 | 4 {
   const { targetValue, benchmarkValue, higherIsBetter } = def;
   const mid = (targetValue + benchmarkValue) / 2;
@@ -486,15 +486,15 @@ function getKpiExpertInsight(kpiId: string, score: number, _value: number, _unit
         'معظم خطوط الطلبات متأثرة بشكل منهجي. جمّد أي تغييرات جارية في العمليات وافرِض غرفة حرب يومية مع الفرق التشغيلية والتجارية حتى يتعافى المؤشر.',
         'كل نقطة تحسين في POR تسترد نحو 0.3% من الإيراد. حدّد سبب الإخفاق الرئيسي أولاً — هل هو OTIF أم دقة الانتقاء أم التلف؟',
         'قريب من المعيار. التسرّب المتبقّي عند هذا المستوى غالباً في دقة الفواتير وتوقيت إيصالات التسليم — راجعهما شهرياً.',
-        'دون المعدّل الخليجي. الجذر المشترك للمشكلة عادةً بين أداء الناقل ودقة نظام WMS. مبادرة كايزن لمدة 90 يوماً على الاثنين تحقق تحسناً 5–8 نقاط عادةً.',
-        'فوق المعيار الخليجي. اثبّت الأداء ببطاقات تقييم أسبوعية للناقلين وسير عمل تأكيد الطلبات الخالي من الأخطاء.',
+        'دون المعدّل المرجعي. الجذر المشترك للمشكلة عادةً بين أداء الناقل ودقة نظام WMS. مبادرة كايزن لمدة 90 يوماً على الاثنين تحقق تحسناً 5–8 نقاط عادةً.',
+        'فوق المعيار المرجعي. اثبّت الأداء ببطاقات تقييم أسبوعية للناقلين وسير عمل تأكيد الطلبات الخالي من الأخطاء.',
         'خدمة عالمية المستوى. انتقل من تقليل العيوب إلى تحسين تكلفة الجودة — خفّض التكلفة الضرورية لتحقيق التميّز لا معدّل العيوب فحسب.',
       ],
       otif: [
         'خطر حاد على العلاقات مع العملاء. صنّف أسوأ 3 خطوط توريد ومورّدين هذا الأسبوع وضع خطة تصحيح عاجلة.',
         'ضعف مزمن في هذا المستوى يدلّ على مشكلة هيكلية — مزيج من موردين غير موثوقين وشبكة لوجستية غير مرنة. وفّر مصدراً بديلاً لأعلى 5 خطوط مخاطرة هذا الربع.',
         'حدّد ما إذا كانت المشكلة في النقل (التوقيت) أم في المورّد (الكميات). التدخّل في الحالتين يختلف جوهرياً.',
-        'دون المعيار الخليجي 82%. المخزون الاحتياطي الديناميكي وتنويع خيارات الشحن يغلق نحو 60% من الفجوة.',
+        'دون المعيار المرجعي 82%. المخزون الاحتياطي الديناميكي وتنويع خيارات الشحن يغلق نحو 60% من الفجوة.',
         'تنافسي. ركّز الحجم على الناقلين بأداء >94% في OTIF وأدِر المتدنّيين في مراجعة العقد القادمة.',
         'قوي. أدرِج بنود مكافأة/غرامة مرتبطة بـ OTIF في تجديد العقود القادمة لتثبيت الأداء.',
         'مستوى عالمي. فكّر في تحويل موثوقية التسليم إلى ميزة تفاضلية أو مستوى خدمة مميّز للعملاء الاستراتيجيين.',
@@ -502,14 +502,14 @@ function getKpiExpertInsight(kpiId: string, score: number, _value: number, _unit
       c2c: [
         'دورة النقد بهذا المستوى تُثقل الميزانية العمومية. الرافعة الفورية: تمديد شروط دفع الموردين إلى 60 يوماً وتشديد تحصيل الذمم المدينة لـ 30 يوماً.',
         'كل 10 أيام تخفيض في C2C تُحرّر 2–3% من الإيراد السنوي رأس مالاً عاملاً. أبدأ بأيام الذمم المدينة — أعلى أثر وأسرع عائد.',
-        'فوق المعيار الخليجي 48 يوماً. مراجعة شروط الدفع مع الموردين مقرونةً بالخصم الديناميكي يغلق نصف الفجوة في دورة واحدة.',
+        'فوق المعيار المرجعي 48 يوماً. مراجعة شروط الدفع مع الموردين مقرونةً بالخصم الديناميكي يغلق نصف الفجوة في دورة واحدة.',
         'رأس مال عامل عند المعيار. الرافعة التالية هي المخزون — كل دورة إضافية تُقلّص C2C نحو 8 أيام في المتوسط.',
         'رأس مال عامل فوق المعيار. فكّر في برامج تمويل سلسلة الإمداد لتمديد الشروط دون الإضرار بعلاقات الموردين.',
         'دورة نقد كفؤة جداً. حافظ على هذا المستوى بعناية في كل مفاوضة تجارية.',
         'إدارة رأس مال عامل عالمية المستوى. هذه ميزة تنافسية حقيقية — احمِها بقوة في كل مفاوضة تجارية.',
       ],
       savings: [
-        'دون الحدّ الأدنى الخليجي — المشتريات تعمل بشكل رد فعلي. أسّس إدارة الفئات أولاً قبل وضع أي أهداف وفورات.',
+        'دون الحدّ الأدنى المرجعي — المشتريات تعمل بشكل رد فعلي. أسّس إدارة الفئات أولاً قبل وضع أي أهداف وفورات.',
         'تحليل سريع للإنفاق على 3 فئات كبرى يكشف فرص إعادة المناقصة ذات العائد السريع. حتى فئة واحدة معادة الطرح تُحقق عادةً 6–12% وفورات.',
         'طبّق خط أنابيب منظّم للمناقصات التنافسية. إعادة طرح مناقصة فئة واحدة فحسب تُحقق عادةً 6–12% وفورات على الإنفاق المُدار.',
         'نضج إدارة الفئات هو الرافعة الرئيسية. المؤسسات التي تُقسّم إنفاقها إلى 6 فئات أو أكثر تحقق باستمرار وفورات 8–12%.',
@@ -584,7 +584,7 @@ function getKpiExpertInsight(kpiId: string, score: number, _value: number, _unit
         'معدّل تخفيف المخاطر الحرجة دون 35% يعني أن معظم المخاطر عالية الخطورة لا تملك ضوابط نشطة. عيّن فوراً مالكاً مُسمّىً لكل مخاطرة حرجة وأوجِب إجراء تخفيف خلال أسبوعين.',
         'ثلثا المخاطر الحرجة لديك دون أي ضوابط. ركّز فقط على المخاطر فوق حدّ مالي محدّد — حتى ضوابط أساسية على أعلى 3 مخاطر هي أولوية اليوم.',
         'أكثر من نصف المخاطر الحرجة لديك غير مُخفَّفة. صنّفها حسب التعرّض المالي — حتى ضوابط أساسية (التوريد المزدوج، المخزون الاحتياطي، بنود العقد) على أعلى 5 مخاطر تُغلق الفجوات الأخطر بسرعة.',
-        'دون المعيار الخليجي 48%. أجرِ فحص صحة ربع سنوي للتخفيف: لكل مخاطرة حرجة، تحقّق من أن الضابط يعمل فعلياً لا أنه موثَّق فحسب. الضوابط الورقية تفشل بصمت.',
+        'دون المعيار المرجعي 48%. أجرِ فحص صحة ربع سنوي للتخفيف: لكل مخاطرة حرجة، تحقّق من أن الضابط يعمل فعلياً لا أنه موثَّق فحسب. الضوابط الورقية تفشل بصمت.',
         'وضع تخفيف فوق المعيار. ارتقِ بالجودة بتحويل الضوابط التفاعلية إلى مؤشرات إنذار مبكر — اربط كل تخفيف بمقياس تشغيلي يُنبّه قبل تحقّق المخاطرة.',
         'تغطية تخفيف قوية. أجرِ اختباراً سنوياً لفاعلية الضوابط: محاكاة أعلى 3 سيناريوهات مخاطر والتحقّق من أن كل تخفيف يُقيّد الأثر ضمن الحدود المقبولة.',
         'إدارة مخاطر حرجة عالمية المستوى. أأسِّس النهج مؤسسياً — وثّق مكتبة ضوابط المخاطر كإطار قابل لإعادة الاستخدام وامتدّ إلى موردي المستوى الثاني حيث تكون مخاطر التركّز أعلى.',
@@ -592,7 +592,7 @@ function getKpiExpertInsight(kpiId: string, score: number, _value: number, _unit
       srs: [
         'متوسط درجة مخاطر الموردين دون 35 يُشير إلى تعرّض منهجي عبر قاعدة التوريد. صنّف الموردين في شرائح مخاطر فوراً وافرِض دورات مراجعة ربع سنوية على الربع الأسفل.',
         'أجرِ فرز سريع للاستقرار المالي على أكبر 20 مورّداً بالإنفاق: أي مورّد في المرتبة عالية المخاطرة يستوجب فوراً خطة توريد احتياطي.',
-        'دون مستوى الصحة المتوسط للموردين في الخليج. أدرِج تقييماً منظّماً لمخاطر الموردين يشمل الاستقرار المالي والتعرّض الجيوسياسي والاعتماد على مصدر وحيد وبُعد ESG — قيّم كل مورّد سنوياً على الأقل.',
+        'دون مستوى الصحة المتوسط المرجعي للموردين. أدرِج تقييماً منظّماً لمخاطر الموردين يشمل الاستقرار المالي والتعرّض الجيوسياسي والاعتماد على مصدر وحيد وبُعد ESG — قيّم كل مورّد سنوياً على الأقل.',
         'قريب من المعيار. أكبر رافعة في هذا النطاق هي جودة البيانات: درجات المخاطر المبنية على معلومات متقادمة أو معلَنة ذاتياً مُضلِّلة. تحقّق ببيانات مالية من طرف ثالث للموردين الاستراتيجيين.',
         'وضع مخاطر موردين فوق المعيار. ميّز استجابتك حسب الشريحة — خصّص الإدارة المكثّفة للموردين الاستراتيجيين والحرجين؛ استخدم المراقبة الآلية (تنبيهات ائتمان، تغذية إخبارية) للقاعدة الأوسع.',
         'صحة مخاطر موردين قوية. شارك الدرجات مباشرةً مع الموردين الرئيسيين في مراجعات الأعمال الربع سنوية — الشفافية تُسرّع تحسينهم وتُشير إلى أنك تأخذ أمان التوريد بجدية.',
@@ -602,7 +602,7 @@ function getKpiExpertInsight(kpiId: string, score: number, _value: number, _unit
         'امتثال مراجعة المخاطر دون 35% يعني أن سجل المخاطر مجرّد ديكور — المخاطر لا تُعاد تقييمها مع تغيّر الظروف. طبّق المراجعات عبر حوكمة مقيَّدة بالتقويم لا بالمبادرة العشوائية.',
         'مراجعات المخاطر لا تُنجَز في الغالب. السبب الجذري هو غموض الملكية — عيّن مالكاً واحداً لكل فئة واجعل اكتمال المراجعة مؤشر أداء للمدير المباشر.',
         'معظم مراجعات المخاطر المجدولة لا تُنجَز. السبب الجذري غالباً غموض الملكية: عيّن مالك مخاطر واحد مُسمّىً لكل فئة واجعل اكتمال المراجعة مؤشر أداء لمدير المباشر.',
-        'دون المعيار الخليجي 52%. قلّل الاحتكاك — مراجعة منظّمة لمدة 30 دقيقة بقالب معياري أكثر احتمالاً للحدوث من غوص عميق غير منظّم. الحجم أهم من العمق في هذه المرحلة.',
+        'دون المعيار المرجعي 52%. قلّل الاحتكاك — مراجعة منظّمة لمدة 30 دقيقة بقالب معياري أكثر احتمالاً للحدوث من غوص عميق غير منظّم. الحجم أهم من العمق في هذه المرحلة.',
         'إيقاع مراجعة فوق المعيار. ارتقِ بالجودة بإلزام كل مراجعة بإنتاج تحديث واحد على الأقل لتقييم مخاطرة أو إجراء تخفيف مفتوح/مُغلَق. المراجعات التي لا تُنتج مخرجات مجرّد شكليات حوكمة.',
         'امتثال مراجعة قوي. أدرِج لوحة اتجاه مخاطر تُظهر كيف تحرّكت تقييمات المخاطر الفردية خلال الأربعة أرباع الماضية — هذا يُجلّي قيمة المراجعات للقيادة.',
         'حوكمة مراجعة مخاطر عالمية المستوى. سجل المخاطر لديك أداة إدارة حية لا وثيقة ثابتة. امتدّ بالإيقاع إلى مخاطر موردي المستوى الثاني وتأكّد من تغذية النتائج مباشرةً في تحديثات استراتيجية الفئات.',
@@ -611,7 +611,7 @@ function getKpiExpertInsight(kpiId: string, score: number, _value: number, _unit
         'امتثال أوامر الشراء دون 60% يعني تجاوز العقود — تُفقد القوة التفاوضية ويرتفع خطر التدقيق. طبّق الامتثال على مستوى النظام.',
         'الإنفاق خارج العقد عند هذا المستوى يعني تسرّباً مالياً وأقصى تعرّض للتدقيق. طبّق سياسة أمر شراء إلزامية مطبَّقة بالنظام هذا الربع دون استثناء.',
         'حدّد أعلى 5 موظفين مشتريات يُصدرون أوامر شراء خارج العقود. التدريب والتوجيه المُستهدَف لهذه المجموعة يُغلق 60% من الفجوة.',
-        'دون المعيار الخليجي 72%. سير عمل يضع العقد أولاً — النظام يمنع أوامر الشراء خارج العقد بلا مبرّر — هو الإصلاح الأسرع.',
+        'دون المعيار المرجعي 72%. سير عمل يضع العقد أولاً — النظام يمنع أوامر الشراء خارج العقد بلا مبرّر — هو الإصلاح الأسرع.',
         'امتثال فوق المعيار. التقارير الشهرية للامتثال التي تُشاركها مع مديري الفئات تُنشئ مساءلة تُديم الاتجاه.',
         'امتثال قوي. دقّق عيّنة عشوائية 5% شهرياً لاكتشاف الفجوات الناشئة قبل أن تتفاقم.',
         'مستوى عالمي. الامتثال عند هذا المستوى يحقّق أقصى قيمة للعقود وأدنى مخاطر للتدقيق.',
@@ -620,7 +620,7 @@ function getKpiExpertInsight(kpiId: string, score: number, _value: number, _unit
         'تسليم الموردين عند هذا المستوى يمثّل خطراً مباشراً على الإيراد. أصدِر إشعار تحسين أداء رسمياً للموردين في الربع الأسفل.',
         'إخفاق التسليم عند هذا المستوى يُسبّب على الأرجح فشلاً في خدمة العملاء في المرحلة اللاحقة. فعّل إجراء إشعار تحسين الأداء التعاقدي لجميع الموردين دون 70% OTIF فوراً.',
         'صنّف الموردين حسب شريحة OTIF. الربع الأسفل يتسبّب عادةً في 80% من إخفاقات التسليم — إدارته المكثّفة تحقق تحسناً غير متناسب.',
-        'دون المعيار الخليجي 80%. مراجعات أداء التسليم المشتركة مع الموردين الرئيسيين شهرياً بدلاً من ربع سنوي ترفع OTIF 8–12 نقطة باستمرار.',
+        'دون المعيار المرجعي 80%. مراجعات أداء التسليم المشتركة مع الموردين الرئيسيين شهرياً بدلاً من ربع سنوي ترفع OTIF 8–12 نقطة باستمرار.',
         'تسليم موردين فوق المعيار. أدرِج أداء التسليم معياراً موزوناً في تقييم المناقصات القادمة.',
         'قوي. فكّر في برنامج مخزون مُدار من قِبَل المورّد (VMI) مع أفضل 5 موردين بأداء OTIF — يُعمّق العلاقة ويُحسّن الخدمة أكثر.',
         'مستوى عالمي في تسليم الموردين. هذه ميزة تنافسية حقيقية — ادمجها في مقترح قيمة إدارة علاقات الموردين.',
@@ -632,7 +632,7 @@ function getKpiExpertInsight(kpiId: string, score: number, _value: number, _unit
     const genericAr = [
       'فجوة حرجة — حدّد خطة إجراءات تصحيحية بأفق 30 يوماً ومالك واحد مُعيَّن.',
       'بعيد جداً عن المعيار. شخّص السبب الجذري قبل الالتزام بحل — الإصلاحات المبنية على الأعراض نادراً ما تصمد.',
-      'دون المعيار الخليجي. مبادرة تحسين منظّمة بمعالم محدّدة ستُغلق الفجوة في ربعين إلى ثلاثة أرباع.',
+      'دون المعيار المرجعي. مبادرة تحسين منظّمة بمعالم محدّدة ستُغلق الفجوة في ربعين إلى ثلاثة أرباع.',
       'عند المعيار الصناعي. دقّق عبر انضباط العمليات وإيقاعات القياس للانتقال إلى الربع الأعلى.',
       'فوق المعيار الصناعي. اثبّت عبر الحوكمة — بيانات المعيار تتغيّر كل 18 شهراً، فاستمر في القياس.',
       'أداء قوي في الربع الأعلى. وثّق منهجيتك كعملية قابلة للتكرار وانقل هذه الكفاءة إلى مجالات مجاورة.',
@@ -647,8 +647,8 @@ function getKpiExpertInsight(kpiId: string, score: number, _value: number, _unit
       'Systemic fulfilment failure — most order lines are affected. Freeze ongoing process changes and run a daily war-room with operations, logistics, and commercial until the KPI recovers.',
       'Each 1pp improvement in POR recovers ~0.3% of revenue. Isolate the dominant failure mode (OTIF vs pick accuracy vs damage) before spreading effort.',
       'Approaching benchmark. Residual leakage at this level is almost always documentation — audit invoice accuracy and PoD timeliness monthly.',
-      'Below the GCC median. Root cause is typically split between carrier OTIF and WMS pick accuracy. A 90-day focused kaizen on both routinely yields 5–8pp uplift.',
-      'Above GCC benchmark. Sustain via weekly carrier scorecards and a zero-defect order confirmation workflow.',
+      'Below the reference score. Root cause is typically split between carrier OTIF and WMS pick accuracy. A 90-day focused kaizen on both routinely yields 5–8pp uplift.',
+      'Above the reference benchmark. Sustain via weekly carrier scorecards and a zero-defect order confirmation workflow.',
       'Top-tier fulfilment. Focus shifts to cost-of-quality — reduce the overhead of achieving perfection, not just the defect rate.',
     ],
     otif: [
@@ -877,16 +877,16 @@ function PerformanceIntelligence({ scores, isAr, kpisTotal }: {
 
   const verdict = avgScore >= 80
     ? (isAr
-        ? 'أداء سلسلة الإمداد لديك فوق المعدّل الخليجي — الخطوة التالية هي تعزيز الفجوات المتبقية للانتقال من مشغّل موثوق إلى رائد في السوق.'
-        : 'Your supply chain performance is above the GCC average. The next phase is converting your remaining gaps into structural advantages. Concentrate effort on your bottom-quartile KPIs — they represent the highest ROI improvement opportunity and the most direct path to market leadership.')
+        ? 'أداء سلسلة الإمداد لديك فوق المعدّل المرجعي — الخطوة التالية هي تعزيز الفجوات المتبقية للانتقال من مشغّل موثوق إلى رائد في السوق.'
+        : 'Your supply chain performance is above the reference average. The next phase is converting your remaining gaps into structural advantages. Concentrate effort on your bottom-quartile KPIs — they represent the highest ROI improvement opportunity and the most direct path to market leadership.')
     : avgScore >= 65
     ? (isAr
         ? 'أداء تنافسي مع فجوات قابلة للمعالجة. التركيز المنضبط على المؤشرات الحرجة مع مالكين واضحين يُحوّل الوضع خلال ربعين.'
-        : 'Competitive performance with addressable gaps. Disciplined focus on your critical KPIs — with structured root-cause analysis and a single named owner per gap — will shift your GCC ranking significantly within two quarters. Avoid the common trap of launching too many initiatives simultaneously.')
+        : 'Competitive performance with addressable gaps. Disciplined focus on your critical KPIs — with structured root-cause analysis and a single named owner per gap — will shift your peer ranking significantly within two quarters. Avoid the common trap of launching too many initiatives simultaneously.')
     : avgScore >= 50
     ? (isAr
-        ? 'الأداء دون المعيار الخليجي في عدة مجالات. الأولوية هي إصلاح الأساس — البيانات والحوكمة وملكية العمليات — قبل الطموح بالتميّز.'
-        : 'Performance is below the GCC benchmark across multiple areas. The priority is fixing foundations — data quality, governance structures, and clear process ownership — before pursuing best-in-class ambitions. A 90-day stabilisation plan with three focused initiatives is the right starting point; attempting everything in parallel is the most common failure mode.')
+        ? 'الأداء دون المعيار المرجعي في عدة مجالات. الأولوية هي إصلاح الأساس — البيانات والحوكمة وملكية العمليات — قبل الطموح بالتميّز.'
+        : 'Performance is below the reference benchmark across multiple areas. The priority is fixing foundations — data quality, governance structures, and clear process ownership — before pursuing best-in-class ambitions. A 90-day stabilisation plan with three focused initiatives is the right starting point; attempting everything in parallel is the most common failure mode.')
     : (isAr
         ? 'فجوات أداء حرجة تستدعي تدخّلاً فورياً. ابدأ بأعلى مؤشرَين تأثيراً وعيّن مالكاً واحداً لكل مسار تحسين.'
         : 'Critical performance gaps require immediate executive intervention. Start with the two highest-impact KPIs, assign single accountable owners, and establish a 30-day crisis review cadence. Attempting to fix everything simultaneously is guaranteed to fail — sequenced, focused effort is what produces results at this stage.');
@@ -1162,8 +1162,8 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
       const score = ek.higherIsBetter
         ? Math.min(100, Math.round((raw / ek.targetValue) * 100))
         : raw > 0 ? Math.min(100, Math.round((ek.targetValue / raw) * 100)) : 0;
-      const tier = score >= 95 ? 'WORLD CLASS' : score >= 80 ? 'BEST-IN-GCC' : score >= 65 ? 'COMPETITIVE' : score >= 50 ? 'DEVELOPING' : score >= 35 ? 'NEEDS ATTENTION' : 'CRITICAL GAP';
-      const bLabel = industryMeta ? `${ek.benchmarkLabel} (${industryMeta.label} sector median)` : `${ek.benchmarkLabel} (GCC general median)`;
+      const tier = score >= 95 ? 'WORLD CLASS' : score >= 80 ? 'TOP TIER' : score >= 65 ? 'COMPETITIVE' : score >= 50 ? 'DEVELOPING' : score >= 35 ? 'NEEDS ATTENTION' : 'CRITICAL GAP';
+      const bLabel = industryMeta ? `${ek.benchmarkLabel} (${industryMeta.label} sector median)` : `${ek.benchmarkLabel} (general reference median)`;
       return `- **${k.label}**: ${raw} ${k.unit} vs target ${ek.targetLabel} | peer benchmark: ${bLabel} → ${tier}`;
     }).filter(Boolean).join('\n');
     const entered = kpis.filter(k => !isNaN(parseFloat(values[k.id] ?? ''))).length;
@@ -1178,8 +1178,8 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
     const overallScore = rawScores.length > 0 ? Math.round(rawScores.reduce((a, b) => a + b, 0) / rawScores.length) : 0;
     const skuMeta = selectedSkuClass ? SKU_CLASSES.find(s => s.id === selectedSkuClass) : null;
     const industryContext = industryMeta
-      ? `Industry: ${industryMeta.label} (GCC sector median benchmarks applied)`
-      : 'Industry: General GCC cross-sector benchmarks';
+      ? `Industry: ${industryMeta.label} (sector reference benchmarks applied)`
+      : 'Industry: General cross-sector reference benchmarks';
     const skuContext = skuMeta
       ? `Inventory class: ${skuMeta.label} — ${skuMeta.description}. SKU-class benchmarks override industry values for inventory-intensive KPIs (turns, forecast accuracy, buffer stock, defect rate, maverick spend, PO cycle time).`
       : 'Inventory class: All classes (no SKU-class filter applied)';
@@ -1579,7 +1579,7 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
                 background: '#fff', color: '#6b7280', borderColor: '#e5e7eb',
               }}
             >
-              {isAr ? '🌍 عام' : '🌍 General GCC'}
+              {isAr ? '🌍 عام' : '🌍 General'}
             </button>
             {INDUSTRIES.map(ind => (
               <button
@@ -1985,10 +1985,10 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
           <div className="flex items-start justify-between gap-3 mb-4 flex-wrap">
             <div>
               <p className="text-sm font-bold text-primary">
-                {isAr ? 'مقارنة: قيمتك · المستهدف · المعيار الخليجي' : 'GCC Benchmark Comparison'}
+                {isAr ? 'مقارنة: قيمتك · المستهدف · المعيار المرجعي' : 'Reference Benchmark Comparison'}
               </p>
               <p className="text-xs text-muted-foreground mt-0.5">
-                {isAr ? 'مقارنة أدائك بالأهداف والمعيار الخليجي لكل مؤشر' : 'Your performance vs target and GCC benchmark for each KPI'}
+                {isAr ? 'مقارنة أدائك بالأهداف والمعيار المرجعي لكل مؤشر' : 'Your performance vs target and reference benchmark for each KPI'}
               </p>
             </div>
             <div className="flex items-center gap-3 flex-wrap">
@@ -1997,7 +1997,7 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
                 { color: '#10b981', label: isAr ? 'النصف الأعلى — فوق المعيار' : 'Top 50% — Above Average' },
                 { color: '#ef4444', label: isAr ? 'النصف الأدنى — دون المعيار' : 'Bottom 50% — Below Average' },
                 { color: GOLD,      label: isAr ? 'الهدف' : 'Target', shape: 'square' },
-                { color: '#cbd5e1', label: isAr ? 'المعيار الخليجي' : 'GCC Benchmark', shape: 'square' },
+                { color: '#cbd5e1', label: isAr ? 'المعيار المرجعي' : 'Reference Benchmark', shape: 'square' },
               ].map(l => (
                 <div key={l.label} className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
                   <div className={`w-2.5 h-2.5 shrink-0 ${l.shape === 'square' ? 'rounded-sm' : 'rounded-full'}`} style={{ background: l.color }} />
@@ -2018,7 +2018,7 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
                     ? (isAr ? 'قيمتك' : 'Your value')
                     : name === 'target'
                       ? (isAr ? 'الهدف' : 'Target')
-                      : (isAr ? 'المعيار الخليجي' : 'GCC Benchmark');
+                      : (isAr ? 'المعيار المرجعي' : 'Reference Benchmark');
                   return [v, label];
                 }}
               />

@@ -6,14 +6,20 @@
  *   2. Industry-only              — for process / operational KPIs
  *   3. SKU-only                   — for when SKU class is selected but no industry
  *
- * These are international best-in-class targets (top-quartile / World-Class).
- * They are NOT GCC medians — those live in kpiBenchmarksByIndustry/BySku.
+ * These are directional "top-quartile / world-class" reference targets, not
+ * a client's live GCC-peer median (that lives in kpiBenchmarksByIndustry/BySku).
  *
- * Data vintage: 2024-2025 (last audited July 2025).
- * Sources: CIPS Benchmarking Report 2024 · Gartner Supply Chain Top 25 (2024) ·
- * APICS/ASCM SCOR v12 Benchmarking Study 2024 · Hackett Group World-Class
- * Procurement Performance Study 2024 · McKinsey GCC Supply Chain Survey 2024 ·
- * Saudi Aramco IKTVA Progress Report 2023 · ISC practitioner data 2022-2025.
+ * Content-honesty note (#183, follow-up pass, 2026-08-17): informed by the
+ * general methodology of the named benchmarking programmes (CIPS, Gartner
+ * Supply Chain Top 25, APICS/ASCM SCOR, Hackett Group), not a literal,
+ * audited extraction from each paywalled report for every one of the ~690
+ * individual figures below. A basic range/plausibility pass found nothing
+ * implausible. Status: pending independent expert review before being
+ * labelled "verified" -- same trust model as regulatory_countries and
+ * gcc_benchmarks.
+ *
+ * Last reviewed: 2026-08-17. Next review due: 2027-02-17 (6 months) or
+ * sooner if a named subject-matter expert signs off earlier.
  */
 
 import type { IndustryKey } from './kpiBenchmarksByIndustry';
