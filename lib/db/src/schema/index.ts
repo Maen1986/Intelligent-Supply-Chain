@@ -15,4 +15,4 @@ export * from "./benchmarks";
 export * from "./maturityGuestSnapshots";
 export * from "./maturitySnapshots";
 export * from "./maturityEvidence";
-export * from "./regulatoryContent";(
+export * from "./regulatoryContent";
