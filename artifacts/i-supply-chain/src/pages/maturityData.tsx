@@ -57,6 +57,16 @@ export interface Question {
    * sub-segment (deep-mode) questions are not yet tagged.
    */
   layer?: 'strategic' | 'tactical' | 'operational';
+  /**
+   * Relative weight (default 1.0) this question carries in its
+   * sub-segment's mean score -- consumed by the weighted scoring engine
+   * (lib/maturityScoring.ts). Not currently set on any authored question;
+   * every sub-segment is flat-weighted today. Declared here so the
+   * `Segment`/`SubSegment`/`Question` types structurally satisfy the
+   * scoring engine's `SegmentLike`/`SubSegmentLike`/`QuestionLike`
+   * interfaces without an `as unknown as` cast.
+   */
+  weight?: number;
 }
 
 /**
@@ -2207,6 +2217,20 @@ export const INDUSTRY_MODULES: Segment[] = [
         ],
       },
     ],
+    recommendations: {
+      Reactive:  'Establish a single register of every licence, permit, and cross-border trade requirement your organisation is currently exposed to, and assign an owner for each. Without this baseline, regulatory risk is being managed by chance rather than by design.',
+      Aware:     'Convert informal compliance awareness into written policies covering trade documentation, data handling, and licence renewals. Set a recurring review cadence so gaps surface before an audit or customer finds them.',
+      Defined:   'Add measurable KPIs to your compliance processes — clearance times, renewal lead times, data-inventory completeness — and assign accountability for tracking them. Move from "a process exists" to "the process is monitored."',
+      Managed:   'Integrate compliance monitoring into supplier and logistics contracts, and formalise horizon-scanning for regulatory change so your organisation adapts before requirements shift rather than after.',
+      Optimised: 'Benchmark your compliance function against peers in your sector and use it as a differentiator in bids and partner selection, while maintaining a zero-lapse renewal and audit-finding record.',
+    },
+    recommendationsAr: {
+      Reactive:  'أنشئوا سجلاً موحداً لكل ترخيص وتصريح ومتطلب تجاري عابر للحدود تتعرض له مؤسستكم حالياً، وحددوا مالكاً لكل بند. دون هذا الأساس، تُدار المخاطر التنظيمية بالصدفة لا بالتصميم.',
+      Aware:     'حوّلوا الوعي غير الرسمي بالامتثال إلى سياسات مكتوبة تغطي مستندات التجارة والتعامل مع البيانات وتجديد التراخيص. حددوا وتيرة مراجعة دورية بحيث تظهر الثغرات قبل أن يكتشفها تدقيق أو عميل.',
+      Defined:   'أضيفوا مؤشرات أداء قابلة للقياس إلى عمليات الامتثال — أزمنة التخليص، مهل التجديد، اكتمال جرد البيانات — وحددوا مسؤولية تتبعها. انتقلوا من "توجد عملية" إلى "العملية تُراقَب".',
+      Managed:   'ادمجوا مراقبة الامتثال في عقود الموردين واللوجستيات، وأضفوا طابعاً رسمياً على استشراف التغيرات التنظيمية بحيث تتكيف مؤسستكم قبل تغيّر المتطلبات لا بعده.',
+      Optimised: 'قارنوا وظيفة الامتثال لديكم بنظرائكم في القطاع واستخدموها كميزة تنافسية في العطاءات واختيار الشركاء، مع الحفاظ على سجل خالٍ من الانقطاعات في التجديد ونتائج التدقيق.',
+    },
   },
 
   /* ── MODULE E: Regulatory & Localisation Compliance (UAE) ───────────── */
