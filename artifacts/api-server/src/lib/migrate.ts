@@ -111,7 +111,7 @@ const MIGRATIONS: string[] = [
      ('ksa', 'Saudi Arabia', 'Ø§Ù„Ù…Ù…Ù„ÙƒØ© Ø§Ù„Ø¹Ø±Ø¨ÙŠØ© Ø§Ù„Ø³Ø¹ÙˆØ¯ÙŠØ©', 'SA', 'gcc', 'full', TRUE,
       'https://www.sfda.gov.sa/en/regulations', NOW(), 'ISC content team',
       'Full-depth regulatory module â€” 7 sub-segments, 70 questions, 5-level bilingual maturity scale. Live in the Maturity Assessment today.',
-      'ÙˆØ­Ø¯Ø© ØªÙ†Ø¸ÙŠÙ…ÙŠØ© ÙƒØ§Ù…Ù„Ø© Ø§Ù„Ø¹Ù…Ù‚ â€” 7 ÙˆØ­Ø¯Ø§Øª ÙØ±Ø¹ÙŠØ©ØŒ 70 Ø³Ø¤Ø§Ù„Ø§Ø»ØŒ ÙˆÙ…Ù‚ÙŠØ§Ø³ Ù†Ø¶Ø¬ Ø«Ù†Ø§Ø¦ÙŠ Ø§Ù„Ù„ØºØ© Ø¨Ø®Ù…Ø³Ø© Ù…Ø³ØªÙˆÙŠØ§Øª.', 1),
+      'ÙˆØ­Ø¯Ø© ØªÙ†Ø¸ÙŠÙ…ÙŠØ© ÙƒØ§Ù…Ù„Ø© Ø§Ù„Ø¹Ù…Ù‚ â€” 7 ÙˆØ­Ø¯Ø§Øª ÙØ±Ø¹ÙŠØ©ØŒ 70 Ø³Ø¤Ø§Ù„Ø§Ù‹ØŒ ÙˆÙ…Ù‚ÙŠØ§Ø³ Ù†Ø¶Ø¬ Ø«Ù†Ø§Ø¦ÙŠ Ø§Ù„Ù„ØºØ© Ø¨Ø®Ù…Ø³Ø© Ù…Ø³ØªÙˆÙŠØ§Øª.', 1),
      ('uae', 'United Arab Emirates', 'Ø§Ù„Ø¥Ù…Ø§Ø±Ø§Øª Ø§Ù„Ø¹Ø±Ø¨ÙŠØ© Ø§Ù„Ù…ØªØ­Ø¯Ø©', 'AE', 'gcc', 'roadmap', FALSE,
       'https://moiat.gov.ae/en/programs/icv', NULL, NULL,
       'Regulator/framework list researched and seeded; maturity-scale question content not yet authored or reviewed.',
@@ -186,58 +186,139 @@ const MIGRATIONS: string[] = [
   `UPDATE regulatory_countries
      SET coverage_level = 'partial',
          notes = 'Maturity-scale question content authored (7 sub-segments, 35 questions: Emiratisation/Nafis, ICV, customs, ESMA product conformity, government procurement, halal certification, PDPL data privacy). Pending independent legal/expert review before being marked fully verified.',
-         notes_ar = 'ØªÙ…Øª ØµÙŠØ§ØºØ© Ø£Ø³Ø¦Ù„Ø© Ù…Ù‚ÙŠØ§Ø³ Ø§Ù„Ù†Ø¶Ø¬ (7 ÙˆØ­Ø¯Ø§Øª ÙØ±Ø¹ÙŠØ©ØŒ 35 Ø³Ø¤Ø§Ù„Ø§Ù‹: Ø§Ù„ØªÙˆØ·ÙŠÙ†/Ù†Ø§ÙØ³ØŒ Ø§Ù„Ù‚ÙŠÙ…Ø© Ø§Ù„Ù…Ø¶Ø§ÙØ© Ø§Ù„Ù…Ø­Ù„ÙŠØ©ØŒ Ø§Ù„Ø¬Ù…Ø§Ø±ÙƒØŒ Ù…Ø·Ø§Ø¨Ù‚Ø© Ø§Ù„Ù…Ù†ØªØ¬Ø§Øª (Ø§Ù„Ù‡ÙŠØ¦Ø©)ØŒ Ø§Ù„Ù…Ø´ØªØ±ÙŠØ§Øª Ø§Ù„Ø­ÙƒÙˆÙ…ÙŠØ©ØŒ Ø´Ù‡Ø§Ø¯Ø© Ø§Ù„Ø­Ù„Ø§Ù„ØŒ Ø­Ù…Ø§ÙŠØ© Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª)Ùˆ6a¶,öava¶bvbH6`¶*6a6)ö.v*¶av)ö+öaö)È6*6-6`öa6`ö)öava‰ÂˆÒT‘HYH	İXYIÈS‘Ûİ™\˜YÙWÛ]™[H	Ü›ØYX\	Ø‚ˆËÈÌMŒ8 %]™Hš[X\K\Ûİ\˜ÙHÚXÚÈÙˆHPQH™Yİ[]ÜHÛÛ[ˆËÈ
-Œ‹LLLÊNˆ]™\HÜXÚYšXÈšYİ\™Kİ™\ÚÛXÜ›ÜÜÈ[ÈİX‹\ÙYÛY[ÂˆËÈØ\È™KXÚXÚÙYYØZ[œİİ\œ™[X›XÈ™Yİ[]ÜˆYÙ\È[™]È^Ë‚ˆËÈÛ™HÛÜœ™Xİ[ÛˆØ\ÈXYH
-H˜XœšXØ]YŒÈYX\œÉÈ^\šY[˜ÙHˆ[™\‚ˆËÈÜš]\š[ÛˆØ\È™]Üš][ˆÈ™Y›XİHXİX[™\]X[YšXØ][ÛˆÜš]\šXBˆËÈ[ˆØXš[™]™\ÛÛ][Ûˆ›ËˆLŒ‹ÌŒ\XÛH8 %š[˜[˜ÚX[ÛÛ™[˜ŞKˆËÈXÚšXØ[Ø\Xš[]K˜XÚÈ™XÛÜ™
-Kˆ\È\Èš[X\K\Ûİ\˜ÙBˆËÈ™\šYšXØ][Û‹“ÕH˜[YY[X[ˆ™]šY]Ù\ˆÚYÛ‹[Ù™ˆ8 %Ûİ™\˜YÙWÛ]™[ˆËÈİ^\È	Ü\X[	Ë›İ	Ù[	Ë[™›È™\šYšYYØH˜[YH\ÈÙ]ˆ›İ\ÂˆËÈ\™H\]YÈ\ØÛÜÙH\È\İ[˜İ[Ûˆ˜[œÜ\™[KˆY[\İ[‚ˆËÈİX\™YHHX\šÙ\ˆİš[™ÈÛÈ]Û›H[œÈÛ˜ÙH]™[ˆİYÚ]›ÂˆËÈÛ™Ù\ˆX]Ú\ÈÛˆHÜšYÚ[˜[	Ü›ØYX\	Èİ]K‚ˆTUH™Yİ[]ÜWØÛİ[šY\ÂˆÑU›İ\ÈH	ÓX]\š]K\ØØ[H]Y\İ[ÛˆÛÛ[]]Ü™Y
-ÈİX‹\ÙYÛY[ËÍH]Y\İ[ÛœÎˆ[Z\˜]\Ø][Û‹Ó˜Yš\ËPÕ‹İ\İÛ\ËTÓPH›ÙXİÛÛ™›Ü›Z]KÛİ™\››Y[›Øİ\™[Y[[[Ù\YšXØ][Û‹]Hš]˜XŞJKˆš[X\K\Ûİ\˜ÙKXÚXÚÙYYØZ[œİİ\œ™[™Yİ[]ÜˆYÙ\ËÛ]È^ÈÛˆŒ‹LLLÈ
-Û™HšYİ\™HÛÜœ™XİY
-Kˆİ[[™[™È[™\[™[˜[YY[X[ˆYØ[Ù^\™]šY]È™Y›Ü™H™Z[™ÈX\šÙY[H™\šYšYY‰Ëˆ›İ\×Ø\ˆH	ö*¶av*ˆ6-vb¶)ö.¶*H6(ö,ö)¶a6*H6av`¶b¶)ö,È6)öa6a¶-¶+
-È6b6+v+ö)ö*ˆ6`v,v.vb¶*v#ÍH6,ö)6)öa6)öbÎˆ6)öa6*¶b6-öb¶a‹öa¶)ö`v,ö#6)öa6`¶b¶av*H6)öa6av-¶)ö`v*H6)öa6av+va6b¶*v#6)öa6+6av)ö,v`ö#6av-ö)ö*6`¶*H6)öa6ava¶*¶+6)ö*ˆ
-6)öa6aöb¶)¶*Jv#6)öa6av-6*¶,vb¶)ö*ˆ6)öa6+v`öb6avb¶*v#6-6aö)ö+ö*H6)öa6+va6)öa6#6+vav)öb¶*H6)öa6*6b¶)öa¶)ö*ˆ6)öa6-6+¶-vb¶*JKˆ6+6,vbH6)öa6*¶+v`¶`ˆ6avaˆ6)öa6av-v)ö+ö,H6)öa6(öb6a6b¶*H6av`¶)ö*6a6-v`v+v)ö*ˆ6)öa6+6aö)ö*ˆ6)öa6*¶a¶.6b¶avb¶*H6)öa6+v)öa6b¶*H6*6*¶)ö,vb¶+ˆŒ‹LLLÈ
-6av.H6*¶-v+vb¶+H6,v`¶aH6b6)ö+v+ÊKˆ6a6)È6*¶,¶)öa6`¶b¶+È6)öa6av,v)ö+6.v*H6)öa6`¶)öa¶b6a¶b¶*Kö)öa6+¶*6b¶,v*H6)öa6av,ö*¶`¶a6*H6`¶*6a6)ö.v*¶av)ö+öaö)È6*6-6`öa6`ö)öava‰ÂˆÒT‘HYH	İXYIÈS‘Ûİ™\˜YÙWÛ]™[H	Ü\X[	ÂˆS‘›İ\È“ÕRÑH	ÉTš[X\K\Ûİ\˜ÙKXÚXÚÙY	IØ‚ˆËÈÌMH
-Œ‹LLMŠH8 %X]\‹Ò›Ü™[‹ÓÛX[‹Ğ˜Z˜Z[ˆ™Yİ[]ÜHÛÛ[Ø\ÂˆËÈ]]Ü™Y[™Ú\™Y]™H
-ÌMŒKHÌMŠH]\ÙH›İÜÈÙ\™Hİ[Y]ˆËÈÛİ™\˜YÙWÛ]™[H	Ü›ØYX\	ÈÚ]HÜšYÚ[˜[››İY]]]Ü™YˆÙYYˆËÈ›İ\ËÛÈHÛİ[HXÚÙ\ˆÙ\ÚİÚ[™ÈÛÛZ[™ÈÛÛÛˆˆ›ÜˆÛÛ[ˆËÈ]Ø\È[ˆ˜Xİ]™H8 %›YÙÙY\ÈHØİ[Y[][Û‹İ\İØ\[ˆÚ]BˆËÈX\ÙXİ[ÛˆËŒ‹ˆ\ÙHTU\Èœš[™ÈHˆX™[[ˆ[™HÚ]ˆËÈ™X[]KX]Ú[™ÈH^XİØ[YH	Ü\X[	È
-›İ	Ù[	ÊH™X]Y[PQBˆËÈ[™XYH™XÙZ]™YˆÛÛ[\È]]Ü™Y[™]™K]›İY]ÚYÛ™YÙ™‚ˆËÈHH˜[YY[™\[™[[X[ˆYØ[Ù^\™]šY]Ù\‹ˆY[\İ[8 %XXÚˆËÈ\ÈİX\™YHÛİ™\˜YÙWÛ]™[H	Ü›ØYX\	ÈÛÈ]Û›Hš\™\ÈÛ˜ÙK‚ˆTUH™Yİ[]ÜWØÛİ[šY\ÂˆÑUÛİ™\˜YÙWÛ]™[H	Ü\X[	Ëˆ›İ\ÈH	ÓX]\š]K\ØØ[H]Y\İ[ÛˆÛÛ[]]Ü™Y
-ÈİX‹\ÙYÛY[ËÍH]Y\İ[ÛœÎˆX]\š^˜][Ûˆ	ˆÛÜšÙ›Ü˜ÙH˜][Û˜[^˜][Û‹]İY[‹ÒPÕ‹İ\İÛ\È	ˆ˜YHÛÛ\X[˜ÙKTÈ›ÙXİÛÛ™›Ü›Z]KÛİ™\››Y[›Øİ\™[Y[[[Ù\YšXØ][Û‹]Hš]˜XŞJKˆ[™[™È[™\[™[YØ[Ù^\™]šY]È™Y›Ü™H™Z[™ÈX\šÙY[H™\šYšYY‰Ëˆ›İ\×Ø\ˆH	ö*¶av*ˆ6-vb¶)ö.¶*H6(ö,ö)¶a6*H6av`¶b¶)ö,È6)öa6a¶-¶+
-È6b6+v+ö)ö*ˆ6`v,v.vb¶*v#ÍH6,ö)6)öa6)öbÎˆ6)öa6`¶-ö,va¶*H6b6*¶b6-öb¶aˆ6)öa6`¶b6bH6)öa6.v)öava6*v#6)öa6*¶b6-öb¶a‹ö)öa6`¶b¶av*H6)öa6av-¶)ö`v*H6)öa6av+va6b¶*v#6)öa6)öav*¶*ö)öa6)öa6+6av,v`öbˆ6b6)öa6*¶+6)ö,vb¶#6av-ö)ö*6`¶*H6)öa6ava¶*¶+6)ö*ˆ6b6)öa6avb6)ö-v`v)ö*¶#6)öa6av-6*¶,vb¶)ö*ˆ6)öa6+v`öb6avb¶*v#6-6aö)ö+ö*H6)öa6+va6)öa6#6`¶)öa¶b6aˆ6+vav)öb¶*H6)öa6*6b¶)öa¶)ö*ˆ6)öa6-6+¶-vb¶*JKˆ6`¶b¶+È6)öa6av,v)ö+6.v*H6)öa6`¶)öa¶b6a¶b¶*Kö)öa6+¶*6b¶,v*H6)öa6av,ö*¶`¶a6*H6`¶*6a6)ö.v*¶av)ö+öaö)È6*6-6`öa6`ö)öava‰ÂˆÒT‘HYH	ÜX]	ÈS‘Ûİ™\˜YÙWÛ]™[H	Ü›ØYX\	Ø‚ˆTUH™Yİ[]ÜWØÛİ[šY\ÂˆÑUÛİ™\˜YÙWÛ]™[H	Ü\X[	Ëˆ›İ\ÈH	ÓX]\š]K\ØØ[H]Y\İ[ÛˆÛÛ[]]Ü™Y
-ÈİX‹\ÙYÛY[ËÍH]Y\İ[ÛœÎˆ›Ü™[š^˜][Ûˆ	ˆX›ÜˆØØ[^˜][Û‹RVˆØØ[ÛÛ[	ˆ[\ÈÙˆÜšYÚ[‹İ\İÛ\È	ˆ˜YHÛÛ\X[˜ÙK”ÓSÈ›ÙXİÛÛ™›Ü›Z]KÛİ™\››Y[›Øİ\™[Y[[[Ù\YšXØ][Û‹]Hš]˜XŞJKˆ[™[™È[™\[™[YØ[Ù^\™]šY]È™Y›Ü™H™Z[™ÈX\šÙY[H™\šYšYY‰Ëˆ›İ\×Ø\ˆH	ö*¶av*ˆ6-vb¶)ö.¶*H6(ö,ö)¶a6*H6av`¶b¶)ö,È6)öa6a¶-¶+
-È6b6+v+ö)ö*ˆ6`v,v.vb¶*v#ÍH6,ö)6)öa6)öbÎˆ6)öa6(ö,v+öa¶*H6b6*¶b6-öb¶aˆ6)öa6`¶b6bH6)öa6.v)öava6*v#6`¶b¶,ˆ6)öa6av+v*¶l6bH6b6`¶b6)ö.v+È6)öa6ava¶-6(ö#6)öa6+6av)ö,v`È6b6)öa6*¶+6)ö,vb¶#6av-ö)ö*6`¶*H6)öa6ava¶*¶+6)ö*ˆ6b6)öa6avb6)ö-v`v)ö*¶#6)öa6av-6*¶,vb¶)ö*ˆ6)öa6+v`öb6avb¶*v#6-6aö)ö+ö*H6)öa6+va6)öa6#6`¶)öa¶b6aˆ6+vav)öb¶*H6)öa6*6b¶)öa¶)ö*ˆ6)öa6-6+¶-vb¶*JKˆ6`¶b¶+È6)öa6av,v)ö+6.v*H6)öa6`¶)öa¶b6a¶b¶*Kö)öa6+¶*6b¶,v*H6)öa6av,ö*¶`¶a6*H6`¶*6a6)ö.v*¶av)ö+öaö)È6*6-6`öa6`ö)öava‰ÂˆÒT‘HYH	Ú›Ü‰ÈS‘Ûİ™\˜YÙWÛ]™[H	Ü›ØYX\	Ø‚ˆTUH™Yİ[]ÜWØÛİ[šY\ÂˆÑUÛİ™\˜YÙWÛ]™[H	Ü\X[	Ëˆ›İ\ÈH	ÓX]\š]K\ØØ[H]Y\İ[ÛˆÛÛ[]]Ü™Y
-ÈİX‹\ÙYÛY[ËÍH]Y\İ[ÛœÎˆÛX[š\Ø][Ûˆ	ˆÛÜšÙ›Ü˜ÙH˜][Û˜[^˜][Û‹[‹PÛİ[H˜[YH
-PÕŠH›ÙÜ˜[[YKİ\İÛ\È	ˆ˜YHÛÛ\X[˜ÙKÔÓH›ÙXİÛÛ™›Ü›Z]KÛİ™\››Y[›Øİ\™[Y[[[Ù\YšXØ][Û‹]Hš]˜XŞJKˆ[™[™È[™\[™[YØ[Ù^\™]šY]È™Y›Ü™H™Z[™ÈX\šÙY[H™\šYšYY‰Ëˆ›İ\×Ø\ˆH	ö*¶av*ˆ6-vb¶)ö.¶*H6(ö,ö)¶a6*H6av`¶b¶)ö,È6)öa6a¶-¶+6`vb¶aö(6)ö,ö.v`H
-È6b6+v+ö)ö*ˆ6`v,v.vb¶*v#ÍH6,ö)6)öa6)öbÎˆ6)öa6*¶.vavb¶aˆ6b6*¶b6-öb¶aˆ6)öa6`¶b6bH6)öa6.v)öava6*v#œ›§®jöb¶`H6)öa6`¶b¶av*H6)öa6av-¶)ö`v*H6)öa6av+va6b¶*v#6)öa6)öav*¶*ö)öa6)öa6+6av,v`öbˆ6b6)öa6*¶+6)ö,vb¶#6av-ö)ö*6`¶*H6)öa6ava¶*¶+6)ö*ˆ6b6)öa6avb6)ö-v`v)ö*¶#6)öa6av-6*¶,vb¶)ö*ˆ6)öa6+v`öb6avb¶*v#6-6aö)ö+ö*H6)öa6+va6)öa6#6`¶)öa¶b6aˆ6+vav)öb¶*H6)öa6*6b¶)öa¶)ö*ˆ6)öa6-6+¶-vb¶*JKˆ6`¶b¶+È6)öa6av,v)ö+6.v*H6)öa6`¶)öa¶b6a¶b¶*Kö)öa6+¶*6b¶,v*H6)öa6av,ö*¶`¶a6*H6`¶*6a6)ö.v*¶av)ö+öaö)È6*6-6`öa6`ö)öava‰ÂˆÒT‘HYH	ÛÛ[‰ÈS‘Ûİ™\˜YÙWÛ]™[H	Ü›ØYX\	Ø‚ˆTUH™Yİ[]ÜWØÛİ[šY\ÂˆÑUÛİ™\˜YÙWÛ]™[H	Ü\X[	Ëˆ›İ\ÈH	ÓX]\š]K\ØØ[H]Y\İ[ÛˆÛÛ[]]Ü™Y
-ÈİX‹\ÙYÛY[ËÍH]Y\İ[ÛœÎˆ˜Z˜Z[š\Ø][Ûˆ	ˆÛÜšÙ›Ü˜ÙHØØ[^˜][Û‹ØØ[ÛÛ[	ˆ˜][Û˜[™Y™\™[˜ÙKİ\İÛ\È	ˆ˜YHÛÛ\X[˜ÙK”ÓQ›ÙXİÛÛ™›Ü›Z]KÛİ™\››Y[›Øİ\™[Y[[[Ù\YšXØ][Û‹]Hš]˜XŞJKˆ[™[™È[™\[™[YØ[Ù^\™]šY]È™Y›Ü™H™Z[™ÈX\šÙY[H™\šYšYY‰Ëˆ›İ\×Ø\ˆH	ö*¶av*ˆ6-vb¶)ö.¶*H6(ö,ö)¶a6*H6av`¶b¶)ö,È6)öa6a¶-¶+Ø¶`öaH
-È6b6+v+ö)ö*ˆ6`v,v.vb¶*v#ÍH6,ö)6)öa6)öbÎˆ6)öa6*6+v,va¶*H6b6*¶b6-öb¶aˆ6)öa6`¶b6bH6)öa6.v)öava6*v#6)öa6av+v*¶b6bH6)öa6av+va6bˆ6b6)öa6(ö`v-¶a6b¶*H6)öa6b6-öa¶b¶*v#6)öa6)öav*¶*ö)öa6)öa6+6av,v`öbˆ6b6)öa6*¶+6)ö,vb¶#6av-ö)ö*6`¶*H6)öa6ava¶*¶+6)ö*ˆ6b6)öa6avb6)ö-v`v)ö*¶#6)öa6av-6*¶,vb¶)ö*ˆ6)öa6+v`öb6avb¶*v#6-6aö)ö+ö*H6)öa6+va6)öa6#6`¶)öa¶b6aˆ6+vav)öb¶*H6)öa6*6b¶)öa¶)ö*ˆ6)öa6-6+¶-vb¶*JKˆ6`¶b¶+È6)öa6av,v)ö+6.v*H6)öa6`¶)öa¶b6a¶b¶*Kö)öa6+¶*6b¶,v*H6)öa6av,ö*¶`¶a6*H6`¶*6a6)ö.v*¶av)ö+öaö)È6*6-6`öa6`ö)öava‰ÂˆÒT‘HYH	Øš‰ÈS‘Ûİ™\˜YÙWÛ]™[H	Ü›ØYX\	Ø‚ˆËÈ[™Ú[™HH
-]›Ü›Hİ˜]YŞH™]šY]ÈK\ÚÈÌŒ
-HKHÜ™Ø[š^˜][ÛœÈ[]K‚ˆËÈ›İ[™][ÛˆX›Nˆ™\XÙ\ÈHœ™YK]^\Ù\œË˜ÛÛ\[HšY[\ÈH™X[ˆËÈXØÛİ[\Ù\œÈØ[ˆÚ\™Kˆ[X™\˜][HZ[š[X[
-˜[YHÛ›JHKHİ\Y\œËˆËÈÜ[™[™ÛÛ˜XİÈÙ]ØÛÜYYØZ[œİ\ÈÛ˜ÙHHÚ\™Y]HÜ˜\ˆËÈ
-[™Ú[™HÊH^\İËˆY]]™H[™Y[\İ[ÈØY™HÛˆ]™\H›Ûİ‚ˆÔ‘PUHP“HQˆ“ÕVTÕÈÜ™Ø[š^˜][ÛœÈ
-ˆYÑT’PS’SPT–HÑVKˆ˜[YHV“Õ•SˆÜ™X]YØ]SQTÕST“Õ•SQUS“ÕÊ
-Bˆ
-X‚ˆËÈ[™Ú[™HHKH[šÈ\Ù\œÈÈÜ™Ø[š^˜][ÛœËˆ[X›Nˆ^\İ[™È\Ù\œÈ\™BˆËÈ“Õ˜XÚÙš[YÚ]H\œÛÛ˜[Ü™ÈH\ÈZYÜ˜][ÛÈ[™Ú[™H	ÜÂˆËÈÙ[‹\Ù\™HÚYÛ\›İÈ\È™\ÜÛœÚX›H›ÜˆÜ™X][™È[ˆÜ™Ø[š^˜][Ûˆ[™ˆËÈÙ][™È\ÈÛˆXØÛİ[Ü™X][ÛˆÛÚ[™È›ÜØ\™‚ˆSTˆP“H\Ù\œÂˆQÓÓSSˆQˆ“ÕVTÕÈÜ™Ø[š^˜][Û—ÚYS•QÑTˆ‘Q‘T‘SÑTÈÜ™Ø[š^˜][ÛœÊY
-X‚ˆËÈ[™Ú[™Hˆ
-]›Ü›Hİ˜]YŞH™]šY]ÈK\ÚÈÌŒKÈÌNJHKHÙ[™\˜[\ÙYˆËÈš[™[™ÜÈ	ˆXİ[ÛœÈX›KˆÙ\È“Õ™\XÙHX]\š]WÜÛ˜\ÚİËœ™[YYWØXİ[ÛœÂˆËÈ
-Xİ[Û•˜XÚÙ\‹ŞÙY\È™XY[™ËİÜš][™È]”ÓÓˆ›Øˆ[˜Ú[™ÙY™\›ÂˆËÈœ›Û[™š\ÚÊHKHHÛÈUÒ[™\œÈ]İXÚ™[YYWØXİ[ÛœÈ›İÈ[ÛÂˆËÈZ\œ›ÜˆHØ[YHÜš]H\™KÛÈ\ÈX›Hİ^\È[ˆŞ[˜È\ÈH\›ÙXİ[™ˆËÈ™XÛÛY\ÈHÚ[™ÛHXÙH]]ÛX][Ûˆ[™]\™H[™Ú[™\È
-ËŠH™XYœ›ÛK‚ˆËÈS’TUQHÛÛœİ˜Z[XZÙ\ÈHZ\œ›ÜˆÜš]\ÈØY™HÈ\Ù\
-ÓˆÓÓ‘“PÕ
-K‚ˆÔ‘PUHP“HQˆ“ÕVTÕÈš[™[™Ü×ØXİ[ÛœÈ
-ˆYÑT’PS’SPT–HÑVKˆ\Ù\—ÚYS•QÑTˆ“Õ•S‘Q‘T‘SÑTÈ\Ù\œÊY
-HÓˆSUHĞTĞĞQKˆÜ™Ø[š^˜][Û—ÚYS•QÑTˆ‘Q‘T‘SÑTÈÜ™Ø[š^˜][ÛœÊY
-KˆÛİ\˜ÙHV“Õ•SˆÛİ\˜ÙWÜ™Y—ÚYS•QÑTˆ“Õ•Sˆ][WÚÙ^HV“Õ•Sˆ\ÙHVˆÙYÛY[İ]HVˆXİ[ÛˆV“Õ•Sˆœ˜[Y]ÛÜšÈVˆYX\İ\˜X›Wİ\™Ù]Vˆİ]\ÈV“Õ•SQUS	Û›İÜİ\Y	Ëˆ›İ\ÈVˆ[—Üİ\YØ]SQTÕSTˆÛÛ\]YØ]SQTÕSTˆYÙYØ]SQTÕSTˆİ\ÛYÙYØ]SQTÕSTˆÜ™X]YØ]SQTÕST“Õ•SQUS“ÕÊ
-Kˆ\]YØ]SQTÕST“Õ•SQUS“ÕÊ
-KˆS’TUQH
-\Ù\—ÚYÛİ\˜ÙKÛİ\˜ÙWÜ™Y—ÚY][WÚÙ^JBˆ
-X‚ˆËÈ[™Ú[™Hˆ\ˆKHÛZ[K[[šÈYXÚ[šXËˆ]ÈHœ™YK[›Û[[İ\ÈXYÛ›ÜİXÂˆËÈ[ˆ™XÛÛYHH™X[˜XÚØX›HXØÛİ[ˆHÚÙ[ˆ\È[XZ[YÛˆ]™\BˆËÈXYÛ›ÜİXÈİX›Z\ÜÚ[Û‹[™ÛZ[Z[™È]š[™Ë[Ü‹XÜ™X]\ÈH\ÜİÛÜ™\ÜÂˆËÈ\Ù\ˆ
-Ø[YH]\›ˆ]]È[™XYH\Ù\È›Üˆ›YØXŞH›Ùš[K[Û›BˆËÈXØÛİ[ÈŠH[™ÛÛ™\È]XYÛ›ÜİXÉÜÈ™XÛÛ[Y[™][ÛœÈ[ÂˆËÈš[™[™Ü×ØXİ[ÛœÈ›İÜÈİÛ™YH]XØÛİ[‚ˆÔ‘PUHP“HQˆ“ÕVTÕÈÛZ[WİÚÙ[œÈ
-ˆYÑT’PS’SPT–HÑVKˆÚÙ[ˆV“Õ•SS’TUQKˆ[XZ[V“Õ•SˆİX›Z\ÜÚ[Û—ÚYS•QÑTˆ“Õ•S‘Q‘T‘SÑTÈİX›Z\ÜÚ[ÛœÊY
-HÓˆSUHĞTĞĞQKˆ\Ù\—ÚYS•QÑTˆ‘Q‘T‘SÑTÈ\Ù\œÊY
-Kˆ^\™\×Ø]SQTÕST“Õ•SˆÛZ[YYØ]SQTÕSTˆÜ™X]YØ]SQTÕST“Õ•SQUS“ÕÊ
-Bˆ
-X‚—NÂ‚™^Ü\Ş[˜È[˜İ[Ûˆ[”İ\\ZYÜ˜][ÛœÊ
-Nˆ›ÛZ\ÙO›ÚYˆÂˆÛÛœİÛY[H]ØZ]ÛÛ˜ÛÛ›™Xİ
+         notes_ar = 'ØªÙ…Øª ØµÙŠØ§ØºØ© Ø£Ø³Ø¦Ù„Ø© Ù…Ù‚ÙŠØ§Ø³ Ø§Ù„Ù†Ø¶Ø¬ (7 ÙˆØ­Ø¯Ø§Øª ÙØ±Ø¹ÙŠØ©ØŒ 35 Ø³Ø¤Ø§Ù„Ø§Ù‹: Ø§Ù„ØªÙˆØ·ÙŠÙ†/Ù†Ø§ÙØ³ØŒ Ø§Ù„Ù‚ÙŠÙ…Ø© Ø§Ù„Ù…Ø¶Ø§ÙØ© Ø§Ù„Ù…Ø­Ù„ÙŠØ©ØŒ Ø§Ù„Ø¬Ù…Ø§Ø±ÙƒØŒ Ù…Ø·Ø§Ø¨Ù‚Ø© Ø§Ù„Ù…Ù†ØªØ¬Ø§Øª (Ø§Ù„Ù‡ÙŠØ¦Ø©)ØŒ Ø§Ù„Ù…Ø´ØªØ±ÙŠØ§Øª Ø§Ù„Ø­ÙƒÙˆÙ…ÙŠØ©ØŒ Ø´Ù‡Ø§Ø¯Ø© Ø§Ù„Ø­Ù„Ø§Ù„ØŒ Ø­Ù…Ø§ÙŠØ© Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª). Ù‚ÙŠØ¯ Ø§Ù„Ù…Ø±Ø§Ø¬Ø¹Ø© Ø§Ù„Ù‚Ø§Ù†ÙˆÙ†ÙŠØ©/Ø§Ù„Ø®Ø¨ÙŠØ±Ø© Ø§Ù„Ù…Ø³ØªÙ‚Ù„Ø© Ù‚Ø¨Ù„ Ø§Ø¹ØªÙ…Ø§Ø¯Ù‡Ø§ Ø¨Ø´ÙƒÙ„ ÙƒØ§Ù…Ù„.'
+   WHERE id = 'uae' AND coverage_level = 'roadmap'`,
 
-NÂˆHÂˆ›Üˆ
-ÛÛœİÜ[ÙˆRQÔUSÓ”ÊHÂˆ]ØZ]ÛY[œ]Y\JÜ[
-NÂˆBˆÙÙÙ\‹š[™›ÊÈÛİ[ˆRQÔUSÓ”Ë›[™İK–ÛZYÜ˜]WHİ\\ZYÜ˜][ÛœÈ\YYŠNÂˆHØ]Ú
-\œŠHÂˆÙÙÙ\‹™\œ›ÜŠÈ\œˆK–ÛZYÜ˜]WHİ\\ZYÜ˜][Ûˆ˜Z[YŠNÂˆ›İÈ\œÈËÈX›Üİ\\8 %Z\ÜÚ[™ÈÛÛ[[œÈÛİ[Ø]\ÙH[[YH\œ›ÜœÂˆHš[˜[HÂˆÛY[œ™[X\ÙJ
-NÂˆBŸB
+  // #160 â€” Live primary-source check of the UAE regulatory content
+  // (2026-08-13): every specific figure/threshold across all 7 sub-segments
+  // was re-checked against current public regulator pages and law texts.
+  // One correction was made (a fabricated "3 years' experience" tender
+  // criterion was rewritten to reflect the actual prequalification criteria
+  // in Cabinet Resolution No. 122/2024 Article 8 â€” financial solvency,
+  // technical capability, track record). This is primary-source
+  // verification, NOT a named human reviewer sign-off â€” coverage_level
+  // stays 'partial', not 'full', and no verified_by value is set. Notes
+  // are updated to disclose this distinction transparently. Idempotent:
+  // guarded by a marker string so it only runs once even though it no
+  // longer matches on the original 'roadmap' state.
+  `UPDATE regulatory_countries
+     SET notes = 'Maturity-scale question content authored (7 sub-segments, 35 questions: Emiratisation/Nafis, ICV, customs, ESMA product conformity, government procurement, halal certification, PDPL data privacy). Primary-source-checked against current regulator pages/law texts on 2026-08-13 (one figure corrected). Still pending independent named human legal/expert review before being marked fully verified.',
+         notes_ar = 'ØªÙ…Øª ØµÙŠØ§ØºØ© Ø£Ø³Ø¦Ù„Ø© Ù…Ù‚ÙŠØ§Ø³ Ø§Ù„Ù†Ø¶Ø¬ (7 ÙˆØ­Ø¯Ø§Øª ÙØ±Ø¹ÙŠØ©ØŒ 35 Ø³Ø¤Ø§Ù„Ø§Ù‹: Ø§Ù„ØªÙˆØ·ÙŠÙ†/Ù†Ø§ÙØ³ØŒ Ø§Ù„Ù‚ÙŠÙ…Ø© Ø§Ù„Ù…Ø¶Ø§ÙØ© Ø§Ù„Ù…Ø­Ù„ÙŠØ©ØŒ Ø§Ù„Ø¬Ù…Ø§Ø±ÙƒØŒ Ù…Ø·Ø§Ø¨Ù‚Ø© Ø§Ù„Ù…Ù†ØªØ¬Ø§Øª (Ø§Ù„Ù‡ÙŠØ¦Ø©)ØŒ Ø§Ù„Ù…Ø´ØªØ±ÙŠØ§Øª Ø§Ù„Ø­ÙƒÙˆÙ…ÙŠØ©ØŒ Ø´Ù‡Ø§Ø¯Ø© Ø§Ù„Ø­Ù„Ø§Ù„ØŒ Ø­Ù…Ø§ÙŠØ© Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª). Ø¬Ø±Ù‰ Ø§Ù„ØªØ­Ù‚Ù‚ Ù…Ù† Ø§Ù„Ù…ØµØ§Ø¯Ø± Ø§Ù„Ø£ÙˆÙ„ÙŠØ© Ù…Ù‚Ø§Ø¨Ù„ ØµÙØ­Ø§Øª Ø§Ù„Ø¬Ù‡Ø§Øª Ø§Ù„ØªÙ†Ø¸ÙŠÙ…ÙŠØ© Ø§Ù„Ø­Ø§Ù„ÙŠØ© Ø¨ØªØ§Ø±ÙŠØ® 2026-08-13 (Ù…Ø¹ ØªØµØ­ÙŠØ­ Ø±Ù‚Ù… ÙˆØ§Ø­Ø¯). Ù„Ø§ ØªØ²Ø§Ù„ Ù‚ÙŠØ¯ Ø§Ù„Ù…Ø±Ø§Ø¬Ø¹Ø© Ø§Ù„Ù‚Ø§Ù†ÙˆÙ†ÙŠØ©/Ø§Ù„Ø®Ø¨ÙŠØ±Ø© Ø§Ù„Ù…Ø³ØªÙ‚Ù„Ø© Ù…Ù† Ù…Ø±Ø§Ø¬Ø¹ Ø¨Ø´Ø±ÙŠ Ù…ÙØ³Ù…Ù‘Ù‰ Ù‚Ø¨Ù„ Ø§Ø¹ØªÙ…Ø§Ø¯Ù‡Ø§ Ø¨Ø´ÙƒÙ„ ÙƒØ§Ù…Ù„.'
+   WHERE id = 'uae' AND coverage_level = 'partial'
+     AND notes NOT LIKE '%Primary-source-checked%'`,
+
+  // #169 (2026-08-16) â€” Qatar/Jordan/Oman/Bahrain regulatory content was
+  // authored and wired live (#161-#166) but these rows were still left at
+  // coverage_level = 'roadmap' with the original "not yet authored" seed
+  // notes, so the country picker kept showing "Coming soon" for content
+  // that was in fact live â€” flagged as a documentation/trust gap in Site
+  // Map v8 Section 3.2. These UPDATEs bring the DB label in line with
+  // reality, matching the exact same 'partial' (not 'full') treatment UAE
+  // already received: content is authored and live, but not yet signed off
+  // by a named independent human legal/expert reviewer. Idempotent â€” each
+  // is guarded by coverage_level = 'roadmap' so it only fires once.
+  `UPDATE regulatory_countries
+     SET coverage_level = 'partial',
+         notes = 'Maturity-scale question content authored (7 sub-segments, 35 questions: Qatarization & Workforce Nationalization, Tawteen/ICV, customs & trade compliance, QS product conformity, government procurement, halal certification, PDPPL data privacy). Pending independent legal/expert review before being marked fully verified.',
+         notes_ar = 'ØªÙ…Øª ØµÙŠØ§ØºØ© Ø£Ø³Ø¦Ù„Ø© Ù…Ù‚ÙŠØ§Ø³ Ø§Ù„Ù†Ø¶Ø¬ (7 ÙˆØ­Ø¯Ø§Øª ÙØ±Ø¹ÙŠØ©ØŒ 35 Ø³Ø¤Ø§Ù„Ø§Ù‹: Ø§Ù„Ù‚Ø·Ø±Ù†Ø© ÙˆØªÙˆØ·ÙŠÙ† Ø§Ù„Ù‚ÙˆÙ‰ Ø§Ù„Ø¹Ø§Ù…Ù„Ø©ØŒ Ø§Ù„ØªÙˆØ·ÙŠÙ†/Ø§Ù„Ù‚ÙŠÙ…Ø© Ø§Ù„Ù…Ø¶Ø§ÙØ© Ø§Ù„Ù…Ø­Ù„ÙŠØ©ØŒ Ø§Ù„Ø§Ù…ØªØ«Ø§Ù„ Ø§Ù„Ø¬Ù…Ø±ÙƒÙŠ ÙˆØ§Ù„ØªØ¬Ø§Ø±ÙŠØŒ Ù…Ø·Ø§Ø¨Ù‚Ø© Ø§Ù„Ù…Ù†ØªØ¬Ø§Øª ÙˆØ§Ù„Ù…ÙˆØ§ØµÙØ§ØªØŒ Ø§Ù„Ù…Ø´ØªØ±ÙŠØ§Øª Ø§Ù„Ø­ÙƒÙˆÙ…ÙŠØ©ØŒ Ø´Ù‡Ø§Ø¯Ø© Ø§Ù„Ø­Ù„Ø§Ù„ØŒ Ø­Ù…Ø§ÙŠØ© Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„Ø´Ø®ØµÙŠØ©). Ù‚ÙŠØ¯ Ø§Ù„Ù…Ø±Ø§Ø¬Ø¹Ø© Ø§Ù„Ù‚Ø§Ù†ÙˆÙ†ÙŠØ©/Ø§Ù„Ø®Ø¨ÙŠØ±Ø© Ø§Ù„Ù…Ø³ØªÙ‚Ù„Ø© Ù‚Ø¨Ù„ Ø§Ø¹ØªÙ…Ø§Ø¯Ù‡Ø§ Ø¨Ø´ÙƒÙ„ ÙƒØ§Ù…Ù„.'
+   WHERE id = 'qat' AND coverage_level = 'roadmap'`,
+
+  `UPDATE regulatory_countries
+     SET coverage_level = 'partial',
+         notes = 'Maturity-scale question content authored (7 sub-segments, 35 questions: Jordanization & labor localization, QIZ local content & rules of origin, customs & trade compliance, JSMO product conformity, government procurement, halal certification, PDPL data privacy). Pending independent legal/expert review before being marked fully verified.',
+         notes_ar = 'ØªÙ…Øª ØµÙŠØ§ØºØ© Ø£Ø³Ø¦Ù„Ø© Ù…Ù‚ÙŠØ§Ø³ Ø§Ù„Ù†Ø¶Ø¬ (7 ÙˆØ­Ø¯Ø§Øª ÙØ±Ø¹ÙŠØ©ØŒ 35 Ø³Ø¤Ø§Ù„Ø§Ù‹: Ø§Ù„Ø£Ø±Ø¯Ù†Ø© ÙˆØªÙˆØ·ÙŠÙ† Ø§Ù„Ø¹Ù…Ø§Ù„Ø©ØŒ Ø§Ù„Ù…Ø­ØªÙˆÙ‰ Ø§Ù„Ù…Ø­Ù„ÙŠ ÙˆÙ‚ÙˆØ§Ø¹Ø¯ Ø§Ù„Ù…Ù†Ø´Ø£ØŒ Ø§Ù„Ø§Ù…ØªØ«Ø§Ù„ Ø§Ù„Ø¬Ù…Ø±ÙƒÙŠ ÙˆØ§Ù„ØªØ¬Ø§Ø±ÙŠØŒ Ù…Ø·Ø§Ø¨Ù‚Ø© Ø§Ù„Ù…Ù†ØªØ¬Ø§Øª ÙˆØ§Ù„Ù…ÙˆØ§ØµÙØ§ØªØŒ Ø§Ù„Ù…Ø´ØªØ±ÙŠØ§Øª Ø§Ù„Ø­ÙƒÙˆÙ…ÙŠØ©ØŒ Ø´Ù‡Ø§Ø¯Ø© Ø§Ù„Ø­Ù„Ø§Ù„ØŒ Ù‚Ø§Ù†ÙˆÙ† Ø­Ù…Ø§ÙŠØ© Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„Ø´Ø®ØµÙŠØ©). Ù‚ÙŠØ¯ Ø§Ù„Ù…Ø±Ø§Ø¬Ø¹Ø© Ø§Ù„Ù‚Ø§Ù†ÙˆÙ†ÙŠØ©/Ø§Ù„Ø®Ø¨ÙŠØ±Ø© Ø§Ù„Ù…Ø³ØªÙ‚Ù„Ø© Ù‚Ø¨Ù„ Ø§Ø¹ØªÙ…Ø§Ø¯Ù‡Ø§ Ø¨Ø´ÙƒÙ„ ÙƒØ§Ù…Ù„.'
+   WHERE id = 'jor' AND coverage_level = 'roadmap'`,
+
+  `UPDATE regulatory_countries
+     SET coverage_level = 'partial',
+         notes = 'Maturity-scale question content authored (7 sub-segments, 35 questions: Omanisation & workforce nationalization, In-Country Value (ICV) programme, customs & trade compliance, DGSM product conformity, government procurement, halal certification, PDPL data privacy). Pending independent legal/expert review before being marked fully verified.',
+         notes_ar = 'ØªÙ…Øª ØµÙŠØ§ØºØ© Ø£Ø³Ø¦Ù„Ø© Ù…Ù‚ÙŠØ§Ø³ Ø§Ù„Ù†Ø¶Ø¬ (7 ÙˆØ­Ø¯Ø§Øª ÙØ±Ø¹ÙŠØ©ØŒ 35 Ø³Ø¤Ø§Ù„Ø§Ù‹: Ø§Ù„ØªØ¹Ù…ÙŠÙ† ÙˆØªÙˆØ·ÙŠÙ† Ø§Ù„Ù‚ÙˆÙ‰ Ø§Ù„Ø¹Ø§Ù…Ù„Ø©ØŒ Ø¨Ø±Ù†Ø§Ù…Ø¬ Ø§Ù„Ù‚ÙŠÙ…Ø© Ø§Ù„Ù…Ø¶Ø§ÙØ© Ø§Ù„Ù…Ø­Ù„ÙŠØ©ØŒ Ø§Ù„Ø§Ù…ØªØ«Ø§Ù„ Ø§Ù„Ø¬Ù…Ø±ÙƒÙŠ ÙˆØ§Ù„ØªØ¬Ø§Ø±ÙŠØŒ Ù…Ø·Ø§Ø¨Ù‚Ø© Ø§Ù„Ù…Ù†ØªØ¬Ø§Øª ÙˆØ§Ù„Ù…ÙˆØ§ØµÙØ§ØªØŒ Ø§Ù„Ù…Ø´ØªØ±ÙŠØ§Øª Ø§Ù„Ø­ÙƒÙˆÙ…ÙŠØ©ØŒ Ø´Ù‡Ø§Ø¯Ø© Ø§Ù„Ø­Ù„Ø§Ù„ØŒ Ù‚Ø§Ù†ÙˆÙ† Ø­Ù…Ø§ÙŠØ© Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„Ø´Ø®ØµÙŠØ©). Ù‚ÙŠØ¯ Ø§Ù„Ù…Ø±Ø§Ø¬Ø¹Ø© Ø§Ù„Ù‚Ø§Ù†ÙˆÙ†ÙŠØ©/Ø§Ù„Ø®Ø¨ÙŠØ±Ø© Ø§Ù„Ù…Ø³ØªÙ‚Ù„Ø© Ù‚Ø¨Ù„ Ø§Ø¹ØªÙ…Ø§Ø¯Ù‡Ø§ Ø¨Ø´ÙƒÙ„ ÙƒØ§Ù…Ù„.'
+   WHERE id = 'omn' AND coverage_level = 'roadmap'`,
+
+  `UPDATE regulatory_countries
+     SET coverage_level = 'partial',
+         notes = 'Maturity-scale question content authored (7 sub-segments, 35 questions: Bahrainisation & workforce localization, local content & national preference, customs & trade compliance, BSMD product conformity, government procurement, halal certification, PDPL data privacy). Pending independent legal/expert review before being marked fully verified.',
+         notes_ar = 'ØªÙ…Øª ØµÙŠØ§ØºØ© Ø£Ø³Ø¦Ù„Ø© Ù…Ù‚ÙŠØ§Ø³ Ø§Ù„Ù†Ø¶Ø¬ (7 ÙˆØ­Ø¯Ø§Øª ÙØ±Ø¹ÙŠØ©ØŒ 35 Ø³Ø¤Ø§Ù„Ø§Ù‹: Ø§Ù„Ø¨Ø­Ø±Ù†Ø© ÙˆØªÙˆØ·ÙŠÙ† Ø§Ù„Ù‚ÙˆÙ‰ Ø§Ù„Ø¹Ø§Ù…Ù„Ø©ØŒ Ø§Ù„Ù…Ø­ØªÙˆÙ‰ Ø§Ù„Ù…Ø­Ù„ÙŠ ÙˆØ§Ù„Ø£ÙØ¶Ù„ÙŠØ© Ø§Ù„ÙˆØ·Ù†ÙŠØ©ØŒ Ø§Ù„Ø§Ù…ØªØ«Ø§Ù„ Ø§Ù„Ø¬Ù…Ø±ÙƒÙŠ ÙˆØ§Ù„ØªØ¬Ø§Ø±ÙŠØŒ Ù…Ø·Ø§Ø¨Ù‚Ø© Ø§Ù„Ù…Ù†ØªØ¬Ø§Øª ÙˆØ§Ù„Ù…ÙˆØ§ØµÙØ§ØªØŒ Ø§Ù„Ù…Ø´ØªØ±ÙŠØ§Øª Ø§Ù„Ø­ÙƒÙˆÙ…ÙŠØ©ØŒ Ø´Ù‡Ø§Ø¯Ø© Ø§Ù„Ø­Ù„Ø§Ù„ØŒ Ù‚Ø§Ù†ÙˆÙ† Ø­Ù…Ø§ÙŠØ© Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„Ø´Ø®ØµÙŠØ©). Ù‚ÙŠØ¯ Ø§Ù„Ù…Ø±Ø§Ø¬Ø¹Ø© Ø§Ù„Ù‚Ø§Ù†ÙˆÙ†ÙŠØ©/Ø§Ù„Ø®Ø¨ÙŠØ±Ø© Ø§Ù„Ù…Ø³ØªÙ‚Ù„Ø© Ù‚Ø¨Ù„ Ø§Ø¹ØªÙ…Ø§Ø¯Ù‡Ø§ Ø¨Ø´ÙƒÙ„ ÙƒØ§Ù…Ù„.'
+   WHERE id = 'bhr' AND coverage_level = 'roadmap'`,
+
+  // Engine 1 (Platform Strategy Review v5, Task #204) -- organizations entity.
+  // Foundation table: replaces the free-text users.company field as the real
+  // account users can share. Deliberately minimal (name only) -- suppliers,
+  // spend, and contracts get scoped against this once the shared data graph
+  // (Engine 3) exists. Additive and idempotent; safe on every boot.
+  `CREATE TABLE IF NOT EXISTS organizations (
+     id          SERIAL PRIMARY KEY,
+     name        TEXT        NOT NULL,
+     created_at  TIMESTAMP   NOT NULL DEFAULT NOW()
+   )`,
+
+  // Engine 1 -- link users to organizations. Nullable: existing users are
+  // NOT backfilled with a personal org by this migration; Engine 4's
+  // self-serve signup flow is responsible for creating an organization and
+  // setting this on account creation going forward.
+  `ALTER TABLE users
+     ADD COLUMN IF NOT EXISTS organization_id INTEGER REFERENCES organizations(id)`,
+
+  // Engine 2 (Platform Strategy Review v5, Task #205/#189) -- generalised
+  // Findings & Actions table. Does NOT replace maturity_snapshots.remedy_actions
+  // (ActionTracker.tsx keeps reading/writing that JSONB blob unchanged, zero
+  // frontend risk) -- the two PATCH handlers that touch remedy_actions now also
+  // mirror the same write here, so this table stays in sync as a byproduct and
+  // becomes the single place automation and future engines (3, 4, 6) read from.
+  // UNIQUE constraint makes the mirror writes safe to upsert (ON CONFLICT).
+  `CREATE TABLE IF NOT EXISTS findings_actions (
+     id                  SERIAL PRIMARY KEY,
+     user_id             INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+     organization_id     INTEGER REFERENCES organizations(id),
+     source              TEXT NOT NULL,
+     source_ref_id       INTEGER NOT NULL,
+     item_key            TEXT NOT NULL,
+     phase               TEXT,
+     segment_title       TEXT,
+     action              TEXT NOT NULL,
+     framework           TEXT,
+     measurable_target   TEXT,
+     status              TEXT NOT NULL DEFAULT 'not_started',
+     notes               TEXT,
+     plan_started_at     TIMESTAMP,
+     completed_at        TIMESTAMP,
+     nudged_at           TIMESTAMP,
+     start_nudged_at     TIMESTAMP,
+     created_at          TIMESTAMP NOT NULL DEFAULT NOW(),
+     updated_at          TIMESTAMP NOT NULL DEFAULT NOW(),
+     UNIQUE (user_id, source, source_ref_id, item_key)
+   )`,
+
+  // Engine 2 Part B -- claim-link mechanic. Lets a free, anonymous Diagnostic
+  // run become a real, trackable account: a token is emailed on every
+  // diagnostic submission, and claiming it finds-or-creates a passwordless
+  // user (same pattern auth.ts already uses for "legacy profile-only
+  // accounts") and converts that diagnostic's recommendations into
+  // findings_actions rows owned by that account.
+  `CREATE TABLE IF NOT EXISTS claim_tokens (
+     id             SERIAL PRIMARY KEY,
+     token          TEXT NOT NULL UNIQUE,
+     email          TEXT NOT NULL,
+     submission_id  INTEGER NOT NULL REFERENCES submissions(id) ON DELETE CASCADE,
+     user_id        INTEGER REFERENCES users(id),
+     expires_at     TIMESTAMP NOT NULL,
+     claimed_at     TIMESTAMP,
+     created_at     TIMESTAMP NOT NULL DEFAULT NOW()
+   )`,
+
+];
+
+export async function runStartupMigrations(): Promise<void> {
+  const client = await pool.connect();
+  try {
+    for (const sql of MIGRATIONS) {
+      await client.query(sql);
+    }
+    logger.info({ count: MIGRATIONS.length }, "[migrate] Startup migrations applied");
+  } catch (err) {
+    logger.error({ err }, "[migrate] Startup migration failed");
+    throw err; // abort startup â€” missing columns would cause runtime errors
+  } finally {
+    client.release();
+  }
+}
