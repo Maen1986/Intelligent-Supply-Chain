@@ -30,6 +30,7 @@ import reportGeneratorRouter   from "./reportGenerator";
 import maturityEvidenceRouter  from "./maturityEvidence";
 import adminEvidenceRouter     from "./adminEvidence";
 import regulatoryContentRouter from "./regulatoryContent";
+import claimRouter              from "./claim";
 
 const router: IRouter = Router();
 
@@ -63,6 +64,7 @@ router.use(csrRouter);
 router.use(maturityEvidenceRouter);
 router.use(adminEvidenceRouter);
 router.use("/regulatory",       regulatoryContentRouter);
+router.use(claimRouter);
 router.use(webhooksInboundRouter);
 
 export default router;
