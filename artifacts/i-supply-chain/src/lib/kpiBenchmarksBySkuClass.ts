@@ -1,19 +1,29 @@
 /**
- * GCC SKU / Inventory Classification Benchmarks — Sub-Sector Edition
+ * SKU / Inventory Classification Reference Benchmarks — Sub-Sector Edition
  *
  * Data model: benchmarks[kpiKey][subSector | '*'][skuClass]
  * The '*' key is the industry-wide fallback used when no sub-sector is
  * selected or when a sub-sector has no specific entry for that KPI.
  *
  * Every manufacturing sub-sector, and every sub-sector in all other
- * industries, has its own calibrated GCC median and top-quartile targets.
- * Values are differentiated by operating model, supply-chain maturity, and
- * inventory dynamics — not just by SKU class.
+ * industries, has its own calibrated reference-median and top-quartile
+ * target. Values are differentiated by operating model, supply-chain
+ * maturity, and inventory dynamics — not just by SKU class.
  *
- * Data vintage: 2024-2025.
- * Sources: APICS/ASCM SCOR v12 · Gartner Supply Chain Analytics 2024 ·
- * Hackett Group World-Class Procurement 2024 · CIPS Inventory Benchmarks 2024
- * · ISC GCC practitioner data 2022-2025.
+ * Content-honesty note (#183, follow-up pass): these are ISC-composed
+ * directional reference figures — a named consultant's calibration,
+ * informed by general published benchmarking methodology (APICS/ASCM SCOR,
+ * Gartner, Hackett Group, CIPS) — not literal numbers pulled from those
+ * (paywalled) reports for every one of the ~1,900 sub-sector × SKU-class ×
+ * KPI combinations below. No publicly available study breaks GCC-country
+ * benchmarks down to this granularity. All 1,890 median/top-quartile pairs
+ * were verified programmatically (2026-08-17) for internal consistency —
+ * every top-quartile value genuinely outperforms its paired median in the
+ * correct direction, with no missing pairs — but the absolute figures are
+ * pending independent expert review before being labelled "verified".
+ *
+ * Last reviewed: 2026-08-17. Next review due: 2027-02-17 (6 months) or
+ * sooner if a named subject-matter expert signs off earlier.
  */
 
 // ─── Types ────────────────────────────────────────────────────────────────────
