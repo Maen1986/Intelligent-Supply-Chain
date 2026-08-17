@@ -19,7 +19,7 @@ import { logger }          from '../lib/logger';
 
 const router = Router();
 
-/* ── Zod schema for POST body ──────────────────────────────────────────────
+/* ── Zod schema for POST body ─────────────────────────────────────────────────────
    The client submits answers + pre-computed per-segment scores (with titles
    for display). The server recomputes and validates the overall score to
    prevent tampering.                                                         */
@@ -44,7 +44,7 @@ const PostSnapshotSchema = z.object({
   remedyActions: z.record(z.string(), z.unknown()).optional().nullable(),
 });
 
-/* ── Server-side score recomputation ───────────────────────────────────────
+/* ── Server-side score recomputation ──────────────────────────────────────────
    Mirrors maturityScoring.segScore / overallScore pure functions.           */
 function serverSegScore(answers: Record<string, number>, segIdx: number): number | null {
   const vals   = [0, 1, 2, 3, 4].map(q => answers[`${segIdx}-${q}`] ?? 0);
@@ -61,7 +61,7 @@ function serverOverallScore(answers: Record<string, number>, numSegments: number
   return scores.length === 0 ? 0 : scores.reduce((a, b) => a + b, 0) / scores.length;
 }
 
-/* ── POST /api/maturity/snapshots ───────────────────────────────────────── */
+/* ── POST /api/maturity/snapshots ──────────────────────────────────────────── */
 router.post(
   '/maturity/snapshots',
   requireSession,
@@ -110,7 +110,7 @@ router.post(
   },
 );
 
-/* ── GET /api/maturity/snapshots ────────────────────────────────────────── */
+/* ── GET /api/maturity/snapshots ────────────────────────────────────────────── */
 
 /**
  * Normalise a raw DB row (snake_case) into the camelCase shape that
@@ -151,7 +151,104 @@ router.get('/maturity/snapshots', requireSession, async (req, res) => {
   }
 });
 
-/* ── PATCH /api/maturity/snapshots/:id/remedies ─────────────────────────── */
+/* ── findings_actions mirror helpers (Engine 2, Task #205/#189) ───────────
+ * Best-effort: mirror failures are logged but never fail the primary
+ * request -- remedy_actions (read by ActionTracker.tsx) remains the source
+ * of truth for the live UI; findings_actions exists for automation (the
+ * scheduler's action-followup job) and future engines to read from instead
+ * of scanning JSON blobs. Raw SQL to match this file's existing style;
+ * upserts via the UNIQUE(user_id, source, source_ref_id, item_key)
+ * constraint created in migrate.ts.
+ */
+interface RemedyItemShape {
+  segmentTitle?: string;
+  action?: string;
+  framework?: string;
+  measurableTarget?: string;
+}
+
+async function mirrorRemediesIntoFindingsActions(
+  userId: number,
+  snapshotId: number,
+  remedyActions: Record<string, unknown>,
+): Promise<void> {
+  const phases: Array<'days30' | 'days60' | 'days90'> = ['days30', 'days60', 'days90'];
+  for (const phase of phases) {
+    const items = (remedyActions[phase] ?? []) as RemedyItemShape[];
+    if (!Array.isArray(items)) continue;
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      if (!item?.action) continue;
+      const itemKey = `${phase}-${i}`;
+      try {
+        await db.execute(sql`
+          INSERT INTO findings_actions
+            (user_id, source, source_ref_id, item_key, phase, segment_title, action, framework, measurable_target)
+          VALUES
+            (${userId}, 'maturity', ${snapshotId}, ${itemKey}, ${phase},
+             ${item.segmentTitle ?? null}, ${item.action}, ${item.framework ?? null}, ${item.measurableTarget ?? null})
+          ON CONFLICT (user_id, source, source_ref_id, item_key)
+          DO UPDATE SET
+            phase = EXCLUDED.phase,
+            segment_title = EXCLUDED.segment_title,
+            action = EXCLUDED.action,
+            framework = EXCLUDED.framework,
+            measurable_target = EXCLUDED.measurable_target,
+            updated_at = NOW()
+        `);
+      } catch (err) {
+        logger.error({ err, userId, snapshotId, itemKey }, '[maturitySnapshots] findings_actions remedies mirror failed');
+      }
+    }
+  }
+}
+
+async function mirrorActionStatusIntoFindingsActions(
+  userId: number,
+  snapshotId: number,
+  itemKey: string,
+  status: 'not_started' | 'in_progress' | 'done',
+  notes: string | null,
+  completedAtIso: string | null,
+  fallbackItem: RemedyItemShape | undefined,
+): Promise<void> {
+  const phaseMatch = itemKey.match(/^(days\d+)-\d+$/);
+  const phase = phaseMatch ? phaseMatch[1] : null;
+
+  try {
+    await db.execute(sql`
+      INSERT INTO findings_actions
+        (user_id, source, source_ref_id, item_key, phase, segment_title, action, framework, measurable_target, status, notes, completed_at)
+      VALUES
+        (${userId}, 'maturity', ${snapshotId}, ${itemKey}, ${phase},
+         ${fallbackItem?.segmentTitle ?? null}, ${fallbackItem?.action ?? itemKey}, ${fallbackItem?.framework ?? null}, ${fallbackItem?.measurableTarget ?? null},
+         ${status}, ${notes}, ${completedAtIso})
+      ON CONFLICT (user_id, source, source_ref_id, item_key)
+      DO UPDATE SET
+        status = EXCLUDED.status,
+        notes = EXCLUDED.notes,
+        completed_at = EXCLUDED.completed_at,
+        updated_at = NOW()
+    `);
+
+    // First engagement with this plan starts the 30/60/90-day clock -- see
+    // findingsActions.ts header for why this anchors to first engagement
+    // rather than row creation (anchoring to creation would flag historical
+    // plans as instantly "overdue" the moment this ships).
+    if (status !== 'not_started') {
+      await db.execute(sql`
+        UPDATE findings_actions
+        SET plan_started_at = NOW()
+        WHERE user_id = ${userId} AND source = 'maturity' AND source_ref_id = ${snapshotId}
+          AND plan_started_at IS NULL
+      `);
+    }
+  } catch (err) {
+    logger.error({ err, userId, snapshotId, itemKey }, '[maturitySnapshots] findings_actions action-status mirror failed');
+  }
+}
+
+/* ── PATCH /api/maturity/snapshots/:id/remedies ────────────────────────────── */
 router.patch('/maturity/snapshots/:id/remedies', requireSession, async (req, res) => {
   const userId = res.locals.userId as number;
   const id     = parseInt(String(req.params.id), 10);
@@ -181,6 +278,8 @@ router.patch('/maturity/snapshots/:id/remedies', requireSession, async (req, res
       return;
     }
 
+    await mirrorRemediesIntoFindingsActions(userId, id, remedyActions as Record<string, unknown>);
+
     res.json({ ok: true });
   } catch (err) {
     logger.error({ err, userId, id }, '[maturitySnapshots] Remedies patch failed');
@@ -188,7 +287,7 @@ router.patch('/maturity/snapshots/:id/remedies', requireSession, async (req, res
   }
 });
 
-/* ── PATCH /api/maturity/snapshots/:id/action-status ────────────────────────
+/* ── PATCH /api/maturity/snapshots/:id/action-status ───────────────────────────
  * Action Tracker (#19) — updates the status of ONE remedy item without
  * requiring a new table/migration. Deliberately reuses the existing
  * remedy_actions JSONB column rather than a dedicated action_tracker
@@ -253,6 +352,16 @@ router.patch('/maturity/snapshots/:id/action-status', requireSession, async (req
       SET remedy_actions = ${JSON.stringify(remedyActions)}::jsonb
       WHERE id = ${id} AND user_id = ${userId}
     `);
+
+    const phaseMatch  = itemKey.match(/^(days\d+)-(\d+)$/);
+    const fallbackItem = phaseMatch
+      ? ((remedyActions[phaseMatch[1]] as RemedyItemShape[] | undefined)?.[Number(phaseMatch[2])])
+      : undefined;
+    await mirrorActionStatusIntoFindingsActions(
+      userId, id, itemKey, status, notes ?? null,
+      status === 'done' ? new Date().toISOString() : null,
+      fallbackItem,
+    );
 
     res.json({ ok: true, actionStatus: actionStatus[itemKey] });
   } catch (err) {
