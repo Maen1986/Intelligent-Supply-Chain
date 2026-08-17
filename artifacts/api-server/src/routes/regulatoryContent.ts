@@ -70,7 +70,13 @@ router.get('/countries/:id/frameworks', async (req, res) => {
 
 // ── PATCH /api/regulatory/countries/:id ─────────────────────────────────────
 router.patch('/countries/:id', requireAdmin, async (req, res) => {
-  const countryId = req.params.id;
+  // Explicit cast: this route only ever matches a single ':id' segment, so
+  // req.params.id is always a plain string at runtime. The annotation is
+  // needed because drizzle's eq() overload resolution against a primaryKey
+  // text column is stricter than against a plain text column (see the
+  // GET /countries/:id/frameworks handler above, which does not need this)
+  // -- caught by CI typecheck (2026-08-17), pre-existing at runtime.
+  const countryId = req.params.id as string;
   const adminUserId = req.session.userId!;
 
   const ALLOWED_FIELDS = [
