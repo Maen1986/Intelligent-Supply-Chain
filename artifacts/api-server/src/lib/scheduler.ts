@@ -1,13 +1,14 @@
 /**
  * Scheduled Automation Engine
  *
- * Runs four cron jobs inside the API server process (no external scheduler needed).
+ * Runs five cron jobs inside the API server process (no external scheduler needed).
  * Each job is configurable — set the corresponding env var to "true" to disable it.
  *
  *   SCHEDULE_DISABLE_WEEKLY_KPI=true       skip Monday 08:00 KPI digest
  *   SCHEDULE_DISABLE_MONTHLY_SCORECARD=true skip 1st-of-month scorecard digest
  *   SCHEDULE_DISABLE_LEAD_FOLLOWUP=true    skip 48-hour lead nudge check
  *   SCHEDULE_DISABLE_STALE_DATA=true       skip 14-day stale-data nudge
+ *   SCHEDULE_DISABLE_ACTION_FOLLOWUP=true  skip findings_actions plan-started / overdue nudge
  *
  * All schedule times are UTC.
  */
@@ -20,7 +21,7 @@ import { runWebhookRetries } from "./webhookRetry";
 import { sendAlertEmail, sendDigestEmail } from "./notifyHelpers";
 import { logger }        from "./logger";
 
-/* ── types ──────────────────────────────────────────────────────────────── */
+/* ──── types ──── */
 
 interface UserRow {
   id:               number;
@@ -41,7 +42,7 @@ interface SubmissionRow {
   outputs:         Record<string, unknown> | null;
 }
 
-/* ── schedule_log helper ────────────────────────────────────────────────── */
+/* ──── schedule_log helper ──── */
 
 async function logJobRun(jobName: string, usersProcessed: number, errors?: string): Promise<void> {
   await db
@@ -50,7 +51,7 @@ async function logJobRun(jobName: string, usersProcessed: number, errors?: strin
     .catch(err => logger.error({ err, jobName }, "[scheduler] Failed to write schedule_log"));
 }
 
-/* ── shared query helpers ───────────────────────────────────────────────── */
+/* ──── shared query helpers ──── */
 
 async function getAllActiveUsers(): Promise<UserRow[]> {
   const result = await db.execute(
@@ -61,9 +62,9 @@ async function getAllActiveUsers(): Promise<UserRow[]> {
   return result.rows as unknown as UserRow[];
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
+/* ════
    JOB 1 — Weekly KPI Digest (Monday 08:00 UTC)
-═══════════════════════════════════════════════════════════════════════════ */
+════ */
 
 export async function runWeeklyKpiDigest(): Promise<void> {
   logger.info("[scheduler] Running weekly KPI digest");
@@ -117,9 +118,9 @@ export async function runWeeklyKpiDigest(): Promise<void> {
   logger.info({ processed }, "[scheduler] Weekly KPI digest complete");
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
+/* ════
    JOB 2 — Monthly Scorecard Digest (1st of month, 08:00 UTC)
-═══════════════════════════════════════════════════════════════════════════ */
+════ */
 
 export async function runMonthlyScorecardDigest(): Promise<void> {
   logger.info("[scheduler] Running monthly scorecard digest");
@@ -177,9 +178,9 @@ export async function runMonthlyScorecardDigest(): Promise<void> {
   logger.info({ processed }, "[scheduler] Monthly scorecard digest complete");
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
+/* ════
    JOB 3 — Lead Follow-up (daily 09:00 UTC — flags leads older than 48 h)
-═══════════════════════════════════════════════════════════════════════════ */
+════ */
 
 export async function runLeadFollowup(): Promise<void> {
   logger.info("[scheduler] Running lead follow-up check");
@@ -242,9 +243,9 @@ export async function runLeadFollowup(): Promise<void> {
   logger.info({ processed }, "[scheduler] Lead follow-up check complete");
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
+/* ════
    JOB 4 — Stale Data Nudge (daily 09:30 UTC — no import in 14+ days)
-═══════════════════════════════════════════════════════════════════════════ */
+════ */
 
 export async function runStaleDataNudge(): Promise<void> {
   logger.info("[scheduler] Running stale-data nudge check");
@@ -304,9 +305,181 @@ export async function runStaleDataNudge(): Promise<void> {
   logger.info({ processed }, "[scheduler] Stale-data nudge complete");
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
+/* ════
+   JOB 5 — Action Follow-up (daily 10:00 UTC -- findings_actions, Task #205/#189)
+
+   Two distinct signals, not one blunt timer (see findingsActions.ts header
+   for why): (1) a plan that's sat untouched for 7+ days since it was
+   generated gets a gentle "get started" nudge, once; (2) a plan the client
+   HAS started, where an item's phase has now passed its 30/60/90-day mark
+   from planStartedAt (not row creation -- anchoring to creation would flag
+   historical plans as instantly "overdue" the moment this job first runs),
+   gets a separate "you're behind" nudge, once per item. Deliberately does
+   NOT filter to password_hash IS NOT NULL like jobs 1/2/4 -- claimed-but-
+   passwordless accounts (Engine 2 Part B, the Diagnostic claim-link) are a
+   first-class target for this job, not an edge case to exclude.
+════ */
+
+interface PlanNotStartedRow {
+  user_id:       number;
+  source:        string;
+  source_ref_id: number;
+  email:         string;
+  full_name:     string;
+  item_count:    string | number;
+}
+
+interface OverdueItemRow {
+  id:            number;
+  user_id:       number;
+  source:        string;
+  source_ref_id: number;
+  phase:         string;
+  action:        string;
+  segment_title: string | null;
+  email:         string;
+  full_name:     string;
+}
+
+export async function runActionFollowup(): Promise<void> {
+  logger.info("[scheduler] Running action follow-up check");
+  let processed = 0;
+  const errorMessages: string[] = [];
+
+  // ──── Signal 1: plan generated 7+ days ago, never started ────
+  try {
+    const result = await db.execute(sql`
+      SELECT fa.user_id, fa.source, fa.source_ref_id, u.email, u.full_name, COUNT(*) AS item_count
+      FROM findings_actions fa
+      JOIN users u ON u.id = fa.user_id
+      WHERE fa.plan_started_at IS NULL
+        AND fa.start_nudged_at IS NULL
+        AND fa.created_at < NOW() - INTERVAL '7 days'
+      GROUP BY fa.user_id, fa.source, fa.source_ref_id, u.email, u.full_name
+    `);
+    const plans = ((result as any).rows ?? result) as PlanNotStartedRow[];
+
+    for (const plan of plans) {
+      try {
+        const digestResult = await sendDigestEmail({
+          to:      plan.email,
+          subject: "📋 Your action plan is ready — you haven't started yet",
+          rows: {
+            "Account":  `${plan.full_name} <${plan.email}>`,
+            "Source":   plan.source,
+            "Items":    String(plan.item_count),
+            "Action":   "Open your Action Tracker to start working through it",
+            "Platform": "https://isupplychain.io/action-tracker",
+          },
+        });
+        if (!digestResult.sent) {
+          throw new Error(digestResult.reason ?? "sendDigestEmail returned sent:false");
+        }
+
+        dispatchEvent(plan.user_id, "schedule.action_plan_not_started", {
+          source:      plan.source,
+          sourceRefId: plan.source_ref_id,
+          itemCount:   plan.item_count,
+        });
+
+        await db.execute(sql`
+          UPDATE findings_actions
+          SET start_nudged_at = NOW()
+          WHERE user_id = ${plan.user_id} AND source = ${plan.source} AND source_ref_id = ${plan.source_ref_id}
+            AND start_nudged_at IS NULL
+        `);
+
+        processed++;
+      } catch (err) {
+        const msg = (err as Error)?.message ?? String(err);
+        errorMessages.push(`user ${plan.user_id} plan ${plan.source}-${plan.source_ref_id}: ${msg}`);
+        logger.error({ err, userId: plan.user_id }, "[scheduler] Plan-not-started nudge failed for user");
+      }
+    }
+  } catch (err) {
+    errorMessages.push(`plan-not-started query: ${(err as Error)?.message ?? String(err)}`);
+    logger.error({ err }, "[scheduler] Plan-not-started query failed");
+  }
+
+  // ──── Signal 2: plan started, a phase has passed its 30/60/90-day mark ────
+  try {
+    const result = await db.execute(sql`
+      SELECT fa.id, fa.user_id, fa.source, fa.source_ref_id, fa.phase, fa.action, fa.segment_title, u.email, u.full_name
+      FROM findings_actions fa
+      JOIN users u ON u.id = fa.user_id
+      WHERE fa.status != 'done'
+        AND fa.plan_started_at IS NOT NULL
+        AND fa.phase IS NOT NULL
+        AND fa.nudged_at IS NULL
+        AND fa.plan_started_at + (
+          CASE fa.phase
+            WHEN 'days30' THEN INTERVAL '30 days'
+            WHEN 'days60' THEN INTERVAL '60 days'
+            WHEN 'days90' THEN INTERVAL '90 days'
+            ELSE INTERVAL '9999 days'
+          END
+        ) < NOW()
+    `);
+    const items = ((result as any).rows ?? result) as OverdueItemRow[];
+
+    const byUser = new Map<number, OverdueItemRow[]>();
+    for (const item of items) {
+      const arr = byUser.get(item.user_id) ?? [];
+      arr.push(item);
+      byUser.set(item.user_id, arr);
+    }
+
+    for (const [userId, userItems] of byUser) {
+      try {
+        const rows: Record<string, string> = {
+          "Account":       `${userItems[0].full_name} <${userItems[0].email}>`,
+          "Overdue Items": String(userItems.length),
+        };
+        userItems.slice(0, 8).forEach((item, i) => {
+          rows[`${i + 1}. ${item.segment_title ?? item.phase}`] = item.action;
+        });
+
+        const digestResult = await sendDigestEmail({
+          to:      userItems[0].email,
+          subject: "⏰ Your action plan has items falling behind schedule",
+          rows,
+        });
+        if (!digestResult.sent) {
+          throw new Error(digestResult.reason ?? "sendDigestEmail returned sent:false");
+        }
+
+        dispatchEvent(userId, "schedule.action_overdue", {
+          overdueCount: userItems.length,
+          items: userItems.map(i => ({ id: i.id, phase: i.phase, action: i.action })),
+        });
+
+        for (const item of userItems) {
+          await db.execute(sql`UPDATE findings_actions SET nudged_at = NOW() WHERE id = ${item.id}`);
+        }
+
+        processed++;
+      } catch (err) {
+        const msg = (err as Error)?.message ?? String(err);
+        errorMessages.push(`user ${userId} overdue: ${msg}`);
+        logger.error({ err, userId }, "[scheduler] Overdue nudge failed for user");
+      }
+    }
+  } catch (err) {
+    errorMessages.push(`overdue query: ${(err as Error)?.message ?? String(err)}`);
+    logger.error({ err }, "[scheduler] Overdue query failed");
+  }
+
+  await logJobRun(
+    "action_followup",
+    processed,
+    errorMessages.length ? errorMessages.join("; ") : undefined,
+  );
+  logger.info({ processed }, "[scheduler] Action follow-up check complete");
+}
+
+/* ════
    Boot — called once from src/index.ts
-═══════════════════════════════════════════════════════════════════════════ */
+════ */
 
 export function startScheduler(): void {
   const disabled = (key: string) => process.env[key] === "true";
@@ -341,6 +514,14 @@ export function startScheduler(): void {
       runStaleDataNudge().catch(err => logger.error({ err }, "[scheduler] Stale-data nudge uncaught"));
     });
     logger.info("[scheduler] Stale-data nudge scheduled: daily 09:30 UTC");
+  }
+
+  if (!disabled("SCHEDULE_DISABLE_ACTION_FOLLOWUP")) {
+    // Every day 10:00 UTC
+    cron.schedule("0 10 * * *", () => {
+      runActionFollowup().catch(err => logger.error({ err }, "[scheduler] Action follow-up uncaught"));
+    });
+    logger.info("[scheduler] Action follow-up scheduled: daily 10:00 UTC");
   }
 
   // Webhook retry sweep — every minute
