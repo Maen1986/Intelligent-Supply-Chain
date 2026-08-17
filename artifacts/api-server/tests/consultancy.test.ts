@@ -13,6 +13,15 @@ vi.mock('../src/routes/notify', () => ({
   default: {},
 }));
 
+// consultancy.ts's /diagnose, /solution, and /refine routes all share the
+// module-level leadsRateLimiter (5 requests/hour/IP — see lib/rateLimit.ts).
+// This file exercises all three across 8 requests in one run, well past that
+// budget, and isn't testing rate-limiting itself (that's covered by
+// leads.test.ts against the real limiter), so stub it out here.
+vi.mock('../src/lib/rateLimit', () => ({
+  leadsRateLimiter: (_req: unknown, _res: unknown, next: () => void) => next(),
+}));
+
 import consultancyRouter from '../src/routes/consultancy';
 import { openai } from '@workspace/integrations-openai-ai-server';
 import { sendEscalationEmail } from '../src/routes/notify';

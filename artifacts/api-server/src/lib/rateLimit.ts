@@ -20,10 +20,7 @@ export const globalRateLimiter = rateLimit({
 // survives server restarts and is shared across instances if the app scales
 // out. The store fails open (allows requests, logs a warning) if the
 // database is unreachable — the global in-memory limiter still applies.
-// In test mode the effective limit is raised (see aiPlanRateLimiter below for
-// the original rationale) so a test file exercising several routes behind
-// this same in-memory-store limiter doesn't trip the cap mid-suite.
-const LEADS_LIMIT = isTest ? 10_000 : 5;
+const LEADS_LIMIT = 5;
 
 export const leadsRateLimiter = rateLimit({
   windowMs: 60 * 60_000,
@@ -77,7 +74,7 @@ export const getLeadsRateLimitStatus = (req: Request) =>
 
 // Feedback submissions: 5 per IP per hour (same posture as leads), backed by
 // PostgreSQL so the limit survives restarts. Fails open if the DB is down.
-const FEEDBACK_LIMIT = isTest ? 10_000 : 5;
+const FEEDBACK_LIMIT = 5;
 
 export const feedbackRateLimiter = rateLimit({
   windowMs: 60 * 60_000,
@@ -105,11 +102,9 @@ export const getFeedbackRateLimitStatus = (req: Request) =>
 // Registration throttle: 20 sign-ups per IP per 15 minutes, backed by
 // PostgreSQL outside tests so the limit survives restarts. Fails open if
 // the DB is unreachable — the global in-memory limiter still applies.
-const AUTH_LIMIT = isTest ? 10_000 : 20;
-
 export const authRateLimiter = rateLimit({
   windowMs: 15 * 60_000,
-  limit: AUTH_LIMIT,
+  limit: 20,
   standardHeaders: "draft-7",
   legacyHeaders: false,
   handler: (req, res) => {
@@ -131,11 +126,9 @@ export const authRateLimiter = rateLimit({
 // Must NOT use skipSuccessfulRequests because forgot-password intentionally
 // returns 200 even for unknown emails (anti-enumeration), so every request must
 // consume quota to prevent email-bombing / cost amplification attacks.
-const FORGOT_PASSWORD_LIMIT = isTest ? 10_000 : 5;
-
 export const forgotPasswordRateLimiter = rateLimit({
   windowMs: 15 * 60_000,
-  limit: FORGOT_PASSWORD_LIMIT,
+  limit: 5,
   standardHeaders: "draft-7",
   legacyHeaders: false,
   handler: (req, res) => {
@@ -157,11 +150,9 @@ export const forgotPasswordRateLimiter = rateLimit({
  * email (normalized). Closes the distributed-botnet gap the IP-based
  * authRateLimiter leaves open — many IPs hammering the same email are all
  * counted in one bucket. Backed by PostgreSQL outside tests. */
-const REGISTER_EMAIL_LIMIT = isTest ? 10_000 : 3;
-
 export const registerEmailRateLimiter = rateLimit({
   windowMs: 60 * 60_000,
-  limit: REGISTER_EMAIL_LIMIT,
+  limit: 3,
   standardHeaders: "draft-7",
   legacyHeaders: false,
   keyGenerator: (req: Request) => {
@@ -230,12 +221,12 @@ export const aiPlanRateLimiter = rateLimit({
  * users signing in/out normally are never affected; an attacker hammering one
  * account (or one IP hammering many passwords) gets 429s after ~5 misses.
  * Backed by PostgreSQL outside tests so the limit survives restarts. */
-const LOGIN_FAIL_LIMIT = isTest ? 10_000 : 5;
+const LOGIN_FAIL_LIMIT = 5;
 
 /* Maturity snapshot: 1 per 24 h per authenticated user.
  * Keyed by userId (from session) so the throttle is per-person, not per-IP.
  * Falls back to IP key if the request somehow arrives without a session user. */
-const SNAPSHOT_LIMIT = isTest ? 10_000 : 1;
+const SNAPSHOT_LIMIT = 1;
 
 export const snapshotRateLimiter = rateLimit({
   windowMs: 24 * 60 * 60_000, // 24 hours
