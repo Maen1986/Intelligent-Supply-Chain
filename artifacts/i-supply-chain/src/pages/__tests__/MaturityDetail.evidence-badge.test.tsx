@@ -102,6 +102,9 @@ const TWO_SEGMENT_SUBMISSION = {
       { id: 'strategy',    title: 'Supply Chain Strategy', score: 3.5, level: 'Defined' },
       { id: 'procurement', title: 'Procurement',           score: 2.8, level: 'Aware'   },
     ],
+    // Evidence UI (badges under test) is gated on this field being present —
+    // see MyAssessments.tsx's MaturityOutputs comment.
+    maturitySnapshotId: 99,
   },
   createdAt: new Date().toISOString(),
 };

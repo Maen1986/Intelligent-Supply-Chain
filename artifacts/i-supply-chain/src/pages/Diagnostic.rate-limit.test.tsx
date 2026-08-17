@@ -21,16 +21,22 @@ function mock429(retryAfterSeconds: number) {
 }
 
 async function completeWizardAndSubmit() {
-  // Step 1-4: pick the first option, click Next.
+  // Diagnostic is a 7-step wizard (see Diagnostic.tsx isStepValid): steps
+  // 4 (supply chain type) and 6 (data maturity) also require a selection
+  // before Next enables, and the submit button only appears at step 7.
   fireEvent.click(screen.getByLabelText(/Startup/i));
   fireEvent.click(screen.getByTestId('button-wizard-next'));
   fireEvent.click(screen.getByLabelText(/Saudi Arabia/i));
   fireEvent.click(screen.getByTestId('button-wizard-next'));
   fireEvent.click(screen.getByLabelText(/Manufacturing/i));
   fireEvent.click(screen.getByTestId('button-wizard-next'));
+  fireEvent.click(screen.getByLabelText(/Make-to-Stock/i));
+  fireEvent.click(screen.getByTestId('button-wizard-next'));
   fireEvent.click(screen.getByLabelText(/Procurement/i));
   fireEvent.click(screen.getByTestId('button-wizard-next'));
-  // Step 5 is optional — submit directly.
+  fireEvent.click(screen.getByLabelText(/Spreadsheets/i));
+  fireEvent.click(screen.getByTestId('button-wizard-next'));
+  // Step 7 (symptoms) is optional — submit directly.
   fireEvent.click(screen.getByTestId('button-wizard-submit'));
   // handleSubmit now calls the live AI endpoint (stubbed here) then falls
   // back to generateReport when the stub returns a non-ok response.

@@ -95,6 +95,9 @@ const MATURITY_SUB: Parameters<typeof SubmissionCard>[0]['sub'] = {
     overallScore: 3.2,
     overallLevel: 'Defined',
     segmentScores: [{ id: 'strategy', title: 'Strategy', score: 3.2, level: 'Defined' }],
+    // Evidence UI (the "Manage evidence" toggle under test) is gated on this
+    // field being present — see MyAssessments.tsx's MaturityOutputs comment.
+    maturitySnapshotId: 7,
   },
   createdAt: '2024-06-01T10:00:00Z',
 };

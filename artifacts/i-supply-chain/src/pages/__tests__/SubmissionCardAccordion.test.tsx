@@ -79,6 +79,9 @@ const MATURITY_SUBMISSION = {
     segmentScores: [
       { id: 'strategy', title: 'Supply Chain Strategy', score: 3.5, level: 'Defined' },
     ],
+    // Evidence UI (the accordion toggles under test) is gated on this field
+    // being present — see MyAssessments.tsx's MaturityOutputs comment.
+    maturitySnapshotId: 42,
   },
   createdAt: new Date().toISOString(),
 };
