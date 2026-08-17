@@ -19,7 +19,7 @@ import { logger }          from '../lib/logger';
 
 const router = Router();
 
-/* ── Zod schema for POST body ─────────────────────────────────────────────────────
+/* ──── Zod schema for POST body ────
    The client submits answers + pre-computed per-segment scores (with titles
    for display). The server recomputes and validates the overall score to
    prevent tampering.                                                         */
@@ -44,7 +44,7 @@ const PostSnapshotSchema = z.object({
   remedyActions: z.record(z.string(), z.unknown()).optional().nullable(),
 });
 
-/* ── Server-side score recomputation ──────────────────────────────────────────
+/* ──── Server-side score recomputation ────
    Mirrors maturityScoring.segScore / overallScore pure functions.           */
 function serverSegScore(answers: Record<string, number>, segIdx: number): number | null {
   const vals   = [0, 1, 2, 3, 4].map(q => answers[`${segIdx}-${q}`] ?? 0);
@@ -61,7 +61,7 @@ function serverOverallScore(answers: Record<string, number>, numSegments: number
   return scores.length === 0 ? 0 : scores.reduce((a, b) => a + b, 0) / scores.length;
 }
 
-/* ── POST /api/maturity/snapshots ──────────────────────────────────────────── */
+/* ──── POST /api/maturity/snapshots ──── */
 router.post(
   '/maturity/snapshots',
   requireSession,
@@ -110,7 +110,7 @@ router.post(
   },
 );
 
-/* ── GET /api/maturity/snapshots ────────────────────────────────────────────── */
+/* ──── GET /api/maturity/snapshots ──── */
 
 /**
  * Normalise a raw DB row (snake_case) into the camelCase shape that
@@ -151,7 +151,7 @@ router.get('/maturity/snapshots', requireSession, async (req, res) => {
   }
 });
 
-/* ── findings_actions mirror helpers (Engine 2, Task #205/#189) ───────────
+/* ──── findings_actions mirror helpers (Engine 2, Task #205/#189) ────
  * Best-effort: mirror failures are logged but never fail the primary
  * request -- remedy_actions (read by ActionTracker.tsx) remains the source
  * of truth for the live UI; findings_actions exists for automation (the
@@ -248,7 +248,7 @@ async function mirrorActionStatusIntoFindingsActions(
   }
 }
 
-/* ── PATCH /api/maturity/snapshots/:id/remedies ────────────────────────────── */
+/* ──── PATCH /api/maturity/snapshots/:id/remedies ──── */
 router.patch('/maturity/snapshots/:id/remedies', requireSession, async (req, res) => {
   const userId = res.locals.userId as number;
   const id     = parseInt(String(req.params.id), 10);
@@ -287,7 +287,7 @@ router.patch('/maturity/snapshots/:id/remedies', requireSession, async (req, res
   }
 });
 
-/* ── PATCH /api/maturity/snapshots/:id/action-status ───────────────────────────
+/* ──── PATCH /api/maturity/snapshots/:id/action-status ────
  * Action Tracker (#19) — updates the status of ONE remedy item without
  * requiring a new table/migration. Deliberately reuses the existing
  * remedy_actions JSONB column rather than a dedicated action_tracker
