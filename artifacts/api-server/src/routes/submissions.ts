@@ -1,10 +1,12 @@
 import { Router } from 'express';
+import crypto from 'node:crypto';
 import { db } from '@workspace/db';
-import { submissionsTable, maturitySnapshotsTable } from '@workspace/db';
+import { submissionsTable, maturitySnapshotsTable, claimTokensTable } from '@workspace/db';
 import { desc, eq, and } from 'drizzle-orm';
 import { z } from 'zod';
 import { logger } from '../lib/logger';
 import { sendBriefingEmail } from './notify';
+import { sendDigestEmail } from '../lib/notifyHelpers';
 import { dispatchEvent } from '../lib/webhookDispatch';
 import {
   ObjectStorageService,
@@ -49,7 +51,7 @@ const SaveSchema = z.object({
   pdfFilename:         z.string().max(200).optional(),
 });
 
-/* ── POST /api/submissions ───────────────────────────────────────────────────
+/* ── POST /api/submissions ────
    Persists any tool interaction (Command Centre briefing, Diagnostic,
    Maturity assessment, Booking, or Lead registration) to PostgreSQL.
    Augments with user session info if the caller is authenticated.             */
@@ -105,6 +107,47 @@ router.post('/', async (req, res) => {
       });
     }
     res.json({ ok: true, id: row.id });
+
+    // Engine 2 Part B (Task #205/#189) -- claim-link mechanic. Every
+    // diagnostic submission with a contact email gets a token so a free,
+    // anonymous run can become a real, trackable account without a signup
+    // wall. Fire-and-forget: never blocks or fails the primary response.
+    if (data.tool === 'diagnostic' && contactEmail) {
+      (async () => {
+        try {
+          const token = crypto.randomBytes(32).toString('hex');
+          const expiresAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000); // 14 days
+          await db.insert(claimTokensTable).values({
+            token,
+            email:        contactEmail,
+            submissionId: row.id,
+            expiresAt,
+          });
+
+          const claimUrl = `https://isupplychain.io/claim?token=${token}`;
+          const rawRecs  = (data.outputs as Record<string, unknown> | undefined)?.recommendations;
+          const recommendationCount = Array.isArray(rawRecs) ? rawRecs.length : 0;
+
+          const result = await sendDigestEmail({
+            to:      contactEmail,
+            subject: '📋 Your diagnostic found action items — claim your tracker',
+            rows: {
+              'Name':                    contactName ?? '—',
+              'Company':                 contactCompany ?? '—',
+              'Findings':                recommendationCount ? `${recommendationCount} recommendations ready to track` : 'Your report is ready',
+              'Claim your action plan':  claimUrl,
+            },
+          });
+          if (!result.sent) {
+            logger.error({ submissionId: row.id, reason: result.reason }, '[submissions] Claim-link email NOT sent');
+          } else {
+            logger.info({ submissionId: row.id }, '[submissions] Claim-link email sent');
+          }
+        } catch (err) {
+          logger.error({ err, submissionId: row.id }, '[submissions] Claim-link generation failed');
+        }
+      })();
+    }
 
     // Store the branded PDF (when captured) and email the lead summary to the
     // consultant — with the PDF attached when available, or without an
@@ -175,7 +218,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-/* ── GET /api/submissions/mine ───────────────────────────────────────────────
+/* ── GET /api/submissions/mine ────
    Returns the authenticated user's own submissions, newest first.
    Only available to logged-in users; returns a curated subset of columns
    (no IP address, email error, or PDF storage paths).                        */
@@ -208,7 +251,7 @@ router.get('/mine', requireAuth, async (req, res) => {
   }
 });
 
-/* ── GET /api/submissions/mine/:id ──────────────────────────────────────────
+/* ── GET /api/submissions/mine/:id ────
    Returns a single submission for the authenticated user.
    Returns 404 (not 403) when the submission id does not belong to the caller
    — leaking existence is itself an information disclosure.                   */
@@ -241,7 +284,7 @@ router.get('/mine/:id', requireAuth, async (req, res) => {
   }
 });
 
-/* ── PATCH /api/submissions/:id/link-maturity-snapshot ──────────────────────
+/* ── PATCH /api/submissions/:id/link-maturity-snapshot ────
    Links a 'maturity' submissions row (the lead-capture record My Assessments
    reads from) to its corresponding maturity_snapshots row (the record that
    evidence uploads, AI remedies, and the Action Tracker are keyed to). The
@@ -322,7 +365,7 @@ const requireAdmin: import('express').RequestHandler = (req, res, next) => {
   next();
 };
 
-/* ── GET /api/submissions ────────────────────────────────────────────────────
+/* ── GET /api/submissions ────
    Returns all submissions, newest first. Admin-only.                          */
 router.get('/', requireAdmin, async (req, res) => {
   try {
@@ -338,7 +381,7 @@ router.get('/', requireAdmin, async (req, res) => {
   }
 });
 
-/* ── GET /api/submissions/by-tool/:tool ─────────────────────────────────────
+/* ── GET /api/submissions/by-tool/:tool ────
    Filter by tool type for quick admin queries. Admin-only.                     */
 router.get<{ tool: string }>('/by-tool/:tool', requireAdmin, async (req, res) => {
   try {
@@ -355,7 +398,7 @@ router.get<{ tool: string }>('/by-tool/:tool', requireAdmin, async (req, res) =>
   }
 });
 
-/* ── GET /api/submissions/:id/briefing-pdf ──────────────────────────────────
+/* ── GET /api/submissions/:id/briefing-pdf ────
    Streams the stored briefing PDF for a submission so an admin can
    re-download it even if the original email was lost. Admin-only.             */
 router.get('/:id/briefing-pdf', requireAdmin, async (req, res) => {
@@ -404,7 +447,7 @@ router.get('/:id/briefing-pdf', requireAdmin, async (req, res) => {
   }
 });
 
-/* ── POST /api/submissions/:id/resend-email ─────────────────────────────────
+/* ── POST /api/submissions/:id/resend-email ────
    Rebuilds and re-sends the briefing email for a submission whose email
    previously failed (emailSentAt is null). Re-attaches the stored PDF when
    available. Updates emailSentAt/emailError to reflect the outcome. Admin-only. */
