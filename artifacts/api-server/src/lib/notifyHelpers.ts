@@ -1,15 +1,11 @@
 /**
  * Shared email helpers used by the scheduler and kpiAlerts.
  *
- * These are thin wrappers around the nodemailer transporter that live in
- * notify.ts but whose internal helpers (createTransporter, buildEmailHtml,
- * sendToAll) are not exported from that router module.
- *
- * We keep this separate to avoid circular imports and keep notify.ts as a
- * pure Express Router module.
+ * These are thin wrappers around the Resend HTTP API — a sibling
+ * implementation to notify.ts's own transporter (kept separate to avoid
+ * circular imports and keep notify.ts as a pure Express Router module).
  */
 
-import nodemailer from "nodemailer";
 import { logger } from "./logger";
 
 const NOTIFY_EMAILS = [
@@ -17,14 +13,28 @@ const NOTIFY_EMAILS = [
   "maen.haqash@yahoo.com",
 ];
 
+const FROM_EMAIL = process.env["RESEND_FROM_EMAIL"] || "I Supply Chain <notifications@iscsupplychain.com>";
+
 function createTransporter() {
-  const user = process.env["GMAIL_USER"] || "haqash.maen@gmail.com";
-  const pass = process.env["GMAIL_APP_PASSWORD"];
-  if (!pass) return null;
-  return nodemailer.createTransport({
-    service: "gmail",
-    auth: { user, pass },
-  });
+  const apiKey = process.env["RESEND_API_KEY"];
+  if (!apiKey) return null;
+  return {
+    async sendMail({ from, to, subject, html }: { from: string; to: string; subject: string; html: string }) {
+      const res = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ from, to, subject, html }),
+      });
+      if (!res.ok) {
+        const body = await res.text().catch(() => "");
+        throw new Error(`Resend API error ${res.status}: ${body}`);
+      }
+      return res.json();
+    },
+  };
 }
 
 export function buildAlertHtml(subject: string, rows: Record<string, string>): string {
@@ -63,12 +73,12 @@ export async function sendAlertEmail(
 ): Promise<{ sent: boolean; reason?: string }> {
   const transporter = createTransporter();
   if (!transporter) {
-    logger.warn({ subject }, "[notifyHelpers] GMAIL_APP_PASSWORD not set — alert email skipped");
-    return { sent: false, reason: "GMAIL_APP_PASSWORD not configured" };
+    logger.warn({ subject }, "[notifyHelpers] RESEND_API_KEY not set — alert email skipped");
+    return { sent: false, reason: "RESEND_API_KEY not configured" };
   }
 
   const html = buildAlertHtml(subject, rows);
-  const from = `"I Supply Chain" <${process.env["GMAIL_USER"] || "haqash.maen@gmail.com"}>`;
+  const from = FROM_EMAIL;
 
   const results = await Promise.allSettled(
     NOTIFY_EMAILS.map(to =>
@@ -104,11 +114,11 @@ export async function sendDigestEmail(params: {
 }): Promise<{ sent: boolean; reason?: string }> {
   const transporter = createTransporter();
   if (!transporter) {
-    return { sent: false, reason: "GMAIL_APP_PASSWORD not configured" };
+    return { sent: false, reason: "RESEND_API_KEY not configured" };
   }
 
   const html = buildAlertHtml(params.subject, params.rows);
-  const from = `"I Supply Chain" <${process.env["GMAIL_USER"] || "haqash.maen@gmail.com"}>`;
+  const from = FROM_EMAIL;
 
   try {
     await transporter.sendMail({ from, to: params.to, subject: params.subject, html });

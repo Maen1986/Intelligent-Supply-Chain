@@ -5,13 +5,22 @@ import { makeApp, makeLoggerMock } from './helpers';
 vi.mock('../src/lib/logger', () => makeLoggerMock());
 
 const sendMailMock = vi.fn();
-vi.mock('nodemailer', () => ({
-  default: { createTransport: () => ({ sendMail: sendMailMock }) },
+
+// notify.ts now sends via the Resend HTTP API (global fetch) instead of
+// nodemailer. This mock intercepts those fetch calls, forwards the parsed
+// JSON body to sendMailMock (awaiting it so a rejection propagates the same
+// way a nodemailer sendMail() rejection used to), and returns a fetch-shaped
+// Response so notify.ts's res.ok check passes. Every other assertion below
+// (call counts, mail content, attachments) is unchanged.
+vi.stubGlobal('fetch', vi.fn(async (_url: string, opts: { body: string }) => {
+  const body = JSON.parse(opts.body);
+  const result = await sendMailMock(body);
+  return { ok: true, text: async () => '', json: async () => (result ?? { id: 'test' }) };
 }));
 
 // Keep retry delay at 0 in tests — must be set before the module is imported.
 process.env.EMAIL_RETRY_DELAY_MS = '0';
-process.env.GMAIL_APP_PASSWORD = 'test-app-password';
+process.env.RESEND_API_KEY = 'test-api-key';
 
 const notifyModule = await import('../src/routes/notify');
 const notifyRouter = notifyModule.default;
@@ -30,8 +39,8 @@ const realCalls = () => sendMailMock.mock.calls.filter(c => c.length > 0).length
 
 beforeEach(() => {
   sendMailMock.mockReset();
-  sendMailMock.mockResolvedValue({ messageId: 'test' });
-  vi.stubEnv('GMAIL_APP_PASSWORD', 'test-app-password');
+  sendMailMock.mockResolvedValue({ id: 'test' });
+  vi.stubEnv('RESEND_API_KEY', 'test-api-key');
 });
 
 afterEach(() => {
@@ -50,12 +59,12 @@ describe('POST /api/notify/lead', () => {
   });
 
   it('returns 503 with a reason when email is not configured', async () => {
-    vi.stubEnv('GMAIL_APP_PASSWORD', '');
+    vi.stubEnv('RESEND_API_KEY', '');
     const app = makeApp('/api/notify', notifyRouter);
     const res = await request(app).post('/api/notify/lead').send(lead);
     expect(res.status).toBe(503);
     expect(res.body.sent).toBe(false);
-    expect(res.body.reason).toMatch(/GMAIL_APP_PASSWORD/);
+    expect(res.body.reason).toMatch(/RESEND_API_KEY/);
     expect(sendMailMock).not.toHaveBeenCalled();
   });
 
@@ -150,11 +159,11 @@ describe('sendBriefingEmail', () => {
     const mail = sendMailMock.mock.calls[0][0];
     expect(mail.attachments).toHaveLength(1);
     expect(mail.attachments[0].filename).toBe('briefing.pdf');
-    expect(mail.attachments[0].contentType).toBe('application/pdf');
+    expect(mail.attachments[0].content_type).toBe('application/pdf');
   });
 
   it('returns a descriptive failure when email is not configured', async () => {
-    vi.stubEnv('GMAIL_APP_PASSWORD', '');
+    vi.stubEnv('RESEND_API_KEY', '');
     const result = await sendBriefingEmail({
       contactName: null,
       contactEmail: null,
@@ -168,7 +177,7 @@ describe('sendBriefingEmail', () => {
       pdfFilename: 'briefing.pdf',
     });
     expect(result.sent).toBe(false);
-    expect(result.reason).toMatch(/GMAIL_APP_PASSWORD/);
+    expect(result.reason).toMatch(/RESEND_API_KEY/);
     expect(sendMailMock).not.toHaveBeenCalled();
   });
 });
@@ -256,7 +265,7 @@ describe('sendEscalationEmail', () => {
   });
 
   it('throws when email is not configured so callers can react', async () => {
-    vi.stubEnv('GMAIL_APP_PASSWORD', '');
-    await expect(sendEscalationEmail(params)).rejects.toThrow(/GMAIL_APP_PASSWORD/);
+    vi.stubEnv('RESEND_API_KEY', '');
+    await expect(sendEscalationEmail(params)).rejects.toThrow(/RESEND_API_KEY/);
   });
 });

@@ -12,14 +12,13 @@
  * If INBOUND_WEBHOOK_SECRET is not configured the endpoint returns 503.
  *
  * Supported actions (pass in body.action + body.payload):
- *   send_email          — send a transactional email via nodemailer
+ *   send_email          — send a transactional email via Resend
  *   generate_plan       — generate an AI plan and optionally save it
  *   patch_tool_data     — overwrite keys in a user's tool_data
  *   create_notification — write an in-app notification for a user
  */
 import { Router }                      from "express";
 import { createHmac, timingSafeEqual } from "crypto";
-import nodemailer                       from "nodemailer";
 import { sql }                          from "drizzle-orm";
 import { db, notificationsTable, inboundWebhookLogTable } from "@workspace/db";
 import { patchToolData }                from "../lib/toolData";
@@ -157,20 +156,21 @@ router.post("/webhooks/inbound", async (req, res) => {
           res.status(400).json({ ok: false, error: "send_email requires payload.to and payload.subject" });
           return;
         }
-        const pass = process.env.GMAIL_APP_PASSWORD;
-        const user = process.env.GMAIL_USER ?? "haqash.maen@gmail.com";
-        if (!pass) {
+        const apiKey = process.env.RESEND_API_KEY;
+        if (!apiKey) {
           res.status(503).json({ ok: false, error: "Email is not configured on this server." });
           return;
         }
-        const transporter = nodemailer.createTransport({ service: "gmail", auth: { user, pass } });
-        await transporter.sendMail({
-          from:    `"I Supply Chain" <${user}>`,
-          to,
-          subject,
-          html:    html ?? `<p>${text ?? ""}</p>`,
-          text:    text ?? "",
+        const from = process.env.RESEND_FROM_EMAIL || "I Supply Chain <notifications@iscsupplychain.com>";
+        const resendRes = await fetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ from, to, subject, html: html ?? `<p>${text ?? ""}</p>` }),
         });
+        if (!resendRes.ok) {
+          const body = await resendRes.text().catch(() => "");
+          throw new Error(`Resend API error ${resendRes.status}: ${body}`);
+        }
         result = { sent: true, to };
         logger.info({ to, subject }, "[webhooks/inbound] send_email delivered");
         break;

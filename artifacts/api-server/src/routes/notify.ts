@@ -1,5 +1,4 @@
 import { Router } from 'express';
-import nodemailer from 'nodemailer';
 import { logger } from '../lib/logger';
 
 const router = Router();
@@ -11,34 +10,69 @@ const NOTIFY_EMAILS = [
 
 // ── Startup config check (called once when server starts) ────────────────────
 export function checkEmailConfig() {
-  const pass = process.env.GMAIL_APP_PASSWORD;
-  const user = process.env.GMAIL_USER || 'haqash.maen@gmail.com';
-  if (!pass) {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
     logger.error(
       '╔══════════════════════════════════════════════════════════════╗\n' +
       '║  EMAIL NOTIFICATIONS ARE DISABLED                           ║\n' +
-      '║  GMAIL_APP_PASSWORD secret is not set.                      ║\n' +
+      '║  RESEND_API_KEY secret is not set.                          ║\n' +
       '║  Every lead, booking, diagnostic and maturity alert         ║\n' +
       '║  will be SILENTLY LOST until this is configured.            ║\n' +
-      '║  → Go to Replit Secrets and add GMAIL_APP_PASSWORD          ║\n' +
+      '║  → Go to Render → isc-backend → Environment and add         ║\n' +
+      '║    RESEND_API_KEY                                           ║\n' +
       '╚══════════════════════════════════════════════════════════════╝'
     );
   } else {
-    logger.info(`[notify] Email configured — will send from ${user} to ${NOTIFY_EMAILS.join(', ')}`);
+    logger.info(`[notify] Email configured (Resend) — will send from ${FROM_EMAIL} to ${NOTIFY_EMAILS.join(', ')}`);
   }
 }
 
 // Delay before the single retry attempt (overridable in tests)
 export const EMAIL_RETRY_DELAY_MS = Number(process.env.EMAIL_RETRY_DELAY_MS ?? 2000);
 
+// Verified-domain sender for Resend (iscsupplychain.com must be verified in the
+// Resend dashboard for this to send — see RESEND_API_KEY setup).
+const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'I Supply Chain <notifications@iscsupplychain.com>';
+
+type SendMailArgs = {
+  from: string;
+  to: string;
+  subject: string;
+  html: string;
+  attachments?: EmailAttachment[];
+};
+
+// Thin wrapper over the Resend HTTP API that exposes the same sendMail(...)
+// shape the rest of this file already calls, so no call site below needed to
+// change when we swapped providers from Gmail SMTP to Resend.
 function createTransporter() {
-  const user = process.env.GMAIL_USER || 'haqash.maen@gmail.com';
-  const pass = process.env.GMAIL_APP_PASSWORD;
-  if (!pass) return null;
-  return nodemailer.createTransport({
-    service: 'gmail',
-    auth: { user, pass },
-  });
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) return null;
+  return {
+    async sendMail({ from, to, subject, html, attachments }: SendMailArgs) {
+      const payload: Record<string, unknown> = { from, to, subject, html };
+      if (attachments?.length) {
+        payload.attachments = attachments.map(a => ({
+          filename: a.filename,
+          content: a.content.toString('base64'),
+          content_type: a.contentType,
+        }));
+      }
+      const res = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        const body = await res.text().catch(() => '');
+        throw new Error(`Resend API error ${res.status}: ${body}`);
+      }
+      return res.json();
+    },
+  };
 }
 
 function buildEmailHtml(subject: string, rows: Record<string, string>) {
@@ -76,13 +110,13 @@ async function sendToAll(
   const transporter = createTransporter();
 
   if (!transporter) {
-    const msg = 'GMAIL_APP_PASSWORD not configured — email NOT sent. Set this secret in Replit to fix.';
+    const msg = 'RESEND_API_KEY not configured — email NOT sent. Set this in Render env vars to fix.';
     logger.error({ subject }, `[notify] BLOCKED: ${msg}`);
     // Return a descriptive failure — callers surface this to the API response
     return { sent: false, reason: msg };
   }
 
-  const from = `"I Supply Chain" <${process.env.GMAIL_USER || 'haqash.maen@gmail.com'}>`;
+  const from = FROM_EMAIL;
 
   // Send to each recipient with one retry on failure (covers transient Gmail
   // rate limits / outages). A recipient counts as failed only if both the
@@ -209,7 +243,7 @@ export async function sendPasswordResetEmail(params: {
 }): Promise<{ sent: boolean; reason?: string }> {
   const transporter = createTransporter();
   if (!transporter) {
-    const msg = 'GMAIL_APP_PASSWORD not configured — password reset email NOT sent.';
+    const msg = 'RESEND_API_KEY not configured — password reset email NOT sent.';
     logger.error({ to: params.to }, `[notify] BLOCKED: ${msg}`);
     return { sent: false, reason: msg };
   }
@@ -232,7 +266,7 @@ export async function sendPasswordResetEmail(params: {
           : "If you didn't request a reset, you can safely ignore this email."}</p>
       </div>
     </div>`;
-  const from = `"I Supply Chain" <${process.env.GMAIL_USER || 'haqash.maen@gmail.com'}>`;
+  const from = FROM_EMAIL;
   try {
     await transporter.sendMail({ from, to: params.to, subject, html });
     logger.info({ to: params.to }, '[notify] Password reset email sent');
@@ -305,15 +339,13 @@ export async function sendGuestResultsEmail(params: {
 }): Promise<{ sent: boolean; reason?: string }> {
   const transporter = createTransporter();
   if (!transporter) {
-    const msg = 'GMAIL_APP_PASSWORD not configured — guest results email NOT sent.';
+    const msg = 'RESEND_API_KEY not configured — guest results email NOT sent.';
     logger.error({ to: params.email }, `[notify] BLOCKED: ${msg}`);
     return { sent: false, reason: msg };
   }
 
   const ar = params.lang === 'ar';
-  const appDomain = process.env.REPLIT_DEV_DOMAIN
-    ? `https://${process.env.REPLIT_DEV_DOMAIN}`
-    : 'https://isupplychain.replit.app';
+  const appDomain = process.env.APP_URL || 'https://iscsupplychain.com';
   const resultsUrl = `${appDomain}/maturity?token=${params.token}`;
 
   const subject = ar
@@ -362,7 +394,7 @@ export async function sendGuestResultsEmail(params: {
       </div>
     </div>`;
 
-  const from = `"I Supply Chain" <${process.env.GMAIL_USER || 'haqash.maen@gmail.com'}>`;
+  const from = FROM_EMAIL;
   try {
     await transporter.sendMail({ from, to: params.email, subject, html });
     logger.info({ to: params.email }, '[notify] Guest results email sent');

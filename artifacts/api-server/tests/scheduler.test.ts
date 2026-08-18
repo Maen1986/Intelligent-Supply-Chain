@@ -246,7 +246,7 @@ describe('runWeeklyKpiDigest', () => {
         scorecard_roster: null, last_import_at: null,
       },
     ];
-    sendDigestEmail.mockResolvedValueOnce({ sent: false, reason: 'GMAIL_APP_PASSWORD not configured' });
+    sendDigestEmail.mockResolvedValueOnce({ sent: false, reason: 'RESEND_API_KEY not configured' });
 
     await runWeeklyKpiDigest();
 
@@ -383,7 +383,7 @@ describe('runMonthlyScorecardDigest', () => {
         last_import_at: null,
       },
     ];
-    sendDigestEmail.mockResolvedValueOnce({ sent: false, reason: 'GMAIL_APP_PASSWORD not configured' });
+    sendDigestEmail.mockResolvedValueOnce({ sent: false, reason: 'RESEND_API_KEY not configured' });
 
     await runMonthlyScorecardDigest();
 
@@ -620,7 +620,7 @@ describe('runStaleDataNudge', () => {
     mockExecuteRows = [
       { id: 17, email: 'creds@test.com', full_name: 'Creds', company: null, last_import_at: null },
     ];
-    sendDigestEmail.mockResolvedValueOnce({ sent: false, reason: 'GMAIL_APP_PASSWORD not configured' });
+    sendDigestEmail.mockResolvedValueOnce({ sent: false, reason: 'RESEND_API_KEY not configured' });
 
     await runStaleDataNudge();
 
