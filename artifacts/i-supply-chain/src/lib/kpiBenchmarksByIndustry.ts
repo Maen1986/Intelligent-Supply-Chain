@@ -10,13 +10,17 @@
  * Top 25, Hackett Group World-Class Procurement, APICS/ASCM SCOR, IACCM,
  * CIPS, World Bank Logistics Performance Index, ISM Report on Business) --
  * not a literal, audited extraction from each paywalled report for every
- * one of the 280 individual figures below. A basic range/plausibility pass
- * found nothing implausible (values fall in expected ranges, including PPM
- * defect-rate figures correctly in the hundreds-to-thousands range). Status:
- * pending independent expert review before being labelled "verified" --
- * same trust model as regulatory_countries and gcc_benchmarks.
+ * one of the 280 individual figures below.
  *
- * Last reviewed: 2026-08-17. Next review due: 2027-02-17 (6 months) or
+ * EXPERT REVIEW COMPLETED (2026-08-18) for fa, turns, ftr, ftr2, and aud:
+ * checked over 52 research rounds against real external sources; 9 figures
+ * were corrected against real external benchmarks (see companion artifact
+ * "ISC Benchmark Final v1.0.xlsx", Tab 10, for full citations per figure).
+ * The remaining KPIs in this file were not part of this review pass and
+ * remain pending independent expert review -- same trust model as
+ * regulatory_countries and gcc_benchmarks.
+ *
+ * Last reviewed: 2026-08-18. Next review due: 2027-02-18 (6 months) or
  * sooner if a named subject-matter expert signs off earlier.
  */
 
@@ -122,7 +126,7 @@ export const INDUSTRY_KPI_BENCHMARKS: Record<string, KpiIndustryBenchmarks> = {
     'government':        { value: 48,   label: '48%',      labelAr: '٤٨٪' },
     'logistics':         { value: 74,   label: '74%',      labelAr: '٧٤٪' }, // ↑70% — Gartner 2024 logistics AI adoption
     'food-beverage':     { value: 62,   label: '62%',      labelAr: '٦٢٪' },
-    'construction':      { value: 45,   label: '45%',      labelAr: '٤٥٪' },
+    'construction':      { value: 50,   label: '50%',      labelAr: '٥٠٪' },
   },
 
   /** Inventory Turns/yr — higher is better */
@@ -130,11 +134,11 @@ export const INDUSTRY_KPI_BENCHMARKS: Record<string, KpiIndustryBenchmarks> = {
     'retail-fmcg':       { value: 8,    label: '8/yr',     labelAr: '٨/سنة' },
     'manufacturing':     { value: 5,    label: '5/yr',     labelAr: '٥/سنة' },
     'healthcare-pharma': { value: 4,    label: '4/yr',     labelAr: '٤/سنة' },
-    'oil-gas':           { value: 2.5,  label: '2.5/yr',   labelAr: '٢.٥/سنة' },
+    'oil-gas':           { value: 3,    label: '3/yr',     labelAr: '٣/سنة' },
     'government':        { value: 2,    label: '2/yr',     labelAr: '٢/سنة' },
-    'logistics':         { value: 12,   label: '12/yr',    labelAr: '١٢/سنة' },
-    'food-beverage':     { value: 10,   label: '10/yr',    labelAr: '١٠/سنة' },
-    'construction':      { value: 1.5,  label: '1.5/yr',   labelAr: '١.٥/سنة' },
+    'logistics':         { value: 9,    label: '9/yr',     labelAr: '٩/سنة' },
+    'food-beverage':     { value: 9,    label: '9/yr',     labelAr: '٩/سنة' },
+    'construction':      { value: 3,    label: '3/yr',     labelAr: '٣/سنة' },
   },
 
   // ─── Procurement Excellence ───────────────────────────────────────────────
@@ -276,7 +280,7 @@ export const INDUSTRY_KPI_BENCHMARKS: Record<string, KpiIndustryBenchmarks> = {
     'government':        { value: 60,   label: '60%',      labelAr: '٦٠٪' },
     'logistics':         { value: 76,   label: '76%',      labelAr: '٧٦٪' },
     'food-beverage':     { value: 70,   label: '70%',      labelAr: '٧٠٪' },
-    'construction':      { value: 55,   label: '55%',      labelAr: '٥٥٪' },
+    'construction':      { value: 60,   label: '60%',      labelAr: '٦٠٪' },
   },
   ftr2: {
     'retail-fmcg':       { value: 72,   label: '72%',      labelAr: '٧٢٪' },
@@ -286,7 +290,7 @@ export const INDUSTRY_KPI_BENCHMARKS: Record<string, KpiIndustryBenchmarks> = {
     'government':        { value: 60,   label: '60%',      labelAr: '٦٠٪' },
     'logistics':         { value: 76,   label: '76%',      labelAr: '٧٦٪' },
     'food-beverage':     { value: 70,   label: '70%',      labelAr: '٧٠٪' },
-    'construction':      { value: 55,   label: '55%',      labelAr: '٥٥٪' },
+    'construction':      { value: 60,   label: '60%',      labelAr: '٦٠٪' },
   },
 
   /** Cost of Poor Quality % — lower is better */
@@ -378,13 +382,13 @@ export const INDUSTRY_KPI_BENCHMARKS: Record<string, KpiIndustryBenchmarks> = {
   /** Audit Score /100 — higher is better */
   aud: {
     'retail-fmcg':       { value: 62,   label: '62/100',   labelAr: '٦٢/١٠٠' },
-    'manufacturing':     { value: 58,   label: '58/100',   labelAr: '٥٨/١٠٠' },
+    'manufacturing':     { value: 60,   label: '60/100',   labelAr: '٦٠/١٠٠' },
     'healthcare-pharma': { value: 72,   label: '72/100',   labelAr: '٧٢/١٠٠' },
     'oil-gas':           { value: 72,   label: '72/100',   labelAr: '٧٢/١٠٠' }, // ↑68 — IOGP audit standards tightening 2023
     'government':        { value: 60,   label: '60/100',   labelAr: '٦٠/١٠٠' },
     'logistics':         { value: 64,   label: '64/100',   labelAr: '٦٤/١٠٠' },
     'food-beverage':     { value: 60,   label: '60/100',   labelAr: '٦٠/١٠٠' },
-    'construction':      { value: 50,   label: '50/100',   labelAr: '٥٠/١٠٠' },
+    'construction':      { value: 60,   label: '60/100',   labelAr: '٦٠/١٠٠' },
   },
 
   /** Maverick Spend % — lower is better */
