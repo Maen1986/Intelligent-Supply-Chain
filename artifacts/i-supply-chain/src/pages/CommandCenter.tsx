@@ -21,6 +21,8 @@ import { API_BASE } from '@/lib/apiBase';
 import { safeSetItem } from '@/lib/storage';
 import { useBenchmarks } from '@/lib/useBenchmarks';
 import { computeImportPlan, CC_DOMAIN_TO_SEGMENTS } from '@/lib/maturityImport';
+import { CORE_SEGMENTS } from './maturityData';
+import { getLevel } from '@/lib/maturityScoring';
 import {
   SKU_CLASSES, SkuClassKey,
   SKU_CLASS_KPI_BENCHMARKS, SKU_CLASS_KPI_TOP_QUARTILE,
@@ -3221,19 +3223,54 @@ function ConsultancyTab({ lang }: { lang: Lang }) {
   const [escalated, setEscalated]   = useState(false);
   const ar = lang === 'ar';
 
+  /* ── Real Maturity Assessment as optional AI context (#141) ──
+     If this user has completed a real Maturity Assessment, fetch its
+     latest snapshot and format a compact summary to send alongside the
+     challenge as `maturityHint`. This lets the AI's own maturityAssessment
+     output ground itself in real scores instead of independently guessing
+     a second, possibly-conflicting number — mirroring the same real-data
+     pattern already used by the AI Executive Briefing's "Import my results"
+     (#121/#127). This is context, not a gate: users with no assessment on
+     file, or asking about a topic the assessment doesn't cover, get today's
+     exact behaviour — an independent AI estimate, never blocked. */
+  const { user } = useAuth();
+  const [maturitySnapshotAt, setMaturitySnapshotAt] = useState<string | null>(null);
+  const [maturityHint, setMaturityHint] = useState<string | undefined>(undefined);
+  useEffect(() => {
+    if (!user) return;
+    fetch(`${API_BASE}/maturity/snapshots`, { credentials: 'include' })
+      .then(r => r.json())
+      .then((data: { ok: boolean; snapshots?: { id: number; takenAt: string; segmentScores: { id: string; score: number }[] }[] }) => {
+        if (!data.ok || !data.snapshots || data.snapshots.length === 0) return;
+        const newest = [...data.snapshots].sort((a, b) => new Date(b.takenAt).getTime() - new Date(a.takenAt).getTime())[0];
+        const scored = newest.segmentScores.filter(s => s.score > 0);
+        if (scored.length === 0) return;
+        const overall = scored.reduce((sum, s) => sum + s.score, 0) / scored.length;
+        const parts = scored.map(s => {
+          const def = CORE_SEGMENTS.find(seg => seg.id === s.id);
+          const name = def?.shortTitle ?? s.id;
+          return `${name} ${s.score.toFixed(1)} (${getLevel(s.score).label})`;
+        });
+        const summary = `Real Maturity Assessment on file, dated ${new Date(newest.takenAt).toLocaleDateString('en-GB')}. Overall ${overall.toFixed(1)}/5 (${getLevel(overall).label}). Segment scores: ${parts.join(', ')}.`;
+        setMaturityHint(summary);
+        setMaturitySnapshotAt(newest.takenAt);
+      })
+      .catch(() => { /* best-effort — diagnosis still works without it */ });
+  }, [user]);
+
   const runDiagnosis = useCallback(async () => {
     if (challenge.trim().length < 20) return;
     setStage('diagnosing'); setError('');
     try {
       const r = await fetch(`${API_BASE}/consultancy/diagnose`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
-        body: JSON.stringify({ industry, subIndustry: subIndustry || undefined, challenge, companySize: companySize || undefined, language: lang }),
+        body: JSON.stringify({ industry, subIndustry: subIndustry || undefined, challenge, companySize: companySize || undefined, maturityHint, language: lang }),
       });
       const d = await r.json();
       if (!d.ok) throw new Error(d.error || 'Diagnosis failed');
       setDiagnosis(d.diagnosis); setStage('diagnosis');
     } catch (e) { setError(String(e)); setStage('input'); }
-  }, [industry, subIndustry, challenge, companySize, lang]);
+  }, [industry, subIndustry, challenge, companySize, maturityHint, lang]);
 
   const generateSolution = useCallback(async () => {
     if (!diagnosis) return;
@@ -3341,6 +3378,14 @@ function ConsultancyTab({ lang }: { lang: Lang }) {
               className="w-full border border-border rounded-xl px-4 py-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#082C6B]/30 resize-none" />
             <p className="text-xs text-muted-foreground">{challenge.length}/2000</p>
           </div>
+          {maturityHint && (
+            <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-xl px-4 py-2.5 text-xs font-semibold">
+              <CheckCircle2 className="w-4 h-4 shrink-0" />
+              {ar
+                ? `✓ سيُبنى التشخيص على تقييم النضج الفعلي المكتمل بتاريخ ${maturitySnapshotAt ? new Date(maturitySnapshotAt).toLocaleDateString('ar') : ''} حيثما كان ذا صلة`
+                : `✓ Grounded in your real, completed Maturity Assessment${maturitySnapshotAt ? ` (dated ${new Date(maturitySnapshotAt).toLocaleDateString('en-GB')})` : ''} where relevant`}
+            </div>
+          )}
           <Button onClick={runDiagnosis} disabled={challenge.trim().length < 20} className="w-full bg-[#082C6B] hover:bg-[#0B3D91] text-white font-bold py-3">
             <Brain className={`w-4 h-4 ${ar ? 'ml-2' : 'mr-2'}`} />{ar ? 'ابدأ التشخيص الذكي' : 'Run AI Diagnosis'}
           </Button>

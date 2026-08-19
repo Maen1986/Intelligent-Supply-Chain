@@ -102,7 +102,8 @@ Rules:
 - rootCauses: 3-5 items
 - urgentActions: 3 items
 - Be industry-specific: ${industryFull} benchmarks, not generic supply chain
-- Ground every root cause in a named framework`;
+- Ground every root cause in a named framework
+- maturityAssessment: if a "Maturity Indicator" is provided above, it is real, completed assessment data for this client — treat it as ground truth for any segment it covers and let it anchor your level/score/keyGaps rather than re-estimating from scratch. If the challenge concerns a topic the indicator does not cover, or no indicator is provided, produce your own independent estimate as usual — do not withhold a diagnosis and do not force-fit unrelated data to make them agree`;
 
   try {
     const response = await openai.chat.completions.create({
