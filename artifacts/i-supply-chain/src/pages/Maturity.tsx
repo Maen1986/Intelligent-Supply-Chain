@@ -266,6 +266,9 @@ export function Maturity() {
   const [guestSaveError,    setGuestSaveError]    = useState<string | null>(null);
   /** True when the current view was restored from a tokenised link */
   const [restoredFromToken, setRestoredFromToken] = useState(false);
+  // #142: true when industry/size/country were pre-filled from a completed
+  // Diagnostic report's handoff link, so the intake screen can say so.
+  const [prefilledFromDiagnostic, setPrefilledFromDiagnostic] = useState(false);
 
   // Snapshot trend state
   const [snapshots,          setSnapshots]          = useState<SnapshotRecord[]>([]);
@@ -391,6 +394,32 @@ export function Maturity() {
         setRestoredFromToken(true);
       })
       .catch(() => { /* best-effort */ });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  /* ── Diagnostic handoff: pre-fill intake from ?industry=&size=&country=
+     (#142) — only on a genuinely fresh session (no draft, nothing answered
+     yet), so this can never overwrite a returning user's in-progress work.
+     Any field without a recognised value is simply left for the user to
+     pick, same honesty rule as the mapping helpers that build this link. */
+  const diagnosticPrefillAttempted = useRef(false);
+  useEffect(() => {
+    if (_testSeedActive) return;
+    if (diagnosticPrefillAttempted.current) return;
+    diagnosticPrefillAttempted.current = true;
+    if (intakeData.industry !== '' || intakeData.companySize !== '') return;
+    const params = new URLSearchParams(searchString);
+    const industry = params.get('industry');
+    const size     = params.get('size');
+    const country  = params.get('country');
+    if (!industry && !size && !country) return;
+    setIntakeData(d => ({
+      ...d,
+      ...(industry ? { industry } : {}),
+      ...(size     ? { companySize: size } : {}),
+      ...(country  ? { country } : {}),
+    }));
+    setPrefilledFromDiagnostic(true);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -1064,6 +1093,16 @@ export function Maturity() {
                 ? 'تُستخدم هذه المعلومات لتحديد الوحدة الصناعية المناسبة وتخصيص التوصيات حسب حجم المؤسسة.'
                 : 'This information is used to select the relevant industry module and calibrate recommendations to your organisation size.'}
             </p>
+            {prefilledFromDiagnostic && (
+              <div className="flex items-start gap-2 rounded-xl border border-green-200 bg-green-50 px-4 py-3 mt-4">
+                <CheckCircle2 className="w-4 h-4 text-green-600 shrink-0 mt-0.5" />
+                <p className="text-xs text-green-800 font-medium">
+                  {ar
+                    ? 'تم تعبئة بعض الحقول أدناه تلقائيًا من تشخيصكم المجاني — يمكنكم تعديلها بحرية.'
+                    : "We've pre-filled some fields below from your free Diagnostic — feel free to change them."}
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Country selection (#150) — drives which regulatory content is personalised in below */}

@@ -2,9 +2,10 @@ import React from 'react';
 import { DiagnosticReport } from '@/lib/diagnosticEngine';
 import { Logo } from './Logo';
 import { Button } from '@/components/ui/button';
-import { Download, CalendarDays, CheckCircle2, AlertTriangle, TrendingUp, Compass, Target, Crosshair } from 'lucide-react';
+import { Download, CalendarDays, CheckCircle2, AlertTriangle, TrendingUp, Compass, Target, Crosshair, ClipboardCheck } from 'lucide-react';
 import { Link } from 'wouter';
 import { useLanguage } from '@/lib/LanguageContext';
+import { buildMaturityHandoffQuery } from '@/lib/diagnosticHandoff';
 
 export function ReportOutput({ report }: { report: DiagnosticReport }) {
   const { t, lang } = useLanguage();
@@ -49,6 +50,16 @@ export function ReportOutput({ report }: { report: DiagnosticReport }) {
           <Button className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-white h-11">
             <CalendarDays className="w-4 h-4 mr-2" />
             {t('diagnostic.talkConsultant')}
+          </Button>
+        </Link>
+        {/* #142: hand off to the full Maturity Assessment, pre-filled with
+            whatever of industry/size/country actually maps (see
+            diagnosticHandoff.ts for why country is often omitted rather
+            than guessed). */}
+        <Link href={buildMaturityHandoffQuery(report)} className="w-full sm:w-auto">
+          <Button className="w-full sm:w-auto bg-accent hover:bg-accent/90 text-white h-11">
+            <ClipboardCheck className="w-4 h-4 mr-2" />
+            {isAr ? 'ابدأ التقييم الكامل للنضج' : 'Take the Full Maturity Assessment'}
           </Button>
         </Link>
       </div>
