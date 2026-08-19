@@ -25,6 +25,33 @@
  *
  * Last reviewed: 2026-08-18. Next review due: 2027-02-18 (6 months) or
  * sooner if a named subject-matter expert signs off earlier.
+ *
+ * ── 2026-08-19 addition: cadence + GCC reference layer ──────────────────
+ * Per strategic review with Maen (see companion artifact
+ * "ISC_Two_Day_Summary.docx"), three design points were agreed:
+ *   1. Targets vary by maturity, but ambitious clients may always opt into
+ *      a harder tier -- this file continues to hold the Best-in-Class /
+ *      top-quartile tier only; the Peer/Median tier already lives in
+ *      kpiBenchmarksByIndustry.ts / kpiBenchmarksBySkuClass.ts (surfaced in
+ *      the UI as "benchmarkValue"); the Foundational tier is NOT a static
+ *      number -- it is client-specific (closes a gap from the client's own
+ *      baseline), so it is computed via computeFoundationalTarget() below
+ *      rather than hardcoded per row.
+ *   2. Every KPI keeps a cadence tag (quarterly / semi-annual / annual /
+ *      ongoing-direction) reflecting how often that KPI should realistically
+ *      be reviewed -- see KPI_CADENCE below. This does not replace the
+ *      existing targetValue/targetLabel contract; it is additive.
+ *   3. GCC-regional figures are kept SEPARATE from the international
+ *      figures above, and are only attached to a specific industry row when
+ *      a real source passes both a construct-match and a population-match
+ *      test (see GCC_TARGETS_BY_INDUSTRY). Real GCC data that exists but
+ *      does not yet pass the population-match test for any one sector is
+ *      kept in GCC_REGIONAL_REFERENCE_UNMATCHED instead of being misapplied.
+ *
+ * None of this changes what getContextualTarget() returns or what the
+ * diagnostic screen currently shows -- this is a data-layer addition only.
+ * Screen changes (a tier picker, a GCC/International toggle) are a separate,
+ * later, deliberately-scoped UI task.
  */
 
 import type { IndustryKey } from './kpiBenchmarksByIndustry';
@@ -1158,3 +1185,168 @@ export function getContextualTarget(
   }
   return null;
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 4. CADENCE — how often each KPI's target should realistically be reviewed
+//    Added 2026-08-19. A property of the KPI itself (how fast the underlying
+//    process moves), not of the industry/SKU context, so it is a flat map
+//    rather than duplicated across all ~690 rows above.
+// ═══════════════════════════════════════════════════════════════════════════
+
+export type TargetCadence = 'quarterly' | 'semi-annual' | 'annual' | 'ongoing-direction';
+
+export const KPI_CADENCE: Record<string, TargetCadence> = {
+  por:     'quarterly',       // Perfect Order Rate — fast-moving operational metric
+  otif:    'quarterly',
+  sccost:  'annual',          // SC Cost % Revenue — tied to annual budget cycle
+  c2c:     'quarterly',       // Cash-to-Cash Days — tracked with quarterly financials
+  fa:      'quarterly',       // Forecast Accuracy
+  turns:   'quarterly',       // Inventory Turns/yr
+  savings: 'annual',          // Procurement Savings % — program/budget cycle
+  pocycle: 'quarterly',       // PO Cycle Time
+  pocomp:  'quarterly',       // PO Compliance Rate
+  sotif:   'quarterly',       // Supplier OTIF
+  sotif2:  'quarterly',
+  ccov:    'semi-annual',     // Contract Coverage % — contract renewal cycles are slower
+  cco:     'semi-annual',
+  ttc:     'quarterly',       // Time-to-Contract
+  pce:     'semi-annual',     // Process Cycle Efficiency — lean initiative, slower to shift
+  pce2:    'semi-annual',
+  sigma:   'semi-annual',     // Sigma Level — structural quality metric
+  ftr:     'quarterly',       // First-Time-Right Rate
+  ftr2:    'quarterly',
+  copq:    'semi-annual',     // Cost of Poor Quality %
+  erpu:    'semi-annual',     // ERP Module Utilisation — digital adoption, slow-moving
+  auto:    'semi-annual',     // Process Automation Rate
+  stp:     'quarterly',       // Straight-Through PO Rate
+  da:      'ongoing-direction', // Data Accuracy Rate — continuous hygiene, not a checkpoint
+  pcr:     'semi-annual',     // Policy Compliance Rate
+  pcr2:    'semi-annual',
+  aud:     'annual',          // Audit Score — audits are periodic/annual by nature
+  mav:     'quarterly',       // Maverick Spend %
+  asa:     'quarterly',       // Approved Supplier Adherence
+  ppm:     'quarterly',       // Defect Rate (PPM)
+  mttr:    'ongoing-direction', // Mean Time to Recover — incident-driven, not scheduled
+  rar:     'ongoing-direction', // Revenue at Risk % — continuously monitored exposure
+  ves:     'annual',          // VE Savings % Spend — project/program cycle
+  scv:     'quarterly',       // Should-Cost Variance %
+  lc:      'annual',          // Local Content / Iktva % — reported annually
+  buf:     'quarterly',       // Buffer Stock (days supply)
+};
+
+/** Falls back to 'annual' for any KPI id not yet tagged above. */
+export function getKpiCadence(kpiId: string): TargetCadence {
+  return KPI_CADENCE[kpiId] ?? 'annual';
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 5. FOUNDATIONAL TIER — deliberately NOT a static table
+//    A client just starting out shouldn't be handed a top-quartile target on
+//    day one. But there is no honest single "foundational number" per KPI —
+//    it depends on where that specific client is starting from. So instead
+//    of fabricating 690 more static figures, this is computed: it closes a
+//    portion of the gap between the client's current value and the
+//    Peer/Median benchmark (from kpiBenchmarksByIndustry / BySkuClass).
+//    Ambitious clients can still ignore this and target Best-in-Class
+//    (the value already returned by getContextualTarget) from day one.
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * @param currentValue   the client's own measured value for this KPI
+ * @param peerValue      the Peer/Median benchmark for this KPI (from
+ *                       getIndustryBenchmark / getSkuClassBenchmark)
+ * @param closeGapFraction how much of the gap to close — default 0.4 (40%),
+ *                       a realistic first-step improvement horizon
+ */
+export function computeFoundationalTarget(
+  currentValue: number,
+  peerValue: number,
+  closeGapFraction = 0.4,
+): number {
+  const gap = peerValue - currentValue;
+  return currentValue + gap * closeGapFraction;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 6. GCC-SPECIFIC REFERENCE DATA
+//    Added 2026-08-19, from a dedicated research round (see companion
+//    artifact "ISC_Two_Day_Summary.docx", Section 4).
+//
+//    Reconciliation rule applied here: before a regional figure is attached
+//    to a specific industry row, it must pass (a) a construct match — same
+//    calculation method — and (b) a population match — comparable sector,
+//    company size, and period. A source that passes (a) but not (b) is kept
+//    in GCC_REGIONAL_REFERENCE_UNMATCHED below instead of being attached to
+//    a row it doesn't actually describe.
+// ═══════════════════════════════════════════════════════════════════════════
+
+export interface GccReference {
+  value: number;
+  label: string;
+  labelAr: string;
+  range?: string;
+  source: string;
+  matchQuality: 'sector-matched';
+}
+
+/**
+ * (kpiId → industryKey → GccReference), only for pairs where a real,
+ * population-matched regional source was found. Every pair NOT listed here
+ * has no GCC-specific figure yet — the international target above (from
+ * getContextualTarget) is the correct number to show until one is found.
+ */
+export const GCC_TARGETS_BY_INDUSTRY: Partial<Record<string, Partial<Record<IndustryKey, GccReference>>>> = {
+  turns: {
+    manufacturing: {
+      value: 8,
+      label: '~8/yr (sample range 4–16)',
+      labelAr: '~8/سنة (مدى العيّنة 4-16)',
+      range: '4–16x/yr across sample; mean ≈ 8x/yr',
+      source: 'Saudi Tadawul-listed manufacturers, 78 firms, 2017–2021, peer-reviewed ' +
+        '(MDPI, journal "Processes"). This independently converges with the existing ' +
+        'international target of 8x/yr for manufacturing in this file — treated as a ' +
+        'confidence signal per the reconciliation rule, not a conflicting figure. Note: ' +
+        'this is separate from the "benchmarkValue" (today\'s typical/peer performance, ' +
+        '~5x/yr) shown elsewhere in the product — this figure is the aspirational target.',
+      matchQuality: 'sector-matched',
+    },
+  },
+};
+
+export function getGccTarget(kpiId: string, industryKey: IndustryKey | null): GccReference | null {
+  if (!industryKey) return null;
+  return GCC_TARGETS_BY_INDUSTRY[kpiId]?.[industryKey] ?? null;
+}
+
+/**
+ * Real, current, regionally-specific figures that exist but do not yet pass
+ * the population-match test for any single sector in this file (they are
+ * all-sector regional blends). Kept here so the research is not lost, and
+ * NOT attached to any industry row until a sector-level breakdown is found —
+ * see "ISC_Two_Day_Summary.docx", Section 5, open flag.
+ */
+export const GCC_REGIONAL_REFERENCE_UNMATCHED = {
+  workingCapital: {
+    netWorkingCapitalDays: {
+      value: 101.7,
+      source: 'PwC Middle East Working Capital Study 2025, region-wide all-sector aggregate.',
+    },
+    dso: {
+      value: 81.1,
+      trendNote: 'improving, down from 83.9 days prior period',
+      source: 'PwC Middle East Working Capital Study 2025, region-wide all-sector aggregate.',
+    },
+    dpo: {
+      value: 60.8,
+      rangeNote: 'broadly stable; ranges roughly 40–100+ days by sector/country',
+      source: 'PwC Middle East Working Capital Study 2025, region-wide all-sector aggregate.',
+    },
+    dioTrendNote: 'improving roughly 3 days year-over-year (no absolute figure extracted yet)',
+    source: 'PwC Middle East Working Capital Study 2025.',
+  },
+  qatarManufacturingStudy: {
+    note: '10 manufacturing firms, Qatar Stock Exchange, 2015–2019 — smaller academic sample; ' +
+      'figures not yet extracted into structured form.',
+  },
+};
+

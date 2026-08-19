@@ -12,10 +12,14 @@ import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
   ResponsiveContainer, Tooltip, Legend,
 } from 'recharts';
-import { Download, ShieldAlert, ClipboardCheck, Waves, Sparkles, AlertTriangle } from 'lucide-react';
+import { Download, ShieldAlert, ClipboardCheck, Waves, Sparkles, AlertTriangle, BookOpen, Calculator, Plus, Trash2, ExternalLink } from 'lucide-react';
 import { safeSetItem } from '@/lib/storage';
 import { useAIPlan } from '@/hooks/useAIPlan';
 import { AIPlanPanel } from '@/components/AIPlanPanel';
+import {
+  RESILIENCE_CASE_STUDIES, RAR_INTERDEPENDENCY_CORRECTION_PCT, RAR_DURATION_BENCHMARKS_DAYS,
+  RAR_REFERENCE_POINTS, RAR_WORKED_EXAMPLE,
+} from '@/lib/resilienceCaseStudies';
 
 interface Props { isAr: boolean; }
 export const RESILIENCY_TOOL_KEY = 'resiliency-stresstest' as const;
@@ -59,7 +63,7 @@ const SCENARIOS: Scenario[] = [
   { id: 'cyber', label: 'Cyber Attack on ERP / Supplier Systems', labelAr: 'هجوم سيبراني على ERP/أنظمة الموردين', baseLeadDays: 12, baseCostPct: 30, desc: 'Ransomware or systems outage halting order processing', descAr: 'هجوم فدية أو تعطل أنظمة يوقف معالجة الطلبات' },
 ];
 
-type Tab = 'exposure' | 'bcp' | 'scenario' | 'ai';
+type Tab = 'exposure' | 'bcp' | 'scenario' | 'library' | 'rar' | 'ai';
 
 export function ResiliencyToolsSection({ isAr }: Props) {
   const [activeTab, setActiveTab] = useState<Tab>('exposure');
@@ -82,6 +86,37 @@ export function ResiliencyToolsSection({ isAr }: Props) {
   const multiplier = 1 + (expAvg > 0 ? (expAvg - 1) * 0.15 : 0);
   const projectedLeadDays = scenario ? Math.round(scenario.baseLeadDays * multiplier) : 0;
   const projectedCostPct = scenario ? Math.round(scenario.baseCostPct * multiplier) : 0;
+
+  // ── Case study library filter ──
+  const [caseFilter, setCaseFilter] = useState<string>('All');
+  const caseTypes = ['All', ...Array.from(new Set(RESILIENCE_CASE_STUDIES.map(cs => cs.disruptionType)))];
+  const filteredCases = caseFilter === 'All' ? RESILIENCE_CASE_STUDIES : RESILIENCE_CASE_STUDIES.filter(cs => cs.disruptionType === caseFilter);
+
+  // ── Revenue-at-Risk (RAR) calculator — implements the 5-step methodology ──
+  interface RarNode { id: string; name: string; revenuePct: number; atRisk: boolean; }
+  const SK_RAR_NODES = 'isc-tool-resiliency-rar-nodes-v1';
+  const SK_RAR_META = 'isc-tool-resiliency-rar-meta-v1';
+  const [rarNodes, setRarNodes] = useState<RarNode[]>(() => loadJson(SK_RAR_NODES, [] as RarNode[]));
+  const [rarMeta, setRarMeta] = useState<{ interdependenciesMapped: boolean; annualRevenue: string }>(
+    () => loadJson(SK_RAR_META, { interdependenciesMapped: false, annualRevenue: '' }),
+  );
+  const saveRarNodes = (next: RarNode[]) => { setRarNodes(next); safeSetItem(SK_RAR_NODES, JSON.stringify(next)); };
+  const saveRarMeta = (next: typeof rarMeta) => { setRarMeta(next); safeSetItem(SK_RAR_META, JSON.stringify(next)); };
+  const addRarNode = () => saveRarNodes([...rarNodes, { id: `n${Date.now()}`, name: '', revenuePct: 0, atRisk: false }]);
+  const updateRarNode = (id: string, patch: Partial<RarNode>) => saveRarNodes(rarNodes.map(n => n.id === id ? { ...n, ...patch } : n));
+  const removeRarNode = (id: string) => saveRarNodes(rarNodes.filter(n => n.id !== id));
+  const rawExposurePct = rarNodes.filter(n => n.atRisk).reduce((s, n) => s + (n.revenuePct || 0), 0);
+  const correctionLow = rarMeta.interdependenciesMapped ? 0 : RAR_INTERDEPENDENCY_CORRECTION_PCT.low;
+  const correctionHigh = rarMeta.interdependenciesMapped ? 0 : RAR_INTERDEPENDENCY_CORRECTION_PCT.high;
+  const adjustedLowPct = rawExposurePct * (1 + correctionLow / 100);
+  const adjustedHighPct = rawExposurePct * (1 + correctionHigh / 100);
+  const annualRevenueNum = parseFloat(rarMeta.annualRevenue) || 0;
+  const dollarAtMedian = annualRevenueNum > 0
+    ? (adjustedLowPct / 100) * annualRevenueNum * (RAR_DURATION_BENCHMARKS_DAYS.median / 365)
+    : 0;
+  const dollarAtP95 = annualRevenueNum > 0
+    ? (adjustedHighPct / 100) * annualRevenueNum * (RAR_DURATION_BENCHMARKS_DAYS.p95 / 365)
+    : 0;
 
   const buildPrompt = useCallback(() => {
     const expLines = EXPOSURE_CATS.map(c => exposure[c.id] !== undefined ? `- ${c.label}: ${exposure[c.id]}/5` : `- ${c.label}: not assessed`).join('\n');
@@ -116,6 +151,8 @@ export function ResiliencyToolsSection({ isAr }: Props) {
     { id: 'exposure', icon: <ShieldAlert className="w-3.5 h-3.5" />, label: 'Risk Exposure', labelAr: 'التعرّض للمخاطر' },
     { id: 'bcp', icon: <ClipboardCheck className="w-3.5 h-3.5" />, label: 'BCP Readiness', labelAr: 'جاهزية الاستمرارية' },
     { id: 'scenario', icon: <Waves className="w-3.5 h-3.5" />, label: 'Disruption Simulator', labelAr: 'محاكي الاضطراب' },
+    { id: 'library', icon: <BookOpen className="w-3.5 h-3.5" />, label: 'Case Study Library', labelAr: 'مكتبة دراسات الحالة' },
+    { id: 'rar', icon: <Calculator className="w-3.5 h-3.5" />, label: 'Revenue-at-Risk', labelAr: 'الإيراد المعرّض للخطر' },
     { id: 'ai', icon: <Sparkles className="w-3.5 h-3.5" />, label: 'AI Resilience Brief', labelAr: 'موجز AI للمرونة' },
   ];
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
@@ -229,6 +266,139 @@ export function ResiliencyToolsSection({ isAr }: Props) {
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {activeTab === 'library' && (
+          <div id="res-panel-library" role="tabpanel" className="space-y-4">
+            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4">
+              <p className="text-xs text-slate-600 leading-relaxed">
+                {isAr
+                  ? 'لا يوجد رقم مرجعي ثابت لمستوى الخدمة أثناء الاضطراب على مستوى الصناعة — فهو يعتمد على استراتيجية كل شركة. بدلاً من رقم مصطنع، إليك حالات اضطراب حقيقية وموثّقة لمقارنة نهجك بها.'
+                  : "There is no flat, industry-wide benchmark for service level during disruption — it depends on each company's own strategy. Instead of a made-up number, here are real, sourced disruption case studies to compare your own approach against."}
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {caseTypes.map(t => (
+                <button key={t} onClick={() => setCaseFilter(t)}
+                  className={`px-3 py-1.5 rounded-full text-[11px] font-semibold border transition-colors ${caseFilter === t ? 'bg-red-600 text-white border-red-600' : 'bg-white text-slate-500 border-slate-200 hover:border-red-300'}`}>
+                  {t === 'All' ? (isAr ? 'الكل' : 'All') : t}
+                </button>
+              ))}
+            </div>
+            <div className="space-y-3">
+              {filteredCases.map(cs => (
+                <div key={cs.id} className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
+                  <div className="flex items-start justify-between gap-3 flex-wrap mb-1.5">
+                    <p className="font-bold text-sm text-slate-800">{isAr ? cs.companiesEventAr : cs.companiesEvent}</p>
+                    <span className="text-[10px] font-bold text-red-700 bg-red-50 border border-red-200 rounded-full px-2 py-0.5 shrink-0">{cs.year}</span>
+                  </div>
+                  <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide mb-2">{isAr ? cs.disruptionTypeAr : cs.disruptionType}</p>
+                  <p className="text-xs text-slate-600 leading-relaxed mb-2">{isAr ? cs.metricsAr : cs.metrics}</p>
+                  <div className="bg-amber-50 border border-amber-200 rounded-xl p-2.5 mb-2">
+                    <p className="text-xs text-amber-900 leading-relaxed"><span className="font-bold">{isAr ? 'الدرس: ' : 'Lesson: '}</span>{isAr ? cs.lessonAr : cs.lesson}</p>
+                  </div>
+                  <p className="text-[10px] text-slate-400">{isAr ? 'المصدر: ' : 'Source: '}{cs.source}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'rar' && (
+          <div id="res-panel-rar" role="tabpanel" className="space-y-4">
+            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4">
+              <p className="text-xs text-slate-600 leading-relaxed">
+                {isAr
+                  ? 'لا يوجد معيار ثابت للإيراد المعرّض للخطر على مستوى الصناعة — الممارسون الحقيقيون يحسبون تعرّضهم الخاص بدلاً من مقارنته بمتوسط. استخدم الأداة أدناه لحساب تعرّضك.'
+                  : "There is no flat industry benchmark for Revenue at Risk — real practitioners calculate their own exposure rather than compare it to an average. Use the calculator below to compute yours."}
+              </p>
+            </div>
+
+            {/* Step 1 + 4: critical nodes */}
+            <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
+              <p className="text-xs font-bold text-slate-700 mb-1">{isAr ? 'الخطوة 1 و4 — العقد الحرجة' : 'Steps 1 & 4 — Critical Nodes'}</p>
+              <p className="text-[11px] text-slate-400 mb-3">
+                {isAr ? 'أضف كل عميل رئيسي أو مورّد أو مصنع أحادي المصدر، ونسبته من إجمالي الإيراد، وحدّد ما إذا كان زمن التعافي أطول من زمن الصمود له (عندها فقط يُحتسب كعقدة "معرّضة للخطر فعلياً").' : 'Add each key customer, supplier, or single-source plant, its % of total revenue, and whether its recovery time exceeds your survival time (only then does it count as "genuinely at risk").'}
+              </p>
+              <div className="space-y-2">
+                {rarNodes.map(n => (
+                  <div key={n.id} className="flex items-center gap-2 flex-wrap bg-slate-50 rounded-xl p-2.5">
+                    <input type="text" placeholder={isAr ? 'اسم العقدة' : 'Node name'} value={n.name}
+                      onChange={e => updateRarNode(n.id, { name: e.target.value })}
+                      className="flex-1 min-w-[120px] text-xs px-2.5 py-1.5 rounded-lg border border-slate-200" />
+                    <input type="number" min={0} max={100} placeholder="%" value={n.revenuePct || ''}
+                      onChange={e => updateRarNode(n.id, { revenuePct: parseFloat(e.target.value) || 0 })}
+                      className="w-20 text-xs px-2.5 py-1.5 rounded-lg border border-slate-200" />
+                    <label className="flex items-center gap-1.5 text-[11px] text-slate-600 shrink-0">
+                      <input type="checkbox" checked={n.atRisk} onChange={e => updateRarNode(n.id, { atRisk: e.target.checked })} className="w-3.5 h-3.5 accent-red-600" />
+                      {isAr ? 'التعافي > الصمود' : 'TTR > TTS'}
+                    </label>
+                    <button onClick={() => removeRarNode(n.id)} className="text-slate-400 hover:text-red-600 shrink-0"><Trash2 className="w-3.5 h-3.5" /></button>
+                  </div>
+                ))}
+                <button onClick={addRarNode} className="flex items-center gap-1.5 text-[11px] font-semibold text-red-700 hover:text-red-800">
+                  <Plus className="w-3.5 h-3.5" />{isAr ? 'إضافة عقدة' : 'Add node'}
+                </button>
+              </div>
+            </div>
+
+            {/* Step 2: interdependency correction */}
+            <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
+              <p className="text-xs font-bold text-slate-700 mb-2">{isAr ? 'الخطوة 2 — تصحيح الترابط' : 'Step 2 — Interdependency Correction'}</p>
+              <label className="flex items-start gap-2.5 text-xs text-slate-600 cursor-pointer">
+                <input type="checkbox" checked={rarMeta.interdependenciesMapped}
+                  onChange={e => saveRarMeta({ ...rarMeta, interdependenciesMapped: e.target.checked })}
+                  className="mt-0.5 w-3.5 h-3.5 accent-red-600" />
+                {isAr
+                  ? 'لقد رسمت خرائط ترابط الموردين بالكامل لهذه العقد (إن لم يُحدد، يُطبَّق تصحيح +9-14% لأن الحساب غير المرسوم يقلل التعرّض الحقيقي، وفق دراسة Swiss Re × UC Berkeley CDAR)'
+                  : "I've fully mapped supplier interdependencies for these nodes (if unchecked, a +9–14% correction is applied, since unmapped calculations understate true exposure — Swiss Re Institute x UC Berkeley CDAR)."}
+              </label>
+            </div>
+
+            {/* Step 3: duration + dollar impact */}
+            <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
+              <p className="text-xs font-bold text-slate-700 mb-2">{isAr ? 'الخطوة 3 — نطاق مدة الاضطراب (اختياري: أضف الإيراد السنوي)' : 'Step 3 — Disruption Duration Range (optional: add annual revenue)'}</p>
+              <input type="number" min={0} placeholder={isAr ? 'الإيراد السنوي (اختياري)' : 'Annual revenue (optional)'} value={rarMeta.annualRevenue}
+                onChange={e => saveRarMeta({ ...rarMeta, annualRevenue: e.target.value })}
+                className="text-xs px-2.5 py-1.5 rounded-lg border border-slate-200 w-full sm:w-64" />
+            </div>
+
+            {/* Result */}
+            <div className="bg-red-50 border-2 border-red-200 rounded-2xl p-4">
+              <p className="text-[11px] font-semibold text-red-700 uppercase tracking-wide mb-1">{isAr ? 'التعرّض المحسوب (الخطوات 1-2)' : 'Computed Exposure (Steps 1–2)'}</p>
+              <p className="text-2xl font-bold text-red-800">
+                {rawExposurePct === 0 ? '—' : correctionLow === 0
+                  ? `${rawExposurePct.toFixed(1)}%`
+                  : `${adjustedLowPct.toFixed(1)}–${adjustedHighPct.toFixed(1)}%`}
+                <span className="text-xs font-normal text-red-500 ml-1">{isAr ? 'من الإيراد الكلي' : 'of total revenue'}</span>
+              </p>
+              {annualRevenueNum > 0 && rawExposurePct > 0 && (
+                <p className="text-[11px] text-red-600 mt-2">
+                  {isAr ? `أثر توضيحي: ~${Math.round(dollarAtMedian).toLocaleString()} عند اضطراب نموذجي (${RAR_DURATION_BENCHMARKS_DAYS.median} أيام)، ~${Math.round(dollarAtP95).toLocaleString()} عند اضطراب شديد (${RAR_DURATION_BENCHMARKS_DAYS.p95} يوماً)`
+                    : `Illustrative $ impact: ~$${Math.round(dollarAtMedian).toLocaleString()} at a typical disruption (${RAR_DURATION_BENCHMARKS_DAYS.median} days), ~$${Math.round(dollarAtP95).toLocaleString()} at a severe one (95th percentile, ${RAR_DURATION_BENCHMARKS_DAYS.p95} days) — IMF PortWatch.`}
+                </p>
+              )}
+              <p className="text-[10px] text-red-400 mt-2">{isAr ? 'تقدير توضيحي مبسّط لأغراض التخطيط، وليس استشارة مالية.' : 'A simplified, illustrative estimate for planning purposes — not financial advice.'}</p>
+            </div>
+
+            {/* Step 5: sanity check reference points */}
+            <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
+              <p className="text-xs font-bold text-slate-700 mb-2">{isAr ? 'الخطوة 5 — التحقق من المعقولية مقابل نتائج حقيقية' : 'Step 5 — Sanity-Check Against Real Disclosed Outcomes'}</p>
+              <div className="space-y-2">
+                {RAR_REFERENCE_POINTS.map(r => (
+                  <div key={r.label} className="flex items-start justify-between gap-3 bg-slate-50 rounded-xl p-2.5">
+                    <p className="text-[11px] text-slate-600 flex-1">{isAr ? r.labelAr : r.label}</p>
+                    <p className="text-[11px] font-bold text-slate-800 shrink-0">{isAr ? r.detailAr : r.detail}</p>
+                  </div>
+                ))}
+              </div>
+              <p className="text-[10px] text-slate-400 mt-2 flex items-center gap-1">
+                <ExternalLink className="w-3 h-3" />
+                {isAr ? `مثال محسوب: ${RAR_WORKED_EXAMPLE.company} — تعرّض بسيط ${RAR_WORKED_EXAMPLE.exposureNaivePct}% مقابل ${RAR_WORKED_EXAMPLE.exposureWithMappedInterdependenciesPct}% مع ترابط مُرسَّم بالكامل (${RAR_WORKED_EXAMPLE.source})`
+                  : `Worked example: ${RAR_WORKED_EXAMPLE.company} — naive exposure ${RAR_WORKED_EXAMPLE.exposureNaivePct}% vs. ${RAR_WORKED_EXAMPLE.exposureWithMappedInterdependenciesPct}% with fully mapped interdependencies (${RAR_WORKED_EXAMPLE.source}).`}
+              </p>
+            </div>
           </div>
         )}
 
