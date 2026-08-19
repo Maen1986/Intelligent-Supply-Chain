@@ -17,7 +17,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { KPI_DATA_SPECS } from '@/lib/kpiDataSpecs';
 import { INDUSTRIES, type IndustryKey, getIndustryBenchmark } from '@/lib/kpiBenchmarksByIndustry';
 import { SKU_CLASSES, type SkuClassKey, getSkuClassBenchmark } from '@/lib/kpiBenchmarksBySkuClass';
-import { getContextualTarget } from '@/lib/kpiTargetsByContext';
+import { getContextualTarget, getGccTarget, computeFoundationalTarget } from '@/lib/kpiTargetsByContext';
 
 /* ─── KPI definition types ─── */
 export interface KpiDef {
@@ -28,6 +28,12 @@ export interface KpiDef {
   benchmarkValue: number; benchmarkLabel: string; benchmarkLabelAr?: string;
   higherIsBetter: boolean;
   description: string; descriptionAr: string;
+  // Added 2026-08-19 (#139/#140) -- optional, so every existing caller/test that
+  // builds a KpiDef without these still compiles unchanged. Populated by
+  // withIndustryBenchmark() when a user picks a target tier or GCC scope.
+  targetTier?: 'foundational' | 'peer' | 'best-in-class';
+  targetScope?: 'gcc' | 'international';
+  targetSourceNote?: string;
 }
 
 /* ─── KPI frameworks: 12 solution slugs + risk-management ─── */
@@ -1093,13 +1099,34 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
     } catch {}
   }, []);
 
+  /* ── Target tier + geographic scope selection (#139/#140) ──
+     Defaults ('best-in-class' / 'international') exactly reproduce pre-existing
+     behaviour, so a user who never touches these two rows sees no change at all. */
+  const tierStorageKey = 'isc-kpi-target-tier';
+  const [selectedTier, setSelectedTier] = useState<'foundational' | 'peer' | 'best-in-class'>(() => {
+    try { return (localStorage.getItem(tierStorageKey) as any) || 'best-in-class'; } catch { return 'best-in-class'; }
+  });
+  const handleTierChange = useCallback((tier: 'foundational' | 'peer' | 'best-in-class') => {
+    setSelectedTier(tier);
+    try { localStorage.setItem(tierStorageKey, tier); } catch {}
+  }, []);
+
+  const scopeStorageKey = 'isc-kpi-target-scope';
+  const [selectedScope, setSelectedScope] = useState<'gcc' | 'international'>(() => {
+    try { return (localStorage.getItem(scopeStorageKey) as any) || 'international'; } catch { return 'international'; }
+  });
+  const handleScopeChange = useCallback((scope: 'gcc' | 'international') => {
+    setSelectedScope(scope);
+    try { localStorage.setItem(scopeStorageKey, scope); } catch {}
+  }, []);
+
   /**
    * Returns a KpiDef with the effective benchmark substituted.
    * Priority: SKU class override → Industry override → KPI definition default.
    * SKU class wins for inventory-intensive KPIs (turns, fa, buf, ppm, mav, pocycle…).
    * Industry wins for process/operational KPIs not covered by SKU class.
    */
-  const withIndustryBenchmark = useCallback((kpi: KpiDef): KpiDef => {
+  const withIndustryBenchmark = useCallback((kpi: KpiDef, currentValueRaw?: number): KpiDef => {
     // ── Step 1: Resolve benchmark (SKU-class overrides industry for inventory KPIs) ──
     const skuOverride = getSkuClassBenchmark(kpi.id, selectedSkuClass);
     const indOverride = getIndustryBenchmark(kpi.id, selectedIndustry);
@@ -1113,6 +1140,7 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
 
     // ── Step 2: Resolve target (most-specific context wins) ──
     // combined [industry+SKU] > industry-only > SKU-only > static KPI_FRAMEWORKS default
+    // This is always the Best-in-Class / international figure -- the pre-#139 baseline.
     const contextTarget = getContextualTarget(kpi.id, selectedIndustry, selectedSkuClass);
     if (contextTarget) {
       result = {
@@ -1123,8 +1151,68 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
       };
     }
 
+    // ── Step 3: Apply target tier (#139) ──
+    // 'best-in-class' (default) leaves Step 2's value untouched -- zero behaviour
+    // change unless a user actively picks Peer or Foundational.
+    if (selectedTier === 'peer') {
+      result = {
+        ...result,
+        targetValue: result.benchmarkValue,
+        targetLabel: result.benchmarkLabel,
+        targetLabelAr: result.benchmarkLabelAr,
+        targetTier: 'peer',
+      };
+    } else if (selectedTier === 'foundational') {
+      if (currentValueRaw !== undefined && !isNaN(currentValueRaw) && result.benchmarkValue) {
+        const fVal = computeFoundationalTarget(currentValueRaw, result.benchmarkValue);
+        const rounded = Math.round(fVal * 100) / 100;
+        result = {
+          ...result,
+          targetValue: fVal,
+          targetLabel: `${result.higherIsBetter ? '>' : '<'}${rounded}${result.unit === '%' ? '%' : ' ' + result.unit}`,
+          targetLabelAr: `${result.higherIsBetter ? '>' : '<'}${rounded}${result.unitAr === '%' ? '%' : ' ' + result.unitAr}`,
+          targetTier: 'foundational',
+        };
+      }
+      // No value entered yet: Foundational can't be computed from a client baseline
+      // that doesn't exist, so Step 2's Best-in-Class figure is left in place rather
+      // than showing a broken or zero target.
+    } else {
+      result = { ...result, targetTier: 'best-in-class' };
+    }
+
+    // ── Step 4: Apply geographic scope (#139) ──
+    // 'international' (default) leaves the target as resolved above -- zero
+    // behaviour change unless a user actively picks GCC.
+    if (selectedScope === 'gcc') {
+      if (selectedTier === 'best-in-class') {
+        const gcc = getGccTarget(kpi.id, selectedIndustry);
+        if (gcc) {
+          result = {
+            ...result,
+            targetValue: gcc.value,
+            targetLabel: gcc.label,
+            targetLabelAr: gcc.labelAr,
+            targetScope: 'gcc',
+            targetSourceNote: gcc.source,
+          };
+        } else {
+          // Honest empty: no sourced GCC figure exists yet for this KPI/industry --
+          // international value is kept, and the UI flags this rather than
+          // silently pretending a GCC number exists.
+          result = { ...result, targetScope: 'gcc' };
+        }
+      } else {
+        // No separate GCC-specific dataset exists yet for the Peer/Foundational
+        // tiers -- flag scope so the UI can note it, but don't fabricate a number.
+        result = { ...result, targetScope: 'gcc' };
+      }
+    } else {
+      result = { ...result, targetScope: 'international' };
+    }
+
     return result;
-  }, [selectedIndustry, selectedSkuClass]);
+  }, [selectedIndustry, selectedSkuClass, selectedTier, selectedScope]);
 
   // Re-load values from localStorage whenever the resolved slug (and therefore the storage key) changes
   // on an already-mounted component.  The lazy initializer only runs once on mount, so without this
@@ -1156,8 +1244,8 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
     if (!kpis) return '';
     const industryMeta = selectedIndustry ? INDUSTRIES.find(i => i.id === selectedIndustry) : null;
     const kpiLines = kpis.map(k => {
-      const ek = withIndustryBenchmark(k);
       const raw = parseFloat(values[k.id] ?? '');
+      const ek = withIndustryBenchmark(k, isNaN(raw) ? undefined : raw);
       if (isNaN(raw)) return null;
       const score = ek.higherIsBetter
         ? Math.min(100, Math.round((raw / ek.targetValue) * 100))
@@ -1168,8 +1256,8 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
     }).filter(Boolean).join('\n');
     const entered = kpis.filter(k => !isNaN(parseFloat(values[k.id] ?? ''))).length;
     const rawScores = kpis.map(k => {
-      const ek = withIndustryBenchmark(k);
       const raw = parseFloat(values[k.id] ?? '');
+      const ek = withIndustryBenchmark(k, isNaN(raw) ? undefined : raw);
       if (isNaN(raw)) return null;
       return ek.higherIsBetter
         ? Math.min(100, Math.round((raw / ek.targetValue) * 100))
@@ -1428,8 +1516,8 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
   }
 
   const scores = kpis.map(k => {
-    const ek = withIndustryBenchmark(k);
     const raw = parseFloat(values[k.id] ?? '');
+    const ek = withIndustryBenchmark(k, isNaN(raw) ? undefined : raw);
     return { kpi: ek, score: isNaN(raw) ? null as number | null : scoreKpi(ek, raw), value: raw };
   });
 
@@ -1658,6 +1746,62 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
             </div>
           )}
         </div>
+
+        {/* Target tier + geographic scope row (#139/#140) */}
+        <div className="flex items-start gap-3 flex-wrap pt-2.5 border-t border-slate-200 mt-2.5">
+          <div className="shrink-0 pt-0.5">
+            <p className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">
+              {isAr ? 'مستوى الهدف' : 'Target Tier'}
+            </p>
+            <p className="text-[10px] text-muted-foreground mt-0.5 whitespace-nowrap">
+              {isAr ? 'ما الذي تهدف إليه' : 'What you\'re aiming for'}
+            </p>
+          </div>
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {([
+              { id: 'foundational' as const, label: 'Foundational', labelAr: 'تأسيسي' },
+              { id: 'peer' as const, label: 'Peer', labelAr: 'نظير' },
+              { id: 'best-in-class' as const, label: 'Best-in-class', labelAr: 'أفضل الفئات' },
+            ]).map(t => (
+              <button
+                key={t.id}
+                onClick={() => handleTierChange(t.id)}
+                title={t.id === 'foundational'
+                  ? (isAr ? 'يغلق جزءاً من الفجوة عن قيمتك الحالية' : 'Closes part of the gap from your current value')
+                  : t.id === 'peer'
+                  ? (isAr ? 'مطابقة متوسط النظراء' : 'Match the peer average')
+                  : (isAr ? 'الهدف الطموح لأفضل الفئات' : 'The stretch, top-quartile goal')}
+                className="text-[10px] font-semibold px-2.5 py-1 rounded-full border transition-all whitespace-nowrap"
+                style={selectedTier === t.id ? {
+                  background: '#0F766E', color: '#fff', borderColor: '#0F766E',
+                } : {
+                  background: '#fff', color: '#9ca3af', borderColor: '#e5e7eb',
+                }}
+              >
+                {isAr ? t.labelAr : t.label}
+              </button>
+            ))}
+          </div>
+          <div className="flex items-center gap-1.5 ml-auto">
+            {([
+              { id: 'gcc' as const, label: 'GCC', labelAr: 'الخليج' },
+              { id: 'international' as const, label: 'International', labelAr: 'دولي' },
+            ]).map(s => (
+              <button
+                key={s.id}
+                onClick={() => handleScopeChange(s.id)}
+                className="text-[10px] font-semibold px-2.5 py-1 rounded-full border transition-all whitespace-nowrap"
+                style={selectedScope === s.id ? {
+                  background: '#0F766E', color: '#fff', borderColor: '#0F766E',
+                } : {
+                  background: '#fff', color: '#9ca3af', borderColor: '#e5e7eb',
+                }}
+              >
+                {isAr ? s.labelAr : s.label}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* Data-collection guidance banner — shown once per framework until dismissed or values are entered */}
@@ -1854,6 +1998,21 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
                         {kpi.higherIsBetter ? (isAr ? 'أعلى أفضل' : 'Higher') : (isAr ? 'أقل أفضل' : 'Lower')}
                       </span>
                     </div>
+
+                    {/* GCC scope badge / honest-empty note (#139/#140) */}
+                    {kpi.targetScope === 'gcc' && (
+                      <div className="mb-1.5" title={kpi.targetSourceNote || undefined}>
+                        {kpi.targetSourceNote ? (
+                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700">
+                            {isAr ? '✓ الخليج — مصدر موثّق' : '✓ GCC — sourced'}
+                          </span>
+                        ) : (
+                          <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700">
+                            {isAr ? 'لا يتوفر مصدر خليجي بعد — يُعرض الرقم الدولي' : 'No GCC source yet — showing international'}
+                          </span>
+                        )}
+                      </div>
+                    )}
 
                     {/* Alert threshold input (Task 319) — user sets a breach level; no API needed */}
                     <div className="flex items-center gap-1.5 mb-1.5">
