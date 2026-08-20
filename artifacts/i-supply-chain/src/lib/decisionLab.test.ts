@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   newCriterion, newOption, scoreOptions, isScenarioScoreable, buildDecisionPrompt,
+  mostDecisiveCriterion,
   type DecisionScenario,
 } from './decisionLab';
 
@@ -110,5 +111,32 @@ describe('buildDecisionPrompt', () => {
 
     const prompt = buildDecisionPrompt(scn, scored, true);
     expect(prompt).toContain('مختبر القرار');
+  });
+});
+
+describe('mostDecisiveCriterion', () => {
+  it('identifies the criterion with the largest weighted-contribution gap between the top two options', () => {
+    const cost = newCriterion('Cost'); cost.id = 'cost'; cost.weight = 10;
+    const quality = newCriterion('Quality'); quality.id = 'quality'; quality.weight = 2;
+
+    const a = newOption('A'); a.id = 'a'; a.scores = { cost: 5, quality: 3 };
+    const b = newOption('B'); b.id = 'b'; b.scores = { cost: 2, quality: 5 };
+    // cost delta: |5*10 - 2*10| = 30; quality delta: |3*2 - 5*2| = 4 -> cost dominates
+    const scored = scoreOptions(scenario({ criteria: [cost, quality], options: [a, b] }));
+
+    const result = mostDecisiveCriterion(scored);
+    expect(result?.criterionId).toBe('cost');
+    expect(result?.contributionDelta).toBe(30);
+  });
+
+  it('returns null when fewer than 2 options are scored', () => {
+    const c = newCriterion('C'); c.id = 'c'; c.weight = 5;
+    const a = newOption('A'); a.id = 'a'; a.scores = { c: 4 };
+    const scored = scoreOptions(scenario({ criteria: [c], options: [a] }));
+    expect(mostDecisiveCriterion(scored)).toBeNull();
+  });
+
+  it('returns null for an empty scenario', () => {
+    expect(mostDecisiveCriterion(scoreOptions(scenario()))).toBeNull();
   });
 });

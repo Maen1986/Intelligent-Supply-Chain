@@ -101,6 +101,40 @@ export function isScenarioScoreable(scenario: DecisionScenario): boolean {
   return namedOptions.length >= 2 && activeCriteria.length >= 1;
 }
 
+export interface DecisiveCriterion {
+  criterionId: string;
+  name: string;
+  /** Absolute weighted-contribution gap this criterion opened up between the
+   *  top two options -- i.e. how much of the overall score gap it explains. */
+  contributionDelta: number;
+}
+
+/**
+ * Honesty/self-critique aid (customer-simulation QA finding, 20 Aug 2026):
+ * a "close call" flag alone tells the reader the top two are near-tied, but
+ * not *why* -- which criterion is actually carrying the ranking. Identifies
+ * the single criterion with the largest absolute weighted-contribution gap
+ * between the top two scored options, so the reader knows exactly where to
+ * scrutinize their own input (a rating they're less sure about, a weight
+ * that may deserve a second look) before treating the ranking as settled.
+ * Returns null when there are fewer than 2 scored options.
+ */
+export function mostDecisiveCriterion(scored: ScoredOption[]): DecisiveCriterion | null {
+  if (scored.length < 2) return null;
+  const [first, second] = scored;
+
+  let best: DecisiveCriterion | null = null;
+  for (const b of first.breakdown) {
+    const other = second.breakdown.find(o => o.criterionId === b.criterionId);
+    const otherContribution = other?.contribution ?? 0;
+    const delta = Math.abs(b.contribution - otherContribution);
+    if (!best || delta > best.contributionDelta) {
+      best = { criterionId: b.criterionId, name: b.name, contributionDelta: delta };
+    }
+  }
+  return best;
+}
+
 export function buildDecisionPrompt(scenario: DecisionScenario, scored: ScoredOption[], isAr: boolean): string {
   const criteriaLines = scenario.criteria
     .filter(c => c.weight > 0 && c.name.trim())

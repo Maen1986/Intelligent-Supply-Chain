@@ -13,17 +13,28 @@
 // rationale text persists server-side, via the same toolKey pattern every
 // other toolkit tool uses.
 import React, { useState, useMemo, useCallback } from 'react';
-import { Scale, Plus, Trash2, Sparkles, ClipboardList, BarChart3, Trophy, Info } from 'lucide-react';
+import { Scale, Plus, Trash2, Sparkles, ClipboardList, BarChart3, Trophy, Info, Printer, Target } from 'lucide-react';
 import { useLanguage } from '@/lib/LanguageContext';
 import {
   type DecisionCriterion, type DecisionOption, type DecisionScenario, type ScoredOption,
   newCriterion, newOption, scoreOptions, isScenarioScoreable, buildDecisionPrompt,
+  mostDecisiveCriterion,
 } from '@/lib/decisionLab';
 import { useAIPlan } from '@/hooks/useAIPlan';
 import { AIPlanPanel } from '@/components/AIPlanPanel';
 import { safeSetItem } from '@/lib/storage';
 
 const STORAGE_KEY = 'isc-decision-lab-v1';
+
+function printZone(zone: string) {
+  document.body.setAttribute('data-print', zone);
+  const cleanup = () => {
+    document.body.removeAttribute('data-print');
+    window.removeEventListener('afterprint', cleanup);
+  };
+  window.addEventListener('afterprint', cleanup);
+  window.print();
+}
 
 function loadScenario(): DecisionScenario {
   try {
@@ -99,6 +110,11 @@ export function DecisionLab() {
   const CLOSE_CALL_THRESHOLD = 0.3;
   const topTwoGap = scored.length >= 2 ? scored[0].weightedScore - scored[1].weightedScore : null;
   const isCloseCall = topTwoGap !== null && topTwoGap < CLOSE_CALL_THRESHOLD;
+  // Which single criterion is actually carrying the top-two ranking -- lets the
+  // reader scrutinize their own input on that specific rating/weight instead of
+  // treating the whole ranking as an opaque black box (honesty/self-critique).
+  const decisiveCriterion = useMemo(() => mostDecisiveCriterion(scored), [scored]);
+  const today = new Date().toLocaleDateString(isAr ? 'ar-SA' : 'en-GB');
 
   // ── AI rationale ──────────────────────────────────────────────────────────
   const buildPrompt = useCallback(() => buildDecisionPrompt(scenario, scored, isAr), [scenario, scored, isAr]);
@@ -299,7 +315,28 @@ export function DecisionLab() {
                 </p>
               </div>
             ) : (
-              <>
+              <div className="print-zone-decision-lab space-y-6">
+                {/* Print-only header */}
+                <div className="hidden print:block pb-3 border-b border-gray-300">
+                  <p className="text-lg font-extrabold text-gray-900">
+                    {isAr ? '⚖️ ملخص مختبر القرار' : '⚖️ Decision Lab Summary'}
+                  </p>
+                  <p className="text-sm font-semibold text-gray-700">{scenario.question || (isAr ? 'بدون عنوان' : 'Untitled decision')}</p>
+                  <p className="text-xs text-gray-500">{isAr ? `تاريخ التصدير: ${today}` : `Exported: ${today}`}</p>
+                </div>
+
+                {/* Export bar (no-print) */}
+                <div className="no-print flex justify-end">
+                  <button
+                    onClick={() => printZone('decision-lab')}
+                    className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg font-bold bg-[#082C6B] text-white hover:opacity-90 transition-colors"
+                    title={isAr ? 'طباعة / تصدير PDF' : 'Print / Export PDF'}
+                  >
+                    <Printer className="w-3.5 h-3.5" />
+                    {isAr ? 'تصدير PDF' : 'Export PDF'}
+                  </button>
+                </div>
+
                 {/* Recommendation banner (#155 decision-ready output) */}
                 <div className="rounded-2xl border border-[#082C6B]/20 bg-[#082C6B]/5 p-4">
                   <p className="text-[11px] font-bold uppercase tracking-wider text-[#082C6B]/70 mb-1">
@@ -315,6 +352,14 @@ export function DecisionLab() {
                       {isAr
                         ? `تنبيه: هذا فرق ضئيل — يفصل بين أعلى خيارين ${topTwoGap?.toFixed(2)} نقطة فقط. راجع أوزان المعايير قبل اتخاذ القرار النهائي.`
                         : `Close call: the top two options are only ${topTwoGap?.toFixed(2)} points apart. Double-check your criteria weights before treating this as decisive.`}
+                      {decisiveCriterion && (
+                        <>
+                          {' '}
+                          {isAr
+                            ? `المعيار الأكثر تأثيراً في هذا الفرق: "${decisiveCriterion.name}" — ابدأ المراجعة من هناك.`
+                            : `Most influential criterion behind this gap: "${decisiveCriterion.name}" -- start your review there.`}
+                        </>
+                      )}
                     </p>
                   )}
                 </div>
@@ -374,18 +419,24 @@ export function DecisionLab() {
                       ))}
                     </tbody>
                   </table>
+                  <p className="text-[10px] text-muted-foreground mt-3 flex items-start gap-1.5">
+                    <Info className="w-3 h-3 shrink-0 mt-0.5" />
+                    {isAr
+                      ? 'هذه التقييمات هي أحكامك الشخصية التي أدخلتها يدوياً — وليست بيانات مُتحقَّق منها أو معيارية.'
+                      : 'These ratings are your own judgment, entered manually -- not verified or benchmarked data.'}
+                  </p>
                 </div>
 
                 {/* AI rationale */}
-                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4">
+                <div className="no-print bg-white rounded-2xl border border-slate-200 shadow-sm p-4">
                   <h3 className="text-sm font-bold text-slate-800 mb-1 flex items-center gap-2">
                     <Sparkles className="w-4 h-4 text-[#082C6B]" />
                     {isAr ? 'التبرير بالذكاء الاصطناعي' : 'AI Rationale'}
                   </h3>
                   <p className="text-[11px] text-muted-foreground mb-1">
                     {isAr
-                      ? 'يفسّر الذكاء الاصطناعي الترتيب أعلاه ويشير إلى أي مخاطر يجب مراعاتها — لا يغيّر الأوزان أو الدرجات التي أدخلتها.'
-                      : 'The AI explains the ranking above and flags anything worth watching -- it does not change the weights or scores you entered.'}
+                      ? 'يفسّر الذكاء الاصطناعي الترتيب أعلاه ويشير إلى أي مخاطر يجب مراعاتها — لا يغيّر الأوزان أو الدرجات التي أدخلتها. إن أضاف تحفظاً يخالف التوصية أعلاه، اعتبر ذلك سبباً إضافياً للمراجعة، لا تصحيحاً تلقائياً لها.'
+                      : "The AI explains the ranking above and flags anything worth watching -- it does not change the weights or scores you entered. If it raises a caveat that cuts against the Recommendation above, treat that as a reason to look closer, not an automatic override."}
                   </p>
                   <AIPlanPanel
                     loading={aiPlan.loading}
@@ -409,7 +460,7 @@ export function DecisionLab() {
                     onDismissDeleteError={aiPlan.dismissDeleteError}
                   />
                 </div>
-              </>
+              </div>
             )}
           </div>
         )}

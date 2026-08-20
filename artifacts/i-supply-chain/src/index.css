@@ -228,6 +228,11 @@ html[lang="ar"] {
     visibility: visible;
   }
 
+  body[data-print="decision-lab"] .print-zone-decision-lab,
+  body[data-print="decision-lab"] .print-zone-decision-lab * {
+    visibility: visible;
+  }
+
   .print-hide {
     display: none !important;
   }
