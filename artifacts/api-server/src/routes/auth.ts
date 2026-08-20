@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import crypto from 'node:crypto';
 import { db } from '@workspace/db';
-import { usersTable } from '@workspace/db';
+import { usersTable, organizationsTable } from '@workspace/db';
 import { eq, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import bcrypt from 'bcryptjs';
@@ -104,6 +104,23 @@ router.post('/register', authRateLimiter, registerEmailRateLimiter, async (req, 
     } else {
       res.status(409).json({ ok: false, error: 'An account with this email already exists. Please sign in.' });
       return;
+    }
+
+    // #367 (Engine 4) — every account that reaches this point is becoming a
+    // real, activated customer for the first time (brand-new signup, or a
+    // legacy profile-only account just setting its first password). Give it
+    // an organisation if it doesn't already have one. Guarded by
+    // organizationId so this only ever fires once per account — safe to
+    // leave in place even after #364 (Stripe) eventually adds its own
+    // org-aware flows. Deliberately does NOT search for an existing
+    // organisation by company name and join it — one org per signup, no
+    // multi-seat/invite mechanic yet (that's a separate, later feature).
+    if (!user.organizationId) {
+      const orgName = (company && company.trim()) || `${fullName}'s workspace`;
+      const [org] = await db.insert(organizationsTable).values({ name: orgName }).returning();
+      await db.update(usersTable).set({ organizationId: org.id }).where(eq(usersTable.id, user.id));
+      user = { ...user, organizationId: org.id };
+      logger.info({ userId: user.id, organizationId: org.id }, '[auth] Organisation created for account (#367)');
     }
 
     // Write server-side session

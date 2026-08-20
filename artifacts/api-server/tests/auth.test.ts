@@ -49,6 +49,7 @@ describe('POST /api/auth/register', () => {
   it('lets a legacy user (no password hash) claim their account', async () => {
     dbState.selectRows = [user]; // no passwordHash field → legacy
     dbState.updateRows = [{ ...user, fullName: 'Jane Updated', passwordHash: 'hashed' }];
+    dbState.insertRows = [{ id: 42, name: "Jane Updated's workspace" }]; // #367 org creation
     const app = makeApp('/api/auth', authRouter);
     const res = await request(app).post('/api/auth/register').send({
       email: user.email,
@@ -58,6 +59,55 @@ describe('POST /api/auth/register', () => {
     expect(res.status).toBe(200);
     expect(res.body.user.fullName).toBe('Jane Updated');
     expect(res.body.user.passwordHash).toBeUndefined();
+  });
+
+  // #367 (Engine 4) — every account activating for the first time (brand-new
+  // signup, or a legacy account setting its first password) gets its own
+  // organisation, guarded by organizationId so it only ever fires once.
+  describe('organisation creation (#367)', () => {
+    it('creates an organisation for a brand-new signup and links it', async () => {
+      dbState.selectRows = [];
+      dbState.insertRows = [{ ...user, organizationId: null }]; // first insert() call: the user row itself
+      const app = makeApp('/api/auth', authRouter);
+      const res = await request(app).post('/api/auth/register').send({
+        email: 'org-new-signup@example.com',
+        fullName: user.fullName,
+        password: 'secret6',
+        company: user.company,
+      });
+      expect(res.status).toBe(200);
+      expect(res.body.ok).toBe(true);
+      // Two inserts happen: the user, then the organisation (name from `company`).
+      expect(dbState.insertedValues.length).toBe(2);
+      expect(dbState.insertedValues[1]).toMatchObject({ name: user.company });
+    });
+
+    it("falls back to a name based on fullName when company is not given", async () => {
+      dbState.selectRows = [];
+      dbState.insertRows = [{ ...user, company: null, organizationId: null }];
+      const app = makeApp('/api/auth', authRouter);
+      const res = await request(app).post('/api/auth/register').send({
+        email: 'org-no-company@example.com',
+        fullName: user.fullName,
+        password: 'secret6',
+      });
+      expect(res.status).toBe(200);
+      expect(dbState.insertedValues[1]).toMatchObject({ name: `${user.fullName}'s workspace` });
+    });
+
+    it('does not create a second organisation for an account that already has one', async () => {
+      dbState.selectRows = [{ ...user, organizationId: 7 }]; // legacy, but already has an org
+      dbState.updateRows = [{ ...user, organizationId: 7, passwordHash: 'hashed' }];
+      const app = makeApp('/api/auth', authRouter);
+      const res = await request(app).post('/api/auth/register').send({
+        email: 'org-already-has-one@example.com',
+        fullName: user.fullName,
+        password: 'secret6',
+      });
+      expect(res.status).toBe(200);
+      // Only the password-set update happens — no insert() call at all for this account.
+      expect(dbState.insertedValues.length).toBe(0);
+    });
   });
 
   it('rejects registration for an email that already has a password', async () => {

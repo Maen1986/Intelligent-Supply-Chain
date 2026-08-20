@@ -60,6 +60,7 @@ export function makeDbMock() {
       execute: vi.fn(async () => ({ rows: [] })),
     },
     usersTable: { email: 'email', id: 'id' },
+    organizationsTable: { id: 'id', name: 'name', createdAt: 'createdAt' },
     entitlementsTable: { id: 'id', userId: 'userId', organizationId: 'organizationId', moduleId: 'moduleId', source: 'source', grantedBy: 'grantedBy', grantedAt: 'grantedAt' },
     apiKeysTable: { keyHash: 'keyHash', id: 'id', userId: 'userId', scope: 'scope', revokedAt: 'revokedAt' },
     submissionsTable: { tool: 'tool', createdAt: 'createdAt' },
