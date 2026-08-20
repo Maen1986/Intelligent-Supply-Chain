@@ -306,6 +306,26 @@ const MIGRATIONS: string[] = [
      created_at     TIMESTAMP NOT NULL DEFAULT NOW()
    )`,
 
+  // #188 (Decision Record 8.5, Layer 1) -- entitlements table. One row per
+  // (user, module) grant. moduleId is one of the 6 real à la carte modules
+  // (m1..m6, 2 core segments each -- see maturityData.tsx) or 'bundle' (all
+  // six). source is 'manual' until #364 (Stripe) ships a webhook that writes
+  // 'stripe' rows instead; every row today is provisioned by hand via the
+  // new POST /api/admin/entitlements/grant route. Deliberately does not
+  // cover Layer 2 (Consultancy Engine / Command Centre subscription) --
+  // that stays a separate tier field once #364 exists, so consultancy.ts
+  // never has to reason about which segments a buyer owns.
+  `CREATE TABLE IF NOT EXISTS entitlements (
+     id               SERIAL PRIMARY KEY,
+     user_id          INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+     organization_id  INTEGER REFERENCES organizations(id),
+     module_id        TEXT NOT NULL,
+     source           TEXT NOT NULL DEFAULT 'manual',
+     granted_by       TEXT,
+     granted_at       TIMESTAMP NOT NULL DEFAULT NOW(),
+     UNIQUE (user_id, module_id)
+   )`,
+
 
   // #183 -- content-honesty pass on gcc_benchmarks. These KPI/lever/risk
   // numbers are internal 0-100 composite reference indices, not literal
