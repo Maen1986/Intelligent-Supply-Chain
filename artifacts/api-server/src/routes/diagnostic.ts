@@ -309,7 +309,7 @@ Return ONLY valid JSON (no markdown, no code fences) matching this EXACT structu
   "evidenceSummary": {
     "dataUsed": ["specific input this diagnosis is grounded in, e.g. \"business size: ${input.businessSize}\"", "reported symptoms or challenge text if provided, or the GCC/reference benchmark data cited above"],
     "assumptions": ["assumption made where this short self-assessment did not specify enough to be precise -- be honest here, this is a directional tool, not an audit"],
-    "confidence": "<0-100, overall confidence in this diagnosis given only a short self-assessment was provided -- should generally be lower than a full paid engagement would warrant unless symptoms/challenge gave real specifics>"
+    "confidence": "<0-100, overall confidence in this diagnosis given only a short self-assessment was provided -- should generally be lower than a full paid engagement would warrant unless symptoms/challenge gave real specifics. Calibrate honestly: 85-100 only with genuinely specific symptoms/challenge text behind it, 60-84 for a reasonable but partly-assumed picture, below 60 when working from just the picker fields with no free text. Do not default high out of politeness>"
   }
 }
 

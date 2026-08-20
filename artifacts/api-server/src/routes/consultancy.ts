@@ -90,7 +90,7 @@ Return ONLY valid JSON:
       "status": "Active",
       "title": "short problem name, 5-8 words",
       "severityScore": <0-100>,
-      "confidence": <0-100, how confident this diagnosis is given the information provided>,
+      "confidence": <0-100, how confident this diagnosis is given the information provided -- calibrate honestly: 85-100 only with verified assessment data or highly specific client detail behind it; 60-84 for a solid but partly-assumed picture; below 60 when working mostly from a short free-text description. Do not default high out of politeness>,
       "framework": "e.g. SCOR Source reliability gap",
       "chain": {
         "symptom": "what the client actually observes or reports",
@@ -122,11 +122,11 @@ Return ONLY valid JSON:
   "diagnosticSummary": "3-4 paragraphs: what is broken, why it is broken, what it is costing them, what world-class looks like for their industry",
   "urgentActions": ["action 1 — do this week", "action 2", "action 3"],
   "estimatedAnnualCost": "SAR/USD quantification of the problem if left unresolved",
-  "considerAlso": "The strongest honest counter-argument to your own top problem/recommendation above -- e.g. a reason it might not be the real priority, a cheaper alternative explanation, or a condition under which acting on it would be premature. One or two sentences. Never omit this even when confident.",
+  "considerAlso": "The strongest honest counter-argument to your own top problem/recommendation above -- e.g. a reason it might not be the real priority, a cheaper alternative explanation, or a condition under which acting on it would be premature. Must be specific to this diagnosis, never a generic caveat like \"more data could change this\". One or two sentences. Never omit this even when confident.",
   "evidenceSummary": {
     "dataUsed": ["specific input this diagnosis is grounded in, e.g. \"maturity indicator: Procurement 2.1/5\"", "the challenge description itself"],
     "assumptions": ["assumption made where information was not provided, stated plainly"],
-    "confidence": "<0-100, overall confidence in this diagnosis given what was actually provided>"
+    "confidence": "<0-100, overall confidence in this diagnosis given what was actually provided -- same calibration as above: 85-100 only with verified data or highly specific detail, 60-84 for a partly-assumed picture, below 60 for a thin free-text description>"
   },
   "consultantNote": "Personal diagnostic note from Ma'in — 2 sentences, specific to their industry and challenge"
 }
@@ -228,11 +228,11 @@ Return ONLY valid JSON:
   "totalProjectedSaving": "quantified SAR/USD annual saving estimate",
   "roi": "estimated ROI % and payback period",
   "nextStep": "The single most important first action to take — specific, this week",
-  "considerAlso": "The strongest honest counter-argument to this solution's central approach -- e.g. a reason a lighter-touch fix might work first, a dependency that could delay it, or a condition under which a different phase order would be better. One or two sentences. Never omit this even when confident.",
+  "considerAlso": "The strongest honest counter-argument to this solution's central approach -- e.g. a reason a lighter-touch fix might work first, a dependency that could delay it, or a condition under which a different phase order would be better. Must be specific to this solution, never a generic caveat like \"more data could change this\". One or two sentences. Never omit this even when confident.",
   "evidenceSummary": {
     "dataUsed": ["specific element of the diagnosis this solution is built from, e.g. \"P1: <problem title>\"", "industry/company-size context"],
     "assumptions": ["assumption made where the diagnosis did not specify enough to plan precisely"],
-    "confidence": "<0-100, overall confidence this solution fits the diagnosed problem given what was actually provided>"
+    "confidence": "<0-100, overall confidence this solution fits the diagnosed problem given what was actually provided -- calibrate honestly: 85-100 only when the diagnosis itself was well-evidenced, 60-84 when reasonable but partly assumed, below 60 when the diagnosis was thin. Do not default high out of politeness>"
   },
   "consultantNote": "Ma'in's personal recommendation — 2 sentences"
 }

@@ -133,12 +133,12 @@ Generate a full strategy report with EIGHT sections, each substantive and deeply
   "executiveSummary": {
     "headline": "One-sentence strategic verdict",
     "body": "5–6 paragraphs: (1) who the client is and their strategic context, (2) what the assessment found — the overall maturity picture with specific scores cited, (3) the single most critical dependency chain blocking improvement, (4) the 3 highest-leverage opportunities found, (5) the 6-month transformation vision and its measurable endpoint, (6) a call to action. Be specific with numbers, GCC benchmarks, and SAR impact estimates.",
-    "considerAlso": "The strongest honest counter-argument to this report's central strategic verdict -- e.g. a reason the top priority might not be the right one to start with, a resourcing or dependency risk to the sequencing, or a condition under which the recommended pace would be wrong for this client. One or two sentences. Never omit this even when confident."
+    "considerAlso": "The strongest honest counter-argument to this report's central strategic verdict -- e.g. a reason the top priority might not be the right one to start with, a resourcing or dependency risk to the sequencing, or a condition under which the recommended pace would be wrong for this client. Must be specific to this client's data, never a generic caveat like \"more data could change this\". One or two sentences. Never omit this even when confident."
   },
   "evidenceSummary": {
     "dataUsed": ["specific input this report is grounded in, e.g. \"Overall maturity score: X/5\"", "specific segment scores or remedy actions referenced above, or \"industry knowledge (no maturity assessment on file)\" if none was provided"],
     "assumptions": ["assumption made where the client's data did not specify enough to be precise"],
-    "confidence": "<0-100, overall confidence in this report's findings given what was actually provided>"
+    "confidence": "<0-100, overall confidence in this report's findings given what was actually provided. Calibrate honestly: 85-100 only with a full maturity assessment on file behind it, 60-84 for partial assessment data, below 60 when the client provided no maturity assessment (\"use industry knowledge to benchmark\" case above). Do not default high out of politeness>"
   },
   "companyContext": {
     "headline": "Organisation & Industry Context",

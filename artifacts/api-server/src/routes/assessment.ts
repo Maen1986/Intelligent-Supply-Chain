@@ -126,7 +126,7 @@ Return ONLY valid JSON (no markdown, no code fences) matching this exact structu
   "evidenceSummary": {
     "dataUsed": ["specific input this briefing is grounded in, e.g. \"KPI avg ${avgKpi.toFixed(1)}/5\"", "verified Maturity Assessment domains if any were provided, or self-reported profile fields otherwise"],
     "assumptions": ["assumption made where the client's self-reported profile did not specify enough to be precise"],
-    "confidence": "<0-100, overall confidence in this briefing -- higher where verified Maturity Assessment domains are cited above, lower where this is built purely from a self-reported profile>"
+    "confidence": "<0-100, overall confidence in this briefing -- higher where verified Maturity Assessment domains are cited above, lower where this is built purely from a self-reported profile. Calibrate honestly: 85-100 only when most of the picture is verified-assessment-backed, 60-84 for a mixed verified/self-reported picture, below 60 when entirely self-reported. Do not default high out of politeness>"
   },
   "consultantNote": "A personal note from Ma'in in first person — 2 sentences, warm but authoritative, referencing their specific industry or primary pain point"
 }
