@@ -3186,9 +3186,29 @@ function BriefingTab({ lang }: { lang: Lang }) {
 // ─── Tab 5: AI Consultancy Engine ────────────────────────────────────────────
 type ConsultStage = 'input' | 'diagnosing' | 'diagnosis' | 'solving' | 'solution' | 'refining';
 
+/* Problem DNA object (#167, 20 Aug 2026): each diagnosed problem as a structured
+   causal chain rather than a flat cause/framework/severity bullet. Same underlying
+   AI call as before -- schema restructuring only. */
+interface ProblemDNA {
+  id: string;
+  status: string;
+  title: string;
+  severityScore: number;
+  confidence: number;
+  framework: string;
+  chain: {
+    symptom: string;
+    trigger: string;
+    immediateCause: string;
+    contributingCauses: string[];
+    rootCause: string;
+    downstreamEffects: string[];
+  };
+}
+
 interface DiagnosisResult {
   challengeSummary: string;
-  rootCauses: { cause: string; framework: string; severity: string }[];
+  problems: ProblemDNA[];
   riskAssessment: { level: string; topRisks: string[]; iso31000Score: number };
   maturityAssessment: { level: string; score: number; keyGaps: string[] };
   diagnosticSummary: string;
@@ -3221,6 +3241,8 @@ function ConsultancyTab({ lang }: { lang: Lang }) {
   const [satisfaction, setSatisfaction] = useState(0);
   const [feedback, setFeedback]     = useState('');
   const [escalated, setEscalated]   = useState(false);
+  const [expandedProblems, setExpandedProblems] = useState<Record<string, boolean>>({});
+  const toggleProblem = (id: string) => setExpandedProblems(p => ({ ...p, [id]: !p[id] }));
   const ar = lang === 'ar';
 
   /* ── Real Maturity Assessment as optional AI context (#141) ──
@@ -3423,15 +3445,52 @@ function ConsultancyTab({ lang }: { lang: Lang }) {
             </div>
           </div>
           <div>
-            <h4 className="text-xs font-bold text-[#082C6B] uppercase tracking-wider mb-3">{ar ? 'الأسباب الجذرية' : 'Root Causes'}</h4>
+            <h4 className="text-xs font-bold text-[#082C6B] uppercase tracking-wider mb-3">{ar ? 'المشكلات المشخّصة' : 'Diagnosed Problems'}</h4>
             <div className="space-y-2">
-              {(diagnosis.rootCauses ?? []).map((rc, i) => (
-                <div key={i} className={`flex gap-3 rounded-xl p-4 border ${rc.severity === 'High' ? 'bg-red-50 border-red-200' : rc.severity === 'Medium' ? 'bg-amber-50 border-amber-200' : 'bg-blue-50 border-blue-200'}`}>
-                  <AlertTriangle className={`w-4 h-4 shrink-0 mt-0.5 ${rc.severity === 'High' ? 'text-red-600' : rc.severity === 'Medium' ? 'text-amber-600' : 'text-blue-600'}`} />
-                  <div className="flex-1 min-w-0"><p className="text-sm font-semibold">{rc.cause}</p><p className="text-xs text-muted-foreground mt-0.5">{rc.framework}</p></div>
-                  <span className={`text-xs font-bold px-2 py-0.5 rounded-full h-fit shrink-0 ${rc.severity === 'High' ? 'bg-red-100 text-red-700' : rc.severity === 'Medium' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'}`}>{rc.severity}</span>
-                </div>
-              ))}
+              {(diagnosis.problems ?? []).map((p) => {
+                const sev = p.severityScore >= 70 ? 'High' : p.severityScore >= 40 ? 'Medium' : 'Low';
+                const sevClass = sev === 'High' ? 'bg-red-50 border-red-200' : sev === 'Medium' ? 'bg-amber-50 border-amber-200' : 'bg-blue-50 border-blue-200';
+                const sevIcon  = sev === 'High' ? 'text-red-600' : sev === 'Medium' ? 'text-amber-600' : 'text-blue-600';
+                const sevBadge = sev === 'High' ? 'bg-red-100 text-red-700' : sev === 'Medium' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700';
+                const isOpen = !!expandedProblems[p.id];
+                return (
+                  <div key={p.id} className={`rounded-xl border overflow-hidden ${sevClass}`}>
+                    <button type="button" onClick={() => toggleProblem(p.id)} className="w-full flex gap-3 items-start p-4 text-left">
+                      <AlertTriangle className={`w-4 h-4 shrink-0 mt-0.5 ${sevIcon}`} />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold">{p.title}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">{p.framework}</p>
+                      </div>
+                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full h-fit shrink-0 ${sevBadge}`}>{p.severityScore}/100</span>
+                      <span className="text-xs font-semibold px-2 py-0.5 rounded-full h-fit shrink-0 bg-white/70 text-muted-foreground border border-border" title={ar ? 'مستوى ثقة التشخيص' : 'Diagnosis confidence'}>{p.confidence}% {ar ? 'ثقة' : 'confidence'}</span>
+                      {ar
+                        ? <ChevronLeft className={`w-4 h-4 text-muted-foreground shrink-0 mt-0.5 transition-transform duration-200 ${isOpen ? '-rotate-90' : ''}`} />
+                        : <ChevronRight className={`w-4 h-4 text-muted-foreground shrink-0 mt-0.5 transition-transform duration-200 ${isOpen ? 'rotate-90' : ''}`} />}
+                    </button>
+                    <AnimatePresence initial={false}>
+                      {isOpen && (
+                        <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
+                          <div className="px-4 pb-4 pt-1 space-y-2 text-sm bg-white/60">
+                            {[
+                              [ar ? 'العرض' : 'Symptom', p.chain.symptom],
+                              [ar ? 'المحفّز' : 'Trigger', p.chain.trigger],
+                              [ar ? 'السبب المباشر' : 'Immediate Cause', p.chain.immediateCause],
+                              [ar ? 'أسباب مساهمة' : 'Contributing Causes', p.chain.contributingCauses.join('; ')],
+                              [ar ? 'السبب الجذري' : 'Root Cause', p.chain.rootCause],
+                              [ar ? 'الآثار اللاحقة إن لم تُعالج' : 'Downstream Effects if Unresolved', p.chain.downstreamEffects.join('; ')],
+                            ].map(([label, value]) => (
+                              <div key={label} className="flex gap-2">
+                                <span className="font-bold text-[#082C6B] shrink-0 w-40">{label}:</span>
+                                <span className="text-muted-foreground">{value}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                );
+              })}
             </div>
           </div>
           <div className="bg-muted rounded-xl p-5">

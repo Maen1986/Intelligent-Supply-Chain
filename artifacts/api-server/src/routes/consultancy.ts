@@ -5,6 +5,10 @@
  * Consultancy Engine is subscription-only per Decision Record 8.5).
  *
  * POST /api/consultancy/diagnose    → structured AI diagnosis
+ *   diagnosis.problems[] is a "Problem DNA" object per problem (#167, 20 Aug 2026):
+ *   id / status / severityScore / confidence % / symptom -> trigger -> immediateCause ->
+ *   contributingCauses -> rootCause -> downstreamEffects. Same underlying AI call and data,
+ *   restructured from the old flat rootCauses[] (cause/framework/severity) list.
  * POST /api/consultancy/solution    → solution plan generation
  * POST /api/consultancy/refine      → refine solution after satisfaction feedback
  * POST /api/consultancy/escalate    → email Ma'in + log case to DB
@@ -76,8 +80,23 @@ Return ONLY valid JSON:
 {
   "challengeSummary": "1-2 sentence synthesis of the core challenge in supply chain terms",
   "clarifyingQuestions": ["question 1 if more info needed", "question 2"],
-  "rootCauses": [
-    { "cause": "specific root cause", "framework": "e.g. SCOR Source reliability gap", "severity": "High|Medium|Low" }
+  "problems": [
+    {
+      "id": "P1",
+      "status": "Active",
+      "title": "short problem name, 5-8 words",
+      "severityScore": <0-100>,
+      "confidence": <0-100, how confident this diagnosis is given the information provided>,
+      "framework": "e.g. SCOR Source reliability gap",
+      "chain": {
+        "symptom": "what the client actually observes or reports",
+        "trigger": "the immediate event or condition that set this off",
+        "immediateCause": "the direct, proximate cause of the symptom",
+        "contributingCauses": ["secondary factor 1", "secondary factor 2"],
+        "rootCause": "the underlying systemic cause -- the thing that, if fixed, prevents recurrence",
+        "downstreamEffects": ["effect 1 if left unresolved", "effect 2 if left unresolved"]
+      }
+    }
   ],
   "scorcardGaps": {
     "reliability": "assessment of OTIF/perfect order reliability",
@@ -103,10 +122,10 @@ Return ONLY valid JSON:
 }
 
 Rules:
-- rootCauses: 3-5 items
+- problems: 3-5 items, ids sequential P1, P2, P3...; status is always "Active" for a first-time diagnosis (this field exists so a future retake can mark a problem "Resolved" or "Recurring" against the same id); contributingCauses: 1-3 items; downstreamEffects: 2-3 items
 - urgentActions: 3 items
 - Be industry-specific: ${industryFull} benchmarks, not generic supply chain
-- Ground every root cause in a named framework
+- Ground every problem's chain in a named framework
 - maturityAssessment: if a "Maturity Indicator" is provided above, it is real, completed assessment data for this client — treat it as ground truth for any segment it covers and let it anchor your level/score/keyGaps rather than re-estimating from scratch. If the challenge concerns a topic the indicator does not cover, or no indicator is provided, produce your own independent estimate as usual — do not withhold a diagnosis and do not force-fit unrelated data to make them agree`;
 
   try {
