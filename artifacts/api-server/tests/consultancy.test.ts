@@ -43,8 +43,18 @@ beforeEach(() => {
 });
 
 describe('POST /api/consultancy/diagnose', () => {
-  it('requires industry and challenge', async () => {
+  // #364 billing gate (Decision Record 8.5): the whole Consultancy Engine is
+  // subscription-only, so every route here requires a session. Checked once
+  // at the top of the file's most-used route rather than on all four.
+  it('returns 401 when called without a session', async () => {
     const app = makeApp('/api/consultancy', consultancyRouter);
+    const res = await request(app).post('/api/consultancy/diagnose').send({ industry: 'FMCG', challenge: 'Stockouts' });
+    expect(res.status).toBe(401);
+    expect(res.body.ok).toBe(false);
+  });
+
+  it('requires industry and challenge', async () => {
+    const app = makeApp('/api/consultancy', consultancyRouter, { userId: 1 });
     const res = await request(app).post('/api/consultancy/diagnose').send({ industry: 'FMCG' });
     expect(res.status).toBe(400);
     expect(res.body.ok).toBe(false);
@@ -52,7 +62,7 @@ describe('POST /api/consultancy/diagnose', () => {
 
   it('returns the parsed AI diagnosis', async () => {
     aiReply({ challengeSummary: 'Late deliveries', riskAssessment: { level: 'High' } });
-    const app = makeApp('/api/consultancy', consultancyRouter);
+    const app = makeApp('/api/consultancy', consultancyRouter, { userId: 1 });
     const res = await request(app).post('/api/consultancy/diagnose').send({
       industry: 'FMCG',
       challenge: 'OTIF is 62% and falling',
@@ -64,7 +74,7 @@ describe('POST /api/consultancy/diagnose', () => {
 
   it('maps AI rate-limit errors to a friendly 503', async () => {
     createMock.mockRejectedValueOnce(Object.assign(new Error('rate limited'), { status: 429 }));
-    const app = makeApp('/api/consultancy', consultancyRouter);
+    const app = makeApp('/api/consultancy', consultancyRouter, { userId: 1 });
     const res = await request(app).post('/api/consultancy/diagnose').send({
       industry: 'FMCG',
       challenge: 'x',
@@ -77,7 +87,7 @@ describe('POST /api/consultancy/diagnose', () => {
 
   it('returns 502 when the AI returns no content', async () => {
     createMock.mockResolvedValueOnce({ choices: [] });
-    const app = makeApp('/api/consultancy', consultancyRouter);
+    const app = makeApp('/api/consultancy', consultancyRouter, { userId: 1 });
     const res = await request(app).post('/api/consultancy/diagnose').send({
       industry: 'FMCG',
       challenge: 'x',
@@ -88,7 +98,7 @@ describe('POST /api/consultancy/diagnose', () => {
 
 describe('POST /api/consultancy/solution', () => {
   it('requires industry, challenge, and diagnosis', async () => {
-    const app = makeApp('/api/consultancy', consultancyRouter);
+    const app = makeApp('/api/consultancy', consultancyRouter, { userId: 1 });
     const res = await request(app).post('/api/consultancy/solution').send({
       industry: 'FMCG',
       challenge: 'x',
@@ -98,7 +108,7 @@ describe('POST /api/consultancy/solution', () => {
 
   it('returns the parsed AI solution', async () => {
     aiReply({ executiveSolution: 'Fix sourcing', roi: '180%' });
-    const app = makeApp('/api/consultancy', consultancyRouter);
+    const app = makeApp('/api/consultancy', consultancyRouter, { userId: 1 });
     const res = await request(app).post('/api/consultancy/solution').send({
       industry: 'FMCG',
       challenge: 'x',
@@ -111,14 +121,14 @@ describe('POST /api/consultancy/solution', () => {
 
 describe('POST /api/consultancy/refine', () => {
   it('requires industry, previousSolution, and feedback', async () => {
-    const app = makeApp('/api/consultancy', consultancyRouter);
+    const app = makeApp('/api/consultancy', consultancyRouter, { userId: 1 });
     const res = await request(app).post('/api/consultancy/refine').send({ industry: 'FMCG' });
     expect(res.status).toBe(400);
   });
 
   it('returns the refined solution', async () => {
     aiReply({ executiveSolution: 'Refined', refinementNote: 'Shortened phase 1' });
-    const app = makeApp('/api/consultancy', consultancyRouter);
+    const app = makeApp('/api/consultancy', consultancyRouter, { userId: 1 });
     const res = await request(app).post('/api/consultancy/refine').send({
       industry: 'FMCG',
       challenge: 'x',
@@ -155,7 +165,7 @@ describe('POST /api/consultancy/escalate', () => {
 
   it('returns 500 when the escalation email fails', async () => {
     escalationMock.mockRejectedValueOnce(new Error('smtp down'));
-    const app = makeApp('/api/consultancy', consultancyRouter);
+    const app = makeApp('/api/consultancy', consultancyRouter, { userId: 1 });
     const res = await request(app).post('/api/consultancy/escalate').send({
       industry: 'Retail',
       challenge: 'Stockouts',

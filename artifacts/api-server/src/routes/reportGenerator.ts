@@ -2,6 +2,7 @@ import { Router }   from 'express';
 import { openai }   from '@workspace/integrations-openai-ai-server';
 import { OPENAI_MODEL, friendlyAIError } from '../lib/aiConfig';
 import { requireSession }            from '../middlewares/requireSession';
+import { getEntitledSegments, gateRemedyActions, entitledTitlesFrom } from '../lib/entitlements';
 
 const router = Router();
 
@@ -56,8 +57,26 @@ router.post('/generate', requireSession, async (req, res) => {
       return res.status(400).json({ error: 'contactInfo.name and contactInfo.company are required' });
     }
 
-    const { contactInfo, maturityData, language } = input;
+    const { contactInfo, language } = input;
     const lang = language === 'ar' ? 'Arabic' : 'English';
+
+    // #188: never trust the client's maturityData for gated content --
+    // the client already filters what it sends, but a manipulated request
+    // could ask for a full report on segments outside a purchased module.
+    // Re-derive entitlement server-side and re-filter before this ever
+    // reaches the AI prompt. Ownership enforced at the data level, same
+    // principle maturitySnapshots.ts already uses for its own reads.
+    const userId = res.locals.userId as number;
+    let maturityData = input.maturityData;
+    if (maturityData) {
+      const entitledSegmentIds = await getEntitledSegments(userId);
+      const entitledTitles = entitledTitlesFrom(entitledSegmentIds, maturityData.segmentScores);
+      maturityData = {
+        ...maturityData,
+        segmentScores: maturityData.segmentScores.filter(s => entitledSegmentIds.has(s.id)),
+        remedies: gateRemedyActions(entitledTitles, maturityData.remedies),
+      };
+    }
 
     /* ── Build context strings ── */
     const maturityContext = maturityData

@@ -14,6 +14,7 @@ import { db }              from '@workspace/db';
 import { sql }             from 'drizzle-orm';
 import { z }               from 'zod';
 import { requireSession }  from '../middlewares/requireSession';
+import { getEntitledSegments, gateSegmentScores, gateRemedyActions, entitledTitlesFrom } from '../lib/entitlements';
 import { snapshotRateLimiter } from '../lib/rateLimit';
 import { logger }          from '../lib/logger';
 
@@ -117,16 +118,23 @@ router.post(
  * MaturityTrend / SnapshotRecord expects. This is the single place where
  * the contract is enforced; the frontend never sees raw DB column names.
  */
-function normaliseSnapshot(row: Record<string, unknown>) {
+function normaliseSnapshot(row: Record<string, unknown>, entitledSegmentIds: Set<string>) {
+  const rawSegments = (row.segment_scores ?? []) as Array<{ id: string; title: string; titleAr?: string }>;
+  const rawRemedies = row.remedy_actions as
+    { days30?: { segmentTitle: string }[]; days60?: { segmentTitle: string }[]; days90?: { segmentTitle: string }[] } | null
+    ?? null;
+  const entitledTitles = entitledTitlesFrom(entitledSegmentIds, rawSegments);
   return {
     id:            row.id,
     takenAt:       row.taken_at,
     industry:      row.industry ?? null,
     companySize:   row.company_size ?? null,
-    segmentScores: row.segment_scores ?? [],
+    // #188: locked segments keep id/title (still shows "assessed") but drop
+    // score/level/benchmarks. Overall score/level below stays free/unlocked.
+    segmentScores: gateSegmentScores(entitledSegmentIds, rawSegments),
     overallScore:  row.overall_score,
     coveragePct:   row.coverage_pct,
-    remedyActions: row.remedy_actions ?? null,
+    remedyActions: gateRemedyActions(entitledTitles, rawRemedies) ?? null, // preserve explicit-null shape frontend already expects
   };
 }
 
@@ -144,7 +152,8 @@ router.get('/maturity/snapshots', requireSession, async (req, res) => {
     `);
 
     const rows: Record<string, unknown>[] = (result as any).rows ?? result;
-    res.json({ ok: true, snapshots: rows.map(normaliseSnapshot) });
+    const entitledSegmentIds = await getEntitledSegments(userId);
+    res.json({ ok: true, snapshots: rows.map(row => normaliseSnapshot(row, entitledSegmentIds)) });
   } catch (err) {
     logger.error({ err, userId }, '[maturitySnapshots] Fetch failed');
     res.status(500).json({ ok: false, error: 'Could not fetch snapshots' });
