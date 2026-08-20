@@ -35,7 +35,7 @@ type ResendState =
 
 const TOOLS = [
   { value: 'all',            en: 'All',            ar: 'الكل',            icon: ClipboardList },
-  { value: 'command_centre', en: 'Command Centre', ar: 'مركز القيادة',    icon: Gauge },
+  { value: 'command_centre', en: 'Control Tower',   ar: 'برج التحكم',       icon: Gauge },
   { value: 'diagnostic',     en: 'Diagnostic',     ar: 'التشخيص',         icon: Search },
   { value: 'maturity',       en: 'Maturity',       ar: 'النضج',           icon: FileText },
   { value: 'booking',        en: 'Booking',        ar: 'الحجوزات',        icon: CalendarCheck },

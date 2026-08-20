@@ -73,7 +73,7 @@ function toolLabel(tool: string, ar: boolean) {
   const map: Record<string, { en: string; ar: string }> = {
     maturity:        { en: 'Maturity Assessment',       ar: 'تقييم النضج' },
     diagnostic:      { en: 'Supply Chain Diagnostic',   ar: 'التشخيص المنهجي' },
-    command_centre:  { en: 'Command Centre Report',     ar: 'تقرير مركز القيادة' },
+    command_centre:  { en: 'Control Tower Report',      ar: 'تقرير برج التحكم' },
     report_generator:{ en: 'Report Generator',          ar: 'مولّد التقارير' },
     booking:         { en: 'Consultation Booking',      ar: 'حجز استشارة' },
     lead:            { en: 'Enquiry',                   ar: 'استفسار' },
@@ -472,7 +472,7 @@ function CommandCentreDetail({ inputs, outputs, ar }: {
       <Link href="/command-center">
         <Button size="sm" variant="outline" className="gap-2 border-accent/40 text-accent hover:bg-accent/5">
           <RotateCcw className="w-3.5 h-3.5" />
-          {ar ? 'مركز القيادة' : 'Command Centre'}
+          {ar ? 'برج التحكم' : 'Control Tower'}
         </Button>
       </Link>
     </div>

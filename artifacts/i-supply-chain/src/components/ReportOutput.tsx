@@ -90,19 +90,38 @@ export function ReportOutput({ report }: { report: DiagnosticReport }) {
           </div>
         </div>
 
-        {/* Content Sections — reduced padding on mobile */}
+        {/* Content Sections — reduced padding on mobile.
+            Restructured (#163, 21 Aug 2026) so the layout matches the
+            question being answered rather than a flat numbered list: every
+            field below already existed in DiagnosticReport -- this is a
+            regrouping + heading rewrite, no new data. */}
         <div className="p-4 sm:p-8 space-y-8 sm:space-y-12">
 
-          {/* Executive Summary */}
+          {/* Q1 — What's happening? */}
           <section>
-            <div className="flex items-center gap-3 mb-4">
+            <div className="flex items-center gap-3 mb-1">
               <Compass className="w-5 h-5 sm:w-6 sm:h-6 text-primary shrink-0" />
-              <h2 className="text-xl sm:text-2xl font-bold text-primary">{isAr ? '1. الملخص التنفيذي' : '1. Executive Summary'}</h2>
+              <div>
+                <p className="text-[11px] font-bold uppercase tracking-widest text-accent">{isAr ? 'ماذا يحدث؟' : "What's Happening"}</p>
+                <h2 className="text-xl sm:text-2xl font-bold text-primary">{isAr ? '1. الملخص التنفيذي' : '1. Executive Summary'}</h2>
+              </div>
             </div>
-            <p className="text-foreground leading-relaxed text-base sm:text-lg">{report.executiveSummary}</p>
+            <p className="text-foreground leading-relaxed text-base sm:text-lg mt-3">{report.executiveSummary}</p>
             <div className="mt-4">
               <EvidenceSummary evidence={report.evidenceSummary} ar={isAr} />
             </div>
+
+            <h3 className="text-lg sm:text-xl font-bold text-primary mt-6 mb-4 flex items-center gap-2">
+              <Target className="w-5 h-5 shrink-0" /> {isAr ? 'أبرز نتائج التشخيص' : 'Key Diagnostics'}
+            </h3>
+            <ul className="space-y-3">
+              {report.diagnosis.map((item, i) => (
+                <li key={i} className="flex items-start gap-3">
+                  <span className="w-2 h-2 mt-2 rounded-full bg-accent shrink-0"></span>
+                  <span className="text-foreground text-sm sm:text-base">{item}</span>
+                </li>
+              ))}
+            </ul>
           </section>
 
           <hr className="border-t-2 border-accent/30" />
@@ -115,78 +134,35 @@ export function ReportOutput({ report }: { report: DiagnosticReport }) {
             </section>
           )}
 
-          {/* Diagnosis & Root Causes — stacks on mobile, 2-col on md+ */}
-          <div className="grid md:grid-cols-2 gap-6 sm:gap-8">
-            <section>
-              <div className="flex items-center gap-3 mb-4">
-                <Target className="w-5 h-5 text-primary shrink-0" />
-                <h3 className="text-lg sm:text-xl font-bold text-primary">{isAr ? 'أبرز نتائج التشخيص' : 'Key Diagnostics'}</h3>
-              </div>
-              <ul className="space-y-3">
-                {report.diagnosis.map((item, i) => (
-                  <li key={i} className="flex items-start gap-3">
-                    <span className="w-2 h-2 mt-2 rounded-full bg-accent shrink-0"></span>
-                    <span className="text-foreground text-sm sm:text-base">{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </section>
-
-            <section>
-              <div className="flex items-center gap-3 mb-4">
-                <Crosshair className="w-5 h-5 text-primary shrink-0" />
-                <h3 className="text-lg sm:text-xl font-bold text-primary">{isAr ? 'الأسباب الجذرية المحددة' : 'Identified Root Causes'}</h3>
-              </div>
-              <ul className="space-y-3">
-                {report.rootCauses.map((item, i) => (
-                  <li key={i} className="flex items-start gap-3">
-                    <span className="w-2 h-2 mt-2 rounded-full bg-destructive shrink-0"></span>
-                    <span className="text-foreground text-sm sm:text-base">{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          </div>
-
-          <hr className="border-t-2 border-accent/30" />
-
-          {/* Recommendations & KPIs */}
+          {/* Q2 — Why? */}
           <section>
-            <div className="flex items-center gap-3 mb-5 sm:mb-6">
-              <CheckCircle2 className="w-5 h-5 sm:w-6 sm:h-6 text-primary shrink-0" />
-              <h2 className="text-xl sm:text-2xl font-bold text-primary">{isAr ? '2. التوصيات الاستراتيجية' : '2. Strategic Recommendations'}</h2>
+            <div className="flex items-center gap-3 mb-4">
+              <Crosshair className="w-5 h-5 sm:w-6 sm:h-6 text-primary shrink-0" />
+              <div>
+                <p className="text-[11px] font-bold uppercase tracking-widest text-accent">{isAr ? 'لماذا؟' : 'Why'}</p>
+                <h2 className="text-xl sm:text-2xl font-bold text-primary">{isAr ? '2. الأسباب الجذرية المحددة' : '2. Identified Root Causes'}</h2>
+              </div>
             </div>
-            <ul className="space-y-3 sm:space-y-4 mb-6 sm:mb-8">
-              {report.recommendations.map((item, i) => (
-                <li key={i} className="flex items-start gap-3 sm:gap-4 bg-muted/50 p-3 sm:p-4 rounded-lg border border-border">
-                  <div className="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 bg-primary text-white rounded-full flex items-center justify-center font-bold text-sm">
-                    {i + 1}
-                  </div>
-                  <span className="text-foreground font-medium pt-0.5 text-sm sm:text-base">{item}</span>
+            <ul className="space-y-3">
+              {report.rootCauses.map((item, i) => (
+                <li key={i} className="flex items-start gap-3">
+                  <span className="w-2 h-2 mt-2 rounded-full bg-destructive shrink-0"></span>
+                  <span className="text-foreground text-sm sm:text-base">{item}</span>
                 </li>
               ))}
             </ul>
-
-            <h3 className="text-base sm:text-lg font-bold text-primary mb-4 flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 shrink-0" /> {isAr ? 'مؤشرات الأداء الرئيسية الموصى بها' : 'Recommended KPIs'}
-            </h3>
-            <div className="grid sm:grid-cols-2 gap-3">
-              {report.kpis.map((kpi, i) => (
-                <div key={i} className="p-3 border border-border rounded bg-white shadow-sm flex items-start gap-2">
-                  <div className="w-1.5 h-1.5 mt-1.5 rounded-full bg-accent shrink-0" />
-                  <span className="text-xs sm:text-sm font-medium text-foreground">{kpi}</span>
-                </div>
-              ))}
-            </div>
           </section>
 
           <hr className="border-t-2 border-accent/30" />
 
-          {/* Risks & Mitigations — horizontal scroll on mobile */}
+          {/* Q3 — How bad? */}
           <section>
             <div className="flex items-center gap-3 mb-5 sm:mb-6">
               <AlertTriangle className="w-5 h-5 sm:w-6 sm:h-6 text-primary shrink-0" />
-              <h2 className="text-xl sm:text-2xl font-bold text-primary">{isAr ? '3. إدارة المخاطر' : '3. Risk Mitigation'}</h2>
+              <div>
+                <p className="text-[11px] font-bold uppercase tracking-widest text-accent">{isAr ? 'ما مدى خطورة الأمر؟' : 'How Bad'}</p>
+                <h2 className="text-xl sm:text-2xl font-bold text-primary">{isAr ? '3. إدارة المخاطر' : '3. Risk Mitigation'}</h2>
+              </div>
             </div>
             <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
               <table className="w-full text-left border-collapse min-w-[520px]">
@@ -210,13 +186,41 @@ export function ReportOutput({ report }: { report: DiagnosticReport }) {
 
           <hr className="border-t-2 border-accent/30" />
 
-          {/* Transformation Roadmap — stacks on mobile, 3-col on md+ */}
+          {/* Q4 — What can I do? */}
           <section>
             <div className="flex items-center gap-3 mb-5 sm:mb-6">
-              <CalendarDays className="w-5 h-5 sm:w-6 sm:h-6 text-primary shrink-0" />
-              <h2 className="text-xl sm:text-2xl font-bold text-primary">{isAr ? '4. خارطة طريق التحول' : '4. Transformation Roadmap'}</h2>
+              <CheckCircle2 className="w-5 h-5 sm:w-6 sm:h-6 text-primary shrink-0" />
+              <div>
+                <p className="text-[11px] font-bold uppercase tracking-widest text-accent">{isAr ? 'ماذا يمكنني أن أفعل؟' : 'What Can I Do'}</p>
+                <h2 className="text-xl sm:text-2xl font-bold text-primary">{isAr ? '4. التوصيات الاستراتيجية' : '4. Strategic Recommendations'}</h2>
+              </div>
+            </div>
+            <ul className="space-y-3 sm:space-y-4 mb-6 sm:mb-8">
+              {report.recommendations.map((item, i) => (
+                <li key={i} className="flex items-start gap-3 sm:gap-4 bg-muted/50 p-3 sm:p-4 rounded-lg border border-border">
+                  <div className="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 bg-primary text-white rounded-full flex items-center justify-center font-bold text-sm">
+                    {i + 1}
+                  </div>
+                  <span className="text-foreground font-medium pt-0.5 text-sm sm:text-base">{item}</span>
+                </li>
+              ))}
+            </ul>
+
+            <h3 className="text-base sm:text-lg font-bold text-primary mb-4 flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 shrink-0" /> {isAr ? 'مؤشرات الأداء الرئيسية الموصى بها' : 'Recommended KPIs'}
+            </h3>
+            <div className="grid sm:grid-cols-2 gap-3 mb-6 sm:mb-8">
+              {report.kpis.map((kpi, i) => (
+                <div key={i} className="p-3 border border-border rounded bg-white shadow-sm flex items-start gap-2">
+                  <div className="w-1.5 h-1.5 mt-1.5 rounded-full bg-accent shrink-0" />
+                  <span className="text-xs sm:text-sm font-medium text-foreground">{kpi}</span>
+                </div>
+              ))}
             </div>
 
+            <h3 className="text-base sm:text-lg font-bold text-primary mb-4 flex items-center gap-2">
+              <CalendarDays className="w-5 h-5 shrink-0" /> {isAr ? 'خارطة طريق التحول' : 'Transformation Roadmap'}
+            </h3>
             <div className="grid md:grid-cols-3 gap-4 sm:gap-6">
               {[report.roadmap.phase1, report.roadmap.phase2, report.roadmap.phase3].map((phase, idx) => (
                 <div key={idx} className="border border-border rounded-lg overflow-hidden flex flex-col">

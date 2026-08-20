@@ -31,7 +31,7 @@ This protection applies globally and is enforceable under the Berne Convention f
     titleAr: 'المنهجيات الخاصة والأسرار التجارية',
     content: `The following constitute proprietary intellectual assets of I Supply Chain and are protected as trade secrets under applicable law:
 
-1. ISC GCC Benchmark Database — The KPI quartile benchmarks, industry medians, and performance thresholds used in the Command Centre are proprietary data compiled by Ma'in Alhaqash over 20+ years of GCC and MENA supply chain practice. They are not derived from any publicly available dataset.
+1. ISC GCC Benchmark Database — The KPI quartile benchmarks, industry medians, and performance thresholds used in the Control Tower are proprietary data compiled by Ma'in Alhaqash over 20+ years of GCC and MENA supply chain practice. They are not derived from any publicly available dataset.
 
 2. ISC Assessment Frameworks — The maturity scoring methodology, gap analysis matrices, and risk exposure models used in this platform are original works developed exclusively by ISC and grounded in CIPS, APICS SCOR, and ISO 31000 — adapted specifically for GCC regulatory, cultural, and commercial environments.
 

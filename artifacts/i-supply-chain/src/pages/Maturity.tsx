@@ -30,6 +30,7 @@ import {
   TrendingUp, RotateCcw, Pencil, Sparkles, Loader2,
   CheckCircle2, Clock, Target, AlertCircle, Building2, Users2,
   Download, FileText, Mail, ListChecks, Globe,
+  Eye, ShieldCheck, Brain, Scale, Lock,
 } from 'lucide-react';
 import {
   CORE_SEGMENTS, INDUSTRY_MODULES, INTAKE_INDUSTRIES, INTAKE_SIZES,
@@ -1998,6 +1999,59 @@ export function Maturity() {
 
       <div className="container mx-auto px-4 py-10 max-w-6xl space-y-10">
 
+        {/* ── Platform Journey context (#165, 21 Aug 2026) ────────────────────
+            Additive narrative layer only. Ties this Maturity Assessment to the
+            Visibility -> Control -> Intelligence -> Decision -> Prediction
+            platform-capability ladder introduced on the homepage (Home.tsx).
+            This is a different axis from the Reactive->Optimised process-
+            maturity score above (MATURITY_LEVELS in maturityScoring.ts) --
+            that enum is reused elsewhere in the app and is untouched here.
+            Prediction stays honestly marked as roadmap, not live, per the
+            platform's standing "never fake it, stand ready" rule. ── */}
+        <div className="rounded-2xl border border-primary/15 bg-primary/[0.03] px-5 py-5">
+          <p className="text-[10px] font-black uppercase tracking-widest text-primary/50 mb-4">
+            {ar ? 'موقع هذا التقييم في مسار المنصة' : 'Where This Assessment Fits in Your Platform Journey'}
+          </p>
+          <div className="flex items-center flex-wrap gap-1 mb-4">
+            {[
+              { icon: Eye,         label: ar ? 'الرؤية' : 'Visibility',   state: 'past' as const,    href: '/diagnostic' },
+              { icon: ShieldCheck, label: ar ? 'التحكّم' : 'Control',      state: 'current' as const, href: null },
+              { icon: Brain,       label: ar ? 'الذكاء' : 'Intelligence', state: 'next' as const,    href: '/command-center' },
+              { icon: Scale,       label: ar ? 'القرار' : 'Decision',     state: 'future' as const,  href: '/decision-lab' },
+              { icon: Lock,        label: ar ? 'التنبؤ' : 'Prediction',   state: 'locked' as const,  href: null },
+            ].map((s, i, arr) => {
+              const Icon = s.icon;
+              const chip = (
+                <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold whitespace-nowrap ${
+                  s.state === 'current' ? 'bg-primary text-white'
+                  : s.state === 'past' ? 'bg-primary/10 text-primary'
+                  : s.state === 'locked' ? 'bg-muted/50 text-muted-foreground/50 border border-dashed border-muted-foreground/25'
+                  : 'bg-muted text-muted-foreground'
+                }`}>
+                  <Icon className="w-3.5 h-3.5" />
+                  {s.label}
+                  {s.state === 'current' && <span className="opacity-70 font-medium">{ar ? '(أنتم هنا)' : '(you are here)'}</span>}
+                </span>
+              );
+              return (
+                <span key={s.label} className="flex items-center gap-1">
+                  {s.href ? <Link href={s.href}>{chip}</Link> : chip}
+                  {i < arr.length - 1 && <span className="w-3 h-px bg-border" />}
+                </span>
+              );
+            })}
+          </div>
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            {ar
+              ? 'يمنحكم هذا التقييم مرحلة "التحكّم" — خط أساس منظم ومقارَن معيارياً. للمراقبة المستمرة والحيّة لنفس المؤشرات، المرحلة التالية هي "الذكاء" عبر برج التحكم.'
+              : 'This assessment gives you Control — a structured, benchmarked baseline. For continuous, live monitoring of these same metrics, the next stage is Intelligence via the Control Tower.'}
+            {' '}
+            <Link href="/command-center" className="text-primary font-semibold hover:underline">
+              {ar ? 'استكشفوا برج التحكم ←' : 'Explore the Control Tower →'}
+            </Link>
+          </p>
+        </div>
+
         {/* ── Restored-from-link notice ─────────────────────────────────────── */}
         {restoredFromToken && (
           <div className="flex items-start gap-3 rounded-2xl border border-green-200 bg-green-50 px-5 py-4">
@@ -2086,7 +2140,7 @@ export function Maturity() {
           <p className="text-muted-foreground text-sm mb-4">
             {ar
               ? 'نتائجكم (الوضع الراهن) مقارنةً بوسيط الخليج وأفضل ربع — نفس الأسلوب البصري لمركز القيادة.'
-              : 'Your scores (As-Is) vs GCC Median and Top Quartile — same visual treatment as the Command Centre.'}
+              : 'Your scores (As-Is) vs GCC Median and Top Quartile — same visual treatment as the Control Tower.'}
           </p>
           {/* Weighted-score tooltip note — visible when sub-segment weights are active */}
           {isWeightedScore && selectedIndustryLabel && (

@@ -58,7 +58,7 @@ export function CommandCentreFloat() {
                   <span className="flex items-center gap-1 text-[10px] font-black uppercase tracking-widest text-[#C9A84C]">
                     <Zap className="w-3 h-3" /> {ar ? 'مدعوم بالذكاء الاصطناعي' : 'AI-Powered'}
                   </span>
-                  <p className="text-white font-bold text-sm leading-tight">{ar ? 'مركز القيادة الذكي' : 'AI Command Centre'}</p>
+                  <p className="text-white font-bold text-sm leading-tight">{ar ? 'برج التحكم الذكي' : 'AI Control Tower'}</p>
                 </div>
               </div>
               <button
@@ -97,7 +97,7 @@ export function CommandCentreFloat() {
                 onClick={() => { sessionStorage.setItem(SESSION_KEY, '1'); setVisible(false); }}
                 className="flex items-center justify-center gap-2 w-full bg-[#C9A84C] hover:bg-[#b8973e] text-white font-bold text-sm py-2.5 rounded-xl transition-colors cursor-pointer shadow-lg"
               >
-                {ar ? 'استكشف مركز القيادة' : 'Explore Command Centre'} {ar ? <ArrowLeft className="w-4 h-4" /> : <ArrowRight className="w-4 h-4" />}
+                {ar ? 'استكشف برج التحكم' : 'Explore Control Tower'} {ar ? <ArrowLeft className="w-4 h-4" /> : <ArrowRight className="w-4 h-4" />}
               </motion.span>
             </Link>
           </div>

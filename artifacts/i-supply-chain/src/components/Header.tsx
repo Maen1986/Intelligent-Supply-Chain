@@ -21,7 +21,7 @@ const industryList = [
 ];
 
 const servicesList = [
-  { key: 'nav.commandCenter',href: '/command-center',          label: '⚡ Command Centre', highlight: true },
+  { key: 'nav.commandCenter',href: '/command-center',          label: '⚡ Control Tower', highlight: true },
   { key: 'nav.solutions',    href: '/#solutions',              label: 'Our Solutions' },
   { key: 'nav.packages',     href: '/#packages',               label: 'Packages & Pricing' },
   { key: 'nav.diagnostic',   href: '/diagnostic',              label: 'AI Diagnostic' },
@@ -80,7 +80,7 @@ export function Header() {
       'nav.caseStudies': { en: 'Case Studies',        ar: 'دراسات الحالة' },
       'nav.intelligence':{ en: 'Intelligence Hub',    ar: 'المستجدات' },
       'nav.maturity':      { en: 'Maturity Assessment',       ar: 'نضج سلسلة الإمداد' },
-      'nav.commandCenter': { en: '⚡ Command Centre',          ar: '⚡ مركز القيادة' },
+      'nav.commandCenter': { en: '⚡ Control Tower',           ar: '⚡ برج التحكم' },
       'nav.lean':          { en: 'Lean & Six Sigma',           ar: 'لين وسيكس سيغما' },
       'nav.risk':          { en: 'Risk Management',            ar: 'إدارة المخاطر' },
       'nav.governance':    { en: 'Governance & Compliance',    ar: 'الحوكمة والامتثال' },

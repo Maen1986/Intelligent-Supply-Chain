@@ -3,7 +3,7 @@ import { motion, useInView, useMotionValue, useTransform, animate, AnimatePresen
 import { useLanguage } from '@/lib/LanguageContext';
 import { Link } from 'wouter';
 import { Button } from '@/components/ui/button';
-import { ChevronRight, ArrowRight, Star, Quote, Cpu, Check, Clock, Users, Building2, Landmark, Rocket, TrendingUp } from 'lucide-react';
+import { ChevronRight, ArrowRight, Star, Quote, Cpu, Check, Clock, Users, Building2, Landmark, Rocket, TrendingUp, Eye, ShieldCheck, Brain, Scale, Radar, Lock } from 'lucide-react';
 
 // ─── Animated counter hook ──────────────────────────────────────────────────
 function useAnimatedCounter(target: number, shouldStart: boolean, duration = 2) {
@@ -664,6 +664,75 @@ export function Home() {
         </div>
       </section>
 
+      {/* ── Maturity Journey (#165, 21 Aug 2026) ─────────────────────────────
+          Visibility -> Control -> Intelligence -> Decision -> Prediction.
+          Every stage but the last maps to a real, live, clickable feature;
+          Prediction is honestly labeled as roadmap, not implied as live --
+          per the platform's standing "never fake it" rule. Additive
+          narrative layer, doesn't touch the existing Reactive->Optimised
+          maturity-score taxonomy used elsewhere (maturityScoring.ts). ── */}
+      <section className="w-full bg-[#0A1628] py-16">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-12">
+            <span className="inline-flex items-center gap-2 bg-[#C9A84C]/15 border border-[#C9A84C]/30 text-[#C9A84C] text-xs font-black uppercase tracking-[0.2em] px-4 py-1.5 rounded-full mb-4">
+              {isAr ? '🧭 مسار النضج' : '🧭 The Maturity Journey'}
+            </span>
+            <h2 className="text-3xl md:text-4xl font-black text-white leading-tight">
+              {isAr ? 'من الرؤية إلى التنبؤ' : 'From Visibility to Prediction'}
+            </h2>
+            <p className="text-white/50 text-base max-w-2xl mx-auto mt-3">
+              {isAr
+                ? 'كل أداة في آي سبلاي تشين تنقلك خطوة أعلى في هذا المسار — إليك ما تفتحه كل مرحلة اليوم.'
+                : "Every I Supply Chain tool moves you one rung up this ladder — here's what each stage unlocks today."}
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+            {(isAr
+              ? [
+                  { icon: Eye,         stage: 'الرؤية',      tool: 'التشخيص المجاني',     href: '/diagnostic',      live: true,  body: 'اكتشف أين تقف خلال 60 ثانية — بدون تسجيل.' },
+                  { icon: ShieldCheck, stage: 'التحكّم',      tool: 'تقييم النضج',        href: '/maturity',        live: true,  body: 'قيّم 8 مجالات مقابل معايير الخليج المرجعية.' },
+                  { icon: Brain,       stage: 'الذكاء',       tool: 'برج التحكم',         href: '/command-center',  live: true,  body: 'رادار المقارنة، حاسبة التوفير، مؤشر المخاطر.' },
+                  { icon: Scale,       stage: 'القرار',       tool: 'مختبر القرار',        href: '/decision-lab',    live: true,  body: 'قارن خياراتك بمعايير مرجّحة وترتيب واضح.' },
+                  { icon: Radar,       stage: 'التنبؤ',       tool: 'قريباً',              href: null,               live: false, body: 'إنذار مبكر قائم على اتجاهات تقييماتك السابقة.' },
+                ]
+              : [
+                  { icon: Eye,         stage: 'Visibility',   tool: 'Free Diagnostic',    href: '/diagnostic',      live: true,  body: 'See where you stand in 60 seconds — no sign-up.' },
+                  { icon: ShieldCheck, stage: 'Control',      tool: 'Maturity Assessment',href: '/maturity',        live: true,  body: 'Score 8 domains against GCC benchmarks.' },
+                  { icon: Brain,       stage: 'Intelligence', tool: 'Control Tower',      href: '/command-center',  live: true,  body: 'Benchmark radar, savings calculator, risk score.' },
+                  { icon: Scale,       stage: 'Decision',     tool: 'Decision Lab',       href: '/decision-lab',    live: true,  body: 'Compare your options on weighted criteria, clearly ranked.' },
+                  { icon: Radar,       stage: 'Prediction',   tool: 'Coming Soon',        href: null,               live: false, body: 'Early-warning trend detection from your assessment history.' },
+                ]
+            ).map((s, i) => {
+              const Icon = s.icon;
+              const card = (
+                <div className={`h-full rounded-2xl border p-5 transition-all ${s.live ? 'bg-white/5 border-white/10 hover:border-[#C9A84C]/40 hover:bg-white/10' : 'bg-white/[0.02] border-white/5 border-dashed'}`}>
+                  <div className="flex items-center justify-between mb-3">
+                    <span className={`w-10 h-10 rounded-xl flex items-center justify-center ${s.live ? 'bg-[#C9A84C]/15 text-[#C9A84C]' : 'bg-white/5 text-white/30'}`}>
+                      <Icon className="w-5 h-5" />
+                    </span>
+                    {!s.live && <Lock className="w-3.5 h-3.5 text-white/25" />}
+                  </div>
+                  <p className={`text-[10px] font-black uppercase tracking-widest mb-1 ${s.live ? 'text-[#C9A84C]' : 'text-white/25'}`}>{i + 1}. {s.stage}</p>
+                  <p className={`text-sm font-bold mb-1.5 ${s.live ? 'text-white' : 'text-white/40'}`}>{s.tool}</p>
+                  <p className={`text-xs leading-relaxed ${s.live ? 'text-white/50' : 'text-white/25'}`}>{s.body}</p>
+                  {!s.live && (
+                    <p className="text-[10px] text-white/25 mt-2 uppercase tracking-wider font-bold">
+                      {isAr ? 'على خارطة الطريق' : 'On our roadmap'}
+                    </p>
+                  )}
+                </div>
+              );
+              return s.href ? (
+                <Link key={i} href={s.href} className="block h-full">{card}</Link>
+              ) : (
+                <div key={i} className="h-full">{card}</div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
       {/* ── About / Visual Strip ─────────────────────────────────────────── */}
       <RevealSection className="w-full bg-white py-16">
         <div className="container mx-auto px-4">
@@ -744,8 +813,11 @@ export function Home() {
             </h2>
             <p className="text-white/60 text-lg max-w-2xl mx-auto leading-relaxed">
               {isAr
-                ? 'مركز القيادة هو محرك الذكاء الاصطناعي من آي سبلاي تشين — مصمم للمؤسسات حول العالم، ومبني على أسس CIPS وAPICS SCOR وخبرة 20 عاماً متجذرة في الخليج. خطط بأسعار مناسبة تُصمَّم بحسب حجم منشأتك.'
-                : "The Command Centre is I Supply Chain's AI-powered intelligence engine — built for enterprises worldwide, grounded in CIPS, APICS SCOR, and 20 years of GCC-rooted expertise. Affordable plans sized to your organisation."}
+                ? 'برج التحكم هو محرك الذكاء الاصطناعي من آي سبلاي تشين — مصمم للمؤسسات حول العالم، ومبني على أسس CIPS وAPICS SCOR وخبرة 20 عاماً متجذرة في الخليج. خطط بأسعار مناسبة تُصمَّم بحسب حجم منشأتك.'
+                : "The Control Tower is I Supply Chain's AI-powered intelligence engine — built for enterprises worldwide, grounded in CIPS, APICS SCOR, and 20 years of GCC-rooted expertise. Affordable plans sized to your organisation."}
+            </p>
+            <p className="text-white/30 text-xs mt-2 uppercase tracking-wider font-bold">
+              {isAr ? 'مبني على التقييم والمقارنة المرجعية اليوم — المراقبة الحية المستمرة على خارطة الطريق.' : 'Assessment & benchmark-driven today -- continuous live monitoring is on our roadmap.'}
             </p>
           </motion.div>
 
@@ -787,7 +859,7 @@ export function Home() {
               <div className="grid grid-cols-3 text-xs font-black uppercase tracking-wider">
                 <div className="bg-white/5 px-4 py-3 text-white/40">{isAr ? 'ما تحتاجه' : 'What you need'}</div>
                 <div className="bg-white/10 px-4 py-3 text-white/40 text-center">{isAr ? 'الاستشاري التقليدي' : 'Traditional Consultant'}</div>
-                <div className="px-4 py-3 text-center text-[#C9A84C]" style={{ background: 'rgba(201,168,76,0.12)' }}>{isAr ? '⚡ مركز القيادة ISC' : '⚡ ISC Command Centre'}</div>
+                <div className="px-4 py-3 text-center text-[#C9A84C]" style={{ background: 'rgba(201,168,76,0.12)' }}>{isAr ? '⚡ برج التحكم ISC' : '⚡ ISC Control Tower'}</div>
               </div>
               {(isAr
                 ? [
@@ -824,7 +896,7 @@ export function Home() {
                 whileTap={{ scale: 0.98 }}
                 className="inline-flex items-center gap-3 bg-[#C9A84C] hover:bg-[#b8973e] text-white font-black text-base px-8 py-4 rounded-2xl transition-colors shadow-xl cursor-pointer"
               >
-                {isAr ? '⚡ ادخل إلى مركز القيادة' : '⚡ Launch Command Centre'}
+                {isAr ? '⚡ ادخل إلى برج التحكم' : '⚡ Launch Control Tower'}
                 <ChevronRight className="w-5 h-5 rtl:rotate-180" />
               </motion.button>
             </Link>
