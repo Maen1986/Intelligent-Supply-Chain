@@ -43,7 +43,11 @@ Your diagnostic methodology applies:
 
 You apply SCOR's five performance attributes: Reliability, Responsiveness, Agility, Cost, and Asset Management — always benchmarked to GCC top-quartile data.
 
-You speak with authority, warmth, and commercial precision. No generic advice. No vague platitudes. Every output must be industry-specific, process-specific, region-specific, and maturity-specific.`;
+You speak with authority, warmth, and commercial precision. No generic advice. No vague platitudes. Every output must be industry-specific, process-specific, region-specific, and maturity-specific.
+
+INVESTIGATOR MODE (#156): you diagnose, you probe, you ask what's missing -- you do not just answer. Every finding should read like a consultant actively working the case, not a report reciting facts back at the client.
+
+DECISION-READY OUTPUT (#155): never hand the reader a raw number and leave them to translate it into a decision themselves -- do that translation for them. "Supplier OTIF decreased to 72%" is not acceptable; "Supplier ABC's promise-date reliability has deteriorated -- four production-critical POs are exposed" is. Every sentence you write should already state the decision-relevant fact, not just the metric behind it.`;
 
 // ── POST /api/consultancy/diagnose ────────────────────────────────────────────
 router.post('/diagnose', requireSession, leadsRateLimiter, async (req, res) => {
@@ -118,6 +122,12 @@ Return ONLY valid JSON:
   "diagnosticSummary": "3-4 paragraphs: what is broken, why it is broken, what it is costing them, what world-class looks like for their industry",
   "urgentActions": ["action 1 — do this week", "action 2", "action 3"],
   "estimatedAnnualCost": "SAR/USD quantification of the problem if left unresolved",
+  "considerAlso": "The strongest honest counter-argument to your own top problem/recommendation above -- e.g. a reason it might not be the real priority, a cheaper alternative explanation, or a condition under which acting on it would be premature. One or two sentences. Never omit this even when confident.",
+  "evidenceSummary": {
+    "dataUsed": ["specific input this diagnosis is grounded in, e.g. \"maturity indicator: Procurement 2.1/5\"", "the challenge description itself"],
+    "assumptions": ["assumption made where information was not provided, stated plainly"],
+    "confidence": "<0-100, overall confidence in this diagnosis given what was actually provided>"
+  },
   "consultantNote": "Personal diagnostic note from Ma'in — 2 sentences, specific to their industry and challenge"
 }
 
@@ -126,6 +136,8 @@ Rules:
 - urgentActions: 3 items
 - Be industry-specific: ${industryFull} benchmarks, not generic supply chain
 - Ground every problem's chain in a named framework
+- evidenceSummary.dataUsed: 2-4 items, each naming an actual input this specific diagnosis used (industry, company size, maturity indicator if present, specifics from the challenge text) -- never a generic methodology name
+- evidenceSummary.assumptions: 1-3 items; if nothing had to be assumed, say so explicitly rather than omitting the field
 - maturityAssessment: if a "Maturity Indicator" is provided above, it is real, completed assessment data for this client — treat it as ground truth for any segment it covers and let it anchor your level/score/keyGaps rather than re-estimating from scratch. If the challenge concerns a topic the indicator does not cover, or no indicator is provided, produce your own independent estimate as usual — do not withhold a diagnosis and do not force-fit unrelated data to make them agree`;
 
   try {
@@ -216,6 +228,12 @@ Return ONLY valid JSON:
   "totalProjectedSaving": "quantified SAR/USD annual saving estimate",
   "roi": "estimated ROI % and payback period",
   "nextStep": "The single most important first action to take — specific, this week",
+  "considerAlso": "The strongest honest counter-argument to this solution's central approach -- e.g. a reason a lighter-touch fix might work first, a dependency that could delay it, or a condition under which a different phase order would be better. One or two sentences. Never omit this even when confident.",
+  "evidenceSummary": {
+    "dataUsed": ["specific element of the diagnosis this solution is built from, e.g. \"P1: <problem title>\"", "industry/company-size context"],
+    "assumptions": ["assumption made where the diagnosis did not specify enough to plan precisely"],
+    "confidence": "<0-100, overall confidence this solution fits the diagnosed problem given what was actually provided>"
+  },
   "consultantNote": "Ma'in's personal recommendation — 2 sentences"
 }
 
@@ -224,6 +242,8 @@ Rules:
 - authorityMatrix: 3-4 entries relevant to ${industryFull}
 - kpiDashboard: 4-6 KPIs with GCC benchmark targets
 - riskMitigations: 3-4 mitigations
+- evidenceSummary.dataUsed: 2-4 items citing specific problems/fields from the diagnosis JSON above, not generic methodology names
+- evidenceSummary.assumptions: 1-3 items; if nothing had to be assumed, say so explicitly rather than omitting the field
 - All SAR figures calibrated to the company context from the diagnosis`;
 
   try {

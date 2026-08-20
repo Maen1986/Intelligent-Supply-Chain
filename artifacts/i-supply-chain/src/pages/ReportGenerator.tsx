@@ -7,6 +7,7 @@ import { useLanguage } from '@/lib/LanguageContext';
 import { API_BASE } from '@/lib/apiBase';
 import { MATURITY_DRAFT_KEY, ISC_MATURITY_CONTEXT_KEY } from './Maturity';
 import { MaturitySummarySection, type MSSContext } from '@/components/MaturitySummarySection';
+import { EvidenceSummary, ConsiderAlso } from '@/components/EvidenceSummary';
 import {
   FileText, Sparkles, Loader2, Download, ChevronRight, ChevronLeft,
   Building2, Users2, BarChart3, AlertCircle, CheckCircle2, RotateCcw,
@@ -66,7 +67,9 @@ interface MaturitySnapshot {
 interface ReportData {
   reportTitle:    string;
   reportSubtitle: string;
-  executiveSummary:       { headline: string; body: string };
+  executiveSummary:       { headline: string; body: string; considerAlso?: string };
+  /** #153, 20 Aug 2026 */
+  evidenceSummary?:       { dataUsed: string[]; assumptions: string[]; confidence: number | string };
   companyContext:         { headline: string; body: string };
   maturityAnalysis:       { headline: string; body: string; keyStrengths: string[]; criticalGaps: string[]; benchmarkInsight: string };
   gapAnalysis:            { headline: string; body: string; priorityGaps: Array<{ rank: number; area: string; currentState: string; targetState: string; rootCause: string; businessImpact: string; interdependencies: string }> };
@@ -249,6 +252,31 @@ function ReportPrintLayout({ report, contactInfo, maturity, generatedAt }: {
         {report.executiveSummary.body.split('\n\n').map((para, i) => (
           <PrintP key={i}>{para}</PrintP>
         ))}
+        {report.executiveSummary.considerAlso && (
+          <PrintCard accent="#B45309">
+            <PrintP style={{ margin: 0, fontWeight: 700, color: '#B45309', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Consider Also</PrintP>
+            <PrintP style={{ margin: '4px 0 0' }}>{report.executiveSummary.considerAlso}</PrintP>
+          </PrintCard>
+        )}
+        {report.evidenceSummary && (
+          <PrintCard accent="#64748B">
+            <PrintP style={{ margin: '0 0 6px', fontWeight: 700, color: '#475569', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              Evidence Basis {typeof report.evidenceSummary.confidence !== 'undefined' ? `— ${report.evidenceSummary.confidence}% confidence` : ''}
+            </PrintP>
+            {report.evidenceSummary.dataUsed?.length > 0 && (
+              <>
+                <PrintP style={{ margin: '0 0 2px', fontWeight: 600, fontSize: '10px' }}>Data used:</PrintP>
+                <BulletList items={report.evidenceSummary.dataUsed} color="#475569" />
+              </>
+            )}
+            {report.evidenceSummary.assumptions?.length > 0 && (
+              <>
+                <PrintP style={{ margin: '0 0 2px', fontWeight: 600, fontSize: '10px' }}>Assumptions:</PrintP>
+                <BulletList items={report.evidenceSummary.assumptions} color="#B45309" />
+              </>
+            )}
+          </PrintCard>
+        )}
       </Section>
 
       {/* ── 2. Company Context ── */}
@@ -880,6 +908,8 @@ export function ReportGenerator() {
                       {report.executiveSummary.body.split('\n\n')[0]}
                     </p>
                   </div>
+                  <ConsiderAlso text={report.executiveSummary.considerAlso} />
+                  <EvidenceSummary evidence={report.evidenceSummary} />
 
                   <div className="grid sm:grid-cols-2 gap-4">
                     <div className="bg-white border border-border rounded-2xl p-5">

@@ -6,6 +6,7 @@ import { Download, CalendarDays, CheckCircle2, AlertTriangle, TrendingUp, Compas
 import { Link } from 'wouter';
 import { useLanguage } from '@/lib/LanguageContext';
 import { buildMaturityHandoffQuery } from '@/lib/diagnosticHandoff';
+import { EvidenceSummary } from './EvidenceSummary';
 
 export function ReportOutput({ report }: { report: DiagnosticReport }) {
   const { t, lang } = useLanguage();
@@ -99,6 +100,9 @@ export function ReportOutput({ report }: { report: DiagnosticReport }) {
               <h2 className="text-xl sm:text-2xl font-bold text-primary">{isAr ? '1. الملخص التنفيذي' : '1. Executive Summary'}</h2>
             </div>
             <p className="text-foreground leading-relaxed text-base sm:text-lg">{report.executiveSummary}</p>
+            <div className="mt-4">
+              <EvidenceSummary evidence={report.evidenceSummary} ar={isAr} />
+            </div>
           </section>
 
           <hr className="border-t-2 border-accent/30" />

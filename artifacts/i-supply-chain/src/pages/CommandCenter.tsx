@@ -16,6 +16,8 @@ import {
   MessageSquare, Languages, Sparkles, Download, Eye, X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { EvidenceSummary, ConsiderAlso } from '@/components/EvidenceSummary';
+import { TellMeTheStoryButton, type NarrativeStep } from '@/components/NarrativeStory';
 
 import { API_BASE } from '@/lib/apiBase';
 import { safeSetItem } from '@/lib/storage';
@@ -1663,6 +1665,8 @@ interface Briefing {
   resiliencyGap?: string;
   recommendedPackage: string;
   recommendedPackageRationale: string;
+  /** #153, 20 Aug 2026 */
+  evidenceSummary?: { dataUsed: string[]; assumptions: string[]; confidence: number | string };
   consultantNote: string;
 }
 
@@ -2642,6 +2646,7 @@ function BriefingTab({ lang }: { lang: Lang }) {
             <p className="text-sm text-muted-foreground">{revenueBand} · Ma'in Alhaqash MCIPS CPSM MSc</p>
           </div>
           <div className="flex gap-2">
+            <TellMeTheStoryButton title="Executive Narrative" titleAr="السرد التنفيذي" steps={buildBriefingNarrative(briefing)} ar={ar} />
             <button onClick={previewPdf} disabled={previewBusy} className="flex items-center gap-2 px-4 py-2 rounded-lg border border-[#082C6B] text-[#082C6B] text-sm font-semibold hover:bg-[#082C6B]/5 transition-colors disabled:opacity-60">
               {previewBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Eye className="w-4 h-4" />}
               {previewBusy ? (ar ? 'جارٍ التحضير…' : 'Preparing…') : (ar ? 'معاينة PDF' : 'Preview PDF')}
@@ -2696,6 +2701,7 @@ function BriefingTab({ lang }: { lang: Lang }) {
           </h3>
           <p className="text-base leading-relaxed">{briefing.executiveSummary}</p>
         </div>
+        <EvidenceSummary evidence={briefing.evidenceSummary} ar={ar} />
 
         {/* Domain Maturity Radar */}
         <div className="rounded-xl border border-border p-4">
@@ -3214,6 +3220,9 @@ interface DiagnosisResult {
   diagnosticSummary: string;
   urgentActions: string[];
   estimatedAnnualCost: string;
+  /** #154, #153 -- 20 Aug 2026 */
+  considerAlso?: string;
+  evidenceSummary?: { dataUsed: string[]; assumptions: string[]; confidence: number | string };
   consultantNote: string;
 }
 
@@ -3226,7 +3235,50 @@ interface SolutionResult {
   totalProjectedSaving: string;
   roi: string;
   nextStep: string;
+  /** #154, #153 -- 20 Aug 2026 */
+  considerAlso?: string;
+  evidenceSummary?: { dataUsed: string[]; assumptions: string[]; confidence: number | string };
   consultantNote: string;
+}
+
+/* #157, 20 Aug 2026 -- pure client-side reformat of an existing diagnosis into
+   the executive narrative template (primary cause -> underlying cause ->
+   exposure -> who's affected -> recommended intervention -> expected impact
+   -> prevention). Built from the highest-severity Problem DNA object plus
+   report-level fields already on the diagnosis -- no new AI call, no field
+   invented that isn't already present somewhere in the response. */
+function buildConsultancyNarrative(diagnosis: DiagnosisResult): NarrativeStep[] {
+  if (!diagnosis.problems || diagnosis.problems.length === 0) return [];
+  const top = [...diagnosis.problems].sort((a, b) => b.severityScore - a.severityScore)[0];
+  const c = top.chain;
+  return [
+    { label: 'Primary Cause', labelAr: 'السبب المباشر', value: c.immediateCause },
+    { label: 'Underlying Cause', labelAr: 'السبب الجذري', value: c.rootCause },
+    { label: 'Exposure', labelAr: 'حجم التعرض', value: `${diagnosis.estimatedAnnualCost} — ${diagnosis.riskAssessment.level} risk (ISO 31000: ${diagnosis.riskAssessment.iso31000Score}/100)` },
+    { label: "Who's Affected", labelAr: 'الجهات المتأثرة', value: `${top.framework} (${top.title})` },
+    { label: 'Recommended Intervention', labelAr: 'الإجراء الموصى به', value: diagnosis.urgentActions?.[0] ?? top.title },
+    { label: 'Expected Impact', labelAr: 'الأثر المتوقع', value: c.downstreamEffects?.length ? `Prevents: ${c.downstreamEffects.join('; ')}` : 'Removes the risk described in Exposure above' },
+    { label: 'Prevention', labelAr: 'الوقاية', value: `Fix the root cause via ${top.framework} discipline: ${c.rootCause}` },
+  ];
+}
+
+/* Same principle applied to the Executive Briefing's top critical gap + top
+   quick win + top strategic priority -- all fields already present on the
+   Briefing response, just re-sequenced into the narrative order. */
+function buildBriefingNarrative(briefing: Briefing): NarrativeStep[] {
+  const gap = briefing.criticalGaps?.[0];
+  if (!gap) return [];
+  const win = briefing.quickWins?.[0];
+  const priority = briefing.strategicPriorities?.[0];
+  return [
+    { label: 'Primary Cause', labelAr: 'السبب المباشر', value: gap.title },
+    { label: 'Underlying Cause', labelAr: 'السبب الجذري', value: gap.detail },
+    { label: 'Exposure', labelAr: 'حجم التعرض', value: `${gap.businessImpact} — ${gap.urgency} priority` },
+    { label: "Who's Affected", labelAr: 'الجهات المتأثرة', value: gap.framework },
+    { label: 'Recommended Intervention', labelAr: 'الإجراء الموصى به', value: win ? win.action : 'See strategic priorities below' },
+    { label: 'Expected Impact', labelAr: 'الأثر المتوقع', value: win ? `~${win.expectedSavingPct}% within ${win.timeframe}` : briefing.ninetyDayPlan?.totalProjectedSaving ?? '' },
+    { label: 'Prevention', labelAr: 'الوقاية', value: priority ? `${priority.title} — ${priority.rationale}` : 'Sustain via the 90-day plan below' },
+  ];
 }
 
 function ConsultancyTab({ lang }: { lang: Lang }) {
@@ -3422,12 +3474,17 @@ function ConsultancyTab({ lang }: { lang: Lang }) {
               <span className="text-xs uppercase tracking-widest text-muted-foreground font-semibold">{ar ? 'نتائج التشخيص' : 'AI Diagnosis Results'}</span>
               <h2 className="text-xl font-black text-[#082C6B] mt-0.5">{industry}{subIndustry ? ` — ${subIndustry}` : ''}</h2>
             </div>
-            <button onClick={() => setStage('input')} className="text-xs text-muted-foreground hover:text-foreground underline">{ar ? 'تشخيص جديد' : 'New Diagnosis'}</button>
+            <div className="flex items-center gap-3">
+              <TellMeTheStoryButton title="Executive Narrative" titleAr="السرد التنفيذي" steps={buildConsultancyNarrative(diagnosis)} ar={ar} />
+              <button onClick={() => setStage('input')} className="text-xs text-muted-foreground hover:text-foreground underline">{ar ? 'تشخيص جديد' : 'New Diagnosis'}</button>
+            </div>
           </div>
           <div className="bg-[#082C6B] rounded-2xl p-6 text-white">
             <p className="text-xs uppercase tracking-widest text-white/60 mb-2">{ar ? 'ملخص التحدي' : 'Challenge Summary'}</p>
             <p className="text-base leading-relaxed">{diagnosis.challengeSummary}</p>
           </div>
+          <ConsiderAlso text={diagnosis.considerAlso} ar={ar} />
+          <EvidenceSummary evidence={diagnosis.evidenceSummary} ar={ar} />
           <div className="grid grid-cols-3 gap-4">
             <div className="rounded-xl border p-4 text-center">
               <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">{ar ? 'مستوى النضج' : 'Maturity'}</p>
@@ -3544,6 +3601,8 @@ function ConsultancyTab({ lang }: { lang: Lang }) {
               <div><p className="text-[#C9A84C] font-black text-lg">{solution.roi}</p><p className="text-white/60 text-xs">{ar ? 'العائد على الاستثمار' : 'ROI'}</p></div>
             </div>
           </div>
+          <ConsiderAlso text={solution.considerAlso} ar={ar} />
+          <EvidenceSummary evidence={solution.evidenceSummary} ar={ar} />
           <div>
             <h4 className="text-xs font-bold text-[#082C6B] uppercase tracking-wider mb-3">{ar ? 'مراحل التنفيذ' : 'Implementation Phases'}</h4>
             <div className="space-y-4">

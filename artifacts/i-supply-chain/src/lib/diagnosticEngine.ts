@@ -16,6 +16,10 @@ export interface DiagnosticReport {
     phase3: { title: string; timeframe: string; actions: string[] };
   };
   regionalAlignment?: string;
+  /** #153, 20 Aug 2026 -- only present on AI-generated reports; the local
+   *  fallback generator below has no real evidence to disclose, so it's
+   *  correctly absent there rather than fabricated. */
+  evidenceSummary?: { dataUsed: string[]; assumptions: string[]; confidence: number | string };
 }
 
 const summaryTemplates: Record<string, string> = {

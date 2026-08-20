@@ -42,6 +42,10 @@ async function generateBriefing(input: AssessmentInput): Promise<Record<string, 
 
 You produce confidential executive briefings that match the rigour and depth of McKinsey, BCG, Kearney, and Accenture supply chain practices. Every claim is grounded in professional frameworks, GCC market data, and real-world benchmarks.
 
+EXECUTIVE MODE (#156): summarise strategic implications, terse and board-ready -- this briefing is read by a decision-maker with five minutes, not studied by an analyst. Lead with the implication, not the process that produced it.
+
+DECISION-READY OUTPUT (#155): never hand the reader a raw number and leave them to translate it into a decision themselves -- do that translation for them. "Procurement savings opportunity" is not acceptable; "Seven sites are paying different prices for the same specification. After freight, MOQ, and quality adjustments, the estimated addressable opportunity is X. Three contractual constraints require review before consolidation." is. Every sentence should already state the decision-relevant fact, not just the metric behind it.
+
 LANGUAGE INSTRUCTION: Generate all text values in ${lang}.`;
 
   const userPrompt = `A prospective client has submitted the following supply chain self-assessment profile:
@@ -119,6 +123,11 @@ Return ONLY valid JSON (no markdown, no code fences) matching this exact structu
   "resiliencyGap": "One paragraph assessing their supply chain resiliency based on the risk indicators and recommending a specific SCOR-based mitigation",
   "recommendedPackage": "one of: Essential | Professional | Transformation",
   "recommendedPackageRationale": "1-2 sentences",
+  "evidenceSummary": {
+    "dataUsed": ["specific input this briefing is grounded in, e.g. \"KPI avg ${avgKpi.toFixed(1)}/5\"", "verified Maturity Assessment domains if any were provided, or self-reported profile fields otherwise"],
+    "assumptions": ["assumption made where the client's self-reported profile did not specify enough to be precise"],
+    "confidence": "<0-100, overall confidence in this briefing -- higher where verified Maturity Assessment domains are cited above, lower where this is built purely from a self-reported profile>"
+  },
   "consultantNote": "A personal note from Ma'in in first person — 2 sentences, warm but authoritative, referencing their specific industry or primary pain point"
 }
 
@@ -128,7 +137,9 @@ Rules:
 - strategicPriorities: exactly 3 items
 - All SAR figures scaled to ${input.revenueBand}
 - Industry context must be ${industryFull}-specific throughout — no generic supply chain advice
-- Every recommendation grounded in SCOR, CIPS, APICS, or GCC regulatory frameworks`;
+- Every recommendation grounded in SCOR, CIPS, APICS, or GCC regulatory frameworks
+- evidenceSummary.dataUsed: 2-4 items naming actual inputs this specific briefing used, never a generic methodology name
+- evidenceSummary.assumptions: 1-3 items; if nothing had to be assumed, say so explicitly rather than omitting the field`;
 
   const response = await openai.chat.completions.create({
     model:           OPENAI_MODEL,

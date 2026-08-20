@@ -166,6 +166,8 @@ DIAGNOSTIC DISCIPLINE — you reason the way an experienced end-to-end supply-ch
 - Every recommendation must specify enough to be actioned: who, what, where, the trigger/threshold that fires it, what data proves it's fixed, and roughly when. "Improve communication", "negotiate better", "use technology", "monitor KPIs" are failures unless paired with that specificity.
 - Distinguish remedy (fixes the current case) from prevention (changes the system so it recurs less) — a finding that only offers one of the two is incomplete.
 
+DECISION-READY OUTPUT (#155): never hand the reader a raw number and leave them to translate it into a decision themselves -- do that translation for them. "Inventory is high" is not acceptable; "SAR 2.4M of inventory is potentially releasable because 37 SKUs exceed current demand coverage, while 14 other critical SKUs are simultaneously short" is. Every sentence should already state the decision-relevant fact, not just the metric behind it.
+
 LANGUAGE INSTRUCTION: Generate ALL text values in ${lang}.`;
 
   const hasChallenge = Boolean(input.challenge?.trim());
@@ -303,7 +305,12 @@ Return ONLY valid JSON (no markdown, no code fences) matching this EXACT structu
       "actions": ["Action 1", "Action 2", "Action 3", "Action 4"]
     }
   },
-  "regionalAlignment": "One paragraph on specific ${input.region} regulatory, policy, or compliance requirements relevant to this ${input.businessSize} ${input.industry} organisation's ${input.focusArea} agenda — e.g. GTPL, IKTVA, Vision 2030 for Saudi; Emiratisation/ICV for UAE; Qatarization/Tawteen for Qatar; Jordanization/QIZ for Jordan; Omanisation/ICV for Oman; Bahrainisation/Tamkeen for Bahrain; for North America/Europe/Africa/Asia-Pacific/Latin America/International (Other), cite the real trade bloc noted above (USMCA, EU Customs Union, AfCFTA, RCEP/ASEAN, Mercosur, etc.) plus ISO 37301 / WCO SAFE Framework, and be explicit that these are general frameworks rather than researched national statutes the way the GCC/Jordan content is. Set to empty string only if truly nothing relevant applies."
+  "regionalAlignment": "One paragraph on specific ${input.region} regulatory, policy, or compliance requirements relevant to this ${input.businessSize} ${input.industry} organisation's ${input.focusArea} agenda — e.g. GTPL, IKTVA, Vision 2030 for Saudi; Emiratisation/ICV for UAE; Qatarization/Tawteen for Qatar; Jordanization/QIZ for Jordan; Omanisation/ICV for Oman; Bahrainisation/Tamkeen for Bahrain; for North America/Europe/Africa/Asia-Pacific/Latin America/International (Other), cite the real trade bloc noted above (USMCA, EU Customs Union, AfCFTA, RCEP/ASEAN, Mercosur, etc.) plus ISO 37301 / WCO SAFE Framework, and be explicit that these are general frameworks rather than researched national statutes the way the GCC/Jordan content is. Set to empty string only if truly nothing relevant applies.",
+  "evidenceSummary": {
+    "dataUsed": ["specific input this diagnosis is grounded in, e.g. \"business size: ${input.businessSize}\"", "reported symptoms or challenge text if provided, or the GCC/reference benchmark data cited above"],
+    "assumptions": ["assumption made where this short self-assessment did not specify enough to be precise -- be honest here, this is a directional tool, not an audit"],
+    "confidence": "<0-100, overall confidence in this diagnosis given only a short self-assessment was provided -- should generally be lower than a full paid engagement would warrant unless symptoms/challenge gave real specifics>"
+  }
 }
 
 Rules:
@@ -314,6 +321,8 @@ Rules:
 - risks: exactly 4 items
 - roadmap phases: exactly 4 actions each
 - regionalAlignment: include only if there is genuinely relevant regulatory/policy content for this region; set to empty string "" otherwise
+- evidenceSummary.dataUsed: 2-4 items naming actual inputs this specific run used, never a generic methodology name
+- evidenceSummary.assumptions: 1-3 items; if nothing had to be assumed, say so explicitly rather than omitting the field
 - Every item must be ${input.industry}-specific and ${input.focusArea}-focused — no generic supply chain filler
 - All SAR figures calibrated to a ${input.businessSize} (${revHint})
 ${isGccRegion

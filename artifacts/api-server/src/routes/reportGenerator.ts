@@ -111,6 +111,8 @@ ${maturityData.remedies?.estimatedImpact
 
 Your writing is authoritative, specific, and GCC-contextualised. You name real frameworks (CIPS Category Cube, SCOR-P, Kraljic, ISO 31000, DMAIC, S&OP, IKTVA, GTPL, etc.). You quantify impacts in SAR. You never write generic advice — every sentence must be calibrated to the specific client's industry, size, and maturity level.
 
+DECISION-READY OUTPUT (#155): never hand the reader a raw number and leave them to translate it into a decision themselves -- do that translation for them. A number that only states the metric, with no stated business consequence or recommended response, is incomplete. Every section should already state the decision-relevant fact, not just the metric behind it.
+
 LANGUAGE: Respond entirely in ${lang}.`;
 
     const userPrompt = `Generate a comprehensive Supply Chain Strategy Report for:
@@ -130,7 +132,13 @@ Generate a full strategy report with EIGHT sections, each substantive and deeply
   "reportSubtitle": "SME Growth Programme — Strategic Assessment & 6-Month Transformation Roadmap",
   "executiveSummary": {
     "headline": "One-sentence strategic verdict",
-    "body": "5–6 paragraphs: (1) who the client is and their strategic context, (2) what the assessment found — the overall maturity picture with specific scores cited, (3) the single most critical dependency chain blocking improvement, (4) the 3 highest-leverage opportunities found, (5) the 6-month transformation vision and its measurable endpoint, (6) a call to action. Be specific with numbers, GCC benchmarks, and SAR impact estimates."
+    "body": "5–6 paragraphs: (1) who the client is and their strategic context, (2) what the assessment found — the overall maturity picture with specific scores cited, (3) the single most critical dependency chain blocking improvement, (4) the 3 highest-leverage opportunities found, (5) the 6-month transformation vision and its measurable endpoint, (6) a call to action. Be specific with numbers, GCC benchmarks, and SAR impact estimates.",
+    "considerAlso": "The strongest honest counter-argument to this report's central strategic verdict -- e.g. a reason the top priority might not be the right one to start with, a resourcing or dependency risk to the sequencing, or a condition under which the recommended pace would be wrong for this client. One or two sentences. Never omit this even when confident."
+  },
+  "evidenceSummary": {
+    "dataUsed": ["specific input this report is grounded in, e.g. \"Overall maturity score: X/5\"", "specific segment scores or remedy actions referenced above, or \"industry knowledge (no maturity assessment on file)\" if none was provided"],
+    "assumptions": ["assumption made where the client's data did not specify enough to be precise"],
+    "confidence": "<0-100, overall confidence in this report's findings given what was actually provided>"
   },
   "companyContext": {
     "headline": "Organisation & Industry Context",
@@ -237,7 +245,9 @@ QUALITY STANDARDS:
 - Cite exact segment scores, GCC benchmarks, and best-in-class comparisons throughout
 - All financial projections must be SAR-denominated and calibrated to their company size
 - Every recommendation must name a specific framework/standard
-- The report must read as if written by a senior GCC supply chain expert who studied their specific data`;
+- The report must read as if written by a senior GCC supply chain expert who studied their specific data
+- evidenceSummary.dataUsed: 2-4 items naming actual inputs this specific report used, never a generic methodology name
+- evidenceSummary.assumptions: 1-3 items; if nothing had to be assumed, say so explicitly rather than omitting the field`;
 
     const response = await openai.chat.completions.create({
       model:           OPENAI_MODEL,
