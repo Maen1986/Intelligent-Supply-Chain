@@ -2,8 +2,8 @@
  * /api/command-centre — live benchmark data + AI-powered analysis
  *
  * GET  /api/command-centre/benchmarks     — public; returns all gcc_benchmarks rows
- * POST /api/command-centre/savings        — AI savings analysis (rate-limited)
- * POST /api/command-centre/risk-score     — AI risk scoring  (rate-limited)
+ * POST /api/command-centre/savings        — AI savings analysis (session required, #364 billing gate; rate-limited)
+ * POST /api/command-centre/risk-score     — AI risk scoring  (session required, #364 billing gate; rate-limited)
  */
 
 import { Router }   from 'express';
@@ -12,6 +12,7 @@ import { db, gccBenchmarksTable } from '@workspace/db';
 import { openai }   from '@workspace/integrations-openai-ai-server';
 import { OPENAI_MODEL, friendlyAIError } from '../lib/aiConfig';
 import { leadsRateLimiter } from '../lib/rateLimit';
+import { requireSession }   from '../middlewares/requireSession';
 import { logger }   from '../lib/logger';
 
 const router = Router();
@@ -37,7 +38,7 @@ router.get('/command-centre/benchmarks', async (_req, res) => {
 // ── POST /api/command-centre/savings ──────────────────────────────────────────
 // AI-reasoned savings analysis. Returns per-lever adjusted maxPct values and
 // narrative grounded in the client's industry.
-router.post('/command-centre/savings', leadsRateLimiter, async (req, res) => {
+router.post('/command-centre/savings', requireSession, leadsRateLimiter, async (req, res) => {
   const { industry, revenue, spendPct, levers, language } = req.body as {
     industry:  string;
     revenue:   number;   // SAR millions
@@ -149,7 +150,7 @@ Rules:
 
 // ── POST /api/command-centre/risk-score ───────────────────────────────────────
 // AI-reasoned risk scoring calibrated to the client's industry.
-router.post('/command-centre/risk-score', leadsRateLimiter, async (req, res) => {
+router.post('/command-centre/risk-score', requireSession, leadsRateLimiter, async (req, res) => {
   const { industry, revenue, ratings, language } = req.body as {
     industry:  string;
     revenue:   number;

@@ -1,6 +1,9 @@
 /**
  * /api/consultancy — End-to-end AI consultancy workflow
  *
+ * All routes below require a signed-in session (#364 billing gate --
+ * Consultancy Engine is subscription-only per Decision Record 8.5).
+ *
  * POST /api/consultancy/diagnose    → structured AI diagnosis
  * POST /api/consultancy/solution    → solution plan generation
  * POST /api/consultancy/refine      → refine solution after satisfaction feedback
@@ -13,6 +16,7 @@ import { submissionsTable } from '@workspace/db';
 import { logger } from '../lib/logger';
 import { OPENAI_MODEL, friendlyAIError } from '../lib/aiConfig';
 import { leadsRateLimiter } from '../lib/rateLimit';
+import { requireSession }   from '../middlewares/requireSession';
 import { sendEscalationEmail } from './notify';
 
 const router = Router();
@@ -38,7 +42,7 @@ You apply SCOR's five performance attributes: Reliability, Responsiveness, Agili
 You speak with authority, warmth, and commercial precision. No generic advice. No vague platitudes. Every output must be industry-specific, process-specific, region-specific, and maturity-specific.`;
 
 // ── POST /api/consultancy/diagnose ────────────────────────────────────────────
-router.post('/diagnose', leadsRateLimiter, async (req, res) => {
+router.post('/diagnose', requireSession, leadsRateLimiter, async (req, res) => {
   const { industry, subIndustry, challenge, companySize, maturityHint, language } = req.body as {
     industry:      string;
     subIndustry?:  string;
@@ -141,7 +145,7 @@ Rules:
 });
 
 // ── POST /api/consultancy/solution ────────────────────────────────────────────
-router.post('/solution', leadsRateLimiter, async (req, res) => {
+router.post('/solution', requireSession, leadsRateLimiter, async (req, res) => {
   const { industry, subIndustry, challenge, diagnosis, language } = req.body as {
     industry:     string;
     subIndustry?: string;
@@ -239,7 +243,7 @@ Rules:
 });
 
 // ── POST /api/consultancy/refine ──────────────────────────────────────────────
-router.post('/refine', leadsRateLimiter, async (req, res) => {
+router.post('/refine', requireSession, leadsRateLimiter, async (req, res) => {
   const { industry, subIndustry, challenge, previousSolution, feedback, language } = req.body as {
     industry:         string;
     subIndustry?:     string;
@@ -290,7 +294,7 @@ Return an improved solution in the same JSON structure as the original solution,
 // ── POST /api/consultancy/escalate ────────────────────────────────────────────
 // Triggers human escalation: sends a structured brief to Ma'in via email
 // and logs the full case to the submissions table.
-router.post('/escalate', async (req, res) => {
+router.post('/escalate', requireSession, async (req, res) => {
   const {
     contactName, contactEmail, contactMobile, contactCompany, contactDesignation,
     industry, subIndustry, challenge, diagnosis, solution, satisfactionScore,

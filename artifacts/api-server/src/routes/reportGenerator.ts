@@ -1,6 +1,7 @@
 import { Router }   from 'express';
 import { openai }   from '@workspace/integrations-openai-ai-server';
 import { OPENAI_MODEL, friendlyAIError } from '../lib/aiConfig';
+import { requireSession }            from '../middlewares/requireSession';
 
 const router = Router();
 
@@ -48,7 +49,7 @@ export interface ReportInput {
 
 /* ── POST /api/report/generate ───────────────────────────────────────────── */
 
-router.post('/generate', async (req, res) => {
+router.post('/generate', requireSession, async (req, res) => {
   try {
     const input = req.body as ReportInput;
     if (!input?.contactInfo?.name || !input?.contactInfo?.company) {
