@@ -30,6 +30,7 @@ import { RiskManagement } from '@/pages/RiskManagement';
 import { GovernanceCompliance } from '@/pages/GovernanceCompliance';
 import { CommandCenter } from '@/pages/CommandCenter';
 import { KraljicMatrix } from '@/pages/KraljicMatrix';
+import { DecisionLab } from '@/pages/DecisionLab';
 import { CustomerVoice } from '@/pages/CustomerVoice';
 import { Legal } from '@/pages/Legal';
 import { DataSources } from '@/pages/DataSources';
@@ -88,6 +89,7 @@ function Router() {
         <Route path="/governance-compliance" component={GovernanceCompliance} />
         <Route path="/command-center" component={CommandCenter} />
         <Route path="/kraljic" component={KraljicMatrix} />
+        <Route path="/decision-lab" component={DecisionLab} />
         <Route path="/admin/leads" component={AdminLeads} />
         <Route path="/admin/integrations" component={AdminIntegrations} />
         <Route path="/admin/automations" component={AdminAutomations} />

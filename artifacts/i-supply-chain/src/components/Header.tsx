@@ -30,6 +30,7 @@ const servicesList = [
   { key: 'nav.risk',         href: '/risk-management',         label: 'Risk Management' },
   { key: 'nav.governance',   href: '/governance-compliance',   label: 'Governance & Compliance' },
   { key: 'nav.kraljic',     href: '/kraljic',                 label: '🧩 Kraljic Matrix' },
+  { key: 'nav.decisionLab', href: '/decision-lab',             label: '⚖️ Decision Lab' },
   { key: 'nav.caseStudies',  href: '/case-studies',            label: 'Case Studies' },
   { key: 'nav.intelligence', href: '/intelligence',            label: 'Intelligence Hub' },
 ];
@@ -89,6 +90,7 @@ export function Header() {
       'nav.csr':           { en: 'CSR',                        ar: 'المسؤولية الاجتماعية' },
       'nav.contact':       { en: 'Contact',                    ar: 'تواصل معنا' },
       'nav.kraljic':       { en: '🧩 Kraljic Matrix',          ar: '🧩 مصفوفة كرالجيك' },
+      'nav.decisionLab':   { en: '⚖️ Decision Lab',            ar: '⚖️ مختبر القرار' },
     };
     return map[key]?.[lang] ?? key;
   };
