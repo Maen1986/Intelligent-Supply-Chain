@@ -4,7 +4,7 @@ import { Link } from 'wouter';
 import { Button } from '@/components/ui/button';
 import {
   Newspaper, Cpu, GitBranch, Lightbulb, ExternalLink,
-  ChevronRight, Zap, TrendingUp, Shield, Leaf, Radio,
+  ChevronRight, Zap, TrendingUp, Shield, Leaf, Radio, Sparkles,
   BookOpen, Clock, ArrowRight, BarChart3, Globe, Lock,
   RefreshCw, CheckCircle,
   ArrowLeft, ChevronLeft,
@@ -281,21 +281,19 @@ export function Intelligence() {
           style={{ background: 'radial-gradient(ellipse 80% 60% at 50% 100%, rgba(201,168,76,0.18) 0%, transparent 60%), linear-gradient(135deg, #082C6B 0%, #0B3D91 60%, #0d4db8 100%)' }} />
         <div className="relative z-10 h-full flex flex-col items-center justify-center text-center px-4">
           <div className="flex items-center gap-2 mb-3">
-            <Radio className="w-4 h-4 text-accent animate-pulse" />
-            <span className="text-accent font-bold text-sm uppercase tracking-widest">{isAr ? 'مركز الذكاء الحي' : 'Live Intelligence Hub'}</span>
+            <Sparkles className="w-4 h-4 text-accent" />
+            <span className="text-accent font-bold text-sm uppercase tracking-widest">{isAr ? 'مركز الذكاء' : 'Intelligence Hub'}</span>
           </div>
           <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-white mb-3">
             {isAr ? 'ذكاء المشتريات وسلسلة الإمداد' : <>Procurement &amp; Supply Chain Intelligence</>}
           </h1>
           <p className="text-white/75 text-base md:text-lg max-w-2xl">
-            {isAr ? "أحدث أخبار القطاع والأدوات الرقمية وابتكارات العمليات ورؤى التحوّل — بإشراف مَعِن الحقّاش، MCIPS." : "Latest industry news, digital tools, process innovations, and transformation insights — curated by Ma'in Alhaqash, MCIPS."}
+            {isAr ? "تعليقات ورؤى تُصاغ بالذكاء الاصطناعي حول الأدوات الرقمية وابتكارات العمليات ورؤى التحوّل، استناداً إلى منهجية ISC." : "AI-synthesized commentary on digital tools, process innovations, and transformation trends, grounded in ISC's methodology."}
           </p>
-          {lastUpdated && (
-            <div className="flex items-center gap-1.5 mt-3 text-white/60 text-xs">
-              <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />
-              <span>{isAr ? `تحديث أسبوعي · آخر تحديث ${lastUpdated}` : `Refreshed weekly · Last updated ${lastUpdated}`}</span>
-            </div>
-          )}
+          <div className="flex items-center gap-1.5 mt-3 text-white/60 text-xs">
+            <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />
+            <span>{isAr ? 'محتوى تحليلي بالذكاء الاصطناعي — وليس تغذية أخبار حيّة؛ يُرجى التحقق من الأرقام الزمنية بشكل مستقل.' : 'AI-generated analysis — not a live news feed; verify time-sensitive figures independently.'}</span>
+          </div>
         </div>
       </div>
 
@@ -334,11 +332,11 @@ export function Intelligence() {
             <Reveal className="flex items-center justify-between flex-wrap gap-4">
               <div>
                 <h2 className="text-2xl font-bold text-primary">{isAr ? 'أحدث أخبار القطاع' : 'Latest Industry News'}</h2>
-                <p className="text-muted-foreground mt-1">{isAr ? 'مستجدّات مختارة تُشكّل إدارة المشتريات وسلسلة الإمداد — تُحدَّث أسبوعياً.' : 'Curated developments shaping procurement and supply chain management — refreshed every week.'}</p>
+                <p className="text-muted-foreground mt-1">{isAr ? 'تحليلات وتعليقات بالذكاء الاصطناعي حول اتجاهات المشتريات وسلسلة الإمداد — وليست تغذية أخبار حيّة موثّقة.' : "AI-synthesized analysis and commentary on procurement and supply chain trends — not a verified, live news feed."}</p>
               </div>
               <span className="flex items-center gap-2 text-xs text-accent font-bold uppercase tracking-widest">
-                <Radio className="w-3.5 h-3.5 animate-pulse" />
-                {lastUpdated ? (isAr ? `حُدّث ${lastUpdated}` : `Updated ${lastUpdated}`) : (isAr ? 'تحديث أسبوعي' : 'Weekly refresh')}
+                <Sparkles className="w-3.5 h-3.5" />
+                {isAr ? 'محتوى بالذكاء الاصطناعي' : 'AI-synthesized'}
               </span>
             </Reveal>
 
