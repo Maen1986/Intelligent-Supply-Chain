@@ -1442,6 +1442,11 @@ function StreamCard({ stream, index }: { stream: Stream; index: number }) {
             <div>
               <p className="text-xs font-bold text-[#C9A84C] uppercase tracking-widest mb-1">{ar ? 'حل ISC' : 'ISC Solution'}</p>
               <p className="text-sm text-foreground/80 leading-relaxed">{ar ? stream.solutionAr : stream.solution}</p>
+              <p className="text-xs text-foreground/50 italic leading-relaxed mt-2">
+                {ar
+                  ? 'الأرقام مبنية على خبرة المؤسس المهنية في مشاركات مماثلة — وليست بعد نتائج عملاء موثّقة أو تم التحقّق منها لدى ISC.'
+                  : "Figures reflect the founder's professional experience across comparable engagements — not yet documented or verified ISC client outcomes."}
+              </p>
             </div>
           </div>
         </div>
