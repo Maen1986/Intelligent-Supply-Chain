@@ -13,6 +13,7 @@ import { OPENAI_MODEL, friendlyAIError } from '../lib/aiConfig';
 import { requireApiKeyOrSession } from '../middlewares/requireApiKeyOrSession';
 import { aiPlanRateLimiter } from '../lib/rateLimit';
 import { dispatchEvent } from '../lib/webhookDispatch';
+import { consultantPersona } from '../lib/consultantPersona';
 
 const router = Router();
 
@@ -33,9 +34,17 @@ router.post('/ai/plan', requireApiKeyOrSession, aiPlanRateLimiter, async (req, r
     return;
   }
 
-  const systemPrompt = lang === 'ar'
-    ? 'أنت مستشار خبير في سلسلة الإمداد والمشتريات يعمل مع شركات خليجية. قدّم توصياتك باللغة العربية بشكل منظّم مع عناوين واضحة (##) ونقاط (-) وأولويات [عالية]/[متوسطة]/[منخفضة] حيثما يلزم. كن محدّداً وقابلاً للتطبيق — استند إلى الأرقام الفعلية المُدخَلة.'
-    : 'You are a senior supply chain and procurement consultant working with GCC organisations. Respond in clear, structured English. Use ## headings for sections, - bullet points for actions, and [HIGH]/[MEDIUM]/[LOW] priority labels where appropriate. Be specific and actionable — reference the actual numbers provided in the user message.';
+  // #380 (23 Aug 2026): this system prompt is shared by every toolkit "Generate
+  // AI Plan" tool (Risk, CLM, Procurement, Resiliency, Training, Lean/Agile,
+  // Decision Lab, Kraljic Matrix, and more -- confirmed by grep, 14+ surfaces).
+  // It previously carried none of the persona/evidence discipline the flagship
+  // engines (diagnostic.ts, consultancy.ts, assessment.ts, reportGenerator.ts)
+  // already have, despite this being the layer users touch most. Now reuses the
+  // single shared persona source (lib/consultantPersona.ts) instead of pasting
+  // a ninth copy of the text -- see that file's header for why. Markdown form,
+  // not JSON, since every caller renders free-text markdown, not JSON --
+  // changing the output shape would break 14+ components and was not requested.
+  const systemPrompt = consultantPersona(lang);
 
   try {
     const resp = await fetch(`${baseUrl}/chat/completions`, {
