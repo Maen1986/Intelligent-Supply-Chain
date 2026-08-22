@@ -389,7 +389,13 @@ router.post('/escalate', requireSession, async (req, res) => {
     });
 
     logger.info({ contactEmail: email, industry: industryFull }, '[consultancy] Escalation sent');
-    res.json({ ok: true, message: 'Escalation sent to Ma\'in Alhaqash. You will be contacted within 4 business hours.' });
+    // #368 (22 Aug 2026): the 4-business-hour response SLA is a monthly-subscription
+    // benefit (Ma'in's personal, informal commitment to active paying clients), not a
+    // guarantee owed to every signed-in user who reaches this free diagnostic flow --
+    // requireSession only checks login state, not plan/billing status (#364 billing
+    // gate is still open). Until #364 lands, don't print an SLA promise we can't yet
+    // verify is backed by a real subscription; keep the human commitment honest instead.
+    res.json({ ok: true, message: 'Escalation sent to Ma\'in Alhaqash. Monthly-plan clients are contacted within 4 business hours; other users are contacted as soon as possible.' });
   } catch (err) {
     logger.error({ err }, '[consultancy/escalate] failed');
     res.status(500).json({ ok: false, error: 'Escalation failed', detail: String(err) });
