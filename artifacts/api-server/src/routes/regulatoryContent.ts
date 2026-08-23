@@ -11,12 +11,12 @@
  *      given industry (or universal frameworks, applies_to_industries=["*"]).
  *      Omit ?industry to get the full unfiltered list for that country.
  *
- * PATCH /api/regulatory/countries/:id  (#168, admin-only)
+ * PATCH /api/regulatory/countries/:id  (admin-only)
  *   -> update a country's coverage_level / notes / notes_ar / source_url /
  *      last_verified_at / verified_by. Added so coverage status can be
  *      corrected as content is authored/reviewed without a code deploy or
  *      a raw DB migration each time (the pattern used for the one-off
- *      #169 fix). Whitelisted fields only; every write is logged with the
+ *      DB coverage fix). Whitelisted fields only; every write is logged with the
  *      admin's user id for accountability.
  */
 

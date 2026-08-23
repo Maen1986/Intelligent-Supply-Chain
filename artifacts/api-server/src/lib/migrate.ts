@@ -175,7 +175,7 @@ const MIGRATIONS: string[] = [
    ) AS v(country_id, code, name, name_ar, regulator_body, regulator_body_ar, applies_to_industries, description, source_url, status, sort_order)
    WHERE NOT EXISTS (SELECT 1 FROM regulatory_frameworks LIMIT 1)`,
 
-  // #157 — UAE regulatory maturity-scale question content has now been
+  // Regulatory coverage fix (2026-08-13) — UAE regulatory maturity-scale question content has now been
   // authored (7 sub-segments, 35 questions, 5-level bilingual maturity
   // scale — see maturityRegulatoryUae.ts on the frontend), so bump UAE's
   // coverage_level from 'roadmap' to 'partial'. Deliberately NOT 'full':
@@ -189,7 +189,7 @@ const MIGRATIONS: string[] = [
          notes_ar = 'تمت صياغة أسئلة مقياس النضج (7 وحدات فرعية، 35 سؤالاً: التوطين/نافس، القيمة المضافة المحلية، الجمارك، مطابقة المنتجات (الهيئة)، المشتريات الحكومية، شهادة الحلال، حماية البيانات). قيد المراجعة القانونية/الخبيرة المستقلة قبل اعتمادها بشكل كامل.'
    WHERE id = 'uae' AND coverage_level = 'roadmap'`,
 
-  // #160 — Live primary-source check of the UAE regulatory content
+  // Primary-source verification pass (2026-08-13) — Live primary-source check of the UAE regulatory content
   // (2026-08-13): every specific figure/threshold across all 7 sub-segments
   // was re-checked against current public regulator pages and law texts.
   // One correction was made (a fabricated "3 years' experience" tender
@@ -207,7 +207,7 @@ const MIGRATIONS: string[] = [
    WHERE id = 'uae' AND coverage_level = 'partial'
      AND notes NOT LIKE '%Primary-source-checked%'`,
 
-  // #169 (2026-08-16) — Qatar/Jordan/Oman/Bahrain regulatory content was
+  // Regulatory coverage fix (2026-08-16) — Qatar/Jordan/Oman/Bahrain regulatory content was
   // authored and wired live (#161-#166) but these rows were still left at
   // coverage_level = 'roadmap' with the original "not yet authored" seed
   // notes, so the country picker kept showing "Coming soon" for content
