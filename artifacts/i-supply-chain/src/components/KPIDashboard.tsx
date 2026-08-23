@@ -18,6 +18,7 @@ import { KPI_DATA_SPECS } from '@/lib/kpiDataSpecs';
 import { INDUSTRIES, type IndustryKey, getIndustryBenchmark } from '@/lib/kpiBenchmarksByIndustry';
 import { SKU_CLASSES, type SkuClassKey, getSkuClassBenchmark } from '@/lib/kpiBenchmarksBySkuClass';
 import { getContextualTarget, getGccTarget, computeFoundationalTarget } from '@/lib/kpiTargetsByContext';
+import { getIndustryBenchmarkReviewStatus, getTargetReviewStatus, type ReviewStatusMeta } from '@/lib/kpiReviewStatus';
 
 /* ─── KPI definition types ─── */
 export interface KpiDef {
@@ -34,6 +35,11 @@ export interface KpiDef {
   targetTier?: 'foundational' | 'peer' | 'best-in-class';
   targetScope?: 'gcc' | 'international';
   targetSourceNote?: string;
+  // Added 2026-08-23 (#382) -- review status of the displayed benchmark/target figure
+  // (Verified / Estimated / Context-specific), sourced from ISC Benchmark Final v54.xlsx.
+  // null means Verified - Correct or not in scope for badging (see kpiReviewStatus.ts).
+  benchmarkReviewStatus?: ReviewStatusMeta | null;
+  targetReviewStatus?: ReviewStatusMeta | null;
 }
 
 /* ─── KPI frameworks: 12 solution slugs + risk-management ─── */
@@ -1133,9 +1139,12 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
 
     let result: KpiDef = kpi;
     if (skuOverride) {
-      result = { ...result, benchmarkValue: skuOverride.value, benchmarkLabel: skuOverride.label, benchmarkLabelAr: skuOverride.labelAr };
+      // SKU-class figure always resolves through the '*' wildcard synthesis today
+      // (no sub-sector selector in this UI yet) -- no single tracked workbook row
+      // describes it, so it's deliberately left unbadged rather than guessed (#382).
+      result = { ...result, benchmarkValue: skuOverride.value, benchmarkLabel: skuOverride.label, benchmarkLabelAr: skuOverride.labelAr, benchmarkReviewStatus: null };
     } else if (indOverride) {
-      result = { ...result, benchmarkValue: indOverride.value, benchmarkLabel: indOverride.label, benchmarkLabelAr: indOverride.labelAr };
+      result = { ...result, benchmarkValue: indOverride.value, benchmarkLabel: indOverride.label, benchmarkLabelAr: indOverride.labelAr, benchmarkReviewStatus: getIndustryBenchmarkReviewStatus(kpi.id, selectedIndustry) };
     }
 
     // ── Step 2: Resolve target (most-specific context wins) ──
@@ -1148,6 +1157,7 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
         targetValue: contextTarget.value,
         targetLabel: contextTarget.label,
         targetLabelAr: contextTarget.labelAr,
+        targetReviewStatus: getTargetReviewStatus(kpi.id, selectedIndustry, selectedSkuClass),
       };
     }
 
@@ -2009,6 +2019,43 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
                         ) : (
                           <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700">
                             {isAr ? 'لا يتوفر مصدر خليجي بعد — يُعرض الرقم الدولي' : 'No GCC source yet — showing international'}
+                          </span>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Coverage / source-quality badge (#382) -- flags when the benchmark
+                        or target figure on this card is Estimated or Context-specific rather
+                        than independently Verified. Absence of a badge means Verified, or
+                        the figure isn't yet in scope for row-level tracking (see kpiReviewStatus.ts). */}
+                    {(kpi.benchmarkReviewStatus || kpi.targetReviewStatus) && (
+                      <div className="flex flex-wrap gap-1 mb-1.5">
+                        {kpi.benchmarkReviewStatus && (
+                          <span
+                            className={`text-[9px] font-medium px-1.5 py-0.5 rounded-full ${
+                              kpi.benchmarkReviewStatus.status === 'estimated'
+                                ? 'bg-amber-50 text-amber-700'
+                                : 'bg-slate-100 text-slate-600'
+                            }`}
+                            title={isAr ? kpi.benchmarkReviewStatus.noteAr : kpi.benchmarkReviewStatus.note}
+                          >
+                            {isAr
+                              ? `المعيار: ${kpi.benchmarkReviewStatus.labelAr}`
+                              : `Benchmark: ${kpi.benchmarkReviewStatus.label}`}
+                          </span>
+                        )}
+                        {kpi.targetReviewStatus && (
+                          <span
+                            className={`text-[9px] font-medium px-1.5 py-0.5 rounded-full ${
+                              kpi.targetReviewStatus.status === 'estimated'
+                                ? 'bg-amber-50 text-amber-700'
+                                : 'bg-slate-100 text-slate-600'
+                            }`}
+                            title={isAr ? kpi.targetReviewStatus.noteAr : kpi.targetReviewStatus.note}
+                          >
+                            {isAr
+                              ? `الهدف: ${kpi.targetReviewStatus.labelAr}`
+                              : `Target: ${kpi.targetReviewStatus.label}`}
                           </span>
                         )}
                       </div>
