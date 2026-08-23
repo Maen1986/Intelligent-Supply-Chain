@@ -31,7 +31,7 @@ interface Changed {
   previousSnapshotAt: string | null;
   segments: ChangedSegment[];
 }
-interface NeedsYouOverdue { id: number; phase: string; action: string; segmentTitle: string | null; dueAt: string }
+interface NeedsYouOverdue { id: number; phase: string; action: string; segmentTitle: string | null; dueAt: string; daysOverdue: number }
 interface NeedsYouNotStarted { id: number; action: string; segmentTitle: string | null; source: string; createdAt: string }
 interface EmergingItem { id: number; action: string; segmentTitle: string | null; source: string; createdAt: string }
 interface CompletionItem { type: string; label: string; occurredAt: string; href: string }
@@ -39,6 +39,7 @@ interface CompletionItem { type: string; label: string; occurredAt: string; href
 interface BriefSummary {
   ok: boolean;
   hasData: boolean;
+  everHasHistory: boolean;
   window: 'daily' | 'weekly';
   windowDays: number;
   changed: Changed;
@@ -135,14 +136,29 @@ export function DailyBrief() {
         {empty ? (
           <div className="bg-white rounded-2xl border border-border p-10 text-center">
             <Newspaper className="w-10 h-10 text-primary/20 mx-auto mb-3" />
-            <p className="text-muted-foreground mb-6">
-              {ar
-                ? `لا يوجد نشاط جديد خلال ${windowLabel}. أكمل تقييمًا أو تابع إجراءاتك ليظهر هنا تلقائيًا.`
-                : `No new activity in the ${windowLabel}. Complete an assessment or work your actions, and it will show up here automatically.`}
-            </p>
-            <Link href="/action-tracker"><Button variant="outline" className="gap-2">
-              {ar ? 'الذهاب إلى متتبّع الإجراءات' : 'Go to Action Tracker'} <ArrowRight className="w-4 h-4" />
-            </Button></Link>
+            {data && data.everHasHistory ? (
+              <>
+                <p className="text-muted-foreground mb-6">
+                  {ar
+                    ? `لا يوجد نشاط جديد خلال ${windowLabel} — كل شيء تحت السيطرة. سجلّك السابق لا يزال محفوظًا.`
+                    : `No new activity in the ${windowLabel} -- everything's on track. Your earlier history is still there.`}
+                </p>
+                <Link href="/action-tracker"><Button variant="outline" className="gap-2">
+                  {ar ? 'الذهاب إلى متتبّع الإجراءات' : 'Go to Action Tracker'} <ArrowRight className="w-4 h-4" />
+                </Button></Link>
+              </>
+            ) : (
+              <>
+                <p className="text-muted-foreground mb-6">
+                  {ar
+                    ? 'لا يوجد سجل بعد. أكمل تقييم النضج الأول لتبدأ رؤية ملخصك هنا تلقائيًا.'
+                    : "No history yet. Complete your first Maturity Assessment and your brief will start building itself here automatically."}
+                </p>
+                <Link href="/maturity"><Button variant="outline" className="gap-2">
+                  {ar ? 'ابدأ تقييم النضج' : 'Start Maturity Assessment'} <ArrowRight className="w-4 h-4" />
+                </Button></Link>
+              </>
+            )}
           </div>
         ) : (
           <div className="space-y-6">
@@ -194,7 +210,9 @@ export function DailyBrief() {
                       <div>
                         <span className="text-sm text-foreground">{item.action}</span>
                         <span className="text-[11px] text-red-600 font-semibold ml-2">
-                          {ar ? 'متأخر منذ ' : 'overdue since '}{formatDate(item.dueAt, ar)}
+                          {ar
+                            ? `متأخر ${item.daysOverdue} يومًا (منذ ${formatDate(item.dueAt, ar)})`
+                            : `${item.daysOverdue} day${item.daysOverdue === 1 ? '' : 's'} overdue (since ${formatDate(item.dueAt, ar)})`}
                         </span>
                       </div>
                     </div>

@@ -512,8 +512,20 @@ type Tab = 'spend' | 'market' | 'strategy' | 'templates' | 'tco' | 'workingcapit
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
+const VALID_TABS: Tab[] = ['spend', 'market', 'strategy', 'templates', 'tco', 'workingcapital', 'spendvariance', 'ai', 'alerts'];
+
+/** Reads a #tab-name hash on first mount for deep-linking (e.g. from the
+ *  Daily/Weekly Brief's "recent completions" feed, #171). Falls back to the
+ *  default 'spend' tab for an empty or unrecognized hash rather than
+ *  silently landing on whatever tab happens to render first -- an unknown
+ *  hash should never look like a real selection. */
+function initialTabFromHash(): Tab {
+  const hash = typeof window !== 'undefined' ? window.location.hash.replace('#', '') : '';
+  return (VALID_TABS as string[]).includes(hash) ? (hash as Tab) : 'spend';
+}
+
 export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
-  const [activeTab, setActiveTab] = useState<Tab>('spend');
+  const [activeTab, setActiveTab] = useState<Tab>(initialTabFromHash);
 
   // Spend data
   const [rows, setRows] = useState<SpendRow[]>(() => loadJson(SK_SPEND, [defaultRow()]));

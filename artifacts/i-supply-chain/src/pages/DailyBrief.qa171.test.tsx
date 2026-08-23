@@ -1,10 +1,18 @@
 /**
- * DailyBrief — #171 QA tests (23 Aug 2026)
+ * DailyBrief — #171 QA tests (23 Aug 2026, hardened after the required
+ * 6-dimension customer-simulation walkthrough -- see brief.ts and the site
+ * map v62 changelog for what the walkthrough found and why each of these
+ * cases exists)
  *
  * Covers the honesty-critical paths: not-signed-in state (no fetch made),
- * honest-empty state (signed in, zero activity in the window), the four
- * real sections rendering from real data, the daily/weekly window toggle
- * re-fetching with the right query param, and Arabic labels.
+ * the TWO distinct empty states (never-assessed vs. real-history-but-quiet-
+ * window -- personalization, dimension 3), the four real sections rendering
+ * from real data, the server-computed days-overdue figure actually
+ * rendering the number the backend sent rather than making the reader do
+ * the subtraction (decision-readiness, dimension 1), completions deep-
+ * linking to the correct ProcurementTools tab instead of always landing on
+ * the default tab (actionability, dimension 4), the daily/weekly window
+ * toggle re-fetching with the right query param, and Arabic labels.
  */
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import { render, screen, cleanup, waitFor, fireEvent } from '@testing-library/react';
@@ -25,12 +33,17 @@ vi.mock('@/lib/LanguageContext', () => ({
   useLanguage: () => ({ lang: mockLang.value }),
 }));
 
-const EMPTY_SUMMARY = {
-  ok: true, hasData: false, window: 'weekly', windowDays: 7,
+const EMPTY_SUMMARY_NEVER_ASSESSED = {
+  ok: true, hasData: false, everHasHistory: false, window: 'weekly', windowDays: 7,
   changed: { hasComparison: false, latestSnapshotAt: null, previousSnapshotAt: null, segments: [] },
   needsYou: { overdue: [], notStarted: [] },
   emerging: [],
   completions: [],
+};
+
+const EMPTY_SUMMARY_QUIET_WEEK = {
+  ...EMPTY_SUMMARY_NEVER_ASSESSED,
+  everHasHistory: true,
 };
 
 afterEach(() => {
@@ -50,17 +63,27 @@ describe('DailyBrief', () => {
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
-  it('shows the honest-empty state when signed in with zero activity', async () => {
+  it('never-assessed empty state (everHasHistory=false) points to Maturity Assessment, not Action Tracker', async () => {
     mockAuthState.user = { id: 1, fullName: 'Test User' };
-    global.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => EMPTY_SUMMARY });
+    global.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => EMPTY_SUMMARY_NEVER_ASSESSED });
     render(<DailyBrief />);
-    await waitFor(() => expect(screen.getByText(/No new activity/)).toBeTruthy());
+    await waitFor(() => expect(screen.getByText(/No history yet/)).toBeTruthy());
+    expect(screen.getByText('Start Maturity Assessment')).toBeTruthy();
+    expect(screen.queryByText('Go to Action Tracker')).toBeNull();
+  });
+
+  it('quiet-week empty state (everHasHistory=true) reassures an existing user instead of prompting them to start over', async () => {
+    mockAuthState.user = { id: 1, fullName: 'Test User' };
+    global.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => EMPTY_SUMMARY_QUIET_WEEK });
+    render(<DailyBrief />);
+    await waitFor(() => expect(screen.getByText(/everything's on track/)).toBeTruthy());
     expect(screen.getByText('Go to Action Tracker')).toBeTruthy();
+    expect(screen.queryByText('Start Maturity Assessment')).toBeNull();
   });
 
   it('fetches the weekly window by default', async () => {
     mockAuthState.user = { id: 1, fullName: 'Test User' };
-    const fetchSpy = vi.fn().mockResolvedValue({ ok: true, json: async () => EMPTY_SUMMARY });
+    const fetchSpy = vi.fn().mockResolvedValue({ ok: true, json: async () => EMPTY_SUMMARY_NEVER_ASSESSED });
     global.fetch = fetchSpy;
     render(<DailyBrief />);
     await waitFor(() => expect(fetchSpy).toHaveBeenCalled());
@@ -69,7 +92,7 @@ describe('DailyBrief', () => {
 
   it('clicking the Daily toggle re-fetches with window=daily', async () => {
     mockAuthState.user = { id: 1, fullName: 'Test User' };
-    const fetchSpy = vi.fn().mockResolvedValue({ ok: true, json: async () => EMPTY_SUMMARY });
+    const fetchSpy = vi.fn().mockResolvedValue({ ok: true, json: async () => EMPTY_SUMMARY_NEVER_ASSESSED });
     global.fetch = fetchSpy;
     render(<DailyBrief />);
     await waitFor(() => expect(fetchSpy).toHaveBeenCalledTimes(1));
@@ -78,24 +101,26 @@ describe('DailyBrief', () => {
     expect(fetchSpy.mock.calls[1][0]).toContain('window=daily');
   });
 
+  const POPULATED_SUMMARY = {
+    ok: true, hasData: true, everHasHistory: true, window: 'weekly', windowDays: 7,
+    changed: {
+      hasComparison: true, latestSnapshotAt: '2026-08-20T00:00:00Z', previousSnapshotAt: '2026-08-01T00:00:00Z',
+      segments: [{ title: 'Procurement', scoreLatest: 3.5, scorePrevious: 2.0, delta: 1.5 }],
+    },
+    needsYou: {
+      overdue: [{ id: 1, phase: 'days30', action: 'Fix OTIF', segmentTitle: 'Logistics', dueAt: '2026-08-01T00:00:00Z', daysOverdue: 22 }],
+      notStarted: [{ id: 2, action: 'Review contracts', segmentTitle: 'CLM', source: 'diagnostic', createdAt: '2026-08-01T00:00:00Z' }],
+    },
+    emerging: [{ id: 3, action: 'New recommendation', segmentTitle: 'Risk', source: 'maturity', createdAt: '2026-08-22T00:00:00Z' }],
+    completions: [
+      { type: 'tco', label: 'TCO analysis saved: Widget TCO', occurredAt: '2026-08-21T10:00:00Z', href: '/procurement-tools#tco' },
+      { type: 'workingcapital', label: 'Working Capital scenario saved: Base Case', occurredAt: '2026-08-19T10:00:00Z', href: '/procurement-tools#workingcapital' },
+    ],
+  };
+
   it('renders all four real sections with populated data, no fabricated content', async () => {
     mockAuthState.user = { id: 1, fullName: 'Test User' };
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        ok: true, hasData: true, window: 'weekly', windowDays: 7,
-        changed: {
-          hasComparison: true, latestSnapshotAt: '2026-08-20T00:00:00Z', previousSnapshotAt: '2026-08-01T00:00:00Z',
-          segments: [{ title: 'Procurement', scoreLatest: 3.5, scorePrevious: 2.0, delta: 1.5 }],
-        },
-        needsYou: {
-          overdue: [{ id: 1, phase: 'days30', action: 'Fix OTIF', segmentTitle: 'Logistics', dueAt: '2026-08-01T00:00:00Z' }],
-          notStarted: [{ id: 2, action: 'Review contracts', segmentTitle: 'CLM', source: 'diagnostic', createdAt: '2026-08-01T00:00:00Z' }],
-        },
-        emerging: [{ id: 3, action: 'New recommendation', segmentTitle: 'Risk', source: 'maturity', createdAt: '2026-08-22T00:00:00Z' }],
-        completions: [{ type: 'tco', label: 'TCO analysis saved: Widget TCO', occurredAt: '2026-08-21T10:00:00Z', href: '/procurement-tools' }],
-      }),
-    });
+    global.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => POPULATED_SUMMARY });
     render(<DailyBrief />);
     await waitFor(() => expect(screen.getByText('What Changed')).toBeTruthy());
     expect(screen.getByText("What Needs You")).toBeTruthy();
@@ -109,10 +134,28 @@ describe('DailyBrief', () => {
     expect(screen.getByText('TCO analysis saved: Widget TCO')).toBeTruthy();
   });
 
+  it('renders the server-computed days-overdue figure verbatim rather than only a bare date (decision-readiness)', async () => {
+    mockAuthState.user = { id: 1, fullName: 'Test User' };
+    global.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => POPULATED_SUMMARY });
+    render(<DailyBrief />);
+    await waitFor(() => expect(screen.getByText(/22 days overdue/)).toBeTruthy());
+  });
+
+  it('deep-links each completion to its own ProcurementTools tab, not the generic page (actionability)', async () => {
+    mockAuthState.user = { id: 1, fullName: 'Test User' };
+    global.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => POPULATED_SUMMARY });
+    render(<DailyBrief />);
+    await waitFor(() => expect(screen.getByText('TCO analysis saved: Widget TCO')).toBeTruthy());
+    const tcoLink = screen.getByText('TCO analysis saved: Widget TCO').closest('a');
+    expect(tcoLink?.getAttribute('href')).toBe('/procurement-tools#tco');
+    const wcLink = screen.getByText('Working Capital scenario saved: Base Case').closest('a');
+    expect(wcLink?.getAttribute('href')).toBe('/procurement-tools#workingcapital');
+  });
+
   it('renders Arabic labels when lang=ar', async () => {
     mockAuthState.user = { id: 1, fullName: 'Test User' };
     mockLang.value = 'ar';
-    global.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => EMPTY_SUMMARY });
+    global.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => EMPTY_SUMMARY_NEVER_ASSESSED });
     render(<DailyBrief />);
     await waitFor(() => expect(screen.getByText('ملخصك')).toBeTruthy());
   });

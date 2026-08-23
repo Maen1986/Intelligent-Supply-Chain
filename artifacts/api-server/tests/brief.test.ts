@@ -44,6 +44,7 @@ describe('GET /api/brief/summary', () => {
     expect(res.status).toBe(200);
     expect(res.body.ok).toBe(true);
     expect(res.body.hasData).toBe(false);
+    expect(res.body.everHasHistory).toBe(false);
     expect(res.body.changed.hasComparison).toBe(false);
     expect(res.body.needsYou.overdue).toEqual([]);
     expect(res.body.needsYou.notStarted).toEqual([]);
@@ -91,7 +92,7 @@ describe('GET /api/brief/summary', () => {
     expect(res.body.changed.segments[1]).toMatchObject({ title: 'Logistics', delta: -0.5 });
   });
 
-  it('"changed": hasComparison is false with only one snapshot', async () => {
+  it('"changed": hasComparison is false with only one snapshot, but everHasHistory is still true', async () => {
     const { db } = await import('@workspace/db');
     (db.execute as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
       rows: [{ id: 1, taken_at: '2026-08-20T00:00:00Z', segment_scores: [{ title: 'Procurement', score: 3.5 }] }],
@@ -100,6 +101,15 @@ describe('GET /api/brief/summary', () => {
     const res = await request(app).get('/api/brief/summary');
     expect(res.body.changed.hasComparison).toBe(false);
     expect(res.body.changed.segments).toEqual([]);
+    // Personalization (Decision Record 8.6, dimension 3): a client with one real snapshot
+    // is not "brand new," even though there is nothing to compare yet.
+    expect(res.body.everHasHistory).toBe(true);
+  });
+
+  it('everHasHistory is false when the user has never taken a maturity snapshot', async () => {
+    const app = makeApp('/api', briefRouter, { userId: 1 });
+    const res = await request(app).get('/api/brief/summary');
+    expect(res.body.everHasHistory).toBe(false);
   });
 
   it('"needsYou": surfaces overdue and not-started items separately', async () => {
@@ -107,7 +117,9 @@ describe('GET /api/brief/summary', () => {
     (db.execute as ReturnType<typeof vi.fn>)
       .mockResolvedValueOnce({ rows: [] }) // snapshots
       .mockResolvedValueOnce({ rows: [
-        { id: 5, phase: 'days30', action: 'Fix OTIF', segment_title: 'Logistics', plan_started_at: '2026-07-01', due_at: '2026-07-31' },
+        // due_at is far enough in the past that daysOverdue is deterministic and non-trivial
+        // regardless of what "today" happens to be when this test runs.
+        { id: 5, phase: 'days30', action: 'Fix OTIF', segment_title: 'Logistics', plan_started_at: '2020-01-01', due_at: '2020-01-31' },
       ] }) // overdue
       .mockResolvedValueOnce({ rows: [
         { id: 6, action: 'Review contracts', segment_title: 'CLM', source: 'diagnostic', created_at: '2026-08-01' },
@@ -117,6 +129,9 @@ describe('GET /api/brief/summary', () => {
     expect(res.body.hasData).toBe(true);
     expect(res.body.needsYou.overdue).toHaveLength(1);
     expect(res.body.needsYou.overdue[0]).toMatchObject({ id: 5, action: 'Fix OTIF' });
+    // Decision-readiness (Decision Record 8.6, dimension 1): the server computes and returns
+    // a real days-overdue figure rather than leaving the client to subtract dates itself.
+    expect(res.body.needsYou.overdue[0].daysOverdue).toBeGreaterThan(2000);
     expect(res.body.needsYou.notStarted).toHaveLength(1);
     expect(res.body.needsYou.notStarted[0]).toMatchObject({ id: 6, action: 'Review contracts' });
   });
@@ -162,11 +177,17 @@ describe('GET /api/brief/summary', () => {
     const res = await request(app).get('/api/brief/summary');
     expect(res.body.completions).toHaveLength(5);
     // Sorted newest-first: spend variance (23rd) > new snapshot (22nd) > done action (20th) > tco (21st)...
-    expect(res.body.completions[0]).toMatchObject({ type: 'spendvariance', label: 'Spend Variance comparison saved: Site Comparison' });
+    expect(res.body.completions[0]).toMatchObject({ type: 'spendvariance', label: 'Spend Variance comparison saved: Site Comparison', href: '/procurement-tools#spendvariance' });
     expect(res.body.completions[0]).toHaveProperty('occurredAt');
     expect(res.body.completions[0]).toHaveProperty('href');
     const types = res.body.completions.map((c: any) => c.type);
     expect(types).toEqual(expect.arrayContaining(['action', 'assessment', 'tco', 'workingcapital', 'spendvariance']));
+    // Actionability (Decision Record 8.6, dimension 4): each engine's completion deep-links to
+    // its own tab, not the generic page (which always lands on the unrelated default tab).
+    const byType = Object.fromEntries(res.body.completions.map((c: any) => [c.type, c.href]));
+    expect(byType.tco).toBe('/procurement-tools#tco');
+    expect(byType.workingcapital).toBe('/procurement-tools#workingcapital');
+    expect(byType.spendvariance).toBe('/procurement-tools#spendvariance');
     // verify sort order is strictly descending by occurredAt
     const times = res.body.completions.map((c: any) => new Date(c.occurredAt).getTime());
     for (let i = 1; i < times.length; i++) expect(times[i]).toBeLessThanOrEqual(times[i - 1]);

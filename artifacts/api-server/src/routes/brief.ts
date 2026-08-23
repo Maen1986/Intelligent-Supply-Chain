@@ -208,7 +208,7 @@ router.get('/brief/summary', requireSession, async (req, res) => {
       ORDER BY updated_at DESC LIMIT 5
     `);
     for (const r of ((tcoResult as any).rows ?? tcoResult) as Array<{ id: number; name: string; updated_at: string }>) {
-      completions.push({ type: 'tco', label: `TCO analysis saved: ${r.name}`, occurredAt: r.updated_at, href: '/procurement-tools' });
+      completions.push({ type: 'tco', label: `TCO analysis saved: ${r.name}`, occurredAt: r.updated_at, href: '/procurement-tools#tco' });
     }
 
     const wcResult = await db.execute(sql`
@@ -217,7 +217,7 @@ router.get('/brief/summary', requireSession, async (req, res) => {
       ORDER BY updated_at DESC LIMIT 5
     `);
     for (const r of ((wcResult as any).rows ?? wcResult) as Array<{ id: number; name: string; updated_at: string }>) {
-      completions.push({ type: 'workingcapital', label: `Working Capital scenario saved: ${r.name}`, occurredAt: r.updated_at, href: '/procurement-tools' });
+      completions.push({ type: 'workingcapital', label: `Working Capital scenario saved: ${r.name}`, occurredAt: r.updated_at, href: '/procurement-tools#workingcapital' });
     }
 
     const svResult = await db.execute(sql`
@@ -226,22 +226,29 @@ router.get('/brief/summary', requireSession, async (req, res) => {
       ORDER BY updated_at DESC LIMIT 5
     `);
     for (const r of ((svResult as any).rows ?? svResult) as Array<{ id: number; name: string; updated_at: string }>) {
-      completions.push({ type: 'spendvariance', label: `Spend Variance comparison saved: ${r.name}`, occurredAt: r.updated_at, href: '/procurement-tools' });
+      completions.push({ type: 'spendvariance', label: `Spend Variance comparison saved: ${r.name}`, occurredAt: r.updated_at, href: '/procurement-tools#spendvariance' });
     }
 
     completions.sort((a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime());
 
     const hasData = changed.hasComparison || overdueItems.length > 0 || notStartedItems.length > 0
       || emergingItems.length > 0 || completions.length > 0;
+    // Personalization (Decision Record 8.6, dimension 3): an empty brief means two very
+    // different things for a client who has never taken an assessment vs. one with real
+    // history and simply a quiet window -- everHasHistory lets the frontend tell them apart
+    // instead of showing identical copy to both. snapRows already reflects ALL of this
+    // user's snapshots (not window-limited), so no extra query is needed.
+    const everHasHistory = snapRows.length > 0;
 
     res.json({
       ok: true,
       hasData,
+      everHasHistory,
       window: windowParam,
       windowDays,
       changed,
       needsYou: {
-        overdue: overdueItems.map((r: any) => ({ id: r.id, phase: r.phase, action: r.action, segmentTitle: r.segment_title, dueAt: r.due_at })),
+        overdue: overdueItems.map((r: any) => ({ id: r.id, phase: r.phase, action: r.action, segmentTitle: r.segment_title, dueAt: r.due_at, daysOverdue: Math.max(1, Math.floor((Date.now() - new Date(r.due_at).getTime()) / 86400000)) })),
         notStarted: notStartedItems.map((r: any) => ({ id: r.id, action: r.action, segmentTitle: r.segment_title, source: r.source, createdAt: r.created_at })),
       },
       emerging: emergingItems.map((r: any) => ({ id: r.id, action: r.action, segmentTitle: r.segment_title, source: r.source, createdAt: r.created_at })),
