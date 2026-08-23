@@ -74,8 +74,8 @@ const FALLBACK_REPORT_CONTENT: Record<string, {
     gapsAr: ['عدم وجود قائمة موردين معتمدين رسمية للمواد الخام', 'الشراء الفوري يؤدي إلى تقلّب الأسعار', 'بيانات جودة محدودة للموردين وعمليات فحص قاصرة'],
     risks: ['No fixed-price clauses for raw material price spikes', 'Inadequate force majeure and supply disruption provisions'],
     risksAr: ['غياب بنود تثبيت الأسعار عند ارتفاع أسعار المواد الخام', 'قصور في أحكام القوة القاهرة وانقطاع الإمداد'],
-    roadmap: ['Month 1: Document your top 10 suppliers by spend and current performance history', 'Month 2: Establish OTIF, quality and lead-time scorecards for each top supplier', 'Month 3-4: Implement a standard purchase order and approval workflow', 'Month 5-6: Negotiate framework agreements with your top 3 material suppliers'],
-    roadmapAr: ['الشهر 1: توثيق أهم 10 موردين حسب الإنفاق وسجل أدائهم الحالي', 'الشهر 2: إنشاء بطاقات قياس أداء (الالتزام بالمواعيد، الجودة، مهلة التوريد) لكل مورد رئيسي', 'الشهر 3-4: تطبيق أوامر شراء ومسار اعتماد موحّد', 'الشهر 5-6: التفاوض على اتفاقيات إطارية مع أفضل 3 موردين للمواد'],
+    roadmap: ['Days 1-15: Document your top 10 suppliers by spend and recent performance', 'Days 16-30: Establish OTIF, quality and lead-time scorecards for each top supplier', 'Days 31-60: Implement a standard purchase order and approval workflow', 'Days 61-90: Negotiate framework agreements with your top 3 material suppliers'],
+    roadmapAr: ['الأيام 1-15: توثيق أهم 10 موردين حسب الإنفاق والأداء الأخير', 'الأيام 16-30: إنشاء بطاقات قياس أداء (الالتزام بالمواعيد، الجودة، مهلة التوريد) لكل مورد رئيسي', 'الأيام 31-60: تطبيق أوامر شراء ومسار اعتماد موحّد', 'الأيام 61-90: التفاوض على اتفاقيات إطارية مع أفضل 3 موردين للمواد'],
   },
   Retail: {
     summary: 'Retail SMEs commonly struggle with demand-driven inventory imbalances, inconsistent supplier terms, and limited visibility into supply lead times.',
@@ -84,8 +84,8 @@ const FALLBACK_REPORT_CONTENT: Record<string, {
     gapsAr: ['عدم وجود تحليل إنفاق على مستوى الفئات عبر خطوط المنتجات', 'شروط سداد غير متسقة للموردين تُسبّب ضغطًا على التدفق النقدي', 'استخدام محدود لبيانات التنبؤ بالطلب في قرارات الشراء'],
     risks: ['Insufficient exclusivity and minimum order quantity terms with key brands', 'No clear returns and damaged goods policy in supplier agreements'],
     risksAr: ['شروط حصرية وكميات طلب دنيا غير كافية مع العلامات التجارية الرئيسية', 'عدم وجود سياسة واضحة للمرتجعات والبضائع التالفة في اتفاقيات الموردين'],
-    roadmap: ['Month 1-2: Conduct full supplier and spend audit', 'Month 2-4: Standardize supplier contracts and payment terms', 'Month 4-6: Implement basic inventory management and reorder point system'],
-    roadmapAr: ['الشهر 1-2: إجراء تدقيق شامل للموردين والإنفاق', 'الشهر 2-4: توحيد عقود الموردين وشروط السداد', 'الشهر 4-6: تطبيق نظام أساسي لإدارة المخزون ونقاط إعادة الطلب'],
+    roadmap: ['Days 1-30: Conduct a full supplier and spend audit across all product lines', 'Days 31-60: Standardize supplier contracts and payment terms', 'Days 61-90: Implement a basic inventory management and reorder-point system'],
+    roadmapAr: ['الأيام 1-30: إجراء تدقيق شامل للموردين والإنفاق عبر جميع خطوط المنتجات', 'الأيام 31-60: توحيد عقود الموردين وشروط السداد', 'الأيام 61-90: تطبيق نظام أساسي لإدارة المخزون ونقاط إعادة الطلب'],
   },
   'Food & Beverage': {
     summary: 'F&B businesses face unique challenges regarding perishability, stringent quality requirements, and seasonal supply fluctuations.',
