@@ -74,8 +74,8 @@ const FALLBACK_REPORT_CONTENT: Record<string, {
     gapsAr: ['عدم وجود قائمة موردين معتمدين رسمية للمواد الخام', 'الشراء الفوري يؤدي إلى تقلّب الأسعار', 'بيانات جودة محدودة للموردين وعمليات فحص قاصرة'],
     risks: ['No fixed-price clauses for raw material price spikes', 'Inadequate force majeure and supply disruption provisions'],
     risksAr: ['غياب بنود تثبيت الأسعار عند ارتفاع أسعار المواد الخام', 'قصور في أحكام القوة القاهرة وانقطاع الإمداد'],
-    roadmap: ['Month 1-2: Document top 10 suppliers and establish performance scorecards', 'Month 2-4: Implement standard purchase order and approval workflow', 'Month 4-6: Negotiate framework agreements with top 3 material suppliers'],
-    roadmapAr: ['الشهر 1-2: توثيق أهم 10 موردين وإنشاء بطاقات قياس الأداء', 'الشهر 2-4: تطبيق أوامر شراء موحّدة ومسار اعتماد', 'الشهر 4-6: التفاوض على اتفاقيات إطارية مع أفضل 3 موردين للمواد'],
+    roadmap: ['Month 1: Document your top 10 suppliers by spend and current performance history', 'Month 2: Establish OTIF, quality and lead-time scorecards for each top supplier', 'Month 3-4: Implement a standard purchase order and approval workflow', 'Month 5-6: Negotiate framework agreements with your top 3 material suppliers'],
+    roadmapAr: ['الشهر 1: توثيق أهم 10 موردين حسب الإنفاق وسجل أدائهم الحالي', 'الشهر 2: إنشاء بطاقات قياس أداء (الالتزام بالمواعيد، الجودة، مهلة التوريد) لكل مورد رئيسي', 'الشهر 3-4: تطبيق أوامر شراء ومسار اعتماد موحّد', 'الشهر 5-6: التفاوض على اتفاقيات إطارية مع أفضل 3 موردين للمواد'],
   },
   Retail: {
     summary: 'Retail SMEs commonly struggle with demand-driven inventory imbalances, inconsistent supplier terms, and limited visibility into supply lead times.',
