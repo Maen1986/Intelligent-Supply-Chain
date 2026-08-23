@@ -1047,7 +1047,7 @@ export function RiskToolsSection({ isAr }: RiskToolsProps) {
       {activeTab === 'ai' && (
         <div role="tabpanel" id="ai-panel" aria-labelledby="ai-tab">
         <AIPlanPanel
-          loading={aiPlan.loading} result={aiPlan.result} error={aiPlan.error}
+          loading={aiPlan.loading} result={aiPlan.result} evidenceSummary={aiPlan.evidenceSummary} error={aiPlan.error}
           onGenerate={aiPlan.generate} onReset={aiPlan.reset}
           savedPlan={aiPlan.savedPlan} onViewSaved={aiPlan.viewSaved} onDeleteSaved={aiPlan.deleteSaved}
           rateLimited={aiPlan.rateLimited}

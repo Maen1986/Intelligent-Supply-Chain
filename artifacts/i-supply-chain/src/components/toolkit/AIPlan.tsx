@@ -28,6 +28,7 @@ export function AIPlan({ state, isAr, toolKey, buttonLabel, disabled }: AIPlanPr
     <AIPlanPanel
       loading={state.loading}
       result={state.result}
+      evidenceSummary={state.evidenceSummary}
       error={state.error}
       rateLimited={state.rateLimited}
       onGenerate={state.generate}

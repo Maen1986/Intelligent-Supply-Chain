@@ -19,6 +19,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { API_BASE } from '@/lib/apiBase';
 import { useAuth }  from '@/lib/AuthContext';
+import { type EvidenceSummaryData } from '@/components/EvidenceSummary';
 
 export interface SavedPlan {
   text:    string;
@@ -28,6 +29,11 @@ export interface SavedPlan {
 export interface AIPlanState {
   loading:      boolean;
   result:       string | null;
+  /** #158 (23 Aug 2026): only populated for a freshly-generated plan, not a
+   * viewed saved plan -- saved-plan persistence (/api/plans/:toolKey) only
+   * stores text today, evidenceSummary is session-only until that schema
+   * is extended too. */
+  evidenceSummary: EvidenceSummaryData | undefined;
   error:        string | null;
   /** True when the last request was rejected with a 429 rate-limit response. */
   rateLimited:  boolean;
@@ -64,6 +70,7 @@ export function useAIPlan(
 
   const [loading,            setLoading]            = useState(false);
   const [result,             setResult]             = useState<string | null>(null);
+  const [evidenceSummary,    setEvidenceSummary]    = useState<EvidenceSummaryData | undefined>(undefined);
   const [error,              setError]              = useState<string | null>(null);
   const [rateLimited,        setRateLimited]        = useState(false);
   const [retryAfterSeconds,  setRetryAfterSeconds]  = useState<number | null>(null);
@@ -196,6 +203,7 @@ export function useAIPlan(
 
     setLoading(true);
     setResult(null);
+    setEvidenceSummary(undefined);
     setError(null);
     setRateLimited(false);
     setSaveError(false);
@@ -212,6 +220,7 @@ export function useAIPlan(
       const data = await res.json() as {
         ok: boolean;
         text?: string;
+        evidenceSummary?: EvidenceSummaryData;
         error?: string;
         retryAfterSeconds?: number;
       };
@@ -235,6 +244,7 @@ export function useAIPlan(
 
       const text = data.text ?? '';
       setResult(text);
+      setEvidenceSummary(data.evidenceSummary);
 
       // Persist server-side for authenticated users
       if (toolKey && isAuthenticated && text) {
@@ -290,6 +300,7 @@ export function useAIPlan(
   const reset = useCallback(() => {
     abortRef.current?.abort();
     setResult(null);
+    setEvidenceSummary(undefined);
     setError(null);
     setLoading(false);
     setRateLimited(false);
@@ -305,7 +316,9 @@ export function useAIPlan(
 
   /* ── View saved plan ── */
   const viewSaved = useCallback(() => {
-    if (savedPlan) setResult(savedPlan.text);
+    // Saved plans only persist `text` today (#158) -- no evidence badge on a
+    // reloaded/viewed saved plan until /api/plans/:toolKey also stores it.
+    if (savedPlan) { setResult(savedPlan.text); setEvidenceSummary(undefined); }
   }, [savedPlan]);
 
   /* ── Delete saved plan ── */
@@ -355,5 +368,5 @@ export function useAIPlan(
     }
   }, [toolKey, result, isAuthenticated]);
 
-  return { loading, result, error, rateLimited, retryAfterSeconds, saveError, deleteError, generate, reset, savedPlan, viewSaved, deleteSaved, dismissSaveError, dismissDeleteError, retrySave };
+  return { loading, result, evidenceSummary, error, rateLimited, retryAfterSeconds, saveError, deleteError, generate, reset, savedPlan, viewSaved, deleteSaved, dismissSaveError, dismissDeleteError, retrySave };
 }

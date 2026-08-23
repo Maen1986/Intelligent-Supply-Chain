@@ -441,6 +441,7 @@ export function DecisionLab() {
                   <AIPlanPanel
                     loading={aiPlan.loading}
                     result={aiPlan.result}
+                    evidenceSummary={aiPlan.evidenceSummary}
                     error={aiPlan.error}
                     onGenerate={aiPlan.generate}
                     onReset={aiPlan.reset}

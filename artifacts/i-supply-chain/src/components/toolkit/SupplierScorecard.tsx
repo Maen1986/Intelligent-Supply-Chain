@@ -726,7 +726,7 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
     ].join('\n');
   }, [active, config]);
 
-  const { loading: planLoading, result: planResult, error: planError, rateLimited: planRateLimited,
+  const { loading: planLoading, result: planResult, evidenceSummary: planEvidenceSummary, error: planError, rateLimited: planRateLimited,
           retryAfterSeconds: planRetryAfterSeconds, generate: generatePlan, reset: resetPlan,
           savedPlan: planSavedPlan, viewSaved: viewSavedPlan, deleteSaved: deleteSavedPlan,
           saveError: planSaveError, dismissSaveError: dismissPlanSaveError,
@@ -1661,6 +1661,7 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
                   <AIPlanPanel
                     loading={planLoading}
                     result={planResult}
+                    evidenceSummary={planEvidenceSummary}
                     error={planError}
                     onGenerate={generatePlan}
                     onReset={resetPlan}

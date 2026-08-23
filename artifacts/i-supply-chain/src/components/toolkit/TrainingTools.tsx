@@ -361,7 +361,7 @@ export function TrainingNeedsAssessment({ isAr }: TrainingToolsProps) {
     ].join('\n');
   }, [members, scores, mgrScores, domainStats, hasAnyScores]);
 
-  const { loading: planLoading, result: planResult, error: planError, rateLimited: planRateLimited,
+  const { loading: planLoading, result: planResult, evidenceSummary: planEvidenceSummary, error: planError, rateLimited: planRateLimited,
           retryAfterSeconds: planRetryAfterSeconds, generate: generatePlan, reset: resetPlan,
           savedPlan: planSavedPlan, viewSaved: viewSavedPlan, deleteSaved: deleteSavedPlan,
           saveError: planSaveError, dismissSaveError: dismissPlanSaveError } =
@@ -665,6 +665,7 @@ export function TrainingNeedsAssessment({ isAr }: TrainingToolsProps) {
           <AIPlanPanel
             loading={planLoading}
             result={planResult}
+            evidenceSummary={planEvidenceSummary}
             error={planError}
             onGenerate={generatePlan}
             onReset={resetPlan}

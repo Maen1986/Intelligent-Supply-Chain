@@ -14,10 +14,15 @@ import { useLocation } from 'wouter';
 import { Sparkles, Loader2, Copy, Check, ChevronDown, ChevronUp, RefreshCw, AlertCircle, LogIn, History, Trash2, CloudOff, Clock } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 import { type SavedPlan } from '@/hooks/useAIPlan';
+import { EvidenceSummary, type EvidenceSummaryData } from '@/components/EvidenceSummary';
 
 interface AIPlanPanelProps {
   loading:    boolean;
   result:     string | null;
+  /** #158 (23 Aug 2026): evidence/confidence badge, same component and pattern
+   * as the other five AI surfaces. Undefined on a viewed saved plan (not
+   * persisted yet) or if the model's JSON response omitted it. */
+  evidenceSummary?: EvidenceSummaryData;
   error:      string | null;
   onGenerate: () => void;
   onReset:    () => void;
@@ -50,7 +55,7 @@ interface AIPlanPanelProps {
 }
 
 export function AIPlanPanel({
-  loading, result, error, onGenerate, onReset, buttonLabel, isAr, disabled,
+  loading, result, evidenceSummary, error, onGenerate, onReset, buttonLabel, isAr, disabled,
   savedPlan, onViewSaved, onDeleteSaved, rateLimited, retryAfterSeconds, toolKey,
   saveError, onDismissSaveError, onRetrySave,
   deleteError, onDismissDeleteError,
@@ -300,6 +305,10 @@ export function AIPlanPanel({
               dir={isAr ? 'rtl' : 'ltr'}
             >
               <AIPlanContent text={result} />
+              {/* #158: evidence/confidence badge -- renders nothing when absent (viewed saved plan, or model omitted it) */}
+              <div className="pt-1">
+                <EvidenceSummary evidence={evidenceSummary} ar={isAr} />
+              </div>
             </div>
           )}
         </div>

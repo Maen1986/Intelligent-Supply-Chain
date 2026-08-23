@@ -675,6 +675,7 @@ export function KraljicMatrix() {
               <AIPlanPanel
                 loading={aiPlan.loading}
                 result={aiPlan.result}
+                evidenceSummary={aiPlan.evidenceSummary}
                 error={aiPlan.error}
                 rateLimited={aiPlan.rateLimited}
                 retryAfterSeconds={aiPlan.retryAfterSeconds}

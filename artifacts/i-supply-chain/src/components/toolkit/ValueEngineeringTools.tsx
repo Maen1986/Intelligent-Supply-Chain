@@ -190,7 +190,7 @@ export function ValueEngineeringToolsSection({ isAr }: Props) {
         )}
 
         {activeTab === 'ai' && (
-          <AIPlanPanel loading={aiPlan.loading} result={aiPlan.result} error={aiPlan.error} onGenerate={aiPlan.generate} onReset={aiPlan.reset}
+          <AIPlanPanel loading={aiPlan.loading} result={aiPlan.result} evidenceSummary={aiPlan.evidenceSummary} error={aiPlan.error} onGenerate={aiPlan.generate} onReset={aiPlan.reset}
             savedPlan={aiPlan.savedPlan} onViewSaved={aiPlan.viewSaved} onDeleteSaved={aiPlan.deleteSaved} rateLimited={aiPlan.rateLimited}
             retryAfterSeconds={aiPlan.retryAfterSeconds} saveError={aiPlan.saveError} onDismissSaveError={aiPlan.dismissSaveError}
             buttonLabel={isAr ? 'توليد موجز هندسة القيمة ✨' : 'Generate VE Brief ✨'} isAr={isAr} toolKey={VE_TOOL_KEY} disabled={!canGenerate} />
