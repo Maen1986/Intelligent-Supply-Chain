@@ -3,7 +3,7 @@ import { Link, useLocation } from 'wouter';
 import { Logo } from './Logo';
 import { useLanguage } from '@/lib/LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
-import { Menu, X, ChevronDown, Phone, LogOut, User, Settings, LayoutDashboard, ClipboardList, ListChecks, Waves } from 'lucide-react';
+import { Menu, X, ChevronDown, Phone, LogOut, User, Settings, LayoutDashboard, ClipboardList, ListChecks, Waves, Newspaper } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { NotificationsBell } from './NotificationsBell';
 
@@ -125,6 +125,9 @@ export function Header() {
                 <LayoutDashboard className="w-3 h-3" /> {lang === 'ar' ? 'لوحة الإدارة' : 'Admin'}
               </Link>
             )}
+            <Link href="/brief" className="flex items-center gap-1 hover:text-[#C9A84C] transition-colors">
+              <Newspaper className="w-3 h-3" /> {lang === 'ar' ? 'ملخصك' : 'Your Brief'}
+            </Link>
             <Link href="/my-assessments" className="flex items-center gap-1 hover:text-[#C9A84C] transition-colors">
               <ClipboardList className="w-3 h-3" /> {lang === 'ar' ? 'تقييماتي' : 'My Assessments'}
             </Link>
@@ -311,6 +314,10 @@ export function Header() {
                     <span className="text-sm font-semibold text-primary">{user.fullName}</span>
                     <button onClick={() => { logout(); setMobileMenuOpen(false); }} className="text-sm text-red-500 font-semibold">{lang === 'ar' ? 'تسجيل الخروج' : 'Sign Out'}</button>
                   </div>
+                  <Link href="/brief" onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-700 hover:text-primary hover:bg-primary/5 rounded-xl transition-colors">
+                    <Newspaper className="w-4 h-4" /> {lang === 'ar' ? 'ملخصك' : 'Your Brief'}
+                  </Link>
                   <Link href="/my-assessments" onClick={() => setMobileMenuOpen(false)}
                     className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-700 hover:text-primary hover:bg-primary/5 rounded-xl transition-colors">
                     <ClipboardList className="w-4 h-4" /> {lang === 'ar' ? 'تقييماتي' : 'My Assessments'}

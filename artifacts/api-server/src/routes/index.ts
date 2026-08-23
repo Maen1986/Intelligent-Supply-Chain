@@ -37,6 +37,7 @@ import tcoAnalysesRouter        from "./tcoAnalyses";
 import tcoTrendSnapshotsRouter  from "./tcoTrendSnapshots";
 import workingCapitalAnalysesRouter from "./workingCapitalAnalyses";
 import spendVarianceAnalysesRouter from "./spendVarianceAnalyses";
+import briefRouter                from "./brief";
 
 const router: IRouter = Router();
 
@@ -77,6 +78,7 @@ router.use("/tco-analyses",     tcoAnalysesRouter);
 router.use("/tco-trend-snapshots", tcoTrendSnapshotsRouter);
 router.use("/working-capital-analyses", workingCapitalAnalysesRouter);
 router.use("/spend-variance-analyses", spendVarianceAnalysesRouter);
+router.use(briefRouter);
 router.use(webhooksInboundRouter);
 
 export default router;
