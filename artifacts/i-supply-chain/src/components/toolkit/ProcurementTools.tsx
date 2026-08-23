@@ -1198,6 +1198,21 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
             </button>
             <p className="text-[10px] text-slate-400">{isAr ? 'يُحفَظ تلقائياً في هذا المتصفح' : 'Auto-saved in this browser'}</p>
           </div>
+
+          {/* Honesty/self-critique note (Decision Record 8.6): the lowest-TCO tag is a
+              real, correct arithmetic result -- but TCO alone does not capture single-source
+              risk, quality/relationship history, or strategic fit. Named explicitly rather
+              than left implied, so the number isn't mistaken for the whole decision. */}
+          {tcoValidResults.length > 1 && (
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-start gap-2">
+              <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+              <p className="text-[11px] text-amber-800">
+                {isAr
+                  ? 'أقل تكلفة إجمالية للملكية ليست بالضرورة الاختيار الأنسب: هذا الرقم لا يعكس مخاطر الاعتماد على مصدر واحد، أو سجل الجودة والعلاقة مع المورّد، أو الملاءمة الاستراتيجية. استخدمه كمدخل رقمي إلى جانب استراتيجية التوريد (علامة تبويب "استراتيجية التوريد" أعلاه)، لا بديلاً عنها.'
+                  : 'The lowest TCO per unit is not automatically the right choice: this number does not capture single-source dependency risk, a supplier\'s quality/relationship track record, or strategic fit. Use it alongside the Sourcing Strategy tab above, not as a replacement for it.'}
+              </p>
+            </div>
+          )}
         </div>
       )}
 

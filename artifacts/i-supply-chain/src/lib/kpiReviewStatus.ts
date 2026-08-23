@@ -50,14 +50,14 @@ const REVIEW_STATUS_META: Record<ReviewStatus, Omit<ReviewStatusMeta, 'status'>>
   estimated: {
     label: 'Estimated',
     labelAr: 'مُقدَّر',
-    note: 'Derived from a documented practitioner framework built on real anchors — not independently verified against an external source yet.',
-    noteAr: 'مُشتق من إطار عملي موثّق مبني على مرجعيات حقيقية — لم يُتحقّق منه بعد بشكل مستقل من مصدر خارجي.',
+    note: 'Derived from a documented practitioner framework built on real anchors — not independently verified against an external source yet. Use it to gauge direction, not as a precise target: cross-check against your own recent data before it feeds a board-level business case.',
+    noteAr: 'مُشتق من إطار عملي موثّق مبني على مرجعيات حقيقية — لم يُتحقّق منه بعد بشكل مستقل من مصدر خارجي. استخدمه لتحديد الاتجاه العام لا كرقم دقيق: تحقّق من بياناتك الحديثة قبل اعتماده في عرض على مستوى مجلس الإدارة.',
   },
   'context-specific': {
     label: 'Context-specific',
     labelAr: 'خاص بالسياق',
-    note: 'Held back from a flat verified/unverified call — mostly Government/Public-Sector figures without a directly transferable published benchmark, or KPIs that are inherently case-specific rather than cross-company comparable.',
-    noteAr: 'لم يُصنَّف كمُتحقَّق أو غير مُتحقَّق بشكل قاطع — غالبًا أرقام حكومية/قطاع عام بلا مرجع منشور قابل للنقل المباشر، أو مؤشرات خاصة بالحالة وليست قابلة للمقارنة بين الشركات.',
+    note: 'Held back from a flat verified/unverified call — mostly Government/Public-Sector figures without a directly transferable published benchmark, or KPIs that are inherently case-specific rather than cross-company comparable. Treat it as a starting reference, and confirm against a recent quote or your own historical figure before relying on it for a budget or planning decision.',
+    noteAr: 'لم يُصنَّف كمُتحقَّق أو غير مُتحقَّق بشكل قاطع — غالبًا أرقام حكومية/قطاع عام بلا مرجع منشور قابل للنقل المباشر، أو مؤشرات خاصة بالحالة وليست قابلة للمقارنة بين الشركات. اعتبره مرجعًا أوليًا، وتحقّق من عرض سعر حديث أو رقمك التاريخي الخاص قبل الاعتماد عليه في قرار ميزانية أو تخطيط.',
   },
 };
 

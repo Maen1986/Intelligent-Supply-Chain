@@ -104,4 +104,25 @@ describe('ProcurementToolsSection — TCO Engine tab', () => {
     table = container.querySelector('table')!;
     expect(within(table).getAllByDisplayValue(/Supplier [AB]/).length).toBe(1);
   });
+
+  it('shows the single-source-risk honesty caveat once two suppliers have real TCO data', () => {
+    const { container } = render(<ProcurementToolsSection isAr={false} />);
+    goToTco();
+    // No caveat before any data is entered
+    expect(screen.queryByText(/not automatically the right choice/i)).toBeNull();
+
+    const table = container.querySelector('table')!;
+    const rows = within(table).getAllByRole('row');
+    const unitPriceRow = rows.find(r => within(r).queryByText(/Unit purchase price/i))!;
+    const qtyRow = rows.find(r => within(r).queryByText(/Annual quantity/i))!;
+    const priceInputs = within(unitPriceRow).getAllByRole('spinbutton') as HTMLInputElement[];
+    const qtyInputs = within(qtyRow).getAllByRole('spinbutton') as HTMLInputElement[];
+
+    fireEvent.change(priceInputs[0], { target: { value: '100' } });
+    fireEvent.change(qtyInputs[0], { target: { value: '10' } });
+    fireEvent.change(priceInputs[1], { target: { value: '80' } });
+    fireEvent.change(qtyInputs[1], { target: { value: '10' } });
+
+    expect(screen.getByText(/not automatically the right choice/i)).toBeInTheDocument();
+  });
 });
