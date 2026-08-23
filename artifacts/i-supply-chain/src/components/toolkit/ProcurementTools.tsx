@@ -34,6 +34,10 @@ import { toast } from 'sonner';
 // already-exported pure functions; no new coupling of write paths.
 import { loadRoster as loadScorecardRoster, loadConfig as loadScorecardConfig } from '@/components/toolkit/SupplierScorecard';
 import { calcDimScore } from '@/lib/scorecardCsv';
+// #174 (Wave B-3 cross-engine wiring) -- real, read-only cross-engine
+// read of the Revenue-at-Risk (RAR) figure the client already computed
+// in the Resiliency toolkit, for the Working Capital Control Tower below.
+import { RAR_INTERDEPENDENCY_CORRECTION_PCT, RAR_DURATION_BENCHMARKS_DAYS } from '@/lib/resilienceCaseStudies';
 
 interface ProcurementToolsProps { isAr: boolean; }
 
@@ -50,6 +54,15 @@ function printZone(zone: string) {
   window.addEventListener('afterprint', cleanup);
   window.print();
 }
+
+// ─── Working Capital Control Tower sources (#169) ────────────────────────────
+// Real, verified citations for the Cash Conversion Cycle methodology --
+// checked live via web search before being embedded (Decision Record 8.7:
+// no invented URLs).
+const WC_SOURCES: { label: string; url: string }[] = [
+  { label: 'Cash Conversion Cycle -- Overview, Formula, Example (Corporate Finance Institute)', url: 'https://corporatefinanceinstitute.com/resources/accounting/cash-conversion-cycle/' },
+  { label: 'Understanding & Optimizing Your Cash Conversion Cycle (J.P. Morgan Treasury Insights)', url: 'https://www.jpmorgan.com/insights/treasury/receivables/understanding-and-optimizing-your-cash-conversion-cycle' },
+];
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -486,7 +499,7 @@ function loadJson<T>(key: string, fallback: T): T {
 
 // ─── Tab type ─────────────────────────────────────────────────────────────────
 
-type Tab = 'spend' | 'market' | 'strategy' | 'templates' | 'tco' | 'ai' | 'alerts';
+type Tab = 'spend' | 'market' | 'strategy' | 'templates' | 'tco' | 'workingcapital' | 'ai' | 'alerts';
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
@@ -1305,6 +1318,279 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
     downloadCsv(rows, 'tco-portfolio-comparison.csv');
   };
 
+  // ── Working Capital Control Tower (#169, Wave B-3, 2026-08-23) ──
+  //    Standard corporate-treasury Cash Conversion Cycle (CCC) mechanics:
+  //    CCC (days) = DIO + DSO - DPO; dollar impact = CCC * (Annual COGS / 365).
+  //    COGS (not revenue) is the daily-rate driver because COGS approximates
+  //    actual cash outlay, not margin-inclusive revenue. See WC_SOURCES below
+  //    for real, verified citations (Decision Record 8.7 -- no invented URLs).
+  //    Multi-Dimensional State design constraint (site map #159 decision
+  //    record): the three cash levers below (inventory value tied up, CCC
+  //    dollar impact, RAR exposure) are NEVER summed into one blended total
+  //    -- they are non-additive, incommensurate quantities (a balance-sheet
+  //    stock, a cycle-timing dollar-days figure, and a probabilistic revenue
+  //    exposure). Each is shown separately so the client can weight what
+  //    matters to them, exactly as #159 established for KPI priority.
+  //    Whole-state, multi-scenario persistence mirrors the TCO Engine's
+  //    tco_analyses pattern (localStorage-first, server-synced via
+  //    /api/working-capital-analyses when logged in) exactly.
+  interface WorkingCapitalAnalysis {
+    id: string; name: string;
+    inventoryValue: number; dioDays: number; dsoDays: number; dpoDays: number; annualCogs: number;
+    updatedAt: number;
+  }
+  const SK_WC_V1 = 'isc-tool-catmgmt-workingcapital-v1';
+  function defaultWcAnalysis(name: string): WorkingCapitalAnalysis {
+    return {
+      id: `wca${Date.now()}${Math.random().toString(36).slice(2, 6)}`, name,
+      inventoryValue: 0, dioDays: 0, dsoDays: 0, dpoDays: 0, annualCogs: 0,
+      updatedAt: Date.now(),
+    };
+  }
+  function loadInitialWcAnalyses(): { analyses: WorkingCapitalAnalysis[]; activeId: string } {
+    const v1 = loadJson<{ analyses: WorkingCapitalAnalysis[]; activeId: string } | null>(SK_WC_V1, null);
+    if (v1 && Array.isArray(v1.analyses) && v1.analyses.length > 0) return v1;
+    const fresh = defaultWcAnalysis(isAr ? 'سيناريو جديد' : 'New scenario');
+    return { analyses: [fresh], activeId: fresh.id };
+  }
+  // ── Server-sync -- identical whole-list PUT/GET pattern to TCO's
+  //    /api/tco-analyses sync above (bootstrap-merge, debounced PUT,
+  //    local-wins-during-bootstrap race guard). See that block's comments
+  //    for the full rationale; not repeated here to avoid drift risk from
+  //    two out-of-sync copies of the same explanation. ──
+  const [wcSyncStatus, setWcSyncStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const wcServerLoadedForUserId = useRef<number | null>(null);
+  const wcBootstrapSettled = useRef(false);
+  const wcLocalWinsDuringBootstrap = useRef(false);
+  const wcSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const wcStateRef = useRef<{ analyses: WorkingCapitalAnalysis[]; activeId: string } | null>(null);
+
+  interface ServerWcRow {
+    id: number; clientKey: string; name: string;
+    inventoryValue: string; dioDays: string; dsoDays: string; dpoDays: string; annualCogs: string;
+    updatedAt: string;
+  }
+  function serverRowToWcAnalysis(row: ServerWcRow): WorkingCapitalAnalysis {
+    return {
+      id: row.clientKey, name: row.name,
+      inventoryValue: parseFloat(row.inventoryValue) || 0,
+      dioDays: parseFloat(row.dioDays) || 0,
+      dsoDays: parseFloat(row.dsoDays) || 0,
+      dpoDays: parseFloat(row.dpoDays) || 0,
+      annualCogs: parseFloat(row.annualCogs) || 0,
+      updatedAt: new Date(row.updatedAt).getTime(),
+    };
+  }
+  function wcAnalysisToPayload(a: WorkingCapitalAnalysis) {
+    return {
+      clientKey: a.id, name: a.name,
+      inventoryValue: a.inventoryValue, dioDays: a.dioDays, dsoDays: a.dsoDays,
+      dpoDays: a.dpoDays, annualCogs: a.annualCogs,
+    };
+  }
+  const syncWcToServerImmediate = (analyses: WorkingCapitalAnalysis[]) => {
+    if (!user) return;
+    setWcSyncStatus('saving');
+    if (wcSyncTimerRef.current) clearTimeout(wcSyncTimerRef.current);
+    wcSyncTimerRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`${API_BASE}/working-capital-analyses`, {
+          method: 'PUT', credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ analyses: analyses.map(wcAnalysisToPayload) }),
+        });
+        setWcSyncStatus(res.ok ? 'saved' : 'error');
+        if (res.ok) setTimeout(() => setWcSyncStatus('idle'), 2500);
+      } catch {
+        setWcSyncStatus('error');
+      }
+    }, 400);
+  };
+  const syncWcToServer = (analyses: WorkingCapitalAnalysis[]) => {
+    if (!user) return;
+    if (!wcBootstrapSettled.current) {
+      wcLocalWinsDuringBootstrap.current = true;
+      return;
+    }
+    syncWcToServerImmediate(analyses);
+  };
+  const [wcState, setWcState] = useState<{ analyses: WorkingCapitalAnalysis[]; activeId: string }>(loadInitialWcAnalyses);
+  wcStateRef.current = wcState;
+  const saveWcState = (next: { analyses: WorkingCapitalAnalysis[]; activeId: string }) => {
+    setWcState(next);
+    safeSetItem(SK_WC_V1, JSON.stringify(next));
+    syncWcToServer(next.analyses);
+  };
+
+  useEffect(() => {
+    if (!user) {
+      if (wcServerLoadedForUserId.current !== null) {
+        wcServerLoadedForUserId.current = null;
+        wcBootstrapSettled.current = false;
+        wcLocalWinsDuringBootstrap.current = false;
+        setWcSyncStatus('idle');
+      }
+      return;
+    }
+    if (wcServerLoadedForUserId.current === user.id) return;
+    wcServerLoadedForUserId.current = user.id;
+    wcBootstrapSettled.current = false;
+    wcLocalWinsDuringBootstrap.current = false;
+    const bootstrapUserId = user.id;
+
+    (async () => {
+      try {
+        const res = await fetch(`${API_BASE}/working-capital-analyses`, { credentials: 'include' });
+        if (wcServerLoadedForUserId.current !== bootstrapUserId) return;
+        if (res.ok) {
+          const data = await res.json() as { ok: boolean; analyses: ServerWcRow[] };
+          if (data.ok && Array.isArray(data.analyses) && data.analyses.length > 0) {
+            if (!wcLocalWinsDuringBootstrap.current) {
+              const converted = data.analyses.map(serverRowToWcAnalysis);
+              const currentActive = wcStateRef.current?.activeId;
+              const activeStillExists = converted.some(a => a.id === currentActive);
+              const next = { analyses: converted, activeId: activeStillExists ? currentActive! : converted[0].id };
+              setWcState(next);
+              safeSetItem(SK_WC_V1, JSON.stringify(next));
+            }
+          } else if (!wcLocalWinsDuringBootstrap.current) {
+            const current = wcStateRef.current;
+            if (current && current.analyses.length > 0) syncWcToServerImmediate(current.analyses);
+          }
+        }
+      } catch { /* offline -- localStorage keeps working */ }
+      wcBootstrapSettled.current = true;
+      if (wcLocalWinsDuringBootstrap.current) {
+        const current = wcStateRef.current;
+        if (current) syncWcToServerImmediate(current.analyses);
+      }
+    })();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
+
+  const wcActive = wcState.analyses.find(a => a.id === wcState.activeId) ?? wcState.analyses[0];
+  const updateWcActive = (patch: Partial<Omit<WorkingCapitalAnalysis, 'id'>>) =>
+    saveWcState({ ...wcState, analyses: wcState.analyses.map(a => a.id === wcActive.id ? { ...a, ...patch, updatedAt: Date.now() } : a) });
+  const addWcAnalysis = () => {
+    const fresh = defaultWcAnalysis(`${isAr ? 'سيناريو' : 'Scenario'} ${wcState.analyses.length + 1}`);
+    saveWcState({ analyses: [...wcState.analyses, fresh], activeId: fresh.id });
+  };
+  const duplicateWcAnalysis = () => {
+    const copy: WorkingCapitalAnalysis = { ...wcActive, id: `wca${Date.now()}${Math.random().toString(36).slice(2, 6)}`, name: `${wcActive.name} (${isAr ? 'نسخة' : 'copy'})`, updatedAt: Date.now() };
+    saveWcState({ analyses: [...wcState.analyses, copy], activeId: copy.id });
+  };
+  const deleteWcAnalysis = (id: string) => {
+    if (wcState.analyses.length <= 1) return;
+    const remaining = wcState.analyses.filter(a => a.id !== id);
+    saveWcState({ analyses: remaining, activeId: remaining[0].id });
+  };
+  const switchWcAnalysis = (id: string) => saveWcState({ ...wcState, activeId: id });
+
+  // Core CCC mechanics (real formula, no fabricated benchmark -- every input is the client's own number)
+  const wcCcc = wcActive.dioDays + wcActive.dsoDays - wcActive.dpoDays;
+  const wcCccDollarImpact = wcCcc * (wcActive.annualCogs / 365);
+  const wcHasData = wcActive.annualCogs > 0 || wcActive.inventoryValue > 0;
+
+  // ── Cross-engine RAR exposure read (#174, "cross-engine wiring") -- real,
+  //    read-only read of the Revenue-at-Risk figure the client already
+  //    computed in the Resiliency toolkit, following the exact same
+  //    read-only cross-engine pattern as the #165 Supplier Scorecard read
+  //    used by the TCO Engine above (try/catch-wrapped localStorage read,
+  //    memoized). Note: Supplier Scorecard was scoped (#172) and confirmed
+  //    to have NO risk dimension in its real rating weights (delivery/
+  //    quality/cost/compliance/innovation/relationship only) -- so unlike
+  //    TCO, there is nothing there to honestly wire in here. RAR is the one
+  //    real, grounded cross-engine figure available for a "cash-at-risk"
+  //    lens. Decision Record 8.7: if the client has never run the RAR
+  //    calculator, show "not yet run" -- never fabricate a number in its
+  //    place. ──
+  const wcRar = useMemo(() => {
+    try {
+      interface RoRarNode { id: string; name: string; revenuePct: number; atRisk: boolean; }
+      const SK_RAR_NODES_RO = 'isc-tool-resiliency-rar-nodes-v1';
+      const SK_RAR_META_RO = 'isc-tool-resiliency-rar-meta-v1';
+      const nodes = loadJson<RoRarNode[]>(SK_RAR_NODES_RO, []);
+      const meta = loadJson<{ interdependenciesMapped: boolean; annualRevenue: string }>(SK_RAR_META_RO, { interdependenciesMapped: false, annualRevenue: '' });
+      const rawExposurePct = nodes.filter(n => n.atRisk).reduce((s, n) => s + (n.revenuePct || 0), 0);
+      const annualRevenueNum = parseFloat(meta.annualRevenue) || 0;
+      if (rawExposurePct === 0 || annualRevenueNum === 0) return { hasRun: false, dollarAtMedian: 0, dollarAtP95: 0 };
+      const correctionLow = meta.interdependenciesMapped ? 0 : RAR_INTERDEPENDENCY_CORRECTION_PCT.low;
+      const correctionHigh = meta.interdependenciesMapped ? 0 : RAR_INTERDEPENDENCY_CORRECTION_PCT.high;
+      const adjustedLowPct = rawExposurePct * (1 + correctionLow / 100);
+      const adjustedHighPct = rawExposurePct * (1 + correctionHigh / 100);
+      const dollarAtMedian = (adjustedLowPct / 100) * annualRevenueNum * (RAR_DURATION_BENCHMARKS_DAYS.median / 365);
+      const dollarAtP95 = (adjustedHighPct / 100) * annualRevenueNum * (RAR_DURATION_BENCHMARKS_DAYS.p95 / 365);
+      return { hasRun: true, dollarAtMedian, dollarAtP95 };
+    } catch { return { hasRun: false, dollarAtMedian: 0, dollarAtP95: 0 }; }
+  // Re-read whenever this tab becomes active, since RAR is edited on a
+  // separate tool (Resiliency) entirely and there is no live subscription
+  // across localStorage keys.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, wcActive.id]);
+
+  const wcLeverChartData = useMemo(() => ([
+    { name: isAr ? 'قيمة المخزون' : 'Inventory Value', value: Math.round(wcActive.inventoryValue), fill: '#3b82f6' },
+    { name: isAr ? 'أثر دورة التحويل النقدي' : 'CCC $ Impact', value: Math.round(wcCccDollarImpact), fill: '#f59e0b' },
+    { name: isAr ? 'التعرض لمخاطر الإيراد' : 'RAR Exposure', value: wcRar.hasRun ? Math.round(wcRar.dollarAtMedian) : 0, fill: '#dc2626' },
+  ]), [wcActive.inventoryValue, wcCccDollarImpact, wcRar, isAr]);
+
+  // ── AI Executive Insight -- mirrors tcoAiPlan's grounded-prompt pattern
+  //    exactly (separate toolKey so it never collides with TCO's or Spend
+  //    Analysis's saved plans). Grounded strictly in the numbers computed
+  //    above; the AI is never given anything it could use to invent a
+  //    benchmark. ──
+  const wcBuildPrompt = useCallback(() => {
+    return [
+      `## Working Capital Control Tower Executive Insight Request`,
+      `Scenario: ${wcActive.name}`,
+      '',
+      `## Cash Conversion Cycle`,
+      `DIO (days inventory outstanding): ${wcActive.dioDays}`,
+      `DSO (days sales outstanding): ${wcActive.dsoDays}`,
+      `DPO (days payables outstanding): ${wcActive.dpoDays}`,
+      `CCC = DIO + DSO - DPO = ${wcCcc.toFixed(1)} days`,
+      `Annual COGS: SAR ${wcActive.annualCogs.toLocaleString()}`,
+      `CCC dollar impact (cash tied up by cycle timing) = CCC x (Annual COGS / 365) = SAR ${wcCccDollarImpact.toLocaleString(undefined, { maximumFractionDigits: 0 })}`,
+      '',
+      `## Three cash levers (kept separate -- non-additive, never summed)`,
+      `1. Inventory value on the balance sheet: SAR ${wcActive.inventoryValue.toLocaleString()}`,
+      `2. CCC dollar impact: SAR ${wcCccDollarImpact.toLocaleString(undefined, { maximumFractionDigits: 0 })}`,
+      `3. Revenue-at-Risk exposure (from the Resiliency toolkit, if run): ${wcRar.hasRun ? `SAR ${wcRar.dollarAtMedian.toLocaleString(undefined, { maximumFractionDigits: 0 })} at a typical disruption, SAR ${wcRar.dollarAtP95.toLocaleString(undefined, { maximumFractionDigits: 0 })} at a severe one` : 'not yet run by this client'}`,
+      '',
+      '## Your Task',
+      'Write a concise (3-4 paragraph) executive working-capital insight:',
+      `1. Whether the CCC of ${wcCcc.toFixed(1)} days is being driven more by inventory, receivables, or payables, and what that implies operationally`,
+      '2. What the CCC dollar impact means in practical terms (cash that could be freed by tightening the cycle) -- do not add it to the inventory value or RAR figures, they measure different things',
+      '3. If RAR has been run, whether the liquidity picture (CCC) and the resiliency picture (RAR) point the same direction or pull against each other',
+      '4. A clear, hedged recommendation on where to focus first (DIO, DSO, or DPO), naming the one assumption that should be verified before acting',
+    ].filter(Boolean).join('\n');
+  }, [wcActive, wcCcc, wcCccDollarImpact, wcRar, isAr]);
+  const wcAiPlan = useAIPlan(wcBuildPrompt, isAr, 'procurement-workingcapital', wcHasData);
+
+  const exportWcAnalysis = () => {
+    const rows: string[][] = [
+      ['Working Capital Scenario', wcActive.name],
+      [],
+      ['Input', 'Value'],
+      ['Inventory value (SAR)', String(wcActive.inventoryValue)],
+      ['DIO -- days inventory outstanding', String(wcActive.dioDays)],
+      ['DSO -- days sales outstanding', String(wcActive.dsoDays)],
+      ['DPO -- days payables outstanding', String(wcActive.dpoDays)],
+      ['Annual COGS (SAR)', String(wcActive.annualCogs)],
+      [],
+      ['Result', 'Value'],
+      ['Cash Conversion Cycle (days) = DIO + DSO - DPO', wcCcc.toFixed(1)],
+      ['CCC dollar impact (SAR) = CCC x (Annual COGS / 365)', wcCccDollarImpact.toFixed(0)],
+      [],
+      ['Three cash levers (kept separate -- not summed)', ''],
+      ['1. Inventory value (SAR)', String(wcActive.inventoryValue)],
+      ['2. CCC dollar impact (SAR)', wcCccDollarImpact.toFixed(0)],
+      ['3. RAR exposure at median disruption (SAR)', wcRar.hasRun ? wcRar.dollarAtMedian.toFixed(0) : 'not yet run'],
+    ];
+    const safeName = (wcActive.name || 'working-capital-scenario').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    downloadCsv(rows, `${safeName || 'working-capital-scenario'}.csv`);
+  };
+
   const anyBreach = Object.values(breachLevels).some(v => v !== null);
 
   const tabs: { id: Tab; icon: string; label: string; labelAr: string }[] = [
@@ -1313,6 +1599,7 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
     { id: 'strategy',  icon: '🎯', label: 'Sourcing Strategy',    labelAr: 'استراتيجية التوريد' },
     { id: 'templates', icon: '📥', label: 'Templates & Tools',    labelAr: 'القوالب والأدوات'   },
     { id: 'tco',       icon: '💰', label: 'TCO Engine',           labelAr: 'محرك التكلفة الإجمالية' },
+    { id: 'workingcapital', icon: '💧', label: 'Working Capital', labelAr: 'رأس المال العامل' },
     { id: 'ai',        icon: '✨', label: 'AI Strategy Brief',    labelAr: 'تقرير الاستراتيجية' },
     { id: 'alerts',    icon: '🔔', label: 'Alert Thresholds',     labelAr: 'حدود التنبيه'       },
   ];
@@ -2321,6 +2608,222 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
             <summary className="cursor-pointer font-semibold text-slate-500">{isAr ? 'المصادر والمنهجية' : 'Sources & methodology'}</summary>
             <ul className="mt-1.5 space-y-1 pl-3 list-disc">
               {TCO_SOURCES.map(src => (
+                <li key={src.url}><a href={src.url} target="_blank" rel="noopener noreferrer" className="underline hover:text-slate-600">{src.label}</a></li>
+              ))}
+            </ul>
+          </details>
+        </div>
+      )}
+
+      {/* ── TAB: Working Capital Control Tower (#169, Wave B-3) ── */}
+      {activeTab === 'workingcapital' && (
+        <div id="panel-workingcapital" role="tabpanel" aria-labelledby="tab-workingcapital" className="print-zone-workingcapital space-y-4">
+          <div className="flex justify-end print-hide">
+            <button onClick={() => printZone('workingcapital')}
+              className="flex items-center gap-1.5 text-xs font-semibold bg-[#082C6B] text-white px-3 py-1.5 rounded-xl hover:bg-[#082C6B]/90 transition-colors">
+              <FileDown className="w-3.5 h-3.5" />{isAr ? 'تصدير PDF' : 'Export PDF'}
+            </button>
+          </div>
+
+          <div className="wc-print-header hidden pb-3 border-b border-slate-200 mb-2">
+            <h2 className="text-base font-bold text-slate-800">{isAr ? 'تقرير برج التحكم برأس المال العامل' : 'Working Capital Control Tower Report'}</h2>
+            <p className="text-xs text-slate-600 mt-1">{wcActive.name}</p>
+            <p className="text-[10px] text-slate-300 mt-1">{isAr ? 'تاريخ الإنشاء: ' : 'Generated: '}{new Date().toLocaleDateString()}</p>
+          </div>
+
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 flex items-start gap-2">
+            <Info className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
+            <p className="text-xs text-blue-800">
+              {isAr
+                ? 'دورة التحويل النقدي (CCC) هي المقياس القياسي في إدارة الخزينة لعدد الأيام التي يبقى فيها رأس المال العامل مجمّداً بين دفع الموردين وتحصيل العملاء. CCC = أيام المخزون (DIO) + أيام تحصيل الذمم (DSO) − أيام سداد الموردين (DPO). كل رقم أدناه من إدخالك أنت -- لا شيء هنا مقدَّر أو مفترض.'
+                : 'The Cash Conversion Cycle (CCC) is the standard treasury-management measure of how many days working capital stays tied up between paying suppliers and collecting from customers. CCC = Days Inventory Outstanding (DIO) + Days Sales Outstanding (DSO) − Days Payables Outstanding (DPO). Every number below is your own input -- nothing here is estimated or assumed.'}
+            </p>
+          </div>
+
+          {/* Scenario switcher -- multiple named, saved scenarios, mirrors the TCO Engine's analysis switcher */}
+          <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-2 print-hide">
+            <div className="flex flex-wrap items-center gap-2">
+              <label className="text-[11px] font-semibold text-slate-500 shrink-0">{isAr ? 'السيناريو:' : 'Scenario:'}</label>
+              <select value={wcActive.id} onChange={e => switchWcAnalysis(e.target.value)} aria-label={isAr ? 'السيناريو:' : 'Scenario:'}
+                className="text-xs border border-slate-200 rounded-lg px-2 py-1.5 font-semibold text-slate-700 min-w-[160px]">
+                {wcState.analyses.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+              </select>
+              <input value={wcActive.name} onChange={e => updateWcActive({ name: e.target.value })}
+                aria-label={isAr ? 'اسم السيناريو' : 'Scenario name'}
+                className="text-xs border border-slate-200 rounded-lg px-2 py-1.5 flex-1 min-w-[140px]" />
+              <button onClick={addWcAnalysis} className="flex items-center gap-1 text-[11px] font-semibold text-[#082C6B] hover:opacity-80 shrink-0">
+                <Plus className="w-3.5 h-3.5" />{isAr ? 'سيناريو جديد' : 'New'}
+              </button>
+              <button onClick={duplicateWcAnalysis} className="text-[11px] font-semibold text-slate-500 hover:text-slate-700 shrink-0">
+                {isAr ? 'نسخ' : 'Duplicate'}
+              </button>
+              {wcState.analyses.length > 1 && (
+                <button onClick={() => deleteWcAnalysis(wcActive.id)} className="flex items-center gap-1 text-[11px] font-semibold text-slate-400 hover:text-red-500 shrink-0">
+                  <Trash2 className="w-3.5 h-3.5" />{isAr ? 'حذف' : 'Delete'}
+                </button>
+              )}
+              {user && (
+                <span className="text-[10px] font-semibold text-slate-400 ml-auto shrink-0">
+                  {wcSyncStatus === 'saving' && (isAr ? 'جارٍ الحفظ…' : 'Saving…')}
+                  {wcSyncStatus === 'saved' && (isAr ? 'تم الحفظ ✓' : 'Saved ✓')}
+                  {wcSyncStatus === 'error' && (isAr ? 'فشل الحفظ' : 'Save failed')}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Inputs */}
+          <div className="bg-white border border-slate-200 rounded-xl p-3">
+            <h3 className="text-xs font-bold text-slate-700 mb-2">{isAr ? 'المدخلات' : 'Inputs'}</h3>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+              <div>
+                <label className="text-[10px] text-slate-400 block mb-0.5">{isAr ? 'قيمة المخزون (ر.س)' : 'Inventory value (SAR)'}</label>
+                <input type="number" min={0} value={wcActive.inventoryValue || ''}
+                  onChange={e => updateWcActive({ inventoryValue: parseFloat(e.target.value) || 0 })}
+                  aria-label={isAr ? 'قيمة المخزون' : 'Inventory value'}
+                  className="w-full text-xs border border-slate-200 rounded-lg px-2 py-1.5" />
+              </div>
+              <div>
+                <label className="text-[10px] text-slate-400 block mb-0.5">{isAr ? 'أيام المخزون (DIO)' : 'DIO (days)'}</label>
+                <input type="number" min={0} value={wcActive.dioDays || ''}
+                  onChange={e => updateWcActive({ dioDays: parseFloat(e.target.value) || 0 })}
+                  aria-label="DIO"
+                  className="w-full text-xs border border-slate-200 rounded-lg px-2 py-1.5" />
+              </div>
+              <div>
+                <label className="text-[10px] text-slate-400 block mb-0.5">{isAr ? 'أيام تحصيل الذمم (DSO)' : 'DSO (days)'}</label>
+                <input type="number" min={0} value={wcActive.dsoDays || ''}
+                  onChange={e => updateWcActive({ dsoDays: parseFloat(e.target.value) || 0 })}
+                  aria-label="DSO"
+                  className="w-full text-xs border border-slate-200 rounded-lg px-2 py-1.5" />
+              </div>
+              <div>
+                <label className="text-[10px] text-slate-400 block mb-0.5">{isAr ? 'أيام سداد الموردين (DPO)' : 'DPO (days)'}</label>
+                <input type="number" min={0} value={wcActive.dpoDays || ''}
+                  onChange={e => updateWcActive({ dpoDays: parseFloat(e.target.value) || 0 })}
+                  aria-label="DPO"
+                  className="w-full text-xs border border-slate-200 rounded-lg px-2 py-1.5" />
+              </div>
+              <div>
+                <label className="text-[10px] text-slate-400 block mb-0.5">{isAr ? 'تكلفة البضاعة المباعة السنوية (ر.س)' : 'Annual COGS (SAR)'}</label>
+                <input type="number" min={0} value={wcActive.annualCogs || ''}
+                  onChange={e => updateWcActive({ annualCogs: parseFloat(e.target.value) || 0 })}
+                  aria-label={isAr ? 'تكلفة البضاعة المباعة السنوية' : 'Annual COGS'}
+                  className="w-full text-xs border border-slate-200 rounded-lg px-2 py-1.5" />
+              </div>
+            </div>
+          </div>
+
+          {/* CCC breakdown */}
+          <div className="bg-white border border-slate-200 rounded-xl p-3">
+            <h3 className="text-xs font-bold text-slate-700 mb-2">{isAr ? 'دورة التحويل النقدي (CCC)' : 'Cash Conversion Cycle (CCC)'}</h3>
+            <div className="flex items-center flex-wrap gap-1.5 text-xs font-semibold text-slate-600">
+              <span className="bg-slate-100 rounded-lg px-2 py-1">{isAr ? 'DIO' : 'DIO'} {wcActive.dioDays}</span>
+              <span className="text-slate-300">+</span>
+              <span className="bg-slate-100 rounded-lg px-2 py-1">{isAr ? 'DSO' : 'DSO'} {wcActive.dsoDays}</span>
+              <span className="text-slate-300">−</span>
+              <span className="bg-slate-100 rounded-lg px-2 py-1">{isAr ? 'DPO' : 'DPO'} {wcActive.dpoDays}</span>
+              <span className="text-slate-300">=</span>
+              <span className={`rounded-lg px-2.5 py-1 text-white ${wcCcc <= 0 ? 'bg-emerald-600' : wcCcc <= 45 ? 'bg-amber-500' : 'bg-red-600'}`}>
+                {isAr ? 'CCC' : 'CCC'} {wcCcc.toFixed(1)} {isAr ? 'يوماً' : 'days'}
+              </span>
+            </div>
+            <p className="text-[10px] text-slate-400 mt-2">
+              {isAr
+                ? `أثر دورة التحويل النقدي بالريال = CCC × (تكلفة البضاعة المباعة السنوية ÷ 365) = ${wcCcc.toFixed(1)} × (${wcActive.annualCogs.toLocaleString()} ÷ 365) = ر.س ${Math.round(wcCccDollarImpact).toLocaleString()}`
+                : `CCC dollar impact = CCC × (Annual COGS ÷ 365) = ${wcCcc.toFixed(1)} × (${wcActive.annualCogs.toLocaleString()} ÷ 365) = SAR ${Math.round(wcCccDollarImpact).toLocaleString()}`}
+            </p>
+          </div>
+
+          {/* Three non-additive cash levers */}
+          <div className="bg-white border border-slate-200 rounded-xl p-3">
+            <div className="flex items-start justify-between gap-2 mb-2">
+              <h3 className="text-xs font-bold text-slate-700">{isAr ? 'ثلاث روافع نقدية (تُعرض منفصلة عمداً)' : 'Three cash levers (shown separately, on purpose)'}</h3>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div className="border border-blue-200 bg-blue-50/50 rounded-xl p-3">
+                <p className="text-[10px] font-semibold text-blue-600 uppercase tracking-wide">{isAr ? '1. قيمة المخزون' : '1. Inventory value'}</p>
+                <p className="text-lg font-bold text-slate-800 mt-1">SAR {wcActive.inventoryValue.toLocaleString()}</p>
+                <p className="text-[10px] text-slate-400 mt-1">{isAr ? 'قيمة دفترية، رأس مال محتجز في المخزون الآن' : 'Balance-sheet stock -- capital sitting in inventory right now'}</p>
+              </div>
+              <div className="border border-amber-200 bg-amber-50/50 rounded-xl p-3">
+                <p className="text-[10px] font-semibold text-amber-600 uppercase tracking-wide">{isAr ? '2. أثر دورة التحويل النقدي' : '2. CCC dollar impact'}</p>
+                <p className="text-lg font-bold text-slate-800 mt-1">SAR {Math.round(wcCccDollarImpact).toLocaleString()}</p>
+                <p className="text-[10px] text-slate-400 mt-1">{isAr ? 'نقد يمكن تحريره سنوياً بتقصير الدورة يوماً واحداً في كل اتجاه' : 'Cash-days figure -- what tightening the cycle by one day, each lever, could free annually'}</p>
+              </div>
+              <div className="border border-red-200 bg-red-50/50 rounded-xl p-3">
+                <p className="text-[10px] font-semibold text-red-600 uppercase tracking-wide">{isAr ? '3. التعرض لمخاطر الإيراد (RAR)' : '3. Revenue-at-Risk exposure'}</p>
+                {wcRar.hasRun ? (
+                  <>
+                    <p className="text-lg font-bold text-slate-800 mt-1">SAR {Math.round(wcRar.dollarAtMedian).toLocaleString()}</p>
+                    <p className="text-[10px] text-slate-400 mt-1">
+                      {isAr ? `عند اضطراب نموذجي؛ حتى ر.س ${Math.round(wcRar.dollarAtP95).toLocaleString()} عند اضطراب شديد -- من أداة المرونة` : `at a typical disruption; up to SAR ${Math.round(wcRar.dollarAtP95).toLocaleString()} at a severe one -- from the Resiliency toolkit`}
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-lg font-bold text-slate-300 mt-1">{isAr ? 'لم يُشغَّل بعد' : 'Not yet run'}</p>
+                    <p className="text-[10px] text-slate-400 mt-1">
+                      {isAr ? 'شغّل حاسبة التعرض لمخاطر الإيراد (RAR) في أداة المرونة لعرض هذا الرقم الحقيقي هنا.' : 'Run the Revenue-at-Risk (RAR) calculator in the Resiliency toolkit to surface this real figure here.'}
+                    </p>
+                  </>
+                )}
+              </div>
+            </div>
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-start gap-2 mt-3 print-hide">
+              <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+              <p className="text-[11px] text-amber-800">
+                {isAr
+                  ? 'لا تُجمَع هذه الأرقام الثلاثة في رقم واحد: قيمة المخزون رصيد دفتري، وأثر دورة التحويل النقدي مقياس زمني-نقدي سنوي، والتعرض لمخاطر الإيراد احتمالي وليس مضموناً. جمعها يُنتج رقماً مضللاً لا معنى مالياً حقيقياً له.'
+                  : 'These three figures are never added together: inventory value is a balance-sheet stock, the CCC dollar impact is an annual cash-timing figure, and RAR exposure is a probabilistic (not guaranteed) revenue figure. Summing them would produce a misleading number with no real financial meaning.'}
+              </p>
+            </div>
+          </div>
+
+          {/* Visual comparison -- explicitly a side-by-side comparison, not a stacked/summed total */}
+          <div className="bg-white border border-slate-200 rounded-xl p-3 print-hide">
+            <h3 className="text-xs font-bold text-slate-700 mb-2">{isAr ? 'مقارنة جنباً إلى جنب (غير مجمّعة)' : 'Side-by-side comparison (not stacked)'}</h3>
+            <ResponsiveContainer width="100%" height={180}>
+              <ComposedChart data={wcLeverChartData} margin={{ top: 8, right: 8, left: 8, bottom: 8 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                <XAxis dataKey="name" tick={{ fontSize: 10 }} />
+                <YAxis tick={{ fontSize: 10 }} tickFormatter={v => `${Math.round(v / 1000)}k`} />
+                <Tooltip formatter={(v: number) => [`SAR ${v.toLocaleString()}`, '']} />
+                <Bar dataKey="value" radius={[6, 6, 0, 0]}>
+                  {wcLeverChartData.map((d, i) => <Cell key={i} fill={d.fill} />)}
+                </Bar>
+              </ComposedChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Export + AI Insight */}
+          <div className="flex justify-end print-hide">
+            <button onClick={exportWcAnalysis}
+              className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-700">
+              <Download className="w-3.5 h-3.5" />{isAr ? 'تصدير (CSV)' : 'Export (CSV)'}
+            </button>
+          </div>
+
+          <div className="print-hide">
+            <AIPlanPanel
+              loading={wcAiPlan.loading} result={wcAiPlan.result} evidenceSummary={wcAiPlan.evidenceSummary} error={wcAiPlan.error}
+              onGenerate={wcAiPlan.generate} onReset={wcAiPlan.reset}
+              savedPlan={wcAiPlan.savedPlan} onViewSaved={wcAiPlan.viewSaved} onDeleteSaved={wcAiPlan.deleteSaved}
+              rateLimited={wcAiPlan.rateLimited}
+              retryAfterSeconds={wcAiPlan.retryAfterSeconds}
+              saveError={wcAiPlan.saveError}
+              onDismissSaveError={wcAiPlan.dismissSaveError}
+              buttonLabel={isAr ? 'توليد رؤية رأس المال العامل التنفيذية ✨' : 'Generate Working Capital Executive Insight ✨'}
+              isAr={isAr} toolKey="procurement-workingcapital"
+              disabled={!wcHasData}
+            />
+          </div>
+
+          {/* Sources -- real, verified citations for the CCC methodology (Decision Record 8.7: no invented URLs) */}
+          <details className="text-[10px] text-slate-400 print-hide">
+            <summary className="cursor-pointer font-semibold text-slate-500">{isAr ? 'المصادر والمنهجية' : 'Sources & methodology'}</summary>
+            <ul className="mt-1.5 space-y-1 pl-3 list-disc">
+              {WC_SOURCES.map(src => (
                 <li key={src.url}><a href={src.url} target="_blank" rel="noopener noreferrer" className="underline hover:text-slate-600">{src.label}</a></li>
               ))}
             </ul>

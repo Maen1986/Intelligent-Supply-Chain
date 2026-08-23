@@ -247,6 +247,12 @@ html[lang="ar"] {
     visibility: visible;
   }
 
+  body[data-print="workingcapital"] .print-zone-workingcapital,
+  body[data-print="workingcapital"] .print-zone-workingcapital * {
+    visibility: visible;
+  }
+  .print-zone-workingcapital .wc-print-header { display: block !important; }
+
   .print-hide {
     display: none !important;
   }

@@ -415,6 +415,28 @@ const MIGRATIONS: string[] = [
    )`,
   `CREATE INDEX IF NOT EXISTS tco_trend_snapshots_user_key ON tco_trend_snapshots (user_id, analysis_client_key)`,
 
+  // working_capital_analyses -- real backend persistence for the Working
+  // Capital Control Tower (#169, Wave B-3, 2026-08-23). See
+  // lib/db/src/schema/workingCapitalAnalyses.ts for the full design
+  // rationale (fixed-shape scalar columns, not JSONB; the three cash levers
+  // are deliberately never summed into one blended figure). Additive and
+  // idempotent, applies automatically on next server boot.
+  `CREATE TABLE IF NOT EXISTS working_capital_analyses (
+     id                SERIAL PRIMARY KEY,
+     user_id           INTEGER       NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+     organization_id   INTEGER       REFERENCES organizations(id),
+     client_key        TEXT          NOT NULL,
+     name              TEXT          NOT NULL,
+     inventory_value   NUMERIC(16,2) NOT NULL,
+     dio_days          NUMERIC(8,2)  NOT NULL,
+     dso_days          NUMERIC(8,2)  NOT NULL,
+     dpo_days          NUMERIC(8,2)  NOT NULL,
+     annual_cogs       NUMERIC(18,2) NOT NULL,
+     created_at        TIMESTAMP     NOT NULL DEFAULT NOW(),
+     updated_at        TIMESTAMP     NOT NULL DEFAULT NOW()
+   )`,
+  `CREATE INDEX IF NOT EXISTS working_capital_analyses_user_id ON working_capital_analyses (user_id)`,
+
 ];
 
 export async function runStartupMigrations(): Promise<void> {
