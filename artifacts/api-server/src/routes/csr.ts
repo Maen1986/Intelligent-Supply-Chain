@@ -43,7 +43,12 @@ Return ONLY valid JSON (no markdown, no code fences) matching this EXACT structu
   "summary": "2-3 sentences directly addressing their stated challenge and industry context — must reference specifics from what they wrote, not generic industry text",
   "gaps": ["Gap 1 — specific to their stated challenge", "Gap 2", "Gap 3"],
   "risks": ["Contract/commercial risk 1 relevant to their situation", "Risk 2"],
-  "roadmap": ["Month 1: specific first action addressing their challenge", "Month 2: specific action", "Month 3: specific action"]
+  "roadmap": ["Month 1: specific first action addressing their challenge", "Month 2: specific action", "Month 3: specific action"],
+  "evidenceSummary": {
+    "dataUsed": ["the industry and the client's own stated challenge text -- name what was actually used, nothing invented"],
+    "assumptions": ["assumption made where the stated challenge did not fully specify something needed for this plan"],
+    "confidence": "<0-100. This is a short free intake form, not a full assessment -- calibrate accordingly: do not claim high confidence (85+) from a one-paragraph challenge description alone. Typically 40-70 is honest for this tool. Do not default high out of politeness>"
+  }
 }
 
 Rules:

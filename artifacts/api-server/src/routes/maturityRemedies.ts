@@ -103,6 +103,7 @@ CRITICAL RULES:
 5b. Each weak sub-question above is prefixed with its management layer — [OPERATIONAL], [TACTICAL], or [STRATEGIC]. Use it as a strong (not absolute) sequencing signal: [OPERATIONAL] gaps are usually the right 30-day quick wins (they need execution, not new mandate); [TACTICAL] gaps usually belong in the 60-day phase (they need a designed process or capability); [STRATEGIC] gaps usually belong in the 90-day phase (they need leadership sponsorship, budget, or a policy decision before they can move) — unless a specific dependency clearly overrides this (e.g. a foundational Strategic gap that blocks everything else may need to start on day 1 even if it only closes at day 90). [UNCLASSIFIED] items should be sequenced on their content alone, same as before.
 6. Prioritise the 6–9 most impactful gaps (2–3 per phase). Quality over quantity.
 7. Be ${input.industry}-specific throughout — no generic advice.
+8. Include an evidenceSummary object (see schema) naming exactly what this roadmap is grounded in -- the real segment scores and weak sub-questions provided, nothing more. Calibrate confidence honestly: higher when many weak sub-questions were provided across multiple segments (a fuller picture), lower when only one or two segments/questions were assessed. Do not default high out of politeness.
 
 Return ONLY valid JSON (no markdown fences) matching this exact schema:
 {
@@ -120,7 +121,12 @@ Return ONLY valid JSON (no markdown fences) matching this exact schema:
   ],
   "days60": [{ ...same structure..., "effort": "Medium" }],
   "days90": [{ ...same structure..., "effort": "Medium or High" }],
-  "estimatedImpact": "Realistic SAR/USD impact estimate for a ${input.companySize} in ${input.industry} — e.g. 'SAR 1.4–3.2M in Year 1 from procurement savings, inventory right-sizing, and OTIF improvement' with brief rationale"
+  "estimatedImpact": "Realistic SAR/USD impact estimate for a ${input.companySize} in ${input.industry} — e.g. 'SAR 1.4–3.2M in Year 1 from procurement savings, inventory right-sizing, and OTIF improvement' with brief rationale",
+  "evidenceSummary": {
+    "dataUsed": ["specific segments/scores and weak sub-questions this roadmap is actually grounded in -- name them, not a generic methodology label"],
+    "assumptions": ["assumption made where the assessment data did not fully specify something needed for this roadmap"],
+    "confidence": "<0-100, honest confidence in this roadmap -- higher with more weak sub-questions across more segments provided, lower when the picture is thin (one or two segments/questions only). Do not default high out of politeness>"
+  }
 }`;
 
     const response = await openai.chat.completions.create({

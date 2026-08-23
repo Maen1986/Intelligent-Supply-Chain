@@ -18,6 +18,7 @@ import { EvidenceUploadZone, type EvidenceRecord } from '@/components/EvidenceUp
 import { ConfidenceTierBadge, getSegmentTier } from '@/components/ConfidenceTierBadge';
 import { FeedbackModal, shouldShowFeedback } from '@/components/FeedbackModal';
 import { FrameworkBadge } from '@/components/FrameworkBadge';
+import { EvidenceSummary, type EvidenceSummaryData } from '@/components/EvidenceSummary';
 import { API_BASE } from '@/lib/apiBase';
 import { useAuth } from '@/lib/AuthContext';
 import {
@@ -157,6 +158,10 @@ interface RemediesResponse {
   days60: RemedyItem[];
   days90: RemedyItem[];
   estimatedImpact?: string;
+  /** #158 (23 Aug 2026): generalizes the evidence/confidence badge pattern
+   * (already live on Consultancy, Diagnostic, Executive Briefing, Report
+   * Generator) to Maturity Assessment's AI-written remedy roadmap. */
+  evidenceSummary?: EvidenceSummaryData;
 }
 
 /* ── Regulatory country registry (#150, DB-backed via /api/regulatory) ──── */
@@ -2560,6 +2565,9 @@ export function Maturity() {
                   </div>
                 )}
               </div>
+
+              {/* #158: evidence/confidence badge, same component as the other 4 flagship surfaces */}
+              <EvidenceSummary evidence={remediesData.evidenceSummary} ar={ar} />
 
               {/* ── 30/60/90 visual timeline ────────────────────────────────────── */}
               {(() => {

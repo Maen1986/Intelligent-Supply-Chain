@@ -6,6 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Logo } from '@/components/Logo';
 import { API_BASE } from '@/lib/apiBase';
+import { EvidenceSummary, type EvidenceSummaryData } from '@/components/EvidenceSummary';
 
 const INDUSTRIES = [
   { en: 'Manufacturing', ar: 'التصنيع' },
@@ -105,6 +106,9 @@ type CsrReport = {
   gaps: string[];
   risks: string[];
   roadmap: string[];
+  /** #158 (23 Aug 2026): only present for real AI-generated reports, never
+   * the static fallback content -- absent evidence renders no badge. */
+  evidenceSummary?: EvidenceSummaryData;
 };
 
 function buildFallbackReport(industry: string, industryLabel: string, isAr: boolean): CsrReport {
@@ -164,6 +168,7 @@ export function Csr() {
         gaps: data.report.gaps,
         risks: data.report.risks,
         roadmap: data.report.roadmap,
+        evidenceSummary: data.report.evidenceSummary,
       });
       setUsedFallback(false);
     } catch (err) {
@@ -310,6 +315,9 @@ export function Csr() {
                     </ul>
                   </div>
                 </section>
+
+                {/* #158: evidence/confidence badge -- only renders when the AI path produced it */}
+                <EvidenceSummary evidence={report.evidenceSummary} ar={ar} />
               </div>
 
               <div className="bg-primary px-4 sm:px-8 py-4 text-white flex flex-col sm:flex-row justify-between sm:items-center gap-1 text-sm">
