@@ -19,7 +19,7 @@ import { Button } from '@/components/ui/button';
 import { EvidenceSummary, ConsiderAlso } from '@/components/EvidenceSummary';
 import { TellMeTheStoryButton, type NarrativeStep } from '@/components/NarrativeStory';
 import { ProblemChainFlow } from '@/components/ProblemChainFlow';
-import { getVitalSigns, setVitalSign, type VitalSignKey, type VitalSign } from '@/lib/commandCenterVitalSigns';
+import { getVitalSigns, setVitalSign, getPriorityVitalSigns, toggleVitalSignPriority, type VitalSignKey, type VitalSign } from '@/lib/commandCenterVitalSigns';
 
 import { API_BASE } from '@/lib/apiBase';
 import { safeSetItem } from '@/lib/storage';
@@ -3794,6 +3794,10 @@ const TONE_CLASSES: Record<VitalSign['tone'], string> = {
  */
 function VitalSignsStrip({ tab, ar, onJump }: { tab: TabId; ar: boolean; onJump: (t: TabId) => void }) {
   const [signs, setSigns] = useState(() => getVitalSigns());
+  // #159: which signs the client has told us matter most to them -- a real,
+  // client-controlled choice, not a fabricated weighted score (see
+  // commandCenterVitalSigns.ts header for why this stays a plain list).
+  const [priority, setPriority] = useState<VitalSignKey[]>(() => getPriorityVitalSigns());
 
   // Re-read after every tab switch -- the previous tab may have just
   // written a fresh value on unmount/change, and tabs are independently
@@ -3801,28 +3805,46 @@ function VitalSignsStrip({ tab, ar, onJump }: { tab: TabId; ar: boolean; onJump:
   // React state to react to directly.
   useEffect(() => { setSigns(getVitalSigns()); }, [tab]);
 
+  const orderedKeys = useMemo(() => {
+    const all = Object.keys(VITAL_SIGN_META) as VitalSignKey[];
+    // Prioritized signs first, each group keeping its original relative order.
+    return [...all.filter(k => priority.includes(k)), ...all.filter(k => !priority.includes(k))];
+  }, [priority]);
+
   return (
     <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3, duration: 0.6 }}
       className="grid grid-cols-2 md:grid-cols-5 gap-3 mt-10">
-      {(Object.keys(VITAL_SIGN_META) as VitalSignKey[]).map(key => {
+      {orderedKeys.map(key => {
         const meta = VITAL_SIGN_META[key];
         const Icon = meta.icon;
         const sign = signs[key];
         const isActive = tab === meta.tabId;
+        const isPriority = priority.includes(key);
         return (
-          <button
+          <div
             key={key}
-            onClick={() => onJump(meta.tabId)}
-            className={`text-left bg-white/10 backdrop-blur-sm rounded-xl p-3.5 border transition-colors ${isActive ? 'border-[#C9A84C]/60' : 'border-white/20 hover:border-white/40'}`}
+            className={`relative text-left bg-white/10 backdrop-blur-sm rounded-xl p-3.5 border transition-colors ${isActive ? 'border-[#C9A84C]/60' : isPriority ? 'border-[#C9A84C]/40' : 'border-white/20 hover:border-white/40'}`}
           >
-            <Icon className="w-3.5 h-3.5 text-white/50 mb-1.5" />
-            {sign ? (
-              <p className={`text-base font-black leading-tight ${TONE_CLASSES[sign.tone]}`}>{ar ? sign.valueAr : sign.value}</p>
-            ) : (
-              <p className="text-xs font-bold text-white/35 leading-tight">{ar ? 'لم يُشغَّل بعد' : 'Not yet run'}</p>
-            )}
-            <p className="text-white/60 text-[10px] mt-1 leading-relaxed">{ar ? meta.labelAr : meta.label}</p>
-          </button>
+            <button
+              type="button"
+              onClick={e => { e.stopPropagation(); setPriority(toggleVitalSignPriority(key)); }}
+              title={ar
+                ? (isPriority ? 'إزالة من الأولويات' : 'وضع علامة كأولوية بالنسبة لي')
+                : (isPriority ? 'Remove from my priorities' : 'Mark as important to me')}
+              className={`absolute top-2 ${ar ? 'left-2' : 'right-2'} p-0.5 rounded hover:bg-white/10 transition-colors`}
+            >
+              <Star className={`w-3 h-3 ${isPriority ? 'fill-[#C9A84C] text-[#C9A84C]' : 'text-white/25'}`} />
+            </button>
+            <button onClick={() => onJump(meta.tabId)} className="w-full text-left">
+              <Icon className="w-3.5 h-3.5 text-white/50 mb-1.5" />
+              {sign ? (
+                <p className={`text-base font-black leading-tight ${TONE_CLASSES[sign.tone]}`}>{ar ? sign.valueAr : sign.value}</p>
+              ) : (
+                <p className="text-xs font-bold text-white/35 leading-tight">{ar ? 'لم يُشغَّل بعد' : 'Not yet run'}</p>
+              )}
+              <p className="text-white/60 text-[10px] mt-1 leading-relaxed pr-3">{ar ? meta.labelAr : meta.label}</p>
+            </button>
+          </div>
         );
       })}
     </motion.div>

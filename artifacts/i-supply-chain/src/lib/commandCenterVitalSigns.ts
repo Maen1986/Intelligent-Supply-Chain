@@ -46,3 +46,38 @@ export function setVitalSign(key: VitalSignKey, sign: VitalSign): void {
   const next = { ...getVitalSigns(), [key]: sign };
   safeSetItem(STORAGE_KEY, JSON.stringify(next));
 }
+
+/**
+ * Client-set priority signals (#159, 23 Aug 2026 -- Multi-Dimensional State
+ * design constraint from the UI/UX Vision Synthesis plan, Wave A-2).
+ *
+ * "Never collapse into one fabricated score; show dimensions separately,
+ * let the client weight what matters to them." The five dimensions were
+ * already shown separately (never a composite) since #161 -- this is the
+ * second half: a real, client-controlled way to say which of the five
+ * actually matters to *them*, without ISC inventing a blended number to
+ * do it. Deliberately NOT a numeric weight fed into any calculation --
+ * that would just be a fabricated score wearing a different name. It is a
+ * plain multi-select of which signs the client wants surfaced first,
+ * stored client-side, same localStorage pattern as the signs themselves.
+ */
+const PRIORITY_STORAGE_KEY = 'isc-cc-vitals-priority-v1';
+
+export function getPriorityVitalSigns(): VitalSignKey[] {
+  try {
+    const raw = localStorage.getItem(PRIORITY_STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.filter((k): k is VitalSignKey =>
+      ['benchmark', 'savings', 'risk', 'briefing', 'consultancy'].includes(k)) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function toggleVitalSignPriority(key: VitalSignKey): VitalSignKey[] {
+  const current = getPriorityVitalSigns();
+  const next = current.includes(key) ? current.filter(k => k !== key) : [...current, key];
+  safeSetItem(PRIORITY_STORAGE_KEY, JSON.stringify(next));
+  return next;
+}
