@@ -437,6 +437,25 @@ const MIGRATIONS: string[] = [
    )`,
   `CREATE INDEX IF NOT EXISTS working_capital_analyses_user_id ON working_capital_analyses (user_id)`,
 
+  // spend_variance_analyses -- real backend persistence for the
+  // Opportunity / Spend Variance Finder (#170, Wave B-3, 2026-08-23). See
+  // lib/db/src/schema/spendVarianceAnalyses.ts for the full design
+  // rationale (JSONB rows array, same reasoning as tco_analyses.suppliers,
+  // since row count is variable). Additive and idempotent, applies
+  // automatically on next server boot.
+  `CREATE TABLE IF NOT EXISTS spend_variance_analyses (
+     id               SERIAL PRIMARY KEY,
+     user_id          INTEGER     NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+     organization_id  INTEGER     REFERENCES organizations(id),
+     client_key       TEXT        NOT NULL,
+     name             TEXT        NOT NULL,
+     item_spec        TEXT,
+     rows             JSONB       NOT NULL,
+     created_at       TIMESTAMP   NOT NULL DEFAULT NOW(),
+     updated_at       TIMESTAMP   NOT NULL DEFAULT NOW()
+   )`,
+  `CREATE INDEX IF NOT EXISTS spend_variance_analyses_user_id ON spend_variance_analyses (user_id)`,
+
 ];
 
 export async function runStartupMigrations(): Promise<void> {

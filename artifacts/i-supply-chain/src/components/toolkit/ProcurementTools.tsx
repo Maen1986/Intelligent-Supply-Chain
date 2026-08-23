@@ -64,6 +64,15 @@ const WC_SOURCES: { label: string; url: string }[] = [
   { label: 'Understanding & Optimizing Your Cash Conversion Cycle (J.P. Morgan Treasury Insights)', url: 'https://www.jpmorgan.com/insights/treasury/receivables/understanding-and-optimizing-your-cash-conversion-cycle' },
 ];
 
+// ─── Opportunity / Spend Variance Finder sources (#170) ───────────────────────
+// Real, verified citations for the Purchase Price Variance (PPV) methodology
+// -- checked live via web search before being embedded (Decision Record 8.7:
+// no invented URLs).
+const SV_SOURCES: { label: string; url: string }[] = [
+  { label: 'Purchase Price Variance (PPV): Calculation, Factors, Influence Explained (GEP Blog)', url: 'https://www.gep.com/blog/strategy/purchase-price-variance-calculation-factors-influence-explained' },
+  { label: 'What Is Purchase Price Variance (PPV) & How To Calculate It (Ramp)', url: 'https://ramp.com/blog/purchase-price-variance' },
+];
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface SpendRow {
@@ -499,7 +508,7 @@ function loadJson<T>(key: string, fallback: T): T {
 
 // ─── Tab type ─────────────────────────────────────────────────────────────────
 
-type Tab = 'spend' | 'market' | 'strategy' | 'templates' | 'tco' | 'workingcapital' | 'ai' | 'alerts';
+type Tab = 'spend' | 'market' | 'strategy' | 'templates' | 'tco' | 'workingcapital' | 'spendvariance' | 'ai' | 'alerts';
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
@@ -1591,6 +1600,320 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
     downloadCsv(rows, `${safeName || 'working-capital-scenario'}.csv`);
   };
 
+  // ── Opportunity / Spend Variance Finder (#170, Wave B-3, 2026-08-23) ──
+  //    Real Purchase Price Variance (PPV) methodology, the standard
+  //    procurement metric for comparing what an organization pays for the
+  //    same specification item across different sites/suppliers (sources:
+  //    Corporate Finance Institute-adjacent procurement literature --
+  //    GEP, Ramp -- see SV_SOURCES below, both verified live before citing
+  //    per Decision Record 8.7). Classic PPV compares actual vs. baseline
+  //    price over time; this tool applies the same subtraction-times-
+  //    volume logic across sites/suppliers instead: each site's price is
+  //    normalized to a landed-cost basis (unit price + freight + quality
+  //    adjustment), the cheapest becomes the benchmark, and the
+  //    addressable opportunity is the landed-cost gap times the volume
+  //    currently bought at each above-benchmark site.
+  //    Same architectural family as the TCO Engine and Working Capital
+  //    Control Tower: multi-scenario, localStorage-first with debounced
+  //    server sync + bootstrap-merge for logged-in users, whole-state PUT
+  //    against /api/spend-variance-analyses.
+  interface SpendVarianceRow {
+    id: string; siteName: string;
+    unitPrice: number; freightPerUnit: number; qualityAdjPerUnit: number;
+    annualQty: number; moq: number;
+  }
+  interface SpendVarianceAnalysis {
+    id: string; name: string; itemSpec: string;
+    rows: SpendVarianceRow[];
+    updatedAt: number;
+  }
+  const SK_SV_V1 = 'isc-tool-catmgmt-spendvariance-v1';
+  function defaultSvRow(label: string): SpendVarianceRow {
+    return {
+      id: `svr${Date.now()}${Math.random().toString(36).slice(2, 6)}`, siteName: label,
+      unitPrice: 0, freightPerUnit: 0, qualityAdjPerUnit: 0, annualQty: 0, moq: 0,
+    };
+  }
+  function defaultSvAnalysis(name: string): SpendVarianceAnalysis {
+    return {
+      id: `sva${Date.now()}${Math.random().toString(36).slice(2, 6)}`, name, itemSpec: '',
+      rows: [defaultSvRow(isAr ? 'الموقع أ' : 'Site A'), defaultSvRow(isAr ? 'الموقع ب' : 'Site B')],
+      updatedAt: Date.now(),
+    };
+  }
+  function loadInitialSvAnalyses(): { analyses: SpendVarianceAnalysis[]; activeId: string } {
+    const v1 = loadJson<{ analyses: SpendVarianceAnalysis[]; activeId: string } | null>(SK_SV_V1, null);
+    if (v1 && Array.isArray(v1.analyses) && v1.analyses.length > 0) return v1;
+    const fresh = defaultSvAnalysis(isAr ? 'مقارنة جديدة' : 'New comparison');
+    return { analyses: [fresh], activeId: fresh.id };
+  }
+  // ── Server-sync -- identical whole-list PUT/GET pattern to TCO's and
+  //    Working Capital's. See those blocks' comments for the full
+  //    rationale; not repeated here to avoid drift risk. ──
+  const [svSyncStatus, setSvSyncStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const svServerLoadedForUserId = useRef<number | null>(null);
+  const svBootstrapSettled = useRef(false);
+  const svLocalWinsDuringBootstrap = useRef(false);
+  const svSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const svStateRef = useRef<{ analyses: SpendVarianceAnalysis[]; activeId: string } | null>(null);
+
+  interface ServerSvRow {
+    id: number; clientKey: string; name: string;
+    itemSpec: string | null; rows: SpendVarianceRow[]; updatedAt: string;
+  }
+  function serverRowToSvAnalysis(row: ServerSvRow): SpendVarianceAnalysis {
+    return {
+      id: row.clientKey, name: row.name, itemSpec: row.itemSpec ?? '',
+      rows: row.rows, updatedAt: new Date(row.updatedAt).getTime(),
+    };
+  }
+  function svAnalysisToPayload(a: SpendVarianceAnalysis) {
+    return { clientKey: a.id, name: a.name, itemSpec: a.itemSpec || null, rows: a.rows };
+  }
+  const syncSvToServerImmediate = (analyses: SpendVarianceAnalysis[]) => {
+    if (!user) return;
+    setSvSyncStatus('saving');
+    if (svSyncTimerRef.current) clearTimeout(svSyncTimerRef.current);
+    svSyncTimerRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`${API_BASE}/spend-variance-analyses`, {
+          method: 'PUT', credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ analyses: analyses.map(svAnalysisToPayload) }),
+        });
+        setSvSyncStatus(res.ok ? 'saved' : 'error');
+        if (res.ok) setTimeout(() => setSvSyncStatus('idle'), 2500);
+      } catch {
+        setSvSyncStatus('error');
+      }
+    }, 400);
+  };
+  const syncSvToServer = (analyses: SpendVarianceAnalysis[]) => {
+    if (!user) return;
+    if (!svBootstrapSettled.current) {
+      svLocalWinsDuringBootstrap.current = true;
+      return;
+    }
+    syncSvToServerImmediate(analyses);
+  };
+  const [svState, setSvState] = useState<{ analyses: SpendVarianceAnalysis[]; activeId: string }>(loadInitialSvAnalyses);
+  svStateRef.current = svState;
+  const saveSvState = (next: { analyses: SpendVarianceAnalysis[]; activeId: string }) => {
+    setSvState(next);
+    safeSetItem(SK_SV_V1, JSON.stringify(next));
+    syncSvToServer(next.analyses);
+  };
+
+  useEffect(() => {
+    if (!user) {
+      if (svServerLoadedForUserId.current !== null) {
+        svServerLoadedForUserId.current = null;
+        svBootstrapSettled.current = false;
+        svLocalWinsDuringBootstrap.current = false;
+        setSvSyncStatus('idle');
+      }
+      return;
+    }
+    if (svServerLoadedForUserId.current === user.id) return;
+    svServerLoadedForUserId.current = user.id;
+    svBootstrapSettled.current = false;
+    svLocalWinsDuringBootstrap.current = false;
+    const bootstrapUserId = user.id;
+
+    (async () => {
+      try {
+        const res = await fetch(`${API_BASE}/spend-variance-analyses`, { credentials: 'include' });
+        if (svServerLoadedForUserId.current !== bootstrapUserId) return;
+        if (res.ok) {
+          const data = await res.json() as { ok: boolean; analyses: ServerSvRow[] };
+          if (data.ok && Array.isArray(data.analyses) && data.analyses.length > 0) {
+            if (!svLocalWinsDuringBootstrap.current) {
+              const converted = data.analyses.map(serverRowToSvAnalysis);
+              const currentActive = svStateRef.current?.activeId;
+              const activeStillExists = converted.some(a => a.id === currentActive);
+              const next = { analyses: converted, activeId: activeStillExists ? currentActive! : converted[0].id };
+              setSvState(next);
+              safeSetItem(SK_SV_V1, JSON.stringify(next));
+            }
+          } else if (!svLocalWinsDuringBootstrap.current) {
+            const current = svStateRef.current;
+            if (current && current.analyses.length > 0) syncSvToServerImmediate(current.analyses);
+          }
+        }
+      } catch { /* offline -- localStorage keeps working */ }
+      svBootstrapSettled.current = true;
+      if (svLocalWinsDuringBootstrap.current) {
+        const current = svStateRef.current;
+        if (current) syncSvToServerImmediate(current.analyses);
+      }
+    })();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
+
+  const svActive = svState.analyses.find(a => a.id === svState.activeId) ?? svState.analyses[0];
+  const updateSvActive = (patch: Partial<Omit<SpendVarianceAnalysis, 'id' | 'rows'>>) =>
+    saveSvState({ ...svState, analyses: svState.analyses.map(a => a.id === svActive.id ? { ...a, ...patch, updatedAt: Date.now() } : a) });
+  const svRows = svActive.rows;
+  const saveSvRows = (next: SpendVarianceRow[]) =>
+    saveSvState({ ...svState, analyses: svState.analyses.map(a => a.id === svActive.id ? { ...a, rows: next, updatedAt: Date.now() } : a) });
+  const updateSvRow = (id: string, patch: Partial<SpendVarianceRow>) =>
+    saveSvRows(svRows.map(r => r.id === id ? { ...r, ...patch } : r));
+  const addSvRow = () => {
+    if (svRows.length >= 6) return;
+    const letter = String.fromCharCode(65 + svRows.length);
+    saveSvRows([...svRows, defaultSvRow(`${isAr ? 'الموقع' : 'Site'} ${letter}`)]);
+  };
+  const removeSvRow = (id: string) => { if (svRows.length > 2) saveSvRows(svRows.filter(r => r.id !== id)); };
+  const addSvAnalysis = () => {
+    const fresh = defaultSvAnalysis(`${isAr ? 'مقارنة' : 'Comparison'} ${svState.analyses.length + 1}`);
+    saveSvState({ analyses: [...svState.analyses, fresh], activeId: fresh.id });
+  };
+  const duplicateSvAnalysis = () => {
+    const copy: SpendVarianceAnalysis = { ...svActive, id: `sva${Date.now()}${Math.random().toString(36).slice(2, 6)}`, name: `${svActive.name} (${isAr ? 'نسخة' : 'copy'})`, updatedAt: Date.now() };
+    saveSvState({ analyses: [...svState.analyses, copy], activeId: copy.id });
+  };
+  const deleteSvAnalysis = (id: string) => {
+    if (svState.analyses.length <= 1) return;
+    const remaining = svState.analyses.filter(a => a.id !== id);
+    saveSvState({ analyses: remaining, activeId: remaining[0].id });
+  };
+  const switchSvAnalysis = (id: string) => saveSvState({ ...svState, activeId: id });
+
+  // ── Cross-engine wiring (#178, "wire into other engines") -- real,
+  //    read-only import of the user's own saved TCO Engine analyses
+  //    (tcoState.analyses, already in scope above). Decision Record 8.7's
+  //    "stand by a click" applies literally: nothing here auto-fills
+  //    anything -- the user must pick a TCO analysis and click Import to
+  //    pull its real supplier prices into a new Spend Variance comparison,
+  //    mirroring the #165 Supplier Scorecard cross-link's click-to-apply
+  //    pattern used by the TCO Engine itself. Only TCO analyses with at
+  //    least one supplier carrying a real unit price are offered, since an
+  //    all-zero analysis would produce a meaningless comparison.
+  const svImportableTcoAnalyses = useMemo(
+    () => tcoState.analyses.filter(a => a.suppliers.some(s => s.unitPrice > 0 && s.annualQty > 0)),
+    [tcoState.analyses],
+  );
+  const importSvFromTco = (tcoAnalysisId: string) => {
+    const tco = tcoState.analyses.find(a => a.id === tcoAnalysisId);
+    if (!tco) return;
+    const importedRows: SpendVarianceRow[] = tco.suppliers.map(s => ({
+      id: `svr${Date.now()}${Math.random().toString(36).slice(2, 6)}`,
+      siteName: s.name,
+      unitPrice: s.unitPrice,
+      // TCO's freight/insurance/handling/last-mile stages all normalize to
+      // a per-unit landed-cost adjustment here, same as this tool's own
+      // freightPerUnit field -- real figures the user already entered.
+      freightPerUnit: s.freight + s.insurance + s.handling + s.lastMile,
+      qualityAdjPerUnit: s.annualQty > 0 ? (s.inspectionCost + s.reworkCost + s.auditCost) / s.annualQty : 0,
+      annualQty: s.annualQty,
+      moq: 0,
+    }));
+    const rows = importedRows.length >= 2 ? importedRows : [...importedRows, defaultSvRow(isAr ? 'موقع إضافي' : 'Additional site')];
+    const fresh: SpendVarianceAnalysis = {
+      id: `sva${Date.now()}${Math.random().toString(36).slice(2, 6)}`,
+      name: `${tco.name} (${isAr ? 'من محرك TCO' : 'from TCO Engine'})`,
+      itemSpec: tco.itemName || '',
+      rows,
+      updatedAt: Date.now(),
+    };
+    saveSvState({ analyses: [...svState.analyses, fresh], activeId: fresh.id });
+    toast.success(isAr ? 'تم الاستيراد من محرك TCO ✓' : 'Imported from TCO Engine ✓');
+  };
+
+  /* Pure PPV calculation -- landed unit cost, benchmark identification, and
+     addressable opportunity per row. Kept as one function so the results
+     table, chart, CSV export, and AI prompt can never silently drift out of
+     arithmetic sync with each other. */
+  function computeSvResults(rows: SpendVarianceRow[]) {
+    const landed = rows.map(r => ({ id: r.id, landedUnitCost: r.unitPrice + r.freightPerUnit + r.qualityAdjPerUnit }));
+    const validRows = rows.filter(r => r.unitPrice > 0 && r.annualQty > 0);
+    const validLanded = landed.filter(l => validRows.some(r => r.id === l.id));
+    const benchmarkLandedCost = validLanded.length > 0 ? Math.min(...validLanded.map(l => l.landedUnitCost)) : 0;
+    const benchmarkId = validLanded.find(l => l.landedUnitCost === benchmarkLandedCost)?.id;
+    const rowResults = rows.map(r => {
+      const l = landed.find(x => x.id === r.id)!;
+      const isValid = r.unitPrice > 0 && r.annualQty > 0;
+      const ppvPerUnit = isValid && benchmarkId ? Math.max(0, l.landedUnitCost - benchmarkLandedCost) : 0;
+      const addressableOpportunity = ppvPerUnit * r.annualQty;
+      return { id: r.id, landedUnitCost: l.landedUnitCost, isValid, isBenchmark: r.id === benchmarkId, ppvPerUnit, addressableOpportunity };
+    });
+    const totalAddressableOpportunity = rowResults.reduce((s, r) => s + r.addressableOpportunity, 0);
+    const benchmarkRow = rows.find(r => r.id === benchmarkId);
+    // Redirectable volume -- the annual quantity currently bought at every
+    // OTHER (above-benchmark) site, i.e. what would actually move to the
+    // benchmark site if consolidated. Used only as an honest feasibility
+    // flag against that site's own stated MOQ, never to change the dollar
+    // figure above.
+    const redirectableQty = rows.filter(r => r.id !== benchmarkId).reduce((s, r) => s + (r.annualQty || 0), 0);
+    const moqNote = benchmarkRow && benchmarkRow.moq > 0 && benchmarkRow.moq > redirectableQty;
+    return { rowResults, totalAddressableOpportunity, benchmarkId, benchmarkRow, redirectableQty, moqNote };
+  }
+  const svResults = useMemo(() => computeSvResults(svRows), [svRows]);
+  const svHasData = svResults.rowResults.some(r => r.isValid);
+
+  const svChartData = useMemo(() => (
+    svRows.map(r => {
+      const res = svResults.rowResults.find(x => x.id === r.id);
+      return {
+        name: r.siteName.length > 14 ? r.siteName.slice(0, 12) + '…' : r.siteName,
+        opportunity: Math.round(res?.addressableOpportunity ?? 0),
+        fill: res?.isBenchmark ? '#059669' : '#f59e0b',
+      };
+    })
+  ), [svRows, svResults]);
+
+  // ── AI Executive Insight -- mirrors tcoAiPlan / wcAiPlan's grounded-
+  //    prompt pattern exactly (separate toolKey so it never collides with
+  //    other saved plans). ──
+  const svBuildPrompt = useCallback(() => {
+    const rowLines = svRows.map(r => {
+      const res = svResults.rowResults.find(x => x.id === r.id);
+      return `- ${r.siteName}: unit price SAR ${r.unitPrice.toFixed(2)}, freight SAR ${r.freightPerUnit.toFixed(2)}, quality adj SAR ${r.qualityAdjPerUnit.toFixed(2)} -> landed SAR ${(res?.landedUnitCost ?? 0).toFixed(2)}, annual qty ${r.annualQty}, MOQ ${r.moq}`
+        + (res?.isBenchmark ? ' [BENCHMARK -- lowest landed cost]' : (res?.isValid ? `, PPV/unit SAR ${res.ppvPerUnit.toFixed(2)}, addressable opportunity SAR ${res.addressableOpportunity.toFixed(0)}` : ''));
+    }).join('\n');
+    return [
+      `## Opportunity / Spend Variance Finder Executive Insight Request`,
+      `Comparison: ${svActive.name} | Item spec: ${svActive.itemSpec || 'Not specified'}`,
+      '',
+      `## Sites/suppliers compared`,
+      rowLines || 'No cost data entered yet.',
+      '',
+      `## Total addressable opportunity`,
+      `SAR ${svResults.totalAddressableOpportunity.toFixed(0)} per year, if all above-benchmark volume moved to ${svResults.benchmarkRow?.siteName || 'the benchmark site'}.`,
+      svResults.moqNote ? `Feasibility flag: ${svResults.benchmarkRow?.siteName}'s stated MOQ (${svResults.benchmarkRow?.moq}) exceeds the volume that would redirect there (${svResults.redirectableQty}) -- may need consolidating with existing volume already placed there.` : '',
+      '',
+      '## Your Task',
+      'Write a concise (3-4 paragraph) executive insight on this price-variance finding:',
+      '1. What the numbers say: the real landed-cost gap and which site is driving the addressable opportunity',
+      '2. Whether the gap looks structural (persistent price difference) or could be explained by a one-off factor (e.g. a recent freight spike at one site) -- flag this as something to verify, not something the numbers alone can tell you',
+      '3. The MOQ feasibility flag above, if any, and what it means for actually capturing this opportunity',
+      '4. A clear, hedged recommendation on next step (e.g. renegotiate the higher-priced site, or consolidate volume), naming the one assumption that should be verified before acting',
+    ].filter(Boolean).join('\n');
+  }, [svActive, svRows, svResults]);
+  const svAiPlan = useAIPlan(svBuildPrompt, isAr, 'procurement-spendvariance', svHasData);
+
+  const exportSvAnalysis = () => {
+    const rows: string[][] = [
+      ['Spend Variance Comparison', svActive.name],
+      ['Item spec', svActive.itemSpec],
+      [],
+      ['Site/Supplier', 'Unit price (SAR)', 'Freight/unit (SAR)', 'Quality adj/unit (SAR)', 'Landed unit cost (SAR)', 'Annual qty', 'MOQ', 'Benchmark?', 'PPV/unit (SAR)', 'Addressable opportunity (SAR/yr)'],
+    ];
+    svRows.forEach(r => {
+      const res = svResults.rowResults.find(x => x.id === r.id);
+      rows.push([
+        r.siteName, r.unitPrice.toFixed(2), r.freightPerUnit.toFixed(2), r.qualityAdjPerUnit.toFixed(2),
+        (res?.landedUnitCost ?? 0).toFixed(2), String(r.annualQty), String(r.moq),
+        res?.isBenchmark ? 'Yes' : 'No',
+        (res?.ppvPerUnit ?? 0).toFixed(2), (res?.addressableOpportunity ?? 0).toFixed(0),
+      ]);
+    });
+    rows.push([]);
+    rows.push(['Total addressable opportunity (SAR/yr)', svResults.totalAddressableOpportunity.toFixed(0)]);
+    const safeName = (svActive.name || 'spend-variance-comparison').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    downloadCsv(rows, `${safeName || 'spend-variance-comparison'}.csv`);
+  };
+
   const anyBreach = Object.values(breachLevels).some(v => v !== null);
 
   const tabs: { id: Tab; icon: string; label: string; labelAr: string }[] = [
@@ -1600,6 +1923,7 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
     { id: 'templates', icon: '📥', label: 'Templates & Tools',    labelAr: 'القوالب والأدوات'   },
     { id: 'tco',       icon: '💰', label: 'TCO Engine',           labelAr: 'محرك التكلفة الإجمالية' },
     { id: 'workingcapital', icon: '💧', label: 'Working Capital', labelAr: 'رأس المال العامل' },
+    { id: 'spendvariance', icon: '🔍', label: 'Spend Variance', labelAr: 'تباين الإنفاق' },
     { id: 'ai',        icon: '✨', label: 'AI Strategy Brief',    labelAr: 'تقرير الاستراتيجية' },
     { id: 'alerts',    icon: '🔔', label: 'Alert Thresholds',     labelAr: 'حدود التنبيه'       },
   ];
@@ -2824,6 +3148,268 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
             <summary className="cursor-pointer font-semibold text-slate-500">{isAr ? 'المصادر والمنهجية' : 'Sources & methodology'}</summary>
             <ul className="mt-1.5 space-y-1 pl-3 list-disc">
               {WC_SOURCES.map(src => (
+                <li key={src.url}><a href={src.url} target="_blank" rel="noopener noreferrer" className="underline hover:text-slate-600">{src.label}</a></li>
+              ))}
+            </ul>
+          </details>
+        </div>
+      )}
+
+      {/* ── TAB: Opportunity / Spend Variance Finder (#170, Wave B-3) ── */}
+      {activeTab === 'spendvariance' && (
+        <div id="panel-spendvariance" role="tabpanel" aria-labelledby="tab-spendvariance" className="print-zone-spendvariance space-y-4">
+          <div className="flex justify-end print-hide">
+            <button onClick={() => printZone('spendvariance')}
+              className="flex items-center gap-1.5 text-xs font-semibold bg-[#082C6B] text-white px-3 py-1.5 rounded-xl hover:bg-[#082C6B]/90 transition-colors">
+              <FileDown className="w-3.5 h-3.5" />{isAr ? 'تصدير PDF' : 'Export PDF'}
+            </button>
+          </div>
+
+          <div className="sv-print-header hidden pb-3 border-b border-slate-200 mb-2">
+            <h2 className="text-base font-bold text-slate-800">{isAr ? 'تقرير فرصة تباين الإنفاق' : 'Spend Variance Opportunity Report'}</h2>
+            <p className="text-xs text-slate-600 mt-1">{svActive.name}{svActive.itemSpec ? ` -- ${svActive.itemSpec}` : ''}</p>
+            <p className="text-[10px] text-slate-300 mt-1">{isAr ? 'تاريخ الإنشاء: ' : 'Generated: '}{new Date().toLocaleDateString()}</p>
+          </div>
+
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 flex items-start gap-2">
+            <Info className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
+            <p className="text-xs text-blue-800">
+              {isAr
+                ? 'يقارن تباين سعر الشراء (PPV) للصنف نفسه بمواصفة واحدة عبر موقعين أو أكثر / موردين، بعد تسوية السعر إلى تكلفة مسلَّمة (سعر الوحدة + الشحن + تعديل الجودة). الموقع الأقل تكلفة مسلَّمة يصبح المرجع، والفرصة القابلة للتحصيل هي الفارق × الكمية السنوية عند كل موقع أعلى من المرجع. كل رقم أدناه من إدخالك أنت.'
+                : 'Compares Purchase Price Variance (PPV) for the same-spec item across two or more sites/suppliers, after normalizing to a landed-cost basis (unit price + freight + quality adjustment). The lowest-landed-cost site becomes the benchmark; the addressable opportunity is the gap × the annual quantity currently bought at each above-benchmark site. Every number below is your own input.'}
+            </p>
+          </div>
+
+          {/* Scenario switcher -- multiple named, saved comparisons */}
+          <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-2 print-hide">
+            <div className="flex flex-wrap items-center gap-2">
+              <label className="text-[11px] font-semibold text-slate-500 shrink-0">{isAr ? 'المقارنة:' : 'Comparison:'}</label>
+              <select value={svActive.id} onChange={e => switchSvAnalysis(e.target.value)} aria-label={isAr ? 'المقارنة:' : 'Comparison:'}
+                className="text-xs border border-slate-200 rounded-lg px-2 py-1.5 font-semibold text-slate-700 min-w-[160px]">
+                {svState.analyses.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+              </select>
+              <input value={svActive.name} onChange={e => updateSvActive({ name: e.target.value })}
+                aria-label={isAr ? 'اسم المقارنة' : 'Comparison name'}
+                className="text-xs border border-slate-200 rounded-lg px-2 py-1.5 flex-1 min-w-[140px]" />
+              <button onClick={addSvAnalysis} className="flex items-center gap-1 text-[11px] font-semibold text-[#082C6B] hover:opacity-80 shrink-0">
+                <Plus className="w-3.5 h-3.5" />{isAr ? 'مقارنة جديدة' : 'New'}
+              </button>
+              <button onClick={duplicateSvAnalysis} className="text-[11px] font-semibold text-slate-500 hover:text-slate-700 shrink-0">
+                {isAr ? 'نسخ' : 'Duplicate'}
+              </button>
+              {svState.analyses.length > 1 && (
+                <button onClick={() => deleteSvAnalysis(svActive.id)} className="flex items-center gap-1 text-[11px] font-semibold text-slate-400 hover:text-red-500 shrink-0">
+                  <Trash2 className="w-3.5 h-3.5" />{isAr ? 'حذف' : 'Delete'}
+                </button>
+              )}
+              {user && (
+                <span className="text-[10px] font-semibold text-slate-400 ml-auto shrink-0">
+                  {svSyncStatus === 'saving' && (isAr ? 'جارٍ الحفظ…' : 'Saving…')}
+                  {svSyncStatus === 'saved' && (isAr ? 'تم الحفظ ✓' : 'Saved ✓')}
+                  {svSyncStatus === 'error' && (isAr ? 'فشل الحفظ' : 'Save failed')}
+                </span>
+              )}
+            </div>
+            <div>
+              <label className="text-[10px] text-slate-400 block mb-0.5">{isAr ? 'مواصفة الصنف' : 'Item specification'}</label>
+              <input value={svActive.itemSpec} onChange={e => updateSvActive({ itemSpec: e.target.value })}
+                placeholder={isAr ? 'مثال: محمل كروي 6205، فولاذ كروم، مانع تسرب' : 'e.g. Bearing 6205-ZZ, chrome steel, sealed'}
+                aria-label={isAr ? 'مواصفة الصنف' : 'Item specification'}
+                className="w-full text-xs border border-slate-200 rounded-lg px-2 py-1.5" />
+            </div>
+            {/* Cross-engine import (#178) -- real, click-to-apply pull from the
+                user's own saved TCO Engine supplier prices, never auto-filled. */}
+            {svImportableTcoAnalyses.length > 0 && (
+              <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-slate-200">
+                <label className="text-[10px] font-semibold text-slate-500 shrink-0">
+                  {isAr ? 'أو استورد من محرك TCO:' : 'Or import from TCO Engine:'}
+                </label>
+                <select defaultValue="" onChange={e => { if (e.target.value) { importSvFromTco(e.target.value); e.target.value = ''; } }}
+                  aria-label={isAr ? 'استيراد من محرك TCO' : 'Import from TCO Engine'}
+                  className="text-xs border border-slate-200 rounded-lg px-2 py-1.5 font-semibold text-slate-700">
+                  <option value="" disabled>{isAr ? '— اختر تحليل TCO —' : '— Choose a TCO analysis —'}</option>
+                  {svImportableTcoAnalyses.map(a => <option key={a.id} value={a.id}>{a.name}{a.itemName ? ` -- ${a.itemName}` : ''}</option>)}
+                </select>
+              </div>
+            )}
+          </div>
+
+          {/* Sites/suppliers input table */}
+          <div className="bg-white border border-slate-200 rounded-xl p-3 overflow-x-auto">
+            <div className="flex items-center justify-between mb-2 print-hide">
+              <h3 className="text-xs font-bold text-slate-700">{isAr ? 'المواقع / الموردون' : 'Sites / Suppliers'}</h3>
+              {svRows.length < 6 && (
+                <button onClick={addSvRow} className="flex items-center gap-1 text-[11px] font-semibold text-[#082C6B] hover:opacity-80">
+                  <Plus className="w-3.5 h-3.5" />{isAr ? 'إضافة موقع' : 'Add site'}
+                </button>
+              )}
+            </div>
+            <table className="w-full text-xs border-collapse">
+              <thead>
+                <tr className="border-b border-slate-200">
+                  <th className="text-left py-2 pr-2 text-slate-400 font-semibold whitespace-nowrap">{isAr ? 'الموقع/المورّد' : 'Site/Supplier'}</th>
+                  <th className="text-left py-2 px-2 text-slate-400 font-semibold whitespace-nowrap">{isAr ? 'سعر الوحدة' : 'Unit price'}</th>
+                  <th className="text-left py-2 px-2 text-slate-400 font-semibold whitespace-nowrap">{isAr ? 'الشحن/وحدة' : 'Freight/unit'}</th>
+                  <th className="text-left py-2 px-2 text-slate-400 font-semibold whitespace-nowrap">{isAr ? 'تعديل الجودة/وحدة' : 'Quality adj/unit'}</th>
+                  <th className="text-left py-2 px-2 text-slate-400 font-semibold whitespace-nowrap">{isAr ? 'الكمية السنوية' : 'Annual qty'}</th>
+                  <th className="text-left py-2 px-2 text-slate-400 font-semibold whitespace-nowrap">{isAr ? 'الحد الأدنى للطلب' : 'MOQ'}</th>
+                  <th className="py-2 px-2 print-hide"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {svRows.map(r => (
+                  <tr key={r.id} className="border-b border-slate-100">
+                    <td className="py-1.5 pr-2">
+                      <input value={r.siteName} onChange={e => updateSvRow(r.id, { siteName: e.target.value })}
+                        aria-label={isAr ? 'الموقع/المورّد' : 'Site/Supplier'}
+                        className="w-full text-xs border border-slate-200 rounded-lg px-1.5 py-1" />
+                    </td>
+                    <td className="py-1.5 px-2">
+                      <input type="number" min={0} value={r.unitPrice || ''} onChange={e => updateSvRow(r.id, { unitPrice: parseFloat(e.target.value) || 0 })}
+                        aria-label={isAr ? 'سعر الوحدة' : 'Unit price'}
+                        className="w-full text-xs border border-slate-200 rounded-lg px-1.5 py-1" />
+                    </td>
+                    <td className="py-1.5 px-2">
+                      <input type="number" min={0} value={r.freightPerUnit || ''} onChange={e => updateSvRow(r.id, { freightPerUnit: parseFloat(e.target.value) || 0 })}
+                        aria-label={isAr ? 'الشحن لكل وحدة' : 'Freight per unit'}
+                        className="w-full text-xs border border-slate-200 rounded-lg px-1.5 py-1" />
+                    </td>
+                    <td className="py-1.5 px-2">
+                      <input type="number" min={0} value={r.qualityAdjPerUnit || ''} onChange={e => updateSvRow(r.id, { qualityAdjPerUnit: parseFloat(e.target.value) || 0 })}
+                        aria-label={isAr ? 'تعديل الجودة لكل وحدة' : 'Quality adjustment per unit'}
+                        className="w-full text-xs border border-slate-200 rounded-lg px-1.5 py-1" />
+                    </td>
+                    <td className="py-1.5 px-2">
+                      <input type="number" min={0} value={r.annualQty || ''} onChange={e => updateSvRow(r.id, { annualQty: parseFloat(e.target.value) || 0 })}
+                        aria-label={isAr ? 'الكمية السنوية' : 'Annual quantity'}
+                        className="w-full text-xs border border-slate-200 rounded-lg px-1.5 py-1" />
+                    </td>
+                    <td className="py-1.5 px-2">
+                      <input type="number" min={0} value={r.moq || ''} onChange={e => updateSvRow(r.id, { moq: parseFloat(e.target.value) || 0 })}
+                        aria-label={isAr ? 'الحد الأدنى للطلب' : 'MOQ'}
+                        className="w-full text-xs border border-slate-200 rounded-lg px-1.5 py-1" />
+                    </td>
+                    <td className="py-1.5 px-2 print-hide">
+                      {svRows.length > 2 && (
+                        <button onClick={() => removeSvRow(r.id)} aria-label={isAr ? 'حذف الموقع' : 'Remove site'}
+                          className="text-slate-300 hover:text-red-500">
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Results table */}
+          <div className="bg-white border border-slate-200 rounded-xl p-3 overflow-x-auto">
+            <h3 className="text-xs font-bold text-slate-700 mb-2">{isAr ? 'النتائج' : 'Results'}</h3>
+            <table className="w-full text-xs border-collapse">
+              <thead>
+                <tr className="border-b border-slate-200">
+                  <th className="text-left py-2 pr-2 text-slate-400 font-semibold whitespace-nowrap">{isAr ? 'الموقع/المورّد' : 'Site/Supplier'}</th>
+                  <th className="text-left py-2 px-2 text-slate-400 font-semibold whitespace-nowrap">{isAr ? 'التكلفة المسلَّمة/وحدة' : 'Landed cost/unit'}</th>
+                  <th className="text-left py-2 px-2 text-slate-400 font-semibold whitespace-nowrap">PPV/{isAr ? 'وحدة' : 'unit'}</th>
+                  <th className="text-left py-2 px-2 text-slate-400 font-semibold whitespace-nowrap">{isAr ? 'الفرصة القابلة للتحصيل/سنة' : 'Addressable opportunity/yr'}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {svRows.map(r => {
+                  const res = svResults.rowResults.find(x => x.id === r.id);
+                  return (
+                    <tr key={r.id} className={`border-b border-slate-100 ${res?.isBenchmark ? 'bg-emerald-50/50' : ''}`}>
+                      <td className="py-2 pr-2 font-semibold text-slate-700 whitespace-nowrap">
+                        {r.siteName}
+                        {res?.isBenchmark && <span className="ml-1.5 text-[9px] font-bold text-emerald-600 uppercase">{isAr ? 'مرجع' : 'Benchmark'}</span>}
+                      </td>
+                      <td className="py-2 px-2 text-slate-600">{res?.isValid ? `SAR ${res.landedUnitCost.toFixed(2)}` : '—'}</td>
+                      <td className="py-2 px-2 text-slate-600">{res?.isValid ? `SAR ${res.ppvPerUnit.toFixed(2)}` : '—'}</td>
+                      <td className="py-2 px-2 font-semibold">
+                        {res?.isValid
+                          ? (res.addressableOpportunity > 0
+                            ? <span className="text-amber-600">SAR {res.addressableOpportunity.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                            : <span className="text-slate-300">—</span>)
+                          : '—'}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+
+            <div className="mt-3 pt-3 border-t border-slate-200 flex items-center justify-between flex-wrap gap-2">
+              <div>
+                <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">{isAr ? 'إجمالي الفرصة القابلة للتحصيل سنوياً' : 'Total addressable opportunity / year'}</p>
+                <p className="text-xl font-bold text-slate-800">SAR {svResults.totalAddressableOpportunity.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
+              </div>
+            </div>
+
+            {svResults.moqNote && (
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-start gap-2 mt-3 print-hide">
+                <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                <p className="text-[11px] text-amber-800">
+                  {isAr
+                    ? `تنبيه جدوى: الحد الأدنى للطلب المذكور لدى ${svResults.benchmarkRow?.siteName} (${svResults.benchmarkRow?.moq}) يتجاوز الكمية التي ستنتقل إليه (${svResults.redirectableQty}) -- قد يتطلب الأمر دمجها مع الحجم الحالي الموجود هناك بالفعل قبل اعتبار هذه الفرصة قابلة للتحصيل بالكامل.`
+                    : `Feasibility flag: ${svResults.benchmarkRow?.siteName}'s stated MOQ (${svResults.benchmarkRow?.moq}) exceeds the volume that would redirect there (${svResults.redirectableQty}) -- may need consolidating with the volume already placed there before treating this opportunity as fully capturable.`}
+                </p>
+              </div>
+            )}
+
+            <div className="bg-slate-50 border border-dashed border-slate-300 rounded-xl p-3 mt-3 print-hide">
+              <p className="text-[10px] text-slate-400">
+                {isAr
+                  ? 'ملاحظة صدق: قد يعكس الفارق سعراً هيكلياً حقيقياً أو عاملاً مؤقتاً (مثل ارتفاع مؤقت في تكلفة الشحن). تحقق قبل التفاوض أو إعادة التوجيه.'
+                  : 'Honesty note: this gap may reflect a real, structural price difference or a temporary factor (e.g. a recent freight spike at one site). Verify before renegotiating or redirecting volume.'}
+              </p>
+            </div>
+          </div>
+
+          {/* Visual comparison */}
+          <div className="bg-white border border-slate-200 rounded-xl p-3 print-hide">
+            <h3 className="text-xs font-bold text-slate-700 mb-2">{isAr ? 'الفرصة القابلة للتحصيل حسب الموقع' : 'Addressable opportunity by site'}</h3>
+            <ResponsiveContainer width="100%" height={180}>
+              <ComposedChart data={svChartData} margin={{ top: 8, right: 8, left: 8, bottom: 8 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                <XAxis dataKey="name" tick={{ fontSize: 10 }} />
+                <YAxis tick={{ fontSize: 10 }} tickFormatter={v => `${Math.round(v / 1000)}k`} />
+                <Tooltip formatter={(v: number) => [`SAR ${v.toLocaleString()}`, '']} />
+                <Bar dataKey="opportunity" radius={[6, 6, 0, 0]}>
+                  {svChartData.map((d, i) => <Cell key={i} fill={d.fill} />)}
+                </Bar>
+              </ComposedChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Export + AI Insight */}
+          <div className="flex justify-end print-hide">
+            <button onClick={exportSvAnalysis}
+              className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-700">
+              <Download className="w-3.5 h-3.5" />{isAr ? 'تصدير (CSV)' : 'Export (CSV)'}
+            </button>
+          </div>
+
+          <div className="print-hide">
+            <AIPlanPanel
+              loading={svAiPlan.loading} result={svAiPlan.result} evidenceSummary={svAiPlan.evidenceSummary} error={svAiPlan.error}
+              onGenerate={svAiPlan.generate} onReset={svAiPlan.reset}
+              savedPlan={svAiPlan.savedPlan} onViewSaved={svAiPlan.viewSaved} onDeleteSaved={svAiPlan.deleteSaved}
+              rateLimited={svAiPlan.rateLimited}
+              retryAfterSeconds={svAiPlan.retryAfterSeconds}
+              saveError={svAiPlan.saveError}
+              onDismissSaveError={svAiPlan.dismissSaveError}
+              buttonLabel={isAr ? 'توليد رؤية فرصة الإنفاق التنفيذية ✨' : 'Generate Spend Opportunity Executive Insight ✨'}
+              isAr={isAr} toolKey="procurement-spendvariance"
+              disabled={!svHasData}
+            />
+          </div>
+
+          {/* Sources -- real, verified citations for the PPV methodology */}
+          <details className="text-[10px] text-slate-400 print-hide">
+            <summary className="cursor-pointer font-semibold text-slate-500">{isAr ? 'المصادر والمنهجية' : 'Sources & methodology'}</summary>
+            <ul className="mt-1.5 space-y-1 pl-3 list-disc">
+              {SV_SOURCES.map(src => (
                 <li key={src.url}><a href={src.url} target="_blank" rel="noopener noreferrer" className="underline hover:text-slate-600">{src.label}</a></li>
               ))}
             </ul>

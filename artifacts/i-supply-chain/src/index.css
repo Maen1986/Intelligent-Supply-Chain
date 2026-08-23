@@ -253,6 +253,12 @@ html[lang="ar"] {
   }
   .print-zone-workingcapital .wc-print-header { display: block !important; }
 
+  body[data-print="spendvariance"] .print-zone-spendvariance,
+  body[data-print="spendvariance"] .print-zone-spendvariance * {
+    visibility: visible;
+  }
+  .print-zone-spendvariance .sv-print-header { display: block !important; }
+
   .print-hide {
     display: none !important;
   }

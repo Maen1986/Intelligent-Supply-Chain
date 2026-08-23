@@ -36,6 +36,7 @@ import roiSummaryRouter         from "./roiSummary";
 import tcoAnalysesRouter        from "./tcoAnalyses";
 import tcoTrendSnapshotsRouter  from "./tcoTrendSnapshots";
 import workingCapitalAnalysesRouter from "./workingCapitalAnalyses";
+import spendVarianceAnalysesRouter from "./spendVarianceAnalyses";
 
 const router: IRouter = Router();
 
@@ -75,6 +76,7 @@ router.use(roiSummaryRouter);
 router.use("/tco-analyses",     tcoAnalysesRouter);
 router.use("/tco-trend-snapshots", tcoTrendSnapshotsRouter);
 router.use("/working-capital-analyses", workingCapitalAnalysesRouter);
+router.use("/spend-variance-analyses", spendVarianceAnalysesRouter);
 router.use(webhooksInboundRouter);
 
 export default router;
