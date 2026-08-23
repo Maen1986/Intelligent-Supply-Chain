@@ -420,7 +420,7 @@ describe('ProcurementToolsSection — arrow-key tab navigation (LTR)', () => {
     render(<ProcurementToolsSection isAr={false} />);
     expect(screen.getByRole('tablist')).toBeInTheDocument();
     const tabs = screen.getAllByRole('tab');
-    expect(tabs).toHaveLength(6);
+    expect(tabs).toHaveLength(7);
   });
 
   it('first tab is aria-selected on mount', () => {
@@ -441,24 +441,24 @@ describe('ProcurementToolsSection — arrow-key tab navigation (LTR)', () => {
     render(<ProcurementToolsSection isAr={false} />);
     const tabs = screen.getAllByRole('tab');
     // Start at tab 0, press right 5 times → should land on tab 5 (last)
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 6; i++) {
       const current = tabs.findIndex(t => t.getAttribute('aria-selected') === 'true');
       fireEvent.keyDown(tabs[current], { key: 'ArrowRight' });
     }
-    expect(tabs[5].getAttribute('aria-selected')).toBe('true');
+    expect(tabs[6].getAttribute('aria-selected')).toBe('true');
   });
 
   it('ArrowRight wraps from last tab back to first tab', () => {
     render(<ProcurementToolsSection isAr={false} />);
     const tabs = screen.getAllByRole('tab');
     // Navigate to the last tab first
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 6; i++) {
       const current = tabs.findIndex(t => t.getAttribute('aria-selected') === 'true');
       fireEvent.keyDown(tabs[current], { key: 'ArrowRight' });
     }
-    expect(tabs[5].getAttribute('aria-selected')).toBe('true');
+    expect(tabs[6].getAttribute('aria-selected')).toBe('true');
     // One more ArrowRight should wrap to first
-    fireEvent.keyDown(tabs[5], { key: 'ArrowRight' });
+    fireEvent.keyDown(tabs[6], { key: 'ArrowRight' });
     expect(tabs[0].getAttribute('aria-selected')).toBe('true');
   });
 
@@ -475,7 +475,7 @@ describe('ProcurementToolsSection — arrow-key tab navigation (LTR)', () => {
     render(<ProcurementToolsSection isAr={false} />);
     const tabs = screen.getAllByRole('tab');
     fireEvent.keyDown(tabs[0], { key: 'ArrowLeft' });
-    expect(tabs[5].getAttribute('aria-selected')).toBe('true');
+    expect(tabs[6].getAttribute('aria-selected')).toBe('true');
   });
 
   it('Home key jumps directly to first tab from any position', () => {
@@ -494,7 +494,7 @@ describe('ProcurementToolsSection — arrow-key tab navigation (LTR)', () => {
     render(<ProcurementToolsSection isAr={false} />);
     const tabs = screen.getAllByRole('tab');
     fireEvent.keyDown(tabs[0], { key: 'End' });
-    expect(tabs[5].getAttribute('aria-selected')).toBe('true');
+    expect(tabs[6].getAttribute('aria-selected')).toBe('true');
   });
 
   it('navigating to a tab via ArrowRight shows its panel content', () => {
@@ -530,7 +530,7 @@ describe('ProcurementToolsSection — arrow-key tab navigation (Arabic / RTL)', 
   it('tab buttons are present with role="tab" in Arabic mode', () => {
     render(<ProcurementToolsSection isAr={true} />);
     const tabs = screen.getAllByRole('tab');
-    expect(tabs).toHaveLength(6);
+    expect(tabs).toHaveLength(7);
   });
 
   it('first tab is aria-selected on mount in Arabic mode', () => {
@@ -547,10 +547,10 @@ describe('ProcurementToolsSection — arrow-key tab navigation (Arabic / RTL)', 
     expect(tabs[0].getAttribute('aria-selected')).toBe('false');
   });
 
-  it('ArrowRight advances through all 6 tabs in Arabic mode', () => {
+  it('ArrowRight advances through all 7 tabs in Arabic mode', () => {
     render(<ProcurementToolsSection isAr={true} />);
     const tabs = screen.getAllByRole('tab');
-    for (let expected = 1; expected <= 5; expected++) {
+    for (let expected = 1; expected <= 6; expected++) {
       const current = tabs.findIndex(t => t.getAttribute('aria-selected') === 'true');
       fireEvent.keyDown(tabs[current], { key: 'ArrowRight' });
       expect(tabs[expected].getAttribute('aria-selected')).toBe('true');
@@ -561,13 +561,13 @@ describe('ProcurementToolsSection — arrow-key tab navigation (Arabic / RTL)', 
     render(<ProcurementToolsSection isAr={true} />);
     const tabs = screen.getAllByRole('tab');
     // Navigate to last tab
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 6; i++) {
       const current = tabs.findIndex(t => t.getAttribute('aria-selected') === 'true');
       fireEvent.keyDown(tabs[current], { key: 'ArrowRight' });
     }
-    expect(tabs[5].getAttribute('aria-selected')).toBe('true');
+    expect(tabs[6].getAttribute('aria-selected')).toBe('true');
     // Wrap
-    fireEvent.keyDown(tabs[5], { key: 'ArrowRight' });
+    fireEvent.keyDown(tabs[6], { key: 'ArrowRight' });
     expect(tabs[0].getAttribute('aria-selected')).toBe('true');
   });
 
@@ -584,23 +584,23 @@ describe('ProcurementToolsSection — arrow-key tab navigation (Arabic / RTL)', 
     render(<ProcurementToolsSection isAr={true} />);
     const tabs = screen.getAllByRole('tab');
     fireEvent.keyDown(tabs[0], { key: 'ArrowLeft' });
-    expect(tabs[5].getAttribute('aria-selected')).toBe('true');
+    expect(tabs[6].getAttribute('aria-selected')).toBe('true');
   });
 
-  it('full round-trip: ArrowRight × 6 returns to the starting tab in Arabic mode', () => {
+  it('full round-trip: ArrowRight × 7 returns to the starting tab in Arabic mode', () => {
     render(<ProcurementToolsSection isAr={true} />);
     const tabs = screen.getAllByRole('tab');
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < 7; i++) {
       const current = tabs.findIndex(t => t.getAttribute('aria-selected') === 'true');
       fireEvent.keyDown(tabs[current], { key: 'ArrowRight' });
     }
     expect(tabs[0].getAttribute('aria-selected')).toBe('true');
   });
 
-  it('full round-trip: ArrowLeft × 6 returns to the starting tab in Arabic mode', () => {
+  it('full round-trip: ArrowLeft × 7 returns to the starting tab in Arabic mode', () => {
     render(<ProcurementToolsSection isAr={true} />);
     const tabs = screen.getAllByRole('tab');
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < 7; i++) {
       const current = tabs.findIndex(t => t.getAttribute('aria-selected') === 'true');
       fireEvent.keyDown(tabs[current], { key: 'ArrowLeft' });
     }
@@ -621,7 +621,7 @@ describe('ProcurementToolsSection — arrow-key tab navigation (Arabic / RTL)', 
     render(<ProcurementToolsSection isAr={true} />);
     const tabs = screen.getAllByRole('tab');
     fireEvent.keyDown(tabs[0], { key: 'End' });
-    expect(tabs[5].getAttribute('aria-selected')).toBe('true');
+    expect(tabs[6].getAttribute('aria-selected')).toBe('true');
   });
 
   it('ArrowRight in Arabic mode switches panel content (Market Intelligence panel appears)', () => {
@@ -1060,9 +1060,9 @@ describe('ProcurementToolsSection — arrow-key tab navigation', () => {
     expect(screen.getByRole('tablist')).toBeInTheDocument();
   });
 
-  it('all 6 tabs have role="tab"', () => {
+  it('all 7 tabs have role="tab"', () => {
     render(<ProcurementToolsSection isAr={false} />);
-    expect(screen.getAllByRole('tab').length).toBe(6);
+    expect(screen.getAllByRole('tab').length).toBe(7);
   });
 
   it('default tab is aria-selected and has tabIndex 0', () => {
@@ -1203,14 +1203,14 @@ describe('ProcurementToolsSection — arrow-key navigation to Sourcing Strategy 
     const tabs = screen.getAllByRole('tab');
 
     // Navigate all the way to the last tab
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 6; i++) {
       const current = tabs.findIndex(t => t.getAttribute('aria-selected') === 'true');
       fireEvent.keyDown(tabs[current], { key: 'ArrowRight' });
     }
-    expect(tabs[5].getAttribute('aria-selected')).toBe('true');
+    expect(tabs[6].getAttribute('aria-selected')).toBe('true');
 
     // One more ArrowRight should wrap to first tab
-    fireEvent.keyDown(tabs[5], { key: 'ArrowRight' });
+    fireEvent.keyDown(tabs[6], { key: 'ArrowRight' });
     expect(tabs[0].getAttribute('aria-selected')).toBe('true');
     expect(screen.getByLabelText('Supplier: contracted')).toBeInTheDocument();
   });
@@ -1288,14 +1288,14 @@ describe('ProcurementToolsSection — arrow-key navigation to Sourcing Strategy 
     const tabs = screen.getAllByRole('tab');
 
     // Navigate all the way to the last tab
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 6; i++) {
       const current = tabs.findIndex(t => t.getAttribute('aria-selected') === 'true');
       fireEvent.keyDown(tabs[current], { key: 'ArrowRight' });
     }
-    expect(tabs[5].getAttribute('aria-selected')).toBe('true');
+    expect(tabs[6].getAttribute('aria-selected')).toBe('true');
 
     // One more ArrowRight should wrap to first tab
-    fireEvent.keyDown(tabs[5], { key: 'ArrowRight' });
+    fireEvent.keyDown(tabs[6], { key: 'ArrowRight' });
     expect(tabs[0].getAttribute('aria-selected')).toBe('true');
     // Spend Analysis panel content visible in Arabic mode
     expect(screen.getByLabelText(/تحت عقد/)).toBeInTheDocument();

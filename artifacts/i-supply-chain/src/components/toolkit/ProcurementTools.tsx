@@ -455,7 +455,7 @@ function loadJson<T>(key: string, fallback: T): T {
 
 // ─── Tab type ─────────────────────────────────────────────────────────────────
 
-type Tab = 'spend' | 'market' | 'strategy' | 'templates' | 'ai' | 'alerts';
+type Tab = 'spend' | 'market' | 'strategy' | 'templates' | 'tco' | 'ai' | 'alerts';
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
@@ -672,6 +672,64 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
 
   const aiPlan = useAIPlan(buildPrompt, isAr, 'procurement-catmgmt', validRows.length >= 2);
 
+  // ── TCO Engine (#168) — Total Cost of Ownership calculator, same interactive
+  //    pattern as the Resiliency toolkit's Revenue-at-Risk calculator: a
+  //    dynamic, localStorage-backed row list with a live-computed result.
+  //    Mirrors the existing static TCO_CSV template's methodology exactly (same
+  //    5 cost buckets, same "carrying cost typically 20-30%" convention) so the
+  //    downloadable template and this live version never disagree.
+  interface TcoSupplier {
+    id: string; name: string;
+    unitPrice: number; annualQty: number;
+    vatPct: number; dutyPct: number;
+    freight: number; insurance: number; handling: number; lastMile: number;
+    safetyStockDays: number; carryingCostPct: number;
+    inspectionCost: number; defectPpm: number; reworkCost: number; auditCost: number;
+    poCount: number; poCostEach: number; invoiceProcessingCost: number;
+  }
+  const SK_TCO = 'isc-tool-catmgmt-tco-v1';
+  function defaultTcoSupplier(label: string): TcoSupplier {
+    return {
+      id: `tco${Date.now()}${Math.random().toString(36).slice(2, 6)}`, name: label,
+      unitPrice: 0, annualQty: 0, vatPct: 15, dutyPct: 0,
+      freight: 0, insurance: 0, handling: 0, lastMile: 0,
+      safetyStockDays: 0, carryingCostPct: 25,
+      inspectionCost: 0, defectPpm: 0, reworkCost: 0, auditCost: 0,
+      poCount: 0, poCostEach: 0, invoiceProcessingCost: 0,
+    };
+  }
+  const [tcoSuppliers, setTcoSuppliers] = useState<TcoSupplier[]>(
+    () => loadJson(SK_TCO, [defaultTcoSupplier('Supplier A'), defaultTcoSupplier('Supplier B')] as TcoSupplier[]),
+  );
+  const saveTcoSuppliers = (next: TcoSupplier[]) => { setTcoSuppliers(next); safeSetItem(SK_TCO, JSON.stringify(next)); };
+  const updateTcoSupplier = (id: string, patch: Partial<TcoSupplier>) =>
+    saveTcoSuppliers(tcoSuppliers.map(s => s.id === id ? { ...s, ...patch } : s));
+  const addTcoSupplier = () => {
+    const letter = String.fromCharCode(65 + tcoSuppliers.length);
+    if (tcoSuppliers.length >= 5) return;
+    saveTcoSuppliers([...tcoSuppliers, defaultTcoSupplier(`${isAr ? 'مورّد' : 'Supplier'} ${letter}`)]);
+  };
+  const removeTcoSupplier = (id: string) => { if (tcoSuppliers.length > 1) saveTcoSuppliers(tcoSuppliers.filter(s => s.id !== id)); };
+
+  const tcoResults = useMemo(() => tcoSuppliers.map(s => {
+    const directPurchase = s.unitPrice * s.annualQty;
+    const vatAmount = directPurchase * (s.vatPct / 100);
+    const dutyAmount = directPurchase * (s.dutyPct / 100);
+    const directTotal = directPurchase + vatAmount + dutyAmount;
+    const logisticsTotal = s.freight + s.insurance + s.handling + s.lastMile;
+    // Safety-stock value held = share of annual purchase cost proportional to days of stock carried.
+    const safetyStockValue = directPurchase * (s.safetyStockDays / 365);
+    const carryingCostAnnual = safetyStockValue * (s.carryingCostPct / 100);
+    const qualityTotal = s.inspectionCost + s.reworkCost + s.auditCost;
+    const transactionTotal = (s.poCount * s.poCostEach) + s.invoiceProcessingCost;
+    const tcoAnnual = directTotal + logisticsTotal + carryingCostAnnual + qualityTotal + transactionTotal;
+    const tcoPerUnit = s.annualQty > 0 ? tcoAnnual / s.annualQty : 0;
+    return { id: s.id, directPurchase, vatAmount, dutyAmount, directTotal, logisticsTotal, safetyStockValue, carryingCostAnnual, qualityTotal, transactionTotal, tcoAnnual, tcoPerUnit };
+  }), [tcoSuppliers]);
+  const tcoValidResults = tcoResults.filter(r => r.tcoPerUnit > 0);
+  const tcoLowestPerUnit = tcoValidResults.length > 0 ? Math.min(...tcoValidResults.map(r => r.tcoPerUnit)) : 0;
+  const tcoLowestId = tcoValidResults.find(r => r.tcoPerUnit === tcoLowestPerUnit)?.id;
+
   const anyBreach = Object.values(breachLevels).some(v => v !== null);
 
   const tabs: { id: Tab; icon: string; label: string; labelAr: string }[] = [
@@ -679,6 +737,7 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
     { id: 'market',    icon: '🌍', label: 'Market Intelligence',  labelAr: 'استخبارات السوق'    },
     { id: 'strategy',  icon: '🎯', label: 'Sourcing Strategy',    labelAr: 'استراتيجية التوريد' },
     { id: 'templates', icon: '📥', label: 'Templates & Tools',    labelAr: 'القوالب والأدوات'   },
+    { id: 'tco',       icon: '💰', label: 'TCO Engine',           labelAr: 'محرك التكلفة الإجمالية' },
     { id: 'ai',        icon: '✨', label: 'AI Strategy Brief',    labelAr: 'تقرير الاستراتيجية' },
     { id: 'alerts',    icon: '🔔', label: 'Alert Thresholds',     labelAr: 'حدود التنبيه'       },
   ];
@@ -1032,6 +1091,112 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── TAB: TCO Engine (#168) ── */}
+      {activeTab === 'tco' && (
+        <div id="panel-tco" role="tabpanel" aria-labelledby="tab-tco" className="space-y-4">
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 flex items-start gap-2">
+            <Info className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
+            <p className="text-xs text-blue-800">
+              {isAr
+                ? 'قارن حتى 5 موردين عبر التكلفة الإجمالية للملكية الحقيقية -- ليس سعر الوحدة فقط. يستخدم نفس منهجية قالب حاسبة TCO القابل للتحميل (علامة تبويب القوالب): تكاليف مباشرة + لوجستيات + تكلفة الاحتفاظ بالمخزون + الجودة/المخاطر + المعاملات. كل الأرقام مُدخلة من قِبلك؛ لا توجد قيم افتراضية مُقدَّرة سوى معدّل ضريبة القيمة المضافة السعودي (15%) ومعدّل تكلفة الاحتفاظ النموذجي (20-30%، القيمة الافتراضية هنا 25%) وكلاهما قابل للتعديل.'
+                : 'Compare up to 5 suppliers by real Total Cost of Ownership -- not just unit price. Uses the same methodology as the downloadable TCO template (Templates tab): direct costs + logistics + inventory carrying cost + quality/risk + transaction costs. Every number is yours to enter; the only defaults are Saudi VAT (15%) and a typical carrying-cost rate (20-30%, defaulted here to 25%) -- both editable.'}
+            </p>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs border-collapse">
+              <thead>
+                <tr className="border-b border-slate-200">
+                  <th className="text-left py-2 pr-2 text-slate-400 font-semibold whitespace-nowrap">{isAr ? 'عنصر التكلفة' : 'Cost element'}</th>
+                  {tcoSuppliers.map(s => (
+                    <th key={s.id} className="text-left py-2 px-2 min-w-[150px]">
+                      <div className="flex items-center gap-1">
+                        <input value={s.name} onChange={e => updateTcoSupplier(s.id, { name: e.target.value })}
+                          className="w-full font-bold text-slate-800 border border-slate-200 rounded-lg px-1.5 py-1 text-xs" />
+                        {tcoSuppliers.length > 1 && (
+                          <button onClick={() => removeTcoSupplier(s.id)} aria-label={isAr ? 'إزالة المورّد' : 'Remove supplier'}
+                            className="text-slate-300 hover:text-red-500 shrink-0"><Trash2 className="w-3.5 h-3.5" /></button>
+                        )}
+                      </div>
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {([
+                  ['unitPrice',              isAr ? 'سعر الوحدة (ر.س)'                          : 'Unit purchase price (SAR)'],
+                  ['annualQty',              isAr ? 'الكمية السنوية'                             : 'Annual quantity'],
+                  ['vatPct',                 isAr ? 'ضريبة القيمة المضافة (%)'                   : 'VAT (%)'],
+                  ['dutyPct',                isAr ? 'رسوم الجمارك / الاستيراد (%)'               : 'Import duties / customs (%)'],
+                  ['freight',                isAr ? 'الشحن (ر.س/سنة)'                            : 'Freight / shipping (SAR/yr)'],
+                  ['insurance',              isAr ? 'التأمين أثناء النقل (ر.س/سنة)'              : 'Insurance in transit (SAR/yr)'],
+                  ['handling',               isAr ? 'رسوم مناولة الميناء (ر.س/سنة)'              : 'Port handling fees (SAR/yr)'],
+                  ['lastMile',               isAr ? 'التسليم للميل الأخير (ر.س/سنة)'             : 'Last-mile delivery (SAR/yr)'],
+                  ['safetyStockDays',        isAr ? 'أيام مخزون الأمان'                          : 'Safety stock (days)'],
+                  ['carryingCostPct',        isAr ? 'معدّل تكلفة الاحتفاظ (%، عادة 20-30%)'      : 'Carrying cost rate (%, typically 20-30%)'],
+                  ['inspectionCost',         isAr ? 'تكلفة الفحص الوارد (ر.س/سنة)'               : 'Incoming inspection cost (SAR/yr)'],
+                  ['defectPpm',              isAr ? 'معدّل العيوب المتوقّع (PPM)'                : 'Expected defect rate (PPM)'],
+                  ['reworkCost',             isAr ? 'إعادة العمل / الإرجاع / الهدر (ر.س/سنة)'    : 'Rework / return / scrap (SAR/yr)'],
+                  ['auditCost',              isAr ? 'تدقيق/زيارة المورّد (ر.س/سنة)'               : 'Supplier audit / visit (SAR/yr)'],
+                  ['poCount',                isAr ? 'عدد أوامر الشراء (سنوياً)'                   : '# of POs (annual)'],
+                  ['poCostEach',             isAr ? 'تكلفة معالجة أمر الشراء (ر.س)'              : 'PO processing cost each (SAR)'],
+                  ['invoiceProcessingCost',  isAr ? 'معالجة الفواتير / التسوية (ر.س/سنة)'        : 'Invoice processing / reconciliation (SAR/yr)'],
+                ] as [keyof TcoSupplier, string][]).map(([field, label]) => (
+                  <tr key={field} className="border-b border-slate-100">
+                    <td className="py-1.5 pr-2 text-slate-500 whitespace-nowrap">{label}</td>
+                    {tcoSuppliers.map(s => (
+                      <td key={s.id} className="py-1.5 px-2">
+                        <input type="number" min={0} value={s[field] || ''}
+                          onChange={e => updateTcoSupplier(s.id, { [field]: parseFloat(e.target.value) || 0 } as Partial<TcoSupplier>)}
+                          className="w-full border border-slate-200 rounded-lg px-1.5 py-1 text-xs" />
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr className="border-t-2 border-slate-300">
+                  <td className="py-2 pr-2 font-bold text-slate-700">{isAr ? 'إجمالي TCO السنوي' : 'Total TCO (annual)'}</td>
+                  {tcoResults.map(r => (
+                    <td key={r.id} className="py-2 px-2 font-bold text-slate-800">SAR {r.tcoAnnual.toLocaleString(undefined, { maximumFractionDigits: 0 })}</td>
+                  ))}
+                </tr>
+                <tr>
+                  <td className="py-1.5 pr-2 font-semibold text-slate-600">{isAr ? 'TCO لكل وحدة' : 'TCO per unit'}</td>
+                  {tcoResults.map(r => (
+                    <td key={r.id} className={`py-1.5 px-2 font-semibold ${r.id === tcoLowestId && tcoValidResults.length > 1 ? 'text-emerald-600' : 'text-slate-600'}`}>
+                      SAR {r.tcoPerUnit.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                      {r.id === tcoLowestId && tcoValidResults.length > 1 && (
+                        <span className="ml-1 text-[10px] font-bold">{isAr ? '(الأقل)' : '(lowest)'}</span>
+                      )}
+                    </td>
+                  ))}
+                </tr>
+                <tr>
+                  <td className="py-1.5 pr-2 text-slate-400">{isAr ? 'مقابل الأقل (%)' : 'vs. lowest (%)'}</td>
+                  {tcoResults.map(r => {
+                    const pctVsLowest = tcoLowestPerUnit > 0 && r.tcoPerUnit > 0 ? ((r.tcoPerUnit - tcoLowestPerUnit) / tcoLowestPerUnit) * 100 : 0;
+                    return (
+                      <td key={r.id} className="py-1.5 px-2 text-slate-400">
+                        {r.tcoPerUnit > 0 ? (r.id === tcoLowestId ? (isAr ? 'الأساس' : 'base') : `+${pctVsLowest.toFixed(1)}%`) : '—'}
+                      </td>
+                    );
+                  })}
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <button onClick={addTcoSupplier} disabled={tcoSuppliers.length >= 5}
+              className="flex items-center gap-1.5 text-xs font-semibold text-[#082C6B] hover:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed">
+              <Plus className="w-3.5 h-3.5" />{isAr ? 'إضافة مورّد' : 'Add supplier'}
+            </button>
+            <p className="text-[10px] text-slate-400">{isAr ? 'يُحفَظ تلقائياً في هذا المتصفح' : 'Auto-saved in this browser'}</p>
           </div>
         </div>
       )}
