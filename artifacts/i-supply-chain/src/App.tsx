@@ -29,6 +29,7 @@ import { LeanSixSigma } from '@/pages/LeanSixSigma';
 import { RiskManagement } from '@/pages/RiskManagement';
 import { GovernanceCompliance } from '@/pages/GovernanceCompliance';
 import { CommandCenter } from '@/pages/CommandCenter';
+import { ROIWaterfall } from '@/pages/ROIWaterfall';
 import { KraljicMatrix } from '@/pages/KraljicMatrix';
 import { DecisionLab } from '@/pages/DecisionLab';
 import { CustomerVoice } from '@/pages/CustomerVoice';
@@ -97,6 +98,7 @@ function Router() {
         <Route path="/account" component={AccountSettings} />
         <Route path="/my-assessments" component={MyAssessments} />
         <Route path="/action-tracker" component={ActionTracker} />
+        <Route path="/roi-waterfall" component={ROIWaterfall} />
         <Route path="/customer-voice" component={CustomerVoice} />
         <Route path="/legal" component={Legal} />
         <Route path="/data-sources" component={DataSources} />

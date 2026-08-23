@@ -32,6 +32,7 @@ import adminEvidenceRouter     from "./adminEvidence";
 import regulatoryContentRouter from "./regulatoryContent";
 import claimRouter              from "./claim";
 import entitlementsRouter       from "./entitlements";
+import roiSummaryRouter         from "./roiSummary";
 
 const router: IRouter = Router();
 
@@ -67,6 +68,7 @@ router.use(adminEvidenceRouter);
 router.use("/regulatory",       regulatoryContentRouter);
 router.use(claimRouter);
 router.use(entitlementsRouter);
+router.use(roiSummaryRouter);
 router.use(webhooksInboundRouter);
 
 export default router;
