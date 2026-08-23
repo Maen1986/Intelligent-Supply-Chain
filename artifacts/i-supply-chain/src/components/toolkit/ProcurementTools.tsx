@@ -17,6 +17,10 @@ import { Upload, Download, Plus, Trash2, ChevronDown, ChevronUp,
   BarChart3, Globe, Target, FileDown, Sparkles, TrendingUp,
   AlertTriangle, CheckCircle, Info, Bell, Save } from 'lucide-react';
 import { safeSetItem } from '@/lib/storage';
+import { INDUSTRIES, type IndustryKey } from '@/lib/kpiBenchmarksByIndustry';
+import { SKU_CLASSES, type SkuClassKey } from '@/lib/kpiBenchmarksBySkuClass';
+import { INDUSTRY_SUB_SECTORS } from '@/lib/industrySubSectors';
+import { TCO_STAGES, TCO_FIELDS, TCO_CHECKLIST_BY_SKU_CLASS, TCO_SOURCES, type TcoStageId } from '@/lib/tcoKnowledgeBase';
 import { parseCsvFile, downloadCsv } from '@/lib/importCsv';
 import { useAIPlan } from '@/hooks/useAIPlan';
 import { AIPlanPanel } from '@/components/AIPlanPanel';
@@ -321,38 +325,42 @@ TOTAL SCORE,,100,0,/100,0,/100,0,/100
 RECOMMENDATION,,,,,,,,,
 Notes,,,,,,,,,`;
 
-const TCO_CSV = `Total Cost of Ownership (TCO) Calculator
-Compare up to 3 suppliers — fill in yellow cells
+const TCO_CSV = `Total Cost of Ownership (TCO) Calculator -- CIPS 4-stage model + Ellram process-cost addendum
+Compare up to 3 suppliers — fill in yellow cells. Matches the live TCO Engine tool exactly (Templates & Tools tab vs. TCO Engine tab).
 ,,,,
 COST ELEMENT,UNIT,Supplier A (SAR),Supplier B (SAR),Supplier C (SAR)
 ,,,,
-DIRECT COSTS,,,,
+STAGE 1 -- PROCUREMENT COSTS (CIPS),,,,
 Unit purchase price,,,,
 Quantity (annual),,,,
 "Total purchase cost (price × qty)",,=FORMULA,=FORMULA,=FORMULA
-VAT (15%),,,,
-Import duties / customs fees,,,,
+VAT (%),,,,
+Import duties / customs fees (%),,,,
 ,,,,
-LOGISTICS & DELIVERY COSTS,,,,
+STAGE 2 -- ACQUISITION COSTS (CIPS),,,,
 Freight / shipping cost,,,,
 Insurance in transit,,,,
 Port handling fees,,,,
 Last-mile delivery,,,,
 ,,,,
-INVENTORY CARRYING COSTS,,,,
+STAGE 3 -- USAGE COSTS (CIPS): INVENTORY & CARRYING,,,,
 Safety stock days required,,,,
 "Carrying cost rate (% of stock value, typically 20-30%)",,,,
 Annual inventory carrying cost,,,,
 ,,,,
-QUALITY & RISK COSTS,,,,
+STAGE 3 -- USAGE COSTS (CIPS): QUALITY & RISK,,,,
 "Incoming inspection cost / sample testing",,,,
 Expected defect rate (PPM),,,,
 "Rework / return / scrap cost (annual est.)",,,,
 Supplier audit / visit cost (annual),,,,
 ,,,,
-TRANSACTION COSTS,,,,
+PROCESS & ADMINISTRATION COSTS (Ellram),,,,
 "PO processing cost (# POs × SAR per PO)",,,,
 "Invoice processing / reconciliation cost",,,,
+,,,,
+STAGE 4 -- END-OF-LIFE COSTS (CIPS),,,,
+"Disposal / recycling / waste handling cost (annual)",,,,
+"Contract exit / switching / decommission cost (one-time -- not summed into annual TCO below)",,,,
 ,,,,
 TOTAL TCO (ANNUAL SAR),,=SUM,=SUM,=SUM
 TCO per unit,,=FORMULA,=FORMULA,=FORMULA
@@ -672,12 +680,16 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
 
   const aiPlan = useAIPlan(buildPrompt, isAr, 'procurement-catmgmt', validRows.length >= 2);
 
-  // ── TCO Engine (#168) — Total Cost of Ownership calculator, same interactive
-  //    pattern as the Resiliency toolkit's Revenue-at-Risk calculator: a
-  //    dynamic, localStorage-backed row list with a live-computed result.
-  //    Mirrors the existing static TCO_CSV template's methodology exactly (same
-  //    5 cost buckets, same "carrying cost typically 20-30%" convention) so the
-  //    downloadable template and this live version never disagree.
+  // ── TCO Engine (#168, rebuilt v2 2026-08-23) ── world-class, category-aware
+  //    Total Cost of Ownership calculator. Structure follows the real CIPS
+  //    4-stage TCO model (Procurement / Acquisition / Usage / End-of-life)
+  //    plus Ellram's process/transaction-cost addendum — see
+  //    src/lib/tcoKnowledgeBase.ts for the full citation trail. Supports
+  //    multiple NAMED, SAVED analyses (one per item/category, replacing the
+  //    old single-instance-overwrite limitation) and a grounded, category-
+  //    specific hidden-cost checklist that changes with the selected SKU
+  //    class — every dollar figure entered remains the user's own input;
+  //    nothing here is auto-filled from a fabricated benchmark.
   interface TcoSupplier {
     id: string; name: string;
     unitPrice: number; annualQty: number;
@@ -686,8 +698,16 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
     safetyStockDays: number; carryingCostPct: number;
     inspectionCost: number; defectPpm: number; reworkCost: number; auditCost: number;
     poCount: number; poCostEach: number; invoiceProcessingCost: number;
+    disposalCost: number; contractExitCost: number;
   }
-  const SK_TCO = 'isc-tool-catmgmt-tco-v1';
+  interface TcoAnalysis {
+    id: string; name: string;
+    industry: IndustryKey | ''; subSector: string; skuClass: SkuClassKey | ''; itemName: string;
+    suppliers: TcoSupplier[];
+    updatedAt: number;
+  }
+  const SK_TCO_V1 = 'isc-tool-catmgmt-tco-v1';   // legacy single-instance key, read once for migration
+  const SK_TCO_V2 = 'isc-tool-catmgmt-tco-v2';
   function defaultTcoSupplier(label: string): TcoSupplier {
     return {
       id: `tco${Date.now()}${Math.random().toString(36).slice(2, 6)}`, name: label,
@@ -696,12 +716,51 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
       safetyStockDays: 0, carryingCostPct: 25,
       inspectionCost: 0, defectPpm: 0, reworkCost: 0, auditCost: 0,
       poCount: 0, poCostEach: 0, invoiceProcessingCost: 0,
+      disposalCost: 0, contractExitCost: 0,
     };
   }
-  const [tcoSuppliers, setTcoSuppliers] = useState<TcoSupplier[]>(
-    () => loadJson(SK_TCO, [defaultTcoSupplier('Supplier A'), defaultTcoSupplier('Supplier B')] as TcoSupplier[]),
-  );
-  const saveTcoSuppliers = (next: TcoSupplier[]) => { setTcoSuppliers(next); safeSetItem(SK_TCO, JSON.stringify(next)); };
+  function defaultTcoAnalysis(name: string): TcoAnalysis {
+    return {
+      id: `tcoa${Date.now()}${Math.random().toString(36).slice(2, 6)}`, name,
+      industry: '', subSector: '', skuClass: '', itemName: '',
+      suppliers: [defaultTcoSupplier('Supplier A'), defaultTcoSupplier('Supplier B')],
+      updatedAt: Date.now(),
+    };
+  }
+  function loadInitialTcoAnalyses(): { analyses: TcoAnalysis[]; activeId: string } {
+    const v2 = loadJson<{ analyses: TcoAnalysis[]; activeId: string } | null>(SK_TCO_V2, null);
+    if (v2 && Array.isArray(v2.analyses) && v2.analyses.length > 0) return v2;
+    // Migration: a v1 single-supplier-list may exist from before the multi-analysis
+    // rebuild. Honesty requirement (Decision Record 8.7) -- never silently discard
+    // data the user already entered; carry it forward as one named analysis.
+    const v1 = loadJson<TcoSupplier[] | null>(SK_TCO_V1, null);
+    if (v1 && Array.isArray(v1) && v1.length > 0) {
+      const migrated: TcoAnalysis = {
+        id: `tcoa${Date.now()}mig`, name: isAr ? 'تحليل مُرحَّل' : 'Migrated analysis',
+        industry: '', subSector: '', skuClass: '', itemName: '',
+        suppliers: v1.map(s => ({ ...s, disposalCost: s.disposalCost ?? 0, contractExitCost: s.contractExitCost ?? 0 })),
+        updatedAt: Date.now(),
+      };
+      const migratedState = { analyses: [migrated], activeId: migrated.id };
+      // Persist the migration immediately -- don't leave the user's carried-forward
+      // data sitting only in memory, where it would vanish if they navigate away
+      // without editing anything.
+      safeSetItem(SK_TCO_V2, JSON.stringify(migratedState));
+      return migratedState;
+    }
+    const fresh = defaultTcoAnalysis(isAr ? 'تحليل جديد' : 'New analysis');
+    return { analyses: [fresh], activeId: fresh.id };
+  }
+  const [tcoState, setTcoState] = useState<{ analyses: TcoAnalysis[]; activeId: string }>(loadInitialTcoAnalyses);
+  const saveTcoState = (next: { analyses: TcoAnalysis[]; activeId: string }) => {
+    setTcoState(next); safeSetItem(SK_TCO_V2, JSON.stringify(next));
+  };
+  const tcoActiveAnalysis = tcoState.analyses.find(a => a.id === tcoState.activeId) ?? tcoState.analyses[0];
+  const updateActiveAnalysis = (patch: Partial<Omit<TcoAnalysis, 'id' | 'suppliers'>>) =>
+    saveTcoState({ ...tcoState, analyses: tcoState.analyses.map(a => a.id === tcoActiveAnalysis.id ? { ...a, ...patch, updatedAt: Date.now() } : a) });
+  const tcoSuppliers = tcoActiveAnalysis.suppliers;
+  const saveTcoSuppliers = (next: TcoSupplier[]) =>
+    saveTcoState({ ...tcoState, analyses: tcoState.analyses.map(a => a.id === tcoActiveAnalysis.id ? { ...a, suppliers: next, updatedAt: Date.now() } : a) });
   const updateTcoSupplier = (id: string, patch: Partial<TcoSupplier>) =>
     saveTcoSuppliers(tcoSuppliers.map(s => s.id === id ? { ...s, ...patch } : s));
   const addTcoSupplier = () => {
@@ -710,6 +769,20 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
     saveTcoSuppliers([...tcoSuppliers, defaultTcoSupplier(`${isAr ? 'مورّد' : 'Supplier'} ${letter}`)]);
   };
   const removeTcoSupplier = (id: string) => { if (tcoSuppliers.length > 1) saveTcoSuppliers(tcoSuppliers.filter(s => s.id !== id)); };
+  const addTcoAnalysis = () => {
+    const fresh = defaultTcoAnalysis(`${isAr ? 'تحليل' : 'Analysis'} ${tcoState.analyses.length + 1}`);
+    saveTcoState({ analyses: [...tcoState.analyses, fresh], activeId: fresh.id });
+  };
+  const duplicateTcoAnalysis = () => {
+    const copy: TcoAnalysis = { ...tcoActiveAnalysis, id: `tcoa${Date.now()}${Math.random().toString(36).slice(2, 6)}`, name: `${tcoActiveAnalysis.name} (${isAr ? 'نسخة' : 'copy'})`, updatedAt: Date.now() };
+    saveTcoState({ analyses: [...tcoState.analyses, copy], activeId: copy.id });
+  };
+  const deleteTcoAnalysis = (id: string) => {
+    if (tcoState.analyses.length <= 1) return;
+    const remaining = tcoState.analyses.filter(a => a.id !== id);
+    saveTcoState({ analyses: remaining, activeId: remaining[0].id });
+  };
+  const switchTcoAnalysis = (id: string) => saveTcoState({ ...tcoState, activeId: id });
 
   const tcoResults = useMemo(() => tcoSuppliers.map(s => {
     const directPurchase = s.unitPrice * s.annualQty;
@@ -722,13 +795,49 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
     const carryingCostAnnual = safetyStockValue * (s.carryingCostPct / 100);
     const qualityTotal = s.inspectionCost + s.reworkCost + s.auditCost;
     const transactionTotal = (s.poCount * s.poCostEach) + s.invoiceProcessingCost;
-    const tcoAnnual = directTotal + logisticsTotal + carryingCostAnnual + qualityTotal + transactionTotal;
+    // End-of-life (CIPS stage 4): disposalCost is a real recurring annual cost and is
+    // included in TCO. contractExitCost is a one-time figure (e.g. a switching/exit
+    // fee) -- deliberately kept OUT of the annual TCO sum so an annual and a one-time
+    // number are never silently added together, and shown as its own line instead.
+    const endOfLifeAnnual = s.disposalCost;
+    const tcoAnnual = directTotal + logisticsTotal + carryingCostAnnual + qualityTotal + transactionTotal + endOfLifeAnnual;
     const tcoPerUnit = s.annualQty > 0 ? tcoAnnual / s.annualQty : 0;
-    return { id: s.id, directPurchase, vatAmount, dutyAmount, directTotal, logisticsTotal, safetyStockValue, carryingCostAnnual, qualityTotal, transactionTotal, tcoAnnual, tcoPerUnit };
+    return {
+      id: s.id, directPurchase, vatAmount, dutyAmount, directTotal, logisticsTotal,
+      safetyStockValue, carryingCostAnnual, qualityTotal, transactionTotal, endOfLifeAnnual,
+      contractExitOneTime: s.contractExitCost, tcoAnnual, tcoPerUnit,
+    };
   }), [tcoSuppliers]);
   const tcoValidResults = tcoResults.filter(r => r.tcoPerUnit > 0);
   const tcoLowestPerUnit = tcoValidResults.length > 0 ? Math.min(...tcoValidResults.map(r => r.tcoPerUnit)) : 0;
   const tcoLowestId = tcoValidResults.find(r => r.tcoPerUnit === tcoLowestPerUnit)?.id;
+  const tcoChecklist = tcoActiveAnalysis.skuClass ? TCO_CHECKLIST_BY_SKU_CLASS[tcoActiveAnalysis.skuClass] : null;
+  const tcoSubSectorOptions = tcoActiveAnalysis.industry ? (INDUSTRY_SUB_SECTORS[tcoActiveAnalysis.industry] || []) : [];
+  const exportTcoAnalysis = () => {
+    const industryLabel = INDUSTRIES.find(i => i.id === tcoActiveAnalysis.industry)?.label || '';
+    const skuLabel = SKU_CLASSES.find(s => s.id === tcoActiveAnalysis.skuClass)?.label || '';
+    const rows: string[][] = [
+      ['TCO Analysis', tcoActiveAnalysis.name],
+      ['Item', tcoActiveAnalysis.itemName],
+      ['Industry', industryLabel],
+      ['Sub-sector', tcoActiveAnalysis.subSector],
+      ['Category', skuLabel],
+      [],
+      ['Cost element', ...tcoSuppliers.map(s => s.name)],
+    ];
+    TCO_STAGES.forEach(stage => {
+      rows.push([`${stage.label} (${stage.short})`]);
+      TCO_FIELDS.filter(f => f.stage === stage.id).forEach(f => {
+        rows.push([f.label, ...tcoSuppliers.map(s => String(s[f.key] ?? ''))]);
+      });
+    });
+    rows.push([]);
+    rows.push(['Total TCO (annual, SAR)', ...tcoResults.map(r => r.tcoAnnual.toFixed(0))]);
+    rows.push(['TCO per unit (SAR)', ...tcoResults.map(r => r.tcoPerUnit.toFixed(2))]);
+    rows.push(['One-time exit cost (SAR, not in annual TCO)', ...tcoResults.map(r => r.contractExitOneTime.toFixed(0))]);
+    const safeName = (tcoActiveAnalysis.name || 'tco-analysis').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    downloadCsv(rows, `${safeName || 'tco-analysis'}.csv`);
+  };
 
   const anyBreach = Object.values(breachLevels).some(v => v !== null);
 
@@ -1095,17 +1204,120 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
         </div>
       )}
 
-      {/* ── TAB: TCO Engine (#168) ── */}
+      {/* ── TAB: TCO Engine (#168, rebuilt v2) ── */}
       {activeTab === 'tco' && (
         <div id="panel-tco" role="tabpanel" aria-labelledby="tab-tco" className="space-y-4">
           <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 flex items-start gap-2">
             <Info className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
             <p className="text-xs text-blue-800">
               {isAr
-                ? 'قارن حتى 5 موردين عبر التكلفة الإجمالية للملكية الحقيقية -- ليس سعر الوحدة فقط. يستخدم نفس منهجية قالب حاسبة TCO القابل للتحميل (علامة تبويب القوالب): تكاليف مباشرة + لوجستيات + تكلفة الاحتفاظ بالمخزون + الجودة/المخاطر + المعاملات. كل الأرقام مُدخلة من قِبلك؛ لا توجد قيم افتراضية مُقدَّرة سوى معدّل ضريبة القيمة المضافة السعودي (15%) ومعدّل تكلفة الاحتفاظ النموذجي (20-30%، القيمة الافتراضية هنا 25%) وكلاهما قابل للتعديل.'
-                : 'Compare up to 5 suppliers by real Total Cost of Ownership -- not just unit price. Uses the same methodology as the downloadable TCO template (Templates tab): direct costs + logistics + inventory carrying cost + quality/risk + transaction costs. Every number is yours to enter; the only defaults are Saudi VAT (15%) and a typical carrying-cost rate (20-30%, defaulted here to 25%) -- both editable.'}
+                ? 'قارن حتى 5 موردين عبر التكلفة الإجمالية للملكية الحقيقية، مبنية على نموذج CIPS رباعي المراحل (شراء / اقتناء / استخدام / نهاية العمر) مع إضافة إلرام لتكاليف العمليات. اختر الصناعة والفئة أدناه لعرض قائمة تحقق موثّقة بمصادر حول التكاليف الخفية الأكثر أهمية لهذه الفئة تحديداً -- القائمة إرشادية فقط، وكل رقم في الجدول يبقى من إدخالك أنت.'
+                : 'Compare up to 5 suppliers by real Total Cost of Ownership, structured on CIPS’s 4-stage TCO model (Procurement / Acquisition / Usage / End-of-life) plus Ellram’s process-cost addendum. Select an Industry and Category below to see a sourced checklist of which hidden costs are typically most material for that specific category -- the checklist is guidance only; every number in the table below stays yours to enter.'}
             </p>
           </div>
+
+          {/* Analysis switcher -- multiple named, saved analyses (one per item/category) */}
+          <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <label className="text-[11px] font-semibold text-slate-500 shrink-0">{isAr ? 'التحليل:' : 'Analysis:'}</label>
+              <select value={tcoActiveAnalysis.id} onChange={e => switchTcoAnalysis(e.target.value)} aria-label={isAr ? 'التحليل:' : 'Analysis:'}
+                className="text-xs border border-slate-200 rounded-lg px-2 py-1.5 font-semibold text-slate-700 min-w-[160px]">
+                {tcoState.analyses.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+              </select>
+              <input value={tcoActiveAnalysis.name} onChange={e => updateActiveAnalysis({ name: e.target.value })}
+                aria-label={isAr ? 'اسم التحليل' : 'Analysis name'}
+                className="text-xs border border-slate-200 rounded-lg px-2 py-1.5 flex-1 min-w-[140px]" />
+              <button onClick={addTcoAnalysis} className="flex items-center gap-1 text-[11px] font-semibold text-[#082C6B] hover:opacity-80 shrink-0">
+                <Plus className="w-3.5 h-3.5" />{isAr ? 'تحليل جديد' : 'New'}
+              </button>
+              <button onClick={duplicateTcoAnalysis} className="text-[11px] font-semibold text-slate-500 hover:text-slate-700 shrink-0">
+                {isAr ? 'نسخ' : 'Duplicate'}
+              </button>
+              {tcoState.analyses.length > 1 && (
+                <button onClick={() => deleteTcoAnalysis(tcoActiveAnalysis.id)} className="flex items-center gap-1 text-[11px] font-semibold text-slate-400 hover:text-red-500 shrink-0">
+                  <Trash2 className="w-3.5 h-3.5" />{isAr ? 'حذف' : 'Delete'}
+                </button>
+              )}
+            </div>
+
+            {/* Item / Industry / Sub-sector / Category context -- drives the grounded checklist below via Category only */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+              <div>
+                <label className="text-[10px] text-slate-400 block mb-0.5">{isAr ? 'اسم العنصر' : 'Item name'}</label>
+                <input value={tcoActiveAnalysis.itemName} onChange={e => updateActiveAnalysis({ itemName: e.target.value })}
+                  placeholder={isAr ? 'مثال: محمل كروي 6205' : 'e.g. Bearing 6205-ZZ'}
+                  aria-label={isAr ? 'اسم العنصر' : 'Item name'}
+                  className="w-full text-xs border border-slate-200 rounded-lg px-2 py-1.5" />
+              </div>
+              <div>
+                <label className="text-[10px] text-slate-400 block mb-0.5">{isAr ? 'الصناعة' : 'Industry'}</label>
+                <select value={tcoActiveAnalysis.industry} aria-label={isAr ? 'الصناعة' : 'Industry'}
+                  onChange={e => updateActiveAnalysis({ industry: e.target.value as IndustryKey | '', subSector: '' })}
+                  className="w-full text-xs border border-slate-200 rounded-lg px-2 py-1.5">
+                  <option value="">{isAr ? '— غير محدد —' : '— Not specified —'}</option>
+                  {INDUSTRIES.map(ind => <option key={ind.id} value={ind.id}>{isAr ? ind.labelAr : ind.label}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-[10px] text-slate-400 block mb-0.5">{isAr ? 'القطاع الفرعي' : 'Sub-sector'}</label>
+                <select value={tcoActiveAnalysis.subSector} onChange={e => updateActiveAnalysis({ subSector: e.target.value })}
+                  aria-label={isAr ? 'القطاع الفرعي' : 'Sub-sector'}
+                  disabled={!tcoActiveAnalysis.industry}
+                  className="w-full text-xs border border-slate-200 rounded-lg px-2 py-1.5 disabled:opacity-50 disabled:bg-slate-100">
+                  <option value="">{isAr ? '— عام —' : '— General —'}</option>
+                  {tcoSubSectorOptions.map(sub => <option key={sub} value={sub}>{sub}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-[10px] text-slate-400 block mb-0.5">{isAr ? 'الفئة (نوع الصنف)' : 'Category (item type)'}</label>
+                <select value={tcoActiveAnalysis.skuClass} onChange={e => updateActiveAnalysis({ skuClass: e.target.value as SkuClassKey | '' })}
+                  aria-label={isAr ? 'الفئة (نوع الصنف)' : 'Category (item type)'}
+                  className="w-full text-xs border border-slate-200 rounded-lg px-2 py-1.5 font-semibold">
+                  <option value="">{isAr ? '— اختر لعرض الإرشادات —' : '— Select to see guidance —'}</option>
+                  {SKU_CLASSES.map(sc => <option key={sc.id} value={sc.id}>{isAr ? sc.labelAr : sc.label}</option>)}
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* Grounded, category-specific hidden-cost checklist */}
+          {tcoChecklist ? (
+            <div className="bg-white border border-slate-200 rounded-xl p-3 space-y-2.5">
+              <p className="text-[11px] font-bold text-slate-600 uppercase tracking-wide">
+                {isAr ? `ما يهم عادةً لفئة "${SKU_CLASSES.find(s => s.id === tcoActiveAnalysis.skuClass)?.labelAr}"` : `What typically matters for "${SKU_CLASSES.find(s => s.id === tcoActiveAnalysis.skuClass)?.label}"`}
+              </p>
+              {TCO_STAGES.map(stage => {
+                const items = tcoChecklist!.filter(c => c.stage === stage.id);
+                if (items.length === 0) return null;
+                return (
+                  <div key={stage.id} className="flex items-start gap-2">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase w-24 shrink-0 pt-0.5">{isAr ? stage.labelAr : stage.label}</span>
+                    <ul className="space-y-1.5 flex-1">
+                      {items.map((item, i) => (
+                        <li key={i} className="text-[11px] text-slate-600 leading-snug">
+                          {isAr ? item.textAr : item.text}
+                          {item.sourceUrl && (
+                            <a href={item.sourceUrl} target="_blank" rel="noopener noreferrer" className="ml-1 text-[10px] text-[#082C6B] underline whitespace-nowrap">
+                              [{isAr ? 'مصدر' : 'source'}]
+                            </a>
+                          )}
+                          {item.confidence === 'principle' && (
+                            <span className="ml-1 text-[9px] text-slate-400 italic">({isAr ? 'مبدأ عام' : 'general principle'})</span>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="bg-slate-50 border border-dashed border-slate-300 rounded-xl p-3">
+              <p className="text-[11px] text-slate-400">
+                {isAr ? 'اختر "الفئة" أعلاه لعرض قائمة تحقق موثّقة وخاصة بهذه الفئة حول التكاليف الخفية الأكثر أهمية.' : 'Select a Category above to see a sourced, category-specific checklist of which hidden costs are typically most material.'}
+              </p>
+            </div>
+          )}
 
           <div className="overflow-x-auto">
             <table className="w-full text-xs border-collapse">
@@ -1127,35 +1339,26 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
                 </tr>
               </thead>
               <tbody>
-                {([
-                  ['unitPrice',              isAr ? 'سعر الوحدة (ر.س)'                          : 'Unit purchase price (SAR)'],
-                  ['annualQty',              isAr ? 'الكمية السنوية'                             : 'Annual quantity'],
-                  ['vatPct',                 isAr ? 'ضريبة القيمة المضافة (%)'                   : 'VAT (%)'],
-                  ['dutyPct',                isAr ? 'رسوم الجمارك / الاستيراد (%)'               : 'Import duties / customs (%)'],
-                  ['freight',                isAr ? 'الشحن (ر.س/سنة)'                            : 'Freight / shipping (SAR/yr)'],
-                  ['insurance',              isAr ? 'التأمين أثناء النقل (ر.س/سنة)'              : 'Insurance in transit (SAR/yr)'],
-                  ['handling',               isAr ? 'رسوم مناولة الميناء (ر.س/سنة)'              : 'Port handling fees (SAR/yr)'],
-                  ['lastMile',               isAr ? 'التسليم للميل الأخير (ر.س/سنة)'             : 'Last-mile delivery (SAR/yr)'],
-                  ['safetyStockDays',        isAr ? 'أيام مخزون الأمان'                          : 'Safety stock (days)'],
-                  ['carryingCostPct',        isAr ? 'معدّل تكلفة الاحتفاظ (%، عادة 20-30%)'      : 'Carrying cost rate (%, typically 20-30%)'],
-                  ['inspectionCost',         isAr ? 'تكلفة الفحص الوارد (ر.س/سنة)'               : 'Incoming inspection cost (SAR/yr)'],
-                  ['defectPpm',              isAr ? 'معدّل العيوب المتوقّع (PPM)'                : 'Expected defect rate (PPM)'],
-                  ['reworkCost',             isAr ? 'إعادة العمل / الإرجاع / الهدر (ر.س/سنة)'    : 'Rework / return / scrap (SAR/yr)'],
-                  ['auditCost',              isAr ? 'تدقيق/زيارة المورّد (ر.س/سنة)'               : 'Supplier audit / visit (SAR/yr)'],
-                  ['poCount',                isAr ? 'عدد أوامر الشراء (سنوياً)'                   : '# of POs (annual)'],
-                  ['poCostEach',             isAr ? 'تكلفة معالجة أمر الشراء (ر.س)'              : 'PO processing cost each (SAR)'],
-                  ['invoiceProcessingCost',  isAr ? 'معالجة الفواتير / التسوية (ر.س/سنة)'        : 'Invoice processing / reconciliation (SAR/yr)'],
-                ] as [keyof TcoSupplier, string][]).map(([field, label]) => (
-                  <tr key={field} className="border-b border-slate-100">
-                    <td className="py-1.5 pr-2 text-slate-500 whitespace-nowrap">{label}</td>
-                    {tcoSuppliers.map(s => (
-                      <td key={s.id} className="py-1.5 px-2">
-                        <input type="number" min={0} value={s[field] || ''}
-                          onChange={e => updateTcoSupplier(s.id, { [field]: parseFloat(e.target.value) || 0 } as Partial<TcoSupplier>)}
-                          className="w-full border border-slate-200 rounded-lg px-1.5 py-1 text-xs" />
+                {TCO_STAGES.map(stage => (
+                  <React.Fragment key={stage.id}>
+                    <tr className="bg-slate-50">
+                      <td colSpan={1 + tcoSuppliers.length} className="py-1 pr-2 text-[10px] font-bold text-slate-500 uppercase tracking-wide">
+                        {isAr ? stage.labelAr : stage.label} <span className="font-normal normal-case text-slate-400">-- {isAr ? stage.shortAr : stage.short}</span>
                       </td>
+                    </tr>
+                    {TCO_FIELDS.filter(f => f.stage === stage.id).map(f => (
+                      <tr key={f.key} className="border-b border-slate-100">
+                        <td className="py-1.5 pr-2 text-slate-500 whitespace-nowrap">{isAr ? f.labelAr : f.label}</td>
+                        {tcoSuppliers.map(s => (
+                          <td key={s.id} className="py-1.5 px-2">
+                            <input type="number" min={0} value={s[f.key] || ''}
+                              onChange={e => updateTcoSupplier(s.id, { [f.key]: parseFloat(e.target.value) || 0 } as Partial<TcoSupplier>)}
+                              className="w-full border border-slate-200 rounded-lg px-1.5 py-1 text-xs" />
+                          </td>
+                        ))}
+                      </tr>
                     ))}
-                  </tr>
+                  </React.Fragment>
                 ))}
               </tbody>
               <tfoot>
@@ -1187,15 +1390,29 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
                     );
                   })}
                 </tr>
+                <tr>
+                  <td className="py-1.5 pr-2 text-slate-400 italic">{isAr ? 'تكلفة الخروج لمرة واحدة (خارج TCO السنوي)' : 'One-time exit cost (not in annual TCO)'}</td>
+                  {tcoResults.map(r => (
+                    <td key={r.id} className="py-1.5 px-2 text-slate-400 italic">
+                      {r.contractExitOneTime > 0 ? `SAR ${r.contractExitOneTime.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : '—'}
+                    </td>
+                  ))}
+                </tr>
               </tfoot>
             </table>
           </div>
 
-          <div className="flex items-center justify-between">
-            <button onClick={addTcoSupplier} disabled={tcoSuppliers.length >= 5}
-              className="flex items-center gap-1.5 text-xs font-semibold text-[#082C6B] hover:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed">
-              <Plus className="w-3.5 h-3.5" />{isAr ? 'إضافة مورّد' : 'Add supplier'}
-            </button>
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div className="flex items-center gap-3">
+              <button onClick={addTcoSupplier} disabled={tcoSuppliers.length >= 5}
+                className="flex items-center gap-1.5 text-xs font-semibold text-[#082C6B] hover:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed">
+                <Plus className="w-3.5 h-3.5" />{isAr ? 'إضافة مورّد' : 'Add supplier'}
+              </button>
+              <button onClick={exportTcoAnalysis}
+                className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-700">
+                <Download className="w-3.5 h-3.5" />{isAr ? 'تصدير هذا التحليل (CSV)' : 'Export this analysis (CSV)'}
+              </button>
+            </div>
             <p className="text-[10px] text-slate-400">{isAr ? 'يُحفَظ تلقائياً في هذا المتصفح' : 'Auto-saved in this browser'}</p>
           </div>
 
@@ -1209,10 +1426,20 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
               <p className="text-[11px] text-amber-800">
                 {isAr
                   ? 'أقل تكلفة إجمالية للملكية ليست بالضرورة الاختيار الأنسب: هذا الرقم لا يعكس مخاطر الاعتماد على مصدر واحد، أو سجل الجودة والعلاقة مع المورّد، أو الملاءمة الاستراتيجية. استخدمه كمدخل رقمي إلى جانب استراتيجية التوريد (علامة تبويب "استراتيجية التوريد" أعلاه)، لا بديلاً عنها.'
-                  : 'The lowest TCO per unit is not automatically the right choice: this number does not capture single-source dependency risk, a supplier\'s quality/relationship track record, or strategic fit. Use it alongside the Sourcing Strategy tab above, not as a replacement for it.'}
+                  : 'The lowest TCO per unit is not automatically the right choice: this number does not capture single-source dependency risk, a supplier’s quality/relationship track record, or strategic fit. Use it alongside the Sourcing Strategy tab above, not as a replacement for it.'}
               </p>
             </div>
           )}
+
+          {/* Sources panel -- every grounded (non-"general principle") checklist claim above traces to one of these */}
+          <details className="text-[10px] text-slate-400">
+            <summary className="cursor-pointer font-semibold text-slate-500">{isAr ? 'المصادر والمنهجية' : 'Sources & methodology'}</summary>
+            <ul className="mt-1.5 space-y-1 pl-3 list-disc">
+              {TCO_SOURCES.map(src => (
+                <li key={src.url}><a href={src.url} target="_blank" rel="noopener noreferrer" className="underline hover:text-slate-600">{src.label}</a></li>
+              ))}
+            </ul>
+          </details>
         </div>
       )}
 
