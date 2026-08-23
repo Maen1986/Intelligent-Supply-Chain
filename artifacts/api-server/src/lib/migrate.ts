@@ -370,6 +370,28 @@ const MIGRATIONS: string[] = [
   `UPDATE gcc_benchmarks SET methodology_note = 'ISC composite risk-exposure index (internal 0-100 scale). This is ISC’s own risk-scoring methodology, informed by ISO 31000 risk-management principles -- it is not an externally published market statistic, and no external benchmark exists for this exact measure. Anchor points reflect ISC practitioner judgment, pending independent expert review.', methodology_note_ar = 'مؤشر ISC المركّب للتعرض للمخاطر (مقياس داخلي من 0 إلى 100). هذه منهجية خاصة بـ ISC مستندة إلى مبادئ ISO 31000 لإدارة المخاطر -- وليست إحصائية سوقية منشورة خارجياً، ولا يوجد معيار خارجي لهذا المقياس بالذات. نقاط الاسترشاد تعكس تقدير خبراء ISC الممارسين، بانتظار مراجعة خبير مستقل.' WHERE category = 'risk' AND item_id = 'cyber' AND industry IS NULL AND methodology_note IS NULL`,
   `UPDATE gcc_benchmarks SET methodology_note = 'ISC composite risk-exposure index (internal 0-100 scale). This is ISC’s own risk-scoring methodology, informed by ISO 31000 risk-management principles -- it is not an externally published market statistic, and no external benchmark exists for this exact measure. Anchor points reflect ISC practitioner judgment, pending independent expert review.', methodology_note_ar = 'مؤشر ISC المركّب للتعرض للمخاطر (مقياس داخلي من 0 إلى 100). هذه منهجية خاصة بـ ISC مستندة إلى مبادئ ISO 31000 لإدارة المخاطر -- وليست إحصائية سوقية منشورة خارجياً، ولا يوجد معيار خارجي لهذا المقياس بالذات. نقاط الاسترشاد تعكس تقدير خبراء ISC الممارسين، بانتظار مراجعة خبير مستقل.' WHERE category = 'risk' AND item_id = 'contract' AND industry IS NULL AND methodology_note IS NULL`,
 
+  // tco_analyses -- real backend persistence for the TCO Engine (#168 v3,
+  // "maximum technical and consultancy wise" enhancement, 2026-08-23).
+  // See lib/db/src/schema/tcoAnalyses.ts for the full design rationale
+  // (user-scoped today, organization_id nullable and unused for access
+  // control yet, whole-list sync pattern). Additive and idempotent, applies
+  // automatically on next server boot -- no manual migration step needed.
+  `CREATE TABLE IF NOT EXISTS tco_analyses (
+     id               SERIAL PRIMARY KEY,
+     user_id          INTEGER     NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+     organization_id  INTEGER     REFERENCES organizations(id),
+     client_key       TEXT        NOT NULL,
+     name             TEXT        NOT NULL,
+     industry         TEXT,
+     sub_sector       TEXT,
+     sku_class        TEXT,
+     item_name        TEXT,
+     suppliers        JSONB       NOT NULL,
+     created_at       TIMESTAMP   NOT NULL DEFAULT NOW(),
+     updated_at       TIMESTAMP   NOT NULL DEFAULT NOW()
+   )`,
+  `CREATE INDEX IF NOT EXISTS tco_analyses_user_id ON tco_analyses (user_id)`,
+
 ];
 
 export async function runStartupMigrations(): Promise<void> {

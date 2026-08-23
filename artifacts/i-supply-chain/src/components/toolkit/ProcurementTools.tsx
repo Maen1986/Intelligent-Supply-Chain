@@ -8,7 +8,7 @@
  * 4. Templates & Tools     — downloadable RFP, evaluation scorecard, TCO calculator
  * 5. AI Category Brief     — AI-generated full category strategy document
  */
-import React, { useState, useCallback, useMemo, useRef, KeyboardEvent, ChangeEvent } from 'react';
+import React, { useState, useCallback, useMemo, useRef, useEffect, KeyboardEvent, ChangeEvent } from 'react';
 import {
   ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Cell, ReferenceLine,
@@ -21,10 +21,19 @@ import { INDUSTRIES, type IndustryKey } from '@/lib/kpiBenchmarksByIndustry';
 import { SKU_CLASSES, type SkuClassKey } from '@/lib/kpiBenchmarksBySkuClass';
 import { INDUSTRY_SUB_SECTORS } from '@/lib/industrySubSectors';
 import { TCO_STAGES, TCO_FIELDS, TCO_CHECKLIST_BY_SKU_CLASS, TCO_SOURCES, type TcoStageId } from '@/lib/tcoKnowledgeBase';
+import { useAuth } from '@/lib/AuthContext';
+import { API_BASE } from '@/lib/apiBase';
 import { parseCsvFile, downloadCsv } from '@/lib/importCsv';
 import { useAIPlan } from '@/hooks/useAIPlan';
 import { AIPlanPanel } from '@/components/AIPlanPanel';
 import { toast } from 'sonner';
+// #165 (TCO max-enhance: wire into other engines) -- real cross-engine read
+// of the Supplier Scorecard roster already saved by the user, so a TCO
+// supplier can be matched to its real performance rating instead of the
+// user re-entering the same judgement twice. Read-only import of existing,
+// already-exported pure functions; no new coupling of write paths.
+import { loadRoster as loadScorecardRoster, loadConfig as loadScorecardConfig } from '@/components/toolkit/SupplierScorecard';
+import { calcDimScore } from '@/lib/scorecardCsv';
 
 interface ProcurementToolsProps { isAr: boolean; }
 
@@ -648,37 +657,6 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
     porterAvg:     thresholds.porterAvg     ? kpiBreachLevel(porterAvg,     thresholds.porterAvg)     : null,
   }), [contractedPct, top3Pct, porterAvg, thresholds]);
 
-  // AI prompt
-  const buildPrompt = useCallback(() => {
-    const topSuppliers = paretoData.slice(0, 5).map(r => `${r.name}: SAR ${r.spend.toLocaleString()} (${r.cumPct}% cumulative)`).join(', ');
-    const porterSummary = PORTER_FORCES.map(f => `${f.label}: ${porter[f.id]?.score ?? 3}/5`).join(', ');
-    const strat = chosenStrategy;
-    return [
-      `## Category Management Strategy Brief`,
-      `Total spend: SAR ${totalSpend.toLocaleString()} | ${validRows.length} suppliers | Contracted: ${contractedPct}%`,
-      `Top 3 supplier concentration: ${top3Pct}% of spend`,
-      `Top suppliers: ${topSuppliers || 'No data'}`,
-      '',
-      `## Market Analysis (Porter's 5 Forces)`,
-      porterSummary,
-      `Overall market risk: ${marketRisk} (avg score: ${porterAvg.toFixed(1)}/5)`,
-      '',
-      `## Recommended Sourcing Strategy`,
-      `Strategy: ${strat?.label || 'Not selected'}`,
-      `Rationale: ${strat?.desc || ''}`,
-      '',
-      '## Your Task',
-      'Generate a 4–6 paragraph executive category strategy document:',
-      '1. Spend landscape: portfolio health, concentration risk, contracted vs uncontracted analysis',
-      '2. Supply market assessment: interpret Porter\'s forces scores and their sourcing implications',
-      '3. Strategic recommendation: justify the chosen sourcing strategy with market evidence',
-      '4. Risk register: top 3 supply risks and their specific mitigations',
-      '5. 90-day action plan with [HIGH]/[MEDIUM]/[LOW] priority items',
-      '6. Savings opportunity: estimate potential savings from this strategy (provide a % range)',
-    ].join('\n');
-  }, [validRows, totalSpend, contractedPct, top3Pct, paretoData, porter, porterAvg, marketRisk, chosenStrategy]);
-
-  const aiPlan = useAIPlan(buildPrompt, isAr, 'procurement-catmgmt', validRows.length >= 2);
 
   // ── TCO Engine (#168, rebuilt v2 2026-08-23) ── world-class, category-aware
   //    Total Cost of Ownership calculator. Structure follows the real CIPS
@@ -699,6 +677,12 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
     inspectionCost: number; defectPpm: number; reworkCost: number; auditCost: number;
     poCount: number; poCostEach: number; invoiceProcessingCost: number;
     disposalCost: number; contractExitCost: number;
+    /* Qualitative decision-scoring inputs (#164, "beyond raw cost" weighted
+       scoring) -- 1-5 scale, user-entered judgement calls, NOT derived from
+       any benchmark (Decision Record 8.7: nothing here is fabricated).
+       Optional so analyses saved before this feature still load cleanly;
+       every read site falls back to 3 ("neutral / no view yet"). */
+    qualQuality?: number; qualDelivery?: number; qualRisk?: number; qualStrategicFit?: number;
   }
   interface TcoAnalysis {
     id: string; name: string;
@@ -717,6 +701,7 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
       inspectionCost: 0, defectPpm: 0, reworkCost: 0, auditCost: 0,
       poCount: 0, poCostEach: 0, invoiceProcessingCost: 0,
       disposalCost: 0, contractExitCost: 0,
+      qualQuality: 3, qualDelivery: 3, qualRisk: 3, qualStrategicFit: 3,
     };
   }
   function defaultTcoAnalysis(name: string): TcoAnalysis {
@@ -751,10 +736,139 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
     const fresh = defaultTcoAnalysis(isAr ? 'تحليل جديد' : 'New analysis');
     return { analyses: [fresh], activeId: fresh.id };
   }
-  const [tcoState, setTcoState] = useState<{ analyses: TcoAnalysis[]; activeId: string }>(loadInitialTcoAnalyses);
-  const saveTcoState = (next: { analyses: TcoAnalysis[]; activeId: string }) => {
-    setTcoState(next); safeSetItem(SK_TCO_V2, JSON.stringify(next));
+  // ── Server-sync (backend persistence, "maximum technical and consultancy
+  //    wise" enhancement, 2026-08-23) ── Whole-list sync against
+  //    /api/tco-analyses, mirroring the debounced-PUT / bootstrap-merge
+  //    pattern already proven in SupplierScorecard.tsx, but for the TCO
+  //    analyses array. The local, client-generated `id` on each TcoAnalysis
+  //    (e.g. "tcoa...") IS the value sent to/received from the server as
+  //    `clientKey` -- the server's own serial row id is internal bookkeeping
+  //    only, never surfaced to the frontend, so there is no ID-reconciliation
+  //    step needed after a sync. Logged-out users keep working entirely off
+  //    localStorage, exactly as before; nothing here changes guest behaviour.
+  const { user } = useAuth();
+  const [tcoSyncStatus, setTcoSyncStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const tcoServerLoadedForUserId = useRef<number | null>(null);
+  const tcoBootstrapSettled = useRef(false);
+  const tcoLocalWinsDuringBootstrap = useRef(false);
+  const tcoSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const tcoStateRef = useRef<{ analyses: TcoAnalysis[]; activeId: string } | null>(null);
+
+  interface ServerTcoRow {
+    id: number; clientKey: string; name: string;
+    industry: string | null; subSector: string | null; skuClass: string | null; itemName: string | null;
+    suppliers: TcoSupplier[]; updatedAt: string;
+  }
+  function serverRowToAnalysis(row: ServerTcoRow): TcoAnalysis {
+    return {
+      id: row.clientKey, name: row.name,
+      industry: (row.industry ?? '') as IndustryKey | '',
+      subSector: row.subSector ?? '',
+      skuClass: (row.skuClass ?? '') as SkuClassKey | '',
+      itemName: row.itemName ?? '',
+      suppliers: row.suppliers,
+      updatedAt: new Date(row.updatedAt).getTime(),
+    };
+  }
+  function analysisToPayload(a: TcoAnalysis) {
+    return {
+      clientKey: a.id, name: a.name,
+      industry: a.industry || null, subSector: a.subSector || null,
+      skuClass: a.skuClass || null, itemName: a.itemName || null,
+      suppliers: a.suppliers,
+    };
+  }
+
+  const syncTcoToServerImmediate = (analyses: TcoAnalysis[]) => {
+    if (!user) return;
+    setTcoSyncStatus('saving');
+    if (tcoSyncTimerRef.current) clearTimeout(tcoSyncTimerRef.current);
+    tcoSyncTimerRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`${API_BASE}/tco-analyses`, {
+          method: 'PUT', credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ analyses: analyses.map(analysisToPayload) }),
+        });
+        setTcoSyncStatus(res.ok ? 'saved' : 'error');
+        if (res.ok) setTimeout(() => setTcoSyncStatus('idle'), 2500);
+      } catch {
+        setTcoSyncStatus('error');
+      }
+    }, 400);
   };
+  const syncTcoToServer = (analyses: TcoAnalysis[]) => {
+    if (!user) return;
+    if (!tcoBootstrapSettled.current) {
+      // Bootstrap GET hasn't resolved yet -- don't race it with a PUT.
+      // Mark that a local edit happened so the bootstrap effect knows not to
+      // clobber it once the GET does resolve.
+      tcoLocalWinsDuringBootstrap.current = true;
+      return;
+    }
+    syncTcoToServerImmediate(analyses);
+  };
+
+  const [tcoState, setTcoState] = useState<{ analyses: TcoAnalysis[]; activeId: string }>(loadInitialTcoAnalyses);
+  tcoStateRef.current = tcoState;
+  const saveTcoState = (next: { analyses: TcoAnalysis[]; activeId: string }) => {
+    setTcoState(next);
+    safeSetItem(SK_TCO_V2, JSON.stringify(next));
+    syncTcoToServer(next.analyses);
+  };
+
+  /* Bootstrap: on login (or account switch), pull the server's saved
+   * analyses. Server-has-data wins over localStorage UNLESS the user has
+   * already edited something in this session while the GET was in flight.
+   * Server-empty means "first time syncing this account" -- upload whatever
+   * is currently in localStorage instead of discarding it. */
+  useEffect(() => {
+    if (!user) {
+      if (tcoServerLoadedForUserId.current !== null) {
+        tcoServerLoadedForUserId.current = null;
+        tcoBootstrapSettled.current = false;
+        tcoLocalWinsDuringBootstrap.current = false;
+        setTcoSyncStatus('idle');
+      }
+      return;
+    }
+    if (tcoServerLoadedForUserId.current === user.id) return;
+    tcoServerLoadedForUserId.current = user.id;
+    tcoBootstrapSettled.current = false;
+    tcoLocalWinsDuringBootstrap.current = false;
+    const bootstrapUserId = user.id;
+
+    (async () => {
+      try {
+        const res = await fetch(`${API_BASE}/tco-analyses`, { credentials: 'include' });
+        if (tcoServerLoadedForUserId.current !== bootstrapUserId) return;
+        if (res.ok) {
+          const data = await res.json() as { ok: boolean; analyses: ServerTcoRow[] };
+          if (data.ok && Array.isArray(data.analyses) && data.analyses.length > 0) {
+            if (!tcoLocalWinsDuringBootstrap.current) {
+              const converted = data.analyses.map(serverRowToAnalysis);
+              const currentActive = tcoStateRef.current?.activeId;
+              const activeStillExists = converted.some(a => a.id === currentActive);
+              const next = { analyses: converted, activeId: activeStillExists ? currentActive! : converted[0].id };
+              setTcoState(next);
+              safeSetItem(SK_TCO_V2, JSON.stringify(next));
+            }
+          } else if (!tcoLocalWinsDuringBootstrap.current) {
+            // Server has nothing yet for this account -- upload local state
+            // as the initial sync rather than leaving the server empty.
+            const current = tcoStateRef.current;
+            if (current && current.analyses.length > 0) syncTcoToServerImmediate(current.analyses);
+          }
+        }
+      } catch { /* offline -- localStorage keeps working */ }
+      tcoBootstrapSettled.current = true;
+      if (tcoLocalWinsDuringBootstrap.current) {
+        const current = tcoStateRef.current;
+        if (current) syncTcoToServerImmediate(current.analyses);
+      }
+    })();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
   const tcoActiveAnalysis = tcoState.analyses.find(a => a.id === tcoState.activeId) ?? tcoState.analyses[0];
   const updateActiveAnalysis = (patch: Partial<Omit<TcoAnalysis, 'id' | 'suppliers'>>) =>
     saveTcoState({ ...tcoState, analyses: tcoState.analyses.map(a => a.id === tcoActiveAnalysis.id ? { ...a, ...patch, updatedAt: Date.now() } : a) });
@@ -784,35 +898,287 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
   };
   const switchTcoAnalysis = (id: string) => saveTcoState({ ...tcoState, activeId: id });
 
-  const tcoResults = useMemo(() => tcoSuppliers.map(s => {
-    const directPurchase = s.unitPrice * s.annualQty;
-    const vatAmount = directPurchase * (s.vatPct / 100);
-    const dutyAmount = directPurchase * (s.dutyPct / 100);
-    const directTotal = directPurchase + vatAmount + dutyAmount;
-    const logisticsTotal = s.freight + s.insurance + s.handling + s.lastMile;
-    // Safety-stock value held = share of annual purchase cost proportional to days of stock carried.
-    const safetyStockValue = directPurchase * (s.safetyStockDays / 365);
-    const carryingCostAnnual = safetyStockValue * (s.carryingCostPct / 100);
-    const qualityTotal = s.inspectionCost + s.reworkCost + s.auditCost;
-    const transactionTotal = (s.poCount * s.poCostEach) + s.invoiceProcessingCost;
-    // End-of-life (CIPS stage 4): disposalCost is a real recurring annual cost and is
-    // included in TCO. contractExitCost is a one-time figure (e.g. a switching/exit
-    // fee) -- deliberately kept OUT of the annual TCO sum so an annual and a one-time
-    // number are never silently added together, and shown as its own line instead.
-    const endOfLifeAnnual = s.disposalCost;
-    const tcoAnnual = directTotal + logisticsTotal + carryingCostAnnual + qualityTotal + transactionTotal + endOfLifeAnnual;
-    const tcoPerUnit = s.annualQty > 0 ? tcoAnnual / s.annualQty : 0;
-    return {
-      id: s.id, directPurchase, vatAmount, dutyAmount, directTotal, logisticsTotal,
-      safetyStockValue, carryingCostAnnual, qualityTotal, transactionTotal, endOfLifeAnnual,
-      contractExitOneTime: s.contractExitCost, tcoAnnual, tcoPerUnit,
-    };
-  }), [tcoSuppliers]);
+  /* Pure per-supplier TCO calculation, shared between the active analysis's
+     live table (below) and the cross-item Portfolio view (#163) -- kept as
+     one function so the two views can never silently drift out of
+     arithmetic sync with each other. */
+  function computeTcoResultsForSuppliers(suppliers: TcoSupplier[]) {
+    return suppliers.map(s => {
+      const directPurchase = s.unitPrice * s.annualQty;
+      const vatAmount = directPurchase * (s.vatPct / 100);
+      const dutyAmount = directPurchase * (s.dutyPct / 100);
+      const directTotal = directPurchase + vatAmount + dutyAmount;
+      const logisticsTotal = s.freight + s.insurance + s.handling + s.lastMile;
+      // Safety-stock value held = share of annual purchase cost proportional to days of stock carried.
+      const safetyStockValue = directPurchase * (s.safetyStockDays / 365);
+      const carryingCostAnnual = safetyStockValue * (s.carryingCostPct / 100);
+      const qualityTotal = s.inspectionCost + s.reworkCost + s.auditCost;
+      const transactionTotal = (s.poCount * s.poCostEach) + s.invoiceProcessingCost;
+      // End-of-life (CIPS stage 4): disposalCost is a real recurring annual cost and is
+      // included in TCO. contractExitCost is a one-time figure (e.g. a switching/exit
+      // fee) -- deliberately kept OUT of the annual TCO sum so an annual and a one-time
+      // number are never silently added together, and shown as its own line instead.
+      const endOfLifeAnnual = s.disposalCost;
+      const tcoAnnual = directTotal + logisticsTotal + carryingCostAnnual + qualityTotal + transactionTotal + endOfLifeAnnual;
+      const tcoPerUnit = s.annualQty > 0 ? tcoAnnual / s.annualQty : 0;
+      return {
+        id: s.id, directPurchase, vatAmount, dutyAmount, directTotal, logisticsTotal,
+        safetyStockValue, carryingCostAnnual, qualityTotal, transactionTotal, endOfLifeAnnual,
+        contractExitOneTime: s.contractExitCost, tcoAnnual, tcoPerUnit,
+      };
+    });
+  }
+  const tcoResults = useMemo(() => computeTcoResultsForSuppliers(tcoSuppliers), [tcoSuppliers]);
   const tcoValidResults = tcoResults.filter(r => r.tcoPerUnit > 0);
   const tcoLowestPerUnit = tcoValidResults.length > 0 ? Math.min(...tcoValidResults.map(r => r.tcoPerUnit)) : 0;
   const tcoLowestId = tcoValidResults.find(r => r.tcoPerUnit === tcoLowestPerUnit)?.id;
+  const [tcoViewMode, setTcoViewMode] = useState<'analysis' | 'portfolio'>('analysis');
+  /* Cross-item Portfolio view (#163) -- lets the client compare TCO across
+     ALL saved analyses (i.e. across different items/categories), not just
+     across suppliers within one item. Reuses computeTcoResultsForSuppliers()
+     so the "best supplier" figure shown here always matches what the user
+     sees on opening that analysis directly. */
+  interface TcoPortfolioRow {
+    id: string; name: string; itemName: string;
+    industryLabel: string; skuLabel: string;
+    supplierCount: number; hasData: boolean;
+    bestSupplierName: string; bestTcoPerUnit: number; bestTcoAnnual: number;
+    worstTcoPerUnit: number; savingsPct: number; updatedAt: number;
+  }
+  const tcoPortfolio: TcoPortfolioRow[] = useMemo(() => tcoState.analyses.map(a => {
+    const results = computeTcoResultsForSuppliers(a.suppliers);
+    const valid = results.filter(r => r.tcoPerUnit > 0);
+    const best = valid.length > 0 ? valid.reduce((m, r) => r.tcoPerUnit < m.tcoPerUnit ? r : m) : null;
+    const worst = valid.length > 0 ? valid.reduce((m, r) => r.tcoPerUnit > m.tcoPerUnit ? r : m) : null;
+    const bestSupplier = best ? a.suppliers.find(sp => sp.id === best.id) : null;
+    const savingsPct = best && worst && worst.tcoPerUnit > 0 && valid.length > 1
+      ? ((worst.tcoPerUnit - best.tcoPerUnit) / worst.tcoPerUnit) * 100 : 0;
+    return {
+      id: a.id, name: a.name, itemName: a.itemName,
+      industryLabel: (INDUSTRIES.find(i => i.id === a.industry)?.[isAr ? 'labelAr' : 'label']) || '',
+      skuLabel: (SKU_CLASSES.find(sc => sc.id === a.skuClass)?.[isAr ? 'labelAr' : 'label']) || '',
+      supplierCount: a.suppliers.length, hasData: valid.length > 0,
+      bestSupplierName: bestSupplier?.name || '',
+      bestTcoPerUnit: best?.tcoPerUnit || 0, bestTcoAnnual: best?.tcoAnnual || 0,
+      worstTcoPerUnit: worst?.tcoPerUnit || 0, savingsPct, updatedAt: a.updatedAt,
+    };
+  }), [tcoState.analyses, isAr]);
+  type TcoPortfolioSort = 'updated' | 'name' | 'tcoPerUnit' | 'savings';
+  const [tcoPortfolioSort, setTcoPortfolioSort] = useState<TcoPortfolioSort>('updated');
+  const tcoPortfolioSorted = useMemo(() => {
+    const rows = [...tcoPortfolio];
+    switch (tcoPortfolioSort) {
+      case 'name': rows.sort((a, b) => a.name.localeCompare(b.name)); break;
+      case 'tcoPerUnit': rows.sort((a, b) => (b.hasData ? b.bestTcoPerUnit : -1) - (a.hasData ? a.bestTcoPerUnit : -1)); break;
+      case 'savings': rows.sort((a, b) => b.savingsPct - a.savingsPct); break;
+      default: rows.sort((a, b) => b.updatedAt - a.updatedAt);
+    }
+    return rows;
+  }, [tcoPortfolio, tcoPortfolioSort]);
+  // ── Cross-tab signal for the Sourcing Strategy tab (#165) -- the single
+  //    biggest real savings opportunity across all saved TCO analyses. ──
+  const tcoBiggestOpportunity = useMemo(() => {
+    const withSavings = tcoPortfolio.filter(r => r.hasData && r.savingsPct > 0);
+    if (withSavings.length === 0) return null;
+    return withSavings.reduce((max, r) => r.savingsPct > max.savingsPct ? r : max);
+  }, [tcoPortfolio]);
+
+  // AI prompt
+  const buildPrompt = useCallback(() => {
+    const topSuppliers = paretoData.slice(0, 5).map(r => `${r.name}: SAR ${r.spend.toLocaleString()} (${r.cumPct}% cumulative)`).join(', ');
+    const porterSummary = PORTER_FORCES.map(f => `${f.label}: ${porter[f.id]?.score ?? 3}/5`).join(', ');
+    const strat = chosenStrategy;
+    return [
+      `## Category Management Strategy Brief`,
+      `Total spend: SAR ${totalSpend.toLocaleString()} | ${validRows.length} suppliers | Contracted: ${contractedPct}%`,
+      `Top 3 supplier concentration: ${top3Pct}% of spend`,
+      `Top suppliers: ${topSuppliers || 'No data'}`,
+      '',
+      `## Market Analysis (Porter's 5 Forces)`,
+      porterSummary,
+      `Overall market risk: ${marketRisk} (avg score: ${porterAvg.toFixed(1)}/5)`,
+      '',
+      `## Recommended Sourcing Strategy`,
+      `Strategy: ${strat?.label || 'Not selected'}`,
+      `Rationale: ${strat?.desc || ''}`,
+      '',
+      // #165 (TCO max-enhance: wire into other engines) -- when the user has
+      // real TCO Engine data, ground the category brief in it instead of
+      // leaving the AI to estimate savings blind. Omitted entirely when no
+      // TCO data exists yet, so the AI is never invited to invent a number.
+      ...(tcoPortfolio.some(r => r.hasData) ? [
+        `## TCO Engine data (real, user-entered)`,
+        tcoPortfolio.filter(r => r.hasData).map(r =>
+          `${r.name}${r.itemName ? ` (${r.itemName})` : ''}: best supplier TCO SAR ${r.bestTcoPerUnit.toFixed(2)}/unit`
+          + (r.savingsPct > 0 ? `, ${r.savingsPct.toFixed(1)}% savings potential vs. costliest supplier` : '')
+        ).join('\n'),
+        '',
+      ] : []),
+      '## Your Task',
+      'Generate a 4–6 paragraph executive category strategy document:',
+      '1. Spend landscape: portfolio health, concentration risk, contracted vs uncontracted analysis',
+      '2. Supply market assessment: interpret Porter\'s forces scores and their sourcing implications',
+      '3. Strategic recommendation: justify the chosen sourcing strategy with market evidence',
+      '4. Risk register: top 3 supply risks and their specific mitigations',
+      '5. 90-day action plan with [HIGH]/[MEDIUM]/[LOW] priority items',
+      '6. Savings opportunity: if TCO Engine data is provided above, cite it directly; otherwise give a % range and clearly label it as an estimate, not a measured figure',
+    ].join('\n');
+  }, [validRows, totalSpend, contractedPct, top3Pct, paretoData, porter, porterAvg, marketRisk, chosenStrategy, tcoPortfolio]);
+
+  const aiPlan = useAIPlan(buildPrompt, isAr, 'procurement-catmgmt', validRows.length >= 2);
+
   const tcoChecklist = tcoActiveAnalysis.skuClass ? TCO_CHECKLIST_BY_SKU_CLASS[tcoActiveAnalysis.skuClass] : null;
   const tcoSubSectorOptions = tcoActiveAnalysis.industry ? (INDUSTRY_SUB_SECTORS[tcoActiveAnalysis.industry] || []) : [];
+
+  // ── Sensitivity analysis (#164) -- pure "what if this input were off by
+  //    X%?" recompute of the SAME arithmetic used everywhere else in this
+  //    tool. No new data is invented; every driver value below is the
+  //    user's own entered number, only varied by the chosen swing %. ──
+  interface TcoSensitivityDriver { key: keyof TcoSupplier; label: string; labelAr: string; }
+  const TCO_SENSITIVITY_DRIVERS: TcoSensitivityDriver[] = [
+    { key: 'unitPrice', label: 'Unit purchase price', labelAr: 'سعر الشراء للوحدة' },
+    { key: 'annualQty', label: 'Annual quantity', labelAr: 'الكمية السنوية' },
+    { key: 'vatPct', label: 'VAT rate', labelAr: 'معدل ضريبة القيمة المضافة' },
+    { key: 'dutyPct', label: 'Duty rate', labelAr: 'معدل الرسوم الجمركية' },
+    { key: 'freight', label: 'Freight', labelAr: 'الشحن' },
+    { key: 'carryingCostPct', label: 'Carrying cost %', labelAr: 'نسبة تكلفة الاحتفاظ بالمخزون' },
+  ];
+  const [tcoSensitivitySupplierId, setTcoSensitivitySupplierId] = useState<string>('');
+  const [tcoSensitivitySwingPct, setTcoSensitivitySwingPct] = useState(10);
+  const tcoSensitivitySupplier = tcoSuppliers.find(s => s.id === tcoSensitivitySupplierId)
+    ?? tcoSuppliers.find(s => s.id === tcoLowestId) ?? tcoSuppliers[0];
+  const tcoSensitivityBase = tcoResults.find(r => r.id === tcoSensitivitySupplier?.id);
+  const tcoSensitivityRows = useMemo(() => {
+    if (!tcoSensitivitySupplier || !tcoSensitivityBase || tcoSensitivityBase.tcoPerUnit <= 0) return [];
+    const swing = tcoSensitivitySwingPct / 100;
+    return TCO_SENSITIVITY_DRIVERS.map(d => {
+      const baseValue = (tcoSensitivitySupplier[d.key] as number) || 0;
+      const lowSupplier = { ...tcoSensitivitySupplier, [d.key]: baseValue * (1 - swing) };
+      const highSupplier = { ...tcoSensitivitySupplier, [d.key]: baseValue * (1 + swing) };
+      const [lowResult] = computeTcoResultsForSuppliers([lowSupplier]);
+      const [highResult] = computeTcoResultsForSuppliers([highSupplier]);
+      return {
+        key: d.key, label: d.label, labelAr: d.labelAr, baseValue,
+        low: Math.min(lowResult.tcoPerUnit, highResult.tcoPerUnit),
+        high: Math.max(lowResult.tcoPerUnit, highResult.tcoPerUnit),
+        swingAbs: Math.abs(highResult.tcoPerUnit - lowResult.tcoPerUnit),
+      };
+    }).filter(r => r.baseValue > 0 && r.swingAbs > 0).sort((a, b) => b.swingAbs - a.swingAbs);
+  }, [tcoSensitivitySupplier, tcoSensitivityBase, tcoSensitivitySwingPct]);
+  const tcoSensitivityMaxSwing = Math.max(1, ...tcoSensitivityRows.map(r => r.swingAbs));
+
+  // ── Weighted decision scoring, "beyond raw cost" (#164) -- combines the
+  //    real, computed cost score with user-entered qualitative judgement
+  //    (quality/delivery/risk/strategic fit, 1-5 each) using adjustable
+  //    weights. Directly operationalizes the honesty note already shown
+  //    below ("lowest TCO is not automatically the right choice"). Weights
+  //    are a session-only analytical lens (reset to sensible defaults each
+  //    visit), NOT persisted -- the underlying 1-5 supplier ratings ARE
+  //    real per-supplier data and DO persist via the normal supplier save
+  //    path (localStorage + server sync), same as every other TCO field. */
+  const TCO_DEFAULT_WEIGHTS = { cost: 40, quality: 20, delivery: 15, risk: 15, strategicFit: 10 };
+  const [tcoWeights, setTcoWeights] = useState(TCO_DEFAULT_WEIGHTS);
+  const tcoWeightsTotal = tcoWeights.cost + tcoWeights.quality + tcoWeights.delivery + tcoWeights.risk + tcoWeights.strategicFit;
+  const tcoDecisionScores = useMemo(() => {
+    if (tcoValidResults.length < 2) return [];
+    const perUnitVals = tcoValidResults.map(r => r.tcoPerUnit);
+    const minCost = Math.min(...perUnitVals), maxCost = Math.max(...perUnitVals);
+    const w = tcoWeightsTotal > 0 ? tcoWeightsTotal : 1;
+    return tcoSuppliers.map(s => {
+      const result = tcoResults.find(r => r.id === s.id);
+      const hasCost = !!result && result.tcoPerUnit > 0;
+      const costScore100 = hasCost
+        ? (maxCost > minCost ? 100 * (1 - (result!.tcoPerUnit - minCost) / (maxCost - minCost)) : 100)
+        : 0;
+      const qualityScore100 = ((s.qualQuality ?? 3) / 5) * 100;
+      const deliveryScore100 = ((s.qualDelivery ?? 3) / 5) * 100;
+      const riskScore100 = ((s.qualRisk ?? 3) / 5) * 100;
+      const strategicFitScore100 = ((s.qualStrategicFit ?? 3) / 5) * 100;
+      const weighted = hasCost
+        ? (costScore100 * tcoWeights.cost + qualityScore100 * tcoWeights.quality
+          + deliveryScore100 * tcoWeights.delivery + riskScore100 * tcoWeights.risk
+          + strategicFitScore100 * tcoWeights.strategicFit) / w
+        : 0;
+      return { id: s.id, name: s.name, hasCost, costScore100, weighted };
+    }).sort((a, b) => b.weighted - a.weighted);
+  }, [tcoSuppliers, tcoResults, tcoValidResults, tcoWeights, tcoWeightsTotal]);
+  const tcoDecisionTopId = tcoDecisionScores[0]?.id;
+  const tcoDecisionRankFlip = !!tcoDecisionTopId && tcoDecisionTopId !== tcoLowestId && tcoValidResults.length > 1;
+
+  // ── Supplier Scorecard cross-link (#165, "wire into other engines") --
+  //    real, read-only match against the user's own saved Supplier
+  //    Scorecard roster (name match, case-insensitive). Never auto-fills
+  //    anything -- Decision Record 8.7's "stand by a click" applies
+  //    literally: the user must click "Apply" to pull a real scorecard
+  //    rating into the TCO decision-scoring inputs above. ──
+  const tcoScorecardMatches = useMemo(() => {
+    try {
+      const roster = loadScorecardRoster();
+      const config = loadScorecardConfig();
+      return tcoSuppliers.map(s => {
+        const needle = s.name.trim().toLowerCase();
+        const match = needle ? roster.suppliers.find(r => r.name.trim().toLowerCase() === needle) : undefined;
+        if (!match) return null;
+        const qualityDim = calcDimScore('quality', match.subScores);
+        const deliveryDim = calcDimScore('delivery', match.subScores);
+        const weighted = qualityDim !== null && deliveryDim !== null
+          ? Math.round(((qualityDim + deliveryDim) / 2))
+          : (qualityDim ?? deliveryDim);
+        return { supplierId: s.id, scorecardName: match.name, qualityDim, deliveryDim, weighted };
+      }).filter((m): m is { supplierId: string; scorecardName: string; qualityDim: number | null; deliveryDim: number | null; weighted: number | null } => m !== null);
+    } catch { return []; }
+  }, [tcoSuppliers]);
+  const applyScorecardRating = (supplierId: string, qualityDim: number | null, deliveryDim: number | null) => {
+    const patch: Partial<TcoSupplier> = {};
+    if (qualityDim !== null) patch.qualQuality = Math.min(5, Math.max(1, Math.round(qualityDim / 20)));
+    if (deliveryDim !== null) patch.qualDelivery = Math.min(5, Math.max(1, Math.round(deliveryDim / 20)));
+    if (Object.keys(patch).length > 0) {
+      updateTcoSupplier(supplierId, patch);
+      toast.success(isAr ? 'تم تطبيق تقييم بطاقة أداء المورّد ✓' : 'Applied real Supplier Scorecard rating ✓');
+    }
+  };
+
+
+  // ── AI Executive Insight for TCO (#164) -- second, TCO-scoped useAIPlan
+  //    instance (separate toolKey so it never collides with the Spend
+  //    Analysis "AI Strategy Brief" plan stored under 'procurement-catmgmt').
+  //    Grounded strictly in the numbers already computed above -- the AI
+  //    is not given anything it could use to invent a benchmark. ──
+  const tcoBuildPrompt = useCallback(() => {
+    const industryLabel = INDUSTRIES.find(i => i.id === tcoActiveAnalysis.industry)?.label || 'Not specified';
+    const skuLabel = SKU_CLASSES.find(sc => sc.id === tcoActiveAnalysis.skuClass)?.label || 'Not specified';
+    const supplierLines = tcoSuppliers.map(s => {
+      const r = tcoResults.find(rr => rr.id === s.id);
+      const score = tcoDecisionScores.find(d => d.id === s.id);
+      return `- ${s.name}: TCO/unit SAR ${r ? r.tcoPerUnit.toFixed(2) : '0.00'}, annual TCO SAR ${r ? r.tcoAnnual.toFixed(0) : '0'}`
+        + (score ? `, qualitative ratings (1-5) -- quality ${s.qualQuality ?? 3}, delivery ${s.qualDelivery ?? 3}, single-source risk ${s.qualRisk ?? 3}, strategic fit ${s.qualStrategicFit ?? 3}, weighted decision score ${score.weighted.toFixed(0)}/100` : '');
+    }).join('\n');
+    const topDriver = tcoSensitivityRows[0];
+    return [
+      `## TCO Executive Insight Request`,
+      `Analysis: ${tcoActiveAnalysis.name} | Item: ${tcoActiveAnalysis.itemName || 'Not specified'}`,
+      `Industry: ${industryLabel} | Sub-sector: ${tcoActiveAnalysis.subSector || 'Not specified'} | Category: ${skuLabel}`,
+      '',
+      `## Supplier TCO comparison`,
+      supplierLines || 'No supplier cost data entered yet.',
+      '',
+      `## Weighted decision score (cost ${tcoWeights.cost}% / quality ${tcoWeights.quality}% / delivery ${tcoWeights.delivery}% / single-source risk ${tcoWeights.risk}% / strategic fit ${tcoWeights.strategicFit}%)`,
+      tcoDecisionTopId ? `Highest-scoring supplier overall: ${tcoSuppliers.find(s => s.id === tcoDecisionTopId)?.name}` : 'Not enough data to score yet.',
+      tcoDecisionRankFlip ? 'Note: the lowest-TCO supplier is NOT the highest-scoring supplier once quality/delivery/risk/strategic-fit judgement is weighted in.' : '',
+      '',
+      `## Sensitivity`,
+      topDriver ? `Most sensitive cost driver: ${topDriver.label} (±${tcoSensitivitySwingPct}% swings TCO/unit between SAR ${topDriver.low.toFixed(2)} and SAR ${topDriver.high.toFixed(2)})` : 'Not enough data for a sensitivity read yet.',
+      '',
+      '## Your Task',
+      'Write a concise (3-4 paragraph) executive TCO insight for this specific sourcing decision:',
+      '1. What the numbers say: the real cost gap between suppliers and what drives it',
+      '2. Whether the weighted decision score agrees or disagrees with the raw lowest-TCO pick, and why that matters',
+      '3. The single biggest assumption this recommendation is riding on (use the sensitivity driver above) and what would have to be true for the recommendation to flip',
+      '4. A clear, hedged recommendation -- state it, but name the one thing that should be verified before committing',
+    ].filter(Boolean).join('\n');
+  }, [tcoActiveAnalysis, tcoSuppliers, tcoResults, tcoDecisionScores, tcoDecisionTopId, tcoDecisionRankFlip, tcoWeights, tcoSensitivityRows, tcoSensitivitySwingPct]);
+  const tcoAiPlan = useAIPlan(tcoBuildPrompt, isAr, 'procurement-tco', tcoValidResults.length >= 2);
+
   const exportTcoAnalysis = () => {
     const industryLabel = INDUSTRIES.find(i => i.id === tcoActiveAnalysis.industry)?.label || '';
     const skuLabel = SKU_CLASSES.find(s => s.id === tcoActiveAnalysis.skuClass)?.label || '';
@@ -837,6 +1203,23 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
     rows.push(['One-time exit cost (SAR, not in annual TCO)', ...tcoResults.map(r => r.contractExitOneTime.toFixed(0))]);
     const safeName = (tcoActiveAnalysis.name || 'tco-analysis').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
     downloadCsv(rows, `${safeName || 'tco-analysis'}.csv`);
+  };
+  const exportTcoPortfolio = () => {
+    const rows: string[][] = [
+      ['Analysis', 'Item', 'Industry', 'Category', 'Suppliers compared', 'Best supplier',
+       'Best TCO/unit (SAR)', 'Best TCO annual (SAR)', 'Savings potential vs. costliest supplier (%)', 'Last updated'],
+    ];
+    tcoPortfolioSorted.forEach(r => {
+      rows.push([
+        r.name, r.itemName, r.industryLabel, r.skuLabel, String(r.supplierCount),
+        r.hasData ? r.bestSupplierName : '',
+        r.hasData ? r.bestTcoPerUnit.toFixed(2) : '',
+        r.hasData ? r.bestTcoAnnual.toFixed(0) : '',
+        r.hasData && r.savingsPct > 0 ? r.savingsPct.toFixed(1) : '',
+        new Date(r.updatedAt).toISOString().slice(0, 10),
+      ]);
+    });
+    downloadCsv(rows, 'tco-portfolio-comparison.csv');
   };
 
   const anyBreach = Object.values(breachLevels).some(v => v !== null);
@@ -1135,6 +1518,27 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
             <p className="text-[10px] text-white/50 mt-2">{isAr ? 'بناءً على تركّز الإنفاق وتحليل بورتر. يمكنك تحديد استراتيجية مختلفة أدناه.' : 'Based on spend concentration + Porter\'s forces. Override below if needed.'}</p>
           </div>
 
+          {/* ── TCO-informed sourcing signal (#165, "wire into other engines") --
+              surfaces the single biggest real savings opportunity already
+              computed in the TCO Engine's Portfolio view, so a sourcing
+              strategy decision is informed by actual entered cost data, not
+              spend concentration + market risk alone. ── */}
+          {tcoBiggestOpportunity && (
+            <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 flex items-start gap-2">
+              <TrendingUp className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-[11px] text-emerald-800">
+                  {isAr
+                    ? `أكبر فرصة توفير من محرك TCO: "${tcoBiggestOpportunity.name}" يُظهر فرصة توفير ${tcoBiggestOpportunity.savingsPct.toFixed(1)}% بين أرخص وأغلى مورّد (${tcoBiggestOpportunity.bestTcoPerUnit.toLocaleString(undefined, { maximumFractionDigits: 2 })} ريال/وحدة مقابل الأفضل). قد يستحق ذلك تعديل استراتيجية التوريد لهذه الفئة.`
+                    : `Biggest TCO Engine savings opportunity: "${tcoBiggestOpportunity.name}" shows a ${tcoBiggestOpportunity.savingsPct.toFixed(1)}% gap between its cheapest and priciest supplier (SAR ${tcoBiggestOpportunity.bestTcoPerUnit.toLocaleString(undefined, { maximumFractionDigits: 2 })}/unit at best). Worth factoring into the sourcing strategy for this category.`}
+                </p>
+                <button onClick={() => setActiveTab('tco')} className="text-[10px] font-bold text-emerald-700 hover:opacity-80 mt-1">
+                  {isAr ? 'فتح محرك TCO →' : 'Open TCO Engine →'}
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Action plan for chosen strategy */}
           {chosenStrategy && (
             <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
@@ -1216,6 +1620,101 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
             </p>
           </div>
 
+          {/* View-mode toggle -- Analysis (single item, supplier comparison) vs.
+              Portfolio (cross-item comparison, #163). Directly answers "can a client
+              compare two or more items?" -- not just suppliers within one item. */}
+          <div className="flex items-center gap-1 bg-slate-100 border border-slate-200 rounded-xl p-1 w-fit">
+            <button onClick={() => setTcoViewMode('analysis')}
+              className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all ${tcoViewMode === 'analysis' ? 'bg-white text-[#082C6B] shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
+              {isAr ? 'تحليل واحد' : 'Single analysis'}
+            </button>
+            <button onClick={() => setTcoViewMode('portfolio')}
+              className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all ${tcoViewMode === 'portfolio' ? 'bg-white text-[#082C6B] shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
+              {isAr ? `مقارنة المحفظة (${tcoState.analyses.length})` : `Portfolio comparison (${tcoState.analyses.length})`}
+            </button>
+          </div>
+
+          {tcoViewMode === 'portfolio' ? (
+            <div className="space-y-3">
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 flex items-start gap-2">
+                <Info className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
+                <p className="text-xs text-blue-800">
+                  {isAr
+                    ? 'قارن التكلفة الإجمالية للملكية عبر جميع العناصر/الفئات المحفوظة -- وليس فقط بين موردين لنفس الصنف. لكل تحليل، "أفضل مورّد" هو المورّد صاحب أقل TCO لكل وحدة ضمن ذلك التحليل. "فرصة التوفير" تقارن أفضل مورّد بأغلى مورّد ضمن نفس التحليل.'
+                    : 'Compare Total Cost of Ownership across every saved item/category -- not just between suppliers of the same item. For each analysis, "Best supplier" is whichever supplier has the lowest TCO/unit within that analysis; "Savings potential" compares that best supplier against the costliest one in the same analysis.'}
+                </p>
+              </div>
+
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div className="flex items-center gap-2">
+                  <label className="text-[11px] font-semibold text-slate-500">{isAr ? 'الترتيب حسب:' : 'Sort by:'}</label>
+                  <select value={tcoPortfolioSort} onChange={e => setTcoPortfolioSort(e.target.value as TcoPortfolioSort)}
+                    aria-label={isAr ? 'الترتيب حسب:' : 'Sort by:'}
+                    className="text-xs border border-slate-200 rounded-lg px-2 py-1.5 font-semibold text-slate-700">
+                    <option value="updated">{isAr ? 'آخر تحديث' : 'Last updated'}</option>
+                    <option value="name">{isAr ? 'الاسم' : 'Name'}</option>
+                    <option value="tcoPerUnit">{isAr ? 'أعلى TCO لكل وحدة' : 'Highest TCO/unit'}</option>
+                    <option value="savings">{isAr ? 'أكبر فرصة توفير' : 'Biggest savings opportunity'}</option>
+                  </select>
+                </div>
+                <button onClick={exportTcoPortfolio}
+                  className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-700">
+                  <Download className="w-3.5 h-3.5" />{isAr ? 'تصدير المحفظة (CSV)' : 'Export portfolio (CSV)'}
+                </button>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs border-collapse">
+                  <thead>
+                    <tr className="border-b border-slate-200">
+                      <th className="text-left py-2 pr-2 text-slate-400 font-semibold whitespace-nowrap">{isAr ? 'التحليل / العنصر' : 'Analysis / Item'}</th>
+                      <th className="text-left py-2 px-2 text-slate-400 font-semibold whitespace-nowrap">{isAr ? 'الصناعة / الفئة' : 'Industry / Category'}</th>
+                      <th className="text-left py-2 px-2 text-slate-400 font-semibold whitespace-nowrap">{isAr ? 'الموردون' : 'Suppliers'}</th>
+                      <th className="text-left py-2 px-2 text-slate-400 font-semibold whitespace-nowrap">{isAr ? 'أفضل مورّد' : 'Best supplier'}</th>
+                      <th className="text-left py-2 px-2 text-slate-400 font-semibold whitespace-nowrap">{isAr ? 'TCO لكل وحدة' : 'TCO/unit'}</th>
+                      <th className="text-left py-2 px-2 text-slate-400 font-semibold whitespace-nowrap">{isAr ? 'TCO السنوي' : 'Annual TCO'}</th>
+                      <th className="text-left py-2 px-2 text-slate-400 font-semibold whitespace-nowrap">{isAr ? 'فرصة التوفير' : 'Savings potential'}</th>
+                      <th className="text-left py-2 px-2 text-slate-400 font-semibold whitespace-nowrap">{isAr ? 'آخر تحديث' : 'Updated'}</th>
+                      <th className="py-2 px-2"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {tcoPortfolioSorted.map(r => (
+                      <tr key={r.id} className={`border-b border-slate-100 ${r.id === tcoActiveAnalysis.id ? 'bg-blue-50/50' : ''}`}>
+                        <td className="py-2 pr-2 font-semibold text-slate-700 whitespace-nowrap">{r.name}{r.itemName ? <span className="block text-[10px] font-normal text-slate-400">{r.itemName}</span> : null}</td>
+                        <td className="py-2 px-2 text-slate-500 whitespace-nowrap">{r.industryLabel || '—'}{r.skuLabel ? <span className="block text-[10px] text-slate-400">{r.skuLabel}</span> : null}</td>
+                        <td className="py-2 px-2 text-slate-500">{r.supplierCount}</td>
+                        <td className="py-2 px-2 text-slate-700">{r.hasData ? r.bestSupplierName : <span className="text-slate-300 italic">{isAr ? 'لا بيانات' : 'no data yet'}</span>}</td>
+                        <td className="py-2 px-2 font-semibold text-slate-800">{r.hasData ? `SAR ${r.bestTcoPerUnit.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : '—'}</td>
+                        <td className="py-2 px-2 text-slate-600">{r.hasData ? `SAR ${r.bestTcoAnnual.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : '—'}</td>
+                        <td className="py-2 px-2">
+                          {r.hasData && r.savingsPct > 0 ? (
+                            <span className="text-emerald-600 font-semibold">{r.savingsPct.toFixed(1)}%</span>
+                          ) : <span className="text-slate-300">—</span>}
+                        </td>
+                        <td className="py-2 px-2 text-slate-400 whitespace-nowrap">{new Date(r.updatedAt).toLocaleDateString()}</td>
+                        <td className="py-2 px-2">
+                          <button onClick={() => { switchTcoAnalysis(r.id); setTcoViewMode('analysis'); }}
+                            className="text-[11px] font-semibold text-[#082C6B] hover:opacity-80 whitespace-nowrap">
+                            {isAr ? 'فتح ←' : 'Open →'}
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {tcoPortfolio.filter(r => r.hasData).length === 0 && (
+                <div className="bg-slate-50 border border-dashed border-slate-300 rounded-xl p-3">
+                  <p className="text-[11px] text-slate-400">
+                    {isAr ? 'لا توجد بيانات تكلفة بعد في أي تحليل. أدخل الأسعار والكميات في "تحليل واحد" لرؤية المقارنة هنا.' : 'No cost data entered yet in any analysis. Fill in prices and quantities under "Single analysis" to see the comparison here.'}
+                  </p>
+                </div>
+              )}
+            </div>
+          ) : (
+          <>
           {/* Analysis switcher -- multiple named, saved analyses (one per item/category) */}
           <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-2">
             <div className="flex flex-wrap items-center gap-2">
@@ -1413,7 +1912,211 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
                 <Download className="w-3.5 h-3.5" />{isAr ? 'تصدير هذا التحليل (CSV)' : 'Export this analysis (CSV)'}
               </button>
             </div>
-            <p className="text-[10px] text-slate-400">{isAr ? 'يُحفَظ تلقائياً في هذا المتصفح' : 'Auto-saved in this browser'}</p>
+            <p className="text-[10px] text-slate-400">
+              {user
+                ? (tcoSyncStatus === 'saving' ? (isAr ? 'جارٍ المزامنة مع الخادم…' : 'Syncing to server…')
+                  : tcoSyncStatus === 'saved' ? (isAr ? 'تمت المزامنة مع الخادم ✓' : 'Synced to server ✓')
+                  : tcoSyncStatus === 'error' ? (isAr ? 'تعذّرت المزامنة — تم الحفظ محلياً' : 'Sync failed — saved locally')
+                  : (isAr ? 'محفوظ في حسابك' : 'Saved to your account'))
+                : (isAr ? 'يُحفَظ تلقائياً في هذا المتصفح (سجّل الدخول للحفظ في حسابك)' : 'Auto-saved in this browser (sign in to save to your account)')}
+            </p>
+          </div>
+
+          {/* ── Weighted Decision Scoring, "beyond raw cost" (#164) ── */}
+          {tcoSuppliers.length > 1 && (
+            <div className="bg-white border border-slate-200 rounded-xl p-3 space-y-3">
+              <div>
+                <p className="text-[11px] font-bold text-slate-600 uppercase tracking-wide">
+                  {isAr ? 'التقييم المرجّح -- إلى ما هو أبعد من التكلفة' : 'Weighted decision score -- beyond raw cost'}
+                </p>
+                <p className="text-[10px] text-slate-400 mt-0.5">
+                  {isAr
+                    ? 'قيّم كل مورّد يدوياً (١-٥) على الجودة والتسليم ومخاطر الاعتماد على مصدر واحد والملاءمة الاستراتيجية. هذه تقديرات إدارية منك أنت -- لا تُشتق من أي معيار. اضبط الأوزان لرؤية كيف تتغير النتيجة.'
+                    : 'Rate each supplier yourself (1-5) on quality, delivery, single-source risk, and strategic fit. These are your own judgement calls -- not derived from any benchmark. Adjust the weights to see how the ranking shifts.'}
+                </p>
+              </div>
+
+              {/* ── Supplier Scorecard cross-link (#165) -- real match against
+                  the user's own saved Supplier Scorecard roster, never
+                  auto-applied. Decision Record 8.7's "stand by a click"
+                  applies literally: a click is required to pull the rating in. ── */}
+              {tcoScorecardMatches.length > 0 && (
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-2.5 space-y-1.5">
+                  <p className="text-[10px] font-semibold text-slate-500">
+                    {isAr ? 'تطابق مع بطاقة أداء المورّد المحفوظة لديك:' : 'Matched against your saved Supplier Scorecard:'}
+                  </p>
+                  {tcoScorecardMatches.map(m => {
+                    const supplierName = tcoSuppliers.find(s => s.id === m.supplierId)?.name || m.scorecardName;
+                    return (
+                      <div key={m.supplierId} className="flex items-center justify-between flex-wrap gap-2 text-[11px]">
+                        <span className="text-slate-600">
+                          <span className="font-semibold">{supplierName}</span>
+                          {': '}
+                          {m.weighted !== null
+                            ? (isAr ? `تقييم البطاقة ${m.weighted}/100` : `Scorecard rating ${m.weighted}/100`)
+                            : (isAr ? 'بيانات البطاقة غير مكتملة' : 'scorecard data incomplete')}
+                        </span>
+                        <div className="flex items-center gap-2">
+                          {(m.qualityDim !== null || m.deliveryDim !== null) && (
+                            <button onClick={() => applyScorecardRating(m.supplierId, m.qualityDim, m.deliveryDim)}
+                              className="text-[10px] font-semibold text-[#082C6B] hover:opacity-80">
+                              {isAr ? 'تطبيق التقييم →' : 'Apply rating →'}
+                            </button>
+                          )}
+                          <a href="/solutions/supplier-relationship-governance" target="_blank" rel="noopener noreferrer"
+                            className="text-[10px] font-semibold text-slate-400 hover:text-slate-600">
+                            {isAr ? 'فتح بطاقة الأداء ↗' : 'Open Scorecard ↗'}
+                          </a>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                {([
+                  ['cost', isAr ? 'التكلفة' : 'Cost'],
+                  ['quality', isAr ? 'الجودة' : 'Quality'],
+                  ['delivery', isAr ? 'التسليم' : 'Delivery'],
+                  ['risk', isAr ? 'مخاطر المصدر الواحد' : 'Single-source risk'],
+                  ['strategicFit', isAr ? 'الملاءمة الاستراتيجية' : 'Strategic fit'],
+                ] as [keyof typeof tcoWeights, string][]).map(([key, label]) => (
+                  <div key={key}>
+                    <label className="text-[10px] text-slate-400 block mb-0.5">{label} %</label>
+                    <input type="number" min={0} max={100} value={tcoWeights[key]}
+                      aria-label={`${label} %`}
+                      onChange={e => setTcoWeights({ ...tcoWeights, [key]: Math.max(0, parseFloat(e.target.value) || 0) })}
+                      className="w-full text-xs border border-slate-200 rounded-lg px-2 py-1.5" />
+                  </div>
+                ))}
+              </div>
+              {tcoWeightsTotal !== 100 && (
+                <p className="text-[10px] text-slate-400">
+                  {isAr ? `مجموع الأوزان ${tcoWeightsTotal}% -- يُطبَّع تلقائياً عند الحساب.` : `Weights sum to ${tcoWeightsTotal}% -- automatically normalized when scoring.`}
+                </p>
+              )}
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs border-collapse">
+                  <thead>
+                    <tr className="border-b border-slate-200">
+                      <th className="text-left py-2 pr-2 text-slate-400 font-semibold whitespace-nowrap">{isAr ? 'المورّد' : 'Supplier'}</th>
+                      <th className="text-left py-2 px-2 text-slate-400 font-semibold whitespace-nowrap">{isAr ? 'الجودة' : 'Quality'}</th>
+                      <th className="text-left py-2 px-2 text-slate-400 font-semibold whitespace-nowrap">{isAr ? 'التسليم' : 'Delivery'}</th>
+                      <th className="text-left py-2 px-2 text-slate-400 font-semibold whitespace-nowrap">{isAr ? 'مخاطر المصدر الواحد' : 'Single-source risk'}</th>
+                      <th className="text-left py-2 px-2 text-slate-400 font-semibold whitespace-nowrap">{isAr ? 'الملاءمة الاستراتيجية' : 'Strategic fit'}</th>
+                      <th className="text-left py-2 px-2 text-slate-400 font-semibold whitespace-nowrap">{isAr ? 'النتيجة المرجّحة' : 'Weighted score'}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {tcoSuppliers.map(s => {
+                      const score = tcoDecisionScores.find(d => d.id === s.id);
+                      return (
+                        <tr key={s.id} className={`border-b border-slate-100 ${s.id === tcoDecisionTopId && tcoDecisionScores.length > 1 ? 'bg-emerald-50/50' : ''}`}>
+                          <td className="py-1.5 pr-2 font-semibold text-slate-700 whitespace-nowrap">{s.name}</td>
+                          {(['qualQuality', 'qualDelivery', 'qualRisk', 'qualStrategicFit'] as const).map(field => (
+                            <td key={field} className="py-1.5 px-2">
+                              <select value={s[field] ?? 3} aria-label={`${s.name} ${field}`}
+                                onChange={e => updateTcoSupplier(s.id, { [field]: parseInt(e.target.value, 10) } as Partial<TcoSupplier>)}
+                                className="text-xs border border-slate-200 rounded-lg px-1.5 py-1">
+                                {[1, 2, 3, 4, 5].map(n => <option key={n} value={n}>{n}</option>)}
+                              </select>
+                            </td>
+                          ))}
+                          <td className="py-1.5 px-2 font-bold text-slate-800">
+                            {score ? score.weighted.toFixed(0) : '0'}/100
+                            {s.id === tcoDecisionTopId && tcoDecisionScores.length > 1 && (
+                              <span className="ml-1 text-[10px] font-bold text-emerald-600">{isAr ? '(الأعلى)' : '(top)'}</span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {tcoDecisionRankFlip && (
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-2.5 flex items-start gap-2">
+                  <AlertTriangle className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
+                  <p className="text-[11px] text-amber-800">
+                    {isAr
+                      ? 'ملاحظة: المورّد الأعلى في النتيجة المرجّحة ليس هو صاحب أقل TCO -- التقييمات النوعية غيّرت الترتيب.'
+                      : 'Note: the top-scoring supplier once quality/delivery/risk/strategic fit are weighted in is NOT the lowest-TCO supplier -- the qualitative ratings changed the ranking.'}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── Sensitivity analysis (#164) -- recomputes the SAME arithmetic
+              above with one input varied by the chosen swing %, ranked by
+              impact. No new numbers are invented; every value is a recompute
+              of the user's own entered figures. ── */}
+          {tcoSuppliers.length > 0 && (
+            <div className="bg-white border border-slate-200 rounded-xl p-3 space-y-2.5">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <p className="text-[11px] font-bold text-slate-600 uppercase tracking-wide">
+                  {isAr ? 'تحليل الحساسية' : 'Sensitivity analysis'}
+                </p>
+                <div className="flex items-center gap-2">
+                  <select value={tcoSensitivitySupplier?.id || ''} aria-label={isAr ? 'المورّد' : 'Supplier'}
+                    onChange={e => setTcoSensitivitySupplierId(e.target.value)}
+                    className="text-xs border border-slate-200 rounded-lg px-2 py-1.5 font-semibold text-slate-700">
+                    {tcoSuppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                  </select>
+                  <select value={tcoSensitivitySwingPct} aria-label={isAr ? 'نسبة التغيير' : 'Swing %'}
+                    onChange={e => setTcoSensitivitySwingPct(parseInt(e.target.value, 10))}
+                    className="text-xs border border-slate-200 rounded-lg px-2 py-1.5 font-semibold text-slate-700">
+                    {[5, 10, 20, 30].map(p => <option key={p} value={p}>±{p}%</option>)}
+                  </select>
+                </div>
+              </div>
+              <p className="text-[10px] text-slate-400">
+                {isAr
+                  ? `أي مما يلي يغيّر TCO لكل وحدة لمورّد "${tcoSensitivitySupplier?.name || ''}" أكثر إذا كان الرقم المُدخل خاطئاً بنسبة ±${tcoSensitivitySwingPct}%؟`
+                  : `Which of these moves TCO/unit for "${tcoSensitivitySupplier?.name || ''}" the most if that entered number is off by ±${tcoSensitivitySwingPct}%?`}
+              </p>
+              {tcoSensitivityRows.length > 0 ? (
+                <div className="space-y-2">
+                  {tcoSensitivityRows.map(r => (
+                    <div key={r.key} className="space-y-0.5">
+                      <div className="flex items-center justify-between text-[11px]">
+                        <span className="font-semibold text-slate-600">{isAr ? r.labelAr : r.label}</span>
+                        <span className="text-slate-500">SAR {r.low.toLocaleString(undefined, { maximumFractionDigits: 2 })} &ndash; SAR {r.high.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
+                      </div>
+                      <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                        <div className="h-full bg-[#082C6B] rounded-full" style={{ width: `${Math.max(4, (r.swingAbs / tcoSensitivityMaxSwing) * 100)}%` }} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-[11px] text-slate-400 italic">
+                  {isAr ? 'أدخل بيانات التكلفة لهذا المورّد لرؤية تحليل الحساسية.' : 'Enter cost data for this supplier to see the sensitivity read.'}
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* ── AI Executive Insight for this TCO analysis (#164) ── */}
+          <div className="bg-white border border-slate-200 rounded-xl p-3">
+            <p className="text-[11px] font-bold text-slate-600 uppercase tracking-wide mb-2">
+              {isAr ? 'رؤية تنفيذية مدعومة بالذكاء الاصطناعي' : 'AI Executive Insight'}
+            </p>
+            <AIPlanPanel
+              loading={tcoAiPlan.loading} result={tcoAiPlan.result} evidenceSummary={tcoAiPlan.evidenceSummary} error={tcoAiPlan.error}
+              onGenerate={tcoAiPlan.generate} onReset={tcoAiPlan.reset}
+              savedPlan={tcoAiPlan.savedPlan} onViewSaved={tcoAiPlan.viewSaved} onDeleteSaved={tcoAiPlan.deleteSaved}
+              rateLimited={tcoAiPlan.rateLimited}
+              retryAfterSeconds={tcoAiPlan.retryAfterSeconds}
+              saveError={tcoAiPlan.saveError}
+              onDismissSaveError={tcoAiPlan.dismissSaveError}
+              buttonLabel={isAr ? 'توليد رؤية TCO التنفيذية ✨' : 'Generate TCO Executive Insight ✨'}
+              isAr={isAr} toolKey="procurement-tco"
+              disabled={tcoValidResults.length < 2}
+            />
           </div>
 
           {/* Honesty/self-critique note (Decision Record 8.6): the lowest-TCO tag is a
@@ -1429,6 +2132,8 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
                   : 'The lowest TCO per unit is not automatically the right choice: this number does not capture single-source dependency risk, a supplier’s quality/relationship track record, or strategic fit. Use it alongside the Sourcing Strategy tab above, not as a replacement for it.'}
               </p>
             </div>
+          )}
+          </>
           )}
 
           {/* Sources panel -- every grounded (non-"general principle") checklist claim above traces to one of these */}

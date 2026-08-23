@@ -29,7 +29,12 @@ describe('ProcurementToolsSection — TCO Engine tab', () => {
   it('starts with two supplier columns (A and B) in a single default analysis', () => {
     const { container } = render(<ProcurementToolsSection isAr={false} />);
     goToTco();
-    const nameInputs = within(container).getAllByDisplayValue(/Supplier [AB]/);
+    // Scoped to the main cost table -- the #164 sensitivity-analysis supplier
+    // picker is a <select> that also legitimately displays a supplier name
+    // (whichever supplier is currently selected for the "what if" read), so
+    // an unscoped query now matches more than the two name <input>s.
+    const table = container.querySelector('table')!;
+    const nameInputs = within(table).getAllByDisplayValue(/Supplier [AB]/);
     expect(nameInputs.length).toBe(2);
   });
 
@@ -92,9 +97,12 @@ describe('ProcurementToolsSection — TCO Engine tab', () => {
         inspectionCost: 0, defectPpm: 0, reworkCost: 0, auditCost: 0, poCount: 0, poCostEach: 0, invoiceProcessingCost: 0 },
     ];
     localStorage.setItem(SK_TCO_V1, JSON.stringify(v1Suppliers));
-    render(<ProcurementToolsSection isAr={false} />);
+    const { container } = render(<ProcurementToolsSection isAr={false} />);
     goToTco();
-    expect(screen.getByDisplayValue('Legacy Supplier A')).toBeInTheDocument();
+    // Scoped to the main cost table for the same reason as above -- the #164
+    // sensitivity supplier picker also displays this single supplier's name.
+    const table = container.querySelector('table')!;
+    expect(within(table).getByDisplayValue('Legacy Supplier A')).toBeInTheDocument();
     const stored = JSON.parse(localStorage.getItem(SK_TCO_V2) || '{}');
     expect(stored.analyses[0].suppliers[0].name).toBe('Legacy Supplier A');
     // Migrated rows get real defaults for the new End-of-life fields rather than undefined.
