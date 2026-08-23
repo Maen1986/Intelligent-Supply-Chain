@@ -134,6 +134,10 @@ html[lang="ar"] {
 /* Supplier Alert Config — hide print-value spans on screen; revealed only in @media print */
 .alert-cfg-val { display: none; }
 
+/* TCO Engine (#167) — same screen-hide/print-reveal pattern as alert-cfg above. */
+.tco-print-val { display: none; }
+.tco-print-header { display: none; }
+
 @media print {
   body * {
     visibility: hidden;
@@ -233,8 +237,33 @@ html[lang="ar"] {
     visibility: visible;
   }
 
+  body[data-print="tco"] .print-zone-tco,
+  body[data-print="tco"] .print-zone-tco * {
+    visibility: visible;
+  }
+
+  body[data-print="tco-portfolio"] .print-zone-tco-portfolio,
+  body[data-print="tco-portfolio"] .print-zone-tco-portfolio * {
+    visibility: visible;
+  }
+
   .print-hide {
     display: none !important;
+  }
+
+  /* ── TCO Engine print-safe number cells (#167, "TCO reporting: PDF export")
+     Same fix as Supplier Alert Config above: <input type="number"> renders
+     blank on print in Firefox and older Safari. Each cost cell carries a
+     sibling <span class="tco-print-val"> mirroring the live value; on
+     screen the span is hidden, inside the TCO print zone the input is
+     hidden (opacity:0) and the span is revealed instead. ─────────────── */
+  .print-zone-tco .tco-print-val { display: flex !important; }
+  .print-zone-tco .tco-print-input { opacity: 0; }
+  /* Print-only header blocks (TCO summary title, weights, sensitivity
+     selection) are hidden on screen and revealed only inside the zone. */
+  .print-zone-tco .tco-print-header,
+  .print-zone-tco-portfolio .tco-print-header {
+    display: block !important;
   }
 
   /* ── KPI bar chart print colour safety ─────────────────────────────────

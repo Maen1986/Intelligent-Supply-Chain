@@ -36,6 +36,27 @@ interface Remedies {
   estimatedImpact?: string;
 }
 
+/**
+ * One saved TCO Engine analysis, summarised for the report prompt (#168/#170
+ * TCO reporting, 2026-08-23). Shape matches the "best supplier" row the
+ * frontend already computes in ProcurementTools.tsx's tcoPortfolio -- see
+ * ReportGenerator.tsx for the equivalent computation on this page, kept in
+ * sync deliberately so the number a client sees on the TCO tab is the same
+ * number that lands in this report. No entitlement gating here (unlike
+ * maturityData) -- TCO analyses are not part of the module paywall, and this
+ * is the client's own account data, session-scoped like every other
+ * /api/tco-* route.
+ */
+interface TcoAnalysisSummary {
+  name:             string;
+  itemName?:        string | null;
+  bestSupplierName?: string | null;
+  bestTcoPerUnit:   number;
+  bestTcoAnnual?:   number | null;
+  savingsPct?:      number | null;
+  supplierCount:    number;
+}
+
 export interface ReportInput {
   tier:         'sme_growth' | 'startup' | 'mid_market';
   contactInfo:  { name: string; company: string; industry: string; companySize: string; email?: string };
@@ -45,6 +66,8 @@ export interface ReportInput {
     segmentScores:  SegmentScore[];
     remedies?:      Remedies;
   };
+  /** Client's own saved TCO Engine analyses, best-supplier summary only. */
+  tcoData?:     TcoAnalysisSummary[];
   language?:    'en' | 'ar';
 }
 
@@ -57,7 +80,7 @@ router.post('/generate', requireSession, async (req, res) => {
       return res.status(400).json({ error: 'contactInfo.name and contactInfo.company are required' });
     }
 
-    const { contactInfo, language } = input;
+    const { contactInfo, language, tcoData } = input;
     const lang = language === 'ar' ? 'Arabic' : 'English';
 
     // #188: never trust the client's maturityData for gated content --
@@ -107,6 +130,27 @@ ${maturityData.remedies?.estimatedImpact
   : ''}`.trim()
       : 'No maturity assessment data provided — use industry knowledge to benchmark.';
 
+    // #168/#170 (TCO reporting, 2026-08-23) -- fold the client's own saved
+    // TCO Engine analyses into the prompt when present, so cost/ROI figures
+    // in gapAnalysis, strategicRecommendations, and investmentProjection can
+    // be grounded in the client's real numbers instead of invented ones.
+    // Absent entirely (not even an empty-state string) when the account has
+    // no saved analyses, so the prompt reads identically to before this
+    // feature for every client who never used the TCO Engine.
+    const tcoContext = tcoData && tcoData.length > 0
+      ? `
+TCO ENGINE ANALYSES ON FILE (client's own saved cost comparisons):
+${tcoData.map(t => {
+  const parts = [`  "${t.name}"${t.itemName ? ` (${t.itemName})` : ''}: best TCO SAR ${t.bestTcoPerUnit.toLocaleString(undefined, { maximumFractionDigits: 2 })}/unit`];
+  if (t.bestSupplierName) parts.push(`via ${t.bestSupplierName}`);
+  if (t.bestTcoAnnual != null) parts.push(`(SAR ${t.bestTcoAnnual.toLocaleString(undefined, { maximumFractionDigits: 0 })}/yr)`);
+  if (t.savingsPct != null && t.savingsPct > 0) parts.push(`-- ${t.savingsPct.toFixed(1)}% savings potential vs. costliest supplier compared, across ${t.supplierCount} suppliers`);
+  return parts.join(' ');
+}).join('\n')}
+
+Use these real, client-specific TCO figures wherever cost, savings, or ROI claims are made -- do not invent SAR figures for categories where the client already has a real analysis on file. Where no TCO analysis exists for a category discussed, say so plainly and estimate from industry knowledge instead.`.trim()
+      : '';
+
     const systemPrompt = `You are Ma'in Alhaqash, MCIPS · CPSM · MSc · MIPP — the GCC's foremost supply chain transformation authority with 20+ years across Saudi Arabia, UAE, Qatar, Jordan, and Kuwait. You author premium, board-ready strategy reports for organisations undergoing supply chain transformation.
 
 Your writing is authoritative, specific, and GCC-contextualised. You name real frameworks (CIPS Category Cube, SCOR-P, Kraljic, ISO 31000, DMAIC, S&OP, IKTVA, GTPL, etc.). You quantify impacts in SAR. You never write generic advice — every sentence must be calibrated to the specific client's industry, size, and maturity level.
@@ -124,7 +168,7 @@ ORGANISATION SIZE: ${contactInfo.companySize}
 PACKAGE TIER: SME Growth — 30-page Strategy Report + 6-Month Implementation Roadmap
 
 ${maturityContext}
-
+${tcoContext ? `\n${tcoContext}\n` : ''}
 Generate a full strategy report with EIGHT sections, each substantive and deeply tailored to this specific client. Return ONLY valid JSON (no markdown fences) with this exact structure:
 
 {
@@ -136,7 +180,7 @@ Generate a full strategy report with EIGHT sections, each substantive and deeply
     "considerAlso": "The strongest honest counter-argument to this report's central strategic verdict -- e.g. a reason the top priority might not be the right one to start with, a resourcing or dependency risk to the sequencing, or a condition under which the recommended pace would be wrong for this client. Must be specific to this client's data, never a generic caveat like \"more data could change this\". One or two sentences. Never omit this even when confident."
   },
   "evidenceSummary": {
-    "dataUsed": ["specific input this report is grounded in, e.g. \"Overall maturity score: X/5\"", "specific segment scores or remedy actions referenced above, or \"industry knowledge (no maturity assessment on file)\" if none was provided"],
+    "dataUsed": ["specific input this report is grounded in, e.g. \"Overall maturity score: X/5\"", "specific segment scores or remedy actions referenced above, or \"industry knowledge (no maturity assessment on file)\" if none was provided", "if TCO Engine analyses were provided above, name them here too, e.g. \"TCO analysis: [name] -- SAR X/unit\""],
     "assumptions": ["assumption made where the client's data did not specify enough to be precise"],
     "confidence": "<0-100, overall confidence in this report's findings given what was actually provided. Calibrate honestly: 85-100 only with a full maturity assessment on file behind it, 60-84 for partial assessment data, below 60 when the client provided no maturity assessment (\"use industry knowledge to benchmark\" case above). Do not default high out of politeness>"
   },

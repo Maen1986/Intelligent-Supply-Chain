@@ -10,7 +10,7 @@
  */
 import React, { useState, useCallback, useMemo, useRef, useEffect, KeyboardEvent, ChangeEvent } from 'react';
 import {
-  ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip,
+  ComposedChart, LineChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Cell, ReferenceLine,
 } from 'recharts';
 import { Upload, Download, Plus, Trash2, ChevronDown, ChevronUp,
@@ -36,6 +36,20 @@ import { loadRoster as loadScorecardRoster, loadConfig as loadScorecardConfig } 
 import { calcDimScore } from '@/lib/scorecardCsv';
 
 interface ProcurementToolsProps { isAr: boolean; }
+
+// ─── Print zone helper (#167, "TCO reporting: PDF export") ──────────────────
+// Mirrors the same pattern used by RiskTools.tsx / SupplierScorecard.tsx /
+// DecisionLab.tsx / ChallengeChecklists.tsx -- each file keeps its own local
+// copy rather than sharing one, matching this codebase's existing convention.
+function printZone(zone: string) {
+  document.body.setAttribute('data-print', zone);
+  const cleanup = () => {
+    document.body.removeAttribute('data-print');
+    window.removeEventListener('afterprint', cleanup);
+  };
+  window.addEventListener('afterprint', cleanup);
+  window.print();
+}
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -975,6 +989,75 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
     }
     return rows;
   }, [tcoPortfolio, tcoPortfolioSort]);
+  // ── Trend history (#168/#169 TCO reporting, 2026-08-23) -- real
+  //    server-backed monthly snapshots of the active analysis's best TCO,
+  //    mirroring Supplier Scorecard's TrendSnapshot pattern but persisted to
+  //    /api/tco-trend-snapshots (a real per-row table) instead of
+  //    localStorage only -- TCO already has real backend persistence via
+  //    tco_analyses, so its trend history gets the same treatment. Guests
+  //    see no trend chart (nothing to sync against) rather than a
+  //    localStorage-only one that could vanish on next login (Decision
+  //    Record 8.7 -- never show data the user can't rely on).
+  interface TcoTrendSnapshotRow {
+    id: number; month: string; bestTcoPerUnit: string; bestSupplierName: string | null;
+    savingsPct: string | null;
+  }
+  const [tcoTrend, setTcoTrend] = useState<TcoTrendSnapshotRow[]>([]);
+  const [tcoTrendLoading, setTcoTrendLoading] = useState(false);
+  const tcoPrevSnapshotKeyRef = useRef<string | null>(null);
+
+  const loadTcoTrend = useCallback(async (analysisClientKey: string) => {
+    setTcoTrendLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/tco-trend-snapshots?analysisClientKey=${encodeURIComponent(analysisClientKey)}`, { credentials: 'include' });
+      if (res.ok) {
+        const data = await res.json() as { ok: boolean; snapshots?: TcoTrendSnapshotRow[] };
+        if (data.ok) setTcoTrend(Array.isArray(data.snapshots) ? data.snapshots : []);
+      }
+    } catch { /* offline -- trend chart just stays empty until next load */ }
+    setTcoTrendLoading(false);
+  }, []);
+
+  useEffect(() => {
+    if (!user) { setTcoTrend([]); return; }
+    loadTcoTrend(tcoActiveAnalysis.id);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, tcoActiveAnalysis.id]);
+
+  // Auto-snapshot: once per analysis per calendar month, whenever this
+  // analysis has valid priced data. Guarded by a composite key (analysis +
+  // month + rounded value) so it doesn't refire on every keystroke -- same
+  // monthly-dedup intent as Scorecard's prevTrendKeyRef, adapted to fire a
+  // real POST (server enforces the UNIQUE constraint too) instead of
+  // mutating a localStorage array.
+  useEffect(() => {
+    if (!user) return;
+    const row = tcoPortfolio.find(r => r.id === tcoActiveAnalysis.id);
+    if (!row || !row.hasData) return;
+    const month = new Date().toISOString().slice(0, 7);
+    const snapKey = `${row.id}|${month}|${Math.round(row.bestTcoPerUnit)}`;
+    if (tcoPrevSnapshotKeyRef.current === snapKey) return;
+    tcoPrevSnapshotKeyRef.current = snapKey;
+    (async () => {
+      try {
+        const res = await fetch(`${API_BASE}/tco-trend-snapshots`, {
+          method: 'POST', credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            analysisClientKey: row.id, analysisName: row.name, itemName: row.itemName || null,
+            bestSupplierName: row.bestSupplierName || null, bestTcoPerUnit: row.bestTcoPerUnit,
+            bestTcoAnnual: row.bestTcoAnnual || null, savingsPct: row.savingsPct || null,
+            supplierCount: row.supplierCount,
+          }),
+        });
+        // Refresh so the chart picks up the new point without waiting for
+        // the next analysis switch.
+        if (res.ok) loadTcoTrend(row.id);
+      } catch { /* offline -- snapshot just doesn't get captured this time */ }
+    })();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, tcoPortfolio, tcoActiveAnalysis.id]);
+
   // ── Cross-tab signal for the Sourcing Strategy tab (#165) -- the single
   //    biggest real savings opportunity across all saved TCO analyses. ──
   const tcoBiggestOpportunity = useMemo(() => {
@@ -1635,7 +1718,13 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
           </div>
 
           {tcoViewMode === 'portfolio' ? (
-            <div className="space-y-3">
+            <div className="print-zone-tco-portfolio space-y-3">
+              {/* Print-only header (#167) */}
+              <div className="tco-print-header pb-3 border-b border-slate-200 mb-2">
+                <h2 className="text-base font-bold text-slate-800">{isAr ? 'تقرير مقارنة محفظة TCO' : 'TCO Portfolio Comparison Report'}</h2>
+                <p className="text-[11px] text-slate-400 mt-0.5">{isAr ? 'تاريخ الإنشاء: ' : 'Generated: '}{new Date().toLocaleDateString()}</p>
+              </div>
+
               <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 flex items-start gap-2">
                 <Info className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
                 <p className="text-xs text-blue-800">
@@ -1645,7 +1734,7 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
                 </p>
               </div>
 
-              <div className="flex items-center justify-between flex-wrap gap-2">
+              <div className="flex items-center justify-between flex-wrap gap-2 print-hide">
                 <div className="flex items-center gap-2">
                   <label className="text-[11px] font-semibold text-slate-500">{isAr ? 'الترتيب حسب:' : 'Sort by:'}</label>
                   <select value={tcoPortfolioSort} onChange={e => setTcoPortfolioSort(e.target.value as TcoPortfolioSort)}
@@ -1657,10 +1746,16 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
                     <option value="savings">{isAr ? 'أكبر فرصة توفير' : 'Biggest savings opportunity'}</option>
                   </select>
                 </div>
-                <button onClick={exportTcoPortfolio}
-                  className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-700">
-                  <Download className="w-3.5 h-3.5" />{isAr ? 'تصدير المحفظة (CSV)' : 'Export portfolio (CSV)'}
-                </button>
+                <div className="flex items-center gap-2">
+                  <button onClick={exportTcoPortfolio}
+                    className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-700">
+                    <Download className="w-3.5 h-3.5" />{isAr ? 'تصدير المحفظة (CSV)' : 'Export portfolio (CSV)'}
+                  </button>
+                  <button onClick={() => printZone('tco-portfolio')}
+                    className="flex items-center gap-1.5 text-xs font-semibold bg-[#082C6B] text-white px-3 py-1.5 rounded-xl hover:bg-[#082C6B]/90 transition-colors">
+                    <FileDown className="w-3.5 h-3.5" />{isAr ? 'تصدير PDF' : 'Export PDF'}
+                  </button>
+                </div>
               </div>
 
               <div className="overflow-x-auto">
@@ -1693,7 +1788,7 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
                           ) : <span className="text-slate-300">—</span>}
                         </td>
                         <td className="py-2 px-2 text-slate-400 whitespace-nowrap">{new Date(r.updatedAt).toLocaleDateString()}</td>
-                        <td className="py-2 px-2">
+                        <td className="py-2 px-2 print-hide">
                           <button onClick={() => { switchTcoAnalysis(r.id); setTcoViewMode('analysis'); }}
                             className="text-[11px] font-semibold text-[#082C6B] hover:opacity-80 whitespace-nowrap">
                             {isAr ? 'فتح ←' : 'Open →'}
@@ -1714,9 +1809,43 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
               )}
             </div>
           ) : (
-          <>
+          <div className="print-zone-tco space-y-4">
+          {/* Export PDF (#167) -- prints this analysis: item context, cost
+              table, decision score, sensitivity read, checklist, sources. */}
+          <div className="flex justify-end print-hide">
+            <button onClick={() => printZone('tco')}
+              className="flex items-center gap-1.5 text-xs font-semibold bg-[#082C6B] text-white px-3 py-1.5 rounded-xl hover:bg-[#082C6B]/90 transition-colors">
+              <FileDown className="w-3.5 h-3.5" />{isAr ? 'تصدير PDF' : 'Export PDF'}
+            </button>
+          </div>
+
+          {/* Print-only header -- resolves everything the print-hidden editing
+              controls below would otherwise show (item context, weights,
+              generated date), since the report should read standalone. */}
+          <div className="tco-print-header pb-3 border-b border-slate-200 mb-2">
+            <h2 className="text-base font-bold text-slate-800">{isAr ? 'تقرير التكلفة الإجمالية للملكية' : 'Total Cost of Ownership Report'}</h2>
+            <p className="text-xs text-slate-600 mt-1">
+              {tcoActiveAnalysis.name}
+              {tcoActiveAnalysis.itemName ? ` -- ${tcoActiveAnalysis.itemName}` : ''}
+            </p>
+            <p className="text-[11px] text-slate-400 mt-0.5">
+              {[
+                INDUSTRIES.find(i => i.id === tcoActiveAnalysis.industry)?.label,
+                tcoActiveAnalysis.subSector,
+                SKU_CLASSES.find(sc => sc.id === tcoActiveAnalysis.skuClass)?.label,
+              ].filter(Boolean).join(' | ') || (isAr ? 'لم يتم تحديد الصناعة/الفئة' : 'Industry/category not specified')}
+            </p>
+            {tcoSuppliers.length > 1 && (
+              <p className="text-[11px] text-slate-400 mt-0.5">
+                {isAr ? 'أوزان التقييم المرجّح: ' : 'Decision score weights: '}
+                {isAr ? 'التكلفة' : 'Cost'} {tcoWeights.cost}% / {isAr ? 'الجودة' : 'Quality'} {tcoWeights.quality}% / {isAr ? 'التسليم' : 'Delivery'} {tcoWeights.delivery}% / {isAr ? 'مخاطر المصدر الواحد' : 'Single-source risk'} {tcoWeights.risk}% / {isAr ? 'الملاءمة الاستراتيجية' : 'Strategic fit'} {tcoWeights.strategicFit}%
+              </p>
+            )}
+            <p className="text-[10px] text-slate-300 mt-1">{isAr ? 'تاريخ الإنشاء: ' : 'Generated: '}{new Date().toLocaleDateString()}</p>
+          </div>
+
           {/* Analysis switcher -- multiple named, saved analyses (one per item/category) */}
-          <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-2">
+          <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-2 print-hide">
             <div className="flex flex-wrap items-center gap-2">
               <label className="text-[11px] font-semibold text-slate-500 shrink-0">{isAr ? 'التحليل:' : 'Analysis:'}</label>
               <select value={tcoActiveAnalysis.id} onChange={e => switchTcoAnalysis(e.target.value)} aria-label={isAr ? 'التحليل:' : 'Analysis:'}
@@ -1849,10 +1978,16 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
                       <tr key={f.key} className="border-b border-slate-100">
                         <td className="py-1.5 pr-2 text-slate-500 whitespace-nowrap">{isAr ? f.labelAr : f.label}</td>
                         {tcoSuppliers.map(s => (
-                          <td key={s.id} className="py-1.5 px-2">
+                          <td key={s.id} className="py-1.5 px-2 relative">
+                            {/* Print-safe number cell (#167) -- same fix as
+                                Supplier Alert Config: input hidden, mirrored
+                                span revealed, only inside the print zone. */}
                             <input type="number" min={0} value={s[f.key] || ''}
                               onChange={e => updateTcoSupplier(s.id, { [f.key]: parseFloat(e.target.value) || 0 } as Partial<TcoSupplier>)}
-                              className="w-full border border-slate-200 rounded-lg px-1.5 py-1 text-xs" />
+                              className="tco-print-input w-full border border-slate-200 rounded-lg px-1.5 py-1 text-xs" />
+                            <span className="tco-print-val absolute inset-0 items-center px-1.5 text-xs" aria-hidden="true">
+                              {s[f.key] || 0}
+                            </span>
                           </td>
                         ))}
                       </tr>
@@ -1901,7 +2036,7 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
             </table>
           </div>
 
-          <div className="flex items-center justify-between flex-wrap gap-2">
+          <div className="flex items-center justify-between flex-wrap gap-2 print-hide">
             <div className="flex items-center gap-3">
               <button onClick={addTcoSupplier} disabled={tcoSuppliers.length >= 5}
                 className="flex items-center gap-1.5 text-xs font-semibold text-[#082C6B] hover:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed">
@@ -1941,7 +2076,7 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
                   auto-applied. Decision Record 8.7's "stand by a click"
                   applies literally: a click is required to pull the rating in. ── */}
               {tcoScorecardMatches.length > 0 && (
-                <div className="bg-slate-50 border border-slate-200 rounded-xl p-2.5 space-y-1.5">
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-2.5 space-y-1.5 print-hide">
                   <p className="text-[10px] font-semibold text-slate-500">
                     {isAr ? 'تطابق مع بطاقة أداء المورّد المحفوظة لديك:' : 'Matched against your saved Supplier Scorecard:'}
                   </p>
@@ -1974,7 +2109,7 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
                 </div>
               )}
 
-              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 print-hide">
                 {([
                   ['cost', isAr ? 'التكلفة' : 'Cost'],
                   ['quality', isAr ? 'الجودة' : 'Quality'],
@@ -2060,7 +2195,7 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
                 <p className="text-[11px] font-bold text-slate-600 uppercase tracking-wide">
                   {isAr ? 'تحليل الحساسية' : 'Sensitivity analysis'}
                 </p>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 print-hide">
                   <select value={tcoSensitivitySupplier?.id || ''} aria-label={isAr ? 'المورّد' : 'Supplier'}
                     onChange={e => setTcoSensitivitySupplierId(e.target.value)}
                     className="text-xs border border-slate-200 rounded-lg px-2 py-1.5 font-semibold text-slate-700">
@@ -2100,8 +2235,53 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
             </div>
           )}
 
-          {/* ── AI Executive Insight for this TCO analysis (#164) ── */}
-          <div className="bg-white border border-slate-200 rounded-xl p-3">
+          {/* ── Trend history (#168/#169 TCO reporting) -- real monthly
+              snapshots of this analysis's best TCO/unit, captured
+              automatically as the client keeps this analysis updated across
+              months. Server-backed, so it does not appear in the #167 PDF
+              export (interactive, sign-in-gated, same treatment as the AI
+              Insight panel below). ── */}
+          <div className="bg-white border border-slate-200 rounded-xl p-3 space-y-2.5 print-hide">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <p className="text-[11px] font-bold text-slate-600 uppercase tracking-wide">
+                {isAr ? 'اتجاه التكلفة الإجمالية للملكية' : 'TCO trend history'}
+              </p>
+              {tcoTrendLoading && <span className="text-[10px] text-slate-400">{isAr ? 'جارٍ التحميل...' : 'Loading…'}</span>}
+            </div>
+            {!user ? (
+              <p className="text-[11px] text-slate-400 italic">
+                {isAr
+                  ? 'سجّل الدخول لتتبّع أفضل تكلفة إجمالية للملكية لهذا التحليل شهرياً بمرور الوقت.'
+                  : 'Sign in to track this analysis\'s best TCO/unit month over month.'}
+              </p>
+            ) : tcoTrend.length < 2 ? (
+              <p className="text-[11px] text-slate-400 italic">
+                {isAr
+                  ? 'يُبنى الاتجاه تلقائياً كلما عدت إلى هذا التحليل عبر أشهر مختلفة ولديه بيانات تسعير صالحة. عودة الشهر القادم ستضيف نقطة ثانية.'
+                  : 'The trend builds automatically as you keep returning to this priced analysis across different months. Come back next month for a second data point.'}
+              </p>
+            ) : (
+              <div style={{ width: '100%', height: 160 }}>
+                <ResponsiveContainer>
+                  <LineChart data={tcoTrend.map(s => ({ month: s.month, bestTcoPerUnit: parseFloat(s.bestTcoPerUnit), bestSupplierName: s.bestSupplierName }))}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                    <XAxis dataKey="month" tick={{ fontSize: 10 }} stroke="#94a3b8" />
+                    <YAxis tick={{ fontSize: 10 }} stroke="#94a3b8" width={56} tickFormatter={(v: number) => v.toLocaleString(undefined, { maximumFractionDigits: 0 })} />
+                    <Tooltip
+                      formatter={(value: number, _name: string, item: { payload?: { bestSupplierName?: string | null } }) =>
+                        [`SAR ${value.toLocaleString(undefined, { maximumFractionDigits: 2 })}${item?.payload?.bestSupplierName ? ` — ${item.payload.bestSupplierName}` : ''}`, isAr ? 'أفضل تكلفة/وحدة' : 'Best TCO/unit']}
+                    />
+                    <Line type="monotone" dataKey="bestTcoPerUnit" stroke="#082C6B" strokeWidth={2} dot={{ r: 3 }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+          </div>
+
+          {/* ── AI Executive Insight for this TCO analysis (#164) -- interactive
+              generate/sign-in UI has no place in a printed report; hidden from
+              the #167 PDF export. ── */}
+          <div className="bg-white border border-slate-200 rounded-xl p-3 print-hide">
             <p className="text-[11px] font-bold text-slate-600 uppercase tracking-wide mb-2">
               {isAr ? 'رؤية تنفيذية مدعومة بالذكاء الاصطناعي' : 'AI Executive Insight'}
             </p>
@@ -2133,7 +2313,7 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
               </p>
             </div>
           )}
-          </>
+          </div>
           )}
 
           {/* Sources panel -- every grounded (non-"general principle") checklist claim above traces to one of these */}

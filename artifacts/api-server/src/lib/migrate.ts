@@ -392,6 +392,29 @@ const MIGRATIONS: string[] = [
    )`,
   `CREATE INDEX IF NOT EXISTS tco_analyses_user_id ON tco_analyses (user_id)`,
 
+  // tco_trend_snapshots -- real backend persistence for TCO trend history
+  // (#168 TCO reporting, 2026-08-23). See lib/db/src/schema/tcoTrendSnapshots.ts
+  // for the full design rationale (server-computed month, keyed by the same
+  // clientKey as tco_analyses, UNIQUE constraint backs the monthly upsert in
+  // the route). Additive and idempotent, applies automatically on next
+  // server boot -- no manual migration step needed.
+  `CREATE TABLE IF NOT EXISTS tco_trend_snapshots (
+     id                    SERIAL PRIMARY KEY,
+     user_id               INTEGER       NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+     analysis_client_key   TEXT          NOT NULL,
+     month                 TEXT          NOT NULL,
+     analysis_name         TEXT          NOT NULL,
+     item_name             TEXT,
+     best_supplier_name    TEXT,
+     best_tco_per_unit     NUMERIC(14,2) NOT NULL,
+     best_tco_annual       NUMERIC(16,2),
+     savings_pct           NUMERIC(5,2),
+     supplier_count        INTEGER,
+     created_at            TIMESTAMP     NOT NULL DEFAULT NOW(),
+     UNIQUE (user_id, analysis_client_key, month)
+   )`,
+  `CREATE INDEX IF NOT EXISTS tco_trend_snapshots_user_key ON tco_trend_snapshots (user_id, analysis_client_key)`,
+
 ];
 
 export async function runStartupMigrations(): Promise<void> {

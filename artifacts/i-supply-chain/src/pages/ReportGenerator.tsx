@@ -64,6 +64,24 @@ interface MaturitySnapshot {
   evidenceAppendix?: EvidenceAppendixEntry[];
 }
 
+/**
+ * One saved TCO Engine analysis, summarised for the Report Generator
+ * (#168/#170 TCO reporting, 2026-08-23). Mirrors the "best supplier" row
+ * ProcurementTools.tsx already computes in its tcoPortfolio useMemo -- kept
+ * as a separate, deliberately small computation here (not a shared import)
+ * since this page only needs the summary figures, not the full analysis
+ * editing state.
+ */
+interface TcoAnalysisSummary {
+  name:              string;
+  itemName?:         string | null;
+  bestSupplierName?: string | null;
+  bestTcoPerUnit:    number;
+  bestTcoAnnual?:    number | null;
+  savingsPct?:       number | null;
+  supplierCount:     number;
+}
+
 interface ReportData {
   reportTitle:    string;
   reportSubtitle: string;
@@ -537,6 +555,65 @@ function ReportPrintLayout({ report, contactInfo, maturity, generatedAt }: {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
+   TCO ENGINE SUMMARY (#168/#170 TCO reporting, 2026-08-23)
+═══════════════════════════════════════════════════════════════════════════ */
+
+/** Raw shape of one row from GET /api/tco-analyses. */
+interface RawTcoSupplier {
+  id: string; name: string; unitPrice: number; annualQty: number; vatPct: number; dutyPct: number;
+  freight: number; insurance: number; handling: number; lastMile: number;
+  safetyStockDays: number; carryingCostPct: number;
+  inspectionCost: number; reworkCost: number; auditCost: number;
+  poCount: number; poCostEach: number; invoiceProcessingCost: number;
+  disposalCost: number;
+}
+interface RawTcoAnalysis {
+  clientKey: string; name: string; itemName: string | null; suppliers: RawTcoSupplier[];
+}
+
+/**
+ * Same arithmetic as ProcurementTools.tsx's computeTcoResultsForSuppliers /
+ * tcoPortfolio (kept deliberately in sync so the number a client sees on
+ * the TCO tab is the same number that lands in this report) -- reduced here
+ * to just the per-supplier TCO/unit, since this page only needs the
+ * best/worst read, not the full cost-stage breakdown.
+ */
+function tcoPerUnitFor(s: RawTcoSupplier): number {
+  const directPurchase = s.unitPrice * s.annualQty;
+  const vatAmount = directPurchase * (s.vatPct / 100);
+  const dutyAmount = directPurchase * (s.dutyPct / 100);
+  const directTotal = directPurchase + vatAmount + dutyAmount;
+  const logisticsTotal = s.freight + s.insurance + s.handling + s.lastMile;
+  const safetyStockValue = directPurchase * (s.safetyStockDays / 365);
+  const carryingCostAnnual = safetyStockValue * (s.carryingCostPct / 100);
+  const qualityTotal = s.inspectionCost + s.reworkCost + s.auditCost;
+  const transactionTotal = (s.poCount * s.poCostEach) + s.invoiceProcessingCost;
+  const endOfLifeAnnual = s.disposalCost;
+  const tcoAnnual = directTotal + logisticsTotal + carryingCostAnnual + qualityTotal + transactionTotal + endOfLifeAnnual;
+  return s.annualQty > 0 ? tcoAnnual / s.annualQty : 0;
+}
+
+function summariseTcoAnalyses(rows: RawTcoAnalysis[]): TcoAnalysisSummary[] {
+  return rows.map<TcoAnalysisSummary | null>(a => {
+    const priced = a.suppliers
+      .map(s => ({ s, tcoPerUnit: tcoPerUnitFor(s) }))
+      .filter(x => x.tcoPerUnit > 0);
+    if (priced.length === 0) return null;
+    const best  = priced.reduce((m, x) => x.tcoPerUnit < m.tcoPerUnit ? x : m);
+    const worst = priced.reduce((m, x) => x.tcoPerUnit > m.tcoPerUnit ? x : m);
+    const savingsPct = worst.tcoPerUnit > 0 && priced.length > 1
+      ? ((worst.tcoPerUnit - best.tcoPerUnit) / worst.tcoPerUnit) * 100 : 0;
+    return {
+      name: a.name, itemName: a.itemName || null,
+      bestSupplierName: best.s.name || null,
+      bestTcoPerUnit: best.tcoPerUnit,
+      bestTcoAnnual: best.tcoPerUnit * (best.s.annualQty || 0),
+      savingsPct, supplierCount: a.suppliers.length,
+    };
+  }).filter((r): r is TcoAnalysisSummary => r !== null);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
    MAIN PAGE
 ═══════════════════════════════════════════════════════════════════════════ */
 
@@ -563,6 +640,24 @@ export function ReportGenerator() {
 
   /* ── Cached report restore ── */
   const [cachedReport, setCachedReport] = useState<ReportCache | null>(null);
+
+  /* ── TCO Engine analyses (#168/#170 TCO reporting) -- fetched once per
+   * session so the generated report can ground cost/ROI claims in the
+   * client's own real TCO data when they have any on file. Silently empty
+   * for guests or accounts with no saved analyses -- same behaviour as
+   * before this feature existed. */
+  const [tcoSummaries, setTcoSummaries] = useState<TcoAnalysisSummary[]>([]);
+  useEffect(() => {
+    if (!user) { setTcoSummaries([]); return; }
+    (async () => {
+      try {
+        const res = await fetch(`${API_BASE}/tco-analyses`, { credentials: 'include' });
+        if (!res.ok) return;
+        const data = await res.json() as { ok: boolean; analyses?: RawTcoAnalysis[] };
+        if (data.ok && Array.isArray(data.analyses)) setTcoSummaries(summariseTcoAnalyses(data.analyses));
+      } catch { /* offline -- report just generates without TCO grounding this time */ }
+    })();
+  }, [user]);
 
   useEffect(() => {
     // Load cached report
@@ -616,6 +711,7 @@ export function ReportGenerator() {
           tier: 'sme_growth',
           contactInfo,
           maturityData: maturity ?? undefined,
+          tcoData: tcoSummaries.length > 0 ? tcoSummaries : undefined,
           language: ar ? 'ar' : 'en',
         }),
       });

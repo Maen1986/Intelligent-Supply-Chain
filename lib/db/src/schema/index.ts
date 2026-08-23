@@ -6,6 +6,7 @@ export * from "./entitlements";
 export * from "./submissions";
 export * from "./findingsActions";
 export * from "./tcoAnalyses";
+export * from "./tcoTrendSnapshots";
 export * from "./claimTokens";
 export * from "./sessions";
 export * from "./feedback";

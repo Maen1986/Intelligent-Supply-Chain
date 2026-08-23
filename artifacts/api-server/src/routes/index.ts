@@ -34,6 +34,7 @@ import claimRouter              from "./claim";
 import entitlementsRouter       from "./entitlements";
 import roiSummaryRouter         from "./roiSummary";
 import tcoAnalysesRouter        from "./tcoAnalyses";
+import tcoTrendSnapshotsRouter  from "./tcoTrendSnapshots";
 
 const router: IRouter = Router();
 
@@ -71,6 +72,7 @@ router.use(claimRouter);
 router.use(entitlementsRouter);
 router.use(roiSummaryRouter);
 router.use("/tco-analyses",     tcoAnalysesRouter);
+router.use("/tco-trend-snapshots", tcoTrendSnapshotsRouter);
 router.use(webhooksInboundRouter);
 
 export default router;
