@@ -511,6 +511,16 @@ export function ResiliencyToolsSection({ isAr }: Props) {
               <p className="text-[11px] text-slate-400 mb-3">
                 {isAr ? 'أضف كل عميل رئيسي أو مورّد أو مصنع أحادي المصدر، ونسبته من إجمالي الإيراد، وحدّد ما إذا كان زمن التعافي أطول من زمن الصمود له (عندها فقط يُحتسب كعقدة "معرّضة للخطر فعلياً").' : 'Add each key customer, supplier, or single-source plant, its % of total revenue, and whether its recovery time exceeds your survival time (only then does it count as "genuinely at risk").'}
               </p>
+              {/* #182 honesty note: leadTimeDays/route are recorded for reference on each node
+                  but do NOT feed the exposure % (only revenuePct + atRisk do) -- this tool has no
+                  lead-time-to-dollar or route-risk model to draw on, so it never pretends to. Said
+                  explicitly here rather than left to a silent zero-delta a user could mistake for
+                  a bug (Decision Record 8.7 / 8.6 honesty dimension). */}
+              <p className="text-[11px] text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5 mb-3">
+                {isAr
+                  ? 'مهلة التوريد والمسار أدناه للتوثيق فقط — لا يؤثران حاليًا على نسبة التعرّض للخطر، والتي تعتمد فقط على نسبة الإيراد وحالة "معرّض للخطر".'
+                  : 'Lead time and route below are recorded for reference only — they do not currently affect the exposure %, which depends only on %-revenue and at-risk status.'}
+              </p>
               <div className="space-y-2">
                 {rarNodes.map(n => (
                   <div key={n.id} className="flex items-center gap-2 flex-wrap bg-slate-50 rounded-xl p-2.5">
@@ -603,8 +613,8 @@ export function ResiliencyToolsSection({ isAr }: Props) {
                 </div>
                 <p className="text-[11px] text-slate-400">
                   {isAr
-                    ? 'عدّل عقد أي سيناريو (المورّد/المسار/مهلة التوريد/النسبة/التعرّض) بشكل مستقل عن خط الأساس أعلاه، ثم قارن التعرّض جنباً إلى جنب.'
-                    : "Edit any scenario's nodes (supplier, route, lead-time, %-revenue, at-risk) independently of the baseline above, then compare exposure side-by-side."}
+                    ? 'عدّل عقد أي سيناريو (المورّد/المسار/مهلة التوريد/النسبة/التعرّض) بشكل مستقل عن خط الأساس أعلاه، ثم قارن التعرّض جنباً إلى جنب. (تُحتسب النسبة المئوية للتعرّض فقط من نسبة الإيراد وحالة "معرّض للخطر" — المسار ومهلة التوريد للتوثيق فقط.)'
+                    : "Edit any scenario's nodes (supplier, route, lead-time, %-revenue, at-risk) independently of the baseline above, then compare exposure side-by-side. (Only %-revenue and at-risk status drive the exposure % -- route and lead-time are recorded for reference only.)"}
                 </p>
 
                 {rarScenarios.map(s => {
