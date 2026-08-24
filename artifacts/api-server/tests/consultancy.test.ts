@@ -183,6 +183,71 @@ describe('POST /api/consultancy/refine', () => {
   });
 });
 
+describe('POST /api/consultancy/ask (#191)', () => {
+  it('requires industry, challenge, diagnosis, and question', async () => {
+    const app = makeApp('/api/consultancy', consultancyRouter, { userId: 1 });
+    const res = await request(app).post('/api/consultancy/ask').send({ industry: 'FMCG' });
+    expect(res.status).toBe(400);
+    expect(res.body.ok).toBe(false);
+  });
+
+  it('rejects a whitespace-only question the same as a missing one', async () => {
+    const app = makeApp('/api/consultancy', consultancyRouter, { userId: 1 });
+    const res = await request(app).post('/api/consultancy/ask').send({
+      industry: 'FMCG', challenge: 'x', diagnosis: { challengeSummary: 'y' }, question: '   ',
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it('returns a profound, framework-grounded answer shaped as answer/frameworkApplied/evidenceSummary/considerAlso', async () => {
+    aiReply({
+      answer: 'Your OTIF decline traces to a SCOR Source-process reliability gap...',
+      frameworkApplied: 'SCOR — Source (Reliability, Responsiveness)',
+      evidenceSummary: { dataUsed: ['P1: Carrier capacity mismatch'], assumptions: [], confidence: 82 },
+      considerAlso: 'If the 3PL contract renews within 60 days, a renegotiated SLA may resolve this faster than a re-tender.',
+    });
+    const app = makeApp('/api/consultancy', consultancyRouter, { userId: 1 });
+    const res = await request(app).post('/api/consultancy/ask').send({
+      industry: 'FMCG',
+      challenge: 'OTIF is 62% and falling',
+      diagnosis: { challengeSummary: 'Late deliveries', problems: [{ id: 'P1', framework: 'SCOR - Source' }] },
+      question: 'Why did you rate carrier capacity as the immediate cause instead of demand forecasting?',
+    });
+    expect(res.status).toBe(200);
+    expect(res.body.ok).toBe(true);
+    expect(res.body.answer.frameworkApplied).toBe('SCOR — Source (Reliability, Responsiveness)');
+    expect(res.body.answer.answer).toContain('SCOR Source-process reliability gap');
+    expect(res.body.answer.evidenceSummary.dataUsed).toEqual(['P1: Carrier capacity mismatch']);
+    expect(res.body.answer.considerAlso).toContain('renegotiated SLA');
+  });
+
+  it('accepts an optional solution and includes it in the AI prompt context', async () => {
+    aiReply({ answer: 'x', frameworkApplied: 'CIPS', evidenceSummary: { dataUsed: [], assumptions: [], confidence: 70 }, considerAlso: 'y' });
+    const app = makeApp('/api/consultancy', consultancyRouter, { userId: 1 });
+    const res = await request(app).post('/api/consultancy/ask').send({
+      industry: 'FMCG',
+      challenge: 'x',
+      diagnosis: { challengeSummary: 'y' },
+      solution: { executiveSolution: 'Renegotiate SLA' },
+      question: 'Does this apply to our Riyadh warehouse specifically?',
+    });
+    expect(res.status).toBe(200);
+    const promptSent = createMock.mock.calls[0][0].messages[1].content as string;
+    expect(promptSent).toContain('SOLUTION PLAN ALREADY GIVEN');
+    expect(promptSent).toContain('Renegotiate SLA');
+  });
+
+  it('maps AI errors the same friendly way as the other routes', async () => {
+    createMock.mockRejectedValueOnce(Object.assign(new Error('rate limited'), { status: 429 }));
+    const app = makeApp('/api/consultancy', consultancyRouter, { userId: 1 });
+    const res = await request(app).post('/api/consultancy/ask').send({
+      industry: 'FMCG', challenge: 'x', diagnosis: { challengeSummary: 'y' }, question: 'Why?',
+    });
+    expect(res.status).toBe(503);
+    expect(res.body.ok).toBe(false);
+  });
+});
+
 describe('POST /api/consultancy/escalate', () => {
   it('sends the escalation email and persists the case', async () => {
     dbState.insertRows = [{ id: 9 }];

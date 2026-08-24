@@ -25,7 +25,32 @@
  *   similarCase is additive context, not a dependency.
  * POST /api/consultancy/solution    → solution plan generation
  * POST /api/consultancy/refine      → refine solution after satisfaction feedback
+ * POST /api/consultancy/ask         → answer a client's follow-up question (#191, 24 Aug 2026)
  * POST /api/consultancy/escalate    → email Ma'in + log case to DB
+ *
+ * #191 (Ask the Consultant, 24 Aug 2026): surfaced during a live conversation --
+ * the only existing follow-up path was the low-satisfaction "feedback" textarea
+ * on /refine, which only appears at the solution stage after a sub-4-star
+ * rating. A client with a genuine clarifying question -- satisfied or not, at
+ * the diagnosis stage or the solution stage -- had no path at all. /ask fills
+ * that gap as its own capability, decoupled from the satisfaction/refine flow.
+ * Reuses CONSULTANT_IDENTITY (same persona as every other route here) rather
+ * than a second system prompt. The owner's requirement: answers must be
+ * expert at a PROFOUND level, not generic reassurance. Rather than rely on
+ * the persona's broad framework list alone, the prompt instructs the AI to
+ * identify which specific framework(s) the diagnosis's own problems[] already
+ * named (Problem DNA's `framework` field, #167) are most relevant to the
+ * question, and go deep in THAT one -- real named methodology components
+ * (a specific SCOR performance attribute, a CIPS competency level, an ISO
+ * 31000 process step, a Six Sigma DMAIC phase, the TOC constraint type),
+ * not generic supply-chain language. Stateless V1 -- deliberately not
+ * persisted to the submissions table. Every other route here persists
+ * because it produces a durable artifact (a diagnosis, a solution) the
+ * client returns to; a Q&A exchange is conversational, and adding a new
+ * `tool` value would touch the admin lead list and MyAssessments' TOOL_ORDER
+ * filtering, both unverified against this shape. Kept out of scope rather
+ * than guessed at -- can be added later as its own, properly scoped item if
+ * a Q&A history view turns out to be wanted.
  */
 import { Router } from 'express';
 import { openai } from '@workspace/integrations-openai-ai-server';
@@ -383,6 +408,81 @@ Return an improved solution in the same JSON structure as the original solution,
     res.json({ ok: true, solution: JSON.parse(content) });
   } catch (err) {
     logger.error({ err }, '[consultancy/refine] failed');
+    const { message, status } = friendlyAIError(err);
+    res.status(status).json({ ok: false, error: message });
+  }
+});
+
+// ── POST /api/consultancy/ask (#191, 24 Aug 2026) ──────────────────────────────
+// A client's follow-up question about a diagnosis (and solution, if one
+// exists yet), answered in-depth in whichever specific framework the
+// diagnosis itself already invoked -- see file header for the full
+// rationale on why this exists and why it is deliberately stateless.
+router.post('/ask', requireSession, leadsRateLimiter, async (req, res) => {
+  const { industry, subIndustry, challenge, diagnosis, solution, question, language } = req.body as {
+    industry:      string;
+    subIndustry?:  string;
+    challenge:     string;
+    diagnosis:     Record<string, unknown>;
+    solution?:     Record<string, unknown> | null;
+    question:      string;
+    language?:     'en' | 'ar';
+  };
+
+  if (!industry || !challenge || !diagnosis || !question || !question.trim()) {
+    res.status(400).json({ ok: false, error: 'industry, challenge, diagnosis, and question are required' });
+    return;
+  }
+
+  const lang = language === 'ar' ? 'Arabic' : 'English';
+  const industryFull = subIndustry ? `${industry} — ${subIndustry}` : industry;
+
+  const prompt = `The client has a follow-up question about the diagnosis below${solution ? ' and the solution plan that followed it' : ''}. Answer it directly, in ${lang}.
+
+INDUSTRY: ${industryFull}
+ORIGINAL CHALLENGE: ${challenge}
+FULL DIAGNOSIS (includes each problem's "framework" field -- the specific methodology already applied to that problem): ${JSON.stringify(diagnosis, null, 2)}
+${solution ? `SOLUTION PLAN ALREADY GIVEN: ${JSON.stringify(solution, null, 2)}
+` : ''}
+CLIENT'S QUESTION: ${question}
+
+Instructions for a PROFOUND answer, not a generic one:
+1. Look at the "framework" field already named on the diagnosis's problems (e.g. "SCOR - Source", "CIPS Level 4", "ISO 31000", a Lean/Six Sigma/TOC reference). Identify which ONE is most relevant to this specific question.
+2. Answer using genuine depth from THAT framework -- name its real components (a specific SCOR performance attribute or process category, a specific CIPS competency level, an ISO 31000 process step, a Six Sigma DMAIC phase, the TOC constraint type, a named CLM clause type). Never answer in generic "supply chain best practice" language when a specific framework already applies.
+3. If no framework already in the diagnosis genuinely fits the question, say so explicitly and apply the single best-fitting framework from your full methodology list instead of forcing a mismatch.
+4. Ground every claim in the actual diagnosis/solution content above -- reference the specific problem, root cause, or solution phase the question is really about, not the challenge description in the abstract.
+5. Never deflect or answer vaguely to sound safe -- give the client a real, specific, decision-useful answer, the way a senior consultant would in a live meeting.
+
+Return JSON exactly in this shape:
+{
+  "answer": "the full answer -- as long as needed to be genuinely thorough, written in full sentences, no bullet-point shorthand",
+  "frameworkApplied": "the specific framework name this answer is grounded in, e.g. 'SCOR — Source (Reliability, Responsiveness)' or 'CIPS Procurement Excellence Framework — Level 4'",
+  "evidenceSummary": {
+    "dataUsed": ["specific element of the diagnosis/solution this answer draws on"],
+    "assumptions": ["assumption made where the diagnosis did not specify enough to answer precisely -- state plainly if none"],
+    "confidence": "0-100, honest confidence this answer is well-grounded given what the diagnosis actually provided"
+  },
+  "considerAlso": "the strongest honest counter-consideration or edge case to this specific answer -- never a generic caveat"
+}`;
+
+  try {
+    const response = await openai.chat.completions.create({
+      model: OPENAI_MODEL,
+      messages: [
+        { role: 'system', content: CONSULTANT_IDENTITY },
+        { role: 'user',   content: prompt },
+      ],
+      response_format: { type: 'json_object' },
+      max_completion_tokens: 2000,
+    });
+
+    const content = response.choices[0]?.message?.content;
+    if (!content) throw new Error('No content from AI');
+    const answer = JSON.parse(content);
+
+    res.json({ ok: true, answer });
+  } catch (err) {
+    logger.error({ err }, '[consultancy/ask] failed');
     const { message, status } = friendlyAIError(err);
     res.status(status).json({ ok: false, error: message });
   }

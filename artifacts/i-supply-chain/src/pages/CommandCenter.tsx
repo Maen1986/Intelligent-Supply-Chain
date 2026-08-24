@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { EvidenceSummary, ConsiderAlso, SimilarCase, type SimilarCaseData } from '@/components/EvidenceSummary';
+import { AskConsultant } from '@/components/AskConsultant';
 import { TellMeTheStoryButton, type NarrativeStep } from '@/components/NarrativeStory';
 import { ProblemChainFlow } from '@/components/ProblemChainFlow';
 import { getVitalSigns, setVitalSign, getPriorityVitalSigns, toggleVitalSignPriority, type VitalSignKey, type VitalSign } from '@/lib/commandCenterVitalSigns';
@@ -3621,6 +3622,7 @@ function ConsultancyTab({ lang }: { lang: Lang }) {
               <p className="text-sm italic">"{diagnosis.consultantNote}"</p>
             </div>
           )}
+          <AskConsultant industry={industry} subIndustry={subIndustry} challenge={challenge} diagnosis={diagnosis} lang={lang} ar={ar} />
           <Button onClick={generateSolution} className="w-full bg-[#082C6B] hover:bg-[#0B3D91] text-white font-bold py-3">
             <Zap className={`w-4 h-4 ${ar ? 'ml-2' : 'mr-2'}`} />{ar ? 'إنشاء خطة الحل الكاملة' : 'Generate Full Solution Plan'}
           </Button>
@@ -3703,6 +3705,7 @@ function ConsultancyTab({ lang }: { lang: Lang }) {
               {solution.resiliencyImpact && <div className="bg-blue-50 border border-blue-200 rounded-xl p-4"><p className="text-xs font-bold text-blue-700 uppercase tracking-wider mb-1">{ar ? 'أثر المرونة' : 'Resiliency Impact'}</p><p className="text-sm text-blue-900 leading-relaxed">{solution.resiliencyImpact}</p></div>}
             </div>
           )}
+          <AskConsultant industry={industry} subIndustry={subIndustry} challenge={challenge} diagnosis={diagnosis} solution={solution} lang={lang} ar={ar} />
           {/* Satisfaction */}
           {!escalated && (
             <div className="rounded-xl border border-border p-5 space-y-3">
