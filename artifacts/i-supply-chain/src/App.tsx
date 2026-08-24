@@ -43,6 +43,7 @@ import { AccountSettings } from '@/pages/AccountSettings';
 import { MyAssessments } from '@/pages/MyAssessments';
 import { ActionTracker } from '@/pages/ActionTracker';
 import { DailyBrief } from '@/pages/DailyBrief';
+import { MyWorkbench } from '@/pages/MyWorkbench';
 import { useIPProtection } from '@/hooks/useIPProtection';
 import { ChatWidget } from '@/components/ChatWidget';
 import { WhatsAppButton } from '@/components/WhatsAppButton';
@@ -100,6 +101,7 @@ function Router() {
         <Route path="/my-assessments" component={MyAssessments} />
         <Route path="/action-tracker" component={ActionTracker} />
         <Route path="/brief" component={DailyBrief} />
+        <Route path="/workbench" component={MyWorkbench} />
         <Route path="/roi-waterfall" component={ROIWaterfall} />
         <Route path="/customer-voice" component={CustomerVoice} />
         <Route path="/legal" component={Legal} />
