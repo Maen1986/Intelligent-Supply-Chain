@@ -14,16 +14,34 @@ import { useRateLimitCountdown } from '@/hooks/useRateLimitCountdown';
 // ── Symptom picker options (grounded in the real-world supply-chain problem
 //    library — Section 12 Symptom-to-Root-Cause Library — so the free-text
 //    box is no longer the only way a user can hand the AI something specific
-//    to reason about). Keep ids stable: the backend keys off these exact ids. ──
+//    to reason about). Keep ids stable: the backend keys off these exact ids.
+//
+//    focusAreas tags each symptom to the Step 5 focus-area value(s) (exact
+//    strings from the Step 5 options list below) it is genuinely relevant
+//    to, so Step 7 can show a shorter, more relevant subset instead of a
+//    flat 8-item list (#181, Adaptive Diagnostic Interrogation v1 — a small
+//    tag-and-filter pass, not a decision-tree engine). `focusAreas: null`
+//    means "always show, not filterable" — reserved for 'other', the
+//    explicit escape valve. A "Show all symptoms" reveal in Step 7 always
+//    lets a user see the full list, so filtering never hides a real option
+//    with no way back to it. ──
 const SYMPTOM_OPTIONS = [
-  { id: 'stockouts',            en: 'Stockouts / cannot fulfil orders',                        ar: 'نفاد المخزون / تعذّر تلبية الطلبات' },
-  { id: 'excess_inventory',     en: 'Excess inventory / slow-moving stock',                     ar: 'مخزون زائد / بطيء الحركة' },
-  { id: 'late_deliveries',      en: 'Late customer deliveries',                                 ar: 'تأخر التسليم للعملاء' },
-  { id: 'high_cost',            en: 'High procurement / purchasing cost',                       ar: 'ارتفاع تكلفة الشراء/المشتريات' },
-  { id: 'supplier_reliability', en: 'Supplier reliability issues (late, inconsistent, capacity)', ar: 'مشاكل موثوقية الموردين (تأخر، عدم اتساق، طاقة إنتاجية)' },
-  { id: 'quality_defects',      en: 'Quality / defect issues',                                  ar: 'مشاكل الجودة / العيوب' },
-  { id: 'data_visibility',      en: 'Data & visibility gaps (spreadsheets, ERP mismatches)',     ar: 'فجوات البيانات والرؤية (جداول بيانات، عدم تطابق ERP)' },
-  { id: 'other',                en: 'Something else / not sure yet',                            ar: 'شيء آخر / لست متأكداً بعد' },
+  { id: 'stockouts',            en: 'Stockouts / cannot fulfil orders',                        ar: 'نفاد المخزون / تعذّر تلبية الطلبات',
+    focusAreas: ['Supply Chain Strategy', 'Risk Management', 'Resiliency'] as string[] },
+  { id: 'excess_inventory',     en: 'Excess inventory / slow-moving stock',                     ar: 'مخزون زائد / بطيء الحركة',
+    focusAreas: ['Supply Chain Strategy', 'Sustainability'] as string[] },
+  { id: 'late_deliveries',      en: 'Late customer deliveries',                                 ar: 'تأخر التسليم للعملاء',
+    focusAreas: ['Supply Chain Strategy', 'Supplier Governance', 'Risk Management', 'Resiliency'] as string[] },
+  { id: 'high_cost',            en: 'High procurement / purchasing cost',                       ar: 'ارتفاع تكلفة الشراء/المشتريات',
+    focusAreas: ['Procurement', 'CLM'] as string[] },
+  { id: 'supplier_reliability', en: 'Supplier reliability issues (late, inconsistent, capacity)', ar: 'مشاكل موثوقية الموردين (تأخر، عدم اتساق، طاقة إنتاجية)',
+    focusAreas: ['Procurement', 'CLM', 'Supplier Governance', 'Risk Management', 'Resiliency'] as string[] },
+  { id: 'quality_defects',      en: 'Quality / defect issues',                                  ar: 'مشاكل الجودة / العيوب',
+    focusAreas: ['Supplier Governance', 'Risk Management', 'Sustainability', 'Government Compliance'] as string[] },
+  { id: 'data_visibility',      en: 'Data & visibility gaps (spreadsheets, ERP mismatches)',     ar: 'فجوات البيانات والرؤية (جداول بيانات، عدم تطابق ERP)',
+    focusAreas: ['Supply Chain Strategy', 'Digital Transformation', 'Organizational Design', 'Government Compliance'] as string[] },
+  { id: 'other',                en: 'Something else / not sure yet',                            ar: 'شيء آخر / لست متأكداً بعد',
+    focusAreas: null as string[] | null },
 ] as const;
 
 const FREQUENCY_OPTIONS = [
@@ -73,11 +91,34 @@ export function Diagnostic() {
   });
   const [symptoms, setSymptoms] = useState<string[]>([]);
   const [symptomDetails, setSymptomDetails] = useState<Record<string, SymptomDetail>>({});
+  // Step 7 symptom picker: on by default the grid is narrowed to the Step 5
+  // focusArea answer (see SYMPTOM_OPTIONS.focusAreas above); this is a
+  // one-way reveal — once a user asks to see everything we don't re-hide
+  // anything, which keeps the escape hatch unambiguous and honest.
+  const [showAllSymptoms, setShowAllSymptoms] = useState(false);
 
   const totalSteps = 7;
 
   const handleNext = () => { if (step < totalSteps) setStep(step + 1); };
   const handleBack = () => { if (step > 1) setStep(step - 1); };
+
+  // A symptom is "in focus" for the current Step 5 answer when it's tagged
+  // null (always-show, e.g. 'other') or its focusAreas list includes the
+  // selected focusArea.
+  const isSymptomInFocus = (opt: (typeof SYMPTOM_OPTIONS)[number]) =>
+    !opt.focusAreas || (opt.focusAreas as readonly string[]).includes(formData.focusArea);
+
+  // What actually renders in the Step 7 grid: everything in focus, plus
+  // anything already selected (even if the user then went back to Step 5
+  // and picked a different focus area) so a prior selection is never made
+  // invisible/unremovable, plus everything once "Show all symptoms" has
+  // been used.
+  const visibleSymptomOptions = SYMPTOM_OPTIONS.filter(
+    (opt) => showAllSymptoms || isSymptomInFocus(opt) || symptoms.includes(opt.id),
+  );
+  const hasHiddenSymptoms = !showAllSymptoms && SYMPTOM_OPTIONS.some(
+    (opt) => !isSymptomInFocus(opt) && !symptoms.includes(opt.id),
+  );
 
   const toggleSymptom = (id: string) => {
     setSymptoms((prev) => {
@@ -456,9 +497,10 @@ export function Diagnostic() {
                     ? 'اختر ما ينطبق عليك — هذا هو أهم مُدخل نملكه لتخصيص تقريرك فعلياً.'
                     : "Pick what applies to you — this is the single most important input we have for actually personalizing your report."}
                 </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
-                  {SYMPTOM_OPTIONS.map((opt) => {
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-2">
+                  {visibleSymptomOptions.map((opt) => {
                     const active = symptoms.includes(opt.id);
+                    const keptFromEarlierAnswer = active && !showAllSymptoms && !isSymptomInFocus(opt);
                     return (
                       <button
                         key={opt.id}
@@ -470,10 +512,27 @@ export function Diagnostic() {
                         }`}
                       >
                         {isAr ? opt.ar : opt.en}
+                        {keptFromEarlierAnswer && (
+                          <span className="block mt-0.5 text-xs font-normal opacity-70">
+                            {isAr ? 'من إجابة سابقة' : 'From an earlier answer'}
+                          </span>
+                        )}
                       </button>
                     );
                   })}
                 </div>
+
+                {hasHiddenSymptoms && (
+                  <button
+                    type="button"
+                    onClick={() => setShowAllSymptoms(true)}
+                    data-testid="button-show-all-symptoms"
+                    className="text-sm font-semibold text-primary hover:underline mb-4"
+                  >
+                    {isAr ? 'إظهار كل الأعراض' : 'Show all symptoms'}
+                  </button>
+                )}
+                {!hasHiddenSymptoms && <div className="mb-4" />}
 
                 {symptoms.length > 0 && (
                   <div className="space-y-3 mb-5">
