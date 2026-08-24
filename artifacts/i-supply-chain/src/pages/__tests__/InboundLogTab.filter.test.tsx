@@ -91,17 +91,21 @@ describe('InboundLogTab — action filter', () => {
     const input = screen.getByPlaceholderText('Filter by action…');
     fireEvent.change(input, { target: { value: 'supplier' } });
 
-    // Wait for the filtered fetch to resolve
+    // Wait for the filtered fetch to fully resolve into its final state.
+    // A single combined waitFor is required here, not a "wait for the old
+    // row to disappear" step followed by synchronous asserts: while the
+    // new fetch is in flight, load() sets loading=true and the component
+    // replaces the whole table with a spinner -- which *also* makes
+    // 'kpi.import' disappear, satisfying an absence-only waitFor before the
+    // filtered data has actually arrived. Asserting presence of the new
+    // content synchronously right after was a race against that loading
+    // state, not just against the network mock.
     await waitFor(() => {
       expect(screen.queryByText('kpi.import')).not.toBeInTheDocument();
+      expect(screen.getByText('supplier.update')).toBeInTheDocument();
+      expect(screen.getByText('supplier.delete')).toBeInTheDocument();
+      expect(screen.getByText(`${SUPPLIER_ROWS.length} records`)).toBeInTheDocument();
     });
-
-    // Both supplier rows are still visible
-    expect(screen.getByText('supplier.update')).toBeInTheDocument();
-    expect(screen.getByText('supplier.delete')).toBeInTheDocument();
-
-    // Total count reflects filtered set
-    expect(screen.getByText(`${SUPPLIER_ROWS.length} records`)).toBeInTheDocument();
   });
 
   /* ── B. Status dropdown "error" hides OK rows ────────────────────────── */
@@ -120,15 +124,16 @@ describe('InboundLogTab — action filter', () => {
     const select = screen.getByRole('combobox');
     fireEvent.change(select, { target: { value: 'error' } });
 
-    // Wait for filtered fetch
+    // Wait for the filtered fetch to fully resolve into its final state --
+    // same combined-waitFor reasoning as test A above: the interim loading
+    // spinner also satisfies an absence-only check, so presence of the new
+    // row must be asserted inside the same waitFor, not synchronously after.
     await waitFor(() => {
       expect(screen.queryByText('supplier.update')).not.toBeInTheDocument();
       expect(screen.queryByText('kpi.import')).not.toBeInTheDocument();
+      expect(screen.getByText('supplier.delete')).toBeInTheDocument();
+      expect(screen.getByText(`${ERROR_ROWS.length} records`)).toBeInTheDocument();
     });
-
-    // Error row is visible
-    expect(screen.getByText('supplier.delete')).toBeInTheDocument();
-    expect(screen.getByText(`${ERROR_ROWS.length} records`)).toBeInTheDocument();
   });
 
   /* ── C. Clearing the action filter restores all rows ─────────────────── */
@@ -187,13 +192,14 @@ describe('InboundLogTab — action filter', () => {
     const select = screen.getByRole('combobox');
     fireEvent.change(select, { target: { value: 'error' } });
 
+    // Combined waitFor -- same reasoning as tests A/B: the interim loading
+    // spinner satisfies an absence-only check before the combined-filter
+    // fetch has actually resolved.
     await waitFor(() => {
       expect(screen.queryByText('supplier.update')).not.toBeInTheDocument();
+      expect(screen.getByText('supplier.delete')).toBeInTheDocument();
+      expect(screen.getByText(`${SUPPLIER_ERROR.length} records`)).toBeInTheDocument();
     });
-
-    // Only the supplier+error row remains
-    expect(screen.getByText('supplier.delete')).toBeInTheDocument();
-    expect(screen.getByText(`${SUPPLIER_ERROR.length} records`)).toBeInTheDocument();
   });
 
   /* ── E. fetch URL carries correct query params ───────────────────────── */
