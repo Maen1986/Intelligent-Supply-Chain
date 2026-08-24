@@ -2101,7 +2101,9 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
                       <td className="px-2 py-1.5"><input value={row.category} onChange={e => updateRow(row.id, 'category', e.target.value)} placeholder={isAr ? 'فئة' : 'Category'} className="w-full text-xs border border-slate-200 rounded px-2 py-1 min-w-[100px] focus:outline-none focus:ring-1 focus:ring-[#082C6B]" /></td>
                       <td className="px-2 py-1.5"><input value={row.subcategory} onChange={e => updateRow(row.id, 'subcategory', e.target.value)} placeholder={isAr ? 'فئة فرعية' : 'Subcategory'} className="w-full text-xs border border-slate-200 rounded px-2 py-1 min-w-[100px] focus:outline-none focus:ring-1 focus:ring-[#082C6B]" /></td>
                       <td className="px-2 py-1.5 min-w-[140px]">
-                        <select value={row.unspscSegmentCode ?? ''} onChange={e => updateRow(row.id, 'unspscSegmentCode', e.target.value)} className="w-full text-xs border border-slate-200 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-[#082C6B] bg-white">
+                        <select value={row.unspscSegmentCode ?? ''} onChange={e => updateRow(row.id, 'unspscSegmentCode', e.target.value)}
+                          aria-label={isAr ? `${row.supplier || 'مورد'}: قطاع UNSPSC` : `${row.supplier || 'Supplier'}: UNSPSC segment`}
+                          className="w-full text-xs border border-slate-200 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-[#082C6B] bg-white">
                           <option value="">{isAr ? 'غير محدد' : 'Not specified'}</option>
                           {UNSPSC_SERVICES_SEGMENTS.map(s => <option key={s.code} value={s.code}>{s.code} -- {isAr ? s.labelAr : s.label}</option>)}
                           <option value="other">{isAr ? 'أخرى...' : 'Other...'}</option>
@@ -2109,6 +2111,7 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
                         {row.unspscSegmentCode === 'other' ? (
                           <input type="text" value={row.unspscSegmentOther ?? ''} onChange={e => updateRow(row.id, 'unspscSegmentOther', e.target.value)}
                             placeholder={isAr ? 'ما الفئة التي تبحث عنها؟' : 'What were you looking for?'}
+                            aria-label={isAr ? `${row.supplier || 'مورد'}: ما الفئة التي تبحث عنها؟` : `${row.supplier || 'Supplier'}: what were you looking for?`}
                             className="w-full text-xs border border-slate-200 rounded px-2 py-1 mt-1 focus:outline-none focus:ring-1 focus:ring-[#082C6B]" />
                         ) : null}
                       </td>
