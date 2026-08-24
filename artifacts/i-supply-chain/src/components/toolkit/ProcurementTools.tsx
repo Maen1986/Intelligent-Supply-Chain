@@ -20,6 +20,7 @@ import { safeSetItem } from '@/lib/storage';
 import { INDUSTRIES, type IndustryKey } from '@/lib/kpiBenchmarksByIndustry';
 import { SKU_CLASSES, type SkuClassKey } from '@/lib/kpiBenchmarksBySkuClass';
 import { INDUSTRY_SUB_SECTORS } from '@/lib/industrySubSectors';
+import { UNSPSC_SERVICES_SEGMENTS, unspscSegmentLabel } from '@/lib/unspscSegments';
 import { TCO_STAGES, TCO_FIELDS, TCO_CHECKLIST_BY_SKU_CLASS, TCO_SOURCES, type TcoStageId } from '@/lib/tcoKnowledgeBase';
 import { useAuth } from '@/lib/AuthContext';
 import { API_BASE } from '@/lib/apiBase';
@@ -80,6 +81,14 @@ interface SpendRow {
   supplier: string;
   category: string;
   subcategory: string;
+  /** Optional UNSPSC services segment code (2-digit), Phase 1 -- see
+   *  lib/unspscSegments.ts. Additive alongside free-text category/
+   *  subcategory; never auto-populated, manual selection only. */
+  unspscSegmentCode?: string;
+  /** Free-text fallback when the client's real category isn't one of the 16
+   *  sourced UNSPSC segments yet (set when unspscSegmentCode === 'other').
+   *  Captures what they were actually looking for, not a fabricated code. */
+  unspscSegmentOther?: string;
   annualSpend: number;
   contracted: boolean;
   strategic: boolean;
@@ -186,7 +195,7 @@ function kpiBreachLevel(value: number, cfg: KpiThresholdCfg): 'warn' | 'critical
 function nid() { return Math.random().toString(36).slice(2, 10); }
 
 function defaultRow(): SpendRow {
-  return { id: nid(), supplier: '', category: '', subcategory: '', annualSpend: 0, contracted: false, strategic: false, notes: '' };
+  return { id: nid(), supplier: '', category: '', subcategory: '', annualSpend: 0, contracted: false, strategic: false, notes: '' }; // unspscSegmentCode/Other intentionally omitted -- optional, manual only
 }
 
 // ─── Template generators ──────────────────────────────────────────────────────
@@ -209,7 +218,7 @@ const TEMPLATES = [
     id: 'spend', icon: '📊', label: 'Spend Analysis Template', labelAr: 'نموذج تحليل الإنفاق',
     desc: 'Pre-formatted CSV for uploading supplier spend data into this tool.', descAr: 'نموذج CSV جاهز لرفع بيانات الإنفاق إلى هذه الأداة.',
     generate: () => downloadCsvText('spend-analysis-template.csv',
-      'Supplier,Category,Subcategory,Annual Spend (SAR),YTD Spend (SAR),Contracted (Yes/No),Strategic (Yes/No),Notes\n' +
+      'Supplier,Category,Subcategory,UNSPSC Segment Code (optional),Annual Spend (SAR),YTD Spend (SAR),Contracted (Yes/No),Strategic (Yes/No),Notes\n' +
       'Saudi Aramco Trading,Raw Materials,Chemicals,1200000,900000,Yes,Yes,Long-term agreement in place\n' +
       'SACO,Indirect,MRO & Tools,85000,62000,No,No,Spot buying currently\n' +
       'DHL Supply Chain,Logistics,Freight,420000,315000,Yes,No,Annual contract\n'),
@@ -560,6 +569,7 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
           supplier,
           category: row['Category']?.trim() || '',
           subcategory: row['Subcategory']?.trim() || '',
+          unspscSegmentCode: row['UNSPSC Segment Code (optional)']?.trim() || undefined,
           annualSpend,
           contracted: row['Contracted (Yes/No)']?.trim().toLowerCase() === 'yes',
           strategic: row['Strategic (Yes/No)']?.trim().toLowerCase() === 'yes',
@@ -2079,7 +2089,7 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
               <table className="w-full text-xs">
                 <thead className="bg-slate-50 border-b border-slate-100">
                   <tr>
-                    {[isAr ? 'المورد' : 'Supplier', isAr ? 'الفئة' : 'Category', isAr ? 'فئة فرعية' : 'Subcategory', isAr ? 'الإنفاق السنوي (ر.س)' : 'Annual Spend (SAR)', isAr ? 'متعاقد؟' : 'Contracted?', isAr ? 'استراتيجي؟' : 'Strategic?', ''].map((h, i) => (
+                    {[isAr ? 'المورد' : 'Supplier', isAr ? 'الفئة' : 'Category', isAr ? 'فئة فرعية' : 'Subcategory', isAr ? 'قطاع UNSPSC' : 'UNSPSC Segment', isAr ? 'الإنفاق السنوي (ر.س)' : 'Annual Spend (SAR)', isAr ? 'متعاقد؟' : 'Contracted?', isAr ? 'استراتيجي؟' : 'Strategic?', ''].map((h, i) => (
                       <th key={i} className="px-3 py-2 text-left font-semibold text-slate-500 whitespace-nowrap">{h}</th>
                     ))}
                   </tr>
@@ -2090,6 +2100,18 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
                       <td className="px-2 py-1.5"><input value={row.supplier} onChange={e => updateRow(row.id, 'supplier', e.target.value)} placeholder={isAr ? 'اسم المورد' : 'Supplier name'} className="w-full text-xs border border-slate-200 rounded px-2 py-1 min-w-[120px] focus:outline-none focus:ring-1 focus:ring-[#082C6B]" /></td>
                       <td className="px-2 py-1.5"><input value={row.category} onChange={e => updateRow(row.id, 'category', e.target.value)} placeholder={isAr ? 'فئة' : 'Category'} className="w-full text-xs border border-slate-200 rounded px-2 py-1 min-w-[100px] focus:outline-none focus:ring-1 focus:ring-[#082C6B]" /></td>
                       <td className="px-2 py-1.5"><input value={row.subcategory} onChange={e => updateRow(row.id, 'subcategory', e.target.value)} placeholder={isAr ? 'فئة فرعية' : 'Subcategory'} className="w-full text-xs border border-slate-200 rounded px-2 py-1 min-w-[100px] focus:outline-none focus:ring-1 focus:ring-[#082C6B]" /></td>
+                      <td className="px-2 py-1.5 min-w-[140px]">
+                        <select value={row.unspscSegmentCode ?? ''} onChange={e => updateRow(row.id, 'unspscSegmentCode', e.target.value)} className="w-full text-xs border border-slate-200 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-[#082C6B] bg-white">
+                          <option value="">{isAr ? 'غير محدد' : 'Not specified'}</option>
+                          {UNSPSC_SERVICES_SEGMENTS.map(s => <option key={s.code} value={s.code}>{s.code} -- {isAr ? s.labelAr : s.label}</option>)}
+                          <option value="other">{isAr ? 'أخرى...' : 'Other...'}</option>
+                        </select>
+                        {row.unspscSegmentCode === 'other' ? (
+                          <input type="text" value={row.unspscSegmentOther ?? ''} onChange={e => updateRow(row.id, 'unspscSegmentOther', e.target.value)}
+                            placeholder={isAr ? 'ما الفئة التي تبحث عنها؟' : 'What were you looking for?'}
+                            className="w-full text-xs border border-slate-200 rounded px-2 py-1 mt-1 focus:outline-none focus:ring-1 focus:ring-[#082C6B]" />
+                        ) : null}
+                      </td>
                       <td className="px-2 py-1.5"><input type="number" value={row.annualSpend || ''} onChange={e => updateRow(row.id, 'annualSpend', parseFloat(e.target.value) || 0)} placeholder="0" className="w-full text-xs border border-slate-200 rounded px-2 py-1 text-right min-w-[120px] focus:outline-none focus:ring-1 focus:ring-[#082C6B]" /></td>
                       <td className="px-2 py-1.5 text-center"><input type="checkbox" checked={row.contracted} onChange={e => updateRow(row.id, 'contracted', e.target.checked)} className="w-4 h-4 accent-[#082C6B]" aria-label={isAr ? `${row.supplier || 'مورد'}: تحت عقد` : `${row.supplier || 'Supplier'}: contracted`} /></td>
                       <td className="px-2 py-1.5 text-center"><input type="checkbox" checked={row.strategic} onChange={e => updateRow(row.id, 'strategic', e.target.checked)} className="w-4 h-4 accent-[#082C6B]" aria-label={isAr ? `${row.supplier || 'مورد'}: استراتيجي` : `${row.supplier || 'Supplier'}: strategic`} /></td>
