@@ -6,6 +6,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { Menu, X, ChevronDown, Phone, LogOut, User, Settings, LayoutDashboard, ClipboardList, ListChecks, Waves, Newspaper, LayoutGrid, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { NotificationsBell } from './NotificationsBell';
+import { ScopedCommandBar } from './ScopedCommandBar';
 
 const industryList = [
   { label: 'Manufacturing',           labelAr: 'التصنيع',                    slug: 'manufacturing' },
@@ -146,6 +147,7 @@ export function Header() {
             <Link href="/account" className="flex items-center gap-1 hover:text-[#C9A84C] transition-colors">
               <Settings className="w-3 h-3" /> {lang === 'ar' ? 'إعدادات الحساب' : 'Account'}
             </Link>
+            <ScopedCommandBar />
             <NotificationsBell lang={lang} />
             <button onClick={logout} className="flex items-center gap-1 hover:text-[#C9A84C] transition-colors">
               <LogOut className="w-3 h-3" /> {lang === 'ar' ? 'تسجيل الخروج' : 'Sign out'}

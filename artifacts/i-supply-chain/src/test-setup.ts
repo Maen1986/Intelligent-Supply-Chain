@@ -22,6 +22,12 @@ global.ResizeObserver = class ResizeObserver {
   disconnect() {}
 };
 
+/* ── jsdom doesn't implement scrollIntoView either; cmdk (ScopedCommandBar, ──
+   ── #180) calls it on the selected item whenever the list re-renders. ───── */
+if (!Element.prototype.scrollIntoView) {
+  Element.prototype.scrollIntoView = () => {};
+}
+
 /* ── Recharts logs "width(0) and height(0)" in jsdom because there is no   ──
    ── layout engine. Mock ResponsiveContainer to render children at a fixed  ──
    ── size so those warnings never appear in test output.                    ── */
