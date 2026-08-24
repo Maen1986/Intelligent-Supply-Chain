@@ -12,6 +12,18 @@
 // and this project has no graph/node-link library (recharts only) -- see
 // Decision Record 8.7 for why the literal "Graph" primitive was scoped down
 // rather than adding a new dependency or hand-rolling node-link layout.
+//
+// #177 delta (24 Aug 2026): the 4 top-level steps were always a connected
+// step-flow; contributingCauses[] and downstreamEffects[] were still plain
+// <ul><li> bullet lists, which is exactly the "bullet text" #177 asked to
+// replace. Both now render as their own connected step-nodes in the same
+// icon-in-circle + line vocabulary as the main chain, rather than being
+// rebuilt from scratch -- contributing causes as smaller dashed-line branch
+// nodes off Immediate Cause (parallel inputs, not sequential steps, so the
+// smaller size + dashed connector honestly signals "branch" vs "chain"),
+// downstream effects as full-size solid-line nodes cascading from Root
+// Cause (genuinely sequential-reading consequences, same visual weight as
+// the main chain).
 import { AlertCircle, Zap, Crosshair, Layers, Target as RootIcon, ArrowDownCircle } from 'lucide-react';
 
 interface ChainStep {
@@ -54,52 +66,65 @@ export function ProblemChainFlow({ chain, ar }: {
               </div>
             </div>
 
-            {/* Contributing causes branch off the Immediate Cause step */}
+            {/* Contributing causes branch off the Immediate Cause step (#177: connected
+                branch nodes, not a bullet list -- smaller badge + dashed connector honestly
+                signals "parallel input," distinct from the main chain's solid sequential line) */}
             {i === 2 && chain.contributingCauses.length > 0 && (
-              <div className="flex gap-3 mb-3">
-                <div className="w-7 flex justify-center shrink-0">
-                  <span className="w-px h-full bg-border/60 border-l border-dashed border-border" />
-                </div>
-                <div className="min-w-0 flex-1 -mt-1">
-                  <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground mb-1">
-                    {ar ? 'أسباب مساهمة' : 'Contributing Causes'}
-                  </p>
-                  <ul className="space-y-1">
-                    {chain.contributingCauses.map((c, ci) => (
-                      <li key={ci} className="flex items-start gap-1.5 text-xs text-muted-foreground">
-                        <span className="w-1 h-1 mt-1.5 rounded-full bg-muted-foreground/50 shrink-0" />
-                        <span>{c}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+              <div className="mb-3">
+                <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground mb-1 ml-10">
+                  {ar ? 'أسباب مساهمة' : 'Contributing Causes'}
+                </p>
+                {chain.contributingCauses.map((cause, ci) => {
+                  const isLastCause = ci === chain.contributingCauses.length - 1;
+                  return (
+                    <div key={ci} className="flex gap-3">
+                      <div className="flex flex-col items-center shrink-0 pl-2">
+                        <span className="w-5 h-5 rounded-full bg-muted border border-dashed border-muted-foreground/40 text-muted-foreground flex items-center justify-center shrink-0">
+                          <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/60" />
+                        </span>
+                        {!isLastCause && (
+                          <span className="w-px flex-1 min-h-[8px] border-l border-dashed border-border mt-1" />
+                        )}
+                      </div>
+                      <div className="pb-2 min-w-0 flex-1">
+                        <p className="text-xs text-muted-foreground leading-relaxed">{cause}</p>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
         );
       })}
 
-      {/* Downstream effects if unresolved */}
+      {/* Downstream effects if unresolved (#177: each effect is now its own
+          connected node cascading from Root Cause, same solid-line weight as
+          the main chain -- these read as genuinely sequential consequences,
+          not an unordered bullet list) */}
       {chain.downstreamEffects.length > 0 && (
-        <div className="flex gap-3">
-          <div className="flex flex-col items-center shrink-0">
-            <span className="w-7 h-7 rounded-full bg-red-100 text-red-700 flex items-center justify-center shrink-0">
-              <ArrowDownCircle className="w-3.5 h-3.5" />
-            </span>
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-[10px] font-bold uppercase tracking-wide text-red-700">
-              {ar ? 'الآثار اللاحقة إن لم تُعالج' : 'Downstream Effects if Unresolved'}
-            </p>
-            <ul className="space-y-1 mt-1">
-              {chain.downstreamEffects.map((e, ei) => (
-                <li key={ei} className="flex items-start gap-1.5 text-sm text-foreground">
-                  <Layers className="w-3 h-3 mt-1 text-red-500 shrink-0" />
-                  <span>{e}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-wide text-red-700 mb-1">
+            {ar ? 'الآثار اللاحقة إن لم تُعالج' : 'Downstream Effects if Unresolved'}
+          </p>
+          {chain.downstreamEffects.map((effect, ei) => {
+            const isLastEffect = ei === chain.downstreamEffects.length - 1;
+            return (
+              <div key={ei} className="flex gap-3">
+                <div className="flex flex-col items-center shrink-0">
+                  <span className="w-7 h-7 rounded-full bg-red-100 text-red-700 flex items-center justify-center shrink-0">
+                    {ei === 0 ? <ArrowDownCircle className="w-3.5 h-3.5" /> : <Layers className="w-3 h-3" />}
+                  </span>
+                  {!isLastEffect && (
+                    <span className="w-px flex-1 min-h-[10px] bg-red-200 mt-1" />
+                  )}
+                </div>
+                <div className="pb-2 min-w-0 flex-1">
+                  <p className="text-sm text-foreground leading-relaxed">{effect}</p>
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
