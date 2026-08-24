@@ -39,7 +39,13 @@ interface WorkbenchSummary {
   ok: boolean;
   hasData: boolean;
   actions: { total: number; notStarted: number; inProgress: number; done: number; items: ActionItem[] };
-  investigations: Array<{ id: number; tool: string; industry: string | null; subIndustry: string | null; challenge: string | null; problemCount: number | null; createdAt: string }>;
+  investigations: Array<{
+    id: number; tool: string; industry: string | null; subIndustry: string | null; challenge: string | null;
+    problemCount: number | null;
+    // #178 delta: normalized Problem DNA status counts (Active/Resolved/Recurring, #167) -- null for rows with no problems[]
+    problemStatus: { active: number; resolved: number; recurring: number } | null;
+    createdAt: string;
+  }>;
 }
 interface PlanEntry { toolKey: string; text: string; savedAt: string }
 interface DecisionScenario { question: string; criteria: unknown[]; options: unknown[] }
@@ -202,6 +208,25 @@ export function MyWorkbench() {
                             — {inv.industry}{inv.subIndustry ? ` / ${inv.subIndustry}` : ''}
                             {inv.problemCount !== null && ` · ${inv.problemCount} ${ar ? 'مشكلة محددة' : 'problem(s) identified'}`}
                           </span>
+                          {inv.problemStatus && (inv.problemStatus.active + inv.problemStatus.resolved + inv.problemStatus.recurring) > 0 && (
+                            <div className="flex items-center gap-2 mt-1">
+                              {inv.problemStatus.active > 0 && (
+                                <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200">
+                                  {inv.problemStatus.active} {ar ? 'نشطة' : 'active'}
+                                </span>
+                              )}
+                              {inv.problemStatus.recurring > 0 && (
+                                <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-red-50 text-red-700 border border-red-200">
+                                  {inv.problemStatus.recurring} {ar ? 'متكررة' : 'recurring'}
+                                </span>
+                              )}
+                              {inv.problemStatus.resolved > 0 && (
+                                <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                  {inv.problemStatus.resolved} {ar ? 'محلولة' : 'resolved'}
+                                </span>
+                              )}
+                            </div>
+                          )}
                         </div>
                         <span className="text-[11px] text-muted-foreground shrink-0">{formatDate(inv.createdAt, ar)}</span>
                       </div>

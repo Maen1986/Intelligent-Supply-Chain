@@ -23,6 +23,20 @@
  *   raise real data-boundary questions this endpoint has no business
  *   answering. A lookup failure never blocks the diagnosis itself --
  *   similarCase is additive context, not a dependency.
+ *   #178 delta (24 Aug 2026, Decision Record 8.10): every urgentActions[]
+ *   item is now also written to findings_actions (source='command_centre',
+ *   source_ref_id=this new submission's id, item_key=`urgent-${i}`) so a
+ *   Consultancy Engine diagnosis produces real, trackable rows in the
+ *   Action Tracker / My Workbench -- before this delta the ONLY path into
+ *   findings_actions was the public wizard's claim.ts flow, so an
+ *   authenticated Command Centre diagnosis had zero way to be tracked.
+ *   This is the honest-buildable half of the original #178 "Problem Map"
+ *   ask: the literal ask (plot items across "F2's domain layout") needs a
+ *   domain taxonomy that does not exist anywhere in this codebase or any
+ *   spec content available to this build -- fabricating one would violate
+ *   the platform's own "never fake things" standard (Decision Record 8.7),
+ *   so it is deferred as its own registry item pending real F2 content or
+ *   an owner design decision, not built here.
  * POST /api/consultancy/solution    → solution plan generation
  * POST /api/consultancy/refine      → refine solution after satisfaction feedback
  * POST /api/consultancy/ask         → answer a client's follow-up question (#191, 24 Aug 2026)
@@ -238,7 +252,17 @@ Rules:
     if (!content) throw new Error('No content from AI');
     const diagnosis = JSON.parse(content);
 
-    // Persist to submissions table (fire-and-forget)
+    // Persist to submissions table (fire-and-forget), then -- #178 delta,
+    // Decision Record 8.10 -- wire this diagnosis's urgentActions into
+    // findings_actions the same way claim.ts already does for the public
+    // wizard's flat recommendations[]. Before this, a Consultancy Engine
+    // diagnosis never produced a single Action Tracker / My Workbench row;
+    // the ONLY path into findings_actions was the public wizard's claim
+    // flow. Real gap, not a cosmetic one: an authenticated Command Centre
+    // user got a diagnosis with zero way to track acting on it. Awaits the
+    // insert (rather than pure fire-and-forget) only long enough to get the
+    // new row's id, since findings_actions needs a real source_ref_id --
+    // still never blocks the diagnosis response on failure.
     db.insert(submissionsTable).values({
       tool:         'diagnostic',
       userId:       req.session.userId ?? null,
@@ -248,6 +272,24 @@ Rules:
       inputs:  { industry, subIndustry, challenge, companySize, maturityHint, language },
       outputs: diagnosis,
       ipAddress: req.ip ?? null,
+    }).returning({ id: submissionsTable.id }).then(async ([row]) => {
+      if (!row || !userId) return; // no session -> nothing to track against
+      const urgentActions = Array.isArray(diagnosis?.urgentActions) ? diagnosis.urgentActions as unknown[] : [];
+      const topFramework = Array.isArray(diagnosis?.problems) && diagnosis.problems[0]?.framework
+        ? String(diagnosis.problems[0].framework) : null;
+      for (let i = 0; i < urgentActions.length; i++) {
+        const action = typeof urgentActions[i] === 'string' ? (urgentActions[i] as string) : null;
+        if (!action) continue;
+        try {
+          await db.execute(sql`
+            INSERT INTO findings_actions (user_id, source, source_ref_id, item_key, action, framework)
+            VALUES (${userId}, 'command_centre', ${row.id}, ${`urgent-${i}`}, ${action}, ${topFramework})
+            ON CONFLICT (user_id, source, source_ref_id, item_key) DO NOTHING
+          `);
+        } catch (err) {
+          logger.error({ err, userId, submissionId: row.id }, '[consultancy/diagnose] findings_actions insert failed');
+        }
+      }
     }).catch(err => logger.error({ err }, '[consultancy] Failed to persist diagnosis'));
 
     res.json({ ok: true, diagnosis, similarCase });

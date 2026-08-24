@@ -38,6 +38,17 @@
  * tool does not persist to this table at all (checked in consultancy.ts vs
  * diagnostic.ts before building this), so there is no risk of leaking a
  * pre-signup session's submission into a signed-in user's workbench.
+ *
+ * #178 delta (24 Aug 2026, Decision Record 8.10): each investigation now
+ * also carries problemStatus, a count of its Problem DNA problems[] by
+ * status (Active/Resolved/Recurring, #167) -- the honest, buildable half
+ * of the original "Problem Map" ask (the literal ask needed a domain
+ * taxonomy that exists nowhere in this codebase; see consultancy.ts's
+ * header for the full reasoning). Consultancy Engine diagnoses'
+ * urgentActions[] are now also written to findings_actions at diagnose
+ * time (source='command_centre'), so they show up in "My Actions" above
+ * too -- before this delta a Consultancy diagnosis produced zero trackable
+ * rows in this workbench at all.
  */
 import { Router }          from 'express';
 import { db }               from '@workspace/db';
@@ -117,17 +128,37 @@ router.get('/workbench/summary', requireSession, async (req, res) => {
       }),
     };
 
-    const investigations = investigationRows.map(r => ({
-      id: r.id,
-      tool: r.tool,
-      industry: r.inputs?.industry ?? null,
-      subIndustry: r.inputs?.subIndustry ?? null,
-      challenge: r.inputs?.challenge ?? null,
-      // Problem DNA (#167) count -- only present on 'diagnostic' tool outputs; a
-      // real, cheap-to-read decision-relevant detail, not an invented one.
-      problemCount: Array.isArray(r.outputs?.problems) ? r.outputs.problems.length : null,
-      createdAt: r.created_at,
-    }));
+    // #178 delta (24 Aug 2026, Decision Record 8.10): normalize each
+    // investigation's Problem DNA statuses (Active/Resolved/Recurring, #167)
+    // into one summary object so the frontend can show a real status badge
+    // instead of just a raw problem count. This is the honest, buildable
+    // half of #178's "status vocabulary" ask -- it reconciles the ONE
+    // status field that genuinely exists on Problem DNA data; it does not
+    // invent a cross-tool vocabulary spanning findings_actions'
+    // not_started/in_progress/done too, since those are a different grain
+    // (per-action, not per-problem) and force-mapping them would be a
+    // fabricated equivalence, not a real one. problemStatus is null for
+    // submissions with no problems[] (the public wizard's flat-shape rows).
+    const investigations = investigationRows.map(r => {
+      const problems = Array.isArray(r.outputs?.problems) ? r.outputs.problems as Array<{ status?: string }> : null;
+      const problemStatus = problems ? {
+        active:    problems.filter(p => p.status === 'Active').length,
+        resolved:  problems.filter(p => p.status === 'Resolved').length,
+        recurring: problems.filter(p => p.status === 'Recurring').length,
+      } : null;
+      return {
+        id: r.id,
+        tool: r.tool,
+        industry: r.inputs?.industry ?? null,
+        subIndustry: r.inputs?.subIndustry ?? null,
+        challenge: r.inputs?.challenge ?? null,
+        // Problem DNA (#167) count -- only present on 'diagnostic' tool outputs; a
+        // real, cheap-to-read decision-relevant detail, not an invented one.
+        problemCount: problems ? problems.length : null,
+        problemStatus,
+        createdAt: r.created_at,
+      };
+    });
 
     res.json({
       ok: true,

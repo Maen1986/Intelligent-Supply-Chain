@@ -90,7 +90,7 @@ describe('GET /api/workbench/summary', () => {
           {
             id: 10, tool: 'diagnostic',
             inputs: { industry: 'Manufacturing', subIndustry: 'Automotive', challenge: 'Late supplier deliveries' },
-            outputs: { problems: [{ id: 'p1' }, { id: 'p2' }] },
+            outputs: { problems: [{ id: 'p1', status: 'Active' }, { id: 'p2', status: 'Active' }] },
             created_at: '2026-08-20T00:00:00Z',
           },
           {
@@ -111,6 +111,38 @@ describe('GET /api/workbench/summary', () => {
     // command_centre outputs has no problems[] -- problemCount must be null, not 0 (0 would
     // falsely imply "zero problems found" rather than "this tool doesn't produce that field").
     expect(res.body.investigations[1]).toMatchObject({ id: 11, tool: 'command_centre', problemCount: null });
+  });
+
+  it('#178: problemStatus normalizes Active/Resolved/Recurring counts from problems[], and is null when problems[] is absent', async () => {
+    const { db } = await import('@workspace/db');
+    (db.execute as ReturnType<typeof vi.fn>)
+      .mockResolvedValueOnce({ rows: [] }) // actions
+      .mockResolvedValueOnce({
+        rows: [
+          {
+            id: 20, tool: 'diagnostic',
+            inputs: { industry: 'Retail', challenge: 'Stockouts' },
+            outputs: { problems: [
+              { id: 'p1', status: 'Active' },
+              { id: 'p2', status: 'Active' },
+              { id: 'p3', status: 'Resolved' },
+              { id: 'p4', status: 'Recurring' },
+            ] },
+            created_at: '2026-08-20T00:00:00Z',
+          },
+          {
+            id: 21, tool: 'diagnostic',
+            inputs: { industry: 'Logistics', challenge: 'Legacy flat-shape row' },
+            outputs: { recommendations: ['rec 1', 'rec 2'] }, // no problems[] -- pre-#167 or public-wizard shape
+            created_at: '2026-08-19T00:00:00Z',
+          },
+        ],
+      }); // investigations
+    const app = makeApp('/api', workbenchRouter, { userId: 1 });
+    const res = await request(app).get('/api/workbench/summary');
+    expect(res.body.investigations[0].problemStatus).toEqual({ active: 2, resolved: 1, recurring: 1 });
+    // No problems[] on this row -- problemStatus must be null, not a fabricated { active: 0, resolved: 0, recurring: 0 }.
+    expect(res.body.investigations[1].problemStatus).toBeNull();
   });
 
   it('returns 500 on a database failure', async () => {

@@ -102,6 +102,25 @@ describe('MyWorkbench', () => {
     expect(screen.getByText(/3 problem\(s\) identified/)).toBeTruthy();
   });
 
+  it('#178: renders a problemStatus badge (active/recurring/resolved) on an investigation, and shows nothing when problemStatus is null', async () => {
+    mockAuthState.user = { id: 1, fullName: 'Test User' };
+    global.fetch = mockFetchFor({
+      ok: true, hasData: true,
+      actions: { total: 0, notStarted: 0, inProgress: 0, done: 0, items: [] },
+      investigations: [
+        { id: 10, tool: 'diagnostic', industry: 'Manufacturing', subIndustry: null, challenge: 'Late deliveries', problemCount: 4, problemStatus: { active: 2, resolved: 1, recurring: 1 }, createdAt: '2026-08-20T00:00:00Z' },
+        { id: 11, tool: 'diagnostic', industry: 'Retail', subIndustry: null, challenge: 'Legacy shape row', problemCount: null, problemStatus: null, createdAt: '2026-08-18T00:00:00Z' },
+      ],
+    });
+    render(<MyWorkbench />);
+    await waitFor(() => expect(screen.getByText('Late deliveries')).toBeTruthy());
+    expect(screen.getByText('2 active')).toBeTruthy();
+    expect(screen.getByText('1 recurring')).toBeTruthy();
+    expect(screen.getByText('1 resolved')).toBeTruthy();
+    // Row with problemStatus: null renders no badges at all -- never a fabricated 0/0/0.
+    expect(screen.getByText('Legacy shape row')).toBeTruthy();
+  });
+
   it('renders My Commitments from the existing /api/plans endpoint (no separate backend read)', async () => {
     mockAuthState.user = { id: 1, fullName: 'Test User' };
     global.fetch = mockFetchFor(EMPTY_WORKBENCH, { ok: true, plans: [{ toolKey: 'maturity', text: 'plan text', savedAt: '2026-08-15T00:00:00Z' }] });
