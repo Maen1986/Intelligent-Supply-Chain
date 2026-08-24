@@ -30,6 +30,14 @@
  *                  identified. If no later snapshot exists yet, the action
  *                  stays "Completed" (not yet verifiable), which is itself
  *                  an honest state -- it is never silently promoted.
+ *
+ * #174 (Decision Memory, 24 Aug 2026) extension: the response also carries
+ * learningItems[], the per-action before/after record the sustained-count
+ * loop below was already computing internally but not exposing. Rather than
+ * write a second query + join to power a separate "what did we learn"
+ * report, /decision-memory reads this SAME endpoint and renders the
+ * per-item detail ROIWaterfall.tsx's aggregate funnel view intentionally
+ * does not surface. One computation, two honest views of it.
  */
 import { Router }          from 'express';
 import { db }              from '@workspace/db';
@@ -76,6 +84,7 @@ router.get('/maturity/roi-summary', requireSession, async (req, res) => {
         hasData: false,
         funnel: { identified: 0, inProgress: 0, completed: 0, sustained: 0 },
         segments: [],
+        learningItems: [],
         firstSnapshotAt: null,
         latestSnapshotAt: null,
         snapshotCount: 0,
@@ -99,6 +108,11 @@ router.get('/maturity/roi-summary', requireSession, async (req, res) => {
     // ---- Sustained: for each completed item, was the segment score held
     //      or improved in the most recent snapshot taken after completion? ----
     let sustained = 0;
+    const learningItems: Array<{
+      id: number; action: string; segmentTitle: string;
+      scoreBefore: number; scoreAfter: number | null; delta: number | null;
+      completedAt: string; held: boolean | null; // null = not yet verifiable
+    }> = [];
     const sortedSnapshots = snapshots; // already ASC by taken_at
     for (const f of findings) {
       if (f.status !== 'done' || !f.completed_at || !f.segment_title) continue;
@@ -112,14 +126,29 @@ router.get('/maturity/roi-summary', requireSession, async (req, res) => {
       // Most recent snapshot taken strictly after completion.
       const completedAtMs = new Date(f.completed_at).getTime();
       const laterSnapshots = sortedSnapshots.filter(s => new Date(s.taken_at).getTime() > completedAtMs);
-      if (laterSnapshots.length === 0) continue; // not yet verifiable -- stays "Completed"
+      if (laterSnapshots.length === 0) {
+        // Not yet verifiable -- stays "Completed", not silently promoted or demoted.
+        learningItems.push({
+          id: f.id, action: f.action, segmentTitle: f.segment_title,
+          scoreBefore: originScore, scoreAfter: null, delta: null,
+          completedAt: f.completed_at, held: null,
+        });
+        continue;
+      }
 
       const mostRecent = laterSnapshots[laterSnapshots.length - 1];
       const latestScore = mostRecent.segment_scores?.find(sg => sg.title === f.segment_title)?.score;
-      if (latestScore !== undefined && latestScore >= originScore) {
-        sustained += 1;
-      }
+      const held = latestScore !== undefined && latestScore >= originScore;
+      if (held) sustained += 1;
+      learningItems.push({
+        id: f.id, action: f.action, segmentTitle: f.segment_title,
+        scoreBefore: originScore, scoreAfter: latestScore ?? null,
+        delta: latestScore !== undefined ? Number((latestScore - originScore).toFixed(2)) : null,
+        completedAt: f.completed_at, held,
+      });
     }
+    // Most recent first -- what did we most recently learn.
+    learningItems.sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime());
 
     // ---- Per-segment score movement across the user's full history ----
     const firstSnap = sortedSnapshots[0];
@@ -144,6 +173,7 @@ router.get('/maturity/roi-summary', requireSession, async (req, res) => {
       hasData: true,
       funnel: { identified, inProgress, completed, sustained },
       segments,
+      learningItems,
       firstSnapshotAt: firstSnap.taken_at,
       latestSnapshotAt: latestSnap.taken_at,
       snapshotCount: sortedSnapshots.length,

@@ -225,9 +225,14 @@ export function ROIWaterfall() {
           )}
         </div>
 
-        <div className="flex justify-center">
+        <div className="flex justify-center gap-3">
           <Link href="/action-tracker"><Button variant="outline" className="gap-2">
             {ar ? 'الذهاب إلى متتبّع الإجراءات' : 'Go to Action Tracker'} <ArrowRight className="w-4 h-4" />
+          </Button></Link>
+          {/* #174 cross-link: the per-action before/after detail this funnel's counts are
+              aggregated from lives at /decision-memory (same backend data, same endpoint). */}
+          <Link href="/decision-memory"><Button variant="outline" className="gap-2">
+            {ar ? 'عرض ما تعلمناه، إجراءً بإجراء' : 'See what we learned, action by action'} <ArrowRight className="w-4 h-4" />
           </Button></Link>
         </div>
       </div>

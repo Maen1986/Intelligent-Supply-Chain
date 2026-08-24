@@ -3,7 +3,7 @@ import { Link, useLocation } from 'wouter';
 import { Logo } from './Logo';
 import { useLanguage } from '@/lib/LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
-import { Menu, X, ChevronDown, Phone, LogOut, User, Settings, LayoutDashboard, ClipboardList, ListChecks, Waves, Newspaper, LayoutGrid } from 'lucide-react';
+import { Menu, X, ChevronDown, Phone, LogOut, User, Settings, LayoutDashboard, ClipboardList, ListChecks, Waves, Newspaper, LayoutGrid, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { NotificationsBell } from './NotificationsBell';
 
@@ -139,6 +139,9 @@ export function Header() {
             </Link>
             <Link href="/roi-waterfall" className="flex items-center gap-1 hover:text-[#C9A84C] transition-colors">
               <Waves className="w-3 h-3" /> {lang === 'ar' ? 'تحقيق القيمة' : 'Value Realization'}
+            </Link>
+            <Link href="/decision-memory" className="flex items-center gap-1 hover:text-[#C9A84C] transition-colors">
+              <BookOpen className="w-3 h-3" /> {lang === 'ar' ? 'ذاكرة القرار' : 'Decision Memory'}
             </Link>
             <Link href="/account" className="flex items-center gap-1 hover:text-[#C9A84C] transition-colors">
               <Settings className="w-3 h-3" /> {lang === 'ar' ? 'إعدادات الحساب' : 'Account'}
@@ -336,6 +339,10 @@ export function Header() {
                   <Link href="/roi-waterfall" onClick={() => setMobileMenuOpen(false)}
                     className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-700 hover:text-primary hover:bg-primary/5 rounded-xl transition-colors">
                     <Waves className="w-4 h-4" /> {lang === 'ar' ? 'تحقيق القيمة' : 'Value Realization'}
+                  </Link>
+                  <Link href="/decision-memory" onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-700 hover:text-primary hover:bg-primary/5 rounded-xl transition-colors">
+                    <BookOpen className="w-4 h-4" /> {lang === 'ar' ? 'ذاكرة القرار' : 'Decision Memory'}
                   </Link>
                   <Link href="/account" onClick={() => setMobileMenuOpen(false)}
                     className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-700 hover:text-primary hover:bg-primary/5 rounded-xl transition-colors">
