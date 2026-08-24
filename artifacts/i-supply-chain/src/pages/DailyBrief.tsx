@@ -8,10 +8,20 @@
  * has no natural "done" state so it is deliberately left out of the
  * completions feed rather than mislabeled).
  *
- * Four sections, each independently empty-safe: What Changed, What Needs
- * You, What's Emerging, Recent Completions. Refreshed on view (a toggle
- * switches between the last 24 hours and the last 7 days), not pushed
- * live -- matching the plan doc's own framing.
+ * Five sections, each independently empty-safe: What Changed, Early
+ * Warning, What Needs You, What's Emerging, Recent Completions. Refreshed
+ * on view (a toggle switches between the last 24 hours and the last 7
+ * days), not pushed live -- matching the plan doc's own framing.
+ *
+ * #175 (Trend-Based Early Warning, 24 Aug 2026): Early Warning is NOT the
+ * same signal as What Changed -- "changed" reports any movement between
+ * the last two assessments (including a single dip that recovers), while
+ * this section only fires on two CONSECUTIVE declines, a stronger signal
+ * worth calling out separately. This platform has no "Critical" label
+ * anywhere (see src/lib/maturityScoring.ts) -- the lowest band is named
+ * "Reactive," so this section uses that name consistently rather than
+ * inventing a new one, and keeps segments already IN Reactive visually
+ * distinct from segments merely trending toward it.
  */
 import React, { useEffect, useState } from 'react';
 import { Link } from 'wouter';
@@ -20,7 +30,7 @@ import { useLanguage } from '@/lib/LanguageContext';
 import { API_BASE } from '@/lib/apiBase';
 import { Button } from '@/components/ui/button';
 import {
-  Loader2, Newspaper, TrendingUp, TrendingDown, AlertCircle, Sparkles,
+  Loader2, Newspaper, TrendingUp, TrendingDown, AlertCircle, AlertTriangle, Sparkles,
   CheckCircle2, ArrowRight, Clock3, Target,
 } from 'lucide-react';
 
@@ -30,6 +40,19 @@ interface Changed {
   latestSnapshotAt: string | null;
   previousSnapshotAt: string | null;
   segments: ChangedSegment[];
+}
+interface TrendWarningSegment {
+  title: string;
+  scoreOldest: number; scoreMiddle: number; scoreLatest: number;
+  delta1: number; delta2: number;
+  alreadyReactive: boolean;
+}
+interface TrendWarning {
+  hasEnoughHistory: boolean;
+  oldestSnapshotAt: string | null;
+  middleSnapshotAt: string | null;
+  latestSnapshotAt: string | null;
+  segments: TrendWarningSegment[];
 }
 interface NeedsYouOverdue { id: number; phase: string; action: string; segmentTitle: string | null; dueAt: string; daysOverdue: number }
 interface NeedsYouNotStarted { id: number; action: string; segmentTitle: string | null; source: string; createdAt: string }
@@ -43,6 +66,7 @@ interface BriefSummary {
   window: 'daily' | 'weekly';
   windowDays: number;
   changed: Changed;
+  trendWarning: TrendWarning;
   needsYou: { overdue: NeedsYouOverdue[]; notStarted: NeedsYouNotStarted[] };
   emerging: EmergingItem[];
   completions: CompletionItem[];
@@ -191,6 +215,51 @@ export function DailyBrief() {
                       </div>
                     );
                   })}
+                </div>
+              )}
+            </section>
+
+            {/* ── Early Warning (#175) ── */}
+            <section className="bg-white rounded-2xl border border-border p-6">
+              <h2 className="text-sm font-bold text-primary uppercase tracking-widest mb-1 flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4" /> {ar ? 'تحذير مبكر' : 'Early Warning'}
+              </h2>
+              {!data!.trendWarning.hasEnoughHistory ? (
+                <p className="text-xs text-muted-foreground italic mt-3">
+                  {ar ? 'يلزم ثلاثة تقييمات على الأقل لرصد اتجاه.' : 'Needs at least three assessments to establish a trend.'}
+                </p>
+              ) : data!.trendWarning.segments.length === 0 ? (
+                <p className="text-xs text-muted-foreground italic mt-3">
+                  {ar ? 'لا يوجد قطاع تراجع في تقييمين متتاليين.' : 'No segment has declined for two consecutive assessments.'}
+                </p>
+              ) : (
+                <div className="space-y-3 mt-3">
+                  {data!.trendWarning.segments.map(seg => (
+                    <div key={seg.title} className="flex items-start justify-between gap-3 py-2 border-b border-border/60 last:border-0">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-foreground font-medium">{seg.title}</span>
+                          <span className={`text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full ${seg.alreadyReactive ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>
+                            {seg.alreadyReactive
+                              ? (ar ? 'داخل النطاق التفاعلي بالفعل' : 'Already in Reactive')
+                              : (ar ? 'اتجاه تنازلي — إنذار مبكر' : 'Declining — early warning')}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-muted-foreground mt-1">
+                          {seg.scoreOldest.toFixed(1)} → {seg.scoreMiddle.toFixed(1)} → {seg.scoreLatest.toFixed(1)}
+                          {' '}({ar ? 'تراجعان متتاليان' : 'two consecutive declines'})
+                        </p>
+                      </div>
+                      <TrendingDown className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
+                    </div>
+                  ))}
+                </div>
+              )}
+              {data!.trendWarning.segments.length > 0 && (
+                <div className="mt-4">
+                  <Link href="/maturity"><Button variant="outline" size="sm" className="gap-2">
+                    {ar ? 'مراجعة تقييم النضج' : 'Review Maturity Assessment'} <ArrowRight className="w-3.5 h-3.5" />
+                  </Button></Link>
                 </div>
               )}
             </section>

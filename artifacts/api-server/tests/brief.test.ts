@@ -7,6 +7,9 @@
  *  - "changed": segment deltas computed correctly between two snapshots,
  *    zero-delta segments filtered out, sorted by |delta| descending
  *  - "changed": hasComparison=false when fewer than two snapshots exist
+ *  - "trendWarning" (#175): two consecutive declines flagged, a single dip
+ *    is NOT flagged, already-Reactive segments are labeled distinctly,
+ *    hasEnoughHistory=false with fewer than 3 snapshots
  *  - "needsYou": overdue items and not-started items both surfaced
  *  - "emerging": new not-started findings_actions within the window
  *  - "completions": merged feed across actions/assessment/tco/wc/sv, sorted
@@ -46,6 +49,8 @@ describe('GET /api/brief/summary', () => {
     expect(res.body.hasData).toBe(false);
     expect(res.body.everHasHistory).toBe(false);
     expect(res.body.changed.hasComparison).toBe(false);
+    expect(res.body.trendWarning.hasEnoughHistory).toBe(false);
+    expect(res.body.trendWarning.segments).toEqual([]);
     expect(res.body.needsYou.overdue).toEqual([]);
     expect(res.body.needsYou.notStarted).toEqual([]);
     expect(res.body.emerging).toEqual([]);
@@ -110,6 +115,82 @@ describe('GET /api/brief/summary', () => {
     const app = makeApp('/api', briefRouter, { userId: 1 });
     const res = await request(app).get('/api/brief/summary');
     expect(res.body.everHasHistory).toBe(false);
+  });
+
+  it('"trendWarning": flags a segment with two CONSECUTIVE declines, distinguishes already-Reactive from early-warning', async () => {
+    const { db } = await import('@workspace/db');
+    (db.execute as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      rows: [
+        // latest (most recent)
+        { id: 3, taken_at: '2026-08-22T00:00:00Z', segment_scores: [
+          { title: 'Supplier Risk', score: 2.8 },   // still above Reactive (2.0) -- early warning
+          { title: 'Contract Mgmt', score: 1.6 },   // already IN Reactive
+          { title: 'Steady', score: 3.0 },          // flat, never declines
+        ] },
+        // middle
+        { id: 2, taken_at: '2026-08-08T00:00:00Z', segment_scores: [
+          { title: 'Supplier Risk', score: 3.2 },
+          { title: 'Contract Mgmt', score: 2.0 },
+          { title: 'Steady', score: 3.0 },
+        ] },
+        // oldest
+        { id: 1, taken_at: '2026-07-25T00:00:00Z', segment_scores: [
+          { title: 'Supplier Risk', score: 3.6 },
+          { title: 'Contract Mgmt', score: 2.4 },
+          { title: 'Steady', score: 3.0 },
+        ] },
+      ],
+    }); // snapshots (LIMIT 3)
+    const app = makeApp('/api', briefRouter, { userId: 1 });
+    const res = await request(app).get('/api/brief/summary');
+    expect(res.body.trendWarning.hasEnoughHistory).toBe(true);
+    expect(res.body.trendWarning.segments).toHaveLength(2);
+    // Steady never appears -- no decline at all, correctly excluded.
+    const titles = res.body.trendWarning.segments.map((s: any) => s.title);
+    expect(titles).not.toContain('Steady');
+    // Sorted steepest most-recent decline first: Contract Mgmt (-0.4) before Supplier Risk (-0.4)...
+    // both deltas equal here, so check each entry's shape instead of exact order.
+    const byTitle = Object.fromEntries(res.body.trendWarning.segments.map((s: any) => [s.title, s]));
+    expect(byTitle['Supplier Risk']).toMatchObject({
+      scoreOldest: 3.6, scoreMiddle: 3.2, scoreLatest: 2.8,
+      delta1: -0.4, delta2: -0.4, alreadyReactive: false,
+    });
+    expect(byTitle['Contract Mgmt']).toMatchObject({
+      scoreOldest: 2.4, scoreMiddle: 2.0, scoreLatest: 1.6,
+      delta1: -0.4, delta2: -0.4, alreadyReactive: true,
+    });
+    expect(res.body.hasData).toBe(true);
+  });
+
+  it('"trendWarning": a single dip (one decline, then recovery) is NOT flagged -- two consecutive declines are required', async () => {
+    const { db } = await import('@workspace/db');
+    (db.execute as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      rows: [
+        { id: 3, taken_at: '2026-08-22T00:00:00Z', segment_scores: [{ title: 'Logistics', score: 3.0 }] }, // recovered
+        { id: 2, taken_at: '2026-08-08T00:00:00Z', segment_scores: [{ title: 'Logistics', score: 2.5 }] }, // dipped
+        { id: 1, taken_at: '2026-07-25T00:00:00Z', segment_scores: [{ title: 'Logistics', score: 3.2 }] },
+      ],
+    });
+    const app = makeApp('/api', briefRouter, { userId: 1 });
+    const res = await request(app).get('/api/brief/summary');
+    expect(res.body.trendWarning.hasEnoughHistory).toBe(true);
+    expect(res.body.trendWarning.segments).toEqual([]);
+  });
+
+  it('"trendWarning": hasEnoughHistory is false with only two snapshots (changed still works from the same query)', async () => {
+    const { db } = await import('@workspace/db');
+    (db.execute as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      rows: [
+        { id: 2, taken_at: '2026-08-20T00:00:00Z', segment_scores: [{ title: 'Procurement', score: 3.5 }] },
+        { id: 1, taken_at: '2026-08-01T00:00:00Z', segment_scores: [{ title: 'Procurement', score: 2.0 }] },
+      ],
+    });
+    const app = makeApp('/api', briefRouter, { userId: 1 });
+    const res = await request(app).get('/api/brief/summary');
+    expect(res.body.trendWarning.hasEnoughHistory).toBe(false);
+    expect(res.body.trendWarning.segments).toEqual([]);
+    // "changed" still works off the same 2-row result -- one query, two honest views.
+    expect(res.body.changed.hasComparison).toBe(true);
   });
 
   it('"needsYou": surfaces overdue and not-started items separately', async () => {

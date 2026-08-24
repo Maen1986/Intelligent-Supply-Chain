@@ -36,6 +36,7 @@ vi.mock('@/lib/LanguageContext', () => ({
 const EMPTY_SUMMARY_NEVER_ASSESSED = {
   ok: true, hasData: false, everHasHistory: false, window: 'weekly', windowDays: 7,
   changed: { hasComparison: false, latestSnapshotAt: null, previousSnapshotAt: null, segments: [] },
+  trendWarning: { hasEnoughHistory: false, oldestSnapshotAt: null, middleSnapshotAt: null, latestSnapshotAt: null, segments: [] },
   needsYou: { overdue: [], notStarted: [] },
   emerging: [],
   completions: [],
@@ -107,6 +108,11 @@ describe('DailyBrief', () => {
       hasComparison: true, latestSnapshotAt: '2026-08-20T00:00:00Z', previousSnapshotAt: '2026-08-01T00:00:00Z',
       segments: [{ title: 'Procurement', scoreLatest: 3.5, scorePrevious: 2.0, delta: 1.5 }],
     },
+    trendWarning: {
+      hasEnoughHistory: true, oldestSnapshotAt: '2026-07-25T00:00:00Z',
+      middleSnapshotAt: '2026-08-08T00:00:00Z', latestSnapshotAt: '2026-08-20T00:00:00Z',
+      segments: [],
+    },
     needsYou: {
       overdue: [{ id: 1, phase: 'days30', action: 'Fix OTIF', segmentTitle: 'Logistics', dueAt: '2026-08-01T00:00:00Z', daysOverdue: 22 }],
       notStarted: [{ id: 2, action: 'Review contracts', segmentTitle: 'CLM', source: 'diagnostic', createdAt: '2026-08-01T00:00:00Z' }],
@@ -118,11 +124,12 @@ describe('DailyBrief', () => {
     ],
   };
 
-  it('renders all four real sections with populated data, no fabricated content', async () => {
+  it('renders all five real sections with populated data, no fabricated content', async () => {
     mockAuthState.user = { id: 1, fullName: 'Test User' };
     global.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => POPULATED_SUMMARY });
     render(<DailyBrief />);
     await waitFor(() => expect(screen.getByText('What Changed')).toBeTruthy());
+    expect(screen.getByText('Early Warning')).toBeTruthy();
     expect(screen.getByText("What Needs You")).toBeTruthy();
     expect(screen.getByText("What's Emerging")).toBeTruthy();
     expect(screen.getByText('Recent Completions')).toBeTruthy();

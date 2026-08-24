@@ -47,6 +47,23 @@
  *                    snapshots taken, and TCO / Working Capital / Spend
  *                    Variance analyses saved or edited
  *
+ * #175 (Trend-Based Early Warning, 24 Aug 2026) extension: a fifth
+ * bucket, trendWarning, reuses the SAME snapshot query "changed" already
+ * runs (LIMIT bumped from 2 to 3, one query, two honest views -- the same
+ * pattern #174 used on roiSummary.ts). "Changed" tells you what moved
+ * between the last two assessments; trendWarning asks a stricter question:
+ * has a segment declined for two CONSECUTIVE snapshot-to-snapshot
+ * intervals in a row (not just one dip), while the account still has at
+ * least 3 snapshots to establish a real trend from. A single decline is
+ * noise; two in a row, while the segment is still above the lowest band,
+ * is an early warning worth surfacing before it gets there. This app has
+ * no "Critical" label anywhere (see src/lib/maturityScoring.ts,
+ * MATURITY_LEVELS) -- the lowest band is named "Reactive" (score 1.0-1.9).
+ * Rather than introduce a new "critical" label the rest of the platform
+ * does not use, this endpoint uses "Reactive" consistently, and honestly
+ * separates segments that are trending toward Reactive (early warning)
+ * from segments already IN Reactive (a different, more urgent state,
+ * surfaced but never conflated with the early-warning framing).
  * Consultancy Engine activity (submissions table, tool in diagnostic/
  * command_centre) is intentionally NOT folded into "completions" -- those
  * rows have no natural "done" state (a diagnosis is a single AI call, not a
@@ -87,7 +104,7 @@ router.get('/brief/summary', requireSession, async (req, res) => {
       FROM maturity_snapshots
       WHERE user_id = ${userId}
       ORDER BY taken_at DESC
-      LIMIT 2
+      LIMIT 3
     `);
     const snapRows = ((snapResult as any).rows ?? snapResult) as Array<{
       id: number; taken_at: string; segment_scores: SegmentScoreRow[] | null;
@@ -100,7 +117,7 @@ router.get('/brief/summary', requireSession, async (req, res) => {
       segments: Array<{ title: string; scoreLatest: number; scorePrevious: number; delta: number }>;
     } = { hasComparison: false, latestSnapshotAt: null, previousSnapshotAt: null, segments: [] };
 
-    if (snapRows.length === 2) {
+    if (snapRows.length >= 2) {
       const [latest, previous] = snapRows;
       const prevByTitle = new Map((previous.segment_scores ?? []).map(s => [s.title, s.score]));
       const segments = (latest.segment_scores ?? [])
@@ -118,6 +135,57 @@ router.get('/brief/summary', requireSession, async (req, res) => {
         latestSnapshotAt: latest.taken_at,
         previousSnapshotAt: previous.taken_at,
         segments,
+      };
+    }
+
+    // ── "Trend warning" (#175): two CONSECUTIVE declines in a row, not just
+    //    one dip -- needs a third, older snapshot to establish an interval
+    //    before the most recent one. REACTIVE_CEILING mirrors
+    //    MATURITY_LEVELS[0].max + a hair (1.9 -> boundary at 2.0) from
+    //    src/lib/maturityScoring.ts on the frontend; kept as a literal here
+    //    since this is a raw-SQL route with no import path into that file. ──
+    const REACTIVE_CEILING = 2.0;
+    let trendWarning: {
+      hasEnoughHistory: boolean;
+      oldestSnapshotAt: string | null;
+      middleSnapshotAt: string | null;
+      latestSnapshotAt: string | null;
+      segments: Array<{
+        title: string;
+        scoreOldest: number; scoreMiddle: number; scoreLatest: number;
+        delta1: number; delta2: number;
+        alreadyReactive: boolean;
+      }>;
+    } = { hasEnoughHistory: false, oldestSnapshotAt: null, middleSnapshotAt: null, latestSnapshotAt: null, segments: [] };
+
+    if (snapRows.length === 3) {
+      const [latest, middle, oldest] = snapRows;
+      const middleByTitle = new Map((middle.segment_scores ?? []).map(s => [s.title, s.score]));
+      const oldestByTitle = new Map((oldest.segment_scores ?? []).map(s => [s.title, s.score]));
+      const declining = (latest.segment_scores ?? [])
+        .filter(s => middleByTitle.has(s.title) && oldestByTitle.has(s.title))
+        .map(s => {
+          const scoreMiddle = middleByTitle.get(s.title)!;
+          const scoreOldest = oldestByTitle.get(s.title)!;
+          return {
+            title: s.title,
+            scoreOldest,
+            scoreMiddle,
+            scoreLatest: s.score,
+            delta1: Math.round((scoreMiddle - scoreOldest) * 100) / 100,
+            delta2: Math.round((s.score - scoreMiddle) * 100) / 100,
+            alreadyReactive: s.score < REACTIVE_CEILING,
+          };
+        })
+        // Two consecutive declines, not one -- a single dip is noise, not a trend.
+        .filter(s => s.delta1 < 0 && s.delta2 < 0)
+        .sort((a, b) => a.delta2 - b.delta2); // steepest most-recent decline first
+      trendWarning = {
+        hasEnoughHistory: true,
+        oldestSnapshotAt: oldest.taken_at,
+        middleSnapshotAt: middle.taken_at,
+        latestSnapshotAt: latest.taken_at,
+        segments: declining,
       };
     }
 
@@ -232,7 +300,7 @@ router.get('/brief/summary', requireSession, async (req, res) => {
     completions.sort((a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime());
 
     const hasData = changed.hasComparison || overdueItems.length > 0 || notStartedItems.length > 0
-      || emergingItems.length > 0 || completions.length > 0;
+      || emergingItems.length > 0 || completions.length > 0 || trendWarning.segments.length > 0;
     // Personalization (Decision Record 8.6, dimension 3): an empty brief means two very
     // different things for a client who has never taken an assessment vs. one with real
     // history and simply a quiet window -- everHasHistory lets the frontend tell them apart
@@ -247,6 +315,7 @@ router.get('/brief/summary', requireSession, async (req, res) => {
       window: windowParam,
       windowDays,
       changed,
+      trendWarning,
       needsYou: {
         overdue: overdueItems.map((r: any) => ({ id: r.id, phase: r.phase, action: r.action, segmentTitle: r.segment_title, dueAt: r.due_at, daysOverdue: Math.max(1, Math.floor((Date.now() - new Date(r.due_at).getTime()) / 86400000)) })),
         notStarted: notStartedItems.map((r: any) => ({ id: r.id, action: r.action, segmentTitle: r.segment_title, source: r.source, createdAt: r.created_at })),
