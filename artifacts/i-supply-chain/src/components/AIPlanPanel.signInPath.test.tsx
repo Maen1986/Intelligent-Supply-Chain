@@ -367,9 +367,17 @@ describe('Login — post-login redirect uses decoded `from` param', () => {
       expect(mockLogin).toHaveBeenCalled();
     });
 
+    // Error message appears once the rejected login promise is caught and
+    // the component re-renders -- that state update is asynchronous
+    // (a microtask after the mocked rejection), so it must be awaited
+    // rather than asserted synchronously right after the call above.
+    // Asserting synchronously here is what made this test flaky: it
+    // sometimes ran before React committed the error-state update.
+    await waitFor(() => {
+      expect(screen.getByText(/Invalid email or password/i)).toBeInTheDocument();
+    });
+
     // navigate must NOT have been called on failure
     expect(mockNavigate).not.toHaveBeenCalled();
-    // Error message must appear
-    expect(screen.getByText(/Invalid email or password/i)).toBeInTheDocument();
   });
 });

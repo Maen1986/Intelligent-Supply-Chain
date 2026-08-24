@@ -856,19 +856,32 @@ export function InboundLogTab({ ar, refresh }: { ar: boolean; refresh: number })
   const [statusFilter, setStatusFilter] = useState('');
   const PAGE = 50;
 
+  // Returns a cleanup function that marks this specific request stale --
+  // React runs it automatically before the next effect run (filter/page/
+  // refresh change) or on unmount. Without this guard, two overlapping
+  // requests (e.g. the initial unfiltered load and a filter applied a
+  // moment later) can resolve out of order, and the *last response to
+  // land* -- not the *last request sent* -- wins, silently reverting a
+  // filtered view back to the unfiltered one. This was a real race, not
+  // just test flakiness: it surfaced as an intermittent failing assertion
+  // in InboundLogTab.filter.test.tsx (whichever sub-test happened to hit
+  // the race that run), and the same race is reachable by a real user who
+  // changes a filter shortly after the tab first loads.
   const load = useCallback(() => {
+    let stale = false;
     setLoading(true);
     const params = new URLSearchParams({ limit: String(PAGE), offset: String(page * PAGE) });
     if (actionFilter.trim()) params.set('action', actionFilter.trim());
     if (statusFilter)        params.set('status', statusFilter);
     fetch(`${API_BASE}/admin/automations/inbound-log?${params}`, { credentials: 'include' })
       .then(r => r.json())
-      .then(d => { if (d.ok) { setRows(d.logs); setTotal(d.total); } })
+      .then(d => { if (!stale && d.ok) { setRows(d.logs); setTotal(d.total); } })
       .catch(() => {})
-      .finally(() => setLoading(false));
+      .finally(() => { if (!stale) setLoading(false); });
+    return () => { stale = true; };
   }, [page, actionFilter, statusFilter]);
 
-  useEffect(() => { load(); }, [load, refresh]);
+  useEffect(() => load(), [load, refresh]);
 
   /** Fetch every matching row (no server-side cap) then trigger a CSV download. */
   const handleExportCsv = useCallback(async () => {
