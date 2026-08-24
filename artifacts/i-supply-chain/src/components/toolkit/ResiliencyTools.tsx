@@ -7,15 +7,17 @@
  * 3. Disruption Simulator   — preset scenarios scaled by the user's exposure score
  * 4. AI Resilience Brief
  */
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
   ResponsiveContainer, Tooltip, Legend,
 } from 'recharts';
-import { Download, ShieldAlert, ClipboardCheck, Waves, Sparkles, AlertTriangle, BookOpen, Calculator, Plus, Trash2, ExternalLink } from 'lucide-react';
+import { Download, ShieldAlert, ClipboardCheck, Waves, Sparkles, AlertTriangle, BookOpen, Calculator, Plus, Trash2, ExternalLink, Copy } from 'lucide-react';
 import { safeSetItem } from '@/lib/storage';
 import { useAIPlan } from '@/hooks/useAIPlan';
 import { AIPlanPanel } from '@/components/AIPlanPanel';
+import { useAuth } from '@/lib/AuthContext';
+import { API_BASE } from '@/lib/apiBase';
 import {
   RESILIENCE_CASE_STUDIES, RAR_INTERDEPENDENCY_CORRECTION_PCT, RAR_DURATION_BENCHMARKS_DAYS,
   RAR_REFERENCE_POINTS, RAR_WORKED_EXAMPLE,
@@ -63,6 +65,81 @@ const SCENARIOS: Scenario[] = [
   { id: 'cyber', label: 'Cyber Attack on ERP / Supplier Systems', labelAr: 'هجوم سيبراني على ERP/أنظمة الموردين', baseLeadDays: 12, baseCostPct: 30, desc: 'Ransomware or systems outage halting order processing', descAr: 'هجوم فدية أو تعطل أنظمة يوقف معالجة الطلبات' },
 ];
 
+/**
+ * Revenue-at-Risk (RAR) node + scenario types, and the pure exposure
+ * calculation (#182 Disruption Simulator extension of the RAR calculator,
+ * Wave B-6, 2026-08-24, Decision Record 8.10).
+ *
+ * IMPORTANT naming note: this is NOT the "Disruption Simulator" TAB below
+ * (tab id `scenario`, the preset port-closure/supplier-failure/freight-
+ * spike/cyber-attack picker) -- that is a separate, already-complete
+ * feature and is untouched by this change. This extends the RAR
+ * ("Revenue-at-Risk", not a rating) calculator on the `rar` tab with a
+ * manual what-if mechanism: duplicate the current node set as a named,
+ * independently-editable "scenario" and compare it side-by-side against
+ * the baseline. There is no probability distribution or logistics graph
+ * here -- it stays an honest manual calculator, not a Monte Carlo
+ * simulator.
+ */
+export interface RarNode {
+  id: string;
+  name: string;
+  revenuePct: number;
+  atRisk: boolean;
+  /** Optional -- one of the three what-if levers named in backlog #182
+   *  ("supplier/route/lead-time change"). Manual input only; there is no
+   *  logistics graph or lead-time model behind this. */
+  leadTimeDays?: number;
+  /** Optional plain-text "Primary route/corridor" field -- deliberately not
+   *  a route-graph model, just an honest manual label per node. */
+  route?: string;
+}
+export interface RarMeta { interdependenciesMapped: boolean; annualRevenue: string; }
+export interface RarScenario { id: string; name: string; nodes: RarNode[]; meta: RarMeta; }
+
+/**
+ * Pure RAR exposure calculation, extracted so the baseline calculation
+ * (Steps 1-2 of the RAR methodology) and every saved "what-if" scenario are
+ * ALWAYS computed by the exact same function -- there is no second,
+ * parallel exposure formula anywhere in this file. Both the baseline render
+ * and the scenario comparison call this and only this.
+ */
+export function computeRarExposure(nodes: RarNode[], meta: RarMeta) {
+  const rawExposurePct = nodes.filter(n => n.atRisk).reduce((s, n) => s + (n.revenuePct || 0), 0);
+  const correctionLow = meta.interdependenciesMapped ? 0 : RAR_INTERDEPENDENCY_CORRECTION_PCT.low;
+  const correctionHigh = meta.interdependenciesMapped ? 0 : RAR_INTERDEPENDENCY_CORRECTION_PCT.high;
+  const adjustedLowPct = rawExposurePct * (1 + correctionLow / 100);
+  const adjustedHighPct = rawExposurePct * (1 + correctionHigh / 100);
+  const annualRevenueNum = parseFloat(meta.annualRevenue) || 0;
+  const dollarAtMedian = annualRevenueNum > 0
+    ? (adjustedLowPct / 100) * annualRevenueNum * (RAR_DURATION_BENCHMARKS_DAYS.median / 365)
+    : 0;
+  const dollarAtP95 = annualRevenueNum > 0
+    ? (adjustedHighPct / 100) * annualRevenueNum * (RAR_DURATION_BENCHMARKS_DAYS.p95 / 365)
+    : 0;
+  // Midpoint of the adjusted range, used only for scenario-vs-baseline delta
+  // display -- when interdependencies are fully mapped the range collapses
+  // (low === high === rawExposurePct) so the midpoint is just that figure.
+  const midPct = (adjustedLowPct + adjustedHighPct) / 2;
+  return { rawExposurePct, correctionLow, correctionHigh, adjustedLowPct, adjustedHighPct, annualRevenueNum, dollarAtMedian, dollarAtP95, midPct };
+}
+type RarExposureResult = ReturnType<typeof computeRarExposure>;
+
+function formatPPDelta(deltaPp: number): string {
+  const sign = deltaPp > 0.05 ? '+' : deltaPp < -0.05 ? '' : '±';
+  return `${sign}${deltaPp.toFixed(1)}pp`;
+}
+function formatDollarCompact(n: number): string {
+  const abs = Math.abs(n);
+  if (abs >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`;
+  if (abs >= 1_000) return `$${(n / 1_000).toFixed(0)}K`;
+  return `$${Math.round(n).toLocaleString()}`;
+}
+function formatDollarDelta(delta: number): string {
+  const sign = delta > 0.5 ? '+' : delta < -0.5 ? '-' : '±';
+  return `${sign}${formatDollarCompact(Math.abs(delta))}`;
+}
+
 type Tab = 'exposure' | 'bcp' | 'scenario' | 'library' | 'rar' | 'ai';
 
 export function ResiliencyToolsSection({ isAr }: Props) {
@@ -93,30 +170,143 @@ export function ResiliencyToolsSection({ isAr }: Props) {
   const filteredCases = caseFilter === 'All' ? RESILIENCE_CASE_STUDIES : RESILIENCE_CASE_STUDIES.filter(cs => cs.disruptionType === caseFilter);
 
   // ── Revenue-at-Risk (RAR) calculator — implements the 5-step methodology ──
-  interface RarNode { id: string; name: string; revenuePct: number; atRisk: boolean; }
   const SK_RAR_NODES = 'isc-tool-resiliency-rar-nodes-v1';
   const SK_RAR_META = 'isc-tool-resiliency-rar-meta-v1';
   const [rarNodes, setRarNodes] = useState<RarNode[]>(() => loadJson(SK_RAR_NODES, [] as RarNode[]));
-  const [rarMeta, setRarMeta] = useState<{ interdependenciesMapped: boolean; annualRevenue: string }>(
+  const [rarMeta, setRarMeta] = useState<RarMeta>(
     () => loadJson(SK_RAR_META, { interdependenciesMapped: false, annualRevenue: '' }),
   );
   const saveRarNodes = (next: RarNode[]) => { setRarNodes(next); safeSetItem(SK_RAR_NODES, JSON.stringify(next)); };
-  const saveRarMeta = (next: typeof rarMeta) => { setRarMeta(next); safeSetItem(SK_RAR_META, JSON.stringify(next)); };
+  const saveRarMeta = (next: RarMeta) => { setRarMeta(next); safeSetItem(SK_RAR_META, JSON.stringify(next)); };
   const addRarNode = () => saveRarNodes([...rarNodes, { id: `n${Date.now()}`, name: '', revenuePct: 0, atRisk: false }]);
   const updateRarNode = (id: string, patch: Partial<RarNode>) => saveRarNodes(rarNodes.map(n => n.id === id ? { ...n, ...patch } : n));
   const removeRarNode = (id: string) => saveRarNodes(rarNodes.filter(n => n.id !== id));
-  const rawExposurePct = rarNodes.filter(n => n.atRisk).reduce((s, n) => s + (n.revenuePct || 0), 0);
-  const correctionLow = rarMeta.interdependenciesMapped ? 0 : RAR_INTERDEPENDENCY_CORRECTION_PCT.low;
-  const correctionHigh = rarMeta.interdependenciesMapped ? 0 : RAR_INTERDEPENDENCY_CORRECTION_PCT.high;
-  const adjustedLowPct = rawExposurePct * (1 + correctionLow / 100);
-  const adjustedHighPct = rawExposurePct * (1 + correctionHigh / 100);
-  const annualRevenueNum = parseFloat(rarMeta.annualRevenue) || 0;
-  const dollarAtMedian = annualRevenueNum > 0
-    ? (adjustedLowPct / 100) * annualRevenueNum * (RAR_DURATION_BENCHMARKS_DAYS.median / 365)
-    : 0;
-  const dollarAtP95 = annualRevenueNum > 0
-    ? (adjustedHighPct / 100) * annualRevenueNum * (RAR_DURATION_BENCHMARKS_DAYS.p95 / 365)
-    : 0;
+  const {
+    rawExposurePct, correctionLow, correctionHigh, adjustedLowPct, adjustedHighPct,
+    annualRevenueNum, dollarAtMedian, dollarAtP95,
+  } = computeRarExposure(rarNodes, rarMeta);
+
+  // ── RAR scenarios ("Duplicate as scenario" what-if mechanism, #182) ──
+  // Server-sync mirrors the CLM Contracts / TCO Analyses whole-list pattern
+  // exactly (see CLMTools.tsx's syncClmToServer* block) -- localStorage
+  // remains the source of truth on fetch failure, never breaking the UI.
+  const SK_RAR_SCENARIOS = 'isc-tool-resiliency-rar-scenarios-v1';
+  const [rarScenarios, setRarScenarios] = useState<RarScenario[]>(() => loadJson(SK_RAR_SCENARIOS, [] as RarScenario[]));
+  const { user } = useAuth();
+  const [rarSyncStatus, setRarSyncStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const rarServerLoadedForUserId = useRef<number | null>(null);
+  const rarBootstrapSettled = useRef(false);
+  const rarLocalWinsDuringBootstrap = useRef(false);
+  const rarSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const rarScenariosRef = useRef<RarScenario[]>(rarScenarios);
+  rarScenariosRef.current = rarScenarios;
+
+  interface ServerRarRow { id: number; clientKey: string; name: string; data: { nodes: RarNode[]; meta: RarMeta }; updatedAt: string; }
+  function serverRowToScenario(row: ServerRarRow): RarScenario {
+    return { id: row.clientKey, name: row.name, nodes: row.data.nodes, meta: row.data.meta };
+  }
+  function scenarioToPayload(s: RarScenario) {
+    return { clientKey: s.id, name: s.name, data: { nodes: s.nodes, meta: s.meta } };
+  }
+  const syncRarToServerImmediate = (list: RarScenario[]) => {
+    if (!user) return;
+    setRarSyncStatus('saving');
+    if (rarSyncTimerRef.current) clearTimeout(rarSyncTimerRef.current);
+    rarSyncTimerRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`${API_BASE}/rar-analyses`, {
+          method: 'PUT', credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ analyses: list.map(scenarioToPayload) }),
+        });
+        setRarSyncStatus(res.ok ? 'saved' : 'error');
+        if (res.ok) setTimeout(() => setRarSyncStatus('idle'), 2500);
+      } catch {
+        setRarSyncStatus('error');
+      }
+    }, 400);
+  };
+  const syncRarToServer = (list: RarScenario[]) => {
+    if (!user) return;
+    if (!rarBootstrapSettled.current) { rarLocalWinsDuringBootstrap.current = true; return; }
+    syncRarToServerImmediate(list);
+  };
+  const saveRarScenarios = (next: RarScenario[]) => {
+    setRarScenarios(next);
+    safeSetItem(SK_RAR_SCENARIOS, JSON.stringify(next));
+    syncRarToServer(next);
+  };
+
+  useEffect(() => {
+    if (!user) {
+      if (rarServerLoadedForUserId.current !== null) {
+        rarServerLoadedForUserId.current = null;
+        rarBootstrapSettled.current = false;
+        rarLocalWinsDuringBootstrap.current = false;
+        setRarSyncStatus('idle');
+      }
+      return;
+    }
+    if (rarServerLoadedForUserId.current === user.id) return;
+    rarServerLoadedForUserId.current = user.id;
+    rarBootstrapSettled.current = false;
+    rarLocalWinsDuringBootstrap.current = false;
+    const bootstrapUserId = user.id;
+
+    (async () => {
+      try {
+        const res = await fetch(`${API_BASE}/rar-analyses`, { credentials: 'include' });
+        if (rarServerLoadedForUserId.current !== bootstrapUserId) return;
+        if (res.ok) {
+          const data = await res.json() as { ok: boolean; analyses: ServerRarRow[] };
+          if (data.ok && Array.isArray(data.analyses) && data.analyses.length > 0) {
+            if (!rarLocalWinsDuringBootstrap.current) {
+              const converted = data.analyses.map(serverRowToScenario);
+              setRarScenarios(converted);
+              safeSetItem(SK_RAR_SCENARIOS, JSON.stringify(converted));
+            }
+          } else if (!rarLocalWinsDuringBootstrap.current) {
+            const current = rarScenariosRef.current;
+            if (current && current.length > 0) syncRarToServerImmediate(current);
+          }
+        }
+      } catch { /* offline -- localStorage keeps working */ }
+      rarBootstrapSettled.current = true;
+      if (rarLocalWinsDuringBootstrap.current) {
+        const current = rarScenariosRef.current;
+        if (current) syncRarToServerImmediate(current);
+      }
+    })();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
+
+  const duplicateRarAsScenario = () => {
+    const id = `rs${Date.now()}`;
+    const name = `Scenario ${rarScenarios.length + 1}`;
+    const clone: RarScenario = {
+      id, name,
+      nodes: rarNodes.map(n => ({ ...n })),
+      meta: { ...rarMeta },
+    };
+    saveRarScenarios([...rarScenarios, clone]);
+  };
+  const updateRarScenario = (id: string, patch: Partial<RarScenario>) =>
+    saveRarScenarios(rarScenarios.map(s => s.id === id ? { ...s, ...patch } : s));
+  const updateRarScenarioNode = (scenarioId: string, nodeId: string, patch: Partial<RarNode>) =>
+    saveRarScenarios(rarScenarios.map(s => s.id === scenarioId
+      ? { ...s, nodes: s.nodes.map(n => n.id === nodeId ? { ...n, ...patch } : n) }
+      : s));
+  const addRarScenarioNode = (scenarioId: string) =>
+    saveRarScenarios(rarScenarios.map(s => s.id === scenarioId
+      ? { ...s, nodes: [...s.nodes, { id: `n${Date.now()}`, name: '', revenuePct: 0, atRisk: false }] }
+      : s));
+  const removeRarScenarioNode = (scenarioId: string, nodeId: string) =>
+    saveRarScenarios(rarScenarios.map(s => s.id === scenarioId
+      ? { ...s, nodes: s.nodes.filter(n => n.id !== nodeId) }
+      : s));
+  const removeRarScenario = (id: string) => saveRarScenarios(rarScenarios.filter(s => s.id !== id));
+
+  const baselineRarResult: RarExposureResult = computeRarExposure(rarNodes, rarMeta);
 
   const buildPrompt = useCallback(() => {
     const expLines = EXPOSURE_CATS.map(c => exposure[c.id] !== undefined ? `- ${c.label}: ${exposure[c.id]}/5` : `- ${c.label}: not assessed`).join('\n');
@@ -330,6 +520,12 @@ export function ResiliencyToolsSection({ isAr }: Props) {
                     <input type="number" min={0} max={100} placeholder="%" value={n.revenuePct || ''}
                       onChange={e => updateRarNode(n.id, { revenuePct: parseFloat(e.target.value) || 0 })}
                       className="w-20 text-xs px-2.5 py-1.5 rounded-lg border border-slate-200" />
+                    <input type="number" min={0} placeholder={isAr ? 'مهلة التوريد (أيام)' : 'Lead time (days)'} aria-label={isAr ? 'مهلة التوريد بالأيام' : 'Lead time in days'} value={n.leadTimeDays ?? ''}
+                      onChange={e => updateRarNode(n.id, { leadTimeDays: e.target.value === '' ? undefined : parseFloat(e.target.value) || 0 })}
+                      className="w-28 text-xs px-2.5 py-1.5 rounded-lg border border-slate-200" />
+                    <input type="text" placeholder={isAr ? 'المسار/الممر الرئيسي' : 'Primary route/corridor'} aria-label={isAr ? 'المسار أو الممر الرئيسي' : 'Primary route or corridor'} value={n.route ?? ''}
+                      onChange={e => updateRarNode(n.id, { route: e.target.value })}
+                      className="w-40 text-xs px-2.5 py-1.5 rounded-lg border border-slate-200" />
                     <label className="flex items-center gap-1.5 text-[11px] text-slate-600 shrink-0">
                       <input type="checkbox" checked={n.atRisk} onChange={e => updateRarNode(n.id, { atRisk: e.target.checked })} className="w-3.5 h-3.5 accent-red-600" />
                       {isAr ? 'التعافي > الصمود' : 'TTR > TTS'}
@@ -337,9 +533,15 @@ export function ResiliencyToolsSection({ isAr }: Props) {
                     <button onClick={() => removeRarNode(n.id)} className="text-slate-400 hover:text-red-600 shrink-0"><Trash2 className="w-3.5 h-3.5" /></button>
                   </div>
                 ))}
-                <button onClick={addRarNode} className="flex items-center gap-1.5 text-[11px] font-semibold text-red-700 hover:text-red-800">
-                  <Plus className="w-3.5 h-3.5" />{isAr ? 'إضافة عقدة' : 'Add node'}
-                </button>
+                <div className="flex items-center gap-3 flex-wrap">
+                  <button onClick={addRarNode} className="flex items-center gap-1.5 text-[11px] font-semibold text-red-700 hover:text-red-800">
+                    <Plus className="w-3.5 h-3.5" />{isAr ? 'إضافة عقدة' : 'Add node'}
+                  </button>
+                  <button onClick={duplicateRarAsScenario} disabled={rarNodes.length === 0}
+                    className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-600 hover:text-slate-800 disabled:opacity-40 disabled:cursor-not-allowed">
+                    <Copy className="w-3.5 h-3.5" />{isAr ? 'نسخ كسيناريو "ماذا لو"' : 'Duplicate as what-if scenario'}
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -381,6 +583,126 @@ export function ResiliencyToolsSection({ isAr }: Props) {
               )}
               <p className="text-[10px] text-red-400 mt-2">{isAr ? 'تقدير توضيحي مبسّط لأغراض التخطيط، وليس استشارة مالية.' : 'A simplified, illustrative estimate for planning purposes — not financial advice.'}</p>
             </div>
+
+            {/* What-if scenarios -- #182 Disruption Simulator extension of RAR.
+                NOT the "Disruption Simulator" tab above -- this is a manual
+                what-if duplicate-and-edit mechanism over the RAR node model,
+                reusing computeRarExposure for every recompute. */}
+            {rarScenarios.length > 0 && (
+              <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm space-y-4">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <p className="text-xs font-bold text-slate-700">{isAr ? 'سيناريوهات "ماذا لو" المحفوظة' : 'Saved What-If Scenarios'}</p>
+                  {user && (
+                    <span className="text-[10px] text-slate-400">
+                      {rarSyncStatus === 'saving' ? (isAr ? 'جارٍ الحفظ...' : 'Saving...')
+                        : rarSyncStatus === 'saved' ? (isAr ? 'تم الحفظ' : 'Saved')
+                        : rarSyncStatus === 'error' ? (isAr ? 'تعذّر الحفظ (محفوظ محلياً)' : 'Save failed (kept locally)')
+                        : ''}
+                    </span>
+                  )}
+                </div>
+                <p className="text-[11px] text-slate-400">
+                  {isAr
+                    ? 'عدّل عقد أي سيناريو (المورّد/المسار/مهلة التوريد/النسبة/التعرّض) بشكل مستقل عن خط الأساس أعلاه، ثم قارن التعرّض جنباً إلى جنب.'
+                    : "Edit any scenario's nodes (supplier, route, lead-time, %-revenue, at-risk) independently of the baseline above, then compare exposure side-by-side."}
+                </p>
+
+                {rarScenarios.map(s => {
+                  const sResult = computeRarExposure(s.nodes, s.meta);
+                  return (
+                    <div key={s.id} className="border border-slate-200 rounded-xl p-3 bg-slate-50 space-y-2">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <input type="text" value={s.name} onChange={e => updateRarScenario(s.id, { name: e.target.value })}
+                          aria-label={isAr ? 'اسم السيناريو' : 'Scenario name'}
+                          className="flex-1 min-w-[140px] text-xs font-bold px-2.5 py-1.5 rounded-lg border border-slate-200" />
+                        <button onClick={() => removeRarScenario(s.id)} className="text-slate-400 hover:text-red-600 shrink-0"><Trash2 className="w-3.5 h-3.5" /></button>
+                      </div>
+                      <div className="space-y-1.5">
+                        {s.nodes.map(n => (
+                          <div key={n.id} className="flex items-center gap-2 flex-wrap bg-white rounded-lg p-2">
+                            <input type="text" placeholder={isAr ? 'اسم العقدة' : 'Node name'} value={n.name}
+                              onChange={e => updateRarScenarioNode(s.id, n.id, { name: e.target.value })}
+                              className="flex-1 min-w-[110px] text-xs px-2 py-1 rounded-lg border border-slate-200" />
+                            <input type="number" min={0} max={100} placeholder="%" value={n.revenuePct || ''}
+                              onChange={e => updateRarScenarioNode(s.id, n.id, { revenuePct: parseFloat(e.target.value) || 0 })}
+                              className="w-16 text-xs px-2 py-1 rounded-lg border border-slate-200" />
+                            <input type="number" min={0} placeholder={isAr ? 'مهلة (أيام)' : 'Lead (days)'} aria-label={isAr ? 'مهلة التوريد بالأيام' : 'Lead time in days'} value={n.leadTimeDays ?? ''}
+                              onChange={e => updateRarScenarioNode(s.id, n.id, { leadTimeDays: e.target.value === '' ? undefined : parseFloat(e.target.value) || 0 })}
+                              className="w-24 text-xs px-2 py-1 rounded-lg border border-slate-200" />
+                            <input type="text" placeholder={isAr ? 'المسار' : 'Route'} aria-label={isAr ? 'المسار أو الممر الرئيسي' : 'Primary route or corridor'} value={n.route ?? ''}
+                              onChange={e => updateRarScenarioNode(s.id, n.id, { route: e.target.value })}
+                              className="w-32 text-xs px-2 py-1 rounded-lg border border-slate-200" />
+                            <label className="flex items-center gap-1 text-[10px] text-slate-600 shrink-0">
+                              <input type="checkbox" checked={n.atRisk} onChange={e => updateRarScenarioNode(s.id, n.id, { atRisk: e.target.checked })} className="w-3.5 h-3.5 accent-red-600" />
+                              {isAr ? 'خطر' : 'At risk'}
+                            </label>
+                            <button onClick={() => removeRarScenarioNode(s.id, n.id)} className="text-slate-400 hover:text-red-600 shrink-0"><Trash2 className="w-3 h-3" /></button>
+                          </div>
+                        ))}
+                        <button onClick={() => addRarScenarioNode(s.id)} className="flex items-center gap-1.5 text-[10px] font-semibold text-red-700 hover:text-red-800">
+                          <Plus className="w-3 h-3" />{isAr ? 'إضافة عقدة' : 'Add node'}
+                        </button>
+                      </div>
+                      <label className="flex items-start gap-2 text-[11px] text-slate-600 cursor-pointer">
+                        <input type="checkbox" checked={s.meta.interdependenciesMapped}
+                          onChange={e => updateRarScenario(s.id, { meta: { ...s.meta, interdependenciesMapped: e.target.checked } })}
+                          className="mt-0.5 w-3.5 h-3.5 accent-red-600" />
+                        {isAr ? 'ترابط الموردين مُرسَّم بالكامل لهذا السيناريو' : 'Supplier interdependencies fully mapped for this scenario'}
+                      </label>
+                      <input type="number" min={0} placeholder={isAr ? 'الإيراد السنوي لهذا السيناريو (اختياري)' : 'Annual revenue for this scenario (optional)'}
+                        value={s.meta.annualRevenue}
+                        onChange={e => updateRarScenario(s.id, { meta: { ...s.meta, annualRevenue: e.target.value } })}
+                        className="text-xs px-2.5 py-1.5 rounded-lg border border-slate-200 w-full sm:w-64" />
+                      <div className="text-xs text-slate-700">
+                        <span className="font-bold">{isAr ? 'تعرّض هذا السيناريو: ' : 'This scenario\'s exposure: '}</span>
+                        {sResult.rawExposurePct === 0 ? '—' : sResult.correctionLow === 0
+                          ? `${sResult.rawExposurePct.toFixed(1)}%`
+                          : `${sResult.adjustedLowPct.toFixed(1)}–${sResult.adjustedHighPct.toFixed(1)}%`}
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {/* Side-by-side comparison: baseline vs each saved scenario,
+                    reusing computeRarExposure identically for both. */}
+                <div className="border-2 border-slate-200 rounded-xl overflow-hidden">
+                  <table className="w-full text-[11px]">
+                    <thead className="bg-slate-100">
+                      <tr>
+                        <th className="text-left px-2.5 py-1.5 font-bold text-slate-600">{isAr ? 'الحالة' : 'Case'}</th>
+                        <th className="text-left px-2.5 py-1.5 font-bold text-slate-600">{isAr ? 'التعرّض %' : 'Exposure %'}</th>
+                        <th className="text-left px-2.5 py-1.5 font-bold text-slate-600">{isAr ? 'الأثر $ (نموذجي)' : '$ Impact (typical)'}</th>
+                        <th className="text-left px-2.5 py-1.5 font-bold text-slate-600">{isAr ? 'الفرق مقابل خط الأساس' : 'Delta vs. baseline'}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr className="border-t border-slate-200 bg-red-50">
+                        <td className="px-2.5 py-1.5 font-bold text-red-800">{isAr ? 'خط الأساس' : 'Baseline'}</td>
+                        <td className="px-2.5 py-1.5">{baselineRarResult.rawExposurePct === 0 ? '—' : `${baselineRarResult.midPct.toFixed(1)}%`}</td>
+                        <td className="px-2.5 py-1.5">{baselineRarResult.annualRevenueNum > 0 ? formatDollarCompact(baselineRarResult.dollarAtMedian) : '—'}</td>
+                        <td className="px-2.5 py-1.5 text-slate-400">—</td>
+                      </tr>
+                      {rarScenarios.map(s => {
+                        const sResult = computeRarExposure(s.nodes, s.meta);
+                        const deltaPp = sResult.midPct - baselineRarResult.midPct;
+                        const bothHaveRevenue = sResult.annualRevenueNum > 0 && baselineRarResult.annualRevenueNum > 0;
+                        const deltaDollar = bothHaveRevenue ? sResult.dollarAtMedian - baselineRarResult.dollarAtMedian : null;
+                        return (
+                          <tr key={s.id} className="border-t border-slate-200">
+                            <td className="px-2.5 py-1.5 font-semibold text-slate-700">{s.name}</td>
+                            <td className="px-2.5 py-1.5">{sResult.rawExposurePct === 0 ? '—' : `${sResult.midPct.toFixed(1)}%`}</td>
+                            <td className="px-2.5 py-1.5">{sResult.annualRevenueNum > 0 ? formatDollarCompact(sResult.dollarAtMedian) : '—'}</td>
+                            <td className={`px-2.5 py-1.5 font-bold ${deltaPp > 0.05 ? 'text-red-600' : deltaPp < -0.05 ? 'text-emerald-600' : 'text-slate-400'}`}>
+                              {formatPPDelta(deltaPp)}{deltaDollar !== null && ` / ${formatDollarDelta(deltaDollar)}`}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
 
             {/* Step 5: sanity check reference points */}
             <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
