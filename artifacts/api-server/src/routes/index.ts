@@ -37,6 +37,7 @@ import tcoAnalysesRouter        from "./tcoAnalyses";
 import tcoTrendSnapshotsRouter  from "./tcoTrendSnapshots";
 import workingCapitalAnalysesRouter from "./workingCapitalAnalyses";
 import spendVarianceAnalysesRouter from "./spendVarianceAnalyses";
+import clmContractsRouter          from "./clmContracts";
 import briefRouter                from "./brief";
 import workbenchRouter             from "./workbench";
 
@@ -79,6 +80,7 @@ router.use("/tco-analyses",     tcoAnalysesRouter);
 router.use("/tco-trend-snapshots", tcoTrendSnapshotsRouter);
 router.use("/working-capital-analyses", workingCapitalAnalysesRouter);
 router.use("/spend-variance-analyses", spendVarianceAnalysesRouter);
+router.use("/clm-contracts",           clmContractsRouter);
 router.use(briefRouter);
 router.use(workbenchRouter);
 router.use(webhooksInboundRouter);

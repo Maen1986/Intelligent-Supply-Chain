@@ -8,7 +8,7 @@
  * 4. Templates & Tools     — downloadable contract templates and checklists
  * 5. AI Contract Brief     — AI-generated portfolio analysis and renewal strategy
  */
-import React, { useState, useMemo, useCallback, useRef } from 'react';
+import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
 } from 'recharts';
@@ -20,6 +20,8 @@ import { safeSetItem } from '@/lib/storage';
 import { useAIPlan } from '@/hooks/useAIPlan';
 import { AIPlanPanel } from '@/components/AIPlanPanel';
 import { toast } from 'sonner';
+import { useAuth } from '@/lib/AuthContext';
+import { API_BASE } from '@/lib/apiBase';
 
 interface CLMToolsProps { isAr: boolean; }
 
@@ -51,6 +53,14 @@ interface Contract {
   notes: string;
   keyTerms: string;
   renewalDecision: 'renew' | 'renegotiate' | 'retender' | 'terminate' | 'undecided';
+  /** Purchase volume (SAR) that must be reached to earn a negotiated rebate.
+   *  Optional -- manual input, #179 Contract Value Tracker. Never fabricate a
+   *  claimable status when this or purchaseVolume is missing (see
+   *  claimableRebate() below). */
+  rebateThreshold?: number;
+  /** Actual purchase volume (SAR) recorded to date against this contract.
+   *  Optional -- manual input, #179 Contract Value Tracker. */
+  purchaseVolume?: number;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -68,6 +78,25 @@ function healthRating(c: Contract): HealthRating {
   if (avg >= 60) return 'good';
   if (avg >= 40 || daysUntil(c.endDate) <= 30) return 'at-risk';
   return 'critical';
+}
+
+/** Claimable-rebate flag -- #179 Contract Value Tracker.
+ *  True only when BOTH rebateThreshold and purchaseVolume are present
+ *  numbers, rebateThreshold > 0, and purchaseVolume has reached it.
+ *  Never fabricate a claimable status from partial data: a missing field
+ *  returns false so the UI shows no badge at all rather than a false
+ *  negative or positive (Decision Record 8.7 honesty requirement). */
+function claimableRebate(c: Contract): boolean {
+  if (typeof c.rebateThreshold !== 'number' || typeof c.purchaseVolume !== 'number') return false;
+  if (!(c.rebateThreshold > 0)) return false;
+  return c.purchaseVolume >= c.rebateThreshold;
+}
+
+/** True when rebate tracking is even applicable to this contract (both
+ *  fields entered), regardless of whether the threshold has been met yet --
+ *  used to decide whether to show a "not yet reached" progress hint. */
+function hasRebateTracking(c: Contract): boolean {
+  return typeof c.rebateThreshold === 'number' && c.rebateThreshold > 0 && typeof c.purchaseVolume === 'number';
 }
 
 const HEALTH_META: Record<HealthRating, { label: string; labelAr: string; color: string; bg: string; border: string }> = {
@@ -329,9 +358,125 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [renewalFilter, setRenewalFilter] = useState<number>(180); // show renewals due in N days
 
-  const saveContracts = (c: Contract[]) => { setContracts(c); safeSetItem(SK_CONTRACTS, JSON.stringify(c)); };
-  const updateContract = (id: string, field: keyof Contract, value: string | number | boolean) =>
+  // ── Server-sync (backend persistence, #179 Contract Value Tracker,
+  //    2026-08-24) ── Whole-list sync against /api/clm-contracts, mirroring
+  //    the debounced-PUT / bootstrap-merge pattern already proven in
+  //    ProcurementTools.tsx for the TCO Engine (tco_analyses) and Spend
+  //    Variance Finder (spend_variance_analyses), adapted for CLM's flat
+  //    contract list (no "named analysis" / activeId concept here -- the
+  //    whole `contracts` array IS the synced state). Each Contract's own
+  //    client-generated `id` (via nid()) IS the value sent to/received from
+  //    the server as `clientKey` -- the server's own serial row id is
+  //    internal bookkeeping only, never surfaced to the frontend, so there
+  //    is no ID-reconciliation step needed after a sync. Logged-out users
+  //    keep working entirely off localStorage, exactly as before; nothing
+  //    here changes guest behaviour.
+  const { user } = useAuth();
+  const [clmSyncStatus, setClmSyncStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const clmServerLoadedForUserId = useRef<number | null>(null);
+  const clmBootstrapSettled = useRef(false);
+  const clmLocalWinsDuringBootstrap = useRef(false);
+  const clmSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const contractsRef = useRef<Contract[]>(contracts);
+  contractsRef.current = contracts;
+
+  interface ServerClmRow { id: number; clientKey: string; name: string; data: Contract; updatedAt: string; }
+  function serverRowToContract(row: ServerClmRow): Contract {
+    // Prefer clientKey/name (the server's canonical indexing columns) over
+    // whatever may be embedded in `data`, in case they ever drift.
+    return { ...row.data, id: row.clientKey, name: row.name };
+  }
+  function contractToPayload(c: Contract) {
+    return { clientKey: c.id, name: c.name, data: c };
+  }
+
+  const syncClmToServerImmediate = (list: Contract[]) => {
+    if (!user) return;
+    setClmSyncStatus('saving');
+    if (clmSyncTimerRef.current) clearTimeout(clmSyncTimerRef.current);
+    clmSyncTimerRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`${API_BASE}/clm-contracts`, {
+          method: 'PUT', credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contracts: list.map(contractToPayload) }),
+        });
+        setClmSyncStatus(res.ok ? 'saved' : 'error');
+        if (res.ok) setTimeout(() => setClmSyncStatus('idle'), 2500);
+      } catch {
+        setClmSyncStatus('error');
+      }
+    }, 400);
+  };
+  const syncClmToServer = (list: Contract[]) => {
+    if (!user) return;
+    if (!clmBootstrapSettled.current) {
+      // Bootstrap GET hasn't resolved yet -- don't race it with a PUT.
+      clmLocalWinsDuringBootstrap.current = true;
+      return;
+    }
+    syncClmToServerImmediate(list);
+  };
+
+  const saveContracts = (c: Contract[]) => {
+    setContracts(c);
+    safeSetItem(SK_CONTRACTS, JSON.stringify(c));
+    syncClmToServer(c);
+  };
+  const updateContract = (id: string, field: keyof Contract, value: string | number | boolean | undefined) =>
     saveContracts(contracts.map(c => c.id === id ? { ...c, [field]: value } : c));
+
+  /* Bootstrap: on login (or account switch), pull the server's saved
+   * contracts. Server-has-data wins over localStorage UNLESS the user has
+   * already edited something in this session while the GET was in flight.
+   * Server-empty means "first time syncing this account" -- upload whatever
+   * is currently in localStorage instead of discarding it. A failed fetch
+   * (offline, server down) leaves localStorage as the sole source of truth
+   * and never breaks the UI. */
+  useEffect(() => {
+    if (!user) {
+      if (clmServerLoadedForUserId.current !== null) {
+        clmServerLoadedForUserId.current = null;
+        clmBootstrapSettled.current = false;
+        clmLocalWinsDuringBootstrap.current = false;
+        setClmSyncStatus('idle');
+      }
+      return;
+    }
+    if (clmServerLoadedForUserId.current === user.id) return;
+    clmServerLoadedForUserId.current = user.id;
+    clmBootstrapSettled.current = false;
+    clmLocalWinsDuringBootstrap.current = false;
+    const bootstrapUserId = user.id;
+
+    (async () => {
+      try {
+        const res = await fetch(`${API_BASE}/clm-contracts`, { credentials: 'include' });
+        if (clmServerLoadedForUserId.current !== bootstrapUserId) return;
+        if (res.ok) {
+          const data = await res.json() as { ok: boolean; contracts: ServerClmRow[] };
+          if (data.ok && Array.isArray(data.contracts) && data.contracts.length > 0) {
+            if (!clmLocalWinsDuringBootstrap.current) {
+              const converted = data.contracts.map(serverRowToContract);
+              setContracts(converted);
+              safeSetItem(SK_CONTRACTS, JSON.stringify(converted));
+            }
+          } else if (!clmLocalWinsDuringBootstrap.current) {
+            // Server has nothing yet for this account -- upload local state
+            // as the initial sync rather than leaving the server empty.
+            const current = contractsRef.current;
+            if (current && current.length > 0) syncClmToServerImmediate(current);
+          }
+        }
+      } catch { /* offline -- localStorage keeps working */ }
+      clmBootstrapSettled.current = true;
+      if (clmLocalWinsDuringBootstrap.current) {
+        const current = contractsRef.current;
+        if (current) syncClmToServerImmediate(current);
+      }
+    })();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
   const addContract = () => saveContracts([...contracts, defaultContract()]);
   const removeContract = (id: string) => saveContracts(contracts.filter(c => c.id !== id));
   const toggleExpand = (id: string) => setExpandedIds(prev => {
@@ -350,6 +495,7 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
     [contracts, renewalFilter]);
   const expiredContracts = useMemo(() => contracts.filter(c => daysUntil(c.endDate) < 0 && c.status !== 'renewed'), [contracts]);
   const totalSavings     = useMemo(() => contracts.reduce((s, c) => s + (c.savingsRealized || 0), 0), [contracts]);
+  const claimableRebateContracts = useMemo(() => contracts.filter(claimableRebate), [contracts]);
 
   // Health bar chart data
   const healthData = useMemo(() => [
@@ -452,12 +598,13 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
         <div className="space-y-4">
           {/* Summary cards */}
           {contracts.length > 0 && (
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
               {[
                 { label: isAr ? 'إجمالي العقود' : 'Total Contracts',     value: contracts.length,                       color: '#082C6B' },
                 { label: isAr ? 'القيمة السنوية' : 'Annual Value',         value: `SAR ${(totalAnnualValue/1000000).toFixed(1)}M`, color: '#4f46e5' },
                 { label: isAr ? 'وفورات محقّقة' : 'Savings Realised',     value: `SAR ${(totalSavings/1000).toFixed(0)}K`,      color: '#059669' },
                 { label: isAr ? 'تنتهي خلال 90 يوم' : 'Expiring ≤90d',    value: contracts.filter(c => { const d = daysUntil(c.endDate); return d >= 0 && d <= 90; }).length, color: '#d97706' },
+                { label: isAr ? 'خصومات مستحقة للمطالبة' : 'Claimable Rebates', value: claimableRebateContracts.length, color: '#059669' },
               ].map(c => (
                 <div key={c.label} className="bg-white border border-slate-200 rounded-xl p-3 text-center shadow-sm">
                   <p className="text-[11px] text-slate-500 font-medium">{c.label}</p>
@@ -491,6 +638,7 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${statusMeta.badge}`}>{isAr ? statusMeta.labelAr : statusMeta.label}</span>
                         <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: hm.bg, color: hm.color }}>{isAr ? hm.labelAr : hm.label}</span>
                         {expiredContracts.includes(c) && <span className="text-[10px] bg-red-100 text-red-700 font-bold px-2 py-0.5 rounded-full">{isAr ? 'تحتاج إجراء عاجل' : 'ACTION NEEDED'}</span>}
+                        {claimableRebate(c) && <span className="text-[10px] bg-emerald-100 text-emerald-700 font-bold px-2 py-0.5 rounded-full">{isAr ? 'خصم مستحق للمطالبة' : 'CLAIMABLE REBATE'}</span>}
                       </div>
                       <p className="font-bold text-sm text-slate-800 mt-1">{c.name || (isAr ? '(اسم العقد)' : '(Contract name)')}</p>
                       <p className="text-[11px] text-slate-500 mt-0.5">{c.supplier} {c.category ? `· ${c.category}` : ''} {c.annualValue ? `· SAR ${c.annualValue.toLocaleString()}/yr` : ''}</p>
@@ -516,11 +664,21 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
                         { label: isAr ? 'القيمة الإجمالية (ر.س)' : 'Total Value (SAR)', field: 'totalValue', type: 'number', placeholder: '0' },
                         { label: isAr ? 'الوفورات المحقّقة (ر.س)' : 'Savings Realised (SAR)', field: 'savingsRealized', type: 'number', placeholder: '0' },
                         { label: isAr ? 'فترة الإشعار (أيام)' : 'Notice Period (days)', field: 'noticePeriodDays', type: 'number', placeholder: '90' },
+                        { label: isAr ? 'حد استحقاق الخصم (حجم الشراء)' : 'Rebate Threshold (Purchase Volume)', field: 'rebateThreshold', type: 'number', placeholder: isAr ? 'اتركه فارغاً إن لم ينطبق' : 'Leave blank if N/A', optional: true },
+                        { label: isAr ? 'حجم الشراء حتى الآن' : 'Purchase Volume To Date', field: 'purchaseVolume', type: 'number', placeholder: isAr ? 'اتركه فارغاً إن لم ينطبق' : 'Leave blank if N/A', optional: true },
                       ].map(f => (
                         <div key={f.field} className="space-y-1">
                           <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{f.label}</label>
-                          <input type={f.type} value={(c as unknown as Record<string, string | number | boolean>)[f.field] as string | number}
-                            onChange={e => updateContract(c.id, f.field as keyof Contract, f.type === 'number' ? parseFloat(e.target.value) || 0 : e.target.value)}
+                          <input type={f.type} value={((c as unknown as Record<string, string | number | boolean | undefined>)[f.field] ?? '') as string | number}
+                            onChange={e => {
+                              const raw = e.target.value;
+                              let value: string | number | undefined;
+                              if (f.type === 'number') {
+                                if (f.optional && raw === '') { value = undefined; }
+                                else { const parsed = parseFloat(raw); value = f.optional ? (isNaN(parsed) ? undefined : parsed) : (parsed || 0); }
+                              } else { value = raw; }
+                              updateContract(c.id, f.field as keyof Contract, value);
+                            }}
                             placeholder={f.placeholder}
                             className="w-full text-xs border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#082C6B]" />
                         </div>
@@ -586,9 +744,19 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
             })}
           </div>
 
-          <button onClick={addContract} className="flex items-center gap-2 text-sm text-[#082C6B] font-semibold border border-[#082C6B] rounded-xl px-4 py-2 hover:bg-[#082C6B]/5 transition-colors">
-            <Plus className="w-4 h-4" />{isAr ? 'إضافة عقد' : 'Add Contract'}
-          </button>
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <button onClick={addContract} className="flex items-center gap-2 text-sm text-[#082C6B] font-semibold border border-[#082C6B] rounded-xl px-4 py-2 hover:bg-[#082C6B]/5 transition-colors">
+              <Plus className="w-4 h-4" />{isAr ? 'إضافة عقد' : 'Add Contract'}
+            </button>
+            <p className="text-[10px] text-slate-400">
+              {user
+                ? (clmSyncStatus === 'saving' ? (isAr ? 'جارٍ المزامنة مع الخادم…' : 'Syncing to server…')
+                  : clmSyncStatus === 'saved' ? (isAr ? 'تمت المزامنة مع الخادم ✓' : 'Synced to server ✓')
+                  : clmSyncStatus === 'error' ? (isAr ? 'تعذّرت المزامنة — تم الحفظ محلياً' : 'Sync failed — saved locally')
+                  : (isAr ? 'محفوظ في حسابك' : 'Saved to your account'))
+                : (isAr ? 'يُحفَظ تلقائياً في هذا المتصفح (سجّل الدخول للحفظ في حسابك)' : 'Auto-saved in this browser (sign in to save to your account)')}
+            </p>
+          </div>
         </div>
       )}
 
@@ -707,7 +875,7 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
                     return (
                       <div key={c.id} className="px-4 py-3 flex items-center gap-3">
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold text-slate-800 truncate">{c.name || '(unnamed)'}</p>
+                          <p className="text-sm font-semibold text-slate-800 truncate">{c.name || '(unnamed)'}{claimableRebate(c) && <span className="ml-2 text-[10px] bg-emerald-100 text-emerald-700 font-bold px-2 py-0.5 rounded-full align-middle">{isAr ? 'خصم مستحق' : 'REBATE'}</span>}</p>
                           <p className="text-[11px] text-slate-400">{c.supplier}</p>
                         </div>
                         <div className="hidden sm:flex gap-6 text-center shrink-0">

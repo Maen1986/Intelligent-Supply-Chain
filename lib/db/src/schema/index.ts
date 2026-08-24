@@ -9,6 +9,7 @@ export * from "./tcoAnalyses";
 export * from "./tcoTrendSnapshots";
 export * from "./workingCapitalAnalyses";
 export * from "./spendVarianceAnalyses";
+export * from "./clmContracts";
 export * from "./claimTokens";
 export * from "./sessions";
 export * from "./feedback";
