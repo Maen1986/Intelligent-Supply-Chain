@@ -22,6 +22,39 @@
  * hidden-cost checklist content is shown -- only the Category (SKU class)
  * selection does that, per the grounded-checklist design -- a debatable
  * placement here has no effect on any number or claim the tool makes.
+ *
+ * Follow-on note (24 Aug 2026, ISC Services Classification Book v1,
+ * isc-services-classification-book-v1.md): checked whether that book's real,
+ * sourced UNSPSC data could correct the 3 force-fit placements above.
+ * Finding: it can explain WHY they don't fit, but it cannot relocate them,
+ * because it classifies a different axis. UNSPSC Segment 80 (Management,
+ * Business Professionals and Administrative Services -- Family 80100000
+ * Management advisory services) and Segment 81 (Engineering, Research and
+ * Technology Based Services -- Family 81110000 Computer services) classify
+ * WHAT IS BEING PROCURED (a consulting engagement, a software service).
+ * IndustryKey classifies WHAT INDUSTRY THE CLIENT OPERATES IN (a NAICS/
+ * ISIC-adjacent axis). "Professional Services (Consulting, Legal, Audit)"
+ * and "Software & SaaS" are real client industries in their own right --
+ * UNSPSC 80/81 correctly names the service category a professional-services
+ * or software firm itself SELLS, but that is not the same fact as which of
+ * the 8 existing IndustryKey buckets such a firm's OWN industry belongs
+ * under, and forcing that crosswalk would conflate the two axes the
+ * classification book explicitly warns against conflating ("The other axis
+ * this is NOT" section). Same reasoning applies to the 3 e-commerce
+ * variants (B2C/B2B/Marketplace) -- UNSPSC Segment 80's marketing/
+ * distribution families describe a service, not a client industry.
+ *
+ * Honest conclusion: there is no mis-mapping to correct here with the data
+ * this book provides. The real gap is that the 8-key IndustryKey taxonomy
+ * itself has no "Technology / Software" or "Professional & Business
+ * Services" industry -- these 4 sub-sectors are placed under the nearest
+ * existing bucket (retail-fmcg, government) as a documented, deliberate
+ * compromise, not a silent one. A true fix would mean adding new IndustryKey
+ * value(s) (e.g. 'technology-services', 'professional-services') and is a
+ * larger, cross-cutting schema change (touches kpiBenchmarksByIndustry.ts,
+ * the KPI Dashboard industry selector, and every other IndustryKey consumer)
+ * -- out of scope for this pass, flagged as a real follow-on item requiring
+ * its own scoping rather than forced through here.
  */
 import type { IndustryKey } from './kpiBenchmarksByIndustry';
 
