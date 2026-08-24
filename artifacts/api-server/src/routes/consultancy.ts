@@ -9,6 +9,20 @@
  *   id / status / severityScore / confidence % / symptom -> trigger -> immediateCause ->
  *   contributingCauses -> rootCause -> downstreamEffects. Same underlying AI call and data,
  *   restructured from the old flat rootCauses[] (cause/framework/severity) list.
+ *   #176 (Similar Case Matching, 24 Aug 2026): the response also carries
+ *   similarCase, a best-effort lookup of this SAME signed-in user's own most
+ *   recent PRIOR diagnostic submission with a matching industry (and
+ *   subIndustry, when given) -- read from the same submissions table #167
+ *   already writes to, not a new table. "Similar" here means a categorical
+ *   match on the dropdown fields the client themselves chose, not semantic
+ *   text similarity (no embeddings/full-text infra exists in this stack, so
+ *   this deliberately does not claim a stronger match than it can prove).
+ *   Cross-CLIENT matching was considered and rejected -- the site map
+ *   registry item specifically scopes this to "the same client's own
+ *   diagnosis history," and matching across different organizations would
+ *   raise real data-boundary questions this endpoint has no business
+ *   answering. A lookup failure never blocks the diagnosis itself --
+ *   similarCase is additive context, not a dependency.
  * POST /api/consultancy/solution    → solution plan generation
  * POST /api/consultancy/refine      → refine solution after satisfaction feedback
  * POST /api/consultancy/escalate    → email Ma'in + log case to DB
@@ -17,6 +31,7 @@ import { Router } from 'express';
 import { openai } from '@workspace/integrations-openai-ai-server';
 import { db } from '@workspace/db';
 import { submissionsTable } from '@workspace/db';
+import { sql } from 'drizzle-orm';
 import { logger } from '../lib/logger';
 import { OPENAI_MODEL, friendlyAIError } from '../lib/aiConfig';
 import { leadsRateLimiter } from '../lib/rateLimit';
@@ -63,6 +78,49 @@ router.post('/diagnose', requireSession, leadsRateLimiter, async (req, res) => {
   if (!industry || !challenge) {
     res.status(400).json({ ok: false, error: 'industry and challenge are required' });
     return;
+  }
+
+  // ── #176 Similar Case Matching: this user's own most recent prior
+  //    diagnostic submission with a matching industry (+ subIndustry, when
+  //    given). Best-effort -- a lookup failure never blocks the diagnosis. ──
+  const userId = req.session.userId ?? null;
+  let similarCase: {
+    challenge: string; challengeSummary: string | null;
+    industry: string; subIndustry: string | null; takenAt: string;
+  } | null = null;
+
+  if (userId) {
+    try {
+      const subIndustryFilter = subIndustry ? sql`AND inputs->>'subIndustry' = ${subIndustry}` : sql``;
+      const priorResult = await db.execute(sql`
+        SELECT inputs, outputs, created_at
+        FROM submissions
+        WHERE user_id = ${userId}
+          AND tool = 'diagnostic'
+          AND inputs->>'industry' = ${industry}
+          ${subIndustryFilter}
+        ORDER BY created_at DESC
+        LIMIT 1
+      `);
+      const priorRows = ((priorResult as any).rows ?? priorResult) as Array<{
+        inputs: { challenge?: string; industry?: string; subIndustry?: string } | null;
+        outputs: { challengeSummary?: string } | null;
+        created_at: string;
+      }>;
+      const prior = priorRows[0];
+      if (prior?.inputs?.challenge) {
+        similarCase = {
+          challenge:        prior.inputs.challenge,
+          challengeSummary: prior.outputs?.challengeSummary ?? null,
+          industry:         prior.inputs.industry ?? industry,
+          subIndustry:      prior.inputs.subIndustry ?? null,
+          takenAt:          prior.created_at,
+        };
+      }
+    } catch (err) {
+      logger.error({ err, userId }, '[consultancy/diagnose] similar-case lookup failed');
+      // similarCase stays null -- the diagnosis itself still proceeds normally.
+    }
   }
 
   const lang = language === 'ar' ? 'Arabic' : 'English';
@@ -167,7 +225,7 @@ Rules:
       ipAddress: req.ip ?? null,
     }).catch(err => logger.error({ err }, '[consultancy] Failed to persist diagnosis'));
 
-    res.json({ ok: true, diagnosis });
+    res.json({ ok: true, diagnosis, similarCase });
   } catch (err) {
     logger.error({ err }, '[consultancy/diagnose] failed');
     const { message, status } = friendlyAIError(err);

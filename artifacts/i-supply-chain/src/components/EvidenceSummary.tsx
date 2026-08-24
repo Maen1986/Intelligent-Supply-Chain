@@ -11,7 +11,8 @@
 // to expand. Neutral theme-token styling (bg-muted/text-primary) so it reads
 // consistently across every surface it's dropped into.
 import { useState } from 'react';
-import { ChevronRight, ChevronLeft, Microscope } from 'lucide-react';
+import { Link } from 'wouter';
+import { ChevronRight, ChevronLeft, Microscope, History } from 'lucide-react';
 
 export interface EvidenceSummaryData {
   dataUsed: string[];
@@ -91,6 +92,43 @@ export function ConsiderAlso({ text, ar }: { text?: string | null; ar?: boolean 
     <div className="flex items-start gap-2 text-xs sm:text-sm text-muted-foreground bg-amber-50 border border-amber-200 rounded-lg px-3 py-2.5">
       <span className="font-bold text-amber-700 shrink-0">{ar ? 'من الجهة الأخرى:' : 'Consider also:'}</span>
       <span>{text}</span>
+    </div>
+  );
+}
+
+// Shared "Similar case" callout (#176, 24 Aug 2026) -- surfaces the SAME
+// signed-in user's own most recent PRIOR diagnostic submission when its
+// industry (+ subIndustry, when given) matches the one just diagnosed. A
+// categorical match on the client's own dropdown choices, not a semantic
+// claim -- so the copy says "same industry," never "similar problem," which
+// this data cannot actually prove. Distinct blue theme (not the amber used
+// by ConsiderAlso, not to be confused with a counter-argument) since this is
+// context, not a caveat.
+export interface SimilarCaseData {
+  challenge: string;
+  challengeSummary: string | null;
+  industry: string;
+  subIndustry: string | null;
+  takenAt: string;
+}
+
+export function SimilarCase({ similarCase, ar }: { similarCase?: SimilarCaseData | null; ar?: boolean }) {
+  if (!similarCase) return null;
+  const dateStr = new Date(similarCase.takenAt).toLocaleDateString(ar ? 'ar-SA' : 'en-GB', { year: 'numeric', month: 'short', day: 'numeric' });
+  const summary = similarCase.challengeSummary ?? similarCase.challenge;
+  return (
+    <div className="flex items-start gap-2.5 text-xs sm:text-sm text-blue-900 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2.5">
+      <History className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
+      <div>
+        <p>
+          <span className="font-bold">{ar ? `لديك تشخيص سابق لنفس القطاع (${similarCase.industry})` : `You raised a similar-industry challenge before (${similarCase.industry})`}</span>
+          {ar ? `، بتاريخ ${dateStr}: ` : `, on ${dateStr}: `}
+          <span className="italic">{summary}</span>
+        </p>
+        <Link href="/my-assessments" className="inline-block mt-1 text-blue-700 font-semibold hover:underline">
+          {ar ? 'عرض التشخيص السابق' : 'View that prior diagnosis'}
+        </Link>
+      </div>
     </div>
   );
 }

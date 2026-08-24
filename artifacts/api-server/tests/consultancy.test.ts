@@ -70,6 +70,49 @@ describe('POST /api/consultancy/diagnose', () => {
     expect(res.status).toBe(200);
     expect(res.body.ok).toBe(true);
     expect(res.body.diagnosis.challengeSummary).toBe('Late deliveries');
+    // similarCase defaults to null with no prior submissions (db.execute -> { rows: [] } by default).
+    expect(res.body.similarCase).toBeNull();
+  });
+
+  it('#176: surfaces a matching prior diagnosis from the SAME user as similarCase', async () => {
+    const { db } = await import('@workspace/db');
+    (db.execute as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      rows: [{
+        inputs: { challenge: 'Warehouse pick errors rising', industry: 'FMCG', subIndustry: 'Retail' },
+        outputs: { challengeSummary: 'Pick-accuracy declining due to WMS mis-slotting' },
+        created_at: '2026-07-01T00:00:00Z',
+      }],
+    });
+    aiReply({ challengeSummary: 'Late deliveries', riskAssessment: { level: 'High' } });
+    const app = makeApp('/api/consultancy', consultancyRouter, { userId: 1 });
+    const res = await request(app).post('/api/consultancy/diagnose').send({
+      industry: 'FMCG',
+      subIndustry: 'Retail',
+      challenge: 'OTIF is 62% and falling',
+    });
+    expect(res.status).toBe(200);
+    expect(res.body.similarCase).toMatchObject({
+      challenge: 'Warehouse pick errors rising',
+      challengeSummary: 'Pick-accuracy declining due to WMS mis-slotting',
+      industry: 'FMCG',
+      subIndustry: 'Retail',
+      takenAt: '2026-07-01T00:00:00Z',
+    });
+  });
+
+  it('#176: a similar-case lookup failure never blocks the diagnosis itself', async () => {
+    const { db } = await import('@workspace/db');
+    (db.execute as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('db down (test)'));
+    aiReply({ challengeSummary: 'Late deliveries', riskAssessment: { level: 'High' } });
+    const app = makeApp('/api/consultancy', consultancyRouter, { userId: 1 });
+    const res = await request(app).post('/api/consultancy/diagnose').send({
+      industry: 'FMCG',
+      challenge: 'OTIF is 62% and falling',
+    });
+    expect(res.status).toBe(200);
+    expect(res.body.ok).toBe(true);
+    expect(res.body.diagnosis.challengeSummary).toBe('Late deliveries');
+    expect(res.body.similarCase).toBeNull();
   });
 
   it('maps AI rate-limit errors to a friendly 503', async () => {

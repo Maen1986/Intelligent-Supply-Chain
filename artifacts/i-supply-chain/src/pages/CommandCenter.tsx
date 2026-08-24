@@ -16,7 +16,7 @@ import {
   MessageSquare, Languages, Sparkles, Download, Eye, X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { EvidenceSummary, ConsiderAlso } from '@/components/EvidenceSummary';
+import { EvidenceSummary, ConsiderAlso, SimilarCase, type SimilarCaseData } from '@/components/EvidenceSummary';
 import { TellMeTheStoryButton, type NarrativeStep } from '@/components/NarrativeStory';
 import { ProblemChainFlow } from '@/components/ProblemChainFlow';
 import { getVitalSigns, setVitalSign, getPriorityVitalSigns, toggleVitalSignPriority, type VitalSignKey, type VitalSign } from '@/lib/commandCenterVitalSigns';
@@ -3333,6 +3333,7 @@ function ConsultancyTab({ lang }: { lang: Lang }) {
   const [companySize, setCompanySize] = useState('');
   const [challenge, setChallenge]   = useState('');
   const [diagnosis, setDiagnosis]   = useState<DiagnosisResult | null>(null);
+  const [similarCase, setSimilarCase] = useState<SimilarCaseData | null>(null);
 
   // #161 vital sign: only written once a real diagnosis exists.
   useEffect(() => {
@@ -3399,7 +3400,7 @@ function ConsultancyTab({ lang }: { lang: Lang }) {
       });
       const d = await r.json();
       if (!d.ok) throw new Error(d.error || 'Diagnosis failed');
-      setDiagnosis(d.diagnosis); setStage('diagnosis');
+      setDiagnosis(d.diagnosis); setSimilarCase(d.similarCase ?? null); setStage('diagnosis');
     } catch (e) { setError(String(e)); setStage('input'); }
   }, [industry, subIndustry, challenge, companySize, maturityHint, lang]);
 
@@ -3536,6 +3537,7 @@ function ConsultancyTab({ lang }: { lang: Lang }) {
               <button onClick={() => setStage('input')} className="text-xs text-muted-foreground hover:text-foreground underline">{ar ? 'تشخيص جديد' : 'New Diagnosis'}</button>
             </div>
           </div>
+          <SimilarCase similarCase={similarCase} ar={ar} />
           <div className="bg-[#082C6B] rounded-2xl p-6 text-white">
             <p className="text-xs uppercase tracking-widest text-white/60 mb-2">{ar ? 'ملخص التحدي' : 'Challenge Summary'}</p>
             <p className="text-base leading-relaxed">{diagnosis.challengeSummary}</p>
@@ -3635,7 +3637,7 @@ function ConsultancyTab({ lang }: { lang: Lang }) {
             </div>
             <div className="flex gap-3">
               <button onClick={() => setStage('diagnosis')} className="text-xs text-muted-foreground hover:text-foreground underline">{ar ? 'العودة للتشخيص' : 'Back to Diagnosis'}</button>
-              <button onClick={() => { setStage('input'); setDiagnosis(null); setSolution(null); setSatisfaction(0); }} className="text-xs text-muted-foreground hover:text-foreground underline">{ar ? 'بدء جديد' : 'Start Over'}</button>
+              <button onClick={() => { setStage('input'); setDiagnosis(null); setSimilarCase(null); setSolution(null); setSatisfaction(0); }} className="text-xs text-muted-foreground hover:text-foreground underline">{ar ? 'بدء جديد' : 'Start Over'}</button>
             </div>
           </div>
           <div className="bg-[#082C6B] rounded-2xl p-6 text-white">
