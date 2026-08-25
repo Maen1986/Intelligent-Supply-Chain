@@ -155,7 +155,7 @@ html[lang="ar"] {
     display: none !important;
   }
 
-  /* ── Shared layout + typography for ALL print zones ────────────────────
+  /* ── Shared layout + typography for ALL print zones ────────────────────────────────
      Any element whose class includes "print-zone-" automatically gets:
        • correct positioning so it fills the page
        • the -webkit-print-color-adjust / print-color-adjust pair that
@@ -163,7 +163,7 @@ html[lang="ar"] {
        • base typography (font-family, colour, background)
      To add a new zone: just add one visibility-gate rule below — all
      layout, colour-preserve, and typography properties are inherited.
-  ─────────────────────────────────────────────────────────────────────── */
+  ──────────────────────────────────────────────────────────────── */
   [class*="print-zone-"] {
     position: absolute;
     left: 0;
@@ -196,6 +196,11 @@ html[lang="ar"] {
 
   body[data-print="kri"] .print-zone-kri,
   body[data-print="kri"] .print-zone-kri * {
+    visibility: visible;
+  }
+
+  body[data-print="supplier-dependency"] .print-zone-supplier-dependency,
+  body[data-print="supplier-dependency"] .print-zone-supplier-dependency * {
     visibility: visible;
   }
 
@@ -268,7 +273,7 @@ html[lang="ar"] {
      blank on print in Firefox and older Safari. Each cost cell carries a
      sibling <span class="tco-print-val"> mirroring the live value; on
      screen the span is hidden, inside the TCO print zone the input is
-     hidden (opacity:0) and the span is revealed instead. ─────────────── */
+     hidden (opacity:0) and the span is revealed instead. ───────────── */
   .print-zone-tco .tco-print-val { display: flex !important; }
   .print-zone-tco .tco-print-input { opacity: 0; }
   /* Print-only header blocks (TCO summary title, weights, sensitivity
@@ -278,29 +283,29 @@ html[lang="ar"] {
     display: block !important;
   }
 
-  /* ── KPI bar chart print colour safety ─────────────────────────────────
+  /* ── KPI bar chart print colour safety ───────────────────────────────────────
      Recharts Cell fills are inline SVG attributes. Safari and Firefox strip
      those colours during print unless the container opts in to exact colour
      rendering. The JS side also sets WebkitPrintColorAdjust via inline style
      as a belt-and-suspenders guard for older WebKit.
-  ─────────────────────────────────────────────────────────────────────── */
+  ──────────────────────────────────────────────────────────────── */
   .kpi-chart-wrap {
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
 
-  /* ── SVG gauge print safety ──────────────────────────────────────────────
+  /* ── SVG gauge print safety ────────────────────────────────────────────
      Some browsers (Safari, Firefox) apply overflow:hidden to SVG elements
      during print, clipping the arc stroke that extends to the viewBox edge.
      Force overflow:visible so the gauge arcs and needle render in full.
      The fill path inside MiniGauge uses stroke-dasharray, not fill, so no
      background-colour stripping occurs — these rules only affect geometry.
-  ─────────────────────────────────────────────────────────────────────── */
+  ──────────────────────────────────────────────────────────────── */
   svg {
     overflow: visible !important;
   }
 
-  /* ── Overflow-hidden clipping fix ────────────────────────────────────────
+  /* ── Overflow-hidden clipping fix ──────────────────────────────────────────────
      The print zones are absolutely positioned and must escape any ancestor
      overflow:hidden context. Older Safari and Firefox honour the parent's
      overflow:hidden during print and clip the output. When a data-print
@@ -322,7 +327,7 @@ html[lang="ar"] {
      independently and clips any absolutely-positioned content that extends
      beyond the element.  Resetting to auto collapses the layer so the print
      zone renders in the normal document flow.
-  ─────────────────────────────────────────────────────────────────────── */
+  ──────────────────────────────────────────────────────────────── */
   body[data-print] .rounded-2xl,
   body[data-print] .rounded-xl,
   body[data-print] .overflow-hidden,
@@ -339,19 +344,19 @@ html[lang="ar"] {
     -webkit-overflow-scrolling: auto !important;
   }
 
-  /* ── max-height clipping fix ─────────────────────────────────────────────
+  /* ── max-height clipping fix ───────────────────────────────────────────────
      Tailwind max-h-* utilities (e.g. max-h-96, max-h-screen) on ancestor
      wrappers can clip absolutely-positioned print zones even when the zone
      itself is overflow:visible. The weekly-review print zone inner template
      already has max-height:none, but any outer wrapper carrying a max-h-*
      class would still truncate the output. Override them all at once using
      the substring class selector.
-  ─────────────────────────────────────────────────────────────────────── */
+  ──────────────────────────────────────────────────────────────── */
   body[data-print] [class*="max-h-"] {
     max-height: none !important;
   }
 
-  /* ── Supplier Alert Config input print fix ───────────────────────────
+  /* ── Supplier Alert Config input print fix ─────────────────────────
      Firefox and older Safari do not print the value inside
      <input type="number">; the box renders blank. Each threshold cell
      contains a sibling <span class="alert-cfg-val"> that mirrors the
@@ -359,7 +364,7 @@ html[lang="ar"] {
      block). Inside the print zone we swap: make the input transparent
      so its box still occupies the column width, and reveal the span
      over it. This guarantees the number appears in every browser.
-  ─────────────────────────────────────────────────────────────────────── */
+  ──────────────────────────────────────────────────────────────── */
   .print-zone-alert-config .alert-cfg-input {
     opacity: 0;
   }
