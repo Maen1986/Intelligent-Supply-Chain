@@ -10,6 +10,7 @@
  */
 import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { UNSPSC_SERVICES_SEGMENTS, unspscSegmentLabel } from '@/lib/unspscSegments';
+import { GOVERNING_LAW_TRACKS, governingLawTrackLabel, checkGoverningLawMismatch, type GoverningLawTrack } from '@/lib/clmLegalTrack';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
 } from 'recharts';
@@ -71,6 +72,18 @@ interface Contract {
   /** Actual purchase volume (SAR) recorded to date against this contract.
    *  Optional -- manual input, #179 Contract Value Tracker. */
   purchaseVolume?: number;
+  /** Government or private counterparty -- determines the Tier 0 Saudi
+   *  anchor (GTPL vs CTL). Optional, manual input. Module 01, #386. */
+  counterpartyType?: 'government' | 'private';
+  /** Governing-law track named by the contract itself, if any. Optional,
+   *  manual input -- never inferred. Module 01, #386. */
+  governingLawClause?: GoverningLawTrack;
+  /** Free-text jurisdiction where the counterparty is domiciled. Optional,
+   *  manual input. Module 01, #386. */
+  counterpartyJurisdiction?: string;
+  /** Free-text location where the contract is actually performed/delivered.
+   *  Optional, manual input. Module 01, #386. */
+  performanceLocation?: string;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -649,6 +662,7 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
                         <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: hm.bg, color: hm.color }}>{isAr ? hm.labelAr : hm.label}</span>
                         {expiredContracts.includes(c) && <span className="text-[10px] bg-red-100 text-red-700 font-bold px-2 py-0.5 rounded-full">{isAr ? 'تحتاج إجراء عاجل' : 'ACTION NEEDED'}</span>}
                         {claimableRebate(c) && <span className="text-[10px] bg-emerald-100 text-emerald-700 font-bold px-2 py-0.5 rounded-full">{isAr ? 'خصم مستحق للمطالبة' : 'CLAIMABLE REBATE'}</span>}
+                        {checkGoverningLawMismatch(c.governingLawClause, c.counterpartyJurisdiction, c.performanceLocation).flagged && <span className="text-[10px] bg-amber-100 text-amber-700 font-bold px-2 py-0.5 rounded-full" title={isAr ? checkGoverningLawMismatch(c.governingLawClause, c.counterpartyJurisdiction, c.performanceLocation).reasonAr : checkGoverningLawMismatch(c.governingLawClause, c.counterpartyJurisdiction, c.performanceLocation).reasonEn}>{isAr ? 'قانون حاكم غير متطابق' : 'GOVERNING-LAW MISMATCH'}</span>}
                       </div>
                       <p className="font-bold text-sm text-slate-800 mt-1">{c.name || (isAr ? '(اسم العقد)' : '(Contract name)')}</p>
                       <p className="text-[11px] text-slate-500 mt-0.5">{c.supplier} {c.category ? `· ${c.category}` : ''} {c.unspscSegmentCode && c.unspscSegmentCode !== 'other' ? `· UNSPSC ${c.unspscSegmentCode} (${unspscSegmentLabel(c.unspscSegmentCode, isAr)})` : ''} {c.unspscSegmentCode === 'other' && c.unspscSegmentOther ? `· UNSPSC: ${c.unspscSegmentOther} (${isAr ? 'غير مصنّف بعد' : 'not yet classified'})` : ''} {c.annualValue ? `· SAR ${c.annualValue.toLocaleString()}/yr` : ''}</p>
@@ -721,6 +735,35 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
                             className="w-full text-xs border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#082C6B]" />
                         ) : null}
                         <p className="text-[10px] text-slate-400">{isAr ? 'تصنيف خدمات UNSPSC الرسمي (16 قطاعاً مصدره حتى الآن) -- إضافي إلى حقل الفئة الحر. اختر "أخرى" إذا لم تجد ما تبحث عنه' : 'Real UNSPSC services classification (16 sourced segments so far) -- additive to the free-text Category field above. Pick "Other" if what you need isn\'t listed yet'}</p>
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{isAr ? 'نوع الطرف المقابل (اختياري)' : 'Counterparty Type (optional)'}</label>
+                        <select value={c.counterpartyType ?? ''} onChange={e => updateContract(c.id, 'counterpartyType', e.target.value || undefined)} className="w-full text-xs border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#082C6B] bg-white">
+                          <option value="">{isAr ? 'غير محدد' : 'Not specified'}</option>
+                          <option value="government">{isAr ? 'جهة حكومية' : 'Government'}</option>
+                          <option value="private">{isAr ? 'طرف خاص' : 'Private'}</option>
+                        </select>
+                        <p className="text-[10px] text-slate-400">{isAr ? 'يحدد المرساة السعودية: حكومي = نظام المنافسات والمشتريات الحكومية، خاص = نظام المعاملات المدنية' : 'Determines the Saudi anchor: government = GTPL/MOF-Etimad, private = Civil Transactions Law (CTL)'}</p>
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{isAr ? 'القانون الحاكم (اختياري)' : 'Governing Law (optional)'}</label>
+                        <select value={c.governingLawClause ?? ''} onChange={e => updateContract(c.id, 'governingLawClause', (e.target.value || undefined) as Contract['governingLawClause'])} className="w-full text-xs border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#082C6B] bg-white">
+                          <option value="">{isAr ? 'غير محدد' : 'Not specified'}</option>
+                          {GOVERNING_LAW_TRACKS.map(t => <option key={t.id} value={t.id}>{isAr ? t.labelAr : t.label}</option>)}
+                        </select>
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{isAr ? 'ولاية الطرف المقابل (اختياري)' : "Counterparty Jurisdiction (optional)"}</label>
+                        <input type="text" value={c.counterpartyJurisdiction ?? ''} onChange={e => updateContract(c.id, 'counterpartyJurisdiction', e.target.value || undefined)}
+                          placeholder={isAr ? 'مثال: السعودية، الإمارات، ألمانيا' : 'e.g. Saudi Arabia, UAE, Germany'}
+                          className="w-full text-xs border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#082C6B]" />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{isAr ? 'موقع التنفيذ (اختياري)' : 'Performance Location (optional)'}</label>
+                        <input type="text" value={c.performanceLocation ?? ''} onChange={e => updateContract(c.id, 'performanceLocation', e.target.value || undefined)}
+                          placeholder={isAr ? 'مثال: الرياض، السعودية' : 'e.g. Riyadh, Saudi Arabia'}
+                          className="w-full text-xs border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#082C6B]" />
+                        <p className="text-[10px] text-slate-400">{isAr ? 'يُستخدم نوع الطرف المقابل والقانون الحاكم والولايتان أعلاه لتوليد تنبيه مراجعة اتجاهي عند عدم التطابق -- ليس حكماً قانونياً قطعياً' : 'Counterparty type, governing law, and the two jurisdiction fields above drive a directional review flag on mismatch -- not a definitive legal verdict'}</p>
                       </div>
                       <div className="space-y-1">
                         <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{isAr ? 'الحالة' : 'Status'}</label>
