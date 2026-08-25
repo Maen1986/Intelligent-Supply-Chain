@@ -32,6 +32,7 @@ const servicesList = [
   { key: 'nav.governance',   href: '/governance-compliance',   label: 'Governance & Compliance' },
   { key: 'nav.kraljic',     href: '/kraljic',                 label: '🧩 Kraljic Matrix' },
   { key: 'nav.decisionLab', href: '/decision-lab',             label: '⚖️ Decision Lab' },
+  { key: 'nav.supplierDependency', href: '/supplier-dependency', label: '🔗 Supplier Dependency' },
   { key: 'nav.caseStudies',  href: '/case-studies',            label: 'Case Studies' },
   { key: 'nav.intelligence', href: '/intelligence',            label: 'Intelligence Hub' },
 ];
@@ -92,6 +93,7 @@ export function Header() {
       'nav.contact':       { en: 'Contact',                    ar: 'تواصل معنا' },
       'nav.kraljic':       { en: '🧩 Kraljic Matrix',          ar: '🧩 مصفوفة كرالجيك' },
       'nav.decisionLab':   { en: '⚖️ Decision Lab',            ar: '⚖️ مختبر القرار' },
+      'nav.supplierDependency': { en: '🔗 Supplier Dependency', ar: '🔗 اعتمادية المورّد' },
     };
     return map[key]?.[lang] ?? key;
   };
