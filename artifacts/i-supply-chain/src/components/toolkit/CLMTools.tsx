@@ -11,6 +11,7 @@
 import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { UNSPSC_SERVICES_SEGMENTS, unspscSegmentLabel } from '@/lib/unspscSegments';
 import { GOVERNING_LAW_TRACKS, governingLawTrackLabel, checkGoverningLawMismatch, type GoverningLawTrack } from '@/lib/clmLegalTrack';
+import { PRICING_TYPES, checkPricingMisuseFlag, type PricingType, type ScopeDefiniteness, type PricingPhase } from '@/lib/clmPricingTaxonomy';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
 } from 'recharts';
@@ -84,9 +85,23 @@ interface Contract {
   /** Free-text location where the contract is actually performed/delivered.
    *  Optional, manual input. Module 01, #386. */
   performanceLocation?: string;
+  /** Primary pricing structure type. Optional, manual input. Module 04. */
+  pricingPrimary?: PricingType;
+  /** Secondary pricing type for hybrid structures (e.g. a provisional-sum
+   *  component alongside a lump-sum primary). Optional. Module 04. */
+  pricingSecondary?: PricingType;
+  /** Phase-by-phase pricing breakdown (e.g. a Gold Book DBO contract's
+   *  construct phase vs operate phase). Optional, manual input. Module 04. */
+  pricingPhaseBreakdown?: PricingPhase[];
+  /** Self-declared scope definiteness -- drives the pricing misuse
+   *  ("worth a second look") flag. Never inferred. Module 04. */
+  scopeDefiniteness?: ScopeDefiniteness;
+  /** Whether the T&M pricing has a cap or milestones. Only meaningful when
+   *  pricingPrimary === 'tm'. Optional, manual input. Module 04. */
+  pricingHasCapOrMilestones?: boolean;
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// ─── Helpers ────────────────────────────────────────────────────────────────────
 
 function nid() { return Math.random().toString(36).slice(2, 10); }
 
@@ -256,14 +271,6 @@ SECTION 5 — LIABILITY & INDEMNITY
 
 ────────────────────────────────────────────────────────────────────────────────
 SECTION 6 — TERM, TERMINATION & EXIT
-────────────────────────────────────────────────────────────────────────────────
-☐ Contract start and end dates stated
-☐ Auto-renewal clause (include: opt-out notice period, maximum auto-renewals)
-☐ Termination for convenience clause (notice period: typically 30–90 days)
-☐ Termination for cause (material breach, insolvency, change of control)
-☐ Exit obligations (data return, handover period, IP transfer)
-☐ Survival clause (which terms survive termination)
-
 ────────────────────────────────────────────────────────────────────────────────
 SECTION 7 — COMPLIANCE & RISK
 ────────────────────────────────────────────────────────────────────────────────
@@ -448,6 +455,15 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
   };
   const updateContract = (id: string, field: keyof Contract, value: string | number | boolean | undefined) =>
     saveContracts(contracts.map(c => c.id === id ? { ...c, [field]: value } : c));
+  /** Pricing phase-breakdown row helpers (Module 04) -- pricingPhaseBreakdown
+   *  is an array of { phase, pricingType } and needs its own add/update/
+   *  remove helpers since updateContract only replaces a whole field. */
+  const addPricingPhase = (id: string) =>
+    saveContracts(contracts.map(c => c.id === id ? { ...c, pricingPhaseBreakdown: [...(c.pricingPhaseBreakdown ?? []), { phase: '', pricingType: '' as PricingType }] } : c));
+  const updatePricingPhase = (id: string, idx: number, field: keyof PricingPhase, value: string) =>
+    saveContracts(contracts.map(c => c.id === id ? { ...c, pricingPhaseBreakdown: (c.pricingPhaseBreakdown ?? []).map((p, i) => i === idx ? { ...p, [field]: value } : p) } : c));
+  const removePricingPhase = (id: string, idx: number) =>
+    saveContracts(contracts.map(c => c.id === id ? { ...c, pricingPhaseBreakdown: (c.pricingPhaseBreakdown ?? []).filter((_, i) => i !== idx) } : c));
 
   /* Bootstrap: on login (or account switch), pull the server's saved
    * contracts. Server-has-data wins over localStorage UNLESS the user has
@@ -663,6 +679,7 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
                         {expiredContracts.includes(c) && <span className="text-[10px] bg-red-100 text-red-700 font-bold px-2 py-0.5 rounded-full">{isAr ? 'تحتاج إجراء عاجل' : 'ACTION NEEDED'}</span>}
                         {claimableRebate(c) && <span className="text-[10px] bg-emerald-100 text-emerald-700 font-bold px-2 py-0.5 rounded-full">{isAr ? 'خصم مستحق للمطالبة' : 'CLAIMABLE REBATE'}</span>}
                         {checkGoverningLawMismatch(c.governingLawClause, c.counterpartyJurisdiction, c.performanceLocation).flagged && <span className="text-[10px] bg-amber-100 text-amber-700 font-bold px-2 py-0.5 rounded-full" title={isAr ? checkGoverningLawMismatch(c.governingLawClause, c.counterpartyJurisdiction, c.performanceLocation).reasonAr : checkGoverningLawMismatch(c.governingLawClause, c.counterpartyJurisdiction, c.performanceLocation).reasonEn}>{isAr ? 'قانون حاكم غير متطابق' : 'GOVERNING-LAW MISMATCH'}</span>}
+                        {checkPricingMisuseFlag(c.pricingPrimary, c.scopeDefiniteness, c.pricingHasCapOrMilestones, c.startDate, c.endDate).flagged && <span className="text-[10px] bg-amber-100 text-amber-700 font-bold px-2 py-0.5 rounded-full" title={isAr ? checkPricingMisuseFlag(c.pricingPrimary, c.scopeDefiniteness, c.pricingHasCapOrMilestones, c.startDate, c.endDate).reasonAr : checkPricingMisuseFlag(c.pricingPrimary, c.scopeDefiniteness, c.pricingHasCapOrMilestones, c.startDate, c.endDate).reasonEn}>{isAr ? 'التسعير يستحق نظرة ثانية' : 'PRICING: WORTH A SECOND LOOK'}</span>}
                       </div>
                       <p className="font-bold text-sm text-slate-800 mt-1">{c.name || (isAr ? '(اسم العقد)' : '(Contract name)')}</p>
                       <p className="text-[11px] text-slate-500 mt-0.5">{c.supplier} {c.category ? `· ${c.category}` : ''} {c.unspscSegmentCode && c.unspscSegmentCode !== 'other' ? `· UNSPSC ${c.unspscSegmentCode} (${unspscSegmentLabel(c.unspscSegmentCode, isAr)})` : ''} {c.unspscSegmentCode === 'other' && c.unspscSegmentOther ? `· UNSPSC: ${c.unspscSegmentOther} (${isAr ? 'غير مصنّف بعد' : 'not yet classified'})` : ''} {c.annualValue ? `· SAR ${c.annualValue.toLocaleString()}/yr` : ''}</p>
@@ -764,6 +781,56 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
                           placeholder={isAr ? 'مثال: الرياض، السعودية' : 'e.g. Riyadh, Saudi Arabia'}
                           className="w-full text-xs border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#082C6B]" />
                         <p className="text-[10px] text-slate-400">{isAr ? 'يُستخدم نوع الطرف المقابل والقانون الحاكم والولايتان أعلاه لتوليد تنبيه مراجعة اتجاهي عند عدم التطابق -- ليس حكماً قانونياً قطعياً' : 'Counterparty type, governing law, and the two jurisdiction fields above drive a directional review flag on mismatch -- not a definitive legal verdict'}</p>
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{isAr ? 'نوع التسعير الأساسي (اختياري)' : 'Primary Pricing Type (optional)'}</label>
+                        <select value={c.pricingPrimary ?? ''} onChange={e => updateContract(c.id, 'pricingPrimary', e.target.value || undefined)} className="w-full text-xs border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#082C6B] bg-white">
+                          <option value="">{isAr ? 'غير محدد' : 'Not specified'}</option>
+                          {PRICING_TYPES.map(t => <option key={t.id} value={t.id}>{isAr ? t.labelAr : t.label}</option>)}
+                        </select>
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{isAr ? 'نوع التسعير الثانوي (اختياري)' : 'Secondary Pricing Type (optional)'}</label>
+                        <select value={c.pricingSecondary ?? ''} onChange={e => updateContract(c.id, 'pricingSecondary', e.target.value || undefined)} className="w-full text-xs border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#082C6B] bg-white">
+                          <option value="">{isAr ? 'غير محدد' : 'Not specified'}</option>
+                          {PRICING_TYPES.map(t => <option key={t.id} value={t.id}>{isAr ? t.labelAr : t.label}</option>)}
+                        </select>
+                        <p className="text-[10px] text-slate-400">{isAr ? 'لهياكل التسعير المختلطة، مثل مبلغ إجمالي مع مبالغ احتياطية بسعر الوحدة' : 'For hybrid structures, e.g. a lump-sum primary with unit-price provisional sums'}</p>
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{isAr ? 'مدى وضوح النطاق (اختياري، تصريح ذاتي)' : 'Scope Definiteness (optional, self-declared)'}</label>
+                        <select value={c.scopeDefiniteness ?? ''} onChange={e => updateContract(c.id, 'scopeDefiniteness', e.target.value || undefined)} className="w-full text-xs border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#082C6B] bg-white">
+                          <option value="">{isAr ? 'غير محدد' : 'Not specified'}</option>
+                          <option value="well-defined">{isAr ? 'محدد جيداً' : 'Well-defined'}</option>
+                          <option value="evolving">{isAr ? 'متطور / قابل للتغيير' : 'Evolving'}</option>
+                          <option value="uncertain">{isAr ? 'غير مؤكد إلى حد كبير' : 'Highly uncertain'}</option>
+                        </select>
+                        <p className="text-[10px] text-slate-400">{isAr ? 'يُستخدم مع نوع التسعير لتوليد تنبيه "يستحق نظرة ثانية" -- استناداً إلى ما تفيدون به فقط، وليس حكماً تحققنا منه' : 'Used with pricing type to drive a "worth a second look" flag -- based only on what you tell us, not a verified judgment'}</p>
+                      </div>
+                      {c.pricingPrimary === 'tm' && (
+                        <div className="flex items-center gap-2">
+                          <input type="checkbox" id={`tmcap-${c.id}`} checked={c.pricingHasCapOrMilestones ?? false} onChange={e => updateContract(c.id, 'pricingHasCapOrMilestones', e.target.checked)} className="w-4 h-4 accent-[#082C6B]" />
+                          <label htmlFor={`tmcap-${c.id}`} className="text-xs text-slate-600 font-medium">{isAr ? 'يوجد سقف مالي أو معالم واضحة لهذا العقد بالوقت والمواد' : 'This T&M contract has a cap or milestones'}</label>
+                        </div>
+                      )}
+                      <div className="col-span-full space-y-1">
+                        <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{isAr ? 'تفصيل التسعير حسب المرحلة (اختياري)' : 'Pricing Phase Breakdown (optional)'}</label>
+                        {(c.pricingPhaseBreakdown ?? []).map((p, idx) => (
+                          <div key={idx} className="flex gap-2 items-center">
+                            <input type="text" value={p.phase} onChange={e => updatePricingPhase(c.id, idx, 'phase', e.target.value)}
+                              placeholder={isAr ? 'مثال: مرحلة الإنشاء' : 'e.g. Construct phase'}
+                              className="flex-1 text-xs border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#082C6B]" />
+                            <select value={p.pricingType} onChange={e => updatePricingPhase(c.id, idx, 'pricingType', e.target.value)} className="flex-1 text-xs border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#082C6B] bg-white">
+                              <option value="">{isAr ? 'غير محدد' : 'Not specified'}</option>
+                              {PRICING_TYPES.map(t => <option key={t.id} value={t.id}>{isAr ? t.labelAr : t.label}</option>)}
+                            </select>
+                            <button onClick={() => removePricingPhase(c.id, idx)} className="text-slate-300 hover:text-red-500 transition-colors shrink-0"><Trash2 className="w-3.5 h-3.5" /></button>
+                          </div>
+                        ))}
+                        <button onClick={() => addPricingPhase(c.id)} className="flex items-center gap-1.5 text-xs text-[#082C6B] font-semibold hover:opacity-80">
+                          <Plus className="w-3.5 h-3.5" />{isAr ? 'إضافة مرحلة' : 'Add Phase'}
+                        </button>
+                        <p className="text-[10px] text-slate-400">{isAr ? 'مثال: عقد Gold Book بمرحلة إنشاء بسعر GMP ومرحلة تشغيل بـ CPIF' : "e.g. a Gold Book contract's GMP construct phase and CPIF operate phase"}</p>
                       </div>
                       <div className="space-y-1">
                         <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{isAr ? 'الحالة' : 'Status'}</label>
