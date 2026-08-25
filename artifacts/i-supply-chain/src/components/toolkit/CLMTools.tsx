@@ -12,6 +12,8 @@ import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react'
 import { UNSPSC_SERVICES_SEGMENTS, unspscSegmentLabel } from '@/lib/unspscSegments';
 import { GOVERNING_LAW_TRACKS, governingLawTrackLabel, checkGoverningLawMismatch, type GoverningLawTrack } from '@/lib/clmLegalTrack';
 import { PRICING_TYPES, checkPricingMisuseFlag, type PricingType, type ScopeDefiniteness, type PricingPhase } from '@/lib/clmPricingTaxonomy';
+import { INDUSTRY_BUCKETS, FIDIC_BOOKS, PROFESSIONAL_SERVICES_TRACKS, LOGISTICS_MODES, resolveApplicableStandard, type IndustryBucket, type FidicBook, type ProfessionalServicesTrack, type LogisticsMode } from '@/lib/clmIndustryStandards';
+import { INCOTERMS_2020, PAYMENT_TERMS, ISO_4217_CURRENCIES, type Incoterm, type PaymentTermType } from '@/lib/clmTradeTerms';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
 } from 'recharts';
@@ -28,7 +30,7 @@ import { API_BASE } from '@/lib/apiBase';
 
 interface CLMToolsProps { isAr: boolean; }
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// --- Types ---
 
 type ContractStatus = 'active' | 'expiring-soon' | 'expired' | 'draft' | 'under-negotiation' | 'renewed';
 type ContractType   = 'goods' | 'services' | 'framework' | 'msa' | 'nda' | 'lease' | 'it-saas' | 'logistics';
@@ -51,7 +53,11 @@ interface Contract {
   type: ContractType;
   annualValue: number;
   totalValue: number;
-  currency: 'SAR' | 'USD' | 'EUR' | 'AED';
+  /** ISO 4217 currency code. Optional -- defaults to 'USD' when a new
+   *  contract is created, fully overridable via the full ~168-code real
+   *  ISO 4217 list (never auto-inferred from jurisdiction/location fields,
+   *  per Decision Record 8.7). */
+  currency?: string;
   startDate: string;
   endDate: string;
   noticePeriodDays: number;
@@ -99,9 +105,33 @@ interface Contract {
   /** Whether the T&M pricing has a cap or milestones. Only meaningful when
    *  pricingPrimary === 'tm'. Optional, manual input. Module 04. */
   pricingHasCapOrMilestones?: boolean;
+  /** Industry/SOW bucket -- selects which real, sourced body-of-knowledge
+   *  applies via resolveApplicableStandard(). Optional, manual input.
+   *  Module 05. */
+  industryBucket?: IndustryBucket;
+  /** FIDIC book, only meaningful when industryBucket === 'construction'.
+   *  Optional, manual input. Module 05. */
+  fidicBook?: FidicBook;
+  /** Professional-services track, only meaningful when
+   *  industryBucket === 'professional-services'. Optional, manual input.
+   *  Module 05. */
+  professionalServicesTrack?: ProfessionalServicesTrack;
+  /** Transport mode, only meaningful when industryBucket === 'logistics'.
+   *  Optional, manual input. Module 05. */
+  logisticsMode?: LogisticsMode;
+  /** ICC Incoterms (R) 2020 rule governing delivery/cost/risk transfer.
+   *  Optional, manual input -- most relevant to Supply/Goods and Logistics
+   *  contracts but not restricted to them. Module 05 extension, 25 Aug 2026. */
+  incoterm?: Incoterm;
+  /** Payment method/timing term (real trade-finance categories -- see
+   *  clmTradeTerms.ts for sourcing). Optional, manual input. */
+  paymentTerm?: PaymentTermType;
+  /** Net-days figure, only meaningful when paymentTerm === 'open-account'
+   *  (e.g. Net 30/60/90). Optional, manual input. */
+  paymentTermNetDays?: number;
 }
 
-// ─── Helpers ────────────────────────────────────────────────────────────────────
+// --- Helpers ---
 
 function nid() { return Math.random().toString(36).slice(2, 10); }
 
@@ -166,17 +196,17 @@ const CONTRACT_TYPES: { id: ContractType; label: string; labelAr: string }[] = [
 const STATUS_META: Record<ContractStatus, { label: string; labelAr: string; badge: string }> = {
   active:               { label: 'Active',              labelAr: 'نشط',              badge: 'bg-emerald-100 text-emerald-700' },
   'expiring-soon':      { label: 'Expiring Soon',       labelAr: 'ينتهي قريباً',     badge: 'bg-amber-100 text-amber-700' },
-  expired:              { label: 'Expired',             labelAr: 'منتهٍ',            badge: 'bg-gray-100 text-gray-600' },
+  expired:              { label: 'Expired',             labelAr: 'منتهِ',            badge: 'bg-gray-100 text-gray-600' },
   draft:                { label: 'Draft',               labelAr: 'مسودة',            badge: 'bg-blue-100 text-blue-700' },
   'under-negotiation':  { label: 'Under Negotiation',   labelAr: 'قيد التفاوض',      badge: 'bg-purple-100 text-purple-700' },
-  renewed:              { label: 'Renewed',             labelAr: 'مُجدَّد',           badge: 'bg-teal-100 text-teal-700' },
+  renewed:              { label: 'Renewed',             labelAr: 'مُجدّد',           badge: 'bg-teal-100 text-teal-700' },
 };
 
 function defaultContract(): Contract {
   const today = new Date(); const end = new Date(today); end.setFullYear(end.getFullYear() + 1);
   return {
     id: nid(), name: '', supplier: '', category: '', type: 'services',
-    annualValue: 0, totalValue: 0, currency: 'SAR',
+    annualValue: 0, totalValue: 0, currency: 'USD',
     startDate: today.toISOString().slice(0, 10), endDate: end.toISOString().slice(0, 10),
     noticePeriodDays: 90, autoRenewal: false, status: 'active',
     performanceScore: 80, deliveredValue: 0, complianceScore: 90,
@@ -184,14 +214,14 @@ function defaultContract(): Contract {
   };
 }
 
-// ─── Storage ────────────────────────────────────────────────────────────────────
+// --- Storage ---
 
 const SK_CONTRACTS = 'isc-tool-clm-contracts-v2';
 function loadJson<T>(key: string, fallback: T): T {
   try { const s = localStorage.getItem(key); return s ? JSON.parse(s) : fallback; } catch { return fallback; }
 }
 
-// ─── Template generators ────────────────────────────────────────────────────────────────────────────────
+// --- Template generators ---
 
 function downloadText(filename: string, content: string) {
   const blob = new Blob([content], { type: 'text/plain;charset=utf-8;' });
@@ -218,18 +248,18 @@ I Supply Chain | Contract Lifecycle Management Toolkit
 Use this checklist when reviewing, drafting, or negotiating a supply contract.
 Each item should be explicitly addressed in the contract or negotiation.
 
-────────────────────────────────────────────────────────────────────────────────
+================================================================================
 SECTION 1 — PARTIES & DEFINITIONS
-────────────────────────────────────────────────────────────────────────────────
+================================================================================
 ☐ Full legal name and CR number of both parties
 ☐ Authorised signatories clearly named
 ☐ Definitions section covers all key terms used in the contract
 ☐ Governing law and jurisdiction stated (Saudi Law recommended for KSA contracts)
 ☐ Language of the contract and which version prevails (Arabic / English)
 
-────────────────────────────────────────────────────────────────────────────────
+================================================================================
 SECTION 2 — SCOPE OF SUPPLY / SERVICES
-────────────────────────────────────────────────────────────────────────────────
+================================================================================
 ☐ Detailed specification or Statement of Work (SOW) attached
 ☐ Quantities / volumes stated (or formula for call-off volumes)
 ☐ Delivery locations specified
@@ -237,9 +267,9 @@ SECTION 2 — SCOPE OF SUPPLY / SERVICES
 ☐ Exclusions from scope clearly listed
 ☐ Change control process defined (how scope changes are agreed and priced)
 
-────────────────────────────────────────────────────────────────────────────────
+================================================================================
 SECTION 3 — PRICING & PAYMENT
-────────────────────────────────────────────────────────────────────────────────
+================================================================================
 ☐ Unit prices / rate card attached
 ☐ Pricing validity period stated
 ☐ Price review mechanism (annual, index-linked, or mutual agreement)
@@ -250,9 +280,9 @@ SECTION 3 — PRICING & PAYMENT
 ☐ Volume rebate / discount structure defined
 ☐ Currency and FX risk allocation stated
 
-────────────────────────────────────────────────────────────────────────────────
+================================================================================
 SECTION 4 — DELIVERY & PERFORMANCE
-────────────────────────────────────────────────────────────────────────────────
+================================================================================
 ☐ Delivery terms (Incoterms if goods: DAP / DDP)
 ☐ Lead times defined and binding
 ☐ OTIF (on-time in-full) target stated
@@ -260,18 +290,18 @@ SECTION 4 — DELIVERY & PERFORMANCE
 ☐ Warranty period and remedy process
 ☐ Performance review cadence (monthly/quarterly scorecard)
 
-────────────────────────────────────────────────────────────────────────────────
+================================================================================
 SECTION 5 — LIABILITY & INDEMNITY
-────────────────────────────────────────────────────────────────────────────────
+================================================================================
 ☐ Limitation of liability cap stated (typically 12 months' contract value)
 ☐ Consequential / indirect loss exclusion clause
 ☐ Indemnity obligations defined (who indemnifies whom for what)
 ☐ Product liability / professional indemnity insurance requirements
 ☐ Third-party claims procedure
 
-────────────────────────────────────────────────────────────────────────────────
+================================================================================
 SECTION 6 — TERM, TERMINATION & EXIT
-────────────────────────────────────────────────────────────────────────────────
+================================================================================
 ☐ Contract start and end dates stated
 ☐ Auto-renewal clause (include: opt-out notice period, maximum auto-renewals)
 ☐ Termination for convenience clause (notice period: typically 30–90 days)
@@ -279,9 +309,9 @@ SECTION 6 — TERM, TERMINATION & EXIT
 ☐ Exit obligations (data return, handover period, IP transfer)
 ☐ Survival clause (which terms survive termination)
 
-────────────────────────────────────────────────────────────────────────────────
+================================================================================
 SECTION 7 — COMPLIANCE & RISK
-────────────────────────────────────────────────────────────────────────────────
+================================================================================
 ☐ Iktva / local content obligations stated (if applicable to supplier)
 ☐ ZATCA / VAT registration confirmation required
 ☐ Anti-bribery and anti-corruption clause
@@ -292,9 +322,9 @@ SECTION 7 — COMPLIANCE & RISK
 ☐ Business continuity / disaster recovery requirements
 ☐ Audit rights clause
 
-────────────────────────────────────────────────────────────────────────────────
+================================================================================
 SECTION 8 — DISPUTE RESOLUTION
-────────────────────────────────────────────────────────────────────────────────
+================================================================================
 ☐ Escalation process before formal dispute
 ☐ Mediation / arbitration clause (SCCA recommended for KSA)
 ☐ Expert determination for technical disputes
@@ -312,9 +342,9 @@ I Supply Chain | Contract Lifecycle Management Toolkit
 USE THIS PLAYBOOK to structure every contract renewal. Start 6–12 months before
 expiry for strategic contracts, 3–6 months for standard contracts.
 
-────────────────────────────────────────────────────────────────────────────────
+================================================================================
 STAGE 1 — CONTRACT REVIEW (6–12 months before expiry)
-────────────────────────────────────────────────────────────────────────────────
+================================================================================
 ☐ Pull full contract register — confirm exact expiry date and notice period
 ☐ Retrieve supplier performance scorecard (OTIF, quality, complaints, savings)
 ☐ Review spend vs. contracted value — was the contract fully utilised?
@@ -323,18 +353,18 @@ STAGE 1 — CONTRACT REVIEW (6–12 months before expiry)
 
 Decision gate: Renew / Renegotiate / Retender / Terminate?
 
-────────────────────────────────────────────────────────────────────────────────
+================================================================================
 STAGE 2 — MARKET CHECK (5–10 months before expiry)
-────────────────────────────────────────────────────────────────────────────────
+================================================================================
 ☐ Run a market scan — are there new or alternative suppliers worth testing?
 ☐ Obtain 2–3 informal market quotes (even if renewing, use as benchmark)
 ☐ Check commodity price indices for price movement vs. current contract rates
 ☐ Review Kraljic position — has the strategic importance of this contract changed?
 ☐ Check local content / Iktva requirements (may have changed)
 
-────────────────────────────────────────────────────────────────────────────────
+================================================================================
 STAGE 3 — NEGOTIATION PREPARATION (3–6 months before expiry)
-────────────────────────────────────────────────────────────────────────────────
+================================================================================
 ☐ Build negotiation file:
     - Should-cost analysis (what should this cost based on market data?)
     - BATNA (Best Alternative to Negotiated Agreement): what if talks break down?
@@ -344,9 +374,9 @@ STAGE 3 — NEGOTIATION PREPARATION (3–6 months before expiry)
 ☐ Brief internal stakeholders (operations, finance, legal) on negotiation position
 ☐ Check: Does the supplier have leverage? (sole source, long qualification, IP lock-in)
 
-────────────────────────────────────────────────────────────────────────────────
+================================================================================
 STAGE 4 — NEGOTIATION (2–4 months before expiry)
-────────────────────────────────────────────────────────────────────────────────
+================================================================================
 ☐ Open with data: share performance scorecard, compliment strengths first
 ☐ Anchor on your target: state your desired outcome early
 ☐ Trade concessions — link any give to a corresponding get
@@ -358,9 +388,9 @@ Key leverage levers:
   Volume commitment  |  Payment terms improvement  |  Longer term (multi-year)
   Reference / case study  |  Early signature  |  Reduced spec / simplified service
 
-────────────────────────────────────────────────────────────────────────────────
+================================================================================
 STAGE 5 — EXECUTION & HANDOVER (0–2 months before expiry)
-────────────────────────────────────────────────────────────────────────────────
+================================================================================
 ☐ Legal review of amended contract terms
 ☐ Internal approval per Delegation of Authority (DoA)
 ☐ Signed contract executed by both parties before current contract expires
@@ -384,11 +414,11 @@ const CLM_TEMPLATES = [
   { id: 'kpis',      icon: '📊', label: 'Contract KPI Scorecard',    labelAr: 'بطاقة أداء العقد',          desc: 'Monthly supplier performance scorecard aligned to contract SLAs — quality, OTIF, responsiveness, compliance.', descAr: 'بطاقة أداء شهرية للمورد متوافقة مع مستويات الخدمة المتعاقد عليها.', fn: () => downloadCsv('contract-kpi-scorecard.csv', 'Month,Supplier,Contract Ref,KPI: OTIF %,Target,RAG,KPI: Defect Rate %,Target,RAG,KPI: Invoice Accuracy %,Target,RAG,KPI: Responsiveness (hrs),Target,RAG,Overall Score /100,Score vs Last Month,Notes\nJan 2025,Supplier A,REF-001,94%,95%,Amber,0.3%,<0.5%,Green,98%,>95%,Green,4,<8,Green,87,,\nFeb 2025,Supplier A,REF-001,97%,95%,Green,0.1%,<0.5%,Green,99%,>95%,Green,3,<8,Green,93,+6,Improved significantly\n') },
 ];
 
-// ─── Tab type ─────────────────────────────────────────────────────────────────
+// --- Tab type ---
 
 type Tab = 'inventory' | 'pipeline' | 'health' | 'templates' | 'ai';
 
-// ─── Main Component ───────────────────────────────────────────────────────────
+// --- Main Component ---
 
 export function ContractHealthChecker({ isAr }: CLMToolsProps) {
   const [activeTab, setActiveTab] = useState<Tab>('inventory');
@@ -396,8 +426,8 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [renewalFilter, setRenewalFilter] = useState<number>(180); // show renewals due in N days
 
-  // ── Server-sync (backend persistence, #179 Contract Value Tracker,
-  //    2026-08-24) ── Whole-list sync against /api/clm-contracts, mirroring
+  // -- Server-sync (backend persistence, #179 Contract Value Tracker,
+  //    2026-08-24) -- Whole-list sync against /api/clm-contracts, mirroring
   //    the debounced-PUT / bootstrap-merge pattern already proven in
   //    ProcurementTools.tsx for the TCO Engine (tco_analyses) and Spend
   //    Variance Finder (spend_variance_analyses), adapted for CLM's flat
@@ -640,7 +670,7 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
         ))}
       </div>
 
-      {/* ── TAB 1: Contract Inventory ── */}
+      {/* -- TAB 1: Contract Inventory -- */}
       {activeTab === 'inventory' && (
         <div className="space-y-4">
           {/* Summary cards */}
@@ -791,6 +821,86 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
                         <p className="text-[10px] text-slate-400">{isAr ? 'يُستخدم نوع الطرف المقابل والقانون الحاكم والولايتان أعلاه لتوليد تنبيه مراجعة اتجاهي عند عدم التطابق -- ليس حكماً قانونياً قطعياً' : 'Counterparty type, governing law, and the two jurisdiction fields above drive a directional review flag on mismatch -- not a definitive legal verdict'}</p>
                       </div>
                       <div className="space-y-1">
+                        <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{isAr ? 'قطاع الصناعة / نطاق العمل (اختياري)' : 'Industry / SOW Bucket (optional)'}</label>
+                        <select value={c.industryBucket ?? ''} onChange={e => updateContract(c.id, 'industryBucket', (e.target.value || undefined) as Contract['industryBucket'])} className="w-full text-xs border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#082C6B] bg-white">
+                          <option value="">{isAr ? 'غير محدد' : 'Not specified'}</option>
+                          {INDUSTRY_BUCKETS.map(b => <option key={b.id} value={b.id}>{isAr ? b.labelAr : b.label}</option>)}
+                        </select>
+                        <p className="text-[10px] text-slate-400">{isAr ? 'يحدد المعيار المرجعي الموضح أدناه -- معلومة مرجعية وليست تنبيهاً' : 'Drives the reference standard shown below -- informational, not a flag'}</p>
+                      </div>
+                      {c.industryBucket === 'construction' && (
+                        <div className="space-y-1">
+                          <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{isAr ? 'كتاب FIDIC (اختياري)' : 'FIDIC Book (optional)'}</label>
+                          <select value={c.fidicBook ?? ''} onChange={e => updateContract(c.id, 'fidicBook', (e.target.value || undefined) as Contract['fidicBook'])} className="w-full text-xs border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#082C6B] bg-white">
+                            <option value="">{isAr ? 'غير محدد' : 'Not specified'}</option>
+                            {FIDIC_BOOKS.map(b => <option key={b.id} value={b.id}>{isAr ? b.labelAr : b.label}</option>)}
+                          </select>
+                        </div>
+                      )}
+                      {c.industryBucket === 'professional-services' && (
+                        <div className="space-y-1">
+                          <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{isAr ? 'مسار الخدمات المهنية (اختياري)' : 'Professional Services Track (optional)'}</label>
+                          <select value={c.professionalServicesTrack ?? ''} onChange={e => updateContract(c.id, 'professionalServicesTrack', (e.target.value || undefined) as Contract['professionalServicesTrack'])} className="w-full text-xs border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#082C6B] bg-white">
+                            <option value="">{isAr ? 'غير محدد' : 'Not specified'}</option>
+                            {PROFESSIONAL_SERVICES_TRACKS.map(t => <option key={t.id} value={t.id}>{isAr ? t.labelAr : t.label}</option>)}
+                          </select>
+                        </div>
+                      )}
+                      {c.industryBucket === 'logistics' && (
+                        <div className="space-y-1">
+                          <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{isAr ? 'وسيلة النقل (اختياري)' : 'Transport Mode (optional)'}</label>
+                          <select value={c.logisticsMode ?? ''} onChange={e => updateContract(c.id, 'logisticsMode', (e.target.value || undefined) as Contract['logisticsMode'])} className="w-full text-xs border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#082C6B] bg-white">
+                            <option value="">{isAr ? 'غير محدد' : 'Not specified'}</option>
+                            {LOGISTICS_MODES.map(m => <option key={m.id} value={m.id}>{isAr ? m.labelAr : m.label}</option>)}
+                          </select>
+                        </div>
+                      )}
+                      {(() => {
+                        const std = resolveApplicableStandard(c.counterpartyType, c.industryBucket, c.fidicBook, c.professionalServicesTrack, c.logisticsMode);
+                        return std ? (
+                          <div className="col-span-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 space-y-0.5">
+                            <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">{isAr ? 'المعيار المرجعي المنطبق' : 'Applicable Reference Standard'}</p>
+                            <p className="text-xs font-bold text-slate-700">{isAr ? std.standardAr : std.standardEn}</p>
+                            {(isAr ? std.noteAr : std.noteEn) ? <p className="text-[10px] text-slate-500">{isAr ? std.noteAr : std.noteEn}</p> : null}
+                          </div>
+                        ) : null;
+                      })()}
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{isAr ? 'شرط إنكوترمز (اختياري)' : 'Incoterm (optional)'}</label>
+                        <select value={c.incoterm ?? ''} onChange={e => updateContract(c.id, 'incoterm', (e.target.value || undefined) as Contract['incoterm'])} className="w-full text-xs border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#082C6B] bg-white">
+                          <option value="">{isAr ? 'غير محدد' : 'Not specified'}</option>
+                          {INCOTERMS_2020.map(i => <option key={i.id} value={i.id}>{i.code} -- {isAr ? i.labelAr : i.label}</option>)}
+                        </select>
+                        {c.incoterm && (() => {
+                          const it = INCOTERMS_2020.find(i => i.id === c.incoterm);
+                          return it ? <p className="text-[10px] text-slate-400">{isAr ? it.noteAr : it.noteEn}</p> : null;
+                        })()}
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{isAr ? 'العملة (اختياري، الافتراضي USD)' : 'Currency (optional, defaults to USD)'}</label>
+                        <select value={c.currency ?? 'USD'} onChange={e => updateContract(c.id, 'currency', e.target.value || undefined)} className="w-full text-xs border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#082C6B] bg-white">
+                          {ISO_4217_CURRENCIES.map(cur => <option key={cur.code} value={cur.code}>{cur.code} -- {isAr ? cur.labelAr : cur.label}</option>)}
+                        </select>
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{isAr ? 'شرط الدفع (اختياري)' : 'Payment Term (optional)'}</label>
+                        <select value={c.paymentTerm ?? ''} onChange={e => updateContract(c.id, 'paymentTerm', (e.target.value || undefined) as Contract['paymentTerm'])} className="w-full text-xs border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#082C6B] bg-white">
+                          <option value="">{isAr ? 'غير محدد' : 'Not specified'}</option>
+                          {PAYMENT_TERMS.map(p => <option key={p.id} value={p.id}>{isAr ? p.labelAr : p.label}</option>)}
+                        </select>
+                        {c.paymentTerm && (() => {
+                          const pt = PAYMENT_TERMS.find(p => p.id === c.paymentTerm);
+                          return pt ? <p className="text-[10px] text-slate-400">{isAr ? pt.riskNoteAr : pt.riskNoteEn}</p> : null;
+                        })()}
+                      </div>
+                      {c.paymentTerm === 'open-account' && (
+                        <div className="space-y-1">
+                          <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{isAr ? 'عدد أيام الأجل (مثال: 30، 60، 90)' : 'Net Days (e.g. 30, 60, 90)'}</label>
+                          <input type="number" value={c.paymentTermNetDays ?? ''} onChange={e => { const raw = e.target.value; updateContract(c.id, 'paymentTermNetDays', raw === '' ? undefined : parseInt(raw)); }}
+                            placeholder="30" className="w-full text-xs border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#082C6B]" />
+                        </div>
+                      )}
+                      <div className="space-y-1">
                         <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{isAr ? 'نوع التسعير الأساسي (اختياري)' : 'Primary Pricing Type (optional)'}</label>
                         <select value={c.pricingPrimary ?? ''} onChange={e => updateContract(c.id, 'pricingPrimary', e.target.value || undefined)} className="w-full text-xs border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#082C6B] bg-white">
                           <option value="">{isAr ? 'غير محدد' : 'Not specified'}</option>
@@ -903,7 +1013,7 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
         </div>
       )}
 
-      {/* ── TAB 2: Renewal Pipeline ── */}
+      {/* -- TAB 2: Renewal Pipeline -- */}
       {activeTab === 'pipeline' && (
         <div className="space-y-4">
           <div className="flex items-center gap-3 flex-wrap">
@@ -920,7 +1030,7 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
             <div className="bg-red-50 border border-red-300 rounded-2xl p-4">
               <div className="flex items-center gap-2 mb-3">
                 <AlertTriangle className="w-4 h-4 text-red-600" />
-                <p className="text-sm font-bold text-red-800">{isAr ? `${expiredContracts.length} عقد منتهٍ — يتطلب إجراءً فورياً` : `${expiredContracts.length} Expired Contract${expiredContracts.length > 1 ? 's' : ''} — Immediate Action Required`}</p>
+                <p className="text-sm font-bold text-red-800">{isAr ? `${expiredContracts.length} عقد منتهِ — يتطلب إجراءً فورياً` : `${expiredContracts.length} Expired Contract${expiredContracts.length > 1 ? 's' : ''} — Immediate Action Required`}</p>
               </div>
               {expiredContracts.map(c => (
                 <div key={c.id} className="bg-white rounded-xl p-3 mb-2 last:mb-0 border border-red-200">
@@ -978,7 +1088,7 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
         </div>
       )}
 
-      {/* ── TAB 3: Portfolio Health ── */}
+      {/* -- TAB 3: Portfolio Health -- */}
       {activeTab === 'health' && (
         <div className="space-y-4">
           {contracts.length === 0 ? (
@@ -1032,7 +1142,7 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
                           </div>
                           <div>
                             <p className="text-[10px] text-slate-400">{isAr ? 'يتبقى' : 'Expires'}</p>
-                            <p className="text-sm font-bold" style={{ color: days <= 30 ? '#dc2626' : days <= 90 ? '#d97706' : '#059669' }}>{days < 0 ? (isAr ? 'منتهٍ' : 'Expired') : `${days}d`}</p>
+                            <p className="text-sm font-bold" style={{ color: days <= 30 ? '#dc2626' : days <= 90 ? '#d97706' : '#059669' }}>{days < 0 ? (isAr ? 'منتهِ' : 'Expired') : `${days}d`}</p>
                           </div>
                         </div>
                         <span className="text-[11px] font-bold px-2 py-1 rounded-full shrink-0" style={{ background: hm.bg, color: hm.color }}>{isAr ? hm.labelAr : hm.label}</span>
@@ -1046,12 +1156,12 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
         </div>
       )}
 
-      {/* ── TAB 4: Templates ── */}
+      {/* -- TAB 4: Templates -- */}
       {activeTab === 'templates' && (
         <div className="space-y-3">
           <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 flex items-start gap-2">
             <Info className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
-            <p className="text-xs text-blue-800">{isAr ? 'قوالب عقود مُصمَّمة وفق القانون السعودي وأفضل الممارسات الدولية في إدارة دورة حياة العقود.' : 'Contract templates designed for Saudi law and international CLM best practice.'}</p>
+            <p className="text-xs text-blue-800">{isAr ? 'قوالب عقود مُصمّمة وفق القانون السعودي وأفضل الممارسات الدولية في إدارة دورة حياة العقود.' : 'Contract templates designed for Saudi law and international CLM best practice.'}</p>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
             {CLM_TEMPLATES.map(t => (
@@ -1071,7 +1181,7 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
         </div>
       )}
 
-      {/* ── TAB 5: AI Portfolio Brief ── */}
+      {/* -- TAB 5: AI Portfolio Brief -- */}
       {activeTab === 'ai' && (
         <AIPlanPanel
           loading={aiPlan.loading} result={aiPlan.result} evidenceSummary={aiPlan.evidenceSummary} error={aiPlan.error}
