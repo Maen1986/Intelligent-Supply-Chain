@@ -29,6 +29,8 @@ import {
 import { safeSetItem } from '@/lib/storage';
 import { useAIPlan } from '@/hooks/useAIPlan';
 import { AIPlanPanel } from '@/components/AIPlanPanel';
+import { ContractReviewReport } from '@/components/ContractReviewReport';
+import { buildNdaSkeleton, renderSkeletonAsText } from '@/lib/clmGenerationEngine';
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/AuthContext';
 import { API_BASE } from '@/lib/apiBase';
@@ -455,6 +457,10 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
    *  Local display state only (key: `${contractId}:${category}`), not
    *  synced business data -- same pattern as expandedIds above. */
   const [expandedClauseCats, setExpandedClauseCats] = useState<Set<string>>(new Set());
+  /** Module 09 -- which per-contract Contract Assurance Chain (Review v1)
+   *  panels are open. Local display state only, same pattern as
+   *  expandedClauseCats above. */
+  const [expandedReview, setExpandedReview] = useState<Set<string>>(new Set());
   const [renewalFilter, setRenewalFilter] = useState<number>(180); // show renewals due in N days
 
   // -- Server-sync (backend persistence, #179 Contract Value Tracker,
@@ -557,6 +563,9 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
   const toggleClauseCategoryExpand = (contractId: string, category: ClauseCategory) => setExpandedClauseCats(prev => {
     const key = `${contractId}:${category}`;
     const s = new Set(prev); s.has(key) ? s.delete(key) : s.add(key); return s;
+  });
+  const toggleReviewExpand = (contractId: string) => setExpandedReview(prev => {
+    const s = new Set(prev); s.has(contractId) ? s.delete(contractId) : s.add(contractId); return s;
   });
 
   /* Bootstrap: on login (or account switch), pull the server's saved
@@ -770,7 +779,7 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${statusMeta.badge}`}>{isAr ? statusMeta.labelAr : statusMeta.label}</span>
                         <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: hm.bg, color: hm.color }}>{isAr ? hm.labelAr : hm.label}</span>
-                        {expiredContracts.includes(c) && <span className="text-[10px] bg-red-100 text-red-700 font-bold px-2 py-0.5 rounded-full">{isAr ? 'تحتاج إجراءاً عاجلاً' : 'ACTION NEEDED'}</span>}
+                        {expiredContracts.includes(c) && <span className="text-[10px] bg-red-100 text-red-700 font-bold px-2 py-0.5 rounded-full">{isAr ? 'تحتاج إجراءً عاجلاً' : 'ACTION NEEDED'}</span>}
                         {claimableRebate(c) && <span className="text-[10px] bg-emerald-100 text-emerald-700 font-bold px-2 py-0.5 rounded-full">{isAr ? 'خصم مستحق للمطالبة' : 'CLAIMABLE REBATE'}</span>}
                         {checkGoverningLawMismatch(c.governingLawClause, c.counterpartyJurisdiction, c.performanceLocation).flagged && <span className="text-[10px] bg-amber-100 text-amber-700 font-bold px-2 py-0.5 rounded-full" title={isAr ? checkGoverningLawMismatch(c.governingLawClause, c.counterpartyJurisdiction, c.performanceLocation).reasonAr : checkGoverningLawMismatch(c.governingLawClause, c.counterpartyJurisdiction, c.performanceLocation).reasonEn}>{isAr ? 'قانون حاكم غير متطابق' : 'GOVERNING-LAW MISMATCH'}</span>}
                         {checkPricingMisuseFlag(c.pricingPrimary, c.scopeDefiniteness, c.pricingHasCapOrMilestones, c.startDate, c.endDate).flagged && <span className="text-[10px] bg-amber-100 text-amber-700 font-bold px-2 py-0.5 rounded-full" title={isAr ? checkPricingMisuseFlag(c.pricingPrimary, c.scopeDefiniteness, c.pricingHasCapOrMilestones, c.startDate, c.endDate).reasonAr : checkPricingMisuseFlag(c.pricingPrimary, c.scopeDefiniteness, c.pricingHasCapOrMilestones, c.startDate, c.endDate).reasonEn}>{isAr ? 'التسعير يستحق نظرة ثانية' : 'PRICING: WORTH A SECOND LOOK'}</span>}
@@ -888,7 +897,7 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
                         <input type="text" value={c.performanceLocation ?? ''} onChange={e => updateContract(c.id, 'performanceLocation', e.target.value || undefined)}
                           placeholder={isAr ? 'مثال: الرياض، السعودية' : 'e.g. Riyadh, Saudi Arabia'}
                           className="w-full text-xs border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#082C6B]" />
-                        <p className="text-[10px] text-slate-400">{isAr ? 'يُستخدم نوع الطرف المقابل والقانون الحاكم والولايتان أعلاه لتوليد تنبيه مراجعة اتجاهي عند عدم التطابق -- ليس حكماً قانونياً قاطعاً' : 'Counterparty type, governing law, and the two jurisdiction fields above drive a directional review flag on mismatch -- not a definitive legal verdict'}</p>
+                        <p className="text-[10px] text-slate-400">{isAr ? 'يُستخدم نوع الطرف المقابل والقانون الحاكم والولايتان أعلاه لتوليد تنبيه مراجعة اتجاهي عند عدم التطابق -- ليس حكماً قانونياً قطعياً' : 'Counterparty type, governing law, and the two jurisdiction fields above drive a directional review flag on mismatch -- not a definitive legal verdict'}</p>
                       </div>
                       <div className="space-y-1">
                         <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{isAr ? 'قطاع الصناعة / نطاق العمل (اختياري)' : 'Industry / SOW Bucket (optional)'}</label>
@@ -1167,6 +1176,85 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
                           })}
                         </div>
                       </div>
+                      {/* -- Module 09 Part B.6: The Contract Assurance Chain
+                           (Review v1) -- cross-dimensional review reusing Modules
+                           01/02/04/05's already-tested checks, assembled into
+                           4 independently-colored dimension states (never one
+                           composite score), per-finding causal chains, 3-tier
+                           assurance badges, and real named options wherever a
+                           sourced Module 02 variant list exists. Owner
+                           instruction, 25 Aug 2026: review services must be
+                           genuinely different in methodology, recommendation,
+                           assurance, options, and causal logic -- not a cosmetic
+                           reskin. -- */}
+                      <div className="col-span-full border border-slate-200 rounded-xl overflow-hidden">
+                        <button type="button" onClick={() => toggleReviewExpand(c.id)} className="w-full bg-slate-50 px-3 py-2.5 flex items-center justify-between gap-2 hover:bg-slate-100 transition-colors text-left">
+                          <div className="flex items-center gap-2 min-w-0">
+                            {expandedReview.has(c.id) ? <ChevronUp className="w-3.5 h-3.5 text-slate-400 shrink-0" /> : <ChevronDown className="w-3.5 h-3.5 text-slate-400 shrink-0" />}
+                            <div>
+                              <p className="text-xs font-bold text-slate-700">{isAr ? 'سلسلة ضمان العقد (المراجعة)' : 'The Contract Assurance Chain (Review)'}</p>
+                              <p className="text-[10px] text-slate-400">{isAr ? 'مراجعة متعددة الأبعاد مبنية على ما تم تحديده أعلاه' : 'Cross-dimensional review built from what\'s entered above'}</p>
+                            </div>
+                          </div>
+                        </button>
+                        {expandedReview.has(c.id) && (
+                          <div className="px-3 py-3 border-t border-slate-100">
+                            <ContractReviewReport isAr={isAr} input={{
+                              clausesPresent: c.clausesPresent,
+                              clauseCategoriesNotApplicable: c.clauseCategoriesNotApplicable,
+                              counterpartyType: c.counterpartyType,
+                              governingLawClause: c.governingLawClause,
+                              counterpartyJurisdiction: c.counterpartyJurisdiction,
+                              performanceLocation: c.performanceLocation,
+                              pricingPrimary: c.pricingPrimary,
+                              scopeDefiniteness: c.scopeDefiniteness,
+                              pricingHasCapOrMilestones: c.pricingHasCapOrMilestones,
+                              startDate: c.startDate,
+                              endDate: c.endDate,
+                              industryBucket: c.industryBucket,
+                              fidicBook: c.fidicBook,
+                              professionalServicesTrack: c.professionalServicesTrack,
+                              logisticsMode: c.logisticsMode,
+                            }} />
+                          </div>
+                        )}
+                      </div>
+                      {/* -- Module 09 Part A, Option 1: Generation v1 skeleton
+                           (NDA pilot only, per owner-approved recommendation
+                           25 Aug 2026). Real facts + a classified clause
+                           outline with guidance notes -- no clause language is
+                           drafted (Decision Record 8.7: Module 02 is a
+                           categorized framework, not a drafting-ready clause
+                           bank). Gated on contract type === 'nda' since this is
+                           the pilot, not yet generalized to other contract
+                           types. -- */}
+                      {c.type === 'nda' && (
+                        <div className="col-span-full border border-slate-200 rounded-xl overflow-hidden">
+                          <div className="bg-slate-50 px-3 py-2.5 flex items-center justify-between gap-2 flex-wrap">
+                            <div>
+                              <p className="text-xs font-bold text-slate-700">{isAr ? 'هيكل اتفاقية السرية (الإصدار 1)' : 'NDA Skeleton (v1)'}</p>
+                              <p className="text-[10px] text-slate-400">{isAr ? 'وقائع + مخطط بنود مصنّف -- بدون صياغة نصوص قانونية' : 'Facts + a classified clause outline -- no clause language drafted'}</p>
+                            </div>
+                            <button type="button" onClick={() => {
+                              const skeleton = buildNdaSkeleton({
+                                parties: [{ name: c.name, role: isAr ? 'طرف' : 'Party' }, { name: c.supplier, role: isAr ? 'طرف' : 'Party' }],
+                                effectiveDate: c.startDate,
+                                termDuration: c.endDate ? `${c.startDate} - ${c.endDate}` : undefined,
+                                governingLawClause: c.governingLawClause,
+                                counterpartyJurisdiction: c.counterpartyJurisdiction,
+                                performanceLocation: c.performanceLocation,
+                                counterpartyType: c.counterpartyType,
+                                industryBucket: c.industryBucket,
+                                clausesPresent: c.clausesPresent,
+                                disputeResolutionVariant: c.clauseVariants?.['dispute-resolution'],
+                              });
+                              downloadText(`${c.name || 'nda'}-skeleton-${isAr ? 'ar' : 'en'}.txt`, renderSkeletonAsText(skeleton, isAr));
+                            }} className="text-[11px] font-semibold px-3 py-1.5 rounded-full bg-[#082C6B] text-white hover:bg-[#082C6B]/90 transition-colors shrink-0">
+                              {isAr ? 'تنزيل الهيكل' : 'Download Skeleton'}
+                            </button>
+                          </div>
+                        </div>
+                      )}
                       <div className="col-span-full space-y-1">
                         <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{isAr ? 'قرار التجديد' : 'Renewal Decision'}</label>
                         <div className="flex gap-2 flex-wrap">
@@ -1262,7 +1350,7 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
                         <p className="text-xs text-slate-500 mt-1">{c.supplier} {c.annualValue ? `· SAR ${c.annualValue.toLocaleString()}/yr` : ''}</p>
                         <div className="flex gap-4 mt-2 text-xs">
                           <span><span className="font-semibold text-slate-600">{isAr ? 'ينتهي:' : 'Expires:'}</span> <span style={{ color: urgency.color, fontWeight: 700 }}>{c.endDate} ({urgency.text})</span></span>
-                          <span><span className="font-semibold text-slate-600">{isAr ? 'فترة الإشعار:' : 'Notice:'}</span> {c.noticePeriodDays} {isAr ? 'يوم' : 'd'} {noticeDue > 0 ? `(${isAr ? 'يُشعَر في' : 'due in'} ${noticeDue}${isAr ? ' يوم' : 'd'})` : `(${isAr ? 'متأخر!' : 'OVERDUE!'})`}</span>
+                          <span><span className="font-semibold text-slate-600">{isAr ? 'فترة الإشعار:' : 'Notice:'}</span> {c.noticePeriodDays} {isAr ? 'يوم' : 'd'} {noticeDue > 0 ? `(${isAr ? 'يُشعر في' : 'due in'} ${noticeDue}${isAr ? ' يوم' : 'd'})` : `(${isAr ? 'متأخر!' : 'OVERDUE!'})`}</span>
                         </div>
                         {c.renewalDecision !== 'undecided' && (
                           <div className="mt-2">
