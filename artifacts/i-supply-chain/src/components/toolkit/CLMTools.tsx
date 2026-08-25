@@ -184,14 +184,14 @@ function defaultContract(): Contract {
   };
 }
 
-// ─── Storage ──────────────────────────────────────────────────────────────────
+// ─── Storage ────────────────────────────────────────────────────────────────────
 
 const SK_CONTRACTS = 'isc-tool-clm-contracts-v2';
 function loadJson<T>(key: string, fallback: T): T {
   try { const s = localStorage.getItem(key); return s ? JSON.parse(s) : fallback; } catch { return fallback; }
 }
 
-// ─── Template generators ──────────────────────────────────────────────────────
+// ─── Template generators ────────────────────────────────────────────────────────────────────────────────
 
 function downloadText(filename: string, content: string) {
   const blob = new Blob([content], { type: 'text/plain;charset=utf-8;' });
@@ -271,6 +271,14 @@ SECTION 5 — LIABILITY & INDEMNITY
 
 ────────────────────────────────────────────────────────────────────────────────
 SECTION 6 — TERM, TERMINATION & EXIT
+────────────────────────────────────────────────────────────────────────────────
+☐ Contract start and end dates stated
+☐ Auto-renewal clause (include: opt-out notice period, maximum auto-renewals)
+☐ Termination for convenience clause (notice period: typically 30–90 days)
+☐ Termination for cause (material breach, insolvency, change of control)
+☐ Exit obligations (data return, handover period, IP transfer)
+☐ Survival clause (which terms survive termination)
+
 ────────────────────────────────────────────────────────────────────────────────
 SECTION 7 — COMPLIANCE & RISK
 ────────────────────────────────────────────────────────────────────────────────
