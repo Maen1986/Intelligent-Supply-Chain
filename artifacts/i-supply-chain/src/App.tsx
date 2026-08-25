@@ -45,6 +45,7 @@ import { ActionTracker } from '@/pages/ActionTracker';
 import { DailyBrief } from '@/pages/DailyBrief';
 import { MyWorkbench } from '@/pages/MyWorkbench';
 import { DecisionMemory } from '@/pages/DecisionMemory';
+import { SupplierDependencyCheck } from '@/pages/SupplierDependencyCheck';
 import { useIPProtection } from '@/hooks/useIPProtection';
 import { ChatWidget } from '@/components/ChatWidget';
 import { WhatsAppButton } from '@/components/WhatsAppButton';
@@ -104,6 +105,7 @@ function Router() {
         <Route path="/brief" component={DailyBrief} />
         <Route path="/workbench" component={MyWorkbench} />
         <Route path="/decision-memory" component={DecisionMemory} />
+        <Route path="/supplier-dependency" component={SupplierDependencyCheck} />
         <Route path="/roi-waterfall" component={ROIWaterfall} />
         <Route path="/customer-voice" component={CustomerVoice} />
         <Route path="/legal" component={Legal} />
