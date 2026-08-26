@@ -72,10 +72,9 @@
  * recommendedPractice, round 2 (NEW, 26 Aug 2026, owner follow-up: "what
  * about the rest of the world and dominant and international laws"):
  * extended to the remaining seven tracks -- saudi-ctl, saudi-gtpl,
- * uk-common-law, uk-sga, us-ucc, eu-pecl, cisg-full. "other" stays
- * deliberately undefined -- it is unspecified by design, so there is
- * nothing sourced to attach. Three more honest scope notes from this
- * round: (1) Saudi's new Government Tenders and Procurement Law was
+ * uk-common-law, uk-sga, us-ucc, eu-pecl, cisg-full. At this point "other"
+ * was still deliberately undefined. Three more honest scope notes from
+ * this round: (1) Saudi's new Government Tenders and Procurement Law was
  * approved by the Council of Ministers 4 Aug 2026 but its implementing
  * regulations were not yet published as of this research -- saudi-gtpl's
  * note describes the still-operative prior framework (Board of
@@ -90,6 +89,28 @@
  * Louisiana's non-adoption of UCC Article 2 explicitly rather than
  * treating "US law" as internally uniform, since Louisiana sales of
  * movables run on its own Civil Code articles instead.
+ *
+ * "other" label + recommendedPractice, round 3 (NEW, 26 Aug 2026, owner
+ * follow-up on round 2's summary: "1- can you simply define 'other'
+ * because it is anonymous word not professional? 2- can we say now all
+ * world countries and all continents are covered properly?"): two
+ * separate, honest responses, both landing in this same track. First,
+ * the label itself changed from the vague "Other / not specified" to
+ * "Other / Rest of World (not yet modeled)" -- a real rename, not just a
+ * tooltip, since the old label gave a client-facing user no information
+ * about what selecting it actually meant. Second, "other" now carries its
+ * own recommendedPractice/recommendedPracticeAr -- but this is
+ * deliberately NOT a jurisdiction-specific legal-practice note like every
+ * other track's (there is no single "other" law to describe); it is an
+ * honest disclosure of the platform's own scope boundary: which regions
+ * fall into this catch-all (named explicitly -- most of Asia, all of
+ * Africa, all of Latin America, Canada, Australia/Oceania) and a
+ * recommendation to engage local counsel for any of them, precisely
+ * because ISC has not researched them. The answer to the owner's second
+ * question is "no" -- this content exists so that "no" is stated plainly
+ * in the product itself rather than implied by a vague label. Logged as a
+ * new backlog item (full world/continent coverage expansion) rather than
+ * silently left as a gap -- see Module 01 doc and site map registry.
  *
  * This is T1 pure conditional logic, same spirit as CLMTools.tsx's existing
  * claimableRebate() -- no AI, no invented jurisdictions, a directional
@@ -238,7 +259,18 @@ export const GOVERNING_LAW_TRACKS: GoverningLawTrackMeta[] = [
     recommendedPractice: "Recommended real-world practice: CISG (97 Contracting States as of 2026) governs contract formation and the parties' substantive rights and obligations for an international goods sale, but it does not itself name a dispute-resolution forum or procedure -- that must be chosen separately, e.g. litigation in a named national court, or arbitration under institutional rules (ICC, UNCITRAL Arbitration Rules) with an explicit seat and language. Pairing a CISG governing-law choice with an explicit dispute-resolution clause matters more than under a national-law contract, since national law at least defaults to that country's courts by default -- CISG leaves the forum question entirely open if the contract is silent. If arbitration is chosen, enforcement of the resulting award relies on the New York Convention (146 signatories as of 2026) -- confirm both parties' countries are signatories at drafting stage, since coverage is wide but not universal. CISG's own default rules can be modified or excluded under Article 6; state explicitly which CISG provisions (if any) the parties are varying or excluding, rather than leaving the scope of application implicit.",
     recommendedPracticeAr: "الممارسة العملية الموصى بها: تحكم اتفاقية البيع الدولي للبضائع (CISG) (97 دولة طرفاً حتى عام 2026) تكوين العقد وحقوق والتزامات الطرفين الجوهرية في بيع دولي للبضائع، لكنها لا تحدد بذاتها جهة أو إجراء تسوية المنازعات -- إذ يجب اختيار ذلك بشكل منفصل، سواء بالتقاضي أمام محكمة وطنية محددة، أو بالتحكيم بموجب قواعد مؤسسية (ICC، أو قواعد الأونسيترال للتحكيم) مع تحديد صريح لمقر التحكيم ولغته. اقتران اختيار CISG كقانون حاكم ببند صريح لتسوية المنازعات أكثر أهمية منه في عقد خاضع لقانون وطني، إذ يفترض القانون الوطني على الأقل اختصاص محاكم تلك الدولة افتراضياً -- بينما تترك CISG مسألة الجهة مفتوحة تماماً إذا سكت العقد عنها. وفي حال اختيار التحكيم، يعتمد تنفيذ الحكم الصادر على اتفاقية نيويورك (146 دولة موقعة حتى عام 2026) -- يُنصح بالتحقق من انضمام دولتي الطرفين إليها عند الصياغة، فتغطيتها واسعة لكنها ليست شاملة. كما يجوز تعديل أو استبعاد القواعد الافتراضية لاتفاقية CISG بموجب المادة 6 منها؛ ويُنصح بالنص صراحة على أحكام CISG التي يعدّلها الطرفان أو يستبعدانها، إن وُجدت، بدلاً من ترك نطاق التطبيق ضمنياً.",
   },
-  { id: 'other', label: 'Other / not specified', labelAr: 'أخرى / غير محدد', jurisdictionKeywords: [] },
+  // "Other" is the catch-all for any governing law outside every named
+  // track above -- a real, honest label change and content addition, 26
+  // Aug 2026, owner-prompted ("simply define 'other' because it is
+  // anonymous, not professional"). Not a jurisdiction ISC has researched;
+  // it is the platform's own scope boundary, disclosed rather than hidden
+  // behind a vague label.
+  {
+    id: 'other', label: 'Other / Rest of World (not yet modeled)', labelAr: 'أخرى / بقية دول العالم (لم تُدرَج تفصيلاً بعد)',
+    jurisdictionKeywords: [],
+    recommendedPractice: "This track is used when the contract's governing law falls outside every named track above -- i.e. a jurisdiction ISC has not yet researched and modeled in named detail. As of 26 Aug 2026 that means most of Asia (China, India, Japan, Singapore, and others), all of Africa, all of Latin America, Canada, Australia/Oceania, and other jurisdictions beyond Saudi/GCC/Jordan, the UK, the US, the EU, and the multilateral CISG. Selecting this track does not mean no law governs the contract -- it means ISC has not yet built jurisdiction-specific guidance for whichever law does. Recommended practice regardless of jurisdiction: state the governing law and dispute-resolution forum explicitly in the contract rather than leaving it silent, and have qualified local counsel in that jurisdiction confirm applicable law, language, notarization, and dispute-resolution conventions before relying on this platform's general clause guidance.",
+    recommendedPracticeAr: "يُستخدم هذا المسار عندما يقع القانون الحاكم للعقد خارج جميع المسارات المسمّاة أعلاه -- أي أنه اختصاص قضائي لم تبحثه ISC ولم تُدرجه بعد بتفصيل مسمّى. حتى تاريخ 26 أغسطس 2026، يشمل ذلك معظم آسيا (الصين، الهند، اليابان، سنغافورة، وغيرها)، وكامل أفريقيا، وكامل أمريكا اللاتينية، وكندا، وأستراليا/أوقيانوسيا، وأي اختصاصات أخرى خارج السعودية/دول الخليج والأردن، والمملكة المتحدة، والولايات المتحدة، والاتحاد الأوروبي، واتفاقية البيع الدولي للبضائع (CISG) متعددة الأطراف. اختيار هذا المسار لا يعني عدم وجود قانون يحكم العقد -- بل يعني أن ISC لم تُنشئ بعد إرشادات خاصة بذلك الاختصاص القضائي المحدد. الممارسة الموصى بها بصرف النظر عن الاختصاص القضائي: النص صراحة على القانون الحاكم وجهة تسوية المنازعات في العقد بدلاً من ترك ذلك دون تحديد، والاستعانة بمستشار قانوني محلي مؤهل في ذلك الاختصاص للتحقق من القانون الواجب التطبيق واللغة والتوثيق وأعراف تسوية المنازعات قبل الاعتماد على إرشادات البنود العامة في هذه المنصة.",
+  },
 ];
 
 export function governingLawTrackLabel(track: GoverningLawTrack, isAr: boolean): string {

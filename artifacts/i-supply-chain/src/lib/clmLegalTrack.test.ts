@@ -52,11 +52,6 @@ describe('governingLawPracticeNote (GCC/Jordan real-practice recommendations, 26
     }
   });
 
-  it('returns undefined only for "other" (Decision Record 8.7: never fabricate where not researched)', () => {
-    expect(governingLawPracticeNote('other', false)).toBeUndefined();
-    expect(governingLawPracticeNote('other', true)).toBeUndefined();
-  });
-
   it('returns undefined for an unknown track id', () => {
     expect(governingLawPracticeNote('' as any, false)).toBeUndefined();
   });
@@ -130,6 +125,40 @@ describe('governingLawPracticeNote (Saudi/UK/US/EU/CISG real-practice recommenda
       const ar = governingLawPracticeNote(track, true)!;
       expect(ar.length).toBeGreaterThan(50);
       expect(ar).not.toBe(en);
+    }
+  });
+});
+
+describe('"other" track -- professional label + scope-boundary disclosure (round 3, 26 Aug 2026)', () => {
+  it('label is no longer the vague "not specified" -- names what selecting it means', () => {
+    expect(governingLawTrackLabel('other', false)).toBe('Other / Rest of World (not yet modeled)');
+    expect(governingLawTrackLabel('other', false)).not.toContain('not specified');
+    expect(governingLawTrackLabel('other', true)).toContain('بقية دول العالم');
+  });
+
+  it('now has a non-empty EN and AR recommendedPractice, unlike round 2', () => {
+    expect(governingLawPracticeNote('other', false)).toBeTruthy();
+    expect(governingLawPracticeNote('other', true)).toBeTruthy();
+  });
+
+  it('honestly names the real coverage gap -- Asia, Africa, Latin America, Canada, Australia', () => {
+    const note = governingLawPracticeNote('other', false)!;
+    expect(note).toContain('Asia');
+    expect(note).toContain('Africa');
+    expect(note).toContain('Latin America');
+    expect(note).toContain('Canada');
+    expect(note).toContain('Australia');
+  });
+
+  it('recommends local counsel rather than presenting itself as legal coverage', () => {
+    const note = governingLawPracticeNote('other', false)!;
+    expect(note.toLowerCase()).toContain('local counsel');
+  });
+
+  it('every track except the empty string now has a non-empty recommendedPractice note', () => {
+    for (const meta of GOVERNING_LAW_TRACKS) {
+      expect(governingLawPracticeNote(meta.id, false)).toBeTruthy();
+      expect(governingLawPracticeNote(meta.id, true)).toBeTruthy();
     }
   });
 });
