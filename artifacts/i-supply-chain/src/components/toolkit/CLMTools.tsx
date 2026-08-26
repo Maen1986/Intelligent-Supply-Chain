@@ -14,6 +14,7 @@ import { GOVERNING_LAW_TRACKS, governingLawTrackLabel, governingLawPracticeNote,
 import { PRICING_TYPES, checkPricingMisuseFlag, type PricingType, type ScopeDefiniteness, type PricingPhase } from '@/lib/clmPricingTaxonomy';
 import { INDUSTRY_BUCKETS, FIDIC_BOOKS, PROFESSIONAL_SERVICES_TRACKS, LOGISTICS_MODES, resolveApplicableStandard, type IndustryBucket, type FidicBook, type ProfessionalServicesTrack, type LogisticsMode } from '@/lib/clmIndustryStandards';
 import { INCOTERMS_2020, PAYMENT_TERMS, ISO_4217_CURRENCIES, type Incoterm, type PaymentTermType } from '@/lib/clmTradeTerms';
+import { resolveComplexityLevel, resolveReviewDepth, complexityLevelLabel, COMPLEXITY_LEVELS, type ComplexityLevel } from '@/lib/clmContractLifecycle';
 import {
   CLAUSE_CATEGORIES, SUBCLAUSES_BY_CATEGORY, totalSubclauseCount, presentSubclauseCount, categoryCompleteness, overallClauseHealth,
   checkCommercialRibaFlag, checkPerformanceMeasurabilityFlag, checkRiskAllocationFidicMismatchFlag, checkForegroundIPGapFlag, checkGovernanceRibaArbitrationFlag,
@@ -172,6 +173,22 @@ interface Contract {
    *  regulator liaison, an outside sponsor). Free text, manual only, never
    *  mandatory, always suggested. */
   customStakeholders?: string[];
+  /** Module 03 (Contract Lifecycle & RFx Operations), built 26 Aug 2026.
+   *  Self-declared counterparty relationship history -- feeds
+   *  resolveComplexityLevel(). Optional, manual, never inferred. */
+  counterpartyHistory?: 'established' | 'new' | 'unvetted';
+  /** Self-declared count of clauses that deviate from the standard/
+   *  template language for this contract's base document. Optional,
+   *  manual entry by default -- Module 03 Part A. May ALSO be populated
+   *  via mockDocumentExtraction() in dev/demo contexts ONLY; never
+   *  silently swapped for a real value in production. */
+  clauseDeviationCount?: number;
+  /** Client-configurable value threshold above which review defaults to
+   *  HEAVY (Module 03 Part C). Deliberately NOT a hardcoded SAR figure --
+   *  no real client figures have been supplied (open item 27, since v5) --
+   *  so each client sets their own. Optional; falls back to complexity
+   *  level alone when unset. */
+  reviewHeavyThresholdValue?: number;
 }
 
 // --- Helpers ---
@@ -963,6 +980,63 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
                           placeholder={isAr ? 'مثال: الرياض، السعودية' : 'e.g. Riyadh, Saudi Arabia'}
                           className="w-full text-xs border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#082C6B]" />
                         <p className="text-[10px] text-slate-400">{isAr ? 'يُستخدم نوع الطرف المقابل والقانون الحاكم والولايتان أعلاه لتوليد تنبيه مراجعة اتجاهي عند عدم التطابق -- ليس حكماً قانونياً قطعياً' : 'Counterparty type, governing law, and the two jurisdiction fields above drive a directional review flag on mismatch -- not a definitive legal verdict'}</p>
+                      </div>
+                      <div className="space-y-1 sm:col-span-2 bg-slate-50 border border-slate-200 rounded-xl p-3">
+                        <p className="text-[11px] font-bold text-slate-600 uppercase tracking-wider">{isAr ? 'تعقيد العقد وعمق المراجعة (الوحدة 03)' : 'Contract Complexity & Review Depth (Module 03)'}</p>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-1">
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">{isAr ? 'تاريخ العلاقة مع الطرف المقابل (اختياري)' : 'Counterparty History (optional)'}</label>
+                            <select value={c.counterpartyHistory ?? ''} onChange={e => updateContract(c.id, 'counterpartyHistory', (e.target.value || undefined) as Contract['counterpartyHistory'])} className="w-full text-xs border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#082C6B] bg-white">
+                              <option value="">{isAr ? 'غير محدد' : 'Not specified'}</option>
+                              <option value="established">{isAr ? 'معروف' : 'Established'}</option>
+                              <option value="new">{isAr ? 'جديد' : 'New'}</option>
+                              <option value="unvetted">{isAr ? 'غير مدقق' : 'Unvetted'}</option>
+                            </select>
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">{isAr ? 'عدد انحرافات البنود عن القياسي (اختياري)' : 'Clause Deviations From Standard (optional)'}</label>
+                            <input type="number" min={0} value={c.clauseDeviationCount ?? ''} onChange={e => updateContract(c.id, 'clauseDeviationCount', e.target.value === '' ? undefined : parseInt(e.target.value, 10))}
+                              placeholder={isAr ? '0' : '0'}
+                              className="w-full text-xs border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#082C6B]" />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">{isAr ? 'حد قيمة المراجعة المعمّقة (اختياري، خاص بالعميل)' : 'Heavy-Review Value Threshold (optional, client-set)'}</label>
+                            <input type="number" min={0} value={c.reviewHeavyThresholdValue ?? ''} onChange={e => updateContract(c.id, 'reviewHeavyThresholdValue', e.target.value === '' ? undefined : parseFloat(e.target.value))}
+                              placeholder={isAr ? 'اتركه فارغاً لاعتماد التعقيد فقط' : 'Leave blank to use complexity alone'}
+                              className="w-full text-xs border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#082C6B]" />
+                          </div>
+                        </div>
+                        {(() => {
+                          const durationMonths = c.startDate && c.endDate
+                            ? Math.max(0, Math.round((new Date(c.endDate).getTime() - new Date(c.startDate).getTime()) / (1000 * 60 * 60 * 24 * 30)))
+                            : 0;
+                          const crossBorder = Boolean(c.counterpartyJurisdiction && c.performanceLocation && c.counterpartyJurisdiction.trim().toLowerCase() !== c.performanceLocation.trim().toLowerCase());
+                          const hasActiveMismatchFlag =
+                            checkGoverningLawMismatch(c.governingLawClause, c.counterpartyJurisdiction, c.performanceLocation).flagged ||
+                            checkArbitrationInstitutionFit(c.governingLawClause, c.arbitrationInstitution, c.clauseVariants?.['dispute-resolution']).flagged ||
+                            checkPricingMisuseFlag(c.pricingPrimary, c.scopeDefiniteness, c.pricingHasCapOrMilestones, c.startDate, c.endDate).flagged;
+                          const complexity = resolveComplexityLevel({
+                            value: c.annualValue || c.totalValue || 0,
+                            durationMonths,
+                            counterpartyHistory: c.counterpartyHistory,
+                            crossBorder,
+                            hasActiveMismatchFlag,
+                            clauseDeviationCount: c.clauseDeviationCount,
+                          });
+                          const review = resolveReviewDepth(complexity.level, c.annualValue || c.totalValue || 0, c.reviewHeavyThresholdValue);
+                          return (
+                            <div className="flex flex-wrap items-center gap-2 mt-2">
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white border border-slate-300 text-slate-700">
+                                {complexityLevelLabel(complexity.level, isAr)}
+                              </span>
+                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${review.depth === 'heavy' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                                {review.depth === 'heavy' ? (isAr ? 'مراجعة معمّقة' : 'HEAVY REVIEW') : (isAr ? 'مراجعة خفيفة' : 'LIGHT REVIEW')}
+                              </span>
+                              <p className="text-[10px] text-slate-400 basis-full">{isAr ? review.reasonAr : review.reasonEn}</p>
+                            </div>
+                          );
+                        })()}
+                        <p className="text-[10px] text-slate-400 mt-1">{isAr ? 'حساب اتجاهي بحت من الحقول المُدخلة يدوياً أعلاه -- ليس تحققاً من نص العقد الفعلي' : 'Purely directional, computed from the manually-entered fields above -- not a check against the actual contract text'}</p>
                       </div>
                       <div className="space-y-1">
                         <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{isAr ? 'قطاع الصناعة / نطاق العمل (اختياري)' : 'Industry / SOW Bucket (optional)'}</label>
