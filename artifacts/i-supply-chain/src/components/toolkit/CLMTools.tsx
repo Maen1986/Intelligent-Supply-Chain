@@ -14,7 +14,11 @@ import { GOVERNING_LAW_TRACKS, governingLawTrackLabel, governingLawPracticeNote,
 import { PRICING_TYPES, checkPricingMisuseFlag, type PricingType, type ScopeDefiniteness, type PricingPhase } from '@/lib/clmPricingTaxonomy';
 import { INDUSTRY_BUCKETS, FIDIC_BOOKS, PROFESSIONAL_SERVICES_TRACKS, LOGISTICS_MODES, resolveApplicableStandard, type IndustryBucket, type FidicBook, type ProfessionalServicesTrack, type LogisticsMode } from '@/lib/clmIndustryStandards';
 import { INCOTERMS_2020, PAYMENT_TERMS, ISO_4217_CURRENCIES, type Incoterm, type PaymentTermType } from '@/lib/clmTradeTerms';
-import { resolveComplexityLevel, resolveReviewDepth, complexityLevelLabel, COMPLEXITY_LEVELS, type ComplexityLevel } from '@/lib/clmContractLifecycle';
+import {
+  resolveComplexityLevel, resolveReviewDepth, complexityLevelLabel, COMPLEXITY_LEVELS, type ComplexityLevel,
+  RFX_TYPES, rfxTypeLabel, recommendRfxType, RFX_DEFAULT_SCORING_TEMPLATE, scoreRfxBidders,
+  type RfxType, type RfxSelectionInputs, type RfxScoringCriterion, type RfxBidderScoreInput, type RfxBidderResult,
+} from '@/lib/clmContractLifecycle';
 import {
   CLAUSE_CATEGORIES, SUBCLAUSES_BY_CATEGORY, totalSubclauseCount, presentSubclauseCount, categoryCompleteness, overallClauseHealth,
   checkCommercialRibaFlag, checkPerformanceMeasurabilityFlag, checkRiskAllocationFidicMismatchFlag, checkForegroundIPGapFlag, checkGovernanceRibaArbitrationFlag,
@@ -277,6 +281,11 @@ function defaultContract(): Contract {
 // --- Storage ---
 
 const SK_CONTRACTS = 'isc-tool-clm-contracts-v2';
+/** Module 03 Part D (RFx Builder), built 26 Aug 2026 -- closes registry #394.
+ *  Client-side only, no backend sync (same T1 scope as the rest of Module
+ *  03): a single owner's selection/criteria/bidder state, local to this
+ *  browser. Consistent with the rest of this module being pure logic. */
+const SK_RFX = 'isc-tool-clm-rfx-v1';
 function loadJson<T>(key: string, fallback: T): T {
   try { const s = localStorage.getItem(key); return s ? JSON.parse(s) : fallback; } catch { return fallback; }
 }
@@ -476,7 +485,7 @@ const CLM_TEMPLATES = [
 
 // --- Tab type ---
 
-type Tab = 'inventory' | 'pipeline' | 'health' | 'templates' | 'ai';
+type Tab = 'inventory' | 'pipeline' | 'health' | 'rfx' | 'templates' | 'ai';
 
 // --- Main Component ---
 
@@ -493,6 +502,50 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
    *  expandedClauseCats above. */
   const [expandedReview, setExpandedReview] = useState<Set<string>>(new Set());
   const [renewalFilter, setRenewalFilter] = useState<number>(180); // show renewals due in N days
+
+  // -- Module 03 Part D (RFx Builder), built 26 Aug 2026, closes registry
+  //    #394 -- the RFx logic (recommendRfxType, scoreRfxBidders) shipped
+  //    25 Aug/T1 build with no screen; this wires it in. Client-side only,
+  //    T1 scope (see SK_RFX comment above).
+  const [rfxSelection, setRfxSelection] = useState<RfxSelectionInputs>(() => loadJson(SK_RFX + ':selection', {
+    specificationsFixed: false, supplierCapabilityKnown: false, needsApproachComparison: false,
+  }));
+  const [rfxCriteria, setRfxCriteria] = useState<RfxScoringCriterion[]>(() => loadJson(SK_RFX + ':criteria', RFX_DEFAULT_SCORING_TEMPLATE));
+  const [rfxBidders, setRfxBidders] = useState<RfxBidderScoreInput[]>(() => loadJson(SK_RFX + ':bidders', []));
+
+  useEffect(() => { safeSetItem(SK_RFX + ':selection', JSON.stringify(rfxSelection)); }, [rfxSelection]);
+  useEffect(() => { safeSetItem(SK_RFX + ':criteria', JSON.stringify(rfxCriteria)); }, [rfxCriteria]);
+  useEffect(() => { safeSetItem(SK_RFX + ':bidders', JSON.stringify(rfxBidders)); }, [rfxBidders]);
+
+  const rfxRecommendation = useMemo(() => recommendRfxType(rfxSelection), [rfxSelection]);
+  const rfxWeightSum = useMemo(
+    () => rfxCriteria.filter(c => !c.isMandatoryGate).reduce((sum, c) => sum + (c.weight || 0), 0),
+    [rfxCriteria]
+  );
+  const rfxResults = useMemo(() => scoreRfxBidders(rfxCriteria, rfxBidders), [rfxCriteria, rfxBidders]);
+  const rfxResultsSorted = useMemo(() => {
+    const byId = new Map(rfxBidders.map(b => [b.bidderId, b]));
+    return [...rfxResults].sort((a, b) => {
+      if (a.disqualified !== b.disqualified) return a.disqualified ? 1 : -1;
+      return (b.weightedTotal ?? 0) - (a.weightedTotal ?? 0);
+    }).map(r => ({ ...r, input: byId.get(r.bidderId) }));
+  }, [rfxResults, rfxBidders]);
+
+  const addRfxBidder = useCallback(() => {
+    setRfxBidders(prev => [...prev, { bidderId: nid(), bidderName: '', passedMandatoryGate: true, scores: {} }]);
+  }, []);
+  const removeRfxBidder = useCallback((id: string) => {
+    setRfxBidders(prev => prev.filter(b => b.bidderId !== id));
+  }, []);
+  const updateRfxBidder = useCallback((id: string, patch: Partial<RfxBidderScoreInput>) => {
+    setRfxBidders(prev => prev.map(b => (b.bidderId === id ? { ...b, ...patch } : b)));
+  }, []);
+  const updateRfxBidderScore = useCallback((id: string, criterionId: string, value: number) => {
+    setRfxBidders(prev => prev.map(b => (b.bidderId === id ? { ...b, scores: { ...b.scores, [criterionId]: value } } : b)));
+  }, []);
+  const updateRfxCriterionWeight = useCallback((criterionId: string, weight: number) => {
+    setRfxCriteria(prev => prev.map(c => (c.id === criterionId ? { ...c, weight } : c)));
+  }, []);
 
   // -- Server-sync (backend persistence, #179 Contract Value Tracker,
   //    2026-08-24) -- Whole-list sync against /api/clm-contracts, mirroring
@@ -731,6 +784,7 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
     { id: 'inventory',  icon: '📋', label: 'Contract Inventory',  labelAr: 'مخزون العقود'       },
     { id: 'pipeline',   icon: '⏰', label: 'Renewal Pipeline',    labelAr: 'مسار التجديد'        },
     { id: 'health',     icon: '💚', label: 'Portfolio Health',    labelAr: 'صحة المحفظة'         },
+    { id: 'rfx',        icon: '📝', label: 'RFx Builder',         labelAr: 'أداة RFx'              },
     { id: 'templates',  icon: '📥', label: 'Templates & Tools',   labelAr: 'القوالب والأدوات'    },
     { id: 'ai',         icon: '✨', label: 'AI Portfolio Brief',  labelAr: 'تقرير المحفظة AI'    },
   ];
@@ -1610,6 +1664,158 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
                 </div>
               </div>
             </>
+          )}
+        </div>
+      )}
+
+      {/* -- TAB: RFx Builder (Module 03 Part D, closes registry #394) -- */}
+      {activeTab === 'rfx' && (
+        <div className="space-y-4">
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 flex items-start gap-2">
+            <Info className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
+            <p className="text-xs text-blue-800">
+              {isAr
+                ? 'أداة اتجاهية بحتة -- ليست رأياً قانونياً أو استشارة مشتريات رسمية. تساعد على اختيار نوع الطلب (RFI/RFP/RFQ) وتقييم العروض عبر مصفوفة أوزان قابلة للتعديل.'
+                : 'Purely directional, T1 pure-logic tool -- not legal or formal procurement advice. Helps select the right RFx type (RFI/RFP/RFQ) and evaluate bidder responses through an editable weighted-scoring matrix.'}
+            </p>
+          </div>
+
+          {/* -- Selection helper -- */}
+          <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm space-y-3">
+            <p className="text-sm font-bold text-slate-800">{isAr ? 'أي نوع طلب تحتاج؟' : 'Which RFx type do you need?'}</p>
+            <div className="grid gap-2 sm:grid-cols-3">
+              <label className="flex items-start gap-2 text-xs text-slate-600 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 cursor-pointer">
+                <input type="checkbox" className="mt-0.5" checked={rfxSelection.specificationsFixed}
+                  onChange={e => setRfxSelection(prev => ({ ...prev, specificationsFixed: e.target.checked }))} />
+                {isAr ? 'المواصفات محددة وثابتة' : 'Specifications are fixed'}
+              </label>
+              <label className="flex items-start gap-2 text-xs text-slate-600 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 cursor-pointer">
+                <input type="checkbox" className="mt-0.5" checked={rfxSelection.supplierCapabilityKnown}
+                  onChange={e => setRfxSelection(prev => ({ ...prev, supplierCapabilityKnown: e.target.checked }))} />
+                {isAr ? 'قدرات الموردين/السوق معروفة' : 'Supplier capability / market is known'}
+              </label>
+              <label className="flex items-start gap-2 text-xs text-slate-600 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 cursor-pointer">
+                <input type="checkbox" className="mt-0.5" checked={rfxSelection.needsApproachComparison}
+                  onChange={e => setRfxSelection(prev => ({ ...prev, needsApproachComparison: e.target.checked }))} />
+                {isAr ? 'أحتاج مقارنة نُهج/حلول الموردين، لا السعر فقط' : 'I need to compare supplier approaches, not just price'}
+              </label>
+            </div>
+            <div className="bg-[#082C6B]/5 border border-[#082C6B]/20 rounded-xl p-3 flex items-start gap-3">
+              <span className="text-[11px] font-bold px-2 py-1 rounded-full bg-[#082C6B] text-white shrink-0">
+                {rfxTypeLabel(rfxRecommendation.type, isAr)}
+              </span>
+              <p className="text-xs text-slate-600">{isAr ? rfxRecommendation.reasonAr : rfxRecommendation.reasonEn}</p>
+            </div>
+            <div className="grid gap-2 sm:grid-cols-3">
+              {RFX_TYPES.map(t => (
+                <div key={t.id} className={`rounded-lg border px-3 py-2 ${rfxRecommendation.type === t.id ? 'border-[#082C6B] bg-[#082C6B]/5' : 'border-slate-200'}`}>
+                  <p className="text-[11px] font-bold text-slate-700">{isAr ? t.labelAr : t.label}</p>
+                  <p className="text-[10px] text-slate-400 mt-0.5">{isAr ? t.purposeAr : t.purposeEn}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* -- Weighted scoring matrix -- */}
+          <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm space-y-3">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <p className="text-sm font-bold text-slate-800">{isAr ? 'مصفوفة تقييم العروض المرجّحة' : 'Weighted Bidder Scoring Matrix'}</p>
+              <span className={`text-[10px] font-bold px-2 py-1 rounded-full ${rfxWeightSum === 100 ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                {isAr ? `إجمالي الأوزان: ${rfxWeightSum}%` : `Weights sum to ${rfxWeightSum}%`}{rfxWeightSum !== 100 ? (isAr ? ' (يجب أن يساوي 100%)' : ' (should equal 100%)') : ''}
+              </span>
+            </div>
+            <p className="text-[10px] text-slate-400">
+              {isAr
+                ? 'بوابة الامتثال الإلزامي تُفحص أولاً (نجاح/رسوب) قبل بدء التقييم المرجّح -- نمط من مرحلتين موثّق في الوحدة 03، الجزء D.'
+                : 'The mandatory-compliance gate is checked first (pass/fail) before weighted scoring begins -- the two-stage pattern sourced in Module 03 Part D.'}
+            </p>
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="border-b border-slate-200 text-left text-[10px] text-slate-400 uppercase tracking-wider">
+                    <th className="py-1.5 pr-2">{isAr ? 'مقدّم العرض' : 'Bidder'}</th>
+                    <th className="py-1.5 px-2">{isAr ? 'اجتاز البوابة الإلزامية' : 'Passed Gate'}</th>
+                    {rfxCriteria.filter(c => !c.isMandatoryGate).map(c => (
+                      <th key={c.id} className="py-1.5 px-2">
+                        <div className="space-y-0.5">
+                          <p>{isAr ? c.labelAr : c.labelEn}</p>
+                          <input type="number" min={0} max={100} value={c.weight}
+                            onChange={e => updateRfxCriterionWeight(c.id, parseFloat(e.target.value) || 0)}
+                            className="w-14 text-[10px] border border-slate-200 rounded px-1 py-0.5 font-bold" />
+                          <span className="text-[9px] text-slate-400">%</span>
+                        </div>
+                      </th>
+                    ))}
+                    <th className="py-1.5 px-2">{isAr ? 'المجموع المرجّح' : 'Weighted Total'}</th>
+                    <th className="py-1.5 pl-2" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {rfxBidders.map(b => {
+                    const result = rfxResults.find(r => r.bidderId === b.bidderId);
+                    return (
+                      <tr key={b.bidderId} className="border-b border-slate-100">
+                        <td className="py-1.5 pr-2">
+                          <input value={b.bidderName} onChange={e => updateRfxBidder(b.bidderId, { bidderName: e.target.value })}
+                            placeholder={isAr ? 'اسم المورد' : 'Bidder name'}
+                            className="w-full text-xs border border-slate-200 rounded px-2 py-1" />
+                        </td>
+                        <td className="py-1.5 px-2 text-center">
+                          <input type="checkbox" checked={b.passedMandatoryGate}
+                            onChange={e => updateRfxBidder(b.bidderId, { passedMandatoryGate: e.target.checked })} />
+                        </td>
+                        {rfxCriteria.filter(c => !c.isMandatoryGate).map(c => (
+                          <td key={c.id} className="py-1.5 px-2">
+                            <input type="number" min={0} max={100} disabled={!b.passedMandatoryGate}
+                              value={b.scores[c.id] ?? ''}
+                              onChange={e => updateRfxBidderScore(b.bidderId, c.id, e.target.value === '' ? 0 : parseFloat(e.target.value))}
+                              className="w-16 text-xs border border-slate-200 rounded px-2 py-1 disabled:bg-slate-50 disabled:text-slate-300" />
+                          </td>
+                        ))}
+                        <td className="py-1.5 px-2 font-bold">
+                          {result?.disqualified ? (
+                            <span className="text-[10px] text-red-600">{isAr ? 'مستبعد' : 'Disqualified'}</span>
+                          ) : (
+                            result?.weightedTotal ?? '--'
+                          )}
+                        </td>
+                        <td className="py-1.5 pl-2">
+                          <button onClick={() => removeRfxBidder(b.bidderId)} className="text-slate-300 hover:text-red-500">
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            <button onClick={addRfxBidder}
+              className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg font-bold text-[#082C6B] border border-[#082C6B]/30 hover:bg-[#082C6B]/5">
+              <Plus className="w-3.5 h-3.5" />{isAr ? 'إضافة مقدّم عرض' : 'Add Bidder'}
+            </button>
+          </div>
+
+          {/* -- Ranked results -- */}
+          {rfxBidders.length > 0 && (
+            <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm space-y-2">
+              <p className="text-sm font-bold text-slate-800">{isAr ? 'الترتيب النهائي' : 'Final Ranking'}</p>
+              {rfxResultsSorted.map((r, idx) => (
+                <div key={r.bidderId} className="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
+                  <span className="text-[11px] font-bold text-slate-400 w-5">{r.disqualified ? '--' : `#${idx + 1}`}</span>
+                  <span className="flex-1 text-xs font-semibold text-slate-700">{r.input?.bidderName || (isAr ? '(بدون اسم)' : '(unnamed)')}</span>
+                  {r.disqualified ? (
+                    <span className="flex items-center gap-1 text-[10px] font-bold text-red-600">
+                      <AlertTriangle className="w-3 h-3" />{isAr ? 'مستبعد -- لم يجتز البوابة الإلزامية' : 'Disqualified -- failed mandatory gate'}
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1 text-[11px] font-bold text-emerald-700">
+                      <CheckCircle className="w-3 h-3" />{r.weightedTotal}
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
           )}
         </div>
       )}

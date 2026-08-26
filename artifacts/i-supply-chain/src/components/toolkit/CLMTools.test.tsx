@@ -42,9 +42,9 @@ describe('ContractHealthChecker — ARIA roles', () => {
     expect(screen.getByRole('tablist')).toBeInTheDocument();
   });
 
-  it('renders exactly 5 tabs', () => {
+  it('renders exactly 6 tabs (RFx Builder added 26 Aug 2026, registry #394)', () => {
     render(<ContractHealthChecker isAr={false} />);
-    expect(screen.getAllByRole('tab').length).toBe(5);
+    expect(screen.getAllByRole('tab').length).toBe(6);
   });
 
   it('first tab (Contract Inventory) is aria-selected by default', () => {
