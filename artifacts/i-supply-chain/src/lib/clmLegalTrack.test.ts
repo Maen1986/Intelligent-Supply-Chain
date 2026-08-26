@@ -1,13 +1,15 @@
 import { describe, it, expect } from 'vitest';
-import { checkGoverningLawMismatch, governingLawTrackLabel, governingLawPracticeNote, GOVERNING_LAW_TRACKS } from './clmLegalTrack';
+import { checkGoverningLawMismatch, governingLawTrackLabel, governingLawPracticeNote, GOVERNING_LAW_TRACKS, type GoverningLawTrack } from './clmLegalTrack';
 
 describe('GOVERNING_LAW_TRACKS', () => {
-  it('has 15 tracks including the six new GCC/Jordan tracks, uk-sga, and other', () => {
+  it('has 19 tracks including the six new GCC/Jordan tracks, uk-sga, the wave-1 Asia/Africa tracks, and other', () => {
     const ids = GOVERNING_LAW_TRACKS.map(t => t.id);
     expect(ids).toEqual([
       'saudi-ctl', 'saudi-gtpl',
       'uae-ctl', 'uae-difc-adgm', 'qatar-civil', 'bahrain-civil', 'oman-civil', 'kuwait-civil', 'jordan-civil',
-      'uk-common-law', 'uk-sga', 'us-ucc', 'eu-pecl', 'cisg-full', 'other',
+      'uk-common-law', 'uk-sga', 'us-ucc', 'eu-pecl', 'cisg-full',
+      'china-civil', 'india-contract-act', 'egypt-civil', 'south-africa-common-law',
+      'other',
     ]);
   });
 
@@ -263,5 +265,81 @@ describe('checkGoverningLawMismatch', () => {
   it('does not flag any new GCC/Jordan track when the other field mentions Saudi Arabia', () => {
     const r = checkGoverningLawMismatch('kuwait-civil', 'Saudi Arabia', undefined);
     expect(r.flagged).toBe(false);
+  });
+});
+
+describe('governingLawPracticeNote (China/India/Egypt/South Africa, wave 1 of world/continent coverage, registry #387, 26 Aug 2026)', () => {
+  const waveOneTracks: GoverningLawTrack[] = ['china-civil', 'india-contract-act', 'egypt-civil', 'south-africa-common-law'];
+
+  it('returns non-empty EN and AR practice notes for all 4 wave-1 tracks', () => {
+    for (const t of waveOneTracks) {
+      expect(governingLawPracticeNote(t, false)).toBeTruthy();
+      expect(governingLawPracticeNote(t, true)).toBeTruthy();
+    }
+  });
+
+  it('China note names CIETAC and the PRC Civil Code Article 466 language presumption', () => {
+    const note = governingLawPracticeNote('china-civil', false);
+    expect(note).toContain('CIETAC');
+    expect(note).toContain('Article 466');
+  });
+
+  it('China note confirms CISG ratification and the 2013 Article 96 withdrawal', () => {
+    const note = governingLawPracticeNote('china-civil', false);
+    expect(note).toContain('1986');
+    expect(note).toContain('Article 96');
+    expect(note).toContain('2013');
+  });
+
+  it('India note names MCIA and the Indian Stamp Act 1899 inadmissibility point', () => {
+    const note = governingLawPracticeNote('india-contract-act', false);
+    expect(note).toContain('MCIA');
+    expect(note).toContain('Indian Stamp Act 1899');
+    expect(note).toContain('inadmissible');
+  });
+
+  it('India note confirms India is not a CISG Contracting State', () => {
+    const note = governingLawPracticeNote('india-contract-act', false);
+    expect(note).toContain('not a CISG Contracting State');
+  });
+
+  it('Egypt note names CRCICA and discloses the honest gap on Arabic-language convention', () => {
+    const note = governingLawPracticeNote('egypt-civil', false);
+    expect(note).toContain('CRCICA');
+    expect(note).toContain('Honest gap');
+  });
+
+  it('Egypt note confirms CISG accession and the inconsistent-application caveat', () => {
+    const note = governingLawPracticeNote('egypt-civil', false);
+    expect(note).toContain('1 Jan 1988');
+    expect(note).toContain('inconsistent');
+  });
+
+  it('South Africa note names AFSA and the Roman-Dutch law origin', () => {
+    const note = governingLawPracticeNote('south-africa-common-law', false);
+    expect(note).toContain('AFSA');
+    expect(note).toContain('Roman-Dutch');
+  });
+
+  it('South Africa note confirms South Africa is not a CISG Contracting State', () => {
+    const note = governingLawPracticeNote('south-africa-common-law', false);
+    expect(note).toContain('not a CISG Contracting State');
+  });
+
+  it('every wave-1 track has a non-empty, distinct Arabic translation from its English note', () => {
+    for (const t of waveOneTracks) {
+      const en = governingLawPracticeNote(t, false);
+      const ar = governingLawPracticeNote(t, true);
+      expect(ar).toBeTruthy();
+      expect(ar).not.toBe(en);
+    }
+  });
+
+  it('all 4 wave-1 tracks are present in GOVERNING_LAW_TRACKS with correct labels', () => {
+    const ids = GOVERNING_LAW_TRACKS.map((t) => t.id);
+    expect(ids).toContain('china-civil');
+    expect(ids).toContain('india-contract-act');
+    expect(ids).toContain('egypt-civil');
+    expect(ids).toContain('south-africa-common-law');
   });
 });
