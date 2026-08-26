@@ -10,7 +10,7 @@
  */
 import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { UNSPSC_SERVICES_SEGMENTS, unspscSegmentLabel } from '@/lib/unspscSegments';
-import { GOVERNING_LAW_TRACKS, governingLawTrackLabel, governingLawPracticeNote, checkGoverningLawMismatch, internationalContractingPracticeGuide, type GoverningLawTrack } from '@/lib/clmLegalTrack';
+import { GOVERNING_LAW_TRACKS, governingLawTrackLabel, governingLawPracticeNote, checkGoverningLawMismatch, internationalContractingPracticeGuide, ARBITRATION_INSTITUTIONS, arbitrationInstitutionLabel, COMMON_CONTRACTING_COMBOS, checkArbitrationInstitutionFit, type GoverningLawTrack, type ArbitrationInstitution } from '@/lib/clmLegalTrack';
 import { PRICING_TYPES, checkPricingMisuseFlag, type PricingType, type ScopeDefiniteness, type PricingPhase } from '@/lib/clmPricingTaxonomy';
 import { INDUSTRY_BUCKETS, FIDIC_BOOKS, PROFESSIONAL_SERVICES_TRACKS, LOGISTICS_MODES, resolveApplicableStandard, type IndustryBucket, type FidicBook, type ProfessionalServicesTrack, type LogisticsMode } from '@/lib/clmIndustryStandards';
 import { INCOTERMS_2020, PAYMENT_TERMS, ISO_4217_CURRENCIES, type Incoterm, type PaymentTermType } from '@/lib/clmTradeTerms';
@@ -92,6 +92,13 @@ interface Contract {
   /** Governing-law track named by the contract itself, if any. Optional,
    *  manual input -- never inferred. Module 01, #386. */
   governingLawClause?: GoverningLawTrack;
+  /** Named arbitration/dispute-resolution institution (NEW, 26 Aug 2026,
+   *  owner: "once client pick any of what you mentioned we call for it and
+   *  fill contract accordingly"). Distinct from clauseVariants['dispute-resolution']
+   *  (the mechanism: litigation/arbitration/mediation) -- this is WHICH
+   *  institution. Optional, manual input, or auto-filled by clicking a
+   *  COMMON_CONTRACTING_COMBOS chip (still editable afterward). Module 01. */
+  arbitrationInstitution?: ArbitrationInstitution;
   /** Free-text jurisdiction where the counterparty is domiciled. Optional,
    *  manual input. Module 01, #386. */
   counterpartyJurisdiction?: string;
@@ -567,6 +574,18 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
     saveContracts(contracts.map(c => c.id === id ? { ...c, clauseSpecialConditions: { ...(c.clauseSpecialConditions ?? {}), [category]: text } } : c));
   const updateClauseVariant = (id: string, subclauseId: string, variantId: string) =>
     saveContracts(contracts.map(c => c.id === id ? { ...c, clauseVariants: { ...(c.clauseVariants ?? {}), [subclauseId]: variantId } } : c));
+  /** Module 01 (NEW, 26 Aug 2026) -- applies one of COMMON_CONTRACTING_COMBOS
+   *  in a single atomic update: governing law, arbitration institution, and
+   *  the dispute-resolution mechanism together. Entirely optional and
+   *  reversible -- every field it touches remains independently editable
+   *  afterward, same as if the client had set each one manually. */
+  const applyContractingCombo = (id: string, combo: (typeof COMMON_CONTRACTING_COMBOS)[number]) =>
+    saveContracts(contracts.map(c => c.id === id ? {
+      ...c,
+      governingLawClause: combo.governingLaw,
+      arbitrationInstitution: combo.arbitrationInstitution,
+      clauseVariants: { ...(c.clauseVariants ?? {}), 'dispute-resolution': combo.disputeResolutionVariant },
+    } : c));
   /** Module 09 item 50 -- customStakeholders is an array of free-text
    *  strings, so (like pricingPhaseBreakdown above) it needs its own
    *  add/update/remove helpers rather than the flat updateContract. */
@@ -798,6 +817,7 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
                         {expiredContracts.includes(c) && <span className="text-[10px] bg-red-100 text-red-700 font-bold px-2 py-0.5 rounded-full">{isAr ? 'تحتاج إجراءً عاجلاً' : 'ACTION NEEDED'}</span>}
                         {claimableRebate(c) && <span className="text-[10px] bg-emerald-100 text-emerald-700 font-bold px-2 py-0.5 rounded-full">{isAr ? 'خصم مستحق للمطالبة' : 'CLAIMABLE REBATE'}</span>}
                         {checkGoverningLawMismatch(c.governingLawClause, c.counterpartyJurisdiction, c.performanceLocation).flagged && <span className="text-[10px] bg-amber-100 text-amber-700 font-bold px-2 py-0.5 rounded-full" title={isAr ? checkGoverningLawMismatch(c.governingLawClause, c.counterpartyJurisdiction, c.performanceLocation).reasonAr : checkGoverningLawMismatch(c.governingLawClause, c.counterpartyJurisdiction, c.performanceLocation).reasonEn}>{isAr ? 'قانون حاكم غير متطابق' : 'GOVERNING-LAW MISMATCH'}</span>}
+                        {checkArbitrationInstitutionFit(c.governingLawClause, c.arbitrationInstitution, c.clauseVariants?.['dispute-resolution']).flagged && <span className="text-[10px] bg-amber-100 text-amber-700 font-bold px-2 py-0.5 rounded-full" title={isAr ? checkArbitrationInstitutionFit(c.governingLawClause, c.arbitrationInstitution, c.clauseVariants?.['dispute-resolution']).reasonAr : checkArbitrationInstitutionFit(c.governingLawClause, c.arbitrationInstitution, c.clauseVariants?.['dispute-resolution']).reasonEn}>{isAr ? 'جهة التحكيم تستحق التأكيد' : 'ARBITRATION INSTITUTION: WORTH CONFIRMING'}</span>}
                         {checkPricingMisuseFlag(c.pricingPrimary, c.scopeDefiniteness, c.pricingHasCapOrMilestones, c.startDate, c.endDate).flagged && <span className="text-[10px] bg-amber-100 text-amber-700 font-bold px-2 py-0.5 rounded-full" title={isAr ? checkPricingMisuseFlag(c.pricingPrimary, c.scopeDefiniteness, c.pricingHasCapOrMilestones, c.startDate, c.endDate).reasonAr : checkPricingMisuseFlag(c.pricingPrimary, c.scopeDefiniteness, c.pricingHasCapOrMilestones, c.startDate, c.endDate).reasonEn}>{isAr ? 'التسعير يستحق نظرة ثانية' : 'PRICING: WORTH A SECOND LOOK'}</span>}
                         {(() => {
                           const clauseFlagCount = [
@@ -912,7 +932,24 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
                           <p className="text-[10px] text-slate-500 bg-blue-50 border border-blue-100 rounded-lg px-2 py-1.5 mt-1">
                             {internationalContractingPracticeGuide(isAr)}
                           </p>
+                          <p className="text-[10px] text-slate-400 mt-1.5">{isAr ? 'اختياري تماماً -- عند اختيار أي مما يلي، تملأ isc القانون الحاكم وجهة التحكيم وبند تسوية المنازعات معاً تلقائياً، وتبقى كل الحقول قابلة للتعديل بعد ذلك.' : 'Entirely optional -- picking any of the below has ISC fill in the governing law, arbitration institution, and dispute-resolution sub-clause together automatically. Every field stays editable afterward.'}</p>
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {COMMON_CONTRACTING_COMBOS.map(combo => (
+                              <button key={combo.id} type="button" onClick={() => applyContractingCombo(c.id, combo)}
+                                className="text-[10px] bg-white border border-blue-200 text-[#082C6B] rounded-full px-2 py-0.5 hover:bg-blue-100 transition-colors">
+                                {isAr ? combo.labelAr : combo.labelEn}
+                              </button>
+                            ))}
+                          </div>
                         </details>
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{isAr ? 'جهة التحكيم / تسوية المنازعات (اختياري)' : 'Arbitration / Dispute Institution (optional)'}</label>
+                        <select value={c.arbitrationInstitution ?? ''} onChange={e => updateContract(c.id, 'arbitrationInstitution', (e.target.value || undefined) as Contract['arbitrationInstitution'])} className="w-full text-xs border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#082C6B] bg-white">
+                          <option value="">{isAr ? 'غير محدد' : 'Not specified'}</option>
+                          {ARBITRATION_INSTITUTIONS.map(i => <option key={i.id} value={i.id}>{isAr ? i.labelAr : i.label}</option>)}
+                        </select>
+                        <p className="text-[10px] text-slate-400">{isAr ? 'الجهة المحددة التي تدير التحكيم -- بخلاف حقل "تسوية المنازعات" أدناه في تبويب البنود، الذي يحدد الآلية فقط (تقاضٍ/تحكيم/وساطة)' : 'The specific body administering arbitration -- distinct from the Dispute Resolution sub-clause in the Clauses tab below, which sets only the mechanism (litigation/arbitration/mediation)'}</p>
                       </div>
                       <div className="space-y-1">
                         <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{isAr ? 'ولاية الطرف المقابل (اختياري)' : "Counterparty Jurisdiction (optional)"}</label>
@@ -1107,11 +1144,11 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
                           <p className="text-[10px] text-blue-800 leading-relaxed">
                             {isAr
                               ? (c.governingLawClause
-                                  ? `هذه قائمة تحقق ذاتية التصريح فقط، وليست استشارة قانونية. القانون الحاكم المحدد لهذا العقد هو ${governingLawTrackLabel(c.governingLawClause, true)} -- يُنصح بمراجعة مستشار قانوني مؤهل لمراجعة نص العقد الفعلي في ضوء هذا القانون قبل التوقيع.`
-                                  : 'هذه قائمة تحقق ذاتية التصريح فقط، وليست استشارة قانونية. حدد القانون الحاكم أعلاه (الوحدة 01)، ويُنصح دوماً بمراجعة مستشار قانوني مؤهل لمراجعة نص العقد الفعلي قبل التوقيع.')
+                                  ? `هذه قائمة تحقق ذاتية التصريح فقط، وليست استشارة قانونية -- isc لا تتحقق من نص العقد الفعلي في ضوء القانون المحدد، بل تتتبع وجود البنود وتُظهر تنبيهات نمطية معروفة وإرشادات ممارسة موثقة المصدر فقط. القانون الحاكم المحدد لهذا العقد هو ${governingLawTrackLabel(c.governingLawClause, true)}${c.arbitrationInstitution && c.arbitrationInstitution !== 'other' ? ` وجهة التحكيم المحددة هي ${arbitrationInstitutionLabel(c.arbitrationInstitution, true)}` : ''} -- يُنصح بمراجعة مستشار قانوني مؤهل لمراجعة نص العقد الفعلي في ضوء هذا القانون قبل التوقيع.`
+                                  : 'هذه قائمة تحقق ذاتية التصريح فقط، وليست استشارة قانونية -- isc لا تتحقق من نص العقد الفعلي في ضوء أي قانون، بل تتتبع وجود البنود فقط. حدد القانون الحاكم أعلاه (الوحدة 01)، ويُنصح دوماً بمراجعة مستشار قانوني مؤهل لمراجعة نص العقد الفعلي قبل التوقيع.')
                               : (c.governingLawClause
-                                  ? `This is a self-declared checklist, not legal advice. This contract's governing law is set to ${governingLawTrackLabel(c.governingLawClause, false)} -- have qualified legal counsel review the actual contract text against that law before signing.`
-                                  : 'This is a self-declared checklist, not legal advice. Set the governing law above (Module 01) -- and always have qualified legal counsel review the actual contract text before signing.')}
+                                  ? `This is a self-declared checklist, not legal advice -- ISC does not verify the actual contract text against the chosen law, it tracks clause presence and surfaces named risk patterns and sourced practice guidance only. This contract's governing law is set to ${governingLawTrackLabel(c.governingLawClause, false)}${c.arbitrationInstitution && c.arbitrationInstitution !== 'other' ? `, with ${arbitrationInstitutionLabel(c.arbitrationInstitution, false)} as the named arbitration institution` : ''} -- have qualified legal counsel review the actual contract text against that law before signing.`
+                                  : 'This is a self-declared checklist, not legal advice -- ISC does not verify the actual contract text against any law, it tracks clause presence only. Set the governing law above (Module 01) -- and always have qualified legal counsel review the actual contract text before signing.')}
                           </p>
                         </div>
 

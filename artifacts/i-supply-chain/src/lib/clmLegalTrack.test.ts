@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { checkGoverningLawMismatch, governingLawTrackLabel, governingLawPracticeNote, GOVERNING_LAW_TRACKS, internationalContractingPracticeGuide, type GoverningLawTrack } from './clmLegalTrack';
+import { checkGoverningLawMismatch, governingLawTrackLabel, governingLawPracticeNote, GOVERNING_LAW_TRACKS, internationalContractingPracticeGuide, ARBITRATION_INSTITUTIONS, arbitrationInstitutionLabel, COMMON_CONTRACTING_COMBOS, checkArbitrationInstitutionFit, type GoverningLawTrack } from './clmLegalTrack';
 
 describe('GOVERNING_LAW_TRACKS', () => {
   it('has 19 tracks including the six new GCC/Jordan tracks, uk-sga, the wave-1 Asia/Africa tracks, and other', () => {
@@ -389,5 +389,139 @@ describe('internationalContractingPracticeGuide (common GCC/Jordan/Middle East c
     const ar = internationalContractingPracticeGuide(true);
     expect(ar).toBeTruthy();
     expect(ar).not.toBe(en);
+  });
+});
+
+describe('ARBITRATION_INSTITUTIONS + arbitrationInstitutionLabel (NEW, 26 Aug 2026)', () => {
+  it('includes all 10 named institutions plus other', () => {
+    const ids = ARBITRATION_INSTITUTIONS.map(i => i.id);
+    expect(ids).toContain('scca');
+    expect(ids).toContain('board-of-grievances');
+    expect(ids).toContain('lcia');
+    expect(ids).toContain('icc');
+    expect(ids).toContain('diac');
+    expect(ids).toContain('aaa');
+    expect(ids).toContain('cietac-hk');
+    expect(ids).toContain('mcia');
+    expect(ids).toContain('crcica');
+    expect(ids).toContain('afsa');
+    expect(ids).toContain('other');
+  });
+
+  it('every institution has a non-empty EN and AR label', () => {
+    for (const i of ARBITRATION_INSTITUTIONS) {
+      expect(i.label).toBeTruthy();
+      expect(i.labelAr).toBeTruthy();
+    }
+  });
+
+  it('arbitrationInstitutionLabel returns undefined for unset/unknown, correct label otherwise', () => {
+    expect(arbitrationInstitutionLabel(undefined, false)).toBeUndefined();
+    expect(arbitrationInstitutionLabel('' as never, false)).toBeUndefined();
+    expect(arbitrationInstitutionLabel('lcia', false)).toContain('LCIA');
+    expect(arbitrationInstitutionLabel('lcia', true)).toContain('لندن');
+  });
+});
+
+describe('COMMON_CONTRACTING_COMBOS (NEW, 26 Aug 2026, owner-prompted: "once client pick any of what you mentioned we call for it and fill contract accordinglly")', () => {
+  it('has 10 combos, each grounded in a real GoverningLawTrack + ArbitrationInstitution pairing', () => {
+    expect(COMMON_CONTRACTING_COMBOS.length).toBe(10);
+    for (const combo of COMMON_CONTRACTING_COMBOS) {
+      expect(combo.governingLaw).toBeTruthy();
+      expect(combo.arbitrationInstitution).toBeTruthy();
+      expect(['institutional-arbitration', 'litigation']).toContain(combo.disputeResolutionVariant);
+    }
+  });
+
+  it('deliberately excludes eu-pecl and cisg-full (no single clean sourced institutional pairing)', () => {
+    const laws = COMMON_CONTRACTING_COMBOS.map(c => c.governingLaw);
+    expect(laws).not.toContain('eu-pecl');
+    expect(laws).not.toContain('cisg-full');
+  });
+
+  it('Saudi government track pairs with Board of Grievances + litigation, not arbitration', () => {
+    const combo = COMMON_CONTRACTING_COMBOS.find(c => c.governingLaw === 'saudi-gtpl');
+    expect(combo).toBeDefined();
+    expect(combo!.arbitrationInstitution).toBe('board-of-grievances');
+    expect(combo!.disputeResolutionVariant).toBe('litigation');
+  });
+
+  it('English law pairs with LCIA as the most common cross-border default', () => {
+    const combo = COMMON_CONTRACTING_COMBOS.find(c => c.governingLaw === 'uk-common-law');
+    expect(combo).toBeDefined();
+    expect(combo!.arbitrationInstitution).toBe('lcia');
+  });
+});
+
+describe('checkArbitrationInstitutionFit (NEW, 26 Aug 2026, owner-prompted: "CAN isc CHALLENGE CLIENT IF THEY PICKED USUITABLE CLAUSES", narrowed: "THIS ONE SHOULD BE AT THE CLAUSE AND SUB CLAUSE LEVELS NOT JUST GOVERNING LAW")', () => {
+  it('returns flagged:false when institution is unset or "other"', () => {
+    expect(checkArbitrationInstitutionFit('saudi-ctl', undefined).flagged).toBe(false);
+    expect(checkArbitrationInstitutionFit('saudi-ctl', 'other').flagged).toBe(false);
+  });
+
+  it('returns flagged:false when governing law is unset and the dispute-resolution clause does not contradict', () => {
+    expect(checkArbitrationInstitutionFit(undefined, 'lcia').flagged).toBe(false);
+    expect(checkArbitrationInstitutionFit(undefined, 'lcia', 'institutional-arbitration').flagged).toBe(false);
+  });
+
+  it('CLAUSE LEVEL: flags a named institution paired with a Litigation dispute-resolution sub-clause', () => {
+    const result = checkArbitrationInstitutionFit('uk-common-law', 'lcia', 'litigation');
+    expect(result.flagged).toBe(true);
+    expect(result.reasonEn).toContain('Litigation');
+    expect(result.reasonEn).toContain('contradict');
+    expect(result.reasonAr).toBeTruthy();
+  });
+
+  it('CLAUSE LEVEL: flags a named institution paired with an Ad-hoc arbitration sub-clause', () => {
+    const result = checkArbitrationInstitutionFit('jordan-civil', 'icc', 'ad-hoc-arbitration');
+    expect(result.flagged).toBe(true);
+    expect(result.reasonEn).toContain('Ad-hoc');
+  });
+
+  it('CLAUSE LEVEL: Board of Grievances paired with anything other than Litigation is flagged', () => {
+    const result = checkArbitrationInstitutionFit('saudi-gtpl', 'board-of-grievances', 'institutional-arbitration');
+    expect(result.flagged).toBe(true);
+    expect(result.reasonEn).toContain('Board of Grievances');
+  });
+
+  it('CLAUSE LEVEL: Board of Grievances paired with Litigation is NOT flagged (expected pairing)', () => {
+    const result = checkArbitrationInstitutionFit('saudi-gtpl', 'board-of-grievances', 'litigation');
+    expect(result.flagged).toBe(false);
+  });
+
+  it('CLAUSE LEVEL: institutional-arbitration and mediation-then-arbitration sub-clauses do not contradict a named institution', () => {
+    expect(checkArbitrationInstitutionFit('uk-common-law', 'lcia', 'institutional-arbitration').flagged).toBe(false);
+    expect(checkArbitrationInstitutionFit('uk-common-law', 'lcia', 'mediation-then-arbitration').flagged).toBe(false);
+  });
+
+  it('GOVERNING-LAW LEVEL (fallback): flags an uncommon governing-law/institution pairing when the clause does not already contradict', () => {
+    const result = checkArbitrationInstitutionFit('saudi-ctl', 'icc', 'institutional-arbitration');
+    expect(result.flagged).toBe(true);
+    expect(result.reasonEn).toContain('uncommon');
+    expect(result.reasonEn).toContain('SCCA');
+  });
+
+  it('GOVERNING-LAW LEVEL: does not flag the sourced typical pairing itself', () => {
+    expect(checkArbitrationInstitutionFit('saudi-ctl', 'scca', 'institutional-arbitration').flagged).toBe(false);
+    expect(checkArbitrationInstitutionFit('uk-common-law', 'lcia', 'institutional-arbitration').flagged).toBe(false);
+  });
+
+  it('GOVERNING-LAW LEVEL: silent (not falsely "fine") for a governing-law track with no sourced combo at all', () => {
+    const result = checkArbitrationInstitutionFit('eu-pecl', 'icc', 'institutional-arbitration');
+    expect(result.flagged).toBe(false);
+  });
+
+  it('never asserts the pairing is WRONG -- always frames as worth confirming intentional', () => {
+    const result = checkArbitrationInstitutionFit('saudi-ctl', 'icc', 'institutional-arbitration');
+    expect(result.reasonEn.toLowerCase()).not.toContain('wrong');
+    expect(result.reasonEn.toLowerCase()).not.toContain('incorrect choice');
+  });
+
+  it('returns distinct, non-empty Arabic reasons for both clause-level and governing-law-level flags', () => {
+    const clauseLevel = checkArbitrationInstitutionFit('uk-common-law', 'lcia', 'litigation');
+    const lawLevel = checkArbitrationInstitutionFit('saudi-ctl', 'icc', 'institutional-arbitration');
+    expect(clauseLevel.reasonAr).toBeTruthy();
+    expect(lawLevel.reasonAr).toBeTruthy();
+    expect(clauseLevel.reasonAr).not.toBe(lawLevel.reasonAr);
   });
 });

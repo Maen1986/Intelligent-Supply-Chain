@@ -373,6 +373,205 @@ export function internationalContractingPracticeGuide(isAr: boolean): string {
     : "In practice -- this is a market observation, not a recommendation: English law is the single most commonly chosen governing law for international commercial contracts worldwide, governing roughly 40% of international business and financial transactions globally (The Law Society of England and Wales, Sept 2025 annual report), 78% of LCIA cases in 2024, and the largest single share of new ICC cases (15%, ahead of Swiss law at 7.2%, Brazilian law at 5%, French law at 5%, and New York law at 4.8%). For the Middle East specifically, the 2025 Queen Mary University of London / White & Case International Arbitration Survey found London (63%) and Singapore (43%) as the top two arbitration seats chosen by Middle East respondents, with ICC Rules the most preferred arbitral rules in the region (59%). For UAE-linked cross-border contracts specifically, English law remains the most common governing-law choice, typically paired with DIFC Courts, LCIA, ICC, or DIAC arbitration -- though the 2024-2025 DIFC legislative reforms (DIFC Law No. 8 of 2024, Dubai Law No. 2 of 2025, and an October 2024 Dubai Court of Cassation ruling invalidating asymmetric jurisdiction clauses onshore) mean English law is no longer an automatic gap-filler inside DIFC statutes, and boilerplate DIFC jurisdiction clauses may no longer meet the new 'specific, clear and express' threshold. Saudi Arabia and Jordan both recognize party autonomy in choice of governing law for international contracts (subject to Sharia/public-policy limits in Saudi Arabia), with SCCA, ICC, and LCIA arbitration clauses commonly upheld in Saudi Arabia and ICC/UNCITRAL rules common in Jordan; both are New York Convention signatories, supporting cross-border award enforcement. For deals connecting the region to Asia -- including China's Belt and Road-linked contracts -- HKIAC, SIAC, ICC, and CIETAC (including its Hong Kong Arbitration Center) are the most commonly used arbitral institutions, with English law still frequently chosen as the governing law even in China-linked contracts. None of this is a recommendation for any specific contract -- it is a description of what other parties commonly choose, sourced to public 2025-2026 industry data, so a drafter can weigh a genuinely unusual choice against the market default rather than choosing blind, and should still have qualified legal counsel review the actual clause before relying on it.";
 }
 
+/**
+ * Arbitration/dispute-resolution institution (NEW, 26 Aug 2026, owner
+ * follow-up: "we help to keep it optional and once client pick any of what
+ * you mentioned we call for it and fill contract accordingly"). A named
+ * institution field distinct from the generic 'dispute-resolution' clause
+ * variant (litigation / institutional-arbitration / ad-hoc-arbitration /
+ * mediation-then-arbitration) in clmClauseTaxonomy.ts -- that variant list
+ * captures the MECHANISM, this captures WHICH institution, so a contract
+ * can record e.g. "institutional arbitration, specifically SCCA" rather
+ * than just "institutional arbitration". Every id here is one already
+ * named in this file's own recommendedPractice text or the international
+ * contracting practice guide above -- no institution is invented for this
+ * feature; this is a structured index into facts already researched and
+ * cited.
+ */
+export type ArbitrationInstitution =
+  | 'scca' | 'board-of-grievances'
+  | 'lcia' | 'icc' | 'diac' | 'aaa'
+  | 'cietac-hk' | 'mcia' | 'crcica' | 'afsa'
+  | 'other' | '';
+
+export interface ArbitrationInstitutionMeta {
+  id: ArbitrationInstitution;
+  label: string;
+  labelAr: string;
+}
+
+export const ARBITRATION_INSTITUTIONS: ArbitrationInstitutionMeta[] = [
+  { id: 'scca', label: 'SCCA (Saudi Center for Commercial Arbitration)', labelAr: 'المركز السعودي للتحكيم التجاري (SCCA)' },
+  { id: 'board-of-grievances', label: 'Board of Grievances / Diwan Al-Mazalim (Saudi government disputes)', labelAr: 'ديوان المظالم (منازعات الجهات الحكومية السعودية)' },
+  { id: 'lcia', label: 'LCIA (London Court of International Arbitration)', labelAr: 'محكمة لندن للتحكيم الدولي (LCIA)' },
+  { id: 'icc', label: 'ICC (International Chamber of Commerce)', labelAr: 'غرفة التجارة الدولية (ICC)' },
+  { id: 'diac', label: 'DIAC (Dubai International Arbitration Centre)', labelAr: 'مركز دبي للتحكيم الدولي (DIAC)' },
+  { id: 'aaa', label: 'AAA (American Arbitration Association)', labelAr: 'الجمعية الأمريكية للتحكيم (AAA)' },
+  { id: 'cietac-hk', label: 'CIETAC Hong Kong Arbitration Center', labelAr: 'مركز CIETAC للتحكيم بهونغ كونغ' },
+  { id: 'mcia', label: 'MCIA (Mumbai Centre for International Arbitration)', labelAr: 'مركز مومباي للتحكيم الدولي (MCIA)' },
+  { id: 'crcica', label: 'CRCICA (Cairo Regional Centre for International Commercial Arbitration)', labelAr: 'المركز الإقليمي للتحكيم التجاري الدولي بالقاهرة (CRCICA)' },
+  { id: 'afsa', label: 'AFSA (Arbitration Foundation of Southern Africa)', labelAr: 'مؤسسة التحكيم لجنوب أفريقيا (AFSA)' },
+  { id: 'other', label: 'Other / not listed here', labelAr: 'أخرى / غير مدرجة هنا' },
+];
+
+export function arbitrationInstitutionLabel(id: ArbitrationInstitution | undefined, isAr: boolean): string | undefined {
+  if (!id) return undefined;
+  const meta = ARBITRATION_INSTITUTIONS.find((i) => i.id === id);
+  if (!meta) return undefined;
+  return isAr ? meta.labelAr : meta.label;
+}
+
+/**
+ * Common Contracting Combinations (NEW, 26 Aug 2026): the client-facing,
+ * clickable counterpart to internationalContractingPracticeGuide() above.
+ * Each entry pairs a named governing-law track with the arbitration
+ * institution most commonly seen alongside it in this platform's own
+ * researched recommendedPractice content -- clicking one in CLMTools.tsx
+ * fills governingLawClause, arbitrationInstitution, and the
+ * 'dispute-resolution' clause variant together, but every field stays
+ * manually editable afterward (Decision Record 8.7: never lock in an
+ * inferred choice as if it were confirmed fact). Deliberately limited to
+ * tracks with a clear, sourced, single typical institution -- eu-pecl and
+ * cisg-full are excluded because neither has one clean institutional
+ * pairing (PECL is soft law with no forum of its own; CISG applies
+ * regardless of forum), so a combo for either would be invented, not
+ * sourced.
+ */
+export interface CommonContractingCombo {
+  id: string;
+  labelEn: string;
+  labelAr: string;
+  governingLaw: GoverningLawTrack;
+  arbitrationInstitution: ArbitrationInstitution;
+  disputeResolutionVariant: 'institutional-arbitration' | 'litigation';
+}
+
+export const COMMON_CONTRACTING_COMBOS: CommonContractingCombo[] = [
+  { id: 'saudi-private-scca', labelEn: 'Saudi CTL + SCCA arbitration', labelAr: 'نظام المعاملات المدنية السعودي + تحكيم SCCA',
+    governingLaw: 'saudi-ctl', arbitrationInstitution: 'scca', disputeResolutionVariant: 'institutional-arbitration' },
+  { id: 'saudi-gov-bog', labelEn: 'Saudi GTPL + Board of Grievances', labelAr: 'نظام المنافسات والمشتريات الحكومية + ديوان المظالم',
+    governingLaw: 'saudi-gtpl', arbitrationInstitution: 'board-of-grievances', disputeResolutionVariant: 'litigation' },
+  { id: 'uk-lcia', labelEn: 'English law + LCIA arbitration (most common cross-border default)', labelAr: 'القانون الإنجليزي + تحكيم LCIA (الاختيار الافتراضي الأكثر شيوعاً)',
+    governingLaw: 'uk-common-law', arbitrationInstitution: 'lcia', disputeResolutionVariant: 'institutional-arbitration' },
+  { id: 'uae-difc-diac', labelEn: 'UAE DIFC/ADGM common law + DIAC arbitration', labelAr: 'القانون العام لمركز دبي المالي العالمي/سوق أبوظبي العالمي + تحكيم DIAC',
+    governingLaw: 'uae-difc-adgm', arbitrationInstitution: 'diac', disputeResolutionVariant: 'institutional-arbitration' },
+  { id: 'jordan-icc', labelEn: 'Jordan Civil Code + ICC arbitration', labelAr: 'القانون المدني الأردني + تحكيم ICC',
+    governingLaw: 'jordan-civil', arbitrationInstitution: 'icc', disputeResolutionVariant: 'institutional-arbitration' },
+  { id: 'us-ucc-aaa', labelEn: 'US UCC Article 2 + AAA arbitration', labelAr: 'القانون التجاري الموحد الأمريكي (المادة 2) + تحكيم AAA',
+    governingLaw: 'us-ucc', arbitrationInstitution: 'aaa', disputeResolutionVariant: 'institutional-arbitration' },
+  { id: 'china-cietac', labelEn: 'China Civil Code + CIETAC (Hong Kong)', labelAr: 'القانون المدني الصيني + CIETAC (هونغ كونغ)',
+    governingLaw: 'china-civil', arbitrationInstitution: 'cietac-hk', disputeResolutionVariant: 'institutional-arbitration' },
+  { id: 'india-mcia', labelEn: 'India Contract Act + MCIA arbitration', labelAr: 'قانون العقود الهندي + تحكيم MCIA',
+    governingLaw: 'india-contract-act', arbitrationInstitution: 'mcia', disputeResolutionVariant: 'institutional-arbitration' },
+  { id: 'egypt-crcica', labelEn: 'Egypt Civil Code + CRCICA arbitration', labelAr: 'القانون المدني المصري + تحكيم CRCICA',
+    governingLaw: 'egypt-civil', arbitrationInstitution: 'crcica', disputeResolutionVariant: 'institutional-arbitration' },
+  { id: 'south-africa-afsa', labelEn: 'South Africa common law + AFSA arbitration', labelAr: 'القانون العام لجنوب أفريقيا + تحكيم AFSA',
+    governingLaw: 'south-africa-common-law', arbitrationInstitution: 'afsa', disputeResolutionVariant: 'institutional-arbitration' },
+];
+
+export interface ArbitrationInstitutionCheck {
+  flagged: boolean;
+  reasonEn: string;
+  reasonAr: string;
+}
+
+/**
+ * Soft "challenge" flag (NEW, 26 Aug 2026, owner-prompted: "CAN isc
+ * CHALLENGE CLIENT IF THEY PICKED USUITABLE CLAUSES... AND RECOMMEND
+ * CORRECTION?", then narrowed by the owner: "THIS ONE SHOULD BE AT THE
+ * CLAUSE AND SUB CLAUSE LEVELS NOT JUST GOVERNING LAW"). Two independent
+ * checks, run in order:
+ *
+ * 1. CLAUSE-LEVEL (checked first, and the stronger of the two): does the
+ *    Dispute Resolution sub-clause variant (clauseVariants['dispute-resolution']
+ *    in clmClauseTaxonomy.ts -- litigation / institutional-arbitration /
+ *    ad-hoc-arbitration / mediation-then-arbitration) actually match what
+ *    naming a specific arbitrationInstitution implies? A named arbitral
+ *    institution (SCCA, LCIA, ICC, DIAC, AAA, CIETAC-HK, MCIA, CRCICA, AFSA)
+ *    logically implies institutional arbitration -- if the sub-clause is
+ *    still set to Litigation, or to ad-hoc/mediation-first, that is an
+ *    internal contradiction within the same contract, not a soft market
+ *    preference, so it is named plainly rather than hedged as "uncommon."
+ *    Board of Grievances is the one exception: it is Saudi Arabia's
+ *    government-disputes court, not an arbitral body, so it is expected to
+ *    pair with Litigation and is excluded from the "implies arbitration"
+ *    rule.
+ * 2. GOVERNING-LAW LEVEL (checked only if #1 found nothing): the original
+ *    behavior -- an unusual governing-law/institution pairing is not
+ *    asserted as WRONG (a client can validly choose ICC arbitration under
+ *    Saudi law, for instance -- that is a legitimate choice, just an
+ *    uncommon one) -- it is flagged as worth confirming is intentional,
+ *    naming the more commonly-seen pairing from COMMON_CONTRACTING_COMBOS
+ *    as the point of comparison.
+ *
+ * Same non-blocking, advisory tone as checkGoverningLawMismatch() below in
+ * both cases. Returns flagged:false whenever arbitrationInstitution is
+ * unset or 'other', or (for check #2) the platform has no sourced combo
+ * for that governing-law track at all -- silence, not a false "no
+ * mismatch" verdict, for tracks this feature doesn't yet cover.
+ */
+export function checkArbitrationInstitutionFit(
+  governingLawClause: GoverningLawTrack | undefined,
+  arbitrationInstitution: ArbitrationInstitution | undefined,
+  disputeResolutionClauseVariant?: string
+): ArbitrationInstitutionCheck {
+  if (!arbitrationInstitution || arbitrationInstitution === 'other') {
+    return { flagged: false, reasonEn: '', reasonAr: '' };
+  }
+
+  // Check #1 -- clause/sub-clause level: does the Dispute Resolution
+  // sub-clause variant actually agree with the named institution?
+  if (disputeResolutionClauseVariant) {
+    const institutionEn = arbitrationInstitutionLabel(arbitrationInstitution, false);
+    const institutionAr = arbitrationInstitutionLabel(arbitrationInstitution, true);
+    if (arbitrationInstitution === 'board-of-grievances') {
+      if (disputeResolutionClauseVariant !== 'litigation') {
+        return {
+          flagged: true,
+          reasonEn: `The Dispute Resolution sub-clause is not set to Litigation, but the chosen institution is ${institutionEn} -- Saudi Arabia's government-disputes court, not an arbitral body. These two selections contradict each other at the clause level; worth correcting one or the other.`,
+          reasonAr: `بند تسوية المنازعات (الفرعي) غير مضبوط على التقاضي، بينما الجهة المختارة هي ${institutionAr} -- وهو ديوان قضائي حكومي سعودي وليس جهة تحكيم. يوجد تعارض بين هذين الاختيارين على مستوى البند؛ يستحق تصحيح أحدهما.`,
+        };
+      }
+    } else if (disputeResolutionClauseVariant === 'litigation') {
+      return {
+        flagged: true,
+        reasonEn: `The Dispute Resolution sub-clause is set to Litigation, but a named arbitral institution (${institutionEn}) is also selected -- these contradict each other at the clause level. A named institution implies institutional arbitration, not national-court litigation; worth correcting one or the other.`,
+        reasonAr: `بند تسوية المنازعات (الفرعي) مضبوط على التقاضي، بينما تم أيضاً اختيار جهة تحكيم محددة (${institutionAr}) -- يوجد تعارض بين هذين الاختيارين على مستوى البند. اختيار جهة محددة يعني ضمناً تحكيماً مؤسسياً، لا تقاضياً أمام المحاكم الوطنية؛ يستحق تصحيح أحدهما.`,
+      };
+    } else if (disputeResolutionClauseVariant === 'ad-hoc-arbitration') {
+      return {
+        flagged: true,
+        reasonEn: `The Dispute Resolution sub-clause is set to Ad-hoc arbitration (no administering institution), but a named institution (${institutionEn}) is also selected -- these contradict each other at the clause level. Worth correcting one or the other, or switching the sub-clause to Institutional arbitration.`,
+        reasonAr: `بند تسوية المنازعات (الفرعي) مضبوط على تحكيم مخصص (دون مؤسسة إدارية)، بينما تم أيضاً اختيار جهة محددة (${institutionAr}) -- يوجد تعارض بين هذين الاختيارين على مستوى البند. يستحق تصحيح أحدهما، أو تغيير البند الفرعي إلى تحكيم مؤسسي.`,
+      };
+    }
+    // 'institutional-arbitration' and 'mediation-then-arbitration' are both
+    // consistent with a named institution (mediation-then-arbitration still
+    // ends in institutional arbitration if mediation fails) -- fall through
+    // to check #2, no clause-level contradiction found.
+  }
+
+  // Check #2 -- governing-law level (original behavior, unchanged).
+  if (!governingLawClause) {
+    return { flagged: false, reasonEn: '', reasonAr: '' };
+  }
+  const combo = COMMON_CONTRACTING_COMBOS.find((c) => c.governingLaw === governingLawClause);
+  if (!combo || combo.arbitrationInstitution === arbitrationInstitution) {
+    return { flagged: false, reasonEn: '', reasonAr: '' };
+  }
+  const chosenEn = arbitrationInstitutionLabel(arbitrationInstitution, false);
+  const chosenAr = arbitrationInstitutionLabel(arbitrationInstitution, true);
+  const typicalEn = arbitrationInstitutionLabel(combo.arbitrationInstitution, false);
+  const typicalAr = arbitrationInstitutionLabel(combo.arbitrationInstitution, true);
+  const lawEn = governingLawTrackLabel(governingLawClause, false);
+  const lawAr = governingLawTrackLabel(governingLawClause, true);
+  return {
+    flagged: true,
+    reasonEn: `${chosenEn} is an uncommon pairing with ${lawEn} in practice -- ${typicalEn} is the more commonly seen choice (see the international contracting practice guide). Not incorrect on its own, just worth confirming this is an intentional choice rather than an oversight.`,
+    reasonAr: `يُعد اقتران ${chosenAr} مع ${lawAr} غير شائع في الممارسة العملية -- إذ يُعد ${typicalAr} الاختيار الأكثر شيوعاً (انظر دليل ممارسات التعاقد الدولي). هذا لا يعني أن الاختيار خاطئ بحد ذاته، لكنه يستحق التأكد من أنه اختيار مقصود لا سهو.`,
+  };
+}
+
 export interface JurisdictionCheck {
   flagged: boolean;
   reasonEn: string;
