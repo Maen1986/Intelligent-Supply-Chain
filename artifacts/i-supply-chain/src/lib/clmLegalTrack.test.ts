@@ -2,12 +2,12 @@ import { describe, it, expect } from 'vitest';
 import { checkGoverningLawMismatch, governingLawTrackLabel, GOVERNING_LAW_TRACKS } from './clmLegalTrack';
 
 describe('GOVERNING_LAW_TRACKS', () => {
-  it('has 14 tracks including the six new GCC/Jordan tracks and other', () => {
+  it('has 15 tracks including the six new GCC/Jordan tracks, uk-sga, and other', () => {
     const ids = GOVERNING_LAW_TRACKS.map(t => t.id);
     expect(ids).toEqual([
       'saudi-ctl', 'saudi-gtpl',
       'uae-ctl', 'uae-difc-adgm', 'qatar-civil', 'bahrain-civil', 'oman-civil', 'kuwait-civil', 'jordan-civil',
-      'uk-common-law', 'us-ucc', 'eu-pecl', 'cisg-full', 'other',
+      'uk-common-law', 'uk-sga', 'us-ucc', 'eu-pecl', 'cisg-full', 'other',
     ]);
   });
 
@@ -25,9 +25,29 @@ describe('GOVERNING_LAW_TRACKS', () => {
       expect(meta.jurisdictionKeywords.length).toBeGreaterThan(0);
     }
   });
+
+  it('uk-sga has a non-empty bilingual label and keywords, deliberately excluding "commonwealth"', () => {
+    const meta = GOVERNING_LAW_TRACKS.find(t => t.id === 'uk-sga')!;
+    expect(meta.label).toContain('Sale of Goods Act 1979');
+    expect(meta.labelAr.length).toBeGreaterThan(0);
+    expect(meta.jurisdictionKeywords).toContain('uk');
+    expect(meta.jurisdictionKeywords).not.toContain('commonwealth');
+  });
+
+  it('uk-common-law and uk-sga both resolve labels independently (coexist, one does not replace the other)', () => {
+    expect(governingLawTrackLabel('uk-common-law', false)).toBe('UK / Commonwealth common law');
+    expect(governingLawTrackLabel('uk-sga', false)).toBe('UK Sale of Goods Act 1979 (B2B goods contracts)');
+  });
 });
 
 describe('checkGoverningLawMismatch', () => {
+  it('uk-sga matches on UK jurisdiction text but a bare "Commonwealth" country does not falsely match it', () => {
+    expect(checkGoverningLawMismatch('uk-sga', 'United Kingdom', undefined).flagged).toBe(false);
+    // Australia is Commonwealth but not "UK" -- uk-sga's keywords exclude
+    // 'commonwealth' on purpose (see file header), so this should flag.
+    expect(checkGoverningLawMismatch('uk-sga', 'Australia', 'Sydney').flagged).toBe(true);
+  });
+
   it('does not flag when governing law is unset', () => {
     expect(checkGoverningLawMismatch(undefined, 'Germany', 'Berlin').flagged).toBe(false);
   });

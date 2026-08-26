@@ -58,6 +58,14 @@ function deriveInvolvementMap(input: {
   counterpartyType?: 'government' | 'private';
   industryBucket?: IndustryBucket;
   clausesPresent?: ClausesPresent;
+  /** Item 50 (owner-confirmed 26 Aug 2026): the derived roles above are the
+   *  standard 8-role involvement map. This lets the client optionally name
+   *  extra stakeholders for a special-case relationship the derived map
+   *  doesn't cover (e.g. a named regulator liaison, an outside sponsor).
+   *  Free-text, manual entry only, never inferred -- appended as suggested
+   *  (never mandatory), matching how the derived optional roles already
+   *  behave. */
+  customStakeholders?: string[];
 }): InvolvementRole[] {
   const roles: InvolvementRole[] = [];
 
@@ -136,6 +144,22 @@ function deriveInvolvementMap(input: {
       reasonAr: 'تم تحديد الملكية الفكرية السابقة دون الناتجة -- يستحق الأمر مراجعاً فنياً/مطلعاً على الملكية الفكرية للتأكد من حاجة هذه الاتفاقية لموقف بشأن الملكية الناتجة.',
     });
   }
+
+  // Item 50: client-added stakeholders, always suggested (never mandatory --
+  // the 8-role map above is the confirmed baseline), always appended last so
+  // the derived roles stay first and predictable. Blank entries (e.g. a row
+  // the client added but hasn't typed into yet) are silently skipped rather
+  // than rendered as an empty role.
+  const customStakeholders = (input.customStakeholders ?? []).filter(s => s && s.trim().length > 0);
+  customStakeholders.forEach((label, i) => {
+    const trimmed = label.trim();
+    roles.push({
+      id: `custom-${i}`, mandatory: false,
+      labelEn: trimmed, labelAr: trimmed,
+      reasonEn: 'Added by the client for this specific matter -- not part of the standard 8-role involvement map derived above.',
+      reasonAr: 'أضافه العميل لهذه الحالة تحديداً -- ليس جزءاً من خريطة الأدوار الثمانية المشتقة أعلاه.',
+    });
+  });
 
   return roles;
 }
@@ -307,6 +331,10 @@ export interface GenerationInput {
   industryBucket?: IndustryBucket;
   clausesPresent?: ClausesPresent;
   disputeResolutionVariant?: string;
+  /** Item 50: optional client-named stakeholders beyond the standard
+   *  8-role involvement map (see deriveInvolvementMap above). Free text,
+   *  manual only, for special-case relationships. */
+  customStakeholders?: string[];
 }
 
 export interface GeneratedSkeleton {

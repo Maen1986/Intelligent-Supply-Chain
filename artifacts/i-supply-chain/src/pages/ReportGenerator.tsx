@@ -8,6 +8,7 @@ import { API_BASE } from '@/lib/apiBase';
 import { MATURITY_DRAFT_KEY, ISC_MATURITY_CONTEXT_KEY } from './Maturity';
 import { MaturitySummarySection, type MSSContext } from '@/components/MaturitySummarySection';
 import { EvidenceSummary, ConsiderAlso } from '@/components/EvidenceSummary';
+import { SavingsWaterfall } from '@/components/SavingsWaterfall';
 import {
   FileText, Sparkles, Loader2, Download, ChevronRight, ChevronLeft,
   Building2, Users2, BarChart3, AlertCircle, CheckCircle2, RotateCcw,
@@ -93,7 +94,16 @@ interface ReportData {
   gapAnalysis:            { headline: string; body: string; priorityGaps: Array<{ rank: number; area: string; currentState: string; targetState: string; rootCause: string; businessImpact: string; interdependencies: string }> };
   strategicRecommendations: Array<{ title: string; priority: string; description: string; framework: string; timeframe: string; expectedOutcome: string; kpis: string[]; implementationSteps: string[] }>;
   implementationRoadmap:  { headline: string; overview: string; phase1: PhaseData; phase2: PhaseData; phase3: PhaseData };
-  investmentProjection:   { headline: string; body: string; scenarios: Array<{ name: string; assumption: string; year1SavingsRange: string; keyDrivers: string[]; roi: string }> };
+  investmentProjection:   { headline: string; body: string; scenarios: Array<{
+    name: string; assumption: string; year1SavingsRange: string; keyDrivers: string[]; roi: string;
+    /** #190, 26 Aug 2026 -- additive structured restatement of the free-text
+     *  fields above, for the real Waterfall chart. Optional: older cached
+     *  reports and any AI response missing these fields simply render
+     *  without the chart (SavingsWaterfall returns null), never a crash
+     *  and never a fabricated number. */
+    year1SavingsLowSAR?: number; year1SavingsHighSAR?: number; roiPercent?: number;
+    savingsBreakdown?: Array<{ category: string; amountSAR: number }>;
+  }> };
   conclusion:             { headline: string; body: string; immediateNextSteps: string[] };
 }
 
@@ -459,6 +469,18 @@ function ReportPrintLayout({ report, contactInfo, maturity, generatedAt }: {
             );
           })}
         </div>
+        {/* #190 (26 Aug 2026): real per-category waterfall for the Base
+            Case scenario -- additive alongside the 3-card summary above,
+            renders nothing if the AI response lacks the structured
+            savingsBreakdown field (older cached reports, or a malformed
+            response). Base Case chosen as the single default view per the
+            scoping doc's "waterfall reads well for ONE scenario" finding;
+            Conservative/Optimistic breakdowns are still available in the
+            underlying data for a future per-scenario toggle. */}
+        {(() => {
+          const baseCase = report.investmentProjection.scenarios.find(s => s.name === 'Base Case') ?? report.investmentProjection.scenarios[1];
+          return baseCase ? <SavingsWaterfall scenario={baseCase} /> : null;
+        })()}
       </Section>
 
       {/* ── 8. Conclusion ── */}

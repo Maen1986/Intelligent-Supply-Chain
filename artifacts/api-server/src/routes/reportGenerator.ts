@@ -259,21 +259,39 @@ Generate a full strategy report with EIGHT sections, each substantive and deeply
         "assumption": "Partial implementation, 50–60% adoption",
         "year1SavingsRange": "SAR X–Y million",
         "keyDrivers": ["2–3 drivers"],
-        "roi": "X% ROI"
+        "roi": "X% ROI",
+        "year1SavingsLowSAR": "number, the X in year1SavingsRange converted to a plain SAR figure (e.g. 2100000 for 'SAR 2.1 million'), no currency symbol or text",
+        "year1SavingsHighSAR": "number, the Y in year1SavingsRange as a plain SAR figure",
+        "roiPercent": "number, the X in roi as a plain number (e.g. 145 for '145% ROI'), no percent sign",
+        "savingsBreakdown": [
+          { "category": "short label for one driver behind this scenario's savings, e.g. 'Procurement cycle time reduction'", "amountSAR": "number, this category's share of year1SavingsHighSAR" }
+        ]
       },
       {
         "name": "Base Case",
         "assumption": "Full implementation, 75–85% adoption",
         "year1SavingsRange": "SAR X–Y million",
         "keyDrivers": ["2–3 drivers"],
-        "roi": "X% ROI"
+        "roi": "X% ROI",
+        "year1SavingsLowSAR": "number, same convention as above",
+        "year1SavingsHighSAR": "number, same convention as above",
+        "roiPercent": "number, same convention as above",
+        "savingsBreakdown": [
+          { "category": "short label for one driver behind this scenario's savings", "amountSAR": "number, this category's share of year1SavingsHighSAR" }
+        ]
       },
       {
         "name": "Optimistic",
         "assumption": "Full implementation with leadership commitment and quick capability build",
         "year1SavingsRange": "SAR X–Y million",
         "keyDrivers": ["2–3 drivers"],
-        "roi": "X% ROI"
+        "roi": "X% ROI",
+        "year1SavingsLowSAR": "number, same convention as above",
+        "year1SavingsHighSAR": "number, same convention as above",
+        "roiPercent": "number, same convention as above",
+        "savingsBreakdown": [
+          { "category": "short label for one driver behind this scenario's savings", "amountSAR": "number, this category's share of year1SavingsHighSAR" }
+        ]
       }
     ]
   },
@@ -291,7 +309,8 @@ QUALITY STANDARDS:
 - Every recommendation must name a specific framework/standard
 - The report must read as if written by a senior GCC supply chain expert who studied their specific data
 - evidenceSummary.dataUsed: 2-4 items naming actual inputs this specific report used, never a generic methodology name
-- evidenceSummary.assumptions: 1-3 items; if nothing had to be assumed, say so explicitly rather than omitting the field`;
+- evidenceSummary.assumptions: 1-3 items; if nothing had to be assumed, say so explicitly rather than omitting the field
+- #190 (26 Aug 2026): each investmentProjection scenario's year1SavingsLowSAR/year1SavingsHighSAR/roiPercent/savingsBreakdown fields are structured numeric restatements of that same scenario's year1SavingsRange/roi text -- they must describe the same numbers, not a second independent estimate. savingsBreakdown's amountSAR values should sum to approximately year1SavingsHighSAR (rounding is fine; this powers a real chart, not just narrative text, so internal consistency matters more than false precision)`;
 
     const response = await openai.chat.completions.create({
       model:           OPENAI_MODEL,

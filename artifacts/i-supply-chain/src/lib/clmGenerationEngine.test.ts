@@ -95,6 +95,45 @@ describe('buildNdaSkeleton -- involvement map (A.1b)', () => {
   });
 });
 
+describe('buildNdaSkeleton -- involvement map, custom stakeholders (item 50)', () => {
+  it('adds no custom roles when customStakeholders is absent or empty', () => {
+    const none = buildNdaSkeleton({ parties: [] });
+    expect(none.cover.involvementMap.filter(r => r.id.startsWith('custom-'))).toHaveLength(0);
+    const empty = buildNdaSkeleton({ parties: [], customStakeholders: [] });
+    expect(empty.cover.involvementMap.filter(r => r.id.startsWith('custom-'))).toHaveLength(0);
+  });
+
+  it('appends client-named stakeholders as suggested (never mandatory), after the derived roles', () => {
+    const skeleton = buildNdaSkeleton({ parties: [], customStakeholders: ['External Sponsor Liaison', 'Board Observer'] });
+    const custom = skeleton.cover.involvementMap.filter(r => r.id.startsWith('custom-'));
+    expect(custom).toHaveLength(2);
+    expect(custom.every(r => r.mandatory === false)).toBe(true);
+    expect(custom.map(r => r.labelEn)).toEqual(['External Sponsor Liaison', 'Board Observer']);
+    // Custom roles come after every derived role, not interleaved.
+    const lastDerivedIdx = skeleton.cover.involvementMap.findIndex(r => r.id.startsWith('custom-')) - 1;
+    expect(skeleton.cover.involvementMap[lastDerivedIdx].id.startsWith('custom-')).toBe(false);
+  });
+
+  it('silently skips blank/whitespace-only custom stakeholder entries rather than rendering an empty role', () => {
+    const skeleton = buildNdaSkeleton({ parties: [], customStakeholders: ['', '   ', 'Real Name'] });
+    const custom = skeleton.cover.involvementMap.filter(r => r.id.startsWith('custom-'));
+    expect(custom).toHaveLength(1);
+    expect(custom[0].labelEn).toBe('Real Name');
+  });
+
+  it('trims whitespace from a custom stakeholder label', () => {
+    const skeleton = buildNdaSkeleton({ parties: [], customStakeholders: ['  Regional Auditor  '] });
+    expect(skeleton.cover.involvementMap.find(r => r.id === 'custom-0')?.labelEn).toBe('Regional Auditor');
+  });
+
+  it('custom stakeholders render into the plain-text output alongside derived roles', () => {
+    const skeleton = buildNdaSkeleton({ parties: [], customStakeholders: ['External Sponsor Liaison'] });
+    const text = renderSkeletonAsText(skeleton, false);
+    expect(text).toContain('External Sponsor Liaison');
+    expect(text).toContain('(suggested)');
+  });
+});
+
 describe('buildNdaSkeleton -- body outline', () => {
   it('covers all 6 Module 02 categories, in Module 02 order', () => {
     const skeleton = buildNdaSkeleton({ parties: [] });

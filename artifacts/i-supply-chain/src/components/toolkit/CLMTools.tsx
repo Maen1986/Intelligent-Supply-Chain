@@ -158,6 +158,13 @@ interface Contract {
    *  additional to (never a substitute for) checking the subclause present.
    *  Module 02. */
   clauseVariants?: Record<string, string>;
+  /** Module 09 item 50 (owner-confirmed 26 Aug 2026): optional client-named
+   *  stakeholders beyond the standard 8-role involvement map the NDA
+   *  Skeleton derives automatically -- for special-case relationships that
+   *  need a named role the derived map doesn't cover (e.g. a specific
+   *  regulator liaison, an outside sponsor). Free text, manual only, never
+   *  mandatory, always suggested. */
+  customStakeholders?: string[];
 }
 
 // --- Helpers ---
@@ -560,6 +567,15 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
     saveContracts(contracts.map(c => c.id === id ? { ...c, clauseSpecialConditions: { ...(c.clauseSpecialConditions ?? {}), [category]: text } } : c));
   const updateClauseVariant = (id: string, subclauseId: string, variantId: string) =>
     saveContracts(contracts.map(c => c.id === id ? { ...c, clauseVariants: { ...(c.clauseVariants ?? {}), [subclauseId]: variantId } } : c));
+  /** Module 09 item 50 -- customStakeholders is an array of free-text
+   *  strings, so (like pricingPhaseBreakdown above) it needs its own
+   *  add/update/remove helpers rather than the flat updateContract. */
+  const addCustomStakeholder = (id: string) =>
+    saveContracts(contracts.map(c => c.id === id ? { ...c, customStakeholders: [...(c.customStakeholders ?? []), ''] } : c));
+  const updateCustomStakeholder = (id: string, idx: number, value: string) =>
+    saveContracts(contracts.map(c => c.id === id ? { ...c, customStakeholders: (c.customStakeholders ?? []).map((s, i) => i === idx ? value : s) } : c));
+  const removeCustomStakeholder = (id: string, idx: number) =>
+    saveContracts(contracts.map(c => c.id === id ? { ...c, customStakeholders: (c.customStakeholders ?? []).filter((_, i) => i !== idx) } : c));
   const toggleClauseCategoryExpand = (contractId: string, category: ClauseCategory) => setExpandedClauseCats(prev => {
     const key = `${contractId}:${category}`;
     const s = new Set(prev); s.has(key) ? s.delete(key) : s.add(key); return s;
@@ -1247,11 +1263,38 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
                                 industryBucket: c.industryBucket,
                                 clausesPresent: c.clausesPresent,
                                 disputeResolutionVariant: c.clauseVariants?.['dispute-resolution'],
+                                customStakeholders: c.customStakeholders,
                               });
                               downloadText(`${c.name || 'nda'}-skeleton-${isAr ? 'ar' : 'en'}.txt`, renderSkeletonAsText(skeleton, isAr));
                             }} className="text-[11px] font-semibold px-3 py-1.5 rounded-full bg-[#082C6B] text-white hover:bg-[#082C6B]/90 transition-colors shrink-0">
                               {isAr ? 'تنزيل الهيكل' : 'Download Skeleton'}
                             </button>
+                          </div>
+                          {/* -- Item 50: the derived 8-role involvement map is
+                               fixed and confirmed; this is the client's escape
+                               hatch to name extra stakeholders for a
+                               special-case relationship, never a substitute
+                               for the derived roles. -- */}
+                          <div className="px-3 py-2.5 border-t border-slate-100 space-y-1.5">
+                            <div className="flex items-center justify-between gap-2">
+                              <div>
+                                <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">{isAr ? 'أطراف إضافية مقترحة (اختياري)' : 'Additional Stakeholders (optional)'}</label>
+                                <p className="text-[9px] text-slate-400 mt-0.5">{isAr ? 'لحالات خاصة تحتاج طرفاً لم تشمله خريطة الأدوار الثمانية المشتقة أعلاه' : 'For special cases needing a role the derived 8-role map above doesn\'t cover'}</p>
+                              </div>
+                              <button type="button" onClick={() => addCustomStakeholder(c.id)} className="flex items-center gap-1 text-[10px] font-semibold text-[#082C6B] hover:opacity-80 shrink-0">
+                                <Plus className="w-3 h-3" />{isAr ? 'إضافة' : 'Add'}
+                              </button>
+                            </div>
+                            {(c.customStakeholders ?? []).map((s, idx) => (
+                              <div key={idx} className="flex items-center gap-1.5">
+                                <input type="text" value={s} onChange={e => updateCustomStakeholder(c.id, idx, e.target.value)}
+                                  placeholder={isAr ? 'مثال: منسق راعٍ خارجي' : 'e.g. External Sponsor Liaison'}
+                                  className="flex-1 text-[11px] border border-slate-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-1 focus:ring-[#082C6B]" />
+                                <button type="button" onClick={() => removeCustomStakeholder(c.id, idx)} className="text-slate-300 hover:text-red-500 transition-colors shrink-0" aria-label={isAr ? 'إزالة' : 'Remove'}>
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            ))}
                           </div>
                         </div>
                       )}

@@ -114,6 +114,26 @@ describe('POST /api/report/generate', () => {
     expect(userPrompt).not.toContain('TCO ENGINE ANALYSES ON FILE');
   });
 
+  it('#190 (26 Aug 2026): the system prompt asks for structured numeric savings fields alongside the existing free-text ones', async () => {
+    aiReply(MINIMAL_REPORT);
+    const app = makeApp('/api/report', reportGeneratorRouter, { userId: 1 });
+    const res = await request(app)
+      .post('/api/report/generate')
+      .send({ tier: 'sme_growth', contactInfo: CONTACT_INFO });
+    expect(res.status).toBe(200);
+
+    const userPrompt = createMock.mock.calls[0][0].messages[1].content as string;
+    // Additive structured fields for the real Waterfall chart (data model
+    // unblock) -- must sit alongside, not replace, the existing free-text
+    // year1SavingsRange/roi fields.
+    expect(userPrompt).toContain('year1SavingsRange');
+    expect(userPrompt).toContain('year1SavingsLowSAR');
+    expect(userPrompt).toContain('year1SavingsHighSAR');
+    expect(userPrompt).toContain('roiPercent');
+    expect(userPrompt).toContain('savingsBreakdown');
+    expect(userPrompt).toContain('amountSAR');
+  });
+
   it('returns 500 with a friendly error when the AI call fails', async () => {
     createMock.mockRejectedValueOnce(new Error('boom'));
     const app = makeApp('/api/report', reportGeneratorRouter, { userId: 1 });

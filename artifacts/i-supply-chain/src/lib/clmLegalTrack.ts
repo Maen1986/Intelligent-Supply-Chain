@@ -23,13 +23,36 @@
  * conflating the two would misrepresent a real and legally significant
  * split, not simplify it.
  *
- * Tier 1 (v10): four secondary/comparative international tracks a
+ * Tier 1 (v10): five secondary/comparative international tracks a
  * cross-border contract may reference alongside the Saudi anchor -- UK
- * common law, US UCC Article 2, EU civil law (PECL), and full-form CISG
- * (Parts II+III, for a genuinely non-Saudi cross-border goods contract
- * between two CISG Contracting States -- Bahrain is one; UAE, Qatar, Oman,
- * Kuwait and Jordan are not, per the official Pace/UNCITRAL Contracting
- * States list, last updated 5 Dec 2024).
+ * common law, UK Sale of Goods Act 1979 (goods-specific, see below), US
+ * UCC Article 2, EU civil law (PECL), and full-form CISG (Parts II+III,
+ * for a genuinely non-Saudi cross-border goods contract between two CISG
+ * Contracting States -- Bahrain is one; UAE, Qatar, Oman, Kuwait and
+ * Jordan are not, per the official Pace/UNCITRAL Contracting States list,
+ * last updated 5 Dec 2024).
+ *
+ * uk-sga (NEW, 26 Aug 2026, owner-prompted verification): the UK Sale of
+ * Goods Act 1979 sits alongside uk-common-law rather than replacing it --
+ * the same relationship us-ucc already has to general US contract law
+ * (a goods-specific statute layered on top of, not instead of, general
+ * common-law principles). Confirmed current and in force via
+ * legislation.gov.uk (checked 26 Aug 2026, "up to date" status as
+ * amended, most recently by the Consumer Rights Act 2015 for
+ * consumer-to-consumer scope carve-outs -- B2B sale-of-goods terms
+ * implied by SGA 1979 ss.12-15 (title, description, satisfactory
+ * quality, fitness for purpose, sample) remain the operative default
+ * for commercial goods contracts). Its jurisdictionKeywords deliberately
+ * exclude "commonwealth": SGA 1979 is a UK-specific Act -- Australia,
+ * Canada's provinces, New Zealand and others each have their own,
+ * separately-numbered Sale of Goods Acts modeled on the UK's original
+ * 1893 Act, not this one, so a bare "Commonwealth" mention should not
+ * silently match the UK-specific 1979 citation. The complementary Supply
+ * of Goods and Services Act 1982 Part II (implied terms for the services
+ * side of a UK B2B contract, also still in force) is documented here as
+ * context rather than given its own track, for the same proportionality
+ * reason the platform has no separate "US services" track alongside
+ * us-ucc.
  *
  * This is T1 pure conditional logic, same spirit as CLMTools.tsx's existing
  * claimableRebate() -- no AI, no invented jurisdictions, a directional
@@ -50,7 +73,7 @@ export type GoverningLawTrack =
   | 'saudi-ctl' | 'saudi-gtpl'
   | 'uae-ctl' | 'uae-difc-adgm' | 'qatar-civil' | 'bahrain-civil'
   | 'oman-civil' | 'kuwait-civil' | 'jordan-civil'
-  | 'uk-common-law' | 'us-ucc' | 'eu-pecl' | 'cisg-full' | 'other' | '';
+  | 'uk-common-law' | 'uk-sga' | 'us-ucc' | 'eu-pecl' | 'cisg-full' | 'other' | '';
 
 export interface GoverningLawTrackMeta {
   id: GoverningLawTrack;
@@ -90,6 +113,13 @@ export const GOVERNING_LAW_TRACKS: GoverningLawTrackMeta[] = [
   // replaced Jordan's 1952 code, which had replaced the Ottoman Majalla).
   { id: 'jordan-civil', label: 'Jordan Civil Code (Law No. 43 of 1976)', labelAr: 'القانون المدني الأردني (القانون رقم 43 لسنة 1976)', jurisdictionKeywords: ['jordan'] },
   { id: 'uk-common-law', label: 'UK / Commonwealth common law', labelAr: 'القانون العام البريطاني / الكومنولث', jurisdictionKeywords: ['uk', 'united kingdom', 'england', 'britain', 'commonwealth'] },
+  // UK Sale of Goods Act 1979 (as amended) -- goods-specific implied terms
+  // (title, description, satisfactory quality, fitness for purpose,
+  // sample), sits alongside uk-common-law rather than replacing it, same
+  // relationship us-ucc has to general US contract law. UK-specific by
+  // design -- see header comment for why "commonwealth" is deliberately
+  // excluded from its keywords.
+  { id: 'uk-sga', label: 'UK Sale of Goods Act 1979 (B2B goods contracts)', labelAr: 'قانون بيع البضائع البريطاني لعام 1979 (عقود البضائع بين الشركات)', jurisdictionKeywords: ['uk', 'united kingdom', 'england', 'britain', 'scotland', 'wales', 'northern ireland'] },
   { id: 'us-ucc', label: 'US UCC Article 2 (Sale of Goods)', labelAr: 'القانون التجاري الموحد الأمريكي (المادة 2 -- بيع البضائع)', jurisdictionKeywords: ['us', 'usa', 'united states', 'america'] },
   { id: 'eu-pecl', label: 'EU civil law (Principles of European Contract Law)', labelAr: 'القانون المدني الأوروبي (مبادئ قانون العقود الأوروبي)', jurisdictionKeywords: ['eu', 'europe', 'european union', 'germany', 'france', 'italy', 'spain', 'netherlands'] },
   { id: 'cisg-full', label: 'CISG, full form (non-Saudi cross-border goods contract)', labelAr: 'اتفاقية البيع الدولي للبضائع (الصيغة الكاملة -- عقد بضائع عابر للحدود بين طرفين غير سعوديين)', jurisdictionKeywords: [] },
