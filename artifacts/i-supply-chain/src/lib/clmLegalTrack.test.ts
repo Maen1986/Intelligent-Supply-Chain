@@ -52,14 +52,9 @@ describe('governingLawPracticeNote (GCC/Jordan real-practice recommendations, 26
     }
   });
 
-  it('returns undefined for tracks with no researched practice note (Decision Record 8.7: never fabricate)', () => {
-    const unresearched: Array<typeof GOVERNING_LAW_TRACKS[number]['id']> = [
-      'saudi-ctl', 'saudi-gtpl', 'uk-common-law', 'uk-sga', 'us-ucc', 'eu-pecl', 'cisg-full', 'other',
-    ];
-    for (const track of unresearched) {
-      expect(governingLawPracticeNote(track, false)).toBeUndefined();
-      expect(governingLawPracticeNote(track, true)).toBeUndefined();
-    }
+  it('returns undefined only for "other" (Decision Record 8.7: never fabricate where not researched)', () => {
+    expect(governingLawPracticeNote('other', false)).toBeUndefined();
+    expect(governingLawPracticeNote('other', true)).toBeUndefined();
   });
 
   it('returns undefined for an unknown track id', () => {
@@ -85,6 +80,57 @@ describe('governingLawPracticeNote (GCC/Jordan real-practice recommendations, 26
   it('flags Qatar Arabic-language requirements as an honest research gap, not assumed', () => {
     const note = governingLawPracticeNote('qatar-civil', false)!;
     expect(note.toLowerCase()).toContain('honest gap');
+  });
+});
+
+describe('governingLawPracticeNote (Saudi/UK/US/EU/CISG real-practice recommendations, round 2, 26 Aug 2026)', () => {
+  const round2Tracks: Array<typeof GOVERNING_LAW_TRACKS[number]['id']> = [
+    'saudi-ctl', 'saudi-gtpl', 'uk-common-law', 'uk-sga', 'us-ucc', 'eu-pecl', 'cisg-full',
+  ];
+
+  it('returns a non-empty EN and AR note for all seven round-2 tracks', () => {
+    for (const track of round2Tracks) {
+      expect(governingLawPracticeNote(track, false)).toBeTruthy();
+      expect(governingLawPracticeNote(track, true)).toBeTruthy();
+    }
+  });
+
+  it('names the correct dispute-resolution forum per round-2 track', () => {
+    expect(governingLawPracticeNote('saudi-ctl', false)).toContain('SCCA');
+    expect(governingLawPracticeNote('saudi-gtpl', false)).toContain('Board of Grievances');
+    expect(governingLawPracticeNote('uk-common-law', false)).toContain('LCIA');
+    expect(governingLawPracticeNote('uk-sga', false)).toContain('Arbitration Act 2025');
+    expect(governingLawPracticeNote('us-ucc', false)).toContain('AAA');
+    expect(governingLawPracticeNote('eu-pecl', false)).toContain('Rome I');
+    expect(governingLawPracticeNote('cisg-full', false)).toContain('New York Convention');
+  });
+
+  it('flags the new Saudi GTPL (approved 4 Aug 2026) as pending implementing regulations (honest, time-stamped note)', () => {
+    const note = governingLawPracticeNote('saudi-gtpl', false)!;
+    expect(note).toContain('4 Aug 2026');
+    expect(note.toLowerCase()).toContain('not yet been published');
+  });
+
+  it('flags PECL as soft law, not enacted EU/member-state legislation (fabrication-adjacent honest gap)', () => {
+    const note = governingLawPracticeNote('eu-pecl', false)!;
+    expect(note).toContain('Honest gap');
+    expect(note.toLowerCase()).toContain('soft law');
+    expect(note).toContain('Rome I Regulation');
+  });
+
+  it('names Louisiana\'s non-adoption of UCC Article 2 by name (US law is not internally uniform)', () => {
+    const note = governingLawPracticeNote('us-ucc', false)!;
+    expect(note).toContain('Louisiana');
+    expect(note).toContain('has not adopted UCC Article 2');
+  });
+
+  it('every round-2 note has a non-empty Arabic translation distinct from the English text', () => {
+    for (const track of round2Tracks) {
+      const en = governingLawPracticeNote(track, false)!;
+      const ar = governingLawPracticeNote(track, true)!;
+      expect(ar.length).toBeGreaterThan(50);
+      expect(ar).not.toBe(en);
+    }
   });
 });
 
