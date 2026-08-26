@@ -1136,13 +1136,23 @@ export function Maturity() {
                       <p className={`font-semibold text-sm leading-tight ${selected ? 'text-primary' : 'text-foreground'}`}>
                         {ar ? c.nameAr : c.name}
                       </p>
-                      <p className={`text-[10px] font-bold mt-1 ${c.coverageLevel === 'full' ? 'text-accent' : c.coverageLevel === 'partial' ? 'text-amber-600' : 'text-muted-foreground'}`}>
+                      {/* Coverage badge (#382) -- same pill pattern as the #139 GCC-scope
+                          badge on KPI Dashboard and the Country Coverage summary box below,
+                          applied here to the country picker itself. */}
+                      <span
+                        data-testid={`intake-country-coverage-${c.id}`}
+                        className={`inline-block mt-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                          c.coverageLevel === 'full' ? 'bg-emerald-100 text-emerald-700' :
+                          c.coverageLevel === 'partial' ? 'bg-amber-100 text-amber-700' :
+                          'bg-slate-200 text-slate-600'
+                        }`}
+                      >
                         {c.coverageLevel === 'full'
                           ? (ar ? 'تغطية تنظيمية كاملة' : 'Full regulatory coverage')
                           : c.coverageLevel === 'partial'
                           ? (ar ? 'محتوى متاح — قيد المراجعة' : 'Live — pending review')
                           : (ar ? 'قريبًا' : 'Coming soon')}
-                      </p>
+                      </span>
                       {selected && (
                         <div className="absolute top-2 right-2 w-4 h-4 rounded-full bg-primary flex items-center justify-center">
                           <div className="w-2 h-2 rounded-full bg-white" />
