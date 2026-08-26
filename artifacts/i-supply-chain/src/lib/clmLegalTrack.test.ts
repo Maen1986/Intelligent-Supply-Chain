@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { checkGoverningLawMismatch, governingLawTrackLabel, GOVERNING_LAW_TRACKS } from './clmLegalTrack';
+import { checkGoverningLawMismatch, governingLawTrackLabel, governingLawPracticeNote, GOVERNING_LAW_TRACKS } from './clmLegalTrack';
 
 describe('GOVERNING_LAW_TRACKS', () => {
   it('has 15 tracks including the six new GCC/Jordan tracks, uk-sga, and other', () => {
@@ -37,6 +37,54 @@ describe('GOVERNING_LAW_TRACKS', () => {
   it('uk-common-law and uk-sga both resolve labels independently (coexist, one does not replace the other)', () => {
     expect(governingLawTrackLabel('uk-common-law', false)).toBe('UK / Commonwealth common law');
     expect(governingLawTrackLabel('uk-sga', false)).toBe('UK Sale of Goods Act 1979 (B2B goods contracts)');
+  });
+});
+
+describe('governingLawPracticeNote (GCC/Jordan real-practice recommendations, 26 Aug 2026)', () => {
+  const gccJordanTracks: Array<typeof GOVERNING_LAW_TRACKS[number]['id']> = [
+    'uae-ctl', 'uae-difc-adgm', 'qatar-civil', 'bahrain-civil', 'oman-civil', 'kuwait-civil', 'jordan-civil',
+  ];
+
+  it('returns a non-empty EN and AR note for all seven GCC/Jordan tracks', () => {
+    for (const track of gccJordanTracks) {
+      expect(governingLawPracticeNote(track, false)).toBeTruthy();
+      expect(governingLawPracticeNote(track, true)).toBeTruthy();
+    }
+  });
+
+  it('returns undefined for tracks with no researched practice note (Decision Record 8.7: never fabricate)', () => {
+    const unresearched: Array<typeof GOVERNING_LAW_TRACKS[number]['id']> = [
+      'saudi-ctl', 'saudi-gtpl', 'uk-common-law', 'uk-sga', 'us-ucc', 'eu-pecl', 'cisg-full', 'other',
+    ];
+    for (const track of unresearched) {
+      expect(governingLawPracticeNote(track, false)).toBeUndefined();
+      expect(governingLawPracticeNote(track, true)).toBeUndefined();
+    }
+  });
+
+  it('returns undefined for an unknown track id', () => {
+    expect(governingLawPracticeNote('' as any, false)).toBeUndefined();
+  });
+
+  it('names the correct dispute-resolution forum per GCC/Jordan track', () => {
+    expect(governingLawPracticeNote('uae-ctl', false)).toContain('DIAC');
+    expect(governingLawPracticeNote('qatar-civil', false)).toContain('QICCA');
+    expect(governingLawPracticeNote('bahrain-civil', false)).toContain('BCDR-AAA');
+    expect(governingLawPracticeNote('oman-civil', false)).toContain('OAC');
+    expect(governingLawPracticeNote('kuwait-civil', false)).toContain('KCAC');
+    expect(governingLawPracticeNote('jordan-civil', false)).toContain('ACAC');
+  });
+
+  it('flags the Jordan Arbitration Centre as a proposed/draft law, not yet enacted (honest scope note)', () => {
+    const note = governingLawPracticeNote('jordan-civil', false)!;
+    expect(note).toContain('JAC');
+    expect(note.toLowerCase()).toMatch(/draft|proposed/);
+    expect(note.toLowerCase()).toContain('not yet enacted');
+  });
+
+  it('flags Qatar Arabic-language requirements as an honest research gap, not assumed', () => {
+    const note = governingLawPracticeNote('qatar-civil', false)!;
+    expect(note.toLowerCase()).toContain('honest gap');
   });
 });
 

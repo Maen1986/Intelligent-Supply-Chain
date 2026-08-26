@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildNdaSkeleton, renderSkeletonAsText, type GenerationInput } from './clmGenerationEngine';
+import { buildNdaSkeleton, buildMsaSkeleton, renderSkeletonAsText, type GenerationInput } from './clmGenerationEngine';
 import { CLAUSE_CATEGORIES } from './clmClauseTaxonomy';
 
 describe('buildNdaSkeleton -- disclaimer', () => {
@@ -181,6 +181,70 @@ describe('buildNdaSkeleton -- body outline', () => {
   });
 });
 
+describe('buildMsaSkeleton (item 53, 26 Aug 2026 -- MSA pilot)', () => {
+  it('always carries a bilingual disclaimer, same as the NDA pilot', () => {
+    const skeleton = buildMsaSkeleton({ parties: [] });
+    expect(skeleton.disclaimerEn.length).toBeGreaterThan(0);
+    expect(skeleton.disclaimerAr.length).toBeGreaterThan(0);
+    expect(skeleton.disclaimerEn.toLowerCase()).toContain('not legal advice');
+  });
+
+  it('labels itself MSA, not NDA', () => {
+    const skeleton = buildMsaSkeleton({ parties: [] });
+    expect(skeleton.contractTypeLabelEn).toBe('MSA');
+    expect(skeleton.contractTypeLabelAr.length).toBeGreaterThan(0);
+  });
+
+  it('covers all 6 Module 02 categories, in Module 02 order', () => {
+    const skeleton = buildMsaSkeleton({ parties: [] });
+    expect(skeleton.body.map(s => s.category)).toEqual(CLAUSE_CATEGORIES.map(c => c.id));
+  });
+
+  it('marks every category as applicable -- unlike the NDA pilot, no category is not-applicable to an MSA', () => {
+    const skeleton = buildMsaSkeleton({ parties: [] });
+    for (const section of skeleton.body) {
+      expect(section.applicable).toBe(true);
+      expect(section.subclauses.length).toBeGreaterThan(0);
+    }
+  });
+
+  it('marks commercial-payment price-consideration and performance-service SLA as mandatory (core MSA content, unlike NDA)', () => {
+    const skeleton = buildMsaSkeleton({ parties: [] });
+    const commercial = skeleton.body.find(s => s.category === 'commercial-payment')!;
+    const price = commercial.subclauses.find(s => s.id === 'price-consideration')!;
+    expect(price.mandatory).toBe(true);
+    const performance = skeleton.body.find(s => s.category === 'performance-service')!;
+    const sla = performance.subclauses.find(s => s.id === 'performance-service-levels')!;
+    expect(sla.mandatory).toBe(true);
+  });
+
+  it('marks termination-for-convenience and transition-exit-assistance as mandatory (defining MSA features)', () => {
+    const skeleton = buildMsaSkeleton({ parties: [] });
+    const exit = skeleton.body.find(s => s.category === 'strategic-exit')!;
+    expect(exit.subclauses.find(s => s.id === 'termination-for-convenience')!.mandatory).toBe(true);
+    expect(exit.subclauses.find(s => s.id === 'transition-exit-assistance')!.mandatory).toBe(true);
+  });
+
+  it('lists every subclause in every category with a bilingual guidance note, mandatory or not', () => {
+    const skeleton = buildMsaSkeleton({ parties: [] });
+    for (const section of skeleton.body) {
+      for (const sc of section.subclauses) {
+        expect(sc.guidanceEn.length).toBeGreaterThan(0);
+        expect(sc.guidanceAr.length).toBeGreaterThan(0);
+        expect(sc.placeholderEn.length).toBeGreaterThan(0);
+        expect(sc.placeholderAr.length).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it('reuses the same GenerationInput/CoverSection shape as the NDA pilot -- customStakeholders (item 50) still flow through', () => {
+    const input: GenerationInput = { parties: [{ name: 'Acme Co.', role: 'Client' }], customStakeholders: ['External Auditor'] };
+    const skeleton = buildMsaSkeleton(input);
+    const roles = skeleton.cover.involvementMap.map(r => r.labelEn);
+    expect(roles).toContain('External Auditor');
+  });
+});
+
 describe('renderSkeletonAsText', () => {
   it('produces non-empty EN and AR text containing the disclaimer and all category headers', () => {
     const skeleton = buildNdaSkeleton({
@@ -196,5 +260,14 @@ describe('renderSkeletonAsText', () => {
       expect(en).toContain(cat.label);
       expect(ar).toContain(cat.labelAr);
     }
+  });
+
+  it('titles the NDA skeleton "NDA" and the MSA skeleton "MSA" -- shared renderer, per-pilot title', () => {
+    const nda = buildNdaSkeleton({ parties: [] });
+    const msa = buildMsaSkeleton({ parties: [] });
+    const ndaTitle = renderSkeletonAsText(nda, false).split('\n')[0];
+    const msaTitle = renderSkeletonAsText(msa, false).split('\n')[0];
+    expect(ndaTitle).toBe('NDA -- STRUCTURAL SKELETON (Module 09 v1)');
+    expect(msaTitle).toBe('MSA -- STRUCTURAL SKELETON (Module 09 v1)');
   });
 });

@@ -10,7 +10,7 @@
  */
 import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { UNSPSC_SERVICES_SEGMENTS, unspscSegmentLabel } from '@/lib/unspscSegments';
-import { GOVERNING_LAW_TRACKS, governingLawTrackLabel, checkGoverningLawMismatch, type GoverningLawTrack } from '@/lib/clmLegalTrack';
+import { GOVERNING_LAW_TRACKS, governingLawTrackLabel, governingLawPracticeNote, checkGoverningLawMismatch, type GoverningLawTrack } from '@/lib/clmLegalTrack';
 import { PRICING_TYPES, checkPricingMisuseFlag, type PricingType, type ScopeDefiniteness, type PricingPhase } from '@/lib/clmPricingTaxonomy';
 import { INDUSTRY_BUCKETS, FIDIC_BOOKS, PROFESSIONAL_SERVICES_TRACKS, LOGISTICS_MODES, resolveApplicableStandard, type IndustryBucket, type FidicBook, type ProfessionalServicesTrack, type LogisticsMode } from '@/lib/clmIndustryStandards';
 import { INCOTERMS_2020, PAYMENT_TERMS, ISO_4217_CURRENCIES, type Incoterm, type PaymentTermType } from '@/lib/clmTradeTerms';
@@ -30,7 +30,7 @@ import { safeSetItem } from '@/lib/storage';
 import { useAIPlan } from '@/hooks/useAIPlan';
 import { AIPlanPanel } from '@/components/AIPlanPanel';
 import { ContractReviewReport } from '@/components/ContractReviewReport';
-import { buildNdaSkeleton, renderSkeletonAsText } from '@/lib/clmGenerationEngine';
+import { buildNdaSkeleton, buildMsaSkeleton, renderSkeletonAsText } from '@/lib/clmGenerationEngine';
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/AuthContext';
 import { API_BASE } from '@/lib/apiBase';
@@ -901,6 +901,12 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
                           <option value="">{isAr ? 'غير محدد' : 'Not specified'}</option>
                           {GOVERNING_LAW_TRACKS.map(t => <option key={t.id} value={t.id}>{isAr ? t.labelAr : t.label}</option>)}
                         </select>
+                        {c.governingLawClause && governingLawPracticeNote(c.governingLawClause, isAr) && (
+                          <p className="text-[10px] text-slate-500 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 mt-1">
+                            <span className="font-semibold text-slate-600">{isAr ? 'الممارسة الموصى بها: ' : 'Recommended practice: '}</span>
+                            {governingLawPracticeNote(c.governingLawClause, isAr)}
+                          </p>
+                        )}
                       </div>
                       <div className="space-y-1">
                         <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{isAr ? 'ولاية الطرف المقابل (اختياري)' : "Counterparty Jurisdiction (optional)"}</label>
@@ -1236,23 +1242,29 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
                         )}
                       </div>
                       {/* -- Module 09 Part A, Option 1: Generation v1 skeleton
-                           (NDA pilot only, per owner-approved recommendation
-                           25 Aug 2026). Real facts + a classified clause
-                           outline with guidance notes -- no clause language is
-                           drafted (Decision Record 8.7: Module 02 is a
-                           categorized framework, not a drafting-ready clause
-                           bank). Gated on contract type === 'nda' since this is
-                           the pilot, not yet generalized to other contract
-                           types. -- */}
-                      {c.type === 'nda' && (
+                           (NDA pilot, owner-approved recommendation 25 Aug
+                           2026; MSA pilot added 26 Aug 2026, item 53 --
+                           follow-on to item 46's resolution that MSA is the
+                           next real-client pilot contract type). Real facts +
+                           a classified clause outline with guidance notes --
+                           no clause language is drafted (Decision Record 8.7:
+                           Module 02 is a categorized framework, not a
+                           drafting-ready clause bank). Gated on contract type
+                           'nda' or 'msa' -- the two piloted types; not yet
+                           generalized to every ContractType value. -- */}
+                      {(c.type === 'nda' || c.type === 'msa') && (
                         <div className="col-span-full border border-slate-200 rounded-xl overflow-hidden">
                           <div className="bg-slate-50 px-3 py-2.5 flex items-center justify-between gap-2 flex-wrap">
                             <div>
-                              <p className="text-xs font-bold text-slate-700">{isAr ? 'هيكل اتفاقية السرية (الإصدار 1)' : 'NDA Skeleton (v1)'}</p>
+                              <p className="text-xs font-bold text-slate-700">
+                                {c.type === 'msa'
+                                  ? (isAr ? 'هيكل الاتفاقية الإطارية (الإصدار 1)' : 'MSA Skeleton (v1)')
+                                  : (isAr ? 'هيكل اتفاقية السرية (الإصدار 1)' : 'NDA Skeleton (v1)')}
+                              </p>
                               <p className="text-[10px] text-slate-400">{isAr ? 'وقائع + مخطط بنود مصنّف -- بدون صياغة نصوص قانونية' : 'Facts + a classified clause outline -- no clause language drafted'}</p>
                             </div>
                             <button type="button" onClick={() => {
-                              const skeleton = buildNdaSkeleton({
+                              const genInput = {
                                 parties: [{ name: c.name, role: isAr ? 'طرف' : 'Party' }, { name: c.supplier, role: isAr ? 'طرف' : 'Party' }],
                                 effectiveDate: c.startDate,
                                 termDuration: c.endDate ? `${c.startDate} - ${c.endDate}` : undefined,
@@ -1264,8 +1276,9 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
                                 clausesPresent: c.clausesPresent,
                                 disputeResolutionVariant: c.clauseVariants?.['dispute-resolution'],
                                 customStakeholders: c.customStakeholders,
-                              });
-                              downloadText(`${c.name || 'nda'}-skeleton-${isAr ? 'ar' : 'en'}.txt`, renderSkeletonAsText(skeleton, isAr));
+                              };
+                              const skeleton = c.type === 'msa' ? buildMsaSkeleton(genInput) : buildNdaSkeleton(genInput);
+                              downloadText(`${c.name || c.type}-skeleton-${isAr ? 'ar' : 'en'}.txt`, renderSkeletonAsText(skeleton, isAr));
                             }} className="text-[11px] font-semibold px-3 py-1.5 rounded-full bg-[#082C6B] text-white hover:bg-[#082C6B]/90 transition-colors shrink-0">
                               {isAr ? 'تنزيل الهيكل' : 'Download Skeleton'}
                             </button>
