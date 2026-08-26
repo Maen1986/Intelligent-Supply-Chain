@@ -10,7 +10,7 @@
  */
 import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { UNSPSC_SERVICES_SEGMENTS, unspscSegmentLabel } from '@/lib/unspscSegments';
-import { GOVERNING_LAW_TRACKS, governingLawTrackLabel, governingLawPracticeNote, checkGoverningLawMismatch, type GoverningLawTrack } from '@/lib/clmLegalTrack';
+import { GOVERNING_LAW_TRACKS, governingLawTrackLabel, governingLawPracticeNote, checkGoverningLawMismatch, internationalContractingPracticeGuide, type GoverningLawTrack } from '@/lib/clmLegalTrack';
 import { PRICING_TYPES, checkPricingMisuseFlag, type PricingType, type ScopeDefiniteness, type PricingPhase } from '@/lib/clmPricingTaxonomy';
 import { INDUSTRY_BUCKETS, FIDIC_BOOKS, PROFESSIONAL_SERVICES_TRACKS, LOGISTICS_MODES, resolveApplicableStandard, type IndustryBucket, type FidicBook, type ProfessionalServicesTrack, type LogisticsMode } from '@/lib/clmIndustryStandards';
 import { INCOTERMS_2020, PAYMENT_TERMS, ISO_4217_CURRENCIES, type Incoterm, type PaymentTermType } from '@/lib/clmTradeTerms';
@@ -907,6 +907,12 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
                             {governingLawPracticeNote(c.governingLawClause, isAr)}
                           </p>
                         )}
+                        <details className="mt-1 group">
+                          <summary className="text-[10px] font-semibold text-[#082C6B] cursor-pointer select-none">{isAr ? 'ما القانون الحاكم الذي يختاره الآخرون عادة في العقود الدولية؟ (بيانات السوق)' : 'What governing law do others commonly choose internationally? (market data)'}</summary>
+                          <p className="text-[10px] text-slate-500 bg-blue-50 border border-blue-100 rounded-lg px-2 py-1.5 mt-1">
+                            {internationalContractingPracticeGuide(isAr)}
+                          </p>
+                        </details>
                       </div>
                       <div className="space-y-1">
                         <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{isAr ? 'ولاية الطرف المقابل (اختياري)' : "Counterparty Jurisdiction (optional)"}</label>

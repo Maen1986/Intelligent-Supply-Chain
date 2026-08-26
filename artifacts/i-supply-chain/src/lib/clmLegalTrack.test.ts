@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { checkGoverningLawMismatch, governingLawTrackLabel, governingLawPracticeNote, GOVERNING_LAW_TRACKS, type GoverningLawTrack } from './clmLegalTrack';
+import { checkGoverningLawMismatch, governingLawTrackLabel, governingLawPracticeNote, GOVERNING_LAW_TRACKS, internationalContractingPracticeGuide, type GoverningLawTrack } from './clmLegalTrack';
 
 describe('GOVERNING_LAW_TRACKS', () => {
   it('has 19 tracks including the six new GCC/Jordan tracks, uk-sga, the wave-1 Asia/Africa tracks, and other', () => {
@@ -341,5 +341,53 @@ describe('governingLawPracticeNote (China/India/Egypt/South Africa, wave 1 of wo
     expect(ids).toContain('india-contract-act');
     expect(ids).toContain('egypt-civil');
     expect(ids).toContain('south-africa-common-law');
+  });
+});
+
+describe('internationalContractingPracticeGuide (common GCC/Jordan/Middle East cross-border practice, owner-prompted research, 26 Aug 2026)', () => {
+  it('returns non-empty EN and AR guides', () => {
+    expect(internationalContractingPracticeGuide(false)).toBeTruthy();
+    expect(internationalContractingPracticeGuide(true)).toBeTruthy();
+  });
+
+  it('EN guide cites English law global dominance stats', () => {
+    const guide = internationalContractingPracticeGuide(false);
+    expect(guide).toContain('English law');
+    expect(guide).toContain('40%');
+    expect(guide).toContain('LCIA');
+  });
+
+  it('EN guide cites the 2025 QMUL/White & Case Middle East seat data', () => {
+    const guide = internationalContractingPracticeGuide(false);
+    expect(guide).toContain('London');
+    expect(guide).toContain('Singapore');
+    expect(guide).toContain('ICC Rules');
+  });
+
+  it('EN guide names the 2024-2025 DIFC reform nuance', () => {
+    const guide = internationalContractingPracticeGuide(false);
+    expect(guide).toContain('DIFC Law No. 8 of 2024');
+    expect(guide).toContain('Dubai Law No. 2 of 2025');
+    expect(guide).toContain('asymmetric jurisdiction');
+  });
+
+  it('EN guide covers Saudi/Jordan party autonomy and Asia-linked (China) arbitration institutions', () => {
+    const guide = internationalContractingPracticeGuide(false);
+    expect(guide).toContain('SCCA');
+    expect(guide).toContain('New York Convention');
+    expect(guide).toContain('CIETAC');
+    expect(guide).toContain('Belt and Road');
+  });
+
+  it('EN guide is explicit that this is market observation, not a recommendation', () => {
+    const guide = internationalContractingPracticeGuide(false);
+    expect(guide).toContain('not a recommendation');
+  });
+
+  it('AR guide is non-empty and distinct from the EN guide', () => {
+    const en = internationalContractingPracticeGuide(false);
+    const ar = internationalContractingPracticeGuide(true);
+    expect(ar).toBeTruthy();
+    expect(ar).not.toBe(en);
   });
 });

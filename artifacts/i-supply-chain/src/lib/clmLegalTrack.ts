@@ -347,6 +347,32 @@ export function governingLawPracticeNote(track: GoverningLawTrack, isAr: boolean
   return isAr ? meta.recommendedPracticeAr : meta.recommendedPractice;
 }
 
+/**
+ * International Contracting Practice Guide (NEW, 26 Aug 2026, owner-prompted:
+ * "research and consider international contracting between GCC, Jordan,
+ * Middle East and other continents, what are the most used and common
+ * contract laws to be used and highlighted... at the engine"). Distinct in
+ * kind from governingLawPracticeNote() above: that function describes what
+ * a NAMED jurisdiction's law actually says (a fact sheet, per track). This
+ * function describes what governing law and dispute forum parties actually
+ * CHOOSE most often in real cross-border contracts connecting the GCC,
+ * Jordan, and the wider Middle East to other continents -- a market-practice
+ * observation, not a jurisdiction definition and not a recommendation for
+ * any specific deal. Sourced to public 2025-2026 industry data: The Law
+ * Society of England & Wales' Sept 2025 annual report on the global position
+ * of English law; the 2025 Queen Mary University of London / White & Case
+ * International Arbitration Survey; and Kayrouz & Associates' 2026 analysis
+ * of the 2024-2025 DIFC legislative reforms. Decision Record 8.7 applies:
+ * this is real, cited, publicly reported data, not an invented ranking --
+ * and it names its own limits (a global/regional pattern is not a
+ * substitute for legal advice on any one contract).
+ */
+export function internationalContractingPracticeGuide(isAr: boolean): string {
+  return isAr
+    ? "في الممارسة العملية -- هذه ملاحظة عن السوق وليست توصية: يُعد القانون الإنجليزي القانون الحاكم الأكثر اختياراً على الإطلاق في العقود التجارية الدولية عالمياً، إذ يحكم نحو 40% من المعاملات التجارية والمالية الدولية عالمياً (تقرير نقابة المحامين الإنجليزية والويلزية، سبتمبر 2025)، ويحكم 78% من قضايا محكمة لندن للتحكيم الدولي (LCIA) لعام 2024، وهو الاختيار الأكثر شيوعاً في قضايا غرفة التجارة الدولية (ICC) الجديدة (15%، يليه القانون السويسري 7.2%، والقانون البرازيلي 5%، والقانون الفرنسي 5%، وقانون نيويورك 4.8%). بالنسبة للشرق الأوسط تحديداً، وجد استطلاع التحكيم الدولي لعام 2025 (جامعة كوين ماري بالتعاون مع وايت آند كيس) أن لندن (63%) وسنغافورة (43%) هما أكثر مقرّي تحكيم اختياراً من قبل المشاركين من الشرق الأوسط، مع تفضيل قواعد ICC كأكثر قواعد تحكيم شيوعاً في المنطقة (59%). بالنسبة للعقود العابرة للحدود المرتبطة بالإمارات تحديداً، يبقى القانون الإنجليزي الاختيار الأكثر شيوعاً للقانون الحاكم، ويُقترن عادة بمحاكم مركز دبي المالي العالمي (DIFC) أو تحكيم LCIA أو ICC أو DIAC -- إلا أن إصلاحات DIFC التشريعية لعامي 2024-2025 (القانون رقم 8 لسنة 2024، وقانون دبي رقم 2 لسنة 2025، وحكم محكمة التمييز بدبي في أكتوبر 2024 الذي أبطل بنود الاختصاص غير المتماثلة داخل الدولة) تعني أن القانون الإنجليزي لم يعد يُطبَّق تلقائياً لسد الفراغ داخل تشريعات DIFC، وأن بنود اختصاص DIFC النمطية قد لا تستوفي المعيار الجديد المتمثل في أن تكون «محددة وواضحة وصريحة». تعترف كل من السعودية والأردن بحرية الأطراف في اختيار القانون الحاكم للعقود الدولية (مع مراعاة قيود الشريعة/النظام العام في السعودية)، مع قبول بنود تحكيم SCCA وICC وLCIA عادة في السعودية، وقواعد ICC/الأونسيترال الشائعة في الأردن؛ وكلا البلدين طرف في اتفاقية نيويورك، ما يدعم تنفيذ الأحكام العابرة للحدود. أما الصفقات التي تربط المنطقة بآسيا -- بما في ذلك العقود المرتبطة بمبادرة الحزام والطريق الصينية -- فإن مؤسسات HKIAC وSIAC وICC وCIETAC (بما في ذلك مركزها بهونغ كونغ) هي الأكثر استخداماً كجهات تحكيم، مع استمرار اختيار القانون الإنجليزي بشكل متكرر كقانون حاكم حتى في العقود المرتبطة بالصين. هذا وصف لما يختاره أطراف آخرون عادة، مستقى من بيانات صناعية عامة لعامي 2025-2026، وليس توصية بشأن أي عقد بعينه -- الهدف تمكين من يصوغ العقد من موازنة أي اختيار غير معتاد مقابل الافتراض السوقي الشائع، بدلاً من الاختيار بلا معلومة، مع ضرورة مراجعة مستشار قانوني مؤهل قبل الاعتماد على أي بند فعلي."
+    : "In practice -- this is a market observation, not a recommendation: English law is the single most commonly chosen governing law for international commercial contracts worldwide, governing roughly 40% of international business and financial transactions globally (The Law Society of England and Wales, Sept 2025 annual report), 78% of LCIA cases in 2024, and the largest single share of new ICC cases (15%, ahead of Swiss law at 7.2%, Brazilian law at 5%, French law at 5%, and New York law at 4.8%). For the Middle East specifically, the 2025 Queen Mary University of London / White & Case International Arbitration Survey found London (63%) and Singapore (43%) as the top two arbitration seats chosen by Middle East respondents, with ICC Rules the most preferred arbitral rules in the region (59%). For UAE-linked cross-border contracts specifically, English law remains the most common governing-law choice, typically paired with DIFC Courts, LCIA, ICC, or DIAC arbitration -- though the 2024-2025 DIFC legislative reforms (DIFC Law No. 8 of 2024, Dubai Law No. 2 of 2025, and an October 2024 Dubai Court of Cassation ruling invalidating asymmetric jurisdiction clauses onshore) mean English law is no longer an automatic gap-filler inside DIFC statutes, and boilerplate DIFC jurisdiction clauses may no longer meet the new 'specific, clear and express' threshold. Saudi Arabia and Jordan both recognize party autonomy in choice of governing law for international contracts (subject to Sharia/public-policy limits in Saudi Arabia), with SCCA, ICC, and LCIA arbitration clauses commonly upheld in Saudi Arabia and ICC/UNCITRAL rules common in Jordan; both are New York Convention signatories, supporting cross-border award enforcement. For deals connecting the region to Asia -- including China's Belt and Road-linked contracts -- HKIAC, SIAC, ICC, and CIETAC (including its Hong Kong Arbitration Center) are the most commonly used arbitral institutions, with English law still frequently chosen as the governing law even in China-linked contracts. None of this is a recommendation for any specific contract -- it is a description of what other parties commonly choose, sourced to public 2025-2026 industry data, so a drafter can weigh a genuinely unusual choice against the market default rather than choosing blind, and should still have qualified legal counsel review the actual clause before relying on it.";
+}
+
 export interface JurisdictionCheck {
   flagged: boolean;
   reasonEn: string;
