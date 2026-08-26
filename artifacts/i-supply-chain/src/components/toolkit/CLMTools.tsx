@@ -20,6 +20,14 @@ import {
   type RfxType, type RfxSelectionInputs, type RfxScoringCriterion, type RfxBidderScoreInput, type RfxBidderResult,
 } from '@/lib/clmContractLifecycle';
 import {
+  resolveRfxScopeProfile, SPEC_TYPE_META,
+  type RfxScopeProfile,
+} from '@/lib/clmRfxScopeEngine';
+import {
+  reviewDraftRfx, reviewSupplierResponse, FIELD_COMPLETENESS_META, RESPONSE_STATUS_META,
+  type FieldEntryState, type ResponseEntryState,
+} from '@/lib/clmRfxReviewEngine';
+import {
   CLAUSE_CATEGORIES, SUBCLAUSES_BY_CATEGORY, totalSubclauseCount, presentSubclauseCount, categoryCompleteness, overallClauseHealth,
   checkCommercialRibaFlag, checkPerformanceMeasurabilityFlag, checkRiskAllocationFidicMismatchFlag, checkForegroundIPGapFlag, checkGovernanceRibaArbitrationFlag,
   type ClauseCategory, type ClausesPresent, type ClauseCategoriesNotApplicable,
@@ -518,6 +526,66 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
   useEffect(() => { safeSetItem(SK_RFX + ':bidders', JSON.stringify(rfxBidders)); }, [rfxBidders]);
 
   const rfxRecommendation = useMemo(() => recommendRfxType(rfxSelection), [rfxSelection]);
+
+  // -- #395 (Priority 1, owner directive 26 Aug 2026): Category-Aware RFx
+  //    Scope Build & Review Engine. Composes industryBucket + rfxType +
+  //    complexityLevel into a derived, sourced scope profile (spec-type
+  //    decision, WBS skeleton, elicitation guidance, mandatory field
+  //    library -- clmRfxScopeEngine.ts) and reviews a draft RFx or a
+  //    supplier's response against that SAME profile (clmRfxReviewEngine.ts).
+  //    Client-side only, same T1 pattern as the rest of this tab.
+  const [rfxScopeBucket, setRfxScopeBucket] = useState<IndustryBucket>(() => loadJson(SK_RFX + ':scopeBucket', '' as IndustryBucket));
+  const [rfxScopeComplexity, setRfxScopeComplexity] = useState<ComplexityLevel>(() => loadJson(SK_RFX + ':scopeComplexity', 'level-2-standard' as ComplexityLevel));
+  const [rfxFieldEntries, setRfxFieldEntries] = useState<Record<string, FieldEntryState>>(() => loadJson(SK_RFX + ':fieldEntries', {}));
+  const [rfxWbsFilled, setRfxWbsFilled] = useState<Record<string, boolean>>(() => loadJson(SK_RFX + ':wbsFilled', {}));
+  const [rfxResponseEntries, setRfxResponseEntries] = useState<Record<string, ResponseEntryState>>(() => loadJson(SK_RFX + ':responseEntries', {}));
+
+  useEffect(() => { safeSetItem(SK_RFX + ':scopeBucket', JSON.stringify(rfxScopeBucket)); }, [rfxScopeBucket]);
+  useEffect(() => { safeSetItem(SK_RFX + ':scopeComplexity', JSON.stringify(rfxScopeComplexity)); }, [rfxScopeComplexity]);
+  useEffect(() => { safeSetItem(SK_RFX + ':fieldEntries', JSON.stringify(rfxFieldEntries)); }, [rfxFieldEntries]);
+  useEffect(() => { safeSetItem(SK_RFX + ':wbsFilled', JSON.stringify(rfxWbsFilled)); }, [rfxWbsFilled]);
+  useEffect(() => { safeSetItem(SK_RFX + ':responseEntries', JSON.stringify(rfxResponseEntries)); }, [rfxResponseEntries]);
+
+  /** Complexity Level (Part A, 3 named tiers) -> the engine's simplified
+   *  1/2/3 signal (only used to pick lighter vs heavier elicitation
+   *  guidance, BABOK Section 4) -- keeps one authoritative tiering concept
+   *  (COMPLEXITY_LEVELS) instead of a second parallel numbering scheme. */
+  const rfxComplexityTier = useMemo((): 1 | 2 | 3 => {
+    if (rfxScopeComplexity === 'level-1-low') return 1;
+    if (rfxScopeComplexity === 'level-3-complex') return 3;
+    return 2;
+  }, [rfxScopeComplexity]);
+
+  const rfxScopeProfile = useMemo(
+    () => resolveRfxScopeProfile({ industryBucket: rfxScopeBucket, rfxType: rfxRecommendation.type, complexityTier: rfxComplexityTier }),
+    [rfxScopeBucket, rfxRecommendation.type, rfxComplexityTier]
+  );
+
+  const rfxDraftReview = useMemo(
+    () => reviewDraftRfx({ industryBucket: rfxScopeBucket, rfxType: rfxRecommendation.type, complexityTier: rfxComplexityTier, fieldEntries: rfxFieldEntries, wbsNodesFilled: rfxWbsFilled }),
+    [rfxScopeBucket, rfxRecommendation.type, rfxComplexityTier, rfxFieldEntries, rfxWbsFilled]
+  );
+
+  const rfxResponseReview = useMemo(
+    () => reviewSupplierResponse({ industryBucket: rfxScopeBucket, rfxType: rfxRecommendation.type, complexityTier: rfxComplexityTier, responseEntries: rfxResponseEntries }),
+    [rfxScopeBucket, rfxRecommendation.type, rfxComplexityTier, rfxResponseEntries]
+  );
+
+  const toggleRfxFieldEntered = useCallback((fieldId: string) => {
+    setRfxFieldEntries(prev => ({ ...prev, [fieldId]: { entered: !(prev[fieldId]?.entered), selfDeclaredMeasurable: prev[fieldId]?.selfDeclaredMeasurable } }));
+  }, []);
+  const toggleRfxFieldMeasurable = useCallback((fieldId: string) => {
+    setRfxFieldEntries(prev => ({ ...prev, [fieldId]: { entered: prev[fieldId]?.entered ?? false, selfDeclaredMeasurable: !(prev[fieldId]?.selfDeclaredMeasurable) } }));
+  }, []);
+  const toggleRfxWbsNode = useCallback((nodeId: string) => {
+    setRfxWbsFilled(prev => ({ ...prev, [nodeId]: !prev[nodeId] }));
+  }, []);
+  const toggleRfxResponseAnswered = useCallback((fieldId: string) => {
+    setRfxResponseEntries(prev => ({ ...prev, [fieldId]: { answered: !(prev[fieldId]?.answered), selfDeclaredSpecific: prev[fieldId]?.selfDeclaredSpecific } }));
+  }, []);
+  const toggleRfxResponseSpecific = useCallback((fieldId: string) => {
+    setRfxResponseEntries(prev => ({ ...prev, [fieldId]: { answered: prev[fieldId]?.answered ?? false, selfDeclaredSpecific: !(prev[fieldId]?.selfDeclaredSpecific) } }));
+  }, []);
   const rfxWeightSum = useMemo(
     () => rfxCriteria.filter(c => !c.isMandatoryGate).reduce((sum, c) => sum + (c.weight || 0), 0),
     [rfxCriteria]
@@ -1817,6 +1885,131 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
               ))}
             </div>
           )}
+
+          {/* -- #395 (Priority 1): Category-Aware RFx Scope Build & Review Engine -- */}
+          <div className="bg-white border-2 border-[#082C6B]/20 rounded-2xl p-4 shadow-sm space-y-4">
+            <div>
+              <p className="text-sm font-bold text-slate-800">{isAr ? 'أداة بناء نطاق العمل حسب الفئة (#395)' : 'Category-Aware Scope Builder (#395)'}</p>
+              <p className="text-[11px] text-slate-500 mt-0.5">{isAr ? 'يُشتق نطاق العمل من الفئة الصناعية ونوع RFx ومستوى التعقيد -- وليس نموذجاً عاماً واحداً. مصادر حقيقية وموثقة، راجع القسم 8 من وثيقة الوحدة 03.' : 'The scope is derived from industry bucket + RFx type + complexity level -- not one generic form. Real, sourced methodology; see Module 03 doc Section 8.'}</p>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <label className="text-[11px] font-semibold text-slate-600">{isAr ? 'الفئة الصناعية' : 'Industry Bucket'}</label>
+                <select value={rfxScopeBucket} onChange={e => setRfxScopeBucket(e.target.value as IndustryBucket)}
+                  className="mt-1 w-full text-xs border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#082C6B] bg-white">
+                  <option value="">{isAr ? '-- اختر --' : '-- Select --'}</option>
+                  {INDUSTRY_BUCKETS.map(b => <option key={b.id} value={b.id}>{isAr ? b.labelAr : b.label}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-[11px] font-semibold text-slate-600">{isAr ? 'مستوى التعقيد' : 'Complexity Level'}</label>
+                <select value={rfxScopeComplexity} onChange={e => setRfxScopeComplexity(e.target.value as ComplexityLevel)}
+                  className="mt-1 w-full text-xs border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#082C6B] bg-white">
+                  {COMPLEXITY_LEVELS.map(c => <option key={c.id} value={c.id}>{isAr ? c.labelAr : c.label}</option>)}
+                </select>
+              </div>
+            </div>
+
+            {rfxScopeProfile && (
+              <>
+                {/* Spec-type decision (CIPS) */}
+                <div className="bg-[#082C6B]/5 border border-[#082C6B]/20 rounded-xl p-3">
+                  <p className="text-[11px] font-bold text-[#082C6B]">{isAr ? SPEC_TYPE_META[rfxScopeProfile.specType.type].labelAr : SPEC_TYPE_META[rfxScopeProfile.specType.type].labelEn}</p>
+                  <p className="text-xs text-slate-600 mt-1">{isAr ? rfxScopeProfile.specType.reasonAr : rfxScopeProfile.specType.reasonEn}</p>
+                  <p className="text-[10px] text-slate-400 mt-1">{isAr ? rfxScopeProfile.specType.sourceAr : rfxScopeProfile.specType.sourceEn}</p>
+                </div>
+
+                {/* Elicitation guidance (BABOK) */}
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-3">
+                  <p className="text-[11px] font-bold text-amber-800">{isAr ? 'كيفية جمع المتطلبات' : 'How to Gather These Requirements'}</p>
+                  <p className="text-xs text-amber-900 mt-1">{isAr ? rfxScopeProfile.elicitation.techniqueAr : rfxScopeProfile.elicitation.techniqueEn}</p>
+                  <p className="text-[11px] text-amber-700 mt-1">{isAr ? rfxScopeProfile.elicitation.reasonAr : rfxScopeProfile.elicitation.reasonEn}</p>
+                </div>
+
+                {/* WBS-anchored deliverable skeleton (PMI) */}
+                <div>
+                  <p className="text-xs font-bold text-slate-700 mb-1.5">{isAr ? 'هيكل تجزئة العمل (WBS)' : 'Work Breakdown Structure (WBS)'}</p>
+                  <div className="space-y-1.5">
+                    {rfxScopeProfile.wbsSkeleton.map(node => (
+                      <label key={node.id} className="flex items-start gap-2 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 cursor-pointer">
+                        <input type="checkbox" className="mt-0.5" checked={!!rfxWbsFilled[node.id]} onChange={() => toggleRfxWbsNode(node.id)} />
+                        <div>
+                          <p className="text-xs font-semibold text-slate-700">{isAr ? node.labelAr : node.labelEn}</p>
+                          <p className="text-[11px] text-slate-500">{isAr ? node.guidanceAr : node.guidanceEn}</p>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Mandatory field library, sourced per bucket/RFx-type */}
+                <div>
+                  <p className="text-xs font-bold text-slate-700 mb-1.5">{isAr ? 'الحقول الإلزامية لهذه الفئة' : 'Mandatory Fields for This Category'}</p>
+                  <div className="space-y-1.5">
+                    {rfxScopeProfile.mandatoryFields.map(field => {
+                      const entry = rfxFieldEntries[field.id];
+                      return (
+                        <div key={field.id} className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
+                          <div className="flex items-start gap-2">
+                            <input type="checkbox" className="mt-0.5" checked={!!entry?.entered} onChange={() => toggleRfxFieldEntered(field.id)} />
+                            <div className="flex-1">
+                              <p className="text-xs font-semibold text-slate-700">{isAr ? field.labelAr : field.labelEn}</p>
+                              <p className="text-[11px] text-slate-500">{isAr ? field.whyAr : field.whyEn}</p>
+                            </div>
+                          </div>
+                          {field.mustBeMeasurable && (
+                            <label className="flex items-center gap-1.5 mt-1.5 ml-6 cursor-pointer">
+                              <input type="checkbox" checked={!!entry?.selfDeclaredMeasurable} onChange={() => toggleRfxFieldMeasurable(field.id)} />
+                              <span className="text-[11px] text-slate-500">{isAr ? 'أؤكد أن هذا الحقل محدد/قابل للقياس' : 'I confirm this field is specific/measurable'}</span>
+                            </label>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Draft-RFx completeness summary -- real computed counts, never a fabricated single score */}
+                {rfxDraftReview && (
+                  <div className={`rounded-xl p-3 border ${rfxDraftReview.counts.missing === 0 && rfxDraftReview.counts.presentVague === 0 ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-200'}`}>
+                    <p className={`text-[11px] font-bold ${rfxDraftReview.counts.missing === 0 && rfxDraftReview.counts.presentVague === 0 ? 'text-emerald-800' : 'text-red-700'}`}>
+                      {isAr ? `${rfxDraftReview.counts.presentMeasurable} من ${rfxDraftReview.counts.mandatoryFieldsTotal} حقلاً مكتمل ومحدد -- ${rfxDraftReview.counts.wbsNodesFilled} من ${rfxDraftReview.counts.wbsNodesTotal} من هيكل تجزئة العمل` : `${rfxDraftReview.counts.presentMeasurable} of ${rfxDraftReview.counts.mandatoryFieldsTotal} fields complete & measurable -- ${rfxDraftReview.counts.wbsNodesFilled} of ${rfxDraftReview.counts.wbsNodesTotal} WBS nodes filled`}
+                    </p>
+                    <p className="text-xs text-slate-600 mt-1">{isAr ? rfxDraftReview.summaryAr : rfxDraftReview.summaryEn}</p>
+                  </div>
+                )}
+
+                {/* Supplier-response compliance matrix (requirements traceability) */}
+                <div>
+                  <p className="text-xs font-bold text-slate-700 mb-1.5">{isAr ? 'مراجعة استجابة المورد (مصفوفة تتبع المتطلبات)' : "Review a Supplier's Response (Requirements Traceability Matrix)"}</p>
+                  <div className="space-y-1.5">
+                    {rfxScopeProfile.mandatoryFields.map(field => {
+                      const entry = rfxResponseEntries[field.id];
+                      return (
+                        <div key={field.id} className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 flex items-center gap-3">
+                          <label className="flex items-center gap-1.5 cursor-pointer">
+                            <input type="checkbox" checked={!!entry?.answered} onChange={() => toggleRfxResponseAnswered(field.id)} />
+                            <span className="text-[11px] text-slate-500">{isAr ? 'أُجيب' : 'Answered'}</span>
+                          </label>
+                          <label className="flex items-center gap-1.5 cursor-pointer">
+                            <input type="checkbox" checked={!!entry?.selfDeclaredSpecific} onChange={() => toggleRfxResponseSpecific(field.id)} />
+                            <span className="text-[11px] text-slate-500">{isAr ? 'محدد' : 'Specific'}</span>
+                          </label>
+                          <span className="flex-1 text-xs font-semibold text-slate-700">{isAr ? field.labelAr : field.labelEn}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {rfxResponseReview && (
+                    <div className={`mt-2 rounded-xl p-3 border ${rfxResponseReview.counts.notAnswered === 0 && rfxResponseReview.counts.placeholderOrVague === 0 ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-200'}`}>
+                      <p className="text-xs text-slate-600">{isAr ? rfxResponseReview.summaryAr : rfxResponseReview.summaryEn}</p>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
         </div>
       )}
 
