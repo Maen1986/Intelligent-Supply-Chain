@@ -47,6 +47,8 @@ import { buildNdaSkeleton, buildMsaSkeleton, renderSkeletonAsText } from '@/lib/
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/AuthContext';
 import { API_BASE } from '@/lib/apiBase';
+import { Link } from 'wouter';
+import type { SnapshotRecord, SubSegScoreItem } from '@/components/MaturityTrend';
 
 interface CLMToolsProps { isAr: boolean; }
 
@@ -630,6 +632,36 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
   //    here changes guest behaviour.
   const { user } = useAuth();
   const [clmSyncStatus, setClmSyncStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+
+  /* Module 06 gap #2 (27 Aug 2026) -- read-only maturity badge. Reads the
+     latest Maturity Assessment snapshot's subSegmentScores for the two
+     sub-segments this register actually maps to (clm-obligations,
+     clm-renewal) so a client working in the Contract Register sees their
+     own self-reported maturity next to the real data, without this
+     component ever writing to /api/maturity/snapshots -- read-only,
+     one-way link in this direction; Maturity.tsx is the one that reads
+     /api/clm-contracts, closing the loop from the other side. */
+  const [clmMaturityBadge, setClmMaturityBadge] = useState<{ obligations?: SubSegScoreItem; renewal?: SubSegScoreItem } | null>(null);
+  const clmMaturityFetchedForUserId = useRef<number | null>(null);
+  useEffect(() => {
+    if (!user) { clmMaturityFetchedForUserId.current = null; setClmMaturityBadge(null); return; }
+    if (clmMaturityFetchedForUserId.current === user.id) return;
+    clmMaturityFetchedForUserId.current = user.id;
+    fetch(`${API_BASE}/maturity/snapshots`, { credentials: 'include' })
+      .then(r => r.json())
+      .then((data: { ok: boolean; snapshots?: SnapshotRecord[] }) => {
+        if (!data.ok || !data.snapshots || data.snapshots.length === 0) return;
+        // Newest first, same convention as Maturity.tsx's own trend panel.
+        const latest = [...data.snapshots].sort(
+          (a, b) => new Date(b.takenAt).getTime() - new Date(a.takenAt).getTime()
+        )[0];
+        const subs = latest.subSegmentScores ?? [];
+        const obligations = subs.find(s => s.id === 'clm-obligations');
+        const renewal = subs.find(s => s.id === 'clm-renewal');
+        if (obligations || renewal) setClmMaturityBadge({ obligations, renewal });
+      })
+      .catch(() => { /* best-effort -- badge just doesn't show */ });
+  }, [user]);
   const clmServerLoadedForUserId = useRef<number | null>(null);
   const clmBootstrapSettled = useRef(false);
   const clmLocalWinsDuringBootstrap = useRef(false);
@@ -912,6 +944,32 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
       {/* -- TAB 1: Contract Inventory -- */}
       {activeTab === 'inventory' && (
         <div className="space-y-4">
+          {/* Module 06 gap #2 (27 Aug 2026) -- read-only maturity badge,
+              linking this register back to the client's own Maturity
+              Assessment self-report for the two sub-segments it maps to. */}
+          {clmMaturityBadge && (clmMaturityBadge.obligations || clmMaturityBadge.renewal) && (
+            <div className="bg-white border border-accent/25 rounded-2xl px-4 py-3 flex flex-wrap items-center gap-x-6 gap-y-2">
+              <p className="text-[11px] font-bold uppercase tracking-widest text-accent shrink-0">
+                {isAr ? 'من تقييم النضج الخاص بكم' : 'From your own Maturity Assessment'}
+              </p>
+              {clmMaturityBadge.obligations && (
+                <div className="flex items-center gap-1.5 text-xs">
+                  <span className="text-slate-500">{isAr ? clmMaturityBadge.obligations.titleAr || clmMaturityBadge.obligations.title : clmMaturityBadge.obligations.title}:</span>
+                  <span className="font-bold text-[#082C6B]">{clmMaturityBadge.obligations.level} ({clmMaturityBadge.obligations.score.toFixed(1)}/5)</span>
+                </div>
+              )}
+              {clmMaturityBadge.renewal && (
+                <div className="flex items-center gap-1.5 text-xs">
+                  <span className="text-slate-500">{isAr ? clmMaturityBadge.renewal.titleAr || clmMaturityBadge.renewal.title : clmMaturityBadge.renewal.title}:</span>
+                  <span className="font-bold text-[#082C6B]">{clmMaturityBadge.renewal.level} ({clmMaturityBadge.renewal.score.toFixed(1)}/5)</span>
+                </div>
+              )}
+              <Link href="/maturity" className="ml-auto text-[11px] font-semibold text-accent hover:underline shrink-0">
+                {isAr ? 'عرض تقييم النضج الكامل →' : 'View full Maturity Assessment →'}
+              </Link>
+            </div>
+          )}
+
           {/* Summary cards */}
           {contracts.length > 0 && (
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">

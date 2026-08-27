@@ -11,6 +11,8 @@ import {
   weightedOverallScore as calcWeightedOverallScore,
   weightedSegScore as calcWeightedSegScore,
   countCoveredSubSegments,
+  subSegScore as calcSubSegScore,
+  subSegOptionsFrom,
 } from '@/lib/maturityScoring';
 import { MaturityCoverage } from '@/components/MaturityCoverage';
 import { MaturityTrend, type SnapshotRecord, type SegmentMeta } from '@/components/MaturityTrend';
@@ -179,6 +181,41 @@ interface RegCountry {
   sortOrder: number;
 }
 
+/* ── Module 06 gap #2 (27 Aug 2026): CLM_SUB_SEGMENTS <-> CLMTools.tsx
+   cross-link ────────────────────────────────────────────────────────────
+   Read-only subset of CLMTools.tsx's `Contract` shape -- only the fields
+   the evidence callout below actually needs. Intentionally NOT importing
+   the full Contract interface from CLMTools.tsx (a component file, not a
+   shared lib) to avoid a page<->component cross-import; the server's
+   /api/clm-contracts `data` blob is the same shape either way. */
+interface ClmContractLite {
+  endDate:          string;
+  noticePeriodDays: number;
+  autoRenewal:      boolean;
+  renewalDecision:  'renew' | 'renegotiate' | 'retender' | 'terminate' | 'undecided';
+  status:           string;
+}
+interface ServerClmContractRow { data: ClmContractLite; }
+
+/** Real, computed-not-fabricated stats from the client's own CLM contract
+ *  register, shown next to the clm-obligations/clm-renewal self-report
+ *  questions so the maturity diagnostic isn't answered in a vacuum. Pure
+ *  function, unit-testable, no side effects. `today` is injectable for
+ *  deterministic tests. */
+export function computeClmObligationEvidence(contracts: ClmContractLite[], today: Date = new Date()) {
+  const live = contracts.filter(c => c.status !== 'expired' && c.status !== 'draft');
+  const undecidedRenewalCount = live.filter(c => c.renewalDecision === 'undecided').length;
+  const autoRenewalUnreviewedCount = live.filter(c => c.autoRenewal && c.renewalDecision === 'undecided').length;
+  const overdueNoticeCount = live.filter(c => {
+    if (c.renewalDecision !== 'undecided') return false;
+    const end = new Date(c.endDate);
+    if (Number.isNaN(end.getTime())) return false;
+    const daysUntilEnd = (end.getTime() - today.getTime()) / 86400000;
+    return daysUntilEnd <= c.noticePeriodDays;
+  }).length;
+  return { totalLive: live.length, undecidedRenewalCount, autoRenewalUnreviewedCount, overdueNoticeCount };
+}
+
 /* ─────────────────────────────────────────────────────────────────────────── */
 
 export function Maturity() {
@@ -290,6 +327,14 @@ export function Maturity() {
   // Evidence: confidence tier & document upload state (results only)
   const [evidenceList,  setEvidenceList]  = useState<EvidenceRecord[]>([]);
   const [expandedEvSeg, setExpandedEvSeg] = useState<Set<string>>(new Set());
+
+  /* Module 06 gap #2 (27 Aug 2026) -- real CLM contract data, fetched
+     read-only from the same /api/clm-contracts backend CLMTools.tsx already
+     syncs to, so the clm-obligations/clm-renewal deep-mode questions below
+     can show the client's own actual contract-register numbers alongside
+     the self-report question, instead of leaving the two totally
+     disconnected. null = not yet loaded/not logged in; [] = loaded, empty. */
+  const [clmContractsEvidence, setClmContractsEvidence] = useState<ClmContractLite[] | null>(null);
 
   // Regulatory country coverage (#150) — live from the DB-backed registry,
   // not a hardcoded list, so new countries appear here the moment they're
@@ -528,6 +573,31 @@ export function Maturity() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, user]);
 
+  /* ── Module 06 gap #2: load real CLM contract register for the
+     clm-obligations/clm-renewal evidence callout (deep mode, 'contracts'
+     segment only) ───────────────────────────────────────────────────────
+     Read-only GET against the same /api/clm-contracts endpoint CLMTools.tsx
+     already syncs to -- this page never writes to it. Fires once the
+     'contracts' segment is in deep mode during the questions phase, so
+     logged-out users and users not assessing CLM in depth never pay for
+     the fetch. */
+  useEffect(() => {
+    if (phase !== 'questions' || !user || _testSeedActive) return;
+    if (!deepSegIds.has('contracts')) return;
+    if (clmContractsEvidence !== null) return; // already loaded this session
+    fetch(`${API_BASE}/clm-contracts`, { credentials: 'include' })
+      .then(r => r.json())
+      .then((data: { ok: boolean; contracts?: ServerClmContractRow[] }) => {
+        if (data.ok && Array.isArray(data.contracts)) {
+          setClmContractsEvidence(data.contracts.map(row => row.data));
+        } else {
+          setClmContractsEvidence([]);
+        }
+      })
+      .catch(() => setClmContractsEvidence([])); // best-effort -- question still answerable without it
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, user, deepSegIds]);
+
   /* ── Auto-save snapshot when phase → results (logged-in users only) ─────
      Fires at most once per results visit. On success, re-fetches the full
      list so the newly saved entry appears in the trend panel. On 429/error,
@@ -545,6 +615,30 @@ export function Maturity() {
       score:   +(segScore(i) ?? 0).toFixed(2),
       level:   getLevel(segScore(i) ?? 0).label,
     }));
+
+    // Module 06 gap #2 (27 Aug 2026) -- one entry per sub-segment of every
+    // Deep-mode segment, e.g. clm-obligations/clm-renewal under 'contracts'.
+    // Reuses the same pure, unit-tested subSegScore() the results view
+    // already calls internally (via weightedSegScore) -- no new scoring
+    // logic, just exposing per-sub-segment detail that was previously only
+    // ever collapsed into the parent segment's weighted mean. Segments not
+    // in deepSegIds contribute nothing (their sub-segment answers don't
+    // exist -- Quick mode only has flat 2-part keys).
+    const subSegScores = scopedSegments.flatMap((seg, i) => {
+      if (!seg.subSegments || !deepSegIds.has(seg.id)) return [];
+      return seg.subSegments.map((sub, si) => {
+        const raw = calcSubSegScore(answers, i, si, sub.questions.length, subSegOptionsFrom(sub));
+        return {
+          id:        sub.id,
+          segmentId: seg.id,
+          title:     sub.title,
+          titleAr:   sub.titleAr,
+          score:     +(raw ?? 0).toFixed(2),
+          level:     getLevel(raw ?? 0).label,
+        };
+      });
+    });
+
     const coveragePctVal = totalSubSegs > 0
       ? +(coveredSubSegs / totalSubSegs * 100).toFixed(2)
       : 0;
@@ -556,9 +650,10 @@ export function Maturity() {
       body: JSON.stringify({
         answers,
         intakeData,
-        numSegments:   scopedSegments.length,
-        segmentScores: segScores,
-        coveragePct:   coveragePctVal,
+        numSegments:      scopedSegments.length,
+        segmentScores:    segScores,
+        subSegmentScores: subSegScores,
+        coveragePct:      coveragePctVal,
       }),
     })
     .then(r => r.json())
@@ -1720,6 +1815,31 @@ export function Maturity() {
                   {(sub.hint || sub.hintAr) && (
                     <p className="text-xs text-muted-foreground mb-3 px-1">{ar ? sub.hintAr : sub.hint}</p>
                   )}
+
+                  {/* Module 06 gap #2 (27 Aug 2026) -- real contract-register
+                      evidence next to the two sub-segments it actually
+                      speaks to, so the self-report question isn't answered
+                      disconnected from the client's own logged contracts. */}
+                  {seg.id === 'contracts' && (sub.id === 'clm-obligations' || sub.id === 'clm-renewal') && clmContractsEvidence && clmContractsEvidence.length > 0 && (() => {
+                    const stats = computeClmObligationEvidence(clmContractsEvidence);
+                    if (stats.totalLive === 0) return null;
+                    return (
+                      <div className="mb-3 mx-1 rounded-xl border border-accent/25 bg-accent/5 px-4 py-3">
+                        <p className="text-[11px] font-bold uppercase tracking-widest text-accent mb-1.5">
+                          {ar ? 'من سجل عقودكم الفعلي' : 'From your actual contract register'}
+                        </p>
+                        <p className="text-xs text-foreground/80 leading-relaxed">
+                          {ar
+                            ? `من أصل ${stats.totalLive} عقداً نشطاً: ${stats.undecidedRenewalCount} بقرار تجديد غير محسوم، منها ${stats.autoRenewalUnreviewedCount} بتجديد تلقائي دون مراجعة، و${stats.overdueNoticeCount} تجاوزت مهلة الإشعار المطلوبة دون قرار.`
+                            : `Of ${stats.totalLive} live contracts: ${stats.undecidedRenewalCount} have no renewal decision recorded, ${stats.autoRenewalUnreviewedCount} of those auto-renew unreviewed, and ${stats.overdueNoticeCount} are already past their notice-period deadline with no decision made.`}
+                        </p>
+                        <p className="text-[11px] text-muted-foreground mt-1.5">
+                          {ar ? 'مصدر البيانات: سجل العقود الخاص بكم (أداة CLM).' : 'Source: your own CLM Contract Register.'}
+                        </p>
+                      </div>
+                    );
+                  })()}
+
                   {sub.questions.map((question, qi) => {
                     const val = answers[`${segIdx}-${subIdx}-${qi}`];
                     return (
