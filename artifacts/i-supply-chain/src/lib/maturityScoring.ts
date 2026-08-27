@@ -112,7 +112,7 @@ export interface SegmentLike {
  * `countCoveredSubSegments` so both honour the same per-question weights
  * and core/bonus split as `subSegScore`.
  */
-function subSegOptionsFrom(sub: SubSegmentLike): { weights: readonly number[]; coreCount: number } {
+export function subSegOptionsFrom(sub: SubSegmentLike): { weights: readonly number[]; coreCount: number } {
   return {
     weights: sub.questions.map(q => q.weight ?? 1.0),
     coreCount: sub.coreQuestionCount ?? sub.questions.length,

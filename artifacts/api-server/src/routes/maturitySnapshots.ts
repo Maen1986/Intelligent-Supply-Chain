@@ -33,16 +33,33 @@ const SegmentScoreSchema = z.object({
   level:   z.string(),
 });
 
+/** Module 06 gap #2 (27 Aug 2026) -- one entry per sub-segment of a Deep-mode
+ *  segment, e.g. { id: 'clm-obligations', segmentId: 'contracts', ... }.
+ *  segmentId is required (unlike SegmentScoreSchema's flat id) because
+ *  gating below needs to know which PARENT segment's entitlement governs
+ *  this sub-segment -- sub-segment ids are not globally unique the way
+ *  segment ids are. Capped generously (200) since a deep assessment can
+ *  cover up to 12 segments x ~6 sub-segments each. */
+const SubSegmentScoreSchema = z.object({
+  id:        z.string(),
+  segmentId: z.string(),
+  title:     z.string(),
+  titleAr:   z.string().optional(),
+  score:     z.number().min(0).max(5),
+  level:     z.string(),
+});
+
 const PostSnapshotSchema = z.object({
-  answers:       z.record(z.string(), z.number()),
-  intakeData:    z.object({
+  answers:          z.record(z.string(), z.number()),
+  intakeData:       z.object({
     industry:    z.string().optional().default(''),
     companySize: z.string().optional().default(''),
   }),
-  numSegments:   z.number().int().min(1).max(20),
-  segmentScores: z.array(SegmentScoreSchema).min(1).max(20),
-  coveragePct:   z.number().min(0).max(100).default(0),
-  remedyActions: z.record(z.string(), z.unknown()).optional().nullable(),
+  numSegments:      z.number().int().min(1).max(20),
+  segmentScores:    z.array(SegmentScoreSchema).min(1).max(20),
+  subSegmentScores: z.array(SubSegmentScoreSchema).max(200).optional(),
+  coveragePct:      z.number().min(0).max(100).default(0),
+  remedyActions:    z.record(z.string(), z.unknown()).optional().nullable(),
 });
 
 /* ──── Server-side score recomputation ────
@@ -76,7 +93,7 @@ router.post(
       return;
     }
 
-    const { answers, intakeData, numSegments, segmentScores, coveragePct, remedyActions } = parsed.data;
+    const { answers, intakeData, numSegments, segmentScores, subSegmentScores, coveragePct, remedyActions } = parsed.data;
 
     // Recompute overall score server-side to prevent score inflation from clients
     const computedOverall = serverOverallScore(answers, numSegments);
@@ -85,13 +102,14 @@ router.post(
       const result = await db.execute(sql`
         INSERT INTO maturity_snapshots
           (user_id, industry, company_size, answers, segment_scores,
-           overall_score, coverage_pct, remedy_actions)
+           sub_segment_scores, overall_score, coverage_pct, remedy_actions)
         VALUES (
           ${userId},
           ${intakeData.industry || null},
           ${intakeData.companySize || null},
           ${JSON.stringify(answers)}::jsonb,
           ${JSON.stringify(segmentScores)}::jsonb,
+          ${subSegmentScores ? JSON.stringify(subSegmentScores) : null}::jsonb,
           ${computedOverall.toFixed(2)},
           ${coveragePct.toFixed(2)},
           ${remedyActions ? JSON.stringify(remedyActions) : null}::jsonb
@@ -118,23 +136,40 @@ router.post(
  * MaturityTrend / SnapshotRecord expects. This is the single place where
  * the contract is enforced; the frontend never sees raw DB column names.
  */
+/** Module 06 gap #2 (27 Aug 2026) -- same gating principle as
+ *  gateSegmentScores, but keyed on each entry's PARENT segmentId rather
+ *  than its own id, since sub-segment ids (e.g. 'clm-obligations') are not
+ *  what #188's entitlement map is keyed by -- their containing segment
+ *  ('contracts') is. A locked parent segment drops its sub-segment scores
+ *  entirely rather than showing a locked placeholder (unlike
+ *  gateSegmentScores' segment-level behaviour) -- sub-segment detail below
+ *  an already-locked segment has no teaser value on its own. */
+function gateSubSegmentScores<T extends { id: string; segmentId: string }>(
+  entitledSegmentIds: Set<string>,
+  subSegmentScores: T[],
+): T[] {
+  return subSegmentScores.filter(s => entitledSegmentIds.has(s.segmentId));
+}
+
 function normaliseSnapshot(row: Record<string, unknown>, entitledSegmentIds: Set<string>) {
   const rawSegments = (row.segment_scores ?? []) as Array<{ id: string; title: string; titleAr?: string }>;
+  const rawSubSegments = (row.sub_segment_scores ?? []) as Array<{ id: string; segmentId: string; title: string; titleAr?: string; score: number; level: string }>;
   const rawRemedies = row.remedy_actions as
     { days30?: { segmentTitle: string }[]; days60?: { segmentTitle: string }[]; days90?: { segmentTitle: string }[] } | null
     ?? null;
   const entitledTitles = entitledTitlesFrom(entitledSegmentIds, rawSegments);
   return {
-    id:            row.id,
-    takenAt:       row.taken_at,
-    industry:      row.industry ?? null,
-    companySize:   row.company_size ?? null,
+    id:               row.id,
+    takenAt:          row.taken_at,
+    industry:         row.industry ?? null,
+    companySize:      row.company_size ?? null,
     // #188: locked segments keep id/title (still shows "assessed") but drop
     // score/level/benchmarks. Overall score/level below stays free/unlocked.
-    segmentScores: gateSegmentScores(entitledSegmentIds, rawSegments),
-    overallScore:  row.overall_score,
-    coveragePct:   row.coverage_pct,
-    remedyActions: gateRemedyActions(entitledTitles, rawRemedies) ?? null, // preserve explicit-null shape frontend already expects
+    segmentScores:    gateSegmentScores(entitledSegmentIds, rawSegments),
+    subSegmentScores: gateSubSegmentScores(entitledSegmentIds, rawSubSegments),
+    overallScore:     row.overall_score,
+    coveragePct:      row.coverage_pct,
+    remedyActions:    gateRemedyActions(entitledTitles, rawRemedies) ?? null, // preserve explicit-null shape frontend already expects
   };
 }
 
@@ -144,8 +179,8 @@ router.get('/maturity/snapshots', requireSession, async (req, res) => {
   try {
     const result = await db.execute(sql`
       SELECT id, user_id, taken_at, industry, company_size,
-             answers, segment_scores, overall_score, coverage_pct,
-             remedy_actions, created_at
+             answers, segment_scores, sub_segment_scores, overall_score,
+             coverage_pct, remedy_actions, created_at
       FROM maturity_snapshots
       WHERE user_id = ${userId}
       ORDER BY taken_at ASC
