@@ -42,6 +42,7 @@ import rarAnalysesRouter           from "./rarAnalyses";
 import briefRouter                from "./brief";
 import workbenchRouter             from "./workbench";
 import clmGenerationRouter         from "./clmGeneration";
+import clmReviewExtractionRouter   from "./clmReviewExtraction";
 
 const router: IRouter = Router();
 
@@ -87,6 +88,7 @@ router.use("/rar-analyses",            rarAnalysesRouter);
 router.use(briefRouter);
 router.use(workbenchRouter);
 router.use(clmGenerationRouter);
+router.use(clmReviewExtractionRouter);
 router.use(webhooksInboundRouter);
 
 export default router;

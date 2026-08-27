@@ -48,6 +48,11 @@ import {
   buildDraftClausesRequestBody, renderDraftedContractAsText,
   type DraftedContract, type DraftClausesGroundingNotes,
 } from '@/lib/clmGenerationEngine';
+import {
+  buildTaxonomyMenus, mergeExtractedFieldsIntoContract, fileToBase64,
+  EXTRACTION_ALLOWED_MIME_TYPES, EXTRACTION_MAX_FILE_BYTES,
+  type ExtractedContractFields,
+} from '@/lib/clmReviewExtraction';
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/AuthContext';
 import { API_BASE } from '@/lib/apiBase';
@@ -526,6 +531,21 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
     errorMessage?: string;
     drafted?: DraftedContract;
   }>>({});
+  /** Module 09 Part B.3 -- Review v2 (document upload/extraction, T2).
+   *  A single, global (not per-contract-id) extraction-in-progress state,
+   *  since extraction produces a NEW draft contract rather than acting on
+   *  an existing one -- there is no contract id to key by until the user
+   *  applies the result. Local display state only, matching
+   *  draftClauseState's non-persisted pattern above. */
+  const [extractionState, setExtractionState] = useState<{
+    status: 'idle' | 'loading' | 'error';
+    errorMessage?: string;
+    extractedFields?: ExtractedContractFields;
+    disclaimerEn?: string;
+    disclaimerAr?: string;
+    truncated?: boolean;
+    sourceFilename?: string;
+  }>({ status: 'idle' });
   const [renewalFilter, setRenewalFilter] = useState<number>(180); // show renewals due in N days
 
   // -- Module 03 Part D (RFx Builder), built 26 Aug 2026, closes registry
@@ -840,6 +860,69 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
       setDraftClauseState(prev => ({ ...prev, [c.id]: { status: 'error', errorMessage: message } }));
       toast.error(message);
     }
+  };
+
+  /** Module 09 Part B.3 -- Review v2 (document upload/extraction, T2).
+   *  Reads the uploaded file client-side, resolves the current taxonomy
+   *  menus from this file's own already-imported constant arrays (client-
+   *  computes/server-forwards, same pattern as draftClauseLanguage's
+   *  groundingNotes above), and POSTs to the extraction endpoint. Never
+   *  touches `contracts` state itself -- the result is only a draft the
+   *  user must explicitly apply via applyExtractionToNewContract below. */
+  const extractFromDocument = async (file: File) => {
+    if (!EXTRACTION_ALLOWED_MIME_TYPES.has(file.type)) {
+      toast.error(isAr ? 'نوع الملف غير مدعوم. يُرجى رفع PDF أو DOCX.' : 'File type not supported. Please upload a PDF or DOCX.');
+      return;
+    }
+    if (file.size > EXTRACTION_MAX_FILE_BYTES) {
+      toast.error(isAr ? 'حجم الملف يتجاوز الحد الأقصى (10 ميغابايت).' : 'File exceeds the 10 MB limit.');
+      return;
+    }
+
+    setExtractionState({ status: 'loading', sourceFilename: file.name });
+    try {
+      const fileBase64 = await fileToBase64(file);
+      const taxonomyMenus = buildTaxonomyMenus(
+        GOVERNING_LAW_TRACKS, ARBITRATION_INSTITUTIONS, PRICING_TYPES,
+        INDUSTRY_BUCKETS, FIDIC_BOOKS, CLAUSE_CATEGORIES,
+        Object.fromEntries(CLAUSE_CATEGORIES.map(cat => [cat.id, SUBCLAUSES_BY_CATEGORY[cat.id] ?? []])),
+      );
+      const res = await fetch(`${API_BASE}/clm-review-extraction/extract`, {
+        method: 'POST', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          filename: file.name,
+          mimeType: file.type,
+          fileBase64,
+          taxonomyMenus,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error || (isAr ? 'تعذّر استخراج بيانات المستند' : 'Failed to extract document'));
+      setExtractionState({
+        status: 'idle', sourceFilename: file.name,
+        extractedFields: data.extractedFields as ExtractedContractFields,
+        disclaimerEn: data.disclaimerEn, disclaimerAr: data.disclaimerAr,
+        truncated: Boolean(data.truncated),
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : (isAr ? 'تعذّر استخراج بيانات المستند' : 'Failed to extract document');
+      setExtractionState({ status: 'error', errorMessage: message });
+      toast.error(message);
+    }
+  };
+
+  /** Creates a new draft contract (defaultContract()) with the last
+   *  extraction result merged in, adds it to the contract register, and
+   *  clears the extraction preview -- the user still edits/confirms every
+   *  field in the normal contract form before Review v1 runs against it,
+   *  exactly as it already does for any manually-entered contract. */
+  const applyExtractionToNewContract = () => {
+    if (!extractionState.extractedFields) return;
+    const draft = mergeExtractedFieldsIntoContract(defaultContract(), extractionState.extractedFields);
+    saveContracts([...contracts, draft]);
+    setExtractionState({ status: 'idle' });
+    toast.success(isAr ? 'تم إنشاء عقد مسودة من المستند -- يُرجى مراجعة كل حقل' : 'Draft contract created from document -- please review every field');
   };
 
   /* Bootstrap: on login (or account switch), pull the server's saved
@@ -1766,6 +1849,68 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
                 </div>
               );
             })}
+          </div>
+
+          {/* Module 09 Part B.3 -- Review v2 (document upload/extraction, T2).
+              Upload a PDF/DOCX and get an AI-drafted, editable first-draft
+              contract -- explicit, separately-requested (a file must be
+              picked and this must succeed) and never silently replaces
+              anything, matching item 47's Stage-2 discipline. */}
+          <div className="border border-dashed border-slate-300 rounded-xl p-3 bg-slate-50/60">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <div>
+                <p className="text-sm font-semibold text-slate-700">{isAr ? 'استخراج من مستند (Review v2)' : 'Extract from a Document (Review v2)'}</p>
+                <p className="text-[11px] text-slate-500">{isAr ? 'ارفع عقداً بصيغة PDF أو DOCX للحصول على مسودة حقول قابلة للتعديل' : 'Upload a PDF or DOCX contract to get an editable draft of the fields below'}</p>
+              </div>
+              <label className={`flex items-center gap-2 text-sm font-semibold border rounded-xl px-4 py-2 transition-colors cursor-pointer ${extractionState.status === 'loading' ? 'text-slate-400 border-slate-200 cursor-not-allowed' : 'text-[#082C6B] border-[#082C6B] hover:bg-[#082C6B]/5'}`}>
+                <FileDown className="w-4 h-4" />
+                {extractionState.status === 'loading' ? (isAr ? 'جارٍ الاستخراج…' : 'Extracting…') : (isAr ? 'رفع مستند' : 'Upload Document')}
+                <input
+                  type="file" accept=".pdf,.docx" className="hidden"
+                  disabled={extractionState.status === 'loading'}
+                  onChange={e => { const f = e.target.files?.[0]; if (f) void extractFromDocument(f); e.target.value = ''; }}
+                />
+              </label>
+            </div>
+            {extractionState.status === 'error' && (
+              <p className="mt-2 text-xs text-red-600">{extractionState.errorMessage}</p>
+            )}
+            {extractionState.extractedFields && (
+              <div className="mt-3 border border-amber-200 bg-amber-50 rounded-lg p-3 space-y-2">
+                <p className="text-xs text-amber-800 font-medium">{isAr ? extractionState.disclaimerAr : extractionState.disclaimerEn}</p>
+                {extractionState.truncated && (
+                  <p className="text-[11px] text-amber-700">{isAr ? 'ملاحظة: تم اقتصاص نص المستند قبل التحليل بسبب طوله.' : 'Note: the document text was truncated before analysis due to length.'}</p>
+                )}
+                <p className="text-[11px] text-slate-600">
+                  {isAr ? 'من: ' : 'From: '}<span className="font-medium">{extractionState.sourceFilename}</span>
+                </p>
+                {(extractionState.extractedFields.extractionNotesEn || extractionState.extractedFields.extractionNotesAr) && (
+                  <p className="text-[11px] text-slate-600 italic">{isAr ? extractionState.extractedFields.extractionNotesAr : extractionState.extractedFields.extractionNotesEn}</p>
+                )}
+                <div className="flex flex-wrap gap-1.5">
+                  {Object.entries(extractionState.extractedFields)
+                    .filter(([k, v]) => !['extractionNotesEn', 'extractionNotesAr', 'clausesPresent', 'clauseCategoriesNotApplicable'].includes(k) && v !== undefined && v !== '')
+                    .map(([k, v]) => (
+                      <span key={k} className="text-[10px] bg-white border border-amber-200 text-amber-800 px-2 py-0.5 rounded-full">
+                        {k}: {String(v)}
+                      </span>
+                    ))}
+                  {extractionState.extractedFields.clausesPresent && (
+                    <span className="text-[10px] bg-white border border-amber-200 text-amber-800 px-2 py-0.5 rounded-full">
+                      {isAr ? 'بنود موجودة: ' : 'clauses found: '}{Object.values(extractionState.extractedFields.clausesPresent).reduce((n, arr) => n + arr.length, 0)}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <button onClick={applyExtractionToNewContract} className="text-xs font-semibold bg-[#082C6B] text-white rounded-lg px-3 py-1.5 hover:bg-[#082C6B]/90 transition-colors">
+                    {isAr ? 'إنشاء عقد مسودة من هذا الاستخراج' : 'Create Draft Contract From This'}
+                  </button>
+                  <button onClick={() => setExtractionState({ status: 'idle' })} className="text-xs text-slate-500 hover:text-slate-700">
+                    {isAr ? 'تجاهل' : 'Discard'}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="flex items-center justify-between flex-wrap gap-2">
