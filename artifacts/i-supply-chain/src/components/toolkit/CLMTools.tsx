@@ -33,11 +33,14 @@ import {
   type ClauseCategory, type ClausesPresent, type ClauseCategoriesNotApplicable,
 } from '@/lib/clmClauseTaxonomy';
 import {
+  getClauseLanguage, CLAUSE_ASSURANCE_META, COUNSEL_REVIEW_DISCLAIMER,
+} from '@/lib/clmClauseLanguageLibrary';
+import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
 } from 'recharts';
 import {
   Plus, Trash2, FileDown, Info, ChevronDown, ChevronUp,
-  AlertTriangle, CheckCircle, Clock, TrendingUp,
+  AlertTriangle, CheckCircle, Clock, TrendingUp, BookOpen,
 } from 'lucide-react';
 import { safeSetItem } from '@/lib/storage';
 import { useAIPlan } from '@/hooks/useAIPlan';
@@ -516,6 +519,15 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
    *  Local display state only (key: `${contractId}:${category}`), not
    *  synced business data -- same pattern as expandedIds above. */
   const [expandedClauseCats, setExpandedClauseCats] = useState<Set<string>>(new Set());
+  /** Module 09 Part B.3, Option 3 -- which per-subclause model-clause-
+   *  language panels are open (key: `${contractId}:${subclauseId}`).
+   *  Local, click-to-reveal display state only, same pattern as
+   *  expandedClauseCats above -- a static library lookup (no AI call, no
+   *  server round-trip), so there is no auto-fire risk to guard against
+   *  (item 47's discipline), but the panel still only ever appears on an
+   *  explicit click, never expanded by default, to keep the checklist
+   *  scannable. */
+  const [expandedModelClause, setExpandedModelClause] = useState<Set<string>>(new Set());
   /** Module 09 -- which per-contract Contract Assurance Chain (Review v1)
    *  panels are open. Local display state only, same pattern as
    *  expandedClauseCats above. */
@@ -806,6 +818,13 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
   });
   const toggleReviewExpand = (contractId: string) => setExpandedReview(prev => {
     const s = new Set(prev); s.has(contractId) ? s.delete(contractId) : s.add(contractId); return s;
+  });
+  /** Module 09 Part B.3, Option 3 -- toggle a single subclause's model-
+   *  clause-language panel. Same key/toggle shape as
+   *  toggleClauseCategoryExpand above. */
+  const toggleModelClause = (contractId: string, subclauseId: string) => setExpandedModelClause(prev => {
+    const key = `${contractId}:${subclauseId}`;
+    const s = new Set(prev); s.has(key) ? s.delete(key) : s.add(key); return s;
   });
 
   /** Module 09 Part A.3, Option 2 -- Generation v1.5. Stage 2 of the
@@ -1615,11 +1634,31 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
                                             const checked = (c.clausesPresent?.[cat.id] ?? []).includes(sc.id);
                                             const help = isAr ? sc.helpAr : sc.helpEn;
                                             const isAtypical = !!(sc.typicalIndustryBuckets && c.industryBucket && !sc.typicalIndustryBuckets.includes(c.industryBucket));
+                                            /* -- Module 09 Part B.3, Option 3: the real-sourced model-clause-
+                                                 language library (owner instruction, 27 Aug 2026 -- full coverage,
+                                                 real-sourced, never generic, "never give up, dig deeper"). A pure
+                                                 static lookup against clmClauseLanguageLibrary.ts's 63-entry table;
+                                                 no AI call, nothing invented if absent -- undefined simply means no
+                                                 panel renders (Decision Record 8.7). -- */
+                                            const modelClause = getClauseLanguage(sc.id);
+                                            const modelClauseKey = `${c.id}:${sc.id}`;
+                                            const modelClauseOpen = expandedModelClause.has(modelClauseKey);
                                             return (
                                               <div key={sc.id} className="space-y-1">
                                                 <label className={`flex items-start gap-1.5 text-[11px] cursor-pointer ${isAtypical ? 'text-slate-400' : 'text-slate-600'}`} title={help}>
                                                   <input type="checkbox" checked={checked} onChange={() => toggleClauseSubclause(c.id, cat.id, sc.id)} className="w-3.5 h-3.5 mt-0.5 accent-[#082C6B] shrink-0" />
-                                                  <span className="inline-flex items-center gap-1">{isAr ? sc.labelAr : sc.label}{help ? <Info className="w-2.5 h-2.5 text-slate-400 shrink-0" aria-hidden="true" /> : null}{isAtypical ? <span className="italic">{isAr ? '(أقل شيوعاً لهذا القطاع)' : '(less common for this industry)'}</span> : null}</span>
+                                                  <span className="inline-flex items-center gap-1 flex-wrap">
+                                                    {isAr ? sc.labelAr : sc.label}
+                                                    {help ? <Info className="w-2.5 h-2.5 text-slate-400 shrink-0" aria-hidden="true" /> : null}
+                                                    {isAtypical ? <span className="italic">{isAr ? '(أقل شيوعاً لهذا القطاع)' : '(less common for this industry)'}</span> : null}
+                                                    {modelClause && (
+                                                      <button type="button" onClick={e => { e.preventDefault(); toggleModelClause(c.id, sc.id); }}
+                                                        className="inline-flex items-center gap-0.5 text-[9px] font-semibold text-[#082C6B] hover:underline shrink-0">
+                                                        <BookOpen className="w-2.5 h-2.5" aria-hidden="true" />
+                                                        {modelClauseOpen ? (isAr ? 'إخفاء البند النموذجي' : 'Hide model clause') : (isAr ? 'عرض بند نموذجي مُوثّق' : 'View sourced model clause')}
+                                                      </button>
+                                                    )}
+                                                  </span>
                                                 </label>
                                                 {checked && sc.variants && (
                                                   <select value={c.clauseVariants?.[sc.id] ?? ''} onChange={e => updateClauseVariant(c.id, sc.id, e.target.value)}
@@ -1627,6 +1666,23 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
                                                     <option value="">{isAr ? 'أي شكل/نوع؟ (اختياري)' : 'Which shape/type? (optional)'}</option>
                                                     {sc.variants.map(v => <option key={v.id} value={v.id}>{isAr ? v.labelAr : v.label}</option>)}
                                                   </select>
+                                                )}
+                                                {modelClause && modelClauseOpen && (
+                                                  <div className="ml-5 mt-1 p-2.5 rounded-lg border border-[#082C6B]/15 bg-[#082C6B]/[0.03] space-y-2" style={{ width: 'calc(100% - 1.25rem)' }}>
+                                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                                      <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${modelClause.assuranceTier === 'reference-verified' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>
+                                                        {isAr ? CLAUSE_ASSURANCE_META[modelClause.assuranceTier].labelAr : CLAUSE_ASSURANCE_META[modelClause.assuranceTier].labelEn}
+                                                      </span>
+                                                      <span className="text-[9px] text-slate-400">{isAr ? CLAUSE_ASSURANCE_META[modelClause.assuranceTier].descAr : CLAUSE_ASSURANCE_META[modelClause.assuranceTier].descEn}</span>
+                                                    </div>
+                                                    <p className="text-[11px] text-slate-700 leading-relaxed whitespace-pre-wrap" dir="ltr">{modelClause.clauseTextEn}</p>
+                                                    <p className="text-[11px] text-slate-700 leading-relaxed whitespace-pre-wrap" dir="rtl">{modelClause.clauseTextAr}</p>
+                                                    {modelClause.variantNoteEn && (
+                                                      <p className="text-[10px] text-slate-500 italic">{isAr ? modelClause.variantNoteAr : modelClause.variantNoteEn}</p>
+                                                    )}
+                                                    <p className="text-[9px] text-slate-400 border-t border-slate-200 pt-1.5">{isAr ? modelClause.sourceNoteAr : modelClause.sourceNoteEn}</p>
+                                                    <p className="text-[9px] font-semibold text-amber-700 bg-amber-50 rounded px-1.5 py-1">{isAr ? COUNSEL_REVIEW_DISCLAIMER.textAr : COUNSEL_REVIEW_DISCLAIMER.textEn}</p>
+                                                  </div>
                                                 )}
                                               </div>
                                             );
