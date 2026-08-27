@@ -41,6 +41,7 @@ import clmContractsRouter          from "./clmContracts";
 import rarAnalysesRouter           from "./rarAnalyses";
 import briefRouter                from "./brief";
 import workbenchRouter             from "./workbench";
+import clmGenerationRouter         from "./clmGeneration";
 
 const router: IRouter = Router();
 
@@ -85,6 +86,7 @@ router.use("/clm-contracts",           clmContractsRouter);
 router.use("/rar-analyses",            rarAnalysesRouter);
 router.use(briefRouter);
 router.use(workbenchRouter);
+router.use(clmGenerationRouter);
 router.use(webhooksInboundRouter);
 
 export default router;

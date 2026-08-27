@@ -43,7 +43,11 @@ import { safeSetItem } from '@/lib/storage';
 import { useAIPlan } from '@/hooks/useAIPlan';
 import { AIPlanPanel } from '@/components/AIPlanPanel';
 import { ContractReviewReport } from '@/components/ContractReviewReport';
-import { buildNdaSkeleton, buildMsaSkeleton, renderSkeletonAsText } from '@/lib/clmGenerationEngine';
+import {
+  buildNdaSkeleton, buildMsaSkeleton, renderSkeletonAsText,
+  buildDraftClausesRequestBody, renderDraftedContractAsText,
+  type DraftedContract, type DraftClausesGroundingNotes,
+} from '@/lib/clmGenerationEngine';
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/AuthContext';
 import { API_BASE } from '@/lib/apiBase';
@@ -511,6 +515,17 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
    *  panels are open. Local display state only, same pattern as
    *  expandedClauseCats above. */
   const [expandedReview, setExpandedReview] = useState<Set<string>>(new Set());
+  /** Module 09 Part A.3, Option 2 -- Generation v1.5 (AI-drafted clause
+   *  language). Per-contract-id result of the explicit, separately-
+   *  requested "Draft Clause Language" action -- never populated
+   *  automatically alongside the Stage-1 skeleton (item 47). Local
+   *  display state only, not synced/persisted -- a fresh draft is a
+   *  fresh AI call each time, same as Review v1's ContractReviewReport. */
+  const [draftClauseState, setDraftClauseState] = useState<Record<string, {
+    status: 'idle' | 'loading' | 'error';
+    errorMessage?: string;
+    drafted?: DraftedContract;
+  }>>({});
   const [renewalFilter, setRenewalFilter] = useState<number>(180); // show renewals due in N days
 
   // -- Module 03 Part D (RFx Builder), built 26 Aug 2026, closes registry
@@ -772,6 +787,60 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
   const toggleReviewExpand = (contractId: string) => setExpandedReview(prev => {
     const s = new Set(prev); s.has(contractId) ? s.delete(contractId) : s.add(contractId); return s;
   });
+
+  /** Module 09 Part A.3, Option 2 -- Generation v1.5. Stage 2 of the
+   *  two-stage flow (item 47): explicit, separately-requested AI drafting
+   *  layered onto an already-generated Stage-1 skeleton. Client-computes/
+   *  server-forwards pattern (same as maturityHint, #141) -- the
+   *  governing-law/industry/riba/FIDIC grounding notes are resolved HERE,
+   *  client-side, using the already-tested Module 01/02/05 libraries
+   *  (clmLegalTrack.ts/clmIndustryStandards.ts/clmClauseTaxonomy.ts, all
+   *  frontend-only packages the backend cannot import), and sent as plain
+   *  strings in the request body -- the backend route
+   *  (/api/clm-generation/draft-clauses) never re-derives or second-
+   *  guesses this grounding, it only forwards it into the AI prompt. */
+  const draftClauseLanguage = async (c: Contract) => {
+    const genInput = {
+      parties: [{ name: c.name, role: isAr ? 'طرف' : 'Party' }, { name: c.supplier, role: isAr ? 'طرف' : 'Party' }],
+      effectiveDate: c.startDate,
+      termDuration: c.endDate ? `${c.startDate} - ${c.endDate}` : undefined,
+      governingLawClause: c.governingLawClause,
+      counterpartyJurisdiction: c.counterpartyJurisdiction,
+      performanceLocation: c.performanceLocation,
+      counterpartyType: c.counterpartyType,
+      industryBucket: c.industryBucket,
+      clausesPresent: c.clausesPresent,
+      disputeResolutionVariant: c.clauseVariants?.['dispute-resolution'],
+      customStakeholders: c.customStakeholders,
+    };
+    const skeleton = c.type === 'msa' ? buildMsaSkeleton(genInput) : buildNdaSkeleton(genInput);
+
+    const standard = resolveApplicableStandard(c.counterpartyType, c.industryBucket, c.fidicBook, c.professionalServicesTrack, c.logisticsMode);
+    const ribaFlag = checkCommercialRibaFlag(c.clausesPresent, c.counterpartyJurisdiction, c.performanceLocation, c.governingLawClause);
+    const fidicFlag = checkRiskAllocationFidicMismatchFlag(c.clausesPresent, c.fidicBook);
+    const groundingNotes: DraftClausesGroundingNotes = {
+      governingLawPracticeNoteEn: c.governingLawClause ? governingLawPracticeNote(c.governingLawClause, false) : undefined,
+      industryStandardNoteEn: standard ? [standard.standardEn, standard.noteEn].filter(Boolean).join(' -- ') : undefined,
+      ribaFlagNoteEn: ribaFlag.flagged ? ribaFlag.reasonEn : undefined,
+      fidicRiskMismatchNoteEn: fidicFlag.flagged ? fidicFlag.reasonEn : undefined,
+    };
+
+    setDraftClauseState(prev => ({ ...prev, [c.id]: { status: 'loading' } }));
+    try {
+      const res = await fetch(`${API_BASE}/clm-generation/draft-clauses`, {
+        method: 'POST', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(buildDraftClausesRequestBody(skeleton, groundingNotes)),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error || (isAr ? 'تعذّرت صياغة البنود' : 'Failed to draft clauses'));
+      setDraftClauseState(prev => ({ ...prev, [c.id]: { status: 'idle', drafted: data as DraftedContract } }));
+    } catch (err) {
+      const message = err instanceof Error ? err.message : (isAr ? 'تعذّرت صياغة البنود' : 'Failed to draft clauses');
+      setDraftClauseState(prev => ({ ...prev, [c.id]: { status: 'error', errorMessage: message } }));
+      toast.error(message);
+    }
+  };
 
   /* Bootstrap: on login (or account switch), pull the server's saved
    * contracts. Server-has-data wins over localStorage UNLESS the user has
@@ -1560,26 +1629,90 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
                               </p>
                               <p className="text-[10px] text-slate-400">{isAr ? 'وقائع + مخطط بنود مصنّف -- بدون صياغة نصوص قانونية' : 'Facts + a classified clause outline -- no clause language drafted'}</p>
                             </div>
-                            <button type="button" onClick={() => {
-                              const genInput = {
-                                parties: [{ name: c.name, role: isAr ? 'طرف' : 'Party' }, { name: c.supplier, role: isAr ? 'طرف' : 'Party' }],
-                                effectiveDate: c.startDate,
-                                termDuration: c.endDate ? `${c.startDate} - ${c.endDate}` : undefined,
-                                governingLawClause: c.governingLawClause,
-                                counterpartyJurisdiction: c.counterpartyJurisdiction,
-                                performanceLocation: c.performanceLocation,
-                                counterpartyType: c.counterpartyType,
-                                industryBucket: c.industryBucket,
-                                clausesPresent: c.clausesPresent,
-                                disputeResolutionVariant: c.clauseVariants?.['dispute-resolution'],
-                                customStakeholders: c.customStakeholders,
-                              };
-                              const skeleton = c.type === 'msa' ? buildMsaSkeleton(genInput) : buildNdaSkeleton(genInput);
-                              downloadText(`${c.name || c.type}-skeleton-${isAr ? 'ar' : 'en'}.txt`, renderSkeletonAsText(skeleton, isAr));
-                            }} className="text-[11px] font-semibold px-3 py-1.5 rounded-full bg-[#082C6B] text-white hover:bg-[#082C6B]/90 transition-colors shrink-0">
-                              {isAr ? 'تنزيل الهيكل' : 'Download Skeleton'}
-                            </button>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <button type="button" onClick={() => {
+                                const genInput = {
+                                  parties: [{ name: c.name, role: isAr ? 'طرف' : 'Party' }, { name: c.supplier, role: isAr ? 'طرف' : 'Party' }],
+                                  effectiveDate: c.startDate,
+                                  termDuration: c.endDate ? `${c.startDate} - ${c.endDate}` : undefined,
+                                  governingLawClause: c.governingLawClause,
+                                  counterpartyJurisdiction: c.counterpartyJurisdiction,
+                                  performanceLocation: c.performanceLocation,
+                                  counterpartyType: c.counterpartyType,
+                                  industryBucket: c.industryBucket,
+                                  clausesPresent: c.clausesPresent,
+                                  disputeResolutionVariant: c.clauseVariants?.['dispute-resolution'],
+                                  customStakeholders: c.customStakeholders,
+                                };
+                                const skeleton = c.type === 'msa' ? buildMsaSkeleton(genInput) : buildNdaSkeleton(genInput);
+                                downloadText(`${c.name || c.type}-skeleton-${isAr ? 'ar' : 'en'}.txt`, renderSkeletonAsText(skeleton, isAr));
+                              }} className="text-[11px] font-semibold px-3 py-1.5 rounded-full bg-white text-[#082C6B] border border-[#082C6B] hover:bg-[#082C6B]/5 transition-colors">
+                                {isAr ? 'تنزيل الهيكل' : 'Download Skeleton'}
+                              </button>
+                              {/* -- Module 09 Part A.3, Option 2: Generation v1.5.
+                                   Explicit, separately-requested Stage 2 action
+                                   (item 47) -- never fires automatically alongside
+                                   the Stage-1 skeleton above. -- */}
+                              <button type="button" disabled={draftClauseState[c.id]?.status === 'loading'} onClick={() => draftClauseLanguage(c)}
+                                className="text-[11px] font-semibold px-3 py-1.5 rounded-full bg-[#082C6B] text-white hover:bg-[#082C6B]/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                                {draftClauseState[c.id]?.status === 'loading'
+                                  ? (isAr ? 'جارٍ الصياغة…' : 'Drafting…')
+                                  : (isAr ? 'صياغة نص البنود (1.5)' : 'Draft Clause Language (v1.5)')}
+                              </button>
+                            </div>
                           </div>
+                          {draftClauseState[c.id]?.status === 'error' && (
+                            <div className="px-3 py-2 border-t border-slate-100 bg-red-50 text-[11px] text-red-600 font-medium">
+                              {draftClauseState[c.id]?.errorMessage}
+                            </div>
+                          )}
+                          {draftClauseState[c.id]?.drafted && (() => {
+                            const drafted = draftClauseState[c.id]!.drafted!;
+                            const genInput = {
+                              parties: [{ name: c.name, role: isAr ? 'طرف' : 'Party' }, { name: c.supplier, role: isAr ? 'طرف' : 'Party' }],
+                              effectiveDate: c.startDate,
+                              termDuration: c.endDate ? `${c.startDate} - ${c.endDate}` : undefined,
+                              governingLawClause: c.governingLawClause,
+                              counterpartyJurisdiction: c.counterpartyJurisdiction,
+                              performanceLocation: c.performanceLocation,
+                              counterpartyType: c.counterpartyType,
+                              industryBucket: c.industryBucket,
+                              clausesPresent: c.clausesPresent,
+                              disputeResolutionVariant: c.clauseVariants?.['dispute-resolution'],
+                              customStakeholders: c.customStakeholders,
+                            };
+                            const previewSkeleton = c.type === 'msa' ? buildMsaSkeleton(genInput) : buildNdaSkeleton(genInput);
+                            return (
+                              <div className="px-3 py-3 border-t border-slate-100 space-y-2.5">
+                                <div className="bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-2 text-[10px] text-amber-800 leading-relaxed">
+                                  {isAr ? drafted.disclaimerAr : drafted.disclaimerEn}
+                                </div>
+                                <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
+                                  {drafted.sections.map(section => {
+                                    const skeletonSection = previewSkeleton.body.find(s => s.category === section.category);
+                                    return (
+                                      <div key={section.category} className="space-y-1.5">
+                                        <p className="text-[11px] font-bold text-slate-600">{skeletonSection ? (isAr ? skeletonSection.labelAr : skeletonSection.labelEn) : section.category}</p>
+                                        {section.subclauses.map(sc => {
+                                          const scMeta = skeletonSection?.subclauses.find(s => s.id === sc.id);
+                                          return (
+                                            <div key={sc.id} className="bg-slate-50 rounded-lg px-2.5 py-2">
+                                              {scMeta && <p className="text-[10px] font-semibold text-slate-500 mb-0.5">{isAr ? scMeta.labelAr : scMeta.labelEn}</p>}
+                                              <p className="text-[11px] text-slate-700 leading-relaxed whitespace-pre-wrap">{isAr ? sc.ar : sc.en}</p>
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                                <button type="button" onClick={() => downloadText(`${c.name || c.type}-drafted-${isAr ? 'ar' : 'en'}.txt`, renderDraftedContractAsText(previewSkeleton, drafted, isAr))}
+                                  className="w-full text-[11px] font-semibold px-3 py-1.5 rounded-full bg-white text-[#082C6B] border border-[#082C6B] hover:bg-[#082C6B]/5 transition-colors">
+                                  {isAr ? 'تنزيل المسودة الكاملة' : 'Download Full Draft'}
+                                </button>
+                              </div>
+                            );
+                          })()}
                           {/* -- Item 50: the derived 8-role involvement map is
                                fixed and confirmed; this is the client's escape
                                hatch to name extra stakeholders for a

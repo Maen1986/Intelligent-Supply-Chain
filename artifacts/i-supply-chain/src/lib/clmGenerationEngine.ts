@@ -606,3 +606,124 @@ export function renderSkeletonAsText(skeleton: GeneratedSkeleton, isAr: boolean)
 
   return lines.join('\n');
 }
+
+// --- Generation v1.5 (Module 09 Part A.3, Option 2) -- AI-drafted clause
+// language, Stage 2 of the two-stage flow. This section stays pure/no-AI
+// itself: it only shapes the request body sent to the backend
+// (/api/clm-generation/draft-clauses) and renders the drafted response
+// back into text. The backend never re-derives governing-law/industry/
+// riba grounding -- per the client-computes/server-forwards pattern
+// already established for maturityHint (#141), the caller (CLMTools.tsx)
+// resolves groundingNotes itself using clmLegalTrack.ts/
+// clmIndustryStandards.ts/clmClauseTaxonomy.ts and passes the resolved
+// strings in here. This function only assembles the already-approved
+// skeleton's applicable subclauses into the shape the backend's Zod
+// schema (DraftClausesRequestSchema in clmGeneration.ts) expects -- it
+// never invents or edits subclause content.
+
+export interface DraftClausesGroundingNotes {
+  governingLawPracticeNoteEn?: string;
+  industryStandardNoteEn?: string;
+  ribaFlagNoteEn?: string;
+  fidicRiskMismatchNoteEn?: string;
+}
+
+export interface DraftClausesRequestBody {
+  contractTypeLabelEn: 'NDA' | 'MSA';
+  cover: {
+    partiesEn: string;
+    purposeEn: string;
+    scopeSummaryEn: string;
+    governingLawEn: string;
+    disputeForumEn: string;
+  };
+  body: Array<{
+    category: string;
+    labelEn: string;
+    subclauses: Array<{ id: string; labelEn: string; mandatory: boolean; guidanceEn: string }>;
+  }>;
+  groundingNotes?: DraftClausesGroundingNotes;
+}
+
+/** Builds the POST body for /api/clm-generation/draft-clauses out of an
+ *  already-generated (and, implicitly, already-reviewed/approved by the
+ *  client -- Stage 2 is explicit and separately requested, never
+ *  automatic per item 47) skeleton. Only applicable categories are sent;
+ *  not-applicable categories (e.g. Commercial/Payment on a pure NDA) are
+ *  never drafted, matching the skeleton's own classification. */
+export function buildDraftClausesRequestBody(
+  skeleton: GeneratedSkeleton,
+  groundingNotes?: DraftClausesGroundingNotes,
+): DraftClausesRequestBody {
+  return {
+    contractTypeLabelEn: skeleton.contractTypeLabelEn as 'NDA' | 'MSA',
+    cover: {
+      partiesEn: skeleton.cover.partiesEn,
+      purposeEn: skeleton.cover.purposeEn,
+      scopeSummaryEn: skeleton.cover.scopeSummaryEn,
+      governingLawEn: skeleton.cover.governingLawEn,
+      disputeForumEn: skeleton.cover.disputeForumEn,
+    },
+    body: skeleton.body
+      .filter(section => section.applicable && section.subclauses.length > 0)
+      .map(section => ({
+        category: section.category,
+        labelEn: section.labelEn,
+        subclauses: section.subclauses.map(sc => ({
+          id: sc.id, labelEn: sc.labelEn, mandatory: sc.mandatory, guidanceEn: sc.guidanceEn,
+        })),
+      })),
+    groundingNotes,
+  };
+}
+
+export interface DraftedSubclause { id: string; en: string; ar: string; }
+export interface DraftedCategorySection { category: string; subclauses: DraftedSubclause[]; }
+export interface DraftedContract {
+  ok: boolean;
+  disclaimerEn: string;
+  disclaimerAr: string;
+  sections: DraftedCategorySection[];
+}
+
+/** Renders the merged cover + AI-drafted clause text as plain text (EN or
+ *  AR), same downloadText() mechanism renderSkeletonAsText already uses.
+ *  Looks up each drafted subclause's label/mandatory flag back from the
+ *  original skeleton (the drafted response only carries id + drafted
+ *  text, per DraftClausesRequestSchema's response shape) so the merged
+ *  document reads identically to the skeleton output, just with real
+ *  clause language in place of the placeholder. */
+export function renderDraftedContractAsText(skeleton: GeneratedSkeleton, drafted: DraftedContract, isAr: boolean): string {
+  const lines: string[] = [];
+  const t = (en: string, ar: string) => isAr ? ar : en;
+
+  lines.push(`${isAr ? skeleton.contractTypeLabelAr : skeleton.contractTypeLabelEn} -- ${t('AI-DRAFTED CLAUSE LANGUAGE (Module 09 v1.5)', 'صياغة بنود بالذكاء الاصطناعي (الوحدة 09، الإصدار 1.5)')}`);
+  lines.push(isAr ? drafted.disclaimerAr : drafted.disclaimerEn);
+  lines.push('');
+  lines.push(t('== INTRODUCTION / COVER ==', '== المقدمة / الغلاف =='));
+  lines.push(`${t('Parties', 'الأطراف')}: ${isAr ? skeleton.cover.partiesAr : skeleton.cover.partiesEn}`);
+  lines.push(`${t('Effective Date', 'تاريخ السريان')}: ${isAr ? skeleton.cover.effectiveDateAr : skeleton.cover.effectiveDateEn}`);
+  lines.push(`${t('Term/Duration', 'المدة')}: ${isAr ? skeleton.cover.termDurationAr : skeleton.cover.termDurationEn}`);
+  lines.push(`${t('Governing Law', 'القانون الحاكم')}: ${isAr ? skeleton.cover.governingLawAr : skeleton.cover.governingLawEn}`);
+  lines.push(`${t('Dispute Forum', 'جهة تسوية المنازعات')}: ${isAr ? skeleton.cover.disputeForumAr : skeleton.cover.disputeForumEn}`);
+  lines.push(`${t('Purpose', 'الغرض')}: ${isAr ? skeleton.cover.purposeAr : skeleton.cover.purposeEn}`);
+  lines.push(`${t('Scope Summary', 'ملخص النطاق')}: ${isAr ? skeleton.cover.scopeSummaryAr : skeleton.cover.scopeSummaryEn}`);
+  lines.push('');
+
+  for (const draftedSection of drafted.sections) {
+    const skeletonSection = skeleton.body.find(s => s.category === draftedSection.category);
+    lines.push(`== ${skeletonSection ? (isAr ? skeletonSection.labelAr : skeletonSection.labelEn) : draftedSection.category} ==`);
+    for (const dsc of draftedSection.subclauses) {
+      const skeletonSc = skeletonSection?.subclauses.find(sc => sc.id === dsc.id);
+      if (skeletonSc) {
+        lines.push(`  [${skeletonSc.mandatory ? t('MANDATORY', 'إلزامي') : t('optional', 'اختياري')}] ${isAr ? skeletonSc.labelAr : skeletonSc.labelEn}`);
+      } else {
+        lines.push(`  ${dsc.id}`);
+      }
+      lines.push(`    ${isAr ? dsc.ar : dsc.en}`);
+    }
+    lines.push('');
+  }
+
+  return lines.join('\n');
+}

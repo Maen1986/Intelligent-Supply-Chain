@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildNdaSkeleton, buildMsaSkeleton, renderSkeletonAsText, type GenerationInput } from './clmGenerationEngine';
+import { buildNdaSkeleton, buildMsaSkeleton, renderSkeletonAsText, buildDraftClausesRequestBody, renderDraftedContractAsText, type GenerationInput } from './clmGenerationEngine';
 import { CLAUSE_CATEGORIES } from './clmClauseTaxonomy';
 
 describe('buildNdaSkeleton -- disclaimer', () => {
@@ -269,5 +269,89 @@ describe('renderSkeletonAsText', () => {
     const msaTitle = renderSkeletonAsText(msa, false).split('\n')[0];
     expect(ndaTitle).toBe('NDA -- STRUCTURAL SKELETON (Module 09 v1)');
     expect(msaTitle).toBe('MSA -- STRUCTURAL SKELETON (Module 09 v1)');
+  });
+});
+
+describe('buildDraftClausesRequestBody', () => {
+  it('sends only applicable categories with subclauses, dropping not-applicable ones (e.g. Commercial/Payment on a pure NDA)', () => {
+    const skeleton = buildNdaSkeleton({ parties: [], governingLawClause: 'saudi-ctl' });
+    const reqBody = buildDraftClausesRequestBody(skeleton);
+    expect(reqBody.contractTypeLabelEn).toBe('NDA');
+    for (const section of reqBody.body) {
+      const skeletonSection = skeleton.body.find(s => s.category === section.category);
+      expect(skeletonSection?.applicable).toBe(true);
+      expect(section.subclauses.length).toBeGreaterThan(0);
+    }
+    // Commercial/Payment is not applicable to a pure NDA -- must not appear.
+    expect(reqBody.body.find(s => s.category === 'commercial-payment')).toBeUndefined();
+  });
+
+  it('carries cover facts through verbatim', () => {
+    const skeleton = buildNdaSkeleton({
+      parties: [{ name: 'Acme Co.', role: 'Disclosing Party' }],
+      purposeStatement: { en: 'To evaluate a partnership', ar: 'لتقييم شراكة' },
+      governingLawClause: 'saudi-ctl',
+    });
+    const reqBody = buildDraftClausesRequestBody(skeleton);
+    expect(reqBody.cover.partiesEn).toBe(skeleton.cover.partiesEn);
+    expect(reqBody.cover.purposeEn).toBe('To evaluate a partnership');
+    expect(reqBody.cover.governingLawEn).toBe(skeleton.cover.governingLawEn);
+  });
+
+  it('passes groundingNotes through unchanged, including when omitted', () => {
+    const skeleton = buildNdaSkeleton({ parties: [] });
+    const withNotes = buildDraftClausesRequestBody(skeleton, { governingLawPracticeNoteEn: 'A practice note' });
+    expect(withNotes.groundingNotes?.governingLawPracticeNoteEn).toBe('A practice note');
+    const withoutNotes = buildDraftClausesRequestBody(skeleton);
+    expect(withoutNotes.groundingNotes).toBeUndefined();
+  });
+
+  it('each subclause entry carries id/labelEn/mandatory/guidanceEn matching the skeleton, never placeholder text', () => {
+    const skeleton = buildNdaSkeleton({ parties: [], governingLawClause: 'saudi-ctl' });
+    const reqBody = buildDraftClausesRequestBody(skeleton);
+    const confidentiality = reqBody.body.find(s => s.category === 'data-ip-confidentiality')?.subclauses.find(sc => sc.id === 'confidentiality-nda');
+    expect(confidentiality).toBeDefined();
+    expect(confidentiality!.mandatory).toBe(true);
+    expect(confidentiality!.guidanceEn.length).toBeGreaterThan(0);
+    // never leaks the skeleton's own clause-text placeholder into the request
+    expect(JSON.stringify(reqBody)).not.toContain('Module 09 v1 is a structural skeleton only');
+  });
+});
+
+describe('renderDraftedContractAsText', () => {
+  const skeleton = buildNdaSkeleton({
+    parties: [{ name: 'Acme Co.', role: 'Disclosing Party' }],
+    governingLawClause: 'saudi-ctl',
+  });
+  const drafted = {
+    ok: true,
+    disclaimerEn: 'AI-drafted disclaimer EN',
+    disclaimerAr: 'إخلاء مسؤولية بالعربية',
+    sections: [
+      {
+        category: 'data-ip-confidentiality',
+        subclauses: [
+          { id: 'confidentiality-nda', en: 'Each party shall keep confidential all information disclosed.', ar: 'يلتزم كل طرف بالحفاظ على سرية جميع المعلومات المفصح عنها.' },
+        ],
+      },
+    ],
+  };
+
+  it('includes the disclaimer, cover facts, and drafted clause text (EN)', () => {
+    const text = renderDraftedContractAsText(skeleton, drafted, false);
+    expect(text).toContain('AI-drafted disclaimer EN');
+    expect(text).toContain('Acme Co.');
+    expect(text).toContain('Each party shall keep confidential all information disclosed.');
+  });
+
+  it('includes the Arabic disclaimer and drafted clause text in AR mode', () => {
+    const text = renderDraftedContractAsText(skeleton, drafted, true);
+    expect(text).toContain('إخلاء مسؤولية بالعربية');
+    expect(text).toContain('يلتزم كل طرف بالحفاظ على سرية جميع المعلومات المفصح عنها.');
+  });
+
+  it('labels the merged document as v1.5, distinct from the v1 skeleton renderer', () => {
+    const text = renderDraftedContractAsText(skeleton, drafted, false);
+    expect(text.split('\n')[0]).toContain('Module 09 v1.5');
   });
 });
