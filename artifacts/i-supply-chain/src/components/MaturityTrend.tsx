@@ -21,7 +21,7 @@ import { TrendingUp, RotateCcw, ArrowUp, ArrowDown, Minus } from 'lucide-react';
 import { Button }    from '@/components/ui/button';
 import { MATURITY_LEVELS } from '@/lib/maturityScoring';
 
-/* ── Types ──────────────────────────────────────────────────────────────── */
+/* ── Types ────────────────────────────────────────────────────── */
 
 export interface SegScoreItem {
   id:      string;
@@ -29,6 +29,20 @@ export interface SegScoreItem {
   titleAr?: string;
   score:   number;
   level:   string;
+}
+
+/** Module 06 gap #2 (27 Aug 2026) -- one sub-segment's score, e.g.
+ *  clm-obligations under the 'contracts' segment. segmentId identifies the
+ *  parent so consumers (e.g. CLMTools.tsx's maturity badge) can filter to
+ *  the sub-segments relevant to their own surface without needing the full
+ *  segment tree loaded. */
+export interface SubSegScoreItem {
+  id:        string;
+  segmentId: string;
+  title:     string;
+  titleAr?:  string;
+  score:     number;
+  level:     string;
 }
 
 interface RemedyItem {
@@ -50,14 +64,17 @@ interface RemediesData {
 }
 
 export interface SnapshotRecord {
-  id:            number;
-  takenAt:       string;          // ISO timestamp string
-  industry:      string | null;
-  companySize:   string | null;
-  segmentScores: SegScoreItem[];
-  overallScore:  string | number; // numeric from DB arrives as string
-  coveragePct:   string | number;
-  remedyActions: RemediesData | null;
+  id:               number;
+  takenAt:          string;          // ISO timestamp string
+  industry:         string | null;
+  companySize:      string | null;
+  segmentScores:    SegScoreItem[];
+  /** Module 06 gap #2 -- absent on snapshots taken before this field
+   *  existed, and legitimately empty for a Quick-mode-only assessment. */
+  subSegmentScores?: SubSegScoreItem[];
+  overallScore:     string | number; // numeric from DB arrives as string
+  coveragePct:      string | number;
+  remedyActions:    RemediesData | null;
 }
 
 export interface SegmentMeta {
@@ -74,7 +91,7 @@ interface MaturityTrendProps {
   onRetake:    () => void;
 }
 
-/* ── Helpers ─────────────────────────────────────────────────────────────── */
+/* ── Helpers ─────────────────────────────────────────── */
 
 function numericScore(v: string | number): number {
   return typeof v === 'string' ? parseFloat(v) : v;
@@ -101,7 +118,7 @@ function deltaCategory(delta: number): 'improved' | 'flat' | 'declined' {
   return 'flat';
 }
 
-/* ── Correlation helpers ─────────────────────────────────────────────────── */
+/* ── Correlation helpers ─────────────────────────────────────── */
 
 type CorrelationKey = 'moved' | 'partial' | 'no_change' | 'declined';
 
@@ -123,14 +140,14 @@ const CORRELATION_CONFIG: Record<CorrelationKey, {
   declined:  { icon: '↓', enLabel: 'Declined',       arLabel: 'تراجع',       textClass: 'text-red-700',    borderClass: 'border-red-200',   bgClass: 'bg-red-50'    },
 };
 
-/* ═══════════════════════════════════════════════════════════════════════════
+/* ══════════════════════════════════════════════════════════════════════════════════
    MAIN COMPONENT
-═══════════════════════════════════════════════════════════════════════════ */
+══════════════════════════════════════════════════════════════════════════════════ */
 
 export function MaturityTrend({ snapshots, segmentList, ar, onRetake }: MaturityTrendProps) {
   if (snapshots.length === 0) return null;
 
-  /* ── Single snapshot: retake prompt ─────────────────────────────────── */
+  /* ── Single snapshot: retake prompt ──────────────────────────── */
   if (snapshots.length === 1) {
     return (
       <div
@@ -148,7 +165,7 @@ export function MaturityTrend({ snapshots, segmentList, ar, onRetake }: Maturity
             </h3>
             <p className="text-muted-foreground text-sm leading-relaxed mb-4">
               {ar
-                ? 'عُد بعد 3 إلى 6 أشهر من تطبيق خطة العمل — سيُظهر تقييمك القادم بالضبط ما الذي تغيّر وبأي مقدار.'
+                ? 'عُد بعد 3 إلى 6 أشهر من تطبيق خطة العمل للتقييم — سيُظهر تقييمك القادم بالضبط ما الذي تغيّر وبأي مقدار.'
                 : 'Come back in 3–6 months after working through your roadmap — your next assessment will show exactly what moved and by how much.'}
             </p>
             <Button
@@ -167,7 +184,7 @@ export function MaturityTrend({ snapshots, segmentList, ar, onRetake }: Maturity
     );
   }
 
-  /* ── ≥2 snapshots: compute deltas ───────────────────────────────────── */
+  /* ── ≥2 snapshots: compute deltas ───────────────────────────── */
   const prev = snapshots[snapshots.length - 2];
   const curr = snapshots[snapshots.length - 1];
 
@@ -203,7 +220,7 @@ export function MaturityTrend({ snapshots, segmentList, ar, onRetake }: Maturity
     if (d.titleAr) deltaByTitle.set(d.titleAr, d.delta ?? 0);
   });
 
-  /* ── Trajectory chart data ─────────────────────────────────────────── */
+  /* ── Trajectory chart data ───────────────────────────── */
   const trajectoryData = useMemo(() =>
     snapshots.map(snap => {
       const row: Record<string, string | number | null> = {
@@ -224,7 +241,7 @@ export function MaturityTrend({ snapshots, segmentList, ar, onRetake }: Maturity
   // Build tooltip label from snapshots by date string
   const snapByDate = new Map(snapshots.map(s => [formatSnapshotDate(s.takenAt, ar), s]));
 
-  /* ── Remedy correlation panel data ─────────────────────────────────── */
+  /* ── Remedy correlation panel data ───────────────────────── */
   const prevRemedies = prev.remedyActions;
   const correlatedActions = useMemo(() => {
     if (!prevRemedies) return [];
@@ -242,14 +259,14 @@ export function MaturityTrend({ snapshots, segmentList, ar, onRetake }: Maturity
   return (
     <div className="space-y-8" dir={ar ? 'rtl' : 'ltr'} data-testid="maturity-trend-panel">
 
-      {/* ═══════════════════════════════════════════════════════════════
+      {/* ═════════════════════════════════════════════════════
           SECTION A — Delta Summary Panel
-      ═══════════════════════════════════════════════════════════════ */}
+      ═════════════════════════════════════════════════════ */}
       <div className="bg-white rounded-2xl border border-border shadow-sm overflow-hidden">
         {/* Overall delta header */}
         <div className="bg-[#082C6B] px-6 py-5" data-testid="trend-overall-delta">
           <p className="text-white/60 text-xs font-bold uppercase tracking-widest mb-2">
-            {ar ? 'التغيّر الإجمالي — آخر تقييمَين' : 'Overall Delta — Last Two Assessments'}
+            {ar ? 'التغيّر الإجمالي — آخر تقييمين' : 'Overall Delta — Last Two Assessments'}
           </p>
           <div className="flex items-center gap-3 flex-wrap">
             <span className="text-3xl font-extrabold text-white">
@@ -274,7 +291,7 @@ export function MaturityTrend({ snapshots, segmentList, ar, onRetake }: Maturity
         <div className="p-6">
           <p className="text-sm text-muted-foreground mb-4">
             {ar
-              ? 'مُرتَّبة: المتحسّن أولاً، ثم الثابت، ثم المتراجع.'
+              ? 'مُرتّبة: المتحسّن أولاً، ثم الثابت، ثم المتراجع.'
               : 'Sorted: improved first, then flat, then declined.'}
           </p>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -351,9 +368,9 @@ export function MaturityTrend({ snapshots, segmentList, ar, onRetake }: Maturity
         </div>
       </div>
 
-      {/* ═══════════════════════════════════════════════════════════════
+      {/* ═════════════════════════════════════════════════════
           SECTION B — Remedy Correlation Panel
-      ═══════════════════════════════════════════════════════════════ */}
+      ═════════════════════════════════════════════════════ */}
       {prevRemedies && correlatedActions.length > 0 && (
         <div
           className="bg-white rounded-2xl border border-border shadow-sm p-6"
@@ -420,9 +437,9 @@ export function MaturityTrend({ snapshots, segmentList, ar, onRetake }: Maturity
         </div>
       )}
 
-      {/* ═══════════════════════════════════════════════════════════════
+      {/* ═════════════════════════════════════════════════════
           SECTION C — Trajectory Chart
-      ═══════════════════════════════════════════════════════════════ */}
+      ═════════════════════════════════════════════════════ */}
       {snapshots.length >= 2 && (
         <div
           className="bg-white rounded-2xl border border-border shadow-sm p-6"
@@ -522,7 +539,7 @@ export function MaturityTrend({ snapshots, segmentList, ar, onRetake }: Maturity
   );
 }
 
-/* ── DeltaBadge ──────────────────────────────────────────────────────────── */
+/* ── DeltaBadge ──────────────────────────────────────────────────── */
 
 interface DeltaBadgeProps {
   delta: number;
