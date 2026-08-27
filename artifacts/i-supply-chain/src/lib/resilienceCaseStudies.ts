@@ -184,6 +184,32 @@ export const RESILIENCE_CASE_STUDIES: ResilienceCaseStudy[] = [
     lessonAr: 'يؤكد أن هذا النوع من التعرض قلق متزايد وحالي، وأن نية تقليل المخاطر تسبق التغيير الفعلي في الطاقة الإنتاجية.',
     source: 'Kearney; National Association of Manufacturers',
   },
+  {
+    id: 'aisin-fire-supplier-concentration',
+    disruptionType: 'Supplier Concentration Risk',
+    disruptionTypeAr: 'مخاطر تركّز الموردين',
+    companiesEvent: 'Aisin Seiki fire halts Toyota production nationwide',
+    companiesEventAr: 'حريق آيسين سيكي يوقف إنتاج تويوتا على مستوى اليابان',
+    year: '1997',
+    metrics: "Aisin Seiki supplied 98% of the P-valves (brake proportioning valves) used in every Toyota vehicle. A fire destroyed its main plant on 1 Feb 1997. With Toyota's just-in-time model holding only 2-3 days of parts inventory, all 20 Toyota assembly plants across Japan halted -- roughly 15,500 vehicles/day of output stopped. Toyota and ~200 affiliated suppliers self-organized (with no contracts, no pre-agreed compensation, and minimal direct Toyota control) to stand up alternative P-valve production across more than 60 separate suppliers. Full-capacity production resumed within about 2 days of the fire, versus initial estimates of weeks to months. Toyota's estimated lost revenue: approximately ¥160 billion.",
+    metricsAr: 'كانت آيسين سيكي تزوّد 98% من صمامات الفرامل المستخدمة في كل سيارة تويوتا. أدى حريق في مصنعها الرئيسي في 1 فبراير 1997 إلى توقف جميع مصانع تويوتا الـ20 في اليابان بسبب نظام الإنتاج في الوقت المحدد الذي لا يحتفظ إلا بمخزون يكفي يومين إلى ثلاثة أيام. نظّمت تويوتا وحوالي 200 مورد تابع أنفسهم -- دون عقود أو تعويض متفق عليه مسبقًا -- لإنتاج الصمامات البديلة عبر أكثر من 60 موردًا منفصلاً. استؤنف الإنتاج الكامل خلال يومين تقريبًا، مقابل تقديرات أولية بأسابيع أو أشهر. الخسارة التقديرية لتويوتا: نحو 160 مليار ين.',
+    lesson: "Single-sourcing a critical component -- even inside a trusted, long-term supplier relationship -- creates a real, demonstrated production-halting risk. What limited Toyota's damage wasn't a formal business-continuity plan; it was years of investment in deep, high-trust supplier relationships (the keiretsu model) that let dozens of unrelated firms collaborate under crisis without contracts or pre-negotiated terms. For a client without that kind of relational depth, the practical takeaway is dual/multi-sourcing of any single-supplier-dependent critical component, not reliance on informal goodwill alone.",
+    lessonAr: 'الاعتماد على مصدر واحد لمكوّن حرج -- حتى ضمن علاقة موردين طويلة الأمد وموثوقة -- يمثل خطرًا حقيقيًا وموثّقًا لوقف الإنتاج. ما حدّ من ضرر تويوتا لم يكن خطة استمرارية أعمال رسمية، بل سنوات من الاستثمار في علاقات موردين عميقة وعالية الثقة (نموذج الكيريتسو) سمحت لعشرات الشركات غير المرتبطة بالتعاون في الأزمة دون عقود أو شروط متفق عليها مسبقًا. بالنسبة لعميل يفتقر لهذا العمق العلائقي، فإن الدرس العملي هو التزويد المزدوج أو متعدد المصادر لأي مكوّن حرج يعتمد على مورد واحد، لا الاعتماد على النوايا الحسنة غير الرسمية وحدها.',
+    source: "1997 Aisin fire (Wikipedia, cross-referenced against MIT Sloan Management Review's published case 'The Toyota Group and the Aisin Fire' and The Case Centre's case listing); production-halt duration and revenue loss figures corroborated across multiple secondary sources (LinkedIn analysis citing the MIT case, Commerce.net contemporary reporting).",
+  },
+  {
+    id: 'apple-imagination-ip-dispute',
+    disruptionType: 'Contract & IP Dispute Risk',
+    disruptionTypeAr: 'مخاطر نزاعات العقود والملكية الفكرية',
+    companiesEvent: "Apple's termination notice to Imagination Technologies",
+    companiesEventAr: 'إشعار آبل بإنهاء التعاقد مع Imagination Technologies',
+    year: '2017',
+    metrics: "On 3 April 2017, Apple notified GPU-licensor Imagination Technologies that it intended to stop using Imagination's IP within 15-24 months, planning to design its own graphics chips in-house instead. Imagination's stock fell over 70% in a single trading day on the news -- Apple licensing revenue represented roughly half of Imagination's total revenue at the time. Imagination publicly disputed Apple's claim that it could design a non-infringing GPU without Imagination's IP or a new license, and the company was acquired later that same year by China-backed Canyon Bridge Capital Partners at a fraction of its prior valuation.",
+    metricsAr: 'في 3 أبريل 2017، أبلغت آبل مرخِّص معالجات الرسوميات Imagination Technologies بنيتها التوقف عن استخدام ملكيتها الفكرية خلال 15 إلى 24 شهرًا، بهدف تصميم رقائق رسوميات خاصة بها داخليًا. انخفض سهم Imagination بأكثر من 70% في يوم تداول واحد، علمًا أن إيرادات ترخيص آبل كانت تمثل نحو نصف إجمالي إيرادات الشركة. اعترضت Imagination علنًا على ادعاء آبل بإمكانية تصميم معالج رسومي لا ينتهك ملكيتها الفكرية دون ترخيص جديد، واستحوذت عليها لاحقًا في العام نفسه شركة Canyon Bridge Capital Partners المدعومة صينيًا بجزء بسيط من قيمتها السابقة.',
+    lesson: "Revenue concentration in a single counterparty is a contract and commercial risk, not just a sales-pipeline risk -- Imagination's near-total dependence on one licensee turned a single termination notice into an existential event within one trading day. For CLM specifically: a termination-for-convenience or non-renewal clause that looks standard in isolation carries very different real risk depending on what share of total revenue that one counterparty represents -- exactly the kind of concentration signal a contract register (Module 06's clm-renewal maturity dimension) should be built to surface, not just track renewal dates in isolation.",
+    lessonAr: 'تركّز الإيرادات لدى طرف تعاقدي واحد هو خطر تعاقدي وتجاري، لا مجرد خطر يتعلق بخط مبيعات -- فاعتماد Imagination شبه الكامل على مرخَّص واحد حوّل إشعار إنهاء واحد إلى حدث وجودي خلال يوم تداول واحد. وبالنسبة لإدارة دورة حياة العقود تحديدًا: بند إنهاء لمصلحة الطرف أو عدم تجديد قد يبدو معياريًا بمعزل عن السياق، لكنه يحمل مخاطر حقيقية مختلفة تمامًا تبعًا لحصة ذلك الطرف الواحد من إجمالي الإيرادات -- وهذا بالضبط نوع إشارة التركّز التي ينبغي أن يُبنى سجل العقود (بُعد النضج clm-renewal في الوحدة 06) لإظهارها، لا لتتبع تواريخ التجديد بمعزل عن السياق فقط.',
+    source: "Widely reported contemporaneous financial/tech press coverage of Apple's 3 April 2017 termination notice to Imagination Technologies and the resulting >70% single-day stock decline; Imagination's 2017 acquisition by Canyon Bridge Capital Partners is separately, publicly documented.",
+  },
 ];
 
 // ─── Revenue-at-Risk (RAR) calculation methodology ─────────────────────────
