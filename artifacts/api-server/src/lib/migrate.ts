@@ -456,6 +456,15 @@ const MIGRATIONS: string[] = [
    )`,
   `CREATE INDEX IF NOT EXISTS spend_variance_analyses_user_id ON spend_variance_analyses (user_id)`,
 
+  // Module 06 gap #2 (Contract Intelligence v10, 27 Aug 2026) -- closes the
+  // CLM_SUB_SEGMENTS <-> CLMTools.tsx cross-link. Same client-computes/
+  // server-stores trust model as segment_scores (see maturitySnapshots.ts
+  // schema header): client-side subSegScore()/getLevel() compute each deep
+  // segment's sub-segment scores, server stores them verbatim, gated on
+  // read by the same segment-level entitlement check as segment_scores.
+  `ALTER TABLE maturity_snapshots
+     ADD COLUMN IF NOT EXISTS sub_segment_scores JSONB`,
+
 ];
 
 export async function runStartupMigrations(): Promise<void> {

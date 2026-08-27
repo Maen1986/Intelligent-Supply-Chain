@@ -23,6 +23,22 @@ export const maturitySnapshotsTable = pgTable("maturity_snapshots", {
    * per-segment scores are stored for delta display without re-scoring.
    */
   segmentScores: jsonb("segment_scores").notNull(),
+  /**
+   * Array of { id, segmentId, title, titleAr, score, level } -- one entry
+   * per sub-segment of every segment currently in Deep mode (see
+   * Maturity.tsx's deepSegIds). Same trust model as segmentScores: computed
+   * client-side by the pure, unit-tested subSegScore()/getLevel() helpers
+   * in lib/maturityScoring.ts, sent as-is, stored without server
+   * re-derivation -- consistent with this table's existing
+   * client-computes/server-stores convention. Nullable: absent entirely
+   * for older snapshots taken before this field existed, and legitimately
+   * empty when a client completed every segment in Quick mode only (no
+   * deep sub-segment answers exist to score). Added 27 Aug 2026 to close
+   * Module 06 gap #2 -- the CLM_SUB_SEGMENTS <-> CLMTools.tsx cross-link
+   * (a client's `clm-obligations`/`clm-renewal` maturity level, surfaced
+   * back inside the CLM Contract Register).
+   */
+  subSegmentScores: jsonb("sub_segment_scores"),
   /** Server-recomputed overall mean across all completed segments */
   overallScore:  numeric("overall_score", { precision: 4, scale: 2 }).notNull(),
   /**
