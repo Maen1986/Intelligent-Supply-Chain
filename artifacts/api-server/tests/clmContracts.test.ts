@@ -84,6 +84,7 @@ vi.mock('@workspace/db/schema', () => ({
 vi.mock('../src/lib/logger', () => makeLoggerMock());
 
 import clmContractsRouter from '../src/routes/clmContracts';
+import { db } from '@workspace/db';
 
 const VALID_CONTRACT = {
   clientKey: 'clm123abc',
@@ -101,6 +102,8 @@ const VALID_CONTRACT = {
 beforeEach(() => {
   resetDbState();
   txInsertedRows = [];
+  (db.execute as any).mockReset();
+  (db.execute as any).mockImplementation(async () => ({ rows: [] }));
 });
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -227,5 +230,78 @@ describe('PUT /api/clm-contracts', () => {
     const app = makeApp('/api/clm-contracts', clmContractsRouter, { userId: 1 });
     const res = await request(app).put('/api/clm-contracts').send({ contracts: [VALID_CONTRACT] });
     expect(res.status).toBe(500);
+  });
+});
+
+
+/* ══════════════════════════════════════════════════════════════════════════
+   #184 (Commitment Tracking) -- findings_actions mirror on PUT
+══════════════════════════════════════════════════════════════════════════ */
+
+describe('PUT /api/clm-contracts -- findings_actions mirror (#184)', () => {
+  const CONTRACT_WITH_OBLIGATION = {
+    clientKey: 'clm-abc',
+    name: 'Logistics MSA',
+    data: {
+      supplier: 'Gulf Logistics Co', endDate: '2027-01-01', noticePeriodDays: 60,
+      renewalDecision: 'undecided',
+    },
+  };
+
+  it('mirrors a renewal-notice obligation (cleanup + one upsert) when endDate and noticePeriodDays are present', async () => {
+    dbState.selectRows = [{ organizationId: null }];
+    txInsertedRows = [{ id: 1, ...CONTRACT_WITH_OBLIGATION, userId: 1, organizationId: null }];
+    const app = makeApp('/api/clm-contracts', clmContractsRouter, { userId: 1 });
+    const res = await request(app).put('/api/clm-contracts').send({ contracts: [CONTRACT_WITH_OBLIGATION] });
+    expect(res.status).toBe(200);
+    // 1 cleanup DELETE + 1 upsert INSERT
+    expect((db.execute as any).mock.calls.length).toBe(2);
+  });
+
+  it('skips the mirror for a contract missing endDate or noticePeriodDays (cleanup only)', async () => {
+    dbState.selectRows = [{ organizationId: null }];
+    const incomplete = { clientKey: 'clm-x', name: 'Draft Contract', data: { supplier: 'TBD' } };
+    txInsertedRows = [{ id: 2, ...incomplete, userId: 1, organizationId: null }];
+    const app = makeApp('/api/clm-contracts', clmContractsRouter, { userId: 1 });
+    const res = await request(app).put('/api/clm-contracts').send({ contracts: [incomplete] });
+    expect(res.status).toBe(200);
+    // cleanup DELETE only -- no upsert for a contract with no real obligation to mirror
+    expect((db.execute as any).mock.calls.length).toBe(1);
+  });
+
+  it('runs cleanup even for an empty contracts array (delete-all path)', async () => {
+    dbState.selectRows = [{ organizationId: null }];
+    const app = makeApp('/api/clm-contracts', clmContractsRouter, { userId: 1 });
+    const res = await request(app).put('/api/clm-contracts').send({ contracts: [] });
+    expect(res.status).toBe(200);
+    expect((db.execute as any).mock.calls.length).toBe(1);
+  });
+
+  it('does not fail the contract sync when the mirror-write throws', async () => {
+    dbState.selectRows = [{ organizationId: null }];
+    txInsertedRows = [{ id: 1, ...CONTRACT_WITH_OBLIGATION, userId: 1, organizationId: null }];
+    (db.execute as any).mockImplementation(async () => { throw new Error('mirror db failure (test)'); });
+    const app = makeApp('/api/clm-contracts', clmContractsRouter, { userId: 1 });
+    const res = await request(app).put('/api/clm-contracts').send({ contracts: [CONTRACT_WITH_OBLIGATION] });
+    // The contract sync itself must still succeed -- mirror failures are
+    // logged, never propagated (see mirrorContractsIntoFindingsActions()).
+    expect(res.status).toBe(200);
+    expect(res.body.ok).toBe(true);
+  });
+
+  it('mirrors two contracts as cleanup + two upserts', async () => {
+    dbState.selectRows = [{ organizationId: null }];
+    const second = {
+      clientKey: 'clm-def', name: 'Facilities Contract',
+      data: { supplier: 'ACME FM', endDate: '2026-11-01', noticePeriodDays: 30, renewalDecision: 'renew' },
+    };
+    txInsertedRows = [
+      { id: 1, ...CONTRACT_WITH_OBLIGATION, userId: 1, organizationId: null },
+      { id: 2, ...second, userId: 1, organizationId: null },
+    ];
+    const app = makeApp('/api/clm-contracts', clmContractsRouter, { userId: 1 });
+    const res = await request(app).put('/api/clm-contracts').send({ contracts: [CONTRACT_WITH_OBLIGATION, second] });
+    expect(res.status).toBe(200);
+    expect((db.execute as any).mock.calls.length).toBe(3); // 1 cleanup + 2 upserts
   });
 });

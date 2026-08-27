@@ -289,6 +289,25 @@ const MIGRATIONS: string[] = [
      UNIQUE (user_id, source, source_ref_id, item_key)
    )`,
 
+  // #184 (Commitment Tracking) -- generalize findings_actions to a third
+  // source, 'contract'. clm_contracts uses a whole-state delete-all+
+  // reinsert sync (see clmContracts.ts / #179), so its serial `id` is not
+  // stable across syncs and cannot safely anchor an upsert the way
+  // maturity_snapshots.id does. source_ref_id is relaxed to nullable and a
+  // new source_ref_key TEXT column (the contract's stable client-generated
+  // clientKey) carries identity for 'contract' rows instead. A separate
+  // PARTIAL unique index -- scoped to source = 'contract' -- makes those
+  // rows safe to upsert on (user_id, source, source_ref_key, item_key)
+  // without touching the original constraint above, which still governs
+  // 'maturity'/'diagnostic' rows unchanged.
+  `ALTER TABLE findings_actions
+     ALTER COLUMN source_ref_id DROP NOT NULL`,
+  `ALTER TABLE findings_actions
+     ADD COLUMN IF NOT EXISTS source_ref_key TEXT`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS findings_actions_contract_upsert_idx
+     ON findings_actions (user_id, source, source_ref_key, item_key)
+     WHERE source = 'contract'`,
+
   // Engine 2 Part B -- claim-link mechanic. Lets a free, anonymous Diagnostic
   // run become a real, trackable account: a token is emailed on every
   // diagnostic submission, and claiming it finds-or-creates a passwordless

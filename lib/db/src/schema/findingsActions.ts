@@ -32,11 +32,24 @@ export const findingsActionsTable = pgTable("findings_actions", {
   userId:           integer("user_id").notNull().references(() => usersTable.id, { onDelete: "cascade" }),
   /** Nullable today -- populated once Engine 3/4 give every user a real org. */
   organizationId:   integer("organization_id").references(() => organizationsTable.id),
-  /** 'maturity' | 'diagnostic' -- extend as new sources are wired in. */
+  /** 'maturity' | 'diagnostic' | 'contract' -- extend as new sources are wired in. */
   source:           text("source").notNull(),
-  /** e.g. maturity_snapshots.id or submissions.id -- the record this item traces back to. */
-  sourceRefId:      integer("source_ref_id").notNull(),
-  /** Deterministic key, e.g. "days30-2" (maturity) or "rec-3" (diagnostic). Stable identity for upsert. */
+  /** e.g. maturity_snapshots.id or submissions.id -- the record this item traces back to.
+   *  Nullable as of #184 (Commitment Tracking): clm_contracts uses a whole-state
+   *  delete-all+reinsert sync (see clmContracts.ts), so its serial `id` is NOT
+   *  stable across syncs and cannot safely anchor an upsert -- unlike
+   *  maturity_snapshots.id / submissions.id, which are real, stable row ids.
+   *  'contract' rows leave this NULL and use sourceRefKey instead. */
+  sourceRefId:      integer("source_ref_id"),
+  /** Stable client-generated identity for sources whose DB row id isn't
+   *  stable across syncs (added #184) -- e.g. a clm_contracts row's
+   *  `clientKey`. NULL for 'maturity'/'diagnostic' sources, which use
+   *  sourceRefId instead. A partial unique index (see migrate.ts) makes
+   *  'contract' rows safe to upsert on (userId, source, sourceRefKey, itemKey). */
+  sourceRefKey:     text("source_ref_key"),
+  /** Deterministic key, e.g. "days30-2" (maturity), "rec-3" (diagnostic), or
+   *  "renewal-notice" (contract -- the one real, computed obligation type
+   *  wired today; see clmContracts.ts). Stable identity for upsert. */
   itemKey:          text("item_key").notNull(),
   /** 'days30' | 'days60' | 'days90' -- null for sources without phases (e.g. diagnostic). */
   phase:            text("phase"),
