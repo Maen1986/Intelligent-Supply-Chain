@@ -252,6 +252,12 @@ function LeadsDashboard({ onLogout, ar }: { onLogout: () => Promise<void>; ar: b
                 {ar ? 'مصادر البيانات' : 'Data Sources'}
               </Button>
             </Link>
+            <Link href="/admin/platform-impact">
+              <Button variant="outline" size="sm">
+                <Gauge className="w-4 h-4 me-2" />
+                {ar ? 'أثر المنصة' : 'Platform Impact'}
+              </Button>
+            </Link>
             <Button variant="outline" size="sm" onClick={() => { void load(tool); }} data-testid="button-refresh-leads">
               <RefreshCw className="w-4 h-4 me-2" />
               {ar ? 'تحديث' : 'Refresh'}

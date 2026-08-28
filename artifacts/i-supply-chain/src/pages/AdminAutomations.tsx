@@ -312,6 +312,9 @@ export function AdminAutomations() {
         <span className="px-3 py-1.5 rounded-t-md bg-primary text-white font-semibold whitespace-nowrap">
           {ar ? 'مركز الأتمتة' : 'Automation Hub'}
         </span>
+        <Link href="/admin/platform-impact" className="px-3 py-1.5 rounded-t-md text-muted-foreground hover:text-primary transition-colors font-medium whitespace-nowrap">
+          {ar ? 'أثر المنصة' : 'Platform Impact'}
+        </Link>
       </nav>
 
       {/* Tabs */}

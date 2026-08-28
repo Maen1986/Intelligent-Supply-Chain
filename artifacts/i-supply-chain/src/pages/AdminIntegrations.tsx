@@ -134,6 +134,9 @@ export function AdminIntegrations() {
         <Link href="/admin/automations" className="px-3 py-1.5 rounded-t-md text-muted-foreground hover:text-primary transition-colors font-medium whitespace-nowrap">
           Automation Hub
         </Link>
+        <Link href="/admin/platform-impact" className="px-3 py-1.5 rounded-t-md text-muted-foreground hover:text-primary transition-colors font-medium whitespace-nowrap">
+          Platform Impact
+        </Link>
       </nav>
 
       <ApiKeysSection />

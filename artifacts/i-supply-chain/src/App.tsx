@@ -39,6 +39,7 @@ import { AdminLeads } from '@/pages/AdminLeads';
 import { AdminIntegrations } from '@/pages/AdminIntegrations';
 import { AdminAutomations } from '@/pages/AdminAutomations';
 import { AdminEvidenceReview } from '@/pages/AdminEvidenceReview';
+import { AdminPlatformImpact } from '@/pages/AdminPlatformImpact';
 import { AccountSettings } from '@/pages/AccountSettings';
 import { MyAssessments } from '@/pages/MyAssessments';
 import { ActionTracker } from '@/pages/ActionTracker';
@@ -99,6 +100,7 @@ function Router() {
         <Route path="/admin/integrations" component={AdminIntegrations} />
         <Route path="/admin/automations" component={AdminAutomations} />
         <Route path="/admin/evidence-review" component={AdminEvidenceReview} />
+        <Route path="/admin/platform-impact" component={AdminPlatformImpact} />
         <Route path="/account" component={AccountSettings} />
         <Route path="/my-assessments" component={MyAssessments} />
         <Route path="/action-tracker" component={ActionTracker} />
