@@ -132,6 +132,13 @@ describe('governingLawPracticeNote (Saudi/UK/US/EU/CISG real-practice recommenda
     expect(note.toLowerCase()).toContain('not yet been published');
   });
 
+  it('flags the GTPL direct-purchase threshold change (SAR 100,000 -> SAR 1,000,000, not yet in force)', () => {
+    const note = governingLawPracticeNote('saudi-gtpl', false)!;
+    expect(note).toContain('SAR 100,000');
+    expect(note).toContain('SAR 1,000,000');
+    expect(note.toLowerCase()).toContain('not yet taken effect');
+  });
+
   it('flags PECL as soft law, not enacted EU/member-state legislation (fabrication-adjacent honest gap)', () => {
     const note = governingLawPracticeNote('eu-pecl', false)!;
     expect(note).toContain('Honest gap');
