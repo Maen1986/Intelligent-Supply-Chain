@@ -4,12 +4,24 @@
 // single-source-risk check. Self-scoped (client names the supplier/category
 // directly -- see supplierDependency.ts header note for why). Manual input
 // only, no live data required, same v1-scoping discipline as Decision Lab:
-// no new backend route (reuses the existing generic /api/ai/plan endpoint
-// via useAIPlan for the optional remedy narrative), localStorage persistence
-// only for the checks themselves.
-import React, { useState, useCallback } from 'react';
+// no new backend route for the checks themselves at launch (the optional
+// remedy narrative reuses the existing generic /api/ai/plan endpoint via
+// useAIPlan), localStorage-only persistence.
+//
+// Backend-sync added 28 Aug 2026, with the owner's explicit go-ahead (see
+// the #381 scoping pass, shared-case-data-layer-381-scoping-draft.md, which
+// flagged this as a real product-shape decision, not a small implementation
+// detail, and asked rather than assumed). Server-sync mirrors the RAR
+// scenario / TCO analyses whole-list pattern exactly (see
+// ResiliencyTools.tsx's rar-analyses sync block) -- localStorage remains
+// the source of truth on fetch failure, never breaking the UI, and an
+// unauthenticated visitor still gets the full local-only experience exactly
+// as before this change.
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Link2, Plus, Trash2, Sparkles, Info, Printer, ShieldAlert, ShieldCheck, ShieldQuestion } from 'lucide-react';
 import { useLanguage } from '@/lib/LanguageContext';
+import { useAuth } from '@/lib/AuthContext';
+import { API_BASE } from '@/lib/apiBase';
 import {
   type SupplierCheck, type SeverityResult, type ContractType,
   newSupplierCheck, isCheckComplete, deriveSeverity, buildSupplierDependencyPrompt,
@@ -266,10 +278,100 @@ export function SupplierDependencyCheck() {
 
   const [checks, setChecks] = useState<SupplierCheck[]>(loadChecks);
 
+  // ── Server sync (added 28 Aug 2026, owner go-ahead -- see file header) ──
+  // Mirrors ResiliencyTools.tsx's rar-analyses sync block exactly: whole-
+  // list PUT, localStorage remains source of truth on fetch failure, an
+  // unauthenticated visitor gets the unchanged local-only experience.
+  const { user } = useAuth();
+  const [syncStatus, setSyncStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const serverLoadedForUserId = useRef<number | null>(null);
+  const bootstrapSettled = useRef(false);
+  const localWinsDuringBootstrap = useRef(false);
+  const syncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const checksRef = useRef<SupplierCheck[]>(checks);
+  checksRef.current = checks;
+
+  interface ServerCheckRow { id: number; clientKey: string; name: string; data: SupplierCheck; updatedAt: string; }
+  function serverRowToCheck(row: ServerCheckRow): SupplierCheck {
+    return { ...row.data, id: row.clientKey, name: row.name };
+  }
+  function checkToPayload(c: SupplierCheck) {
+    return { clientKey: c.id, name: c.name, data: c };
+  }
+
+  const syncToServerImmediate = (list: SupplierCheck[]) => {
+    if (!user) return;
+    setSyncStatus('saving');
+    if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
+    syncTimerRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`${API_BASE}/supplier-dependency-checks`, {
+          method: 'PUT', credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ checks: list.map(checkToPayload) }),
+        });
+        setSyncStatus(res.ok ? 'saved' : 'error');
+        if (res.ok) setTimeout(() => setSyncStatus('idle'), 2500);
+      } catch {
+        setSyncStatus('error');
+      }
+    }, 400);
+  };
+  const syncToServer = (list: SupplierCheck[]) => {
+    if (!user) return;
+    if (!bootstrapSettled.current) { localWinsDuringBootstrap.current = true; return; }
+    syncToServerImmediate(list);
+  };
+
   const persist = useCallback((next: SupplierCheck[]) => {
     setChecks(next);
     safeSetItem(STORAGE_KEY, JSON.stringify(next));
-  }, []);
+    syncToServer(next);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) {
+      if (serverLoadedForUserId.current !== null) {
+        serverLoadedForUserId.current = null;
+        bootstrapSettled.current = false;
+        localWinsDuringBootstrap.current = false;
+        setSyncStatus('idle');
+      }
+      return;
+    }
+    if (serverLoadedForUserId.current === user.id) return;
+    serverLoadedForUserId.current = user.id;
+    bootstrapSettled.current = false;
+    localWinsDuringBootstrap.current = false;
+    const bootstrapUserId = user.id;
+
+    (async () => {
+      try {
+        const res = await fetch(`${API_BASE}/supplier-dependency-checks`, { credentials: 'include' });
+        if (serverLoadedForUserId.current !== bootstrapUserId) return;
+        if (res.ok) {
+          const data = await res.json() as { ok: boolean; checks: ServerCheckRow[] };
+          if (data.ok && Array.isArray(data.checks) && data.checks.length > 0) {
+            if (!localWinsDuringBootstrap.current) {
+              const converted = data.checks.map(serverRowToCheck);
+              setChecks(converted);
+              safeSetItem(STORAGE_KEY, JSON.stringify(converted));
+            }
+          } else if (!localWinsDuringBootstrap.current) {
+            const current = checksRef.current;
+            if (current && current.length > 0) syncToServerImmediate(current);
+          }
+        }
+      } catch { /* offline -- localStorage keeps working */ }
+      bootstrapSettled.current = true;
+      if (localWinsDuringBootstrap.current) {
+        const current = checksRef.current;
+        if (current) syncToServerImmediate(current);
+      }
+    })();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
   const addCheck = () => persist([...checks, newSupplierCheck()]);
   const removeCheck = (id: string) => persist(checks.length > 1 ? checks.filter(c => c.id !== id) : [newSupplierCheck()]);
@@ -298,7 +400,7 @@ export function SupplierDependencyCheck() {
           </div>
           <p className="text-white/75 text-base max-w-2xl leading-relaxed mb-6">
             {isAr
-              ? 'سمِّ مورّداً أو فئة إنفاق تقلقك، أجب عن خمسة أسئلة سريعة، واحصل على تقييم خطورة مباشر وفق قاعدة ثابتة معلنة -- بدون الحاجة إلى بيانات ERP.'
+              ? 'سمِّ مورّداً أو فئة إنفاق تقلقك، أجب عن خمسة أسئلة سريعة، واحصل على تقييم خطورة مباشر وفق قاعدة ثابتة معلنة -- بدون الحاجة إلى بيانات ERP.'
               : "Name a supplier or spend category you're worried about, answer 5 quick questions, and get a plain-language severity read from a fixed, disclosed rule -- no ERP data required."}
           </p>
           <div className="flex flex-wrap gap-3 text-xs text-white/60">
@@ -314,12 +416,21 @@ export function SupplierDependencyCheck() {
 
       <div className="container mx-auto px-4 py-8 max-w-3xl space-y-4">
         <div className="no-print flex items-center justify-between">
-          <button
-            onClick={addCheck}
-            className="flex items-center gap-1.5 text-xs font-bold text-white bg-[#082C6B] rounded-lg px-4 py-2 hover:opacity-90"
-          >
-            <Plus className="w-3.5 h-3.5" /> {isAr ? 'إضافة مورّد للفحص' : 'Add a supplier to check'}
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={addCheck}
+              className="flex items-center gap-1.5 text-xs font-bold text-white bg-[#082C6B] rounded-lg px-4 py-2 hover:opacity-90"
+            >
+              <Plus className="w-3.5 h-3.5" /> {isAr ? 'إضافة مورّد للفحص' : 'Add a supplier to check'}
+            </button>
+            {user && syncStatus !== 'idle' && (
+              <span className="text-[11px] text-muted-foreground">
+                {syncStatus === 'saving' ? (isAr ? 'جارٍ الحفظ...' : 'Saving...')
+                  : syncStatus === 'saved' ? (isAr ? 'تم الحفظ' : 'Saved')
+                  : (isAr ? 'تعذّر الحفظ (محفوظ محلياً)' : 'Save failed (kept locally)')}
+              </span>
+            )}
+          </div>
           <button
             onClick={() => printZone('supplier-dependency')}
             className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg font-bold bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 transition-colors"
