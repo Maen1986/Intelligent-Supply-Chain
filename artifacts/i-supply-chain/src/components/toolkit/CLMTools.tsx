@@ -10,6 +10,7 @@
  */
 import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { UNSPSC_SERVICES_SEGMENTS, unspscSegmentLabel } from '@/lib/unspscSegments';
+import { getFamiliesForSegment } from '@/lib/unspscClassCommodity';
 import { GOVERNING_LAW_TRACKS, governingLawTrackLabel, governingLawPracticeNote, checkGoverningLawMismatch, internationalContractingPracticeGuide, ARBITRATION_INSTITUTIONS, arbitrationInstitutionLabel, COMMON_CONTRACTING_COMBOS, checkArbitrationInstitutionFit, type GoverningLawTrack, type ArbitrationInstitution } from '@/lib/clmLegalTrack';
 import { PRICING_TYPES, checkPricingMisuseFlag, type PricingType, type ScopeDefiniteness, type PricingPhase } from '@/lib/clmPricingTaxonomy';
 import { INDUSTRY_BUCKETS, FIDIC_BOOKS, PROFESSIONAL_SERVICES_TRACKS, LOGISTICS_MODES, resolveApplicableStandard, type IndustryBucket, type FidicBook, type ProfessionalServicesTrack, type LogisticsMode } from '@/lib/clmIndustryStandards';
@@ -84,6 +85,11 @@ interface Contract {
    *  Captures what they were actually looking for -- a real signal for
    *  which segment/family to source and add next, not a fabricated code. */
   unspscSegmentOther?: string;
+  /** Optional UNSPSC family code (4-digit), registry #385 lowest-level
+   *  import, 28 Aug 2026 -- see lib/unspscClassCommodity.ts. Only
+   *  meaningful alongside a real (non-'other') unspscSegmentCode; cleared
+   *  whenever the segment changes to avoid a stale family/segment pairing. */
+  unspscFamilyCode?: string;
   type: ContractType;
   annualValue: number;
   totalValue: number;
@@ -1390,7 +1396,7 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
                       </div>
                       <div className="space-y-1">
                         <label htmlFor={`unspsc-${c.id}`} className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{isAr ? 'قطاع UNSPSC (اختياري)' : 'UNSPSC Segment (optional)'}</label>
-                        <select id={`unspsc-${c.id}`} value={c.unspscSegmentCode ?? ''} onChange={e => updateContract(c.id, 'unspscSegmentCode', e.target.value || undefined)} className="w-full text-xs border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#082C6B] bg-white">
+                        <select id={`unspsc-${c.id}`} value={c.unspscSegmentCode ?? ''} onChange={e => { const next = e.target.value || undefined; updateContract(c.id, 'unspscSegmentCode', next); if (c.unspscFamilyCode) updateContract(c.id, 'unspscFamilyCode', undefined); }} className="w-full text-xs border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#082C6B] bg-white">
                           <option value="">{isAr ? 'غير محدد' : 'Not specified'}</option>
                           {UNSPSC_SERVICES_SEGMENTS.map(s => <option key={s.code} value={s.code}>{s.code} -- {isAr ? s.labelAr : s.label}</option>)}
                           <option value="other">{isAr ? 'أخرى / غير مدرجة بعد...' : 'Other / not listed yet...'}</option>
@@ -1401,7 +1407,16 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
                             aria-label={isAr ? 'قطاع UNSPSC آخر -- ما الفئة التي كنت تبحث عنها؟' : 'Other UNSPSC segment -- what category were you looking for?'}
                             className="w-full text-xs border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#082C6B]" />
                         ) : null}
-                        <p className="text-[10px] text-slate-400">{isAr ? 'تصنيف خدمات UNSPSC الرسمي (16 قطاعاً مصدره حتى الآن) -- إضافي إلى حقل الفئة الحر. اختر "أخرى" إذا لم تجد ما تبحث عنه' : 'Real UNSPSC services classification (16 sourced segments so far) -- additive to the free-text Category field above. Pick "Other" if what you need isn\'t listed yet'}</p>
+                        {c.unspscSegmentCode && c.unspscSegmentCode !== 'other' && getFamiliesForSegment(c.unspscSegmentCode).length > 0 ? (
+                          <>
+                            <label htmlFor={`unspsc-family-${c.id}`} className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block mt-1">{isAr ? 'عائلة UNSPSC (اختياري)' : 'UNSPSC Family (optional)'}</label>
+                            <select id={`unspsc-family-${c.id}`} value={c.unspscFamilyCode ?? ''} onChange={e => updateContract(c.id, 'unspscFamilyCode', e.target.value || undefined)} className="w-full text-xs border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#082C6B] bg-white">
+                              <option value="">{isAr ? 'غير محدد' : 'Not specified'}</option>
+                              {getFamiliesForSegment(c.unspscSegmentCode).map(f => <option key={f.code} value={f.code}>{f.code} -- {f.title}</option>)}
+                            </select>
+                          </>
+                        ) : null}
+                        <p className="text-[10px] text-slate-400">{isAr ? 'تصنيف خدمات UNSPSC الرسمي (16 قطاعاً مصدره حتى الآن، مع مستوى العائلة الكامل من مصدر الأمم المتحدة الرسمي) -- إضافي إلى حقل الفئة الحر. اختر "أخرى" إذا لم تجد ما تبحث عنه' : 'Real UNSPSC services classification (16 sourced segments, now with full Family-level detail sourced directly from the UN\'s own primary distribution) -- additive to the free-text Category field above. Pick "Other" if what you need isn\'t listed yet'}</p>
                       </div>
                       <div className="space-y-1">
                         <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{isAr ? 'نوع الطرف المقابل (اختياري)' : 'Counterparty Type (optional)'}</label>

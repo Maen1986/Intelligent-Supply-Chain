@@ -21,6 +21,7 @@ import { INDUSTRIES, type IndustryKey } from '@/lib/kpiBenchmarksByIndustry';
 import { SKU_CLASSES, type SkuClassKey } from '@/lib/kpiBenchmarksBySkuClass';
 import { INDUSTRY_SUB_SECTORS } from '@/lib/industrySubSectors';
 import { UNSPSC_SERVICES_SEGMENTS, unspscSegmentLabel } from '@/lib/unspscSegments';
+import { getFamiliesForSegment } from '@/lib/unspscClassCommodity';
 import { TCO_STAGES, TCO_FIELDS, TCO_CHECKLIST_BY_SKU_CLASS, TCO_SOURCES, type TcoStageId } from '@/lib/tcoKnowledgeBase';
 import { useAuth } from '@/lib/AuthContext';
 import { API_BASE } from '@/lib/apiBase';
@@ -89,6 +90,9 @@ interface SpendRow {
    *  sourced UNSPSC segments yet (set when unspscSegmentCode === 'other').
    *  Captures what they were actually looking for, not a fabricated code. */
   unspscSegmentOther?: string;
+  /** Optional UNSPSC family code (4-digit), registry #385 lowest-level
+   *  import, 28 Aug 2026 -- see lib/unspscClassCommodity.ts. */
+  unspscFamilyCode?: string;
   annualSpend: number;
   contracted: boolean;
   strategic: boolean;
@@ -195,7 +199,7 @@ function kpiBreachLevel(value: number, cfg: KpiThresholdCfg): 'warn' | 'critical
 function nid() { return Math.random().toString(36).slice(2, 10); }
 
 function defaultRow(): SpendRow {
-  return { id: nid(), supplier: '', category: '', subcategory: '', annualSpend: 0, contracted: false, strategic: false, notes: '' }; // unspscSegmentCode/Other intentionally omitted -- optional, manual only
+  return { id: nid(), supplier: '', category: '', subcategory: '', annualSpend: 0, contracted: false, strategic: false, notes: '' }; // unspscSegmentCode/Other/FamilyCode intentionally omitted -- optional, manual only
 }
 
 // ─── Template generators ──────────────────────────────────────────────────────
@@ -2101,7 +2105,7 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
                       <td className="px-2 py-1.5"><input value={row.category} onChange={e => updateRow(row.id, 'category', e.target.value)} placeholder={isAr ? 'فئة' : 'Category'} className="w-full text-xs border border-slate-200 rounded px-2 py-1 min-w-[100px] focus:outline-none focus:ring-1 focus:ring-[#082C6B]" /></td>
                       <td className="px-2 py-1.5"><input value={row.subcategory} onChange={e => updateRow(row.id, 'subcategory', e.target.value)} placeholder={isAr ? 'فئة فرعية' : 'Subcategory'} className="w-full text-xs border border-slate-200 rounded px-2 py-1 min-w-[100px] focus:outline-none focus:ring-1 focus:ring-[#082C6B]" /></td>
                       <td className="px-2 py-1.5 min-w-[140px]">
-                        <select value={row.unspscSegmentCode ?? ''} onChange={e => updateRow(row.id, 'unspscSegmentCode', e.target.value)}
+                        <select value={row.unspscSegmentCode ?? ''} onChange={e => { const next = e.target.value; updateRow(row.id, 'unspscSegmentCode', next); if (row.unspscFamilyCode) updateRow(row.id, 'unspscFamilyCode', ''); }}
                           aria-label={isAr ? `${row.supplier || 'مورد'}: قطاع UNSPSC` : `${row.supplier || 'Supplier'}: UNSPSC segment`}
                           className="w-full text-xs border border-slate-200 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-[#082C6B] bg-white">
                           <option value="">{isAr ? 'غير محدد' : 'Not specified'}</option>
@@ -2113,6 +2117,14 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
                             placeholder={isAr ? 'ما الفئة التي تبحث عنها؟' : 'What were you looking for?'}
                             aria-label={isAr ? `${row.supplier || 'مورد'}: ما الفئة التي تبحث عنها؟` : `${row.supplier || 'Supplier'}: what were you looking for?`}
                             className="w-full text-xs border border-slate-200 rounded px-2 py-1 mt-1 focus:outline-none focus:ring-1 focus:ring-[#082C6B]" />
+                        ) : null}
+                        {row.unspscSegmentCode && row.unspscSegmentCode !== 'other' && getFamiliesForSegment(row.unspscSegmentCode).length > 0 ? (
+                          <select value={row.unspscFamilyCode ?? ''} onChange={e => updateRow(row.id, 'unspscFamilyCode', e.target.value)}
+                            aria-label={isAr ? `${row.supplier || 'مورد'}: عائلة UNSPSC` : `${row.supplier || 'Supplier'}: UNSPSC family`}
+                            className="w-full text-xs border border-slate-200 rounded px-2 py-1 mt-1 focus:outline-none focus:ring-1 focus:ring-[#082C6B] bg-white">
+                            <option value="">{isAr ? 'عائلة UNSPSC: غير محدد' : 'UNSPSC Family: not specified'}</option>
+                            {getFamiliesForSegment(row.unspscSegmentCode).map(f => <option key={f.code} value={f.code}>{f.code} -- {f.title}</option>)}
+                          </select>
                         ) : null}
                       </td>
                       <td className="px-2 py-1.5"><input type="number" value={row.annualSpend || ''} onChange={e => updateRow(row.id, 'annualSpend', parseFloat(e.target.value) || 0)} placeholder="0" className="w-full text-xs border border-slate-200 rounded px-2 py-1 text-right min-w-[120px] focus:outline-none focus:ring-1 focus:ring-[#082C6B]" /></td>
