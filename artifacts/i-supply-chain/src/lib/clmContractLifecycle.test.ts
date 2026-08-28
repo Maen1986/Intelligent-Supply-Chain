@@ -6,6 +6,7 @@ import {
   complexityLevelLabel,
   resolveComplexityLevel,
   resolveReviewDepth,
+  resolveMandatoryClauseCategories,
   RFX_TYPES,
   rfxTypeLabel,
   recommendRfxType,
@@ -275,6 +276,28 @@ describe('scoreRfxBidders', () => {
 // ---------------------------------------------------------------------------
 // Part E -- Wiring composition
 // ---------------------------------------------------------------------------
+
+describe('resolveMandatoryClauseCategories (Part E, rule 4, second half)', () => {
+  it('Level 1: no mandatory categories', () => {
+    const r = resolveMandatoryClauseCategories('level-1-low');
+    expect(r.categories).toEqual([]);
+  });
+  it('Level 2: Legal/Governance only', () => {
+    const r = resolveMandatoryClauseCategories('level-2-standard');
+    expect(r.categories).toEqual(['legal-governance']);
+  });
+  it('Level 3: Commercial/Payment, Risk Allocation, Legal/Governance', () => {
+    const r = resolveMandatoryClauseCategories('level-3-complex');
+    expect(r.categories).toEqual(['commercial-payment', 'risk-allocation', 'legal-governance']);
+  });
+  it('reasons are bilingual and non-empty for every level', () => {
+    (['level-1-low', 'level-2-standard', 'level-3-complex'] as const).forEach((level) => {
+      const r = resolveMandatoryClauseCategories(level);
+      expect(r.reasonEn.length).toBeGreaterThan(0);
+      expect(r.reasonAr.length).toBeGreaterThan(0);
+    });
+  });
+});
 
 describe('summarizeWiringChecks', () => {
   it('passes through flags unchanged, as a thin composition layer', () => {

@@ -80,6 +80,22 @@ export const LOGISTICS_MODES: { id: LogisticsMode; label: string; labelAr: strin
   { id: 'multimodal', label: 'Multimodal / Freight Forwarding', labelAr: 'متعدد الوسائط / الشحن' },
 ];
 
+/**
+ * Part E, rule 1 (Contract Intelligence v10 Module 03, cross-module wiring):
+ * counterpartyType (Module 01) determines which Module 05 sub-selection is
+ * even visible -- the government track (VII-A.1) is four fixed MOF/Etimad
+ * categories with NO FIDIC/professional-services-track/logistics-mode
+ * sub-selection (see resolveApplicableStandard's government branch below,
+ * which never reads fidicBook/professionalServicesTrack/logisticsMode at
+ * all). Only the private track (VII-A.2) uses those three sub-selectors.
+ * This never blocks data entry -- it only tells the caller whether showing
+ * that sub-selector is meaningful for the currently-selected counterparty
+ * type, matching the "government vs private never blend" standing rule.
+ */
+export function subSelectorsApplicable(counterpartyType: 'government' | 'private' | undefined): boolean {
+  return counterpartyType !== 'government';
+}
+
 export interface ApplicableStandardResult {
   standardEn: string;
   standardAr: string;

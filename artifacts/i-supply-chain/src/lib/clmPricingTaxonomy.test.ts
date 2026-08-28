@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { checkPricingMisuseFlag, pricingTypeLabel, PRICING_TYPES } from './clmPricingTaxonomy';
+import { checkPricingMisuseFlag, checkIndustryPricingPatternFlag, pricingTypeLabel, PRICING_TYPES, TYPICAL_PRICING_BY_BUCKET } from './clmPricingTaxonomy';
 
 describe('PRICING_TYPES', () => {
   it('has 11 types including the 3 primary and 7 extended plus other', () => {
@@ -60,5 +60,35 @@ describe('checkPricingMisuseFlag', () => {
   it('does not flag unit-price or other extended types (no rule defined)', () => {
     expect(checkPricingMisuseFlag('unit-price', 'uncertain', false, '2024-01-01', '2026-06-01').flagged).toBe(false);
     expect(checkPricingMisuseFlag('gmp', 'well-defined', false, '2024-01-01', '2026-06-01').flagged).toBe(false);
+  });
+});
+
+describe('checkIndustryPricingPatternFlag (Part E, rule 2: industry bucket -> typical pricing type)', () => {
+  it('not flagged when either field is unset', () => {
+    expect(checkIndustryPricingPatternFlag(undefined, 'ffp').flagged).toBe(false);
+    expect(checkIndustryPricingPatternFlag('construction', undefined).flagged).toBe(false);
+  });
+  it('not flagged when pricingPrimary is "other"', () => {
+    expect(checkIndustryPricingPatternFlag('construction', 'other').flagged).toBe(false);
+  });
+  it('not flagged when the bucket has no documented typical set', () => {
+    expect(checkIndustryPricingPatternFlag('not-a-real-bucket', 'ffp').flagged).toBe(false);
+  });
+  it('not flagged when pricingPrimary matches the bucket\'s typical set', () => {
+    expect(checkIndustryPricingPatternFlag('supply-goods', 'ffp').flagged).toBe(false);
+    expect(checkIndustryPricingPatternFlag('construction', 'gmp').flagged).toBe(false);
+    expect(checkIndustryPricingPatternFlag('om', 'cpff').flagged).toBe(false);
+    expect(checkIndustryPricingPatternFlag('professional-services', 'tm').flagged).toBe(false);
+    expect(checkIndustryPricingPatternFlag('logistics', 'unit-price').flagged).toBe(false);
+  });
+  it('flagged when pricingPrimary is outside the typical set, names the typical alternatives, and is framed as informational', () => {
+    const r = checkIndustryPricingPatternFlag('supply-goods', 'cost-plus');
+    expect(r.flagged).toBe(true);
+    expect(r.reasonEn).toContain('Firm Fixed-Price');
+    expect(r.reasonEn).toContain('Not an error');
+  });
+  it('TYPICAL_PRICING_BY_BUCKET has an entry for all 5 industry buckets', () => {
+    expect(Object.keys(TYPICAL_PRICING_BY_BUCKET).sort()).toEqual(
+      ['construction', 'logistics', 'om', 'professional-services', 'supply-goods']);
   });
 });

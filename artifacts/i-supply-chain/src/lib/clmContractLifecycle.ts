@@ -205,6 +205,67 @@ export function resolveReviewDepth(
 }
 
 // ---------------------------------------------------------------------------
+// Part E, rule 4, second half -- mandatory clause category set by
+// complexity level (T1, cross-module wiring)
+// ---------------------------------------------------------------------------
+
+/**
+ * Part E's 4th wiring rule: "Complexity Level (Part A) determines review
+ * depth (Part C) and which clause set is mandatory vs optional (Module
+ * 02)." The review-depth half is resolveReviewDepth() above; this is the
+ * mandatory-clause-set half. Rather than inventing a new per-subclause
+ * mandatory/optional taxonomy (which nothing in Module 02's research base
+ * documents), this reuses Module 02's own already-published, sourced
+ * category-level sensitivity tiers (CLAUSE_CATEGORIES' `sensitivity` field
+ * in clmClauseTaxonomy.ts: high / high-by-definition / moderate /
+ * low-moderate) -- no new fabricated content, just a cross-module read of
+ * what Module 02 already asserts.
+ *
+ * Level 1 (Low): nothing is hard-mandated -- the whole clause checklist
+ * stays fully optional, matching Part A's own "standard/templated terms"
+ * definition of Level 1.
+ * Level 2 (Standard): Legal/Governance is mandated -- it's tagged
+ * "high-by-definition" because it IS Module 01's operational surface
+ * (governing-law + dispute-resolution are the two fields Module 01's own
+ * mismatch-flag logic checks), so any contract past Level 1 should have
+ * it addressed.
+ * Level 3 (Complex/Strategic): every category tagged "high" or
+ * "high-by-definition" is mandated -- Commercial/Payment, Risk Allocation,
+ * and Legal/Governance -- matching resolveReviewDepth()'s own Level-3
+ * description ("full clause-by-clause analysis, risk allocation mapping").
+ */
+export interface MandatoryClauseCategoriesResolution {
+  categories: string[];
+  reasonEn: string;
+  reasonAr: string;
+}
+
+const LEVEL_3_MANDATORY_CATEGORIES = ['commercial-payment', 'risk-allocation', 'legal-governance'];
+const LEVEL_2_MANDATORY_CATEGORIES = ['legal-governance'];
+
+export function resolveMandatoryClauseCategories(complexity: ComplexityLevel): MandatoryClauseCategoriesResolution {
+  if (complexity === 'level-3-complex') {
+    return {
+      categories: LEVEL_3_MANDATORY_CATEGORIES,
+      reasonEn: 'Level 3 (Complex/Strategic): all HIGH and HIGH-BY-DEFINITION sensitivity categories (Commercial/Payment, Risk Allocation, Legal/Governance) are mandatory to address, matching the HEAVY review depth this complexity level triggers.',
+      reasonAr: 'المستوى 3 (معقد/استراتيجي): جميع الفئات ذات الحساسية المرتفعة أو المرتفعة بحكم التعريف (التجاري/الدفع، توزيع المخاطر، القانوني/الحوكمة) إلزامية المعالجة، بما يتوافق مع عمق المراجعة المعمّقة الذي يستدعيه هذا المستوى.',
+    };
+  }
+  if (complexity === 'level-2-standard') {
+    return {
+      categories: LEVEL_2_MANDATORY_CATEGORIES,
+      reasonEn: "Level 2 (Standard): Legal/Governance is mandatory to address -- it is Module 01's operational surface (governing law + dispute resolution). Other categories remain recommended, not mandated.",
+      reasonAr: 'المستوى 2 (عادي): القانوني/الحوكمة إلزامي المعالجة -- فهو الواجهة التشغيلية للوحدة 01 (القانون الحاكم وتسوية المنازعات). تبقى الفئات الأخرى موصى بها دون إلزام.',
+    };
+  }
+  return {
+    categories: [],
+    reasonEn: 'Level 1 (Low): standard/templated terms -- no clause category is hard-mandated; the full checklist stays optional.',
+    reasonAr: 'المستوى 1 (منخفض): شروط قياسية/نموذجية -- لا تُلزم أي فئة من فئات البنود؛ تبقى القائمة كاملة اختيارية.',
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Part D -- RFx (RFI / RFP / RFQ) selection + weighted scoring (T1)
 // ---------------------------------------------------------------------------
 

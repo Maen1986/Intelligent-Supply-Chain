@@ -12,11 +12,11 @@ import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react'
 import { UNSPSC_SERVICES_SEGMENTS, unspscSegmentLabel } from '@/lib/unspscSegments';
 import { getFamiliesForSegment } from '@/lib/unspscClassCommodity';
 import { GOVERNING_LAW_TRACKS, governingLawTrackLabel, governingLawPracticeNote, checkGoverningLawMismatch, internationalContractingPracticeGuide, ARBITRATION_INSTITUTIONS, arbitrationInstitutionLabel, COMMON_CONTRACTING_COMBOS, checkArbitrationInstitutionFit, type GoverningLawTrack, type ArbitrationInstitution } from '@/lib/clmLegalTrack';
-import { PRICING_TYPES, checkPricingMisuseFlag, type PricingType, type ScopeDefiniteness, type PricingPhase } from '@/lib/clmPricingTaxonomy';
-import { INDUSTRY_BUCKETS, FIDIC_BOOKS, PROFESSIONAL_SERVICES_TRACKS, LOGISTICS_MODES, resolveApplicableStandard, type IndustryBucket, type FidicBook, type ProfessionalServicesTrack, type LogisticsMode } from '@/lib/clmIndustryStandards';
+import { PRICING_TYPES, checkPricingMisuseFlag, checkIndustryPricingPatternFlag, type PricingType, type ScopeDefiniteness, type PricingPhase } from '@/lib/clmPricingTaxonomy';
+import { INDUSTRY_BUCKETS, FIDIC_BOOKS, PROFESSIONAL_SERVICES_TRACKS, LOGISTICS_MODES, resolveApplicableStandard, subSelectorsApplicable, type IndustryBucket, type FidicBook, type ProfessionalServicesTrack, type LogisticsMode } from '@/lib/clmIndustryStandards';
 import { INCOTERMS_2020, PAYMENT_TERMS, ISO_4217_CURRENCIES, type Incoterm, type PaymentTermType } from '@/lib/clmTradeTerms';
 import {
-  resolveComplexityLevel, resolveReviewDepth, complexityLevelLabel, COMPLEXITY_LEVELS, type ComplexityLevel,
+  resolveComplexityLevel, resolveReviewDepth, resolveMandatoryClauseCategories, summarizeWiringChecks, complexityLevelLabel, COMPLEXITY_LEVELS, type ComplexityLevel,
   RFX_TYPES, rfxTypeLabel, recommendRfxType, RFX_DEFAULT_SCORING_TEMPLATE, scoreRfxBidders,
   type RfxType, type RfxSelectionInputs, type RfxScoringCriterion, type RfxBidderScoreInput, type RfxBidderResult,
 } from '@/lib/clmContractLifecycle';
@@ -1322,6 +1322,7 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
                         {checkGoverningLawMismatch(c.governingLawClause, c.counterpartyJurisdiction, c.performanceLocation).flagged && <span className="text-[10px] bg-amber-100 text-amber-700 font-bold px-2 py-0.5 rounded-full" title={isAr ? checkGoverningLawMismatch(c.governingLawClause, c.counterpartyJurisdiction, c.performanceLocation).reasonAr : checkGoverningLawMismatch(c.governingLawClause, c.counterpartyJurisdiction, c.performanceLocation).reasonEn}>{isAr ? 'قانون حاكم غير متطابق' : 'GOVERNING-LAW MISMATCH'}</span>}
                         {checkArbitrationInstitutionFit(c.governingLawClause, c.arbitrationInstitution, c.clauseVariants?.['dispute-resolution']).flagged && <span className="text-[10px] bg-amber-100 text-amber-700 font-bold px-2 py-0.5 rounded-full" title={isAr ? checkArbitrationInstitutionFit(c.governingLawClause, c.arbitrationInstitution, c.clauseVariants?.['dispute-resolution']).reasonAr : checkArbitrationInstitutionFit(c.governingLawClause, c.arbitrationInstitution, c.clauseVariants?.['dispute-resolution']).reasonEn}>{isAr ? 'جهة التحكيم تستحق التأكيد' : 'ARBITRATION INSTITUTION: WORTH CONFIRMING'}</span>}
                         {checkPricingMisuseFlag(c.pricingPrimary, c.scopeDefiniteness, c.pricingHasCapOrMilestones, c.startDate, c.endDate).flagged && <span className="text-[10px] bg-amber-100 text-amber-700 font-bold px-2 py-0.5 rounded-full" title={isAr ? checkPricingMisuseFlag(c.pricingPrimary, c.scopeDefiniteness, c.pricingHasCapOrMilestones, c.startDate, c.endDate).reasonAr : checkPricingMisuseFlag(c.pricingPrimary, c.scopeDefiniteness, c.pricingHasCapOrMilestones, c.startDate, c.endDate).reasonEn}>{isAr ? 'التسعير يستحق نظرة ثانية' : 'PRICING: WORTH A SECOND LOOK'}</span>}
+                        {checkIndustryPricingPatternFlag(c.industryBucket, c.pricingPrimary).flagged && <span className="text-[10px] bg-amber-100 text-amber-700 font-bold px-2 py-0.5 rounded-full" title={isAr ? checkIndustryPricingPatternFlag(c.industryBucket, c.pricingPrimary).reasonAr : checkIndustryPricingPatternFlag(c.industryBucket, c.pricingPrimary).reasonEn}>{isAr ? 'نمط التسعير غير معتاد لهذا القطاع' : 'PRICING PATTERN: UNCOMMON FOR THIS BUCKET'}</span>}
                         {(() => {
                           const clauseFlagCount = [
                             checkCommercialRibaFlag(c.clausesPresent, c.counterpartyJurisdiction, c.performanceLocation, c.governingLawClause),
@@ -1509,7 +1510,8 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
                           const hasActiveMismatchFlag =
                             checkGoverningLawMismatch(c.governingLawClause, c.counterpartyJurisdiction, c.performanceLocation).flagged ||
                             checkArbitrationInstitutionFit(c.governingLawClause, c.arbitrationInstitution, c.clauseVariants?.['dispute-resolution']).flagged ||
-                            checkPricingMisuseFlag(c.pricingPrimary, c.scopeDefiniteness, c.pricingHasCapOrMilestones, c.startDate, c.endDate).flagged;
+                            checkPricingMisuseFlag(c.pricingPrimary, c.scopeDefiniteness, c.pricingHasCapOrMilestones, c.startDate, c.endDate).flagged ||
+                            checkIndustryPricingPatternFlag(c.industryBucket, c.pricingPrimary).flagged;
                           const complexity = resolveComplexityLevel({
                             value: c.annualValue || c.totalValue || 0,
                             durationMonths,
@@ -1519,6 +1521,7 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
                             clauseDeviationCount: c.clauseDeviationCount,
                           });
                           const review = resolveReviewDepth(complexity.level, c.annualValue || c.totalValue || 0, c.reviewHeavyThresholdValue);
+                          const mandatoryClauses = resolveMandatoryClauseCategories(complexity.level);
                           return (
                             <div className="flex flex-wrap items-center gap-2 mt-2">
                               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white border border-slate-300 text-slate-700">
@@ -1528,6 +1531,41 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
                                 {review.depth === 'heavy' ? (isAr ? 'مراجعة معمّقة' : 'HEAVY REVIEW') : (isAr ? 'مراجعة خفيفة' : 'LIGHT REVIEW')}
                               </span>
                               <p className="text-[10px] text-slate-400 basis-full">{isAr ? review.reasonAr : review.reasonEn}</p>
+                              {mandatoryClauses.categories.length > 0 && (
+                                <div className="basis-full flex flex-wrap items-center gap-1.5 mt-1">
+                                  <span className="text-[10px] text-slate-500">{isAr ? 'فئات البنود الإلزامية عند هذا المستوى:' : 'Mandatory clause categories at this level:'}</span>
+                                  {mandatoryClauses.categories.map(catId => {
+                                    const cat = CLAUSE_CATEGORIES.find(c2 => c2.id === catId);
+                                    return cat ? (
+                                      <span key={catId} className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-200 text-slate-700">
+                                        {isAr ? cat.labelAr : cat.label}
+                                      </span>
+                                    ) : null;
+                                  })}
+                                </div>
+                              )}
+                              {(() => {
+                                const wiringChecks = summarizeWiringChecks([
+                                  { id: 'governing-law-mismatch', labelEn: 'Governing-law / jurisdiction mismatch', labelAr: 'عدم تطابق القانون الحاكم / الولاية القضائية', flagged: checkGoverningLawMismatch(c.governingLawClause, c.counterpartyJurisdiction, c.performanceLocation).flagged },
+                                  { id: 'arbitration-institution-fit', labelEn: 'Arbitration institution worth confirming', labelAr: 'جهة التحكيم تستحق التأكيد', flagged: checkArbitrationInstitutionFit(c.governingLawClause, c.arbitrationInstitution, c.clauseVariants?.['dispute-resolution']).flagged },
+                                  { id: 'pricing-misuse', labelEn: 'Pricing type worth a second look', labelAr: 'نوع التسعير يستحق نظرة ثانية', flagged: checkPricingMisuseFlag(c.pricingPrimary, c.scopeDefiniteness, c.pricingHasCapOrMilestones, c.startDate, c.endDate).flagged },
+                                  { id: 'industry-pricing-pattern', labelEn: 'Pricing type uncommon for industry bucket', labelAr: 'نمط التسعير غير معتاد لقطاع الصناعة', flagged: checkIndustryPricingPatternFlag(c.industryBucket, c.pricingPrimary).flagged },
+                                ]);
+                                const activeCount = wiringChecks.filter(w => w.flagged).length;
+                                return (
+                                  <div className="basis-full mt-2 pt-2 border-t border-slate-200">
+                                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">{isAr ? `فحوصات الربط بين الوحدات (الجزء E) -- ${activeCount} نشطة من ${wiringChecks.length}` : `Cross-Module Wiring Checks (Part E) -- ${activeCount} of ${wiringChecks.length} active`}</p>
+                                    <div className="flex flex-wrap gap-1.5">
+                                      {wiringChecks.map(w => (
+                                        <span key={w.id} className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${w.flagged ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-400'}`}>
+                                          {w.flagged ? '⚠ ' : '✓ '}{isAr ? w.labelAr : w.labelEn}
+                                        </span>
+                                      ))}
+                                    </div>
+                                    <p className="text-[10px] text-slate-400 mt-1">{isAr ? 'يجمع هذا اللوح تنبيهات موجودة بالفعل من الوحدات 01 و04 و05 في مكان واحد -- لا يُعيد تنفيذ أي فحص، بل يعرضها معاً فقط' : 'This panel consolidates checks already computed by Modules 01, 04, and 05 into one place -- it does not reimplement any check, only displays them together'}</p>
+                                  </div>
+                                );
+                              })()}
                             </div>
                           );
                         })()}
@@ -1542,6 +1580,7 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
                         <p className="text-[10px] text-slate-400">{isAr ? 'يحدد المعيار المرجعي الموضح أدناه -- معلومة مرجعية وليست تنبيهاً' : 'Drives the reference standard shown below -- informational, not a flag'}</p>
                       </div>
                       {c.industryBucket === 'construction' && (
+                        subSelectorsApplicable(c.counterpartyType) ? (
                         <div className="space-y-1">
                           <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{isAr ? 'كتاب FIDIC (اختياري)' : 'FIDIC Book (optional)'}</label>
                           <select value={c.fidicBook ?? ''} onChange={e => updateContract(c.id, 'fidicBook', (e.target.value || undefined) as Contract['fidicBook'])} className="w-full text-xs border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#082C6B] bg-white">
@@ -1549,8 +1588,12 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
                             {FIDIC_BOOKS.map(b => <option key={b.id} value={b.id}>{isAr ? b.labelAr : b.label}</option>)}
                           </select>
                         </div>
+                        ) : (
+                          <p className="text-[10px] text-slate-400 sm:col-span-1 self-end pb-1.5">{isAr ? 'كتاب FIDIC غير قابل للتطبيق -- المسار الحكومي يستخدم فئات وزارة المالية / اعتماد الثابتة دون تصنيف فرعي' : 'FIDIC book not applicable -- the government track uses fixed MOF/Etimad categories with no sub-selection'}</p>
+                        )
                       )}
                       {c.industryBucket === 'professional-services' && (
+                        subSelectorsApplicable(c.counterpartyType) ? (
                         <div className="space-y-1">
                           <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{isAr ? 'مسار الخدمات المهنية (اختياري)' : 'Professional Services Track (optional)'}</label>
                           <select value={c.professionalServicesTrack ?? ''} onChange={e => updateContract(c.id, 'professionalServicesTrack', (e.target.value || undefined) as Contract['professionalServicesTrack'])} className="w-full text-xs border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#082C6B] bg-white">
@@ -1558,8 +1601,12 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
                             {PROFESSIONAL_SERVICES_TRACKS.map(t => <option key={t.id} value={t.id}>{isAr ? t.labelAr : t.label}</option>)}
                           </select>
                         </div>
+                        ) : (
+                          <p className="text-[10px] text-slate-400 sm:col-span-1 self-end pb-1.5">{isAr ? 'مسار الخدمات المهنية غير قابل للتطبيق -- المسار الحكومي يستخدم فئات وزارة المالية / اعتماد الثابتة دون تصنيف فرعي' : 'Professional Services Track not applicable -- the government track uses fixed MOF/Etimad categories with no sub-selection'}</p>
+                        )
                       )}
                       {c.industryBucket === 'logistics' && (
+                        subSelectorsApplicable(c.counterpartyType) ? (
                         <div className="space-y-1">
                           <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{isAr ? 'وسيلة النقل (اختياري)' : 'Transport Mode (optional)'}</label>
                           <select value={c.logisticsMode ?? ''} onChange={e => updateContract(c.id, 'logisticsMode', (e.target.value || undefined) as Contract['logisticsMode'])} className="w-full text-xs border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#082C6B] bg-white">
@@ -1567,6 +1614,9 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
                             {LOGISTICS_MODES.map(m => <option key={m.id} value={m.id}>{isAr ? m.labelAr : m.label}</option>)}
                           </select>
                         </div>
+                        ) : (
+                          <p className="text-[10px] text-slate-400 sm:col-span-1 self-end pb-1.5">{isAr ? 'وسيلة النقل غير قابلة للتطبيق -- المسار الحكومي يستخدم فئات وزارة المالية / اعتماد الثابتة دون تصنيف فرعي' : 'Transport Mode not applicable -- the government track uses fixed MOF/Etimad categories with no sub-selection'}</p>
+                        )
                       )}
                       {(() => {
                         const std = resolveApplicableStandard(c.counterpartyType, c.industryBucket, c.fidicBook, c.professionalServicesTrack, c.logisticsMode);

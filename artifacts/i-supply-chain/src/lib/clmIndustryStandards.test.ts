@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   INDUSTRY_BUCKETS, FIDIC_BOOKS, PROFESSIONAL_SERVICES_TRACKS, LOGISTICS_MODES,
-  resolveApplicableStandard,
+  resolveApplicableStandard, subSelectorsApplicable,
 } from './clmIndustryStandards';
 
 describe('static metadata', () => {
@@ -144,5 +144,17 @@ describe('resolveApplicableStandard', () => {
   it('defaults to the private track when counterpartyType is not yet specified', () => {
     const r = resolveApplicableStandard(undefined, 'supply-goods', undefined, undefined, undefined);
     expect(r?.standardEn).toContain('Civil Transactions Law');
+  });
+});
+
+describe('subSelectorsApplicable (Part E, rule 1: counterpartyType gates Module 05 sub-selection)', () => {
+  it('returns false for government (no FIDIC/professional-services/logistics sub-selection)', () => {
+    expect(subSelectorsApplicable('government')).toBe(false);
+  });
+  it('returns true for private', () => {
+    expect(subSelectorsApplicable('private')).toBe(true);
+  });
+  it('returns true when counterpartyType is not yet specified (private is the default track)', () => {
+    expect(subSelectorsApplicable(undefined)).toBe(true);
   });
 });

@@ -139,3 +139,56 @@ export function checkPricingMisuseFlag(
 
   return notFlagged;
 }
+
+// ---------------------------------------------------------------------------
+// Part E, rule 2 (Contract Intelligence v10 Module 03, cross-module wiring):
+// industry SOW bucket (Module 05) and its commonly-paired pricing type.
+// ---------------------------------------------------------------------------
+
+/**
+ * Commonly-paired pricing types per Module 05 industry bucket -- general
+ * contract-pricing-type guidance (FAR Part 16's contract-type categories;
+ * CIPS pricing-strategy guidance), the same generic sourcing register
+ * already used elsewhere in this file ("the extended CIPS/FAR-style list").
+ * This is a **typical pattern**, not a rule: a real contract can and does
+ * legitimately deviate (e.g. a construction EPC using GMP is normal; a
+ * professional-services retainer using FFP for a fixed monthly scope is
+ * normal). It exists only to power an informational "worth confirming"
+ * flag, never a blocking error -- same honesty register as
+ * checkPricingMisuseFlag above (item 35's rule: "worth a second look",
+ * never "misuse"/"error").
+ */
+export const TYPICAL_PRICING_BY_BUCKET: Record<string, PricingType[]> = {
+  'supply-goods': ['ffp', 'unit-price'],
+  'construction': ['ffp', 'gmp', 'unit-price'],
+  'om': ['fp-epa', 'cpff'],
+  'professional-services': ['tm', 'cpff', 'ffp'],
+  'logistics': ['unit-price', 'fp-epa'],
+};
+
+/**
+ * Part E, rule 2: flags when the contract's selected primary pricing type
+ * (Module 04) is outside the commonly-paired set for its self-declared
+ * industry bucket (Module 05) -- informational only, phrased as "worth
+ * confirming", not a misuse verdict. Silent (not flagged) when either field
+ * is unset, when the bucket has no documented typical set, or when
+ * pricingPrimary is 'other'/blank -- consistent with checkPricingMisuseFlag
+ * above never flagging on incomplete input.
+ */
+export function checkIndustryPricingPatternFlag(
+  industryBucket: string | undefined,
+  pricingPrimary: PricingType | undefined,
+): PricingFlagCheck {
+  if (!industryBucket || !pricingPrimary || pricingPrimary === 'other') return notFlagged;
+  const typical = TYPICAL_PRICING_BY_BUCKET[industryBucket];
+  if (!typical || typical.length === 0) return notFlagged;
+  if (typical.includes(pricingPrimary)) return notFlagged;
+
+  const typicalLabelsEn = typical.map((t) => pricingTypeLabel(t, false)).join(', ');
+  const typicalLabelsAr = typical.map((t) => pricingTypeLabel(t, true)).join('، ');
+  return {
+    flagged: true,
+    reasonEn: `${pricingTypeLabel(pricingPrimary, false)} is set, which is less commonly paired with this industry bucket -- ${typicalLabelsEn} are the more typical patterns here. Not an error; many contracts legitimately deviate -- worth confirming this was a deliberate choice.`,
+    reasonAr: `تم تحديد ${pricingTypeLabel(pricingPrimary, true)}، وهو أقل شيوعاً مع قطاع الصناعة هذا -- الأنماط الأكثر شيوعاً هنا هي ${typicalLabelsAr}. هذا ليس خطأً؛ فكثير من العقود تنحرف عن ذلك بشكل مشروع -- يستحق التأكد من أن هذا كان اختياراً مقصوداً.`,
+  };
+}
