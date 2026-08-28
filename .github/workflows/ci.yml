@@ -54,3 +54,38 @@ jobs:
       - name: Test — API server (artifacts/api-server)
         run: pnpm --filter ./artifacts/api-server run test
         continue-on-error: false
+
+  # Mirrors Render's actual buildCommands byte-for-byte (both isc-frontend
+  # and isc-backend use unpinned `npx pnpm`, which Render's dashboard does
+  # not let us edit or pin). Deliberately does NOT use pnpm/action-setup —
+  # the whole point is to let npx resolve whatever pnpm currently tags
+  # "latest" on the npm registry, exactly like Render does on every real
+  # deploy, so a future pnpm-major breaking change fails HERE within
+  # minutes of the push instead of silently breaking production for days.
+  #
+  # Added 2026-08-28 after discovering both Render services had been
+  # failing every build since 2026-08-24 21:53:42 UTC: the typecheck-and-
+  # test job above pins pnpm to 9 via pnpm/action-setup, so it stayed green
+  # the entire time this was broken in production. That gap is what let a
+  # ~4-day outage go unnoticed. See commit f8ae152 for the fix and root
+  # cause; do not remove this job without an equivalent safeguard in place.
+  render-build-parity:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies (unpinned npx pnpm, matches Render)
+        run: npx pnpm install --frozen-lockfile
+
+      - name: Build frontend (matches isc-frontend buildCommand)
+        env:
+          PORT: "10000"
+          BASE_PATH: "/"
+        run: npx pnpm --filter @workspace/i-supply-chain build
+
+      - name: Build API server (matches isc-backend buildCommand's final step)
+        run: npx pnpm --filter @workspace/api-server build
