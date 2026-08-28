@@ -26,6 +26,9 @@ import {
   type SupplierCheck, type SeverityResult, type ContractType,
   newSupplierCheck, isCheckComplete, deriveSeverity, buildSupplierDependencyPrompt,
 } from '@/lib/supplierDependency';
+import {
+  correlateSupplierChecksWithContracts, type SupplierContractCorrelation, type CorrelationContractInput,
+} from '@/lib/clmSharedCaseData';
 import { useAIPlan } from '@/hooks/useAIPlan';
 import { AIPlanPanel } from '@/components/AIPlanPanel';
 import { safeSetItem } from '@/lib/storage';
@@ -373,6 +376,38 @@ export function SupplierDependencyCheck() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
+  // ── #381 Shared Client Case Data Layer (2-source correlation, 29 Aug
+  // 2026, owner go-ahead) -- read-only fetch of the client's own #371
+  // Contract Intelligence contracts, purely to compute a client-side
+  // correlation against this page's own Supplier Dependency Checks. This
+  // page never writes to /api/clm-contracts -- read-only, and silently
+  // empty (no correlation panel shown) for an unauthenticated visitor or
+  // on fetch failure, exactly like every other read this page already
+  // makes. See clmSharedCaseData.ts for the match logic and its honesty
+  // scope (2 sources only, exact supplier-name match only).
+  const [correlationContracts, setCorrelationContracts] = useState<CorrelationContractInput[]>([]);
+  useEffect(() => {
+    if (!user) { setCorrelationContracts([]); return; }
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`${API_BASE}/clm-contracts`, { credentials: 'include' });
+        if (cancelled || !res.ok) return;
+        const data = await res.json() as { ok: boolean; contracts: { clientKey: string; name: string; data: { supplier?: string; endDate?: string } }[] };
+        if (!data.ok || !Array.isArray(data.contracts)) return;
+        setCorrelationContracts(data.contracts.map(row => ({
+          id: row.clientKey,
+          name: row.name,
+          supplier: row.data?.supplier ?? '',
+          endDate: row.data?.endDate ?? '',
+        })));
+      } catch { /* offline -- correlation panel just stays empty */ }
+    })();
+    return () => { cancelled = true; };
+  }, [user]);
+  const correlations: SupplierContractCorrelation[] = correlateSupplierChecksWithContracts(checks, correlationContracts);
+  const flaggedCorrelations = correlations.filter(c => c.flagged);
+
   const addCheck = () => persist([...checks, newSupplierCheck()]);
   const removeCheck = (id: string) => persist(checks.length > 1 ? checks.filter(c => c.id !== id) : [newSupplierCheck()]);
   const updateCheck = (id: string, patch: Partial<SupplierCheck>) =>
@@ -440,6 +475,24 @@ export function SupplierDependencyCheck() {
             {isAr ? 'تصدير PDF' : 'Export PDF'}
           </button>
         </div>
+
+        {correlations.length > 0 && (
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-2">
+            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+              {isAr ? `طبقة بيانات العميل المشتركة -- ${flaggedCorrelations.length} تطابق يستحق المراجعة من ${correlations.length}` : `Shared Client Case Data -- ${flaggedCorrelations.length} of ${correlations.length} matches worth reviewing`}
+            </p>
+            {correlations.map((corr, idx) => (
+              <div key={`${corr.supplierCheckId}-${corr.matchedContractId}-${idx}`} className={`text-xs rounded-lg px-3 py-2 ${corr.flagged ? 'bg-amber-100 text-amber-800 font-medium' : 'bg-white text-slate-500 border border-slate-200'}`}>
+                {corr.flagged ? '⚠ ' : ''}{isAr ? corr.narrativeAr : corr.narrativeEn}
+              </div>
+            ))}
+            <p className="text-[10px] text-slate-400">
+              {isAr
+                ? 'يطابق هذا فحوصات اعتماد الموردين مع عقود التوريد (الوحدة 03) عبر تطابق اسم المورد تماماً -- مصدران فقط حتى الآن (سجل المخاطر واكتشاف الموردين ما زالا خارج النطاق حتى يتم بناؤهما)'
+                : 'This matches Supplier Dependency Checks against Contract Intelligence contracts via exact supplier-name match -- 2 sources only for now (Risk Register and Supplier Discovery remain out of scope until those tools exist)'}
+            </p>
+          </div>
+        )}
 
         {checks.map(check => (
           <SupplierCheckCard key={check.id} check={check} isAr={isAr} onUpdate={updateCheck} onRemove={removeCheck} today={today} />
