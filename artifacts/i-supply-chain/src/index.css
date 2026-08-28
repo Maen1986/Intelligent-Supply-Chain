@@ -209,6 +209,11 @@ html[lang="ar"] {
     visibility: visible;
   }
 
+  body[data-print="freezone-routing"] .print-zone-freezone-routing,
+  body[data-print="freezone-routing"] .print-zone-freezone-routing * {
+    visibility: visible;
+  }
+
   body[data-print="clm"] .print-zone-clm,
   body[data-print="clm"] .print-zone-clm * {
     visibility: visible;
