@@ -547,3 +547,94 @@ export function checkGovernanceRibaArbitrationFlag(
     reasonAr: 'تم تحديد بند تسوية المنازعات وبند فائدة التأخر في السداد معاً في عقد ذي صلة بالسعودية. تُخضِع المحاكم السعودية جوهر الحكم لمراجعة النظام العام الشرعية -- والأحكام التي تمنح فائدة (ربا) غير قابلة للإنفاذ عموماً، بصرف النظر عن صحة اختيار مقر التحكيم. هذا نمط حقيقي وموثق لمخاطر الإنفاذ (البند 33)، مختلف عن مسألة المقر/المؤسسة نفسها -- يستحق نظرة ثانية.',
   };
 }
+
+/**
+ * Commercial/Payment category flag, GCC/Jordan wave (item 25, 29 Aug 2026).
+ * The five tracks below are NOT governed by Saudi's riba treatment -- each
+ * has its own Commercial Code / Law of Commerce provision that makes
+ * commercial interest legally chargeable and enforceable, subject to a
+ * jurisdiction-specific statutory rate ceiling (sourced, not assumed):
+ * UAE (Federal Decree-Law No. 50/2022, Art. 72 -- 9% p.a. cap), Jordan
+ * (Code of Civil Procedure Art. 167 -- 9% p.a. cap on delay interest),
+ * Kuwait (Commercial Code Art. 102 -- 7% default legal rate), Bahrain (Law
+ * of Commerce Art. 76 -- BMA-set or agreed rate, plus a separate cap so
+ * total interest cannot exceed principal on debts running over 7 years),
+ * Oman (Commercial Code Art. 80 -- market rate, consistently upheld by
+ * courts). This function does NOT claim to verify the contract's actual
+ * stated rate against these caps -- `clausesPresent` only captures whether
+ * an interest clause topic is checked, not its numeric rate (no rate field
+ * exists in the contract model today). The honest, buildable-today flag is
+ * an informational advisory: the clause is enforceable here (unlike
+ * Saudi), but the client should confirm their own stated rate sits within
+ * the track's statutory ceiling. A future T2 (capturing the actual rate
+ * and comparing it automatically) is a real, separate, larger build, not
+ * this one. UAE DIFC/ADGM (a common-law free-zone track, not Sharia-
+ * sensitive in the same way) is deliberately excluded -- not researched
+ * this pass, so not asserted here.
+ */
+const GCC_JORDAN_INTEREST_PERMITTED_TRACKS: Record<string, { capEn: string; capAr: string }> = {
+  'uae-ctl': {
+    capEn: 'UAE Commercial Transactions Law (Federal Decree-Law No. 50/2022, Art. 72) caps commercial interest at 9% per annum.',
+    capAr: 'يحدد قانون المعاملات التجارية الإماراتي (المرسوم بقانون اتحادي رقم 50 لسنة 2022، المادة 72) سقف الفائدة التجارية بنسبة 9% سنوياً.',
+  },
+  'bahrain-civil': {
+    capEn: 'Bahrain’s Law of Commerce (Art. 76) permits interest at a Bahrain Monetary Agency-set or agreed rate, with total interest capped at the principal amount for debts running over 7 years.',
+    capAr: 'يسمح قانون التجارة البحريني (المادة 76) بالفائدة بالمعدل الذي تحدده مؤسسة نقد البحرين أو المتفق عليه، مع سقف إجمالي للفائدة لا يتجاوز أصل الدين للديون التي تمتد لأكثر من 7 سنوات.',
+  },
+  'oman-civil': {
+    capEn: 'Oman’s Commercial Code (Art. 80) entitles a creditor to interest on a commercial loan or debt at the applicable market rate, consistently upheld by Omani courts.',
+    capAr: 'يمنح قانون التجارة العماني (المادة 80) الدائن حق الحصول على فائدة على القرض أو الدين التجاري بالمعدل السوقي المعمول به، وقد أقرّت المحاكم العمانية ذلك باستمرار.',
+  },
+  'kuwait-civil': {
+    capEn: 'Kuwait’s Commercial Code (Art. 102) entitles a creditor to commercial-loan interest, defaulting to a 7% legal rate if no rate is stated in the contract.',
+    capAr: 'يمنح قانون التجارة الكويتي (المادة 102) الدائن حق الحصول على فائدة القرض التجاري، وتُطبَّق نسبة قانونية افتراضية 7% في حال عدم تحديد المعدل في العقد.',
+  },
+  'jordan-civil': {
+    capEn: 'Jordan’s Code of Civil Procedure (Art. 167) caps delay interest on commercial debts at 9% per annum; the Commercial Code (Art. 88) imposes legal interest for payment delay.',
+    capAr: 'يحدد قانون أصول المحاكمات المدنية الأردني (المادة 167) سقف فائدة التأخير على الديون التجارية بنسبة 9% سنوياً؛ ويفرض القانون التجاري (المادة 88) فائدة قانونية عن التأخر في السداد.',
+  },
+};
+
+export function checkGccJordanInterestPermittedFlag(
+  clausesPresent: ClausesPresent | undefined,
+  governingLawClause: string | undefined,
+): ClauseFlagCheck {
+  if (!governingLawClause || !(governingLawClause in GCC_JORDAN_INTEREST_PERMITTED_TRACKS)) return notFlagged;
+
+  const hasInterestClause = (clausesPresent?.['commercial-payment'] ?? []).includes('late-payment-interest-penalty');
+  if (!hasInterestClause) return notFlagged;
+
+  const track = GCC_JORDAN_INTEREST_PERMITTED_TRACKS[governingLawClause];
+  return {
+    flagged: true,
+    reasonEn: `A late-payment interest/penalty subclause is checked on a contract governed by this track. Unlike Saudi law, this jurisdiction’s Commercial Code makes commercial interest legally chargeable and enforceable -- ${track.capEn} This is an informational advisory, not a compliance risk: confirm the contract’s stated rate sits within the statutory ceiling above (the platform does not yet capture or verify the numeric rate itself).`,
+    reasonAr: `تم تحديد بند فائدة/غرامة التأخر في السداد في عقد يخضع لهذا المسار القانوني. وخلافاً للنظام السعودي، يجعل القانون التجاري لهذه الجهة الفائدة التجارية قابلة للفرض والإنفاذ قانونياً -- ${track.capAr} هذا تنبيه معلوماتي وليس مخاطرة امتثال: يُرجى التأكد من أن المعدل المذكور في العقد يقع ضمن السقف القانوني أعلاه (لا تلتقط المنصة أو تتحقق بعد من المعدل الرقمي نفسه).`,
+  };
+}
+
+/**
+ * Commercial/Payment category flag, Qatar (item 25, 29 Aug 2026). Qatar's
+ * Civil Code (Art. 568) is structurally different from the other five GCC/
+ * Jordan tracks above: a loan contract's interest/remuneration term is
+ * VOID by default (though the rest of the contract survives) unless the
+ * lender is a licensed financial institution (Qatar Central Bank Law,
+ * Art. 110). This is a real enforceability risk pattern, closer in kind to
+ * the existing Saudi riba flag than to the other five tracks' blanket
+ * commercial carve-out -- flagged as "worth a second look", not merely
+ * informational.
+ */
+export function checkQatarInterestLenderFlag(
+  clausesPresent: ClausesPresent | undefined,
+  governingLawClause: string | undefined,
+): ClauseFlagCheck {
+  if (governingLawClause !== 'qatar-civil') return notFlagged;
+
+  const hasInterestClause = (clausesPresent?.['commercial-payment'] ?? []).includes('late-payment-interest-penalty');
+  if (!hasInterestClause) return notFlagged;
+
+  return {
+    flagged: true,
+    reasonEn: 'A late-payment interest/penalty subclause is checked on a Qatar-governed contract. Under Qatar’s Civil Code (Art. 568), a loan contract’s interest term is void by default -- the rest of the contract survives, but the interest itself is unenforceable -- unless the lender is a licensed financial institution (Qatar Central Bank Law, Art. 110). Worth confirming the lending counterparty’s status, based on what you told us.',
+    reasonAr: 'تم تحديد بند فائدة/غرامة التأخر في السداد في عقد يخضع للقانون القطري. بموجب القانون المدني القطري (المادة 568)، يُعتبر بند الفائدة في عقد القرض باطلاً افتراضياً -- ويبقى العقد نافذاً فيما عدا ذلك، لكن الفائدة نفسها غير قابلة للإنفاذ -- ما لم يكن المُقرض مؤسسة مالية مرخصة (قانون مصرف قطر المركزي، المادة 110). يستحق التأكد من صفة الطرف المُقرض، بناءً على ما أفدتم به.',
+  };
+}

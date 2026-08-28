@@ -4,6 +4,7 @@ import {
   categoryCompleteness, overallClauseHealth,
   checkCommercialRibaFlag, checkPerformanceMeasurabilityFlag, checkRiskAllocationFidicMismatchFlag,
   checkForegroundIPGapFlag, checkGovernanceRibaArbitrationFlag,
+  checkGccJordanInterestPermittedFlag, checkQatarInterestLenderFlag,
 } from './clmClauseTaxonomy';
 
 describe('static metadata', () => {
@@ -302,5 +303,59 @@ describe('checkGovernanceRibaArbitrationFlag', () => {
     expect(r.flagged).toBe(true);
     expect(r.reasonEn).toContain('public-policy');
     expect(r.reasonEn).not.toContain('seat/institution choice is worth');
+  });
+});
+
+describe('checkGccJordanInterestPermittedFlag', () => {
+  it('not flagged when interest clause not checked', () => {
+    expect(checkGccJordanInterestPermittedFlag({}, 'uae-ctl').flagged).toBe(false);
+  });
+  it('not flagged for a track outside the 5-track set (e.g. saudi-ctl, uae-difc-adgm, undefined)', () => {
+    const cp = { 'commercial-payment': ['late-payment-interest-penalty'] };
+    expect(checkGccJordanInterestPermittedFlag(cp, 'saudi-ctl').flagged).toBe(false);
+    expect(checkGccJordanInterestPermittedFlag(cp, 'uae-difc-adgm').flagged).toBe(false);
+    expect(checkGccJordanInterestPermittedFlag(cp, undefined).flagged).toBe(false);
+  });
+  it('flagged for each of the 5 tracks with the right sourced cap text', () => {
+    const cp = { 'commercial-payment': ['late-payment-interest-penalty'] };
+    const uae = checkGccJordanInterestPermittedFlag(cp, 'uae-ctl');
+    expect(uae.flagged).toBe(true);
+    expect(uae.reasonEn).toContain('9%');
+    const bahrain = checkGccJordanInterestPermittedFlag(cp, 'bahrain-civil');
+    expect(bahrain.flagged).toBe(true);
+    expect(bahrain.reasonEn).toContain('Bahrain Monetary Agency');
+    const oman = checkGccJordanInterestPermittedFlag(cp, 'oman-civil');
+    expect(oman.flagged).toBe(true);
+    expect(oman.reasonEn).toContain('Art. 80');
+    const kuwait = checkGccJordanInterestPermittedFlag(cp, 'kuwait-civil');
+    expect(kuwait.flagged).toBe(true);
+    expect(kuwait.reasonEn).toContain('7%');
+    const jordan = checkGccJordanInterestPermittedFlag(cp, 'jordan-civil');
+    expect(jordan.flagged).toBe(true);
+    expect(jordan.reasonEn).toContain('9%');
+  });
+  it('reason text frames this as informational, not a compliance risk', () => {
+    const cp = { 'commercial-payment': ['late-payment-interest-penalty'] };
+    const r = checkGccJordanInterestPermittedFlag(cp, 'uae-ctl');
+    expect(r.reasonEn).toContain('informational advisory');
+  });
+});
+
+describe('checkQatarInterestLenderFlag', () => {
+  it('not flagged when interest clause not checked', () => {
+    expect(checkQatarInterestLenderFlag({}, 'qatar-civil').flagged).toBe(false);
+  });
+  it('not flagged for a non-Qatar track', () => {
+    const cp = { 'commercial-payment': ['late-payment-interest-penalty'] };
+    expect(checkQatarInterestLenderFlag(cp, 'uae-ctl').flagged).toBe(false);
+    expect(checkQatarInterestLenderFlag(cp, undefined).flagged).toBe(false);
+  });
+  it('flagged when interest checked on qatar-civil, cites Art. 568 and QCB Art. 110', () => {
+    const cp = { 'commercial-payment': ['late-payment-interest-penalty'] };
+    const r = checkQatarInterestLenderFlag(cp, 'qatar-civil');
+    expect(r.flagged).toBe(true);
+    expect(r.reasonEn).toContain('Art. 568');
+    expect(r.reasonEn).toContain('Art. 110');
+    expect(r.reasonEn).toContain('licensed financial institution');
   });
 });
