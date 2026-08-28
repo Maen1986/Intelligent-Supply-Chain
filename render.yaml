@@ -53,15 +53,29 @@ services:
     plan: starter
     numInstances: 1
     branch: main
-    buildCommand: npx pnpm install --frozen-lockfile && npx pnpm --filter @workspace/db push-force && npx pnpm --filter @workspace/api-server build
+    buildCommand: npx pnpm install --frozen-lockfile && npx pnpm --filter @workspace/db push && npx pnpm --filter @workspace/api-server build
     startCommand: node artifacts/api-server/dist/index.mjs
     autoDeployTrigger: commit
-    # NOTE (risk register item, 28 Aug 2026): the buildCommand above runs a
-    # destructive schema push (`push-force`) directly against production on
-    # EVERY deploy, with no review gate. This is captured here as-is because
-    # it reflects live reality, not because it's endorsed — see the ISC
-    # risk register for the recommended fix (versioned migrations instead
-    # of push-force in the build path).
+    # FIXED 28 Aug 2026 (risk register item #3): buildCommand previously ran
+    # `drizzle-kit push --force`, which auto-confirms ALL schema diffs,
+    # including destructive ones (dropped columns/tables, incompatible type
+    # changes), directly against production on every deploy with zero
+    # review. Switched to `push` (no --force): additive/unambiguous changes
+    # (new tables, new columns, etc.) still apply automatically exactly as
+    # before, but any diff drizzle-kit would need to prompt about now fails
+    # the build loudly instead of silently applying data loss — confirmed
+    # against the installed drizzle-kit 0.31.10 source: in a non-TTY
+    # environment (which Render's build pipeline is), an unconfirmed
+    # destructive prompt throws rather than auto-proceeding.
+    # The `push-force` script remains available in lib/db/package.json as a
+    # deliberate, manually-run escape hatch for when a destructive change
+    # really is intended — it is simply no longer what runs unattended on
+    # every push to main.
+    # ACTION STILL NEEDED: this file is documentation-as-code only (see the
+    # header note above) — the LIVE Render buildCommand for isc-backend
+    # must also be updated to match in the dashboard, since I have no API
+    # access to change it directly. Settings > Build Command, replace
+    # `push-force` with `push` in the command string above.
     envVars:
       - key: DATABASE_URL
         fromDatabase:
