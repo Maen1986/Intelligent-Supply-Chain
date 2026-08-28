@@ -2,15 +2,39 @@ import { describe, it, expect } from 'vitest';
 import { checkGoverningLawMismatch, governingLawTrackLabel, governingLawPracticeNote, GOVERNING_LAW_TRACKS, internationalContractingPracticeGuide, ARBITRATION_INSTITUTIONS, arbitrationInstitutionLabel, COMMON_CONTRACTING_COMBOS, checkArbitrationInstitutionFit, type GoverningLawTrack } from './clmLegalTrack';
 
 describe('GOVERNING_LAW_TRACKS', () => {
-  it('has 19 tracks including the six new GCC/Jordan tracks, uk-sga, the wave-1 Asia/Africa tracks, and other', () => {
+  it('has 24 tracks including the six GCC/Jordan tracks, uk-sga, wave-1 Asia/Africa, wave-2 Canada/Australia/Singapore/Turkey, and other', () => {
     const ids = GOVERNING_LAW_TRACKS.map(t => t.id);
     expect(ids).toEqual([
       'saudi-ctl', 'saudi-gtpl',
       'uae-ctl', 'uae-difc-adgm', 'qatar-civil', 'bahrain-civil', 'oman-civil', 'kuwait-civil', 'jordan-civil',
       'uk-common-law', 'uk-sga', 'us-ucc', 'eu-pecl', 'cisg-full',
       'china-civil', 'india-contract-act', 'egypt-civil', 'south-africa-common-law',
+      'canada-common-law', 'canada-quebec-civil', 'australia-common-law', 'singapore-sga', 'turkey-tbk-ttk',
       'other',
     ]);
+  });
+
+  it('every wave-2 track (Canada x2, Australia, Singapore, Turkey) has a non-empty bilingual label, recommendedPractice, and at least one jurisdiction keyword', () => {
+    const wave2Ids = ['canada-common-law', 'canada-quebec-civil', 'australia-common-law', 'singapore-sga', 'turkey-tbk-ttk'];
+    for (const id of wave2Ids) {
+      const meta = GOVERNING_LAW_TRACKS.find(t => t.id === id)!;
+      expect(meta.label.length).toBeGreaterThan(0);
+      expect(meta.labelAr.length).toBeGreaterThan(0);
+      expect(meta.jurisdictionKeywords.length).toBeGreaterThan(0);
+      expect(meta.recommendedPractice?.length ?? 0).toBeGreaterThan(0);
+      expect(meta.recommendedPracticeAr?.length ?? 0).toBeGreaterThan(0);
+    }
+  });
+
+  it("'other' track's coverage note stays current -- names all wave-1 + wave-2 countries as now-covered (beyond the not-yet-covered list), dated 28 Aug 2026", () => {
+    const other = GOVERNING_LAW_TRACKS.find(t => t.id === 'other')!;
+    expect(other.recommendedPractice).toContain('28 Aug 2026');
+    expect(other.recommendedPractice).not.toContain('26 Aug 2026');
+    for (const covered of ['China', 'India', 'Egypt', 'South Africa', 'Canada', 'Australia', 'Singapore', 'Turkey']) {
+      expect(other.recommendedPractice).toContain(covered);
+    }
+    // still honestly flags genuinely uncovered territory
+    expect(other.recommendedPractice).toContain('Latin America');
   });
 
   it('governingLawTrackLabel returns the right language', () => {
@@ -393,7 +417,7 @@ describe('internationalContractingPracticeGuide (common GCC/Jordan/Middle East c
 });
 
 describe('ARBITRATION_INSTITUTIONS + arbitrationInstitutionLabel (NEW, 26 Aug 2026)', () => {
-  it('includes all 10 named institutions plus other', () => {
+  it('includes all 14 named institutions (wave 1 + wave 2) plus other', () => {
     const ids = ARBITRATION_INSTITUTIONS.map(i => i.id);
     expect(ids).toContain('scca');
     expect(ids).toContain('board-of-grievances');
@@ -405,7 +429,12 @@ describe('ARBITRATION_INSTITUTIONS + arbitrationInstitutionLabel (NEW, 26 Aug 20
     expect(ids).toContain('mcia');
     expect(ids).toContain('crcica');
     expect(ids).toContain('afsa');
+    expect(ids).toContain('icdr-canada');
+    expect(ids).toContain('acica');
+    expect(ids).toContain('siac');
+    expect(ids).toContain('istac');
     expect(ids).toContain('other');
+    expect(ARBITRATION_INSTITUTIONS.length).toBe(15);
   });
 
   it('every institution has a non-empty EN and AR label', () => {
@@ -424,13 +453,22 @@ describe('ARBITRATION_INSTITUTIONS + arbitrationInstitutionLabel (NEW, 26 Aug 20
 });
 
 describe('COMMON_CONTRACTING_COMBOS (NEW, 26 Aug 2026, owner-prompted: "once client pick any of what you mentioned we call for it and fill contract accordinglly")', () => {
-  it('has 10 combos, each grounded in a real GoverningLawTrack + ArbitrationInstitution pairing', () => {
-    expect(COMMON_CONTRACTING_COMBOS.length).toBe(10);
+  it('has 15 combos (wave 1 + wave 2), each grounded in a real GoverningLawTrack + ArbitrationInstitution pairing', () => {
+    expect(COMMON_CONTRACTING_COMBOS.length).toBe(15);
     for (const combo of COMMON_CONTRACTING_COMBOS) {
       expect(combo.governingLaw).toBeTruthy();
       expect(combo.arbitrationInstitution).toBeTruthy();
       expect(['institutional-arbitration', 'litigation']).toContain(combo.disputeResolutionVariant);
     }
+  });
+
+  it('wave-2 combos cover Canada (both tracks), Australia, Singapore, and Turkey', () => {
+    const ids = COMMON_CONTRACTING_COMBOS.map(c => c.id);
+    expect(ids).toContain('canada-icc');
+    expect(ids).toContain('quebec-icc');
+    expect(ids).toContain('australia-acica');
+    expect(ids).toContain('singapore-siac');
+    expect(ids).toContain('turkey-istac');
   });
 
   it('deliberately excludes eu-pecl and cisg-full (no single clean sourced institutional pairing)', () => {
