@@ -45,6 +45,7 @@ import briefRouter                from "./brief";
 import workbenchRouter             from "./workbench";
 import clmGenerationRouter         from "./clmGeneration";
 import clmReviewExtractionRouter   from "./clmReviewExtraction";
+import rfxWorkspaceRouter          from "./rfxWorkspace";
 
 const router: IRouter = Router();
 
@@ -93,6 +94,7 @@ router.use(briefRouter);
 router.use(workbenchRouter);
 router.use(clmGenerationRouter);
 router.use(clmReviewExtractionRouter);
+router.use("/rfx-workspace",         rfxWorkspaceRouter);
 router.use(webhooksInboundRouter);
 
 export default router;

@@ -560,6 +560,9 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
   }>({ status: 'idle' });
   const [renewalFilter, setRenewalFilter] = useState<number>(180); // show renewals due in N days
 
+
+  const { user } = useAuth();
+
   // -- Module 03 Part D (RFx Builder), built 26 Aug 2026, closes registry
   //    #394 -- the RFx logic (recommendRfxType, scoreRfxBidders) shipped
   //    25 Aug/T1 build with no screen; this wires it in. Client-side only,
@@ -594,6 +597,133 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
   useEffect(() => { safeSetItem(SK_RFX + ':fieldEntries', JSON.stringify(rfxFieldEntries)); }, [rfxFieldEntries]);
   useEffect(() => { safeSetItem(SK_RFX + ':wbsFilled', JSON.stringify(rfxWbsFilled)); }, [rfxWbsFilled]);
   useEffect(() => { safeSetItem(SK_RFX + ':responseEntries', JSON.stringify(rfxResponseEntries)); }, [rfxResponseEntries]);
+
+  // -- #371 T2 server-sync pass (28 Aug 2026): closes the honest gap logged
+  //    in Module 03 doc section 8.10 -- "No backend/DB persistence... a T2
+  //    server-sync pass... is not scheduled." Whole-object sync against
+  //    /api/rfx-workspace, mirroring the bootstrap-merge / debounced-PUT
+  //    pattern already proven in ProcurementTools.tsx for the TCO Engine,
+  //    but for a SINGLE workspace object (this panel is one working
+  //    session, not a list of named analyses) -- see rfxWorkspace.ts for
+  //    why that's a JSONB-blob-under-tool_data route, not a per-row table.
+  //    Logged-out users keep working entirely off localStorage, exactly as
+  //    before; nothing here changes guest behaviour.
+  const [rfxSyncStatus, setRfxSyncStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const rfxServerLoadedForUserId = useRef<number | null>(null);
+  const rfxBootstrapSettled = useRef(false);
+  const rfxLocalWinsDuringBootstrap = useRef(false);
+  const rfxSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  interface RfxWorkspaceState {
+    selection: RfxSelectionInputs;
+    criteria: RfxScoringCriterion[];
+    bidders: RfxBidderScoreInput[];
+    scopeBucket: IndustryBucket;
+    scopeComplexity: ComplexityLevel;
+    fieldEntries: Record<string, FieldEntryState>;
+    wbsFilled: Record<string, boolean>;
+    responseEntries: Record<string, ResponseEntryState>;
+  }
+  const rfxWorkspaceRef = useRef<RfxWorkspaceState>({
+    selection: rfxSelection, criteria: rfxCriteria, bidders: rfxBidders,
+    scopeBucket: rfxScopeBucket, scopeComplexity: rfxScopeComplexity,
+    fieldEntries: rfxFieldEntries, wbsFilled: rfxWbsFilled, responseEntries: rfxResponseEntries,
+  });
+  useEffect(() => {
+    rfxWorkspaceRef.current = {
+      selection: rfxSelection, criteria: rfxCriteria, bidders: rfxBidders,
+      scopeBucket: rfxScopeBucket, scopeComplexity: rfxScopeComplexity,
+      fieldEntries: rfxFieldEntries, wbsFilled: rfxWbsFilled, responseEntries: rfxResponseEntries,
+    };
+  }, [rfxSelection, rfxCriteria, rfxBidders, rfxScopeBucket, rfxScopeComplexity, rfxFieldEntries, rfxWbsFilled, rfxResponseEntries]);
+
+  const applyServerRfxWorkspace = (w: RfxWorkspaceState) => {
+    setRfxSelection(w.selection);
+    setRfxCriteria(w.criteria);
+    setRfxBidders(w.bidders);
+    setRfxScopeBucket(w.scopeBucket);
+    setRfxScopeComplexity(w.scopeComplexity);
+    setRfxFieldEntries(w.fieldEntries);
+    setRfxWbsFilled(w.wbsFilled);
+    setRfxResponseEntries(w.responseEntries);
+  };
+
+  const syncRfxWorkspaceToServerImmediate = (w: RfxWorkspaceState) => {
+    if (!user) return;
+    setRfxSyncStatus('saving');
+    if (rfxSyncTimerRef.current) clearTimeout(rfxSyncTimerRef.current);
+    rfxSyncTimerRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`${API_BASE}/rfx-workspace`, {
+          method: 'PUT', credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ workspace: w }),
+        });
+        setRfxSyncStatus(res.ok ? 'saved' : 'error');
+        if (res.ok) setTimeout(() => setRfxSyncStatus('idle'), 2500);
+      } catch {
+        setRfxSyncStatus('error');
+      }
+    }, 400);
+  };
+  const syncRfxWorkspaceToServer = (w: RfxWorkspaceState) => {
+    if (!user) return;
+    if (!rfxBootstrapSettled.current) {
+      // Bootstrap GET hasn't resolved yet -- don't race it with a PUT.
+      rfxLocalWinsDuringBootstrap.current = true;
+      return;
+    }
+    syncRfxWorkspaceToServerImmediate(w);
+  };
+  // Any local edit to the 8 RFx pieces of state queues a sync, same trigger
+  // shape as the localStorage useEffects immediately above.
+  useEffect(() => { syncRfxWorkspaceToServer(rfxWorkspaceRef.current); }, [rfxSelection, rfxCriteria, rfxBidders, rfxScopeBucket, rfxScopeComplexity, rfxFieldEntries, rfxWbsFilled, rfxResponseEntries]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /* Bootstrap: on login (or account switch), pull the server's saved RFx
+   * workspace. Server-has-data wins over localStorage UNLESS the user has
+   * already edited something in this session while the GET was in flight.
+   * Server-empty means "first time syncing this account" -- upload
+   * whatever is currently in localStorage instead of discarding it. */
+  useEffect(() => {
+    if (!user) {
+      if (rfxServerLoadedForUserId.current !== null) {
+        rfxServerLoadedForUserId.current = null;
+        rfxBootstrapSettled.current = false;
+        rfxLocalWinsDuringBootstrap.current = false;
+        setRfxSyncStatus('idle');
+      }
+      return;
+    }
+    if (rfxServerLoadedForUserId.current === user.id) return;
+    rfxServerLoadedForUserId.current = user.id;
+    rfxBootstrapSettled.current = false;
+    rfxLocalWinsDuringBootstrap.current = false;
+    const bootstrapUserId = user.id;
+
+    (async () => {
+      try {
+        const res = await fetch(`${API_BASE}/rfx-workspace`, { credentials: 'include' });
+        if (rfxServerLoadedForUserId.current !== bootstrapUserId) return;
+        if (res.ok) {
+          const data = await res.json() as { ok: boolean; workspace: RfxWorkspaceState | null };
+          if (data.ok && data.workspace) {
+            if (!rfxLocalWinsDuringBootstrap.current) {
+              applyServerRfxWorkspace(data.workspace);
+            }
+          } else if (!rfxLocalWinsDuringBootstrap.current) {
+            // Server has nothing yet for this account -- upload local state
+            // as the initial sync rather than leaving the server empty.
+            syncRfxWorkspaceToServerImmediate(rfxWorkspaceRef.current);
+          }
+        }
+      } catch { /* offline -- localStorage keeps working */ }
+      rfxBootstrapSettled.current = true;
+      if (rfxLocalWinsDuringBootstrap.current) {
+        syncRfxWorkspaceToServerImmediate(rfxWorkspaceRef.current);
+      }
+    })();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
   /** Complexity Level (Part A, 3 named tiers) -> the engine's simplified
    *  1/2/3 signal (only used to pick lighter vs heavier elicitation
@@ -677,7 +807,6 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
   //    is no ID-reconciliation step needed after a sync. Logged-out users
   //    keep working entirely off localStorage, exactly as before; nothing
   //    here changes guest behaviour.
-  const { user } = useAuth();
   const [clmSyncStatus, setClmSyncStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
 
   /* Module 06 gap #2 (27 Aug 2026) -- read-only maturity badge. Reads the
