@@ -46,6 +46,7 @@ import workbenchRouter             from "./workbench";
 import clmGenerationRouter         from "./clmGeneration";
 import clmReviewExtractionRouter   from "./clmReviewExtraction";
 import rfxWorkspaceRouter          from "./rfxWorkspace";
+import adminDbBackupRouter         from "./adminDbBackup";
 
 const router: IRouter = Router();
 
@@ -66,6 +67,7 @@ router.use("/plans",             plansRouter);
 router.use("/notifications",     notificationsRouter);
 router.use("/admin/automations",  adminAutomationsRouter);
 router.use("/admin/benchmarks",   adminBenchmarksRouter);
+router.use("/admin/db-backup",     adminDbBackupRouter);
 router.use("/admin/platform-impact", adminPlatformImpactRouter);
 router.use("/report",            reportGeneratorRouter);
 router.use(commandCentreRouter);
