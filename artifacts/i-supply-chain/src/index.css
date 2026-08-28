@@ -204,6 +204,11 @@ html[lang="ar"] {
     visibility: visible;
   }
 
+  body[data-print="lcgpa-readiness"] .print-zone-lcgpa-readiness,
+  body[data-print="lcgpa-readiness"] .print-zone-lcgpa-readiness * {
+    visibility: visible;
+  }
+
   body[data-print="clm"] .print-zone-clm,
   body[data-print="clm"] .print-zone-clm * {
     visibility: visible;

@@ -33,6 +33,7 @@ const servicesList = [
   { key: 'nav.kraljic',     href: '/kraljic',                 label: '🧩 Kraljic Matrix' },
   { key: 'nav.decisionLab', href: '/decision-lab',             label: '⚖️ Decision Lab' },
   { key: 'nav.supplierDependency', href: '/supplier-dependency', label: '🔗 Supplier Dependency' },
+  { key: 'nav.lcgpaReadiness', href: '/lcgpa-readiness', label: '🏛️ LCGPA Readiness' },
   { key: 'nav.caseStudies',  href: '/case-studies',            label: 'Case Studies' },
   { key: 'nav.intelligence', href: '/intelligence',            label: 'Intelligence Hub' },
 ];
@@ -94,6 +95,7 @@ export function Header() {
       'nav.kraljic':       { en: '🧩 Kraljic Matrix',          ar: '🧩 مصفوفة كرالجيك' },
       'nav.decisionLab':   { en: '⚖️ Decision Lab',            ar: '⚖️ مختبر القرار' },
       'nav.supplierDependency': { en: '🔗 Supplier Dependency', ar: '🔗 اعتمادية المورّد' },
+      'nav.lcgpaReadiness': { en: '🏛️ LCGPA Readiness', ar: '🏛️ جاهزية المحتوى المحلي' },
     };
     return map[key]?.[lang] ?? key;
   };
