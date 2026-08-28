@@ -1,0 +1,77 @@
+# render.yaml — Infrastructure as Code Blueprint for ISC (I Supply Chain)
+#
+# WHY THIS FILE EXISTS
+# Until this commit, every setting for isc-frontend, isc-backend, and
+# isc-database existed ONLY inside the Render dashboard. There was no
+# version-controlled record of the real configuration anywhere in this repo.
+# If the Render workspace/account were ever lost, misconfigured, or had to
+# be rebuilt, there was no source of truth to rebuild from except memory.
+# This file closes that gap at zero ongoing cost (Phase 1, item 1 of the
+# ISC Business Continuity & Disaster Recovery Plan v1, Section 6).
+#
+# STATUS: Documentation-as-code. This file has NOT been synced as a live
+# Render Blueprint. Creating/committing it does not change how the two
+# services deploy today — autoDeploy on push to `main` continues to work
+# exactly as before. Syncing it (Render Dashboard > Blueprints > New
+# Blueprint Instance, pointed at this repo) is a separate, deliberate step
+# that changes how future config edits are applied, and should only be done
+# with the owner's explicit go-ahead.
+#
+# VERIFICATION NOTE (Decision Record 8.7 — never fake it):
+# All fields below were read directly from the live Render API on
+# 28 Aug 2026 (get_service / get_postgres), except the Postgres `plan`
+# field. Render's dashboard/API name for the live database is
+# "basic_256mb"; the Blueprint file format uses a different composite
+# CPU/RAM id ("0.1c-256mb" per Render's own render.yaml reference at the
+# time of writing) for the equivalent tier. Before ever syncing this file,
+# use Render Dashboard > isc-database > Settings > "Export to Blueprint"
+# (or equivalent) to confirm the exact plan id Render expects, and correct
+# the `plan:` line below if it differs. Every other field is a direct,
+# unmodified copy of live production configuration.
+
+services:
+  - type: web
+    runtime: static
+    name: isc-frontend
+    repo: https://github.com/Maen1986/Intelligent-Supply-Chain
+    region: frankfurt
+    branch: main
+    buildCommand: npx pnpm install --frozen-lockfile && npx pnpm --filter @workspace/i-supply-chain build
+    staticPublishPath: artifacts/i-supply-chain/dist/public
+    autoDeployTrigger: commit
+    envVars:
+      - key: PORT
+        value: "10000"
+      - key: BASE_PATH
+        value: /
+
+  - type: web
+    runtime: node
+    name: isc-backend
+    repo: https://github.com/Maen1986/Intelligent-Supply-Chain
+    region: frankfurt
+    plan: starter
+    numInstances: 1
+    branch: main
+    buildCommand: npx pnpm install --frozen-lockfile && npx pnpm --filter @workspace/db push-force && npx pnpm --filter @workspace/api-server build
+    startCommand: node artifacts/api-server/dist/index.mjs
+    autoDeployTrigger: commit
+    # NOTE (risk register item, 28 Aug 2026): the buildCommand above runs a
+    # destructive schema push (`push-force`) directly against production on
+    # EVERY deploy, with no review gate. This is captured here as-is because
+    # it reflects live reality, not because it's endorsed — see the ISC
+    # risk register for the recommended fix (versioned migrations instead
+    # of push-force in the build path).
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: isc-database
+          property: connectionString
+
+databases:
+  - name: isc-database
+    databaseName: isc_production
+    user: isc_production_user
+    region: frankfurt
+    plan: 0.1c-256mb  # UNVERIFIED against Blueprint plan-id naming — see note above. Live dashboard plan name: basic_256mb.
+    postgresMajorVersion: "18"
