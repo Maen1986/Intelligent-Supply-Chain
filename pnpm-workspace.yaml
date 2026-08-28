@@ -74,7 +74,19 @@ onlyBuiltDependencies:
   - msw
   - unrs-resolver
 
+allowBuilds:
+  '@swc/core': true
+  core-js: true
+  esbuild: true
+  msw: true
+  unrs-resolver: true
+
 overrides:
+  "js-yaml": "^4.3.0"
+  "brace-expansion": "^5.0.8"
+  "postcss": "^8.5.18"
+  "fast-uri": "^3.1.4"
+  "uuid": "^11.1.1"
   # replit uses linux-x64 only, we can exclude all other platforms
   "esbuild>@esbuild/darwin-arm64": "-"
   "esbuild>@esbuild/darwin-x64": "-"
