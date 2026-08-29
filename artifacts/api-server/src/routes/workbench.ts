@@ -172,4 +172,134 @@ router.get('/workbench/summary', requireSession, async (req, res) => {
   }
 });
 
+/**
+ * GET /api/workbench/problem-map (#192, 30 Aug 2026, Decision Record 8.7/8.10)
+ *
+ * Owner-approved design (see ISC_Problem_Map_192_Design_Proposal.docx v2,
+ * Decision 1 as revised during build-out, Decision 2 Option A "enhanced to
+ * the maximum"):
+ *
+ *   X-axis was originally proposed as the 10-category focusArea taxonomy
+ *   (diagnosticEngine.ts). Grounding this route in the real schema surfaced
+ *   a fact the proposal got wrong: focusArea is captured ONLY on the public
+ *   Diagnostic wizard's submissions -- and the wizard never produces
+ *   Problem DNA (no problems[], no severityScore, see the honest-gap note
+ *   below). The ONLY rows that carry severityScore are authenticated
+ *   Consultancy Engine diagnoses (POST /consultancy/diagnose), and those
+ *   rows carry industry/subIndustry (CommandCenter.tsx's own 24-item
+ *   INDUSTRY_TREE), never focusArea. There is no real row anywhere in this
+ *   codebase with both a focusArea tag and a severityScore. Rather than
+ *   fabricate that pairing, the X-axis was corrected -- with the owner's
+ *   explicit sign-off -- to industry/subIndustry, the one dimension that
+ *   genuinely co-occurs with severityScore on every Problem DNA row.
+ *
+ *   "Level" note (owner asked "at which level ... make all levels"): the
+ *   only real two-level hierarchy in this data is industry -> subIndustry
+ *   (Command Centre's own INDUSTRY_TREE). Level 1 (industry) drives the
+ *   plotted X-axis, since ~24 categories is chart-legible; Level 2
+ *   (subIndustry) is surfaced in the tooltip and as a filter, the same
+ *   "category -> subcategory" pattern KraljicMatrix.tsx's ScatterTooltip
+ *   already uses. focusArea (flat, one level, no sub-level exists) moves
+ *   to the wizard-only tally strip below, where it is the real field.
+ *
+ * "diagnostic" is an overloaded tool value in `submissions`: both the
+ * public wizard AND POST /consultancy/diagnose write tool='diagnostic'
+ * (only the follow-up /consultancy/solution step writes
+ * tool='command_centre', and that step has no problems[] either). So the
+ * only honest way to tell a scored diagnosis from a flat wizard report is
+ * the same JSON-shape check workbench/summary already uses one function up:
+ * Array.isArray(outputs?.problems). Reused verbatim here, not reinvented.
+ *
+ * Two disjoint result sets, matching the two disjoint real populations:
+ *
+ *   - points[]: one entry per Problem DNA problem (has severityScore) --
+ *     plots on the scatter.
+ *   - wizardTally[]: one entry per focusArea, counting Diagnostic-wizard
+ *     submissions with no problems[] -- the enhanced tally strip (Decision
+ *     2). Rows with neither problems[] nor a focusArea (e.g. a
+ *     tool='command_centre' /solution follow-up) belong to neither bucket
+ *     and are silently excluded -- correct, not a bug: they carry no
+ *     domain tag and no severity value, so nothing here could honestly
+ *     place them on this page.
+ */
+export async function resolveProblemMapPoints(userId: number) {
+  const result = await db.execute(sql`
+    SELECT id, inputs, outputs, created_at
+    FROM submissions
+    WHERE user_id = ${userId} AND tool IN ('diagnostic', 'command_centre')
+    ORDER BY created_at DESC
+    LIMIT 100
+  `);
+  const rows = ((result as any).rows ?? result) as Array<{
+    id: number; inputs: any; outputs: any; created_at: string;
+  }>;
+
+  type Point = {
+    id: string; submissionId: number; industry: string; subIndustry: string | null;
+    title: string; severityScore: number; status: string; framework: string | null;
+    confidence: number | null; createdAt: string;
+  };
+  const points: Point[] = [];
+
+  type TallyRow = { focusArea: string; count: number; mostRecentAt: string };
+  const tallyMap = new Map<string, TallyRow>();
+
+  for (const r of rows) {
+    const problems = Array.isArray(r.outputs?.problems) ? r.outputs.problems as Array<{
+      id?: string; title?: string; status?: string; severityScore?: number;
+      framework?: string; confidence?: number;
+    }> : null;
+
+    if (problems) {
+      const industry = typeof r.inputs?.industry === 'string' ? r.inputs.industry : null;
+      if (!industry) continue; // no domain to plot on X -- exclude rather than guess one
+      const subIndustry = typeof r.inputs?.subIndustry === 'string' ? r.inputs.subIndustry : null;
+      problems.forEach((p, idx) => {
+        if (typeof p.severityScore !== 'number') return; // no Y-value -- exclude, never fabricate
+        points.push({
+          id: `${r.id}-${p.id ?? idx}`,
+          submissionId: r.id,
+          industry,
+          subIndustry,
+          title: p.title ?? 'Untitled problem',
+          severityScore: Math.max(0, Math.min(100, p.severityScore)),
+          status: p.status ?? 'Active',
+          framework: p.framework ?? null,
+          confidence: typeof p.confidence === 'number' ? p.confidence : null,
+          createdAt: r.created_at,
+        });
+      });
+    } else {
+      const focusArea = typeof r.inputs?.focusArea === 'string' ? r.inputs.focusArea : null;
+      if (!focusArea) continue; // neither problems[] nor focusArea -- nothing honest to plot
+      const existing = tallyMap.get(focusArea);
+      if (existing) {
+        existing.count += 1;
+        if (r.created_at > existing.mostRecentAt) existing.mostRecentAt = r.created_at;
+      } else {
+        tallyMap.set(focusArea, { focusArea, count: 1, mostRecentAt: r.created_at });
+      }
+    }
+  }
+
+  const wizardTally = Array.from(tallyMap.values()).sort((a, b) => b.count - a.count);
+  return { points, wizardTally };
+}
+
+router.get('/workbench/problem-map', requireSession, async (req, res) => {
+  const userId = res.locals.userId as number;
+  try {
+    const { points, wizardTally } = await resolveProblemMapPoints(userId);
+    res.json({
+      ok: true,
+      hasData: points.length > 0 || wizardTally.length > 0,
+      points,
+      wizardTally,
+    });
+  } catch (err) {
+    logger.error({ err }, '[workbench/problem-map] failed');
+    res.status(500).json({ ok: false, error: 'Failed to build problem map' });
+  }
+});
+
 export default router;

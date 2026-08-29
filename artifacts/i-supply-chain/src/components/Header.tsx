@@ -3,7 +3,7 @@ import { Link, useLocation } from 'wouter';
 import { Logo } from './Logo';
 import { useLanguage } from '@/lib/LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
-import { Menu, X, ChevronDown, Phone, LogOut, User, Settings, LayoutDashboard, ClipboardList, ListChecks, Waves, Newspaper, LayoutGrid, BookOpen } from 'lucide-react';
+import { Menu, X, ChevronDown, Phone, LogOut, User, Settings, LayoutDashboard, ClipboardList, ListChecks, Waves, Newspaper, LayoutGrid, BookOpen, Map as MapIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { NotificationsBell } from './NotificationsBell';
 import { ScopedCommandBar } from './ScopedCommandBar';
@@ -137,6 +137,9 @@ export function Header() {
             </Link>
             <Link href="/workbench" className="flex items-center gap-1 hover:text-[#C9A84C] transition-colors">
               <LayoutGrid className="w-3 h-3" /> {lang === 'ar' ? 'مساحة عملي' : 'My Workbench'}
+            </Link>
+            <Link href="/problem-map" className="flex items-center gap-1 hover:text-[#C9A84C] transition-colors">
+              <MapIcon className="w-3 h-3" /> {lang === 'ar' ? 'خريطة المشكلات' : 'Problem Map'}
             </Link>
             <Link href="/my-assessments" className="flex items-center gap-1 hover:text-[#C9A84C] transition-colors">
               <ClipboardList className="w-3 h-3" /> {lang === 'ar' ? 'تقييماتي' : 'My Assessments'}
@@ -335,6 +338,10 @@ export function Header() {
                   <Link href="/workbench" onClick={() => setMobileMenuOpen(false)}
                     className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-700 hover:text-primary hover:bg-primary/5 rounded-xl transition-colors">
                     <LayoutGrid className="w-4 h-4" /> {lang === 'ar' ? 'مساحة عملي' : 'My Workbench'}
+                  </Link>
+                  <Link href="/problem-map" onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-700 hover:text-primary hover:bg-primary/5 rounded-xl transition-colors">
+                    <MapIcon className="w-4 h-4" /> {lang === 'ar' ? 'خريطة المشكلات' : 'Problem Map'}
                   </Link>
                   <Link href="/my-assessments" onClick={() => setMobileMenuOpen(false)}
                     className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-700 hover:text-primary hover:bg-primary/5 rounded-xl transition-colors">

@@ -31,6 +31,7 @@ import { GovernanceCompliance } from '@/pages/GovernanceCompliance';
 import { CommandCenter } from '@/pages/CommandCenter';
 import { ROIWaterfall } from '@/pages/ROIWaterfall';
 import { KraljicMatrix } from '@/pages/KraljicMatrix';
+import { ProblemMap } from '@/pages/ProblemMap';
 import { DecisionLab } from '@/pages/DecisionLab';
 import { CustomerVoice } from '@/pages/CustomerVoice';
 import { Legal } from '@/pages/Legal';
@@ -97,6 +98,7 @@ function Router() {
         <Route path="/governance-compliance" component={GovernanceCompliance} />
         <Route path="/command-center" component={CommandCenter} />
         <Route path="/kraljic" component={KraljicMatrix} />
+        <Route path="/problem-map" component={ProblemMap} />
         <Route path="/decision-lab" component={DecisionLab} />
         <Route path="/admin/leads" component={AdminLeads} />
         <Route path="/admin/integrations" component={AdminIntegrations} />
