@@ -22,10 +22,22 @@
  *
  * Reuses MyWorkbench.tsx's data-fetch/auth-gate pattern and ProblemMap.tsx's
  * hero/empty-state visual language.
+ *
+ * Demo mode (added 30 Aug 2026, per direct owner instruction after
+ * disagreeing with a real-usage-only framing): a purely client-side,
+ * explicitly-labeled illustrative preview using synthetic DEMO_ROWS data,
+ * toggled on by the user -- never fetched, never mixed into the real
+ * `data` state, and wrapped in a persistent "Illustrative Example" banner
+ * that cannot be mistaken for a real comparison. This is a sales/pitch
+ * asset only. It does not, and structurally cannot, move the Competitive
+ * Moat score -- Hamilton Helmer's network-economies power is a claim
+ * about a real barrier built from real client data; a demo illustrates
+ * the concept, it does not create the barrier. See Investor
+ * Pitch-Readiness Positioning v14 for the full reasoning.
  */
 import React, { useEffect, useState } from 'react';
 import { Link } from 'wouter';
-import { Loader2, BarChart3, ArrowRight, Users, Info } from 'lucide-react';
+import { Loader2, BarChart3, ArrowRight, Users, Info, Eye, EyeOff, AlertTriangle } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
 import { API_BASE } from '@/lib/apiBase';
@@ -54,6 +66,20 @@ interface BenchmarkResponse {
   takenAt: string | null;
   rows: BenchmarkRow[];
 }
+
+// ─── Demo/illustrative data (client-side only, never fetched, 30 Aug 2026) ──
+// Purely synthetic. Exists only to show a prospect or investor what a
+// populated comparison will look like once real client volume clears the
+// privacy floor -- never presented as, or mistaken for, a real cohort. See
+// the docblock above and Investor Pitch-Readiness Positioning v14 for why
+// this cannot move the Competitive Moat score.
+const DEMO_ROWS: BenchmarkRow[] = [
+  { segmentId: 'strategy',    segmentTitle: 'Strategy & Governance', segmentTitleAr: 'الاستراتيجية والحوكمة', yourScore: 3.4, insufficientSample: false, sampleSize: 12, mean: 3.1, median: 3.0, p25: 2.6, p75: 3.6 },
+  { segmentId: 'procurement', segmentTitle: 'Procurement',           segmentTitleAr: 'المشتريات',            yourScore: 2.8, insufficientSample: false, sampleSize: 12, mean: 3.3, median: 3.2, p25: 2.9, p75: 3.8 },
+  { segmentId: 'clm',         segmentTitle: 'Contract Lifecycle Management', segmentTitleAr: 'إدارة دورة حياة العقود', yourScore: 3.9, insufficientSample: false, sampleSize: 9,  mean: 3.0, median: 2.9, p25: 2.4, p75: 3.5 },
+  { segmentId: 'risk',        segmentTitle: 'Risk Management',       segmentTitleAr: 'إدارة المخاطر',        yourScore: 2.5, insufficientSample: false, sampleSize: 12, mean: 2.9, median: 2.8, p25: 2.3, p75: 3.4 },
+  { segmentId: 'sustainability', segmentTitle: 'Sustainability & ESG', segmentTitleAr: 'الاستدامة والحوكمة البيئية', yourScore: 2.2, insufficientSample: false, sampleSize: 7,  mean: 2.4, median: 2.3, p25: 1.9, p75: 2.9 },
+];
 
 // ─── Segment comparison bar ─────────────────────────────────────────────────
 
@@ -116,6 +142,7 @@ export function IndustryBenchmark() {
 
   const [data, setData] = useState<BenchmarkResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showDemo, setShowDemo] = useState(false);
 
   useEffect(() => {
     if (authLoading) return;
@@ -175,17 +202,45 @@ export function IndustryBenchmark() {
 
       <div className="container mx-auto px-4 py-8 max-w-3xl">
         {!hasSnapshot ? (
-          <div className="bg-white rounded-2xl border border-dashed border-slate-300 p-12 text-center">
-            <BarChart3 className="w-10 h-10 text-slate-300 mx-auto mb-3" />
-            <p className="text-slate-500 font-semibold">{ar ? 'لا يوجد تقييم بعد' : 'No assessment yet'}</p>
-            <p className="text-slate-400 text-sm mt-1 max-w-md mx-auto">
-              {ar
-                ? 'أكمل تقييم النضج لبدء مقارنة نتائجك بالمعيار المجهول لقطاعك.'
-                : 'Complete a Maturity Assessment to start comparing your scores against your industry\'s anonymized benchmark.'}
-            </p>
-            <Link href="/maturity"><Button size="sm" className="mt-4 gap-2 bg-[#082C6B] hover:bg-[#0e3d8a]">
-              {ar ? 'بدء التقييم' : 'Start the Assessment'} <ArrowRight className="w-3.5 h-3.5" />
-            </Button></Link>
+          <div className="space-y-4">
+            <div className="bg-white rounded-2xl border border-dashed border-slate-300 p-12 text-center">
+              <BarChart3 className="w-10 h-10 text-slate-300 mx-auto mb-3" />
+              <p className="text-slate-500 font-semibold">{ar ? 'لا يوجد تقييم بعد' : 'No assessment yet'}</p>
+              <p className="text-slate-400 text-sm mt-1 max-w-md mx-auto">
+                {ar
+                  ? 'أكمل تقييم النضج لبدء مقارنة نتائجك بالمعيار المجهول لقطاعك.'
+                  : 'Complete a Maturity Assessment to start comparing your scores against your industry\'s anonymized benchmark.'}
+              </p>
+              <Link href="/maturity"><Button size="sm" className="mt-4 gap-2 bg-[#082C6B] hover:bg-[#0e3d8a]">
+                {ar ? 'بدء التقييم' : 'Start the Assessment'} <ArrowRight className="w-3.5 h-3.5" />
+              </Button></Link>
+              <button
+                type="button"
+                onClick={() => setShowDemo(v => !v)}
+                data-testid="mib-demo-toggle"
+                className="mt-4 inline-flex items-center gap-1.5 text-xs font-semibold text-[#082C6B] hover:text-[#0e3d8a] underline decoration-dashed underline-offset-4"
+              >
+                {showDemo
+                  ? (<><EyeOff className="w-3.5 h-3.5" /> {ar ? 'إخفاء المثال التوضيحي' : 'Hide illustrative example'}</>)
+                  : (<><Eye className="w-3.5 h-3.5" /> {ar ? 'عرض مثال توضيحي لكيفية عمل هذا' : 'See an illustrative example of how this works'}</>)}
+              </button>
+            </div>
+
+            {showDemo && (
+              <div data-testid="mib-demo-block" className="space-y-3">
+                <div className="flex items-start gap-2 text-xs font-bold text-amber-800 bg-amber-50 border border-amber-300 rounded-lg px-3 py-2.5">
+                  <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                  <span>
+                    {ar
+                      ? 'مثال توضيحي — بيانات اصطناعية، وليست بيانات عملاء حقيقيين. يوضح هذا شكل المقارنة بمجرد أن ينضم عدد كافٍ من العملاء الفعليين.'
+                      : 'Illustrative Example — Synthetic Data, Not Real ISC Clients. This shows what the comparison will look like once enough real clients have joined.'}
+                  </span>
+                </div>
+                {DEMO_ROWS.map(row => (
+                  <SegmentCompareBar key={row.segmentId} row={row} ar={ar} />
+                ))}
+              </div>
+            )}
           </div>
         ) : (
           <div className="space-y-4">

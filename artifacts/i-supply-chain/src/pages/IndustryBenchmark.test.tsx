@@ -1,13 +1,14 @@
 /**
- * IndustryBenchmark (#398, 30 Aug 2026) tests.
+ * IndustryBenchmark (#398, 30 Aug 2026; demo mode added same day) tests.
  *
  * Covers: sign-in gate (no fetch made), no-snapshot honest-empty state,
  * insufficient-sample state (below privacy floor -- no fabricated
- * comparison shown), and a real cohort comparison rendering sample size,
- * mean, and your score correctly.
+ * comparison shown), a real cohort comparison rendering sample size, mean,
+ * and your score correctly, and the client-side-only demo/illustrative
+ * toggle -- hidden by default, clearly labeled when shown, never fetched.
  */
 import { describe, it, expect, afterEach, vi } from 'vitest';
-import { render, screen, cleanup, waitFor } from '@testing-library/react';
+import { render, screen, cleanup, waitFor, fireEvent } from '@testing-library/react';
 import { IndustryBenchmark } from './IndustryBenchmark';
 
 vi.mock('@/lib/apiBase', () => ({ API_BASE: 'http://test-server/api' }));
@@ -78,5 +79,36 @@ describe('IndustryBenchmark', () => {
     await waitFor(() => expect(screen.getByText('Risk')).toBeTruthy());
     expect(screen.getByText(/Based on 7 ISC clients/)).toBeTruthy();
     expect(screen.getByText('3.5')).toBeTruthy();
+  });
+
+  it('hides the demo/illustrative example by default and shows it only when toggled, with an unmistakable label', async () => {
+    mockAuthState.user = { id: 1, fullName: 'Test User' };
+    global.fetch = mockFetchFor();
+    render(<IndustryBenchmark />);
+    await waitFor(() => expect(screen.getByText('No assessment yet')).toBeTruthy());
+
+    expect(screen.queryByTestId('mib-demo-block')).toBeNull();
+    expect(screen.queryByText(/Illustrative Example/)).toBeNull();
+
+    fireEvent.click(screen.getByTestId('mib-demo-toggle'));
+    expect(screen.getByTestId('mib-demo-block')).toBeTruthy();
+    expect(screen.getByText(/Illustrative Example.*Synthetic Data, Not Real ISC Clients/)).toBeTruthy();
+    expect(screen.getByText('Strategy & Governance')).toBeTruthy();
+
+    fireEvent.click(screen.getByTestId('mib-demo-toggle'));
+    expect(screen.queryByTestId('mib-demo-block')).toBeNull();
+  });
+
+  it('never fetches when showing the demo -- it is purely client-side synthetic data', async () => {
+    mockAuthState.user = { id: 1, fullName: 'Test User' };
+    const fetchMock = mockFetchFor();
+    global.fetch = fetchMock;
+    render(<IndustryBenchmark />);
+    await waitFor(() => expect(screen.getByText('No assessment yet')).toBeTruthy());
+    const callsBeforeDemo = (fetchMock as ReturnType<typeof vi.fn>).mock.calls.length;
+
+    fireEvent.click(screen.getByTestId('mib-demo-toggle'));
+    expect(screen.getByTestId('mib-demo-block')).toBeTruthy();
+    expect((fetchMock as ReturnType<typeof vi.fn>).mock.calls.length).toBe(callsBeforeDemo);
   });
 });
