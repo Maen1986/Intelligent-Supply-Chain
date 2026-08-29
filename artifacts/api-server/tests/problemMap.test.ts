@@ -90,6 +90,20 @@ describe('GET /api/workbench/problem-map', () => {
     expect(res.body.points[0].severityScore).toBe(100);
   });
 
+  it('clamps a below-range (negative) severityScore to 0 rather than plotting it off-chart', async () => {
+    const { db } = await import('@workspace/db');
+    (db.execute as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      rows: [{
+        id: 12, inputs: { industry: 'Retail' },
+        outputs: { problems: [{ id: 'P1', status: 'Active', severityScore: -35 }] },
+        created_at: '2026-08-20T00:00:00Z',
+      }],
+    });
+    const app = makeApp('/api', workbenchRouter, { userId: 1 });
+    const res = await request(app).get('/api/workbench/problem-map');
+    expect(res.body.points[0].severityScore).toBe(0);
+  });
+
   it('excludes a problem missing severityScore rather than fabricating one', async () => {
     const { db } = await import('@workspace/db');
     (db.execute as ReturnType<typeof vi.fn>).mockResolvedValueOnce({

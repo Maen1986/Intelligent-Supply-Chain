@@ -7,7 +7,7 @@
  * in workbench.ts for the full reasoning. In short:
  *
  *   Scatter (has severityScore): X = industry (Command Centre's own
- *   24-item INDUSTRY_TREE, the one dimension that genuinely co-occurs with
+ *   12-item INDUSTRY_TREE, the one dimension that genuinely co-occurs with
  *   severityScore), Y = severityScore 0-100 with Low/Medium/High bands,
  *   color = status, size = confidence%, tooltip carries subIndustry as the
  *   real Level-2 drill-down (mirrors KraljicMatrix.tsx's ScatterTooltip
@@ -220,24 +220,29 @@ export function ProblemMap() {
           </div>
         ) : (
           <div className="space-y-6">
-            {/* ── Tabs ── */}
-            <div className="flex gap-1 bg-white border border-slate-200 rounded-2xl p-1 shadow-sm w-fit">
-              {([
-                { id: 'map' as Tab, label: 'Map', labelAr: 'الخريطة', icon: <MapIcon className="w-4 h-4" /> },
-                { id: 'list' as Tab, label: 'List', labelAr: 'القائمة', icon: <ListChecks className="w-4 h-4" /> },
-              ]).map(tab => (
-                <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-[13px] font-semibold transition-all ${
-                    activeTab === tab.id ? 'bg-[#082C6B] text-white shadow-md' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
-                  }`}
-                >
-                  {tab.icon} {ar ? tab.labelAr : tab.label}
-                </button>
-              ))}
-            </div>
-
-            {filteredPoints.length === 0 && data && data.points.length === 0 ? null : (
+            {/* Tabs + legend + Map/List content only render when there is at least one
+                scored point -- otherwise these controls would be visible but dead (a
+                customer with only wizard-only submissions would see "Map"/"List" buttons
+                that do nothing when clicked, since there is nothing scored to show either
+                way). The wizard tally strip below covers that customer honestly instead. */}
+            {(data?.points.length ?? 0) > 0 && (
               <>
+                {/* ── Tabs ── */}
+                <div role="tablist" className="flex gap-1 bg-white border border-slate-200 rounded-2xl p-1 shadow-sm w-fit">
+                  {([
+                    { id: 'map' as Tab, label: 'Map', labelAr: 'الخريطة', icon: <MapIcon className="w-4 h-4" /> },
+                    { id: 'list' as Tab, label: 'List', labelAr: 'القائمة', icon: <ListChecks className="w-4 h-4" /> },
+                  ]).map(tab => (
+                    <button key={tab.id} role="tab" aria-selected={activeTab === tab.id} onClick={() => setActiveTab(tab.id)}
+                      className={`flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-[13px] font-semibold transition-all ${
+                        activeTab === tab.id ? 'bg-[#082C6B] text-white shadow-md' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+                      }`}
+                    >
+                      {tab.icon} {ar ? tab.labelAr : tab.label}
+                    </button>
+                  ))}
+                </div>
+
                 {/* ── Legend / filters (as a real control, not decoration) ── */}
                 <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-4 flex flex-wrap items-center gap-3">
                   <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">{ar ? 'الحالة' : 'Status'}</span>
@@ -245,7 +250,7 @@ export function ProblemMap() {
                     const meta = STATUS_META[s];
                     const on = visibleStatuses.has(s);
                     return (
-                      <button key={s} onClick={() => toggleStatus(s)}
+                      <button key={s} onClick={() => toggleStatus(s)} aria-pressed={on}
                         className="flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-full border transition-all"
                         style={on ? { background: meta.fill, color: meta.color, borderColor: meta.color } : { background: '#fff', color: '#cbd5e1', borderColor: '#e5e7eb' }}
                         title={ar ? 'انقر للعزل/المقارنة' : 'Click to isolate/compare'}
@@ -299,7 +304,7 @@ export function ProblemMap() {
                             tick={{ fontSize: 10, fill: '#94a3b8' }}
                           />
                           <YAxis dataKey="y" type="number" domain={[0, 100]} name="Severity"
-                            label={{ value: ar ? '← شدة المشكلة' : '← Severity Score', angle: -90, position: 'insideLeft', offset: 8, fontSize: 12, fontWeight: 600, fill: '#475569' }}
+                            label={{ value: ar ? 'شدة المشكلة' : 'Severity Score', angle: -90, position: 'insideLeft', offset: 8, fontSize: 12, fontWeight: 600, fill: '#475569' }}
                             tick={{ fontSize: 11, fill: '#94a3b8' }}
                           />
                           <ZAxis dataKey="z" range={[60, 500]} />

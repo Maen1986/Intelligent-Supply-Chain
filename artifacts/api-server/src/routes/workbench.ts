@@ -186,7 +186,7 @@ router.get('/workbench/summary', requireSession, async (req, res) => {
  *   Problem DNA (no problems[], no severityScore, see the honest-gap note
  *   below). The ONLY rows that carry severityScore are authenticated
  *   Consultancy Engine diagnoses (POST /consultancy/diagnose), and those
- *   rows carry industry/subIndustry (CommandCenter.tsx's own 24-item
+ *   rows carry industry/subIndustry (CommandCenter.tsx's own 12-item
  *   INDUSTRY_TREE), never focusArea. There is no real row anywhere in this
  *   codebase with both a focusArea tag and a severityScore. Rather than
  *   fabricate that pairing, the X-axis was corrected -- with the owner's

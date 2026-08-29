@@ -98,6 +98,23 @@ describe('ProblemMap', () => {
     expect(screen.getByText('Get a full Consultancy Engine diagnosis')).toBeTruthy();
   });
 
+  it('does not render dead Map/List tabs when there are zero scored points -- only the tally strip shows', async () => {
+    mockAuthState.user = { id: 1, fullName: 'Test User' };
+    global.fetch = mockFetchFor({
+      ok: true, hasData: true,
+      points: [],
+      wizardTally: [{ focusArea: 'Procurement', count: 2, mostRecentAt: '2026-08-20' }],
+    });
+    render(<ProblemMap />);
+    await waitFor(() => expect(screen.getByText('Procurement')).toBeTruthy());
+    // The Map/List tabs and the Status legend are only meaningful once there is at
+    // least one scored point to switch between/filter -- for a wizard-only customer
+    // they would otherwise sit on screen doing nothing when clicked.
+    expect(screen.queryByText('List')).toBeNull();
+    expect(screen.queryByText('Map')).toBeNull();
+    expect(screen.queryByText('Status')).toBeNull();
+  });
+
   it('status legend filters points -- clicking Active off hides Active rows in the List tab', async () => {
     mockAuthState.user = { id: 1, fullName: 'Test User' };
     global.fetch = mockFetchFor({
