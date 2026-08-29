@@ -9,6 +9,12 @@
  *     scores >= 2.0 do not count, scores < 2.0 do
  *   - A findings_actions status breakdown with an unknown/null status still
  *     sums correctly into actionsTracked
+ *   - benchmarkCohortProgress (added 30 Aug 2026, direct response to the
+ *     "real moves on Moat/differentiation" demand): the route calls
+ *     getCohortProgress() (its own db.execute) via the same Promise.all as
+ *     the five select()s, BEFORE the later gaps-query db.execute call --
+ *     the mock's executeQueue (FIFO) models that exact call order so each
+ *     query gets its own, independently-shaped rows.
  */
 import { describe, it, expect, vi } from 'vitest';
 import request from 'supertest';
@@ -20,13 +26,22 @@ const mockDb = vi.hoisted(() => ({
    *  built by the route (diagnosticsRun, assessments, actions-by-status,
    *  orgs-engaged, total-users -- in that exact order). */
   selectQueue: [] as any[][],
-  /** Rows returned by the single db.execute(sql`...DISTINCT ON...`) call. */
+  /** Rows returned by the single db.execute(sql`...DISTINCT ON...`) call
+   *  (legacy default, used when executeQueue is empty -- kept so existing
+   *  tests that only care about the gaps query don't need updating). */
   executeRows: [] as any[],
+  /** FIFO queue for db.execute() calls, in real call order: the route's
+   *  Promise.all fires getCohortProgress()'s own db.execute() synchronously
+   *  as that array is built (1st call), then -- only after Promise.all
+   *  resolves -- the gaps DISTINCT ON query fires (2nd call). Falls back to
+   *  executeRows once drained. */
+  executeQueue: [] as any[][],
 }));
 
 function resetMockDb() {
   mockDb.selectQueue = [];
   mockDb.executeRows = [];
+  mockDb.executeQueue = [];
 }
 
 vi.mock('@workspace/db', () => {
@@ -54,7 +69,7 @@ vi.mock('@workspace/db', () => {
   return {
     db: {
       select: vi.fn(() => makeChain(() => [])),
-      execute: vi.fn(async () => ({ rows: mockDb.executeRows })),
+      execute: vi.fn(async () => ({ rows: mockDb.executeQueue.length > 0 ? mockDb.executeQueue.shift() : mockDb.executeRows })),
     },
     submissionsTable: {},
     maturitySnapshotsTable: {},
@@ -137,5 +152,50 @@ describe('GET /api/admin/platform-impact — metric assembly (admin)', () => {
     expect(m.actionsTracked).toBe(0);
     expect(m.gapsIdentified).toBe(0);
     expect(m.distinctUsersAssessed).toBe(0);
+  });
+
+  it('includes benchmarkCohortProgress -- minCohortSize, full cohort list, and closestToLive capped at 3', async () => {
+    resetMockDb();
+    mockDb.selectQueue = [[{ count: 0 }], [{ count: 0 }], [], [{ count: 0 }], [{ count: 0 }]];
+    // 1st execute() call: getCohortProgress()'s own query (fires inside
+    // Promise.all, before the gaps query below).
+    mockDb.executeQueue.push([
+      { industry: 'Manufacturing', company_size: '11-50', contributing_organizations: 5 }, // live
+      { industry: 'Retail', company_size: '1-10', contributing_organizations: 3 },
+      { industry: 'Logistics', company_size: '51-200', contributing_organizations: 2 },
+      { industry: 'Energy & Oil', company_size: '201+', contributing_organizations: 1 },
+    ]);
+    // 2nd execute() call: the gaps DISTINCT ON query -- deliberately empty,
+    // this test only cares about benchmarkCohortProgress.
+    mockDb.executeQueue.push([]);
+
+    const app = makeApp('/api/admin/platform-impact', adminPlatformImpactRouter, { userId: 1, userRole: 'admin' });
+    const res = await request(app).get('/api/admin/platform-impact');
+
+    expect(res.status).toBe(200);
+    const b = res.body.benchmarkCohortProgress;
+    expect(b.minCohortSize).toBe(5);
+    expect(b.cohorts).toHaveLength(4);
+    expect(b.cohorts[0]).toEqual({ industry: 'Manufacturing', companySize: '11-50', contributingOrganizations: 5, needed: 0, live: true });
+    // closestToLive: only non-live cohorts, capped at 3 -- all three
+    // remaining (below-floor) cohorts here, live one excluded.
+    expect(b.closestToLive).toHaveLength(3);
+    expect(b.closestToLive.every((c: any) => c.live === false)).toBe(true);
+    expect(b.closestToLive.map((c: any) => c.industry)).toEqual(['Retail', 'Logistics', 'Energy & Oil']);
+    expect(res.body.definitions.benchmarkCohortProgress).toBeTruthy();
+  });
+
+  it('benchmarkCohortProgress is honestly empty when no cohort has any assessment data', async () => {
+    resetMockDb();
+    mockDb.selectQueue = [[{ count: 0 }], [{ count: 0 }], [], [{ count: 0 }], [{ count: 0 }]];
+    mockDb.executeQueue.push([]); // getCohortProgress() -- no cohorts yet
+    mockDb.executeQueue.push([]); // gaps query
+
+    const app = makeApp('/api/admin/platform-impact', adminPlatformImpactRouter, { userId: 1, userRole: 'admin' });
+    const res = await request(app).get('/api/admin/platform-impact');
+
+    expect(res.status).toBe(200);
+    expect(res.body.benchmarkCohortProgress.cohorts).toEqual([]);
+    expect(res.body.benchmarkCohortProgress.closestToLive).toEqual([]);
   });
 });

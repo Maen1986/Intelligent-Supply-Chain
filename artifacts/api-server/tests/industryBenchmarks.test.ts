@@ -4,7 +4,10 @@
  * Covers: recomputeIndustryBenchmarks() writing a cell that meets the
  * MIN_COHORT_SIZE floor, pruning a cell that falls below it, the read-side
  * getBenchmarkComparisonForUser() honest-empty/insufficient-sample/real-
- * comparison cases, and the route's 401/200/500 behavior.
+ * comparison cases, the route's 401/200/500 behavior, and
+ * getCohortProgress() (added 30 Aug 2026, admin-facing operational
+ * visibility into how close each cohort is to crossing the privacy
+ * floor for real -- not the demo mode).
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import request from 'supertest';
@@ -14,7 +17,7 @@ vi.mock('@workspace/db', () => makeDbMock());
 vi.mock('../src/lib/logger', () => makeLoggerMock());
 
 import industryBenchmarksRouter from '../src/routes/industryBenchmarks';
-import { recomputeIndustryBenchmarks, getBenchmarkComparisonForUser, MIN_COHORT_SIZE } from '../src/lib/industryBenchmarks';
+import { recomputeIndustryBenchmarks, getBenchmarkComparisonForUser, getCohortProgress, MIN_COHORT_SIZE } from '../src/lib/industryBenchmarks';
 
 beforeEach(() => {
   resetDbState();
@@ -72,6 +75,65 @@ describe('recomputeIndustryBenchmarks', () => {
     const result = await recomputeIndustryBenchmarks();
     expect(result.contributingOrganizations).toBe(0);
     expect(result.cellsWritten).toBe(0);
+  });
+});
+
+describe('getCohortProgress', () => {
+  it('marks a cohort at/above the privacy floor as live, with needed: 0', async () => {
+    const { db } = await import('@workspace/db');
+    (db.execute as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      rows: [{ industry: 'Manufacturing', company_size: '11-50', contributing_organizations: 5 }],
+    });
+    const result = await getCohortProgress();
+    expect(result).toHaveLength(1);
+    expect(result[0]).toEqual({
+      industry: 'Manufacturing',
+      companySize: '11-50',
+      contributingOrganizations: 5,
+      needed: 0,
+      live: true,
+    });
+  });
+
+  it('marks a cohort below the privacy floor as not live, with the correct remainder needed', async () => {
+    const { db } = await import('@workspace/db');
+    (db.execute as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      rows: [{ industry: 'Retail', company_size: '1-10', contributing_organizations: 2 }],
+    });
+    const result = await getCohortProgress();
+    expect(result[0].live).toBe(false);
+    expect(result[0].needed).toBe(3); // 5 - 2
+  });
+
+  it('never returns a negative needed count for a cohort already past the floor', async () => {
+    const { db } = await import('@workspace/db');
+    (db.execute as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      rows: [{ industry: 'Energy & Oil', company_size: '201+', contributing_organizations: 12 }],
+    });
+    const result = await getCohortProgress();
+    expect(result[0].needed).toBe(0);
+    expect(result[0].live).toBe(true);
+  });
+
+  it('preserves the closest-to-live-first order the SQL query already sorts by', async () => {
+    const { db } = await import('@workspace/db');
+    (db.execute as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      rows: [
+        { industry: 'Manufacturing', company_size: '11-50', contributing_organizations: 4 },
+        { industry: 'Retail', company_size: '1-10', contributing_organizations: 2 },
+        { industry: 'Logistics', company_size: '51-200', contributing_organizations: 0 },
+      ],
+    });
+    const result = await getCohortProgress();
+    expect(result.map(r => r.industry)).toEqual(['Manufacturing', 'Retail', 'Logistics']);
+    expect(result.map(r => r.needed)).toEqual([1, 3, 5]);
+  });
+
+  it('returns an empty array (not a zero-row entry) when no cohort has any assessment data yet', async () => {
+    const { db } = await import('@workspace/db');
+    (db.execute as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ rows: [] });
+    const result = await getCohortProgress();
+    expect(result).toEqual([]);
   });
 });
 

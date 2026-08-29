@@ -143,6 +143,50 @@ export async function recomputeIndustryBenchmarks(): Promise<{
   return { cellsWritten, cellsPrunedBelowFloor, contributingOrganizations: rows.length };
 }
 
+export interface CohortProgressRow {
+  industry: string;
+  companySize: string;
+  contributingOrganizations: number;
+  needed: number;
+  live: boolean;
+}
+
+/**
+ * Admin-facing operational visibility (#398, addendum 30 Aug 2026): how
+ * close is each (industry, companySize) cohort to crossing MIN_COHORT_SIZE
+ * and going live for real? Reuses the exact same dedup-to-latest-per-org
+ * cohort_key logic as recomputeIndustryBenchmarks() (never counts a client
+ * who reassessed monthly more than once), but only counts organizations --
+ * it does not read or expose any segment score, so it carries no privacy
+ * risk even for cohorts below the floor. Sorted closest-to-live first, so
+ * the admin sees exactly which cohort to focus outreach on to unlock the
+ * fastest real (non-demo) benchmark cell.
+ */
+export async function getCohortProgress(): Promise<CohortProgressRow[]> {
+  const result = await db.execute(sql`
+    SELECT industry, company_size, COUNT(DISTINCT cohort_key)::int AS contributing_organizations
+    FROM (
+      SELECT DISTINCT
+        COALESCE(u.organization_id::text, '-' || u.id::text) AS cohort_key,
+        ms.industry, ms.company_size
+      FROM maturity_snapshots ms
+      JOIN users u ON u.id = ms.user_id
+      WHERE ms.industry IS NOT NULL AND ms.industry != ''
+        AND ms.company_size IS NOT NULL AND ms.company_size != ''
+    ) ranked
+    GROUP BY industry, company_size
+    ORDER BY contributing_organizations DESC, industry, company_size
+  `);
+  const rows = ((result as any).rows ?? result) as Array<{ industry: string; company_size: string; contributing_organizations: number }>;
+  return rows.map(r => ({
+    industry: r.industry,
+    companySize: r.company_size,
+    contributingOrganizations: r.contributing_organizations,
+    needed: Math.max(0, MIN_COHORT_SIZE - r.contributing_organizations),
+    live: r.contributing_organizations >= MIN_COHORT_SIZE,
+  }));
+}
+
 export interface BenchmarkComparisonRow {
   segmentId: string;
   segmentTitle: string;

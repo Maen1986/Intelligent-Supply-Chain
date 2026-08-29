@@ -35,6 +35,7 @@
 import { Router } from 'express';
 import { sql } from 'drizzle-orm';
 import { db, submissionsTable, maturitySnapshotsTable, findingsActionsTable, usersTable, organizationsTable } from '@workspace/db';
+import { getCohortProgress, MIN_COHORT_SIZE } from '../lib/industryBenchmarks';
 import { requireAdmin } from '../middlewares/requireAdmin';
 import { logger } from '../lib/logger';
 
@@ -60,6 +61,7 @@ router.get('/', async (_req, res) => {
       actionsRows,
       orgRows,
       userRows,
+      cohortProgress,
     ] = await Promise.all([
       db.select({ count: sql<number>`count(*)::int` }).from(submissionsTable),
       db.select({ count: sql<number>`count(*)::int` }).from(maturitySnapshotsTable),
@@ -69,6 +71,7 @@ router.get('/', async (_req, res) => {
         .groupBy(findingsActionsTable.status),
       db.select({ count: sql<number>`count(distinct ${usersTable.organizationId})::int` }).from(usersTable),
       db.select({ count: sql<number>`count(*)::int` }).from(usersTable),
+      getCohortProgress(),
     ]);
 
     const diagnosticsRun = diagnosticsRunRows[0]?.count ?? 0;
@@ -120,10 +123,16 @@ router.get('/', async (_req, res) => {
         organizationsEngaged,
         totalUsers,
       },
+      benchmarkCohortProgress: {
+        minCohortSize: MIN_COHORT_SIZE,
+        cohorts: cohortProgress,
+        closestToLive: cohortProgress.filter(c => !c.live).slice(0, 3),
+      },
       definitions: {
         gap: `A segment scoring below ${REACTIVE_CEILING} ("Reactive" maturity band) on a client's most recent assessment. Deduplicated per user -- reassessing does not inflate the count.`,
         actionsTracked: 'Row count in findings_actions across all sources (maturity remediation, diagnostic follow-ups, contract renewal obligations).',
         organizationsEngaged: `Distinct organizations linked via users.organization_id. Note: organizations are only created via self-serve signup (Engine 4) -- users predating that engine are not backfilled into one, so this undercounts total platform reach relative to totalUsers (${totalUsers}).`,
+        benchmarkCohortProgress: `Real progress toward #398's cross-client benchmark going live for real (not the demo mode). Each (industry, company size) cell needs ${MIN_COHORT_SIZE} distinct contributing organizations before it's surfaced -- this counts organizations only, never scores, so it carries no privacy risk even below the floor. "closestToLive" is the fastest realistic path to a real, non-demo benchmark cell -- an outreach target list, not a wishlist.`,
       },
     });
   } catch (err) {

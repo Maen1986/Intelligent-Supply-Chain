@@ -6,6 +6,13 @@
  *  - "Admin access required" for a logged-out or non-admin user
  *  - Admin user sees the Platform Impact heading and fetched metric values
  *  - A failed fetch (non-ok response) surfaces the error message, not a crash
+ *  - benchmarkCohortProgress section (added 30 Aug 2026): renders the
+ *    closest-to-live cohort rows with the "{orgs} / {minCohortSize}
+ *    ({needed} more needed)" label, and shows the honest "no assessment
+ *    data yet" fallback when the cohort list is empty. The component reads
+ *    data.benchmarkCohortProgress.* with no optional chaining, so every
+ *    mocked fetch response below (including the pre-existing metrics test)
+ *    must include this field or the component throws.
  */
 import React from 'react';
 import { describe, it, expect, vi, afterEach } from 'vitest';
@@ -88,6 +95,11 @@ describe('AdminPlatformImpact — admin dashboard', () => {
           organizationsEngaged: 6,
           totalUsers: 20,
         },
+        benchmarkCohortProgress: {
+          minCohortSize: 5,
+          cohorts: [{ industry: 'Manufacturing', companySize: '11-50', contributingOrganizations: 5, needed: 0, live: true }],
+          closestToLive: [],
+        },
         definitions: { gap: 'A segment scoring below 2.0...' },
       }),
     }) as unknown as typeof fetch;
@@ -117,6 +129,72 @@ describe('AdminPlatformImpact — admin dashboard', () => {
     renderPage();
 
     expect(await screen.findByText(/Failed to load platform impact data/i)).toBeTruthy();
+
+    mockAuthState.user = null;
+  });
+
+  it('renders the closest-to-live benchmark cohort rows with progress-to-floor labels', async () => {
+    mockAuthState.loading = false;
+    mockAuthState.user = { id: 1, fullName: 'Admin', email: 'admin@example.com', role: 'admin' };
+
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        ok: true,
+        generatedAt: '2026-08-30T00:00:00.000Z',
+        metrics: {
+          diagnosticsRun: 1, assessmentsCompleted: 1, actionsTracked: 0, actionsByStatus: {},
+          gapsIdentified: 0, assessedUsersWithAtLeastOneGap: 0, distinctUsersAssessed: 1,
+          organizationsEngaged: 1, totalUsers: 1,
+        },
+        benchmarkCohortProgress: {
+          minCohortSize: 5,
+          cohorts: [
+            { industry: 'Retail', companySize: '1-10', contributingOrganizations: 3, needed: 2, live: false },
+          ],
+          closestToLive: [
+            { industry: 'Retail', companySize: '1-10', contributingOrganizations: 3, needed: 2, live: false },
+          ],
+        },
+        definitions: { gap: 'x' },
+      }),
+    }) as unknown as typeof fetch;
+
+    renderPage();
+
+    const row = await screen.findByTestId('row-cohort-retail-1-10');
+    expect(row.textContent).toContain('Retail');
+    expect(row.textContent).toContain('1-10');
+    expect(row.textContent).toContain('3 / 5');
+    expect(row.textContent).toContain('2 more needed');
+
+    mockAuthState.user = null;
+  });
+
+  it('shows the honest "no assessment data yet" fallback when no cohort has data', async () => {
+    mockAuthState.loading = false;
+    mockAuthState.user = { id: 1, fullName: 'Admin', email: 'admin@example.com', role: 'admin' };
+
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        ok: true,
+        generatedAt: '2026-08-30T00:00:00.000Z',
+        metrics: {
+          diagnosticsRun: 0, assessmentsCompleted: 0, actionsTracked: 0, actionsByStatus: {},
+          gapsIdentified: 0, assessedUsersWithAtLeastOneGap: 0, distinctUsersAssessed: 0,
+          organizationsEngaged: 0, totalUsers: 0,
+        },
+        benchmarkCohortProgress: { minCohortSize: 5, cohorts: [], closestToLive: [] },
+        definitions: { gap: 'x' },
+      }),
+    }) as unknown as typeof fetch;
+
+    renderPage();
+
+    expect(await screen.findByText('No assessment data yet.')).toBeTruthy();
 
     mockAuthState.user = null;
   });

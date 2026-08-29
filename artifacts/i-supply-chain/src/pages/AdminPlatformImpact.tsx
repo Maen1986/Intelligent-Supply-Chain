@@ -22,7 +22,7 @@ import { useLanguage } from '@/lib/LanguageContext';
 import { Button } from '@/components/ui/button';
 import {
   Gauge, RefreshCw, Loader2, ShieldAlert, ArrowLeft,
-  ClipboardList, FileText, ListChecks, TrendingDown, Building2, Users,
+  ClipboardList, FileText, ListChecks, TrendingDown, Building2, Users, BarChart3, Target,
 } from 'lucide-react';
 import { API_BASE } from '@/lib/apiBase';
 
@@ -37,10 +37,23 @@ interface PlatformImpactMetrics {
   organizationsEngaged: number;
   totalUsers: number;
 }
+interface CohortProgressRow {
+  industry: string;
+  companySize: string;
+  contributingOrganizations: number;
+  needed: number;
+  live: boolean;
+}
+interface BenchmarkCohortProgress {
+  minCohortSize: number;
+  cohorts: CohortProgressRow[];
+  closestToLive: CohortProgressRow[];
+}
 interface PlatformImpactResponse {
   ok: boolean;
   generatedAt: string;
   metrics: PlatformImpactMetrics;
+  benchmarkCohortProgress: BenchmarkCohortProgress;
   definitions: Record<string, string>;
 }
 
@@ -187,6 +200,52 @@ function Dashboard({ ar }: { ar: boolean }) {
               label={ar ? 'إجمالي المستخدمين' : 'Total Users'}
               value={data.metrics.totalUsers}
             />
+          </div>
+
+          {/* Benchmark Cohort Progress (#398 addendum, 30 Aug 2026): real,
+              operational visibility into how close each (industry,
+              companySize) cohort is to crossing MIN_COHORT_SIZE and going
+              live for real -- turns "wait for real clients" into a visible,
+              trackable countdown, and points outreach at the fastest real
+              path instead of a generic wishlist. Counts organizations only,
+              never scores -- safe to show even for cohorts below the floor. */}
+          <div className="rounded-xl border border-border p-5 space-y-3" data-testid="section-benchmark-cohort-progress">
+            <div className="flex items-center gap-2">
+              <BarChart3 className="w-4 h-4 text-primary" />
+              <h2 className="text-sm font-bold text-primary">
+                {ar ? 'تقدّم معيار المقارنة الحقيقي' : 'Real Benchmark Cohort Progress'}
+              </h2>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {ar
+                ? `يحتاج كل قطاع/حجم شركة إلى ${data.benchmarkCohortProgress.minCohortSize} مؤسسات مساهمة مختلفة قبل أن يصبح المعيار حقيقيًا (غير تجريبي). فيما يلي أقرب القطاعات إلى ذلك.`
+                : `Each industry/company-size cell needs ${data.benchmarkCohortProgress.minCohortSize} distinct contributing organizations before it goes live for real (not demo mode). Closest cohorts to unlocking shown first.`}
+            </p>
+            {data.benchmarkCohortProgress.closestToLive.length === 0 ? (
+              <p className="text-xs text-muted-foreground italic">
+                {ar ? 'لا توجد بيانات تقييم بعد.' : 'No assessment data yet.'}
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {data.benchmarkCohortProgress.closestToLive.map(cohort => (
+                  <div
+                    key={`${cohort.industry}::${cohort.companySize}`}
+                    data-testid={`row-cohort-${cohort.industry}-${cohort.companySize}`.replace(/\s+/g, '-').toLowerCase()}
+                    className="flex items-center justify-between gap-3 text-xs bg-muted/30 rounded-lg px-3 py-2"
+                  >
+                    <span className="flex items-center gap-1.5 font-medium text-foreground">
+                      <Target className="w-3.5 h-3.5 text-muted-foreground" />
+                      {cohort.industry} · {cohort.companySize}
+                    </span>
+                    <span className="font-bold text-primary whitespace-nowrap">
+                      {cohort.contributingOrganizations} / {data.benchmarkCohortProgress.minCohortSize}
+                      {' '}
+                      {ar ? `(يلزم ${cohort.needed} أخرى)` : `(${cohort.needed} more needed)`}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Definitions / honesty panel -- every number above is explained,
