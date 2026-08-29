@@ -815,3 +815,73 @@ export function unspscFamilyLabel(segmentCode: string | undefined, familyCode: s
   const fam = getFamiliesForSegment(segmentCode).find(f => f.code === familyCode);
   return fam ? fam.title : '';
 }
+
+/**
+ * #385 (30 Aug 2026) -- Class/Commodity-depth searchable lookup. Family-
+ * level dropdowns (getFamiliesForSegment) work fine for ~5-15 options per
+ * segment, but Class (506 total) and Commodity (3,660 total) are too deep
+ * to browse via nested selects. This searches Family/Class/Commodity
+ * titles and codes within one segment and returns matches ranked
+ * commodity-first (the most specific, most useful match for a real
+ * contract-categorization task), then class, then family, capped at
+ * limit results so a broad query (e.g. a single letter) doesn't return
+ * hundreds of rows.
+ */
+export interface UnspscSearchResult {
+  level: 'family' | 'class' | 'commodity';
+  familyCode: string;
+  familyTitle: string;
+  classCode?: string;
+  classTitle?: string;
+  commodityCode?: string;
+  commodityTitle?: string;
+}
+
+export function searchUnspscClassCommodity(
+  segmentCode: string | undefined,
+  query: string,
+  limit = 30,
+): UnspscSearchResult[] {
+  const q = query.trim().toLowerCase();
+  if (!segmentCode || q.length < 2) return [];
+
+  const families = getFamiliesForSegment(segmentCode);
+  const commodityMatches: UnspscSearchResult[] = [];
+  const classMatches: UnspscSearchResult[] = [];
+  const familyMatches: UnspscSearchResult[] = [];
+
+  for (const fam of families) {
+    if (fam.title.toLowerCase().includes(q) || fam.code.includes(q)) {
+      familyMatches.push({ level: 'family', familyCode: fam.code, familyTitle: fam.title });
+    }
+    for (const cls of fam.classes) {
+      if (cls.title.toLowerCase().includes(q) || cls.code.includes(q)) {
+        classMatches.push({ level: 'class', familyCode: fam.code, familyTitle: fam.title, classCode: cls.code, classTitle: cls.title });
+      }
+      for (const com of cls.commodities) {
+        if (com.title.toLowerCase().includes(q) || com.code.includes(q)) {
+          commodityMatches.push({
+            level: 'commodity',
+            familyCode: fam.code, familyTitle: fam.title,
+            classCode: cls.code, classTitle: cls.title,
+            commodityCode: com.code, commodityTitle: com.title,
+          });
+        }
+      }
+    }
+  }
+
+  return [...commodityMatches, ...classMatches, ...familyMatches].slice(0, limit);
+}
+
+export function getClassLabel(segmentCode: string | undefined, familyCode: string | undefined, classCode: string | undefined): string {
+  if (!classCode) return '';
+  const cls = getClassesForFamily(segmentCode, familyCode).find(c => c.code === classCode);
+  return cls ? cls.title : '';
+}
+
+export function getCommodityLabel(segmentCode: string | undefined, familyCode: string | undefined, classCode: string | undefined, commodityCode: string | undefined): string {
+  if (!commodityCode) return '';
+  const com = getCommoditiesForClass(segmentCode, familyCode, classCode).find(c => c.code === commodityCode);
+  return com ? com.title : '';
+}

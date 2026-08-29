@@ -11,7 +11,7 @@
 import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { AccountabilityLine } from '@/components/AccountabilityLine';
 import { UNSPSC_SERVICES_SEGMENTS, unspscSegmentLabel } from '@/lib/unspscSegments';
-import { getFamiliesForSegment } from '@/lib/unspscClassCommodity';
+import { getFamiliesForSegment, searchUnspscClassCommodity, getClassLabel, getCommodityLabel, type UnspscSearchResult } from '@/lib/unspscClassCommodity';
 import { GOVERNING_LAW_TRACKS, governingLawTrackLabel, governingLawPracticeNote, checkGoverningLawMismatch, internationalContractingPracticeGuide, ARBITRATION_INSTITUTIONS, arbitrationInstitutionLabel, COMMON_CONTRACTING_COMBOS, checkArbitrationInstitutionFit, type GoverningLawTrack, type ArbitrationInstitution } from '@/lib/clmLegalTrack';
 import { PRICING_TYPES, checkPricingMisuseFlag, checkIndustryPricingPatternFlag, type PricingType, type ScopeDefiniteness, type PricingPhase } from '@/lib/clmPricingTaxonomy';
 import { INDUSTRY_BUCKETS, FIDIC_BOOKS, PROFESSIONAL_SERVICES_TRACKS, LOGISTICS_MODES, resolveApplicableStandard, subSelectorsApplicable, type IndustryBucket, type FidicBook, type ProfessionalServicesTrack, type LogisticsMode } from '@/lib/clmIndustryStandards';
@@ -91,6 +91,13 @@ interface Contract {
    *  meaningful alongside a real (non-'other') unspscSegmentCode; cleared
    *  whenever the segment changes to avoid a stale family/segment pairing. */
   unspscFamilyCode?: string;
+  /** Optional UNSPSC class (6-digit) and commodity (8-digit) codes, #385
+   *  searchable-lookup addition, 30 Aug 2026 -- set together via the
+   *  search UI (never via a nested select, at 506 classes / 3,660
+   *  commodities that would be unusable), or left unset. Both cleared
+   *  whenever segment or family changes. */
+  unspscClassCode?: string;
+  unspscCommodityCode?: string;
   type: ContractType;
   annualValue: number;
   totalValue: number;
@@ -521,6 +528,11 @@ type Tab = 'inventory' | 'pipeline' | 'health' | 'rfx' | 'templates' | 'ai';
 export function ContractHealthChecker({ isAr }: CLMToolsProps) {
   const [activeTab, setActiveTab] = useState<Tab>('inventory');
   const [contracts, setContracts] = useState<Contract[]>(() => loadJson(SK_CONTRACTS, []));
+  /** #385 -- transient (not persisted) search text per contract row for the
+   *  Class/Commodity searchable lookup; clearing on selection or segment
+   *  change is enough, no need to survive a reload. */
+  const [unspscSearchQuery, setUnspscSearchQuery] = useState<Record<string, string>>({});
+
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   /** Module 02 -- which per-contract clause-category accordions are open.
    *  Local display state only (key: `${contractId}:${category}`), not
@@ -1404,7 +1416,7 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
                       </div>
                       <div className="space-y-1">
                         <label htmlFor={`unspsc-${c.id}`} className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{isAr ? 'قطاع UNSPSC (اختياري)' : 'UNSPSC Segment (optional)'}</label>
-                        <select id={`unspsc-${c.id}`} value={c.unspscSegmentCode ?? ''} onChange={e => { const next = e.target.value || undefined; updateContract(c.id, 'unspscSegmentCode', next); if (c.unspscFamilyCode) updateContract(c.id, 'unspscFamilyCode', undefined); }} className="w-full text-xs border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#082C6B] bg-white">
+                        <select id={`unspsc-${c.id}`} value={c.unspscSegmentCode ?? ''} onChange={e => { const next = e.target.value || undefined; updateContract(c.id, 'unspscSegmentCode', next); if (c.unspscFamilyCode) updateContract(c.id, 'unspscFamilyCode', undefined); if (c.unspscClassCode) updateContract(c.id, 'unspscClassCode', undefined); if (c.unspscCommodityCode) updateContract(c.id, 'unspscCommodityCode', undefined); setUnspscSearchQuery(prev => ({ ...prev, [c.id]: '' })); }} className="w-full text-xs border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#082C6B] bg-white">
                           <option value="">{isAr ? 'غير محدد' : 'Not specified'}</option>
                           {UNSPSC_SERVICES_SEGMENTS.map(s => <option key={s.code} value={s.code}>{s.code} -- {isAr ? s.labelAr : s.label}</option>)}
                           <option value="other">{isAr ? 'أخرى / غير مدرجة بعد...' : 'Other / not listed yet...'}</option>
@@ -1418,11 +1430,76 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
                         {c.unspscSegmentCode && c.unspscSegmentCode !== 'other' && getFamiliesForSegment(c.unspscSegmentCode).length > 0 ? (
                           <>
                             <label htmlFor={`unspsc-family-${c.id}`} className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block mt-1">{isAr ? 'عائلة UNSPSC (اختياري)' : 'UNSPSC Family (optional)'}</label>
-                            <select id={`unspsc-family-${c.id}`} value={c.unspscFamilyCode ?? ''} onChange={e => updateContract(c.id, 'unspscFamilyCode', e.target.value || undefined)} className="w-full text-xs border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#082C6B] bg-white">
+                            <select id={`unspsc-family-${c.id}`} value={c.unspscFamilyCode ?? ''} onChange={e => { updateContract(c.id, 'unspscFamilyCode', e.target.value || undefined); if (c.unspscClassCode) updateContract(c.id, 'unspscClassCode', undefined); if (c.unspscCommodityCode) updateContract(c.id, 'unspscCommodityCode', undefined); }} className="w-full text-xs border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#082C6B] bg-white">
                               <option value="">{isAr ? 'غير محدد' : 'Not specified'}</option>
                               {getFamiliesForSegment(c.unspscSegmentCode).map(f => <option key={f.code} value={f.code}>{f.code} -- {f.title}</option>)}
                             </select>
                           </>
+                        ) : null}
+                        {/* #385 (30 Aug 2026) -- Class/Commodity searchable lookup. Nested
+                            selects don't scale to 506 classes / 3,660 commodities; search does. */}
+                        {c.unspscSegmentCode && c.unspscSegmentCode !== 'other' ? (
+                          <div className="mt-1">
+                            <label htmlFor={`unspsc-search-${c.id}`} className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">{isAr ? 'ابحث في الفئة/السلعة (اختياري)' : 'Search Class / Commodity (optional)'}</label>
+                            <input
+                              id={`unspsc-search-${c.id}`}
+                              type="text"
+                              value={unspscSearchQuery[c.id] ?? ''}
+                              onChange={e => setUnspscSearchQuery(prev => ({ ...prev, [c.id]: e.target.value }))}
+                              placeholder={isAr ? 'اكتب حرفين على الأقل للبحث...' : 'Type at least 2 characters to search...'}
+                              className="w-full text-xs border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#082C6B]"
+                            />
+                            {(unspscSearchQuery[c.id] ?? '').trim().length >= 2 && (() => {
+                              const results = searchUnspscClassCommodity(c.unspscSegmentCode, unspscSearchQuery[c.id] ?? '', 20);
+                              return results.length > 0 ? (
+                                <div className="mt-1 max-h-40 overflow-y-auto border border-slate-200 rounded-lg divide-y divide-slate-100 bg-white">
+                                  {results.map((r: UnspscSearchResult, i: number) => (
+                                    <button
+                                      key={`${r.level}-${r.commodityCode ?? r.classCode ?? r.familyCode}-${i}`}
+                                      type="button"
+                                      onClick={() => {
+                                        // #385 fix (30 Aug 2026) -- updateContract closes over
+                                        // stale `contracts` state (no functional setState), so
+                                        // three sequential calls in one handler would silently
+                                        // drop all but the last. One saveContracts call instead,
+                                        // matching the addPricingPhase compound-update pattern.
+                                        saveContracts(contracts.map(row => row.id === c.id ? { ...row, unspscFamilyCode: r.familyCode, unspscClassCode: r.classCode, unspscCommodityCode: r.commodityCode } : row));
+                                        setUnspscSearchQuery(prev => ({ ...prev, [c.id]: '' }));
+                                      }}
+                                      className="w-full text-left px-2 py-1.5 hover:bg-slate-50 text-xs"
+                                    >
+                                      <span className="font-semibold text-slate-700">{r.commodityTitle ?? r.classTitle ?? r.familyTitle}</span>
+                                      <span className="text-[10px] text-slate-400 ml-1">
+                                        {r.level === 'commodity' ? (isAr ? 'سلعة' : 'commodity') : r.level === 'class' ? (isAr ? 'فئة' : 'class') : (isAr ? 'عائلة' : 'family')}
+                                        {' -- '}{r.familyTitle}{r.classTitle ? ` > ${r.classTitle}` : ''}
+                                      </span>
+                                    </button>
+                                  ))}
+                                </div>
+                              ) : (
+                                <p className="text-[10px] text-slate-400 mt-1">{isAr ? 'لا توجد نتائج مطابقة' : 'No matching results'}</p>
+                              );
+                            })()}
+                            {c.unspscCommodityCode ? (
+                              <div className="mt-1.5 bg-emerald-50 border border-emerald-200 rounded-lg px-2 py-1.5">
+                                <p className="text-[11px] font-semibold text-emerald-800">
+                                  {isAr ? 'سلعة' : 'Commodity'} {c.unspscCommodityCode} -- {getCommodityLabel(c.unspscSegmentCode, c.unspscFamilyCode, c.unspscClassCode, c.unspscCommodityCode)}
+                                </p>
+                                <button type="button" onClick={() => { updateContract(c.id, 'unspscClassCode', undefined); updateContract(c.id, 'unspscCommodityCode', undefined); }} className="text-[10px] text-emerald-700 underline mt-0.5">
+                                  {isAr ? 'مسح' : 'Clear'}
+                                </button>
+                              </div>
+                            ) : c.unspscClassCode ? (
+                              <div className="mt-1.5 bg-emerald-50 border border-emerald-200 rounded-lg px-2 py-1.5">
+                                <p className="text-[11px] font-semibold text-emerald-800">
+                                  {isAr ? 'فئة' : 'Class'} {c.unspscClassCode} -- {getClassLabel(c.unspscSegmentCode, c.unspscFamilyCode, c.unspscClassCode)}
+                                </p>
+                                <button type="button" onClick={() => updateContract(c.id, 'unspscClassCode', undefined)} className="text-[10px] text-emerald-700 underline mt-0.5">
+                                  {isAr ? 'مسح' : 'Clear'}
+                                </button>
+                              </div>
+                            ) : null}
+                          </div>
                         ) : null}
                         <p className="text-[10px] text-slate-400">{isAr ? 'تصنيف خدمات UNSPSC الرسمي (16 قطاعاً مصدره حتى الآن، مع مستوى العائلة الكامل من مصدر الأمم المتحدة الرسمي) -- إضافي إلى حقل الفئة الحر. اختر "أخرى" إذا لم تجد ما تبحث عنه' : 'Real UNSPSC services classification (16 sourced segments, now with full Family-level detail sourced directly from the UN\'s own primary distribution) -- additive to the free-text Category field above. Pick "Other" if what you need isn\'t listed yet'}</p>
                       </div>
