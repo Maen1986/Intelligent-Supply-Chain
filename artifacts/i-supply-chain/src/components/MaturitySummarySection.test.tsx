@@ -384,7 +384,7 @@ describe('MaturitySummarySection — edge cases', () => {
   it('does not render SVG radar when segment count < 3', () => {
     const ctx = makeContext({ segmentScores: BASE_SEGS.slice(0, 2) });
     const { container } = render(<MaturitySummarySection maturity={ctx} />);
-    expect(container.querySelector('svg')).toBeNull();
+    expect(container.querySelector('[data-testid="mss-radar-wrapper"] svg')).toBeNull();
   });
 
   it('handles segments missing gccAvg (no GCC gap label rendered)', () => {

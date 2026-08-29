@@ -47,6 +47,7 @@ import clmGenerationRouter         from "./clmGeneration";
 import clmReviewExtractionRouter   from "./clmReviewExtraction";
 import rfxWorkspaceRouter          from "./rfxWorkspace";
 import adminDbBackupRouter         from "./adminDbBackup";
+import industryBenchmarksRouter    from "./industryBenchmarks";
 
 const router: IRouter = Router();
 
@@ -94,6 +95,7 @@ router.use("/rar-analyses",            rarAnalysesRouter);
 router.use("/supplier-dependency-checks", supplierDependencyChecksRouter);
 router.use(briefRouter);
 router.use(workbenchRouter);
+router.use(industryBenchmarksRouter);
 router.use(clmGenerationRouter);
 router.use(clmReviewExtractionRouter);
 router.use("/rfx-workspace",         rfxWorkspaceRouter);

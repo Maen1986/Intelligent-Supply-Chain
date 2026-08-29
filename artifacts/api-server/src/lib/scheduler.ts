@@ -1,7 +1,7 @@
 /**
  * Scheduled Automation Engine
  *
- * Runs five cron jobs inside the API server process (no external scheduler needed).
+ * Runs six cron jobs inside the API server process (no external scheduler needed).
  * Each job is configurable — set the corresponding env var to "true" to disable it.
  *
  *   SCHEDULE_DISABLE_WEEKLY_KPI=true       skip Monday 08:00 KPI digest
@@ -9,6 +9,7 @@
  *   SCHEDULE_DISABLE_LEAD_FOLLOWUP=true    skip 48-hour lead nudge check
  *   SCHEDULE_DISABLE_STALE_DATA=true       skip 14-day stale-data nudge
  *   SCHEDULE_DISABLE_ACTION_FOLLOWUP=true  skip findings_actions plan-started / overdue nudge
+ *   SCHEDULE_DISABLE_INDUSTRY_BENCHMARKS=true  skip nightly industry-benchmark recompute (#398)
  *
  * All schedule times are UTC.
  */
@@ -20,6 +21,7 @@ import { dispatchEvent } from "./webhookDispatch";
 import { runWebhookRetries } from "./webhookRetry";
 import { sendAlertEmail, sendDigestEmail } from "./notifyHelpers";
 import { logger }        from "./logger";
+import { recomputeIndustryBenchmarks } from "./industryBenchmarks";
 
 /* ──── types ──── */
 
@@ -478,6 +480,29 @@ export async function runActionFollowup(): Promise<void> {
 }
 
 /* ════
+   JOB 6 — Nightly Industry Benchmark Recompute (02:00 UTC)
+   Registry #398 (Score-Max Plan v3 lever 3, built 30 Aug 2026). Recomputes
+   every (industry, companySize, segmentId) cohort cell from the latest
+   maturity_snapshots row per organization. See lib/industryBenchmarks.ts
+   for the aggregation and privacy-floor logic this job just invokes.
+════ */
+
+export async function runIndustryBenchmarkRecompute(): Promise<void> {
+  logger.info("[scheduler] Running industry benchmark recompute");
+  try {
+    const { cellsWritten, cellsPrunedBelowFloor, contributingOrganizations } = await recomputeIndustryBenchmarks();
+    await logJobRun("industry_benchmarks", contributingOrganizations);
+    logger.info(
+      { cellsWritten, cellsPrunedBelowFloor, contributingOrganizations },
+      "[scheduler] Industry benchmark recompute complete",
+    );
+  } catch (err) {
+    await logJobRun("industry_benchmarks", 0, (err as Error)?.message ?? String(err));
+    logger.error({ err }, "[scheduler] Industry benchmark recompute failed");
+  }
+}
+
+/* ════
    Boot — called once from src/index.ts
 ════ */
 
@@ -522,6 +547,14 @@ export function startScheduler(): void {
       runActionFollowup().catch(err => logger.error({ err }, "[scheduler] Action follow-up uncaught"));
     });
     logger.info("[scheduler] Action follow-up scheduled: daily 10:00 UTC");
+  }
+
+  if (!disabled("SCHEDULE_DISABLE_INDUSTRY_BENCHMARKS")) {
+    // Every day 02:00 UTC
+    cron.schedule("0 2 * * *", () => {
+      runIndustryBenchmarkRecompute().catch(err => logger.error({ err }, "[scheduler] Industry benchmark recompute uncaught"));
+    });
+    logger.info("[scheduler] Industry benchmark recompute scheduled: daily 02:00 UTC");
   }
 
   // Webhook retry sweep — every minute

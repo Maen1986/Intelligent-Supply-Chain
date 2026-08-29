@@ -13,6 +13,8 @@
  */
 
 import React from 'react';
+import { Link } from 'wouter';
+import { BarChart3 } from 'lucide-react';
 
 /* ─────────────────────────────────────────────────────────────────────────────
    Shared types (kept local so this component has no circular imports)
@@ -410,6 +412,22 @@ export function MaturitySummarySection({ maturity, isAr = false }: MaturitySumma
               </span>
             </div>
           )}
+
+          {/* #398: cross-client benchmark CTA -- reuses the coverage/evidence
+              visual language so it reads as "real, sourced" rather than
+              another promo banner. Links to the honest per-segment
+              comparison page (insufficientSample state shown there until
+              real client volume clears the privacy floor). */}
+          <div style={{ marginTop: '8px' }} data-testid="mss-benchmark-cta">
+            <Link href="/industry-benchmark" style={{
+              display: 'inline-flex', alignItems: 'center', gap: '5px',
+              fontSize: '9.5px', fontWeight: 700, color: '#082C6B',
+              textDecoration: 'none', borderBottom: '1px dashed #082C6B55',
+            }}>
+              <BarChart3 style={{ width: '11px', height: '11px' }} />
+              {isAr ? 'قارن بمعيار قطاعك' : 'Compare to your industry benchmark'}
+            </Link>
+          </div>
         </div>
       </div>
 
@@ -423,7 +441,7 @@ export function MaturitySummarySection({ maturity, isAr = false }: MaturitySumma
       }}>
 
         {/* Left: radar */}
-        <div style={{ display: 'flex', justifyContent: 'center' }}>
+        <div data-testid="mss-radar-wrapper" style={{ display: 'flex', justifyContent: 'center' }}>
           <StaticRadar segments={segmentScores} size={200} isAr={isAr} />
         </div>
 

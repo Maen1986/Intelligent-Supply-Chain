@@ -484,6 +484,29 @@ const MIGRATIONS: string[] = [
   `ALTER TABLE maturity_snapshots
      ADD COLUMN IF NOT EXISTS sub_segment_scores JSONB`,
 
+  // industry_benchmarks -- cross-client benchmarking infrastructure
+  // (registry #398, Score-Max Plan v3 lever 3, built 30 Aug 2026). See
+  // lib/db/src/schema/industryBenchmarks.ts for the full design rationale
+  // (nightly-recomputed cohort cells, privacy floor enforced server-side,
+  // dedup to latest snapshot per organization). Additive and idempotent,
+  // applies automatically on next server boot.
+  `CREATE TABLE IF NOT EXISTS industry_benchmarks (
+     id                SERIAL PRIMARY KEY,
+     industry          TEXT          NOT NULL,
+     company_size      TEXT          NOT NULL,
+     segment_id        TEXT          NOT NULL,
+     segment_title     TEXT,
+     segment_title_ar  TEXT,
+     sample_size       INTEGER       NOT NULL,
+     mean_score        NUMERIC(4,2)  NOT NULL,
+     median_score      NUMERIC(4,2)  NOT NULL,
+     p25_score         NUMERIC(4,2)  NOT NULL,
+     p75_score         NUMERIC(4,2)  NOT NULL,
+     last_computed_at  TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
+     UNIQUE (industry, company_size, segment_id)
+   )`,
+  `CREATE INDEX IF NOT EXISTS industry_benchmarks_cohort ON industry_benchmarks (industry, company_size)`,
+
 ];
 
 export async function runStartupMigrations(): Promise<void> {

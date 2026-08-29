@@ -22,5 +22,6 @@ export * from "./automation";
 export * from "./benchmarks";
 export * from "./maturityGuestSnapshots";
 export * from "./maturitySnapshots";
+export * from "./industryBenchmarks";
 export * from "./maturityEvidence";
 export * from "./regulatoryContent";
