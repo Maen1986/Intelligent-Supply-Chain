@@ -598,12 +598,18 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
   const [rfxFieldEntries, setRfxFieldEntries] = useState<Record<string, FieldEntryState>>(() => loadJson(SK_RFX + ':fieldEntries', {}));
   const [rfxWbsFilled, setRfxWbsFilled] = useState<Record<string, boolean>>(() => loadJson(SK_RFX + ':wbsFilled', {}));
   const [rfxResponseEntries, setRfxResponseEntries] = useState<Record<string, ResponseEntryState>>(() => loadJson(SK_RFX + ':responseEntries', {}));
+  /** #396 (30 Aug 2026) -- Guided vs Expert experience-level toggle. Purely a
+   *  UI-density preference for a user already familiar with RFx work, not a
+   *  fact about the deal (that's complexityTier's job, unchanged). Default
+   *  'guided' so nothing collapses unless the user opts in. */
+  const [rfxExperienceLevel, setRfxExperienceLevel] = useState<'guided' | 'expert'>(() => loadJson(SK_RFX + ':experienceLevel', 'guided' as 'guided' | 'expert'));
 
   useEffect(() => { safeSetItem(SK_RFX + ':scopeBucket', JSON.stringify(rfxScopeBucket)); }, [rfxScopeBucket]);
   useEffect(() => { safeSetItem(SK_RFX + ':scopeComplexity', JSON.stringify(rfxScopeComplexity)); }, [rfxScopeComplexity]);
   useEffect(() => { safeSetItem(SK_RFX + ':fieldEntries', JSON.stringify(rfxFieldEntries)); }, [rfxFieldEntries]);
   useEffect(() => { safeSetItem(SK_RFX + ':wbsFilled', JSON.stringify(rfxWbsFilled)); }, [rfxWbsFilled]);
   useEffect(() => { safeSetItem(SK_RFX + ':responseEntries', JSON.stringify(rfxResponseEntries)); }, [rfxResponseEntries]);
+  useEffect(() => { safeSetItem(SK_RFX + ':experienceLevel', JSON.stringify(rfxExperienceLevel)); }, [rfxExperienceLevel]);
 
   // -- #371 T2 server-sync pass (28 Aug 2026): closes the honest gap logged
   //    in Module 03 doc section 8.10 -- "No backend/DB persistence... a T2
@@ -2567,6 +2573,23 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
               <p className="text-[11px] text-slate-500 mt-0.5">{isAr ? 'يُشتق نطاق العمل من الفئة الصناعية ونوع RFx ومستوى التعقيد -- وليس نموذجاً عاماً واحداً. مصادر حقيقية وموثقة، راجع القسم 8 من وثيقة الوحدة 03.' : 'The scope is derived from industry bucket + RFx type + complexity level -- not one generic form. Real, sourced methodology; see Module 03 doc Section 8.'}</p>
             </div>
 
+            {/* #396 -- Guided vs Expert toggle: collapses elicitation-guidance/"why"
+                text for users who already know RFx; never hides the checklist itself. */}
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-semibold text-slate-500">{isAr ? 'مستوى الخبرة' : 'Experience level'}</span>
+              <div className="inline-flex rounded-lg border border-slate-200 overflow-hidden">
+                <button type="button" onClick={() => setRfxExperienceLevel('guided')}
+                  className={`px-2.5 py-1 text-[11px] font-semibold ${rfxExperienceLevel === 'guided' ? 'bg-[#082C6B] text-white' : 'bg-white text-slate-500'}`}>
+                  {isAr ? 'إرشادي' : 'Guided'}
+                </button>
+                <button type="button" onClick={() => setRfxExperienceLevel('expert')}
+                  className={`px-2.5 py-1 text-[11px] font-semibold ${rfxExperienceLevel === 'expert' ? 'bg-[#082C6B] text-white' : 'bg-white text-slate-500'}`}>
+                  {isAr ? 'خبير' : 'Expert'}
+                </button>
+              </div>
+              <span className="text-[10px] text-slate-400">{isAr ? '(إرشادي = عرض إرشادات "لماذا/كيف" كاملة؛ خبير = قائمة سريعة فقط)' : "(Guided = full \"why/how\" guidance shown; Expert = fast checklist only)"}</span>
+            </div>
+
             <div className="grid gap-3 sm:grid-cols-2">
               <div>
                 <label className="text-[11px] font-semibold text-slate-600">{isAr ? 'الفئة الصناعية' : 'Industry Bucket'}</label>
@@ -2594,12 +2617,16 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
                   <p className="text-[10px] text-slate-400 mt-1">{isAr ? rfxScopeProfile.specType.sourceAr : rfxScopeProfile.specType.sourceEn}</p>
                 </div>
 
-                {/* Elicitation guidance (BABOK) */}
-                <div className="bg-amber-50 border border-amber-200 rounded-xl p-3">
-                  <p className="text-[11px] font-bold text-amber-800">{isAr ? 'كيفية جمع المتطلبات' : 'How to Gather These Requirements'}</p>
-                  <p className="text-xs text-amber-900 mt-1">{isAr ? rfxScopeProfile.elicitation.techniqueAr : rfxScopeProfile.elicitation.techniqueEn}</p>
-                  <p className="text-[11px] text-amber-700 mt-1">{isAr ? rfxScopeProfile.elicitation.reasonAr : rfxScopeProfile.elicitation.reasonEn}</p>
-                </div>
+                {/* Elicitation guidance (BABOK) -- collapsed by default in Expert mode (#396) */}
+                {rfxExperienceLevel === 'guided' ? (
+                  <div className="bg-amber-50 border border-amber-200 rounded-xl p-3">
+                    <p className="text-[11px] font-bold text-amber-800">{isAr ? 'كيفية جمع المتطلبات' : 'How to Gather These Requirements'}</p>
+                    <p className="text-xs text-amber-900 mt-1">{isAr ? rfxScopeProfile.elicitation.techniqueAr : rfxScopeProfile.elicitation.techniqueEn}</p>
+                    <p className="text-[11px] text-amber-700 mt-1">{isAr ? rfxScopeProfile.elicitation.reasonAr : rfxScopeProfile.elicitation.reasonEn}</p>
+                  </div>
+                ) : (
+                  <p className="text-[11px] text-amber-700">{isAr ? rfxScopeProfile.elicitation.techniqueAr : rfxScopeProfile.elicitation.techniqueEn}</p>
+                )}
 
                 {/* WBS-anchored deliverable skeleton (PMI) */}
                 <div>
@@ -2610,7 +2637,7 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
                         <input type="checkbox" className="mt-0.5" checked={!!rfxWbsFilled[node.id]} onChange={() => toggleRfxWbsNode(node.id)} />
                         <div>
                           <p className="text-xs font-semibold text-slate-700">{isAr ? node.labelAr : node.labelEn}</p>
-                          <p className="text-[11px] text-slate-500">{isAr ? node.guidanceAr : node.guidanceEn}</p>
+                          {rfxExperienceLevel === 'guided' && <p className="text-[11px] text-slate-500">{isAr ? node.guidanceAr : node.guidanceEn}</p>}
                         </div>
                       </label>
                     ))}
@@ -2629,7 +2656,7 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
                             <input type="checkbox" className="mt-0.5" checked={!!entry?.entered} onChange={() => toggleRfxFieldEntered(field.id)} />
                             <div className="flex-1">
                               <p className="text-xs font-semibold text-slate-700">{isAr ? field.labelAr : field.labelEn}</p>
-                              <p className="text-[11px] text-slate-500">{isAr ? field.whyAr : field.whyEn}</p>
+                              {rfxExperienceLevel === 'guided' && <p className="text-[11px] text-slate-500">{isAr ? field.whyAr : field.whyEn}</p>}
                             </div>
                           </div>
                           {field.mustBeMeasurable && (
