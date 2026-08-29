@@ -41,6 +41,7 @@ import {
   checkCommercialRibaFlag, checkPerformanceMeasurabilityFlag, checkRiskAllocationFidicMismatchFlag,
   checkForegroundIPGapFlag, checkGovernanceRibaArbitrationFlag,
   checkGccJordanInterestPermittedFlag, checkQatarInterestLenderFlag,
+  checkLiquidatedDamagesGovLawFlag, checkForceMajeureStatutoryDefaultFlag,
   type ClausesPresent, type ClauseCategoriesNotApplicable,
 } from './clmClauseTaxonomy';
 import { checkGoverningLawMismatch, type GoverningLawTrack } from './clmLegalTrack';
@@ -348,6 +349,60 @@ function buildClauseFindings(
     ],
     'The design-risk clause may already exist in an attached technical annex this checklist doesn\'t see -- confirm before assuming it is genuinely missing.',
     'قد يكون بند مخاطر التصميم موجوداً بالفعل في ملحق فني مرفق لا تراه هذه القائمة -- تأكدوا قبل افتراض غيابه فعلياً.',
+  ));
+
+  findings.push(buildClauseFinding(
+    checkLiquidatedDamagesGovLawFlag(clausesPresent, governingLawClause),
+    'clause-liquidated-damages-gov-law', 'Liquidated-Damages Enforceability Depends on the Governing Law You Chose', 'قابلية إنفاذ التعويض المقطوع تعتمد على القانون الحاكم الذي اخترتموه',
+    'Module 02 Risk Allocation category, cross-referenced with Module 01\'s governing-law tracks (#399 harmonization scoping, 28-30 Aug 2026).',
+    'فئة توزيع المخاطر (الوحدة 02)، بالربط مع مسارات القانون الحاكم في الوحدة 01 (نطاق التوحيد #399، 28-30 أغسطس 2026).',
+    [
+      { stepEn: 'Underlying cause', stepAr: 'السبب الكامن',
+        textEn: 'Liquidated-damages clause text is usually drafted once and reused across contracts under different governing laws, without checking whether the same wording carries the same real-world enforceability everywhere it is used.',
+        textAr: 'عادةً ما تُصاغ نصوص بند التعويض المقطوع مرة واحدة وتُعاد استخدامها في عقود تخضع لقوانين حاكمة مختلفة، دون التحقق مما إذا كانت الصياغة ذاتها تحمل نفس قابلية الإنفاذ الفعلية أينما استُخدمت.' },
+      { stepEn: 'Exposure', stepAr: 'التعرض للمخاطر',
+        textEn: 'If the governing law gives courts a mandatory power to revisit the agreed figure (or, conversely, gives it strong contractual-freedom protection), a party relying on the clause without knowing which regime applies may be surprised by the real-world outcome if a dispute arises.',
+        textAr: 'إذا كان القانون الحاكم يمنح المحاكم سلطة إلزامية لإعادة النظر في المبلغ المتفق عليه (أو، على العكس، يمنحه حماية قوية لحرية التعاقد)، فقد يُفاجأ الطرف المعتمد على البند دون معرفة النظام المعمول به بالنتيجة الفعلية في حال نشوء نزاع.' },
+      { stepEn: 'Recommended intervention', stepAr: 'التدخل الموصى به',
+        textEn: 'Confirm with legal counsel how the selected governing law actually treats liquidated-damages enforceability, and consider whether the agreed figure and its justification (a genuine pre-estimate of loss, not a penalty) should be documented more explicitly for this specific jurisdiction.',
+        textAr: 'تأكدوا مع المستشار القانوني من كيفية تعامل القانون الحاكم المختار فعلياً مع قابلية إنفاذ التعويض المقطوع، وضعوا في الاعتبار ما إذا كان ينبغي توثيق المبلغ المتفق عليه ومبرراته (كونه تقديراً حقيقياً مسبقاً للخسارة، لا غرامة) بشكل أكثر وضوحاً لهذه الولاية القضائية تحديداً.' },
+      { stepEn: 'Expected outcome', stepAr: 'النتيجة المتوقعة',
+        textEn: 'Knowing which enforceability regime applies lets both parties negotiate a figure that is more likely to survive a dispute, rather than discovering the gap only after one arises.',
+        textAr: 'تتيح معرفة نظام قابلية الإنفاذ المعمول به للطرفين التفاوض على مبلغ أكثر قابلية للصمود أمام نزاع، بدلاً من اكتشاف الفجوة بعد نشوئه فقط.' },
+      { stepEn: 'How to prevent recurrence', stepAr: 'كيفية منع التكرار',
+        textEn: 'Treat liquidated-damages enforceability as a governing-law-specific check on every contract template, not a one-time drafting decision reused everywhere.',
+        textAr: 'اعتبروا قابلية إنفاذ التعويض المقطوع فحصاً خاصاً بكل قانون حاكم على كل نموذج عقد، لا قراراً صياغياً لمرة واحدة يُعاد استخدامه في كل مكان.' },
+    ],
+    'This is a real, sourced difference in legal treatment, not a certainty of outcome either way -- courts weigh the specific facts, and sophisticated drafters sometimes structure the figure deliberately to survive scrutiny under the applicable regime. Confirm before assuming either an automatic reduction or automatic enforcement.',
+    'هذا فرق حقيقي وموثق في المعاملة القانونية، وليس يقيناً بنتيجة معينة في أي الاتجاهين -- إذ تزن المحاكم الوقائع المحددة، وقد يصوغ بعض المحررين المتمرسين المبلغ عمداً بحيث يصمد أمام الفحص بموجب النظام المعمول به. تأكدوا قبل افتراض خفض تلقائي أو إنفاذ تلقائي.',
+    variantsFor('risk-allocation', 'liquidated-damages-delay-penalties'),
+  ));
+
+  findings.push(buildClauseFinding(
+    checkForceMajeureStatutoryDefaultFlag(clausesPresent, governingLawClause),
+    'clause-force-majeure-statutory-default', 'Force-Majeure Protection Depends on Whether Your Governing Law Provides a Default', 'تعتمد حماية القوة القاهرة على ما إذا كان القانون الحاكم يوفر قاعدة افتراضية',
+    'Module 02 Risk Allocation category, cross-referenced with Module 01\'s governing-law tracks (#399 harmonization scoping, 28-30 Aug 2026).',
+    'فئة توزيع المخاطر (الوحدة 02)، بالربط مع مسارات القانون الحاكم في الوحدة 01 (نطاق التوحيد #399، 28-30 أغسطس 2026).',
+    [
+      { stepEn: 'Underlying cause', stepAr: 'السبب الكامن',
+        textEn: 'Force-majeure clauses are sometimes left out of shorter or lower-value contracts on the assumption that "something like it" would apply anyway if a genuine disruption occurred -- an assumption that is only true in some governing-law regimes.',
+        textAr: 'يُترك بند القوة القاهرة أحياناً خارج العقود الأقصر أو الأقل قيمة على افتراض أن "شيئاً مشابهاً" سينطبق على أي حال في حال وقوع اضطراب حقيقي -- وهو افتراض صحيح فقط في بعض أنظمة القانون الحاكم.' },
+      { stepEn: 'Exposure', stepAr: 'التعرض للمخاطر',
+        textEn: 'In a governing-law regime with no general force-majeure doctrine, the absence of a clause means no protection exists at all if performance is disrupted by an event outside either party\'s control -- only narrower, harder-to-invoke fallback doctrines remain.',
+        textAr: 'في نظام قانوني حاكم لا يعرف مبدأً عاماً للقوة القاهرة، يعني غياب البند عدم وجود أي حماية على الإطلاق إذا تعطل التنفيذ بسبب حدث خارج عن سيطرة أي من الطرفين -- ولا تبقى سوى مبادئ احتياطية أضيق يصعب الاحتجاج بها.' },
+      { stepEn: 'Recommended intervention', stepAr: 'التدخل الموصى به',
+        textEn: 'Add an explicit force-majeure clause -- especially on a common-law-governed contract -- rather than relying on an assumed default that may not exist under the selected governing law.',
+        textAr: 'أضيفوا بنداً صريحاً للقوة القاهرة -- خاصة في العقود الخاضعة لقانون عام (كومن لو) -- بدلاً من الاعتماد على قاعدة افتراضية مفترَضة قد لا توجد بموجب القانون الحاكم المختار.' },
+      { stepEn: 'Expected outcome', stepAr: 'النتيجة المتوقعة',
+        textEn: 'An explicit, well-scoped force-majeure clause gives both parties predictable protection regardless of which governing law ends up applying.',
+        textAr: 'يمنح بند القوة القاهرة الصريح والمحدد النطاق جيداً الطرفين حماية قابلة للتنبؤ بصرف النظر عن القانون الحاكم الذي سيُطبَّق في النهاية.' },
+      { stepEn: 'How to prevent recurrence', stepAr: 'كيفية منع التكرار',
+        textEn: 'Make force-majeure inclusion a standard checklist item for every contract template, cross-checked against the selected governing law rather than assumed universal.',
+        textAr: 'اجعلوا إدراج بند القوة القاهرة عنصراً معيارياً في قائمة كل نموذج عقد، مع التحقق المتقاطع مع القانون الحاكم المختار بدلاً من افتراض شموليته.' },
+    ],
+    'A missing clause is not automatically a gap under every governing law -- civil-law jurisdictions in this tradition provide a statutory default that may already offer real protection, so this is a genuine reason to confirm with counsel before drafting new language, not an automatic recommendation to add a clause everywhere.',
+    'لا يُعد غياب البند فجوة تلقائية بموجب كل قانون حاكم -- إذ توفر الأنظمة القانونية المدنية ضمن هذا التقليد قاعدة افتراضية قانونية قد تقدم بالفعل حماية حقيقية، لذا فهذا سبب حقيقي للتأكد مع المستشار القانوني قبل صياغة نص جديد، وليس توصية تلقائية بإضافة بند في كل مكان.',
+    variantsFor('risk-allocation', 'force-majeure'),
   ));
 
   findings.push(buildClauseFinding(

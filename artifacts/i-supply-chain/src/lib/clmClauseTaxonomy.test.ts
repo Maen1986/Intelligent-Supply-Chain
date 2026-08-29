@@ -5,6 +5,7 @@ import {
   checkCommercialRibaFlag, checkPerformanceMeasurabilityFlag, checkRiskAllocationFidicMismatchFlag,
   checkForegroundIPGapFlag, checkGovernanceRibaArbitrationFlag,
   checkGccJordanInterestPermittedFlag, checkQatarInterestLenderFlag,
+  checkLiquidatedDamagesGovLawFlag, checkForceMajeureStatutoryDefaultFlag,
 } from './clmClauseTaxonomy';
 
 describe('static metadata', () => {
@@ -357,5 +358,63 @@ describe('checkQatarInterestLenderFlag', () => {
     expect(r.reasonEn).toContain('Art. 568');
     expect(r.reasonEn).toContain('Art. 110');
     expect(r.reasonEn).toContain('licensed financial institution');
+  });
+});
+
+describe('checkLiquidatedDamagesGovLawFlag', () => {
+  it('not flagged when LD clause not checked', () => {
+    expect(checkLiquidatedDamagesGovLawFlag({}, 'uae-ctl').flagged).toBe(false);
+  });
+  it('not flagged when governing law is undefined or an unresearched track', () => {
+    const cp = { 'risk-allocation': ['liquidated-damages-delay-penalties'] };
+    expect(checkLiquidatedDamagesGovLawFlag(cp, undefined).flagged).toBe(false);
+    expect(checkLiquidatedDamagesGovLawFlag(cp, 'china-civil').flagged).toBe(false);
+    expect(checkLiquidatedDamagesGovLawFlag(cp, 'uae-difc-adgm').flagged).toBe(false);
+  });
+  it('flagged for civil-law judicial-reduction tracks, cites UAE Article 340/390', () => {
+    const cp = { 'risk-allocation': ['liquidated-damages-delay-penalties'] };
+    for (const track of ['saudi-ctl', 'saudi-gtpl', 'uae-ctl', 'egypt-civil', 'jordan-civil']) {
+      const r = checkLiquidatedDamagesGovLawFlag(cp, track);
+      expect(r.flagged, track).toBe(true);
+      expect(r.reasonEn).toContain('mandatory');
+    }
+    expect(checkLiquidatedDamagesGovLawFlag(cp, 'uae-ctl').reasonEn).toContain('Article 340');
+    expect(checkLiquidatedDamagesGovLawFlag(cp, 'uae-ctl').reasonEn).toContain('Article 390');
+  });
+  it('flagged for common-law contract-freedom tracks, cites Makdessi', () => {
+    const cp = { 'risk-allocation': ['liquidated-damages-delay-penalties'] };
+    for (const track of ['uk-common-law', 'uk-sga', 'us-ucc']) {
+      const r = checkLiquidatedDamagesGovLawFlag(cp, track);
+      expect(r.flagged, track).toBe(true);
+      expect(r.reasonEn).toContain('Makdessi');
+    }
+  });
+});
+
+describe('checkForceMajeureStatutoryDefaultFlag', () => {
+  it('not flagged when risk-allocation category is untouched', () => {
+    expect(checkForceMajeureStatutoryDefaultFlag({}, 'uk-common-law').flagged).toBe(false);
+  });
+  it('not flagged when force-majeure is checked', () => {
+    const cp = { 'risk-allocation': ['force-majeure'] };
+    expect(checkForceMajeureStatutoryDefaultFlag(cp, 'uk-common-law').flagged).toBe(false);
+  });
+  it('not flagged when governing law is undefined or an unresearched track', () => {
+    const cp = { 'risk-allocation': ['limitation-of-liability'] };
+    expect(checkForceMajeureStatutoryDefaultFlag(cp, undefined).flagged).toBe(false);
+    expect(checkForceMajeureStatutoryDefaultFlag(cp, 'india-contract-act').flagged).toBe(false);
+  });
+  it('flagged (lower-urgency framing) for civil-law tracks when FM absent', () => {
+    const cp = { 'risk-allocation': ['limitation-of-liability'] };
+    const r = checkForceMajeureStatutoryDefaultFlag(cp, 'saudi-ctl');
+    expect(r.flagged).toBe(true);
+    expect(r.reasonEn).toContain('civil code itself');
+    expect(r.reasonEn).toContain('lower urgency');
+  });
+  it('flagged (no-protection-at-all framing) for common-law tracks when FM absent', () => {
+    const cp = { 'risk-allocation': ['limitation-of-liability'] };
+    const r = checkForceMajeureStatutoryDefaultFlag(cp, 'us-ucc');
+    expect(r.flagged).toBe(true);
+    expect(r.reasonEn).toContain('no force-majeure protection at all');
   });
 });

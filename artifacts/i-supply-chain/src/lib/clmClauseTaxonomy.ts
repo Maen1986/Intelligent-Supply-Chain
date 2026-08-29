@@ -638,3 +638,89 @@ export function checkQatarInterestLenderFlag(
     reasonAr: 'تم تحديد بند فائدة/غرامة التأخر في السداد في عقد يخضع للقانون القطري. بموجب القانون المدني القطري (المادة 568)، يُعتبر بند الفائدة في عقد القرض باطلاً افتراضياً -- ويبقى العقد نافذاً فيما عدا ذلك، لكن الفائدة نفسها غير قابلة للإنفاذ -- ما لم يكن المُقرض مؤسسة مالية مرخصة (قانون مصرف قطر المركزي، المادة 110). يستحق التأكد من صفة الطرف المُقرض، بناءً على ما أفدتم به.',
   };
 }
+
+/**
+ * Risk Allocation category flags, governing-law-aware (#399 Piece A, 30 Aug
+ * 2026 -- scoped and built same day per owner green-light, following
+ * clause-governing-law-harmonization-338-scoping-draft.md). The same
+ * liquidated-damages or force-majeure clause text carries a materially
+ * different real-world legal effect depending on the contract's governing
+ * law, and until this pass the platform said nothing about it either way.
+ *
+ * Scoped strictly to the tracks this pass actually sourced -- not extended
+ * to every nominally "civil-law" or "common-law" track without dedicated
+ * research (Decision Record 8.7, same discipline as the Qatar-specific
+ * interest flag above rather than lumping it into the blanket GCC/Jordan
+ * set).
+ *
+ * Civil-law, codified-obligations tradition (courts retain a mandatory,
+ * non-waivable power to reduce an excessive liquidated-damages figure; the
+ * civil code itself supplies a force-majeure default even with no clause):
+ * Saudi (both tracks), UAE, Egypt, Jordan -- sourced to the UAE's new Civil
+ * Transactions Law, Federal Decree-Law No. 25/2025, Article 340 (replacing
+ * Article 390, effective 1 Jun 2026), and the same codified-obligations
+ * family for the other three.
+ *
+ * Common law, contract-freedom tradition (an agreed damages figure is
+ * enforced largely as written; no general force-majeure doctrine exists
+ * absent an express clause): UK common law, UK SGA, US UCC -- sourced to
+ * the UK Supreme Court's 2015 Cavendish Square Holding BV v Makdessi
+ * decision.
+ */
+const LD_CIVIL_LAW_JUDICIAL_REDUCTION_TRACKS = new Set([
+  'saudi-ctl', 'saudi-gtpl', 'uae-ctl', 'egypt-civil', 'jordan-civil',
+]);
+const LD_COMMON_LAW_CONTRACT_FREEDOM_TRACKS = new Set([
+  'uk-common-law', 'uk-sga', 'us-ucc',
+]);
+
+export function checkLiquidatedDamagesGovLawFlag(
+  clausesPresent: ClausesPresent | undefined,
+  governingLawClause: string | undefined,
+): ClauseFlagCheck {
+  if (!governingLawClause) return notFlagged;
+  const hasLdClause = (clausesPresent?.['risk-allocation'] ?? []).includes('liquidated-damages-delay-penalties');
+  if (!hasLdClause) return notFlagged;
+
+  if (LD_CIVIL_LAW_JUDICIAL_REDUCTION_TRACKS.has(governingLawClause)) {
+    return {
+      flagged: true,
+      reasonEn: 'A liquidated-damages/delay-penalty subclause is checked on a contract governed by this track. Civil-law jurisdictions in this codified-obligations tradition give courts a mandatory, non-waivable power to reduce an agreed sum if the paying party proves it is excessive relative to actual harm -- parties cannot contract out of this by agreement alone. The UAE’s Civil Transactions Law (Federal Decree-Law No. 25/2025, Article 340, replacing the prior Article 390, effective 1 Jun 2026) codifies this explicitly, and Saudi, Egyptian, and Jordanian law follow the same tradition. This is an informational advisory, not a certainty of reduction -- worth knowing the agreed figure is not automatically the final word, based on what you told us.',
+      reasonAr: 'تم تحديد بند التعويض المقطوع/غرامات التأخير في عقد يخضع لهذا المسار القانوني. تمنح الأنظمة القانونية المدنية ضمن هذا التقليد المقنّن المحاكم سلطة إلزامية وغير قابلة للتنازل عنها لخفض المبلغ المتفق عليه إذا أثبت الطرف الملزم بالدفع أنه مبالغ فيه مقارنة بالضرر الفعلي -- ولا يمكن للأطراف استبعاد هذا الحكم بالاتفاق فقط. يُقنّن قانون المعاملات المدنية الإماراتي (المرسوم بقانون اتحادي رقم 25 لسنة 2025، المادة 340، التي حلت محل المادة 390 سابقاً، سارية اعتباراً من 1 يونيو 2026) هذا الحكم صراحةً، وتتبع الأنظمة السعودية والمصرية والأردنية التقليد ذاته. هذا تنبيه معلوماتي وليس يقيناً بالخفض -- يستحق معرفة أن المبلغ المتفق عليه ليس بالضرورة الكلمة الأخيرة، بناءً على ما أفدتم به.',
+    };
+  }
+  if (LD_COMMON_LAW_CONTRACT_FREEDOM_TRACKS.has(governingLawClause)) {
+    return {
+      flagged: true,
+      reasonEn: 'A liquidated-damages/delay-penalty subclause is checked on a contract governed by this track. Common-law jurisdictions take a contract-freedom-respecting approach: since the UK Supreme Court’s 2015 Cavendish Square Holding BV v Makdessi decision, an agreed damages figure is generally enforced as written unless it is "out of all proportion to the innocent party’s legitimate interest" in enforcement -- a materially higher bar to disturb the clause than in civil-law jurisdictions. This is an informational advisory: the agreed figure is more likely to be enforced as stated here, based on what you told us.',
+      reasonAr: 'تم تحديد بند التعويض المقطوع/غرامات التأخير في عقد يخضع لهذا المسار القانوني. تتبنى الأنظمة القانونية العامة (الكومن لو) نهجاً يحترم حرية التعاقد: منذ قرار المحكمة العليا البريطانية لعام 2015 في قضية Cavendish Square Holding BV v Makdessi، يُنفذ مبلغ التعويض المتفق عليه عادةً كما ورد ما لم يكن "غير متناسب إطلاقاً مع المصلحة المشروعة" للطرف المتضرر في الإنفاذ -- وهو معيار أعلى بكثير لإسقاط البند مقارنة بالأنظمة المدنية. هذا تنبيه معلوماتي: من المرجّح أن يُنفذ المبلغ المتفق عليه كما ورد هنا، بناءً على ما أفدتم به.',
+    };
+  }
+  return notFlagged;
+}
+
+export function checkForceMajeureStatutoryDefaultFlag(
+  clausesPresent: ClausesPresent | undefined,
+  governingLawClause: string | undefined,
+): ClauseFlagCheck {
+  if (!governingLawClause) return notFlagged;
+  const categoryEntries = clausesPresent?.['risk-allocation'] ?? [];
+  if (categoryEntries.length === 0) return notFlagged;
+  if (categoryEntries.includes('force-majeure')) return notFlagged;
+
+  if (LD_CIVIL_LAW_JUDICIAL_REDUCTION_TRACKS.has(governingLawClause)) {
+    return {
+      flagged: true,
+      reasonEn: 'Force Majeure is not among the Risk Allocation subclauses checked on a contract governed by this track. Civil-law jurisdictions in this tradition write force majeure into the civil code itself as a default rule that can excuse non-performance even with no clause in the contract at all -- so this is lower urgency than in a common-law jurisdiction, but the statutory default’s scope is typically narrower and less predictable than a bespoke clause the parties actually negotiated. Worth adding an explicit clause rather than relying on the default, based on what you told us.',
+      reasonAr: 'بند القوة القاهرة غير مدرج ضمن بنود توزيع المخاطر المحددة في عقد يخضع لهذا المسار القانوني. تُدرج الأنظمة القانونية المدنية ضمن هذا التقليد القوة القاهرة في صلب القانون المدني نفسه كقاعدة افتراضية يمكن أن تُعفي من عدم التنفيذ حتى دون وجود بند في العقد على الإطلاق -- لذا فإن هذا الأمر أقل إلحاحاً منه في الأنظمة القانونية العامة، إلا أن نطاق القاعدة القانونية الافتراضية عادةً ما يكون أضيق وأقل قابلية للتنبؤ من بند مخصص اتفق عليه الطرفان فعلياً. يستحق إضافة بند صريح بدلاً من الاعتماد على القاعدة الافتراضية، بناءً على ما أفدتم به.',
+    };
+  }
+  if (LD_COMMON_LAW_CONTRACT_FREEDOM_TRACKS.has(governingLawClause)) {
+    return {
+      flagged: true,
+      reasonEn: 'Force Majeure is not among the Risk Allocation subclauses checked on a contract governed by this track. Common-law jurisdictions have no general force-majeure doctrine -- courts will not imply one, and protection exists only to the extent the contract expressly grants it (narrower fallback doctrines like frustration or impossibility exist but are harder to invoke). With no clause present, this contract currently has no force-majeure protection at all under this governing law -- worth a second look, based on what you told us.',
+      reasonAr: 'بند القوة القاهرة غير مدرج ضمن بنود توزيع المخاطر المحددة في عقد يخضع لهذا المسار القانوني. لا تعرف الأنظمة القانونية العامة مبدأً عاماً للقوة القاهرة -- فلن تفترضه المحاكم ضمناً، ولا تنشأ الحماية إلا بقدر ما يمنحه العقد صراحةً (توجد مبادئ احتياطية أضيق مثل الإحباط أو الاستحالة، لكنها أصعب في الاحتجاج). مع غياب البند، لا يتمتع هذا العقد حالياً بأي حماية من القوة القاهرة على الإطلاق بموجب هذا القانون الحاكم -- يستحق نظرة ثانية، بناءً على ما أفدتم به.',
+    };
+  }
+  return notFlagged;
+}
