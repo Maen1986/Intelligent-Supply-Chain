@@ -15,6 +15,7 @@ import { Sparkles, Loader2, Copy, Check, ChevronDown, ChevronUp, RefreshCw, Aler
 import { useAuth } from '@/lib/AuthContext';
 import { type SavedPlan } from '@/hooks/useAIPlan';
 import { EvidenceSummary, type EvidenceSummaryData } from '@/components/EvidenceSummary';
+import { AccountabilityLine } from '@/components/AccountabilityLine';
 
 interface AIPlanPanelProps {
   loading:    boolean;
@@ -308,6 +309,7 @@ export function AIPlanPanel({
               {/* #158: evidence/confidence badge -- renders nothing when absent (viewed saved plan, or model omitted it) */}
               <div className="pt-1">
                 <EvidenceSummary evidence={evidenceSummary} ar={isAr} />
+                <AccountabilityLine ar={isAr} />
               </div>
             </div>
           )}

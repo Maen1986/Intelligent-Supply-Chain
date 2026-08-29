@@ -25,6 +25,7 @@
 //   clmReviewEngine.ts attached a real, sourced Module 02 variant list --
 //   never fabricated (Decision Record 8.7).
 import { useState } from 'react';
+import { AccountabilityLine } from './AccountabilityLine';
 import {
   buildReviewReport, ASSURANCE_META,
   type ReviewReportInput, type ReviewFinding, type DimensionState, type AssuranceTier,
@@ -167,6 +168,7 @@ export function ContractReviewReport({ input, isAr }: { input: ReviewReportInput
             ? 'أربعة أبعاد مستقلة، لا رقم واحد مركّب -- كل نتيجة تحمل سلسلة سببية كاملة وبديلاً حقيقياً حيثما توفر، ومستوى ثقة صريح، وأقوى حجة مضادة لها.'
             : 'Four independent dimensions, never one composite score -- every finding carries a full causal chain, a real alternative where one genuinely exists, an honest confidence tier, and its own strongest counter-argument.'}
         </p>
+        <AccountabilityLine ar={isAr} />
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">

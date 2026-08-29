@@ -21,6 +21,7 @@ import { ConfidenceTierBadge, getSegmentTier } from '@/components/ConfidenceTier
 import { FeedbackModal, shouldShowFeedback } from '@/components/FeedbackModal';
 import { FrameworkBadge } from '@/components/FrameworkBadge';
 import { EvidenceSummary, type EvidenceSummaryData } from '@/components/EvidenceSummary';
+import { AccountabilityLine } from '@/components/AccountabilityLine';
 import { API_BASE } from '@/lib/apiBase';
 import { useAuth } from '@/lib/AuthContext';
 import {
@@ -2698,6 +2699,7 @@ export function Maturity() {
 
               {/* #158: evidence/confidence badge, same component as the other 4 flagship surfaces */}
               <EvidenceSummary evidence={remediesData.evidenceSummary} ar={ar} />
+              <AccountabilityLine ar={ar} />
 
               {/* ── 30/60/90 visual timeline ────────────────────────────────────── */}
               {(() => {

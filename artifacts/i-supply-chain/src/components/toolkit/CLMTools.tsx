@@ -9,6 +9,7 @@
  * 5. AI Contract Brief     — AI-generated portfolio analysis and renewal strategy
  */
 import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
+import { AccountabilityLine } from '@/components/AccountabilityLine';
 import { UNSPSC_SERVICES_SEGMENTS, unspscSegmentLabel } from '@/lib/unspscSegments';
 import { getFamiliesForSegment } from '@/lib/unspscClassCommodity';
 import { GOVERNING_LAW_TRACKS, governingLawTrackLabel, governingLawPracticeNote, checkGoverningLawMismatch, internationalContractingPracticeGuide, ARBITRATION_INSTITUTIONS, arbitrationInstitutionLabel, COMMON_CONTRACTING_COMBOS, checkArbitrationInstitutionFit, type GoverningLawTrack, type ArbitrationInstitution } from '@/lib/clmLegalTrack';
@@ -2020,6 +2021,7 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
                                 <div className="bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-2 text-[10px] text-amber-800 leading-relaxed">
                                   {isAr ? drafted.disclaimerAr : drafted.disclaimerEn}
                                 </div>
+                                <AccountabilityLine ar={isAr} />
                                 <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
                                   {drafted.sections.map(section => {
                                     const skeletonSection = previewSkeleton.body.find(s => s.category === section.category);

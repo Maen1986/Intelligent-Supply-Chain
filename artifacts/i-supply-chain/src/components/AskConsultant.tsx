@@ -24,6 +24,7 @@ import { useState } from 'react';
 import { MessageCircleQuestion, Loader2, Send } from 'lucide-react';
 import { API_BASE } from '@/lib/apiBase';
 import { EvidenceSummary, ConsiderAlso, type EvidenceSummaryData } from '@/components/EvidenceSummary';
+import { AccountabilityLine } from '@/components/AccountabilityLine';
 
 interface QAEntry {
   question: string;
@@ -120,6 +121,7 @@ export function AskConsultant({
               </span>
               <div className="mt-2 space-y-2">
                 <EvidenceSummary evidence={entry.evidenceSummary} ar={ar} />
+                <AccountabilityLine ar={ar} />
                 <ConsiderAlso text={entry.considerAlso} ar={ar} />
               </div>
             </div>

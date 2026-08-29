@@ -7,6 +7,7 @@ import { Link } from 'wouter';
 import { useLanguage } from '@/lib/LanguageContext';
 import { buildMaturityHandoffQuery } from '@/lib/diagnosticHandoff';
 import { EvidenceSummary } from './EvidenceSummary';
+import { AccountabilityLine } from './AccountabilityLine';
 
 export function ReportOutput({ report }: { report: DiagnosticReport }) {
   const { t, lang } = useLanguage();
@@ -109,6 +110,7 @@ export function ReportOutput({ report }: { report: DiagnosticReport }) {
             <p className="text-foreground leading-relaxed text-base sm:text-lg mt-3">{report.executiveSummary}</p>
             <div className="mt-4">
               <EvidenceSummary evidence={report.evidenceSummary} ar={isAr} />
+              <AccountabilityLine ar={isAr} />
             </div>
 
             <h3 className="text-lg sm:text-xl font-bold text-primary mt-6 mb-4 flex items-center gap-2">

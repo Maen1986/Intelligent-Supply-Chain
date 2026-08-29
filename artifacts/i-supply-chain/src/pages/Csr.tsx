@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Logo } from '@/components/Logo';
 import { API_BASE } from '@/lib/apiBase';
 import { EvidenceSummary, type EvidenceSummaryData } from '@/components/EvidenceSummary';
+import { AccountabilityLine } from '@/components/AccountabilityLine';
 
 const INDUSTRIES = [
   { en: 'Manufacturing', ar: 'التصنيع' },
@@ -318,6 +319,7 @@ export function Csr() {
 
                 {/* #158: evidence/confidence badge -- only renders when the AI path produced it */}
                 <EvidenceSummary evidence={report.evidenceSummary} ar={ar} />
+                <AccountabilityLine ar={ar} />
               </div>
 
               <div className="bg-primary px-4 sm:px-8 py-4 text-white flex flex-col sm:flex-row justify-between sm:items-center gap-1 text-sm">

@@ -8,6 +8,7 @@ import { API_BASE } from '@/lib/apiBase';
 import { MATURITY_DRAFT_KEY, ISC_MATURITY_CONTEXT_KEY } from './Maturity';
 import { MaturitySummarySection, type MSSContext } from '@/components/MaturitySummarySection';
 import { EvidenceSummary, ConsiderAlso } from '@/components/EvidenceSummary';
+import { AccountabilityLine } from '@/components/AccountabilityLine';
 import { SavingsWaterfall } from '@/components/SavingsWaterfall';
 import {
   FileText, Sparkles, Loader2, Download, ChevronRight, ChevronLeft,
@@ -1028,6 +1029,7 @@ export function ReportGenerator() {
                   </div>
                   <ConsiderAlso text={report.executiveSummary.considerAlso} />
                   <EvidenceSummary evidence={report.evidenceSummary} />
+                  <AccountabilityLine ar={false} />
 
                   <div className="grid sm:grid-cols-2 gap-4">
                     <div className="bg-white border border-border rounded-2xl p-5">

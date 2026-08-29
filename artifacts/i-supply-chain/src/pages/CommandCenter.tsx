@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { EvidenceSummary, ConsiderAlso, SimilarCase, type SimilarCaseData } from '@/components/EvidenceSummary';
+import { AccountabilityLine } from '@/components/AccountabilityLine';
 import { AskConsultant } from '@/components/AskConsultant';
 import { TellMeTheStoryButton, type NarrativeStep } from '@/components/NarrativeStory';
 import { ProblemChainFlow } from '@/components/ProblemChainFlow';
@@ -2748,6 +2749,7 @@ function BriefingTab({ lang }: { lang: Lang }) {
           <p className="text-base leading-relaxed">{briefing.executiveSummary}</p>
         </div>
         <EvidenceSummary evidence={briefing.evidenceSummary} ar={ar} />
+        <AccountabilityLine ar={ar} />
 
         {/* Domain Maturity Radar */}
         <div className="rounded-xl border border-border p-4">
@@ -3545,6 +3547,7 @@ function ConsultancyTab({ lang }: { lang: Lang }) {
           </div>
           <ConsiderAlso text={diagnosis.considerAlso} ar={ar} />
           <EvidenceSummary evidence={diagnosis.evidenceSummary} ar={ar} />
+          <AccountabilityLine ar={ar} />
           <div className="grid grid-cols-3 gap-4">
             <div className="rounded-xl border p-4 text-center">
               <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">{ar ? 'مستوى النضج' : 'Maturity'}</p>
@@ -3652,6 +3655,7 @@ function ConsultancyTab({ lang }: { lang: Lang }) {
           </div>
           <ConsiderAlso text={solution.considerAlso} ar={ar} />
           <EvidenceSummary evidence={solution.evidenceSummary} ar={ar} />
+          <AccountabilityLine ar={ar} />
           <div>
             <h4 className="text-xs font-bold text-[#082C6B] uppercase tracking-wider mb-3">{ar ? 'مراحل التنفيذ' : 'Implementation Phases'}</h4>
             <div className="space-y-4">
