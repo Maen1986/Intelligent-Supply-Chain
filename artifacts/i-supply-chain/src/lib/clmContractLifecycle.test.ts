@@ -217,6 +217,77 @@ describe('recommendRfxType', () => {
     const result = recommendRfxType({ specificationsFixed: true, supplierCapabilityKnown: true, needsApproachComparison: false });
     expect(result.type).toBe('rfq');
   });
+
+  it('does not add a route-to-market caution when marketCompetitionLevel is undeclared', () => {
+    const result = recommendRfxType({ specificationsFixed: true, supplierCapabilityKnown: true, needsApproachComparison: false });
+    expect(result.routeToMarketCautionEn).toBeUndefined();
+    expect(result.routeToMarketCautionAr).toBeUndefined();
+  });
+
+  it('does not add a caution when many qualified suppliers exist', () => {
+    const result = recommendRfxType({
+      specificationsFixed: true, supplierCapabilityKnown: true, needsApproachComparison: false,
+      marketCompetitionLevel: 'many-qualified-suppliers',
+    });
+    expect(result.type).toBe('rfq');
+    expect(result.routeToMarketCautionEn).toBeUndefined();
+  });
+
+  it('adds a sole-source caution regardless of RFx type (RFQ case)', () => {
+    const result = recommendRfxType({
+      specificationsFixed: true, supplierCapabilityKnown: true, needsApproachComparison: false,
+      marketCompetitionLevel: 'sole-source',
+    });
+    expect(result.type).toBe('rfq');
+    expect(result.routeToMarketCautionEn).toContain('only one qualified supplier');
+    expect(result.routeToMarketCautionAr).toContain('مورد مؤهل واحد');
+  });
+
+  it('adds a sole-source caution for RFP too', () => {
+    const result = recommendRfxType({
+      specificationsFixed: true, supplierCapabilityKnown: true, needsApproachComparison: true,
+      marketCompetitionLevel: 'sole-source',
+    });
+    expect(result.type).toBe('rfp');
+    expect(result.routeToMarketCautionEn).toContain('only one qualified supplier');
+  });
+
+  it('adds a sole-source caution even for RFI (specs not yet fixed)', () => {
+    const result = recommendRfxType({
+      specificationsFixed: false, supplierCapabilityKnown: true, needsApproachComparison: false,
+      marketCompetitionLevel: 'sole-source',
+    });
+    expect(result.type).toBe('rfi');
+    expect(result.routeToMarketCautionEn).toContain('only one qualified supplier');
+  });
+
+  it('adds a few-suppliers caution for RFQ', () => {
+    const result = recommendRfxType({
+      specificationsFixed: true, supplierCapabilityKnown: true, needsApproachComparison: false,
+      marketCompetitionLevel: 'few-qualified-suppliers',
+    });
+    expect(result.type).toBe('rfq');
+    expect(result.routeToMarketCautionEn).toContain('RFQ');
+    expect(result.routeToMarketCautionEn).toContain('few qualified suppliers');
+  });
+
+  it('adds a few-suppliers caution for RFP', () => {
+    const result = recommendRfxType({
+      specificationsFixed: true, supplierCapabilityKnown: true, needsApproachComparison: true,
+      marketCompetitionLevel: 'few-qualified-suppliers',
+    });
+    expect(result.type).toBe('rfp');
+    expect(result.routeToMarketCautionEn).toContain('RFP');
+  });
+
+  it('does NOT add a few-suppliers caution for RFI -- a thin market is exactly when RFI helps', () => {
+    const result = recommendRfxType({
+      specificationsFixed: false, supplierCapabilityKnown: true, needsApproachComparison: false,
+      marketCompetitionLevel: 'few-qualified-suppliers',
+    });
+    expect(result.type).toBe('rfi');
+    expect(result.routeToMarketCautionEn).toBeUndefined();
+  });
 });
 
 describe('RFX_DEFAULT_SCORING_TEMPLATE', () => {

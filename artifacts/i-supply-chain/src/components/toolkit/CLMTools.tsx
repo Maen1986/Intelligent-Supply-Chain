@@ -17,8 +17,8 @@ import { INDUSTRY_BUCKETS, FIDIC_BOOKS, PROFESSIONAL_SERVICES_TRACKS, LOGISTICS_
 import { INCOTERMS_2020, PAYMENT_TERMS, ISO_4217_CURRENCIES, type Incoterm, type PaymentTermType } from '@/lib/clmTradeTerms';
 import {
   resolveComplexityLevel, resolveReviewDepth, resolveMandatoryClauseCategories, summarizeWiringChecks, complexityLevelLabel, COMPLEXITY_LEVELS, type ComplexityLevel,
-  RFX_TYPES, rfxTypeLabel, recommendRfxType, RFX_DEFAULT_SCORING_TEMPLATE, scoreRfxBidders,
-  type RfxType, type RfxSelectionInputs, type RfxScoringCriterion, type RfxBidderScoreInput, type RfxBidderResult,
+  RFX_TYPES, rfxTypeLabel, recommendRfxType, RFX_DEFAULT_SCORING_TEMPLATE, scoreRfxBidders, MARKET_COMPETITION_LEVELS,
+  type RfxType, type RfxSelectionInputs, type RfxScoringCriterion, type RfxBidderScoreInput, type RfxBidderResult, type MarketCompetitionLevel,
 } from '@/lib/clmContractLifecycle';
 import {
   resolveRfxScopeProfile, SPEC_TYPE_META,
@@ -2354,12 +2354,35 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
                 {isAr ? 'أحتاج مقارنة نُهج/حلول الموردين، لا السعر فقط' : 'I need to compare supplier approaches, not just price'}
               </label>
             </div>
+            <div className="space-y-1.5">
+              <p className="text-[11px] font-bold text-slate-500">
+                {isAr ? 'مستوى المنافسة في السوق (اختياري -- مصفوفة Kraljic / نموذج CIPS لتموضع التوريد)' : 'Supply-market competition level (optional -- Kraljic Matrix / CIPS Supply Positioning Model)'}
+              </p>
+              <div className="grid gap-2 sm:grid-cols-3">
+                {MARKET_COMPETITION_LEVELS.map(m => (
+                  <label key={m.id} className="flex items-start gap-2 text-xs text-slate-600 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 cursor-pointer">
+                    <input type="radio" name="rfx-market-competition" className="mt-0.5"
+                      checked={rfxSelection.marketCompetitionLevel === m.id}
+                      onChange={() => setRfxSelection(prev => ({ ...prev, marketCompetitionLevel: m.id as MarketCompetitionLevel }))} />
+                    {isAr ? m.labelAr : m.label}
+                  </label>
+                ))}
+              </div>
+            </div>
             <div className="bg-[#082C6B]/5 border border-[#082C6B]/20 rounded-xl p-3 flex items-start gap-3">
               <span className="text-[11px] font-bold px-2 py-1 rounded-full bg-[#082C6B] text-white shrink-0">
                 {rfxTypeLabel(rfxRecommendation.type, isAr)}
               </span>
               <p className="text-xs text-slate-600">{isAr ? rfxRecommendation.reasonAr : rfxRecommendation.reasonEn}</p>
             </div>
+            {rfxRecommendation.routeToMarketCautionEn && (
+              <div className="bg-amber-50 border border-amber-300 rounded-xl p-3 flex items-start gap-2">
+                <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <p className="text-xs text-amber-800">
+                  {isAr ? rfxRecommendation.routeToMarketCautionAr : rfxRecommendation.routeToMarketCautionEn}
+                </p>
+              </div>
+            )}
             <div className="grid gap-2 sm:grid-cols-3">
               {RFX_TYPES.map(t => (
                 <div key={t.id} className={`rounded-lg border px-3 py-2 ${rfxRecommendation.type === t.id ? 'border-[#082C6B] bg-[#082C6B]/5' : 'border-slate-200'}`}>

@@ -303,10 +303,56 @@ export function rfxTypeLabel(id: RfxType | undefined, isAr: boolean): string | u
   return meta ? (isAr ? meta.labelAr : meta.label) : undefined;
 }
 
+/**
+ * Supply-market competition level -- the axis Kraljic Matrix / CIPS Supply
+ * Positioning Model calls "supply risk" (supplier concentration,
+ * substitutability). Confirmed by direct research (30 Aug 2026, item 26
+ * deep-dive) as a real, separate criterion from specs/capability/approach:
+ * even when specs are fixed and price is the stated differentiator, a
+ * competitive RFQ/RFP cannot deliver real competition if only one or two
+ * qualified suppliers actually exist. Self-declared, same pattern as
+ * ComplexityInputs.counterpartyHistory -- never inferred or benchmarked
+ * against market data ISC does not have.
+ */
+export type MarketCompetitionLevel = 'many-qualified-suppliers' | 'few-qualified-suppliers' | 'sole-source';
+
+export interface MarketCompetitionLevelMeta {
+  id: MarketCompetitionLevel;
+  label: string;
+  labelAr: string;
+}
+
+export const MARKET_COMPETITION_LEVELS: MarketCompetitionLevelMeta[] = [
+  { id: 'many-qualified-suppliers', label: 'Many qualified suppliers exist', labelAr: 'يوجد العديد من الموردين المؤهلين' },
+  { id: 'few-qualified-suppliers', label: 'Only a few qualified suppliers exist', labelAr: 'يوجد عدد قليل فقط من الموردين المؤهلين' },
+  { id: 'sole-source', label: 'Only one qualified supplier exists', labelAr: 'يوجد مورد مؤهل واحد فقط' },
+];
+
 export interface RfxSelectionInputs {
   specificationsFixed: boolean;
   supplierCapabilityKnown: boolean;
   needsApproachComparison: boolean;
+  /** Optional -- see MarketCompetitionLevel doc comment above. Does not
+   *  change WHICH RFx type is recommended (that question is answered
+   *  correctly by the three fields above, confirmed against ISM/GEP/Ivalua);
+   *  it changes whether a route-to-market caution is attached to that
+   *  recommendation. */
+  marketCompetitionLevel?: MarketCompetitionLevel;
+}
+
+export interface RfxRecommendation {
+  type: RfxType;
+  reasonEn: string;
+  reasonAr: string;
+  /** Present only when the declared market competition is too thin for the
+   *  recommended process to deliver real competition -- sourced to the
+   *  Kraljic Matrix / CIPS Supply Positioning Model's Bottleneck/Strategic
+   *  quadrant guidance ("developing competition in the marketplace or
+   *  bringing services in-house may be a better strategy if you are reliant
+   *  on one sole source of supply" -- CIPS). Informational, not a rule
+   *  override -- the RFx type recommendation above stands either way. */
+  routeToMarketCautionEn?: string;
+  routeToMarketCautionAr?: string;
 }
 
 /**
@@ -316,26 +362,43 @@ export interface RfxSelectionInputs {
  * RFQ. If the buyer needs to compare differing supplier approaches against
  * a defined outcome -> RFP.
  */
-export function recommendRfxType(inputs: RfxSelectionInputs): { type: RfxType; reasonEn: string; reasonAr: string } {
+export function recommendRfxType(inputs: RfxSelectionInputs): RfxRecommendation {
+  let base: { type: RfxType; reasonEn: string; reasonAr: string };
   if (!inputs.specificationsFixed || !inputs.supplierCapabilityKnown) {
-    return {
+    base = {
       type: 'rfi',
       reasonEn: 'Specifications are not yet fixed or supplier capability/market is unknown -- start with an RFI to narrow the field before RFP/RFQ.',
       reasonAr: 'المواصفات غير محددة بعد أو قدرات/سوق الموردين غير معروفة -- ابدأ بطلب معلومات (RFI) لتضييق النطاق قبل RFP/RFQ.',
     };
-  }
-  if (inputs.needsApproachComparison) {
-    return {
+  } else if (inputs.needsApproachComparison) {
+    base = {
       type: 'rfp',
       reasonEn: 'Specifications are fixed and supplier capability is known, but the buyer needs to compare differing supplier approaches/solutions against a defined outcome -- use an RFP.',
       reasonAr: 'المواصفات محددة وقدرات الموردين معروفة، لكن المشتري يحتاج لمقارنة نُهج/حلول الموردين المختلفة مقابل نتيجة محددة -- استخدم طلب عرض (RFP).',
     };
+  } else {
+    base = {
+      type: 'rfq',
+      reasonEn: 'Specifications are fixed and only price/commercial terms differ across bidders -- use an RFQ for fast, transparent price comparison.',
+      reasonAr: 'المواصفات محددة ولا يختلف بين مقدمي العروض سوى السعر/الشروط التجارية -- استخدم طلب عرض أسعار (RFQ) لمقارنة سريعة وشفافة للأسعار.',
+    };
   }
-  return {
-    type: 'rfq',
-    reasonEn: 'Specifications are fixed and only price/commercial terms differ across bidders -- use an RFQ for fast, transparent price comparison.',
-    reasonAr: 'المواصفات محددة ولا يختلف بين مقدمي العروض سوى السعر/الشروط التجارية -- استخدم طلب عرض أسعار (RFQ) لمقارنة سريعة وشفافة للأسعار.',
-  };
+
+  if (inputs.marketCompetitionLevel === 'sole-source') {
+    return {
+      ...base,
+      routeToMarketCautionEn: 'Route-to-market caution (Kraljic Matrix / CIPS Supply Positioning Model): only one qualified supplier exists for this requirement -- a competitive process cannot generate real price or approach competition here regardless of RFx type. Consider a negotiated single-source approach, supplier development, or qualifying an alternate source before running a formal RFx.',
+      routeToMarketCautionAr: 'تنبيه بشأن مسار الشراء (مصفوفة Kraljic / نموذج CIPS لتموضع التوريد): يوجد مورد مؤهل واحد فقط لهذا المطلب -- لا يمكن لعملية تنافسية أن تولّد منافسة حقيقية في السعر أو النهج هنا أياً كان نوع طلب المنافسة. يُنصح بالتفاوض المباشر مع المصدر الوحيد، أو تطوير المورد، أو تأهيل مصدر بديل قبل إطلاق طلب منافسة رسمي.',
+    };
+  }
+  if (inputs.marketCompetitionLevel === 'few-qualified-suppliers' && (base.type === 'rfq' || base.type === 'rfp')) {
+    return {
+      ...base,
+      routeToMarketCautionEn: `Route-to-market caution (Kraljic Matrix / CIPS Supply Positioning Model): only a few qualified suppliers exist for this requirement -- limited market competition reduces how much real price or approach tension a competitive ${base.type.toUpperCase()} can generate. Consider whether supplier development or a longer-term agreement would serve better than a repeat competitive event.`,
+      routeToMarketCautionAr: `تنبيه بشأن مسار الشراء (مصفوفة Kraljic / نموذج CIPS لتموضع التوريد): يوجد عدد قليل فقط من الموردين المؤهلين لهذا المطلب -- محدودية المنافسة في السوق تقلل من قدرة طلب ${base.type.toUpperCase()} التنافسي على توليد تنافس حقيقي في السعر أو النهج. يُنصح بتقييم ما إذا كان تطوير المورد أو اتفاقية أطول أمداً أنسب من تكرار حدث تنافسي.`,
+    };
+  }
+  return base;
 }
 
 export interface RfxScoringCriterion {
