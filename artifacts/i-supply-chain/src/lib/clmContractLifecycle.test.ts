@@ -290,6 +290,108 @@ describe('recommendRfxType', () => {
   });
 });
 
+describe('recommendRfxType -- govProcurementNote (#402, 30 Aug 2026)', () => {
+  it('does not attach a note when counterpartyType is undeclared', () => {
+    const result = recommendRfxType({
+      specificationsFixed: true, supplierCapabilityKnown: true, needsApproachComparison: false,
+      procurementGoverningLawClause: 'saudi-gtpl',
+    });
+    expect(result.govProcurementNote).toBeUndefined();
+  });
+
+  it('does not attach a note for a private counterparty, even with a researched track selected', () => {
+    const result = recommendRfxType({
+      specificationsFixed: true, supplierCapabilityKnown: true, needsApproachComparison: false,
+      counterpartyType: 'private', procurementGoverningLawClause: 'saudi-gtpl',
+    });
+    expect(result.govProcurementNote).toBeUndefined();
+  });
+
+  it('does not attach a note when governing law is undeclared, even for a government counterparty', () => {
+    const result = recommendRfxType({
+      specificationsFixed: true, supplierCapabilityKnown: true, needsApproachComparison: false,
+      counterpartyType: 'government',
+    });
+    expect(result.govProcurementNote).toBeUndefined();
+  });
+
+  it('does not attach a note for a governing-law track outside the researched GCC/Jordan set', () => {
+    const result = recommendRfxType({
+      specificationsFixed: true, supplierCapabilityKnown: true, needsApproachComparison: false,
+      counterpartyType: 'government', procurementGoverningLawClause: 'uk-common-law',
+    });
+    expect(result.govProcurementNote).toBeUndefined();
+  });
+
+  it('attaches a primary-confirmed Saudi GTPL note for a government counterparty, including the live-reform note', () => {
+    const result = recommendRfxType({
+      specificationsFixed: true, supplierCapabilityKnown: true, needsApproachComparison: false,
+      counterpartyType: 'government', procurementGoverningLawClause: 'saudi-gtpl',
+    });
+    expect(result.govProcurementNote).toBeDefined();
+    expect(result.govProcurementNote?.lawNameEn).toContain('Government Tenders and Procurement Law');
+    expect(result.govProcurementNote?.thresholds.some((t) => t.confidence === 'primary-confirmed')).toBe(true);
+    expect(result.govProcurementNote?.liveReformNoteEn).toContain('4 Aug 2026');
+  });
+
+  it('attaches a not-publicly-disclosed UAE note, honestly reflecting the non-public Manual', () => {
+    const result = recommendRfxType({
+      specificationsFixed: true, supplierCapabilityKnown: true, needsApproachComparison: false,
+      counterpartyType: 'government', procurementGoverningLawClause: 'uae-ctl',
+    });
+    expect(result.govProcurementNote).toBeDefined();
+    expect(result.govProcurementNote?.thresholds.every((t) => t.confidence === 'not-publicly-disclosed')).toBe(true);
+    expect(result.govProcurementNote?.methods.length).toBeGreaterThan(0);
+  });
+
+  it('attaches a secondary-sourced Qatar note with real committee thresholds', () => {
+    const result = recommendRfxType({
+      specificationsFixed: true, supplierCapabilityKnown: true, needsApproachComparison: false,
+      counterpartyType: 'government', procurementGoverningLawClause: 'qatar-civil',
+    });
+    expect(result.govProcurementNote?.thresholds.some((t) => t.labelEn.includes('5,000,000'))).toBe(true);
+  });
+
+  it('attaches a Bahrain note including its own live-reform note', () => {
+    const result = recommendRfxType({
+      specificationsFixed: true, supplierCapabilityKnown: true, needsApproachComparison: false,
+      counterpartyType: 'government', procurementGoverningLawClause: 'bahrain-civil',
+    });
+    expect(result.govProcurementNote?.liveReformNoteEn).toContain('22 Mar 2025');
+  });
+
+  it('attaches an honest not-found-this-pass note for Oman and Jordan (no invented thresholds)', () => {
+    const oman = recommendRfxType({
+      specificationsFixed: true, supplierCapabilityKnown: true, needsApproachComparison: false,
+      counterpartyType: 'government', procurementGoverningLawClause: 'oman-civil',
+    });
+    const jordan = recommendRfxType({
+      specificationsFixed: true, supplierCapabilityKnown: true, needsApproachComparison: false,
+      counterpartyType: 'government', procurementGoverningLawClause: 'jordan-civil',
+    });
+    expect(oman.govProcurementNote?.thresholds.every((t) => t.confidence === 'not-found-this-pass')).toBe(true);
+    expect(jordan.govProcurementNote?.thresholds.every((t) => t.confidence === 'not-found-this-pass')).toBe(true);
+  });
+
+  it('attaches a Kuwait note with the CAPT KD 75,000 threshold', () => {
+    const result = recommendRfxType({
+      specificationsFixed: true, supplierCapabilityKnown: true, needsApproachComparison: false,
+      counterpartyType: 'government', procurementGoverningLawClause: 'kuwait-civil',
+    });
+    expect(result.govProcurementNote?.thresholds.some((t) => t.labelEn.includes('75,000'))).toBe(true);
+  });
+
+  it('co-exists with a market-competition caution without either overwriting the other', () => {
+    const result = recommendRfxType({
+      specificationsFixed: true, supplierCapabilityKnown: true, needsApproachComparison: false,
+      counterpartyType: 'government', procurementGoverningLawClause: 'saudi-gtpl',
+      marketCompetitionLevel: 'sole-source',
+    });
+    expect(result.govProcurementNote).toBeDefined();
+    expect(result.routeToMarketCautionEn).toContain('only one qualified supplier');
+  });
+});
+
 describe('RFX_DEFAULT_SCORING_TEMPLATE', () => {
   it('has exactly one mandatory-gate criterion with weight 0', () => {
     const gates = RFX_DEFAULT_SCORING_TEMPLATE.filter((c) => c.isMandatoryGate);

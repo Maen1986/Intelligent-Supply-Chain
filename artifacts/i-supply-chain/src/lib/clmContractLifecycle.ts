@@ -24,6 +24,9 @@
  * invent one (Decision Record 8.7).
  */
 
+import type { GoverningLawTrack } from './clmLegalTrack';
+import { getGovProcurementFrameworkNote, type GovProcurementFrameworkNote } from './clmGovProcurement';
+
 // ---------------------------------------------------------------------------
 // Part A -- Contract complexity tiering (T1)
 // ---------------------------------------------------------------------------
@@ -338,6 +341,15 @@ export interface RfxSelectionInputs {
    *  it changes whether a route-to-market caution is attached to that
    *  recommendation. */
   marketCompetitionLevel?: MarketCompetitionLevel;
+  /** #402 (30 Aug 2026): self-declared, same optional/self-declared pattern
+   *  as marketCompetitionLevel above. Only when BOTH counterpartyType is
+   *  'government' AND procurementGoverningLawClause is one of the
+   *  platform's seven researched GCC/Jordan tracks does
+   *  recommendRfxType() attach a govProcurementNote -- see
+   *  clmGovProcurement.ts. Does not change the RFI/RFP/RFQ recommendation
+   *  itself. */
+  counterpartyType?: 'government' | 'private';
+  procurementGoverningLawClause?: GoverningLawTrack;
 }
 
 export interface RfxRecommendation {
@@ -353,6 +365,12 @@ export interface RfxRecommendation {
    *  override -- the RFx type recommendation above stands either way. */
   routeToMarketCautionEn?: string;
   routeToMarketCautionAr?: string;
+  /** #402 (30 Aug 2026): present only when counterpartyType is 'government'
+   *  and procurementGoverningLawClause is a researched GCC/Jordan track --
+   *  see clmGovProcurement.ts for full sourcing/confidence tagging.
+   *  Informational: this precedes/accompanies the RFI/RFP/RFQ
+   *  recommendation above, it never overrides it. */
+  govProcurementNote?: GovProcurementFrameworkNote;
 }
 
 /**
@@ -384,11 +402,13 @@ export function recommendRfxType(inputs: RfxSelectionInputs): RfxRecommendation 
     };
   }
 
+  const govProcurementNote = getGovProcurementFrameworkNote(inputs.counterpartyType, inputs.procurementGoverningLawClause);
   if (inputs.marketCompetitionLevel === 'sole-source') {
     return {
       ...base,
       routeToMarketCautionEn: 'Route-to-market caution (Kraljic Matrix / CIPS Supply Positioning Model): only one qualified supplier exists for this requirement -- a competitive process cannot generate real price or approach competition here regardless of RFx type. Consider a negotiated single-source approach, supplier development, or qualifying an alternate source before running a formal RFx.',
       routeToMarketCautionAr: 'تنبيه بشأن مسار الشراء (مصفوفة Kraljic / نموذج CIPS لتموضع التوريد): يوجد مورد مؤهل واحد فقط لهذا المطلب -- لا يمكن لعملية تنافسية أن تولّد منافسة حقيقية في السعر أو النهج هنا أياً كان نوع طلب المنافسة. يُنصح بالتفاوض المباشر مع المصدر الوحيد، أو تطوير المورد، أو تأهيل مصدر بديل قبل إطلاق طلب منافسة رسمي.',
+      ...(govProcurementNote ? { govProcurementNote } : {}),
     };
   }
   if (inputs.marketCompetitionLevel === 'few-qualified-suppliers' && (base.type === 'rfq' || base.type === 'rfp')) {
@@ -396,9 +416,10 @@ export function recommendRfxType(inputs: RfxSelectionInputs): RfxRecommendation 
       ...base,
       routeToMarketCautionEn: `Route-to-market caution (Kraljic Matrix / CIPS Supply Positioning Model): only a few qualified suppliers exist for this requirement -- limited market competition reduces how much real price or approach tension a competitive ${base.type.toUpperCase()} can generate. Consider whether supplier development or a longer-term agreement would serve better than a repeat competitive event.`,
       routeToMarketCautionAr: `تنبيه بشأن مسار الشراء (مصفوفة Kraljic / نموذج CIPS لتموضع التوريد): يوجد عدد قليل فقط من الموردين المؤهلين لهذا المطلب -- محدودية المنافسة في السوق تقلل من قدرة طلب ${base.type.toUpperCase()} التنافسي على توليد تنافس حقيقي في السعر أو النهج. يُنصح بتقييم ما إذا كان تطوير المورد أو اتفاقية أطول أمداً أنسب من تكرار حدث تنافسي.`,
+      ...(govProcurementNote ? { govProcurementNote } : {}),
     };
   }
-  return base;
+  return { ...base, ...(govProcurementNote ? { govProcurementNote } : {}) };
 }
 
 export interface RfxScoringCriterion {

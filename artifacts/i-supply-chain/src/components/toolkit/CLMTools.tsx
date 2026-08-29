@@ -2369,6 +2369,27 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
                 ))}
               </div>
             </div>
+            <div className="space-y-1.5">
+              <p className="text-[11px] font-bold text-slate-500">
+                {isAr ? 'إطار المشتريات الحكومية (اختياري -- #402، 7 مسارات مبحوثة)' : 'Government procurement framework (optional -- #402, 7 researched tracks)'}
+              </p>
+              <div className="grid gap-2 sm:grid-cols-2">
+                <select value={rfxSelection.counterpartyType ?? ''} onChange={e => setRfxSelection(prev => ({ ...prev, counterpartyType: (e.target.value || undefined) as 'government' | 'private' | undefined }))} className="w-full text-xs border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#082C6B] bg-white">
+                  <option value="">{isAr ? 'نوع الطرف المقابل: غير محدد' : 'Counterparty type: not specified'}</option>
+                  <option value="government">{isAr ? 'جهة حكومية' : 'Government'}</option>
+                  <option value="private">{isAr ? 'طرف خاص' : 'Private'}</option>
+                </select>
+                <select value={rfxSelection.procurementGoverningLawClause ?? ''} onChange={e => setRfxSelection(prev => ({ ...prev, procurementGoverningLawClause: (e.target.value || undefined) as GoverningLawTrack | undefined }))} className="w-full text-xs border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#082C6B] bg-white">
+                  <option value="">{isAr ? 'القانون الحاكم: غير محدد' : 'Governing law: not specified'}</option>
+                  {GOVERNING_LAW_TRACKS.map(t => <option key={t.id} value={t.id}>{isAr ? t.labelAr : t.label}</option>)}
+                </select>
+              </div>
+              <p className="text-[10px] text-slate-400">
+                {isAr
+                  ? 'يحدد ما إذا كان قانون المشتريات الحكومية في المسار المختار يفرض سلماً إلزامياً لأسلوب الشراء (شراء مباشر/منافسة محدودة/منافسة عامة) يسبق سؤال RFI/RFP/RFQ -- معلوماتي فقط، لا يغيّر التوصية أعلاه.'
+                  : 'Determines whether the selected track\'s government procurement law imposes a mandatory procurement-method ladder (direct purchase / limited tender / public tender) that precedes the RFI/RFP/RFQ question -- informational only, does not change the recommendation above.'}
+              </p>
+            </div>
             <div className="bg-[#082C6B]/5 border border-[#082C6B]/20 rounded-xl p-3 flex items-start gap-3">
               <span className="text-[11px] font-bold px-2 py-1 rounded-full bg-[#082C6B] text-white shrink-0">
                 {rfxTypeLabel(rfxRecommendation.type, isAr)}
@@ -2380,6 +2401,48 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
                 <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                 <p className="text-xs text-amber-800">
                   {isAr ? rfxRecommendation.routeToMarketCautionAr : rfxRecommendation.routeToMarketCautionEn}
+                </p>
+              </div>
+            )}
+            {rfxRecommendation.govProcurementNote && (
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 space-y-2">
+                <p className="text-xs font-bold text-blue-900">
+                  {isAr ? rfxRecommendation.govProcurementNote.lawNameAr : rfxRecommendation.govProcurementNote.lawNameEn}
+                  <span className="font-normal text-blue-700"> -- {isAr ? rfxRecommendation.govProcurementNote.administeringBodyAr : rfxRecommendation.govProcurementNote.administeringBodyEn}</span>
+                </p>
+                <div className="space-y-1">
+                  {rfxRecommendation.govProcurementNote.methods.map((m, i) => (
+                    <p key={i} className="text-[11px] text-blue-800">
+                      <span className="font-semibold">{isAr ? m.labelAr : m.labelEn}:</span>{' '}
+                      {isAr ? m.triggerAr : m.triggerEn}
+                    </p>
+                  ))}
+                </div>
+                <div className="space-y-1 border-t border-blue-100 pt-2">
+                  {rfxRecommendation.govProcurementNote.thresholds.map((t, i) => (
+                    <p key={i} className="text-[11px] text-blue-800 flex items-start gap-1.5">
+                      <span className={`shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded-full mt-0.5 ${
+                        t.confidence === 'primary-confirmed' ? 'bg-emerald-100 text-emerald-700' :
+                        t.confidence === 'secondary-sourced' ? 'bg-amber-100 text-amber-700' :
+                        'bg-slate-200 text-slate-600'
+                      }`}>
+                        {isAr
+                          ? (t.confidence === 'primary-confirmed' ? 'مؤكد من المصدر الأساسي' : t.confidence === 'secondary-sourced' ? 'مصدر ثانوي' : t.confidence === 'not-publicly-disclosed' ? 'غير معلن' : 'لم يُعثر عليه')
+                          : (t.confidence === 'primary-confirmed' ? 'primary-confirmed' : t.confidence === 'secondary-sourced' ? 'secondary-sourced' : t.confidence === 'not-publicly-disclosed' ? 'not disclosed' : 'not found')}
+                      </span>
+                      <span>{isAr ? t.labelAr : t.labelEn}</span>
+                    </p>
+                  ))}
+                </div>
+                {rfxRecommendation.govProcurementNote.liveReformNoteEn && (
+                  <p className="text-[11px] text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1.5">
+                    {isAr ? rfxRecommendation.govProcurementNote.liveReformNoteAr : rfxRecommendation.govProcurementNote.liveReformNoteEn}
+                  </p>
+                )}
+                <p className="text-[10px] text-blue-600">
+                  {isAr
+                    ? 'معلوماتي فقط -- يسبق سؤال RFI/RFP/RFQ أعلاه ولا يستبدله. راجع مستشاراً مؤهلاً في المشتريات الحكومية قبل اتخاذ القرار.'
+                    : 'Informational only -- precedes the RFI/RFP/RFQ question above, does not replace it. Consult qualified government-procurement counsel before deciding.'}
                 </p>
               </div>
             )}
