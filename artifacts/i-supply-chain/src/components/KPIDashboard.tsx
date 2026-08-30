@@ -21,6 +21,11 @@ import { getContextualTarget, getGccTarget, computeFoundationalTarget } from '@/
 import { getIndustryBenchmarkReviewStatus, getTargetReviewStatus, type ReviewStatusMeta } from '@/lib/kpiReviewStatus';
 
 /* ─── KPI definition types ─── */
+// #363 -- shared aliases for the tier/scope literal unions, used by both the
+// global picker (#139/#140) and the per-card override control below.
+type TargetTier = 'foundational' | 'peer' | 'best-in-class';
+type TargetScope = 'gcc' | 'international';
+
 export interface KpiDef {
   id: string;
   label: string; labelAr: string;
@@ -1126,13 +1131,72 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
     try { localStorage.setItem(scopeStorageKey, scope); } catch {}
   }, []);
 
+  /* ── Per-KPI-card target tier/scope override (#363) ──
+     The tier/scope row above is a GLOBAL setting that applies to every card at
+     once. Some KPIs legitimately need a different lens than the rest of the
+     dashboard on a given day -- e.g. an organisation reviewing everything at
+     Best-in-Class but wanting to see Perfect Order Rate specifically at Peer
+     because that is the negotiation floor in an active conversation. This
+     stores a per-KPI override that, when present, wins over the global
+     picker for that one card only. Absence of an entry (the default, and the
+     only state for any KPI a user has never touched) means "follow global" --
+     zero behaviour change from #139/#140 for anyone who doesn't use this. */
+  const cardOverrideStorageKey = `isc-kpi-card-target-override-${resolvedSlug}`;
+  const [cardOverrides, setCardOverrides] = useState<Record<string, { tier?: TargetTier; scope?: TargetScope }>>(() => {
+    try {
+      const saved = localStorage.getItem(cardOverrideStorageKey);
+      return saved ? JSON.parse(saved) : {};
+    } catch { return {}; }
+  });
+  const handleCardTierOverride = useCallback((kpiId: string, tier: TargetTier | null) => {
+    setCardOverrides(prev => {
+      const next = { ...prev };
+      const entry = { ...(next[kpiId] || {}) };
+      if (tier === null) delete entry.tier; else entry.tier = tier;
+      if (Object.keys(entry).length === 0) delete next[kpiId]; else next[kpiId] = entry;
+      try { localStorage.setItem(cardOverrideStorageKey, JSON.stringify(next)); } catch {}
+      return next;
+    });
+  }, [cardOverrideStorageKey]);
+  const handleCardScopeOverride = useCallback((kpiId: string, scope: TargetScope | null) => {
+    setCardOverrides(prev => {
+      const next = { ...prev };
+      const entry = { ...(next[kpiId] || {}) };
+      if (scope === null) delete entry.scope; else entry.scope = scope;
+      if (Object.keys(entry).length === 0) delete next[kpiId]; else next[kpiId] = entry;
+      try { localStorage.setItem(cardOverrideStorageKey, JSON.stringify(next)); } catch {}
+      return next;
+    });
+  }, [cardOverrideStorageKey]);
+  const clearCardOverride = useCallback((kpiId: string) => {
+    setCardOverrides(prev => {
+      if (!(kpiId in prev)) return prev;
+      const next = { ...prev };
+      delete next[kpiId];
+      try { localStorage.setItem(cardOverrideStorageKey, JSON.stringify(next)); } catch {}
+      return next;
+    });
+  }, [cardOverrideStorageKey]);
+  const [overridePanelKpi, setOverridePanelKpi] = useState<string | null>(null);
+
   /**
    * Returns a KpiDef with the effective benchmark substituted.
    * Priority: SKU class override → Industry override → KPI definition default.
    * SKU class wins for inventory-intensive KPIs (turns, fa, buf, ppm, mav, pocycle…).
    * Industry wins for process/operational KPIs not covered by SKU class.
    */
-  const withIndustryBenchmark = useCallback((kpi: KpiDef, currentValueRaw?: number): KpiDef => {
+  const withIndustryBenchmark = useCallback((
+    kpi: KpiDef,
+    currentValueRaw?: number,
+    // #363 -- per-card override, wins over the global selectedTier/selectedScope
+    // for this one KPI when present. null/undefined means "follow global", the
+    // only state for any KPI a caller doesn't explicitly override.
+    cardTierOverride?: TargetTier | null,
+    cardScopeOverride?: TargetScope | null,
+  ): KpiDef => {
+    const effectiveTier = cardTierOverride ?? selectedTier;
+    const effectiveScope = cardScopeOverride ?? selectedScope;
+
     // ── Step 1: Resolve benchmark (SKU-class overrides industry for inventory KPIs) ──
     const skuOverride = getSkuClassBenchmark(kpi.id, selectedSkuClass);
     const indOverride = getIndustryBenchmark(kpi.id, selectedIndustry);
@@ -1161,10 +1225,10 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
       };
     }
 
-    // ── Step 3: Apply target tier (#139) ──
+    // ── Step 3: Apply target tier (#139, per-card override via #363) ──
     // 'best-in-class' (default) leaves Step 2's value untouched -- zero behaviour
-    // change unless a user actively picks Peer or Foundational.
-    if (selectedTier === 'peer') {
+    // change unless a user actively picks Peer or Foundational, globally or per-card.
+    if (effectiveTier === 'peer') {
       result = {
         ...result,
         targetValue: result.benchmarkValue,
@@ -1172,7 +1236,7 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
         targetLabelAr: result.benchmarkLabelAr,
         targetTier: 'peer',
       };
-    } else if (selectedTier === 'foundational') {
+    } else if (effectiveTier === 'foundational') {
       if (currentValueRaw !== undefined && !isNaN(currentValueRaw) && result.benchmarkValue) {
         const fVal = computeFoundationalTarget(currentValueRaw, result.benchmarkValue);
         const rounded = Math.round(fVal * 100) / 100;
@@ -1191,11 +1255,11 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
       result = { ...result, targetTier: 'best-in-class' };
     }
 
-    // ── Step 4: Apply geographic scope (#139) ──
+    // ── Step 4: Apply geographic scope (#139, per-card override via #363) ──
     // 'international' (default) leaves the target as resolved above -- zero
-    // behaviour change unless a user actively picks GCC.
-    if (selectedScope === 'gcc') {
-      if (selectedTier === 'best-in-class') {
+    // behaviour change unless a user actively picks GCC, globally or per-card.
+    if (effectiveScope === 'gcc') {
+      if (effectiveTier === 'best-in-class') {
         const gcc = getGccTarget(kpi.id, selectedIndustry);
         if (gcc) {
           result = {
@@ -1236,6 +1300,21 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
     }
   }, [storageKey]);
 
+  // Re-load per-card overrides from localStorage whenever the resolved slug
+  // (and therefore the storage key) changes on an already-mounted component --
+  // same reasoning/pattern as the `values` reload above (#363): the lazy
+  // initializer only runs once on mount, so without this effect slug A's
+  // per-card overrides would leak into slug B's cards on a prop change.
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(cardOverrideStorageKey);
+      setCardOverrides(saved ? JSON.parse(saved) : {});
+    } catch {
+      setCardOverrides({});
+    }
+    setOverridePanelKpi(null);
+  }, [cardOverrideStorageKey]);
+
   const bannerDismissKey = `isc-kpi-banner-dismissed-${resolvedSlug}`;
   const [bannerDismissed, setBannerDismissed] = useState<boolean>(() => {
     try { return localStorage.getItem(`isc-kpi-banner-dismissed-${resolvedSlug}`) === '1'; } catch { return false; }
@@ -1255,7 +1334,7 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
     const industryMeta = selectedIndustry ? INDUSTRIES.find(i => i.id === selectedIndustry) : null;
     const kpiLines = kpis.map(k => {
       const raw = parseFloat(values[k.id] ?? '');
-      const ek = withIndustryBenchmark(k, isNaN(raw) ? undefined : raw);
+      const ek = withIndustryBenchmark(k, isNaN(raw) ? undefined : raw, cardOverrides[k.id]?.tier ?? null, cardOverrides[k.id]?.scope ?? null);
       if (isNaN(raw)) return null;
       const score = ek.higherIsBetter
         ? Math.min(100, Math.round((raw / ek.targetValue) * 100))
@@ -1267,7 +1346,7 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
     const entered = kpis.filter(k => !isNaN(parseFloat(values[k.id] ?? ''))).length;
     const rawScores = kpis.map(k => {
       const raw = parseFloat(values[k.id] ?? '');
-      const ek = withIndustryBenchmark(k, isNaN(raw) ? undefined : raw);
+      const ek = withIndustryBenchmark(k, isNaN(raw) ? undefined : raw, cardOverrides[k.id]?.tier ?? null, cardOverrides[k.id]?.scope ?? null);
       if (isNaN(raw)) return null;
       return ek.higherIsBetter
         ? Math.min(100, Math.round((raw / ek.targetValue) * 100))
@@ -1298,7 +1377,7 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
       '4. Close with a prioritised 30-day action list ([HIGH] / [MEDIUM] / [LOW])',
       '5. Where relevant, reference GCC Vision 2030 priorities (Iktva, localisation, digital transformation)',
     ].join('\n');
-  }, [kpis, values, resolvedSlug, selectedIndustry, selectedSkuClass, withIndustryBenchmark]);
+  }, [kpis, values, resolvedSlug, selectedIndustry, selectedSkuClass, withIndustryBenchmark, cardOverrides]);
 
   // Compute hasAnyValue here (before hook) so canGenerate can be passed to useAIPlan
   const hasAnyValue = !!kpis && kpis.some(k => !isNaN(parseFloat(values[k.id] ?? '')));
@@ -1527,7 +1606,7 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
 
   const scores = kpis.map(k => {
     const raw = parseFloat(values[k.id] ?? '');
-    const ek = withIndustryBenchmark(k, isNaN(raw) ? undefined : raw);
+    const ek = withIndustryBenchmark(k, isNaN(raw) ? undefined : raw, cardOverrides[k.id]?.tier ?? null, cardOverrides[k.id]?.scope ?? null);
     return { kpi: ek, score: isNaN(raw) ? null as number | null : scoreKpi(ek, raw), value: raw };
   });
 
@@ -2007,6 +2086,103 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
                           : <TrendingDown className="w-2.5 h-2.5 text-blue-500" />}
                         {kpi.higherIsBetter ? (isAr ? 'أعلى أفضل' : 'Higher') : (isAr ? 'أقل أفضل' : 'Lower')}
                       </span>
+                    </div>
+
+                    {/* Per-KPI-card target tier/scope override (#363) --
+                        lets one card deviate from the global Target Tier / GCC-International
+                        row above without changing what any other card shows. */}
+                    <div className="mb-1.5">
+                      {(() => {
+                        const ov = cardOverrides[kpi.id];
+                        const isOverridden = !!(ov && (ov.tier || ov.scope));
+                        const isPanelOpen = overridePanelKpi === kpi.id;
+                        return (
+                          <>
+                            <button
+                              type="button"
+                              data-testid={`kpi-override-toggle-${kpi.id}`}
+                              onClick={() => setOverridePanelKpi(isPanelOpen ? null : kpi.id)}
+                              className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full transition-colors whitespace-nowrap"
+                              style={isOverridden ? {
+                                background: '#0F766E18', color: '#0F766E',
+                              } : {
+                                background: 'transparent', color: '#9ca3af',
+                              }}
+                              title={isAr
+                                ? 'خصّص مستوى الهدف/النطاق لهذا المؤشر فقط دون تغيير باقي البطاقات'
+                                : 'Customize the target tier/scope for just this KPI, without changing any other card'}
+                            >
+                              {isOverridden
+                                ? (isAr ? `⚙ مخصّص لهذه البطاقة ${isPanelOpen ? '▴' : '▾'}` : `⚙ Custom for this card ${isPanelOpen ? '▴' : '▾'}`)
+                                : (isAr ? `تخصيص الهدف لهذه البطاقة ${isPanelOpen ? '▴' : '▾'}` : `Override for this card ${isPanelOpen ? '▴' : '▾'}`)}
+                            </button>
+                            {isPanelOpen && (
+                              <div className="mt-1.5 p-2 rounded-lg border border-slate-200 bg-slate-50/70 space-y-1.5"
+                                data-testid={`kpi-override-panel-${kpi.id}`}>
+                                <div className="flex items-center gap-1 flex-wrap">
+                                  {([
+                                    { id: 'foundational' as const, label: 'Foundational', labelAr: 'تأسيسي' },
+                                    { id: 'peer' as const, label: 'Peer', labelAr: 'نظير' },
+                                    { id: 'best-in-class' as const, label: 'Best-in-class', labelAr: 'أفضل الفئات' },
+                                  ]).map(t => {
+                                    const active = (ov?.tier ?? selectedTier) === t.id;
+                                    return (
+                                      <button
+                                        key={t.id}
+                                        type="button"
+                                        data-testid={`kpi-override-tier-${kpi.id}-${t.id}`}
+                                        onClick={() => handleCardTierOverride(kpi.id, t.id)}
+                                        className="text-[9px] font-semibold px-2 py-0.5 rounded-full border transition-all whitespace-nowrap"
+                                        style={active ? {
+                                          background: '#0F766E', color: '#fff', borderColor: '#0F766E',
+                                        } : {
+                                          background: '#fff', color: '#9ca3af', borderColor: '#e5e7eb',
+                                        }}
+                                      >
+                                        {isAr ? t.labelAr : t.label}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                                <div className="flex items-center gap-1 flex-wrap">
+                                  {([
+                                    { id: 'gcc' as const, label: 'GCC', labelAr: 'الخليج' },
+                                    { id: 'international' as const, label: 'International', labelAr: 'دولي' },
+                                  ]).map(s => {
+                                    const active = (ov?.scope ?? selectedScope) === s.id;
+                                    return (
+                                      <button
+                                        key={s.id}
+                                        type="button"
+                                        data-testid={`kpi-override-scope-${kpi.id}-${s.id}`}
+                                        onClick={() => handleCardScopeOverride(kpi.id, s.id)}
+                                        className="text-[9px] font-semibold px-2 py-0.5 rounded-full border transition-all whitespace-nowrap"
+                                        style={active ? {
+                                          background: '#0F766E', color: '#fff', borderColor: '#0F766E',
+                                        } : {
+                                          background: '#fff', color: '#9ca3af', borderColor: '#e5e7eb',
+                                        }}
+                                      >
+                                        {isAr ? s.labelAr : s.label}
+                                      </button>
+                                    );
+                                  })}
+                                  {isOverridden && (
+                                    <button
+                                      type="button"
+                                      data-testid={`kpi-override-reset-${kpi.id}`}
+                                      onClick={() => clearCardOverride(kpi.id)}
+                                      className="text-[9px] font-semibold px-2 py-0.5 rounded-full border border-transparent text-slate-500 hover:text-slate-700 hover:underline whitespace-nowrap ml-auto"
+                                    >
+                                      {isAr ? '↺ استخدام الإعداد العام' : '↺ Use global setting'}
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                          </>
+                        );
+                      })()}
                     </div>
 
                     {/* GCC scope badge / honest-empty note (#139/#140) */}
