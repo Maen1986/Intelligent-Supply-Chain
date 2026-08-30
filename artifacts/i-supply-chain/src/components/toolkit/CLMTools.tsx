@@ -51,6 +51,7 @@ import { ContractReviewReport } from '@/components/ContractReviewReport';
 import {
   buildNdaSkeleton, buildMsaSkeleton, renderSkeletonAsText,
   buildDraftClausesRequestBody, renderDraftedContractAsText,
+  NDA_NOT_APPLICABLE_CATEGORY_IDS,
   type DraftedContract, type DraftClausesGroundingNotes,
 } from '@/lib/clmGenerationEngine';
 import {
@@ -939,6 +940,25 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
       if (c.id !== id) return c;
       const current = c.clauseCategoriesNotApplicable ?? [];
       const next = current.includes(category) ? current.filter(x => x !== category) : [...current, category];
+      return { ...c, clauseCategoriesNotApplicable: next };
+    }));
+  /** #371 professional-readiness audit (30 Aug 2026): Review's N/A list was
+   *  purely manual and blind to contract type, so a real NDA review could
+   *  show a misleadingly low clause-health score for categories (pricing,
+   *  performance/SLA, risk-allocation) that a real confidentiality
+   *  agreement never carries -- exactly the kind of thing that would make
+   *  ISC's review look unprofessional next to a human consultant. This is
+   *  an explicit, client-triggered one-click action (never automatic on
+   *  type change -- Decision Record 8.7, stand by a click), and it always
+   *  overwrites with the correct default for the CURRENT type: the real
+   *  NDA list for 'nda', or an empty list for 'msa' (no MSA category is
+   *  N/A -- see clmGenerationEngine.ts's MSA_NOT_APPLICABLE_CATEGORIES).
+   *  Still fully overridable afterward via the existing per-category
+   *  toggle above. */
+  const applyContractTypeReviewDefaults = (id: string) =>
+    saveContracts(contracts.map(c => {
+      if (c.id !== id) return c;
+      const next = c.type === 'nda' ? NDA_NOT_APPLICABLE_CATEGORY_IDS : [];
       return { ...c, clauseCategoriesNotApplicable: next };
     }));
   const updateClauseSpecialCondition = (id: string, category: ClauseCategory, text: string) =>
@@ -1842,6 +1862,26 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
                             );
                           })()}
                         </div>
+
+                        {(c.type === 'nda' || c.type === 'msa') && (
+                          <div className="px-3 py-2 bg-slate-50 border-t border-slate-100 flex items-center justify-between gap-2 flex-wrap">
+                            <p className="text-[10px] text-slate-500 leading-relaxed">
+                              {isAr
+                                ? (c.type === 'nda'
+                                    ? 'اتفاقية السرية لا تتضمن عادة أسعاراً أو نطاق عمل أو سقف مسؤولية -- طبّق الإعدادات الافتراضية لتجنب نتيجة تغطية مضللة.'
+                                    : 'لا تُستثنى أي فئة من الاتفاقية الإطارية -- سيؤدي التطبيق إلى مسح أي استثناءات فئة موروثة من نوع عقد سابق.')
+                                : (c.type === 'nda'
+                                    ? 'A standard NDA carries no pricing, scope-of-work, or liability-cap content -- apply the real best-practice defaults instead of a misleadingly low coverage score.'
+                                    : 'No category is N/A for an MSA -- applying this clears any category exclusions inherited from a previous contract type.')}
+                            </p>
+                            <button type="button" onClick={() => applyContractTypeReviewDefaults(c.id)}
+                              className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-white text-[#082C6B] border border-[#082C6B] hover:bg-[#082C6B]/5 transition-colors shrink-0">
+                              {isAr
+                                ? (c.type === 'nda' ? 'تطبيق إعدادات اتفاقية السرية الافتراضية' : 'تطبيق إعدادات الاتفاقية الإطارية الافتراضية')
+                                : (c.type === 'nda' ? 'Apply NDA Best-Practice Defaults' : 'Apply MSA Best-Practice Defaults')}
+                            </button>
+                          </div>
+                        )}
 
                         <div className="px-3 py-2 bg-blue-50 border-t border-blue-100">
                           <p className="text-[10px] text-blue-800 leading-relaxed">

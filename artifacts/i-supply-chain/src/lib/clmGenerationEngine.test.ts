@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildNdaSkeleton, buildMsaSkeleton, renderSkeletonAsText, buildDraftClausesRequestBody, renderDraftedContractAsText, type GenerationInput } from './clmGenerationEngine';
+import { buildNdaSkeleton, buildMsaSkeleton, renderSkeletonAsText, buildDraftClausesRequestBody, renderDraftedContractAsText, NDA_NOT_APPLICABLE_CATEGORY_IDS, type GenerationInput } from './clmGenerationEngine';
 import { CLAUSE_CATEGORIES } from './clmClauseTaxonomy';
 
 describe('buildNdaSkeleton -- disclaimer', () => {
@@ -353,5 +353,16 @@ describe('renderDraftedContractAsText', () => {
   it('labels the merged document as v1.5, distinct from the v1 skeleton renderer', () => {
     const text = renderDraftedContractAsText(skeleton, drafted, false);
     expect(text.split('\n')[0]).toContain('Module 09 v1.5');
+  });
+});
+
+describe('NDA_NOT_APPLICABLE_CATEGORY_IDS (#371 professional-readiness audit, 30 Aug 2026)', () => {
+  it('exports exactly the 3 categories a standard NDA does not carry -- shared with Review, not duplicated', () => {
+    expect(NDA_NOT_APPLICABLE_CATEGORY_IDS.sort()).toEqual(['commercial-payment', 'performance-service', 'risk-allocation'].sort());
+  });
+
+  it('does not include legal-governance or data-ip-confidentiality -- both are real, applicable NDA content', () => {
+    expect(NDA_NOT_APPLICABLE_CATEGORY_IDS).not.toContain('legal-governance');
+    expect(NDA_NOT_APPLICABLE_CATEGORY_IDS).not.toContain('data-ip-confidentiality');
   });
 });

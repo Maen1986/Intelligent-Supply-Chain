@@ -307,6 +307,24 @@ const NDA_NOT_APPLICABLE_CATEGORIES: Partial<Record<ClauseCategory, { en: string
   },
 };
 
+/** Exported so Review (Module 09 Part B, clmReviewEngine.ts /
+ *  CLMTools.tsx's clauseCategoriesNotApplicable field) can apply the exact
+ *  same NDA-vs-MSA category-applicability judgment Generation already
+ *  makes above, instead of the two modules silently drifting apart.
+ *  Real gap this closes (found during the #371 professional-readiness
+ *  audit, 30 Aug 2026): Review's clauseCategoriesNotApplicable was a
+ *  purely manual, per-contract client toggle with zero awareness of
+ *  contract type -- so an NDA reviewed without the client manually
+ *  flagging commercial-payment/performance-service/risk-allocation as N/A
+ *  would show a misleadingly low clause-health score, as if a
+ *  confidentiality agreement were missing a pricing clause. CLMTools.tsx
+ *  now offers a one-click "Apply NDA best-practice defaults" action that
+ *  seeds this list -- always a client-triggered action, never silent, and
+ *  always still overridable via the existing per-category N/A toggle
+ *  (Decision Record 8.7: stand by a click, never fake/auto-decide behind
+ *  the scenes). */
+export const NDA_NOT_APPLICABLE_CATEGORY_IDS: ClauseCategory[] = Object.keys(NDA_NOT_APPLICABLE_CATEGORIES) as ClauseCategory[];
+
 type SubclauseNotesMap = Partial<Record<string, { mandatory: boolean; guidanceEn: string; guidanceAr: string }>>;
 type NotApplicableMap = Partial<Record<ClauseCategory, { en: string; ar: string }>>;
 
