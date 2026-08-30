@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'wouter';
 import { Logo } from './Logo';
+import { PilotStatusBadge } from './PilotStatusBadge';
 import { useLanguage } from '@/lib/LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
 import { Menu, X, ChevronDown, Phone, LogOut, User, Settings, LayoutDashboard, ClipboardList, ListChecks, Waves, Newspaper, LayoutGrid, BookOpen, Map as MapIcon, BarChart3 } from 'lucide-react';
@@ -177,7 +178,10 @@ export function Header() {
 
       {/* ── Main header row ── */}
       <div className="container mx-auto px-4 h-[68px] flex items-center justify-between gap-4">
-        <Logo />
+        <div className="flex items-center gap-2 shrink-0">
+          <Logo />
+          <PilotStatusBadge lang={lang} className="hidden sm:inline-flex" />
+        </div>
 
         {/* ── Desktop Nav ── */}
         <nav className="hidden lg:flex items-center gap-0.5 flex-1 justify-center">
@@ -286,6 +290,10 @@ export function Header() {
       {mobileMenuOpen && (
         <div className="lg:hidden border-t border-border bg-white absolute w-full left-0 shadow-2xl z-40 max-h-[85vh] overflow-y-auto">
           <div className="p-4 flex flex-col gap-1">
+
+            <div className="px-4 pb-2">
+              <PilotStatusBadge lang={lang} />
+            </div>
 
             <Link href="/" onClick={() => setMobileMenuOpen(false)}
               className="block px-4 py-3 text-base font-semibold rounded-lg text-gray-800 hover:text-primary hover:bg-primary/5 transition-colors">
