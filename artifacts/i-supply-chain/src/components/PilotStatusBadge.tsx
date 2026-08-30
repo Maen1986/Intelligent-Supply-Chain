@@ -41,12 +41,21 @@ export function PilotStatusBadge({ lang, className }: PilotStatusBadgeProps) {
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
-          <span
-            className={`inline-flex items-center px-2 py-0.5 rounded-full border border-amber-300 bg-amber-50 text-amber-800 text-[10px] font-bold uppercase tracking-wide cursor-default select-none leading-tight whitespace-nowrap ${className ?? ''}`}
+          {/* A real <button>, not a <span>, so the explanation is reachable
+           *  by keyboard (Tab + focus opens the Radix tooltip by default)
+           *  and by tap on touch devices that focus on tap -- a plain span
+           *  trigger (the pattern FrameworkBadge/ConfidenceTierBadge use
+           *  elsewhere) is hover-only and gives mobile visitors the label
+           *  with no way to reach the "why" behind it. type="button" so it
+           *  never behaves like a form submit if this badge ever lands
+           *  inside a form. */}
+          <button
+            type="button"
+            className={`inline-flex items-center px-2 py-0.5 rounded-full border border-amber-300 bg-amber-50 text-amber-800 text-[10px] font-bold uppercase tracking-wide select-none leading-tight whitespace-nowrap cursor-help ${className ?? ''}`}
             data-testid="pilot-status-badge"
           >
             {ar ? 'تجريبي · قيد التطوير' : 'Pilot · Active Development'}
-          </span>
+          </button>
         </TooltipTrigger>
         <TooltipContent side="bottom" className="max-w-xs">
           <p className="text-xs">

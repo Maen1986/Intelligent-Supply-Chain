@@ -66,6 +66,14 @@ describe('Header — Pilot / Active Development badge', () => {
     badges.forEach(b => expect(b.textContent).not.toMatch(/demo/i));
   });
 
+  it('renders as a real, keyboard-focusable button, not a hover-only span (QA fix: mobile/touch users could see the label but never reach the explanation)', async () => {
+    const Header = await getHeader();
+    render(<Header />);
+    const badge = screen.getAllByTestId('pilot-status-badge')[0];
+    expect(badge.tagName).toBe('BUTTON');
+    expect(badge).toHaveAttribute('type', 'button');
+  });
+
   it('also renders inside the mobile menu once opened', async () => {
     const Header = await getHeader();
     render(<Header />);
