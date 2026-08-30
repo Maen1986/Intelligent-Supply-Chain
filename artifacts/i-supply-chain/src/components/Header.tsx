@@ -35,6 +35,7 @@ const servicesList = [
   { key: 'nav.supplierDependency', href: '/supplier-dependency', label: '🔗 Supplier Dependency' },
   { key: 'nav.lcgpaReadiness', href: '/lcgpa-readiness', label: '🏛️ LCGPA Readiness' },
   { key: 'nav.freeZoneRouting', href: '/freezone-routing', label: '🏭 Free-Zone Routing' },
+  { key: 'nav.gccSeasonalCalendar', href: '/gcc-seasonal-calendar', label: '📅 Seasonal Calendar' },
   { key: 'nav.caseStudies',  href: '/case-studies',            label: 'Case Studies' },
   { key: 'nav.intelligence', href: '/intelligence',            label: 'Intelligence Hub' },
 ];
