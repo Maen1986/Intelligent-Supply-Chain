@@ -78,7 +78,9 @@ export function Footer() {
                 { label: 'Human Consultant Booking', labelAr: 'حجز استشاري متخصص', href: '/consultant' },
                 { label: 'Supply Chain Strategy', labelAr: 'استراتيجية سلسلة الإمداد', href: '/#solutions' },
                 { label: 'Procurement Excellence', labelAr: 'التميّز في المشتريات', href: '/#solutions' },
-                { label: 'Risk Management', labelAr: 'إدارة المخاطر', href: '/#solutions' },
+                { label: 'Contract Lifecycle Management', labelAr: 'إدارة دورة حياة العقود', href: '/#solutions' },
+                { label: 'Risk Management', labelAr: 'إدارة المخاطر', href: '/risk-management' },
+                { label: 'Governance & Compliance', labelAr: 'الحوكمة والامتثال', href: '/governance-compliance' },
                 { label: 'CSR Free Support', labelAr: 'الدعم المجاني للمسؤولية الاجتماعية', href: '/csr' },
               ].map((l) => (
                 <Link key={l.label} href={l.href} className="text-white/70 hover:text-white text-sm transition-colors hover:translate-x-0.5 inline-block">

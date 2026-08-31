@@ -28,6 +28,20 @@ if (!Element.prototype.scrollIntoView) {
   Element.prototype.scrollIntoView = () => {};
 }
 
+/* ── jsdom doesn't ship IntersectionObserver; framer-motion's whileInView ──
+   ── (used by the shared Reveal wrapper on SolutionDetail and elsewhere) ──
+   ── needs one to mount without throwing. A no-op stub is enough since   ──
+   ── these tests don't assert on scroll-triggered visibility timing. ─── */
+if (typeof global.IntersectionObserver === 'undefined') {
+  // @ts-expect-error -- minimal stub, not a full IntersectionObserver
+  global.IntersectionObserver = class IntersectionObserver {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+    takeRecords() { return []; }
+  };
+}
+
 /* ── Recharts logs "width(0) and height(0)" in jsdom because there is no   ──
    ── layout engine. Mock ResponsiveContainer to render children at a fixed  ──
    ── size so those warnings never appear in test output.                    ── */

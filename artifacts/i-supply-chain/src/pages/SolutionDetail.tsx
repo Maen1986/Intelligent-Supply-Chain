@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { motion  } from 'framer-motion';
 import { Link, useParams } from 'wouter';
 import { Button } from '@/components/ui/button';
@@ -8,7 +8,7 @@ import {
   ChevronRight, ArrowLeft, AlertTriangle, Globe, Cpu,
   FileText, ClipboardList, Star, Clock, DollarSign,
   Factory, Activity, Building2, Layers, RefreshCw,
-  ArrowRight,
+  ArrowRight, Wrench,
 } from 'lucide-react';
 import { useLanguage } from '@/lib/LanguageContext';
 import { KPIDashboard } from '@/components/KPIDashboard';
@@ -767,6 +767,27 @@ const SOLUTIONS: SolutionData[] = [
 // All slugs are now fully implemented
 const REMAINING_SLUGS: string[] = [];
 
+// Every solution slug below has a real, working interactive tool embedded in
+// the Challenges tab (tab index 4) -- see the toolkit component imports above.
+// This map drives the "Try the tool" hero CTA and the tab badge so that tool
+// is actually discoverable instead of requiring a visitor to click through to
+// the 5th of 6 tabs with no visual cue that anything interactive is there.
+const TOOL_LABELS: Record<string, { en: string; ar: string }> = {
+  'supply-chain-strategy': { en: 'Strategy Tools', ar: 'أدوات الاستراتيجية' },
+  'procurement-excellence': { en: 'TCO & Spend Analysis Tool', ar: 'أداة التكلفة الإجمالية وتحليل الإنفاق' },
+  'risk-management-solution': { en: 'Risk Assessment Toolkit', ar: 'أدوات تقييم المخاطر' },
+  'lean-agile-supply-chain': { en: 'Lean & Agile Tools', ar: 'أدوات رشيقة ومرنة' },
+  'sustainability-esg': { en: 'Sustainability & ESG Tools', ar: 'أدوات الاستدامة والحوكمة البيئية' },
+  'digital-transformation': { en: 'Digital Transformation Tools', ar: 'أدوات التحوّل الرقمي' },
+  'contract-lifecycle-management': { en: 'Contract Health Checker', ar: 'فاحص سلامة العقود' },
+  'supplier-relationship-governance': { en: 'Supplier Scorecard Tool', ar: 'أداة بطاقة أداء المورّدين' },
+  resiliency: { en: 'Resiliency Tools', ar: 'أدوات المرونة' },
+  'value-engineering': { en: 'Value Engineering Tools', ar: 'أدوات هندسة القيمة' },
+  'process-improvement-policy': { en: 'Process Improvement Tools', ar: 'أدوات تحسين العمليات' },
+  'training-capability-building': { en: 'Training Needs Assessment', ar: 'تقييم الاحتياجات التدريبية' },
+};
+const TOOL_TAB_INDEX = 4; // "Challenges" tab -- where every tool above actually renders
+
 const TABS = ['Overview', 'Frameworks', 'KPIs', 'Projects & Quick Wins', 'Challenges', 'Achievements'];
 
 const TABS_AR = ['نظرة عامة', 'الأطر', 'مؤشرات الأداء', 'المشاريع والمكاسب السريعة', 'التحديات', 'الإنجازات'];
@@ -780,6 +801,15 @@ export function SolutionDetail() {
   const [frameworkLevel, setFrameworkLevel] = useState<'strategic' | 'tactical' | 'operational'>('strategic');
   const [industryIdx, setIndustryIdx] = useState(0);
   const [openChallenge, setOpenChallenge] = useState<number | null>(0);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const tool = TOOL_LABELS[slug];
+  const jumpToTool = () => {
+    setActiveTab(TOOL_TAB_INDEX);
+    requestAnimationFrame(() => {
+      contentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  };
+
 
   const sol = SOLUTIONS.find(s => s.slug === slug);
 
@@ -832,6 +862,14 @@ export function SolutionDetail() {
           <div className="mt-6 flex gap-3 flex-wrap">
             <Link href="/consultant"><Button className="bg-[#C9A84C] hover:bg-[#b8943d] text-white font-bold">{isAr ? 'احجز استشارة' : 'Book a Consultation'}</Button></Link>
             <Link href="/diagnostic"><Button variant="outline" className="border-white text-white hover:bg-white hover:text-primary font-bold">{isAr ? 'تشخيص مجاني بالذكاء الاصطناعي' : 'Free AI Diagnostic'}</Button></Link>
+            {tool && (
+              <Button onClick={jumpToTool} variant="outline"
+                className="border-white/60 text-white hover:bg-white hover:text-primary font-bold flex items-center gap-2"
+                data-testid="button-jump-to-tool">
+                <Wrench className="w-4 h-4" />
+                {isAr ? `جرّب: ${tool.ar}` : `Try it: ${tool.en}`}
+              </Button>
+            )}
           </div>
         </div>
       </div>
@@ -839,16 +877,25 @@ export function SolutionDetail() {
       {/* Sticky Tab Bar */}
       <div className="sticky top-16 z-30 bg-white border-b border-border shadow-sm">
         <div className="container mx-auto px-4 flex overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-          {TABS.map((tab, i) => (
-            <button key={tab} onClick={() => setActiveTab(i)}
-              className={`px-5 py-4 text-sm font-semibold border-b-2 whitespace-nowrap shrink-0 transition-all duration-200 ${activeTab === i ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-primary hover:border-primary/40'}`}>
-              {isAr ? TABS_AR[i] : tab}
-            </button>
-          ))}
+          {TABS.map((tab, i) => {
+            const hasTool = Boolean(tool) && i === TOOL_TAB_INDEX;
+            const label = isAr ? TABS_AR[i] : tab;
+            const toolSuffix = hasTool ? (isAr ? ' (توجد أداة تفاعلية)' : ' (interactive tool available)') : '';
+            return (
+              <button key={tab} onClick={() => setActiveTab(i)}
+                aria-label={hasTool ? `${label}${toolSuffix}` : undefined}
+                className={`px-5 py-4 text-sm font-semibold border-b-2 whitespace-nowrap shrink-0 transition-all duration-200 flex items-center gap-1.5 ${activeTab === i ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-primary hover:border-primary/40'}`}>
+                {label}
+                {hasTool && (
+                  <span aria-hidden="true" className="w-1.5 h-1.5 rounded-full bg-[#C9A84C]" title={isAr ? 'أداة تفاعلية هنا' : 'Interactive tool here'} />
+                )}
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-10 max-w-5xl space-y-8">
+      <div ref={contentRef} className="container mx-auto px-4 py-10 max-w-5xl space-y-8">
 
         {/* TAB 0 — OVERVIEW */}
         {activeTab === 0 && (
