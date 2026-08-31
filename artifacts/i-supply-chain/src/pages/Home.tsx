@@ -275,29 +275,48 @@ function useHeroFitBox(sectionRef: React.RefObject<HTMLElement | null>) {
       // yet settled -- observed to happen momentarily on some load paths).
       // A real viewport never has zero/negative width or space below the
       // header, so treat that as "not measured yet" and skip committing --
-      // never lock the hero at zero size. The scheduled re-measures below
-      // (and any resize/orientation event) supply a good value shortly after.
+      // never lock the hero at zero size. The ResizeObserver below supplies
+      // a good value as soon as layout actually settles.
       if (viewportWidth <= 0 || available <= 0) return;
       if (naturalHeight <= available) {
         // Common case: full width fits within the available height as-is.
-        setBox({ width: viewportWidth, height: naturalHeight });
+        setBox(prev => (prev && prev.width === viewportWidth && prev.height === naturalHeight)
+          ? prev
+          : { width: viewportWidth, height: naturalHeight });
       } else {
         // Short/wide viewport: shrink both dimensions together so the box
         // stays locked to HERO_ASPECT_RATIO -- never just height alone.
-        setBox({ width: available * HERO_ASPECT_RATIO, height: available });
+        const w = available * HERO_ASPECT_RATIO;
+        setBox(prev => (prev && prev.width === w && prev.height === available)
+          ? prev
+          : { width: w, height: available });
       }
     }
 
     measure();
-    // Catch the announcement banner's height:0->auto mount animation
-    // (~350ms) settling to its final height before locking in a value.
-    const t1 = setTimeout(measure, 450);
-    const t2 = setTimeout(measure, 1000);
+
+    // Re-measure whenever ANY layout change alters the space above the hero
+    // -- the announcement banner's height:0->auto mount/dismiss animation,
+    // a web-font swap reflow, or anything else that shifts chromeAbove. A
+    // fixed setTimeout schedule (the previous approach) can't guarantee it
+    // outlasts an animation duration or a slow/cached font load -- it was
+    // observed live to leave the hero ~9px taller than the viewport (a
+    // scroll sliver) whenever the banner's mount animation settled after
+    // the last scheduled re-measure. Observing real layout via
+    // ResizeObserver on the document body self-heals regardless of timing,
+    // and also correctly re-fits the hero when the banner is dismissed
+    // (which shrinks chromeAbove and should let the hero grow back).
+    const ro = new ResizeObserver(() => measure());
+    ro.observe(document.body);
+
+    if (typeof document !== 'undefined' && document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(measure).catch(() => {});
+    }
+
     window.addEventListener('resize', measure);
     window.addEventListener('orientationchange', measure);
     return () => {
-      clearTimeout(t1);
-      clearTimeout(t2);
+      ro.disconnect();
       window.removeEventListener('resize', measure);
       window.removeEventListener('orientationchange', measure);
     };
