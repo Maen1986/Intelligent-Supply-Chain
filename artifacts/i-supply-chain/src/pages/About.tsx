@@ -176,6 +176,28 @@ export function About() {
         </div>
       </section>
 
+      {/* Our Approach / Problem-Solving Methodology */}
+      <section className="py-20 bg-white">
+        <div className="container mx-auto px-4 max-w-5xl">
+          <RevealSection className="text-center mb-10">
+            <span className="text-accent font-bold text-sm uppercase tracking-widest">{ar ? 'كيف نعمل' : 'How We Work'}</span>
+            <h2 className="text-3xl md:text-4xl font-bold text-primary mt-3">{ar ? 'منهجنا في حل المشكلات' : 'Our Problem-Solving Approach'}</h2>
+            <p className="text-muted-foreground text-lg leading-relaxed max-w-2xl mx-auto mt-4">
+              {ar
+                ? 'من التحديات المعقّدة إلى حلول عملية — نتّبع منهجية منظّمة في كل مشاركة.'
+                : 'From complex challenges to practical solutions — a structured methodology behind every engagement.'}
+            </p>
+          </RevealSection>
+          <RevealSection delay={0.1}>
+            <img
+              src="/brand/isc-problem-solving.jpg"
+              alt={ar ? 'منهجية آي سبلاي تشين في حل المشكلات' : 'I Supply Chain problem-solving methodology'}
+              className="w-full rounded-2xl shadow-xl border border-border"
+            />
+          </RevealSection>
+        </div>
+      </section>
+
       {/* Meet the Team — Ma'in only */}
       <section className="py-20 bg-white">
         <div className="container mx-auto px-4 max-w-5xl">

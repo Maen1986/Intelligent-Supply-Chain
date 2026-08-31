@@ -771,6 +771,26 @@ export function Home() {
         </div>
       </RevealSection>
 
+      {/* ── Reliable Partner ─────────────────────────────────────────────── */}
+      <RevealSection className="w-full bg-muted py-16">
+        <div className="container mx-auto px-4 max-w-5xl">
+          <div className="text-center mb-10">
+            <span className="text-accent font-bold text-sm uppercase tracking-widest">{isAr ? 'لماذا الشراكة معنا' : 'Why Partner With Us'}</span>
+            <h2 className="text-3xl md:text-4xl font-bold text-primary mt-3">{isAr ? 'آي سبلاي تشين — شريككم الموثوق' : 'ISC Is Your Reliable Partner'}</h2>
+            <p className="text-muted-foreground text-lg leading-relaxed max-w-2xl mx-auto mt-4">
+              {isAr
+                ? 'معاً، نبني سلاسل إمداد أقوى وأذكى وأكثر مرونة.'
+                : 'Together, we build stronger, smarter, and more resilient supply chains.'}
+            </p>
+          </div>
+          <img
+            src="/brand/isc-reliable-partner.jpg"
+            alt={isAr ? 'آي سبلاي تشين شريككم الموثوق' : 'ISC Is Your Reliable Partner'}
+            className="w-full rounded-2xl shadow-xl border border-border"
+          />
+        </div>
+      </RevealSection>
+
       {/* ── Command Centre Spotlight ─────────────────────────────────────── */}
       <section className="relative bg-[#060F1E] overflow-hidden py-20">
         {/* Background texture */}
@@ -863,6 +883,18 @@ export function Home() {
                   <div className="px-4 py-3 text-center font-bold text-[#C9A84C] text-xs" style={{ background: 'rgba(201,168,76,0.05)' }}>{isc}</div>
                 </div>
               ))}
+            </div>
+          </motion.div>
+
+          {/* AI Persona Consultant */}
+          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6, delay: 0.25 }}
+            className="max-w-4xl mx-auto mb-12">
+            <div className="rounded-2xl overflow-hidden border border-white/10 shadow-2xl">
+              <img
+                src="/brand/isc-ai-persona-consultant.jpg"
+                alt={isAr ? 'مستشار الذكاء الاصطناعي من آي سبلاي تشين' : 'ISC AI Persona Consultant'}
+                className="w-full block"
+              />
             </div>
           </motion.div>
 
