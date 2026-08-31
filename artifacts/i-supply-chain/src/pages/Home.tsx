@@ -210,7 +210,7 @@ const heroSlides = [
   { src: '/brand/hero-service-tco.jpg?v=1', alt: 'ISC Total Cost of Ownership', label: 'Total Cost of Ownership (TCO)', labelAr: 'التكلفة الإجمالية للملكية' },
   { src: '/brand/hero-service-clm.jpg?v=1', alt: 'ISC Contract Intelligence', label: 'Contract Intelligence (CLM)', labelAr: 'إدارة دورة حياة العقود' },
   { src: '/brand/hero-service-srm.jpg?v=1', alt: 'ISC Supplier Intelligence', label: 'Supplier Intelligence (SRM)', labelAr: 'إدارة علاقات الموردين' },
-  { src: '/brand/hero-service-risk.jpg?v=1', alt: 'ISC Supply Chain Resiliency & Risk', label: 'SC Resiliency & Risk', labelAr: 'مرونة سلسلة الإمداد وإدارة المخاطر' },
+  { src: '/brand/hero-service-risk.jpg?v=2', alt: 'ISC Supply Chain Resiliency & Risk', label: 'SC Resiliency & Risk', labelAr: 'مرونة سلسلة الإمداد وإدارة المخاطر' },
 ];
 
 // Shared slide-rotation state, lifted out so the image (in the full-bleed
