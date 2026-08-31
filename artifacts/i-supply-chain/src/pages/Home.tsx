@@ -237,24 +237,16 @@ function Orb({
   );
 }
 
-// ─── Consultant carousel ─────────────────────────────────────────────────────
-const consultants = [
-  {
-    src: '/brand/hero-maen-a.jpg?v=1',
-    alt: "Ma'in Alhaqash — Founder & Procurement/Supply Chain Director",
-    label: "Ma'in Alhaqash",
-    labelAr: 'مَعِن الحقّاش',
-    sublabel: 'Procurement & Supply Chain Director',
-    sublabelAr: 'مدير المشتريات وسلسلة الإمداد',
-  },
-  {
-    src: '/brand/hero-maen-b.jpg?v=1',
-    alt: "Ma'in Alhaqash — Founder & Senior Consultant",
-    label: "Ma'in Alhaqash",
-    labelAr: 'مَعِن الحقّاش',
-    sublabel: 'Senior Consultant, ISC',
-    sublabelAr: 'مستشار أول، ISC',
-  },
+// ─── Hero service carousel ───────────────────────────────────────────────────
+const heroSlides = [
+  { src: '/brand/hero-service-journey.jpg?v=1', alt: 'ISC Services — Our Journey', label: 'Our Services Journey', labelAr: 'رحلة خدماتنا' },
+  { src: '/brand/hero-service-advantage.jpg?v=1', alt: 'ISC — Supply Chain Advantage', label: 'Supply Chain Advantage', labelAr: 'ميزة سلسلة الإمداد التنافسية' },
+  { src: '/brand/hero-service-maturity.jpg?v=1', alt: 'ISC Maturity Assessment', label: 'Maturity Assessment', labelAr: 'تقييم النضج' },
+  { src: '/brand/hero-service-kpi.jpg?v=1', alt: 'ISC KPIs & Benchmarking', label: 'KPIs & Benchmarking', labelAr: 'مؤشرات الأداء والمقارنة المرجعية' },
+  { src: '/brand/hero-service-tco.jpg?v=1', alt: 'ISC Total Cost of Ownership', label: 'Total Cost of Ownership (TCO)', labelAr: 'التكلفة الإجمالية للملكية' },
+  { src: '/brand/hero-service-clm.jpg?v=1', alt: 'ISC Contract Intelligence', label: 'Contract Intelligence (CLM)', labelAr: 'إدارة دورة حياة العقود' },
+  { src: '/brand/hero-service-srm.jpg?v=1', alt: 'ISC Supplier Intelligence', label: 'Supplier Intelligence (SRM)', labelAr: 'إدارة علاقات الموردين' },
+  { src: '/brand/hero-service-risk.jpg?v=1', alt: 'ISC Supply Chain Resiliency & Risk', label: 'SC Resiliency & Risk', labelAr: 'مرونة سلسلة الإمداد وإدارة المخاطر' },
 ];
 
 function ConsultantCarousel({ heroInView, isAr = false }: { heroInView: boolean; isAr?: boolean }) {
@@ -263,7 +255,7 @@ function ConsultantCarousel({ heroInView, isAr = false }: { heroInView: boolean;
 
   const next = useCallback(() => {
     setDirection(1);
-    setActive((p) => (p + 1) % consultants.length);
+    setActive((p) => (p + 1) % heroSlides.length);
   }, []);
 
   useEffect(() => {
@@ -289,12 +281,12 @@ function ConsultantCarousel({ heroInView, isAr = false }: { heroInView: boolean;
       transition={{ duration: 1, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
       className="hidden lg:flex justify-center items-end"
     >
-      <div className="relative" style={{ width: '420px' }}>
+      <div className="relative" style={{ width: '460px' }}>
         {/* Gold glow */}
         <div className="absolute -inset-4 rounded-3xl bg-accent/20 blur-2xl pointer-events-none" />
 
         {/* Image frame */}
-        <div className="relative rounded-3xl overflow-hidden shadow-2xl ring-2 ring-white/20" style={{ width: '420px', height: '520px' }}>
+        <div className="relative rounded-3xl overflow-hidden shadow-2xl ring-2 ring-white/20" style={{ width: '460px', height: '307px' }}>
           <AnimatePresence custom={direction} initial={false}>
             <motion.img
               key={active}
@@ -304,26 +296,11 @@ function ConsultantCarousel({ heroInView, isAr = false }: { heroInView: boolean;
               animate="center"
               exit="exit"
               transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
-              src={consultants[active].src}
-              alt={consultants[active].alt}
+              src={heroSlides[active].src}
+              alt={heroSlides[active].alt}
               className="absolute inset-0 w-full h-full object-cover"
-              style={{ objectPosition: 'top center' }}
+              style={{ objectPosition: 'center center' }}
             />
-          </AnimatePresence>
-
-          {/* Name tag overlay */}
-          <AnimatePresence initial={false}>
-            <motion.div
-              key={`label-${active}`}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-              className="absolute top-4 right-4 bg-white/15 backdrop-blur-md rounded-xl px-3 py-1.5 text-white"
-            >
-              <p className="text-xs font-medium text-white/70">{isAr ? consultants[active].sublabelAr : consultants[active].sublabel}</p>
-              <p className="text-sm font-bold leading-tight">{isAr ? consultants[active].labelAr : consultants[active].label}</p>
-            </motion.div>
           </AnimatePresence>
         </div>
 
@@ -340,12 +317,12 @@ function ConsultantCarousel({ heroInView, isAr = false }: { heroInView: boolean;
 
         {/* Dot indicators */}
         <div className="absolute -bottom-12 left-1/2 -translate-x-1/2 flex gap-2">
-          {consultants.map((_, i) => (
+          {heroSlides.map((_, i) => (
             <button
               key={i}
               onClick={() => goTo(i)}
               className={`rounded-full transition-all duration-300 ${i === active ? 'w-6 h-2.5 bg-accent' : 'w-2.5 h-2.5 bg-white/40 hover:bg-white/70'}`}
-              aria-label={isAr ? `مستشار ${i + 1}` : `Consultant ${i + 1}`}
+              aria-label={isAr ? heroSlides[i].labelAr : heroSlides[i].label}
             />
           ))}
         </div>
@@ -353,6 +330,7 @@ function ConsultantCarousel({ heroInView, isAr = false }: { heroInView: boolean;
     </motion.div>
   );
 }
+
 
 // ─── Main component ──────────────────────────────────────────────────────────
 export function Home() {
