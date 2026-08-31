@@ -265,12 +265,13 @@ function ConsultantCarousel({ heroInView, isAr = false }: { heroInView: boolean;
 
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.95, x: 40 }}
-      animate={heroInView ? { opacity: 1, scale: 1, x: 0 } : {}}
-      transition={{ duration: 1, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
-      className="hidden lg:flex flex-col items-center w-full"
+      initial={{ opacity: 0, scale: 0.97 }}
+      animate={heroInView ? { opacity: 1, scale: 1 } : {}}
+      transition={{ duration: 0.8, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
+      className="hidden lg:flex flex-col items-center shrink-0"
+      style={{ width: 'clamp(480px, 42vw, 900px)' }}
     >
-      <div className="relative w-full" style={{ maxWidth: '840px' }}>
+      <div className="relative w-full">
         {/* Gold glow */}
         <div className="absolute -inset-4 rounded-3xl bg-accent/20 blur-2xl pointer-events-none" />
 
@@ -559,24 +560,24 @@ export function Home() {
         <Orb size={320} color="rgba(201,168,76,0.15)" x="55%" y="-5%" duration={9} delay={0} />
         <Orb size={200} color="rgba(201,168,76,0.10)" x="75%" y="55%" duration={12} delay={2} />
 
-        <div className="mx-auto px-4 relative z-10 flex items-center w-full" style={{ maxWidth: '1600px' }}>
-          <div className="grid lg:grid-cols-[1fr_1.15fr] gap-10 items-center w-full py-20">
+        <div className="mx-auto px-4 relative z-10 flex items-center w-full" style={{ maxWidth: '1800px' }}>
+          <div className="flex flex-col lg:flex-row gap-10 lg:gap-14 items-center w-full py-20">
 
             {/* Left — text */}
-            <div className="space-y-8">
+            <div className="space-y-8 flex-1 min-w-0">
               <motion.h1
-                initial={{ opacity: 0, x: -40 }}
-                animate={heroInView ? { opacity: 1, x: 0 } : {}}
-                transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+                initial={{ opacity: 0 }}
+                animate={heroInView ? { opacity: 1 } : {}}
+                transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
                 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-tight tracking-tight"
               >
                 {t('hero.headline')}
               </motion.h1>
 
               <motion.p
-                initial={{ opacity: 0, x: -30 }}
-                animate={heroInView ? { opacity: 1, x: 0 } : {}}
-                transition={{ duration: 0.9, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
+                initial={{ opacity: 0 }}
+                animate={heroInView ? { opacity: 1 } : {}}
+                transition={{ duration: 0.7, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
                 className="text-lg md:text-xl text-white/80 max-w-xl leading-relaxed"
               >
                 {t('hero.subheadline')}
