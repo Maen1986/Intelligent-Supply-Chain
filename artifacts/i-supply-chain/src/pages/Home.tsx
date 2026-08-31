@@ -295,7 +295,7 @@ function ConsultantCarousel({ heroInView, isAr = false }: { heroInView: boolean;
 
         {/* Image frame */}
         <div className="relative rounded-3xl overflow-hidden shadow-2xl ring-2 ring-white/20" style={{ width: '420px', height: '520px' }}>
-          <AnimatePresence custom={direction} mode="wait">
+          <AnimatePresence custom={direction} initial={false}>
             <motion.img
               key={active}
               custom={direction}
@@ -303,7 +303,7 @@ function ConsultantCarousel({ heroInView, isAr = false }: { heroInView: boolean;
               initial="enter"
               animate="center"
               exit="exit"
-              transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+              transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
               src={consultants[active].src}
               alt={consultants[active].alt}
               className="absolute inset-0 w-full h-full object-cover"
@@ -312,13 +312,13 @@ function ConsultantCarousel({ heroInView, isAr = false }: { heroInView: boolean;
           </AnimatePresence>
 
           {/* Name tag overlay */}
-          <AnimatePresence mode="wait">
+          <AnimatePresence initial={false}>
             <motion.div
               key={`label-${active}`}
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.35 }}
+              transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
               className="absolute top-4 right-4 bg-white/15 backdrop-blur-md rounded-xl px-3 py-1.5 text-white"
             >
               <p className="text-xs font-medium text-white/70">{isAr ? consultants[active].sublabelAr : consultants[active].sublabel}</p>
