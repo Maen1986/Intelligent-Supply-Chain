@@ -118,13 +118,17 @@ export function Header() {
   const dropItemCls = 'flex items-center gap-2 px-5 py-2.5 text-[14px] font-medium text-gray-700 hover:bg-primary/5 hover:text-primary transition-colors';
 
   return (
-    <header className={`sticky top-0 z-50 w-full transition-all duration-200 bg-[#0B3D91] ${scrolled ? 'shadow-lg' : 'shadow-md'} border-b border-white/10`}>
+    <header className={`sticky top-0 z-50 w-full transition-all duration-200 bg-[#082C6B] ${scrolled ? 'shadow-lg' : 'shadow-md'} border-b border-white/10`}>
 
       {/* ── Single, narrower header row -- owner's call (31 Aug 2026): merge the
           two stacked bars (navy utility strip + white nav row) into one bar,
           with the phone/account/language items folded in on the right next
           to the CTA instead of stacked above it. ── */}
-      <div className="container mx-auto px-4 h-16 flex items-center justify-between gap-4">
+      {/* w-full (not the centered `container`) so the logo and CTA cluster
+          sit near the bar's actual left/right edges on wide viewports,
+          instead of being capped by container's max-width with unused
+          navy margin on both sides -- reported live via screenshot. */}
+      <div className="w-full px-4 sm:px-6 lg:px-10 h-16 flex items-center justify-between gap-4">
         <div className="flex items-center gap-3 shrink-0">
           {/* Chip height (44px logo + 8px padding = 52px) is kept well under
               the header's own h-16 (64px) bar so it never pokes out past the
