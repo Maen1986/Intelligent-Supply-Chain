@@ -318,6 +318,14 @@ function HeroCarouselImage({ active, heroInView, maxWidthPx }: { active: number;
 // on resize/orientation-change so it stays correct if the window is resized.
 function useHeroImageMaxWidth(sectionRef: React.RefObject<HTMLElement | null>) {
   const [maxWidthPx, setMaxWidthPx] = useState(1700);
+  // Hard cap on the SECTION's own height, in addition to the image width
+  // above. This is the backstop: even if the width/aspect-ratio math is off
+  // by a few px on some browser/zoom/logged-in-nav combination we haven't
+  // hit yet, the section itself physically cannot grow past this height --
+  // overflow is clipped, not pushed into a scrollbar. Zero-scroll becomes
+  // guaranteed by construction, not just by an (however carefully) computed
+  // width.
+  const [maxSectionHeightPx, setMaxSectionHeightPx] = useState(2000);
 
   useEffect(() => {
     function measure() {
@@ -333,6 +341,9 @@ function useHeroImageMaxWidth(sectionRef: React.RefObject<HTMLElement | null>) {
       const availableWidth = Math.min(window.innerWidth * 0.94, 1700);
       const widthThatFitsHeight = availableHeight * (920 / 614);
       setMaxWidthPx(Math.max(280, Math.min(availableWidth, widthThatFitsHeight)));
+      // The section itself may never exceed the real remaining viewport
+      // space (down to the same breathing room used above).
+      setMaxSectionHeightPx(Math.max(240, window.innerHeight - top));
     }
     measure();
     window.addEventListener('resize', measure);
@@ -364,7 +375,7 @@ function useHeroImageMaxWidth(sectionRef: React.RefObject<HTMLElement | null>) {
     };
   }, [sectionRef]);
 
-  return maxWidthPx;
+  return { maxWidthPx, maxSectionHeightPx };
 }
 
 // Badge + dot indicators -- lives in the flat section below the photo, "attached"
@@ -617,7 +628,7 @@ export function Home() {
   const heroRef = useRef<HTMLElement>(null);
   const heroInView = useInView(heroRef, { once: true });
   const { active: heroActive, goTo: heroGoTo } = useHeroCarousel();
-  const heroImgMaxWidth = useHeroImageMaxWidth(heroRef);
+  const { maxWidthPx: heroImgMaxWidth, maxSectionHeightPx: heroMaxSectionHeight } = useHeroImageMaxWidth(heroRef);
 
   return (
     <div className="w-full flex flex-col min-h-screen">
@@ -626,6 +637,7 @@ export function Home() {
       <section
         ref={heroRef}
         className="relative w-full bg-gradient-to-br from-[#0B3D91] to-[#082C6B] text-white overflow-hidden flex items-center justify-center"
+        style={{ maxHeight: `${heroMaxSectionHeight}px` }}
       >
         {/* Full-bleed background photo */}
         <div
