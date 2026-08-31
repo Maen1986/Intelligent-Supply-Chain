@@ -270,7 +270,7 @@ function ConsultantCarousel({ heroInView, isAr = false }: { heroInView: boolean;
       transition={{ duration: 1, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
       className="hidden lg:flex flex-col items-center w-full"
     >
-      <div className="relative w-full" style={{ maxWidth: '720px' }}>
+      <div className="relative w-full" style={{ maxWidth: '840px' }}>
         {/* Gold glow */}
         <div className="absolute -inset-4 rounded-3xl bg-accent/20 blur-2xl pointer-events-none" />
 
@@ -559,8 +559,8 @@ export function Home() {
         <Orb size={320} color="rgba(201,168,76,0.15)" x="55%" y="-5%" duration={9} delay={0} />
         <Orb size={200} color="rgba(201,168,76,0.10)" x="75%" y="55%" duration={12} delay={2} />
 
-        <div className="container mx-auto px-4 relative z-10 flex items-center">
-          <div className="grid lg:grid-cols-2 gap-12 items-center w-full py-20">
+        <div className="mx-auto px-4 relative z-10 flex items-center w-full" style={{ maxWidth: '1600px' }}>
+          <div className="grid lg:grid-cols-[1fr_1.15fr] gap-10 items-center w-full py-20">
 
             {/* Left — text */}
             <div className="space-y-8">
