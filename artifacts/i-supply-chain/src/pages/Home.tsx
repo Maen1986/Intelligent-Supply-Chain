@@ -249,7 +249,10 @@ const heroSlides = [
   { src: '/brand/hero-service-risk.jpg?v=1', alt: 'ISC Supply Chain Resiliency & Risk', label: 'SC Resiliency & Risk', labelAr: 'مرونة سلسلة الإمداد وإدارة المخاطر' },
 ];
 
-function ConsultantCarousel({ heroInView, isAr = false }: { heroInView: boolean; isAr?: boolean }) {
+// Shared slide-rotation state, lifted out so the image (in the full-bleed
+// photo section) and the badge/dots (in the flat section below) can stay in
+// sync without nesting one inside the other.
+function useHeroCarousel() {
   const [active, setActive] = useState(0);
 
   const next = useCallback(() => {
@@ -263,22 +266,28 @@ function ConsultantCarousel({ heroInView, isAr = false }: { heroInView: boolean;
 
   const goTo = (i: number) => setActive(i);
 
+  return { active, goTo };
+}
+
+// The presentation image itself -- this is the ONLY thing in the photo hero
+// section, sized so the whole slide is visible on load with no scrolling.
+function HeroCarouselImage({ active, heroInView }: { active: number; heroInView: boolean }) {
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.97 }}
       animate={heroInView ? { opacity: 1, scale: 1 } : {}}
       transition={{ duration: 0.8, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
-      className="flex flex-col items-center w-full"
+      className="relative w-full flex items-center justify-center"
       style={{ maxWidth: '1700px' }}
     >
-      <div className="relative w-full">
+      <div className="relative" style={{ height: 'min(62vh, 720px)', width: '100%', maxWidth: 'min(1700px, 62vh * 920 / 614)' }}>
         {/* Gold glow */}
         <div className="absolute -inset-4 rounded-3xl bg-accent/20 blur-2xl pointer-events-none" />
 
         {/* Image frame */}
         <div
-          className="relative w-full rounded-3xl overflow-hidden shadow-2xl ring-2 ring-white/20"
-          style={{ aspectRatio: '920 / 614', clipPath: 'inset(0 round 1.5rem)', WebkitClipPath: 'inset(0 round 1.5rem)' }}
+          className="relative w-full h-full rounded-3xl overflow-hidden shadow-2xl ring-2 ring-white/20"
+          style={{ clipPath: 'inset(0 round 1.5rem)', WebkitClipPath: 'inset(0 round 1.5rem)' }}
         >
           <AnimatePresence initial={false}>
             <motion.img
@@ -289,15 +298,22 @@ function ConsultantCarousel({ heroInView, isAr = false }: { heroInView: boolean;
               transition={{ opacity: { duration: 1.4, ease: [0.4, 0, 0.2, 1] }, scale: { duration: 15, ease: 'linear' } }}
               src={heroSlides[active].src}
               alt={heroSlides[active].alt}
-              className="absolute inset-0 w-full h-full object-cover"
+              className="absolute inset-0 w-full h-full object-contain"
               style={{ objectPosition: 'center center' }}
             />
           </AnimatePresence>
         </div>
       </div>
+    </motion.div>
+  );
+}
 
-      {/* AI badge — sits below the image, never overlapping the artwork */}
-      <div className="mt-5 bg-white rounded-2xl shadow-xl px-5 py-3 flex items-center gap-3">
+// Badge + dot indicators -- lives in the flat section below the photo, "attached"
+// to (but visually separate from) the presentation above it.
+function HeroCarouselControls({ active, goTo, isAr = false }: { active: number; goTo: (i: number) => void; isAr?: boolean }) {
+  return (
+    <div className="flex flex-col items-center">
+      <div className="bg-white rounded-2xl shadow-xl px-5 py-3 flex items-center gap-3">
         <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center shrink-0">
           <Cpu className="w-5 h-5 text-white" />
         </div>
@@ -307,7 +323,6 @@ function ConsultantCarousel({ heroInView, isAr = false }: { heroInView: boolean;
         </div>
       </div>
 
-      {/* Dot indicators */}
       <div className="mt-5 flex gap-2">
         {heroSlides.map((_, i) => (
           <button
@@ -318,7 +333,7 @@ function ConsultantCarousel({ heroInView, isAr = false }: { heroInView: boolean;
           />
         ))}
       </div>
-    </motion.div>
+    </div>
   );
 }
 
@@ -542,14 +557,16 @@ export function Home() {
   // Hero headline stagger
   const heroRef = useRef(null);
   const heroInView = useInView(heroRef, { once: true });
+  const { active: heroActive, goTo: heroGoTo } = useHeroCarousel();
 
   return (
     <div className="w-full flex flex-col min-h-screen">
 
-      {/* ── Hero ─────────────────────────────────────────────────────────── */}
+      {/* ── Hero: photo slide, full presentation visible on load, nothing else in this section ── */}
       <section
         ref={heroRef}
-        className="relative w-full bg-gradient-to-br from-[#0B3D91] to-[#082C6B] text-white overflow-hidden"
+        className="relative w-full bg-gradient-to-br from-[#0B3D91] to-[#082C6B] text-white overflow-hidden flex items-center justify-center"
+        style={{ minHeight: 'calc(100svh - 108px)' }}
       >
         {/* Full-bleed background photo */}
         <div
@@ -563,55 +580,60 @@ export function Home() {
         <Orb size={320} color="rgba(201,168,76,0.15)" x="55%" y="-5%" duration={9} delay={0} />
         <Orb size={200} color="rgba(201,168,76,0.10)" x="75%" y="55%" duration={12} delay={2} />
 
-        <div className="mx-auto px-4 relative z-10 w-full" style={{ maxWidth: '1800px' }}>
-          <div className="flex flex-col items-center w-full py-16 gap-8 text-center">
+        <div className="mx-auto px-4 relative z-10 w-full flex flex-col items-center py-8" style={{ maxWidth: '1800px' }}>
+          {/* Headline kept for SEO/accessibility (heading hierarchy), hidden visually per design */}
+          <h1 className="sr-only">{t('hero.headline')}</h1>
 
-            {/* Headline kept for SEO/accessibility (heading hierarchy), hidden visually per design */}
-            <h1 className="sr-only">{t('hero.headline')}</h1>
+          {/* The full presentation slide -- sized to fit the first screen, no scroll needed */}
+          <HeroCarouselImage active={heroActive} heroInView={heroInView} />
+        </div>
+      </section>
 
-            {/* Wide, presentation-style consultant carousel — now the primary hero visual */}
-            <ConsultantCarousel heroInView={heroInView} isAr={isAr} />
+      {/* ── Flat section: badge/dots + copy + CTAs, "attached" below the presentation ── */}
+      <section className="w-full bg-[#082C6B] py-12 text-white text-center">
+        <div className="mx-auto px-4 flex flex-col items-center gap-6" style={{ maxWidth: '760px' }}>
 
-            {/* Subheadline — sits below the carousel */}
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={heroInView ? { opacity: 1 } : {}}
-              transition={{ duration: 0.7, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
-              className="text-lg md:text-xl text-white/80 max-w-2xl leading-relaxed"
-            >
-              {t('hero.subheadline')}
-            </motion.p>
+          <HeroCarouselControls active={heroActive} goTo={heroGoTo} isAr={isAr} />
 
-            {/* CTA buttons — immediately below the subheadline */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={heroInView ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 0.8, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
-              className="flex flex-col sm:flex-row gap-3 justify-center"
-            >
-              <Link href="/diagnostic">
-                <Button size="lg" className="w-full sm:w-auto bg-accent hover:bg-accent/90 text-white font-bold px-8 shadow-lg min-h-[52px] text-base">
-                  {t('hero.ctaPrimary')}
-                </Button>
-              </Link>
-              <Link href="/consultant">
-                <Button size="lg" variant="outline" className="w-full sm:w-auto border-white/70 text-white hover:bg-white hover:text-primary font-bold px-8 min-h-[52px] text-base">
-                  {t('hero.ctaSecondary')}
-                </Button>
-              </Link>
-            </motion.div>
+          {/* Subheadline */}
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={heroInView ? { opacity: 1 } : {}}
+            transition={{ duration: 0.7, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
+            className="text-lg md:text-xl text-white/80 max-w-2xl leading-relaxed"
+          >
+            {t('hero.subheadline')}
+          </motion.p>
 
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={heroInView ? { opacity: 1 } : {}}
-              transition={{ duration: 0.8, delay: 0.5 }}
-            >
-              <Link href="/csr" className="text-sm text-white/60 hover:text-accent underline underline-offset-4 font-medium inline-flex items-center gap-1 transition-colors">
-                {t('hero.ctaTertiary')} <ArrowRight className="w-3 h-3 rtl:rotate-180" />
-              </Link>
-            </motion.div>
+          {/* CTA buttons — immediately below the subheadline */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={heroInView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.8, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
+            className="flex flex-col sm:flex-row gap-3 justify-center"
+          >
+            <Link href="/diagnostic">
+              <Button size="lg" className="w-full sm:w-auto bg-accent hover:bg-accent/90 text-white font-bold px-8 shadow-lg min-h-[52px] text-base">
+                {t('hero.ctaPrimary')}
+              </Button>
+            </Link>
+            <Link href="/consultant">
+              <Button size="lg" variant="outline" className="w-full sm:w-auto border-white/70 text-white hover:bg-white hover:text-primary font-bold px-8 min-h-[52px] text-base">
+                {t('hero.ctaSecondary')}
+              </Button>
+            </Link>
+          </motion.div>
 
-          </div>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={heroInView ? { opacity: 1 } : {}}
+            transition={{ duration: 0.8, delay: 0.5 }}
+          >
+            <Link href="/csr" className="text-sm text-white/60 hover:text-accent underline underline-offset-4 font-medium inline-flex items-center gap-1 transition-colors">
+              {t('hero.ctaTertiary')} <ArrowRight className="w-3 h-3 rtl:rotate-180" />
+            </Link>
+          </motion.div>
+
         </div>
       </section>
 
