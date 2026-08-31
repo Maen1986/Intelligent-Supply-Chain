@@ -110,23 +110,23 @@ describe('Header — auth-driven user name display', () => {
 
   // ── Guest baseline ─────────────────────────────────────────────────────
 
-  it('shows "Sign In / Register" when no user is logged in', () => {
+  it('shows "Sign In" when no user is logged in', () => {
     const ref = { current: null } as React.MutableRefObject<((v: boolean) => void) | null>;
     render(<HeaderAuthHarness initialAuth={false} onFlipRef={ref} />);
 
-    expect(screen.getByText('Sign In / Register')).toBeTruthy();
+    expect(screen.getByText('Sign In')).toBeTruthy();
     // User first name must NOT appear
     expect(screen.queryByText('Alice')).toBeNull();
   });
 
   // ── Authenticated baseline ─────────────────────────────────────────────
 
-  it('shows the user first name and hides "Sign In / Register" when already logged in', () => {
+  it('shows the user first name and hides "Sign In" when already logged in', () => {
     const ref = { current: null } as React.MutableRefObject<((v: boolean) => void) | null>;
     render(<HeaderAuthHarness initialAuth={true} onFlipRef={ref} />);
 
     expect(screen.getByText('Alice')).toBeTruthy();
-    expect(screen.queryByText('Sign In / Register')).toBeNull();
+    expect(screen.queryByText('Sign In')).toBeNull();
   });
 
   // ── Login transition ───────────────────────────────────────────────────
@@ -136,7 +136,7 @@ describe('Header — auth-driven user name display', () => {
     render(<HeaderAuthHarness initialAuth={false} onFlipRef={ref} />);
 
     // Verify initial guest state
-    expect(screen.getByText('Sign In / Register')).toBeTruthy();
+    expect(screen.getByText('Sign In')).toBeTruthy();
     expect(screen.queryByText('Alice')).toBeNull();
 
     // Simulate login: equivalent to login() → setUser(data.user) in AuthContext
@@ -144,7 +144,7 @@ describe('Header — auth-driven user name display', () => {
 
     // Header must update immediately without unmount/remount
     expect(screen.getByText('Alice')).toBeTruthy();
-    expect(screen.queryByText('Sign In / Register')).toBeNull();
+    expect(screen.queryByText('Sign In')).toBeNull();
   });
 
   // ── Logout transition ──────────────────────────────────────────────────
@@ -155,13 +155,13 @@ describe('Header — auth-driven user name display', () => {
 
     // Verify initial authenticated state
     expect(screen.getByText('Alice')).toBeTruthy();
-    expect(screen.queryByText('Sign In / Register')).toBeNull();
+    expect(screen.queryByText('Sign In')).toBeNull();
 
     // Simulate logout: equivalent to logout() → setUser(null) in AuthContext
     await act(async () => { ref.current!(false); });
 
     // Header must return to guest state immediately
-    expect(screen.getByText('Sign In / Register')).toBeTruthy();
+    expect(screen.getByText('Sign In')).toBeTruthy();
     expect(screen.queryByText('Alice')).toBeNull();
   });
 
@@ -170,6 +170,9 @@ describe('Header — auth-driven user name display', () => {
   it('renders a "Sign out" control when the user is authenticated', () => {
     const ref = { current: null } as React.MutableRefObject<((v: boolean) => void) | null>;
     render(<HeaderAuthHarness initialAuth={true} onFlipRef={ref} />);
+
+    // "Sign out" now lives inside the desktop account dropdown -- open it first
+    act(() => { fireEvent.click(screen.getByText('Alice').closest('button')!); });
 
     expect(screen.getByText('Sign out')).toBeTruthy();
   });
@@ -183,30 +186,30 @@ describe('Header — auth-driven user name display', () => {
 
   // ── Loading placeholder ────────────────────────────────────────────────
 
-  it('shows a placeholder and hides "Sign In / Register" while loading', () => {
+  it('shows a placeholder and hides "Sign In" while loading', () => {
     const ref = { current: null } as React.MutableRefObject<((v: boolean) => void) | null>;
     render(<HeaderAuthHarness initialAuth={false} onFlipRef={ref} initialLoading={true} />);
 
     // Placeholder must be visible
     expect(screen.getByTestId('auth-loading-placeholder')).toBeTruthy();
     // Guest link must NOT flash during loading
-    expect(screen.queryByText('Sign In / Register')).toBeNull();
+    expect(screen.queryByText('Sign In')).toBeNull();
     // User name must not appear either
     expect(screen.queryByText('Alice')).toBeNull();
   });
 
-  it('shows "Sign In / Register" after loading resolves with no session', async () => {
+  it('shows "Sign In" after loading resolves with no session', async () => {
     const ref = { current: null } as React.MutableRefObject<((v: boolean) => void) | null>;
     const loadingRef = { current: null } as React.MutableRefObject<((v: boolean) => void) | null>;
     render(<HeaderAuthHarness initialAuth={false} onFlipRef={ref} initialLoading={true} onSetLoadingRef={loadingRef} />);
 
     // Still loading — no Sign In link
-    expect(screen.queryByText('Sign In / Register')).toBeNull();
+    expect(screen.queryByText('Sign In')).toBeNull();
 
     // Session check finishes: no user
     await act(async () => { loadingRef.current!(false); });
 
-    expect(screen.getByText('Sign In / Register')).toBeTruthy();
+    expect(screen.getByText('Sign In')).toBeTruthy();
     expect(screen.queryByTestId('auth-loading-placeholder')).toBeNull();
   });
 
@@ -217,13 +220,13 @@ describe('Header — auth-driven user name display', () => {
 
     // Still loading — no name yet
     expect(screen.queryByText('Alice')).toBeNull();
-    expect(screen.queryByText('Sign In / Register')).toBeNull();
+    expect(screen.queryByText('Sign In')).toBeNull();
 
     // Session check finishes: user is authenticated
     await act(async () => { loadingRef.current!(false); });
 
     expect(screen.getByText('Alice')).toBeTruthy();
-    expect(screen.queryByText('Sign In / Register')).toBeNull();
+    expect(screen.queryByText('Sign In')).toBeNull();
     expect(screen.queryByTestId('auth-loading-placeholder')).toBeNull();
   });
 });

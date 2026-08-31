@@ -48,10 +48,12 @@ export function Header() {
   const [servicesOpen, setServicesOpen] = useState(false);
   const [industriesOpen, setIndustriesOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
   const [location] = useLocation();
 
   const servicesRef = useRef<HTMLDivElement>(null);
   const industriesRef = useRef<HTMLDivElement>(null);
+  const accountRef = useRef<HTMLDivElement>(null);
 
   const toggleLanguage = () => setLang(lang === 'en' ? 'ar' : 'en');
 
@@ -65,12 +67,14 @@ export function Header() {
     setServicesOpen(false);
     setIndustriesOpen(false);
     setMobileMenuOpen(false);
+    setAccountOpen(false);
   }, [location]);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (servicesRef.current && !servicesRef.current.contains(e.target as Node)) setServicesOpen(false);
       if (industriesRef.current && !industriesRef.current.contains(e.target as Node)) setIndustriesOpen(false);
+      if (accountRef.current && !accountRef.current.contains(e.target as Node)) setAccountOpen(false);
     }
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
@@ -116,68 +120,11 @@ export function Header() {
   return (
     <header className={`sticky top-0 z-50 w-full transition-all duration-200 ${scrolled ? 'bg-white shadow-lg border-b border-border' : 'bg-white shadow-md border-b border-border'}`}>
 
-      {/* ── Top utility bar ── */}
-      <div className="hidden lg:flex items-center justify-end gap-6 px-6 py-1.5 bg-[#082C6B] text-white text-[12px] font-medium">
-        <a href="tel:+966549479722" className="flex items-center gap-1.5 hover:text-[#C9A84C] transition-colors">
-          <Phone className="w-3 h-3" /> +966 549 479 722
-        </a>
-        <span className="text-white/40">|</span>
-        {loading ? (
-          <span data-testid="auth-loading-placeholder" className="w-24 h-3 rounded bg-white/20 animate-pulse inline-block" />
-        ) : user ? (
-          <div className="flex items-center gap-3">
-            <span className="flex items-center gap-1.5 text-white/80">
-              <User className="w-3 h-3" /> {user.fullName.split(' ')[0]}
-            </span>
-            {user.role === 'admin' && (
-              <Link href="/admin" className="flex items-center gap-1 hover:text-[#C9A84C] transition-colors">
-                <LayoutDashboard className="w-3 h-3" /> {lang === 'ar' ? 'لوحة الإدارة' : 'Admin'}
-              </Link>
-            )}
-            <Link href="/brief" className="flex items-center gap-1 hover:text-[#C9A84C] transition-colors">
-              <Newspaper className="w-3 h-3" /> {lang === 'ar' ? 'ملخصك' : 'Your Brief'}
-            </Link>
-            <Link href="/workbench" className="flex items-center gap-1 hover:text-[#C9A84C] transition-colors">
-              <LayoutGrid className="w-3 h-3" /> {lang === 'ar' ? 'مساحة عملي' : 'My Workbench'}
-            </Link>
-            <Link href="/problem-map" className="flex items-center gap-1 hover:text-[#C9A84C] transition-colors">
-              <MapIcon className="w-3 h-3" /> {lang === 'ar' ? 'خريطة المشكلات' : 'Problem Map'}
-            </Link>
-            <Link href="/industry-benchmark" className="flex items-center gap-1 hover:text-[#C9A84C] transition-colors">
-              <BarChart3 className="w-3 h-3" /> {lang === 'ar' ? 'مقارنة القطاع' : 'Benchmark'}
-            </Link>
-            <Link href="/my-assessments" className="flex items-center gap-1 hover:text-[#C9A84C] transition-colors">
-              <ClipboardList className="w-3 h-3" /> {lang === 'ar' ? 'تقييماتي' : 'My Assessments'}
-            </Link>
-            <Link href="/action-tracker" className="flex items-center gap-1 hover:text-[#C9A84C] transition-colors">
-              <ListChecks className="w-3 h-3" /> {lang === 'ar' ? 'خطة العمل' : 'Action Tracker'}
-            </Link>
-            <Link href="/roi-waterfall" className="flex items-center gap-1 hover:text-[#C9A84C] transition-colors">
-              <Waves className="w-3 h-3" /> {lang === 'ar' ? 'تحقيق القيمة' : 'Value Realization'}
-            </Link>
-            <Link href="/decision-memory" className="flex items-center gap-1 hover:text-[#C9A84C] transition-colors">
-              <BookOpen className="w-3 h-3" /> {lang === 'ar' ? 'ذاكرة القرار' : 'Decision Memory'}
-            </Link>
-            <Link href="/account" className="flex items-center gap-1 hover:text-[#C9A84C] transition-colors">
-              <Settings className="w-3 h-3" /> {lang === 'ar' ? 'إعدادات الحساب' : 'Account'}
-            </Link>
-            <ScopedCommandBar />
-            <NotificationsBell lang={lang} />
-            <button onClick={logout} className="flex items-center gap-1 hover:text-[#C9A84C] transition-colors">
-              <LogOut className="w-3 h-3" /> {lang === 'ar' ? 'تسجيل الخروج' : 'Sign out'}
-            </button>
-          </div>
-        ) : (
-          <Link href="/login" className="hover:text-[#C9A84C] transition-colors font-semibold">{lang === 'ar' ? 'تسجيل الدخول / إنشاء حساب' : 'Sign In / Register'}</Link>
-        )}
-        <span className="text-white/40">|</span>
-        <button onClick={toggleLanguage} className="hover:text-[#C9A84C] transition-colors font-semibold tracking-wide">
-          {lang === 'en' ? 'عربي' : 'English'}
-        </button>
-      </div>
-
-      {/* ── Main header row ── */}
-      <div className="container mx-auto px-4 h-[68px] flex items-center justify-between gap-4">
+      {/* ── Single, narrower header row -- owner's call (31 Aug 2026): merge the
+          two stacked bars (navy utility strip + white nav row) into one bar,
+          with the phone/account/language items folded in on the right next
+          to the CTA instead of stacked above it. ── */}
+      <div className="container mx-auto px-4 h-16 flex items-center justify-between gap-4">
         <div className="flex items-center gap-2 shrink-0">
           <Logo />
           <PilotStatusBadge lang={lang} className="hidden sm:inline-flex" />
@@ -257,10 +204,85 @@ export function Header() {
 
         </nav>
 
-        {/* ── Desktop CTA ── */}
-        <div className="hidden lg:flex items-center shrink-0">
+        {/* ── Desktop utility + CTA cluster -- everything that used to live in
+            the separate navy bar now sits here, condensed, on one line ── */}
+        <div className="hidden lg:flex items-center gap-3 shrink-0">
+          <a href="tel:+966549479722" title="+966 549 479 722" className="flex items-center gap-1.5 text-gray-500 hover:text-primary transition-colors text-[13px] font-medium">
+            <Phone className="w-3.5 h-3.5" />
+            <span className="hidden xl:inline">+966 549 479 722</span>
+          </a>
+
+          {loading ? (
+            <span data-testid="auth-loading-placeholder" className="w-20 h-3 rounded bg-muted animate-pulse inline-block" />
+          ) : user ? (
+            <div className="flex items-center gap-2">
+              <ScopedCommandBar />
+              <NotificationsBell lang={lang} />
+              <div ref={accountRef} className="relative">
+                <button
+                  onClick={() => setAccountOpen(v => !v)}
+                  className={`flex items-center gap-1.5 text-[13px] font-semibold px-2.5 py-1.5 rounded-lg transition-colors ${accountOpen ? 'text-primary bg-primary/8' : 'text-gray-700 hover:text-primary hover:bg-primary/5'}`}
+                >
+                  <User className="w-3.5 h-3.5" /> {user.fullName.split(' ')[0]}
+                  <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${accountOpen ? 'rotate-180' : ''}`} />
+                </button>
+                {accountOpen && (
+                  <div className={dropdownCls} style={{ minWidth: 220 }}>
+                    {user.role === 'admin' && (
+                      <Link href="/admin" className={dropItemCls} onClick={() => setAccountOpen(false)}>
+                        <LayoutDashboard className="w-4 h-4" /> {lang === 'ar' ? 'لوحة الإدارة' : 'Admin Dashboard'}
+                      </Link>
+                    )}
+                    <Link href="/brief" className={dropItemCls} onClick={() => setAccountOpen(false)}>
+                      <Newspaper className="w-4 h-4" /> {lang === 'ar' ? 'ملخصك' : 'Your Brief'}
+                    </Link>
+                    <Link href="/workbench" className={dropItemCls} onClick={() => setAccountOpen(false)}>
+                      <LayoutGrid className="w-4 h-4" /> {lang === 'ar' ? 'مساحة عملي' : 'My Workbench'}
+                    </Link>
+                    <Link href="/problem-map" className={dropItemCls} onClick={() => setAccountOpen(false)}>
+                      <MapIcon className="w-4 h-4" /> {lang === 'ar' ? 'خريطة المشكلات' : 'Problem Map'}
+                    </Link>
+                    <Link href="/industry-benchmark" className={dropItemCls} onClick={() => setAccountOpen(false)}>
+                      <BarChart3 className="w-4 h-4" /> {lang === 'ar' ? 'مقارنة القطاع' : 'Benchmark'}
+                    </Link>
+                    <Link href="/my-assessments" className={dropItemCls} onClick={() => setAccountOpen(false)}>
+                      <ClipboardList className="w-4 h-4" /> {lang === 'ar' ? 'تقييماتي' : 'My Assessments'}
+                    </Link>
+                    <Link href="/action-tracker" className={dropItemCls} onClick={() => setAccountOpen(false)}>
+                      <ListChecks className="w-4 h-4" /> {lang === 'ar' ? 'خطة العمل' : 'Action Tracker'}
+                    </Link>
+                    <Link href="/roi-waterfall" className={dropItemCls} onClick={() => setAccountOpen(false)}>
+                      <Waves className="w-4 h-4" /> {lang === 'ar' ? 'تحقيق القيمة' : 'Value Realization'}
+                    </Link>
+                    <Link href="/decision-memory" className={dropItemCls} onClick={() => setAccountOpen(false)}>
+                      <BookOpen className="w-4 h-4" /> {lang === 'ar' ? 'ذاكرة القرار' : 'Decision Memory'}
+                    </Link>
+                    <Link href="/account" className={dropItemCls} onClick={() => setAccountOpen(false)}>
+                      <Settings className="w-4 h-4" /> {lang === 'ar' ? 'إعدادات الحساب' : 'Account Settings'}
+                    </Link>
+                    <div className="border-t border-border my-1" />
+                    <button
+                      onClick={() => { setAccountOpen(false); logout(); }}
+                      className={`${dropItemCls} w-full text-left`}
+                    >
+                      <LogOut className="w-4 h-4" /> {lang === 'ar' ? 'تسجيل الخروج' : 'Sign out'}
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <Link href="/login" className="text-[13px] font-semibold text-gray-700 hover:text-primary transition-colors">
+              {lang === 'ar' ? 'تسجيل الدخول' : 'Sign In'}
+            </Link>
+          )}
+
+          <button onClick={toggleLanguage} className="text-[13px] font-bold text-gray-500 hover:text-primary transition-colors tracking-wide">
+            {lang === 'en' ? 'عربي' : 'EN'}
+          </button>
+
           <Link href="/consultant">
-            <Button className="bg-[#C9A84C] hover:bg-[#b8963e] text-white font-bold px-6 py-2.5 text-[15px] rounded-xl shadow-md hover:shadow-lg transition-all">
+            <Button className="bg-[#C9A84C] hover:bg-[#b8963e] text-white font-bold px-5 py-2 text-[14px] rounded-xl shadow-md hover:shadow-lg transition-all">
               {lang === 'ar' ? 'احجز استشارة' : 'Book a Consultation'}
             </Button>
           </Link>

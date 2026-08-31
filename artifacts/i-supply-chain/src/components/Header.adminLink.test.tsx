@@ -84,12 +84,17 @@ beforeEach(() => {
    Suite 1 — Admin user: link is visible
 ══════════════════════════════════════════════════════════════════════════════ */
 describe('Header — Admin link, admin user', () => {
-  it('renders the Admin link in the desktop utility bar', async () => {
+  it('renders the Admin link in the desktop account dropdown', async () => {
     mockUseAuth.mockReturnValue({ user: ADMIN_USER, isAuthenticated: true, loading: false, logout: mockLogout });
     const Header = await getHeader();
     render(<Header />);
 
-    // The desktop bar renders an anchor pointing to /admin
+    // The desktop account links (Admin among them) now live inside the
+    // condensed Account dropdown -- open it via the "Alice" account button.
+    const accountBtn = screen.getByRole('button', { name: /alice/i });
+    await act(async () => { fireEvent.click(accountBtn); });
+
+    // The dropdown renders an anchor pointing to /admin
     const adminLinks = screen.getAllByRole('link', { name: /admin/i });
     expect(adminLinks.length).toBeGreaterThanOrEqual(1);
     expect(adminLinks.some(el => (el as HTMLAnchorElement).href.includes('/admin'))).toBe(true);
@@ -125,11 +130,15 @@ describe('Header — Admin link disappears on logout without a page reload', () 
 
     render(<AuthController />);
 
+    // Open the desktop account dropdown via the "Alice" account button
+    const accountBtn = screen.getByRole('button', { name: /alice/i });
+    await act(async () => { fireEvent.click(accountBtn); });
+
     // Before logout: Admin link must be present
     const before = screen.getAllByRole('link', { name: /admin/i });
     expect(before.some(el => (el as HTMLAnchorElement).href.includes('/admin'))).toBe(true);
 
-    // Click the desktop "Sign out" button
+    // Click the desktop "Sign out" button (inside the open dropdown)
     const signOutBtn = screen.getByRole('button', { name: /sign out/i });
     await act(async () => { fireEvent.click(signOutBtn); });
 

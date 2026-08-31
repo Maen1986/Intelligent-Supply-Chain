@@ -201,42 +201,6 @@ function StatCard({ value, suffix, label }: { value: number; suffix: string; lab
   );
 }
 
-// ─── Floating hero orb ───────────────────────────────────────────────────────
-function Orb({
-  size,
-  color,
-  x,
-  y,
-  duration,
-  delay = 0,
-}: {
-  size: number;
-  color: string;
-  x: string;
-  y: string;
-  duration: number;
-  delay?: number;
-}) {
-  return (
-    <motion.div
-      className="absolute rounded-full blur-3xl pointer-events-none"
-      style={{ width: size, height: size, background: color, left: x, top: y }}
-      animate={{
-        y: [0, -30, 0, 20, 0],
-        x: [0, 15, -10, 5, 0],
-        scale: [1, 1.06, 0.97, 1.03, 1],
-        opacity: [0.35, 0.5, 0.3, 0.45, 0.35],
-      }}
-      transition={{
-        duration,
-        delay,
-        repeat: Infinity,
-        ease: 'easeInOut',
-      }}
-    />
-  );
-}
-
 // ─── Hero service carousel ───────────────────────────────────────────────────
 const heroSlides = [
   { src: '/brand/hero-service-journey.jpg?v=1', alt: 'ISC Services — Our Journey', label: 'Our Services Journey', labelAr: 'رحلة خدماتنا' },
@@ -269,63 +233,56 @@ function useHeroCarousel() {
   return { active, goTo };
 }
 
-// The presentation image itself -- this is the ONLY thing in the photo hero
-// section. `maxWidthPx` is measured live from the actual rendered page (see
-// useHeroImageMaxWidth below), not guessed with vh units -- vh-based sizing
-// broke down on real windows where the height:width ratio and browser chrome
-// didn't match what was assumed, leaving the image both small AND clipped.
-function HeroCarouselImage({ active, heroInView, maxWidthPx }: { active: number; heroInView: boolean; maxWidthPx: number }) {
+// The presentation image itself -- a full-bleed layer that fills the entire
+// hero section (see useHeroSectionHeight below for how the section itself is
+// sized to the available viewport height with zero scroll).
+function HeroCarouselImage({ active, heroInView }: { active: number; heroInView: boolean }) {
+  // Owner's call (31 Aug 2026, third pass): no card frame, no rounded
+  // corners, no glow, no visible background peeking around the edges --
+  // the photo must be truly edge-to-edge: full viewport width AND full
+  // available height, filling the entire section exactly like the old
+  // backdrop-photo layer did. object-fit:cover crops into the photo's own
+  // edges as needed instead of showing ANY frame or background around it.
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.97 }}
-      animate={heroInView ? { opacity: 1, scale: 1 } : {}}
-      transition={{ duration: 0.8, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
-      className="relative w-full flex items-center justify-center"
+      initial={{ opacity: 0 }}
+      animate={heroInView ? { opacity: 1 } : {}}
+      transition={{ duration: 0.8, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
+      className="absolute inset-0"
     >
-      <div className="relative w-full" style={{ maxWidth: `${maxWidthPx}px`, aspectRatio: '920 / 614' }}>
-        {/* Gold glow */}
-        <div className="absolute -inset-4 rounded-3xl bg-accent/20 blur-2xl pointer-events-none" />
-
-        {/* Image frame */}
-        <div
-          className="relative w-full h-full rounded-3xl overflow-hidden shadow-2xl ring-2 ring-white/20"
-          style={{ clipPath: 'inset(0 round 1.5rem)', WebkitClipPath: 'inset(0 round 1.5rem)' }}
-        >
-          <AnimatePresence initial={false}>
-            <motion.img
-              key={active}
-              initial={{ opacity: 0, scale: 1.035 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 1 }}
-              transition={{ opacity: { duration: 1.4, ease: [0.4, 0, 0.2, 1] }, scale: { duration: 15, ease: 'linear' } }}
-              src={heroSlides[active].src}
-              alt={heroSlides[active].alt}
-              className="absolute inset-0 w-full h-full object-contain"
-              style={{ objectPosition: 'center center' }}
-            />
-          </AnimatePresence>
-        </div>
-      </div>
+      <AnimatePresence initial={false}>
+        <motion.img
+          key={active}
+          initial={{ opacity: 0, scale: 1.035 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 1 }}
+          transition={{ opacity: { duration: 1.4, ease: [0.4, 0, 0.2, 1] }, scale: { duration: 15, ease: 'linear' } }}
+          src={heroSlides[active].src}
+          alt={heroSlides[active].alt}
+          className="absolute inset-0 w-full h-full object-cover"
+          style={{ objectPosition: 'center center' }}
+        />
+      </AnimatePresence>
     </motion.div>
   );
 }
 
-// Measures the ACTUAL space available for the hero image on the real page --
-// viewport height minus whatever the sticky header + announcement banner are
-// really rendering at (not an assumed pixel offset), and viewport width minus
-// margins -- then returns the largest width (capped at 1700px) that lets the
-// 920:614 image fit both axes with zero cropping and zero scrolling. Re-runs
-// on resize/orientation-change so it stays correct if the window is resized.
-function useHeroImageMaxWidth(sectionRef: React.RefObject<HTMLElement | null>) {
-  // Owner's explicit call (31 Aug 2026): fill the full page width even if
-  // that means the image is taller than the viewport on shorter windows,
-  // requiring a small scroll to see the rest of it. This intentionally
-  // trades away the earlier "zero scroll" guarantee in exchange for the
-  // photo never being letterboxed/narrow on wide screens. maxSectionHeightPx
-  // is kept only as a very generous ceiling (never the binding constraint
-  // in normal use) so the section can never runaway-grow past a sane bound.
-  const [maxWidthPx, setMaxWidthPx] = useState(1700);
-  const [maxSectionHeightPx, setMaxSectionHeightPx] = useState(4000);
+// Measures the ACTUAL vertical space available for the hero section on the
+// real page -- viewport height minus whatever the sticky header is really
+// rendering at (not an assumed pixel offset) -- and returns that as the
+// section's own height. The section has no horizontal padding at all now,
+// so its width is always the full viewport width automatically; height is
+// the only thing that needs live measurement. Re-runs on resize/orientation
+// change so it stays correct if the window is resized.
+function useHeroSectionHeight(sectionRef: React.RefObject<HTMLElement | null>) {
+  // Owner's explicit call (31 Aug 2026, third pass): no card frame, no
+  // letterboxing, no visible background around the edges -- the photo must
+  // be truly full-bleed, edge-to-edge in BOTH directions, with zero scroll.
+  // Since the section is now edge-to-edge with no padding, its width is
+  // simply 100% of the viewport for free; only its height needs measuring,
+  // and HeroCarouselImage's object-fit:cover crops the photo to whatever
+  // that height/width box turns out to be.
+  const [sectionHeightPx, setSectionHeightPx] = useState(700);
 
   useEffect(() => {
     function measure() {
@@ -337,15 +294,8 @@ function useHeroImageMaxWidth(sectionRef: React.RefObject<HTMLElement | null>) {
       // current scroll offset back converts it to the hero's distance from
       // the TOP OF THE PAGE, which is invariant to scroll position.
       const topAtRest = el.getBoundingClientRect().top + window.scrollY;
-      // Width is now the ONLY driver -- fill almost the full viewport width
-      // (a small margin + a generous ceiling for ultra-wide monitors), and
-      // let height follow from the fixed aspect ratio, however tall that
-      // makes the section. No longer clamped by available viewport height.
-      const availableWidth = Math.min(window.innerWidth * 0.97, 2200);
-      setMaxWidthPx(Math.max(280, availableWidth));
-      // Generous ceiling only -- not meant to bind in normal use now that
-      // scroll is acceptable, just a sane upper bound.
-      setMaxSectionHeightPx(Math.max(600, window.innerHeight - topAtRest + 4000));
+      const availableHeight = window.innerHeight - topAtRest;
+      setSectionHeightPx(Math.max(320, availableHeight));
     }
     measure();
     window.addEventListener('resize', measure);
@@ -377,25 +327,19 @@ function useHeroImageMaxWidth(sectionRef: React.RefObject<HTMLElement | null>) {
     };
   }, [sectionRef]);
 
-  return { maxWidthPx, maxSectionHeightPx };
+  return { sectionHeightPx };
 }
 
 // Badge + dot indicators -- lives in the flat section below the photo, "attached"
 // to (but visually separate from) the presentation above it.
 function HeroCarouselControls({ active, goTo, isAr = false }: { active: number; goTo: (i: number) => void; isAr?: boolean }) {
+  // Owner's call (31 Aug 2026): the "AI-Powered / Supply Chain Expert" badge
+  // above the dots was removed -- it added no information the page doesn't
+  // already convey elsewhere (the section title + AI Control Tower widget),
+  // so it was just clutter attached to the carousel. Dots only, now.
   return (
     <div className="flex flex-col items-center">
-      <div className="bg-white rounded-2xl shadow-xl px-5 py-3 flex items-center gap-3">
-        <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center shrink-0">
-          <Cpu className="w-5 h-5 text-white" />
-        </div>
-        <div>
-          <p className="text-xs text-muted-foreground font-medium">{isAr ? 'مدعوم بالذكاء الاصطناعي' : 'AI-Powered'}</p>
-          <p className="text-sm font-bold text-primary">{isAr ? 'خبير سلسلة الإمداد' : 'Supply Chain Expert'}</p>
-        </div>
-      </div>
-
-      <div className="mt-5 flex gap-2">
+      <div className="flex gap-2">
         {heroSlides.map((_, i) => (
           <button
             key={i}
@@ -630,36 +574,25 @@ export function Home() {
   const heroRef = useRef<HTMLElement>(null);
   const heroInView = useInView(heroRef, { once: true });
   const { active: heroActive, goTo: heroGoTo } = useHeroCarousel();
-  const { maxWidthPx: heroImgMaxWidth, maxSectionHeightPx: heroMaxSectionHeight } = useHeroImageMaxWidth(heroRef);
+  const { sectionHeightPx: heroSectionHeight } = useHeroSectionHeight(heroRef);
 
   return (
     <div className="w-full flex flex-col min-h-screen">
 
-      {/* ── Hero: photo slide, full presentation visible on load, nothing else in this section ── */}
+      {/* ── Hero: full-bleed photo slide, edge-to-edge, nothing else in this section ── */}
       <section
         ref={heroRef}
-        className="relative w-full bg-gradient-to-br from-[#0B3D91] to-[#082C6B] text-white overflow-hidden flex items-center justify-center"
-        style={{ maxHeight: `${heroMaxSectionHeight}px` }}
+        className="relative w-full text-white overflow-hidden"
+        style={{ height: `${heroSectionHeight}px` }}
       >
-        {/* Full-bleed background photo */}
-        <div
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-          style={{ backgroundImage: "url('/brand/hero-port.jpg')" }}
-        />
-        {/* Dark overlay so text stays readable */}
-        <div className="absolute inset-0 bg-gradient-to-r from-[#082C6B]/95 via-[#0B3D91]/80 to-[#0B3D91]/30" />
+        {/* The full presentation slide -- true full-bleed, fills the entire
+            section (full viewport width + full available height, zero
+            scroll), no frame/border/rounding, cropping into the photo's own
+            edges via object-fit:cover instead of showing any background. */}
+        <HeroCarouselImage active={heroActive} heroInView={heroInView} />
 
-        {/* Animated orbs on top */}
-        <Orb size={320} color="rgba(201,168,76,0.15)" x="55%" y="-5%" duration={9} delay={0} />
-        <Orb size={200} color="rgba(201,168,76,0.10)" x="75%" y="55%" duration={12} delay={2} />
-
-        <div className="mx-auto px-4 relative z-10 w-full flex flex-col items-center py-4" style={{ maxWidth: '1800px' }}>
-          {/* Headline kept for SEO/accessibility (heading hierarchy), hidden visually per design */}
-          <h1 className="sr-only">{t('hero.headline')}</h1>
-
-          {/* The full presentation slide -- sized to fit the first screen, no scroll needed */}
-          <HeroCarouselImage active={heroActive} heroInView={heroInView} maxWidthPx={heroImgMaxWidth} />
-        </div>
+        {/* Headline kept for SEO/accessibility (heading hierarchy), hidden visually per design */}
+        <h1 className="sr-only">{t('hero.headline')}</h1>
       </section>
 
       {/* ── Flat section: badge/dots + copy + CTAs, "attached" below the presentation ── */}
