@@ -126,8 +126,13 @@ export function Header() {
           to the CTA instead of stacked above it. ── */}
       <div className="container mx-auto px-4 h-16 flex items-center justify-between gap-4">
         <div className="flex items-center gap-3 shrink-0">
-          <div className="bg-white rounded-xl px-2.5 py-1.5 shadow-sm">
-            <Logo />
+          {/* Chip height (44px logo + 8px padding = 52px) is kept well under
+              the header's own h-16 (64px) bar so it never pokes out past the
+              bar's top/bottom edge -- Logo's default 100px (used by
+              Footer/Csr/ReportOutput, which aren't height-constrained like
+              this) would overflow a 64px-tall container. */}
+          <div className="bg-white rounded-xl px-2.5 py-1 shadow-sm">
+            <Logo heightPx={44} />
           </div>
           <PilotStatusBadge lang={lang} className="hidden sm:inline-flex" />
         </div>
