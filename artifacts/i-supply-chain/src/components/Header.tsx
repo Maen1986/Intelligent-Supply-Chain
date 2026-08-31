@@ -221,8 +221,8 @@ export function Header() {
             overflowing on common ~1280px laptop widths -- the earlier version
             overflowed the viewport horizontally at that size. ── */}
         <div className="hidden lg:flex items-center gap-2 shrink-0">
-          <a href="tel:+966549479722" title="+966 549 479 722" className="flex items-center gap-1.5 text-white/70 hover:text-white transition-colors text-[13px] font-medium">
-            <Phone className="w-3.5 h-3.5" />
+          <a href="tel:+966549479722" title="+966 549 479 722" className="flex items-center gap-1.5 text-white/90 hover:text-white transition-colors text-[14px] font-medium">
+            <Phone className="w-[18px] h-[18px]" strokeWidth={2.25} />
             <span className="hidden 2xl:inline">+966 549 479 722</span>
           </a>
 
@@ -235,10 +235,10 @@ export function Header() {
               <div ref={accountRef} className="relative">
                 <button
                   onClick={() => setAccountOpen(v => !v)}
-                  className={`flex items-center gap-1.5 text-[13px] font-semibold px-2.5 py-1.5 rounded-lg transition-colors ${accountOpen ? 'text-white bg-white/15' : 'text-white/80 hover:text-white hover:bg-white/10'}`}
+                  className={`flex items-center gap-1.5 text-[14px] font-semibold px-2.5 py-1.5 rounded-lg transition-colors ${accountOpen ? 'text-white bg-white/15' : 'text-white/90 hover:text-white hover:bg-white/10'}`}
                 >
-                  <User className="w-3.5 h-3.5" /> {user.fullName.split(' ')[0]}
-                  <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${accountOpen ? 'rotate-180' : ''}`} />
+                  <User className="w-[18px] h-[18px]" strokeWidth={2.25} /> {user.fullName.split(' ')[0]}
+                  <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${accountOpen ? 'rotate-180' : ''}`} />
                 </button>
                 {accountOpen && (
                   <div className={dropdownCls} style={{ minWidth: 220 }}>
@@ -286,13 +286,13 @@ export function Header() {
               </div>
             </div>
           ) : (
-            <Link href="/login" title={lang === 'ar' ? 'تسجيل الدخول' : 'Sign In'} className="flex items-center gap-1.5 text-[13px] font-semibold text-white/80 hover:text-white transition-colors">
-              <User className="w-3.5 h-3.5" />
+            <Link href="/login" title={lang === 'ar' ? 'تسجيل الدخول' : 'Sign In'} className="flex items-center gap-1.5 text-[14px] font-semibold text-white/90 hover:text-white transition-colors">
+              <User className="w-[18px] h-[18px]" strokeWidth={2.25} />
               <span className="hidden 2xl:inline">{lang === 'ar' ? 'تسجيل الدخول' : 'Sign In'}</span>
             </Link>
           )}
 
-          <button onClick={toggleLanguage} className="text-[13px] font-bold text-white/70 hover:text-white transition-colors tracking-wide">
+          <button onClick={toggleLanguage} className="text-[15px] font-bold text-white/90 hover:text-white transition-colors tracking-wide">
             {lang === 'en' ? 'عربي' : 'EN'}
           </button>
 
