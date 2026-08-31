@@ -203,7 +203,7 @@ function StatCard({ value, suffix, label }: { value: number; suffix: string; lab
 
 // ─── Hero service carousel ───────────────────────────────────────────────────
 const heroSlides = [
-  { src: '/brand/hero-service-journey.jpg?v=2', alt: 'ISC Services — Our Journey', label: 'Our Services Journey', labelAr: 'رحلة خدماتنا' },
+  { src: '/brand/hero-service-journey.jpg?v=3', alt: 'ISC Services — Our Journey', label: 'Our Services Journey', labelAr: 'رحلة خدماتنا' },
   { src: '/brand/hero-service-advantage.jpg?v=1', alt: 'ISC — Supply Chain Advantage', label: 'Supply Chain Advantage', labelAr: 'ميزة سلسلة الإمداد التنافسية' },
   { src: '/brand/hero-service-maturity.jpg?v=1', alt: 'ISC Maturity Assessment', label: 'Maturity Assessment', labelAr: 'تقييم النضج' },
   { src: '/brand/hero-service-kpi.jpg?v=1', alt: 'ISC KPIs & Benchmarking', label: 'KPIs & Benchmarking', labelAr: 'مؤشرات الأداء والمقارنة المرجعية' },
@@ -237,7 +237,7 @@ function useHeroCarousel() {
 // close enough to blend in) -- this is the shared box the hero section is
 // sized to, so the image can fill it edge-to-edge at full viewport width
 // with zero cropping and zero letterbox on either axis for 7 of 8 slides.
-const HERO_ASPECT_RATIO = 1774 / 887; // trial: journey slide regenerated at 2:1 -- other 7 slides pillarbox until replaced
+const HERO_ASPECT_RATIO = 2400 / 1200; // trial: journey slide regenerated at 2:1 -- other 7 slides pillarbox until replaced
 
 // The presentation image itself -- a full-bleed layer that fills the entire
 // hero section, which is itself sized to this exact aspect ratio (see the
