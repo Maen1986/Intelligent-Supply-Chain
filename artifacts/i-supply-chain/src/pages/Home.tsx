@@ -338,21 +338,22 @@ function useHeroImageMaxWidth(sectionRef: React.RefObject<HTMLElement | null>) {
     window.addEventListener('resize', measure);
     window.addEventListener('orientationchange', measure);
 
-    // The announcement banner above the hero animates its own height in
-    // from 0 (framer-motion, ~350ms), and web fonts/images can also shift
-    // layout a beat after first paint. A single guessed setTimeout delay
-    // measured too early once and locked in a "top" from before the banner
-    // finished expanding, sizing the image for more room than actually
-    // existed once it settled. Instead, keep re-measuring on every frame
-    // for the first 1.5s after mount so we always land on the real,
-    // settled position -- however long that animation actually takes.
+    // Everything above the hero (announcement banner mount animation,
+    // web fonts, the "AI Control Tower" widget that appears 5s in, RTL/
+    // Arabic layout, slow connections) can shift the hero's real top
+    // position at times we can't fully predict in advance. Two different
+    // guessed re-measurement windows (a single setTimeout, then a 1.5s
+    // rAF loop) each got beaten by a layout shift that landed just after
+    // the window closed and produced a stale, too-tall image again. So
+    // instead of guessing another window, just never stop: re-measure on
+    // every animation frame for the life of the component. It's a cheap
+    // read (a couple of getBoundingClientRect calls) and React bails out
+    // of re-rendering when the computed value hasn't actually changed, so
+    // this stays correct indefinitely at negligible cost.
     let rafId: number;
-    const stopAt = performance.now() + 1500;
     function tick() {
       measure();
-      if (performance.now() < stopAt) {
-        rafId = requestAnimationFrame(tick);
-      }
+      rafId = requestAnimationFrame(tick);
     }
     rafId = requestAnimationFrame(tick);
 
