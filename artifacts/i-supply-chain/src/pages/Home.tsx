@@ -233,25 +233,31 @@ function useHeroCarousel() {
   return { active, goTo };
 }
 
+// All 8 hero slides are ~1536x1024 infographic panels (one is 1473x1068,
+// close enough to blend in) -- this is the shared box the hero section is
+// sized to, so the image can fill it edge-to-edge at full viewport width
+// with zero cropping and zero letterbox on either axis for 7 of 8 slides.
+const HERO_ASPECT_RATIO = 1536 / 1024;
+
 // The presentation image itself -- a full-bleed layer that fills the entire
-// hero section (see useHeroSectionHeight below for how the section itself is
-// sized to the available viewport height with zero scroll).
+// hero section, which is itself sized to this exact aspect ratio (see the
+// <section> element in Home() below) so the image needs no letterboxing.
 function HeroCarouselImage({ active, heroInView }: { active: number; heroInView: boolean }) {
   // Owner's call (31 Aug 2026, fourth pass): the hero slides are NOT plain
   // ambient photography -- they are infographic panels with headline text,
   // stat callouts and icon rows baked in right up to the top and bottom
   // edges (e.g. "ISC SERVICES" / "TURNING SUPPLY CHAINS INTO ..." / "THE
-  // IMPACT YOU CAN EXPECT"). Every slide is ~1.5:1 (3:2), while the section
-  // box on a real laptop/desktop viewport is much wider than that once the
-  // header height is subtracted -- so object-fit:cover (used in the third
-  // pass to kill scrolling) was cropping real content off the top and
-  // bottom of slides 2-8, which is worse than the original scroll problem.
-  // Fix: object-fit:contain so the ENTIRE image is always visible (zero
-  // content loss), on a solid near-black navy backdrop that matches these
-  // images' own dark corner color -- so on wide screens the tiny letterbox
-  // strip reads as part of the artwork, not as empty background. The
-  // section height (useHeroSectionHeight below) still caps at the real
-  // available viewport height, so this still never causes page scroll.
+  // IMPACT YOU CAN EXPECT"). object-fit:cover (used in the third pass to
+  // kill scrolling by forcing the image into a viewport-height-driven box)
+  // was cropping that real content whenever the box's aspect ratio didn't
+  // match the image's own ~1.5:1 ratio. Fixed in the fifth pass: the
+  // <section> itself is now sized to HERO_ASPECT_RATIO (full viewport
+  // width, height = width / 1.5), so the box matches the image almost
+  // exactly for 7 of 8 slides -- full width, zero crop, no visible
+  // letterbox. object-fit:contain stays as a safety net for the one
+  // slightly different-ratio slide (SC Resiliency & Risk, 1473x1068) and
+  // for any future replacement image, backed by a near-black navy fill
+  // that matches these images' own dark corners.
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -274,69 +280,6 @@ function HeroCarouselImage({ active, heroInView }: { active: number; heroInView:
       </AnimatePresence>
     </motion.div>
   );
-}
-
-// Measures the ACTUAL vertical space available for the hero section on the
-// real page -- viewport height minus whatever the sticky header is really
-// rendering at (not an assumed pixel offset) -- and returns that as the
-// section's own height. The section has no horizontal padding at all now,
-// so its width is always the full viewport width automatically; height is
-// the only thing that needs live measurement. Re-runs on resize/orientation
-// change so it stays correct if the window is resized.
-function useHeroSectionHeight(sectionRef: React.RefObject<HTMLElement | null>) {
-  // Owner's explicit call (31 Aug 2026, third pass): no card frame, no
-  // letterboxing, no visible background around the edges -- the photo must
-  // be truly full-bleed, edge-to-edge in BOTH directions, with zero scroll.
-  // Since the section is now edge-to-edge with no padding, its width is
-  // simply 100% of the viewport for free; only its height needs measuring,
-  // and HeroCarouselImage's object-fit:cover crops the photo to whatever
-  // that height/width box turns out to be.
-  const [sectionHeightPx, setSectionHeightPx] = useState(700);
-
-  useEffect(() => {
-    function measure() {
-      const el = sectionRef.current;
-      if (!el) return;
-      // IMPORTANT: getBoundingClientRect().top is relative to the CURRENT
-      // viewport, so it changes every time the page is scrolled -- once the
-      // user scrolls past the hero it goes strongly negative. Adding the
-      // current scroll offset back converts it to the hero's distance from
-      // the TOP OF THE PAGE, which is invariant to scroll position.
-      const topAtRest = el.getBoundingClientRect().top + window.scrollY;
-      const availableHeight = window.innerHeight - topAtRest;
-      setSectionHeightPx(Math.max(320, availableHeight));
-    }
-    measure();
-    window.addEventListener('resize', measure);
-    window.addEventListener('orientationchange', measure);
-
-    // Everything above the hero (announcement banner mount animation,
-    // web fonts, the "AI Control Tower" widget that appears 5s in, RTL/
-    // Arabic layout, slow connections) can shift the hero's real top
-    // position at times we can't fully predict in advance. Two different
-    // guessed re-measurement windows (a single setTimeout, then a 1.5s
-    // rAF loop) each got beaten by a layout shift that landed just after
-    // the window closed and produced a stale, too-tall image again. So
-    // instead of guessing another window, just never stop: re-measure on
-    // every animation frame for the life of the component. It's a cheap
-    // read (a couple of getBoundingClientRect calls) and React bails out
-    // of re-rendering when the computed value hasn't actually changed, so
-    // this stays correct indefinitely at negligible cost.
-    let rafId: number;
-    function tick() {
-      measure();
-      rafId = requestAnimationFrame(tick);
-    }
-    rafId = requestAnimationFrame(tick);
-
-    return () => {
-      window.removeEventListener('resize', measure);
-      window.removeEventListener('orientationchange', measure);
-      cancelAnimationFrame(rafId);
-    };
-  }, [sectionRef]);
-
-  return { sectionHeightPx };
 }
 
 // Badge + dot indicators -- lives in the flat section below the photo, "attached"
@@ -583,21 +526,30 @@ export function Home() {
   const heroRef = useRef<HTMLElement>(null);
   const heroInView = useInView(heroRef, { once: true });
   const { active: heroActive, goTo: heroGoTo } = useHeroCarousel();
-  const { sectionHeightPx: heroSectionHeight } = useHeroSectionHeight(heroRef);
 
   return (
     <div className="w-full flex flex-col min-h-screen">
 
-      {/* ── Hero: full-bleed photo slide, edge-to-edge, nothing else in this section ── */}
+      {/* ── Hero: full-bleed photo slide, edge-to-edge, nothing else in this section ──
+          Owner's call (31 Aug 2026, fifth pass): "just make it full width" --
+          sizing the section to the image's own aspect ratio (instead of the
+          previous viewport-height-driven box) means the image spans the
+          FULL viewport width with zero side letterbox AND zero content
+          cropping at the same time, for 7 of 8 slides pixel-for-pixel. The
+          section is simply as tall as a full-width image naturally is, so
+          the page may need a small amount of ordinary scroll to reach the
+          content below on shorter screens -- normal hero-banner behaviour,
+          and a fair trade for full width with nothing cut off. maxHeight
+          keeps it from ever exceeding the viewport on very wide monitors. */}
       <section
         ref={heroRef}
         className="relative w-full text-white overflow-hidden"
-        style={{ height: `${heroSectionHeight}px` }}
+        style={{ aspectRatio: `${HERO_ASPECT_RATIO}`, maxHeight: '100vh' }}
       >
-        {/* The full presentation slide -- true full-bleed, fills the entire
-            section (full viewport width + full available height, zero
-            scroll), no frame/border/rounding, cropping into the photo's own
-            edges via object-fit:cover instead of showing any background. */}
+        {/* The full presentation slide -- fills the section exactly (full
+            viewport width, height matched to the image's own aspect ratio),
+            no frame/border/rounding, no cropping and no visible letterbox
+            for slides that share the section's aspect ratio. */}
         <HeroCarouselImage active={heroActive} heroInView={heroInView} />
 
         {/* Headline kept for SEO/accessibility (heading hierarchy), hidden visually per design */}
