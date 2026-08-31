@@ -263,7 +263,14 @@ function useHeroFitHeight(sectionRef: React.RefObject<HTMLElement | null>) {
       const chromeAbove = rect.top + window.scrollY;
       const available = window.innerHeight - chromeAbove;
       const natural = rect.width / HERO_ASPECT_RATIO;
-      setHeight(Math.max(0, Math.min(natural, available)));
+      // Guard against a transient bad read (window.innerHeight or layout not
+      // yet settled -- observed to happen momentarily on some load paths).
+      // A real viewport never has zero/negative space below the header, so
+      // treat that as "not measured yet" and skip committing -- never lock
+      // the hero at height 0. The scheduled re-measures below (and any
+      // resize/orientation event) will supply a good value shortly after.
+      if (natural <= 0 || available <= 0) return;
+      setHeight(Math.min(natural, available));
     }
 
     measure();
