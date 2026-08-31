@@ -324,7 +324,11 @@ function useHeroImageMaxWidth(sectionRef: React.RefObject<HTMLElement | null>) {
       const el = sectionRef.current;
       if (!el) return;
       const top = el.getBoundingClientRect().top; // space already used above the hero (banner + sticky nav)
-      const bottomBreathingRoom = 24;
+      // 60px covers the wrapper's own vertical padding (py-4 = 32px) plus a
+      // safety margin for scrollbar/rounding differences across real browsers
+      // -- without it the image can compute a hair too tall and force a
+      // few-pixel scroll, defeating the whole point of measuring live.
+      const bottomBreathingRoom = 60;
       const availableHeight = Math.max(240, window.innerHeight - top - bottomBreathingRoom);
       const availableWidth = Math.min(window.innerWidth * 0.94, 1700);
       const widthThatFitsHeight = availableHeight * (920 / 614);
