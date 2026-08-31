@@ -331,19 +331,28 @@ function useHeroImageMaxWidth(sectionRef: React.RefObject<HTMLElement | null>) {
     function measure() {
       const el = sectionRef.current;
       if (!el) return;
-      const top = el.getBoundingClientRect().top; // space already used above the hero (banner + sticky nav)
+      // IMPORTANT: getBoundingClientRect().top is relative to the CURRENT
+      // viewport, so it changes every time the page is scrolled -- once the
+      // user scrolls past the hero it goes strongly negative, which this
+      // formula would previously read as "tons of extra room" and inflate
+      // the image far past the viewport (the "enlarged, cut off on both
+      // edges" bug). Adding the current scroll offset back converts it to
+      // the hero's distance from the TOP OF THE PAGE, which is invariant to
+      // scroll position -- banner + sticky header occupy fixed, known space
+      // above the hero regardless of where the user has scrolled to.
+      const topAtRest = el.getBoundingClientRect().top + window.scrollY;
       // 60px covers the wrapper's own vertical padding (py-4 = 32px) plus a
       // safety margin for scrollbar/rounding differences across real browsers
       // -- without it the image can compute a hair too tall and force a
       // few-pixel scroll, defeating the whole point of measuring live.
       const bottomBreathingRoom = 60;
-      const availableHeight = Math.max(240, window.innerHeight - top - bottomBreathingRoom);
+      const availableHeight = Math.max(240, window.innerHeight - topAtRest - bottomBreathingRoom);
       const availableWidth = Math.min(window.innerWidth * 0.94, 1700);
       const widthThatFitsHeight = availableHeight * (920 / 614);
       setMaxWidthPx(Math.max(280, Math.min(availableWidth, widthThatFitsHeight)));
       // The section itself may never exceed the real remaining viewport
       // space (down to the same breathing room used above).
-      setMaxSectionHeightPx(Math.max(240, window.innerHeight - top));
+      setMaxSectionHeightPx(Math.max(240, window.innerHeight - topAtRest));
     }
     measure();
     window.addEventListener('resize', measure);
