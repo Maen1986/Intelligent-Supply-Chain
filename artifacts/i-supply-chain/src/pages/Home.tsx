@@ -239,6 +239,51 @@ function useHeroCarousel() {
 // with zero cropping and zero letterbox on either axis for 7 of 8 slides.
 const HERO_ASPECT_RATIO = 2400 / 1200; // trial: journey slide regenerated at 2:1 -- other 7 slides pillarbox until replaced
 
+// Guarantees the hero NEVER requires scroll to see in full on load, on any
+// real viewport -- measures the actual space available below whatever sits
+// above the hero (announcement banner + sticky header, whatever their real
+// heights are) and clamps the section's height to fit it, only ever
+// shrinking BELOW the natural width/HERO_ASPECT_RATIO height, never growing
+// past it. object-fit stays 'contain' (see HeroCarouselImage below) so nothing
+// is ever cropped -- on the rare short viewport where clamping kicks in, the
+// image (for slides that already match HERO_ASPECT_RATIO) may show a few
+// px of empty edge instead, never a scroll. Re-measures after the
+// announcement banner's own mount animation settles and on window resize.
+function useHeroFitHeight(sectionRef: React.RefObject<HTMLElement | null>) {
+  const [height, setHeight] = useState<number | null>(null);
+
+  useEffect(() => {
+    function measure() {
+      const el = sectionRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      // Document-relative top offset of the hero = combined height of
+      // everything stacked above it (banner + header), independent of
+      // current scroll position.
+      const chromeAbove = rect.top + window.scrollY;
+      const available = window.innerHeight - chromeAbove;
+      const natural = rect.width / HERO_ASPECT_RATIO;
+      setHeight(Math.max(0, Math.min(natural, available)));
+    }
+
+    measure();
+    // Catch the announcement banner's height:0->auto mount animation
+    // (~350ms) settling to its final height before locking in a value.
+    const t1 = setTimeout(measure, 450);
+    const t2 = setTimeout(measure, 1000);
+    window.addEventListener('resize', measure);
+    window.addEventListener('orientationchange', measure);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      window.removeEventListener('resize', measure);
+      window.removeEventListener('orientationchange', measure);
+    };
+  }, [sectionRef]);
+
+  return height;
+}
+
 // The presentation image itself -- a full-bleed layer that fills the entire
 // hero section, which is itself sized to this exact aspect ratio (see the
 // <section> element in Home() below) so the image needs no letterboxing.
@@ -526,6 +571,7 @@ export function Home() {
   const heroRef = useRef<HTMLElement>(null);
   const heroInView = useInView(heroRef, { once: true });
   const { active: heroActive, goTo: heroGoTo } = useHeroCarousel();
+  const heroFitHeight = useHeroFitHeight(heroRef);
 
   return (
     <div className="w-full flex flex-col min-h-screen">
@@ -549,7 +595,7 @@ export function Home() {
       <section
         ref={heroRef}
         className="relative w-full text-white overflow-hidden"
-        style={{ aspectRatio: `${HERO_ASPECT_RATIO}` }}
+        style={heroFitHeight !== null ? { height: `${heroFitHeight}px` } : { aspectRatio: `${HERO_ASPECT_RATIO}` }}
       >
         {/* The full presentation slide -- fills the section exactly (full
             viewport width, height matched to the image's own aspect ratio),
