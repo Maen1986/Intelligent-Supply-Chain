@@ -251,35 +251,24 @@ const heroSlides = [
 
 function ConsultantCarousel({ heroInView, isAr = false }: { heroInView: boolean; isAr?: boolean }) {
   const [active, setActive] = useState(0);
-  const [direction, setDirection] = useState(1);
 
   const next = useCallback(() => {
-    setDirection(1);
     setActive((p) => (p + 1) % heroSlides.length);
   }, []);
 
   useEffect(() => {
-    const id = setInterval(next, 4000);
+    const id = setInterval(next, 60000);
     return () => clearInterval(id);
   }, [next]);
 
-  const goTo = (i: number) => {
-    setDirection(i > active ? 1 : -1);
-    setActive(i);
-  };
-
-  const variants = {
-    enter: (dir: number) => ({ opacity: 0, x: dir * 60, scale: 0.97 }),
-    center: { opacity: 1, x: 0, scale: 1 },
-    exit: (dir: number) => ({ opacity: 0, x: dir * -60, scale: 0.97 }),
-  };
+  const goTo = (i: number) => setActive(i);
 
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.95, x: 40 }}
       animate={heroInView ? { opacity: 1, scale: 1, x: 0 } : {}}
       transition={{ duration: 1, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
-      className="hidden lg:flex justify-center items-end"
+      className="hidden lg:flex flex-col items-center"
     >
       <div className="relative" style={{ width: '460px' }}>
         {/* Gold glow */}
@@ -287,15 +276,13 @@ function ConsultantCarousel({ heroInView, isAr = false }: { heroInView: boolean;
 
         {/* Image frame */}
         <div className="relative rounded-3xl overflow-hidden shadow-2xl ring-2 ring-white/20" style={{ width: '460px', height: '307px' }}>
-          <AnimatePresence custom={direction} initial={false}>
+          <AnimatePresence initial={false}>
             <motion.img
               key={active}
-              custom={direction}
-              variants={variants}
-              initial="enter"
-              animate="center"
-              exit="exit"
-              transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+              initial={{ opacity: 0, scale: 1.035 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 1 }}
+              transition={{ opacity: { duration: 1.4, ease: [0.4, 0, 0.2, 1] }, scale: { duration: 60, ease: 'linear' } }}
               src={heroSlides[active].src}
               alt={heroSlides[active].alt}
               className="absolute inset-0 w-full h-full object-cover"
@@ -303,29 +290,29 @@ function ConsultantCarousel({ heroInView, isAr = false }: { heroInView: boolean;
             />
           </AnimatePresence>
         </div>
+      </div>
 
-        {/* Floating AI badge */}
-        <div className="absolute -bottom-4 -left-4 bg-white rounded-2xl shadow-xl px-5 py-3 flex items-center gap-3 z-10">
-          <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center shrink-0">
-            <Cpu className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <p className="text-xs text-muted-foreground font-medium">{isAr ? 'مدعوم بالذكاء الاصطناعي' : 'AI-Powered'}</p>
-            <p className="text-sm font-bold text-primary">{isAr ? 'خبير سلسلة الإمداد' : 'Supply Chain Expert'}</p>
-          </div>
+      {/* AI badge — sits below the image, never overlapping the artwork */}
+      <div className="mt-5 bg-white rounded-2xl shadow-xl px-5 py-3 flex items-center gap-3">
+        <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center shrink-0">
+          <Cpu className="w-5 h-5 text-white" />
         </div>
+        <div>
+          <p className="text-xs text-muted-foreground font-medium">{isAr ? 'مدعوم بالذكاء الاصطناعي' : 'AI-Powered'}</p>
+          <p className="text-sm font-bold text-primary">{isAr ? 'خبير سلسلة الإمداد' : 'Supply Chain Expert'}</p>
+        </div>
+      </div>
 
-        {/* Dot indicators */}
-        <div className="absolute -bottom-12 left-1/2 -translate-x-1/2 flex gap-2">
-          {heroSlides.map((_, i) => (
-            <button
-              key={i}
-              onClick={() => goTo(i)}
-              className={`rounded-full transition-all duration-300 ${i === active ? 'w-6 h-2.5 bg-accent' : 'w-2.5 h-2.5 bg-white/40 hover:bg-white/70'}`}
-              aria-label={isAr ? heroSlides[i].labelAr : heroSlides[i].label}
-            />
-          ))}
-        </div>
+      {/* Dot indicators */}
+      <div className="mt-5 flex gap-2">
+        {heroSlides.map((_, i) => (
+          <button
+            key={i}
+            onClick={() => goTo(i)}
+            className={`rounded-full transition-all duration-300 ${i === active ? 'w-6 h-2.5 bg-accent' : 'w-2.5 h-2.5 bg-white/40 hover:bg-white/70'}`}
+            aria-label={isAr ? heroSlides[i].labelAr : heroSlides[i].label}
+          />
+        ))}
       </div>
     </motion.div>
   );
