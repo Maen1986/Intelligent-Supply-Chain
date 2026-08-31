@@ -531,20 +531,25 @@ export function Home() {
     <div className="w-full flex flex-col min-h-screen">
 
       {/* ── Hero: full-bleed photo slide, edge-to-edge, nothing else in this section ──
-          Owner's call (31 Aug 2026, fifth pass): "just make it full width" --
+          Owner's call (31 Aug 2026, sixth pass): "just make it full width" --
           sizing the section to the image's own aspect ratio (instead of the
           previous viewport-height-driven box) means the image spans the
           FULL viewport width with zero side letterbox AND zero content
-          cropping at the same time, for 7 of 8 slides pixel-for-pixel. The
-          section is simply as tall as a full-width image naturally is, so
-          the page may need a small amount of ordinary scroll to reach the
-          content below on shorter screens -- normal hero-banner behaviour,
-          and a fair trade for full width with nothing cut off. maxHeight
-          keeps it from ever exceeding the viewport on very wide monitors. */}
+          cropping at the same time -- all 8 slides are now the same 1.5
+          ratio, so this is pixel-exact. The section is simply as tall as a
+          full-width image naturally is, so the page may need a small amount
+          of ordinary scroll to reach the content below on shorter screens --
+          normal hero-banner behaviour, and the trade-off the owner asked
+          for over full width. IMPORTANT: do NOT add a maxHeight cap here --
+          a maxHeight:100vh "safety net" was tried and it silently broke the
+          aspect ratio (height got clamped shorter than width/1.5 on
+          completely ordinary laptop screens, not just extreme ones), which
+          reintroduced the exact side-pillarbox bug this pass was fixing.
+          Pure width-driven aspect-ratio sizing, no height cap. */}
       <section
         ref={heroRef}
         className="relative w-full text-white overflow-hidden"
-        style={{ aspectRatio: `${HERO_ASPECT_RATIO}`, maxHeight: '100vh' }}
+        style={{ aspectRatio: `${HERO_ASPECT_RATIO}` }}
       >
         {/* The full presentation slide -- fills the section exactly (full
             viewport width, height matched to the image's own aspect ratio),
