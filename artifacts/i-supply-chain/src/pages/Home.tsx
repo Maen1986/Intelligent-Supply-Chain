@@ -626,13 +626,17 @@ export function Home() {
           must shrink together, not height alone. */}
       <section
         ref={heroRef}
-        className="relative w-full text-white overflow-hidden bg-gradient-to-br from-[#0B3D91] to-[#082C6B]"
+        // Solid #082C6B (not the earlier from-[#0B3D91] gradient) -- unified
+        // with the header and footer's own navy so there's no visible seam
+        // between the header bar and the hero section, reported live via
+        // screenshot as two distinct blues stacked on top of each other.
+        className="relative w-full text-white overflow-hidden bg-[#082C6B]"
         style={heroBox !== null ? { height: `${heroBox.height}px` } : { aspectRatio: `${HERO_ASPECT_RATIO}` }}
       >
         {/* Inner image box -- locked to HERO_ASPECT_RATIO at all times and
             centered. On an ordinary viewport this spans the full section
             width (identical to before). Only narrows on a short/wide
-            viewport, in which case the section's own brand-gradient
+            viewport, in which case the section's own solid navy
             background (not black, not a crop, not a scroll) shows on
             either side instead of a letterbox. */}
         <div
