@@ -268,14 +268,14 @@ function ConsultantCarousel({ heroInView, isAr = false }: { heroInView: boolean;
       initial={{ opacity: 0, scale: 0.95, x: 40 }}
       animate={heroInView ? { opacity: 1, scale: 1, x: 0 } : {}}
       transition={{ duration: 1, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
-      className="hidden lg:flex flex-col items-center"
+      className="hidden lg:flex flex-col items-center w-full"
     >
-      <div className="relative" style={{ width: '460px' }}>
+      <div className="relative w-full" style={{ maxWidth: '720px' }}>
         {/* Gold glow */}
         <div className="absolute -inset-4 rounded-3xl bg-accent/20 blur-2xl pointer-events-none" />
 
         {/* Image frame */}
-        <div className="relative rounded-3xl overflow-hidden shadow-2xl ring-2 ring-white/20" style={{ width: '460px', height: '307px' }}>
+        <div className="relative w-full rounded-3xl overflow-hidden shadow-2xl ring-2 ring-white/20" style={{ aspectRatio: '920 / 614' }}>
           <AnimatePresence initial={false}>
             <motion.img
               key={active}
