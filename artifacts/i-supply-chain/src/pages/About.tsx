@@ -190,7 +190,7 @@ export function About() {
               {/* Full-width photo */}
               <div className="relative w-full bg-[#071e3d]">
                 <img
-                  src="/brand/maen-photo.jpg"
+                  src="/brand/maen-photo-isc.jpg"
                   alt="Ma'in Alhaqash — Supply Chain Consultant"
                   className="w-full h-auto block"
                   style={{ maxHeight: '75vh', objectFit: 'contain', objectPosition: 'center' }}
