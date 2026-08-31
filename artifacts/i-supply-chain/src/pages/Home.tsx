@@ -240,20 +240,20 @@ function Orb({
 // ─── Consultant carousel ─────────────────────────────────────────────────────
 const consultants = [
   {
-    src: '/brand/hero-consultant.jpg?v=3',
-    alt: 'Saudi Supply Chain Consultant',
-    label: 'GCC & Saudi Arabia Expert',
-    labelAr: 'خبير الخليج والمملكة العربية السعودية',
-    sublabel: 'Strategic Advisor',
-    sublabelAr: 'مستشار استراتيجي',
+    src: '/brand/hero-maen-a.jpg?v=1',
+    alt: "Ma'in Alhaqash — Founder & Procurement/Supply Chain Director",
+    label: "Ma'in Alhaqash",
+    labelAr: 'مَعِن الحقّاش',
+    sublabel: 'Procurement & Supply Chain Director',
+    sublabelAr: 'مدير المشتريات وسلسلة الإمداد',
   },
   {
-    src: '/brand/consultant-female.jpg',
-    alt: 'Female Supply Chain Consultant',
-    label: 'Global Strategy Advisor',
-    labelAr: 'مستشارة الاستراتيجية العالمية',
-    sublabel: 'Lead Consultant',
-    sublabelAr: 'مستشارة رئيسية',
+    src: '/brand/hero-maen-b.jpg?v=1',
+    alt: "Ma'in Alhaqash — Founder & Senior Consultant",
+    label: "Ma'in Alhaqash",
+    labelAr: 'مَعِن الحقّاش',
+    sublabel: 'Senior Consultant, ISC',
+    sublabelAr: 'مستشار أول، ISC',
   },
 ];
 
