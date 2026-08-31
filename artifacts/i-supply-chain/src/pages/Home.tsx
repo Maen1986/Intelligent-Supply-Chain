@@ -268,8 +268,8 @@ function ConsultantCarousel({ heroInView, isAr = false }: { heroInView: boolean;
       initial={{ opacity: 0, scale: 0.97 }}
       animate={heroInView ? { opacity: 1, scale: 1 } : {}}
       transition={{ duration: 0.8, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
-      className="hidden lg:flex flex-col items-center shrink-0"
-      style={{ width: 'clamp(480px, 42vw, 900px)' }}
+      className="flex flex-col items-center w-full"
+      style={{ maxWidth: '1100px' }}
     >
       <div className="relative w-full">
         {/* Gold glow */}
@@ -560,60 +560,53 @@ export function Home() {
         <Orb size={320} color="rgba(201,168,76,0.15)" x="55%" y="-5%" duration={9} delay={0} />
         <Orb size={200} color="rgba(201,168,76,0.10)" x="75%" y="55%" duration={12} delay={2} />
 
-        <div className="mx-auto px-4 relative z-10 flex items-center w-full" style={{ maxWidth: '1800px' }}>
-          <div className="flex flex-col lg:flex-row gap-10 lg:gap-14 items-center w-full py-20">
+        <div className="mx-auto px-4 relative z-10 w-full" style={{ maxWidth: '1800px' }}>
+          <div className="flex flex-col items-center w-full py-16 gap-8 text-center">
 
-            {/* Left — text */}
-            <div className="space-y-8 flex-1 min-w-0">
-              <motion.h1
-                initial={{ opacity: 0 }}
-                animate={heroInView ? { opacity: 1 } : {}}
-                transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-                className="text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-tight tracking-tight"
-              >
-                {t('hero.headline')}
-              </motion.h1>
+            {/* Headline kept for SEO/accessibility (heading hierarchy), hidden visually per design */}
+            <h1 className="sr-only">{t('hero.headline')}</h1>
 
-              <motion.p
-                initial={{ opacity: 0 }}
-                animate={heroInView ? { opacity: 1 } : {}}
-                transition={{ duration: 0.7, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
-                className="text-lg md:text-xl text-white/80 max-w-xl leading-relaxed"
-              >
-                {t('hero.subheadline')}
-              </motion.p>
-
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={heroInView ? { opacity: 1, y: 0 } : {}}
-                transition={{ duration: 0.8, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
-                className="flex flex-col sm:flex-row gap-3"
-              >
-                <Link href="/diagnostic">
-                  <Button size="lg" className="w-full sm:w-auto bg-accent hover:bg-accent/90 text-white font-bold px-8 shadow-lg min-h-[52px] text-base">
-                    {t('hero.ctaPrimary')}
-                  </Button>
-                </Link>
-                <Link href="/consultant">
-                  <Button size="lg" variant="outline" className="w-full sm:w-auto border-white/70 text-white hover:bg-white hover:text-primary font-bold px-8 min-h-[52px] text-base">
-                    {t('hero.ctaSecondary')}
-                  </Button>
-                </Link>
-              </motion.div>
-
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={heroInView ? { opacity: 1 } : {}}
-                transition={{ duration: 0.8, delay: 0.5 }}
-              >
-                <Link href="/csr" className="text-sm text-white/60 hover:text-accent underline underline-offset-4 font-medium inline-flex items-center gap-1 transition-colors">
-                  {t('hero.ctaTertiary')} <ArrowRight className="w-3 h-3 rtl:rotate-180" />
-                </Link>
-              </motion.div>
-            </div>
-
-            {/* Right — consultant carousel */}
+            {/* Wide, presentation-style consultant carousel — now the primary hero visual */}
             <ConsultantCarousel heroInView={heroInView} isAr={isAr} />
+
+            {/* Subheadline — sits below the carousel */}
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={heroInView ? { opacity: 1 } : {}}
+              transition={{ duration: 0.7, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
+              className="text-lg md:text-xl text-white/80 max-w-2xl leading-relaxed"
+            >
+              {t('hero.subheadline')}
+            </motion.p>
+
+            {/* CTA buttons — immediately below the subheadline */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={heroInView ? { opacity: 1, y: 0 } : {}}
+              transition={{ duration: 0.8, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
+              className="flex flex-col sm:flex-row gap-3 justify-center"
+            >
+              <Link href="/diagnostic">
+                <Button size="lg" className="w-full sm:w-auto bg-accent hover:bg-accent/90 text-white font-bold px-8 shadow-lg min-h-[52px] text-base">
+                  {t('hero.ctaPrimary')}
+                </Button>
+              </Link>
+              <Link href="/consultant">
+                <Button size="lg" variant="outline" className="w-full sm:w-auto border-white/70 text-white hover:bg-white hover:text-primary font-bold px-8 min-h-[52px] text-base">
+                  {t('hero.ctaSecondary')}
+                </Button>
+              </Link>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={heroInView ? { opacity: 1 } : {}}
+              transition={{ duration: 0.8, delay: 0.5 }}
+            >
+              <Link href="/csr" className="text-sm text-white/60 hover:text-accent underline underline-offset-4 font-medium inline-flex items-center gap-1 transition-colors">
+                {t('hero.ctaTertiary')} <ArrowRight className="w-3 h-3 rtl:rotate-180" />
+              </Link>
+            </motion.div>
 
           </div>
         </div>
