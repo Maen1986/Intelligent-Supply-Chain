@@ -111,7 +111,7 @@ export function Header() {
   const isActive = (href: string) =>
     href.startsWith('/#') ? false : href !== '/' ? location.startsWith(href.split('?')[0]) : location === '/';
 
-  const tabBase = 'relative flex items-center gap-1 px-4 py-2 text-[15px] font-semibold rounded-lg transition-all duration-150 whitespace-nowrap';
+  const tabBase = 'relative flex items-center gap-1 px-3 py-2 text-[15px] font-semibold rounded-lg transition-all duration-150 whitespace-nowrap';
   const tabActive = 'text-primary bg-primary/8';
   const tabIdle = 'text-gray-700 hover:text-primary hover:bg-primary/5';
   const dropdownCls = `absolute top-full ${lang === 'ar' ? 'right-0' : 'left-0'} mt-2 bg-white border border-border rounded-2xl shadow-2xl py-2 z-50`;
@@ -205,8 +205,11 @@ export function Header() {
         </nav>
 
         {/* ── Desktop utility + CTA cluster -- everything that used to live in
-            the separate navy bar now sits here, condensed, on one line ── */}
-        <div className="hidden lg:flex items-center gap-3 shrink-0">
+            the separate navy bar now sits here, condensed, on one line. Icon-
+            only below xl (phone, sign-in) to keep the single merged row from
+            overflowing on common ~1280px laptop widths -- the earlier version
+            overflowed the viewport horizontally at that size. ── */}
+        <div className="hidden lg:flex items-center gap-2 shrink-0">
           <a href="tel:+966549479722" title="+966 549 479 722" className="flex items-center gap-1.5 text-gray-500 hover:text-primary transition-colors text-[13px] font-medium">
             <Phone className="w-3.5 h-3.5" />
             <span className="hidden xl:inline">+966 549 479 722</span>
@@ -272,8 +275,9 @@ export function Header() {
               </div>
             </div>
           ) : (
-            <Link href="/login" className="text-[13px] font-semibold text-gray-700 hover:text-primary transition-colors">
-              {lang === 'ar' ? 'تسجيل الدخول' : 'Sign In'}
+            <Link href="/login" title={lang === 'ar' ? 'تسجيل الدخول' : 'Sign In'} className="flex items-center gap-1.5 text-[13px] font-semibold text-gray-700 hover:text-primary transition-colors">
+              <User className="w-3.5 h-3.5" />
+              <span className="hidden xl:inline">{lang === 'ar' ? 'تسجيل الدخول' : 'Sign In'}</span>
             </Link>
           )}
 
@@ -282,8 +286,12 @@ export function Header() {
           </button>
 
           <Link href="/consultant">
-            <Button className="bg-[#C9A84C] hover:bg-[#b8963e] text-white font-bold px-5 py-2 text-[14px] rounded-xl shadow-md hover:shadow-lg transition-all">
-              {lang === 'ar' ? 'احجز استشارة' : 'Book a Consultation'}
+            <Button className="bg-[#C9A84C] hover:bg-[#b8963e] text-white font-bold px-4 py-2 text-[14px] rounded-xl shadow-md hover:shadow-lg transition-all whitespace-nowrap">
+              {/* Shorter label at lg (extra safety margin against the merged
+                  row overflowing on ~1280px laptop widths); full label once
+                  there's room at xl+. */}
+              <span className="xl:hidden">{lang === 'ar' ? 'احجز الآن' : 'Book Now'}</span>
+              <span className="hidden xl:inline">{lang === 'ar' ? 'احجز استشارة' : 'Book a Consultation'}</span>
             </Button>
           </Link>
         </div>
