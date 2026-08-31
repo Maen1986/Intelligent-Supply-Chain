@@ -237,29 +237,38 @@ function useHeroCarousel() {
 // hero section (see useHeroSectionHeight below for how the section itself is
 // sized to the available viewport height with zero scroll).
 function HeroCarouselImage({ active, heroInView }: { active: number; heroInView: boolean }) {
-  // Owner's call (31 Aug 2026, third pass): no card frame, no rounded
-  // corners, no glow, no visible background peeking around the edges --
-  // the photo must be truly edge-to-edge: full viewport width AND full
-  // available height, filling the entire section exactly like the old
-  // backdrop-photo layer did. object-fit:cover crops into the photo's own
-  // edges as needed instead of showing ANY frame or background around it.
+  // Owner's call (31 Aug 2026, fourth pass): the hero slides are NOT plain
+  // ambient photography -- they are infographic panels with headline text,
+  // stat callouts and icon rows baked in right up to the top and bottom
+  // edges (e.g. "ISC SERVICES" / "TURNING SUPPLY CHAINS INTO ..." / "THE
+  // IMPACT YOU CAN EXPECT"). Every slide is ~1.5:1 (3:2), while the section
+  // box on a real laptop/desktop viewport is much wider than that once the
+  // header height is subtracted -- so object-fit:cover (used in the third
+  // pass to kill scrolling) was cropping real content off the top and
+  // bottom of slides 2-8, which is worse than the original scroll problem.
+  // Fix: object-fit:contain so the ENTIRE image is always visible (zero
+  // content loss), on a solid near-black navy backdrop that matches these
+  // images' own dark corner color -- so on wide screens the tiny letterbox
+  // strip reads as part of the artwork, not as empty background. The
+  // section height (useHeroSectionHeight below) still caps at the real
+  // available viewport height, so this still never causes page scroll.
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={heroInView ? { opacity: 1 } : {}}
       transition={{ duration: 0.8, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
-      className="absolute inset-0"
+      className="absolute inset-0 bg-[#040910]"
     >
       <AnimatePresence initial={false}>
         <motion.img
           key={active}
-          initial={{ opacity: 0, scale: 1.035 }}
+          initial={{ opacity: 0, scale: 1.015 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 1 }}
           transition={{ opacity: { duration: 1.4, ease: [0.4, 0, 0.2, 1] }, scale: { duration: 15, ease: 'linear' } }}
           src={heroSlides[active].src}
           alt={heroSlides[active].alt}
-          className="absolute inset-0 w-full h-full object-cover"
+          className="absolute inset-0 w-full h-full object-contain"
           style={{ objectPosition: 'center center' }}
         />
       </AnimatePresence>
