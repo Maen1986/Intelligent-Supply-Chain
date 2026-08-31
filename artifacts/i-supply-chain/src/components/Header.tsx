@@ -223,7 +223,7 @@ export function Header() {
         <div className="hidden lg:flex items-center gap-2 shrink-0">
           <a href="tel:+966549479722" title="+966 549 479 722" className="flex items-center gap-1.5 text-white/90 hover:text-white transition-colors text-[14px] font-medium">
             <Phone className="w-[18px] h-[18px]" strokeWidth={2.25} />
-            <span className="hidden 2xl:inline">+966 549 479 722</span>
+            <span className="hidden xl:inline">+966 549 479 722</span>
           </a>
 
           {loading ? (
@@ -288,7 +288,7 @@ export function Header() {
           ) : (
             <Link href="/login" title={lang === 'ar' ? 'تسجيل الدخول' : 'Sign In'} className="flex items-center gap-1.5 text-[14px] font-semibold text-white/90 hover:text-white transition-colors">
               <User className="w-[18px] h-[18px]" strokeWidth={2.25} />
-              <span className="hidden 2xl:inline">{lang === 'ar' ? 'تسجيل الدخول' : 'Sign In'}</span>
+              <span className="hidden xl:inline">{lang === 'ar' ? 'تسجيل الدخول' : 'Sign In'}</span>
             </Link>
           )}
 
