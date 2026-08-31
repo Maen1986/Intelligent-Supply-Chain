@@ -317,15 +317,15 @@ function HeroCarouselImage({ active, heroInView, maxWidthPx }: { active: number;
 // 920:614 image fit both axes with zero cropping and zero scrolling. Re-runs
 // on resize/orientation-change so it stays correct if the window is resized.
 function useHeroImageMaxWidth(sectionRef: React.RefObject<HTMLElement | null>) {
+  // Owner's explicit call (31 Aug 2026): fill the full page width even if
+  // that means the image is taller than the viewport on shorter windows,
+  // requiring a small scroll to see the rest of it. This intentionally
+  // trades away the earlier "zero scroll" guarantee in exchange for the
+  // photo never being letterboxed/narrow on wide screens. maxSectionHeightPx
+  // is kept only as a very generous ceiling (never the binding constraint
+  // in normal use) so the section can never runaway-grow past a sane bound.
   const [maxWidthPx, setMaxWidthPx] = useState(1700);
-  // Hard cap on the SECTION's own height, in addition to the image width
-  // above. This is the backstop: even if the width/aspect-ratio math is off
-  // by a few px on some browser/zoom/logged-in-nav combination we haven't
-  // hit yet, the section itself physically cannot grow past this height --
-  // overflow is clipped, not pushed into a scrollbar. Zero-scroll becomes
-  // guaranteed by construction, not just by an (however carefully) computed
-  // width.
-  const [maxSectionHeightPx, setMaxSectionHeightPx] = useState(2000);
+  const [maxSectionHeightPx, setMaxSectionHeightPx] = useState(4000);
 
   useEffect(() => {
     function measure() {
@@ -333,26 +333,19 @@ function useHeroImageMaxWidth(sectionRef: React.RefObject<HTMLElement | null>) {
       if (!el) return;
       // IMPORTANT: getBoundingClientRect().top is relative to the CURRENT
       // viewport, so it changes every time the page is scrolled -- once the
-      // user scrolls past the hero it goes strongly negative, which this
-      // formula would previously read as "tons of extra room" and inflate
-      // the image far past the viewport (the "enlarged, cut off on both
-      // edges" bug). Adding the current scroll offset back converts it to
-      // the hero's distance from the TOP OF THE PAGE, which is invariant to
-      // scroll position -- banner + sticky header occupy fixed, known space
-      // above the hero regardless of where the user has scrolled to.
+      // user scrolls past the hero it goes strongly negative. Adding the
+      // current scroll offset back converts it to the hero's distance from
+      // the TOP OF THE PAGE, which is invariant to scroll position.
       const topAtRest = el.getBoundingClientRect().top + window.scrollY;
-      // 60px covers the wrapper's own vertical padding (py-4 = 32px) plus a
-      // safety margin for scrollbar/rounding differences across real browsers
-      // -- without it the image can compute a hair too tall and force a
-      // few-pixel scroll, defeating the whole point of measuring live.
-      const bottomBreathingRoom = 60;
-      const availableHeight = Math.max(240, window.innerHeight - topAtRest - bottomBreathingRoom);
-      const availableWidth = Math.min(window.innerWidth * 0.94, 1700);
-      const widthThatFitsHeight = availableHeight * (920 / 614);
-      setMaxWidthPx(Math.max(280, Math.min(availableWidth, widthThatFitsHeight)));
-      // The section itself may never exceed the real remaining viewport
-      // space (down to the same breathing room used above).
-      setMaxSectionHeightPx(Math.max(240, window.innerHeight - topAtRest));
+      // Width is now the ONLY driver -- fill almost the full viewport width
+      // (a small margin + a generous ceiling for ultra-wide monitors), and
+      // let height follow from the fixed aspect ratio, however tall that
+      // makes the section. No longer clamped by available viewport height.
+      const availableWidth = Math.min(window.innerWidth * 0.97, 2200);
+      setMaxWidthPx(Math.max(280, availableWidth));
+      // Generous ceiling only -- not meant to bind in normal use now that
+      // scroll is acceptable, just a sane upper bound.
+      setMaxSectionHeightPx(Math.max(600, window.innerHeight - topAtRest + 4000));
     }
     measure();
     window.addEventListener('resize', measure);
