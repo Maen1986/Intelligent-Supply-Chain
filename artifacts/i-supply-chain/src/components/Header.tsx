@@ -112,21 +112,23 @@ export function Header() {
     href.startsWith('/#') ? false : href !== '/' ? location.startsWith(href.split('?')[0]) : location === '/';
 
   const tabBase = 'relative flex items-center gap-1 px-3 py-2 text-[15px] font-semibold rounded-lg transition-all duration-150 whitespace-nowrap';
-  const tabActive = 'text-primary bg-primary/8';
-  const tabIdle = 'text-gray-700 hover:text-primary hover:bg-primary/5';
+  const tabActive = 'text-white bg-white/15';
+  const tabIdle = 'text-white/80 hover:text-white hover:bg-white/10';
   const dropdownCls = `absolute top-full ${lang === 'ar' ? 'right-0' : 'left-0'} mt-2 bg-white border border-border rounded-2xl shadow-2xl py-2 z-50`;
   const dropItemCls = 'flex items-center gap-2 px-5 py-2.5 text-[14px] font-medium text-gray-700 hover:bg-primary/5 hover:text-primary transition-colors';
 
   return (
-    <header className={`sticky top-0 z-50 w-full transition-all duration-200 ${scrolled ? 'bg-white shadow-lg border-b border-border' : 'bg-white shadow-md border-b border-border'}`}>
+    <header className={`sticky top-0 z-50 w-full transition-all duration-200 bg-[#0B3D91] ${scrolled ? 'shadow-lg' : 'shadow-md'} border-b border-white/10`}>
 
       {/* ── Single, narrower header row -- owner's call (31 Aug 2026): merge the
           two stacked bars (navy utility strip + white nav row) into one bar,
           with the phone/account/language items folded in on the right next
           to the CTA instead of stacked above it. ── */}
       <div className="container mx-auto px-4 h-16 flex items-center justify-between gap-4">
-        <div className="flex items-center gap-2 shrink-0">
-          <Logo />
+        <div className="flex items-center gap-3 shrink-0">
+          <div className="bg-white rounded-xl px-2.5 py-1.5 shadow-sm">
+            <Logo />
+          </div>
           <PilotStatusBadge lang={lang} className="hidden sm:inline-flex" />
         </div>
 
@@ -210,7 +212,7 @@ export function Header() {
             overflowing on common ~1280px laptop widths -- the earlier version
             overflowed the viewport horizontally at that size. ── */}
         <div className="hidden lg:flex items-center gap-2 shrink-0">
-          <a href="tel:+966549479722" title="+966 549 479 722" className="flex items-center gap-1.5 text-gray-500 hover:text-primary transition-colors text-[13px] font-medium">
+          <a href="tel:+966549479722" title="+966 549 479 722" className="flex items-center gap-1.5 text-white/70 hover:text-white transition-colors text-[13px] font-medium">
             <Phone className="w-3.5 h-3.5" />
             <span className="hidden 2xl:inline">+966 549 479 722</span>
           </a>
@@ -224,7 +226,7 @@ export function Header() {
               <div ref={accountRef} className="relative">
                 <button
                   onClick={() => setAccountOpen(v => !v)}
-                  className={`flex items-center gap-1.5 text-[13px] font-semibold px-2.5 py-1.5 rounded-lg transition-colors ${accountOpen ? 'text-primary bg-primary/8' : 'text-gray-700 hover:text-primary hover:bg-primary/5'}`}
+                  className={`flex items-center gap-1.5 text-[13px] font-semibold px-2.5 py-1.5 rounded-lg transition-colors ${accountOpen ? 'text-white bg-white/15' : 'text-white/80 hover:text-white hover:bg-white/10'}`}
                 >
                   <User className="w-3.5 h-3.5" /> {user.fullName.split(' ')[0]}
                   <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${accountOpen ? 'rotate-180' : ''}`} />
@@ -275,13 +277,13 @@ export function Header() {
               </div>
             </div>
           ) : (
-            <Link href="/login" title={lang === 'ar' ? 'تسجيل الدخول' : 'Sign In'} className="flex items-center gap-1.5 text-[13px] font-semibold text-gray-700 hover:text-primary transition-colors">
+            <Link href="/login" title={lang === 'ar' ? 'تسجيل الدخول' : 'Sign In'} className="flex items-center gap-1.5 text-[13px] font-semibold text-white/80 hover:text-white transition-colors">
               <User className="w-3.5 h-3.5" />
               <span className="hidden 2xl:inline">{lang === 'ar' ? 'تسجيل الدخول' : 'Sign In'}</span>
             </Link>
           )}
 
-          <button onClick={toggleLanguage} className="text-[13px] font-bold text-gray-500 hover:text-primary transition-colors tracking-wide">
+          <button onClick={toggleLanguage} className="text-[13px] font-bold text-white/70 hover:text-white transition-colors tracking-wide">
             {lang === 'en' ? 'عربي' : 'EN'}
           </button>
 
@@ -299,16 +301,16 @@ export function Header() {
         {/* ── Mobile controls ── */}
         <div className="lg:hidden flex items-center gap-2 ml-auto">
           {user && (
-            <span className="text-gray-700">
+            <span className="text-white/80">
               <NotificationsBell lang={lang} />
             </span>
           )}
-          <button onClick={toggleLanguage} className="text-sm font-bold text-muted-foreground hover:text-primary px-2 py-1">
+          <button onClick={toggleLanguage} className="text-sm font-bold text-white/70 hover:text-white px-2 py-1">
             {lang === 'en' ? 'AR' : 'EN'}
           </button>
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="p-2 rounded-lg text-gray-700 hover:bg-muted transition-colors"
+            className="p-2 rounded-lg text-white/90 hover:bg-white/10 transition-colors"
             aria-label={lang === 'ar' ? 'تبديل القائمة' : 'Toggle menu'}
           >
             {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
