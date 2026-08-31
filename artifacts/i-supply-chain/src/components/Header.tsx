@@ -212,7 +212,7 @@ export function Header() {
         <div className="hidden lg:flex items-center gap-2 shrink-0">
           <a href="tel:+966549479722" title="+966 549 479 722" className="flex items-center gap-1.5 text-gray-500 hover:text-primary transition-colors text-[13px] font-medium">
             <Phone className="w-3.5 h-3.5" />
-            <span className="hidden xl:inline">+966 549 479 722</span>
+            <span className="hidden 2xl:inline">+966 549 479 722</span>
           </a>
 
           {loading ? (
@@ -277,7 +277,7 @@ export function Header() {
           ) : (
             <Link href="/login" title={lang === 'ar' ? 'تسجيل الدخول' : 'Sign In'} className="flex items-center gap-1.5 text-[13px] font-semibold text-gray-700 hover:text-primary transition-colors">
               <User className="w-3.5 h-3.5" />
-              <span className="hidden xl:inline">{lang === 'ar' ? 'تسجيل الدخول' : 'Sign In'}</span>
+              <span className="hidden 2xl:inline">{lang === 'ar' ? 'تسجيل الدخول' : 'Sign In'}</span>
             </Link>
           )}
 
@@ -290,8 +290,8 @@ export function Header() {
               {/* Shorter label at lg (extra safety margin against the merged
                   row overflowing on ~1280px laptop widths); full label once
                   there's room at xl+. */}
-              <span className="xl:hidden">{lang === 'ar' ? 'احجز الآن' : 'Book Now'}</span>
-              <span className="hidden xl:inline">{lang === 'ar' ? 'احجز استشارة' : 'Book a Consultation'}</span>
+              <span className="2xl:hidden">{lang === 'ar' ? 'احجز الآن' : 'Book Now'}</span>
+              <span className="hidden 2xl:inline">{lang === 'ar' ? 'احجز استشارة' : 'Book a Consultation'}</span>
             </Button>
           </Link>
         </div>
