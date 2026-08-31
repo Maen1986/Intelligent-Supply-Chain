@@ -32,10 +32,10 @@ export function AnnouncementBanner() {
           className="overflow-hidden"
           style={{ background: 'linear-gradient(90deg, #082C6B 0%, #0B3D91 40%, #1a5276 70%, #082C6B 100%)' }}
         >
-          <div className="container mx-auto px-4 py-2.5 flex items-center justify-between gap-3">
+          <div className="container mx-auto px-4 py-1 flex items-center justify-between gap-3">
             {/* Left badge + message */}
             <div className="flex items-center gap-3 min-w-0">
-              <span className="flex items-center gap-1.5 bg-[#C9A84C] text-white text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full shrink-0 shadow-lg">
+              <span className="flex items-center gap-1.5 bg-[#C9A84C] text-white text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full shrink-0 shadow-lg">
                 <Zap className="w-3 h-3" />
                 {ar ? 'مباشر الآن' : 'Live Now'}
               </span>
@@ -43,7 +43,7 @@ export function AnnouncementBanner() {
               {/* Scrolling marquee on mobile, static on desktop */}
               <div className="overflow-hidden">
                 <motion.p
-                  className="text-white text-sm font-medium whitespace-nowrap"
+                  className="text-white text-xs font-medium whitespace-nowrap"
                   initial={{ x: '100%' }}
                   animate={{ x: 0 }}
                   transition={{ duration: 0.6, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
@@ -59,7 +59,7 @@ export function AnnouncementBanner() {
               <Link href="/command-center" onClick={dismiss}>
                 <motion.span
                   whileHover={{ scale: 1.04 }}
-                  className="hidden sm:flex items-center gap-1.5 bg-[#C9A84C] hover:bg-[#b8973e] text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-colors cursor-pointer shadow"
+                  className="hidden sm:flex items-center gap-1.5 bg-[#C9A84C] hover:bg-[#b8973e] text-white text-xs font-bold px-3 py-1 rounded-lg transition-colors cursor-pointer shadow"
                 >
                   {ar ? 'ابدأ الآن' : 'Get Started'} {ar ? <ArrowLeft className="w-3.5 h-3.5" /> : <ArrowRight className="w-3.5 h-3.5" />}
                 </motion.span>
