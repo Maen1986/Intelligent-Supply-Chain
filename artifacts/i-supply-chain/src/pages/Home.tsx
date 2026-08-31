@@ -203,14 +203,14 @@ function StatCard({ value, suffix, label }: { value: number; suffix: string; lab
 
 // ─── Hero service carousel ───────────────────────────────────────────────────
 const heroSlides = [
-  { src: '/brand/hero-service-journey.jpg?v=3', alt: 'ISC Services — Our Journey', label: 'Our Services Journey', labelAr: 'رحلة خدماتنا' },
-  { src: '/brand/hero-service-advantage.jpg?v=1', alt: 'ISC — Supply Chain Advantage', label: 'Supply Chain Advantage', labelAr: 'ميزة سلسلة الإمداد التنافسية' },
-  { src: '/brand/hero-service-maturity.jpg?v=1', alt: 'ISC Maturity Assessment', label: 'Maturity Assessment', labelAr: 'تقييم النضج' },
-  { src: '/brand/hero-service-kpi.jpg?v=1', alt: 'ISC KPIs & Benchmarking', label: 'KPIs & Benchmarking', labelAr: 'مؤشرات الأداء والمقارنة المرجعية' },
-  { src: '/brand/hero-service-tco.jpg?v=1', alt: 'ISC Total Cost of Ownership', label: 'Total Cost of Ownership (TCO)', labelAr: 'التكلفة الإجمالية للملكية' },
-  { src: '/brand/hero-service-clm.jpg?v=1', alt: 'ISC Contract Intelligence', label: 'Contract Intelligence (CLM)', labelAr: 'إدارة دورة حياة العقود' },
-  { src: '/brand/hero-service-srm.jpg?v=1', alt: 'ISC Supplier Intelligence', label: 'Supplier Intelligence (SRM)', labelAr: 'إدارة علاقات الموردين' },
-  { src: '/brand/hero-service-risk.jpg?v=2', alt: 'ISC Supply Chain Resiliency & Risk', label: 'SC Resiliency & Risk', labelAr: 'مرونة سلسلة الإمداد وإدارة المخاطر' },
+  { src: '/brand/hero-service-journey.jpg?v=4', alt: 'ISC Services — Our Journey', label: 'Our Services Journey', labelAr: 'رحلة خدماتنا' },
+  { src: '/brand/hero-service-advantage.jpg?v=2', alt: 'ISC — Supply Chain Advantage', label: 'Supply Chain Advantage', labelAr: 'ميزة سلسلة الإمداد التنافسية' },
+  { src: '/brand/hero-service-maturity.jpg?v=2', alt: 'ISC Maturity Assessment', label: 'Maturity Assessment', labelAr: 'تقييم النضج' },
+  { src: '/brand/hero-service-kpi.jpg?v=2', alt: 'ISC KPIs & Benchmarking', label: 'KPIs & Benchmarking', labelAr: 'مؤشرات الأداء والمقارنة المرجعية' },
+  { src: '/brand/hero-service-tco.jpg?v=2', alt: 'ISC Total Cost of Ownership', label: 'Total Cost of Ownership (TCO)', labelAr: 'التكلفة الإجمالية للملكية' },
+  { src: '/brand/hero-service-clm.jpg?v=2', alt: 'ISC Contract Intelligence', label: 'Contract Intelligence (CLM)', labelAr: 'إدارة دورة حياة العقود' },
+  { src: '/brand/hero-service-srm.jpg?v=2', alt: 'ISC Supplier Intelligence', label: 'Supplier Intelligence (SRM)', labelAr: 'إدارة علاقات الموردين' },
+  { src: '/brand/hero-service-risk.jpg?v=3', alt: 'ISC Supply Chain Resiliency & Risk', label: 'SC Resiliency & Risk', labelAr: 'مرونة سلسلة الإمداد وإدارة المخاطر' },
 ];
 
 // Shared slide-rotation state, lifted out so the image (in the full-bleed
@@ -233,11 +233,11 @@ function useHeroCarousel() {
   return { active, goTo };
 }
 
-// All 8 hero slides are ~1536x1024 infographic panels (one is 1473x1068,
-// close enough to blend in) -- this is the shared box the hero section is
-// sized to, so the image can fill it edge-to-edge at full viewport width
-// with zero cropping and zero letterbox on either axis for 7 of 8 slides.
-const HERO_ASPECT_RATIO = 2400 / 1200; // trial: journey slide regenerated at 2:1 -- other 7 slides pillarbox until replaced
+// All 8 hero slides (final set, 1 Sep 2026) are 1774x887 infographic
+// panels -- this is the shared box the hero section is sized to, so every
+// slide fills it edge-to-edge at full viewport width with zero cropping
+// and zero letterbox, all 8, not just one.
+const HERO_ASPECT_RATIO = 1774 / 887;
 
 // Guarantees the hero NEVER requires scroll to see in full on load, on any
 // real viewport, WITHOUT ever pillarboxing -- the earlier height-only clamp
@@ -313,18 +313,16 @@ function HeroCarouselImage({ active, heroInView }: { active: number; heroInView:
   // Owner's call (31 Aug 2026, fourth pass): the hero slides are NOT plain
   // ambient photography -- they are infographic panels with headline text,
   // stat callouts and icon rows baked in right up to the top and bottom
-  // edges (e.g. "ISC SERVICES" / "TURNING SUPPLY CHAINS INTO ..." / "THE
-  // IMPACT YOU CAN EXPECT"). object-fit:cover (used in the third pass to
-  // kill scrolling by forcing the image into a viewport-height-driven box)
-  // was cropping that real content whenever the box's aspect ratio didn't
-  // match the image's own ~1.5:1 ratio. Fixed in the fifth pass: the
-  // <section> itself is now sized to HERO_ASPECT_RATIO (full viewport
-  // width, height = width / 1.5), so the box matches the image almost
-  // exactly for 7 of 8 slides -- full width, zero crop, no visible
-  // letterbox. object-fit:contain stays as a safety net for the one
-  // slightly different-ratio slide (SC Resiliency & Risk, 1473x1068) and
-  // for any future replacement image, backed by a near-black navy fill
-  // that matches these images' own dark corners.
+  // edges. object-fit:cover (used in the third pass to kill scrolling by
+  // forcing the image into a viewport-height-driven box) was cropping that
+  // real content whenever the box's aspect ratio didn't match the image's
+  // own ratio. Fixed in the fifth pass: the <section> itself is sized to
+  // HERO_ASPECT_RATIO. As of the final image set (1 Sep 2026), all 8
+  // slides are exactly 1774x887 -- pixel-identical to HERO_ASPECT_RATIO --
+  // so this is now full width, zero crop, zero letterbox for all 8, not
+  // just some. object-fit:contain stays in place as a safety net for any
+  // future replacement image that doesn't share the exact ratio, backed
+  // by a near-black navy fill that matches these images' own dark corners.
   return (
     <motion.div
       initial={{ opacity: 0 }}
