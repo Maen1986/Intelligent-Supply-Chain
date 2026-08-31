@@ -337,13 +337,29 @@ function useHeroImageMaxWidth(sectionRef: React.RefObject<HTMLElement | null>) {
     measure();
     window.addEventListener('resize', measure);
     window.addEventListener('orientationchange', measure);
-    // Re-measure once more shortly after mount in case fonts/webfonts or the
-    // sticky header's own layout settle a beat after first paint.
-    const t = setTimeout(measure, 250);
+
+    // The announcement banner above the hero animates its own height in
+    // from 0 (framer-motion, ~350ms), and web fonts/images can also shift
+    // layout a beat after first paint. A single guessed setTimeout delay
+    // measured too early once and locked in a "top" from before the banner
+    // finished expanding, sizing the image for more room than actually
+    // existed once it settled. Instead, keep re-measuring on every frame
+    // for the first 1.5s after mount so we always land on the real,
+    // settled position -- however long that animation actually takes.
+    let rafId: number;
+    const stopAt = performance.now() + 1500;
+    function tick() {
+      measure();
+      if (performance.now() < stopAt) {
+        rafId = requestAnimationFrame(tick);
+      }
+    }
+    rafId = requestAnimationFrame(tick);
+
     return () => {
       window.removeEventListener('resize', measure);
       window.removeEventListener('orientationchange', measure);
-      clearTimeout(t);
+      cancelAnimationFrame(rafId);
     };
   }, [sectionRef]);
 
