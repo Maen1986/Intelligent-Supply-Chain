@@ -257,7 +257,7 @@ function ConsultantCarousel({ heroInView, isAr = false }: { heroInView: boolean;
   }, []);
 
   useEffect(() => {
-    const id = setInterval(next, 30000);
+    const id = setInterval(next, 15000);
     return () => clearInterval(id);
   }, [next]);
 
@@ -282,7 +282,7 @@ function ConsultantCarousel({ heroInView, isAr = false }: { heroInView: boolean;
               initial={{ opacity: 0, scale: 1.035 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 1 }}
-              transition={{ opacity: { duration: 1.4, ease: [0.4, 0, 0.2, 1] }, scale: { duration: 30, ease: 'linear' } }}
+              transition={{ opacity: { duration: 1.4, ease: [0.4, 0, 0.2, 1] }, scale: { duration: 15, ease: 'linear' } }}
               src={heroSlides[active].src}
               alt={heroSlides[active].alt}
               className="absolute inset-0 w-full h-full object-cover"
