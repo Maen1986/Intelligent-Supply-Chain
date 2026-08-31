@@ -270,17 +270,19 @@ function useHeroCarousel() {
 }
 
 // The presentation image itself -- this is the ONLY thing in the photo hero
-// section, sized so the whole slide is visible on load with no scrolling.
-function HeroCarouselImage({ active, heroInView }: { active: number; heroInView: boolean }) {
+// section. `maxWidthPx` is measured live from the actual rendered page (see
+// useHeroImageMaxWidth below), not guessed with vh units -- vh-based sizing
+// broke down on real windows where the height:width ratio and browser chrome
+// didn't match what was assumed, leaving the image both small AND clipped.
+function HeroCarouselImage({ active, heroInView, maxWidthPx }: { active: number; heroInView: boolean; maxWidthPx: number }) {
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.97 }}
       animate={heroInView ? { opacity: 1, scale: 1 } : {}}
       transition={{ duration: 0.8, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
       className="relative w-full flex items-center justify-center"
-      style={{ maxWidth: '1700px' }}
     >
-      <div className="relative" style={{ height: 'min(62vh, 720px)', width: '100%', maxWidth: 'min(1700px, 62vh * 920 / 614)' }}>
+      <div className="relative w-full" style={{ maxWidth: `${maxWidthPx}px`, aspectRatio: '920 / 614' }}>
         {/* Gold glow */}
         <div className="absolute -inset-4 rounded-3xl bg-accent/20 blur-2xl pointer-events-none" />
 
@@ -306,6 +308,42 @@ function HeroCarouselImage({ active, heroInView }: { active: number; heroInView:
       </div>
     </motion.div>
   );
+}
+
+// Measures the ACTUAL space available for the hero image on the real page --
+// viewport height minus whatever the sticky header + announcement banner are
+// really rendering at (not an assumed pixel offset), and viewport width minus
+// margins -- then returns the largest width (capped at 1700px) that lets the
+// 920:614 image fit both axes with zero cropping and zero scrolling. Re-runs
+// on resize/orientation-change so it stays correct if the window is resized.
+function useHeroImageMaxWidth(sectionRef: React.RefObject<HTMLElement | null>) {
+  const [maxWidthPx, setMaxWidthPx] = useState(1700);
+
+  useEffect(() => {
+    function measure() {
+      const el = sectionRef.current;
+      if (!el) return;
+      const top = el.getBoundingClientRect().top; // space already used above the hero (banner + sticky nav)
+      const bottomBreathingRoom = 24;
+      const availableHeight = Math.max(240, window.innerHeight - top - bottomBreathingRoom);
+      const availableWidth = Math.min(window.innerWidth * 0.94, 1700);
+      const widthThatFitsHeight = availableHeight * (920 / 614);
+      setMaxWidthPx(Math.max(280, Math.min(availableWidth, widthThatFitsHeight)));
+    }
+    measure();
+    window.addEventListener('resize', measure);
+    window.addEventListener('orientationchange', measure);
+    // Re-measure once more shortly after mount in case fonts/webfonts or the
+    // sticky header's own layout settle a beat after first paint.
+    const t = setTimeout(measure, 250);
+    return () => {
+      window.removeEventListener('resize', measure);
+      window.removeEventListener('orientationchange', measure);
+      clearTimeout(t);
+    };
+  }, [sectionRef]);
+
+  return maxWidthPx;
 }
 
 // Badge + dot indicators -- lives in the flat section below the photo, "attached"
@@ -555,9 +593,10 @@ export function Home() {
   }[] = [];
 
   // Hero headline stagger
-  const heroRef = useRef(null);
+  const heroRef = useRef<HTMLElement>(null);
   const heroInView = useInView(heroRef, { once: true });
   const { active: heroActive, goTo: heroGoTo } = useHeroCarousel();
+  const heroImgMaxWidth = useHeroImageMaxWidth(heroRef);
 
   return (
     <div className="w-full flex flex-col min-h-screen">
@@ -566,7 +605,6 @@ export function Home() {
       <section
         ref={heroRef}
         className="relative w-full bg-gradient-to-br from-[#0B3D91] to-[#082C6B] text-white overflow-hidden flex items-center justify-center"
-        style={{ minHeight: 'calc(100svh - 108px)' }}
       >
         {/* Full-bleed background photo */}
         <div
@@ -580,12 +618,12 @@ export function Home() {
         <Orb size={320} color="rgba(201,168,76,0.15)" x="55%" y="-5%" duration={9} delay={0} />
         <Orb size={200} color="rgba(201,168,76,0.10)" x="75%" y="55%" duration={12} delay={2} />
 
-        <div className="mx-auto px-4 relative z-10 w-full flex flex-col items-center py-8" style={{ maxWidth: '1800px' }}>
+        <div className="mx-auto px-4 relative z-10 w-full flex flex-col items-center py-4" style={{ maxWidth: '1800px' }}>
           {/* Headline kept for SEO/accessibility (heading hierarchy), hidden visually per design */}
           <h1 className="sr-only">{t('hero.headline')}</h1>
 
           {/* The full presentation slide -- sized to fit the first screen, no scroll needed */}
-          <HeroCarouselImage active={heroActive} heroInView={heroInView} />
+          <HeroCarouselImage active={heroActive} heroInView={heroInView} maxWidthPx={heroImgMaxWidth} />
         </div>
       </section>
 
