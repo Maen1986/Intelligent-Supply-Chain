@@ -240,17 +240,21 @@ function useHeroCarousel() {
 const HERO_ASPECT_RATIO = 2400 / 1200; // trial: journey slide regenerated at 2:1 -- other 7 slides pillarbox until replaced
 
 // Guarantees the hero NEVER requires scroll to see in full on load, on any
-// real viewport -- measures the actual space available below whatever sits
-// above the hero (announcement banner + sticky header, whatever their real
-// heights are) and clamps the section's height to fit it, only ever
-// shrinking BELOW the natural width/HERO_ASPECT_RATIO height, never growing
-// past it. object-fit stays 'contain' (see HeroCarouselImage below) so nothing
-// is ever cropped -- on the rare short viewport where clamping kicks in, the
-// image (for slides that already match HERO_ASPECT_RATIO) may show a few
-// px of empty edge instead, never a scroll. Re-measures after the
-// announcement banner's own mount animation settles and on window resize.
-function useHeroFitHeight(sectionRef: React.RefObject<HTMLElement | null>) {
-  const [height, setHeight] = useState<number | null>(null);
+// real viewport, WITHOUT ever pillarboxing -- the earlier height-only clamp
+// shrank the section's height but kept it 100% viewport width, which on
+// short/wide viewports left the box WIDER than HERO_ASPECT_RATIO; since
+// object-fit:contain fits the image to whichever dimension the box
+// under-supplies, that mismatch showed as visible black bars down both
+// sides (reported live, 1 Sep 2026) even for the one slide that already
+// matches HERO_ASPECT_RATIO exactly. Fix: shrink WIDTH and HEIGHT together,
+// keeping the box locked to HERO_ASPECT_RATIO at all times, so contain has
+// nothing to compensate for -- on an ordinary viewport this is identical to
+// before (full width, natural height). Only on a viewport too short for
+// full-width-at-this-ratio does the box narrow below 100% width (centered),
+// trading a small amount of the section's own background showing on the
+// sides for zero scroll and zero crop -- never a scroll, never a bar.
+function useHeroFitBox(sectionRef: React.RefObject<HTMLElement | null>) {
+  const [box, setBox] = useState<{ width: number; height: number } | null>(null);
 
   useEffect(() => {
     function measure() {
@@ -259,18 +263,29 @@ function useHeroFitHeight(sectionRef: React.RefObject<HTMLElement | null>) {
       const rect = el.getBoundingClientRect();
       // Document-relative top offset of the hero = combined height of
       // everything stacked above it (banner + header), independent of
-      // current scroll position.
+      // current scroll position. rect.width is the section's own width,
+      // which stays 100% of the viewport regardless of any previous
+      // measurement (the section itself is never narrowed -- only the
+      // inner image box is), so this is a stable full-viewport-width read.
       const chromeAbove = rect.top + window.scrollY;
       const available = window.innerHeight - chromeAbove;
-      const natural = rect.width / HERO_ASPECT_RATIO;
+      const viewportWidth = rect.width;
+      const naturalHeight = viewportWidth / HERO_ASPECT_RATIO;
       // Guard against a transient bad read (window.innerHeight or layout not
       // yet settled -- observed to happen momentarily on some load paths).
-      // A real viewport never has zero/negative space below the header, so
-      // treat that as "not measured yet" and skip committing -- never lock
-      // the hero at height 0. The scheduled re-measures below (and any
-      // resize/orientation event) will supply a good value shortly after.
-      if (natural <= 0 || available <= 0) return;
-      setHeight(Math.min(natural, available));
+      // A real viewport never has zero/negative width or space below the
+      // header, so treat that as "not measured yet" and skip committing --
+      // never lock the hero at zero size. The scheduled re-measures below
+      // (and any resize/orientation event) supply a good value shortly after.
+      if (viewportWidth <= 0 || available <= 0) return;
+      if (naturalHeight <= available) {
+        // Common case: full width fits within the available height as-is.
+        setBox({ width: viewportWidth, height: naturalHeight });
+      } else {
+        // Short/wide viewport: shrink both dimensions together so the box
+        // stays locked to HERO_ASPECT_RATIO -- never just height alone.
+        setBox({ width: available * HERO_ASPECT_RATIO, height: available });
+      }
     }
 
     measure();
@@ -288,7 +303,7 @@ function useHeroFitHeight(sectionRef: React.RefObject<HTMLElement | null>) {
     };
   }, [sectionRef]);
 
-  return height;
+  return box;
 }
 
 // The presentation image itself -- a full-bleed layer that fills the entire
@@ -578,37 +593,37 @@ export function Home() {
   const heroRef = useRef<HTMLElement>(null);
   const heroInView = useInView(heroRef, { once: true });
   const { active: heroActive, goTo: heroGoTo } = useHeroCarousel();
-  const heroFitHeight = useHeroFitHeight(heroRef);
+  const heroBox = useHeroFitBox(heroRef);
 
   return (
     <div className="w-full flex flex-col min-h-screen">
 
       {/* ── Hero: full-bleed photo slide, edge-to-edge, nothing else in this section ──
-          Owner's call (31 Aug 2026, sixth pass): "just make it full width" --
-          sizing the section to the image's own aspect ratio (instead of the
-          previous viewport-height-driven box) means the image spans the
-          FULL viewport width with zero side letterbox AND zero content
-          cropping at the same time -- all 8 slides are now the same 1.5
-          ratio, so this is pixel-exact. The section is simply as tall as a
-          full-width image naturally is, so the page may need a small amount
-          of ordinary scroll to reach the content below on shorter screens --
-          normal hero-banner behaviour, and the trade-off the owner asked
-          for over full width. IMPORTANT: do NOT add a maxHeight cap here --
-          a maxHeight:100vh "safety net" was tried and it silently broke the
-          aspect ratio (height got clamped shorter than width/1.5 on
-          completely ordinary laptop screens, not just extreme ones), which
-          reintroduced the exact side-pillarbox bug this pass was fixing.
-          Pure width-driven aspect-ratio sizing, no height cap. */}
+          Owner's call (1 Sep 2026, seventh pass): full width AND zero scroll
+          AND zero crop, all three, on every real viewport. useHeroFitBox
+          (above) sizes this section's box to HERO_ASPECT_RATIO at all times
+          -- full viewport width whenever that fits within the space below
+          the banner+header, narrower-and-centered (never letterboxed by
+          object-fit:contain, never a scroll) on the rare viewport too short
+          for that. See useHeroFitBox's own comment for why width and height
+          must shrink together, not height alone. */}
       <section
         ref={heroRef}
-        className="relative w-full text-white overflow-hidden"
-        style={heroFitHeight !== null ? { height: `${heroFitHeight}px` } : { aspectRatio: `${HERO_ASPECT_RATIO}` }}
+        className="relative w-full text-white overflow-hidden bg-gradient-to-br from-[#0B3D91] to-[#082C6B]"
+        style={heroBox !== null ? { height: `${heroBox.height}px` } : { aspectRatio: `${HERO_ASPECT_RATIO}` }}
       >
-        {/* The full presentation slide -- fills the section exactly (full
-            viewport width, height matched to the image's own aspect ratio),
-            no frame/border/rounding, no cropping and no visible letterbox
-            for slides that share the section's aspect ratio. */}
-        <HeroCarouselImage active={heroActive} heroInView={heroInView} />
+        {/* Inner image box -- locked to HERO_ASPECT_RATIO at all times and
+            centered. On an ordinary viewport this spans the full section
+            width (identical to before). Only narrows on a short/wide
+            viewport, in which case the section's own brand-gradient
+            background (not black, not a crop, not a scroll) shows on
+            either side instead of a letterbox. */}
+        <div
+          className="relative h-full mx-auto"
+          style={heroBox !== null ? { width: `${heroBox.width}px` } : { width: '100%' }}
+        >
+          <HeroCarouselImage active={heroActive} heroInView={heroInView} />
+        </div>
 
         {/* Headline kept for SEO/accessibility (heading hierarchy), hidden visually per design */}
         <h1 className="sr-only">{t('hero.headline')}</h1>
