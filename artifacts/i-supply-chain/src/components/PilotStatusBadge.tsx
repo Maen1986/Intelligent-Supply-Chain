@@ -54,7 +54,18 @@ export function PilotStatusBadge({ lang, className }: PilotStatusBadgeProps) {
             className={`inline-flex items-center px-2 py-0.5 rounded-full border border-amber-300 bg-amber-50 text-amber-800 text-[10px] font-bold uppercase tracking-wide select-none leading-tight whitespace-nowrap cursor-help ${className ?? ''}`}
             data-testid="pilot-status-badge"
           >
-            {ar ? 'تجريبي · قيد التطوير' : 'Pilot · Active Development'}
+            {/* Two labels, one always-visible button: at the lg-only width
+             *  band (1024-1279px) the full label doesn't fit next to the
+             *  full nav row, so we swap to a short "PILOT" chip there
+             *  instead of hiding the whole badge -- the badge itself must
+             *  never disappear (owner-reported: looked like the header was
+             *  broken again when it silently vanished at that width). */}
+            <span className="lg:hidden xl:inline">
+              {ar ? 'تجريبي · قيد التطوير' : 'Pilot · Active Development'}
+            </span>
+            <span className="hidden lg:inline xl:hidden">
+              {ar ? 'تجريبي' : 'Pilot'}
+            </span>
           </button>
         </TooltipTrigger>
         <TooltipContent side="bottom" className="max-w-xs">

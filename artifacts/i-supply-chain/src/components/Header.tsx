@@ -139,7 +139,7 @@ export function Header() {
           <div className="bg-white rounded-xl px-2.5 py-1 shadow-sm">
             <Logo heightPx={44} />
           </div>
-          <PilotStatusBadge lang={lang} className="hidden sm:inline-flex lg:hidden xl:inline-flex" />
+          <PilotStatusBadge lang={lang} className="hidden sm:inline-flex" />
         </div>
 
         {/* ── Desktop Nav ── */}
