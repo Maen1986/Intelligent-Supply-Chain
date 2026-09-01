@@ -269,29 +269,24 @@ function useHeroFitBox(sectionRef: React.RefObject<HTMLElement | null>) {
       // Document-relative top offset of the hero = combined height of
       // everything stacked above it (banner + header), independent of
       // current scroll position.
-      const chromeAbove = rect.top + window.scrollY;
-      // Small undershoot so sub-pixel rounding / a transient scrollbar
-      // never leaves a 1-2px scroll sliver at the very bottom.
-      const SAFETY_MARGIN_PX = 8;
-      const available = window.innerHeight - chromeAbove - SAFETY_MARGIN_PX;
       const viewportWidth = rect.width;
       const naturalHeight = viewportWidth / HERO_ASPECT_RATIO;
       // Guard against a transient bad read (window.innerHeight or layout not
       // yet settled -- observed to happen momentarily on some load paths).
-      // A real viewport never has zero/negative width or space below the
-      // header, so treat that as "not measured yet" and skip committing --
-      // never lock the hero at zero size. The ResizeObserver below supplies
-      // a good value as soon as layout actually settles.
-      if (viewportWidth <= 0 || available <= 0) return;
-      // Width is ALWAYS viewportWidth -- never narrowed. Height is capped
-      // to `available` so the hero itself never forces a scroll; on the
-      // common case (naturalHeight <= available) height === naturalHeight,
-      // identical to before. Only when the window is too short for the
-      // natural height does height clamp below it, and HeroCarouselImage
-      // switches to object-fit:cover for just that state, cropping evenly
-      // top/bottom instead of narrowing or scrolling.
-      const height = Math.min(naturalHeight, available);
-      const cropped = naturalHeight > available;
+      if (viewportWidth <= 0) return;
+      // Tenth pass (2 Sep 2026, owner-reported live crop of baked-in text/
+      // stats at the top and bottom edges of the hero slides): height is
+      // ALWAYS the image's own natural height now -- never clamped to the
+      // space below the header. The ninth pass's clamp-and-cover-crop
+      // traded a short-viewport scrollbar for cropping real infographic
+      // content (headline stat rows, "DATA SOURCES" / "WHY ISC?" footers)
+      // baked right up to the image edges, which is worse: it silently cuts
+      // off content instead of just asking the user to scroll a few dozen
+      // pixels on an unusually short window. The image is never cropped;
+      // `cropped` is retained as a prop for HeroCarouselImage but is now
+      // always false, so it always renders with object-fit:contain.
+      const height = naturalHeight;
+      const cropped = false;
       setBox(prev => (prev && prev.width === viewportWidth && prev.height === height && prev.cropped === cropped)
         ? prev
         : { width: viewportWidth, height, cropped });
