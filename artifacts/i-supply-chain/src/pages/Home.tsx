@@ -209,7 +209,7 @@ const heroSlides = [
   { src: '/brand/hero-service-kpi.jpg?v=4', alt: 'ISC KPIs & Benchmarking', label: 'KPIs & Benchmarking', labelAr: 'مؤشرات الأداء والمقارنة المرجعية' },
   { src: '/brand/hero-service-tco.jpg?v=3', alt: 'ISC Total Cost of Ownership', label: 'Total Cost of Ownership (TCO)', labelAr: 'التكلفة الإجمالية للملكية' },
   { src: '/brand/hero-service-clm.jpg?v=4', alt: 'ISC Contract Intelligence', label: 'Contract Intelligence (CLM)', labelAr: 'إدارة دورة حياة العقود' },
-  { src: '/brand/hero-service-srm.jpg?v=4', alt: 'ISC Supplier Intelligence', label: 'Supplier Intelligence (SRM)', labelAr: 'إدارة علاقات الموردين' },
+  { src: '/brand/hero-service-srm.jpg?v=5', alt: 'ISC Supplier Intelligence', label: 'Supplier Intelligence (SRM)', labelAr: 'إدارة علاقات الموردين' },
   { src: '/brand/hero-service-risk.jpg?v=5', alt: 'ISC Supply Chain Resiliency & Risk', label: 'SC Resiliency & Risk', labelAr: 'مرونة سلسلة الإمداد وإدارة المخاطر' },
 ];
 
