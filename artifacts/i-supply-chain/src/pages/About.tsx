@@ -194,6 +194,16 @@ export function About() {
               alt={ar ? 'منهجية آي سبلاي تشين في حل المشكلات' : 'I Supply Chain problem-solving methodology'}
               className="w-full rounded-2xl shadow-xl border border-border"
             />
+            <div className="text-center mt-6 max-w-2xl mx-auto">
+              <p className="text-muted-foreground text-lg leading-relaxed">
+                {ar
+                  ? 'معظم المشكلات ليست معقّدة، بل ببساطة لم تُشخَّص بالكامل.'
+                  : "Most problems aren't complicated. They're just never fully diagnosed."}
+              </p>
+              <p className="text-accent font-bold text-xl mt-1">
+                {ar ? 'نحن نتعمّق أكثر — ثم نحلّها.' : 'We go deeper — then we fix it.'}
+              </p>
+            </div>
           </RevealSection>
         </div>
       </section>
