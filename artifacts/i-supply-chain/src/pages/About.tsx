@@ -209,7 +209,7 @@ export function About() {
       </section>
 
       {/* Meet the Team — Ma'in only */}
-      <section className="py-20 bg-white">
+      <section className="py-20 bg-muted">
         <div className="container mx-auto px-4 max-w-5xl">
           <RevealSection className="text-center mb-14">
             <span className="text-accent font-bold text-sm uppercase tracking-widest">{ar ? 'الخبير وراء ISC' : 'The Expert Behind ISC'}</span>
