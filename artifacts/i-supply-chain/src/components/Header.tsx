@@ -142,7 +142,7 @@ export function Header() {
         </div>
 
         {/* ── Desktop Nav ── */}
-        <nav className="hidden lg:flex items-center gap-0.5 flex-1 justify-center min-w-0 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+        <nav className="hidden lg:flex items-center gap-0.5 flex-1 justify-center">
 
           <Link href="/" className={`${tabBase} ${isActive('/') ? tabActive : tabIdle}`}>
             {navLabel('nav.home')}
