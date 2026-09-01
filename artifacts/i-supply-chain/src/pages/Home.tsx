@@ -203,14 +203,14 @@ function StatCard({ value, suffix, label }: { value: number; suffix: string; lab
 
 // ─── Hero service carousel ───────────────────────────────────────────────────
 const heroSlides = [
-  { src: '/brand/hero-service-journey.jpg?v=6', alt: 'ISC Services — Our Journey', label: 'Our Services Journey', labelAr: 'رحلة خدماتنا' },
-  { src: '/brand/hero-service-advantage.jpg?v=2', alt: 'ISC — Supply Chain Advantage', label: 'Supply Chain Advantage', labelAr: 'ميزة سلسلة الإمداد التنافسية' },
-  { src: '/brand/hero-service-maturity.jpg?v=2', alt: 'ISC Maturity Assessment', label: 'Maturity Assessment', labelAr: 'تقييم النضج' },
-  { src: '/brand/hero-service-kpi.jpg?v=2', alt: 'ISC KPIs & Benchmarking', label: 'KPIs & Benchmarking', labelAr: 'مؤشرات الأداء والمقارنة المرجعية' },
-  { src: '/brand/hero-service-tco.jpg?v=2', alt: 'ISC Total Cost of Ownership', label: 'Total Cost of Ownership (TCO)', labelAr: 'التكلفة الإجمالية للملكية' },
-  { src: '/brand/hero-service-clm.jpg?v=2', alt: 'ISC Contract Intelligence', label: 'Contract Intelligence (CLM)', labelAr: 'إدارة دورة حياة العقود' },
-  { src: '/brand/hero-service-srm.jpg?v=2', alt: 'ISC Supplier Intelligence', label: 'Supplier Intelligence (SRM)', labelAr: 'إدارة علاقات الموردين' },
-  { src: '/brand/hero-service-risk.jpg?v=3', alt: 'ISC Supply Chain Resiliency & Risk', label: 'SC Resiliency & Risk', labelAr: 'مرونة سلسلة الإمداد وإدارة المخاطر' },
+  { src: '/brand/hero-service-journey.jpg?v=7', alt: 'ISC Services — Our Journey', label: 'Our Services Journey', labelAr: 'رحلة خدماتنا' },
+  { src: '/brand/hero-service-advantage.jpg?v=3', alt: 'ISC — Supply Chain Advantage', label: 'Supply Chain Advantage', labelAr: 'ميزة سلسلة الإمداد التنافسية' },
+  { src: '/brand/hero-service-maturity.jpg?v=3', alt: 'ISC Maturity Assessment', label: 'Maturity Assessment', labelAr: 'تقييم النضج' },
+  { src: '/brand/hero-service-kpi.jpg?v=3', alt: 'ISC KPIs & Benchmarking', label: 'KPIs & Benchmarking', labelAr: 'مؤشرات الأداء والمقارنة المرجعية' },
+  { src: '/brand/hero-service-tco.jpg?v=3', alt: 'ISC Total Cost of Ownership', label: 'Total Cost of Ownership (TCO)', labelAr: 'التكلفة الإجمالية للملكية' },
+  { src: '/brand/hero-service-clm.jpg?v=3', alt: 'ISC Contract Intelligence', label: 'Contract Intelligence (CLM)', labelAr: 'إدارة دورة حياة العقود' },
+  { src: '/brand/hero-service-srm.jpg?v=3', alt: 'ISC Supplier Intelligence', label: 'Supplier Intelligence (SRM)', labelAr: 'إدارة علاقات الموردين' },
+  { src: '/brand/hero-service-risk.jpg?v=4', alt: 'ISC Supply Chain Resiliency & Risk', label: 'SC Resiliency & Risk', labelAr: 'مرونة سلسلة الإمداد وإدارة المخاطر' },
 ];
 
 // Shared slide-rotation state, lifted out so the image (in the full-bleed
