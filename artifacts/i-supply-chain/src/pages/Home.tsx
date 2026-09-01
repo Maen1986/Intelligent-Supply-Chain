@@ -273,7 +273,23 @@ function useHeroFitBox(sectionRef: React.RefObject<HTMLElement | null>) {
       // measurement (the section itself is never narrowed -- only the
       // inner image box is), so this is a stable full-viewport-width read.
       const chromeAbove = rect.top + window.scrollY;
-      const available = window.innerHeight - chromeAbove;
+      // Safety margin (2 Sep 2026, owner-reported): pixel-exact fitting
+      // against window.innerHeight has repeatedly gone stale in real
+      // browsers -- a horizontal scrollbar appearing (which eats into
+      // vertical space without changing innerHeight), a banner animation
+      // frame landing between ResizeObserver ticks, or plain sub-pixel
+      // rounding on the computed height -- each independently pushes the
+      // true rendered bottom edge a few px below the fold, which reads as
+      // "have to scroll slightly to see the bottom of the slide." Rather
+      // than keep chasing the exact cause per-browser, undershoot on
+      // purpose: reserve a small margin so the box is always slightly
+      // SHORTER than the theoretical exact fit. The cost is an invisible
+      // sliver of the section's own solid navy background at the very
+      // bottom on ordinary viewports (not a crop, not a letterbox, not
+      // noticeable) -- paid in exchange for a hard guarantee of zero
+      // scroll, on every browser, every time, no exceptions.
+      const SAFETY_MARGIN_PX = 24;
+      const available = window.innerHeight - chromeAbove - SAFETY_MARGIN_PX;
       const viewportWidth = rect.width;
       const naturalHeight = viewportWidth / HERO_ASPECT_RATIO;
       // Guard against a transient bad read (window.innerHeight or layout not
