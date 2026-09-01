@@ -354,7 +354,7 @@ function HeroCarouselImage({ active, heroInView, cropped }: { active: number; he
   return (
     <motion.div
       initial={{ opacity: 0 }}
-      animate={heroInView ? { opacity: 1 } : {}}
+      animate={{ opacity: 1 }}
       transition={{ duration: 0.8, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
       className="absolute inset-0 bg-[#040910]"
     >
@@ -670,7 +670,7 @@ export function Home() {
           {/* Subheadline */}
           <motion.p
             initial={{ opacity: 0 }}
-            animate={heroInView ? { opacity: 1 } : {}}
+            animate={{ opacity: 1 }}
             transition={{ duration: 0.7, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
             className="text-lg md:text-xl text-white/80 max-w-2xl leading-relaxed"
           >
@@ -680,7 +680,7 @@ export function Home() {
           {/* CTA buttons — immediately below the subheadline */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
-            animate={heroInView ? { opacity: 1, y: 0 } : {}}
+            animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
             className="flex flex-col sm:flex-row gap-3 justify-center"
           >
@@ -698,7 +698,7 @@ export function Home() {
 
           <motion.div
             initial={{ opacity: 0 }}
-            animate={heroInView ? { opacity: 1 } : {}}
+            animate={{ opacity: 1 }}
             transition={{ duration: 0.8, delay: 0.5 }}
           >
             <Link href="/csr" className="text-sm text-white/60 hover:text-accent underline underline-offset-4 font-medium inline-flex items-center gap-1 transition-colors">
