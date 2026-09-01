@@ -1,10 +1,10 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import NotFound from '@/pages/not-found';
-import { Route, Switch, Router as WouterRouter } from 'wouter';
+import { Route, Switch, Router as WouterRouter, useLocation } from 'wouter';
 import { LanguageProvider, useLanguage } from '@/lib/LanguageContext';
 import { AuthProvider } from '@/lib/AuthContext';
 import { isLocalStorageAvailable } from '@/lib/storage';
@@ -60,8 +60,46 @@ import { CommandCentreFloat } from '@/components/CommandCentreFloat';
 
 const queryClient = new QueryClient();
 
+// The floating chat / WhatsApp / promo widgets are all `position: fixed`
+// docked to a page-viewport corner (bottom-left or bottom-right). On every
+// route except Home that's harmless -- the page already scrolls, so a
+// corner widget never sits on top of anything the person is reading. On
+// Home, though, the hero section is deliberately sized to fill the entire
+// viewport with zero scroll (see useHeroFitBox in Home.tsx), which means
+// "bottom-right of the viewport" and "bottom-right of the hero image" are
+// the exact same pixels on first load. The floats were sitting directly on
+// top of hero content -- e.g. the SRM/KPI/Risk slides' right-hand alerts
+// and scorecard panels -- which reads as "part of the slide is cut off,"
+// even though the image itself is intact underneath. Fix: on Home only,
+// hold the floats back until the person has scrolled roughly half a
+// viewport height, i.e. past the hero. Every other route is unaffected --
+// floats there render immediately, exactly as before.
+function useShowFloats(pathname: string) {
+  const [show, setShow] = useState(pathname !== '/');
+
+  useEffect(() => {
+    if (pathname !== '/') {
+      setShow(true);
+      return;
+    }
+    setShow(false);
+    function check() {
+      if (window.scrollY > window.innerHeight * 0.5) {
+        setShow(true);
+      }
+    }
+    check(); // covers back/forward navigation landing already-scrolled
+    window.addEventListener('scroll', check, { passive: true });
+    return () => window.removeEventListener('scroll', check);
+  }, [pathname]);
+
+  return show;
+}
+
 function Layout({ children }: { children: React.ReactNode }) {
   const { lang } = useLanguage();
+  const [location] = useLocation();
+  const showFloats = useShowFloats(location);
   useIPProtection();
   return (
     <div className={`min-h-screen flex flex-col font-sans ${lang === 'ar' ? 'rtl' : 'ltr'}`}>
@@ -71,9 +109,9 @@ function Layout({ children }: { children: React.ReactNode }) {
         {children}
       </main>
       <Footer />
-      <ChatWidget />
-      <WhatsAppButton />
-      <CommandCentreFloat />
+      {showFloats && <ChatWidget />}
+      {showFloats && <WhatsAppButton />}
+      {showFloats && <CommandCentreFloat />}
     </div>
   );
 }
