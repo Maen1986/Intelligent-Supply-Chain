@@ -272,24 +272,6 @@ function useHeroFitBox(sectionRef: React.RefObject<HTMLElement | null>) {
       // which stays 100% of the viewport regardless of any previous
       // measurement (the section itself is never narrowed -- only the
       // inner image box is), so this is a stable full-viewport-width read.
-      const chromeAbove = rect.top + window.scrollY;
-      // Safety margin (2 Sep 2026, owner-reported): pixel-exact fitting
-      // against window.innerHeight has repeatedly gone stale in real
-      // browsers -- a horizontal scrollbar appearing (which eats into
-      // vertical space without changing innerHeight), a banner animation
-      // frame landing between ResizeObserver ticks, or plain sub-pixel
-      // rounding on the computed height -- each independently pushes the
-      // true rendered bottom edge a few px below the fold, which reads as
-      // "have to scroll slightly to see the bottom of the slide." Rather
-      // than keep chasing the exact cause per-browser, undershoot on
-      // purpose: reserve a small margin so the box is always slightly
-      // SHORTER than the theoretical exact fit. The cost is an invisible
-      // sliver of the section's own solid navy background at the very
-      // bottom on ordinary viewports (not a crop, not a letterbox, not
-      // noticeable) -- paid in exchange for a hard guarantee of zero
-      // scroll, on every browser, every time, no exceptions.
-      const SAFETY_MARGIN_PX = 24;
-      const available = window.innerHeight - chromeAbove - SAFETY_MARGIN_PX;
       const viewportWidth = rect.width;
       const naturalHeight = viewportWidth / HERO_ASPECT_RATIO;
       // Guard against a transient bad read (window.innerHeight or layout not
@@ -298,20 +280,19 @@ function useHeroFitBox(sectionRef: React.RefObject<HTMLElement | null>) {
       // header, so treat that as "not measured yet" and skip committing --
       // never lock the hero at zero size. The ResizeObserver below supplies
       // a good value as soon as layout actually settles.
-      if (viewportWidth <= 0 || available <= 0) return;
-      if (naturalHeight <= available) {
-        // Common case: full width fits within the available height as-is.
-        setBox(prev => (prev && prev.width === viewportWidth && prev.height === naturalHeight)
-          ? prev
-          : { width: viewportWidth, height: naturalHeight });
-      } else {
-        // Short/wide viewport: shrink both dimensions together so the box
-        // stays locked to HERO_ASPECT_RATIO -- never just height alone.
-        const w = available * HERO_ASPECT_RATIO;
-        setBox(prev => (prev && prev.width === w && prev.height === available)
-          ? prev
-          : { width: w, height: available });
-      }
+      if (viewportWidth <= 0) return;
+      // Owner's call (1 Sep 2026, eighth pass): full width now wins over
+      // zero-scroll. The short/wide-viewport branch that used to shrink
+      // WIDTH to fit "available" height traded a small scroll for visible
+      // navy gutters down both sides of the hero -- reported live as "it
+      // must be wider, closing most of the two sides." Full width, natural
+      // height (viewportWidth / HERO_ASPECT_RATIO) always -- on an
+      // ordinary viewport this is identical to before; on an unusually
+      // short window the hero may now be taller than the visible area
+      // above the fold, which the owner has said is the better trade.
+      setBox(prev => (prev && prev.width === viewportWidth && prev.height === naturalHeight)
+        ? prev
+        : { width: viewportWidth, height: naturalHeight });
     }
 
     measure();
