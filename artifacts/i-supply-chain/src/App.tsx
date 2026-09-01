@@ -74,6 +74,33 @@ const queryClient = new QueryClient();
 // hold the floats back until the person has scrolled roughly half a
 // viewport height, i.e. past the hero. Every other route is unaffected --
 // floats there render immediately, exactly as before.
+// BUG FOUND 2 Sep 2026 (owner-reported live screenshot: floats sitting on
+// top of the Maturity slide on first paint, no scroll involved). Root
+// cause: the original version of this hook read window.scrollY exactly
+// once on mount via check() and, if it happened to already be past the
+// 50% threshold, latched show=true FOREVER for that page view -- it never
+// re-checked afterwards. wouter does client-side routing with no
+// scroll-reset on navigation (confirmed: no scrollTo(0,0) anywhere in this
+// app), so a signed-in user browsing another page, scrolling down, then
+// clicking "Home" in the nav would land on the fresh Home hero with the
+// browser's scrollY still wherever it was on the PREVIOUS page. That stale
+// high scrollY immediately tripped the one-time check() and the floats
+// rendered directly over the hero from the very first frame -- exactly
+// what the screenshot showed, and exactly why it could never be
+// reproduced by a plain fresh page load (scrollY is genuinely 0 there).
+// Fix, two parts: (1) useScrollToTopOnNavigate below actually scrolls to
+// the top on every route change -- correct behaviour on its own, and it
+// removes the stale-scrollY input at the source. (2) this hook now tracks
+// LIVE scroll position on every scroll event instead of latching once, so
+// scrolling back up to the top hides the floats again exactly as
+// scrolling down revealed them, rather than "stuck visible forever" after
+// the first trip.
+function useScrollToTopOnNavigate(pathname: string) {
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+}
+
 function useShowFloats(pathname: string) {
   const [show, setShow] = useState(pathname !== '/');
 
@@ -82,13 +109,10 @@ function useShowFloats(pathname: string) {
       setShow(true);
       return;
     }
-    setShow(false);
     function check() {
-      if (window.scrollY > window.innerHeight * 0.5) {
-        setShow(true);
-      }
+      setShow(window.scrollY > window.innerHeight * 0.5);
     }
-    check(); // covers back/forward navigation landing already-scrolled
+    check();
     window.addEventListener('scroll', check, { passive: true });
     return () => window.removeEventListener('scroll', check);
   }, [pathname]);
@@ -99,6 +123,7 @@ function useShowFloats(pathname: string) {
 function Layout({ children }: { children: React.ReactNode }) {
   const { lang } = useLanguage();
   const [location] = useLocation();
+  useScrollToTopOnNavigate(location);
   const showFloats = useShowFloats(location);
   useIPProtection();
   return (
