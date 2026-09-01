@@ -104,6 +104,7 @@ export function Header() {
       'nav.supplierDependency': { en: '🔗 Supplier Dependency', ar: '🔗 اعتمادية المورّد' },
       'nav.lcgpaReadiness': { en: '🏛️ LCGPA Readiness', ar: '🏛️ جاهزية المحتوى المحلي' },
       'nav.freeZoneRouting': { en: '🏭 Free-Zone Routing', ar: '🏭 توجيه المنطقة الحرة' },
+      'nav.gccSeasonalCalendar': { en: '📅 Seasonal Calendar', ar: '📅 التقويم الموسمي' },
     };
     return map[key]?.[lang] ?? key;
   };
