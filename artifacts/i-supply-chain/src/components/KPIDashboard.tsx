@@ -179,7 +179,7 @@ export function buildKpiTemplateRows(
     // Branding / title block
     ['I Supply Chain — KPI Data Collection Template', '', '', '', '', '', ''],
     [`Framework: ${frameworkLabel}`, '', '', '', '', '', ''],
-    [`Generated: ${today} | Ma'in Alhaqash MCIPS CPSM | isupplychain.com`, '', '', '', '', '', ''],
+    [`Generated: ${today} | Ma'in Alhaqash MCIPS CPSM | iscsupplychain.com`, '', '', '', '', '', ''],
     [...EMPTY7],
     ['INSTRUCTIONS:', 'Fill in the "Your Value" column (column C) for EVERY input row.', '', '', '', '', ''],
     ['', 'Do NOT modify KPI ID, Input Field, Unit, or Formula columns.', '', '', '', '', ''],

@@ -499,7 +499,7 @@ function ReportPrintLayout({ report, contactInfo, maturity, generatedAt }: {
         </PrintCard>
         <div style={{ marginTop: '32px', borderTop: '2px solid #082C6B', paddingTop: '16px', textAlign: 'center' }}>
           <div style={{ fontSize: '13px', fontWeight: 700, color: '#082C6B' }}>I Supply Chain — Ma'in Alhaqash MCIPS · CPSM · MSc · MIPP</div>
-          <div style={{ fontSize: '11px', color: '#666', marginTop: '4px' }}>+966 549 479 722 · www.isupplychain.com</div>
+          <div style={{ fontSize: '11px', color: '#666', marginTop: '4px' }}>+966 549 479 722 · www.iscsupplychain.com</div>
           <div style={{ fontSize: '10px', color: '#888', marginTop: '8px' }}>
             This report is confidential and prepared exclusively for {contactInfo.company}.
             © {new Date().getFullYear()} I Supply Chain. All Rights Reserved.
@@ -565,7 +565,7 @@ function ReportPrintLayout({ report, contactInfo, maturity, generatedAt }: {
           </table>
           <div style={{ marginTop: '32px', borderTop: '2px solid #082C6B', paddingTop: '16px', textAlign: 'center' }}>
             <div style={{ fontSize: '13px', fontWeight: 700, color: '#082C6B' }}>I Supply Chain — Ma'in Alhaqash MCIPS · CPSM · MSc · MIPP</div>
-            <div style={{ fontSize: '11px', color: '#666', marginTop: '4px' }}>+966 549 479 722 · www.isupplychain.com</div>
+            <div style={{ fontSize: '11px', color: '#666', marginTop: '4px' }}>+966 549 479 722 · www.iscsupplychain.com</div>
             <div style={{ fontSize: '10px', color: '#888', marginTop: '8px' }}>
               This report is confidential and prepared exclusively for {contactInfo.company}.
               © {new Date().getFullYear()} I Supply Chain. All Rights Reserved.

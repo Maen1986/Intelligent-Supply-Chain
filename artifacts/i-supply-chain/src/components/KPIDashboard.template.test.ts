@@ -128,7 +128,7 @@ function buildTemplateRows(resolvedSlug: string): string[][] {
   const allRows: string[][] = [
     ['I Supply Chain — KPI Data Collection Template', '', '', '', '', ''],
     [`Framework: ${frameworkLabel}`, '', '', '', '', ''],
-    [`Generated: 1 January 2026 | Ma'in Alhaqash MCIPS CPSM | isupplychain.com`, '', '', '', '', ''],
+    [`Generated: 1 January 2026 | Ma'in Alhaqash MCIPS CPSM | iscsupplychain.com`, '', '', '', '', ''],
     ['', '', '', '', '', ''],
     ['INSTRUCTIONS:', 'Fill in the "Your Value" column (column C) for EVERY input row.', '', '', '', ''],
     ['', 'Do NOT modify KPI ID, Input Field, Unit, or Formula columns.', '', '', '', ''],
@@ -636,7 +636,7 @@ describe('Arabic import log — risk-management (lang="ar")', () => {
     const rows: string[][] = [
       ['I Supply Chain — KPI Data Collection Template', '', '', ''],
       ['Framework: Risk Management', '', '', ''],
-      ["Generated: 1 January 2024 | Ma'in Alhaqash MCIPS CPSM | isupplychain.com", '', '', ''],
+      ["Generated: 1 January 2024 | Ma'in Alhaqash MCIPS CPSM | iscsupplychain.com", '', '', ''],
       ['', '', '', ''],
       ['KPI ID', 'Input Field', 'Your Value', 'Unit'],
       // rrc: Risk Register Coverage %
@@ -656,7 +656,7 @@ describe('Arabic import log — risk-management (lang="ar")', () => {
     const rows: string[][] = [
       ['I Supply Chain — KPI Data Collection Template', '', '', ''],
       ['Framework: Risk Management', '', '', ''],
-      ["Generated: 1 January 2024 | Ma'in Alhaqash MCIPS CPSM | isupplychain.com", '', '', ''],
+      ["Generated: 1 January 2024 | Ma'in Alhaqash MCIPS CPSM | iscsupplychain.com", '', '', ''],
       ['', '', '', ''],
       ['KPI ID', 'Input Field', 'Your Value', 'Unit'],
       // rrc
@@ -3001,7 +3001,7 @@ describe('Arabic import log — contract-lifecycle-management (lang="ar")', () =
     const rows: string[][] = [
       ['I Supply Chain — KPI Data Collection Template', '', '', ''],
       ['Framework: Contract Lifecycle Management', '', '', ''],
-      ["Generated: 1 January 2024 | Ma'in Alhaqash MCIPS CPSM | isupplychain.com", '', '', ''],
+      ["Generated: 1 January 2024 | Ma'in Alhaqash MCIPS CPSM | iscsupplychain.com", '', '', ''],
       ['', '', '', ''],
       ['KPI ID', 'Input Field', 'Your Value', 'Unit'],
       // cact: avg(350, 48) ≈ 7.3
@@ -3021,7 +3021,7 @@ describe('Arabic import log — contract-lifecycle-management (lang="ar")', () =
     const rows: string[][] = [
       ['I Supply Chain — KPI Data Collection Template', '', '', ''],
       ['Framework: Contract Lifecycle Management', '', '', ''],
-      ["Generated: 1 January 2024 | Ma'in Alhaqash MCIPS CPSM | isupplychain.com", '', '', ''],
+      ["Generated: 1 January 2024 | Ma'in Alhaqash MCIPS CPSM | iscsupplychain.com", '', '', ''],
       ['', '', '', ''],
       ['KPI ID', 'Input Field', 'Your Value', 'Unit'],
       // cact
@@ -3118,7 +3118,7 @@ describe('Arabic import log — lean-agile-supply-chain (lang="ar")', () => {
     const rows: string[][] = [
       ['I Supply Chain — KPI Data Collection Template', '', '', ''],
       ['Framework: Lean Agile Supply Chain', '', '', ''],
-      ["Generated: 1 January 2024 | Ma'in Alhaqash MCIPS CPSM | isupplychain.com", '', '', ''],
+      ["Generated: 1 January 2024 | Ma'in Alhaqash MCIPS CPSM | iscsupplychain.com", '', '', ''],
       ['', '', '', ''],
       ['KPI ID', 'Input Field', 'Your Value', 'Unit'],
       // pce: Process Cycle Efficiency — pct(42, 380) ≈ 11.1

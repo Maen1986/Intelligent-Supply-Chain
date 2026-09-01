@@ -124,7 +124,7 @@ Confidential Marking: All generated briefings are marked "CONFIDENTIAL — © I 
 5. A statement that the information in your notice is accurate, and under penalty of perjury, that you are the copyright owner or authorised to act on their behalf
 6. Your electronic or physical signature
 
-To report infringement of ISC's intellectual property by third parties, or to request a content licence, contact: legal@isupplychain.com or haqash.maen@gmail.com`,
+To report infringement of ISC's intellectual property by third parties, or to request a content licence, contact: legal@iscsupplychain.com or haqash.maen@gmail.com`,
     contentAr: `إذا كنت تعتقد أن أي محتوى على هذه المنصّة ينتهك حقوق ملكيتك الفكرية، يُرجى تقديم إشعار خطي إلى فريقنا القانوني يتضمّن ما يلي:
 
 1. تحديد المصنّف المحمي بحقوق النشر الذي تدّعي انتهاكه
@@ -134,7 +134,7 @@ To report infringement of ISC's intellectual property by third parties, or to re
 5. بيان بأن المعلومات الواردة في إشعارك دقيقة، وأنك — تحت طائلة عقوبة الحنث باليمين — مالك حقوق النشر أو مفوّض بالتصرف نيابةً عنه
 6. توقيعك الإلكتروني أو المادي
 
-للإبلاغ عن انتهاك أطراف ثالثة للملكية الفكرية لـ ISC، أو لطلب ترخيص محتوى، يُرجى التواصل عبر: legal@isupplychain.com أو haqash.maen@gmail.com`,
+للإبلاغ عن انتهاك أطراف ثالثة للملكية الفكرية لـ ISC، أو لطلب ترخيص محتوى، يُرجى التواصل عبر: legal@iscsupplychain.com أو haqash.maen@gmail.com`,
   },
   {
     id: 'jurisdiction',
