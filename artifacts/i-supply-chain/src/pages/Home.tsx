@@ -218,19 +218,24 @@ const heroSlides = [
 // sync without nesting one inside the other.
 function useHeroCarousel() {
   const [active, setActive] = useState(0);
+  // Paused while the mouse is over the hero image, so a slide doesn't
+  // change out from under someone who's actually looking at/reading it --
+  // requested live, 1 Sep 2026. Resumes automatically on mouse-leave.
+  const [paused, setPaused] = useState(false);
 
   const next = useCallback(() => {
     setActive((p) => (p + 1) % heroSlides.length);
   }, []);
 
   useEffect(() => {
+    if (paused) return;
     const id = setInterval(next, 15000);
     return () => clearInterval(id);
-  }, [next]);
+  }, [next, paused]);
 
   const goTo = (i: number) => setActive(i);
 
-  return { active, goTo };
+  return { active, goTo, pause: () => setPaused(true), resume: () => setPaused(false) };
 }
 
 // All 8 hero slides (final set, 1 Sep 2026) are 1774x887 infographic
@@ -609,7 +614,7 @@ export function Home() {
   // Hero headline stagger
   const heroRef = useRef<HTMLElement>(null);
   const heroInView = useInView(heroRef, { once: true });
-  const { active: heroActive, goTo: heroGoTo } = useHeroCarousel();
+  const { active: heroActive, goTo: heroGoTo, pause: heroPause, resume: heroResume } = useHeroCarousel();
   const heroBox = useHeroFitBox(heroRef);
 
   return (
@@ -632,6 +637,8 @@ export function Home() {
         // screenshot as two distinct blues stacked on top of each other.
         className="relative w-full text-white overflow-hidden bg-[#082C6B]"
         style={heroBox !== null ? { height: `${heroBox.height}px` } : { aspectRatio: `${HERO_ASPECT_RATIO}` }}
+        onMouseEnter={heroPause}
+        onMouseLeave={heroResume}
       >
         {/* Inner image box -- locked to HERO_ASPECT_RATIO at all times and
             centered. On an ordinary viewport this spans the full section
