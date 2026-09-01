@@ -323,7 +323,7 @@ export function ScopedCommandBar() {
         onClick={() => setOpen(true)}
         className="flex items-center gap-1 hover:text-[#C9A84C] transition-colors"
       >
-        <Search className="w-3 h-3" /> {ar ? 'ابحث في بياناتي' : 'Ask your data'}
+        <Search className="w-3 h-3" /> <span className="hidden xl:inline">{ar ? 'ابحث في بياناتي' : 'Ask your data'}</span>
       </button>
 
       <Dialog open={open} onOpenChange={setOpen}>

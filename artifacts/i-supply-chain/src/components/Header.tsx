@@ -111,7 +111,7 @@ export function Header() {
   const isActive = (href: string) =>
     href.startsWith('/#') ? false : href !== '/' ? location.startsWith(href.split('?')[0]) : location === '/';
 
-  const tabBase = 'relative flex items-center gap-1 px-3 py-2 text-[15px] font-semibold rounded-lg transition-all duration-150 whitespace-nowrap';
+  const tabBase = 'relative flex items-center gap-0.5 xl:gap-1 px-1.5 xl:px-2 2xl:px-3 py-2 text-[12px] xl:text-[13px] 2xl:text-[15px] font-semibold rounded-lg transition-all duration-150 whitespace-nowrap';
   const tabActive = 'text-white bg-white/15';
   const tabIdle = 'text-white/80 hover:text-white hover:bg-white/10';
   const dropdownCls = `absolute top-full ${lang === 'ar' ? 'right-0' : 'left-0'} mt-2 bg-white border border-border rounded-2xl shadow-2xl py-2 z-50`;
@@ -128,7 +128,7 @@ export function Header() {
           sit near the bar's actual left/right edges on wide viewports,
           instead of being capped by container's max-width with unused
           navy margin on both sides -- reported live via screenshot. */}
-      <div className="w-full px-4 sm:px-6 lg:px-10 h-16 flex items-center justify-between gap-4">
+      <div className="w-full px-4 sm:px-6 lg:px-4 xl:px-6 2xl:px-10 h-16 flex items-center justify-between gap-2 lg:gap-2 xl:gap-3 2xl:gap-4">
         <div className="flex items-center gap-3 shrink-0">
           {/* Chip height (44px logo + 8px padding = 52px) is kept well under
               the header's own h-16 (64px) bar so it never pokes out past the
@@ -138,11 +138,11 @@ export function Header() {
           <div className="bg-white rounded-xl px-2.5 py-1 shadow-sm">
             <Logo heightPx={44} />
           </div>
-          <PilotStatusBadge lang={lang} className="hidden sm:inline-flex" />
+          <PilotStatusBadge lang={lang} className="hidden sm:inline-flex lg:hidden xl:inline-flex" />
         </div>
 
         {/* ── Desktop Nav ── */}
-        <nav className="hidden 2xl:flex items-center gap-0.5 flex-1 justify-center">
+        <nav className="hidden lg:flex items-center gap-0.5 flex-1 justify-center min-w-0 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
 
           <Link href="/" className={`${tabBase} ${isActive('/') ? tabActive : tabIdle}`}>
             {navLabel('nav.home')}
@@ -220,7 +220,7 @@ export function Header() {
             only below xl (phone, sign-in) to keep the single merged row from
             overflowing on common ~1280px laptop widths -- the earlier version
             overflowed the viewport horizontally at that size. ── */}
-        <div className="hidden 2xl:flex items-center gap-2 shrink-0">
+        <div className="hidden lg:flex items-center gap-1 xl:gap-1.5 2xl:gap-2 shrink-0">
           <a href="tel:+966549479722" title="+966 549 479 722" className="flex items-center gap-1.5 text-white/90 hover:text-white transition-colors text-[14px] font-medium">
             <Phone className="w-[18px] h-[18px]" strokeWidth={2.25} />
             <span className="hidden xl:inline">+966 549 479 722</span>
@@ -237,7 +237,7 @@ export function Header() {
                   onClick={() => setAccountOpen(v => !v)}
                   className={`flex items-center gap-1.5 text-[14px] font-semibold px-2.5 py-1.5 rounded-lg transition-colors ${accountOpen ? 'text-white bg-white/15' : 'text-white/90 hover:text-white hover:bg-white/10'}`}
                 >
-                  <User className="w-[18px] h-[18px]" strokeWidth={2.25} /> <span className="max-w-[110px] truncate">{user.fullName.split(' ')[0]}</span>
+                  <User className="w-[18px] h-[18px]" strokeWidth={2.25} /> <span className="hidden 2xl:inline max-w-[110px] truncate">{user.fullName.split(' ')[0]}</span>
                   <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${accountOpen ? 'rotate-180' : ''}`} />
                 </button>
                 {accountOpen && (
@@ -308,7 +308,7 @@ export function Header() {
         </div>
 
         {/* ── Mobile controls ── */}
-        <div className="2xl:hidden flex items-center gap-2 ml-auto">
+        <div className="lg:hidden flex items-center gap-2 ml-auto">
           {user && (
             <span className="text-white/80">
               <NotificationsBell lang={lang} />
@@ -329,7 +329,7 @@ export function Header() {
 
       {/* ── Mobile Menu ── */}
       {mobileMenuOpen && (
-        <div className="2xl:hidden border-t border-border bg-white absolute w-full left-0 shadow-2xl z-40 max-h-[85vh] overflow-y-auto">
+        <div className="lg:hidden border-t border-border bg-white absolute w-full left-0 shadow-2xl z-40 max-h-[85vh] overflow-y-auto">
           <div className="p-4 flex flex-col gap-1">
 
             <div className="px-4 pb-2">
