@@ -873,6 +873,16 @@ export function Home() {
             alt={isAr ? 'آي سبلاي تشين شريككم الموثوق' : 'ISC Is Your Reliable Partner'}
             className="w-full rounded-2xl shadow-xl border border-border"
           />
+          <div className="text-center mt-6 max-w-2xl mx-auto">
+            <p className="text-muted-foreground text-lg leading-relaxed">
+              {isAr
+                ? 'الاستشاري يسلّمك تقريراً ثم يمضي في طريقه.'
+                : 'A consultant hands you a report and moves on.'}
+            </p>
+            <p className="text-accent font-bold text-xl mt-1">
+              {isAr ? 'الشريك يبقى حتى تتحرّك الأرقام.' : 'A partner stays until the numbers move.'}
+            </p>
+          </div>
         </div>
       </RevealSection>
 
