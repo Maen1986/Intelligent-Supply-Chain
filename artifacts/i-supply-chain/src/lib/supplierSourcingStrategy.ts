@@ -32,6 +32,15 @@
 
 import { scoreItems, ACTION_PLANS, type KraljicItem, type KraljicScored, type KraljicQuadrant } from '@/lib/kraljicScoring';
 import { scoreOptions, type DecisionScenario, type ScoredOption } from '@/lib/decisionLab';
+import {
+  buildNegotiationTeam,
+  recommendClientTactics,
+  recommendNegotiationLevels,
+  recommendWatchForTactics,
+  type NegotiationLevel,
+  type NegotiationRole,
+  type NamedNegotiationTactic,
+} from '@/lib/negotiationTactics';
 
 export interface EvaluationCriterionSuggestion {
   criterion: string;
@@ -70,6 +79,11 @@ export interface SourcingStrategyOutput {
   solutionSet: SolutionAction[];
   relationshipCompatibility: RelationshipCompatibility | null;
   negotiationStrategy: NegotiationStrategy;
+  /** Full negotiation plan document -- team roles, a multi-level structure
+   *  for complex Strategic/Bottleneck cases, client-usable tactics, and a
+   *  counterpart watch-list -- built directly from negotiationTactics.ts,
+   *  never a second, contradictory tactics source. */
+  negotiationPlan: NegotiationPlanDocument;
   evidenceSummary: { dataUsed: string[]; assumptions: string[]; confidence: number };
 }
 
@@ -274,6 +288,7 @@ export function buildSourcingStrategy(input: {
     solutionSet: buildSolutionSet(scored.quadrant),
     relationshipCompatibility,
     negotiationStrategy: recommendNegotiationStrategy(scored.quadrant, relationshipCompatibility),
+    negotiationPlan: buildNegotiationPlan(scored.quadrant),
     evidenceSummary: {
       dataUsed: [`Kraljic profit-impact score: ${scored.profitImpactScore}`, `Kraljic supply-risk score: ${scored.supplyRiskScore}`, `industry: ${input.industryKey ?? 'default'}`],
       assumptions,
@@ -745,5 +760,57 @@ export function recommendNegotiationStrategy(
     milGuidance: MIL_GUIDANCE,
     milObjectives: profile.milObjectives,
     relationshipAdjustment,
+  };
+}
+
+/* ------------------------------------------------------------------------
+ * Negotiation Plan Document -- combines this module's own quadrant-level
+ * strategy (approach/BATNA/ZOPA/MIL, above) with negotiationTactics.ts's
+ * named-tactic library and team/level structure into one client-ready
+ * document. Direct response to: "some good companies build negotiation
+ * strategy docs that have all roles, participants, tactics... for
+ * complicated cases... more than one level of negotiation" and "make that
+ * clear when, where, how, follow up and results achievement for whoever
+ * wants to use negotiation tactics" -- the per-tactic when/where/how/
+ * followUp/desiredResult/counterTactic fields answering the latter live on
+ * NamedNegotiationTactic itself (negotiationTactics.ts), not duplicated
+ * here.
+ * ------------------------------------------------------------------------ */
+
+export interface NegotiationPlanDocument {
+  quadrant: KraljicQuadrant;
+  /** The client-side negotiation team for this quadrant's complexity --
+   *  full 6-role team for Strategic/Bottleneck, a lean 2-role team for
+   *  Leverage/Non-critical. See buildNegotiationTeam() in
+   *  negotiationTactics.ts. */
+  team: NegotiationRole[];
+  /** 3-level structure (technical pre-negotiation, commercial, executive
+   *  escalation) for Strategic/Bottleneck; a single round otherwise. See
+   *  recommendNegotiationLevels() in negotiationTactics.ts. */
+  levels: NegotiationLevel[];
+  /** Low-ethical-risk tactics appropriate for the client to actually use in
+   *  this quadrant, each carrying its own when/where/how/followUp/
+   *  desiredResult fields. */
+  recommendedTactics: NamedNegotiationTactic[];
+  /** Moderate/high-ethical-risk tactics the client should watch for from a
+   *  counterpart in this quadrant, each carrying its own counterTactic. */
+  watchForTactics: NamedNegotiationTactic[];
+}
+
+/**
+ * Assembles the full negotiation plan document for a Kraljic-classified
+ * sourcing decision. Deliberately thin -- every real piece of content
+ * (team roles, level structure, tactic library) already lives in
+ * negotiationTactics.ts; this function only selects and packages it by
+ * quadrant, exactly the same reuse discipline recommendNegotiationStrategy()
+ * already applies to ACTION_PLANS.
+ */
+export function buildNegotiationPlan(quadrant: KraljicQuadrant): NegotiationPlanDocument {
+  return {
+    quadrant,
+    team: buildNegotiationTeam(quadrant),
+    levels: recommendNegotiationLevels(quadrant),
+    recommendedTactics: recommendClientTactics(quadrant),
+    watchForTactics: recommendWatchForTactics(quadrant),
   };
 }

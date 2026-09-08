@@ -391,7 +391,7 @@ describe('recommendNegotiationStrategy -- real, sourced tactics per quadrant', (
   });
 
   it('is wired into buildSourcingStrategy output', () => {
-    const item = newItem({ annualSpend: 180_000, supplierCount: 2, leadTimeDays: 45, qualityImpact: 4, revenueImpact: 3, marketCompetitiveness: 2, geographicRisk: 3, substitutability: 2 });
+    const item = newItem({ annualSpend: 180_000, supplierCount: 2, leadTimeDays: 45, qualityImpact: 3, revenueImpact: 1, marketCompetitiveness: 2, geographicRisk: 3, substitutability: 2 });
     const restOfPortfolio = [
       newItem({ annualSpend: 4_500_000, supplierCount: 8, qualityImpact: 3, revenueImpact: 3 }),
       newItem({ annualSpend: 4_320_000, supplierCount: 6, qualityImpact: 3, revenueImpact: 3 }),
@@ -405,8 +405,21 @@ describe('recommendNegotiationStrategy -- real, sourced tactics per quadrant', (
       currentRelationshipPosture: 'adversarial',
       assumptions: ['Demand volume stable year over year'],
     });
+    expect(output.kraljicQuadrant).toBe('bottleneck');
     expect(output.negotiationStrategy).toBeDefined();
     expect(output.negotiationStrategy.quadrant).toBe(output.kraljicQuadrant);
     expect(output.negotiationStrategy.relationshipAdjustment).not.toBeNull();
+
+    // Named-tactics negotiation plan document, wired alongside the
+    // quadrant-level strategy above -- Rawabi is a bottleneck, adversarial
+    // case, so it should get the full 6-role team and 3-level structure.
+    expect(output.negotiationPlan).toBeDefined();
+    expect(output.negotiationPlan.quadrant).toBe(output.kraljicQuadrant);
+    expect(output.negotiationPlan.team.length).toBe(6);
+    expect(output.negotiationPlan.levels.length).toBe(3);
+    expect(output.negotiationPlan.recommendedTactics.length).toBeGreaterThan(0);
+    output.negotiationPlan.recommendedTactics.forEach((t) => expect(t.ethicalRisk).toBe('low'));
+    expect(output.negotiationPlan.watchForTactics.length).toBeGreaterThan(0);
+    output.negotiationPlan.watchForTactics.forEach((t) => expect(t.ethicalRisk).not.toBe('low'));
   });
 });
