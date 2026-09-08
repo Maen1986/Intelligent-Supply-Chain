@@ -597,3 +597,69 @@ describe('ENHANCED_DD_THRESHOLD_OVERRIDES -- scoped to exactly the three due-dil
     expect(Object.keys(ENHANCED_DD_THRESHOLD_OVERRIDES).sort()).toEqual(['compliance', 'financial', 'risk']);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Bilingual correction (8 Sep 2026, owner-caught) -- unscoredDimensions and
+// dueDiligenceGaps must ship with real Arabic counterparts, matching the
+// platform's own established pattern (kraljicScoring.ts ActionPlan.planningAr,
+// diagnosticEngine.ts *DictAr), not deferred just because no UI exists yet.
+// ---------------------------------------------------------------------------
+
+import {
+  ENHANCED_DD_UNIMPLEMENTED_MECHANISMS_AR,
+} from '@/lib/supplierQualificationGates';
+
+describe('unscoredDimensionsAr -- bilingual parity, always present', () => {
+  it('is populated on every run, same length as unscoredDimensions', () => {
+    const record = freshRecord('manufacturer');
+    const result = runQualificationGates(record);
+    expect(result.unscoredDimensionsAr.length).toBe(result.unscoredDimensions.length);
+    expect(result.unscoredDimensionsAr.length).toBeGreaterThan(0);
+  });
+
+  it('contains real Arabic script (not a placeholder or the English string reused)', () => {
+    const record = freshRecord('manufacturer');
+    const result = runQualificationGates(record);
+    for (const text of result.unscoredDimensionsAr) {
+      expect(/[؀-ۿ]/.test(text)).toBe(true);
+    }
+  });
+
+  it('the ESG gap is named in the Arabic text too', () => {
+    const record = freshRecord('manufacturer');
+    const result = runQualificationGates(record);
+    expect(result.unscoredDimensionsAr.some((d) => /ESG|الاستدامة/i.test(d))).toBe(true);
+  });
+});
+
+describe('dueDiligenceGapsAr -- bilingual parity, same ENHANCED-only population rule as dueDiligenceGaps', () => {
+  it('is empty under STANDARD tier, matching dueDiligenceGaps', () => {
+    const record = freshRecord('manufacturer');
+    const result = runQualificationGates(record, DEFAULT_GATE_THRESHOLDS, undefined, 'STANDARD');
+    expect(result.dueDiligenceGapsAr).toEqual([]);
+  });
+
+  it('lists all four Arabic gap descriptions under ENHANCED tier, same order as the English array', () => {
+    const record = freshRecord('manufacturer');
+    const result = runQualificationGates(record, DEFAULT_GATE_THRESHOLDS, undefined, 'ENHANCED');
+    expect(result.dueDiligenceGapsAr).toEqual(ENHANCED_DD_UNIMPLEMENTED_MECHANISMS_AR);
+    expect(result.dueDiligenceGapsAr.length).toBe(result.dueDiligenceGaps.length);
+  });
+
+  it('contains real Arabic script for every entry, not a placeholder', () => {
+    const record = freshRecord('manufacturer');
+    const result = runQualificationGates(record, DEFAULT_GATE_THRESHOLDS, undefined, 'ENHANCED');
+    for (const text of result.dueDiligenceGapsAr) {
+      expect(/[؀-ۿ]/.test(text)).toBe(true);
+    }
+  });
+
+  it('each Arabic gap corresponds in meaning-order to its English counterpart (sanctions, UBO, credit-bureau, monitoring)', () => {
+    const record = freshRecord('manufacturer');
+    const result = runQualificationGates(record, DEFAULT_GATE_THRESHOLDS, undefined, 'ENHANCED');
+    expect(result.dueDiligenceGapsAr[0]).toMatch(/عقوبات/); // sanctions
+    expect(result.dueDiligenceGapsAr[1]).toMatch(/المستفيد الحقيقي/); // UBO
+    expect(result.dueDiligenceGapsAr[2]).toMatch(/ائتمان/); // credit bureau
+    expect(result.dueDiligenceGapsAr[3]).toMatch(/المراقبة المستمرة/); // continuous monitoring
+  });
+});

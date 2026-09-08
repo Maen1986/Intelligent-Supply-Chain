@@ -59,9 +59,23 @@
  * monitoring feed. These are real, named TPRM/OECD mechanisms ISC has no
  * data source for. Enhanced due diligence can correctly demand
  * "third-party-verified" evidence; it cannot manufacture the third party.
- * This gap is named explicitly in `dueDiligenceGaps` on the output
- * schema whenever the tier is ENHANCED, and logged as backlog (SI-04
- * doc), never silently implied as covered.
+ * This gap is named explicitly in `dueDiligenceGaps` (and its Arabic
+ * counterpart `dueDiligenceGapsAr`) on the output schema whenever the
+ * tier is ENHANCED, and logged as backlog (SI-04 doc), never silently
+ * implied as covered.
+ *
+ * BILINGUAL CORRECTION (same day, owner-caught): `dueDiligenceGaps` and
+ * `unscoredDimensions` initially shipped English-only. The owner correctly
+ * flagged this against the platform's own standing bilingual discipline --
+ * every other client-facing array in this codebase ships an *Ar
+ * counterpart alongside it (kraljicScoring.ts's ActionPlan.planningAr,
+ * QUADRANT_META.labelAr, diagnosticEngine.ts's *DictAr maps), and "no UI
+ * consumes this yet" is not a real exception to that, since the array will
+ * be displayed as-is the moment a UI does exist and nobody would
+ * necessarily think to add Arabic retroactively. Fixed same day:
+ * `unscoredDimensionsAr` and `dueDiligenceGapsAr` added as parallel,
+ * real-Arabic fields, same order, same population rules as their English
+ * counterparts.
  *
  * THIS IS ALSO THE MODULE THAT ACTIVATES MODULE 03'S DISCLOSED-BUT-
  * DORMANT FLAG: assessSupplierRoleDataQuality() has, since Module 03
@@ -237,6 +251,8 @@ export interface QualificationResult {
   /** Comma-joined category names behind a NOT_QUALIFIED result; null otherwise. Never hidden inside an average (SI-04 "critical-fail rule"). */
   blockingGate: string | null;
   unscoredDimensions: string[];
+  /** Arabic equivalent of unscoredDimensions, same order -- platform bilingual standard (every client-facing array in this engine ships EN+AR together, e.g. kraljicScoring.ts's ActionPlan.planningAr); not deferred just because no UI consumes it yet. */
+  unscoredDimensionsAr: string[];
   /** The due-diligence depth actually applied to this run (see determineDueDiligenceTier). */
   dueDiligenceTier: DueDiligenceTier;
   /**
@@ -248,6 +264,8 @@ export interface QualificationResult {
    * Disclosed, never silently implied as covered (Decision Record 8.7).
    */
   dueDiligenceGaps: string[];
+  /** Arabic equivalent of dueDiligenceGaps, same order and same ENHANCED-only population rule. */
+  dueDiligenceGapsAr: string[];
 }
 
 // ---------------------------------------------------------------------------
@@ -308,6 +326,14 @@ export const ENHANCED_DD_UNIMPLEMENTED_MECHANISMS = [
   'Beneficial-ownership (UBO) verification -- no registry integration',
   'Credit-bureau-verified financial health check -- financial gate relies on client-supplied evidence only',
   'Continuous post-qualification monitoring -- all evidence here is point-in-time, not a live feed',
+];
+
+/** Arabic equivalent of ENHANCED_DD_UNIMPLEMENTED_MECHANISMS, same order and meaning -- see the field-level comment on QualificationResult.dueDiligenceGapsAr for why this exists rather than being deferred. */
+export const ENHANCED_DD_UNIMPLEMENTED_MECHANISMS_AR = [
+  'فحص قوائم العقوبات والأشخاص السياسيين المعرَّضين (PEP) مقابل قائمة مراقبة حيّة -- لا يوجد مصدر بيانات متكامل لهذا الغرض',
+  'التحقق من هوية المستفيد الحقيقي (الملكية النفعية) -- لا يوجد تكامل مع أي سجل رسمي لذلك',
+  'فحص الوضع الائتماني والمالي عبر مكتب ائتمان معتمد -- بند التقييم المالي يعتمد حصراً على الأدلة المقدَّمة من العميل',
+  'المراقبة المستمرة بعد التأهيل -- جميع الأدلة هنا تمثّل لحظة زمنية محددة، وليست تغذية بيانات حيّة ومستمرة',
 ];
 
 /**
@@ -527,6 +553,8 @@ function weakestEvidenceStage(facts: SupplierFact[]): EvidenceStage {
 // ---------------------------------------------------------------------------
 
 const UNSCORED_DIMENSIONS = ['ESG/sustainability -- no sourced methodology yet (Decision Record 8.7; SI-04 OWNER INPUT NEEDED #2)'];
+/** Arabic equivalent of UNSCORED_DIMENSIONS, same order -- see QualificationResult.unscoredDimensionsAr. */
+const UNSCORED_DIMENSIONS_AR = ['الحوكمة البيئية والاجتماعية/الاستدامة (ESG) -- لا توجد منهجية موثقة بعد لقياسها (سجل القرار 8.7؛ بند مدخلات المالك المطلوبة رقم 2 في وثيقة الوحدة SI-04)'];
 
 export function runQualificationGates(
   record: SupplierRecord,
@@ -561,8 +589,10 @@ export function runQualificationGates(
     overallStatus,
     blockingGate,
     unscoredDimensions: UNSCORED_DIMENSIONS,
+    unscoredDimensionsAr: UNSCORED_DIMENSIONS_AR,
     dueDiligenceTier,
     dueDiligenceGaps: dueDiligenceTier === 'ENHANCED' ? ENHANCED_DD_UNIMPLEMENTED_MECHANISMS : [],
+    dueDiligenceGapsAr: dueDiligenceTier === 'ENHANCED' ? ENHANCED_DD_UNIMPLEMENTED_MECHANISMS_AR : [],
   };
 }
 
