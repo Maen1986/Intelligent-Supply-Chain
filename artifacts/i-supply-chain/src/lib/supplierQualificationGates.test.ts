@@ -258,3 +258,342 @@ describe('runQualificationGates -- clean qualification path', () => {
     expect(result.overallStatus).toBe('CONDITIONALLY_QUALIFIED');
   });
 });
+
+// ---------------------------------------------------------------------------
+// EXTENSION TESTS (8 Sep 2026) -- Qualification vs. Due Diligence framework
+// ---------------------------------------------------------------------------
+
+import {
+  mechanismForEvidenceStage,
+  determineDueDiligenceTier,
+  thresholdsForTier,
+  applyQualificationOutcome,
+  GATE_CATEGORY_TYPE,
+  ENHANCED_DD_THRESHOLD_OVERRIDES,
+  ENHANCED_DD_UNIMPLEMENTED_MECHANISMS,
+  type QualificationResult,
+} from '@/lib/supplierQualificationGates';
+
+describe('mechanismForEvidenceStage -- TPRM-aligned vocabulary over Module 03s evidence ladder', () => {
+  it('maps every evidence stage to its named mechanism, 1:1', () => {
+    expect(mechanismForEvidenceStage('CLAIMED')).toBe('self-declared');
+    expect(mechanismForEvidenceStage('DOCUMENTED')).toBe('documentary');
+    expect(mechanismForEvidenceStage('VALIDATED')).toBe('third-party-verified');
+    expect(mechanismForEvidenceStage('OBSERVED')).toBe('observed');
+    expect(mechanismForEvidenceStage('PROVEN')).toBe('independently-proven');
+  });
+
+  it('returns null for null input, never a guessed mechanism', () => {
+    expect(mechanismForEvidenceStage(null)).toBeNull();
+  });
+});
+
+describe('GATE_CATEGORY_TYPE -- qualification vs due-diligence tagging', () => {
+  it('tags the seven ISO 9001 / CIPS "can they do it" categories as qualification', () => {
+    for (const cat of ['identity', 'capability', 'capacity', 'technical', 'quality', 'commercial', 'operational'] as const) {
+      expect(GATE_CATEGORY_TYPE[cat]).toBe('qualification');
+    }
+  });
+
+  it('tags the three OECD/TPRM "is it safe to engage" categories as due-diligence', () => {
+    for (const cat of ['compliance', 'financial', 'risk'] as const) {
+      expect(GATE_CATEGORY_TYPE[cat]).toBe('due-diligence');
+    }
+  });
+
+  it('every GateResult from checkGate carries the correct categoryType', () => {
+    const record = freshRecord('manufacturer');
+    for (const category of GATE_CATEGORIES) {
+      const result = checkGate(record, category);
+      expect(result.categoryType).toBe(GATE_CATEGORY_TYPE[category]);
+    }
+  });
+});
+
+describe('GateResult.mechanism is populated consistently with evidenceStage', () => {
+  it('mechanism is null exactly when evidenceStage is null (identity gate, no-fact gates)', () => {
+    const record = freshRecord('manufacturer');
+    const identity = checkGate(record, 'identity');
+    expect(identity.evidenceStage).toBeNull();
+    expect(identity.mechanism).toBeNull();
+
+    const noFacts = checkGate(record, 'financial');
+    expect(noFacts.evidenceStage).toBeNull();
+    expect(noFacts.mechanism).toBeNull();
+  });
+
+  it('mechanism reflects the actual weakest evidenceStage on a PASS', () => {
+    const record = freshRecord('manufacturer');
+    attachFact(record, record.hierarchy.legalEntityId, 'legalEntity', 'financialPosition', 500000, 'DOCUMENTED', 'erp');
+    const result = checkGate(record, 'financial');
+    expect(result.result).toBe('PASS');
+    expect(result.evidenceStage).toBe('DOCUMENTED');
+    expect(result.mechanism).toBe('documentary');
+  });
+
+  it('mechanism reflects evidenceStage on a CRITICAL_FAIL (expired certification)', () => {
+    const record = freshRecord('manufacturer');
+    attachFact(record, record.hierarchy.legalEntityId, 'legalEntity', 'certificationStatus', 'expired', 'VALIDATED', 'manual');
+    const result = checkGate(record, 'compliance');
+    expect(result.result).toBe('CRITICAL_FAIL');
+    expect(result.evidenceStage).toBe('VALIDATED');
+    expect(result.mechanism).toBe('third-party-verified');
+  });
+});
+
+describe('determineDueDiligenceTier -- risk-based tiering from Module 02s own fields (OECD/TPRM proportionality)', () => {
+  it('is ENHANCED for the strategic Kraljic quadrant', () => {
+    expect(determineDueDiligenceTier({ kraljicQuadrant: 'strategic' })).toBe('ENHANCED');
+  });
+
+  it('is ENHANCED for the bottleneck Kraljic quadrant', () => {
+    expect(determineDueDiligenceTier({ kraljicQuadrant: 'bottleneck' })).toBe('ENHANCED');
+  });
+
+  it('is STANDARD for leverage and non-critical quadrants absent high geographic risk', () => {
+    expect(determineDueDiligenceTier({ kraljicQuadrant: 'leverage' })).toBe('STANDARD');
+    expect(determineDueDiligenceTier({ kraljicQuadrant: 'non-critical' })).toBe('STANDARD');
+  });
+
+  it('is ENHANCED when geographicRisk is 4 or higher, regardless of quadrant', () => {
+    expect(determineDueDiligenceTier({ kraljicQuadrant: 'non-critical', geographicRisk: 4 })).toBe('ENHANCED');
+    expect(determineDueDiligenceTier({ kraljicQuadrant: 'non-critical', geographicRisk: 5 })).toBe('ENHANCED');
+  });
+
+  it('is STANDARD when geographicRisk is below 4', () => {
+    expect(determineDueDiligenceTier({ geographicRisk: 3 })).toBe('STANDARD');
+    expect(determineDueDiligenceTier({ geographicRisk: 1 })).toBe('STANDARD');
+  });
+
+  it('defaults to STANDARD with no inputs -- the honest answer when criticality/geography have not been assessed', () => {
+    expect(determineDueDiligenceTier()).toBe('STANDARD');
+    expect(determineDueDiligenceTier({})).toBe('STANDARD');
+  });
+});
+
+describe('thresholdsForTier -- Enhanced-DD overrides applied only to due-diligence categories', () => {
+  it('STANDARD returns the base threshold object unchanged', () => {
+    const result = thresholdsForTier(DEFAULT_GATE_THRESHOLDS, 'STANDARD');
+    expect(result).toBe(DEFAULT_GATE_THRESHOLDS);
+  });
+
+  it('ENHANCED applies the three overrides (compliance/financial/risk) and leaves qualification categories untouched', () => {
+    const result = thresholdsForTier(DEFAULT_GATE_THRESHOLDS, 'ENHANCED');
+    expect(result.minEvidenceStageForPass.compliance).toBe(ENHANCED_DD_THRESHOLD_OVERRIDES.compliance);
+    expect(result.minEvidenceStageForPass.financial).toBe(ENHANCED_DD_THRESHOLD_OVERRIDES.financial);
+    expect(result.minEvidenceStageForPass.risk).toBe(ENHANCED_DD_THRESHOLD_OVERRIDES.risk);
+    // Qualification categories must be unaffected -- proportionality principle (file header DECISION on ENHANCED_DD_THRESHOLD_OVERRIDES).
+    expect(result.minEvidenceStageForPass.capability).toBe(DEFAULT_GATE_THRESHOLDS.minEvidenceStageForPass.capability);
+    expect(result.minEvidenceStageForPass.identity).toBe(DEFAULT_GATE_THRESHOLDS.minEvidenceStageForPass.identity);
+    expect(result.minEvidenceStageForPass.commercial).toBe(DEFAULT_GATE_THRESHOLDS.minEvidenceStageForPass.commercial);
+  });
+
+  it('does not mutate the base thresholds object', () => {
+    const baseCopy = JSON.parse(JSON.stringify(DEFAULT_GATE_THRESHOLDS));
+    thresholdsForTier(DEFAULT_GATE_THRESHOLDS, 'ENHANCED');
+    expect(DEFAULT_GATE_THRESHOLDS).toEqual(baseCopy);
+  });
+});
+
+describe('runQualificationGates -- ENHANCED tier end-to-end (proves the raised bar actually changes outcomes)', () => {
+  it('a financial fact that PASSes under STANDARD becomes CONDITIONAL under ENHANCED', () => {
+    const record = freshRecord('manufacturer');
+    // DOCUMENTED clears the STANDARD financial threshold (DOCUMENTED) but not
+    // the ENHANCED override (VALIDATED).
+    attachFact(record, record.hierarchy.legalEntityId, 'legalEntity', 'financialPosition', 500000, 'DOCUMENTED', 'erp');
+
+    const standard = runQualificationGates(record, DEFAULT_GATE_THRESHOLDS, undefined, 'STANDARD');
+    const enhanced = runQualificationGates(record, DEFAULT_GATE_THRESHOLDS, undefined, 'ENHANCED');
+
+    const standardFinancial = standard.gateResults.find((g) => g.category === 'financial')!;
+    const enhancedFinancial = enhanced.gateResults.find((g) => g.category === 'financial')!;
+    expect(standardFinancial.result).toBe('PASS');
+    expect(enhancedFinancial.result).toBe('CONDITIONAL');
+  });
+
+  it('a compliance fact that PASSes under STANDARD (VALIDATED) becomes CONDITIONAL under ENHANCED (requires OBSERVED)', () => {
+    const record = freshRecord('manufacturer');
+    attachFact(record, record.hierarchy.legalEntityId, 'legalEntity', 'certificationStatus', 'active', 'VALIDATED', 'manual');
+
+    const standard = runQualificationGates(record, DEFAULT_GATE_THRESHOLDS, undefined, 'STANDARD');
+    const enhanced = runQualificationGates(record, DEFAULT_GATE_THRESHOLDS, undefined, 'ENHANCED');
+
+    expect(standard.gateResults.find((g) => g.category === 'compliance')!.result).toBe('PASS');
+    expect(enhanced.gateResults.find((g) => g.category === 'compliance')!.result).toBe('CONDITIONAL');
+  });
+
+  it('does NOT raise the bar for qualification categories (capability unaffected by tier)', () => {
+    const record = freshRecord('manufacturer');
+    attachFact(record, record.hierarchy.legalEntityId, 'legalEntity', 'capability', 'motor assembly', 'DOCUMENTED', 'manual');
+
+    const standard = runQualificationGates(record, DEFAULT_GATE_THRESHOLDS, undefined, 'STANDARD');
+    const enhanced = runQualificationGates(record, DEFAULT_GATE_THRESHOLDS, undefined, 'ENHANCED');
+
+    expect(standard.gateResults.find((g) => g.category === 'capability')!.result)
+      .toBe(enhanced.gateResults.find((g) => g.category === 'capability')!.result);
+  });
+
+  it('defaults to STANDARD when the tier argument is omitted (backward compatible)', () => {
+    const record = freshRecord('manufacturer');
+    attachFact(record, record.hierarchy.legalEntityId, 'legalEntity', 'financialPosition', 500000, 'DOCUMENTED', 'erp');
+    const result = runQualificationGates(record);
+    expect(result.dueDiligenceTier).toBe('STANDARD');
+    expect(result.gateResults.find((g) => g.category === 'financial')!.result).toBe('PASS');
+  });
+
+  it('reports the actual tier used on the result object', () => {
+    const record = freshRecord('manufacturer');
+    expect(runQualificationGates(record, DEFAULT_GATE_THRESHOLDS, undefined, 'ENHANCED').dueDiligenceTier).toBe('ENHANCED');
+    expect(runQualificationGates(record, DEFAULT_GATE_THRESHOLDS, undefined, 'STANDARD').dueDiligenceTier).toBe('STANDARD');
+  });
+});
+
+describe('dueDiligenceGaps -- disclosed, never silently implied as covered (Decision Record 8.7)', () => {
+  it('is empty under STANDARD tier', () => {
+    const record = freshRecord('manufacturer');
+    const result = runQualificationGates(record, DEFAULT_GATE_THRESHOLDS, undefined, 'STANDARD');
+    expect(result.dueDiligenceGaps).toEqual([]);
+  });
+
+  it('lists all four named unimplemented mechanisms under ENHANCED tier', () => {
+    const record = freshRecord('manufacturer');
+    const result = runQualificationGates(record, DEFAULT_GATE_THRESHOLDS, undefined, 'ENHANCED');
+    expect(result.dueDiligenceGaps).toEqual(ENHANCED_DD_UNIMPLEMENTED_MECHANISMS);
+    expect(result.dueDiligenceGaps.length).toBe(4);
+    expect(result.dueDiligenceGaps.some((g) => /sanctions|PEP/i.test(g))).toBe(true);
+    expect(result.dueDiligenceGaps.some((g) => /beneficial-ownership|UBO/i.test(g))).toBe(true);
+    expect(result.dueDiligenceGaps.some((g) => /credit-bureau/i.test(g))).toBe(true);
+    expect(result.dueDiligenceGaps.some((g) => /continuous/i.test(g))).toBe(true);
+  });
+});
+
+describe('applyQualificationOutcome -- wires the qualification decision back into Module 03s discoveryState lifecycle', () => {
+  function resultWith(overallStatus: QualificationResult['overallStatus']): QualificationResult {
+    return {
+      supplierId: 'test-supplier',
+      gateResults: [],
+      overallStatus,
+      blockingGate: overallStatus === 'NOT_QUALIFIED' ? 'compliance' : null,
+      unscoredDimensions: [],
+      dueDiligenceTier: 'STANDARD',
+      dueDiligenceGaps: [],
+    };
+  }
+
+  it('advances a VERIFIED record to QUALIFIED on a QUALIFIED result', () => {
+    const record = freshRecord('manufacturer');
+    record.discoveryState = 'VERIFIED';
+    const updated = applyQualificationOutcome(record, resultWith('QUALIFIED'));
+    expect(updated.discoveryState).toBe('QUALIFIED');
+  });
+
+  it('advances a record below VERIFIED (e.g. SCREENED) straight to QUALIFIED on a QUALIFIED result', () => {
+    const record = freshRecord('manufacturer');
+    record.discoveryState = 'SCREENED';
+    const updated = applyQualificationOutcome(record, resultWith('QUALIFIED'));
+    expect(updated.discoveryState).toBe('QUALIFIED');
+  });
+
+  it('leaves a record already at RECOMMENDED/SELECTED/APPROVED untouched on a fresh QUALIFIED result -- never pulled backward', () => {
+    for (const state of ['RECOMMENDED', 'SELECTED', 'APPROVED'] as const) {
+      const record = freshRecord('manufacturer');
+      record.discoveryState = state;
+      const updated = applyQualificationOutcome(record, resultWith('QUALIFIED'));
+      expect(updated.discoveryState).toBe(state);
+    }
+  });
+
+  it('regresses QUALIFIED/RECOMMENDED/SELECTED/APPROVED to VERIFIED on a NOT_QUALIFIED result (failed re-audit, not a full delisting)', () => {
+    for (const state of ['QUALIFIED', 'RECOMMENDED', 'SELECTED', 'APPROVED'] as const) {
+      const record = freshRecord('manufacturer');
+      record.discoveryState = state;
+      const updated = applyQualificationOutcome(record, resultWith('NOT_QUALIFIED'));
+      expect(updated.discoveryState).toBe('VERIFIED');
+    }
+  });
+
+  it('does nothing on a NOT_QUALIFIED result for a record that was never qualified in the first place', () => {
+    for (const state of ['DISCOVERED', 'POTENTIALLY_RELEVANT', 'SCREENED', 'EVIDENCE_SUPPORTED', 'VERIFIED'] as const) {
+      const record = freshRecord('manufacturer');
+      record.discoveryState = state;
+      const updated = applyQualificationOutcome(record, resultWith('NOT_QUALIFIED'));
+      expect(updated.discoveryState).toBe(state);
+    }
+  });
+
+  it('is inert on CONDITIONALLY_QUALIFIED -- ambiguous evidence must never imply an earned lifecycle move', () => {
+    const record = freshRecord('manufacturer');
+    record.discoveryState = 'VERIFIED';
+    const updated = applyQualificationOutcome(record, resultWith('CONDITIONALLY_QUALIFIED'));
+    expect(updated.discoveryState).toBe('VERIFIED');
+  });
+
+  it('is inert on INSUFFICIENT_EVIDENCE -- missing evidence must never imply an earned lifecycle move', () => {
+    const record = freshRecord('manufacturer');
+    record.discoveryState = 'SCREENED';
+    const updated = applyQualificationOutcome(record, resultWith('INSUFFICIENT_EVIDENCE'));
+    expect(updated.discoveryState).toBe('SCREENED');
+  });
+
+  it('mutates and returns the same record instance (matches logEntityResolution mutation pattern)', () => {
+    const record = freshRecord('manufacturer');
+    record.discoveryState = 'VERIFIED';
+    const updated = applyQualificationOutcome(record, resultWith('QUALIFIED'));
+    expect(updated).toBe(record);
+  });
+
+  it('end-to-end: runQualificationGates -> applyQualificationOutcome moves a real record from VERIFIED to QUALIFIED', () => {
+    const record = freshRecord('manufacturer');
+    record.discoveryState = 'VERIFIED';
+    const entityId = record.hierarchy.legalEntityId;
+    for (const cat of ['capability', 'financial', 'quality', 'compliance', 'capacity', 'technical', 'commercial', 'risk', 'operational'] as const) {
+      attachFact(record, entityId, 'legalEntity', cat, 'strong', 'PROVEN', 'erp');
+    }
+    const result = runQualificationGates(record);
+    expect(result.overallStatus).toBe('QUALIFIED');
+    applyQualificationOutcome(record, result);
+    expect(record.discoveryState).toBe('QUALIFIED');
+  });
+
+  it('end-to-end: a real record with an expired certification is regressed from QUALIFIED back to VERIFIED', () => {
+    const record = freshRecord('manufacturer');
+    record.discoveryState = 'QUALIFIED';
+    const entityId = record.hierarchy.legalEntityId;
+    attachFact(record, entityId, 'legalEntity', 'certificationStatus', 'expired', 'VALIDATED', 'manual');
+    const result = runQualificationGates(record);
+    expect(result.overallStatus).toBe('NOT_QUALIFIED');
+    applyQualificationOutcome(record, result);
+    expect(record.discoveryState).toBe('VERIFIED');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Saturation pass -- additional edge-case precision (identity mechanism-null
+// on every branch, and the exact geographicRisk boundary) per the standing
+// "enhancement saturation" instruction: verify, don't assume, every branch.
+// ---------------------------------------------------------------------------
+
+describe('identity gate -- mechanism is null on every confidence branch, not just PASS', () => {
+  it('CONDITIONAL (MODERATE/LOW) and INSUFFICIENT_EVIDENCE (UNVERIFIED) branches also carry mechanism: null', () => {
+    const record = freshRecord();
+    record.entityResolution.confidence = 'MODERATE';
+    expect(checkGate(record, 'identity').mechanism).toBeNull();
+    record.entityResolution.confidence = 'LOW';
+    expect(checkGate(record, 'identity').mechanism).toBeNull();
+    record.entityResolution.confidence = 'UNVERIFIED';
+    expect(checkGate(record, 'identity').mechanism).toBeNull();
+  });
+});
+
+describe('determineDueDiligenceTier -- exact geographicRisk boundary', () => {
+  it('3.99 stays STANDARD, exactly 4 flips to ENHANCED', () => {
+    expect(determineDueDiligenceTier({ geographicRisk: 3.99 })).toBe('STANDARD');
+    expect(determineDueDiligenceTier({ geographicRisk: 4 })).toBe('ENHANCED');
+  });
+});
+
+describe('ENHANCED_DD_THRESHOLD_OVERRIDES -- scoped to exactly the three due-diligence categories', () => {
+  it('has exactly compliance, financial, and risk as keys -- no accidental qualification-category override', () => {
+    expect(Object.keys(ENHANCED_DD_THRESHOLD_OVERRIDES).sort()).toEqual(['compliance', 'financial', 'risk']);
+  });
+});
