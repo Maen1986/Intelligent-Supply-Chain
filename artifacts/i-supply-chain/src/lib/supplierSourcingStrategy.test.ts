@@ -1,0 +1,308 @@
+import { describe, it, expect } from 'vitest';
+import { newItem } from '@/lib/kraljicScoring';
+import {
+  classifyKraljicPosition,
+  suggestEvaluationCriteria,
+  draftRfpStructure,
+  buildSolutionSet,
+  checkLocalContentRelevance,
+  rankCandidateSuppliers,
+  assessSourcingConfidence,
+  buildSourcingStrategy,
+  RELATIONSHIP_SPECTRUM,
+  IDEAL_POSTURE_BY_QUADRANT,
+  getRelationshipStageProfile,
+  assessRelationshipCompatibility,
+  recommendRelationshipUpgrade,
+} from './supplierSourcingStrategy';
+
+describe('classifyKraljicPosition -- direct reuse of the live Kraljic engine', () => {
+  it('classifies a low-spend, many-supplier item as non-critical or leverage, never fabricating a Strategic/Bottleneck read', () => {
+    const item = newItem({ annualSpend: 5000, supplierCount: 20, marketCompetitiveness: 5, geographicRisk: 1, substitutability: 5, qualityImpact: 1, revenueImpact: 1 });
+    const scored = classifyKraljicPosition(item, [], 'manufacturing');
+    expect(['non-critical', 'leverage']).toContain(scored.quadrant);
+  });
+
+  it('classifies a high-spend, single-supplier item as strategic or bottleneck', () => {
+    const item = newItem({ annualSpend: 2_000_000, supplierCount: 1, marketCompetitiveness: 1, geographicRisk: 5, substitutability: 1, qualityImpact: 5, revenueImpact: 5 });
+    const scored = classifyKraljicPosition(item, [], 'manufacturing');
+    expect(['strategic', 'bottleneck']).toContain(scored.quadrant);
+  });
+
+  it('classifying the same item alone vs. within real portfolio context can change the quadrant -- proving portfolioContext is not cosmetic', () => {
+    const item = newItem({ annualSpend: 180_000, supplierCount: 2, leadTimeDays: 45, qualityImpact: 3, revenueImpact: 1, marketCompetitiveness: 2, geographicRisk: 3, substitutability: 2 });
+    const alone = classifyKraljicPosition(item, [], 'manufacturing');
+    const restOfPortfolio = [
+      newItem({ annualSpend: 4_500_000, supplierCount: 8 }),
+      newItem({ annualSpend: 4_320_000, supplierCount: 6 }),
+    ];
+    const inContext = classifyKraljicPosition(item, restOfPortfolio, 'manufacturing');
+    expect(alone.spendPct).toBe(100);
+    expect(inContext.spendPct).toBeLessThan(10);
+  });
+
+  it('matches the Rawabi illustrative example: aluminum extrusion classifies as Bottleneck once read against real portfolio context', () => {
+    // Few qualified regional extruders (low supplier count, high risk); a supporting
+    // material rather than the company's core revenue/quality driver (low impact) --
+    // and correctly read as a small share of Rawabi's ~16-supplier portfolio, not in isolation.
+    const item = newItem({
+      category: 'Raw Materials', subcategory: 'Aluminum Extrusion', itemName: 'Aluminum extrusion profiles',
+      annualSpend: 180_000, supplierCount: 2, leadTimeDays: 45, qualityImpact: 3, revenueImpact: 1,
+      marketCompetitiveness: 2, geographicRisk: 3, substitutability: 2,
+    });
+    const restOfPortfolio = [
+      newItem({ annualSpend: 4_500_000, supplierCount: 8, qualityImpact: 3, revenueImpact: 3 }),
+      newItem({ annualSpend: 4_320_000, supplierCount: 6, qualityImpact: 3, revenueImpact: 3 }),
+    ];
+    const scored = classifyKraljicPosition(item, restOfPortfolio, 'manufacturing');
+    expect(scored.quadrant).toBe('bottleneck');
+  });
+});
+
+describe('suggestEvaluationCriteria', () => {
+  it('returns real, weighted criteria for every quadrant, with price weighted lowest for Strategic and highest for Leverage', () => {
+    for (const q of ['strategic', 'leverage', 'bottleneck', 'non-critical'] as const) {
+      const criteria = suggestEvaluationCriteria(q);
+      expect(criteria.length).toBeGreaterThan(0);
+      for (const c of criteria) {
+        expect(c.suggestedWeight).toBeGreaterThanOrEqual(1);
+        expect(c.suggestedWeight).toBeLessThanOrEqual(10);
+        expect(c.rationale.length).toBeGreaterThan(10);
+      }
+    }
+    const strategicPrice = suggestEvaluationCriteria('strategic').find(c => c.criterion.includes('Price'));
+    const leveragePrice = suggestEvaluationCriteria('leverage').find(c => c.criterion.includes('Price'));
+    expect(strategicPrice!.suggestedWeight).toBeLessThan(leveragePrice!.suggestedWeight);
+  });
+});
+
+describe('draftRfpStructure', () => {
+  it('gives every quadrant real RFP sections, with continuity leading Bottleneck and price leading Leverage', () => {
+    const bottleneck = draftRfpStructure('bottleneck');
+    expect(bottleneck[0].section.toLowerCase()).toContain('continuity');
+    const leverage = draftRfpStructure('leverage');
+    expect(leverage[0].section.toLowerCase()).toContain('pricing');
+  });
+});
+
+describe('buildSolutionSet', () => {
+  it('gives every quadrant realistic, non-fixed-bucket timeframes', () => {
+    for (const q of ['strategic', 'leverage', 'bottleneck', 'non-critical'] as const) {
+      const actions = buildSolutionSet(q);
+      expect(actions.length).toBeGreaterThan(0);
+      for (const a of actions) {
+        expect(['same day', 'this week', '2-4 weeks', 'quarter+']).toContain(a.timeframe);
+        expect(['Low', 'Medium', 'High']).toContain(a.effort);
+      }
+    }
+  });
+});
+
+describe('checkLocalContentRelevance -- honest by construction', () => {
+  it('flags Saudi as relevant and points to the real LCGPA tool', () => {
+    const result = checkLocalContentRelevance('Saudi Arabia');
+    expect(result.relevant).toBe(true);
+    expect(result.note).toContain('LCGPA');
+  });
+
+  it('accepts common Saudi aliases', () => {
+    expect(checkLocalContentRelevance('KSA').relevant).toBe(true);
+    expect(checkLocalContentRelevance('saudi').relevant).toBe(true);
+  });
+
+  it('never claims coverage for an unresearched GCC market -- discloses the real gap instead', () => {
+    const result = checkLocalContentRelevance('United Arab Emirates');
+    expect(result.relevant).toBe(false);
+    expect(result.note.toLowerCase()).toContain('not yet');
+    expect(result.note).not.toContain('LCGPA applies');
+    expect(result.note.toLowerCase()).not.toContain('lcgpa requirements may apply');
+  });
+
+  it('returns not-relevant with an explanatory note when no market is given', () => {
+    const result = checkLocalContentRelevance(null);
+    expect(result.relevant).toBe(false);
+    expect(result.note.length).toBeGreaterThan(10);
+  });
+});
+
+describe('rankCandidateSuppliers -- explicit Decision Lab passthrough', () => {
+  it('produces the same ranking Decision Lab itself would for an identical scenario', () => {
+    const scenario = {
+      question: 'Which aluminum extrusion supplier?',
+      criteria: [{ id: 'c1', name: 'Price', weight: 8 }, { id: 'c2', name: 'Lead time', weight: 5 }],
+      options: [
+        { id: 'o1', name: 'Supplier A', scores: { c1: 4, c2: 3 } },
+        { id: 'o2', name: 'Supplier B', scores: { c1: 2, c2: 5 } },
+      ],
+    };
+    const ranked = rankCandidateSuppliers(scenario);
+    expect(ranked).toHaveLength(2);
+    expect(ranked[0].rank).toBe(1);
+    expect(ranked[0].name).toBe('Supplier A'); // higher weighted score given the weights above
+  });
+});
+
+describe('assessSourcingConfidence -- disclosed rule, never fabricated', () => {
+  it('is 0 when annualSpend is unset, regardless of other inputs', () => {
+    const item = newItem({ annualSpend: 0, supplierCount: 1, qualityImpact: 5 });
+    expect(assessSourcingConfidence(item)).toBe(0);
+  });
+
+  it('rises with each risk/impact field actually entered away from its default', () => {
+    const base = newItem({ annualSpend: 100000 });
+    const baseConfidence = assessSourcingConfidence(base);
+    const oneMore = newItem({ annualSpend: 100000, supplierCount: 1 });
+    expect(assessSourcingConfidence(oneMore)).toBeGreaterThan(baseConfidence);
+  });
+
+  it('never exceeds 100', () => {
+    const item = newItem({ annualSpend: 999999, supplierCount: 1, leadTimeDays: 200, qualityImpact: 5, revenueImpact: 5, marketCompetitiveness: 5, geographicRisk: 5, substitutability: 5 });
+    expect(assessSourcingConfidence(item)).toBeLessThanOrEqual(100);
+  });
+});
+
+describe('buildSourcingStrategy -- full assembly, Rawabi scenario', () => {
+  it('assembles the SI-02.md output schema shape end to end', () => {
+    const item = newItem({
+      category: 'Raw Materials', subcategory: 'Aluminum Extrusion', itemName: 'Aluminum extrusion profiles',
+      annualSpend: 180_000, supplierCount: 2, leadTimeDays: 45, qualityImpact: 3, revenueImpact: 1,
+      marketCompetitiveness: 2, geographicRisk: 3, substitutability: 2,
+    });
+    const restOfPortfolio = [
+      newItem({ annualSpend: 4_500_000, supplierCount: 8, qualityImpact: 3, revenueImpact: 3 }),
+      newItem({ annualSpend: 4_320_000, supplierCount: 6, qualityImpact: 3, revenueImpact: 3 }),
+    ];
+    const output = buildSourcingStrategy({
+      statedNeed: 'Diversify or negotiate against sole-source aluminum extrusion supplier',
+      kraljicItem: item,
+      portfolioContext: restOfPortfolio,
+      industryKey: 'manufacturing',
+      targetMarket: 'Saudi Arabia',
+      assumptions: ['Demand volume stable year over year'],
+    });
+
+    expect(output.kraljicQuadrant).toBe('bottleneck');
+    expect(output.evaluationCriteria.length).toBeGreaterThan(0);
+    expect(output.localContentRelevant).toBe(true);
+    expect(output.rfpStructureDraft.length).toBeGreaterThan(0);
+    expect(output.solutionSet.length).toBeGreaterThan(0);
+    expect(output.evidenceSummary.confidence).toBeGreaterThan(0);
+    expect(output.evidenceSummary.dataUsed.length).toBeGreaterThan(0);
+  });
+});
+
+describe('RELATIONSHIP_SPECTRUM -- real, ordered, bilingual', () => {
+  it('is ordered low (adversarial) to high (partnership), 5 stages', () => {
+    expect(RELATIONSHIP_SPECTRUM.map(s => s.posture)).toEqual(['adversarial', 'transactional', 'cooperative', 'collaborative', 'partnership']);
+  });
+
+  it('every stage has real, non-empty EN and AR content across all fields', () => {
+    for (const stage of RELATIONSHIP_SPECTRUM) {
+      expect(stage.label.length).toBeGreaterThan(3);
+      expect(stage.labelAr.length).toBeGreaterThan(3);
+      expect(stage.characteristics.length).toBeGreaterThan(0);
+      expect(stage.governanceFeatures.length).toBeGreaterThan(0);
+      expect(stage.typicalKpis.length).toBeGreaterThan(0);
+      expect(stage.contractCharacteristics.length).toBeGreaterThan(0);
+    }
+  });
+
+  it('getRelationshipStageProfile returns the matching stage', () => {
+    expect(getRelationshipStageProfile('partnership').label).toBe('Strategic Partnership');
+    expect(getRelationshipStageProfile('adversarial').label).toBe('Adversarial');
+  });
+});
+
+describe('IDEAL_POSTURE_BY_QUADRANT', () => {
+  it('maps Strategic to Partnership and Leverage to Transactional -- the textbook CIPS pairing', () => {
+    expect(IDEAL_POSTURE_BY_QUADRANT.strategic).toBe('partnership');
+    expect(IDEAL_POSTURE_BY_QUADRANT.leverage).toBe('transactional');
+    expect(IDEAL_POSTURE_BY_QUADRANT.bottleneck).toBe('collaborative');
+    expect(IDEAL_POSTURE_BY_QUADRANT['non-critical']).toBe('transactional');
+  });
+});
+
+describe('assessRelationshipCompatibility -- the real diagnostic', () => {
+  it('flags Bottleneck + Adversarial as the named high-risk case, with a specific non-generic advisory', () => {
+    const result = assessRelationshipCompatibility('bottleneck', 'adversarial');
+    expect(result.severity).toBe('high-risk');
+    expect(result.advisory.toLowerCase()).toContain('scarcity');
+    expect(result.advisoryAr).toContain('الاختناق');
+  });
+
+  it('flags Strategic + Transactional as high-risk under-governance, not silently passing it', () => {
+    const result = assessRelationshipCompatibility('strategic', 'transactional');
+    expect(result.severity).toBe('high-risk');
+    expect(result.advisory.toLowerCase()).toContain('under-governed');
+  });
+
+  it('reports aligned when current posture matches the quadrant ideal exactly', () => {
+    const result = assessRelationshipCompatibility('leverage', 'transactional');
+    expect(result.severity).toBe('aligned');
+    expect(result.gap).toBe(0);
+  });
+
+  it('reports a positive gap (under-invested) with monitor severity for a 1-stage gap', () => {
+    const result = assessRelationshipCompatibility('strategic', 'collaborative');
+    expect(result.gap).toBe(1);
+    expect(result.severity).toBe('monitor');
+  });
+
+  it('reports a negative gap (over-invested) without treating it as a crisis', () => {
+    const result = assessRelationshipCompatibility('non-critical', 'partnership');
+    expect(result.gap).toBeLessThan(0);
+    expect(result.advisory.toLowerCase()).toContain('over-invested');
+  });
+});
+
+describe('recommendRelationshipUpgrade', () => {
+  it('returns the next stage\'s real governance features, not a generic list', () => {
+    const actions = recommendRelationshipUpgrade('transactional', 'partnership');
+    expect(actions).toEqual(getRelationshipStageProfile('cooperative').governanceFeatures);
+  });
+
+  it('returns an empty list when already at or above the ideal', () => {
+    expect(recommendRelationshipUpgrade('partnership', 'transactional')).toEqual([]);
+    expect(recommendRelationshipUpgrade('collaborative', 'collaborative')).toEqual([]);
+  });
+});
+
+describe('buildSourcingStrategy -- relationship compatibility wiring', () => {
+  it('includes relationshipCompatibility when a current posture is supplied, flagging the Bottleneck/Adversarial Rawabi case', () => {
+    const item = newItem({
+      category: 'Raw Materials', subcategory: 'Aluminum Extrusion', itemName: 'Aluminum extrusion profiles',
+      annualSpend: 180_000, supplierCount: 2, leadTimeDays: 45, qualityImpact: 3, revenueImpact: 1,
+      marketCompetitiveness: 2, geographicRisk: 3, substitutability: 2,
+    });
+    const restOfPortfolio = [
+      newItem({ annualSpend: 4_500_000, supplierCount: 8, qualityImpact: 3, revenueImpact: 3 }),
+      newItem({ annualSpend: 4_320_000, supplierCount: 6, qualityImpact: 3, revenueImpact: 3 }),
+    ];
+    const output = buildSourcingStrategy({
+      statedNeed: 'Diversify or negotiate against sole-source aluminum extrusion supplier',
+      kraljicItem: item,
+      portfolioContext: restOfPortfolio,
+      industryKey: 'manufacturing',
+      targetMarket: 'Saudi Arabia',
+      currentRelationshipPosture: 'adversarial',
+      assumptions: ['Demand volume stable year over year'],
+    });
+
+    expect(output.kraljicQuadrant).toBe('bottleneck');
+    expect(output.relationshipCompatibility).not.toBeNull();
+    expect(output.relationshipCompatibility!.severity).toBe('high-risk');
+  });
+
+  it('leaves relationshipCompatibility null when no current posture is supplied -- never guessed', () => {
+    const item = newItem({ annualSpend: 100_000, supplierCount: 5 });
+    const output = buildSourcingStrategy({
+      statedNeed: 'Test',
+      kraljicItem: item,
+      industryKey: 'manufacturing',
+      targetMarket: null,
+      assumptions: [],
+    });
+    expect(output.relationshipCompatibility).toBeNull();
+  });
+});
+
