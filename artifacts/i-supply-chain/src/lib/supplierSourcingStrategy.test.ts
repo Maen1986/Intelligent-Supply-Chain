@@ -14,7 +14,9 @@ import {
   getRelationshipStageProfile,
   assessRelationshipCompatibility,
   recommendRelationshipUpgrade,
+  recommendNegotiationStrategy,
 } from './supplierSourcingStrategy';
+import { ACTION_PLANS } from '@/lib/kraljicScoring';
 
 describe('classifyKraljicPosition -- direct reuse of the live Kraljic engine', () => {
   it('classifies a low-spend, many-supplier item as non-critical or leverage, never fabricating a Strategic/Bottleneck read', () => {
@@ -306,3 +308,105 @@ describe('buildSourcingStrategy -- relationship compatibility wiring', () => {
   });
 });
 
+
+describe('recommendNegotiationStrategy -- real, sourced tactics per quadrant', () => {
+  it('recommends integrative for Strategic, distributive for Leverage, mixed for Bottleneck, distributive for Non-critical', () => {
+    expect(recommendNegotiationStrategy('strategic', null).recommendedApproach).toBe('integrative');
+    expect(recommendNegotiationStrategy('leverage', null).recommendedApproach).toBe('distributive');
+    expect(recommendNegotiationStrategy('bottleneck', null).recommendedApproach).toBe('mixed');
+    expect(recommendNegotiationStrategy('non-critical', null).recommendedApproach).toBe('distributive');
+  });
+
+  it('reuses ACTION_PLANS.negotiation/negotiationAr as the first tactics, never re-authoring or contradicting them', () => {
+    (['strategic', 'leverage', 'bottleneck', 'non-critical'] as const).forEach((quadrant) => {
+      const strategy = recommendNegotiationStrategy(quadrant, null);
+      const existing = ACTION_PLANS[quadrant];
+      existing.negotiation.forEach((en, i) => {
+        expect(strategy.tactics[i].en).toBe(en);
+        expect(strategy.tactics[i].ar).toBe(existing.negotiationAr[i]);
+      });
+    });
+  });
+
+  it('provides substantially more tactics than the reused 5 -- real depth, not a thin wrapper', () => {
+    (['strategic', 'leverage', 'bottleneck', 'non-critical'] as const).forEach((quadrant) => {
+      const strategy = recommendNegotiationStrategy(quadrant, null);
+      expect(strategy.tactics.length).toBeGreaterThan(5);
+    });
+    const totalTactics = (['strategic', 'leverage', 'bottleneck', 'non-critical'] as const)
+      .reduce((sum, q) => sum + recommendNegotiationStrategy(q, null).tactics.length, 0);
+    expect(totalTactics).toBeGreaterThanOrEqual(40);
+  });
+
+  it('every tactic and avoid-item has real, non-empty bilingual (EN + AR) content', () => {
+    (['strategic', 'leverage', 'bottleneck', 'non-critical'] as const).forEach((quadrant) => {
+      const strategy = recommendNegotiationStrategy(quadrant, null);
+      [...strategy.tactics, ...strategy.avoid].forEach((t) => {
+        expect(t.en.length).toBeGreaterThan(10);
+        expect(t.ar.length).toBeGreaterThan(5);
+      });
+    });
+  });
+
+  it('includes BATNA and ZOPA guidance for every quadrant', () => {
+    (['strategic', 'leverage', 'bottleneck', 'non-critical'] as const).forEach((quadrant) => {
+      const strategy = recommendNegotiationStrategy(quadrant, null);
+      expect(strategy.batnaGuidance.length).toBeGreaterThan(20);
+      expect(strategy.zopaGuidance.length).toBeGreaterThan(20);
+    });
+  });
+
+  it('leaves relationshipAdjustment null when no relationshipCompatibility was computed', () => {
+    const strategy = recommendNegotiationStrategy('bottleneck', null);
+    expect(strategy.relationshipAdjustment).toBeNull();
+  });
+
+  it('flags a specific high-risk relationshipAdjustment for the Bottleneck+Adversarial case', () => {
+    const compatibility = assessRelationshipCompatibility('bottleneck', 'adversarial');
+    const strategy = recommendNegotiationStrategy('bottleneck', compatibility);
+    expect(strategy.relationshipAdjustment).not.toBeNull();
+    expect(strategy.relationshipAdjustment).toContain('adversarial');
+  });
+
+  it('gives a reassuring relationshipAdjustment when posture is already aligned', () => {
+    const compatibility = assessRelationshipCompatibility('leverage', 'transactional');
+    const strategy = recommendNegotiationStrategy('leverage', compatibility);
+    expect(strategy.relationshipAdjustment).not.toBeNull();
+    expect(compatibility.severity).toBe('aligned');
+  });
+
+  it('provides a real MIL (Must/Intend/Like) objective grid for every quadrant, with guidance explaining the discipline', () => {
+    (['strategic', 'leverage', 'bottleneck', 'non-critical'] as const).forEach((quadrant) => {
+      const strategy = recommendNegotiationStrategy(quadrant, null);
+      expect(strategy.milGuidance.toLowerCase()).toContain('must');
+      expect(strategy.milGuidance.toLowerCase()).toContain('intend');
+      expect(strategy.milGuidance.toLowerCase()).toContain('like');
+      const levels = strategy.milObjectives.map((o) => o.level);
+      expect(levels).toEqual(['must', 'intend', 'like']);
+      strategy.milObjectives.forEach((o) => {
+        expect(o.objective.en.length).toBeGreaterThan(10);
+        expect(o.objective.ar.length).toBeGreaterThan(5);
+      });
+    });
+  });
+
+  it('is wired into buildSourcingStrategy output', () => {
+    const item = newItem({ annualSpend: 180_000, supplierCount: 2, leadTimeDays: 45, qualityImpact: 4, revenueImpact: 3, marketCompetitiveness: 2, geographicRisk: 3, substitutability: 2 });
+    const restOfPortfolio = [
+      newItem({ annualSpend: 4_500_000, supplierCount: 8, qualityImpact: 3, revenueImpact: 3 }),
+      newItem({ annualSpend: 4_320_000, supplierCount: 6, qualityImpact: 3, revenueImpact: 3 }),
+    ];
+    const output = buildSourcingStrategy({
+      statedNeed: 'Diversify or negotiate against sole-source aluminum extrusion supplier',
+      kraljicItem: item,
+      portfolioContext: restOfPortfolio,
+      industryKey: 'manufacturing',
+      targetMarket: 'Saudi Arabia',
+      currentRelationshipPosture: 'adversarial',
+      assumptions: ['Demand volume stable year over year'],
+    });
+    expect(output.negotiationStrategy).toBeDefined();
+    expect(output.negotiationStrategy.quadrant).toBe(output.kraljicQuadrant);
+    expect(output.negotiationStrategy.relationshipAdjustment).not.toBeNull();
+  });
+});

@@ -30,7 +30,7 @@
  * this platform has not researched.
  */
 
-import { scoreItems, type KraljicItem, type KraljicScored, type KraljicQuadrant } from '@/lib/kraljicScoring';
+import { scoreItems, ACTION_PLANS, type KraljicItem, type KraljicScored, type KraljicQuadrant } from '@/lib/kraljicScoring';
 import { scoreOptions, type DecisionScenario, type ScoredOption } from '@/lib/decisionLab';
 
 export interface EvaluationCriterionSuggestion {
@@ -69,6 +69,7 @@ export interface SourcingStrategyOutput {
   rfpStructureDraft: RfpSection[];
   solutionSet: SolutionAction[];
   relationshipCompatibility: RelationshipCompatibility | null;
+  negotiationStrategy: NegotiationStrategy;
   evidenceSummary: { dataUsed: string[]; assumptions: string[]; confidence: number };
 }
 
@@ -272,6 +273,7 @@ export function buildSourcingStrategy(input: {
     rfpStructureDraft: draftRfpStructure(scored.quadrant),
     solutionSet: buildSolutionSet(scored.quadrant),
     relationshipCompatibility,
+    negotiationStrategy: recommendNegotiationStrategy(scored.quadrant, relationshipCompatibility),
     evidenceSummary: {
       dataUsed: [`Kraljic profit-impact score: ${scored.profitImpactScore}`, `Kraljic supply-risk score: ${scored.supplyRiskScore}`, `industry: ${input.industryKey ?? 'default'}`],
       assumptions,
@@ -487,3 +489,261 @@ export function recommendRelationshipUpgrade(currentPosture: RelationshipPosture
   return nextStage.governanceFeatures;
 }
 
+
+/* ------------------------------------------------------------------------
+ * Negotiation strategy: real, sourced tactics -- not invented advice
+ *
+ * Grounded in three real bodies of negotiation research, applied to the
+ * Kraljic quadrant this module already computes and the relationship
+ * posture Module 02's own compatibility check already tracks:
+ *
+ * - Fisher & Ury, "Getting to Yes" (Harvard Program on Negotiation, 1981) --
+ *   principled negotiation: separate people from the problem, focus on
+ *   interests not positions, generate options for mutual gain, insist on
+ *   objective criteria. BATNA (Best Alternative to a Negotiated Agreement)
+ *   and ZOPA (Zone of Possible Agreement) both originate here.
+ * - Lewicki / Walton & McKersie's distributive-vs-integrative distinction --
+ *   distributive (win-lose, claim value from a fixed pie) suits one-time,
+ *   price-primary, commodity-style deals; integrative (win-win, expand the
+ *   total value) suits ongoing relationships with multiple tradeable
+ *   variables.
+ * - CIPS negotiation-strategy guidance and standard Kraljic-quadrant
+ *   negotiation postures taught across procurement practice.
+ *
+ * IMPORTANT -- this does not duplicate ISC's existing negotiation content.
+ * kraljicScoring.ts's ACTION_PLANS already ships 5 real, bilingual,
+ * quadrant-specific negotiation actions per quadrant, live today in
+ * KraljicMatrix.tsx's "Negotiation Approach" tab. Those 5 items per
+ * quadrant are REUSED here directly (never re-authored or contradicted --
+ * see NEGOTIATION_PROFILE_BY_QUADRANT below, which pulls them from
+ * ACTION_PLANS[quadrant].negotiation/negotiationAr as the first entries in
+ * each tactics list). What this module adds on top, and what ACTION_PLANS
+ * does not have, is threefold: (1) an explicit distributive/integrative
+ * approach classification with academic rationale, (2) BATNA/ZOPA framing,
+ * and (3) a relationship-posture-adjusted advisory -- ACTION_PLANS is
+ * quadrant-only and has no awareness of the client's real, observed
+ * current relationship posture the way assessRelationshipCompatibility()
+ * does. The additional tactics beyond the reused 5 focus on HOW to
+ * negotiate (technique) rather than WHAT to negotiate for (ACTION_PLANS'
+ * focus), so the two lists are complementary, not overlapping.
+ *
+ * Why this belongs in Module 02 and not a new module: quadrant and
+ * relationship posture are the two real inputs a negotiation approach
+ * depends on, and this module already computes both. The eventual
+ * client-facing surface for this, like the rest of Module 02, is Module
+ * 09's consultancy output layer; ISC's live Maturity Assessment already
+ * separately diagnoses WHETHER a client has disciplined negotiation
+ * planning practice (maturitySubSegProcurement.ts, the "leverage
+ * assessment / BATNA / walk-away positioning" question) -- this module is
+ * the first place ISC actually prescribes real tactics once that gap is
+ * identified, not a second, competing maturity check.
+ * ------------------------------------------------------------------------ */
+
+export type NegotiationApproach = 'distributive' | 'mixed' | 'integrative';
+
+export interface BilingualTactic {
+  en: string;
+  ar: string;
+}
+
+export type MilLevel = 'must' | 'intend' | 'like';
+
+export interface MilObjective {
+  level: MilLevel;
+  objective: BilingualTactic;
+}
+
+export interface NegotiationStrategy {
+  quadrant: KraljicQuadrant;
+  recommendedApproach: NegotiationApproach;
+  approachRationale: string;
+  batnaGuidance: string;
+  zopaGuidance: string;
+  /** Reused ACTION_PLANS.negotiation entries first, then additional
+   *  technique-level tactics grounded in Fisher & Ury / CIPS / Lewicki --
+   *  never a second, contradictory list. */
+  tactics: BilingualTactic[];
+  avoid: BilingualTactic[];
+  /** How to use the MIL objective grid below (Must / Intend / Like), a
+   *  standard CIPS negotiation-planning discipline -- explained once here
+   *  rather than repeated per objective. */
+  milGuidance: string;
+  /** Illustrative starting-point objectives for this quadrant, classified
+   *  by priority tier. These are examples to replace with the client's own
+   *  real priorities before the session, not a fixed checklist -- the
+   *  whole point of the MIL discipline is that the CLIENT decides what is
+   *  actually a Must versus a Like for their specific negotiation. */
+  milObjectives: MilObjective[];
+  /** Only populated when a relationshipCompatibility check ran and found a
+   *  real mismatch -- never guessed when no current posture was supplied. */
+  relationshipAdjustment: string | null;
+}
+
+interface NegotiationProfile {
+  recommendedApproach: NegotiationApproach;
+  approachRationale: string;
+  batnaGuidance: string;
+  zopaGuidance: string;
+  additionalTactics: BilingualTactic[];
+  avoid: BilingualTactic[];
+  milObjectives: MilObjective[];
+}
+
+const MIL_GUIDANCE = "Before entering this negotiation, classify the client's own objectives using the MIL framework (Must / Intend / Like), a standard CIPS negotiation-planning discipline. Must-have objectives are the non-negotiable minimum -- walk away rather than concede them. Intend-to-have objectives are real priorities worth pushing hard for, but an acceptable deal can still be reached without every one of them. Like-to-have objectives are the first things to trade away to protect the Must and Intend tiers. The objectives below are illustrative starting points for this quadrant, not a fixed checklist -- the whole point of the MIL discipline is that the client sets these based on their own real priorities before the session, not from a generic template.";
+
+
+const NEGOTIATION_PROFILE_BY_QUADRANT: Record<KraljicQuadrant, NegotiationProfile> = {
+  strategic: {
+    recommendedApproach: 'integrative',
+    approachRationale: "High profit impact and high supply risk mean a win-lose outcome costs the client more than it gains -- Fisher & Ury's principled-negotiation logic and CIPS's collaborative-strategy guidance both point toward joint value creation over price extraction in this quadrant.",
+    batnaGuidance: "Real leverage rarely comes from threatening to switch suppliers here -- qualified alternatives are scarce by definition in a Strategic position. The BATNA worth building is credible in-house capability or a genuine, funded dual-source development plan, not a bluff the supplier can see through.",
+    zopaGuidance: "Expect a wide negotiating mix beyond unit price: joint investment, exclusivity terms, innovation-sharing, and payment-term trade-offs. Price alone rarely captures the real zone of possible agreement in a Strategic relationship.",
+    additionalTactics: [
+      { en: "Separate the people from the problem -- critique the proposed terms, not the supplier relationship, when pushing back (Fisher & Ury, Getting to Yes).", ar: "افصل بين الأشخاص والمشكلة -- انتقد الشروط المقترحة لا العلاقة مع المورد عند الاعتراض (فيشر ويوري، الوصول إلى نعم)." },
+      { en: "Focus on interests, not stated positions -- ask why a term matters to the supplier before rejecting it outright.", ar: "ركّز على المصالح لا على المواقف المعلنة -- اسأل عن سبب أهمية بند معين للمورد قبل رفضه مباشرة." },
+      { en: "Generate multiple options before committing to one deal structure -- brainstorm several ways to satisfy both sides' real interests.", ar: "ولّد عدة خيارات قبل الالتزام بهيكل صفقة واحد -- اطرح طرقاً متعددة لتلبية المصالح الحقيقية لكلا الطرفين." },
+      { en: "Insist on objective, verifiable criteria (market indices, audited cost models) to resolve disagreements rather than a battle of wills.", ar: "أصرّ على معايير موضوعية يمكن التحقق منها (مؤشرات السوق، نماذج التكلفة المدقَّقة) لحل الخلافات بدلاً من صراع الإرادات." },
+      { en: "Run interest-based bargaining sessions rather than single-round offer/counter-offer exchanges.", ar: "أجرِ جلسات تفاوض قائمة على المصالح بدلاً من تبادل عروض ومقابل عروض من جولة واحدة." },
+      { en: "Build joint negotiation teams with technical and commercial members on both sides, not procurement versus sales alone.", ar: "شكّل فرق تفاوض مشتركة تضم أعضاء تقنيين وتجاريين من الطرفين، وليس المشتريات مقابل المبيعات فقط." },
+      { en: "Rehearse likely objections and prepare fallback trade-offs before the session -- the same structured planning discipline ISC's own Maturity Assessment already scores.", ar: "تدرّب على الاعتراضات المحتملة وجهّز مقايضات بديلة قبل الجلسة -- وهو نفس انضباط التخطيط المنظّم الذي يقيّمه تقييم النضج الخاص بـ ISC بالفعل." },
+    ],
+    avoid: [
+      { en: "Aggressive, price-only tactics that treat a Strategic partner like a commodity supplier.", ar: "تكتيكات عدوانية قائمة على السعر فقط تعامل شريكاً استراتيجياً كأنه مورد سلعي." },
+      { en: "Single-issue bargaining that ignores the wider relationship.", ar: "مساومة على قضية واحدة تتجاهل العلاقة الأوسع." },
+      { en: "Surprise competitive RFPs run against a supplier the client actually depends on -- this reads as adversarial and can trigger real retaliation risk.", ar: "طرح مناقصات تنافسية مفاجئة ضد مورد يعتمد عليه العميل فعلياً -- يُقرأ كخطوة خصومية وقد يستدعي مخاطر رد فعل حقيقية." },
+      { en: "Letting procurement negotiate a Strategic relationship without executive visibility or involvement.", ar: "ترك المشتريات تتفاوض على علاقة استراتيجية دون رؤية أو مشاركة تنفيذية." },
+      { en: "Treating a signed framework agreement as the end of the relationship rather than the start of joint execution.", ar: "معاملة الاتفاقية الإطارية الموقعة كنهاية للعلاقة بدلاً من بداية التنفيذ المشترك." },
+    ],
+    milObjectives: [
+      { level: 'must', objective: { en: "Guaranteed capacity or priority allocation during any future shortage; no unilateral price increase without objective cost justification.", ar: "ضمان أولوية التخصيص أو الطاقة الإنتاجية عند أي نقص مستقبلي؛ عدم رفع الأسعار من جانب واحد دون تبرير موضوعي للتكلفة." } },
+      { level: 'intend', objective: { en: "Joint innovation or R&D investment commitment; a multi-year price-review band tied to a published index rather than open renegotiation every year.", ar: "التزام استثماري مشترك في الابتكار والبحث والتطوير؛ نطاق مراجعة أسعار متعدد السنوات مرتبط بمؤشر منشور بدلاً من إعادة تفاوض سنوية مفتوحة." } },
+      { level: 'like', objective: { en: "Executive-to-executive quarterly business reviews; joint case-study or co-branding participation.", ar: "مراجعات عمل تنفيذية ربع سنوية بين الطرفين؛ المشاركة في دراسات حالة مشتركة أو العلامة التجارية المشتركة." } },
+    ],
+  },
+  leverage: {
+    recommendedApproach: 'distributive',
+    approachRationale: "Multiple qualified suppliers and low switching cost is exactly the condition distributive, competitive negotiation is suited for (CIPS, Lewicki) -- this is the one quadrant where playing suppliers against each other is the textbook-correct approach, not an aggressive overreach.",
+    batnaGuidance: "A credible competing bid in hand is the real BATNA here -- run an actual competitive process (RFQ, reverse auction) rather than negotiating from a single quote and hoping the threat of alternatives is believed.",
+    zopaGuidance: "Price is usually the primary variable; the zone of possible agreement is narrow and centers on unit price, payment terms, and volume discounts rather than a wide multi-issue trade.",
+    additionalTactics: [
+      { en: "Anchor first and anchor firmly -- the opening number has a disproportionate effect on where a distributive negotiation lands.", ar: "ابدأ بترسية الرقم أولاً وبثبات -- للرقم الافتتاحي تأثير غير متناسب على نتيجة التفاوض التنافسي." },
+      { en: "Use silence deliberately after making an offer -- do not fill the silence or negotiate against yourself.", ar: "استخدم الصمت عن قصد بعد تقديم العرض -- لا تملأ الصمت ولا تفاوض ضد نفسك." },
+      { en: "Create genuine time pressure only where it is real (quarter-end, budget cycles) -- fabricated deadlines are quickly detected and cost credibility.", ar: "اخلق ضغط وقت حقيقياً فقط عندما يكون فعلياً (نهاية الربع، دورات الميزانية) -- المواعيد النهائية المصطنعة تُكتشف بسرعة وتكلّف المصداقية." },
+      { en: "Bundle multiple small requests into a single ask rather than trickling concessions across several rounds.", ar: "اجمع عدة طلبات صغيرة في طلب واحد بدلاً من تسريب التنازلات عبر جولات متعددة." },
+      { en: "Never make the first concession without extracting a matching concession in return.", ar: "لا تُقدّم أول تنازل دون الحصول على تنازل مقابل له." },
+      { en: "Keep your own walk-away point private -- never disclose the maximum acceptable price to the other side.", ar: "أبقِ نقطة انسحابك سرّية -- لا تكشف أبداً للطرف الآخر عن أقصى سعر يمكنك قبوله." },
+      { en: "Use competitive bid data transparently as leverage -- let the supplier see, or credibly infer, that real alternatives exist.", ar: "استخدم بيانات العروض التنافسية بشفافية كأداة ضغط -- دع المورد يرى، أو يستدل بمصداقية، أن هناك بدائل حقيقية." },
+      { en: "Recognize and resist anchoring tactics used against you -- a supplier's high opening price is a tactic, not a fact about true cost.", ar: "تعرّف على تكتيكات الترسية المستخدمة ضدك وقاومها -- سعر الافتتاح المرتفع من المورد تكتيك وليس حقيقة عن التكلفة الفعلية." },
+    ],
+    avoid: [
+      { en: "Over-investing relationship effort in a category that does not need it -- Leverage items are, by definition, low switching-risk.", ar: "الإفراط في الاستثمار العلائقي في فئة لا تحتاج لذلك -- أصناف النفوذ منخفضة مخاطر التبديل بحكم تعريفها." },
+      { en: "Single-sourcing without maintaining real competitive tension behind it.", ar: "الاعتماد على مصدر واحد دون الحفاظ على توتر تنافسي حقيقي خلفه." },
+      { en: "Disclosing your own budget or target price before the supplier reveals theirs.", ar: "الكشف عن ميزانيتك أو سعرك المستهدف قبل أن يكشف المورد عن سعره." },
+      { en: "Accepting the supplier's proposed negotiation format or agenda without proposing your own.", ar: "قبول صيغة أو جدول أعمال التفاوض الذي يقترحه المورد دون اقتراح صيغتك الخاصة." },
+    ],
+    milObjectives: [
+      { level: 'must', objective: { en: "Price at or below the best of at least two to three competing, qualified bids.", ar: "سعر عند أو أقل من أفضل عرضين إلى ثلاثة عروض تنافسية مؤهلة." } },
+      { level: 'intend', objective: { en: "Extended payment terms (DPO 60-90 days) and tiered volume rebates.", ar: "تمديد شروط الدفع (60-90 يوماً) وخصومات متدرجة على الكمية." } },
+      { level: 'like', objective: { en: "Marginal service upgrades -- faster delivery windows, a dedicated account contact -- at no additional cost.", ar: "تحسينات خدمية هامشية -- مواعيد تسليم أسرع، جهة اتصال مخصصة -- دون تكلفة إضافية." } },
+    ],
+  },
+  bottleneck: {
+    recommendedApproach: 'mixed',
+    approachRationale: "Real supply risk with few alternatives usually means the client, not the supplier, is the vulnerable party -- distributive or competitive tactics can backfire by damaging the one relationship keeping supply flowing. This is the same finding this module's relationshipCompatibility check flags as high-risk for a Bottleneck supplier held at Adversarial distance.",
+    batnaGuidance: "Building a genuine BATNA -- a second qualified source, an in-house substitute, or a specification change that unlocks alternative suppliers -- is the single highest-value negotiation action available in this quadrant. Until it exists, any negotiating leverage the client claims to have is largely theoretical.",
+    zopaGuidance: "Broaden the negotiating mix past price: guaranteed volumes, priority allocation during a shortage, accelerated payment terms, and joint engineering work are the real levers when price leverage genuinely does not exist.",
+    additionalTactics: [
+      { en: "Separate the relationship from the immediate deal -- protect the long-term relationship even while pushing on a specific term (Fisher & Ury).", ar: "افصل بين العلاقة والصفقة الآنية -- احمِ العلاقة طويلة الأمد حتى أثناء التفاوض على بند معين." },
+      { en: "Lead every conversation with the client's investment in the supplier's success, not with demands.", ar: "ابدأ كل محادثة باستثمار العميل في نجاح المورد، لا بالمطالب." },
+      { en: "Offer to solve a real problem for the supplier -- forecast visibility, faster payment, engineering support -- before asking for anything in return.", ar: "اعرض حل مشكلة حقيقية للمورد -- كوضوح التوقعات، أو دفع أسرع، أو دعم هندسي -- قبل طلب أي شيء بالمقابل." },
+      { en: "Never threaten to switch suppliers unless a real, funded alternative genuinely exists -- an empty threat, once discovered, damages trust permanently.", ar: "لا تهدّد بتغيير المورد إلا إذا كان هناك بديل حقيقي وممول فعلاً -- التهديد الفارغ، إذا اكتُشف، يضر بالثقة بشكل دائم." },
+      { en: "Justify any price pushback with objective, published cost or market data so it reads as fact-based rather than adversarial.", ar: "برّر أي اعتراض على السعر ببيانات تكلفة أو سوق منشورة وموضوعية حتى يبدو مبنياً على الحقائق لا خصومياً." },
+      { en: "Escalate to executive-to-executive contact rather than working-level pressure, which a scarce supplier can more easily ignore.", ar: "صعّد إلى تواصل تنفيذي بين الطرفين بدلاً من الضغط على المستوى التنفيذي الأدنى الذي يمكن للمورد النادر تجاهله بسهولة أكبر." },
+      { en: "Document any verbal commitments in writing promptly -- goodwill fades faster than a signed provision.", ar: "وثّق أي التزامات شفهية كتابياً على الفور -- حسن النية يتلاشى أسرع من بند موقّع." },
+    ],
+    avoid: [
+      { en: "Ultimatums or aggressive price pressure -- the client typically lacks the leverage to make these stick.", ar: "إنذارات نهائية أو ضغط سعري عدواني -- عادة ما يفتقر العميل للنفوذ اللازم لفرضها." },
+      { en: "Single-issue, price-only bargaining, which ignores every lever that actually works in this quadrant.", ar: "مساومة أحادية القضية تقتصر على السعر وتتجاهل كل الأدوات الفعالة فعلياً في هذا الربع." },
+      { en: "Any tactic that reads as adversarial toward a supplier that already holds the real leverage in the relationship.", ar: "أي تكتيك يبدو خصومياً تجاه مورد يملك النفوذ الحقيقي أصلاً في العلاقة." },
+      { en: "Assuming the current sole-source status is permanent instead of actively working to end it.", ar: "افتراض أن وضع المصدر الوحيد الحالي دائم بدلاً من العمل الفعلي لإنهائه." },
+    ],
+    milObjectives: [
+      { level: 'must', objective: { en: "A guaranteed minimum allocation or continuity commitment during any shortage, with documented force majeure and allocation-priority terms.", ar: "التزام بحد أدنى مضمون من التخصيص أو استمرارية الإمداد عند أي نقص، مع شروط موثقة للقوة القاهرة وأولوية التخصيص." } },
+      { level: 'intend', objective: { en: "A long-term agreement with a defined volume commitment in exchange for price stability.", ar: "اتفاقية طويلة الأمد بالتزام كمية محدد مقابل استقرار السعر." } },
+      { level: 'like', objective: { en: "Joint engineering collaboration or early access to the supplier's product roadmap.", ar: "تعاون هندسي مشترك أو اطلاع مبكر على خارطة طريق منتجات المورد." } },
+    ],
+  },
+  'non-critical': {
+    recommendedApproach: 'distributive',
+    approachRationale: "Low profit impact and low supply risk mean the real question is not which tactic to use but whether negotiating hard is worth the transaction cost at all. CIPS and Kraljic literature agree the right strategy here is standardization and process efficiency, not negotiation intensity.",
+    batnaGuidance: "BATNA is trivial to establish -- many substitutable suppliers exist by definition in this quadrant. The real decision is whether the effort of negotiating exceeds the savings realistically available.",
+    zopaGuidance: "Narrow, price/terms-only zone of possible agreement; extensive multi-issue trade-off analysis is rarely justified for the spend and risk at stake.",
+    additionalTactics: [
+      { en: "Decide up front whether this negotiation is worth doing at all -- calculate the transaction cost before starting.", ar: "قرّر مسبقاً ما إذا كان هذا التفاوض يستحق الخوض فيه أصلاً -- احسب تكلفة المعاملة قبل البدء." },
+      { en: "Use pre-negotiated framework or catalogue pricing wherever it already exists rather than opening a fresh negotiation.", ar: "استخدم التسعير الإطاري أو تسعير الكتالوج المتفاوض عليه مسبقاً كلما توفر بدلاً من فتح تفاوض جديد." },
+      { en: "Delegate low-value negotiations to junior staff or automate acceptance entirely, reserving senior negotiator time for Leverage, Strategic, and Bottleneck categories.", ar: "فوّض المفاوضات منخفضة القيمة لموظفين مبتدئين أو أتمتة القبول بالكامل، واحتفظ بوقت كبار المفاوضين لفئات النفوذ والاستراتيجية والاختناق." },
+      { en: "Accept reasonable supplier standard terms rather than spending negotiation capital disproportionate to the spend at stake.", ar: "اقبل الشروط القياسية المعقولة للمورد بدلاً من إنفاق رأس مال تفاوضي لا يتناسب مع حجم الإنفاق المعني." },
+      { en: "Batch multiple small purchases into a single negotiation cycle to justify the time spent.", ar: "اجمع عدة مشتريات صغيرة في دورة تفاوض واحدة لتبرير الوقت المستغرق." },
+    ],
+    avoid: [
+      { en: "Spending negotiation effort disproportionate to the spend or risk actually at stake in this quadrant.", ar: "إنفاق جهد تفاوضي لا يتناسب مع حجم الإنفاق أو المخاطر الفعلية في هذا الربع." },
+      { en: "Treating every purchase as worthy of individual negotiation rather than standardizing.", ar: "معاملة كل عملية شراء وكأنها تستحق تفاوضاً فردياً بدلاً من التوحيد القياسي." },
+    ],
+    milObjectives: [
+      { level: 'must', objective: { en: "Standard commercial terms with no unusual liability exposure.", ar: "شروط تجارية قياسية دون أي تعرض غير معتاد للمسؤولية." } },
+      { level: 'intend', objective: { en: "Framework or catalogue pricing that avoids per-order negotiation.", ar: "تسعير إطاري أو كتالوجي يتجنب التفاوض في كل طلب." } },
+      { level: 'like', objective: { en: "A minor payment-term extension or a small volume-based discount.", ar: "تمديد بسيط لشروط الدفع أو خصم صغير قائم على الكمية." } },
+    ],
+  },
+};
+
+/**
+ * Recommends a negotiation approach for a Kraljic-classified sourcing
+ * decision, and tightens that recommendation when a real relationship
+ * mismatch has already been found by assessRelationshipCompatibility().
+ *
+ * tactics[] always leads with ACTION_PLANS[quadrant].negotiation/
+ * negotiationAr -- ISC's existing, live, shipped negotiation content --
+ * paired index-for-index into { en, ar }, followed by this module's
+ * additional technique-level tactics. Reused, never re-derived.
+ *
+ * relationshipAdjustment is never guessed: it is populated only when a real
+ * relationshipCompatibility object was computed (i.e. the client supplied
+ * an actual, observed current posture), and only carries a specific note
+ * when that check found a real gap worth acting on.
+ */
+export function recommendNegotiationStrategy(
+  quadrant: KraljicQuadrant,
+  relationshipCompatibility: RelationshipCompatibility | null,
+): NegotiationStrategy {
+  const profile = NEGOTIATION_PROFILE_BY_QUADRANT[quadrant];
+  const existingPlan = ACTION_PLANS[quadrant];
+  const reusedTactics: BilingualTactic[] = existingPlan.negotiation.map((en, i) => ({
+    en,
+    ar: existingPlan.negotiationAr[i] ?? '',
+  }));
+
+  let relationshipAdjustment: string | null = null;
+  if (relationshipCompatibility) {
+    if (relationshipCompatibility.severity === 'high-risk') {
+      relationshipAdjustment = `The client's actual ${relationshipCompatibility.currentPosture} posture on this ${quadrant} supplier makes ${profile.recommendedApproach === 'distributive' ? 'distributive, price-led' : 'the usual'} tactics especially likely to backfire right now -- see relationshipCompatibility.advisory for the specific, real levers to use instead of pushing harder on price.`;
+    } else if (relationshipCompatibility.severity === 'monitor') {
+      relationshipAdjustment = `The client's current ${relationshipCompatibility.currentPosture} posture is close to, but not fully at, this quadrant's ideal (${relationshipCompatibility.idealPosture}) -- proceed with the strategy below, but treat closing that gap as part of the negotiation's own agenda, not a separate initiative.`;
+    } else {
+      relationshipAdjustment = `The client's current ${relationshipCompatibility.currentPosture} posture already matches this quadrant's ideal -- the strategy below can be applied directly without a relationship-repair step first.`;
+    }
+  }
+
+  return {
+    quadrant,
+    recommendedApproach: profile.recommendedApproach,
+    approachRationale: profile.approachRationale,
+    batnaGuidance: profile.batnaGuidance,
+    zopaGuidance: profile.zopaGuidance,
+    tactics: [...reusedTactics, ...profile.additionalTactics],
+    avoid: profile.avoid,
+    milGuidance: MIL_GUIDANCE,
+    milObjectives: profile.milObjectives,
+    relationshipAdjustment,
+  };
+}
