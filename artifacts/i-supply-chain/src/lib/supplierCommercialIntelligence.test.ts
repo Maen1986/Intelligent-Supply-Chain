@@ -6,8 +6,17 @@ import {
   recommendNextMove,
   buildNegotiationBrief,
   buildNegotiationBriefPrompt,
+  assessShouldCostGap,
+  assessNegotiationOutcome,
+  buildNegotiationValueLedger,
+  assessPaymentTermsValue,
+  assessRebateTierPosition,
+  assessVolumeConsolidationOpportunity,
   type PricePoint,
   type NegotiationRoundHistory,
+  type ShouldCostModel,
+  type QuotedCostBreakdown,
+  type RebateTier,
 } from './supplierCommercialIntelligence';
 import {
   assessRelationshipCompatibility,
@@ -272,6 +281,27 @@ describe('assessCostDriverJustification', () => {
       );
       expect(result.supported).toBe(true);
       expect(result.toleranceSource).toBe('caller-override');
+    });
+  });
+
+  describe('expertise-viewpoint enhancement: index-linked-clause suggestion', () => {
+    it('suggests an index-linked clause only when a real reference exists AND the claim is unsupported', () => {
+      const result = assessCostDriverJustification({ driver: 'Aluminum market pricing', claimedImpactPct: 12, basis: 'estimated' }, 4);
+      expect(result.supported).toBe(false);
+      expect(result.suggestIndexLinkedClause).toBe(true);
+      expect(result.indexLinkedClauseNoteEn).toContain('index-linked pricing clause');
+      expect(result.indexLinkedClauseNoteAr).toMatch(/[؀-ۿ]/);
+    });
+
+    it('does not suggest an index-linked clause when the claim is supported', () => {
+      const result = assessCostDriverJustification({ driver: 'Energy costs', claimedImpactPct: 5, basis: 'estimated' }, 4);
+      expect(result.suggestIndexLinkedClause).toBe(false);
+      expect(result.indexLinkedClauseNoteEn).toBeUndefined();
+    });
+
+    it('does not suggest an index-linked clause on INSUFFICIENT_DATA (no reference figure at all)', () => {
+      const result = assessCostDriverJustification({ driver: 'Freight surcharge', claimedImpactPct: 5, basis: 'estimated' }, null);
+      expect(result.suggestIndexLinkedClause).toBe(false);
     });
   });
 });
@@ -658,5 +688,448 @@ describe('buildNegotiationBrief + buildNegotiationBriefPrompt (orchestration)', 
       const ar = buildNegotiationBriefPrompt(brief, true);
       expect(ar).toContain(strategy.relationshipAdjustmentAr);
     });
+  });
+});
+
+describe('assessShouldCostGap (expertise-viewpoint enhancement: Section 7)', () => {
+  it('returns INSUFFICIENT_DATA with no model or no quoted price', () => {
+    expect(assessShouldCostGap(null, 100).severity).toBe('INSUFFICIENT_DATA');
+    const model: ShouldCostModel = { components: [{ category: 'raw_materials', description: 'x', amount: 10, basis: 'estimated' }], currency: 'SAR', basis: 'estimated', archetype: 'manufactured_goods' };
+    expect(assessShouldCostGap(model, null).severity).toBe('INSUFFICIENT_DATA');
+  });
+
+  it('classifies ALIGNED / MODERATE_GAP / MATERIAL_GAP using the generic default tolerance (10%)', () => {
+    const model: ShouldCostModel = {
+      components: [
+        { category: 'raw_materials', description: 'steel', amount: 60, basis: 'estimated' },
+        { category: 'direct_labor', description: 'assembly', amount: 40, basis: 'estimated' },
+      ],
+      currency: 'SAR',
+      basis: 'estimated',
+      archetype: 'manufactured_goods',
+    };
+    expect(assessShouldCostGap(model, 105).severity).toBe('ALIGNED'); // 5% gap
+    expect(assessShouldCostGap(model, 115).severity).toBe('MODERATE_GAP'); // 15% gap
+    expect(assessShouldCostGap(model, 140).severity).toBe('MATERIAL_GAP'); // 40% gap
+  });
+
+  it('applies a quadrant-informed tolerance in place of the generic default', () => {
+    const model: ShouldCostModel = { components: [{ category: 'raw_materials', description: 'x', amount: 100, basis: 'estimated' }], currency: 'SAR', basis: 'estimated', archetype: 'manufactured_goods' };
+    const leverageResult = assessShouldCostGap(model, 107, { quadrant: 'leverage' }); // 7% gap
+    expect(leverageResult.toleranceApplied).toBe(6);
+    expect(leverageResult.toleranceSource).toBe('quadrant-informed-default');
+    expect(leverageResult.severity).toBe('MODERATE_GAP'); // 7% > 6% leverage tolerance
+    const bottleneckResult = assessShouldCostGap(model, 107, { quadrant: 'bottleneck' });
+    expect(bottleneckResult.toleranceApplied).toBe(15);
+    expect(bottleneckResult.severity).toBe('ALIGNED'); // 7% <= 15% bottleneck tolerance
+  });
+
+  it('computes a cost-structure fingerprint sorted descending by amount', () => {
+    const model: ShouldCostModel = {
+      components: [
+        { category: 'raw_materials', description: 'x', amount: 30, basis: 'estimated' },
+        { category: 'direct_labor', description: 'y', amount: 50, basis: 'estimated' },
+        { category: 'sga_allocation', description: 'z', amount: 20, basis: 'estimated' },
+      ],
+      currency: 'SAR',
+      basis: 'estimated',
+      archetype: 'manufactured_goods',
+    };
+    const result = assessShouldCostGap(model, 100);
+    expect(result.categoryFingerprint.map((c) => c.category)).toEqual(['direct_labor', 'raw_materials', 'sga_allocation']);
+    expect(result.categoryFingerprint[0].pctOfTotal).toBe(50);
+  });
+
+  it('produces category-level gaps and identifies the top driver only when a supplier quoted breakdown is supplied', () => {
+    const model: ShouldCostModel = {
+      components: [
+        { category: 'raw_materials', description: 'x', amount: 40, basis: 'estimated' },
+        { category: 'supplier_margin', description: 'margin', amount: 10, basis: 'estimated' },
+      ],
+      currency: 'SAR',
+      basis: 'estimated',
+      archetype: 'manufactured_goods',
+    };
+    const aggregateOnly = assessShouldCostGap(model, 70);
+    expect(aggregateOnly.granularity).toBe('aggregate');
+    expect(aggregateOnly.categoryGaps).toBeNull();
+
+    const quotedBreakdown: QuotedCostBreakdown = {
+      components: [
+        { category: 'raw_materials', description: 'x', amount: 40, basis: 'observed' },
+        { category: 'supplier_margin', description: 'margin', amount: 30, basis: 'observed' },
+      ],
+      currency: 'SAR',
+    };
+    const categoryLevel = assessShouldCostGap(model, 70, { quotedBreakdown });
+    expect(categoryLevel.granularity).toBe('category-level');
+    expect(categoryLevel.categoryGaps).not.toBeNull();
+    expect(categoryLevel.categoryGaps![0].category).toBe('supplier_margin'); // largest abs gap (20) sorted first
+    expect(categoryLevel.narrativeEn).toContain('Supplier margin');
+  });
+
+  it('reports a margin observation only when a supplier_margin component exists, evaluative only with a caller-supplied expectation', () => {
+    const withMargin: ShouldCostModel = {
+      components: [
+        { category: 'raw_materials', description: 'x', amount: 80, basis: 'estimated' },
+        { category: 'supplier_margin', description: 'margin', amount: 20, basis: 'estimated' },
+      ],
+      currency: 'SAR',
+      basis: 'estimated',
+      archetype: 'manufactured_goods',
+    };
+    const noExpectation = assessShouldCostGap(withMargin, 100);
+    expect(noExpectation.marginObservation!.marginPctOfShouldCost).toBe(20);
+    expect(noExpectation.marginObservation!.expectationPct).toBeNull();
+    expect(noExpectation.marginObservation!.exceedsExpectation).toBeNull();
+
+    const withExpectation = assessShouldCostGap(withMargin, 100, { marginExpectationPct: 15 });
+    expect(withExpectation.marginObservation!.exceedsExpectation).toBe(true);
+
+    const noMargin: ShouldCostModel = { components: [{ category: 'raw_materials', description: 'x', amount: 100, basis: 'estimated' }], currency: 'SAR', basis: 'estimated', archetype: 'manufactured_goods' };
+    expect(assessShouldCostGap(noMargin, 100).marginObservation).toBeNull();
+  });
+
+  describe('industry-archetype category-taxonomy check (owner follow-up: "should-cost models vary per industry")', () => {
+    it('flags a category unusual for the declared archetype (raw_materials on a professional_services model)', () => {
+      const model: ShouldCostModel = {
+        components: [
+          { category: 'direct_labor', description: 'consulting hours', amount: 80, basis: 'estimated' },
+          { category: 'raw_materials', description: 'unexpected', amount: 20, basis: 'estimated' },
+        ],
+        currency: 'SAR',
+        basis: 'estimated',
+        archetype: 'professional_services',
+      };
+      const result = assessShouldCostGap(model, 100);
+      expect(result.categoryArchetypeWarnings).toContain('raw_materials');
+      expect(result.narrativeEn).toContain('professional_services'.length > 0 ? 'unusual for that archetype' : '');
+    });
+
+    it('does not flag any category for the generic archetype (always permissive)', () => {
+      const model: ShouldCostModel = {
+        components: [
+          { category: 'license_royalty_fee', description: 'SaaS license', amount: 50, basis: 'estimated' },
+          { category: 'raw_materials', description: 'unexpected', amount: 50, basis: 'estimated' },
+        ],
+        currency: 'SAR',
+        basis: 'estimated',
+        archetype: 'generic',
+      };
+      expect(assessShouldCostGap(model, 100).categoryArchetypeWarnings).toEqual([]);
+    });
+
+    it('does not flag fuel_energy/equipment_depreciation for a logistics_freight_services archetype (the categories this archetype exists for)', () => {
+      const model: ShouldCostModel = {
+        components: [
+          { category: 'fuel_energy', description: 'diesel', amount: 40, basis: 'estimated' },
+          { category: 'equipment_depreciation', description: 'trucks', amount: 30, basis: 'estimated' },
+          { category: 'direct_labor', description: 'drivers', amount: 30, basis: 'estimated' },
+        ],
+        currency: 'SAR',
+        basis: 'estimated',
+        archetype: 'logistics_freight_services',
+      };
+      expect(assessShouldCostGap(model, 100).categoryArchetypeWarnings).toEqual([]);
+    });
+  });
+
+  describe('category-specific override of the archetype default (owner follow-up: "should-cost differ also per category")', () => {
+    it('defaults categoryCheckSource to archetype-default when no override is supplied', () => {
+      const model: ShouldCostModel = {
+        components: [{ category: 'raw_materials', description: 'x', amount: 100, basis: 'estimated' }],
+        currency: 'SAR',
+        basis: 'estimated',
+        archetype: 'manufactured_goods',
+      };
+      const result = assessShouldCostGap(model, 100);
+      expect(result.categoryCheckSource).toBe('archetype-default');
+      expect(result.narrativeEn).toContain('archetype default');
+    });
+
+    it('flags equipment_depreciation on a manufactured_goods model with no override (not in the archetype default set)', () => {
+      const model: ShouldCostModel = {
+        components: [
+          { category: 'raw_materials', description: 'aluminum billet', amount: 60, basis: 'estimated' },
+          { category: 'equipment_depreciation', description: 'dedicated tooled sub-assembly line', amount: 40, basis: 'estimated' },
+        ],
+        currency: 'SAR',
+        basis: 'estimated',
+        archetype: 'manufactured_goods',
+      };
+      const withoutOverride = assessShouldCostGap(model, 100);
+      expect(withoutOverride.categoryArchetypeWarnings).toContain('equipment_depreciation');
+      expect(withoutOverride.categoryCheckSource).toBe('archetype-default');
+    });
+
+    it('a caller-supplied categoryTypicalOverride permits equipment_depreciation for a specific tooled sub-assembly category and sets categoryCheckSource to caller-override', () => {
+      const model: ShouldCostModel = {
+        components: [
+          { category: 'raw_materials', description: 'aluminum billet', amount: 60, basis: 'estimated' },
+          { category: 'equipment_depreciation', description: 'dedicated tooled sub-assembly line', amount: 40, basis: 'estimated' },
+        ],
+        currency: 'SAR',
+        basis: 'estimated',
+        archetype: 'manufactured_goods',
+        unspscCategoryCode: '23153000',
+        categoryLabel: 'Tooled aluminum sub-assemblies',
+      };
+      const withOverride = assessShouldCostGap(model, 100, {
+        categoryTypicalOverride: ['raw_materials', 'direct_labor', 'manufacturing_overhead', 'tooling_equipment', 'equipment_depreciation', 'packaging', 'supplier_margin'],
+      });
+      expect(withOverride.categoryArchetypeWarnings).toEqual([]);
+      expect(withOverride.categoryCheckSource).toBe('caller-override');
+      expect(withOverride.narrativeEn).toContain('caller-supplied category-specific override');
+    });
+
+    it('a categoryTypicalOverride can also narrow the check tighter than the archetype default (flags a category the archetype default would have allowed)', () => {
+      const model: ShouldCostModel = {
+        components: [
+          { category: 'raw_materials', description: 'aluminum billet', amount: 60, basis: 'estimated' },
+          { category: 'tooling_equipment', description: 'one-off die charge', amount: 40, basis: 'estimated' },
+        ],
+        currency: 'SAR',
+        basis: 'estimated',
+        archetype: 'manufactured_goods',
+      };
+      // manufactured_goods archetype default includes tooling_equipment, so with no override it should not be flagged.
+      expect(assessShouldCostGap(model, 100).categoryArchetypeWarnings).toEqual([]);
+      // a category-specific override for e.g. an injection-molded plastic part that never carries its own tooling line
+      // narrows the check and correctly flags tooling_equipment as unusual for THIS specific category.
+      const narrowed = assessShouldCostGap(model, 100, {
+        categoryTypicalOverride: ['raw_materials', 'direct_labor', 'manufacturing_overhead', 'packaging', 'supplier_margin'],
+      });
+      expect(narrowed.categoryArchetypeWarnings).toContain('tooling_equipment');
+      expect(narrowed.categoryCheckSource).toBe('caller-override');
+    });
+  });
+});
+
+describe('Negotiated Value Tracking (expertise-viewpoint enhancement: Section 8)', () => {
+  describe('assessNegotiationOutcome', () => {
+    it('classifies a reduction from an already-paid baseline as HARD_SAVINGS', () => {
+      const result = assessNegotiationOutcome({ id: '1', description: 'Unit price cut', baselinePrice: 100, negotiatedPrice: 90, volumeOrSpend: 1000, wasBaselineAlreadyPaid: true, recurring: false });
+      expect(result.valueType).toBe('HARD_SAVINGS');
+      expect(result.absoluteValue).toBe(10000);
+    });
+
+    it('classifies a reduction from a proposed (not-yet-paid) increase as COST_AVOIDANCE', () => {
+      const result = assessNegotiationOutcome({ id: '2', description: 'Increase negotiated down', baselinePrice: 112, negotiatedPrice: 103, volumeOrSpend: 1000, wasBaselineAlreadyPaid: false, recurring: false });
+      expect(result.valueType).toBe('COST_AVOIDANCE');
+      expect(result.absoluteValue).toBe(9000);
+    });
+
+    it('never claims value when the negotiated price does not improve on the baseline', () => {
+      const result = assessNegotiationOutcome({ id: '3', description: 'No improvement', baselinePrice: 100, negotiatedPrice: 100, volumeOrSpend: 1000, wasBaselineAlreadyPaid: true, recurring: false });
+      expect(result.valueType).toBe('NO_VALUE_CAPTURED');
+      expect(result.absoluteValue).toBe(0);
+    });
+
+    it('annualizes a recurring value only when periodsPerYear is supplied -- never guessed', () => {
+      const withPeriods = assessNegotiationOutcome({ id: '4', description: 'Monthly recurring cut', baselinePrice: 10, negotiatedPrice: 9, volumeOrSpend: 100, wasBaselineAlreadyPaid: true, recurring: true, periodsPerYear: 12 });
+      expect(withPeriods.annualizedValue).toBe(1200); // 100 absoluteValue * 12
+      const withoutPeriods = assessNegotiationOutcome({ id: '5', description: 'Recurring but unspecified', baselinePrice: 10, negotiatedPrice: 9, volumeOrSpend: 100, wasBaselineAlreadyPaid: true, recurring: true });
+      expect(withoutPeriods.annualizedValue).toBeNull();
+      expect(withoutPeriods.narrativeEn).toContain('not computed rather than guessed');
+    });
+  });
+
+  describe('buildNegotiationValueLedger', () => {
+    it('aggregates hard savings and cost avoidance separately, never combining them into one undifferentiated figure', () => {
+      const outcomes = [
+        assessNegotiationOutcome({ id: '1', description: 'Hard saving A', baselinePrice: 100, negotiatedPrice: 90, volumeOrSpend: 100, wasBaselineAlreadyPaid: true, recurring: false }),
+        assessNegotiationOutcome({ id: '2', description: 'Avoidance A', baselinePrice: 112, negotiatedPrice: 103, volumeOrSpend: 100, wasBaselineAlreadyPaid: false, recurring: false }),
+        assessNegotiationOutcome({ id: '3', description: 'No value', baselinePrice: 100, negotiatedPrice: 100, volumeOrSpend: 100, wasBaselineAlreadyPaid: true, recurring: false }),
+      ];
+      const ledger = buildNegotiationValueLedger(outcomes);
+      expect(ledger.recordCount).toBe(3);
+      expect(ledger.hardSavingsCount).toBe(1);
+      expect(ledger.costAvoidanceCount).toBe(1);
+      expect(ledger.noValueCapturedCount).toBe(1);
+      expect(ledger.totalHardSavings).toBe(1000);
+      expect(ledger.totalCostAvoidance).toBe(900);
+      expect(ledger.totalCombinedValue).toBe(1900);
+      expect(ledger.narrativeEn).toContain('kept separate per CIPS');
+    });
+
+    it('handles an empty ledger without throwing', () => {
+      const ledger = buildNegotiationValueLedger([]);
+      expect(ledger.recordCount).toBe(0);
+      expect(ledger.narrativeEn).toContain('No negotiation outcomes recorded');
+    });
+  });
+
+  describe('assessPaymentTermsValue (working-capital / DPO financing value -- distinct from savings/avoidance)', () => {
+    it('monetizes an extension of payment terms as a positive financing value', () => {
+      const result = assessPaymentTermsValue({ baselineDays: 30, negotiatedDays: 60, annualSpend: 1_000_000, costOfCapitalPctAnnual: 8 });
+      expect(result.daysDelta).toBe(30);
+      expect(result.annualFinancingValue).toBeCloseTo((30 / 365) * 1_000_000 * 0.08, 2);
+      expect(result.narrativeEn).toContain('working-capital');
+    });
+
+    it('treats a tightening of terms as a cost, not a saving', () => {
+      const result = assessPaymentTermsValue({ baselineDays: 60, negotiatedDays: 30, annualSpend: 1_000_000, costOfCapitalPctAnnual: 8 });
+      expect(result.daysDelta).toBeLessThan(0);
+      expect(result.annualFinancingValue).toBeLessThan(0);
+      expect(result.narrativeEn).toContain('COST');
+    });
+  });
+});
+
+describe('Rebate-Tier Positioning & Volume Consolidation (expertise-viewpoint enhancement: Section 9)', () => {
+  const tiers: RebateTier[] = [
+    { thresholdVolume: 0, rebatePct: 2, label: 'Base' },
+    { thresholdVolume: 1000, rebatePct: 5, label: 'Silver' },
+    { thresholdVolume: 5000, rebatePct: 8, label: 'Gold' },
+  ];
+
+  describe('assessRebateTierPosition', () => {
+    it('returns a no-structure result when no tiers are supplied', () => {
+      const result = assessRebateTierPosition([], 500);
+      expect(result.currentTier).toBeNull();
+      expect(result.ladder).toEqual([]);
+    });
+
+    it('builds the full ladder tagging every rung achieved/current/next/future', () => {
+      const result = assessRebateTierPosition(tiers, 1500);
+      expect(result.ladder.map((l) => l.status)).toEqual(['achieved', 'current', 'next']);
+      expect(result.currentTier!.label).toBe('Silver');
+      expect(result.nextTier!.label).toBe('Gold');
+      expect(result.volumeToNextTier).toBe(3500);
+      expect(result.progressToNextTierPct).toBeCloseTo(30, 5);
+    });
+
+    it('computes rebate value at the current tier from ACTUAL volume, distinct from the ladder\'s threshold-based reference points', () => {
+      const result = assessRebateTierPosition(tiers, 1500, { unitValue: 10 });
+      expect(result.rebateValueAtCurrentTier).toBe(1500 * 10 * 0.05); // actual volume, current tier rate
+      expect(result.ladder.find((l) => l.status === 'current')!.rebateValueAtThreshold).toBe(1000 * 10 * 0.05); // threshold-based reference
+    });
+
+    it('projects periods-to-next-tier only when a run-rate is supplied -- disclosed as a projection', () => {
+      const result = assessRebateTierPosition(tiers, 1500, { runRatePerPeriod: 500 });
+      expect(result.estimatedPeriodsToNextTier).toBe(7); // ceil(3500 / 500)
+      expect(result.narrativeEn).toContain('projected to take approximately 7');
+      const noRunRate = assessRebateTierPosition(tiers, 1500);
+      expect(noRunRate.estimatedPeriodsToNextTier).toBeNull();
+    });
+
+    it('reports no further upside at the top tier', () => {
+      const result = assessRebateTierPosition(tiers, 6000);
+      expect(result.nextTier).toBeNull();
+      expect(result.narrativeEn).toContain('top rebate tier');
+    });
+  });
+
+  describe('assessVolumeConsolidationOpportunity (Kraljic Leverage-quadrant "aggregate volume" tactic)', () => {
+    it('identifies fragmented entities sitting below the tier the consolidated volume would reach', () => {
+      const result = assessVolumeConsolidationOpportunity(tiers, [
+        { entityLabel: 'Riyadh BU', currentVolume: 800 },
+        { entityLabel: 'Jeddah BU', currentVolume: 900 },
+        { entityLabel: 'Dammam BU', currentVolume: 3500 },
+      ]);
+      expect(result.consolidatedVolume).toBe(5200);
+      expect(result.tierConsolidated!.label).toBe('Gold');
+      expect(result.entities.find((e) => e.entityLabel === 'Riyadh BU')!.tierAlone!.label).toBe('Base');
+      expect(result.narrativeEn).toContain('structural/organizational finding');
+    });
+
+    it('quantifies the value uplift from consolidation when a unit value is supplied', () => {
+      const result = assessVolumeConsolidationOpportunity(
+        tiers,
+        [
+          { entityLabel: 'A', currentVolume: 800 },
+          { entityLabel: 'B', currentVolume: 900 },
+          { entityLabel: 'C', currentVolume: 3500 },
+        ],
+        { unitValue: 10 },
+      );
+      expect(result.valueUpliftFromConsolidation).not.toBeNull();
+      expect(result.valueUpliftFromConsolidation!).toBeGreaterThan(0);
+    });
+
+    it('reports no upside when all entities already sit at the consolidated tier', () => {
+      const result = assessVolumeConsolidationOpportunity(tiers, [
+        { entityLabel: 'A', currentVolume: 6000 },
+        { entityLabel: 'B', currentVolume: 7000 },
+      ]);
+      expect(result.narrativeEn).toContain('no structural consolidation upside');
+    });
+
+    it('returns an INSUFFICIENT_DATA-style result when tiers or entities are missing', () => {
+      expect(assessVolumeConsolidationOpportunity([], [{ entityLabel: 'A', currentVolume: 100 }]).tierConsolidated).toBeNull();
+      expect(assessVolumeConsolidationOpportunity(tiers, []).entities).toEqual([]);
+    });
+  });
+});
+
+describe('buildNegotiationBrief integration: expertise-viewpoint enhancement fields are optional and roll up automatically', () => {
+  it('defaults all four new fields safely when the caller omits them (backward compatible with every existing test above)', () => {
+    const brief = buildNegotiationBrief({
+      supplierId: 'legacy-caller',
+      kraljicQuadrant: null,
+      priceTrajectory: { direction: 'INSUFFICIENT_DATA', periodMonths: null, percentChange: null, basis: null, maxIntraPeriodSwingPct: null, hasIntermediateVolatility: null },
+      costDriverJustifications: [],
+      tcoReferenceId: null,
+      contractEntitlementId: null,
+      negotiationLeverage: assessNegotiationLeverage({ lockInIndex: null, isSurvivable: null }),
+      negotiationRoundHistory: [],
+      relationshipCompatibility: null,
+      negotiationStrategy: null,
+      negotiationPlan: null,
+      // shouldCostGap, negotiationValueHistory, rebateTierPosition, volumeConsolidationOpportunity all omitted
+    });
+    expect(brief.shouldCostGap).toBeNull();
+    expect(brief.negotiationValueHistory).toEqual([]);
+    expect(brief.negotiationValueLedger.recordCount).toBe(0);
+    expect(brief.rebateTierPosition).toBeNull();
+    expect(brief.volumeConsolidationOpportunity).toBeNull();
+  });
+
+  it('rolls up a supplied negotiationValueHistory into negotiationValueLedger automatically', () => {
+    const outcome = assessNegotiationOutcome({ id: '1', description: 'Price cut', baselinePrice: 100, negotiatedPrice: 90, volumeOrSpend: 100, wasBaselineAlreadyPaid: true, recurring: false });
+    const brief = buildNegotiationBrief({
+      supplierId: 'ledger-test',
+      kraljicQuadrant: null,
+      priceTrajectory: { direction: 'INSUFFICIENT_DATA', periodMonths: null, percentChange: null, basis: null, maxIntraPeriodSwingPct: null, hasIntermediateVolatility: null },
+      costDriverJustifications: [],
+      tcoReferenceId: null,
+      contractEntitlementId: null,
+      negotiationLeverage: assessNegotiationLeverage({ lockInIndex: null, isSurvivable: null }),
+      negotiationRoundHistory: [],
+      relationshipCompatibility: null,
+      negotiationStrategy: null,
+      negotiationPlan: null,
+      negotiationValueHistory: [outcome],
+    });
+    expect(brief.negotiationValueLedger.recordCount).toBe(1);
+    expect(brief.negotiationValueLedger.totalHardSavings).toBe(1000);
+    const en = buildNegotiationBriefPrompt(brief, false);
+    expect(en).toContain('1 negotiation outcome(s) recorded');
+  });
+
+  it('renders should-cost gap and rebate-tier narratives in the bilingual brief prompt when supplied', () => {
+    const model: ShouldCostModel = { components: [{ category: 'raw_materials', description: 'x', amount: 100, basis: 'estimated' }], currency: 'SAR', basis: 'estimated', archetype: 'manufactured_goods' };
+    const shouldCostGap = assessShouldCostGap(model, 140);
+    const rebateTierPosition = assessRebateTierPosition([{ thresholdVolume: 0, rebatePct: 2 }, { thresholdVolume: 1000, rebatePct: 5 }], 500);
+    const brief = buildNegotiationBrief({
+      supplierId: 'narrative-test',
+      kraljicQuadrant: null,
+      priceTrajectory: { direction: 'INSUFFICIENT_DATA', periodMonths: null, percentChange: null, basis: null, maxIntraPeriodSwingPct: null, hasIntermediateVolatility: null },
+      costDriverJustifications: [],
+      tcoReferenceId: null,
+      contractEntitlementId: null,
+      negotiationLeverage: assessNegotiationLeverage({ lockInIndex: null, isSurvivable: null }),
+      negotiationRoundHistory: [],
+      relationshipCompatibility: null,
+      negotiationStrategy: null,
+      negotiationPlan: null,
+      shouldCostGap,
+      rebateTierPosition,
+    });
+    const en = buildNegotiationBriefPrompt(brief, false);
+    expect(en).toContain('material'); // should-cost gap severity language
+    expect(en).toContain('rung'); // rebate tier ladder language
+    const ar = buildNegotiationBriefPrompt(brief, true);
+    expect(ar).toMatch(/[؀-ۿ]/);
   });
 });
