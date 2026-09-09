@@ -9,6 +9,11 @@ import {
   type PricePoint,
   type NegotiationRoundHistory,
 } from './supplierCommercialIntelligence';
+import {
+  assessRelationshipCompatibility,
+  recommendNegotiationStrategy,
+  buildNegotiationPlan,
+} from './supplierSourcingStrategy';
 
 describe('computePriceTrajectory', () => {
   it('returns INSUFFICIENT_DATA with fewer than 3 points', () => {
@@ -33,6 +38,8 @@ describe('computePriceTrajectory', () => {
     expect(result.direction).toBe('up');
     expect(result.percentChange).toBe(12);
     expect(result.basis).toBe('observed');
+    expect(result.flatBandPctApplied).toBe(3);
+    expect(result.flatBandSource).toBe('generic-default');
   });
 
   it('classifies down when change is below the negative flat band', () => {
@@ -92,7 +99,9 @@ describe('computePriceTrajectory', () => {
     ];
     // 5% change; default band (3%) would call this "up", a wider band should call it "flat"
     expect(computePriceTrajectory(points).direction).toBe('up');
-    expect(computePriceTrajectory(points, { flatBandPct: 10 }).direction).toBe('flat');
+    const overridden = computePriceTrajectory(points, { flatBandPct: 10 });
+    expect(overridden.direction).toBe('flat');
+    expect(overridden.flatBandSource).toBe('caller-override');
   });
 
   it('pressure-test-found gap, fixed: a mid-period spike that returns to baseline is not silently called flat', () => {
@@ -136,6 +145,47 @@ describe('computePriceTrajectory', () => {
     expect(result.percentChange).toBeNull();
     expect(result.direction).toBe('INSUFFICIENT_DATA');
   });
+
+  describe('deep-enhancement pass: quadrant-informed flat-band heuristic (KRALJIC USAGE MAP 5a)', () => {
+    it('a 4% move classifies as "up" for Leverage (tight 2% band) but "flat" for Bottleneck (loose 5% band)', () => {
+      const points: PricePoint[] = [
+        { periodLabel: 'Q1', price: 100, sortKey: '2026-01' },
+        { periodLabel: 'Q2', price: 102, sortKey: '2026-04' },
+        { periodLabel: 'Q3', price: 104, sortKey: '2026-07' },
+      ];
+      const leverageResult = computePriceTrajectory(points, { quadrant: 'leverage' });
+      expect(leverageResult.direction).toBe('up');
+      expect(leverageResult.flatBandPctApplied).toBe(2);
+      expect(leverageResult.flatBandSource).toBe('quadrant-informed-default');
+
+      const bottleneckResult = computePriceTrajectory(points, { quadrant: 'bottleneck' });
+      expect(bottleneckResult.direction).toBe('flat');
+      expect(bottleneckResult.flatBandPctApplied).toBe(5);
+      expect(bottleneckResult.flatBandSource).toBe('quadrant-informed-default');
+    });
+
+    it('an explicit flatBandPct always wins over a supplied quadrant', () => {
+      const points: PricePoint[] = [
+        { periodLabel: 'Q1', price: 100, sortKey: '2026-01' },
+        { periodLabel: 'Q2', price: 102, sortKey: '2026-04' },
+        { periodLabel: 'Q3', price: 104, sortKey: '2026-07' },
+      ];
+      const result = computePriceTrajectory(points, { quadrant: 'leverage', flatBandPct: 10 });
+      expect(result.direction).toBe('flat');
+      expect(result.flatBandSource).toBe('caller-override');
+    });
+
+    it('with no quadrant supplied, falls back to the plain generic default, not a quadrant default', () => {
+      const points: PricePoint[] = [
+        { periodLabel: 'Q1', price: 100, sortKey: '2026-01' },
+        { periodLabel: 'Q2', price: 102, sortKey: '2026-04' },
+        { periodLabel: 'Q3', price: 104, sortKey: '2026-07' },
+      ];
+      const result = computePriceTrajectory(points);
+      expect(result.flatBandPctApplied).toBe(3);
+      expect(result.flatBandSource).toBe('generic-default');
+    });
+  });
 });
 
 describe('assessCostDriverJustification', () => {
@@ -163,6 +213,8 @@ describe('assessCostDriverJustification', () => {
     );
     expect(result.supported).toBe(false);
     expect(result.gapPct).toBe(8);
+    expect(result.toleranceApplied).toBe(2);
+    expect(result.toleranceSource).toBe('generic-default');
   });
 
   it('a claim within tolerance of the reference figure is supported', () => {
@@ -189,6 +241,38 @@ describe('assessCostDriverJustification', () => {
     );
     expect(result.supported).toBe(false);
     expect(result.gapPct).toBe(-5);
+  });
+
+  describe('deep-enhancement pass: quadrant-informed justification tolerance (KRALJIC USAGE MAP 5a)', () => {
+    it('the same 3-point gap is unsupported for Leverage (1pt tolerance) but supported for Non-critical (4pt tolerance)', () => {
+      const leverageResult = assessCostDriverJustification(
+        { driver: 'Packaging cost', claimedImpactPct: 7, basis: 'estimated' },
+        4,
+        { quadrant: 'leverage' },
+      );
+      expect(leverageResult.supported).toBe(false);
+      expect(leverageResult.toleranceApplied).toBe(1);
+      expect(leverageResult.toleranceSource).toBe('quadrant-informed-default');
+
+      const nonCriticalResult = assessCostDriverJustification(
+        { driver: 'Packaging cost', claimedImpactPct: 7, basis: 'estimated' },
+        4,
+        { quadrant: 'non-critical' },
+      );
+      expect(nonCriticalResult.supported).toBe(true);
+      expect(nonCriticalResult.toleranceApplied).toBe(4);
+      expect(nonCriticalResult.toleranceSource).toBe('quadrant-informed-default');
+    });
+
+    it('an explicit toleranceOverride always wins over a supplied quadrant', () => {
+      const result = assessCostDriverJustification(
+        { driver: 'Packaging cost', claimedImpactPct: 7, basis: 'estimated' },
+        4,
+        { quadrant: 'leverage', toleranceOverride: 10 },
+      );
+      expect(result.supported).toBe(true);
+      expect(result.toleranceSource).toBe('caller-override');
+    });
   });
 });
 
@@ -226,6 +310,54 @@ describe('assessNegotiationLeverage', () => {
 
   it('mid-range lock-in with survivable is MODERATE', () => {
     expect(assessNegotiationLeverage({ lockInIndex: 3, isSurvivable: true }).level).toBe('MODERATE');
+  });
+
+  describe('deep-enhancement pass: leverage/quadrant structural consistency check (KRALJIC USAGE MAP 5b)', () => {
+    it('flags a Leverage-quadrant supplier with WEAK computed leverage as a structural mismatch worth re-verifying', () => {
+      const result = assessNegotiationLeverage({ lockInIndex: 4.5, isSurvivable: true }, 'leverage');
+      expect(result.level).toBe('WEAK');
+      expect(result.quadrantConsistencyNote).not.toBeNull();
+      expect(result.quadrantConsistencyNote).toContain('Leverage-quadrant supplier');
+      expect(result.quadrantConsistencyNoteAr).not.toBeNull();
+      expect(result.quadrantConsistencyNoteAr).toMatch(/[؀-ۿ]/);
+    });
+
+    it('flags a Bottleneck-quadrant supplier with STRONG computed leverage as a structural mismatch worth re-verifying', () => {
+      const result = assessNegotiationLeverage({ lockInIndex: 1, isSurvivable: true }, 'bottleneck');
+      expect(result.level).toBe('STRONG');
+      expect(result.quadrantConsistencyNote).not.toBeNull();
+      expect(result.quadrantConsistencyNote).toContain('Bottleneck-quadrant supplier');
+      expect(result.quadrantConsistencyNoteAr).not.toBeNull();
+    });
+
+    it('does NOT flag a Leverage-quadrant supplier with STRONG leverage (the expected, consistent case)', () => {
+      const result = assessNegotiationLeverage({ lockInIndex: 1, isSurvivable: true }, 'leverage');
+      expect(result.quadrantConsistencyNote).toBeNull();
+      expect(result.quadrantConsistencyNoteAr).toBeNull();
+    });
+
+    it('does NOT flag a Bottleneck-quadrant supplier with WEAK leverage (the expected, consistent case)', () => {
+      const result = assessNegotiationLeverage({ lockInIndex: 4.5, isSurvivable: true }, 'bottleneck');
+      expect(result.quadrantConsistencyNote).toBeNull();
+      expect(result.quadrantConsistencyNoteAr).toBeNull();
+    });
+
+    it('never applies the consistency check to Strategic or Non-critical quadrants (no sourced structural prediction exists for them)', () => {
+      const strategicWeak = assessNegotiationLeverage({ lockInIndex: 4.5, isSurvivable: true }, 'strategic');
+      expect(strategicWeak.quadrantConsistencyNote).toBeNull();
+      const strategicStrong = assessNegotiationLeverage({ lockInIndex: 1, isSurvivable: true }, 'strategic');
+      expect(strategicStrong.quadrantConsistencyNote).toBeNull();
+      const nonCriticalWeak = assessNegotiationLeverage({ lockInIndex: 4.5, isSurvivable: true }, 'non-critical');
+      expect(nonCriticalWeak.quadrantConsistencyNote).toBeNull();
+      const nonCriticalStrong = assessNegotiationLeverage({ lockInIndex: 1, isSurvivable: true }, 'non-critical');
+      expect(nonCriticalStrong.quadrantConsistencyNote).toBeNull();
+    });
+
+    it('does not apply the check at all when no quadrant is supplied (existing callers unaffected)', () => {
+      const result = assessNegotiationLeverage({ lockInIndex: 4.5, isSurvivable: true });
+      expect(result.quadrantConsistencyNote).toBeNull();
+      expect(result.quadrantConsistencyNoteAr).toBeNull();
+    });
   });
 });
 
@@ -289,6 +421,9 @@ describe('buildNegotiationBrief + buildNegotiationBriefPrompt (orchestration)', 
       contractEntitlementId: null,
       negotiationLeverage: assessNegotiationLeverage({ lockInIndex: 3, isSurvivable: true }),
       negotiationRoundHistory: [],
+      relationshipCompatibility: null,
+      negotiationStrategy: null,
+      negotiationPlan: null,
     });
 
     expect(brief.unsupportedCostDriverCount).toBe(1);
@@ -311,6 +446,9 @@ describe('buildNegotiationBrief + buildNegotiationBriefPrompt (orchestration)', 
       contractEntitlementId: null,
       negotiationLeverage: assessNegotiationLeverage({ lockInIndex: 3, isSurvivable: true }),
       negotiationRoundHistory: [],
+      relationshipCompatibility: null,
+      negotiationStrategy: null,
+      negotiationPlan: null,
     };
 
     const upBrief = buildNegotiationBrief({
@@ -351,46 +489,16 @@ describe('buildNegotiationBrief + buildNegotiationBriefPrompt (orchestration)', 
       contractEntitlementId: null,
       negotiationLeverage: assessNegotiationLeverage({ lockInIndex: null, isSurvivable: null }),
       negotiationRoundHistory: [],
+      relationshipCompatibility: null,
+      negotiationStrategy: null,
+      negotiationPlan: null,
     });
     expect(brief.unsupportedCostDriverCount).toBe(0);
-    expect(brief.recommendedTactics).toBeNull();
+    expect(brief.relationshipCompatibility).toBeNull();
+    expect(brief.negotiationStrategy).toBeNull();
+    expect(brief.negotiationPlan).toBeNull();
     const en = buildNegotiationBriefPrompt(brief, false);
     expect(en).toContain('INSUFFICIENT_DATA');
-  });
-
-  it('"make it great" fix: a supplied kraljicQuadrant is no longer a dead input -- it cross-references Module 02\'s real tactics library', () => {
-    const brief = buildNegotiationBrief({
-      supplierId: 'bottleneck-supplier',
-      kraljicQuadrant: 'bottleneck',
-      priceTrajectory: { direction: 'flat', periodMonths: 12, percentChange: 1, basis: 'observed', maxIntraPeriodSwingPct: 1, hasIntermediateVolatility: false },
-      costDriverJustifications: [],
-      tcoReferenceId: null,
-      contractEntitlementId: null,
-      negotiationLeverage: assessNegotiationLeverage({ lockInIndex: 4.2, isSurvivable: false }),
-      negotiationRoundHistory: [],
-    });
-
-    expect(brief.kraljicQuadrant).toBe('bottleneck');
-    expect(brief.recommendedTactics).not.toBeNull();
-    expect(brief.recommendedTactics!.quadrant).toBe('bottleneck');
-    // Every returned "for us" tactic must actually be tagged low-risk and suited to this quadrant --
-    // proves this reuses Module 02's own filter rather than returning an arbitrary/unfiltered list.
-    for (const t of brief.recommendedTactics!.forUs) {
-      expect(t.ethicalRisk).toBe('low');
-      expect(t.suitableQuadrants).toContain('bottleneck');
-    }
-    for (const t of brief.recommendedTactics!.watchFor) {
-      expect(t.ethicalRisk).not.toBe('low');
-      expect(t.suitableQuadrants).toContain('bottleneck');
-    }
-
-    const en = buildNegotiationBriefPrompt(brief, false);
-    const ar = buildNegotiationBriefPrompt(brief, true);
-    if (brief.recommendedTactics!.forUs.length > 0) {
-      expect(en).toContain('Recommended tactics (Module 02, bottleneck quadrant)');
-      expect(ar).toContain('تكتيكات موصى بها');
-      expect(ar).not.toMatch(/\bbottleneck\b/);
-    }
   });
 
   it('surfaces the intermediate-volatility caveat in the narrative when flagged (pressure-test-found gap, fixed)', () => {
@@ -408,11 +516,147 @@ describe('buildNegotiationBrief + buildNegotiationBriefPrompt (orchestration)', 
       contractEntitlementId: null,
       negotiationLeverage: assessNegotiationLeverage({ lockInIndex: 2.5, isSurvivable: true }),
       negotiationRoundHistory: [],
+      relationshipCompatibility: null,
+      negotiationStrategy: null,
+      negotiationPlan: null,
     });
 
     const en = buildNegotiationBriefPrompt(brief, false);
     expect(en).toContain('Caveat: price moved 30%');
     const ar = buildNegotiationBriefPrompt(brief, true);
     expect(ar).toContain('تنبيه');
+  });
+
+  describe('deep-enhancement pass: architecture correction -- real Module 02 pass-through, not a hard import', () => {
+    // These tests deliberately call Module 02's OWN real functions to build the input --
+    // proving buildNegotiationBrief() is a pure pass-through of already-computed Module 02
+    // output, not a reimplementation, and not a hard runtime dependency (this test file, not
+    // supplierCommercialIntelligence.ts, is what imports supplierSourcingStrategy).
+
+    it('passes through a real relationshipCompatibility, negotiationStrategy, and negotiationPlan unchanged', () => {
+      const quadrant = 'bottleneck' as const;
+      const relationshipCompatibility = assessRelationshipCompatibility(quadrant, 'adversarial');
+      const negotiationStrategy = recommendNegotiationStrategy(quadrant, relationshipCompatibility);
+      const negotiationPlan = buildNegotiationPlan(quadrant);
+
+      const brief = buildNegotiationBrief({
+        supplierId: 'bottleneck-supplier',
+        kraljicQuadrant: quadrant,
+        priceTrajectory: { direction: 'flat', periodMonths: 12, percentChange: 1, basis: 'observed', maxIntraPeriodSwingPct: 1, hasIntermediateVolatility: false },
+        costDriverJustifications: [],
+        tcoReferenceId: null,
+        contractEntitlementId: null,
+        negotiationLeverage: assessNegotiationLeverage({ lockInIndex: 4.2, isSurvivable: false }, quadrant),
+        negotiationRoundHistory: [],
+        relationshipCompatibility,
+        negotiationStrategy,
+        negotiationPlan,
+      });
+
+      // Pure pass-through: same object references/values, nothing recomputed.
+      expect(brief.relationshipCompatibility).toBe(relationshipCompatibility);
+      expect(brief.negotiationStrategy).toBe(negotiationStrategy);
+      expect(brief.negotiationPlan).toBe(negotiationPlan);
+      // The Bottleneck + Adversarial case is Module 02's own named highest-risk combination.
+      expect(brief.relationshipCompatibility!.severity).toBe('high-risk');
+      expect(brief.negotiationPlan!.team.length).toBeGreaterThan(0);
+      expect(brief.negotiationPlan!.levels.length).toBeGreaterThan(0);
+    });
+
+    it('the bilingual narrative renders the real Module 02 team/level/tactics/strategy/relationship content correctly', () => {
+      const quadrant = 'bottleneck' as const;
+      const relationshipCompatibility = assessRelationshipCompatibility(quadrant, 'adversarial');
+      const negotiationStrategy = recommendNegotiationStrategy(quadrant, relationshipCompatibility);
+      const negotiationPlan = buildNegotiationPlan(quadrant);
+
+      const brief = buildNegotiationBrief({
+        supplierId: 'bottleneck-supplier',
+        kraljicQuadrant: quadrant,
+        priceTrajectory: { direction: 'flat', periodMonths: 12, percentChange: 1, basis: 'observed', maxIntraPeriodSwingPct: 1, hasIntermediateVolatility: false },
+        costDriverJustifications: [],
+        tcoReferenceId: null,
+        contractEntitlementId: null,
+        negotiationLeverage: assessNegotiationLeverage({ lockInIndex: 4.2, isSurvivable: false }, quadrant),
+        negotiationRoundHistory: [],
+        relationshipCompatibility,
+        negotiationStrategy,
+        negotiationPlan,
+      });
+
+      const en = buildNegotiationBriefPrompt(brief, false);
+      expect(en).toContain(`${negotiationPlan.team.length}-role team`);
+      expect(en).toContain('Recommended negotiation approach (Module 02, bottleneck quadrant)');
+      expect(en).toContain(negotiationStrategy.approachRationale);
+      expect(en).toContain(relationshipCompatibility.advisory);
+      if (negotiationPlan.recommendedTactics.length > 0) {
+        expect(en).toContain(negotiationPlan.recommendedTactics[0].name.en);
+      }
+      if (negotiationPlan.watchForTactics.length > 0) {
+        expect(en).toContain(negotiationPlan.watchForTactics[0].name.en);
+      }
+
+      const ar = buildNegotiationBriefPrompt(brief, true);
+      // Canonical quadrant Arabic label from kraljicScoring.ts's QUADRANT_META, not a
+      // re-invented one -- this is the terminology-consistency fix.
+      expect(ar).toContain('نقطة اختناق');
+      expect(ar).toContain(negotiationStrategy.approachRationaleAr);
+      expect(ar).toContain(relationshipCompatibility.advisoryAr);
+      expect(ar).toMatch(/[؀-ۿ]/);
+      if (negotiationPlan.recommendedTactics.length > 0) {
+        expect(ar).toContain(negotiationPlan.recommendedTactics[0].name.ar);
+      }
+    });
+
+    it('terminology-consistency fix: quadrant Arabic label matches kraljicScoring.ts\'s canonical QUADRANT_META, not an independently-invented label', () => {
+      // Regression for the specific mismatch found this pass: an earlier local
+      // QUADRANT_LABEL_AR map used 'عنق زجاجة' for bottleneck and 'ذو قوة تفاوضية' for
+      // leverage -- both inconsistent with the platform's one canonical source.
+      for (const quadrant of ['strategic', 'leverage', 'bottleneck', 'non-critical'] as const) {
+        const strategy = recommendNegotiationStrategy(quadrant, null);
+        const brief = buildNegotiationBrief({
+          supplierId: 'terminology-check',
+          kraljicQuadrant: quadrant,
+          priceTrajectory: { direction: 'INSUFFICIENT_DATA', periodMonths: null, percentChange: null, basis: null, maxIntraPeriodSwingPct: null, hasIntermediateVolatility: null },
+          costDriverJustifications: [],
+          tcoReferenceId: null,
+          contractEntitlementId: null,
+          negotiationLeverage: assessNegotiationLeverage({ lockInIndex: null, isSurvivable: null }),
+          negotiationRoundHistory: [],
+          relationshipCompatibility: null,
+          negotiationStrategy: strategy,
+          negotiationPlan: null,
+        });
+        const ar = buildNegotiationBriefPrompt(brief, true);
+        const expectedLabelAr: Record<typeof quadrant, string> = {
+          strategic: 'استراتيجي',
+          leverage: 'نفوذ سوقي',
+          bottleneck: 'نقطة اختناق',
+          'non-critical': 'غير حرج',
+        };
+        expect(ar).toContain(expectedLabelAr[quadrant]);
+      }
+    });
+
+    it('does not render a relationship-adjustment line when Module 02 found none to give (aligned posture)', () => {
+      const quadrant = 'leverage' as const;
+      const relationshipCompatibility = assessRelationshipCompatibility(quadrant, 'transactional'); // aligned -- leverage's ideal is transactional
+      const strategy = recommendNegotiationStrategy(quadrant, relationshipCompatibility);
+      expect(strategy.relationshipAdjustment).not.toBeNull(); // aligned still gets a reassuring note, per Module 02's own design
+      const brief = buildNegotiationBrief({
+        supplierId: 'aligned-supplier',
+        kraljicQuadrant: quadrant,
+        priceTrajectory: { direction: 'flat', periodMonths: 12, percentChange: 0, basis: 'observed', maxIntraPeriodSwingPct: 0, hasIntermediateVolatility: false },
+        costDriverJustifications: [],
+        tcoReferenceId: null,
+        contractEntitlementId: null,
+        negotiationLeverage: assessNegotiationLeverage({ lockInIndex: 1, isSurvivable: true }),
+        negotiationRoundHistory: [],
+        relationshipCompatibility,
+        negotiationStrategy: strategy,
+        negotiationPlan: null,
+      });
+      const ar = buildNegotiationBriefPrompt(brief, true);
+      expect(ar).toContain(strategy.relationshipAdjustmentAr);
+    });
   });
 });

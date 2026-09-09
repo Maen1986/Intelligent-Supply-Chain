@@ -1,11 +1,50 @@
 /**
- * SI Module 06 -- Commercial & Negotiation Intelligence (9 Sep 2026).
+ * SI Module 06 -- Commercial & Negotiation Intelligence (9 Sep 2026,
+ * deep enhancement pass 9 Sep 2026 -- "use Kraljic at as many real levels
+ * as legitimately apply", critical-thinking review requested by the owner).
  *
  * BUILT as a pure, tested library -- no UI this cycle, same standalone-first
  * pattern as Modules 02-05: soft-dependency on sibling modules' *types*
- * only (KraljicQuadrant), never a hard import of a full upstream object, so
+ * only, never a hard runtime import of another module's business logic, so
  * this module works even if Modules 02/03/05 haven't been run for a given
  * supplier yet (SI-06-Commercial-Negotiation-Intelligence.md).
+ *
+ * =====================================================================
+ * ARCHITECTURE CORRECTION (9 Sep 2026 deep review)
+ * =====================================================================
+ * The first "make it great" pass on this module (earlier the same day)
+ * hard-imported and CALLED Module 02's `recommendClientTactics()` /
+ * `recommendWatchForTactics()` at runtime -- a real, self-inconsistent
+ * violation of this file's own stated soft-dependency doctrine (it
+ * recomputed a slice of Module 02's own output instead of reusing it by
+ * reference), and it duplicated only HALF of what Module 02 already
+ * assembles: `buildNegotiationPlan(quadrant)` already returns the
+ * negotiation TEAM and LEVEL STRUCTURE alongside both tactic lists, none
+ * of which the first pass surfaced. On top of that, its ad-hoc Arabic
+ * quadrant labels ('عنق زجاجة' for bottleneck, etc.) did not match the
+ * platform's own canonical `QUADRANT_META.labelAr` in kraljicScoring.ts --
+ * a real terminology inconsistency. All three are fixed here:
+ *   1. Module 06 no longer imports or calls any Module 02 FUNCTION. It
+ *      accepts Module 02's already-computed `NegotiationPlanDocument`,
+ *      `NegotiationStrategy`, and `RelationshipCompatibility` objects as
+ *      plain pass-through input fields (exactly like `tcoReferenceId` /
+ *      `contractEntitlementId` are references, never recomputed here),
+ *      typed via type-only imports.
+ *   2. The full Module 02 output (team, 3-level structure, both tactic
+ *      lists, quadrant-level approach/BATNA/ZOPA/MIL guidance, and any
+ *      relationship-posture mismatch) is now surfaced in the brief and
+ *      narrative -- not just the tactic names.
+ *   3. Arabic quadrant labels are reused from `kraljicScoring.ts`'s
+ *      canonical `QUADRANT_META`, not re-invented.
+ * A related bilingual gap this review found IN MODULE 02 itself --
+ * `recommendNegotiationStrategy()`'s narrative guidance fields
+ * (approachRationale/batnaGuidance/zopaGuidance/milGuidance/
+ * relationshipAdjustment) were English-only -- was fixed directly in
+ * `supplierSourcingStrategy.ts` the same day (AR siblings added, with
+ * regression tests), since Module 06 now surfaces those fields bilingually
+ * and shipping English-only strategic guidance inside an otherwise
+ * bilingual Arabic negotiation brief would itself be a new bilingual
+ * defect, not a fix.
  *
  * =====================================================================
  * REUSE, NOT REBUILD (SI-06 body, "Existing ISC infrastructure to reuse")
@@ -13,13 +52,74 @@
  * This module does NOT compute total cost of ownership -- that stays in
  * the existing TCO Engine (#168 and its extensions). It does not compute
  * concentration/lock-in math either -- that stays in Module 05
- * (supplierConcentration.ts). Callers pass those systems' own already
- * -computed, disclosed outputs (a TCO analysis ID, a lockInIndex number,
- * an isSurvivable boolean) into this module's functions; nothing here
- * re-derives them. The only new math in this file is price-trajectory
- * classification, cost-driver justification-gap checking, negotiation-
- * leverage framing, and negotiation-round-history tit-for-tat logic --
- * genuinely new capability, not a second copy of an existing one.
+ * (supplierConcentration.ts). It does not compute Kraljic quadrant
+ * classification, sourcing strategy, relationship-posture compatibility,
+ * or the named-tactics library either -- all of that stays in Module 02
+ * (kraljicScoring.ts / supplierSourcingStrategy.ts / negotiationTactics.ts).
+ * Callers pass those systems' own already-computed, disclosed outputs into
+ * this module's functions; nothing here re-derives them. The only new math
+ * in this file is price-trajectory classification, cost-driver
+ * justification-gap checking, negotiation-leverage framing from Module 05's
+ * raw numbers, negotiation-round-history tit-for-tat logic, and (new this
+ * pass) two small, honestly-disclosed Kraljic-quadrant-informed heuristics
+ * described under KRALJIC USAGE MAP below -- genuinely new capability, not
+ * a second copy of an existing one.
+ *
+ * =====================================================================
+ * KRALJIC USAGE MAP (this deep-enhancement pass, all real, all disclosed)
+ * =====================================================================
+ * Kraljic's quadrant (Kraljic, "Purchasing Must Become Supply Management",
+ * Harvard Business Review, 1983) now informs this module at FIVE distinct,
+ * non-redundant levels, each sourced or clearly disclosed as a heuristic:
+ *   1. Tactics-for-us / tactics-to-watch-for -- pass-through of Module 02's
+ *      `NegotiationPlanDocument` (unchanged capability, corrected reuse).
+ *   2. Negotiation team size and level structure (1-round vs 3-level,
+ *      2-role vs 6-role) -- pass-through of the same document.
+ *   3. Strategic approach (distributive/mixed/integrative), BATNA/ZOPA
+ *      guidance, and MIL (Must/Intend/Like) objective starting points --
+ *      pass-through of Module 02's `NegotiationStrategy`.
+ *   4. Relationship-posture compatibility (is the client's actual
+ *      relationship with this supplier appropriate for the quadrant?) --
+ *      pass-through of Module 02's `RelationshipCompatibility`.
+ *   5. TWO NEW, MODULE-06-OWNED, quadrant-informed heuristics (real math
+ *      this module computes, not pass-through):
+ *      a. QUADRANT-INFORMED PRICE/JUSTIFICATION SCRUTINY -- Kraljic's own
+ *         prescription differs sharply by quadrant: Leverage quadrant
+ *         calls for exploiting competitive market power (tight price
+ *         scrutiny is textbook-correct there); Bottleneck calls for
+ *         securing supply continuity, sometimes at a price premium
+ *         (excessive price scrutiny can damage the one relationship
+ *         keeping supply flowing -- see Module 02's own
+ *         `assessRelationshipCompatibility` Bottleneck+Adversarial
+ *         finding); Non-critical calls for minimizing transaction cost
+ *         (scrutiny effort should be proportionate to low stakes);
+ *         Strategic sits in between. This module operationalizes that
+ *         DIRECTION with `QUADRANT_FLAT_BAND_PCT` /
+ *         `QUADRANT_JUSTIFICATION_TOLERANCE_PCT` -- the qualitative
+ *         direction is Kraljic-sourced, but the SPECIFIC numeric values
+ *         are disclosed, overridable heuristic defaults, NOT an external
+ *         published benchmark (same non-fabrication pattern as
+ *         `DEFAULT_FLAT_BAND_PCT` itself and Module 04's
+ *         `DEFAULT_GATE_THRESHOLDS`). Every result discloses exactly
+ *         which band/tolerance was applied and why via
+ *         `flatBandSource`/`toleranceSource`.
+ *      b. LEVERAGE/QUADRANT STRUCTURAL CONSISTENCY CHECK -- a Leverage
+ *         quadrant supplier has, BY DEFINITION, many qualified
+ *         alternatives (low supply risk); a Bottleneck supplier has few
+ *         (high supply risk). If Module 05's real computed BATNA leverage
+ *         for a Leverage-quadrant supplier comes back WEAK, or a
+ *         Bottleneck-quadrant supplier's leverage comes back STRONG, that
+ *         is a structural mismatch worth surfacing -- either the market
+ *         has genuinely shifted (a real finding) or the underlying data is
+ *         stale (also a real finding) -- never silently accepted, same
+ *         "don't let one module's output silently override another's
+ *         disclosed logic" discipline already applied across Modules
+ *         03/04 this session. Only Leverage and Bottleneck get this check
+ *         -- Strategic and Non-critical are impact-axis-dominated
+ *         quadrants with no equally strong structural prediction on
+ *         leverage level from Kraljic's own model, so inventing a
+ *         "consistency rule" for them would not be sourced, and none is
+ *         applied (Decision Record 8.7).
  *
  * =====================================================================
  * FRAMEWORK 1: BATNA -- Best Alternative to a Negotiated Agreement
@@ -73,7 +173,7 @@
  *      certainty Decision Record 8.7 would forbid.
  *
  * =====================================================================
- * NEVER-FABRICATE DISCIPLINE (Decision Record 8.7), applied twice here
+ * NEVER-FABRICATE DISCIPLINE (Decision Record 8.7), applied throughout
  * =====================================================================
  * DECISION A -- price trajectory needs 3+ chronologically-ordered price
  * points before a direction is claimed. A "trend" computed from two data
@@ -82,21 +182,21 @@
  * than inferring a trend from two data points"). With fewer than 3
  * points, `computePriceTrajectory()` returns INSUFFICIENT_DATA, never a
  * guessed direction.
- * DECISION B -- the up/down/flat banding threshold (+/-3% total change)
- * is a generic, disclosed structural default, NOT a sourced industry
- * benchmark -- same non-fabrication pattern as Module 04's
- * DEFAULT_GATE_THRESHOLDS. Overridable via the `flatBandPct` parameter
- * once real, sourced category thresholds exist (SI-06 OWNER INPUT
- * NEEDED #1).
+ * DECISION B -- the up/down/flat banding threshold is a generic, disclosed
+ * structural default (or, new this pass, a disclosed quadrant-informed
+ * default), NOT a sourced industry benchmark -- same non-fabrication
+ * pattern as Module 04's DEFAULT_GATE_THRESHOLDS. Always overridable via
+ * an explicit `flatBandPct`, and the exact band + its source are always
+ * disclosed on the result.
  *
  * Design precedent followed (same as kraljicScoring.ts /
  * supplierObjectModel.ts / supplierQualificationGates.ts /
- * supplierConcentration.ts): pure functions, no side effects, no network
- * calls, no fabricated data.
+ * supplierConcentration.ts / supplierSourcingStrategy.ts): pure functions,
+ * no side effects, no network calls, no fabricated data.
  */
 
-import type { KraljicQuadrant } from './kraljicScoring';
-import { recommendClientTactics, recommendWatchForTactics, type NamedNegotiationTactic } from './negotiationTactics';
+import { QUADRANT_META, type KraljicQuadrant } from './kraljicScoring';
+import type { RelationshipCompatibility, NegotiationStrategy, NegotiationPlanDocument } from './supplierSourcingStrategy';
 
 // ---------------------------------------------------------------------------
 // 1. Evidence-basis tiering (SI-06 body, "The labeling discipline")
@@ -112,7 +212,38 @@ export interface CommercialFigure<T = number> {
 }
 
 // ---------------------------------------------------------------------------
-// 2. Price trajectory (DECISION A/B above)
+// 2. Quadrant-informed scrutiny defaults (KRALJIC USAGE MAP item 5a)
+// ---------------------------------------------------------------------------
+
+export type ThresholdSource = 'caller-override' | 'quadrant-informed-default' | 'generic-default';
+
+const DEFAULT_FLAT_BAND_PCT = 3;
+
+/**
+ * Heuristic, disclosed defaults -- the DIRECTION (Leverage tightest,
+ * Bottleneck/Non-critical loosest) is Kraljic-sourced; the specific
+ * percentages are this module's own non-fabricated heuristic, exactly
+ * like DEFAULT_FLAT_BAND_PCT itself, always overridable, always disclosed
+ * via `flatBandSource` on the result.
+ */
+const QUADRANT_FLAT_BAND_PCT: Record<KraljicQuadrant, number> = {
+  leverage: 2,
+  strategic: 3,
+  bottleneck: 5,
+  'non-critical': 5,
+};
+
+const JUSTIFICATION_GAP_TOLERANCE_PCT = 2;
+
+const QUADRANT_JUSTIFICATION_TOLERANCE_PCT: Record<KraljicQuadrant, number> = {
+  leverage: 1,
+  strategic: 2,
+  bottleneck: 3,
+  'non-critical': 4,
+};
+
+// ---------------------------------------------------------------------------
+// 3. Price trajectory (DECISION A/B above)
 // ---------------------------------------------------------------------------
 
 export interface PricePoint {
@@ -144,13 +275,16 @@ export interface PriceTrajectory {
    * know about. Null when INSUFFICIENT_DATA.
    */
   hasIntermediateVolatility: boolean | null;
+  /** The actual +/-% band applied to classify up/down/flat. Undefined when INSUFFICIENT_DATA (no banding decision was exercised). Optional so directly-constructed literals (tests, callers) don't have to supply it. */
+  flatBandPctApplied?: number;
+  /** Discloses whether the band above came from an explicit caller override, a Kraljic-quadrant-informed heuristic default, or the plain generic default -- never silently applied. */
+  flatBandSource?: ThresholdSource;
 }
 
-const DEFAULT_FLAT_BAND_PCT = 3;
-
 /**
- * DECISION A/B: needs 3+ points to claim a direction; +/-flatBandPct% is a
- * disclosed default band, not a sourced benchmark.
+ * DECISION A/B: needs 3+ points to claim a direction; the +/-band is
+ * disclosed (generic, quadrant-informed, or caller-overridden -- never a
+ * sourced benchmark).
  *
  * PRESSURE-TEST-FOUND GAP, FIXED (9 Sep 2026): an adversarial scenario --
  * price 100 -> 130 -> 128 -> 101 -- classified as "flat" under a pure
@@ -162,10 +296,14 @@ const DEFAULT_FLAT_BAND_PCT = 3;
  * whenever that swing materially exceeds the headline percentChange --
  * disclosed on the schema and surfaced in the narrative, never hidden
  * behind a single trend label (Decision Record 8.7).
+ *
+ * KRALJIC USAGE MAP item 5a: pass `quadrant` to apply a disclosed,
+ * quadrant-informed default band instead of the plain generic default --
+ * an explicit `flatBandPct` always wins over both.
  */
 export function computePriceTrajectory(
   points: PricePoint[],
-  opts: { periodMonths?: number; basis?: EvidenceBasis; flatBandPct?: number } = {},
+  opts: { periodMonths?: number; basis?: EvidenceBasis; flatBandPct?: number; quadrant?: KraljicQuadrant | null } = {},
 ): PriceTrajectory {
   if (points.length < 3) {
     return {
@@ -181,7 +319,19 @@ export function computePriceTrajectory(
   const first = sorted[0].price;
   const last = sorted[sorted.length - 1].price;
   const percentChange = first === 0 ? null : ((last - first) / first) * 100;
-  const flatBand = opts.flatBandPct ?? DEFAULT_FLAT_BAND_PCT;
+
+  let flatBand: number;
+  let flatBandSource: ThresholdSource;
+  if (opts.flatBandPct !== undefined) {
+    flatBand = opts.flatBandPct;
+    flatBandSource = 'caller-override';
+  } else if (opts.quadrant) {
+    flatBand = QUADRANT_FLAT_BAND_PCT[opts.quadrant];
+    flatBandSource = 'quadrant-informed-default';
+  } else {
+    flatBand = DEFAULT_FLAT_BAND_PCT;
+    flatBandSource = 'generic-default';
+  }
 
   let direction: PriceTrajectoryDirection;
   if (percentChange === null) {
@@ -211,11 +361,13 @@ export function computePriceTrajectory(
     basis: opts.basis ?? 'observed',
     maxIntraPeriodSwingPct,
     hasIntermediateVolatility,
+    flatBandPctApplied: flatBand,
+    flatBandSource,
   };
 }
 
 // ---------------------------------------------------------------------------
-// 3. Cost drivers + justification-gap check (Rawabi illustrative example, operationalized)
+// 4. Cost drivers + justification-gap check (Rawabi illustrative example, operationalized)
 // ---------------------------------------------------------------------------
 
 export interface CostDriverInput {
@@ -235,14 +387,25 @@ export interface CostDriverJustification {
   supported: boolean | null;
   gapPct: number | null;
   note: string;
+  /** The +/-point tolerance actually applied. Undefined when INSUFFICIENT_DATA (no tolerance decision was exercised). */
+  toleranceApplied?: number;
+  toleranceSource?: ThresholdSource;
 }
 
-const JUSTIFICATION_GAP_TOLERANCE_PCT = 2;
-
-/** Operationalizes the SI-06 illustrative example: a supplier's claimed 12% driven-by-aluminum-pricing justification checked against real 4% aluminum market movement is NOT supported -- an 8-point gap the client should open the negotiation with, not accept on faith. */
+/**
+ * Operationalizes the SI-06 illustrative example: a supplier's claimed 12%
+ * driven-by-aluminum-pricing justification checked against real 4%
+ * aluminum market movement is NOT supported -- an 8-point gap the client
+ * should open the negotiation with, not accept on faith.
+ *
+ * KRALJIC USAGE MAP item 5a: pass `quadrant` in `opts` to apply a
+ * disclosed, quadrant-informed tolerance instead of the plain generic
+ * default -- an explicit `toleranceOverride` always wins over both.
+ */
 export function assessCostDriverJustification(
   input: CostDriverInput,
   referenceImpactPct: number | null,
+  opts: { toleranceOverride?: number; quadrant?: KraljicQuadrant | null } = {},
 ): CostDriverJustification {
   if (input.claimedImpactPct === null || referenceImpactPct === null) {
     return {
@@ -254,8 +417,22 @@ export function assessCostDriverJustification(
       note: 'No reference market figure available to check this claim against -- neither supported nor unsupported, INSUFFICIENT_DATA.',
     };
   }
+
+  let tolerance: number;
+  let toleranceSource: ThresholdSource;
+  if (opts.toleranceOverride !== undefined) {
+    tolerance = opts.toleranceOverride;
+    toleranceSource = 'caller-override';
+  } else if (opts.quadrant) {
+    tolerance = QUADRANT_JUSTIFICATION_TOLERANCE_PCT[opts.quadrant];
+    toleranceSource = 'quadrant-informed-default';
+  } else {
+    tolerance = JUSTIFICATION_GAP_TOLERANCE_PCT;
+    toleranceSource = 'generic-default';
+  }
+
   const gapPct = Math.round((input.claimedImpactPct - referenceImpactPct) * 100) / 100;
-  const supported = Math.abs(gapPct) <= JUSTIFICATION_GAP_TOLERANCE_PCT;
+  const supported = Math.abs(gapPct) <= tolerance;
   return {
     driver: input.driver,
     claimedImpactPct: input.claimedImpactPct,
@@ -263,13 +440,15 @@ export function assessCostDriverJustification(
     supported,
     gapPct,
     note: supported
-      ? `Claimed ${input.claimedImpactPct}% impact is consistent with the ${referenceImpactPct}% reference figure (within ${JUSTIFICATION_GAP_TOLERANCE_PCT} points).`
+      ? `Claimed ${input.claimedImpactPct}% impact is consistent with the ${referenceImpactPct}% reference figure (within ${tolerance} points).`
       : `Claimed ${input.claimedImpactPct}% impact vs. a ${referenceImpactPct}% reference figure -- a ${Math.abs(gapPct)}-point gap, stated plainly as an opening negotiation fact rather than accepted.`,
+    toleranceApplied: tolerance,
+    toleranceSource,
   };
 }
 
 // ---------------------------------------------------------------------------
-// 4. Negotiation leverage (FRAMEWORK 1: BATNA)
+// 5. Negotiation leverage (FRAMEWORK 1: BATNA + KRALJIC USAGE MAP item 5b)
 // ---------------------------------------------------------------------------
 
 export type LeverageLevel = 'STRONG' | 'MODERATE' | 'WEAK' | 'INSUFFICIENT_DATA';
@@ -287,13 +466,30 @@ export interface NegotiationLeverage {
   isSurvivable: boolean | null;
   framingEn: string;
   framingAr: string;
+  /**
+   * KRALJIC USAGE MAP item 5b: populated only when a quadrant was supplied
+   * AND a genuine structural mismatch was found (WEAK leverage in a
+   * Leverage quadrant, or STRONG leverage in a Bottleneck quadrant) --
+   * never populated for a normal, consistent result, and never applied to
+   * Strategic/Non-critical (no equally strong Kraljic-sourced structural
+   * prediction exists for those two).
+   */
+  quadrantConsistencyNote: string | null;
+  quadrantConsistencyNoteAr: string | null;
 }
 
 const LOW_LOCK_IN_THRESHOLD = 2;
 const HIGH_LOCK_IN_THRESHOLD = 4;
 
-/** BATNA strength requires BOTH low lock-in AND survivable continuity -- a conjunction, not an average, so one weak input can't be masked by the other. */
-export function assessNegotiationLeverage(inputs: NegotiationLeverageInputs): NegotiationLeverage {
+/**
+ * BATNA strength requires BOTH low lock-in AND survivable continuity -- a
+ * conjunction, not an average, so one weak input can't be masked by the
+ * other.
+ *
+ * KRALJIC USAGE MAP item 5b: pass `quadrant` to run the structural
+ * consistency check described in this file's header.
+ */
+export function assessNegotiationLeverage(inputs: NegotiationLeverageInputs, quadrant?: KraljicQuadrant | null): NegotiationLeverage {
   const { lockInIndex, isSurvivable } = inputs;
 
   if (lockInIndex === null || isSurvivable === null) {
@@ -303,6 +499,8 @@ export function assessNegotiationLeverage(inputs: NegotiationLeverageInputs): Ne
       isSurvivable,
       framingEn: 'Negotiation leverage cannot be assessed yet -- Module 05 has not produced a Lock-In Index and/or survivability result for this supplier.',
       framingAr: 'لا يمكن تقييم قوة التفاوض بعد -- لم تُصدر الوحدة 05 بعد مؤشر التقييد أو نتيجة القدرة على الاستمرار (أو كليهما) لهذا المورّد.',
+      quadrantConsistencyNote: null,
+      quadrantConsistencyNoteAr: null,
     };
   }
 
@@ -328,11 +526,21 @@ export function assessNegotiationLeverage(inputs: NegotiationLeverageInputs): Ne
         ? `قوة تفاوضية ضعيفة: ${lockInIndex >= HIGH_LOCK_IN_THRESHOLD ? `مؤشر التقييد ${lockInIndex.toFixed(1)}/5 (مرتفع)` : 'عدم القدرة على الاستمرار خلال فترة الانتقال'} -- الانسحاب ليس تهديداً قابلاً للتصديق اليوم؛ يجب التفاوض وفقاً لذلك وإعطاء أولوية لتقليل التقييد قبل الدورة القادمة.`
         : `قوة تفاوضية متوسطة: مؤشر التقييد ${lockInIndex.toFixed(1)}/5، و${isSurvivable ? 'قادر' : 'غير قادر'} على الاستمرار خلال فترة الانتقال -- توجد بعض القوة التفاوضية لكنها غير مطلقة.`;
 
-  return { level, lockInIndex, isSurvivable, framingEn: en, framingAr: ar };
+  let quadrantConsistencyNote: string | null = null;
+  let quadrantConsistencyNoteAr: string | null = null;
+  if (quadrant === 'leverage' && level === 'WEAK') {
+    quadrantConsistencyNote = 'Worth re-verifying: a Leverage-quadrant supplier (many qualified alternatives, low switching cost by definition) showing WEAK computed leverage is a structural mismatch -- confirm the Kraljic classification is still current and that Module 05\'s Lock-In Index reflects real, not stale, alternative-supplier data.';
+    quadrantConsistencyNoteAr = 'يستحق إعادة التحقق: مورد من ربع "النفوذ" (يملك بحكم تعريفه بدائل مؤهلة عديدة وتكلفة تبديل منخفضة) يُظهر قوة تفاوضية ضعيفة محسوبة هو تناقض بنيوي -- تأكد من أن تصنيف كرالييك ما زال حديثاً وأن مؤشر التقييد في الوحدة 05 يعكس بيانات موردين بديلين حقيقية وليست قديمة.';
+  } else if (quadrant === 'bottleneck' && level === 'STRONG') {
+    quadrantConsistencyNote = 'Worth re-verifying: a Bottleneck-quadrant supplier (few real alternatives by definition) showing STRONG computed leverage is a structural mismatch -- confirm whether a genuine new alternative has emerged (in which case the Kraljic quadrant itself may be ready to move) or whether Module 05\'s inputs need review.';
+    quadrantConsistencyNoteAr = 'يستحق إعادة التحقق: مورد من ربع "الاختناق" (يملك بحكم تعريفه بدائل حقيقية قليلة) يُظهر قوة تفاوضية عالية محسوبة هو تناقض بنيوي -- تأكد مما إذا كان قد ظهر بديل حقيقي جديد فعلاً (وعندها قد يكون تصنيف كرالييك نفسه جاهزاً للتغيير) أو ما إذا كانت مدخلات الوحدة 05 بحاجة لمراجعة.';
+  }
+
+  return { level, lockInIndex, isSurvivable, framingEn: en, framingAr: ar, quadrantConsistencyNote, quadrantConsistencyNoteAr };
 }
 
 // ---------------------------------------------------------------------------
-// 5. Negotiation round history + Tit-for-Tat (FRAMEWORK 2)
+// 6. Negotiation round history + Tit-for-Tat (FRAMEWORK 2)
 // ---------------------------------------------------------------------------
 
 export type OurMove = 'cooperated' | 'defected';
@@ -397,7 +605,7 @@ export function recommendNextMove(history: NegotiationRoundHistory): NextMoveRec
 }
 
 // ---------------------------------------------------------------------------
-// 6. Negotiation Brief orchestration (SI-06 output schema)
+// 7. Negotiation Brief orchestration (SI-06 output schema)
 // ---------------------------------------------------------------------------
 
 export interface NegotiationBriefInput {
@@ -411,26 +619,27 @@ export interface NegotiationBriefInput {
   contractEntitlementId: string | null;
   negotiationLeverage: NegotiationLeverage;
   negotiationRoundHistory: NegotiationRoundHistory;
-}
-
-/**
- * QA-found gap, fixed (9 Sep 2026, "make it great" review): `kraljicQuadrant`
- * was accepted on `NegotiationBriefInput` and never read anywhere in
- * `buildNegotiationBrief()` -- a dead input that silently discarded real
- * Module 02 context instead of using it. Fixed by cross-referencing the
- * quadrant against Module 02's own already-sourced, already-published
- * tactics library (`negotiationTactics.ts`) rather than inventing any new
- * scoring or ranking heuristic: `recommendedTactics.forUs` reuses
- * `recommendClientTactics()` (low-ethical-risk tactics suited to this
- * quadrant) and `.watchFor` reuses `recommendWatchForTactics()` (moderate/
- * high-risk tactics a counterpart might use, each already carrying its own
- * counter-tactic). Null when no quadrant is available yet (Module 02 not
- * run for this supplier) -- never defaulted to a guessed quadrant.
- */
-export interface RecommendedTactics {
-  quadrant: KraljicQuadrant;
-  forUs: NamedNegotiationTactic[];
-  watchFor: NamedNegotiationTactic[];
+  /**
+   * Pass-through of Module 02's `assessRelationshipCompatibility(quadrant,
+   * currentPosture)` output, computed by the caller -- null when the
+   * client's current relationship posture for this supplier hasn't been
+   * recorded yet. Never computed inside this module (see ARCHITECTURE
+   * CORRECTION above).
+   */
+  relationshipCompatibility: RelationshipCompatibility | null;
+  /**
+   * Pass-through of Module 02's `recommendNegotiationStrategy(quadrant,
+   * relationshipCompatibility)` output -- the quadrant-level approach,
+   * BATNA/ZOPA guidance, and MIL objectives. Null when `kraljicQuadrant`
+   * is null (Module 02 not yet run for this supplier).
+   */
+  negotiationStrategy: NegotiationStrategy | null;
+  /**
+   * Pass-through of Module 02's `buildNegotiationPlan(quadrant)` output --
+   * the negotiation team, level structure, and both named-tactic lists.
+   * Null when `kraljicQuadrant` is null.
+   */
+  negotiationPlan: NegotiationPlanDocument | null;
 }
 
 export interface NegotiationBrief {
@@ -441,22 +650,25 @@ export interface NegotiationBrief {
   tcoReferenceId: string | null;
   contractEntitlementId: string | null;
   negotiationLeverage: NegotiationLeverage;
-  recommendedTactics: RecommendedTactics | null;
+  relationshipCompatibility: RelationshipCompatibility | null;
+  negotiationStrategy: NegotiationStrategy | null;
+  negotiationPlan: NegotiationPlanDocument | null;
   nextMove: NextMoveRecommendation;
   unsupportedCostDriverCount: number;
 }
 
+/**
+ * Pure orchestration -- every field on the output is either a value this
+ * module itself computed (priceTrajectory, costDriverJustifications,
+ * negotiationLeverage, nextMove) or a straight pass-through of a value the
+ * CALLER already computed elsewhere (relationshipCompatibility,
+ * negotiationStrategy, negotiationPlan, tcoReferenceId,
+ * contractEntitlementId). This function never calls into Module 02, 05,
+ * the TCO Engine, or Contract Intelligence itself.
+ */
 export function buildNegotiationBrief(input: NegotiationBriefInput): NegotiationBrief {
   const nextMove = recommendNextMove(input.negotiationRoundHistory);
   const unsupportedCostDriverCount = input.costDriverJustifications.filter((j) => j.supported === false).length;
-  const recommendedTactics: RecommendedTactics | null =
-    input.kraljicQuadrant === null
-      ? null
-      : {
-          quadrant: input.kraljicQuadrant,
-          forUs: recommendClientTactics(input.kraljicQuadrant),
-          watchFor: recommendWatchForTactics(input.kraljicQuadrant),
-        };
 
   return {
     supplierId: input.supplierId,
@@ -466,14 +678,16 @@ export function buildNegotiationBrief(input: NegotiationBriefInput): Negotiation
     tcoReferenceId: input.tcoReferenceId,
     contractEntitlementId: input.contractEntitlementId,
     negotiationLeverage: input.negotiationLeverage,
-    recommendedTactics,
+    relationshipCompatibility: input.relationshipCompatibility,
+    negotiationStrategy: input.negotiationStrategy,
+    negotiationPlan: input.negotiationPlan,
     nextMove,
     unsupportedCostDriverCount,
   };
 }
 
 // ---------------------------------------------------------------------------
-// 7. Bilingual narrative (Module 09 consultancy framing)
+// 8. Bilingual narrative (Module 09 consultancy framing)
 // ---------------------------------------------------------------------------
 
 /**
@@ -499,11 +713,10 @@ const BASIS_LABEL_AR: Record<EvidenceBasis, string> = {
   estimated: 'مُقدَّر',
 };
 
-const QUADRANT_LABEL_AR: Record<KraljicQuadrant, string> = {
-  strategic: 'استراتيجي',
-  leverage: 'ذو قوة تفاوضية',
-  bottleneck: 'عنق زجاجة',
-  'non-critical': 'غير حرج',
+const APPROACH_LABEL_AR: Record<NegotiationStrategy['recommendedApproach'], string> = {
+  distributive: 'توزيعي (تنافسي)',
+  mixed: 'مختلط',
+  integrative: 'تكاملي (تعاوني)',
 };
 
 export function buildNegotiationBriefPrompt(brief: NegotiationBrief, isAr: boolean): string {
@@ -544,19 +757,44 @@ export function buildNegotiationBriefPrompt(brief: NegotiationBrief, isAr: boole
   }
 
   lines.push(isAr ? brief.negotiationLeverage.framingAr : brief.negotiationLeverage.framingEn);
+  if (brief.negotiationLeverage.quadrantConsistencyNote) {
+    lines.push(isAr ? brief.negotiationLeverage.quadrantConsistencyNoteAr! : brief.negotiationLeverage.quadrantConsistencyNote);
+  }
 
-  if (brief.recommendedTactics) {
-    const { forUs, watchFor } = brief.recommendedTactics;
-    if (forUs.length > 0) {
-      const names = forUs.map((t) => (isAr ? t.name.ar : t.name.en)).join('، ');
+  if (brief.relationshipCompatibility) {
+    lines.push(isAr ? brief.relationshipCompatibility.advisoryAr : brief.relationshipCompatibility.advisory);
+  }
+
+  if (brief.negotiationStrategy) {
+    const s = brief.negotiationStrategy;
+    const approachAr = APPROACH_LABEL_AR[s.recommendedApproach];
+    lines.push(
+      isAr
+        ? `النهج التفاوضي الموصى به (الوحدة 02، ربع ${QUADRANT_META[s.quadrant].labelAr}): ${approachAr} -- ${s.approachRationaleAr}`
+        : `Recommended negotiation approach (Module 02, ${s.quadrant} quadrant): ${s.recommendedApproach} -- ${s.approachRationale}`,
+    );
+    if (s.relationshipAdjustment) {
+      lines.push(isAr ? s.relationshipAdjustmentAr! : s.relationshipAdjustment);
+    }
+  }
+
+  if (brief.negotiationPlan) {
+    const p = brief.negotiationPlan;
+    lines.push(
+      isAr
+        ? `هيكل التفاوض: فريق من ${p.team.length} أدوار عبر ${p.levels.length} مستوى/مستويات.`
+        : `Negotiation structure: ${p.team.length}-role team across ${p.levels.length} level(s).`,
+    );
+    if (p.recommendedTactics.length > 0) {
+      const names = p.recommendedTactics.map((t) => (isAr ? t.name.ar : t.name.en)).join('، ');
       lines.push(
         isAr
-          ? `تكتيكات موصى بها (الوحدة 02، ربع ${QUADRANT_LABEL_AR[brief.recommendedTactics.quadrant]}): ${names}.`
-          : `Recommended tactics (Module 02, ${brief.recommendedTactics.quadrant} quadrant): ${names}.`,
+          ? `تكتيكات موصى بها: ${names}.`
+          : `Recommended tactics: ${names}.`,
       );
     }
-    if (watchFor.length > 0) {
-      const names = watchFor.map((t) => (isAr ? t.name.ar : t.name.en)).join('، ');
+    if (p.watchForTactics.length > 0) {
+      const names = p.watchForTactics.map((t) => (isAr ? t.name.ar : t.name.en)).join('، ');
       lines.push(
         isAr
           ? `تكتيكات يُحتمل أن يستخدمها الطرف الآخر -- انتبه لها: ${names}.`

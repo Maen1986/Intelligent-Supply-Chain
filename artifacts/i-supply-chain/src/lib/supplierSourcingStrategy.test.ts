@@ -375,6 +375,48 @@ describe('recommendNegotiationStrategy -- real, sourced tactics per quadrant', (
     expect(compatibility.severity).toBe('aligned');
   });
 
+  it('bilingual-correctness fix: every narrative guidance field has a real, non-empty, distinct Arabic counterpart', () => {
+    (['strategic', 'leverage', 'bottleneck', 'non-critical'] as const).forEach((quadrant) => {
+      const strategy = recommendNegotiationStrategy(quadrant, null);
+      expect(strategy.approachRationaleAr.length).toBeGreaterThan(20);
+      expect(strategy.approachRationaleAr).not.toBe(strategy.approachRationale);
+      expect(strategy.batnaGuidanceAr.length).toBeGreaterThan(20);
+      expect(strategy.batnaGuidanceAr).not.toBe(strategy.batnaGuidance);
+      expect(strategy.zopaGuidanceAr.length).toBeGreaterThan(20);
+      expect(strategy.zopaGuidanceAr).not.toBe(strategy.zopaGuidance);
+      expect(strategy.milGuidanceAr.length).toBeGreaterThan(20);
+      expect(strategy.milGuidanceAr).not.toBe(strategy.milGuidance);
+      // Real Arabic script, not a placeholder or the English string reused.
+      expect(strategy.approachRationaleAr).toMatch(/[\u0600-\u06FF]/);
+      expect(strategy.batnaGuidanceAr).toMatch(/[\u0600-\u06FF]/);
+      expect(strategy.zopaGuidanceAr).toMatch(/[\u0600-\u06FF]/);
+      expect(strategy.milGuidanceAr).toMatch(/[\u0600-\u06FF]/);
+    });
+  });
+
+  it('bilingual-correctness fix: relationshipAdjustmentAr is populated in lockstep with relationshipAdjustment, in real Arabic, for all three severities', () => {
+    const cases: Array<[Parameters<typeof assessRelationshipCompatibility>[0], Parameters<typeof assessRelationshipCompatibility>[1]]> = [
+      ['bottleneck', 'adversarial'], // high-risk (the named special case)
+      ['strategic', 'collaborative'], // monitor (gap of 1)
+      ['leverage', 'transactional'], // aligned
+    ];
+    for (const [quadrant, posture] of cases) {
+      const compatibility = assessRelationshipCompatibility(quadrant, posture);
+      const strategy = recommendNegotiationStrategy(quadrant, compatibility);
+      expect(strategy.relationshipAdjustment).not.toBeNull();
+      expect(strategy.relationshipAdjustmentAr).not.toBeNull();
+      expect(strategy.relationshipAdjustmentAr!.length).toBeGreaterThan(15);
+      expect(strategy.relationshipAdjustmentAr).toMatch(/[\u0600-\u06FF]/);
+      expect(strategy.relationshipAdjustmentAr).not.toBe(strategy.relationshipAdjustment);
+    }
+  });
+
+  it('bilingual-correctness fix: relationshipAdjustmentAr stays null exactly when relationshipAdjustment does', () => {
+    const strategy = recommendNegotiationStrategy('bottleneck', null);
+    expect(strategy.relationshipAdjustment).toBeNull();
+    expect(strategy.relationshipAdjustmentAr).toBeNull();
+  });
+
   it('provides a real MIL (Must/Intend/Like) objective grid for every quadrant, with guidance explaining the discipline', () => {
     (['strategic', 'leverage', 'bottleneck', 'non-critical'] as const).forEach((quadrant) => {
       const strategy = recommendNegotiationStrategy(quadrant, null);
