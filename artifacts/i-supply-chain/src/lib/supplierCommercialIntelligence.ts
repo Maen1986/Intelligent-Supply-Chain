@@ -271,6 +271,115 @@ import { QUADRANT_META, type KraljicQuadrant } from './kraljicScoring';
 import type { RelationshipCompatibility, NegotiationStrategy, NegotiationPlanDocument } from './supplierSourcingStrategy';
 
 // ---------------------------------------------------------------------------
+// 0. FREE-SOURCE GAP CLOSURE (9 Sep 2026) -- closes both "OWNER INPUT NEEDED"
+//    items from the original SI-06 doc, under an explicit owner constraint:
+//    "not planning to pay for any external services... close these gap in
+//    one good way or another." No paid API, feed, or subscription is
+//    embedded anywhere in this module as a runtime dependency -- both gaps
+//    are closed with (a) real, freely-public, no-signup-required reference
+//    literature/data cited by name, and (b) an optional, caller-supplied,
+//    disclosed comparison field, exactly the existing pattern already used
+//    for `referenceImpactPct` in Section 4 and `categoryTypicalOverride` in
+//    Section 7. This module never calls any of the sources below over the
+//    network -- a human (or a future, separately-scoped integration) looks
+//    the figure up and passes it in; the module only does the comparison
+//    math and discloses where the number could have come from.
+//
+//    GAP 1 -- "real category-specific cost-driver weightings for the
+//    categories Maen works in most": closed via `ARCHETYPE_TYPICAL_COST_RANGE_PCT`
+//    below (Section 7-B), sourced from freely-accessible published cost-
+//    structure literature (not a licensed benchmark database):
+//      - Manufacturing materials/labor/overhead split: standard managerial
+//        -accounting cost-structure framework (materials ~40-60%, direct
+//        labor ~15-30%, overhead ~20-35% of total manufacturing cost).
+//      - Logistics/freight: fuel ~25-40%, driver labor/benefits ~30-43%,
+//        equipment/maintenance ~10-25% of total trucking operating cost
+//        (published industry cost-component studies, e.g. gomotive.com/
+//        blog/trucking-operational-costs, fleetio.com/blog/trucking-cost
+//        -analysis).
+//      - Construction: materials ~40-60%, labor ~20-50%, overhead ~5-15%
+//        of project cost (published construction-cost-breakdown guides,
+//        e.g. buildertrend.com/library/construction-overhead, e-a-a.com's
+//        materials-percentage breakdown).
+//      - Professional services: direct labor/cost-of-service ~35-53% of
+//        engagement revenue, implied by published gross-margin benchmarks
+//        of 47-65% across the sector (2024 PSE industry survey, cited via
+//        eaglerockcfo.com/aierpnav.ai professional-services benchmark
+//        summaries).
+//      - Software/SaaS: supplier margin (gross margin equivalent) ~60-86%
+//        of price, implied by published SaaS gross-margin benchmarks
+//        (62% usage-heavy models to 86%+ top-tier at scale; cost of
+//        revenue/hosting ~15-30% of price) -- getaleph.com/fiscallion.io/
+//        k38consulting.com SaaS-margin benchmark summaries.
+//      - Raw-material commodities intentionally have NO category-range
+//        table here (a commodity's should-cost IS the market price -- see
+//        GAP 2 below for how that gets checked instead).
+//    Every range is disclosed in code as `industry-literature-typical-range`
+//    -- a directional sanity check against PUBLISHED literature, explicitly
+//    NOT a live market benchmark, licensed index, or claim about any
+//    specific supplier's actual cost structure (Decision Record 8.7). A
+//    category outside the range is a prompt to ask a question, never proof
+//    of an unfair price.
+//
+//    GAP 2 -- "market-index feed for price-trajectory sanity checks":
+//    decided NOT to license any paid feed. Closed via `FREE_PUBLIC_MARKET_REFERENCE_SOURCES`
+//    below (real, freely-accessible, no-cost sources a client can look up
+//    by hand or via a free API key) plus an optional `externalReference`
+//    input on `computePriceTrajectory()` (Section 3) that lets a caller
+//    paste in a figure they looked up from one of those sources for a
+//    disclosed consistency check against this module's own client-data
+//    -only trend -- never a live network call from inside this module.
+// ---------------------------------------------------------------------------
+
+export interface FreePublicMarketReferenceSource {
+  id: string;
+  nameEn: string;
+  nameAr: string;
+  coverageEn: string;
+  coverageAr: string;
+  url: string;
+  /** True if a free signup/API key is needed to pull data programmatically; the underlying data itself is still free either way. */
+  requiresFreeSignup: boolean;
+}
+
+/**
+ * Real, freely-accessible, no-cost public sources for commodity/price-index
+ * reference data -- documentation metadata only, never called over the
+ * network by this module. A caller (or a future, separately-scoped
+ * integration) looks up the relevant figure and supplies it via
+ * `computePriceTrajectory()`'s `externalReference` option.
+ */
+export const FREE_PUBLIC_MARKET_REFERENCE_SOURCES: FreePublicMarketReferenceSource[] = [
+  {
+    id: 'world-bank-pink-sheet',
+    nameEn: 'World Bank Commodity Markets ("Pink Sheet")',
+    nameAr: 'مؤشرات أسعار السلع للبنك الدولي ("Pink Sheet")',
+    coverageEn: 'Monthly prices for metals, energy, agriculture, fertilizers, and precious metals -- free CSV download, Creative Commons license, updated monthly, no signup required.',
+    coverageAr: 'أسعار شهرية للمعادن والطاقة والزراعة والأسمدة والمعادن الثمينة -- تحميل مجاني بصيغة CSV، برخصة المشاع الإبداعي، تحديث شهري، بلا حاجة للتسجيل.',
+    url: 'https://www.worldbank.org/en/research/commodity-markets',
+    requiresFreeSignup: false,
+  },
+  {
+    id: 'fred-stlouisfed',
+    nameEn: 'FRED (Federal Reserve Bank of St. Louis) -- Producer Price Index by Commodity',
+    nameAr: 'قاعدة بيانات FRED (بنك الاحتياطي الفيدرالي في سانت لويس) -- مؤشر أسعار المنتجين حسب السلعة',
+    coverageEn: 'Free, long-run PPI series by specific commodity (e.g. steel, aluminum, chemicals) sourced from the US Bureau of Labor Statistics. Free API with a free-to-obtain key for programmatic access; the web UI itself needs no signup.',
+    coverageAr: 'سلاسل زمنية طويلة ومجانية لمؤشر أسعار المنتجين حسب سلعة محددة (مثل الصلب والألمنيوم والكيماويات) مصدرها مكتب إحصاءات العمل الأمريكي. واجهة برمجية مجانية بمفتاح مجاني للوصول البرمجي؛ واجهة الموقع نفسها لا تتطلب تسجيلاً.',
+    url: 'https://fred.stlouisfed.org',
+    requiresFreeSignup: false,
+  },
+  {
+    id: 'gastat-economic-data-platform',
+    nameEn: 'GASTAT Economic Data Platform (Saudi Arabia) -- Producer Price Index',
+    nameAr: 'منصة البيانات الاقتصادية للهيئة العامة للإحصاء (السعودية) -- الرقم القياسي لأسعار المنتجين',
+    coverageEn: 'Free, official Saudi producer-price and economic-indicator data, downloadable in multiple formats -- the natural first reference for GCC-sourced categories.',
+    coverageAr: 'بيانات رسمية مجانية لأسعار المنتجين والمؤشرات الاقتصادية السعودية، قابلة للتحميل بصيغ متعددة -- المرجع الطبيعي الأول للفئات ذات المصدر الخليجي.',
+    url: 'https://www.stats.gov.sa/en/w/ppi-1',
+    requiresFreeSignup: false,
+  },
+];
+
+// ---------------------------------------------------------------------------
 // 1. Evidence-basis tiering (SI-06 body, "The labeling discipline")
 // ---------------------------------------------------------------------------
 
@@ -351,6 +460,39 @@ export interface PriceTrajectory {
   flatBandPctApplied?: number;
   /** Discloses whether the band above came from an explicit caller override, a Kraljic-quadrant-informed heuristic default, or the plain generic default -- never silently applied. */
   flatBandSource?: ThresholdSource;
+  /**
+   * FREE-SOURCE GAP CLOSURE (GAP 2, Section 0): populated only when the
+   * caller supplied `opts.externalReference` -- a disclosed consistency
+   * check between this module's own client-data-only trend and a real
+   * figure the caller looked up from a named free public source (see
+   * `FREE_PUBLIC_MARKET_REFERENCE_SOURCES`). Null when no external
+   * reference was supplied -- the trend then stands on client data alone,
+   * exactly as before this gap-closure, and that limitation stays
+   * disclosed rather than silently implied to be checked.
+   */
+  externalReferenceCheck: PriceTrajectoryExternalReferenceCheck | null;
+}
+
+/** A figure the caller looked up from a real, named, free public source (see `FREE_PUBLIC_MARKET_REFERENCE_SOURCES`) -- never fetched by this module itself. */
+export interface ExternalPriceReference {
+  /** Should match an id in FREE_PUBLIC_MARKET_REFERENCE_SOURCES when possible; a free-text source name is accepted for a source not yet in that list. */
+  sourceId: string;
+  sourceLabel: string;
+  asOfDate: string;
+  direction: 'up' | 'down' | 'flat';
+  percentChange: number | null;
+}
+
+export interface PriceTrajectoryExternalReferenceCheck {
+  sourceId: string;
+  sourceLabel: string;
+  asOfDate: string;
+  externalDirection: 'up' | 'down' | 'flat';
+  externalPercentChange: number | null;
+  /** True when the client-data trend direction and the external reference direction agree (INSUFFICIENT_DATA never reaches this check). */
+  consistent: boolean;
+  noteEn: string;
+  noteAr: string;
 }
 
 /**
@@ -375,7 +517,24 @@ export interface PriceTrajectory {
  */
 export function computePriceTrajectory(
   points: PricePoint[],
-  opts: { periodMonths?: number; basis?: EvidenceBasis; flatBandPct?: number; quadrant?: KraljicQuadrant | null } = {},
+  opts: {
+    periodMonths?: number;
+    basis?: EvidenceBasis;
+    flatBandPct?: number;
+    quadrant?: KraljicQuadrant | null;
+    /**
+     * FREE-SOURCE GAP CLOSURE (GAP 2, Section 0): a figure the caller
+     * looked up from a real, named, free public source (World Bank Pink
+     * Sheet, FRED, GASTAT, or any other named source) -- never fetched by
+     * this module. When supplied, the result discloses whether the
+     * client's own price trend agrees or disagrees with that external
+     * reference direction. Omitted entirely, this stays exactly what it
+     * was before this gap-closure: a client-data-only trend with no
+     * external check, and that limitation is disclosed via a null
+     * `externalReferenceCheck` rather than implied to have been verified.
+     */
+    externalReference?: ExternalPriceReference | null;
+  } = {},
 ): PriceTrajectory {
   if (points.length < 3) {
     return {
@@ -385,6 +544,7 @@ export function computePriceTrajectory(
       basis: null,
       maxIntraPeriodSwingPct: null,
       hasIntermediateVolatility: null,
+      externalReferenceCheck: null,
     };
   }
   const sorted = [...points].sort((a, b) => (a.sortKey < b.sortKey ? -1 : a.sortKey > b.sortKey ? 1 : 0));
@@ -426,6 +586,30 @@ export function computePriceTrajectory(
     hasIntermediateVolatility = maxSwing - headlineAbs > flatBand;
   }
 
+  let externalReferenceCheck: PriceTrajectoryExternalReferenceCheck | null = null;
+  if (opts.externalReference && direction !== 'INSUFFICIENT_DATA') {
+    const ext = opts.externalReference;
+    // Treat internally-computed 'flat' as compatible with either external
+    // direction only when the external move itself is flat -- otherwise a
+    // real, disclosed disagreement is exactly what this check exists to
+    // surface, not paper over.
+    const consistent = direction === ext.direction;
+    externalReferenceCheck = {
+      sourceId: ext.sourceId,
+      sourceLabel: ext.sourceLabel,
+      asOfDate: ext.asOfDate,
+      externalDirection: ext.direction,
+      externalPercentChange: ext.percentChange,
+      consistent,
+      noteEn: consistent
+        ? `Client-data trend (${direction}) is consistent with the ${ext.sourceLabel} reference as of ${ext.asOfDate} (${ext.direction}${ext.percentChange !== null ? `, ${ext.percentChange}%` : ''}) -- no free public-source contradiction found.`
+        : `Client-data trend (${direction}) does NOT match the ${ext.sourceLabel} reference as of ${ext.asOfDate} (${ext.direction}${ext.percentChange !== null ? `, ${ext.percentChange}%` : ''}) -- worth asking why this supplier's pricing is moving differently from the broader public reference before accepting either explanation at face value.`,
+      noteAr: consistent
+        ? `اتجاه بيانات العميل (${direction}) متوافق مع المرجع العام ${ext.sourceLabel} كما في ${ext.asOfDate} (${ext.direction}${ext.percentChange !== null ? `، ${ext.percentChange}%` : ''}) -- لم يُعثر على تناقض مع مصدر عام مجاني.`
+        : `اتجاه بيانات العميل (${direction}) لا يتطابق مع المرجع العام ${ext.sourceLabel} كما في ${ext.asOfDate} (${ext.direction}${ext.percentChange !== null ? `، ${ext.percentChange}%` : ''}) -- يستحق السؤال عن سبب تحرك تسعير هذا المورّد بشكل مختلف عن المرجع العام الأوسع قبل قبول أي تفسير كأمر مسلّم به.`,
+    };
+  }
+
   return {
     direction,
     periodMonths: opts.periodMonths ?? null,
@@ -435,6 +619,7 @@ export function computePriceTrajectory(
     hasIntermediateVolatility,
     flatBandPctApplied: flatBand,
     flatBandSource,
+    externalReferenceCheck,
   };
 }
 
@@ -810,6 +995,56 @@ const ARCHETYPE_TYPICAL_CATEGORIES: Record<CostModelArchetype, CostBreakdownCate
   generic: ['raw_materials', 'direct_labor', 'manufacturing_overhead', 'tooling_equipment', 'packaging', 'logistics_freight', 'fuel_energy', 'equipment_depreciation', 'subcontractor_pass_through', 'license_royalty_fee', 'insurance_bonding', 'duties_tariffs', 'sga_allocation', 'supplier_margin', 'other'],
 };
 
+/**
+ * FREE-SOURCE GAP CLOSURE (GAP 1, Section 0): real, freely-published
+ * cost-structure literature, cited by name in Section 0's header comment --
+ * NOT a licensed benchmark database, NOT a live market feed, and NOT a
+ * claim about any specific supplier. Each range is a directional sanity
+ * check only: a category outside its typical range is a prompt to ask a
+ * question at the negotiation table, never proof the price is unfair.
+ * Deliberately sparse -- only archetype/category combinations with a real,
+ * citable published range are populated; every other combination stays
+ * absent rather than filled with an invented number (Decision Record 8.7).
+ * 'raw_material_commodity' and 'generic' are intentionally entirely absent:
+ * a commodity's should-cost check belongs against a real market index
+ * (Section 3's `externalReference`, GAP 2), not a labor/overhead split, and
+ * 'generic' by design carries no assumptions at all.
+ */
+const ARCHETYPE_TYPICAL_COST_RANGE_PCT: Partial<Record<CostModelArchetype, Partial<Record<CostBreakdownCategory, { minPct: number; maxPct: number }>>>> = {
+  manufactured_goods: {
+    raw_materials: { minPct: 40, maxPct: 60 },
+    direct_labor: { minPct: 15, maxPct: 30 },
+    manufacturing_overhead: { minPct: 20, maxPct: 35 },
+  },
+  logistics_freight_services: {
+    fuel_energy: { minPct: 25, maxPct: 40 },
+    direct_labor: { minPct: 30, maxPct: 43 },
+    equipment_depreciation: { minPct: 10, maxPct: 25 },
+  },
+  construction_works: {
+    raw_materials: { minPct: 40, maxPct: 60 },
+    direct_labor: { minPct: 20, maxPct: 50 },
+    sga_allocation: { minPct: 5, maxPct: 15 },
+  },
+  professional_services: {
+    direct_labor: { minPct: 35, maxPct: 53 },
+  },
+  software_license_saas: {
+    supplier_margin: { minPct: 60, maxPct: 86 },
+  },
+};
+
+export interface CostCategoryConcentrationFlag {
+  category: CostBreakdownCategory;
+  pctOfTotal: number;
+  typicalRangeMinPct: number;
+  typicalRangeMaxPct: number;
+  /** 'above' when pctOfTotal exceeds the typical range, 'below' when it falls short. */
+  direction: 'above' | 'below';
+  noteEn: string;
+  noteAr: string;
+}
+
 export interface CostBreakdownComponent {
   category: CostBreakdownCategory;
   /** Free-text specifics, e.g. "6061 aluminum extrusion, 4.2kg @ spot". */
@@ -906,6 +1141,17 @@ export interface ShouldCostGap {
   /** Cost-structure fingerprint of the should-cost model -- % of total by category, sorted descending. Always computed when a model exists. */
   categoryFingerprint: CostCategoryFingerprintEntry[];
   /**
+   * FREE-SOURCE GAP CLOSURE (GAP 1, Section 0): categories whose % of the
+   * should-cost total falls outside a real, published-literature typical
+   * range for this archetype (see `ARCHETYPE_TYPICAL_COST_RANGE_PCT`).
+   * Always an empty array (never null) when a model exists -- empty simply
+   * means either every category was within its published range, or no
+   * published range exists for this archetype/category combination (most
+   * archetype/category pairs have none -- see that table's own comment).
+   * A directional prompt to ask a question, never proof of anything.
+   */
+  categoryConcentrationFlags: CostCategoryConcentrationFlag[];
+  /**
    * Populated only when the caller also supplies the supplier's own quoted
    * cost breakdown -- a category-by-category comparison, sorted by
    * absolute gap descending, so the negotiation can target the SPECIFIC
@@ -986,6 +1232,7 @@ export function assessShouldCostGap(
       archetype: model?.archetype ?? null,
       categoryArchetypeWarnings: [],
       categoryFingerprint: [],
+      categoryConcentrationFlags: [],
       categoryGaps: null,
       granularity: 'aggregate',
       marginObservation: null,
@@ -1014,6 +1261,35 @@ export function assessShouldCostGap(
   const typicalCategories = new Set(opts.categoryTypicalOverride ?? ARCHETYPE_TYPICAL_CATEGORIES[model.archetype]);
   const categoryArchetypeWarnings: CostBreakdownCategory[] = [...byCategory.keys()].filter((cat) => !typicalCategories.has(cat));
 
+  // FREE-SOURCE GAP CLOSURE (GAP 1, Section 0): flag categories whose share
+  // of the should-cost total falls outside a real, published-literature
+  // typical range for this archetype. Deliberately runs off the ARCHETYPE
+  // default table only (not `categoryTypicalOverride`, which is a category
+  // *set*, not a percentage range) -- a directional sanity prompt, never
+  // proof of an unfair price.
+  const rangeTable = ARCHETYPE_TYPICAL_COST_RANGE_PCT[model.archetype];
+  const categoryConcentrationFlags: CostCategoryConcentrationFlag[] = rangeTable
+    ? categoryFingerprint
+        .filter((entry) => rangeTable[entry.category] !== undefined)
+        .flatMap((entry) => {
+          const range = rangeTable[entry.category]!;
+          if (entry.pctOfTotal >= range.minPct && entry.pctOfTotal <= range.maxPct) return [];
+          const direction: 'above' | 'below' = entry.pctOfTotal > range.maxPct ? 'above' : 'below';
+          const label = COST_BREAKDOWN_CATEGORY_LABEL[entry.category];
+          return [
+            {
+              category: entry.category,
+              pctOfTotal: entry.pctOfTotal,
+              typicalRangeMinPct: range.minPct,
+              typicalRangeMaxPct: range.maxPct,
+              direction,
+              noteEn: `"${label.en}" is ${entry.pctOfTotal}% of the should-cost total, ${direction} the ${range.minPct}-${range.maxPct}% range typically reported in published cost-structure literature for "${COST_MODEL_ARCHETYPE_LABEL[model.archetype].en}" -- worth asking why, not proof the figure is wrong (industry-literature-typical-range, not a live benchmark).`,
+              noteAr: `تمثّل فئة "${label.ar}" نسبة ${entry.pctOfTotal}% من إجمالي التكلفة المستهدفة، وهي ${direction === 'above' ? 'أعلى من' : 'أقل من'} النطاق المعتاد ${range.minPct}-${range.maxPct}% المذكور في الأدبيات المنشورة لهيكل التكلفة لتصنيف "${COST_MODEL_ARCHETYPE_LABEL[model.archetype].ar}" -- يستحق السؤال عن السبب، وليس دليلاً على خطأ الرقم (نطاق نموذجي من الأدبيات المنشورة، وليس مؤشراً حياً).`,
+            },
+          ];
+        })
+    : [];
+
   // Margin observation -- factual by default, evaluative only if the caller supplies their own expectation.
   const marginAmount = byCategory.get('supplier_margin');
   const marginObservation: ShouldCostMarginObservation | null =
@@ -1040,6 +1316,7 @@ export function assessShouldCostGap(
       categoryArchetypeWarnings,
       categoryCheckSource,
       categoryFingerprint,
+      categoryConcentrationFlags,
       categoryGaps: null,
       granularity: 'aggregate',
       marginObservation,
@@ -1115,14 +1392,25 @@ export function assessShouldCostGap(
       ? ` ملاحظة: هذا النموذج مصنَّف كـ"${COST_MODEL_ARCHETYPE_LABEL[model.archetype].ar}"، لكنه يتضمن ${categoryArchetypeWarnings.length === 1 ? 'فئة' : 'فئات'} غير معتادة لهذا التصنيف (${categoryArchetypeWarnings.map((c) => COST_BREAKDOWN_CATEGORY_LABEL[c].ar).join('، ')}) -- يستحق التأكد من أن هذا ليس بنداً مصنَّفاً بشكل خاطئ قبل الاعتماد على البصمة أعلاه. (إفصاح:${categoryCheckSourceClauseAr})`
       : ` (إفصاح:${categoryCheckSourceClauseAr})`;
 
+  // FREE-SOURCE GAP CLOSURE (GAP 1, Section 0): concentration-flag clause,
+  // only when at least one flag fired.
+  const concentrationClauseEn =
+    categoryConcentrationFlags.length > 0
+      ? ` Also worth a question: ${categoryConcentrationFlags.map((f) => `"${COST_BREAKDOWN_CATEGORY_LABEL[f.category].en}" at ${f.pctOfTotal}% (published-literature typical range for this archetype: ${f.typicalRangeMinPct}-${f.typicalRangeMaxPct}%)`).join('; ')}.`
+      : '';
+  const concentrationClauseAr =
+    categoryConcentrationFlags.length > 0
+      ? ` كذلك يستحق السؤال: ${categoryConcentrationFlags.map((f) => `"${COST_BREAKDOWN_CATEGORY_LABEL[f.category].ar}" بنسبة ${f.pctOfTotal}% (النطاق المعتاد في الأدبيات المنشورة لهذا التصنيف: ${f.typicalRangeMinPct}-${f.typicalRangeMaxPct}%)`).join('؛ ')}.`
+      : '';
+
   const narrativeEn =
     severity === 'ALIGNED'
-      ? `Quoted price (${quotedPrice} ${model.currency}) is within ${tolerance}% of the independently modeled should-cost (${shouldCostTotal} ${model.currency}) -- broadly aligned, not a priority negotiation lever.${marginClauseEn}${archetypeWarningClauseEn}`
-      : `Quoted price (${quotedPrice} ${model.currency}) sits ${absGap}% ${aboveEn} the independently modeled should-cost (${shouldCostTotal} ${model.currency}) -- a ${severity === 'MATERIAL_GAP' ? 'material' : 'moderate'} gap of ${Math.abs(gapAmount)} ${model.currency}.${topDriverClauseEn}${marginClauseEn}${granularity === 'aggregate' ? ' (Aggregate comparison only -- no category-level supplier breakdown was supplied, so the gap cannot yet be attributed to a specific cost category.)' : ''}${archetypeWarningClauseEn}`;
+      ? `Quoted price (${quotedPrice} ${model.currency}) is within ${tolerance}% of the independently modeled should-cost (${shouldCostTotal} ${model.currency}) -- broadly aligned, not a priority negotiation lever.${marginClauseEn}${concentrationClauseEn}${archetypeWarningClauseEn}`
+      : `Quoted price (${quotedPrice} ${model.currency}) sits ${absGap}% ${aboveEn} the independently modeled should-cost (${shouldCostTotal} ${model.currency}) -- a ${severity === 'MATERIAL_GAP' ? 'material' : 'moderate'} gap of ${Math.abs(gapAmount)} ${model.currency}.${topDriverClauseEn}${marginClauseEn}${concentrationClauseEn}${granularity === 'aggregate' ? ' (Aggregate comparison only -- no category-level supplier breakdown was supplied, so the gap cannot yet be attributed to a specific cost category.)' : ''}${archetypeWarningClauseEn}`;
   const narrativeAr =
     severity === 'ALIGNED'
-      ? `السعر المعروض (${quotedPrice} ${model.currency}) يقع ضمن هامش ${tolerance}% من التكلفة المستهدفة المحتسبة باستقلالية (${shouldCostTotal} ${model.currency}) -- متوافق إلى حد كبير، وليس أولوية تفاوضية.${marginClauseAr}${archetypeWarningClauseAr}`
-      : `السعر المعروض (${quotedPrice} ${model.currency}) ${aboveAr} التكلفة المستهدفة المحتسبة باستقلالية (${shouldCostTotal} ${model.currency}) بنسبة ${absGap}% -- فجوة ${severity === 'MATERIAL_GAP' ? 'جوهرية' : 'متوسطة'} قدرها ${Math.abs(gapAmount)} ${model.currency}.${topDriverClauseAr}${marginClauseAr}${granularity === 'aggregate' ? ' (مقارنة إجمالية فقط -- لم يتم توفير تفصيل تكلفة من المورّد على مستوى الفئات، لذا لا يمكن بعد نسب الفجوة لفئة تكلفة محددة.)' : ''}${archetypeWarningClauseAr}`;
+      ? `السعر المعروض (${quotedPrice} ${model.currency}) يقع ضمن هامش ${tolerance}% من التكلفة المستهدفة المحتسبة باستقلالية (${shouldCostTotal} ${model.currency}) -- متوافق إلى حد كبير، وليس أولوية تفاوضية.${marginClauseAr}${concentrationClauseAr}${archetypeWarningClauseAr}`
+      : `السعر المعروض (${quotedPrice} ${model.currency}) ${aboveAr} التكلفة المستهدفة المحتسبة باستقلالية (${shouldCostTotal} ${model.currency}) بنسبة ${absGap}% -- فجوة ${severity === 'MATERIAL_GAP' ? 'جوهرية' : 'متوسطة'} قدرها ${Math.abs(gapAmount)} ${model.currency}.${topDriverClauseAr}${marginClauseAr}${concentrationClauseAr}${granularity === 'aggregate' ? ' (مقارنة إجمالية فقط -- لم يتم توفير تفصيل تكلفة من المورّد على مستوى الفئات، لذا لا يمكن بعد نسب الفجوة لفئة تكلفة محددة.)' : ''}${archetypeWarningClauseAr}`;
 
   return {
     shouldCostTotal,
@@ -1137,6 +1425,7 @@ export function assessShouldCostGap(
     categoryArchetypeWarnings,
     categoryCheckSource,
     categoryFingerprint,
+    categoryConcentrationFlags,
     categoryGaps,
     granularity,
     marginObservation,

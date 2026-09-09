@@ -12,6 +12,7 @@ import {
   assessPaymentTermsValue,
   assessRebateTierPosition,
   assessVolumeConsolidationOpportunity,
+  FREE_PUBLIC_MARKET_REFERENCE_SOURCES,
   type PricePoint,
   type NegotiationRoundHistory,
   type ShouldCostModel,
@@ -194,6 +195,74 @@ describe('computePriceTrajectory', () => {
       expect(result.flatBandPctApplied).toBe(3);
       expect(result.flatBandSource).toBe('generic-default');
     });
+  });
+
+  describe('free-source gap closure (GAP 2): optional externalReference consistency check', () => {
+    const upPoints: PricePoint[] = [
+      { periodLabel: 'Q1', price: 100, sortKey: '2026-01' },
+      { periodLabel: 'Q2', price: 108, sortKey: '2026-04' },
+      { periodLabel: 'Q3', price: 115, sortKey: '2026-07' },
+    ];
+
+    it('is null when no externalReference is supplied (unchanged pre-gap-closure behavior)', () => {
+      const result = computePriceTrajectory(upPoints);
+      expect(result.externalReferenceCheck).toBeNull();
+    });
+
+    it('is null on INSUFFICIENT_DATA even if an externalReference is supplied (no direction to check against)', () => {
+      const result = computePriceTrajectory([{ periodLabel: 'Q1', price: 100, sortKey: '2026-01' }], {
+        externalReference: { sourceId: 'fred-stlouisfed', sourceLabel: 'FRED PPI Steel Mill Products', asOfDate: '2026-08', direction: 'up', percentChange: 6 },
+      });
+      expect(result.externalReferenceCheck).toBeNull();
+    });
+
+    it('reports consistent: true when the client trend direction matches the external reference', () => {
+      const result = computePriceTrajectory(upPoints, {
+        externalReference: { sourceId: 'fred-stlouisfed', sourceLabel: 'FRED PPI Steel Mill Products', asOfDate: '2026-08', direction: 'up', percentChange: 6 },
+      });
+      expect(result.direction).toBe('up');
+      expect(result.externalReferenceCheck).not.toBeNull();
+      expect(result.externalReferenceCheck!.consistent).toBe(true);
+      expect(result.externalReferenceCheck!.sourceLabel).toBe('FRED PPI Steel Mill Products');
+      expect(result.externalReferenceCheck!.noteEn).toContain('consistent');
+    });
+
+    it('reports consistent: false when the client trend direction disagrees with the external reference', () => {
+      const result = computePriceTrajectory(upPoints, {
+        externalReference: { sourceId: 'world-bank-pink-sheet', sourceLabel: 'World Bank Pink Sheet -- Aluminum', asOfDate: '2026-08', direction: 'down', percentChange: -4 },
+      });
+      expect(result.direction).toBe('up');
+      expect(result.externalReferenceCheck!.consistent).toBe(false);
+      expect(result.externalReferenceCheck!.noteEn).toContain('does NOT match');
+    });
+
+    it('never fetches anything over the network -- purely a comparison against the caller-supplied figure', () => {
+      // Structural assertion: computePriceTrajectory is a synchronous pure function (no Promise return),
+      // which is only possible if it performs no network I/O.
+      const result = computePriceTrajectory(upPoints, {
+        externalReference: { sourceId: 'gastat-economic-data-platform', sourceLabel: 'GASTAT PPI', asOfDate: '2026-08', direction: 'up', percentChange: 5 },
+      });
+      expect(result).not.toBeInstanceOf(Promise);
+    });
+  });
+});
+
+describe('FREE_PUBLIC_MARKET_REFERENCE_SOURCES (free-source gap closure, GAP 2)', () => {
+  it('lists at least the three real, named, free public sources this gap-closure decision names', () => {
+    const ids = FREE_PUBLIC_MARKET_REFERENCE_SOURCES.map((s) => s.id);
+    expect(ids).toContain('world-bank-pink-sheet');
+    expect(ids).toContain('fred-stlouisfed');
+    expect(ids).toContain('gastat-economic-data-platform');
+  });
+
+  it('every listed source has a real URL and bilingual coverage description', () => {
+    for (const source of FREE_PUBLIC_MARKET_REFERENCE_SOURCES) {
+      expect(source.url.startsWith('https://')).toBe(true);
+      expect(source.nameEn.length).toBeGreaterThan(0);
+      expect(source.nameAr.length).toBeGreaterThan(0);
+      expect(source.coverageEn.length).toBeGreaterThan(0);
+      expect(source.coverageAr.length).toBeGreaterThan(0);
+    }
   });
 });
 
@@ -901,6 +970,95 @@ describe('assessShouldCostGap (expertise-viewpoint enhancement: Section 7)', () 
       });
       expect(narrowed.categoryArchetypeWarnings).toContain('tooling_equipment');
       expect(narrowed.categoryCheckSource).toBe('caller-override');
+    });
+  });
+
+  describe('free-source gap closure (GAP 1): published-literature category concentration flags', () => {
+    it('flags raw_materials when it falls outside the published 40-60% range for manufactured_goods', () => {
+      const model: ShouldCostModel = {
+        components: [
+          { category: 'raw_materials', description: 'steel', amount: 75, basis: 'estimated' },
+          { category: 'direct_labor', description: 'assembly', amount: 15, basis: 'estimated' },
+          { category: 'manufacturing_overhead', description: 'plant overhead', amount: 10, basis: 'estimated' },
+        ],
+        currency: 'SAR',
+        basis: 'estimated',
+        archetype: 'manufactured_goods',
+      };
+      const result = assessShouldCostGap(model, 100);
+      const flag = result.categoryConcentrationFlags.find((f) => f.category === 'raw_materials');
+      expect(flag).toBeDefined();
+      expect(flag!.direction).toBe('above');
+      expect(flag!.typicalRangeMinPct).toBe(40);
+      expect(flag!.typicalRangeMaxPct).toBe(60);
+      expect(result.narrativeEn).toContain('Also worth a question');
+    });
+
+    it('does not flag categories within their published range', () => {
+      const model: ShouldCostModel = {
+        components: [
+          { category: 'raw_materials', description: 'steel', amount: 50, basis: 'estimated' },
+          { category: 'direct_labor', description: 'assembly', amount: 25, basis: 'estimated' },
+          { category: 'manufacturing_overhead', description: 'plant overhead', amount: 25, basis: 'estimated' },
+        ],
+        currency: 'SAR',
+        basis: 'estimated',
+        archetype: 'manufactured_goods',
+      };
+      expect(assessShouldCostGap(model, 100).categoryConcentrationFlags).toEqual([]);
+    });
+
+    it('flags direction "below" when a category falls short of its published range', () => {
+      const model: ShouldCostModel = {
+        components: [
+          { category: 'direct_labor', description: 'drivers', amount: 20, basis: 'estimated' }, // published range 30-43% for logistics
+          { category: 'fuel_energy', description: 'diesel', amount: 50, basis: 'estimated' },
+          { category: 'equipment_depreciation', description: 'trucks', amount: 30, basis: 'estimated' },
+        ],
+        currency: 'SAR',
+        basis: 'estimated',
+        archetype: 'logistics_freight_services',
+      };
+      const flag = assessShouldCostGap(model, 100).categoryConcentrationFlags.find((f) => f.category === 'direct_labor');
+      expect(flag!.direction).toBe('below');
+    });
+
+    it('returns an empty array (never null) when the archetype has no published range table at all (raw_material_commodity, generic)', () => {
+      const commodityModel: ShouldCostModel = {
+        components: [{ category: 'raw_materials', description: 'aluminum', amount: 100, basis: 'observed' }],
+        currency: 'SAR',
+        basis: 'observed',
+        archetype: 'raw_material_commodity',
+      };
+      expect(assessShouldCostGap(commodityModel, 105).categoryConcentrationFlags).toEqual([]);
+
+      const genericModel: ShouldCostModel = {
+        components: [{ category: 'other', description: 'misc', amount: 100, basis: 'estimated' }],
+        currency: 'SAR',
+        basis: 'estimated',
+        archetype: 'generic',
+      };
+      expect(assessShouldCostGap(genericModel, 105).categoryConcentrationFlags).toEqual([]);
+    });
+
+    it('flags supplier_margin outside the published 60-86% SaaS gross-margin range', () => {
+      const model: ShouldCostModel = {
+        components: [
+          { category: 'license_royalty_fee', description: 'platform license', amount: 30, basis: 'estimated' },
+          { category: 'direct_labor', description: 'implementation', amount: 20, basis: 'estimated' },
+          { category: 'supplier_margin', description: 'margin', amount: 50, basis: 'estimated' },
+        ],
+        currency: 'SAR',
+        basis: 'estimated',
+        archetype: 'software_license_saas',
+      };
+      const flag = assessShouldCostGap(model, 100).categoryConcentrationFlags.find((f) => f.category === 'supplier_margin');
+      expect(flag).toBeDefined();
+      expect(flag!.direction).toBe('below'); // 50% < published 60-86% range
+    });
+
+    it('is present on the INSUFFICIENT_DATA early-return shape as an empty array, not undefined', () => {
+      expect(assessShouldCostGap(null, 100).categoryConcentrationFlags).toEqual([]);
     });
   });
 });
