@@ -1248,7 +1248,7 @@ export function assessNegotiationOutcome(input: NegotiationOutcomeInput): Negoti
   if (recurring) {
     if (periodsPerYear !== undefined && periodsPerYear > 0) {
       annualizedValue = round2(absoluteValue * periodsPerYear);
-      recurrenceEn = ` This value recurs each period -- annualized across ${periodsPerYear} periods/year, the projected run-rate value is approximately ${annualizedValue} (a projection based on current terms holding, not a guarantee).`;
+      recurrenceEn = ` This value recurs each period -- annualized across ${periodsPerYear} period(s)/year, the projected run-rate value is approximately ${annualizedValue} (a projection based on current terms holding, not a guarantee).`;
       recurrenceAr = ` هذه القيمة متكررة كل دورة -- وبتحويلها إلى قيمة سنوية عبر ${periodsPerYear} دورة/سنة، تُقدَّر القيمة السنوية بنحو ${annualizedValue} (توقّع مبني على استمرار الشروط الحالية، وليس ضماناً).`;
     } else {
       recurrenceEn = ' This value is marked recurring, but no periods-per-year figure was supplied -- annualized value is not computed rather than guessed.';
