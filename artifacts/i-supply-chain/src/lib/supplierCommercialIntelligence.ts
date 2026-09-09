@@ -1196,7 +1196,29 @@ export interface NegotiationOutcomeInput {
   recurring: boolean;
   /** Required to annualize a recurring value -- e.g. 12 for monthly, 4 for quarterly, 1 for annual. Never assumed by this module; annualizedValue stays null without it. */
   periodsPerYear?: number;
+  /**
+   * OPTIONAL. The value originally forecast/approved for this negotiation (e.g.
+   * from a business case, budget line, or sourcing-event target) -- distinct
+   * from `baselinePrice`, which is a price reference point, not a value target.
+   * When supplied, this enables a forecast-vs-actual variance check (the
+   * "leakage" governance discipline named tools like JAGGAER's Value Tracker
+   * document -- see SI-06 doc's re-rating section for the sourced comparison).
+   * Left undefined, the check is simply not run -- no forecast is assumed.
+   */
+  forecastValue?: number;
+  /**
+   * OPTIONAL. Overrides this module's own generic default materiality band
+   * (+/-5%) for flagging a forecast-vs-actual divergence as worth reviewing.
+   * Always disclosed via `varianceToleranceSource` on the result -- never a
+   * silent default.
+   */
+  varianceToleranceOverridePct?: number;
 }
+
+/** Forecast-vs-actual "leakage" governance status -- NOT_ASSESSED when no forecastValue was supplied (never guessed). */
+export type ValueRealizationVarianceStatus = 'ON_TRACK' | 'SHORTFALL' | 'EXCEEDED' | 'NOT_ASSESSED';
+
+const DEFAULT_VALUE_VARIANCE_TOLERANCE_PCT = 5;
 
 export interface NegotiationOutcome {
   id: string;
@@ -1209,6 +1231,17 @@ export interface NegotiationOutcome {
   recurring: boolean;
   /** absoluteValue * periodsPerYear, only when recurring AND periodsPerYear was supplied. Null otherwise -- never guessed. */
   annualizedValue: number | null;
+  /** Echoes the caller-supplied forecast value, or null if none was supplied. */
+  forecastValue: number | null;
+  /** absoluteValue - forecastValue. Null when no forecastValue was supplied. */
+  forecastVariance: number | null;
+  /** Null when no forecastValue was supplied, or when forecastValue is 0 (percent undefined at that base). */
+  forecastVariancePct: number | null;
+  varianceStatus: ValueRealizationVarianceStatus;
+  /** Null when varianceStatus is NOT_ASSESSED. */
+  varianceToleranceAppliedPct: number | null;
+  /** Null when varianceStatus is NOT_ASSESSED. */
+  varianceToleranceSource: ThresholdSource | null;
   narrativeEn: string;
   narrativeAr: string;
 }
@@ -1220,11 +1253,68 @@ export interface NegotiationOutcome {
  * actually improve on the baseline.
  */
 export function assessNegotiationOutcome(input: NegotiationOutcomeInput): NegotiationOutcome {
-  const { id, description, baselinePrice, negotiatedPrice, volumeOrSpend, wasBaselineAlreadyPaid, recurring, periodsPerYear } = input;
+  const { id, description, baselinePrice, negotiatedPrice, volumeOrSpend, wasBaselineAlreadyPaid, recurring, periodsPerYear, forecastValue, varianceToleranceOverridePct } = input;
   const unitDelta = round2(baselinePrice - negotiatedPrice);
   const unitDeltaPct = baselinePrice === 0 ? null : round2((unitDelta / baselinePrice) * 100);
 
+  /**
+   * Forecast-vs-actual "leakage" check -- runs on absoluteValue regardless of
+   * unitDelta's sign, so a NO_VALUE_CAPTURED result against a real forecast
+   * still surfaces as a SHORTFALL (this is the case leakage-tracking exists
+   * to catch, per the sourced comparison in the SI-06 doc). Computed once
+   * here and applied to both return branches below.
+   */
+  function computeVariance(absoluteValueForVariance: number): {
+    forecastVariance: number | null;
+    forecastVariancePct: number | null;
+    varianceStatus: ValueRealizationVarianceStatus;
+    varianceToleranceAppliedPct: number | null;
+    varianceToleranceSource: ThresholdSource | null;
+    clauseEn: string;
+    clauseAr: string;
+  } {
+    if (forecastValue === undefined) {
+      return { forecastVariance: null, forecastVariancePct: null, varianceStatus: 'NOT_ASSESSED', varianceToleranceAppliedPct: null, varianceToleranceSource: null, clauseEn: '', clauseAr: '' };
+    }
+    const toleranceApplied = varianceToleranceOverridePct !== undefined ? varianceToleranceOverridePct : DEFAULT_VALUE_VARIANCE_TOLERANCE_PCT;
+    const toleranceSource: ThresholdSource = varianceToleranceOverridePct !== undefined ? 'caller-override' : 'generic-default';
+    const forecastVariance = round2(absoluteValueForVariance - forecastValue);
+
+    if (forecastValue === 0) {
+      const status: ValueRealizationVarianceStatus = absoluteValueForVariance > 0 ? 'EXCEEDED' : 'ON_TRACK';
+      const clauseEn =
+        status === 'EXCEEDED'
+          ? ` No forecast value had been set for this item (0) -- the realized ${absoluteValueForVariance} is unplanned upside, not a shortfall.`
+          : '';
+      const clauseAr =
+        status === 'EXCEEDED'
+          ? ` لم يتم تحديد قيمة متوقعة (صفر) لهذا البند -- القيمة المحققة ${absoluteValueForVariance} تُعد فائضاً غير مخطط له، وليست عجزاً.`
+          : '';
+      return { forecastVariance, forecastVariancePct: null, varianceStatus: status, varianceToleranceAppliedPct: toleranceApplied, varianceToleranceSource: toleranceSource, clauseEn, clauseAr };
+    }
+
+    const forecastVariancePct = round2((forecastVariance / forecastValue) * 100);
+    let status: ValueRealizationVarianceStatus;
+    let clauseEn: string;
+    let clauseAr: string;
+    if (forecastVariancePct < -toleranceApplied) {
+      status = 'SHORTFALL';
+      clauseEn = ` Falls short of the forecast value (${forecastValue}) by ${Math.abs(forecastVariancePct)}% -- beyond the ${toleranceApplied}% tolerance band (${toleranceSource}), flagged for leakage review rather than assumed benign.`;
+      clauseAr = ` يقل عن القيمة المتوقعة (${forecastValue}) بنسبة ${Math.abs(forecastVariancePct)}% -- وهو خارج نطاق التفاوت المسموح به (${toleranceApplied}%، ${toleranceSource === 'caller-override' ? 'حد مُدخل من المستخدم' : 'افتراض عام'})، ويُرصد كفجوة تحتاج مراجعة بدلاً من افتراضه غير ضار.`;
+    } else if (forecastVariancePct > toleranceApplied) {
+      status = 'EXCEEDED';
+      clauseEn = ` Exceeds the forecast value (${forecastValue}) by ${forecastVariancePct}% -- beyond the ${toleranceApplied}% tolerance band (${toleranceSource}), worth confirming the original forecast wasn't understated rather than assuming pure upside.`;
+      clauseAr = ` يتجاوز القيمة المتوقعة (${forecastValue}) بنسبة ${forecastVariancePct}% -- وهو خارج نطاق التفاوت المسموح به (${toleranceApplied}%، ${toleranceSource === 'caller-override' ? 'حد مُدخل من المستخدم' : 'افتراض عام'})، ويستحق التحقق من أن التوقّع الأصلي لم يكن أقل من الواقع بدلاً من افتراضه فائضاً بحتاً.`;
+    } else {
+      status = 'ON_TRACK';
+      clauseEn = ` Tracking to the forecast value (${forecastValue}) within a ${toleranceApplied}% tolerance band -- no leakage flag.`;
+      clauseAr = ` يتماشى مع القيمة المتوقعة (${forecastValue}) ضمن نطاق تفاوت ${toleranceApplied}% -- لا يوجد ما يستدعي رصد فجوة تسرّب.`;
+    }
+    return { forecastVariance, forecastVariancePct, varianceStatus: status, varianceToleranceAppliedPct: toleranceApplied, varianceToleranceSource: toleranceSource, clauseEn, clauseAr };
+  }
+
   if (unitDelta <= 0) {
+    const v = computeVariance(0);
     return {
       id,
       description,
@@ -1234,13 +1324,20 @@ export function assessNegotiationOutcome(input: NegotiationOutcomeInput): Negoti
       absoluteValue: 0,
       recurring,
       annualizedValue: null,
-      narrativeEn: `[${description}] The negotiated price (${negotiatedPrice}) did not improve on the baseline (${baselinePrice}) -- no negotiated value to record here (a real, honest result, not padded).`,
-      narrativeAr: `[${description}] السعر المتفاوَض عليه (${negotiatedPrice}) لم يتحسّن مقارنةً بسعر الأساس (${baselinePrice}) -- لا توجد قيمة تفاوضية تُسجَّل هنا (نتيجة حقيقية وصريحة، غير مُبالَغ فيها).`,
+      forecastValue: forecastValue ?? null,
+      forecastVariance: v.forecastVariance,
+      forecastVariancePct: v.forecastVariancePct,
+      varianceStatus: v.varianceStatus,
+      varianceToleranceAppliedPct: v.varianceToleranceAppliedPct,
+      varianceToleranceSource: v.varianceToleranceSource,
+      narrativeEn: `[${description}] The negotiated price (${negotiatedPrice}) did not improve on the baseline (${baselinePrice}) -- no negotiated value to record here (a real, honest result, not padded).${v.clauseEn}`,
+      narrativeAr: `[${description}] السعر المتفاوَض عليه (${negotiatedPrice}) لم يتحسّن مقارنةً بسعر الأساس (${baselinePrice}) -- لا توجد قيمة تفاوضية تُسجَّل هنا (نتيجة حقيقية وصريحة، غير مُبالَغ فيها).${v.clauseAr}`,
     };
   }
 
   const absoluteValue = round2(unitDelta * volumeOrSpend);
   const valueType: ValueType = wasBaselineAlreadyPaid ? 'HARD_SAVINGS' : 'COST_AVOIDANCE';
+  const v = computeVariance(absoluteValue);
 
   let annualizedValue: number | null = null;
   let recurrenceEn = '';
@@ -1258,14 +1355,31 @@ export function assessNegotiationOutcome(input: NegotiationOutcomeInput): Negoti
 
   const narrativeEn =
     valueType === 'HARD_SAVINGS'
-      ? `[${description}] Hard saving: negotiated price reduced from ${baselinePrice} (what the client was already paying) to ${negotiatedPrice} -- a real reduction in current spend of approximately ${absoluteValue} across the stated volume/spend basis. Finance-recognized (CIPS "hard savings").${recurrenceEn}`
-      : `[${description}] Cost avoidance: the supplier's proposed price/increase of ${baselinePrice} was negotiated down to ${negotiatedPrice} -- approximately ${absoluteValue} of value delivered across the stated volume/spend basis, but current spend did NOT decrease (a "soft saving" per CIPS's definition -- real value, harder to defend on a P&L than a hard saving, and never presented as one).${recurrenceEn}`;
+      ? `[${description}] Hard saving: negotiated price reduced from ${baselinePrice} (what the client was already paying) to ${negotiatedPrice} -- a real reduction in current spend of approximately ${absoluteValue} across the stated volume/spend basis. Finance-recognized (CIPS "hard savings").${recurrenceEn}${v.clauseEn}`
+      : `[${description}] Cost avoidance: the supplier's proposed price/increase of ${baselinePrice} was negotiated down to ${negotiatedPrice} -- approximately ${absoluteValue} of value delivered across the stated volume/spend basis, but current spend did NOT decrease (a "soft saving" per CIPS's definition -- real value, harder to defend on a P&L than a hard saving, and never presented as one).${recurrenceEn}${v.clauseEn}`;
   const narrativeAr =
     valueType === 'HARD_SAVINGS'
-      ? `[${description}] توفير فعلي (Hard Saving): انخفض السعر المتفاوَض عليه من ${baselinePrice} (ما كان العميل يدفعه فعلاً) إلى ${negotiatedPrice} -- انخفاض حقيقي في الإنفاق الحالي بقيمة تقارب ${absoluteValue} عبر أساس الحجم/الإنفاق المذكور. مُعترَف به مالياً (تعريف CIPS لـ"التوفير الفعلي").${recurrenceAr}`
-      : `[${description}] تجنّب تكلفة (Cost Avoidance): تم التفاوض على تخفيض السعر/الزيادة المقترحة من المورّد (${baselinePrice}) إلى (${negotiatedPrice}) -- بقيمة تقارب ${absoluteValue} عبر أساس الحجم/الإنفاق المذكور، إلا أن الإنفاق الحالي لم ينخفض فعلياً (توفير غير مباشر بحسب تعريف CIPS -- قيمة حقيقية، يصعب إثباتها في القوائم المالية مقارنة بالتوفير الفعلي، ولا تُعرض أبداً كأنها توفير فعلي).${recurrenceAr}`;
+      ? `[${description}] توفير فعلي (Hard Saving): انخفض السعر المتفاوَض عليه من ${baselinePrice} (ما كان العميل يدفعه فعلاً) إلى ${negotiatedPrice} -- انخفاض حقيقي في الإنفاق الحالي بقيمة تقارب ${absoluteValue} عبر أساس الحجم/الإنفاق المذكور. مُعترَف به مالياً (تعريف CIPS لـ"التوفير الفعلي").${recurrenceAr}${v.clauseAr}`
+      : `[${description}] تجنّب تكلفة (Cost Avoidance): تم التفاوض على تخفيض السعر/الزيادة المقترحة من المورّد (${baselinePrice}) إلى (${negotiatedPrice}) -- بقيمة تقارب ${absoluteValue} عبر أساس الحجم/الإنفاق المذكور، إلا أن الإنفاق الحالي لم ينخفض فعلياً (توفير غير مباشر بحسب تعريف CIPS -- قيمة حقيقية، يصعب إثباتها في القوائم المالية مقارنة بالتوفير الفعلي، ولا تُعرض أبداً كأنها توفير فعلي).${recurrenceAr}${v.clauseAr}`;
 
-  return { id, description, valueType, unitDelta, unitDeltaPct, absoluteValue, recurring, annualizedValue, narrativeEn, narrativeAr };
+  return {
+    id,
+    description,
+    valueType,
+    unitDelta,
+    unitDeltaPct,
+    absoluteValue,
+    recurring,
+    annualizedValue,
+    forecastValue: forecastValue ?? null,
+    forecastVariance: v.forecastVariance,
+    forecastVariancePct: v.forecastVariancePct,
+    varianceStatus: v.varianceStatus,
+    varianceToleranceAppliedPct: v.varianceToleranceAppliedPct,
+    varianceToleranceSource: v.varianceToleranceSource,
+    narrativeEn,
+    narrativeAr,
+  };
 }
 
 export interface NegotiationValueLedgerSummary {
@@ -1278,6 +1392,17 @@ export interface NegotiationValueLedgerSummary {
   /** Hard savings + cost avoidance -- always disclosed as a combined figure, never presented as pure "savings." */
   totalCombinedValue: number;
   totalAnnualizedValue: number;
+  /**
+   * Portfolio-level forecast-vs-actual "leakage" early-warning counts -- only
+   * counts records where a forecastValue was actually supplied (see
+   * `assessNegotiationOutcome`'s `varianceStatus`). Records with
+   * varianceStatus NOT_ASSESSED (no forecast supplied) are excluded from all
+   * four counts below, not silently folded into onTrack.
+   */
+  onTrackCount: number;
+  shortfallCount: number;
+  exceededCount: number;
+  notAssessedCount: number;
   narrativeEn: string;
   narrativeAr: string;
 }
@@ -1286,7 +1411,10 @@ export interface NegotiationValueLedgerSummary {
  * Rolls up a history of recorded negotiation outcomes for a supplier (or a
  * portfolio) into a real value ledger -- the aggregate view CIPS/ISM-style
  * procurement-value reporting is judged on, never collapsing the hard-
- * savings/cost-avoidance distinction even in the rollup.
+ * savings/cost-avoidance distinction even in the rollup. Also rolls up
+ * forecast-vs-actual "leakage" status across the portfolio (see
+ * `assessNegotiationOutcome`'s `varianceStatus`) so a shortfall pattern
+ * across many records surfaces here rather than only per-record.
  */
 export function buildNegotiationValueLedger(outcomes: NegotiationOutcome[]): NegotiationValueLedgerSummary {
   const hardSavings = outcomes.filter((o) => o.valueType === 'HARD_SAVINGS');
@@ -1296,17 +1424,40 @@ export function buildNegotiationValueLedger(outcomes: NegotiationOutcome[]): Neg
   const totalCostAvoidance = round2(costAvoidance.reduce((s, o) => s + o.absoluteValue, 0));
   const totalCombinedValue = round2(totalHardSavings + totalCostAvoidance);
   const totalAnnualizedValue = round2(outcomes.reduce((s, o) => s + (o.annualizedValue ?? 0), 0));
+  const onTrackCount = outcomes.filter((o) => o.varianceStatus === 'ON_TRACK').length;
+  const shortfallCount = outcomes.filter((o) => o.varianceStatus === 'SHORTFALL').length;
+  const exceededCount = outcomes.filter((o) => o.varianceStatus === 'EXCEEDED').length;
+  const notAssessedCount = outcomes.filter((o) => o.varianceStatus === 'NOT_ASSESSED').length;
+  const assessedCount = onTrackCount + shortfallCount + exceededCount;
+
+  const leakageClauseEn = assessedCount === 0 ? '' : ` Forecast-vs-actual tracking (${assessedCount} record(s) with a forecast on file): ${onTrackCount} on track, ${shortfallCount} shortfall(s) flagged for leakage review, ${exceededCount} exceeding forecast${notAssessedCount > 0 ? `; ${notAssessedCount} record(s) had no forecast supplied and are excluded from this check` : ''}.`;
+  const leakageClauseAr = assessedCount === 0 ? '' : ` تتبّع التوقّع مقابل الفعلي (${assessedCount} سجل/سجلات لديها قيمة متوقعة مُسجَّلة): ${onTrackCount} ضمن المسار المتوقع، ${shortfallCount} حالة/حالات عجز تحتاج مراجعة كفجوة تسرّب، و${exceededCount} حالة/حالات تتجاوز التوقّع${notAssessedCount > 0 ? `؛ ${notAssessedCount} سجل/سجلات لم تُزوَّد بقيمة متوقعة واستُثنيت من هذا الفحص` : ''}.`;
 
   const narrativeEn =
     outcomes.length === 0
       ? 'No negotiation outcomes recorded yet for this ledger.'
-      : `${outcomes.length} negotiation outcome(s) recorded: ${hardSavings.length} hard saving(s) totaling ${totalHardSavings}, ${costAvoidance.length} cost-avoidance record(s) totaling ${totalCostAvoidance} (kept separate per CIPS -- never combined into an undifferentiated "savings" figure), and ${noValue.length} record(s) with no value captured. Combined negotiated value (hard + avoidance): ${totalCombinedValue}${totalAnnualizedValue > 0 ? `; projected annualized run-rate value: ${totalAnnualizedValue}` : ''}.`;
+      : `${outcomes.length} negotiation outcome(s) recorded: ${hardSavings.length} hard saving(s) totaling ${totalHardSavings}, ${costAvoidance.length} cost-avoidance record(s) totaling ${totalCostAvoidance} (kept separate per CIPS -- never combined into an undifferentiated "savings" figure), and ${noValue.length} record(s) with no value captured. Combined negotiated value (hard + avoidance): ${totalCombinedValue}${totalAnnualizedValue > 0 ? `; projected annualized run-rate value: ${totalAnnualizedValue}` : ''}.${leakageClauseEn}`;
   const narrativeAr =
     outcomes.length === 0
       ? 'لم يتم تسجيل أي نتائج تفاوض بعد في هذا السجل.'
-      : `تم تسجيل ${outcomes.length} نتيجة/نتائج تفاوض: ${hardSavings.length} توفيراً فعلياً بإجمالي ${totalHardSavings}، و${costAvoidance.length} سجل/سجلات تجنّب تكلفة بإجمالي ${totalCostAvoidance} (تُحفظ منفصلة وفق تعريف CIPS -- ولا تُدمج أبداً في رقم "توفير" واحد غير مُميَّز)، و${noValue.length} سجل/سجلات دون قيمة مُحقَّقة. إجمالي القيمة التفاوضية المجمّعة (الفعلي + التجنّب): ${totalCombinedValue}${totalAnnualizedValue > 0 ? `؛ القيمة السنوية المُتوقعة (run-rate): ${totalAnnualizedValue}` : ''}.`;
+      : `تم تسجيل ${outcomes.length} نتيجة/نتائج تفاوض: ${hardSavings.length} توفيراً فعلياً بإجمالي ${totalHardSavings}، و${costAvoidance.length} سجل/سجلات تجنّب تكلفة بإجمالي ${totalCostAvoidance} (تُحفظ منفصلة وفق تعريف CIPS -- ولا تُدمج أبداً في رقم "توفير" واحد غير مُميَّز)، و${noValue.length} سجل/سجلات دون قيمة مُحقَّقة. إجمالي القيمة التفاوضية المجمّعة (الفعلي + التجنّب): ${totalCombinedValue}${totalAnnualizedValue > 0 ? `؛ القيمة السنوية المُتوقعة (run-rate): ${totalAnnualizedValue}` : ''}.${leakageClauseAr}`;
 
-  return { recordCount: outcomes.length, hardSavingsCount: hardSavings.length, costAvoidanceCount: costAvoidance.length, noValueCapturedCount: noValue.length, totalHardSavings, totalCostAvoidance, totalCombinedValue, totalAnnualizedValue, narrativeEn, narrativeAr };
+  return {
+    recordCount: outcomes.length,
+    hardSavingsCount: hardSavings.length,
+    costAvoidanceCount: costAvoidance.length,
+    noValueCapturedCount: noValue.length,
+    totalHardSavings,
+    totalCostAvoidance,
+    totalCombinedValue,
+    totalAnnualizedValue,
+    onTrackCount,
+    shortfallCount,
+    exceededCount,
+    notAssessedCount,
+    narrativeEn,
+    narrativeAr,
+  };
 }
 
 export interface PaymentTermsValueInput {

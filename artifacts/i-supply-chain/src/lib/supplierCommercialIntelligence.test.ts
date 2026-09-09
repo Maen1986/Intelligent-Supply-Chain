@@ -934,6 +934,68 @@ describe('Negotiated Value Tracking (expertise-viewpoint enhancement: Section 8)
     });
   });
 
+  describe('assessNegotiationOutcome -- forecast-vs-actual "leakage" governance (10/10 challenge: sourced JAGGAER Value Tracker parity, see SI-06 doc re-rating)', () => {
+    it('marks varianceStatus NOT_ASSESSED and leaves all variance fields null when no forecastValue is supplied (never guessed)', () => {
+      const result = assessNegotiationOutcome({ id: 'v1', description: 'No forecast on file', baselinePrice: 100, negotiatedPrice: 90, volumeOrSpend: 1000, wasBaselineAlreadyPaid: true, recurring: false });
+      expect(result.varianceStatus).toBe('NOT_ASSESSED');
+      expect(result.forecastValue).toBeNull();
+      expect(result.forecastVariance).toBeNull();
+      expect(result.forecastVariancePct).toBeNull();
+      expect(result.varianceToleranceAppliedPct).toBeNull();
+      expect(result.varianceToleranceSource).toBeNull();
+    });
+
+    it('flags ON_TRACK when realized value falls within the generic +/-5% default tolerance of the forecast', () => {
+      const result = assessNegotiationOutcome({ id: 'v2', description: 'On track', baselinePrice: 100, negotiatedPrice: 90, volumeOrSpend: 1000, wasBaselineAlreadyPaid: true, recurring: false, forecastValue: 9800 });
+      expect(result.absoluteValue).toBe(10000);
+      expect(result.forecastVariancePct).toBeCloseTo(2.04, 1);
+      expect(result.varianceStatus).toBe('ON_TRACK');
+      expect(result.varianceToleranceAppliedPct).toBe(5);
+      expect(result.varianceToleranceSource).toBe('generic-default');
+      expect(result.narrativeEn).toContain('Tracking to the forecast value');
+    });
+
+    it('flags SHORTFALL when realized value falls short of the forecast beyond tolerance -- the real leakage case', () => {
+      const result = assessNegotiationOutcome({ id: 'v3', description: 'Underdelivered vs business case', baselinePrice: 100, negotiatedPrice: 95, volumeOrSpend: 1000, wasBaselineAlreadyPaid: true, recurring: false, forecastValue: 20000 });
+      expect(result.absoluteValue).toBe(5000);
+      expect(result.varianceStatus).toBe('SHORTFALL');
+      expect(result.forecastVariancePct).toBe(-75);
+      expect(result.narrativeEn).toContain('Falls short of the forecast value');
+      expect(result.narrativeEn).toContain('flagged for leakage review');
+    });
+
+    it('flags SHORTFALL correctly even on a NO_VALUE_CAPTURED result -- the exact case leakage-tracking exists to catch', () => {
+      const result = assessNegotiationOutcome({ id: 'v4', description: 'Failed renegotiation against a real forecast', baselinePrice: 100, negotiatedPrice: 100, volumeOrSpend: 1000, wasBaselineAlreadyPaid: true, recurring: false, forecastValue: 15000 });
+      expect(result.valueType).toBe('NO_VALUE_CAPTURED');
+      expect(result.absoluteValue).toBe(0);
+      expect(result.varianceStatus).toBe('SHORTFALL');
+      expect(result.forecastVariancePct).toBe(-100);
+    });
+
+    it('flags EXCEEDED when realized value beats the forecast beyond tolerance', () => {
+      const result = assessNegotiationOutcome({ id: 'v5', description: 'Beat the business case', baselinePrice: 100, negotiatedPrice: 80, volumeOrSpend: 1000, wasBaselineAlreadyPaid: true, recurring: false, forecastValue: 10000 });
+      expect(result.absoluteValue).toBe(20000);
+      expect(result.varianceStatus).toBe('EXCEEDED');
+      expect(result.narrativeEn).toContain('Exceeds the forecast value');
+      expect(result.narrativeEn).toContain("confirming the original forecast wasn't understated");
+    });
+
+    it('a caller-supplied varianceToleranceOverridePct always wins over the generic default and is disclosed as caller-override', () => {
+      const result = assessNegotiationOutcome({ id: 'v6', description: 'Tight tolerance', baselinePrice: 100, negotiatedPrice: 90, volumeOrSpend: 1000, wasBaselineAlreadyPaid: true, recurring: false, forecastValue: 9800, varianceToleranceOverridePct: 1 });
+      // Same 2.04% positive variance as the ON_TRACK case above, but a tightened 1% override band now flags it as EXCEEDED rather than ON_TRACK.
+      expect(result.varianceStatus).toBe('EXCEEDED');
+      expect(result.varianceToleranceAppliedPct).toBe(1);
+      expect(result.varianceToleranceSource).toBe('caller-override');
+    });
+
+    it('handles a zero forecastValue as an honest edge case -- unplanned upside, not a shortfall, and no division-by-zero percent', () => {
+      const result = assessNegotiationOutcome({ id: 'v7', description: 'Unplanned win, no forecast set', baselinePrice: 100, negotiatedPrice: 90, volumeOrSpend: 1000, wasBaselineAlreadyPaid: true, recurring: false, forecastValue: 0 });
+      expect(result.forecastVariancePct).toBeNull();
+      expect(result.varianceStatus).toBe('EXCEEDED');
+      expect(result.narrativeEn).toContain('unplanned upside, not a shortfall');
+    });
+  });
+
   describe('buildNegotiationValueLedger', () => {
     it('aggregates hard savings and cost avoidance separately, never combining them into one undifferentiated figure', () => {
       const outcomes = [
@@ -956,6 +1018,33 @@ describe('Negotiated Value Tracking (expertise-viewpoint enhancement: Section 8)
       const ledger = buildNegotiationValueLedger([]);
       expect(ledger.recordCount).toBe(0);
       expect(ledger.narrativeEn).toContain('No negotiation outcomes recorded');
+    });
+
+    it('rolls up forecast-vs-actual leakage status across a portfolio, excluding NOT_ASSESSED records from the counts', () => {
+      const outcomes = [
+        assessNegotiationOutcome({ id: 'p1', description: 'On track', baselinePrice: 100, negotiatedPrice: 90, volumeOrSpend: 1000, wasBaselineAlreadyPaid: true, recurring: false, forecastValue: 9800 }),
+        assessNegotiationOutcome({ id: 'p2', description: 'Shortfall', baselinePrice: 100, negotiatedPrice: 95, volumeOrSpend: 1000, wasBaselineAlreadyPaid: true, recurring: false, forecastValue: 20000 }),
+        assessNegotiationOutcome({ id: 'p3', description: 'Exceeded', baselinePrice: 100, negotiatedPrice: 80, volumeOrSpend: 1000, wasBaselineAlreadyPaid: true, recurring: false, forecastValue: 10000 }),
+        assessNegotiationOutcome({ id: 'p4', description: 'No forecast on file', baselinePrice: 100, negotiatedPrice: 92, volumeOrSpend: 1000, wasBaselineAlreadyPaid: true, recurring: false }),
+      ];
+      const ledger = buildNegotiationValueLedger(outcomes);
+      expect(ledger.onTrackCount).toBe(1);
+      expect(ledger.shortfallCount).toBe(1);
+      expect(ledger.exceededCount).toBe(1);
+      expect(ledger.notAssessedCount).toBe(1);
+      expect(ledger.narrativeEn).toContain('Forecast-vs-actual tracking');
+      expect(ledger.narrativeEn).toContain('1 shortfall(s) flagged for leakage review');
+      expect(ledger.narrativeEn).toContain('1 record(s) had no forecast supplied and are excluded');
+    });
+
+    it('omits the leakage clause entirely when no record in the ledger had a forecast supplied', () => {
+      const outcomes = [assessNegotiationOutcome({ id: 'p5', description: 'No forecast', baselinePrice: 100, negotiatedPrice: 90, volumeOrSpend: 100, wasBaselineAlreadyPaid: true, recurring: false })];
+      const ledger = buildNegotiationValueLedger(outcomes);
+      expect(ledger.onTrackCount).toBe(0);
+      expect(ledger.shortfallCount).toBe(0);
+      expect(ledger.exceededCount).toBe(0);
+      expect(ledger.notAssessedCount).toBe(1);
+      expect(ledger.narrativeEn).not.toContain('Forecast-vs-actual tracking');
     });
   });
 
