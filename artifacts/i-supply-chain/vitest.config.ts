@@ -28,5 +28,42 @@ export default defineConfig({
     // time, since the pattern is global, not per-test.
     testTimeout: 30000,
     hookTimeout: 30000,
+    // Second, separate problem found on the very next deploy (commit
+    // 0baad12c, the one that added the timeouts above): the build log
+    // stopped mid-suite -- tests were genuinely passing (Login,
+    // AIPlanPanel, ResiliencyTools, ...), then log output simply stopped
+    // for ~73s with zero error/stack-trace/summary line, followed by
+    // Render marking the whole build build_failed. A real assertion
+    // failure or thrown error always produces log text; a silent,
+    // abrupt stop with no final "Test Files"/"FAIL" summary line is the
+    // signature of the OS killing the process outright (most consistent
+    // with an OOM kill), not of vitest reporting a failure on its own.
+    // isc-frontend's Render build plan is "starter" -- a small, shared-
+    // memory box -- and by default vitest sizes its worker-process pool
+    // off the container's *reported* CPU count, which on small/shared
+    // Render plans commonly overstates real available cores/memory,
+    // so the default pool can spin up more concurrent jsdom+RTL worker
+    // processes than the box can actually hold in memory. That risk grew
+    // worse, not better, from the testTimeout fix above: tests that
+    // previously aborted fast (5s timeout) now run to real completion
+    // (up to 30s), holding each worker's memory (jsdom heap + React
+    // Testing Library + fake timers) for longer, which raises peak
+    // concurrent memory rather than lowering it.
+    // Fix: explicitly cap the fork pool at 2 concurrent workers instead of
+    // trusting the box's reported CPU count, trading some wall-clock time
+    // for a bounded, predictable memory footprint. This is a reasoned
+    // diagnosis from the log's failure *shape* (silent truncation, no
+    // error text), not a confirmed OOM read from an explicit Render log
+    // line -- Render's build logs did not surface one. If this build still
+    // fails the same way, the next, more conservative step is
+    // maxForks: 1 (fully serial) to isolate whether concurrency is really
+    // the cause.
+    pool: 'forks',
+    poolOptions: {
+      forks: {
+        maxForks: 2,
+        minForks: 1,
+      },
+    },
   },
 });
