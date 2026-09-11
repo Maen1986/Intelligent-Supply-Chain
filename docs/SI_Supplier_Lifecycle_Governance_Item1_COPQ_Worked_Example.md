@@ -276,7 +276,7 @@ That gap is stated here, not hidden.
 - `artifacts/i-supply-chain/src/App.tsx` (+2 lines: import + route)
 - `artifacts/i-supply-chain/src/components/Header.tsx` (+2 lines: `servicesList`
   entry AND the matching `navLabel()` map entry — both required, see section 6
-  QA finding on the nav-wiring gap
+  QA finding on the nav-wiring gap)
 - `lib/db/src/schema/copqLedger.ts` (new)
 - `lib/db/src/schema/index.ts` (+1 line: barrel export)
 - `artifacts/api-server/src/routes/copq.ts` (new)
