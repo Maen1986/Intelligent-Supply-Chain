@@ -14,7 +14,25 @@ export const usersTable = pgTable("users", {
    *  going forward; existing users are not backfilled by the Engine 1
    *  migration. Platform Strategy Review v5, Task #204. */
   organizationId: integer("organization_id").references(() => organizationsTable.id),
-  role:         text("role").notNull().default("user"),  // 'user' | 'admin'
+  /** Per-organization role, DISTINCT from `role` below (which is a GLOBAL
+   *  ISC-platform-admin flag, unrelated to any one organization). Added for
+   *  Item 2 of the Supplier Lifecycle Governance build (RACI, 11 Sep 2026) —
+   *  real finding: no org-scoped permission concept existed anywhere in this
+   *  schema before this field, so "the client's own org admin assigns RACI
+   *  roles" (the design brief's assumption) had nothing to check against.
+   *  Client-confirmed (AskUserQuestion, 11 Sep 2026): the first user to
+   *  create/join an organization becomes its 'org_admin' by default — see
+   *  auth.ts's /register route, the only place this is currently set to
+   *  'org_admin' (at the exact point a brand-new organization is created for
+   *  a signup). Every other user defaults to 'member'. There is no
+   *  invite/join-an-existing-org flow yet (auth.ts's own comment: "one org
+   *  per signup, no multi-seat/invite mechanic yet"), so today an org_admin
+   *  promoting a second member of the SAME organization to org_admin, or
+   *  demoting themselves, has no UI/route yet either — both are honestly
+   *  disclosed as known gaps in the Item 2 worked-example doc, not silently
+   *  assumed solved by adding this column alone. */
+  orgRole:      text("org_role").notNull().default("member"),  // 'member' | 'org_admin'
+  role:         text("role").notNull().default("user"),  // 'user' | 'admin' (GLOBAL ISC-platform-admin flag)
   passwordHash: text("password_hash"),                    // bcrypt hash; null for legacy profile-only accounts
   resetTokenHash:      text("reset_token_hash"),           // bcrypt hash of the one-time password-reset code
   resetTokenExpiresAt: timestamp("reset_token_expires_at"),// reset code validity window
