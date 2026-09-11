@@ -2,7 +2,7 @@
  * Supplier Scorecard Tool v2 — multi-supplier roster + sub-indicators
  * per dimension, weighted scoring, tier badge, RadarChart.
  */
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { RadarChart, Radar, PolarGrid, PolarAngleAxis, ResponsiveContainer, Tooltip, Legend, LineChart, Line, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { Printer, Plus, Trash2, Users, Download, Upload, Settings, ChevronDown, ChevronUp, RotateCcw, Sparkles, Columns, X, TrendingUp, ClipboardList, BookOpen, CheckCircle2, AlertCircle, Clock, Calendar, DollarSign, ChevronRight, Edit2 } from 'lucide-react';
 import { safeSetItem } from '@/lib/storage';
@@ -10,6 +10,11 @@ import { useAuth } from '@/lib/AuthContext';
 import { API_BASE } from '@/lib/apiBase';
 import { parseCsvFile, downloadCsv } from '@/lib/importCsv';
 import { useAIPlan } from '@/hooks/useAIPlan';
+import {
+  type CARRecord as COPQCARRecord,
+  type CARCustomerImpactOverride,
+  computeMonthOverMonthCOPQAlert,
+} from '@/lib/supplierCOPQ';
 
 /** Prefix for per-supplier AI plan keys: `${SCORECARD_TOOL_KEY_PREFIX}-${supplier.id}` */
 export const SCORECARD_TOOL_KEY_PREFIX = 'scorecard' as const;
@@ -68,6 +73,11 @@ interface CAR {
   status: CARStatus;
   createdAt: string;
   closedAt?: string;
+  /** Optional, caller-set -- mirrors supplierCOPQ.ts's CARCustomerImpactOverride
+   * convention exactly: undefined/absent = default-Internal (never guessed),
+   * 'external' = this CAR's issue reached the customer. Feeds the Quality-
+   * dimension COPQ alert on the trend panel below. */
+  customerImpact?: 'external';
 }
 
 /* ─── Development Investment Log ─── */
@@ -698,6 +708,33 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
 
   const active = roster.suppliers.find(s => s.id === roster.activeId) ?? roster.suppliers[0] ?? null;
   const weightedScore = active ? calcWeightedScore(active.subScores, config) : null;
+
+  /* ── COPQ (Module 01) wiring -- real, direct engine import from the UI
+     layer, same standalone-first precedent supplierRecoveryPortfolio.ts
+     already established for Module 07. Quality-category CARs on this
+     supplier feed the real PAF-model month-over-month alert; the checkbox
+     above is the only source of the External/Internal split (never
+     guessed). No cost data exists in this tool today, so impacts is
+     honestly empty -- the alert still works off CAR counts / External
+     Failure share, which don't require a $ figure. */
+  const qualityCopqAlert = useMemo(() => {
+    if (!active) return null;
+    const qualityCars: COPQCARRecord[] = cars
+      .filter(c => c.category === 'quality')
+      .map(c => ({
+        id: c.id,
+        supplierId: active.id,
+        category: c.category,
+        rootCause: c.rootCause,
+        status: c.status,
+        createdAt: c.createdAt,
+        closedAt: c.closedAt ?? null,
+      }));
+    const overrides: CARCustomerImpactOverride[] = cars
+      .filter(c => c.category === 'quality' && c.customerImpact === 'external')
+      .map(c => ({ carId: c.id, customerImpact: 'external' as const }));
+    return computeMonthOverMonthCOPQAlert(qualityCars, [], overrides, new Date().toISOString().slice(0, 10));
+  }, [active, cars]);
 
   /* ── AI Plan ── */
   const buildScorecardPrompt = useCallback((): string => {
@@ -1753,6 +1790,7 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
                                 formatter={(v: number) => [`${v}/100`, isAr ? 'الدرجة' : 'Score']}
                                 labelFormatter={(label: string) => label}
                               />
+                              <Legend wrapperStyle={{ fontSize: 8 }} />
                               <Line
                                 type="monotone"
                                 dataKey="weightedScore"
@@ -1761,8 +1799,26 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
                                 dot={{ r: 3, fill: tier.color }}
                                 name={isAr ? 'الدرجة المرجّحة' : 'Weighted Score'}
                               />
+                              <Line
+                                type="monotone"
+                                dataKey="dimScores.quality"
+                                stroke="#0ea5e9"
+                                strokeWidth={1.5}
+                                strokeDasharray="4 2"
+                                dot={{ r: 2.5, fill: '#0ea5e9' }}
+                                connectNulls
+                                name={isAr ? 'بُعد الجودة' : 'Quality Dimension'}
+                              />
                             </LineChart>
                           </ResponsiveContainer>
+                          {qualityCopqAlert?.alert.triggered && (
+                            <div className="mt-2 flex items-start gap-1.5 rounded-lg bg-red-50 border border-red-200 px-2.5 py-2">
+                              <AlertCircle className="w-3.5 h-3.5 text-red-600 shrink-0 mt-0.5" />
+                              <p className="text-[10px] text-red-700 leading-snug">
+                                {isAr ? qualityCopqAlert.alert.messageAr : qualityCopqAlert.alert.messageEn}
+                              </p>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
@@ -1879,6 +1935,24 @@ export function SupplierScorecardTool({ isAr }: SupplierScorecardProps) {
                           onChange={e => setEditingCar({ ...editingCar, resolution: e.target.value })}
                         />
                       </div>
+                      {editingCar.category === 'quality' && (
+                        <div className="sm:col-span-2">
+                          <label className="flex items-center gap-2 text-xs font-semibold text-gray-700 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={editingCar.customerImpact === 'external'}
+                              onChange={e => setEditingCar({ ...editingCar, customerImpact: e.target.checked ? 'external' : undefined })}
+                              className="w-3.5 h-3.5"
+                            />
+                            {isAr ? 'وصلت المشكلة إلى العميل (فشل خارجي)' : 'Reached the customer (External Failure)'}
+                          </label>
+                          <p className="text-[10px] text-muted-foreground mt-0.5 ml-5">
+                            {isAr
+                              ? 'يُستخدم في تصنيف PAF (نموذج تكلفة الجودة) أدناه — غير محدد = فشل داخلي افتراضياً، لا يُخمَّن أبداً.'
+                              : 'Feeds the PAF-model (cost-of-quality) classification below — unset defaults to Internal Failure, never guessed.'}
+                          </p>
+                        </div>
+                      )}
                     </div>
                     <div className="flex items-center gap-2 justify-end">
                       <button

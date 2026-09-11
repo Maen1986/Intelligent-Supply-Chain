@@ -57,6 +57,19 @@ import {
   type InterventionType,
   type PerformanceTrend,
 } from './supplierPerformanceRecovery';
+import {
+  type CARRecord as COPQCARRecord,
+  type CARBusinessImpact,
+  type CARCustomerImpactOverride,
+  type COPQRollup,
+  computeCOPQRollup,
+} from './supplierCOPQ';
+
+// Re-exported so consumers of THIS aggregation layer (e.g. the Recovery
+// Portfolio page) don't need a second import from supplierCOPQ.ts directly
+// just to construct impacts/overrides for computeRootCauseCOPQBreakdown /
+// computeCOPQAttentionPriority below.
+export type { CARBusinessImpact, CARCustomerImpactOverride };
 
 // ---- Mirrored real type contracts (Module 02 / Module 05 / CAR) ----------
 
@@ -357,4 +370,176 @@ export function computePortfolioKPIs(
     },
     detections,
   };
+}
+
+// ---------------------------------------------------------------------------
+// Upgrade 5 — COPQ-costed root cause breakdown (11 Sep 2026 addition).
+// computeRootCauseByDimension() above (Upgrade 4) only counts CARs per
+// Scorecard dimension — it has no cost/dollar signal at all. This function
+// adds one, by importing SI Module 01 (supplierCOPQ.ts) directly and running
+// its real, unmodified computeCOPQRollup() against each dimension's CAR
+// subset — the same standalone-first pattern already established in this
+// file for Module 07 (see file header): the AGGREGATION layer imports the
+// engine directly; the engine itself imports nothing back.
+//
+// This file's own CARRecord (above) already carries every field COPQ's
+// CARRecord needs (id/supplierId/category/rootCause/status/createdAt/
+// closedAt) plus one extra (scorecardDimension) that COPQ doesn't need —
+// toCOPQRecord() below does the narrowing mechanically, not by guesswork.
+// ---------------------------------------------------------------------------
+function toCOPQRecord(c: CARRecord): COPQCARRecord {
+  return {
+    id: c.id,
+    supplierId: c.supplierId,
+    category: c.category,
+    rootCause: c.rootCause,
+    status: c.status,
+    createdAt: c.createdAt,
+    closedAt: c.closedAt,
+  };
+}
+
+export interface DimensionCOPQBreakdown extends DimensionBreakdown {
+  costedUSD: number | null;
+  costBasis: 'derived-from-linked-business-impact' | 'INSUFFICIENT_DATA';
+  pctOfCostedTotal: number | null;
+}
+
+const ALL_DIMENSIONS: ScorecardDimension[] = ['delivery', 'quality', 'cost', 'compliance', 'innovation', 'relationship'];
+
+/**
+ * impacts/overrides are caller-supplied, exactly as COPQ's own contract
+ * requires (Decision Record 8.7 — never inferred/guessed). A caller with no
+ * business-impact data for a dimension gets costedUSD: null /
+ * costBasis: 'INSUFFICIENT_DATA' for that dimension, never a fabricated
+ * figure — the same honest-gap behavior computeCOPQRollup already has.
+ */
+export function computeRootCauseCOPQBreakdown(
+  allCars: CARRecord[],
+  impacts: CARBusinessImpact[],
+  overrides: CARCustomerImpactOverride[],
+  asOfIso: string
+): DimensionCOPQBreakdown[] {
+  const base = computeRootCauseByDimension(allCars);
+
+  const perDimRollup = new Map<ScorecardDimension, COPQRollup | null>();
+  for (const dim of ALL_DIMENSIONS) {
+    const dimCars = allCars.filter((c) => c.scorecardDimension === dim).map(toCOPQRecord);
+    perDimRollup.set(
+      dim,
+      dimCars.length > 0
+        ? computeCOPQRollup({ periodLabel: `dimension:${dim}`, asOfIso, cars: dimCars, impacts, overrides })
+        : null
+    );
+  }
+
+  const costedByDim = ALL_DIMENSIONS.map((dim) => ({
+    dim,
+    costUSD: perDimRollup.get(dim)?.totalCostedUSD ?? null,
+  }));
+  const totalCosted = costedByDim.reduce((sum, d) => sum + (d.costUSD ?? 0), 0);
+  const anyCosted = costedByDim.some((d) => d.costUSD !== null);
+
+  return base.map((b) => {
+    const rollup = perDimRollup.get(b.dimension) ?? null;
+    const costedUSD = rollup?.totalCostedUSD ?? null;
+    return {
+      ...b,
+      costedUSD,
+      costBasis: costedUSD !== null ? 'derived-from-linked-business-impact' : 'INSUFFICIENT_DATA',
+      pctOfCostedTotal: anyCosted && totalCosted > 0 && costedUSD !== null ? Math.round((1000 * costedUSD) / totalCosted) / 10 : null,
+    };
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Upgrade 6 — COPQ Attention Priority (11 Sep 2026 addition). "Which
+// suppliers' COPQ deserves attention first" — combines three real, already-
+// live signals rather than inventing a new score from nothing:
+//   1. Kraljic criticality (Module 02's real per-supplier quadrant, already
+//      on SupplierRecord.quadrant in this file).
+//   2. Costed COPQ (Module 01, via computeCOPQRollup — caller-supplied
+//      impacts, never fabricated).
+//   3. External Failure share (Module 01's own PAF-model leading indicator,
+//      the same one detectCOPQAlert treats as the highest-severity signal).
+//
+// Per Decision Record 8.7 / isc-ai-output-standards #7 (never collapse a
+// multi-dimensional assessment into a fabricated composite score unless the
+// methodology is rigorously and transparently defined): the formula below is
+// disclosed in full via PRIORITY_FORMULA_EN/AR on every result, and every
+// input that feeds it is a real, already-computed, individually-visible
+// number — not a black-box weighting. A supplier with zero CARs gets
+// priorityScore 0 and costBasis INSUFFICIENT_DATA, not a hidden default.
+//
+// NOTE on Module 05: at the time of this build, supplierConcentration.ts
+// (Module 05) has no live UI page of its own yet (grep of the repo this
+// session found zero .tsx consumers) and carries no per-supplier absolute
+// join back to a supplier record — only a relative capacityOrSpendSharePct
+// keyed by category (see file header's documented cross-module gap, #668).
+// So Module 05's concentration signal is NOT part of this formula; adding it
+// honestly would require that still-open join, not a guess. This is stated
+// here explicitly rather than silently omitted.
+// ---------------------------------------------------------------------------
+
+export const PRIORITY_FORMULA_EN =
+  'priorityScore = (costed COPQ in $000s) × Kraljic-quadrant criticality weight (strategic 1.5 / bottleneck 1.3 / leverage 1.0 / non-critical 0.7) × (1 + External Failure share / 100). Suppliers with no costed COPQ data score 0, not a hidden default.';
+export const PRIORITY_FORMULA_AR =
+  'درجة الأولوية = (تكلفة COPQ بالآلاف من الدولارات) × وزن حرَجية ربع كرالييك (استراتيجي 1.5 / نقطة اختناق 1.3 / نفوذ سوق 1.0 / غير حرج 0.7) × (1 + حصة الفشل الخارجي / 100). الموردون الذين لا تتوفر لهم بيانات COPQ مكلَّفة يحصلون على درجة 0، وليس قيمة افتراضية مخفية.';
+
+const QUADRANT_CRITICALITY_WEIGHT: Record<KraljicQuadrant, number> = {
+  strategic: 1.5,
+  bottleneck: 1.3,
+  leverage: 1.0,
+  'non-critical': 0.7,
+};
+
+export interface COPQAttentionPriority {
+  supplierId: string;
+  quadrant: KraljicQuadrant;
+  costedCOPQUSD: number | null;
+  costBasis: 'derived-from-linked-business-impact' | 'INSUFFICIENT_DATA';
+  externalFailureSharePct: number | null;
+  priorityScore: number;
+  formulaEn: string;
+  formulaAr: string;
+}
+
+export function computeCOPQAttentionPriority(
+  suppliers: SupplierRecord[],
+  impacts: CARBusinessImpact[],
+  overrides: CARCustomerImpactOverride[],
+  asOfIso: string
+): COPQAttentionPriority[] {
+  const results = suppliers.map((s): COPQAttentionPriority => {
+    const copqCars = s.cars.map(toCOPQRecord);
+    if (copqCars.length === 0) {
+      return {
+        supplierId: s.supplierId,
+        quadrant: s.quadrant,
+        costedCOPQUSD: null,
+        costBasis: 'INSUFFICIENT_DATA',
+        externalFailureSharePct: null,
+        priorityScore: 0,
+        formulaEn: PRIORITY_FORMULA_EN,
+        formulaAr: PRIORITY_FORMULA_AR,
+      };
+    }
+    const rollup = computeCOPQRollup({ periodLabel: 'as-of', asOfIso, cars: copqCars, impacts, overrides });
+    const totalClassified = rollup.internalFailure.carCount + rollup.externalFailure.carCount;
+    const externalShare = totalClassified > 0 ? Math.round((1000 * rollup.externalFailure.carCount) / totalClassified) / 10 : null;
+    const costUSDForScoring = rollup.totalCostedUSD ?? 0;
+    const weight = QUADRANT_CRITICALITY_WEIGHT[s.quadrant];
+    const priorityScore = Math.round(((costUSDForScoring / 1000) * weight * (1 + (externalShare ?? 0) / 100)) * 10) / 10;
+    return {
+      supplierId: s.supplierId,
+      quadrant: s.quadrant,
+      costedCOPQUSD: rollup.totalCostedUSD,
+      costBasis: rollup.totalCostedUSD !== null ? 'derived-from-linked-business-impact' : 'INSUFFICIENT_DATA',
+      externalFailureSharePct: externalShare,
+      priorityScore,
+      formulaEn: PRIORITY_FORMULA_EN,
+      formulaAr: PRIORITY_FORMULA_AR,
+    };
+  });
+  return results.sort((a, b) => b.priorityScore - a.priorityScore);
 }

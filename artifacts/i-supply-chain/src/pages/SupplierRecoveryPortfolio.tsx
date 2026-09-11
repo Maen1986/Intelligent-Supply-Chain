@@ -29,7 +29,7 @@
  */
 import { useMemo, useState } from 'react';
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, Legend,
 } from 'recharts';
 import { useLanguage } from '@/lib/LanguageContext';
 import {
@@ -38,10 +38,14 @@ import {
   type SupplierCategoryShare,
   type CARRecord,
   type KraljicQuadrant,
+  type CARBusinessImpact,
+  type CARCustomerImpactOverride,
   computePortfolioKPIs,
   computeCarCohorts,
   computeMigrationTrails,
   computeRootCauseByDimension,
+  computeRootCauseCOPQBreakdown,
+  computeCOPQAttentionPriority,
   computeSupplierExposure,
   detectSupplier,
 } from '@/lib/supplierRecoveryPortfolio';
@@ -152,6 +156,42 @@ const DEMO_SHARES: SupplierCategoryShare[] = [
   { supplierId: 'SUP-016', category: 'IT/Software', capacityOrSpendSharePct: 25 },
 ];
 
+/**
+ * DEMO/MOCK business-impact figures for the same constructed 16-supplier
+ * portfolio above -- estimated dollar costs, not observed production
+ * figures (basis: 'estimated' on every entry, per supplierCOPQ.ts's own
+ * disclosed BusinessImpactBasis contract). Built the same way this file's
+ * SAR exposure KPI already discloses its mock data (see file header):
+ * realistic, clearly-labeled synthetic values, never presented as if they
+ * were a live client-supplied cost. One CAR (CAR-158, the recurrence of
+ * SUP-002's coating defect) is marked externalImpact so the COPQ Attention
+ * Priority panel below has a real non-zero External Failure share to show,
+ * not just an all-Internal-by-default dataset.
+ */
+const DEMO_CAR_IMPACTS: CARBusinessImpact[] = [
+  { carId: 'CAR-101', description: 'Air-freight expedite to cover late shipment', estimatedCostUSD: 8_000, basis: 'estimated' },
+  { carId: 'CAR-114', description: 'Air-freight expedite, recurrence of same root cause', estimatedCostUSD: 9_500, basis: 'estimated' },
+  { carId: 'CAR-131', description: 'Expedite fee, open CAR', estimatedCostUSD: 6_000, basis: 'estimated' },
+  { carId: 'CAR-140', description: 'Rework + line stoppage for coating defect', estimatedCostUSD: 22_000, basis: 'estimated' },
+  { carId: 'CAR-158', description: 'Coating defect recurrence -- reached customer, field replacement + credit', estimatedCostUSD: 35_000, basis: 'estimated' },
+  { carId: 'CAR-162', description: 'Schedule buffer cost, lead-time slip', estimatedCostUSD: 5_500, basis: 'estimated' },
+  { carId: 'CAR-120', description: 'Relabeling run, packaging spec drift', estimatedCostUSD: 12_000, basis: 'estimated' },
+  { carId: 'CAR-171', description: 'Incoming-inspection hold + sort, material thickness variance', estimatedCostUSD: 18_000, basis: 'estimated' },
+  { carId: 'CAR-133', description: 'Reroute cost, logistics disruption', estimatedCostUSD: 14_000, basis: 'estimated' },
+  { carId: 'CAR-149', description: 'Reroute cost, recurrence', estimatedCostUSD: 16_500, basis: 'estimated' },
+  { carId: 'CAR-165', description: 'Spot-capacity premium, carrier shortfall', estimatedCostUSD: 9_800, basis: 'estimated' },
+  { carId: 'CAR-155', description: '100% sort + re-test, alloy purity variance', estimatedCostUSD: 27_000, basis: 'estimated' },
+  { carId: 'CAR-108', description: 'Onboarding-ramp support cost', estimatedCostUSD: 4_200, basis: 'estimated' },
+  { carId: 'CAR-144', description: 'Roadmap-slip opportunity cost (low-confidence estimate)', estimatedCostUSD: 3_000, basis: 'estimated' },
+];
+
+const DEMO_CAR_OVERRIDES: CARCustomerImpactOverride[] = [
+  { carId: 'CAR-158', customerImpact: 'external' },
+];
+
+const MOCK_IMPACT_NOTE_EN = 'Estimated $ figures on a constructed demo portfolio, not live production cost data -- see module notes.';
+const MOCK_IMPACT_NOTE_AR = 'أرقام تكلفة تقديرية على محفظة تجريبية إنشائية، وليست بيانات تكلفة إنتاجية حقيقية -- راجع ملاحظات الوحدة.';
+
 // Real QUADRANT_META values, reused verbatim from kraljicScoring.ts (Module
 // 02) rather than re-invented, so this page's quadrant colors/labels never
 // drift from the real Kraljic Matrix page's own.
@@ -188,6 +228,13 @@ function fmtSAR(n: number, isAr: boolean): string {
   return isAr ? `${val} ر.س` : `SAR ${val}`;
 }
 
+function fmtUSD(n: number | null): string {
+  if (n === null) return '—';
+  const abs = Math.abs(n);
+  const val = abs >= 1_000_000 ? `${(abs / 1_000_000).toFixed(1)}M` : abs >= 1_000 ? `${(abs / 1_000).toFixed(1)}K` : `${abs}`;
+  return `$${val}`;
+}
+
 export function SupplierRecoveryPortfolio() {
   const { lang } = useLanguage();
   const isAr = lang === 'ar';
@@ -202,6 +249,14 @@ export function SupplierRecoveryPortfolio() {
   const cohorts = useMemo(() => computeCarCohorts(allCars, ASOF), [allCars]);
   const trails = useMemo(() => computeMigrationTrails(suppliers), [suppliers]);
   const rootCause = useMemo(() => computeRootCauseByDimension(allCars), [allCars]);
+  const rootCauseCOPQ = useMemo(
+    () => computeRootCauseCOPQBreakdown(allCars, DEMO_CAR_IMPACTS, DEMO_CAR_OVERRIDES, ASOF),
+    [allCars]
+  );
+  const copqPriority = useMemo(
+    () => computeCOPQAttentionPriority(suppliers, DEMO_CAR_IMPACTS, DEMO_CAR_OVERRIDES, ASOF).filter((p) => p.priorityScore > 0),
+    [suppliers]
+  );
   const migrated = trails.filter((t) => t.migrated);
 
   const watchlist = useMemo(
@@ -221,11 +276,16 @@ export function SupplierRecoveryPortfolio() {
 
   const rootCauseChartData = rootCause
     .filter((d) => d.count > 0)
-    .map((d) => ({
-      name: isAr ? DIMENSION_LABEL[d.dimension]?.ar ?? d.dimension : DIMENSION_LABEL[d.dimension]?.en ?? d.dimension,
-      count: d.count,
-      pct: d.pctOfTotal,
-    }));
+    .map((d) => {
+      const copqRow = rootCauseCOPQ.find((r) => r.dimension === d.dimension);
+      return {
+        name: isAr ? DIMENSION_LABEL[d.dimension]?.ar ?? d.dimension : DIMENSION_LABEL[d.dimension]?.en ?? d.dimension,
+        count: d.count,
+        pct: d.pctOfTotal,
+        costPct: copqRow?.pctOfCostedTotal ?? 0,
+        costUSD: copqRow?.costedUSD ?? null,
+      };
+    });
 
   const cohortChartData = cohorts.map((c) => ({
     name: c.quarter,
@@ -244,6 +304,12 @@ export function SupplierRecoveryPortfolio() {
     kpiDays: isAr ? 'متوسط أيام التعافي' : 'Avg Days in Recovery',
     kpiFlag: isAr ? 'إشارات مزدوجة مؤكدة' : 'Confirmed Dual-Signal Flags',
     rootCauseTitle: isAr ? 'الأسباب الجذرية حسب بُعد بطاقة الأداء' : 'Root Cause by Scorecard Dimension',
+    rootCauseCountLegend: isAr ? '% من عدد الطلبات' : '% of CAR count',
+    rootCauseCostLegend: isAr ? '% من تكلفة COPQ المقدّرة' : '% of estimated COPQ cost',
+    rootCauseCostNote: isAr ? MOCK_IMPACT_NOTE_AR : MOCK_IMPACT_NOTE_EN,
+    copqPriorityTitle: isAr ? 'أولوية معالجة COPQ' : 'COPQ Attention Priority',
+    copqPriorityEmpty: isAr ? 'لا توجد بيانات COPQ مكلَّفة كافية لترتيب الأولوية حالياً.' : 'No costed COPQ data yet to rank priority.',
+    copqPriorityExternal: isAr ? 'حصة الفشل الخارجي' : 'External Failure share',
     cohortTitle: isAr ? 'أفواج إجراءات التصحيح (CAR) — نسبة الحل خلال 90 يوم' : 'CAR Cohorts — % Resolved Within 90 Days',
     migrationTitle: isAr ? 'مسارات انتقال الربع الاستراتيجي' : 'Quadrant Migration Trails',
     watchlistTitle: isAr ? 'قائمة المراقبة — الموردون المُصعّدون' : 'Watchlist — Escalated Suppliers',
@@ -299,19 +365,31 @@ export function SupplierRecoveryPortfolio() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
               <div className="bg-white rounded-2xl border border-slate-200 p-4">
                 <h2 className="text-sm font-bold text-slate-800 mb-3">{t.rootCauseTitle}</h2>
-                <ResponsiveContainer width="100%" height={220}>
+                <ResponsiveContainer width="100%" height={240}>
                   <BarChart data={rootCauseChartData} layout="vertical" margin={{ left: isAr ? 0 : 8, right: isAr ? 8 : 16 }}>
                     <CartesianGrid strokeDasharray="3 3" horizontal={false} />
                     <XAxis type="number" tick={{ fontSize: 11 }} />
                     <YAxis type="category" dataKey="name" width={90} tick={{ fontSize: 11 }} orientation={isAr ? 'right' : 'left'} />
-                    <Tooltip formatter={(v: number, key: string) => (key === 'pct' ? [`${v}%`, isAr ? 'النسبة' : '% of total'] : [v, isAr ? 'العدد' : 'count'])} />
-                    <Bar dataKey="pct" radius={[0, 4, 4, 0]}>
+                    <Tooltip
+                      formatter={(v: number, key: string, item: any) => {
+                        if (key === 'pct') return [`${v}%`, t.rootCauseCountLegend];
+                        if (key === 'costPct') {
+                          const usd = item?.payload?.costUSD;
+                          return [usd === null || usd === undefined ? (isAr ? 'بيانات غير كافية' : 'insufficient data') : `${v}% (${fmtUSD(usd)})`, t.rootCauseCostLegend];
+                        }
+                        return [v, key];
+                      }}
+                    />
+                    <Legend wrapperStyle={{ fontSize: 10 }} formatter={(value: string) => (value === 'pct' ? t.rootCauseCountLegend : t.rootCauseCostLegend)} />
+                    <Bar dataKey="pct" radius={[0, 4, 4, 0]} name="pct">
                       {rootCauseChartData.map((_, i) => (
                         <Cell key={i} fill="#92400e" fillOpacity={0.85 - i * 0.1} />
                       ))}
                     </Bar>
+                    <Bar dataKey="costPct" radius={[0, 4, 4, 0]} name="costPct" fill="#082C6B" fillOpacity={0.75} />
                   </BarChart>
                 </ResponsiveContainer>
+                <p className="text-[10px] text-slate-400 mt-2">* {t.rootCauseCostNote}</p>
               </div>
 
               <div className="bg-white rounded-2xl border border-slate-200 p-4">
@@ -413,6 +491,52 @@ export function SupplierRecoveryPortfolio() {
               <p className="text-[10px] text-slate-400 mt-3">
                 * {isAr ? MOCK_NOTE_AR_SHORT : 'SAR exposure is a labeled mock/simulated derivation (category spend × relative supplier share), not a live production figure -- see module notes.'}
               </p>
+            </div>
+
+            {/* COPQ Attention Priority -- real cross-module ranking: Module 02's
+                per-supplier Kraljic quadrant + Module 01's costed COPQ + External
+                Failure share, formula fully disclosed per row (Decision Record 8.7 /
+                isc-ai-output-standards #7 -- never a black-box composite score). */}
+            <div className="bg-white rounded-2xl border border-slate-200 p-4 mt-6">
+              <h2 className="text-sm font-bold text-slate-800 mb-1">{t.copqPriorityTitle} ({copqPriority.length})</h2>
+              <p className="text-[10px] text-slate-400 mb-3">{isAr ? MOCK_IMPACT_NOTE_AR : MOCK_IMPACT_NOTE_EN}</p>
+              {copqPriority.length === 0 ? (
+                <p className="text-xs text-slate-400">{t.copqPriorityEmpty}</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="text-slate-500 border-b border-slate-200">
+                        <th className={`py-2 font-semibold ${isAr ? 'text-right' : 'text-left'}`}>{isAr ? 'المورد' : 'Supplier'}</th>
+                        <th className={`py-2 font-semibold ${isAr ? 'text-right' : 'text-left'}`}>{isAr ? 'الربع' : 'Quadrant'}</th>
+                        <th className={`py-2 font-semibold ${isAr ? 'text-right' : 'text-left'}`}>{isAr ? 'COPQ المكلَّفة' : 'Costed COPQ'}</th>
+                        <th className={`py-2 font-semibold ${isAr ? 'text-right' : 'text-left'}`}>{t.copqPriorityExternal}</th>
+                        <th className={`py-2 font-semibold ${isAr ? 'text-right' : 'text-left'}`}>{isAr ? 'درجة الأولوية' : 'Priority Score'}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {copqPriority.map((row) => {
+                        const s = suppliers.find((x) => x.supplierId === row.supplierId)!;
+                        const meta = QUADRANT_META[row.quadrant];
+                        return (
+                          <tr key={row.supplierId} className="border-b border-slate-100 last:border-0">
+                            <td className="py-2 font-medium text-slate-800">{s.name}</td>
+                            <td className="py-2">
+                              <span className="px-2 py-0.5 rounded-full text-white text-[10px] font-semibold" style={{ backgroundColor: meta.color }}>
+                                {isAr ? meta.labelAr : meta.label}
+                              </span>
+                            </td>
+                            <td className="py-2">{fmtUSD(row.costedCOPQUSD)}</td>
+                            <td className="py-2">{row.externalFailureSharePct === null ? '—' : `${row.externalFailureSharePct}%`}</td>
+                            <td className="py-2 font-bold text-[#082C6B]">{row.priorityScore}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+              <p className="text-[10px] text-slate-400 mt-3">{isAr ? copqPriority[0]?.formulaAr ?? '' : copqPriority[0]?.formulaEn ?? ''}</p>
             </div>
           </>
         )}

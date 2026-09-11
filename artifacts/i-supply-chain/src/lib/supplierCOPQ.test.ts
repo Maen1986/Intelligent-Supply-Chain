@@ -14,6 +14,7 @@ import {
   computePreventionRollup,
   computeCOPQRollup,
   detectCOPQAlert,
+  computeMonthOverMonthCOPQAlert,
 } from './supplierCOPQ';
 
 function car(id: string, overrides: Partial<CARRecord> = {}): CARRecord {
@@ -345,5 +346,135 @@ describe('STRESS TEST — boundary tier (exact thresholds)', () => {
     const cars = [car('B7', { createdAt: '2026-06-01', closedAt: '2026-06-11' })]; // 10 days
     const r = computeAppraisalRollup(cars, '2026-09-10');
     expect(r.medianDaysToClose).toBe(10);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Section 6 — computeMonthOverMonthCOPQAlert (11 Sep 2026 wiring addition —
+// three-tier stress test per Rule 7, same discipline as the sections above)
+// ---------------------------------------------------------------------------
+
+describe('computeMonthOverMonthCOPQAlert', () => {
+  // --- normal / soft ---
+  it('returns no-data honest state for an empty CAR list', () => {
+    const r = computeMonthOverMonthCOPQAlert([], [], [], '2026-09-10');
+    expect(r.currentPeriodLabel).toBeNull();
+    expect(r.priorPeriodLabel).toBeNull();
+    expect(r.current).toBeNull();
+    expect(r.prior).toBeNull();
+    expect(r.alert.triggered).toBe(false);
+  });
+
+  it('single-month CAR history has a current period but no prior to compare', () => {
+    const cars = [car('M1', { createdAt: '2026-08-05' }), car('M2', { createdAt: '2026-08-20' })];
+    const r = computeMonthOverMonthCOPQAlert(cars, [], [], '2026-09-10');
+    expect(r.currentPeriodLabel).toBe('2026-08');
+    expect(r.priorPeriodLabel).toBeNull();
+    expect(r.prior).toBeNull();
+    expect(r.alert.triggered).toBe(false);
+  });
+
+  it('SOFT: messy but realistic data — mixed months, one external override, no cost data', () => {
+    const cars = [
+      car('S1', { createdAt: '2026-07-03' }),
+      car('S2', { createdAt: '2026-07-25' }),
+      car('S3', { createdAt: '2026-08-02' }),
+      car('S4', { createdAt: '2026-08-10' }),
+      car('S5', { createdAt: '2026-08-15' }),
+    ];
+    const overrides: CARCustomerImpactOverride[] = [{ carId: 'S5', customerImpact: 'external' }];
+    const r = computeMonthOverMonthCOPQAlert(cars, [], overrides, '2026-09-10');
+    expect(r.currentPeriodLabel).toBe('2026-08');
+    expect(r.priorPeriodLabel).toBe('2026-07');
+    // 2026-08's External Failure share (1/3 = 33.3%) is higher than 2026-07's (0/2 = 0%) → triggers
+    expect(r.alert.triggered).toBe(true);
+    expect(r.alert.reason).toBe('external-failure-share-increased');
+  });
+
+  // --- hardest / adversarial ---
+  it('HARDEST: all CARs in a single month at asOfIso boundary, no false prior period fabricated', () => {
+    const cars = [car('H1', { createdAt: '2026-09-10' }), car('H2', { createdAt: '2026-09-10' })];
+    const r = computeMonthOverMonthCOPQAlert(cars, [], [], '2026-09-10');
+    expect(r.currentPeriodLabel).toBe('2026-09');
+    expect(r.priorPeriodLabel).toBeNull();
+    expect(r.alert.triggered).toBe(false); // never fabricate a signal with nothing to compare against
+  });
+
+  it('HARDEST: CARs dated AFTER asOfIso are excluded from the evaluation window entirely', () => {
+    const cars = [
+      car('H3', { createdAt: '2026-08-01' }),
+      car('H4', { createdAt: '2026-12-25' }), // future-dated relative to asOfIso — must not leak in
+    ];
+    const r = computeMonthOverMonthCOPQAlert(cars, [], [], '2026-09-10');
+    expect(r.currentPeriodLabel).toBe('2026-08');
+    expect(r.current?.internalFailure.carCount ?? 0 + (r.current?.externalFailure.carCount ?? 0)).toBeDefined();
+    // Only H3 should ever be counted -- H4 is outside the asOf window.
+    const totalClassified = (r.current?.internalFailure.carCount ?? 0) + (r.current?.externalFailure.carCount ?? 0);
+    expect(totalClassified).toBe(1);
+  });
+
+  it('HARDEST: External share DECREASING between periods must not trigger', () => {
+    const cars = [
+      car('H5', { createdAt: '2026-07-01' }),
+      car('H6', { createdAt: '2026-07-05' }),
+      car('H7', { createdAt: '2026-08-01' }),
+      car('H8', { createdAt: '2026-08-05' }),
+    ];
+    // July: both external. August: both internal (default) — share drops from 100% to 0%.
+    const overrides: CARCustomerImpactOverride[] = [
+      { carId: 'H5', customerImpact: 'external' },
+      { carId: 'H6', customerImpact: 'external' },
+    ];
+    const r = computeMonthOverMonthCOPQAlert(cars, [], overrides, '2026-09-10');
+    expect(r.alert.triggered).toBe(false);
+  });
+
+  it('HARDEST: many months of history only ever compares the two MOST RECENT, never an earlier pair', () => {
+    const cars = [
+      car('H9',  { createdAt: '2026-04-01' }),
+      car('H10', { createdAt: '2026-05-01' }),
+      car('H11', { createdAt: '2026-06-01' }),
+      car('H12', { createdAt: '2026-07-01' }),
+      car('H13', { createdAt: '2026-08-01' }),
+    ];
+    const r = computeMonthOverMonthCOPQAlert(cars, [], [], '2026-09-10');
+    expect(r.currentPeriodLabel).toBe('2026-08');
+    expect(r.priorPeriodLabel).toBe('2026-07');
+  });
+
+  // --- boundary ---
+  it('BOUNDARY: exactly the configured threshold percentage does NOT trigger (strict >, not >=)', () => {
+    const impacts: CARBusinessImpact[] = [
+      { carId: 'B1', description: 'x', estimatedCostUSD: 1000, basis: 'observed' },
+      { carId: 'B2', description: 'x', estimatedCostUSD: 1150, basis: 'observed' }, // exactly +15% vs 1000
+    ];
+    const cars = [
+      car('B1', { createdAt: '2026-07-01', category: 'quality' }),
+      car('B2', { createdAt: '2026-08-01', category: 'quality' }),
+    ];
+    const r = computeMonthOverMonthCOPQAlert(cars, impacts, [], '2026-09-10', 15);
+    // Both single-CAR months have 0% external share (no change there); cost basis is
+    // 'observed' business impact so totalCostedUSD is real for both periods.
+    expect(r.alert.reason).not.toBe('total-costed-copq-increased');
+  });
+
+  it('BOUNDARY: asOfIso day exactly equal to a CAR createdAt month-end still includes it', () => {
+    const cars = [car('B3', { createdAt: '2026-09-01' })];
+    const r = computeMonthOverMonthCOPQAlert(cars, [], [], '2026-09-10');
+    expect(r.currentPeriodLabel).toBe('2026-09');
+  });
+
+  it('BOUNDARY: increasePctThreshold of 0 makes any positive cost increase trigger', () => {
+    const impacts: CARBusinessImpact[] = [
+      { carId: 'B4', description: 'x', estimatedCostUSD: 100, basis: 'observed' },
+      { carId: 'B5', description: 'x', estimatedCostUSD: 101, basis: 'observed' },
+    ];
+    const cars = [
+      car('B4', { createdAt: '2026-07-01' }),
+      car('B5', { createdAt: '2026-08-01' }),
+    ];
+    const r = computeMonthOverMonthCOPQAlert(cars, impacts, [], '2026-09-10', 0);
+    expect(r.alert.triggered).toBe(true);
+    expect(r.alert.reason).toBe('total-costed-copq-increased');
   });
 });

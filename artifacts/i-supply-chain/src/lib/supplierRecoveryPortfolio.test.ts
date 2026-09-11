@@ -17,9 +17,12 @@ import {
   computeCarCohorts,
   computeMigrationTrails,
   computeRootCauseByDimension,
+  computeRootCauseCOPQBreakdown,
+  computeCOPQAttentionPriority,
   computePortfolioKPIs,
   detectSupplier,
 } from './supplierRecoveryPortfolio';
+import type { CARBusinessImpact, CARCustomerImpactOverride } from './supplierCOPQ';
 
 const supplier: SupplierRecord = {
   supplierId: 'SUP-TEST',
@@ -138,5 +141,130 @@ describe('detectSupplier + computePortfolioKPIs -- non-empty portfolio sanity', 
     expect(kpis.totalActiveSuppliers).toBe(1);
     expect(kpis.suppliersInEscalation).toBe(1);
     expect(kpis.totalExposureAtRiskSAR).toBe(4_000_000);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// computeRootCauseCOPQBreakdown / computeCOPQAttentionPriority (11 Sep 2026
+// wiring addition) — three-tier stress test per Rule 7.
+// ---------------------------------------------------------------------------
+
+const strategicSupplier: SupplierRecord = {
+  supplierId: 'SUP-STRAT',
+  name: 'Strategic Test Supplier',
+  category: 'Widgets',
+  quadrant: 'strategic',
+  quadrantPriorQuarter: 'strategic',
+  scoreHistory12mo: [90, 88, 85, 82, 80, 78, 76, 74, 72, 70, 68, 66],
+  cars: [
+    { id: 'CAR-S1', supplierId: 'SUP-STRAT', category: 'quality', scorecardDimension: 'quality', rootCause: 'defect', status: 'closed', createdAt: '2026-06-01', closedAt: '2026-06-20' },
+    { id: 'CAR-S2', supplierId: 'SUP-STRAT', category: 'delivery', scorecardDimension: 'delivery', rootCause: 'late', status: 'open', createdAt: '2026-08-01', closedAt: null },
+  ],
+};
+
+const nonCriticalSupplier: SupplierRecord = {
+  supplierId: 'SUP-NC',
+  name: 'Non-Critical Test Supplier',
+  category: 'Widgets',
+  quadrant: 'non-critical',
+  quadrantPriorQuarter: 'non-critical',
+  scoreHistory12mo: [95, 94, 93, 92, 91, 90, 89, 88, 87, 86, 85, 84],
+  cars: [
+    { id: 'CAR-N1', supplierId: 'SUP-NC', category: 'quality', scorecardDimension: 'quality', rootCause: 'minor variance', status: 'closed', createdAt: '2026-07-01', closedAt: '2026-07-10' },
+  ],
+};
+
+const zeroCarSupplier: SupplierRecord = {
+  supplierId: 'SUP-ZERO',
+  name: 'No-Issues Test Supplier',
+  category: 'Widgets',
+  quadrant: 'bottleneck',
+  quadrantPriorQuarter: 'bottleneck',
+  scoreHistory12mo: [92, 92, 92, 92, 92, 92, 92, 92, 92, 92, 92, 92],
+  cars: [],
+};
+
+const testImpacts: CARBusinessImpact[] = [
+  { carId: 'CAR-S1', description: 'coating rework', estimatedCostUSD: 20_000, basis: 'estimated' },
+  { carId: 'CAR-S2', description: 'expedite fee', estimatedCostUSD: 5_000, basis: 'estimated' },
+  { carId: 'CAR-N1', description: 'minor sort cost', estimatedCostUSD: 1_000, basis: 'estimated' },
+  { carId: 'CAR-1', description: 'quality rework, base fixture', estimatedCostUSD: 8_000, basis: 'estimated' },
+  { carId: 'CAR-2', description: 'quality rework, base fixture, open', estimatedCostUSD: 12_000, basis: 'estimated' },
+];
+
+const testOverrides: CARCustomerImpactOverride[] = [{ carId: 'CAR-S1', customerImpact: 'external' }];
+
+describe('computeRootCauseCOPQBreakdown', () => {
+  it('SOFT: quality dimension gets a real costed total when impacts are supplied', () => {
+    const allCars = [...supplier.cars, ...strategicSupplier.cars, ...nonCriticalSupplier.cars];
+    const rows = computeRootCauseCOPQBreakdown(allCars, testImpacts, testOverrides, '2026-09-10');
+    const quality = rows.find((r) => r.dimension === 'quality')!;
+    expect(quality.costedUSD).not.toBeNull();
+    expect(quality.costBasis).toBe('derived-from-linked-business-impact');
+    // Quality-dimension CARs across all three suppliers: CAR-1 (8000), CAR-2 (12000),
+    // CAR-S1 (20000), CAR-N1 (1000) = 41000 total costed for the quality dimension.
+    expect(quality.costedUSD).toBe(41_000);
+  });
+
+  it('HARDEST: a dimension with CARs but zero matching impacts stays honestly INSUFFICIENT_DATA, never a fabricated $0', () => {
+    const cars = [
+      { id: 'X1', supplierId: 'SUP-X', category: 'compliance' as const, scorecardDimension: 'compliance' as const, rootCause: 'r', status: 'open' as const, createdAt: '2026-08-01', closedAt: null },
+    ];
+    const rows = computeRootCauseCOPQBreakdown(cars, [], [], '2026-09-10');
+    const compliance = rows.find((r) => r.dimension === 'compliance')!;
+    expect(compliance.count).toBe(1);
+    expect(compliance.costedUSD).toBeNull();
+    expect(compliance.costBasis).toBe('INSUFFICIENT_DATA');
+    expect(compliance.pctOfCostedTotal).toBeNull();
+  });
+
+  it('BOUNDARY: empty CAR list returns all six dimensions at zero, never throws', () => {
+    const rows = computeRootCauseCOPQBreakdown([], [], [], '2026-09-10');
+    expect(rows).toHaveLength(6);
+    expect(rows.every((r) => r.count === 0 && r.costedUSD === null)).toBe(true);
+  });
+
+  it('BOUNDARY: pctOfCostedTotal across costed dimensions sums to ~100', () => {
+    const allCars = [...strategicSupplier.cars, ...nonCriticalSupplier.cars];
+    const rows = computeRootCauseCOPQBreakdown(allCars, testImpacts, testOverrides, '2026-09-10');
+    const sum = rows.reduce((s, r) => s + (r.pctOfCostedTotal ?? 0), 0);
+    expect(Math.round(sum)).toBeGreaterThanOrEqual(99);
+    expect(Math.round(sum)).toBeLessThanOrEqual(101);
+  });
+});
+
+describe('computeCOPQAttentionPriority', () => {
+  it('SOFT: a supplier with zero CARs scores 0, not a hidden default, and is not silently dropped', () => {
+    const rows = computeCOPQAttentionPriority([zeroCarSupplier], testImpacts, testOverrides, '2026-09-10');
+    const zero = rows.find((r) => r.supplierId === 'SUP-ZERO')!;
+    expect(zero.priorityScore).toBe(0);
+    expect(zero.costBasis).toBe('INSUFFICIENT_DATA');
+  });
+
+  it('HARDEST: a strategic supplier with a costly, externally-classified CAR outranks a non-critical supplier with a cheap internal one', () => {
+    const rows = computeCOPQAttentionPriority([strategicSupplier, nonCriticalSupplier], testImpacts, testOverrides, '2026-09-10');
+    const stratIdx = rows.findIndex((r) => r.supplierId === 'SUP-STRAT');
+    const ncIdx = rows.findIndex((r) => r.supplierId === 'SUP-NC');
+    expect(stratIdx).toBeLessThan(ncIdx); // sorted descending by priorityScore -- strategic must come first
+  });
+
+  it('HARDEST: results are always sorted descending by priorityScore, including a three-way mix with a zero-CAR supplier', () => {
+    const rows = computeCOPQAttentionPriority([nonCriticalSupplier, zeroCarSupplier, strategicSupplier], testImpacts, testOverrides, '2026-09-10');
+    for (let i = 1; i < rows.length; i++) {
+      expect(rows[i - 1]!.priorityScore).toBeGreaterThanOrEqual(rows[i]!.priorityScore);
+    }
+  });
+
+  it('BOUNDARY: empty supplier list returns an empty array, not an error', () => {
+    const rows = computeCOPQAttentionPriority([], [], [], '2026-09-10');
+    expect(rows).toEqual([]);
+  });
+
+  it('BOUNDARY: every row discloses the same non-empty formula string (never a silent black-box score)', () => {
+    const rows = computeCOPQAttentionPriority([strategicSupplier, zeroCarSupplier], testImpacts, testOverrides, '2026-09-10');
+    for (const r of rows) {
+      expect(r.formulaEn.length).toBeGreaterThan(20);
+      expect(r.formulaAr.length).toBeGreaterThan(20);
+    }
   });
 });

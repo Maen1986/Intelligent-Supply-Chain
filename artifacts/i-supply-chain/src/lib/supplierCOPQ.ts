@@ -472,3 +472,74 @@ export function detectCOPQAlert(
     messageAr: `لا توجد إشارة تجاوز حد بين ${prior.periodLabel} و${current.periodLabel}.`,
   };
 }
+
+// ---------------------------------------------------------------------------
+// Section 6 — Month-over-month alert helper (11 Sep 2026 addition — real
+// wiring for consumers with a plain CAR history and no explicit period
+// boundaries of their own, e.g. the Supplier Scorecard tool's local CAR log,
+// which tracks individual CARs with createdAt dates but has no concept of a
+// COPQ "period" the way a dedicated COPQ reporting cadence would). Buckets
+// CARs by calendar month (createdAt), takes the two most recent months at
+// or before asOfIso that actually have CAR activity, and runs the existing,
+// unmodified detectCOPQAlert across them. A caller that already has real
+// defined reporting periods (e.g. a quarterly ops cadence) should call
+// computeCOPQRollup + detectCOPQAlert directly instead of this convenience
+// wrapper — this helper exists specifically for the "just a CAR log with
+// dates" case.
+// ---------------------------------------------------------------------------
+
+export interface MonthOverMonthCOPQResult {
+  currentPeriodLabel: string | null;
+  priorPeriodLabel: string | null;
+  current: COPQRollup | null;
+  prior: COPQRollup | null;
+  alert: COPQAlert;
+}
+
+function monthOf(iso: string): string {
+  return iso.slice(0, 7); // YYYY-MM
+}
+
+export function computeMonthOverMonthCOPQAlert(
+  cars: CARRecord[],
+  impacts: CARBusinessImpact[],
+  overrides: CARCustomerImpactOverride[],
+  asOfIso: string,
+  increasePctThreshold: number = 15
+): MonthOverMonthCOPQResult {
+  const asOfMonth = monthOf(asOfIso);
+  const monthsPresent = Array.from(new Set(cars.map((c) => monthOf(c.createdAt))))
+    .filter((m) => m <= asOfMonth)
+    .sort();
+
+  if (monthsPresent.length === 0) {
+    return {
+      currentPeriodLabel: null,
+      priorPeriodLabel: null,
+      current: null,
+      prior: null,
+      alert: {
+        triggered: false,
+        reason: 'none',
+        messageEn: 'No CAR activity at or before the as-of date — nothing to evaluate yet.',
+        messageAr: 'لا يوجد نشاط طلبات إجراء تصحيحي حتى تاريخ التقييم — لا يوجد ما يمكن تقييمه بعد.',
+      },
+    };
+  }
+
+  const currentMonth = monthsPresent[monthsPresent.length - 1]!;
+  const priorMonth = monthsPresent.length >= 2 ? monthsPresent[monthsPresent.length - 2]! : null;
+
+  const currentCars = cars.filter((c) => monthOf(c.createdAt) === currentMonth);
+  const current = computeCOPQRollup({ periodLabel: currentMonth, asOfIso, cars: currentCars, impacts, overrides });
+
+  let prior: COPQRollup | null = null;
+  if (priorMonth) {
+    const priorCars = cars.filter((c) => monthOf(c.createdAt) === priorMonth);
+    prior = computeCOPQRollup({ periodLabel: priorMonth, asOfIso, cars: priorCars, impacts, overrides });
+  }
+
+  const alert = detectCOPQAlert(current, prior, increasePctThreshold);
+
+  return { currentPeriodLabel: currentMonth, priorPeriodLabel: priorMonth, current, prior, alert };
+}
