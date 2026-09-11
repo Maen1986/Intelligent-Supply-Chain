@@ -52,6 +52,7 @@ import { SupplierDependencyCheck } from '@/pages/SupplierDependencyCheck';
 import { SupplierRecoveryPortfolio } from '@/pages/SupplierRecoveryPortfolio';
 import { SupplierCOPQ } from '@/pages/SupplierCOPQ';
 import { RaciMatrix } from '@/pages/RaciMatrix';
+import { SupplierPreQualification } from '@/pages/SupplierPreQualification';
 import { LCGPAReadinessCheck } from '@/pages/LCGPAReadinessCheck';
 import { FreeZoneRoutingTool } from '@/pages/FreeZoneRoutingTool';
 import { GccSeasonalCalendar } from '@/pages/GccSeasonalCalendar';
@@ -184,6 +185,7 @@ function Router() {
         <Route path="/supplier-recovery-portfolio" component={SupplierRecoveryPortfolio} />
         <Route path="/supplier-copq" component={SupplierCOPQ} />
         <Route path="/raci-matrix" component={RaciMatrix} />
+        <Route path="/pre-qualification-asl" component={SupplierPreQualification} />
         <Route path="/lcgpa-readiness" component={LCGPAReadinessCheck} />
         <Route path="/freezone-routing" component={FreeZoneRoutingTool} />
         <Route path="/gcc-seasonal-calendar" component={GccSeasonalCalendar} />
@@ -204,7 +206,7 @@ function App() {
       toast.warning(
         'Private browsing detected — your changes cannot be saved. ' +
         'Open the app in a normal tab to keep your work.\n' +
-        'تم اكتشاف وضع التصفح الخاص — لا يمكن حفظ التغييرات. ' +
+        'تم اكتشاف وضع التصفح الخاص ولا يمكن حفظ التغييرات. ' +
         'افتح التطبيق في تبويب عادي للاحتفاظ بعملك.',
         {
           id: 'storage-private-browsing',
