@@ -130,7 +130,23 @@ export interface RiskTierSignals {
   concentrationBand?: ConcentrationBand;
 }
 
-/** Mirrors supplierRACI.ts's current-Accountable-holder shape for the 'prequalification_approval' activity, already one of the 7 fixed RaciActivityKey values. */
+/**
+ * Mirrors supplierRACI.ts's current-Accountable-holder shape for the 'prequalification_approval' activity, already one of the 7 fixed RaciActivityKey values.
+ *
+ * CLEANUP ITEM (logged 11 Sep 2026, verified NOT security-relevant): this
+ * type has zero real callers anywhere in this file -- a leftover from an
+ * earlier design path where this check may have been intended to also run
+ * client-side. The real, live write-gate enforcement for
+ * 'prequalification_approval' lives server-side in
+ * artifacts/api-server/src/routes/preQualification.ts (POST /decisions),
+ * which queries the real raciAssignmentEventsTable directly via its own
+ * mirrored currentAccountableHolder() replay -- confirmed by reading that
+ * route and by that its POSITIVE CONTROL HTTP-boundary test exercises the
+ * real function, not a stub. This type is dead code, not a missing
+ * control; remove it or wire it to something real in a future pass. See
+ * docs/SI_Supplier_Lifecycle_Governance_Item2_RACI_Worked_Example.md,
+ * Section 9, gap item 3.
+ */
 export interface AccountableHolderSnapshot {
   userId: number | null;
   /** True when the org's RACI matrix has never assigned an Accountable owner for this activity -- see hasAccountabilityGap() in supplierRACI.ts. */

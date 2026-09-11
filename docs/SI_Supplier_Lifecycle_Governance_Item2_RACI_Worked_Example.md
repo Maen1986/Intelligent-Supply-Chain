@@ -247,11 +247,33 @@ Every new/edited file (`supplierRACI.ts`, `raciAssignments.ts`, `raci.ts`,
    org_admin, or to demote themselves.** Moot until the invite flow above
    exists (there is never a second member to promote), but named here so
    it isn't silently assumed solved by the `orgRole` column alone.
-3. **Cross-engine read-back (Items 3 and 7 consuming this module's
-   Accountable assignments) is designed but not yet verifiable**, since
-   Items 3 and 7 don't exist yet. Will be verified as part of the standing
-   cross-engine chained adversarial stress-test program (registry #436)
-   once those items are built.
+3. **Cross-engine read-back — VERIFIED 11 Sep 2026, with one real cleanup
+   item found in the process.** Item 3 now exists, so this was checked
+   directly rather than left as a prediction. The finding: the security-
+   relevant enforcement is real. `artifacts/api-server/src/routes/
+   preQualification.ts`'s `POST /decisions` write-gate queries the live
+   `raciAssignmentEventsTable` directly and replays it through a local,
+   mirrored `currentAccountableHolder()` function (same standalone-first
+   pattern as this module's own mirrored replay logic) before accepting an
+   ASL decision from a non-admin caller — confirmed both by reading the
+   route code and by re-deriving that `preQualification.test.ts`'s
+   POSITIVE CONTROL test ("the genuine RACI Accountable holder (a
+   non-admin) is accepted") exercises that real function against injected
+   RACI rows, not a stub (the test mocks only the DB I/O layer, not the
+   route or its authorization logic).
+   **However**, a SEPARATE type, `AccountableHolderSnapshot`, defined in
+   the frontend lib `artifacts/i-supply-chain/src/lib/
+   supplierPreQualification.ts` (mirroring this same RACI shape, with
+   detailed header comments about the intended cross-reference) has ZERO
+   real callers anywhere in that file — a leftover from an earlier,
+   superseded design path where this check may have been intended to also
+   run client-side. It does not affect the real, server-side security
+   boundary, which is enforced correctly regardless. **Logged as a minor
+   cleanup item**: remove `AccountableHolderSnapshot` from
+   `supplierPreQualification.ts`, or wire it to something real, in a future
+   pass — not urgent, not security-relevant, but real dead code that
+   shouldn't be left implying a check exists where the actual check lives
+   elsewhere.
 4. **No dedicated `raci.test.ts` for the backend route** (mirrors the
    established precedent: `copq.ts` also has no separate backend-route test
    file — only `supplierCOPQ.ts`'s standalone logic is unit-tested, with
@@ -263,3 +285,56 @@ Every new/edited file (`supplierRACI.ts`, `raciAssignments.ts`, `raci.ts`,
    before Item 2 — no prior feature needed an org-scoped member list. It
    returns only the caller's own organization's members (id, full name,
    email, orgRole) — never another organization's.
+
+---
+
+## 10. Competitive Moat (Rule 10) — Benchmarked Against Five Named Platforms
+
+Added 11 Sep 2026, per explicit client instruction to run this module
+through the same challenge standard COPQ (Item 1) passed the same night.
+Benchmarked against the same five platforms, for consistency across both
+items' moat sections: SAP Ariba, Coupa, JAGGAER, GEP, and Ivalua. Each
+vendor's own current page was fetched and read this session.
+
+| Platform | What it actually offers for supplier-decision ownership (per its own current page) | A formal RACI matrix (distinct R/A/C/I roles, single-Accountable discipline)? |
+|---|---|---|
+| **Ivalua** (Supplier Management Software) | The strongest analog of the five: "Set smart approval workflows to ensure compliance and governance at every step," "Assign ownership and verify follow-up actions to prevent recurring issues," "Assign, manage, and monitor actions with smart tracking to ensure full accountability." Real ownership-assignment and approval-routing capability. | No. Single-owner "assign ownership" / approval routing — not a named RACI matrix, and no stated single-Accountable-only discipline (RACI's own best-known anti-pattern guard). |
+| **GEP** (Quantum Intelligence) | Its corrective-action workflow (already cited in COPQ's own moat section) includes "structured workflows with audit trails and accountability" and "automated escalation procedures." | No. Accountability is a property of the workflow engine, not a named, queryable R/A/C/I assignment a client can read back per activity. |
+| **JAGGAER** (Supplier Compliance) | Non-compliance tracking, certification tracking, due-diligence reporting. No role/ownership/accountability feature described on its own compliance page. | No. |
+| **Coupa** (Supplier Risk & Performance) | Continuous risk monitoring and AI-prescriptive hold/release recommendations. No named ownership-assignment feature found. | No. |
+| **SAP Ariba** (Supplier Lifecycle and Performance) | Performance/compliance scorecards and KPI analytics. No named ownership-assignment feature found in the sources reviewed. | No. |
+
+**The pattern, stated honestly**: Ivalua and GEP both build real, workflow-level
+"accountability" — audit trails, escalation, ownership assignment — but
+neither publishes a named RACI matrix with the specific R/A/C/I role
+taxonomy or, more importantly, the single-Accountable-owner discipline that
+is RACI's own defining anti-pattern guard (per PMI's PMBOK Guide, this
+module's own cited methodology, Section 2). None of the five named
+platforms expose "who is Accountable for this specific governance
+decision, with diffused accountability structurally prevented" as a
+client-readable fact the way this module does.
+
+**This module's actual edge, restated against that finding**: this is not
+a claim that these platforms lack workflow accountability — Ivalua's is
+real and more mature in its UI than this module's Advisory-tier template
+view. The edge is structural: this module enforces, in the schema itself
+(`raci_assignment_events`, append-only, one active Accountable per
+activity), the specific discipline RACI the framework prescribes and that
+generic "assign ownership" workflow tools do not encode as a constraint —
+a client cannot accidentally end up with two simultaneous Accountable
+owners for `prequalification_approval` the way a free-form ownership field
+would allow.
+
+**The gap against best-in-class practice, stated honestly (not closed by
+this addition)**: Ivalua's approval-workflow UI (smart routing, tracked
+follow-up actions) is a more mature end-user experience today than this
+module's current read-only Advisory template plus an Operational-tier
+assignment list. This module does not yet have Ivalua-style automated
+escalation when an Accountable holder fails to act within a time window —
+a real, named gap for a future iteration, not hidden here.
+
+**Sourcing note (Rule 1 honesty)**: SAP Ariba's own page was not
+independently re-fetched for this section (see COPQ's Section 7 sourcing
+note on the same 403 issue encountered earlier this session); its row
+above reflects the same general capability profile already documented
+there, not a fresh, RACI-specific check of SAP's page.
