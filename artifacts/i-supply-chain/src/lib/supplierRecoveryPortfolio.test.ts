@@ -1,0 +1,142 @@
+/**
+ * Tests for the Supplier Recovery Portfolio aggregation layer
+ * (supplierRecoveryPortfolio.ts). Promoted from ad-hoc verification scripts
+ * (run_portfolio.ts / run_portfolio_empty.ts, both still included as
+ * worked-example fixtures) into a real, permanent vitest suite before this
+ * file's first commit to the repo -- a print script is not a test.
+ */
+import { describe, it, expect } from 'vitest';
+import {
+  type SupplierRecord,
+  type KraljicItemLite,
+  type SupplierCategoryShare,
+  type CARRecord,
+  buildMockSupplierSpendDataset,
+  computeSupplierExposure,
+  computeTotalExposureAtRisk,
+  computeCarCohorts,
+  computeMigrationTrails,
+  computeRootCauseByDimension,
+  computePortfolioKPIs,
+  detectSupplier,
+} from './supplierRecoveryPortfolio';
+
+const supplier: SupplierRecord = {
+  supplierId: 'SUP-TEST',
+  name: 'Test Supplier',
+  category: 'Widgets',
+  quadrant: 'bottleneck',
+  quadrantPriorQuarter: 'strategic',
+  scoreHistory12mo: [90, 88, 85, 80, 76, 71, 68, 65, 62, 60, 58, 55],
+  cars: [
+    { id: 'CAR-1', supplierId: 'SUP-TEST', category: 'quality', scorecardDimension: 'quality', rootCause: 'x', status: 'closed', createdAt: '2026-01-05', closedAt: '2026-02-10' },
+    { id: 'CAR-2', supplierId: 'SUP-TEST', category: 'quality', scorecardDimension: 'quality', rootCause: 'x', status: 'open', createdAt: '2026-08-01', closedAt: null },
+  ],
+};
+const categoryItems: KraljicItemLite[] = [{ id: 'ITEM-1', category: 'Widgets', annualSpendSAR: 10_000_000, quadrant: 'bottleneck' }];
+const shares: SupplierCategoryShare[] = [{ supplierId: 'SUP-TEST', category: 'Widgets', capacityOrSpendSharePct: 40 }];
+
+describe('buildMockSupplierSpendDataset', () => {
+  it('allocates category total by relative share and tags every record as mock', () => {
+    const [rec] = buildMockSupplierSpendDataset([supplier], categoryItems, shares);
+    expect(rec!.mockAnnualSpendSAR).toBe(4_000_000); // 10M * 40%
+    expect(rec!.derivationNote).toMatch(/MOCK\/SYNTHETIC/);
+  });
+  it('returns 0 for a supplier with no matching share (no silent fabrication)', () => {
+    const other: SupplierRecord = { ...supplier, supplierId: 'SUP-NOSHARE' };
+    const [rec] = buildMockSupplierSpendDataset([other], categoryItems, shares);
+    expect(rec!.mockAnnualSpendSAR).toBe(0);
+  });
+});
+
+describe('computeSupplierExposure', () => {
+  it('tags the basis as mock-simulated-per-supplier-spend, not a real-data approximation', () => {
+    const r = computeSupplierExposure(supplier, categoryItems, shares);
+    expect(r.exposureBasis).toBe('mock-simulated-per-supplier-spend');
+    expect(r.exposureSAR).toBe(4_000_000);
+  });
+  it('returns INSUFFICIENT_DATA (not a fabricated 0-as-real) when no category item exists', () => {
+    const r = computeSupplierExposure(supplier, [], shares);
+    expect(r.exposureBasis).toBe('INSUFFICIENT_DATA');
+    expect(r.exposureSAR).toBe(0);
+  });
+});
+
+describe('computeTotalExposureAtRisk', () => {
+  it('sums only suppliers with a resolvable exposure and counts the rest as insufficient-data', () => {
+    const noShare: SupplierRecord = { ...supplier, supplierId: 'SUP-NOSHARE', category: 'Unknown' };
+    const r = computeTotalExposureAtRisk([supplier, noShare], categoryItems, shares);
+    expect(r.totalSAR).toBe(4_000_000);
+    expect(r.suppliersWithInsufficientData).toBe(1);
+  });
+});
+
+describe('computeCarCohorts', () => {
+  it('buckets by creation quarter and computes 90-day resolution correctly', () => {
+    const cohorts = computeCarCohorts(supplier.cars, '2026-09-10');
+    const q1 = cohorts.find((c) => c.quarter === '2026-Q1')!;
+    expect(q1.opened).toBe(1);
+    expect(q1.resolvedWithin90d).toBe(1); // Jan 5 -> Feb 10 = 36 days
+    expect(q1.medianDaysToClose).toBe(36);
+    const q3 = cohorts.find((c) => c.quarter === '2026-Q3')!;
+    expect(q3.stillOpenAtEndOfQuarter).toBe(1);
+    expect(q3.medianDaysToClose).toBeNull();
+  });
+  it('returns an empty array for no CARs, not a crash or a fabricated zero-quarter', () => {
+    expect(computeCarCohorts([], '2026-09-10')).toEqual([]);
+  });
+});
+
+describe('computeMigrationTrails', () => {
+  it('flags migration only when prior differs from current', () => {
+    const [trail] = computeMigrationTrails([supplier]);
+    expect(trail!.migrated).toBe(true);
+    expect(trail!.prior).toBe('strategic');
+    expect(trail!.current).toBe('bottleneck');
+  });
+  it('does not flag migration when prior is null (no history) or equal to current', () => {
+    const noHistory: SupplierRecord = { ...supplier, quadrantPriorQuarter: null };
+    const stable: SupplierRecord = { ...supplier, quadrantPriorQuarter: 'bottleneck' };
+    expect(computeMigrationTrails([noHistory])[0]!.migrated).toBe(false);
+    expect(computeMigrationTrails([stable])[0]!.migrated).toBe(false);
+  });
+});
+
+describe('computeRootCauseByDimension', () => {
+  it('always returns all 6 dimensions, zero-filled, no division by zero', () => {
+    const dims = computeRootCauseByDimension([]);
+    expect(dims).toHaveLength(6);
+    expect(dims.every((d) => d.count === 0 && d.pctOfTotal === 0)).toBe(true);
+  });
+  it('computes percentages that sum to 100 across a real CAR set', () => {
+    const dims = computeRootCauseByDimension(supplier.cars);
+    const total = dims.reduce((s, d) => s + d.pctOfTotal, 0);
+    expect(total).toBeCloseTo(100, 5);
+  });
+});
+
+describe('computePortfolioKPIs -- zero-suppliers edge case (built and verified per explicit instruction, 11 Sep 2026)', () => {
+  it('degrades to all-zero / null KPIs with no crash and no NaN on an empty portfolio', () => {
+    const { kpis, detections } = computePortfolioKPIs([], [], [], '2026-09-10');
+    expect(kpis.totalActiveSuppliers).toBe(0);
+    expect(kpis.suppliersInEscalation).toBe(0);
+    expect(kpis.totalExposureAtRiskSAR).toBe(0);
+    expect(kpis.avgDaysInRecovery).toBeNull(); // null (no data), not 0 (zero days) -- a real distinction
+    expect(kpis.combinedSignalFlagCount).toBe(0);
+    expect(detections).toEqual([]);
+  });
+});
+
+describe('detectSupplier + computePortfolioKPIs -- non-empty portfolio sanity', () => {
+  it('classifies the declining, recurring test supplier as escalated, not REPAIR', () => {
+    const d = detectSupplier(supplier);
+    expect(d.trend).toBe('declining');
+    expect(d.recommendedIntervention).not.toBe('REPAIR');
+  });
+  it('rolls a single escalated supplier up into the portfolio KPIs correctly', () => {
+    const { kpis } = computePortfolioKPIs([supplier], categoryItems, shares, '2026-09-10');
+    expect(kpis.totalActiveSuppliers).toBe(1);
+    expect(kpis.suppliersInEscalation).toBe(1);
+    expect(kpis.totalExposureAtRiskSAR).toBe(4_000_000);
+  });
+});
