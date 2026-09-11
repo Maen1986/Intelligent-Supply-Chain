@@ -22,7 +22,7 @@ interface AuthState {
   user:            UserProfile | null;
   isAuthenticated: boolean;
   loading:         boolean;
-  register:        (profile: Omit<UserProfile, 'id' | 'role'> & { password: string }) => Promise<void>;
+  register:        (profile: Omit<UserProfile, 'id' | 'role' | 'organizationId' | 'orgRole'> & { password: string }) => Promise<void>;
   login:           (email: string, password: string) => Promise<void>;
   logout:          () => Promise<void>;
   changePassword:  (currentPassword: string, newPassword: string) => Promise<void>;
@@ -100,7 +100,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // ── register: create account server-side (password hashed there),
   //    receive session cookie ────────────────────────────────
-  const register = useCallback(async (profile: Omit<UserProfile, 'id' | 'role'> & { password: string }) => {
+  const register = useCallback(async (profile: Omit<UserProfile, 'id' | 'role' | 'organizationId' | 'orgRole'> & { password: string }) => {
     const res = await fetch(`${API_BASE}/auth/register`, {
       method:      'POST',
       headers:     { 'Content-Type': 'application/json' },
