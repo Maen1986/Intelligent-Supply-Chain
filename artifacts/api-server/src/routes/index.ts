@@ -48,6 +48,7 @@ import clmReviewExtractionRouter   from "./clmReviewExtraction";
 import rfxWorkspaceRouter          from "./rfxWorkspace";
 import adminDbBackupRouter         from "./adminDbBackup";
 import industryBenchmarksRouter    from "./industryBenchmarks";
+import copqRouter                  from "./copq";
 
 const router: IRouter = Router();
 
@@ -99,6 +100,7 @@ router.use(industryBenchmarksRouter);
 router.use(clmGenerationRouter);
 router.use(clmReviewExtractionRouter);
 router.use("/rfx-workspace",         rfxWorkspaceRouter);
+router.use("/copq",                  copqRouter);
 router.use(webhooksInboundRouter);
 
 export default router;
