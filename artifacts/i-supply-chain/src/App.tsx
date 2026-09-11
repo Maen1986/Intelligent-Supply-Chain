@@ -51,6 +51,7 @@ import { DecisionMemory } from '@/pages/DecisionMemory';
 import { SupplierDependencyCheck } from '@/pages/SupplierDependencyCheck';
 import { SupplierRecoveryPortfolio } from '@/pages/SupplierRecoveryPortfolio';
 import { SupplierCOPQ } from '@/pages/SupplierCOPQ';
+import { RaciMatrix } from '@/pages/RaciMatrix';
 import { LCGPAReadinessCheck } from '@/pages/LCGPAReadinessCheck';
 import { FreeZoneRoutingTool } from '@/pages/FreeZoneRoutingTool';
 import { GccSeasonalCalendar } from '@/pages/GccSeasonalCalendar';
@@ -182,6 +183,7 @@ function Router() {
         <Route path="/supplier-dependency" component={SupplierDependencyCheck} />
         <Route path="/supplier-recovery-portfolio" component={SupplierRecoveryPortfolio} />
         <Route path="/supplier-copq" component={SupplierCOPQ} />
+        <Route path="/raci-matrix" component={RaciMatrix} />
         <Route path="/lcgpa-readiness" component={LCGPAReadinessCheck} />
         <Route path="/freezone-routing" component={FreeZoneRoutingTool} />
         <Route path="/gcc-seasonal-calendar" component={GccSeasonalCalendar} />

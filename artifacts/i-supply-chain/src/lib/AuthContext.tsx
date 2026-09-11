@@ -8,6 +8,14 @@ export interface UserProfile {
   designation: string | null;
   company:     string | null;
   role:        string;
+  /** Item 2 (RACI, 11 Sep 2026) -- the backend's publicUser() (auth.ts) and
+   *  GET /auth/me now include these two fields so the frontend can gate the
+   *  RACI Operational tier's "assign a role" controls to org_admins without
+   *  a separate round trip. organizationId is nullable for the same reason
+   *  it's nullable on usersTable itself -- a legacy profile-only account may
+   *  not have one yet. orgRole defaults server-side to 'member'. */
+  organizationId: number | null;
+  orgRole:        string; // 'member' | 'org_admin'
 }
 
 interface AuthState {
@@ -38,7 +46,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user,    setUser]    = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // ── Shared helper: call /auth/me and update state ───────────────────────
+  // ── Shared helper: call /auth/me and update state ─────────────────
   const revalidateSession = useCallback(async (opts?: { setLoadingTrue?: boolean }) => {
     if (opts?.setLoadingTrue) setLoading(true);
     try {
@@ -58,14 +66,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  // ── On mount: validate session server-side ───────────────────────────────
+  // ── On mount: validate session server-side ─────────────────────
   // This is the key security fix: we ask the SERVER whether this browser
   // has a valid session cookie. localStorage cannot fake this response.
   useEffect(() => {
     revalidateSession({ setLoadingTrue: false });
   }, [revalidateSession]);
 
-  // ── Throttle: track when the last visibility-triggered check ran ──────────
+  // ── Throttle: track when the last visibility-triggered check ran ───────────
   // Initialised to 0 so the very first visibilitychange always fires.
   // The mount-time check does NOT update this ref — only the handler below
   // does — so a cross-tab login seen right after page load still works.
@@ -91,7 +99,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [revalidateSession]);
 
   // ── register: create account server-side (password hashed there),
-  //    receive session cookie ────────────────────────────────────────────────
+  //    receive session cookie ────────────────────────────────
   const register = useCallback(async (profile: Omit<UserProfile, 'id' | 'role'> & { password: string }) => {
     const res = await fetch(`${API_BASE}/auth/register`, {
       method:      'POST',
@@ -119,7 +127,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(data.user);
   }, []);
 
-  // ── login: verify credentials server-side, receive session cookie ────────
+  // ── login: verify credentials server-side, receive session cookie ────
   const login = useCallback(async (email: string, password: string) => {
     const res = await fetch(`${API_BASE}/auth/login`, {
       method:      'POST',
@@ -134,7 +142,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(data.user);
   }, []);
 
-  // ── logout: destroy session server-side, then clear local state ──────────
+  // ── logout: destroy session server-side, then clear local state ──────
   const logout = useCallback(async () => {
     try {
       await fetch(`${API_BASE}/auth/logout`, {
@@ -156,7 +164,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
   }, []);
 
-  // ── changePassword: verify current password, set new one server-side ─────
+  // ── changePassword: verify current password, set new one server-side ───
   const changePassword = useCallback(async (currentPassword: string, newPassword: string) => {
     const res = await fetch(`${API_BASE}/auth/change-password`, {
       method:      'POST',
