@@ -111,3 +111,10 @@ jobs:
 
       - name: Build API server (matches isc-backend buildCommand's final step)
         run: npx pnpm --filter @workspace/api-server build
+
+# No-op deploy-gate verification marker (11 Sep 2026, registry #442):
+# this single comment line was pushed specifically to observe whether
+# Render's deploy for this commit starts immediately (gate NOT active)
+# or waits until this workflow's own check runs report success (gate
+# active) -- see Site Map v168/v169 for the result. Changes nothing
+# functionally.
