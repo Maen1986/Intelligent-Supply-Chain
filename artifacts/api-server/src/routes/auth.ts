@@ -10,7 +10,7 @@ import { loginRateLimiter, authRateLimiter, registerEmailRateLimiter, forgotPass
 import { sendPasswordResetEmail } from './notify';
 import { dispatchEvent } from '../lib/webhookDispatch';
 
-// ── Session type augmentation ────────────────────────────────────────────────
+// ── Session type augmentation ─────────────────────────────────────────
 declare module 'express-session' {
   interface SessionData {
     userId:          number;
@@ -51,17 +51,23 @@ function establishSession(req: Parameters<Parameters<typeof router.post>[1]>[0],
 
 function publicUser(user: typeof usersTable.$inferSelect) {
   return {
-    id:          user.id,
-    email:       user.email,
-    fullName:    user.fullName,
-    mobile:      user.mobile,
-    designation: user.designation,
-    company:     user.company,
-    role:        user.role,
+    id:             user.id,
+    email:          user.email,
+    fullName:       user.fullName,
+    mobile:         user.mobile,
+    designation:    user.designation,
+    company:        user.company,
+    role:           user.role,
+    organizationId: user.organizationId,
+    // Item 2 (RACI, 11 Sep 2026) — exposed so the frontend can gate the
+    // Operational-tier "assign a role" controls to org_admins without a
+    // separate round trip; the backend route re-checks this from the DB on
+    // every write regardless (never trusts a client-supplied role claim).
+    orgRole:        user.orgRole,
   };
 }
 
-/* ── POST /api/auth/register ─────────────────────────────────────────────────
+/* ── POST /api/auth/register ─────────────────────────────────────────
    Creates a user with a bcrypt-hashed password and establishes a server-side
    session. Legacy profile-only accounts (no password hash) may claim their
    account by registering again with the same email.                          */
@@ -118,9 +124,17 @@ router.post('/register', authRateLimiter, registerEmailRateLimiter, async (req, 
     if (!user.organizationId) {
       const orgName = (company && company.trim()) || `${fullName}'s workspace`;
       const [org] = await db.insert(organizationsTable).values({ name: orgName }).returning();
-      await db.update(usersTable).set({ organizationId: org.id }).where(eq(usersTable.id, user.id));
-      user = { ...user, organizationId: org.id };
-      logger.info({ userId: user.id, organizationId: org.id }, '[auth] Organisation created for account (#367)');
+      // Item 2 (RACI, Supplier Lifecycle Governance build, 11 Sep 2026,
+      // client-confirmed): the first user to create/join an organization
+      // becomes its org_admin by default. Since this route never joins an
+      // EXISTING organization (see the comment above — one org per signup,
+      // no invite/join mechanic yet), every account that reaches this branch
+      // is, by construction, the first and only member of the org it just
+      // created, so 'org_admin' is unconditionally correct here — not a
+      // guess. See users.ts's orgRole field comment for the full picture.
+      await db.update(usersTable).set({ organizationId: org.id, orgRole: 'org_admin' }).where(eq(usersTable.id, user.id));
+      user = { ...user, organizationId: org.id, orgRole: 'org_admin' };
+      logger.info({ userId: user.id, organizationId: org.id }, '[auth] Organisation created for account (#367); user set as org_admin (Item 2, RACI)');
     }
 
     // Write server-side session
@@ -147,7 +161,7 @@ router.post('/register', authRateLimiter, registerEmailRateLimiter, async (req, 
   }
 });
 
-/* ── POST /api/auth/login ────────────────────────────────────────────────────
+/* ── POST /api/auth/login ─────────────────────────────────────────
    Verifies email + password against the bcrypt hash and establishes a
    server-side session. Works from any device/browser.                        */
 router.post('/login', loginRateLimiter, async (req, res) => {
@@ -234,7 +248,7 @@ router.post('/login', loginRateLimiter, async (req, res) => {
   }
 });
 
-/* ── POST /api/auth/forgot-password ──────────────────────────────────────────
+/* ── POST /api/auth/forgot-password ───────────────────────────────────
    Issues a short-lived (15 min) one-time reset code and emails it to the
    account's address. Always responds 200 with the same body regardless of
    whether the email exists — don't leak which emails are registered.         */
@@ -294,7 +308,7 @@ router.post('/forgot-password', forgotPasswordRateLimiter, async (req, res) => {
   }
 });
 
-/* ── POST /api/auth/reset-password ───────────────────────────────────────────
+/* ── POST /api/auth/reset-password ───────────────────────────────────
    Verifies the emailed code, sets the new password, clears the token, and
    invalidates every existing session for that account.                       */
 const ResetSchema = z.object({
@@ -350,7 +364,7 @@ router.post('/reset-password', forgotPasswordRateLimiter, async (req, res) => {
   }
 });
 
-/* ── POST /api/auth/change-password ─────────────────────────────────────────
+/* ── POST /api/auth/change-password ──────────────────────────────────
    Lets a signed-in user rotate their password.  Requires the current password
    so an attacker who finds an unlocked screen cannot silently take over.
    After a successful change every OTHER session (other devices) is signed out;
@@ -420,7 +434,7 @@ router.post('/change-password', async (req, res) => {
   }
 });
 
-/* ── POST /api/auth/update-profile ───────────────────────────────────────────
+/* ── POST /api/auth/update-profile ────────────────────────────────────
    Lets a signed-in user update their name, mobile, designation, and company.
    Updates the DB row and refreshes the session so the UI reflects the change
    immediately without requiring a fresh login.                                */
@@ -479,7 +493,7 @@ router.post('/update-profile', async (req, res) => {
   }
 });
 
-/* ── POST /api/auth/admin-login ──────────────────────────────────────────────
+/* ── POST /api/auth/admin-login ──────────────────────────────────────
    Password-protected sign-in for the consultant. Credentials come from the
    ADMIN_EMAIL / ADMIN_PASSWORD environment secrets; on success the matching
    user row is upserted with role 'admin' and an admin session is created.    */
@@ -579,7 +593,7 @@ router.post('/admin-login', async (req, res) => {
   }
 });
 
-/* ── GET /api/auth/me ────────────────────────────────────────────────────────
+/* ── GET /api/auth/me ────────────────────────────────────────────────
    Validates the session cookie server-side and returns the user profile.
    Returns 401 if no valid session exists — client-side localStorage cannot
    fake this response.                                                          */
@@ -596,25 +610,21 @@ router.get('/me', async (req, res) => {
       res.status(401).json({ ok: false, error: 'User not found' });
       return;
     }
-    res.json({
-      ok: true,
-      user: {
-        id:          user.id,
-        email:       user.email,
-        fullName:    user.fullName,
-        mobile:      user.mobile,
-        designation: user.designation,
-        company:     user.company,
-        role:        user.role,
-      },
-    });
+    // Item 2 (RACI, 11 Sep 2026): now routed through publicUser() so /me
+    // returns organizationId and orgRole like every other auth response —
+    // previously this endpoint built its own inline object and would have
+    // silently omitted both fields (the exact fields the RACI Operational
+    // tier's frontend page needs to decide whether to show the "assign a
+    // role" controls). Same fields as before, plus these two; no behavior
+    // change for any existing caller.
+    res.json({ ok: true, user: publicUser(user) });
   } catch (err) {
     logger.error({ err }, '[auth] /me error');
     res.status(500).json({ ok: false, error: 'Server error' });
   }
 });
 
-/* ── POST /api/auth/logout ───────────────────────────────────────────────────
+/* ── POST /api/auth/logout ────────────────────────────────────────────
    Destroys the server-side session. After this, no cookie can claim auth.     */
 router.post('/logout', (req, res) => {
   req.session.destroy(err => {
