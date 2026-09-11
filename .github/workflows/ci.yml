@@ -34,7 +34,20 @@ jobs:
 
       - uses: pnpm/action-setup@v4
         with:
-          version: 9
+          # Pinned to major 12 to match what this repo's lockfile actually
+          # requires. pnpm-workspace.yaml uses workspace-level `overrides`,
+          # `allowBuilds`, `onlyBuiltDependencies`, and `minimumReleaseAge`
+          # settings that pnpm 9 does not read from pnpm-workspace.yaml at
+          # all (those moved out of package.json's `pnpm` key in a later
+          # pnpm release). Pinning to 9 made pnpm compute an empty override
+          # set, which frozen-lockfile install then rejected against the
+          # lockfile's real (86-entry) overrides block with
+          # ERR_PNPM_LOCKFILE_CONFIG_MISMATCH — failing this job's install
+          # step on every run, before Typecheck/Test ever got to execute.
+          # 12 is what Render's real (unpinnable) `npx pnpm` resolves to
+          # today, confirmed via render-build-parity's install step, and is
+          # the version pnpm-lock.yaml was actually generated under.
+          version: 12
 
       - uses: actions/setup-node@v4
         with:
@@ -69,6 +82,15 @@ jobs:
   # the entire time this was broken in production. That gap is what let a
   # ~4-day outage go unnoticed. See commit f8ae152 for the fix and root
   # cause; do not remove this job without an equivalent safeguard in place.
+  #
+  # These steps invoke each package's own `build` script by reference
+  # (`npx pnpm --filter <pkg> build`), not a duplicated command string, so
+  # this job automatically mirrors whatever that script actually does —
+  # including the 2026-09-11 change that removed `pnpm run test` from both
+  # packages' `build` scripts (Render's build should typecheck, not run the
+  # full suite; that now runs in the typecheck-and-test job above, on a
+  # properly-resourced runner with a real Postgres service). No separate
+  # edit to this job was needed for it to pick that up.
   render-build-parity:
     runs-on: ubuntu-latest
     steps:
