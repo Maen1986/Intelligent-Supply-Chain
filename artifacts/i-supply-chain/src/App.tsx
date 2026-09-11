@@ -64,41 +64,6 @@ import { CommandCentreFloat } from '@/components/CommandCentreFloat';
 
 const queryClient = new QueryClient();
 
-// The floating chat / WhatsApp / promo widgets are all `position: fixed`
-// docked to a page-viewport corner (bottom-left or bottom-right). On every
-// route except Home that's harmless -- the page already scrolls, so a
-// corner widget never sits on top of anything the person is reading. On
-// Home, though, the hero section is deliberately sized to fill the entire
-// viewport with zero scroll (see useHeroFitBox in Home.tsx), which means
-// "bottom-right of the viewport" and "bottom-right of the hero image" are
-// the exact same pixels on first load. The floats were sitting directly on
-// top of hero content -- e.g. the SRM/KPI/Risk slides' right-hand alerts
-// and scorecard panels -- which reads as "part of the slide is cut off,"
-// even though the image itself is intact underneath. Fix: on Home only,
-// hold the floats back until the person has scrolled roughly half a
-// viewport height, i.e. past the hero. Every other route is unaffected --
-// floats there render immediately, exactly as before.
-// BUG FOUND 2 Sep 2026 (owner-reported live screenshot: floats sitting on
-// top of the Maturity slide on first paint, no scroll involved). Root
-// cause: the original version of this hook read window.scrollY exactly
-// once on mount via check() and, if it happened to already be past the
-// 50% threshold, latched show=true FOREVER for that page view -- it never
-// re-checked afterwards. wouter does client-side routing with no
-// scroll-reset on navigation (confirmed: no scrollTo(0,0) anywhere in this
-// app), so a signed-in user browsing another page, scrolling down, then
-// clicking "Home" in the nav would land on the fresh Home hero with the
-// browser's scrollY still wherever it was on the PREVIOUS page. That stale
-// high scrollY immediately tripped the one-time check() and the floats
-// rendered directly over the hero from the very first frame -- exactly
-// what the screenshot showed, and exactly why it could never be
-// reproduced by a plain fresh page load (scrollY is genuinely 0 there).
-// Fix, two parts: (1) useScrollToTopOnNavigate below actually scrolls to
-// the top on every route change -- correct behaviour on its own, and it
-// removes the stale-scrollY input at the source. (2) this hook now tracks
-// LIVE scroll position on every scroll event instead of latching once, so
-// scrolling back up to the top hides the floats again exactly as
-// scrolling down revealed them, rather than "stuck visible forever" after
-// the first trip.
 function useScrollToTopOnNavigate(pathname: string) {
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -206,7 +171,7 @@ function App() {
       toast.warning(
         'Private browsing detected — your changes cannot be saved. ' +
         'Open the app in a normal tab to keep your work.\n' +
-        'تم اكتشاف وضع التصفح الخاص ولا يمكن حفظ التغييرات. ' +
+        'تم اكتشاف وضع التصفح الخاص — لا يمكن حفظ التغييرات. ' +
         'افتح التطبيق في تبويب عادي للاحتفاظ بعملك.',
         {
           id: 'storage-private-browsing',
