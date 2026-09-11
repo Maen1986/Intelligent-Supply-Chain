@@ -16,60 +16,63 @@ export default defineConfig({
     // Render's build container is far slower/more CPU-constrained than a dev
     // machine, and this is the first time this whole suite has ever run in
     // that environment (the CI gate that wires `test` into `build` -- commit
-    // 368f09d -- was only added tonight). At vitest's 5000ms default, 275 of
-    // this suite's tests timed out on their very first CI run, spread across
-    // dozens of totally unrelated files, not 275 real regressions appearing
-    // at once.
+    // 368f09d -- was only added tonight).
     //
-    // Raised once already to 30000ms (commit 0baad12c). That surfaced a
-    // second, separate problem (silent mid-suite death, fixed in bf4bfd97 by
-    // capping the fork pool at 2 workers) -- and once that stability fix let
-    // the suite run to real completion, it also showed 30s is STILL not
-    // enough headroom on this box: e.g. Header.mobile.test.tsx's simplest
-    // test ("renders an Admin Dashboard link...") -- three RTL interactions,
-    // application logic read and confirmed correct against the test's own
-    // mock (Header.tsx:252 `user.role === 'admin'`, matching the mock's
-    // `role: 'admin'` exactly) -- still took 36499ms and failed purely on
-    // the 30s ceiling. Raising again to 60000ms for the same reason as
-    // before: this is CI-box slowness under a 2-worker cap, not 33 new
-    // regressions appearing at once from an unrelated infra commit.
-    //
-    // Also: several failing files show a suspicious pattern worth tracking
-    // as a *possible* real bug in the test suite's own hygiene rather than
-    // application code -- FeedbackModal.maturity.test.tsx's first 3 tests
-    // ran 40-53s each (over the old 30s ceiling) and then its remaining 8
-    // tests in the SAME file failed near-instantly (3-701ms), which reads
-    // like cascading failure from shared/module-level mock state not being
-    // reset after an abrupt timeout-triggered teardown, not 8 independent
-    // new bugs. Raising the ceiling here also removes that as a confound --
-    // if a file still shows the same "slow first test(s), fast-cascading
-    // failures after" shape at 60s, that points at the shared-state theory
-    // specifically and should be investigated as a test-suite bug, not
-    // application logic.
+    // History of this setting tonight, each step forced by real evidence
+    // from the next deploy, not guessed in advance:
+    //   1. 5000ms default -> 275/4064 tests timed out on the suite's first-
+    //      ever CI run (0baad12c raised it to 30000ms).
+    //   2. At 30000ms with the default (unbounded) worker pool, the build
+    //      log died silently mid-suite -- tests genuinely passing, then log
+    //      output stopped completely with no error/summary line, followed
+    //      by build_failed ~73s later. That silent-death shape is what an
+    //      OOM kill looks like (SIGKILL gives no chance to flush output),
+    //      not vitest reporting its own failure. isc-frontend's Render
+    //      buildPlan is "starter" -- a small, shared-memory box -- and
+    //      vitest sizes its pool off the container's *reported* CPU count,
+    //      which on small/shared plans commonly overstates real available
+    //      memory. Fixed (bf4bfd97) by explicitly capping the fork pool at
+    //      2 workers. Confirmed working: the suite ran to real completion
+    //      for the first time (Test Files 9 failed | 201 passed (210)).
+    //   3. At 30000ms + 2 workers, several failures were purely the timeout:
+    //      e.g. Header.mobile.test.tsx's simplest test (3 plain RTL
+    //      interactions, application logic read and confirmed correct
+    //      against Header.tsx:252) took 36499ms and failed on the 30s
+    //      ceiling alone. Raised to 60000ms (d2ffac5f).
+    //   4. At 60000ms + 2 workers, Header.mobile.test.tsx passed (confirming
+    //      step 3's diagnosis) -- but SIX test files failed to even start:
+    //      "[vitest-pool]: Failed to start forks worker for test files
+    //      ...". That is a worker-process spawn failure, not a test
+    //      failure or a timeout -- it means the box ran out of some OS
+    //      resource (almost certainly memory) trying to keep 2 forked
+    //      jsdom+RTL worker processes alive for the longer 60s window each
+    //      test file is now allowed to hold one open. Longer per-test
+    //      headroom raised peak concurrent memory again, the same dynamic
+    //      that caused step 2's OOM, just manifesting differently this
+    //      time (an explicit spawn error instead of a silent kill).
+    //      Separately: the SET of failing tests also changed between the
+    //      30s and 60s runs (e.g. EvAccordionScrollRestore passed at 60s
+    //      but Maturity.coverage-badge, ProcurementTools.tco.analytics,
+    //      SupplierScorecard.server-sync, SubmissionCardAccordion, and
+    //      TabKeyboardNav newly failed) at essentially the same total
+    //      failure count (32-33). That is the signature of resource-
+    //      contention flakiness -- which specific tests lose the race for
+    //      CPU/memory each run -- not a stable set of logic bugs.
+    //   Conclusion: this box cannot reliably hold 2 concurrent worker
+    //   processes for this suite's real memory footprint, regardless of
+    //   the timeout ceiling. Dropping to a single, fully serial worker
+    //   (maxForks/minForks: 1) below, trading significantly more wall-clock
+    //   time for a memory footprint bounded by one worker instead of two.
+    //   If the suite still can't complete cleanly serial, that is strong,
+    //   disclosed evidence this box's plan (not the test suite or the app)
+    //   needs a real upgrade -- an infrastructure/billing decision for the
+    //   owner, not something to route around further from here.
     testTimeout: 60000,
     hookTimeout: 60000,
-    // Second, separate problem found on the deploy right after the first
-    // testTimeout raise (commit 0baad12c): the build log stopped mid-suite
-    // -- tests were genuinely passing, then log output simply stopped for
-    // ~73s with zero error/stack-trace/summary line, followed by Render
-    // marking the whole build build_failed. A real assertion failure or
-    // thrown error always produces log text; a silent, abrupt stop with no
-    // final "Test Files"/"FAIL" summary line is the signature of the OS
-    // killing the process outright (most consistent with an OOM kill), not
-    // of vitest reporting a failure on its own. isc-frontend's Render build
-    // plan is "starter" -- a small, shared-memory box -- and vitest's
-    // default pool sizing (off the container's *reported* CPU count) can
-    // overshoot what a small/shared plan actually has, spinning up more
-    // concurrent jsdom+RTL worker processes than the box can hold. Fixed
-    // (commit bf4bfd97) by capping the fork pool explicitly instead of
-    // trusting the reported CPU count -- confirmed working: the very next
-    // deploy ran the full 4064-test suite to real completion (Test Files 9
-    // failed | 201 passed (210), Tests 33 failed | 4031 passed (4064)) with
-    // no more silent deaths.
     pool: 'forks',
     poolOptions: {
       forks: {
-        maxForks: 2,
+        maxForks: 1,
         minForks: 1,
       },
     },
