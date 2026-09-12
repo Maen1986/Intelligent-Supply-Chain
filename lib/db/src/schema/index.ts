@@ -18,6 +18,7 @@ export * from "./aslRegister";
 export * from "./onboardingEvents";
 export * from "./governanceTierOverrideEvents";
 export * from "./periodicEvaluationEvents";
+export * from "./blacklistEvents";
 export * from "./claimTokens";
 export * from "./sessions";
 export * from "./feedback";
