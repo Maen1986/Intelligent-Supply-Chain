@@ -414,3 +414,160 @@ before this build was called done — not deferred.
   actually discoverable, not just reachable by typing a URL (Rule 9).
 - `docs/SI_Supplier_Lifecycle_Governance_Item4_Onboarding_Worked_Example.md`
   — this document.
+- `artifacts/i-supply-chain/src/lib/supplierGovernanceTierRecommendation.ts`
+  — the standalone governance-tier-recommendation module (§11 addendum,
+  12 Sep 2026), built as "step zero" and designed for reuse by Items 5-7.
+- `artifacts/i-supply-chain/src/lib/supplierGovernanceTierRecommendation.test.ts`
+  — 22 standalone soft/hardest/boundary/override-precedence tests, 22/22
+  passing.
+
+## 11. Addendum (12 Sep 2026) — Governance-Tier Recommendation Module
+
+Added as a follow-up commit to this same Item 4 build, per an explicit,
+self-corrected platform-owner instruction: build a standalone module that
+recommends Advisory vs. Operational tier from the supplier's Kraljic
+quadrant (Module 02) and the client's declared industry, treat it as "step
+zero" of the onboarding build (built and stress-tested on its own before
+being wired into the tier toggle), and design it for reuse, unmodified, by
+Items 5-7.
+
+### 11.1 Sourcing — what's real, what's ISC's own synthesis
+
+The owner's own self-critique, issued before this module was built, is
+preserved verbatim in spirit here because it materially improved the
+design:
+
+1. **Differentiated engagement depth by Kraljic quadrant is a real, named
+   SRM concept, not an ISC invention.** Kraljic's original 1983 purchasing-
+   portfolio model, as summarized on CIPS's own pages (cips.org, "Kraljic
+   Matrix" and "Supplier Preferencing Matrix", fetched 2026-09-12),
+   prescribes materially different relationship approaches per quadrant:
+   Strategic → "balancing power ... performance-based partnerships";
+   Bottleneck → "securing long- and short-term supply ... seeking
+   alternative suppliers"; Leverage → exploit "full purchasing power ...
+   tendering, target pricing"; Non-critical/Routine → "systems contracting
+   and e-procurement ... efficient processing." CIPS does not use ISC's
+   words ("governance intensity", "Advisory vs. Operational") but the
+   underlying claim — Strategic/Bottleneck warrant closer engagement than
+   Leverage/Routine — is directly attributable to Kraljic/CIPS.
+2. **Regulated industries warranting deeper third-party oversight is also a
+   real, named regulatory pattern**: the 2023 Interagency Guidance on
+   Third-Party Risk Management (OCC, Federal Reserve, FDIC) directs US
+   financial institutions to scale monitoring intensity to a third party's
+   criticality/risk — a widely-cited TPRM baseline. This module's use of it
+   is an explicit ANALOGY (disclosed as such in the module header and in
+   the UI copy itself): ISC is not a US banking regulator and this
+   guidance does not literally bind Saudi/GCC healthcare, energy, or
+   government procurement.
+3. **What is ISC's own synthesis, disclosed, not hidden:** (a) the specific
+   OR-gate combination rule — Operational is recommended when EITHER the
+   Kraljic signal OR the industry signal indicates elevated risk, Advisory
+   only when neither does — is ISC's own operationalization of the two
+   sourced concepts above, not a named standard's literal prescription; (b)
+   the classification of exactly which 3 of the platform's 8 declared-
+   industry values (`healthcare-pharma`, `oil-gas`, `government`) count as
+   "regulated" for this module is ISC's own judgment call — other
+   industries (food-beverage, construction) carry real regulatory regimes
+   too, just not the systemic financial/health/public-accountability
+   oversight this specific signal targets. Both disclosures are shown to
+   the user directly in the UI (`industryClassificationNote`), not just in
+   code comments — Decision Record 8.7 in practice, not merely on paper.
+
+### 11.2 Design contract (per the owner's corrected spec)
+
+- **Recommend, never enforce**: the module returns a `preSelectTier` value
+  that pre-selects the UI toggle; the client can always click the other
+  tier. The module has zero persistence and zero side effects.
+- **Missing data defaults to Advisory, never guessed toward Operational**:
+  if either the Kraljic quadrant or the declared industry is missing,
+  empty, or malformed, the recommendation is unconditionally Advisory —
+  regardless of what the other signal says. A real combined recommendation
+  is only computed when both signals are present and valid.
+- **Override persists against a later recommendation change**:
+  `resolveEffectiveGovernanceTier()` makes a client override always win
+  over a freshly recomputed recommendation, until the client explicitly
+  changes the override again. The module itself stores nothing — the
+  caller (here, `SupplierOnboarding.tsx`'s local override state) is
+  responsible for keeping the override and re-supplying it.
+
+### 11.3 Standalone-First disclosure
+
+Zero runtime imports from sibling modules (Rule 3). Two input shapes are
+manually-synced mirrors, disclosed in the module header:
+`KraljicQuadrantLike` mirrors the lowercase `KraljicQuadrant` union used by
+`kraljicScoring.ts`/`supplierPreQualification.ts`/
+`supplierRecoveryPortfolio.ts` — noting, as a disclosed pre-existing
+inconsistency this module does not silently paper over, that
+`supplierIntelligenceCaseStudy.ts` defines a differently-CASED version of
+the same four values; `normalizeKraljicQuadrant()` defensively lowercases
+input so a value sourced from either file resolves correctly.
+`IndustryKeyLike` mirrors `IndustryKey` from `kpiBenchmarksByIndustry.ts` —
+the platform's one existing "declared industry" vocabulary — reused rather
+than inventing a parallel taxonomy, per Rule 3's no-duplicate-data-model
+discipline.
+
+### 11.4 Standalone stress test results (run before UI wiring, per "step zero")
+
+22/22 tests passing (`supplierGovernanceTierRecommendation.test.ts`):
+
+- **Missing-data (6 tests)**: both signals missing; Kraljic-only (even for
+  a Strategic supplier); industry-only (even for `government`); malformed
+  Kraljic value; malformed industry value; empty-string/whitespace inputs
+  — all correctly default to Advisory.
+- **Both-signals-present combinations (7 tests)**, including the two
+  conflicting-signal cases the owner specifically named: Strategic quadrant
+  + unregulated industry → Operational (supply risk alone is enough);
+  Non-critical quadrant + regulated (`government`) industry → Operational
+  (regulatory exposure alone is enough). A boundary test sweeps all 4
+  quadrants × 2 industry buckets without throwing.
+- **Defensive parsing / hardest tier (3 tests)**: differently-cased Kraljic
+  input normalizes correctly; non-string/object/array adversarial input
+  returns `null` rather than throwing; incidental whitespace is trimmed.
+- **Override precedence (6 tests)**, including the two core stress cases
+  the owner explicitly asked for: an Advisory→Operational override persists
+  even after a later Kraljic re-scoring flips the recommendation to
+  Operational anyway (both now agree, but the override, not the
+  recomputed recommendation, is what the resolver reports as the
+  effective source); and the reverse direction, an Operational→Advisory
+  override persisting against an unchanged Operational recommendation.
+
+Scoped `tsc --noEmit`: 0 errors, run together with
+`supplierOnboarding.ts` and `SupplierOnboarding.tsx` to catch integration-
+level type issues before wiring.
+
+### 11.5 Wiring into `SupplierOnboarding.tsx`
+
+Two new manual-entry selects (Kraljic quadrant, declared industry — the
+same disclosed-fallback pattern already used for the Module 03 contact
+hints, since neither Module 02 nor a client-profile screen feeds this page
+directly yet) sit directly under the tier toggle, always visible
+regardless of ASL gate state (Rule 9 discoverability). A recommendation
+banner shows the live rationale (bilingual), a "Recommended" or "Manually
+overridden" badge, the industry-classification honesty disclosure, and —
+only when overridden — a "Reset to recommendation" button. The tier toggle
+buttons now call `handleTierSelect()`, which records an explicit override;
+the page's `tier` value itself is derived from
+`resolveEffectiveGovernanceTier()`, so the toggle auto-pre-selects the
+recommended tier whenever no override is set, and continues honoring a
+standing override even as the Kraljic/industry inputs change.
+
+### 11.6 QA 10/10 pass on this addition — one real defect found and fixed
+
+Walked through the same scenario as an SRM lead scoring a Rawabi
+counterparty as Strategic + Oil & Gas: recommendation correctly flips to
+Operational and pre-selects the toggle with no click needed; manually
+overriding to Advisory correctly shows the "Manually overridden" badge and
+persists even after changing the Kraljic quadrant afterward; "Reset to
+recommendation" correctly clears the override.
+
+**Real defect found (bilingual correctness, dimension 3):** the first draft
+translated "Bottleneck" as "عنق زجاجة (نادر التوفر)" — a non-standard,
+overly-explained gloss — instead of the platform's own, already-established
+term. `supplierPreQualification.ts` (Item 3, line 312) already uses "عنق
+الزجاجة" for the same Kraljic quadrant in its own Arabic copy. Fixed both
+occurrences (the option label in `SupplierOnboarding.tsx` and the rationale
+string in `supplierGovernanceTierRecommendation.ts`) to match the
+platform's existing, grammatically standard term, re-verified with the full
+test suite and a scoped `tsc` run — both still clean.
+
+No other real defects surfaced in this addition's walkthrough (discoverability, accessibility — real `<select>`/`<button>` elements, keyboard-operable — data safety, and cross-feature isolation were all checked and found sound); this is reported honestly rather than padded with dimensions manufactured to look thorough.

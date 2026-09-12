@@ -69,8 +69,34 @@ import {
   type OnboardingStepEventLike,
   type OnboardingStepCategory,
 } from '@/lib/supplierOnboarding';
+import {
+  computeRecommendedGovernanceTier,
+  resolveEffectiveGovernanceTier,
+  type GovernanceTierOverrideLike,
+} from '@/lib/supplierGovernanceTierRecommendation';
 
 type Tier = 'advisory' | 'operational';
+
+const KRALJIC_QUADRANT_OPTIONS: { value: string; en: string; ar: string }[] = [
+  { value: '', en: '-- not yet scored --', ar: '-- لم يتم التقييم بعد --' },
+  { value: 'strategic', en: 'Strategic', ar: 'استراتيجي' },
+  { value: 'bottleneck', en: 'Bottleneck', ar: 'عنق الزجاجة' },
+  { value: 'leverage', en: 'Leverage', ar: 'ذو نفوذ تفاوضي' },
+  { value: 'non-critical', en: 'Non-critical / Routine', ar: 'روتيني / غير حرج' },
+];
+
+/* Manually-synced mirror of kpiBenchmarksByIndustry.ts's INDUSTRIES labels (Standalone-First Architecture, Rule 3) -- reused here rather than inventing a parallel industry taxonomy. */
+const DECLARED_INDUSTRY_OPTIONS: { value: string; en: string; ar: string }[] = [
+  { value: '', en: '-- not yet declared --', ar: '-- لم يُعلَن بعد --' },
+  { value: 'retail-fmcg', en: 'Retail / FMCG', ar: 'تجزئة / بضائع سريعة' },
+  { value: 'manufacturing', en: 'Manufacturing', ar: 'تصنيع صناعي' },
+  { value: 'healthcare-pharma', en: 'Healthcare & Pharma', ar: 'رعاية صحية / دواء' },
+  { value: 'oil-gas', en: 'Oil & Gas / Energy', ar: 'نفط وغاز / طاقة' },
+  { value: 'government', en: 'Government / Public Sector', ar: 'حكومي / قطاع عام' },
+  { value: 'logistics', en: 'Logistics / 3PL', ar: 'لوجستيات / طرف ثالث' },
+  { value: 'food-beverage', en: 'Food & Beverage', ar: 'غذاء ومشروبات' },
+  { value: 'construction', en: 'Construction / Real Estate', ar: 'إنشاءات / عقارات' },
+];
 
 const CATEGORY_ORDER: OnboardingStepCategory[] = ['legal_compliance', 'banking_financial', 'operational_readiness', 'risk_screening'];
 
@@ -100,9 +126,15 @@ export function SupplierOnboarding() {
   const hasOrg = !!user?.organizationId;
   const isOrgAdmin = hasOrg && user?.orgRole === 'org_admin';
 
-  const [tier, setTier] = useState<Tier>('advisory');
   const [supplierId, setSupplierId] = useState('SUP-RAWABI-01');
   const [esgApplicable, setEsgApplicable] = useState(false);
+
+  // Governance-tier-recommendation inputs (Module 02 Kraljic quadrant + client's declared
+  // industry) -- manual entry until a real Module 02/client-profile UI feeds them directly,
+  // same disclosed-fallback pattern as the Module 03 contact hints below.
+  const [kraljicQuadrant, setKraljicQuadrant] = useState('');
+  const [declaredIndustry, setDeclaredIndustry] = useState('');
+  const [tierOverride, setTierOverride] = useState<GovernanceTierOverrideLike | null>(null);
 
   // Manual ASL entry fallback -- used only when the org-scoped live ASL fetch is unavailable.
   const [manualOnAsl, setManualOnAsl] = useState(true);
@@ -126,6 +158,23 @@ export function SupplierOnboarding() {
   const [graduateStatus, setGraduateStatus] = useState<'idle' | 'saving' | 'done' | 'error'>('idle');
 
   const canWrite = isOrgAdmin || isAccountableHolder;
+
+  // Governance-tier recommendation: recommend, never enforce. Pre-selects the tier toggle
+  // below but a client override, once set, always wins over a freshly recomputed
+  // recommendation -- until the client explicitly changes it again (resolveEffectiveGovernanceTier).
+  const governanceRecommendation = useMemo(
+    () => computeRecommendedGovernanceTier({ kraljicQuadrant, declaredIndustry }),
+    [kraljicQuadrant, declaredIndustry],
+  );
+  const effectiveGovernance = useMemo(
+    () => resolveEffectiveGovernanceTier(governanceRecommendation, tierOverride),
+    [governanceRecommendation, tierOverride],
+  );
+  const tier: Tier = effectiveGovernance.tier;
+  const handleTierSelect = (nextTier: Tier) => {
+    setTierOverride({ tier: nextTier, overriddenAt: new Date().toISOString(), overriddenBy: user?.email ?? undefined });
+  };
+  const clearTierOverride = () => setTierOverride(null);
 
   // Fetch this org's live ASL state for the entered supplierId (Item 3's real endpoint).
   useEffect(() => {
@@ -227,6 +276,13 @@ export function SupplierOnboarding() {
     unreachable: isAr ? 'تعذّر الوصول إلى الخادم' : 'Could not reach the server',
     save: isAr ? 'حفظ' : 'Save',
     saved: isAr ? '✓ تم الحفظ' : '✓ Saved',
+    kraljicLabel: isAr ? 'ربع مصفوفة كرالييك (الوحدة 02)' : 'Kraljic quadrant (Module 02)',
+    industryLabel: isAr ? 'قطاع العميل المُعلَن' : "Client's declared industry",
+    recommendationTitle: isAr ? 'توصية الطبقة (يمكن تجاوزها دائماً)' : 'Tier recommendation (always overridable)',
+    recommendedBadge: isAr ? 'موصى به' : 'Recommended',
+    overriddenBadge: isAr ? 'تم التجاوز يدوياً' : 'Manually overridden',
+    resetToRecommendation: isAr ? 'العودة إلى التوصية' : 'Reset to recommendation',
+    industryClassificationNote: isAr ? governanceRecommendation.industryClassificationNoteAr : governanceRecommendation.industryClassificationNoteEn,
   };
 
   const submitStepEvent = async (stepKey: string, action: 'completed' | 'reopened') => {
@@ -298,11 +354,45 @@ export function SupplierOnboarding() {
             <p className="text-sm text-slate-600 mt-1">{t.subtitle}</p>
           </div>
           <div className="flex rounded-lg border border-[#082C6B]/20 overflow-hidden shrink-0">
-            <button type="button" onClick={() => setTier('advisory')} className={`px-4 py-2 text-xs font-semibold transition-colors ${tier === 'advisory' ? 'bg-[#082C6B] text-white' : 'bg-white text-[#082C6B] hover:bg-[#082C6B]/5'}`}>{t.tierAdvisory}</button>
-            <button type="button" onClick={() => setTier('operational')} className={`px-4 py-2 text-xs font-semibold transition-colors ${tier === 'operational' ? 'bg-[#082C6B] text-white' : 'bg-white text-[#082C6B] hover:bg-[#082C6B]/5'}`}>{t.tierOperational}</button>
+            <button type="button" onClick={() => handleTierSelect('advisory')} className={`px-4 py-2 text-xs font-semibold transition-colors ${tier === 'advisory' ? 'bg-[#082C6B] text-white' : 'bg-white text-[#082C6B] hover:bg-[#082C6B]/5'}`}>{t.tierAdvisory}</button>
+            <button type="button" onClick={() => handleTierSelect('operational')} className={`px-4 py-2 text-xs font-semibold transition-colors ${tier === 'operational' ? 'bg-[#082C6B] text-white' : 'bg-white text-[#082C6B] hover:bg-[#082C6B]/5'}`}>{t.tierOperational}</button>
           </div>
         </div>
         <p className="text-xs text-slate-500 mb-6">{tier === 'advisory' ? t.tierAdvisoryDesc : t.tierOperationalDesc}</p>
+
+        <div className="bg-white border border-slate-200 rounded-xl p-4 mb-6">
+          <p className="text-xs font-semibold text-[#082C6B] mb-2">{t.recommendationTitle}</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+            <label className="text-xs">
+              <span className="block font-semibold text-slate-600 mb-1">{t.kraljicLabel}</span>
+              <select value={kraljicQuadrant} onChange={(e) => setKraljicQuadrant(e.target.value)} className="w-full text-xs border border-slate-300 rounded-lg px-2 py-2">
+                {KRALJIC_QUADRANT_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>{isAr ? opt.ar : opt.en}</option>
+                ))}
+              </select>
+            </label>
+            <label className="text-xs">
+              <span className="block font-semibold text-slate-600 mb-1">{t.industryLabel}</span>
+              <select value={declaredIndustry} onChange={(e) => setDeclaredIndustry(e.target.value)} className="w-full text-xs border border-slate-300 rounded-lg px-2 py-2">
+                {DECLARED_INDUSTRY_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>{isAr ? opt.ar : opt.en}</option>
+                ))}
+              </select>
+            </label>
+          </div>
+          <div className="flex items-start justify-between gap-3 bg-slate-50 rounded-lg p-3">
+            <div>
+              <span className={`inline-block text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded mb-1 ${effectiveGovernance.source === 'client-override' ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}`}>
+                {effectiveGovernance.source === 'client-override' ? t.overriddenBadge : t.recommendedBadge}
+              </span>
+              <p className="text-xs text-slate-700 leading-relaxed">{isAr ? governanceRecommendation.rationaleAr : governanceRecommendation.rationaleEn}</p>
+              <p className="text-[10px] text-slate-400 mt-1 leading-relaxed">{t.industryClassificationNote}</p>
+            </div>
+            {effectiveGovernance.source === 'client-override' && (
+              <button type="button" onClick={clearTierOverride} className="text-[11px] font-semibold text-[#082C6B] underline shrink-0">{t.resetToRecommendation}</button>
+            )}
+          </div>
+        </div>
 
         <div className="bg-white border border-slate-200 rounded-xl p-4 mb-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
           <label className="text-xs">
