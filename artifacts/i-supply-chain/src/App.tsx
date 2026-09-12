@@ -54,6 +54,7 @@ import { SupplierCOPQ } from '@/pages/SupplierCOPQ';
 import { RaciMatrix } from '@/pages/RaciMatrix';
 import { SupplierPreQualification } from '@/pages/SupplierPreQualification';
 import { SupplierOnboarding } from '@/pages/SupplierOnboarding';
+import { SupplierPeriodicEvaluation } from '@/pages/SupplierPeriodicEvaluation';
 import { LCGPAReadinessCheck } from '@/pages/LCGPAReadinessCheck';
 import { FreeZoneRoutingTool } from '@/pages/FreeZoneRoutingTool';
 import { GccSeasonalCalendar } from '@/pages/GccSeasonalCalendar';
@@ -188,6 +189,7 @@ function Router() {
         <Route path="/raci-matrix" component={RaciMatrix} />
         <Route path="/pre-qualification-asl" component={SupplierPreQualification} />
         <Route path="/onboarding" component={SupplierOnboarding} />
+        <Route path="/periodic-evaluation" component={SupplierPeriodicEvaluation} />
         <Route path="/lcgpa-readiness" component={LCGPAReadinessCheck} />
         <Route path="/freezone-routing" component={FreeZoneRoutingTool} />
         <Route path="/gcc-seasonal-calendar" component={GccSeasonalCalendar} />

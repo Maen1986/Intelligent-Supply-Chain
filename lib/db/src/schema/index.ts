@@ -17,6 +17,7 @@ export * from "./raciAssignments";
 export * from "./aslRegister";
 export * from "./onboardingEvents";
 export * from "./governanceTierOverrideEvents";
+export * from "./periodicEvaluationEvents";
 export * from "./claimTokens";
 export * from "./sessions";
 export * from "./feedback";
