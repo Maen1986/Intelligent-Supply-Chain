@@ -171,10 +171,85 @@ export function SupplierOnboarding() {
     [governanceRecommendation, tierOverride],
   );
   const tier: Tier = effectiveGovernance.tier;
-  const handleTierSelect = (nextTier: Tier) => {
-    setTierOverride({ tier: nextTier, overriddenAt: new Date().toISOString(), overriddenBy: user?.email ?? undefined });
+  const [overrideLoadState, setOverrideLoadState] = useState<'idle' | 'loading' | 'live' | 'unreachable'>('idle');
+  const [overrideSaveStatus, setOverrideSaveStatus] = useState<'idle' | 'saving' | 'error'>('idle');
+
+  /*
+   * QA-caught fix (12 Sep 2026, follow-up review): the override was previously
+   * component-state-only (a bare useState), which meant it was silently lost on
+   * page reload -- directly contradicting this module's own documented contract
+   * that a client override "always wins ... until the client explicitly changes
+   * it again." A reload is not the client changing it. Now durably persisted via
+   * /api/governance-tier (governance_tier_override_events, append-only, write-
+   * gated identically to onboarding events: org_admin or the RACI Accountable
+   * holder for 'onboarding_signoff') when the caller has an organization; for a
+   * signed-out or no-org visitor there is no organization to scope a durable
+   * override to, so it honestly falls back to component-state-only for that
+   * session, same disclosed-fallback precedent as the manual ASL entry above.
+   */
+  useEffect(() => {
+    if (!hasOrg || !supplierId.trim()) { setOverrideLoadState('idle'); return; }
+    let cancelled = false;
+    setOverrideLoadState('loading');
+    fetch(`/api/governance-tier/current?supplierId=${encodeURIComponent(supplierId.trim())}`, { credentials: 'include' })
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
+      .then((data) => {
+        if (cancelled) return;
+        if (data.ok && data.override) {
+          setTierOverride({ tier: data.override.tier, overriddenAt: data.override.overriddenAt });
+        } else {
+          setTierOverride(null);
+        }
+        setOverrideLoadState('live');
+      })
+      .catch(() => { if (!cancelled) setOverrideLoadState('unreachable'); });
+    return () => { cancelled = true; };
+  }, [hasOrg, supplierId]);
+
+  /** Posts one override event; returns whether it was actually accepted -- callers must not
+   *  update local UI state as if an override succeeded until this resolves true, or a
+   *  non-authorized click would show a false "Manually overridden" badge that was never
+   *  actually persisted. */
+  const persistOverride = async (action: 'set' | 'clear', nextTier?: Tier): Promise<boolean> => {
+    setOverrideSaveStatus('saving');
+    try {
+      const res = await fetch('/api/governance-tier/override', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(action === 'set' ? { supplierId: supplierId.trim(), action, tier: nextTier } : { supplierId: supplierId.trim(), action }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.ok) { setOverrideSaveStatus('error'); return false; }
+      setOverrideSaveStatus('idle');
+      return true;
+    } catch {
+      setOverrideSaveStatus('error');
+      return false;
+    }
   };
-  const clearTierOverride = () => setTierOverride(null);
+
+  const handleTierSelect = async (nextTier: Tier) => {
+    if (!hasOrg) {
+      // No organization to durably scope this to -- honest local-only fallback for this session.
+      setTierOverride({ tier: nextTier, overriddenAt: new Date().toISOString(), overriddenBy: user?.email ?? undefined });
+      return;
+    }
+    if (!canWrite) {
+      // Same write-gate as the Operational tier's own recording controls -- do not optimistically
+      // show an override that the server will reject.
+      setOverrideSaveStatus('error');
+      return;
+    }
+    const ok = await persistOverride('set', nextTier);
+    if (ok) setTierOverride({ tier: nextTier, overriddenAt: new Date().toISOString(), overriddenBy: user?.email ?? undefined });
+  };
+  const clearTierOverride = async () => {
+    if (!hasOrg) { setTierOverride(null); return; }
+    if (!canWrite) { setOverrideSaveStatus('error'); return; }
+    const ok = await persistOverride('clear');
+    if (ok) setTierOverride(null);
+  };
 
   // Fetch this org's live ASL state for the entered supplierId (Item 3's real endpoint).
   useEffect(() => {
@@ -282,6 +357,11 @@ export function SupplierOnboarding() {
     recommendedBadge: isAr ? 'موصى به' : 'Recommended',
     overriddenBadge: isAr ? 'تم التجاوز يدوياً' : 'Manually overridden',
     resetToRecommendation: isAr ? 'العودة إلى التوصية' : 'Reset to recommendation',
+    overrideNotAuthorized: isAr
+      ? 'حسابك ليس مسؤول المنظمة ولا المعتمد (Accountable) المعيّن لاعتماد التهيئة، لذا لا يمكنك تغيير طبقة الحوكمة هنا.'
+      : "Your account is neither this organization's admin nor the Accountable holder for onboarding sign-off, so you cannot change the governance tier here.",
+    overrideSaveError: isAr ? 'تعذّر حفظ هذا التجاوز' : 'Could not save this override',
+    overrideSaving: isAr ? 'جارٍ الحفظ…' : 'Saving…',
     industryClassificationNote: isAr ? governanceRecommendation.industryClassificationNoteAr : governanceRecommendation.industryClassificationNoteEn,
   };
 
@@ -387,6 +467,14 @@ export function SupplierOnboarding() {
               </span>
               <p className="text-xs text-slate-700 leading-relaxed">{isAr ? governanceRecommendation.rationaleAr : governanceRecommendation.rationaleEn}</p>
               <p className="text-[10px] text-slate-400 mt-1 leading-relaxed">{t.industryClassificationNote}</p>
+              {overrideSaveStatus === 'saving' && <p className="text-[10px] text-slate-400 mt-1">{t.overrideSaving}</p>}
+              {overrideSaveStatus === 'error' && (
+                <p className="text-[10px] text-red-700 mt-1 font-semibold">{hasOrg && !canWrite ? t.overrideNotAuthorized : t.overrideSaveError}</p>
+              )}
+              {overrideSaveStatus !== 'error' && hasOrg && !canWrite && (
+                <p className="text-[10px] text-amber-700 mt-1">{t.overrideNotAuthorized}</p>
+              )}
+              {hasOrg && overrideLoadState === 'unreachable' && <p className="text-[10px] text-amber-700 mt-1">{t.unreachable}</p>}
             </div>
             {effectiveGovernance.source === 'client-override' && (
               <button type="button" onClick={clearTierOverride} className="text-[11px] font-semibold text-[#082C6B] underline shrink-0">{t.resetToRecommendation}</button>

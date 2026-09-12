@@ -52,6 +52,7 @@ import copqRouter                  from "./copq";
 import raciRouter                  from "./raci";
 import preQualificationRouter      from "./preQualification";
 import onboardingRouter             from "./onboarding";
+import governanceTierRouter          from "./governanceTier";
 
 const router: IRouter = Router();
 
@@ -107,6 +108,7 @@ router.use("/copq",                  copqRouter);
 router.use("/raci",                  raciRouter);
 router.use("/pre-qualification",     preQualificationRouter);
 router.use("/onboarding",             onboardingRouter);
+router.use("/governance-tier",        governanceTierRouter);
 router.use(webhooksInboundRouter);
 
 export default router;

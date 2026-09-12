@@ -421,6 +421,21 @@ before this build was called done — not deferred.
   — 22 standalone soft/hardest/boundary/override-precedence tests, 22/22
   passing.
 
+### 11.7 QA-review follow-up (same day) — see the module's own worked-example doc
+
+A post-close-out QA review asked six verification questions about this
+addendum. Answering them surfaced one real defect (the override above was
+component-state-only, not durable) and one clarification (the industry
+dropdown correctly reuses the platform's canonical `IndustryKey`, not a new
+list -- `industrySubSectors.ts` is a sub-sector refinement of that same
+type, not a separate taxonomy). Rather than duplicate the full writeup
+here, the complete answers, the durable-persistence fix (a new
+`governance_tier_override_events` table, `/api/governance-tier` route, and
+17 HTTP-boundary tests), the CI-failure evidence for the placeholder
+commit, and the explicit competitive-benchmark-not-performed disclosure are
+all recorded in this module's own dedicated worked-example doc:
+`docs/SI_Supplier_Governance_Tier_Recommendation_Worked_Example.md`.
+
 ## 11. Addendum (12 Sep 2026) — Governance-Tier Recommendation Module
 
 Added as a follow-up commit to this same Item 4 build, per an explicit,
@@ -487,8 +502,11 @@ design:
   `resolveEffectiveGovernanceTier()` makes a client override always win
   over a freshly recomputed recommendation, until the client explicitly
   changes the override again. The module itself stores nothing — the
-  caller (here, `SupplierOnboarding.tsx`'s local override state) is
-  responsible for keeping the override and re-supplying it.
+  caller is responsible for keeping the override and re-supplying it.
+  **Correction (same day, QA review):** at first wiring, "the caller" meant
+  only `SupplierOnboarding.tsx`'s local component state, which was silently
+  lost on page reload -- a real defect, not a disclosed design choice. See
+  the addendum note at the end of this section for the durable fix.
 
 ### 11.3 Standalone-First disclosure
 
