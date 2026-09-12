@@ -15,6 +15,7 @@ export * from "./supplierDependencyChecks";
 export * from "./copqLedger";
 export * from "./raciAssignments";
 export * from "./aslRegister";
+export * from "./onboardingEvents";
 export * from "./claimTokens";
 export * from "./sessions";
 export * from "./feedback";
