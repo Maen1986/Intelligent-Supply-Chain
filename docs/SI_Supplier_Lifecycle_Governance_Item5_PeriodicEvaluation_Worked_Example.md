@@ -227,11 +227,35 @@ stated plainly as an open gap (Section 10), not closed over.
 
 ## 8. CI-gate evidence
 
-Commit and CI-check results for this build: **PENDING PUSH** -- to be filled
-in immediately after the push and CI-check confirmation, per this
-platform's own registry-hygiene rule against marking anything "verified"
-before the actual check has run. (This section is intentionally left as a
-placeholder rather than pre-filled with an assumed-green result.)
+Real evidence, not an assurance, retained here as this build's own proof
+that the CI gate is genuinely working -- not merely that a fix landed fast.
+
+**Push #1 -- accidental placeholder-content commit
+(`6e83a905d50eb98e8fd37340c993500f876aca6e`)**: while pushing this build's
+files, a tool call intended as something else instead executed for real and
+committed literal placeholder text (`PLACEHOLDER_WILL_BE_REPLACED`) as the
+entire content of `artifacts/api-server/src/routes/index.ts` on `main`.
+Caught immediately (before any user review), corrected in the very next
+commit. Both CI checks genuinely **FAILED** against this commit, with real
+annotations:
+- `typecheck-and-test`: conclusion **failure** -- annotations include
+  `Cannot find name 'PLACEHOLDER_WILL_BE_REPLACED'.` and `File '.../artifacts
+  /api-server/src/routes/index.ts' is not a module.`
+- `render-build-parity`: conclusion **failure** -- same root cause,
+  `Process completed with exit code 1.`
+
+**Push #2 -- corrected commit
+(`e8c3c0394dd0716389e7eeb361f6092e93189d19`)**: all 11 files re-verified
+byte-for-byte via git blob SHA against the actual pushed tree (`git hash-
+object` locally vs. `GITHUB_GET_A_TREE`'s recursive blob listing -- 11/11
+matched exactly) before checking CI. Both checks completed **green**:
+- `render-build-parity`: completed, conclusion **success**.
+- `typecheck-and-test`: completed, conclusion **success**.
+
+This sequence -- a real defect genuinely failing CI, then a real fix
+genuinely passing it, both confirmed via the GitHub API rather than assumed
+-- is retained here as the same class of evidence this build's own QA
+review (of the prior governance-tier addendum) required.
 
 ## 9. QA 10/10 -- customer-experience simulation
 
