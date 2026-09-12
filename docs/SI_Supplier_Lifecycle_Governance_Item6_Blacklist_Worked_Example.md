@@ -334,12 +334,22 @@ multilateral tribunal's full apparatus.
 
 ## 8. CI-gate evidence
 
-*Not yet available at the time this document was drafted -- filled in
-after the pre-flight-verified push (Section 12 of the close-out summary
-delivered alongside this document) and the subsequent CI poll against the
-real commit SHA. Left as an honest placeholder rather than a guessed
-status, per Rule 12: a "pending push" state must not be marked clean until
-it genuinely is.*
+Real evidence, retained as this build's own proof the CI gate is genuinely
+working. Pushed via an atomic 11-file commit
+(`a422e399cb8dbf19fcc4dd3394e4f9f152cdf452`) after a pre-flight check
+confirmed 11/11 files hash-matched local source with zero placeholder
+markers, and the returned blob SHAs for all 11 files matched the local
+`git hash-object` values exactly (byte-verified, not assumed). Both CI
+checks against this commit completed **green** on the first attempt --
+no placeholder-content incident this time, per the standing pre-flight
+requirement adopted this segment:
+- `render-build-parity`: completed, conclusion **success** (22:50:27 --
+  22:51:31 UTC, 12 Sep 2026). One benign annotation: a platform-level
+  Node.js 20 deprecation warning on GitHub-hosted runners, unrelated to
+  this build's code.
+- `typecheck-and-test`: completed, conclusion **success** (22:50:27 --
+  22:55:38 UTC, 12 Sep 2026). Same benign Node.js 20 deprecation warning,
+  no other annotations.
 
 ## 9. QA 10/10 -- customer-experience simulation
 
