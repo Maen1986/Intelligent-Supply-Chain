@@ -49,6 +49,8 @@ import {
   DURATION_TYPE_SOURCE_AR,
   computeAdvisoryBlacklistRecommendation,
   validateBlacklistFinalization,
+  validateBlacklistReversal,
+  MIN_REVERSAL_JUSTIFICATION_LENGTH,
   ITEM7_FORWARD_HOOK_NOTE_EN,
   ITEM7_FORWARD_HOOK_NOTE_AR,
   CONSULTANCY_FRAMING_NOTE_EN,
@@ -118,6 +120,9 @@ export function SupplierBlacklist() {
 
   const [reverseConfirmOpen, setReverseConfirmOpen] = useState(false);
   const [reverseStatus, setReverseStatus] = useState<'idle' | 'saving' | 'error'>('idle');
+  const [reverseJustification, setReverseJustification] = useState('');
+  const [reverseError, setReverseError] = useState<string | null>(null);
+  const [aslRequalificationSuggestion, setAslRequalificationSuggestion] = useState<string | null>(null);
 
   // RACI Accountable-holder check for 'blacklist_decision' -- same pattern
   // as every prior item's own live /api/raci/current check.
@@ -174,6 +179,14 @@ export function SupplierBlacklist() {
   const finalizeValidation = useMemo(
     () => validateBlacklistFinalization({ evidence: allEvidenceForFinalize, rightToRespondConfirmed, durationType, effectiveUntilIso: durationType === 'time_bound' ? (effectiveUntilIso || null) : null }),
     [allEvidenceForFinalize, rightToRespondConfirmed, durationType, effectiveUntilIso],
+  );
+
+  // Reversal due-process gate, mirroring the finalize wizard's own live
+  // validation -- a reversal justification is required, not a bare undo
+  // (see supplierBlacklist.ts's validateBlacklistReversal()).
+  const reverseValidation = useMemo(
+    () => validateBlacklistReversal({ justificationNote: reverseJustification }),
+    [reverseJustification],
   );
 
   function addEvidenceRow() {
@@ -242,20 +255,26 @@ export function SupplierBlacklist() {
   }
 
   async function submitReverse() {
+    if (!reverseValidation.valid) return;
     setReverseStatus('saving');
+    setReverseError(null);
     try {
       const res = await fetch('/api/blacklist/reverse', {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ supplierId: supplierId.trim() }),
+        body: JSON.stringify({ supplierId: supplierId.trim(), justificationNote: reverseJustification.trim() }),
       });
-      if (!res.ok) { setReverseStatus('error'); return; }
+      const data = await res.json().catch(() => null);
+      if (!res.ok) { setReverseStatus('error'); setReverseError(data?.error ?? t.finalizeError); return; }
       setReverseStatus('idle');
       setReverseConfirmOpen(false);
+      setReverseJustification('');
       setAslCrossReferenceNote(null);
+      setAslRequalificationSuggestion(isAr ? data?.aslRequalificationSuggestion?.suggestionAr ?? null : data?.aslRequalificationSuggestion?.suggestionEn ?? null);
     } catch {
       setReverseStatus('error');
+      setReverseError(t.finalizeError);
     }
   }
 
@@ -309,6 +328,13 @@ export function SupplierBlacklist() {
     reverseButton: isAr ? 'عكس / استئناف' : 'Reverse / Appeal',
     reverseConfirm: isAr ? 'تأكيد عكس هذا القرار؟ هذا إجراء له عواقب أيضاً.' : 'Confirm reversing this decision? This action also has consequences.',
     reverseSubmit: isAr ? 'تأكيد العكس' : 'Confirm Reversal',
+    reverseJustificationLabel: isAr
+      ? `مبرر العكس (مطلوب، ${MIN_REVERSAL_JUSTIFICATION_LENGTH} حرفاً على الأقل) -- ما الذي تغيّر جوهرياً؟`
+      : `Reversal justification (required, at least ${MIN_REVERSAL_JUSTIFICATION_LENGTH} characters) -- what has materially changed?`,
+    reverseJustificationPlaceholder: isAr
+      ? 'مثال: أكمل المورد خطة تصحيحية موثقة وقدّم شهادات محدّثة...'
+      : 'e.g. Supplier completed a documented corrective-action plan and provided updated certifications…',
+    aslRequalificationTitle: isAr ? 'إعادة تأهيل القائمة المعتمدة' : 'ASL re-qualification',
     forwardHookTitle: isAr ? 'ملاحظة مستقبلية (البند 7)' : 'Forward-looking note (Item 7)',
     consultancyTitle: isAr ? 'إطار الاستشارة' : 'Consultancy Framing',
     durationSourceTitle: isAr ? 'مصدر تصنيف المدة' : 'Duration-typing source',
@@ -350,6 +376,24 @@ export function SupplierBlacklist() {
               <div className="mt-2 bg-slate-50 border border-slate-200 rounded-lg p-2">
                 <p className="text-[10px] font-semibold text-slate-600">{t.aslCrossRef}</p>
                 <p className="text-[11px] text-slate-700">{aslCrossReferenceNote}</p>
+              </div>
+            )}
+            {/* Deliberately rendered here, NOT inside the currentState?.isBlacklisted
+                gate below: a reversal flips isBlacklisted from true to false on the
+                next background state refetch (the useEffect above re-runs on
+                reverseStatus change), which would otherwise unmount this suggestion
+                within moments of it appearing -- the exact race-condition display
+                defect class this module's own QA 10/10 pass already found and fixed
+                once for the finalize/reverse panel choice (Section 9 of the worked-
+                example doc). Anchoring it beside aslCrossReferenceNote (which uses
+                this same unconditional placement for the same reason) keeps the
+                "don't leave the client with silence" suggestion visible regardless
+                of how currentState reloads afterward. Found and fixed during this
+                follow-up round's own QA 10/10 re-pass. */}
+            {aslRequalificationSuggestion && (
+              <div className="mt-2 bg-sky-50 border border-sky-200 rounded-lg p-2">
+                <p className="text-[10px] font-semibold text-sky-900">{t.aslRequalificationTitle}</p>
+                <p className="text-[11px] text-sky-800">{aslRequalificationSuggestion}</p>
               </div>
             )}
           </div>
@@ -507,11 +551,23 @@ export function SupplierBlacklist() {
                 {isOrgAdmin && reverseConfirmOpen && (
                   <div className="bg-amber-50 border border-amber-300 rounded-lg p-3">
                     <p className="text-[11px] text-amber-800 mb-2">{t.reverseConfirm}</p>
+                    <label className="block text-[11px] font-semibold text-amber-900 mb-1" htmlFor="reverse-justification">{t.reverseJustificationLabel}</label>
+                    <textarea
+                      id="reverse-justification"
+                      value={reverseJustification}
+                      onChange={(e) => setReverseJustification(e.target.value)}
+                      placeholder={t.reverseJustificationPlaceholder}
+                      rows={3}
+                      className="w-full text-xs border border-amber-300 rounded-lg p-2 mb-2"
+                    />
+                    {reverseJustification.length > 0 && !reverseValidation.valid && (
+                      <p className="text-[11px] text-red-700 mb-2">{isAr ? reverseValidation.errorsAr[0] : reverseValidation.errorsEn[0]}</p>
+                    )}
                     <div className="flex gap-2">
-                      <button type="button" onClick={() => setReverseConfirmOpen(false)} className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-slate-200 text-slate-700">{t.cancel}</button>
-                      <button type="button" disabled={reverseStatus === 'saving'} onClick={submitReverse} className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-amber-700 text-white">{t.reverseSubmit}</button>
+                      <button type="button" onClick={() => { setReverseConfirmOpen(false); setReverseJustification(''); setReverseError(null); }} className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-slate-200 text-slate-700">{t.cancel}</button>
+                      <button type="button" disabled={reverseStatus === 'saving' || !reverseValidation.valid} onClick={submitReverse} className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-amber-700 text-white disabled:opacity-50">{t.reverseSubmit}</button>
                     </div>
-                    {reverseStatus === 'error' && <p className="text-[11px] text-red-700 mt-1">{t.finalizeError}</p>}
+                    {reverseStatus === 'error' && <p className="text-[11px] text-red-700 mt-1">{reverseError ?? t.finalizeError}</p>}
                   </div>
                 )}
               </div>

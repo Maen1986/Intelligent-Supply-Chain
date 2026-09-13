@@ -309,27 +309,53 @@ describe('POST /api/blacklist/finalize -- STRICTER write-gate: org_admin ONLY, n
   });
 });
 
-describe('POST /api/blacklist/reverse -- STRICTER write-gate (org_admin ONLY), and server-derived prior-state check', () => {
+const VALID_REVERSAL_JUSTIFICATION = 'Appeal upheld -- evidence found insufficient on further review.';
+
+describe('POST /api/blacklist/reverse -- STRICTER write-gate (org_admin ONLY), a required justification, and server-derived prior-state check', () => {
   it('401s an unauthenticated caller', async () => {
     const app = makeApp('/api/blacklist', blacklistRouter);
-    const res = await request(app).post('/api/blacklist/reverse').send({ supplierId: 'SUP-RAWABI-01' });
+    const res = await request(app).post('/api/blacklist/reverse').send({ supplierId: 'SUP-RAWABI-01', justificationNote: VALID_REVERSAL_JUSTIFICATION });
     expect(res.status).toBe(401);
     expect(insertCalls).toHaveLength(0);
   });
 
-  it('403s a plain member, including the genuine RACI Accountable holder for blacklist_decision -- reversal is equally consequential, org_admin only', async () => {
-    selectQueue.push([{ organizationId: 1, orgRole: 'member' }]);
+  it('400s a structurally invalid payload -- justificationNote missing entirely (gap found on independent review, closed here: previously optional)', async () => {
     const app = makeApp('/api/blacklist', blacklistRouter, { userId: 5 });
     const res = await request(app).post('/api/blacklist/reverse').send({ supplierId: 'SUP-RAWABI-01' });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/justificationNote/);
+    expect(insertCalls).toHaveLength(0);
+  });
+
+  it('400s a structurally invalid payload -- justificationNote is an empty string', async () => {
+    const app = makeApp('/api/blacklist', blacklistRouter, { userId: 5 });
+    const res = await request(app).post('/api/blacklist/reverse').send({ supplierId: 'SUP-RAWABI-01', justificationNote: '' });
+    expect(res.status).toBe(400);
+    expect(insertCalls).toHaveLength(0);
+  });
+
+  it('403s a plain member, including the genuine RACI Accountable holder for blacklist_decision -- reversal is equally consequential, org_admin only (a valid justification alone does not bypass the gate)', async () => {
+    selectQueue.push([{ organizationId: 1, orgRole: 'member' }]);
+    const app = makeApp('/api/blacklist', blacklistRouter, { userId: 5 });
+    const res = await request(app).post('/api/blacklist/reverse').send({ supplierId: 'SUP-RAWABI-01', justificationNote: VALID_REVERSAL_JUSTIFICATION });
     expect(res.status).toBe(403);
     expect(insertCalls).toHaveLength(0);
   });
 
-  it('400s when the supplier is NOT currently, actively blacklisted -- never trusts a client-supplied "it was blacklisted" claim', async () => {
+  it('400s when justificationNote is structurally present but below the due-process minimum length (org_admin, gate passes, due-process check does not) -- mirrors the same rigor /finalize applies to its own four gates', async () => {
+    selectQueue.push([{ organizationId: 1, orgRole: 'org_admin' }]);
+    const app = makeApp('/api/blacklist', blacklistRouter, { userId: 5 });
+    const res = await request(app).post('/api/blacklist/reverse').send({ supplierId: 'SUP-RAWABI-01', justificationNote: 'too short' });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/justification is required/i);
+    expect(insertCalls).toHaveLength(0);
+  });
+
+  it('400s when the supplier is NOT currently, actively blacklisted -- never trusts a client-supplied "it was blacklisted" claim (checked only after the justification itself is valid)', async () => {
     selectQueue.push([{ organizationId: 1, orgRole: 'org_admin' }]);
     selectQueue.push([]); // no blacklist_events at all for this supplier
     const app = makeApp('/api/blacklist', blacklistRouter, { userId: 5 });
-    const res = await request(app).post('/api/blacklist/reverse').send({ supplierId: 'SUP-RAWABI-01' });
+    const res = await request(app).post('/api/blacklist/reverse').send({ supplierId: 'SUP-RAWABI-01', justificationNote: VALID_REVERSAL_JUSTIFICATION });
     expect(res.status).toBe(400);
     expect(res.body.error).toMatch(/not currently/i);
     expect(insertCalls).toHaveLength(0);
@@ -339,19 +365,21 @@ describe('POST /api/blacklist/reverse -- STRICTER write-gate (org_admin ONLY), a
     selectQueue.push([{ organizationId: 1, orgRole: 'org_admin' }]);
     selectQueue.push([blacklistEvent('SUP-RAWABI-01', 'finalized', { durationType: 'time_bound', effectiveUntil: new Date('2020-01-01') })]);
     const app = makeApp('/api/blacklist', blacklistRouter, { userId: 5 });
-    const res = await request(app).post('/api/blacklist/reverse').send({ supplierId: 'SUP-RAWABI-01' });
+    const res = await request(app).post('/api/blacklist/reverse').send({ supplierId: 'SUP-RAWABI-01', justificationNote: VALID_REVERSAL_JUSTIFICATION });
     expect(res.status).toBe(400);
     expect(insertCalls).toHaveLength(0);
   });
 
-  it('POSITIVE CONTROL + CORE APPEAL CASE: org_admin reverses an actively-blacklisted supplier and a \'reversed\' event is actually inserted', async () => {
+  it('POSITIVE CONTROL + CORE APPEAL CASE: org_admin reverses an actively-blacklisted supplier with a valid justification, a \'reversed\' event is actually inserted, and the response includes the ASL-requalification suggestion', async () => {
     selectQueue.push([{ organizationId: 1, orgRole: 'org_admin' }]);
     selectQueue.push([blacklistEvent('SUP-RAWABI-01', 'finalized', { durationType: 'permanent' })]);
     const app = makeApp('/api/blacklist', blacklistRouter, { userId: 5 });
-    const res = await request(app).post('/api/blacklist/reverse').send({ supplierId: 'SUP-RAWABI-01', notes: 'Appeal upheld -- evidence found insufficient on further review.' });
+    const res = await request(app).post('/api/blacklist/reverse').send({ supplierId: 'SUP-RAWABI-01', justificationNote: VALID_REVERSAL_JUSTIFICATION });
     expect(res.status).toBe(200);
     expect(insertCalls).toHaveLength(1);
     expect(insertCalls[0].action).toBe('reversed');
     expect(insertCalls[0].notes).toMatch(/Appeal upheld/i);
+    expect(res.body.aslRequalificationSuggestion.suggestionEn).toContain('SUP-RAWABI-01');
+    expect(res.body.aslRequalificationSuggestion.suggestionEn.toLowerCase()).toContain('does not automatically restore');
   });
 });

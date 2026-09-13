@@ -313,16 +313,32 @@ exclusion regime, and (disclosed as procedurally thin at the secondary-
 source level) **Saudi Arabia's GTPL** Ministry of Finance boycott list
 (Section 1). Named commercial SRM/procurement platforms -- **SAP Ariba,
 Coupa, JAGGAER, GEP, and Ivalua** -- were not re-checked against fresh
-marketing pages for this specific item (unlike Item 5's benchmark, which
-did a fresh page-by-page check); this is disclosed as informed industry
-positioning rather than a verified feature audit for this item. The honest,
-hedged comparison: most commercial SRM suites treat a supplier exclusion as
-a status field on a supplier record, updated in place. ISC's real,
-verifiable difference here is the append-only `blacklist_events` log with
-derived, read-time state (never a mutable flag) plus a genuine, live
-cross-reference into the same ASL event log that gates onboarding -- a
-structural choice visible directly in the codebase (Section 3), not a
-marketing claim.
+marketing pages for this specific item, unlike Item 5's benchmark, which
+did a fresh page-by-page check.
+
+**This is a deliberate scope choice for this item, not an inconsistency in
+method between items.** This build's research budget was spent where the
+spec explicitly required NEW ground -- the sourced due-process methodology
+(Section 1: World Bank / UK Procurement Act 2023 / the honest GTPL and
+Nazaha findings) and the authorization-bar and cross-reference design
+decisions the spec called out by name (Sections 2-3) -- rather than
+re-running a generic SRM-platform marketing-page scan whose five named
+platforms (and their public positioning on supplier exclusion) were already
+checked for Item 5 within the same week and were not expected to have
+materially changed in the interim. The comparison below therefore reuses
+that recent, informed positioning rather than repeating the page-by-page
+check, and this section says so plainly rather than presenting reused
+positioning as if it were an equally fresh audit -- see also Section 10,
+where this same choice is logged as a disclosed open gap for anyone
+auditing this doc's own rigor against Item 5's.
+
+The honest, hedged comparison itself: most commercial SRM suites treat a
+supplier exclusion as a status field on a supplier record, updated in
+place. ISC's real, verifiable difference here is the append-only
+`blacklist_events` log with derived, read-time state (never a mutable
+flag) plus a genuine, live cross-reference into the same ASL event log
+that gates onboarding -- a structural choice visible directly in the
+codebase (Section 3), not a marketing claim.
 
 **Where a genuine gap against best-in-class practice remains, stated
 honestly**: none of the named World Bank/UK regimes' full multi-stage
@@ -410,24 +426,125 @@ pattern).
   rather than a freshly re-checked page-by-page audit** of the five named
   commercial platforms for this specific item, unlike Item 5's benchmark --
   disclosed rather than presented as an equally fresh check.
-- **Finalizing a blacklist entry does not itself restore or otherwise
-  touch ASL status on reversal** -- reversing lifts the blacklist exclusion
-  itself; a client wishing to re-admit the supplier to the ASL records that
-  as a separate, deliberate Item 3 decision (Section 4, step 6). This is a
-  deliberate design choice (blacklist and ASL are related but distinct
-  ledgers), not an oversight, but is called out here so it is not mistaken
-  for automatic re-qualification.
+- **Reversing a blacklist entry does not itself restore ASL status.**
+  Reversing lifts the blacklist exclusion itself; a client wishing to
+  re-admit the supplier to the ASL records that as a separate, deliberate
+  Item 3 decision (Section 4, step 6). This remains a deliberate design
+  choice (blacklist and ASL are related but distinct ledgers), not an
+  oversight -- **updated in this follow-up round (13 Sep 2026, found on
+  independent owner review): a successful `/reverse` now automatically
+  surfaces a bilingual `aslRequalificationSuggestion`** naming the specific
+  supplier and stating plainly that ASL status was not restored, so the
+  client is never left with silent inaction on this point (the same "never
+  leave the client with silence" discipline already applied to the
+  insufficient-evidence Advisory case's `RECOMMEND_HOLD_AT_ASL_SUSPENSION`
+  branch, Section 4). What closed is the *silence* -- the underlying
+  choice not to auto-restore ASL status is unchanged and remains
+  intentional; the client still records any re-qualification as its own,
+  separate Item 3 decision, exactly as before.
 
 ## 11. File list
 
 - `artifacts/i-supply-chain/src/lib/supplierBlacklist.ts` (module)
-- `artifacts/i-supply-chain/src/lib/supplierBlacklist.test.ts` (39 tests)
+- `artifacts/i-supply-chain/src/lib/supplierBlacklist.test.ts` (48 tests, was 39 -- +9 in the follow-up round, Section 12)
 - `artifacts/i-supply-chain/src/pages/SupplierBlacklist.tsx` (UI, both tiers)
 - `lib/db/src/schema/blacklistEvents.ts` (append-only table)
 - `lib/db/src/schema/index.ts` (barrel export, modified)
 - `artifacts/api-server/src/routes/blacklist.ts` (route)
 - `artifacts/api-server/src/routes/index.ts` (wiring, modified)
-- `artifacts/api-server/tests/blacklist.test.ts` (26 HTTP-boundary tests)
+- `artifacts/api-server/tests/blacklist.test.ts` (29 HTTP-boundary tests, was 26 -- +3 in the follow-up round, Section 12)
 - `artifacts/i-supply-chain/src/App.tsx` (route wiring, modified)
 - `artifacts/i-supply-chain/src/components/Header.tsx` (nav entry, modified)
 - `docs/SI_Supplier_Lifecycle_Governance_Item6_Blacklist_Worked_Example.md` (this document)
+
+## 12. Follow-up round (13 Sep 2026) -- two gaps closed on independent owner review
+
+Item 6 was originally closed 12 Sep 2026 (v176). On independent review, the
+owner flagged two specific, rational gaps rather than a defect in what had
+shipped -- both closed in this same follow-up round, plus a doc-framing
+strengthening. Logged here per Rule 12 (registry/paper-trail hygiene): a
+closed item that receives a real follow-up fix gets that fix recorded, not
+silently folded back into the original close-out as if it had always been
+there.
+
+**Gap 1 -- `/reverse` had no required justification.** The original build
+cited the World Bank petition-for-reduction path / UK Procurement Act 2023
+"material change of circumstances" standard (Section 1) as the sourced
+basis for reversal, but did not enforce it as an input -- `/reverse`
+accepted an optional, unvalidated `notes` field, while `/finalize` already
+enforced its own due-process checklist. Closed by adding
+`validateBlacklistReversal()` (module) and a mirrored
+`validateReversalServerSide()` (route), both requiring a real,
+non-empty `justificationNote` of at least `MIN_REVERSAL_JUSTIFICATION_LENGTH`
+(15) characters -- enforced client-side (live validation, disabled Confirm
+button) and re-validated server-side (400 on a too-short or missing value,
+after the org_admin authorization gate, mirroring `/finalize`'s own
+shape-check-then-gate-then-validate order). Consistent with the platform's
+consultancy framing (Rule 1 / Decision Record 8.7): the validator checks
+only that a justification was *given*, never whether it is substantively
+good -- ISC does not adjudicate the client's reasoning. The existing
+generic `notes` column on `blacklist_events` was reused to store it (no
+schema migration) -- a deliberate, disclosed reuse, not a workaround.
+
+**Gap 2 -- reversal left ASL re-qualification unaddressed in silence.** The
+Advisory tier's insufficient-evidence case already recommends ASL
+suspension rather than going silent (`RECOMMEND_HOLD_AT_ASL_SUSPENSION`,
+Section 4); reversal had no equivalent. Closed by adding
+`buildReversalAslRequalificationSuggestion()` (module, mirrored in the
+route), returned as `aslRequalificationSuggestion` in `/reverse`'s response
+and rendered in `SupplierBlacklist.tsx` immediately below the ASL
+cross-reference note. It states plainly, bilingually, and by supplier ID
+that reversal does not automatically restore ASL status and that
+re-qualification is a separate, deliberate Item 3 decision -- closing the
+*silence*, not changing the underlying no-auto-restore design choice
+(Section 10 updated accordingly).
+
+**Doc framing -- Section 7 benchmark-reuse scope note.** The owner asked
+that the competitive-benchmark methodology difference (this item reuses
+informed positioning; Item 5 ran a fresh check) be visibly framed as a
+deliberate scope choice rather than read as an inconsistency. Section 7 now
+states this explicitly, with the research-prioritization rationale, rather
+than leaving the distinction implicit.
+
+**QA 10/10 re-run on the new UI (`isc-qa-customer-simulation`).** Run
+specifically on the new justification textarea, the disabled-until-valid
+Confirm Reversal button, and the new suggestion panel in
+`SupplierBlacklist.tsx`. Found and fixed one real defect in the same pass:
+a **race-condition display defect**, the same defect class already found
+once in this file's original QA pass (Section 9, defect 3). The new
+`aslRequalificationSuggestion` panel was first placed inside the
+`currentState?.isBlacklisted`-gated block; because a successful reversal
+flips `isBlacklisted` to `false` on the background state refetch that
+follows it (the same `useEffect` that re-fetches on `reverseStatus`
+change), that entire block -- suggestion panel included -- would unmount
+within moments of appearing, defeating the "don't leave the client with
+silence" purpose of the feature. Fixed by anchoring the panel at the same
+unconditional location already used for the analogous finalize-side
+`aslCrossReferenceNote`, so it persists across the state-load flip. All
+other dimensions checked clean: bilingual correctness (both new EN/AR
+justification-label/placeholder strings and the suggestion text itself are
+real, grammatical Arabic, verified by direct read, not machine-garbled or
+English reused); accessibility (the textarea has a real `<label
+htmlFor>`/`id` pairing and is keyboard-reachable; the Confirm button is a
+real `<button>`, correctly `disabled` until validation passes); data safety
+(`submitReverse()` traced directly -- it only clears
+`reverseJustification`/`reverseConfirmOpen`/`reverseError` and the stale
+finalize-side `aslCrossReferenceNote`, touching no other field); honesty
+(the validator's own doc comments state it does not adjudicate substance,
+matching the consultancy framing); visual/tonal consistency (the new
+sky-blue suggestion panel follows the same badge/pill and panel
+conventions as the existing amber reverse-panel and slate cross-reference
+note, not a one-off style).
+
+**Re-verification (same task, per Rule 7/Rule 11 -- fix, don't just log).**
+After the race-condition fix: scoped `tsc -b`
+(`supplierBlacklist.ts`, `supplierBlacklist.test.ts`, `SupplierBlacklist.tsx`)
+clean, **zero errors**; `supplierBlacklist.test.ts` **48/48 passing** (+9
+over the original 39: 6 for `validateBlacklistReversal`, 3 for
+`buildReversalAslRequalificationSuggestion`); the four pre-existing Header
+regression suites **31/31 passing** (79/79 combined); `blacklist.test.ts`
+(HTTP-boundary) **29/29 passing** (+3 over the original 26: missing-
+justification, empty-justification, and too-short-justification cases,
+alongside the core appeal-case assertion extended to also check the
+returned `aslRequalificationSuggestion`). Zero regressions across all
+three suites.

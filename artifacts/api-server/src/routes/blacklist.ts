@@ -28,6 +28,16 @@
  * POST /api/blacklist/reverse -- append ONE new 'reversed' event (an
  *   appeal/correction). GATE: org_admin SPECIFICALLY, identical strictness
  *   to /finalize -- reversing a blacklist decision is equally consequential.
+ *   Requires a REAL, non-empty justificationNote (>= 15 chars, re-validated
+ *   server-side) -- sourced to the same World Bank petition-for-reduction /
+ *   UK Procurement Act 2023 "material change of circumstances" standard
+ *   already cited for finalization; a reversal is not a bare undo click.
+ *   Returns an aslRequalificationSuggestion alongside the inserted event:
+ *   reversal lifts the blacklist exclusion but does NOT itself restore
+ *   Item 3 ASL status (only /finalize's cross-reference touches that
+ *   table), so the response surfaces that as an explicit next step rather
+ *   than leaving it implicit. Both of these were gaps in the initial build,
+ *   found on independent review and closed here.
  *
  * NON-NEGOTIABLE PROCESS REQUIREMENT NOTE (this build, per instruction):
  * this route file itself was constructed and pushed under the standing
@@ -111,6 +121,32 @@ function validateFinalizationServerSide(
   return { valid: errors.length === 0, errors };
 }
 
+/* ─── Mirrored core: reversal justification validation (see supplierBlacklist.ts's validateBlacklistReversal()) ───
+ * Gap identified and closed after the initial build shipped /reverse with only an optional `notes` field: a
+ * reversal now requires the same due-process weight as finalization -- a real, non-empty justification, sourced
+ * to the World Bank petition-for-reduction path / UK Procurement Act 2023 "material change of circumstances"
+ * standard (see supplierBlacklist.ts Section 1 and the new validator's own header). */
+const MIN_REVERSAL_JUSTIFICATION_LENGTH = 15;
+function validateReversalServerSide(justificationNote: string): { valid: boolean; errors: string[] } {
+  const errors: string[] = [];
+  const trimmed = (justificationNote ?? '').trim();
+  if (trimmed.length < MIN_REVERSAL_JUSTIFICATION_LENGTH) {
+    errors.push(`A justification is required to reverse a finalized blacklist entry (at least ${MIN_REVERSAL_JUSTIFICATION_LENGTH} characters) -- mirroring the same due-process standard already applied to finalization. A reversal cannot be a bare, unexplained undo.`);
+  }
+  return { valid: errors.length === 0, errors };
+}
+
+/* ─── Mirrored core: reversal ASL-requalification suggestion (see supplierBlacklist.ts's buildReversalAslRequalificationSuggestion())
+ * Gap identified and closed after the initial build: reversing lifts the blacklist exclusion itself but does NOT
+ * touch Item 3's ASL status (the cross-reference in /finalize below only runs in that one direction) -- so a
+ * successful reversal now surfaces the actual next step rather than leaving that gap implicit. */
+function buildReversalAslRequalificationSuggestion(supplierId: string): { suggestionEn: string; suggestionAr: string } {
+  return {
+    suggestionEn: `Reversing this blacklist entry lifts the exclusion itself, but does not automatically restore ${supplierId}'s Approved Supplier List (Item 3) status. If this supplier should now be reconsidered for the ASL, record a new, explicit Item 3 re-qualification decision -- a separate, deliberate step, not an automatic consequence of this reversal.`,
+    suggestionAr: `يرفع عكس هذا الإدراج الاستبعاد نفسه، لكنه لا يُعيد تلقائياً حالة المورد ${supplierId} في القائمة المعتمدة (البند 3). إذا كان ينبغي إعادة النظر في تأهيل هذا المورد للقائمة المعتمدة، فسجِّلوا قرار إعادة تأهيل جديداً وصريحاً ضمن البند 3 -- فهذه خطوة منفصلة ومتعمدة، وليست نتيجة تلقائية لهذا العكس.`,
+  };
+}
+
 /* ─── Mirrored core: minimal RACI replay for 'blacklist_decision' (see supplierRACI.ts / periodicEvaluation.ts) ─── */
 interface RaciEventLike { id: number; activityKey: string; role: string; userId: number; action: 'assigned' | 'unassigned'; createdAt: Date }
 function currentAccountableHolder(events: RaciEventLike[], activityKey: string): number | null {
@@ -187,11 +223,12 @@ function isValidFinalizePayload(a: unknown): a is FinalizePayload {
   return true;
 }
 
-interface ReversePayload { supplierId: string; notes?: string }
+interface ReversePayload { supplierId: string; justificationNote: string }
 function isValidReversePayload(a: unknown): a is ReversePayload {
   if (!a || typeof a !== 'object') return false;
   const r = a as Record<string, unknown>;
-  return typeof r.supplierId === 'string' && r.supplierId.length > 0;
+  if (typeof r.supplierId !== 'string' || r.supplierId.length === 0) return false;
+  return typeof r.justificationNote === 'string' && r.justificationNote.length > 0;
 }
 
 /* ─── GET /api/blacklist/current?supplierId=... ──────────────────────────── */
@@ -386,13 +423,24 @@ router.post('/finalize', async (req, res) => {
 router.post('/reverse', async (req, res) => {
   const body = req.body as unknown;
   if (!isValidReversePayload(body)) {
-    res.status(400).json({ ok: false, error: 'Invalid reverse shape -- expected {supplierId, notes?}' });
+    res.status(400).json({ ok: false, error: 'Invalid reverse shape -- expected {supplierId, justificationNote} (justificationNote is required, not optional -- see the due-process note below)' });
     return;
   }
   try {
     const actingUserId = res.locals.userId as number;
     const organizationId = await assertFinalizeWriteGate(actingUserId, res);
     if (organizationId === null) return;
+
+    // Due-process gate for reversal, matching the same rigor /finalize
+    // already enforces: a real justification is required, not a bare undo
+    // (see validateReversalServerSide()'s own header for the sourced
+    // standard). Re-validated server-side -- never trusts a UI that
+    // happened to allow the click.
+    const justificationValidation = validateReversalServerSide(body.justificationNote);
+    if (!justificationValidation.valid) {
+      res.status(400).json({ ok: false, error: justificationValidation.errors.join(' ') });
+      return;
+    }
 
     // Server-side re-derivation: refuse to reverse a supplier that is not
     // currently, actively blacklisted -- never trust a client-supplied
@@ -419,12 +467,22 @@ router.post('/reverse', async (req, res) => {
         durationType: null,
         effectiveUntil: null,
         actorUserId: actingUserId,
-        notes: body.notes ?? null,
+        // Reuses the existing generic `notes` column (no schema migration
+        // needed) to store the now-REQUIRED reversal justification -- see
+        // blacklistEvents.ts's own column comment; the required-ness is
+        // enforced above, at the API/validation layer, not by the column.
+        notes: body.justificationNote,
       })
       .returning();
 
+    // Extends the finalize-side cross-reference's own "never leave the
+    // client with silence" discipline to reversal: does NOT touch ASL
+    // status (only /finalize's cross-reference does that), so surface the
+    // actual next step explicitly instead.
+    const aslRequalificationSuggestion = buildReversalAslRequalificationSuggestion(body.supplierId);
+
     logger.info({ actingUserId, organizationId, supplierId: body.supplierId, blacklistEventId: inserted?.id }, '[blacklist/reverse] Event recorded');
-    res.json({ ok: true, event: inserted });
+    res.json({ ok: true, event: inserted, aslRequalificationSuggestion });
   } catch (err) {
     logger.error({ err }, '[blacklist/reverse] POST failed');
     res.status(500).json({ ok: false, error: 'Server error' });

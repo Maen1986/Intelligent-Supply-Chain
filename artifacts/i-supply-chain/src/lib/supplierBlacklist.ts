@@ -466,6 +466,80 @@ export function validateBlacklistFinalization(input: BlacklistFinalizationInput)
   return { valid: errorsEn.length === 0, errorsEn, errorsAr };
 }
 
+/**
+ * Minimum length (characters, after trimming) for a reversal justification.
+ * A low bar deliberately: ISC does not adjudicate whether a stated reason is
+ * GOOD (consultancy framing, Section 8 below) -- only that a real one was
+ * actually typed, not left blank or filled with a single throwaway
+ * character to get past a required-field check.
+ */
+export const MIN_REVERSAL_JUSTIFICATION_LENGTH = 15;
+
+export interface BlacklistReversalInput {
+  /**
+   * Required, non-empty justification for reversing a finalized blacklist
+   * entry. Sourced standard, matching the due-process rigor
+   * validateBlacklistFinalization() already enforces for finalization: the
+   * World Bank Sanctions System's own petition-for-reduction path and the
+   * UK Procurement Act 2023's "material change of circumstances"
+   * self-cleaning standard (Section 1) both require the party seeking
+   * removal to STATE why circumstances have changed -- reversal is not a
+   * bare, unexplained undo click. Gap identified and closed after the
+   * initial build shipped /reverse with only an optional `notes` field.
+   */
+  justificationNote: string;
+}
+
+export interface BlacklistReversalValidation {
+  valid: boolean;
+  errorsEn: string[];
+  errorsAr: string[];
+}
+
+/**
+ * The reversal-side due-process enforcement point, mirroring
+ * validateBlacklistFinalization()'s own discipline: a reversal this
+ * function rejects must be rejected by the route layer too, never silently
+ * accepted because a UI happened to allow the click.
+ */
+export function validateBlacklistReversal(input: BlacklistReversalInput): BlacklistReversalValidation {
+  const errorsEn: string[] = [];
+  const errorsAr: string[] = [];
+
+  const trimmed = (input.justificationNote ?? '').trim();
+  if (trimmed.length < MIN_REVERSAL_JUSTIFICATION_LENGTH) {
+    errorsEn.push(`A justification is required to reverse a finalized blacklist entry (at least ${MIN_REVERSAL_JUSTIFICATION_LENGTH} characters) -- mirroring the same due-process standard already applied to finalization (World Bank petition-for-reduction path / UK Procurement Act 2023 "material change of circumstances"). A reversal cannot be a bare, unexplained undo.`);
+    errorsAr.push(`يلزم تقديم تبرير لعكس إدراج نهائي في القائمة السوداء (${MIN_REVERSAL_JUSTIFICATION_LENGTH} حرفاً على الأقل) -- بما يعكس معيار الإجراءات الواجبة ذاته المطبَّق على الإنهاء (مسار طلب التخفيف لدى البنك الدولي / معيار "تغيّر جوهري في الظروف" في قانون المشتريات البريطاني لعام 2023). لا يجوز أن يكون العكس إجراء غير مبرر بلا تفسير.`);
+  }
+
+  return { valid: errorsEn.length === 0, errorsEn, errorsAr };
+}
+
+export interface BlacklistReversalSuggestion {
+  suggestionEn: string;
+  suggestionAr: string;
+}
+
+/**
+ * Returned alongside every successful reversal -- extends the same "never
+ * leave the client with silence" discipline computeAdvisoryBlacklistRecommendation()
+ * already applies to RECOMMEND_HOLD_AT_ASL_SUSPENSION (Section 2) to the
+ * reversal action. Gap identified and closed after the initial build:
+ * reversing a blacklist entry lifts the exclusion itself, but the Section 5
+ * cross-reference design only runs in the FINALIZE direction (writing a
+ * 'revoked' row into asl_decision_events) -- it does not run in reverse, so
+ * a reversal does not, and should not, silently restore the supplier's
+ * Item 3 ASL status. Left unstated, an organization could easily assume
+ * reversal alone re-qualifies the supplier; this function surfaces the
+ * actual next step instead of leaving that gap implicit.
+ */
+export function buildReversalAslRequalificationSuggestion(supplierId: string): BlacklistReversalSuggestion {
+  return {
+    suggestionEn: `Reversing this blacklist entry lifts the exclusion itself, but does not automatically restore ${supplierId}'s Approved Supplier List (Item 3) status. If this supplier should now be reconsidered for the ASL, record a new, explicit Item 3 re-qualification decision -- a separate, deliberate step, not an automatic consequence of this reversal.`,
+    suggestionAr: `يرفع عكس هذا الإدراج الاستبعاد نفسه، لكنه لا يُعيد تلقائياً حالة المورد ${supplierId} في القائمة المعتمدة (البند 3). إذا كان ينبغي إعادة النظر في تأهيل هذا المورد للقائمة المعتمدة، فسجِّلوا قرار إعادة تأهيل جديداً وصريحاً ضمن البند 3 -- فهذه خطوة منفصلة ومتعمدة، وليست نتيجة تلقائية لهذا العكس.`,
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Section 4 -- Current-state derivation from append-only events (replay) --
 // mirrors computeCurrentASLState() in supplierPreQualification.ts exactly.

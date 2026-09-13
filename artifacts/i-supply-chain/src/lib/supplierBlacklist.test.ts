@@ -19,6 +19,9 @@ import {
   buildSuggestedEvidenceLinks,
   computeAdvisoryBlacklistRecommendation,
   validateBlacklistFinalization,
+  validateBlacklistReversal,
+  buildReversalAslRequalificationSuggestion,
+  MIN_REVERSAL_JUSTIFICATION_LENGTH,
   computeCurrentBlacklistState,
   computeBlacklistBlockSignal,
   buildAslCrossReferenceReasonNote,
@@ -276,6 +279,67 @@ describe('validateBlacklistFinalization -- due-process enforcement (evidence thr
     });
     expect(result.valid).toBe(false);
     expect(result.errorsEn.length).toBe(3); // evidence threshold + right-to-respond + duration type (the time_bound-specific check does not fire when durationType itself is null)
+  });
+});
+
+describe('validateBlacklistReversal -- reversal due-process enforcement (gap found on independent review, closed here)', () => {
+  it('rejects an empty justification', () => {
+    const result = validateBlacklistReversal({ justificationNote: '' });
+    expect(result.valid).toBe(false);
+    expect(result.errorsEn.length).toBe(1);
+    expect(result.errorsAr.length).toBe(1);
+  });
+
+  it('rejects a justification of only whitespace', () => {
+    const result = validateBlacklistReversal({ justificationNote: '   \n\t  ' });
+    expect(result.valid).toBe(false);
+  });
+
+  it('BOUNDARY: a justification exactly one character short of the minimum is rejected', () => {
+    const justificationNote = 'x'.repeat(MIN_REVERSAL_JUSTIFICATION_LENGTH - 1);
+    const result = validateBlacklistReversal({ justificationNote });
+    expect(result.valid).toBe(false);
+  });
+
+  it('BOUNDARY: a justification exactly at the minimum length is accepted', () => {
+    const justificationNote = 'x'.repeat(MIN_REVERSAL_JUSTIFICATION_LENGTH);
+    const result = validateBlacklistReversal({ justificationNote });
+    expect(result.valid).toBe(true);
+  });
+
+  it('accepts a genuine, realistic reversal justification', () => {
+    const result = validateBlacklistReversal({
+      justificationNote: 'Supplier completed a documented corrective-action plan and provided updated certifications.',
+    });
+    expect(result.valid).toBe(true);
+    expect(result.errorsEn.length).toBe(0);
+  });
+
+  it('does not police WHAT the justification says, only that one was given -- ISC does not adjudicate sufficiency (consultancy framing)', () => {
+    // A justification with no evident substance still passes as long as it
+    // clears the minimum length -- this function enforces that a reason was
+    // stated, never whether ISC judges the reason good enough.
+    const result = validateBlacklistReversal({ justificationNote: 'no reason given at all really' });
+    expect(result.valid).toBe(true);
+  });
+});
+
+describe('buildReversalAslRequalificationSuggestion -- surfaces the ASL next step instead of silence (gap found on independent review, closed here)', () => {
+  it('names the specific supplier id in both languages', () => {
+    const result = buildReversalAslRequalificationSuggestion('SUP-RAWABI-06');
+    expect(result.suggestionEn).toContain('SUP-RAWABI-06');
+    expect(result.suggestionAr).toContain('SUP-RAWABI-06');
+  });
+
+  it('states plainly that reversal does NOT itself restore ASL status -- the actual cross-reference direction', () => {
+    const result = buildReversalAslRequalificationSuggestion('SUP-RAWABI-06');
+    expect(result.suggestionEn.toLowerCase()).toContain('does not automatically restore');
+  });
+
+  it('points to Item 3 as the separate, deliberate next step, not an automatic consequence', () => {
+    const result = buildReversalAslRequalificationSuggestion('SUP-X');
+    expect(result.suggestionEn).toMatch(/Item 3/);
+    expect(result.suggestionEn.toLowerCase()).toContain('separate');
   });
 });
 
