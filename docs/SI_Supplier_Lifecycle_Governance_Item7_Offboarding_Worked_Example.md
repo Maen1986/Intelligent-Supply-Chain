@@ -350,11 +350,22 @@ layer exists.
 ## 8. CI-gate evidence
 
 Real evidence, retained as this build's own proof the CI gate is
-genuinely working. Pending the pre-flight-verified push for this item's
-commit -- to be completed with the actual commit SHA and both CI checks'
-real conclusions and timestamps in the same task, per the standing
-"never mark a pending push as verified before it has happened" rule
-(Rule 12).
+genuinely working. Pushed via an atomic 12-file commit
+(`fa4cd48f05dd5695d1c82c6993a214ddfdb79e49`) after the pre-flight check
+above confirmed 12/12 files hash-matched local source with zero
+placeholder markers, and all 12 returned blob SHAs matched the local
+`git hash-object` values exactly (byte-verified, not assumed). Both CI
+checks against this commit completed **green**:
+
+- `render-build-parity`: completed, conclusion **success** (19:57:39 --
+  19:58:42 UTC, 13 Sep 2026).
+- `typecheck-and-test`: completed, conclusion **success** (19:57:39 --
+  20:01:33 UTC, 13 Sep 2026). This independently confirms the full
+  monorepo `tsc -b` build -- including `artifacts/i-supply-chain` --
+  genuinely type-checks clean; Section 10's disclosed local sandbox
+  limitation (unable to complete that same build under 1 GB of RAM) was
+  a resource constraint of this build's own sandbox, not a real type
+  error in the shipped code.
 
 ## 9. QA 10/10 -- customer-experience simulation
 
@@ -427,21 +438,24 @@ badge and panel conventions as Items 1-6, not a one-off pattern).
   omitted: the recovery was verified, not assumed, but the incident
   itself was a real interruption to this build, not a routine step.
 - **A full `tsc -b` project-reference type-check of the
-  `artifacts/i-supply-chain` package could not be completed** in this
-  build's sandbox, which has under 1 GB of total RAM. Three attempts
-  (a full 3-project composite build, a per-project incremental build,
-  and a narrowly-scoped 6-file check limited to only the new/changed
-  Item 7 files and their direct wiring) were all terminated by the
-  kernel's out-of-memory killer. This is a genuine, disclosed
-  environment limitation, not a claim that the code type-checks clean --
-  mitigated, but not replaced, by: a clean `tsc -b` build with zero
-  errors for `lib/db`, `lib/api-zod`, `lib/integrations-openai-ai-server`,
-  `lib/api-client-react`, and the entire `artifacts/api-server` package
-  (including the new `offboarding.ts` route); an esbuild parse-check
-  passing on every new or changed file; and the full `i-supply-chain`
-  runtime test suite (4308/4308 tests, 216 files) passing, which
-  exercises most real logic paths at runtime even though it is not a
-  substitute for exhaustive static type-checking.
+  `artifacts/i-supply-chain` package could not be completed inside this
+  build's own sandbox**, which has under 1 GB of total RAM. Three
+  attempts (a full 3-project composite build, a per-project incremental
+  build, and a narrowly-scoped 6-file check limited to only the
+  new/changed Item 7 files and their direct wiring) were all terminated
+  by the kernel's out-of-memory killer. This was mitigated at the time
+  by a clean `tsc -b` build with zero errors for `lib/db`,
+  `lib/api-zod`, `lib/integrations-openai-ai-server`,
+  `lib/api-client-react`, and the entire `artifacts/api-server` package;
+  an esbuild parse-check passing on every new or changed file; and the
+  full `i-supply-chain` runtime test suite (4308/4308 tests, 216 files)
+  passing. It has since been **fully closed**: CI's own
+  `typecheck-and-test` check (Section 8) ran the identical full-monorepo
+  `tsc -b` build, including `artifacts/i-supply-chain`, in an
+  environment with adequate memory, and completed with conclusion
+  **success** against this exact commit -- confirming this was a local
+  sandbox resource constraint, not an unverified or masked type error in
+  the shipped code.
 - **No dedicated page-level component test exists for
   `SupplierOffboarding.tsx`** -- consistent with, not a new gap
   relative to, the established precedent for `SupplierOnboarding.tsx`
