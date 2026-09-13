@@ -19,6 +19,7 @@ export * from "./onboardingEvents";
 export * from "./governanceTierOverrideEvents";
 export * from "./periodicEvaluationEvents";
 export * from "./blacklistEvents";
+export * from "./transitionEvents";
 export * from "./claimTokens";
 export * from "./sessions";
 export * from "./feedback";

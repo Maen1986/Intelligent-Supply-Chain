@@ -115,9 +115,28 @@ export const RACI_ACTIVITIES: RaciActivityMeta[] = [
   { key: 'prequalification_approval', labelEn: 'Pre-Qualification / ASL Approval', labelAr: 'اعتماد التأهيل المسبق / القائمة المعتمدة', governanceItemEn: 'Item 3 — Pre-Qualification & ASL', governanceItemAr: 'البند 3 — التأهيل المسبق والقائمة المعتمدة' },
   { key: 'onboarding_signoff', labelEn: 'Onboarding Sign-off', labelAr: 'اعتماد التهيئة والإدماج', governanceItemEn: 'Item 4 — Onboarding', governanceItemAr: 'البند 4 — التهيئة والإدماج' },
   { key: 'periodic_evaluation', labelEn: 'Periodic Evaluation', labelAr: 'التقييم الدوري', governanceItemEn: 'Item 5 — Periodic Evaluation', governanceItemAr: 'البند 5 — التقييم الدوري' },
-  { key: 'second_party_audit', labelEn: 'Second-party Audit', labelAr: 'تدقيق الطرف الثاني', governanceItemEn: 'Item 6 — Second-party Audit', governanceItemAr: 'البند 6 — تدقيق الطرف الثاني' },
-  { key: 'blacklist_decision', labelEn: 'Blacklist Decision (for-cause)', labelAr: 'قرار الإدراج بالقائمة السوداء (لسبب موجب)', governanceItemEn: 'Item 7a — Blacklist', governanceItemAr: 'البند 7أ — القائمة السوداء' },
-  { key: 'offboarding_decision', labelEn: 'Offboarding Decision (no-fault)', labelAr: 'قرار إنهاء التعامل (بلا مخالفة)', governanceItemEn: 'Item 7b — Offboarding', governanceItemAr: 'البند 7ب — إنهاء التعامل' },
+  // DISCLOSED: 'second_party_audit' predates the final, locked 7-item
+  // spec and does not correspond to any of its numbered items -- it is
+  // NOT the same thing as Item 6 (Blacklist, directly below). Left as a
+  // supplementary, unnumbered RACI activity rather than silently deleted;
+  // removing a RACI activity key outright is a larger, separate change
+  // (see supplierOffboarding.ts's Section 6 for the full disclosure).
+  { key: 'second_party_audit', labelEn: 'Second-party Audit', labelAr: 'تدقيق الطرف الثاني', governanceItemEn: 'Supplementary practice (not a numbered item in the final 7-item spec)', governanceItemAr: 'ممارسة تكميلية (ليست بنداً مرقَّماً ضمن المواصفة النهائية ذات السبعة بنود)' },
+  { key: 'blacklist_decision', labelEn: 'Blacklist Decision (for-cause)', labelAr: 'قرار الإدراج بالقائمة السوداء (لسبب موجب)', governanceItemEn: 'Item 6 — Blacklist', governanceItemAr: 'البند 6 — القائمة السوداء' },
+  { key: 'offboarding_decision', labelEn: 'Offboarding Decision (no-fault)', labelAr: 'قرار إنهاء التعامل (بلا مخالفة)', governanceItemEn: 'Item 7 — Offboarding & Transition', governanceItemAr: 'البند 7 — إنهاء التعامل والانتقال' },
+  // DISCLOSED CORRECTION (13 Sep 2026, found while building Item 7 -- see
+  // supplierOffboarding.ts's own Section 6): the two rows above originally
+  // read "Item 7a — Blacklist" / "Item 7b — Offboarding", an early split-
+  // numbering guess from before the 7-item spec locked in as 1-COPQ/2-RACI/
+  // 3-ASL/4-Onboarding/5-Periodic-Eval/6-Blacklist/7-Offboarding. Corrected
+  // here to match, the same kind of stale-label fix already applied once
+  // before (Site Map v176's correction of Item 6's placeholder "Second-
+  // Party Audits" label). The 'second_party_audit' row directly below
+  // carries the SAME kind of stale label ("Item 6 — Second-party Audit")
+  // and does not correspond to any of the final 7 items at all -- left in
+  // place with this note rather than silently deleted, since removing a
+  // RACI activity key outright is a larger, separate change this build
+  // does not attempt.
 ];
 
 // ---------------------------------------------------------------------------

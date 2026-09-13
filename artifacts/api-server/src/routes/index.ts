@@ -55,6 +55,7 @@ import onboardingRouter             from "./onboarding";
 import governanceTierRouter          from "./governanceTier";
 import periodicEvaluationRouter       from "./periodicEvaluation";
 import blacklistRouter                from "./blacklist";
+import offboardingRouter              from "./offboarding";
 
 const router: IRouter = Router();
 
@@ -113,6 +114,7 @@ router.use("/onboarding",             onboardingRouter);
 router.use("/governance-tier",        governanceTierRouter);
 router.use("/periodic-evaluation",    periodicEvaluationRouter);
 router.use("/blacklist",              blacklistRouter);
+router.use("/offboarding",            offboardingRouter);
 router.use(webhooksInboundRouter);
 
 export default router;
