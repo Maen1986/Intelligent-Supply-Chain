@@ -253,14 +253,33 @@ next step once real per-supplier spend/performance data exists to persist.
 
 ## 8. CI-gate evidence
 
-Pending this pass's push — see the commit this document ships alongside.
-Once pushed, the real `typecheck-and-test` and `render-build-parity` check
-conclusions for that exact commit will be fetched from GitHub Actions
-directly (not summarized from memory) and this section updated with the
-real run URL, exactly as done for Items 5, 6, and 7 previously on this
-platform. This paragraph is intentionally left as a "pending" marker rather
-than a fabricated pass, per Rule 12 (a "pending push" status must not be
-removed until the actual push/cross-check has genuinely happened).
+Real, fetched directly from GitHub Actions for this pass's actual pushed
+commit `4f63d5be74908f74ec4b69d747cf4b1e4324f2ac` — not summarized from
+memory, not assumed from the local sandbox run:
+
+- `render-build-parity` — **completed / success**
+  (https://github.com/Maen1986/Intelligent-Supply-Chain/actions/runs/34816860129/job/103889245038)
+- `typecheck-and-test` — **completed / success**
+  (https://github.com/Maen1986/Intelligent-Supply-Chain/actions/runs/34816860129/job/103889244838)
+
+Raw job-log summary lines for `typecheck-and-test`, quoted verbatim (proper
+CI runner, not this sandbox's memory-constrained environment):
+
+```
+Test Files  216 passed (216)
+     Tests  4311 passed (4311)
+   Duration  169.65s
+
+Test Files  57 passed (57)
+     Tests  941 passed (941)
+   Duration  10.37s
+```
+
+4311 is exactly 3 more than the 4308 confirmed at Item 7's own close-out
+(commit `25a93e6`) — the 3 new SOFT/HARDEST/BOUNDARY shock-wiring tests
+added in this pass (Section 5), and nothing else moved. api-server's 941
+is unchanged, consistent with this pass touching no api-server code. Both
+checks passed on the first attempt — no placeholder-content incident.
 
 ## 9. QA 10/10 customer-simulation pass — what it found and fixed
 
