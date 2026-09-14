@@ -145,6 +145,54 @@ describe('detectSupplier + computePortfolioKPIs -- non-empty portfolio sanity', 
 });
 
 // ---------------------------------------------------------------------------
+// detectSupplier -- SI Module 06 cross-engine shock check (Fix #700 QA pass,
+// 14 Sep 2026). checkLatestPeriodShock existed in supplierPerformanceRecovery.ts,
+// sourced from Module 06's maxIntraPeriodSwingPct convention, but was never
+// wired into this portfolio layer -- the live dashboard had no real
+// cross-engine trace to Module 06, only a methodology citation in a comment.
+// Three-tier stress test per Rule 7, proving the wiring end-to-end.
+// ---------------------------------------------------------------------------
+describe('detectSupplier -- Module 06 cross-engine shock check', () => {
+  it('SOFT: a gradual decline with no single-period jump does not flag shock', () => {
+    // reuses the module-level `supplier` fixture: ...60, 58, 55 -- a ~5.2%
+    // final-period move, real decline but not a shock.
+    const d = detectSupplier(supplier);
+    expect(d.shockFlag).toBe(false);
+    expect(d.shockChangePct).not.toBeNull();
+    expect(d.shockChangePct!).toBeLessThan(15);
+  });
+
+  it('HARDEST: a shock on the latest period is flagged independently of an otherwise-stable multi-period trend', () => {
+    // Ten flat periods at 80, then a sharp one-period drop to 64 (a 20% move)
+    // -- computeTrend's whole-series OLS read would not necessarily call
+    // this "declining" on its own (a single late-series outlier can sit
+    // inside an otherwise near-stable fit), but checkLatestPeriodShock must
+    // still catch it, proving it is a genuinely independent, wired check.
+    const shockSupplier: SupplierRecord = {
+      ...supplier,
+      supplierId: 'SUP-SHOCK',
+      scoreHistory12mo: [80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 64],
+    };
+    const d = detectSupplier(shockSupplier);
+    expect(d.shockFlag).toBe(true);
+    expect(d.shockChangePct!).toBeCloseTo(20, 0);
+    expect(d.shockRuleSourceEn).toMatch(/Module 06/);
+    expect(d.shockRuleSourceAr.length).toBeGreaterThan(0);
+  });
+
+  it('BOUNDARY: exactly the 15% default threshold does not flag (isShock is strictly greater-than)', () => {
+    const boundarySupplier: SupplierRecord = {
+      ...supplier,
+      supplierId: 'SUP-BOUNDARY',
+      scoreHistory12mo: [...supplier.scoreHistory12mo.slice(0, -1), 100, 85], // exactly 15.0% drop
+    };
+    const d = detectSupplier(boundarySupplier);
+    expect(d.shockChangePct!).toBeCloseTo(15, 5);
+    expect(d.shockFlag).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // computeRootCauseCOPQBreakdown / computeCOPQAttentionPriority (11 Sep 2026
 // wiring addition) — three-tier stress test per Rule 7.
 // ---------------------------------------------------------------------------

@@ -54,6 +54,7 @@ import {
   computeTrend,
   assessRecurrence,
   recommendEscalation,
+  checkLatestPeriodShock,
   type InterventionType,
   type PerformanceTrend,
 } from './supplierPerformanceRecovery';
@@ -122,6 +123,18 @@ export interface SupplierDetection {
   recurrenceCount: number;
   recommendedIntervention: InterventionType;
   combinedSignalFlag: boolean;
+  /** SI Module 06 cross-engine check (Fix #700 QA pass, 14 Sep 2026):
+   * checkLatestPeriodShock existed in supplierPerformanceRecovery.ts,
+   * sourced from Module 06's own maxIntraPeriodSwingPct convention, and was
+   * unit-tested there -- but was never actually called from this portfolio
+   * layer, so the live dashboard had no real cross-engine trace to Module 06,
+   * only a methodology citation in a doc comment. Wired in for real here:
+   * a genuine single-period shock on a supplier's own score history is now
+   * surfaced on the watchlist, independent of the whole-series trend read. */
+  shockFlag: boolean;
+  shockChangePct: number | null;
+  shockRuleSourceEn: string;
+  shockRuleSourceAr: string;
 }
 
 export function detectSupplier(s: SupplierRecord): SupplierDetection {
@@ -129,6 +142,7 @@ export function detectSupplier(s: SupplierRecord): SupplierDetection {
   const prior = s.scoreHistory12mo.slice(0, -1);
   const trendResult = computeTrend(s.scoreHistory12mo);
   const varResult = classifyVariability(prior, latest);
+  const shockResult = checkLatestPeriodShock(s.scoreHistory12mo);
 
   const closedSameRootCause = s.cars.filter((c) => c.status === 'closed').map((c) => c.id);
   const recurrence = assessRecurrence(closedSameRootCause.slice(0, -1)); // prior occurrences, not counting latest
@@ -152,6 +166,10 @@ export function detectSupplier(s: SupplierRecord): SupplierDetection {
     recurrenceCount: recurrence.recurrenceCount,
     recommendedIntervention: escalation.recommendedIntervention,
     combinedSignalFlag: escalation.combinedSignalFlag,
+    shockFlag: shockResult.isShock,
+    shockChangePct: shockResult.periodOverPeriodChangePct,
+    shockRuleSourceEn: shockResult.ruleSource,
+    shockRuleSourceAr: shockResult.ruleSourceAr,
   };
 }
 

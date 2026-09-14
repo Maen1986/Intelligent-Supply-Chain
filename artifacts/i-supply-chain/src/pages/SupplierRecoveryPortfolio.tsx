@@ -470,6 +470,15 @@ export function SupplierRecoveryPortfolio() {
                               {row.detection.recommendedIntervention}
                               {row.detection.combinedSignalFlag ? ' ⚠' : ''}
                             </span>
+                            {row.detection.shockFlag && (
+                              <span
+                                className="ml-1 mr-1 inline-block px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-800 text-[9px] font-bold align-middle"
+                                title={isAr ? row.detection.shockRuleSourceAr : row.detection.shockRuleSourceEn}
+                              >
+                                {isAr ? 'صدمة فترة واحدة' : 'SHOCK'}
+                                {row.detection.shockChangePct !== null ? ` ${row.detection.shockChangePct.toFixed(0)}%` : ''}
+                              </span>
+                            )}
                           </td>
                           <td className="py-2">
                             {row.exposure.exposureBasis === 'INSUFFICIENT_DATA' ? (
@@ -491,6 +500,13 @@ export function SupplierRecoveryPortfolio() {
               <p className="text-[10px] text-slate-400 mt-3">
                 * {isAr ? MOCK_NOTE_AR_SHORT : 'SAR exposure is a labeled mock/simulated derivation (category spend × relative supplier share), not a live production figure -- see module notes.'}
               </p>
+              {watchlist.some((r) => r.detection.shockFlag) && (
+                <p className="text-[10px] text-slate-400 mt-1">
+                  {isAr
+                    ? 'شارة \u201cصدمة\u201d: تغيّر فردي بين آخر فترتين يتجاوز الحد المصدره من اتفاقية الوحدة 06 (maxIntraPeriodSwingPct)، مستقل عن قراءة الاتجاه العامة.'
+                    : 'SHOCK badge: a single period-over-period swing past the Module-06-sourced threshold (maxIntraPeriodSwingPct convention), independent of the whole-series trend read above.'}
+                </p>
+              )}
             </div>
 
             {/* COPQ Attention Priority -- real cross-module ranking: Module 02's
