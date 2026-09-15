@@ -1,9 +1,9 @@
 # SI Module 08 — Local Content / ICV Eligibility
 ### Worked Example, Sourced Methodology, and Stress-Test Record — Rawabi Advanced Industries
 
-*Registry: SI-08 (draft, pending #436/#441 formal registry entry). Date: 15 Sep 2026, updated 16 Sep 2026 (Saudi Arabia mechanism decomposition, Part 1 slice, section 8; UAE mechanism decomposition + program-architecture generalization, same day, section 9).*
-*Engine file: `src/lib/supplierLocalContentEligibility.ts` (1076 lines, 13 programs across 7 countries via a generalized `LocalContentProgram` architecture — see section 9's own note on why the Saudi-only `SaudiProgram` pattern was generalized). Test file: `src/lib/supplierLocalContentEligibility.test.ts` (74 tests: 39 original + 23 Saudi-mechanism + 12 UAE-mechanism/architecture tests, soft/hardest/boundary tiers).*
-*Status: library-complete, unit-tested, cross-engine chain-tested, live UI rebuilt as a multi-supplier list per an independent senior-QA review (`/local-content-icv`, QA-10/10-walked-through, 16 Sep 2026), extended this pass with Saudi Arabia's full mechanism decomposition (section 8) and then the UAE's (section 9: MoIAT ICV usage note + genuine incentive-not-gate negative finding, and the Tawazun defense-offset mechanism with a real sourced formula), plus a dual-sided buyer/supplier value-framing panel added to the live UI for every country including Saudi Arabia per the owner's explicit instruction — see "What Is Not Yet Done" below for what remains, including the backend table this pass added but has not provisioned, and Part 2 of the assignment (non-GCC coverage) and the rest of Part 1 (Jordan's second mechanism if any, Oman, Qatar, Bahrain, Kuwait) which are explicitly not started yet.*
+*Registry: SI-08 (draft, pending #436/#441 formal registry entry). Date: 15 Sep 2026, updated 16 Sep 2026 (Saudi Arabia mechanism decomposition, Part 1 slice, section 8; UAE mechanism decomposition + program-architecture generalization, same day, section 9), updated again 17 Sep 2026 (Jordan's second mechanism, Oman, Qatar, Bahrain, Kuwait -- closing out the rest of Part 1, section 10).*
+*Engine file: `src/lib/supplierLocalContentEligibility.ts` (1564 lines, 20 programs across all 7 countries via a generalized `LocalContentProgram` architecture — see section 9's own note on why the Saudi-only `SaudiProgram` pattern was generalized, and section 10.1 for the 7 programs added 17 Sep 2026). Test file: `src/lib/supplierLocalContentEligibility.test.ts` (109 tests: 39 original + 23 Saudi-mechanism + 15 UAE-mechanism/architecture + 32 Jordan/Oman/Qatar/Bahrain/Kuwait-mechanism tests, soft/hardest/boundary tiers).*
+*Status: library-complete, unit-tested, cross-engine chain-tested, live UI rebuilt as a multi-supplier list per an independent senior-QA review (`/local-content-icv`, QA-10/10-walked-through, 16 Sep 2026), extended with Saudi Arabia's full mechanism decomposition (section 8), the UAE's (section 9: MoIAT ICV usage note + genuine incentive-not-gate negative finding, and the Tawazun defense-offset mechanism with a real sourced formula), and now Jordan's second mechanism plus real sourced programs for Oman, Qatar, Bahrain, and Kuwait (section 10, 17 Sep 2026) -- completing the rest of Part 1 (GCC/Jordan coverage). A dual-sided buyer/supplier value-framing panel is live in the UI for every country and every sourced mechanism type. See "What Is Not Yet Done" below for what remains, including the backend table this pass added but has not provisioned, and Part 2 of the assignment (non-GCC coverage), which is explicitly not started yet.*
 
 ---
 
@@ -65,7 +65,7 @@ remain live and completely unchanged by this work.
 
 ---
 
-## 4. Stress-Test Record (39 tests as of 15 Sep 2026, all passing; three tiers per mechanism — see section 8.8 for the 23 additional Saudi-mechanism tests (62 total) and section 9.5 for the 12 additional UAE-mechanism/architecture tests added 16 Sep 2026, 74 total)
+## 4. Stress-Test Record (39 tests as of 15 Sep 2026, all passing; three tiers per mechanism — see section 8.8 for the 23 additional Saudi-mechanism tests (62 total), section 9.5 for the 15 additional UAE-mechanism/architecture tests added 16 Sep 2026 (77 total), and section 10.8 for the 32 additional Jordan/Oman/Qatar/Bahrain/Kuwait-mechanism tests added 17 Sep 2026 (109 total))
 
 ### 4.1 Saudi Arabia — LCGPA eligible-spend-ratio
 
@@ -287,8 +287,18 @@ separately-sourced answers, exactly as Core Instruction #7 requires.
 - **UAE formula verification** against the primary MoIAT document (not just an AI-summarized
   extraction) remains an open item before this module's AE output should be used for an actual
   certification-adjacent decision.
-- **Oman/Qatar/Bahrain/Kuwait** remain `not-yet-sourced` by design — a future research pass could
-  source these, but they are not guessed here.
+- **Oman/Qatar/Bahrain/Kuwait's GENERAL national local-content frameworks** (`om-icv`,
+  `qa-national-strategy`, `bh-local-content`, `kw-local-content`) remain `not-yet-sourced` by
+  design -- a future research pass could source these, but they are not guessed here. **Updated
+  17 Sep 2026:** this no longer means these four countries have no real sourced program at all --
+  section 10 sourced 5 genuinely different, narrower mechanisms alongside these four honest gaps
+  (Oman's PTLC Mandatory List and OQ Group price preference; Qatar's Tawteen/ICV; Bahrain's SME
+  price preference and spend set-aside; Kuwait's KPC spend target), each real and computable, each
+  disclosed as narrower than the still-unsourced general program it sits beside.
+- **Jordan's post-2022 contractor-quota escalator** (section 10.2/10.7) is not confirmed beyond the
+  2018 Cabinet decision's own base 35% figure -- a future research pass could confirm whether the
+  annual 5-point increase continued, plateaued, or was superseded, but the current-year figure is
+  not guessed here.
 
 ## 8. Saudi Arabia Mechanism Decomposition (16 Sep 2026)
 
@@ -534,7 +544,7 @@ both disclosed program options, never modeled as a compliance failure.
   MoIAT page does not itself state one; the sourced 40% figure is disclosed as Abu Dhabi
   emirate-level only, never generalized to the whole country (see 9.2).
 
-### 9.5 Stress-test record — UAE Tawazun mechanism (12 new tests, all passing; full suite 62 → 74 for this file)
+### 9.5 Stress-test record — UAE Tawazun mechanism (12 new tests, all passing; full suite 62 → 77 for this file)
 
 | Mechanism | Soft | Hardest | Boundary |
 |---|---|---|---|
@@ -576,6 +586,214 @@ buyer's-reading/supplier's-reading subsections. The panel states, in both langua
 gets and what the supplier gets from the same mechanism, built entirely from facts already sourced
 and disclosed elsewhere in the engine (never a new claim or statistic) — re-stating in the live
 product the same reading this document has carried in prose since section 8.3.
+
+## 10. Jordan's Second Mechanism, Oman, Qatar, Bahrain, and Kuwait Mechanism Decomposition (17 Sep 2026)
+
+Continuing Part 1 after Saudi Arabia (section 8) and the UAE (section 9): this pass closed every
+remaining open research gap for the module's other five countries -- Jordan's second mechanism
+beyond its existing 20% price preference, and real sourced mechanisms for Oman, Qatar, Bahrain, and
+Kuwait, all four of which previously carried only a single `not-yet-sourced` placeholder program.
+Two genuinely new mechanism types were added to the taxonomy this pass: `spend-set-aside-target`
+(a sourced national/program target share plus the supplier's own binary qualification -- Jordan's
+contractor quota, Bahrain's SME allocation, Kuwait's KPC spend target) and `modified-icv-score`
+(an eligible-spend-ratio base score plus real, disclosed modifiers -- Qatar's Tawteen/ICV). Every
+country's original `not-yet-sourced` or previously-sourced program remains untouched and un-defaulted
+-- new programs are added alongside, never replacing, and `DEFAULT_PROGRAM_BY_COUNTRY` values are
+unchanged, mirroring exactly how `sa-iktva-aramco` was added in section 8 without ever becoming
+Saudi Arabia's default.
+
+### 10.1 Six-type taxonomy → program mapping
+
+| Country | Program | `mechanismType` | Status |
+|---|---|---|---|
+| Jordan | `jo-contractor-quota` (type 5) | `spend-set-aside-target` (new) | Sourced: 35% minimum Jordanian-contractor quota in international tenders, Cabinet decision reported by Jordan Times (7 May 2018 base figure; post-2022 continuation not confirmed -- see 10.7) |
+| Oman | `om-mandatory-list` (type 3) | `category-eligibility-gate` (reuses the generalized primitive from section 8.3) | Sourced: PTLC's Mandatory List, structurally identical to Saudi's Mandatory List gate |
+| Oman | `om-oq-price-preference` (type 4) | `price-preference-margin` | Sourced: OQ Group's own 10% preference for Omani-manufactured goods (company-specific, like Aramco IKTVA / QatarEnergy Tawteen) |
+| Qatar | `qa-icv-tawteen` (type 1) | `modified-icv-score` (new) | Sourced: icv.qa's official 5-pillar ICV methodology with real ICV+/blanket-floor/bonus modifiers |
+| Bahrain | `bh-sme-price-preference` (type 4) | `price-preference-margin` | Sourced: 10% SME bidding advantage, Ministerial Decision No. 23 of 2026 |
+| Bahrain | `bh-sme-spend-setaside` (type 5) | `spend-set-aside-target` (new) | Sourced: 20% of government tender value reserved for SMEs, same Ministerial Decision |
+| Kuwait | `kw-kpc-local-spend` (type 5) | `spend-set-aside-target` (new) | Sourced: KPC's own 30%-by-2040 Kuwaiti-supplier spend target, per trade.gov's Kuwait market guide |
+
+### 10.2 Jordan `jo-contractor-quota` -- spend-set-aside-target, dual-sided reading
+
+Source: Jordan's Council of Ministers approved (7 May 2018, per Jordan Times) a minimum 35% quota
+for Jordanian contractors in international tenders for projects implemented in Jordan, spanning
+ministries, public institutions, government-owned and government-shareholding companies, and
+private-sector entities floating tenders to foreign contractors. The decision also required
+Jordanian consultants for design/supervision work and set a separate 20-40% quota for six named
+energy/environment projects, framed within the 2018-2022 Economic Growth Plan with a stated 5-point
+annual escalator "during the time frame" of that plan.
+
+- **Buyer's reading** (the tendering ministry, public institution, or government-shareholding
+  company): a guaranteed floor of Jordanian-contractor participation in a tender pool that would
+  otherwise default entirely to foreign bidders -- the target itself does the enforcement, no
+  per-award negotiation required.
+- **Supplier's reading:** a Jordanian contractor's own registration status is the entire lever --
+  once qualified, it competes within a smaller, reserved 35% pool rather than the full open market
+  against every foreign bidder.
+- Worked mini-example: a Jordanian construction subcontractor bidding into an international tender
+  for a government-funded infrastructure project, confirmed as a registered Jordanian contractor,
+  in the `government` procurement context → `targetSharePct: 35`, `qualifiesForSetAside: true`,
+  `eligibleForReservedShare: true` -- `recommendLocalContentAction` returns `null` (nothing to
+  recommend; the supplier already clears the qualification bar). The same supplier, unregistered →
+  `qualifiesForSetAside: false`, and the recommendation fires: pursue registration before the next
+  bid cycle as the only way to compete within the reserved 35% pool itself, with the open
+  (non-reserved) portion of spend as the honest fallback if registration cannot complete in time.
+
+### 10.3 Oman `om-mandatory-list` -- category-eligibility-gate (the generalized primitive at work)
+
+Source: Oman's tender authority, renamed under Royal Decree No. 57/2025 to the Projects, Tenders,
+and Local Content Authority (PTLC, replacing the former Tender Board), maintains a Mandatory List
+that reserves defined categories of goods and services for Omani SMEs and local suppliers (per
+tendersarabia.com's 2026 Oman tender guide) -- structurally the exact same pass/fail bidding gate as
+Saudi Arabia's LCGPA Mandatory List (section 8.3), which is why this program reuses the same
+`computeCategoryEligibilityGate` primitive rather than a second, duplicated implementation. This
+research pass did not find a published enumeration of which specific categories sit on Oman's
+Mandatory List (unlike Saudi's sourced 233+-item count) -- the gate logic itself is real and
+sourced, but the specific category coverage is not, and is disclosed as such rather than guessed.
+
+- **Buyer's reading:** certainty of local sourcing by design for strategic Omani categories, with no
+  reliance on a price preference being large enough to swing the award.
+- **Supplier's reading:** certification for a gated category is a genuine moat -- uncertified
+  competitors, Omani or foreign, cannot bid at all, not just at a price disadvantage.
+- Same soft/hardest/boundary shape as Saudi's Mandatory List (section 8.8): in-list and certified →
+  eligible; in-list and not certified → gated out (`false`, never a partial percentage); not in a
+  Mandatory List category at all → the gate simply does not apply, eligible regardless of
+  certification status.
+
+### 10.4 Oman `om-oq-price-preference` -- price-preference-margin (a fourth company-specific program)
+
+Source: OQ Group (Oman's state-owned integrated energy company, formerly Orpic/OOC) offers a 10%
+price preference for Omani-manufactured goods in qualifying contract categories, per a 2026 Oman
+tenders market guide. This is a company-specific buyer preference, scoped to `semi-government-soe`
+procurement only (not government), joining Aramco IKTVA and QatarEnergy's Tawteen program as the
+third real "anchor-buyer-specific" mechanism this module models, and reusing the same
+`computePricePreferenceMargin` primitive already shared by Jordan, Saudi Arabia, and Bahrain (four
+countries, one computation, four disclosed source-notes).
+
+### 10.5 Qatar `qa-icv-tawteen` -- modified-icv-score, full formula walk-through, dual-sided reading
+
+Source: Qatar's official In-Country Value Digital Portal (icv.qa, the national ICV certification
+authority) publishes a real, computable methodology. Base score = eligible local spend (local
+tangible goods/materials + local services [manpower, subcontractors, goods] + Qatari
+national/resident training cost + supplier training/certification cost + depreciation of
+Qatar-based company assets) divided by total Qatar revenue **excluding exports**. Three real,
+sourced modifiers apply on top, per icv.qa's own FAQ and Enhanced Program pages: (1) "ICV+" gives
+eligible manufacturers a 50% score increase (`QATAR_ICV_PLUS_MANUFACTURER_BOOST_MULTIPLIER = 1.5`);
+(2) a "blanket score" guarantees micro/small suppliers a minimum 30% ICV score
+(`QATAR_ICV_BLANKET_FLOOR_PCT_MICRO_SMALL = 30`) regardless of the base ratio; (3) suppliers can
+claim up to 15 additional points through disclosed strategic behaviors (productivity, capability
+building, investment growth, Qatarization, exports, R&D, sustainability) -- modeled as a capped,
+self-reported input (`QATAR_ICV_MAX_SELF_REPORTED_BONUS_PCT = 15`), since icv.qa does not publish
+the internal weighting of that bonus. icv.qa states ICV "will play a role in the evaluation of
+commercial bids; premiums will be paid for higher ICV bids assuming the price is competitive" -- a
+real, sourced commercial-advantage mechanism, though not a guaranteed win or an exact percentage
+weighting, so it is disclosed here as context rather than modeled as a computed discount (the same
+discipline already applied to Aramco IKTVA's own incentive-bonus simplification in section 8.5).
+
+- **Buyer's reading** (any Qatari government or semi-government entity evaluating bids via icv.qa):
+  a single official score usable directly in bid evaluation, with real disclosed modifiers that
+  reward exactly the behaviors Qatar's strategy wants (local manufacturing, small-supplier
+  inclusion, workforce development) without inventing a new scoring methodology of its own.
+- **Supplier's reading:** multiple real, separately-improvable levers raise this score beyond raw
+  spend alone -- eligible-manufacturer status alone is worth a 50% multiplier, and a genuinely
+  small/micro supplier is guaranteed 30% regardless of its spend breakdown, both facts worth
+  checking before assuming a scoring gap requires new spend.
+- Worked mini-example: a Qatar-based industrial supplier with QAR 200,000 in local tangible
+  goods/materials, QAR 100,000 in local services, QAR 50,000 in Qatari-national training cost, QAR
+  50,000 in supplier training/certification cost, and QAR 100,000 in Qatar-based asset depreciation,
+  against QAR 1,000,000 in total Qatar revenue excluding exports, confirmed as an eligible
+  manufacturer with a disclosed 10-point strategic-behavior bonus → base ratio 50% (QAR 500,000 /
+  QAR 1,000,000), ICV+ boost to 75% (x1.5), plus the 10-point bonus → **final score 85%**. The same
+  supplier without the manufacturer boost → final score 60% (50% base + 10 bonus, no multiplier) --
+  a concrete, honest illustration of what the ICV+ modifier is actually worth.
+
+### 10.6 Bahrain `bh-sme-price-preference` and `bh-sme-spend-setaside` -- one qualifying fact, two mechanism reads
+
+Source: Ministerial Decision No. 23 of 2026 (Bahrain's Minister of Industry and Commerce, Official
+Gazette, effective 12 Jun 2026, repealing the 2017 SME-classification criteria) raised the SME
+ceiling to up to 250 employees or up to BHD 20 million annual revenue (from the prior 100 employees
+/ BHD 3 million), and grants qualifying SMEs both "a 10% advantage in bidding for government
+tenders" and a "20% allocation of the value of government procurements and tenders to SMEs" (per
+mondaq.com's legal summary) -- confirming the brief's own original taxonomy note that Bahrain
+"reserves a share of tenders for SMEs plus a stacked price preference." Both mechanisms are driven
+by the exact same underlying qualifying fact (`bhSme.qualifiesAsSme`), modeled once in the input
+schema and read twice -- once through `computePricePreferenceMargin` (the SME's qualification acts
+as a binary 100%/0% "locally-manufactured share" input to the shared price-preference primitive,
+since the qualifying fact here is binary, not a spend percentage) and once through
+`computeSpendSetAside`, the same primitive already shared by Jordan and Kuwait. A supplier is never
+asked the same SME-qualification question twice across Bahrain's two programs.
+
+### 10.7 Explicitly not modeled, to avoid fabrication
+
+- **Jordan's post-2022 escalator**: the sourced 2018 Cabinet decision stated the 35% quota would
+  rise 5 points annually "during the time frame" of the 2018-2022 Economic Growth Plan. No
+  primary-source reconfirmation of the quota's value beyond that plan's own window was found -- this
+  engine computes against the disclosed 2018 base of 35% only, never an extrapolated current-year
+  figure.
+- **Oman's general national ICV program** (`om-icv`, unchanged, still `not-yet-sourced`): Oman runs
+  its own ICV program distinct from the UAE's, but no exact pillar formula or weighting for the
+  GENERAL program was confirmed to the rigor applied to SA/AE/JO -- deliberately not guessed, left
+  exactly as it was before this pass, alongside (not replaced by) the two narrower Oman mechanisms
+  now sourced.
+- **Qatar's National Local Content Strategy** (`qa-national-strategy`, unchanged, still
+  `not-yet-sourced`): Qatar's Cabinet approved this strategy recently, too new for a public formula
+  to exist yet -- left untouched alongside the genuinely different, longer-established, and
+  fully-sourced Tawteen/ICV mechanism.
+- **A general Bahrain or Kuwait national local-content framework** (`bh-local-content`,
+  `kw-local-content`, both unchanged, still `not-yet-sourced`): no formalized, publicly-documented
+  GENERAL scoring framework was found for either country to the rigor applied to SA/AE/JO -- both
+  narrower, genuinely different, real mechanisms sourced this pass are modeled alongside, not as a
+  replacement for the honest gap.
+- **Oman's Mandatory List category enumeration** and **Kuwait's granular "Kuwaiti supplier"
+  certification criteria** (beyond simple registration status): neither was found in this research
+  pass -- both are disclosed as open gaps in the relevant program's own `sourceNoteEn`/`sourceNoteAr`,
+  not silently assumed.
+
+### 10.8 Stress-test record -- 5-country continuation (32 new tests, all passing; full suite 77 → 109 for this file)
+
+| Mechanism | Soft | Hardest | Boundary |
+|---|---|---|---|
+| `jo-contractor-quota` | registered contractor -> qualifies, recommendation returns `null` | unregistered -> excluded, recommendation cites the real 35% target | no registration status supplied -> honest `null`, never a fabricated pass/fail |
+| `om-mandatory-list` | in-list + certified -> eligible | in-list + not certified -> gated out (`false`) | not in a Mandatory List category at all -> gate does not apply regardless of certification |
+| `om-oq-price-preference` | 25% Omani-manufactured -> proportional 2.5-point discount | 0% and 100% (adversarial extremes) -> 0 and 10-point discount | exactly 100% -> recommendation returns `null` |
+| `qa-icv-tawteen` | realistic 5-pillar spend with manufacturer boost + disclosed bonus | manufacturer boost + an over-cap bonus stack together and the result is honestly capped at 100, never fabricated above it | zero Qatar revenue supplied: `null` score when not micro/small, but the blanket 30% floor still resolves when micro/small (a policy guarantee independent of spend data) |
+| `bh-sme-price-preference` | qualifies as SME -> full 10-point margin via a 100% binary share | does not qualify -> zero discount, not a partial one | no qualification status supplied -> honest `null` share, never assumed disqualified |
+| `bh-sme-spend-setaside` | qualifies as SME -> qualifies for the 20% allocation | does not qualify -> excluded, recommendation fires | the same `bhSme.qualifiesAsSme` fact drives both Bahrain programs correctly, without being asked twice |
+| `kw-kpc-local-spend` | registered Kuwaiti supplier -> qualifies for the 30% target pool | not registered -> excluded | no registration status supplied -> honest `null` |
+| Applicability | -- | every new program's out-of-scope procurement context correctly resolves `not-applicable` (e.g. Jordan's quota is public/SOE-only, OQ's preference is SOE-only, Bahrain's SME programs are government-tender-only, KPC's target is SOE-only) | -- |
+| Portfolio rollup | `setAsideQualifyingSharePct` is spend-share-weighted across qualifying/non-qualifying suppliers, and never blended with `weightedScorePct` | `modified-icv-score` groups roll up `finalScorePct` spend-share-weighted, the same convention as every other score-based mechanism | -- |
+| Structural | a new regression test asserts every one of the 7 countries now has 2 or more programs, and that every program in `PROGRAMS_BY_COUNTRY` resolves back to its own country in `PROGRAMS` -- catching a program listed under the wrong country before it reaches the UI | -- | -- |
+
+The one pre-existing test this pass had to update, not just add to: `PROGRAMS_BY_COUNTRY` lists
+exactly the countries known to run more than one program (section 9.5's own architecture sanity
+test) previously asserted `JO: 1, OM: 1, QA: 1, BH: 1, KW: 1` -- now correctly `JO: 2, OM: 3, QA: 2,
+BH: 3, KW: 2`, updated rather than left stale, since a passing-but-wrong assertion is itself a
+Decision Record 8.7 violation once the underlying fact it asserts has changed.
+
+### 10.9 UI -- routing questions generalized to every country, portfolio rollup extended
+
+The program-routing button row (sections 8.9 and 9.6) already generalized to "any country whose
+`PROGRAMS_BY_COUNTRY` list has more than one program" rather than a hardcoded SA/AE check -- so this
+pass required **zero new routing logic**, only new program entries and new input-rendering branches
+per program. Every one of the 7 new programs got its own input form (binary yes/no toggles for the
+four set-aside-qualification programs and the two category-eligibility-gate inputs, a percentage
+field for the two price-preference programs, and Qatar's full 5-field spend breakdown plus two
+checkboxes for `qa-icv-tawteen`), its own result-rendering block (a new spend-set-aside-target
+result card showing the target share and this supplier's qualification, and a new modified-icv-score
+result card showing the final score, the 5-pillar breakdown, and a plain-language note on which
+modifiers applied), and its own entry in the dual-sided `MECHANISM_VALUE_FRAMING` panel (section
+9.6) for the 2 new mechanism types -- automatic for both new programs that use
+`spend-set-aside-target` and the one that uses `modified-icv-score`, not hand-added three times.
+The client-level portfolio table's "Weighted Result" column gained a `setAsideQualifyingSharePct`
+branch so a spend-set-aside-target group renders its own qualifying-share reading rather than
+falling through to an uninformative dash. The page's hero copy and footer disclaimer were also
+updated to name all seven countries' authorities (PTLC, icv.qa, and Bahrain's/Kuwait's competent
+authorities alongside LCGPA, MoIAT, and Jordan's ministry) rather than only the original three --
+the same honesty discipline this document itself follows, applied to the page a real user reads
+first.
+
+---
 
 ---
 
@@ -879,7 +1097,7 @@ QA وأُصلحت ضمن هذه المرحلة نفسها:** كان التبدي
   الوطنية نسبة بعينها؛ نسبة الـ٤٠٪ الموثّقة مُفصَح عنها كرقم على مستوى إمارة أبوظبي فقط، ولم تُعمَّم
   على الدولة بأكملها (انظر ٩.٢).
 
-### ٩.٥ سجل اختبار الإجهاد — آلية توازن الإماراتية (١٢ اختباراً جديداً، جميعها ناجحة؛ إجمالي هذا الملف من ٦٢ إلى ٧٤)
+### ٩.٥ سجل اختبار الإجهاد — آلية توازن الإماراتية (١٢ اختباراً جديداً، جميعها ناجحة؛ إجمالي هذا الملف من ٦٢ إلى ٧٧)
 
 | الآلية | ناعم (Soft) | الأصعب (Hardest) | الحدّي (Boundary) |
 |---|---|---|---|
@@ -918,3 +1136,196 @@ QA وأُصلحت ضمن هذه المرحلة نفسها:** كان التبدي
 المستند. تذكر اللوحة، بكلا اللغتين، ما يحصل عليه المشتري وما يحصل عليه المورّد من الآلية نفسها،
 مبنية بالكامل من حقائق موثّقة ومُفصَح عنها بالفعل في مكان آخر من المحرك (وليس ادعاءً أو رقماً
 جديداً) — تعيد في المنتج الحي نفس القراءة التي يحملها هذا المستند نثراً منذ القسم ٨.٣.
+
+
+---
+
+## 10. تفكيك آلية الأردن الثانية، وعُمان، وقطر، والبحرين، والكويت (١٧ سبتمبر ٢٠٢٦)
+
+استكمالاً للجزء الأول بعد السعودية (القسم ٨) والإمارات (القسم ٩): أغلقت هذه المرحلة كل فجوة بحثية
+متبقية للدول الخمس الأخرى في هذه الوحدة -- آلية الأردن الثانية إلى جانب تفضيله السعري القائم البالغ
+٢٠٪، وآليات حقيقية موثّقة لعُمان وقطر والبحرين والكويت، وكانت هذه الدول الأربع الأخيرة تحمل سابقاً
+برنامجاً واحداً فقط بحالة "غير موثّق". أُضيف نوعان جديدان فعلياً إلى تصنيف الآليات في هذه المرحلة:
+`spend-set-aside-target` (حصة مستهدفة وطنية/برنامجية موثّقة إضافة إلى تأهل المورّد الثنائي الخاص به
+-- حصة المقاولين الأردنيين، وتخصيص البحرين للمؤسسات الصغيرة والمتوسطة، وهدف إنفاق مؤسسة البترول
+الكويتية) و`modified-icv-score` (درجة أساسية بنسبة الإنفاق المؤهل مضافاً إليها معدِّلات حقيقية
+ومُفصَح عنها -- توطين/القيمة المحلية القطرية). يبقى برنامج كل دولة الأصلي "غير الموثّق" أو الموثّق
+مسبقاً دون تغيير ودون أن يصبح افتراضياً -- تُضاف البرامج الجديدة إلى جانبه، لا بديلاً عنه، وتبقى قيم
+`DEFAULT_PROGRAM_BY_COUNTRY` دون تغيير، على غرار ما جرى تماماً مع `sa-iktva-aramco` في القسم ٨ الذي
+لم يصبح أبداً البرنامج الافتراضي للسعودية.
+
+### ١٠.١ تصنيف الأنواع الستة ← ربطها بالبرامج الجديدة
+
+| الدولة | البرنامج | `mechanismType` | الحالة |
+|---|---|---|---|
+| الأردن | `jo-contractor-quota` (النوع ٥) | `spend-set-aside-target` (جديد) | موثّق: حصة لا تقل عن ٣٥٪ للمقاولين الأردنيين في المناقصات الدولية، بقرار مجلس الوزراء بحسب جوردن تايمز (رقم أساسي لعام ٢٠١٨؛ استمرار ما بعد ٢٠٢٢ غير مؤكد -- انظر ١٠.٧) |
+| عُمان | `om-mandatory-list` (النوع ٣) | `category-eligibility-gate` (إعادة استخدام الصيغة المعمَّمة من القسم ٨.٣) | موثّق: القائمة الإلزامية لهيئة PTLC، مطابقة من حيث البنية لبوابة القائمة الإلزامية السعودية |
+| عُمان | `om-oq-price-preference` (النوع ٤) | `price-preference-margin` | موثّق: تفضيل مجموعة OQ الخاص بنسبة ١٠٪ للسلع المصنّعة عمانياً (خاص بالشركة، على غرار إكتفاء أرامكو/توطين قطر للطاقة) |
+| قطر | `qa-icv-tawteen` (النوع ١) | `modified-icv-score` (جديد) | موثّق: منهجية icv.qa الرسمية للقيمة المحلية بخمسة أركان مع معدِّلات حقيقية (ICV+ / الحد الأدنى الشامل / المكافأة) |
+| البحرين | `bh-sme-price-preference` (النوع ٤) | `price-preference-margin` | موثّق: ميزة سعرية ١٠٪ للمؤسسات الصغيرة والمتوسطة في العطاءات، القرار الوزاري رقم ٢٣ لسنة ٢٠٢٦ |
+| البحرين | `bh-sme-spend-setaside` (النوع ٥) | `spend-set-aside-target` (جديد) | موثّق: تخصيص ٢٠٪ من قيمة المناقصات الحكومية للمؤسسات الصغيرة والمتوسطة، القرار الوزاري نفسه |
+| الكويت | `kw-kpc-local-spend` (النوع ٥) | `spend-set-aside-target` (جديد) | موثّق: هدف مؤسسة البترول الكويتية الخاص بنسبة ٣٠٪ للموردين الكويتيين بحلول ٢٠٤٠، بحسب دليل trade.gov للسوق الكويتي |
+
+### ١٠.٢ `jo-contractor-quota` الأردنية -- تخصيص حصة إنفاق، قراءة ثنائية الجانب
+
+المصدر: وافق مجلس الوزراء الأردني (٧ مايو ٢٠١٨، بحسب جوردن تايمز) على حصة لا تقل عن ٣٥٪ للمقاولين
+الأردنيين في المناقصات الدولية للمشاريع المنفَّذة داخل الأردن، وتشمل الوزارات والمؤسسات العامة
+والشركات المملوكة للحكومة أو ذات المساهمة الحكومية، وكذلك القطاع الخاص عند طرح مناقصات على مقاولين
+أجانب. كما اشترط القرار إسناد أعمال التصميم والإشراف إلى استشاريين أردنيين، وحدّد حصة منفصلة تتراوح
+بين ٢٠٪ و٤٠٪ لستة مشاريع محددة في قطاعي الطاقة والبيئة، ضمن خطة النمو الاقتصادي ٢٠١٨-٢٠٢٢ مع زيادة
+سنوية معلنة بمقدار ٥ نقاط "خلال الإطار الزمني" لتلك الخطة.
+
+- **قراءة المشتري** (الوزارة أو المؤسسة العامة أو الشركة ذات المساهمة الحكومية الطارحة للمناقصة):
+  حد أدنى مضمون لمشاركة المقاولين الأردنيين في مجموعة مناقصات كانت لتذهب بالكامل للمقاولين الأجانب
+  لولا ذلك -- الحصة المستهدفة نفسها تفرض التنفيذ، دون الحاجة لتفاوض عند كل ترسية.
+- **قراءة المورّد:** حالة تسجيل المقاول الأردني نفسها هي الرافعة الكاملة -- بعد التأهل، يتنافس ضمن
+  مجموعة أصغر ومخصصة بنسبة ٣٥٪ بدلاً من السوق المفتوح بالكامل أمام كل مقاول أجنبي.
+- مثال تطبيقي مصغّر: مقاول من الباطن أردني في قطاع الإنشاءات يقدّم عطاءً ضمن مناقصة دولية لمشروع
+  بنية تحتية ممول حكومياً، مؤكَّد كمقاول أردني مسجَّل رسمياً، ضمن سياق شراء `government` →
+  `targetSharePct: 35`، `qualifiesForSetAside: true`، `eligibleForReservedShare: true` -- تُعيد
+  `recommendLocalContentAction` القيمة `null` (لا توصية مطلوبة؛ المورّد يستوفي شرط التأهل بالفعل).
+  المورّد نفسه، غير مسجَّل → `qualifiesForSetAside: false`، وتظهر التوصية: متابعة التسجيل قبل دورة
+  العطاءات القادمة بوصفه السبيل الوحيد للمنافسة ضمن الحصة المخصصة البالغة ٣٥٪ نفسها، مع بقاء الجزء
+  المفتوح (غير المخصص) من الإنفاق كبديل صادق إن تعذّر إتمام التسجيل في الوقت المناسب.
+
+### ١٠.٣ `om-mandatory-list` العُمانية -- بوابة أهلية الفئة (الصيغة المعمَّمة قيد العمل فعلياً)
+
+المصدر: تُدير هيئة المناقصات العُمانية، التي أعاد المرسوم السلطاني رقم ٥٧/٢٠٢٥ تسميتها إلى "هيئة
+المشاريع والمناقصات والمحتوى المحلي" (PTLC، خلفاً لمجلس المناقصات السابق)، قائمة إلزامية تُخصّص فئات
+محددة من السلع والخدمات للمؤسسات الصغيرة والمتوسطة والموردين المحليين العُمانيين (بحسب دليل مناقصات
+عُمان ٢٠٢٦ الصادر عن tendersarabia.com) -- وهي مطابقة تماماً من حيث البنية لبوابة نجاح/فشل القائمة
+الإلزامية لهيئة المحتوى المحلي والمشتريات الحكومية السعودية (القسم ٨.٣)، ولذلك أعاد هذا البرنامج
+استخدام صيغة `computeCategoryEligibilityGate` نفسها بدلاً من تطبيق مكرَّر منفصل. لم يعثر هذا البحث
+على قائمة منشورة بالفئات المحددة المدرجة في القائمة الإلزامية العُمانية (بخلاف السعودية الموثّقة
+بأكثر من ٢٣٣ بنداً) -- منطق البوابة نفسه حقيقي وموثّق، أما نطاق تغطية الفئات المحدد فغير موثّق،
+ويُفصَح عن ذلك صراحة بدلاً من تخمينه.
+
+- **قراءة المشتري:** يقين بالتوريد المحلي بالتصميم للفئات العُمانية الاستراتيجية، دون الاعتماد على
+  أن يكون التفضيل السعري وحده كافياً لترجيح الترسية.
+- **قراءة المورّد:** الاعتماد في فئة مشمولة بالبوابة يمثّل ميزة تنافسية حقيقية -- لا يمكن للمنافسين
+  غير المعتمدين، عُمانيين كانوا أم أجانب، التقديم إطلاقاً، وليس فقط التنافس بوضع سعري أضعف.
+- نفس شكل الاختبار الناعم/الأقسى/الحدّي المطبَّق على القائمة الإلزامية السعودية (القسم ٨.٨): مدرج
+  ومعتمد → مؤهل؛ مدرج وغير معتمد → مستبعد (`false`، وليس نسبة جزئية أبداً)؛ غير مدرج في أي فئة
+  إلزامية أصلاً → البوابة لا تنطبق ببساطة، والمورّد مؤهل بغض النظر عن حالة الاعتماد.
+
+### ١٠.٤ `om-oq-price-preference` العُمانية -- تفضيل سعري (رابع برنامج خاص بشركة بعينها)
+
+المصدر: تقدّم مجموعة OQ (شركة الطاقة المتكاملة المملوكة للدولة في عُمان، والمعروفة سابقاً بأوربيك/شركة
+عُمان للنفط) تفضيلاً سعرياً بنسبة ١٠٪ للسلع المصنّعة عمانياً ضمن فئات عقود مؤهلة، بحسب دليل سوق
+المناقصات العُمانية لعام ٢٠٢٦. هذا تفضيل خاص بمشتريات شركة بعينها، ومقصور على سياق `semi-government-soe`
+فقط (وليس الحكومي)، لينضم إلى إكتفاء أرامكو وبرنامج توطين قطر للطاقة كثالث آلية حقيقية "خاصة بمشترٍ
+رئيسي محدد" تُنمذجها هذه الوحدة، مُعيداً استخدام صيغة `computePricePreferenceMargin` نفسها التي
+تتشاركها بالفعل الأردن والسعودية والبحرين (أربع دول، حساب واحد، أربع ملاحظات مصدرية مُفصَح عنها).
+
+### ١٠.٥ `qa-icv-tawteen` القطرية -- درجة قيمة محلية معدَّلة، شرح الصيغة الكاملة، قراءة ثنائية الجانب
+
+المصدر: تنشر البوابة الرقمية الرسمية للقيمة المحلية في قطر (icv.qa، الجهة الوطنية المعتمدة لشهادات
+القيمة المحلية) منهجية حقيقية قابلة للحساب. الدرجة الأساسية = الإنفاق المحلي المؤهل (السلع والمواد
+الملموسة المحلية + الخدمات المحلية [القوى العاملة والمقاولون من الباطن والسلع] + تكلفة تدريب
+المواطنين/المقيمين القطريين + تكلفة تدريب/اعتماد الموردين + إهلاك أصول الشركة المقيمة في قطر) مقسومة
+على إجمالي إيرادات قطر **باستثناء الصادرات**. تُضاف ثلاثة معدِّلات حقيقية وموثّقة فوق الدرجة
+الأساسية، بحسب صفحتي الأسئلة الشائعة والبرنامج المعزَّز على icv.qa: (١) "ICV+" تمنح المصنّعين
+المؤهلين زيادة ٥٠٪ على الدرجة (`QATAR_ICV_PLUS_MANUFACTURER_BOOST_MULTIPLIER = 1.5`)؛ (٢) "الدرجة
+الشاملة" تضمن للموردين متناهي الصغر والصغار حداً أدنى ٣٠٪
+(`QATAR_ICV_BLANKET_FLOOR_PCT_MICRO_SMALL = 30`) بغض النظر عن النسبة الأساسية؛ (٣) يمكن للموردين
+المطالبة بحتى ١٥ نقطة إضافية عبر سلوكيات استراتيجية موثّقة (الإنتاجية، بناء القدرات، نمو الاستثمار،
+القطرنة، التصدير، البحث والتطوير، الاستدامة) -- وتُنمذَج كمُدخل ذاتي التصريح بحدّ أقصى
+(`QATAR_ICV_MAX_SELF_REPORTED_BONUS_PCT = 15`)، إذ لا تنشر icv.qa الترجيح الداخلي لهذه المكافأة.
+تذكر icv.qa أن القيمة المحلية "ستؤدي دوراً في تقييم العروض التجارية؛ إذ تُمنح علاوات للعروض ذات
+القيمة المحلية الأعلى بشرط أن يكون السعر تنافسياً" -- آلية ميزة تجارية حقيقية وموثّقة، إلا أنها لا
+تضمن الفوز ولا تمثّل ترجيحاً بنسبة مئوية دقيقة، لذا تُفصَح هنا كسياق لا كخصم محسوب (نفس الانضباط
+المُطبَّق على تبسيط المكافأة التحفيزية لإكتفاء أرامكو في القسم ٨.٥).
+
+- **قراءة المشتري** (أي جهة حكومية أو شبه حكومية قطرية تُقيِّم العروض عبر icv.qa): درجة رسمية واحدة
+  قابلة للاستخدام مباشرة في تقييم العطاءات، مع معدِّلات حقيقية ومُفصَح عنها تكافئ تحديداً السلوكيات
+  التي تستهدفها استراتيجية قطر (التصنيع المحلي، إشراك الموردين الصغار، تطوير القوى العاملة) دون
+  ابتكار منهجية تقييم جديدة خاصة بها.
+- **قراءة المورّد:** توجد عدة روافع حقيقية وقابلة للتحسين كل على حدة لرفع هذه الدرجة إلى جانب
+  الإنفاق وحده -- صفة "المصنّع المؤهل" وحدها تساوي مضاعِفاً بنسبة ٥٠٪، ويُضمَن للمورّد متناهي
+  الصغر/الصغير فعلياً ٣٠٪ بغض النظر عن تفصيل إنفاقه، وكلاهما حقيقة تستحق التحقق منها قبل افتراض أن
+  سد فجوة الدرجة يتطلب إنفاقاً جديداً.
+- مثال تطبيقي مصغّر: مورّد صناعي مقيم في قطر بقيمة ٢٠٠,٠٠٠ ر.ق سلع ومواد ملموسة محلية، و١٠٠,٠٠٠ ر.ق
+  خدمات محلية، و٥٠,٠٠٠ ر.ق تكلفة تدريب مواطنين قطريين، و٥٠,٠٠٠ ر.ق تكلفة تدريب/اعتماد موردين،
+  و١٠٠,٠٠٠ ر.ق إهلاك أصول مقيمة في قطر، مقابل ١,٠٠٠,٠٠٠ ر.ق إجمالي إيرادات قطر باستثناء الصادرات،
+  مؤكَّد كمصنّع مؤهل مع مكافأة سلوك استراتيجي مُفصَح عنها بـ١٠ نقاط → نسبة أساسية ٥٠٪ (٥٠٠,٠٠٠ ر.ق /
+  ١,٠٠٠,٠٠٠ ر.ق)، ثم مكافأة ICV+ ترفعها إلى ٧٥٪ (×١.٥)، زائد مكافأة الـ١٠ نقاط → **الدرجة النهائية
+  ٨٥٪**. المورّد نفسه دون مكافأة المصنّع → الدرجة النهائية ٦٠٪ (٥٠٪ أساسية + ١٠ مكافأة، دون مضاعِف)
+  -- توضيح ملموس وصادق لقيمة معدِّل ICV+ فعلياً.
+
+### ١٠.٦ `bh-sme-price-preference` و`bh-sme-spend-setaside` البحرينيتان -- حقيقة تأهل واحدة، قراءتا آلية
+
+المصدر: القرار الوزاري رقم ٢٣ لسنة ٢٠٢٦ (وزير الصناعة والتجارة البحريني، الجريدة الرسمية، نافذ من
+١٢ يونيو ٢٠٢٦، ألغى معايير تصنيف المؤسسات الصغيرة والمتوسطة لعام ٢٠١٧) رفع سقف التصنيف إلى حتى ٢٥٠
+موظفاً أو حتى ٢٠ مليون دينار بحريني إيرادات سنوية (من السقف السابق ١٠٠ موظف / ٣ ملايين دينار)، ويمنح
+المؤسسات المؤهلة كلاً من "ميزة بنسبة ١٠٪ في تقديم العطاءات للمناقصات الحكومية" و"تخصيص ٢٠٪ من قيمة
+المشتريات والمناقصات الحكومية" لها (بحسب الملخص القانوني الصادر عن mondaq.com) -- وهو ما يؤكد ملاحظة
+التصنيف الأصلية في الموجز بأن البحرين "تخصص حصة من المناقصات للمؤسسات الصغيرة والمتوسطة إضافة إلى
+تفضيل سعري متراكب." تعتمد الآليتان كلتاهما على حقيقة التأهل الأساسية نفسها (`bhSme.qualifiesAsSme`)،
+المُنمذَجة مرة واحدة في مخطط المُدخلات وتُقرأ مرتين -- مرة عبر `computePricePreferenceMargin` (يعمل
+تأهل المؤسسة الصغيرة أو المتوسطة كحصة ثنائية ١٠٠٪/٠٪ "مصنَّعة محلياً" مُدخَلة إلى صيغة تفضيل السعر
+المشتركة، لأن حقيقة التأهل هنا ثنائية وليست نسبة إنفاق) ومرة عبر `computeSpendSetAside`، الصيغة
+نفسها التي يتشاركها بالفعل الأردن والكويت. لا يُسأل المورّد سؤال تأهل المؤسسة الصغيرة أو المتوسطة
+مرتين عبر برنامجي البحرين.
+
+### ١٠.٧ ما لم يُنمذَج عمداً، تجنباً للاختلاق
+
+- **زيادة الأردن السنوية بعد ٢٠٢٢**: نصّ قرار مجلس الوزراء الموثّق لعام ٢٠١٨ على زيادة الحصة البالغة
+  ٣٥٪ بمقدار ٥ نقاط سنوياً "خلال الإطار الزمني" لخطة النمو الاقتصادي ٢٠١٨-٢٠٢٢. لم يُعثر على مصدر
+  أساسي يعيد تأكيد قيمة الحصة بعد نهاية إطار تلك الخطة -- يحسب هذا المحرك بناءً على الرقم الأساسي
+  الموثّق لعام ٢٠١٨ (٣٥٪) فقط، دون أي تقدير مُسقَط للسنة الحالية.
+- **برنامج القيمة المحلية الوطني العام في عُمان** (`om-icv`، دون تغيير، لا يزال "غير موثّق"): تدير
+  عُمان برنامج قيمة محلية خاصاً بها مختلفاً عن برنامج الإمارات، لكن لم تُؤكَّد صيغة أركان دقيقة أو
+  أوزان للبرنامج العام بنفس دقة السعودية والإمارات والأردن -- لم يتم تخمينها عمداً، وتُركت كما كانت
+  قبل هذه المرحلة، إلى جانب (لا بديلاً عن) الآليتين العُمانيتين الأضيق نطاقاً الموثّقتين الآن.
+- **الاستراتيجية الوطنية للمحتوى المحلي في قطر** (`qa-national-strategy`، دون تغيير، لا تزال "غير
+  موثّقة"): أقرّها مجلس الوزراء القطري مؤخراً، ولا تزال حديثة العهد بحيث لم تُنشر صيغة حساب علنية
+  بعد -- تُركت دون تغيير إلى جانب آلية توطين/القيمة المحلية المختلفة فعلياً والأطول عهداً والموثّقة
+  بالكامل.
+- **إطار وطني عام للمحتوى المحلي في البحرين أو الكويت** (`bh-local-content` و`kw-local-content`،
+  كلاهما دون تغيير، لا يزالان "غير موثّقين"): لم يُعثر على إطار عام موثّق علنياً لأي من الدولتين بنفس
+  دقة السعودية والإمارات والأردن -- تُنمذَج الآليتان الأضيق نطاقاً والمختلفتان فعلياً الموثّقتان في
+  هذه المرحلة إلى جانب الفجوة الصادقة، لا بديلاً عنها.
+- **تعداد فئات القائمة الإلزامية العُمانية** و**معايير التأهيل الأدق لصفة "المورّد الكويتي"** (بخلاف
+  حالة التسجيل البسيطة): لم يُعثر على أي منهما في هذا البحث -- يُفصَح عن كليهما كفجوة مفتوحة ضمن
+  `sourceNoteEn`/`sourceNoteAr` الخاصة بالبرنامج المعني، دون افتراض صامت.
+
+### ١٠.٨ سجل اختبار الإجهاد -- استكمال الدول الخمس (٣٢ اختباراً جديداً، جميعها ناجحة؛ إجمالي هذا الملف من ٧٧ إلى ١٠٩)
+
+| الآلية | ناعم | أقسى | حدّي |
+|---|---|---|---|
+| `jo-contractor-quota` | مقاول مسجَّل → مؤهل، والتوصية تُعيد `null` | غير مسجَّل → مستبعد، والتوصية تذكر الحصة الحقيقية ٣٥٪ | لا حالة تسجيل مُدخلة → `null` صادقة، وليس نجاحاً أو فشلاً ملفَّقاً |
+| `om-mandatory-list` | مدرج + معتمد → مؤهل | مدرج + غير معتمد → مستبعد (`false`) | غير مدرج في أي فئة إلزامية أصلاً → البوابة لا تنطبق بغض النظر عن الاعتماد |
+| `om-oq-price-preference` | ٢٥٪ تصنيع عماني → خصم تناسبي ٢.٥ نقطة | ٠٪ و١٠٠٪ (الحدّان المتطرفان) → خصم ٠ و١٠ نقاط | ١٠٠٪ بالضبط → التوصية تُعيد `null` |
+| `qa-icv-tawteen` | تفصيل إنفاق واقعي بخمسة أركان مع مكافأة المصنّع والمكافأة المُفصَح عنها | تتراكم مكافأة المصنّع مع مكافأة تتجاوز الحد، والنتيجة تُقيَّد بصدق عند ١٠٠، دون اختلاق تجاوزها | لا إيرادات قطرية مُدخلة: درجة `null` إن لم يكن متناهي الصغر/صغيراً، لكن الحد الأدنى الشامل ٣٠٪ يظل يُحسَب إن كان كذلك (ضمانة سياسية مستقلة عن بيانات الإنفاق) |
+| `bh-sme-price-preference` | مؤهل كمؤسسة صغيرة/متوسطة → هامش كامل ١٠ نقاط عبر حصة ثنائية ١٠٠٪ | غير مؤهل → خصم صفري، وليس جزئياً | لا حالة تأهل مُدخلة → حصة `null` صادقة، دون افتراض استبعاد |
+| `bh-sme-spend-setaside` | مؤهل → مؤهل لتخصيص ٢٠٪ | غير مؤهل → مستبعد، والتوصية تظهر | حقيقة `bhSme.qualifiesAsSme` نفسها تقود برنامجي البحرين كليهما بشكل صحيح، دون سؤالها مرتين |
+| `kw-kpc-local-spend` | مورّد كويتي مسجَّل → مؤهل لحصة هدف ٣٠٪ | غير مسجَّل → مستبعد | لا حالة تسجيل مُدخلة → `null` صادقة |
+| الانطباق | -- | كل سياق شراء خارج نطاق كل برنامج جديد يُحسَم بشكل صحيح إلى "لا ينطبق" (حصة الأردن حكومية/شبه حكومية فقط، تفضيل OQ شبه حكومي فقط، برامج البحرين للمناقصات الحكومية فقط، هدف مؤسسة البترول الكويتية شبه حكومي فقط) | -- |
+| تجميع المحفظة | `setAsideQualifyingSharePct` مرجَّحة بحصة الإنفاق بين الموردين المؤهلين وغير المؤهلين، ولا تُدمَج أبداً مع `weightedScorePct` | مجموعات `modified-icv-score` تُجمِّع `finalScorePct` مرجَّحة بحصة الإنفاق، بنفس اتفاقية كل آلية أخرى قائمة على درجة | -- |
+| بنيوي | اختبار انحدار جديد يؤكد أن كل دولة من الدول السبع أصبحت تضم برنامجين أو أكثر الآن، وأن كل برنامج في `PROGRAMS_BY_COUNTRY` يعود إلى دولته الصحيحة في `PROGRAMS` -- ما يكشف برنامجاً مُدرَجاً تحت دولة خاطئة قبل وصوله إلى الواجهة | -- | -- |
+
+الاختبار الوحيد المسبق الذي احتاجته هذه المرحلة للتحديث، لا مجرد الإضافة إليه: اختبار السلامة البنيوية
+الخاص بالقسم ٩.٥ نفسه ("`PROGRAMS_BY_COUNTRY` يسرد بدقة الدول المعروف أنها تدير أكثر من برنامج واحد")
+كان يفترض سابقاً `JO: 1, OM: 1, QA: 1, BH: 1, KW: 1` -- وأصبح الآن بشكل صحيح `JO: 2, OM: 3, QA: 2,
+BH: 3, KW: 2`، وجرى تحديثه لا تركه راكداً، إذ إن تأكيداً ناجحاً لكنه خاطئ يمثّل هو نفسه مخالفة لسجل
+القرار ٨.٧ بمجرد تغيّر الحقيقة التي يؤكدها.
+
+### ١٠.٩ الواجهة -- تعميم أسئلة التوجيه على كل دولة، وتوسيع تجميع المحفظة
+
+صف أزرار سؤال توجيه البرنامج (القسمان ٨.٩ و٩.٦) عُمِّم مسبقاً ليشمل "أي دولة تحتوي قائمة
+`PROGRAMS_BY_COUNTRY` الخاصة بها أكثر من برنامج واحد" بدلاً من فحص مُشفَّر للسعودية والإمارات فقط --
+لذا لم تحتج هذه المرحلة **أي منطق توجيه جديد إطلاقاً**، بل فقط مُدخلات برامج جديدة وفروع عرض مُدخلات
+جديدة لكل برنامج. حصل كل برنامج من البرامج السبعة الجديدة على نموذج مُدخلات خاص به (مفاتيح تبديل
+نعم/لا ثنائية للبرامج الأربعة القائمة على تأهل تخصيص الحصة، ومُدخلا بوابة أهلية الفئة، وحقل نسبة
+مئوية للبرنامجين القائمين على تفضيل السعر، وتفصيل إنفاق قطري كامل بخمسة حقول زائد مربعي اختيار
+لبرنامج `qa-icv-tawteen`)، وكتلة عرض نتيجة خاصة به (بطاقة نتيجة جديدة لـ`spend-set-aside-target`
+تُظهر الحصة المستهدفة وتأهل هذا المورّد، وبطاقة نتيجة جديدة لـ`modified-icv-score` تُظهر الدرجة
+النهائية وتفصيل الأركان الخمسة وملاحظة بلغة واضحة حول المعدِّلات المطبَّقة)، وإدخالاً خاصاً به في
+لوحة `MECHANISM_VALUE_FRAMING` ثنائية الجانب (القسم ٩.٦) للنوعين الجديدين من الآليات -- تلقائياً
+للبرنامجين الجديدين اللذين يستخدمان `spend-set-aside-target` والبرنامج الذي يستخدم
+`modified-icv-score`، دون إضافة يدوية ثلاث مرات. اكتسب عمود "النتيجة المرجحة" في جدول المحفظة على
+مستوى العميل فرعاً جديداً لـ`setAsideQualifyingSharePct`، بحيث تعرض مجموعة `spend-set-aside-target`
+قراءة حصتها المؤهلة الخاصة بدلاً من الانتقال إلى شرطة غير مفيدة. حُدِّث أيضاً نص المقدمة الرئيسية
+ونص إخلاء المسؤولية في تذييل الصفحة ليذكرا جهات الدول السبع كلها (PTLC، وicv.qa، والجهتين المختصتين
+في البحرين والكويت، إلى جانب LCGPA وMoIAT ووزارة الأردن) بدلاً من الدول الثلاث الأصلية فقط -- نفس
+انضباط الصدق الذي يتبعه هذا المستند نفسه، مُطبَّقاً على الصفحة التي يقرأها المستخدم الحقيقي أولاً.

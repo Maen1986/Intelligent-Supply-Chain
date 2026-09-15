@@ -132,6 +132,79 @@
  * government source, generally kept current) cites the same 2019 guidelines
  * without noting a later update, and that absence of a newer figure is
  * disclosed rather than treated as silent confirmation nothing has changed.
+ *
+ * ============================================================================
+ * PART 1 CONTINUATION: JORDAN / OMAN / QATAR / BAHRAIN / KUWAIT (17 Sep 2026)
+ * ============================================================================
+ * Per the user's "Proceed" instruction following the UAE decomposition, this
+ * pass continued Part 1 into the five remaining GCC + Jordan countries,
+ * exactly as the file header's "WHY THIS IS MULTI-COUNTRY" section had
+ * flagged as future work. Real, dated, sourced mechanisms were found for
+ * ALL FIVE countries -- each country's ORIGINAL single program is kept
+ * verbatim (unchanged), and newly-sourced programs are added alongside it,
+ * never replacing it, following the exact SA/AE precedent of layering
+ * narrower/company-specific real mechanisms next to a country's main
+ * program rather than guessing what the main program's own formula is:
+ *   - Jordan: a genuinely SECOND mechanism beyond the 20% price preference
+ *     -- a Cabinet-approved 35% quota (2018, Jordan Times reporting the
+ *     Council of Ministers decision) for Jordanian contractors in
+ *     international tenders, part of the 2018-2022 Economic Growth Plan.
+ *     The plan specified a 5-point annual increase "during the time frame"
+ *     of that plan; no primary source reconfirming the value beyond 2022
+ *     was found, so this engine computes against the disclosed 2018 base
+ *     (35%) only -- never an extrapolated current-year guess (`jo-
+ *     contractor-quota`, new `spend-set-aside-target` mechanism type).
+ *   - Oman: the general national ICV program remains not-yet-sourced (kept
+ *     verbatim as `om-icv`), but two genuinely different, narrower Oman
+ *     mechanisms WERE sourced -- the PTLC Mandatory List (Royal Decree No.
+ *     57/2025 renamed Oman's Tender Board to the Projects, Tenders, and
+ *     Local Content Authority; the list itself reserves categories for
+ *     Omani SMEs/local suppliers, per tendersarabia.com's 2026 guide,
+ *     structurally identical to Saudi's Mandatory List gate, `om-
+ *     mandatory-list`) and OQ Group's own 10% price preference for
+ *     Omani-manufactured goods (`om-oq-price-preference`, an anchor-buyer-
+ *     specific mechanism in the same pattern as Aramco IKTVA / QatarEnergy
+ *     Tawteen -- a real company program, not the national ICV score).
+ *   - Qatar: the newly-approved National Local Content Strategy remains
+ *     not-yet-sourced (kept verbatim as `qa-national-strategy` -- still too
+ *     new for a public formula), but Qatar's much longer-established
+ *     official Tawteen/ICV program WAS fully sourced from icv.qa (the
+ *     national ICV certification portal's own FAQ and Enhanced Program
+ *     pages): a real 5-cost-category eligible-spend base ratio (local
+ *     tangible goods/materials, local services, Qatari-national/resident
+ *     training, supplier training/certification, Qatar-based asset
+ *     depreciation -- against total Qatar revenue EXCLUDING exports, with
+ *     sub-supplier development costs crediting 100% to the primary
+ *     supplier), PLUS three real sourced modifiers: an "ICV+" 50% score
+ *     boost for eligible manufacturers, a "blanket score" 30% floor for
+ *     micro/small suppliers, and a capped (0-15pt) self-reported
+ *     strategic-behaviour bonus. A new `modified-icv-score` mechanism type
+ *     was added specifically so these modifiers are shown to the reader as
+ *     real decision-relevant facts, not smoothed into a single opaque
+ *     number (`qa-icv-tawteen`).
+ *   - Bahrain: the general national framework remains not-yet-sourced (kept
+ *     verbatim as `bh-local-content`), but Ministerial Decision No. 23 of
+ *     2026 (Bahrain's Minister of Industry and Commerce, Official Gazette
+ *     11 Jun 2026, effective 12 Jun 2026) sourced BOTH mechanisms the
+ *     brief's own taxonomy note anticipated: a 10% SME bidding price
+ *     advantage (`bh-sme-price-preference`, reusing the price-preference-
+ *     margin primitive) and a 20% SME government-spend allocation (`bh-sme-
+ *     spend-setaside`, new spend-set-aside-target mechanism) -- both keyed
+ *     off the same SME-qualification fact (<=250 employees or <=BHD 20M
+ *     annual revenue, up from the prior 100 employees / BHD 3M ceiling).
+ *   - Kuwait: the general national framework remains not-yet-sourced (kept
+ *     verbatim as `kw-local-content`), but the U.S. government's own
+ *     trade.gov Kuwait market-intelligence guide sourced KPC's own real
+ *     spend target -- a minimum 30% of project spending designated for
+ *     Kuwaiti suppliers, targeted "by 2040" (`kw-kpc-local-spend`, the
+ *     spend set-aside the brief's own taxonomy note anticipated for KPC/
+ *     KOC).
+ * Two shared computation primitives (`computePricePreferenceMargin`,
+ * `computeCategoryEligibilityGate` -- the latter generalized this pass from
+ * the SA-only `computeMandatoryListSa`) now serve SEVEN programs across
+ * four countries with the exact same "one computation, N source-notes"
+ * pattern already used for Saudi/Jordan; a new third shared primitive
+ * (`computeSpendSetAside`) was added for the three new set-aside programs.
  */
 
 // ---------------------------------------------------------------------------
@@ -159,14 +232,27 @@ export type LocalContentProgram =
   | 'ae-icv-general'      // AE type 1: certification score (the module's original mechanism)
   | 'ae-tawazun-offset'   // AE type 6: offset/tech-transfer obligation (Tawazun Economic Council, real formula)
   | 'jo-price-preference' // JO type 4: bid-evaluation price preference (the module's original mechanism)
-  | 'om-icv'              // OM: not-yet-sourced (the module's original mechanism)
-  | 'qa-national-strategy' // QA: not-yet-sourced (the module's original mechanism)
-  | 'bh-local-content'    // BH: not-yet-sourced (the module's original mechanism)
-  | 'kw-local-content';   // KW: not-yet-sourced (the module's original mechanism)
+  | 'jo-contractor-quota' // JO type 5 (new, 17 Sep 2026): international-tender contractor quota, real Cabinet decision
+  | 'om-icv'              // OM: not-yet-sourced (the module's original mechanism -- general national ICV formula)
+  | 'om-mandatory-list'   // OM type 3 (new, 17 Sep 2026): PTLC Mandatory List category eligibility gate
+  | 'om-oq-price-preference' // OM type 4 (new, 17 Sep 2026): OQ Group price preference (company-specific, like AE Tawazun/QA QatarEnergy)
+  | 'qa-national-strategy' // QA: not-yet-sourced (the module's original mechanism -- the NEW Cabinet-approved National Local Content Strategy specifically)
+  | 'qa-icv-tawteen'      // QA type 1 (new, 17 Sep 2026): official icv.qa Tawteen ICV score with real modifiers
+  | 'bh-local-content'    // BH: not-yet-sourced (the module's original mechanism -- general national framework)
+  | 'bh-sme-price-preference' // BH type 4 (new, 17 Sep 2026): 10% SME bidding price advantage, Ministerial Decision 23/2026
+  | 'bh-sme-spend-setaside'   // BH type 5 (new, 17 Sep 2026): 20% SME spend allocation, Ministerial Decision 23/2026
+  | 'kw-local-content'    // KW: not-yet-sourced (the module's original mechanism -- general national framework)
+  | 'kw-kpc-local-spend'; // KW type 5 (new, 17 Sep 2026): KPC 30% Kuwaiti-supplier spend target
 
 /** Which program `assessSupplierLocalContent` resolves to when `program` is
  * omitted -- always each country's original pre-existing single mechanism,
- * so this generalization changes no caller's default behavior. */
+ * so this generalization (and the 17 Sep 2026 Part-1-continuation additions
+ * below it) changes no caller's default behavior. Every newly-added JO/OM/
+ * QA/BH/KW program is deliberately NOT made the default, mirroring how
+ * Saudi's real, sourced, computable `sa-iktva-aramco` is not the SA default
+ * either -- the default stays each country's own MAIN named program, with
+ * narrower/company-specific/category-specific real mechanisms reachable via
+ * the routing question (`PROGRAMS_BY_COUNTRY`) instead. */
 export const DEFAULT_PROGRAM_BY_COUNTRY: Record<LocalContentCountry, LocalContentProgram> = {
   SA: 'sa-lcgpa-general', AE: 'ae-icv-general', JO: 'jo-price-preference',
   OM: 'om-icv', QA: 'qa-national-strategy', BH: 'bh-local-content', KW: 'kw-local-content',
@@ -174,16 +260,17 @@ export const DEFAULT_PROGRAM_BY_COUNTRY: Record<LocalContentCountry, LocalConten
 
 /** Every program that exists for a given country, in display order -- used
  * by the UI to render the routing-question button row whenever a country
- * has more than one (today: SA and AE; every other country still has
- * exactly one, so no routing question is shown for them yet). */
+ * has more than one. As of the 17 Sep 2026 Part-1-continuation pass, every
+ * country now has more than one program -- the routing question is no
+ * longer an SA/AE-only UI affordance. */
 export const PROGRAMS_BY_COUNTRY: Record<LocalContentCountry, LocalContentProgram[]> = {
   SA: ['sa-lcgpa-general', 'sa-mandatory-list', 'sa-price-preference', 'sa-iktva-aramco', 'sa-gami-defense', 'sa-likt'],
   AE: ['ae-icv-general', 'ae-tawazun-offset'],
-  JO: ['jo-price-preference'],
-  OM: ['om-icv'],
-  QA: ['qa-national-strategy'],
-  BH: ['bh-local-content'],
-  KW: ['kw-local-content'],
+  JO: ['jo-price-preference', 'jo-contractor-quota'],
+  OM: ['om-icv', 'om-mandatory-list', 'om-oq-price-preference'],
+  QA: ['qa-national-strategy', 'qa-icv-tawteen'],
+  BH: ['bh-local-content', 'bh-sme-price-preference', 'bh-sme-spend-setaside'],
+  KW: ['kw-local-content', 'kw-kpc-local-spend'],
 };
 
 /** Which buyer this assessment is for -- see file header: every sourced
@@ -204,11 +291,13 @@ const PROCUREMENT_CONTEXT_LABEL_AR: Record<ProcurementContext, string> = {
 export type LocalContentMechanismType =
   | 'eligible-spend-ratio'      // Saudi LCGPA general score
   | 'weighted-pillar-score'     // UAE ICV
-  | 'price-preference-margin'   // Jordan; Saudi LCGPA national-product preference
-  | 'category-eligibility-gate' // Saudi LCGPA Mandatory List
+  | 'price-preference-margin'   // Jordan; Saudi LCGPA national-product preference; Oman OQ Group; Bahrain SME
+  | 'category-eligibility-gate' // Saudi LCGPA Mandatory List; Oman PTLC Mandatory List
   | 'anchor-buyer-score'        // Saudi Aramco IKTVA
   | 'offset-obligation-gate'    // UAE Tawazun defense-sector offset obligation
-  | 'not-yet-sourced';          // Oman / Qatar / Bahrain / Kuwait; Saudi GAMI / LIKT
+  | 'spend-set-aside-target'    // (new, 17 Sep 2026) Jordan contractor quota; Bahrain SME allocation; Kuwait KPC local spend -- a sourced NATIONAL/PROGRAM target share plus this supplier's own qualification for it, not a per-bid score
+  | 'modified-icv-score'        // (new, 17 Sep 2026) Qatar Tawteen/ICV -- eligible-spend-ratio base score plus real sourced modifiers (ICV+ manufacturer boost, micro/small blanket floor, capped strategic-behavior bonus)
+  | 'not-yet-sourced';          // Oman general ICV / Qatar National Local Content Strategy / Bahrain general framework / Kuwait general framework; Saudi GAMI / LIKT
 
 export interface CountryFrameworkInfo {
   country: LocalContentCountry;
@@ -326,11 +415,22 @@ const AE_PROGRAMS: Record<'ae-icv-general' | 'ae-tawazun-offset', CountryFramewo
 };
 
 // ---------------------------------------------------------------------------
-// Section 1d — Jordan / Oman / Qatar / Bahrain / Kuwait: one program each
-// for now (unchanged content, renamed keys -- see file header).
+// Section 1d — Jordan / Oman / Qatar / Bahrain / Kuwait. 17 Sep 2026 Part-1-
+// continuation pass ("Proceed" instruction): each of these five countries
+// now has its ORIGINAL single program (unchanged, renamed keys from the 16
+// Sep pass) PLUS newly-sourced real programs found in this pass. Where
+// nothing sourceable was found, the original `not-yet-sourced` entry is
+// kept verbatim (never guessed) -- Decision Record 8.7.
 // ---------------------------------------------------------------------------
 
-const JO_OM_QA_BH_KW_PROGRAMS: Record<'jo-price-preference' | 'om-icv' | 'qa-national-strategy' | 'bh-local-content' | 'kw-local-content', CountryFrameworkInfo> = {
+const JO_OM_QA_BH_KW_PROGRAMS: Record<
+  | 'jo-price-preference' | 'jo-contractor-quota'
+  | 'om-icv' | 'om-mandatory-list' | 'om-oq-price-preference'
+  | 'qa-national-strategy' | 'qa-icv-tawteen'
+  | 'bh-local-content' | 'bh-sme-price-preference' | 'bh-sme-spend-setaside'
+  | 'kw-local-content' | 'kw-kpc-local-spend',
+  CountryFrameworkInfo
+> = {
   'jo-price-preference': {
     country: 'JO', countryNameEn: 'Jordan', countryNameAr: 'المملكة الأردنية الهاشمية',
     programNameEn: 'National Industry Price Preference', programNameAr: 'تفضيل السعر للصناعة الوطنية',
@@ -339,37 +439,93 @@ const JO_OM_QA_BH_KW_PROGRAMS: Record<'jo-price-preference' | 'om-icv' | 'qa-nat
     sourceNoteEn: "Cabinet-approved 20% price preference for locally-manufactured products in public tenders, announced by Jordan's Minister of Industry, Trade & Supply (per Petra, Jordan's official state news agency). This adjusts bid evaluation (a price handicap favoring local bidders), not a company's own local-content percentage -- a different mechanism from LCGPA/ICV. The precise governing bylaw/regulation number was not identified in available sourcing; the mechanism and 20% figure are real and sourced, the exact legal citation is not.",
     sourceNoteAr: 'تفضيل سعري بنسبة ٢٠٪ للمنتجات المصنّعة محلياً في المناقصات الحكومية، أقرّه مجلس الوزراء وأعلنه وزير الصناعة والتجارة والتموين الأردني (بحسب وكالة الأنباء الأردنية الرسمية "بترا"). يُطبَّق هذا التفضيل على تقييم العطاءات (خصم سعري لصالح المورّدين المحليين)، وليس كنسبة محتوى محلي خاصة بالشركة -- آلية مختلفة عن LCGPA/ICV. لم يتم تحديد رقم النظام أو التشريع الدقيق ضمن المصادر المتاحة؛ الآلية والنسبة ٢٠٪ موثّقتان، أما الاستشهاد القانوني الدقيق فغير مؤكد.',
   },
+  'jo-contractor-quota': {
+    country: 'JO', countryNameEn: 'Jordan', countryNameAr: 'المملكة الأردنية الهاشمية',
+    programNameEn: 'International Tender Contractor Quota', programNameAr: 'حصة المقاولين الأردنيين في المناقصات الدولية',
+    mechanismType: 'spend-set-aside-target', program: 'jo-contractor-quota',
+    applicableContexts: ['government', 'semi-government-soe'],
+    sourceNoteEn: "Jordan's Council of Ministers approved (7 May 2018, per Jordan Times reporting the Cabinet decision) a minimum 35% quota for Jordanian contractors in \"international tenders\" for projects implemented in Jordan -- applying to ministries, public institutions, government-owned companies, companies with government shareholding, and private-sector entities floating tenders to foreign contractors. The decision also required Jordanian consultants/certified local professionals for design and supervision work, and set a 20-40% local-contractor quota specifically for six named energy/environment-sector projects. It was framed as part of the 2018-2022 Economic Growth Plan and specified the quota would rise 5 percentage points annually \"during the time frame\" of that plan. This research pass found no primary-source reconfirmation of the quota's value beyond the 2018-2022 plan window -- the mechanism and its 2018 base figure (35%) are real and sourced; whether the annual escalator continued, plateaued, or was superseded after 2022 is NOT confirmed, so this engine computes against the disclosed 2018 base of 35% only, never an extrapolated current-year figure, per Decision Record 8.7.",
+    sourceNoteAr: 'وافق مجلس الوزراء الأردني (في ٧ مايو ٢٠١٨، بحسب تقرير صحيفة جوردن تايمز عن قرار مجلس الوزراء) على تخصيص حصة لا تقل عن ٣٥٪ للمقاولين الأردنيين في "المناقصات الدولية" للمشاريع المنفَّذة داخل الأردن -- وتشمل الوزارات والمؤسسات العامة والشركات المملوكة للحكومة والشركات ذات المساهمة الحكومية، وكذلك القطاع الخاص عند طرح مناقصات على مقاولين أجانب. كما اشترط القرار إسناد أعمال التصميم والإشراف على التنفيذ إلى استشاريين أردنيين معتمدين، وحدّد حصة محلية تتراوح بين ٢٠٪ و٤٠٪ لستة مشاريع محددة في قطاعي الطاقة والبيئة. جاء القرار ضمن خطة النمو الاقتصادي ٢٠١٨-٢٠٢٢، ونصّ على زيادة الحصة بمقدار ٥ نقاط مئوية سنوياً "خلال الإطار الزمني" لتلك الخطة. لم يعثر هذا البحث على مصدر أساسي يعيد تأكيد قيمة الحصة بعد نهاية إطار خطة ٢٠١٨-٢٠٢٢ -- الآلية ورقمها الأساسي لعام ٢٠١٨ (٣٥٪) حقيقيان وموثّقان؛ أما استمرار الزيادة السنوية أو استقرارها أو استبدالها بعد عام ٢٠٢٢ فغير مؤكد، لذا يحسب هذا المحرك بناءً على الرقم الأساسي الموثّق لعام ٢٠١٨ (٣٥٪) فقط، دون أي تقدير مُسقَط للسنة الحالية، وفق سجل القرار ٨.٧.',
+  },
   'om-icv': {
     country: 'OM', countryNameEn: 'Oman', countryNameAr: 'سلطنة عُمان',
     programNameEn: 'In-Country Value (ICV) -- not yet sourced', programNameAr: 'القيمة المحلية (ICV) — غير موثّقة بعد',
     mechanismType: 'not-yet-sourced', program: 'om-icv',
     applicableContexts: [],
-    sourceNoteEn: "Oman runs its own separate ICV program (distinct from the UAE's, historically anchored in oil & gas / large-JV procurement). This research pass could not confirm an exact pillar formula or weighting to the same rigor as SA/AE/JO -- deliberately not guessed.",
-    sourceNoteAr: 'تدير عُمان برنامج قيمة محلية (ICV) خاصاً بها (مختلف عن برنامج الإمارات، وتاريخياً مرتبط بقطاع النفط والغاز والمشاريع المشتركة الكبرى). لم يتمكن هذا البحث من تأكيد صيغة أركان دقيقة أو أوزان بنفس دقة السعودية والإمارات والأردن -- ولم يتم تخمينها عمداً.',
+    sourceNoteEn: "Oman runs its own separate ICV program (distinct from the UAE's, historically anchored in oil & gas / large-JV procurement). This research pass could not confirm an exact pillar formula or weighting for the GENERAL national program to the same rigor as SA/AE/JO -- deliberately not guessed. Two narrower, genuinely different Oman mechanisms WERE sourced this pass and are modeled separately below: the PTLC Mandatory List (`om-mandatory-list`) and OQ Group's own price preference (`om-oq-price-preference`).",
+    sourceNoteAr: 'تدير عُمان برنامج قيمة محلية (ICV) خاصاً بها (مختلف عن برنامج الإمارات، وتاريخياً مرتبط بقطاع النفط والغاز والمشاريع المشتركة الكبرى). لم يتمكن هذا البحث من تأكيد صيغة أركان دقيقة أو أوزان للبرنامج الوطني العام بنفس دقة السعودية والإمارات والأردن -- ولم يتم تخمينها عمداً. جرى في هذا البحث توثيق آليتين عُمانيتين أضيق نطاقاً ومختلفتين فعلياً، ونُمذجتا بشكل منفصل أدناه: القائمة الإلزامية لهيئة المشاريع والمناقصات والمحتوى المحلي (`om-mandatory-list`)، والتفضيل السعري الخاص بمجموعة OQ (`om-oq-price-preference`).',
+  },
+  'om-mandatory-list': {
+    country: 'OM', countryNameEn: 'Oman', countryNameAr: 'سلطنة عُمان',
+    programNameEn: 'PTLC Mandatory List (category eligibility gate)', programNameAr: 'القائمة الإلزامية لهيئة المشاريع والمناقصات والمحتوى المحلي (بوابة أهلية الفئة)',
+    mechanismType: 'category-eligibility-gate', program: 'om-mandatory-list',
+    applicableContexts: ['government', 'semi-government-soe'],
+    sourceNoteEn: 'Oman\'s tender authority (renamed under Royal Decree No. 57/2025 to the Projects, Tenders, and Local Content Authority -- PTLC, replacing the former Tender Board) maintains a Mandatory List that "reserves defined categories of goods and services for Omani SMEs and local suppliers" (per tendersarabia.com\'s 2026 Oman tender guide) -- structurally the same pass/fail bidding-gate mechanism as Saudi Arabia\'s LCGPA Mandatory List, reused here via the same category-eligibility-gate computation. This research pass did not find a published enumeration of which specific categories are on Oman\'s Mandatory List (unlike Saudi\'s sourced 233+-item count) -- bidders must check the actual list for their own category; this engine\'s gate logic is real and sourced, but the specific category coverage is not, and is disclosed as such.',
+    sourceNoteAr: 'تُدير هيئة المناقصات في عُمان (التي أعاد المرسوم السلطاني رقم ٥٧/٢٠٢٥ تسميتها إلى "هيئة المشاريع والمناقصات والمحتوى المحلي" -- PTLC، خلفاً لمجلس المناقصات السابق) قائمة إلزامية "تُخصّص فئات محددة من السلع والخدمات للمؤسسات الصغيرة والمتوسطة والموردين المحليين العُمانيين" (بحسب دليل مناقصات عُمان ٢٠٢٦ الصادر عن tendersarabia.com) -- آلية بوابة نجاح/فشل مطابقة من حيث البنية للقائمة الإلزامية لهيئة المحتوى المحلي والمشتريات الحكومية السعودية، وتُستخدم هنا نفس صيغة حساب بوابة أهلية الفئة. لم يعثر هذا البحث على قائمة منشورة بالفئات المحددة المدرجة في القائمة الإلزامية العُمانية (بخلاف السعودية الموثّقة بأكثر من ٢٣٣ بنداً) -- على مقدمي العطاءات التحقق من القائمة الفعلية لفئتهم؛ منطق البوابة في هذا المحرك حقيقي وموثّق، أما نطاق تغطية الفئات المحدد فغير موثّق، ويُفصَح عن ذلك صراحة.',
+  },
+  'om-oq-price-preference': {
+    country: 'OM', countryNameEn: 'Oman', countryNameAr: 'سلطنة عُمان',
+    programNameEn: 'OQ Group Price Preference (Omani-manufactured goods)', programNameAr: 'تفضيل سعري لمجموعة OQ (السلع المصنّعة عمانياً)',
+    mechanismType: 'price-preference-margin', program: 'om-oq-price-preference',
+    applicableContexts: ['semi-government-soe'],
+    sourceNoteEn: 'OQ Group (Oman\'s state-owned integrated energy company, formerly Orpic/OOC) "offers a 10 percent price preference for Omani-manufactured goods in qualifying contract categories" (per a 2026 Oman tenders market guide). This is OQ Group\'s own company-specific procurement preference -- a genuinely different buyer/program from Oman\'s general national ICV program, the same "anchor-buyer-specific mechanism" pattern already modeled for Saudi Aramco (IKTVA) and Qatar\'s QatarEnergy Tawteen program. Structurally identical to Jordan\'s price-preference mechanism, reusing the same computation. No further detail on which contract categories qualify was found in this research pass.',
+    sourceNoteAr: 'تقدّم مجموعة OQ (شركة الطاقة المتكاملة المملوكة للدولة في عُمان، والمعروفة سابقاً بأوربيك/شركة عُمان للنفط) "تفضيلاً سعرياً بنسبة ١٠٪ للسلع المصنّعة عمانياً ضمن فئات العقود المؤهلة" (بحسب دليل سوق المناقصات العُمانية لعام ٢٠٢٦). هذا تفضيل خاص بمشتريات مجموعة OQ نفسها -- برنامج ومشترٍ مختلفان فعلياً عن برنامج القيمة المحلية الوطني العام في عُمان، على غرار نمط "الآلية الخاصة بمشترٍ رئيسي محدد" المُنمذَج مسبقاً لبرنامج إكتفاء لدى أرامكو السعودية وبرنامج توطين التابع لقطر للطاقة. مطابق من حيث البنية لآلية التفضيل السعري الأردنية، ويُستخدم نفس أسلوب الحساب. لم يُعثر في هذا البحث على تفاصيل إضافية حول فئات العقود المؤهلة تحديداً.',
   },
   'qa-national-strategy': {
     country: 'QA', countryNameEn: 'Qatar', countryNameAr: 'دولة قطر',
     programNameEn: 'National Local Content Strategy -- not yet sourced', programNameAr: 'الاستراتيجية الوطنية للمحتوى المحلي — غير موثّقة بعد',
     mechanismType: 'not-yet-sourced', program: 'qa-national-strategy',
     applicableContexts: [],
-    sourceNoteEn: "Qatar's Cabinet approved a National Local Content Strategy recently -- too new for a public formula to be sourced as of this research pass. Deliberately not guessed.",
-    sourceNoteAr: 'أقرّ مجلس وزراء دولة قطر مؤخراً استراتيجية وطنية للمحتوى المحلي -- لا تزال حديثة العهد بحيث لم تُنشر صيغة حساب علنية حتى وقت هذا البحث. لم يتم تخمينها عمداً.',
+    sourceNoteEn: "Qatar's Cabinet approved a National Local Content Strategy recently -- too new for a public formula to be sourced as of this research pass, deliberately not guessed. A genuinely different, longer-established, and fully-sourced QATAR mechanism WAS found this pass -- the official Tawteen/ICV score run via icv.qa -- and is modeled separately below (`qa-icv-tawteen`).",
+    sourceNoteAr: 'أقرّ مجلس وزراء دولة قطر مؤخراً استراتيجية وطنية للمحتوى المحلي -- لا تزال حديثة العهد بحيث لم تُنشر صيغة حساب علنية حتى وقت هذا البحث، ولم يتم تخمينها عمداً. جرى في هذا البحث توثيق آلية قطرية مختلفة فعلياً وأطول عهداً وموثّقة بالكامل -- درجة توطين/القيمة المحلية الرسمية عبر icv.qa -- ونُمذجت بشكل منفصل أدناه (`qa-icv-tawteen`).',
+  },
+  'qa-icv-tawteen': {
+    country: 'QA', countryNameEn: 'Qatar', countryNameAr: 'دولة قطر',
+    programNameEn: 'Tawteen / ICV Score (official methodology)', programNameAr: 'درجة توطين / القيمة المحلية (المنهجية الرسمية)',
+    mechanismType: 'modified-icv-score', program: 'qa-icv-tawteen',
+    applicableContexts: ['government', 'semi-government-soe'],
+    sourceNoteEn: 'Qatar\'s official In-Country Value Digital Portal (icv.qa, the national ICV certification authority) publishes a real, computable methodology: a base ICV score = eligible local spend (local tangible goods/materials + local services -- manpower, subcontractors, goods + training cost for Qatari nationals/residents + supplier training/certification cost + depreciation of Qatar-based company assets) divided by total Qatar revenue EXCLUDING exports. Sub-supplier development costs count as 100% contribution to the primary supplier\'s own score. Real, sourced modifiers on top of the base score, per icv.qa\'s own FAQ and Enhanced Program pages: (1) an "ICV+" policy gives eligible manufacturers a 50% increase to their ICV score; (2) a "blanket score" guarantees micro and small suppliers a minimum ICV score of 30%; (3) suppliers can claim up to an additional 15 percentage points through disclosed strategic behaviors (productivity, capability building, investment growth, Qatarization, exports, R&D, sustainability) -- modeled here as a capped, self-reported, caller-supplied input (not independently verified/computed from sub-components, since icv.qa does not publish the internal weighting of that 15-point bonus). In tender evaluation, icv.qa states ICV "will play a role in the evaluation of commercial bids; premiums will be paid for higher ICV bids assuming the price is competitive" -- a real, sourced commercial-advantage mechanism, though (per icv.qa\'s own wording) not a guaranteed win and not an exact percentage weighting, so this is disclosed as context rather than modeled as a computed discount.',
+    sourceNoteAr: 'تنشر البوابة الرقمية الرسمية للقيمة المحلية في قطر (icv.qa، الجهة الوطنية المعتمدة لشهادات القيمة المحلية) منهجية حقيقية قابلة للحساب: الدرجة الأساسية للقيمة المحلية = الإنفاق المحلي المؤهل (السلع والمواد الملموسة المحلية + الخدمات المحلية -- القوى العاملة والمقاولون من الباطن والسلع + تكلفة تدريب المواطنين/المقيمين القطريين + تكلفة تدريب/اعتماد الموردين + إهلاك أصول الشركة المقيمة في قطر) مقسومة على إجمالي إيرادات قطر باستثناء الصادرات. تُحتسب تكاليف تطوير الموردين من الباطن بنسبة ١٠٠٪ كمساهمة في درجة المورّد الرئيسي نفسه. معدِّلات حقيقية وموثّقة تُضاف إلى الدرجة الأساسية، بحسب صفحتي الأسئلة الشائعة والبرنامج المعزَّز على icv.qa: (١) سياسة "ICV+" تمنح المصنّعين المؤهلين زيادة ٥٠٪ على درجة القيمة المحلية؛ (٢) "الدرجة الشاملة" تضمن للموردين متناهي الصغر والصغار حداً أدنى لدرجة القيمة المحلية يبلغ ٣٠٪؛ (٣) يمكن للموردين المطالبة بحتى ١٥ نقطة مئوية إضافية عبر سلوكيات استراتيجية موثّقة (الإنتاجية، بناء القدرات، نمو الاستثمار، القطرنة، التصدير، البحث والتطوير، الاستدامة) -- وتُنمذَج هنا كمُدخل ذاتي التصريح يُدخله المستخدم بحدّ أقصى (وليس محسوباً بشكل مستقل من مكوّنات فرعية، إذ لا تنشر icv.qa الترجيح الداخلي لهذه المكافأة البالغة ١٥ نقطة). في تقييم العطاءات، تذكر icv.qa أن القيمة المحلية "ستؤدي دوراً في تقييم العروض التجارية؛ إذ تُمنح علاوات للعروض ذات القيمة المحلية الأعلى بشرط أن يكون السعر تنافسياً" -- آلية ميزة تجارية حقيقية وموثّقة، إلا أنها (بحسب صياغة icv.qa نفسها) لا تضمن الفوز ولا تمثّل ترجيحاً بنسبة مئوية دقيقة، لذا يُفصَح عنها كسياق وليس كخصم محسوب.',
   },
   'bh-local-content': {
     country: 'BH', countryNameEn: 'Bahrain', countryNameAr: 'مملكة البحرين',
     programNameEn: 'Local content framework -- not yet sourced', programNameAr: 'إطار المحتوى المحلي — غير موثّق بعد',
     mechanismType: 'not-yet-sourced', program: 'bh-local-content',
     applicableContexts: [],
-    sourceNoteEn: 'This research pass found no formalized, publicly-documented national local-content scoring framework for Bahrain to the rigor applied to SA/AE/JO. Deliberately not guessed.',
-    sourceNoteAr: 'لم يعثر هذا البحث على إطار وطني موثّق علنياً لتقييم المحتوى المحلي في مملكة البحرين بنفس دقة السعودية والإمارات والأردن. لم يتم تخمينه عمداً.',
+    sourceNoteEn: 'This research pass found no formalized, publicly-documented GENERAL national local-content scoring framework for Bahrain to the rigor applied to SA/AE/JO. Deliberately not guessed. Two genuinely different, narrower Bahrain mechanisms WERE sourced this pass (both under the same Ministerial Decision No. 23 of 2026) and are modeled separately below: `bh-sme-price-preference` and `bh-sme-spend-setaside` -- confirming the brief\'s own original taxonomy note that Bahrain "reserves a share of tenders for SMEs plus a stacked price preference."',
+    sourceNoteAr: 'لم يعثر هذا البحث على إطار وطني عام موثّق علنياً لتقييم المحتوى المحلي في مملكة البحرين بنفس دقة السعودية والإمارات والأردن. لم يتم تخمينه عمداً. جرى في هذا البحث توثيق آليتين بحرينيتين مختلفتين فعلياً وأضيق نطاقاً (كلتاهما بموجب القرار الوزاري رقم ٢٣ لسنة ٢٠٢٦ نفسه)، ونُمذجتا بشكل منفصل أدناه: `bh-sme-price-preference` و`bh-sme-spend-setaside` -- وهو ما يؤكد ملاحظة التصنيف الأصلية في الموجز بأن البحرين "تخصص حصة من المناقصات للمؤسسات الصغيرة والمتوسطة إضافة إلى تفضيل سعري متراكب."',
+  },
+  'bh-sme-price-preference': {
+    country: 'BH', countryNameEn: 'Bahrain', countryNameAr: 'مملكة البحرين',
+    programNameEn: 'SME Bidding Price Advantage', programNameAr: 'ميزة سعرية للمؤسسات الصغيرة والمتوسطة في المناقصات',
+    mechanismType: 'price-preference-margin', program: 'bh-sme-price-preference',
+    applicableContexts: ['government'],
+    sourceNoteEn: 'Under Ministerial Decision No. 23 of 2026 (Bahrain\'s Minister of Industry and Commerce, published in the Official Gazette 11 Jun 2026, effective 12 Jun 2026, repealing the 2017 SME-classification criteria), SMEs qualifying under the new ceiling (up to 250 employees or up to BHD 20 million in annual revenue, up from the prior 100 employees / BHD 3 million) receive "a 10% advantage in bidding for government tenders" (per mondaq.com\'s legal summary). A separate, related 10% advantage applies to public-utility auctions -- disclosed here as related context, not separately modeled (this program covers tender bidding specifically). Structurally the same price-preference-margin mechanism as Jordan/Saudi, but the qualifying share here is binary (SME status), not a locally-manufactured content percentage.',
+    sourceNoteAr: 'بموجب القرار الوزاري رقم ٢٣ لسنة ٢٠٢٦ (الصادر عن وزير الصناعة والتجارة البحريني، ونُشر في الجريدة الرسمية بتاريخ ١١ يونيو ٢٠٢٦، ونفذ اعتباراً من ١٢ يونيو ٢٠٢٦، وألغى معايير تصنيف المؤسسات الصغيرة والمتوسطة لعام ٢٠١٧)، تحصل المؤسسات المؤهلة ضمن السقف الجديد (حتى ٢٥٠ موظفاً أو حتى ٢٠ مليون دينار بحريني إيرادات سنوية، مقارنة بالسقف السابق البالغ ١٠٠ موظف / ٣ ملايين دينار) على "ميزة بنسبة ١٠٪ في تقديم العطاءات للمناقصات الحكومية" (بحسب الملخص القانوني الصادر عن mondaq.com). وتنطبق ميزة منفصلة ذات صلة بنسبة ١٠٪ على مزادات المرافق العامة -- تُذكر هنا كسياق ذي صلة دون نمذجتها بشكل منفصل (يغطي هذا البرنامج تقديم العطاءات تحديداً). آلية مطابقة من حيث البنية لتفضيل السعر الأردني/السعودي، إلا أن الحصة المؤهلة هنا ثنائية (صفة مؤسسة صغيرة أو متوسطة)، وليست نسبة محتوى مصنّع محلياً.',
+  },
+  'bh-sme-spend-setaside': {
+    country: 'BH', countryNameEn: 'Bahrain', countryNameAr: 'مملكة البحرين',
+    programNameEn: 'SME Government Spend Allocation', programNameAr: 'تخصيص إنفاق حكومي للمؤسسات الصغيرة والمتوسطة',
+    mechanismType: 'spend-set-aside-target', program: 'bh-sme-spend-setaside',
+    applicableContexts: ['government'],
+    sourceNoteEn: 'The same Ministerial Decision No. 23 of 2026 sourcing (mondaq.com) states a "20% allocation of the value of government procurements and tenders to SMEs" qualifying under the new ceiling -- a real, sourced national spend-reservation target, structurally the SME/local spend set-aside mechanism type (per the brief\'s own original taxonomy note that Bahrain "reserves a share of tenders for SMEs"). This is a national/program-level target share, not a per-supplier score -- disclosed here alongside this supplier\'s own SME qualification for the reserved pool.',
+    sourceNoteAr: 'يذكر المصدر نفسه لقرار وزاري ٢٣ لسنة ٢٠٢٦ (mondaq.com) تخصيص "٢٠٪ من قيمة المشتريات والمناقصات الحكومية للمؤسسات الصغيرة والمتوسطة" المؤهلة ضمن السقف الجديد -- هدف وطني حقيقي وموثّق لتخصيص حصة من الإنفاق، وهو من نوع آلية تخصيص الإنفاق المحلي/للمؤسسات الصغيرة والمتوسطة (بحسب ملاحظة التصنيف الأصلية في الموجز التي أشارت إلى أن البحرين "تخصص حصة من المناقصات للمؤسسات الصغيرة والمتوسطة"). هذا هدف وطني/برنامجي على مستوى الحصة، وليس درجة خاصة بمورّد بعينه -- يُعرض هنا إلى جانب مدى استيفاء هذا المورّد لشرط التأهل كمؤسسة صغيرة أو متوسطة للاستفادة من هذه الحصة المخصصة.',
   },
   'kw-local-content': {
     country: 'KW', countryNameEn: 'Kuwait', countryNameAr: 'دولة الكويت',
     programNameEn: 'Local content framework -- not yet sourced', programNameAr: 'إطار المحتوى المحلي — غير موثّق بعد',
     mechanismType: 'not-yet-sourced', program: 'kw-local-content',
     applicableContexts: [],
-    sourceNoteEn: 'This research pass found no formalized, publicly-documented national local-content scoring framework for Kuwait to the rigor applied to SA/AE/JO. Deliberately not guessed.',
-    sourceNoteAr: 'لم يعثر هذا البحث على إطار وطني موثّق علنياً لتقييم المحتوى المحلي في دولة الكويت بنفس دقة السعودية والإمارات والأردن. لم يتم تخمينه عمداً.',
+    sourceNoteEn: 'This research pass found no formalized, publicly-documented GENERAL national local-content scoring framework for Kuwait to the rigor applied to SA/AE/JO. Deliberately not guessed. A genuinely different, narrower, and real KPC spend-target mechanism WAS sourced this pass and is modeled separately below (`kw-kpc-local-spend`).',
+    sourceNoteAr: 'لم يعثر هذا البحث على إطار وطني عام موثّق علنياً لتقييم المحتوى المحلي في دولة الكويت بنفس دقة السعودية والإمارات والأردن. لم يتم تخمينه عمداً. جرى في هذا البحث توثيق آلية كويتية مختلفة فعلياً وأضيق نطاقاً وحقيقية لهدف إنفاق مؤسسة البترول الكويتية، ونُمذجت بشكل منفصل أدناه (`kw-kpc-local-spend`).',
+  },
+  'kw-kpc-local-spend': {
+    country: 'KW', countryNameEn: 'Kuwait', countryNameAr: 'دولة الكويت',
+    programNameEn: 'KPC Kuwaiti-Supplier Spend Target', programNameAr: 'هدف إنفاق مؤسسة البترول الكويتية مع الموردين الكويتيين',
+    mechanismType: 'spend-set-aside-target', program: 'kw-kpc-local-spend',
+    applicableContexts: ['semi-government-soe'],
+    sourceNoteEn: 'Per the U.S. government\'s own trade.gov Kuwait market-intelligence guide (citing Kuwait Petroleum Corporation\'s own stated objectives), KPC aims to "increase local private sector share in KPC spending by requiring a minimum of 30% of a project spending be designated for Kuwaiti suppliers," targeted "by 2040." This is KPC\'s own anchor-buyer-style spend target across its "K-company" group (KOC, KNPC, and other KPC subsidiaries) -- the real sourced mechanism the brief\'s own taxonomy note anticipated ("Kuwait\'s KPC/KOC run anchor-buyer-style programs... plus a spend set-aside"). No further per-supplier qualification criteria (a formal "Kuwaiti supplier" registration/certification scheme, as opposed to simple national ownership/registration) were found in this research pass -- disclosed as self-reported registration status pending a more granular sourced definition.',
+    sourceNoteAr: 'بحسب دليل الحكومة الأمريكية الرسمي على trade.gov حول قطاع النفط الكويتي (نقلاً عن أهداف مؤسسة البترول الكويتية المعلنة)، تهدف المؤسسة إلى "زيادة حصة القطاع الخاص المحلي في إنفاق المؤسسة عبر اشتراط تخصيص ما لا يقل عن ٣٠٪ من إنفاق المشاريع للموردين الكويتيين"، بحلول عام ٢٠٤٠. هذا هدف إنفاق خاص بمؤسسة البترول الكويتية بصفتها مشترياً رئيسياً عبر مجموعة "شركات الكاف" التابعة لها (شركة نفط الكويت، شركة البترول الوطنية الكويتية، وشركات أخرى تابعة للمؤسسة) -- وهو الآلية الحقيقية والموثّقة التي توقّعتها ملاحظة التصنيف الأصلية في الموجز ("تدير مؤسسة البترول الكويتية/شركة نفط الكويت برامج على غرار المشتري الرئيسي... إضافة إلى تخصيص حصة من الإنفاق"). لم يُعثر في هذا البحث على معايير تأهيل إضافية على مستوى المورّد (نظام تسجيل/اعتماد رسمي لصفة "المورّد الكويتي"، بخلاف الملكية/التسجيل الوطني البسيط) -- يُفصَح عن ذلك كحالة تسجيل ذاتية التصريح ريثما تتوفر مصادر أدق.',
   },
 };
 
@@ -467,6 +623,64 @@ export interface SupplierLocalContentInputs {
   jo?: {
     bidValueLocallyManufacturedPct: number | null;
   };
+  /** Jordan contractor quota (JO / 'jo-contractor-quota', new 17 Sep 2026)
+   * -- self-reported Jordanian-contractor registration status. See
+   * PROGRAMS['jo-contractor-quota'].sourceNoteEn for the 35% target and its
+   * disclosed post-2022 uncertainty. */
+  joContractorQuota?: {
+    isRegisteredJordanianContractor: boolean | null;
+  };
+  /** Oman PTLC Mandatory List (OM / 'om-mandatory-list', new 17 Sep 2026)
+   * -- same binary category-eligibility-gate shape as Saudi's Mandatory
+   * List (see `saMandatoryList` above). */
+  omMandatoryList?: {
+    inMandatoryListCategory: boolean | null;
+    certifiedForCategory: boolean | null;
+  };
+  /** Oman OQ Group price preference (OM / 'om-oq-price-preference', new 17
+   * Sep 2026) -- % of this bid's value that is Omani-manufactured
+   * (self-reported, caller-supplied), same shape as Jordan's mechanism. */
+  omOqPricePreference?: {
+    bidValueLocallyManufacturedPct: number | null;
+  };
+  /** Qatar Tawteen/ICV (QA / 'qa-icv-tawteen', new 17 Sep 2026) -- QAR, per
+   * icv.qa's official 5-cost-category methodology (see
+   * PROGRAMS['qa-icv-tawteen'].sourceNoteEn for the full sourcing). */
+  qa?: {
+    localTangibleGoodsMaterialsQAR: number | null;
+    /** Local services -- manpower, subcontractors, goods, per icv.qa's own
+     * category grouping (modeled as one combined field; icv.qa does not
+     * publish separate sub-weights across manpower/subcontractors/goods
+     * within this category). */
+    localServicesQAR: number | null;
+    qatariNationalResidentTrainingCostQAR: number | null;
+    supplierTrainingCertificationCostQAR: number | null;
+    qatarAssetDepreciationQAR: number | null;
+    totalQatarRevenueExclExportsQAR: number | null;
+    /** ICV+ policy: eligible manufacturers get a 50% score increase. */
+    isEligibleManufacturer: boolean | null;
+    /** Blanket score: micro/small suppliers get a minimum 30% ICV score. */
+    isMicroOrSmallSupplier: boolean | null;
+    /** Capped 0-15 self-reported strategic-behaviour bonus (productivity,
+     * capability building, investment growth, Qatarization, exports, R&D,
+     * sustainability) -- disclosed simplification, see sourceNoteEn. */
+    selfReportedBonusPct: number | null;
+  };
+  /** Bahrain SME qualification (BH / 'bh-sme-price-preference' AND
+   * 'bh-sme-spend-setaside', new 17 Sep 2026) -- self-reported SME
+   * qualification under Ministerial Decision No. 23 of 2026's ceiling
+   * (<=250 employees or <=BHD 20M annual revenue). Shared by both Bahrain
+   * SME programs, since it is the same underlying qualifying fact. */
+  bhSme?: {
+    qualifiesAsSme: boolean | null;
+  };
+  /** Kuwait KPC local-spend set-aside (KW / 'kw-kpc-local-spend', new 17
+   * Sep 2026) -- self-reported Kuwaiti-supplier registration status (see
+   * PROGRAMS['kw-kpc-local-spend'].sourceNoteEn for the disclosed gap on a
+   * more granular sourced qualification definition). */
+  kwLocalSpend?: {
+    isRegisteredKuwaitiSupplier: boolean | null;
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -535,6 +749,60 @@ export interface NotYetSourcedResult {
   mechanismType: 'not-yet-sourced';
 }
 
+/** (New, 17 Sep 2026) Jordan contractor quota / Bahrain SME allocation /
+ * Kuwait KPC local spend -- a sourced NATIONAL/PROGRAM target share plus
+ * this supplier's own qualification for the reserved pool. Deliberately
+ * NOT a per-supplier percentage score: the target is a portfolio/national
+ * fact (disclosed for decision-readiness, per isc-ai-output-standards rule
+ * 3), and qualification is binary. */
+export interface SpendSetAsideResult {
+  mechanismType: 'spend-set-aside-target';
+  /** The sourced national/program target share (0-100) of total tender
+   * value/count reserved for the qualifying supplier class. */
+  targetSharePct: number;
+  /** Does THIS supplier qualify for the reserved-share class (SME status /
+   * Jordanian-contractor registration / Kuwaiti-supplier registration)? */
+  qualifiesForSetAside: boolean | null;
+  /** true = may compete within the reserved-share pool, false = does not
+   * qualify, null = qualification status unknown. Mirrors
+   * `qualifiesForSetAside` today (no separate certification step is
+   * sourced for any of the three programs that use this mechanism) but
+   * kept as its own field for the same reason CategoryEligibilityGateResult
+   * keeps `eligibleToBid` distinct from `certifiedForCategory`. */
+  eligibleForReservedShare: boolean | null;
+}
+
+/** (New, 17 Sep 2026) Qatar Tawteen/ICV -- an eligible-spend-ratio base
+ * score plus icv.qa's own real, sourced modifiers. Kept as its own
+ * mechanism type (not reused as `eligible-spend-ratio`) because the
+ * modifiers are decision-relevant facts a reader must see, not an internal
+ * computation detail to hide -- per isc-ai-output-standards rule 3
+ * (decision-ready output) and Decision Record 8.7 (never smooth over a
+ * materially different mechanism into a same-shaped result). */
+export interface ModifiedIcvScoreResult {
+  mechanismType: 'modified-icv-score';
+  /** Eligible local spend / total Qatar revenue (excl. exports), BEFORE
+   * the ICV+ manufacturer boost, blanket floor, or bonus are applied. */
+  baseScorePct: number | null;
+  pillars: { key: string; eligible: number; total: number }[];
+  /** ICV+ policy: true if this supplier claimed (and the caller marked)
+   * eligible-manufacturer status -- applies a 50% score increase. */
+  isEligibleManufacturer: boolean;
+  /** Blanket score: true if this supplier is a micro/small supplier --
+   * guarantees a minimum 30% final score regardless of the base score. */
+  isMicroOrSmallSupplier: boolean;
+  /** Capped 0-15 self-reported strategic-behaviour bonus, as supplied
+   * (not independently verified -- see PROGRAMS['qa-icv-tawteen']
+   * .sourceNoteEn). */
+  selfReportedBonusPct: number | null;
+  /** baseScorePct (x1.5 if isEligibleManufacturer) + selfReportedBonusPct,
+   * floored at 30 if isMicroOrSmallSupplier, capped at 100. Null only when
+   * there is no base score AND the supplier is not micro/small (the
+   * blanket floor is a policy guarantee independent of spend data, so it
+   * still resolves even with no spend breakdown supplied). */
+  finalScorePct: number | null;
+}
+
 export type LocalContentComputation =
   | EligibleSpendRatioResult
   | WeightedPillarScoreResult
@@ -542,6 +810,8 @@ export type LocalContentComputation =
   | CategoryEligibilityGateResult
   | AnchorBuyerScoreResult
   | OffsetObligationGateResult
+  | SpendSetAsideResult
+  | ModifiedIcvScoreResult
   | NotYetSourcedResult;
 
 export type LocalContentApplicability = 'applicable' | 'not-applicable' | 'insufficient-data';
@@ -590,12 +860,15 @@ function computeLcgpaSa(sa: NonNullable<SupplierLocalContentInputs['sa']>): Elig
 }
 
 // ---------------------------------------------------------------------------
-// Section 4b — SA: LCGPA Mandatory List category-eligibility-gate (type 3).
-// Deliberately binary -- see PROGRAMS['sa-mandatory-list'].sourceNoteEn
-// for why no percentage threshold is modeled.
+// Section 4b — SA/OM: shared category-eligibility-gate primitive (type 3).
+// Deliberately binary -- see PROGRAMS['sa-mandatory-list'] / PROGRAMS[
+// 'om-mandatory-list'].sourceNoteEn for why no percentage threshold is
+// modeled. Generalized 17 Sep 2026 (was SA-only, `computeMandatoryListSa`)
+// the same way computePricePreferenceMargin below was already shared for
+// SA/JO -- one computation, two source-notes, same pattern.
 // ---------------------------------------------------------------------------
 
-function computeMandatoryListSa(input: NonNullable<SupplierLocalContentInputs['saMandatoryList']>): CategoryEligibilityGateResult {
+function computeCategoryEligibilityGate(input: { inMandatoryListCategory: boolean | null | undefined; certifiedForCategory: boolean | null | undefined }): CategoryEligibilityGateResult {
   const inList = input.inMandatoryListCategory;
   const certified = input.certifiedForCategory;
   let eligibleToBid: boolean | null;
@@ -612,9 +885,9 @@ function computeMandatoryListSa(input: NonNullable<SupplierLocalContentInputs['s
 }
 
 // ---------------------------------------------------------------------------
-// Section 4c — SA/JO: shared price-preference-margin primitive (type 4).
-// Structurally identical mechanism for both countries (see file header) --
-// one computation, two source-notes.
+// Section 4c — SA/JO/OM/BH: shared price-preference-margin primitive (type
+// 4). Structurally identical mechanism across all four countries (see file
+// header) -- one computation, four source-notes.
 // ---------------------------------------------------------------------------
 
 function computePricePreferenceMargin(marginPct: number, sharePct: number | null | undefined): PricePreferenceMarginResult {
@@ -624,6 +897,22 @@ function computePricePreferenceMargin(marginPct: number, sharePct: number | null
     preferenceMarginPct: marginPct,
     locallyManufacturedSharePct: share,
     effectiveBidDiscountPct: share !== null ? (marginPct * share) / 100 : null,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Section 4d — JO/BH/KW: shared spend-set-aside-target primitive (type 5,
+// new 17 Sep 2026). A sourced national/program target share plus this
+// supplier's own binary qualification -- one computation, three source-notes.
+// ---------------------------------------------------------------------------
+
+function computeSpendSetAside(targetSharePct: number, qualifies: boolean | null | undefined): SpendSetAsideResult {
+  const q = qualifies === undefined ? null : qualifies;
+  return {
+    mechanismType: 'spend-set-aside-target',
+    targetSharePct,
+    qualifiesForSetAside: q,
+    eligibleForReservedShare: q,
   };
 }
 
@@ -805,6 +1094,106 @@ function computePricePreferenceSa(sa: NonNullable<SupplierLocalContentInputs['sa
 }
 
 // ---------------------------------------------------------------------------
+// Section 6b — OM: OQ Group price preference (type 4, new 17 Sep 2026).
+// Same shared primitive as JO/SA above -- see PROGRAMS['om-oq-price-
+// preference'].sourceNoteEn.
+// ---------------------------------------------------------------------------
+
+export const OMAN_OQ_PRICE_PREFERENCE_MARGIN_PCT = 10;
+
+function computePricePreferenceOm(om: NonNullable<SupplierLocalContentInputs['omOqPricePreference']>): PricePreferenceMarginResult {
+  return computePricePreferenceMargin(OMAN_OQ_PRICE_PREFERENCE_MARGIN_PCT, om.bidValueLocallyManufacturedPct);
+}
+
+// ---------------------------------------------------------------------------
+// Section 6c — BH: SME price preference (type 4, new 17 Sep 2026). Same
+// shared primitive -- the "share" here is the SME qualification itself
+// (100 if qualified, 0 if not), not a locally-manufactured content % --
+// see PROGRAMS['bh-sme-price-preference'].sourceNoteEn.
+// ---------------------------------------------------------------------------
+
+export const BAHRAIN_SME_PRICE_PREFERENCE_MARGIN_PCT = 10;
+
+function computePricePreferenceBh(bh: NonNullable<SupplierLocalContentInputs['bhSme']>): PricePreferenceMarginResult {
+  const qualifies = bh.qualifiesAsSme;
+  const share = qualifies === null || qualifies === undefined ? null : (qualifies ? 100 : 0);
+  return computePricePreferenceMargin(BAHRAIN_SME_PRICE_PREFERENCE_MARGIN_PCT, share);
+}
+
+// ---------------------------------------------------------------------------
+// Section 6d — JO/BH/KW: spend-set-aside-target (type 5, new 17 Sep 2026).
+// Real sourced national/program target shares -- see PROGRAMS[
+// 'jo-contractor-quota' | 'bh-sme-spend-setaside' | 'kw-kpc-local-spend']
+// .sourceNoteEn.
+// ---------------------------------------------------------------------------
+
+export const JORDAN_CONTRACTOR_QUOTA_TARGET_PCT = 35;
+export const BAHRAIN_SME_SPEND_SETASIDE_TARGET_PCT = 20;
+export const KUWAIT_KPC_LOCAL_SPEND_TARGET_PCT = 30;
+
+function computeContractorQuotaJo(jo: NonNullable<SupplierLocalContentInputs['joContractorQuota']>): SpendSetAsideResult {
+  return computeSpendSetAside(JORDAN_CONTRACTOR_QUOTA_TARGET_PCT, jo.isRegisteredJordanianContractor);
+}
+
+function computeSpendSetAsideBh(bh: NonNullable<SupplierLocalContentInputs['bhSme']>): SpendSetAsideResult {
+  return computeSpendSetAside(BAHRAIN_SME_SPEND_SETASIDE_TARGET_PCT, bh.qualifiesAsSme);
+}
+
+function computeLocalSpendKw(kw: NonNullable<SupplierLocalContentInputs['kwLocalSpend']>): SpendSetAsideResult {
+  return computeSpendSetAside(KUWAIT_KPC_LOCAL_SPEND_TARGET_PCT, kw.isRegisteredKuwaitiSupplier);
+}
+
+// ---------------------------------------------------------------------------
+// Section 6e — QA: Tawteen/ICV modified-icv-score (new 17 Sep 2026). Real
+// formula from icv.qa's own official methodology pages -- see PROGRAMS[
+// 'qa-icv-tawteen'].sourceNoteEn for the full sourcing.
+// baseScorePct = eligible local spend (5 cost categories) / total Qatar
+// revenue excluding exports; finalScorePct applies the ICV+ manufacturer
+// boost, the micro/small blanket floor, and the capped self-reported bonus.
+// ---------------------------------------------------------------------------
+
+export const QATAR_ICV_PLUS_MANUFACTURER_BOOST_MULTIPLIER = 1.5; // ICV+: 50% score increase
+export const QATAR_ICV_BLANKET_FLOOR_PCT_MICRO_SMALL = 30;       // blanket score: minimum for micro/small suppliers
+export const QATAR_ICV_MAX_SELF_REPORTED_BONUS_PCT = 15;         // capped strategic-behaviour bonus
+
+function computeIcvTawteenQa(qa: NonNullable<SupplierLocalContentInputs['qa']>): ModifiedIcvScoreResult {
+  const tangible = { key: 'localTangibleGoodsMaterials', eligible: n(qa.localTangibleGoodsMaterialsQAR), total: n(qa.localTangibleGoodsMaterialsQAR) };
+  const services = { key: 'localServices', eligible: n(qa.localServicesQAR), total: n(qa.localServicesQAR) };
+  const training = { key: 'qatariNationalResidentTraining', eligible: n(qa.qatariNationalResidentTrainingCostQAR), total: n(qa.qatariNationalResidentTrainingCostQAR) };
+  const supplierTraining = { key: 'supplierTrainingCertification', eligible: n(qa.supplierTrainingCertificationCostQAR), total: n(qa.supplierTrainingCertificationCostQAR) };
+  const depreciation = { key: 'qatarAssetDepreciation', eligible: n(qa.qatarAssetDepreciationQAR), total: n(qa.qatarAssetDepreciationQAR) };
+  const pillars = [tangible, services, training, supplierTraining, depreciation];
+
+  const eligibleSpend = pillars.reduce((s, p) => s + p.eligible, 0);
+  const totalRevenue = qa.totalQatarRevenueExclExportsQAR;
+  const baseScorePct = totalRevenue !== null && totalRevenue !== undefined && totalRevenue > 0 ? (eligibleSpend / totalRevenue) * 100 : null;
+
+  const isManufacturer = qa.isEligibleManufacturer === true;
+  const isMicroSmall = qa.isMicroOrSmallSupplier === true;
+  const bonus = Math.max(0, Math.min(QATAR_ICV_MAX_SELF_REPORTED_BONUS_PCT, n(qa.selfReportedBonusPct)));
+
+  let finalScorePct: number | null;
+  if (baseScorePct === null && !isMicroSmall) {
+    // No spend denominator, and no blanket-floor guarantee to fall back on
+    // -- an honest null, same convention as every other score-based
+    // mechanism in this file (never a fabricated 0).
+    finalScorePct = null;
+  } else {
+    let s = baseScorePct ?? 0;
+    if (isManufacturer) s = s * QATAR_ICV_PLUS_MANUFACTURER_BOOST_MULTIPLIER;
+    s = s + bonus;
+    if (isMicroSmall) s = Math.max(s, QATAR_ICV_BLANKET_FLOOR_PCT_MICRO_SMALL);
+    finalScorePct = Math.min(100, s);
+  }
+
+  return {
+    mechanismType: 'modified-icv-score', baseScorePct, pillars,
+    isEligibleManufacturer: isManufacturer, isMicroOrSmallSupplier: isMicroSmall,
+    selfReportedBonusPct: qa.selfReportedBonusPct ?? null, finalScorePct,
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Section 7 — top-level supplier assessment: resolves applicability first
 // (government/SOE vs private-commercial, and sourced vs not-yet-sourced),
 // then computes with the right mechanism. `program` defaults to
@@ -849,7 +1238,7 @@ export function assessSupplierLocalContent(
     if (!inputs.saMandatoryList) {
       return { country, program: resolvedProgram, procurementContext, applicability: 'applicable', framework, computation: { mechanismType: 'category-eligibility-gate', inMandatoryListCategory: null, certifiedForCategory: null, eligibleToBid: null }, certificationCaveatEn: NOT_CERTIFIED_EN, certificationCaveatAr: NOT_CERTIFIED_AR, reasonEn: 'No Mandatory List category/certification inputs supplied yet.', reasonAr: 'لم تُدخل بيانات فئة القائمة الإلزامية أو الاعتماد بعد.' };
     }
-    computation = computeMandatoryListSa(inputs.saMandatoryList);
+    computation = computeCategoryEligibilityGate(inputs.saMandatoryList);
   } else if (resolvedProgram === 'sa-price-preference') {
     if (!inputs.saPricePreference) {
       return { country, program: resolvedProgram, procurementContext, applicability: 'applicable', framework, computation: computePricePreferenceMargin(SAUDI_PRICE_PREFERENCE_MARGIN_PCT, null), certificationCaveatEn: NOT_CERTIFIED_EN, certificationCaveatAr: NOT_CERTIFIED_AR, reasonEn: 'No Saudi locally-manufactured bid share supplied yet.', reasonAr: 'لم تُدخل نسبة التصنيع المحلي في العطاء بعد.' };
@@ -875,31 +1264,74 @@ export function assessSupplierLocalContent(
       return { country, program: resolvedProgram, procurementContext, applicability: 'applicable', framework, computation: { mechanismType: 'price-preference-margin', preferenceMarginPct: JORDAN_PRICE_PREFERENCE_MARGIN_PCT, locallyManufacturedSharePct: null, effectiveBidDiscountPct: null }, certificationCaveatEn: NOT_CERTIFIED_EN, certificationCaveatAr: NOT_CERTIFIED_AR, reasonEn: 'No Jordan locally-manufactured bid share supplied yet.', reasonAr: 'لم تُدخل نسبة التصنيع المحلي في العطاء بعد.' };
     }
     computation = computePricePreferenceJo(inputs.jo);
+  } else if (resolvedProgram === 'jo-contractor-quota') {
+    if (!inputs.joContractorQuota) {
+      return { country, program: resolvedProgram, procurementContext, applicability: 'applicable', framework, computation: { mechanismType: 'spend-set-aside-target', targetSharePct: JORDAN_CONTRACTOR_QUOTA_TARGET_PCT, qualifiesForSetAside: null, eligibleForReservedShare: null }, certificationCaveatEn: NOT_CERTIFIED_EN, certificationCaveatAr: NOT_CERTIFIED_AR, reasonEn: 'No Jordanian-contractor registration status supplied yet.', reasonAr: 'لم تُدخل حالة تسجيل المقاول الأردني بعد.' };
+    }
+    computation = computeContractorQuotaJo(inputs.joContractorQuota);
+  } else if (resolvedProgram === 'om-mandatory-list') {
+    if (!inputs.omMandatoryList) {
+      return { country, program: resolvedProgram, procurementContext, applicability: 'applicable', framework, computation: { mechanismType: 'category-eligibility-gate', inMandatoryListCategory: null, certifiedForCategory: null, eligibleToBid: null }, certificationCaveatEn: NOT_CERTIFIED_EN, certificationCaveatAr: NOT_CERTIFIED_AR, reasonEn: 'No PTLC Mandatory List category/certification inputs supplied yet.', reasonAr: 'لم تُدخل بيانات فئة القائمة الإلزامية أو الاعتماد بعد.' };
+    }
+    computation = computeCategoryEligibilityGate(inputs.omMandatoryList);
+  } else if (resolvedProgram === 'om-oq-price-preference') {
+    if (!inputs.omOqPricePreference) {
+      return { country, program: resolvedProgram, procurementContext, applicability: 'applicable', framework, computation: computePricePreferenceMargin(OMAN_OQ_PRICE_PREFERENCE_MARGIN_PCT, null), certificationCaveatEn: NOT_CERTIFIED_EN, certificationCaveatAr: NOT_CERTIFIED_AR, reasonEn: 'No Omani locally-manufactured bid share supplied yet.', reasonAr: 'لم تُدخل نسبة التصنيع العماني في العطاء بعد.' };
+    }
+    computation = computePricePreferenceOm(inputs.omOqPricePreference);
+  } else if (resolvedProgram === 'qa-icv-tawteen') {
+    if (!inputs.qa) {
+      return { country, program: resolvedProgram, procurementContext, applicability: 'applicable', framework, computation: { mechanismType: 'modified-icv-score', baseScorePct: null, pillars: [], isEligibleManufacturer: false, isMicroOrSmallSupplier: false, selfReportedBonusPct: null, finalScorePct: null }, certificationCaveatEn: NOT_CERTIFIED_EN, certificationCaveatAr: NOT_CERTIFIED_AR, reasonEn: 'No Qatar Tawteen/ICV inputs supplied yet.', reasonAr: 'لم تُدخل بيانات توطين/القيمة المحلية القطرية بعد.' };
+    }
+    computation = computeIcvTawteenQa(inputs.qa);
+  } else if (resolvedProgram === 'bh-sme-price-preference') {
+    if (!inputs.bhSme) {
+      return { country, program: resolvedProgram, procurementContext, applicability: 'applicable', framework, computation: computePricePreferenceMargin(BAHRAIN_SME_PRICE_PREFERENCE_MARGIN_PCT, null), certificationCaveatEn: NOT_CERTIFIED_EN, certificationCaveatAr: NOT_CERTIFIED_AR, reasonEn: 'No Bahrain SME qualification status supplied yet.', reasonAr: 'لم تُدخل حالة تأهل المؤسسة الصغيرة أو المتوسطة البحرينية بعد.' };
+    }
+    computation = computePricePreferenceBh(inputs.bhSme);
+  } else if (resolvedProgram === 'bh-sme-spend-setaside') {
+    if (!inputs.bhSme) {
+      return { country, program: resolvedProgram, procurementContext, applicability: 'applicable', framework, computation: { mechanismType: 'spend-set-aside-target', targetSharePct: BAHRAIN_SME_SPEND_SETASIDE_TARGET_PCT, qualifiesForSetAside: null, eligibleForReservedShare: null }, certificationCaveatEn: NOT_CERTIFIED_EN, certificationCaveatAr: NOT_CERTIFIED_AR, reasonEn: 'No Bahrain SME qualification status supplied yet.', reasonAr: 'لم تُدخل حالة تأهل المؤسسة الصغيرة أو المتوسطة البحرينية بعد.' };
+    }
+    computation = computeSpendSetAsideBh(inputs.bhSme);
+  } else if (resolvedProgram === 'kw-kpc-local-spend') {
+    if (!inputs.kwLocalSpend) {
+      return { country, program: resolvedProgram, procurementContext, applicability: 'applicable', framework, computation: { mechanismType: 'spend-set-aside-target', targetSharePct: KUWAIT_KPC_LOCAL_SPEND_TARGET_PCT, qualifiesForSetAside: null, eligibleForReservedShare: null }, certificationCaveatEn: NOT_CERTIFIED_EN, certificationCaveatAr: NOT_CERTIFIED_AR, reasonEn: 'No Kuwaiti-supplier registration status supplied yet.', reasonAr: 'لم تُدخل حالة تسجيل المورّد الكويتي بعد.' };
+    }
+    computation = computeLocalSpendKw(inputs.kwLocalSpend);
   } else {
     computation = { mechanismType: 'not-yet-sourced' };
   }
 
   const scoreLine = computation.mechanismType === 'eligible-spend-ratio' || computation.mechanismType === 'weighted-pillar-score' || computation.mechanismType === 'anchor-buyer-score'
     ? (computation.scorePct !== null ? `directional score ${computation.scorePct.toFixed(1)}%` : 'incomplete inputs')
-    : computation.mechanismType === 'price-preference-margin'
-      ? (computation.effectiveBidDiscountPct !== null ? `effective bid discount ${computation.effectiveBidDiscountPct.toFixed(1)} points` : 'incomplete inputs')
-      : computation.mechanismType === 'category-eligibility-gate'
-        ? (computation.eligibleToBid !== null ? (computation.eligibleToBid ? 'eligible to bid' : 'gated out of this category') : 'incomplete inputs')
-        : computation.mechanismType === 'offset-obligation-gate'
-          ? (computation.triggersObligation === null ? 'incomplete inputs' : computation.triggersObligation ? `offset obligation triggered, required credits AED ${computation.requiredOffsetCreditsAED?.toLocaleString()}` : 'below threshold, no offset obligation')
-          : 'not sourced';
+    : computation.mechanismType === 'modified-icv-score'
+      ? (computation.finalScorePct !== null ? `directional score ${computation.finalScorePct.toFixed(1)}% (base ${computation.baseScorePct !== null ? computation.baseScorePct.toFixed(1) + '%' : 'n/a'})` : 'incomplete inputs')
+      : computation.mechanismType === 'price-preference-margin'
+        ? (computation.effectiveBidDiscountPct !== null ? `effective bid discount ${computation.effectiveBidDiscountPct.toFixed(1)} points` : 'incomplete inputs')
+        : computation.mechanismType === 'category-eligibility-gate'
+          ? (computation.eligibleToBid !== null ? (computation.eligibleToBid ? 'eligible to bid' : 'gated out of this category') : 'incomplete inputs')
+          : computation.mechanismType === 'offset-obligation-gate'
+            ? (computation.triggersObligation === null ? 'incomplete inputs' : computation.triggersObligation ? `offset obligation triggered, required credits AED ${computation.requiredOffsetCreditsAED?.toLocaleString()}` : 'below threshold, no offset obligation')
+            : computation.mechanismType === 'spend-set-aside-target'
+              ? (computation.qualifiesForSetAside === null ? 'incomplete inputs' : computation.qualifiesForSetAside ? `qualifies for the reserved share (program target ${computation.targetSharePct}%)` : `does not qualify for the reserved share (program target ${computation.targetSharePct}%)`)
+              : 'not sourced';
 
   // scoreLineAr must carry the SAME information as scoreLine (bilingual-
   // completeness fix, 15 Sep 2026) -- never a shorter Arabic sentence.
   const scoreLineAr = computation.mechanismType === 'eligible-spend-ratio' || computation.mechanismType === 'weighted-pillar-score' || computation.mechanismType === 'anchor-buyer-score'
     ? (computation.scorePct !== null ? `درجة توجيهية ${computation.scorePct.toFixed(1)}٪` : 'بيانات غير مكتملة')
-    : computation.mechanismType === 'price-preference-margin'
-      ? (computation.effectiveBidDiscountPct !== null ? `خصم عطاء فعّال ${computation.effectiveBidDiscountPct.toFixed(1)} نقطة` : 'بيانات غير مكتملة')
-      : computation.mechanismType === 'category-eligibility-gate'
-        ? (computation.eligibleToBid !== null ? (computation.eligibleToBid ? 'مؤهل للتقديم' : 'مستبعد من هذه الفئة') : 'بيانات غير مكتملة')
-        : computation.mechanismType === 'offset-obligation-gate'
-          ? (computation.triggersObligation === null ? 'بيانات غير مكتملة' : computation.triggersObligation ? `تم تفعيل التزام المقاصة، الائتمانات المطلوبة ${computation.requiredOffsetCreditsAED?.toLocaleString()} درهم` : 'أقل من الحد، لا يوجد التزام مقاصة')
-          : 'غير موثّق';
+    : computation.mechanismType === 'modified-icv-score'
+      ? (computation.finalScorePct !== null ? `درجة توجيهية ${computation.finalScorePct.toFixed(1)}٪ (الدرجة الأساسية ${computation.baseScorePct !== null ? computation.baseScorePct.toFixed(1) + '٪' : 'غير متاحة'})` : 'بيانات غير مكتملة')
+      : computation.mechanismType === 'price-preference-margin'
+        ? (computation.effectiveBidDiscountPct !== null ? `خصم عطاء فعّال ${computation.effectiveBidDiscountPct.toFixed(1)} نقطة` : 'بيانات غير مكتملة')
+        : computation.mechanismType === 'category-eligibility-gate'
+          ? (computation.eligibleToBid !== null ? (computation.eligibleToBid ? 'مؤهل للتقديم' : 'مستبعد من هذه الفئة') : 'بيانات غير مكتملة')
+          : computation.mechanismType === 'offset-obligation-gate'
+            ? (computation.triggersObligation === null ? 'بيانات غير مكتملة' : computation.triggersObligation ? `تم تفعيل التزام المقاصة، الائتمانات المطلوبة ${computation.requiredOffsetCreditsAED?.toLocaleString()} درهم` : 'أقل من الحد، لا يوجد التزام مقاصة')
+            : computation.mechanismType === 'spend-set-aside-target'
+              ? (computation.qualifiesForSetAside === null ? 'بيانات غير مكتملة' : computation.qualifiesForSetAside ? `مؤهل للحصة المخصصة (الهدف البرنامجي ${computation.targetSharePct}٪)` : `غير مؤهل للحصة المخصصة (الهدف البرنامجي ${computation.targetSharePct}٪)`)
+              : 'غير موثّق';
 
   return {
     country, program: resolvedProgram, procurementContext, applicability: 'applicable', framework, computation,
@@ -933,6 +1365,18 @@ export function recommendLocalContentAction(assessment: LocalContentAssessment, 
       alternativeAr: 'إذا تعذّر إغلاق الفجوة قبل موعد هذه المناقصة: أشرك جهة محلية معتمدة مسبقاً كشريك أو مقاول من الباطن للجزء الناقص من النطاق، أو استهدف مناقصة/جهة شراء أخرى يفي هذا المورّد بحدّها الأدنى بالفعل.',
     };
   }
+  if (c.mechanismType === 'modified-icv-score') {
+    if (c.finalScorePct === null || targetThresholdPct === null || c.finalScorePct >= targetThresholdPct) return null;
+    const gap = targetThresholdPct - c.finalScorePct;
+    const manufacturerHint = c.isEligibleManufacturer ? '' : ' Confirming eligible-manufacturer status (if applicable) would apply icv.qa\'s own ICV+ 50% score boost on top of the base ratio -- check eligibility before assuming this gap requires new spend.';
+    const manufacturerHintAr = c.isEligibleManufacturer ? '' : ' تأكد من استيفاء شروط صفة "المصنّع المؤهل" (إن انطبقت)، إذ تطبّق icv.qa مكافأة ICV+ بنسبة ٥٠٪ على الدرجة الأساسية -- تحقق من الأهلية قبل افتراض أن سد هذه الفجوة يتطلب إنفاقاً جديداً.';
+    return {
+      primaryEn: `Close the ${gap.toFixed(1)}-point gap directly: increase eligible Qatar spend (local goods/materials, local services, Qatari-national/resident training, supplier training/certification, or Qatar-based asset depreciation) against total Qatar revenue excluding exports -- this raises the base ratio the whole score is built on.${manufacturerHint}`,
+      primaryAr: `أغلق الفجوة البالغة ${gap.toFixed(1)} نقطة مباشرة: زد الإنفاق القطري المؤهل (سلع/مواد محلية، خدمات محلية، تدريب مواطنين/مقيمين قطريين، تدريب/اعتماد الموردين، أو إهلاك أصول مقيمة في قطر) مقابل إجمالي إيرادات قطر باستثناء الصادرات -- هذا يرفع النسبة الأساسية التي تُبنى عليها الدرجة كاملة.${manufacturerHintAr}`,
+      alternativeEn: 'If the gap cannot close before this tender\'s deadline: confirm micro/small-supplier status for icv.qa\'s blanket 30% score floor if genuinely eligible, or partner/subcontract the shortfall portion of scope with an already-ICV-certified local entity.',
+      alternativeAr: 'إذا تعذّر إغلاق الفجوة قبل موعد هذه المناقصة: تحقق من استيفاء شروط صفة المورّد متناهي الصغر أو الصغير للاستفادة من الحد الأدنى الشامل لدرجة icv.qa البالغ ٣٠٪ إن كانت الأهلية حقيقية، أو أشرك جهة محلية معتمدة من icv.qa كشريك أو مقاول من الباطن للجزء الناقص من النطاق.',
+    };
+  }
   if (c.mechanismType === 'price-preference-margin') {
     if (c.locallyManufacturedSharePct === null || c.locallyManufacturedSharePct >= 100) return null;
     return {
@@ -944,11 +1388,24 @@ export function recommendLocalContentAction(assessment: LocalContentAssessment, 
   }
   if (c.mechanismType === 'category-eligibility-gate') {
     if (c.eligibleToBid !== false) return null; // only recommend when genuinely gated out
+    const programNameEn = assessment.framework.programNameEn;
+    const programNameAr = assessment.framework.programNameAr;
     return {
-      primaryEn: 'This category is on LCGPA\'s Mandatory List and this supplier is not yet certified for it: pursue LCGPA certification for this specific category before the next bid cycle -- this is the only way to remove the gate itself.',
-      primaryAr: 'هذه الفئة مدرجة في القائمة الإلزامية للهيئة، وهذا المورّد غير معتمد لها بعد: تابع الحصول على اعتماد الهيئة لهذه الفئة تحديداً قبل دورة العطاءات القادمة -- هذا هو السبيل الوحيد لإزالة البوابة نفسها.',
+      primaryEn: `This category is on ${programNameEn}'s Mandatory List and this supplier is not yet certified for it: pursue certification for this specific category before the next bid cycle -- this is the only way to remove the gate itself.`,
+      primaryAr: `هذه الفئة مدرجة في القائمة الإلزامية لـ${programNameAr}، وهذا المورّد غير معتمد لها بعد: تابع الحصول على الاعتماد لهذه الفئة تحديداً قبل دورة العطاءات القادمة -- هذا هو السبيل الوحيد لإزالة البوابة نفسها.`,
       alternativeEn: 'If certification cannot complete in time: bid jointly with, or subcontract to, an already-certified local entity for the mandatory-list portion of scope, or target a lot/category that is not on the Mandatory List.',
       alternativeAr: 'إذا تعذّر إتمام الاعتماد في الوقت المناسب: قدّم عطاءً مشتركاً مع جهة محلية معتمدة مسبقاً أو أسند لها كمقاول من الباطن الجزء المشمول بالقائمة الإلزامية من النطاق، أو استهدف حزمة/فئة غير مدرجة في القائمة الإلزامية.',
+    };
+  }
+  if (c.mechanismType === 'spend-set-aside-target') {
+    if (c.qualifiesForSetAside !== false) return null; // only recommend when genuinely not qualifying
+    const programNameEn = assessment.framework.programNameEn;
+    const programNameAr = assessment.framework.programNameAr;
+    return {
+      primaryEn: `This supplier does not currently qualify for ${programNameEn}'s reserved ${c.targetSharePct}% share: pursue the underlying qualification (registration/classification with the sourced authority) before the next bid cycle -- this is the only way to compete within the reserved pool itself, not just around it.`,
+      primaryAr: `لا يستوفي هذا المورّد حالياً شروط التأهل للحصة المخصصة البالغة ${c.targetSharePct}٪ ضمن ${programNameAr}: تابع استيفاء شرط التأهل الأساسي (التسجيل/التصنيف لدى الجهة الموثّقة) قبل دورة العطاءات القادمة -- هذا هو السبيل الوحيد للمنافسة ضمن الحصة المخصصة نفسها، وليس الالتفاف حولها فقط.`,
+      alternativeEn: 'If qualification cannot complete in time: this supplier still competes for the open (non-reserved) portion of spend on its own technical/commercial merits -- confirm whether the reserved-share advantage is decisive before investing in the qualification process.',
+      alternativeAr: 'إذا تعذّر استيفاء شرط التأهل في الوقت المناسب: يظل هذا المورّد قادراً على المنافسة على الجزء المفتوح (غير المخصص) من الإنفاق بمزاياه الفنية والتجارية -- تأكد من أن ميزة الحصة المخصصة حاسمة قبل الاستثمار في عملية التأهل.',
     };
   }
   if (c.mechanismType === 'offset-obligation-gate') {
@@ -982,7 +1439,7 @@ export interface PortfolioLocalContentGroup {
   mechanismType: LocalContentMechanismType;
   supplierCount: number;
   portfolioSpendSharePct: number; // sum of spendShare across suppliers in this group
-  weightedScorePct: number | null; // score-based mechanisms (eligible-spend-ratio / weighted-pillar-score / anchor-buyer-score)
+  weightedScorePct: number | null; // score-based mechanisms (eligible-spend-ratio / weighted-pillar-score / anchor-buyer-score / modified-icv-score [finalScorePct])
   weightedEffectiveDiscountPct: number | null; // only for price-preference-margin
   gateEligibleSharePct: number | null; // only for category-eligibility-gate: spend-share-weighted % eligible to bid
   /** Only for offset-obligation-gate: the plain SUM (not spend-weighted --
@@ -990,6 +1447,12 @@ export interface PortfolioLocalContentGroup {
    * every supplier's shortfallPenaltyAED in this group whose shortfall is
    * known. Client-level real-money exposure, not an averaged rate. */
   totalShortfallPenaltyAED: number | null;
+  /** Only for spend-set-aside-target (new, 17 Sep 2026): spend-share-
+   * weighted % of suppliers in this group who qualify for the reserved
+   * share -- the supplier-level counterpart to the program's own national
+   * `targetSharePct` (shown separately per-supplier, not rolled up here,
+   * since it is a fixed program fact, not a computed portfolio figure). */
+  setAsideQualifyingSharePct: number | null;
   suppliersWithInsufficientData: number;
   suppliersNotApplicable: number;
 }
@@ -1015,6 +1478,7 @@ export function rollUpPortfolioLocalContent(inputs: PortfolioLocalContentInput[]
     let weightedEffectiveDiscountPct: number | null = null;
     let gateEligibleSharePct: number | null = null;
     let totalShortfallPenaltyAED: number | null = null;
+    let setAsideQualifyingSharePct: number | null = null;
 
     if (first.framework.mechanismType === 'eligible-spend-ratio' || first.framework.mechanismType === 'weighted-pillar-score' || first.framework.mechanismType === 'anchor-buyer-score') {
       const scorable = applicableItems.filter(i => {
@@ -1026,6 +1490,30 @@ export function rollUpPortfolioLocalContent(inputs: PortfolioLocalContentInput[]
         weightedScorePct = scorable.reduce((s, i) => {
           const c = i.assessment.computation as EligibleSpendRatioResult | WeightedPillarScoreResult | AnchorBuyerScoreResult;
           return s + (c.scorePct as number) * (i.spendShare / scorableSpend);
+        }, 0);
+      }
+    } else if (first.framework.mechanismType === 'modified-icv-score') {
+      const scorable = applicableItems.filter(i => {
+        const c = i.assessment.computation;
+        return c && c.mechanismType === 'modified-icv-score' && c.finalScorePct !== null;
+      });
+      const scorableSpend = scorable.reduce((s, i) => s + i.spendShare, 0);
+      if (scorableSpend > 0) {
+        weightedScorePct = scorable.reduce((s, i) => {
+          const c = i.assessment.computation as ModifiedIcvScoreResult;
+          return s + (c.finalScorePct as number) * (i.spendShare / scorableSpend);
+        }, 0);
+      }
+    } else if (first.framework.mechanismType === 'spend-set-aside-target') {
+      const scorable = applicableItems.filter(i => {
+        const c = i.assessment.computation;
+        return c && c.mechanismType === 'spend-set-aside-target' && c.qualifiesForSetAside !== null;
+      });
+      const scorableSpend = scorable.reduce((s, i) => s + i.spendShare, 0);
+      if (scorableSpend > 0) {
+        setAsideQualifyingSharePct = scorable.reduce((s, i) => {
+          const c = i.assessment.computation as SpendSetAsideResult;
+          return s + (c.qualifiesForSetAside ? 100 : 0) * (i.spendShare / scorableSpend);
         }, 0);
       }
     } else if (first.framework.mechanismType === 'price-preference-margin') {
@@ -1068,7 +1556,7 @@ export function rollUpPortfolioLocalContent(inputs: PortfolioLocalContentInput[]
     result.push({
       country: first.country, program: first.program, procurementContext: first.procurementContext, mechanismType: first.framework.mechanismType,
       supplierCount: items.length, portfolioSpendSharePct: totalSpendShare,
-      weightedScorePct, weightedEffectiveDiscountPct, gateEligibleSharePct, totalShortfallPenaltyAED,
+      weightedScorePct, weightedEffectiveDiscountPct, gateEligibleSharePct, totalShortfallPenaltyAED, setAsideQualifyingSharePct,
       suppliersWithInsufficientData: insufficientCount, suppliersNotApplicable: notApplicableCount,
     });
   }

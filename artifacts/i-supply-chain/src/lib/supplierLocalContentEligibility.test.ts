@@ -12,6 +12,14 @@ import {
   TAWAZUN_OFFSET_THRESHOLD_AED,
   TAWAZUN_OFFSET_TARGET_PCT,
   TAWAZUN_SHORTFALL_PENALTY_PCT,
+  JORDAN_CONTRACTOR_QUOTA_TARGET_PCT,
+  OMAN_OQ_PRICE_PREFERENCE_MARGIN_PCT,
+  BAHRAIN_SME_PRICE_PREFERENCE_MARGIN_PCT,
+  BAHRAIN_SME_SPEND_SETASIDE_TARGET_PCT,
+  KUWAIT_KPC_LOCAL_SPEND_TARGET_PCT,
+  QATAR_ICV_PLUS_MANUFACTURER_BOOST_MULTIPLIER,
+  QATAR_ICV_BLANKET_FLOOR_PCT_MICRO_SMALL,
+  QATAR_ICV_MAX_SELF_REPORTED_BONUS_PCT,
   type SupplierLocalContentInputs,
   type LocalContentAssessment,
   type EligibleSpendRatioResult,
@@ -20,6 +28,8 @@ import {
   type CategoryEligibilityGateResult,
   type AnchorBuyerScoreResult,
   type OffsetObligationGateResult,
+  type SpendSetAsideResult,
+  type ModifiedIcvScoreResult,
 } from './supplierLocalContentEligibility';
 
 // ===========================================================================
@@ -636,14 +646,14 @@ describe('SA — program routing default', () => {
     });
   });
 
-  it('PROGRAMS_BY_COUNTRY lists exactly the countries known to run more than one program (SA: 6, AE: 2, others: 1 each)', () => {
+  it('PROGRAMS_BY_COUNTRY lists every program per country (SA: 6, AE: 2, JO: 2, OM: 3, QA: 2, BH: 3, KW: 2 -- updated 17 Sep 2026 as Jordan/Oman/Qatar/Bahrain/Kuwait each gained real sourced programs alongside their original entry)', () => {
     expect(PROGRAMS_BY_COUNTRY.SA).toHaveLength(6);
     expect(PROGRAMS_BY_COUNTRY.AE).toHaveLength(2);
-    expect(PROGRAMS_BY_COUNTRY.JO).toHaveLength(1);
-    expect(PROGRAMS_BY_COUNTRY.OM).toHaveLength(1);
-    expect(PROGRAMS_BY_COUNTRY.QA).toHaveLength(1);
-    expect(PROGRAMS_BY_COUNTRY.BH).toHaveLength(1);
-    expect(PROGRAMS_BY_COUNTRY.KW).toHaveLength(1);
+    expect(PROGRAMS_BY_COUNTRY.JO).toHaveLength(2);
+    expect(PROGRAMS_BY_COUNTRY.OM).toHaveLength(3);
+    expect(PROGRAMS_BY_COUNTRY.QA).toHaveLength(2);
+    expect(PROGRAMS_BY_COUNTRY.BH).toHaveLength(3);
+    expect(PROGRAMS_BY_COUNTRY.KW).toHaveLength(2);
   });
 
   it('lcgpa-general carries the two usage notes (40% high-value-contract weighting, ~30% consulting/IT figure) bilingually', () => {
@@ -894,5 +904,305 @@ describe('SA — portfolio rollup groups by program', () => {
     ]);
     expect(groups).toHaveLength(1);
     expect(groups[0]!.gateEligibleSharePct).toBeCloseTo(30, 6); // only the eligible supplier's spend share counts as eligible
+  });
+});
+
+// ===========================================================================
+// 17 Sep 2026 continuation -- Jordan's second mechanism, Oman, Qatar,
+// Bahrain, Kuwait (7 new sourced programs). Same soft/hardest/boundary
+// discipline as every earlier describe block in this file.
+// ===========================================================================
+
+describe('JO / Contractor Quota — spend-set-aside-target', () => {
+  it('soft: registered Jordanian contractor -> qualifies for the reserved share', () => {
+    const a = assessSupplierLocalContent('JO', 'government', { joContractorQuota: { isRegisteredJordanianContractor: true } }, 'jo-contractor-quota');
+    const c = a.computation as SpendSetAsideResult;
+    expect(c.targetSharePct).toBe(JORDAN_CONTRACTOR_QUOTA_TARGET_PCT);
+    expect(c.qualifiesForSetAside).toBe(true);
+    expect(c.eligibleForReservedShare).toBe(true);
+  });
+
+  it('hardest: not a registered contractor -> does not qualify, and a recommendation fires citing the real 35% target', () => {
+    const a = assessSupplierLocalContent('JO', 'semi-government-soe', { joContractorQuota: { isRegisteredJordanianContractor: false } }, 'jo-contractor-quota');
+    const c = a.computation as SpendSetAsideResult;
+    expect(c.qualifiesForSetAside).toBe(false);
+    const rec = recommendLocalContentAction(a, null);
+    expect(rec).not.toBeNull();
+    expect(rec!.primaryEn).toContain('35%');
+    expect(rec!.primaryAr.length).toBeGreaterThan(0);
+  });
+
+  it('boundary: no registration status supplied -> honest null, never a fabricated pass or fail', () => {
+    const a = assessSupplierLocalContent('JO', 'government', {}, 'jo-contractor-quota');
+    const c = a.computation as SpendSetAsideResult;
+    expect(c.qualifiesForSetAside).toBeNull();
+    expect(c.eligibleForReservedShare).toBeNull();
+    expect(a.applicability).toBe('applicable'); // gate exists, just unanswered -- not "not-applicable"
+  });
+
+  it('not-applicable: private-commercial procurement is outside the sourced scope (government/semi-government-soe only)', () => {
+    const a = assessSupplierLocalContent('JO', 'private-commercial', { joContractorQuota: { isRegisteredJordanianContractor: true } }, 'jo-contractor-quota');
+    expect(a.applicability).toBe('not-applicable');
+  });
+});
+
+describe("OM / PTLC Mandatory List — category-eligibility-gate (structurally identical to SA's Mandatory List)", () => {
+  it('soft: in a mandatory-list category and certified -> eligible to bid', () => {
+    const a = assessSupplierLocalContent('OM', 'government', { omMandatoryList: { inMandatoryListCategory: true, certifiedForCategory: true } }, 'om-mandatory-list');
+    const c = a.computation as CategoryEligibilityGateResult;
+    expect(c.eligibleToBid).toBe(true);
+  });
+
+  it('hardest: in a mandatory-list category but NOT certified -> gated out entirely', () => {
+    const a = assessSupplierLocalContent('OM', 'semi-government-soe', { omMandatoryList: { inMandatoryListCategory: true, certifiedForCategory: false } }, 'om-mandatory-list');
+    const c = a.computation as CategoryEligibilityGateResult;
+    expect(c.eligibleToBid).toBe(false);
+  });
+
+  it('boundary: not in a mandatory-list category at all -> gate does not apply, eligible regardless of certification status', () => {
+    const a = assessSupplierLocalContent('OM', 'government', { omMandatoryList: { inMandatoryListCategory: false, certifiedForCategory: null } }, 'om-mandatory-list');
+    const c = a.computation as CategoryEligibilityGateResult;
+    expect(c.eligibleToBid).toBe(true);
+  });
+
+  it('not-applicable: private-commercial procurement is outside PTLC Mandatory List scope', () => {
+    const a = assessSupplierLocalContent('OM', 'private-commercial', { omMandatoryList: { inMandatoryListCategory: true, certifiedForCategory: true } }, 'om-mandatory-list');
+    expect(a.applicability).toBe('not-applicable');
+  });
+});
+
+describe('OM / OQ Group Price Preference — price-preference-margin (company-specific, like Aramco/QatarEnergy)', () => {
+  it('soft: 25% Omani-manufactured bid content', () => {
+    const a = assessSupplierLocalContent('OM', 'semi-government-soe', { omOqPricePreference: { bidValueLocallyManufacturedPct: 25 } }, 'om-oq-price-preference');
+    const c = a.computation as PricePreferenceMarginResult;
+    expect(c.preferenceMarginPct).toBe(OMAN_OQ_PRICE_PREFERENCE_MARGIN_PCT);
+    expect(c.effectiveBidDiscountPct).toBeCloseTo(2.5, 6);
+  });
+
+  it('hardest: 0% and 100% Omani-manufactured (the two adversarial extremes)', () => {
+    const zero = assessSupplierLocalContent('OM', 'semi-government-soe', { omOqPricePreference: { bidValueLocallyManufacturedPct: 0 } }, 'om-oq-price-preference').computation as PricePreferenceMarginResult;
+    const full = assessSupplierLocalContent('OM', 'semi-government-soe', { omOqPricePreference: { bidValueLocallyManufacturedPct: 100 } }, 'om-oq-price-preference').computation as PricePreferenceMarginResult;
+    expect(zero.effectiveBidDiscountPct).toBe(0);
+    expect(full.effectiveBidDiscountPct).toBe(10);
+  });
+
+  it('boundary: exactly 100% share -> recommendLocalContentAction returns null (nothing left to improve)', () => {
+    const a = assessSupplierLocalContent('OM', 'semi-government-soe', { omOqPricePreference: { bidValueLocallyManufacturedPct: 100 } }, 'om-oq-price-preference');
+    expect(recommendLocalContentAction(a, null)).toBeNull();
+  });
+
+  it("not-applicable: government procurement is outside OQ Group's own company-specific scope", () => {
+    const a = assessSupplierLocalContent('OM', 'government', { omOqPricePreference: { bidValueLocallyManufacturedPct: 50 } }, 'om-oq-price-preference');
+    expect(a.applicability).toBe('not-applicable');
+  });
+});
+
+describe('QA / Tawteen-ICV (icv.qa) — modified-icv-score', () => {
+  it('soft: realistic 5-pillar spend breakdown with the ICV+ manufacturer boost and a disclosed bonus', () => {
+    const a = assessSupplierLocalContent('QA', 'government', {
+      qa: {
+        localTangibleGoodsMaterialsQAR: 200_000, localServicesQAR: 100_000,
+        qatariNationalResidentTrainingCostQAR: 50_000, supplierTrainingCertificationCostQAR: 50_000,
+        qatarAssetDepreciationQAR: 100_000, totalQatarRevenueExclExportsQAR: 1_000_000,
+        isEligibleManufacturer: true, isMicroOrSmallSupplier: false, selfReportedBonusPct: 10,
+      },
+    }, 'qa-icv-tawteen');
+    const c = a.computation as ModifiedIcvScoreResult;
+    expect(c.baseScorePct).toBeCloseTo(50, 6); // 500,000 / 1,000,000
+    expect(c.finalScorePct).toBeCloseTo(85, 6); // (50 * 1.5) + 10
+    expect(c.pillars).toHaveLength(5);
+  });
+
+  it('hardest: manufacturer boost + an over-cap self-reported bonus stack, and the final score is honestly capped at 100, never fabricated above it', () => {
+    const a = assessSupplierLocalContent('QA', 'semi-government-soe', {
+      qa: {
+        localTangibleGoodsMaterialsQAR: 90_000, localServicesQAR: 0,
+        qatariNationalResidentTrainingCostQAR: 0, supplierTrainingCertificationCostQAR: 0,
+        qatarAssetDepreciationQAR: 0, totalQatarRevenueExclExportsQAR: 100_000,
+        isEligibleManufacturer: true, isMicroOrSmallSupplier: true, selfReportedBonusPct: 50, // over the 15pt cap
+      },
+    }, 'qa-icv-tawteen');
+    const c = a.computation as ModifiedIcvScoreResult;
+    expect(c.baseScorePct).toBeCloseTo(90, 6);
+    expect(c.selfReportedBonusPct).toBe(50); // stored exactly as supplied -- disclosed, never silently rewritten
+    expect(c.finalScorePct).toBe(100); // (90 * QATAR_ICV_PLUS_MANUFACTURER_BOOST_MULTIPLIER) + QATAR_ICV_MAX_SELF_REPORTED_BONUS_PCT = 150, capped at 100
+  });
+
+  it('boundary: no Qatar revenue supplied and not micro/small -> honest null, never a fabricated zero', () => {
+    const a = assessSupplierLocalContent('QA', 'government', {
+      qa: {
+        localTangibleGoodsMaterialsQAR: 10_000, localServicesQAR: 0,
+        qatariNationalResidentTrainingCostQAR: 0, supplierTrainingCertificationCostQAR: 0,
+        qatarAssetDepreciationQAR: 0, totalQatarRevenueExclExportsQAR: null,
+        isEligibleManufacturer: false, isMicroOrSmallSupplier: false, selfReportedBonusPct: null,
+      },
+    }, 'qa-icv-tawteen');
+    const c = a.computation as ModifiedIcvScoreResult;
+    expect(c.baseScorePct).toBeNull();
+    expect(c.finalScorePct).toBeNull();
+  });
+
+  it('boundary: no Qatar revenue supplied BUT micro/small -> the blanket 30% floor still resolves (a policy guarantee independent of spend data)', () => {
+    const a = assessSupplierLocalContent('QA', 'government', {
+      qa: {
+        localTangibleGoodsMaterialsQAR: null, localServicesQAR: null,
+        qatariNationalResidentTrainingCostQAR: null, supplierTrainingCertificationCostQAR: null,
+        qatarAssetDepreciationQAR: null, totalQatarRevenueExclExportsQAR: null,
+        isEligibleManufacturer: false, isMicroOrSmallSupplier: true, selfReportedBonusPct: null,
+      },
+    }, 'qa-icv-tawteen');
+    const c = a.computation as ModifiedIcvScoreResult;
+    expect(c.baseScorePct).toBeNull();
+    expect(c.finalScorePct).toBe(QATAR_ICV_BLANKET_FLOOR_PCT_MICRO_SMALL);
+  });
+
+  it("not-applicable: private-commercial procurement is outside icv.qa's sourced scope (government/semi-government-soe only)", () => {
+    const a = assessSupplierLocalContent('QA', 'private-commercial', {
+      qa: {
+        localTangibleGoodsMaterialsQAR: 1, localServicesQAR: 0, qatariNationalResidentTrainingCostQAR: 0,
+        supplierTrainingCertificationCostQAR: 0, qatarAssetDepreciationQAR: 0, totalQatarRevenueExclExportsQAR: 10,
+        isEligibleManufacturer: false, isMicroOrSmallSupplier: false, selfReportedBonusPct: null,
+      },
+    }, 'qa-icv-tawteen');
+    expect(a.applicability).toBe('not-applicable');
+  });
+});
+
+describe('BH / SME Bidding Price Advantage — price-preference-margin (binary SME status drives the share, not a spend %)', () => {
+  it('soft: qualifies as SME -> full price-preference margin applied via a 100% binary share', () => {
+    const a = assessSupplierLocalContent('BH', 'government', { bhSme: { qualifiesAsSme: true } }, 'bh-sme-price-preference');
+    const c = a.computation as PricePreferenceMarginResult;
+    expect(c.preferenceMarginPct).toBe(BAHRAIN_SME_PRICE_PREFERENCE_MARGIN_PCT);
+    expect(c.locallyManufacturedSharePct).toBe(100);
+    expect(c.effectiveBidDiscountPct).toBe(10);
+  });
+
+  it('hardest: does not qualify as SME -> zero effective discount, not a partial one', () => {
+    const a = assessSupplierLocalContent('BH', 'government', { bhSme: { qualifiesAsSme: false } }, 'bh-sme-price-preference');
+    const c = a.computation as PricePreferenceMarginResult;
+    expect(c.locallyManufacturedSharePct).toBe(0);
+    expect(c.effectiveBidDiscountPct).toBe(0);
+  });
+
+  it('boundary: no qualification status supplied -> honest null share, never assumed disqualified', () => {
+    const a = assessSupplierLocalContent('BH', 'government', { bhSme: { qualifiesAsSme: null } }, 'bh-sme-price-preference');
+    const c = a.computation as PricePreferenceMarginResult;
+    expect(c.locallyManufacturedSharePct).toBeNull();
+    expect(c.effectiveBidDiscountPct).toBeNull();
+  });
+
+  it("not-applicable: semi-government-soe procurement is outside this program's sourced (government tenders) scope", () => {
+    const a = assessSupplierLocalContent('BH', 'semi-government-soe', { bhSme: { qualifiesAsSme: true } }, 'bh-sme-price-preference');
+    expect(a.applicability).toBe('not-applicable');
+  });
+});
+
+describe('BH / SME Government Spend Allocation — spend-set-aside-target', () => {
+  it('soft: qualifies as SME -> qualifies for the 20% reserved spend allocation', () => {
+    const a = assessSupplierLocalContent('BH', 'government', { bhSme: { qualifiesAsSme: true } }, 'bh-sme-spend-setaside');
+    const c = a.computation as SpendSetAsideResult;
+    expect(c.targetSharePct).toBe(BAHRAIN_SME_SPEND_SETASIDE_TARGET_PCT);
+    expect(c.qualifiesForSetAside).toBe(true);
+  });
+
+  it('hardest: does not qualify as SME -> excluded from the reserved allocation, and a recommendation fires', () => {
+    const a = assessSupplierLocalContent('BH', 'government', { bhSme: { qualifiesAsSme: false } }, 'bh-sme-spend-setaside');
+    const c = a.computation as SpendSetAsideResult;
+    expect(c.qualifiesForSetAside).toBe(false);
+    const rec = recommendLocalContentAction(a, null);
+    expect(rec).not.toBeNull();
+    expect(rec!.primaryEn).toContain('20%');
+  });
+
+  it('boundary: no qualification status supplied -> honest null, no default guess', () => {
+    const a = assessSupplierLocalContent('BH', 'government', { bhSme: { qualifiesAsSme: null } }, 'bh-sme-spend-setaside');
+    const c = a.computation as SpendSetAsideResult;
+    expect(c.qualifiesForSetAside).toBeNull();
+  });
+
+  it('the same bhSme.qualifiesAsSme fact drives BOTH Bahrain SME programs (price preference and spend set-aside) -- one qualification fact, two mechanism reads, never asked twice', () => {
+    const sharedInputs = { bhSme: { qualifiesAsSme: true } };
+    const price = assessSupplierLocalContent('BH', 'government', sharedInputs, 'bh-sme-price-preference').computation as PricePreferenceMarginResult;
+    const setAside = assessSupplierLocalContent('BH', 'government', sharedInputs, 'bh-sme-spend-setaside').computation as SpendSetAsideResult;
+    expect(price.locallyManufacturedSharePct).toBe(100);
+    expect(setAside.qualifiesForSetAside).toBe(true);
+  });
+});
+
+describe("KW / KPC Kuwaiti-Supplier Spend Target — spend-set-aside-target", () => {
+  it("soft: registered Kuwaiti supplier -> qualifies for KPC's 30% target pool", () => {
+    const a = assessSupplierLocalContent('KW', 'semi-government-soe', { kwLocalSpend: { isRegisteredKuwaitiSupplier: true } }, 'kw-kpc-local-spend');
+    const c = a.computation as SpendSetAsideResult;
+    expect(c.targetSharePct).toBe(KUWAIT_KPC_LOCAL_SPEND_TARGET_PCT);
+    expect(c.qualifiesForSetAside).toBe(true);
+  });
+
+  it('hardest: not a registered Kuwaiti supplier -> does not qualify', () => {
+    const a = assessSupplierLocalContent('KW', 'semi-government-soe', { kwLocalSpend: { isRegisteredKuwaitiSupplier: false } }, 'kw-kpc-local-spend');
+    const c = a.computation as SpendSetAsideResult;
+    expect(c.qualifiesForSetAside).toBe(false);
+  });
+
+  it('boundary: no registration status supplied -> honest null', () => {
+    const a = assessSupplierLocalContent('KW', 'semi-government-soe', { kwLocalSpend: { isRegisteredKuwaitiSupplier: null } }, 'kw-kpc-local-spend');
+    const c = a.computation as SpendSetAsideResult;
+    expect(c.qualifiesForSetAside).toBeNull();
+  });
+
+  it("not-applicable: government procurement is outside KPC's own semi-government-soe-anchored scope", () => {
+    const a = assessSupplierLocalContent('KW', 'government', { kwLocalSpend: { isRegisteredKuwaitiSupplier: true } }, 'kw-kpc-local-spend');
+    expect(a.applicability).toBe('not-applicable');
+  });
+});
+
+// ===========================================================================
+// Portfolio rollup -- the 2 new mechanism types (17 Sep 2026 continuation)
+// ===========================================================================
+
+describe('Portfolio rollup — spend-set-aside-target and modified-icv-score groups', () => {
+  it('setAsideQualifyingSharePct is spend-share-weighted across qualifying and non-qualifying suppliers, and never blended with a score reading', () => {
+    const qualifying = assessSupplierLocalContent('KW', 'semi-government-soe', { kwLocalSpend: { isRegisteredKuwaitiSupplier: true } }, 'kw-kpc-local-spend');
+    const nonQualifying = assessSupplierLocalContent('KW', 'semi-government-soe', { kwLocalSpend: { isRegisteredKuwaitiSupplier: false } }, 'kw-kpc-local-spend');
+    const groups = rollUpPortfolioLocalContent([
+      { supplierId: 's1', spendShare: 40, assessment: qualifying },
+      { supplierId: 's2', spendShare: 60, assessment: nonQualifying },
+    ]);
+    expect(groups).toHaveLength(1);
+    expect(groups[0]!.mechanismType).toBe('spend-set-aside-target');
+    expect(groups[0]!.setAsideQualifyingSharePct).toBeCloseTo(40, 6);
+    expect(groups[0]!.weightedScorePct).toBeNull();
+  });
+
+  it('modified-icv-score groups roll up finalScorePct spend-share-weighted, same convention as every other score-based mechanism', () => {
+    const strong = assessSupplierLocalContent('QA', 'government', {
+      qa: { localTangibleGoodsMaterialsQAR: 800_000, localServicesQAR: 0, qatariNationalResidentTrainingCostQAR: 0, supplierTrainingCertificationCostQAR: 0, qatarAssetDepreciationQAR: 0, totalQatarRevenueExclExportsQAR: 1_000_000, isEligibleManufacturer: false, isMicroOrSmallSupplier: false, selfReportedBonusPct: null },
+    }, 'qa-icv-tawteen');
+    const weak = assessSupplierLocalContent('QA', 'government', {
+      qa: { localTangibleGoodsMaterialsQAR: 200_000, localServicesQAR: 0, qatariNationalResidentTrainingCostQAR: 0, supplierTrainingCertificationCostQAR: 0, qatarAssetDepreciationQAR: 0, totalQatarRevenueExclExportsQAR: 1_000_000, isEligibleManufacturer: false, isMicroOrSmallSupplier: false, selfReportedBonusPct: null },
+    }, 'qa-icv-tawteen');
+    const groups = rollUpPortfolioLocalContent([
+      { supplierId: 's1', spendShare: 50, assessment: strong },
+      { supplierId: 's2', spendShare: 50, assessment: weak },
+    ]);
+    expect(groups).toHaveLength(1);
+    expect(groups[0]!.mechanismType).toBe('modified-icv-score');
+    expect(groups[0]!.weightedScorePct).toBeCloseTo(50, 6); // (80 + 20) / 2
+  });
+});
+
+// ===========================================================================
+// Structural regression -- every country now has more than one program
+// (17 Sep 2026 continuation); catches a program listed under the wrong
+// country before it ever reaches the UI.
+// ===========================================================================
+
+describe('PROGRAMS_BY_COUNTRY — structural sanity (17 Sep 2026 continuation)', () => {
+  it('all 7 countries have at least 2 programs, and every program in every list resolves back to that same country in PROGRAMS', () => {
+    for (const country of ['SA', 'AE', 'JO', 'OM', 'QA', 'BH', 'KW'] as const) {
+      expect(PROGRAMS_BY_COUNTRY[country].length).toBeGreaterThanOrEqual(2);
+      for (const program of PROGRAMS_BY_COUNTRY[country]) {
+        expect(PROGRAMS[program].country).toBe(country);
+      }
+    }
   });
 });

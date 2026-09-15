@@ -79,6 +79,12 @@ type SaMandatoryListInputs = NonNullable<SupplierLocalContentInputs['saMandatory
 type SaPricePreferenceInputs = NonNullable<SupplierLocalContentInputs['saPricePreference']>;
 type IktvaInputs = NonNullable<SupplierLocalContentInputs['iktva']>;
 type AeTawazunInputs = NonNullable<SupplierLocalContentInputs['aeTawazun']>;
+type JoContractorQuotaInputs = NonNullable<SupplierLocalContentInputs['joContractorQuota']>;
+type OmMandatoryListInputs = NonNullable<SupplierLocalContentInputs['omMandatoryList']>;
+type OmOqPricePreferenceInputs = NonNullable<SupplierLocalContentInputs['omOqPricePreference']>;
+type QaInputs = NonNullable<SupplierLocalContentInputs['qa']>;
+type BhSmeInputs = NonNullable<SupplierLocalContentInputs['bhSme']>;
+type KwLocalSpendInputs = NonNullable<SupplierLocalContentInputs['kwLocalSpend']>;
 
 function emptySa(): SaInputs {
   return {
@@ -118,6 +124,29 @@ function emptyIktva(): IktvaInputs {
 }
 function emptyAeTawazun(): AeTawazunInputs {
   return { contractValueAED: null, offsetCreditsEarnedAED: null };
+}
+function emptyJoContractorQuota(): JoContractorQuotaInputs {
+  return { isRegisteredJordanianContractor: null };
+}
+function emptyOmMandatoryList(): OmMandatoryListInputs {
+  return { inMandatoryListCategory: null, certifiedForCategory: null };
+}
+function emptyOmOqPricePreference(): OmOqPricePreferenceInputs {
+  return { bidValueLocallyManufacturedPct: null };
+}
+function emptyQa(): QaInputs {
+  return {
+    localTangibleGoodsMaterialsQAR: null, localServicesQAR: null,
+    qatariNationalResidentTrainingCostQAR: null, supplierTrainingCertificationCostQAR: null,
+    qatarAssetDepreciationQAR: null, totalQatarRevenueExclExportsQAR: null,
+    isEligibleManufacturer: null, isMicroOrSmallSupplier: null, selfReportedBonusPct: null,
+  };
+}
+function emptyBhSme(): BhSmeInputs {
+  return { qualifiesAsSme: null };
+}
+function emptyKwLocalSpend(): KwLocalSpendInputs {
+  return { isRegisteredKuwaitiSupplier: null };
 }
 
 // Old (pre-16-Sep-2026-generalization) Saudi-only program keys, still
@@ -167,10 +196,10 @@ interface LocalContentEntry {
   /** Always resolved to a program valid for the current countrySelection --
    * see PROGRAMS_BY_COUNTRY and normalizeProgram(). Defaults to
    * DEFAULT_PROGRAM_BY_COUNTRY[country], each country's own original single
-   * pre-existing mechanism. Only SA (6) and AE (2) currently have more than
-   * one program, so only those two show the routing-question button row --
-   * every other country's entry still carries a program value (its sole
-   * default), it's just never asked about. */
+   * pre-existing mechanism. Every country now has more than one program
+   * (17 Sep 2026 continuation), so every country shows the routing-question
+   * button row -- each entry still always carries a program value (its
+   * default when the reader hasn't chosen otherwise). */
   program: LocalContentProgram;
   context: ProcurementContext;
   spendSharePct: number | null;
@@ -181,6 +210,12 @@ interface LocalContentEntry {
   ae: AeInputs;
   aeTawazun: AeTawazunInputs;
   jo: JoInputs;
+  joContractorQuota: JoContractorQuotaInputs;
+  omMandatoryList: OmMandatoryListInputs;
+  omOqPricePreference: OmOqPricePreferenceInputs;
+  qa: QaInputs;
+  bhSme: BhSmeInputs;
+  kwLocalSpend: KwLocalSpendInputs;
 }
 
 function newLocalContentEntry(): LocalContentEntry {
@@ -193,6 +228,8 @@ function newLocalContentEntry(): LocalContentEntry {
     spendSharePct: null,
     sa: emptySa(), saMandatoryList: emptySaMandatoryList(), saPricePreference: emptySaPricePreference(), iktva: emptyIktva(),
     ae: emptyAe(), aeTawazun: emptyAeTawazun(), jo: emptyJo(),
+    joContractorQuota: emptyJoContractorQuota(), omMandatoryList: emptyOmMandatoryList(), omOqPricePreference: emptyOmOqPricePreference(),
+    qa: emptyQa(), bhSme: emptyBhSme(), kwLocalSpend: emptyKwLocalSpend(),
   };
 }
 
@@ -226,6 +263,12 @@ function loadState(): PersistedState {
             ae: { ...emptyAe(), ...e.ae },
             aeTawazun: { ...emptyAeTawazun(), ...e.aeTawazun },
             jo: { ...emptyJo(), ...e.jo },
+            joContractorQuota: { ...emptyJoContractorQuota(), ...e.joContractorQuota },
+            omMandatoryList: { ...emptyOmMandatoryList(), ...e.omMandatoryList },
+            omOqPricePreference: { ...emptyOmOqPricePreference(), ...e.omOqPricePreference },
+            qa: { ...emptyQa(), ...e.qa },
+            bhSme: { ...emptyBhSme(), ...e.bhSme },
+            kwLocalSpend: { ...emptyKwLocalSpend(), ...e.kwLocalSpend },
           })),
           targetThresholdPct: parsed.targetThresholdPct ?? null,
         };
@@ -261,8 +304,9 @@ const CONTEXT_TABS: { v: ProcurementContext; en: string; ar: string }[] = [
 ];
 
 // Program routing question (task #115, generalized 16 Sep 2026 from SA-only
-// to any country with more than one program -- today SA (6) and AE (2)):
-// which mechanism is this assessment for. Short bilingual labels for the
+// to any country with more than one program -- since 17 Sep 2026 that is
+// every one of the 7 countries): which mechanism is this assessment for.
+// Short bilingual labels for the
 // button row and the portfolio table; the full sourced methodology stays in
 // the accordion below, keyed off PROGRAMS[program] automatically. Every
 // LocalContentProgram key gets a label (not just the multi-program
@@ -278,10 +322,17 @@ const PROGRAM_LABELS: Record<LocalContentProgram, { en: string; ar: string }> = 
   'ae-icv-general': { en: 'National ICV Score', ar: 'الدرجة الوطنية لـICV' },
   'ae-tawazun-offset': { en: 'Tawazun Offset', ar: 'مقاصة توازن' },
   'jo-price-preference': { en: 'Price Preference (20%)', ar: 'تفضيل السعر (٢٠٪)' },
+  'jo-contractor-quota': { en: 'Contractor Quota (35%)', ar: 'حصة المقاولين (٣٥٪)' },
   'om-icv': { en: 'ICV (not sourced)', ar: 'ICV (غير موثّق)' },
+  'om-mandatory-list': { en: 'PTLC Mandatory List Gate', ar: 'بوابة القائمة الإلزامية (PTLC)' },
+  'om-oq-price-preference': { en: 'OQ Price Preference (10%)', ar: 'تفضيل سعر OQ (١٠٪)' },
   'qa-national-strategy': { en: 'National Strategy (not sourced)', ar: 'الاستراتيجية الوطنية (غير موثّقة)' },
+  'qa-icv-tawteen': { en: 'Tawteen / ICV (icv.qa)', ar: 'توطين / ICV (icv.qa)' },
   'bh-local-content': { en: 'Local Content (not sourced)', ar: 'المحتوى المحلي (غير موثّق)' },
+  'bh-sme-price-preference': { en: 'SME Price Preference (10%)', ar: 'تفضيل سعر المنشآت الصغيرة والمتوسطة (١٠٪)' },
+  'bh-sme-spend-setaside': { en: 'SME Spend Set-Aside (20%)', ar: 'تخصيص إنفاق للمنشآت الصغيرة والمتوسطة (٢٠٪)' },
   'kw-local-content': { en: 'Local Content (not sourced)', ar: 'المحتوى المحلي (غير موثّق)' },
+  'kw-kpc-local-spend': { en: 'KPC Local Spend Target (30%)', ar: 'هدف إنفاق KPC المحلي (٣٠٪)' },
 };
 
 // Dual-sided (buyer + supplier) value framing, per mechanism TYPE (not per
@@ -334,6 +385,18 @@ const MECHANISM_VALUE_FRAMING: Partial<Record<LocalContentMechanismType, { buyer
     supplierEn: 'Banking real offset credits early (investment, JV, tech transfer) avoids the 8.5% cash/guarantee cost -- a supplier who plans offset activity from day one turns a compliance obligation into a genuine local partnership, not a penalty to absorb at the end.',
     supplierAr: 'اكتساب ائتمانات مقاصة حقيقية مبكراً (استثمار، مشروع مشترك، نقل تقني) يتجنب تكلفة ٨.٥٪ النقدية/الضمانية -- المورّد الذي يخطط لنشاط المقاصة منذ اليوم الأول يحوّل التزام الامتثال إلى شراكة محلية حقيقية، لا غرامة يتحملها في النهاية.',
   },
+  'spend-set-aside-target': {
+    buyerEn: 'Guarantees a real, measurable share of spend reaches the reserved supplier class (SMEs, national contractors) without policing every individual award -- the target share itself does the enforcement.',
+    buyerAr: 'يضمن وصول حصة حقيقية وقابلة للقياس من الإنفاق إلى فئة الموردين المخصصة (المنشآت الصغيرة والمتوسطة، المقاولون الوطنيون) دون الحاجة لمراقبة كل قرار ترسية على حدة -- فالحصة المستهدفة نفسها تفرض التنفيذ.',
+    supplierEn: 'Once qualified, this supplier competes within a smaller, reserved pool instead of the full open market -- qualification itself is the lever, not incremental spend or score-building.',
+    supplierAr: 'بعد التأهل، يتنافس هذا المورّد ضمن مجموعة أصغر ومخصصة بدلاً من السوق المفتوح بالكامل -- التأهل نفسه هو الرافعة، وليس زيادة الإنفاق أو بناء الدرجة تدريجياً.',
+  },
+  'modified-icv-score': {
+    buyerEn: "A single official score (icv.qa) usable directly in bid evaluation, with real, disclosed modifiers (manufacturer boost, small-supplier floor) that reward the specific behaviors Qatar's strategy wants without inventing a new methodology.",
+    buyerAr: 'درجة رسمية واحدة (icv.qa) قابلة للاستخدام مباشرة في تقييم العطاءات، مع معدِّلات حقيقية ومُفصَح عنها (مكافأة المصنّعين، حد أدنى للموردين الصغار) تكافئ السلوكيات التي تستهدفها استراتيجية قطر دون ابتكار منهجية جديدة.',
+    supplierEn: "Multiple real levers raise this score beyond raw spend: eligible-manufacturer status applies a 50% boost, and genuinely small/micro suppliers get a guaranteed 30% floor regardless of spend data -- both are policy facts worth checking before assuming a gap requires new spend.",
+    supplierAr: 'توجد عدة روافع حقيقية لرفع هذه الدرجة إلى جانب الإنفاق وحده: صفة "المصنّع المؤهل" تمنح مكافأة ٥٠٪، ويحصل الموردون متناهو الصغر/الصغار فعلياً على حد أدنى مضمون ٣٠٪ بغض النظر عن بيانات الإنفاق -- وكلاهما حقيقة سياسية تستحق التحقق منها قبل افتراض أن سد الفجوة يتطلب إنفاقاً جديداً.',
+  },
 };
 
 // Pillar keys come straight off the engine's computation result (SA: labor/goodsServices/
@@ -352,6 +415,11 @@ const PILLAR_LABELS: Record<string, { en: string; ar: string }> = {
   emiratisation: { en: 'Emiratisation', ar: 'التوطين' },
   expatriateContribution: { en: 'Expatriate Contribution', ar: 'مساهمة العمالة الوافدة' },
   bonus: { en: 'Bonus Categories', ar: 'فئات المكافآت' },
+  localTangibleGoodsMaterials: { en: 'Local Tangible Goods & Materials', ar: 'السلع والمواد المحلية الملموسة' },
+  localServices: { en: 'Local Services', ar: 'الخدمات المحلية' },
+  qatariNationalResidentTraining: { en: 'Qatari National/Resident Training', ar: 'تدريب المواطنين والمقيمين القطريين' },
+  supplierTrainingCertification: { en: 'Supplier Training & Certification', ar: 'تدريب واعتماد الموردين' },
+  qatarAssetDepreciation: { en: 'Qatar Asset Depreciation', ar: 'إهلاك الأصول في قطر' },
 };
 function pillarLabel(key: string, isAr: boolean): string {
   const l = PILLAR_LABELS[key];
@@ -421,7 +489,7 @@ function LocalContentEntryCard({
   const assessment: LocalContentAssessment | null = !isOther
     ? assessSupplierLocalContent(
         entry.countrySelection as LocalContentCountry, entry.context,
-        { sa: entry.sa, ae: entry.ae, jo: entry.jo, saMandatoryList: entry.saMandatoryList, saPricePreference: entry.saPricePreference, iktva: entry.iktva, aeTawazun: entry.aeTawazun },
+        { sa: entry.sa, ae: entry.ae, jo: entry.jo, saMandatoryList: entry.saMandatoryList, saPricePreference: entry.saPricePreference, iktva: entry.iktva, aeTawazun: entry.aeTawazun, joContractorQuota: entry.joContractorQuota, omMandatoryList: entry.omMandatoryList, omOqPricePreference: entry.omOqPricePreference, qa: entry.qa, bhSme: entry.bhSme, kwLocalSpend: entry.kwLocalSpend },
         entry.program,
       )
     : null;
@@ -435,6 +503,8 @@ function LocalContentEntryCard({
     if (c.mechanismType === 'price-preference-margin') return c.locallyManufacturedSharePct !== null;
     if (c.mechanismType === 'category-eligibility-gate') return c.eligibleToBid !== null;
     if (c.mechanismType === 'offset-obligation-gate') return c.triggersObligation !== null;
+    if (c.mechanismType === 'spend-set-aside-target') return c.qualifiesForSetAside !== null;
+    if (c.mechanismType === 'modified-icv-score') return c.finalScorePct !== null;
     return false;
   })();
 
@@ -525,9 +595,10 @@ function LocalContentEntryCard({
         </div>
 
         {/* ── Program routing question (task #115; generalized 16 Sep 2026 from
-             SA-only to any country with more than one program -- today SA (6)
-             and AE (2)). Shown before context/methodology, since it changes
-             which framework and applicable contexts apply. ── */}
+             SA-only to any country with more than one program -- since
+             17 Sep 2026 that is every one of the 7 countries). Shown before
+             context/methodology, since it changes which framework and
+             applicable contexts apply. ── */}
         {hasMultiplePrograms && (
           <div className="mb-3">
             <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
@@ -583,8 +654,8 @@ function LocalContentEntryCard({
             <Compass className="w-4 h-4 text-slate-500 shrink-0 mt-0.5" />
             <p className="text-[11px] text-slate-600 leading-relaxed">
               {isAr
-                ? 'هذه الوحدة تغطي حالياً سبع دول فقط: السعودية والإمارات والأردن (صيغ موثّقة قابلة للحساب) بالإضافة إلى عُمان وقطر والبحرين والكويت (برامج حقيقية لم تُوثَّق صيغتها بعد). أي دولة أخرى (مثل الصين أو تركيا أو مصر) غير قابلة للتمثيل في هذه المكتبة إطلاقاً -- لا يوجد فحص محتوى محلي متاح لها هنا، وليس درجة صفرية أو "غير مطبَّق".'
-                : "This module currently covers only seven countries: Saudi Arabia, the UAE, and Jordan (sourced, computable formulas), plus Oman, Qatar, Bahrain, and Kuwait (real programs whose formula isn't sourced yet). Any other country (e.g. China, Turkey, Egypt) isn't representable by this library at all -- no local-content check is available for it here, and this is not a zero score or a \"not applicable\" verdict."}
+                ? 'هذه الوحدة تغطي حالياً سبع دول فقط: السعودية والإمارات والأردن وعُمان وقطر والبحرين والكويت، ولكل منها برنامج واحد أو أكثر بصيغة موثّقة قابلة للحساب (بعضها إلى جانب برنامج عام لا يزال "غير موثّق" -- يُعرض ذلك صراحة عند اختياره، لا كدرجة صفرية). أي دولة أخرى (مثل الصين أو تركيا أو مصر) غير قابلة للتمثيل في هذه المكتبة إطلاقاً -- لا يوجد فحص محتوى محلي متاح لها هنا، وليس درجة صفرية أو "غير مطبَّق".'
+                : "This module currently covers only seven countries: Saudi Arabia, the UAE, Jordan, Oman, Qatar, Bahrain, and Kuwait, each with one or more sourced, computable-formula programs (some also carry a separate general program that's still not-yet-sourced -- disclosed explicitly when selected, not shown as a zero score). Any other country (e.g. China, Turkey, Egypt) isn't representable by this library at all -- no local-content check is available for it here, and this is not a zero score or a \"not applicable\" verdict."}
             </p>
           </div>
         ) : (
@@ -820,16 +891,181 @@ function LocalContentEntryCard({
                   </div>
                 )}
 
-                {entry.countrySelection === 'JO' && (
+                {entry.countrySelection === 'JO' && entry.program === 'jo-price-preference' && (
                   <div className="grid sm:grid-cols-2 gap-3">
                     <NumberField
                       label={isAr ? 'نسبة القيمة المصنّعة محلياً من قيمة العطاء' : 'Locally-Manufactured Share of Bid Value'}
-                      hint={isAr ? `تفضيل السعر الأقصى ${COUNTRY_FRAMEWORKS.JO.programNameAr}: ٢٠٪` : 'Maximum price preference margin: 20%'}
+                      hint={isAr ? `تفضيل السعر الأقصى ${PROGRAMS['jo-price-preference'].programNameAr}: ٢٠٪` : 'Maximum price preference margin: 20%'}
                       unit="%"
                       max={100}
                       value={entry.jo.bidValueLocallyManufacturedPct}
                       onChange={v => onUpdate(entry.id, { jo: { ...entry.jo, bidValueLocallyManufacturedPct: v } })}
                     />
+                  </div>
+                )}
+
+                {entry.countrySelection === 'JO' && entry.program === 'jo-contractor-quota' && (
+                  <div>
+                    <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                      {isAr ? 'هل هذا المورّد مقاول أردني مسجّل رسمياً؟' : 'Is this supplier a registered Jordanian contractor?'}
+                    </p>
+                    <div className="flex gap-1.5" role="group" aria-label={isAr ? 'حالة التسجيل كمقاول أردني' : 'Jordanian-contractor registration status'}>
+                      {([['yes', true], ['no', false]] as const).map(([k, v]) => (
+                        <button
+                          key={k}
+                          type="button"
+                          aria-pressed={entry.joContractorQuota.isRegisteredJordanianContractor === v}
+                          onClick={() => onUpdate(entry.id, { joContractorQuota: { ...entry.joContractorQuota, isRegisteredJordanianContractor: v } })}
+                          className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors ${
+                            entry.joContractorQuota.isRegisteredJordanianContractor === v ? 'bg-[#082C6B] border-[#082C6B] text-white' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                          }`}
+                        >
+                          {k === 'yes' ? (isAr ? 'نعم' : 'Yes') : (isAr ? 'لا' : 'No')}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {entry.countrySelection === 'OM' && entry.program === 'om-mandatory-list' && (
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                        {isAr ? 'هل هذه الفئة مدرجة في القائمة الإلزامية لهيئة المناقصات والمشتريات العامة والمحتوى المحلي؟' : "Is this category on PTLC's Mandatory List?"}
+                      </p>
+                      <div className="flex gap-1.5" role="group" aria-label={isAr ? 'الإدراج في القائمة الإلزامية' : 'Mandatory List membership'}>
+                        {([['yes', true], ['no', false]] as const).map(([k, v]) => (
+                          <button
+                            key={k}
+                            type="button"
+                            aria-pressed={entry.omMandatoryList.inMandatoryListCategory === v}
+                            onClick={() => onUpdate(entry.id, { omMandatoryList: { ...entry.omMandatoryList, inMandatoryListCategory: v } })}
+                            className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors ${
+                              entry.omMandatoryList.inMandatoryListCategory === v ? 'bg-[#082C6B] border-[#082C6B] text-white' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                            }`}
+                          >
+                            {k === 'yes' ? (isAr ? 'نعم' : 'Yes') : (isAr ? 'لا' : 'No')}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    {entry.omMandatoryList.inMandatoryListCategory === true && (
+                      <div>
+                        <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                          {isAr ? 'هل هذا المورّد معتمد لهذه الفئة؟' : 'Is this supplier certified for this category?'}
+                        </p>
+                        <div className="flex gap-1.5" role="group" aria-label={isAr ? 'حالة الاعتماد' : 'Certification status'}>
+                          {([['yes', true], ['no', false]] as const).map(([k, v]) => (
+                            <button
+                              key={k}
+                              type="button"
+                              aria-pressed={entry.omMandatoryList.certifiedForCategory === v}
+                              onClick={() => onUpdate(entry.id, { omMandatoryList: { ...entry.omMandatoryList, certifiedForCategory: v } })}
+                              className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors ${
+                                entry.omMandatoryList.certifiedForCategory === v ? 'bg-[#082C6B] border-[#082C6B] text-white' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                              }`}
+                            >
+                              {k === 'yes' ? (isAr ? 'نعم' : 'Yes') : (isAr ? 'لا' : 'No')}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {entry.countrySelection === 'OM' && entry.program === 'om-oq-price-preference' && (
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    <NumberField
+                      label={isAr ? 'نسبة القيمة المصنّعة عُمانياً من قيمة العطاء' : 'Locally-Manufactured Share of Bid Value'}
+                      hint={isAr ? `تفضيل السعر الأقصى ${PROGRAMS['om-oq-price-preference'].programNameAr}: ١٠٪` : 'Maximum price preference margin: 10%'}
+                      unit="%"
+                      max={100}
+                      value={entry.omOqPricePreference.bidValueLocallyManufacturedPct}
+                      onChange={v => onUpdate(entry.id, { omOqPricePreference: { ...entry.omOqPricePreference, bidValueLocallyManufacturedPct: v } })}
+                    />
+                  </div>
+                )}
+
+                {entry.countrySelection === 'QA' && entry.program === 'qa-icv-tawteen' && (
+                  <div className="space-y-3">
+                    <div className="grid sm:grid-cols-2 gap-3">
+                      <NumberField label={isAr ? 'السلع والمواد المحلية الملموسة' : 'Local Tangible Goods & Materials'} unit={isAr ? 'ر.ق' : 'QAR'} value={entry.qa.localTangibleGoodsMaterialsQAR} onChange={v => onUpdate(entry.id, { qa: { ...entry.qa, localTangibleGoodsMaterialsQAR: v } })} />
+                      <NumberField label={isAr ? 'الخدمات المحلية' : 'Local Services'} unit={isAr ? 'ر.ق' : 'QAR'} value={entry.qa.localServicesQAR} onChange={v => onUpdate(entry.id, { qa: { ...entry.qa, localServicesQAR: v } })} />
+                      <NumberField label={isAr ? 'تكلفة تدريب المواطنين/المقيمين القطريين' : 'Qatari National/Resident Training Cost'} unit={isAr ? 'ر.ق' : 'QAR'} value={entry.qa.qatariNationalResidentTrainingCostQAR} onChange={v => onUpdate(entry.id, { qa: { ...entry.qa, qatariNationalResidentTrainingCostQAR: v } })} />
+                      <NumberField label={isAr ? 'تكلفة تدريب واعتماد الموردين' : 'Supplier Training & Certification Cost'} unit={isAr ? 'ر.ق' : 'QAR'} value={entry.qa.supplierTrainingCertificationCostQAR} onChange={v => onUpdate(entry.id, { qa: { ...entry.qa, supplierTrainingCertificationCostQAR: v } })} />
+                      <NumberField label={isAr ? 'إهلاك الأصول في قطر' : 'Qatar Asset Depreciation'} unit={isAr ? 'ر.ق' : 'QAR'} value={entry.qa.qatarAssetDepreciationQAR} onChange={v => onUpdate(entry.id, { qa: { ...entry.qa, qatarAssetDepreciationQAR: v } })} />
+                      <NumberField label={isAr ? 'إجمالي إيرادات قطر (باستثناء الصادرات)' : 'Total Qatar Revenue (excl. exports)'} unit={isAr ? 'ر.ق' : 'QAR'} value={entry.qa.totalQatarRevenueExclExportsQAR} onChange={v => onUpdate(entry.id, { qa: { ...entry.qa, totalQatarRevenueExclExportsQAR: v } })} />
+                      <NumberField
+                        label={isAr ? 'مكافأة سلوك استراتيجي ذاتية (اختياري، مبسّطة)' : 'Self-Reported Strategic-Behaviour Bonus (optional, simplified)'}
+                        hint={isAr ? 'حد أقصى ١٥٪ -- تبسيط مُفصَح عنه لمعايير icv.qa الفرعية الكاملة' : "Capped at 15% -- disclosed simplification of icv.qa's full sub-criteria"}
+                        unit="%" max={15}
+                        value={entry.qa.selfReportedBonusPct}
+                        onChange={v => onUpdate(entry.id, { qa: { ...entry.qa, selfReportedBonusPct: v } })}
+                      />
+                    </div>
+                    <div className="flex flex-wrap gap-3">
+                      <label htmlFor={`qa-manufacturer-${entry.id}`} className="flex items-center gap-2 text-xs font-semibold text-slate-700">
+                        <Checkbox id={`qa-manufacturer-${entry.id}`} checked={entry.qa.isEligibleManufacturer === true} onCheckedChange={c => onUpdate(entry.id, { qa: { ...entry.qa, isEligibleManufacturer: c === true } })} />
+                        {isAr ? 'مصنّع مؤهل بموجب سياسة ICV+ (مكافأة +٥٠٪)' : 'Eligible manufacturer under ICV+ policy (+50% boost)'}
+                      </label>
+                      <label htmlFor={`qa-microsmall-${entry.id}`} className="flex items-center gap-2 text-xs font-semibold text-slate-700">
+                        <Checkbox id={`qa-microsmall-${entry.id}`} checked={entry.qa.isMicroOrSmallSupplier === true} onCheckedChange={c => onUpdate(entry.id, { qa: { ...entry.qa, isMicroOrSmallSupplier: c === true } })} />
+                        {isAr ? 'مورّد متناهي الصغر أو صغير (حد أدنى مضمون ٣٠٪)' : 'Micro or small supplier (guaranteed 30% floor)'}
+                      </label>
+                    </div>
+                  </div>
+                )}
+
+                {entry.countrySelection === 'BH' && (entry.program === 'bh-sme-price-preference' || entry.program === 'bh-sme-spend-setaside') && (
+                  <div>
+                    <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                      {isAr ? 'هل يستوفي هذا المورّد شروط التصنيف كمنشأة صغيرة أو متوسطة (القرار الوزاري رقم ٢٣ لسنة ٢٠٢٦)؟' : 'Does this supplier qualify as an SME (Ministerial Decision No. 23 of 2026)?'}
+                    </p>
+                    <div className="flex gap-1.5" role="group" aria-label={isAr ? 'حالة تأهل المنشآت الصغيرة والمتوسطة' : 'SME qualification status'}>
+                      {([['yes', true], ['no', false]] as const).map(([k, v]) => (
+                        <button
+                          key={k}
+                          type="button"
+                          aria-pressed={entry.bhSme.qualifiesAsSme === v}
+                          onClick={() => onUpdate(entry.id, { bhSme: { ...entry.bhSme, qualifiesAsSme: v } })}
+                          className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors ${
+                            entry.bhSme.qualifiesAsSme === v ? 'bg-[#082C6B] border-[#082C6B] text-white' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                          }`}
+                        >
+                          {k === 'yes' ? (isAr ? 'نعم' : 'Yes') : (isAr ? 'لا' : 'No')}
+                        </button>
+                      ))}
+                    </div>
+                    <p className="text-[10px] text-muted-foreground mt-1.5">
+                      {isAr ? 'الحد: ≤٢٥٠ موظفاً أو ≤٢٠ مليون دينار بحريني إيرادات سنوية.' : 'Ceiling: <=250 employees or <=BHD 20M annual revenue.'}
+                    </p>
+                  </div>
+                )}
+
+                {entry.countrySelection === 'KW' && entry.program === 'kw-kpc-local-spend' && (
+                  <div>
+                    <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                      {isAr ? 'هل هذا المورّد مسجّل رسمياً كمورّد كويتي؟' : 'Is this supplier a registered Kuwaiti supplier?'}
+                    </p>
+                    <div className="flex gap-1.5" role="group" aria-label={isAr ? 'حالة التسجيل كمورّد كويتي' : 'Kuwaiti-supplier registration status'}>
+                      {([['yes', true], ['no', false]] as const).map(([k, v]) => (
+                        <button
+                          key={k}
+                          type="button"
+                          aria-pressed={entry.kwLocalSpend.isRegisteredKuwaitiSupplier === v}
+                          onClick={() => onUpdate(entry.id, { kwLocalSpend: { ...entry.kwLocalSpend, isRegisteredKuwaitiSupplier: v } })}
+                          className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors ${
+                            entry.kwLocalSpend.isRegisteredKuwaitiSupplier === v ? 'bg-[#082C6B] border-[#082C6B] text-white' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                          }`}
+                        >
+                          {k === 'yes' ? (isAr ? 'نعم' : 'Yes') : (isAr ? 'لا' : 'No')}
+                        </button>
+                      ))}
+                    </div>
+                    <p className="text-[10px] text-muted-foreground mt-1.5">
+                      {isAr ? 'لم يُسنَد بعد تعريف تأهل أكثر تفصيلاً وموثّقاً -- التسجيل الرسمي هو الحقيقة المتاحة حالياً.' : 'A more granular sourced qualification definition has not been located yet -- formal registration is the fact available today.'}
+                    </p>
                   </div>
                 )}
               </div>
@@ -994,6 +1230,54 @@ function LocalContentEntryCard({
                     )}
                   </>
                 )}
+                {assessment.computation.mechanismType === 'spend-set-aside-target' && (
+                  <>
+                    <div className="flex items-baseline justify-between">
+                      <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        {isAr ? 'الحصة المستهدفة المخصصة' : 'Reserved Target Share'}
+                      </span>
+                      <span className="text-2xl font-black text-[#082C6B]">{assessment.computation.targetSharePct}%</span>
+                    </div>
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="text-slate-600">{isAr ? 'مؤهل للحصة المخصصة' : 'Qualifies for Reserved Share'}</span>
+                      <span className={`text-sm font-black px-2.5 py-1 rounded-full ${
+                        assessment.computation.eligibleForReservedShare === true ? 'bg-emerald-100 text-emerald-700'
+                          : assessment.computation.eligibleForReservedShare === false ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-500'
+                      }`}>
+                        {assessment.computation.eligibleForReservedShare === true ? (isAr ? 'نعم' : 'Yes')
+                          : assessment.computation.eligibleForReservedShare === false ? (isAr ? 'لا' : 'No') : (isAr ? 'غير مكتمل' : 'Incomplete')}
+                      </span>
+                    </div>
+                  </>
+                )}
+                {assessment.computation.mechanismType === 'modified-icv-score' && (
+                  <>
+                    <div className="flex items-baseline justify-between">
+                      <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        {isAr ? 'الدرجة النهائية (توطين/ICV)' : 'Final Score (Tawteen/ICV)'}
+                      </span>
+                      <span className="text-2xl font-black text-[#082C6B]">
+                        {assessment.computation.finalScorePct !== null ? `${assessment.computation.finalScorePct.toFixed(1)}%` : '—'}
+                      </span>
+                    </div>
+                    <div className="space-y-1">
+                      {assessment.computation.pillars.map(p => (
+                        <div key={p.key} className="flex items-center justify-between text-[11px] text-slate-600">
+                          <span>{pillarLabel(p.key, isAr)}</span>
+                          <span className="font-semibold">
+                            {p.total > 0 ? `${((p.eligible / p.total) * 100).toFixed(0)}%` : '—'}
+                            <span className="text-slate-400 font-normal"> ({p.eligible.toLocaleString()} / {p.total.toLocaleString()})</span>
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-[10px] text-slate-500">
+                      {isAr
+                        ? `النسبة الأساسية: ${assessment.computation.baseScorePct !== null ? `${assessment.computation.baseScorePct.toFixed(1)}٪` : '—'}${assessment.computation.isEligibleManufacturer ? ' — مكافأة المصنّع المؤهل (×١.٥) مطبّقة' : ''}${assessment.computation.isMicroOrSmallSupplier ? ' — الحد الأدنى الشامل ٣٠٪ مطبّق' : ''}`
+                        : `Base ratio: ${assessment.computation.baseScorePct !== null ? `${assessment.computation.baseScorePct.toFixed(1)}%` : '—'}${assessment.computation.isEligibleManufacturer ? ' — ICV+ manufacturer boost (x1.5) applied' : ''}${assessment.computation.isMicroOrSmallSupplier ? ' — blanket 30% floor applied' : ''}`}
+                    </p>
+                  </>
+                )}
               </div>
             )}
 
@@ -1152,7 +1436,7 @@ export function LocalContentICVCheck() {
       entry: e,
       assessment: assessSupplierLocalContent(
         e.countrySelection as LocalContentCountry, e.context,
-        { sa: e.sa, ae: e.ae, jo: e.jo, saMandatoryList: e.saMandatoryList, saPricePreference: e.saPricePreference, iktva: e.iktva, aeTawazun: e.aeTawazun },
+        { sa: e.sa, ae: e.ae, jo: e.jo, saMandatoryList: e.saMandatoryList, saPricePreference: e.saPricePreference, iktva: e.iktva, aeTawazun: e.aeTawazun, joContractorQuota: e.joContractorQuota, omMandatoryList: e.omMandatoryList, omOqPricePreference: e.omOqPricePreference, qa: e.qa, bhSme: e.bhSme, kwLocalSpend: e.kwLocalSpend },
         e.program,
       ),
     }));
@@ -1195,14 +1479,14 @@ export function LocalContentICVCheck() {
                 {isAr ? 'المحتوى المحلي / القيمة المحلية المضافة — متعدد الدول' : 'Local Content / ICV — Multi-Country'}
               </p>
               <h1 className="text-3xl lg:text-4xl font-black leading-tight">
-                {isAr ? 'فحص أهلية المحتوى المحلي عبر السعودية والإمارات والأردن' : 'Local Content / ICV Eligibility Check'}
+                {isAr ? 'فحص أهلية المحتوى المحلي عبر سبع دول خليجية وعربية' : 'Local Content / ICV Eligibility Check'}
               </h1>
             </div>
           </div>
           <p className="text-white/75 text-base max-w-2xl leading-relaxed mb-4">
             {isAr
-              ? 'المحتوى المحلي ليس معياراً إقليمياً واحداً -- إنه ثلاث آليات مختلفة جوهرياً: درجة نسبة مئوية معتمدة في السعودية (LCGPA)، درجة مرجحة متعددة الأركان في الإمارات (ICV)، وتفضيل سعري في العطاءات بالأردن. سمِّ كل مورّد، اختر الدولة وسياق الشراء، واحصل على قراءة أهلية صادقة فوراً.'
-              : "Local content isn't one regional standard -- it's three genuinely different mechanisms: a certified percentage score in Saudi Arabia (LCGPA), a weighted multi-pillar score in the UAE (ICV), and a bid-evaluation price preference in Jordan. Name each supplier, pick the country and buyer context, and get an honest applicability read immediately."}
+              ? 'المحتوى المحلي ليس معياراً إقليمياً واحداً -- إنه آليات مختلفة جوهرياً عبر سبع دول: درجة نسبة مئوية معتمدة في السعودية (LCGPA)، درجة مرجحة متعددة الأركان في الإمارات (ICV)، تفضيل سعري في عطاءات الأردن وعُمان والبحرين، بوابة أهلية للفئات في القائمة الإلزامية بالسعودية وعُمان، درجة توطين/ICV رسمية في قطر (icv.qa)، وحصص إنفاق مخصصة في الأردن والبحرين والكويت. سمِّ كل مورّد، اختر الدولة والبرنامج وسياق الشراء، واحصل على قراءة أهلية صادقة فوراً.'
+              : "Local content isn't one regional standard -- it's genuinely different mechanisms across seven countries: a certified percentage score in Saudi Arabia (LCGPA), a weighted multi-pillar score in the UAE (ICV), a bid-evaluation price preference in Jordan, Oman, and Bahrain, a category-eligibility gate on Saudi and Omani Mandatory Lists, an official Tawteen/ICV score in Qatar (icv.qa), and reserved spend set-asides in Jordan, Bahrain, and Kuwait. Name each supplier, pick the country, program, and buyer context, and get an honest applicability read immediately."}
           </p>
           <div className="flex flex-wrap gap-3 text-xs text-white/60 mb-4">
             {(isAr
@@ -1342,6 +1626,7 @@ export function LocalContentICVCheck() {
                           : g.weightedEffectiveDiscountPct !== null ? `${g.weightedEffectiveDiscountPct.toFixed(1)} pts`
                           : g.gateEligibleSharePct !== null ? (isAr ? `${g.gateEligibleSharePct.toFixed(0)}٪ مؤهل` : `${g.gateEligibleSharePct.toFixed(0)}% eligible`)
                           : g.totalShortfallPenaltyAED !== null ? (isAr ? `التعرض المالي ${g.totalShortfallPenaltyAED.toLocaleString()} درهم` : `AED ${g.totalShortfallPenaltyAED.toLocaleString()} exposure`)
+                          : g.setAsideQualifyingSharePct !== null ? (isAr ? `${g.setAsideQualifyingSharePct.toFixed(0)}٪ مؤهل للحصة` : `${g.setAsideQualifyingSharePct.toFixed(0)}% qualify for set-aside`)
                           : '—'}
                       </td>
                     </tr>
@@ -1385,8 +1670,8 @@ export function LocalContentICVCheck() {
 
         <p className="text-[10px] text-muted-foreground text-center pt-2">
           {isAr
-            ? 'هذه الأداة لا تحل محل تدقيق رسمي من الجهة المعنية (هيئة المحتوى المحلي والمشتريات الحكومية، وزارة الصناعة والتقنية المتقدمة، أو الجهة الأردنية المختصة) أو استشارة قانونية/محاسبية متخصصة.'
-            : "This tool is not a substitute for a formal audit from the relevant authority (LCGPA, the UAE's MoIAT, or Jordan's competent ministry) or specialist legal/accounting advice."}
+            ? 'هذه الأداة لا تحل محل تدقيق رسمي من الجهة المعنية (هيئة المحتوى المحلي والمشتريات الحكومية في السعودية، وزارة الصناعة والتقنية المتقدمة في الإمارات، الجهة الأردنية المختصة، هيئة المناقصات والمشتريات العامة والمحتوى المحلي PTLC في عُمان، icv.qa في قطر، أو الجهة البحرينية أو الكويتية المختصة) أو استشارة قانونية/محاسبية متخصصة.'
+            : "This tool is not a substitute for a formal audit from the relevant authority (Saudi Arabia's LCGPA, the UAE's MoIAT, Jordan's competent ministry, Oman's PTLC, Qatar's icv.qa, or Bahrain's or Kuwait's competent authority) or specialist legal/accounting advice."}
         </p>
       </div>
     </div>
