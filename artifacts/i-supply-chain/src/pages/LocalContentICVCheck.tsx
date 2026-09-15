@@ -55,10 +55,11 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { safeSetItem } from '@/lib/storage';
 import {
   assessSupplierLocalContent, recommendLocalContentAction, rollUpPortfolioLocalContent,
-  COUNTRY_FRAMEWORKS, SAUDI_PROGRAMS, SAUDI_PROGRAMS_LIST,
+  COUNTRY_FRAMEWORKS, PROGRAMS, PROGRAMS_BY_COUNTRY, DEFAULT_PROGRAM_BY_COUNTRY,
+  TAWAZUN_OFFSET_THRESHOLD_AED,
   type LocalContentCountry, type ProcurementContext, type SupplierLocalContentInputs,
   type LocalContentApplicability, type LocalContentAssessment, type PortfolioLocalContentInput,
-  type SaudiProgram,
+  type LocalContentProgram, type LocalContentMechanismType,
 } from '@/lib/supplierLocalContentEligibility';
 // Module 05 cross-reference (side-by-side callout only -- two independent
 // dimensions, per Core Instruction / Rule 7, never blended into one
@@ -77,6 +78,7 @@ type JoInputs = NonNullable<SupplierLocalContentInputs['jo']>;
 type SaMandatoryListInputs = NonNullable<SupplierLocalContentInputs['saMandatoryList']>;
 type SaPricePreferenceInputs = NonNullable<SupplierLocalContentInputs['saPricePreference']>;
 type IktvaInputs = NonNullable<SupplierLocalContentInputs['iktva']>;
+type AeTawazunInputs = NonNullable<SupplierLocalContentInputs['aeTawazun']>;
 
 function emptySa(): SaInputs {
   return {
@@ -114,6 +116,39 @@ function emptyIktva(): IktvaInputs {
     localRnDSAR: null, totalCostsSAR: null, incentiveBonusPct: null,
   };
 }
+function emptyAeTawazun(): AeTawazunInputs {
+  return { contractValueAED: null, offsetCreditsEarnedAED: null };
+}
+
+// Old (pre-16-Sep-2026-generalization) Saudi-only program keys, still
+// possibly sitting in a returning user's localStorage/server row from
+// before this pass -- migrated to their new 'sa-'-prefixed
+// LocalContentProgram keys so an existing user's saved entry doesn't
+// silently break (framework/country mismatch) on first load after this
+// deploy. Never guessed -- a straight 1:1 rename of the exact 6 old keys.
+const LEGACY_SA_PROGRAM_MIGRATION: Record<string, LocalContentProgram> = {
+  'lcgpa-general': 'sa-lcgpa-general',
+  'mandatory-list': 'sa-mandatory-list',
+  'price-preference': 'sa-price-preference',
+  'iktva-aramco': 'sa-iktva-aramco',
+  'gami-defense': 'sa-gami-defense',
+  likt: 'sa-likt',
+};
+
+/** Resolves a possibly-stale/legacy/missing program value against the
+ * entry's CURRENT country selection -- never trusts a persisted program
+ * value that doesn't actually belong to that country (the real bug this
+ * guards against: switching countrySelection without also resetting
+ * program would otherwise leave `framework` and `assessment` reading a
+ * different country's methodology than the one displayed). */
+function normalizeProgram(raw: unknown, countrySelection: CountrySelection): LocalContentProgram {
+  const country = countrySelection === 'OTHER' ? null : (countrySelection as LocalContentCountry);
+  const fallback: LocalContentProgram = country ? DEFAULT_PROGRAM_BY_COUNTRY[country] : 'sa-lcgpa-general';
+  if (typeof raw !== 'string') return fallback;
+  const migrated = LEGACY_SA_PROGRAM_MIGRATION[raw] ?? (raw as LocalContentProgram);
+  if (country && PROGRAMS_BY_COUNTRY[country].includes(migrated)) return migrated;
+  return fallback;
+}
 
 // 'OTHER' is a client-only pseudo-value for a supplier whose country is not
 // one of the 7 this module's engine can represent at all (e.g. China,
@@ -129,9 +164,14 @@ interface LocalContentEntry {
   id: string;
   label: string;
   countrySelection: CountrySelection;
-  /** Only meaningful when countrySelection === 'SA' -- see SAUDI_PROGRAMS_LIST.
-   * Defaults to 'lcgpa-general', the module's original single Saudi program. */
-  program: SaudiProgram;
+  /** Always resolved to a program valid for the current countrySelection --
+   * see PROGRAMS_BY_COUNTRY and normalizeProgram(). Defaults to
+   * DEFAULT_PROGRAM_BY_COUNTRY[country], each country's own original single
+   * pre-existing mechanism. Only SA (6) and AE (2) currently have more than
+   * one program, so only those two show the routing-question button row --
+   * every other country's entry still carries a program value (its sole
+   * default), it's just never asked about. */
+  program: LocalContentProgram;
   context: ProcurementContext;
   spendSharePct: number | null;
   sa: SaInputs;
@@ -139,6 +179,7 @@ interface LocalContentEntry {
   saPricePreference: SaPricePreferenceInputs;
   iktva: IktvaInputs;
   ae: AeInputs;
+  aeTawazun: AeTawazunInputs;
   jo: JoInputs;
 }
 
@@ -147,11 +188,11 @@ function newLocalContentEntry(): LocalContentEntry {
     id: `lc-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
     label: '',
     countrySelection: 'SA',
-    program: 'lcgpa-general',
+    program: DEFAULT_PROGRAM_BY_COUNTRY.SA,
     context: 'government',
     spendSharePct: null,
     sa: emptySa(), saMandatoryList: emptySaMandatoryList(), saPricePreference: emptySaPricePreference(), iktva: emptyIktva(),
-    ae: emptyAe(), jo: emptyJo(),
+    ae: emptyAe(), aeTawazun: emptyAeTawazun(), jo: emptyJo(),
   };
 }
 
@@ -175,7 +216,7 @@ function loadState(): PersistedState {
             id: e.id ?? newLocalContentEntry().id,
             label: e.label ?? '',
             countrySelection: e.countrySelection ?? 'SA',
-            program: e.program ?? 'lcgpa-general',
+            program: normalizeProgram(e.program, e.countrySelection ?? 'SA'),
             context: e.context ?? 'government',
             spendSharePct: e.spendSharePct ?? null,
             sa: { ...emptySa(), ...e.sa },
@@ -183,6 +224,7 @@ function loadState(): PersistedState {
             saPricePreference: { ...emptySaPricePreference(), ...e.saPricePreference },
             iktva: { ...emptyIktva(), ...e.iktva },
             ae: { ...emptyAe(), ...e.ae },
+            aeTawazun: { ...emptyAeTawazun(), ...e.aeTawazun },
             jo: { ...emptyJo(), ...e.jo },
           })),
           targetThresholdPct: parsed.targetThresholdPct ?? null,
@@ -218,17 +260,80 @@ const CONTEXT_TABS: { v: ProcurementContext; en: string; ar: string }[] = [
   { v: 'private-commercial', en: 'Private Commercial', ar: 'تجاري خاص' },
 ];
 
-// Saudi Arabia routing question (task #115): which of the (now 6) Saudi
-// mechanisms is this assessment for. Short bilingual labels for the button
-// row; the full sourced methodology stays in the accordion below, keyed off
-// SAUDI_PROGRAMS[program] automatically.
-const SAUDI_PROGRAM_LABELS: Record<SaudiProgram, { en: string; ar: string }> = {
-  'lcgpa-general': { en: 'LCGPA General Score', ar: 'الدرجة العامة (الهيئة)' },
-  'mandatory-list': { en: 'Mandatory List Gate', ar: 'بوابة القائمة الإلزامية' },
-  'price-preference': { en: 'Price Preference (10%)', ar: 'تفضيل السعر (١٠٪)' },
-  'iktva-aramco': { en: 'Aramco IKTVA', ar: 'إكتفاء أرامكو' },
-  'gami-defense': { en: 'GAMI Defense', ar: 'التوطين الدفاعي (GAMI)' },
-  likt: { en: 'LIKT', ar: 'LIKT' },
+// Program routing question (task #115, generalized 16 Sep 2026 from SA-only
+// to any country with more than one program -- today SA (6) and AE (2)):
+// which mechanism is this assessment for. Short bilingual labels for the
+// button row and the portfolio table; the full sourced methodology stays in
+// the accordion below, keyed off PROGRAMS[program] automatically. Every
+// LocalContentProgram key gets a label (not just the multi-program
+// countries') so the portfolio table can show a program-aware group label
+// for any country uniformly, not just SA.
+const PROGRAM_LABELS: Record<LocalContentProgram, { en: string; ar: string }> = {
+  'sa-lcgpa-general': { en: 'LCGPA General Score', ar: 'الدرجة العامة (الهيئة)' },
+  'sa-mandatory-list': { en: 'Mandatory List Gate', ar: 'بوابة القائمة الإلزامية' },
+  'sa-price-preference': { en: 'Price Preference (10%)', ar: 'تفضيل السعر (١٠٪)' },
+  'sa-iktva-aramco': { en: 'Aramco IKTVA', ar: 'إكتفاء أرامكو' },
+  'sa-gami-defense': { en: 'GAMI Defense', ar: 'التوطين الدفاعي (GAMI)' },
+  'sa-likt': { en: 'LIKT', ar: 'LIKT' },
+  'ae-icv-general': { en: 'National ICV Score', ar: 'الدرجة الوطنية لـICV' },
+  'ae-tawazun-offset': { en: 'Tawazun Offset', ar: 'مقاصة توازن' },
+  'jo-price-preference': { en: 'Price Preference (20%)', ar: 'تفضيل السعر (٢٠٪)' },
+  'om-icv': { en: 'ICV (not sourced)', ar: 'ICV (غير موثّق)' },
+  'qa-national-strategy': { en: 'National Strategy (not sourced)', ar: 'الاستراتيجية الوطنية (غير موثّقة)' },
+  'bh-local-content': { en: 'Local Content (not sourced)', ar: 'المحتوى المحلي (غير موثّق)' },
+  'kw-local-content': { en: 'Local Content (not sourced)', ar: 'المحتوى المحلي (غير موثّق)' },
+};
+
+// Dual-sided (buyer + supplier) value framing, per mechanism TYPE (not per
+// program -- 7 real mechanism shapes, not 13 country-specific programs) --
+// explicit instruction (16 Sep 2026): "every mechanism ... carries an
+// explicit buyer-side and supplier-side value reading, not just a
+// compliance number", applied retroactively to Saudi Arabia's own live UI
+// too, not only new UAE work or the worked-example doc's Section 8/9. Built
+// entirely from facts already sourced and disclosed elsewhere in this file
+// (mechanismType semantics, applicableContexts, the recommendation logic's
+// own primary/alternative shape) -- no new claim or statistic introduced,
+// same Decision Record 8.7 discipline as the rest of the module. Omitted
+// for 'not-yet-sourced' -- there is no real mechanism yet to frame value
+// around, and inventing one would violate the same rule this exists to
+// serve.
+const MECHANISM_VALUE_FRAMING: Partial<Record<LocalContentMechanismType, { buyerEn: string; buyerAr: string; supplierEn: string; supplierAr: string }>> = {
+  'eligible-spend-ratio': {
+    buyerEn: 'Verifiable assurance that spend genuinely reaches the local economy (real labor, goods & services, capacity-building) -- not a paper promise.',
+    buyerAr: 'ضمان قابل للتحقق بأن الإنفاق يصل فعلياً إلى الاقتصاد المحلي (عمالة، سلع وخدمات، بناء قدرات حقيقية) -- وليس وعداً على الورق.',
+    supplierEn: 'A transparent, improvable score: each pillar shows exactly where to invest next to raise it, rather than a single opaque pass/fail number.',
+    supplierAr: 'درجة شفافة وقابلة للتحسين: يوضّح كل ركن أين يجب الاستثمار تحديداً لرفعها، بدلاً من رقم نجاح/فشل واحد غامض.',
+  },
+  'weighted-pillar-score': {
+    buyerEn: 'A single certified score usable directly in tender evaluation weighting, cutting the due-diligence cost of assessing each bidder\'s real local footprint.',
+    buyerAr: 'درجة معتمدة واحدة قابلة للاستخدام مباشرة في ترجيح تقييم العطاءات، ما يقلّل تكلفة التحقق من الأثر المحلي الحقيقي لكل مقدّم عطاء.',
+    supplierEn: 'Certification becomes a reusable competitive asset (14-month validity) that narrows the evaluated price gap against foreign competitors across every tender it applies to, not just one.',
+    supplierAr: 'تتحول الشهادة إلى أصل تنافسي قابل لإعادة الاستخدام (صلاحية ١٤ شهراً) يقلّص فجوة السعر المُقيَّمة أمام المنافسين الأجانب في كل مناقصة تنطبق عليها، وليس في مناقصة واحدة فقط.',
+  },
+  'price-preference-margin': {
+    buyerEn: 'Keeps national industrial capacity competitive for public spend without a hard quota -- the market still decides, with a disclosed thumb on the scale.',
+    buyerAr: 'يحافظ على تنافسية الصناعة الوطنية في الإنفاق العام دون فرض حصة إلزامية -- يظل السوق هو الفيصل، مع ترجيح مُعلَن وواضح.',
+    supplierEn: 'A quantifiable price cushion: increasing the locally-manufactured share of a bid converts directly into a larger, calculable competitive discount.',
+    supplierAr: 'وسادة سعرية قابلة للقياس: زيادة الحصة المصنّعة محلياً في العطاء تتحول مباشرة إلى خصم تنافسي أكبر وقابل للحساب.',
+  },
+  'category-eligibility-gate': {
+    buyerEn: 'Removes negotiation entirely for strategic categories -- certainty of local sourcing by design, not by hoping a price preference is enough to win the bid.',
+    buyerAr: 'يزيل التفاوض تماماً في الفئات الاستراتيجية -- يقين بالتوريد المحلي بالتصميم، لا بالأمل في أن يكون التفضيل السعري كافياً للفوز بالعطاء.',
+    supplierEn: 'Certification in a gated category is a genuine moat: uncertified competitors, local or foreign, cannot bid at all -- not just at a disadvantage.',
+    supplierAr: 'الاعتماد في فئة مشمولة بالبوابة يمثّل ميزة تنافسية حقيقية: لا يمكن للمنافسين غير المعتمدين، محليين كانوا أم أجانب، التقديم إطلاقاً -- وليس فقط التنافس بوضع أضعف.',
+  },
+  'anchor-buyer-score': {
+    buyerEn: 'A single anchor-buyer program pulls supplier investment, training, and R&D spend into the country at a scale broader than what government procurement rules alone can mandate.',
+    buyerAr: 'برنامج مشترٍ رئيسي واحد يجذب استثمارات الموردين وإنفاقهم على التدريب والبحث والتطوير إلى الداخل بحجم يتجاوز ما تستطيع أنظمة المشتريات الحكومية وحدها فرضه.',
+    supplierEn: 'Five distinct, separately-improvable levers count toward the same score -- workforce development and R&D investment score just as much as pure local purchasing, widening the paths to a higher number.',
+    supplierAr: 'خمسة روافع مستقلة وقابلة للتحسين كل على حدة تُحتسب ضمن الدرجة نفسها -- يُحتسب تطوير القوى العاملة والاستثمار في البحث والتطوير بقدر الشراء المحلي البحت، ما يوسّع مسارات رفع الدرجة.',
+  },
+  'offset-obligation-gate': {
+    buyerEn: 'Converts a portion of defense spend into real in-country economic activity (investment, JV, technology transfer) or a cash/guarantee-backed shortfall payment -- value is captured either way, never simply lost to a foreign contractor.',
+    buyerAr: 'يحوّل جزءاً من الإنفاق الدفاعي إلى نشاط اقتصادي محلي حقيقي (استثمار، مشروع مشترك، نقل تقني) أو دفعة تعويض مدعومة نقداً/ضماناً عند النقص -- تُستحصَل القيمة في الحالتين، ولا تُفقَد ببساطة لمقاول أجنبي.',
+    supplierEn: 'Banking real offset credits early (investment, JV, tech transfer) avoids the 8.5% cash/guarantee cost -- a supplier who plans offset activity from day one turns a compliance obligation into a genuine local partnership, not a penalty to absorb at the end.',
+    supplierAr: 'اكتساب ائتمانات مقاصة حقيقية مبكراً (استثمار، مشروع مشترك، نقل تقني) يتجنب تكلفة ٨.٥٪ النقدية/الضمانية -- المورّد الذي يخطط لنشاط المقاصة منذ اليوم الأول يحوّل التزام الامتثال إلى شراكة محلية حقيقية، لا غرامة يتحملها في النهاية.',
+  },
 };
 
 // Pillar keys come straight off the engine's computation result (SA: labor/goodsServices/
@@ -308,14 +413,16 @@ function LocalContentEntryCard({
   const [methodologyOpen, setMethodologyOpen] = useState(false);
   const isOther = entry.countrySelection === 'OTHER';
   const isSA = entry.countrySelection === 'SA';
-  const framework = !isOther
-    ? (isSA ? SAUDI_PROGRAMS[entry.program] : COUNTRY_FRAMEWORKS[entry.countrySelection as LocalContentCountry])
-    : null;
+  // Generalized 16 Sep 2026 from an SA-only check: any country whose
+  // PROGRAMS_BY_COUNTRY list has more than one entry gets the routing
+  // question row below (today: SA and AE).
+  const hasMultiplePrograms = !isOther && PROGRAMS_BY_COUNTRY[entry.countrySelection as LocalContentCountry].length > 1;
+  const framework = !isOther ? PROGRAMS[entry.program] : null;
   const assessment: LocalContentAssessment | null = !isOther
     ? assessSupplierLocalContent(
         entry.countrySelection as LocalContentCountry, entry.context,
-        { sa: entry.sa, ae: entry.ae, jo: entry.jo, saMandatoryList: entry.saMandatoryList, saPricePreference: entry.saPricePreference, iktva: entry.iktva },
-        isSA ? entry.program : undefined,
+        { sa: entry.sa, ae: entry.ae, jo: entry.jo, saMandatoryList: entry.saMandatoryList, saPricePreference: entry.saPricePreference, iktva: entry.iktva, aeTawazun: entry.aeTawazun },
+        entry.program,
       )
     : null;
   const style = assessment ? applicabilityStyle[assessment.applicability] : null;
@@ -327,6 +434,7 @@ function LocalContentEntryCard({
     if (c.mechanismType === 'eligible-spend-ratio' || c.mechanismType === 'weighted-pillar-score' || c.mechanismType === 'anchor-buyer-score') return c.scorePct !== null;
     if (c.mechanismType === 'price-preference-margin') return c.locallyManufacturedSharePct !== null;
     if (c.mechanismType === 'category-eligibility-gate') return c.eligibleToBid !== null;
+    if (c.mechanismType === 'offset-obligation-gate') return c.triggersObligation !== null;
     return false;
   })();
 
@@ -379,7 +487,16 @@ function LocalContentEntryCard({
                 key={c}
                 type="button"
                 aria-pressed={active}
-                onClick={() => onUpdate(entry.id, { countrySelection: c })}
+                onClick={() => onUpdate(entry.id, {
+                  countrySelection: c,
+                  // REAL DEFECT AVOIDED (16 Sep 2026 QA pass, generalization):
+                  // switching country without resetting program would leave
+                  // `framework`/`assessment` reading a DIFFERENT country's
+                  // methodology than the one just selected (e.g. still showing
+                  // Aramco IKTVA's Saudi framework after switching to AE).
+                  // Always reset to the new country's own default program.
+                  program: DEFAULT_PROGRAM_BY_COUNTRY[c],
+                })}
                 className={`text-xs font-semibold px-3 py-2 rounded-lg border transition-colors flex items-center gap-1.5 ${
                   active ? 'bg-[#082C6B] border-[#082C6B] text-white' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
                 }`}
@@ -407,32 +524,37 @@ function LocalContentEntryCard({
           </button>
         </div>
 
-        {/* ── Saudi Arabia routing question (task #115): which of the 6 Saudi
-             mechanisms applies. Shown only for SA, before context/methodology,
-             since it changes which framework and applicable contexts apply. ── */}
-        {!isOther && isSA && (
+        {/* ── Program routing question (task #115; generalized 16 Sep 2026 from
+             SA-only to any country with more than one program -- today SA (6)
+             and AE (2)). Shown before context/methodology, since it changes
+             which framework and applicable contexts apply. ── */}
+        {hasMultiplePrograms && (
           <div className="mb-3">
             <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-              {isAr ? 'أي برنامج سعودي؟' : 'Which Saudi program?'}
+              {isAr
+                ? `أي برنامج في ${COUNTRY_FRAMEWORKS[entry.countrySelection as LocalContentCountry].countryNameAr}؟`
+                : `Which ${COUNTRY_FRAMEWORKS[entry.countrySelection as LocalContentCountry].countryNameEn} program?`}
             </p>
-            <div className="flex flex-wrap gap-1.5" role="group" aria-label={isAr ? 'اختيار برنامج المحتوى المحلي السعودي' : 'Select Saudi local-content program'}>
-              {SAUDI_PROGRAMS_LIST.map(p => {
+            <div className="flex flex-wrap gap-1.5" role="group" aria-label={isAr ? 'اختيار برنامج المحتوى المحلي' : 'Select local-content program'}>
+              {PROGRAMS_BY_COUNTRY[entry.countrySelection as LocalContentCountry].map(p => {
                 const active = entry.program === p;
-                const notSourced = SAUDI_PROGRAMS[p].mechanismType === 'not-yet-sourced';
+                const notSourced = PROGRAMS[p].mechanismType === 'not-yet-sourced';
                 return (
                   <button
                     key={p}
                     type="button"
                     aria-pressed={active}
                     onClick={() => {
-                      // QA fix (16 Sep 2026 pass): a program with exactly one sourced
-                      // applicable context (e.g. Aramco IKTVA -> semi-government-soe
-                      // only) auto-selects that context too, so picking the program
+                      // QA fix (16 Sep 2026 pass, generalized): a program with
+                      // exactly one sourced applicable context (e.g. Aramco IKTVA
+                      // -> semi-government-soe only; Tawazun -> government only)
+                      // auto-selects that context too, so picking the program
                       // doesn't silently leave the reader on a context where it reads
                       // "not applicable" for a reason they'd have to go hunting for.
                       // Multi-context programs (lcgpa-general, mandatory-list,
-                      // price-preference) are left exactly as the reader set them.
-                      const targetContexts = SAUDI_PROGRAMS[p].applicableContexts;
+                      // price-preference, ae-icv-general) are left exactly as the
+                      // reader set them.
+                      const targetContexts = PROGRAMS[p].applicableContexts;
                       const patch: Partial<LocalContentEntry> = { program: p };
                       if (targetContexts.length === 1 && !targetContexts.includes(entry.context)) {
                         patch.context = targetContexts[0];
@@ -443,7 +565,7 @@ function LocalContentEntryCard({
                       active ? 'bg-[#082C6B] border-[#082C6B] text-white' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
                     }`}
                   >
-                    {isAr ? SAUDI_PROGRAM_LABELS[p].ar : SAUDI_PROGRAM_LABELS[p].en}
+                    {isAr ? PROGRAM_LABELS[p].ar : PROGRAM_LABELS[p].en}
                     {notSourced && (
                       <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${active ? 'bg-white/20' : 'bg-amber-100 text-amber-700'}`}>
                         {isAr ? 'غير موثّق' : 'not sourced'}
@@ -507,10 +629,39 @@ function LocalContentEntryCard({
               )}
             </div>
 
-            {/* ── Usage notes (lcgpa-general only): "how the same score gets used
-                 differently by context" -- per the brief's own UAE precedent, this is
-                 disclosure text about the score above, never a second score. ── */}
-            {isSA && entry.program === 'lcgpa-general' && framework!.usageNotesEn && framework!.usageNotesEn!.length > 0 && (
+            {/* ── Dual-sided value framing (buyer + supplier), every country including
+                 SA -- explicit instruction (16 Sep 2026): a compliance number alone is
+                 not enough; every mechanism must show who benefits and how, on both
+                 sides of the transaction. Keyed by mechanism TYPE, so it's automatic
+                 for every current and future program, not hand-added per country. ── */}
+            {framework && MECHANISM_VALUE_FRAMING[framework.mechanismType] && (
+              <div className="rounded-xl border border-emerald-100 bg-emerald-50/50 px-3 py-2.5 mb-3 grid sm:grid-cols-2 gap-2.5">
+                <div>
+                  <p className="text-[10px] font-black text-emerald-800 uppercase tracking-wider mb-1">
+                    {isAr ? 'القيمة للمشتري' : 'Value for the Buyer'}
+                  </p>
+                  <p className="text-[11px] text-emerald-900 leading-relaxed">
+                    {isAr ? MECHANISM_VALUE_FRAMING[framework.mechanismType]!.buyerAr : MECHANISM_VALUE_FRAMING[framework.mechanismType]!.buyerEn}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-black text-emerald-800 uppercase tracking-wider mb-1">
+                    {isAr ? 'القيمة للمورّد' : 'Value for the Supplier'}
+                  </p>
+                  <p className="text-[11px] text-emerald-900 leading-relaxed">
+                    {isAr ? MECHANISM_VALUE_FRAMING[framework.mechanismType]!.supplierAr : MECHANISM_VALUE_FRAMING[framework.mechanismType]!.supplierEn}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* ── Usage notes (any program that has them -- today sa-lcgpa-general
+                 and ae-icv-general): "how the same score gets used differently by
+                 context" -- per the brief's own UAE precedent, this is disclosure
+                 text about the score above, never a second score. Generalized
+                 16 Sep 2026 from an sa-lcgpa-general-only condition so AE's real
+                 sourced Abu Dhabi ADLC 40%-weighting note surfaces here too. ── */}
+            {framework && framework.usageNotesEn && framework.usageNotesEn.length > 0 && (
               <div className="rounded-xl border border-slate-100 bg-slate-50/60 px-3 py-2.5 mb-3 space-y-1.5">
                 <p className="text-[10px] font-black text-slate-500 uppercase tracking-wider">
                   {isAr ? 'كيف تُستخدم هذه الدرجة في التقييم' : 'How this score gets used in evaluation'}
@@ -532,7 +683,7 @@ function LocalContentEntryCard({
             {/* ── Step 2: input form -- ONLY once applicability resolves to 'applicable' ── */}
             {assessment?.applicability === 'applicable' && (
               <div className="mt-3">
-                {entry.countrySelection === 'SA' && entry.program === 'lcgpa-general' && (
+                {entry.countrySelection === 'SA' && entry.program === 'sa-lcgpa-general' && (
                   <div className="grid sm:grid-cols-2 gap-3">
                     <NumberField label={isAr ? 'رواتب العمالة المحلية' : 'Local Labor Compensation'} hint={isAr ? '١٠٠٪ مؤهل' : '100% eligible'} unit={isAr ? 'ر.س' : 'SAR'} value={entry.sa.localLaborSAR} onChange={v => onUpdate(entry.id, { sa: { ...entry.sa, localLaborSAR: v } })} />
                     <NumberField label={isAr ? 'رواتب العمالة الوافدة' : 'Expatriate Labor Compensation'} hint={isAr ? '٣٧٪ مؤهل' : '37% eligible'} unit={isAr ? 'ر.س' : 'SAR'} value={entry.sa.expatLaborSAR} onChange={v => onUpdate(entry.id, { sa: { ...entry.sa, expatLaborSAR: v } })} />
@@ -544,7 +695,7 @@ function LocalContentEntryCard({
                   </div>
                 )}
 
-                {entry.countrySelection === 'SA' && entry.program === 'mandatory-list' && (
+                {entry.countrySelection === 'SA' && entry.program === 'sa-mandatory-list' && (
                   <div className="space-y-3">
                     <div>
                       <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
@@ -591,11 +742,11 @@ function LocalContentEntryCard({
                   </div>
                 )}
 
-                {entry.countrySelection === 'SA' && entry.program === 'price-preference' && (
+                {entry.countrySelection === 'SA' && entry.program === 'sa-price-preference' && (
                   <div className="grid sm:grid-cols-2 gap-3">
                     <NumberField
                       label={isAr ? 'نسبة القيمة المصنّعة محلياً من قيمة العطاء' : 'Locally-Manufactured Share of Bid Value'}
-                      hint={isAr ? `تفضيل السعر الأقصى ${SAUDI_PROGRAMS['price-preference'].programNameAr}: ١٠٪` : 'Maximum price preference margin: 10%'}
+                      hint={isAr ? `تفضيل السعر الأقصى ${PROGRAMS['sa-price-preference'].programNameAr}: ١٠٪` : 'Maximum price preference margin: 10%'}
                       unit="%"
                       max={100}
                       value={entry.saPricePreference.bidValueLocallyManufacturedPct}
@@ -604,7 +755,7 @@ function LocalContentEntryCard({
                   </div>
                 )}
 
-                {entry.countrySelection === 'SA' && entry.program === 'iktva-aramco' && (
+                {entry.countrySelection === 'SA' && entry.program === 'sa-iktva-aramco' && (
                   <div className="grid sm:grid-cols-2 gap-3">
                     <NumberField label={isAr ? 'A: السلع/الخدمات المحلية' : 'A: Local Goods & Services'} unit={isAr ? 'ر.س' : 'SAR'} value={entry.iktva.goodsServicesLocalSAR} onChange={v => onUpdate(entry.id, { iktva: { ...entry.iktva, goodsServicesLocalSAR: v } })} />
                     <NumberField label={isAr ? 'A: إهلاك الأصول المحلية' : 'A: Local Asset Depreciation'} unit={isAr ? 'ر.س' : 'SAR'} value={entry.iktva.assetDepreciationLocalSAR} onChange={v => onUpdate(entry.id, { iktva: { ...entry.iktva, assetDepreciationLocalSAR: v } })} />
@@ -624,7 +775,7 @@ function LocalContentEntryCard({
                   </div>
                 )}
 
-                {entry.countrySelection === 'AE' && (
+                {entry.countrySelection === 'AE' && entry.program === 'ae-icv-general' && (
                   <div className="grid sm:grid-cols-2 gap-3">
                     <NumberField label={isAr ? 'الإنفاق على التصنيع/الطرف الثالث داخل الإمارات' : 'UAE-Based Manufacturing/Third-Party Spend'} unit={isAr ? 'د.إ' : 'AED'} value={entry.ae.manufacturingOrThirdPartySpendLocalAED} onChange={v => onUpdate(entry.id, { ae: { ...entry.ae, manufacturingOrThirdPartySpendLocalAED: v } })} />
                     <NumberField label={isAr ? 'إجمالي إنفاق التصنيع/الطرف الثالث' : 'Total Manufacturing/Third-Party Spend'} unit={isAr ? 'د.إ' : 'AED'} value={entry.ae.manufacturingOrThirdPartySpendTotalAED} onChange={v => onUpdate(entry.id, { ae: { ...entry.ae, manufacturingOrThirdPartySpendTotalAED: v } })} />
@@ -639,6 +790,33 @@ function LocalContentEntryCard({
                       <Checkbox id={`ae-mainland-${entry.id}`} checked={entry.ae.registeredOnMainland === true} onCheckedChange={c => onUpdate(entry.id, { ae: { ...entry.ae, registeredOnMainland: c === true } })} />
                       {isAr ? 'مسجّلة في البر الرئيسي بالإمارات (حافز +١٠٪)' : 'Registered on UAE Mainland (+10% uplift)'}
                     </label>
+                  </div>
+                )}
+
+                {entry.countrySelection === 'AE' && entry.program === 'ae-tawazun-offset' && (
+                  <div className="space-y-3">
+                    <div className="grid sm:grid-cols-2 gap-3">
+                      <NumberField
+                        label={isAr ? 'قيمة العقد الدفاعي' : 'Defense Contract Value'}
+                        hint={isAr ? `عتبة الالتزام: ${TAWAZUN_OFFSET_THRESHOLD_AED.toLocaleString()} درهم (≈ ١٠ ملايين دولار)` : `Obligation threshold: AED ${TAWAZUN_OFFSET_THRESHOLD_AED.toLocaleString()} (≈ USD 10M)`}
+                        unit={isAr ? 'د.إ' : 'AED'}
+                        value={entry.aeTawazun.contractValueAED}
+                        onChange={v => onUpdate(entry.id, { aeTawazun: { ...entry.aeTawazun, contractValueAED: v } })}
+                      />
+                      <NumberField
+                        label={isAr ? 'ائتمانات المقاصة المكتسبة حتى الآن (اختياري)' : 'Offset Credits Earned So Far (optional)'}
+                        hint={isAr ? 'اتركه فارغاً إذا كان غير معروف بعد -- يبقى النقص غير معروف، وليس صفراً' : 'Leave blank if not yet known -- shortfall stays unknown, not zero'}
+                        unit={isAr ? 'د.إ' : 'AED'}
+                        value={entry.aeTawazun.offsetCreditsEarnedAED}
+                        onChange={v => onUpdate(entry.id, { aeTawazun: { ...entry.aeTawazun, offsetCreditsEarnedAED: v } })}
+                      />
+                    </div>
+                    <p className="text-[10px] text-muted-foreground flex items-start gap-1.5">
+                      <Info className="w-3 h-3 shrink-0 mt-0.5" />
+                      {isAr
+                        ? 'يتطلب البرنامج ائتمانات مقاصة تعادل ٦٠٪ من قيمة العقد؛ أي نقص عند نهاية فترة الأداء يُسوَّى بنسبة ٨.٥٪ نقداً أو عبر ضمان بنكي.'
+                        : 'The program requires offset credits equal to 60% of contract value; any shortfall at period end settles at 8.5%, cash or via bank guarantee.'}
+                    </p>
                   </div>
                 )}
 
@@ -773,6 +951,49 @@ function LocalContentEntryCard({
                     )}
                   </>
                 )}
+                {assessment.computation.mechanismType === 'offset-obligation-gate' && (
+                  <>
+                    <div className="flex items-baseline justify-between">
+                      <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        {isAr ? 'التزام المقاصة (توازن)' : 'Offset Obligation (Tawazun)'}
+                      </span>
+                      <span className={`text-sm font-black px-2.5 py-1 rounded-full ${
+                        assessment.computation.triggersObligation === true ? 'bg-amber-100 text-amber-700'
+                          : assessment.computation.triggersObligation === false ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'
+                      }`}>
+                        {assessment.computation.triggersObligation === true ? (isAr ? 'مفعّل' : 'Triggered')
+                          : assessment.computation.triggersObligation === false ? (isAr ? 'دون العتبة' : 'Below threshold') : (isAr ? 'غير مكتمل' : 'Incomplete')}
+                      </span>
+                    </div>
+                    {assessment.computation.triggersObligation === true && (
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between text-[11px] text-slate-600">
+                          <span>{isAr ? 'ائتمانات المقاصة المطلوبة (٦٠٪)' : 'Required Offset Credits (60%)'}</span>
+                          <span className="font-semibold">{isAr ? 'د.إ' : 'AED'} {assessment.computation.requiredOffsetCreditsAED?.toLocaleString() ?? '—'}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-[11px] text-slate-600">
+                          <span>{isAr ? 'ائتمانات مكتسبة' : 'Credits Earned'}</span>
+                          <span className="font-semibold">{assessment.computation.offsetCreditsEarnedAED !== null ? `${isAr ? 'د.إ' : 'AED'} ${assessment.computation.offsetCreditsEarnedAED.toLocaleString()}` : (isAr ? 'غير معروف' : 'unknown')}</span>
+                        </div>
+                        {assessment.computation.shortfallAED !== null && (
+                          <div className="flex items-center justify-between text-[11px]">
+                            <span className={assessment.computation.shortfallAED > 0 ? 'text-amber-700 font-semibold' : 'text-emerald-700 font-semibold'}>
+                              {assessment.computation.shortfallAED > 0 ? (isAr ? 'النقص' : 'Shortfall') : (isAr ? 'مغطّى بالكامل' : 'Fully covered')}
+                            </span>
+                            <span className="font-semibold">{isAr ? 'د.إ' : 'AED'} {assessment.computation.shortfallAED.toLocaleString()}</span>
+                          </div>
+                        )}
+                        {assessment.computation.shortfallPenaltyAED !== null && assessment.computation.shortfallPenaltyAED > 0 && (
+                          <p className="text-[10px] text-amber-700 font-semibold">
+                            {isAr
+                              ? `غرامة تسوية النقص (٨.٥٪): ${assessment.computation.shortfallPenaltyAED.toLocaleString()} درهم`
+                              : `Shortfall settlement penalty (8.5%): AED ${assessment.computation.shortfallPenaltyAED.toLocaleString()}`}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
             )}
 
@@ -831,7 +1052,13 @@ export function LocalContentICVCheck() {
 
   interface ServerEntryRow { id: number; clientKey: string; name: string; data: LocalContentEntry; updatedAt: string; }
   function serverRowToEntry(row: ServerEntryRow): LocalContentEntry {
-    return { ...row.data, id: row.clientKey, label: row.name };
+    // Same legacy-program migration as loadState() -- a server row can be
+    // just as stale as a localStorage entry (e.g. synced before this pass).
+    return {
+      ...row.data, id: row.clientKey, label: row.name,
+      program: normalizeProgram(row.data.program, row.data.countrySelection ?? 'SA'),
+      aeTawazun: { ...emptyAeTawazun(), ...row.data.aeTawazun },
+    };
   }
   function entryToPayload(e: LocalContentEntry) {
     return { clientKey: e.id, name: e.label, data: e };
@@ -925,8 +1152,8 @@ export function LocalContentICVCheck() {
       entry: e,
       assessment: assessSupplierLocalContent(
         e.countrySelection as LocalContentCountry, e.context,
-        { sa: e.sa, ae: e.ae, jo: e.jo, saMandatoryList: e.saMandatoryList, saPricePreference: e.saPricePreference, iktva: e.iktva },
-        e.countrySelection === 'SA' ? e.program : undefined,
+        { sa: e.sa, ae: e.ae, jo: e.jo, saMandatoryList: e.saMandatoryList, saPricePreference: e.saPricePreference, iktva: e.iktva, aeTawazun: e.aeTawazun },
+        e.program,
       ),
     }));
   const otherCountryEntries = state.entries.filter(e => e.countrySelection === 'OTHER');
@@ -1092,11 +1319,11 @@ export function LocalContentICVCheck() {
                 </thead>
                 <tbody>
                   {portfolioRollup.map((g, i) => (
-                    <tr key={`${g.country}-${g.program ?? ''}-${g.procurementContext}-${i}`} className="border-b border-slate-100">
+                    <tr key={`${g.country}-${g.program}-${g.procurementContext}-${i}`} className="border-b border-slate-100">
                       <td className="py-1.5 pe-3 font-semibold text-slate-700">
                         <span aria-hidden="true">{COUNTRY_FLAG[g.country]}</span>{' '}
-                        {g.country === 'SA' && g.program
-                          ? (isAr ? SAUDI_PROGRAM_LABELS[g.program].ar : SAUDI_PROGRAM_LABELS[g.program].en)
+                        {PROGRAMS_BY_COUNTRY[g.country].length > 1
+                          ? (isAr ? PROGRAM_LABELS[g.program].ar : PROGRAM_LABELS[g.program].en)
                           : (isAr ? COUNTRY_FRAMEWORKS[g.country].countryNameAr : COUNTRY_FRAMEWORKS[g.country].countryNameEn)}
                         <span className="text-slate-400 font-normal"> — {isAr ? CONTEXT_TABS.find(c => c.v === g.procurementContext)?.ar : CONTEXT_TABS.find(c => c.v === g.procurementContext)?.en}</span>
                       </td>
@@ -1114,6 +1341,7 @@ export function LocalContentICVCheck() {
                         {g.weightedScorePct !== null ? `${g.weightedScorePct.toFixed(1)}%`
                           : g.weightedEffectiveDiscountPct !== null ? `${g.weightedEffectiveDiscountPct.toFixed(1)} pts`
                           : g.gateEligibleSharePct !== null ? (isAr ? `${g.gateEligibleSharePct.toFixed(0)}٪ مؤهل` : `${g.gateEligibleSharePct.toFixed(0)}% eligible`)
+                          : g.totalShortfallPenaltyAED !== null ? (isAr ? `التعرض المالي ${g.totalShortfallPenaltyAED.toLocaleString()} درهم` : `AED ${g.totalShortfallPenaltyAED.toLocaleString()} exposure`)
                           : '—'}
                       </td>
                     </tr>

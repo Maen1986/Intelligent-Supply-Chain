@@ -4,9 +4,14 @@ import {
   recommendLocalContentAction,
   rollUpPortfolioLocalContent,
   COUNTRY_FRAMEWORKS,
-  SAUDI_PROGRAMS,
+  PROGRAMS,
+  DEFAULT_PROGRAM_BY_COUNTRY,
+  PROGRAMS_BY_COUNTRY,
   JORDAN_PRICE_PREFERENCE_MARGIN_PCT,
   SAUDI_PRICE_PREFERENCE_MARGIN_PCT,
+  TAWAZUN_OFFSET_THRESHOLD_AED,
+  TAWAZUN_OFFSET_TARGET_PCT,
+  TAWAZUN_SHORTFALL_PENALTY_PCT,
   type SupplierLocalContentInputs,
   type LocalContentAssessment,
   type EligibleSpendRatioResult,
@@ -14,6 +19,7 @@ import {
   type PricePreferenceMarginResult,
   type CategoryEligibilityGateResult,
   type AnchorBuyerScoreResult,
+  type OffsetObligationGateResult,
 } from './supplierLocalContentEligibility';
 
 // ===========================================================================
@@ -261,6 +267,127 @@ describe('AE / ICV — weighted-pillar-score', () => {
     const a = assessSupplierLocalContent('AE', 'private-commercial', { ae: { manufacturingOrThirdPartySpendLocalAED: 1, manufacturingOrThirdPartySpendTotalAED: 1, investmentNBVLocalAED: null, investmentNBVTotalAED: null, emiratisationAnnualSpendAED: null, expatriateHeadcount: null, exportRevenueAED: null, emiratiHeadcountGrowthPct: null, investmentGrowthPct: null, registeredOnMainland: null } });
     expect(a.applicability).toBe('not-applicable');
   });
+
+  it('carries the sourced Abu Dhabi ADLC usage note (40% financial evaluation weight) and the MoIAT incentive-not-mandatory-gate negative finding, bilingually', () => {
+    const fw = PROGRAMS['ae-icv-general'];
+    expect(fw.usageNotesEn).toHaveLength(1);
+    expect(fw.usageNotesAr).toHaveLength(1);
+    expect(fw.usageNotesEn![0]).toContain('40%');
+    expect(fw.usageNotesAr![0]).toContain('٤٠٪');
+    // The genuine negative finding: MoIAT's own page confirms ICV is an
+    // incentive, not a mandatory bidding gate -- disclosed in sourceNote,
+    // not fabricated as a Mandatory-List-style mechanism.
+    expect(fw.sourceNoteEn).toContain('INCENTIVE');
+    expect(fw.sourceNoteAr).toContain('تحفيزية');
+  });
+});
+
+// ===========================================================================
+// AE — Tawazun Economic Program (offset-obligation-gate, type 6). Real,
+// sourced, computable -- see PROGRAMS['ae-tawazun-offset'] and the file
+// header's "AE TAWAZUN SOURCING" section.
+// ===========================================================================
+
+describe('AE / Tawazun Economic Program — offset-obligation-gate', () => {
+  it('soft: realistic defense contract above threshold with partial offset credits already earned', () => {
+    const a = assessSupplierLocalContent('AE', 'government', { aeTawazun: { contractValueAED: 50_000_000, offsetCreditsEarnedAED: 10_000_000 } }, 'ae-tawazun-offset');
+    expect(a.applicability).toBe('applicable');
+    const c = a.computation as OffsetObligationGateResult;
+    expect(c.triggersObligation).toBe(true);
+    expect(c.requiredOffsetCreditsAED).toBeCloseTo(30_000_000, 6); // 60% of 50M
+    expect(c.shortfallAED).toBeCloseTo(20_000_000, 6); // 30M required - 10M earned
+    expect(c.shortfallPenaltyAED).toBeCloseTo(1_700_000, 6); // 8.5% of 20M shortfall
+  });
+
+  it('soft: contract value supplied but offset credits earned not yet known -- shortfall stays null, not zero (honesty: unknown != zero)', () => {
+    const a = assessSupplierLocalContent('AE', 'government', { aeTawazun: { contractValueAED: 50_000_000, offsetCreditsEarnedAED: null } }, 'ae-tawazun-offset');
+    const c = a.computation as OffsetObligationGateResult;
+    expect(c.triggersObligation).toBe(true);
+    expect(c.requiredOffsetCreditsAED).toBeCloseTo(30_000_000, 6);
+    expect(c.shortfallAED).toBeNull();
+    expect(c.shortfallPenaltyAED).toBeNull();
+  });
+
+  it('hardest: contract value far below threshold -- no obligation, zero required credits, never a spurious penalty', () => {
+    const a = assessSupplierLocalContent('AE', 'government', { aeTawazun: { contractValueAED: 1_000_000, offsetCreditsEarnedAED: 0 } }, 'ae-tawazun-offset');
+    const c = a.computation as OffsetObligationGateResult;
+    expect(c.triggersObligation).toBe(false);
+    expect(c.requiredOffsetCreditsAED).toBe(0);
+    expect(c.shortfallAED).toBe(0);
+    expect(c.shortfallPenaltyAED).toBe(0);
+  });
+
+  it('hardest: earned credits exceed the requirement -- shortfall floors at 0, never negative', () => {
+    const a = assessSupplierLocalContent('AE', 'government', { aeTawazun: { contractValueAED: 40_000_000, offsetCreditsEarnedAED: 100_000_000 } }, 'ae-tawazun-offset');
+    const c = a.computation as OffsetObligationGateResult;
+    expect(c.triggersObligation).toBe(true);
+    expect(c.shortfallAED).toBe(0);
+    expect(c.shortfallPenaltyAED).toBe(0);
+  });
+
+  it('boundary: contract value at exactly the AED 36.73M threshold triggers the obligation (>=, not >)', () => {
+    const at = assessSupplierLocalContent('AE', 'government', { aeTawazun: { contractValueAED: TAWAZUN_OFFSET_THRESHOLD_AED, offsetCreditsEarnedAED: 0 } }, 'ae-tawazun-offset').computation as OffsetObligationGateResult;
+    const justBelow = assessSupplierLocalContent('AE', 'government', { aeTawazun: { contractValueAED: TAWAZUN_OFFSET_THRESHOLD_AED - 1, offsetCreditsEarnedAED: 0 } }, 'ae-tawazun-offset').computation as OffsetObligationGateResult;
+    expect(at.triggersObligation).toBe(true);
+    expect(justBelow.triggersObligation).toBe(false);
+  });
+
+  it('boundary: the AED 36.73M threshold is the USD 10M threshold at the fixed 3.6725 peg, within the source citation\'s own rounding (resolves the brief\'s flagged currency ambiguity -- STRESS-TEST FINDING: mondaq.com\'s "36.73 million" is itself rounded to 2 decimals, so the peg-exact figure is AED 36.725M; the cited AED 36.73M is off by AED 5,000 / ~USD 1,361, i.e. 0.014% -- real-world-close, not byte-exact, and the file header\'s "essentially exactly" wording is accurate for practical purposes but this test checks the ACTUAL tolerance rather than assuming exactness)', () => {
+    const usdEquivalent = TAWAZUN_OFFSET_THRESHOLD_AED / 3.6725;
+    expect(Math.abs(usdEquivalent - 10_000_000)).toBeLessThan(2_000); // within the source's own rounding, not a code defect
+    expect(TAWAZUN_OFFSET_TARGET_PCT).toBe(60);
+    expect(TAWAZUN_SHORTFALL_PENALTY_PCT).toBe(8.5);
+  });
+
+  it('not-applicable: Tawazun is sourced only for government (UAE Armed Forces / Abu Dhabi Police) contracts, not semi-government-soe or private-commercial', () => {
+    const soe = assessSupplierLocalContent('AE', 'semi-government-soe', { aeTawazun: { contractValueAED: 50_000_000, offsetCreditsEarnedAED: 0 } }, 'ae-tawazun-offset');
+    const priv = assessSupplierLocalContent('AE', 'private-commercial', { aeTawazun: { contractValueAED: 50_000_000, offsetCreditsEarnedAED: 0 } }, 'ae-tawazun-offset');
+    expect(soe.applicability).toBe('not-applicable');
+    expect(priv.applicability).toBe('not-applicable');
+  });
+
+  it('insufficient-data: no Tawazun inputs supplied yet -- distinct from a below-threshold "no obligation" result', () => {
+    const a = assessSupplierLocalContent('AE', 'government', {}, 'ae-tawazun-offset');
+    expect(a.applicability).toBe('applicable'); // applicability is about context, not input completeness
+    const c = a.computation as OffsetObligationGateResult;
+    expect(c.triggersObligation).toBeNull();
+    expect(c.requiredOffsetCreditsAED).toBeNull();
+  });
+
+  it('reasonEn/reasonAr carry the same information for a triggered obligation (bilingual completeness)', () => {
+    const a = assessSupplierLocalContent('AE', 'government', { aeTawazun: { contractValueAED: 50_000_000, offsetCreditsEarnedAED: 10_000_000 } }, 'ae-tawazun-offset');
+    expect(a.reasonEn).toContain('offset obligation triggered');
+    expect(a.reasonEn).toContain('30,000,000');
+    expect(a.reasonAr).toContain('تم تفعيل التزام المقاصة');
+    expect(a.reasonAr).toContain('30,000,000');
+  });
+
+  it('recommendLocalContentAction gives a genuine primary + alternative (bank real credits vs. pay the 8.5% penalty / roll it over) -- never a single-path recommendation (Rule 8)', () => {
+    const a = assessSupplierLocalContent('AE', 'government', { aeTawazun: { contractValueAED: 50_000_000, offsetCreditsEarnedAED: 10_000_000 } }, 'ae-tawazun-offset');
+    const rec = recommendLocalContentAction(a, null);
+    expect(rec).not.toBeNull();
+    expect(rec!.primaryEn).toContain('Bank real offset credits');
+    expect(rec!.alternativeEn).toContain('8.5%');
+    expect(rec!.primaryAr).toContain('اكتسب ائتمانات مقاصة حقيقية');
+    expect(rec!.alternativeAr).toContain('٨.٥٪');
+  });
+
+  it('recommendLocalContentAction returns null once there is no shortfall (nothing to recommend against a closed gap)', () => {
+    const a = assessSupplierLocalContent('AE', 'government', { aeTawazun: { contractValueAED: 40_000_000, offsetCreditsEarnedAED: 100_000_000 } }, 'ae-tawazun-offset');
+    expect(recommendLocalContentAction(a, null)).toBeNull();
+  });
+
+  it('portfolio rollup: totalShortfallPenaltyAED is a plain SUM of real-money exposure across the group, not spend-share-weighted like a percentage', () => {
+    const s1 = assessSupplierLocalContent('AE', 'government', { aeTawazun: { contractValueAED: 50_000_000, offsetCreditsEarnedAED: 10_000_000 } }, 'ae-tawazun-offset'); // shortfall penalty 1.7M
+    const s2 = assessSupplierLocalContent('AE', 'government', { aeTawazun: { contractValueAED: 40_000_000, offsetCreditsEarnedAED: 0 } }, 'ae-tawazun-offset'); // required 24M, penalty 2.04M
+    const groups = rollUpPortfolioLocalContent([
+      { supplierId: 's1', spendShare: 50, assessment: s1 },
+      { supplierId: 's2', spendShare: 50, assessment: s2 },
+    ]);
+    expect(groups).toHaveLength(1);
+    expect(groups[0]!.mechanismType).toBe('offset-obligation-gate');
+    expect(groups[0]!.totalShortfallPenaltyAED).toBeCloseTo(1_700_000 + 2_040_000, 0);
+  });
 });
 
 // ===========================================================================
@@ -490,17 +617,37 @@ describe('reasonAr bilingual completeness (regression: must never say less than 
 describe('SA — program routing default', () => {
   it('omitting the program param resolves to lcgpa-general (back-compat with every pre-existing caller)', () => {
     const a = assessSupplierLocalContent('SA', 'government', { sa: { localLaborSAR: 1, expatLaborSAR: 0, localGoodsServicesSAR: 0, foreignGoodsServicesSAR: 0, capacityBuildingSAR: 0, localAssetDepreciationSAR: 0, totalAssetDepreciationSAR: 0 } });
-    expect(a.program).toBe('lcgpa-general');
-    expect(a.framework).toBe(SAUDI_PROGRAMS['lcgpa-general']);
+    expect(a.program).toBe('sa-lcgpa-general');
+    expect(a.framework).toBe(PROGRAMS['sa-lcgpa-general']);
   });
 
-  it('non-SA countries always resolve program to null', () => {
+  it('omitting the program param for AE resolves to ae-icv-general (its own pre-existing default -- generalization is behavior-preserving)', () => {
     const a = assessSupplierLocalContent('AE', 'government', { ae: { manufacturingOrThirdPartySpendLocalAED: 1, manufacturingOrThirdPartySpendTotalAED: 1, investmentNBVLocalAED: 0, investmentNBVTotalAED: 0, emiratisationAnnualSpendAED: 0, expatriateHeadcount: 0, exportRevenueAED: 0, emiratiHeadcountGrowthPct: 0, investmentGrowthPct: 0, registeredOnMainland: false } });
-    expect(a.program).toBeNull();
+    expect(a.program).toBe('ae-icv-general');
+    expect(a.framework).toBe(PROGRAMS['ae-icv-general']);
+  });
+
+  it('every country resolves DEFAULT_PROGRAM_BY_COUNTRY to a real PROGRAMS entry (architecture sanity check)', () => {
+    (['SA', 'AE', 'JO', 'OM', 'QA', 'BH', 'KW'] as const).forEach(country => {
+      const program = DEFAULT_PROGRAM_BY_COUNTRY[country];
+      expect(PROGRAMS[program]).toBeDefined();
+      expect(PROGRAMS[program].country).toBe(country);
+      expect(PROGRAMS_BY_COUNTRY[country]).toContain(program);
+    });
+  });
+
+  it('PROGRAMS_BY_COUNTRY lists exactly the countries known to run more than one program (SA: 6, AE: 2, others: 1 each)', () => {
+    expect(PROGRAMS_BY_COUNTRY.SA).toHaveLength(6);
+    expect(PROGRAMS_BY_COUNTRY.AE).toHaveLength(2);
+    expect(PROGRAMS_BY_COUNTRY.JO).toHaveLength(1);
+    expect(PROGRAMS_BY_COUNTRY.OM).toHaveLength(1);
+    expect(PROGRAMS_BY_COUNTRY.QA).toHaveLength(1);
+    expect(PROGRAMS_BY_COUNTRY.BH).toHaveLength(1);
+    expect(PROGRAMS_BY_COUNTRY.KW).toHaveLength(1);
   });
 
   it('lcgpa-general carries the two usage notes (40% high-value-contract weighting, ~30% consulting/IT figure) bilingually', () => {
-    const fw = SAUDI_PROGRAMS['lcgpa-general'];
+    const fw = PROGRAMS['sa-lcgpa-general'];
     expect(fw.usageNotesEn).toHaveLength(2);
     expect(fw.usageNotesAr).toHaveLength(2);
     expect(fw.usageNotesEn![0]).toContain('40%');
@@ -516,7 +663,7 @@ describe('SA — program routing default', () => {
 
 describe('SA / LCGPA Mandatory List — category-eligibility-gate', () => {
   it('soft: category not on the Mandatory List -> gate does not apply, eligible regardless of certification', () => {
-    const a = assessSupplierLocalContent('SA', 'government', { saMandatoryList: { inMandatoryListCategory: false, certifiedForCategory: null } }, 'mandatory-list');
+    const a = assessSupplierLocalContent('SA', 'government', { saMandatoryList: { inMandatoryListCategory: false, certifiedForCategory: null } }, 'sa-mandatory-list');
     expect(a.applicability).toBe('applicable');
     const c = a.computation as CategoryEligibilityGateResult;
     expect(c.eligibleToBid).toBe(true);
@@ -525,7 +672,7 @@ describe('SA / LCGPA Mandatory List — category-eligibility-gate', () => {
   });
 
   it('hardest: in-list category, supplier NOT certified -> gated out (false), never a percentage', () => {
-    const a = assessSupplierLocalContent('SA', 'government', { saMandatoryList: { inMandatoryListCategory: true, certifiedForCategory: false } }, 'mandatory-list');
+    const a = assessSupplierLocalContent('SA', 'government', { saMandatoryList: { inMandatoryListCategory: true, certifiedForCategory: false } }, 'sa-mandatory-list');
     const c = a.computation as CategoryEligibilityGateResult;
     expect(c.eligibleToBid).toBe(false);
     expect(a.reasonEn).toContain('gated out of this category');
@@ -533,7 +680,7 @@ describe('SA / LCGPA Mandatory List — category-eligibility-gate', () => {
   });
 
   it('boundary: in-list category, certification status unknown (null) -> insufficient, not a guessed true/false', () => {
-    const a = assessSupplierLocalContent('SA', 'government', { saMandatoryList: { inMandatoryListCategory: true, certifiedForCategory: null } }, 'mandatory-list');
+    const a = assessSupplierLocalContent('SA', 'government', { saMandatoryList: { inMandatoryListCategory: true, certifiedForCategory: null } }, 'sa-mandatory-list');
     const c = a.computation as CategoryEligibilityGateResult;
     expect(c.eligibleToBid).toBeNull();
     expect(a.reasonEn).toContain('incomplete inputs');
@@ -541,13 +688,13 @@ describe('SA / LCGPA Mandatory List — category-eligibility-gate', () => {
   });
 
   it('in-list + certified -> eligible', () => {
-    const a = assessSupplierLocalContent('SA', 'semi-government-soe', { saMandatoryList: { inMandatoryListCategory: true, certifiedForCategory: true } }, 'mandatory-list');
+    const a = assessSupplierLocalContent('SA', 'semi-government-soe', { saMandatoryList: { inMandatoryListCategory: true, certifiedForCategory: true } }, 'sa-mandatory-list');
     const c = a.computation as CategoryEligibilityGateResult;
     expect(c.eligibleToBid).toBe(true);
   });
 
   it('no inputs supplied at all -> null gate, reasonAr carries a genuinely different phrase than reasonEn (not English reused)', () => {
-    const a = assessSupplierLocalContent('SA', 'government', {}, 'mandatory-list');
+    const a = assessSupplierLocalContent('SA', 'government', {}, 'sa-mandatory-list');
     const c = a.computation as CategoryEligibilityGateResult;
     expect(c.eligibleToBid).toBeNull();
     expect(a.reasonEn).toBe('No Mandatory List category/certification inputs supplied yet.');
@@ -555,17 +702,17 @@ describe('SA / LCGPA Mandatory List — category-eligibility-gate', () => {
   });
 
   it('recommendLocalContentAction: only fires when genuinely gated out (false), never for null/true', () => {
-    const gatedOut = assessSupplierLocalContent('SA', 'government', { saMandatoryList: { inMandatoryListCategory: true, certifiedForCategory: false } }, 'mandatory-list');
+    const gatedOut = assessSupplierLocalContent('SA', 'government', { saMandatoryList: { inMandatoryListCategory: true, certifiedForCategory: false } }, 'sa-mandatory-list');
     const rec = recommendLocalContentAction(gatedOut, null);
     expect(rec).not.toBeNull();
     expect(rec!.primaryEn).toContain('certification');
     expect(rec!.alternativeEn).toContain('subcontract');
     expect(rec!.primaryAr).toContain('اعتماد');
 
-    const eligible = assessSupplierLocalContent('SA', 'government', { saMandatoryList: { inMandatoryListCategory: true, certifiedForCategory: true } }, 'mandatory-list');
+    const eligible = assessSupplierLocalContent('SA', 'government', { saMandatoryList: { inMandatoryListCategory: true, certifiedForCategory: true } }, 'sa-mandatory-list');
     expect(recommendLocalContentAction(eligible, null)).toBeNull();
 
-    const unknown = assessSupplierLocalContent('SA', 'government', { saMandatoryList: { inMandatoryListCategory: true, certifiedForCategory: null } }, 'mandatory-list');
+    const unknown = assessSupplierLocalContent('SA', 'government', { saMandatoryList: { inMandatoryListCategory: true, certifiedForCategory: null } }, 'sa-mandatory-list');
     expect(recommendLocalContentAction(unknown, null)).toBeNull();
   });
 });
@@ -577,7 +724,7 @@ describe('SA / LCGPA Mandatory List — category-eligibility-gate', () => {
 
 describe('SA / LCGPA — price-preference (10%, shared shape with Jordan)', () => {
   it('soft: partial local share -> proportional discount at the Saudi 10% margin (not Jordan\'s 20%)', () => {
-    const a = assessSupplierLocalContent('SA', 'government', { saPricePreference: { bidValueLocallyManufacturedPct: 40 } }, 'price-preference');
+    const a = assessSupplierLocalContent('SA', 'government', { saPricePreference: { bidValueLocallyManufacturedPct: 40 } }, 'sa-price-preference');
     const c = a.computation as PricePreferenceMarginResult;
     expect(c.preferenceMarginPct).toBe(SAUDI_PRICE_PREFERENCE_MARGIN_PCT);
     expect(c.preferenceMarginPct).not.toBe(JORDAN_PRICE_PREFERENCE_MARGIN_PCT);
@@ -585,21 +732,21 @@ describe('SA / LCGPA — price-preference (10%, shared shape with Jordan)', () =
   });
 
   it('boundary: 100% locally-manufactured -> full 10-point discount; recommendation correctly returns null (nothing to improve)', () => {
-    const a = assessSupplierLocalContent('SA', 'government', { saPricePreference: { bidValueLocallyManufacturedPct: 100 } }, 'price-preference');
+    const a = assessSupplierLocalContent('SA', 'government', { saPricePreference: { bidValueLocallyManufacturedPct: 100 } }, 'sa-price-preference');
     const c = a.computation as PricePreferenceMarginResult;
     expect(c.effectiveBidDiscountPct).toBeCloseTo(10, 6);
     expect(recommendLocalContentAction(a, null)).toBeNull();
   });
 
   it('boundary: 0% -> zero discount, still a real computed answer (not insufficient-data)', () => {
-    const a = assessSupplierLocalContent('SA', 'government', { saPricePreference: { bidValueLocallyManufacturedPct: 0 } }, 'price-preference');
+    const a = assessSupplierLocalContent('SA', 'government', { saPricePreference: { bidValueLocallyManufacturedPct: 0 } }, 'sa-price-preference');
     expect(a.applicability).toBe('applicable');
     const c = a.computation as PricePreferenceMarginResult;
     expect(c.effectiveBidDiscountPct).toBe(0);
   });
 
   it('hardest: private-commercial context -> not-applicable (LCGPA price preference is government/SOE only), not a zero score', () => {
-    const a = assessSupplierLocalContent('SA', 'private-commercial', { saPricePreference: { bidValueLocallyManufacturedPct: 90 } }, 'price-preference');
+    const a = assessSupplierLocalContent('SA', 'private-commercial', { saPricePreference: { bidValueLocallyManufacturedPct: 90 } }, 'sa-price-preference');
     expect(a.applicability).toBe('not-applicable');
     expect(a.computation).toBeNull();
     expect(a.reasonAr).not.toContain('private-commercial'); // no raw English enum spliced into Arabic
@@ -619,7 +766,7 @@ describe('SA / Aramco IKTVA — anchor-buyer-score', () => {
         localRnDSAR: 0, totalCostsSAR: 6_000_000, incentiveBonusPct: null,
       },
     };
-    const a = assessSupplierLocalContent('SA', 'semi-government-soe', inputs, 'iktva-aramco');
+    const a = assessSupplierLocalContent('SA', 'semi-government-soe', inputs, 'sa-iktva-aramco');
     expect(a.applicability).toBe('applicable');
     const c = a.computation as AnchorBuyerScoreResult;
     const numerator = 3_000_000 + 200_000 + 500_000 + 1_500_000 + 100_000 + 50_000 + 0;
@@ -637,7 +784,7 @@ describe('SA / Aramco IKTVA — anchor-buyer-score', () => {
         localRnDSAR: 0, totalCostsSAR: 1_000_000, incentiveBonusPct: 150,
       },
     };
-    const a = assessSupplierLocalContent('SA', 'semi-government-soe', inputs, 'iktva-aramco');
+    const a = assessSupplierLocalContent('SA', 'semi-government-soe', inputs, 'sa-iktva-aramco');
     const c = a.computation as AnchorBuyerScoreResult;
     // numerator == totalCosts -> base 100%, clamp to 100 overall despite the (clamped-to-10) bonus
     expect(c.scorePct).toBeCloseTo(100, 6);
@@ -647,7 +794,7 @@ describe('SA / Aramco IKTVA — anchor-buyer-score', () => {
     const inputs: SupplierLocalContentInputs = {
       iktva: { goodsServicesLocalSAR: 500_000, assetDepreciationLocalSAR: 0, expatCompensationInSaudiSAR: 0, saudiWorkforceCompensationSAR: 0, trainingDevelopmentSAR: 0, supplierDevelopmentSAR: 0, localRnDSAR: 0, totalCostsSAR: 0, incentiveBonusPct: 0 },
     };
-    const a = assessSupplierLocalContent('SA', 'semi-government-soe', inputs, 'iktva-aramco');
+    const a = assessSupplierLocalContent('SA', 'semi-government-soe', inputs, 'sa-iktva-aramco');
     const c = a.computation as AnchorBuyerScoreResult;
     expect(c.scorePct).toBeNull();
     expect(a.reasonEn).toContain('incomplete inputs');
@@ -655,7 +802,7 @@ describe('SA / Aramco IKTVA — anchor-buyer-score', () => {
   });
 
   it('IKTVA is scoped to semi-government-soe only (Aramco is an anchor-buyer program, not the general government score) -- government context is not-applicable', () => {
-    const a = assessSupplierLocalContent('SA', 'government', { iktva: { goodsServicesLocalSAR: 1, assetDepreciationLocalSAR: 0, expatCompensationInSaudiSAR: 0, saudiWorkforceCompensationSAR: 0, trainingDevelopmentSAR: 0, supplierDevelopmentSAR: 0, localRnDSAR: 0, totalCostsSAR: 1, incentiveBonusPct: 0 } }, 'iktva-aramco');
+    const a = assessSupplierLocalContent('SA', 'government', { iktva: { goodsServicesLocalSAR: 1, assetDepreciationLocalSAR: 0, expatCompensationInSaudiSAR: 0, saudiWorkforceCompensationSAR: 0, trainingDevelopmentSAR: 0, supplierDevelopmentSAR: 0, localRnDSAR: 0, totalCostsSAR: 1, incentiveBonusPct: 0 } }, 'sa-iktva-aramco');
     expect(a.applicability).toBe('not-applicable');
   });
 
@@ -663,7 +810,7 @@ describe('SA / Aramco IKTVA — anchor-buyer-score', () => {
     const inputs: SupplierLocalContentInputs = {
       iktva: { goodsServicesLocalSAR: 500_000, assetDepreciationLocalSAR: 0, expatCompensationInSaudiSAR: 0, saudiWorkforceCompensationSAR: 0, trainingDevelopmentSAR: 0, supplierDevelopmentSAR: 0, localRnDSAR: 0, totalCostsSAR: 1_000_000, incentiveBonusPct: 0 },
     };
-    const a = assessSupplierLocalContent('SA', 'semi-government-soe', inputs, 'iktva-aramco');
+    const a = assessSupplierLocalContent('SA', 'semi-government-soe', inputs, 'sa-iktva-aramco');
     const c = a.computation as AnchorBuyerScoreResult;
     expect(a.reasonAr).toContain(`${c.scorePct!.toFixed(1)}`.replace('.', '.')); // numeral present
     expect(a.reasonAr).toContain('٪');
@@ -674,7 +821,7 @@ describe('SA / Aramco IKTVA — anchor-buyer-score', () => {
     const inputs: SupplierLocalContentInputs = {
       iktva: { goodsServicesLocalSAR: 200_000, assetDepreciationLocalSAR: 0, expatCompensationInSaudiSAR: 0, saudiWorkforceCompensationSAR: 0, trainingDevelopmentSAR: 0, supplierDevelopmentSAR: 0, localRnDSAR: 0, totalCostsSAR: 1_000_000, incentiveBonusPct: 0 },
     };
-    const a = assessSupplierLocalContent('SA', 'semi-government-soe', inputs, 'iktva-aramco');
+    const a = assessSupplierLocalContent('SA', 'semi-government-soe', inputs, 'sa-iktva-aramco');
     const rec = recommendLocalContentAction(a, 60);
     expect(rec).not.toBeNull();
     expect(rec!.primaryEn).toContain('gap');
@@ -689,23 +836,23 @@ describe('SA / Aramco IKTVA — anchor-buyer-score', () => {
 
 describe('SA — GAMI defense localization (not-yet-sourced, real dated context)', () => {
   it('returns insufficient-data with the real 24.89% / 2030 figures in both languages, never a fabricated per-supplier score', () => {
-    const a = assessSupplierLocalContent('SA', 'government', {}, 'gami-defense');
+    const a = assessSupplierLocalContent('SA', 'government', {}, 'sa-gami-defense');
     expect(a.applicability).toBe('insufficient-data');
     expect(a.computation).toEqual({ mechanismType: 'not-yet-sourced' });
     expect(a.reasonEn).toContain('24.89%');
     expect(a.reasonEn).toContain('2030');
     expect(a.reasonAr).toContain('٢٤.٨٩٪');
     expect(a.reasonAr).toContain('٢٠٣٠');
-    expect(a.program).toBe('gami-defense');
+    expect(a.program).toBe('sa-gami-defense');
   });
 });
 
 describe('SA — LIKT (Localization of Industry & Knowledge Transfer, not-yet-sourced)', () => {
   it('is modeled as a genuinely distinct program from GAMI, with its own bilingual sourceNote', () => {
-    const a = assessSupplierLocalContent('SA', 'government', {}, 'likt');
+    const a = assessSupplierLocalContent('SA', 'government', {}, 'sa-likt');
     expect(a.applicability).toBe('insufficient-data');
-    expect(a.program).toBe('likt');
-    expect(SAUDI_PROGRAMS.likt.sourceNoteEn).not.toEqual(SAUDI_PROGRAMS['gami-defense'].sourceNoteEn);
+    expect(a.program).toBe('sa-likt');
+    expect(PROGRAMS['sa-likt'].sourceNoteEn).not.toEqual(PROGRAMS['sa-gami-defense'].sourceNoteEn);
     expect(a.reasonEn).toContain('LIKT');
     expect(a.reasonAr).toContain('LIKT');
   });
@@ -719,8 +866,8 @@ describe('SA — LIKT (Localization of Industry & Knowledge Transfer, not-yet-so
 
 describe('SA — portfolio rollup groups by program', () => {
   it('lcgpa-general and mandatory-list suppliers in the same government context land in two separate groups', () => {
-    const general = assessSupplierLocalContent('SA', 'government', { sa: { localLaborSAR: 900_000, expatLaborSAR: 100_000, localGoodsServicesSAR: 0, foreignGoodsServicesSAR: 0, capacityBuildingSAR: 0, localAssetDepreciationSAR: 0, totalAssetDepreciationSAR: 0 } }, 'lcgpa-general');
-    const gate = assessSupplierLocalContent('SA', 'government', { saMandatoryList: { inMandatoryListCategory: true, certifiedForCategory: true } }, 'mandatory-list');
+    const general = assessSupplierLocalContent('SA', 'government', { sa: { localLaborSAR: 900_000, expatLaborSAR: 100_000, localGoodsServicesSAR: 0, foreignGoodsServicesSAR: 0, capacityBuildingSAR: 0, localAssetDepreciationSAR: 0, totalAssetDepreciationSAR: 0 } }, 'sa-lcgpa-general');
+    const gate = assessSupplierLocalContent('SA', 'government', { saMandatoryList: { inMandatoryListCategory: true, certifiedForCategory: true } }, 'sa-mandatory-list');
 
     const groups = rollUpPortfolioLocalContent([
       { supplierId: 's1', spendShare: 60, assessment: general },
@@ -728,8 +875,8 @@ describe('SA — portfolio rollup groups by program', () => {
     ]);
 
     expect(groups).toHaveLength(2);
-    const generalGroup = groups.find(g => g.program === 'lcgpa-general')!;
-    const gateGroup = groups.find(g => g.program === 'mandatory-list')!;
+    const generalGroup = groups.find(g => g.program === 'sa-lcgpa-general')!;
+    const gateGroup = groups.find(g => g.program === 'sa-mandatory-list')!;
     expect(generalGroup).toBeDefined();
     expect(gateGroup).toBeDefined();
     expect(generalGroup.mechanismType).toBe('eligible-spend-ratio');
@@ -739,8 +886,8 @@ describe('SA — portfolio rollup groups by program', () => {
   });
 
   it('gateEligibleSharePct is spend-share-weighted across mixed eligible/gated suppliers', () => {
-    const eligible = assessSupplierLocalContent('SA', 'government', { saMandatoryList: { inMandatoryListCategory: true, certifiedForCategory: true } }, 'mandatory-list');
-    const gated = assessSupplierLocalContent('SA', 'government', { saMandatoryList: { inMandatoryListCategory: true, certifiedForCategory: false } }, 'mandatory-list');
+    const eligible = assessSupplierLocalContent('SA', 'government', { saMandatoryList: { inMandatoryListCategory: true, certifiedForCategory: true } }, 'sa-mandatory-list');
+    const gated = assessSupplierLocalContent('SA', 'government', { saMandatoryList: { inMandatoryListCategory: true, certifiedForCategory: false } }, 'sa-mandatory-list');
     const groups = rollUpPortfolioLocalContent([
       { supplierId: 's1', spendShare: 30, assessment: eligible },
       { supplierId: 's2', spendShare: 70, assessment: gated },

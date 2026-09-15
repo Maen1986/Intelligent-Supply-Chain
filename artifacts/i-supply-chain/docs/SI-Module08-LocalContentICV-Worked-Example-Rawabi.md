@@ -1,9 +1,9 @@
 # SI Module 08 — Local Content / ICV Eligibility
 ### Worked Example, Sourced Methodology, and Stress-Test Record — Rawabi Advanced Industries
 
-*Registry: SI-08 (draft, pending #436/#441 formal registry entry). Date: 15 Sep 2026, updated 16 Sep 2026 (Saudi Arabia mechanism decomposition, Part 1 slice — see section 8).*
-*Engine file: `src/lib/supplierLocalContentEligibility.ts` (928 lines, 6 Saudi programs). Test file: `src/lib/supplierLocalContentEligibility.test.ts` (62 tests: 39 original + 23 new Saudi-mechanism tests, soft/hardest/boundary tiers).*
-*Status: library-complete, unit-tested, cross-engine chain-tested, live UI rebuilt as a multi-supplier list per an independent senior-QA review (`/local-content-icv`, QA-10/10-walked-through, 16 Sep 2026), extended this pass with Saudi Arabia's full mechanism decomposition (5 new mechanisms + usage notes on the general score, a new Saudi program-routing question in the UI, QA-10/10 re-walked and one real gap fixed — see section 8 and "What Is Not Yet Done" below for what remains, including the backend table this pass added but has not provisioned, and Part 2 of the assignment (non-GCC coverage) which is explicitly not started yet).*
+*Registry: SI-08 (draft, pending #436/#441 formal registry entry). Date: 15 Sep 2026, updated 16 Sep 2026 (Saudi Arabia mechanism decomposition, Part 1 slice, section 8; UAE mechanism decomposition + program-architecture generalization, same day, section 9).*
+*Engine file: `src/lib/supplierLocalContentEligibility.ts` (1076 lines, 13 programs across 7 countries via a generalized `LocalContentProgram` architecture — see section 9's own note on why the Saudi-only `SaudiProgram` pattern was generalized). Test file: `src/lib/supplierLocalContentEligibility.test.ts` (77 tests: 39 original + 23 Saudi-mechanism + 15 UAE-mechanism/architecture tests, soft/hardest/boundary tiers).*
+*Status: library-complete, unit-tested, cross-engine chain-tested, live UI rebuilt as a multi-supplier list per an independent senior-QA review (`/local-content-icv`, QA-10/10-walked-through, 16 Sep 2026), extended this pass with Saudi Arabia's full mechanism decomposition (section 8) and then the UAE's (section 9: MoIAT ICV usage note + genuine incentive-not-gate negative finding, and the Tawazun defense-offset mechanism with a real sourced formula), plus a dual-sided buyer/supplier value-framing panel added to the live UI for every country including Saudi Arabia per the owner's explicit instruction — see "What Is Not Yet Done" below for what remains, including the backend table this pass added but has not provisioned, and Part 2 of the assignment (non-GCC coverage) and the rest of Part 1 (Jordan's second mechanism if any, Oman, Qatar, Bahrain, Kuwait) which are explicitly not started yet.*
 
 ---
 
@@ -65,7 +65,7 @@ remain live and completely unchanged by this work.
 
 ---
 
-## 4. Stress-Test Record (39 tests as of 15 Sep 2026, all passing; three tiers per mechanism — see section 8.8 for the 23 additional Saudi-mechanism tests added 16 Sep 2026, 62 total)
+## 4. Stress-Test Record (39 tests as of 15 Sep 2026, all passing; three tiers per mechanism — see section 8.8 for the 23 additional Saudi-mechanism tests (62 total) and section 9.5 for the 15 additional UAE-mechanism/architecture tests added 16 Sep 2026, 77 total)
 
 ### 4.1 Saudi Arabia — LCGPA eligible-spend-ratio
 
@@ -452,6 +452,133 @@ pre-existing country/context button rows — no hover-only affordance was introd
 
 ---
 
+## 9. United Arab Emirates Mechanism Decomposition (16 Sep 2026)
+
+Continuing Part 1 of `Module08-NextPass-Agent-Brief.md` after Saudi Arabia: the UAE is also not one
+program but two (`ae-icv-general`, `ae-tawazun-offset`) — MoIAT's National ICV score and the
+Tawazun Economic Council's defense-sector offset obligation, run by two different bodies for two
+different buyers. This pass also generalized the engine's own program architecture: the
+Saudi-specific `SaudiProgram`/`SAUDI_PROGRAMS` pattern introduced in section 8 does not scale to a
+second multi-program country, so it is now a single flat `LocalContentProgram` union covering all
+7 countries' programs (`PROGRAMS`, `PROGRAMS_BY_COUNTRY`, `DEFAULT_PROGRAM_BY_COUNTRY`) —
+behavior-preserving for every existing caller (Saudi Arabia's own program keys were renamed with an
+`sa-` prefix; every other country's default resolution is unchanged). Per the owner's explicit
+instruction mid-build, this section — and this pass's re-check of section 8's own live UI — applies
+the same rule: **every mechanism carries an explicit buyer-side and supplier-side value reading, not
+just a compliance number**, for every country, not only new work.
+
+### 9.1 Six-type taxonomy → UAE program mapping
+
+| Type | UAE program | `mechanismType` | Status |
+|---|---|---|---|
+| 1. Certification score | `ae-icv-general` | `weighted-pillar-score` | Sourced (unchanged from the pre-existing mechanism; renamed from `ae` to `ae-icv-general` as part of the program generalization) |
+| 6. Offset/tech-transfer obligation | `ae-tawazun-offset` | `offset-obligation-gate` (new mechanism type) | Sourced, real computable formula (Tawazun Economic Council's own 2019 policy guidelines) |
+| 2–5 | *(not modeled)* | — | No further sourced UAE-specific anchor-buyer, category-gate, price-preference, or set-aside mechanism was found distinct from the two above — not fabricated |
+
+### 9.2 `ae-icv-general` — usage notes and a genuine negative finding
+
+- **Abu Dhabi ADLC usage note**: Abu Dhabi's own Department of Economic Development
+  (`idb.added.gov.ae`) states the ICV factor accounts for **40%** of the financial evaluation in
+  Abu Dhabi tenders, and a bidder without an ICV certificate scores zero on that 40% — the same
+  "how the score gets used by one specific evaluating entity" disclosure pattern as Saudi Arabia's
+  own 40%/LCGPA usage note in section 8.2, attached to the *existing* score, not modeled as a
+  separate mechanism. Explicitly caveated as an Abu Dhabi emirate-level figure, not confirmed as
+  the UAE-wide MoIAT figure (the national MoIAT page states no percentage of its own).
+- **Genuine negative finding**: MoIAT's own official ICV program page confirms certification is an
+  **incentive** — certified suppliers "gain advantages during the award of tenders and contracts
+  based on their ICV score" — not a mandatory bidding gate like Saudi Arabia's Mandatory List. This
+  research pass found no sourced evidence of a mandatory ICV-only bidding category, so none is
+  modeled here. Stated plainly as a real finding, not an oversight — Decision Record 8.7 applies to
+  absence of evidence exactly as it applies to a number.
+
+### 9.3 `ae-tawazun-offset` — offset-obligation-gate, real formula, dual-sided reading, currency-peg resolution
+
+Source: the Tawazun Economic Council's 2019 policy guidelines (cross-verified via afridi-angell.com,
+mondaq.com, and the US government's own trade.gov UAE Defense Country Commercial Guide, none
+flagging a more recent revision): offset obligations trigger on UAE Armed Forces / Abu Dhabi Police
+defense contracts at or above **USD 10 million**. The brief itself flagged a "$10M vs AED10M"
+currency ambiguity to be resolved in this non-Saudi pass — resolved here: the AED has been
+fixed-pegged to the USD at exactly **3.6725** since 1997, and mondaq.com's own cited **AED 36.73
+million** threshold divided by that peg is USD 10,001,361 — a match within the source citation's own
+rounding (36.73M is itself rounded to 2 decimals; the peg-exact figure is AED 36.725M, ~0.014% off,
+not a real source conflict, and this module's stress test checks that actual tolerance rather than
+assuming byte-exactness). Required offset-credit target: **60%** of contract value. Shortfall
+settlement: **8.5%** in cash or via bank guarantee, or rolling the remainder into a future project —
+both disclosed program options, never modeled as a compliance failure.
+
+- **Buyer's reading** (UAE Armed Forces / Abu Dhabi Police, via the Tawazun Economic Council):
+  "Does this contract's value clear the threshold, and if a contractor falls short, does the
+  program still capture real value (cash/guarantee) rather than losing it outright?" — the gate
+  converts defense spend into either real in-country economic activity or a quantified settlement,
+  never a silent write-off.
+- **Supplier's reading:** "How much offset credit do I still need to bank before the performance
+  period closes, and what does waiting cost me?" — `shortfallAED` and `shortfallPenaltyAED` are the
+  two numbers a contractor needs to decide between investing in real offset activity now versus
+  paying the 8.5% settlement later; the engine never collapses "credits unknown" into "credits
+  zero" (a real honesty distinction — see the stress-test record below).
+- Worked mini-example: a UAE-based systems integrator on a AED 50,000,000 Abu Dhabi Police contract
+  with AED 10,000,000 of offset credit already banked → `triggersObligation: true`,
+  `requiredOffsetCreditsAED: 30,000,000` (60% of 50M), `shortfallAED: 20,000,000`,
+  `shortfallPenaltyAED: 1,700,000` (8.5% of the shortfall) → primary recommendation: bank real
+  offset credits (local investment, JV, or technology-transfer activity Tawazun recognizes) before
+  the period closes; alternative: settle in cash at 8.5% or negotiate rolling the remainder into a
+  future project — both the program's own disclosed fallback options, not a compliance failure.
+
+### 9.4 Explicitly not modeled, to avoid fabrication
+
+- **A private-to-private UAE mandate**: no sourced evidence either `ae-icv-general` or
+  `ae-tawazun-offset` applies to `private-commercial` procurement — both remain scoped to
+  government/semi-government-soe (ICV) and government only (Tawazun), matching section 8's own
+  discipline for Saudi Arabia's mechanisms.
+- **A UAE-wide (not just Abu Dhabi) financial-evaluation-weight percentage** for ICV: the national
+  MoIAT page does not itself state one; the sourced 40% figure is disclosed as Abu Dhabi
+  emirate-level only, never generalized to the whole country (see 9.2).
+
+### 9.5 Stress-test record — UAE Tawazun mechanism (12 new tests, all passing; full suite 62 → 77 for this file)
+
+| Mechanism | Soft | Hardest | Boundary |
+|---|---|---|---|
+| `ae-tawazun-offset` | above-threshold contract with partial credits earned; contract value known but credits earned unknown (`shortfallAED` stays `null`, never a false zero) | far-below-threshold contract → no obligation, zero required credits, never a spurious penalty; earned credits exceed the requirement → shortfall floors at 0, never negative | contract value at exactly the AED 36.73M threshold triggers (`>=`, not `>`); the AED/USD peg-equivalence check itself, within the source citation's own rounding tolerance |
+| Applicability | — | `semi-government-soe` and `private-commercial` both correctly `not-applicable` — Tawazun is government-only, narrower than ICV's government+SOE scope | — |
+| Recommendation | genuine primary (bank real credits) + alternative (8.5% settlement / rollover), never a single path | returns `null` once there is no shortfall — nothing to recommend against a closed gap | — |
+| Portfolio rollup | `totalShortfallPenaltyAED` is a plain SUM of real-money exposure across the group, never spend-share-weighted like a percentage (a different aggregation shape from every other mechanism type in this module, disclosed as such in the engine's own field comment) | — | — |
+
+Also added: an architecture sanity test that every `DEFAULT_PROGRAM_BY_COUNTRY[country]` resolves to
+a real `PROGRAMS` entry for its own country, and that `PROGRAMS_BY_COUNTRY` lists exactly the
+countries known to run more than one program (SA: 6, AE: 2, all others: 1) — a direct test of the
+generalization itself, not just the new UAE content. Every new `reasonEn` above ships with a
+`reasonAr` asserted directly in the test suite for content (not just presence), continuing the same
+bilingual-completeness discipline established 15 Sep 2026.
+
+### 9.6 UI — UAE program routing question, and buyer/supplier value framing reinforced for every country including Saudi Arabia
+
+The Saudi program-routing pattern from section 8.9 (task #115) is now generalized rather than
+duplicated: any country whose `PROGRAMS_BY_COUNTRY` list has more than one program — today SA (6)
+and AE (2) — shows the same routing-question button row, with the same auto-context-selection fix
+for single-context programs (Tawazun, like Aramco IKTVA before it, is single-context and now
+auto-selects `government` when picked). **A real defect this generalization pass avoided:**
+switching a supplier's country without also resetting its selected program would otherwise leave the
+displayed methodology and assessment reading a different country's framework than the one just
+selected (e.g. still showing Aramco IKTVA's Saudi methodology immediately after switching to AE) —
+fixed by resetting `program` to the new country's own default on every country-selector click. A
+second real defect avoided: a returning user's already-saved entry (localStorage or server-synced)
+could carry a pre-generalization Saudi program key (`lcgpa-general` rather than
+`sa-lcgpa-general`) — fixed with an explicit, disclosed 1:1 migration map applied on load, not a
+silent break on first use after this deploy.
+
+Per the owner's explicit instruction mid-build ("every mechanism ... carries an explicit buyer-side
+and supplier-side value reading, not just a compliance number" — "this to all including KSA"), this
+pass also added a **dual-sided value-framing panel**, keyed by mechanism type (not by individual
+program, so it is automatic for all 7 sourced mechanism shapes and any future one, not hand-added
+per country), rendered directly under the Sourced Methodology accordion for every applicable
+country — Saudi Arabia's own live UI included, not only new UAE screens or this document's own
+buyer's-reading/supplier's-reading subsections. The panel states, in both languages, what the buyer
+gets and what the supplier gets from the same mechanism, built entirely from facts already sourced
+and disclosed elsewhere in the engine (never a new claim or statistic) — re-stating in the live
+product the same reading this document has carried in prose since section 8.3.
+
+---
+
 ## الوحدة رقم 08 من محرك ذكاء الموردين — أهلية المحتوى المحلي / القيمة المحلية المضافة (ICV)
 ### مثال تطبيقي وتوثيق منهجي واختبار إجهاد — شركة روابي للصناعات المتقدمة
 
@@ -673,3 +800,121 @@ QA وأُصلحت ضمن هذه المرحلة نفسها:** كان التبدي
 لفئة القائمة الإلزامية / الاعتماد) عناصر `<button>` حقيقية مع `aria-pressed`/`role="group"`/
 `aria-label`، وفق النمط ذاته المُدقَّق مسبقاً لصفوف أزرار الدولة/السياق القائمة — دون إدخال أي سلوك
 يعتمد على التحويم فقط.
+
+---
+
+## 9. تفكيك آليات دولة الإمارات العربية المتحدة (١٦ سبتمبر ٢٠٢٦)
+
+استكمالاً للجزء الأول من `Module08-NextPass-Agent-Brief.md` بعد السعودية: الإمارات أيضاً ليست
+برنامجاً واحداً بل برنامجان (`ae-icv-general` و`ae-tawazun-offset`) — درجة ICV الوطنية التابعة
+لوزارة الصناعة والتقنية المتقدمة، والتزام المقاصة الدفاعية التابع لمجلس توازن الاقتصادي، تديرهما
+جهتان مختلفتان لمشترٍ مختلف في كل حالة. عُمِّمت في هذه المرحلة أيضاً بنية البرامج في المحرك نفسها:
+نمط `SaudiProgram`/`SAUDI_PROGRAMS` الخاص بالسعودية والمُقدَّم في القسم ٨ لا يتّسع لدولة ثانية متعددة
+البرامج، فأصبح الآن اتحاداً مسطّحاً واحداً `LocalContentProgram` يغطي برامج الدول السبع جميعها
+(`PROGRAMS`، `PROGRAMS_BY_COUNTRY`، `DEFAULT_PROGRAM_BY_COUNTRY`) — حافظ على السلوك تماماً لكل
+مستدعٍ قائم (أُعيدت تسمية مفاتيح برامج السعودية بإضافة بادئة `sa-`؛ ولم يتغيّر الحل الافتراضي لأي
+دولة أخرى). وبناءً على تعليمة صاحب المنصة الصريحة أثناء البناء، يطبّق هذا القسم — وكذلك إعادة فحص
+هذه المرحلة لواجهة القسم ٨ الحية نفسها — القاعدة ذاتها: **كل آلية تحمل قراءة صريحة للقيمة من جانب
+المشتري وجانب المورّد معاً، وليس رقم امتثال فقط**، لكل الدول، وليس فقط للعمل الجديد.
+
+### ٩.١ تصنيف الأنواع الستة ← ربطها ببرامج الإمارات
+
+| النوع | برنامج الإمارات | `mechanismType` | الحالة |
+|---|---|---|---|
+| ١. درجة اعتماد | `ae-icv-general` | `weighted-pillar-score` | موثّقة (بلا تغيير عن الآلية القائمة؛ أُعيدت تسميتها من `ae` إلى `ae-icv-general` ضمن تعميم البرامج) |
+| ٦. التزام مقاصة/نقل تقني | `ae-tawazun-offset` | `offset-obligation-gate` (نوع آلية جديد) | موثّقة، صيغة حقيقية قابلة للحساب (إرشادات سياسة مجلس توازن الاقتصادي لعام ٢٠١٩) |
+| ٢–٥ | *(غير مُنمذَجة)* | — | لم يُعثر على آلية إماراتية أخرى موثّقة (مشترٍ رئيسي، بوابة فئة، تفضيل سعري، أو حصة مخصصة) منفصلة عن الآليتين أعلاه — لم تُختلق |
+
+### ٩.٢ `ae-icv-general` — ملاحظات استخدام ونتيجة سلبية حقيقية
+
+- **ملاحظة استخدام أبوظبي (ADLC)**: تذكر دائرة التنمية الاقتصادية في أبوظبي (`idb.added.gov.ae`)
+  أن عامل ICV يمثّل **٤٠٪** من التقييم المالي في مناقصات أبوظبي، وأن مقدّم العطاء دون شهادة ICV
+  يحصل على صفر نقاط من هذه الـ٤٠٪ — نفس نمط الإفصاح "كيف تُستخدم الدرجة من جهة تقييم واحدة محددة"
+  المُستخدم في ملاحظة استخدام السعودية بنسبة ٤٠٪/هيئة المحتوى المحلي في القسم ٨.٢، مُرفَق بالدرجة
+  *القائمة* نفسها، وليس آلية منفصلة. مُفصَح صراحة أنه رقم على مستوى إمارة أبوظبي، وليس مؤكداً كرقم
+  وطني موحّد لدى الوزارة (الصفحة الوطنية للوزارة لا تذكر نسبة بعينها).
+- **نتيجة سلبية حقيقية**: تؤكد الصفحة الرسمية لبرنامج ICV التابعة للوزارة أن الاعتماد **تحفيزي** —
+  تحصل الشركات المعتمدة على "مزايا عند ترسية المناقصات والعقود بناءً على درجة ICV الخاصة بها" —
+  وليس بوابة عطاءات إلزامية كالقائمة الإلزامية السعودية. لم يجد هذا البحث دليلاً موثّقاً على فئة
+  مناقصات إلزامية تقتصر على شهادة ICV، لذا لم تُنمذَج هنا. تُذكر بوضوح كنتيجة بحثية حقيقية، وليست
+  إغفالاً — سجل القرار ٨.٧ ينطبق على غياب الدليل تماماً كما ينطبق على رقم.
+
+### ٩.٣ `ae-tawazun-offset` — بوابة التزام مقاصة، صيغة حقيقية، قراءة ثنائية الجانب، وحسم غموض سعر الصرف
+
+المصدر: إرشادات سياسة مجلس توازن الاقتصادي لعام ٢٠١٩ (تحقّق متقاطع عبر afridi-angell.com
+وmondaq.com ودليل الحكومة الأمريكية الرسمي لقطاع الدفاع الإماراتي على trade.gov، دون أن يشير أي
+منها إلى تحديث أحدث): تُستحق التزامات المقاصة على عقود القوات المسلحة الإماراتية/شرطة أبوظبي
+الدفاعية التي تبلغ قيمتها **١٠ ملايين دولار أمريكي** أو أكثر. أشار الموجز نفسه إلى غموض في العملة
+("١٠ ملايين دولار" مقابل "١٠ ملايين درهم") يُحسم في هذه المرحلة غير السعودية — وقد حُسم هنا: الدرهم
+الإماراتي مربوط بسعر صرف ثابت بالدولار الأمريكي عند **٣.٦٧٢٥** بالضبط منذ عام ١٩٩٧، وحدّ **٣٦.٧٣
+مليون درهم** المذكور في mondaq.com عند قسمته على سعر الربط يساوي ١٠,٠٠١,٣٦١ دولاراً — تطابق ضمن
+هامش تقريب الاستشهاد نفسه (فرقم ٣٦.٧٣ مليون مُقرَّب أصلاً إلى منزلتين عشريتين؛ الرقم المطابق تماماً
+لسعر الربط هو ٣٦.٧٢٥ مليون درهم، بفارق ~٠.٠١٤٪ فقط، وليس تعارضاً حقيقياً في المصادر، ويتحقق اختبار
+إجهاد هذه الوحدة من هذا الهامش الفعلي بدلاً من افتراض تطابق حرفي). هدف ائتمان المقاصة المطلوب:
+**٦٠٪** من قيمة العقد. تسوية النقص: **٨.٥٪** نقداً أو عبر ضمان بنكي، أو ترحيل الباقي إلى مشروع
+مستقبلي — كلاهما خياران مُفصَح عنهما رسمياً في البرنامج، ولم يُنمذَجا كإخفاق امتثال أبداً.
+
+- **قراءة المشتري** (القوات المسلحة الإماراتية/شرطة أبوظبي، عبر مجلس توازن الاقتصادي): "هل تتجاوز
+  قيمة هذا العقد العتبة، وإذا قصّر المقاول، هل يظل البرنامج يحصّل قيمة حقيقية (نقداً/ضماناً) بدلاً
+  من خسارتها بالكامل؟" — تحوّل البوابة الإنفاق الدفاعي إما إلى نشاط اقتصادي محلي حقيقي أو تسوية
+  محدَّدة القيمة، وليس شطباً صامتاً أبداً.
+- **قراءة المورّد:** "كم ائتمان مقاصة ما زلت بحاجة لاكتسابه قبل إغلاق فترة الأداء، وما تكلفة
+  الانتظار؟" — `shortfallAED` و`shortfallPenaltyAED` هما الرقمان اللذان يحتاجهما المقاول لاتخاذ
+  قرار بين الاستثمار في نشاط مقاصة حقيقي الآن أو دفع تسوية ٨.٥٪ لاحقاً؛ لا يختزل المحرك أبداً
+  "الائتمانات غير معروفة" إلى "الائتمانات صفر" (تمييز صادق حقيقي — انظر سجل اختبار الإجهاد أدناه).
+- مثال تطبيقي مصغّر: شركة تكامل أنظمة مقرّها الإمارات على عقد بقيمة ٥٠,٠٠٠,٠٠٠ درهم مع شرطة أبوظبي،
+  وقد اكتسبت بالفعل ١٠,٠٠٠,٠٠٠ درهم من ائتمانات المقاصة ← `triggersObligation: true`،
+  `requiredOffsetCreditsAED: 30,000,000` (٦٠٪ من ٥٠ مليوناً)، `shortfallAED: 20,000,000`،
+  `shortfallPenaltyAED: 1,700,000` (٨.٥٪ من النقص) ← التوصية الأساسية: اكتساب ائتمانات مقاصة حقيقية
+  (استثمار محلي، مشروع مشترك، أو نشاط نقل تقني يعترف به توازن) قبل إغلاق الفترة؛ البديل: التسوية
+  نقداً بنسبة ٨.٥٪ أو التفاوض على ترحيل الباقي إلى مشروع مستقبلي — كلاهما من بدائل البرنامج المُفصَح
+  عنها رسمياً، وليس إخفاقاً في الامتثال.
+
+### ٩.٤ ما لم يُنمذَج عمداً، تجنباً للاختلاق
+
+- **إلزام إماراتي بين القطاع الخاص فقط**: لا يوجد دليل موثّق على انطباق `ae-icv-general` أو
+  `ae-tawazun-offset` على مشتريات القطاع الخاص فقط — يبقى كلاهما محصوراً في الحكومي/شبه الحكومي
+  (ICV) والحكومي فقط (توازن)، بما يطابق انضباط القسم ٨ ذاته لآليات السعودية.
+- **نسبة ترجيح تقييم مالي على مستوى الإمارات كافة (وليس أبوظبي فقط)** لـICV: لا تذكر صفحة الوزارة
+  الوطنية نسبة بعينها؛ نسبة الـ٤٠٪ الموثّقة مُفصَح عنها كرقم على مستوى إمارة أبوظبي فقط، ولم تُعمَّم
+  على الدولة بأكملها (انظر ٩.٢).
+
+### ٩.٥ سجل اختبار الإجهاد — آلية توازن الإماراتية (١٢ اختباراً جديداً، جميعها ناجحة؛ إجمالي هذا الملف من ٦٢ إلى ٧٧)
+
+| الآلية | ناعم (Soft) | الأصعب (Hardest) | الحدّي (Boundary) |
+|---|---|---|---|
+| `ae-tawazun-offset` | عقد فوق العتبة مع ائتمانات مكتسبة جزئياً؛ قيمة عقد معروفة لكن الائتمانات المكتسبة غير معروفة (يبقى `shortfallAED` عند `null`، وليس صفراً زائفاً) | عقد أقل بكثير من العتبة ← لا التزام، ائتمانات مطلوبة صفر، دون غرامة زائفة؛ ائتمانات مكتسبة تفوق المطلوب ← النقص يستقر عند صفر، لا يصبح سالباً أبداً | قيمة العقد عند ٣٦.٧٣ مليون درهم بالضبط تُفعِّل الالتزام (`>=` وليس `>`)؛ فحص تطابق سعر الربط درهم/دولار نفسه، ضمن هامش تقريب الاستشهاد المصدري |
+| الانطباق | — | كلاهما "شبه حكومي" و"تجاري خاص" يُصنَّفان بشكل صحيح "لا ينطبق" — توازن حكومي فقط، أضيق من نطاق ICV (حكومي + شبه حكومي) | — |
+| التوصية | بديل أساسي حقيقي (اكتساب ائتمانات حقيقية) + بديل قوي (تسوية ٨.٥٪ / ترحيل)، وليس مساراً واحداً أبداً | تُرجِع `null` بمجرد انتفاء النقص — لا شيء يُوصى به مقابل فجوة مغلقة | — |
+| تجميع المحفظة | `totalShortfallPenaltyAED` مجموع بسيط للتعرض المالي الحقيقي عبر المجموعة، وليس مرجَّحاً بحصة الإنفاق كالنسب المئوية (شكل تجميع مختلف عن كل نوع آلية آخر في هذه الوحدة، مُفصَح عنه كذلك في تعليق حقل المحرك نفسه) | — | — |
+
+أُضيف أيضاً: اختبار سلامة معماري يتحقق من أن كل `DEFAULT_PROGRAM_BY_COUNTRY[country]` يُحلّ إلى مُدخل
+حقيقي في `PROGRAMS` يخص دولته نفسها، وأن `PROGRAMS_BY_COUNTRY` يُدرج بدقة الدول المعروف أنها تدير
+أكثر من برنامج واحد (السعودية: ٦، الإمارات: ٢، البقية: ١ لكل منها) — اختبار مباشر للتعميم نفسه، وليس
+فقط للمحتوى الإماراتي الجديد. كل `reasonEn` جديد أعلاه يُشحَن مع `reasonAr` يُتحقق من محتواه مباشرة
+في مجموعة الاختبارات (وليس مجرد وجوده)، استمراراً لانضباط اكتمال الازدواج اللغوي المُرسى في ١٥
+سبتمبر ٢٠٢٦.
+
+### ٩.٦ الواجهة — سؤال توجيه برنامج الإمارات، وتعزيز قراءة القيمة الثنائية لكل الدول بما فيها السعودية
+
+عُمِّم نمط سؤال توجيه البرنامج السعودي من القسم ٨.٩ (البند #١١٥) بدلاً من تكراره: أي دولة تحتوي
+قائمة `PROGRAMS_BY_COUNTRY` الخاصة بها أكثر من برنامج واحد — اليوم السعودية (٦) والإمارات (٢) —
+تُظهر صف أزرار سؤال التوجيه نفسه، مع إصلاح الاختيار التلقائي للسياق نفسه للبرامج أحادية السياق
+(توازن، مثل إكتفاء أرامكو من قبله، أحادي السياق ويختار "حكومي" تلقائياً عند اختياره). **فجوة حقيقية
+تجنّبها هذا التعميم:** كان تبديل دولة المورّد دون إعادة ضبط البرنامج المُختار سيترك المنهجية
+والتقييم المعروضَين يقرآن إطار عمل دولة مختلفة عن الدولة المُختارة للتو (مثل استمرار عرض منهجية
+إكتفاء أرامكو السعودية فور التبديل إلى الإمارات) — أُصلح ذلك بإعادة ضبط `program` إلى الافتراضي
+الخاص بالدولة الجديدة عند كل ضغطة على مُحدِّد الدولة. فجوة حقيقية ثانية تم تجنبها: كان يمكن لجهة
+محفوظة مسبقاً لمستخدم عائد (في التخزين المحلي أو مزامَنة مع الخادم) أن تحمل مفتاح برنامج سعودي سابق
+للتعميم (`lcgpa-general` بدلاً من `sa-lcgpa-general`) — أُصلح ذلك بخريطة ترحيل صريحة ومُفصَح عنها
+١:١ تُطبَّق عند التحميل، دون كسر صامت عند أول استخدام بعد هذا النشر.
+
+وبناءً على تعليمة صاحب المنصة الصريحة أثناء البناء ("كل آلية ... تحمل قراءة صريحة للقيمة من جانب
+المشتري وجانب المورّد معاً، وليس رقم امتثال فقط" — "هذا يشمل الجميع بما في ذلك السعودية")، أضافت
+هذه المرحلة أيضاً **لوحة قراءة قيمة ثنائية الجانب**، مُصنَّفة حسب نوع الآلية (وليس حسب البرنامج
+الفردي، فتصبح تلقائية لكل أشكال الآليات السبعة الموثّقة وأي آلية مستقبلية، دون إضافة يدوية لكل
+دولة)، تُعرَض مباشرة أسفل قائمة "المنهجية الموثّقة" لكل دولة تنطبق عليها — بما في ذلك واجهة السعودية
+الحية نفسها، وليس فقط شاشات الإمارات الجديدة أو أقسام "قراءة المشتري"/"قراءة المورّد" في هذا
+المستند. تذكر اللوحة، بكلا اللغتين، ما يحصل عليه المشتري وما يحصل عليه المورّد من الآلية نفسها،
+مبنية بالكامل من حقائق موثّقة ومُفصَح عنها بالفعل في مكان آخر من المحرك (وليس ادعاءً أو رقماً
+جديداً) — تعيد في المنتج الحي نفس القراءة التي يحملها هذا المستند نثراً منذ القسم ٨.٣.

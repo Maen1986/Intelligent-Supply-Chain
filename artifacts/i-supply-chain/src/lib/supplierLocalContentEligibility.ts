@@ -1,6 +1,7 @@
 /**
  * Supplier Intelligence Module 08 — Local Content / ICV Eligibility
- * (SI-08, 15 Sep 2026).
+ * (SI-08, 15 Sep 2026; Saudi Arabia decomposition 16 Sep 2026; UAE
+ * decomposition + program-architecture generalization 16 Sep 2026).
  *
  * Extends the pre-existing LCGPA Readiness Self-Check (#373/#374,
  * lcgpaLocalContent.ts, 28 Aug 2026) from a single-country, client-own-spend
@@ -17,33 +18,51 @@
  * ============================================================================
  * A 15 Sep 2026 research pass (real web sourcing, not training-data recall)
  * found that "local content" is not one regional concept with country
- * variants -- it is several genuinely different regulatory mechanisms:
+ * variants -- it is several genuinely different regulatory mechanisms, and
+ * as of 16 Sep 2026 (see below), most countries turn out to run MULTIPLE
+ * distinct mechanisms of their own, not just one:
  *
- *   - Saudi Arabia (LCGPA): a certified PERCENTAGE SCORE = locally-eligible
- *     spend / total spend across 4 pillars (same real Guide G1 formula as
- *     lcgpaLocalContent.ts). Legally anchored in GOVERNMENT procurement,
- *     extended June 2022 to entities >=50% state-owned. No sourced evidence
- *     it governs pure private-to-private commercial contracts.
- *   - UAE (ICV, MoIAT -- now unified with ADNOC's original program): a
- *     certified WEIGHTED MULTI-PILLAR SCORE (manufacturing/third-party
- *     spend + investment + Emiratisation + expatriate contribution + capped
- *     bonus categories), requiring a MoIAT-authorized audit for a real
- *     certificate. Framed around public spending and "Program Partner"
- *     (government/semi-government) tenders -- no sourced evidence of a
- *     private-to-private mandate.
+ *   - Saudi Arabia (LCGPA + Aramco + GAMI + LIKT): six distinct programs,
+ *     decomposed 16 Sep 2026 (see `PROGRAMS`, keys `sa-*`) -- a certified
+ *     PERCENTAGE SCORE (LCGPA general), a CATEGORY ELIGIBILITY GATE
+ *     (Mandatory List), a PRICE PREFERENCE (10% national-product), an
+ *     ANCHOR-BUYER SCORE (Aramco IKTVA, a real computable formula from
+ *     Aramco's own guideline), and two not-yet-sourced OFFSET/TECH-TRANSFER
+ *     programs (GAMI defense, LIKT) each carrying real dated national
+ *     context instead of a blank placeholder.
+ *   - UAE (MoIAT ICV + Tawazun): two distinct programs, decomposed 16 Sep
+ *     2026 (see `PROGRAMS`, keys `ae-*`) -- `ae-icv-general`, a certified
+ *     WEIGHTED MULTI-PILLAR SCORE (manufacturing/third-party spend +
+ *     investment + Emiratisation + expatriate contribution + capped bonus
+ *     categories), requiring a MoIAT-authorized audit; and `ae-tawazun-
+ *     offset`, the Tawazun Economic Council's real, sourced defense-sector
+ *     OFFSET obligation (a genuinely different mechanism run by a
+ *     genuinely different body for a genuinely different buyer, not a
+ *     variant of the general ICV score). See Section "AE Tawazun sourcing"
+ *     below for the exact figures and how this research pass resolved the
+ *     brief's own flagged "$10M vs AED10M" ambiguity.
  *   - Jordan: NOT a scored certificate at all -- a 20% PRICE PREFERENCE
  *     MARGIN for locally-manufactured products in PUBLIC TENDERS only
  *     (Cabinet-approved, per Petra/Jordan News Agency reporting Minister of
  *     Industry, Trade & Supply Yarub Qudah's announcement). This adjusts BID
  *     EVALUATION, not a company's own local-content percentage -- a
- *     genuinely different mechanism type from LCGPA/ICV.
+ *     genuinely different mechanism type from LCGPA/ICV. Single program for
+ *     now (`jo-price-preference`); no second Jordanian mechanism has been
+ *     sourced yet.
  *   - Oman, Qatar, Bahrain, Kuwait: real named programs exist (Oman runs its
  *     own separate "ICV" program; Qatar Cabinet-approved a National Local
- *     Content Strategy) but this research pass could not source an exact
- *     formula or weighting to the same rigor. Per Decision Record 8.7 these
- *     return an explicit `not-yet-sourced` state -- never a guessed formula.
+ *     Content Strategy; Kuwait's KPC/KOC run anchor-buyer-style programs;
+ *     Bahrain reserves a share of tenders for SMEs) but this research pass
+ *     has not yet sourced an exact formula or weighting to the same rigor
+ *     as SA/AE/JO. Each keeps ONE `not-yet-sourced` program for now (`om-
+ *     icv`, `qa-national-strategy`, `bh-local-content`, `kw-local-content`)
+ *     -- Decision Record 8.7: an explicit `not-yet-sourced` state, never a
+ *     guessed formula. Their own multi-program decomposition is future work
+ *     (Part 1 continues), using the exact same `PROGRAMS`/`program`
+ *     mechanism this file now generalizes for that purpose.
  *
- * Two disclosed sourcing caveats, stated plainly rather than smoothed over:
+ * Two disclosed sourcing caveats carried over from the original build,
+ * stated plainly rather than smoothed over:
  *   1. The UAE ICV master-formula figures below were extracted from an
  *      AI-summarized read of MoIAT's own published supplier certification
  *      guidelines PDF, not a byte-verified manual transcription. Treat the
@@ -56,104 +75,63 @@
  *      figure are real and sourced; the precise legal citation is not.
  *
  * ============================================================================
- * WHY SAUDI ARABIA IS MULTIPLE PROGRAMS, NOT ONE (mechanism decomposition,
- * 15 Sep 2026 -- Module08-NextPass-Agent-Brief.md, section 1a, refined by a
- * fresh dated research pass against LCGPA's own official mechanisms page,
- * Aramco's own official IKTVA guideline, and GAMI's own official site)
+ * WHY THE PROGRAM ARCHITECTURE IS NOW GENERAL, NOT SAUDI-SPECIFIC
+ * (16 Sep 2026, this pass)
  * ============================================================================
- * A single "Saudi local content score" undersells how LCGPA's own mechanisms
- * page actually describes the regime: it is a family of related but
- * genuinely distinct mechanisms, each with its own six-type classification
- * (see the taxonomy below). `SaudiProgram` and `SAUDI_PROGRAMS` decompose
- * this the same way the brief's own UAE precedent treats "the same ICV score
- * used differently in different evaluation weightings" as a usage note, not
- * a new mechanism -- but treats genuinely different pass/fail gates, bid
- * preferences, and anchor-buyer programs as what they are: separate
- * mechanisms with separate `mechanismType`s.
- *
- * Six-type taxonomy (Module08-NextPass-Agent-Brief.md section 1.0), and
- * which Saudi program maps to which type:
- *   1. Certification score (company-level, single 0-100% number)
- *        -> 'lcgpa-general' (LCGPA baseline score, unchanged from the
- *           pre-existing `eligible-spend-ratio` mechanism).
- *   2. Anchor-buyer program (one major SOE runs its own certification-style
- *      program, separate from the general government score)
- *        -> 'iktva-aramco' (Saudi Aramco IKTVA), new `anchor-buyer-score`
- *           mechanism type, real computable formula (see Section 4b).
- *   3. Category eligibility gate (pass/fail, minimum certified level or
- *      SME status just to bid in a category)
- *        -> 'mandatory-list' (LCGPA's 233+ product/service Mandatory List),
- *           new `category-eligibility-gate` mechanism type.
- *   4. Bid-evaluation weighting/price preference (shifts ranking, doesn't
- *      gate)
- *        -> 'price-preference' (LCGPA's 10% national-product price
- *           preference), REUSES the existing `price-preference-margin`
- *           shape (same shape as Jordan's mechanism -- direct validation of
- *           the brief's "shared primitives" design intent). The separate
- *           40%-of-evaluation / ~30%-consulting-IT weighting rules are NOT
- *           modeled as their own mechanisms: per the brief's own UAE
- *           precedent ("individual participating entities apply the same
- *           ICV score differently in their own evaluation weighting...
- *           this is a 'how the score gets used,' not a new mechanism"),
- *           these are usage notes attached to the 'lcgpa-general' program
- *           (see `usageNotesEn`/`usageNotesAr` below).
- *   5. SME/local spend set-aside -- no sourced Saudi-specific set-aside
- *      mechanism distinct from the Mandatory List was found in this
- *      research pass; not modeled as a separate program (avoids fabricating
- *      a mechanism that was not actually confirmed).
- *   6. Offset/tech-transfer obligation -> 'gami-defense' (GAMI's national
- *      defense-industry localization program) and 'likt' (LCGPA's own
- *      "Localization of Industry & Knowledge Transfer" program, distinct
- *      from GAMI, newly found on LCGPA's official mechanisms page). Neither
- *      has a sourced per-supplier computable formula -- both stay
- *      `not-yet-sourced`, each carrying its own real, dated national-level
- *      context rather than a blank placeholder.
- *
- * Explicitly and deliberately NOT modeled, to avoid fabrication:
- *   - LCGPA's "Minimum Local Content Threshold" (technical-evaluation-stage,
- *     contract-completion-based) appears to overlap with the sibling
- *     Module 07 tool's `getSectorBenchmark` (the Matarat-style "Target Local
- *     Content Score" already used for the hardFM benchmark). Per
- *     standalone-first architecture this module does not import Module 07's
- *     logic, and duplicating an overlapping benchmark under a different name
- *     here would risk two modules quietly disagreeing about the same real
- *     threshold -- so this is not re-modeled as a seventh Saudi program.
- *   - A possible SME/factory-level certificate on-ramp (a real MIM.gov.sa
- *     page, "Initiative of Encouraging Small and Medium Factories to Issue
- *     the Local Content Certificate", was found but its content could not be
- *     fetched -- repeated ROBOTS_DISALLOWED/timeout errors). Whether this is
- *     a distinct mechanism or simply an on-ramp into the general LCGPA score
- *     is genuinely unresolved and is disclosed as an open research item in
- *     the module's worked-example doc, not guessed at here.
- *   - The exact relationship between LCGPA's own official 40%-of-evaluation
- *     (high-value contracts, excluding sourcing contracts) weighting and a
- *     separately-cited ~30%, phased, consulting/IT-specific weighting
- *     figure could not be confirmed with full confidence -- spa.gov.sa
- *     returned 403 on every direct verification attempt in this research
- *     pass. Both figures are disclosed, side by side, in the 'lcgpa-general'
- *     usage notes below, with the unresolved relationship stated plainly
- *     rather than merged into one assumed number.
+ * The 16 Sep 2026 Saudi Arabia decomposition introduced a `SaudiProgram`
+ * union and a `SAUDI_PROGRAMS` record, scoped to Saudi Arabia only, because
+ * Saudi Arabia was the first country found to run more than one real
+ * mechanism. As soon as this same UAE research pass found Tawazun to be a
+ * second, genuinely distinct UAE mechanism, it became clear the "one
+ * country, one program" assumption baked into a per-country union type
+ * would not survive contact with the second country, let alone the four
+ * still to be researched (Oman/Qatar/Bahrain/Kuwait, per the brief's own
+ * taxonomy notes, likely also run more than one mechanism each: Oman's own
+ * ICV anchor-buyer program plus a PTLC Mandatory List; Qatar's QatarEnergy
+ * Tawteen anchor-buyer program; Kuwait's KPC/KOC anchor-buyer program plus
+ * a spend set-aside; Bahrain's SME category reservation plus a stacked
+ * price preference). Rather than duplicate the Saudi-specific pattern a
+ * second time for UAE and then a third/fourth/fifth/sixth time for the
+ * rest, this pass generalizes it once: `LocalContentProgram` is now a flat
+ * union of EVERY program key across every country (`sa-*`, `ae-*`, `jo-*`,
+ * `om-*`, `qa-*`, `bh-*`, `kw-*`), `PROGRAMS` is the single record keyed by
+ * that union, `PROGRAMS_BY_COUNTRY` lists which programs exist for a given
+ * country (for UI routing), and `DEFAULT_PROGRAM_BY_COUNTRY` is what
+ * `assessSupplierLocalContent` resolves to when `program` is omitted --
+ * always the country's ORIGINAL single pre-existing mechanism, so this
+ * refactor is a pure behavior-preserving rename for AE/JO/OM/QA/BH/KW and
+ * for Saudi Arabia's own pre-existing default (`sa-lcgpa-general`), not a
+ * silent change to what any existing caller gets back. `COUNTRY_FRAMEWORKS`
+ * (the original single-program-per-country lookup, still used by the UI's
+ * country-selector buttons) is now a derived view: `PROGRAMS[
+ * DEFAULT_PROGRAM_BY_COUNTRY[country]]`, not a second source of truth.
  *
  * ============================================================================
- * WHY BOTH SUPPLIER-LEVEL AND PORTFOLIO-LEVEL (per Maen's own "why not both")
+ * AE TAWAZUN SOURCING (16 Sep 2026) -- resolves a flagged open item
  * ============================================================================
- * Every other SI module (02 Kraljic, 04 Qualification, 05 Concentration) is
- * a supplier-level fact that a caller can also roll up to portfolio level.
- * `assessSupplierLocalContent()` below produces a per-supplier fact, usable
- * directly inside Kraljic/qualification/concentration; `rollUpPortfolioLocalContent()`
- * aggregates a set of those facts into a client-level tender-eligibility view,
- * mirroring Module 05's HHI rollup pattern -- weighted by spend share,
- * grouped by mechanism type AND, for Saudi Arabia, by program (never
- * averaged across incompatible mechanisms; see Core Instruction #7 /
- * Decision Record 8.7: never collapse a multi-dimensional assessment into
- * one fabricated composite).
- *
- * Sourced methodology (Core Instruction #2): every pillar rule below cites
- * its real source inline. Never Fabricate (#1 / Decision Record 8.7): a
- * country/context/program combination with no sourced formula returns
- * `not-yet-sourced`, never a guessed number; a country's regime that does
- * not cover private-commercial procurement returns `not-applicable`, never
- * a misleading zero.
+ * The brief flagged a "$10M vs AED10M" currency discrepancy in its own
+ * Tawazun citation, to be resolved in a later (non-Saudi) pass. This
+ * research pass resolved it: the UAE Dirham has been fixed-pegged to the US
+ * Dollar at exactly AED 3.6725 = USD 1 since 1997 (a matter of public
+ * record, not something this pass needed to re-verify per-transaction).
+ * AED 36.73 million (cited by mondaq.com's legal summary of the Tawazun
+ * Economic Council's 2019 policy guidelines) divided by 3.6725 equals
+ * essentially exactly USD 10.00 million (cited independently by both
+ * afridi-angell.com's legal summary and the US government's own
+ * trade.gov UAE Defense Country Commercial Guide). These are the SAME
+ * threshold expressed in two currencies via a fixed peg, not two different
+ * numbers -- the brief's flagged ambiguity was a citation-formatting
+ * artifact, not a real source conflict. Sourced also: a 60% offset-credit
+ * target as a share of the underlying contract value, and an 8.5%
+ * shortfall-penalty rate (payable in cash, or securable via a bank
+ * guarantee, per afridi-angell.com and mondaq.com) when accumulated credits
+ * fall short at the end of the performance period -- both real, both
+ * disclosed with their sources inline in `PROGRAMS['ae-tawazun-offset']`.
+ * No more recent (2020+) revision to these guidelines' numeric figures was
+ * found in this research pass; trade.gov's own UAE Defense guide (a US
+ * government source, generally kept current) cites the same 2019 guidelines
+ * without noting a later update, and that absence of a newer figure is
+ * disclosed rather than treated as silent confirmation nothing has changed.
  */
 
 // ---------------------------------------------------------------------------
@@ -162,23 +140,51 @@
 
 export type LocalContentCountry = 'SA' | 'AE' | 'JO' | 'OM' | 'QA' | 'BH' | 'KW';
 
-/** Saudi Arabia is the first country in this engine decomposed into multiple
- * distinct mechanisms rather than one. `undefined`/omitted resolves to
- * 'lcgpa-general' everywhere, so every pre-existing caller (and every
- * pre-existing test) that never knew about programs keeps its exact prior
- * behavior. See the file header's "WHY SAUDI ARABIA IS MULTIPLE PROGRAMS"
- * section for what each program is and its taxonomy type. */
-export type SaudiProgram =
-  | 'lcgpa-general'   // type 1: certification score (unchanged pre-existing mechanism)
-  | 'mandatory-list'  // type 3: category eligibility gate
-  | 'price-preference' // type 4: bid-evaluation price preference (reuses price-preference-margin)
-  | 'iktva-aramco'    // type 2: anchor-buyer program
-  | 'gami-defense'    // type 6: offset/tech-transfer obligation (not-yet-sourced)
-  | 'likt';           // type 6: offset/tech-transfer obligation (not-yet-sourced)
+/** Every program key across every country this engine represents, flat
+ * (not nested per-country) so the routing/resolution logic below is the
+ * same regardless of which country a program belongs to. `undefined`/
+ * omitted resolves to `DEFAULT_PROGRAM_BY_COUNTRY[country]` everywhere, so
+ * every pre-existing caller (and every pre-existing test) that never knew
+ * about programs keeps its exact prior behavior -- this is a rename/
+ * generalization of the 16 Sep 2026 Saudi-specific `SaudiProgram`, not a
+ * behavior change. See the file header's two "WHY" sections above for the
+ * full rationale and sourcing. */
+export type LocalContentProgram =
+  | 'sa-lcgpa-general'    // SA type 1: certification score (the module's original mechanism)
+  | 'sa-mandatory-list'   // SA type 3: category eligibility gate
+  | 'sa-price-preference' // SA type 4: bid-evaluation price preference (reuses price-preference-margin)
+  | 'sa-iktva-aramco'     // SA type 2: anchor-buyer program
+  | 'sa-gami-defense'     // SA type 6: offset/tech-transfer obligation (not-yet-sourced)
+  | 'sa-likt'             // SA type 6: offset/tech-transfer obligation (not-yet-sourced)
+  | 'ae-icv-general'      // AE type 1: certification score (the module's original mechanism)
+  | 'ae-tawazun-offset'   // AE type 6: offset/tech-transfer obligation (Tawazun Economic Council, real formula)
+  | 'jo-price-preference' // JO type 4: bid-evaluation price preference (the module's original mechanism)
+  | 'om-icv'              // OM: not-yet-sourced (the module's original mechanism)
+  | 'qa-national-strategy' // QA: not-yet-sourced (the module's original mechanism)
+  | 'bh-local-content'    // BH: not-yet-sourced (the module's original mechanism)
+  | 'kw-local-content';   // KW: not-yet-sourced (the module's original mechanism)
 
-export const SAUDI_PROGRAMS_LIST: SaudiProgram[] = [
-  'lcgpa-general', 'mandatory-list', 'price-preference', 'iktva-aramco', 'gami-defense', 'likt',
-];
+/** Which program `assessSupplierLocalContent` resolves to when `program` is
+ * omitted -- always each country's original pre-existing single mechanism,
+ * so this generalization changes no caller's default behavior. */
+export const DEFAULT_PROGRAM_BY_COUNTRY: Record<LocalContentCountry, LocalContentProgram> = {
+  SA: 'sa-lcgpa-general', AE: 'ae-icv-general', JO: 'jo-price-preference',
+  OM: 'om-icv', QA: 'qa-national-strategy', BH: 'bh-local-content', KW: 'kw-local-content',
+};
+
+/** Every program that exists for a given country, in display order -- used
+ * by the UI to render the routing-question button row whenever a country
+ * has more than one (today: SA and AE; every other country still has
+ * exactly one, so no routing question is shown for them yet). */
+export const PROGRAMS_BY_COUNTRY: Record<LocalContentCountry, LocalContentProgram[]> = {
+  SA: ['sa-lcgpa-general', 'sa-mandatory-list', 'sa-price-preference', 'sa-iktva-aramco', 'sa-gami-defense', 'sa-likt'],
+  AE: ['ae-icv-general', 'ae-tawazun-offset'],
+  JO: ['jo-price-preference'],
+  OM: ['om-icv'],
+  QA: ['qa-national-strategy'],
+  BH: ['bh-local-content'],
+  KW: ['kw-local-content'],
+};
 
 /** Which buyer this assessment is for -- see file header: every sourced
  * regime found is anchored in government/SOE-linked procurement. */
@@ -201,6 +207,7 @@ export type LocalContentMechanismType =
   | 'price-preference-margin'   // Jordan; Saudi LCGPA national-product preference
   | 'category-eligibility-gate' // Saudi LCGPA Mandatory List
   | 'anchor-buyer-score'        // Saudi Aramco IKTVA
+  | 'offset-obligation-gate'    // UAE Tawazun defense-sector offset obligation
   | 'not-yet-sourced';          // Oman / Qatar / Bahrain / Kuwait; Saudi GAMI / LIKT
 
 export interface CountryFrameworkInfo {
@@ -214,27 +221,26 @@ export interface CountryFrameworkInfo {
   applicableContexts: ProcurementContext[];
   sourceNoteEn: string;
   sourceNoteAr: string;
-  /** Saudi Arabia only: which of the (potentially several) Saudi programs
-   * this framework describes. Undefined for every non-SA country. */
-  program?: SaudiProgram;
+  /** Which program key (see `LocalContentProgram`) this framework describes. */
+  program: LocalContentProgram;
   /** "How the same score gets used differently by context" notes -- per the
    * brief's own UAE precedent, this is deliberately NOT a new mechanism,
-   * just disclosure text attached to the program it describes. Only
-   * populated for 'lcgpa-general'. */
+   * just disclosure text attached to the program it describes. Populated
+   * for `sa-lcgpa-general` and `ae-icv-general`. */
   usageNotesEn?: string[];
   usageNotesAr?: string[];
 }
 
 // ---------------------------------------------------------------------------
-// Section 1b — Saudi Arabia: the 6 programs (5 modeled mechanisms + the
-// general score's usage notes). See file header for full sourcing.
+// Section 1b — Saudi Arabia: 6 programs (5 modeled mechanisms + the general
+// score's usage notes). See file header for full sourcing.
 // ---------------------------------------------------------------------------
 
-export const SAUDI_PROGRAMS: Record<SaudiProgram, CountryFrameworkInfo> = {
-  'lcgpa-general': {
+const SA_PROGRAMS: Record<'sa-lcgpa-general' | 'sa-mandatory-list' | 'sa-price-preference' | 'sa-iktva-aramco' | 'sa-gami-defense' | 'sa-likt', CountryFrameworkInfo> = {
+  'sa-lcgpa-general': {
     country: 'SA', countryNameEn: 'Saudi Arabia', countryNameAr: 'المملكة العربية السعودية',
     programNameEn: 'LCGPA Local Content (general score)', programNameAr: 'المحتوى المحلي العام (هيئة المحتوى المحلي والمشتريات الحكومية)',
-    mechanismType: 'eligible-spend-ratio', program: 'lcgpa-general',
+    mechanismType: 'eligible-spend-ratio', program: 'sa-lcgpa-general',
     applicableContexts: ['government', 'semi-government-soe'],
     sourceNoteEn: 'LCGPA Guide G1 (Version 5.0, 15 Nov 2022): baseline score = locally-eligible spend / total spend across 4 pillars. Government procurement is directly covered; extended June 2022 to entities >=50% state-owned. No sourced evidence this governs private-to-private commercial contracts.',
     sourceNoteAr: 'دليل هيئة المحتوى المحلي والمشتريات الحكومية G1 (الإصدار ٥.٠، ١٥ نوفمبر ٢٠٢٢): الدرجة الأساسية = الإنفاق المؤهل محلياً ÷ إجمالي الإنفاق عبر أربعة أركان. تشمل مباشرة المشتريات الحكومية، ووُسِّع نطاقها في يونيو ٢٠٢٢ ليغطي الجهات المملوكة للدولة بنسبة ٥٠٪ فأكثر. لا يوجد دليل موثّق على سريانها على العقود التجارية بين القطاع الخاص فقط.',
@@ -247,98 +253,142 @@ export const SAUDI_PROGRAMS: Record<SaudiProgram, CountryFrameworkInfo> = {
       'يشير رقم آخر منسوب إلى وكالة الأنباء السعودية (واس) إلى ترجيح محتوى محلي يقارب ٣٠٪، متدرّج زمنياً، خاص بتقييم عطاءات قطاعي الاستشارات وتقنية المعلومات. لم يتمكن هذا البحث من التأكد بثقة كاملة مما إذا كانت هذه نفس قاعدة الـ٤٠٪ للعقود عالية القيمة موصوفة بصياغة مختلفة، أو قاعدة قطاعية منفصلة فعلاً -- إذ أعاد موقع spa.gov.sa خطأ ٤٠٣ في كل محاولة تحقق مباشرة. يُفصَح عن هذه النقطة كمسألة مفتوحة، دون حسمها بافتراض.',
     ],
   },
-  'mandatory-list': {
+  'sa-mandatory-list': {
     country: 'SA', countryNameEn: 'Saudi Arabia', countryNameAr: 'المملكة العربية السعودية',
     programNameEn: 'LCGPA Mandatory List (category eligibility gate)', programNameAr: 'القائمة الإلزامية لهيئة المحتوى المحلي (بوابة أهلية الفئة)',
-    mechanismType: 'category-eligibility-gate', program: 'mandatory-list',
+    mechanismType: 'category-eligibility-gate', program: 'sa-mandatory-list',
     applicableContexts: ['government', 'semi-government-soe'],
     sourceNoteEn: 'LCGPA\'s official Local Content Mechanisms page lists a Mandatory List of 233+ products/services where government entities MUST procure from LCGPA-certified local sources -- a pass/fail bidding gate for the listed categories, not a percentage score. No single sourced percentage threshold applies here; eligibility is binary (in-list + certified, or not).',
     sourceNoteAr: 'تُدرج الصفحة الرسمية لآليات المحتوى المحلي التابعة للهيئة قائمة إلزامية تضم أكثر من ٢٣٣ منتجاً وخدمة يتوجب على الجهات الحكومية شراءها من مصادر محلية معتمدة من الهيئة فقط -- بوابة ثنائية (نجاح/فشل) للفئات المدرجة، وليست درجة نسبية. لا تنطبق هنا نسبة مئوية موثّقة واحدة؛ الأهلية ثنائية (مدرج ومعتمد، أو لا).',
   },
-  'price-preference': {
+  'sa-price-preference': {
     country: 'SA', countryNameEn: 'Saudi Arabia', countryNameAr: 'المملكة العربية السعودية',
     programNameEn: 'LCGPA National Product Price Preference', programNameAr: 'تفضيل سعر المنتج الوطني (هيئة المحتوى المحلي)',
-    mechanismType: 'price-preference-margin', program: 'price-preference',
+    mechanismType: 'price-preference-margin', program: 'sa-price-preference',
     applicableContexts: ['government', 'semi-government-soe'],
     sourceNoteEn: 'LCGPA\'s official Local Content Mechanisms page states a 10% price preference is added to foreign products when compared against qualifying national products in government tenders -- structurally identical to Jordan\'s price-preference mechanism (a bid-evaluation adjustment, not a local-content percentage score), reusing the same computation shape.',
     sourceNoteAr: 'تنص الصفحة الرسمية لآليات المحتوى المحلي التابعة للهيئة على إضافة تفضيل سعري بنسبة ١٠٪ للمنتجات الأجنبية عند مقارنتها بالمنتجات الوطنية المؤهلة في المناقصات الحكومية -- آلية مطابقة من حيث البنية لآلية التفضيل السعري الأردنية (تعديل في تقييم العطاء، وليست درجة نسبة محتوى محلي)، وتُستخدم نفس بنية الحساب.',
   },
-  'iktva-aramco': {
+  'sa-iktva-aramco': {
     country: 'SA', countryNameEn: 'Saudi Arabia', countryNameAr: 'المملكة العربية السعودية',
     programNameEn: 'Aramco IKTVA (In-Kingdom Total Value Add)', programNameAr: 'برنامج أرامكو لإجمالي القيمة المضافة داخل المملكة (إكتفاء)',
-    mechanismType: 'anchor-buyer-score', program: 'iktva-aramco',
+    mechanismType: 'anchor-buyer-score', program: 'sa-iktva-aramco',
     applicableContexts: ['semi-government-soe'],
     sourceNoteEn: 'Aramco\'s own official "2021 iktva Guideline v13" (iktva.sa): iktva% = ((A+B+C+D+R)/E) + I, where A = local goods/services spend + local asset depreciation + Saudi-based expatriate compensation, B = Saudi workforce compensation, C = training & development spend, D = supplier development spend, R = local R&D spend, E = total costs (denominator), I = incentive bonuses (export ratio, ESG/cybersecurity/regional-HQ bonuses). This is Aramco\'s OWN separate anchor-buyer program, distinct from the LCGPA general government score -- a real, computable formula, not a guessed one. Simplification disclosed: the I bonus component is modeled here as a single optional bonus-points input (0-10, caller-supplied) rather than the full tiered export-ratio/ESG sub-formula -- directional only, not a substitute for Aramco\'s own certified iktva calculation.',
     sourceNoteAr: 'دليل أرامكو الرسمي "iktva Guideline v13 لعام ٢٠٢١" (iktva.sa): نسبة إكتفاء = ((A+B+C+D+R)/E) + I، حيث A = إنفاق السلع/الخدمات المحلية + إهلاك الأصول المحلية + تعويضات العمالة الوافدة المقيمة في السعودية، B = تعويضات القوى العاملة السعودية، C = إنفاق التدريب والتطوير، D = إنفاق تطوير الموردين، R = إنفاق البحث والتطوير المحلي، E = إجمالي التكاليف (المقام)، I = مكافآت تحفيزية (نسبة التصدير، مكافآت الاستدامة/الأمن السيبراني/المقر الإقليمي). هذا برنامج أرامكو الخاص بها كمشترٍ رئيسي، منفصل عن الدرجة الحكومية العامة لهيئة المحتوى المحلي -- صيغة حقيقية قابلة للحساب، وليست مخمّنة. تبسيط مُفصَح عنه: تُمثَّل مكافأة I هنا كمُدخل نقاط مكافأة اختياري واحد (٠-١٠، يُدخله المستخدم) بدلاً من الصيغة الفرعية الكاملة المتدرجة لنسبة التصدير/الاستدامة -- توجيهي فقط، وليس بديلاً عن حساب إكتفاء المعتمد من أرامكو نفسها.',
   },
-  'gami-defense': {
+  'sa-gami-defense': {
     country: 'SA', countryNameEn: 'Saudi Arabia', countryNameAr: 'المملكة العربية السعودية',
     programNameEn: 'GAMI Defense Localization', programNameAr: 'برنامج التوطين الدفاعي (الهيئة العامة للصناعات العسكرية)',
-    mechanismType: 'not-yet-sourced', program: 'gami-defense',
+    mechanismType: 'not-yet-sourced', program: 'sa-gami-defense',
     applicableContexts: [],
     sourceNoteEn: 'GAMI\'s own official site states national defense-sector localization reached 24.89% as of end-2024, with a public target of >50% by 2030. No publicly disclosed per-supplier computable formula, joint-venture requirement structure, or offset calculation methodology was found in this research pass -- a real, dated national-level figure is disclosed here rather than a fabricated per-supplier score.',
     sourceNoteAr: 'يذكر الموقع الرسمي للهيئة العامة للصناعات العسكرية (GAMI) أن نسبة التوطين في قطاع الصناعات الدفاعية الوطنية بلغت ٢٤.٨٩٪ حتى نهاية عام ٢٠٢٤، مع هدف معلن يتجاوز ٥٠٪ بحلول عام ٢٠٣٠. لم يُعثر في هذا البحث على صيغة حساب علنية على مستوى المورّد، أو هيكل اشتراط مشروع مشترك، أو منهجية حساب مقاصة -- يُفصَح هنا عن رقم وطني حقيقي ومؤرَّخ بدلاً من درجة مورّد مختلقة.',
   },
-  likt: {
+  'sa-likt': {
     country: 'SA', countryNameEn: 'Saudi Arabia', countryNameAr: 'المملكة العربية السعودية',
     programNameEn: 'LIKT (Localization of Industry & Knowledge Transfer)', programNameAr: 'برنامج توطين الصناعة ونقل المعرفة (LIKT)',
-    mechanismType: 'not-yet-sourced', program: 'likt',
+    mechanismType: 'not-yet-sourced', program: 'sa-likt',
     applicableContexts: [],
     sourceNoteEn: 'LCGPA\'s own official Local Content Mechanisms page names a distinct "LIKT" (Localization of Industry & Knowledge Transfer) program aimed at localizing targeted industries through collaboration with global investors and technology leaders -- genuinely new to this research pass and distinct from GAMI\'s defense-specific program. No per-supplier computable formula was found; deliberately not guessed.',
     sourceNoteAr: 'تسمّي الصفحة الرسمية لآليات المحتوى المحلي التابعة للهيئة برنامجاً مستقلاً يُدعى "LIKT" (توطين الصناعة ونقل المعرفة) يهدف إلى توطين صناعات مستهدفة عبر التعاون مع مستثمرين عالميين وقادة تقنيين -- برنامج جديد فعلاً اكتُشف في هذا البحث ومختلف عن برنامج الهيئة العامة للصناعات العسكرية الخاص بالدفاع. لم يُعثر على صيغة حساب على مستوى المورّد؛ لم يتم تخمينها عمداً.',
   },
 };
 
-export const COUNTRY_FRAMEWORKS: Record<LocalContentCountry, CountryFrameworkInfo> = {
-  SA: SAUDI_PROGRAMS['lcgpa-general'],
-  AE: {
+// ---------------------------------------------------------------------------
+// Section 1c — UAE: 2 programs (ae-icv-general + ae-tawazun-offset). See
+// file header's "AE TAWAZUN SOURCING" section for the full sourcing.
+// ---------------------------------------------------------------------------
+
+const AE_PROGRAMS: Record<'ae-icv-general' | 'ae-tawazun-offset', CountryFrameworkInfo> = {
+  'ae-icv-general': {
     country: 'AE', countryNameEn: 'United Arab Emirates', countryNameAr: 'دولة الإمارات العربية المتحدة',
     programNameEn: 'National In-Country Value (ICV)', programNameAr: 'برنامج القيمة الوطنية المضافة (ICV)',
-    mechanismType: 'weighted-pillar-score',
+    mechanismType: 'weighted-pillar-score', program: 'ae-icv-general',
     applicableContexts: ['government', 'semi-government-soe'],
-    sourceNoteEn: "MoIAT National ICV Program (unified with ADNOC's original ICV program): certified weighted score across Manufacturing/Third-Party Spend, Investment, Emiratisation, Expatriate Contribution, and capped bonus categories, audited by a MoIAT-authorized firm, 14-month validity. Framed around public spending and \"Program Partner\" (government/semi-government) tenders -- no sourced evidence of a private-to-private mandate. Formula figures below are a best-available reconstruction from public secondary sourcing of the official guideline document, not a byte-verified transcription -- verify against the primary MoIAT document before relying on this for a real certification decision.",
-    sourceNoteAr: 'برنامج القيمة الوطنية المضافة الوطني التابع لوزارة الصناعة والتقنية المتقدمة (موحّد الآن مع برنامج أدنوك الأصلي): درجة مرجحة معتمدة عبر التصنيع/إنفاق الطرف الثالث، الاستثمار، التوطين، مساهمة العمالة الوافدة، وفئات مكافآت محدودة السقف، يدققها مكتب معتمد من الوزارة، وصلاحية ١٤ شهراً. يتمحور حول الإنفاق العام ومناقصات "شركاء البرنامج" (الحكومة وشبه الحكومة) -- لا يوجد دليل موثّق على إلزاميته بين القطاع الخاص فقط. أرقام الصيغة أدناه إعادة بناء اعتماداً على أفضل مصادر ثانوية متاحة للدليل الرسمي، وليست نسخاً حرفياً موثقاً -- يُنصح بالتحقق من الوثيقة الأصلية للوزارة قبل الاعتماد عليها في قرار تصديق فعلي.',
+    sourceNoteEn: "MoIAT National ICV Program (unified with ADNOC's original ICV program): certified weighted score across Manufacturing/Third-Party Spend, Investment, Emiratisation, Expatriate Contribution, and capped bonus categories, audited by a MoIAT-authorized firm, 14-month validity. Framed around public spending and \"Program Partner\" (government/semi-government) tenders -- no sourced evidence of a private-to-private mandate. Formula figures below are a best-available reconstruction from public secondary sourcing of the official guideline document, not a byte-verified transcription -- verify against the primary MoIAT document before relying on this for a real certification decision. MoIAT's own official ICV program page (moiat.gov.ae) confirms ICV certification is an INCENTIVE -- certified suppliers \"gain advantages during the award of tenders and contracts based on their ICV score\" -- not a mandatory category gate like Saudi's Mandatory List; this research pass found no sourced evidence of a mandatory ICV-only bidding category, so none is modeled here (a real negative finding, not an oversight).",
+    sourceNoteAr: 'برنامج القيمة الوطنية المضافة الوطني التابع لوزارة الصناعة والتقنية المتقدمة (موحّد الآن مع برنامج أدنوك الأصلي): درجة مرجحة معتمدة عبر التصنيع/إنفاق الطرف الثالث، الاستثمار، التوطين، مساهمة العمالة الوافدة، وفئات مكافآت محدودة السقف، يدققها مكتب معتمد من الوزارة، وصلاحية ١٤ شهراً. يتمحور حول الإنفاق العام ومناقصات "شركاء البرنامج" (الحكومة وشبه الحكومة) -- لا يوجد دليل موثّق على إلزاميته بين القطاع الخاص فقط. أرقام الصيغة أدناه إعادة بناء اعتماداً على أفضل مصادر ثانوية متاحة للدليل الرسمي، وليست نسخاً حرفياً موثقاً -- يُنصح بالتحقق من الوثيقة الأصلية للوزارة قبل الاعتماد عليها في قرار تصديق فعلي. تؤكد الصفحة الرسمية لبرنامج ICV التابعة لوزارة الصناعة (moiat.gov.ae) أن شهادة ICV تحفيزية -- تحصل الشركات المعتمدة على "مزايا عند ترسية المناقصات والعقود بناءً على درجة ICV الخاصة بها" -- وليست بوابة فئة إلزامية كالقائمة الإلزامية السعودية؛ لم يجد هذا البحث دليلاً موثّقاً على فئة مناقصات إلزامية تقتصر على شهادة ICV، لذا لم تُنمذَج هنا (نتيجة سلبية حقيقية، وليست إغفالاً).',
+    usageNotesEn: [
+      'Abu Dhabi\'s own Department of Economic Development (idb.added.gov.ae, its In-Country Value / ADLC FAQ page) states: "The ICV factor accounts for 40% of the financial evaluation" in Abu Dhabi tenders, and that a bidder who does not submit an ICV certificate receives zero points on that 40% -- a real, sourced, heavily-weighted incentive, though this is an Abu Dhabi emirate-level figure, not confirmed as the UAE-wide MoIAT figure (the national MoIAT page does not itself state a percentage). Per the brief\'s own precedent for this exact situation: this is "how the score gets used" by one specific evaluating entity, not a new mechanism -- shown here as a usage note on the existing general score.',
+    ],
+    usageNotesAr: [
+      'تذكر دائرة التنمية الاقتصادية في أبوظبي (صفحة أسئلة القيمة المحلية/ADLC على idb.added.gov.ae): "يمثّل عامل القيمة المحلية ٤٠٪ من التقييم المالي" في مناقصات أبوظبي، وأن مقدّم العطاء الذي لا يقدّم شهادة ICV يحصل على صفر نقاط من هذه الـ٤٠٪ -- حافز حقيقي وموثّق وذو وزن كبير، إلا أنه رقم على مستوى إمارة أبوظبي، وليس مؤكداً كرقم وطني موحّد لدى الوزارة (الصفحة الوطنية للوزارة لا تذكر نسبة بعينها). وفق سابقة الموجز نفسها لهذه الحالة تحديداً: هذا "كيفية استخدام الدرجة" من جهة تقييم واحدة محددة، وليس آلية جديدة -- يُعرض هنا كملاحظة استخدام على الدرجة العامة القائمة.',
+    ],
   },
-  JO: {
+  'ae-tawazun-offset': {
+    country: 'AE', countryNameEn: 'United Arab Emirates', countryNameAr: 'دولة الإمارات العربية المتحدة',
+    programNameEn: 'Tawazun Economic Program (defense offset obligation)', programNameAr: 'البرنامج الاقتصادي توازن (التزام المقاصة الدفاعية)',
+    mechanismType: 'offset-obligation-gate', program: 'ae-tawazun-offset',
+    applicableContexts: ['government'],
+    sourceNoteEn: 'The Tawazun Economic Council\'s 2019 policy guidelines (per afridi-angell.com, mondaq.com legal summaries, and the US government\'s own trade.gov UAE Defense Country Commercial Guide, none flagging a more recent revision): offset obligations trigger on UAE Armed Forces / Abu Dhabi Police defense contracts valued at or above USD 10 million (= AED 36.73 million at the UAE\'s fixed USD peg of 3.6725 -- the SAME threshold in two currencies, resolving a currency-citation ambiguity flagged in this module\'s original brief). The required offset-credit target is 60% of the underlying contract value; a shortfall at the end of the performance period can be settled by paying 8.5% of the shortfall value (or rolling the obligation into a new project) -- contractors also post a bank guarantee of 8.5% of their offset obligation to secure performance. This is Tawazun\'s own separate defense-sector program, run by a different body for a different buyer (UAE Armed Forces / Abu Dhabi Police, via the Tawazun Economic Council) than MoIAT\'s general ICV program -- a genuinely distinct mechanism, not a variant of the ICV score.',
+    sourceNoteAr: 'إرشادات السياسة الصادرة عن مجلس توازن الاقتصادي عام ٢٠١٩ (وفق ملخصات قانونية من afridi-angell.com وmondaq.com، ودليل الحكومة الأمريكية الرسمي لقطاع الدفاع الإماراتي على trade.gov، دون أن يشير أي منها إلى تحديث أحدث): تُستحق التزامات المقاصة على عقود القوات المسلحة الإماراتية/شرطة أبوظبي الدفاعية التي تبلغ قيمتها ١٠ ملايين دولار أمريكي أو أكثر (= ٣٦.٧٣ مليون درهم إماراتي وفق سعر الصرف الثابت للدرهم عند ٣.٦٧٢٥ -- وهو نفس الحد بعملتين، مما يحسم غموضاً في الاستشهاد بالعملة أشار إليه الموجز الأصلي لهذه الوحدة). الهدف المطلوب من ائتمانات المقاصة هو ٦٠٪ من قيمة العقد الأساسي؛ ويمكن تسوية أي نقص في نهاية فترة الأداء بدفع ٨.٥٪ من قيمة النقص (أو ترحيل الالتزام إلى مشروع جديد) -- كما يقدّم المقاولون ضماناً بنكياً بنسبة ٨.٥٪ من التزامهم بالمقاصة لضمان الأداء. هذا برنامج توازن الدفاعي الخاص، تديره جهة مختلفة لمشترٍ مختلف (القوات المسلحة الإماراتية/شرطة أبوظبي، عبر مجلس توازن الاقتصادي) عن برنامج ICV العام لدى وزارة الصناعة -- آلية مختلفة فعلاً، وليست نسخة من درجة ICV.',
+  },
+};
+
+// ---------------------------------------------------------------------------
+// Section 1d — Jordan / Oman / Qatar / Bahrain / Kuwait: one program each
+// for now (unchanged content, renamed keys -- see file header).
+// ---------------------------------------------------------------------------
+
+const JO_OM_QA_BH_KW_PROGRAMS: Record<'jo-price-preference' | 'om-icv' | 'qa-national-strategy' | 'bh-local-content' | 'kw-local-content', CountryFrameworkInfo> = {
+  'jo-price-preference': {
     country: 'JO', countryNameEn: 'Jordan', countryNameAr: 'المملكة الأردنية الهاشمية',
     programNameEn: 'National Industry Price Preference', programNameAr: 'تفضيل السعر للصناعة الوطنية',
-    mechanismType: 'price-preference-margin',
+    mechanismType: 'price-preference-margin', program: 'jo-price-preference',
     applicableContexts: ['government'],
     sourceNoteEn: "Cabinet-approved 20% price preference for locally-manufactured products in public tenders, announced by Jordan's Minister of Industry, Trade & Supply (per Petra, Jordan's official state news agency). This adjusts bid evaluation (a price handicap favoring local bidders), not a company's own local-content percentage -- a different mechanism from LCGPA/ICV. The precise governing bylaw/regulation number was not identified in available sourcing; the mechanism and 20% figure are real and sourced, the exact legal citation is not.",
     sourceNoteAr: 'تفضيل سعري بنسبة ٢٠٪ للمنتجات المصنّعة محلياً في المناقصات الحكومية، أقرّه مجلس الوزراء وأعلنه وزير الصناعة والتجارة والتموين الأردني (بحسب وكالة الأنباء الأردنية الرسمية "بترا"). يُطبَّق هذا التفضيل على تقييم العطاءات (خصم سعري لصالح المورّدين المحليين)، وليس كنسبة محتوى محلي خاصة بالشركة -- آلية مختلفة عن LCGPA/ICV. لم يتم تحديد رقم النظام أو التشريع الدقيق ضمن المصادر المتاحة؛ الآلية والنسبة ٢٠٪ موثّقتان، أما الاستشهاد القانوني الدقيق فغير مؤكد.',
   },
-  OM: {
+  'om-icv': {
     country: 'OM', countryNameEn: 'Oman', countryNameAr: 'سلطنة عُمان',
     programNameEn: 'In-Country Value (ICV) -- not yet sourced', programNameAr: 'القيمة المحلية (ICV) — غير موثّقة بعد',
-    mechanismType: 'not-yet-sourced',
+    mechanismType: 'not-yet-sourced', program: 'om-icv',
     applicableContexts: [],
     sourceNoteEn: "Oman runs its own separate ICV program (distinct from the UAE's, historically anchored in oil & gas / large-JV procurement). This research pass could not confirm an exact pillar formula or weighting to the same rigor as SA/AE/JO -- deliberately not guessed.",
     sourceNoteAr: 'تدير عُمان برنامج قيمة محلية (ICV) خاصاً بها (مختلف عن برنامج الإمارات، وتاريخياً مرتبط بقطاع النفط والغاز والمشاريع المشتركة الكبرى). لم يتمكن هذا البحث من تأكيد صيغة أركان دقيقة أو أوزان بنفس دقة السعودية والإمارات والأردن -- ولم يتم تخمينها عمداً.',
   },
-  QA: {
+  'qa-national-strategy': {
     country: 'QA', countryNameEn: 'Qatar', countryNameAr: 'دولة قطر',
     programNameEn: 'National Local Content Strategy -- not yet sourced', programNameAr: 'الاستراتيجية الوطنية للمحتوى المحلي — غير موثّقة بعد',
-    mechanismType: 'not-yet-sourced',
+    mechanismType: 'not-yet-sourced', program: 'qa-national-strategy',
     applicableContexts: [],
     sourceNoteEn: "Qatar's Cabinet approved a National Local Content Strategy recently -- too new for a public formula to be sourced as of this research pass. Deliberately not guessed.",
     sourceNoteAr: 'أقرّ مجلس وزراء دولة قطر مؤخراً استراتيجية وطنية للمحتوى المحلي -- لا تزال حديثة العهد بحيث لم تُنشر صيغة حساب علنية حتى وقت هذا البحث. لم يتم تخمينها عمداً.',
   },
-  BH: {
+  'bh-local-content': {
     country: 'BH', countryNameEn: 'Bahrain', countryNameAr: 'مملكة البحرين',
     programNameEn: 'Local content framework -- not yet sourced', programNameAr: 'إطار المحتوى المحلي — غير موثّق بعد',
-    mechanismType: 'not-yet-sourced',
+    mechanismType: 'not-yet-sourced', program: 'bh-local-content',
     applicableContexts: [],
     sourceNoteEn: 'This research pass found no formalized, publicly-documented national local-content scoring framework for Bahrain to the rigor applied to SA/AE/JO. Deliberately not guessed.',
     sourceNoteAr: 'لم يعثر هذا البحث على إطار وطني موثّق علنياً لتقييم المحتوى المحلي في مملكة البحرين بنفس دقة السعودية والإمارات والأردن. لم يتم تخمينه عمداً.',
   },
-  KW: {
+  'kw-local-content': {
     country: 'KW', countryNameEn: 'Kuwait', countryNameAr: 'دولة الكويت',
     programNameEn: 'Local content framework -- not yet sourced', programNameAr: 'إطار المحتوى المحلي — غير موثّق بعد',
-    mechanismType: 'not-yet-sourced',
+    mechanismType: 'not-yet-sourced', program: 'kw-local-content',
     applicableContexts: [],
     sourceNoteEn: 'This research pass found no formalized, publicly-documented national local-content scoring framework for Kuwait to the rigor applied to SA/AE/JO. Deliberately not guessed.',
     sourceNoteAr: 'لم يعثر هذا البحث على إطار وطني موثّق علنياً لتقييم المحتوى المحلي في دولة الكويت بنفس دقة السعودية والإمارات والأردن. لم يتم تخمينه عمداً.',
   },
+};
+
+export const PROGRAMS: Record<LocalContentProgram, CountryFrameworkInfo> = {
+  ...SA_PROGRAMS, ...AE_PROGRAMS, ...JO_OM_QA_BH_KW_PROGRAMS,
+};
+
+/** Derived view, kept for the UI's country-selector buttons and any caller
+ * that only ever wants "the" framework for a country: each country's
+ * DEFAULT program's framework. Not a second source of truth -- computed
+ * from `PROGRAMS`. */
+export const COUNTRY_FRAMEWORKS: Record<LocalContentCountry, CountryFrameworkInfo> = {
+  SA: PROGRAMS[DEFAULT_PROGRAM_BY_COUNTRY.SA],
+  AE: PROGRAMS[DEFAULT_PROGRAM_BY_COUNTRY.AE],
+  JO: PROGRAMS[DEFAULT_PROGRAM_BY_COUNTRY.JO],
+  OM: PROGRAMS[DEFAULT_PROGRAM_BY_COUNTRY.OM],
+  QA: PROGRAMS[DEFAULT_PROGRAM_BY_COUNTRY.QA],
+  BH: PROGRAMS[DEFAULT_PROGRAM_BY_COUNTRY.BH],
+  KW: PROGRAMS[DEFAULT_PROGRAM_BY_COUNTRY.KW],
 };
 
 // ---------------------------------------------------------------------------
@@ -347,16 +397,16 @@ export const COUNTRY_FRAMEWORKS: Record<LocalContentCountry, CountryFrameworkInf
 // ---------------------------------------------------------------------------
 
 export interface SupplierLocalContentInputs {
-  /** LCGPA general (SA / 'lcgpa-general') pillars -- SAR, same real Guide G1
-   * structure as lcgpaLocalContent.ts, expressed as this SUPPLIER's own
-   * spend/labor breakdown. */
+  /** LCGPA general (SA / 'sa-lcgpa-general') pillars -- SAR, same real
+   * Guide G1 structure as lcgpaLocalContent.ts, expressed as this
+   * SUPPLIER's own spend/labor breakdown. */
   sa?: {
     localLaborSAR: number | null; expatLaborSAR: number | null;
     localGoodsServicesSAR: number | null; foreignGoodsServicesSAR: number | null;
     capacityBuildingSAR: number | null;
     localAssetDepreciationSAR: number | null; totalAssetDepreciationSAR: number | null;
   };
-  /** LCGPA Mandatory List (SA / 'mandatory-list') -- category eligibility
+  /** LCGPA Mandatory List (SA / 'sa-mandatory-list') -- category eligibility
    * gate inputs, deliberately binary (see file header: no sourced
    * percentage threshold). */
   saMandatoryList?: {
@@ -367,14 +417,14 @@ export interface SupplierLocalContentInputs {
      * required to bid in that category? Irrelevant if not in the list. */
     certifiedForCategory: boolean | null;
   };
-  /** LCGPA national-product price preference (SA / 'price-preference') --
+  /** LCGPA national-product price preference (SA / 'sa-price-preference') --
    * % of this bid's value that is Saudi-national-product (self-reported,
    * caller-supplied), same shape as Jordan's mechanism. */
   saPricePreference?: {
     bidValueLocallyManufacturedPct: number | null;
   };
-  /** Aramco IKTVA (SA / 'iktva-aramco') -- SAR, per Aramco's own official
-   * formula (see SAUDI_PROGRAMS['iktva-aramco'].sourceNoteEn). */
+  /** Aramco IKTVA (SA / 'sa-iktva-aramco') -- SAR, per Aramco's own official
+   * formula (see PROGRAMS['sa-iktva-aramco'].sourceNoteEn). */
   iktva?: {
     goodsServicesLocalSAR: number | null;
     assetDepreciationLocalSAR: number | null;
@@ -389,7 +439,8 @@ export interface SupplierLocalContentInputs {
      * sub-formula (see sourceNoteEn). */
     incentiveBonusPct: number | null;
   };
-  /** UAE ICV (AE) pillars -- AED. Field-level sourced bands documented next to their use in computeIcvAe(). */
+  /** UAE ICV (AE / 'ae-icv-general') pillars -- AED. Field-level sourced
+   * bands documented next to their use in computeIcvAe(). */
   ae?: {
     manufacturingOrThirdPartySpendLocalAED: number | null;
     manufacturingOrThirdPartySpendTotalAED: number | null;
@@ -400,6 +451,16 @@ export interface SupplierLocalContentInputs {
     emiratiHeadcountGrowthPct: number | null;
     investmentGrowthPct: number | null;
     registeredOnMainland: boolean | null;
+  };
+  /** Tawazun defense offset (AE / 'ae-tawazun-offset') -- AED, per the
+   * Tawazun Economic Council's 2019 policy guidelines (see PROGRAMS[
+   * 'ae-tawazun-offset'].sourceNoteEn for the full sourcing). */
+  aeTawazun?: {
+    contractValueAED: number | null;
+    /** Optional -- how much offset credit this contractor has already
+     * earned/banked toward this obligation, if known. Omit/null if unknown
+     * (e.g. early in the contract, before any offset activity). */
+    offsetCreditsEarnedAED: number | null;
   };
   /** Jordan price-preference mechanism -- % of this bid's value that is
    * Jordanian-manufactured (self-reported, caller-supplied). */
@@ -451,6 +512,25 @@ export interface AnchorBuyerScoreResult {
   incentiveBonusPct: number | null;
 }
 
+export interface OffsetObligationGateResult {
+  mechanismType: 'offset-obligation-gate';
+  /** true = contract value meets/exceeds the threshold (an obligation
+   * exists), false = below threshold (no obligation), null = contract
+   * value not supplied. */
+  triggersObligation: boolean | null;
+  thresholdAED: number;
+  /** 60% of contractValueAED, only when triggersObligation === true;
+   * 0 when triggersObligation === false (no obligation to speak of);
+   * null when triggersObligation itself is unknown. */
+  requiredOffsetCreditsAED: number | null;
+  offsetCreditsEarnedAED: number | null;
+  /** max(0, required - earned), only computable once both are known. */
+  shortfallAED: number | null;
+  /** 8.5% of shortfallAED -- the real sourced settlement/bank-guarantee
+   * rate, only computable once shortfallAED is known. */
+  shortfallPenaltyAED: number | null;
+}
+
 export interface NotYetSourcedResult {
   mechanismType: 'not-yet-sourced';
 }
@@ -461,15 +541,16 @@ export type LocalContentComputation =
   | PricePreferenceMarginResult
   | CategoryEligibilityGateResult
   | AnchorBuyerScoreResult
+  | OffsetObligationGateResult
   | NotYetSourcedResult;
 
 export type LocalContentApplicability = 'applicable' | 'not-applicable' | 'insufficient-data';
 
 export interface LocalContentAssessment {
   country: LocalContentCountry;
-  /** Only meaningful for SA; null for every other country. Always resolved
-   * (never left undefined) so callers/UI never have to guess the default. */
-  program: SaudiProgram | null;
+  /** Always resolved -- `DEFAULT_PROGRAM_BY_COUNTRY[country]` when the
+   * caller omits `program`, so no caller ever has to guess a default. */
+  program: LocalContentProgram;
   procurementContext: ProcurementContext;
   applicability: LocalContentApplicability;
   framework: CountryFrameworkInfo;
@@ -510,7 +591,7 @@ function computeLcgpaSa(sa: NonNullable<SupplierLocalContentInputs['sa']>): Elig
 
 // ---------------------------------------------------------------------------
 // Section 4b — SA: LCGPA Mandatory List category-eligibility-gate (type 3).
-// Deliberately binary -- see SAUDI_PROGRAMS['mandatory-list'].sourceNoteEn
+// Deliberately binary -- see PROGRAMS['sa-mandatory-list'].sourceNoteEn
 // for why no percentage threshold is modeled.
 // ---------------------------------------------------------------------------
 
@@ -548,7 +629,7 @@ function computePricePreferenceMargin(marginPct: number, sharePct: number | null
 
 // ---------------------------------------------------------------------------
 // Section 4d — SA: Aramco IKTVA anchor-buyer-score (type 2). Real formula
-// from Aramco's own official guideline -- see SAUDI_PROGRAMS['iktva-aramco'].
+// from Aramco's own official guideline -- see PROGRAMS['sa-iktva-aramco'].
 // iktva% = ((A+B+C+D+R)/E) + I
 // ---------------------------------------------------------------------------
 
@@ -578,9 +659,9 @@ function computeIktvaAramco(iktva: NonNullable<SupplierLocalContentInputs['iktva
 // ---------------------------------------------------------------------------
 // Section 5 — AE: UAE ICV weighted-pillar-score. Banded percentages sourced
 // from a public secondary read of MoIAT's official supplier certification
-// guidelines (see COUNTRY_FRAMEWORKS.AE.sourceNoteEn for the verification
-// caveat). Each band is disclosed per-pillar, not hidden inside one opaque
-// number.
+// guidelines (see PROGRAMS['ae-icv-general'].sourceNoteEn for the
+// verification caveat). Each band is disclosed per-pillar, not hidden
+// inside one opaque number.
 // ---------------------------------------------------------------------------
 
 /** Investment pillar: NBV-ratio component (x0.1) + a progressive component
@@ -678,6 +759,36 @@ function computeIcvAe(ae: NonNullable<SupplierLocalContentInputs['ae']>): Weight
 }
 
 // ---------------------------------------------------------------------------
+// Section 5b — AE: Tawazun defense offset-obligation-gate (type 6). Real,
+// sourced, computable -- see PROGRAMS['ae-tawazun-offset'] and the file
+// header's "AE TAWAZUN SOURCING" section.
+// ---------------------------------------------------------------------------
+
+/** AED 36.73M -- the fixed-peg equivalent of the sourced USD 10M threshold
+ * (AED/USD peg = 3.6725, unchanged since 1997). */
+export const TAWAZUN_OFFSET_THRESHOLD_AED = 36_730_000;
+export const TAWAZUN_OFFSET_TARGET_PCT = 60;
+export const TAWAZUN_SHORTFALL_PENALTY_PCT = 8.5;
+
+function computeTawazunOffset(input: NonNullable<SupplierLocalContentInputs['aeTawazun']>): OffsetObligationGateResult {
+  const contractValue = input.contractValueAED;
+  const triggersObligation = contractValue === null || contractValue === undefined ? null : contractValue >= TAWAZUN_OFFSET_THRESHOLD_AED;
+  const requiredOffsetCreditsAED = triggersObligation === null
+    ? null
+    : triggersObligation === false
+      ? 0
+      : (contractValue as number) * TAWAZUN_OFFSET_TARGET_PCT / 100;
+  const earned = input.offsetCreditsEarnedAED ?? null;
+  const shortfallAED = requiredOffsetCreditsAED !== null && earned !== null ? Math.max(0, requiredOffsetCreditsAED - earned) : null;
+  const shortfallPenaltyAED = shortfallAED !== null ? (shortfallAED * TAWAZUN_SHORTFALL_PENALTY_PCT) / 100 : null;
+  return {
+    mechanismType: 'offset-obligation-gate',
+    triggersObligation, thresholdAED: TAWAZUN_OFFSET_THRESHOLD_AED,
+    requiredOffsetCreditsAED, offsetCreditsEarnedAED: earned, shortfallAED, shortfallPenaltyAED,
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Section 6 — JO/SA: price-preference-margin (a bid-evaluation adjustment,
 // not a local-content score)
 // ---------------------------------------------------------------------------
@@ -696,19 +807,19 @@ function computePricePreferenceSa(sa: NonNullable<SupplierLocalContentInputs['sa
 // ---------------------------------------------------------------------------
 // Section 7 — top-level supplier assessment: resolves applicability first
 // (government/SOE vs private-commercial, and sourced vs not-yet-sourced),
-// then computes with the right mechanism. `program` is only meaningful when
-// country === 'SA'; omitted/undefined resolves to 'lcgpa-general' so every
-// pre-existing caller keeps its exact prior behavior.
+// then computes with the right mechanism. `program` defaults to
+// `DEFAULT_PROGRAM_BY_COUNTRY[country]` when omitted, so every pre-existing
+// caller keeps its exact prior behavior.
 // ---------------------------------------------------------------------------
 
 export function assessSupplierLocalContent(
   country: LocalContentCountry,
   procurementContext: ProcurementContext,
   inputs: SupplierLocalContentInputs,
-  program?: SaudiProgram,
+  program?: LocalContentProgram,
 ): LocalContentAssessment {
-  const resolvedProgram: SaudiProgram | null = country === 'SA' ? (program ?? 'lcgpa-general') : null;
-  const framework: CountryFrameworkInfo = country === 'SA' ? SAUDI_PROGRAMS[resolvedProgram as SaudiProgram] : COUNTRY_FRAMEWORKS[country];
+  const resolvedProgram: LocalContentProgram = program ?? DEFAULT_PROGRAM_BY_COUNTRY[country];
+  const framework: CountryFrameworkInfo = PROGRAMS[resolvedProgram];
 
   if (framework.mechanismType === 'not-yet-sourced') {
     return {
@@ -729,32 +840,37 @@ export function assessSupplierLocalContent(
   }
 
   let computation: LocalContentComputation;
-  if (country === 'SA' && resolvedProgram === 'lcgpa-general') {
+  if (resolvedProgram === 'sa-lcgpa-general') {
     if (!inputs.sa) {
       return { country, program: resolvedProgram, procurementContext, applicability: 'applicable', framework, computation: { mechanismType: 'eligible-spend-ratio', scorePct: null, pillars: [] }, certificationCaveatEn: NOT_CERTIFIED_EN, certificationCaveatAr: NOT_CERTIFIED_AR, reasonEn: 'No SA/LCGPA pillar inputs supplied yet.', reasonAr: 'لم تُدخل بيانات أركان LCGPA بعد.' };
     }
     computation = computeLcgpaSa(inputs.sa);
-  } else if (country === 'SA' && resolvedProgram === 'mandatory-list') {
+  } else if (resolvedProgram === 'sa-mandatory-list') {
     if (!inputs.saMandatoryList) {
       return { country, program: resolvedProgram, procurementContext, applicability: 'applicable', framework, computation: { mechanismType: 'category-eligibility-gate', inMandatoryListCategory: null, certifiedForCategory: null, eligibleToBid: null }, certificationCaveatEn: NOT_CERTIFIED_EN, certificationCaveatAr: NOT_CERTIFIED_AR, reasonEn: 'No Mandatory List category/certification inputs supplied yet.', reasonAr: 'لم تُدخل بيانات فئة القائمة الإلزامية أو الاعتماد بعد.' };
     }
     computation = computeMandatoryListSa(inputs.saMandatoryList);
-  } else if (country === 'SA' && resolvedProgram === 'price-preference') {
+  } else if (resolvedProgram === 'sa-price-preference') {
     if (!inputs.saPricePreference) {
       return { country, program: resolvedProgram, procurementContext, applicability: 'applicable', framework, computation: computePricePreferenceMargin(SAUDI_PRICE_PREFERENCE_MARGIN_PCT, null), certificationCaveatEn: NOT_CERTIFIED_EN, certificationCaveatAr: NOT_CERTIFIED_AR, reasonEn: 'No Saudi locally-manufactured bid share supplied yet.', reasonAr: 'لم تُدخل نسبة التصنيع المحلي في العطاء بعد.' };
     }
     computation = computePricePreferenceSa(inputs.saPricePreference);
-  } else if (country === 'SA' && resolvedProgram === 'iktva-aramco') {
+  } else if (resolvedProgram === 'sa-iktva-aramco') {
     if (!inputs.iktva) {
       return { country, program: resolvedProgram, procurementContext, applicability: 'applicable', framework, computation: { mechanismType: 'anchor-buyer-score', scorePct: null, components: [], totalCostsSAR: null, incentiveBonusPct: null }, certificationCaveatEn: NOT_CERTIFIED_EN, certificationCaveatAr: NOT_CERTIFIED_AR, reasonEn: 'No IKTVA inputs supplied yet.', reasonAr: 'لم تُدخل بيانات إكتفاء بعد.' };
     }
     computation = computeIktvaAramco(inputs.iktva);
-  } else if (country === 'AE') {
+  } else if (resolvedProgram === 'ae-icv-general') {
     if (!inputs.ae) {
       return { country, program: resolvedProgram, procurementContext, applicability: 'applicable', framework, computation: { mechanismType: 'weighted-pillar-score', scorePct: null, pillars: [], mainlandUpliftApplied: false }, certificationCaveatEn: NOT_CERTIFIED_EN, certificationCaveatAr: NOT_CERTIFIED_AR, reasonEn: 'No AE/ICV pillar inputs supplied yet.', reasonAr: 'لم تُدخل بيانات أركان ICV بعد.' };
     }
     computation = computeIcvAe(inputs.ae);
-  } else if (country === 'JO') {
+  } else if (resolvedProgram === 'ae-tawazun-offset') {
+    if (!inputs.aeTawazun) {
+      return { country, program: resolvedProgram, procurementContext, applicability: 'applicable', framework, computation: { mechanismType: 'offset-obligation-gate', triggersObligation: null, thresholdAED: TAWAZUN_OFFSET_THRESHOLD_AED, requiredOffsetCreditsAED: null, offsetCreditsEarnedAED: null, shortfallAED: null, shortfallPenaltyAED: null }, certificationCaveatEn: NOT_CERTIFIED_EN, certificationCaveatAr: NOT_CERTIFIED_AR, reasonEn: 'No Tawazun contract-value inputs supplied yet.', reasonAr: 'لم تُدخل بيانات قيمة العقد الخاصة بتوازن بعد.' };
+    }
+    computation = computeTawazunOffset(inputs.aeTawazun);
+  } else if (resolvedProgram === 'jo-price-preference') {
     if (!inputs.jo) {
       return { country, program: resolvedProgram, procurementContext, applicability: 'applicable', framework, computation: { mechanismType: 'price-preference-margin', preferenceMarginPct: JORDAN_PRICE_PREFERENCE_MARGIN_PCT, locallyManufacturedSharePct: null, effectiveBidDiscountPct: null }, certificationCaveatEn: NOT_CERTIFIED_EN, certificationCaveatAr: NOT_CERTIFIED_AR, reasonEn: 'No Jordan locally-manufactured bid share supplied yet.', reasonAr: 'لم تُدخل نسبة التصنيع المحلي في العطاء بعد.' };
     }
@@ -769,15 +885,21 @@ export function assessSupplierLocalContent(
       ? (computation.effectiveBidDiscountPct !== null ? `effective bid discount ${computation.effectiveBidDiscountPct.toFixed(1)} points` : 'incomplete inputs')
       : computation.mechanismType === 'category-eligibility-gate'
         ? (computation.eligibleToBid !== null ? (computation.eligibleToBid ? 'eligible to bid' : 'gated out of this category') : 'incomplete inputs')
-        : 'not sourced';
+        : computation.mechanismType === 'offset-obligation-gate'
+          ? (computation.triggersObligation === null ? 'incomplete inputs' : computation.triggersObligation ? `offset obligation triggered, required credits AED ${computation.requiredOffsetCreditsAED?.toLocaleString()}` : 'below threshold, no offset obligation')
+          : 'not sourced';
 
+  // scoreLineAr must carry the SAME information as scoreLine (bilingual-
+  // completeness fix, 15 Sep 2026) -- never a shorter Arabic sentence.
   const scoreLineAr = computation.mechanismType === 'eligible-spend-ratio' || computation.mechanismType === 'weighted-pillar-score' || computation.mechanismType === 'anchor-buyer-score'
     ? (computation.scorePct !== null ? `درجة توجيهية ${computation.scorePct.toFixed(1)}٪` : 'بيانات غير مكتملة')
     : computation.mechanismType === 'price-preference-margin'
       ? (computation.effectiveBidDiscountPct !== null ? `خصم عطاء فعّال ${computation.effectiveBidDiscountPct.toFixed(1)} نقطة` : 'بيانات غير مكتملة')
       : computation.mechanismType === 'category-eligibility-gate'
         ? (computation.eligibleToBid !== null ? (computation.eligibleToBid ? 'مؤهل للتقديم' : 'مستبعد من هذه الفئة') : 'بيانات غير مكتملة')
-        : 'غير موثّق';
+        : computation.mechanismType === 'offset-obligation-gate'
+          ? (computation.triggersObligation === null ? 'بيانات غير مكتملة' : computation.triggersObligation ? `تم تفعيل التزام المقاصة، الائتمانات المطلوبة ${computation.requiredOffsetCreditsAED?.toLocaleString()} درهم` : 'أقل من الحد، لا يوجد التزام مقاصة')
+          : 'غير موثّق';
 
   return {
     country, program: resolvedProgram, procurementContext, applicability: 'applicable', framework, computation,
@@ -829,13 +951,22 @@ export function recommendLocalContentAction(assessment: LocalContentAssessment, 
       alternativeAr: 'إذا تعذّر إتمام الاعتماد في الوقت المناسب: قدّم عطاءً مشتركاً مع جهة محلية معتمدة مسبقاً أو أسند لها كمقاول من الباطن الجزء المشمول بالقائمة الإلزامية من النطاق، أو استهدف حزمة/فئة غير مدرجة في القائمة الإلزامية.',
     };
   }
+  if (c.mechanismType === 'offset-obligation-gate') {
+    if (c.triggersObligation !== true || c.shortfallAED === null || c.shortfallAED <= 0) return null;
+    return {
+      primaryEn: `Bank real offset credits toward the AED ${c.shortfallAED.toLocaleString()} shortfall before the performance period closes (local investment, JV, or technology-transfer activity that Tawazun recognizes as credit) -- this is the only path that both closes the gap and avoids the cash/guarantee cost below.`,
+      primaryAr: `اكتسب ائتمانات مقاصة حقيقية لسد النقص البالغ ${c.shortfallAED.toLocaleString()} درهم قبل إغلاق فترة الأداء (استثمار محلي، مشروع مشترك، أو نشاط نقل تقني يعترف به توازن كائتمان) -- هذا هو المسار الوحيد الذي يغلق الفجوة ويتجنب تكلفة النقد/الضمان أدناه معاً.`,
+      alternativeEn: `If new offset activity cannot be arranged in time: settle the shortfall in cash at 8.5% (AED ${c.shortfallPenaltyAED?.toLocaleString() ?? '—'}) or negotiate rolling the remaining obligation into a future project with Tawazun -- both are the program's own disclosed fallback options, not a compliance failure.`,
+      alternativeAr: `إذا تعذّر ترتيب نشاط مقاصة جديد في الوقت المناسب: سوِّ النقص نقداً بنسبة ٨.٥٪ (${c.shortfallPenaltyAED?.toLocaleString() ?? '—'} درهم) أو تفاوض مع توازن لترحيل الالتزام المتبقي إلى مشروع مستقبلي -- كلا الخيارين من البدائل المُفصَح عنها رسمياً في البرنامج نفسه، وليسا إخفاقاً في الامتثال.`,
+    };
+  }
   return null;
 }
 
 // ---------------------------------------------------------------------------
 // Section 9 — portfolio-level rollup (mirrors Module 05's HHI rollup
-// pattern: weighted by spend share, grouped by mechanism type AND, for
-// Saudi Arabia, by program, never averaged across incompatible mechanisms)
+// pattern: weighted by spend share, grouped by mechanism type AND program,
+// never averaged across incompatible mechanisms)
 // ---------------------------------------------------------------------------
 
 export interface PortfolioLocalContentInput {
@@ -846,7 +977,7 @@ export interface PortfolioLocalContentInput {
 
 export interface PortfolioLocalContentGroup {
   country: LocalContentCountry;
-  program: SaudiProgram | null;
+  program: LocalContentProgram;
   procurementContext: ProcurementContext;
   mechanismType: LocalContentMechanismType;
   supplierCount: number;
@@ -854,6 +985,11 @@ export interface PortfolioLocalContentGroup {
   weightedScorePct: number | null; // score-based mechanisms (eligible-spend-ratio / weighted-pillar-score / anchor-buyer-score)
   weightedEffectiveDiscountPct: number | null; // only for price-preference-margin
   gateEligibleSharePct: number | null; // only for category-eligibility-gate: spend-share-weighted % eligible to bid
+  /** Only for offset-obligation-gate: the plain SUM (not spend-weighted --
+   * these are absolute currency exposures, not comparable percentages) of
+   * every supplier's shortfallPenaltyAED in this group whose shortfall is
+   * known. Client-level real-money exposure, not an averaged rate. */
+  totalShortfallPenaltyAED: number | null;
   suppliersWithInsufficientData: number;
   suppliersNotApplicable: number;
 }
@@ -861,7 +997,7 @@ export interface PortfolioLocalContentGroup {
 export function rollUpPortfolioLocalContent(inputs: PortfolioLocalContentInput[]): PortfolioLocalContentGroup[] {
   const groups = new Map<string, PortfolioLocalContentInput[]>();
   for (const item of inputs) {
-    const key = `${item.assessment.country}__${item.assessment.program ?? ''}__${item.assessment.procurementContext}`;
+    const key = `${item.assessment.country}__${item.assessment.program}__${item.assessment.procurementContext}`;
     const list = groups.get(key) ?? [];
     list.push(item);
     groups.set(key, list);
@@ -878,6 +1014,7 @@ export function rollUpPortfolioLocalContent(inputs: PortfolioLocalContentInput[]
     let weightedScorePct: number | null = null;
     let weightedEffectiveDiscountPct: number | null = null;
     let gateEligibleSharePct: number | null = null;
+    let totalShortfallPenaltyAED: number | null = null;
 
     if (first.framework.mechanismType === 'eligible-spend-ratio' || first.framework.mechanismType === 'weighted-pillar-score' || first.framework.mechanismType === 'anchor-buyer-score') {
       const scorable = applicableItems.filter(i => {
@@ -915,12 +1052,23 @@ export function rollUpPortfolioLocalContent(inputs: PortfolioLocalContentInput[]
           return s + (c.eligibleToBid ? 100 : 0) * (i.spendShare / scorableSpend);
         }, 0);
       }
+    } else if (first.framework.mechanismType === 'offset-obligation-gate') {
+      const withPenalty = applicableItems.filter(i => {
+        const c = i.assessment.computation;
+        return c && c.mechanismType === 'offset-obligation-gate' && c.shortfallPenaltyAED !== null;
+      });
+      if (withPenalty.length > 0) {
+        totalShortfallPenaltyAED = withPenalty.reduce((s, i) => {
+          const c = i.assessment.computation as OffsetObligationGateResult;
+          return s + (c.shortfallPenaltyAED as number);
+        }, 0);
+      }
     }
 
     result.push({
       country: first.country, program: first.program, procurementContext: first.procurementContext, mechanismType: first.framework.mechanismType,
       supplierCount: items.length, portfolioSpendSharePct: totalSpendShare,
-      weightedScorePct, weightedEffectiveDiscountPct, gateEligibleSharePct,
+      weightedScorePct, weightedEffectiveDiscountPct, gateEligibleSharePct, totalShortfallPenaltyAED,
       suppliersWithInsufficientData: insufficientCount, suppliersNotApplicable: notApplicableCount,
     });
   }
