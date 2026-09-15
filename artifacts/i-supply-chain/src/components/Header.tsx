@@ -43,6 +43,7 @@ const servicesList = [
   { key: 'nav.blacklist', href: '/blacklist', label: '🚫 Blacklist' },
   { key: 'nav.offboarding', href: '/offboarding', label: '📦 Offboarding' },
   { key: 'nav.lcgpaReadiness', href: '/lcgpa-readiness', label: '🏛️ LCGPA Readiness' },
+  { key: 'nav.localContentICV', href: '/local-content-icv', label: '🌍 Local Content / ICV' },
   { key: 'nav.freeZoneRouting', href: '/freezone-routing', label: '🏭 Free-Zone Routing' },
   { key: 'nav.gccSeasonalCalendar', href: '/gcc-seasonal-calendar', label: '📅 Seasonal Calendar' },
   { key: 'nav.caseStudies',  href: '/case-studies',            label: 'Case Studies' },
@@ -119,6 +120,7 @@ export function Header() {
       'nav.blacklist': { en: '🚫 Blacklist', ar: '🚫 القائمة السوداء' },
       'nav.offboarding': { en: '📦 Offboarding', ar: '📦 إنهاء التعامل' },
       'nav.lcgpaReadiness': { en: '🏛️ LCGPA Readiness', ar: '🏛️ جاهزية المحتوى المحلي' },
+      'nav.localContentICV': { en: '🌍 Local Content / ICV', ar: '🌍 المحتوى المحلي / ICV' },
       'nav.freeZoneRouting': { en: '🏭 Free-Zone Routing', ar: '🏭 توجيه المنطقة الحرة' },
       'nav.gccSeasonalCalendar': { en: '📅 Seasonal Calendar', ar: '📅 التقويم الموسمي' },
     };

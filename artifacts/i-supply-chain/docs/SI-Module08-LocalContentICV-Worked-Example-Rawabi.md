@@ -3,7 +3,7 @@
 
 *Registry: SI-08 (draft, pending #436/#441 formal registry entry). Date: 15 Sep 2026.*
 *Engine file: `src/lib/supplierLocalContentEligibility.ts` (570 lines). Test file: `src/lib/supplierLocalContentEligibility.test.ts` (33 tests, soft/hardest/boundary tiers).*
-*Status: library-complete, unit-tested, cross-engine chain-tested. No live UI yet (see "What Is Not Yet Done" below) — this doc is written and pushed ahead of the UI decision so the engine itself is reviewable first.*
+*Status: library-complete, unit-tested, cross-engine chain-tested, live UI shipped (`/local-content-icv`, QA-10/10-walked-through, 16 Sep 2026 — see "What Is Not Yet Done" below for what remains).*
 
 ---
 
@@ -240,12 +240,16 @@ separately-sourced answers, exactly as Core Instruction #7 requires.
 
 ## 7. What Is Not Yet Done (honest status, not silently deferred)
 
-- **No live UI yet.** The existing `LCGPAReadinessCheck.tsx` page (`/lcgpa-readiness`, Saudi-only,
-  client-own-spend) is the natural extension point for a country/mechanism selector, but building
-  it is a distinct follow-up task, not yet started or scoped with the platform owner. Per the
-  standing UI/UX rule, this module is not "done" in the full sense until that UI exists and is
-  QA-10/10-walked-through — this doc records that gap explicitly rather than marking the module
-  falsely complete.
+- **Live UI shipped.** A dedicated multi-country page, `LocalContentICVCheck.tsx`
+  (`/local-content-icv`), now exists as a standalone route/nav entry alongside the pre-existing
+  Saudi-only `LCGPAReadinessCheck.tsx` (`/lcgpa-readiness`) — neither page rewrites nor shares
+  state with the other, and each links to the other reciprocally. It covers SA/AE/JO input forms,
+  a not-yet-sourced disclosure for OM/QA/BH/KW, the recommendation panel, and a spend-weighted
+  portfolio rollup builder. It passed a QA 10/10 customer-experience-simulation walkthrough, which
+  found and fixed three real issues: an English-only pillar-label fallback shown even in Arabic
+  mode, a confusing all-zero result card shown before any data was entered, and a missing
+  `id`/`htmlFor` pairing on the mainland-registration checkbox. v1 deliberately omits an
+  AI-narrative panel — a disclosed scope decision, not a hidden gap.
 - **Registry numbering (#436/#441)** is deferred until Modules 09/10/11 are also complete, per the
   already-approved build order.
 - **UAE formula verification** against the primary MoIAT document (not just an AI-summarized
@@ -287,8 +291,12 @@ separately-sourced answers, exactly as Core Instruction #7 requires.
 يساوي **٢٠٩٨** (تركّز متوسط) على نفس المحفظة الكاملة بستة موردين — بُعدان مستقلان تماماً، لم يُدمَجا
 في رقم واحد مطلقاً، تماشياً مع التعليمة الأساسية رقم ٧.
 
-**الحالة الحالية بصراحة:** لا توجد واجهة مستخدم فعلية بعد لهذه الوحدة (الصفحة الحالية
-`/lcgpa-readiness` تغطي السعودية فقط وهي نقطة التوسع الطبيعية المستقبلية)؛ رقم السجل (#436/#441)
-مؤجل حتى اكتمال الوحدات ٠٩ و١٠ و١١ وفق خطة البناء المعتمدة؛ أرقام صيغة ICV الإماراتية تحتاج تحققاً
-من الوثيقة الرسمية الأصلية قبل استخدامها في قرار تصديق فعلي؛ وعُمان وقطر والبحرين والكويت تبقى "غير
-موثّقة" بتصميم متعمد، لا تخميناً.
+**الحالة الحالية بصراحة:** تم إطلاق واجهة مستخدم فعلية لهذه الوحدة — صفحة مستقلة متعددة الدول
+`/local-content-icv`، منفصلة تماماً عن صفحة `/lcgpa-readiness` (السعودية فقط) ولا تشترك معها في أي
+حالة تخزين، مع رابط متبادل بين الصفحتين. اجتازت الواجهة اختبار المحاكاة الشاملة لتجربة العميل
+(QA 10/10)، الذي كشف وأصلح ثلاث مشكلات حقيقية: عرض تسميات الأركان بالإنجليزية فقط حتى في وضع اللغة
+العربية، وبطاقة نتائج مربكة تظهر بقيم صفرية قبل إدخال أي بيانات، وغياب ربط `id`/`htmlFor` الصريح في
+مربع اختيار "مسجّلة في البر الرئيسي". تم استبعاد لوحة السرد الذكي (AI narrative) عمداً من الإصدار
+الأول — قرار نطاق مُعلَن، وليس نقصاً مخفياً. رقم السجل (#436/#441) مؤجل حتى اكتمال الوحدات ٠٩ و١٠
+و١١ وفق خطة البناء المعتمدة؛ أرقام صيغة ICV الإماراتية تحتاج تحققاً من الوثيقة الرسمية الأصلية قبل
+استخدامها في قرار تصديق فعلي؛ وعُمان وقطر والبحرين والكويت تبقى "غير موثّقة" بتصميم متعمد، لا تخميناً.

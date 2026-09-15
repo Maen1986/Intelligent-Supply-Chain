@@ -58,6 +58,7 @@ import { SupplierPeriodicEvaluation } from '@/pages/SupplierPeriodicEvaluation';
 import { SupplierBlacklist } from '@/pages/SupplierBlacklist';
 import { SupplierOffboarding } from '@/pages/SupplierOffboarding';
 import { LCGPAReadinessCheck } from '@/pages/LCGPAReadinessCheck';
+import { LocalContentICVCheck } from '@/pages/LocalContentICVCheck';
 import { FreeZoneRoutingTool } from '@/pages/FreeZoneRoutingTool';
 import { GccSeasonalCalendar } from '@/pages/GccSeasonalCalendar';
 import { useIPProtection } from '@/hooks/useIPProtection';
@@ -195,6 +196,7 @@ function Router() {
         <Route path="/blacklist" component={SupplierBlacklist} />
         <Route path="/offboarding" component={SupplierOffboarding} />
         <Route path="/lcgpa-readiness" component={LCGPAReadinessCheck} />
+        <Route path="/local-content-icv" component={LocalContentICVCheck} />
         <Route path="/freezone-routing" component={FreeZoneRoutingTool} />
         <Route path="/gcc-seasonal-calendar" component={GccSeasonalCalendar} />
         <Route path="/roi-waterfall" component={ROIWaterfall} />

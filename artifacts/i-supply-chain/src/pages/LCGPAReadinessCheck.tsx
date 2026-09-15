@@ -14,7 +14,8 @@
 // persistence only, manual input, deterministic disclosed-rule scoring
 // (Decision Record 8.7 -- never an AI-invented score).
 import React, { useState, useCallback, useMemo } from 'react';
-import { Landmark, Printer, Info, Sparkles, ShieldAlert, ShieldCheck, ShieldQuestion, Clock } from 'lucide-react';
+import { Link } from 'wouter';
+import { Landmark, Printer, Info, Sparkles, ShieldAlert, ShieldCheck, ShieldQuestion, Clock, ExternalLink } from 'lucide-react';
 import { useLanguage } from '@/lib/LanguageContext';
 import {
   type LocalContentInputs, type Sector, type TriageVerdict,
@@ -177,6 +178,10 @@ export function LCGPAReadinessCheck() {
               <span key={t} className="px-3 py-1 rounded-full border border-white/20 bg-white/5">{t}</span>
             ))}
           </div>
+          <Link href="/local-content-icv" className="no-print mt-5 inline-flex items-center gap-1.5 text-xs font-semibold text-[#C9A84C] hover:text-white transition-colors">
+            {isAr ? 'تحتاج الإمارات أو الأردن أيضاً؟ افتح أداة المحتوى المحلي / ICV متعددة الدول' : "Also need the UAE or Jordan? Open the multi-country Local Content / ICV tool"}
+            <ExternalLink className="w-3 h-3" />
+          </Link>
         </div>
       </div>
 
