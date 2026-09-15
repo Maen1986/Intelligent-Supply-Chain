@@ -2,7 +2,7 @@
 ### Worked Example, Sourced Methodology, and Stress-Test Record — Rawabi Advanced Industries
 
 *Registry: SI-08 (draft, pending #436/#441 formal registry entry). Date: 15 Sep 2026, updated 16 Sep 2026 (Saudi Arabia mechanism decomposition, Part 1 slice, section 8; UAE mechanism decomposition + program-architecture generalization, same day, section 9).*
-*Engine file: `src/lib/supplierLocalContentEligibility.ts` (1076 lines, 13 programs across 7 countries via a generalized `LocalContentProgram` architecture — see section 9's own note on why the Saudi-only `SaudiProgram` pattern was generalized). Test file: `src/lib/supplierLocalContentEligibility.test.ts` (77 tests: 39 original + 23 Saudi-mechanism + 15 UAE-mechanism/architecture tests, soft/hardest/boundary tiers).*
+*Engine file: `src/lib/supplierLocalContentEligibility.ts` (1076 lines, 13 programs across 7 countries via a generalized `LocalContentProgram` architecture — see section 9's own note on why the Saudi-only `SaudiProgram` pattern was generalized). Test file: `src/lib/supplierLocalContentEligibility.test.ts` (74 tests: 39 original + 23 Saudi-mechanism + 12 UAE-mechanism/architecture tests, soft/hardest/boundary tiers).*
 *Status: library-complete, unit-tested, cross-engine chain-tested, live UI rebuilt as a multi-supplier list per an independent senior-QA review (`/local-content-icv`, QA-10/10-walked-through, 16 Sep 2026), extended this pass with Saudi Arabia's full mechanism decomposition (section 8) and then the UAE's (section 9: MoIAT ICV usage note + genuine incentive-not-gate negative finding, and the Tawazun defense-offset mechanism with a real sourced formula), plus a dual-sided buyer/supplier value-framing panel added to the live UI for every country including Saudi Arabia per the owner's explicit instruction — see "What Is Not Yet Done" below for what remains, including the backend table this pass added but has not provisioned, and Part 2 of the assignment (non-GCC coverage) and the rest of Part 1 (Jordan's second mechanism if any, Oman, Qatar, Bahrain, Kuwait) which are explicitly not started yet.*
 
 ---
@@ -65,7 +65,7 @@ remain live and completely unchanged by this work.
 
 ---
 
-## 4. Stress-Test Record (39 tests as of 15 Sep 2026, all passing; three tiers per mechanism — see section 8.8 for the 23 additional Saudi-mechanism tests (62 total) and section 9.5 for the 15 additional UAE-mechanism/architecture tests added 16 Sep 2026, 77 total)
+## 4. Stress-Test Record (39 tests as of 15 Sep 2026, all passing; three tiers per mechanism — see section 8.8 for the 23 additional Saudi-mechanism tests (62 total) and section 9.5 for the 12 additional UAE-mechanism/architecture tests added 16 Sep 2026, 74 total)
 
 ### 4.1 Saudi Arabia — LCGPA eligible-spend-ratio
 
@@ -534,7 +534,7 @@ both disclosed program options, never modeled as a compliance failure.
   MoIAT page does not itself state one; the sourced 40% figure is disclosed as Abu Dhabi
   emirate-level only, never generalized to the whole country (see 9.2).
 
-### 9.5 Stress-test record — UAE Tawazun mechanism (12 new tests, all passing; full suite 62 → 77 for this file)
+### 9.5 Stress-test record — UAE Tawazun mechanism (12 new tests, all passing; full suite 62 → 74 for this file)
 
 | Mechanism | Soft | Hardest | Boundary |
 |---|---|---|---|
@@ -879,7 +879,7 @@ QA وأُصلحت ضمن هذه المرحلة نفسها:** كان التبدي
   الوطنية نسبة بعينها؛ نسبة الـ٤٠٪ الموثّقة مُفصَح عنها كرقم على مستوى إمارة أبوظبي فقط، ولم تُعمَّم
   على الدولة بأكملها (انظر ٩.٢).
 
-### ٩.٥ سجل اختبار الإجهاد — آلية توازن الإماراتية (١٢ اختباراً جديداً، جميعها ناجحة؛ إجمالي هذا الملف من ٦٢ إلى ٧٧)
+### ٩.٥ سجل اختبار الإجهاد — آلية توازن الإماراتية (١٢ اختباراً جديداً، جميعها ناجحة؛ إجمالي هذا الملف من ٦٢ إلى ٧٤)
 
 | الآلية | ناعم (Soft) | الأصعب (Hardest) | الحدّي (Boundary) |
 |---|---|---|---|
