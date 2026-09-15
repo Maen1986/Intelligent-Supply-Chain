@@ -86,6 +86,17 @@ export type LocalContentCountry = 'SA' | 'AE' | 'JO' | 'OM' | 'QA' | 'BH' | 'KW'
  * regime found is anchored in government/SOE-linked procurement. */
 export type ProcurementContext = 'government' | 'semi-government-soe' | 'private-commercial';
 
+// Bilingual-completeness fix (found by independent QA review, 15 Sep 2026):
+// reasonAr must never splice a raw English enum literal into an Arabic
+// sentence, and must never carry LESS information than reasonEn. This map
+// is the Arabic label for each procurement context, used everywhere
+// procurementContext is rendered inside reasonAr.
+const PROCUREMENT_CONTEXT_LABEL_AR: Record<ProcurementContext, string> = {
+  government: 'حكومي',
+  'semi-government-soe': 'شبه حكومي / مملوك للدولة',
+  'private-commercial': 'تجاري خاص',
+};
+
 export type LocalContentMechanismType =
   | 'eligible-spend-ratio'      // Saudi LCGPA
   | 'weighted-pillar-score'     // UAE ICV
@@ -429,7 +440,7 @@ export function assessSupplierLocalContent(
       country, procurementContext, applicability: 'not-applicable', framework, computation: null,
       certificationCaveatEn: NOT_CERTIFIED_EN, certificationCaveatAr: NOT_CERTIFIED_AR,
       reasonEn: `${framework.programNameEn} is sourced as applying to ${framework.applicableContexts.join('/')} procurement in ${framework.countryNameEn}. No sourced evidence it applies to ${procurementContext} procurement -- this assessment does not apply here, not a zero score.`,
-      reasonAr: `${framework.programNameAr} موثّق كأنه يسري على مشتريات ${framework.applicableContexts.join(' / ')} في ${framework.countryNameAr}. لا يوجد دليل موثّق على سريانه على مشتريات من نوع ${procurementContext} -- هذا التقييم لا ينطبق هنا، وليس درجة صفرية.`,
+      reasonAr: `${framework.programNameAr} موثّق كأنه يسري على مشتريات ${framework.applicableContexts.map(c => PROCUREMENT_CONTEXT_LABEL_AR[c]).join(' / ')} في ${framework.countryNameAr}. لا يوجد دليل موثّق على سريانه على مشتريات من نوع ${PROCUREMENT_CONTEXT_LABEL_AR[procurementContext]} -- هذا التقييم لا ينطبق هنا، وليس درجة صفرية.`,
     };
   }
 
@@ -459,11 +470,19 @@ export function assessSupplierLocalContent(
       ? (computation.effectiveBidDiscountPct !== null ? `effective bid discount ${computation.effectiveBidDiscountPct.toFixed(1)} points` : 'incomplete inputs')
       : 'not sourced';
 
+  // scoreLineAr must carry the SAME information as scoreLine (bilingual-
+  // completeness fix, 15 Sep 2026) -- never a shorter Arabic sentence.
+  const scoreLineAr = computation.mechanismType === 'eligible-spend-ratio' || computation.mechanismType === 'weighted-pillar-score'
+    ? (computation.scorePct !== null ? `درجة توجيهية ${computation.scorePct.toFixed(1)}٪` : 'بيانات غير مكتملة')
+    : computation.mechanismType === 'price-preference-margin'
+      ? (computation.effectiveBidDiscountPct !== null ? `خصم عطاء فعّال ${computation.effectiveBidDiscountPct.toFixed(1)} نقطة` : 'بيانات غير مكتملة')
+      : 'غير موثّق';
+
   return {
     country, procurementContext, applicability: 'applicable', framework, computation,
     certificationCaveatEn: NOT_CERTIFIED_EN, certificationCaveatAr: NOT_CERTIFIED_AR,
     reasonEn: `${framework.programNameEn} (${framework.countryNameEn}, ${procurementContext}): ${scoreLine}.`,
-    reasonAr: `${framework.programNameAr} (${framework.countryNameAr}، ${procurementContext})`,
+    reasonAr: `${framework.programNameAr} (${framework.countryNameAr}، ${PROCUREMENT_CONTEXT_LABEL_AR[procurementContext]}): ${scoreLineAr}.`,
   };
 }
 

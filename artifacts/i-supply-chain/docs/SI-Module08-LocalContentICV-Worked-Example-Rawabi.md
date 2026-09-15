@@ -3,7 +3,7 @@
 
 *Registry: SI-08 (draft, pending #436/#441 formal registry entry). Date: 15 Sep 2026.*
 *Engine file: `src/lib/supplierLocalContentEligibility.ts` (570 lines). Test file: `src/lib/supplierLocalContentEligibility.test.ts` (33 tests, soft/hardest/boundary tiers).*
-*Status: library-complete, unit-tested, cross-engine chain-tested, live UI shipped (`/local-content-icv`, QA-10/10-walked-through, 16 Sep 2026 — see "What Is Not Yet Done" below for what remains).*
+*Status: library-complete, unit-tested, cross-engine chain-tested, live UI rebuilt as a multi-supplier list per an independent senior-QA review (`/local-content-icv`, QA-10/10-walked-through, 16 Sep 2026 — see "What Is Not Yet Done" below for what remains, including the backend table this pass added but has not provisioned).*
 
 ---
 
@@ -240,16 +240,48 @@ separately-sourced answers, exactly as Core Instruction #7 requires.
 
 ## 7. What Is Not Yet Done (honest status, not silently deferred)
 
-- **Live UI shipped.** A dedicated multi-country page, `LocalContentICVCheck.tsx`
-  (`/local-content-icv`), now exists as a standalone route/nav entry alongside the pre-existing
-  Saudi-only `LCGPAReadinessCheck.tsx` (`/lcgpa-readiness`) — neither page rewrites nor shares
-  state with the other, and each links to the other reciprocally. It covers SA/AE/JO input forms,
-  a not-yet-sourced disclosure for OM/QA/BH/KW, the recommendation panel, and a spend-weighted
-  portfolio rollup builder. It passed a QA 10/10 customer-experience-simulation walkthrough, which
-  found and fixed three real issues: an English-only pillar-label fallback shown even in Arabic
-  mode, a confusing all-zero result card shown before any data was entered, and a missing
-  `id`/`htmlFor` pairing on the mainland-registration checkbox. v1 deliberately omits an
-  AI-narrative panel — a disclosed scope decision, not a hidden gap.
+- **Live UI shipped, then rebuilt (16 Sep 2026)** per an independent senior-QA review run
+  against origin/main @ b9dab44 (33/33 engine tests re-verified, every worked-example number
+  hand-recomputed and matched). Two real issues from that review are fixed in this pass:
+  1. **A real bilingual-completeness bug in the engine itself** (not the UI): `assessSupplierLocalContent`'s
+     `reasonAr` dropped the score/discount value entirely in the "applicable" branch, and spliced
+     a raw English `ProcurementContext` enum literal into Arabic sentences in both the
+     "applicable" and "not-applicable" branches — an Arabic-reading user got less information
+     than an English-reading one. Fixed with a `PROCUREMENT_CONTEXT_LABEL_AR` map and a
+     `scoreLineAr` built in parallel with the English `scoreLine`; 6 new regression tests assert
+     on `reasonAr` content directly (none of the original 33 did).
+  2. **The UI's architecture was wrong for the module's real differentiator.** v1 (15 Sep) shipped
+     as a single-entity form with a separate "add to portfolio" step. Rebuilt around a
+     supplier/entity LIST (`LocalContentEntryCard`, one row per entity, add/remove, mirroring
+     `SupplierDependencyCheck.tsx`'s list pattern) so every entity IS a portfolio member from the
+     moment it's added. Country + procurement context are now asked before any numeric input, so
+     a private-commercial context resolves to "not applicable" immediately instead of showing a
+     blank input form first. A supplier whose country isn't one of the 7 this module represents
+     (e.g. China, Turkey, Egypt) gets its own explicit "not covered by this module" state — a
+     third honest reason for "no number", distinct from "not-yet-sourced" and "not-applicable".
+     A Module 05 HHI side-by-side concentration callout was added (page-level composition of two
+     already-tested engines' outputs, gated at >=2 spend-bearing entries so a single-entity 100%
+     reading is never shown as if it meant something) — labeled and rendered as a fully separate
+     dimension, never blended into the local-content rollup (Rule 7). A persistent trust-signal
+     line and a note pointing at LCGPA's own small sourced sector-threshold table were added. The
+     page remains a standalone route/nav entry alongside the pre-existing Saudi-only
+     `LCGPAReadinessCheck.tsx` (`/lcgpa-readiness`) — neither page rewrites nor shares state with
+     the other. v1 deliberately still omits an AI-narrative panel — a disclosed scope decision.
+  A fresh QA 10/10 customer-experience-simulation walkthrough of the rebuilt page found no new
+  defects requiring a fix; one pre-existing, platform-wide gap (the shared `NumberField`
+  component's `<label>` is not explicitly `htmlFor`/`id`-paired with its `<input>`, across many
+  pages, not unique to this one) is logged rather than fixed here, as genuinely out of this
+  single module's scope.
+- **Backend persistence added but not provisioned.** Per the QA review's explicit instruction,
+  this pass added `local_content_icv_entries` (a Drizzle schema table, `lib/db/src/schema/
+  localContentIcvEntries.ts`) and `/api/local-content-icv-entries` (GET/PUT, `artifacts/api-server/
+  src/routes/localContentIcvEntries.ts`), mirroring `supplier_dependency_checks`'/`/api/supplier-
+  dependency-checks`' whole-state-sync pattern exactly, with the UI's own localStorage-fallback
+  behavior unchanged. Per Decision Record 8.7 and the platform's credential boundary (this
+  sandbox has no `DATABASE_URL` and no production DB credential, and none was sought): **the code
+  is written but the table has not been created on any live database.** Whoever has production DB
+  access must run the existing `drizzle-kit push` workflow before backend sync will actually work
+  end-to-end — until then, every user gets the same localStorage-only experience v1 always had.
 - **Registry numbering (#436/#441)** is deferred until Modules 09/10/11 are also complete, per the
   already-approved build order.
 - **UAE formula verification** against the primary MoIAT document (not just an AI-summarized
@@ -291,12 +323,45 @@ separately-sourced answers, exactly as Core Instruction #7 requires.
 يساوي **٢٠٩٨** (تركّز متوسط) على نفس المحفظة الكاملة بستة موردين — بُعدان مستقلان تماماً، لم يُدمَجا
 في رقم واحد مطلقاً، تماشياً مع التعليمة الأساسية رقم ٧.
 
-**الحالة الحالية بصراحة:** تم إطلاق واجهة مستخدم فعلية لهذه الوحدة — صفحة مستقلة متعددة الدول
-`/local-content-icv`، منفصلة تماماً عن صفحة `/lcgpa-readiness` (السعودية فقط) ولا تشترك معها في أي
-حالة تخزين، مع رابط متبادل بين الصفحتين. اجتازت الواجهة اختبار المحاكاة الشاملة لتجربة العميل
-(QA 10/10)، الذي كشف وأصلح ثلاث مشكلات حقيقية: عرض تسميات الأركان بالإنجليزية فقط حتى في وضع اللغة
-العربية، وبطاقة نتائج مربكة تظهر بقيم صفرية قبل إدخال أي بيانات، وغياب ربط `id`/`htmlFor` الصريح في
-مربع اختيار "مسجّلة في البر الرئيسي". تم استبعاد لوحة السرد الذكي (AI narrative) عمداً من الإصدار
-الأول — قرار نطاق مُعلَن، وليس نقصاً مخفياً. رقم السجل (#436/#441) مؤجل حتى اكتمال الوحدات ٠٩ و١٠
-و١١ وفق خطة البناء المعتمدة؛ أرقام صيغة ICV الإماراتية تحتاج تحققاً من الوثيقة الرسمية الأصلية قبل
-استخدامها في قرار تصديق فعلي؛ وعُمان وقطر والبحرين والكويت تبقى "غير موثّقة" بتصميم متعمد، لا تخميناً.
+**الحالة الحالية بصراحة:** أُطلقت واجهة مستخدم فعلية لهذه الوحدة، ثم **أُعيد بناؤها بتاريخ ١٦
+سبتمبر ٢٠٢٦** بناءً على مراجعة جودة مستقلة (QA) شاملة أُجريت على نسخة origin/main عند b9dab44
+(أُعيد التحقق من ٣٣/٣٣ اختباراً للمحرك، وأُعيد حساب كل رقم في المثال التطبيقي يدوياً وتطابق). أُصلحت
+مشكلتان حقيقيتان من تلك المراجعة في هذه المرحلة:
+١) **عيب حقيقي في اكتمال الازدواج اللغوي داخل المحرك نفسه** (وليس الواجهة فقط): كانت `reasonAr` في
+`assessSupplierLocalContent` تُسقط قيمة الدرجة/الخصم تماماً في الحالة "قابل للتطبيق"، وتُقحم قيمة
+تعداد `ProcurementContext` الإنجليزية الخام داخل جمل عربية في كلٍّ من حالتي "قابل للتطبيق" و"لا
+ينطبق" — فكان القارئ بالعربية يحصل على معلومات أقل من القارئ بالإنجليزية. أُصلح ذلك بإضافة خريطة
+`PROCUREMENT_CONTEXT_LABEL_AR` وبناء `scoreLineAr` موازٍ للنسخة الإنجليزية؛ وأُضيفت ٦ اختبارات
+ارتداد جديدة تتحقق من محتوى `reasonAr` مباشرة (لم يكن أيٌّ من الاختبارات الأصلية الـ٣٣ يفعل ذلك).
+٢) **كانت بنية الواجهة غير مناسبة لأهم ميزة تمايز في الوحدة.** أُطلق الإصدار الأول (١٥ سبتمبر) كنموذج
+لجهة واحدة مع خطوة منفصلة لـ"الإضافة إلى المحفظة". أُعيد بناؤها حول **قائمة** موردين/جهات
+(`LocalContentEntryCard`، صف واحد لكل جهة، إضافة/إزالة، على غرار نمط `SupplierDependencyCheck.tsx`)
+بحيث تكون كل جهة عضواً في المحفظة من لحظة إضافتها. يُطلب الآن اختيار الدولة وسياق الشراء قبل أي إدخال
+رقمي، بحيث يُحسم سياق "تجاري خاص" فوراً كـ"لا ينطبق" بدلاً من عرض نموذج إدخال فارغ أولاً. أي مورّد من
+دولة غير مشمولة بالسبع دول التي تمثّلها هذه الوحدة (كالصين أو تركيا أو مصر) يحصل على حالة صريحة خاصة
+به بعنوان "غير مغطاة بهذه الوحدة إطلاقاً" — سبب صادق ثالث لعدم وجود رقم، متمايز عن "غير موثّق" و"لا
+ينطبق". أُضيف عرض جانبي لمؤشر HHI من الوحدة ٠٥ (تركيب على مستوى الواجهة لمخرجات محركين مُختبرين
+مسبقاً، مشروط بوجود جهتين على الأقل بحصة إنفاق مُدخلة حتى لا تُعرض قراءة تركّز ١٠٠٪ لجهة واحدة وكأنها
+ذات دلالة) — يُعرض دائماً كبُعد منفصل تماماً، ولا يُدمَج أبداً مع تجميع المحتوى المحلي (التعليمة رقم
+٧). أُضيف أيضاً شريط ثقة دائم وملاحظة تُشير إلى جدول الحدود القطاعية الموثّق الصغير الخاص بـLCGPA.
+تبقى الصفحة مساراً/عنصر تنقل مستقلاً إلى جانب `LCGPAReadinessCheck.tsx` (السعودية فقط،
+`/lcgpa-readiness`) — لا تُعيد أيٌّ من الصفحتين كتابة الأخرى ولا تشترك معها في أي حالة. لا يزال
+الإصدار الأول يستبعد عمداً لوحة السرد الذكي (AI narrative) — قرار نطاق مُعلَن. اجتاز فحص محاكاة
+تجربة العميل (QA 10/10) الجديد للصفحة المُعاد بناؤها دون العثور على عيوب جديدة تستدعي إصلاحاً؛ فجوة
+واحدة موجودة مسبقاً وعابرة للمنصة بأكملها (عنصر `<label>` في مكوّن `NumberField` المشترك غير مرتبط
+صراحةً بـ`htmlFor`/`id` مع حقل `<input>` الخاص به، عبر صفحات عديدة، وليست خاصة بهذه الصفحة) تُسجَّل
+كبند تراكمي منفصل بدلاً من إصلاحها هنا، لكونها خارج نطاق هذه الوحدة الواحدة فعلياً.
+
+**إضافة تخزين خلفي (backend) دون تفعيله فعلياً على قاعدة بيانات حية.** بناءً على تعليمات مراجعة الجودة
+الصريحة، أضافت هذه المرحلة جدول `local_content_icv_entries` (مخطط Drizzle، الملف
+`lib/db/src/schema/localContentIcvEntries.ts`) ومسار `/api/local-content-icv-entries`
+(GET/PUT، الملف `artifacts/api-server/src/routes/localContentIcvEntries.ts`)، على غرار نمط المزامنة
+الكاملة لحالة `supplier_dependency_checks`/`/api/supplier-dependency-checks` تماماً، مع بقاء سلوك
+التخزين المحلي الاحتياطي للواجهة كما هو دون تغيير. وفقاً للسجل القراري ٨.٧ وحدود بيانات الاعتماد
+الخاصة بالمنصة (لا يوجد `DATABASE_URL` ولا بيانات اعتماد قاعدة بيانات إنتاجية في هذه البيئة المعزولة،
+ولم تُطلب): **الكود مكتوب لكن الجدول لم يُنشأ على أي قاعدة بيانات حية بعد.** يجب على من يملك صلاحية
+الوصول لقاعدة البيانات الإنتاجية تشغيل مسار العمل الحالي `drizzle-kit push` قبل أن تعمل المزامنة
+الخلفية فعلياً من طرف إلى طرف — وحتى ذلك الحين، يحصل كل مستخدم على نفس تجربة التخزين المحلي فقط التي
+كانت عليها منذ الإصدار الأول. رقم السجل (#436/#441) مؤجل حتى اكتمال الوحدات ٠٩ و١٠ و١١ وفق خطة البناء
+المعتمدة؛ أرقام صيغة ICV الإماراتية تحتاج تحققاً من الوثيقة الرسمية الأصلية قبل استخدامها في قرار
+تصديق فعلي؛ وعُمان وقطر والبحرين والكويت تبقى "غير موثّقة" بتصميم متعمد، لا تخميناً.

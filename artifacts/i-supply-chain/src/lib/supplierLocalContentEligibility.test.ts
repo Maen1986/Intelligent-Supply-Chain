@@ -397,3 +397,84 @@ describe('rollUpPortfolioLocalContent — grouping and weighting (mirrors Module
     expect(rollUpPortfolioLocalContent([])).toEqual([]);
   });
 });
+
+// ===========================================================================
+// reasonAr bilingual-completeness (regression tests for a real defect found
+// by independent QA review, 15 Sep 2026: reasonAr previously (a) dropped the
+// score/discount value entirely in the 'applicable' branch, and (b) spliced
+// a raw English ProcurementContext enum literal into an Arabic sentence in
+// both the 'applicable' and 'not-applicable' branches. Neither is a math
+// bug -- both are bilingual-completeness bugs: an Arabic-reading user got
+// less information than an English-reading one, which is not acceptable on
+// a bilingual-by-default platform (isc-standing-rules rule 5).
+// ===========================================================================
+
+describe('reasonAr bilingual completeness (regression: must never say less than reasonEn, never splice raw English enums)', () => {
+  const ENGLISH_ENUM_LITERALS = ['government', 'semi-government-soe', 'private-commercial'];
+
+  it('applicable branch: reasonAr carries the same score value as reasonEn, not just the program name', () => {
+    const inputs: SupplierLocalContentInputs = {
+      sa: { localLaborSAR: 1_000_000, expatLaborSAR: 0, localGoodsServicesSAR: 0, foreignGoodsServicesSAR: 0, capacityBuildingSAR: 0, localAssetDepreciationSAR: 0, totalAssetDepreciationSAR: 0 },
+    };
+    const a = assessSupplierLocalContent('SA', 'government', inputs);
+    const c = a.computation as EligibleSpendRatioResult;
+    const expected = c.scorePct!.toFixed(1);
+    expect(a.reasonEn).toContain(`${expected}%`);
+    // Previously reasonAr ended right after the program name/country/context
+    // with no score at all -- this asserts the actual numeral is present.
+    expect(a.reasonAr).toContain(expected);
+  });
+
+  it('applicable branch: reasonAr never contains a raw English procurementContext enum literal', () => {
+    for (const ctx of ['government', 'semi-government-soe'] as const) {
+      const inputs: SupplierLocalContentInputs = {
+        ae: { manufacturingOrThirdPartySpendLocalAED: 1, manufacturingOrThirdPartySpendTotalAED: 1, investmentNBVLocalAED: null, investmentNBVTotalAED: null, emiratisationAnnualSpendAED: 1_000_000, expatriateHeadcount: null, exportRevenueAED: null, emiratiHeadcountGrowthPct: null, investmentGrowthPct: null, registeredOnMainland: false },
+      };
+      const a = assessSupplierLocalContent('AE', ctx, inputs);
+      for (const literal of ENGLISH_ENUM_LITERALS) {
+        expect(a.reasonAr).not.toContain(literal);
+      }
+    }
+  });
+
+  it('applicable branch, incomplete inputs: reasonAr says "incomplete inputs" in Arabic, not the English phrase', () => {
+    const inputs: SupplierLocalContentInputs = {
+      sa: { localLaborSAR: 0, expatLaborSAR: 0, localGoodsServicesSAR: 0, foreignGoodsServicesSAR: 0, capacityBuildingSAR: 0, localAssetDepreciationSAR: 0, totalAssetDepreciationSAR: 0 },
+    };
+    const a = assessSupplierLocalContent('SA', 'government', inputs);
+    const c = a.computation as EligibleSpendRatioResult;
+    expect(c.scorePct).toBeNull();
+    expect(a.reasonEn).toContain('incomplete inputs');
+    expect(a.reasonAr).not.toContain('incomplete inputs');
+    expect(a.reasonAr).toContain('بيانات غير مكتملة');
+  });
+
+  it('not-applicable branch: reasonAr never contains a raw English procurementContext enum literal (either side of the sentence)', () => {
+    const a = assessSupplierLocalContent('SA', 'private-commercial', {});
+    expect(a.applicability).toBe('not-applicable');
+    for (const literal of ENGLISH_ENUM_LITERALS) {
+      expect(a.reasonAr).not.toContain(literal);
+    }
+    // The Arabic label for the applicable contexts (government/SOE) and for
+    // the rejected context (private-commercial) must both appear in Arabic.
+    expect(a.reasonAr).toContain('حكومي');
+    expect(a.reasonAr).toContain('تجاري خاص');
+  });
+
+  it('Jordan price-preference-margin branch: reasonAr carries the effective bid discount value, not just the program name', () => {
+    const a = assessSupplierLocalContent('JO', 'government', { jo: { bidValueLocallyManufacturedPct: 40 } });
+    const c = a.computation as PricePreferenceMarginResult;
+    expect(c.effectiveBidDiscountPct).not.toBeNull();
+    expect(a.reasonEn).toContain(c.effectiveBidDiscountPct!.toFixed(1));
+    expect(a.reasonAr).toContain(c.effectiveBidDiscountPct!.toFixed(1));
+    for (const literal of ENGLISH_ENUM_LITERALS) {
+      expect(a.reasonAr).not.toContain(literal);
+    }
+  });
+
+  it('semi-government-soe context: reasonAr uses the Arabic label, not the raw hyphenated English enum', () => {
+    const a = assessSupplierLocalContent('JO', 'semi-government-soe', { jo: { bidValueLocallyManufacturedPct: 50 } });
+    expect(a.reasonAr).not.toContain('semi-government-soe');
+    expect(a.reasonAr).toContain('شبه حكومي');
+  });
+});
