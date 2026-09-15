@@ -55,9 +55,10 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { safeSetItem } from '@/lib/storage';
 import {
   assessSupplierLocalContent, recommendLocalContentAction, rollUpPortfolioLocalContent,
-  COUNTRY_FRAMEWORKS,
+  COUNTRY_FRAMEWORKS, SAUDI_PROGRAMS, SAUDI_PROGRAMS_LIST,
   type LocalContentCountry, type ProcurementContext, type SupplierLocalContentInputs,
   type LocalContentApplicability, type LocalContentAssessment, type PortfolioLocalContentInput,
+  type SaudiProgram,
 } from '@/lib/supplierLocalContentEligibility';
 // Module 05 cross-reference (side-by-side callout only -- two independent
 // dimensions, per Core Instruction / Rule 7, never blended into one
@@ -73,6 +74,9 @@ const STORAGE_KEY = 'isc-local-content-icv-v2';
 type SaInputs = NonNullable<SupplierLocalContentInputs['sa']>;
 type AeInputs = NonNullable<SupplierLocalContentInputs['ae']>;
 type JoInputs = NonNullable<SupplierLocalContentInputs['jo']>;
+type SaMandatoryListInputs = NonNullable<SupplierLocalContentInputs['saMandatoryList']>;
+type SaPricePreferenceInputs = NonNullable<SupplierLocalContentInputs['saPricePreference']>;
+type IktvaInputs = NonNullable<SupplierLocalContentInputs['iktva']>;
 
 function emptySa(): SaInputs {
   return {
@@ -97,6 +101,19 @@ function emptyAe(): AeInputs {
 function emptyJo(): JoInputs {
   return { bidValueLocallyManufacturedPct: null };
 }
+function emptySaMandatoryList(): SaMandatoryListInputs {
+  return { inMandatoryListCategory: null, certifiedForCategory: null };
+}
+function emptySaPricePreference(): SaPricePreferenceInputs {
+  return { bidValueLocallyManufacturedPct: null };
+}
+function emptyIktva(): IktvaInputs {
+  return {
+    goodsServicesLocalSAR: null, assetDepreciationLocalSAR: null, expatCompensationInSaudiSAR: null,
+    saudiWorkforceCompensationSAR: null, trainingDevelopmentSAR: null, supplierDevelopmentSAR: null,
+    localRnDSAR: null, totalCostsSAR: null, incentiveBonusPct: null,
+  };
+}
 
 // 'OTHER' is a client-only pseudo-value for a supplier whose country is not
 // one of the 7 this module's engine can represent at all (e.g. China,
@@ -112,9 +129,15 @@ interface LocalContentEntry {
   id: string;
   label: string;
   countrySelection: CountrySelection;
+  /** Only meaningful when countrySelection === 'SA' -- see SAUDI_PROGRAMS_LIST.
+   * Defaults to 'lcgpa-general', the module's original single Saudi program. */
+  program: SaudiProgram;
   context: ProcurementContext;
   spendSharePct: number | null;
   sa: SaInputs;
+  saMandatoryList: SaMandatoryListInputs;
+  saPricePreference: SaPricePreferenceInputs;
+  iktva: IktvaInputs;
   ae: AeInputs;
   jo: JoInputs;
 }
@@ -124,9 +147,11 @@ function newLocalContentEntry(): LocalContentEntry {
     id: `lc-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
     label: '',
     countrySelection: 'SA',
+    program: 'lcgpa-general',
     context: 'government',
     spendSharePct: null,
-    sa: emptySa(), ae: emptyAe(), jo: emptyJo(),
+    sa: emptySa(), saMandatoryList: emptySaMandatoryList(), saPricePreference: emptySaPricePreference(), iktva: emptyIktva(),
+    ae: emptyAe(), jo: emptyJo(),
   };
 }
 
@@ -150,9 +175,13 @@ function loadState(): PersistedState {
             id: e.id ?? newLocalContentEntry().id,
             label: e.label ?? '',
             countrySelection: e.countrySelection ?? 'SA',
+            program: e.program ?? 'lcgpa-general',
             context: e.context ?? 'government',
             spendSharePct: e.spendSharePct ?? null,
             sa: { ...emptySa(), ...e.sa },
+            saMandatoryList: { ...emptySaMandatoryList(), ...e.saMandatoryList },
+            saPricePreference: { ...emptySaPricePreference(), ...e.saPricePreference },
+            iktva: { ...emptyIktva(), ...e.iktva },
             ae: { ...emptyAe(), ...e.ae },
             jo: { ...emptyJo(), ...e.jo },
           })),
@@ -188,6 +217,19 @@ const CONTEXT_TABS: { v: ProcurementContext; en: string; ar: string }[] = [
   { v: 'semi-government-soe', en: 'Semi-Government / SOE', ar: 'شبه حكومي / مملوك للدولة' },
   { v: 'private-commercial', en: 'Private Commercial', ar: 'تجاري خاص' },
 ];
+
+// Saudi Arabia routing question (task #115): which of the (now 6) Saudi
+// mechanisms is this assessment for. Short bilingual labels for the button
+// row; the full sourced methodology stays in the accordion below, keyed off
+// SAUDI_PROGRAMS[program] automatically.
+const SAUDI_PROGRAM_LABELS: Record<SaudiProgram, { en: string; ar: string }> = {
+  'lcgpa-general': { en: 'LCGPA General Score', ar: 'الدرجة العامة (الهيئة)' },
+  'mandatory-list': { en: 'Mandatory List Gate', ar: 'بوابة القائمة الإلزامية' },
+  'price-preference': { en: 'Price Preference (10%)', ar: 'تفضيل السعر (١٠٪)' },
+  'iktva-aramco': { en: 'Aramco IKTVA', ar: 'إكتفاء أرامكو' },
+  'gami-defense': { en: 'GAMI Defense', ar: 'التوطين الدفاعي (GAMI)' },
+  likt: { en: 'LIKT', ar: 'LIKT' },
+};
 
 // Pillar keys come straight off the engine's computation result (SA: labor/goodsServices/
 // capacityBuilding/depreciation; AE: manufacturingOrThirdPartySpend/investment/emiratisation/
@@ -265,9 +307,16 @@ function LocalContentEntryCard({
 }) {
   const [methodologyOpen, setMethodologyOpen] = useState(false);
   const isOther = entry.countrySelection === 'OTHER';
-  const framework = !isOther ? COUNTRY_FRAMEWORKS[entry.countrySelection as LocalContentCountry] : null;
+  const isSA = entry.countrySelection === 'SA';
+  const framework = !isOther
+    ? (isSA ? SAUDI_PROGRAMS[entry.program] : COUNTRY_FRAMEWORKS[entry.countrySelection as LocalContentCountry])
+    : null;
   const assessment: LocalContentAssessment | null = !isOther
-    ? assessSupplierLocalContent(entry.countrySelection as LocalContentCountry, entry.context, { sa: entry.sa, ae: entry.ae, jo: entry.jo })
+    ? assessSupplierLocalContent(
+        entry.countrySelection as LocalContentCountry, entry.context,
+        { sa: entry.sa, ae: entry.ae, jo: entry.jo, saMandatoryList: entry.saMandatoryList, saPricePreference: entry.saPricePreference, iktva: entry.iktva },
+        isSA ? entry.program : undefined,
+      )
     : null;
   const style = assessment ? applicabilityStyle[assessment.applicability] : null;
   const recommendation = assessment ? recommendLocalContentAction(assessment, targetThresholdPct) : null;
@@ -275,8 +324,9 @@ function LocalContentEntryCard({
   const hasMeaningfulResult = (() => {
     if (!assessment || !assessment.computation) return false;
     const c = assessment.computation;
-    if (c.mechanismType === 'eligible-spend-ratio' || c.mechanismType === 'weighted-pillar-score') return c.scorePct !== null;
+    if (c.mechanismType === 'eligible-spend-ratio' || c.mechanismType === 'weighted-pillar-score' || c.mechanismType === 'anchor-buyer-score') return c.scorePct !== null;
     if (c.mechanismType === 'price-preference-margin') return c.locallyManufacturedSharePct !== null;
+    if (c.mechanismType === 'category-eligibility-gate') return c.eligibleToBid !== null;
     return false;
   })();
 
@@ -357,6 +407,55 @@ function LocalContentEntryCard({
           </button>
         </div>
 
+        {/* ── Saudi Arabia routing question (task #115): which of the 6 Saudi
+             mechanisms applies. Shown only for SA, before context/methodology,
+             since it changes which framework and applicable contexts apply. ── */}
+        {!isOther && isSA && (
+          <div className="mb-3">
+            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+              {isAr ? 'أي برنامج سعودي؟' : 'Which Saudi program?'}
+            </p>
+            <div className="flex flex-wrap gap-1.5" role="group" aria-label={isAr ? 'اختيار برنامج المحتوى المحلي السعودي' : 'Select Saudi local-content program'}>
+              {SAUDI_PROGRAMS_LIST.map(p => {
+                const active = entry.program === p;
+                const notSourced = SAUDI_PROGRAMS[p].mechanismType === 'not-yet-sourced';
+                return (
+                  <button
+                    key={p}
+                    type="button"
+                    aria-pressed={active}
+                    onClick={() => {
+                      // QA fix (16 Sep 2026 pass): a program with exactly one sourced
+                      // applicable context (e.g. Aramco IKTVA -> semi-government-soe
+                      // only) auto-selects that context too, so picking the program
+                      // doesn't silently leave the reader on a context where it reads
+                      // "not applicable" for a reason they'd have to go hunting for.
+                      // Multi-context programs (lcgpa-general, mandatory-list,
+                      // price-preference) are left exactly as the reader set them.
+                      const targetContexts = SAUDI_PROGRAMS[p].applicableContexts;
+                      const patch: Partial<LocalContentEntry> = { program: p };
+                      if (targetContexts.length === 1 && !targetContexts.includes(entry.context)) {
+                        patch.context = targetContexts[0];
+                      }
+                      onUpdate(entry.id, patch);
+                    }}
+                    className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors flex items-center gap-1.5 ${
+                      active ? 'bg-[#082C6B] border-[#082C6B] text-white' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                    }`}
+                  >
+                    {isAr ? SAUDI_PROGRAM_LABELS[p].ar : SAUDI_PROGRAM_LABELS[p].en}
+                    {notSourced && (
+                      <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${active ? 'bg-white/20' : 'bg-amber-100 text-amber-700'}`}>
+                        {isAr ? 'غير موثّق' : 'not sourced'}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {isOther ? (
           <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 flex items-start gap-2">
             <Compass className="w-4 h-4 text-slate-500 shrink-0 mt-0.5" />
@@ -408,6 +507,20 @@ function LocalContentEntryCard({
               )}
             </div>
 
+            {/* ── Usage notes (lcgpa-general only): "how the same score gets used
+                 differently by context" -- per the brief's own UAE precedent, this is
+                 disclosure text about the score above, never a second score. ── */}
+            {isSA && entry.program === 'lcgpa-general' && framework!.usageNotesEn && framework!.usageNotesEn!.length > 0 && (
+              <div className="rounded-xl border border-slate-100 bg-slate-50/60 px-3 py-2.5 mb-3 space-y-1.5">
+                <p className="text-[10px] font-black text-slate-500 uppercase tracking-wider">
+                  {isAr ? 'كيف تُستخدم هذه الدرجة في التقييم' : 'How this score gets used in evaluation'}
+                </p>
+                {(isAr ? framework!.usageNotesAr! : framework!.usageNotesEn!).map((note, i) => (
+                  <p key={i} className="text-[11px] text-slate-600 leading-relaxed">{note}</p>
+                ))}
+              </div>
+            )}
+
             {/* ── Applicability read (always shown first -- context resolves this BEFORE any input form) ── */}
             {assessment && style && (
               <div className={`rounded-xl border px-3 py-2.5 flex items-start gap-2 ${style.badge}`}>
@@ -419,7 +532,7 @@ function LocalContentEntryCard({
             {/* ── Step 2: input form -- ONLY once applicability resolves to 'applicable' ── */}
             {assessment?.applicability === 'applicable' && (
               <div className="mt-3">
-                {entry.countrySelection === 'SA' && (
+                {entry.countrySelection === 'SA' && entry.program === 'lcgpa-general' && (
                   <div className="grid sm:grid-cols-2 gap-3">
                     <NumberField label={isAr ? 'رواتب العمالة المحلية' : 'Local Labor Compensation'} hint={isAr ? '١٠٠٪ مؤهل' : '100% eligible'} unit={isAr ? 'ر.س' : 'SAR'} value={entry.sa.localLaborSAR} onChange={v => onUpdate(entry.id, { sa: { ...entry.sa, localLaborSAR: v } })} />
                     <NumberField label={isAr ? 'رواتب العمالة الوافدة' : 'Expatriate Labor Compensation'} hint={isAr ? '٣٧٪ مؤهل' : '37% eligible'} unit={isAr ? 'ر.س' : 'SAR'} value={entry.sa.expatLaborSAR} onChange={v => onUpdate(entry.id, { sa: { ...entry.sa, expatLaborSAR: v } })} />
@@ -428,6 +541,86 @@ function LocalContentEntryCard({
                     <NumberField label={isAr ? 'إنفاق بناء القدرات' : 'Capacity Building Spend'} hint={isAr ? '١٠٠٪ مؤهل' : '100% eligible'} unit={isAr ? 'ر.س' : 'SAR'} value={entry.sa.capacityBuildingSAR} onChange={v => onUpdate(entry.id, { sa: { ...entry.sa, capacityBuildingSAR: v } })} />
                     <NumberField label={isAr ? 'إهلاك الأصول المحلية' : 'Local Asset Depreciation'} unit={isAr ? 'ر.س' : 'SAR'} value={entry.sa.localAssetDepreciationSAR} onChange={v => onUpdate(entry.id, { sa: { ...entry.sa, localAssetDepreciationSAR: v } })} />
                     <NumberField label={isAr ? 'إجمالي إهلاك الأصول' : 'Total Asset Depreciation'} unit={isAr ? 'ر.س' : 'SAR'} value={entry.sa.totalAssetDepreciationSAR} onChange={v => onUpdate(entry.id, { sa: { ...entry.sa, totalAssetDepreciationSAR: v } })} />
+                  </div>
+                )}
+
+                {entry.countrySelection === 'SA' && entry.program === 'mandatory-list' && (
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                        {isAr ? 'هل هذه الفئة مدرجة في القائمة الإلزامية لهيئة المحتوى المحلي؟' : "Is this category on LCGPA's Mandatory List?"}
+                      </p>
+                      <div className="flex gap-1.5" role="group" aria-label={isAr ? 'الإدراج في القائمة الإلزامية' : 'Mandatory List membership'}>
+                        {([['yes', true], ['no', false]] as const).map(([k, v]) => (
+                          <button
+                            key={k}
+                            type="button"
+                            aria-pressed={entry.saMandatoryList.inMandatoryListCategory === v}
+                            onClick={() => onUpdate(entry.id, { saMandatoryList: { ...entry.saMandatoryList, inMandatoryListCategory: v } })}
+                            className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors ${
+                              entry.saMandatoryList.inMandatoryListCategory === v ? 'bg-[#082C6B] border-[#082C6B] text-white' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                            }`}
+                          >
+                            {k === 'yes' ? (isAr ? 'نعم' : 'Yes') : (isAr ? 'لا' : 'No')}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    {entry.saMandatoryList.inMandatoryListCategory === true && (
+                      <div>
+                        <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                          {isAr ? 'هل هذا المورّد معتمد من الهيئة لهذه الفئة؟' : 'Is this supplier LCGPA-certified for this category?'}
+                        </p>
+                        <div className="flex gap-1.5" role="group" aria-label={isAr ? 'حالة الاعتماد' : 'Certification status'}>
+                          {([['yes', true], ['no', false]] as const).map(([k, v]) => (
+                            <button
+                              key={k}
+                              type="button"
+                              aria-pressed={entry.saMandatoryList.certifiedForCategory === v}
+                              onClick={() => onUpdate(entry.id, { saMandatoryList: { ...entry.saMandatoryList, certifiedForCategory: v } })}
+                              className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors ${
+                                entry.saMandatoryList.certifiedForCategory === v ? 'bg-[#082C6B] border-[#082C6B] text-white' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                              }`}
+                            >
+                              {k === 'yes' ? (isAr ? 'نعم' : 'Yes') : (isAr ? 'لا' : 'No')}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {entry.countrySelection === 'SA' && entry.program === 'price-preference' && (
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    <NumberField
+                      label={isAr ? 'نسبة القيمة المصنّعة محلياً من قيمة العطاء' : 'Locally-Manufactured Share of Bid Value'}
+                      hint={isAr ? `تفضيل السعر الأقصى ${SAUDI_PROGRAMS['price-preference'].programNameAr}: ١٠٪` : 'Maximum price preference margin: 10%'}
+                      unit="%"
+                      max={100}
+                      value={entry.saPricePreference.bidValueLocallyManufacturedPct}
+                      onChange={v => onUpdate(entry.id, { saPricePreference: { ...entry.saPricePreference, bidValueLocallyManufacturedPct: v } })}
+                    />
+                  </div>
+                )}
+
+                {entry.countrySelection === 'SA' && entry.program === 'iktva-aramco' && (
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    <NumberField label={isAr ? 'A: السلع/الخدمات المحلية' : 'A: Local Goods & Services'} unit={isAr ? 'ر.س' : 'SAR'} value={entry.iktva.goodsServicesLocalSAR} onChange={v => onUpdate(entry.id, { iktva: { ...entry.iktva, goodsServicesLocalSAR: v } })} />
+                    <NumberField label={isAr ? 'A: إهلاك الأصول المحلية' : 'A: Local Asset Depreciation'} unit={isAr ? 'ر.س' : 'SAR'} value={entry.iktva.assetDepreciationLocalSAR} onChange={v => onUpdate(entry.id, { iktva: { ...entry.iktva, assetDepreciationLocalSAR: v } })} />
+                    <NumberField label={isAr ? 'A: تعويضات العمالة الوافدة المقيمة في السعودية' : 'A: Saudi-Based Expatriate Compensation'} unit={isAr ? 'ر.س' : 'SAR'} value={entry.iktva.expatCompensationInSaudiSAR} onChange={v => onUpdate(entry.id, { iktva: { ...entry.iktva, expatCompensationInSaudiSAR: v } })} />
+                    <NumberField label={isAr ? 'B: تعويضات القوى العاملة السعودية' : 'B: Saudi Workforce Compensation'} unit={isAr ? 'ر.س' : 'SAR'} value={entry.iktva.saudiWorkforceCompensationSAR} onChange={v => onUpdate(entry.id, { iktva: { ...entry.iktva, saudiWorkforceCompensationSAR: v } })} />
+                    <NumberField label={isAr ? 'C: إنفاق التدريب والتطوير' : 'C: Training & Development Spend'} unit={isAr ? 'ر.س' : 'SAR'} value={entry.iktva.trainingDevelopmentSAR} onChange={v => onUpdate(entry.id, { iktva: { ...entry.iktva, trainingDevelopmentSAR: v } })} />
+                    <NumberField label={isAr ? 'D: إنفاق تطوير الموردين' : 'D: Supplier Development Spend'} unit={isAr ? 'ر.س' : 'SAR'} value={entry.iktva.supplierDevelopmentSAR} onChange={v => onUpdate(entry.id, { iktva: { ...entry.iktva, supplierDevelopmentSAR: v } })} />
+                    <NumberField label={isAr ? 'R: إنفاق البحث والتطوير المحلي' : 'R: Local R&D Spend'} unit={isAr ? 'ر.س' : 'SAR'} value={entry.iktva.localRnDSAR} onChange={v => onUpdate(entry.id, { iktva: { ...entry.iktva, localRnDSAR: v } })} />
+                    <NumberField label={isAr ? 'E: إجمالي التكاليف (المقام)' : 'E: Total Costs (denominator)'} unit={isAr ? 'ر.س' : 'SAR'} value={entry.iktva.totalCostsSAR} onChange={v => onUpdate(entry.id, { iktva: { ...entry.iktva, totalCostsSAR: v } })} />
+                    <NumberField
+                      label={isAr ? 'I: نقاط مكافأة تحفيزية (اختياري، مبسّطة)' : 'I: Incentive Bonus Points (optional, simplified)'}
+                      hint={isAr ? 'حد أقصى ١٠ نقاط -- تبسيط مُفصَح عنه لصيغة أرامكو الفرعية الكاملة' : "Capped at 10 points -- disclosed simplification of Aramco's full bonus sub-formula"}
+                      unit="pts" max={10}
+                      value={entry.iktva.incentiveBonusPct}
+                      onChange={v => onUpdate(entry.id, { iktva: { ...entry.iktva, incentiveBonusPct: v } })}
+                    />
                   </div>
                 )}
 
@@ -532,6 +725,52 @@ function LocalContentEntryCard({
                         ? `من أصل ${assessment.computation.preferenceMarginPct} نقطة كحد أقصى لتفضيل السعر`
                         : `Out of a maximum ${assessment.computation.preferenceMarginPct}-point price preference`}
                     </p>
+                  </>
+                )}
+                {assessment.computation.mechanismType === 'category-eligibility-gate' && (
+                  <>
+                    <div className="flex items-baseline justify-between">
+                      <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        {isAr ? 'أهلية التقديم' : 'Bid Eligibility'}
+                      </span>
+                      <span className={`text-sm font-black px-2.5 py-1 rounded-full ${
+                        assessment.computation.eligibleToBid === true ? 'bg-emerald-100 text-emerald-700'
+                          : assessment.computation.eligibleToBid === false ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-500'
+                      }`}>
+                        {assessment.computation.eligibleToBid === true ? (isAr ? 'مؤهل' : 'Eligible')
+                          : assessment.computation.eligibleToBid === false ? (isAr ? 'مستبعد' : 'Gated out') : (isAr ? 'غير مكتمل' : 'Incomplete')}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-600">
+                      {isAr
+                        ? `في القائمة الإلزامية: ${assessment.computation.inMandatoryListCategory === true ? 'نعم' : assessment.computation.inMandatoryListCategory === false ? 'لا' : 'غير محدد'} — معتمد للفئة: ${assessment.computation.certifiedForCategory === true ? 'نعم' : assessment.computation.certifiedForCategory === false ? 'لا' : 'غير محدد'}`
+                        : `On Mandatory List: ${assessment.computation.inMandatoryListCategory === true ? 'Yes' : assessment.computation.inMandatoryListCategory === false ? 'No' : 'Unknown'} — Certified for category: ${assessment.computation.certifiedForCategory === true ? 'Yes' : assessment.computation.certifiedForCategory === false ? 'No' : 'Unknown'}`}
+                    </p>
+                  </>
+                )}
+                {assessment.computation.mechanismType === 'anchor-buyer-score' && (
+                  <>
+                    <div className="flex items-baseline justify-between">
+                      <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        {isAr ? 'الدرجة التوجيهية (إكتفاء)' : 'Directional Score (iktva)'}
+                      </span>
+                      <span className="text-2xl font-black text-[#082C6B]">
+                        {assessment.computation.scorePct !== null ? `${assessment.computation.scorePct.toFixed(1)}%` : '—'}
+                      </span>
+                    </div>
+                    <div className="space-y-1">
+                      {assessment.computation.components.map(comp => (
+                        <div key={comp.key} className="flex items-center justify-between text-[11px] text-slate-600">
+                          <span>{isAr ? comp.noteAr : comp.noteEn}</span>
+                          <span className="font-semibold">{comp.amountSAR.toLocaleString()}</span>
+                        </div>
+                      ))}
+                    </div>
+                    {assessment.computation.incentiveBonusPct !== null && assessment.computation.incentiveBonusPct > 0 && (
+                      <p className="text-[10px] text-emerald-700 font-semibold">
+                        {isAr ? `+ مكافأة تحفيزية ${assessment.computation.incentiveBonusPct} نقطة (مبسّطة)` : `+ Incentive bonus ${assessment.computation.incentiveBonusPct} pts (simplified)`}
+                      </p>
+                    )}
                   </>
                 )}
               </div>
@@ -684,7 +923,11 @@ export function LocalContentICVCheck() {
     .filter(e => e.countrySelection !== 'OTHER')
     .map(e => ({
       entry: e,
-      assessment: assessSupplierLocalContent(e.countrySelection as LocalContentCountry, e.context, { sa: e.sa, ae: e.ae, jo: e.jo }),
+      assessment: assessSupplierLocalContent(
+        e.countrySelection as LocalContentCountry, e.context,
+        { sa: e.sa, ae: e.ae, jo: e.jo, saMandatoryList: e.saMandatoryList, saPricePreference: e.saPricePreference, iktva: e.iktva },
+        e.countrySelection === 'SA' ? e.program : undefined,
+      ),
     }));
   const otherCountryEntries = state.entries.filter(e => e.countrySelection === 'OTHER');
 
@@ -849,10 +1092,12 @@ export function LocalContentICVCheck() {
                 </thead>
                 <tbody>
                   {portfolioRollup.map((g, i) => (
-                    <tr key={`${g.country}-${g.procurementContext}-${i}`} className="border-b border-slate-100">
+                    <tr key={`${g.country}-${g.program ?? ''}-${g.procurementContext}-${i}`} className="border-b border-slate-100">
                       <td className="py-1.5 pe-3 font-semibold text-slate-700">
                         <span aria-hidden="true">{COUNTRY_FLAG[g.country]}</span>{' '}
-                        {isAr ? COUNTRY_FRAMEWORKS[g.country].countryNameAr : COUNTRY_FRAMEWORKS[g.country].countryNameEn}
+                        {g.country === 'SA' && g.program
+                          ? (isAr ? SAUDI_PROGRAM_LABELS[g.program].ar : SAUDI_PROGRAM_LABELS[g.program].en)
+                          : (isAr ? COUNTRY_FRAMEWORKS[g.country].countryNameAr : COUNTRY_FRAMEWORKS[g.country].countryNameEn)}
                         <span className="text-slate-400 font-normal"> — {isAr ? CONTEXT_TABS.find(c => c.v === g.procurementContext)?.ar : CONTEXT_TABS.find(c => c.v === g.procurementContext)?.en}</span>
                       </td>
                       <td className="py-1.5 pe-3 text-slate-600">
@@ -868,6 +1113,7 @@ export function LocalContentICVCheck() {
                       <td className="py-1.5 pe-3 font-bold text-[#082C6B]">
                         {g.weightedScorePct !== null ? `${g.weightedScorePct.toFixed(1)}%`
                           : g.weightedEffectiveDiscountPct !== null ? `${g.weightedEffectiveDiscountPct.toFixed(1)} pts`
+                          : g.gateEligibleSharePct !== null ? (isAr ? `${g.gateEligibleSharePct.toFixed(0)}٪ مؤهل` : `${g.gateEligibleSharePct.toFixed(0)}% eligible`)
                           : '—'}
                       </td>
                     </tr>

@@ -4,12 +4,16 @@ import {
   recommendLocalContentAction,
   rollUpPortfolioLocalContent,
   COUNTRY_FRAMEWORKS,
+  SAUDI_PROGRAMS,
   JORDAN_PRICE_PREFERENCE_MARGIN_PCT,
+  SAUDI_PRICE_PREFERENCE_MARGIN_PCT,
   type SupplierLocalContentInputs,
   type LocalContentAssessment,
   type EligibleSpendRatioResult,
   type WeightedPillarScoreResult,
   type PricePreferenceMarginResult,
+  type CategoryEligibilityGateResult,
+  type AnchorBuyerScoreResult,
 } from './supplierLocalContentEligibility';
 
 // ===========================================================================
@@ -476,5 +480,272 @@ describe('reasonAr bilingual completeness (regression: must never say less than 
     const a = assessSupplierLocalContent('JO', 'semi-government-soe', { jo: { bidValueLocallyManufacturedPct: 50 } });
     expect(a.reasonAr).not.toContain('semi-government-soe');
     expect(a.reasonAr).toContain('شبه حكومي');
+  });
+});
+
+// ===========================================================================
+// SA — program routing (default resolves to lcgpa-general, back-compat)
+// ===========================================================================
+
+describe('SA — program routing default', () => {
+  it('omitting the program param resolves to lcgpa-general (back-compat with every pre-existing caller)', () => {
+    const a = assessSupplierLocalContent('SA', 'government', { sa: { localLaborSAR: 1, expatLaborSAR: 0, localGoodsServicesSAR: 0, foreignGoodsServicesSAR: 0, capacityBuildingSAR: 0, localAssetDepreciationSAR: 0, totalAssetDepreciationSAR: 0 } });
+    expect(a.program).toBe('lcgpa-general');
+    expect(a.framework).toBe(SAUDI_PROGRAMS['lcgpa-general']);
+  });
+
+  it('non-SA countries always resolve program to null', () => {
+    const a = assessSupplierLocalContent('AE', 'government', { ae: { manufacturingOrThirdPartySpendLocalAED: 1, manufacturingOrThirdPartySpendTotalAED: 1, investmentNBVLocalAED: 0, investmentNBVTotalAED: 0, emiratisationAnnualSpendAED: 0, expatriateHeadcount: 0, exportRevenueAED: 0, emiratiHeadcountGrowthPct: 0, investmentGrowthPct: 0, registeredOnMainland: false } });
+    expect(a.program).toBeNull();
+  });
+
+  it('lcgpa-general carries the two usage notes (40% high-value-contract weighting, ~30% consulting/IT figure) bilingually', () => {
+    const fw = SAUDI_PROGRAMS['lcgpa-general'];
+    expect(fw.usageNotesEn).toHaveLength(2);
+    expect(fw.usageNotesAr).toHaveLength(2);
+    expect(fw.usageNotesEn![0]).toContain('40%');
+    expect(fw.usageNotesAr![0]).toContain('٤٠٪');
+    expect(fw.usageNotesEn![1]).toContain('spa.gov.sa returned 403');
+    expect(fw.usageNotesAr![1]).toContain('٤٠٣');
+  });
+});
+
+// ===========================================================================
+// SA — LCGPA Mandatory List (category-eligibility-gate, type 3)
+// ===========================================================================
+
+describe('SA / LCGPA Mandatory List — category-eligibility-gate', () => {
+  it('soft: category not on the Mandatory List -> gate does not apply, eligible regardless of certification', () => {
+    const a = assessSupplierLocalContent('SA', 'government', { saMandatoryList: { inMandatoryListCategory: false, certifiedForCategory: null } }, 'mandatory-list');
+    expect(a.applicability).toBe('applicable');
+    const c = a.computation as CategoryEligibilityGateResult;
+    expect(c.eligibleToBid).toBe(true);
+    expect(a.reasonEn).toContain('eligible to bid');
+    expect(a.reasonAr).toContain('مؤهل للتقديم');
+  });
+
+  it('hardest: in-list category, supplier NOT certified -> gated out (false), never a percentage', () => {
+    const a = assessSupplierLocalContent('SA', 'government', { saMandatoryList: { inMandatoryListCategory: true, certifiedForCategory: false } }, 'mandatory-list');
+    const c = a.computation as CategoryEligibilityGateResult;
+    expect(c.eligibleToBid).toBe(false);
+    expect(a.reasonEn).toContain('gated out of this category');
+    expect(a.reasonAr).toContain('مستبعد من هذه الفئة');
+  });
+
+  it('boundary: in-list category, certification status unknown (null) -> insufficient, not a guessed true/false', () => {
+    const a = assessSupplierLocalContent('SA', 'government', { saMandatoryList: { inMandatoryListCategory: true, certifiedForCategory: null } }, 'mandatory-list');
+    const c = a.computation as CategoryEligibilityGateResult;
+    expect(c.eligibleToBid).toBeNull();
+    expect(a.reasonEn).toContain('incomplete inputs');
+    expect(a.reasonAr).toContain('بيانات غير مكتملة');
+  });
+
+  it('in-list + certified -> eligible', () => {
+    const a = assessSupplierLocalContent('SA', 'semi-government-soe', { saMandatoryList: { inMandatoryListCategory: true, certifiedForCategory: true } }, 'mandatory-list');
+    const c = a.computation as CategoryEligibilityGateResult;
+    expect(c.eligibleToBid).toBe(true);
+  });
+
+  it('no inputs supplied at all -> null gate, reasonAr carries a genuinely different phrase than reasonEn (not English reused)', () => {
+    const a = assessSupplierLocalContent('SA', 'government', {}, 'mandatory-list');
+    const c = a.computation as CategoryEligibilityGateResult;
+    expect(c.eligibleToBid).toBeNull();
+    expect(a.reasonEn).toBe('No Mandatory List category/certification inputs supplied yet.');
+    expect(a.reasonAr).toBe('لم تُدخل بيانات فئة القائمة الإلزامية أو الاعتماد بعد.');
+  });
+
+  it('recommendLocalContentAction: only fires when genuinely gated out (false), never for null/true', () => {
+    const gatedOut = assessSupplierLocalContent('SA', 'government', { saMandatoryList: { inMandatoryListCategory: true, certifiedForCategory: false } }, 'mandatory-list');
+    const rec = recommendLocalContentAction(gatedOut, null);
+    expect(rec).not.toBeNull();
+    expect(rec!.primaryEn).toContain('certification');
+    expect(rec!.alternativeEn).toContain('subcontract');
+    expect(rec!.primaryAr).toContain('اعتماد');
+
+    const eligible = assessSupplierLocalContent('SA', 'government', { saMandatoryList: { inMandatoryListCategory: true, certifiedForCategory: true } }, 'mandatory-list');
+    expect(recommendLocalContentAction(eligible, null)).toBeNull();
+
+    const unknown = assessSupplierLocalContent('SA', 'government', { saMandatoryList: { inMandatoryListCategory: true, certifiedForCategory: null } }, 'mandatory-list');
+    expect(recommendLocalContentAction(unknown, null)).toBeNull();
+  });
+});
+
+// ===========================================================================
+// SA — LCGPA National Product Price Preference (reuses price-preference-margin,
+// same shape as Jordan — validates the "shared primitives" design intent)
+// ===========================================================================
+
+describe('SA / LCGPA — price-preference (10%, shared shape with Jordan)', () => {
+  it('soft: partial local share -> proportional discount at the Saudi 10% margin (not Jordan\'s 20%)', () => {
+    const a = assessSupplierLocalContent('SA', 'government', { saPricePreference: { bidValueLocallyManufacturedPct: 40 } }, 'price-preference');
+    const c = a.computation as PricePreferenceMarginResult;
+    expect(c.preferenceMarginPct).toBe(SAUDI_PRICE_PREFERENCE_MARGIN_PCT);
+    expect(c.preferenceMarginPct).not.toBe(JORDAN_PRICE_PREFERENCE_MARGIN_PCT);
+    expect(c.effectiveBidDiscountPct).toBeCloseTo(4, 6);
+  });
+
+  it('boundary: 100% locally-manufactured -> full 10-point discount; recommendation correctly returns null (nothing to improve)', () => {
+    const a = assessSupplierLocalContent('SA', 'government', { saPricePreference: { bidValueLocallyManufacturedPct: 100 } }, 'price-preference');
+    const c = a.computation as PricePreferenceMarginResult;
+    expect(c.effectiveBidDiscountPct).toBeCloseTo(10, 6);
+    expect(recommendLocalContentAction(a, null)).toBeNull();
+  });
+
+  it('boundary: 0% -> zero discount, still a real computed answer (not insufficient-data)', () => {
+    const a = assessSupplierLocalContent('SA', 'government', { saPricePreference: { bidValueLocallyManufacturedPct: 0 } }, 'price-preference');
+    expect(a.applicability).toBe('applicable');
+    const c = a.computation as PricePreferenceMarginResult;
+    expect(c.effectiveBidDiscountPct).toBe(0);
+  });
+
+  it('hardest: private-commercial context -> not-applicable (LCGPA price preference is government/SOE only), not a zero score', () => {
+    const a = assessSupplierLocalContent('SA', 'private-commercial', { saPricePreference: { bidValueLocallyManufacturedPct: 90 } }, 'price-preference');
+    expect(a.applicability).toBe('not-applicable');
+    expect(a.computation).toBeNull();
+    expect(a.reasonAr).not.toContain('private-commercial'); // no raw English enum spliced into Arabic
+  });
+});
+
+// ===========================================================================
+// SA — Aramco IKTVA (anchor-buyer-score, type 2). iktva% = ((A+B+C+D+R)/E) + I
+// ===========================================================================
+
+describe('SA / Aramco IKTVA — anchor-buyer-score', () => {
+  it('soft: realistic supplier, no incentive bonus supplied', () => {
+    const inputs: SupplierLocalContentInputs = {
+      iktva: {
+        goodsServicesLocalSAR: 3_000_000, assetDepreciationLocalSAR: 200_000, expatCompensationInSaudiSAR: 500_000,
+        saudiWorkforceCompensationSAR: 1_500_000, trainingDevelopmentSAR: 100_000, supplierDevelopmentSAR: 50_000,
+        localRnDSAR: 0, totalCostsSAR: 6_000_000, incentiveBonusPct: null,
+      },
+    };
+    const a = assessSupplierLocalContent('SA', 'semi-government-soe', inputs, 'iktva-aramco');
+    expect(a.applicability).toBe('applicable');
+    const c = a.computation as AnchorBuyerScoreResult;
+    const numerator = 3_000_000 + 200_000 + 500_000 + 1_500_000 + 100_000 + 50_000 + 0;
+    expect(c.scorePct).not.toBeNull();
+    expect(c.scorePct!).toBeCloseTo((numerator / 6_000_000) * 100, 6);
+    expect(c.components).toHaveLength(5);
+    expect(c.incentiveBonusPct).toBeNull();
+  });
+
+  it('hardest: incentive bonus supplied out-of-range (150) is clamped to the disclosed 0-10 simplification cap', () => {
+    const inputs: SupplierLocalContentInputs = {
+      iktva: {
+        goodsServicesLocalSAR: 1_000_000, assetDepreciationLocalSAR: 0, expatCompensationInSaudiSAR: 0,
+        saudiWorkforceCompensationSAR: 0, trainingDevelopmentSAR: 0, supplierDevelopmentSAR: 0,
+        localRnDSAR: 0, totalCostsSAR: 1_000_000, incentiveBonusPct: 150,
+      },
+    };
+    const a = assessSupplierLocalContent('SA', 'semi-government-soe', inputs, 'iktva-aramco');
+    const c = a.computation as AnchorBuyerScoreResult;
+    // numerator == totalCosts -> base 100%, clamp to 100 overall despite the (clamped-to-10) bonus
+    expect(c.scorePct).toBeCloseTo(100, 6);
+  });
+
+  it('boundary: totalCostsSAR = 0 -> null score (undefined denominator), not a divide-by-zero artifact', () => {
+    const inputs: SupplierLocalContentInputs = {
+      iktva: { goodsServicesLocalSAR: 500_000, assetDepreciationLocalSAR: 0, expatCompensationInSaudiSAR: 0, saudiWorkforceCompensationSAR: 0, trainingDevelopmentSAR: 0, supplierDevelopmentSAR: 0, localRnDSAR: 0, totalCostsSAR: 0, incentiveBonusPct: 0 },
+    };
+    const a = assessSupplierLocalContent('SA', 'semi-government-soe', inputs, 'iktva-aramco');
+    const c = a.computation as AnchorBuyerScoreResult;
+    expect(c.scorePct).toBeNull();
+    expect(a.reasonEn).toContain('incomplete inputs');
+    expect(a.reasonAr).toContain('بيانات غير مكتملة');
+  });
+
+  it('IKTVA is scoped to semi-government-soe only (Aramco is an anchor-buyer program, not the general government score) -- government context is not-applicable', () => {
+    const a = assessSupplierLocalContent('SA', 'government', { iktva: { goodsServicesLocalSAR: 1, assetDepreciationLocalSAR: 0, expatCompensationInSaudiSAR: 0, saudiWorkforceCompensationSAR: 0, trainingDevelopmentSAR: 0, supplierDevelopmentSAR: 0, localRnDSAR: 0, totalCostsSAR: 1, incentiveBonusPct: 0 } }, 'iktva-aramco');
+    expect(a.applicability).toBe('not-applicable');
+  });
+
+  it('reasonAr carries the actual score value in Arabic numerals, never the raw English procurementContext literal', () => {
+    const inputs: SupplierLocalContentInputs = {
+      iktva: { goodsServicesLocalSAR: 500_000, assetDepreciationLocalSAR: 0, expatCompensationInSaudiSAR: 0, saudiWorkforceCompensationSAR: 0, trainingDevelopmentSAR: 0, supplierDevelopmentSAR: 0, localRnDSAR: 0, totalCostsSAR: 1_000_000, incentiveBonusPct: 0 },
+    };
+    const a = assessSupplierLocalContent('SA', 'semi-government-soe', inputs, 'iktva-aramco');
+    const c = a.computation as AnchorBuyerScoreResult;
+    expect(a.reasonAr).toContain(`${c.scorePct!.toFixed(1)}`.replace('.', '.')); // numeral present
+    expect(a.reasonAr).toContain('٪');
+    expect(a.reasonAr).not.toContain('semi-government-soe');
+  });
+
+  it('recommendLocalContentAction: gap-closing recommendation fires for anchor-buyer-score exactly like the other score-based mechanisms', () => {
+    const inputs: SupplierLocalContentInputs = {
+      iktva: { goodsServicesLocalSAR: 200_000, assetDepreciationLocalSAR: 0, expatCompensationInSaudiSAR: 0, saudiWorkforceCompensationSAR: 0, trainingDevelopmentSAR: 0, supplierDevelopmentSAR: 0, localRnDSAR: 0, totalCostsSAR: 1_000_000, incentiveBonusPct: 0 },
+    };
+    const a = assessSupplierLocalContent('SA', 'semi-government-soe', inputs, 'iktva-aramco');
+    const rec = recommendLocalContentAction(a, 60);
+    expect(rec).not.toBeNull();
+    expect(rec!.primaryEn).toContain('gap');
+    expect(rec!.alternativeAr).toContain('مناقصة');
+  });
+});
+
+// ===========================================================================
+// SA — GAMI defense & LIKT (both not-yet-sourced, each with real dated
+// national-level context rather than a blank placeholder)
+// ===========================================================================
+
+describe('SA — GAMI defense localization (not-yet-sourced, real dated context)', () => {
+  it('returns insufficient-data with the real 24.89% / 2030 figures in both languages, never a fabricated per-supplier score', () => {
+    const a = assessSupplierLocalContent('SA', 'government', {}, 'gami-defense');
+    expect(a.applicability).toBe('insufficient-data');
+    expect(a.computation).toEqual({ mechanismType: 'not-yet-sourced' });
+    expect(a.reasonEn).toContain('24.89%');
+    expect(a.reasonEn).toContain('2030');
+    expect(a.reasonAr).toContain('٢٤.٨٩٪');
+    expect(a.reasonAr).toContain('٢٠٣٠');
+    expect(a.program).toBe('gami-defense');
+  });
+});
+
+describe('SA — LIKT (Localization of Industry & Knowledge Transfer, not-yet-sourced)', () => {
+  it('is modeled as a genuinely distinct program from GAMI, with its own bilingual sourceNote', () => {
+    const a = assessSupplierLocalContent('SA', 'government', {}, 'likt');
+    expect(a.applicability).toBe('insufficient-data');
+    expect(a.program).toBe('likt');
+    expect(SAUDI_PROGRAMS.likt.sourceNoteEn).not.toEqual(SAUDI_PROGRAMS['gami-defense'].sourceNoteEn);
+    expect(a.reasonEn).toContain('LIKT');
+    expect(a.reasonAr).toContain('LIKT');
+  });
+});
+
+// ===========================================================================
+// SA — portfolio rollup groups by program, not just country+context (two
+// different Saudi programs for the same context must never be merged into
+// one averaged group -- Decision Record 8.7)
+// ===========================================================================
+
+describe('SA — portfolio rollup groups by program', () => {
+  it('lcgpa-general and mandatory-list suppliers in the same government context land in two separate groups', () => {
+    const general = assessSupplierLocalContent('SA', 'government', { sa: { localLaborSAR: 900_000, expatLaborSAR: 100_000, localGoodsServicesSAR: 0, foreignGoodsServicesSAR: 0, capacityBuildingSAR: 0, localAssetDepreciationSAR: 0, totalAssetDepreciationSAR: 0 } }, 'lcgpa-general');
+    const gate = assessSupplierLocalContent('SA', 'government', { saMandatoryList: { inMandatoryListCategory: true, certifiedForCategory: true } }, 'mandatory-list');
+
+    const groups = rollUpPortfolioLocalContent([
+      { supplierId: 's1', spendShare: 60, assessment: general },
+      { supplierId: 's2', spendShare: 40, assessment: gate },
+    ]);
+
+    expect(groups).toHaveLength(2);
+    const generalGroup = groups.find(g => g.program === 'lcgpa-general')!;
+    const gateGroup = groups.find(g => g.program === 'mandatory-list')!;
+    expect(generalGroup).toBeDefined();
+    expect(gateGroup).toBeDefined();
+    expect(generalGroup.mechanismType).toBe('eligible-spend-ratio');
+    expect(gateGroup.mechanismType).toBe('category-eligibility-gate');
+    expect(gateGroup.gateEligibleSharePct).toBe(100);
+    expect(generalGroup.weightedScorePct).not.toBeNull();
+  });
+
+  it('gateEligibleSharePct is spend-share-weighted across mixed eligible/gated suppliers', () => {
+    const eligible = assessSupplierLocalContent('SA', 'government', { saMandatoryList: { inMandatoryListCategory: true, certifiedForCategory: true } }, 'mandatory-list');
+    const gated = assessSupplierLocalContent('SA', 'government', { saMandatoryList: { inMandatoryListCategory: true, certifiedForCategory: false } }, 'mandatory-list');
+    const groups = rollUpPortfolioLocalContent([
+      { supplierId: 's1', spendShare: 30, assessment: eligible },
+      { supplierId: 's2', spendShare: 70, assessment: gated },
+    ]);
+    expect(groups).toHaveLength(1);
+    expect(groups[0]!.gateEligibleSharePct).toBeCloseTo(30, 6); // only the eligible supplier's spend share counts as eligible
   });
 });
