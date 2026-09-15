@@ -481,9 +481,11 @@ function LocalContentEntryCard({
   const [methodologyOpen, setMethodologyOpen] = useState(false);
   const isOther = entry.countrySelection === 'OTHER';
   const isSA = entry.countrySelection === 'SA';
-  // Generalized 16 Sep 2026 from an SA-only check: any country whose
-  // PROGRAMS_BY_COUNTRY list has more than one entry gets the routing
-  // question row below (today: SA and AE).
+  // Generalized 16 Sep 2026 from an SA-only check, then again 17 Sep 2026
+  // when the 5-country continuation gave every remaining country a second
+  // program: any country whose PROGRAMS_BY_COUNTRY list has more than one
+  // entry gets the routing question row below (as of 17 Sep 2026, that is
+  // all 7 countries).
   const hasMultiplePrograms = !isOther && PROGRAMS_BY_COUNTRY[entry.countrySelection as LocalContentCountry].length > 1;
   const framework = !isOther ? PROGRAMS[entry.program] : null;
   const assessment: LocalContentAssessment | null = !isOther
