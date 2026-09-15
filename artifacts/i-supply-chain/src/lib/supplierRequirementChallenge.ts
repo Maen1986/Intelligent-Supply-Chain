@@ -79,6 +79,17 @@ export interface RequirementBrief {
   requirementType: RequirementType;
   challengeQuestions: Array<{ question: string; rationale: string; clientResponse: string | null }>;
   unspscClassification: UnspscClassificationResult;
+  /**
+   * Consultant-entered category label for a requirement UNSPSC cannot yet
+   * classify (any goods requirement, and any services requirement outside
+   * the 16 licensed segments). Carried through to the brief -- and into
+   * confidence assessment -- so Module 02 and a human reviewer both see the
+   * same category a real classification would have shown, rather than the
+   * brief silently dropping the one piece of categorization evidence a
+   * consultant actually supplied. Undefined when UNSPSC itself resolved
+   * the classification (covered: true).
+   */
+  freeTextCategory?: string;
   specification: string[];
   certificationRequired: string[];
   capacityRequirement: CapacityRequirement;
@@ -295,6 +306,13 @@ export function buildRequirementBrief(input: {
   questions: ChallengeQuestion[];
   challengeResponses: ChallengeQuestionResponse[];
   unspscClassification: UnspscClassificationResult;
+  /**
+   * Consultant-entered category, e.g. for a goods requirement UNSPSC cannot
+   * classify. Optional -- omit when unspscClassification.covered is true.
+   * Forwarded into confidence assessment and into the returned brief; see
+   * RequirementBrief.freeTextCategory for why this matters.
+   */
+  freeTextCategory?: string;
   specification: string[];
   certificationRequired: string[];
   capacityRequirement: CapacityRequirement;
@@ -302,7 +320,8 @@ export function buildRequirementBrief(input: {
   assumptions: string[];
 }): RequirementBrief {
   const { statedNeed, requirementType, questions, challengeResponses, unspscClassification,
-    specification, certificationRequired, capacityRequirement, geographyConstraint, assumptions } = input;
+    freeTextCategory, specification, certificationRequired, capacityRequirement, geographyConstraint,
+    assumptions } = input;
 
   const responseById = new Map(challengeResponses.map(r => [r.questionId, r.clientResponse]));
   const challengeQuestions = questions.map(q => ({
@@ -320,6 +339,7 @@ export function buildRequirementBrief(input: {
     challengeResponses,
     specification,
     capacityRequirement,
+    freeTextCategory,
   });
 
   return {
@@ -327,6 +347,7 @@ export function buildRequirementBrief(input: {
     requirementType,
     challengeQuestions,
     unspscClassification,
+    freeTextCategory,
     specification,
     certificationRequired,
     capacityRequirement,
