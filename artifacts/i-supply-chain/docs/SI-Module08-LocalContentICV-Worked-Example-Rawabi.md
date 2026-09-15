@@ -1,9 +1,9 @@
 # SI Module 08 — Local Content / ICV Eligibility
 ### Worked Example, Sourced Methodology, and Stress-Test Record — Rawabi Advanced Industries
 
-*Registry: SI-08 (draft, pending #436/#441 formal registry entry). Date: 15 Sep 2026, updated 16 Sep 2026 (Saudi Arabia mechanism decomposition, Part 1 slice, section 8; UAE mechanism decomposition + program-architecture generalization, same day, section 9), updated again 17 Sep 2026 (Jordan's second mechanism, Oman, Qatar, Bahrain, Kuwait -- closing out the rest of Part 1, section 10).*
-*Engine file: `src/lib/supplierLocalContentEligibility.ts` (953 lines, 20 programs across all 7 countries via a generalized `LocalContentProgram` architecture — see section 9's own note on why the Saudi-only `SaudiProgram` pattern was generalized, and section 10.1 for the 7 programs added 17 Sep 2026). Test file: `src/lib/supplierLocalContentEligibility.test.ts` (109 tests: 39 original + 23 Saudi-mechanism + 15 UAE-mechanism/architecture + 32 Jordan/Oman/Qatar/Bahrain/Kuwait-mechanism tests, soft/hardest/boundary tiers; the OM/QA/BH/KW not-yet-sourced block and the 7-country structural-sanity check each register more runtime tests than their single `it(` call-site, so this N is Vitest's executed count, not a literal-text `it(` search).*
-*Status: library-complete, unit-tested, cross-engine chain-tested, live UI rebuilt as a multi-supplier list per an independent senior-QA review (`/local-content-icv`, QA-10/10-walked-through, 16 Sep 2026), extended with Saudi Arabia's full mechanism decomposition (section 8), the UAE's (section 9: MoIAT ICV usage note + genuine incentive-not-gate negative finding, and the Tawazun defense-offset mechanism with a real sourced formula), and now Jordan's second mechanism plus real sourced programs for Oman, Qatar, Bahrain, and Kuwait (section 10, 17 Sep 2026) -- completing the rest of Part 1 (GCC/Jordan coverage). A dual-sided buyer/supplier value-framing panel is live in the UI for every country and every sourced mechanism type. See "What Is Not Yet Done" below for what remains, including the backend table this pass added but has not provisioned, and Part 2 of the assignment (non-GCC coverage), which is explicitly not started yet.*
+*Registry: SI-08 (draft, pending #436/#441 formal registry entry). Date: 15 Sep 2026, updated 16 Sep 2026 (Saudi Arabia mechanism decomposition, Part 1 slice, section 8; UAE mechanism decomposition + program-architecture generalization, same day, section 9), updated again 17 Sep 2026 (Jordan's second mechanism, Oman, Qatar, Bahrain, Kuwait -- closing out the rest of Part 1, section 10), updated again 15 Sep 2026 (Egypt mechanism decomposition -- opening Part 2, non-GCC coverage, section 11).*
+*Engine file: `src/lib/supplierLocalContentEligibility.ts` (1,701 lines, 23 programs across all 8 countries via a generalized `LocalContentProgram` architecture — see section 9's own note on why the Saudi-only `SaudiProgram` pattern was generalized, section 10.1 for the 7 programs added 17 Sep 2026, and section 11.1 for the 3 Egyptian programs added 15 Sep 2026). Test file: `src/lib/supplierLocalContentEligibility.test.ts` (120 tests: 39 original + 23 Saudi-mechanism + 15 UAE-mechanism/architecture + 32 Jordan/Oman/Qatar/Bahrain/Kuwait-mechanism + 11 Egypt-mechanism tests, soft/hardest/boundary tiers; the OM/QA/BH/KW not-yet-sourced block and the 8-country structural-sanity check each register more runtime tests than their single `it(` call-site, so this N is Vitest's executed count, not a literal-text `it(` search).*
+*Status: library-complete, unit-tested, cross-engine chain-tested, live UI rebuilt as a multi-supplier list per an independent senior-QA review (`/local-content-icv`, QA-10/10-walked-through, 16 Sep 2026), extended with Saudi Arabia's full mechanism decomposition (section 8), the UAE's (section 9: MoIAT ICV usage note + genuine incentive-not-gate negative finding, and the Tawazun defense-offset mechanism with a real sourced formula), Jordan's second mechanism plus real sourced programs for Oman, Qatar, Bahrain, and Kuwait (section 10, 17 Sep 2026, completing Part 1 / GCC-Jordan coverage), and now Egypt's two sourced price-preference mechanisms plus one honest not-yet-sourced entry (section 11, 15 Sep 2026, opening Part 2 / non-GCC coverage). A dual-sided buyer/supplier value-framing panel is live in the UI for every country and every sourced mechanism type. See "What Is Not Yet Done" below for what remains, including the backend table this pass added but has not provisioned, and the rest of Part 2 (Turkey, UK, USA, China, per the platform owner's own stated order), which is not started yet.*
 
 ---
 
@@ -65,7 +65,7 @@ remain live and completely unchanged by this work.
 
 ---
 
-## 4. Stress-Test Record (39 tests as of 15 Sep 2026, all passing; three tiers per mechanism — see section 8.8 for the 23 additional Saudi-mechanism tests (62 total), section 9.5 for the 15 additional UAE-mechanism/architecture tests added 16 Sep 2026 (77 total), and section 10.8 for the 32 additional Jordan/Oman/Qatar/Bahrain/Kuwait-mechanism tests added 17 Sep 2026 (109 total))
+## 4. Stress-Test Record (39 tests as of 15 Sep 2026, all passing; three tiers per mechanism — see section 8.8 for the 23 additional Saudi-mechanism tests (62 total), section 9.5 for the 15 additional UAE-mechanism/architecture tests added 16 Sep 2026 (77 total), section 10.8 for the 32 additional Jordan/Oman/Qatar/Bahrain/Kuwait-mechanism tests added 17 Sep 2026 (109 total), and section 11.5 for the 11 additional Egypt-mechanism tests added 15 Sep 2026 (120 total))
 
 ### 4.1 Saudi Arabia — LCGPA eligible-spend-ratio
 
@@ -793,6 +793,173 @@ authorities alongside LCGPA, MoIAT, and Jordan's ministry) rather than only the 
 the same honesty discipline this document itself follows, applied to the page a real user reads
 first.
 
+## 11. Egypt Mechanism Decomposition — Part 2 Opening (15 Sep 2026)
+
+Part 1 (GCC + Jordan, sections 8-10) closed out with all 7 original countries now carrying at
+least one real sourced mechanism. Part 2 ("non-GCC coverage") was explicitly flagged as not started
+in section 7 above. Per the platform owner's own direction ("go with egypt, then turkey, then UK,
+then USA, then China"), this pass opened Part 2 with Egypt -- the first country added to
+`LocalContentCountry` since the engine's original 7, and one of Rawabi's own named non-GCC supplier
+countries (section 1's own scenario intro already lists Egypt as a real Rawabi sourcing country,
+alongside China and Turkey).
+
+**Coverage-scope decision, stated here rather than only in conversation:** this engine does not
+attempt to pre-build a mechanism for every country in the world. Most countries run no GCC/
+Jordan-style local-content or ICV regime at all, so forcing one would mean either fabricating a
+formula (Decision Record 8.7) or filling the union with dozens of empty `not-yet-sourced` entries
+that add no real decision-relevant value. Coverage grows on demand, prioritized by where ISC clients
+have real supplier exposure -- the same demand-driven logic already used to decide which GCC country
+got a second or third mechanism first (section 10's own five-country continuation). A country not
+yet in `LocalContentCountry` resolves through the UI's pre-existing `'OTHER'` pseudo-value (section
+9's own build) to an honest "not covered by this module" state, a third distinct reason for "no
+number" alongside `not-yet-sourced` and `not-applicable` -- never a silent gap.
+
+Two genuinely different, real, sourced Egyptian mechanisms were found this pass, plus one honest
+`not-yet-sourced` entry. Both sourced mechanisms reuse the existing `price-preference-margin`
+mechanism type and `computePricePreferenceMargin` primitive -- no new mechanism type or shared
+computation was needed, unlike sections 8-10's `spend-set-aside-target` and `modified-icv-score`
+additions.
+
+### 11.1 Six-type taxonomy → Egyptian program mapping
+
+| Program | `mechanismType` | Status |
+|---|---|---|
+| `eg-price-preference` (default program) | `price-preference-margin` | Sourced: Law No. 5 of 2015 (as amended by Law No. 90 of 2018) -- a 40%-local-content qualifying threshold, then a flat 15% price preference in government/public-company procurement evaluation |
+| `eg-oil-gas-price-preference` | `price-preference-margin` | Sourced: Production Sharing Agreement (PSA) local-contractor priority -- a 10% price-band preference for qualifying local contractors, run by petroleum-sector operating companies under Ministry of Petroleum oversight |
+| `eg-auto-local-content` | `not-yet-sourced` | Real, dated national target disclosed (60% local content, revamped AIDP), no published per-supplier formula found |
+
+### 11.2 `eg-price-preference` -- price-preference-margin, threshold-gated (a genuinely different shape)
+
+Source: Egypt's Law No. 5 of 2015 ("Preference of Egyptian Products in Governmental Contracts", as
+amended by Law No. 90 of 2018) requires a bid's supplied goods/services to contain at least 40%
+Egyptian-origin local content, by estimated project value, to qualify as an "Egyptian product";
+qualifying Egyptian bidders then receive a flat 15% price preference against foreign bids in
+evaluation (per the US government's own trade.gov "Egypt -- Selling to the Public Sector" guide).
+This is a **threshold gate, not a continuous scale** -- a genuine departure from how the same
+`price-preference-margin` mechanism type behaves for Jordan/Oman/Saudi (where the margin scales
+proportionally with the locally-manufactured share all the way from 0% to 100%). This engine models
+the distinction honestly rather than smoothing Egypt into the continuous-scaling assumption: the
+qualifying threshold converts a supplier's declared Egyptian-content percentage into a binary
+100%/0% share before the shared primitive ever runs, the same binary-to-share conversion already
+used for Bahrain's SME price preference (section 10.6) -- three different real-world qualifying
+rules (a spend percentage in Jordan/Oman, SME classification in Bahrain, a local-content threshold
+in Egypt), one shared computation, disclosed per-program rather than assumed identical.
+
+- **Buyer's reading** (the tendering government entity or public company/enterprise): a clear,
+  binary qualifying bar -- either a bid genuinely meets the 40% Egyptian-content standard and earns
+  the full 15-point advantage, or it does not and competes on price/technical merit alone. No
+  partial-credit ambiguity for evaluators to adjudicate case by case.
+- **Supplier's reading:** the entire lever is crossing the 40% line, not incremental improvement
+  below it -- a supplier at 38% Egyptian content gets exactly the same zero preference as one at 5%,
+  so the decision-relevant question is whether closing the specific gap to 40% is worth it for this
+  tender, not whether to nudge the number up slightly.
+- Worked mini-example: an Egyptian building-materials supplier bidding into a government
+  infrastructure tender declares 55% Egyptian-origin local content (steel rebar and cement sourced
+  domestically) → `egyptianContentSharePct: 55` → qualifies (>=40) → `locallyManufacturedSharePct:
+  100`, `effectiveBidDiscountPct: 15` (the full margin) → `recommendLocalContentAction` returns
+  `null` (already at the maximum available advantage, nothing left to recommend). The same supplier
+  at 25% Egyptian content (importing more of the specification) → does not qualify →
+  `locallyManufacturedSharePct: 0`, `effectiveBidDiscountPct: 0` → the recommendation fires: source
+  enough additional Egyptian-origin content to cross the 40% threshold before this tender's deadline,
+  or (the honest alternative) accept the bid competes on its own technical/commercial merits without
+  any price cushion.
+
+### 11.3 `eg-oil-gas-price-preference` -- a genuinely different buyer, legal basis, and margin
+
+Source: Egypt's Production Sharing Agreement (PSA) model -- the standard contractual framework
+governing oil & gas exploration/production, under the Mines and Quarries Law of 1953, the Investment
+Guarantees and Incentives Act of 1997, and the Ministry of Petroleum's own PSA terms -- requires
+operating (International Oil Company) contractors to give priority to local Egyptian contractors and
+sub-contractors "when their performance is comparable to international performance, and the prices
+of their services are not higher than other contractors by more than 10%". This is a real, sourced,
+genuinely different mechanism from `eg-price-preference` above: a different buyer (petroleum-sector
+operating companies under Ministry of Petroleum oversight, scoped to `semi-government-soe`
+procurement only -- not general government procuring entities), a different legal basis (PSA
+contractual terms, not Law 5/2015), and a different margin (10%, not 15%) -- the same "genuinely
+distinct mechanism, not a variant" pattern already applied to UAE Tawazun vs. ICV (section 9) and
+Oman's OQ Group vs. general ICV (section 10.4).
+
+- **Buyer's reading** (the PSA operating company / International Oil Company): a disclosed,
+  bounded price band (up to 10% above the lowest bid) within which local capacity is deliberately
+  favored, keeping Egyptian oilfield-services capacity competitive without a hard local-content
+  quota on the contract itself.
+- **Supplier's reading:** for an Egyptian oilfield-services contractor whose performance is
+  genuinely comparable to international competitors, the 10-point price band is a real, quantifiable
+  cushion against being undercut purely on price by a foreign contractor -- the qualifying bar is
+  contractor-class status and comparable performance, not a percentage of bid content.
+- Worked mini-example: an Egyptian oilfield-services subcontractor bidding into a PSA-governed
+  drilling-support contract, confirmed as a qualifying local contractor (comparable performance,
+  price within the 10% band) in the `semi-government-soe` procurement context →
+  `isLocalEgyptianContractor: true` → `locallyManufacturedSharePct: 100`, `effectiveBidDiscountPct:
+  10` -- `recommendLocalContentAction` returns `null` (already qualifying, nothing to recommend). The
+  same contractor without confirmed comparable-performance/price-band status →
+  `isLocalEgyptianContractor: false` → `effectiveBidDiscountPct: 0`, and the recommendation fires:
+  pursue the underlying qualifying facts (performance benchmarking, price positioning within the
+  band) rather than assuming registration alone is sufficient. Applied to `government` procurement
+  instead of `semi-government-soe` → `not-applicable` (this program is sourced as PSA-operating-
+  company-specific, not general government procurement).
+
+### 11.4 Explicitly not modeled, to avoid fabrication
+
+- **The revamped automotive local-content target** (`eg-auto-local-content`, `not-yet-sourced`):
+  Egypt's Ministry of Industry, Trade and Small Industries announced a revamped Automotive Industry
+  Development Program (AIDP) targeting 60% local content and 100,000 vehicles/year (per EnterpriseAM's
+  March 2026 reporting), replacing the earlier AIDP's 35%/10,000-vehicle target described in that same
+  reporting as impractical. No published per-manufacturer or per-supplier computable formula for the
+  revised target was found -- the incentive structure itself is reported as unpublished, pending
+  official announcement. Disclosed as a real, dated national target rather than guessed, the same
+  Decision Record 8.7 treatment already applied to Saudi GAMI/LIKT (section 8.6) and Oman/Qatar/
+  Bahrain/Kuwait's general national programs (section 10.7).
+- **The Law 89/1998 vs. Law 182/2018 citation discrepancy**: the US government's own trade.gov guide
+  cites the older Tenders and Bids Law No. 89 of 1998 as governing Egypt's overall procurement
+  procedure, while a separate legal summary (riad-riad.com) states Law No. 182 of 2018 replaced that
+  1998 law. This pass discloses the discrepancy rather than resolving it by assumption -- the same
+  treatment already applied to Jordan's own unconfirmed governing-bylaw citation (section 10.2's own
+  source note).
+- **No dedicated certifying/administering authority** for the 40% local-content determination under
+  `eg-price-preference` was identified in this research pass's sourcing (unlike LCGPA, MoIAT, or
+  icv.qa's named certifying bodies for other countries) -- disclosed as an open item, not assumed.
+- **The defense/interior/military-production/intelligence exemption** from `eg-price-preference`
+  (per trade.gov: these agencies' procurement is exempted from the Law 5/2015 preference) is
+  disclosed in the program's own `sourceNoteEn`/`sourceNoteAr` but not separately modeled as a
+  distinct procurement context -- no per-department procurement context is sourced anywhere else in
+  this file either, so this is consistent with the engine's existing scope, not a new gap.
+- **A confirmed administering department for the PSA local-contractor priority**: the source
+  article's own recommendation that Egypt establish "a unique and specialized department in the
+  Ministry of Petroleum to manage local content" implies no such department is confirmed to exist
+  yet -- disclosed as an open item rather than assumed to exist.
+
+### 11.5 Stress-test record -- Egypt opening (11 new tests, all passing; full suite 109 → 120 for this file)
+
+| Mechanism | Soft | Hardest | Boundary |
+|---|---|---|---|
+| `eg-price-preference` | 45% Egyptian content (above the 40% threshold) -> full 15-point margin via a 100% binary share | 39.9% Egyptian content (just below the threshold) -> zero discount, not a partial one -- proves this is a gate, not a continuous scale | exactly 40.0% -> qualifies (`>=`, not `>`); no share supplied -> honest `null`, never assumed disqualified |
+| `eg-oil-gas-price-preference` | qualifying local PSA contractor -> full 10-point margin via a 100% binary share | does not qualify -> zero discount, not a partial one | no contractor status supplied -> honest `null` share |
+| `eg-auto-local-content` | -- | returns `insufficient-data` with the real 60%/AIDP context disclosed in both languages, never a fabricated per-supplier formula | -- |
+| Applicability | -- | `eg-price-preference` correctly resolves `not-applicable` for `private-commercial` procurement; `eg-oil-gas-price-preference` correctly resolves `not-applicable` for `government` procurement (it is PSA-operating-company-specific, not general government) | -- |
+| Default routing | `eg-price-preference` is confirmed as `DEFAULT_PROGRAM_BY_COUNTRY.EG`, the same "original/broadest program is the default" convention as every other country | -- | -- |
+| Structural | the existing 8-country structural-sanity regression test (section 10.8's own test, now covering EG too) confirms `PROGRAMS_BY_COUNTRY.EG` has 3 programs and every one resolves back to `EG` in `PROGRAMS` | -- | -- |
+
+### 11.6 UI -- Egypt slots into the existing generalized routing with zero new logic
+
+The same "any country whose `PROGRAMS_BY_COUNTRY` list has more than one program gets the routing
+question row" logic (sections 8.9, 9.6, 10.9) required **zero new routing logic** for Egypt --
+`COUNTRY_ORDER` and `COUNTRY_FLAG` gained an `EG` entry, and `PROGRAM_LABELS`, `MECHANISM_VALUE_FRAMING`
+(already generic per `mechanismType`, needing no change since both Egyptian mechanisms reuse
+`price-preference-margin`), and `hasMeaningfulResult` (also already generic per `mechanismType`)
+needed only the label additions, not new branches. Egypt got its own two input-rendering blocks: a
+percentage field for `eg-price-preference` (with an inline hint disclosing the 40%-threshold/15%-flat-
+margin shape, so a user isn't left to infer why a 39% entry shows a zero discount) and a yes/no
+qualification toggle for `eg-oil-gas-price-preference`, matching the exact binary-toggle pattern
+already used for Bahrain's SME status, Jordan's contractor registration, and Kuwait's supplier
+registration. The stale "OTHER" pseudo-value comment that named Egypt as an example of a country
+*not yet* representable by this engine (section 9's own original text) was corrected in the same
+pass that made it representable -- the same "a known-wrong disclosure must not be left uncorrected"
+discipline (Decision Record 8.7 / registry rule 12) already applied to this document's own test-count
+arithmetic. The page's hero copy, the "not covered by this module" disclosure copy, and the footer
+disclaimer were all updated to say "eight countries" and name Egypt's governing law/ministry
+alongside the other seven authorities, rather than leaving Egypt described as an uncovered example
+country in copy a real user reads first.
 ---
 
 ---
@@ -1329,3 +1496,154 @@ BH: 3, KW: 2`، وجرى تحديثه لا تركه راكداً، إذ إن ت�
 ونص إخلاء المسؤولية في تذييل الصفحة ليذكرا جهات الدول السبع كلها (PTLC، وicv.qa، والجهتين المختصتين
 في البحرين والكويت، إلى جانب LCGPA وMoIAT ووزارة الأردن) بدلاً من الدول الثلاث الأصلية فقط -- نفس
 انضباط الصدق الذي يتبعه هذا المستند نفسه، مُطبَّقاً على الصفحة التي يقرأها المستخدم الحقيقي أولاً.
+
+
+## 11. تفكيك آلية مصر — افتتاح الجزء الثاني (١٥ سبتمبر ٢٠٢٦)
+
+اختُتم الجزء الأول (دول الخليج والأردن، الأقسام ٨-١٠) بحصول كل الدول السبع الأصلية على آلية واحدة
+موثّقة حقيقية على الأقل. أما الجزء الثاني ("التغطية خارج دول الخليج") فقد أُشير إليه صراحة في القسم ٧
+أعلاه كغير مبدوء بعد. وبناءً على توجيه صاحب المنصة نفسه ("ابدأ بمصر، ثم تركيا، ثم المملكة المتحدة، ثم
+الولايات المتحدة، ثم الصين")، افتتحت هذه المرحلة الجزء الثاني بمصر -- أول دولة تُضاف إلى نوع
+`LocalContentCountry` منذ الدول السبع الأصلية للمحرك، وهي إحدى دول التوريد الحقيقية غير الخليجية
+لشركة روابي نفسها (مقدمة سيناريو القسم ١ تذكر مصر بالفعل كدولة توريد حقيقية لروابي، إلى جانب الصين
+وتركيا).
+
+**قرار نطاق التغطية، مُدوَّن هنا لا في المحادثة فقط:** لا يسعى هذا المحرك إلى بناء آلية مسبقة لكل دولة
+في العالم. فمعظم الدول لا تدير أي نظام محتوى محلي أو قيمة محلية مضافة على غرار دول الخليج والأردن على
+الإطلاق، ما يعني أن فرض واحدة سيؤدي إما إلى اختلاق صيغة (سجل القرار ٨.٧) أو إلى ملء الاتحاد بعشرات
+الإدخالات الفارغة "غير الموثّقة" التي لا تضيف قيمة حقيقية للقرار. تنمو التغطية عند الحاجة، وفق أولوية
+الدول التي لعملاء ISC فيها تعرّض حقيقي للموردين -- وهو نفس المنطق القائم على الطلب المُستخدم بالفعل
+لتحديد أي دولة خليجية حصلت على آلية ثانية أو ثالثة أولاً (استكمال الدول الخمس في القسم ١٠ نفسه). أي
+دولة لم تُضَف بعد إلى `LocalContentCountry` تُحسَم عبر القيمة الوهمية المسبقة `'OTHER'` في الواجهة
+(بناء القسم ٩ نفسه) إلى حالة صادقة "غير مشمولة بهذه الوحدة" -- سبب ثالث ومتمايز لعدم وجود رقم، إلى
+جانب "غير موثّق" و"لا ينطبق"، وليس فجوة صامتة.
+
+عُثر في هذه المرحلة على آليتين مصريتين حقيقيتين وموثّقتين ومختلفتين فعلياً، إضافة إلى إدخال واحد صادق
+"غير موثّق بعد". تُعيد كلتا الآليتين الموثّقتين استخدام نوع الآلية القائم `price-preference-margin`
+وصيغة الحساب المشتركة `computePricePreferenceMargin` -- لم تكن هناك حاجة لنوع آلية جديد أو صيغة حساب
+مشتركة جديدة، بخلاف إضافتي `spend-set-aside-target` و`modified-icv-score` في الأقسام ٨-١٠.
+
+### ١١.١ تصنيف الأنواع الستة ← ربطها بالبرامج المصرية
+
+| البرنامج | `mechanismType` | الحالة |
+|---|---|---|
+| `eg-price-preference` (البرنامج الافتراضي) | `price-preference-margin` | موثّق: القانون رقم ٥ لسنة ٢٠١٥ (بصيغته المعدَّلة بالقانون رقم ٩٠ لسنة ٢٠١٨) -- بوابة حدّية عند ٤٠٪ محتوى محلي، ثم تفضيل سعري ثابت بنسبة ١٥٪ في تقييم مشتريات الجهات الحكومية والشركات العامة |
+| `eg-oil-gas-price-preference` | `price-preference-margin` | موثّق: أولوية المقاول المحلي بموجب اتفاقيات تقاسم الإنتاج (PSA) -- تفضيل سعري بهامش ١٠٪ للمقاولين المحليين المؤهلين، تديره شركات التشغيل في قطاع البترول تحت إشراف وزارة البترول |
+| `eg-auto-local-content` | `not-yet-sourced` | هدف وطني حقيقي ومؤرَّخ مُفصَح عنه (٦٠٪ محتوى محلي، نسخة مُجدَّدة من برنامج AIDP)، دون صيغة منشورة على مستوى المورّد |
+
+### ١١.٢ `eg-price-preference` -- تفضيل سعري، بوابة حدّية (شكل مختلف فعلياً)
+
+المصدر: يشترط القانون المصري رقم ٥ لسنة ٢٠١٥ ("في شأن تفضيل المنتجات المصرية في العقود الحكومية"،
+بصيغته المعدَّلة بالقانون رقم ٩٠ لسنة ٢٠١٨) أن يحتوي العطاء على نسبة لا تقل عن ٤٠٪ من المحتوى المحلي
+المصري المنشأ، من القيمة التقديرية للمشروع، ليُعتبر "منتجاً مصرياً"؛ وتحصل العطاءات المصرية المؤهلة
+عندئذٍ على تفضيل سعري ثابت بنسبة ١٥٪ مقابل العطاءات الأجنبية عند التقييم (بحسب دليل الحكومة الأمريكية
+الرسمي "مصر -- البيع للقطاع العام" على trade.gov). هذه **بوابة حدّية، وليست تدرجاً مستمراً** -- خروج
+حقيقي عن سلوك نفس نوع الآلية `price-preference-margin` في الأردن وعُمان والسعودية (حيث يتدرّج الهامش
+تناسبياً مع الحصة المصنّعة محلياً من ٠٪ إلى ١٠٠٪). يُنمذِج هذا المحرك الفارق بصدق بدلاً من دمج مصر ضمن
+افتراض التدرّج المستمر: تُحوَّل نسبة المحتوى المصري المصرَّح بها إلى حصة ثنائية ١٠٠٪/٠٪ قبل تشغيل
+الصيغة المشتركة، بنفس أسلوب التحويل الثنائي المُستخدم بالفعل لتفضيل سعر المنشآت الصغيرة والمتوسطة
+البحرينية (القسم ١٠.٦) -- ثلاث قواعد تأهل واقعية مختلفة فعلياً (نسبة إنفاق في الأردن وعُمان، تصنيف
+منشأة صغيرة/متوسطة في البحرين، وبوابة حدّية للمحتوى المحلي في مصر)، وصيغة حساب واحدة مشتركة، مُفصَح
+عنها لكل برنامج على حدة وليست مفترَضة متطابقة.
+
+- **قراءة المشتري** (الجهة الحكومية المناقِصة أو الشركة/المؤسسة العامة): حدّ تأهل واضح وثنائي -- إما
+  أن يستوفي العطاء فعلياً معيار الـ٤٠٪ محتوى مصري ويحصل على كامل الميزة البالغة ١٥ نقطة، أو لا يستوفيه
+  فيتنافس على أساس السعر/الجدارة الفنية وحدهما. لا غموض في احتساب "درجة جزئية" يحتاج المُقيِّم لحسمه
+  حالة بحالة.
+- **قراءة المورّد:** الرافعة الكاملة هي تجاوز خط الـ٤٠٪، لا التحسن التدريجي دونه -- مورّد عند ٣٨٪
+  محتوى مصري يحصل على نفس التفضيل الصفري تماماً كمورّد عند ٥٪، فالسؤال ذو الدلالة للقرار هو ما إذا كان
+  إغلاق فجوة محددة للوصول إلى ٤٠٪ يستحق العناء لهذه المناقصة تحديداً، لا مجرد رفع الرقم قليلاً.
+- مثال تطبيقي مصغّر: مورّد مواد بناء مصري يقدّم عطاءً في مناقصة بنية تحتية حكومية ويصرّح بنسبة ٥٥٪
+  محتوى مصري المنشأ (حديد تسليح وإسمنت مصدرهما محلي) → `egyptianContentSharePct: 55` → مؤهل (≥٤٠) →
+  `locallyManufacturedSharePct: 100`، `effectiveBidDiscountPct: 15` (كامل الهامش) → تُرجع
+  `recommendLocalContentAction` قيمة `null` (بلغ بالفعل أقصى ميزة متاحة، لا شيء لتوصيته). المورّد
+  نفسه عند ٢٥٪ محتوى مصري (استيراد جزء أكبر من المواصفة) → غير مؤهل →
+  `locallyManufacturedSharePct: 0`، `effectiveBidDiscountPct: 0` → تنطلق التوصية: توريد محتوى مصري
+  إضافي كافٍ لتجاوز حاجز الـ٤٠٪ قبل موعد هذه المناقصة، أو (البديل الصادق) قبول أن يتنافس العطاء
+  بمزاياه الفنية والتجارية وحدها دون أي وسادة سعرية.
+
+### ١١.٣ `eg-oil-gas-price-preference` -- مشترٍ وأساس قانوني وهامش مختلفون فعلياً
+
+المصدر: يشترط نموذج اتفاقية تقاسم الإنتاج (PSA) المصري -- الإطار التعاقدي المعياري الحاكم لاستكشاف
+وإنتاج النفط والغاز، بموجب قانون المناجم والمحاجر لعام ١٩٥٣، وقانون ضمانات وحوافز الاستثمار لعام
+١٩٩٧، وشروط اتفاقيات تقاسم الإنتاج الخاصة بوزارة البترول -- أن تمنح الشركات المشغِّلة (شركات النفط
+الدولية) الأولوية للمقاولين والمقاولين من الباطن المصريين المحليين "عندما يكون أداؤهم مماثلاً للأداء
+الدولي، ولا تتجاوز أسعار خدماتهم أسعار المقاولين الآخرين بأكثر من ١٠٪". هذه آلية حقيقية وموثّقة
+ومختلفة فعلياً عن `eg-price-preference` أعلاه: مشترٍ مختلف (شركات التشغيل في قطاع البترول تحت إشراف
+وزارة البترول، مقتصرة على مشتريات شبه حكومية/مملوكة للدولة فقط -- وليس جهات المشتريات الحكومية
+العامة)، وأساس قانوني مختلف (شروط اتفاقية تقاسم الإنتاج، وليس القانون ٥ لسنة ٢٠١٥)، وهامش مختلف (١٠٪
+وليس ١٥٪) -- نفس نمط "آلية مختلفة فعلاً، وليست نسخة" المُطبَّق سابقاً على توازن الإماراتية مقابل ICV
+(القسم ٩) وتفضيل مجموعة OQ العُمانية مقابل ICV العام (القسم ١٠.٤).
+
+- **قراءة المشتري** (شركة التشغيل بموجب اتفاقية تقاسم الإنتاج / شركة النفط الدولية): نطاق سعري
+  مُفصَح عنه ومحدود (حتى ١٠٪ فوق أقل عطاء) يُفضَّل ضمنه القدرة المحلية عمداً، ما يحافظ على تنافسية
+  قدرات خدمات حقول النفط المصرية دون فرض حصة إلزامية للمحتوى المحلي على العقد نفسه.
+- **قراءة المورّد:** بالنسبة لمقاول خدمات حقول نفط مصري يتمتع بأداء مماثل فعلياً للمنافسين الدوليين،
+  يمثّل النطاق السعري البالغ ١٠ نقاط وسادة حقيقية وقابلة للقياس ضد التعرّض لمنافس سعري أجنبي أرخص --
+  حاجز التأهل هو صفة فئة المقاول والأداء المماثل، وليس نسبة من محتوى العطاء.
+- مثال تطبيقي مصغّر: مقاول خدمات حقول نفط مصري يقدّم عطاءً في عقد دعم حفر بموجب اتفاقية تقاسم إنتاج،
+  ومؤكَّد كمقاول محلي مؤهل (أداء مماثل، سعر ضمن نطاق الـ١٠٪) في سياق مشتريات شبه حكومي/مملوك للدولة →
+  `isLocalEgyptianContractor: true` → `locallyManufacturedSharePct: 100`،
+  `effectiveBidDiscountPct: 10` -- تُرجع `recommendLocalContentAction` قيمة `null` (مؤهل بالفعل، لا
+  شيء لتوصيته). المقاول نفسه دون تأكيد صفة الأداء المماثل/النطاق السعري →
+  `isLocalEgyptianContractor: false` → `effectiveBidDiscountPct: 0`، وتنطلق التوصية: السعي لإثبات
+  الحقائق الأساسية للتأهل (قياس الأداء، الموقع السعري ضمن النطاق) بدلاً من افتراض كفاية التسجيل وحده.
+  عند تطبيقه على مشتريات حكومية بدلاً من شبه حكومية/مملوكة للدولة → "لا ينطبق" (هذا البرنامج موثّق
+  كخاص بشركات التشغيل بموجب اتفاقية تقاسم الإنتاج، لا المشتريات الحكومية العامة).
+
+### ١١.٤ ما لم يُنمذَج عمداً، تجنباً للاختلاق
+
+- **هدف المحتوى المحلي المُجدَّد لصناعة السيارات** (`eg-auto-local-content`، "غير موثّق"): أعلنت وزارة
+  الصناعة والتجارة والصناعات الصغيرة المصرية عن نسخة مُجدَّدة من برنامج تطوير صناعة السيارات (AIDP)
+  تستهدف ٦٠٪ محتوى محلي و١٠٠ ألف مركبة سنوياً (بحسب تقرير EnterpriseAM في مارس ٢٠٢٦)، لتحل محل هدف
+  البرنامج السابق البالغ ٣٥٪/١٠ آلاف مركبة الذي وصفه التقرير نفسه بأنه غير عملي. لم يُعثر على صيغة
+  حساب منشورة على مستوى المصنّع أو المورّد للهدف الجديد -- ويُذكر أن هيكل الحوافز نفسه غير منشور،
+  وينتظر إعلاناً رسمياً. يُفصَح عنه كهدف وطني حقيقي ومؤرَّخ بدلاً من تخمينه، وهي نفس معالجة سجل القرار
+  ٨.٧ المطبَّقة سابقاً على برنامجي GAMI وLIKT السعوديين (القسم ٨.٦) والبرامج الوطنية العامة لعُمان
+  وقطر والبحرين والكويت (القسم ١٠.٧).
+- **تعارض الاستشهاد بين القانون ٨٩ لسنة ١٩٩٨ والقانون ١٨٢ لسنة ٢٠١٨**: يستشهد دليل trade.gov الرسمي
+  للحكومة الأمريكية بقانون المناقصات والمزايدات رقم ٨٩ لسنة ١٩٩٨ (القديم) كحاكم لإجراءات المشتريات
+  المصرية العامة، في حين يذكر ملخص قانوني منفصل (riad-riad.com) أن القانون رقم ١٨٢ لسنة ٢٠١٨ حلّ محل
+  ذلك القانون القديم. تُفصح هذه المرحلة عن هذا التعارض بدلاً من حسمه بافتراض -- وهي نفس المعالجة
+  المطبَّقة سابقاً على استشهاد الأردن غير المؤكد بالنظام الحاكم (ملاحظة مصدر القسم ١٠.٢ نفسه).
+- **عدم وجود جهة اعتماد/إدارة مخصصة** لتحديد نسبة الـ٤٠٪ للمحتوى المحلي ضمن `eg-price-preference` لم
+  تُحدَّد في مصادر هذا البحث (بخلاف الجهات المعتمِدة المسمّاة لدى LCGPA وMoIAT وicv.qa في الدول
+  الأخرى) -- يُفصَح عنها كمسألة مفتوحة، لا كافتراض.
+- **استثناء وزارة الدفاع والداخلية والإنتاج الحربي والمخابرات العامة** من `eg-price-preference` (بحسب
+  trade.gov: مشتريات هذه الجهات مستثناة من تفضيل القانون ٥ لسنة ٢٠١٥) مُفصَح عنه ضمن
+  `sourceNoteEn`/`sourceNoteAr` الخاصة بالبرنامج نفسه، لكنه غير مُنمذَج بشكل منفصل كسياق مشتريات
+  متمايز -- لا يوجد سياق مشتريات خاص بكل جهة موثّق في أي مكان آخر من هذا الملف أيضاً، فهذا متسق مع
+  نطاق المحرك القائم، وليس فجوة جديدة.
+- **جهة إدارة مؤكَّدة لأولوية المقاول المحلي بموجب اتفاقية تقاسم الإنتاج**: توصية المقال المصدر نفسه
+  بأن تُنشئ مصر "إدارة متخصصة وفريدة في وزارة البترول لإدارة المحتوى المحلي" تعني ضمناً أن مثل هذه
+  الإدارة غير مؤكد وجودها بعد -- يُفصَح عن ذلك كمسألة مفتوحة، لا كافتراض بوجودها.
+
+### ١١.٥ سجل اختبار الإجهاد -- افتتاح مصر (١١ اختباراً جديداً، جميعها ناجحة؛ إجمالي هذا الملف من ١٠٩ إلى ١٢٠)
+
+| الآلية | الاختبار السهل | الاختبار الأصعب | اختبار الحدّ |
+|---|---|---|---|
+| `eg-price-preference` | ٤٥٪ محتوى مصري (فوق حدّ الـ٤٠٪) → كامل الهامش ١٥ نقطة عبر حصة ثنائية ١٠٠٪ | ٣٩.٩٪ محتوى مصري (أقل قليلاً من الحدّ) → خصم صفري، وليس جزئياً -- يُثبت أن هذه بوابة، لا تدرّج مستمر | عند ٤٠.٠٪ تماماً → مؤهل (≥، وليس >)؛ دون حصة مُدخلة → `null` صادقة، دون افتراض عدم التأهل |
+| `eg-oil-gas-price-preference` | مقاول محلي مؤهل بموجب اتفاقية تقاسم الإنتاج → كامل الهامش ١٠ نقاط عبر حصة ثنائية ١٠٠٪ | غير مؤهل → خصم صفري، وليس جزئياً | دون حالة مقاول مُدخلة → حصة `null` صادقة |
+| `eg-auto-local-content` | -- | تُرجع "بيانات غير كافية" مع الإفصاح عن سياق ٦٠٪/AIDP الحقيقي بكلتا اللغتين، دون صيغة مورّد مختلقة | -- |
+| الانطباق | -- | يُحسم `eg-price-preference` بشكل صحيح كـ"لا ينطبق" على المشتريات التجارية الخاصة؛ ويُحسم `eg-oil-gas-price-preference` بشكل صحيح كـ"لا ينطبق" على المشتريات الحكومية (خاص بشركات التشغيل بموجب اتفاقية تقاسم الإنتاج، لا المشتريات الحكومية العامة) | -- |
+| التوجيه الافتراضي | يُؤكَّد أن `eg-price-preference` هو `DEFAULT_PROGRAM_BY_COUNTRY.EG`، بنفس اتفاقية "البرنامج الأصلي/الأوسع هو الافتراضي" المُطبَّقة على كل دولة أخرى | -- | -- |
+| البنيوي | اختبار الفحص البنيوي القائم للدول الثماني (اختبار القسم ١٠.٨ نفسه، يشمل الآن EG أيضاً) يؤكد أن `PROGRAMS_BY_COUNTRY.EG` يضم ٣ برامج وأن كل واحد منها يعود إلى `EG` نفسها في `PROGRAMS` | -- | -- |
+
+### ١١.٦ الواجهة -- مصر تندمج في التوجيه المعمَّم القائم دون أي منطق جديد
+
+نفس منطق "أي دولة تضم قائمة `PROGRAMS_BY_COUNTRY` الخاصة بها أكثر من برنامج تحصل على صف سؤال التوجيه"
+(الأقسام ٨.٩ و٩.٦ و١٠.٩) لم يتطلب **أي منطق توجيه جديد إطلاقاً** لمصر -- اكتسب `COUNTRY_ORDER`
+و`COUNTRY_FLAG` إدخال `EG`، واحتاج `PROGRAM_LABELS` و`MECHANISM_VALUE_FRAMING` (معمَّم مسبقاً حسب
+`mechanismType`، لا يحتاج تغييراً لأن كلتا الآليتين المصريتين تُعيدان استخدام `price-preference-
+margin`) و`hasMeaningfulResult` (معمَّم مسبقاً أيضاً حسب `mechanismType`) إلى إضافات التسميات فقط، لا
+فروعاً جديدة. حصلت مصر على كتلتي إدخال خاصتين بها: حقل نسبة مئوية لـ`eg-price-preference` (مع تلميح
+مضمَّن يُفصح عن شكل بوابة الـ٤٠٪/الهامش الثابت ١٥٪، حتى لا يُترك المستخدم ليستنتج بنفسه سبب ظهور خصم
+صفري عند إدخال ٣٩٪) ومفتاح تبديل نعم/لا للتأهل لـ`eg-oil-gas-price-preference`، بنفس نمط المفتاح
+الثنائي المُستخدم بالفعل لصفة المنشأة الصغيرة والمتوسطة البحرينية وتسجيل المقاول الأردني وتسجيل
+المورّد الكويتي. جرى تصحيح تعليق "OTHER" غير المحدَّث الذي كان يذكر مصر كمثال لدولة *لم تُمثَّل بعد*
+في هذا المحرك (نص القسم ٩ الأصلي نفسه) في نفس المرحلة التي جعلتها قابلة للتمثيل -- نفس انضباط "لا يجوز
+ترك إفصاح خاطئ معروف دون تصحيح" (سجل القرار ٨.٧ / قاعدة السجل رقم ١٢) المُطبَّق بالفعل على حساب عدد
+اختبارات هذا المستند نفسه. حُدِّث أيضاً نص المقدمة الرئيسية، ونص الإفصاح عن "غير مشمولة بهذه الوحدة"،
+ونص إخلاء المسؤولية في تذييل الصفحة، ليذكر الجميع "ثماني دول" ويُسمِّي قانون/وزارة مصر المختصة إلى
+جانب الجهات السبع الأخرى، بدلاً من ترك مصر موصوفة كدولة غير مشمولة كمثال في نص يقرأه مستخدم حقيقي
+أولاً.

@@ -20,6 +20,9 @@ import {
   QATAR_ICV_PLUS_MANUFACTURER_BOOST_MULTIPLIER,
   QATAR_ICV_BLANKET_FLOOR_PCT_MICRO_SMALL,
   QATAR_ICV_MAX_SELF_REPORTED_BONUS_PCT,
+  EGYPT_PRICE_PREFERENCE_MARGIN_PCT,
+  EGYPT_PRICE_PREFERENCE_QUALIFYING_THRESHOLD_PCT,
+  EGYPT_OIL_GAS_PRICE_PREFERENCE_MARGIN_PCT,
   type SupplierLocalContentInputs,
   type LocalContentAssessment,
   type EligibleSpendRatioResult,
@@ -448,6 +451,94 @@ describe('OM/QA/BH/KW — not-yet-sourced (never a guessed formula)', () => {
 });
 
 // ===========================================================================
+// EG — Egypt (Part 2, 15 Sep 2026 pass -- first non-GCC/Jordan country)
+// ===========================================================================
+
+describe('EG / Public Procurement Price Preference — price-preference-margin (threshold-gated at 40%, not continuously scaled)', () => {
+  it('soft: 45% Egyptian content (above the 40% qualifying threshold) -> full 15% margin applied via a 100% binary share', () => {
+    const a = assessSupplierLocalContent('EG', 'government', { eg: { egyptianContentSharePct: 45 } }, 'eg-price-preference');
+    const c = a.computation as PricePreferenceMarginResult;
+    expect(c.preferenceMarginPct).toBe(EGYPT_PRICE_PREFERENCE_MARGIN_PCT);
+    expect(c.locallyManufacturedSharePct).toBe(100);
+    expect(c.effectiveBidDiscountPct).toBe(15);
+  });
+
+  it('hardest: 39.9% Egyptian content (just below the 40% threshold) -> zero effective discount, not a partial one (a gate, not a continuous scale)', () => {
+    const a = assessSupplierLocalContent('EG', 'government', { eg: { egyptianContentSharePct: 39.9 } }, 'eg-price-preference');
+    const c = a.computation as PricePreferenceMarginResult;
+    expect(c.locallyManufacturedSharePct).toBe(0);
+    expect(c.effectiveBidDiscountPct).toBe(0);
+  });
+
+  it('boundary: exactly 40% Egyptian content -> qualifies (>=40%, not >40%)', () => {
+    const a = assessSupplierLocalContent('EG', 'government', { eg: { egyptianContentSharePct: EGYPT_PRICE_PREFERENCE_QUALIFYING_THRESHOLD_PCT } }, 'eg-price-preference');
+    const c = a.computation as PricePreferenceMarginResult;
+    expect(c.locallyManufacturedSharePct).toBe(100);
+    expect(c.effectiveBidDiscountPct).toBe(EGYPT_PRICE_PREFERENCE_MARGIN_PCT);
+  });
+
+  it('boundary: no Egyptian-content share supplied -> honest null share, never assumed disqualified', () => {
+    const a = assessSupplierLocalContent('EG', 'government', { eg: { egyptianContentSharePct: null } }, 'eg-price-preference');
+    const c = a.computation as PricePreferenceMarginResult;
+    expect(c.locallyManufacturedSharePct).toBeNull();
+    expect(c.effectiveBidDiscountPct).toBeNull();
+  });
+
+  it("not-applicable: private-commercial procurement is outside this program's sourced (government + public-company/enterprise) scope", () => {
+    const a = assessSupplierLocalContent('EG', 'private-commercial', { eg: { egyptianContentSharePct: 100 } }, 'eg-price-preference');
+    expect(a.applicability).toBe('not-applicable');
+  });
+
+  it('is the default program for EG when program is omitted', () => {
+    expect(DEFAULT_PROGRAM_BY_COUNTRY.EG).toBe('eg-price-preference');
+    const a = assessSupplierLocalContent('EG', 'government', { eg: { egyptianContentSharePct: 50 } });
+    expect(a.program).toBe('eg-price-preference');
+  });
+});
+
+describe('EG / Oil & Gas PSA Local-Contractor Priority — price-preference-margin (binary contractor status, structurally like BH SME)', () => {
+  it('soft: qualifying local Egyptian PSA contractor -> full 10% margin applied via a 100% binary share', () => {
+    const a = assessSupplierLocalContent('EG', 'semi-government-soe', { egOilGas: { isLocalEgyptianContractor: true } }, 'eg-oil-gas-price-preference');
+    const c = a.computation as PricePreferenceMarginResult;
+    expect(c.preferenceMarginPct).toBe(EGYPT_OIL_GAS_PRICE_PREFERENCE_MARGIN_PCT);
+    expect(c.locallyManufacturedSharePct).toBe(100);
+    expect(c.effectiveBidDiscountPct).toBe(10);
+  });
+
+  it('hardest: does not qualify as a local PSA contractor -> zero effective discount, not a partial one', () => {
+    const a = assessSupplierLocalContent('EG', 'semi-government-soe', { egOilGas: { isLocalEgyptianContractor: false } }, 'eg-oil-gas-price-preference');
+    const c = a.computation as PricePreferenceMarginResult;
+    expect(c.locallyManufacturedSharePct).toBe(0);
+    expect(c.effectiveBidDiscountPct).toBe(0);
+  });
+
+  it('boundary: no contractor status supplied -> honest null share, never assumed disqualified', () => {
+    const a = assessSupplierLocalContent('EG', 'semi-government-soe', { egOilGas: { isLocalEgyptianContractor: null } }, 'eg-oil-gas-price-preference');
+    const c = a.computation as PricePreferenceMarginResult;
+    expect(c.locallyManufacturedSharePct).toBeNull();
+    expect(c.effectiveBidDiscountPct).toBeNull();
+  });
+
+  it("not-applicable: government procurement is outside this PSA-anchored program's sourced (semi-government/SOE) scope", () => {
+    const a = assessSupplierLocalContent('EG', 'government', { egOilGas: { isLocalEgyptianContractor: true } }, 'eg-oil-gas-price-preference');
+    expect(a.applicability).toBe('not-applicable');
+  });
+});
+
+describe('EG — Automotive Local Content Target (AIDP, not-yet-sourced, real dated context)', () => {
+  it('returns insufficient-data with the real 60% AIDP target disclosed in both languages, never a fabricated per-supplier formula', () => {
+    const a = assessSupplierLocalContent('EG', 'government', {}, 'eg-auto-local-content');
+    expect(a.applicability).toBe('insufficient-data');
+    expect(a.computation).toEqual({ mechanismType: 'not-yet-sourced' });
+    expect(a.reasonEn).toContain('60%');
+    expect(a.reasonAr).toContain('٦٠٪');
+    expect(a.program).toBe('eg-auto-local-content');
+    expect(COUNTRY_FRAMEWORKS.EG.applicableContexts).not.toHaveLength(0); // EG's default program IS sourced, unlike OM/QA/BH/KW's default
+    expect(PROGRAMS['eg-auto-local-content'].applicableContexts).toHaveLength(0);
+  });
+});
+
+// ===========================================================================
 // recommendLocalContentAction — primary + alternative (Rule 8)
 // ===========================================================================
 
@@ -638,7 +729,7 @@ describe('SA — program routing default', () => {
   });
 
   it('every country resolves DEFAULT_PROGRAM_BY_COUNTRY to a real PROGRAMS entry (architecture sanity check)', () => {
-    (['SA', 'AE', 'JO', 'OM', 'QA', 'BH', 'KW'] as const).forEach(country => {
+    (['SA', 'AE', 'JO', 'OM', 'QA', 'BH', 'KW', 'EG'] as const).forEach(country => {
       const program = DEFAULT_PROGRAM_BY_COUNTRY[country];
       expect(PROGRAMS[program]).toBeDefined();
       expect(PROGRAMS[program].country).toBe(country);
@@ -646,7 +737,7 @@ describe('SA — program routing default', () => {
     });
   });
 
-  it('PROGRAMS_BY_COUNTRY lists every program per country (SA: 6, AE: 2, JO: 2, OM: 3, QA: 2, BH: 3, KW: 2 -- updated 17 Sep 2026 as Jordan/Oman/Qatar/Bahrain/Kuwait each gained real sourced programs alongside their original entry)', () => {
+  it('PROGRAMS_BY_COUNTRY lists every program per country (SA: 6, AE: 2, JO: 2, OM: 3, QA: 2, BH: 3, KW: 2, EG: 3 -- EG added 15 Sep 2026 Part 2 pass)', () => {
     expect(PROGRAMS_BY_COUNTRY.SA).toHaveLength(6);
     expect(PROGRAMS_BY_COUNTRY.AE).toHaveLength(2);
     expect(PROGRAMS_BY_COUNTRY.JO).toHaveLength(2);
@@ -654,6 +745,7 @@ describe('SA — program routing default', () => {
     expect(PROGRAMS_BY_COUNTRY.QA).toHaveLength(2);
     expect(PROGRAMS_BY_COUNTRY.BH).toHaveLength(3);
     expect(PROGRAMS_BY_COUNTRY.KW).toHaveLength(2);
+    expect(PROGRAMS_BY_COUNTRY.EG).toHaveLength(3);
   });
 
   it('lcgpa-general carries the two usage notes (40% high-value-contract weighting, ~30% consulting/IT figure) bilingually', () => {
@@ -1196,9 +1288,9 @@ describe('Portfolio rollup — spend-set-aside-target and modified-icv-score gro
 // country before it ever reaches the UI.
 // ===========================================================================
 
-describe('PROGRAMS_BY_COUNTRY — structural sanity (17 Sep 2026 continuation)', () => {
-  it('all 7 countries have at least 2 programs, and every program in every list resolves back to that same country in PROGRAMS', () => {
-    for (const country of ['SA', 'AE', 'JO', 'OM', 'QA', 'BH', 'KW'] as const) {
+describe('PROGRAMS_BY_COUNTRY — structural sanity (17 Sep 2026 continuation, EG added 15 Sep 2026 Part 2 pass)', () => {
+  it('all 8 countries have at least 2 programs, and every program in every list resolves back to that same country in PROGRAMS', () => {
+    for (const country of ['SA', 'AE', 'JO', 'OM', 'QA', 'BH', 'KW', 'EG'] as const) {
       expect(PROGRAMS_BY_COUNTRY[country].length).toBeGreaterThanOrEqual(2);
       for (const program of PROGRAMS_BY_COUNTRY[country]) {
         expect(PROGRAMS[program].country).toBe(country);

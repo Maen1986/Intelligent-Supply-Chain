@@ -205,13 +205,50 @@
  * four countries with the exact same "one computation, N source-notes"
  * pattern already used for Saudi/Jordan; a new third shared primitive
  * (`computeSpendSetAside`) was added for the three new set-aside programs.
+ *
+ * ============================================================================
+ * PART 2: EGYPT -- FIRST NON-GCC/JORDAN COUNTRY (15 Sep 2026)
+ * ============================================================================
+ * Per the user's own explicit direction ("go with egypt, then turkey, then
+ * UK, then USA, then China"), this pass opened Part 2 ("non-GCC coverage",
+ * previously explicitly not started -- see "What Is Not Yet Done" in the
+ * worked-example doc) with Egypt, the first country added to `EG`
+ * (`LocalContentCountry`) since this engine's original 7. Coverage scope
+ * decision, stated here rather than only in conversation: this engine does
+ * NOT attempt to pre-build a mechanism for every country in the world --
+ * most countries run no GCC/Jordan-style local-content or ICV regime at
+ * all, so forcing one would mean either fabricating a formula (Decision
+ * Record 8.7) or filling the union with empty not-yet-sourced entries that
+ * add no real value. Coverage grows on demand, prioritized by where ISC
+ * clients have real supplier exposure -- Egypt, Turkey, UK, USA, and China
+ * are Rawabi's own named non-GCC supplier countries (see section 1's
+ * intro), the same demand-driven logic already used to decide which GCC
+ * countries got a second/third mechanism first. Two genuinely different,
+ * real, sourced Egyptian mechanisms were found this pass: a general
+ * public-procurement price preference (Law No. 5 of 2015, as amended by
+ * Law No. 90 of 2018 -- a 40%-local-content qualifying threshold, then a
+ * flat 15% price preference, `eg-price-preference`, the country's default
+ * program) and a narrower oil & gas Production Sharing Agreement (PSA)
+ * local-contractor priority (a 10% price-band preference for local
+ * contractors, run by petroleum-sector operating companies under Ministry
+ * of Petroleum oversight -- a different buyer and legal basis from the
+ * general preference, `eg-oil-gas-price-preference`). A third, real,
+ * dated national target -- the revamped Automotive Industry Development
+ * Program's 60% local-content goal -- was found to have no published
+ * per-supplier formula as of this research pass, so it is kept as an
+ * honest `not-yet-sourced` entry (`eg-auto-local-content`) rather than
+ * guessed, the same Decision Record 8.7 treatment already applied to
+ * Saudi GAMI/LIKT and Oman/Qatar/Bahrain/Kuwait's general national
+ * programs. Both sourced Egyptian mechanisms reuse the existing
+ * `computePricePreferenceMargin` primitive -- one shared computation, now
+ * serving NINE programs across five countries.
  */
 
 // ---------------------------------------------------------------------------
 // Section 1 — country / context / mechanism taxonomy
 // ---------------------------------------------------------------------------
 
-export type LocalContentCountry = 'SA' | 'AE' | 'JO' | 'OM' | 'QA' | 'BH' | 'KW';
+export type LocalContentCountry = 'SA' | 'AE' | 'JO' | 'OM' | 'QA' | 'BH' | 'KW' | 'EG';
 
 /** Every program key across every country this engine represents, flat
  * (not nested per-country) so the routing/resolution logic below is the
@@ -242,7 +279,10 @@ export type LocalContentProgram =
   | 'bh-sme-price-preference' // BH type 4 (new, 17 Sep 2026): 10% SME bidding price advantage, Ministerial Decision 23/2026
   | 'bh-sme-spend-setaside'   // BH type 5 (new, 17 Sep 2026): 20% SME spend allocation, Ministerial Decision 23/2026
   | 'kw-local-content'    // KW: not-yet-sourced (the module's original mechanism -- general national framework)
-  | 'kw-kpc-local-spend'; // KW type 5 (new, 17 Sep 2026): KPC 30% Kuwaiti-supplier spend target
+  | 'kw-kpc-local-spend'  // KW type 5 (new, 17 Sep 2026): KPC 30% Kuwaiti-supplier spend target
+  | 'eg-price-preference'          // EG type 4 (new, 15 Sep 2026 Part 2 pass): public-procurement price preference, Law 5/2015 as amended by Law 90/2018 (the module's default/original mechanism for Egypt)
+  | 'eg-oil-gas-price-preference'  // EG type 4 (new, Part 2 pass): PSA local-contractor price-band priority, Ministry of Petroleum PSA framework -- a genuinely different buyer/program from the general procurement preference above
+  | 'eg-auto-local-content';       // EG type 6-ish target (new, Part 2 pass): revamped AIDP 60% local-content target, not-yet-sourced (no published per-supplier formula)
 
 /** Which program `assessSupplierLocalContent` resolves to when `program` is
  * omitted -- always each country's original pre-existing single mechanism,
@@ -256,6 +296,7 @@ export type LocalContentProgram =
 export const DEFAULT_PROGRAM_BY_COUNTRY: Record<LocalContentCountry, LocalContentProgram> = {
   SA: 'sa-lcgpa-general', AE: 'ae-icv-general', JO: 'jo-price-preference',
   OM: 'om-icv', QA: 'qa-national-strategy', BH: 'bh-local-content', KW: 'kw-local-content',
+  EG: 'eg-price-preference',
 };
 
 /** Every program that exists for a given country, in display order -- used
@@ -271,6 +312,7 @@ export const PROGRAMS_BY_COUNTRY: Record<LocalContentCountry, LocalContentProgra
   QA: ['qa-national-strategy', 'qa-icv-tawteen'],
   BH: ['bh-local-content', 'bh-sme-price-preference', 'bh-sme-spend-setaside'],
   KW: ['kw-local-content', 'kw-kpc-local-spend'],
+  EG: ['eg-price-preference', 'eg-oil-gas-price-preference', 'eg-auto-local-content'],
 };
 
 /** Which buyer this assessment is for -- see file header: every sourced
@@ -529,8 +571,46 @@ const JO_OM_QA_BH_KW_PROGRAMS: Record<
   },
 };
 
+// ---------------------------------------------------------------------------
+// Section 1e — Egypt (EG). 15 Sep 2026 Part 2 pass ("non-GCC coverage"):
+// the first non-GCC/Jordan country added to this engine. Two genuinely
+// different, real, sourced price-preference-margin mechanisms (a general
+// public-procurement preference and a narrower oil & gas PSA preference,
+// run by different bodies under different legal bases), plus one honest
+// not-yet-sourced entry (the revamped automotive local-content target,
+// whose formula is reported as unpublished). See file header for the
+// "rest of the world" coverage-scope note this pass also established.
+// ---------------------------------------------------------------------------
+
+const EG_PROGRAMS: Record<'eg-price-preference' | 'eg-oil-gas-price-preference' | 'eg-auto-local-content', CountryFrameworkInfo> = {
+  'eg-price-preference': {
+    country: 'EG', countryNameEn: 'Egypt', countryNameAr: 'جمهورية مصر العربية',
+    programNameEn: 'Public Procurement Price Preference', programNameAr: 'تفضيل السعر في المشتريات الحكومية',
+    mechanismType: 'price-preference-margin', program: 'eg-price-preference',
+    applicableContexts: ['government', 'semi-government-soe'],
+    sourceNoteEn: 'Egypt\'s Law No. 5 of 2015 ("Preference of Egyptian Products in Governmental Contracts", as amended by Law No. 90 of 2018) requires a bid\'s supplied goods/services to contain at least 40% Egyptian-origin local content, by estimated project value, to qualify as an "Egyptian product"; qualifying Egyptian bidders then receive a flat 15% price preference in evaluation against foreign bids (per the US government\'s own trade.gov "Egypt -- Selling to the Public Sector" guide: "Egyptian domestic contractors shall be accorded priority if their bids do not exceed the lowest foreign bid by more than 15 percent"). This preference sits within Egypt\'s broader public-procurement legal framework -- trade.gov\'s own guide cites the older Tenders and Bids Law No. 89 of 1998 as governing overall procurement procedure, while a separate legal summary (riad-riad.com) states Law No. 182 of 2018 replaced that 1998 law; this research pass discloses that citation discrepancy rather than resolving it by assumption, the same treatment already applied to Jordan\'s own unconfirmed bylaw citation. Exempted from these preferences: procurement by the Ministry of Defense, Ministry of Interior, Military Production, and General Intelligence -- a real disclosed scope carve-out this engine does not separately model (no per-department procurement context is sourced anywhere else in this file either). No dedicated certifying/administering authority for the 40% local-content determination was identified in this research pass\'s sourcing. Modeled here as a threshold-gated flat preference (qualify at >=40% local content, then receive the full 15% margin) rather than Jordan/Oman\'s continuously-scaled share, since that is what the sourced language describes -- a genuinely different shape from the price-preference-margin mechanism\'s other reuses, disclosed rather than smoothed into the same continuous-scaling assumption.',
+    sourceNoteAr: 'يشترط القانون المصري رقم ٥ لسنة ٢٠١٥ ("في شأن تفضيل المنتجات المصرية في العقود الحكومية"، بصيغته المعدَّلة بالقانون رقم ٩٠ لسنة ٢٠١٨) أن يحتوي العطاء على نسبة لا تقل عن ٤٠٪ من المحتوى المحلي المصري المنشأ، من القيمة التقديرية للمشروع، ليُعتبر "منتجاً مصرياً"؛ وتحصل العطاءات المصرية المؤهلة عندئذٍ على تفضيل سعري ثابت بنسبة ١٥٪ عند تقييمها مقابل العطاءات الأجنبية (بحسب دليل الحكومة الأمريكية الرسمي "مصر -- البيع للقطاع العام" على trade.gov: "يُمنح المقاولون المصريون المحليون الأولوية إذا لم تتجاوز عطاءاتهم أقل عطاء أجنبي بأكثر من ١٥٪"). يندرج هذا التفضيل ضمن إطار المشتريات الحكومية المصرية الأوسع -- يستشهد دليل trade.gov نفسه بقانون المناقصات والمزايدات رقم ٨٩ لسنة ١٩٩٨ (القديم) كحاكم لإجراءات المشتريات العامة، في حين يذكر ملخص قانوني منفصل (riad-riad.com) أن القانون رقم ١٨٢ لسنة ٢٠١٨ حلّ محل ذلك القانون القديم؛ يُفصح هذا البحث عن هذا التعارض في الاستشهاد بدلاً من حسمه بافتراض، وهي نفس المعالجة المطبّقة سابقاً على استشهاد الأردن غير المؤكد بالنظام. يُستثنى من هذه التفضيلات: مشتريات وزارة الدفاع، ووزارة الداخلية، والإنتاج الحربي، والمخابرات العامة -- استثناء حقيقي ومُفصَح عنه لا يُنمذجه هذا المحرك بشكل منفصل (لا يوجد سياق مشتريات خاص بكل جهة موثّق في أي مكان آخر من هذا الملف أيضاً). لم تُحدَّد جهة اعتماد/إدارة مخصصة لتحديد نسبة الـ٤٠٪ للمحتوى المحلي ضمن مصادر هذا البحث. يُنمذَج هذا هنا كتفضيل ثابت مشروط ببوابة حدّية (التأهل عند ≥٤٠٪ محتوى محلي، ثم الحصول على كامل هامش الـ١٥٪) بدلاً من التدرّج المستمر المستخدم في الأردن وعُمان، لأن هذا ما تصفه الصياغة الموثّقة -- شكل مختلف فعلياً عن الاستخدامات الأخرى لآلية تفضيل السعر، يُفصَح عنه بدلاً من دمجه ضمن افتراض التدرّج المستمر نفسه.',
+  },
+  'eg-oil-gas-price-preference': {
+    country: 'EG', countryNameEn: 'Egypt', countryNameAr: 'جمهورية مصر العربية',
+    programNameEn: 'Oil & Gas PSA Local-Contractor Priority', programNameAr: 'أولوية المقاول المحلي في اتفاقيات تقاسم الإنتاج النفطية',
+    mechanismType: 'price-preference-margin', program: 'eg-oil-gas-price-preference',
+    applicableContexts: ['semi-government-soe'],
+    sourceNoteEn: 'Egypt\'s Production Sharing Agreement (PSA) model -- the standard contractual framework governing oil & gas exploration/production, under the Mines and Quarries Law of 1953, the Investment Guarantees and Incentives Act of 1997, and the Ministry of Petroleum\'s own PSA terms -- requires operating (International Oil Company) contractors to give priority to local Egyptian contractors and sub-contractors "when their performance is comparable to international performance, and the prices of their services are not higher than other contractors by more than 10%" (a 10% price-band preference), and separately to favor domestically-manufactured equipment/materials on the same comparable-quality/delivery basis. This is a real, sourced, genuinely different mechanism from the general procurement preference above -- a different buyer (petroleum-sector operating companies under Ministry of Petroleum oversight, not general government procuring entities), a different legal basis (PSA contractual terms, not Law 5/2015), and a different margin (10%, not 15%), the same "genuinely distinct mechanism, not a variant" pattern already applied to UAE Tawazun vs. ICV and Oman\'s OQ Group vs. general ICV. This research pass found no numeric administering-body confirmation beyond the general PSA contractual language -- the source article\'s own recommendation that Egypt establish "a unique and specialized department in the Ministry of Petroleum to manage local content" implies no such department is confirmed to exist yet, disclosed as an open item rather than assumed. Modeled here via the binary local-contractor-status-to-share conversion already used for Bahrain\'s SME price preference (qualifying status -> 100% share, not qualifying -> 0%), since the sourced mechanism is a contractor-class priority, not a locally-manufactured-content percentage of bid value.',
+    sourceNoteAr: 'يشترط نموذج اتفاقية تقاسم الإنتاج (PSA) المصري -- الإطار التعاقدي المعياري الحاكم لاستكشاف وإنتاج النفط والغاز، بموجب قانون المناجم والمحاجر لعام ١٩٥٣، وقانون ضمانات وحوافز الاستثمار لعام ١٩٩٧، وشروط اتفاقيات تقاسم الإنتاج الخاصة بوزارة البترول -- أن تمنح الشركات المشغِّلة (شركات النفط الدولية) الأولوية للمقاولين والمقاولين من الباطن المصريين المحليين "عندما يكون أداؤهم مماثلاً للأداء الدولي، ولا تتجاوز أسعار خدماتهم أسعار المقاولين الآخرين بأكثر من ١٠٪" (هامش تفضيل سعري ١٠٪)، وأن تُفضِّل بشكل منفصل المعدات/المواد المصنَّعة محلياً على نفس أساس تكافؤ الجودة والتسليم. هذه آلية حقيقية وموثّقة ومختلفة فعلياً عن تفضيل المشتريات العام أعلاه -- مشترٍ مختلف (شركات التشغيل في قطاع البترول تحت إشراف وزارة البترول، وليس جهات المشتريات الحكومية العامة)، وأساس قانوني مختلف (شروط اتفاقية تقاسم الإنتاج، وليس القانون ٥ لسنة ٢٠١٥)، وهامش مختلف (١٠٪ وليس ١٥٪)، وهو نفس نمط "آلية مختلفة فعلاً، وليست نسخة" المُطبَّق سابقاً على توازن الإماراتية مقابل ICV العام، وتفضيل مجموعة OQ العُمانية مقابل ICV العام. لم يعثر هذا البحث على تأكيد رقمي لجهة إدارة محددة بخلاف الصياغة التعاقدية العامة لاتفاقيات تقاسم الإنتاج -- وتوصية المقال المصدر نفسه بأن تُنشئ مصر "إدارة متخصصة وفريدة في وزارة البترول لإدارة المحتوى المحلي" تعني ضمناً أن مثل هذه الإدارة غير مؤكد وجودها بعد، ويُفصَح عن ذلك كمسألة مفتوحة لا كافتراض. يُنمذَج هذا هنا عبر تحويل حالة المقاول المحلي الثنائية إلى حصة، بنفس الأسلوب المستخدم بالفعل لتفضيل سعر المنشآت الصغيرة والمتوسطة البحرينية (حالة التأهل → حصة ١٠٠٪، وعدم التأهل → ٠٪)، لأن الآلية الموثّقة هي أولوية لفئة مقاولين، وليست نسبة مئوية من قيمة العطاء مصنّعة محلياً.',
+  },
+  'eg-auto-local-content': {
+    country: 'EG', countryNameEn: 'Egypt', countryNameAr: 'جمهورية مصر العربية',
+    programNameEn: 'Automotive Local Content Target (AIDP) -- not yet sourced', programNameAr: 'هدف المحتوى المحلي لصناعة السيارات (برنامج تطوير صناعة السيارات) — غير موثّق بعد',
+    mechanismType: 'not-yet-sourced', program: 'eg-auto-local-content',
+    applicableContexts: [],
+    sourceNoteEn: "Egypt's Ministry of Industry, Trade and Small Industries announced a revamped Automotive Industry Development Program (AIDP) targeting 60% local content and 100,000 vehicles/year, alongside performance-based production bonuses, extended EV support, and rewards for introducing advanced technology and specific component industries (glass, upholstery, sheet metal) (per EnterpriseAM's March 2026 reporting) -- replacing the earlier AIDP's 35% local-content / 10,000-vehicle target, described in that same reporting as impractical given Egypt's limited domestic demand and underdeveloped supplier base. No published per-manufacturer or per-supplier computable formula for the revised 60% target was found; the incentive structure is reported as unpublished, pending official announcement, as of this research pass. A real, dated national target is disclosed here rather than a fabricated per-supplier score, the same Decision Record 8.7 treatment already applied to Saudi GAMI/LIKT and Oman/Qatar/Bahrain/Kuwait's general national programs.",
+    sourceNoteAr: 'أعلنت وزارة التجارة والصناعة المصرية (وزارة الصناعة والتجارة والصناعات الصغيرة) عن نسخة مُجدَّدة من برنامج تطوير صناعة السيارات (AIDP) تستهدف ٦٠٪ محتوى محلي و١٠٠ ألف مركبة سنوياً، إلى جانب مكافآت إنتاج قائمة على الأداء، ودعم موسّع للمركبات الكهربائية، ومكافآت لإدخال تقنيات متقدمة وصناعات مكوّنات محددة (الزجاج، التنجيد، الصاج) (بحسب تقرير EnterpriseAM في مارس ٢٠٢٦) -- لتحل محل هدف البرنامج السابق البالغ ٣٥٪ محتوى محلي و١٠ آلاف مركبة، والذي وصفه التقرير نفسه بأنه غير عملي نظراً لمحدودية الطلب المحلي المصري وضعف قاعدة الموردين. لم يُعثر على صيغة حساب منشورة على مستوى المصنّع أو المورّد للهدف الجديد البالغ ٦٠٪؛ ويُذكر أن هيكل الحوافز غير منشور، وينتظر إعلاناً رسمياً حتى وقت هذا البحث. يُفصَح هنا عن هدف وطني حقيقي ومؤرَّخ بدلاً من درجة مورّد مختلقة، وهي نفس معالجة سجل القرار ٨.٧ المطبّقة سابقاً على برنامجي GAMI وLIKT السعوديين والبرامج الوطنية العامة لعُمان وقطر والبحرين والكويت.',
+  },
+};
+
 export const PROGRAMS: Record<LocalContentProgram, CountryFrameworkInfo> = {
-  ...SA_PROGRAMS, ...AE_PROGRAMS, ...JO_OM_QA_BH_KW_PROGRAMS,
+  ...SA_PROGRAMS, ...AE_PROGRAMS, ...JO_OM_QA_BH_KW_PROGRAMS, ...EG_PROGRAMS,
 };
 
 /** Derived view, kept for the UI's country-selector buttons and any caller
@@ -545,6 +625,7 @@ export const COUNTRY_FRAMEWORKS: Record<LocalContentCountry, CountryFrameworkInf
   QA: PROGRAMS[DEFAULT_PROGRAM_BY_COUNTRY.QA],
   BH: PROGRAMS[DEFAULT_PROGRAM_BY_COUNTRY.BH],
   KW: PROGRAMS[DEFAULT_PROGRAM_BY_COUNTRY.KW],
+  EG: PROGRAMS[DEFAULT_PROGRAM_BY_COUNTRY.EG],
 };
 
 // ---------------------------------------------------------------------------
@@ -680,6 +761,25 @@ export interface SupplierLocalContentInputs {
    * more granular sourced qualification definition). */
   kwLocalSpend?: {
     isRegisteredKuwaitiSupplier: boolean | null;
+  };
+  /** Egypt public-procurement price preference (EG / 'eg-price-preference',
+   * new 15 Sep 2026 Part 2 pass) -- % of this bid's/project's estimated
+   * value that is Egyptian-origin local content (self-reported,
+   * caller-supplied). Law 5/2015 (as amended by Law 90/2018) requires
+   * >=40% to qualify as an "Egyptian product"; qualifying bids then
+   * receive a flat 15% price preference (a threshold gate, not a
+   * continuously-scaled share -- see PROGRAMS['eg-price-preference']
+   * .sourceNoteEn). */
+  eg?: {
+    egyptianContentSharePct: number | null;
+  };
+  /** Egypt oil & gas PSA local-contractor priority (EG / 'eg-oil-gas-
+   * price-preference', new Part 2 pass) -- self-reported local-Egyptian-
+   * contractor status, same binary-to-share conversion as Bahrain's SME
+   * price preference (see PROGRAMS['eg-oil-gas-price-preference']
+   * .sourceNoteEn). */
+  egOilGas?: {
+    isLocalEgyptianContractor: boolean | null;
   };
 }
 
@@ -1121,6 +1221,33 @@ function computePricePreferenceBh(bh: NonNullable<SupplierLocalContentInputs['bh
 }
 
 // ---------------------------------------------------------------------------
+// Section 6c-2 — EG: two price-preference-margin mechanisms (new, 15 Sep
+// 2026 Part 2 pass). The general procurement preference is threshold-gated
+// (qualify at >=40% local content, then a flat margin) rather than
+// continuously scaled -- see PROGRAMS['eg-price-preference'].sourceNoteEn.
+// The oil & gas PSA preference reuses the same binary-to-share conversion
+// as Bahrain's SME preference above -- see PROGRAMS['eg-oil-gas-price-
+// preference'].sourceNoteEn.
+// ---------------------------------------------------------------------------
+
+export const EGYPT_PRICE_PREFERENCE_MARGIN_PCT = 15;
+export const EGYPT_PRICE_PREFERENCE_QUALIFYING_THRESHOLD_PCT = 40;
+export const EGYPT_OIL_GAS_PRICE_PREFERENCE_MARGIN_PCT = 10;
+
+function computePricePreferenceEg(eg: NonNullable<SupplierLocalContentInputs['eg']>): PricePreferenceMarginResult {
+  const pct = eg.egyptianContentSharePct;
+  const qualifies = pct === null || pct === undefined ? null : pct >= EGYPT_PRICE_PREFERENCE_QUALIFYING_THRESHOLD_PCT;
+  const share = qualifies === null ? null : (qualifies ? 100 : 0);
+  return computePricePreferenceMargin(EGYPT_PRICE_PREFERENCE_MARGIN_PCT, share);
+}
+
+function computePricePreferenceEgOilGas(egOilGas: NonNullable<SupplierLocalContentInputs['egOilGas']>): PricePreferenceMarginResult {
+  const isLocal = egOilGas.isLocalEgyptianContractor;
+  const share = isLocal === null || isLocal === undefined ? null : (isLocal ? 100 : 0);
+  return computePricePreferenceMargin(EGYPT_OIL_GAS_PRICE_PREFERENCE_MARGIN_PCT, share);
+}
+
+// ---------------------------------------------------------------------------
 // Section 6d — JO/BH/KW: spend-set-aside-target (type 5, new 17 Sep 2026).
 // Real sourced national/program target shares -- see PROGRAMS[
 // 'jo-contractor-quota' | 'bh-sme-spend-setaside' | 'kw-kpc-local-spend']
@@ -1299,6 +1426,16 @@ export function assessSupplierLocalContent(
       return { country, program: resolvedProgram, procurementContext, applicability: 'applicable', framework, computation: { mechanismType: 'spend-set-aside-target', targetSharePct: KUWAIT_KPC_LOCAL_SPEND_TARGET_PCT, qualifiesForSetAside: null, eligibleForReservedShare: null }, certificationCaveatEn: NOT_CERTIFIED_EN, certificationCaveatAr: NOT_CERTIFIED_AR, reasonEn: 'No Kuwaiti-supplier registration status supplied yet.', reasonAr: 'لم تُدخل حالة تسجيل المورّد الكويتي بعد.' };
     }
     computation = computeLocalSpendKw(inputs.kwLocalSpend);
+  } else if (resolvedProgram === 'eg-price-preference') {
+    if (!inputs.eg) {
+      return { country, program: resolvedProgram, procurementContext, applicability: 'applicable', framework, computation: computePricePreferenceMargin(EGYPT_PRICE_PREFERENCE_MARGIN_PCT, null), certificationCaveatEn: NOT_CERTIFIED_EN, certificationCaveatAr: NOT_CERTIFIED_AR, reasonEn: 'No Egyptian local-content share supplied yet.', reasonAr: 'لم تُدخل نسبة المحتوى المصري بعد.' };
+    }
+    computation = computePricePreferenceEg(inputs.eg);
+  } else if (resolvedProgram === 'eg-oil-gas-price-preference') {
+    if (!inputs.egOilGas) {
+      return { country, program: resolvedProgram, procurementContext, applicability: 'applicable', framework, computation: computePricePreferenceMargin(EGYPT_OIL_GAS_PRICE_PREFERENCE_MARGIN_PCT, null), certificationCaveatEn: NOT_CERTIFIED_EN, certificationCaveatAr: NOT_CERTIFIED_AR, reasonEn: 'No Egyptian oil & gas local-contractor status supplied yet.', reasonAr: 'لم تُدخل حالة المقاول المصري المحلي في قطاع النفط والغاز بعد.' };
+    }
+    computation = computePricePreferenceEgOilGas(inputs.egOilGas);
   } else {
     computation = { mechanismType: 'not-yet-sourced' };
   }

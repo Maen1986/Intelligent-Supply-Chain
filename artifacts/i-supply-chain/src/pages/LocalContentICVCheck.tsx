@@ -85,6 +85,8 @@ type OmOqPricePreferenceInputs = NonNullable<SupplierLocalContentInputs['omOqPri
 type QaInputs = NonNullable<SupplierLocalContentInputs['qa']>;
 type BhSmeInputs = NonNullable<SupplierLocalContentInputs['bhSme']>;
 type KwLocalSpendInputs = NonNullable<SupplierLocalContentInputs['kwLocalSpend']>;
+type EgInputs = NonNullable<SupplierLocalContentInputs['eg']>;
+type EgOilGasInputs = NonNullable<SupplierLocalContentInputs['egOilGas']>;
 
 function emptySa(): SaInputs {
   return {
@@ -148,6 +150,12 @@ function emptyBhSme(): BhSmeInputs {
 function emptyKwLocalSpend(): KwLocalSpendInputs {
   return { isRegisteredKuwaitiSupplier: null };
 }
+function emptyEg(): EgInputs {
+  return { egyptianContentSharePct: null };
+}
+function emptyEgOilGas(): EgOilGasInputs {
+  return { isLocalEgyptianContractor: null };
+}
 
 // Old (pre-16-Sep-2026-generalization) Saudi-only program keys, still
 // possibly sitting in a returning user's localStorage/server row from
@@ -180,8 +188,11 @@ function normalizeProgram(raw: unknown, countrySelection: CountrySelection): Loc
 }
 
 // 'OTHER' is a client-only pseudo-value for a supplier whose country is not
-// one of the 7 this module's engine can represent at all (e.g. China,
-// Turkey, Egypt) -- never passed to assessSupplierLocalContent, which only
+// one of the 8 this module's engine can represent at all (e.g. China,
+// Turkey, the UK, the USA) -- Egypt moved from this "not yet representable"
+// list to a real LocalContentCountry in the 15 Sep 2026 Part 2 pass, the
+// same growth pattern documented for it in the engine file's own header.
+// 'OTHER' is never passed to assessSupplierLocalContent, which only
 // accepts a real LocalContentCountry. This is its own explicit UI state,
 // distinct from 'insufficient-data' (a real program that's just not sourced
 // yet) and 'not-applicable' (a real, sourced program that doesn't cover
@@ -216,6 +227,8 @@ interface LocalContentEntry {
   qa: QaInputs;
   bhSme: BhSmeInputs;
   kwLocalSpend: KwLocalSpendInputs;
+  eg: EgInputs;
+  egOilGas: EgOilGasInputs;
 }
 
 function newLocalContentEntry(): LocalContentEntry {
@@ -230,6 +243,7 @@ function newLocalContentEntry(): LocalContentEntry {
     ae: emptyAe(), aeTawazun: emptyAeTawazun(), jo: emptyJo(),
     joContractorQuota: emptyJoContractorQuota(), omMandatoryList: emptyOmMandatoryList(), omOqPricePreference: emptyOmOqPricePreference(),
     qa: emptyQa(), bhSme: emptyBhSme(), kwLocalSpend: emptyKwLocalSpend(),
+    eg: emptyEg(), egOilGas: emptyEgOilGas(),
   };
 }
 
@@ -269,6 +283,8 @@ function loadState(): PersistedState {
             qa: { ...emptyQa(), ...e.qa },
             bhSme: { ...emptyBhSme(), ...e.bhSme },
             kwLocalSpend: { ...emptyKwLocalSpend(), ...e.kwLocalSpend },
+            eg: { ...emptyEg(), ...e.eg },
+            egOilGas: { ...emptyEgOilGas(), ...e.egOilGas },
           })),
           targetThresholdPct: parsed.targetThresholdPct ?? null,
         };
@@ -294,8 +310,8 @@ const applicabilityStyle: Record<LocalContentApplicability, { badge: string; ico
   'insufficient-data': { badge: 'bg-amber-50 border-amber-200 text-amber-700', icon: <ShieldAlert className="w-3.5 h-3.5" /> },
 };
 
-const COUNTRY_ORDER: LocalContentCountry[] = ['SA', 'AE', 'JO', 'OM', 'QA', 'BH', 'KW'];
-const COUNTRY_FLAG: Record<LocalContentCountry, string> = { SA: '🇸🇦', AE: '🇦🇪', JO: '🇯🇴', OM: '🇴🇲', QA: '🇶🇦', BH: '🇧🇭', KW: '🇰🇼' };
+const COUNTRY_ORDER: LocalContentCountry[] = ['SA', 'AE', 'JO', 'OM', 'QA', 'BH', 'KW', 'EG'];
+const COUNTRY_FLAG: Record<LocalContentCountry, string> = { SA: '🇸🇦', AE: '🇦🇪', JO: '🇯🇴', OM: '🇴🇲', QA: '🇶🇦', BH: '🇧🇭', KW: '🇰🇼', EG: '🇪🇬' };
 
 const CONTEXT_TABS: { v: ProcurementContext; en: string; ar: string }[] = [
   { v: 'government', en: 'Government', ar: 'حكومي' },
@@ -305,7 +321,7 @@ const CONTEXT_TABS: { v: ProcurementContext; en: string; ar: string }[] = [
 
 // Program routing question (task #115, generalized 16 Sep 2026 from SA-only
 // to any country with more than one program -- since 17 Sep 2026 that is
-// every one of the 7 countries): which mechanism is this assessment for.
+// every one of the 8 countries): which mechanism is this assessment for.
 // Short bilingual labels for the
 // button row and the portfolio table; the full sourced methodology stays in
 // the accordion below, keyed off PROGRAMS[program] automatically. Every
@@ -333,6 +349,9 @@ const PROGRAM_LABELS: Record<LocalContentProgram, { en: string; ar: string }> = 
   'bh-sme-spend-setaside': { en: 'SME Spend Set-Aside (20%)', ar: 'تخصيص إنفاق للمنشآت الصغيرة والمتوسطة (٢٠٪)' },
   'kw-local-content': { en: 'Local Content (not sourced)', ar: 'المحتوى المحلي (غير موثّق)' },
   'kw-kpc-local-spend': { en: 'KPC Local Spend Target (30%)', ar: 'هدف إنفاق KPC المحلي (٣٠٪)' },
+  'eg-price-preference': { en: 'Price Preference (15%)', ar: 'تفضيل السعر (١٥٪)' },
+  'eg-oil-gas-price-preference': { en: 'Oil & Gas PSA Preference (10%)', ar: 'تفضيل اتفاقية تقاسم الإنتاج النفطية (١٠٪)' },
+  'eg-auto-local-content': { en: 'Automotive Local Content (not sourced)', ar: 'المحتوى المحلي لصناعة السيارات (غير موثّق)' },
 };
 
 // Dual-sided (buyer + supplier) value framing, per mechanism TYPE (not per
@@ -485,13 +504,13 @@ function LocalContentEntryCard({
   // when the 5-country continuation gave every remaining country a second
   // program: any country whose PROGRAMS_BY_COUNTRY list has more than one
   // entry gets the routing question row below (as of 17 Sep 2026, that is
-  // all 7 countries).
+  // all 8 countries, as of the 15 Sep 2026 Egypt/Part-2 addition).
   const hasMultiplePrograms = !isOther && PROGRAMS_BY_COUNTRY[entry.countrySelection as LocalContentCountry].length > 1;
   const framework = !isOther ? PROGRAMS[entry.program] : null;
   const assessment: LocalContentAssessment | null = !isOther
     ? assessSupplierLocalContent(
         entry.countrySelection as LocalContentCountry, entry.context,
-        { sa: entry.sa, ae: entry.ae, jo: entry.jo, saMandatoryList: entry.saMandatoryList, saPricePreference: entry.saPricePreference, iktva: entry.iktva, aeTawazun: entry.aeTawazun, joContractorQuota: entry.joContractorQuota, omMandatoryList: entry.omMandatoryList, omOqPricePreference: entry.omOqPricePreference, qa: entry.qa, bhSme: entry.bhSme, kwLocalSpend: entry.kwLocalSpend },
+        { sa: entry.sa, ae: entry.ae, jo: entry.jo, saMandatoryList: entry.saMandatoryList, saPricePreference: entry.saPricePreference, iktva: entry.iktva, aeTawazun: entry.aeTawazun, joContractorQuota: entry.joContractorQuota, omMandatoryList: entry.omMandatoryList, omOqPricePreference: entry.omOqPricePreference, qa: entry.qa, bhSme: entry.bhSme, kwLocalSpend: entry.kwLocalSpend, eg: entry.eg, egOilGas: entry.egOilGas },
         entry.program,
       )
     : null;
@@ -598,7 +617,8 @@ function LocalContentEntryCard({
 
         {/* ── Program routing question (task #115; generalized 16 Sep 2026 from
              SA-only to any country with more than one program -- since
-             17 Sep 2026 that is every one of the 7 countries). Shown before
+             17 Sep 2026 that is every one of the 8 countries, as of the
+             15 Sep 2026 Egypt/Part-2 addition). Shown before
              context/methodology, since it changes which framework and
              applicable contexts apply. ── */}
         {hasMultiplePrograms && (
@@ -656,8 +676,8 @@ function LocalContentEntryCard({
             <Compass className="w-4 h-4 text-slate-500 shrink-0 mt-0.5" />
             <p className="text-[11px] text-slate-600 leading-relaxed">
               {isAr
-                ? 'هذه الوحدة تغطي حالياً سبع دول فقط: السعودية والإمارات والأردن وعُمان وقطر والبحرين والكويت، ولكل منها برنامج واحد أو أكثر بصيغة موثّقة قابلة للحساب (بعضها إلى جانب برنامج عام لا يزال "غير موثّق" -- يُعرض ذلك صراحة عند اختياره، لا كدرجة صفرية). أي دولة أخرى (مثل الصين أو تركيا أو مصر) غير قابلة للتمثيل في هذه المكتبة إطلاقاً -- لا يوجد فحص محتوى محلي متاح لها هنا، وليس درجة صفرية أو "غير مطبَّق".'
-                : "This module currently covers only seven countries: Saudi Arabia, the UAE, Jordan, Oman, Qatar, Bahrain, and Kuwait, each with one or more sourced, computable-formula programs (some also carry a separate general program that's still not-yet-sourced -- disclosed explicitly when selected, not shown as a zero score). Any other country (e.g. China, Turkey, Egypt) isn't representable by this library at all -- no local-content check is available for it here, and this is not a zero score or a \"not applicable\" verdict."}
+                ? 'هذه الوحدة تغطي حالياً ثماني دول فقط: السعودية والإمارات والأردن وعُمان وقطر والبحرين والكويت ومصر، ولكل منها برنامج واحد أو أكثر بصيغة موثّقة قابلة للحساب (بعضها إلى جانب برنامج عام لا يزال "غير موثّق" -- يُعرض ذلك صراحة عند اختياره، لا كدرجة صفرية). أي دولة أخرى (مثل الصين أو تركيا أو المملكة المتحدة أو الولايات المتحدة) غير قابلة للتمثيل في هذه المكتبة إطلاقاً -- لا يوجد فحص محتوى محلي متاح لها هنا، وليس درجة صفرية أو "غير مطبَّق".'
+                : "This module currently covers only eight countries: Saudi Arabia, the UAE, Jordan, Oman, Qatar, Bahrain, Kuwait, and Egypt, each with one or more sourced, computable-formula programs (some also carry a separate general program that's still not-yet-sourced -- disclosed explicitly when selected, not shown as a zero score). Any other country (e.g. China, Turkey, the UK, the USA) isn't representable by this library at all -- no local-content check is available for it here, and this is not a zero score or a \"not applicable\" verdict."}
             </p>
           </div>
         ) : (
@@ -1070,6 +1090,45 @@ function LocalContentEntryCard({
                     </p>
                   </div>
                 )}
+
+                {entry.countrySelection === 'EG' && entry.program === 'eg-price-preference' && (
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    <NumberField
+                      label={isAr ? 'نسبة المحتوى المصري المقدَّرة من قيمة العطاء' : 'Estimated Egyptian Local-Content Share of Bid Value'}
+                      hint={isAr ? 'يتطلب القانون ٥ لسنة ٢٠١٥ (المعدَّل بالقانون ٩٠ لسنة ٢٠١٨) حداً أدنى ٤٠٪ للتأهل؛ العطاءات المؤهلة تحصل على تفضيل سعري ثابت بنسبة ١٥٪ (بوابة حدّية، وليست تدرجاً مستمراً).' : 'Law 5/2015 (as amended by Law 90/2018) requires a minimum 40% to qualify; qualifying bids then receive a flat 15% price preference (a threshold gate, not a continuous scale).'}
+                      unit="%"
+                      max={100}
+                      value={entry.eg.egyptianContentSharePct}
+                      onChange={v => onUpdate(entry.id, { eg: { ...entry.eg, egyptianContentSharePct: v } })}
+                    />
+                  </div>
+                )}
+
+                {entry.countrySelection === 'EG' && entry.program === 'eg-oil-gas-price-preference' && (
+                  <div>
+                    <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                      {isAr ? 'هل هذا المورّد مقاول مصري محلي مؤهل ضمن اتفاقية تقاسم الإنتاج (أداء مماثل وسعر لا يتجاوز أقل عرض بأكثر من ١٠٪)؟' : 'Is this supplier a qualifying local Egyptian PSA contractor (comparable performance, price within 10% of the lowest bid)?'}
+                    </p>
+                    <div className="flex gap-1.5" role="group" aria-label={isAr ? 'حالة المقاول المحلي في اتفاقية تقاسم الإنتاج' : 'PSA local-contractor status'}>
+                      {([['yes', true], ['no', false]] as const).map(([k, v]) => (
+                        <button
+                          key={k}
+                          type="button"
+                          aria-pressed={entry.egOilGas.isLocalEgyptianContractor === v}
+                          onClick={() => onUpdate(entry.id, { egOilGas: { ...entry.egOilGas, isLocalEgyptianContractor: v } })}
+                          className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors ${
+                            entry.egOilGas.isLocalEgyptianContractor === v ? 'bg-[#082C6B] border-[#082C6B] text-white' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                          }`}
+                        >
+                          {k === 'yes' ? (isAr ? 'نعم' : 'Yes') : (isAr ? 'لا' : 'No')}
+                        </button>
+                      ))}
+                    </div>
+                    <p className="text-[10px] text-muted-foreground mt-1.5">
+                      {isAr ? 'وفق شروط اتفاقيات تقاسم الإنتاج (PSA) الخاصة بوزارة البترول -- تفضيل بهامش ١٠٪ لأسعار المقاولين المحليين المؤهلين.' : "Per Ministry of Petroleum PSA contractual terms -- a 10% price-band preference for qualifying local contractors."}
+                    </p>
+                  </div>
+                )}
               </div>
             )}
 
@@ -1438,7 +1497,7 @@ export function LocalContentICVCheck() {
       entry: e,
       assessment: assessSupplierLocalContent(
         e.countrySelection as LocalContentCountry, e.context,
-        { sa: e.sa, ae: e.ae, jo: e.jo, saMandatoryList: e.saMandatoryList, saPricePreference: e.saPricePreference, iktva: e.iktva, aeTawazun: e.aeTawazun, joContractorQuota: e.joContractorQuota, omMandatoryList: e.omMandatoryList, omOqPricePreference: e.omOqPricePreference, qa: e.qa, bhSme: e.bhSme, kwLocalSpend: e.kwLocalSpend },
+        { sa: e.sa, ae: e.ae, jo: e.jo, saMandatoryList: e.saMandatoryList, saPricePreference: e.saPricePreference, iktva: e.iktva, aeTawazun: e.aeTawazun, joContractorQuota: e.joContractorQuota, omMandatoryList: e.omMandatoryList, omOqPricePreference: e.omOqPricePreference, qa: e.qa, bhSme: e.bhSme, kwLocalSpend: e.kwLocalSpend, eg: e.eg, egOilGas: e.egOilGas },
         e.program,
       ),
     }));
@@ -1481,14 +1540,14 @@ export function LocalContentICVCheck() {
                 {isAr ? 'المحتوى المحلي / القيمة المحلية المضافة — متعدد الدول' : 'Local Content / ICV — Multi-Country'}
               </p>
               <h1 className="text-3xl lg:text-4xl font-black leading-tight">
-                {isAr ? 'فحص أهلية المحتوى المحلي عبر سبع دول خليجية وعربية' : 'Local Content / ICV Eligibility Check'}
+                {isAr ? 'فحص أهلية المحتوى المحلي عبر ثماني دول خليجية وعربية' : 'Local Content / ICV Eligibility Check'}
               </h1>
             </div>
           </div>
           <p className="text-white/75 text-base max-w-2xl leading-relaxed mb-4">
             {isAr
-              ? 'المحتوى المحلي ليس معياراً إقليمياً واحداً -- إنه آليات مختلفة جوهرياً عبر سبع دول: درجة نسبة مئوية معتمدة في السعودية (LCGPA)، درجة مرجحة متعددة الأركان في الإمارات (ICV)، تفضيل سعري في عطاءات الأردن وعُمان والبحرين، بوابة أهلية للفئات في القائمة الإلزامية بالسعودية وعُمان، درجة توطين/ICV رسمية في قطر (icv.qa)، وحصص إنفاق مخصصة في الأردن والبحرين والكويت. سمِّ كل مورّد، اختر الدولة والبرنامج وسياق الشراء، واحصل على قراءة أهلية صادقة فوراً.'
-              : "Local content isn't one regional standard -- it's genuinely different mechanisms across seven countries: a certified percentage score in Saudi Arabia (LCGPA), a weighted multi-pillar score in the UAE (ICV), a bid-evaluation price preference in Jordan, Oman, and Bahrain, a category-eligibility gate on Saudi and Omani Mandatory Lists, an official Tawteen/ICV score in Qatar (icv.qa), and reserved spend set-asides in Jordan, Bahrain, and Kuwait. Name each supplier, pick the country, program, and buyer context, and get an honest applicability read immediately."}
+              ? 'المحتوى المحلي ليس معياراً إقليمياً واحداً -- إنه آليات مختلفة جوهرياً عبر ثماني دول: درجة نسبة مئوية معتمدة في السعودية (LCGPA)، درجة مرجحة متعددة الأركان في الإمارات (ICV)، تفضيل سعري في عطاءات الأردن وعُمان والبحرين ومصر (عاماً وفي قطاع النفط والغاز)، بوابة أهلية للفئات في القائمة الإلزامية بالسعودية وعُمان، درجة توطين/ICV رسمية في قطر (icv.qa)، وحصص إنفاق مخصصة في الأردن والبحرين والكويت. سمِّ كل مورّد، اختر الدولة والبرنامج وسياق الشراء، واحصل على قراءة أهلية صادقة فوراً.'
+              : "Local content isn't one regional standard -- it's genuinely different mechanisms across eight countries: a certified percentage score in Saudi Arabia (LCGPA), a weighted multi-pillar score in the UAE (ICV), a bid-evaluation price preference in Jordan, Oman, Bahrain, and Egypt (general procurement and a separate oil & gas PSA preference), a category-eligibility gate on Saudi and Omani Mandatory Lists, an official Tawteen/ICV score in Qatar (icv.qa), and reserved spend set-asides in Jordan, Bahrain, and Kuwait. Name each supplier, pick the country, program, and buyer context, and get an honest applicability read immediately."}
           </p>
           <div className="flex flex-wrap gap-3 text-xs text-white/60 mb-4">
             {(isAr
@@ -1672,8 +1731,8 @@ export function LocalContentICVCheck() {
 
         <p className="text-[10px] text-muted-foreground text-center pt-2">
           {isAr
-            ? 'هذه الأداة لا تحل محل تدقيق رسمي من الجهة المعنية (هيئة المحتوى المحلي والمشتريات الحكومية في السعودية، وزارة الصناعة والتقنية المتقدمة في الإمارات، الجهة الأردنية المختصة، هيئة المناقصات والمشتريات العامة والمحتوى المحلي PTLC في عُمان، icv.qa في قطر، أو الجهة البحرينية أو الكويتية المختصة) أو استشارة قانونية/محاسبية متخصصة.'
-            : "This tool is not a substitute for a formal audit from the relevant authority (Saudi Arabia's LCGPA, the UAE's MoIAT, Jordan's competent ministry, Oman's PTLC, Qatar's icv.qa, or Bahrain's or Kuwait's competent authority) or specialist legal/accounting advice."}
+            ? 'هذه الأداة لا تحل محل تدقيق رسمي من الجهة المعنية (هيئة المحتوى المحلي والمشتريات الحكومية في السعودية، وزارة الصناعة والتقنية المتقدمة في الإمارات، الجهة الأردنية المختصة، هيئة المناقصات والمشتريات العامة والمحتوى المحلي PTLC في عُمان، icv.qa في قطر، الجهة البحرينية أو الكويتية المختصة، أو الجهة المصرية المختصة بموجب القانون رقم ٥ لسنة ٢٠١٥ أو وزارة البترول) أو استشارة قانونية/محاسبية متخصصة.'
+            : "This tool is not a substitute for a formal audit from the relevant authority (Saudi Arabia's LCGPA, the UAE's MoIAT, Jordan's competent ministry, Oman's PTLC, Qatar's icv.qa, Bahrain's or Kuwait's competent authority, or Egypt's competent authority under Law No. 5 of 2015 or the Ministry of Petroleum) or specialist legal/accounting advice."}
         </p>
       </div>
     </div>
