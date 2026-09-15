@@ -2,7 +2,7 @@
 ### Worked Example, Sourced Methodology, and Stress-Test Record — Rawabi Advanced Industries
 
 *Registry: SI-08 (draft, pending #436/#441 formal registry entry). Date: 15 Sep 2026, updated 16 Sep 2026 (Saudi Arabia mechanism decomposition, Part 1 slice, section 8; UAE mechanism decomposition + program-architecture generalization, same day, section 9), updated again 17 Sep 2026 (Jordan's second mechanism, Oman, Qatar, Bahrain, Kuwait -- closing out the rest of Part 1, section 10).*
-*Engine file: `src/lib/supplierLocalContentEligibility.ts` (1564 lines, 20 programs across all 7 countries via a generalized `LocalContentProgram` architecture — see section 9's own note on why the Saudi-only `SaudiProgram` pattern was generalized, and section 10.1 for the 7 programs added 17 Sep 2026). Test file: `src/lib/supplierLocalContentEligibility.test.ts` (109 tests: 39 original + 23 Saudi-mechanism + 15 UAE-mechanism/architecture + 32 Jordan/Oman/Qatar/Bahrain/Kuwait-mechanism tests, soft/hardest/boundary tiers).*
+*Engine file: `src/lib/supplierLocalContentEligibility.ts` (953 lines, 20 programs across all 7 countries via a generalized `LocalContentProgram` architecture — see section 9's own note on why the Saudi-only `SaudiProgram` pattern was generalized, and section 10.1 for the 7 programs added 17 Sep 2026). Test file: `src/lib/supplierLocalContentEligibility.test.ts` (106 tests: 39 original + 23 Saudi-mechanism + 12 UAE-mechanism/architecture + 32 Jordan/Oman/Qatar/Bahrain/Kuwait-mechanism tests, soft/hardest/boundary tiers).*
 *Status: library-complete, unit-tested, cross-engine chain-tested, live UI rebuilt as a multi-supplier list per an independent senior-QA review (`/local-content-icv`, QA-10/10-walked-through, 16 Sep 2026), extended with Saudi Arabia's full mechanism decomposition (section 8), the UAE's (section 9: MoIAT ICV usage note + genuine incentive-not-gate negative finding, and the Tawazun defense-offset mechanism with a real sourced formula), and now Jordan's second mechanism plus real sourced programs for Oman, Qatar, Bahrain, and Kuwait (section 10, 17 Sep 2026) -- completing the rest of Part 1 (GCC/Jordan coverage). A dual-sided buyer/supplier value-framing panel is live in the UI for every country and every sourced mechanism type. See "What Is Not Yet Done" below for what remains, including the backend table this pass added but has not provisioned, and Part 2 of the assignment (non-GCC coverage), which is explicitly not started yet.*
 
 ---
@@ -65,7 +65,7 @@ remain live and completely unchanged by this work.
 
 ---
 
-## 4. Stress-Test Record (39 tests as of 15 Sep 2026, all passing; three tiers per mechanism — see section 8.8 for the 23 additional Saudi-mechanism tests (62 total), section 9.5 for the 15 additional UAE-mechanism/architecture tests added 16 Sep 2026 (77 total), and section 10.8 for the 32 additional Jordan/Oman/Qatar/Bahrain/Kuwait-mechanism tests added 17 Sep 2026 (109 total))
+## 4. Stress-Test Record (39 tests as of 15 Sep 2026, all passing; three tiers per mechanism — see section 8.8 for the 23 additional Saudi-mechanism tests (62 total), section 9.5 for the 12 additional UAE-mechanism/architecture tests added 16 Sep 2026 (74 total), and section 10.8 for the 32 additional Jordan/Oman/Qatar/Bahrain/Kuwait-mechanism tests added 17 Sep 2026 (106 total))
 
 ### 4.1 Saudi Arabia — LCGPA eligible-spend-ratio
 
@@ -544,7 +544,7 @@ both disclosed program options, never modeled as a compliance failure.
   MoIAT page does not itself state one; the sourced 40% figure is disclosed as Abu Dhabi
   emirate-level only, never generalized to the whole country (see 9.2).
 
-### 9.5 Stress-test record — UAE Tawazun mechanism (12 new tests, all passing; full suite 62 → 77 for this file)
+### 9.5 Stress-test record — UAE Tawazun mechanism (12 new tests, all passing; full suite 62 → 74 for this file)
 
 | Mechanism | Soft | Hardest | Boundary |
 |---|---|---|---|
@@ -750,7 +750,7 @@ asked the same SME-qualification question twice across Bahrain's two programs.
   pass -- both are disclosed as open gaps in the relevant program's own `sourceNoteEn`/`sourceNoteAr`,
   not silently assumed.
 
-### 10.8 Stress-test record -- 5-country continuation (32 new tests, all passing; full suite 77 → 109 for this file)
+### 10.8 Stress-test record -- 5-country continuation (32 new tests, all passing; full suite 74 → 106 for this file)
 
 | Mechanism | Soft | Hardest | Boundary |
 |---|---|---|---|
