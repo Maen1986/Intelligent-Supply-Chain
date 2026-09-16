@@ -143,11 +143,18 @@ error.
 ## 5. Worked Example — Rawabi's Raw-Material Portfolio
 
 Rawabi's real multi-country raw-material supplier base (per the SI-00 Charter) spans Saudi Arabia,
-the UAE, China, Turkey, and Egypt. Only the Saudi and UAE suppliers fall inside Module 08's sourced
-scope — China/Turkey/Egypt genuinely have no sourced GCC/Jordan-style local-content mechanism, so
-Module 08 does not attempt to score them at all (a fourth honest state, distinct from
-`not-yet-sourced`, since those countries were never claimed to have a GCC-style regime in the first
-place).
+the UAE, China, Turkey, and Egypt. At the time this worked example was first written (15 Sep 2026),
+only the Saudi and UAE suppliers fell inside Module 08's sourced scope; the Egypt (section 11, 15 Sep
+2026) and Turkey (section 12, 16 Sep 2026) Part 2 passes have since given both of those countries a
+real, sourced mechanism too, so as of this update **only the Rawabi Fasteners Ltd. (China) supplier
+remains genuinely out of scope** -- China has no sourced GCC/Jordan-style local-content mechanism, so
+Module 08 does not attempt to score it at all (a fourth honest state, distinct from
+`not-yet-sourced`, since China was never claimed to have a GCC-style regime in the first place). This
+paragraph is corrected here rather than left describing a now-superseded scope -- the same
+"a known-wrong disclosure must not be left uncorrected" discipline (Decision Record 8.7 / registry
+rule 12) already applied elsewhere in this document; sections 11.2 and 12.2 carry Egypt's and
+Turkey's own worked mini-examples (using illustrative suppliers, not a full recomputation of the
+Rawabi Packaging Co. / Rawabi Coatings Supplier entries below, which is out of this pass's scope).
 
 **Portfolio (spend share):**
 
