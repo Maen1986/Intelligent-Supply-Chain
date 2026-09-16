@@ -355,13 +355,66 @@
  * `computeCategoryEligibilityGate` and `computeSpendSetAside` directly with
  * zero new logic, the same "reuse before inventing" discipline already
  * applied to every prior country.
+ *
+ * ============================================================================
+ * PART 2 CONTINUATION: CHINA (16 Sep 2026)
+ * ============================================================================
+ * Fifth and final stop on the user's explicit "then the USA, then China"
+ * order -- `CN` (`LocalContentCountry`) is the twelfth country, closing out
+ * Part 2 in full. Three real, sourced, computable mechanisms, each
+ * genuinely different in shape and legal basis: `cn-domestic-product-price-
+ * preference` (State Council Doc. [2025] No. 34, 国办发〔2025〕34号, effective
+ * 1 Jan 2026 -- a flat 20% price-evaluation deduction reached via either of
+ * two independently-sufficient paths, this product's own domestic-product
+ * classification OR an 80%+ domestically-made bundle-cost-share, the first
+ * OR-gated eligibility shape in this file, feeding the shared
+ * computePricePreferenceMargin primitive via a genuinely new function,
+ * `computePricePreferenceCnDomesticProduct`); `cn-govt-procurement-law-
+ * domestic-mandate` (Government Procurement Law Article 10, 2002, last
+ * amended 2014 -- a domestic-purchase-by-default mandate with three real
+ * exemptions, modeled via a direct, zero-new-logic reuse of
+ * `computeCategoryEligibilityGate`, the same primitive already used for
+ * Saudi/Oman's Mandatory List and the UK's PPN 005 and USA's BABA gates,
+ * sharing its domestic-product-classification input field with the price
+ * preference above rather than asking a duplicate question); and `cn-sme-
+ * price-deduction` (财库〔2020〕46号 / 财库〔2022〕19号 -- a price-evaluation
+ * deduction banded by BOTH bidder role and procurement type together, a 2x2
+ * band-selection matrix with no counterpart elsewhere in this file, gated
+ * by a real 30% consortium small-enterprise subcontract-share threshold
+ * below which the deduction is zero, not partial, the same "gate not
+ * taper" discipline already applied to the US Buy American Act threshold --
+ * modeled via a genuinely new function, `computePricePreferenceCnSme`).
+ * `cn-defense-domestic-sourcing` (PLA / Military-Civil Fusion, 军民融合) is
+ * kept `not-yet-sourced`: real and dated, structurally similar to the USA's
+ * Berry Amendment, but core directives are issued through the Central
+ * Military Commission's Equipment Development Department and
+ * classified/internal procurement regulations rather than a single
+ * published statute carrying a clean numeric threshold. Two further real
+ * mechanisms were found and deliberately NOT modeled as programs, each
+ * disclosed as an explicit scope decision rather than silently dropped: SOE
+ * procurement under the separate Tendering and Bidding Law (中华人民共和国招标
+ * 投标法, a different statute from the Government Procurement Law modeled
+ * above, governing large state-owned-enterprise capital-construction
+ * tenders), for which no single clean supplier-level local-content
+ * threshold analogous to Document 34/2025 was found; and the pre-2018/2022
+ * foreign-ownership equity cap on joint-venture automakers (<=50% foreign
+ * ownership without a local JV partner), fully phased out by 2022 and a
+ * foreign-investment-structure rule rather than a supplier bid-eligibility
+ * mechanism, a structural fact from a prior era rather than a live
+ * mechanism this module's taxonomy covers. `PricePreferenceMarginResult`
+ * gained two new optional fields, `preferenceMarginMinPct` and
+ * `preferenceMarginMaxPct`, CN-only (verified via a dedicated regression
+ * test that every non-CN price-preference program leaves both `undefined`)
+ * -- the first genuinely additive extension to that shared result shape,
+ * needed because `cn-sme-price-deduction`'s legal ranges cannot be
+ * disclosed honestly by a single `preferenceMarginPct` number alone.
  */
 
 // ---------------------------------------------------------------------------
 // Section 1 — country / context / mechanism taxonomy
 // ---------------------------------------------------------------------------
 
-export type LocalContentCountry = 'SA' | 'AE' | 'JO' | 'OM' | 'QA' | 'BH' | 'KW' | 'EG' | 'TR' | 'UK' | 'USA';
+export type LocalContentCountry = 'SA' | 'AE' | 'JO' | 'OM' | 'QA' | 'BH' | 'KW' | 'EG' | 'TR' | 'UK' | 'USA' | 'CN';
 
 /** Every program key across every country this engine represents, flat
  * (not nested per-country) so the routing/resolution logic below is the
@@ -402,7 +455,11 @@ export type LocalContentProgram =
   | 'usa-buy-american-price-preference' // USA type 4 (new, Part 2 continuation): FAR Subpart 25.1/25.2 Buy American Act binary-threshold price preference -- the module's default/original mechanism for the USA
   | 'usa-baba-infrastructure-gate'      // USA type 3 (new, Part 2 continuation): Build America, Buy America Act (BABA, IIJA Title IX) federally-funded-infrastructure domestic-content category eligibility gate
   | 'usa-sba-small-business-setaside'   // USA type 5 (new, Part 2 continuation): SBA/FAR Part 19 small-business federal-contracting goal (23%) + Rule of Two set-aside
-  | 'usa-berry-amendment-dod';          // USA type 6-ish (new, Part 2 continuation): Berry Amendment (10 U.S.C. 4862) DoD textiles/food/hand-tools domestic-sourcing mandate -- not-yet-sourced (no single clean numeric threshold found)
+  | 'usa-berry-amendment-dod'           // USA type 6-ish (new, Part 2 continuation): Berry Amendment (10 U.S.C. 4862) DoD textiles/food/hand-tools domestic-sourcing mandate -- not-yet-sourced (no single clean numeric threshold found)
+  | 'cn-domestic-product-price-preference'    // CN type 4 (new, 16 Sep 2026 China Part 2 continuation): State Council Doc [2025] No. 34 (国办发〔2025〕34号) 20% price-evaluation deduction, OR-gated eligibility (first OR-gate shape in this file) -- the module's default/original mechanism for China
+  | 'cn-govt-procurement-law-domestic-mandate' // CN type 3: Government Procurement Law (中华人民共和国政府采购法, 2002, last amended 2014) Article 10 domestic-purchase-by-default mandate -- zero-new-logic reuse of computeCategoryEligibilityGate
+  | 'cn-sme-price-deduction'            // CN type 4 (genuinely new mechanism): 财库〔2020〕46号 / 财库〔2022〕19号 SME price-evaluation deduction, banded by bidder role AND procurement type together, gated by a real 30% consortium small-enterprise subcontract-share threshold
+  | 'cn-defense-domestic-sourcing';     // CN type 6-ish: PLA/military-civil fusion (军民融合) defense-procurement domestic-sourcing mandate -- not-yet-sourced (no single clean numeric threshold found), structurally similar to the Berry Amendment above
 
 /** Which program `assessSupplierLocalContent` resolves to when `program` is
  * omitted -- always each country's original pre-existing single mechanism,
@@ -417,7 +474,7 @@ export const DEFAULT_PROGRAM_BY_COUNTRY: Record<LocalContentCountry, LocalConten
   SA: 'sa-lcgpa-general', AE: 'ae-icv-general', JO: 'jo-price-preference',
   OM: 'om-icv', QA: 'qa-national-strategy', BH: 'bh-local-content', KW: 'kw-local-content',
   EG: 'eg-price-preference', TR: 'tr-price-preference', UK: 'uk-below-threshold-reservation',
-  USA: 'usa-buy-american-price-preference',
+  USA: 'usa-buy-american-price-preference', CN: 'cn-domestic-product-price-preference',
 };
 
 /** Every program that exists for a given country, in display order -- used
@@ -437,6 +494,7 @@ export const PROGRAMS_BY_COUNTRY: Record<LocalContentCountry, LocalContentProgra
   TR: ['tr-price-preference', 'tr-defense-offset'],
   UK: ['uk-below-threshold-reservation'],
   USA: ['usa-buy-american-price-preference', 'usa-baba-infrastructure-gate', 'usa-sba-small-business-setaside', 'usa-berry-amendment-dod'],
+  CN: ['cn-domestic-product-price-preference', 'cn-govt-procurement-law-domestic-mandate', 'cn-sme-price-deduction', 'cn-defense-domestic-sourcing'],
 };
 
 /** Which buyer this assessment is for -- see file header: every sourced
@@ -810,8 +868,57 @@ const USA_PROGRAMS: Record<'usa-buy-american-price-preference' | 'usa-baba-infra
   },
 };
 
+// ---------------------------------------------------------------------------
+// Section 1g -- China (CN). 16 Sep 2026 Part 2 continuation: the fifth non-
+// GCC/Jordan country and the twelfth overall, closing out the platform
+// owner's explicitly stated "then the USA, then China" order. Three
+// genuinely different, real, sourced mechanisms -- an OR-gated price
+// preference (the first OR-gate eligibility shape in this file), a zero-
+// new-logic reuse of the category-eligibility-gate primitive for the
+// Government Procurement Law's Article 10 domestic-purchase mandate, and a
+// role-x-procurement-type banded price deduction gated by a real 30%
+// subcontract-share threshold -- plus one honest not-yet-sourced entry (PLA/
+// military-civil fusion defense procurement, structurally similar to the
+// USA's Berry Amendment above).
+// ---------------------------------------------------------------------------
+
+const CN_PROGRAMS: Record<'cn-domestic-product-price-preference' | 'cn-govt-procurement-law-domestic-mandate' | 'cn-sme-price-deduction' | 'cn-defense-domestic-sourcing', CountryFrameworkInfo> = {
+  'cn-domestic-product-price-preference': {
+    country: 'CN', countryNameEn: 'China', countryNameAr: 'جمهورية الصين الشعبية',
+    programNameEn: 'Domestic Product Price Evaluation Deduction (State Council Doc. [2025] No. 34)', programNameAr: 'خصم تقييم سعري للمنتج المحلي (وثيقة مجلس الدولة رقم [2025] 34)',
+    mechanismType: 'price-preference-margin', program: 'cn-domestic-product-price-preference',
+    applicableContexts: ['government'],
+    sourceNoteEn: "State Council General Office Document [2025] No. 34 (guobanfa [2025] No. 34 / 国办发〔2025〕34号), issued 28 Sep 2025 and effective 1 Jan 2026, grants a flat 20% price-evaluation deduction to bids featuring domestic products in government procurement. Domestic-product status is reached via either of two independently-sufficient paths -- (1) THIS specific product passes the Document's domestic-product classification test (a substantial transformation occurring within China, explicitly excluding simple assembly, packaging, or relabeling; a local-component-cost-share threshold to be published later per product category, with products that pass the substantial-transformation test alone treated as domestic pending that category-specific figure; and localization of key components and critical processes for high-tech or security-sensitive products), or (2) for a mixed-category procurement bundle spanning multiple product types within one tender, domestically-made products reach at least 80% of the bundle's total product cost, in which case the same flat 20% deduction applies to the whole bundle. This OR-gated eligibility shape -- two structurally different, independently-sufficient paths feeding the same fixed margin -- is the first of its kind in this file; modeled via a new function, computePricePreferenceCnDomesticProduct, which evaluates both paths independently (meetsDomesticProductCriteria === true or bundleDomesticCostSharePct >= 80) before handing the resulting binary qualification to the shared computePricePreferenceMargin primitive -- an OR-gate feeding a shared primitive, not a disguised reuse of another country's formula with new constants. For over two decades, the Government Procurement Law's own Article 10 (see 'cn-govt-procurement-law-domestic-mandate' below) mandated domestic purchase by default without the State Council ever formally defining 'domestic product' in an implementing regulation; Document 34/2025, together with a follow-on joint interpretive opinion from the Ministry of Finance and the Ministry of Industry and Information Technology (19 Dec 2025) clarifying that products made in China's special customs supervision zones count as Made-in-China and that procurement may not discriminate by a supplier's place of registration, ownership structure, or investor nationality, is the first real, dated, sourced executive definition -- a genuine regulatory event, not an assumed baseline.",
+    sourceNoteAr: 'تمنح وثيقة مكتب مجلس الدولة العام رقم [2025] 34 (国办发〔2025〕34号)، الصادرة في ٢٨ سبتمبر ٢٠٢٥ والنافذة اعتباراً من ١ يناير ٢٠٢٦، خصم تقييم سعري ثابتاً بنسبة ٢٠٪ للعروض التي تتضمن منتجات محلية في المشتريات الحكومية. يتحقق تصنيف "المنتج المحلي" عبر أحد مسارين مستقلين وكافيين كل منهما بذاته -- (١) استيفاء هذا المنتج تحديداً لاختبار تصنيف المنتج المحلي الوارد في الوثيقة (تحول جوهري يحدث داخل الصين، يستثني صراحة التجميع البسيط أو التعبئة أو إعادة التوسيم؛ وعتبة نسبة تكلفة المكون المحلي ستُنشر لاحقاً حسب فئة المنتج، مع اعتبار المنتجات المستوفية لاختبار التحول الجوهري وحده محلية إلى حين نشر تلك النسبة الخاصة بالفئة؛ وتوطين المكونات الرئيسية والعمليات الحرجة للمنتجات عالية التقنية أو الحساسة أمنياً)، أو (٢) بالنسبة لحزمة مشتريات مختلطة تضم أنواع منتجات متعددة ضمن مناقصة واحدة، بلوغ المنتجات المصنوعة محلياً ٨٠٪ على الأقل من إجمالي تكلفة منتجات الحزمة، وعندها يُطبَّق نفس الخصم الثابت ٢٠٪ على الحزمة بأكملها. شكل الأهلية هذا القائم على بوابة "أو" -- مساران مختلفان بنيوياً وكافيان كل منهما بذاته يغذيان نفس الهامش الثابت -- هو الأول من نوعه في هذا الملف؛ ويُنمذَج عبر دالة جديدة فعلياً، computePricePreferenceCnDomesticProduct، تُقيِّم كلا المسارين بشكل مستقل (meetsDomesticProductCriteria === true أو bundleDomesticCostSharePct >= 80) قبل تسليم نتيجة التأهل الثنائية إلى بدائية computePricePreferenceMargin المشتركة -- بوابة "أو" تُغذِّي بدائية مشتركة، وليست صيغة دولة أخرى مُعاد استخدامها بثوابت جديدة. على مدى أكثر من عقدين، ألزمت المادة العاشرة من قانون المشتريات الحكومية نفسها (انظر cn-govt-procurement-law-domestic-mandate أدناه) بالشراء المحلي افتراضياً دون أن يُعرِّف مجلس الدولة "المنتج المحلي" قط في لائحة تنفيذية -- ووثيقة ٣٤/٢٠٢٥، إلى جانب رأي تفسيري تنفيذي لاحق مشترك صادر عن وزارة المالية ووزارة الصناعة وتقنية المعلومات (١٩ ديسمبر ٢٠٢٥) يوضح أن منتجات المناطق الجمركية الخاصة تُعد مصنوعة في الصين وأنه لا يجوز للمشتريات التمييز بحسب مكان تسجيل المورّد أو هيكل الملكية أو جنسية المستثمر، هو أول تعريف تنفيذي حقيقي ومؤرَّخ وموثّق -- حدث تنظيمي حقيقي، وليس افتراضاً أساسياً مفترَضاً.',
+  },
+  'cn-govt-procurement-law-domestic-mandate': {
+    country: 'CN', countryNameEn: 'China', countryNameAr: 'جمهورية الصين الشعبية',
+    programNameEn: 'Government Procurement Law Article 10 Domestic Mandate', programNameAr: 'تفويض المادة العاشرة من قانون المشتريات الحكومية',
+    mechanismType: 'category-eligibility-gate', program: 'cn-govt-procurement-law-domestic-mandate',
+    applicableContexts: ['government'],
+    sourceNoteEn: "Article 10 of the Government Procurement Law of the People's Republic of China (zhonghua renmin gongheguo zhengfu caigou fa / 中华人民共和国政府采购法, enacted 2002, last amended 2014) requires government procurement to purchase domestic goods, engineering, and services by default, subject to three real, sourced exemptions: (1) the goods/engineering/services are not available domestically, or not available on reasonable commercial terms; (2) procurement is for use outside China; or (3) another statute or administrative regulation provides otherwise. Modeled here via the exact same two-key computeCategoryEligibilityGate primitive already used for the Saudi and Omani Mandatory Lists and the UK's PPN 005 and USA's BABA gates (see PROGRAMS['sa-mandatory-list'] / ['om-mandatory-list'] / ['uk-below-threshold-reservation'] / ['usa-baba-infrastructure-gate'].sourceNoteEn) -- zero new computation logic, the same 'reuse before inventing' discipline applied to every prior country. The dispatcher maps the two real Article 10 facts onto that primitive's existing two-key shape: the first key asks whether an Article 10 exemption applies to THIS specific tender (inverted into the primitive's inMandatoryListCategory slot, since the primitive's 'gate applies' semantics are the logical negation of 'an exemption applies'); the second key, read only once the first confirms the mandate is not exempted, is whether this supplier's product meets the same domestic-product classification test from Document 34/2025 above -- a field genuinely SHARED with 'cn-domestic-product-price-preference', not a duplicated question, wired to the same inputs.cn.meetsDomesticProductCriteria value. This is the real structural domestic-purchase-by-default mandate under Article 10 -- a gate on bid eligibility itself, not a price preference layered on top of open competition the way the price-preference programs are.",
+    sourceNoteAr: 'تُلزم المادة العاشرة من قانون المشتريات الحكومية لجمهورية الصين الشعبية (中华人民共和国政府采购法، الصادر عام ٢٠٠٢ وآخر تعديل له عام ٢٠١٤) المشتريات الحكومية بشراء السلع والأشغال والخدمات المحلية افتراضياً، مع ثلاثة إعفاءات حقيقية وموثّقة: (١) عدم توفر السلع/الأشغال/الخدمات محلياً، أو عدم توفرها بشروط تجارية معقولة؛ (٢) أن تكون المشتريات لاستخدام خارج الصين؛ أو (٣) وجود نص قانوني أو لائحة إدارية أخرى تنص على خلاف ذلك. يُنمذَج هذا هنا عبر نفس بدائية computeCategoryEligibilityGate ذات المفتاحين المستخدمة بالفعل للقائمة الإلزامية السعودية والعمانية وبوابة PPN 005 البريطانية وبوابة BABA الأمريكية -- دون أي منطق حساب جديد، بنفس انضباط "إعادة الاستخدام قبل الاختراع" المُطبَّق في كل دولة سابقة. يُترجم الموزِّع الحقيقتين الفعليتين للمادة العاشرة إلى شكل المفتاحين القائم لتلك البدائية: يسأل المفتاح الأول عما إذا كان أحد إعفاءات المادة العاشرة ينطبق على هذه المناقصة تحديداً (ويُعكَس ليلائم فتحة inMandatoryListCategory الخاصة بالبدائية، إذ إن دلالة "انطباق البوابة" في البدائية هي النفي المنطقي لعبارة "ينطبق إعفاء")؛ ويُقرأ المفتاح الثاني فقط بعد تأكيد المفتاح الأول عدم انطباق أي إعفاء، ويسأل عما إذا كان منتج هذا المورّد يستوفي نفس اختبار تصنيف المنتج المحلي الوارد في وثيقة ٣٤/٢٠٢٥ أعلاه -- وهو حقل مشترك فعلياً مع cn-domestic-product-price-preference، وليس سؤالاً مكرراً، ومربوط بنفس قيمة inputs.cn.meetsDomesticProductCriteria. هذا هو التفويض البنيوي الحقيقي بالشراء المحلي افتراضياً بموجب المادة العاشرة -- بوابة على أهلية العطاء نفسها، وليست تفضيلاً سعرياً مضافاً فوق منافسة مفتوحة كما هو حال برامج التفضيل السعري.',
+  },
+  'cn-sme-price-deduction': {
+    country: 'CN', countryNameEn: 'China', countryNameAr: 'جمهورية الصين الشعبية',
+    programNameEn: 'SME Government Procurement Price Deduction (Cai Ku [2020] No. 46 / [2022] No. 19)', programNameAr: 'خصم تقييم سعري لمشتريات المنشآت الصغيرة الحكومية (财库〔2020〕46号 / 财库〔2022〕19号)',
+    mechanismType: 'price-preference-margin', program: 'cn-sme-price-deduction',
+    applicableContexts: ['government'],
+    sourceNoteEn: "Cai Ku [2020] No. 46 (caiku [2020] No. 46 / 财库〔2020〕46号, effective 1 Jan 2021) set a price-evaluation deduction of 6%-10% (3%-5% for engineering-works procurement) for small and micro enterprises bidding directly, and a smaller 2%-3% deduction (1%-2% for engineering works) for large/medium enterprises that subcontract to, or form a consortium with, small enterprises -- conditioned on the small-enterprise share reaching at least 30% of contract value. Cai Ku [2022] No. 19 (财库〔2022〕19号, effective 1 Jul 2022) roughly doubled both goods/services ranges (direct: 10%-20%; consortium/subcontract: 4%-6%) without touching the 2020 engineering-works ranges. Modeled here via a genuinely new function, computePricePreferenceCnSme: the applicable band depends on BOTH the supplier's role (direct small/micro vs. large/medium consortium-subcontract) AND the procurement type (goods/services vs. engineering works) together -- a 2x2 band-selection matrix with no counterpart elsewhere in this file -- and the consortium/subcontract path additionally requires clearing a real minimum 30% small-enterprise subcontract-share gate before any deduction applies at all (below it, the deduction is zero, not partial -- a gate, not a continuous taper, the same 'gate not taper' discipline already applied to the US Buy American Act threshold). Every legal range here is a genuine range, not a single number -- the procuring entity sets the exact figure within the range in its own tender documents. Because PricePreferenceMarginResult previously had no honest way to disclose a range (every prior program's preferenceMarginPct was either a fixed constant or a caller-dependent single figure), this phase extends the shared result shape with two new optional fields, preferenceMarginMinPct and preferenceMarginMaxPct -- preferenceMarginPct itself always shows the legal floor (the guaranteed minimum), while the new fields disclose the ceiling. Every other, non-Chinese price-preference program in this file leaves both fields undefined (verified via a dedicated regression test, see the test file), so this is a genuinely additive, backward-compatible extension to the shared result shape, not a breaking change.",
+    sourceNoteAr: 'حددت وثيقة 财库〔2020〕46号 (النافذة اعتباراً من ١ يناير ٢٠٢١) خصم تقييم سعري بنسبة ٦٪-١٠٪ (٣٪-٥٪ لمشتريات الأشغال الهندسية) للمنشآت الصغيرة والمتناهية الصغر المتقدمة مباشرة بعطاء، وخصماً أصغر ٢٪-٣٪ (١٪-٢٪ للأشغال الهندسية) للمنشآت الكبيرة أو المتوسطة التي تتعاقد من الباطن مع منشآت صغيرة أو تُكوِّن معها تحالفاً -- بشرط بلوغ حصة المنشآت الصغيرة ٣٠٪ على الأقل من قيمة العقد. ورفعت وثيقة 财库〔2022〕19号 (النافذة اعتباراً من ١ يوليو ٢٠٢٢) كلا نطاقي السلع/الخدمات تقريباً إلى الضعف (مباشر: ١٠٪-٢٠٪؛ تحالف/تعاقد من الباطن: ٤٪-٦٪) دون المساس بنطاقات الأشغال الهندسية لعام ٢٠٢٠. يُنمذَج هذا هنا عبر دالة جديدة فعلياً، computePricePreferenceCnSme: يعتمد النطاق المطبَّق على كل من دور المورّد (مباشر صغير/متناهي الصغر مقابل تحالف/تعاقد من الباطن كبير/متوسط) ونوع المشتريات (سلع/خدمات مقابل أشغال هندسية) معاً -- مصفوفة اختيار نطاق ٢×٢ لا نظير لها في أي مكان آخر في هذا الملف -- ويتطلب مسار التحالف/التعاقد من الباطن إضافة إلى ذلك اجتياز بوابة حد أدنى حقيقي ٣٠٪ لحصة المنشآت الصغيرة في التعاقد من الباطن قبل تطبيق أي خصم إطلاقاً (دون بلوغها، الخصم صفر وليس جزئياً -- بوابة، لا تدرّج مستمر، بنفس انضباط "بوابة لا تدرّج" المُطبَّق بالفعل على عتبة قانون الشراء الأمريكي). كل نطاق قانوني هنا هو مدى حقيقي، وليس رقماً واحداً -- تحدد جهة الشراء الرقم الدقيق ضمن النطاق في وثائق مناقصتها الخاصة. ولأن PricePreferenceMarginResult لم يكن لديه سابقاً وسيلة صادقة للإفصاح عن نطاق (كانت قيمة preferenceMarginPct في كل برنامج سابق رقماً ثابتاً أو معتمداً على المستدعي فقط)، وسَّعت هذه المرحلة شكل النتيجة المشترك بحقلين اختياريين جديدين، preferenceMarginMinPct وpreferenceMarginMaxPct -- وتُظهر قيمة preferenceMarginPct نفسها دائماً الأرضية القانونية (الحد الأدنى المضمون)، بينما تُفصِح الحقول الجديدة عن السقف. يترك كل برنامج تفضيل سعري آخر غير صيني في هذا الملف كلا الحقلين undefined (تم التحقق من ذلك عبر اختبار ارتداد مخصص، انظر ملف الاختبار)، فهذا امتداد إضافي فعلي ومتوافق مع الإصدارات السابقة، وليس تغييراً كاسراً لشكل النتيجة المشترك.',
+  },
+  'cn-defense-domestic-sourcing': {
+    country: 'CN', countryNameEn: 'China', countryNameAr: 'جمهورية الصين الشعبية',
+    programNameEn: 'PLA / Military-Civil Fusion Defense Sourcing -- not yet sourced', programNameAr: 'مشتريات الدفاع لجيش التحرير الشعبي / الاندماج المدني العسكري — غير موثّق بعد',
+    mechanismType: 'not-yet-sourced', program: 'cn-defense-domestic-sourcing',
+    applicableContexts: [],
+    sourceNoteEn: "China's defense-procurement domestic-sourcing mandate for the People's Liberation Army, administered through the Military-Civil Fusion (junmin ronghe / 军民融合) national strategy and the Central Military Commission's Equipment Development Department, is real and well documented in secondary/policy literature, and structurally similar to the USA's Berry Amendment above (a defense-ministry-specific regime, near-total domestic sourcing) -- but core directives are issued through the Equipment Development Department and classified/internal procurement regulations rather than a single published statute carrying a clean numeric threshold. This research pass did not find a single clean, supplier-computable numeric threshold in open sources -- kept as an honest not-yet-sourced entry per Decision Record 8.7, with this real, dated context disclosed rather than a guessed formula, the same treatment already applied to the USA's Berry Amendment.",
+    sourceNoteAr: 'نظام توطين مشتريات الدفاع الصيني لجيش التحرير الشعبي، المُدار عبر استراتيجية الاندماج المدني العسكري الوطنية (军民融合) وإدارة تطوير التسليح التابعة للجنة العسكرية المركزية، حقيقي وموثّق جيداً في الأدبيات الثانوية والسياسية، ومماثل بنيوياً لتعديل بيري الأمريكي أعلاه (نظام خاص بوزارة الدفاع، بتوطين شبه كامل) -- لكن التوجيهات الأساسية تصدر عبر إدارة تطوير التسليح ولوائح مشتريات سرية/داخلية بدلاً من قانون واحد منشور يحمل عتبة رقمية نظيفة. لم يعثر هذا البحث على عتبة رقمية واحدة نظيفة قابلة للحوسبة على مستوى المورّد في مصادر مفتوحة -- ويُترَك هذا كإدخال صادق غير موثّق بعد وفق سجل القرار ٨.٧، مع الإفصاح عن هذا السياق الحقيقي والمؤرَّخ بدلاً من صيغة مخمَّنة، بنفس المعالجة المُطبَّقة بالفعل على تعديل بيري الأمريكي.',
+  },
+};
+
 export const PROGRAMS: Record<LocalContentProgram, CountryFrameworkInfo> = {
-  ...SA_PROGRAMS, ...AE_PROGRAMS, ...JO_OM_QA_BH_KW_PROGRAMS, ...EG_PROGRAMS, ...TR_PROGRAMS, ...UK_PROGRAMS, ...USA_PROGRAMS,
+  ...SA_PROGRAMS, ...AE_PROGRAMS, ...JO_OM_QA_BH_KW_PROGRAMS, ...EG_PROGRAMS, ...TR_PROGRAMS, ...UK_PROGRAMS, ...USA_PROGRAMS, ...CN_PROGRAMS,
 };
 
 /** Derived view, kept for the UI's country-selector buttons and any caller
@@ -830,6 +937,7 @@ export const COUNTRY_FRAMEWORKS: Record<LocalContentCountry, CountryFrameworkInf
   TR: PROGRAMS[DEFAULT_PROGRAM_BY_COUNTRY.TR],
   UK: PROGRAMS[DEFAULT_PROGRAM_BY_COUNTRY.UK],
   USA: PROGRAMS[DEFAULT_PROGRAM_BY_COUNTRY.USA],
+  CN: PROGRAMS[DEFAULT_PROGRAM_BY_COUNTRY.CN],
 };
 
 // ---------------------------------------------------------------------------
@@ -1031,6 +1139,34 @@ export interface SupplierLocalContentInputs {
     isFederallyFundedInfrastructureProcurement: boolean | null;
     meetsBabaDomesticContentRequirement: boolean | null;
   };
+  /** China domestic-product classification (CN / 'cn-domestic-product-
+   * price-preference' AND 'cn-govt-procurement-law-domestic-mandate', 16
+   * Sep 2026 China Part 2 continuation) -- a genuinely SHARED fact block,
+   * not a duplicated question: `meetsDomesticProductCriteria` and
+   * `bundleDomesticCostSharePct` feed the OR-gated price-preference margin
+   * (see PROGRAMS['cn-domestic-product-price-preference'].sourceNoteEn for
+   * the two independent paths), while `meetsDomesticProductCriteria` is
+   * also read directly by the Article 10 mandate gate once its own first
+   * key (no exemption applies) is confirmed, and `article10ExemptionApplies`
+   * is read only by that gate. Mirrors the shared-field pattern already
+   * used for Bahrain's `bhSme` object and the USA's `usa.isSmallBusinessConcern`. */
+  cn?: {
+    meetsDomesticProductCriteria: boolean | null;
+    bundleDomesticCostSharePct: number | null;
+    article10ExemptionApplies: boolean | null;
+  };
+  /** China SME government-procurement price deduction (CN / 'cn-sme-price-
+   * deduction', China Part 2 continuation) -- see PROGRAMS['cn-sme-price-
+   * deduction'].sourceNoteEn for the 2x2 role-x-procurement-type band
+   * matrix and the real 30% consortium subcontract-share gate. */
+  cnSme?: {
+    supplierRole: 'direct-small-micro' | 'large-medium-consortium-subcontract' | null;
+    procurementType: 'goods-services' | 'engineering-works' | null;
+    /** Only read on the consortium/subcontract role path -- the % of
+     * contract value subcontracted to, or shared within a consortium with,
+     * small enterprises, tested against the real 30% gate. */
+    consortiumSmallEnterpriseSubcontractSharePct: number | null;
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -1058,6 +1194,17 @@ export interface PricePreferenceMarginResult {
   preferenceMarginPct: number;
   locallyManufacturedSharePct: number | null;
   effectiveBidDiscountPct: number | null; // preferenceMarginPct * locallyManufacturedSharePct / 100
+  /** CN-only (cn-sme-price-deduction, 16 Sep 2026 China Part 2
+   * continuation): discloses the full sourced legal range's ceiling, since
+   * `preferenceMarginPct` alone always shows the legal floor (the
+   * guaranteed minimum) -- the procuring entity sets the exact figure
+   * within [preferenceMarginMinPct, preferenceMarginMaxPct] in its own
+   * tender documents. Left `undefined` by every other, non-Chinese
+   * price-preference program in this file (verified via a dedicated
+   * regression test) -- a genuinely additive, backward-compatible
+   * extension, not a breaking change to the shared result shape. */
+  preferenceMarginMinPct?: number;
+  preferenceMarginMaxPct?: number;
 }
 
 export interface CategoryEligibilityGateResult {
@@ -1528,6 +1675,84 @@ function computePricePreferenceUsa(usa: NonNullable<SupplierLocalContentInputs['
 }
 
 // ---------------------------------------------------------------------------
+// Section 6a-3 -- CN: two genuinely distinct China mechanisms (China Part 2
+// continuation). computePricePreferenceCnDomesticProduct evaluates the
+// first OR-gated eligibility shape in this file (see PROGRAMS['cn-domestic-
+// product-price-preference'].sourceNoteEn) before handing a binary
+// qualification to the shared computePricePreferenceMargin primitive.
+// computePricePreferenceCnSme selects a real 2x2 role-x-procurement-type
+// band matrix, gated by a real 30% consortium subcontract-share threshold
+// (see PROGRAMS['cn-sme-price-deduction'].sourceNoteEn) -- genuinely new
+// selection/gating logic, not a reskinned copy of another country's formula.
+// ---------------------------------------------------------------------------
+
+export const CN_DOMESTIC_PRODUCT_PRICE_PREFERENCE_PCT = 20;
+export const CN_DOMESTIC_PRODUCT_BUNDLE_THRESHOLD_PCT = 80;
+
+function computePricePreferenceCnDomesticProduct(cn: NonNullable<SupplierLocalContentInputs['cn']>): PricePreferenceMarginResult {
+  const meetsCriteria = cn.meetsDomesticProductCriteria ?? null;
+  const bundleSharePct = cn.bundleDomesticCostSharePct ?? null;
+  const bundleQualifies = bundleSharePct === null ? null : bundleSharePct >= CN_DOMESTIC_PRODUCT_BUNDLE_THRESHOLD_PCT;
+
+  // Two independently-sufficient paths (Decision Record 8.7: never a
+  // fabricated pass/fail when a path's own input is genuinely unknown) --
+  // true if EITHER path is confirmed true; false only once BOTH paths are
+  // confirmed false; null (insufficient data) otherwise.
+  let qualifies: boolean | null;
+  if (meetsCriteria === true || bundleQualifies === true) {
+    qualifies = true;
+  } else if (meetsCriteria === false && bundleQualifies === false) {
+    qualifies = false;
+  } else {
+    qualifies = null;
+  }
+  const share = qualifies === null ? null : (qualifies ? 100 : 0);
+  return computePricePreferenceMargin(CN_DOMESTIC_PRODUCT_PRICE_PREFERENCE_PCT, share);
+}
+
+export const CN_SME_DIRECT_ENGINEERING_MIN_PCT = 3;
+export const CN_SME_DIRECT_ENGINEERING_MAX_PCT = 5;
+export const CN_SME_CONSORTIUM_ENGINEERING_MIN_PCT = 1;
+export const CN_SME_CONSORTIUM_ENGINEERING_MAX_PCT = 2;
+export const CN_SME_DIRECT_GOODS_SERVICES_MIN_PCT = 10;
+export const CN_SME_DIRECT_GOODS_SERVICES_MAX_PCT = 20;
+export const CN_SME_CONSORTIUM_GOODS_SERVICES_MIN_PCT = 4;
+export const CN_SME_CONSORTIUM_GOODS_SERVICES_MAX_PCT = 6;
+export const CN_SME_CONSORTIUM_MIN_SUBCONTRACT_SHARE_PCT = 30;
+
+function computePricePreferenceCnSme(cnSme: NonNullable<SupplierLocalContentInputs['cnSme']>): PricePreferenceMarginResult {
+  const role = cnSme.supplierRole ?? null;
+  const procurementType = cnSme.procurementType ?? null;
+  const subcontractSharePct = cnSme.consortiumSmallEnterpriseSubcontractSharePct ?? null;
+
+  if (role === null || procurementType === null) {
+    return computePricePreferenceMargin(0, null); // insufficient inputs -- no band selectable yet
+  }
+
+  if (role === 'large-medium-consortium-subcontract') {
+    // Real gate, not a continuous taper: below the 30% subcontract-share
+    // threshold, the deduction is zero -- same discipline already applied
+    // to the US Buy American Act threshold.
+    if (subcontractSharePct === null) {
+      return computePricePreferenceMargin(0, null); // gate status unknown
+    }
+    if (subcontractSharePct < CN_SME_CONSORTIUM_MIN_SUBCONTRACT_SHARE_PCT) {
+      return { mechanismType: 'price-preference-margin', preferenceMarginPct: 0, preferenceMarginMinPct: 0, preferenceMarginMaxPct: 0, locallyManufacturedSharePct: 0, effectiveBidDiscountPct: 0 };
+    }
+    const [minPct, maxPct] = procurementType === 'engineering-works'
+      ? [CN_SME_CONSORTIUM_ENGINEERING_MIN_PCT, CN_SME_CONSORTIUM_ENGINEERING_MAX_PCT]
+      : [CN_SME_CONSORTIUM_GOODS_SERVICES_MIN_PCT, CN_SME_CONSORTIUM_GOODS_SERVICES_MAX_PCT];
+    return { ...computePricePreferenceMargin(minPct, 100), preferenceMarginMinPct: minPct, preferenceMarginMaxPct: maxPct };
+  }
+
+  // role === 'direct-small-micro'
+  const [minPct, maxPct] = procurementType === 'engineering-works'
+    ? [CN_SME_DIRECT_ENGINEERING_MIN_PCT, CN_SME_DIRECT_ENGINEERING_MAX_PCT]
+    : [CN_SME_DIRECT_GOODS_SERVICES_MIN_PCT, CN_SME_DIRECT_GOODS_SERVICES_MAX_PCT];
+  return { ...computePricePreferenceMargin(minPct, 100), preferenceMarginMinPct: minPct, preferenceMarginMaxPct: maxPct };
+}
+
+// ---------------------------------------------------------------------------
 // Section 6d — JO/BH/KW: spend-set-aside-target (type 5, new 15 Sep 2026).
 // Real sourced national/program target shares -- see PROGRAMS[
 // 'jo-contractor-quota' | 'bh-sme-spend-setaside' | 'kw-kpc-local-spend']
@@ -1742,6 +1967,24 @@ export function assessSupplierLocalContent(
       return { country, program: resolvedProgram, procurementContext, applicability: 'applicable', framework, computation: { mechanismType: 'spend-set-aside-target', targetSharePct: USA_SBA_SMALL_BUSINESS_TARGET_PCT, qualifiesForSetAside: null, eligibleForReservedShare: null }, certificationCaveatEn: NOT_CERTIFIED_EN, certificationCaveatAr: NOT_CERTIFIED_AR, reasonEn: 'No small-business-concern status supplied yet.', reasonAr: 'لم تُدخل حالة صفة المنشأة الصغيرة بعد.' };
     }
     computation = computeSpendSetAside(USA_SBA_SMALL_BUSINESS_TARGET_PCT, inputs.usa.isSmallBusinessConcern);
+  } else if (resolvedProgram === 'cn-domestic-product-price-preference') {
+    if (!inputs.cn) {
+      return { country, program: resolvedProgram, procurementContext, applicability: 'applicable', framework, computation: computePricePreferenceMargin(CN_DOMESTIC_PRODUCT_PRICE_PREFERENCE_PCT, null), certificationCaveatEn: NOT_CERTIFIED_EN, certificationCaveatAr: NOT_CERTIFIED_AR, reasonEn: 'No Chinese domestic-product-classification or bundle-cost-share inputs supplied yet.', reasonAr: 'لم تُدخل بيانات تصنيف المنتج المحلي الصيني أو حصة تكلفة الحزمة بعد.' };
+    }
+    computation = computePricePreferenceCnDomesticProduct(inputs.cn);
+  } else if (resolvedProgram === 'cn-govt-procurement-law-domestic-mandate') {
+    if (!inputs.cn) {
+      return { country, program: resolvedProgram, procurementContext, applicability: 'applicable', framework, computation: { mechanismType: 'category-eligibility-gate', inMandatoryListCategory: null, certifiedForCategory: null, eligibleToBid: null }, certificationCaveatEn: NOT_CERTIFIED_EN, certificationCaveatAr: NOT_CERTIFIED_AR, reasonEn: 'No Article 10 exemption or domestic-product-classification inputs supplied yet.', reasonAr: 'لم تُدخل بيانات إعفاء المادة العاشرة أو تصنيف المنتج المحلي بعد.' };
+    }
+    computation = computeCategoryEligibilityGate({
+      inMandatoryListCategory: inputs.cn.article10ExemptionApplies === null || inputs.cn.article10ExemptionApplies === undefined ? null : !inputs.cn.article10ExemptionApplies,
+      certifiedForCategory: inputs.cn.meetsDomesticProductCriteria,
+    });
+  } else if (resolvedProgram === 'cn-sme-price-deduction') {
+    if (!inputs.cnSme) {
+      return { country, program: resolvedProgram, procurementContext, applicability: 'applicable', framework, computation: computePricePreferenceMargin(0, null), certificationCaveatEn: NOT_CERTIFIED_EN, certificationCaveatAr: NOT_CERTIFIED_AR, reasonEn: 'No Chinese SME bidder-role/procurement-type inputs supplied yet.', reasonAr: 'لم تُدخل بيانات دور المزايد الصيني أو نوع المشتريات بعد.' };
+    }
+    computation = computePricePreferenceCnSme(inputs.cnSme);
   } else {
     computation = { mechanismType: 'not-yet-sourced' };
   }

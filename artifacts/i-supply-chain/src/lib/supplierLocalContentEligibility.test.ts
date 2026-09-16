@@ -28,6 +28,17 @@ import {
   BUY_AMERICAN_LARGE_BUSINESS_MARGIN_PCT,
   BUY_AMERICAN_SMALL_BUSINESS_MARGIN_PCT,
   USA_SBA_SMALL_BUSINESS_TARGET_PCT,
+  CN_DOMESTIC_PRODUCT_PRICE_PREFERENCE_PCT,
+  CN_DOMESTIC_PRODUCT_BUNDLE_THRESHOLD_PCT,
+  CN_SME_DIRECT_ENGINEERING_MIN_PCT,
+  CN_SME_DIRECT_ENGINEERING_MAX_PCT,
+  CN_SME_CONSORTIUM_ENGINEERING_MIN_PCT,
+  CN_SME_CONSORTIUM_ENGINEERING_MAX_PCT,
+  CN_SME_DIRECT_GOODS_SERVICES_MIN_PCT,
+  CN_SME_DIRECT_GOODS_SERVICES_MAX_PCT,
+  CN_SME_CONSORTIUM_GOODS_SERVICES_MIN_PCT,
+  CN_SME_CONSORTIUM_GOODS_SERVICES_MAX_PCT,
+  CN_SME_CONSORTIUM_MIN_SUBCONTRACT_SHARE_PCT,
   type SupplierLocalContentInputs,
   type LocalContentAssessment,
   type EligibleSpendRatioResult,
@@ -828,6 +839,234 @@ describe('USA — structural sanity (16 Sep 2026 Part 2 continuation, fourth non
   });
 });
 
+describe('CN — structural sanity (16 Sep 2026 China Part 2 continuation, fifth non-GCC/Jordan country, twelfth overall)', () => {
+  it('CN is the twelfth country, has 4 programs (3 real + 1 not-yet-sourced), and resolves DEFAULT_PROGRAM_BY_COUNTRY to the domestic-product price-preference program', () => {
+    expect(DEFAULT_PROGRAM_BY_COUNTRY.CN).toBe('cn-domestic-product-price-preference');
+    expect(PROGRAMS_BY_COUNTRY.CN).toEqual(['cn-domestic-product-price-preference', 'cn-govt-procurement-law-domestic-mandate', 'cn-sme-price-deduction', 'cn-defense-domestic-sourcing']);
+    expect(COUNTRY_FRAMEWORKS.CN.applicableContexts.length).toBeGreaterThan(0);
+  });
+
+  it('the PricePreferenceMarginResult min/max disclosure fields are CN-only -- every other price-preference program in this file leaves them undefined (backward-compatibility regression)', () => {
+    const nonCnPriceProgramsWithContext: Array<[LocalContentProgram, ProcurementContext]> = [
+      ['jo-price-preference', 'government'], ['sa-price-preference', 'government'],
+      ['om-oq-price-preference', 'semi-government-soe'], ['bh-sme-price-preference', 'government'],
+      ['eg-price-preference', 'government'], ['eg-oil-gas-price-preference', 'semi-government-soe'],
+      ['tr-price-preference', 'government'], ['usa-buy-american-price-preference', 'government'],
+    ];
+    for (const [program, context] of nonCnPriceProgramsWithContext) {
+      const a = assessSupplierLocalContent(PROGRAMS[program].country, context, {}, program);
+      expect(a.applicability).toBe('applicable');
+      const c = a.computation as PricePreferenceMarginResult;
+      expect(c.preferenceMarginMinPct).toBeUndefined();
+      expect(c.preferenceMarginMaxPct).toBeUndefined();
+    }
+  });
+});
+
+describe('CN / Domestic Product Price Evaluation Deduction (State Council Doc. [2025] No. 34) — price-preference-margin, first OR-gated eligibility shape', () => {
+  it('soft: meets the domestic-product classification test directly -> qualifies via path 1, 20% margin, full discount', () => {
+    const a = assessSupplierLocalContent('CN', 'government', { cn: { meetsDomesticProductCriteria: true, bundleDomesticCostSharePct: null, article10ExemptionApplies: null } }, 'cn-domestic-product-price-preference');
+    expect(a.applicability).toBe('applicable');
+    const c = a.computation as PricePreferenceMarginResult;
+    expect(c.preferenceMarginPct).toBe(CN_DOMESTIC_PRODUCT_PRICE_PREFERENCE_PCT);
+    expect(c.locallyManufacturedSharePct).toBe(100);
+    expect(c.effectiveBidDiscountPct).toBe(20);
+  });
+
+  it('soft: fails the direct classification test but the mixed procurement bundle reaches 85% domestic cost share -> qualifies via path 2 alone', () => {
+    const a = assessSupplierLocalContent('CN', 'government', { cn: { meetsDomesticProductCriteria: false, bundleDomesticCostSharePct: 85, article10ExemptionApplies: null } }, 'cn-domestic-product-price-preference');
+    const c = a.computation as PricePreferenceMarginResult;
+    expect(c.locallyManufacturedSharePct).toBe(100);
+    expect(c.effectiveBidDiscountPct).toBe(20);
+  });
+
+  it('hardest: neither path qualifies (fails direct classification AND bundle share below 80%) -> zero discount, not partial', () => {
+    const a = assessSupplierLocalContent('CN', 'government', { cn: { meetsDomesticProductCriteria: false, bundleDomesticCostSharePct: 50, article10ExemptionApplies: null } }, 'cn-domestic-product-price-preference');
+    const c = a.computation as PricePreferenceMarginResult;
+    expect(c.locallyManufacturedSharePct).toBe(0);
+    expect(c.effectiveBidDiscountPct).toBe(0);
+  });
+
+  it('boundary: bundle domestic cost share exactly 80% -> qualifies (>=80, not >80)', () => {
+    const a = assessSupplierLocalContent('CN', 'government', { cn: { meetsDomesticProductCriteria: false, bundleDomesticCostSharePct: 80, article10ExemptionApplies: null } }, 'cn-domestic-product-price-preference');
+    const c = a.computation as PricePreferenceMarginResult;
+    expect(c.locallyManufacturedSharePct).toBe(100);
+  });
+
+  it('boundary: bundle domestic cost share at 79.9%, just below threshold, direct classification also fails -> does not qualify', () => {
+    const a = assessSupplierLocalContent('CN', 'government', { cn: { meetsDomesticProductCriteria: false, bundleDomesticCostSharePct: 79.9, article10ExemptionApplies: null } }, 'cn-domestic-product-price-preference');
+    const c = a.computation as PricePreferenceMarginResult;
+    expect(c.locallyManufacturedSharePct).toBe(0);
+  });
+
+  it('boundary: both paths genuinely unknown (direct classification and bundle share both null) -> honest null, never a fabricated pass or fail', () => {
+    const a = assessSupplierLocalContent('CN', 'government', { cn: { meetsDomesticProductCriteria: null, bundleDomesticCostSharePct: null, article10ExemptionApplies: null } }, 'cn-domestic-product-price-preference');
+    const c = a.computation as PricePreferenceMarginResult;
+    expect(c.locallyManufacturedSharePct).toBeNull();
+    expect(c.effectiveBidDiscountPct).toBeNull();
+  });
+
+  it("not-applicable: private-commercial procurement is outside this program's sourced (government) scope", () => {
+    const a = assessSupplierLocalContent('CN', 'private-commercial', { cn: { meetsDomesticProductCriteria: true, bundleDomesticCostSharePct: null, article10ExemptionApplies: null } }, 'cn-domestic-product-price-preference');
+    expect(a.applicability).toBe('not-applicable');
+  });
+
+  it('omitting the program param for CN resolves to cn-domestic-product-price-preference (its own default)', () => {
+    const a = assessSupplierLocalContent('CN', 'government', { cn: { meetsDomesticProductCriteria: true, bundleDomesticCostSharePct: null, article10ExemptionApplies: null } });
+    expect(a.program).toBe('cn-domestic-product-price-preference');
+    expect(a.framework).toBe(PROGRAMS['cn-domestic-product-price-preference']);
+  });
+
+  it('discloses the real 20% deduction, the 80% bundle threshold, and Document [2025] No. 34 bilingually, and no inputs at all leaves an honest null share', () => {
+    const fw = PROGRAMS['cn-domestic-product-price-preference'];
+    expect(fw.sourceNoteEn).toContain('20%');
+    expect(fw.sourceNoteEn).toContain('80%');
+    expect(fw.sourceNoteEn).toContain('[2025] No. 34');
+    expect(fw.sourceNoteAr).toContain('٢٠٪');
+    expect(fw.sourceNoteAr).toContain('٨٠٪');
+    const a = assessSupplierLocalContent('CN', 'government', {}, 'cn-domestic-product-price-preference');
+    const c = a.computation as PricePreferenceMarginResult;
+    expect(c.locallyManufacturedSharePct).toBeNull();
+    expect(a.reasonEn).toBe('No Chinese domestic-product-classification or bundle-cost-share inputs supplied yet.');
+    expect(a.reasonAr).toBe('لم تُدخل بيانات تصنيف المنتج المحلي الصيني أو حصة تكلفة الحزمة بعد.');
+  });
+});
+
+describe('CN / Government Procurement Law Domestic Mandate (Art. 10) — category-eligibility-gate, zero-new-logic reuse', () => {
+  it('soft: no Article 10 exemption applies, product meets the shared domestic-product classification -> eligible to bid', () => {
+    const a = assessSupplierLocalContent('CN', 'government', { cn: { meetsDomesticProductCriteria: true, bundleDomesticCostSharePct: null, article10ExemptionApplies: false } }, 'cn-govt-procurement-law-domestic-mandate');
+    const c = a.computation as CategoryEligibilityGateResult;
+    expect(c.eligibleToBid).toBe(true);
+  });
+
+  it('hardest: no Article 10 exemption applies AND the product does NOT meet the domestic-product classification -> gated out entirely', () => {
+    const a = assessSupplierLocalContent('CN', 'government', { cn: { meetsDomesticProductCriteria: false, bundleDomesticCostSharePct: null, article10ExemptionApplies: false } }, 'cn-govt-procurement-law-domestic-mandate');
+    const c = a.computation as CategoryEligibilityGateResult;
+    expect(c.eligibleToBid).toBe(false);
+  });
+
+  it('boundary: an Article 10 exemption DOES apply -> eligible to bid regardless of domestic-product status, even when that status is unknown', () => {
+    const a = assessSupplierLocalContent('CN', 'government', { cn: { meetsDomesticProductCriteria: null, bundleDomesticCostSharePct: null, article10ExemptionApplies: true } }, 'cn-govt-procurement-law-domestic-mandate');
+    const c = a.computation as CategoryEligibilityGateResult;
+    expect(c.eligibleToBid).toBe(true);
+  });
+
+  it('boundary: Article 10 exemption status itself unknown -> honest null, not assumed either way', () => {
+    const a = assessSupplierLocalContent('CN', 'government', { cn: { meetsDomesticProductCriteria: true, bundleDomesticCostSharePct: null, article10ExemptionApplies: null } }, 'cn-govt-procurement-law-domestic-mandate');
+    const c = a.computation as CategoryEligibilityGateResult;
+    expect(c.eligibleToBid).toBeNull();
+  });
+
+  it('no inputs supplied at all -> null gate, reasonAr carries a genuinely different phrase than reasonEn', () => {
+    const a = assessSupplierLocalContent('CN', 'government', {}, 'cn-govt-procurement-law-domestic-mandate');
+    const c = a.computation as CategoryEligibilityGateResult;
+    expect(c.eligibleToBid).toBeNull();
+    expect(a.reasonEn).toBe('No Article 10 exemption or domestic-product-classification inputs supplied yet.');
+    expect(a.reasonAr).toBe('لم تُدخل بيانات إعفاء المادة العاشرة أو تصنيف المنتج المحلي بعد.');
+  });
+
+  it("not-applicable: semi-government-soe procurement is outside this program's sourced (government-only) scope -- a real, disclosed difference from the USA's BABA gate, which covers both", () => {
+    const a = assessSupplierLocalContent('CN', 'semi-government-soe', { cn: { meetsDomesticProductCriteria: true, bundleDomesticCostSharePct: null, article10ExemptionApplies: false } }, 'cn-govt-procurement-law-domestic-mandate');
+    expect(a.applicability).toBe('not-applicable');
+  });
+
+  it('cross-feature: the domestic-product classification field is genuinely shared between the mandate gate and the price preference, not a duplicated question', () => {
+    const sharedCn = { meetsDomesticProductCriteria: true, bundleDomesticCostSharePct: null, article10ExemptionApplies: false };
+    const gate = assessSupplierLocalContent('CN', 'government', { cn: sharedCn }, 'cn-govt-procurement-law-domestic-mandate');
+    const pricePref = assessSupplierLocalContent('CN', 'government', { cn: sharedCn }, 'cn-domestic-product-price-preference');
+    expect((gate.computation as CategoryEligibilityGateResult).eligibleToBid).toBe(true);
+    expect((pricePref.computation as PricePreferenceMarginResult).locallyManufacturedSharePct).toBe(100);
+  });
+});
+
+describe('CN / SME Government Procurement Price Deduction (Cai Ku [2020] No. 46 / [2022] No. 19) — 2x2 role-x-procurement-type band matrix with a real 30% subcontract-share gate', () => {
+  it('soft: direct small/micro enterprise, goods/services procurement -> 10%-20% band, floor as the guaranteed margin', () => {
+    const a = assessSupplierLocalContent('CN', 'government', { cnSme: { supplierRole: 'direct-small-micro', procurementType: 'goods-services', consortiumSmallEnterpriseSubcontractSharePct: null } }, 'cn-sme-price-deduction');
+    const c = a.computation as PricePreferenceMarginResult;
+    expect(c.preferenceMarginPct).toBe(CN_SME_DIRECT_GOODS_SERVICES_MIN_PCT);
+    expect(c.preferenceMarginMinPct).toBe(CN_SME_DIRECT_GOODS_SERVICES_MIN_PCT);
+    expect(c.preferenceMarginMaxPct).toBe(CN_SME_DIRECT_GOODS_SERVICES_MAX_PCT);
+    expect(c.locallyManufacturedSharePct).toBe(100);
+  });
+
+  it('soft: direct small/micro enterprise, engineering-works procurement -> the narrower 3%-5% engineering band, not the goods/services band', () => {
+    const a = assessSupplierLocalContent('CN', 'government', { cnSme: { supplierRole: 'direct-small-micro', procurementType: 'engineering-works', consortiumSmallEnterpriseSubcontractSharePct: null } }, 'cn-sme-price-deduction');
+    const c = a.computation as PricePreferenceMarginResult;
+    expect(c.preferenceMarginMinPct).toBe(CN_SME_DIRECT_ENGINEERING_MIN_PCT);
+    expect(c.preferenceMarginMaxPct).toBe(CN_SME_DIRECT_ENGINEERING_MAX_PCT);
+  });
+
+  it('consortium/subcontract role, goods/services procurement, subcontract share above the 30% gate -> 4%-6% band', () => {
+    const a = assessSupplierLocalContent('CN', 'government', { cnSme: { supplierRole: 'large-medium-consortium-subcontract', procurementType: 'goods-services', consortiumSmallEnterpriseSubcontractSharePct: 50 } }, 'cn-sme-price-deduction');
+    const c = a.computation as PricePreferenceMarginResult;
+    expect(c.preferenceMarginMinPct).toBe(CN_SME_CONSORTIUM_GOODS_SERVICES_MIN_PCT);
+    expect(c.preferenceMarginMaxPct).toBe(CN_SME_CONSORTIUM_GOODS_SERVICES_MAX_PCT);
+  });
+
+  it('consortium/subcontract role, engineering-works procurement, subcontract share above the 30% gate -> 1%-2% band, the narrowest in the matrix', () => {
+    const a = assessSupplierLocalContent('CN', 'government', { cnSme: { supplierRole: 'large-medium-consortium-subcontract', procurementType: 'engineering-works', consortiumSmallEnterpriseSubcontractSharePct: 35 } }, 'cn-sme-price-deduction');
+    const c = a.computation as PricePreferenceMarginResult;
+    expect(c.preferenceMarginMinPct).toBe(CN_SME_CONSORTIUM_ENGINEERING_MIN_PCT);
+    expect(c.preferenceMarginMaxPct).toBe(CN_SME_CONSORTIUM_ENGINEERING_MAX_PCT);
+  });
+
+  it('hardest: consortium/subcontract role but subcontract share well below the 30% gate -> zero deduction, not a partial/pro-rated one', () => {
+    const a = assessSupplierLocalContent('CN', 'government', { cnSme: { supplierRole: 'large-medium-consortium-subcontract', procurementType: 'goods-services', consortiumSmallEnterpriseSubcontractSharePct: 10 } }, 'cn-sme-price-deduction');
+    const c = a.computation as PricePreferenceMarginResult;
+    expect(c.preferenceMarginPct).toBe(0);
+    expect(c.preferenceMarginMinPct).toBe(0);
+    expect(c.preferenceMarginMaxPct).toBe(0);
+    expect(c.locallyManufacturedSharePct).toBe(0);
+    expect(c.effectiveBidDiscountPct).toBe(0);
+  });
+
+  it('boundary: consortium subcontract share at 29.9%, just under the gate -> still zero, a gate not a taper', () => {
+    const a = assessSupplierLocalContent('CN', 'government', { cnSme: { supplierRole: 'large-medium-consortium-subcontract', procurementType: 'engineering-works', consortiumSmallEnterpriseSubcontractSharePct: 29.9 } }, 'cn-sme-price-deduction');
+    const c = a.computation as PricePreferenceMarginResult;
+    expect(c.preferenceMarginPct).toBe(0);
+  });
+
+  it('boundary: consortium subcontract share at exactly 30% -> gate passes (>=30, not >30)', () => {
+    const a = assessSupplierLocalContent('CN', 'government', { cnSme: { supplierRole: 'large-medium-consortium-subcontract', procurementType: 'goods-services', consortiumSmallEnterpriseSubcontractSharePct: 30 } }, 'cn-sme-price-deduction');
+    const c = a.computation as PricePreferenceMarginResult;
+    expect(c.preferenceMarginMinPct).toBe(CN_SME_CONSORTIUM_GOODS_SERVICES_MIN_PCT);
+  });
+
+  it('boundary: bidder role or procurement type not yet supplied -> insufficient data, no band guessed', () => {
+    const a = assessSupplierLocalContent('CN', 'government', { cnSme: { supplierRole: null, procurementType: 'goods-services', consortiumSmallEnterpriseSubcontractSharePct: null } }, 'cn-sme-price-deduction');
+    const c = a.computation as PricePreferenceMarginResult;
+    expect(c.locallyManufacturedSharePct).toBeNull();
+    expect(c.effectiveBidDiscountPct).toBeNull();
+  });
+
+  it('boundary: consortium/subcontract role but subcontract-share status itself unknown -> honest null, gate status cannot be confirmed either way', () => {
+    const a = assessSupplierLocalContent('CN', 'government', { cnSme: { supplierRole: 'large-medium-consortium-subcontract', procurementType: 'goods-services', consortiumSmallEnterpriseSubcontractSharePct: null } }, 'cn-sme-price-deduction');
+    const c = a.computation as PricePreferenceMarginResult;
+    expect(c.locallyManufacturedSharePct).toBeNull();
+  });
+
+  it("not-applicable: private-commercial procurement is outside this program's sourced (government) scope, and no inputs at all leaves an honest null", () => {
+    const notApplicable = assessSupplierLocalContent('CN', 'private-commercial', { cnSme: { supplierRole: 'direct-small-micro', procurementType: 'goods-services', consortiumSmallEnterpriseSubcontractSharePct: null } }, 'cn-sme-price-deduction');
+    expect(notApplicable.applicability).toBe('not-applicable');
+    const noInputs = assessSupplierLocalContent('CN', 'government', {}, 'cn-sme-price-deduction');
+    const c = noInputs.computation as PricePreferenceMarginResult;
+    expect(c.locallyManufacturedSharePct).toBeNull();
+  });
+});
+
+describe('CN — PLA/Military-Civil Fusion Defense Sourcing (not-yet-sourced, real dated context)', () => {
+  it('returns insufficient-data disclosing the real Military-Civil Fusion / Equipment Development Department context, never a fabricated per-supplier formula', () => {
+    const a = assessSupplierLocalContent('CN', 'government', {}, 'cn-defense-domestic-sourcing');
+    expect(a.applicability).toBe('insufficient-data');
+    expect(a.computation).toEqual({ mechanismType: 'not-yet-sourced' });
+    expect(a.program).toBe('cn-defense-domestic-sourcing');
+    expect(PROGRAMS['cn-defense-domestic-sourcing'].applicableContexts).toHaveLength(0);
+    expect(PROGRAMS['cn-defense-domestic-sourcing'].sourceNoteEn).toContain('Equipment Development Department');
+    expect(PROGRAMS['cn-defense-domestic-sourcing'].sourceNoteAr).toContain('军民融合');
+  });
+});
+
+
 // ===========================================================================
 // recommendLocalContentAction — primary + alternative (Rule 8)
 // ===========================================================================
@@ -1019,7 +1258,7 @@ describe('SA — program routing default', () => {
   });
 
   it('every country resolves DEFAULT_PROGRAM_BY_COUNTRY to a real PROGRAMS entry (architecture sanity check)', () => {
-    (['SA', 'AE', 'JO', 'OM', 'QA', 'BH', 'KW', 'EG', 'TR', 'UK', 'USA'] as const).forEach(country => {
+    (['SA', 'AE', 'JO', 'OM', 'QA', 'BH', 'KW', 'EG', 'TR', 'UK', 'USA', 'CN'] as const).forEach(country => {
       const program = DEFAULT_PROGRAM_BY_COUNTRY[country];
       expect(PROGRAMS[program]).toBeDefined();
       expect(PROGRAMS[program].country).toBe(country);
@@ -1027,7 +1266,7 @@ describe('SA — program routing default', () => {
     });
   });
 
-  it('PROGRAMS_BY_COUNTRY lists every program per country (SA: 6, AE: 2, JO: 2, OM: 3, QA: 2, BH: 3, KW: 2, EG: 3, TR: 2, UK: 1, USA: 4 -- UK added 16 Sep 2026 Part 2 continuation, USA added 16 Sep 2026 Part 2 continuation)', () => {
+  it('PROGRAMS_BY_COUNTRY lists every program per country (SA: 6, AE: 2, JO: 2, OM: 3, QA: 2, BH: 3, KW: 2, EG: 3, TR: 2, UK: 1, USA: 4, CN: 4 -- UK added 16 Sep 2026 Part 2 continuation, USA added 16 Sep 2026 Part 2 continuation, CN added 16 Sep 2026 China Part 2 continuation)', () => {
     expect(PROGRAMS_BY_COUNTRY.SA).toHaveLength(6);
     expect(PROGRAMS_BY_COUNTRY.AE).toHaveLength(2);
     expect(PROGRAMS_BY_COUNTRY.JO).toHaveLength(2);
@@ -1039,6 +1278,7 @@ describe('SA — program routing default', () => {
     expect(PROGRAMS_BY_COUNTRY.TR).toHaveLength(2);
     expect(PROGRAMS_BY_COUNTRY.UK).toHaveLength(1);
     expect(PROGRAMS_BY_COUNTRY.USA).toHaveLength(4);
+    expect(PROGRAMS_BY_COUNTRY.CN).toHaveLength(4);
   });
 
   it('lcgpa-general carries the two usage notes (40% high-value-contract weighting, ~30% consulting/IT figure) bilingually', () => {
@@ -1581,12 +1821,12 @@ describe('Portfolio rollup — spend-set-aside-target and modified-icv-score gro
 // country before it ever reaches the UI.
 // ===========================================================================
 
-describe('PROGRAMS_BY_COUNTRY — structural sanity (15 Sep 2026 continuation, EG added 15 Sep 2026, TR added 16 Sep 2026, UK added 16 Sep 2026 Part 2 pass, USA added 16 Sep 2026 Part 2 continuation)', () => {
-  it('the 10 GCC/Jordan/Egypt/Turkey/USA countries have at least 2 programs each (USA is NOT a UK-style single-program exception), and every program in every one of the 11 countries\' lists resolves back to that same country in PROGRAMS', () => {
-    for (const country of ['SA', 'AE', 'JO', 'OM', 'QA', 'BH', 'KW', 'EG', 'TR', 'USA'] as const) {
+describe('PROGRAMS_BY_COUNTRY — structural sanity (15 Sep 2026 continuation, EG added 15 Sep 2026, TR added 16 Sep 2026, UK added 16 Sep 2026 Part 2 pass, USA added 16 Sep 2026 Part 2 continuation, CN added 16 Sep 2026 China Part 2 continuation)', () => {
+  it('the 11 GCC/Jordan/Egypt/Turkey/USA/CN countries have at least 2 programs each (USA and CN are NOT UK-style single-program exceptions), and every program in every one of the 12 countries\' lists resolves back to that same country in PROGRAMS', () => {
+    for (const country of ['SA', 'AE', 'JO', 'OM', 'QA', 'BH', 'KW', 'EG', 'TR', 'USA', 'CN'] as const) {
       expect(PROGRAMS_BY_COUNTRY[country].length).toBeGreaterThanOrEqual(2);
     }
-    for (const country of ['SA', 'AE', 'JO', 'OM', 'QA', 'BH', 'KW', 'EG', 'TR', 'UK', 'USA'] as const) {
+    for (const country of ['SA', 'AE', 'JO', 'OM', 'QA', 'BH', 'KW', 'EG', 'TR', 'UK', 'USA', 'CN'] as const) {
       for (const program of PROGRAMS_BY_COUNTRY[country]) {
         expect(PROGRAMS[program].country).toBe(country);
       }

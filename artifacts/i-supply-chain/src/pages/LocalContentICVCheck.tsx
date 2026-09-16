@@ -91,6 +91,8 @@ type TrInputs = NonNullable<SupplierLocalContentInputs['tr']>;
 type UkInputs = NonNullable<SupplierLocalContentInputs['uk']>;
 type UsaInputs = NonNullable<SupplierLocalContentInputs['usa']>;
 type UsaBabaInputs = NonNullable<SupplierLocalContentInputs['usaBaba']>;
+type CnInputs = NonNullable<SupplierLocalContentInputs['cn']>;
+type CnSmeInputs = NonNullable<SupplierLocalContentInputs['cnSme']>;
 
 function emptySa(): SaInputs {
   return {
@@ -172,6 +174,12 @@ function emptyUsa(): UsaInputs {
 function emptyUsaBaba(): UsaBabaInputs {
   return { isFederallyFundedInfrastructureProcurement: null, meetsBabaDomesticContentRequirement: null };
 }
+function emptyCn(): CnInputs {
+  return { meetsDomesticProductCriteria: null, bundleDomesticCostSharePct: null, article10ExemptionApplies: null };
+}
+function emptyCnSme(): CnSmeInputs {
+  return { supplierRole: null, procurementType: null, consortiumSmallEnterpriseSubcontractSharePct: null };
+}
 
 // Old (pre-16-Sep-2026-generalization) Saudi-only program keys, still
 // possibly sitting in a returning user's localStorage/server row from
@@ -204,15 +212,17 @@ function normalizeProgram(raw: unknown, countrySelection: CountrySelection): Loc
 }
 
 // 'OTHER' is a client-only pseudo-value for a supplier whose country is not
-// one of the 10 this module's engine can represent at all (e.g. China, the
-// USA) -- Egypt, then Turkey, then the UK moved from this "not yet
+// one of the 12 this module's engine can represent at all (e.g. Germany,
+// India) -- Egypt, then Turkey, then the UK moved from this "not yet
 // representable" list to a real LocalContentCountry across the 15-16 Sep
-// 2026 Part 2 pass, the same growth pattern documented for it in the engine
-// file's own header. The UK is a different kind of addition, though: it has
-// no above-threshold price preference at all (a structural PA23 s.90
-// non-discrimination fact, not a research gap) -- only a below-threshold
-// reservation gate, PPN 005 -- so it is representable, but not with the
-// same mechanism shape as every GCC/Jordan/Egypt/Turkey country before it.
+// 2026 Part 2 pass, then the USA, then China moved from this "not yet
+// representable" list across the 16 Sep 2026 Part 2 continuation, the same
+// growth pattern documented for it in the engine file's own header. The UK
+// is a different kind of addition, though: it has no above-threshold price
+// preference at all (a structural PA23 s.90 non-discrimination fact, not a
+// research gap) -- only a below-threshold reservation gate, PPN 005 -- so
+// it is representable, but not with the same mechanism shape as every
+// GCC/Jordan/Egypt/Turkey country before it.
 // 'OTHER' is never passed to assessSupplierLocalContent, which only
 // accepts a real LocalContentCountry. This is its own explicit UI state,
 // distinct from 'insufficient-data' (a real program that's just not sourced
@@ -254,6 +264,8 @@ interface LocalContentEntry {
   uk: UkInputs;
   usa: UsaInputs;
   usaBaba: UsaBabaInputs;
+  cn: CnInputs;
+  cnSme: CnSmeInputs;
 }
 
 function newLocalContentEntry(): LocalContentEntry {
@@ -269,7 +281,7 @@ function newLocalContentEntry(): LocalContentEntry {
     joContractorQuota: emptyJoContractorQuota(), omMandatoryList: emptyOmMandatoryList(), omOqPricePreference: emptyOmOqPricePreference(),
     qa: emptyQa(), bhSme: emptyBhSme(), kwLocalSpend: emptyKwLocalSpend(),
     eg: emptyEg(), egOilGas: emptyEgOilGas(), tr: emptyTr(), uk: emptyUk(),
-    usa: emptyUsa(), usaBaba: emptyUsaBaba(),
+    usa: emptyUsa(), usaBaba: emptyUsaBaba(), cn: emptyCn(), cnSme: emptyCnSme(),
   };
 }
 
@@ -315,6 +327,8 @@ function loadState(): PersistedState {
             uk: { ...emptyUk(), ...e.uk },
             usa: { ...emptyUsa(), ...e.usa },
             usaBaba: { ...emptyUsaBaba(), ...e.usaBaba },
+            cn: { ...emptyCn(), ...e.cn },
+            cnSme: { ...emptyCnSme(), ...e.cnSme },
           })),
           targetThresholdPct: parsed.targetThresholdPct ?? null,
         };
@@ -340,8 +354,8 @@ const applicabilityStyle: Record<LocalContentApplicability, { badge: string; ico
   'insufficient-data': { badge: 'bg-amber-50 border-amber-200 text-amber-700', icon: <ShieldAlert className="w-3.5 h-3.5" /> },
 };
 
-const COUNTRY_ORDER: LocalContentCountry[] = ['SA', 'AE', 'JO', 'OM', 'QA', 'BH', 'KW', 'EG', 'TR', 'UK', 'USA'];
-const COUNTRY_FLAG: Record<LocalContentCountry, string> = { SA: '🇸🇦', AE: '🇦🇪', JO: '🇯🇴', OM: '🇴🇲', QA: '🇶🇦', BH: '🇧🇭', KW: '🇰🇼', EG: '🇪🇬', TR: '🇹🇷', UK: '🇬🇧', USA: '🇺🇸' };
+const COUNTRY_ORDER: LocalContentCountry[] = ['SA', 'AE', 'JO', 'OM', 'QA', 'BH', 'KW', 'EG', 'TR', 'UK', 'USA', 'CN'];
+const COUNTRY_FLAG: Record<LocalContentCountry, string> = { SA: '🇸🇦', AE: '🇦🇪', JO: '🇯🇴', OM: '🇴🇲', QA: '🇶🇦', BH: '🇧🇭', KW: '🇰🇼', EG: '🇪🇬', TR: '🇹🇷', UK: '🇬🇧', USA: '🇺🇸', CN: '🇨🇳' };
 
 const CONTEXT_TABS: { v: ProcurementContext; en: string; ar: string }[] = [
   { v: 'government', en: 'Government', ar: 'حكومي' },
@@ -390,6 +404,10 @@ const PROGRAM_LABELS: Record<LocalContentProgram, { en: string; ar: string }> = 
   'usa-baba-infrastructure-gate': { en: 'BABA Infrastructure Gate', ar: 'بوابة BABA للبنية التحتية' },
   'usa-sba-small-business-setaside': { en: 'SBA Small Business Set-Aside', ar: 'تخصيص المنشآت الصغيرة (SBA)' },
   'usa-berry-amendment-dod': { en: 'Berry Amendment (DoD) -- not yet sourced', ar: 'تعديل بيري (وزارة الدفاع) — غير موثّق بعد' },
+  'cn-domestic-product-price-preference': { en: 'Domestic Product Price Preference (20%)', ar: 'تفضيل سعر المنتج المحلي (٢٠٪)' },
+  'cn-govt-procurement-law-domestic-mandate': { en: 'Article 10 Domestic Mandate Gate', ar: 'بوابة تفويض المادة العاشرة' },
+  'cn-sme-price-deduction': { en: 'SME Price Deduction', ar: 'خصم سعر المنشآت الصغيرة' },
+  'cn-defense-domestic-sourcing': { en: 'PLA Defense Sourcing -- not yet sourced', ar: 'مشتريات الدفاع (جيش التحرير الشعبي) — غير موثّق بعد' },
 };
 
 // Dual-sided (buyer + supplier) value framing, per mechanism TYPE (not per
@@ -542,14 +560,15 @@ function LocalContentEntryCard({
   // (15 Sep 2026) when the 5-country continuation gave every remaining country
   // a second program: any country whose PROGRAMS_BY_COUNTRY list has more than
   // one entry gets the routing question row below (as of 15 Sep 2026, that is
-  // all 11 countries, as of the 15-16 Sep 2026 Egypt/Turkey/UK Part-2 additions,
-  // plus the 16 Sep 2026 USA Part-2 continuation).
+  // all 12 countries, as of the 15-16 Sep 2026 Egypt/Turkey/UK Part-2 additions,
+  // plus the 16 Sep 2026 USA Part-2 continuation, and the same-day China
+  // Part-2 continuation).
   const hasMultiplePrograms = !isOther && PROGRAMS_BY_COUNTRY[entry.countrySelection as LocalContentCountry].length > 1;
   const framework = !isOther ? PROGRAMS[entry.program] : null;
   const assessment: LocalContentAssessment | null = !isOther
     ? assessSupplierLocalContent(
         entry.countrySelection as LocalContentCountry, entry.context,
-        { sa: entry.sa, ae: entry.ae, jo: entry.jo, saMandatoryList: entry.saMandatoryList, saPricePreference: entry.saPricePreference, iktva: entry.iktva, aeTawazun: entry.aeTawazun, joContractorQuota: entry.joContractorQuota, omMandatoryList: entry.omMandatoryList, omOqPricePreference: entry.omOqPricePreference, qa: entry.qa, bhSme: entry.bhSme, kwLocalSpend: entry.kwLocalSpend, eg: entry.eg, egOilGas: entry.egOilGas, tr: entry.tr, uk: entry.uk, usa: entry.usa, usaBaba: entry.usaBaba },
+        { sa: entry.sa, ae: entry.ae, jo: entry.jo, saMandatoryList: entry.saMandatoryList, saPricePreference: entry.saPricePreference, iktva: entry.iktva, aeTawazun: entry.aeTawazun, joContractorQuota: entry.joContractorQuota, omMandatoryList: entry.omMandatoryList, omOqPricePreference: entry.omOqPricePreference, qa: entry.qa, bhSme: entry.bhSme, kwLocalSpend: entry.kwLocalSpend, eg: entry.eg, egOilGas: entry.egOilGas, tr: entry.tr, uk: entry.uk, usa: entry.usa, usaBaba: entry.usaBaba, cn: entry.cn, cnSme: entry.cnSme },
         entry.program,
       )
     : null;
@@ -716,8 +735,8 @@ function LocalContentEntryCard({
             <Compass className="w-4 h-4 text-slate-500 shrink-0 mt-0.5" />
             <p className="text-[11px] text-slate-600 leading-relaxed">
               {isAr
-                ? 'هذه الوحدة تغطي حالياً إحدى عشرة دولة فقط: السعودية والإمارات والأردن وعُمان وقطر والبحرين والكويت ومصر وتركيا والمملكة المتحدة والولايات المتحدة، ولكل منها برنامج واحد أو أكثر بصيغة موثّقة قابلة للحساب (بعضها إلى جانب برنامج عام لا يزال "غير موثّق" -- يُعرض ذلك صراحة عند اختياره، لا كدرجة صفرية). أي دولة أخرى (مثل الصين) غير قابلة للتمثيل في هذه المكتبة إطلاقاً -- لا يوجد فحص محتوى محلي متاح لها هنا، وليس درجة صفرية أو "غير مطبَّق".'
-                : "This module currently covers only eleven countries: Saudi Arabia, the UAE, Jordan, Oman, Qatar, Bahrain, Kuwait, Egypt, Turkey, the UK, and the USA, each with one or more sourced, computable-formula programs (some also carry a separate general program that's still not-yet-sourced -- disclosed explicitly when selected, not shown as a zero score). Any other country (e.g. China) isn't representable by this library at all -- no local-content check is available for it here, and this is not a zero score or a \"not applicable\" verdict."}
+                ? 'هذه الوحدة تغطي حالياً اثنتي عشرة دولة فقط: السعودية والإمارات والأردن وعُمان وقطر والبحرين والكويت ومصر وتركيا والمملكة المتحدة والولايات المتحدة والصين، ولكل منها برنامج واحد أو أكثر بصيغة موثّقة قابلة للحساب (بعضها إلى جانب برنامج عام لا يزال "غير موثّق" -- يُعرض ذلك صراحة عند اختياره، لا كدرجة صفرية). أي دولة أخرى (مثل ألمانيا أو الهند) غير قابلة للتمثيل في هذه المكتبة إطلاقاً -- لا يوجد فحص محتوى محلي متاح لها هنا، وليس درجة صفرية أو "غير مطبَّق".'
+                : "This module currently covers only twelve countries: Saudi Arabia, the UAE, Jordan, Oman, Qatar, Bahrain, Kuwait, Egypt, Turkey, the UK, the USA, and China, each with one or more sourced, computable-formula programs (some also carry a separate general program that's still not-yet-sourced -- disclosed explicitly when selected, not shown as a zero score). Any other country (e.g. Germany or India) isn't representable by this library at all -- no local-content check is available for it here, and this is not a zero score or a \"not applicable\" verdict."}
             </p>
           </div>
         ) : (
@@ -1350,6 +1369,159 @@ function LocalContentEntryCard({
                   </div>
                 )}
 
+                {entry.countrySelection === 'CN' && entry.program === 'cn-domestic-product-price-preference' && (
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                        {isAr ? 'هل يستوفي هذا المنتج تصنيف "المنتج المحلي" وفق وثيقة مجلس الدولة رقم [2025] 34؟' : 'Does this product meet the "domestic product" classification test under State Council Document [2025] No. 34?'}
+                      </p>
+                      <div className="flex gap-1.5" role="group" aria-label={isAr ? 'حالة تصنيف المنتج المحلي' : 'Domestic-product classification status'}>
+                        {([['yes', true], ['no', false]] as const).map(([k, v]) => (
+                          <button
+                            key={k}
+                            type="button"
+                            aria-pressed={entry.cn.meetsDomesticProductCriteria === v}
+                            onClick={() => onUpdate(entry.id, { cn: { ...entry.cn, meetsDomesticProductCriteria: v } })}
+                            className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors ${
+                              entry.cn.meetsDomesticProductCriteria === v ? 'bg-[#082C6B] border-[#082C6B] text-white' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                            }`}
+                          >
+                            {k === 'yes' ? (isAr ? 'نعم' : 'Yes') : (isAr ? 'لا' : 'No')}
+                          </button>
+                        ))}
+                      </div>
+                      <p className="text-[10px] text-muted-foreground mt-1.5">
+                        {isAr ? 'تحول جوهري داخل الصين، يستثني التجميع البسيط أو التعبئة أو إعادة التوسيم.' : 'A substantial transformation within China, excluding simple assembly, packaging, or relabeling.'}
+                      </p>
+                    </div>
+                    <NumberField
+                      label={isAr ? 'حصة تكلفة المنتجات المحلية من إجمالي حزمة المشتريات المختلطة (إن وُجدت)' : "Domestically-Made Share of a Mixed Procurement Bundle's Total Cost (if applicable)"}
+                      hint={isAr ? 'مسار بديل ومستقل: بلوغ ٨٠٪ على الأقل من تكلفة منتجات حزمة مشتريات مختلطة يؤهل للخصم ذاته حتى لو فشل هذا المنتج بمفرده في اختبار التصنيف أعلاه.' : "An independent, alternative path: reaching at least 80% of a mixed procurement bundle's product cost qualifies for the same deduction even if this product alone fails the classification test above."}
+                      unit="%"
+                      max={100}
+                      value={entry.cn.bundleDomesticCostSharePct}
+                      onChange={v => onUpdate(entry.id, { cn: { ...entry.cn, bundleDomesticCostSharePct: v } })}
+                    />
+                  </div>
+                )}
+
+                {entry.countrySelection === 'CN' && entry.program === 'cn-govt-procurement-law-domestic-mandate' && (
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                        {isAr ? 'هل ينطبق أحد إعفاءات المادة العاشرة الثلاثة على هذه المناقصة؟' : 'Does one of the three Article 10 exemptions apply to this tender?'}
+                      </p>
+                      <div className="flex gap-1.5" role="group" aria-label={isAr ? 'حالة إعفاء المادة العاشرة' : 'Article 10 exemption status'}>
+                        {([['yes', true], ['no', false]] as const).map(([k, v]) => (
+                          <button
+                            key={k}
+                            type="button"
+                            aria-pressed={entry.cn.article10ExemptionApplies === v}
+                            onClick={() => onUpdate(entry.id, { cn: { ...entry.cn, article10ExemptionApplies: v } })}
+                            className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors ${
+                              entry.cn.article10ExemptionApplies === v ? 'bg-[#082C6B] border-[#082C6B] text-white' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                            }`}
+                          >
+                            {k === 'yes' ? (isAr ? 'نعم' : 'Yes') : (isAr ? 'لا' : 'No')}
+                          </button>
+                        ))}
+                      </div>
+                      <p className="text-[10px] text-muted-foreground mt-1.5">
+                        {isAr ? 'عدم التوفر محلياً أو بشروط تجارية معقولة؛ الاستخدام خارج الصين؛ أو نص قانوني أو لائحة أخرى.' : 'Domestic unavailability or unreasonable commercial terms; use outside China; or another statute or regulation.'}
+                      </p>
+                    </div>
+                    {entry.cn.article10ExemptionApplies === false && (
+                      <div>
+                        <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                          {isAr ? 'هل يستوفي منتج هذا المورّد تصنيف "المنتج المحلي" (نفس حقل تفضيل السعر أعلاه)؟' : "Does this supplier's product meet the domestic-product classification (the same field as the price-preference program above)?"}
+                        </p>
+                        <div className="flex gap-1.5" role="group" aria-label={isAr ? 'حالة تصنيف المنتج المحلي' : 'Domestic-product classification status'}>
+                          {([['yes', true], ['no', false]] as const).map(([k, v]) => (
+                            <button
+                              key={k}
+                              type="button"
+                              aria-pressed={entry.cn.meetsDomesticProductCriteria === v}
+                              onClick={() => onUpdate(entry.id, { cn: { ...entry.cn, meetsDomesticProductCriteria: v } })}
+                              className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors ${
+                                entry.cn.meetsDomesticProductCriteria === v ? 'bg-[#082C6B] border-[#082C6B] text-white' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                              }`}
+                            >
+                              {k === 'yes' ? (isAr ? 'نعم' : 'Yes') : (isAr ? 'لا' : 'No')}
+                            </button>
+                          ))}
+                        </div>
+                        <p className="text-[10px] text-muted-foreground mt-1.5">
+                          {isAr ? 'بوابة على أهلية العطاء نفسها بموجب المادة العاشرة، وليست تفضيلاً سعرياً.' : "A gate on bid eligibility itself under Article 10, not a price preference."}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {entry.countrySelection === 'CN' && entry.program === 'cn-sme-price-deduction' && (
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                        {isAr ? 'دور المزايد' : "Bidder's Role"}
+                      </p>
+                      <div className="flex gap-1.5" role="group" aria-label={isAr ? 'دور المزايد' : "Bidder's role"}>
+                        {([
+                          ['direct-small-micro', isAr ? 'منشأة صغيرة/متناهية الصغر مباشرة' : 'Direct Small/Micro Enterprise'],
+                          ['large-medium-consortium-subcontract', isAr ? 'كبيرة/متوسطة (تحالف أو تعاقد من الباطن)' : 'Large/Medium (Consortium or Subcontract)'],
+                        ] as const).map(([k, label]) => (
+                          <button
+                            key={k}
+                            type="button"
+                            aria-pressed={entry.cnSme.supplierRole === k}
+                            onClick={() => onUpdate(entry.id, { cnSme: { ...entry.cnSme, supplierRole: k } })}
+                            className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors ${
+                              entry.cnSme.supplierRole === k ? 'bg-[#082C6B] border-[#082C6B] text-white' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                            }`}
+                          >
+                            {label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                        {isAr ? 'نوع المشتريات' : 'Procurement Type'}
+                      </p>
+                      <div className="flex gap-1.5" role="group" aria-label={isAr ? 'نوع المشتريات' : 'Procurement type'}>
+                        {([
+                          ['goods-services', isAr ? 'سلع/خدمات' : 'Goods/Services'],
+                          ['engineering-works', isAr ? 'أشغال هندسية' : 'Engineering Works'],
+                        ] as const).map(([k, label]) => (
+                          <button
+                            key={k}
+                            type="button"
+                            aria-pressed={entry.cnSme.procurementType === k}
+                            onClick={() => onUpdate(entry.id, { cnSme: { ...entry.cnSme, procurementType: k } })}
+                            className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors ${
+                              entry.cnSme.procurementType === k ? 'bg-[#082C6B] border-[#082C6B] text-white' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                            }`}
+                          >
+                            {label}
+                          </button>
+                        ))}
+                      </div>
+                      <p className="text-[10px] text-muted-foreground mt-1.5">
+                        {isAr ? 'يحدد النطاق المطبَّق دور المزايد ونوع المشتريات معاً -- مصفوفة ٢×٢.' : 'The applicable band depends on bidder role AND procurement type together -- a 2x2 matrix.'}
+                      </p>
+                    </div>
+                    {entry.cnSme.supplierRole === 'large-medium-consortium-subcontract' && (
+                      <NumberField
+                        label={isAr ? 'حصة المنشآت الصغيرة من قيمة العقد في التحالف/التعاقد من الباطن' : "Small-Enterprise Share of Contract Value in the Consortium/Subcontract"}
+                        hint={isAr ? 'بوابة حقيقية: دون بلوغ ٣٠٪ على الأقل، الخصم صفر وليس جزئياً.' : 'A real gate: below at least 30%, the deduction is zero, not partial.'}
+                        unit="%"
+                        max={100}
+                        value={entry.cnSme.consortiumSmallEnterpriseSubcontractSharePct}
+                        onChange={v => onUpdate(entry.id, { cnSme: { ...entry.cnSme, consortiumSmallEnterpriseSubcontractSharePct: v } })}
+                      />
+                    )}
+                  </div>
+                )}
+
               </div>
             )}
 
@@ -1416,11 +1588,19 @@ function LocalContentEntryCard({
                         {assessment.computation.effectiveBidDiscountPct !== null ? `${assessment.computation.effectiveBidDiscountPct.toFixed(1)} pts` : '—'}
                       </span>
                     </div>
-                    <p className="text-[11px] text-slate-600">
-                      {isAr
-                        ? `من أصل ${assessment.computation.preferenceMarginPct} نقطة كحد أقصى لتفضيل السعر`
-                        : `Out of a maximum ${assessment.computation.preferenceMarginPct}-point price preference`}
-                    </p>
+                    {assessment.computation.preferenceMarginMinPct !== undefined && assessment.computation.preferenceMarginMaxPct !== undefined ? (
+                      <p className="text-[11px] text-slate-600">
+                        {isAr
+                          ? `الأرضية القانونية المضمونة: ${assessment.computation.preferenceMarginMinPct} نقطة -- والسقف القانوني حتى ${assessment.computation.preferenceMarginMaxPct} نقطة وفق تقدير جهة الشراء ضمن هذا النطاق (وليس رقماً ثابتاً)`
+                          : `Guaranteed legal floor: ${assessment.computation.preferenceMarginMinPct} pts -- statutory ceiling up to ${assessment.computation.preferenceMarginMaxPct} pts, at the procuring entity's discretion within the range (not a fixed figure)`}
+                      </p>
+                    ) : (
+                      <p className="text-[11px] text-slate-600">
+                        {isAr
+                          ? `من أصل ${assessment.computation.preferenceMarginPct} نقطة كحد أقصى لتفضيل السعر`
+                          : `Out of a maximum ${assessment.computation.preferenceMarginPct}-point price preference`}
+                      </p>
+                    )}
                   </>
                 )}
                 {assessment.computation.mechanismType === 'category-eligibility-gate' && (
@@ -1718,7 +1898,7 @@ export function LocalContentICVCheck() {
       entry: e,
       assessment: assessSupplierLocalContent(
         e.countrySelection as LocalContentCountry, e.context,
-        { sa: e.sa, ae: e.ae, jo: e.jo, saMandatoryList: e.saMandatoryList, saPricePreference: e.saPricePreference, iktva: e.iktva, aeTawazun: e.aeTawazun, joContractorQuota: e.joContractorQuota, omMandatoryList: e.omMandatoryList, omOqPricePreference: e.omOqPricePreference, qa: e.qa, bhSme: e.bhSme, kwLocalSpend: e.kwLocalSpend, eg: e.eg, egOilGas: e.egOilGas, tr: e.tr, uk: e.uk, usa: e.usa, usaBaba: e.usaBaba },
+        { sa: e.sa, ae: e.ae, jo: e.jo, saMandatoryList: e.saMandatoryList, saPricePreference: e.saPricePreference, iktva: e.iktva, aeTawazun: e.aeTawazun, joContractorQuota: e.joContractorQuota, omMandatoryList: e.omMandatoryList, omOqPricePreference: e.omOqPricePreference, qa: e.qa, bhSme: e.bhSme, kwLocalSpend: e.kwLocalSpend, eg: e.eg, egOilGas: e.egOilGas, tr: e.tr, uk: e.uk, usa: e.usa, usaBaba: e.usaBaba, cn: e.cn, cnSme: e.cnSme },
         e.program,
       ),
     }));
@@ -1761,14 +1941,14 @@ export function LocalContentICVCheck() {
                 {isAr ? 'المحتوى المحلي / القيمة المحلية المضافة — متعدد الدول' : 'Local Content / ICV — Multi-Country'}
               </p>
               <h1 className="text-3xl lg:text-4xl font-black leading-tight">
-                {isAr ? 'فحص أهلية المحتوى المحلي عبر إحدى عشرة دولة خليجية وعربية وتركيا والمملكة المتحدة والولايات المتحدة' : 'Local Content / ICV Eligibility Check'}
+                {isAr ? 'فحص أهلية المحتوى المحلي عبر اثنتي عشرة دولة خليجية وعربية وتركيا والمملكة المتحدة والولايات المتحدة والصين' : 'Local Content / ICV Eligibility Check'}
               </h1>
             </div>
           </div>
           <p className="text-white/75 text-base max-w-2xl leading-relaxed mb-4">
             {isAr
-              ? 'المحتوى المحلي ليس معياراً إقليمياً واحداً -- إنه آليات مختلفة جوهرياً عبر إحدى عشرة دولة: درجة نسبة مئوية معتمدة في السعودية (LCGPA)، درجة مرجحة متعددة الأركان في الإمارات (ICV)، تفضيل سعري في عطاءات الأردن وعُمان والبحرين ومصر وتركيا والولايات المتحدة (عاماً، وفي قطاع النفط والغاز لمصر)، بوابة أهلية للفئات في القائمة الإلزامية بالسعودية وعُمان وبوابة التخصيص دون العتبة في المملكة المتحدة (PPN 005) وبوابة أهلية بنية تحتية BABA في الولايات المتحدة، درجة توطين/ICV رسمية في قطر (icv.qa)، وحصص إنفاق مخصصة في الأردن والبحرين والكويت والولايات المتحدة (هدف SBA للمنشآت الصغيرة). سمِّ كل مورّد، اختر الدولة والبرنامج وسياق الشراء، واحصل على قراءة أهلية صادقة فوراً.'
-              : "Local content isn't one regional standard -- it's genuinely different mechanisms across eleven countries: a certified percentage score in Saudi Arabia (LCGPA), a weighted multi-pillar score in the UAE (ICV), a bid-evaluation price preference in Jordan, Oman, Bahrain, Egypt, Turkey, and the USA (general procurement, plus a separate oil & gas PSA preference in Egypt), a category-eligibility gate on Saudi and Omani Mandatory Lists plus the UK's below-threshold reservation gate (PPN 005) and the USA's Build America, Buy America Act infrastructure gate, an official Tawteen/ICV score in Qatar (icv.qa), and reserved spend set-asides in Jordan, Bahrain, Kuwait, and the USA (SBA small-business goal). Name each supplier, pick the country, program, and buyer context, and get an honest applicability read immediately."}
+              ? 'المحتوى المحلي ليس معياراً إقليمياً واحداً -- إنه آليات مختلفة جوهرياً عبر اثنتي عشرة دولة: درجة نسبة مئوية معتمدة في السعودية (LCGPA)، درجة مرجحة متعددة الأركان في الإمارات (ICV)، تفضيل سعري في عطاءات الأردن وعُمان والبحرين ومصر وتركيا والولايات المتحدة والصين (عاماً، وفي قطاع النفط والغاز لمصر، وبخصم مُدرَّج حسب دور المزايد ونوع المشتريات للمنشآت الصغيرة في الصين)، بوابة أهلية للفئات في القائمة الإلزامية بالسعودية وعُمان وبوابة التخصيص دون العتبة في المملكة المتحدة (PPN 005) وبوابة أهلية بنية تحتية BABA في الولايات المتحدة وبوابة المادة العاشرة من قانون المشتريات الحكومية الصيني، درجة توطين/ICV رسمية في قطر (icv.qa)، وحصص إنفاق مخصصة في الأردن والبحرين والكويت والولايات المتحدة (هدف SBA للمنشآت الصغيرة). سمِّ كل مورّد، اختر الدولة والبرنامج وسياق الشراء، واحصل على قراءة أهلية صادقة فوراً.'
+              : "Local content isn't one regional standard -- it's genuinely different mechanisms across twelve countries: a certified percentage score in Saudi Arabia (LCGPA), a weighted multi-pillar score in the UAE (ICV), a bid-evaluation price preference in Jordan, Oman, Bahrain, Egypt, Turkey, the USA, and China (general procurement, plus a separate oil & gas PSA preference in Egypt, and a role/procurement-type-banded SME deduction in China), a category-eligibility gate on Saudi and Omani Mandatory Lists plus the UK's below-threshold reservation gate (PPN 005), the USA's Build America, Buy America Act infrastructure gate, and China's Government Procurement Law Article 10 domestic-mandate gate, an official Tawteen/ICV score in Qatar (icv.qa), and reserved spend set-asides in Jordan, Bahrain, Kuwait, and the USA (SBA small-business goal). Name each supplier, pick the country, program, and buyer context, and get an honest applicability read immediately."}
           </p>
           <div className="flex flex-wrap gap-3 text-xs text-white/60 mb-4">
             {(isAr

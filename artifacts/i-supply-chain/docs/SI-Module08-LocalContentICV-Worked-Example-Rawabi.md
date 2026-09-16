@@ -1,9 +1,9 @@
 # SI Module 08 — Local Content / ICV Eligibility
 ### Worked Example, Sourced Methodology, and Stress-Test Record — Rawabi Advanced Industries
 
-*Registry: SI-08 (draft, pending #436/#441 formal registry entry). Date: 15 Sep 2026, updated same day (Saudi Arabia mechanism decomposition, Part 1 slice, section 8; UAE mechanism decomposition + program-architecture generalization, section 9; Jordan's second mechanism, Oman, Qatar, Bahrain, Kuwait -- closing out the rest of Part 1, section 10; Egypt mechanism decomposition -- opening Part 2, non-GCC coverage, section 11 -- all four decompositions and both worked-example fixes landed within a single ~10-hour window, per actual commit timestamps, not on four separate calendar days as earlier revisions of this line incorrectly stated), updated again 16 Sep 2026 (Turkey mechanism decomposition -- Part 2 continuation, section 12; United Kingdom mechanism decomposition -- Part 2 continuation, section 13; United States mechanism decomposition -- Part 2 continuation, section 14).*
-*Engine file: `src/lib/supplierLocalContentEligibility.ts` (2,007 lines, 30 programs across all 11 countries via a generalized `LocalContentProgram` architecture — see section 9's own note on why the Saudi-only `SaudiProgram` pattern was generalized, section 10.1 for the 7 programs added 15 Sep 2026, section 11.1 for the 3 Egyptian programs added 15 Sep 2026, section 12.1 for the 2 Turkish programs added 16 Sep 2026, section 13.1 for the UK's 1 program added 16 Sep 2026 -- the UK is a genuine single-program exception, not a placeholder gap, see section 13.2 -- and section 14.1 for the USA's 4 programs added 16 Sep 2026, NOT a single-program exception like the UK, see section 14.2). Test file: `src/lib/supplierLocalContentEligibility.test.ts` (160 tests: 39 original + 23 Saudi-mechanism + 15 UAE-mechanism/architecture + 32 Jordan/Oman/Qatar/Bahrain/Kuwait-mechanism + 11 Egypt-mechanism + 9 Turkey-mechanism + 9 UK-mechanism + 22 USA-mechanism tests, soft/hardest/boundary tiers; the OM/QA/BH/KW not-yet-sourced block and the 11-country structural-sanity check each register more runtime tests than their single `it(` call-site, so this N is Vitest's executed count, not a literal-text `it(` search).*
-*Status: library-complete, unit-tested, cross-engine chain-tested, live UI rebuilt as a multi-supplier list per an independent senior-QA review (`/local-content-icv`, QA-10/10-walked-through, 15 Sep 2026), extended with Saudi Arabia's full mechanism decomposition (section 8), the UAE's (section 9: MoIAT ICV usage note + genuine incentive-not-gate negative finding, and the Tawazun defense-offset mechanism with a real sourced formula), Jordan's second mechanism plus real sourced programs for Oman, Qatar, Bahrain, and Kuwait (section 10, 15 Sep 2026, completing Part 1 / GCC-Jordan coverage), Egypt's two sourced price-preference mechanisms plus one honest not-yet-sourced entry (section 11, 15 Sep 2026, opening Part 2 / non-GCC coverage), Turkey's one sourced price-preference mechanism plus one honest not-yet-sourced entry (section 12, 16 Sep 2026, continuing Part 2), the UK's one sourced category-eligibility-gate mechanism -- with a real, structural (not un-sourced) reason why no second UK program exists (section 13, 16 Sep 2026, continuing Part 2) -- and now the USA's three sourced mechanisms (Buy American Act price preference, Build America/Buy America infrastructure gate, SBA small-business set-aside) plus one honest not-yet-sourced entry (Berry Amendment), including this file's first caller-dependent price-preference margin (section 14, 16 Sep 2026, continuing Part 2). A dual-sided buyer/supplier value-framing panel is live in the UI for every country and every sourced mechanism type. See "What Is Not Yet Done" below for what remains, including the backend table this pass added but has not provisioned, and the rest of Part 2 (China, per the platform owner's own stated order), which is not started yet.*
+*Registry: SI-08 (draft, pending #436/#441 formal registry entry). Date: 15 Sep 2026, updated same day (Saudi Arabia mechanism decomposition, Part 1 slice, section 8; UAE mechanism decomposition + program-architecture generalization, section 9; Jordan's second mechanism, Oman, Qatar, Bahrain, Kuwait -- closing out the rest of Part 1, section 10; Egypt mechanism decomposition -- opening Part 2, non-GCC coverage, section 11 -- all four decompositions and both worked-example fixes landed within a single ~10-hour window, per actual commit timestamps, not on four separate calendar days as earlier revisions of this line incorrectly stated), updated again 16 Sep 2026 (Turkey mechanism decomposition -- Part 2 continuation, section 12; United Kingdom mechanism decomposition -- Part 2 continuation, section 13; United States mechanism decomposition -- Part 2 continuation, section 14; China mechanism decomposition -- Part 2 continuation, closing out the platform owner's own stated 12-country order, section 15).*
+*Engine file: `src/lib/supplierLocalContentEligibility.ts` (2,250 lines, 34 programs across all 12 countries via a generalized `LocalContentProgram` architecture — see section 9's own note on why the Saudi-only `SaudiProgram` pattern was generalized, section 10.1 for the 7 programs added 15 Sep 2026, section 11.1 for the 3 Egyptian programs added 15 Sep 2026, section 12.1 for the 2 Turkish programs added 16 Sep 2026, section 13.1 for the UK's 1 program added 16 Sep 2026 -- the UK is a genuine single-program exception, not a placeholder gap, see section 13.2 -- section 14.1 for the USA's 4 programs added 16 Sep 2026, NOT a single-program exception like the UK, see section 14.2 -- and section 15.1 for China's 4 programs added 16 Sep 2026, also NOT a single-program exception, see section 15.2). Test file: `src/lib/supplierLocalContentEligibility.test.ts` (189 tests: 39 original + 23 Saudi-mechanism + 15 UAE-mechanism/architecture + 32 Jordan/Oman/Qatar/Bahrain/Kuwait-mechanism + 11 Egypt-mechanism + 9 Turkey-mechanism + 9 UK-mechanism + 22 USA-mechanism + 29 China-mechanism tests, soft/hardest/boundary tiers; the OM/QA/BH/KW not-yet-sourced block and the 12-country structural-sanity check each register more runtime tests than their single `it(` call-site, so this N is Vitest's executed count, not a literal-text `it(` search).*
+*Status: library-complete, unit-tested, cross-engine chain-tested, live UI rebuilt as a multi-supplier list per an independent senior-QA review (`/local-content-icv`, QA-10/10-walked-through, 15 Sep 2026), extended with Saudi Arabia's full mechanism decomposition (section 8), the UAE's (section 9: MoIAT ICV usage note + genuine incentive-not-gate negative finding, and the Tawazun defense-offset mechanism with a real sourced formula), Jordan's second mechanism plus real sourced programs for Oman, Qatar, Bahrain, and Kuwait (section 10, 15 Sep 2026, completing Part 1 / GCC-Jordan coverage), Egypt's two sourced price-preference mechanisms plus one honest not-yet-sourced entry (section 11, 15 Sep 2026, opening Part 2 / non-GCC coverage), Turkey's one sourced price-preference mechanism plus one honest not-yet-sourced entry (section 12, 16 Sep 2026, continuing Part 2), the UK's one sourced category-eligibility-gate mechanism -- with a real, structural (not un-sourced) reason why no second UK program exists (section 13, 16 Sep 2026, continuing Part 2) -- the USA's three sourced mechanisms (Buy American Act price preference, Build America/Buy America infrastructure gate, SBA small-business set-aside) plus one honest not-yet-sourced entry (Berry Amendment), including this file's first caller-dependent price-preference margin (section 14, 16 Sep 2026, continuing Part 2), and now China's three sourced mechanisms (domestic-product price-evaluation deduction with this file's first OR-gated eligibility shape, Government Procurement Law Article 10 domestic-mandate gate reusing the category-eligibility-gate primitive with zero new logic, and an SME price deduction banded by bidder role and procurement type together with a real 30% subcontract-share gate) plus one honest not-yet-sourced entry (PLA/Military-Civil Fusion defense sourcing), including this file's first CN-only extension to the shared PricePreferenceMarginResult shape (section 15, 16 Sep 2026), closing out Part 2 and the platform owner's full 12-country order. A dual-sided buyer/supplier value-framing panel is live in the UI for every country and every sourced mechanism type. See "What Is Not Yet Done" below for what remains, including the backend table this pass added but has not provisioned.*
 
 ---
 
@@ -1369,6 +1369,170 @@ countries" and name the USA's three real mechanisms alongside the other ten, rat
 USA described as an uncovered example country in copy a real user reads first.
 ---
 
+## 15. China Mechanism Decomposition — Part 2 Continuation (16 Sep 2026)
+
+Fifth and final stop on the platform owner's own explicit country order ("then USA, then China"),
+closing out Part 2 in full. `CN` is the twelfth `LocalContentCountry`. This research pass found China
+runs **three** real, sourced, computable mechanisms at the government-procurement level, not one -- so
+CN joins the "≥2 programs" cohort (like every GCC/Jordan/Egypt/Turkey/USA country), it is **not** a
+UK-style single-program exception. This section introduces the file's first genuinely OR-gated
+eligibility shape and its first role-x-procurement-type banded margin with a real qualifying gate.
+
+### 15.1 Six-type taxonomy → China program mapping
+
+| Program | `mechanismType` | Status |
+|---|---|---|
+| `cn-domestic-product-price-preference` (default) | `price-preference-margin` | Sourced: Guobanfa [2025] No. 34 (国办发〔2025〕34号), issued 28 Sep 2025, effective 1 Jan 2026 -- a flat 20% price-evaluation deduction, qualifying via either of two independent paths (this product's own domestic-product classification, OR a mixed-procurement-bundle domestic-cost share of at least 80%) |
+| `cn-govt-procurement-law-domestic-mandate` | `category-eligibility-gate` | Sourced: Government Procurement Law Art. 10 (中华人民共和国政府采购法, 2002, last amended 2014) -- a default-to-domestic mandate with three real exemptions, reusing `computeCategoryEligibilityGate` directly (zero new logic, like the UK's PPN 005 and the USA's BABA gate) |
+| `cn-sme-price-deduction` | `price-preference-margin` | Sourced: Cai Ku [2020] No. 46 / Cai Ku [2022] No. 19 (财库〔2020〕46号 / 财库〔2022〕19号) -- a role x procurement-type banded price-evaluation deduction, gated at a real 30% minimum small/micro-subcontract share for the consortium path |
+| `cn-defense-domestic-sourcing` | `not-yet-sourced` | PLA/military-civil-fusion (军民融合) defense-procurement domestic-sourcing mandate; no single clean supplier-computable numeric threshold found in open sources, structurally analogous to the USA's Berry Amendment |
+
+### 15.2 `cn-domestic-product-price-preference` -- this file's first OR-gated eligibility shape
+
+Every price-preference program modeled in sections 8-14 tests a single fact against a single
+threshold: a percentage against a fixed cutoff (Jordan, Oman, Turkey), or a binary qualification flag
+(Bahrain, Saudi Arabia). Guobanfa [2025] No. 34 breaks that pattern in a genuinely new way: a qualifying
+domestic product receives a flat 20% price-evaluation deduction, but there are **two independent,
+structurally different paths to that same qualification** -- (1) this specific product meets the
+Notice's own three-criteria domestic-product classification test (substantial transformation within
+China, excluding simple assembly/packaging/re-branding; a to-be-published-by-category domestic
+component-cost ratio, with products meeting the substantial-transformation test alone treated as
+domestic until a category-specific ratio is published; and localization of key components/critical
+processes for designated high-tech or security-sensitive products), OR (2) for a mixed-procurement
+package spanning multiple product types in one solicitation, domestic products make up at least 80% of
+the package's total product cost, in which case the same flat 20% deduction applies across the WHOLE
+package. This required a genuinely new compute function, `computePricePreferenceCnDomesticProduct`,
+rather than reusing the shared `computePricePreferenceMargin` helper with new constants: the function
+evaluates both paths independently (`meetsDomesticProductCriteria === true` OR
+`bundleDomesticCostSharePct >= 80`) and only then hands the resulting binary qualification off to the
+shared margin primitive -- an OR-gate feeding a shared primitive, not a reused formula pretending to be
+new. For over two decades, the Government Procurement Law's own Article 10 (section 15.3) required
+buying domestic by default without ever defining "domestic product" in a State Council regulation --
+Guobanfa [2025] No. 34, together with a 19 Dec 2025 Ministry of Finance/MIIT implementation opinion
+clarifying that Special Customs Supervision Zone (bonded-zone) products count as made in China and that
+procurement may not discriminate by a supplier's registration location, ownership structure, or
+investor nationality, is the first operative definition -- a real, dated, sourced regulatory event, not
+an assumed baseline.
+
+### 15.3 `cn-govt-procurement-law-domestic-mandate` (zero new logic) and `cn-sme-price-deduction` (genuinely new banded margin)
+
+- **`cn-govt-procurement-law-domestic-mandate`** reuses the exact two-toggle
+  `computeCategoryEligibilityGate` primitive already used for Saudi/Oman's Mandatory List, the UK's
+  PPN 005 reservation gate, and the USA's BABA infrastructure gate (sections 8.3, 10.3, 13.3, 14.3): a
+  first toggle for whether an Article 10 exemption applies to this specific procurement (unavailable
+  domestically or on reasonable commercial terms; for use outside China; or another statute/regulation
+  provides otherwise -- Art. 10's three real, sourced exemptions), revealing a second toggle -- shared
+  with `cn-domestic-product-price-preference` above, not asked twice -- for whether the supplier's
+  product meets the Guobanfa [2025] No. 34 domestic-product classification, only once the first toggle
+  confirms no exemption applies. This is Article 10's real, structural default-to-domestic mandate
+  (2002, last amended 2014) -- a gate on bid eligibility itself, not a price preference layered on top
+  of open competition the way the price-preference programs are -- modeled with genuinely zero new
+  logic, the same deliberate reuse-where-appropriate choice already made for the UK and USA gates.
+- **`cn-sme-price-deduction`** is this file's first genuinely new **role x procurement-type banded**
+  margin with a **real qualifying gate on top of the band**. Cai Ku [2020] No. 46 (effective 1 Jan
+  2021) set a 6%-10% deduction (3%-5% for engineering/works) for small/micro enterprises bidding
+  directly, and a smaller 2%-3% (1%-2% for engineering/works) deduction for large/medium enterprises
+  that subcontract to, or form a consortium with, small/micro enterprises -- conditioned on the
+  small/micro share reaching at least 30% of total contract value. Cai Ku [2022] No. 19 (effective
+  1 Jul 2022) roughly doubled BOTH goods/services bands (direct: 10%-20%; consortium/subcontract:
+  4%-6%) while leaving the 2020 engineering/works bands untouched. This required a genuinely new
+  compute function, `computePricePreferenceCnSme`: the applicable band depends on BOTH the supplier's
+  bidder role (direct small/micro vs. large/medium consortium-or-subcontract) AND the procurement type
+  (goods/services vs. engineering/works) -- a 2x2 band selection not seen elsewhere in this file -- and
+  the consortium/subcontract path additionally requires clearing the real 30% minimum small/micro-share
+  gate before any deduction applies at all (below it, the deduction is zero, not a partial one -- a
+  gate, not a continuous scale, the same "gate, not scale" discipline already applied to the USA's Buy
+  American Act threshold). Each statutory band is a real RANGE, not a single number -- the procuring
+  entity sets the exact figure within the band in its own tender documents. Because `PricePreferenceMarginResult`
+  had no way to disclose a range honestly (every prior program's `preferenceMarginPct` is a single
+  fixed or caller-dependent number), this pass extended the shared interface with two new optional
+  fields, `preferenceMarginMinPct` and `preferenceMarginMaxPct` -- `preferenceMarginPct` itself always
+  reports the statutory floor (the guaranteed minimum), and the new fields disclose the ceiling. Every
+  non-CN price-preference program in this file leaves both fields `undefined` (verified by a dedicated
+  regression test, section 15.5), so this is a genuinely additive, backward-compatible extension, not a
+  breaking change to the shared result shape.
+
+### 15.4 Explicitly not modeled, to avoid a taxonomy-fit fabrication
+
+- **State-owned-enterprise (SOE) procurement under the separate Tendering and Bidding Law**
+  (中华人民共和国招标投标法, distinct from the Government Procurement Law modeled above, which governs
+  only government-agency and public-institution procurement of goods/services/engineering using fiscal
+  funds) runs its own, structurally different bidding regime for large SOE capital-construction
+  projects. This research pass did not find a single clean, supplier-computable domestic-content
+  threshold under that separate law comparable to Guobanfa [2025] No. 34's, and modeling it here would
+  have meant forcing a different legal regime into this module's existing `applicableContexts` shape --
+  disclosed as genuinely out of this pass's scope, not silently assumed to be covered by the three
+  government-context programs above.
+- **The automotive joint-venture foreign-equity-cap** (the pre-2018/2022 requirement that foreign
+  automakers operate through a 50%-or-less-equity domestic JV) was investigated and deliberately NOT
+  modeled: it was fully phased out by 2022 and is a foreign-investment-structure rule, not a
+  supplier-bid local-content mechanism -- a structural fact from an earlier era, not a current
+  mechanism this module's taxonomy covers.
+- **The 首台套 (first-set/major-technical-equipment) insurance-compensation program** was investigated
+  and deliberately NOT modeled: on inspection it is a manufacturer-side insurance-premium subsidy for
+  first-of-a-kind major equipment, not a supplier-bid eligibility or price-preference mechanism a buyer
+  applies when evaluating a specific tender -- outside this module's six-type taxonomy by its actual
+  structure, not by an assumption.
+- **`cn-defense-domestic-sourcing`'s own numeric threshold** was searched for and not found in a
+  single clean, supplier-computable form: China's PLA/military-civil-fusion (军民融合)
+  defense-procurement domestic-sourcing regime is real and well documented in secondary/policy
+  literature, structurally analogous to the USA's Berry Amendment (DoD-only, near-total domestic
+  sourcing, section 14.4), but the underlying directives are issued through the Central Military
+  Commission's Equipment Development Department and classified/internal procurement regulations rather
+  than a single published law with a clean numeric threshold -- kept as an honest `not-yet-sourced`
+  entry per Decision Record 8.7, with this real, dated context disclosed rather than a guessed formula.
+
+### 15.5 Stress-test record -- China continuation (29 new tests, all passing; full suite 160 → 189 for this file)
+
+| Mechanism | Soft | Hardest | Boundary |
+|---|---|---|---|
+| `cn-domestic-product-price-preference` | product meets the domestic-product classification directly -> full 20% margin via a 100% binary share; product doesn't qualify directly but the mixed-bundle cost share is 85% -> the same 20% margin qualifies via the independent second path | neither path qualifies (not a domestic product AND bundle share just below 80%) -> zero effective discount, not a partial one (an OR-gate, not a continuous scale) | bundle cost share exactly 80% -> qualifies (>=80%, not >80%); neither classification nor bundle-share supplied -> honest `null`, never assumed disqualified; no `cn` inputs at all -> the early-return stub, `applicable` not `insufficient-data` |
+| `cn-govt-procurement-law-domestic-mandate` | no Article 10 exemption applies and the product meets the domestic-product classification -> eligible to bid | no exemption applies and the product does NOT meet the classification -> gated out entirely | an Article 10 exemption DOES apply -> the gate does not apply at all, eligible regardless of the (even unknown) domestic-product status; exemption status not supplied yet -> honest `null`, never assumed either way; a dedicated cross-feature test confirms one shared `cn` input object correctly drives both this gate and the price preference above without duplicate entry |
+| `cn-sme-price-deduction` | direct small/micro on goods/services -> the 2022-updated 10%-20% band, floor reported, full share; direct small/micro on engineering/works -> the original 2020 3%-5% band (Cai Ku [2022] No. 19 never touched engineering/works) | consortium on goods/services subcontracting only 10% to small/micro (well below the real 30% gate) -> the band applies at zero share, not a partial deduction; consortium on engineering/works at 29.9% (just below the gate) -> still gated out entirely | consortium at exactly 30% -> clears the gate (>=30%, not >30%), full share, band floor applied; consortium role selected but no share supplied yet -> honest null/zero, no band disclosed until a share is known; business role not yet selected -> honest null/zero |
+| Applicability | -- | all three real China programs correctly resolve `not-applicable` for `private-commercial` procurement (each is government-tender-anchored) | -- |
+| Structural honesty | discloses the real 20%/80% Guobanfa [2025] No. 34 figures and the 2025 effective date in both languages | discloses Article 10's real text, its three exemptions, and the 2002 date in both languages | discloses the real 6%-10%/3%-5% (2020 baseline) and 10%-20%/4%-6% (2022-updated) statutory bands, the real 30% consortium gate, and both dated Notices in both languages |
+| Not-yet-sourced | -- | -- | `cn-defense-domestic-sourcing` returns `insufficient-data` disclosing the Berry-Amendment-analogous structural context and the Central Military Commission Equipment Development Department sourcing chain, never a fabricated per-supplier formula |
+| Default routing | `cn-domestic-product-price-preference` is confirmed as `DEFAULT_PROGRAM_BY_COUNTRY.CN`, and `PROGRAMS_BY_COUNTRY.CN` is confirmed as the full 4-program list | -- | -- |
+| Structural | the existing structural-sanity regression test now includes CN in the "at least 2 programs" cohort (not a UK-style single-program exception), confirms every one of the 12 countries' programs still resolves back to that country in `PROGRAMS`, and a dedicated new regression test confirms `preferenceMarginMinPct`/`preferenceMarginMaxPct` stay `undefined` on every non-CN price-preference program, proving the new interface fields are additive, not breaking | -- | -- |
+
+One real defect surfaced and fixed during this pass, not a hypothetical: an early version of the
+`cn-govt-procurement-law-domestic-mandate` "hardest" test called the gate with a `semi-government-soe`
+procurement context, copying the pattern from the USA's BABA gate test (section 14.5) without checking
+that BABA and this China program have different sourced scopes -- BABA's `applicableContexts` covers
+both `government` and `semi-government-soe`, but this China program's is `government` only. The
+mismatch made the test call the assessment function outside its sourced scope, which correctly returns
+`computation: null` for a `not-applicable` result -- and the test then crashed reading a property off
+that `null`, a real bug in the test's own data, not in the engine. Caught by running the full suite (not
+just the new tests in isolation) and fixed by correcting the test's procurement context to `government`,
+re-verified with a full clean run (189/189) before this pass was called done.
+
+### 15.6 UI -- three new input blocks, one shared field, zero new routing logic
+
+The same "any country whose `PROGRAMS_BY_COUNTRY` list has more than one program gets the routing
+question row" logic (sections 8.9, 9.6, 10.9, 11.6, 12.6, 13.6, 14.6) needed zero new routing logic for
+China either -- `COUNTRY_ORDER` and `COUNTRY_FLAG` gained a `CN` entry, and `PROGRAM_LABELS` needed
+four new bilingual labels. Because China has 4 programs, it correctly DOES show the routing-question
+button row (unlike the UK). Three new input-rendering blocks were added: a Yes/No toggle for the
+domestic-product classification plus a `NumberField` for the mixed-bundle domestic-cost-share
+(`cn-domestic-product-price-preference`, the file's first OR-gated input pair); a two-toggle
+conditional-reveal pattern for the Article 10 exemption question, revealing the shared
+domestic-product-classification toggle only once no exemption is confirmed
+(`cn-govt-procurement-law-domestic-mandate`, reusing the UK/USA gate pattern verbatim at the UI layer
+too); and two role/type button-groups plus a conditionally-rendered `NumberField` for the
+small/micro-subcontract share, shown only when the consortium role is selected
+(`cn-sme-price-deduction`). The domestic-product-classification toggle is written through the SAME
+`entry.cn.meetsDomesticProductCriteria` field both the price-preference block and the mandate-gate
+block read -- a real UI nuance mirroring Bahrain's and the USA's shared-field patterns (sections 10.10,
+14.6), not a duplicate ask. The stale "OTHER" pseudo-value comment (which listed China itself as a
+not-yet-representable example country, and separately still named the already-representable USA in
+that same list -- two known-wrong disclosures compounding, both corrected in this pass) now points to
+genuinely uncovered example countries instead. The page's hero copy, the "not covered by this module"
+disclosure copy, and the routing-question comments were all updated to say "twelve countries" and name
+China's three real mechanisms alongside the other eleven, rather than leaving China described as an
+uncovered example country in copy a real user reads first -- the same "a known-wrong disclosure must
+not be left uncorrected" discipline (Decision Record 8.7 / registry rule 12) already applied during the
+Egypt, Turkey, UK, and USA passes.
+
 ---
 
 ## الوحدة رقم 08 من محرك ذكاء الموردين — أهلية المحتوى المحلي / القيمة المحلية المضافة (ICV)
@@ -2418,3 +2582,155 @@ usa-baba-infrastructure-gate؛ ومفتاح تبديل نعم/لا واحد لب
 المقدمة الرئيسية، ونص الإفصاح عن "غير مشمولة بهذه الوحدة"، وتعليقات سؤال التوجيه، ليذكر الجميع "إحدى
 عشرة دولة" ويُسمِّي آليات الولايات المتحدة الثلاث الحقيقية إلى جانب الجهات العشر الأخرى، بدلاً من ترك
 الولايات المتحدة موصوفة كدولة غير مشمولة كمثال في نص يقرأه مستخدم حقيقي أولاً.
+
+---
+
+## ١٥. تفكيك آلية الصين — تكملة الجزء الثاني وإغلاقه (١٦ سبتمبر ٢٠٢٦)
+
+المحطة الخامسة والأخيرة في ترتيب الدول الذي حدده مالك المنصة صراحة ("ثم الولايات المتحدة، ثم
+الصين")، وبها يُغلَق الجزء الثاني بالكامل. `CN` هي الدولة الثانية عشرة ضمن `LocalContentCountry`.
+كشف بحث هذه المرحلة أن الصين تُطبِّق **ثلاث** آليات حقيقية وموثّقة وقابلة للحساب على مستوى المشتريات
+الحكومية، وليست آلية واحدة فقط -- فتنضم CN إلى فئة "برنامجين فأكثر" (كحال كل دول الخليج والأردن ومصر
+وتركيا والولايات المتحدة)، وهي **ليست** استثناءً أحادي البرنامج على غرار المملكة المتحدة. يُقدِّم هذا
+القسم أول شكل أهلية بوابة "أو" حقيقي في هذا الملف، وأول هامش مُدرَّج حسب دور المزايد ونوع المشتريات
+معاً مع بوابة تأهل حقيقية.
+
+### ١٥.١ تصنيف الأنواع الستة ← خريطة برامج الصين
+
+| البرنامج | `mechanismType` | الحالة |
+|---|---|---|
+| `cn-domestic-product-price-preference` (الافتراضي) | `price-preference-margin` | موثّق: وثيقة مجلس الدولة رقم [2025] 34 (国办发〔2025〕34号)، الصادرة ٢٨ سبتمبر ٢٠٢٥ والنافذة ١ يناير ٢٠٢٦ -- خصم تقييم سعري ثابت ٢٠٪، يتأهل عبر أحد مسارين مستقلين (تصنيف هذا المنتج نفسه كمنتج محلي، أو حصة تكلفة محلية ٨٠٪ على الأقل على مستوى حزمة مشتريات مختلطة) |
+| `cn-govt-procurement-law-domestic-mandate` | `category-eligibility-gate` | موثّق: المادة العاشرة من قانون المشتريات الحكومية (中华人民共和国政府采购法، ٢٠٠٢، آخر تعديل ٢٠١٤) -- تفويض بالشراء المحلي افتراضياً مع ثلاثة إعفاءات حقيقية، بإعادة استخدام `computeCategoryEligibilityGate` مباشرةً (دون منطق جديد، على غرار بوابة PPN 005 البريطانية وبوابة BABA الأمريكية) |
+| `cn-sme-price-deduction` | `price-preference-margin` | موثّق: 财库〔2020〕46号 / 财库〔2022〕19号 -- خصم تقييم سعري مُدرَّج حسب دور المزايد ونوع المشتريات معاً، مشروط ببوابة حد أدنى حقيقية ٣٠٪ لحصة التعاقد من الباطن مع المنشآت الصغيرة في مسار التحالف |
+| `cn-defense-domestic-sourcing` | `not-yet-sourced` | تفويض توطين مشتريات الدفاع لجيش التحرير الشعبي والاندماج المدني العسكري (军民融合)؛ لم يُعثر على عتبة رقمية واحدة نظيفة قابلة للحوسبة على مستوى المورّد في المصادر المفتوحة، مماثل بنيوياً لتعديل بيري الأمريكي |
+
+### ١٥.٢ `cn-domestic-product-price-preference` -- أول شكل أهلية بوابة "أو" في هذا الملف
+
+كل برنامج تفضيل سعري في الأقسام ٨-١٤ يختبر حقيقة واحدة مقابل عتبة واحدة: نسبة مئوية مقابل عتبة ثابتة
+(الأردن وعُمان وتركيا)، أو علامة تأهل ثنائية (البحرين والسعودية). تكسر وثيقة ٣٤/٢٠٢٥ هذا النمط بطريقة
+جديدة فعلياً: يحصل المنتج المحلي المؤهل على خصم تقييم سعري ثابت ٢٠٪، لكن هناك **مسارين مستقلين
+ومختلفين بنيوياً** للوصول إلى نفس هذا التأهل -- (١) استيفاء هذا المنتج تحديداً لاختبار تصنيف المنتج
+المحلي الثلاثي المعايير الوارد في الوثيقة (تحول جوهري داخل الصين، يستثني التجميع البسيط أو التعبئة أو
+إعادة التوسيم؛ نسبة تكلفة مكون محلي ستُنشر لاحقاً حسب الفئة، مع اعتبار المنتجات المستوفية لاختبار
+التحول الجوهري وحده محلية إلى حين نشر نسبة خاصة بالفئة؛ وتوطين المكونات الرئيسية والعمليات الحرجة
+للمنتجات عالية التقنية أو الحساسة أمنياً)، أو (٢) بالنسبة لحزمة مشتريات مختلطة تضم أنواع منتجات متعددة
+ضمن مناقصة واحدة، بلوغ المنتجات المحلية ٨٠٪ على الأقل من إجمالي تكلفة منتجات الحزمة، وعندها يُطبَّق
+نفس الخصم الثابت ٢٠٪ على الحزمة بأكملها. تطلّب ذلك دالة حساب جديدة فعلياً،
+`computePricePreferenceCnDomesticProduct`، بدلاً من إعادة استخدام دالة `computePricePreferenceMargin`
+المشتركة بثوابت جديدة: تُقيِّم الدالة كلا المسارين بشكل مستقل (`meetsDomesticProductCriteria === true`
+أو `bundleDomesticCostSharePct >= 80`) ثم تُسلِّم نتيجة التأهل الثنائية فقط إلى بدائية الهامش المشتركة
+-- بوابة "أو" تُغذِّي بدائية مشتركة، وليست صيغة مُعاد استخدامها متنكرة في صورة جديدة. على مدى أكثر من
+عقدين، ألزمت المادة العاشرة من قانون المشتريات الحكومية نفسها (القسم ١٥.٣) بالشراء المحلي افتراضياً
+دون أن تُعرِّف "المنتج المحلي" قط في لائحة صادرة عن مجلس الدولة -- ووثيقة ٣٤/٢٠٢٥، إلى جانب رأي تنفيذي
+لاحق صادر عن وزارة المالية ووزارة الصناعة وتقنية المعلومات (١٩ ديسمبر ٢٠٢٥) يوضح أن منتجات المناطق
+الجمركية الخاصة تُعد مصنوعة في الصين وأنه لا يجوز للمشتريات التمييز بحسب مكان تسجيل المورّد أو هيكل
+الملكية أو جنسية المستثمر، هو أول تعريف تنفيذي فعلي -- حدث تنظيمي حقيقي ومؤرَّخ وموثّق، وليس افتراضاً
+أساسياً مفترَضاً.
+
+### ١٥.٣ `cn-govt-procurement-law-domestic-mandate` (دون منطق جديد) و`cn-sme-price-deduction` (هامش مُدرَّج جديد فعلياً)
+
+- **`cn-govt-procurement-law-domestic-mandate`** يُعيد استخدام نفس بدائية `computeCategoryEligibilityGate`
+  ذات المفتاحين المستخدمة بالفعل للقائمة الإلزامية السعودية والعمانية، وبوابة تخصيص PPN 005 البريطانية،
+  وبوابة BABA الأمريكية (الأقسام ٨.٣ و١٠.٣ و١٣.٣ و١٤.٣): مفتاح أول لما إذا كان أحد إعفاءات المادة
+  العاشرة ينطبق على هذه المناقصة تحديداً (تعذّر التوفر محلياً أو بشروط تجارية معقولة؛ الاستخدام خارج
+  الصين؛ أو نص قانوني أو لائحة أخرى -- إعفاءات المادة العاشرة الثلاثة الحقيقية والموثّقة)، يُظهر مفتاحاً
+  ثانياً -- مشتركاً مع `cn-domestic-product-price-preference` أعلاه، وليس سؤالاً مكرراً -- لما إذا كان
+  منتج المورّد يستوفي تصنيف المنتج المحلي وفق وثيقة ٣٤/٢٠٢٥، فقط بعد تأكيد المفتاح الأول عدم انطباق أي
+  إعفاء. هذا هو التفويض البنيوي الحقيقي بالافتراض المحلي وفق المادة العاشرة (٢٠٠٢، آخر تعديل ٢٠١٤) --
+  بوابة على أهلية العطاء نفسها، وليست تفضيلاً سعرياً مضافاً فوق منافسة مفتوحة كما هو حال برامج التفضيل
+  السعري -- نُمذِج هنا دون أي منطق جديد إطلاقاً، وهو نفس خيار إعادة الاستخدام عند الملاءمة الذي اتُّخذ
+  بالفعل لبوابتي المملكة المتحدة والولايات المتحدة.
+- **`cn-sme-price-deduction`** هو أول هامش **مُدرَّج حسب دور المزايد ونوع المشتريات معاً** في هذا
+  الملف، مع **بوابة تأهل حقيقية فوق النطاق نفسه**. حدد 财库〔2020〕46号 (النافذ ١ يناير ٢٠٢١) خصماً
+  ٦٪-١٠٪ (٣٪-٥٪ للأشغال الهندسية) للمنشآت الصغيرة والمتناهية الصغر المتقدمة مباشرة، وخصماً أصغر ٢٪-٣٪
+  (١٪-٢٪ للأشغال الهندسية) للمنشآت الكبيرة أو المتوسطة التي تتعاقد من الباطن مع منشآت صغيرة أو تُكوِّن
+  معها تحالفاً -- بشرط بلوغ حصة المنشآت الصغيرة ٣٠٪ على الأقل من قيمة العقد. رفع 财库〔2022〕19号
+  (النافذ ١ يوليو ٢٠٢٢) كلا نطاقي السلع/الخدمات تقريباً إلى الضعف (مباشر: ١٠٪-٢٠٪؛ تحالف/تعاقد من
+  الباطن: ٤٪-٦٪) دون المساس بنطاقات الأشغال الهندسية لعام ٢٠٢٠. تطلّب ذلك دالة حساب جديدة فعلياً،
+  `computePricePreferenceCnSme`: يعتمد النطاق المطبَّق على كل من دور المورّد (مباشر صغير/متناهي الصغر
+  مقابل تحالف/تعاقد من الباطن كبير/متوسط) ونوع المشتريات (سلع/خدمات مقابل أشغال هندسية) معاً -- اختيار
+  نطاق بمصفوفة ٢×٢ لا نظير له في أي مكان آخر في هذا الملف -- ويتطلب مسار التحالف/التعاقد من الباطن
+  إضافة إلى ذلك اجتياز بوابة الحد الأدنى الحقيقي ٣٠٪ لحصة المنشآت الصغيرة قبل تطبيق أي خصم إطلاقاً (دون
+  بلوغها، الخصم صفر، وليس خصماً جزئياً -- بوابة، لا تدرّج مستمر، بنفس انضباط "بوابة لا تدرّج" المُطبَّق
+  بالفعل على عتبة قانون الشراء الأمريكي). كل نطاق قانوني هو مدى حقيقي، وليس رقماً واحداً -- تحدد جهة
+  الشراء الرقم الدقيق ضمن النطاق في وثائق مناقصتها الخاصة. ولأن `PricePreferenceMarginResult` لم يكن
+  لديه وسيلة للإفصاح عن نطاق بصدق (كانت قيمة `preferenceMarginPct` في كل برنامج سابق رقماً ثابتاً أو
+  معتمداً على المستدعي فقط)، وسَّعت هذه المرحلة الواجهة المشتركة بحقلين اختياريين جديدين،
+  `preferenceMarginMinPct` و`preferenceMarginMaxPct` -- وتُعرِض `preferenceMarginPct` نفسها دائماً
+  الأرضية القانونية (الحد الأدنى المضمون)، بينما تُفصِح الحقول الجديدة عن السقف. يترك كل برنامج تفضيل
+  سعري آخر غير صيني في هذا الملف كلا الحقلين `undefined` (تم التحقق من ذلك عبر اختبار ارتداد مخصص، القسم
+  ١٥.٥)، فهذا امتداد إضافي متوافق مع الإصدارات السابقة فعلياً، وليس تغييراً كاسراً لشكل النتيجة المشترك.
+
+### ١٥.٤ ما لم يُنمذَج عمداً، تجنباً لاختلاق ملاءمة تصنيفية
+
+- **مشتريات الجهات المملوكة للدولة (SOE) بموجب قانون المناقصات والعطاءات المنفصل** (中华人民共和国招标
+  投标法، وهو قانون مختلف عن قانون المشتريات الحكومية المُنمذَج أعلاه، والذي يحكم فقط مشتريات الأجهزة
+  الحكومية والمؤسسات العامة من السلع/الخدمات/الأشغال بأموال مالية) يُطبِّق نظام مناقصات مختلف بنيوياً
+  خاصاً بمشاريع الإنشاءات الرأسمالية الكبرى للجهات المملوكة للدولة. لم يعثر بحث هذه المرحلة على عتبة
+  محتوى محلي واحدة نظيفة وقابلة للحوسبة على مستوى المورّد بموجب ذلك القانون المنفصل تُماثل وثيقة
+  ٣٤/٢٠٢٥، وتنمذجته هنا كانت ستعني فرض نظام قانوني مختلف داخل شكل `applicableContexts` القائم لهذه
+  الوحدة -- أُفصِح عن ذلك كخارج فعلياً عن نطاق هذه المرحلة، دون افتراض ضمني بأنه مغطى ببرامج السياق
+  الحكومي الثلاثة أعلاه.
+- **سقف حصة الملكية الأجنبية في تحالفات صناعة السيارات المشتركة** (اشتراط ما قبل ٢٠١٨/٢٠٢٢ بأن تعمل
+  شركات صناعة السيارات الأجنبية عبر تحالف محلي بحصة ملكية ٥٠٪ فأقل) جرى بحثه وعدم تنمذجته عمداً: أُلغي
+  بالكامل بحلول ٢٠٢٢، وهو قاعدة تتعلق بهيكل الاستثمار الأجنبي، وليست آلية أهلية عطاء للمورّد -- حقيقة
+  بنيوية من حقبة سابقة، وليست آلية حالية يغطيها تصنيف هذه الوحدة.
+- **برنامج تعويض التأمين لمنتجات "الدفعة الأولى" (首台套) للمعدات التقنية الرئيسية** جرى بحثه وعدم
+  تنمذجته عمداً: يتبين عند الفحص أنه دعم لأقساط تأمين على جانب المُصنِّع للمعدات الرئيسية من نوعها
+  الأول، وليس آلية أهلية عطاء أو تفضيل سعري يطبّقها المشتري عند تقييم مناقصة بعينها -- خارج تصنيف هذه
+  الوحدة السداسي الأنواع بحسب بنيته الفعلية، لا بافتراض.
+- **العتبة الرقمية الخاصة بـ`cn-defense-domestic-sourcing`** جرى البحث عنها ولم تُوجد في صيغة نظيفة
+  واحدة قابلة للحوسبة على مستوى المورّد: نظام توطين مشتريات الدفاع والاندماج المدني العسكري (军民融合)
+  الصيني حقيقي وموثّق جيداً في الأدبيات الثانوية والسياسية، ومماثل بنيوياً لتعديل بيري الأمريكي (خاص
+  بوزارة الدفاع فقط، توطين شبه كامل، القسم ١٤.٤)، لكن التوجيهات الأساسية تصدر عبر إدارة تطوير التسليح
+  التابعة للجنة العسكرية المركزية ولوائح مشتريات سرية/داخلية بدلاً من قانون واحد منشور بعتبة رقمية
+  نظيفة -- ويُترَك هذا كإدخال صادق "غير موثّق بعد" وفق سجل القرار ٨.٧، مع الإفصاح عن هذا السياق الحقيقي
+  والمؤرَّخ بدلاً من صيغة مخمَّنة.
+
+### ١٥.٥ سجل اختبار الإجهاد -- تكملة الصين (٢٩ اختباراً جديداً، جميعها ناجحة؛ إجمالي هذا الملف من ١٦٠ إلى ١٨٩)
+
+غطّى اختبار الإجهاد الحالات الثلاث لكل آلية: الحالة الواقعية (منتج يستوفي تصنيف المنتج المحلي مباشرة،
+أو يتأهل عبر حصة تكلفة الحزمة ٨٥٪)؛ الحالة الأصعب (عدم تأهل أي من المسارين معاً، فخصم صفري وليس جزئياً؛
+تعاقد من الباطن بحصة ١٠٪ فقط أو ٢٩.٩٪ أقل من بوابة الـ٣٠٪، فبوابة معطَّلة تماماً)؛ والحالة الحدّية (حصة
+تكلفة الحزمة عند ٨٠٪ بالضبط تتأهل؛ حصة التعاقد من الباطن عند ٣٠٪ بالضبط تجتاز البوابة؛ إعفاء المادة
+العاشرة عند الانطباق يُبطل البوابة كلياً بصرف النظر عن حالة المنتج المحلي حتى لو كانت غير معروفة). أكدت
+اختبارات صريحة أن كل البرامج الصينية الثلاثة الحقيقية تُرجع "لا ينطبق" بشكل صحيح للسياق التجاري الخاص،
+وأن `cn-defense-domestic-sourcing` يُرجع "بيانات غير كافية" مع الإفصاح الحقيقي عن السياق المؤرَّخ، دون
+أي صيغة مختلَقة. أكد اختبار عبور ميزات مخصص أن حقل تصنيف المنتج المحلي المشترك يُغذِّي بالفعل كلاً من
+بوابة الولاية وبرنامج التفضيل السعري من مدخل واحد، دون إدخال مكرر. أكد اختبار بنيوي جديد أن حقلي
+`preferenceMarginMinPct` و`preferenceMarginMaxPct` يبقيان `undefined` في كل برنامج تفضيل سعري غير
+صيني، مما يثبت أن التوسيع الجديد إضافي فعلاً وليس كاسراً.
+
+عيب حقيقي وُجد وأُصلح أثناء هذه المرحلة، وليس افتراضياً: نسخة مبكرة من اختبار الحالة "الأصعب" لبرنامج
+`cn-govt-procurement-law-domestic-mandate` استدعت البوابة بسياق مشتريات `semi-government-soe`، نسخاً
+عن نمط اختبار بوابة BABA الأمريكية (القسم ١٤.٥) دون التحقق من أن نطاقي BABA وهذا البرنامج الصيني
+مختلفان فعلياً -- يغطي `applicableContexts` الخاص بـBABA كلاً من `government` و`semi-government-soe`،
+بينما يقتصر هذا البرنامج الصيني على `government` فقط. أدى هذا التعارض إلى استدعاء دالة التقييم خارج
+نطاقها الموثّق، فأرجعت بشكل صحيح `computation: null` كنتيجة "لا ينطبق" -- وتعطّل الاختبار بعدها عند
+قراءة خاصية من تلك القيمة `null`، وهو عيب حقيقي في بيانات الاختبار نفسه، وليس في المحرك. اكتُشف ذلك عبر
+تشغيل المجموعة الكاملة (وليس الاختبارات الجديدة فقط بمعزل عن غيرها)، وأُصلح بتصحيح سياق المشتريات في
+الاختبار إلى `government`، مع إعادة التحقق بتشغيل نظيف كامل (١٨٩/١٨٩) قبل إعلان هذه المرحلة منجزة.
+
+### ١٥.٦ الواجهة -- ثلاث كتل إدخال جديدة، حقل مشترك واحد، دون منطق توجيه جديد
+
+نفس منطق "أي دولة تضم قائمة PROGRAMS_BY_COUNTRY الخاصة بها أكثر من برنامج تحصل على صف سؤال التوجيه"
+(الأقسام ٨.٩ و٩.٦ و١٠.٩ و١١.٦ و١٢.٦ و١٣.٦ و١٤.٦) لم يتطلب أي منطق توجيه جديد للصين أيضاً -- اكتسب
+COUNTRY_ORDER وCOUNTRY_FLAG إدخال CN، واحتاج PROGRAM_LABELS أربع تسميات ثنائية اللغة جديدة. ولأن الصين
+تملك ٤ برامج، فهي تُظهر بشكل صحيح صف زر سؤال التوجيه (بخلاف المملكة المتحدة). أُضيفت ثلاث كتل إدخال
+جديدة: مفتاح تبديل نعم/لا لتصنيف المنتج المحلي مع حقل NumberField لحصة التكلفة المحلية للحزمة المختلطة
+(`cn-domestic-product-price-preference`، أول زوج إدخال بوابة "أو" في هذا الملف)؛ نمط كشف شرطي بمفتاحين
+لسؤال إعفاء المادة العاشرة، يُظهر مفتاح تصنيف المنتج المحلي المشترك فقط بعد تأكيد عدم انطباق أي إعفاء
+(`cn-govt-procurement-law-domestic-mandate`، إعادة استخدام حرفية لنمط بوابتي المملكة المتحدة
+والولايات المتحدة على مستوى الواجهة أيضاً)؛ ومجموعتا أزرار لدور المزايد ونوع المشتريات، مع حقل
+NumberField يُعرَض شرطياً فقط عند اختيار دور التحالف، لحصة التعاقد من الباطن مع المنشآت الصغيرة
+(`cn-sme-price-deduction`). يُكتَب مفتاح تصنيف المنتج المحلي إلى نفس حقل
+`entry.cn.meetsDomesticProductCriteria` الذي تقرؤه كتلة التفضيل السعري وكتلة بوابة الولاية معاً -- فارق
+واجهة حقيقي يُماثل نمطي الحقل المشترك في البحرين والولايات المتحدة (القسمان ١٠.١٠ و١٤.٦)، وليس سؤالاً
+مكرراً. جرى تصحيح تعليق "OTHER" غير المحدَّث (الذي كان يذكر الصين نفسها كدولة غير قابلة للتمثيل بعد،
+وكان لا يزال يذكر الولايات المتحدة القابلة للتمثيل بالفعل ضمن القائمة نفسها -- إفصاحان خاطئان متراكمان،
+صُحِّحا معاً في هذه المرحلة) ليُشير الآن إلى دول مثال غير مشمولة فعلياً بدلاً من ذلك. حُدِّث أيضاً نص
+المقدمة الرئيسية، ونص الإفصاح عن "غير مشمولة بهذه الوحدة"، وتعليقات سؤال التوجيه، ليذكر الجميع "اثنتي
+عشرة دولة" ويُسمِّي آليات الصين الثلاث الحقيقية إلى جانب الدول الإحدى عشرة الأخرى، بدلاً من ترك الصين
+موصوفة كدولة غير مشمولة كمثال في نص يقرأه مستخدم حقيقي أولاً -- نفس انضباط "لا يجوز ترك إفصاح خاطئ معروف
+دون تصحيح" (سجل القرار ٨.٧ / قاعدة السجل رقم ١٢) المُطبَّق بالفعل أثناء مراحل مصر وتركيا والمملكة
+المتحدة والولايات المتحدة.
