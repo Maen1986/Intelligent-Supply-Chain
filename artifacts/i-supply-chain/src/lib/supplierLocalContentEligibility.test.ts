@@ -24,6 +24,10 @@ import {
   EGYPT_PRICE_PREFERENCE_QUALIFYING_THRESHOLD_PCT,
   EGYPT_OIL_GAS_PRICE_PREFERENCE_MARGIN_PCT,
   TURKEY_PRICE_PREFERENCE_MARGIN_PCT,
+  BUY_AMERICAN_DOMESTIC_CONTENT_THRESHOLD_PCT,
+  BUY_AMERICAN_LARGE_BUSINESS_MARGIN_PCT,
+  BUY_AMERICAN_SMALL_BUSINESS_MARGIN_PCT,
+  USA_SBA_SMALL_BUSINESS_TARGET_PCT,
   type SupplierLocalContentInputs,
   type LocalContentAssessment,
   type EligibleSpendRatioResult,
@@ -666,6 +670,165 @@ describe("UK / Below-Threshold Procurement Reservation (PPN 005) — category-el
 });
 
 // ===========================================================================
+// USA — United States (Part 2 continuation, 16 Sep 2026 -- fourth non-GCC/
+// Jordan country per the user's explicit order, after Egypt/Turkey/UK)
+// ===========================================================================
+
+describe("USA / Buy American Act Price Preference (FAR 25.1/25.2) — price-preference-margin (threshold-gated at 65%, business-size-dependent margin -- the first caller-dependent margin in this file)", () => {
+  it('soft: 70% domestic content (above the 65% threshold), large business (default) -> full 20% margin applied via a 100% binary share', () => {
+    const a = assessSupplierLocalContent('USA', 'government', { usa: { domesticContentSharePct: 70, isSmallBusinessConcern: false } }, 'usa-buy-american-price-preference');
+    const c = a.computation as PricePreferenceMarginResult;
+    expect(c.preferenceMarginPct).toBe(BUY_AMERICAN_LARGE_BUSINESS_MARGIN_PCT);
+    expect(c.locallyManufacturedSharePct).toBe(100);
+    expect(c.effectiveBidDiscountPct).toBe(20);
+  });
+
+  it('soft: 70% domestic content, small business concern -> full 30% margin (the higher tier)', () => {
+    const a = assessSupplierLocalContent('USA', 'government', { usa: { domesticContentSharePct: 70, isSmallBusinessConcern: true } }, 'usa-buy-american-price-preference');
+    const c = a.computation as PricePreferenceMarginResult;
+    expect(c.preferenceMarginPct).toBe(BUY_AMERICAN_SMALL_BUSINESS_MARGIN_PCT);
+    expect(c.effectiveBidDiscountPct).toBe(30);
+  });
+
+  it('hardest: 64.9% domestic content (just below the 65% threshold) -> zero effective discount regardless of business size, not a partial one (a gate, not a continuous scale)', () => {
+    const a = assessSupplierLocalContent('USA', 'government', { usa: { domesticContentSharePct: 64.9, isSmallBusinessConcern: true } }, 'usa-buy-american-price-preference');
+    const c = a.computation as PricePreferenceMarginResult;
+    expect(c.locallyManufacturedSharePct).toBe(0);
+    expect(c.effectiveBidDiscountPct).toBe(0);
+  });
+
+  it('boundary: exactly 65% domestic content -> qualifies (>=65%, not >65%)', () => {
+    const a = assessSupplierLocalContent('USA', 'government', { usa: { domesticContentSharePct: BUY_AMERICAN_DOMESTIC_CONTENT_THRESHOLD_PCT, isSmallBusinessConcern: false } }, 'usa-buy-american-price-preference');
+    const c = a.computation as PricePreferenceMarginResult;
+    expect(c.locallyManufacturedSharePct).toBe(100);
+    expect(c.effectiveBidDiscountPct).toBe(BUY_AMERICAN_LARGE_BUSINESS_MARGIN_PCT);
+  });
+
+  it('boundary: no domestic-content share supplied -> honest null share, never assumed disqualified', () => {
+    const a = assessSupplierLocalContent('USA', 'government', { usa: { domesticContentSharePct: null, isSmallBusinessConcern: null } }, 'usa-buy-american-price-preference');
+    const c = a.computation as PricePreferenceMarginResult;
+    expect(c.locallyManufacturedSharePct).toBeNull();
+    expect(c.effectiveBidDiscountPct).toBeNull();
+  });
+
+  it('defaults to the large-business margin (20%) when isSmallBusinessConcern is not supplied at all, per Decision Record 8.7\'s disclosed caller-overridable-default discipline', () => {
+    const a = assessSupplierLocalContent('USA', 'government', {}, 'usa-buy-american-price-preference');
+    const c = a.computation as PricePreferenceMarginResult;
+    expect(c.preferenceMarginPct).toBe(BUY_AMERICAN_LARGE_BUSINESS_MARGIN_PCT);
+  });
+
+  it("not-applicable: private-commercial procurement is outside this program's sourced (federal government) scope", () => {
+    const a = assessSupplierLocalContent('USA', 'private-commercial', { usa: { domesticContentSharePct: 100, isSmallBusinessConcern: false } }, 'usa-buy-american-price-preference');
+    expect(a.applicability).toBe('not-applicable');
+  });
+
+  it('is the default program for USA when program is omitted', () => {
+    expect(DEFAULT_PROGRAM_BY_COUNTRY.USA).toBe('usa-buy-american-price-preference');
+    const a = assessSupplierLocalContent('USA', 'government', { usa: { domesticContentSharePct: 70, isSmallBusinessConcern: false } });
+    expect(a.program).toBe('usa-buy-american-price-preference');
+  });
+
+  it('discloses the real 65%->75% threshold step-up and the TAA-suspension structural fact, citing FAR 25.105 and the $174,000 GPA figure', () => {
+    const fw = PROGRAMS['usa-buy-american-price-preference'];
+    expect(fw.sourceNoteEn).toContain('75%');
+    expect(fw.sourceNoteEn).toContain('174,000');
+    expect(fw.sourceNoteAr).toContain('١٧٤,٠٠٠');
+  });
+});
+
+describe('USA / Build America, Buy America Act (BABA) Infrastructure Gate — category-eligibility-gate (two-toggle pattern, structurally identical to UK PPN 005)', () => {
+  it('soft: federally-funded infrastructure procurement and supplier meets BABA domestic content -> eligible to bid', () => {
+    const a = assessSupplierLocalContent('USA', 'government', { usaBaba: { isFederallyFundedInfrastructureProcurement: true, meetsBabaDomesticContentRequirement: true } }, 'usa-baba-infrastructure-gate');
+    const c = a.computation as CategoryEligibilityGateResult;
+    expect(c.eligibleToBid).toBe(true);
+  });
+
+  it('hardest: federally-funded infrastructure procurement but supplier does NOT meet BABA domestic content -> gated out entirely', () => {
+    const a = assessSupplierLocalContent('USA', 'semi-government-soe', { usaBaba: { isFederallyFundedInfrastructureProcurement: true, meetsBabaDomesticContentRequirement: false } }, 'usa-baba-infrastructure-gate');
+    const c = a.computation as CategoryEligibilityGateResult;
+    expect(c.eligibleToBid).toBe(false);
+  });
+
+  it('boundary: not a federally-funded infrastructure procurement at all -> gate does not apply, eligible regardless of domestic-content status', () => {
+    const a = assessSupplierLocalContent('USA', 'government', { usaBaba: { isFederallyFundedInfrastructureProcurement: false, meetsBabaDomesticContentRequirement: null } }, 'usa-baba-infrastructure-gate');
+    const c = a.computation as CategoryEligibilityGateResult;
+    expect(c.eligibleToBid).toBe(true);
+  });
+
+  it('boundary: no BABA coverage status supplied yet -> honest null, never assumed either way', () => {
+    const a = assessSupplierLocalContent('USA', 'government', { usaBaba: { isFederallyFundedInfrastructureProcurement: null, meetsBabaDomesticContentRequirement: null } }, 'usa-baba-infrastructure-gate');
+    const c = a.computation as CategoryEligibilityGateResult;
+    expect(c.eligibleToBid).toBeNull();
+  });
+
+  it("not-applicable: private-commercial procurement is outside BABA's sourced (government/semi-government-soe) scope", () => {
+    const a = assessSupplierLocalContent('USA', 'private-commercial', { usaBaba: { isFederallyFundedInfrastructureProcurement: true, meetsBabaDomesticContentRequirement: true } }, 'usa-baba-infrastructure-gate');
+    expect(a.applicability).toBe('not-applicable');
+  });
+
+  it('discloses the real 100% iron/steel, 100% construction-materials, and 55% manufactured-products thresholds, citing IIJA Title IX and the per-agency waiver structure', () => {
+    const fw = PROGRAMS['usa-baba-infrastructure-gate'];
+    expect(fw.sourceNoteEn).toContain('55%');
+    expect(fw.sourceNoteEn).toContain('Title IX');
+    expect(fw.sourceNoteAr).toContain('٥٥٪');
+  });
+});
+
+describe('USA / SBA Small Business Contracting Goal & Set-Aside — spend-set-aside-target (shares the isSmallBusinessConcern field with the Buy American margin above)', () => {
+  it('soft: supplier qualifies as a small business concern -> qualifies for the reserved 23% share', () => {
+    const a = assessSupplierLocalContent('USA', 'government', { usa: { domesticContentSharePct: null, isSmallBusinessConcern: true } }, 'usa-sba-small-business-setaside');
+    const c = a.computation as SpendSetAsideResult;
+    expect(c.targetSharePct).toBe(USA_SBA_SMALL_BUSINESS_TARGET_PCT);
+    expect(c.qualifiesForSetAside).toBe(true);
+  });
+
+  it('hardest: supplier does not qualify as a small business concern -> does not qualify for the reserved share', () => {
+    const a = assessSupplierLocalContent('USA', 'government', { usa: { domesticContentSharePct: null, isSmallBusinessConcern: false } }, 'usa-sba-small-business-setaside');
+    const c = a.computation as SpendSetAsideResult;
+    expect(c.qualifiesForSetAside).toBe(false);
+  });
+
+  it('boundary: no small-business-concern status supplied -> honest null, never assumed either way', () => {
+    const a = assessSupplierLocalContent('USA', 'government', { usa: { domesticContentSharePct: null, isSmallBusinessConcern: null } }, 'usa-sba-small-business-setaside');
+    const c = a.computation as SpendSetAsideResult;
+    expect(c.qualifiesForSetAside).toBeNull();
+  });
+
+  it("not-applicable: private-commercial procurement is outside this program's sourced (federal government) scope", () => {
+    const a = assessSupplierLocalContent('USA', 'private-commercial', { usa: { domesticContentSharePct: null, isSmallBusinessConcern: true } }, 'usa-sba-small-business-setaside');
+    expect(a.applicability).toBe('not-applicable');
+  });
+
+  it("discloses the real 23% government-wide goal and FAR 19.502-2's Rule of Two, and the state-level-preference out-of-scope disclosure", () => {
+    const fw = PROGRAMS['usa-sba-small-business-setaside'];
+    expect(fw.sourceNoteEn).toContain('23%');
+    expect(fw.sourceNoteEn).toContain('Rule of Two');
+    expect(fw.sourceNoteEn).toContain('state');
+    expect(fw.sourceNoteAr).toContain('٢٣٪');
+  });
+});
+
+describe('USA — Berry Amendment (DoD Textiles/Food/Tools, not-yet-sourced, real dated context)', () => {
+  it('returns insufficient-data disclosing the DoD-only near-100%-domestic scope and the 2006 specialty-metals carve-out, never a fabricated per-supplier formula', () => {
+    const a = assessSupplierLocalContent('USA', 'government', {}, 'usa-berry-amendment-dod');
+    expect(a.applicability).toBe('insufficient-data');
+    expect(a.computation).toEqual({ mechanismType: 'not-yet-sourced' });
+    expect(a.program).toBe('usa-berry-amendment-dod');
+    expect(PROGRAMS['usa-berry-amendment-dod'].applicableContexts).toHaveLength(0);
+    expect(PROGRAMS['usa-berry-amendment-dod'].sourceNoteEn).toContain('2006');
+    expect(PROGRAMS['usa-berry-amendment-dod'].sourceNoteAr).toContain('٢٠٠٦');
+  });
+});
+
+describe('USA — structural sanity (16 Sep 2026 Part 2 continuation, fourth non-GCC/Jordan country)', () => {
+  it('USA is the eleventh country, has 4 programs (3 real + 1 not-yet-sourced), and resolves DEFAULT_PROGRAM_BY_COUNTRY to the Buy American Act program', () => {
+    expect(DEFAULT_PROGRAM_BY_COUNTRY.USA).toBe('usa-buy-american-price-preference');
+    expect(PROGRAMS_BY_COUNTRY.USA).toEqual(['usa-buy-american-price-preference', 'usa-baba-infrastructure-gate', 'usa-sba-small-business-setaside', 'usa-berry-amendment-dod']);
+    expect(COUNTRY_FRAMEWORKS.USA.applicableContexts.length).toBeGreaterThan(0);
+  });
+});
+
+// ===========================================================================
 // recommendLocalContentAction — primary + alternative (Rule 8)
 // ===========================================================================
 
@@ -856,7 +1019,7 @@ describe('SA — program routing default', () => {
   });
 
   it('every country resolves DEFAULT_PROGRAM_BY_COUNTRY to a real PROGRAMS entry (architecture sanity check)', () => {
-    (['SA', 'AE', 'JO', 'OM', 'QA', 'BH', 'KW', 'EG', 'TR', 'UK'] as const).forEach(country => {
+    (['SA', 'AE', 'JO', 'OM', 'QA', 'BH', 'KW', 'EG', 'TR', 'UK', 'USA'] as const).forEach(country => {
       const program = DEFAULT_PROGRAM_BY_COUNTRY[country];
       expect(PROGRAMS[program]).toBeDefined();
       expect(PROGRAMS[program].country).toBe(country);
@@ -864,7 +1027,7 @@ describe('SA — program routing default', () => {
     });
   });
 
-  it('PROGRAMS_BY_COUNTRY lists every program per country (SA: 6, AE: 2, JO: 2, OM: 3, QA: 2, BH: 3, KW: 2, EG: 3, TR: 2, UK: 1 -- UK added 16 Sep 2026 Part 2 continuation)', () => {
+  it('PROGRAMS_BY_COUNTRY lists every program per country (SA: 6, AE: 2, JO: 2, OM: 3, QA: 2, BH: 3, KW: 2, EG: 3, TR: 2, UK: 1, USA: 4 -- UK added 16 Sep 2026 Part 2 continuation, USA added 16 Sep 2026 Part 2 continuation)', () => {
     expect(PROGRAMS_BY_COUNTRY.SA).toHaveLength(6);
     expect(PROGRAMS_BY_COUNTRY.AE).toHaveLength(2);
     expect(PROGRAMS_BY_COUNTRY.JO).toHaveLength(2);
@@ -875,6 +1038,7 @@ describe('SA — program routing default', () => {
     expect(PROGRAMS_BY_COUNTRY.EG).toHaveLength(3);
     expect(PROGRAMS_BY_COUNTRY.TR).toHaveLength(2);
     expect(PROGRAMS_BY_COUNTRY.UK).toHaveLength(1);
+    expect(PROGRAMS_BY_COUNTRY.USA).toHaveLength(4);
   });
 
   it('lcgpa-general carries the two usage notes (40% high-value-contract weighting, ~30% consulting/IT figure) bilingually', () => {
@@ -1417,12 +1581,12 @@ describe('Portfolio rollup — spend-set-aside-target and modified-icv-score gro
 // country before it ever reaches the UI.
 // ===========================================================================
 
-describe('PROGRAMS_BY_COUNTRY — structural sanity (15 Sep 2026 continuation, EG added 15 Sep 2026, TR added 16 Sep 2026, UK added 16 Sep 2026 Part 2 pass)', () => {
-  it('the 9 GCC/Jordan/Egypt/Turkey countries have at least 2 programs each, and every program in every one of the 10 countries\' lists resolves back to that same country in PROGRAMS', () => {
-    for (const country of ['SA', 'AE', 'JO', 'OM', 'QA', 'BH', 'KW', 'EG', 'TR'] as const) {
+describe('PROGRAMS_BY_COUNTRY — structural sanity (15 Sep 2026 continuation, EG added 15 Sep 2026, TR added 16 Sep 2026, UK added 16 Sep 2026 Part 2 pass, USA added 16 Sep 2026 Part 2 continuation)', () => {
+  it('the 10 GCC/Jordan/Egypt/Turkey/USA countries have at least 2 programs each (USA is NOT a UK-style single-program exception), and every program in every one of the 11 countries\' lists resolves back to that same country in PROGRAMS', () => {
+    for (const country of ['SA', 'AE', 'JO', 'OM', 'QA', 'BH', 'KW', 'EG', 'TR', 'USA'] as const) {
       expect(PROGRAMS_BY_COUNTRY[country].length).toBeGreaterThanOrEqual(2);
     }
-    for (const country of ['SA', 'AE', 'JO', 'OM', 'QA', 'BH', 'KW', 'EG', 'TR', 'UK'] as const) {
+    for (const country of ['SA', 'AE', 'JO', 'OM', 'QA', 'BH', 'KW', 'EG', 'TR', 'UK', 'USA'] as const) {
       for (const program of PROGRAMS_BY_COUNTRY[country]) {
         expect(PROGRAMS[program].country).toBe(country);
       }

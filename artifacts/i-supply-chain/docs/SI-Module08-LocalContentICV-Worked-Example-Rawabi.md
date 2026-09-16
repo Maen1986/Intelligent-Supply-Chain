@@ -1,9 +1,9 @@
 # SI Module 08 — Local Content / ICV Eligibility
 ### Worked Example, Sourced Methodology, and Stress-Test Record — Rawabi Advanced Industries
 
-*Registry: SI-08 (draft, pending #436/#441 formal registry entry). Date: 15 Sep 2026, updated same day (Saudi Arabia mechanism decomposition, Part 1 slice, section 8; UAE mechanism decomposition + program-architecture generalization, section 9; Jordan's second mechanism, Oman, Qatar, Bahrain, Kuwait -- closing out the rest of Part 1, section 10; Egypt mechanism decomposition -- opening Part 2, non-GCC coverage, section 11 -- all four decompositions and both worked-example fixes landed within a single ~10-hour window, per actual commit timestamps, not on four separate calendar days as earlier revisions of this line incorrectly stated), updated again 16 Sep 2026 (Turkey mechanism decomposition -- Part 2 continuation, section 12; United Kingdom mechanism decomposition -- Part 2 continuation, section 13).*
-*Engine file: `src/lib/supplierLocalContentEligibility.ts` (1,838 lines, 26 programs across all 10 countries via a generalized `LocalContentProgram` architecture — see section 9's own note on why the Saudi-only `SaudiProgram` pattern was generalized, section 10.1 for the 7 programs added 15 Sep 2026, section 11.1 for the 3 Egyptian programs added 15 Sep 2026, section 12.1 for the 2 Turkish programs added 16 Sep 2026, and section 13.1 for the UK's 1 program added 16 Sep 2026 -- the UK is a genuine single-program exception, not a placeholder gap, see section 13.2). Test file: `src/lib/supplierLocalContentEligibility.test.ts` (138 tests: 39 original + 23 Saudi-mechanism + 15 UAE-mechanism/architecture + 32 Jordan/Oman/Qatar/Bahrain/Kuwait-mechanism + 11 Egypt-mechanism + 9 Turkey-mechanism + 9 UK-mechanism tests, soft/hardest/boundary tiers; the OM/QA/BH/KW not-yet-sourced block and the 10-country structural-sanity check each register more runtime tests than their single `it(` call-site, so this N is Vitest's executed count, not a literal-text `it(` search).*
-*Status: library-complete, unit-tested, cross-engine chain-tested, live UI rebuilt as a multi-supplier list per an independent senior-QA review (`/local-content-icv`, QA-10/10-walked-through, 15 Sep 2026), extended with Saudi Arabia's full mechanism decomposition (section 8), the UAE's (section 9: MoIAT ICV usage note + genuine incentive-not-gate negative finding, and the Tawazun defense-offset mechanism with a real sourced formula), Jordan's second mechanism plus real sourced programs for Oman, Qatar, Bahrain, and Kuwait (section 10, 15 Sep 2026, completing Part 1 / GCC-Jordan coverage), Egypt's two sourced price-preference mechanisms plus one honest not-yet-sourced entry (section 11, 15 Sep 2026, opening Part 2 / non-GCC coverage), Turkey's one sourced price-preference mechanism plus one honest not-yet-sourced entry (section 12, 16 Sep 2026, continuing Part 2), and now the UK's one sourced category-eligibility-gate mechanism -- with a real, structural (not un-sourced) reason why no second UK program exists (section 13, 16 Sep 2026, continuing Part 2). A dual-sided buyer/supplier value-framing panel is live in the UI for every country and every sourced mechanism type. See "What Is Not Yet Done" below for what remains, including the backend table this pass added but has not provisioned, and the rest of Part 2 (USA, China, per the platform owner's own stated order), which is not started yet.*
+*Registry: SI-08 (draft, pending #436/#441 formal registry entry). Date: 15 Sep 2026, updated same day (Saudi Arabia mechanism decomposition, Part 1 slice, section 8; UAE mechanism decomposition + program-architecture generalization, section 9; Jordan's second mechanism, Oman, Qatar, Bahrain, Kuwait -- closing out the rest of Part 1, section 10; Egypt mechanism decomposition -- opening Part 2, non-GCC coverage, section 11 -- all four decompositions and both worked-example fixes landed within a single ~10-hour window, per actual commit timestamps, not on four separate calendar days as earlier revisions of this line incorrectly stated), updated again 16 Sep 2026 (Turkey mechanism decomposition -- Part 2 continuation, section 12; United Kingdom mechanism decomposition -- Part 2 continuation, section 13; United States mechanism decomposition -- Part 2 continuation, section 14).*
+*Engine file: `src/lib/supplierLocalContentEligibility.ts` (2,007 lines, 30 programs across all 11 countries via a generalized `LocalContentProgram` architecture — see section 9's own note on why the Saudi-only `SaudiProgram` pattern was generalized, section 10.1 for the 7 programs added 15 Sep 2026, section 11.1 for the 3 Egyptian programs added 15 Sep 2026, section 12.1 for the 2 Turkish programs added 16 Sep 2026, section 13.1 for the UK's 1 program added 16 Sep 2026 -- the UK is a genuine single-program exception, not a placeholder gap, see section 13.2 -- and section 14.1 for the USA's 4 programs added 16 Sep 2026, NOT a single-program exception like the UK, see section 14.2). Test file: `src/lib/supplierLocalContentEligibility.test.ts` (160 tests: 39 original + 23 Saudi-mechanism + 15 UAE-mechanism/architecture + 32 Jordan/Oman/Qatar/Bahrain/Kuwait-mechanism + 11 Egypt-mechanism + 9 Turkey-mechanism + 9 UK-mechanism + 22 USA-mechanism tests, soft/hardest/boundary tiers; the OM/QA/BH/KW not-yet-sourced block and the 11-country structural-sanity check each register more runtime tests than their single `it(` call-site, so this N is Vitest's executed count, not a literal-text `it(` search).*
+*Status: library-complete, unit-tested, cross-engine chain-tested, live UI rebuilt as a multi-supplier list per an independent senior-QA review (`/local-content-icv`, QA-10/10-walked-through, 15 Sep 2026), extended with Saudi Arabia's full mechanism decomposition (section 8), the UAE's (section 9: MoIAT ICV usage note + genuine incentive-not-gate negative finding, and the Tawazun defense-offset mechanism with a real sourced formula), Jordan's second mechanism plus real sourced programs for Oman, Qatar, Bahrain, and Kuwait (section 10, 15 Sep 2026, completing Part 1 / GCC-Jordan coverage), Egypt's two sourced price-preference mechanisms plus one honest not-yet-sourced entry (section 11, 15 Sep 2026, opening Part 2 / non-GCC coverage), Turkey's one sourced price-preference mechanism plus one honest not-yet-sourced entry (section 12, 16 Sep 2026, continuing Part 2), the UK's one sourced category-eligibility-gate mechanism -- with a real, structural (not un-sourced) reason why no second UK program exists (section 13, 16 Sep 2026, continuing Part 2) -- and now the USA's three sourced mechanisms (Buy American Act price preference, Build America/Buy America infrastructure gate, SBA small-business set-aside) plus one honest not-yet-sourced entry (Berry Amendment), including this file's first caller-dependent price-preference margin (section 14, 16 Sep 2026, continuing Part 2). A dual-sided buyer/supplier value-framing panel is live in the UI for every country and every sourced mechanism type. See "What Is Not Yet Done" below for what remains, including the backend table this pass added but has not provisioned, and the rest of Part 2 (China, per the platform owner's own stated order), which is not started yet.*
 
 ---
 
@@ -65,7 +65,7 @@ remain live and completely unchanged by this work.
 
 ---
 
-## 4. Stress-Test Record (39 tests as of 15 Sep 2026, all passing; three tiers per mechanism — see section 8.8 for the 23 additional Saudi-mechanism tests (62 total), section 9.5 for the 15 additional UAE-mechanism/architecture tests added 15 Sep 2026 (77 total), section 10.8 for the 32 additional Jordan/Oman/Qatar/Bahrain/Kuwait-mechanism tests added 15 Sep 2026 (109 total), section 11.5 for the 11 additional Egypt-mechanism tests added 15 Sep 2026 (120 total), section 12.5 for the 9 additional Turkey-mechanism tests added 16 Sep 2026 (129 total), and section 13.5 for the 9 additional UK-mechanism tests added 16 Sep 2026 (138 total))
+## 4. Stress-Test Record (39 tests as of 15 Sep 2026, all passing; three tiers per mechanism — see section 8.8 for the 23 additional Saudi-mechanism tests (62 total), section 9.5 for the 15 additional UAE-mechanism/architecture tests added 15 Sep 2026 (77 total), section 10.8 for the 32 additional Jordan/Oman/Qatar/Bahrain/Kuwait-mechanism tests added 15 Sep 2026 (109 total), section 11.5 for the 11 additional Egypt-mechanism tests added 15 Sep 2026 (120 total), section 12.5 for the 9 additional Turkey-mechanism tests added 16 Sep 2026 (129 total), section 13.5 for the 9 additional UK-mechanism tests added 16 Sep 2026 (138 total), and section 14.5 for the 22 additional USA-mechanism tests added 16 Sep 2026 (160 total))
 
 ### 4.1 Saudi Arabia — LCGPA eligible-spend-ratio
 
@@ -1238,6 +1238,135 @@ Egypt and Turkey passes. The page's hero copy, the "not covered by this module" 
 the footer/body copy were all updated to say "ten countries" and name the UK's PA23/PPN 005 framework
 alongside the other nine, rather than leaving the UK described as an uncovered example country in
 copy a real user reads first.
+
+## 14. United States Mechanism Decomposition — Part 2 Continuation (16 Sep 2026)
+
+Fourth stop on the platform owner's own explicit country order. `USA` is the eleventh
+`LocalContentCountry`. Unlike the UK immediately before it, this research pass found the United
+States runs **three** real, sourced, computable local-content mechanisms at the federal level, not
+one -- so USA joins the "≥2 programs" cohort (like every GCC/Jordan/Egypt/Turkey country), it is
+**not** a UK-style single-program exception. This section also introduces this file's first
+genuinely new mechanism shape: a price-preference margin whose own size depends on a caller-supplied
+fact about the supplier (business size), not just a fixed constant.
+
+### 14.1 Six-type taxonomy → USA program mapping
+
+| Program | `mechanismType` | Status |
+|---|---|---|
+| `usa-buy-american-price-preference` (default) | `price-preference-margin` | Sourced: FAR Subpart 25.1/25.2 (Buy American Act) -- binary 65%/75% domestic-content threshold gate, then a business-size-dependent 20%/30% evaluation margin |
+| `usa-baba-infrastructure-gate` | `category-eligibility-gate` | Sourced: Build America, Buy America Act (BABA, IIJA Title IX) -- federally-funded-infrastructure domestic-content gate, reusing `computeCategoryEligibilityGate` directly (zero new logic, like the UK's PPN 005) |
+| `usa-sba-small-business-setaside` | `spend-set-aside-target` | Sourced: SBA/FAR Part 19 -- 23% government-wide small-business goal + Rule of Two, reusing `computeSpendSetAside` directly, sharing the `isSmallBusinessConcern` field with program 1 |
+| `usa-berry-amendment-dod` | `not-yet-sourced` | DoD-only textiles/food/hand-tools near-100%-domestic mandate; no single clean supplier-computable numeric threshold found across all three product categories and their exceptions |
+
+### 14.2 The first caller-dependent price-preference margin in this file
+
+Every price-preference margin modeled in sections 8-13 (Saudi, Jordan, Oman, Bahrain, Egypt, Turkey)
+is a single fixed constant -- e.g. Egypt's 15% is 15% for every qualifying supplier, always. The Buy
+American Act breaks that pattern: FAR 25.105 sets the evaluation margin at 20% of a competing foreign
+offer's price for a large-business domestic offeror, but **30%** for a small-business domestic
+offeror (source: FAR 52.225-1/52.225-3 clause text, acquisition.gov). This is not a platform-invented
+tier -- it is FAR's own two-tier structure -- but it required a genuinely new compute function,
+`computePricePreferenceUsa`, rather than reusing the shared `computePricePreferenceMargin` helper
+directly with a hardcoded constant. Per Decision Record 8.7's caller-overridable-default discipline,
+the margin defaults to the large-business rate (20%) when the caller does not supply
+`isSmallBusinessConcern`, with the small-business rate (30%) applied only when the caller explicitly
+sets it `true` -- a disclosed default, not a guess, and the same default a real contracting officer
+would apply absent a small-business certification on file. Beyond the margin split, the underlying
+domestic-content test itself is modeled as a **binary threshold gate** (qualify at the current 65%
+domestic-content threshold -- stepping to 75% from 2029, disclosed but not separately modeled as a
+second threshold -- then receive the size-dependent margin), the same shape already used for Egypt's
+public-procurement preference (section 11.3), since FAR's domestic-content test is pass/fail at a
+threshold, not continuously scaled the way Jordan/Oman/Turkey's are.
+
+### 14.3 `usa-baba-infrastructure-gate` and `usa-sba-small-business-setaside` -- zero new logic, reused primitives
+
+- **`usa-baba-infrastructure-gate`** reuses the exact two-toggle `computeCategoryEligibilityGate`
+  primitive already used for Saudi/Oman's Mandatory List and the UK's PPN 005 reservation gate
+  (sections 8.3, 10.3, 13.3): a first toggle for whether this is a federally-funded infrastructure
+  procurement subject to BABA at all, revealing a second toggle for whether the supplier meets BABA's
+  domestic-content requirement for that category, only once the first is `true`. BABA (Title IX of
+  the Infrastructure Investment and Jobs Act, Pub. L. 117-58, 2021) is a substantially stricter,
+  differently-shaped regime from the Buy American Act above -- 100% of iron and steel, 100% of
+  construction materials, and a 55% domestic-component-cost floor for manufactured products -- and is
+  administered per-agency (DOT/FHWA, EPA, HUD, DOE, and others each issue their own waivers) rather
+  than government-wide. Because waiver status cannot be seen from a bid-level input alone, the second
+  toggle asks the caller to state the post-waiver eligibility outcome directly, the same discipline
+  already applied to the UK's PPN 005 gate.
+- **`usa-sba-small-business-setaside`** reuses `computeSpendSetAside` directly against the sourced
+  23% government-wide small-business prime-contracting goal (15 U.S.C. 644, FAR Part 19), the same
+  national/program-target-share-plus-supplier-qualification shape already used for Jordan's
+  contractor quota and Bahrain/Kuwait's spend set-asides (sections 10.2, 10.6, 10.7). It shares the
+  same `isSmallBusinessConcern` input field used by program 1's margin tier -- a single fact about
+  the supplier drives two different mechanisms, mirroring Bahrain's shared `bhSme` object pattern
+  (section 10.5) rather than inventing a second, redundant field. FAR 19.502-2's "Rule of Two" (a
+  contracting officer MUST set aside an acquisition for small-business-only competition whenever two
+  or more small businesses could reasonably be expected to offer fair-market prices) is the real,
+  sourced, mandatory per-solicitation mechanism underneath the 23% goal, but this research pass found
+  no single closed-form supplier-facing formula for the set-aside decision itself beyond the
+  qualification/registration question modeled here -- disclosed in the source note, not modeled as a
+  fabricated formula.
+
+### 14.4 Explicitly not modeled, to avoid a taxonomy-fit fabrication
+
+- **The Trade Agreements Act (TAA)** suspends the Buy American Act's domestic-content test above the
+  WTO Government Procurement Agreement dollar threshold ($174,000 for covered supplies/services as of
+  the March 2026 Federal Register update, lower for several bilateral/regional FTA partners) and
+  replaces it with a "designated country end product" (WTO GPA/FTA-partner origin) eligibility test
+  instead. This is disclosed within `usa-buy-american-price-preference`'s source note as a structural
+  fact, not modeled as a second program, because it governs **foreign-bidder** eligibility rather than
+  a US supplier's own local-content standing -- the same "real but out of a US-supplier-facing
+  program's scope" treatment already applied to the UK's absent nation-level PPN 005 boundary.
+- **State-level in-state-preference statutes** (individual US states run their own, non-federal,
+  in-state supplier preference programs) are disclosed within `usa-sba-small-business-setaside`'s
+  source note as genuinely out of this federal-procurement-focused pass's scope -- the United States
+  has no single federal analog to a sub-national local-content preference, mirroring the UK's absent
+  England/Scotland/Wales/Northern-Ireland-level PPN 005 boundary (section 13.4).
+- **The Made In America Office's per-critical-item additional preference factor** (an extra margin
+  layered onto specific goods on a published "critical item" list, on top of the standard 20%/30%
+  margin) is disclosed as an open item within `usa-buy-american-price-preference`'s source note, not
+  modeled, since it is set per critical item rather than as one universal percentage.
+- **The Berry Amendment's own numeric threshold** was searched for and not found in a single clean,
+  supplier-computable form: DoD purchases of textiles, food, and hand/measuring tools must be "almost
+  entirely" domestically sourced (a stricter, DoD-only regime than the Buy American Act), but complex
+  component-level "substantial transformation" tests and numerous domestic-non-availability exceptions
+  mean no single percentage holds across all three product categories -- kept as an honest
+  `not-yet-sourced` entry rather than a guessed formula, with the real 2006 specialty-metals carve-out
+  to a separate statute (10 U.S.C. 2533b) disclosed as real, dated context.
+
+### 14.5 Stress-test record -- USA continuation (22 new tests, all passing; full suite 138 → 160 for this file)
+
+| Mechanism | Soft | Hardest | Boundary |
+|---|---|---|---|
+| `usa-buy-american-price-preference` | 70% domestic content, large business (default) -> full 20% margin; 70% domestic content, small business -> full 30% margin (higher tier) | 64.9% domestic content (just below the 65% threshold) -> zero effective discount regardless of business size, not a partial one | exactly 65% domestic content -> qualifies (>=65%, not >65%); no domestic-content share supplied -> honest `null`, never assumed disqualified; `isSmallBusinessConcern` omitted entirely -> defaults to the large-business margin (20%), per Decision Record 8.7 |
+| `usa-baba-infrastructure-gate` | federally-funded infrastructure procurement, supplier meets BABA domestic content -> eligible to bid | federally-funded infrastructure procurement, supplier does NOT meet BABA domestic content -> gated out entirely | not a federally-funded infrastructure procurement at all -> gate does not apply, eligible regardless of domestic-content status; no BABA coverage status supplied yet -> honest `null`, never assumed either way |
+| `usa-sba-small-business-setaside` | supplier qualifies as a small business concern -> qualifies for the reserved 23% share | supplier does not qualify as a small business concern -> does not qualify for the reserved share | no small-business-concern status supplied -> honest `null`, never assumed either way |
+| Applicability | -- | all three real USA programs correctly resolve `not-applicable` for `private-commercial` procurement (each is federal-procurement-anchored) | -- |
+| Structural honesty | discloses the real 65%->75% threshold step-up and the $174,000 TAA-suspension figure in both languages | discloses BABA's real 55% manufactured-products floor and IIJA Title IX citation in both languages | discloses the real 23% SBA goal, the Rule of Two, and the state-level-preference out-of-scope disclosure in both languages |
+| Not-yet-sourced | -- | -- | `usa-berry-amendment-dod` returns `insufficient-data` disclosing the DoD-only near-100%-domestic scope and the real 2006 specialty-metals carve-out, never a fabricated per-supplier formula |
+| Default routing | `usa-buy-american-price-preference` is confirmed as `DEFAULT_PROGRAM_BY_COUNTRY.USA`, and `PROGRAMS_BY_COUNTRY.USA` is confirmed as the full 4-program list | -- | -- |
+| Structural | the existing structural-sanity regression test now includes USA in the "at least 2 programs" cohort (not a UK-style single-program exception) and confirms every one of the 11 countries' programs still resolves back to that country in `PROGRAMS` | -- | -- |
+
+### 14.6 UI -- three new input blocks, one shared field, zero new routing logic
+
+The same "any country whose `PROGRAMS_BY_COUNTRY` list has more than one program gets the routing
+question row" logic (sections 8.9, 9.6, 10.9, 11.6, 12.6, 13.6) needed zero new routing logic for the
+USA either -- `COUNTRY_ORDER` and `COUNTRY_FLAG` gained a `USA` entry, and `PROGRAM_LABELS` needed
+four new labels. Because the USA has 4 programs, it correctly DOES show the routing-question button
+row (unlike the UK). Three new input-rendering blocks were added: a `NumberField` plus a Yes/No
+business-size toggle for `usa-buy-american-price-preference` (mirroring Egypt's/Turkey's single-
+percentage-field pattern, plus the new toggle for the caller-dependent margin); the exact two-toggle
+conditional-reveal pattern already used for the UK's PPN 005 gate, reused verbatim for
+`usa-baba-infrastructure-gate`; and a single Yes/No toggle for `usa-sba-small-business-setaside` that
+writes to the SAME `entry.usa.isSmallBusinessConcern` field program 1's toggle writes to -- a real UI
+nuance, not a bug: selecting small-business status once correctly feeds both the BAA margin tier and
+the SBA set-aside qualification, mirroring Bahrain's shared `bhSme` object pattern at the UI layer too
+(section 10.10). The stale "OTHER" pseudo-value comment (naming the USA among not-yet-representable
+example countries) was corrected in the same pass that made it representable -- the same "a
+known-wrong disclosure must not be left uncorrected" discipline (Decision Record 8.7 / registry rule
+12) already applied during the Egypt, Turkey, and UK passes. The page's hero copy, the "not covered by
+this module" disclosure copy, and the routing-question comments were all updated to say "eleven
+countries" and name the USA's three real mechanisms alongside the other ten, rather than leaving the
+USA described as an uncovered example country in copy a real user reads first.
 ---
 
 ---
@@ -2168,3 +2297,124 @@ mondaq.com أن على المقاولين/المقاولين من الباطن �
 بهذه الوحدة"، ونص التذييل/المتن، ليذكر الجميع "عشر دول" ويُسمِّي إطار المملكة المتحدة (PA23 / PPN 005)
 إلى جانب الجهات التسع الأخرى، بدلاً من ترك المملكة المتحدة موصوفة كدولة غير مشمولة كمثال في نص يقرأه
 مستخدم حقيقي أولاً.
+
+
+## ١٤. تفكيك آلية الولايات المتحدة — تكملة الجزء الثاني (١٦ سبتمبر ٢٠٢٦)
+
+المحطة الرابعة في الترتيب الصريح لمالك المنصة. `USA` هي الدولة الحادية عشرة ضمن `LocalContentCountry`.
+بخلاف المملكة المتحدة التي سبقتها مباشرة، وجد هذا البحث أن الولايات المتحدة تُشغِّل **ثلاث** آليات محتوى
+محلي حقيقية وموثّقة وقابلة للحساب على المستوى الفيدرالي، وليست آلية واحدة -- فتنضم الولايات المتحدة إلى
+فئة "٢ برنامج على الأقل" (مثل كل دولة خليجية/أردنية/مصرية/تركية)، وهي **ليست** استثناءً ببرنامج واحد على
+غرار المملكة المتحدة. يقدّم هذا القسم أيضاً أول شكل آلية جديد جوهرياً في هذا الملف: هامش تفضيل سعري
+يعتمد حجمه ذاته على حقيقة يُدخلها المستدعي عن المورّد (حجم المنشأة)، وليس ثابتاً واحداً فقط.
+
+### ١٤.١ تصنيف الأنواع الستة ← خريطة برامج الولايات المتحدة
+
+| البرنامج | `mechanismType` | الحالة |
+|---|---|---|
+| `usa-buy-american-price-preference` (الافتراضي) | `price-preference-margin` | موثّق: الفصل الفرعي ٢٥.١/٢٥.٢ من FAR (قانون الشراء الأمريكي) -- بوابة حدّية ثنائية ٦٥٪/٧٥٪ للمحتوى المحلي، ثم هامش تقييم ٢٠٪/٣٠٪ يعتمد على حجم المنشأة |
+| `usa-baba-infrastructure-gate` | `category-eligibility-gate` | موثّق: قانون بناء أمريكا وشراء أمريكا (BABA، العنوان التاسع من IIJA) -- بوابة محتوى محلي لمشاريع البنية التحتية الممولة فيدرالياً، تُعيد استخدام `computeCategoryEligibilityGate` مباشرة (دون منطق جديد، كما في PPN 005 البريطانية) |
+| `usa-sba-small-business-setaside` | `spend-set-aside-target` | موثّق: SBA/الفصل ١٩ من FAR -- هدف ٢٣٪ على مستوى الحكومة للمنشآت الصغيرة + قاعدة الاثنين، تُعيد استخدام `computeSpendSetAside` مباشرة، وتشارك حقل `isSmallBusinessConcern` مع البرنامج الأول |
+| `usa-berry-amendment-dod` | `not-yet-sourced` | تفويض وزارة الدفاع فقط على المنسوجات/الأغذية/الأدوات اليدوية بمحتوى محلي قريب من ١٠٠٪؛ لم توجد نسبة عتبة رقمية واحدة نظيفة قابلة للحوسبة على مستوى المورّد تصمد أمام فئات المنتجات الثلاث واستثناءاتها |
+
+### ١٤.٢ أول هامش تفضيل سعري يعتمد على المستدعي في هذا الملف
+
+كل هامش تفضيل سعري نُمذِج في الأقسام ٨-١٣ (السعودية، الأردن، عُمان، البحرين، مصر، تركيا) هو ثابت واحد
+موحّد -- فنسبة ١٥٪ المصرية مثلاً هي ١٥٪ لكل مورّد مؤهل، دائماً. يكسر قانون الشراء الأمريكي هذا النمط:
+تحدد المادة FAR 25.105 هامش التقييم بنسبة ٢٠٪ من سعر العرض الأجنبي المنافس لصالح عارض محلي من فئة
+المنشآت الكبيرة، لكن **٣٠٪** لعارض محلي من فئة المنشآت الصغيرة (المصدر: نص بندي FAR 52.225-1/52.225-3،
+عبر acquisition.gov). هذا ليس تدرجاً اخترعته المنصة -- بل هو بنية FAR الثنائية نفسها -- لكنه تطلّب دالة
+حساب جديدة فعلياً، `computePricePreferenceUsa`، بدلاً من إعادة استخدام دالة `computePricePreferenceMargin`
+المشتركة مباشرة بثابت مُدمَج. وفق انضباط "الافتراض القابل للتجاوز من قبل المستدعي" في سجل القرار ٨.٧،
+يُحدَّد الهامش افتراضياً عند نسبة المنشآت الكبيرة (٢٠٪) عندما لا يُدخِل المستدعي isSmallBusinessConcern،
+مع تطبيق نسبة المنشآت الصغيرة (٣٠٪) فقط عندما يضبطها المستدعي صراحةً على `true` -- افتراض مُفصَح عنه، لا
+تخمين، وهو نفس الافتراض الذي سيطبقه ضابط تعاقد حقيقي في غياب شهادة منشأة صغيرة مسجَّلة. وبخلاف تقسيم
+الهامش، يُنمذَج اختبار المحتوى المحلي الكامن نفسه كـ**بوابة حدّية ثنائية** (التأهل عند عتبة المحتوى
+المحلي الحالية ٦٥٪ -- ترتفع إلى ٧٥٪ اعتباراً من ٢٠٢٩، مُفصَح عنها دون نمذجتها كعتبة ثانية منفصلة -- ثم
+الحصول على الهامش المعتمد على الحجم)، بنفس الشكل المستخدم بالفعل لتفضيل المشتريات العامة المصري (القسم
+١١.٣)، لأن اختبار المحتوى المحلي في FAR هو اختبار نجاح/رسوب عند عتبة، وليس تدرجاً مستمراً كما هو الحال
+في الأردن وعُمان وتركيا.
+
+### ١٤.٣ `usa-baba-infrastructure-gate` و`usa-sba-small-business-setaside` -- دون منطق جديد، بدائل مُعاد استخدامها
+
+- **`usa-baba-infrastructure-gate`** تُعيد استخدام بدائية `computeCategoryEligibilityGate` ذات المفتاحين
+  نفسها المستخدمة بالفعل للقائمة الإلزامية السعودية والعمانية وبوابة تخصيص PPN 005 البريطانية (الأقسام
+  ٨.٣ و١٠.٣ و١٣.٣): مفتاح أول لما إذا كانت هذه مناقصة بنية تحتية ممولة فيدرالياً خاضعة لـBABA أصلاً،
+  يُظهر مفتاحاً ثانياً لما إذا كان المورّد يستوفي متطلب المحتوى المحلي لـBABA لتلك الفئة، فقط عندما يكون
+  الأول `true`. يُعد قانون BABA (العنوان التاسع من قانون IIJA، القانون العام ١١٧-٥٨ لعام ٢٠٢١) نظاماً
+  أشد صرامة وأكثر اختلافاً جوهرياً في شكله عن قانون الشراء الأمريكي أعلاه -- ١٠٠٪ من الحديد والصلب، و١٠٠٪
+  من مواد الإنشاء، وأرضية ٥٥٪ من تكلفة المكونات المحلية للمنتجات المُصنَّعة -- وتُديره كل وكالة على حدة
+  (تصدر وزارة النقل/الإدارة الفيدرالية للطرق السريعة، ووكالة حماية البيئة، ووزارة الإسكان، ووزارة الطاقة،
+  وغيرها، كل منها إعفاءاتها الخاصة) وليس بشكل موحد على مستوى الحكومة. ولأن حالة الإعفاء لا يمكن رؤيتها من
+  مُدخل على مستوى العطاء وحده، يطلب المفتاح الثاني من المستدعي إدخال نتيجة الأهلية بعد الإعفاء مباشرة،
+  بنفس الانضباط المُطبَّق بالفعل على بوابة PPN 005 البريطانية.
+- **`usa-sba-small-business-setaside`** تُعيد استخدام `computeSpendSetAside` مباشرة مقابل الهدف الموثّق
+  البالغ ٢٣٪ على مستوى الحكومة للمنشآت الصغيرة كمقاولين رئيسيين (١٥ U.S.C. ٦٤٤، الفصل ١٩ من FAR)، بنفس
+  شكل "الحصة المستهدفة الوطنية/البرنامجية زائد تأهل المورّد" المستخدم بالفعل لحصة المقاولين الأردنية
+  وتخصيصات الإنفاق البحرينية والكويتية (الأقسام ١٠.٢ و١٠.٦ و١٠.٧). تشارك نفس حقل الإدخال
+  isSmallBusinessConcern المستخدم في فئة هامش البرنامج الأول -- حقيقة واحدة عن المورّد تُشغِّل آليتين
+  مختلفتين، على غرار نمط كائن bhSme المشترك في البحرين (القسم ١٠.٥) بدلاً من اختراع حقل ثانٍ زائد. تُعد
+  "قاعدة الاثنين" في المادة FAR 19.502-2 (يجب على ضابط التعاقد تخصيص عملية استحواذ للمنافسة بين المنشآت
+  الصغيرة فقط كلما كان يمكن توقع عرضين أو أكثر من منشآت صغيرة بأسعار السوق العادلة بشكل معقول) الآلية
+  الحقيقية والموثّقة والإلزامية لكل مناقصة تحت هدف ٢٣٪، لكن هذا البحث لم يعثر على صيغة حسابية مغلقة موجهة
+  للمورّد لقرار التخصيص نفسه بخلاف سؤال التأهل/التسجيل المُنمذَج هنا -- ويُفصَح عن ذلك في ملاحظة المصدر،
+  دون نمذجته كصيغة مخمَّنة.
+
+### ١٤.٤ ما لم يُنمذَج عمداً، تجنباً لاختلاق ملاءمة تصنيفية
+
+- **قانون اتفاقيات التجارة (TAA)** يُعلِّق اختبار المحتوى المحلي لقانون الشراء الأمريكي فوق عتبة الدولار
+  الخاصة باتفاقية GPA لمنظمة التجارة العالمية (١٧٤,٠٠٠ دولار للتوريدات/الخدمات المشمولة وفق تحديث السجل
+  الفيدرالي في مارس ٢٠٢٦، وأقل من ذلك لعدة شركاء اتفاقيات تجارة حرة ثنائية/إقليمية) ويستبدله باختبار
+  أهلية "منتج نهائي من دولة معتمَدة" (منشأ من دول اتفاقية GPA أو شركاء اتفاقيات التجارة الحرة) بدلاً منه.
+  يُفصَح عن هذا ضمن ملاحظة مصدر usa-buy-american-price-preference كحقيقة بنيوية، دون نمذجته كبرنامج ثانٍ،
+  لأنه يحكم أهلية **المزايد الأجنبي** وليس وضع المحتوى المحلي للمورّد الأمريكي نفسه -- نفس معالجة "حقيقي
+  لكن خارج نطاق برنامج موجّه للمورّد الأمريكي" المُطبَّقة بالفعل على غياب حد PPN 005 على مستوى الأمة
+  البريطانية.
+- **أنظمة التفضيل داخل-الولاية** (تدير كل ولاية أمريكية على حدة برامج تفضيل موردين داخل الولاية، غير
+  فيدرالية) يُفصَح عنها ضمن ملاحظة مصدر usa-sba-small-business-setaside كخارج نطاق هذه المرحلة التي
+  تركز على المشتريات الفيدرالية فعلياً -- فالولايات المتحدة لا تملك نظيراً فيدرالياً واحداً لتفضيل محتوى
+  محلي دون وطني، على غرار غياب حد إنجلترا/اسكتلندا/ويلز/أيرلندا الشمالية في PPN 005 البريطانية (القسم
+  ١٣.٤).
+- **عامل التفضيل الإضافي الخاص بكل "صنف حرج" التابع لمكتب Made In America** (هامش إضافي يُضاف لسلع محددة
+  ضمن قائمة "الأصناف الحرجة" المنشورة، فوق الهامش القياسي ٢٠٪/٣٠٪) يُفصَح عنه كبند مفتوح ضمن ملاحظة مصدر
+  usa-buy-american-price-preference، دون نمذجته، لأنه يُحدَّد لكل صنف حرج على حدة وليس كنسبة موحدة واحدة.
+- **العتبة الرقمية الخاصة بتعديل بيري نفسه** جرى البحث عنها ولم تُوجد في صيغة نظيفة واحدة قابلة للحوسبة
+  على مستوى المورّد: يجب أن تكون مشتريات وزارة الدفاع من المنسوجات والأغذية والأدوات اليدوية/أدوات القياس
+  مصدرها محلياً "بالكامل تقريباً" (نظام أشد صرامة وخاص بوزارة الدفاع فقط مقارنة بقانون الشراء الأمريكي)،
+  لكن اختبارات "التحول الجوهري" المعقدة على مستوى المكوّن والاستثناءات العديدة لعدم التوفر المحلي تعني أن
+  لا نسبة واحدة تصمد أمام فئات المنتجات الثلاث جميعها -- يُترَك هذا كإدخال صادق "غير موثّق بعد" بدلاً من
+  صيغة مخمَّنة، مع الإفصاح عن استثناء المعادن الخاصة الحقيقي والمؤرَّخ عام ٢٠٠٦ إلى قانون منفصل (١٠ U.S.C.
+  ٢٥٣٣b) كسياق حقيقي ومؤرَّخ.
+
+### ١٤.٥ سجل اختبار الإجهاد -- تكملة الولايات المتحدة (٢٢ اختباراً جديداً، جميعها ناجحة؛ إجمالي هذا الملف من ١٣٨ إلى ١٦٠)
+
+| الآلية | الاختبار السهل | الاختبار الأصعب | اختبار الحدّ |
+|---|---|---|---|
+| `usa-buy-american-price-preference` | ٧٠٪ محتوى محلي، منشأة كبيرة (افتراضي) → هامش ٢٠٪ كاملاً؛ ٧٠٪ محتوى محلي، منشأة صغيرة → هامش ٣٠٪ كاملاً (الفئة الأعلى) | ٦٤.٩٪ محتوى محلي (أقل قليلاً من عتبة ٦٥٪) → خصم فعّال صفر بصرف النظر عن حجم المنشأة، وليس خصماً جزئياً | ٦٥٪ محتوى محلي بالضبط → مؤهل (≥٦٥٪ لا >٦٥٪)؛ دون نسبة محتوى محلي مُدخلة → `null` صادقة، دون افتراض استبعاد؛ حذف isSmallBusinessConcern كلياً → افتراض هامش المنشآت الكبيرة (٢٠٪)، وفق سجل القرار ٨.٧ |
+| `usa-baba-infrastructure-gate` | مناقصة بنية تحتية ممولة فيدرالياً، والمورّد يستوفي محتوى BABA المحلي → مؤهل للمناقصة | مناقصة بنية تحتية ممولة فيدرالياً، لكن المورّد لا يستوفي محتوى BABA المحلي → مستبعد كلياً | ليست مناقصة بنية تحتية ممولة فيدرالياً أصلاً → البوابة لا تنطبق، مؤهل بصرف النظر عن حالة المحتوى المحلي؛ دون حالة شمول BABA مُدخلة → `null` صادقة، دون افتراض أي منهما |
+| `usa-sba-small-business-setaside` | المورّد مؤهل كمنشأة صغيرة → مؤهل للحصة المخصصة ٢٣٪ | المورّد غير مؤهل كمنشأة صغيرة → غير مؤهل للحصة المخصصة | دون حالة منشأة صغيرة مُدخلة → `null` صادقة، دون افتراض أي منهما |
+| الانطباق | -- | تُحسم البرامج الأمريكية الحقيقية الثلاثة جميعها بشكل صحيح كـ"لا ينطبق" على المشتريات التجارية الخاصة (كل منها مرتبط بالمشتريات الفيدرالية) | -- |
+| الصدق البنيوي | يُفصَح عن تصاعد عتبة ٦٥٪→٧٥٪ الحقيقي ورقم ١٧٤,٠٠٠ دولار لتعليق TAA بكلتا اللغتين | يُفصَح عن أرضية ٥٥٪ الحقيقية للمنتجات المُصنَّعة في BABA والاستشهاد بالعنوان التاسع من IIJA بكلتا اللغتين | يُفصَح عن هدف SBA الحقيقي ٢٣٪ وقاعدة الاثنين وإفصاح خروج التفضيل على مستوى الولاية عن النطاق بكلتا اللغتين |
+| غير موثّق بعد | -- | -- | يُعيد usa-berry-amendment-dod حالة insufficient-data مع الإفصاح عن نطاق وزارة الدفاع فقط القريب من ١٠٠٪ محلي واستثناء المعادن الخاصة الحقيقي عام ٢٠٠٦، دون صيغة مخمَّنة لكل مورّد |
+| التوجيه الافتراضي | يُؤكَّد أن usa-buy-american-price-preference هو DEFAULT_PROGRAM_BY_COUNTRY.USA، وتُؤكَّد أن PROGRAMS_BY_COUNTRY.USA هي قائمة البرامج الأربعة الكاملة | -- | -- |
+| البنيوي | يشمل اختبار الفحص البنيوي القائم الآن الولايات المتحدة ضمن فئة "٢ برنامج على الأقل" (وليست استثناءً ببرنامج واحد على غرار المملكة المتحدة) ويؤكد أن كل برنامج في الدول الإحدى عشرة يعود إلى دولته في PROGRAMS | -- | -- |
+
+### ١٤.٦ الواجهة -- ثلاث كتل إدخال جديدة، حقل مشترك واحد، دون منطق توجيه جديد
+
+نفس منطق "أي دولة تضم قائمة PROGRAMS_BY_COUNTRY الخاصة بها أكثر من برنامج تحصل على صف سؤال التوجيه"
+(الأقسام ٨.٩ و٩.٦ و١٠.٩ و١١.٦ و١٢.٦ و١٣.٦) لم يتطلب أي منطق توجيه جديد للولايات المتحدة أيضاً -- اكتسب
+COUNTRY_ORDER وCOUNTRY_FLAG إدخال USA، واحتاج PROGRAM_LABELS أربع تسميات جديدة. ولأن الولايات المتحدة
+تملك ٤ برامج، فهي تُظهر بشكل صحيح صف زر سؤال التوجيه (بخلاف المملكة المتحدة). أُضيفت ثلاث كتل إدخال
+جديدة: حقل NumberField مع مفتاح تبديل نعم/لا لحجم المنشأة لبرنامج usa-buy-american-price-preference
+(يُطابق نمط الحقل النسبي المفرد المصري/التركي، مع إضافة المفتاح الجديد للهامش المعتمد على المستدعي)؛
+نفس نمط الكشف الشرطي بمفتاحين المستخدم بالفعل لبوابة PPN 005 البريطانية، مُعاد استخدامه حرفياً لبرنامج
+usa-baba-infrastructure-gate؛ ومفتاح تبديل نعم/لا واحد لبرنامج usa-sba-small-business-setaside يكتب إلى
+نفس حقل entry.usa.isSmallBusinessConcern الذي يكتب إليه مفتاح البرنامج الأول -- فارق واجهة حقيقي، وليس
+خطأً: اختيار صفة المنشأة الصغيرة مرة واحدة يُغذِّي بشكل صحيح كلاً من فئة هامش قانون الشراء الأمريكي
+وتأهل تخصيص SBA، على غرار نمط كائن bhSme المشترك في البحرين على مستوى الواجهة أيضاً (القسم ١٠.١٠). جرى
+تصحيح تعليق "OTHER" غير المحدَّث (الذي كان يذكر الولايات المتحدة كمثال لدولة غير قابلة للتمثيل بعد) في
+نفس المرحلة التي جعلتها قابلة للتمثيل -- نفس انضباط "لا يجوز ترك إفصاح خاطئ معروف دون تصحيح" (سجل القرار
+٨.٧ / قاعدة السجل رقم ١٢) المُطبَّق بالفعل أثناء مراحل مصر وتركيا والمملكة المتحدة. حُدِّث أيضاً نص
+المقدمة الرئيسية، ونص الإفصاح عن "غير مشمولة بهذه الوحدة"، وتعليقات سؤال التوجيه، ليذكر الجميع "إحدى
+عشرة دولة" ويُسمِّي آليات الولايات المتحدة الثلاث الحقيقية إلى جانب الجهات العشر الأخرى، بدلاً من ترك
+الولايات المتحدة موصوفة كدولة غير مشمولة كمثال في نص يقرأه مستخدم حقيقي أولاً.

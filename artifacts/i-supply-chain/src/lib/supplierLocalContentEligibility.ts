@@ -306,13 +306,62 @@
  * duties, but its own drafters confirm it creates no price preference or
  * quota, for the same s.90 reason -- disclosed, not modeled, the same
  * treatment already applied to Turkey's YEKDEM scheme.
+ *
+ * ============================================================================
+ * PART 2 CONTINUATION: UNITED STATES (16 Sep 2026)
+ * ============================================================================
+ * Fourth stop on the user's explicit order. `USA` (`LocalContentCountry`) is
+ * the eleventh country. Three real, sourced, computable mechanisms, each
+ * genuinely different in shape and legal basis: `usa-buy-american-price-
+ * preference` (the Buy American Act, FAR 25.1/25.2 -- a binary domestic-
+ * content threshold gate, currently 65% through 2028 stepping to 75% from
+ * 2029, feeding a business-size-dependent evaluation margin, 20% large /
+ * 30% small, the first program in this file where the margin itself is
+ * caller-dependent rather than a fixed constant, disclosed as a caller-
+ * overridable default per Decision Record 8.7); `usa-baba-infrastructure-
+ * gate` (the Build America, Buy America Act, IIJA Title IX -- a materially
+ * stricter, infrastructure-specific, per-agency-administered domestic-
+ * content gate covering federal financial-assistance recipients broadly,
+ * not just direct federal agencies, modeled via the same category-
+ * eligibility-gate primitive already used for UK PPN 005 and Saudi/Oman's
+ * Mandatory List); and `usa-sba-small-business-setaside` (the SBA's 23%
+ * government-wide small-business prime-contracting goal plus FAR 19.502-2's
+ * mandatory "Rule of Two" set-aside trigger -- disclosed as a genuinely
+ * different KIND of set-aside from every GCC/Jordan program in this file:
+ * a small-business-STATUS set-aside, not a sub-national-geography or
+ * domestic-manufacturing-content one, since the United States has no single
+ * federal analog to a state/province-level local-content preference).
+ * `usa-berry-amendment-dod` (10 U.S.C. 4862, DoD-only textiles/food/hand-
+ * tools sourcing) is kept `not-yet-sourced`: real and dated, but no single
+ * clean supplier-computable threshold survives its many product-category
+ * exceptions in this research pass. Two further real mechanisms were found
+ * and deliberately NOT modeled as programs, each disclosed in
+ * `usa-buy-american-price-preference`'s or `usa-sba-small-business-
+ * setaside`'s own sourceNoteEn rather than silently dropped: the Trade
+ * Agreements Act, which WAIVES the Buy American Act above the WTO GPA/FTA
+ * dollar threshold ($174,000 for covered supplies/services as of the March
+ * 2026 Federal Register update) and substitutes a "designated country end
+ * product" eligibility test -- a fact about foreign-bidder eligibility, not
+ * a US supplier's own local-content standing, so it is disclosed rather
+ * than modeled as a second program, the same treatment as the UK's PA23
+ * s.90 finding; and state-level in-state-preference statutes, which the US
+ * runs individually per state rather than as one federal program -- a real
+ * but out-of-scope absence, the same disclosed-boundary pattern already
+ * used for the UK's missing England/Scotland/Wales/Northern-Ireland-level
+ * PPN 005 line. `usa-buy-american-price-preference` needed a genuinely new
+ * compute function (`computePricePreferenceUsa`) rather than a direct reuse
+ * of an existing one, since it is the first mechanism in this file whose
+ * margin is itself caller-dependent; the other two real USA programs reuse
+ * `computeCategoryEligibilityGate` and `computeSpendSetAside` directly with
+ * zero new logic, the same "reuse before inventing" discipline already
+ * applied to every prior country.
  */
 
 // ---------------------------------------------------------------------------
 // Section 1 — country / context / mechanism taxonomy
 // ---------------------------------------------------------------------------
 
-export type LocalContentCountry = 'SA' | 'AE' | 'JO' | 'OM' | 'QA' | 'BH' | 'KW' | 'EG' | 'TR' | 'UK';
+export type LocalContentCountry = 'SA' | 'AE' | 'JO' | 'OM' | 'QA' | 'BH' | 'KW' | 'EG' | 'TR' | 'UK' | 'USA';
 
 /** Every program key across every country this engine represents, flat
  * (not nested per-country) so the routing/resolution logic below is the
@@ -349,7 +398,11 @@ export type LocalContentProgram =
   | 'eg-auto-local-content'         // EG type 6-ish target (new, Part 2 pass): revamped AIDP 60% local-content target, not-yet-sourced (no published per-supplier formula)
   | 'tr-price-preference'           // TR type 4 (new, Part 2 continuation): public-procurement domestic-goods ("yerli mali") price preference, Law 4734 Art. 63(c) -- the module's default/original mechanism for Turkey
   | 'tr-defense-offset'             // TR type 6: SSB 2022 Offset Guideline, not-yet-sourced (disclosed trigger-threshold and cross-source figure ambiguity)
-  | 'uk-below-threshold-reservation'; // UK type 3 (new, Part 2 continuation): PPN 005 below-threshold reservation gate (category-eligibility-gate) -- the module's default/only mechanism for the UK, which structurally cannot run an above-threshold price preference (PA23 s.90 non-discrimination duty)
+  | 'uk-below-threshold-reservation' // UK type 3 (new, Part 2 continuation): PPN 005 below-threshold reservation gate (category-eligibility-gate) -- the module's default/only mechanism for the UK, which structurally cannot run an above-threshold price preference (PA23 s.90 non-discrimination duty)
+  | 'usa-buy-american-price-preference' // USA type 4 (new, Part 2 continuation): FAR Subpart 25.1/25.2 Buy American Act binary-threshold price preference -- the module's default/original mechanism for the USA
+  | 'usa-baba-infrastructure-gate'      // USA type 3 (new, Part 2 continuation): Build America, Buy America Act (BABA, IIJA Title IX) federally-funded-infrastructure domestic-content category eligibility gate
+  | 'usa-sba-small-business-setaside'   // USA type 5 (new, Part 2 continuation): SBA/FAR Part 19 small-business federal-contracting goal (23%) + Rule of Two set-aside
+  | 'usa-berry-amendment-dod';          // USA type 6-ish (new, Part 2 continuation): Berry Amendment (10 U.S.C. 4862) DoD textiles/food/hand-tools domestic-sourcing mandate -- not-yet-sourced (no single clean numeric threshold found)
 
 /** Which program `assessSupplierLocalContent` resolves to when `program` is
  * omitted -- always each country's original pre-existing single mechanism,
@@ -364,6 +417,7 @@ export const DEFAULT_PROGRAM_BY_COUNTRY: Record<LocalContentCountry, LocalConten
   SA: 'sa-lcgpa-general', AE: 'ae-icv-general', JO: 'jo-price-preference',
   OM: 'om-icv', QA: 'qa-national-strategy', BH: 'bh-local-content', KW: 'kw-local-content',
   EG: 'eg-price-preference', TR: 'tr-price-preference', UK: 'uk-below-threshold-reservation',
+  USA: 'usa-buy-american-price-preference',
 };
 
 /** Every program that exists for a given country, in display order -- used
@@ -382,6 +436,7 @@ export const PROGRAMS_BY_COUNTRY: Record<LocalContentCountry, LocalContentProgra
   EG: ['eg-price-preference', 'eg-oil-gas-price-preference', 'eg-auto-local-content'],
   TR: ['tr-price-preference', 'tr-defense-offset'],
   UK: ['uk-below-threshold-reservation'],
+  USA: ['usa-buy-american-price-preference', 'usa-baba-infrastructure-gate', 'usa-sba-small-business-setaside', 'usa-berry-amendment-dod'],
 };
 
 /** Which buyer this assessment is for -- see file header: every sourced
@@ -708,8 +763,55 @@ const UK_PROGRAMS: Record<'uk-below-threshold-reservation', CountryFrameworkInfo
   },
 };
 
+// ---------------------------------------------------------------------------
+// Section 1f -- United States (USA). 16 Sep 2026 Part 2 continuation: the
+// fourth non-GCC/Jordan country and the eleventh country overall. Three
+// genuinely different, real, sourced mechanisms (a federal-procurement
+// price preference, an infrastructure-specific domestic-content gate, and
+// a small-business-status set-aside -- not a geography-based local-content
+// set-aside, disclosed as a real structural difference from every GCC/
+// Jordan program), plus one honest not-yet-sourced entry (the Berry
+// Amendment's DoD-specific regime). See file header for the Trade
+// Agreements Act (TAA) and state-level in-state-preference scope notes.
+// ---------------------------------------------------------------------------
+
+const USA_PROGRAMS: Record<'usa-buy-american-price-preference' | 'usa-baba-infrastructure-gate' | 'usa-sba-small-business-setaside' | 'usa-berry-amendment-dod', CountryFrameworkInfo> = {
+  'usa-buy-american-price-preference': {
+    country: 'USA', countryNameEn: 'United States', countryNameAr: 'الولايات المتحدة الأمريكية',
+    programNameEn: 'Buy American Act Price Preference (FAR 25.1/25.2)', programNameAr: 'تفضيل سعر قانون الشراء الأمريكي (FAR ٢٥.١/٢٥.٢)',
+    mechanismType: 'price-preference-margin', program: 'usa-buy-american-price-preference',
+    applicableContexts: ['government'],
+    sourceNoteEn: "The Buy American Act (41 U.S.C. 8301-8305), implemented via FAR Subpart 25.1 (supplies) and 25.2 (construction materials), requires a federal executive-agency acquisition to be a \"domestic end product\" to receive this preference: the cost of the product's US-mined/produced/manufactured components must exceed a rising statutory threshold -- 65% for items delivered 2024-2028, stepping up to 75% from 2029 onward (a 2022 Executive Order 14005 / FAR Council rule raised both the threshold and, for items containing iron or steel, added a separate <5%-foreign-iron-or-steel sub-test not separately modeled here, disclosed as an open item). A qualifying domestic offer then receives an EVALUATION price preference against competing foreign offers, not a discount on the domestic bidder's own price: FAR 25.105 adds 20% to a competing foreign offer's price for a large-business domestic offeror, or 30% for a small-business domestic offeror (source: FAR 52.225-1/52.225-3 clause text via acquisition.gov), plus an additional item-specific factor for goods on the Made In America Office's published \"critical item\" list -- that additional factor is disclosed as an open item, not modeled, since it is set per critical item rather than as one universal percentage. This preference is suspended above the Trade Agreements Act (TAA) dollar threshold ($174,000 for WTO GPA-covered supplies/services, lower for several bilateral/regional FTA partners, as of the March 2026 Federal Register update) -- above that threshold, USTR's TAA waiver replaces the domestic-content test with a \"designated country end product\" (WTO GPA/FTA-partner origin) eligibility test instead, a structural fact disclosed here rather than modeled as a second program, since it governs foreign-bidder eligibility rather than a US supplier's own local-content standing. Modeled here as a binary threshold gate (qualify at the current 65% domestic-content threshold, then receive the size-dependent margin) using the same shape already used for Egypt's public-procurement preference, since FAR's domestic-content test is pass/fail at a threshold, not continuously scaled the way Jordan/Oman/Turkey's are. The margin defaults to the large-business rate (20%) unless the caller supplies isSmallBusinessConcern=true, per Decision Record 8.7's caller-overridable-default discipline -- not a platform-invented default, FAR's own two-tier structure.",
+    sourceNoteAr: 'يشترط قانون الشراء الأمريكي (Buy American Act، ٤١ U.S.C. ٨٣٠١-٨٣٠٥)، المُطبَّق عبر الفصل الفرعي ٢٥.١ من نظام اللوائح الفيدرالية للاستحواذ (FAR) (للتوريدات) و٢٥.٢ (لمواد الإنشاء)، أن يكون المنتج "منتجاً محلياً" للحصول على هذا التفضيل: يجب أن تتجاوز تكلفة مكوناته المُعدَّنة/المُنتَجة/المُصنَّعة في الولايات المتحدة عتبة قانونية متصاعدة -- ٦٥٪ للأصناف المُسلَّمة بين ٢٠٢٤ و٢٠٢٨، ترتفع إلى ٧٥٪ اعتباراً من ٢٠٢٩ (رفع الأمر التنفيذي رقم ١٤٠٠٥ الصادر عام ٢٠٢٢ وقاعدة مجلس FAR كلاً من العتبة، وأضافا للمنتجات المحتوية على حديد أو صلب اختباراً فرعياً منفصلاً بأن تقل نسبة الحديد أو الصلب الأجنبي عن ٥٪، لا يُنمذَج هنا بشكل منفصل ويُفصَح عنه كبند مفتوح). ثم يحصل العرض المحلي المؤهل على تفضيل سعري في التقييم مقابل العروض الأجنبية المنافسة، وليس خصماً على سعر المزايد المحلي نفسه: تضيف المادة FAR 25.105 نسبة ٢٠٪ إلى سعر العرض الأجنبي المنافس لصالح عارض محلي من فئة المنشآت الكبيرة، أو ٣٠٪ لعارض محلي من فئة المنشآت الصغيرة (المصدر: نص بندي FAR 52.225-1/52.225-3 عبر acquisition.gov)، بالإضافة إلى عامل إضافي خاص بكل صنف من "الأصناف الحرجة" المنشورة عبر مكتب Made In America -- ويُفصَح عن هذا العامل الإضافي كبند مفتوح غير مُنمذَج، لأنه يُحدَّد لكل صنف حرج على حدة وليس كنسبة موحدة واحدة. يُعلَّق هذا التفضيل فوق عتبة قانون اتفاقيات التجارة (TAA) بالدولار (١٧٤,٠٠٠ دولار للتوريدات/الخدمات المشمولة باتفاقية GPA لمنظمة التجارة العالمية، وأقل من ذلك لعدة شركاء اتفاقيات تجارة حرة ثنائية/إقليمية، وفق تحديث السجل الفيدرالي في مارس ٢٠٢٦) -- وفوق تلك العتبة، يستبدل إعفاء USTR بموجب TAA اختبار المحتوى المحلي باختبار أهلية "منتج نهائي من دولة معتمَدة" (منشأ من دول اتفاقية GPA أو شركاء اتفاقيات التجارة الحرة) بدلاً منه -- حقيقة بنيوية يُفصَح عنها هنا بدلاً من نمذجتها كبرنامج ثانٍ، لأنها تحكم أهلية المزايد الأجنبي وليس وضع المحتوى المحلي للمورّد الأمريكي نفسه. يُنمذَج هذا هنا كبوابة حدّية ثنائية (التأهل عند عتبة المحتوى المحلي الحالية ٦٥٪، ثم الحصول على الهامش المعتمد على الحجم) بنفس الشكل المستخدم بالفعل لتفضيل المشتريات العامة المصري، لأن اختبار المحتوى المحلي في FAR هو اختبار نجاح/رسوب عند عتبة، وليس تدرجاً مستمراً كما هو الحال في الأردن وعُمان وتركيا. يُحدَّد الهامش افتراضياً عند نسبة المنشآت الكبيرة (٢٠٪) ما لم يُدخِل المستدعي isSmallBusinessConcern=true، وفق انضباط "الافتراض القابل للتجاوز من قبل المستدعي" في سجل القرار ٨.٧ -- وهذا ليس افتراضاً اخترعته المنصة، بل هو بنية FAR الثنائية نفسها.',
+  },
+  'usa-baba-infrastructure-gate': {
+    country: 'USA', countryNameEn: 'United States', countryNameAr: 'الولايات المتحدة الأمريكية',
+    programNameEn: 'Build America, Buy America Act Infrastructure Gate', programNameAr: 'بوابة قانون بناء أمريكا وشراء أمريكا للبنية التحتية',
+    mechanismType: 'category-eligibility-gate', program: 'usa-baba-infrastructure-gate',
+    applicableContexts: ['government', 'semi-government-soe'],
+    sourceNoteEn: "The Build America, Buy America Act (BABA, Title IX of the Infrastructure Investment and Jobs Act, Pub. L. 117-58, 2021) requires ALL iron and steel used in a federally-funded infrastructure project to be produced in the United States (every manufacturing process, from initial melting through coating), ALL construction materials to be manufactured in the United States, and manufactured products to clear a minimum 55% domestic-component-cost threshold -- a substantially stricter, differently-shaped regime from the Buy American Act above, administered per-agency (DOT/FHWA, EPA, HUD, DOE and others each issue their own implementing guidance and waivers) rather than government-wide, and triggered by receipt of federal financial assistance for an infrastructure project -- not by the buyer's own government/private status alone -- so it reaches state DOTs, public water utilities, and public transit agencies (semi-government-soe context) as well as direct federal agency awards (government context), but not a purely privately-financed project carrying no federal infrastructure funding. Waivers (public-interest, non-availability, and unreasonable-cost, following the general OMB-guidance categories referenced across DOE/EPA/HUD implementing guidance) can exempt a specific project or an entire product category from the requirement -- a project operating under an approved general-applicability waiver is a real, disclosed reason a supplier could be gated OUT despite meeting the domestic-content test, or IN despite not meeting it, and this engine cannot see waiver status from a bid-level input alone; the two-toggle gate below asks the caller to state the post-waiver eligibility outcome directly, the same 'first toggle: does the gate apply; second toggle: does the supplier clear it' shape already used for the UK's PPN 005 reservation gate, reusing the existing category-eligibility-gate primitive rather than inventing a new mechanism type. No single national phase-in schedule to a higher domestic-content percentage (comparable to the Buy American Act's 65%->75% step-up) was found for BABA's 55% manufactured-products floor in this research pass; some individual agencies have proposed or piloted higher category-specific thresholds, disclosed as an open item rather than assumed.",
+    sourceNoteAr: 'يشترط قانون بناء أمريكا وشراء أمريكا (Build America, Buy America Act، BABA، العنوان التاسع من قانون الاستثمار في البنية التحتية والوظائف IIJA، القانون العام ١١٧-٥٨ لعام ٢٠٢١) أن يكون كل الحديد والصلب المستخدم في مشروع بنية تحتية ممول فيدرالياً مُنتَجاً في الولايات المتحدة (كل عملية تصنيع، من الصهر الأولي وحتى الطلاء)، وأن تكون كل مواد الإنشاء مُصنَّعة في الولايات المتحدة، وأن تتجاوز المنتجات المُصنَّعة عتبة دنيا ٥٥٪ من تكلفة المكونات المحلية -- نظام أشد صرامة وأكثر اختلافاً جوهرياً في شكله عن قانون الشراء الأمريكي أعلاه، تُديره كل وكالة على حدة (تصدر وزارة النقل/الإدارة الفيدرالية للطرق السريعة، ووكالة حماية البيئة، ووزارة الإسكان، ووزارة الطاقة، وغيرها، كل منها إرشادات تطبيق وإعفاءات خاصة بها) وليس بشكل موحد على مستوى الحكومة، ويُشغَّل عند تلقي مساعدة مالية فيدرالية لمشروع بنية تحتية -- وليس بحسب صفة الجهة المشترية (حكومية أو خاصة) وحدها -- فيشمل إدارات النقل الحكومية ومرافق المياه العامة وهيئات النقل العام (سياق شبه حكومي/مؤسسة مملوكة للدولة) إلى جانب منح الوكالات الفيدرالية المباشرة (سياق حكومي)، لكنه لا يشمل مشروعاً ممولاً بالكامل من القطاع الخاص دون تمويل بنية تحتية فيدرالي. يمكن للإعفاءات (المصلحة العامة، وعدم التوفر، والتكلفة غير المعقولة، وفق الفئات العامة لإرشادات OMB المشار إليها عبر إرشادات تطبيق وزارة الطاقة ووكالة حماية البيئة ووزارة الإسكان) أن تُعفي مشروعاً محدداً أو فئة منتج كاملة من الشرط -- ووجود مشروع يعمل بموجب إعفاء معتمَد عام سبب حقيقي ومُفصَح عنه لاستبعاد مورّد رغم استيفائه لاختبار المحتوى المحلي، أو لقبوله رغم عدم استيفائه له، ولا يمكن لهذا المحرك رؤية حالة الإعفاء من مُدخل على مستوى العطاء وحده؛ لذا تطلب البوابة ذات المفتاحين أدناه من المستدعي إدخال نتيجة الأهلية بعد الإعفاء مباشرة، بنفس شكل "المفتاح الأول: هل تنطبق البوابة؛ المفتاح الثاني: هل يجتازها المورّد" المستخدم بالفعل لبوابة تخصيص PPN 005 البريطانية، معيداً استخدام بدائية بوابة أهلية الفئة القائمة بدلاً من اختراع نوع آلية جديد. لم يُعثر في هذا البحث على جدول تدرج وطني واحد لرفع نسبة المحتوى المحلي لأرضية ٥٥٪ الخاصة بالمنتجات المُصنَّعة في BABA (على غرار تصاعد ٦٥٪→٧٥٪ في قانون الشراء الأمريكي)؛ اقترحت أو جرّبت بعض الوكالات الفردية عتبات أعلى خاصة بفئات معينة، ويُفصَح عن ذلك كبند مفتوح بدلاً من افتراضه.',
+  },
+  'usa-sba-small-business-setaside': {
+    country: 'USA', countryNameEn: 'United States', countryNameAr: 'الولايات المتحدة الأمريكية',
+    programNameEn: 'SBA Small Business Contracting Goal & Set-Aside', programNameAr: 'هدف وتخصيص التعاقد مع المنشآت الصغيرة (SBA)',
+    mechanismType: 'spend-set-aside-target', program: 'usa-sba-small-business-setaside',
+    applicableContexts: ['government'],
+    sourceNoteEn: "Federal law (15 U.S.C. 644 and FAR Part 19) sets a government-wide statutory small-business prime-contracting goal of 23% of total federal contract dollars, alongside four sourced sub-goals within that 23%: 5% to women-owned small businesses (WOSB), 5% to service-disabled veteran-owned small businesses (SDVOSB), 5% to small disadvantaged businesses (SDB/8(a)), and 3% to HUBZone small businesses (source: SBA.gov's own contracting-officials guidance page). These are annually-tracked government-wide GOALS, not a binding per-solicitation quota -- the actual per-solicitation mechanism is FAR 19.502-2's 'Rule of Two': a contracting officer MUST set aside an acquisition exclusively for small-business competition whenever there is a reasonable expectation of receiving fair-market-price offers from two or more small businesses, a real, sourced, mandatory (not discretionary) decision rule this research pass did not find a single closed-form supplier-facing formula for beyond the qualification/registration question modeled below -- the specific set-aside decision, and under which of the four sub-categories, depends on facts about that specific solicitation (the number and identity of interested small businesses) that only the contracting officer's own market research can determine, not a formula a supplier's own attributes alone can resolve. Modeled here via the same national/program-target-share-plus-supplier-qualification shape already used for Jordan's contractor quota and Bahrain/Kuwait's spend set-asides -- the sourced 23% overall goal as the target share, and the supplier's own small-business-concern status (SBA size standards, 13 CFR Part 121, industry-specific by NAICS code -- not modeled as its own formula here, self-reported by the caller, the same `isSmallBusinessConcern` field also used for the margin tier in `usa-buy-american-price-preference`) as the qualification. Unlike GCC/Jordan's nationality-based local-content set-asides, this is a US federal small-business-STATUS set-aside, not a sub-national geography or domestic-manufacturing-content requirement -- the United States has no single federal analog to a state/province-level local-content preference (individual states run their own, non-federal, in-state preference statutes, out of scope for this federal-procurement-focused pass, the same 'real but out of scope' disclosure already applied to the UK's absent England/Scotland/Wales/Northern-Ireland-level PPN 005 boundary).",
+    sourceNoteAr: 'يحدد القانون الفيدرالي (١٥ U.S.C. ٦٤٤ والفصل ١٩ من FAR) هدفاً قانونياً على مستوى الحكومة الفيدرالية بأكملها بنسبة ٢٣٪ من إجمالي قيمة العقود الفيدرالية للمنشآت الصغيرة كمقاولين رئيسيين، إلى جانب أربعة أهداف فرعية موثّقة ضمن تلك النسبة: ٥٪ للمنشآت الصغيرة المملوكة لنساء (WOSB)، و٥٪ للمنشآت الصغيرة المملوكة لقدامى المحاربين ذوي الإعاقة المرتبطة بالخدمة (SDVOSB)، و٥٪ للمنشآت الصغيرة المحرومة (SDB/برنامج ٨(a))، و٣٪ للمنشآت الصغيرة ضمن مناطق HUBZone (المصدر: صفحة إرشادات SBA.gov الخاصة بمسؤولي التعاقد). هذه أهداف تُتابَع سنوياً على مستوى الحكومة، وليست حصة إلزامية لكل مناقصة على حدة -- الآلية الفعلية لكل مناقصة هي "قاعدة الاثنين" في المادة FAR 19.502-2: يجب على ضابط التعاقد تخصيص عملية الاستحواذ حصرياً للمنافسة بين المنشآت الصغيرة كلما كان هناك توقع معقول بتلقي عروض بأسعار السوق العادلة من منشأتين صغيرتين أو أكثر -- وهي قاعدة قرار حقيقية وموثّقة وإلزامية (وليست تقديرية)، ولم يعثر هذا البحث على صيغة حسابية مغلقة موجهة للمورّد بخلاف سؤال التأهل/التسجيل المُنمذَج أدناه؛ فقرار التخصيص المحدد، وتحت أي من الفئات الفرعية الأربع، يعتمد على وقائع خاصة بالمناقصة تحديداً (عدد وهوية المنشآت الصغيرة المهتمة) لا يمكن أن يحسمها إلا بحث السوق الخاص بضابط التعاقد نفسه، وليس صيغة تعتمد فقط على صفات المورّد ذاته. يُنمذَج هذا هنا عبر نفس شكل "الحصة المستهدفة الوطنية/البرنامجية زائد تأهل المورّد" المستخدم بالفعل لحصة المقاولين الأردنية وتخصيصات الإنفاق البحرينية والكويتية -- الهدف العام الموثّق ٢٣٪ كحصة مستهدفة، وحالة المورّد كمنشأة صغيرة (معايير حجم SBA، الفصل ١٢١ من CFR ١٣، خاصة بكل قطاع حسب رمز NAICS -- لا تُنمذَج هنا كصيغة مستقلة، ويُعتمَد فيها على إفادة المستدعي الذاتية، وهو نفس الحقل isSmallBusinessConcern المستخدم أيضاً لتحديد فئة الهامش في usa-buy-american-price-preference) كشرط التأهل. وخلافاً لتخصيصات المحتوى المحلي القائمة على الجنسية في دول الخليج والأردن، فإن هذا تخصيص فيدرالي أمريكي قائم على "صفة" المنشأة الصغيرة، وليس شرط نطاق جغرافي دون وطني أو محتوى تصنيع محلي -- فالولايات المتحدة لا تملك نظيراً فيدرالياً واحداً لتفضيل محتوى محلي على مستوى الولاية/المقاطعة (تدير كل ولاية على حدة أنظمة تفضيل داخل-الولاية خاصة بها، غير فيدرالية، وهي خارج نطاق هذه المرحلة التي تركز على المشتريات الفيدرالية -- نفس إفصاح "حقيقي لكن خارج النطاق" المُطبَّق بالفعل على غياب حد إنجلترا/اسكتلندا/ويلز/أيرلندا الشمالية في بوابة PPN 005 البريطانية).',
+  },
+  'usa-berry-amendment-dod': {
+    country: 'USA', countryNameEn: 'United States', countryNameAr: 'الولايات المتحدة الأمريكية',
+    programNameEn: 'Berry Amendment (DoD Textiles/Food/Tools) -- not yet sourced', programNameAr: 'تعديل بيري (منسوجات/أغذية/أدوات وزارة الدفاع) — غير موثّق بعد',
+    mechanismType: 'not-yet-sourced', program: 'usa-berry-amendment-dod',
+    applicableContexts: [],
+    sourceNoteEn: "The Berry Amendment (10 U.S.C. 4862) requires Department of Defense purchases of textiles, food, and hand or measuring tools to be almost entirely domestically sourced -- a narrower (DoD-only) and stricter (near-100% domestic, no partial credit) regime than the Buy American Act above, but one subject to complex component-level 'substantial transformation' tests and numerous exceptions (domestic non-availability determinations approvable by senior officials such as the USD(A&S) or a Military Department Secretary). Specialty metals were originally covered by the Berry Amendment but were carved out in 2006 to a separate statute (10 U.S.C. 2533b), not treated as part of this program. No single clean, supplier-computable numeric threshold (beyond 'near-100% domestic, no partial credit') that holds across all three product categories and their many exceptions was found in this research pass -- kept as an honest not-yet-sourced entry, per Decision Record 8.7, with this real, dated context disclosed rather than a guessed formula.",
+    sourceNoteAr: 'يشترط تعديل بيري (Berry Amendment، ١٠ U.S.C. ٤٨٦٢) أن تكون مشتريات وزارة الدفاع الأمريكية من المنسوجات والأغذية والأدوات اليدوية/أدوات القياس مصدرها محلياً بالكامل تقريباً -- نظام أضيق نطاقاً (خاص بوزارة الدفاع فقط) وأكثر صرامة (قريب من ١٠٠٪ محلي دون درجات جزئية) من قانون الشراء الأمريكي أعلاه، لكنه يخضع لاختبارات "تحول جوهري" معقدة على مستوى المكوّن ولاستثناءات عديدة (تحديدات عدم التوفر المحلي، بموافقة مسؤولين رفيعي المستوى مثل نائب وزير الدفاع للاستحواذ والدعم أو وزراء الأفرع العسكرية). كانت المعادن الخاصة (Specialty Metals) مشمولة أصلاً ضمن تعديل بيري، لكنها نُقلت عام ٢٠٠٦ إلى قانون منفصل (١٠ U.S.C. ٢٥٣٣b) ولا تُعامَل هنا كجزء من هذا البرنامج. لم يُعثر في هذا البحث على نسبة عتبة رقمية واحدة نظيفة قابلة للحوسبة على مستوى المورّد (بخلاف "شبه ١٠٠٪ محلي، دون درجات جزئية") تصمد أمام كل فئات المنتجات الثلاث واستثناءاتها المتعددة -- ويُترَك هذا كإدخال صادق غير موثّق بعد، وفق سجل القرار ٨.٧، مع الإفصاح عن هذا السياق الحقيقي والمؤرَّخ بدلاً من صيغة مخمَّنة.',
+  },
+};
+
 export const PROGRAMS: Record<LocalContentProgram, CountryFrameworkInfo> = {
-  ...SA_PROGRAMS, ...AE_PROGRAMS, ...JO_OM_QA_BH_KW_PROGRAMS, ...EG_PROGRAMS, ...TR_PROGRAMS, ...UK_PROGRAMS,
+  ...SA_PROGRAMS, ...AE_PROGRAMS, ...JO_OM_QA_BH_KW_PROGRAMS, ...EG_PROGRAMS, ...TR_PROGRAMS, ...UK_PROGRAMS, ...USA_PROGRAMS,
 };
 
 /** Derived view, kept for the UI's country-selector buttons and any caller
@@ -727,6 +829,7 @@ export const COUNTRY_FRAMEWORKS: Record<LocalContentCountry, CountryFrameworkInf
   EG: PROGRAMS[DEFAULT_PROGRAM_BY_COUNTRY.EG],
   TR: PROGRAMS[DEFAULT_PROGRAM_BY_COUNTRY.TR],
   UK: PROGRAMS[DEFAULT_PROGRAM_BY_COUNTRY.UK],
+  USA: PROGRAMS[DEFAULT_PROGRAM_BY_COUNTRY.USA],
 };
 
 // ---------------------------------------------------------------------------
@@ -901,6 +1004,32 @@ export interface SupplierLocalContentInputs {
   uk?: {
     isBelowThresholdReservedProcurement: boolean | null;
     isQualifyingUkGeographySupplier: boolean | null;
+  };
+  /** USA Buy American Act price preference (USA / 'usa-buy-american-
+   * price-preference', Part 2 continuation) -- % of the product's cost
+   * that is US-mined/produced/manufactured (self-reported, caller-
+   * supplied), compared against the current 65% statutory threshold
+   * (2024-2028; steps to 75% from 2029, see PROGRAMS['usa-buy-american-
+   * price-preference'].sourceNoteEn), same binary-threshold shape as
+   * Egypt. `isSmallBusinessConcern` is shared with 'usa-sba-small-
+   * business-setaside' below: it selects the FAR 25.105 margin tier
+   * (20% large / 30% small) here, and is the set-aside qualification
+   * there -- one real-world fact, two programs, the same reuse pattern
+   * already used for Bahrain's shared `bhSme` object. */
+  usa?: {
+    domesticContentSharePct: number | null;
+    isSmallBusinessConcern: boolean | null;
+  };
+  /** USA Build America, Buy America Act infrastructure gate (USA /
+   * 'usa-baba-infrastructure-gate', Part 2 continuation) -- same two-
+   * toggle category-eligibility-gate shape as the UK's PPN 005 gate
+   * (see PROGRAMS['usa-baba-infrastructure-gate'].sourceNoteEn): is THIS
+   * procurement a federally-funded infrastructure award BABA covers, and
+   * does the supplier meet BABA's domestic-content requirement (post-
+   * waiver, if any -- this engine cannot see waiver status separately). */
+  usaBaba?: {
+    isFederallyFundedInfrastructureProcurement: boolean | null;
+    meetsBabaDomesticContentRequirement: boolean | null;
   };
 }
 
@@ -1374,6 +1503,30 @@ function computePricePreferenceTr(tr: NonNullable<SupplierLocalContentInputs['tr
   return computePricePreferenceMargin(TURKEY_PRICE_PREFERENCE_MARGIN_PCT, tr.bidValueDomesticCertifiedPct);
 }
 
+
+// ---------------------------------------------------------------------------
+// Section 6a-2 -- USA: Buy American Act binary-threshold price preference
+// (type 4, new 16 Sep 2026 Part 2 continuation). Unlike every other reuse
+// of computePricePreferenceMargin, the margin itself is caller-dependent
+// (business size), not a single fixed constant -- see PROGRAMS['usa-buy-
+// american-price-preference'].sourceNoteEn for the disclosed default.
+// ---------------------------------------------------------------------------
+
+export const BUY_AMERICAN_DOMESTIC_CONTENT_THRESHOLD_PCT = 65; // 2024-2028; steps to 75% from 2029 (disclosed, not modeled as a second threshold)
+export const BUY_AMERICAN_LARGE_BUSINESS_MARGIN_PCT = 20;
+export const BUY_AMERICAN_SMALL_BUSINESS_MARGIN_PCT = 30;
+
+function computePricePreferenceUsa(usa: NonNullable<SupplierLocalContentInputs['usa']>): PricePreferenceMarginResult {
+  const pct = usa.domesticContentSharePct;
+  const qualifies = pct === null || pct === undefined ? null : pct >= BUY_AMERICAN_DOMESTIC_CONTENT_THRESHOLD_PCT;
+  const share = qualifies === null ? null : (qualifies ? 100 : 0);
+  // Caller-overridable default (Decision Record 8.7): defaults to the
+  // large-business rate unless isSmallBusinessConcern is explicitly true --
+  // FAR's own two-tier structure, not a platform-invented assumption.
+  const marginPct = usa.isSmallBusinessConcern === true ? BUY_AMERICAN_SMALL_BUSINESS_MARGIN_PCT : BUY_AMERICAN_LARGE_BUSINESS_MARGIN_PCT;
+  return computePricePreferenceMargin(marginPct, share);
+}
+
 // ---------------------------------------------------------------------------
 // Section 6d — JO/BH/KW: spend-set-aside-target (type 5, new 15 Sep 2026).
 // Real sourced national/program target shares -- see PROGRAMS[
@@ -1384,6 +1537,7 @@ function computePricePreferenceTr(tr: NonNullable<SupplierLocalContentInputs['tr
 export const JORDAN_CONTRACTOR_QUOTA_TARGET_PCT = 35;
 export const BAHRAIN_SME_SPEND_SETASIDE_TARGET_PCT = 20;
 export const KUWAIT_KPC_LOCAL_SPEND_TARGET_PCT = 30;
+export const USA_SBA_SMALL_BUSINESS_TARGET_PCT = 23; // government-wide statutory goal, 15 U.S.C. 644 / FAR Part 19
 
 function computeContractorQuotaJo(jo: NonNullable<SupplierLocalContentInputs['joContractorQuota']>): SpendSetAsideResult {
   return computeSpendSetAside(JORDAN_CONTRACTOR_QUOTA_TARGET_PCT, jo.isRegisteredJordanianContractor);
@@ -1573,6 +1727,21 @@ export function assessSupplierLocalContent(
       return { country, program: resolvedProgram, procurementContext, applicability: 'applicable', framework, computation: { mechanismType: 'category-eligibility-gate', inMandatoryListCategory: null, certifiedForCategory: null, eligibleToBid: null }, certificationCaveatEn: NOT_CERTIFIED_EN, certificationCaveatAr: NOT_CERTIFIED_AR, reasonEn: 'No PPN 005 reservation/geography-qualification inputs supplied yet.', reasonAr: 'لم تُدخل بيانات التخصيص دون العتبة أو التأهل الجغرافي بعد.' };
     }
     computation = computeCategoryEligibilityGate({ inMandatoryListCategory: inputs.uk.isBelowThresholdReservedProcurement, certifiedForCategory: inputs.uk.isQualifyingUkGeographySupplier });
+  } else if (resolvedProgram === 'usa-buy-american-price-preference') {
+    if (!inputs.usa) {
+      return { country, program: resolvedProgram, procurementContext, applicability: 'applicable', framework, computation: computePricePreferenceMargin(BUY_AMERICAN_LARGE_BUSINESS_MARGIN_PCT, null), certificationCaveatEn: NOT_CERTIFIED_EN, certificationCaveatAr: NOT_CERTIFIED_AR, reasonEn: 'No Buy American Act domestic-content share supplied yet.', reasonAr: 'لم تُدخل نسبة المحتوى المحلي الأمريكي بعد.' };
+    }
+    computation = computePricePreferenceUsa(inputs.usa);
+  } else if (resolvedProgram === 'usa-baba-infrastructure-gate') {
+    if (!inputs.usaBaba) {
+      return { country, program: resolvedProgram, procurementContext, applicability: 'applicable', framework, computation: { mechanismType: 'category-eligibility-gate', inMandatoryListCategory: null, certifiedForCategory: null, eligibleToBid: null }, certificationCaveatEn: NOT_CERTIFIED_EN, certificationCaveatAr: NOT_CERTIFIED_AR, reasonEn: 'No BABA infrastructure-coverage/domestic-content inputs supplied yet.', reasonAr: 'لم تُدخل بيانات شمول BABA للبنية التحتية أو المحتوى المحلي بعد.' };
+    }
+    computation = computeCategoryEligibilityGate({ inMandatoryListCategory: inputs.usaBaba.isFederallyFundedInfrastructureProcurement, certifiedForCategory: inputs.usaBaba.meetsBabaDomesticContentRequirement });
+  } else if (resolvedProgram === 'usa-sba-small-business-setaside') {
+    if (!inputs.usa) {
+      return { country, program: resolvedProgram, procurementContext, applicability: 'applicable', framework, computation: { mechanismType: 'spend-set-aside-target', targetSharePct: USA_SBA_SMALL_BUSINESS_TARGET_PCT, qualifiesForSetAside: null, eligibleForReservedShare: null }, certificationCaveatEn: NOT_CERTIFIED_EN, certificationCaveatAr: NOT_CERTIFIED_AR, reasonEn: 'No small-business-concern status supplied yet.', reasonAr: 'لم تُدخل حالة صفة المنشأة الصغيرة بعد.' };
+    }
+    computation = computeSpendSetAside(USA_SBA_SMALL_BUSINESS_TARGET_PCT, inputs.usa.isSmallBusinessConcern);
   } else {
     computation = { mechanismType: 'not-yet-sourced' };
   }
