@@ -1,9 +1,9 @@
 # SI Module 08 — Local Content / ICV Eligibility
 ### Worked Example, Sourced Methodology, and Stress-Test Record — Rawabi Advanced Industries
 
-*Registry: SI-08 (draft, pending #436/#441 formal registry entry). Date: 15 Sep 2026, updated 16 Sep 2026 (Saudi Arabia mechanism decomposition, Part 1 slice, section 8; UAE mechanism decomposition + program-architecture generalization, same day, section 9), updated again 17 Sep 2026 (Jordan's second mechanism, Oman, Qatar, Bahrain, Kuwait -- closing out the rest of Part 1, section 10), updated again 15 Sep 2026 (Egypt mechanism decomposition -- opening Part 2, non-GCC coverage, section 11).*
-*Engine file: `src/lib/supplierLocalContentEligibility.ts` (1,701 lines, 23 programs across all 8 countries via a generalized `LocalContentProgram` architecture — see section 9's own note on why the Saudi-only `SaudiProgram` pattern was generalized, section 10.1 for the 7 programs added 17 Sep 2026, and section 11.1 for the 3 Egyptian programs added 15 Sep 2026). Test file: `src/lib/supplierLocalContentEligibility.test.ts` (120 tests: 39 original + 23 Saudi-mechanism + 15 UAE-mechanism/architecture + 32 Jordan/Oman/Qatar/Bahrain/Kuwait-mechanism + 11 Egypt-mechanism tests, soft/hardest/boundary tiers; the OM/QA/BH/KW not-yet-sourced block and the 8-country structural-sanity check each register more runtime tests than their single `it(` call-site, so this N is Vitest's executed count, not a literal-text `it(` search).*
-*Status: library-complete, unit-tested, cross-engine chain-tested, live UI rebuilt as a multi-supplier list per an independent senior-QA review (`/local-content-icv`, QA-10/10-walked-through, 16 Sep 2026), extended with Saudi Arabia's full mechanism decomposition (section 8), the UAE's (section 9: MoIAT ICV usage note + genuine incentive-not-gate negative finding, and the Tawazun defense-offset mechanism with a real sourced formula), Jordan's second mechanism plus real sourced programs for Oman, Qatar, Bahrain, and Kuwait (section 10, 17 Sep 2026, completing Part 1 / GCC-Jordan coverage), and now Egypt's two sourced price-preference mechanisms plus one honest not-yet-sourced entry (section 11, 15 Sep 2026, opening Part 2 / non-GCC coverage). A dual-sided buyer/supplier value-framing panel is live in the UI for every country and every sourced mechanism type. See "What Is Not Yet Done" below for what remains, including the backend table this pass added but has not provisioned, and the rest of Part 2 (Turkey, UK, USA, China, per the platform owner's own stated order), which is not started yet.*
+*Registry: SI-08 (draft, pending #436/#441 formal registry entry). Date: 15 Sep 2026, updated 16 Sep 2026 (Saudi Arabia mechanism decomposition, Part 1 slice, section 8; UAE mechanism decomposition + program-architecture generalization, same day, section 9), updated again 17 Sep 2026 (Jordan's second mechanism, Oman, Qatar, Bahrain, Kuwait -- closing out the rest of Part 1, section 10), updated again 15 Sep 2026 (Egypt mechanism decomposition -- opening Part 2, non-GCC coverage, section 11), updated again 16 Sep 2026 (Turkey mechanism decomposition -- Part 2 continuation, section 12).*
+*Engine file: `src/lib/supplierLocalContentEligibility.ts` (1,777 lines, 25 programs across all 9 countries via a generalized `LocalContentProgram` architecture — see section 9's own note on why the Saudi-only `SaudiProgram` pattern was generalized, section 10.1 for the 7 programs added 17 Sep 2026, section 11.1 for the 3 Egyptian programs added 15 Sep 2026, and section 12.1 for the 2 Turkish programs added 16 Sep 2026). Test file: `src/lib/supplierLocalContentEligibility.test.ts` (129 tests: 39 original + 23 Saudi-mechanism + 15 UAE-mechanism/architecture + 32 Jordan/Oman/Qatar/Bahrain/Kuwait-mechanism + 11 Egypt-mechanism + 9 Turkey-mechanism tests, soft/hardest/boundary tiers; the OM/QA/BH/KW not-yet-sourced block and the 9-country structural-sanity check each register more runtime tests than their single `it(` call-site, so this N is Vitest's executed count, not a literal-text `it(` search).*
+*Status: library-complete, unit-tested, cross-engine chain-tested, live UI rebuilt as a multi-supplier list per an independent senior-QA review (`/local-content-icv`, QA-10/10-walked-through, 16 Sep 2026), extended with Saudi Arabia's full mechanism decomposition (section 8), the UAE's (section 9: MoIAT ICV usage note + genuine incentive-not-gate negative finding, and the Tawazun defense-offset mechanism with a real sourced formula), Jordan's second mechanism plus real sourced programs for Oman, Qatar, Bahrain, and Kuwait (section 10, 17 Sep 2026, completing Part 1 / GCC-Jordan coverage), Egypt's two sourced price-preference mechanisms plus one honest not-yet-sourced entry (section 11, 15 Sep 2026, opening Part 2 / non-GCC coverage), and now Turkey's one sourced price-preference mechanism plus one honest not-yet-sourced entry (section 12, 16 Sep 2026, continuing Part 2). A dual-sided buyer/supplier value-framing panel is live in the UI for every country and every sourced mechanism type. See "What Is Not Yet Done" below for what remains, including the backend table this pass added but has not provisioned, and the rest of Part 2 (UK, USA, China, per the platform owner's own stated order), which is not started yet.*
 
 ---
 
@@ -65,7 +65,7 @@ remain live and completely unchanged by this work.
 
 ---
 
-## 4. Stress-Test Record (39 tests as of 15 Sep 2026, all passing; three tiers per mechanism — see section 8.8 for the 23 additional Saudi-mechanism tests (62 total), section 9.5 for the 15 additional UAE-mechanism/architecture tests added 16 Sep 2026 (77 total), section 10.8 for the 32 additional Jordan/Oman/Qatar/Bahrain/Kuwait-mechanism tests added 17 Sep 2026 (109 total), and section 11.5 for the 11 additional Egypt-mechanism tests added 15 Sep 2026 (120 total))
+## 4. Stress-Test Record (39 tests as of 15 Sep 2026, all passing; three tiers per mechanism — see section 8.8 for the 23 additional Saudi-mechanism tests (62 total), section 9.5 for the 15 additional UAE-mechanism/architecture tests added 16 Sep 2026 (77 total), section 10.8 for the 32 additional Jordan/Oman/Qatar/Bahrain/Kuwait-mechanism tests added 17 Sep 2026 (109 total), section 11.5 for the 11 additional Egypt-mechanism tests added 15 Sep 2026 (120 total), and section 12.5 for the 9 additional Turkey-mechanism tests added 16 Sep 2026 (129 total))
 
 ### 4.1 Saudi Arabia — LCGPA eligible-spend-ratio
 
@@ -960,6 +960,148 @@ arithmetic. The page's hero copy, the "not covered by this module" disclosure co
 disclaimer were all updated to say "eight countries" and name Egypt's governing law/ministry
 alongside the other seven authorities, rather than leaving Egypt described as an uncovered example
 country in copy a real user reads first.
+
+## 12. Turkey Mechanism Decomposition — Part 2 Continuation (16 Sep 2026)
+
+Second stop on the platform owner's own explicit country order ("egypt, then turkey, then UK,
+then USA, then China"). `TR` is the ninth `LocalContentCountry`, and the second of Rawabi's own
+named non-GCC supplier countries (section 1's scenario intro) to get a real, sourced mechanism.
+
+One real, sourced, computable mechanism was found this pass (`tr-price-preference`), plus one
+honest `not-yet-sourced` entry with rich disclosed context (`tr-defense-offset`). A third real
+Turkish scheme (YEKDEM solar domestic-content certification) was found and deliberately **not**
+modeled as a program -- see 12.4. Both modeled Turkish programs reuse the existing
+`price-preference-margin` mechanism type and `computePricePreferenceMargin` primitive -- no new
+mechanism type or shared computation was needed, the same "reuse, don't reinvent" pattern already
+true of every country in this file.
+
+### 12.1 Six-type taxonomy → Turkish program mapping
+
+| Program | `mechanismType` | Status |
+|---|---|---|
+| `tr-price-preference` (default program) | `price-preference-margin` | Sourced: Public Procurement Law No. 4734, Art. 63(c) -- up to 15% price preference for domestic-goods ("yerli mali") bidders, mandatory (not discretionary) for medium/high-technology listed goods |
+| `tr-defense-offset` | `not-yet-sourced` | Real, dated national context disclosed (SSB's 2022 Offset Guideline), but two sources disagree on the headline "70%" figure and neither gives a confirmed contract-value trigger threshold or a per-supplier formula |
+
+### 12.2 `tr-price-preference` -- price-preference-margin, continuously scaled (like Jordan/Oman, not Egypt's threshold gate)
+
+Source: Turkey's Public Procurement Law No. 4734, Article 63(c), lets contracting authorities grant
+bidders offering domestic goods a price advantage of up to 15% in goods-procurement tender
+evaluation; for goods on the official list of medium/high-technology industrial products, this 15%
+preference is mandatory rather than discretionary. The preference is applied by adding the
+calculated advantage amount to competing non-domestic bidders' prices for evaluation purposes, not
+by discounting the domestic bidder's own price (a KIK-decision summary, salimdemirel.com.tr);
+domestic-goods status is certified per item via a "Yerli Mali Belgesi" (Domestic Goods Certificate,
+issued by local Chambers of Commerce/Industry or TSE under the Ministry of Industry and Technology's
+framework), and applied item-by-item in partial/multi-item tenders -- a **proportional, not
+all-or-nothing, mechanism**, the opposite shape from Egypt's 40%-threshold gate (section 11.2). This
+engine models Turkey the same way it already models Jordan and Oman: the domestic-certified share of
+a bid's value scales the discount continuously from 0% to the full 15% ceiling, rather than
+converting a percentage into a binary qualify/don't-qualify share the way Egypt's and Bahrain's
+mechanisms do.
+
+**A candidate alternate rate, run down and resolved, not left open:** one source title
+(satinalmadergisi.com, "Yerli Mali Teklif Eden Isteklilere %7 Oraninda Fiyat Avantaji Uygulanmasi?")
+suggested a possible 7% figure competing with the 15% ceiling. Fetching and reading that source
+resolved the ambiguity: the article describes a **KIK ruling against a contracting authority that
+had under-applied only 7% instead of the mandatory 15%** to high-tech medical equipment -- a
+documented compliance violation, not a second live statutory rate. This is disclosed here as a
+resolved discrepancy (the research found the answer), distinct from Turkey's own SSB offset
+ambiguity below (section 12.3), which stays genuinely open because no source resolves it.
+
+- **Buyer's reading** (the tendering government or state-economic-enterprise entity): a bounded,
+  administratively-set price cushion (0-15%, or a mandatory 15% for medium/high-tech goods) that
+  favors domestic-certified goods without excluding foreign bidders outright -- the exact ceiling for
+  any given tender is set in that tender's own documents, not by this engine.
+- **Supplier's reading:** the certified share of THIS bid's value that carries a valid Yerli Mali
+  Belgesi is the entire lever, applied proportionally (not as a threshold) and item-by-item in
+  multi-item tenders -- a supplier partially certified on some line items still gets a partial,
+  real advantage on those items, unlike Egypt's all-or-nothing 40% gate.
+- Worked mini-example: a Turkish machinery supplier bidding into a state-enterprise equipment tender
+  holds Yerli Mali Belgesi certification covering 60% of the bid's value (imported electronic
+  components make up the rest) → `bidValueDomesticCertifiedPct: 60` → `preferenceMarginPct: 15`,
+  `locallyManufacturedSharePct: 60`, `effectiveBidDiscountPct: 9` (15% × 60%) -- competing
+  non-domestic bids are evaluated as if 9 points more expensive. The same supplier with full
+  domestic certification (100%) → `effectiveBidDiscountPct: 15`, the full ceiling --
+  `recommendLocalContentAction` returns `null` (nothing left to improve). Applied to
+  `private-commercial` procurement → `not-applicable` (Law 4734 is a public-procurement-law
+  mechanism, sourced for government and state-economic-enterprise buyers only).
+
+### 12.3 `tr-defense-offset` -- not-yet-sourced, with a genuinely open cross-source discrepancy
+
+Source: Turkey's defense-sector offset regime is administered by the Presidency of Defence
+Industries (SSB), which replaced the Undersecretariat for Defence Industries (SSM) under the 2018
+executive-branch reorganization; a new Offset Guideline was issued in 2022, replacing a 2011-vintage
+guideline. Two real, professionally-published sources disagree on the headline commitment:
+mondaq.com states foreign contractors/subcontractors must commit to an "Offset Liability of at least
+70% of the bid amount" (backed by a 6% guarantee of total offset liabilities); herdemlaw.com's more
+granular 2011-vs-2022 comparison instead gives narrower sub-thresholds -- a minimum 21% of contract
+value as local-content/SME work share (YS/SME), a requirement that 70% of EYDEP-accredited work
+specifically (not 70% of the whole bid) be carried out by Turkish SMEs, a minimum 2% of bid value as
+a technology-acquisition (TUK) liability, and a tiered shortfall penalty (6% of that period's
+shortfall in the interim period, rising to +50% of outstanding liabilities in an extended period,
+and a final 25% penalty on any liability still unrealized).
+
+**This ambiguity is disclosed, not resolved by assumption** -- the same treatment already applied to
+Egypt's Law 89/1998-vs-182/2018 citation conflict (section 11.4) and Jordan's unconfirmed bylaw
+citation (section 10.2): it is not established from either source whether mondaq's "70% of bid
+amount" and herdemlaw's "70% of EYDEP-accredited work" describe the same commitment under different
+labels, or two genuinely distinct figures. Neither source states a confirmed contract-value trigger
+threshold analogous to UAE Tawazun's clear AED 10M/\$10M line (section 9.3), and no per-supplier (as
+opposed to prime-contractor-level) computable formula was found. Kept honestly as `not-yet-sourced`
+-- Decision Record 8.7 -- with this real, dated context disclosed in both `reasonEn`/`reasonAr`
+rather than a guessed formula or an assumed reconciliation.
+
+### 12.4 Explicitly not modeled, to avoid a taxonomy-fit fabrication
+
+- **YEKDEM's solar domestic-content scheme**: Turkey's Renewable Energy Resources Support Mechanism
+  (YEKDEM) requires solar module manufacturers to reach >=55% domestic content (via a Ministry of
+  Industry and Technology weighted-component framework across cells, glass, aluminum frames,
+  junction boxes/diodes, encapsulant/backsheet materials, and local labor) to access premium
+  feed-in tariffs, certified via the same Yerli Mali Belgesi. This is a real, sourced Turkish
+  domestic-content scheme -- but it certifies a **manufacturer for subsidy/tariff access**, not a
+  **supplier bidding into a specific buyer's tender**, so it does not fit this engine's buyer-side
+  `ProcurementContext` taxonomy (`government` / `semi-government-soe` / `private-commercial`) the
+  way every other modeled mechanism in this file does. Rather than force-fitting it into a
+  `ProcurementContext` it doesn't genuinely have, or silently dropping it, this is disclosed here
+  and in `tr-defense-offset`'s own `sourceNoteEn`/`sourceNoteAr` as an explicit scope decision --
+  the same "disclosed, not silent" discipline used everywhere else in this file for what is
+  deliberately left out.
+- **The SSB offset guideline's cross-source "70%" discrepancy** (section 12.3) and its missing
+  contract-value trigger threshold are disclosed rather than resolved by assumption.
+- **No SME-specific rate distinct from the general 15% ceiling** was found for
+  `tr-price-preference` in this research pass, unlike Bahrain's separate SME-specific preference --
+  disclosed as an open item, not assumed to not exist.
+
+### 12.5 Stress-test record -- Turkey continuation (9 new tests, all passing; full suite 120 → 129 for this file)
+
+| Mechanism | Soft | Hardest | Boundary |
+|---|---|---|---|
+| `tr-price-preference` | 40% domestic-certified bid content -> proportional 6-point discount (15% x 40%) | 0% and 100% domestic-certified content -- the two adversarial extremes, 0 and the full 15-point ceiling | no share supplied -> honest `null`, never assumed zero; exactly 100% -> `recommendLocalContentAction` returns `null` (nothing left to improve) |
+| Applicability | `tr-price-preference` correctly resolves `applicable` for `semi-government-soe` (Law 4734 Art. 2 covers state economic enterprises, unlike Jordan's government-only scope) | `tr-price-preference` correctly resolves `not-applicable` for `private-commercial` procurement | -- |
+| `tr-defense-offset` | -- | returns `insufficient-data` with the disclosed 70%-figure discrepancy in both languages, never a guessed reconciliation; YEKDEM's explicit not-modeled disclosure confirmed present in both `sourceNoteEn`/`sourceNoteAr` | -- |
+| Default routing | `tr-price-preference` is confirmed as `DEFAULT_PROGRAM_BY_COUNTRY.TR`, the same "original/broadest sourced program is the default" convention as every other country | -- | -- |
+| Structural | the existing structural-sanity regression test (now covering all 9 countries) confirms `PROGRAMS_BY_COUNTRY.TR` has 2 programs and every one resolves back to `TR` in `PROGRAMS` | -- | -- |
+
+### 12.6 UI -- Turkey slots into the existing generalized routing with zero new logic
+
+The same "any country whose `PROGRAMS_BY_COUNTRY` list has more than one program gets the routing
+question row" logic (sections 8.9, 9.6, 10.9, 11.6) required **zero new routing logic** for Turkey
+-- `COUNTRY_ORDER` and `COUNTRY_FLAG` gained a `TR` entry, and `PROGRAM_LABELS` (already generic
+per `mechanismType` via `MECHANISM_VALUE_FRAMING` and `hasMeaningfulResult`) needed only the label
+additions, not new branches. Turkey got one new input-rendering block: a percentage field for
+`tr-price-preference` (with an inline bilingual hint disclosing the up-to-15%/mandatory-for-
+high-tech-goods shape, mirroring the pattern already used for Egypt's threshold field) --
+`tr-defense-offset` needs no input block at all, since its `not-yet-sourced` `mechanismType` is
+caught by `assessSupplierLocalContent`'s existing top-level check before any input is ever read,
+the same zero-input pattern already true of `eg-auto-local-content`, `om-icv`, and every other
+`not-yet-sourced` program in this file. The stale "OTHER" pseudo-value comment (naming Turkey
+among example not-yet-representable countries) was corrected in the same pass that made it
+representable -- the same "a known-wrong disclosure must not be left uncorrected" discipline
+(Decision Record 8.7 / registry rule 12) already applied during the Egypt pass (section 11.6). The
+page's hero copy, the "not covered by this module" disclosure copy, and the footer/body copy were
+all updated to say "nine countries" and name Turkey's governing law/authority (KIK) alongside the
+other eight, rather than leaving Turkey described as an uncovered example country in copy a real
+user reads first.
 ---
 
 ---
@@ -1647,3 +1789,129 @@ margin`) و`hasMeaningfulResult` (معمَّم مسبقاً أيضاً حسب `m
 ونص إخلاء المسؤولية في تذييل الصفحة، ليذكر الجميع "ثماني دول" ويُسمِّي قانون/وزارة مصر المختصة إلى
 جانب الجهات السبع الأخرى، بدلاً من ترك مصر موصوفة كدولة غير مشمولة كمثال في نص يقرأه مستخدم حقيقي
 أولاً.
+
+
+## ١٢. تفكيك آلية تركيا — تكملة الجزء الثاني (١٦ سبتمبر ٢٠٢٦)
+
+المحطة الثانية في ترتيب الدول الصريح الذي حدده مالك المنصة ("مصر، ثم تركيا، ثم المملكة المتحدة، ثم
+الولايات المتحدة، ثم الصين"). `TR` هي الدولة التاسعة ضمن `LocalContentCountry`، والثانية من بين دول
+التوريد غير الخليجية التي سمّتها روابي صراحةً (مقدمة السيناريو في القسم ١) لتحصل على آلية حقيقية
+وموثّقة.
+
+عُثر في هذه المرحلة على آلية تركية واحدة حقيقية وموثّقة وقابلة للحساب (`tr-price-preference`)، إلى
+جانب إدخال واحد صادق "غير موثّق بعد" مع سياق غني مُفصَح عنه (`tr-defense-offset`). كما عُثر على نظام
+تركي حقيقي ثالث (اعتماد المحتوى المحلي الشمسي ضمن YEKDEM) وتقرر عمداً **عدم** نمذجته كبرنامج -- انظر
+١٢.٤. يُعيد كلا البرنامجين التركيين استخدام نوع الآلية القائم `price-preference-margin` والدالة
+المشتركة `computePricePreferenceMargin` -- لم يتطلب الأمر نوع آلية جديداً أو حساباً مشتركاً جديداً،
+بنفس نمط "إعادة الاستخدام لا إعادة الاختراع" المتّبع بالفعل مع كل دولة في هذا الملف.
+
+### ١٢.١ تصنيف الأنواع الستة ← خريطة البرامج التركية
+
+| البرنامج | `mechanismType` | الحالة |
+|---|---|---|
+| `tr-price-preference` (البرنامج الافتراضي) | `price-preference-margin` | موثّق: قانون المشتريات العامة رقم ٤٧٣٤، المادة ٦٣(ج) -- تفضيل سعري يصل إلى ١٥٪ لمزايدي السلع المحلية ("يرلي مالي")، إلزامي (وليس تقديرياً) للسلع متوسطة/عالية التقنية المدرجة |
+| `tr-defense-offset` | `not-yet-sourced` | سياق وطني حقيقي ومؤرَّخ مُفصَح عنه (دليل تعويضات SSB لعام ٢٠٢٢)، لكن مصدرين يختلفان حول رقم "٧٠٪" الرئيسي ولا يذكر أي منهما عتبة تعاقدية مؤكدة أو صيغة على مستوى المورّد |
+
+### ١٢.٢ `tr-price-preference` -- تفضيل سعري بتدرّج مستمر (كالأردن وعُمان، لا كبوابة مصر الحدّية)
+
+المصدر: يتيح قانون المشتريات العامة التركي رقم ٤٧٣٤، المادة ٦٣(ج)، لجهات التعاقد منح مزايدين يعرضون
+سلعاً محلية ميزة سعرية تصل إلى ١٥٪ في تقييم مناقصات توريد السلع؛ وبالنسبة للسلع المدرجة في القائمة
+الرسمية للمنتجات الصناعية متوسطة أو عالية التقنية، يصبح هذا التفضيل إلزامياً وليس تقديرياً. يُطبَّق
+التفضيل بإضافة مبلغ الميزة المحسوبة إلى أسعار المزايدين غير المحليين المنافسين لأغراض التقييم، وليس
+بخصم من سعر المزايد المحلي نفسه (وفق ملخص قرار KİK، salimdemirel.com.tr)؛ وتُعتمد حالة السلعة
+المحلية لكل بند عبر "وثيقة يرلي مالي" (تصدرها غرف التجارة/الصناعة المحلية أو معهد المواصفات التركي
+ضمن إطار وزارة الصناعة والتقنية)، وتُطبَّق بنداً بنداً في المناقصات الجزئية/متعددة البنود -- **آلية
+تناسبية، وليست كلاً أو لا شيء**، وهي الشكل المعاكس لبوابة مصر الحدّية عند ٤٠٪ (القسم ١١.٢). يُنمذَج
+هذا المحرك تركيا بنفس أسلوبه القائم مع الأردن وعُمان: تُدرّج حصة السلع المحلية المعتمدة من قيمة العطاء
+الخصم تدريجياً من ٠٪ حتى السقف الكامل ١٥٪، بدلاً من تحويل نسبة مئوية إلى حصة ثنائية تأهل/عدم تأهل كما
+تفعل آليتا مصر والبحرين.
+
+**رقم بديل محتمل، جرى تقصّيه وحسمه، لا تركه مفتوحاً:** أشار عنوان أحد المصادر (satinalmadergisi.com:
+"هل تُطبَّق ميزة سعرية بنسبة ٧٪ على مقدمي السلع المحلية؟") إلى احتمال وجود رقم ٧٪ ينافس سقف الـ١٥٪.
+وقد حسم الاطلاع على المصدر كاملاً هذا الالتباس: يصف المقال **قراراً لهيئة المشتريات العامة (KİK) ضد
+جهة تعاقد طبّقت ٧٪ فقط بدلاً من ١٥٪ الإلزامية** على معدات طبية عالية التقنية -- وهي مخالفة امتثال
+موثّقة، لا نسبة قانونية ثانية قائمة فعلاً. يُفصَح عن هذا هنا كتعارض تم حسمه (توصّل البحث إلى الإجابة)،
+بخلاف التباس تعويضات SSB التركية أدناه (القسم ١٢.٣)، الذي يبقى مفتوحاً فعلاً لأن لا مصدر يحسمه.
+
+- **قراءة المشتري** (الجهة الحكومية أو المنشأة الاقتصادية المملوكة للدولة المتعاقدة): هامش سعري محدد
+  إدارياً (٠-١٥٪، أو ١٥٪ إلزامية للسلع متوسطة/عالية التقنية) يُفضِّل السلع المحلية المعتمدة دون استبعاد
+  المزايدين الأجانب كلياً -- ويُحدَّد السقف الدقيق لكل مناقصة في وثائقها الخاصة، لا في هذا المحرك.
+- **قراءة المورّد:** الحصة المعتمدة من قيمة هذا العطاء تحديداً هي الرافعة الكاملة، تُطبَّق تناسبياً
+  (لا كبوابة حدّية) وبنداً بنداً في المناقصات متعددة البنود -- فمورّد معتمَد جزئياً في بعض البنود يحصل
+  على ميزة جزئية حقيقية في تلك البنود، بخلاف بوابة مصر الحدّية عند ٤٠٪ الكلية.
+- مثال تطبيقي مصغّر: مورّد آلات تركي يتقدّم بعطاء لمناقصة معدات لمنشأة اقتصادية مملوكة للدولة، حائز على
+  اعتماد وثيقة يرلي مالي يغطي ٦٠٪ من قيمة العطاء (والباقي مكوّنات إلكترونية مستوردة) →
+  `bidValueDomesticCertifiedPct: 60` → `preferenceMarginPct: 15`، `locallyManufacturedSharePct: 60`،
+  `effectiveBidDiscountPct: 9` (١٥٪ × ٦٠٪) -- تُقيَّم العطاءات غير المحلية المنافسة كأنها أغلى بـ٩
+  نقاط. المورّد نفسه بحيازة اعتماد محلي كامل (١٠٠٪) → `effectiveBidDiscountPct: 15`، السقف الكامل --
+  وتُرجع `recommendLocalContentAction` قيمة `null` (لا شيء متبقٍ للتحسين). عند التطبيق على مشتريات
+  `private-commercial` → "لا ينطبق" (القانون ٤٧٣٤ آلية مشتريات عامة، موثّقة للمشترين الحكوميين
+  والمنشآت الاقتصادية المملوكة للدولة فقط).
+
+### ١٢.٣ `tr-defense-offset` -- غير موثّق بعد، مع تعارض حقيقي مفتوح بين المصادر
+
+المصدر: يُدار نظام التعويضات الدفاعية التركي عبر رئاسة الصناعات الدفاعية (SSB)، التي حلّت محل الأمانة
+العامة للصناعات الدفاعية (SSM) ضمن إعادة الهيكلة التنفيذية لعام ٢٠١٨؛ وصدر دليل تعويضات جديد عام ٢٠٢٢
+ليحل محل دليل سابق يعود لعام ٢٠١١. يختلف مصدران حقيقيان منشوران باحترافية حول الالتزام الرئيسي: يذكر
+mondaq.com أن على المقاولين/المقاولين من الباطن الأجانب الالتزام بـ"مسؤولية تعويض لا تقل عن ٧٠٪ من
+قيمة العرض" (مدعومة بضمان ٦٪ من إجمالي الالتزامات)؛ بينما تقدم مقارنة herdemlaw.com الأكثر تفصيلاً بين
+دليلي ٢٠١١ و٢٠٢٢ عتبات فرعية أضيق -- حد أدنى ٢١٪ من قيمة العقد كحصة عمل محلي/منشآت صغيرة ومتوسطة، وشرط
+أن يُنجَز ٧٠٪ من العمل المعتمد ضمن EYDEP تحديداً (وليس ٧٠٪ من العرض كاملاً) بواسطة منشآت تركية صغيرة
+ومتوسطة، وحد أدنى ٢٪ من قيمة العرض كالتزام اكتساب تقنية، وعقوبة تدرجية عند التقصير (٦٪ من عجز الفترة
+الانتقالية، ترتفع إلى +٥٠٪ من الالتزامات المتبقية في مرحلة ممتدة، وعقوبة نهائية ٢٥٪ على أي التزام لم
+يُنجَز).
+
+**يُفصَح عن هذا الالتباس دون حسمه بافتراض** -- بنفس المعالجة المطبَّقة سابقاً على تعارض استشهاد مصر
+بين القانونين ٨٩/١٩٩٨ و١٨٢/٢٠١٨ (القسم ١١.٤) واستشهاد الأردن غير المؤكد بالنظام (القسم ١٠.٢): لا
+يتضح من أي من المصدرين ما إذا كان رقم mondaq "٧٠٪ من قيمة العرض" ورقم herdemlaw "٧٠٪ من العمل المعتمد
+ضمن EYDEP" يصفان الالتزام ذاته بتسميتين مختلفتين، أم رقمين منفصلين فعلاً. لا يذكر أي من المصدرين عتبة
+تعاقدية مؤكدة مماثلة لعتبة توازن الإماراتية الواضحة (١٠ ملايين درهم/دولار، القسم ٩.٣)، ولم يُعثر على
+صيغة حساب على مستوى المورّد (بخلاف التزام على مستوى المقاول الرئيسي). يُبقى هذا صادقاً كـ"غير موثّق
+بعد" -- سجل القرار ٨.٧ -- مع الإفصاح عن هذا السياق الحقيقي والمؤرَّخ في `reasonEn`/`reasonAr` بدلاً من
+صيغة مخمَّنة أو تسوية مفترَضة.
+
+### ١٢.٤ ما لم يُنمذَج عمداً، تجنباً لاختلاق ملاءمة تصنيفية
+
+- **نظام YEKDEM للمحتوى المحلي الشمسي**: يشترط برنامج دعم مصادر الطاقة المتجددة التركي (YEKDEM) على
+  مصنّعي الألواح الشمسية بلوغ محتوى محلي ≥٥٥٪ (عبر إطار وزارة الصناعة والتقنية المرجَّح لكل مكوّن --
+  الخلايا، الزجاج، الإطارات الألمنيومية، علب/صمامات التوصيل، مواد التغليف/الطبقة الخلفية، والعمالة
+  المحلية) للوصول إلى تعرفات تغذية مميزة، معتمَد عبر وثيقة يرلي مالي نفسها. هذا نظام محتوى محلي تركي
+  حقيقي وموثّق -- لكنه يعتمد **مصنّعاً للوصول إلى دعم/تعرفة**، وليس **مورّداً يتقدم بعطاء لمناقصة مشترٍ
+  محدد**، وبالتالي لا يتناسب مع تصنيف ProcurementContext الخاص بالمشتري في هذا المحرك
+  (`government`/`semi-government-soe`/`private-commercial`) كما تفعل كل آلية أخرى منمذجة في هذا
+  الملف. بدلاً من إقحامه ضمن ProcurementContext لا ينطبق عليه فعلياً، أو إسقاطه صامتاً، يُفصَح عن هذا
+  هنا وضمن `sourceNoteEn`/`sourceNoteAr` الخاصة بـ`tr-defense-offset` كقرار نطاق صريح -- بنفس انضباط
+  "الإفصاح، لا الصمت" المُتّبع في كل مكان آخر من هذا الملف بشأن ما يُستبعد عمداً.
+- **تعارض رقم "٧٠٪" بين مصدري دليل تعويضات SSB** (القسم ١٢.٣) وغياب عتبة تعاقدية مؤكدة له، يُفصَح
+  عنهما دون حسمهما بافتراض.
+- **لم يُعثر على نسبة خاصة بالمنشآت الصغيرة والمتوسطة تختلف عن السقف العام ١٥٪** ضمن `tr-price-
+  preference` في هذه المرحلة البحثية، بخلاف تفضيل البحرين الخاص بالمنشآت الصغيرة والمتوسطة -- يُفصَح
+  عن ذلك كمسألة مفتوحة، لا كافتراض بعدم وجودها.
+
+### ١٢.٥ سجل اختبار الإجهاد -- تكملة تركيا (٩ اختبارات جديدة، جميعها ناجحة؛ إجمالي هذا الملف من ١٢٠ إلى ١٢٩)
+
+| الآلية | الاختبار السهل | الاختبار الأصعب | اختبار الحدّ |
+|---|---|---|---|
+| `tr-price-preference` | ٤٠٪ محتوى معتمد محلياً → خصم تناسبي ٦ نقاط (١٥٪ × ٤٠٪) | ٠٪ و١٠٠٪ محتوى معتمد محلياً -- الحالتان الأصعب، صفر والسقف الكامل ١٥ نقطة | دون حصة مُدخلة → `null` صادقة، دون افتراض صفر؛ عند ١٠٠٪ تماماً → `recommendLocalContentAction` تُرجع `null` (لا شيء متبقٍ للتحسين) |
+| الانطباق | يُحسم `tr-price-preference` بشكل صحيح كـ"ينطبق" على `semi-government-soe` (المادة ٢ من القانون ٤٧٣٤ تشمل المنشآت الاقتصادية المملوكة للدولة، بخلاف نطاق الأردن الحكومي فقط) | يُحسم `tr-price-preference` بشكل صحيح كـ"لا ينطبق" على المشتريات التجارية الخاصة | -- |
+| `tr-defense-offset` | -- | تُرجع "بيانات غير كافية" مع الإفصاح عن تعارض رقم ٧٠٪ بكلتا اللغتين، دون تسوية مفترَضة؛ يُؤكَّد وجود إفصاح YEKDEM الصريح غير المُنمذَج في كلا `sourceNoteEn`/`sourceNoteAr` | -- |
+| التوجيه الافتراضي | يُؤكَّد أن `tr-price-preference` هو `DEFAULT_PROGRAM_BY_COUNTRY.TR`، بنفس اتفاقية "البرنامج الأصلي/الأوسع الموثّق هو الافتراضي" المُطبَّقة على كل دولة أخرى | -- | -- |
+| البنيوي | اختبار الفحص البنيوي القائم (يشمل الآن الدول التسع كلها) يؤكد أن `PROGRAMS_BY_COUNTRY.TR` يضم برنامجين وأن كل واحد منهما يعود إلى `TR` نفسها في `PROGRAMS` | -- | -- |
+
+### ١٢.٦ الواجهة -- تركيا تندمج في التوجيه المعمَّم القائم دون أي منطق جديد
+
+نفس منطق "أي دولة تضم قائمة `PROGRAMS_BY_COUNTRY` الخاصة بها أكثر من برنامج تحصل على صف سؤال التوجيه"
+(الأقسام ٨.٩ و٩.٦ و١٠.٩ و١١.٦) لم يتطلب **أي منطق توجيه جديد إطلاقاً** لتركيا -- اكتسب `COUNTRY_ORDER`
+و`COUNTRY_FLAG` إدخال `TR`، واحتاج `PROGRAM_LABELS` فقط (معمَّم مسبقاً حسب `mechanismType` عبر
+`MECHANISM_VALUE_FRAMING` و`hasMeaningfulResult`) إلى إضافات التسميات، لا فروعاً جديدة. حصلت تركيا
+على كتلة إدخال جديدة واحدة: حقل نسبة مئوية لـ`tr-price-preference` (مع تلميح مضمَّن ثنائي اللغة يُفصح
+عن شكل "حتى ١٥٪/إلزامي للسلع عالية التقنية"، بنفس نمط حقل بوابة مصر) -- ولا يحتاج `tr-defense-offset`
+إلى أي كتلة إدخال إطلاقاً، لأن `mechanismType` الخاص به `not-yet-sourced` تلتقطه دالة
+`assessSupplierLocalContent` عبر فحصها الأعلى-مستوى القائم قبل قراءة أي مُدخل، بنفس نمط الصفر-مُدخلات
+المُتّبع بالفعل مع `eg-auto-local-content` و`om-icv` وكل برنامج آخر "غير موثّق بعد" في هذا الملف. جرى
+تصحيح تعليق "OTHER" غير المحدَّث (الذي كان يذكر تركيا كمثال لدولة غير قابلة للتمثيل بعد) في نفس المرحلة
+التي جعلتها قابلة للتمثيل -- نفس انضباط "لا يجوز ترك إفصاح خاطئ معروف دون تصحيح" (سجل القرار ٨.٧ / قاعدة
+السجل رقم ١٢) المُطبَّق بالفعل أثناء مرحلة مصر (القسم ١١.٦). حُدِّث أيضاً نص المقدمة الرئيسية، ونص
+الإفصاح عن "غير مشمولة بهذه الوحدة"، ونص التذييل/المتن، ليذكر الجميع "تسع دول" ويُسمِّي قانون/هيئة
+تركيا المختصة (KİK) إلى جانب الجهات الثماني الأخرى، بدلاً من ترك تركيا موصوفة كدولة غير مشمولة كمثال
+في نص يقرأه مستخدم حقيقي أولاً.

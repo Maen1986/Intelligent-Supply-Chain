@@ -23,6 +23,7 @@ import {
   EGYPT_PRICE_PREFERENCE_MARGIN_PCT,
   EGYPT_PRICE_PREFERENCE_QUALIFYING_THRESHOLD_PCT,
   EGYPT_OIL_GAS_PRICE_PREFERENCE_MARGIN_PCT,
+  TURKEY_PRICE_PREFERENCE_MARGIN_PCT,
   type SupplierLocalContentInputs,
   type LocalContentAssessment,
   type EligibleSpendRatioResult,
@@ -539,6 +540,76 @@ describe('EG — Automotive Local Content Target (AIDP, not-yet-sourced, real da
 });
 
 // ===========================================================================
+// TR — Turkey (Part 2 continuation, 16 Sep 2026 -- second non-GCC/Jordan
+// country per the user's explicit order)
+// ===========================================================================
+
+describe('TR / Public Procurement Domestic Goods Price Preference — price-preference-margin (continuously scaled, like Jordan/Oman, not Egypt\'s threshold gate)', () => {
+  it('soft: 40% Yerli Mali Belgesi-certified bid content -> proportional discount', () => {
+    const a = assessSupplierLocalContent('TR', 'government', { tr: { bidValueDomesticCertifiedPct: 40 } });
+    const c = a.computation as PricePreferenceMarginResult;
+    expect(c.preferenceMarginPct).toBe(TURKEY_PRICE_PREFERENCE_MARGIN_PCT);
+    expect(c.locallyManufacturedSharePct).toBe(40);
+    expect(c.effectiveBidDiscountPct).toBeCloseTo(6, 6);
+  });
+
+  it('hardest: 0% and 100% domestic-certified share (the two adversarial extremes)', () => {
+    const zero = assessSupplierLocalContent('TR', 'government', { tr: { bidValueDomesticCertifiedPct: 0 } }).computation as PricePreferenceMarginResult;
+    const full = assessSupplierLocalContent('TR', 'government', { tr: { bidValueDomesticCertifiedPct: 100 } }).computation as PricePreferenceMarginResult;
+    expect(zero.effectiveBidDiscountPct).toBe(0);
+    expect(full.effectiveBidDiscountPct).toBe(15);
+  });
+
+  it('boundary: no domestic-certified share supplied -> honest null, never assumed zero', () => {
+    const a = assessSupplierLocalContent('TR', 'government', { tr: { bidValueDomesticCertifiedPct: null } });
+    const c = a.computation as PricePreferenceMarginResult;
+    expect(c.locallyManufacturedSharePct).toBeNull();
+    expect(c.effectiveBidDiscountPct).toBeNull();
+  });
+
+  it('boundary: exactly 100% share -> recommendLocalContentAction returns null (nothing left to improve)', () => {
+    const a = assessSupplierLocalContent('TR', 'government', { tr: { bidValueDomesticCertifiedPct: 100 } });
+    expect(recommendLocalContentAction(a, null)).toBeNull();
+  });
+
+  it('applies to semi-government/SOE procurement too (Law 4734 Art. 2 covers state economic enterprises, not government-only like Jordan)', () => {
+    const a = assessSupplierLocalContent('TR', 'semi-government-soe', { tr: { bidValueDomesticCertifiedPct: 60 } });
+    expect(a.applicability).toBe('applicable');
+  });
+
+  it('not-applicable: private-commercial procurement is outside this public-procurement-law-anchored program\'s sourced scope', () => {
+    const a = assessSupplierLocalContent('TR', 'private-commercial', { tr: { bidValueDomesticCertifiedPct: 50 } });
+    expect(a.applicability).toBe('not-applicable');
+  });
+
+  it('no inputs supplied yet -> honest null computation using the sourced 15% ceiling margin, not a guessed default share', () => {
+    const a = assessSupplierLocalContent('TR', 'government', {});
+    const c = a.computation as PricePreferenceMarginResult;
+    expect(c.preferenceMarginPct).toBe(TURKEY_PRICE_PREFERENCE_MARGIN_PCT);
+    expect(c.locallyManufacturedSharePct).toBeNull();
+  });
+});
+
+describe('TR — SSB Defense Offset Guideline (2022, not-yet-sourced, disclosed cross-source figure ambiguity)', () => {
+  it('returns insufficient-data with the disclosed 70%-figure discrepancy and no confirmed trigger threshold, never a guessed formula', () => {
+    const a = assessSupplierLocalContent('TR', 'government', {}, 'tr-defense-offset');
+    expect(a.applicability).toBe('insufficient-data');
+    expect(a.computation).toEqual({ mechanismType: 'not-yet-sourced' });
+    expect(a.reasonEn).toContain('70%');
+    expect(a.reasonAr).toContain('٧٠٪');
+    expect(a.program).toBe('tr-defense-offset');
+    expect(COUNTRY_FRAMEWORKS.TR.applicableContexts).not.toHaveLength(0); // TR's default program IS sourced, unlike its offset program
+    expect(PROGRAMS['tr-defense-offset'].applicableContexts).toHaveLength(0);
+  });
+
+  it('discloses the YEKDEM solar scheme as an explicit not-modeled scope decision, not a silent omission', () => {
+    const fw = PROGRAMS['tr-defense-offset'];
+    expect(fw.sourceNoteEn).toContain('YEKDEM');
+    expect(fw.sourceNoteAr).toContain('YEKDEM');
+  });
+});
+
+// ===========================================================================
 // recommendLocalContentAction — primary + alternative (Rule 8)
 // ===========================================================================
 
@@ -729,7 +800,7 @@ describe('SA — program routing default', () => {
   });
 
   it('every country resolves DEFAULT_PROGRAM_BY_COUNTRY to a real PROGRAMS entry (architecture sanity check)', () => {
-    (['SA', 'AE', 'JO', 'OM', 'QA', 'BH', 'KW', 'EG'] as const).forEach(country => {
+    (['SA', 'AE', 'JO', 'OM', 'QA', 'BH', 'KW', 'EG', 'TR'] as const).forEach(country => {
       const program = DEFAULT_PROGRAM_BY_COUNTRY[country];
       expect(PROGRAMS[program]).toBeDefined();
       expect(PROGRAMS[program].country).toBe(country);
@@ -737,7 +808,7 @@ describe('SA — program routing default', () => {
     });
   });
 
-  it('PROGRAMS_BY_COUNTRY lists every program per country (SA: 6, AE: 2, JO: 2, OM: 3, QA: 2, BH: 3, KW: 2, EG: 3 -- EG added 15 Sep 2026 Part 2 pass)', () => {
+  it('PROGRAMS_BY_COUNTRY lists every program per country (SA: 6, AE: 2, JO: 2, OM: 3, QA: 2, BH: 3, KW: 2, EG: 3, TR: 2 -- TR added 16 Sep 2026 Part 2 continuation)', () => {
     expect(PROGRAMS_BY_COUNTRY.SA).toHaveLength(6);
     expect(PROGRAMS_BY_COUNTRY.AE).toHaveLength(2);
     expect(PROGRAMS_BY_COUNTRY.JO).toHaveLength(2);
@@ -746,6 +817,7 @@ describe('SA — program routing default', () => {
     expect(PROGRAMS_BY_COUNTRY.BH).toHaveLength(3);
     expect(PROGRAMS_BY_COUNTRY.KW).toHaveLength(2);
     expect(PROGRAMS_BY_COUNTRY.EG).toHaveLength(3);
+    expect(PROGRAMS_BY_COUNTRY.TR).toHaveLength(2);
   });
 
   it('lcgpa-general carries the two usage notes (40% high-value-contract weighting, ~30% consulting/IT figure) bilingually', () => {
@@ -1288,9 +1360,9 @@ describe('Portfolio rollup — spend-set-aside-target and modified-icv-score gro
 // country before it ever reaches the UI.
 // ===========================================================================
 
-describe('PROGRAMS_BY_COUNTRY — structural sanity (17 Sep 2026 continuation, EG added 15 Sep 2026 Part 2 pass)', () => {
-  it('all 8 countries have at least 2 programs, and every program in every list resolves back to that same country in PROGRAMS', () => {
-    for (const country of ['SA', 'AE', 'JO', 'OM', 'QA', 'BH', 'KW', 'EG'] as const) {
+describe('PROGRAMS_BY_COUNTRY — structural sanity (17 Sep 2026 continuation, EG added 15 Sep 2026, TR added 16 Sep 2026 Part 2 pass)', () => {
+  it('all 9 countries have at least 2 programs, and every program in every list resolves back to that same country in PROGRAMS', () => {
+    for (const country of ['SA', 'AE', 'JO', 'OM', 'QA', 'BH', 'KW', 'EG', 'TR'] as const) {
       expect(PROGRAMS_BY_COUNTRY[country].length).toBeGreaterThanOrEqual(2);
       for (const program of PROGRAMS_BY_COUNTRY[country]) {
         expect(PROGRAMS[program].country).toBe(country);

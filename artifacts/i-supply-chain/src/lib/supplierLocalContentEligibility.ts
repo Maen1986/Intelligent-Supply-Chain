@@ -242,13 +242,45 @@
  * programs. Both sourced Egyptian mechanisms reuse the existing
  * `computePricePreferenceMargin` primitive -- one shared computation, now
  * serving NINE programs across five countries.
+ *
+ * ============================================================================
+ * PART 2 CONTINUATION: TURKEY (16 Sep 2026)
+ * ============================================================================
+ * Second stop on the user's explicit order ("egypt, then turkey, then UK,
+ * then USA, then China"). `TR` (`LocalContentCountry`) is the ninth country.
+ * One real, sourced, computable mechanism: `tr-price-preference`, the
+ * general public-procurement domestic-goods ("yerli mali") price
+ * preference under Law No. 4734 Art. 63(c) -- up to 15% (mandatory, not
+ * discretionary, for medium/high-tech listed goods), applied by adding the
+ * margin to competing non-domestic bids, certified per item via a "Yerli
+ * Mali Belgesi" and applied item-by-item in partial tenders -- modeled via
+ * the same continuously-scaled share already used for Jordan/Oman, not
+ * Egypt's binary threshold gate, since the sourced mechanism is
+ * proportional. A candidate "%7" alternate rate found in one source title
+ * was run down and resolved: it is a documented KIK violation finding (an
+ * administration under-applying the mandatory 15%), not a live alternate
+ * statutory rate -- disclosed as a resolved ambiguity, not left open.
+ * `tr-defense-offset` (SSB's 2022 Offset Guideline) is kept `not-yet-
+ * sourced`: two real sources (mondaq.com, herdemlaw.com) disagree on
+ * whether their respective "70%" figures describe the same commitment,
+ * and neither gives a confirmed contract-value trigger threshold or a
+ * per-supplier formula -- disclosed as an open discrepancy rather than
+ * resolved by assumption, per Decision Record 8.7. A third real scheme,
+ * YEKDEM's >=55% domestic-content rule for solar-module manufacturers'
+ * access to premium feed-in tariffs, was deliberately NOT modeled as a
+ * program: it certifies a manufacturer for subsidy access, not a supplier
+ * bidding into a specific buyer's tender, so it does not fit this engine's
+ * buyer-side `ProcurementContext` taxonomy -- an explicit scope decision,
+ * disclosed in `tr-defense-offset`'s sourceNoteEn and the worked-example
+ * doc, not a silent omission. Both Turkish programs reuse existing shared
+ * computation primitives -- no new mechanism type needed.
  */
 
 // ---------------------------------------------------------------------------
 // Section 1 — country / context / mechanism taxonomy
 // ---------------------------------------------------------------------------
 
-export type LocalContentCountry = 'SA' | 'AE' | 'JO' | 'OM' | 'QA' | 'BH' | 'KW' | 'EG';
+export type LocalContentCountry = 'SA' | 'AE' | 'JO' | 'OM' | 'QA' | 'BH' | 'KW' | 'EG' | 'TR';
 
 /** Every program key across every country this engine represents, flat
  * (not nested per-country) so the routing/resolution logic below is the
@@ -282,7 +314,9 @@ export type LocalContentProgram =
   | 'kw-kpc-local-spend'  // KW type 5 (new, 17 Sep 2026): KPC 30% Kuwaiti-supplier spend target
   | 'eg-price-preference'          // EG type 4 (new, 15 Sep 2026 Part 2 pass): public-procurement price preference, Law 5/2015 as amended by Law 90/2018 (the module's default/original mechanism for Egypt)
   | 'eg-oil-gas-price-preference'  // EG type 4 (new, Part 2 pass): PSA local-contractor price-band priority, Ministry of Petroleum PSA framework -- a genuinely different buyer/program from the general procurement preference above
-  | 'eg-auto-local-content';       // EG type 6-ish target (new, Part 2 pass): revamped AIDP 60% local-content target, not-yet-sourced (no published per-supplier formula)
+  | 'eg-auto-local-content'         // EG type 6-ish target (new, Part 2 pass): revamped AIDP 60% local-content target, not-yet-sourced (no published per-supplier formula)
+  | 'tr-price-preference'           // TR type 4 (new, Part 2 continuation): public-procurement domestic-goods ("yerli mali") price preference, Law 4734 Art. 63(c) -- the module's default/original mechanism for Turkey
+  | 'tr-defense-offset';            // TR type 6: SSB 2022 Offset Guideline, not-yet-sourced (disclosed trigger-threshold and cross-source figure ambiguity)
 
 /** Which program `assessSupplierLocalContent` resolves to when `program` is
  * omitted -- always each country's original pre-existing single mechanism,
@@ -296,7 +330,7 @@ export type LocalContentProgram =
 export const DEFAULT_PROGRAM_BY_COUNTRY: Record<LocalContentCountry, LocalContentProgram> = {
   SA: 'sa-lcgpa-general', AE: 'ae-icv-general', JO: 'jo-price-preference',
   OM: 'om-icv', QA: 'qa-national-strategy', BH: 'bh-local-content', KW: 'kw-local-content',
-  EG: 'eg-price-preference',
+  EG: 'eg-price-preference', TR: 'tr-price-preference',
 };
 
 /** Every program that exists for a given country, in display order -- used
@@ -313,6 +347,7 @@ export const PROGRAMS_BY_COUNTRY: Record<LocalContentCountry, LocalContentProgra
   BH: ['bh-local-content', 'bh-sme-price-preference', 'bh-sme-spend-setaside'],
   KW: ['kw-local-content', 'kw-kpc-local-spend'],
   EG: ['eg-price-preference', 'eg-oil-gas-price-preference', 'eg-auto-local-content'],
+  TR: ['tr-price-preference', 'tr-defense-offset'],
 };
 
 /** Which buyer this assessment is for -- see file header: every sourced
@@ -609,8 +644,27 @@ const EG_PROGRAMS: Record<'eg-price-preference' | 'eg-oil-gas-price-preference' 
   },
 };
 
+const TR_PROGRAMS: Record<'tr-price-preference' | 'tr-defense-offset', CountryFrameworkInfo> = {
+  'tr-price-preference': {
+    country: 'TR', countryNameEn: 'Turkey', countryNameAr: 'جمهورية تركيا',
+    programNameEn: 'Public Procurement Domestic Goods Price Preference', programNameAr: 'تفضيل سعر السلع المحلية في المشتريات العامة',
+    mechanismType: 'price-preference-margin', program: 'tr-price-preference',
+    applicableContexts: ['government', 'semi-government-soe'],
+    sourceNoteEn: "Turkey's Public Procurement Law No. 4734, Article 63(c), lets contracting authorities grant bidders offering domestic goods (\'yerli mali\') a price advantage of up to 15% in goods-procurement tender evaluation; for goods on the official list of medium/high-technology industrial products, this 15% preference is mandatory rather than discretionary (a Kamu Ihale Kurumu/KIK ruling reported by satinalmadergisi.com found a contracting authority's use of only 7% for high-tech medical equipment non-compliant and ordered the relevant tender sections cancelled -- the \'7%\' figure that surfaces in some sources is a documented VIOLATION of the mandatory rate, not an alternative statutory rate, and this research pass discloses that resolution rather than treating 7% and 15% as two live options). The preference is applied by adding the calculated advantage amount to competing non-domestic bidders' prices for evaluation purposes, not by discounting the domestic bidder's own price (per a KIK-decision summary, salimdemirel.com.tr); domestic-goods status is certified per item via a \'Yerli Mali Belgesi\' (Domestic Goods Certificate), issued by local Chambers of Commerce/Industry or the Turkish Standards Institution (TSE) under the Ministry of Industry and Technology's framework, and the preference is applied item-by-item in partial/multi-item tenders -- a proportional, not all-or-nothing, mechanism. This research pass found no sourced SME-specific rate distinct from the general rate. Modeled here via the same continuously-scaled share already used for Jordan/Oman (the domestic-certified share of this bid's value), rather than Egypt's binary threshold gate, since the sourced item-by-item/partial-certification language describes a proportional mechanism; the constant used is the 15% ceiling/mandatory rate (the maximum a contracting authority can set, and the rate legally required for medium/high-tech goods) -- disclosed as a ceiling, since the administration sets the exact figure (0-15%) in each tender's own documents for goods not on the mandatory list, and this engine cannot see a specific tender's published rate.",
+    sourceNoteAr: 'يتيح قانون المشتريات العامة التركي رقم ٤٧٣٤، المادة ٦٣(ج)، لجهات التعاقد منح مزايدين يعرضون سلعاً محلية ("يرلي مالي") ميزة سعرية تصل إلى ١٥٪ في تقييم مناقصات توريد السلع؛ وبالنسبة للسلع المدرجة في القائمة الرسمية للمنتجات الصناعية متوسطة أو عالية التقنية، يصبح هذا التفضيل بنسبة ١٥٪ إلزامياً وليس تقديرياً (قرار صادر عن هيئة المشتريات العامة التركية -- Kamu İhale Kurumu/KİK -- نقلته satinalmadergisi.com، وجد أن استخدام جهة تعاقد نسبة ٧٪ فقط لمعدات طبية عالية التقنية غير متوافق، وأمر بإلغاء أقسام المناقصة المعنية -- فرقم "٧٪" الذي يظهر في بعض المصادر هو مخالفة موثّقة للنسبة الإلزامية، وليس نسبة قانونية بديلة، ويُفصح هذا البحث عن هذا الحسم بدلاً من معاملة ٧٪ و١٥٪ كخيارين قائمين). يُطبَّق التفضيل بإضافة مبلغ الميزة المحسوبة إلى أسعار المزايدين غير المحليين المنافسين لأغراض التقييم، وليس بخصم من سعر المزايد المحلي نفسه (وفق ملخص قرار KİK، salimdemirel.com.tr)؛ وتُعتمد حالة السلعة المحلية لكل بند عبر "وثيقة يرلي مالي" (شهادة السلعة المحلية)، تصدرها غرف التجارة/الصناعة المحلية أو معهد المواصفات التركي (TSE) ضمن إطار وزارة الصناعة والتقنية، ويُطبَّق التفضيل بنداً بنداً في المناقصات الجزئية/متعددة البنود -- آلية تناسبية وليست كلاً أو لا شيء. لم يعثر هذا البحث على نسبة خاصة بالمنشآت الصغيرة والمتوسطة تختلف عن النسبة العامة. يُنمذَج هذا هنا عبر نفس التدرّج المستمر المستخدم بالفعل للأردن وعُمان (حصة المحتوى المحلي المعتمد من قيمة هذا العطاء)، بدلاً من بوابة مصر الحدّية الثنائية، لأن صياغة الاعتماد الجزئي بنداً بنداً الموثّقة تصف آلية تناسبية؛ والثابت المستخدم هو النسبة القصوى/الإلزامية ١٥٪ (الحد الأقصى الذي يمكن لجهة التعاقد تحديده، والنسبة المطلوبة قانوناً للسلع متوسطة أو عالية التقنية) -- يُفصَح عنها كسقف، إذ تحدد الإدارة الرقم الدقيق (٠-١٥٪) في وثائق كل مناقصة للسلع غير المدرجة في القائمة الإلزامية، ولا يمكن لهذا المحرك رؤية النسبة المنشورة لمناقصة بعينها.',
+  },
+  'tr-defense-offset': {
+    country: 'TR', countryNameEn: 'Turkey', countryNameAr: 'جمهورية تركيا',
+    programNameEn: 'SSB Defense Offset Guideline (2022) -- not yet sourced', programNameAr: 'دليل تعويضات SSB الدفاعية (٢٠٢٢) — غير موثّق بعد',
+    mechanismType: 'not-yet-sourced', program: 'tr-defense-offset',
+    applicableContexts: [],
+    sourceNoteEn: "Turkey's defense-sector offset regime is administered by the Presidency of Defence Industries (Savunma Sanayii Baskanligi, SSB), which replaced the Undersecretariat for Defence Industries (SSM) under the 2018 executive-branch reorganization; a new Offset Guideline was issued in 2022, replacing a 2011-vintage guideline. Two real, professionally-published sources disagree on the headline commitment in a way this research pass discloses rather than resolves by assumption: mondaq.com's summary states foreign contractors/subcontractors on qualifying defense contracts must commit to an \'Offset Liability of at least 70% of the bid amount\', backed by a 6% guarantee of total offset liabilities; herdemlaw.com's more granular 2011-vs-2022 comparison instead gives narrower sub-thresholds -- a minimum 21% of contract value as local-content/SME work share (YS/SME), a requirement that 70% of EYDEP-accredited work specifically be carried out by Turkish SMEs (not 70% of the whole bid), a minimum 2% of bid value as a technology-acquisition (TUK) liability, and a tiered shortfall penalty (6% of that period's shortfall in the program's interim period, rising to +50% of outstanding liabilities in an extended period, and a final 25% penalty on any liability still unrealized). Whether mondaq's \'70% of bid amount\' and herdemlaw's \'70% of EYDEP-accredited work\' describe the same commitment under different labels, or two distinct figures, is not established by either source -- disclosed as an open discrepancy, the same treatment already applied to Egypt's Law 89/1998-vs-182/2018 citation conflict and Jordan's unconfirmed bylaw citation. Neither source states a confirmed contract-value trigger threshold analogous to UAE Tawazun's clear AED 10M/$10M line, and no per-supplier (as opposed to prime-contractor-level) computable formula was found. Kept as an honest not-yet-sourced entry -- Decision Record 8.7 -- with this real, dated context disclosed rather than a guessed formula or an assumed reconciliation of the two sources' figures. (A separate, real Turkish domestic-content scheme -- the YEKDEM renewable-energy feed-in-tariff program's >=55% domestic-content requirement for solar module manufacturers to access premium tariffs -- was found in this research pass but is deliberately NOT modeled as a third Turkish program: it certifies a manufacturer for subsidy access, not a supplier bidding into a specific buyer's tender, so it does not fit this engine's buyer-side ProcurementContext taxonomy the way every other modeled mechanism does. Disclosed here as an explicit scope decision, not a silent omission.)",
+    sourceNoteAr: 'يُدار نظام التعويضات الدفاعية (Offset) التركي عبر رئاسة الصناعات الدفاعية (Savunma Sanayii Başkanlığı -- SSB)، التي حلّت محل الأمانة العامة للصناعات الدفاعية (SSM) ضمن إعادة الهيكلة التنفيذية لعام ٢٠١٨؛ وصدر دليل تعويضات جديد عام ٢٠٢٢ ليحل محل دليل سابق يعود لعام ٢٠١١. يختلف مصدران حقيقيان منشوران باحترافية حول الالتزام الرئيسي بطريقة يُفصح عنها هذا البحث بدلاً من حسمها بافتراض: يذكر ملخص mondaq.com أن على المقاولين/المقاولين من الباطن الأجانب في العقود الدفاعية المؤهلة الالتزام بـ"مسؤولية تعويض لا تقل عن ٧٠٪ من قيمة العرض"، مدعومة بضمان بنسبة ٦٪ من إجمالي التزامات التعويض؛ بينما تقدم مقارنة herdemlaw.com الأكثر تفصيلاً بين دليلي ٢٠١١ و٢٠٢٢ عتبات فرعية أضيق -- حد أدنى ٢١٪ من قيمة العقد كحصة عمل محلي/منشآت صغيرة ومتوسطة (YS/SME)، وشرط أن يُنجَز ٧٠٪ من العمل المعتمد ضمن EYDEP تحديداً بواسطة منشآت تركية صغيرة ومتوسطة (وليس ٧٠٪ من العرض كاملاً)، وحد أدنى ٢٪ من قيمة العرض كالتزام اكتساب تقنية (TÜK)، وعقوبة تدرجية عند التقصير (٦٪ من عجز تلك الفترة في المرحلة الانتقالية للبرنامج، ترتفع إلى +٥٠٪ من الالتزامات المتبقية في مرحلة ممتدة، وعقوبة نهائية ٢٥٪ على أي التزام لم يُنجَز بعد). ولا يتضح من أي من المصدرين ما إذا كان رقم mondaq "٧٠٪ من قيمة العرض" ورقم herdemlaw "٧٠٪ من العمل المعتمد ضمن EYDEP" يصفان الالتزام ذاته بتسميتين مختلفتين، أم رقمين منفصلين فعلاً -- ويُفصَح عن ذلك كتعارض مفتوح، بنفس المعالجة المطبّقة سابقاً على تعارض استشهاد مصر بين القانونين ٨٩/١٩٩٨ و١٨٢/٢٠١٨، واستشهاد الأردن غير المؤكد بالنظام. لا يذكر أي من المصدرين عتبة تعاقدية مؤكدة مماثلة لعتبة توازن الإماراتية الواضحة (١٠ ملايين درهم/دولار)، ولم يُعثر على صيغة حساب على مستوى المورّد (بخلاف التزام على مستوى المقاول الرئيسي). يُبقى هذا كإدخال صادق غير موثّق بعد -- سجل القرار ٨.٧ -- مع الإفصاح عن هذا السياق الحقيقي والمؤرَّخ بدلاً من صيغة مخمَّنة أو تسوية مفترَضة بين رقمي المصدرين. (عُثر في هذا البحث على نظام محتوى محلي تركي حقيقي منفصل -- برنامج تعرفة التغذية للطاقة المتجددة YEKDEM الذي يشترط محتوى محلياً ≥٥٥٪ لمصنّعي الألواح الشمسية للوصول إلى تعرفات مميزة -- لكنه لا يُنمذَج عمداً كبرنامج تركي ثالث: فهو يعتمد المصنّع للوصول إلى دعم، وليس مورّداً يتقدم بعطاء لمناقصة مشترٍ محدد، وبالتالي لا يتناسب مع تصنيف ProcurementContext الخاص بالمشتري في هذا المحرك كما تفعل كل آلية أخرى منمذجة. يُفصَح عن هذا هنا كقرار نطاق صريح، وليس إغفالاً صامتاً.)',
+  },
+};
+
 export const PROGRAMS: Record<LocalContentProgram, CountryFrameworkInfo> = {
-  ...SA_PROGRAMS, ...AE_PROGRAMS, ...JO_OM_QA_BH_KW_PROGRAMS, ...EG_PROGRAMS,
+  ...SA_PROGRAMS, ...AE_PROGRAMS, ...JO_OM_QA_BH_KW_PROGRAMS, ...EG_PROGRAMS, ...TR_PROGRAMS,
 };
 
 /** Derived view, kept for the UI's country-selector buttons and any caller
@@ -626,6 +680,7 @@ export const COUNTRY_FRAMEWORKS: Record<LocalContentCountry, CountryFrameworkInf
   BH: PROGRAMS[DEFAULT_PROGRAM_BY_COUNTRY.BH],
   KW: PROGRAMS[DEFAULT_PROGRAM_BY_COUNTRY.KW],
   EG: PROGRAMS[DEFAULT_PROGRAM_BY_COUNTRY.EG],
+  TR: PROGRAMS[DEFAULT_PROGRAM_BY_COUNTRY.TR],
 };
 
 // ---------------------------------------------------------------------------
@@ -780,6 +835,16 @@ export interface SupplierLocalContentInputs {
    * .sourceNoteEn). */
   egOilGas?: {
     isLocalEgyptianContractor: boolean | null;
+  };
+  /** Turkey public-procurement domestic-goods price preference (TR /
+   * 'tr-price-preference', Part 2 continuation) -- % of this bid's value
+   * covered by Yerli Mali Belgesi (Domestic Goods Certificate)-certified
+   * domestic content (self-reported, caller-supplied), same continuously-
+   * scaled shape as Jordan/Oman (see PROGRAMS['tr-price-preference']
+   * .sourceNoteEn for the mandatory-vs-discretionary 15% ceiling and
+   * item-by-item certification detail). */
+  tr?: {
+    bidValueDomesticCertifiedPct: number | null;
   };
 }
 
@@ -1247,6 +1312,12 @@ function computePricePreferenceEgOilGas(egOilGas: NonNullable<SupplierLocalConte
   return computePricePreferenceMargin(EGYPT_OIL_GAS_PRICE_PREFERENCE_MARGIN_PCT, share);
 }
 
+export const TURKEY_PRICE_PREFERENCE_MARGIN_PCT = 15;
+
+function computePricePreferenceTr(tr: NonNullable<SupplierLocalContentInputs['tr']>): PricePreferenceMarginResult {
+  return computePricePreferenceMargin(TURKEY_PRICE_PREFERENCE_MARGIN_PCT, tr.bidValueDomesticCertifiedPct);
+}
+
 // ---------------------------------------------------------------------------
 // Section 6d — JO/BH/KW: spend-set-aside-target (type 5, new 17 Sep 2026).
 // Real sourced national/program target shares -- see PROGRAMS[
@@ -1436,6 +1507,11 @@ export function assessSupplierLocalContent(
       return { country, program: resolvedProgram, procurementContext, applicability: 'applicable', framework, computation: computePricePreferenceMargin(EGYPT_OIL_GAS_PRICE_PREFERENCE_MARGIN_PCT, null), certificationCaveatEn: NOT_CERTIFIED_EN, certificationCaveatAr: NOT_CERTIFIED_AR, reasonEn: 'No Egyptian oil & gas local-contractor status supplied yet.', reasonAr: 'لم تُدخل حالة المقاول المصري المحلي في قطاع النفط والغاز بعد.' };
     }
     computation = computePricePreferenceEgOilGas(inputs.egOilGas);
+  } else if (resolvedProgram === 'tr-price-preference') {
+    if (!inputs.tr) {
+      return { country, program: resolvedProgram, procurementContext, applicability: 'applicable', framework, computation: computePricePreferenceMargin(TURKEY_PRICE_PREFERENCE_MARGIN_PCT, null), certificationCaveatEn: NOT_CERTIFIED_EN, certificationCaveatAr: NOT_CERTIFIED_AR, reasonEn: 'No Turkish domestic-goods-certified bid share supplied yet.', reasonAr: 'لم تُدخل نسبة السلع المحلية المعتمدة في العطاء بعد.' };
+    }
+    computation = computePricePreferenceTr(inputs.tr);
   } else {
     computation = { mechanismType: 'not-yet-sourced' };
   }
