@@ -247,7 +247,7 @@ separately-sourced answers, exactly as Core Instruction #7 requires.
 
 ## 7. What Is Not Yet Done (honest status, not silently deferred)
 
-- **Live UI shipped, then rebuilt (16 Sep 2026)** per an independent senior-QA review run
+- **Live UI shipped, then rebuilt (15 Sep 2026)** per an independent senior-QA review run
   against origin/main @ b9dab44 (33/33 engine tests re-verified, every worked-example number
   hand-recomputed and matched). Two real issues from that review are fixed in this pass:
   1. **A real bilingual-completeness bug in the engine itself** (not the UI): `assessSupplierLocalContent`'s
@@ -297,7 +297,7 @@ separately-sourced answers, exactly as Core Instruction #7 requires.
 - **Oman/Qatar/Bahrain/Kuwait's GENERAL national local-content frameworks** (`om-icv`,
   `qa-national-strategy`, `bh-local-content`, `kw-local-content`) remain `not-yet-sourced` by
   design -- a future research pass could source these, but they are not guessed here. **Updated
-  17 Sep 2026:** this no longer means these four countries have no real sourced program at all --
+  15 Sep 2026:** this no longer means these four countries have no real sourced program at all --
   section 10 sourced 5 genuinely different, narrower mechanisms alongside these four honest gaps
   (Oman's PTLC Mandatory List and OQ Group price preference; Qatar's Tawteen/ICV; Bahrain's SME
   price preference and spend set-aside; Kuwait's KPC spend target), each real and computable, each
@@ -307,7 +307,7 @@ separately-sourced answers, exactly as Core Instruction #7 requires.
   annual 5-point increase continued, plateaued, or was superseded, but the current-year figure is
   not guessed here.
 
-## 8. Saudi Arabia Mechanism Decomposition (16 Sep 2026)
+## 8. Saudi Arabia Mechanism Decomposition (15 Sep 2026)
 
 Assignment: `Module08-NextPass-Agent-Brief.md` — decompose all GCC + Jordan local-content
 mechanisms using the six-type taxonomy in the brief's section 1.0, first slice: Saudi Arabia full
@@ -469,7 +469,7 @@ pre-existing country/context button rows — no hover-only affordance was introd
 
 ---
 
-## 9. United Arab Emirates Mechanism Decomposition (16 Sep 2026)
+## 9. United Arab Emirates Mechanism Decomposition (15 Sep 2026)
 
 Continuing Part 1 of `Module08-NextPass-Agent-Brief.md` after Saudi Arabia: the UAE is also not one
 program but two (`ae-icv-general`, `ae-tawazun-offset`) — MoIAT's National ICV score and the
@@ -594,7 +594,7 @@ gets and what the supplier gets from the same mechanism, built entirely from fac
 and disclosed elsewhere in the engine (never a new claim or statistic) — re-stating in the live
 product the same reading this document has carried in prose since section 8.3.
 
-## 10. Jordan's Second Mechanism, Oman, Qatar, Bahrain, and Kuwait Mechanism Decomposition (17 Sep 2026)
+## 10. Jordan's Second Mechanism, Oman, Qatar, Bahrain, and Kuwait Mechanism Decomposition (15 Sep 2026)
 
 Continuing Part 1 after Saudi Arabia (section 8) and the UAE (section 9): this pass closed every
 remaining open research gap for the module's other five countries -- Jordan's second mechanism
@@ -1226,7 +1226,7 @@ UK either -- `COUNTRY_ORDER` and `COUNTRY_FLAG` gained a `UK` entry, and `PROGRA
 the one new label. Because the UK has exactly one program, it correctly does NOT show the
 routing-question button row that every multi-program country shows -- the existing `hasMultiplePrograms`
 check (`PROGRAMS_BY_COUNTRY[country].length > 1`) already handles this with no new code, the first
-time this condition has evaluated false since the 17 Sep 2026 continuation gave every other country a
+time this condition has evaluated false since the 15 Sep 2026 continuation gave every other country a
 second program. The UK got one new input-rendering block: a two-toggle pair mirroring Saudi/Oman's
 existing Mandatory List pattern exactly (a first Yes/No for whether this procurement is reserved
 below-threshold, revealing a second Yes/No for geography qualification only once the first is `true`
@@ -1273,7 +1273,7 @@ copy a real user reads first.
 يساوي **٢٠٩٨** (تركّز متوسط) على نفس المحفظة الكاملة بستة موردين — بُعدان مستقلان تماماً، لم يُدمَجا
 في رقم واحد مطلقاً، تماشياً مع التعليمة الأساسية رقم ٧.
 
-**الحالة الحالية بصراحة:** أُطلقت واجهة مستخدم فعلية لهذه الوحدة، ثم **أُعيد بناؤها بتاريخ ١٦
+**الحالة الحالية بصراحة:** أُطلقت واجهة مستخدم فعلية لهذه الوحدة، ثم **أُعيد بناؤها بتاريخ ١٥
 سبتمبر ٢٠٢٦** بناءً على مراجعة جودة مستقلة (QA) شاملة أُجريت على نسخة origin/main عند b9dab44
 (أُعيد التحقق من ٣٣/٣٣ اختباراً للمحرك، وأُعيد حساب كل رقم في المثال التطبيقي يدوياً وتطابق). أُصلحت
 مشكلتان حقيقيتان من تلك المراجعة في هذه المرحلة:
@@ -1316,7 +1316,7 @@ copy a real user reads first.
 المعتمدة؛ أرقام صيغة ICV الإماراتية تحتاج تحققاً من الوثيقة الرسمية الأصلية قبل استخدامها في قرار
 تصديق فعلي؛ وعُمان وقطر والبحرين والكويت تبقى "غير موثّقة" بتصميم متعمد، لا تخميناً.
 
-## 8. تفكيك آليات المملكة العربية السعودية (١٦ سبتمبر ٢٠٢٦)
+## 8. تفكيك آليات المملكة العربية السعودية (١٥ سبتمبر ٢٠٢٦)
 
 المهمة: `Module08-NextPass-Agent-Brief.md` — تفكيك جميع آليات المحتوى المحلي لدول مجلس التعاون
 والأردن باستخدام تصنيف الأنواع الستة في القسم ١.٠ من الموجز، بدءاً بالشريحة الأولى: التفكيك الكامل
@@ -1466,7 +1466,7 @@ QA وأُصلحت ضمن هذه المرحلة نفسها:** كان التبدي
 
 ---
 
-## 9. تفكيك آليات دولة الإمارات العربية المتحدة (١٦ سبتمبر ٢٠٢٦)
+## 9. تفكيك آليات دولة الإمارات العربية المتحدة (١٥ سبتمبر ٢٠٢٦)
 
 استكمالاً للجزء الأول من `Module08-NextPass-Agent-Brief.md` بعد السعودية: الإمارات أيضاً ليست
 برنامجاً واحداً بل برنامجان (`ae-icv-general` و`ae-tawazun-offset`) — درجة ICV الوطنية التابعة
@@ -1585,7 +1585,7 @@ QA وأُصلحت ضمن هذه المرحلة نفسها:** كان التبدي
 
 ---
 
-## 10. تفكيك آلية الأردن الثانية، وعُمان، وقطر، والبحرين، والكويت (١٧ سبتمبر ٢٠٢٦)
+## 10. تفكيك آلية الأردن الثانية، وعُمان، وقطر، والبحرين، والكويت (١٥ سبتمبر ٢٠٢٦)
 
 استكمالاً للجزء الأول بعد السعودية (القسم ٨) والإمارات (القسم ٩): أغلقت هذه المرحلة كل فجوة بحثية
 متبقية للدول الخمس الأخرى في هذه الوحدة -- آلية الأردن الثانية إلى جانب تفضيله السعري القائم البالغ
@@ -2157,7 +2157,7 @@ mondaq.com أن على المقاولين/المقاولين من الباطن �
 اكتسب `COUNTRY_ORDER` و`COUNTRY_FLAG` إدخال `UK`، واحتاج `PROGRAM_LABELS` تسمية واحدة جديدة فقط. ولأن
 المملكة المتحدة تملك برنامجاً واحداً بالضبط، فهي لا تُظهر صف زر سؤال التوجيه الذي تُظهره كل دولة متعددة
 البرامج -- يتعامل فحص `hasMultiplePrograms` القائم (`PROGRAMS_BY_COUNTRY[country].length > 1`) مع هذا
-بالفعل دون أي كود جديد، وهي أول مرة يُقيَّم فيها هذا الشرط بـ"خطأ" منذ أن منحت تكملة ١٧ سبتمبر ٢٠٢٦ كل
+بالفعل دون أي كود جديد، وهي أول مرة يُقيَّم فيها هذا الشرط بـ"خطأ" منذ أن منحت تكملة ١٥ سبتمبر ٢٠٢٦ كل
 دولة أخرى برنامجاً ثانياً. حصلت المملكة المتحدة على كتلة إدخال جديدة واحدة: زوج مفاتيح تبديل ثنائي يُطابق
 تماماً نمط القائمة الإلزامية السعودية والعمانية القائم (مفتاح نعم/لا أول لما إذا كانت هذه المناقصة مخصصة
 دون العتبة، يُظهر مفتاح نعم/لا ثانياً للتأهل الجغرافي فقط عندما يكون الأول `true` -- نفس بنية الكشف

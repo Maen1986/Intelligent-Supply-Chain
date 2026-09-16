@@ -1,7 +1,7 @@
 // src/pages/LocalContentICVCheck.tsx
 //
 // SI Module 08 UI -- Local Content / ICV Eligibility Check (15 Sep 2026,
-// rebuilt 16 Sep 2026 per an independent senior-QA review run against
+// rebuilt 15 Sep 2026 per an independent senior-QA review run against
 // origin/main @ b9dab44 -- 33/33 engine tests re-verified, every
 // worked-example number hand-recomputed and matched).
 //
@@ -12,7 +12,7 @@
 // completely untouched, and neither page shares state with the other.
 //
 // v1 (15 Sep 2026) shipped as a single-entity form with a separate
-// "add to portfolio" step. The 16 Sep 2026 QA review found this was the
+// "add to portfolio" step. The 15 Sep 2026 QA review found this was the
 // wrong shape for a module whose real differentiator is the portfolio view:
 // rebuilt around a supplier/entity LIST (one row per entity, add/remove,
 // mirroring SupplierDependencyCheck.tsx's list pattern) so every entity IS
@@ -221,7 +221,7 @@ interface LocalContentEntry {
    * see PROGRAMS_BY_COUNTRY and normalizeProgram(). Defaults to
    * DEFAULT_PROGRAM_BY_COUNTRY[country], each country's own original single
    * pre-existing mechanism. Every country now has more than one program
-   * (17 Sep 2026 continuation), so every country shows the routing-question
+   * (15 Sep 2026 continuation), so every country shows the routing-question
    * button row -- each entry still always carries a program value (its
    * default when the reader hasn't chosen otherwise). */
   program: LocalContentProgram;
@@ -336,8 +336,8 @@ const CONTEXT_TABS: { v: ProcurementContext; en: string; ar: string }[] = [
   { v: 'private-commercial', en: 'Private Commercial', ar: 'تجاري خاص' },
 ];
 
-// Program routing question (task #115, generalized 16 Sep 2026 from SA-only
-// to any country with more than one program -- since 17 Sep 2026 that is
+// Program routing question (task #115, generalized 15 Sep 2026 from SA-only
+// to any country with more than one program -- since 15 Sep 2026 that is
 // every one of the 10 countries): which mechanism is this assessment for.
 // Short bilingual labels for the
 // button row and the portfolio table; the full sourced methodology stays in
@@ -376,7 +376,7 @@ const PROGRAM_LABELS: Record<LocalContentProgram, { en: string; ar: string }> = 
 
 // Dual-sided (buyer + supplier) value framing, per mechanism TYPE (not per
 // program -- 7 real mechanism shapes, not 13 country-specific programs) --
-// explicit instruction (16 Sep 2026): "every mechanism ... carries an
+// explicit instruction (15 Sep 2026): "every mechanism ... carries an
 // explicit buyer-side and supplier-side value reading, not just a
 // compliance number", applied retroactively to Saudi Arabia's own live UI
 // too, not only new UAE work or the worked-example doc's Section 8/9. Built
@@ -520,10 +520,10 @@ function LocalContentEntryCard({
   const [methodologyOpen, setMethodologyOpen] = useState(false);
   const isOther = entry.countrySelection === 'OTHER';
   const isSA = entry.countrySelection === 'SA';
-  // Generalized 16 Sep 2026 from an SA-only check, then again 17 Sep 2026
-  // when the 5-country continuation gave every remaining country a second
-  // program: any country whose PROGRAMS_BY_COUNTRY list has more than one
-  // entry gets the routing question row below (as of 17 Sep 2026, that is
+  // Generalized 15 Sep 2026 from an SA-only check, then again the same day
+  // (15 Sep 2026) when the 5-country continuation gave every remaining country
+  // a second program: any country whose PROGRAMS_BY_COUNTRY list has more than
+  // one entry gets the routing question row below (as of 15 Sep 2026, that is
   // all 10 countries, as of the 15-16 Sep 2026 Egypt/Turkey/UK Part-2 additions).
   const hasMultiplePrograms = !isOther && PROGRAMS_BY_COUNTRY[entry.countrySelection as LocalContentCountry].length > 1;
   const framework = !isOther ? PROGRAMS[entry.program] : null;
@@ -600,7 +600,7 @@ function LocalContentEntryCard({
                 aria-pressed={active}
                 onClick={() => onUpdate(entry.id, {
                   countrySelection: c,
-                  // REAL DEFECT AVOIDED (16 Sep 2026 QA pass, generalization):
+                  // REAL DEFECT AVOIDED (15 Sep 2026 QA pass, generalization):
                   // switching country without resetting program would leave
                   // `framework`/`assessment` reading a DIFFERENT country's
                   // methodology than the one just selected (e.g. still showing
@@ -635,10 +635,10 @@ function LocalContentEntryCard({
           </button>
         </div>
 
-        {/* ── Program routing question (task #115; generalized 16 Sep 2026 from
+        {/* ── Program routing question (task #115; generalized 15 Sep 2026 from
              SA-only to any country with more than one program -- since
-             17 Sep 2026 that is every one of the 10 countries, as of the
-             15 Sep 2026 Egypt/Part-2 addition). Shown before
+             15 Sep 2026 that is every one of the 10 countries, as of the
+             15-16 Sep 2026 Egypt/Turkey/UK Part-2 additions). Shown before
              context/methodology, since it changes which framework and
              applicable contexts apply. ── */}
         {hasMultiplePrograms && (
@@ -658,7 +658,7 @@ function LocalContentEntryCard({
                     type="button"
                     aria-pressed={active}
                     onClick={() => {
-                      // QA fix (16 Sep 2026 pass, generalized): a program with
+                      // QA fix (15 Sep 2026 pass, generalized): a program with
                       // exactly one sourced applicable context (e.g. Aramco IKTVA
                       // -> semi-government-soe only; Tawazun -> government only)
                       // auto-selects that context too, so picking the program
@@ -743,7 +743,7 @@ function LocalContentEntryCard({
             </div>
 
             {/* ── Dual-sided value framing (buyer + supplier), every country including
-                 SA -- explicit instruction (16 Sep 2026): a compliance number alone is
+                 SA -- explicit instruction (15 Sep 2026): a compliance number alone is
                  not enough; every mechanism must show who benefits and how, on both
                  sides of the transaction. Keyed by mechanism TYPE, so it's automatic
                  for every current and future program, not hand-added per country. ── */}
@@ -772,7 +772,7 @@ function LocalContentEntryCard({
                  and ae-icv-general): "how the same score gets used differently by
                  context" -- per the brief's own UAE precedent, this is disclosure
                  text about the score above, never a second score. Generalized
-                 16 Sep 2026 from an sa-lcgpa-general-only condition so AE's real
+                 15 Sep 2026 from an sa-lcgpa-general-only condition so AE's real
                  sourced Abu Dhabi ADLC 40%-weighting note surfaces here too. ── */}
             {framework && framework.usageNotesEn && framework.usageNotesEn.length > 0 && (
               <div className="rounded-xl border border-slate-100 bg-slate-50/60 px-3 py-2.5 mb-3 space-y-1.5">

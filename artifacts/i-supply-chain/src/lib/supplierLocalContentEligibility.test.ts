@@ -1129,7 +1129,7 @@ describe('SA — portfolio rollup groups by program', () => {
 });
 
 // ===========================================================================
-// 17 Sep 2026 continuation -- Jordan's second mechanism, Oman, Qatar,
+// 15 Sep 2026 continuation -- Jordan's second mechanism, Oman, Qatar,
 // Bahrain, Kuwait (7 new sourced programs). Same soft/hardest/boundary
 // discipline as every earlier describe block in this file.
 // ===========================================================================
@@ -1377,7 +1377,7 @@ describe("KW / KPC Kuwaiti-Supplier Spend Target — spend-set-aside-target", ()
 });
 
 // ===========================================================================
-// Portfolio rollup -- the 2 new mechanism types (17 Sep 2026 continuation)
+// Portfolio rollup -- the 2 new mechanism types (15 Sep 2026 continuation)
 // ===========================================================================
 
 describe('Portfolio rollup — spend-set-aside-target and modified-icv-score groups', () => {
@@ -1413,11 +1413,11 @@ describe('Portfolio rollup — spend-set-aside-target and modified-icv-score gro
 
 // ===========================================================================
 // Structural regression -- every country now has more than one program
-// (17 Sep 2026 continuation); catches a program listed under the wrong
+// (15 Sep 2026 continuation); catches a program listed under the wrong
 // country before it ever reaches the UI.
 // ===========================================================================
 
-describe('PROGRAMS_BY_COUNTRY — structural sanity (17 Sep 2026 continuation, EG added 15 Sep 2026, TR added 16 Sep 2026, UK added 16 Sep 2026 Part 2 pass)', () => {
+describe('PROGRAMS_BY_COUNTRY — structural sanity (15 Sep 2026 continuation, EG added 15 Sep 2026, TR added 16 Sep 2026, UK added 16 Sep 2026 Part 2 pass)', () => {
   it('the 9 GCC/Jordan/Egypt/Turkey countries have at least 2 programs each, and every program in every one of the 10 countries\' lists resolves back to that same country in PROGRAMS', () => {
     for (const country of ['SA', 'AE', 'JO', 'OM', 'QA', 'BH', 'KW', 'EG', 'TR'] as const) {
       expect(PROGRAMS_BY_COUNTRY[country].length).toBeGreaterThanOrEqual(2);
