@@ -274,13 +274,45 @@
  * disclosed in `tr-defense-offset`'s sourceNoteEn and the worked-example
  * doc, not a silent omission. Both Turkish programs reuse existing shared
  * computation primitives -- no new mechanism type needed.
+ *
+ * ============================================================================
+ * PART 2 CONTINUATION: UNITED KINGDOM (16 Sep 2026)
+ * ============================================================================
+ * Third stop on the user's explicit order. `UK` (`LocalContentCountry`) is
+ * the tenth country -- and a genuinely different kind of finding from every
+ * country before it: this research pass confirms the UK runs NO GCC/Jordan/
+ * Egypt/Turkey-style ABOVE-threshold price preference for domestic
+ * suppliers, and that this is a structural legal fact, not a research gap.
+ * The Procurement Act 2023 (PA23) s.90 binds contracting authorities to a
+ * non-discrimination duty toward WTO GPA/FTA "treaty state" suppliers above
+ * the Act's own thresholds (GBP 135,018 / 207,720 goods-services, GBP
+ * 5,193,000 works, effective 1 Jan 2026 per PPN 023) -- a domestic price
+ * preference above those thresholds would breach that duty outright. BELOW
+ * threshold, Cabinet Office PPN 005 does let a contract be reserved by
+ * supplier geography (UK-wide/county/London-borough -- explicitly not by
+ * constituent nation) optionally combined with SME/VCSE status: a real, one
+ * sourced, computable mechanism, `uk-below-threshold-reservation`, modeled
+ * via the existing `category-eligibility-gate` primitive (the same shape as
+ * Saudi/Oman's Mandatory List) rather than a new mechanism type. A second
+ * real UK mechanism, "social value" evaluation weighting (Public Services
+ * (Social Value) Act 2012 / PA23's National Procurement Policy Statement),
+ * was deliberately NOT modeled: it is nationality-neutral by legal necessity
+ * (the same s.90 duty), each authority sets its own ad hoc qualitative
+ * weighting per tender, and its criteria span environmental/social wellbeing
+ * broadly, not local content specifically -- so there is no domestic-content
+ * sub-formula to source, ever, by design. A pending Parliamentary bill (the
+ * Public Procurement (British Goods and Services) Bill, second reading 17
+ * Apr 2026, not yet law) would add UK-goods consideration and reporting
+ * duties, but its own drafters confirm it creates no price preference or
+ * quota, for the same s.90 reason -- disclosed, not modeled, the same
+ * treatment already applied to Turkey's YEKDEM scheme.
  */
 
 // ---------------------------------------------------------------------------
 // Section 1 — country / context / mechanism taxonomy
 // ---------------------------------------------------------------------------
 
-export type LocalContentCountry = 'SA' | 'AE' | 'JO' | 'OM' | 'QA' | 'BH' | 'KW' | 'EG' | 'TR';
+export type LocalContentCountry = 'SA' | 'AE' | 'JO' | 'OM' | 'QA' | 'BH' | 'KW' | 'EG' | 'TR' | 'UK';
 
 /** Every program key across every country this engine represents, flat
  * (not nested per-country) so the routing/resolution logic below is the
@@ -316,7 +348,8 @@ export type LocalContentProgram =
   | 'eg-oil-gas-price-preference'  // EG type 4 (new, Part 2 pass): PSA local-contractor price-band priority, Ministry of Petroleum PSA framework -- a genuinely different buyer/program from the general procurement preference above
   | 'eg-auto-local-content'         // EG type 6-ish target (new, Part 2 pass): revamped AIDP 60% local-content target, not-yet-sourced (no published per-supplier formula)
   | 'tr-price-preference'           // TR type 4 (new, Part 2 continuation): public-procurement domestic-goods ("yerli mali") price preference, Law 4734 Art. 63(c) -- the module's default/original mechanism for Turkey
-  | 'tr-defense-offset';            // TR type 6: SSB 2022 Offset Guideline, not-yet-sourced (disclosed trigger-threshold and cross-source figure ambiguity)
+  | 'tr-defense-offset'             // TR type 6: SSB 2022 Offset Guideline, not-yet-sourced (disclosed trigger-threshold and cross-source figure ambiguity)
+  | 'uk-below-threshold-reservation'; // UK type 3 (new, Part 2 continuation): PPN 005 below-threshold reservation gate (category-eligibility-gate) -- the module's default/only mechanism for the UK, which structurally cannot run an above-threshold price preference (PA23 s.90 non-discrimination duty)
 
 /** Which program `assessSupplierLocalContent` resolves to when `program` is
  * omitted -- always each country's original pre-existing single mechanism,
@@ -330,7 +363,7 @@ export type LocalContentProgram =
 export const DEFAULT_PROGRAM_BY_COUNTRY: Record<LocalContentCountry, LocalContentProgram> = {
   SA: 'sa-lcgpa-general', AE: 'ae-icv-general', JO: 'jo-price-preference',
   OM: 'om-icv', QA: 'qa-national-strategy', BH: 'bh-local-content', KW: 'kw-local-content',
-  EG: 'eg-price-preference', TR: 'tr-price-preference',
+  EG: 'eg-price-preference', TR: 'tr-price-preference', UK: 'uk-below-threshold-reservation',
 };
 
 /** Every program that exists for a given country, in display order -- used
@@ -348,6 +381,7 @@ export const PROGRAMS_BY_COUNTRY: Record<LocalContentCountry, LocalContentProgra
   KW: ['kw-local-content', 'kw-kpc-local-spend'],
   EG: ['eg-price-preference', 'eg-oil-gas-price-preference', 'eg-auto-local-content'],
   TR: ['tr-price-preference', 'tr-defense-offset'],
+  UK: ['uk-below-threshold-reservation'],
 };
 
 /** Which buyer this assessment is for -- see file header: every sourced
@@ -663,8 +697,19 @@ const TR_PROGRAMS: Record<'tr-price-preference' | 'tr-defense-offset', CountryFr
   },
 };
 
+const UK_PROGRAMS: Record<'uk-below-threshold-reservation', CountryFrameworkInfo> = {
+  'uk-below-threshold-reservation': {
+    country: 'UK', countryNameEn: 'United Kingdom', countryNameAr: 'المملكة المتحدة',
+    programNameEn: 'Below-Threshold Procurement Reservation (PPN 005)', programNameAr: 'تخصيص المشتريات دون العتبة (مذكرة PPN 005)',
+    mechanismType: 'category-eligibility-gate', program: 'uk-below-threshold-reservation',
+    applicableContexts: ['government', 'semi-government-soe'],
+    sourceNoteEn: "The UK's Procurement Act 2023 (PA23) binds contracting authorities to a non-discrimination duty toward \'treaty state\' suppliers (WTO Government Procurement Agreement parties and FTA partners) for regulated procurement above the Act's own thresholds (Schedule 1, updated annually by Cabinet Office Procurement Policy Note -- PPN 023 sets goods/services at GBP 135,018 for central government and GBP 207,720 for other/sub-central contracting authorities, works at GBP 5,193,000, effective 1 Jan 2026). This is a structural, legal reason -- not a research gap -- why the UK runs no GCC/Jordan/Egypt/Turkey-style above-threshold price preference for domestic suppliers: doing so would breach that duty. Below those thresholds, however, Cabinet Office Procurement Policy Note 005 (\'Guide to Reserving Below Threshold Procurements\') lets in-scope public bodies reserve a below-threshold contract for suppliers by geography -- UK-wide, a single county, or individual London boroughs, explicitly NOT by constituent UK nation (England/Scotland/Wales/Northern Ireland may not be used as the reservation boundary) -- optionally combined with SME/VCSE (voluntary, community and social enterprise) supplier-type status, though that combination requires the geography reservation and cannot be applied on its own. PPN 005 sets no percentage or quota: a reserved procurement is a binary eligible/not-eligible gate per bidder, the same shape as Saudi/Oman's Mandatory List category-eligibility-gate mechanism, reused here rather than invented fresh. Northern Ireland goods procurement of cross-border interest is excluded from this reservation policy, per the Windsor Framework/Northern Ireland Protocol's EU treaty free-movement rights -- a real, disclosed carve-out, the same \'disclosed, not separately modeled\' treatment already applied to Egypt's defense/interior procurement exemption.\n\nA separate, real UK mechanism -- \'social value\' evaluation weighting under the Public Services (Social Value) Act 2012 and the Procurement Act 2023's National Procurement Policy Statement (Cabinet Office PPN 002; the devolved equivalents -- Wales' WPPN 003 and Northern Ireland -- both mandate a minimum 10% social-value weighting, England sets no mandated minimum, Scotland encourages but does not mandate one) -- is deliberately NOT modeled as a second UK program. It is real and sourced, but structurally different from every mechanism in this file: each contracting authority sets its own qualitative weighting per tender (bid-writing practitioners report social value comprising up to 25% of marking criteria in some tenders), the criteria span economic, social, AND environmental wellbeing (not local content specifically), and -- critically -- it must remain nationality-neutral to stay compliant with PA23 s.90, so no domestic/local-content sub-formula exists to source. A Parliamentary bill, the Public Procurement (British Goods and Services) Bill (second reading scheduled 17 Apr 2026, not yet law as of this research pass), would add mandatory consideration of UK goods/services and reporting duties (including UK-origin food-content disclosure) -- but its own drafters were explicit that it creates no price preference or quota, precisely because of the same s.90 non-discrimination duty. Disclosed here as an explicit scope decision, not a silent omission -- the same treatment already applied to Turkey's YEKDEM solar scheme.",
+    sourceNoteAr: 'يُلزم قانون المشتريات البريطاني لعام ٢٠٢٣ (Procurement Act 2023) جهات التعاقد بواجب عدم التمييز تجاه موردي "دول المعاهدة" (الدول الأعضاء في اتفاقية منظمة التجارة العالمية للمشتريات الحكومية GPA وشركاء اتفاقيات التجارة الحرة) في المشتريات المنظَّمة التي تتجاوز عتبات القانون نفسها (الملحق ١، المُحدَّث سنوياً عبر مذكرة سياسة مشتريات صادرة عن مكتب مجلس الوزراء -- تحدد المذكرة PPN 023 عتبة السلع/الخدمات بـ ١٣٥,٠١٨ جنيهاً إسترلينياً للحكومة المركزية و٢٠٧,٧٢٠ جنيهاً لجهات التعاقد الأخرى دون المركزية، وعتبة الأشغال بـ ٥,١٩٣,٠٠٠ جنيه، اعتباراً من ١ يناير ٢٠٢٦). هذا سبب قانوني بنيوي -- وليس فجوة بحثية -- لعدم تشغيل المملكة المتحدة أي تفضيل سعري فوق العتبة على غرار الخليج/الأردن/مصر/تركيا لصالح الموردين المحليين: فالقيام بذلك يُخالف هذا الواجب. أما دون تلك العتبات، فتتيح مذكرة سياسة المشتريات رقم ٠٠٥ الصادرة عن مكتب مجلس الوزراء ("دليل تخصيص المشتريات دون العتبة") للجهات العامة المشمولة تخصيص عقد دون العتبة لموردين وفق النطاق الجغرافي -- على مستوى المملكة المتحدة كاملة، أو مقاطعة واحدة، أو أحياء لندن الفردية، دون استخدام أقاليم المملكة المتحدة المكوِّنة (إنجلترا/اسكتلندا/ويلز/أيرلندا الشمالية) كحدٍّ للتخصيص صراحةً -- ويمكن دمج ذلك اختيارياً مع صفة نوع المورّد (منشأة صغيرة أو متوسطة، أو منشأة مجتمعية/تطوعية)، لكن هذا الدمج يتطلب وجود تخصيص جغرافي ولا يمكن تطبيقه بمفرده. لا تحدد مذكرة PPN 005 أي نسبة أو حصة: فالمشتريات المخصصة هي بوابة ثنائية مؤهل/غير مؤهل لكل مزايد، بنفس شكل بوابة أهلية الفئة المستخدمة في القائمة الإلزامية السعودية والعمانية، ويُعاد استخدامها هنا بدلاً من اختراع آلية جديدة. تُستثنى مشتريات السلع لأيرلندا الشمالية ذات الاهتمام العابر للحدود من سياسة التخصيص هذه، بموجب حقوق حرية الحركة التعاهدية الأوروبية بموجب إطار ويندسور/بروتوكول أيرلندا الشمالية -- استثناء حقيقي ومُفصَح عنه، بنفس معالجة "الإفصاح دون نمذجة منفصلة" المُطبَّقة على استثناء مشتريات الدفاع والداخلية المصري.\n\nآلية بريطانية حقيقية أخرى -- ترجيح تقييم "القيمة الاجتماعية" بموجب قانون القيمة الاجتماعية في الخدمات العامة لعام ٢٠١٢ وبيان سياسة المشتريات الوطني التابع لقانون مشتريات ٢٠٢٣ (مذكرة مكتب مجلس الوزراء PPN 002؛ والمعادلات المفوَّضة: تفرض ويلز (WPPN 003) وأيرلندا الشمالية كلتاهما حداً أدنى ١٠٪ لترجيح القيمة الاجتماعية، بينما لا تفرض إنجلترا حداً أدنى، وتشجع اسكتلندا ذلك دون إلزامه) -- لا تُنمذَج عمداً كبرنامج بريطاني ثانٍ. إنها آلية حقيقية وموثّقة، لكنها مختلفة بنيوياً عن كل آلية في هذا الملف: تضع كل جهة تعاقد ترجيحها النوعي الخاص بها لكل مناقصة (يذكر ممارسو كتابة العطاءات أن القيمة الاجتماعية تبلغ حتى ٢٥٪ من معايير التقييم في بعض المناقصات)، وتشمل المعايير الرفاه الاقتصادي والاجتماعي والبيئي معاً (وليس المحتوى المحلي تحديداً)، والأهم أنها يجب أن تبقى محايدة تجاه الجنسية للامتثال للمادة ٩٠ من قانون ٢٠٢٣، فلا توجد صيغة فرعية للمحتوى المحلي يمكن توثيقها. مشروع قانون برلماني، هو مشروع قانون السلع والخدمات البريطانية (Public Procurement (British Goods and Services) Bill)، (قراءة ثانية مقررة في ١٧ إبريل ٢٠٢٦، لم يصبح قانوناً بعد حتى هذه المرحلة البحثية)، سيضيف اعتباراً إلزامياً للسلع/الخدمات البريطانية وواجبات إفصاح (بما في ذلك الإفصاح عن نسبة منشأ الغذاء البريطاني) -- لكن واضعيه أوضحوا صراحة أنه لا يُنشئ أي تفضيل سعري أو حصة، تحديداً بسبب واجب عدم التمييز نفسه في المادة ٩٠. يُفصَح عن هذا هنا كقرار نطاق صريح، وليس إغفالاً صامتاً -- بنفس المعالجة المُطبَّقة على نظام YEKDEM الشمسي التركي.',
+  },
+};
+
 export const PROGRAMS: Record<LocalContentProgram, CountryFrameworkInfo> = {
-  ...SA_PROGRAMS, ...AE_PROGRAMS, ...JO_OM_QA_BH_KW_PROGRAMS, ...EG_PROGRAMS, ...TR_PROGRAMS,
+  ...SA_PROGRAMS, ...AE_PROGRAMS, ...JO_OM_QA_BH_KW_PROGRAMS, ...EG_PROGRAMS, ...TR_PROGRAMS, ...UK_PROGRAMS,
 };
 
 /** Derived view, kept for the UI's country-selector buttons and any caller
@@ -681,6 +726,7 @@ export const COUNTRY_FRAMEWORKS: Record<LocalContentCountry, CountryFrameworkInf
   KW: PROGRAMS[DEFAULT_PROGRAM_BY_COUNTRY.KW],
   EG: PROGRAMS[DEFAULT_PROGRAM_BY_COUNTRY.EG],
   TR: PROGRAMS[DEFAULT_PROGRAM_BY_COUNTRY.TR],
+  UK: PROGRAMS[DEFAULT_PROGRAM_BY_COUNTRY.UK],
 };
 
 // ---------------------------------------------------------------------------
@@ -845,6 +891,16 @@ export interface SupplierLocalContentInputs {
    * item-by-item certification detail). */
   tr?: {
     bidValueDomesticCertifiedPct: number | null;
+  };
+  /** UK below-threshold procurement reservation (UK / 'uk-below-threshold-
+   * reservation', Part 2 continuation) -- same category-eligibility-gate
+   * shape as Saudi/Oman's Mandatory List (see PROGRAMS['uk-below-threshold-
+   * reservation'].sourceNoteEn): is THIS specific procurement reserved under
+   * PPN 005, and does the supplier meet its stated geography (and, if
+   * combined, SME/VCSE) reservation. */
+  uk?: {
+    isBelowThresholdReservedProcurement: boolean | null;
+    isQualifyingUkGeographySupplier: boolean | null;
   };
 }
 
@@ -1512,6 +1568,11 @@ export function assessSupplierLocalContent(
       return { country, program: resolvedProgram, procurementContext, applicability: 'applicable', framework, computation: computePricePreferenceMargin(TURKEY_PRICE_PREFERENCE_MARGIN_PCT, null), certificationCaveatEn: NOT_CERTIFIED_EN, certificationCaveatAr: NOT_CERTIFIED_AR, reasonEn: 'No Turkish domestic-goods-certified bid share supplied yet.', reasonAr: 'لم تُدخل نسبة السلع المحلية المعتمدة في العطاء بعد.' };
     }
     computation = computePricePreferenceTr(inputs.tr);
+  } else if (resolvedProgram === 'uk-below-threshold-reservation') {
+    if (!inputs.uk) {
+      return { country, program: resolvedProgram, procurementContext, applicability: 'applicable', framework, computation: { mechanismType: 'category-eligibility-gate', inMandatoryListCategory: null, certifiedForCategory: null, eligibleToBid: null }, certificationCaveatEn: NOT_CERTIFIED_EN, certificationCaveatAr: NOT_CERTIFIED_AR, reasonEn: 'No PPN 005 reservation/geography-qualification inputs supplied yet.', reasonAr: 'لم تُدخل بيانات التخصيص دون العتبة أو التأهل الجغرافي بعد.' };
+    }
+    computation = computeCategoryEligibilityGate({ inMandatoryListCategory: inputs.uk.isBelowThresholdReservedProcurement, certifiedForCategory: inputs.uk.isQualifyingUkGeographySupplier });
   } else {
     computation = { mechanismType: 'not-yet-sourced' };
   }

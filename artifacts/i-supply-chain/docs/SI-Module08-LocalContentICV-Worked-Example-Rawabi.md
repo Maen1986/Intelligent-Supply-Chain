@@ -1,9 +1,9 @@
 # SI Module 08 — Local Content / ICV Eligibility
 ### Worked Example, Sourced Methodology, and Stress-Test Record — Rawabi Advanced Industries
 
-*Registry: SI-08 (draft, pending #436/#441 formal registry entry). Date: 15 Sep 2026, updated same day (Saudi Arabia mechanism decomposition, Part 1 slice, section 8; UAE mechanism decomposition + program-architecture generalization, section 9; Jordan's second mechanism, Oman, Qatar, Bahrain, Kuwait -- closing out the rest of Part 1, section 10; Egypt mechanism decomposition -- opening Part 2, non-GCC coverage, section 11 -- all four decompositions and both worked-example fixes landed within a single ~10-hour window, per actual commit timestamps, not on four separate calendar days as earlier revisions of this line incorrectly stated), updated again 16 Sep 2026 (Turkey mechanism decomposition -- Part 2 continuation, section 12).*
-*Engine file: `src/lib/supplierLocalContentEligibility.ts` (1,777 lines, 25 programs across all 9 countries via a generalized `LocalContentProgram` architecture — see section 9's own note on why the Saudi-only `SaudiProgram` pattern was generalized, section 10.1 for the 7 programs added 15 Sep 2026, section 11.1 for the 3 Egyptian programs added 15 Sep 2026, and section 12.1 for the 2 Turkish programs added 16 Sep 2026). Test file: `src/lib/supplierLocalContentEligibility.test.ts` (129 tests: 39 original + 23 Saudi-mechanism + 15 UAE-mechanism/architecture + 32 Jordan/Oman/Qatar/Bahrain/Kuwait-mechanism + 11 Egypt-mechanism + 9 Turkey-mechanism tests, soft/hardest/boundary tiers; the OM/QA/BH/KW not-yet-sourced block and the 9-country structural-sanity check each register more runtime tests than their single `it(` call-site, so this N is Vitest's executed count, not a literal-text `it(` search).*
-*Status: library-complete, unit-tested, cross-engine chain-tested, live UI rebuilt as a multi-supplier list per an independent senior-QA review (`/local-content-icv`, QA-10/10-walked-through, 15 Sep 2026), extended with Saudi Arabia's full mechanism decomposition (section 8), the UAE's (section 9: MoIAT ICV usage note + genuine incentive-not-gate negative finding, and the Tawazun defense-offset mechanism with a real sourced formula), Jordan's second mechanism plus real sourced programs for Oman, Qatar, Bahrain, and Kuwait (section 10, 15 Sep 2026, completing Part 1 / GCC-Jordan coverage), Egypt's two sourced price-preference mechanisms plus one honest not-yet-sourced entry (section 11, 15 Sep 2026, opening Part 2 / non-GCC coverage), and now Turkey's one sourced price-preference mechanism plus one honest not-yet-sourced entry (section 12, 16 Sep 2026, continuing Part 2). A dual-sided buyer/supplier value-framing panel is live in the UI for every country and every sourced mechanism type. See "What Is Not Yet Done" below for what remains, including the backend table this pass added but has not provisioned, and the rest of Part 2 (UK, USA, China, per the platform owner's own stated order), which is not started yet.*
+*Registry: SI-08 (draft, pending #436/#441 formal registry entry). Date: 15 Sep 2026, updated same day (Saudi Arabia mechanism decomposition, Part 1 slice, section 8; UAE mechanism decomposition + program-architecture generalization, section 9; Jordan's second mechanism, Oman, Qatar, Bahrain, Kuwait -- closing out the rest of Part 1, section 10; Egypt mechanism decomposition -- opening Part 2, non-GCC coverage, section 11 -- all four decompositions and both worked-example fixes landed within a single ~10-hour window, per actual commit timestamps, not on four separate calendar days as earlier revisions of this line incorrectly stated), updated again 16 Sep 2026 (Turkey mechanism decomposition -- Part 2 continuation, section 12; United Kingdom mechanism decomposition -- Part 2 continuation, section 13).*
+*Engine file: `src/lib/supplierLocalContentEligibility.ts` (1,838 lines, 26 programs across all 10 countries via a generalized `LocalContentProgram` architecture — see section 9's own note on why the Saudi-only `SaudiProgram` pattern was generalized, section 10.1 for the 7 programs added 15 Sep 2026, section 11.1 for the 3 Egyptian programs added 15 Sep 2026, section 12.1 for the 2 Turkish programs added 16 Sep 2026, and section 13.1 for the UK's 1 program added 16 Sep 2026 -- the UK is a genuine single-program exception, not a placeholder gap, see section 13.2). Test file: `src/lib/supplierLocalContentEligibility.test.ts` (138 tests: 39 original + 23 Saudi-mechanism + 15 UAE-mechanism/architecture + 32 Jordan/Oman/Qatar/Bahrain/Kuwait-mechanism + 11 Egypt-mechanism + 9 Turkey-mechanism + 9 UK-mechanism tests, soft/hardest/boundary tiers; the OM/QA/BH/KW not-yet-sourced block and the 10-country structural-sanity check each register more runtime tests than their single `it(` call-site, so this N is Vitest's executed count, not a literal-text `it(` search).*
+*Status: library-complete, unit-tested, cross-engine chain-tested, live UI rebuilt as a multi-supplier list per an independent senior-QA review (`/local-content-icv`, QA-10/10-walked-through, 15 Sep 2026), extended with Saudi Arabia's full mechanism decomposition (section 8), the UAE's (section 9: MoIAT ICV usage note + genuine incentive-not-gate negative finding, and the Tawazun defense-offset mechanism with a real sourced formula), Jordan's second mechanism plus real sourced programs for Oman, Qatar, Bahrain, and Kuwait (section 10, 15 Sep 2026, completing Part 1 / GCC-Jordan coverage), Egypt's two sourced price-preference mechanisms plus one honest not-yet-sourced entry (section 11, 15 Sep 2026, opening Part 2 / non-GCC coverage), Turkey's one sourced price-preference mechanism plus one honest not-yet-sourced entry (section 12, 16 Sep 2026, continuing Part 2), and now the UK's one sourced category-eligibility-gate mechanism -- with a real, structural (not un-sourced) reason why no second UK program exists (section 13, 16 Sep 2026, continuing Part 2). A dual-sided buyer/supplier value-framing panel is live in the UI for every country and every sourced mechanism type. See "What Is Not Yet Done" below for what remains, including the backend table this pass added but has not provisioned, and the rest of Part 2 (USA, China, per the platform owner's own stated order), which is not started yet.*
 
 ---
 
@@ -65,7 +65,7 @@ remain live and completely unchanged by this work.
 
 ---
 
-## 4. Stress-Test Record (39 tests as of 15 Sep 2026, all passing; three tiers per mechanism — see section 8.8 for the 23 additional Saudi-mechanism tests (62 total), section 9.5 for the 15 additional UAE-mechanism/architecture tests added 15 Sep 2026 (77 total), section 10.8 for the 32 additional Jordan/Oman/Qatar/Bahrain/Kuwait-mechanism tests added 15 Sep 2026 (109 total), section 11.5 for the 11 additional Egypt-mechanism tests added 15 Sep 2026 (120 total), and section 12.5 for the 9 additional Turkey-mechanism tests added 16 Sep 2026 (129 total))
+## 4. Stress-Test Record (39 tests as of 15 Sep 2026, all passing; three tiers per mechanism — see section 8.8 for the 23 additional Saudi-mechanism tests (62 total), section 9.5 for the 15 additional UAE-mechanism/architecture tests added 15 Sep 2026 (77 total), section 10.8 for the 32 additional Jordan/Oman/Qatar/Bahrain/Kuwait-mechanism tests added 15 Sep 2026 (109 total), section 11.5 for the 11 additional Egypt-mechanism tests added 15 Sep 2026 (120 total), section 12.5 for the 9 additional Turkey-mechanism tests added 16 Sep 2026 (129 total), and section 13.5 for the 9 additional UK-mechanism tests added 16 Sep 2026 (138 total))
 
 ### 4.1 Saudi Arabia — LCGPA eligible-spend-ratio
 
@@ -1109,6 +1109,135 @@ page's hero copy, the "not covered by this module" disclosure copy, and the foot
 all updated to say "nine countries" and name Turkey's governing law/authority (KIK) alongside the
 other eight, rather than leaving Turkey described as an uncovered example country in copy a real
 user reads first.
+
+## 13. United Kingdom Mechanism Decomposition — Part 2 Continuation (16 Sep 2026)
+
+Third stop on the platform owner's own explicit country order. `UK` is the tenth
+`LocalContentCountry` -- and the first genuinely different KIND of finding this module has produced.
+Every country so far (Saudi Arabia through Turkey) turned out to run at least one real, sourced,
+computable local-content mechanism. This research pass confirms the opposite for the UK's main
+procurement regime: **the UK runs no GCC/Jordan/Egypt/Turkey-style above-threshold price preference
+for domestic suppliers at all, and this is a structural legal fact, not a research gap.**
+
+### 13.1 Six-type taxonomy → UK program mapping
+
+| Program | `mechanismType` | Status |
+|---|---|---|
+| `uk-below-threshold-reservation` (default and only program) | `category-eligibility-gate` | Sourced: Cabinet Office Procurement Policy Note 005 -- below-threshold contracts may be reserved by supplier geography, optionally combined with SME/VCSE status |
+
+Unlike every prior country, the UK does **not** get a second `not-yet-sourced` placeholder program.
+Section 13.4 explains why: the one other real UK mechanism found this pass (social value scoring)
+is deliberately not modeled at all, for a structural reason, not because its formula hasn't been
+found yet.
+
+### 13.2 Why the UK has no above-threshold price preference -- a structural finding, not a gap
+
+Source: the UK's Procurement Act 2023 (PA23), section 90, binds every contracting authority to a
+non-discrimination duty toward "treaty state" suppliers -- WTO Government Procurement Agreement (GPA)
+parties and the UK's own FTA partners -- for regulated procurement above the Act's own thresholds.
+Those thresholds are set out in Schedule 1 and updated annually by Cabinet Office Procurement Policy
+Note; PPN 023 sets the goods/services threshold at **GBP 135,018** for central government and
+**GBP 207,720** for other/sub-central contracting authorities, and the works threshold at
+**GBP 5,193,000**, effective 1 January 2026. A price preference for domestic suppliers above those
+thresholds -- the exact shape of every mechanism modeled in sections 8-12 -- would breach s.90
+outright. This is why this research pass looked for, and found, no such mechanism: it is legally
+foreclosed, not merely un-sourced. This finding is itself decision-relevant to a real Rawabi
+supplier bidding into UK public-sector work above threshold: there is no domestic-preference lever
+to pursue there at all, above threshold, whatever a supplier's UK-content share is.
+
+### 13.3 `uk-below-threshold-reservation` -- category-eligibility-gate, reused from Saudi/Oman's Mandatory List
+
+Below those same thresholds, however, a real, sourced, computable mechanism exists: Cabinet Office
+Procurement Policy Note 005 ("Guide to Reserving Below Threshold Procurements") lets an in-scope
+public body reserve a below-threshold contract for suppliers by **geography** -- UK-wide, a single
+county, or individual London boroughs, **explicitly not** by constituent UK nation (the guidance
+states organisations "should not define by nations of the UK"). This can optionally combine with
+**SME/VCSE** (small/medium enterprise, or voluntary/community/social enterprise) supplier-type
+status, but that combination requires the geography reservation first -- SME/VCSE status alone
+cannot be the sole reservation criterion. PPN 005 sets no percentage or quota: whether a specific
+procurement is reserved, and whether a given supplier qualifies under its stated geography (and
+optional SME/VCSE) criteria, is a **binary eligible/not-eligible call per bidder** -- structurally
+identical to Saudi's and Oman's Mandatory List `category-eligibility-gate` mechanism (sections 8.3,
+10.3), reused here via the same shared `computeCategoryEligibilityGate` primitive rather than a new
+mechanism type. Northern Ireland goods procurement of cross-border interest is excluded from this
+reservation policy under the Windsor Framework/Northern Ireland Protocol's EU treaty free-movement
+rights -- a real, disclosed carve-out, the same "disclosed, not separately modeled" treatment already
+applied to Egypt's defense/interior procurement exemption (section 11.4).
+
+- **Buyer's reading** (the reserving public body -- a council, NHS trust, or central government
+  department): a below-threshold tool to keep smaller contracts accessible to UK-based and/or
+  smaller suppliers without needing to justify a departure from open competition the way an
+  above-threshold restriction would require.
+- **Supplier's reading:** the entire lever is whether THIS specific procurement was reserved at all,
+  and if so, whether the supplier meets its stated geography (and optional SME/VCSE) criteria -- a
+  binary gate, not a percentage to optimize, the same "gate, not scale" shape as Saudi/Oman's
+  Mandatory List.
+- Worked mini-example: a UK-based fabrication supplier bidding into a below-threshold council
+  contract that the council has reserved UK-wide plus SME status → `isBelowThresholdReservedProcurement:
+  true`, `isQualifyingUkGeographySupplier: true` (UK-based and SME) → `eligibleToBid: true`. The same
+  supplier bidding into an above-threshold central-government contract → this program's
+  `applicableContexts` still cover `government`, but the underlying real-world fact is that no
+  domestic preference of any kind attaches above threshold regardless of this gate's inputs -- the
+  gate itself only ever applies to procurements the buyer has actually reserved below threshold, so
+  a non-reserved procurement (the default state for an above-threshold contract) resolves
+  `eligibleToBid: true` for everyone, not because of a preference, but because the gate does not
+  apply.
+
+### 13.4 Explicitly not modeled, to avoid a taxonomy-fit fabrication
+
+- **UK "social value" evaluation weighting** (Public Services (Social Value) Act 2012, and the
+  Procurement Act 2023's National Procurement Policy Statement, administered via Cabinet Office PPN
+  002 centrally and devolved equivalents -- Wales' WPPN 003 and Northern Ireland both mandate a
+  minimum 10% social-value weighting; England sets no mandated minimum; Scotland encourages but does
+  not mandate one) is real, sourced, and genuinely important to a supplier bidding for UK public work
+  -- but it is deliberately **not** modeled as a second UK program, for a structural reason rather
+  than an un-sourced one. It must remain nationality-neutral to stay PA23-s.90-compliant (a foreign
+  supplier can score well on social value too), each contracting authority sets its own qualitative
+  weighting per tender (bid-writing practitioners report it comprising up to 25% of marking criteria
+  in some tenders, with no single national formula), and its criteria span economic, social, AND
+  environmental wellbeing broadly, not local content specifically. There is, by design, no
+  domestic-content sub-formula to eventually source here -- a genuinely different reason for "no
+  number" than every `not-yet-sourced` entry elsewhere in this file, which is why this program is not
+  modeled as `not-yet-sourced` either (that label would misleadingly imply a formula exists and just
+  hasn't been found).
+- **The Public Procurement (British Goods and Services) Bill**, a Parliamentary bill with its second
+  reading scheduled 17 April 2026 (not yet law as of this research pass), would amend the 2012 Social
+  Value Act to require *consideration* of British goods/services and add *reporting* duties (including
+  UK-origin food-content disclosure for food contracts) -- but its own drafters were explicit that it
+  creates no price preference or quota, precisely because PA23 s.90's non-discrimination duty would
+  still apply. Disclosed here as a real, tracked, pending development, not modeled as a program since
+  it is not yet law and, even if enacted, would not create a computable preference.
+
+### 13.5 Stress-test record -- UK continuation (9 new tests, all passing; full suite 129 → 138 for this file)
+
+| Mechanism | Soft | Hardest | Boundary |
+|---|---|---|---|
+| `uk-below-threshold-reservation` | reserved below-threshold, supplier qualifies by geography -> eligible to bid | reserved below-threshold, supplier does NOT qualify by geography -> gated out entirely | not a reserved procurement at all -> gate does not apply, eligible regardless of geography status; no reservation status supplied yet -> honest `null`, never assumed either way |
+| Applicability | -- | `uk-below-threshold-reservation` correctly resolves `not-applicable` for `private-commercial` procurement (PPN 005 is a public-sector-only reservation policy) | -- |
+| Structural honesty | discloses the s.90/2026-threshold reasoning (`135,018` / `١٣٥,٠١٨`) in both languages | discloses UK social value scoring's explicit not-modeled status in both languages | -- |
+| Default routing | `uk-below-threshold-reservation` is confirmed as `DEFAULT_PROGRAM_BY_COUNTRY.UK`, and `PROGRAMS_BY_COUNTRY.UK` is confirmed as a genuine single-program list (not a placeholder gap) | -- | -- |
+| Structural | the existing structural-sanity regression test now separates the "at least 2 programs" assertion (still true for all 9 prior countries) from a UK-specific single-program assertion, and confirms every one of the 10 countries' programs still resolves back to that country in `PROGRAMS` | -- | -- |
+
+### 13.6 UI -- the UK slots into the existing generalized routing, with one genuinely new nuance
+
+The same "any country whose `PROGRAMS_BY_COUNTRY` list has more than one program gets the routing
+question row" logic (sections 8.9, 9.6, 10.9, 11.6, 12.6) needed **zero new routing logic** for the
+UK either -- `COUNTRY_ORDER` and `COUNTRY_FLAG` gained a `UK` entry, and `PROGRAM_LABELS` needed only
+the one new label. Because the UK has exactly one program, it correctly does NOT show the
+routing-question button row that every multi-program country shows -- the existing `hasMultiplePrograms`
+check (`PROGRAMS_BY_COUNTRY[country].length > 1`) already handles this with no new code, the first
+time this condition has evaluated false since the 17 Sep 2026 continuation gave every other country a
+second program. The UK got one new input-rendering block: a two-toggle pair mirroring Saudi/Oman's
+existing Mandatory List pattern exactly (a first Yes/No for whether this procurement is reserved
+below-threshold, revealing a second Yes/No for geography qualification only once the first is `true`
+-- the same conditional-reveal structure already used for SA/OM, not a new UI pattern). The stale
+"OTHER" pseudo-value comment (naming the UK among not-yet-representable example countries) was
+corrected in the same pass that made it representable -- the same "a known-wrong disclosure must not
+be left uncorrected" discipline (Decision Record 8.7 / registry rule 12) already applied during the
+Egypt and Turkey passes. The page's hero copy, the "not covered by this module" disclosure copy, and
+the footer/body copy were all updated to say "ten countries" and name the UK's PA23/PPN 005 framework
+alongside the other nine, rather than leaving the UK described as an uncovered example country in
+copy a real user reads first.
 ---
 
 ---
@@ -1922,3 +2051,120 @@ mondaq.com أن على المقاولين/المقاولين من الباطن �
 الإفصاح عن "غير مشمولة بهذه الوحدة"، ونص التذييل/المتن، ليذكر الجميع "تسع دول" ويُسمِّي قانون/هيئة
 تركيا المختصة (KİK) إلى جانب الجهات الثماني الأخرى، بدلاً من ترك تركيا موصوفة كدولة غير مشمولة كمثال
 في نص يقرأه مستخدم حقيقي أولاً.
+
+
+## ١٣. تفكيك آلية المملكة المتحدة — تكملة الجزء الثاني (١٦ سبتمبر ٢٠٢٦)
+
+المحطة الثالثة في الترتيب الصريح لمالك المنصة. `UK` هي الدولة العاشرة ضمن `LocalContentCountry` --
+وأول نتيجة مختلفة جوهرياً من نوعها تنتجها هذه الوحدة. كل دولة حتى الآن (من السعودية إلى تركيا) تبيّن
+أنها تُشغِّل آلية محتوى محلي حقيقية وموثّقة وقابلة للحساب واحدة على الأقل. يؤكد هذا البحث عكس ذلك تماماً
+بالنسبة لنظام المشتريات الرئيسي في المملكة المتحدة: **لا تُشغِّل المملكة المتحدة أي تفضيل سعري فوق العتبة
+على غرار الخليج/الأردن/مصر/تركيا لصالح الموردين المحليين إطلاقاً، وهذه حقيقة قانونية بنيوية، وليست فجوة
+بحثية.**
+
+### ١٣.١ تصنيف الأنواع الستة ← خريطة برامج المملكة المتحدة
+
+| البرنامج | `mechanismType` | الحالة |
+|---|---|---|
+| `uk-below-threshold-reservation` (البرنامج الافتراضي والوحيد) | `category-eligibility-gate` | موثّق: مذكرة سياسة المشتريات رقم ٠٠٥ الصادرة عن مكتب مجلس الوزراء -- يجوز تخصيص العقود دون العتبة وفق النطاق الجغرافي للمورّد، مع إمكانية الدمج اختيارياً مع صفة منشأة صغيرة/متوسطة أو مجتمعية |
+
+بخلاف كل دولة سابقة، لا تحصل المملكة المتحدة على برنامج ثانٍ بديل "غير موثّق بعد". يوضح القسم ١٣.٤
+السبب: الآلية البريطانية الحقيقية الأخرى التي عُثر عليها في هذه المرحلة (تقييم القيمة الاجتماعية) لا
+تُنمذَج عمداً إطلاقاً، لسبب بنيوي، لا لأن صيغتها لم تُوجد بعد.
+
+### ١٣.٢ لماذا لا يوجد تفضيل سعري فوق العتبة في المملكة المتحدة -- نتيجة بنيوية، لا فجوة
+
+المصدر: تُلزم المادة ٩٠ من قانون المشتريات البريطاني لعام ٢٠٢٣ (PA23) كل جهة تعاقد بواجب عدم التمييز
+تجاه موردي "دول المعاهدة" -- الدول الأعضاء في اتفاقية منظمة التجارة العالمية للمشتريات الحكومية (GPA)
+وشركاء اتفاقيات التجارة الحرة الخاصة بالمملكة المتحدة -- في المشتريات المنظَّمة التي تتجاوز عتبات
+القانون نفسها. تُحدَّد هذه العتبات في الملحق ١ وتُحدَّث سنوياً عبر مذكرة سياسة مشتريات صادرة عن مكتب
+مجلس الوزراء؛ تحدد المذكرة PPN 023 عتبة السلع/الخدمات بـ **١٣٥,٠١٨ جنيهاً إسترلينياً** للحكومة المركزية
+و**٢٠٧,٧٢٠ جنيهاً** لجهات التعاقد الأخرى دون المركزية، وعتبة الأشغال بـ **٥,١٩٣,٠٠٠ جنيه**، اعتباراً من
+١ يناير ٢٠٢٦. أي تفضيل سعري لصالح الموردين المحليين فوق تلك العتبات -- وهو الشكل ذاته لكل آلية نُمذِجت في
+الأقسام ٨-١٢ -- سيُخالف المادة ٩٠ مباشرة. لهذا لم يعثر هذا البحث على أي آلية من هذا النوع: فهي ممنوعة
+قانونياً، وليست غير موثّقة فقط. هذه النتيجة نفسها ذات صلة بقرار حقيقي لمورّد روابي يتقدم بعطاء لعمل حكومي
+بريطاني فوق العتبة: لا توجد أي رافعة تفضيل محلي يمكن السعي إليها هناك فوق العتبة إطلاقاً، أياً كانت حصة
+المحتوى البريطاني لدى المورّد.
+
+### ١٣.٣ `uk-below-threshold-reservation` -- بوابة أهلية الفئة، مُعاد استخدامها من القائمة الإلزامية السعودية والعمانية
+
+مع ذلك، دون تلك العتبات نفسها، توجد آلية حقيقية وموثّقة وقابلة للحساب: تتيح مذكرة سياسة المشتريات رقم
+٠٠٥ الصادرة عن مكتب مجلس الوزراء ("دليل تخصيص المشتريات دون العتبة") لجهة عامة مشمولة تخصيص عقد دون
+العتبة لموردين وفق **النطاق الجغرافي** -- على مستوى المملكة المتحدة كاملة، أو مقاطعة واحدة، أو أحياء
+لندن الفردية، **دون** استخدام أقاليم المملكة المتحدة المكوِّنة صراحةً (تنص الإرشادات على أنه ينبغي "عدم
+التحديد وفق أقاليم المملكة المتحدة"). يمكن دمج ذلك اختيارياً مع صفة **منشأة صغيرة أو متوسطة أو منشأة
+مجتمعية/تطوعية**، لكن هذا الدمج يتطلب وجود التخصيص الجغرافي أولاً -- ولا يمكن أن تكون صفة المنشأة
+الصغيرة/المتوسطة وحدها معيار التخصيص. لا تحدد مذكرة PPN 005 أي نسبة أو حصة: فسواء كانت مناقصة معينة
+مخصصة، وسواء كان مورّد معين مؤهلاً وفق نطاقها الجغرافي المُعلن (وصفة المنشأة الصغيرة/المتوسطة الاختيارية)،
+هو قرار **ثنائي مؤهل/غير مؤهل لكل مزايد** -- مطابق بنيوياً لآلية بوابة أهلية الفئة في القائمة الإلزامية
+السعودية والعمانية (القسمان ٨.٣ و١٠.٣)، ويُعاد استخدامها هنا عبر دالة `computeCategoryEligibilityGate`
+المشتركة نفسها بدلاً من نوع آلية جديد. تُستثنى مشتريات السلع لأيرلندا الشمالية ذات الاهتمام العابر
+للحدود من سياسة التخصيص هذه بموجب حقوق حرية الحركة التعاهدية الأوروبية بموجب إطار ويندسور/بروتوكول
+أيرلندا الشمالية -- استثناء حقيقي ومُفصَح عنه، بنفس معالجة "الإفصاح دون نمذجة منفصلة" المُطبَّقة على
+استثناء مشتريات الدفاع والداخلية المصري (القسم ١١.٤).
+
+- **قراءة المشتري** (الجهة العامة المخصِّصة -- مجلس محلي، أو هيئة تابعة للخدمة الصحية الوطنية، أو إدارة
+  حكومية مركزية): أداة دون العتبة لإبقاء العقود الأصغر متاحة للموردين البريطانيين و/أو الأصغر حجماً دون
+  الحاجة لتبرير الخروج عن المنافسة المفتوحة كما يتطلبه تقييد فوق العتبة.
+- **قراءة المورّد:** الرافعة الكاملة هي ما إذا كانت هذه المناقصة تحديداً مخصصة أصلاً، وإذا كانت كذلك، هل
+  يستوفي المورّد نطاقها الجغرافي المُعلن (وصفة المنشأة الصغيرة/المتوسطة الاختيارية) -- بوابة ثنائية، لا
+  نسبة مئوية يُحسَّن فيها الأداء، بنفس شكل "بوابة لا تدرّج" في القائمة الإلزامية السعودية والعمانية.
+- مثال تطبيقي مصغّر: مورّد تصنيع بريطاني يتقدم بعطاء لعقد مجلس محلي دون العتبة خصّصه المجلس على مستوى
+  المملكة المتحدة كاملة إضافة لصفة المنشأة الصغيرة/المتوسطة → `isBelowThresholdReservedProcurement: true`،
+  `isQualifyingUkGeographySupplier: true` (مقيم في المملكة المتحدة ومنشأة صغيرة/متوسطة) →
+  `eligibleToBid: true`. المورّد نفسه يتقدم بعطاء لعقد حكومي مركزي فوق العتبة → يظل `applicableContexts`
+  الخاص بهذا البرنامج يشمل `government`، لكن الحقيقة الواقعية الكامنة هي أنه لا يلتصق أي تفضيل محلي من أي
+  نوع فوق العتبة بصرف النظر عن مدخلات هذه البوابة -- فالبوابة نفسها لا تنطبق إلا على المشتريات التي خصّصها
+  المشتري فعلياً دون العتبة، فتُحسَم مناقصة غير مخصصة (الحالة الافتراضية لعقد فوق العتبة) كـ
+  `eligibleToBid: true` للجميع، ليس بسبب تفضيل، بل لأن البوابة لا تنطبق أصلاً.
+
+### ١٣.٤ ما لم يُنمذَج عمداً، تجنباً لاختلاق ملاءمة تصنيفية
+
+- **ترجيح تقييم "القيمة الاجتماعية" البريطاني** (قانون القيمة الاجتماعية في الخدمات العامة لعام ٢٠١٢،
+  وبيان سياسة المشتريات الوطني التابع لقانون مشتريات ٢٠٢٣، المُدار عبر مذكرة مكتب مجلس الوزراء PPN 002
+  مركزياً والمعادلات المفوَّضة -- تفرض ويلز (WPPN 003) وأيرلندا الشمالية كلتاهما حداً أدنى ١٠٪ لترجيح
+  القيمة الاجتماعية؛ لا تفرض إنجلترا حداً أدنى؛ وتشجع اسكتلندا ذلك دون إلزامه) آلية حقيقية وموثّقة ومهمة
+  فعلياً لمورّد يتقدم بعطاء لعمل حكومي بريطاني -- لكنها لا تُنمذَج عمداً كبرنامج بريطاني ثانٍ، لسبب بنيوي
+  لا لأنها غير موثّقة. يجب أن تبقى محايدة تجاه الجنسية للامتثال للمادة ٩٠ من قانون ٢٠٢٣ (يمكن لمورّد أجنبي
+  أن يحقق درجة عالية في القيمة الاجتماعية أيضاً)، وتضع كل جهة تعاقد ترجيحها النوعي الخاص بها لكل مناقصة
+  (يذكر ممارسو كتابة العطاءات أنها تبلغ حتى ٢٥٪ من معايير التقييم في بعض المناقصات، دون صيغة وطنية واحدة)،
+  وتشمل معاييرها الرفاه الاقتصادي والاجتماعي والبيئي عموماً، وليس المحتوى المحلي تحديداً. لا توجد، بالتصميم،
+  صيغة فرعية للمحتوى المحلي يمكن توثيقها هنا يوماً ما -- سبب مختلف فعلياً لـ"عدم وجود رقم" عن كل إدخال
+  "غير موثّق بعد" آخر في هذا الملف، ولهذا لا يُنمذَج هذا البرنامج كـ"غير موثّق بعد" أيضاً (فهذه التسمية
+  قد تُوحي خطأً بوجود صيغة لم تُوجد بعد).
+- **مشروع قانون السلع والخدمات البريطانية** (Public Procurement (British Goods and Services) Bill)، وهو
+  مشروع قانون برلماني بقراءة ثانية مقررة في ١٧ إبريل ٢٠٢٦ (لم يصبح قانوناً بعد حتى هذه المرحلة البحثية)،
+  سيُعدِّل قانون القيمة الاجتماعية لعام ٢٠١٢ ليتطلب *اعتباراً* للسلع/الخدمات البريطانية ويضيف واجبات
+  *إفصاح* (بما في ذلك الإفصاح عن نسبة منشأ الغذاء البريطاني لعقود الغذاء) -- لكن واضعيه أوضحوا صراحة أنه
+  لا يُنشئ أي تفضيل سعري أو حصة، تحديداً لأن واجب عدم التمييز في المادة ٩٠ سيظل سارياً. يُفصَح عن هذا هنا
+  كتطوّر حقيقي ومُتابَع وقيد الانتظار، ولا يُنمذَج كبرنامج لأنه لم يصبح قانوناً بعد، وحتى لو سُنَّ فلن
+  يُنشئ تفضيلاً قابلاً للحساب.
+
+### ١٣.٥ سجل اختبار الإجهاد -- تكملة المملكة المتحدة (٩ اختبارات جديدة، جميعها ناجحة؛ إجمالي هذا الملف من ١٢٩ إلى ١٣٨)
+
+| الآلية | الاختبار السهل | الاختبار الأصعب | اختبار الحدّ |
+|---|---|---|---|
+| `uk-below-threshold-reservation` | مناقصة مخصصة دون العتبة، والمورّد مؤهل جغرافياً → مؤهل للمناقصة | مناقصة مخصصة دون العتبة، لكن المورّد غير مؤهل جغرافياً → مستبعد كلياً | ليست مناقصة مخصصة أصلاً → البوابة لا تنطبق، مؤهل بصرف النظر عن حالة التأهل الجغرافي؛ دون حالة تخصيص مُدخلة → `null` صادقة، دون افتراض أي منهما |
+| الانطباق | -- | يُحسم `uk-below-threshold-reservation` بشكل صحيح كـ"لا ينطبق" على المشتريات التجارية الخاصة (مذكرة PPN 005 سياسة تخصيص للقطاع العام فقط) | -- |
+| الصدق البنيوي | يُفصَح عن منطق المادة ٩٠/عتبات ٢٠٢٦ (`135,018` / `١٣٥,٠١٨`) بكلتا اللغتين | يُفصَح عن الحالة الصريحة غير المُنمذَجة لتقييم القيمة الاجتماعية البريطاني بكلتا اللغتين | -- |
+| التوجيه الافتراضي | يُؤكَّد أن `uk-below-threshold-reservation` هو `DEFAULT_PROGRAM_BY_COUNTRY.UK`، ويُؤكَّد أن `PROGRAMS_BY_COUNTRY.UK` قائمة ببرنامج واحد حقيقي (وليست فجوة نائبة) | -- | -- |
+| البنيوي | يفصل اختبار الفحص البنيوي القائم الآن تأكيد "٢ برنامج على الأقل" (لا يزال صحيحاً للدول التسع السابقة) عن تأكيد خاص بالمملكة المتحدة ببرنامج واحد، ويؤكد أن كل برنامج في الدول العشر يعود إلى دولته في `PROGRAMS` | -- | -- |
+
+### ١٣.٦ الواجهة -- المملكة المتحدة تندمج في التوجيه المعمَّم القائم، مع فارق جديد حقيقي واحد
+
+نفس منطق "أي دولة تضم قائمة `PROGRAMS_BY_COUNTRY` الخاصة بها أكثر من برنامج تحصل على صف سؤال التوجيه"
+(الأقسام ٨.٩ و٩.٦ و١٠.٩ و١١.٦ و١٢.٦) لم يتطلب **أي منطق توجيه جديد إطلاقاً** للمملكة المتحدة أيضاً --
+اكتسب `COUNTRY_ORDER` و`COUNTRY_FLAG` إدخال `UK`، واحتاج `PROGRAM_LABELS` تسمية واحدة جديدة فقط. ولأن
+المملكة المتحدة تملك برنامجاً واحداً بالضبط، فهي لا تُظهر صف زر سؤال التوجيه الذي تُظهره كل دولة متعددة
+البرامج -- يتعامل فحص `hasMultiplePrograms` القائم (`PROGRAMS_BY_COUNTRY[country].length > 1`) مع هذا
+بالفعل دون أي كود جديد، وهي أول مرة يُقيَّم فيها هذا الشرط بـ"خطأ" منذ أن منحت تكملة ١٧ سبتمبر ٢٠٢٦ كل
+دولة أخرى برنامجاً ثانياً. حصلت المملكة المتحدة على كتلة إدخال جديدة واحدة: زوج مفاتيح تبديل ثنائي يُطابق
+تماماً نمط القائمة الإلزامية السعودية والعمانية القائم (مفتاح نعم/لا أول لما إذا كانت هذه المناقصة مخصصة
+دون العتبة، يُظهر مفتاح نعم/لا ثانياً للتأهل الجغرافي فقط عندما يكون الأول `true` -- نفس بنية الكشف
+الشرطي المستخدمة بالفعل للسعودية وعُمان، وليست نمط واجهة جديداً). جرى تصحيح تعليق "OTHER" غير المحدَّث
+(الذي كان يذكر المملكة المتحدة كمثال لدولة غير قابلة للتمثيل بعد) في نفس المرحلة التي جعلتها قابلة
+للتمثيل -- نفس انضباط "لا يجوز ترك إفصاح خاطئ معروف دون تصحيح" (سجل القرار ٨.٧ / قاعدة السجل رقم ١٢)
+المُطبَّق بالفعل أثناء مرحلتي مصر وتركيا. حُدِّث أيضاً نص المقدمة الرئيسية، ونص الإفصاح عن "غير مشمولة
+بهذه الوحدة"، ونص التذييل/المتن، ليذكر الجميع "عشر دول" ويُسمِّي إطار المملكة المتحدة (PA23 / PPN 005)
+إلى جانب الجهات التسع الأخرى، بدلاً من ترك المملكة المتحدة موصوفة كدولة غير مشمولة كمثال في نص يقرأه
+مستخدم حقيقي أولاً.

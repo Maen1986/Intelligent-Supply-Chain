@@ -610,6 +610,62 @@ describe('TR — SSB Defense Offset Guideline (2022, not-yet-sourced, disclosed 
 });
 
 // ===========================================================================
+// UK — United Kingdom (Part 2 continuation, 16 Sep 2026 -- third non-GCC/
+// Jordan country; the first genuinely different KIND of finding: no
+// above-threshold price preference exists at all, by legal design)
+// ===========================================================================
+
+describe("UK / Below-Threshold Procurement Reservation (PPN 005) — category-eligibility-gate (structurally identical to SA/OM's Mandatory List)", () => {
+  it('soft: procurement reserved below-threshold and supplier qualifies by geography -> eligible to bid', () => {
+    const a = assessSupplierLocalContent('UK', 'government', { uk: { isBelowThresholdReservedProcurement: true, isQualifyingUkGeographySupplier: true } });
+    const c = a.computation as CategoryEligibilityGateResult;
+    expect(c.eligibleToBid).toBe(true);
+  });
+
+  it('hardest: reserved below-threshold but supplier does NOT qualify by geography -> gated out entirely', () => {
+    const a = assessSupplierLocalContent('UK', 'semi-government-soe', { uk: { isBelowThresholdReservedProcurement: true, isQualifyingUkGeographySupplier: false } });
+    const c = a.computation as CategoryEligibilityGateResult;
+    expect(c.eligibleToBid).toBe(false);
+  });
+
+  it('boundary: not a reserved below-threshold procurement at all -> gate does not apply, eligible regardless of geography status', () => {
+    const a = assessSupplierLocalContent('UK', 'government', { uk: { isBelowThresholdReservedProcurement: false, isQualifyingUkGeographySupplier: null } });
+    const c = a.computation as CategoryEligibilityGateResult;
+    expect(c.eligibleToBid).toBe(true);
+  });
+
+  it('boundary: no reservation status supplied yet -> honest null, never assumed either way', () => {
+    const a = assessSupplierLocalContent('UK', 'government', { uk: { isBelowThresholdReservedProcurement: null, isQualifyingUkGeographySupplier: null } });
+    const c = a.computation as CategoryEligibilityGateResult;
+    expect(c.eligibleToBid).toBeNull();
+  });
+
+  it('not-applicable: private-commercial procurement is outside PPN 005 scope (a public-sector-only reservation policy)', () => {
+    const a = assessSupplierLocalContent('UK', 'private-commercial', { uk: { isBelowThresholdReservedProcurement: true, isQualifyingUkGeographySupplier: true } });
+    expect(a.applicability).toBe('not-applicable');
+  });
+
+  it('discloses the structural (not research-gap) reason the UK has no above-threshold price preference, citing PA23 s.90 and the 2026 thresholds', () => {
+    const fw = PROGRAMS['uk-below-threshold-reservation'];
+    expect(fw.sourceNoteEn).toContain('s.90');
+    expect(fw.sourceNoteEn).toContain('135,018');
+    expect(fw.sourceNoteAr).toContain('١٣٥,٠١٨');
+  });
+
+  it('discloses UK social value scoring as an explicit not-modeled scope decision (nationality-neutral by legal necessity), not a silent omission', () => {
+    const fw = PROGRAMS['uk-below-threshold-reservation'];
+    expect(fw.sourceNoteEn).toContain('social value');
+    expect(fw.sourceNoteAr).toContain('القيمة الاجتماعية');
+  });
+
+  it('UK is the tenth country and resolves DEFAULT_PROGRAM_BY_COUNTRY to its own single sourced program', () => {
+    expect(DEFAULT_PROGRAM_BY_COUNTRY.UK).toBe('uk-below-threshold-reservation');
+    expect(PROGRAMS_BY_COUNTRY.UK).toEqual(['uk-below-threshold-reservation']);
+    expect(COUNTRY_FRAMEWORKS.UK.applicableContexts.length).toBeGreaterThan(0);
+  });
+});
+
+// ===========================================================================
 // recommendLocalContentAction — primary + alternative (Rule 8)
 // ===========================================================================
 
@@ -800,7 +856,7 @@ describe('SA — program routing default', () => {
   });
 
   it('every country resolves DEFAULT_PROGRAM_BY_COUNTRY to a real PROGRAMS entry (architecture sanity check)', () => {
-    (['SA', 'AE', 'JO', 'OM', 'QA', 'BH', 'KW', 'EG', 'TR'] as const).forEach(country => {
+    (['SA', 'AE', 'JO', 'OM', 'QA', 'BH', 'KW', 'EG', 'TR', 'UK'] as const).forEach(country => {
       const program = DEFAULT_PROGRAM_BY_COUNTRY[country];
       expect(PROGRAMS[program]).toBeDefined();
       expect(PROGRAMS[program].country).toBe(country);
@@ -808,7 +864,7 @@ describe('SA — program routing default', () => {
     });
   });
 
-  it('PROGRAMS_BY_COUNTRY lists every program per country (SA: 6, AE: 2, JO: 2, OM: 3, QA: 2, BH: 3, KW: 2, EG: 3, TR: 2 -- TR added 16 Sep 2026 Part 2 continuation)', () => {
+  it('PROGRAMS_BY_COUNTRY lists every program per country (SA: 6, AE: 2, JO: 2, OM: 3, QA: 2, BH: 3, KW: 2, EG: 3, TR: 2, UK: 1 -- UK added 16 Sep 2026 Part 2 continuation)', () => {
     expect(PROGRAMS_BY_COUNTRY.SA).toHaveLength(6);
     expect(PROGRAMS_BY_COUNTRY.AE).toHaveLength(2);
     expect(PROGRAMS_BY_COUNTRY.JO).toHaveLength(2);
@@ -818,6 +874,7 @@ describe('SA — program routing default', () => {
     expect(PROGRAMS_BY_COUNTRY.KW).toHaveLength(2);
     expect(PROGRAMS_BY_COUNTRY.EG).toHaveLength(3);
     expect(PROGRAMS_BY_COUNTRY.TR).toHaveLength(2);
+    expect(PROGRAMS_BY_COUNTRY.UK).toHaveLength(1);
   });
 
   it('lcgpa-general carries the two usage notes (40% high-value-contract weighting, ~30% consulting/IT figure) bilingually', () => {
@@ -1360,13 +1417,20 @@ describe('Portfolio rollup — spend-set-aside-target and modified-icv-score gro
 // country before it ever reaches the UI.
 // ===========================================================================
 
-describe('PROGRAMS_BY_COUNTRY — structural sanity (17 Sep 2026 continuation, EG added 15 Sep 2026, TR added 16 Sep 2026 Part 2 pass)', () => {
-  it('all 9 countries have at least 2 programs, and every program in every list resolves back to that same country in PROGRAMS', () => {
+describe('PROGRAMS_BY_COUNTRY — structural sanity (17 Sep 2026 continuation, EG added 15 Sep 2026, TR added 16 Sep 2026, UK added 16 Sep 2026 Part 2 pass)', () => {
+  it('the 9 GCC/Jordan/Egypt/Turkey countries have at least 2 programs each, and every program in every one of the 10 countries\' lists resolves back to that same country in PROGRAMS', () => {
     for (const country of ['SA', 'AE', 'JO', 'OM', 'QA', 'BH', 'KW', 'EG', 'TR'] as const) {
       expect(PROGRAMS_BY_COUNTRY[country].length).toBeGreaterThanOrEqual(2);
+    }
+    for (const country of ['SA', 'AE', 'JO', 'OM', 'QA', 'BH', 'KW', 'EG', 'TR', 'UK'] as const) {
       for (const program of PROGRAMS_BY_COUNTRY[country]) {
         expect(PROGRAMS[program].country).toBe(country);
       }
     }
+  });
+
+  it('the UK is a genuine single-program exception -- exactly 1 program, not a placeholder gap, because PA23 s.90 structurally rules out a second above-threshold mechanism', () => {
+    expect(PROGRAMS_BY_COUNTRY.UK).toHaveLength(1);
+    expect(PROGRAMS_BY_COUNTRY.UK[0]).toBe('uk-below-threshold-reservation');
   });
 });
