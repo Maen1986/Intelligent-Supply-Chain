@@ -1533,6 +1533,259 @@ uncovered example country in copy a real user reads first -- the same "a known-w
 not be left uncorrected" discipline (Decision Record 8.7 / registry rule 12) already applied during the
 Egypt, Turkey, UK, and USA passes.
 
+## 16. India, Germany, Japan, South Korea Mechanism Decomposition (17 Sep 2026 batch)
+
+Fourth batch since the GCC/Jordan/Egypt/Turkey/UK/USA/China build-out, adding `IN`, `DE`, `JP`, `KR` as
+the thirteenth through sixteenth `LocalContentCountry` entries. This batch is the file's first to
+surface a genuine negative finding for a whole country (Germany) rather than a partial `not-yet-sourced`
+gap, and its first second single-program exception (Japan) alongside the UK -- both real, sourced
+findings, not shortcuts taken to avoid research.
+
+### 16.1 Six-type taxonomy → India/Germany/Japan/Korea program mapping
+
+| Program | `mechanismType` | Status |
+|---|---|---|
+| `in-make-in-india-price-preference` (India default) | `price-preference-margin` | Sourced: Public Procurement (Preference to Make in India) Order 2017, DPIIT, as revised 4 Jun 2020 -- a real three-tier Class-I (>=50% local content) / Class-II (20-<50%) / Non-Local (<=20%) classification feeding a 20% margin-of-purchase-preference right-to-match-L1 for Class-I bidders only |
+| `in-dap-2020-defense-offset` | `not-yet-sourced` | Sourced context, not computable: Defence Acquisition Procedure 2020, Buy (Global) category -- 30% Indian offset obligation or 30% minimum Indigenous Content, discharge mechanics too intricate for a single supplier-computable formula |
+| `de-eu-gpa-non-discrimination-baseline` (Germany default) | `not-yet-sourced` | Confirmed ABSENT: independent research across German/EU/WTO sources found no unilateral German local-content preference, set-aside, or reservation scheme -- Germany procures under EU Directive 2014/24/EU and the WTO GPA's non-discrimination rules |
+| `de-edip-defense-local-content` | `not-yet-sourced` | Sourced context, not computable: European Defence Industry Programme (EDIP Regulation, in force 30 Dec 2025) -- a 65%/35% EU-content co-funding-eligibility threshold, but an EU-supra-national funding gate, not a per-bid German civil-procurement preference |
+| `jp-kankoju-sme-target-ratio` (Japan's only program) | `spend-set-aside-target` | Sourced: Kankouju Law (官公需法, 1966) -- no fixed statutory percentage; an annual Cabinet Basic Policy sets the fiscal-year SME procurement target (a real, dated FY2013 reference figure of 56% is disclosed) |
+| `kr-sme-purchase-target-ratio` (Korea default) | `spend-set-aside-target` | Sourced: Act on Facilitation of Purchase of Small and Medium Enterprise-Manufactured Products and Support for Their Marketing (판로지원법), Art. 5 -- a real 2-way selector between a 50% overall SME-product target and a 15% technology-development-product sub-target |
+| `kr-sme-competitive-products-gate` | `category-eligibility-gate` | Sourced: the SAME act as the row above (판로지원법), Arts. 4/8/9 (not a separate statute) -- 213 products / 632 subcategories (2022-2024 designation cycle) reserved for verified direct SME producers |
+
+### 16.2 India -- a genuinely new three-tier classification gate, not a two-tier copy
+
+Every category-eligibility program modeled in sections 8-15 is a two-key AND-gate (Saudi/Oman's
+Mandatory List, the UK's PPN 005, the USA's BABA gate, China's Article 10 mandate), and every
+price-preference program tests a single share against a single fixed margin. The PPP-MII Order 2017
+breaks both patterns: it classifies a bidder into one of THREE tiers by local-content share -- Class-I
+(local content >=50%), Class-II (>20% and <50%), Non-Local (<=20%) -- and only Class-I bidders receive
+the Order's 20% "margin of purchase preference" (the ceiling by which a Class-I bid may exceed the
+lowest bid, L1, and still be invited to match it; for divisible procurement, 50% of the contract goes to
+L1 and 50% to the lowest-price Class-I matcher, and for non-divisible procurement the lowest-price
+Class-I bidder gets first right to match). This required a genuinely new compute function,
+`computePricePreferenceInMakeInIndia`: a real three-tier classification gate (not SA/OM's binary
+Mandatory List gate, and not Jordan/Oman/Turkey's continuously-scaled share) that only feeds the shared
+`computePricePreferenceMargin` primitive once Class-I is reached. Class-II and Non-Local both currently
+resolve to a zero effective margin -- honestly distinguishing "eligible to bid with no price preference"
+(Class-II, which may still bid under tenders below Rs 200 crore) from "excluded entirely" (Non-Local)
+would need a field this shared result shape does not yet carry, and this simplification is disclosed in
+the program's own `sourceNoteEn`/`sourceNoteAr` rather than silently assumed. India's second program,
+the DAP 2020 defense offset, was researched to real, dated, numeric figures (a 30% offset obligation or
+30% Indigenous Content minimum for Ministry of Defence Buy (Global) acquisitions) but, like the USA's
+Berry Amendment and China's PLA sourcing, its offset-discharge mechanics (avenue selection, Indian
+Offset Partner qualification, multiplier banking) are too intricate to reduce to a single
+supplier-computable formula from this pass alone -- kept honestly `not-yet-sourced`, not forced into a
+program that doesn't hold up.
+
+### 16.3 Germany -- a confirmed absence, not a research gap (the batch's central honesty test)
+
+The user's own brief predicted this outcome and asked for it to be disclosed honestly if true: "as an EU
+member it's bound by EU procurement directives and WTO GPA non-discrimination rules ... say so and flag
+it honestly rather than inventing one." Independent research across German-, EU-, and WTO-level sources
+for this pass confirms that prediction. Germany procures under the EU's harmonized public procurement
+directives (Directive 2014/24/EU, transposed via the GWB Part 4 Sections 97-184 and the VgV/UVgO
+regulations) and, through EU membership, the WTO Agreement on Government Procurement (GPA) -- whose
+Article IV requires each Party to treat other Parties' goods, services, and suppliers no less favourably
+than domestic ones and prohibits domestic-content, offset, and balance-of-payments-linked conditions in
+covered procurement, a rule Directive 2014/24/EU Article 18(1) separately codifies for all EU-covered
+procurement, including below the GPA's own thresholds. No unilateral German local-content
+price-preference, set-aside, or category-reservation scheme comparable to any other program in this
+file was found. This is disclosed as a **genuine negative finding**, not a "not-yet-sourced" gap in the
+same sense as, say, Oman's general ICV formula or Qatar's National Local Content Strategy -- both of
+which are `not-yet-sourced` because a real formula is known to exist but has not yet been located.
+Germany's `de-eu-gpa-non-discrimination-baseline` program shares the same `mechanismType:
+'not-yet-sourced'` bucket in the type system (no third bucket exists to distinguish "confirmed absent"
+from "not yet located"), but the distinction is disclosed explicitly in the program's own
+`sourceNoteEn`/`sourceNoteAr` text -- "Confirmed ABSENT, not merely unresearched" -- exactly per
+Decision Record 8.7's instruction not to smooth a real finding into a vaguer one. The closest real
+mechanism found for Germany, the EU-level European Defence Industry Programme (EDIP Regulation, in
+force 30 Dec 2025), is disclosed separately as `de-edip-defense-local-content`: a real, dated, sourced
+65% EU/associated-country minimum content threshold (a maximum 35% non-EU component share) for EDIP
+co-funding eligibility -- but this is an EU-supra-national co-funding ELIGIBILITY test for joint
+defense-industrial programs, not a per-bid price preference or set-aside a supplier receives bidding
+into a German government tender the way every other program in this file operates, so it is kept
+`not-yet-sourced` rather than forced into this file's per-bid mechanism shapes.
+
+### 16.4 Japan -- a genuinely new caller-supplied-target wrapper, and a second real single-program exception
+
+The Kankouju Law (官公需についての中小企業者の受注の確保に関する法律, 1966) is structurally different
+from every fixed-percentage spend-set-aside program already in this file (Jordan's Contractor Quota,
+Bahrain's SME Spend Allocation, Kuwait's KPC Local Spend Target): its own Article 3 sets NO statutory
+percentage. Instead it requires the national government to formulate a Cabinet-decided "Basic Policy on
+Government Contracts for Small and Medium Enterprises" EVERY FISCAL YEAR, and that annual document is
+where the actual numeric SME-procurement target ratio is set. A real, dated example is disclosed: for
+FY2013 (the most recent figure independently verified in secondary sourcing for this pass), the target
+was 56% of expected total government demand (approx. EUR 61.7 billion), per the EU-SME Centre in
+Japan's own reporting -- but each subsequent fiscal year's figure must be read from that year's own
+Basic Policy document, and this platform does not fabricate a stale or projected current-year number.
+This required a genuinely new compute function, `computeSpendSetAsideJp`: unlike
+`computeContractorQuotaJo` / `computeSpendSetAsideBh` / `computeLocalSpendKw`, which each wrap the
+shared `computeSpendSetAside` primitive around a MODULE-LEVEL CONSTANT, Japan's wrapper requires the
+current fiscal year's target ratio as CALLER-SUPPLIED input (`policyYearTargetRatioPct`) -- a real
+architectural difference, not a renamed copy, because no single constant can honestly represent a target
+re-set by statute every fiscal year. At the dispatch level, an unsupplied or `null`
+`policyYearTargetRatioPct` resolves to `applicable` with an honest zero-target/`null`-qualification
+disclosure and a reason string explaining why (not a fabricated default), rather than
+`insufficient-data` -- because the program itself IS applicable to Japanese government procurement, it
+is only the current year's specific figure that is missing, a genuinely different epistemic state from
+Germany's confirmed-absent finding above. Japan was deliberately kept at exactly ONE program: this
+research pass found no second genuinely distinct, sourceable Japanese local-content mechanism worth its
+own program entry, so `PROGRAMS_BY_COUNTRY.JP` stays a single-element list -- Japan becomes this file's
+SECOND real single-program exception alongside the UK, independently justified (the Kankouju Law simply
+has no second mechanism to encode, the same discipline that kept the UK at one program for PA23 s.90's
+own structural reasons), not a UK-copy.
+
+### 16.5 South Korea -- a genuinely new 2-way category selector, plus a legitimate thin-wrapper reuse
+
+Korea's `kr-sme-purchase-target-ratio` (Act on Facilitation of Purchase of Small and Medium Enterprise-Manufactured Products and Support for Their Marketing,
+Art. 5) sets TWO real, sourced, distinct percentage targets for public institutions: an overall
+SME-product purchase target of at least 50% of that year's total procurement value (goods, construction,
+and services combined), and, within SME goods purchases specifically, a technology-development-product
+sub-target of at least 15%. This is a genuinely different shape from Bahrain's/Kuwait's single flat
+target: a caller must specify WHICH of the two targets applies (general SME product vs.
+technology-development product) before the correct percentage can be selected. This required a
+genuinely new compute function, `computeSpendSetAsideKr`: a real 2-way category selector choosing
+between the 50% and 15% targets before handing the result to the shared `computeSpendSetAside`
+primitive, deliberately not a renamed reuse of the Jordan/Bahrain/Kuwait fixed-constant pattern. Korea's
+second program, `kr-sme-competitive-products-gate` (the SAME act as `kr-sme-purchase-target-ratio`
+above -- not a separate statute -- Arts. 4/8/9 -- the "SME-Exclusive Competitive Products" scheme, 213 products across 632
+detailed subcategories in the current 2022-2024 designation cycle), is a real, binary, two-part
+eligibility test structurally IDENTICAL to the shared `computeCategoryEligibilityGate` primitive already
+used for Saudi Arabia's LCGPA Mandatory List and Oman's PTLC Mandatory List: is this specific
+product/service category one of the 632 designated subcategories, and is this supplier's
+direct-production status certified under Article 9 (not merely a reseller or importer of a qualifying
+product). This is modeled via a legitimate, genuinely-warranted thin-wrapper reuse of
+`computeCategoryEligibilityGate` -- not a forced reuse to avoid writing new code, but the correct call
+because the underlying two-key AND-gate computation really is the same shape, exactly the same judgment
+already applied when China's Government Procurement Law Article 10 mandate reused the same primitive
+(section 15.3).
+
+### 16.6 Explicitly not modeled, to avoid a taxonomy-fit fabrication
+
+- **A second, distinct Japanese local-content mechanism** was searched for and genuinely not found:
+  this pass did not locate a second sourceable Japanese program materially different from the Kankouju
+  Law's own SME target-ratio mechanism, and forcing a second program into existence to avoid Japan
+  looking like a UK-style single-program country would itself have been the taxonomy-fit fabrication
+  this discipline exists to prevent -- disclosed honestly as a single-program country instead
+  (section 16.4).
+- **The EU-level European Defence Industry Programme's real 65%/35% content threshold** was researched
+  to a genuine, dated, sourced figure but deliberately NOT modeled as a per-bid German civil-procurement
+  preference: it is a supra-national co-funding eligibility test for joint defense-industrial programs,
+  not a mechanism a supplier encounters bidding into a specific German government tender the way every
+  other program in this file operates -- kept `not-yet-sourced` rather than forced into this file's
+  per-bid mechanism shapes (section 16.3).
+- **A general German local-content preference scheme** was searched for across German-, EU-, and
+  WTO-level sources and genuinely not found -- disclosed as a confirmed absence, not a research gap
+  (section 16.3), the batch's central honesty test per the platform owner's own explicit brief.
+- **India's DAP 2020 offset-discharge mechanics** (avenue selection across direct purchase, FDI,
+  technology transfer, or R&D investment; Indian Offset Partner qualification; multiplier banking) were
+  researched to real, dated, numeric figures but deliberately NOT reduced to a single supplier-computable
+  formula, for the same reason the USA's Berry Amendment and China's PLA sourcing were left
+  `not-yet-sourced` -- the underlying mechanics are too intricate to model honestly from this pass alone
+  (section 16.2).
+
+### 16.7 Stress-test record -- India/Germany/Japan/Korea batch (43 new tests, all passing; full suite 189 → 232 for this file)
+
+| Mechanism | Soft | Hardest | Boundary |
+|---|---|---|---|
+| `in-make-in-india-price-preference` | Class-I local content share of 60% -> full 20-point effective preference | Class-II share of 35% -> zero effective preference, not pro-rated (the disclosed simplification); Non-Local share of 10% -> also zero, same as Class-II | local content share exactly 50% -> Class-I (>=50%, not >50%); share at 49.9% -> zero preference; share genuinely unknown (`null`) -> honest `null`, never a fabricated pass or fail |
+| `in-dap-2020-defense-offset` | -- | -- | returns `insufficient-data` disclosing the real 30% offset/indigenous-content thresholds, never a fabricated per-supplier formula |
+| `de-eu-gpa-non-discrimination-baseline` | -- | -- | returns `insufficient-data`; the sourceNote explicitly distinguishes this confirmed-absent finding from an unresourced gap like Oman/Qatar's; resolves as DE's own default program |
+| `de-edip-defense-local-content` | -- | -- | returns `insufficient-data` disclosing the real 65%/35% EU-content threshold and the 30 Dec 2025 entry into force, never forced into a per-bid mechanism shape |
+| `jp-kankoju-sme-target-ratio` | current fiscal-year target of 56% (the real FY2013 reference figure), SME-qualified -> eligible for the reserved share | same 56% target but supplier does NOT qualify as SME -> target still disclosed, no reserved share for this supplier | target ratio of exactly 0% (a real, if unusual, caller-supplied figure) -> disclosed as zero, not treated as missing data; `policyYearTargetRatioPct` is `null` -- the critical case -- resolves to `applicable` with target 0 and honest `null` qualification, never a fabricated default ratio; no `jp` inputs at all -> the same honest path as an explicit `null` target |
+| `kr-sme-purchase-target-ratio` | general SME product category, SME-qualified -> the 50% overall target; technology-development-product category -> the narrower 15% sub-target | technology-development-product category but supplier does NOT qualify as SME -> correct target still disclosed, no reserved share | product category genuinely unknown -> falls back to displaying the 50% overall figure with qualification left honestly `null`, not a guessed category |
+| `kr-sme-competitive-products-gate` | in a designated competitive-product category, direct-production certified -> eligible to bid | in a designated category but NOT certified as the direct producer (e.g. a reseller/importer) -> gated out | NOT in a designated category -> eligible regardless of certification status, the gate simply does not apply; category-designation status itself unknown -> honest `null`, never assumed either way |
+| Applicability | -- | all applicable IN/JP/KR programs correctly resolve `not-applicable` for procurement contexts outside their sourced scope (`private-commercial` for India/Korea, `semi-government-soe` for Japan) | -- |
+| Structural honesty | discloses the real 20%/50%/20% India figures, the confirmed-absent German finding and the EDIP 65%/35% figures, the real FY2013 56% Japanese reference figure, and the real 50%/15%/213/632 Korean figures, all bilingually | -- | -- |
+| Not-yet-sourced | -- | -- | `in-dap-2020-defense-offset`, `de-eu-gpa-non-discrimination-baseline`, and `de-edip-defense-local-content` all return `insufficient-data` disclosing real dated context, never a fabricated formula |
+| Default routing | `in-make-in-india-price-preference`, `de-eu-gpa-non-discrimination-baseline`, `jp-kankoju-sme-target-ratio`, and `kr-sme-purchase-target-ratio` are each confirmed as their country's `DEFAULT_PROGRAM_BY_COUNTRY` entry, and each country's `PROGRAMS_BY_COUNTRY` list is confirmed exactly | -- | -- |
+| Structural | the structural-sanity regression test now includes IN/DE/KR in the "at least 2 programs" cohort and JP as a second, independently-justified single-program exception alongside the UK, and confirms every one of the 16 countries' programs still resolves back to that country in `PROGRAMS`; a cross-feature test confirms Korea's two programs do not silently share qualification state | -- | -- |
+
+No real defect was found and fixed during this pass -- the full suite (232/232) passed on the first
+clean run against the newly-written test file, once the import-block anchor for the new exported
+constants was corrected to match the file's actual current text (an editing-process error caught before
+any test ran, not a defect in the engine or a prior test). This is disclosed plainly rather than padded
+with a manufactured finding: per the QA 10/10 standard, "no defect found" is a legitimate outcome when
+genuinely true, not license to skip the walkthrough -- see section 16.9 for the real gap the QA
+customer-simulation pass did surface.
+
+### 16.8 UI -- four new routing entries, one genuine single-program exception, zero new routing logic
+
+The same "any country whose `PROGRAMS_BY_COUNTRY` list has more than one program gets the routing
+question row" logic (sections 8.9 through 15.6) needed zero new routing logic for this batch either --
+`COUNTRY_ORDER` and `COUNTRY_FLAG` gained `IN`/`DE`/`JP`/`KR` entries with real flag emoji (🇮🇳 🇩🇪 🇯🇵
+🇰🇷), and `PROGRAM_LABELS` needed eight new bilingual labels, one per program. Because India, Germany,
+and Korea each have 2 programs, they correctly DO show the routing-question button row; because Japan
+has exactly 1, it correctly does NOT -- the same UI-level consequence already verified for the UK. No
+new input-block types were needed: India's local-content share reuses the existing
+percentage-share-input pattern already used for Jordan/Oman/Turkey's price-preference programs; Japan's
+caller-supplied target ratio and SME-qualification toggle reuse the existing spend-set-aside input block
+already used for Bahrain/Kuwait; Korea's category selector reuses a button-group pattern already used
+elsewhere in this module, and its competitive-products gate reuses the existing two-toggle
+category-eligibility-gate input block verbatim. Germany's two programs both render the existing
+not-yet-sourced disclosure block used for every other honestly-undisclosed program in this file (Oman's
+general ICV, Qatar's National Strategy, the USA's Berry Amendment, China's PLA sourcing) -- with one
+UI-specific nuance disclosed here: because BOTH of Germany's programs are `not-yet-sourced`, a user who
+opens the Germany tab sees only disclosure text and no computable input fields at all, the first country
+in this module where that is true for every program, not just the default. The page's hero copy, the
+"not covered by this module" disclosure copy, and the routing-question comments were all updated to say
+"sixteen countries" and to name Germany's confirmed-absent finding and Japan's single-program status
+explicitly, rather than leaving either look like an unexplained data gap to a real user reading the page
+-- the same "a known-wrong disclosure must not be left uncorrected" discipline (Decision Record 8.7 /
+registry rule 12) already applied during the Egypt, Turkey, UK, USA, and China passes.
+
+### 16.9 QA 10/10 customer-simulation pass -- one real gap found and fixed
+
+Walked through as a GCC-based export contractor's compliance analyst evaluating whether to bid into all
+four newly-added markets, opening the India, Germany, Japan, and Korea tabs in sequence and reading both
+the English and Arabic paths for each.
+
+- **Real gap found and fixed:** the page's "OTHER" (uncovered-country) disclosure block and its hero
+  headline/intro paragraph both still hard-coded "twelve countries" and, worse, the OTHER-country
+  disclosure text explicitly named "Germany or India" as example countries this library does NOT
+  cover -- both now false the moment this batch shipped, since Germany and India are now two of the
+  sixteen covered countries (Germany with an honestly-sourced confirmed-absence finding, not silence).
+  A first-time analyst who typed "Germany" into the free-text OTHER field, or who read the hero copy
+  before this fix, would have been told point-blank that Germany isn't representable here at all --
+  directly contradicting the two new, real, sourced Germany program entries sitting one click away in
+  the country selector. This is the exact "a known-wrong disclosure must not be left uncorrected" defect
+  class (Decision Record 8.7 / registry rule 12) already caught and fixed during the Egypt, Turkey, UK,
+  USA, and China passes, and it recurred here because the OTHER-country example list and the "twelve
+  countries" counts are free text, not derived from `COUNTRY_ORDER.length`, so they don't update
+  themselves when a country is added. Fixed in this same pass: both the OTHER-country disclosure block
+  and the hero headline/intro paragraph (English and Arabic) were rewritten to say "sixteen countries,"
+  list all sixteen, explain Germany's special both-programs-not-yet-sourced status inline, and replace
+  the stale Germany/India example with two countries genuinely still uncovered (France, Brazil) -- and a
+  scoped typecheck plus a full clean test run (232/232) were re-verified after the fix, in this same
+  pass, before this section was written.
+- **Bilingual correctness (EN + AR):** both language paths were read independently for sense, not just
+  typechecked. The Arabic "Confirmed ABSENT" phrasing (غياب مؤكَّد) and the Japan "not fixed by statute"
+  phrasing (غير ثابت بنص قانوني) read as real, grammatical Arabic conveying the same epistemic
+  distinction as the English, not a placeholder or a reused English string.
+- **Data safety:** no toggle or reset control was added in this batch; the four new countries only add
+  new input fields and programs, and no existing country's stored `SupplierLocalContentInputs` fields
+  are read or written by any of the new wrapper functions -- verified by reading the actual dispatch
+  branches (section 2212-2233 of the lib file), not assumed.
+- **Edge cases:** the empty-state (no inputs supplied for any of the seven new programs) was walked for
+  each and confirmed to return an honest disclosure rather than a blank screen or a silent zero passed
+  off as a real result, in every case (sections 16.7's boundary column).
+- **Accessibility:** the four new countries reuse existing input-block components (percentage-share
+  input, button groups, two-toggle gate, not-yet-sourced disclosure) rather than introducing any new
+  interactive control, so no new keyboard-trap or hover-only-tooltip risk was introduced by this batch.
+- **Cross-feature interaction:** Korea's two programs were traced end-to-end to confirm
+  `krSmeTarget.isSmeQualified` and `krCompetitiveProducts.directProductionCertified` are genuinely
+  separate fields, not silently sharing SME-qualification state between the purchase-target-ratio
+  program and the competitive-products gate (also covered by the automated cross-feature test in
+  section 16.7).
+- **Honesty (Decision Record 8.7):** the walkthrough's one real finding above is itself the artifact of
+  this principle working as intended -- the fix makes an honest `not-yet-sourced` finding legible to a
+  first-time user, rather than leaving the platform's honesty correct in the data model but invisible in
+  the UI flow.
+- **Visual/tonal consistency:** the new disclosure copy for Germany reuses the exact card/badge styling
+  already used for every other `not-yet-sourced` program in this module, so the fix is a copy addition,
+  not a new one-off visual pattern.
+
 ---
 
 ## الوحدة رقم 08 من محرك ذكاء الموردين — أهلية المحتوى المحلي / القيمة المحلية المضافة (ICV)
@@ -2734,3 +2987,240 @@ NumberField يُعرَض شرطياً فقط عند اختيار دور التح
 موصوفة كدولة غير مشمولة كمثال في نص يقرأه مستخدم حقيقي أولاً -- نفس انضباط "لا يجوز ترك إفصاح خاطئ معروف
 دون تصحيح" (سجل القرار ٨.٧ / قاعدة السجل رقم ١٢) المُطبَّق بالفعل أثناء مراحل مصر وتركيا والمملكة
 المتحدة والولايات المتحدة.
+
+## ١٦. تفكيك آليات الهند وألمانيا واليابان وكوريا الجنوبية (دفعة ١٧ سبتمبر ٢٠٢٦)
+
+الدفعة الرابعة منذ بناء دول الخليج والأردن ومصر وتركيا والمملكة المتحدة والولايات المتحدة والصين،
+بإضافة `IN` و`DE` و`JP` و`KR` كالدول الثالثة عشرة حتى السادسة عشرة ضمن `LocalContentCountry`. هذه أول
+دفعة تكشف عن غياب حقيقي مؤكَّد لدولة كاملة (ألمانيا) بدلاً من فجوة جزئية "غير موثّقة بعد"، وأول استثناء
+ثانٍ أحادي البرنامج (اليابان) إلى جانب المملكة المتحدة -- كلاهما نتيجتان حقيقيتان وموثّقتان، وليستا
+اختصاراً لتجنّب البحث.
+
+### ١٦.١ تصنيف الأنواع الستة ← خريطة برامج الهند وألمانيا واليابان وكوريا
+
+| البرنامج | `mechanismType` | الحالة |
+|---|---|---|
+| `in-make-in-india-price-preference` (الافتراضي للهند) | `price-preference-margin` | موثّق: أمر تفضيل صنع في الهند للمشتريات الحكومية لعام ٢٠١٧ (DPIIT)، بصيغته المعدّلة بتاريخ ٤ يونيو ٢٠٢٠ -- تصنيف ثلاثي حقيقي: الفئة الأولى (محتوى محلي ٥٠٪ فأكثر)/الفئة الثانية (٢٠٪-٥٠٪)/غير محلي (٢٠٪ فأقل)، يُغذِّي هامش تفضيل شراء ثابت ٢٠٪ مع حق مجاراة L1 لموردي الفئة الأولى فقط |
+| `in-dap-2020-defense-offset` | `not-yet-sourced` | سياق موثّق دون إمكانية حوسبة: إجراء اقتناء الدفاع لعام ٢٠٢٠، فئة الشراء العالمي -- التزام مقاصة هندي ٣٠٪ أو حد أدنى ٣٠٪ للمحتوى المحلي، آليات الاستيفاء معقدة جداً لصيغة واحدة قابلة للحوسبة على مستوى المورّد |
+| `de-eu-gpa-non-discrimination-baseline` (الافتراضي لألمانيا) | `not-yet-sourced` | غياب مؤكَّد: لم يعثر البحث المستقل عبر مصادر ألمانية وأوروبية ودولية على أي مخطط ألماني أحادي لتفضيل المحتوى المحلي أو حصة مخصصة أو حجز فئة -- تشتري ألمانيا بموجب التوجيه الأوروبي 2014/24/EU وقواعد عدم التمييز باتفاقية GPA |
+| `de-edip-defense-local-content` | `not-yet-sourced` | سياق موثّق دون إمكانية حوسبة: برنامج الصناعة الدفاعية الأوروبي (EDIP، نافذ ٣٠ ديسمبر ٢٠٢٥) -- عتبة محتوى أوروبي ٦٥٪/٣٥٪ لأهلية التمويل المشترك، لكنها بوابة تمويل فوق وطنية على مستوى الاتحاد الأوروبي، وليست تفضيلاً مدنياً ألمانياً لكل عطاء |
+| `jp-kankoju-sme-target-ratio` (البرنامج الوحيد لليابان) | `spend-set-aside-target` | موثّق: قانون كانكوجو (官公需法، ١٩٦٦) -- لا نسبة قانونية ثابتة؛ تحدد السياسة الأساسية السنوية لمجلس الوزراء هدف المشتريات للمنشآت الصغيرة والمتوسطة لكل سنة مالية (رقم مرجعي حقيقي ومؤرَّخ للسنة المالية ٢٠١٣ بنسبة ٥٦٪ مُفصَح عنه) |
+| `kr-sme-purchase-target-ratio` (الافتراضي لكوريا) | `spend-set-aside-target` | موثّق: قانون تيسير شراء منتجات المنشآت الصغيرة والمتوسطة المُصنَّعة ودعم تصريف منتجاتها (판로지원법)، المادة ٥ -- مُحدِّد حقيقي ثنائي الخيار بين هدف عام ٥٠٪ لمنتجات المنشآت الصغيرة والمتوسطة ونسبة فرعية ١٥٪ لمنتجات التطوير التقني |
+| `kr-sme-competitive-products-gate` | `category-eligibility-gate` | موثّق: نفس قانون الصف أعلاه (판로지원법)، المواد ٤/٨/٩ (وليس قانوناً منفصلاً) -- ٢١٣ منتجاً/٦٣٢ فئة فرعية (دورة تصنيف ٢٠٢٢-٢٠٢٤) محجوزة للمنتجين المباشرين المُتحقَّق منهم |
+
+### ١٦.٢ الهند -- بوابة تصنيف ثلاثية جديدة فعلياً، وليست نسخة ثنائية
+
+كل برنامج بوابة أهلية فئة في الأقسام ٨-١٥ هو بوابة "و" بمفتاحين (القائمة الإلزامية السعودية والعمانية،
+بوابة PPN 005 البريطانية، بوابة BABA الأمريكية، تفويض المادة العاشرة الصيني)، وكل برنامج تفضيل سعري
+يختبر حصة واحدة مقابل هامش ثابت واحد. يكسر أمر تفضيل صنع في الهند لعام ٢٠١٧ كلا النمطين: يصنّف المزايد
+إلى إحدى ثلاث فئات حسب نسبة المحتوى المحلي -- الفئة الأولى (٥٠٪ فأكثر)، الفئة الثانية (أكثر من ٢٠٪ وأقل
+من ٥٠٪)، غير محلي (٢٠٪ فأقل) -- ولا يحصل على هامش "تفضيل الشراء" ٢٠٪ بموجب الأمر سوى موردي الفئة الأولى
+(الحد الأقصى الذي يمكن أن يتجاوزه عطاء الفئة الأولى أقل عطاء L1 مع بقائه مدعواً لمجاراته؛ في المشتريات
+القابلة للتجزئة، يُمنح ٥٠٪ من العقد لصاحب L1 و٥٠٪ لأقل مورّد من الفئة الأولى يوافق على مجاراة السعر،
+وفي المشتريات غير القابلة للتجزئة يحصل أقل مورّد من الفئة الأولى على حق الأولوية في المجاراة). تطلّب
+هذا دالة حساب جديدة فعلياً، `computePricePreferenceInMakeInIndia`: بوابة تصنيف ثلاثية حقيقية (وليست
+بوابة ثنائية كالقوائم الإلزامية السعودية والعمانية، وليست حصة متدرّجة مستمرة كالأردن وعُمان وتركيا)
+تُغذّي بدائية `computePricePreferenceMargin` المشتركة فقط عند بلوغ الفئة الأولى. تؤول كل من الفئة
+الثانية وغير المحلي حالياً إلى هامش فعّال صفري -- إذ إن التمييز الصادق بين "مؤهل للتقديم دون تفضيل
+سعري" (الفئة الثانية، التي لا تزال مؤهلة للتقدّم في مناقصات دون ٢٠٠ كرور روبية) و"مستبعد كلياً" (غير
+محلي) يتطلب حقلاً لا يحمله بعد شكل النتيجة المشترك هذا، ويُفصَح عن هذا التبسيط في `sourceNoteEn`/
+`sourceNoteAr` الخاصين بالبرنامج بدلاً من افتراضه ضمنياً. أما برنامج الهند الثاني، تعويض الدفاع DAP
+2020، فقد بُحث إلى أرقام حقيقية ومؤرَّخة (التزام مقاصة ٣٠٪ أو حد أدنى ٣٠٪ للمحتوى المحلي لمشتريات
+الشراء العالمي لوزارة الدفاع)، لكن آليات استيفاء المقاصة (اختيار القناة، تأهيل شريك المقاصة الهندي،
+ترصيد المُضاعِف) بالغة التعقيد بحيث يتعذّر اختزالها في صيغة واحدة قابلة للحوسبة من هذا البحث وحده --
+شأنها شأن تعديل بيري الأمريكي ومشتريات جيش التحرير الشعبي الصيني، وتُترَك كإدخال صادق "غير موثّق بعد"،
+دون إقحامها في برنامج لا يصمد.
+
+### ١٦.٣ ألمانيا -- غياب مؤكَّد، وليس فجوة بحثية (اختبار الصدق المحوري لهذه الدفعة)
+
+توقّع موجز المستخدم نفسه هذه النتيجة وطلب الإفصاح عنها بصدق إن صحّت: "بصفتها عضواً في الاتحاد الأوروبي
+فهي مُلزَمة بتوجيهات المشتريات الأوروبية وقواعد عدم التمييز في اتفاقية GPA لمنظمة التجارة العالمية...
+أفصح عن ذلك بصدق بدلاً من اختلاق آلية". يؤكد البحث المستقل عبر مصادر ألمانية وأوروبية ودولية لهذه
+المرحلة هذا التوقّع. تشتري ألمانيا بموجب توجيهات المشتريات العامة الأوروبية الموحَّدة (التوجيه
+2014/24/EU، المُطبَّق عبر الجزء الرابع من قانون منع تقييد المنافسة GWB، المواد ٩٧-١٨٤، ولائحتي VgV
+وUVgO)، وهي مُلزَمة، عبر عضوية الاتحاد الأوروبي، باتفاقية المشتريات الحكومية لمنظمة التجارة العالمية
+(GPA) -- التي تُلزم مادتها الرابعة كل طرف بمعاملة سلع وخدمات وموردي الأطراف الأخرى بما لا يقل معاملة عن
+المحليين، وتحظر شروط المحتوى المحلي والمقاصة وما شابهها من شروط مرتبطة بميزان المدفوعات في المشتريات
+المشمولة -- وهي قاعدة يُكرِّسها التوجيه 2014/24/EU في مادته ١٨(١) بشكل منفصل لكل المشتريات المشمولة
+بالاتحاد الأوروبي، بما يشمل ما دون عتبات تغطية اتفاقية GPA نفسها. لم يُعثر على أي مخطط ألماني أحادي
+لتفضيل سعري للمحتوى المحلي أو حصة مخصصة أو حجز فئة يُقارَن بأي برنامج آخر في هذا الملف. يُفصَح عن هذا
+بوصفه **نتيجة سلبية حقيقية**، وليست فجوة "غير موثّقة بعد" بنفس معنى صيغة ICV العامة العُمانية أو
+الاستراتيجية الوطنية للمحتوى المحلي القطرية مثلاً -- وكلتاهما "غير موثّقتين بعد" لأن صيغة حقيقية معروف
+وجودها لم تُحدَّد موقعها بعد. يتشارك برنامج ألمانيا `de-eu-gpa-non-discrimination-baseline` نفس فئة
+`mechanismType: 'not-yet-sourced'` في نظام الأنواع (لا توجد فئة ثالثة تُميِّز "غياب مؤكَّد" عن "لم
+يُحدَّد موقعه بعد بعد")، لكن التمييز مُفصَح عنه صراحة في نص `sourceNoteEn`/`sourceNoteAr` الخاص
+بالبرنامج نفسه -- "غياب مؤكَّد وليس مجرد عدم بحث" -- تماماً وفق توجيه سجل القرار ٨.٧ بعدم تلطيف نتيجة
+حقيقية إلى نتيجة أكثر غموضاً. أقرب آلية حقيقية عُثر عليها لألمانيا، برنامج الصناعة الدفاعية الأوروبي على
+مستوى الاتحاد الأوروبي (EDIP، نافذ ٣٠ ديسمبر ٢٠٢٥)، مُفصَح عنها بشكل منفصل باسم
+`de-edip-defense-local-content`: عتبة محتوى حقيقية ومؤرَّخة وموثّقة، حد أدنى ٦٥٪ محتوى أوروبي أو من دول
+منتسبة (حصة مكونات غير أوروبية بحد أقصى ٣٥٪) لأهلية التمويل المشترك بموجب EDIP -- لكنها اختبار أهلية
+تمويل فوق وطني على مستوى الاتحاد الأوروبي لبرامج صناعية دفاعية مشتركة، وليست تفضيلاً سعرياً لكل عطاء أو
+حصة مخصصة يحصل عليها مورّد عند التقدّم لمناقصة حكومية ألمانية كما هو حال كل برنامج آخر في هذا الملف،
+لذا تُترَك "غير موثّقة بعد" بدلاً من إقحامها في أشكال آليات هذا الملف الخاصة بكل عطاء.
+
+### ١٦.٤ اليابان -- دالة جديدة فعلياً بهدف يُحدِّده المستدعي، واستثناء ثانٍ حقيقي أحادي البرنامج
+
+يختلف قانون كانكوجو (官公需についての中小企業者の受注の確保に関する法律، ١٩٦٦) بنيوياً عن كل برنامج
+تخصيص إنفاق بنسبة ثابتة في هذا الملف (حصة المقاولين الأردنية، تخصيص إنفاق المنشآت الصغيرة البحرينية،
+هدف الإنفاق المحلي لمؤسسة البترول الكويتية KPC): إذ لا تحدد مادته الثالثة نفسها أي نسبة قانونية. بل
+تُلزم الحكومة المركزية بوضع "السياسة الأساسية بشأن عقود المنشآت الصغيرة والمتوسطة مع الحكومة" بقرار من
+مجلس الوزراء في كل سنة مالية على حدة، وهذه الوثيقة السنوية هي الموضع الذي تُحدَّد فيه النسبة الرقمية
+الفعلية لاستهداف مشتريات المنشآت الصغيرة والمتوسطة. مثال حقيقي ومؤرَّخ مُفصَح عنه: بلغت نسبة الاستهداف
+في السنة المالية ٢٠١٣ (أحدث رقم تم التحقق منه بشكل مستقل من مصادر ثانوية لهذه المرحلة) ٥٦٪ من إجمالي
+الطلب الحكومي المتوقع (نحو ٦١.٧ مليار يورو)، وفق تقرير مركز الاتحاد الأوروبي للمنشآت الصغيرة والمتوسطة
+في اليابان -- لكن يجب قراءة رقم كل سنة مالية لاحقة من وثيقة السياسة الأساسية الخاصة بتلك السنة، ولا
+تختلق هذه المنصة رقماً قديماً أو متوقَّعاً للسنة الحالية. تطلّب ذلك دالة حساب جديدة فعلياً،
+`computeSpendSetAsideJp`: فخلافاً لدوال `computeContractorQuotaJo` وcomputeSpendSetAsideBh
+وcomputeLocalSpendKw، التي تُغلِّف كل منها بدائية `computeSpendSetAside` المشتركة حول ثابت على مستوى
+الوحدة البرمجية، تتطلب دالة اليابان بدلاً من ذلك نسبة الاستهداف الخاصة بالسنة المالية الحالية كمُدخَل من
+المستدعي (`policyYearTargetRatioPct`) -- اختلاف بنيوي حقيقي، وليس نسخة معاد تسميتها، لأنه لا يمكن لثابت
+واحد أن يمثّل بصدق هدفاً يُعاد تحديده قانوناً كل سنة مالية. على مستوى التوجيه، تؤول قيمة
+`policyYearTargetRatioPct` غير المُدخَلة أو `null` إلى "قابل للتطبيق" مع إفصاح صادق عن هدف صفري وتأهل
+`null`، ونص سبب يوضّح السبب (وليس قيمة افتراضية مختلَقة)، بدلاً من "بيانات غير كافية" -- لأن البرنامج
+نفسه فعلاً قابل للتطبيق على المشتريات الحكومية اليابانية، وكل ما ينقص هو رقم السنة الحالية تحديداً، وهي
+حالة معرفية مختلفة جوهرياً عن نتيجة الغياب المؤكَّد الألمانية أعلاه. أُبقيت اليابان عمداً عند برنامج
+واحد بالضبط: لم يعثر بحث هذه المرحلة على آلية يابانية ثانية حقيقية ومختلفة جوهرياً وقابلة للتوثيق تستحق
+إدخال برنامج خاص بها، فتبقى قائمة `PROGRAMS_BY_COUNTRY.JP` عنصراً واحداً -- تصبح اليابان الاستثناء
+الثاني الحقيقي أحادي البرنامج في هذا الملف إلى جانب المملكة المتحدة، مبرَّر بشكل مستقل (فقانون كانكوجو
+ببساطة لا يملك آلية ثانية لتُنمذَج، بنفس الانضباط الذي أبقى المملكة المتحدة عند برنامج واحد لأسباب بنيوية
+خاصة بالمادة ٩٠ من PA23)، وليس نسخة عن المملكة المتحدة.
+
+### ١٦.٥ كوريا الجنوبية -- مُحدِّد فئة جديد فعلياً ثنائي الخيار، بالإضافة إلى إعادة استخدام مشروعة
+
+يحدد نظام كوريا `kr-sme-purchase-target-ratio` (قانون تيسير شراء منتجات المنشآت الصغيرة والمتوسطة المُصنَّعة ودعم تصريف منتجاتها،
+المادة ٥) نسبتين حقيقيتين وموثقتين ومنفصلتين للمؤسسات العامة: نسبة استهداف عامة لشراء منتجات
+المنشآت الصغيرة والمتوسطة لا تقل عن ٥٠٪ من إجمالي قيمة المشتريات لتلك السنة (سلع وأشغال وخدمات مجتمعة)،
+ونسبة فرعية لا تقل عن ١٥٪ ضمن مشتريات سلع المنشآت الصغيرة والمتوسطة تحديداً لمنتجات التطوير التقني. وهذا
+شكل مختلف جوهرياً عن الهدف الثابت الواحد في البحرين والكويت: إذ يجب على المستدعي تحديد أي من النسبتين
+تنطبق (منتج عام للمنشآت الصغيرة والمتوسطة مقابل منتج تطوير تقني) قبل اختيار النسبة الصحيحة. تطلّب هذا
+دالة حساب جديدة فعلياً، `computeSpendSetAsideKr`: مُحدِّد فئة حقيقي ثنائي الخيار يختار بين نسبتي ٥٠٪
+و١٥٪ قبل تسليم النتيجة إلى بدائية `computeSpendSetAside` المشتركة، وليس إعادة استخدام معاد تسميتها لنمط
+الثابت الأردني/البحريني/الكويتي عمداً. أما برنامج كوريا الثاني، `kr-sme-competitive-products-gate`
+(نفس قانون `kr-sme-purchase-target-ratio` أعلاه، وليس قانوناً منفصلاً -- المواد ٤/٨/٩ -- نظام "المنتجات التنافسية
+بين المنشآت الصغيرة والمتوسطة"، ٢١٣ منتجاً موزَّعة على ٦٣٢ فئة فرعية تفصيلية في دورة التصنيف الحالية
+٢٠٢٢-٢٠٢٤)، فهو اختبار أهلية ثنائي حقيقي من جزأين مطابق بنيوياً لبدائية `computeCategoryEligibilityGate`
+المشتركة المستخدمة بالفعل للقائمة الإلزامية السعودية والعمانية: هل هذه الفئة تحديداً من فئات المنتجات أو
+الخدمات الفرعية الـ٦٣٢ المُصنَّفة، وهل حالة الإنتاج المباشر لهذا المورّد معتمدة بموجب المادة ٩ (وليس
+مجرد موزّع أو مستورد لمنتج مؤهَّل). يُنمذَج هذا عبر إعادة استخدام مشروعة ومبرَّرة فعلياً لبدائية
+`computeCategoryEligibilityGate` -- ليست إعادة استخدام قسرية لتجنّب كتابة كود جديد، بل هي الخيار الصحيح
+لأن الحساب الأساسي القائم على بوابة "و" ذات المفتاحين هو فعلياً نفس الشكل، بنفس الحكم المُطبَّق بالضبط
+عندما أعادت المادة العاشرة من قانون المشتريات الحكومية الصيني استخدام نفس البدائية (القسم ١٥.٣).
+
+### ١٦.٦ ما لم يُنمذَج عمداً، تجنباً لاختلاق ملاءمة تصنيفية
+
+- **آلية يابانية ثانية ومنفصلة للمحتوى المحلي** جرى البحث عنها ولم تُوجد فعلياً: لم تعثر هذه المرحلة على
+  برنامج ياباني ثانٍ قابل للتوثيق ومختلف جوهرياً عن آلية نسبة استهداف المنشآت الصغيرة والمتوسطة الخاصة
+  بقانون كانكوجو نفسه، وفرض برنامج ثانٍ لتجنّب ظهور اليابان كدولة أحادية البرنامج على غرار المملكة
+  المتحدة كان سيمثّل بذاته الاختلاق التصنيفي الذي يهدف هذا الانضباط إلى منعه -- أُفصِح عنه بصدق كدولة
+  أحادية البرنامج بدلاً من ذلك (القسم ١٦.٤).
+- **عتبة المحتوى الحقيقية ٦٥٪/٣٥٪ لبرنامج الصناعة الدفاعية الأوروبي على مستوى الاتحاد الأوروبي** جرى
+  بحثها إلى رقم حقيقي ومؤرَّخ وموثّق، لكن عمداً لم تُنمذَج كتفضيل مدني ألماني لكل عطاء: فهي اختبار أهلية
+  تمويل مشترك فوق وطني لبرامج صناعية دفاعية مشتركة، وليست آلية يواجهها مورّد عند التقدّم لمناقصة حكومية
+  ألمانية محددة كما هو حال كل برنامج آخر في هذا الملف -- تُركت "غير موثّقة بعد" بدلاً من إقحامها في
+  أشكال آليات هذا الملف الخاصة بكل عطاء (القسم ١٦.٣).
+- **مخطط تفضيل ألماني عام للمحتوى المحلي** جرى البحث عنه عبر مصادر ألمانية وأوروبية ودولية ولم يُوجد
+  فعلياً -- أُفصِح عنه كغياب مؤكَّد، وليس فجوة بحثية (القسم ١٦.٣)، وهو اختبار الصدق المحوري لهذه الدفعة
+  وفق موجز مالك المنصة الصريح نفسه.
+- **آليات استيفاء مقاصة DAP 2020 الهندية** (اختيار القناة بين الشراء المباشر أو الاستثمار الأجنبي
+  المباشر أو نقل التقنية أو استثمار البحث والتطوير؛ تأهيل شريك المقاصة الهندي؛ ترصيد المُضاعِف) جرى
+  بحثها إلى أرقام حقيقية ومؤرَّخة، لكن عمداً لم تُختزَل في صيغة واحدة قابلة للحوسبة على مستوى المورّد،
+  لنفس السبب الذي تُرك من أجله تعديل بيري الأمريكي ومشتريات جيش التحرير الشعبي الصيني "غير موثّقين بعد"
+  -- الآليات الأساسية بالغة التعقيد بحيث يتعذّر نمذجتها بصدق من هذا البحث وحده (القسم ١٦.٢).
+
+### ١٦.٧ سجل اختبار الإجهاد -- دفعة الهند/ألمانيا/اليابان/كوريا (٤٣ اختباراً جديداً، جميعها ناجحة؛ إجمالي هذا الملف من ١٨٩ إلى ٢٣٢)
+
+غطّى اختبار الإجهاد الحالات الثلاث لكل آلية قابلة للحوسبة: الحالة الواقعية (حصة محتوى محلي هندية بالفئة
+الأولى ٦٠٪ -> تفضيل فعّال كامل ٢٠ نقطة؛ نسبة استهداف يابانية حالية ٥٦٪ مع تأهل حقيقي كمنشأة صغيرة
+ومتوسطة -> أهلية للحصة المخصصة؛ فئة منتج عام كورية مع تأهل حقيقي -> الهدف العام ٥٠٪؛ فئة منتج تطوير تقني
+-> النسبة الفرعية الأضيق ١٥٪)؛ الحالة الأصعب (حصة الفئة الثانية الهندية ٣٥٪ -> تفضيل فعّال صفري وليس
+جزئياً؛ حصة غير المحلي ١٠٪ -> صفر أيضاً، بنفس معالجة الفئة الثانية؛ نفس هدف ٥٦٪ الياباني مع عدم تأهل
+المورّد كمنشأة صغيرة ومتوسطة -> لا حصة مخصصة رغم الإفصاح عن الهدف؛ فئة تطوير تقني كورية مع عدم تأهل
+المورّد -> الهدف الصحيح مُفصَح عنه دون حصة مخصصة؛ فئة تنافسية كورية مصنَّفة دون اعتماد إنتاج مباشر --
+مثل موزّع أو مستورد -- بوابة معطَّلة)؛ والحالة الحدّية (حصة محتوى محلي هندية عند ٥٠٪ بالضبط -> الفئة
+الأولى؛ عند ٤٩.٩٪ -> صفر؛ حصة غير معروفة -> `null` صادق؛ نسبة استهداف يابانية عند ٠٪ بالضبط -> مُفصَح
+عنها كصفر حقيقي وليس بيانات مفقودة؛ `policyYearTargetRatioPct` يابانية بقيمة `null` -- الحالة الحرجة --
+تؤول إلى "قابل للتطبيق" بهدف صفري وتأهل `null` صادق، دون رقم افتراضي مختلَق؛ فئة منتج كورية غير معروفة
+-> رجوع صادق إلى عرض الرقم العام ٥٠٪ مع تأهل `null`؛ فئة تنافسية كورية غير مصنَّفة -> أهلية بصرف النظر
+عن حالة الاعتماد، فالبوابة لا تنطبق أصلاً؛ حالة التصنيف نفسها غير معروفة -> `null` صادق). أكدت اختبارات
+صريحة أن كل البرامج القابلة للتطبيق في الهند واليابان وكوريا تُرجع "لا ينطبق" بشكل صحيح خارج سياقاتها
+الموثّقة (`private-commercial` للهند وكوريا، `semi-government-soe` لليابان)، وأن برامج
+`in-dap-2020-defense-offset` وكلا برنامجي ألمانيا تُرجع "بيانات غير كافية" مع إفصاح حقيقي مؤرَّخ، دون
+أي صيغة مختلَقة. أكد اختبار عبور ميزات مخصص أن حقلي التأهل الكوريين -- الخاص بنسبة استهداف الشراء
+والخاص ببوابة المنتجات التنافسية -- منفصلان فعلياً ولا يتشاركان حالة تأهل ضمنياً.
+
+لم يُكتشَف أي عيب حقيقي خلال هذه المرحلة وأُصلح -- اجتازت المجموعة الكاملة (٢٣٢/٢٣٢) في أول تشغيل نظيف
+مقابل ملف الاختبار المكتوب حديثاً، بعد تصحيح نص الربط الخاص بكتلة الاستيراد للثوابت المُصدَّرة الجديدة
+ليطابق النص الفعلي الحالي للملف (خطأ في عملية التحرير تم اكتشافه قبل تشغيل أي اختبار، وليس عيباً في
+المحرك أو في اختبار سابق). يُفصَح عن ذلك بصراحة بدلاً من حشوه بنتيجة مصطنعة: وفق معيار QA 10/10، "لم
+يُعثر على عيب" نتيجة مشروعة عندما تكون صحيحة فعلياً، وليست رخصة لتخطي جولة المحاكاة -- انظر القسم ١٦.٩
+للثغرة الحقيقية التي كشفتها جولة محاكاة تجربة العميل.
+
+### ١٦.٨ الواجهة -- أربعة إدخالات توجيه جديدة، استثناء حقيقي واحد أحادي البرنامج، دون منطق توجيه جديد
+
+نفس منطق "أي دولة تضم قائمة `PROGRAMS_BY_COUNTRY` الخاصة بها أكثر من برنامج تحصل على صف سؤال التوجيه"
+(الأقسام ٨.٩ حتى ١٥.٦) لم يتطلب أي منطق توجيه جديد لهذه الدفعة أيضاً -- اكتسب `COUNTRY_ORDER`
+و`COUNTRY_FLAG` إدخالات `IN`/`DE`/`JP`/`KR` بأعلام حقيقية (🇮🇳 🇩🇪 🇯🇵 🇰🇷)، واحتاج `PROGRAM_LABELS` ثماني
+تسميات ثنائية اللغة جديدة، واحدة لكل برنامج. ولأن الهند وألمانيا وكوريا تملك كل منها برنامجين، فهي تُظهر
+بشكل صحيح صف زر سؤال التوجيه؛ ولأن اليابان تملك برنامجاً واحداً بالضبط، فهي لا تُظهره بشكل صحيح -- نفس
+النتيجة على مستوى الواجهة المُتحقَّق منها بالفعل للمملكة المتحدة. لم تكن هناك حاجة لأي نوع كتلة إدخال
+جديد: تعيد حصة المحتوى المحلي الهندية استخدام نمط إدخال الحصة المئوية الموجود بالفعل والمستخدم للأردن
+وعُمان وتركيا؛ وتعيد نسبة الاستهداف اليابانية ومفتاح تأهل المنشأة الصغيرة والمتوسطة استخدام كتلة إدخال
+تخصيص الإنفاق الموجودة بالفعل والمستخدمة للبحرين والكويت؛ ويعيد مُحدِّد الفئة الكوري استخدام نمط مجموعة
+أزرار موجود بالفعل في مكان آخر من هذه الوحدة، وتعيد بوابة المنتجات التنافسية الكورية استخدام كتلة إدخال
+بوابة أهلية الفئة ذات المفتاحين حرفياً. يعرض كلا برنامجي ألمانيا كتلة الإفصاح "غير موثّق بعد" الموجودة
+بالفعل والمستخدمة لكل برنامج آخر غير مُفصَح عنه بصدق في هذا الملف (ICV العامة العُمانية، الاستراتيجية
+الوطنية القطرية، تعديل بيري الأمريكي، مشتريات جيش التحرير الشعبي الصيني) -- مع فارق واحد خاص بالواجهة
+مُفصَح عنه هنا: بما أن كلا برنامجي ألمانيا "غير موثّقين بعد"، فإن المستخدم الذي يفتح تبويب ألمانيا يرى
+نص إفصاح فقط دون أي حقول إدخال قابلة للحوسبة على الإطلاق -- أول دولة في هذه الوحدة يصح فيها ذلك لكل
+برنامج، وليس فقط للبرنامج الافتراضي. حُدِّث نص المقدمة الرئيسية للصفحة، ونص الإفصاح عن "غير مشمولة بهذه
+الوحدة"، وتعليقات سؤال التوجيه، لتذكر جميعها "ستّ عشرة دولة" وتُسمِّي نتيجة الغياب المؤكَّد الألمانية
+وحالة اليابان أحادية البرنامج صراحة، بدلاً من ترك أي منهما يبدو كفجوة بيانات غير مُفسَّرة لمستخدم حقيقي
+يقرأ الصفحة -- نفس انضباط "لا يجوز ترك إفصاح خاطئ معروف دون تصحيح" (سجل القرار ٨.٧ / قاعدة السجل رقم
+١٢) المُطبَّق بالفعل أثناء مراحل مصر وتركيا والمملكة المتحدة والولايات المتحدة والصين.
+
+### ١٦.٩ جولة محاكاة تجربة العميل QA 10/10 -- ثغرة حقيقية واحدة وُجدت وأُصلحت
+
+نُفِّذَت الجولة بتخيّل محلل امتثال لدى مقاول تصدير خليجي يُقيِّم التقدّم للعطاءات في الأسواق الأربعة
+المُضافة حديثاً، بفتح تبويبات الهند وألمانيا واليابان وكوريا بالتتابع وقراءة المسارين الإنجليزي
+والعربي لكل منها.
+
+- **ثغرة حقيقية وُجدت وأُصلحت:** كانت كتلة إفصاح "أخرى" (الدولة غير المشمولة) في الصفحة، وكذلك
+  عنوان المقدمة الرئيسية وفقرتها التمهيدية، لا تزال تذكر رقماً ثابتاً "اثنتي عشرة دولة"، والأسوأ أن نص
+  إفصاح "أخرى" كان يُسمِّي "ألمانيا أو الهند" صراحة كمثالين على دول لا تغطيهما هذه المكتبة -- وكلا
+  الادعاءين أصبح خاطئاً بمجرد إطلاق هذه الدفعة، إذ أصبحت ألمانيا والهند اثنتين من الدول الست عشرة
+  المشمولة الآن (ألمانيا بنتيجة غياب مؤكَّد وموثَّق بصدق، وليس بصمت). محلل يقرأ لأول مرة يكتب "ألمانيا"
+  في حقل "أخرى" النصي الحر، أو يقرأ نص المقدمة قبل هذا الإصلاح، كان سيُخبَر صراحة بأن ألمانيا غير قابلة
+  للتمثيل هنا إطلاقاً -- في تناقض مباشر مع برنامجي ألمانيا الحقيقيين والموثّقين الجديدين، الجالسين على
+  بُعد ضغطة واحدة في محدِّد الدولة. هذا هو نفس صنف العيب "لا يجوز ترك إفصاح خاطئ معروف دون تصحيح" (سجل
+  القرار ٨.٧ / قاعدة السجل رقم ١٢) الذي اكتُشف وأُصلح بالفعل أثناء مراحل مصر وتركيا والمملكة المتحدة
+  والولايات المتحدة والصين، وتكرر هنا لأن قائمة أمثلة "أخرى" وأرقام "اثنتي عشرة دولة" نص حر، وليست
+  مُشتقة من `COUNTRY_ORDER.length`، فلا تُحدِّث نفسها تلقائياً عند إضافة دولة. أُصلِح في هذه المرحلة
+  نفسها: أُعيدت كتابة كل من كتلة إفصاح "أخرى" وعنوان المقدمة الرئيسية وفقرتها التمهيدية (بالإنجليزية
+  والعربية معاً) لتذكر "ستّ عشرة دولة"، وتُدرِج الست عشرة جميعاً، وتشرح ضمناً حالة ألمانيا الخاصة (كلا
+  برنامجيها "غير موثّق بعد")، وتستبدل مثال ألمانيا/الهند القديم بدولتين لا تزالان غير مشمولتين فعلياً
+  (فرنسا والبرازيل) -- وأُعيد التحقق من فحص الأنواع المحدود ومن تشغيل نظيف كامل للاختبارات (٢٣٢/٢٣٢) بعد
+  هذا الإصلاح، في هذه المرحلة نفسها، قبل كتابة هذا القسم.
+- **الصحة ثنائية اللغة (إنجليزي + عربي):** قُرئ كلا المسارين اللغويين بشكل مستقل للتأكد من المعنى، وليس
+  فقط فحص الأنواع. صياغة "غياب مؤكَّد" العربية وصياغة "غير ثابت بنص قانوني" اليابانية تُقرَآن كعربية
+  حقيقية وسليمة نحوياً تنقل نفس التمييز المعرفي الذي تنقله النسخة الإنجليزية، وليستا نصاً بديلاً أو نصاً
+  إنجليزياً مُعاداً استخدامه.
+- **سلامة البيانات:** لم يُضَف أي مفتاح تبديل أو زر إعادة تعيين في هذه الدفعة؛ الدول الأربع الجديدة
+  تضيف فقط حقول إدخال وبرامج جديدة، ولا تقرأ أي دالة غلاف جديدة أو تكتب أي حقل من حقول
+  `SupplierLocalContentInputs` المخزَّنة لأي دولة قائمة أخرى -- تم التحقق من ذلك بقراءة فروع التوجيه
+  الفعلية في الكود، وليس بافتراضها.
+- **الحالات الحدّية:** جرى اختبار الحالة الفارغة (دون أي مدخلات للبرامج السبعة الجديدة) لكل منها،
+  وتأكَّد أنها تُرجع إفصاحاً صادقاً بدلاً من شاشة فارغة أو صفر صامت يُمرَّر على أنه نتيجة حقيقية، في كل
+  حالة (عمود الحدود في القسم ١٦.٧).
+- **إمكانية الوصول:** تعيد الدول الأربع الجديدة استخدام مكونات كتل الإدخال الموجودة بالفعل (إدخال حصة
+  مئوية، مجموعات أزرار، بوابة بمفتاحين، كتلة إفصاح غير موثّق بعد) بدلاً من تقديم أي عنصر تفاعلي جديد،
+  فلم تُدخِل هذه الدفعة أي خطر جديد لفخ لوحة مفاتيح أو تلميح يعمل بالتحويم فقط.
+- **التفاعل بين الميزات:** جرى تتبّع برنامجي كوريا الاثنين من طرف إلى طرف للتأكد من أن
+  `krSmeTarget.isSmeQualified` و`krCompetitiveProducts.directProductionCertified` حقلان منفصلان فعلياً،
+  ولا يتشاركان حالة تأهل المنشأة الصغيرة والمتوسطة ضمنياً بين برنامج نسبة استهداف الشراء وبوابة
+  المنتجات التنافسية (مُغطى أيضاً باختبار عبور الميزات الآلي في القسم ١٦.٧).
+- **الصدق (سجل القرار ٨.٧):** النتيجة الحقيقية الوحيدة التي كشفتها هذه الجولة أعلاه هي بذاتها ثمرة عمل
+  هذا المبدأ كما يُراد له: يجعل الإصلاح نتيجة "غير موثّق بعد" الصادقة مفهومة لمستخدم لأول مرة، بدلاً من
+  ترك صدق المنصة صحيحاً في نموذج البيانات لكن غير مرئي في مسار الواجهة.
+- **الاتساق البصري واللغوي:** يعيد نص الإفصاح الجديد لألمانيا استخدام نفس تنسيق البطاقة/الشارة المستخدم
+  بالفعل لكل برنامج آخر "غير موثّق بعد" في هذه الوحدة، فالإصلاح إضافة نصية، وليس نمطاً بصرياً جديداً
+  منفرداً.

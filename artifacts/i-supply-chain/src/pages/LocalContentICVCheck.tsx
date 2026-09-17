@@ -354,8 +354,8 @@ const applicabilityStyle: Record<LocalContentApplicability, { badge: string; ico
   'insufficient-data': { badge: 'bg-amber-50 border-amber-200 text-amber-700', icon: <ShieldAlert className="w-3.5 h-3.5" /> },
 };
 
-const COUNTRY_ORDER: LocalContentCountry[] = ['SA', 'AE', 'JO', 'OM', 'QA', 'BH', 'KW', 'EG', 'TR', 'UK', 'USA', 'CN'];
-const COUNTRY_FLAG: Record<LocalContentCountry, string> = { SA: '🇸🇦', AE: '🇦🇪', JO: '🇯🇴', OM: '🇴🇲', QA: '🇶🇦', BH: '🇧🇭', KW: '🇰🇼', EG: '🇪🇬', TR: '🇹🇷', UK: '🇬🇧', USA: '🇺🇸', CN: '🇨🇳' };
+const COUNTRY_ORDER: LocalContentCountry[] = ['SA', 'AE', 'JO', 'OM', 'QA', 'BH', 'KW', 'EG', 'TR', 'UK', 'USA', 'CN', 'IN', 'DE', 'JP', 'KR'];
+const COUNTRY_FLAG: Record<LocalContentCountry, string> = { SA: '🇸🇦', AE: '🇦🇪', JO: '🇯🇴', OM: '🇴🇲', QA: '🇶🇦', BH: '🇧🇭', KW: '🇰🇼', EG: '🇪🇬', TR: '🇹🇷', UK: '🇬🇧', USA: '🇺🇸', CN: '🇨🇳', IN: '🇮🇳', DE: '🇩🇪', JP: '🇯🇵', KR: '🇰🇷' };
 
 const CONTEXT_TABS: { v: ProcurementContext; en: string; ar: string }[] = [
   { v: 'government', en: 'Government', ar: 'حكومي' },
@@ -408,6 +408,13 @@ const PROGRAM_LABELS: Record<LocalContentProgram, { en: string; ar: string }> = 
   'cn-govt-procurement-law-domestic-mandate': { en: 'Article 10 Domestic Mandate Gate', ar: 'بوابة تفويض المادة العاشرة' },
   'cn-sme-price-deduction': { en: 'SME Price Deduction', ar: 'خصم سعر المنشآت الصغيرة' },
   'cn-defense-domestic-sourcing': { en: 'PLA Defense Sourcing -- not yet sourced', ar: 'مشتريات الدفاع (جيش التحرير الشعبي) — غير موثّق بعد' },
+  'in-make-in-india-price-preference': { en: 'Make in India Preference (20%)', ar: 'تفضيل صنع في الهند (٢٠٪)' },
+  'in-dap-2020-defense-offset': { en: 'DAP 2020 Defense Offset -- not yet sourced', ar: 'تعويض الدفاع DAP 2020 — غير موثّق بعد' },
+  'de-eu-gpa-non-discrimination-baseline': { en: 'No Local-Content Preference -- confirmed absent', ar: 'لا يوجد تفضيل للمحتوى المحلي — غياب مؤكَّد' },
+  'de-edip-defense-local-content': { en: 'EDIP EU-Content Threshold -- not yet sourced', ar: 'عتبة محتوى EDIP الأوروبي — غير موثّق بعد' },
+  'jp-kankoju-sme-target-ratio': { en: 'Kankouju SME Target Ratio', ar: 'نسبة استهداف كانكوجو للمنشآت الصغيرة والمتوسطة' },
+  'kr-sme-purchase-target-ratio': { en: 'SME Purchase Target Ratio (50% / 15%)', ar: 'نسبة استهداف شراء المنشآت الصغيرة والمتوسطة (٥٠٪ / ١٥٪)' },
+  'kr-sme-competitive-products-gate': { en: 'SME Competitive Products Gate', ar: 'بوابة المنتجات التنافسية للمنشآت الصغيرة والمتوسطة' },
 };
 
 // Dual-sided (buyer + supplier) value framing, per mechanism TYPE (not per
@@ -735,8 +742,8 @@ function LocalContentEntryCard({
             <Compass className="w-4 h-4 text-slate-500 shrink-0 mt-0.5" />
             <p className="text-[11px] text-slate-600 leading-relaxed">
               {isAr
-                ? 'هذه الوحدة تغطي حالياً اثنتي عشرة دولة فقط: السعودية والإمارات والأردن وعُمان وقطر والبحرين والكويت ومصر وتركيا والمملكة المتحدة والولايات المتحدة والصين، ولكل منها برنامج واحد أو أكثر بصيغة موثّقة قابلة للحساب (بعضها إلى جانب برنامج عام لا يزال "غير موثّق" -- يُعرض ذلك صراحة عند اختياره، لا كدرجة صفرية). أي دولة أخرى (مثل ألمانيا أو الهند) غير قابلة للتمثيل في هذه المكتبة إطلاقاً -- لا يوجد فحص محتوى محلي متاح لها هنا، وليس درجة صفرية أو "غير مطبَّق".'
-                : "This module currently covers only twelve countries: Saudi Arabia, the UAE, Jordan, Oman, Qatar, Bahrain, Kuwait, Egypt, Turkey, the UK, the USA, and China, each with one or more sourced, computable-formula programs (some also carry a separate general program that's still not-yet-sourced -- disclosed explicitly when selected, not shown as a zero score). Any other country (e.g. Germany or India) isn't representable by this library at all -- no local-content check is available for it here, and this is not a zero score or a \"not applicable\" verdict."}
+                ? 'هذه الوحدة تغطي حالياً ستّ عشرة دولة فقط: السعودية والإمارات والأردن وعُمان وقطر والبحرين والكويت ومصر وتركيا والمملكة المتحدة والولايات المتحدة والصين والهند وألمانيا واليابان وكوريا الجنوبية، ولكل منها برنامج واحد أو أكثر بصيغة موثّقة قابلة للحساب أو إفصاح صادق موثّق (ألمانيا حالة خاصة: كلا برنامجيها "غير موثّق" -- الأول لأنه غياب مؤكَّد للتفضيل بموجب قواعد الاتحاد الأوروبي ومنظمة التجارة العالمية، والثاني لأن برنامج EDIP الأوروبي بوابة تمويل فوق وطنية وليس تفضيلاً مدنياً لكل عطاء؛ يُعرض ذلك صراحة عند اختياره، لا كدرجة صفرية). أي دولة أخرى (مثل فرنسا أو البرازيل) غير قابلة للتمثيل في هذه المكتبة إطلاقاً -- لا يوجد فحص محتوى محلي متاح لها هنا، وليس درجة صفرية أو "غير مطبَّق".'
+                : "This module currently covers only sixteen countries: Saudi Arabia, the UAE, Jordan, Oman, Qatar, Bahrain, Kuwait, Egypt, Turkey, the UK, the USA, China, India, Germany, Japan, and South Korea, each with one or more sourced, computable-formula programs or an honestly-sourced disclosure (Germany is a special case: BOTH of its programs are not-yet-sourced -- one because it's a confirmed absence of any preference under EU/WTO non-discrimination rules, the other because the EU's EDIP program is a supra-national funding gate, not a per-bid civil preference; disclosed explicitly when selected, not shown as a zero score). Any other country (e.g. France or Brazil) isn't representable by this library at all -- no local-content check is available for it here, and this is not a zero score or a \"not applicable\" verdict."}
             </p>
           </div>
         ) : (
@@ -1941,14 +1948,14 @@ export function LocalContentICVCheck() {
                 {isAr ? 'المحتوى المحلي / القيمة المحلية المضافة — متعدد الدول' : 'Local Content / ICV — Multi-Country'}
               </p>
               <h1 className="text-3xl lg:text-4xl font-black leading-tight">
-                {isAr ? 'فحص أهلية المحتوى المحلي عبر اثنتي عشرة دولة خليجية وعربية وتركيا والمملكة المتحدة والولايات المتحدة والصين' : 'Local Content / ICV Eligibility Check'}
+                {isAr ? 'فحص أهلية المحتوى المحلي عبر ستّ عشرة دولة خليجية وعربية وتركيا والمملكة المتحدة والولايات المتحدة والصين والهند وألمانيا واليابان وكوريا الجنوبية' : 'Local Content / ICV Eligibility Check'}
               </h1>
             </div>
           </div>
           <p className="text-white/75 text-base max-w-2xl leading-relaxed mb-4">
             {isAr
-              ? 'المحتوى المحلي ليس معياراً إقليمياً واحداً -- إنه آليات مختلفة جوهرياً عبر اثنتي عشرة دولة: درجة نسبة مئوية معتمدة في السعودية (LCGPA)، درجة مرجحة متعددة الأركان في الإمارات (ICV)، تفضيل سعري في عطاءات الأردن وعُمان والبحرين ومصر وتركيا والولايات المتحدة والصين (عاماً، وفي قطاع النفط والغاز لمصر، وبخصم مُدرَّج حسب دور المزايد ونوع المشتريات للمنشآت الصغيرة في الصين)، بوابة أهلية للفئات في القائمة الإلزامية بالسعودية وعُمان وبوابة التخصيص دون العتبة في المملكة المتحدة (PPN 005) وبوابة أهلية بنية تحتية BABA في الولايات المتحدة وبوابة المادة العاشرة من قانون المشتريات الحكومية الصيني، درجة توطين/ICV رسمية في قطر (icv.qa)، وحصص إنفاق مخصصة في الأردن والبحرين والكويت والولايات المتحدة (هدف SBA للمنشآت الصغيرة). سمِّ كل مورّد، اختر الدولة والبرنامج وسياق الشراء، واحصل على قراءة أهلية صادقة فوراً.'
-              : "Local content isn't one regional standard -- it's genuinely different mechanisms across twelve countries: a certified percentage score in Saudi Arabia (LCGPA), a weighted multi-pillar score in the UAE (ICV), a bid-evaluation price preference in Jordan, Oman, Bahrain, Egypt, Turkey, the USA, and China (general procurement, plus a separate oil & gas PSA preference in Egypt, and a role/procurement-type-banded SME deduction in China), a category-eligibility gate on Saudi and Omani Mandatory Lists plus the UK's below-threshold reservation gate (PPN 005), the USA's Build America, Buy America Act infrastructure gate, and China's Government Procurement Law Article 10 domestic-mandate gate, an official Tawteen/ICV score in Qatar (icv.qa), and reserved spend set-asides in Jordan, Bahrain, Kuwait, and the USA (SBA small-business goal). Name each supplier, pick the country, program, and buyer context, and get an honest applicability read immediately."}
+              ? 'المحتوى المحلي ليس معياراً إقليمياً واحداً -- إنه آليات مختلفة جوهرياً عبر ستّ عشرة دولة: درجة نسبة مئوية معتمدة في السعودية (LCGPA)، درجة مرجحة متعددة الأركان في الإمارات (ICV)، تفضيل سعري في عطاءات الأردن وعُمان والبحرين ومصر وتركيا والولايات المتحدة والصين والهند (عاماً، وفي قطاع النفط والغاز لمصر، وبخصم مُدرَّج حسب دور المزايد ونوع المشتريات للمنشآت الصغيرة في الصين، وببوابة تصنيف ثلاثية الفئات في الهند)، بوابة أهلية للفئات في القائمة الإلزامية بالسعودية وعُمان وبوابة التخصيص دون العتبة في المملكة المتحدة (PPN 005) وبوابة أهلية بنية تحتية BABA في الولايات المتحدة وبوابة المادة العاشرة من قانون المشتريات الحكومية الصيني وبوابة المنتجات التنافسية للمنشآت الصغيرة والمتوسطة الكورية، درجة توطين/ICV رسمية في قطر (icv.qa)، وحصص إنفاق مخصصة في الأردن والبحرين والكويت والولايات المتحدة (هدف SBA للمنشآت الصغيرة) وكوريا الجنوبية (نسبة استهداف بمُحدِّد فئة ثنائي) واليابان (نسبة استهداف كانكوجو التي تحددها الحكومة سنوياً بدل نسبة ثابتة)، وغياب مؤكَّد وموثَّق بصدق لأي تفضيل محلي أحادي في ألمانيا. سمِّ كل مورّد، اختر الدولة والبرنامج وسياق الشراء، واحصل على قراءة أهلية صادقة فوراً.'
+              : "Local content isn't one regional standard -- it's genuinely different mechanisms across sixteen countries: a certified percentage score in Saudi Arabia (LCGPA), a weighted multi-pillar score in the UAE (ICV), a bid-evaluation price preference in Jordan, Oman, Bahrain, Egypt, Turkey, the USA, China, and India (general procurement, plus a separate oil & gas PSA preference in Egypt, a role/procurement-type-banded SME deduction in China, and a three-tier local-content classification gate in India), a category-eligibility gate on Saudi and Omani Mandatory Lists plus the UK's below-threshold reservation gate (PPN 005), the USA's Build America, Buy America Act infrastructure gate, China's Government Procurement Law Article 10 domestic-mandate gate, and South Korea's SME-Exclusive Competitive Products gate, an official Tawteen/ICV score in Qatar (icv.qa), and reserved spend set-asides in Jordan, Bahrain, Kuwait, the USA (SBA small-business goal), South Korea (a 2-way category-selected SME purchase target), and Japan (a Kankouju target ratio set annually by the government rather than a fixed percentage) -- plus a confirmed, honestly-sourced absence of any unilateral local-content preference in Germany. Name each supplier, pick the country, program, and buyer context, and get an honest applicability read immediately."}
           </p>
           <div className="flex flex-wrap gap-3 text-xs text-white/60 mb-4">
             {(isAr

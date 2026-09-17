@@ -39,6 +39,11 @@ import {
   CN_SME_CONSORTIUM_GOODS_SERVICES_MIN_PCT,
   CN_SME_CONSORTIUM_GOODS_SERVICES_MAX_PCT,
   CN_SME_CONSORTIUM_MIN_SUBCONTRACT_SHARE_PCT,
+  INDIA_MAKE_IN_INDIA_PRICE_PREFERENCE_MARGIN_PCT,
+  INDIA_CLASS_I_MIN_LOCAL_CONTENT_PCT,
+  INDIA_CLASS_II_MIN_LOCAL_CONTENT_PCT,
+  KOREA_SME_OVERALL_PURCHASE_TARGET_PCT,
+  KOREA_SME_TECH_DEVELOPMENT_PRODUCT_TARGET_PCT,
   type SupplierLocalContentInputs,
   type LocalContentAssessment,
   type EligibleSpendRatioResult,
@@ -1071,6 +1076,330 @@ describe('CN — PLA/Military-Civil Fusion Defense Sourcing (not-yet-sourced, re
 // recommendLocalContentAction — primary + alternative (Rule 8)
 // ===========================================================================
 
+describe('IN — structural sanity (17 Sep 2026 India/Germany/Japan/Korea batch, 13th country)', () => {
+  it('IN is the thirteenth country, has 2 programs (1 real + 1 not-yet-sourced), and resolves DEFAULT_PROGRAM_BY_COUNTRY to the Make in India price-preference program', () => {
+    expect(DEFAULT_PROGRAM_BY_COUNTRY.IN).toBe('in-make-in-india-price-preference');
+    expect(PROGRAMS_BY_COUNTRY.IN).toEqual(['in-make-in-india-price-preference', 'in-dap-2020-defense-offset']);
+    expect(COUNTRY_FRAMEWORKS.IN.applicableContexts.length).toBeGreaterThan(0);
+  });
+});
+
+describe('IN / Make in India Purchase Preference (PPP-MII Order 2017) — price-preference-margin, genuinely new three-tier classification gate', () => {
+  it('soft: Class-I local content share of 60% -> full 20-point effective preference', () => {
+    const a = assessSupplierLocalContent('IN', 'government', { inMakeInIndia: { localContentSharePct: 60 } }, 'in-make-in-india-price-preference');
+    expect(a.applicability).toBe('applicable');
+    const c = a.computation as PricePreferenceMarginResult;
+    expect(c.preferenceMarginPct).toBe(INDIA_MAKE_IN_INDIA_PRICE_PREFERENCE_MARGIN_PCT);
+    expect(c.locallyManufacturedSharePct).toBe(100);
+    expect(c.effectiveBidDiscountPct).toBe(20);
+  });
+
+  it('hardest: Class-II local content share of 35% (above Non-Local, below Class-I) -> zero effective preference, not a pro-rated one -- the disclosed simplification', () => {
+    const a = assessSupplierLocalContent('IN', 'government', { inMakeInIndia: { localContentSharePct: 35 } }, 'in-make-in-india-price-preference');
+    const c = a.computation as PricePreferenceMarginResult;
+    expect(c.locallyManufacturedSharePct).toBe(0);
+    expect(c.effectiveBidDiscountPct).toBe(0);
+  });
+
+  it('hardest: Non-Local share of 10% -> also zero, same as Class-II, since this shared result shape cannot yet distinguish "no preference" from "excluded entirely"', () => {
+    const a = assessSupplierLocalContent('IN', 'government', { inMakeInIndia: { localContentSharePct: 10 } }, 'in-make-in-india-price-preference');
+    const c = a.computation as PricePreferenceMarginResult;
+    expect(c.locallyManufacturedSharePct).toBe(0);
+  });
+
+  it('boundary: local content share at exactly 50% -> Class-I (>=50, not >50)', () => {
+    const a = assessSupplierLocalContent('IN', 'government', { inMakeInIndia: { localContentSharePct: 50 } }, 'in-make-in-india-price-preference');
+    const c = a.computation as PricePreferenceMarginResult;
+    expect(c.locallyManufacturedSharePct).toBe(100);
+  });
+
+  it('boundary: local content share at 49.9%, just below Class-I -> zero preference', () => {
+    const a = assessSupplierLocalContent('IN', 'government', { inMakeInIndia: { localContentSharePct: 49.9 } }, 'in-make-in-india-price-preference');
+    const c = a.computation as PricePreferenceMarginResult;
+    expect(c.locallyManufacturedSharePct).toBe(0);
+  });
+
+  it('boundary: local content share genuinely unknown (null) -> honest null, never a fabricated pass or fail', () => {
+    const a = assessSupplierLocalContent('IN', 'government', { inMakeInIndia: { localContentSharePct: null } }, 'in-make-in-india-price-preference');
+    const c = a.computation as PricePreferenceMarginResult;
+    expect(c.locallyManufacturedSharePct).toBeNull();
+    expect(c.effectiveBidDiscountPct).toBeNull();
+  });
+
+  it('no inputs supplied at all -> the 20% margin is still disclosed, share left null', () => {
+    const a = assessSupplierLocalContent('IN', 'government', {}, 'in-make-in-india-price-preference');
+    const c = a.computation as PricePreferenceMarginResult;
+    expect(c.preferenceMarginPct).toBe(INDIA_MAKE_IN_INDIA_PRICE_PREFERENCE_MARGIN_PCT);
+    expect(c.locallyManufacturedSharePct).toBeNull();
+    expect(a.reasonEn).toBe('No Indian local-content bid share supplied yet.');
+    expect(a.reasonAr).toBe('لم تُدخل نسبة المحتوى المحلي الهندي في العطاء بعد.');
+  });
+
+  it("not-applicable: private-commercial procurement is outside this program's sourced (government) scope", () => {
+    const a = assessSupplierLocalContent('IN', 'private-commercial', { inMakeInIndia: { localContentSharePct: 60 } }, 'in-make-in-india-price-preference');
+    expect(a.applicability).toBe('not-applicable');
+  });
+
+  it('omitting the program param for IN resolves to in-make-in-india-price-preference (its own default)', () => {
+    const a = assessSupplierLocalContent('IN', 'government', { inMakeInIndia: { localContentSharePct: 60 } });
+    expect(a.program).toBe('in-make-in-india-price-preference');
+    expect(a.framework).toBe(PROGRAMS['in-make-in-india-price-preference']);
+  });
+
+  it('discloses the real 20% margin, the 50%/20% Class-I/Class-II thresholds, and the PPP-MII Order 2017 / 4 June 2020 revision bilingually', () => {
+    const fw = PROGRAMS['in-make-in-india-price-preference'];
+    expect(fw.sourceNoteEn).toContain('20%');
+    expect(fw.sourceNoteEn).toContain('Class-I');
+    expect(fw.sourceNoteEn).toContain('4 June 2020');
+    expect(fw.sourceNoteAr).toContain('20٪');
+    expect(fw.sourceNoteAr).toContain('4 يونيو 2020');
+  });
+});
+
+describe('IN — DAP 2020 Defense Offset & Indigenous Content (not-yet-sourced, real dated context)', () => {
+  it('returns insufficient-data disclosing the real 30% offset/indigenous-content thresholds, never a fabricated per-supplier formula', () => {
+    const a = assessSupplierLocalContent('IN', 'government', {}, 'in-dap-2020-defense-offset');
+    expect(a.applicability).toBe('insufficient-data');
+    expect(a.computation).toEqual({ mechanismType: 'not-yet-sourced' });
+    expect(a.program).toBe('in-dap-2020-defense-offset');
+    expect(PROGRAMS['in-dap-2020-defense-offset'].applicableContexts).toHaveLength(0);
+    expect(PROGRAMS['in-dap-2020-defense-offset'].sourceNoteEn).toContain('30%');
+    expect(PROGRAMS['in-dap-2020-defense-offset'].sourceNoteAr).toContain('30٪');
+  });
+});
+
+describe('DE — structural sanity (17 Sep 2026 India/Germany/Japan/Korea batch, 14th country, both programs honestly not-yet-sourced)', () => {
+  it('DE is the fourteenth country, has 2 programs, and BOTH are not-yet-sourced -- a genuine finding, not a placeholder gap', () => {
+    expect(DEFAULT_PROGRAM_BY_COUNTRY.DE).toBe('de-eu-gpa-non-discrimination-baseline');
+    expect(PROGRAMS_BY_COUNTRY.DE).toEqual(['de-eu-gpa-non-discrimination-baseline', 'de-edip-defense-local-content']);
+    expect(PROGRAMS['de-eu-gpa-non-discrimination-baseline'].mechanismType).toBe('not-yet-sourced');
+    expect(PROGRAMS['de-edip-defense-local-content'].mechanismType).toBe('not-yet-sourced');
+  });
+});
+
+describe('DE / No Unilateral Local-Content Preference — confirmed ABSENT, not merely unresearched (Decision Record 8.7 honesty distinction)', () => {
+  it('returns insufficient-data, and the sourceNote explicitly distinguishes a confirmed-absent finding from an unresourced gap like Oman/Qatar', () => {
+    const a = assessSupplierLocalContent('DE', 'government', {}, 'de-eu-gpa-non-discrimination-baseline');
+    expect(a.applicability).toBe('insufficient-data');
+    expect(a.computation).toEqual({ mechanismType: 'not-yet-sourced' });
+    const fw = PROGRAMS['de-eu-gpa-non-discrimination-baseline'];
+    expect(fw.applicableContexts).toHaveLength(0);
+    expect(fw.sourceNoteEn).toContain('Confirmed ABSENT');
+    expect(fw.sourceNoteEn).toContain('Directive 2014/24/EU');
+    expect(fw.sourceNoteEn).toContain('WTO Agreement on Government Procurement');
+    expect(fw.sourceNoteAr).toContain('غياب مؤكَّد');
+  });
+
+  it('omitting the program param for DE resolves to de-eu-gpa-non-discrimination-baseline (its own default, itself not-yet-sourced)', () => {
+    const a = assessSupplierLocalContent('DE', 'government', {});
+    expect(a.program).toBe('de-eu-gpa-non-discrimination-baseline');
+    expect(a.applicability).toBe('insufficient-data');
+  });
+});
+
+describe('DE / European Defence Industry Programme (EDIP) EU-Content Threshold (not-yet-sourced, real dated context, out-of-scope defense mechanism)', () => {
+  it('returns insufficient-data disclosing the real 65%/35% EU-content threshold and the 30 Dec 2025 entry into force, never forced into a per-bid mechanism shape', () => {
+    const a = assessSupplierLocalContent('DE', 'government', {}, 'de-edip-defense-local-content');
+    expect(a.applicability).toBe('insufficient-data');
+    expect(a.computation).toEqual({ mechanismType: 'not-yet-sourced' });
+    const fw = PROGRAMS['de-edip-defense-local-content'];
+    expect(fw.applicableContexts).toHaveLength(0);
+    expect(fw.sourceNoteEn).toContain('65%');
+    expect(fw.sourceNoteEn).toContain('35%');
+    expect(fw.sourceNoteEn).toContain('30 December 2025');
+    expect(fw.sourceNoteAr).toContain('65٪');
+    expect(fw.sourceNoteAr).toContain('35٪');
+  });
+});
+
+describe('JP — structural sanity (17 Sep 2026 batch, 15th country, a genuine second single-program exception alongside UK)', () => {
+  it('JP is the fifteenth country and has exactly 1 program -- deliberately not padded to a second program, matching the UK PA23 s.90 exception pattern', () => {
+    expect(DEFAULT_PROGRAM_BY_COUNTRY.JP).toBe('jp-kankoju-sme-target-ratio');
+    expect(PROGRAMS_BY_COUNTRY.JP).toEqual(['jp-kankoju-sme-target-ratio']);
+    expect(COUNTRY_FRAMEWORKS.JP.applicableContexts.length).toBeGreaterThan(0);
+  });
+});
+
+describe('JP / Kankouju SME Government-Contract Target Ratio — spend-set-aside-target, genuinely new caller-supplied-target wrapper (not a JO/BH/KW fixed-constant copy)', () => {
+  it('soft: current fiscal-year target of 56% (real FY2013 reference figure), SME-qualified supplier -> eligible for the reserved share', () => {
+    const a = assessSupplierLocalContent('JP', 'government', { jp: { policyYearTargetRatioPct: 56, isSmeQualified: true } }, 'jp-kankoju-sme-target-ratio');
+    expect(a.applicability).toBe('applicable');
+    const c = a.computation as SpendSetAsideResult;
+    expect(c.targetSharePct).toBe(56);
+    expect(c.qualifiesForSetAside).toBe(true);
+    expect(c.eligibleForReservedShare).toBe(true);
+  });
+
+  it('hardest: same 56% target but supplier does NOT qualify as SME -- target is disclosed but this supplier gets no reserved share', () => {
+    const a = assessSupplierLocalContent('JP', 'government', { jp: { policyYearTargetRatioPct: 56, isSmeQualified: false } }, 'jp-kankoju-sme-target-ratio');
+    const c = a.computation as SpendSetAsideResult;
+    expect(c.targetSharePct).toBe(56);
+    expect(c.eligibleForReservedShare).toBe(false);
+  });
+
+  it('boundary: target ratio of exactly 0% (a real, if unusual, caller-supplied figure) -> disclosed as zero, not treated as missing data', () => {
+    const a = assessSupplierLocalContent('JP', 'government', { jp: { policyYearTargetRatioPct: 0, isSmeQualified: true } }, 'jp-kankoju-sme-target-ratio');
+    const c = a.computation as SpendSetAsideResult;
+    expect(c.targetSharePct).toBe(0);
+    expect(c.qualifiesForSetAside).toBe(true);
+  });
+
+  it('boundary: policyYearTargetRatioPct is null -- the critical case -- resolves to applicable-but-unknown, never a fabricated default ratio', () => {
+    const a = assessSupplierLocalContent('JP', 'government', { jp: { policyYearTargetRatioPct: null, isSmeQualified: true } }, 'jp-kankoju-sme-target-ratio');
+    expect(a.applicability).toBe('applicable');
+    const c = a.computation as SpendSetAsideResult;
+    expect(c.targetSharePct).toBe(0);
+    expect(c.qualifiesForSetAside).toBeNull();
+    expect(c.eligibleForReservedShare).toBeNull();
+    expect(a.reasonEn).toContain('not fixed by statute');
+    expect(a.reasonAr).toContain('غير ثابت بنص قانوني');
+  });
+
+  it('no inputs.jp supplied at all -> the same honest insufficient-data path as an explicit null target', () => {
+    const a = assessSupplierLocalContent('JP', 'government', {}, 'jp-kankoju-sme-target-ratio');
+    const c = a.computation as SpendSetAsideResult;
+    expect(c.targetSharePct).toBe(0);
+    expect(c.qualifiesForSetAside).toBeNull();
+  });
+
+  it("not-applicable: semi-government-soe procurement is outside this program's sourced (government-only) scope", () => {
+    const a = assessSupplierLocalContent('JP', 'semi-government-soe', { jp: { policyYearTargetRatioPct: 56, isSmeQualified: true } }, 'jp-kankoju-sme-target-ratio');
+    expect(a.applicability).toBe('not-applicable');
+  });
+
+  it('omitting the program param for JP resolves to jp-kankoju-sme-target-ratio (its own default and only program)', () => {
+    const a = assessSupplierLocalContent('JP', 'government', { jp: { policyYearTargetRatioPct: 56, isSmeQualified: true } });
+    expect(a.program).toBe('jp-kankoju-sme-target-ratio');
+  });
+
+  it('discloses the real FY2013 56% reference figure and the Kankouju Law (1966) name bilingually, and is honest that no fixed statutory percentage exists', () => {
+    const fw = PROGRAMS['jp-kankoju-sme-target-ratio'];
+    expect(fw.sourceNoteEn).toContain('56%');
+    expect(fw.sourceNoteEn).toContain('FY2013');
+    expect(fw.sourceNoteEn).toContain('1966');
+    expect(fw.sourceNoteAr).toContain('56٪');
+    expect(fw.sourceNoteAr).toContain('2013');
+  });
+});
+
+describe('KR — structural sanity (17 Sep 2026 batch, 16th and final country in this run, has 2 programs)', () => {
+  it('KR is the sixteenth country, has 2 programs, and resolves DEFAULT_PROGRAM_BY_COUNTRY to the SME Purchase Target Ratio System', () => {
+    expect(DEFAULT_PROGRAM_BY_COUNTRY.KR).toBe('kr-sme-purchase-target-ratio');
+    expect(PROGRAMS_BY_COUNTRY.KR).toEqual(['kr-sme-purchase-target-ratio', 'kr-sme-competitive-products-gate']);
+    expect(COUNTRY_FRAMEWORKS.KR.applicableContexts.length).toBeGreaterThan(0);
+  });
+});
+
+describe('KR / SME Product Purchase Target Ratio System — spend-set-aside-target, genuinely new 2-way category selector (not a Bahrain/Kuwait flat-target copy)', () => {
+  it('soft: general SME product category, SME-qualified -> the 50% overall target', () => {
+    const a = assessSupplierLocalContent('KR', 'government', { krSmeTarget: { productCategory: 'general-sme-product', isSmeQualified: true } }, 'kr-sme-purchase-target-ratio');
+    expect(a.applicability).toBe('applicable');
+    const c = a.computation as SpendSetAsideResult;
+    expect(c.targetSharePct).toBe(KOREA_SME_OVERALL_PURCHASE_TARGET_PCT);
+    expect(c.eligibleForReservedShare).toBe(true);
+  });
+
+  it('soft: technology-development-product category -> the narrower 15% sub-target, not the 50% overall figure', () => {
+    const a = assessSupplierLocalContent('KR', 'government', { krSmeTarget: { productCategory: 'technology-development-product', isSmeQualified: true } }, 'kr-sme-purchase-target-ratio');
+    const c = a.computation as SpendSetAsideResult;
+    expect(c.targetSharePct).toBe(KOREA_SME_TECH_DEVELOPMENT_PRODUCT_TARGET_PCT);
+  });
+
+  it('hardest: technology-development-product category but supplier does NOT qualify as SME -- correct target still disclosed, no reserved share for this supplier', () => {
+    const a = assessSupplierLocalContent('KR', 'semi-government-soe', { krSmeTarget: { productCategory: 'technology-development-product', isSmeQualified: false } }, 'kr-sme-purchase-target-ratio');
+    const c = a.computation as SpendSetAsideResult;
+    expect(c.targetSharePct).toBe(KOREA_SME_TECH_DEVELOPMENT_PRODUCT_TARGET_PCT);
+    expect(c.eligibleForReservedShare).toBe(false);
+  });
+
+  it('boundary: product category genuinely unknown -> falls back to displaying the 50% overall figure with qualification left honestly null, not a guessed category', () => {
+    const a = assessSupplierLocalContent('KR', 'government', { krSmeTarget: { productCategory: null, isSmeQualified: null } }, 'kr-sme-purchase-target-ratio');
+    const c = a.computation as SpendSetAsideResult;
+    expect(c.targetSharePct).toBe(KOREA_SME_OVERALL_PURCHASE_TARGET_PCT);
+    expect(c.qualifiesForSetAside).toBeNull();
+  });
+
+  it('no inputs.krSmeTarget supplied at all -> same 50% fallback display, honest null qualification', () => {
+    const a = assessSupplierLocalContent('KR', 'government', {}, 'kr-sme-purchase-target-ratio');
+    const c = a.computation as SpendSetAsideResult;
+    expect(c.targetSharePct).toBe(KOREA_SME_OVERALL_PURCHASE_TARGET_PCT);
+    expect(a.reasonEn).toBe('No Korean SME product-category/qualification inputs supplied yet.');
+    expect(a.reasonAr).toBe('لم تُدخل بيانات فئة المنتج أو التأهل الكوري للمنشآت الصغيرة والمتوسطة بعد.');
+  });
+
+  it("not-applicable: private-commercial procurement is outside this program's sourced (government/semi-government-soe) scope", () => {
+    const a = assessSupplierLocalContent('KR', 'private-commercial', { krSmeTarget: { productCategory: 'general-sme-product', isSmeQualified: true } }, 'kr-sme-purchase-target-ratio');
+    expect(a.applicability).toBe('not-applicable');
+  });
+
+  it('omitting the program param for KR resolves to kr-sme-purchase-target-ratio (its own default)', () => {
+    const a = assessSupplierLocalContent('KR', 'government', { krSmeTarget: { productCategory: 'general-sme-product', isSmeQualified: true } });
+    expect(a.program).toBe('kr-sme-purchase-target-ratio');
+  });
+
+  it('discloses the real 50%/15% dual targets and the governing Article 5 bilingually', () => {
+    const fw = PROGRAMS['kr-sme-purchase-target-ratio'];
+    expect(fw.sourceNoteEn).toContain('50%');
+    expect(fw.sourceNoteEn).toContain('15%');
+    expect(fw.sourceNoteEn).toContain('Article 5');
+    expect(fw.sourceNoteAr).toContain('50٪');
+    expect(fw.sourceNoteAr).toContain('15٪');
+  });
+});
+
+describe('KR / SME-Exclusive Competitive Products Designation — category-eligibility-gate, legitimate thin-wrapper reuse of computeCategoryEligibilityGate (same judgment already applied to CN Article 10)', () => {
+  it('soft: in a designated competitive-product category, direct-production certified -> eligible to bid', () => {
+    const a = assessSupplierLocalContent('KR', 'government', { krCompetitiveProducts: { inDesignatedCompetitiveProductCategory: true, directProductionCertified: true } }, 'kr-sme-competitive-products-gate');
+    const c = a.computation as CategoryEligibilityGateResult;
+    expect(c.eligibleToBid).toBe(true);
+  });
+
+  it('hardest: in a designated category but NOT certified as the direct producer (e.g. a reseller/importer) -> gated out', () => {
+    const a = assessSupplierLocalContent('KR', 'government', { krCompetitiveProducts: { inDesignatedCompetitiveProductCategory: true, directProductionCertified: false } }, 'kr-sme-competitive-products-gate');
+    const c = a.computation as CategoryEligibilityGateResult;
+    expect(c.eligibleToBid).toBe(false);
+  });
+
+  it('boundary: NOT in a designated competitive-product category -> eligible to bid regardless of certification status, the gate simply does not apply', () => {
+    const a = assessSupplierLocalContent('KR', 'semi-government-soe', { krCompetitiveProducts: { inDesignatedCompetitiveProductCategory: false, directProductionCertified: null } }, 'kr-sme-competitive-products-gate');
+    const c = a.computation as CategoryEligibilityGateResult;
+    expect(c.eligibleToBid).toBe(true);
+  });
+
+  it('boundary: category-designation status itself unknown -> honest null, never assumed either way', () => {
+    const a = assessSupplierLocalContent('KR', 'government', { krCompetitiveProducts: { inDesignatedCompetitiveProductCategory: null, directProductionCertified: true } }, 'kr-sme-competitive-products-gate');
+    const c = a.computation as CategoryEligibilityGateResult;
+    expect(c.eligibleToBid).toBeNull();
+  });
+
+  it('no inputs supplied at all -> null gate, real bilingual reason text', () => {
+    const a = assessSupplierLocalContent('KR', 'government', {}, 'kr-sme-competitive-products-gate');
+    const c = a.computation as CategoryEligibilityGateResult;
+    expect(c.eligibleToBid).toBeNull();
+    expect(a.reasonEn).toBe('No Korean designated-competitive-product-category/direct-production inputs supplied yet.');
+    expect(a.reasonAr).toBe('لم تُدخل بيانات فئة المنتج التنافسي المُصنَّف أو الإنتاج المباشر الكوري بعد.');
+  });
+
+  it("not-applicable: private-commercial procurement is outside this program's sourced scope", () => {
+    const a = assessSupplierLocalContent('KR', 'private-commercial', { krCompetitiveProducts: { inDesignatedCompetitiveProductCategory: true, directProductionCertified: true } }, 'kr-sme-competitive-products-gate');
+    expect(a.applicability).toBe('not-applicable');
+  });
+
+  it('discloses the real 213 products / 632 subcategories designation figures bilingually', () => {
+    const fw = PROGRAMS['kr-sme-competitive-products-gate'];
+    expect(fw.sourceNoteEn).toContain('213 products');
+    expect(fw.sourceNoteEn).toContain('632');
+    expect(fw.sourceNoteAr).toContain('632');
+  });
+
+  it('cross-feature: the KR SME-status field is genuinely separate between the two Korean programs -- purchase-target-ratio and competitive-products-gate are not silently sharing state', () => {
+    const target = assessSupplierLocalContent('KR', 'government', { krSmeTarget: { productCategory: 'general-sme-product', isSmeQualified: true } }, 'kr-sme-purchase-target-ratio');
+    const gate = assessSupplierLocalContent('KR', 'government', { krCompetitiveProducts: { inDesignatedCompetitiveProductCategory: true, directProductionCertified: true } }, 'kr-sme-competitive-products-gate');
+    expect((target.computation as SpendSetAsideResult).targetSharePct).toBe(KOREA_SME_OVERALL_PURCHASE_TARGET_PCT);
+    expect((gate.computation as CategoryEligibilityGateResult).eligibleToBid).toBe(true);
+  });
+});
+
 describe('recommendLocalContentAction — primary + alternative', () => {
   it('SA below threshold: returns both a primary (close the gap) and a genuinely different alternative (subcontract/retarget)', () => {
     const inputs: SupplierLocalContentInputs = { sa: { localLaborSAR: 300_000, expatLaborSAR: 700_000, localGoodsServicesSAR: 0, foreignGoodsServicesSAR: 1_000_000, capacityBuildingSAR: 0, localAssetDepreciationSAR: 0, totalAssetDepreciationSAR: 0 } };
@@ -1821,12 +2150,12 @@ describe('Portfolio rollup — spend-set-aside-target and modified-icv-score gro
 // country before it ever reaches the UI.
 // ===========================================================================
 
-describe('PROGRAMS_BY_COUNTRY — structural sanity (15 Sep 2026 continuation, EG added 15 Sep 2026, TR added 16 Sep 2026, UK added 16 Sep 2026 Part 2 pass, USA added 16 Sep 2026 Part 2 continuation, CN added 16 Sep 2026 China Part 2 continuation)', () => {
-  it('the 11 GCC/Jordan/Egypt/Turkey/USA/CN countries have at least 2 programs each (USA and CN are NOT UK-style single-program exceptions), and every program in every one of the 12 countries\' lists resolves back to that same country in PROGRAMS', () => {
-    for (const country of ['SA', 'AE', 'JO', 'OM', 'QA', 'BH', 'KW', 'EG', 'TR', 'USA', 'CN'] as const) {
+describe('PROGRAMS_BY_COUNTRY — structural sanity (15 Sep 2026 continuation, EG added 15 Sep 2026, TR added 16 Sep 2026, UK added 16 Sep 2026 Part 2 pass, USA added 16 Sep 2026 Part 2 continuation, CN added 16 Sep 2026 China Part 2 continuation, IN/DE/JP/KR added 17 Sep 2026 India/Germany/Japan/Korea batch)', () => {
+  it('the 14 GCC/Jordan/Egypt/Turkey/USA/CN/IN/DE/KR countries have at least 2 programs each (USA, CN, IN, DE and KR are NOT UK/JP-style single-program exceptions), and every program in every one of the 16 countries\' lists resolves back to that same country in PROGRAMS', () => {
+    for (const country of ['SA', 'AE', 'JO', 'OM', 'QA', 'BH', 'KW', 'EG', 'TR', 'USA', 'CN', 'IN', 'DE', 'KR'] as const) {
       expect(PROGRAMS_BY_COUNTRY[country].length).toBeGreaterThanOrEqual(2);
     }
-    for (const country of ['SA', 'AE', 'JO', 'OM', 'QA', 'BH', 'KW', 'EG', 'TR', 'UK', 'USA', 'CN'] as const) {
+    for (const country of ['SA', 'AE', 'JO', 'OM', 'QA', 'BH', 'KW', 'EG', 'TR', 'UK', 'USA', 'CN', 'IN', 'DE', 'JP', 'KR'] as const) {
       for (const program of PROGRAMS_BY_COUNTRY[country]) {
         expect(PROGRAMS[program].country).toBe(country);
       }
@@ -1836,5 +2165,10 @@ describe('PROGRAMS_BY_COUNTRY — structural sanity (15 Sep 2026 continuation, E
   it('the UK is a genuine single-program exception -- exactly 1 program, not a placeholder gap, because PA23 s.90 structurally rules out a second above-threshold mechanism', () => {
     expect(PROGRAMS_BY_COUNTRY.UK).toHaveLength(1);
     expect(PROGRAMS_BY_COUNTRY.UK[0]).toBe('uk-below-threshold-reservation');
+  });
+
+  it('Japan is a second, genuinely independent single-program exception -- exactly 1 program, because the Kankouju Law itself sets no second fixed-percentage mechanism to encode', () => {
+    expect(PROGRAMS_BY_COUNTRY.JP).toHaveLength(1);
+    expect(PROGRAMS_BY_COUNTRY.JP[0]).toBe('jp-kankoju-sme-target-ratio');
   });
 });

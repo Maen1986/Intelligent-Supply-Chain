@@ -414,7 +414,7 @@
 // Section 1 — country / context / mechanism taxonomy
 // ---------------------------------------------------------------------------
 
-export type LocalContentCountry = 'SA' | 'AE' | 'JO' | 'OM' | 'QA' | 'BH' | 'KW' | 'EG' | 'TR' | 'UK' | 'USA' | 'CN';
+export type LocalContentCountry = 'SA' | 'AE' | 'JO' | 'OM' | 'QA' | 'BH' | 'KW' | 'EG' | 'TR' | 'UK' | 'USA' | 'CN' | 'IN' | 'DE' | 'JP' | 'KR';
 
 /** Every program key across every country this engine represents, flat
  * (not nested per-country) so the routing/resolution logic below is the
@@ -459,7 +459,14 @@ export type LocalContentProgram =
   | 'cn-domestic-product-price-preference'    // CN type 4 (new, 16 Sep 2026 China Part 2 continuation): State Council Doc [2025] No. 34 (国办发〔2025〕34号) 20% price-evaluation deduction, OR-gated eligibility (first OR-gate shape in this file) -- the module's default/original mechanism for China
   | 'cn-govt-procurement-law-domestic-mandate' // CN type 3: Government Procurement Law (中华人民共和国政府采购法, 2002, last amended 2014) Article 10 domestic-purchase-by-default mandate -- zero-new-logic reuse of computeCategoryEligibilityGate
   | 'cn-sme-price-deduction'            // CN type 4 (genuinely new mechanism): 财库〔2020〕46号 / 财库〔2022〕19号 SME price-evaluation deduction, banded by bidder role AND procurement type together, gated by a real 30% consortium small-enterprise subcontract-share threshold
-  | 'cn-defense-domestic-sourcing';     // CN type 6-ish: PLA/military-civil fusion (军民融合) defense-procurement domestic-sourcing mandate -- not-yet-sourced (no single clean numeric threshold found), structurally similar to the Berry Amendment above
+  | 'cn-defense-domestic-sourcing'     // CN type 6-ish: PLA/military-civil fusion (军民融合) defense-procurement domestic-sourcing mandate -- not-yet-sourced (no single clean numeric threshold found), structurally similar to the Berry Amendment above
+  | 'in-make-in-india-price-preference' // IN type 4 (17 Sep 2026, 13th country, India/Germany/Japan/Korea batch): Public Procurement (Preference to Make in India) Order 2017, as revised 4 Jun 2020 -- Class-I (>=50% local content)/Class-II (20-<50%)/Non-local (<=20%) classification feeding a real 20% margin-of-purchase-preference right-to-match-L1 -- the module's default/original mechanism for India
+  | 'in-dap-2020-defense-offset'          // IN type 6-ish: Defence Acquisition Procedure (DAP) 2020, Buy (Global) category -- 30% minimum indigenous content else 30% offset obligation -- not-yet-sourced (narrow defense-only category, structurally similar to the USA Berry Amendment / CN PLA sourcing above)
+  | 'de-eu-gpa-non-discrimination-baseline' // DE: not-yet-sourced -- confirmed ABSENT, not merely unresearched (see sourceNoteEn): Germany, as an EU member and WTO GPA party, has no unilateral local-content price-preference or set-aside mechanism in general civil public procurement -- the module's default/original mechanism for Germany
+  | 'de-edip-defense-local-content'         // DE: European Defence Industry Programme (EDIP Regulation, in force 30 Dec 2025) 65% EU/associated-content threshold for co-funding eligibility -- not-yet-sourced (EU-level, defense-industrial co-funding eligibility, not a per-bid civil price preference; narrow scope, same treatment as CN PLA/USA Berry above)
+  | 'jp-kankoju-sme-target-ratio'           // JP type 5: Act on Ensuring Receipt of Orders from the Government and Other Public Agencies by SMEs (官公需法, 1966) -- annual Cabinet-decided Basic Policy (基本方針) sets a fiscal-year SME procurement target ratio, NOT a fixed statutory percentage -- the module's default/only mechanism for Japan, genuinely different from JO/BH/KW's fixed-constant spend-set-aside wrappers because the target itself must be caller-supplied per fiscal year, not hardcoded
+  | 'kr-sme-purchase-target-ratio'          // KR type 5: Act on Facilitation of Purchase of Small and Medium Enterprise-Manufactured Products and Support for Their Marketing (중소기업제품 구매촉진 및 판로지원에 관한 법률), Article 5 -- >=50% overall SME product purchase target, >=15% technology-development-product sub-target -- a genuinely new 2-way category selector, the module's default mechanism for Korea
+  | 'kr-sme-competitive-products-gate';     // KR type 3: Act on Facilitation of Purchase of Small and Medium Enterprise-Manufactured Products and Support for Their Marketing (중소기업제품 구매촉진 및 판로지원에 관한 법률), Arts. 4/8/9 -- the SAME act as 'kr-sme-purchase-target-ratio' above, a different set of articles within it, not a separate statute -- SME-exclusive competitive-bidding category-eligibility gate (213 products / 632 subcategories, 2022-2024 designation cycle) -- legitimate thin-wrapper reuse of computeCategoryEligibilityGate (structurally identical binary AND-gate to SA Mandatory List / OM PTLC)
 
 /** Which program `assessSupplierLocalContent` resolves to when `program` is
  * omitted -- always each country's original pre-existing single mechanism,
@@ -475,6 +482,8 @@ export const DEFAULT_PROGRAM_BY_COUNTRY: Record<LocalContentCountry, LocalConten
   OM: 'om-icv', QA: 'qa-national-strategy', BH: 'bh-local-content', KW: 'kw-local-content',
   EG: 'eg-price-preference', TR: 'tr-price-preference', UK: 'uk-below-threshold-reservation',
   USA: 'usa-buy-american-price-preference', CN: 'cn-domestic-product-price-preference',
+  IN: 'in-make-in-india-price-preference', DE: 'de-eu-gpa-non-discrimination-baseline',
+  JP: 'jp-kankoju-sme-target-ratio', KR: 'kr-sme-purchase-target-ratio',
 };
 
 /** Every program that exists for a given country, in display order -- used
@@ -495,6 +504,10 @@ export const PROGRAMS_BY_COUNTRY: Record<LocalContentCountry, LocalContentProgra
   UK: ['uk-below-threshold-reservation'],
   USA: ['usa-buy-american-price-preference', 'usa-baba-infrastructure-gate', 'usa-sba-small-business-setaside', 'usa-berry-amendment-dod'],
   CN: ['cn-domestic-product-price-preference', 'cn-govt-procurement-law-domestic-mandate', 'cn-sme-price-deduction', 'cn-defense-domestic-sourcing'],
+  IN: ['in-make-in-india-price-preference', 'in-dap-2020-defense-offset'],
+  DE: ['de-eu-gpa-non-discrimination-baseline', 'de-edip-defense-local-content'],
+  JP: ['jp-kankoju-sme-target-ratio'],
+  KR: ['kr-sme-purchase-target-ratio', 'kr-sme-competitive-products-gate'],
 };
 
 /** Which buyer this assessment is for -- see file header: every sourced
@@ -917,8 +930,97 @@ const CN_PROGRAMS: Record<'cn-domestic-product-price-preference' | 'cn-govt-proc
   },
 };
 
+// ---------------------------------------------------------------------------
+// Section 1h -- India (IN), Germany (DE), Japan (JP), South Korea (KR).
+// 17 Sep 2026: the India/Germany/Japan/Korea batch (13th-16th countries).
+// Researched fresh per the platform owner's brief: India gets a genuinely
+// new three-tier classification gate (Class-I/Class-II/Non-local) feeding
+// the shared price-preference-margin primitive, plus an honest not-yet-
+// sourced DAP 2020 defense-offset entry; Germany is a confirmed-ABSENT
+// finding (no unilateral local-content mechanism -- EU/WTO GPA non-
+// discrimination law -- disclosed as a genuine negative result, not a
+// research gap) plus an honest not-yet-sourced EDIP defense-industrial
+// entry; Japan gets a genuinely new caller-supplied-target wrapper because
+// its SME procurement target is not fixed by statute (set fresh each
+// fiscal year by Cabinet decision); Korea gets a genuinely new 2-way
+// category-selector wrapper (overall vs. technology-development SME
+// target) plus a legitimate thin-wrapper reuse of the existing category-
+// eligibility-gate primitive for its SME-exclusive competitive-products
+// scheme (the same "reuse when genuinely identical, invent when not"
+// discipline already applied throughout this file).
+// ---------------------------------------------------------------------------
+
+const IN_PROGRAMS: Record<'in-make-in-india-price-preference' | 'in-dap-2020-defense-offset', CountryFrameworkInfo> = {
+  'in-make-in-india-price-preference': {
+    country: 'IN', countryNameEn: 'India', countryNameAr: 'جمهورية الهند',
+    programNameEn: 'Make in India Purchase Preference (PPP-MII Order 2017)', programNameAr: 'تفضيل الشراء لصنع في الهند (أمر تفضيل صنع في الهند للمشتريات الحكومية لعام 2017)',
+    mechanismType: 'price-preference-margin', program: 'in-make-in-india-price-preference',
+    applicableContexts: ['government'],
+    sourceNoteEn: "Public Procurement (Preference to Make in India) Order 2017, issued by the Department for Promotion of Industry and Internal Trade (DPIIT), as revised by the Order dated 4 June 2020. Classifies bidders into three tiers by local content share: Class-I Local Supplier (local content >=50%), Class-II Local Supplier (local content >20% and <50%), and Non-Local Supplier (local content <=20%). Only Class-I suppliers receive the Order's price preference -- a 20% 'margin of purchase preference', the maximum extent to which a Class-I bidder's price may exceed the lowest bid (L1) and still be invited to match it; for divisible procurement, 50% of the contract is awarded to L1 and the remaining 50% to the lowest-price Class-I bidder willing to match L1 within that margin; for non-divisible procurement, the lowest-price Class-I bidder gets the first right to match L1. Class-II suppliers may still bid in tenders valued under Rs 200 crore (where sufficient local capacity/competition has not been notified) but receive no price-match right under this Order; Non-Local Suppliers are excluded from most tenders outright, subject to ministry-specific exceptions. Nodal ministries may notify higher minimum local-content thresholds for specific categories. Modeled here via a genuinely new function, computePricePreferenceInMakeInIndia: a real three-tier classification gate (not a two-tier gate like SA/OM Mandatory Lists, and not a continuously-scaled share like Jordan/Oman/Turkey) feeding the shared computePricePreferenceMargin primitive only once Class-I is reached -- Class-II and Non-Local both currently resolve to a zero effective margin, since honestly distinguishing 'eligible to bid, no price preference' (Class-II) from 'excluded entirely' (Non-Local) would need a field this shared result shape does not yet carry; this simplification is disclosed here rather than silently assumed.",
+    sourceNoteAr: 'يصنّف أمر تفضيل صنع في الهند للمشتريات الحكومية لعام 2017، الصادر عن دائرة تعزيز الصناعة والتجارة الداخلية (DPIIT)، بصيغته المعدّلة بالأمر المؤرَّخ 4 يونيو 2020، مقدّمي العطاءات إلى ثلاث فئات حسب نسبة المحتوى المحلي: مورّد محلي من الفئة الأولى (محتوى محلي 50٪ فأكثر)، ومورّد محلي من الفئة الثانية (محتوى محلي أكثر من 20٪ وأقل من 50٪)، ومورّد غير محلي (محتوى محلي 20٪ فأقل). لا يحصل على تفضيل السعر بموجب هذا الأمر سوى موردي الفئة الأولى -- بهامش "تفضيل شراء" ثابت نسبته 20٪، وهو أقصى مقدار يمكن أن يتجاوز به سعر مورّد الفئة الأولى أقل عطاء (L1) مع بقائه مدعواً لمجاراته؛ في المشتريات القابلة للتجزئة، يُمنح 50٪ من العقد لصاحب أقل عطاء و50٪ الباقية لأقل مورّد من الفئة الأولى يوافق على مجاراة ذلك السعر ضمن هذا الهامش؛ وفي المشتريات غير القابلة للتجزئة، يُمنح أقل مورّد من الفئة الأولى حق الأولوية في مجاراة السعر. يجوز لموردي الفئة الثانية التقدّم في المناقصات التي تقل قيمتها عن 200 كرور روبية (حيث لم يُعلَن عن قدرة أو منافسة محلية كافية) لكن دون أي حق مجاراة سعرية بموجب هذا الأمر؛ ويُستبعد الموردون غير المحليين من معظم المناقصات كلياً، مع استثناءات خاصة ببعض الوزارات. يجوز للوزارات المحورية الإعلان عن حدود دنيا أعلى للمحتوى المحلي لفئات محددة. يُنمذَج هذا هنا عبر دالة جديدة فعلياً، computePricePreferenceInMakeInIndia: بوابة تصنيف ثلاثية حقيقية (وليست بوابة ثنائية كالقوائم الإلزامية السعودية والعمانية، وليست حصة متدرّجة مستمرة كالأردن وعُمان وتركيا) تُغذّي بدائية computePricePreferenceMargin المشتركة فقط عند بلوغ الفئة الأولى -- وتؤول كل من الفئة الثانية وغير المحلي حالياً إلى هامش فعّال صفري، إذ إن التمييز الصادق بين "مؤهل للتقديم دون تفضيل سعري" (الفئة الثانية) و"مستبعد كلياً" (غير محلي) يتطلب حقلاً لا يحمله بعد شكل النتيجة المشترك هذا؛ ويُفصَح عن هذا التبسيط هنا بدلاً من افتراضه ضمنياً.',
+  },
+  'in-dap-2020-defense-offset': {
+    country: 'IN', countryNameEn: 'India', countryNameAr: 'جمهورية الهند',
+    programNameEn: 'Defence Acquisition Procedure 2020 Offset & Indigenous Content -- not yet sourced', programNameAr: 'المحتوى المحلي والتزامات المقاصة بموجب إجراء اقتناء الدفاع لعام 2020 — غير موثّق بعد',
+    mechanismType: 'not-yet-sourced', program: 'in-dap-2020-defense-offset',
+    applicableContexts: [],
+    sourceNoteEn: "Defence Acquisition Procedure (DAP) 2020, issued by India's Ministry of Defence (effective 1 Oct 2020). Under the Buy (Global) acquisition category, an Indian offset obligation of 30% of the estimated contract value applies, discharged through Indian Offset Partners across eligible avenues (direct purchase of eligible products/services, FDI in defense manufacturing, technology transfer, or eligible R&D investment in Indian defense/aerospace/internal-security entities); separately, a vendor bidding in the Buy (Global) category must meet a minimum 30% Indigenous Content (IC) threshold, failing which the offset obligation applies in lieu. This is narrowly scoped to Ministry of Defence Buy (Global) acquisitions -- a materially different buyer/category from the general PPP-MII Order above -- and, like the USA's Berry Amendment and China's PLA/military-civil-fusion sourcing already disclosed in this file, involves offset-discharge mechanics (avenue selection, Indian Offset Partner qualification, multiplier banking) too intricate to reduce to a single supplier-computable formula from this research pass alone. Kept as an honest not-yet-sourced entry per Decision Record 8.7, with these real, dated figures disclosed rather than a guessed formula.",
+    sourceNoteAr: 'بموجب إجراء اقتناء الدفاع (DAP) لعام 2020، الصادر عن وزارة الدفاع الهندية (نافذ اعتباراً من 1 أكتوبر 2020)، يسري في فئة الشراء العالمي (Buy Global) التزام مقاصة هندي بنسبة 30٪ من القيمة التقديرية للعقد، يُستوفى عبر شركاء المقاصة الهنود ضمن قنوات مؤهَّلة (شراء مباشر لمنتجات/خدمات مؤهَّلة، أو استثمار أجنبي مباشر في التصنيع الدفاعي، أو نقل تقنية، أو استثمار مؤهَّل في البحث والتطوير لدى كيانات هندية دفاعية/فضائية/أمنية داخلية)؛ وبشكل منفصل، يجب على المورّد المتقدّم في فئة الشراء العالمي استيفاء حد أدنى 30٪ من المحتوى المحلي (IC)، وإلا سرى التزام المقاصة بدلاً من ذلك. يقتصر هذا نطاقاً على مشتريات وزارة الدفاع في فئة الشراء العالمي -- وهي جهة شراء وفئة مختلفة جوهرياً عن أمر تفضيل صنع في الهند العام أعلاه -- ويتضمّن، شأنه شأن تعديل بيري الأمريكي ومشتريات جيش التحرير الشعبي الصيني الموثقة بالفعل في هذا الملف، آليات استيفاء مقاصة (اختيار القناة، تأهيل شريك المقاصة الهندي، ترصيد المُضاعِف) بالغة التعقيد بحيث يتعذّر اختزالها في صيغة واحدة قابلة للحوسبة على مستوى المورّد بناءً على هذا البحث وحده. يُترَك هذا كإدخال صادق غير موثّق بعد وفق سجل القرار 8.7، مع الإفصاح عن هذه الأرقام الحقيقية والمؤرَّخة بدلاً من صيغة مخمَّنة.',
+  },
+};
+
+const DE_PROGRAMS: Record<'de-eu-gpa-non-discrimination-baseline' | 'de-edip-defense-local-content', CountryFrameworkInfo> = {
+  'de-eu-gpa-non-discrimination-baseline': {
+    country: 'DE', countryNameEn: 'Germany', countryNameAr: 'جمهورية ألمانيا الاتحادية',
+    programNameEn: 'No Unilateral Local-Content Preference -- confirmed absent (EU/WTO GPA non-discrimination)', programNameAr: 'لا يوجد تفضيل أحادي للمحتوى المحلي — غياب مؤكَّد (عدم التمييز بموجب الاتحاد الأوروبي ومنظمة التجارة العالمية)',
+    mechanismType: 'not-yet-sourced', program: 'de-eu-gpa-non-discrimination-baseline',
+    applicableContexts: [],
+    sourceNoteEn: "Confirmed ABSENT, not merely unresearched: Germany, as an EU member state, procures under the EU's harmonized public procurement directives (Directive 2014/24/EU for the classic sector, transposed domestically via the GWB Part 4, Sections 97-184, and the Vergabeverordnung/VgV above the EU thresholds, and the UVgO below them) and is separately bound, as part of the EU's WTO membership, by the WTO Agreement on Government Procurement (GPA), whose Article IV requires each Party to accord goods, services, and suppliers of other GPA Parties treatment no less favourable than domestic ones and prohibits domestic-content, offset, and similar balance-of-payments-linked conditions in covered procurement. Directive 2014/24/EU Article 18(1) separately codifies the same equal-treatment/non-discrimination principle for all EU-covered procurement, including below the GPA's own coverage thresholds. Independent research for this pass -- across German-, EU-, and WTO-level sources -- found no unilateral German local-content price-preference, set-aside, or category-reservation scheme comparable to any other program in this file: unlike Oman's general ICV formula or Qatar's National Local Content Strategy (both marked not-yet-sourced because a real formula exists but has not yet been located), this is a genuine negative finding, disclosed as such per Decision Record 8.7 rather than a research gap dressed up as one. The closest real, dated, sourced mechanism found is the EU-level European Defence Industry Programme, disclosed separately below as 'de-edip-defense-local-content' -- a narrow, defense-industrial, EU-level co-funding-eligibility mechanism, not a general civil public-procurement local-content preference for Germany specifically.",
+    sourceNoteAr: 'غياب مؤكَّد وليس مجرد عدم بحث: تشتري ألمانيا، بصفتها دولة عضواً في الاتحاد الأوروبي، بموجب توجيهات المشتريات العامة الأوروبية الموحَّدة (التوجيه 2014/24/EU للقطاع التقليدي، المُطبَّق محلياً عبر الجزء الرابع من قانون منع تقييد المنافسة (GWB)، المواد 97-184، ولائحة المشتريات (VgV) فوق عتبات الاتحاد الأوروبي، ولائحة UVgO دون تلك العتبات)، وهي مُلزَمة كذلك، ضمن عضوية الاتحاد الأوروبي في منظمة التجارة العالمية، باتفاقية المشتريات الحكومية (GPA) التي تُلزم مادتها الرابعة كل طرف بمعاملة سلع وخدمات وموردي الأطراف الأخرى بما لا يقل معاملة عن السلع والخدمات والموردين المحليين، وتحظر شروط المحتوى المحلي والمقاصة وما شابهها من شروط مرتبطة بميزان المدفوعات في المشتريات المشمولة. ويُكرِّس التوجيه 2014/24/EU في مادته 18(1) نفس مبدأ المساواة في المعاملة وعدم التمييز على كل المشتريات المشمولة بالاتحاد الأوروبي، بما يشمل ما دون عتبات تغطية اتفاقية GPA نفسها. لم يعثر البحث المستقل لهذه المرحلة -- عبر مصادر ألمانية وأوروبية ودولية -- على أي مخطط ألماني أحادي لتفضيل سعري للمحتوى المحلي أو حصة مخصصة أو حجز فئة يُقارَن بأي برنامج آخر في هذا الملف: وخلافاً لصيغة ICV العامة العُمانية أو الاستراتيجية الوطنية للمحتوى المحلي القطرية (الموثقتين كغير موثقتين بعد لوجود صيغة حقيقية لم تُحدَّد موقعها بعد)، فإن هذه نتيجة سلبية حقيقية، يُفصَح عنها كذلك وفق سجل القرار 8.7 بدلاً من تقديمها كفجوة بحثية مقنَّعة. أقرب آلية حقيقية ومؤرَّخة وموثّقة عُثر عليها هي برنامج الصناعة الدفاعية الأوروبي على مستوى الاتحاد الأوروبي، المُفصَح عنه بشكل منفصل أدناه باسم de-edip-defense-local-content -- وهي آلية أهلية تمويل مشترك دفاعية صناعية على مستوى الاتحاد الأوروبي ضيقة النطاق، وليست تفضيلاً عاماً للمحتوى المحلي في المشتريات المدنية الألمانية تحديداً.',
+  },
+  'de-edip-defense-local-content': {
+    country: 'DE', countryNameEn: 'Germany', countryNameAr: 'جمهورية ألمانيا الاتحادية',
+    programNameEn: 'European Defence Industry Programme (EDIP) EU-Content Threshold -- not yet sourced', programNameAr: 'عتبة المحتوى الأوروبي لبرنامج الصناعة الدفاعية الأوروبي (EDIP) — غير موثّق بعد',
+    mechanismType: 'not-yet-sourced', program: 'de-edip-defense-local-content',
+    applicableContexts: [],
+    sourceNoteEn: "European Defence Industry Programme (EDIP) Regulation, agreed by the European Parliament and Council and entered into force 30 December 2025, establishing the EU's long-term framework for joint defense procurement, industrial ramp-up, and security of supply. Eligibility for EDIP co-funding requires products/consortia to meet real, sourced content-control thresholds: a maximum 35% share of a product's value may derive from non-EU/non-associated-country (non-EEA, non-Ukraine) components -- i.e. a minimum 65% EU/associated-country content share -- with full design authority required to remain with EU/associated beneficiaries, and non-European subcontractors permitted only where a pre-existing contractual relationship already covered 15%-35% of the relevant scope. This applies to Germany as an EU member state whose defense contractors and joint-procurement consortia may seek EDIP co-funding, but it is fundamentally different in kind from every other program in this file: it is an EU-supra-national co-funding ELIGIBILITY test for joint defense-industrial programs (a component-sourcing gate for accessing EU budget co-financing), not a per-bid price preference or set-aside a supplier receives when bidding into a German government tender the way every other country's program in this file operates. Given this scope mismatch and the Regulation's very recent entry into force (with implementing work-programme detail still being adopted through 2026), this pass discloses the real sourced thresholds rather than forcing them into this file's per-bid mechanism shapes -- kept as an honest not-yet-sourced entry per Decision Record 8.7, the same treatment already given to the USA's Berry Amendment and China's PLA/military-civil-fusion sourcing.",
+    sourceNoteAr: 'اتُّفق على لائحة برنامج الصناعة الدفاعية الأوروبي (EDIP) بين البرلمان الأوروبي والمجلس، ودخلت حيز النفاذ في 30 ديسمبر 2025، لتُرسي الإطار طويل الأمد للاتحاد الأوروبي للمشتريات الدفاعية المشتركة وزيادة الطاقة الصناعية وأمن الإمداد. تتطلب الأهلية للتمويل المشترك بموجب EDIP استيفاء المنتجات أو الائتلافات لعتبات حقيقية وموثّقة لضبط المحتوى: ألا تتجاوز حصة المكونات غير الأوروبية أو غير التابعة لدول منتسبة (خارج المنطقة الاقتصادية الأوروبية وأوكرانيا) 35٪ من قيمة المنتج -- أي حد أدنى 65٪ محتوى أوروبي أو من دول منتسبة -- مع اشتراط بقاء سلطة التصميم الكاملة لدى مستفيدين أوروبيين أو منتسبين، والسماح بمقاولين من الباطن غير أوروبيين فقط حيث كانت علاقة تعاقدية قائمة مسبقاً تغطي بالفعل 15٪-35٪ من النطاق المعني. يسري هذا على ألمانيا بصفتها دولة عضواً في الاتحاد الأوروبي يمكن لمقاوليها الدفاعيين وائتلافات مشترياتها المشتركة السعي للتمويل المشترك بموجب EDIP، لكنه يختلف جوهرياً في طبيعته عن كل برنامج آخر في هذا الملف: فهو اختبار أهلية للتمويل المشترك فوق وطني على مستوى الاتحاد الأوروبي لبرامج صناعية دفاعية مشتركة (بوابة على مصدر المكونات للوصول إلى التمويل المشترك من ميزانية الاتحاد)، وليس تفضيلاً سعرياً لكل عطاء أو حصة مخصصة يحصل عليها مورّد عند التقدّم لمناقصة حكومية ألمانية كما هو حال كل برنامج آخر في هذا الملف. ونظراً لهذا التباين في النطاق ولحداثة دخول اللائحة حيز النفاذ (مع استمرار اعتماد تفاصيل برنامج العمل التنفيذي حتى عام 2026)، تُفصِح هذه المرحلة عن العتبات الحقيقية الموثّقة بدلاً من إقحامها في أشكال آليات هذا الملف الخاصة بكل عطاء -- ويُترَك هذا كإدخال صادق غير موثّق بعد وفق سجل القرار 8.7، بنفس المعالجة المُطبَّقة بالفعل على تعديل بيري الأمريكي ومشتريات جيش التحرير الشعبي الصيني.',
+  },
+};
+
+const JP_PROGRAMS: Record<'jp-kankoju-sme-target-ratio', CountryFrameworkInfo> = {
+  'jp-kankoju-sme-target-ratio': {
+    country: 'JP', countryNameEn: 'Japan', countryNameAr: 'اليابان',
+    programNameEn: 'Kankouju SME Government-Contract Target Ratio', programNameAr: 'نسبة استهداف المشتريات الحكومية للمنشآت الصغيرة والمتوسطة (كانكوجو)',
+    mechanismType: 'spend-set-aside-target', program: 'jp-kankoju-sme-target-ratio',
+    applicableContexts: ['government'],
+    sourceNoteEn: "Act on Ensuring Receipt of Orders from the Government and Other Public Agencies by Small and Medium-sized Enterprises (官公需についての中小企業者の受注の確保に関する法律 / the Kankouju Law, enacted 1966). Unlike every fixed-percentage program elsewhere in this file, the Kankouju Law sets no statutory percentage itself: its Article 3 requires the national government to formulate, EVERY FISCAL YEAR, a Cabinet-decided 'Basic Policy on Government Contracts for Small and Medium Enterprises' (中小企業者に関する国等の契約の基本方針), which is where the actual numeric SME-procurement target ratio for that fiscal year is set -- a genuinely different sourcing shape from Jordan's/Bahrain's/Kuwait's fixed statutory percentages. A real, dated example: for FY2013 (the most recent figure independently verified in secondary sourcing for this pass), the target ratio was 56% of expected total government demand (approx. EUR 61.7 billion), per the EU-SME Centre in Japan's own reporting on Kankouju; each subsequent fiscal year's figure must be read from that year's own Cabinet Basic Policy document (published annually, typically around April, by Japan's Ministry of Economy, Trade and Industry / Small and Medium Enterprise Agency) rather than assumed to still be 56% -- this platform does not fabricate a stale or projected current-year figure. Modeled here via a genuinely new function, computeSpendSetAsideJp: unlike computeContractorQuotaJo / computeSpendSetAsideBh / computeLocalSpendKw, which each wrap the shared computeSpendSetAside primitive around a MODULE-LEVEL CONSTANT, Japan's wrapper instead requires the current fiscal year's target ratio as CALLER-SUPPLIED input (policyYearTargetRatioPct) -- a real architectural difference, not a renamed copy of the Jordan/Bahrain/Kuwait pattern, because no single constant can honestly represent a target that is legally re-set every fiscal year.",
+    sourceNoteAr: 'قانون ضمان حصول المنشآت الصغيرة والمتوسطة على طلبات من الحكومة والجهات العامة الأخرى (官公需についての中小企業者の受注の確保に関する法律 / قانون كانكوجو، الصادر عام 1966). وخلافاً لكل برنامج ذي نسبة ثابتة آخر في هذا الملف، لا يحدد قانون كانكوجو نفسه أي نسبة قانونية: إذ تُلزم مادته الثالثة الحكومة المركزية بوضع "السياسة الأساسية بشأن عقود المنشآت الصغيرة والمتوسطة مع الحكومة" (中小企業者に関する国等の契約の基本方針) عبر قرار مجلس وزراء، في كل سنة مالية على حدة، وهو الموضع الذي تُحدَّد فيه النسبة الرقمية الفعلية لاستهداف مشتريات المنشآت الصغيرة والمتوسطة لتلك السنة -- وهو شكل توثيق مختلف جوهرياً عن النسب القانونية الثابتة في الأردن والبحرين والكويت. مثال حقيقي ومؤرَّخ: بلغت نسبة الاستهداف في السنة المالية 2013 (وهو أحدث رقم تم التحقق منه بشكل مستقل من مصادر ثانوية لهذه المرحلة) 56٪ من إجمالي الطلب الحكومي المتوقع (نحو 61.7 مليار يورو)، وفق تقرير مركز الاتحاد الأوروبي للمنشآت الصغيرة والمتوسطة في اليابان بشأن كانكوجو؛ ويجب قراءة رقم كل سنة مالية لاحقة من وثيقة السياسة الأساسية الخاصة بمجلس الوزراء لتلك السنة (تُنشَر سنوياً، عادة في أبريل، من قبل وزارة الاقتصاد والتجارة والصناعة اليابانية / وكالة المنشآت الصغيرة والمتوسطة) بدلاً من افتراض بقائها 56٪ -- فهذه المنصة لا تختلق رقماً قديماً أو متوقَّعاً للسنة الحالية. يُنمذَج هذا هنا عبر دالة جديدة فعلياً، computeSpendSetAsideJp: فخلافاً لدوال computeContractorQuotaJo وcomputeSpendSetAsideBh وcomputeLocalSpendKw، التي تُغلِّف كل منها بدائية computeSpendSetAside المشتركة حول ثابت على مستوى الوحدة البرمجية، تتطلب دالة اليابان بدلاً من ذلك نسبة الاستهداف الخاصة بالسنة المالية الحالية كمُدخَل من المستدعي (policyYearTargetRatioPct) -- وهو اختلاف بنيوي حقيقي، وليس نسخة معاد تسميتها من نمط الأردن والبحرين والكويت، لأنه لا يمكن لثابت واحد أن يمثّل بصدق هدفاً يُعاد تحديده قانوناً كل سنة مالية.',
+  },
+};
+
+const KR_PROGRAMS: Record<'kr-sme-purchase-target-ratio' | 'kr-sme-competitive-products-gate', CountryFrameworkInfo> = {
+  'kr-sme-purchase-target-ratio': {
+    country: 'KR', countryNameEn: 'South Korea', countryNameAr: 'جمهورية كوريا الجنوبية',
+    programNameEn: 'SME Product Purchase Target Ratio System', programNameAr: 'نظام نسبة استهداف شراء منتجات المنشآت الصغيرة والمتوسطة',
+    mechanismType: 'spend-set-aside-target', program: 'kr-sme-purchase-target-ratio',
+    applicableContexts: ['government', 'semi-government-soe'],
+    sourceNoteEn: "Act on Facilitation of Purchase of Small and Medium Enterprise-Manufactured Products and Support for Their Marketing (중소기업제품 구매촉진 및 판로지원에 관한 법률), Article 5 -- the same act, under a different article, as 'kr-sme-competitive-products-gate' below -- the '중소기업제품 구매목표비율제도' (SME Product Purchase Target Ratio System), administered by Korea's Ministry of SMEs and Startups (중소벤처기업부) and the Public Procurement Service (조달청). Sets two real, sourced, distinct percentage targets for public institutions (government agencies and government-affiliated/-invested public institutions): an overall SME-product purchase target of at least 50% of that year's total procurement value (goods, construction, and services combined), and, within SME goods purchases specifically, a technology-development-product sub-target of at least 15%. This is a genuinely different shape from Bahrain's/Kuwait's single flat target: a caller must specify WHICH of the two targets applies to a given procurement (general SME product vs. technology-development product) before the correct percentage can be selected. Modeled here via a genuinely new function, computeSpendSetAsideKr: a real 2-way category selector choosing between the 50% and 15% targets before handing the result to the shared computeSpendSetAside primitive -- not a renamed reuse of the Jordan/Bahrain/Kuwait fixed-constant pattern.",
+    sourceNoteAr: 'تنص المادة الخامسة من قانون تيسير شراء منتجات المنشآت الصغيرة والمتوسطة المُصنَّعة ودعم تصريف منتجاتها (중소기업제품 구매촉진 및 판로지원에 관한 법률)، وهو نفس القانون الذي تستند إليه المادة ٤/٨/٩ (البرنامج "kr-sme-competitive-products-gate" أدناه) بموادَّ مختلفة، وليس قانوناً منفصلاً، في مادته الخامسة على "نظام نسبة استهداف شراء منتجات المنشآت الصغيرة والمتوسطة"، الذي تديره وزارة المنشآت الصغيرة والمتوسطة والشركات الناشئة الكورية (중소벤처기업부) ودائرة المشتريات العامة (조달청). يحدد هذا النظام نسبتين حقيقيتين وموثقتين ومنفصلتين للمؤسسات العامة (الجهات الحكومية والمؤسسات العامة المرتبطة بالحكومة أو المستثمرة منها): نسبة استهداف عامة لشراء منتجات المنشآت الصغيرة والمتوسطة لا تقل عن 50٪ من إجمالي قيمة المشتريات لتلك السنة (سلع وأشغال وخدمات مجتمعة)، ونسبة فرعية لا تقل عن 15٪ ضمن مشتريات سلع المنشآت الصغيرة والمتوسطة تحديداً لمنتجات التطوير التقني. وهذا شكل مختلف جوهرياً عن الهدف الثابت الواحد في البحرين والكويت: إذ يجب على المستدعي تحديد أي من النسبتين تنطبق على مشتريات معينة (منتج عام للمنشآت الصغيرة والمتوسطة مقابل منتج تطوير تقني) قبل اختيار النسبة الصحيحة. يُنمذَج هذا هنا عبر دالة جديدة فعلياً، computeSpendSetAsideKr: مُحدِّد فئة حقيقي ثنائي الخيار يختار بين نسبتي 50٪ و15٪ قبل تسليم النتيجة إلى بدائية computeSpendSetAside المشتركة -- وليس إعادة استخدام معاد تسميتها لنمط الثابت الأردني/البحريني/الكويتي.',
+  },
+  'kr-sme-competitive-products-gate': {
+    country: 'KR', countryNameEn: 'South Korea', countryNameAr: 'جمهورية كوريا الجنوبية',
+    programNameEn: 'SME-Exclusive Competitive Products Designation', programNameAr: 'تصنيف المنتجات التنافسية الحصرية للمنشآت الصغيرة والمتوسطة',
+    mechanismType: 'category-eligibility-gate', program: 'kr-sme-competitive-products-gate',
+    applicableContexts: ['government', 'semi-government-soe'],
+    sourceNoteEn: "Act on Facilitation of Purchase of Small and Medium Enterprise-Manufactured Products and Support for Their Marketing (중소기업제품 구매촉진 및 판로지원에 관한 법률), Articles 4, 8, and 9 -- the SAME act as 'kr-sme-purchase-target-ratio' above (its Article 5), a different set of articles within it -- the 'SME-Exclusive Competitive Products' scheme (중소기업자간 경쟁제품), administered by the Ministry of SMEs and Startups since 2007. Designates specific product/service categories -- 213 products across 632 detailed subcategories in the current 2022-2024 designation cycle (net +18 vs. the prior cycle) -- for which public institutions must purchase directly from small/medium enterprises that are the VERIFIED DIRECT PRODUCER (Article 9's 'direct production confirmation', not merely a reseller or importer of a qualifying product) rather than through open competitive bidding. This is a real, binary, two-part eligibility test structurally IDENTICAL to the shared computeCategoryEligibilityGate primitive already used for Saudi Arabia's LCGPA Mandatory List and Oman's PTLC Mandatory List (see PROGRAMS['sa-mandatory-list'] / ['om-mandatory-list'].sourceNoteEn): is this specific product/service category one of the 632 designated subcategories, and is this supplier's direct-production status certified under Article 9. Modeled here via a legitimate, genuinely-warranted thin-wrapper reuse of computeCategoryEligibilityGate -- not a forced reuse to avoid writing new code, but the correct call because the underlying two-key AND-gate computation really is the same shape, exactly the same judgment already applied when China's Government Procurement Law Article 10 mandate reused the same primitive.",
+    sourceNoteAr: 'تنص المواد 4 و8 و9 من قانون تيسير شراء منتجات المنشآت الصغيرة والمتوسطة المُصنَّعة ودعم تصريف منتجاتها -- وهو نفس القانون الذي تستند إليه مادته الخامسة (البرنامج "kr-sme-purchase-target-ratio" أعلاه)، بموادَّ مختلفة، وليس قانوناً منفصلاً -- على نظام "المنتجات التنافسية بين المنشآت الصغيرة والمتوسطة" (중소기업자간 경쟁제품)، الذي تديره وزارة المنشآت الصغيرة والمتوسطة والشركات الناشئة منذ عام 2007. يُصنِّف هذا النظام فئات محددة من المنتجات والخدمات -- 213 منتجاً موزَّعة على 632 فئة فرعية تفصيلية في دورة التصنيف الحالية 2022-2024 (بزيادة صافية قدرها 18 فئة عن الدورة السابقة) -- يجب على المؤسسات العامة بشأنها الشراء مباشرة من منشآت صغيرة أو متوسطة تُعد المُنتِج المباشر المُتحقَّق منه (بموجب "تأكيد الإنتاج المباشر" في المادة 9، وليس مجرد موزّع أو مستورد لمنتج مؤهَّل) بدلاً من الشراء عبر مناقصة تنافسية مفتوحة. وهذا اختبار أهلية ثنائي حقيقي من جزأين مطابق بنيوياً لبدائية computeCategoryEligibilityGate المشتركة المستخدمة بالفعل للقائمة الإلزامية لهيئة المحتوى المحلي والمشتريات الحكومية السعودية والقائمة الإلزامية لهيئة تنمية المحتوى المحلي والفرص اللوجستية العُمانية: هل هذه الفئة تحديداً من فئات المنتجات أو الخدمات الفرعية الـ632 المُصنَّفة، وهل حالة الإنتاج المباشر لهذا المورّد معتمدة بموجب المادة 9. يُنمذَج هذا هنا عبر إعادة استخدام مشروعة ومبرَّرة فعلياً وليست قسرية لبدائية computeCategoryEligibilityGate -- ليست إعادة استخدام قسرية لتجنّب كتابة كود جديد، بل هي الخيار الصحيح لأن الحساب الأساسي القائم على بوابة "و" ذات المفتاحين هو فعلياً نفس الشكل، بنفس الحكم المُطبَّق بالضبط عندما أعادت المادة العاشرة من قانون المشتريات الحكومية الصيني استخدام نفس البدائية.',
+  },
+};
+
 export const PROGRAMS: Record<LocalContentProgram, CountryFrameworkInfo> = {
   ...SA_PROGRAMS, ...AE_PROGRAMS, ...JO_OM_QA_BH_KW_PROGRAMS, ...EG_PROGRAMS, ...TR_PROGRAMS, ...UK_PROGRAMS, ...USA_PROGRAMS, ...CN_PROGRAMS,
+  ...IN_PROGRAMS, ...DE_PROGRAMS, ...JP_PROGRAMS, ...KR_PROGRAMS,
 };
 
 /** Derived view, kept for the UI's country-selector buttons and any caller
@@ -938,6 +1040,10 @@ export const COUNTRY_FRAMEWORKS: Record<LocalContentCountry, CountryFrameworkInf
   UK: PROGRAMS[DEFAULT_PROGRAM_BY_COUNTRY.UK],
   USA: PROGRAMS[DEFAULT_PROGRAM_BY_COUNTRY.USA],
   CN: PROGRAMS[DEFAULT_PROGRAM_BY_COUNTRY.CN],
+  IN: PROGRAMS[DEFAULT_PROGRAM_BY_COUNTRY.IN],
+  DE: PROGRAMS[DEFAULT_PROGRAM_BY_COUNTRY.DE],
+  JP: PROGRAMS[DEFAULT_PROGRAM_BY_COUNTRY.JP],
+  KR: PROGRAMS[DEFAULT_PROGRAM_BY_COUNTRY.KR],
 };
 
 // ---------------------------------------------------------------------------
@@ -1166,6 +1272,47 @@ export interface SupplierLocalContentInputs {
      * contract value subcontracted to, or shared within a consortium with,
      * small enterprises, tested against the real 30% gate. */
     consortiumSmallEnterpriseSubcontractSharePct: number | null;
+  };
+
+  /** India Make in India price preference (IN / 'in-make-in-india-price-
+   * preference', 17 Sep 2026 India/Germany/Japan/Korea batch) -- % of this
+   * bid's value that is local content under the PPP-MII Order's own
+   * classification test (self-reported, caller-supplied). See PROGRAMS[
+   * 'in-make-in-india-price-preference'].sourceNoteEn for the real
+   * Class-I (>=50%) / Class-II (20-<50%) / Non-Local (<=20%) thresholds. */
+  inMakeInIndia?: {
+    localContentSharePct: number | null;
+  };
+  /** Japan Kankouju SME target ratio (JP / 'jp-kankoju-sme-target-ratio',
+   * 17 Sep 2026 batch) -- genuinely different from every other spend-set-
+   * aside program in this file: the target itself is NOT a fixed statutory
+   * constant, so it must be supplied by the caller from the current fiscal
+   * year's own Cabinet Basic Policy document (see PROGRAMS['jp-kankoju-sme-
+   * target-ratio'].sourceNoteEn). */
+  jp?: {
+    /** The current fiscal year's published SME procurement target ratio
+     * (0-100), read from that year's Basic Policy on Government Contracts
+     * for SMEs. Null/omitted -- not defaulted to a stale figure -- means
+     * insufficient data, not a fabricated current-year assumption. */
+    policyYearTargetRatioPct: number | null;
+    isSmeQualified: boolean | null;
+  };
+  /** Korea SME Product Purchase Target Ratio System (KR / 'kr-sme-
+   * purchase-target-ratio', 17 Sep 2026 batch) -- a real 2-way category
+   * selector between the 50% overall target and the 15% technology-
+   * development-product sub-target (see PROGRAMS['kr-sme-purchase-target-
+   * ratio'].sourceNoteEn). */
+  krSmeTarget?: {
+    productCategory: 'general-sme-product' | 'technology-development-product' | null;
+    isSmeQualified: boolean | null;
+  };
+  /** Korea SME-Exclusive Competitive Products designation (KR / 'kr-sme-
+   * competitive-products-gate', 17 Sep 2026 batch) -- same binary
+   * category-eligibility-gate shape as Saudi/Oman's Mandatory List (see
+   * PROGRAMS['kr-sme-competitive-products-gate'].sourceNoteEn). */
+  krCompetitiveProducts?: {
+    inDesignatedCompetitiveProductCategory: boolean | null;
+    directProductionCertified: boolean | null;
   };
 }
 
@@ -1753,6 +1900,83 @@ function computePricePreferenceCnSme(cnSme: NonNullable<SupplierLocalContentInpu
 }
 
 // ---------------------------------------------------------------------------
+// Section 6e -- India/Germany/Japan/Korea batch (17 Sep 2026). India's
+// computePricePreferenceInMakeInIndia evaluates a real three-tier
+// classification gate (Class-I/Class-II/Non-Local) before handing a binary
+// qualification to the shared computePricePreferenceMargin primitive, the
+// same "gate feeding a shared primitive" shape already used for China's
+// OR-gate. Japan's computeSpendSetAsideJp and Korea's computeSpendSetAsideKr
+// both use the shared computeSpendSetAside primitive, but neither is a
+// renamed copy of the JO/BH/KW fixed-constant wrappers below: Japan's
+// target is caller-supplied per fiscal year (no statutory constant exists
+// to hardcode), and Korea's selects between two real, differently-sourced
+// targets (50% overall vs. 15% technology-development) depending on the
+// caller-supplied product category. Germany has no wrapper function at all
+// -- both its programs are honestly not-yet-sourced and resolve via the
+// early-return path in assessSupplierLocalContent, the same as Oman's
+// general ICV / Qatar's National Strategy / the USA's Berry Amendment.
+// ---------------------------------------------------------------------------
+
+export const INDIA_MAKE_IN_INDIA_PRICE_PREFERENCE_MARGIN_PCT = 20;
+export const INDIA_CLASS_I_MIN_LOCAL_CONTENT_PCT = 50;
+export const INDIA_CLASS_II_MIN_LOCAL_CONTENT_PCT = 20;
+
+function computePricePreferenceInMakeInIndia(inMakeInIndia: NonNullable<SupplierLocalContentInputs['inMakeInIndia']>): PricePreferenceMarginResult {
+  const share = inMakeInIndia.localContentSharePct ?? null;
+  if (share === null) {
+    return computePricePreferenceMargin(INDIA_MAKE_IN_INDIA_PRICE_PREFERENCE_MARGIN_PCT, null);
+  }
+  // Real three-tier classification (PPP-MII Order 2017, as revised 4 Jun
+  // 2020): only Class-I (>=50%) receives the 20% margin-of-purchase-
+  // preference right-to-match-L1. Class-II (20-<50%) may still be eligible
+  // to bid in smaller tenders (a separate fact this engine does not model)
+  // but gets no price-match right here; Non-Local (<=20%) is excluded
+  // outright. A gate, not a taper -- the same discipline already applied
+  // to China's SME 30% subcontract gate and the USA's Buy American
+  // threshold.
+  if (share >= INDIA_CLASS_I_MIN_LOCAL_CONTENT_PCT) {
+    return computePricePreferenceMargin(INDIA_MAKE_IN_INDIA_PRICE_PREFERENCE_MARGIN_PCT, 100);
+  }
+  return computePricePreferenceMargin(INDIA_MAKE_IN_INDIA_PRICE_PREFERENCE_MARGIN_PCT, 0);
+}
+
+function computeSpendSetAsideJp(jp: NonNullable<SupplierLocalContentInputs['jp']>): SpendSetAsideResult {
+  const target = jp.policyYearTargetRatioPct ?? null;
+  const qualifies = jp.isSmeQualified ?? null;
+  if (target === null) {
+    // Genuinely different from every JO/BH/KW/USA-SBA wrapper below: those
+    // fall back to a real, sourced, fixed statutory constant when the
+    // caller doesn't supply a qualification status. Japan has no such
+    // constant to fall back to -- the Kankouju Law itself sets no fixed
+    // percentage; only the annual Cabinet Basic Policy does (see
+    // PROGRAMS['jp-kankoju-sme-target-ratio'].sourceNoteEn). Returning 0
+    // here would misrepresent an unknown target as a known zero target, so
+    // this is surfaced to the caller as insufficient data at the dispatch
+    // level instead (see assessSupplierLocalContent).
+    return { mechanismType: 'spend-set-aside-target', targetSharePct: 0, qualifiesForSetAside: null, eligibleForReservedShare: null };
+  }
+  return computeSpendSetAside(target, qualifies);
+}
+
+export const KOREA_SME_OVERALL_PURCHASE_TARGET_PCT = 50;
+export const KOREA_SME_TECH_DEVELOPMENT_PRODUCT_TARGET_PCT = 15;
+
+function computeSpendSetAsideKr(kr: NonNullable<SupplierLocalContentInputs['krSmeTarget']>): SpendSetAsideResult {
+  const category = kr.productCategory ?? null;
+  const qualifies = kr.isSmeQualified ?? null;
+  if (category === null) {
+    // Real 2-way selector, not a single fixed constant -- see PROGRAMS[
+    // 'kr-sme-purchase-target-ratio'].sourceNoteEn. Defaults the DISPLAYED
+    // target to the overall 50% figure (the program's own default program
+    // name) while leaving qualification unknown, mirroring how JO/BH/KW
+    // handle an unsupplied qualification against their own known constant.
+    return { mechanismType: 'spend-set-aside-target', targetSharePct: KOREA_SME_OVERALL_PURCHASE_TARGET_PCT, qualifiesForSetAside: null, eligibleForReservedShare: null };
+  }
+  const target = category === 'technology-development-product' ? KOREA_SME_TECH_DEVELOPMENT_PRODUCT_TARGET_PCT : KOREA_SME_OVERALL_PURCHASE_TARGET_PCT;
+  return computeSpendSetAside(target, qualifies);
+}
+
+// ---------------------------------------------------------------------------
 // Section 6d — JO/BH/KW: spend-set-aside-target (type 5, new 15 Sep 2026).
 // Real sourced national/program target shares -- see PROGRAMS[
 // 'jo-contractor-quota' | 'bh-sme-spend-setaside' | 'kw-kpc-local-spend']
@@ -1985,6 +2209,26 @@ export function assessSupplierLocalContent(
       return { country, program: resolvedProgram, procurementContext, applicability: 'applicable', framework, computation: computePricePreferenceMargin(0, null), certificationCaveatEn: NOT_CERTIFIED_EN, certificationCaveatAr: NOT_CERTIFIED_AR, reasonEn: 'No Chinese SME bidder-role/procurement-type inputs supplied yet.', reasonAr: 'لم تُدخل بيانات دور المزايد الصيني أو نوع المشتريات بعد.' };
     }
     computation = computePricePreferenceCnSme(inputs.cnSme);
+  } else if (resolvedProgram === 'in-make-in-india-price-preference') {
+    if (!inputs.inMakeInIndia) {
+      return { country, program: resolvedProgram, procurementContext, applicability: 'applicable', framework, computation: computePricePreferenceMargin(INDIA_MAKE_IN_INDIA_PRICE_PREFERENCE_MARGIN_PCT, null), certificationCaveatEn: NOT_CERTIFIED_EN, certificationCaveatAr: NOT_CERTIFIED_AR, reasonEn: 'No Indian local-content bid share supplied yet.', reasonAr: 'لم تُدخل نسبة المحتوى المحلي الهندي في العطاء بعد.' };
+    }
+    computation = computePricePreferenceInMakeInIndia(inputs.inMakeInIndia);
+  } else if (resolvedProgram === 'jp-kankoju-sme-target-ratio') {
+    if (!inputs.jp || inputs.jp.policyYearTargetRatioPct === null || inputs.jp.policyYearTargetRatioPct === undefined) {
+      return { country, program: resolvedProgram, procurementContext, applicability: 'applicable', framework, computation: { mechanismType: 'spend-set-aside-target', targetSharePct: 0, qualifiesForSetAside: null, eligibleForReservedShare: null }, certificationCaveatEn: NOT_CERTIFIED_EN, certificationCaveatAr: NOT_CERTIFIED_AR, reasonEn: "No current fiscal-year Kankouju target ratio supplied yet -- Japan's target is not fixed by statute; it is set fresh each fiscal year by Cabinet Basic Policy decision, so the caller must supply the currently published figure (see the program's sourceNoteEn for the disclosed FY2013 reference example and citation).", reasonAr: 'لم تُدخل نسبة استهداف كانكوجو للسنة المالية الحالية بعد -- فهدف اليابان غير ثابت بنص قانوني؛ بل يُحدَّد من جديد كل سنة مالية بقرار من مجلس الوزراء ضمن السياسة الأساسية، لذا يجب على المستدعي تقديم الرقم المنشور حالياً (انظر ملاحظة المصدر للبرنامج للاطلاع على مثال مرجعي مفصح عنه للسنة المالية 2013 ومصدره).' };
+    }
+    computation = computeSpendSetAsideJp(inputs.jp);
+  } else if (resolvedProgram === 'kr-sme-purchase-target-ratio') {
+    if (!inputs.krSmeTarget) {
+      return { country, program: resolvedProgram, procurementContext, applicability: 'applicable', framework, computation: { mechanismType: 'spend-set-aside-target', targetSharePct: KOREA_SME_OVERALL_PURCHASE_TARGET_PCT, qualifiesForSetAside: null, eligibleForReservedShare: null }, certificationCaveatEn: NOT_CERTIFIED_EN, certificationCaveatAr: NOT_CERTIFIED_AR, reasonEn: 'No Korean SME product-category/qualification inputs supplied yet.', reasonAr: 'لم تُدخل بيانات فئة المنتج أو التأهل الكوري للمنشآت الصغيرة والمتوسطة بعد.' };
+    }
+    computation = computeSpendSetAsideKr(inputs.krSmeTarget);
+  } else if (resolvedProgram === 'kr-sme-competitive-products-gate') {
+    if (!inputs.krCompetitiveProducts) {
+      return { country, program: resolvedProgram, procurementContext, applicability: 'applicable', framework, computation: { mechanismType: 'category-eligibility-gate', inMandatoryListCategory: null, certifiedForCategory: null, eligibleToBid: null }, certificationCaveatEn: NOT_CERTIFIED_EN, certificationCaveatAr: NOT_CERTIFIED_AR, reasonEn: 'No Korean designated-competitive-product-category/direct-production inputs supplied yet.', reasonAr: 'لم تُدخل بيانات فئة المنتج التنافسي المُصنَّف أو الإنتاج المباشر الكوري بعد.' };
+    }
+    computation = computeCategoryEligibilityGate({ inMandatoryListCategory: inputs.krCompetitiveProducts.inDesignatedCompetitiveProductCategory, certifiedForCategory: inputs.krCompetitiveProducts.directProductionCertified });
   } else {
     computation = { mechanismType: 'not-yet-sourced' };
   }
