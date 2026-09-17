@@ -93,17 +93,17 @@ this platform's "fix, don't just log" standing rule.
 
 ## 3. What is genuinely NOT wired yet (disclosed, not fixed in this pass)
 
-- **No API/database layer.** Module 07 is frontend-only: `grep` across
-  `artifacts/api-server/src` and `artifacts/api-server/tests` found zero
-  real references to `PerformanceRecovery` or `RecoveryPortfolio` (one false
-  positive in `copq.ts` was a doc-comment cross-reference, not a route).
-  Every number on the live dashboard comes from a constructed, clearly-
-  labeled 16-supplier demo dataset (`DEMO_SUPPLIERS` in the page file, an
-  extension of the Rawabi worked example), not persisted or live-editable
-  data. This is the same honesty discipline already applied elsewhere in
-  this codebase (Item 6/7's real DB tables are the contrast case) — Module
-  07 has not yet been given that treatment, and this doc says so rather than
-  implying otherwise.
+- **No API/database layer for the demo dataset itself — unchanged.** The
+  16-supplier `DEMO_SUPPLIERS` worked-example dataset (Section 4) remains a
+  constructed, clearly-labeled in-memory fixture; it is not, and was never
+  intended to become, a live-editable database record. **Closed, 17 Sep
+  2026, for user-owned data**: a real Drizzle table
+  (`supplier_recovery_entries`), API route, and CRUD form now exist so a
+  real user can persist their *own* `SupplierRecord[]` portfolio, separate
+  from the demo dataset — see Section 13 for the full disclosure. This
+  followed the owner's own explicit scoping decision to close the
+  persistence gap without also closing the separate #668 cross-module
+  spend-field gap described in the next bullet.
 - **No real per-supplier absolute-currency field anywhere in the platform.**
   The SAR exposure KPI is built from an explicit, visibly-badged MOCK
   per-supplier spend dataset (`buildMockSupplierSpendDataset`), because
@@ -242,14 +242,18 @@ Section 8 for its real, fetched result on this pass's actual pushed commit.
 
 ## 7. Durable persistence
 
-None yet, and this is disclosed rather than implied otherwise: Module 07 has
-no Drizzle schema, no API route, and no database table. All state is
-recomputed from the page's in-memory demo dataset on every render; nothing a
-user does on this page persists. This matches the "prototype-stage feature"
-carve-out in this platform's own database-schema-discipline rule, but per
-that same rule it must be named as a known gap rather than quietly treated
-as a permanent home for real data — logged here explicitly as the natural
-next step once real per-supplier spend/performance data exists to persist.
+**Updated 17 Sep 2026 — closed for user-owned `SupplierRecord[]` data.** See
+Section 13 for the full build disclosure (schema, API, CRUD form, test
+counts, QA finding). Short version: this is no longer accurate as a blanket
+"none yet" — a real persistence layer now exists for a signed-in user's own
+supplier portfolio, entered through the page's new "My Portfolio" mode. The
+Section 4 demo/worked-example dataset (`DEMO_SUPPLIERS`) is intentionally
+untouched by this and still recomputes in-memory on every render, as a
+worked example should. The mock category/spend reference data
+(`DEMO_CATEGORY_ITEMS`, `DEMO_SHARES`) used to compute exposure-at-risk is
+also unchanged and still shared by both modes — this is why a user-added
+supplier in a category absent from that reference set honestly reports
+`INSUFFICIENT_DATA` rather than a fabricated SAR figure (Section 13.5).
 
 ## 8. CI-gate evidence
 
@@ -395,22 +399,183 @@ connectivity, which this module does not yet match.
   disclosure), not this repo. This document itself is the closest thing to
   a Charter-status update this session can commit; the external Charter
   record should be updated separately.
-- **No live per-supplier spend/currency field** (#668) and **no persistence
-  layer** (Sections 3, 7) — both real, both disclosed, neither fabricated
-  around.
+- **No live per-supplier spend/currency field** (#668) — still open,
+  real, disclosed, not fabricated around. This is a separate, cross-module
+  gap (it would require touching Module 02's and Module 05's own schemas,
+  not just Module 07's) and was explicitly kept out of scope by the
+  platform owner's own scoping decision on 17 Sep 2026 when closing the
+  persistence-layer gap below.
+- ~~No persistence layer~~ — **closed, 17 Sep 2026**, for user-owned
+  `SupplierRecord[]` data only (schema + API + real CRUD form; see Section
+  13). The Section 4 demo dataset and the mock exposure reference data
+  (`DEMO_CATEGORY_ITEMS`/`DEMO_SHARES`) remain intentionally unpersisted,
+  as documented in Section 7's update.
+- **New DB table not yet applied to any live database.** `drizzle-kit push`
+  has not been run against production for `supplier_recovery_entries` — the
+  table is defined in code (schema + provisioning-note disclosure in the
+  file's own header comment) but whoever holds production DB access must
+  run the existing `push` workflow (`lib/db/package.json`'s `push` script)
+  separately. This matches the same honest disclosure already used for
+  `localContentIcvEntries` (Module 08).
 - **Demo dataset does not itself trigger the new shock badge** — disclosed
   in Section 9.7 rather than solved by editing the narrative dataset.
 
 ## 12. Files in this build
 
+**14 Sep 2026 pass (independent verification):**
 - `artifacts/i-supply-chain/src/lib/supplierPerformanceRecovery.ts` (623
-  lines, unmodified this pass — verified only)
+  lines, unmodified that pass — verified only)
 - `artifacts/i-supply-chain/src/lib/supplierPerformanceRecovery.test.ts`
-  (423 lines, unmodified this pass — 40/40 verified passing)
+  (423 lines, unmodified that pass — 40/40 verified passing)
 - `artifacts/i-supply-chain/src/lib/supplierRecoveryPortfolio.ts` (563
-  lines — modified this pass: Module 06 shock wiring)
+  lines — modified: Module 06 shock wiring)
 - `artifacts/i-supply-chain/src/lib/supplierRecoveryPortfolio.test.ts` (318
-  lines — modified this pass: 3 new SOFT/HARDEST/BOUNDARY tests)
+  lines — modified: 3 new SOFT/HARDEST/BOUNDARY tests)
 - `artifacts/i-supply-chain/src/pages/SupplierRecoveryPortfolio.tsx` (574
-  lines — modified this pass: visible SHOCK badge + footnote)
-- `docs/SI_Module07_PerformanceRecovery_Worked_Example.md` (this document)
+  lines — modified: visible SHOCK badge + footnote)
+
+**17 Sep 2026 pass (persistence layer — see Section 13), real counts:**
+- `lib/db/src/schema/supplierRecoveryEntries.ts` (NEW, 92 lines / 5,480
+  bytes) — Drizzle table + Zod insert schema + provisioning-note disclosure.
+- `lib/db/src/schema/index.ts` (modified, 37 lines / 1,275 bytes) — barrel
+  export added.
+- `artifacts/api-server/src/routes/supplierRecoveryEntries.ts` (NEW, 129
+  lines / 5,414 bytes) — GET/PUT whole-state-sync route, 50-row cap.
+- `artifacts/api-server/src/routes/index.ts` (modified, 124 lines / 6,262
+  bytes) — route mounted at `/supplier-recovery-entries`.
+- `artifacts/api-server/tests/supplierRecoveryEntries.test.ts` (NEW, 221
+  lines / 10,520 bytes) — 14/14 passing, no regression on the 14/14 sibling
+  `supplierDependencyChecks.test.ts` (28/28 combined, freshly re-verified).
+- `artifacts/i-supply-chain/src/pages/SupplierRecoveryPortfolio.tsx`
+  (modified again this pass, now 1,190 lines / 69,424 bytes — grew from the
+  574-line 14 Sep version via the new "My Portfolio" mode, management
+  table, `SupplierEditorForm`, and full server-sync block; 574-line SHOCK-
+  badge diff is retained, not reverted).
+- `docs/SI_Module07_PerformanceRecovery_Worked_Example.md` (this document —
+  Sections 3, 7, 11, 12 updated, Section 13 added)
+## 13. Persistence-layer addendum — 17 Sep 2026 (EN / العربية)
+
+### 13.1 Why this addendum exists / لماذا هذا الملحق
+
+**EN.** The platform owner's instruction was: "finish and ship SI Module 07
+first, then come back ... before deciding whether Module 08 gets a bounded
+next batch ... or the team's time goes somewhere else entirely." Reading the
+live repo first (Sections 0-12 above) showed Module 07 was already shipped,
+independently verified, and CI-green, with exactly two honestly-disclosed
+open gaps: no live per-supplier spend/currency field (#668) and no
+persistence layer (Section 7, prior wording). Three scope questions were put
+to the owner rather than guessed at, because a large architectural decision
+should not be assumed on a live platform: (1) whether "finish and ship"
+meant closing the persistence gap only or also #668, (2) after the owner
+asked why persistence-only was recommended over both, a fuller explanation
+of the reasoning (scope containment, module ownership, sequencing), and (3)
+whether the persistence layer should ship with a real add/edit/delete form
+or just serve a fixed dataset from a table. The owner chose, respectively:
+persistence-only (#668 stays a separate, explicitly out-of-scope gap), and
+the full real CRUD form. This addendum discloses exactly what was built
+against that confirmed scope.
+
+**AR.** كانت تعليمات المالك: إنهاء وإطلاق الوحدة 07 أولاً، ثم العودة قبل البت في ما إذا كانت الوحدة 08 ستحصل على دفعة تالية محدودة أم أن وقت الفريق سيُوجَّه إلى مكان آخر. أظهرت قراءة المستودع الحقيقي أولاً أن الوحدة 07 مبنية بالفعل ومتحقق منها بشكل مستقل، وتوجد فيها ثغرتان مفصح عنهما بأمانة: عدم وجود حقل مباشر لإنفاق/عملة المورد الفردي (#668)، وعدم وجود طبقة تخزين دائم. طُرِحت على المالك ثلاثة أسئلة تتعلق بالنطاق، بدلاً من التخمين، واختار إغلاق فجوة التخزين فقط مع إبقاء #668 خارج النطاق صراحةً، واختار نموذج إضافة/تعديل/حذف حقيقي كامل بدلاً من مجرد عرض بيانات ثابتة.
+
+### 13.2 Architecture — what family this belongs to
+
+**EN.** `supplier_recovery_entries` mirrors the platform's established
+**whole-state JSONB sync** family (`supplierDependencyChecks`,
+`localContentIcvEntries`, `rarAnalyses`, `tcoAnalyses`, `clmContracts`) —
+appropriate because a `SupplierRecord[]` portfolio is a "current working
+list the client is actively editing," not an append-only measurement
+ledger (the `copqLedger` family). `localContentIcvEntries.ts` (16 Sep 2026,
+the newest sibling) was used as the direct template for the schema, route,
+and test file. One row per user holds their full portfolio as a `jsonb`
+column; a PUT does delete-all-then-bulk-insert inside a transaction, capped
+at 50 entries per sync.
+
+**AR.** تُحاكي الجدولة `supplier_recovery_entries` النمط المعماري المعتمد في المنصة لمزامنة الحالة الكاملة بتنسيق JSONB، لأن محفظة موردي `SupplierRecord[]` هي "قائمة عمل حالية يُحررها العميل بشكل مستمر"، وليست سجلاً تراكمياً للقياسات. تم استخدام ملف `localContentIcvEntries.ts` كقالب مباشر. التحديث يقوم بحذف كل شيء ثم إدراج جماعي داخل معاملة، بحد أقصى 50 إدخالاً لكل مزامنة.
+
+### 13.3 What is explicitly NOT included (the #668 boundary)
+
+**EN.** This persistence layer stores a user's `SupplierRecord[]` (name,
+category, quadrant, 12-month score history, CARs) — it deliberately does
+**not** persist `KraljicItemLite[]` or `SupplierCategoryShare[]`, the
+reference data `computeSupplierExposure()` needs to turn a category into a
+real SAR figure. Adding that would require schema changes in Module 02/05's
+own tables, which is exactly the #668 boundary the owner chose to keep
+separate. This is stated explicitly in the schema file's own header comment
+so a future session does not silently assume #668 is closed.
+
+**AR.** تُخزِّن طبقة التخزين هذه موردي المستخدم الخاصين فقط (الاسم، الفئة، الربع، سجل الأداء لـ 12 شهراً، وطلبات التصحيح) — ولا تُخزِّن عمداً بيانات المرجع اللازمة لحساب التعرض المالي الحقيقي، لأن ذلك يتطلب تعديل جداول الوحدتين 02 و05 ذاتها، وهو ما قرر المالك إبقاءه خارج النطاق (#668).
+
+### 13.4 Not yet applied to a live database
+
+**EN.** `supplier_recovery_entries` is defined in code (Drizzle schema +
+Zod insert schema) but no `drizzle-kit push` has been run against a live
+database this session — this sandbox has no live Postgres connection, and
+per the credential/repo-access standing rule this session never handles
+production DB credentials. The schema file's header comment carries this
+provisioning note explicitly, matching the precedent already set by
+`localContentIcvEntries.ts`. Whoever holds production DB access runs the
+existing `push` script (`lib/db/package.json`) separately; that is
+considered the "migration diff" review step for this project, since it
+uses schema-diffing rather than generated migration SQL files.
+
+**AR.** جدول `supplier_recovery_entries` مُعرَّف في الكود فقط، ولم يُطبَّق بعد على أي قاعدة بيانات حية. تفتقر هذه البيئة المعزولة لاتصال مباشر بقاعدة Postgres حية، ولا يُفترض أن تتعامل هذه الجلسة مع بيانات اعتماد الإنتاج مباشرةً. من يملك صلاحية الوصول لقاعدة بيانات الإنتاج هو من يشغِّل أمر `push` بشكل منفصل.
+
+### 13.5 The QA 10/10 pass — what it found and fixed
+
+**EN.** Run per `isc-qa-customer-simulation` because this task ships a live
+UI component, a form, and persisted data. Dimension 8 (Honesty, Decision
+Record 8.7) surfaced one real, genuine defect and it was fixed in this same
+pass, then re-verified: the portfolio's headline "SAR Exposure at Risk" KPI
+card showed only a dollar total with a generic mock-data badge, with no
+disclosure that suppliers whose category has no match in the mock
+`DEMO_CATEGORY_ITEMS`/`DEMO_SHARES` reference set are silently excluded from
+that total (the underlying engine already returns
+`{exposureSAR: 0, exposureBasis: 'INSUFFICIENT_DATA'}` for those suppliers,
+and the per-row watchlist already honestly labels them "insufficient data"
+— but the aggregate KPI card did not). This becomes materially more likely
+to mislead now that real users can add suppliers in arbitrary categories
+(the curated 16-supplier demo dataset happens to match the reference set by
+construction; a real user's category often will not). **Fix**: the
+`PortfolioKPIs.exposureInsufficientDataCount` field the engine already
+computed (but never rendered anywhere) is now surfaced on the KPI card's sub-label whenever it is nonzero, in both languages, stating explicitly that N
+escalated suppliers were excluded from the total because their category has
+no matching benchmark — not because their real exposure is zero. Re-verified after the fix: scoped `tsc --noEmit` clean (0 errors), 66/66
+frontend engine tests unchanged, no double-backslash-quote defect (checked).
+No other dimension (discoverability, bilingual correctness, data safety,
+edge cases, accessibility, cross-feature interaction, visual/tonal
+consistency) surfaced a real defect — the mode-tab UI sits directly in the
+page's primary content area (discoverable), both EN/AR strings were read
+for sense, the delete action matches the platform's own established
+no-confirm-dialog convention (`SupplierDependencyCheck.tsx`'s `onRemove`),
+the empty-portfolio and disabled-save-button states are handled with real
+messages, and every new interactive element is a real `<button>`/`<table>`
+with `aria-label`s and `aria-hidden` icons, keyboard-reachable, no
+hover-only affordance.
+
+**AR.** نُفِّذت مراجعة الجودة الإلزامية لأن المهمة تُطلق واجهة مستخدم حية ونموذجاً وبيانات محفوظة. وجد الفحص ثغرة حقيقية واحدة في بعد الصدق (البعد 8): بطاقة مؤشر "التعرُّض المالي للخطر" لم تكن تفصح عن استبعاد موردين ببيانات غير كافية من الإجمالي بصمت. تم الإصلاح في نفس الجولة: أصبحت البطاقة تعرض الآن عدد الموردين المستبعدين بوضوح بكلتا اللغتين، مع توضيح أن السبب هو عدم تطابق الفئة مع البيانات المرجعية، وليس لأن التعرُّض الفعلي صفر. أُعيد التحقق بعد الإصلاح: فحص الأنواع نظيف (0 أخطاء)، وجميع اختبارات المحرك 66/66 بدون تغيير.
+
+### 13.6 Verification summary (real, freshly executed — not estimated)
+
+**EN.**
+- Frontend: scoped `tsc --noEmit` clean (0 errors, positive control
+  confirmed earlier in the session); 66/66 engine tests unchanged
+  (`supplierPerformanceRecovery.test.ts` 40/40,
+  `supplierRecoveryPortfolio.test.ts` 26/26).
+- API server: full unscoped `tsc --noEmit -p tsconfig.json` (not a scoped
+  include — validated against the real, fully-built project-reference
+  graph) came back clean, 0 errors, after building `lib/db`,
+  `lib/api-zod`, and `lib/integrations-openai-ai-server` with
+  `tsc --build` first. `supplierRecoveryEntries.test.ts`: 14/14 passing,
+  freshly re-run alongside the 14/14 sibling `supplierDependencyChecks.test.ts`
+  (28/28 combined). The full api-server suite was verified earlier this
+  session at 953/955 passing, with 2 pre-existing, unrelated failures in
+  `tests/pgRateLimitStore.test.ts` ("counts hits within a window" and
+  "persists counts across store instances") — confirmed via `git status`/
+  `git log` to be untouched by this build and almost certainly caused by
+  this sandbox having no live Postgres connection for that store's real
+  DB-backed rate limiter. Disclosed honestly rather than omitted.
+- `pnpm-lock.yaml` drift from the bootstrap install is reverted
+  (`git checkout -- pnpm-lock.yaml`) before the final push, per the
+  established, disclosed environment-quirk handling for this repo.
+
+**AR.** الواجهة الأمامية: فحص أنواع نظيف بدون أخطاء، 66/66 اختبارات محرك دون تغيير. خادم API: فحص أنواع كامل غير محدود بدون أخطاء، 14/14 لملف الاختبار الجديد (28/28 مع الملف المشابه)، والمجموعة الكاملة 953/955 مع فشلين موجودين مسبقًا غير مرتبطين بهذا البناء والمفصح عنهما بصراحة.

@@ -13,6 +13,7 @@ export * from "./clmContracts";
 export * from "./rarAnalyses";
 export * from "./supplierDependencyChecks";
 export * from "./localContentIcvEntries";
+export * from "./supplierRecoveryEntries";
 export * from "./copqLedger";
 export * from "./raciAssignments";
 export * from "./aslRegister";
