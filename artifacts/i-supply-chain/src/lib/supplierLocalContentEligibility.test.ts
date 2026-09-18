@@ -54,6 +54,14 @@ import {
   type OffsetObligationGateResult,
   type SpendSetAsideResult,
   type ModifiedIcvScoreResult,
+  type LocalContentProgram,
+  type ProcurementContext,
+  type CommitmentDeviationGateResult,
+  type StackedLocalContentAssessment,
+  assessAllApplicableLocalContentPrograms,
+  actionableNextStepForSabicLcGate,
+  SABIC_LC_DEVIATION_TOLERANCE_PCT,
+  SABIC_LC_PENALTY_MAX_PCT_OF_CONTRACT_VALUE,
 } from './supplierLocalContentEligibility';
 
 // ===========================================================================
@@ -1595,8 +1603,8 @@ describe('SA — program routing default', () => {
     });
   });
 
-  it('PROGRAMS_BY_COUNTRY lists every program per country (SA: 6, AE: 2, JO: 2, OM: 3, QA: 2, BH: 3, KW: 2, EG: 3, TR: 2, UK: 1, USA: 4, CN: 4 -- UK added 16 Sep 2026 Part 2 continuation, USA added 16 Sep 2026 Part 2 continuation, CN added 16 Sep 2026 China Part 2 continuation)', () => {
-    expect(PROGRAMS_BY_COUNTRY.SA).toHaveLength(6);
+  it('PROGRAMS_BY_COUNTRY lists every program per country (SA: 9 -- +3 on 18 Sep 2026: Rawafed/SABIC/Tharwah -- AE: 2, JO: 2, OM: 3, QA: 2, BH: 3, KW: 2, EG: 3, TR: 2, UK: 1, USA: 4, CN: 4)', () => {
+    expect(PROGRAMS_BY_COUNTRY.SA).toHaveLength(9);
     expect(PROGRAMS_BY_COUNTRY.AE).toHaveLength(2);
     expect(PROGRAMS_BY_COUNTRY.JO).toHaveLength(2);
     expect(PROGRAMS_BY_COUNTRY.OM).toHaveLength(3);
@@ -1821,6 +1829,289 @@ describe('SA — LIKT (Localization of Industry & Knowledge Transfer, not-yet-so
     expect(a.reasonAr).toContain('LIKT');
   });
 });
+
+// ===========================================================================
+// SA — stc Rawafed (eligible-spend-ratio, reused -- real LCGPA-approved
+// formula sourced from stc's own 2021 Rawafed Annual Report PDF, 18 Sep
+// 2026)
+// ===========================================================================
+
+describe('SA / stc Rawafed — eligible-spend-ratio (reused, real LCGPA-approved formula)', () => {
+  it('soft: realistic 4-pillar supplier breakdown produces the correct directional score', () => {
+    const inputs: SupplierLocalContentInputs = {
+      rawafedStc: {
+        localGoodsServicesSAR: 2_000_000, totalGoodsServicesSAR: 4_000_000,
+        localSalariesSAR: 1_500_000, totalSalariesSAR: 2_000_000,
+        localAssetDepreciationSAR: 100_000, totalAssetDepreciationSAR: 200_000,
+        localCapacityDevelopmentSAR: 50_000, totalCapacityDevelopmentSAR: 100_000,
+      },
+    };
+    const a = assessSupplierLocalContent('SA', 'semi-government-soe', inputs, 'sa-rawafed-stc');
+    expect(a.applicability).toBe('applicable');
+    const c = a.computation as EligibleSpendRatioResult;
+    expect(c.mechanismType).toBe('eligible-spend-ratio'); // reused, not a new render branch
+    const totalEligible = 2_000_000 + 1_500_000 + 100_000 + 50_000;
+    const totalSpend = 4_000_000 + 2_000_000 + 200_000 + 100_000;
+    expect(c.scorePct).not.toBeNull();
+    expect(c.scorePct!).toBeCloseTo((totalEligible / totalSpend) * 100, 6);
+    expect(c.pillars).toHaveLength(4);
+  });
+
+  it('hardest: one pillar fully local (100%) and every other pillar zero -- resolves to exactly 100%, not a divide-by-zero artifact from the zero pillars', () => {
+    const inputs: SupplierLocalContentInputs = {
+      rawafedStc: {
+        localGoodsServicesSAR: 5_000_000, totalGoodsServicesSAR: 5_000_000,
+        localSalariesSAR: 0, totalSalariesSAR: 0,
+        localAssetDepreciationSAR: 0, totalAssetDepreciationSAR: 0,
+        localCapacityDevelopmentSAR: 0, totalCapacityDevelopmentSAR: 0,
+      },
+    };
+    const a = assessSupplierLocalContent('SA', 'semi-government-soe', inputs, 'sa-rawafed-stc');
+    const c = a.computation as EligibleSpendRatioResult;
+    expect(c.scorePct).toBeCloseTo(100, 6);
+  });
+
+  it('boundary: every total is zero -- null score (honest, not a fabricated 0%)', () => {
+    const inputs: SupplierLocalContentInputs = {
+      rawafedStc: {
+        localGoodsServicesSAR: 0, totalGoodsServicesSAR: 0,
+        localSalariesSAR: 0, totalSalariesSAR: 0,
+        localAssetDepreciationSAR: 0, totalAssetDepreciationSAR: 0,
+        localCapacityDevelopmentSAR: 0, totalCapacityDevelopmentSAR: 0,
+      },
+    };
+    const a = assessSupplierLocalContent('SA', 'semi-government-soe', inputs, 'sa-rawafed-stc');
+    const c = a.computation as EligibleSpendRatioResult;
+    expect(c.scorePct).toBeNull();
+    expect(a.reasonEn).toContain('incomplete inputs');
+    expect(a.reasonAr).toContain('بيانات غير مكتملة');
+  });
+
+  it('is stc\'s own company-specific anchor-buyer program, scoped to semi-government-soe only -- government context is not-applicable', () => {
+    const a = assessSupplierLocalContent('SA', 'government', { rawafedStc: { localGoodsServicesSAR: 1, totalGoodsServicesSAR: 1, localSalariesSAR: 0, totalSalariesSAR: 0, localAssetDepreciationSAR: 0, totalAssetDepreciationSAR: 0, localCapacityDevelopmentSAR: 0, totalCapacityDevelopmentSAR: 0 } }, 'sa-rawafed-stc');
+    expect(a.applicability).toBe('not-applicable');
+  });
+
+  it('sourceNoteEn cites the real 2021 Rawafed Annual Report and its LCGPA-approved formula, distinct from the general LCGPA program', () => {
+    const fw = PROGRAMS['sa-rawafed-stc'];
+    expect(fw.sourceNoteEn).toContain('2021');
+    expect(fw.sourceNoteEn).toContain('LCGPA');
+    expect(fw.sourceNoteAr).toContain('LCGPA');
+    expect(fw.mechanismType).toBe('eligible-spend-ratio');
+    expect(fw.sourceNoteEn).not.toEqual(PROGRAMS['sa-lcgpa-general'].sourceNoteEn);
+  });
+});
+
+// ===========================================================================
+// SA — SABIC Local Content Commitment Gate (commitment-deviation-gate, a
+// genuinely new mechanism type, 18 Sep 2026) -- per-contract negotiated
+// target vs. audited actual, NOT a published SABIC-wide standard. See
+// PROGRAMS['sa-sabic-lc-commitment'].sourceNoteEn for the full honesty
+// disclosure, and the platform owner's own explicit instruction: a 1%-of-
+// contract-value penalty applies once deviation exceeds the 5-point line.
+// ===========================================================================
+
+describe('SA / SABIC Commitment Gate — commitment-deviation-gate (per-contract target, NOT a SABIC-wide standard)', () => {
+  it('soft: actual audited performance MEETS the committed target exactly -- zero deviation, within tolerance', () => {
+    const a = assessSupplierLocalContent('SA', 'semi-government-soe', { sabicLcCommitment: { proposedTargetPct: 40, actualAuditedPct: 40 } }, 'sa-sabic-lc-commitment');
+    const c = a.computation as CommitmentDeviationGateResult;
+    expect(c.deviationPct).toBeCloseTo(0, 6);
+    expect(c.withinTolerance).toBe(true);
+    expect(actionableNextStepForSabicLcGate(c)).toBeNull();
+  });
+
+  it('soft: actual EXCEEDS the committed target -- negative deviation is never a breach, regardless of magnitude', () => {
+    const a = assessSupplierLocalContent('SA', 'semi-government-soe', { sabicLcCommitment: { proposedTargetPct: 40, actualAuditedPct: 55 } }, 'sa-sabic-lc-commitment');
+    const c = a.computation as CommitmentDeviationGateResult;
+    expect(c.deviationPct).toBeCloseTo(-15, 6);
+    expect(c.withinTolerance).toBe(true);
+    expect(actionableNextStepForSabicLcGate(c)).toBeNull();
+  });
+
+  it('hardest: a small shortfall INSIDE the 5-point tolerance -- within tolerance, no actionable next step, no penalty text', () => {
+    const a = assessSupplierLocalContent('SA', 'semi-government-soe', { sabicLcCommitment: { proposedTargetPct: 40, actualAuditedPct: 37 } }, 'sa-sabic-lc-commitment');
+    const c = a.computation as CommitmentDeviationGateResult;
+    expect(c.deviationPct).toBeCloseTo(3, 6);
+    expect(c.withinTolerance).toBe(true);
+    expect(actionableNextStepForSabicLcGate(c)).toBeNull();
+  });
+
+  it('hardest: a shortfall just OVER the 5-point tolerance line -- breach, and the actionable next step names the 1%-of-contract-value penalty bilingually', () => {
+    const a = assessSupplierLocalContent('SA', 'semi-government-soe', { sabicLcCommitment: { proposedTargetPct: 40, actualAuditedPct: 34 } }, 'sa-sabic-lc-commitment');
+    const c = a.computation as CommitmentDeviationGateResult;
+    expect(c.deviationPct).toBeCloseTo(6, 6);
+    expect(c.withinTolerance).toBe(false);
+    const step = actionableNextStepForSabicLcGate(c);
+    expect(step).not.toBeNull();
+    expect(step!.en).toContain('1%');
+    expect(step!.en).toContain('penalty');
+    expect(step!.ar).toContain('١٪');
+    expect(step!.ar).toContain('غرامة');
+  });
+
+  it('boundary: deviation is EXACTLY on the 5-point tolerance line -- within tolerance (<=), not yet a breach', () => {
+    const a = assessSupplierLocalContent('SA', 'semi-government-soe', { sabicLcCommitment: { proposedTargetPct: 45, actualAuditedPct: 40 } }, 'sa-sabic-lc-commitment');
+    const c = a.computation as CommitmentDeviationGateResult;
+    expect(c.deviationPct).toBeCloseTo(5, 6);
+    expect(c.withinTolerance).toBe(true);
+    expect(actionableNextStepForSabicLcGate(c)).toBeNull();
+  });
+
+  it('boundary: no contract inputs supplied -- null withinTolerance (insufficient data), not a false pass or false breach', () => {
+    const a = assessSupplierLocalContent('SA', 'semi-government-soe', {}, 'sa-sabic-lc-commitment');
+    const c = a.computation as CommitmentDeviationGateResult;
+    expect(c.withinTolerance).toBeNull();
+    expect(c.deviationPct).toBeNull();
+    expect(actionableNextStepForSabicLcGate(c)).toBeNull();
+  });
+
+  it('is a per-contract company-specific gate, scoped to semi-government-soe only -- government context is not-applicable', () => {
+    const a = assessSupplierLocalContent('SA', 'government', { sabicLcCommitment: { proposedTargetPct: 40, actualAuditedPct: 30 } }, 'sa-sabic-lc-commitment');
+    expect(a.applicability).toBe('not-applicable');
+  });
+
+  it('sourceNoteEn/Ar honestly disclose this is NOT a published SABIC-wide standard, and that the tolerance/penalty are this platform\'s own business-rule defaults (Decision Record 8.7)', () => {
+    const fw = PROGRAMS['sa-sabic-lc-commitment'];
+    expect(fw.sourceNoteEn).toContain('NOT a published SABIC-wide local-content standard');
+    expect(fw.sourceNoteEn).toContain('per-contract negotiated');
+    expect(fw.sourceNoteAr).toContain('ليس معياراً معلناً على مستوى سابك');
+    expect(SABIC_LC_DEVIATION_TOLERANCE_PCT).toBe(5);
+    expect(SABIC_LC_PENALTY_MAX_PCT_OF_CONTRACT_VALUE).toBe(1);
+  });
+
+  it('recommendLocalContentAction: primary+alternative fires on a genuine breach, alternative names the penalty AND the renegotiation option (Rule 8: never a single-path recommendation)', () => {
+    const a = assessSupplierLocalContent('SA', 'semi-government-soe', { sabicLcCommitment: { proposedTargetPct: 40, actualAuditedPct: 30 } }, 'sa-sabic-lc-commitment');
+    const rec = recommendLocalContentAction(a, null);
+    expect(rec).not.toBeNull();
+    expect(rec!.primaryEn).toContain('shortfall');
+    expect(rec!.alternativeEn).toContain('1%');
+    expect(rec!.alternativeEn).toContain('renegotiat');
+    expect(rec!.alternativeAr).toContain('١٪');
+  });
+
+  it('recommendLocalContentAction: returns null when the gate is within tolerance -- no recommendation for a non-problem', () => {
+    const a = assessSupplierLocalContent('SA', 'semi-government-soe', { sabicLcCommitment: { proposedTargetPct: 40, actualAuditedPct: 38 } }, 'sa-sabic-lc-commitment');
+    const rec = recommendLocalContentAction(a, null);
+    expect(rec).toBeNull();
+  });
+
+  it('reasonAr carries the same breach/within-tolerance information as reasonEn, using the real Arabic percent sign, never a raw splice of the English mechanismType', () => {
+    const a = assessSupplierLocalContent('SA', 'semi-government-soe', { sabicLcCommitment: { proposedTargetPct: 40, actualAuditedPct: 30 } }, 'sa-sabic-lc-commitment');
+    expect(a.reasonEn).toContain('breach');
+    expect(a.reasonAr).toContain('تجاوز');
+    expect(a.reasonAr).not.toContain('commitment-deviation-gate');
+    expect(a.reasonAr).not.toContain('semi-government-soe');
+  });
+});
+
+// ===========================================================================
+// SA — Tharwah (Ma'aden Local Content Program, not-yet-sourced, real dated
+// program name confirmed via maaden.com/tharwah, 18 Sep 2026)
+// ===========================================================================
+
+describe("SA — Tharwah (Ma'aden Local Content Program, not-yet-sourced, real dated program name)", () => {
+  it('returns insufficient-data with the real confirmed program name, never a fabricated per-supplier score', () => {
+    const a = assessSupplierLocalContent('SA', 'government', {}, 'sa-tharwah-maaden');
+    expect(a.applicability).toBe('insufficient-data');
+    expect(a.computation).toEqual({ mechanismType: 'not-yet-sourced' });
+    expect(a.reasonEn).toContain('Tharwah');
+    expect(a.reasonAr).toContain('ثروة');
+    expect(a.program).toBe('sa-tharwah-maaden');
+  });
+
+  it('is modeled as a genuinely distinct program from GAMI/LIKT/Rawafed, with its own bilingual sourceNote honestly contrasting itself with Rawafed\'s published formula', () => {
+    const fw = PROGRAMS['sa-tharwah-maaden'];
+    expect(fw.sourceNoteEn).not.toEqual(PROGRAMS['sa-gami-defense'].sourceNoteEn);
+    expect(fw.sourceNoteEn).not.toEqual(PROGRAMS['sa-likt'].sourceNoteEn);
+    expect(fw.sourceNoteEn).toContain('Rawafed');
+    expect(fw.applicableContexts).toHaveLength(0);
+  });
+});
+
+// ===========================================================================
+// assessAllApplicableLocalContentPrograms — multi-mechanism stacking (new,
+// 18 Sep 2026): a single country/context can have more than one genuinely
+// applicable program at once. Never averaged into one score (Decision
+// Record 8.7); each program kept fully separate.
+// ===========================================================================
+
+describe('assessAllApplicableLocalContentPrograms — multi-mechanism stacking', () => {
+  it('excludes not-applicable programs: SA government context excludes IKTVA, Rawafed, and the SABIC gate (all semi-government-soe-only)', () => {
+    const stacked = assessAllApplicableLocalContentPrograms('SA', 'government', {});
+    const programs = stacked.map(s => s.program);
+    expect(programs).not.toContain('sa-iktva-aramco');
+    expect(programs).not.toContain('sa-rawafed-stc');
+    expect(programs).not.toContain('sa-sabic-lc-commitment');
+    expect(programs).toContain('sa-lcgpa-general');
+    expect(programs).toContain('sa-mandatory-list');
+  });
+
+  it('keeps insufficient-data programs (GAMI/LIKT/Tharwah) rather than silently hiding them', () => {
+    const stacked = assessAllApplicableLocalContentPrograms('SA', 'government', {});
+    const insufficientPrograms = stacked.filter(s => s.assessment.applicability === 'insufficient-data').map(s => s.program);
+    expect(insufficientPrograms).toContain('sa-gami-defense');
+    expect(insufficientPrograms).toContain('sa-likt');
+    expect(insufficientPrograms).toContain('sa-tharwah-maaden');
+  });
+
+  it('semi-government-soe context includes LCGPA general, mandatory-list, price-preference, IKTVA, Rawafed, and the SABIC gate all at once -- six genuinely simultaneous programs, never merged into one score', () => {
+    const stacked = assessAllApplicableLocalContentPrograms('SA', 'semi-government-soe', {});
+    const programs = stacked.map(s => s.program);
+    expect(programs).toContain('sa-lcgpa-general');
+    expect(programs).toContain('sa-mandatory-list');
+    expect(programs).toContain('sa-price-preference');
+    expect(programs).toContain('sa-iktva-aramco');
+    expect(programs).toContain('sa-rawafed-stc');
+    expect(programs).toContain('sa-sabic-lc-commitment');
+    // each kept as its own separate LocalContentAssessment, not averaged
+    const distinctMechanisms = new Set(stacked.map(s => s.assessment.framework.mechanismType));
+    expect(distinctMechanisms.size).toBeGreaterThan(1);
+  });
+
+  it('actionableNextStep is populated only for a breaching SABIC gate, and is null for every other program in the same stack', () => {
+    const stacked = assessAllApplicableLocalContentPrograms('SA', 'semi-government-soe', { sabicLcCommitment: { proposedTargetPct: 40, actualAuditedPct: 30 } });
+    const sabicEntry = stacked.find(s => s.program === 'sa-sabic-lc-commitment')!;
+    expect(sabicEntry.actionableNextStep).not.toBeNull();
+    expect(sabicEntry.actionableNextStep!.en).toContain('1%');
+    for (const s of stacked) {
+      if (s.program !== 'sa-sabic-lc-commitment') expect(s.actionableNextStep).toBeNull();
+    }
+  });
+
+  it('actionableNextStep is null when the SABIC gate is within tolerance, even though the gate itself is still in the stacked list', () => {
+    const stacked = assessAllApplicableLocalContentPrograms('SA', 'semi-government-soe', { sabicLcCommitment: { proposedTargetPct: 40, actualAuditedPct: 38 } });
+    const sabicEntry = stacked.find(s => s.program === 'sa-sabic-lc-commitment')!;
+    expect(sabicEntry).toBeDefined();
+    expect(sabicEntry.actionableNextStep).toBeNull();
+  });
+});
+
+// ===========================================================================
+// SA — Rawafed in the portfolio rollup (spend-share-weighted, same
+// convention as every other eligible-spend-ratio mechanism -- confirms the
+// reuse is genuine, not just a typecheck-level coincidence)
+// ===========================================================================
+
+describe('SA — portfolio rollup: Rawafed groups and weights exactly like every other eligible-spend-ratio mechanism', () => {
+  it('two Rawafed suppliers with different scores roll up spend-share-weighted, grouped separately from lcgpa-general even though both are eligible-spend-ratio', () => {
+    const supplierA = assessSupplierLocalContent('SA', 'semi-government-soe', { rawafedStc: { localGoodsServicesSAR: 1_000_000, totalGoodsServicesSAR: 1_000_000, localSalariesSAR: 0, totalSalariesSAR: 0, localAssetDepreciationSAR: 0, totalAssetDepreciationSAR: 0, localCapacityDevelopmentSAR: 0, totalCapacityDevelopmentSAR: 0 } }, 'sa-rawafed-stc');
+    const supplierB = assessSupplierLocalContent('SA', 'semi-government-soe', { rawafedStc: { localGoodsServicesSAR: 0, totalGoodsServicesSAR: 1_000_000, localSalariesSAR: 0, totalSalariesSAR: 0, localAssetDepreciationSAR: 0, totalAssetDepreciationSAR: 0, localCapacityDevelopmentSAR: 0, totalCapacityDevelopmentSAR: 0 } }, 'sa-rawafed-stc');
+    const general = assessSupplierLocalContent('SA', 'semi-government-soe', { sa: { localLaborSAR: 500_000, expatLaborSAR: 0, localGoodsServicesSAR: 0, foreignGoodsServicesSAR: 0, capacityBuildingSAR: 0, localAssetDepreciationSAR: 0, totalAssetDepreciationSAR: 0 } }, 'sa-lcgpa-general');
+
+    const groups = rollUpPortfolioLocalContent([
+      { supplierId: 'r1', spendShare: 50, assessment: supplierA },
+      { supplierId: 'r2', spendShare: 50, assessment: supplierB },
+      { supplierId: 'g1', spendShare: 100, assessment: general },
+    ]);
+
+    expect(groups).toHaveLength(2);
+    const rawafedGroup = groups.find(g => g.program === 'sa-rawafed-stc')!;
+    expect(rawafedGroup).toBeDefined();
+    expect(rawafedGroup.mechanismType).toBe('eligible-spend-ratio');
+    expect(rawafedGroup.weightedScorePct).toBeCloseTo(50, 6); // (100% * 0.5) + (0% * 0.5)
+  });
+});
+
 
 // ===========================================================================
 // SA — portfolio rollup groups by program, not just country+context (two

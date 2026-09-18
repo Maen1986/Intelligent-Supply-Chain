@@ -432,6 +432,9 @@ export type LocalContentProgram =
   | 'sa-iktva-aramco'     // SA type 2: anchor-buyer program
   | 'sa-gami-defense'     // SA type 6: offset/tech-transfer obligation (not-yet-sourced)
   | 'sa-likt'             // SA type 6: offset/tech-transfer obligation (not-yet-sourced)
+  | 'sa-rawafed-stc'      // SA type 2-ish (new, 18 Sep 2026): stc's own Rawafed local-content program -- real LCGPA-approved formula, sourced from stc's own 2021 Rawafed Annual Report PDF; reuses eligible-spend-ratio (same 4-pillar shape as LCGPA general), a company-specific anchor-buyer program like Aramco IKTVA
+  | 'sa-sabic-lc-commitment' // SA type 6-ish (new, 18 Sep 2026): SABIC per-contract local-content commitment deviation gate -- NOT a published SABIC-wide standard (none was found); models a per-contract negotiated target vs. audited actual, per the platform owner's explicit business rule, with a disclosed tolerance/penalty default
+  | 'sa-tharwah-maaden'   // SA type 6 (new, 18 Sep 2026): Ma'aden's real, named "Tharwah" local content program (confirmed via maaden.com/tharwah and press coverage) -- not-yet-sourced: no public per-supplier computable formula found, unlike stc's Rawafed
   | 'ae-icv-general'      // AE type 1: certification score (the module's original mechanism)
   | 'ae-tawazun-offset'   // AE type 6: offset/tech-transfer obligation (Tawazun Economic Council, real formula)
   | 'jo-price-preference' // JO type 4: bid-evaluation price preference (the module's original mechanism)
@@ -492,7 +495,7 @@ export const DEFAULT_PROGRAM_BY_COUNTRY: Record<LocalContentCountry, LocalConten
  * country now has more than one program -- the routing question is no
  * longer an SA/AE-only UI affordance. */
 export const PROGRAMS_BY_COUNTRY: Record<LocalContentCountry, LocalContentProgram[]> = {
-  SA: ['sa-lcgpa-general', 'sa-mandatory-list', 'sa-price-preference', 'sa-iktva-aramco', 'sa-gami-defense', 'sa-likt'],
+  SA: ['sa-lcgpa-general', 'sa-mandatory-list', 'sa-price-preference', 'sa-iktva-aramco', 'sa-gami-defense', 'sa-likt', 'sa-rawafed-stc', 'sa-sabic-lc-commitment', 'sa-tharwah-maaden'],
   AE: ['ae-icv-general', 'ae-tawazun-offset'],
   JO: ['jo-price-preference', 'jo-contractor-quota'],
   OM: ['om-icv', 'om-mandatory-list', 'om-oq-price-preference'],
@@ -534,6 +537,7 @@ export type LocalContentMechanismType =
   | 'offset-obligation-gate'    // UAE Tawazun defense-sector offset obligation
   | 'spend-set-aside-target'    // (new, 15 Sep 2026) Jordan contractor quota; Bahrain SME allocation; Kuwait KPC local spend -- a sourced NATIONAL/PROGRAM target share plus this supplier's own qualification for it, not a per-bid score
   | 'modified-icv-score'        // (new, 15 Sep 2026) Qatar Tawteen/ICV -- eligible-spend-ratio base score plus real sourced modifiers (ICV+ manufacturer boost, micro/small blanket floor, capped strategic-behavior bonus)
+  | 'commitment-deviation-gate' // (new, 18 Sep 2026) SABIC per-contract local-content commitment gate -- a covenant-compliance check against a per-contract negotiated target, NOT a published SABIC-wide standard (see PROGRAMS['sa-sabic-lc-commitment'].sourceNoteEn)
   | 'not-yet-sourced';          // Oman general ICV / Qatar National Local Content Strategy / Bahrain general framework / Kuwait general framework; Saudi GAMI / LIKT
 
 export interface CountryFrameworkInfo {
@@ -562,7 +566,7 @@ export interface CountryFrameworkInfo {
 // score's usage notes). See file header for full sourcing.
 // ---------------------------------------------------------------------------
 
-const SA_PROGRAMS: Record<'sa-lcgpa-general' | 'sa-mandatory-list' | 'sa-price-preference' | 'sa-iktva-aramco' | 'sa-gami-defense' | 'sa-likt', CountryFrameworkInfo> = {
+const SA_PROGRAMS: Record<'sa-lcgpa-general' | 'sa-mandatory-list' | 'sa-price-preference' | 'sa-iktva-aramco' | 'sa-gami-defense' | 'sa-likt' | 'sa-rawafed-stc' | 'sa-sabic-lc-commitment' | 'sa-tharwah-maaden', CountryFrameworkInfo> = {
   'sa-lcgpa-general': {
     country: 'SA', countryNameEn: 'Saudi Arabia', countryNameAr: 'المملكة العربية السعودية',
     programNameEn: 'LCGPA Local Content (general score)', programNameAr: 'المحتوى المحلي العام (هيئة المحتوى المحلي والمشتريات الحكومية)',
@@ -618,6 +622,30 @@ const SA_PROGRAMS: Record<'sa-lcgpa-general' | 'sa-mandatory-list' | 'sa-price-p
     applicableContexts: [],
     sourceNoteEn: 'LCGPA\'s own official Local Content Mechanisms page names a distinct "LIKT" (Localization of Industry & Knowledge Transfer) program aimed at localizing targeted industries through collaboration with global investors and technology leaders -- genuinely new to this research pass and distinct from GAMI\'s defense-specific program. No per-supplier computable formula was found; deliberately not guessed.',
     sourceNoteAr: 'تسمّي الصفحة الرسمية لآليات المحتوى المحلي التابعة للهيئة برنامجاً مستقلاً يُدعى "LIKT" (توطين الصناعة ونقل المعرفة) يهدف إلى توطين صناعات مستهدفة عبر التعاون مع مستثمرين عالميين وقادة تقنيين -- برنامج جديد فعلاً اكتُشف في هذا البحث ومختلف عن برنامج الهيئة العامة للصناعات العسكرية الخاص بالدفاع. لم يُعثر على صيغة حساب على مستوى المورّد؛ لم يتم تخمينها عمداً.',
+  },
+  'sa-rawafed-stc': {
+    country: 'SA', countryNameEn: 'Saudi Arabia', countryNameAr: 'المملكة العربية السعودية',
+    programNameEn: 'stc Rawafed Local Content Program', programNameAr: 'برنامج روافد لتنمية المحتوى المحلي (stc)',
+    mechanismType: 'eligible-spend-ratio', program: 'sa-rawafed-stc',
+    applicableContexts: ['semi-government-soe'],
+    sourceNoteEn: "stc's own official Rawafed Program Annual Report (Version 1, 2021, published at stc.com/content/dam/corporatesite/en/generic/pdf/rawafed_annual_report_2021en.pdf): the Rawafed program launched in 2018 to develop and enhance local content at stc as part of Vision 2030, and the report publishes an explicit formula described as approved by LCGPA: local content % = (local goods/services + local salaries + local asset depreciation + local capacity development) / (total goods/services + total salaries + total asset depreciation + total capacity development) -- the SAME 4-pillar eligible-spend-ratio shape as LCGPA's own general score (reused here, not duplicated as a new mechanism type). This is stc's own company-specific anchor-buyer program (stc is itself a majority state/PIF-linked entity, the same structural category as Aramco's IKTVA) -- the report states it was applied to large high-value project procurement totalling approximately SAR 16 billion. No sourced evidence of applicability to private-commercial (non-stc) buyers.",
+    sourceNoteAr: 'تقرير برنامج "روافد" السنوي الرسمي الصادر عن stc (الإصدار الأول، ٢٠٢١، المنشور على stc.com) يذكر أن البرنامج أُطلق عام ٢٠١٨ لتطوير وتعزيز المحتوى المحلي في stc ضمن رؤية ٢٠٣٠، وينشر صيغة حساب صريحة موصوفة بأنها معتمدة من هيئة المحتوى المحلي والمشتريات الحكومية (LCGPA): نسبة المحتوى المحلي = (المحتوى المحلي في السلع والخدمات + المحتوى المحلي في الرواتب + المحتوى المحلي في إهلاك الأصول + المحتوى المحلي في تنمية القدرات) ÷ (إجمالي السلع والخدمات + إجمالي الرواتب + إجمالي إهلاك الأصول + إجمالي تنمية القدرات) -- وهي نفس بنية الأركان الأربعة المستخدمة في الدرجة العامة لهيئة المحتوى المحلي، أُعيد استخدامها هنا بدلاً من تكرارها كآلية جديدة. هذا برنامج stc الخاص بها كمشترٍ رئيسي (وstc نفسها جهة مملوكة بأغلبية للدولة عبر صندوق الاستثمارات العامة)، من نفس الفئة البنيوية لبرنامج إكتفاء التابع لأرامكو -- يذكر التقرير تطبيقه على مشتريات المشاريع عالية القيمة بما يقارب ١٦ مليار ريال سعودي. لا يوجد دليل موثّق على سريانه على مشترين تجاريين خاصين (غير stc).',
+  },
+  'sa-sabic-lc-commitment': {
+    country: 'SA', countryNameEn: 'Saudi Arabia', countryNameAr: 'المملكة العربية السعودية',
+    programNameEn: 'SABIC Local Content Commitment Gate', programNameAr: 'بوابة التزام المحتوى المحلي (سابك)',
+    mechanismType: 'commitment-deviation-gate', program: 'sa-sabic-lc-commitment',
+    applicableContexts: ['semi-government-soe'],
+    sourceNoteEn: "This is NOT a published SABIC-wide local-content standard -- this research pass found no public SABIC-wide local-content percentage target (SABIC is itself a majority Saudi-government/PIF-owned entity, modeled here as a semi-government-owned-enterprise buyer, the same treatment given to Aramco/stc above). Per the platform owner's own explicit confirmation, SABIC's actual practice is a per-contract negotiated local-content commitment: each supplier contract states its own target percentage, audited against actual delivered local content, with deviation tracked against that contract's own target -- never a fixed company-wide rate. This mechanism encodes that as a covenant-compliance gate, not a national program score: deviationPct = proposedTargetPct - actualAuditedPct, tested against a disclosed tolerance and penalty rate that are this platform's OWN business-rule defaults (SABIC_LC_DEVIATION_TOLERANCE_PCT = 5 percentage points, SABIC_LC_PENALTY_MAX_PCT_OF_CONTRACT_VALUE = 1% of contract value), set directly by the platform owner -- not a published SABIC or third-party standard, and disclosed as such rather than presented as sourced regulation.",
+    sourceNoteAr: 'هذا ليس معياراً معلناً على مستوى سابك ككل -- لم يعثر هذا البحث على هدف نسبة محتوى محلي معلن على مستوى سابك (وسابك نفسها جهة مملوكة بأغلبية للحكومة السعودية/صندوق الاستثمارات العامة، وتُعامَل هنا كمشترٍ شبه حكومي، بنفس معاملة أرامكو/stc أعلاه). ووفق تأكيد صريح من مالك المنصة، فإن الممارسة الفعلية لسابك هي التزام محتوى محلي متفاوض عليه لكل عقد على حدة: يحدد كل عقد هدفه الخاص كنسبة مئوية، يُدقَّق مقابل المحتوى المحلي الفعلي المُسلَّم، ويُتابَع الانحراف عن هدف ذلك العقد تحديداً -- وليس عن نسبة ثابتة على مستوى الشركة. تُنمذِج هذه الآلية ذلك كبوابة امتثال تعاقدي وليس كدرجة برنامج وطني: نسبة الانحراف = الهدف المقترح − النسبة المدققة فعلياً، تُختبر مقابل هامش تسامح ونسبة غرامة مُفصَح عنهما كإعدادات افتراضية خاصة بقواعد عمل هذه المنصة (SABIC_LC_DEVIATION_TOLERANCE_PCT = ٥ نقاط مئوية، وSABIC_LC_PENALTY_MAX_PCT_OF_CONTRACT_VALUE = ١٪ من قيمة العقد)، حددها مالك المنصة مباشرة -- وليسا معياراً معلناً من سابك أو أي جهة أخرى، ويُفصَح عن ذلك هنا بدلاً من تقديمه وكأنه تنظيم موثّق.',
+  },
+  'sa-tharwah-maaden': {
+    country: 'SA', countryNameEn: 'Saudi Arabia', countryNameAr: 'المملكة العربية السعودية',
+    programNameEn: "Tharwah (Ma'aden Local Content Program)", programNameAr: 'برنامج ثروة لتنمية المحتوى المحلي (معدن)',
+    mechanismType: 'not-yet-sourced', program: 'sa-tharwah-maaden',
+    applicableContexts: [],
+    sourceNoteEn: "Ma'aden's own real, named local content program, confirmed via its official corporate site (maaden.com/tharwah) and press coverage of its launch (Argaam, Zawya). No public per-supplier computable formula, pillar breakdown, or percentage methodology was found in this research pass -- unlike stc's Rawafed, whose own annual report publishes an explicit formula (see PROGRAMS['sa-rawafed-stc'].sourceNoteEn), Ma'aden's public materials describe the program's goals and initiatives but not a scoring methodology. A real, dated program name is disclosed here rather than a fabricated per-supplier score.",
+    sourceNoteAr: 'برنامج "ثروة" هو برنامج حقيقي ومسمّى رسمياً تابع لشركة التعدين العربية السعودية (معدن)، تم التأكد منه عبر موقعها الرسمي (maaden.com/tharwah) وتغطية إعلامية (Argaam وZawya) لإطلاقه. لم يُعثر في هذا البحث على صيغة حساب علنية على مستوى المورّد، أو تفصيل للأركان، أو منهجية نسبة مئوية -- على خلاف برنامج "روافد" التابع لـstc الذي ينشر تقريره السنوي صيغة صريحة (انظر PROGRAMS[\'sa-rawafed-stc\'].sourceNoteEn)، إذ تصف المواد العلنية لمعدن أهداف البرنامج ومبادراته دون منهجية تسجيل. يُفصَح هنا عن اسم برنامج حقيقي ومؤرَّخ بدلاً من درجة مورّد مختلقة.',
   },
 };
 
@@ -1094,6 +1122,32 @@ export interface SupplierLocalContentInputs {
      * sub-formula (see sourceNoteEn). */
     incentiveBonusPct: number | null;
   };
+  /** stc Rawafed local-content program (SA / 'sa-rawafed-stc', new 18 Sep
+   * 2026) -- SAR, per stc's own official 2021 Rawafed Annual Report
+   * formula (see PROGRAMS['sa-rawafed-stc'].sourceNoteEn): the SAME
+   * 4-pillar eligible-spend-ratio shape as LCGPA's general score, computed
+   * from stc's own audited local/total breakdown rather than the
+   * supplier's own labor/goods split used for `sa`. */
+  rawafedStc?: {
+    localGoodsServicesSAR: number | null; totalGoodsServicesSAR: number | null;
+    localSalariesSAR: number | null; totalSalariesSAR: number | null;
+    localAssetDepreciationSAR: number | null; totalAssetDepreciationSAR: number | null;
+    localCapacityDevelopmentSAR: number | null; totalCapacityDevelopmentSAR: number | null;
+  };
+  /** SABIC per-contract local-content commitment gate (SA / 'sa-sabic-lc-
+   * commitment', new 18 Sep 2026) -- deliberately NOT a spend breakdown:
+   * SABIC's real practice is a per-contract negotiated target audited
+   * against actual delivered performance (see PROGRAMS['sa-sabic-lc-
+   * commitment'].sourceNoteEn), so this mechanism's only inputs are the
+   * two percentages the contract and its audit actually produce. */
+  sabicLcCommitment?: {
+    /** This specific contract's own negotiated local-content target (0-
+     * 100), NOT a fixed SABIC-wide rate -- there isn't one. */
+    proposedTargetPct: number | null;
+    /** The supplier's actual audited local-content performance (0-100)
+     * against that same contract's target. */
+    actualAuditedPct: number | null;
+  };
   /** UAE ICV (AE / 'ae-icv-general') pillars -- AED. Field-level sourced
    * bands documented next to their use in computeIcvAe(). */
   ae?: {
@@ -1389,6 +1443,28 @@ export interface OffsetObligationGateResult {
   shortfallPenaltyAED: number | null;
 }
 
+/** (New, 18 Sep 2026) SABIC per-contract local-content commitment gate --
+ * a covenant-compliance check against THIS contract's own negotiated
+ * target, not a national program score or a fixed company-wide rate (see
+ * PROGRAMS['sa-sabic-lc-commitment'].sourceNoteEn for the full honesty
+ * disclosure: this tolerance/penalty pair is the platform's own business
+ * rule, not a published SABIC standard). */
+export interface CommitmentDeviationGateResult {
+  mechanismType: 'commitment-deviation-gate';
+  proposedTargetPct: number | null;
+  actualAuditedPct: number | null;
+  /** proposedTargetPct - actualAuditedPct, positive = under-delivery,
+   * negative = over-delivery. Null when either input is missing. */
+  deviationPct: number | null;
+  /** The disclosed tolerance band, in percentage points -- see
+   * SABIC_LC_DEVIATION_TOLERANCE_PCT. */
+  toleranceThresholdPct: number;
+  /** true = deviationPct <= toleranceThresholdPct (a negative deviation,
+   * i.e. the supplier met or exceeded its own target, is never a breach),
+   * false = breach, null = insufficient inputs. */
+  withinTolerance: boolean | null;
+}
+
 export interface NotYetSourcedResult {
   mechanismType: 'not-yet-sourced';
 }
@@ -1456,6 +1532,7 @@ export type LocalContentComputation =
   | OffsetObligationGateResult
   | SpendSetAsideResult
   | ModifiedIcvScoreResult
+  | CommitmentDeviationGateResult
   | NotYetSourcedResult;
 
 export type LocalContentApplicability = 'applicable' | 'not-applicable' | 'insufficient-data';
@@ -1587,6 +1664,61 @@ function computeIktvaAramco(iktva: NonNullable<SupplierLocalContentInputs['iktva
   const scorePct = totalCosts !== null && totalCosts > 0 ? Math.min(100, (numerator / totalCosts) * 100 + bonus) : null;
 
   return { mechanismType: 'anchor-buyer-score', scorePct, components, totalCostsSAR: totalCosts, incentiveBonusPct: iktva.incentiveBonusPct ?? null };
+}
+
+// ---------------------------------------------------------------------------
+// Section 4e — SA: stc Rawafed (eligible-spend-ratio, reused -- real
+// LCGPA-approved formula, see PROGRAMS['sa-rawafed-stc']) + SABIC
+// per-contract commitment-deviation-gate (new mechanism type, 18 Sep 2026,
+// NOT a published SABIC standard -- see PROGRAMS['sa-sabic-lc-commitment']
+// for the full honesty disclosure).
+// ---------------------------------------------------------------------------
+
+function computeRawafedStc(input: NonNullable<SupplierLocalContentInputs['rawafedStc']>): EligibleSpendRatioResult {
+  const goodsServices = { key: 'goodsServices', eligible: n(input.localGoodsServicesSAR), total: n(input.totalGoodsServicesSAR) };
+  const salaries = { key: 'salaries', eligible: n(input.localSalariesSAR), total: n(input.totalSalariesSAR) };
+  const assetDepreciation = { key: 'assetDepreciation', eligible: n(input.localAssetDepreciationSAR), total: n(input.totalAssetDepreciationSAR) };
+  const capacityDevelopment = { key: 'capacityDevelopment', eligible: n(input.localCapacityDevelopmentSAR), total: n(input.totalCapacityDevelopmentSAR) };
+  const pillars = [goodsServices, salaries, assetDepreciation, capacityDevelopment];
+  const totalEligible = pillars.reduce((s, p) => s + p.eligible, 0);
+  const totalSpend = pillars.reduce((s, p) => s + p.total, 0);
+  return { mechanismType: 'eligible-spend-ratio', scorePct: totalSpend > 0 ? (totalEligible / totalSpend) * 100 : null, pillars };
+}
+
+/** This platform's own disclosed business-rule defaults for the SABIC
+ * commitment gate -- NOT a published SABIC standard (see PROGRAMS[
+ * 'sa-sabic-lc-commitment'].sourceNoteEn). Set directly by the platform
+ * owner. */
+export const SABIC_LC_DEVIATION_TOLERANCE_PCT = 5;
+export const SABIC_LC_PENALTY_MAX_PCT_OF_CONTRACT_VALUE = 1;
+
+function computeSabicLcCommitmentGate(input: NonNullable<SupplierLocalContentInputs['sabicLcCommitment']>): CommitmentDeviationGateResult {
+  const target = input.proposedTargetPct ?? null;
+  const actual = input.actualAuditedPct ?? null;
+  const deviationPct = target !== null && actual !== null ? target - actual : null;
+  const withinTolerance = deviationPct === null ? null : deviationPct <= SABIC_LC_DEVIATION_TOLERANCE_PCT;
+  return {
+    mechanismType: 'commitment-deviation-gate',
+    proposedTargetPct: target, actualAuditedPct: actual, deviationPct,
+    toleranceThresholdPct: SABIC_LC_DEVIATION_TOLERANCE_PCT, withinTolerance,
+  };
+}
+
+/** Decision-ready actionable next step for a SABIC commitment breach (per
+ * isc-ai-output-standards rule 3) -- returns null when the gate is within
+ * tolerance or its inputs are incomplete. Per the platform owner's
+ * explicit instruction: state the disclosed penalty-of-up-to-1%-of-
+ * contract-value exposure as the next step once a supplier is over the
+ * 5-percentage-point tolerance line. */
+export function actionableNextStepForSabicLcGate(c: CommitmentDeviationGateResult): { en: string; ar: string } | null {
+  if (c.withinTolerance !== false || c.deviationPct === null || c.proposedTargetPct === null || c.actualAuditedPct === null) return null;
+  const deviationPct = c.deviationPct;
+  const proposedTargetPct = c.proposedTargetPct;
+  const actualAuditedPct = c.actualAuditedPct;
+  return {
+    en: `Actual audited local content (${actualAuditedPct.toFixed(1)}%) is ${deviationPct.toFixed(1)} points below this contract's committed target (${proposedTargetPct.toFixed(1)}%), exceeding the ${c.toleranceThresholdPct}-percentage-point tolerance. Raise this with the supplier now and agree a corrective plan before the next audit cycle -- unresolved, this contract's own terms expose the supplier to a penalty of up to ${SABIC_LC_PENALTY_MAX_PCT_OF_CONTRACT_VALUE}% of contract value.`,
+    ar: `المحتوى المحلي المدقَّق فعلياً (${actualAuditedPct.toFixed(1)}٪) أقل بمقدار ${deviationPct.toFixed(1)} نقطة من الهدف الملتزم به في هذا العقد (${proposedTargetPct.toFixed(1)}٪)، متجاوزاً هامش التسامح البالغ ٥ نقاط مئوية. أثِر هذا الأمر مع المورّد الآن واتفق على خطة تصحيحية قبل دورة التدقيق القادمة -- فإن لم تُحل، تعرّض شروط هذا العقد نفسه المورّد لغرامة تصل إلى ١٪ من قيمة العقد.`,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -2106,6 +2238,16 @@ export function assessSupplierLocalContent(
       return { country, program: resolvedProgram, procurementContext, applicability: 'applicable', framework, computation: { mechanismType: 'anchor-buyer-score', scorePct: null, components: [], totalCostsSAR: null, incentiveBonusPct: null }, certificationCaveatEn: NOT_CERTIFIED_EN, certificationCaveatAr: NOT_CERTIFIED_AR, reasonEn: 'No IKTVA inputs supplied yet.', reasonAr: 'لم تُدخل بيانات إكتفاء بعد.' };
     }
     computation = computeIktvaAramco(inputs.iktva);
+  } else if (resolvedProgram === 'sa-rawafed-stc') {
+    if (!inputs.rawafedStc) {
+      return { country, program: resolvedProgram, procurementContext, applicability: 'applicable', framework, computation: { mechanismType: 'eligible-spend-ratio', scorePct: null, pillars: [] }, certificationCaveatEn: NOT_CERTIFIED_EN, certificationCaveatAr: NOT_CERTIFIED_AR, reasonEn: 'No Rawafed pillar inputs supplied yet.', reasonAr: 'لم تُدخل بيانات أركان روافد بعد.' };
+    }
+    computation = computeRawafedStc(inputs.rawafedStc);
+  } else if (resolvedProgram === 'sa-sabic-lc-commitment') {
+    if (!inputs.sabicLcCommitment) {
+      return { country, program: resolvedProgram, procurementContext, applicability: 'applicable', framework, computation: { mechanismType: 'commitment-deviation-gate', proposedTargetPct: null, actualAuditedPct: null, deviationPct: null, toleranceThresholdPct: SABIC_LC_DEVIATION_TOLERANCE_PCT, withinTolerance: null }, certificationCaveatEn: NOT_CERTIFIED_EN, certificationCaveatAr: NOT_CERTIFIED_AR, reasonEn: 'No SABIC contract target/audited-actual inputs supplied yet.', reasonAr: 'لم تُدخل بيانات هدف العقد أو النسبة المدققة الخاصة بسابك بعد.' };
+    }
+    computation = computeSabicLcCommitmentGate(inputs.sabicLcCommitment);
   } else if (resolvedProgram === 'ae-icv-general') {
     if (!inputs.ae) {
       return { country, program: resolvedProgram, procurementContext, applicability: 'applicable', framework, computation: { mechanismType: 'weighted-pillar-score', scorePct: null, pillars: [], mainlandUpliftApplied: false }, certificationCaveatEn: NOT_CERTIFIED_EN, certificationCaveatAr: NOT_CERTIFIED_AR, reasonEn: 'No AE/ICV pillar inputs supplied yet.', reasonAr: 'لم تُدخل بيانات أركان ICV بعد.' };
@@ -2245,7 +2387,9 @@ export function assessSupplierLocalContent(
             ? (computation.triggersObligation === null ? 'incomplete inputs' : computation.triggersObligation ? `offset obligation triggered, required credits AED ${computation.requiredOffsetCreditsAED?.toLocaleString()}` : 'below threshold, no offset obligation')
             : computation.mechanismType === 'spend-set-aside-target'
               ? (computation.qualifiesForSetAside === null ? 'incomplete inputs' : computation.qualifiesForSetAside ? `qualifies for the reserved share (program target ${computation.targetSharePct}%)` : `does not qualify for the reserved share (program target ${computation.targetSharePct}%)`)
-              : 'not sourced';
+              : computation.mechanismType === 'commitment-deviation-gate'
+                ? (computation.withinTolerance === null ? 'incomplete inputs' : computation.withinTolerance ? `within the ${computation.toleranceThresholdPct}-point tolerance (deviation ${computation.deviationPct?.toFixed(1)} points)` : `breach: deviation ${computation.deviationPct?.toFixed(1)} points exceeds the ${computation.toleranceThresholdPct}-point tolerance`)
+                : 'not sourced';
 
   // scoreLineAr must carry the SAME information as scoreLine (bilingual-
   // completeness fix, 15 Sep 2026) -- never a shorter Arabic sentence.
@@ -2261,7 +2405,9 @@ export function assessSupplierLocalContent(
             ? (computation.triggersObligation === null ? 'بيانات غير مكتملة' : computation.triggersObligation ? `تم تفعيل التزام المقاصة، الائتمانات المطلوبة ${computation.requiredOffsetCreditsAED?.toLocaleString()} درهم` : 'أقل من الحد، لا يوجد التزام مقاصة')
             : computation.mechanismType === 'spend-set-aside-target'
               ? (computation.qualifiesForSetAside === null ? 'بيانات غير مكتملة' : computation.qualifiesForSetAside ? `مؤهل للحصة المخصصة (الهدف البرنامجي ${computation.targetSharePct}٪)` : `غير مؤهل للحصة المخصصة (الهدف البرنامجي ${computation.targetSharePct}٪)`)
-              : 'غير موثّق';
+              : computation.mechanismType === 'commitment-deviation-gate'
+                ? (computation.withinTolerance === null ? 'بيانات غير مكتملة' : computation.withinTolerance ? `ضمن هامش التسامح البالغ ٥ نقاط (الانحراف ${computation.deviationPct?.toFixed(1)} نقطة)` : `تجاوز: الانحراف ${computation.deviationPct?.toFixed(1)} نقطة يتجاوز هامش التسامح البالغ ٥ نقاط`)
+                : 'غير موثّق';
 
   return {
     country, program: resolvedProgram, procurementContext, applicability: 'applicable', framework, computation,
@@ -2345,6 +2491,15 @@ export function recommendLocalContentAction(assessment: LocalContentAssessment, 
       primaryAr: `اكتسب ائتمانات مقاصة حقيقية لسد النقص البالغ ${c.shortfallAED.toLocaleString()} درهم قبل إغلاق فترة الأداء (استثمار محلي، مشروع مشترك، أو نشاط نقل تقني يعترف به توازن كائتمان) -- هذا هو المسار الوحيد الذي يغلق الفجوة ويتجنب تكلفة النقد/الضمان أدناه معاً.`,
       alternativeEn: `If new offset activity cannot be arranged in time: settle the shortfall in cash at 8.5% (AED ${c.shortfallPenaltyAED?.toLocaleString() ?? '—'}) or negotiate rolling the remaining obligation into a future project with Tawazun -- both are the program's own disclosed fallback options, not a compliance failure.`,
       alternativeAr: `إذا تعذّر ترتيب نشاط مقاصة جديد في الوقت المناسب: سوِّ النقص نقداً بنسبة ٨.٥٪ (${c.shortfallPenaltyAED?.toLocaleString() ?? '—'} درهم) أو تفاوض مع توازن لترحيل الالتزام المتبقي إلى مشروع مستقبلي -- كلا الخيارين من البدائل المُفصَح عنها رسمياً في البرنامج نفسه، وليسا إخفاقاً في الامتثال.`,
+    };
+  }
+  if (c.mechanismType === 'commitment-deviation-gate') {
+    if (c.withinTolerance !== false || c.deviationPct === null || c.proposedTargetPct === null || c.actualAuditedPct === null) return null;
+    return {
+      primaryEn: `Close the ${c.deviationPct.toFixed(1)}-point shortfall directly before the next audit cycle: increase delivered local content toward this contract's own committed target of ${c.proposedTargetPct.toFixed(1)}% (currently audited at ${c.actualAuditedPct.toFixed(1)}%) -- this is the only path that removes the breach itself, not just its consequence.`,
+      primaryAr: `أغلق النقص البالغ ${c.deviationPct.toFixed(1)} نقطة مباشرة قبل دورة التدقيق القادمة: ارفع المحتوى المحلي المُسلَّم نحو الهدف الملتزم به في هذا العقد والبالغ ${c.proposedTargetPct.toFixed(1)}٪ (المدقَّق حالياً عند ${c.actualAuditedPct.toFixed(1)}٪) -- هذا هو المسار الوحيد الذي يزيل المخالفة نفسها، لا نتيجتها فقط.`,
+      alternativeEn: `If the gap cannot close before the next audit: this contract's own terms allow settling with a penalty of up to ${SABIC_LC_PENALTY_MAX_PCT_OF_CONTRACT_VALUE}% of contract value, or renegotiating the committed target itself with SABIC if the shortfall reflects a genuine change in scope -- both are real options, not a compliance failure to hide.`,
+      alternativeAr: `إذا تعذّر إغلاق الفجوة قبل التدقيق القادم: تتيح شروط هذا العقد نفسها التسوية بغرامة تصل إلى ١٪ من قيمة العقد، أو إعادة التفاوض على الهدف الملتزم به نفسه مع سابك إذا كان النقص يعكس تغيراً فعلياً في النطاق -- كلا الخيارين حقيقي، وليسا إخفاقاً في الامتثال يجب إخفاؤه.`,
     };
   }
   return null;
@@ -2492,3 +2647,48 @@ export function rollUpPortfolioLocalContent(inputs: PortfolioLocalContentInput[]
   }
   return result;
 }
+
+// ---------------------------------------------------------------------------
+// Section 10 — multi-mechanism stacking (new, 18 Sep 2026): a single
+// country/context can have MORE THAN ONE applicable program at once (e.g.
+// Saudi semi-government-soe: LCGPA general, Aramco IKTVA, stc Rawafed, and
+// the SABIC commitment gate can all genuinely apply to the same supplier
+// simultaneously). `assessSupplierLocalContent` still returns exactly one
+// program's assessment (the caller picks which); this is the complementary
+// "show me everything that could apply" view for the UI's routing screen --
+// never averaged into one score (Decision Record 8.7), each program kept
+// fully separate.
+// ---------------------------------------------------------------------------
+
+export interface StackedLocalContentAssessment {
+  program: LocalContentProgram;
+  assessment: LocalContentAssessment;
+  /** Only populated for the SABIC commitment gate when it is in breach;
+   * null for every other program and for a gate that is within tolerance
+   * or has incomplete inputs. Surfaced separately so the UI can show a
+   * breach warning inline wherever it applies, independent of which
+   * program is currently the "active" one. */
+  actionableNextStep: { en: string; ar: string } | null;
+}
+
+/** Every program for `country` that is genuinely applicable to
+ * `procurementContext` (excludes `not-applicable`; keeps
+ * `insufficient-data` so the caller can still show "not yet sourced"
+ * entries rather than silently hiding them). */
+export function assessAllApplicableLocalContentPrograms(
+  country: LocalContentCountry,
+  procurementContext: ProcurementContext,
+  inputs: SupplierLocalContentInputs,
+): StackedLocalContentAssessment[] {
+  const result: StackedLocalContentAssessment[] = [];
+  for (const program of PROGRAMS_BY_COUNTRY[country]) {
+    const assessment = assessSupplierLocalContent(country, procurementContext, inputs, program);
+    if (assessment.applicability === 'not-applicable') continue;
+    const actionableNextStep = assessment.computation && assessment.computation.mechanismType === 'commitment-deviation-gate'
+      ? actionableNextStepForSabicLcGate(assessment.computation)
+      : null;
+    result.push({ program, assessment, actionableNextStep });
+  }
+  return result;
+}
+
