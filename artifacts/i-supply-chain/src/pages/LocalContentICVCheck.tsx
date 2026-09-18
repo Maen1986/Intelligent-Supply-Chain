@@ -56,10 +56,10 @@ import { safeSetItem } from '@/lib/storage';
 import {
   assessSupplierLocalContent, recommendLocalContentAction, rollUpPortfolioLocalContent,
   COUNTRY_FRAMEWORKS, PROGRAMS, PROGRAMS_BY_COUNTRY, DEFAULT_PROGRAM_BY_COUNTRY,
-  TAWAZUN_OFFSET_THRESHOLD_AED,
+  TAWAZUN_OFFSET_THRESHOLD_AED, actionableNextStepForSabicLcGate, SABIC_LC_DEVIATION_TOLERANCE_PCT,
   type LocalContentCountry, type ProcurementContext, type SupplierLocalContentInputs,
   type LocalContentApplicability, type LocalContentAssessment, type PortfolioLocalContentInput,
-  type LocalContentProgram, type LocalContentMechanismType,
+  type LocalContentProgram, type LocalContentMechanismType, type CommitmentDeviationGateResult,
 } from '@/lib/supplierLocalContentEligibility';
 // Module 05 cross-reference (side-by-side callout only -- two independent
 // dimensions, per Core Instruction / Rule 7, never blended into one
@@ -93,6 +93,8 @@ type UsaInputs = NonNullable<SupplierLocalContentInputs['usa']>;
 type UsaBabaInputs = NonNullable<SupplierLocalContentInputs['usaBaba']>;
 type CnInputs = NonNullable<SupplierLocalContentInputs['cn']>;
 type CnSmeInputs = NonNullable<SupplierLocalContentInputs['cnSme']>;
+type RawafedStcInputs = NonNullable<SupplierLocalContentInputs['rawafedStc']>;
+type SabicLcCommitmentInputs = NonNullable<SupplierLocalContentInputs['sabicLcCommitment']>;
 
 function emptySa(): SaInputs {
   return {
@@ -180,6 +182,17 @@ function emptyCn(): CnInputs {
 function emptyCnSme(): CnSmeInputs {
   return { supplierRole: null, procurementType: null, consortiumSmallEnterpriseSubcontractSharePct: null };
 }
+function emptyRawafedStc(): RawafedStcInputs {
+  return {
+    localGoodsServicesSAR: null, totalGoodsServicesSAR: null,
+    localSalariesSAR: null, totalSalariesSAR: null,
+    localAssetDepreciationSAR: null, totalAssetDepreciationSAR: null,
+    localCapacityDevelopmentSAR: null, totalCapacityDevelopmentSAR: null,
+  };
+}
+function emptySabicLcCommitment(): SabicLcCommitmentInputs {
+  return { proposedTargetPct: null, actualAuditedPct: null };
+}
 
 // Old (pre-16-Sep-2026-generalization) Saudi-only program keys, still
 // possibly sitting in a returning user's localStorage/server row from
@@ -266,6 +279,8 @@ interface LocalContentEntry {
   usaBaba: UsaBabaInputs;
   cn: CnInputs;
   cnSme: CnSmeInputs;
+  rawafedStc: RawafedStcInputs;
+  sabicLcCommitment: SabicLcCommitmentInputs;
 }
 
 function newLocalContentEntry(): LocalContentEntry {
@@ -282,6 +297,7 @@ function newLocalContentEntry(): LocalContentEntry {
     qa: emptyQa(), bhSme: emptyBhSme(), kwLocalSpend: emptyKwLocalSpend(),
     eg: emptyEg(), egOilGas: emptyEgOilGas(), tr: emptyTr(), uk: emptyUk(),
     usa: emptyUsa(), usaBaba: emptyUsaBaba(), cn: emptyCn(), cnSme: emptyCnSme(),
+    rawafedStc: emptyRawafedStc(), sabicLcCommitment: emptySabicLcCommitment(),
   };
 }
 
@@ -329,6 +345,8 @@ function loadState(): PersistedState {
             usaBaba: { ...emptyUsaBaba(), ...e.usaBaba },
             cn: { ...emptyCn(), ...e.cn },
             cnSme: { ...emptyCnSme(), ...e.cnSme },
+            rawafedStc: { ...emptyRawafedStc(), ...e.rawafedStc },
+            sabicLcCommitment: { ...emptySabicLcCommitment(), ...e.sabicLcCommitment },
           })),
           targetThresholdPct: parsed.targetThresholdPct ?? null,
         };
@@ -380,6 +398,9 @@ const PROGRAM_LABELS: Record<LocalContentProgram, { en: string; ar: string }> = 
   'sa-iktva-aramco': { en: 'Aramco IKTVA', ar: 'إكتفاء أرامكو' },
   'sa-gami-defense': { en: 'GAMI Defense', ar: 'التوطين الدفاعي (GAMI)' },
   'sa-likt': { en: 'LIKT', ar: 'LIKT' },
+  'sa-rawafed-stc': { en: 'stc Rawafed', ar: 'روافد (STC)' },
+  'sa-sabic-lc-commitment': { en: 'SABIC Commitment Gate', ar: 'بوابة التزام سابك' },
+  'sa-tharwah-maaden': { en: "Ma'aden Tharwah (not sourced)", ar: 'ثروة (معادن) — غير موثّق' },
   'ae-icv-general': { en: 'National ICV Score', ar: 'الدرجة الوطنية لـICV' },
   'ae-tawazun-offset': { en: 'Tawazun Offset', ar: 'مقاصة توازن' },
   'jo-price-preference': { en: 'Price Preference (20%)', ar: 'تفضيل السعر (٢٠٪)' },
@@ -575,7 +596,7 @@ function LocalContentEntryCard({
   const assessment: LocalContentAssessment | null = !isOther
     ? assessSupplierLocalContent(
         entry.countrySelection as LocalContentCountry, entry.context,
-        { sa: entry.sa, ae: entry.ae, jo: entry.jo, saMandatoryList: entry.saMandatoryList, saPricePreference: entry.saPricePreference, iktva: entry.iktva, aeTawazun: entry.aeTawazun, joContractorQuota: entry.joContractorQuota, omMandatoryList: entry.omMandatoryList, omOqPricePreference: entry.omOqPricePreference, qa: entry.qa, bhSme: entry.bhSme, kwLocalSpend: entry.kwLocalSpend, eg: entry.eg, egOilGas: entry.egOilGas, tr: entry.tr, uk: entry.uk, usa: entry.usa, usaBaba: entry.usaBaba, cn: entry.cn, cnSme: entry.cnSme },
+        { sa: entry.sa, ae: entry.ae, jo: entry.jo, saMandatoryList: entry.saMandatoryList, saPricePreference: entry.saPricePreference, iktva: entry.iktva, aeTawazun: entry.aeTawazun, joContractorQuota: entry.joContractorQuota, omMandatoryList: entry.omMandatoryList, omOqPricePreference: entry.omOqPricePreference, qa: entry.qa, bhSme: entry.bhSme, kwLocalSpend: entry.kwLocalSpend, eg: entry.eg, egOilGas: entry.egOilGas, tr: entry.tr, uk: entry.uk, usa: entry.usa, usaBaba: entry.usaBaba, cn: entry.cn, cnSme: entry.cnSme, rawafedStc: entry.rawafedStc, sabicLcCommitment: entry.sabicLcCommitment },
         entry.program,
       )
     : null;
@@ -591,6 +612,7 @@ function LocalContentEntryCard({
     if (c.mechanismType === 'offset-obligation-gate') return c.triggersObligation !== null;
     if (c.mechanismType === 'spend-set-aside-target') return c.qualifiesForSetAside !== null;
     if (c.mechanismType === 'modified-icv-score') return c.finalScorePct !== null;
+    if (c.mechanismType === 'commitment-deviation-gate') return c.withinTolerance !== null;
     return false;
   })();
 
@@ -1747,6 +1769,49 @@ function LocalContentEntryCard({
                     </p>
                   </>
                 )}
+                {assessment.computation.mechanismType === 'commitment-deviation-gate' && (() => {
+                  const c = assessment.computation as CommitmentDeviationGateResult;
+                  const nextStep = actionableNextStepForSabicLcGate(c);
+                  return (
+                    <>
+                      <div className="flex items-baseline justify-between">
+                        <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                          {isAr ? 'الالتزام مقابل الفعلي' : 'Committed vs. Actual'}
+                        </span>
+                        <span className={`text-sm font-black px-2.5 py-1 rounded-full ${
+                          c.withinTolerance === true ? 'bg-emerald-100 text-emerald-700'
+                            : c.withinTolerance === false ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-500'
+                        }`}>
+                          {c.withinTolerance === true ? (isAr ? 'ضمن التسامح' : 'Within tolerance')
+                            : c.withinTolerance === false ? (isAr ? 'تجاوز التسامح' : 'Breach') : (isAr ? 'غير مكتمل' : 'Incomplete')}
+                        </span>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between text-[11px] text-slate-600">
+                          <span>{isAr ? 'الهدف المتفاوض عليه' : 'Negotiated Target'}</span>
+                          <span className="font-semibold">{c.proposedTargetPct !== null ? `${c.proposedTargetPct.toFixed(1)}%` : '—'}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-[11px] text-slate-600">
+                          <span>{isAr ? 'الأداء الفعلي المدقّق' : 'Actual Audited'}</span>
+                          <span className="font-semibold">{c.actualAuditedPct !== null ? `${c.actualAuditedPct.toFixed(1)}%` : '—'}</span>
+                        </div>
+                        {c.deviationPct !== null && (
+                          <div className="flex items-center justify-between text-[11px]">
+                            <span className={c.deviationPct > c.toleranceThresholdPct ? 'text-red-700 font-semibold' : 'text-slate-600'}>
+                              {isAr ? 'الانحراف' : 'Deviation'}
+                            </span>
+                            <span className="font-semibold">{c.deviationPct.toFixed(1)} pts</span>
+                          </div>
+                        )}
+                      </div>
+                      {nextStep && (
+                        <p className="text-[10px] text-red-700 bg-red-50 border border-red-200 rounded-lg px-2.5 py-2 leading-relaxed">
+                          {isAr ? nextStep.ar : nextStep.en}
+                        </p>
+                      )}
+                    </>
+                  );
+                })()}
               </div>
             )}
 
@@ -1811,6 +1876,8 @@ export function LocalContentICVCheck() {
       ...row.data, id: row.clientKey, label: row.name,
       program: normalizeProgram(row.data.program, row.data.countrySelection ?? 'SA'),
       aeTawazun: { ...emptyAeTawazun(), ...row.data.aeTawazun },
+      rawafedStc: { ...emptyRawafedStc(), ...row.data.rawafedStc },
+      sabicLcCommitment: { ...emptySabicLcCommitment(), ...row.data.sabicLcCommitment },
     };
   }
   function entryToPayload(e: LocalContentEntry) {
@@ -1905,7 +1972,7 @@ export function LocalContentICVCheck() {
       entry: e,
       assessment: assessSupplierLocalContent(
         e.countrySelection as LocalContentCountry, e.context,
-        { sa: e.sa, ae: e.ae, jo: e.jo, saMandatoryList: e.saMandatoryList, saPricePreference: e.saPricePreference, iktva: e.iktva, aeTawazun: e.aeTawazun, joContractorQuota: e.joContractorQuota, omMandatoryList: e.omMandatoryList, omOqPricePreference: e.omOqPricePreference, qa: e.qa, bhSme: e.bhSme, kwLocalSpend: e.kwLocalSpend, eg: e.eg, egOilGas: e.egOilGas, tr: e.tr, uk: e.uk, usa: e.usa, usaBaba: e.usaBaba, cn: e.cn, cnSme: e.cnSme },
+        { sa: e.sa, ae: e.ae, jo: e.jo, saMandatoryList: e.saMandatoryList, saPricePreference: e.saPricePreference, iktva: e.iktva, aeTawazun: e.aeTawazun, joContractorQuota: e.joContractorQuota, omMandatoryList: e.omMandatoryList, omOqPricePreference: e.omOqPricePreference, qa: e.qa, bhSme: e.bhSme, kwLocalSpend: e.kwLocalSpend, eg: e.eg, egOilGas: e.egOilGas, tr: e.tr, uk: e.uk, usa: e.usa, usaBaba: e.usaBaba, cn: e.cn, cnSme: e.cnSme, rawafedStc: e.rawafedStc, sabicLcCommitment: e.sabicLcCommitment },
         e.program,
       ),
     }));
