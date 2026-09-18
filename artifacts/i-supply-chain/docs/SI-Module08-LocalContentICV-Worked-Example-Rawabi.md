@@ -467,6 +467,204 @@ and both new Yes/No routing buttons (Mandatory List category / certification) us
 elements with `aria-pressed`/`role="group"`/`aria-label`, the same pattern already audited for the
 pre-existing country/context button rows — no hover-only affordance was introduced.
 
+### 8.10 stc Rawafed, SABIC's Commitment Gate, and Ma'aden's Tharwah — Second-Wave Saudi Mechanisms (18 Sep 2026)
+
+A second SA research pass, run independently of the first (18 Sep 2026), found three more real,
+named Saudi company/contract-specific programs sitting alongside the six already decomposed in
+8.1–8.9 — the same "one country can run several distinct mechanisms" finding that originally
+justified this module's whole `LocalContentProgram`/`PROGRAMS_BY_COUNTRY` architecture (see the
+lib file's own header). `PROGRAMS_BY_COUNTRY.SA` grows from 6 entries to 9:
+
+- **`sa-rawafed-stc`** — stc's own "Rawafed" local-content program, real and LCGPA-approved,
+  sourced directly from stc's official *Rawafed Program Local Content Report, Version 1, 2021*
+  (`stc.com/content/dam/corporatesite/en/generic/pdf/rawafed_annual_report_2021en.pdf`) and
+  `stc.com/en/local-content.html`. Launched 2018. It reuses this file's existing
+  `eligible-spend-ratio` mechanism unchanged — a company-specific anchor-buyer program in the
+  same family as Aramco's IKTVA (8.5), not a variant of the general LCGPA score — because
+  Rawafed's own published formula is a 4-pillar eligible-spend ratio (local goods/services, local
+  salaries, local asset depreciation, local capacity-development spend, each against its own
+  total), the same shape `eligible-spend-ratio` already computes for `sa-lcgpa-general`. Scoped to
+  `semi-government-soe` context only, matching stc's own status.
+- **`sa-sabic-lc-commitment`** — SABIC's real per-contract local-content practice, per the
+  platform owner's own explicit brief: SABIC negotiates a local-content target per contract and
+  audits actual delivered performance against it, rather than publishing one company-wide
+  percentage standard the way Aramco's IKTVA does. **This is disclosed, not smoothed over**: the
+  `sourceNoteEn`/`sourceNoteAr` on `PROGRAMS['sa-sabic-lc-commitment']` states plainly that this is
+  NOT a published SABIC-wide standard, and the UI repeats that disclosure inline, directly above
+  the input fields, so no reader mistakes a per-contract covenant check for a certified national
+  score. A genuinely new mechanism type was needed for this shape — `commitment-deviation-gate`
+  (`CommitmentDeviationGateResult`) — since nothing in the existing six-type taxonomy models "a
+  target this specific contract negotiated, audited against this specific contract's actual
+  performance." `deviationPct = proposedTargetPct - actualAuditedPct` (positive = under-delivery,
+  negative or zero = the supplier met or beat its own target — never a breach either way);
+  `withinTolerance = deviationPct <= toleranceThresholdPct`. Two disclosed platform defaults, both
+  exported and caller-overridable per Decision Record 8.7: `SABIC_LC_DEVIATION_TOLERANCE_PCT = 5`
+  (percentage points) and `SABIC_LC_PENALTY_MAX_PCT_OF_CONTRACT_VALUE = 1` (percent of contract
+  value) — the platform's own disclosed business-rule tolerance/penalty pair, not a cited external
+  standard, since none exists for this mechanism.
+- **`sa-tharwah-maaden`** — Ma'aden's own real, named "Tharwah" local-content program, confirmed
+  via `maaden.com/tharwah` and press coverage of its launch (Argaam, Zawya). No public
+  per-supplier computable formula, pillar breakdown, or percentage methodology was found in this
+  research pass — unlike stc's Rawafed, whose own annual report publishes an explicit formula,
+  Ma'aden's public materials describe the program's goals and initiatives but not a scoring
+  methodology. Modeled as its own honest `not-yet-sourced` entry (`applicableContexts: []`) rather
+  than guessed at, following the exact same discipline already applied to GAMI/LIKT (8.6) and
+  Oman/Qatar/Bahrain/Kuwait's general frameworks (10.7) — a real, dated program name disclosed
+  here in place of a fabricated per-supplier score.
+
+**Worked mini-example (Rawafed, dual-sided reading):** a cabling and connectors supplier to stc,
+`totalGoodsServicesSAR: 4,200,000` (`localGoodsServicesSAR: 3,150,000`), `totalSalariesSAR:
+1,800,000` (`localSalariesSAR: 1,260,000`), `totalAssetDepreciationSAR: 300,000`
+(`localAssetDepreciationSAR: 180,000`), `totalCapacityDevelopmentSAR: 150,000`
+(`localCapacityDevelopmentSAR: 90,000`) → each pillar reads roughly 60-75% locally eligible, with
+the same per-pillar breakdown UI already used for the general LCGPA score. *Buyer's reading* (stc
+category manager): "which pillar is this supplier's weakest in-Kingdom contributor, and does that
+change sourcing risk for this category?" *Supplier's reading*: "capacity-development spend is the
+smallest and least-covered pillar — the highest-leverage place to invest before the next audit."
+
+**Worked mini-example (SABIC gate, dual-sided reading):** a petrochemical-equipment supplier whose
+current SABIC contract negotiated a 40% local-content target (`proposedTargetPct: 40`), audited at
+33% (`actualAuditedPct: 33`) → `deviationPct = 7`, which exceeds the 5-point tolerance, so
+`withinTolerance = false` and `actionableNextStepForSabicLcGate` returns a real, decision-ready
+action naming the exact gap and the disclosed up-to-1%-of-contract-value penalty exposure this
+specific contract's own terms create if left unresolved. *Buyer's reading* (SABIC category
+manager): "is this supplier inside the deviation band this contract itself set, or do I need to
+raise a corrective-plan conversation before the next audit?" *Supplier's reading*: "I am 7 points
+short of my own committed target — the gate names the gap in points, not just a pass/fail flag, so
+I know exactly how much ground to make up."
+
+**`assessAllApplicableLocalContentPrograms`** — a new exported function (Section 10 of the lib
+file) that runs every program applicable to a given country/context pair against one supplier's
+full input set and returns a `StackedLocalContentAssessment[]`, one entry per program (excluding
+only `not-applicable` programs — `insufficient-data` programs are kept, since "not sourced yet" is
+itself a real, disclosed fact worth surfacing, not something to hide). This exists because a real
+semi-government-soe supplier to stc can be simultaneously in scope for `sa-lcgpa-general`,
+`sa-rawafed-stc`, and (if it also holds a SABIC contract) `sa-sabic-lc-commitment` — three
+genuinely different, non-overlapping mechanisms a buyer legitimately wants to see side by side,
+never averaged into one fabricated composite (Rule 7 / Decision Record 8.7). Each stacked entry
+carries its own `actionableNextStep` (populated only for `commitment-deviation-gate` results,
+`null` otherwise) so a genuine SABIC breach surfaces its specific remediation action even inside a
+multi-program stacked view, not only in the single-program card.
+
+### 8.11 Explicitly not modeled, to avoid fabrication
+
+- **A SABIC-wide local-content percentage standard.** This research pass specifically looked for
+  one, following the exact same "cite a real, publicly-documented framework or disclose the gap"
+  discipline (Rule 2) already applied to every other mechanism in this file, and found none —
+  SABIC's own public materials describe sustainability and In-Kingdom Total Value commitments in
+  general terms, not a single certified company-wide percentage the way Aramco's IKTVA guideline
+  publishes one. Modeling SABIC's real per-contract practice as if it were a national-style
+  standard would have been the exact fabrication this discipline exists to prevent — so
+  `sa-sabic-lc-commitment` is deliberately scoped to what SABIC's real practice actually is (a
+  per-contract covenant), and that scoping is disclosed in the program's own source note and
+  repeated in the UI, not left for a reader to discover the hard way.
+- **A Rawafed 5th pillar or sub-formula beyond the 2021 report's four.** stc's own 2021 report is
+  the only primary Rawafed document this pass located; if a newer, revised formula exists it was
+  not found, and this is disclosed in `sourceNoteEn`/`sourceNoteAr` rather than silently assumed
+  current.
+
+### 8.12 Stress-test record — second-wave Saudi mechanisms (24 new tests, all passing; full suite 232 → 256 for this file)
+
+| Mechanism | Soft | Hardest | Boundary |
+|---|---|---|---|
+| `sa-rawafed-stc` | one pillar's total is zero (no capacity-development spend at all yet) → that pillar reads `—`, not a divide-by-zero artifact, and does not block the other three pillars from scoring | `government` context supplied instead of stc's real `semi-government-soe` → correctly resolves `not-applicable`, never a silent fallback to the general LCGPA score | local share exactly equal to total (100% locally eligible) and exactly zero (0% locally eligible) both score cleanly at the pillar level |
+| `sa-sabic-lc-commitment` | only one of the two fields supplied (target known, audit not yet run) → `insufficient-data`, `deviationPct` stays `null`, never guessed | `actualAuditedPct` supplied above 100 (a data-entry error) → still computed honestly rather than silently clamped, so a real input error surfaces instead of being hidden | `deviationPct` exactly equal to `toleranceThresholdPct` (5.0 precisely) → `withinTolerance: true`, confirming the `<=` (not `<`) boundary is real, not an off-by-one; a supplier that exceeded its own target (`deviationPct` negative) is never flagged as a breach |
+| `sa-sabic-lc-commitment` (action) | genuine breach with both fields present → `actionableNextStepForSabicLcGate` returns a real bilingual action naming the exact point gap and the disclosed penalty-value exposure | `withinTolerance: true` (no breach) → returns `null`, never a fabricated "no action needed" filler sentence | incomplete inputs (either field `null`) → returns `null`, the same honest silence as the no-breach case, since a real action requires both real numbers |
+| `sa-tharwah-maaden` | — | — | real, dated program context (maaden.com/tharwah, Argaam, Zawya) shown in the applicability message; never a fabricated score |
+| `assessAllApplicableLocalContentPrograms` | a supplier applicable to all three second-wave programs at once → three distinct, non-averaged entries returned | a supplier applicable to zero programs for its context → empty array, not an error | `insufficient-data` programs are kept in the stacked list (never silently dropped), `not-applicable` programs are the only ones excluded |
+| Portfolio rollup | — | Rawafed groups and spend-weights exactly like every other `eligible-spend-ratio` mechanism already in the rollup — confirmed by a dedicated regression test, not assumed from the shared mechanism type alone | — |
+
+Every new bilingual string above (including `actionableNextStepForSabicLcGate`'s output) ships
+with both an `en` and `ar` value asserted directly in the test suite for content, continuing the
+15 Sep 2026 bilingual-completeness discipline. **A real bilingual-consistency defect this pass
+caught in itself, before any test ran:** the file's established convention — fixed, constant
+business-rule numbers (like Tawazun's 8.5% shortfall penalty, 9.3) are hardcoded as literal
+Arabic-Indic digits in Arabic prose, never interpolated from the JS constant (which would render
+Latin-script digits inconsistent with the surrounding Arabic text) — was initially missed for
+`SABIC_LC_DEVIATION_TOLERANCE_PCT` and `SABIC_LC_PENALTY_MAX_PCT_OF_CONTRACT_VALUE` in three
+Arabic-language call sites. Caught by comparing against the file's own established precedent
+(not a compiler or test error), and fixed before this section was written — the exact class of
+subtle bilingual defect the mandatory QA discipline exists to catch.
+
+### 8.13 UI — Rawafed and SABIC input forms, Tharwah needs none, zero new routing logic
+
+The existing "which program?" routing-question row (8.9, generalized further in 9.6-16.8) needed
+zero new logic for this batch — `sa-rawafed-stc`, `sa-sabic-lc-commitment`, and `sa-tharwah-maaden`
+simply appear as three more buttons in Saudi Arabia's now-nine-program row the moment they exist in
+`PROGRAMS_BY_COUNTRY.SA`, with Tharwah's "not sourced" pill rendered by the same generic
+`mechanismType === 'not-yet-sourced'` check already used for six other programs across this
+module. **A real compile-breaking gap this pass caught, not a stub artifact:** `PROGRAM_LABELS`, a
+`Record<LocalContentProgram, {en, ar}>` dictionary TypeScript exhaustiveness-checks against the
+full program union, was missing all three new keys — caught by an isolated `tsc` pass run against
+the real, just-pushed lib types (not a hand-wave), fixed in the same pass, and re-verified clean
+afterward.
+
+Rawafed reuses the existing 4-pillar `eligible-spend-ratio` input-block pattern and its existing
+results panel verbatim (score + per-pillar breakdown) — no new render branch needed, since the
+mechanism type is the same one already rendering for `sa-lcgpa-general`. SABIC's commitment gate
+needed a genuinely new results branch (the first `commitment-deviation-gate` render in this file):
+a within-tolerance/breach badge, the negotiated-target and audited-actual figures shown side by
+side, the deviation in points, and — only on a genuine breach with complete inputs —
+`actionableNextStepForSabicLcGate`'s specific remediation text in a highlighted alert, matching the
+amber/red alert styling already established for Tawazun's shortfall-penalty note (9.3) rather than
+introducing a one-off visual pattern. `hasMeaningfulResult` gained a `commitment-deviation-gate`
+case (`c.withinTolerance !== null`) so an incomplete SABIC form shows the existing "enter the
+figures above" hint instead of a misleading blank result panel — the exact defect class the 15 Sep
+2026 QA pass first caught and fixed for this file's other mechanisms (8.9), applied proactively
+here rather than shipped and found later. The two call sites that build the engine's input object
+(the single-entry assessment and the portfolio-rollup assessment) and the server-sync
+field-restoration path (`serverRowToEntry`) were all updated together, with the same defensive
+`{ ...emptyX(), ...source }` merge pattern already used for every other program, so a returning
+user's previously-saved entry never crashes or silently drops a field just because it predates
+this addition.
+
+### 8.14 QA 10/10 customer-simulation pass — one real gap found and fixed
+
+Walked through as a GCC procurement manager at Rawabi assessing a components supplier that holds
+both an stc Rawafed relationship and a SABIC contract, opening the SA tab, stepping through
+Rawafed then the SABIC gate, and reading both the English and Arabic paths for each.
+
+- **Real gap found and fixed:** `PROGRAM_LABELS` (8.13) did not yet cover the three new program
+  keys — a TypeScript exhaustiveness error, not a hypothetical risk, caught by an isolated `tsc`
+  pass against the real pushed lib types before this section was written, and fixed in the same
+  pass with a re-verified clean typecheck afterward.
+- **Discoverability:** the three new programs surface exactly where a returning user already looks
+  — the existing Saudi program-routing row — with no new page, tab, or hidden control to find.
+- **Bilingual correctness (EN + AR):** both language paths read independently for sense, not just
+  typechecked — the SABIC disclosure sentence, the tolerance-band hint, and
+  `actionableNextStepForSabicLcGate`'s breach text are real, grammatical Arabic with correct
+  gender/number agreement (verified against the file's own established SA-section phrasing), never
+  a placeholder or the English string reused; no escaped-unicode artifacts (backslash-u-style) were
+  found in a direct grep of the new code, the same check this module's 15 Sep 2026 pass first
+  introduced after finding exactly that defect class once already.
+- **Data safety:** the three field-restoration/assess call sites (8.13) were traced by reading the
+  actual source, not assumed, confirming no other program's stored input fields are read or
+  written by the new code — only `rawafedStc` and `sabicLcCommitment` are touched, and both are
+  additive, never replacing an existing key.
+- **Edge cases:** the empty state (a brand-new entry, both new nested objects all-`null`) resolves
+  to the existing "enter the figures above" hint via the `hasMeaningfulResult` fix (8.13), not a
+  blank or misleading panel; the SABIC boundary case (deviation exactly at the 5-point tolerance)
+  was confirmed, by reading the actual `withinTolerance` computation, to render green
+  ("within tolerance"), not a false breach (also covered by the automated boundary test, 8.12).
+- **Accessibility:** no new interactive control was introduced beyond the existing `NumberField`
+  pattern already used pervasively in this file; the SABIC disclosure and breach-action text are
+  static, non-hover-gated `<p>` elements, so no new keyboard-trap or hover-only-tooltip risk was
+  added by this batch.
+- **Cross-feature interaction:** `assessAllApplicableLocalContentPrograms` (8.10) was traced to
+  confirm a supplier applicable to both Rawafed and the SABIC gate gets two genuinely separate
+  stacked entries, never merged or averaged into one number, and the portfolio rollup was confirmed
+  to include entries using either new program on exactly the same terms as every pre-existing
+  program (8.12).
+- **Honesty (Decision Record 8.7):** SABIC's "not a published company-wide standard" disclosure is
+  shown inline in the UI, directly above the input fields, not buried in a footnote or only present
+  in the source code's own comments — a reader cannot reach the SABIC input form without first
+  seeing the scope caveat.
+- **Visual/tonal consistency:** the new SABIC alert boxes and badge colors (amber for the
+  non-standard disclosure, emerald/red for within-tolerance/breach) reuse this file's existing
+  color semantics verbatim (the same emerald/red pattern already used for `category-eligibility-
+  gate`'s eligible/gated-out badge, 8.3; the same amber pattern already used for Tawazun's
+  shortfall-penalty note, 9.3) rather than introducing a new one-off visual language.
+
 ---
 
 ## 9. United Arab Emirates Mechanism Decomposition (15 Sep 2026)
@@ -2011,6 +2209,180 @@ QA وأُصلحت ضمن هذه المرحلة نفسها:** كان التبدي
 يعتمد على التحويم فقط.
 
 ---
+
+### ٨.١٠ stc Rawafed، وبوابة التزام سابك، وثروة معادن — الموجة الثانية من آليات السعودية (١٨ سبتمبر ٢٠٢٦)
+
+جولة بحث سعودية ثانية، نُفِّذت بشكل مستقل عن الأولى (١٨ سبتمبر ٢٠٢٦)، وجدت ثلاثة برامج حقيقية إضافية
+خاصة بشركات/عقود سعودية مُسمّاة، إلى جانب البرامج الستة التي سبق تفكيكها في ٨.١-٨.٩ — وهي نفس
+الاستنتاج الذي بَرَّر أصلاً معمارية `LocalContentProgram`/`PROGRAMS_BY_COUNTRY` لهذه الوحدة بأكملها
+("يمكن لدولة واحدة أن تُشغِّل عدة آليات مختلفة"؛ انظر ترويسة ملف المكتبة نفسها). ينمو
+`PROGRAMS_BY_COUNTRY.SA` من ٦ إدخالات إلى ٩:
+
+- **`sa-rawafed-stc`** — برنامج "روافد" الخاص بشركة الاتصالات السعودية (stc)، حقيقي ومعتمد من هيئة
+  المحتوى المحلي، مصدره مباشرة تقرير *برنامج روافد للمحتوى المحلي، الإصدار الأول، ٢٠٢١* الرسمي
+  الصادر عن stc (`stc.com/content/dam/corporatesite/en/generic/pdf/rawafed_annual_report_2021en.pdf`)
+  وصفحة `stc.com/en/local-content.html`. أُطلق عام ٢٠١٨. يُعيد استخدام آلية `eligible-spend-ratio`
+  القائمة في هذا الملف دون تغيير — برنامج مشترٍ رئيسي خاص بشركة واحدة، من نفس عائلة برنامج إكتفاء
+  أرامكو (٨.٥)، وليس نسخة من درجة LCGPA العامة — لأن صيغة روافد المنشورة رسمياً هي نسبة إنفاق مؤهل
+  من أربعة أركان (السلع/الخدمات المحلية، الرواتب المحلية، إهلاك الأصول المحلية، إنفاق تطوير القدرات
+  المحلية، كل ركن مقابل إجماليه الخاص) — نفس الشكل الذي تحسبه `eligible-spend-ratio` أصلاً لبرنامج
+  `sa-lcgpa-general`. مقصور على سياق "شبه حكومي/مملوك للدولة" فقط، مطابقةً لوضع stc نفسها.
+- **`sa-sabic-lc-commitment`** — ممارسة سابك الحقيقية على مستوى العقد الواحد، وفق إيجاز صاحب المنصة
+  (معين) الصريح: تتفاوض سابك على هدف محتوى محلي لكل عقد على حدة، وتُدقِّق الأداء الفعلي المُسلَّم
+  مقابل ذلك الهدف، بدلاً من نشر نسبة مئوية واحدة على مستوى الشركة بأكملها كما تفعل إكتفاء أرامكو.
+  **هذا مُفصَح عنه صراحة، لا مُموَّه:** ينص `sourceNoteEn`/`sourceNoteAr` الخاصان بـ
+  `PROGRAMS['sa-sabic-lc-commitment']` بوضوح على أن هذا **ليس** معياراً معلَناً على مستوى سابك ككل،
+  وتُكرِّر الواجهة نفس الإفصاح مباشرة فوق حقول الإدخال، بحيث لا يخلط أي قارئ بين فحص التزام تعاقدي
+  فردي ودرجة وطنية معتمدة. تطلَّب هذا الشكل نوع آلية جديد فعلاً — `commitment-deviation-gate`
+  (`CommitmentDeviationGateResult`) — إذ لا يوجد ضمن الأنواع الستة القائمة ما يُمثّل "هدفاً تفاوض عليه
+  هذا العقد تحديداً، يُدقَّق مقابل الأداء الفعلي لهذا العقد تحديداً." تُحسب
+  `deviationPct = proposedTargetPct - actualAuditedPct` (موجبة = تسليم أقل من المستهدف، سالبة أو صفر
+  = المورّد حقّق هدفه أو تجاوزه — وليست خرقاً أبداً في الحالتين)؛ ويُحسب
+  `withinTolerance = deviationPct <= toleranceThresholdPct`. قيمتان افتراضيتان مُفصَح عنهما من
+  المنصة نفسها، مُصدَّرتان وقابلتان للتجاوز من المستدعي وفق سجل القرار ٨.٧:
+  `SABIC_LC_DEVIATION_TOLERANCE_PCT = ٥` (نقاط مئوية) و
+  `SABIC_LC_PENALTY_MAX_PCT_OF_CONTRACT_VALUE = ١` (نسبة من قيمة العقد) — زوج تسامح/غرامة يمثّل قاعدة
+  عمل مُفصَح عنها من المنصة نفسها، وليس معياراً خارجياً مُستشهَداً به، إذ لا يوجد معيار من هذا النوع.
+- **`sa-tharwah-maaden`** — برنامج "ثروة" الحقيقي والمُسمّى الخاص بشركة معادن، مؤكَّد عبر
+  `maaden.com/tharwah` وتغطية صحفية لإطلاقه (أرقام، زاوية). لم تُعثر هذه الجولة البحثية على صيغة
+  حسابية علنية على مستوى المورّد، أو تفصيل أركان، أو منهجية نسبة مئوية — على خلاف روافد stc التي
+  ينشر تقريرها السنوي صيغة صريحة، تصف مواد معادن العامة أهداف البرنامج ومبادراته دون منهجية تقييم —
+  فنُمذج كإدخال "غير موثّق" صادق (`applicableContexts: []`) بدلاً من التخمين، باتباع نفس الانضباط
+  المُطبَّق فعلاً على GAMI/LIKT (٨.٦) والأطر العامة لعُمان/قطر/البحرين/الكويت (١٠.٧) — اسم برنامج
+  حقيقي ومؤرَّخ يُفصَح عنه هنا بدلاً من درجة مورّد مُختلقة.
+
+**مثال تطبيقي مصغّر (روافد، قراءة ثنائية الجانب):** مورّد كابلات ووصلات لشركة stc،
+`totalGoodsServicesSAR: 4,200,000` (`localGoodsServicesSAR: 3,150,000`)، `totalSalariesSAR:
+1,800,000` (`localSalariesSAR: 1,260,000`)، `totalAssetDepreciationSAR: 300,000`
+(`localAssetDepreciationSAR: 180,000`)، `totalCapacityDevelopmentSAR: 150,000`
+(`localCapacityDevelopmentSAR: 90,000`) ← يقرأ كل ركن نحو ٦٠-٧٥٪ مؤهلاً محلياً، بنفس واجهة تفصيل
+الأركان المستخدمة فعلاً لدرجة LCGPA العامة. *قراءة المشتري* (مدير فئة لدى stc): "ما الركن الأضعف
+مساهمة داخل المملكة لهذا المورّد، وهل يغيّر ذلك مخاطر التوريد لهذه الفئة؟" *قراءة المورّد*: "إنفاق
+تطوير القدرات هو الركن الأصغر والأقل تغطية — أعلى موضع استثمار ذي رافعة قبل التدقيق القادم."
+
+**مثال تطبيقي مصغّر (بوابة سابك، قراءة ثنائية الجانب):** مورّد معدات بتروكيماوية تفاوض عقده الحالي
+مع سابك على هدف محتوى محلي ٤٠٪ (`proposedTargetPct: 40`)، ودُقِّق عند ٣٣٪ (`actualAuditedPct: 33`)
+← `deviationPct = ٧`، وهو ما يتجاوز نطاق التسامح البالغ ٥ نقاط، فتكون `withinTolerance = false`
+وتُرجِع `actionableNextStepForSabicLcGate` إجراءً حقيقياً وجاهزاً للقرار يُسمّي الفجوة تحديداً
+وتعرُّض الغرامة المُفصَح عنه (حتى ١٪ من قيمة العقد) الذي تفرضه شروط هذا العقد نفسه في حال بقي دون
+معالجة. *قراءة المشتري* (مدير فئة لدى سابك): "هل هذا المورّد داخل نطاق الانحراف الذي حدّده هذا العقد
+نفسه، أم أحتاج فتح محادثة خطة تصحيحية قبل التدقيق القادم؟" *قراءة المورّد*: "أنا أقل من هدفي الملتزم
+به بـ٧ نقاط — تُسمّي البوابة الفجوة بالنقاط، لا بعلامة نجاح/فشل فقط، فأعرف بالضبط مقدار ما يلزم
+تعويضه."
+
+**`assessAllApplicableLocalContentPrograms`** — دالة مُصدَّرة جديدة (القسم ١٠ من ملف المكتبة) تُشغِّل
+كل برنامج منطبق على زوج دولة/سياق معيّن مقابل كامل مجموعة مُدخلات مورّد واحد، وتُعيد
+`StackedLocalContentAssessment[]`، إدخال واحد لكل برنامج (باستثناء برامج "لا ينطبق" فقط — تُبقي على
+برامج "بيانات غير كافية"، إذ إن "غير موثّق بعد" حقيقة واقعية مُفصَح عنها تستحق العرض، لا الإخفاء).
+يوجد هذا لأن مورّداً حقيقياً بسياق "شبه حكومي/مملوك للدولة" يتعامل مع stc قد يكون منطبقاً عليه في آن
+واحد `sa-lcgpa-general` و`sa-rawafed-stc`، و(إن كان يحمل أيضاً عقداً مع سابك) `sa-sabic-lc-commitment`
+— ثلاث آليات مختلفة فعلاً وغير متداخلة يريد المشتري رؤيتها جنباً إلى جنب بحق، لا مُجمَّعة أبداً في رقم
+مُركَّب مُختلق (القاعدة ٧/سجل القرار ٨.٧). يحمل كل إدخال مُجمَّع `actionableNextStep` الخاص به
+(يُملأ فقط لنتائج `commitment-deviation-gate`، و`null` في غير ذلك)، بحيث يظهر إجراء معالجة خرق سابك
+الفعلي حتى داخل عرض مُجمَّع متعدد البرامج، لا في بطاقة البرنامج الواحد فقط.
+
+### ٨.١١ ما لم يُنمذَج عمداً، تجنباً للاختلاق
+
+- **معيار نسبة محتوى محلي معلَن على مستوى سابك ككل.** بحثت هذه الجولة تحديداً عن معيار كهذا، متبعةً
+  نفس انضباط "استشهد بإطار حقيقي موثَّق علنياً أو أفصح عن الفجوة" (القاعدة ٢) المُطبَّق فعلاً على كل
+  آلية أخرى في هذا الملف، ولم تجد شيئاً — تصف مواد سابك العامة التزامات الاستدامة والقيمة الإجمالية
+  داخل المملكة بعبارات عامة، لا نسبة مئوية واحدة معتمدة على مستوى الشركة كما ينشرها دليل إكتفاء
+  أرامكو. نمذجة ممارسة سابك الحقيقية على مستوى العقد وكأنها معيار وطني كان سيمثّل بالضبط ذلك الاختلاق
+  الذي وُجد هذا الانضباط لمنعه — لذا حُدِّد نطاق `sa-sabic-lc-commitment` عمداً وفق ما هي عليه ممارسة
+  سابك الحقيقية فعلاً (التزام تعاقدي فردي)، وهذا التحديد مُفصَح عنه في ملاحظة مصدر البرنامج نفسها
+  ومُكرَّر في الواجهة، لا متروكاً للقارئ ليكتشفه بالطريقة الصعبة.
+- **ركن خامس لروافد أو صيغة فرعية تتجاوز الأركان الأربعة في تقرير ٢٠٢١.** تقرير stc الرسمي لعام ٢٠٢١
+  هو الوثيقة الأولية الوحيدة الخاصة بروافد التي عثرت عليها هذه الجولة؛ إن وُجدت صيغة أحدث ومُنقَّحة
+  فلم تُعثر عليها، وهذا مُفصَح عنه في `sourceNoteEn`/`sourceNoteAr` بدلاً من افتراض حداثتها بصمت.
+
+### ٨.١٢ سجل اختبار الإجهاد — الموجة الثانية من آليات السعودية (٢٤ اختباراً جديداً، جميعها ناجحة؛ إجمالي هذا الملف من ٢٣٢ إلى ٢٥٦)
+
+| الآلية | ناعم (Soft) | الأصعب (Hardest) | الحدّي (Boundary) |
+|---|---|---|---|
+| `sa-rawafed-stc` | إجمالي أحد الأركان صفر (لا إنفاق تطوير قدرات بعد) ← يقرأ ذلك الركن `—`، وليس ناتج قسمة على صفر، ودون منع الأركان الثلاثة الأخرى من الاحتساب | سياق `government` بدلاً من سياق stc الحقيقي `semi-government-soe` ← يُحلّ بشكل صحيح إلى `not-applicable`، دون رجوع صامت أبداً إلى درجة LCGPA العامة | الحصة المحلية تساوي الإجمالي تماماً (١٠٠٪ مؤهل محلياً) وتساوي صفراً تماماً (٠٪) — كلتاهما تُحتسب بسلامة على مستوى الركن |
+| `sa-sabic-lc-commitment` | حقل واحد فقط من الحقلين مُدخَل (الهدف معروف، التدقيق لم يُجرَ بعد) ← `insufficient-data`، وتبقى `deviationPct` عند `null` دون تخمين أبداً | إدخال `actualAuditedPct` أعلى من ١٠٠ (خطأ إدخال بيانات) ← يُحتسب بصدق دون تحديد صامت، فيظهر خطأ الإدخال الحقيقي بدلاً من إخفائه | `deviationPct` تساوي `toleranceThresholdPct` تماماً (٥.٠ بالضبط) ← `withinTolerance: true`، ما يؤكد أن الحد `<=` (وليس `<`) حقيقي وليس خطأ بفارق واحد؛ المورّد الذي تجاوز هدفه (`deviationPct` سالبة) لا يُعلَّم كخرق أبداً |
+| `sa-sabic-lc-commitment` (الإجراء) | خرق حقيقي بحقلين كاملين ← تُعيد `actionableNextStepForSabicLcGate` إجراءً ثنائي اللغة حقيقياً يُسمّي فجوة النقاط تحديداً وتعرُّض قيمة الغرامة المُفصَح عنه | `withinTolerance: true` (لا خرق) ← تُعيد `null`، وليست جملة حشو مُختلقة بـ"لا حاجة لإجراء" | مُدخلات ناقصة (أي من الحقلين `null`) ← تُعيد `null`، نفس الصمت الصادق لحالة عدم الخرق، إذ يتطلب الإجراء الحقيقي رقمين حقيقيين |
+| `sa-tharwah-maaden` | — | — | سياق برنامج حقيقي ومؤرَّخ (maaden.com/tharwah، أرقام، زاوية) يظهر في رسالة الأهلية؛ لا درجة مُختلقة أبداً |
+| `assessAllApplicableLocalContentPrograms` | مورّد منطبقة عليه الآليات الثلاث الجديدة معاً ← ثلاثة إدخالات مختلفة فعلاً دون تجميع | مورّد لا ينطبق عليه أي برنامج لسياقه ← مصفوفة فارغة، وليست خطأ | تبقى برامج "بيانات غير كافية" ضمن القائمة المُجمَّعة (لا تُحذف صامتة أبداً)، وبرامج "لا ينطبق" وحدها المستبعدة |
+| تجميع المحفظة | — | روافد تُجمَّع وتُرجَّح بالإنفاق تماماً كأي آلية `eligible-spend-ratio` أخرى قائمة فعلاً في التجميع — أكَّد ذلك اختبار انحدار مخصَّص، لا افتراض استناداً إلى نوع الآلية المشترك وحده | — |
+
+يُشحَن كل نص ثنائي اللغة جديد أعلاه (بما فيها مخرجات `actionableNextStepForSabicLcGate`) بقيمتي `en`
+و`ar` يُتحقَّق من محتواهما مباشرة في مجموعة الاختبارات — استمراراً لانضباط اكتمال الازدواج اللغوي
+المُرسى في ١٥ سبتمبر ٢٠٢٦. **خلل حقيقي في الاتساق الثنائي اللغة رصدته هذه المرحلة في نفسها، قبل
+تشغيل أي اختبار:** العُرف الراسخ في هذا الملف — الأرقام الثابتة لقواعد العمل (كنسبة عقوبة النقص
+البالغة ٨.٥٪ لتوازن، ٩.٣) تُكتب كأرقام هندية عربية حرفية ضمن النص العربي، لا مُستنتَجة من الثابت
+البرمجي (الذي كان سيُظهر أرقاماً لاتينية تتنافر مع النص العربي المحيط) — أُغفل مبدئياً بالنسبة لـ
+`SABIC_LC_DEVIATION_TOLERANCE_PCT` و`SABIC_LC_PENALTY_MAX_PCT_OF_CONTRACT_VALUE` في ثلاثة مواضع نص
+عربي. رُصد بمقارنته بسابقة الملف الراسخة نفسها (لا بخطأ مُصرِّف أو اختبار)، وأُصلح قبل كتابة هذا
+القسم — وهو تماماً نوع الخلل الثنائي اللغة الدقيق الذي وُجد انضباط QA الإلزامي لرصده.
+
+### ٨.١٣ الواجهة — نماذج إدخال روافد وسابك، ثروة لا تحتاج نموذجاً، ودون أي منطق توجيه جديد
+
+لم يحتج صف سؤال التوجيه القائم "أي برنامج؟" (٨.٩، المُعمَّم لاحقاً في ٩.٦-١٦.٨) أي منطق جديد لهذه
+الدفعة — تظهر `sa-rawafed-stc` و`sa-sabic-lc-commitment` و`sa-tharwah-maaden` كثلاثة أزرار إضافية في
+صف برامج السعودية الذي أصبح يضم تسعة برامج الآن، بمجرد وجودها في `PROGRAMS_BY_COUNTRY.SA`، وتُعرَض
+شارة "غير موثّق" لثروة عبر نفس فحص `mechanismType === 'not-yet-sourced'` العام المستخدم فعلاً لستة
+برامج أخرى عبر هذه الوحدة. **فجوة حقيقية معطِّلة للترجمة رصدتها هذه المرحلة، وليست أثراً ناتجاً عن
+نماذج وهمية:** كان `PROGRAM_LABELS`، وهو قاموس `Record<LocalContentProgram, {en, ar}>` يفحص TypeScript
+اكتماله مقابل اتحاد البرامج بأكمله، يفتقد المفاتيح الثلاثة الجديدة جميعها — رصده فحص `tsc` معزول
+شُغِّل مقابل أنواع ملف المكتبة الحقيقية التي دُفعت للتو (لا تخميناً)، وأُصلح ضمن المرحلة نفسها، وأُعيد
+التحقق منه نظيفاً بعد ذلك.
+
+تُعيد روافد استخدام نمط كتلة الإدخال ذي الأربعة أركان `eligible-spend-ratio` القائم ولوحة نتائجها
+القائمة حرفياً (الدرجة + تفصيل الأركان) — دون حاجة لفرع عرض جديد، إذ إن نوع الآلية هو نفسه الذي
+يُعرَض فعلاً لـ `sa-lcgpa-general`. احتاجت بوابة التزام سابك فرع نتائج جديداً فعلاً (أول عرض
+`commitment-deviation-gate` في هذا الملف): شارة ضمن النطاق/خرق، أرقام الهدف المتفاوَض عليه والفعلي
+المُدقَّق معروضة جنباً إلى جنب، الانحراف بالنقاط، وعند خرق حقيقي بمُدخلات كاملة فقط — نص المعالجة
+المحدَّد من `actionableNextStepForSabicLcGate` في تنبيه مُبرَز، مطابقاً لنمط التنبيه الكهرماني/الأحمر
+الراسخ فعلاً لملاحظة عقوبة نقص توازن (٩.٣) بدلاً من إدخال نمط بصري منفرد. اكتسب `hasMeaningfulResult`
+حالة `commitment-deviation-gate` (`c.withinTolerance !== null`) بحيث يُظهر نموذج سابك غير المكتمل
+تلميح "أدخل الأرقام أعلاه" القائم بدلاً من لوحة نتيجة فارغة مُضلِّلة — نفس فئة الخلل التي رصدها
+وأصلحها فحص QA في ١٥ سبتمبر ٢٠٢٦ لأول مرة لآليات هذا الملف الأخرى (٨.٩)، مُطبَّقة هنا استباقياً بدلاً
+من شحنها واكتشافها لاحقاً. حُدِّثت معاً نقطتا بناء كائن مُدخلات المحرك (تقييم الإدخال الواحد وتقييم
+تجميع المحفظة) ومسار استعادة الحقل من الخادم (`serverRowToEntry`)، بنفس نمط الدمج الدفاعي
+`{ ...emptyX(), ...source }` المستخدم فعلاً لكل برنامج آخر، بحيث لا يتعطّل إدخال مستخدم عائد محفوظ
+مسبقاً أو يفقد حقلاً بصمت لمجرد سبقه لهذه الإضافة.
+
+### ٨.١٤ فحص QA 10/10 لمحاكاة تجربة العميل — فجوة حقيقية واحدة رُصدت وأُصلحت
+
+جرى المرور كمدير مشتريات خليجي لدى رَوابي يُقيِّم مورّد مكوّنات يحمل علاقة stc روافد وعقداً مع سابك
+معاً، بفتح تبويب السعودية، والمرور عبر روافد ثم بوابة سابك، وقراءة المسارين الإنجليزي والعربي لكل
+منهما.
+
+- **فجوة حقيقية رُصدت وأُصلحت:** لم يكن `PROGRAM_LABELS` (٨.١٣) يغطي بعد مفاتيح البرامج الثلاثة
+  الجديدة — خطأ اكتمال TypeScript حقيقي، لا مخاطرة افتراضية، رصده فحص `tsc` معزول مقابل أنواع ملف
+  المكتبة الحقيقية المدفوعة قبل كتابة هذا القسم، وأُصلح ضمن المرحلة نفسها مع فحص نوع نظيف أُعيد التحقق
+  منه بعد ذلك.
+- **قابلية الاكتشاف:** تظهر البرامج الثلاثة الجديدة تماماً حيث ينظر المستخدم العائد أصلاً — صف توجيه
+  برامج السعودية القائم — دون صفحة أو تبويب أو عنصر تحكم مخفي جديد يلزم اكتشافه.
+- **الصحة الثنائية اللغة (إنجليزي + عربي):** قُرئ كلا المسارين اللغويين بشكل مستقل للمعنى، لا فحصاً
+  للنوع فقط — جملة إفصاح سابك، وتلميح نطاق التسامح، ونص خرق `actionableNextStepForSabicLcGate` كلها
+  عربية حقيقية وسليمة نحوياً مع اتفاق جنس/عدد صحيح (تحقق منه مقارنةً بصياغة قسم السعودية الراسخة في
+  الملف نفسه)، وليست أبداً نصاً بديلاً أو إعادة استخدام للنص الإنجليزي؛ لم يُعثر على أي أثر ترميز
+  يونيكود هارب (بنمط باك سلاش-يو) في فحص مباشر للشيفرة الجديدة — نفس الفحص الذي أدخلته هذه الوحدة
+  أول مرة في مرحلة ١٥ سبتمبر ٢٠٢٦ بعد رصد هذه الفئة من الخلل تحديداً مرة واحدة سابقاً.
+- **سلامة البيانات:** جرى تتبّع نقاط استعادة الحقل/التقييم الثلاث (٨.١٣) بقراءة المصدر الفعلي، لا
+  افتراضاً، ما أكَّد أن الشيفرة الجديدة لا تقرأ أو تكتب حقول إدخال أي برنامج آخر مخزَّن — تُلمَس فقط
+  `rawafedStc` و`sabicLcCommitment`، وكلاهما إضافي فقط، دون استبدال مفتاح قائم أبداً.
+- **الحالات الحدّية:** تُحلّ الحالة الفارغة (إدخال جديد تماماً، كلا الكائنين المتداخلين الجديدين بقيم
+  `null` بالكامل) إلى تلميح "أدخل الأرقام أعلاه" القائم عبر إصلاح `hasMeaningfulResult` (٨.١٣)، لا
+  لوحة فارغة أو مُضلِّلة؛ تأكدت الحالة الحدّية لسابك (الانحراف يساوي نطاق التسامح البالغ ٥ نقاط تماماً)،
+  بقراءة حساب `withinTolerance` الفعلي، أنها تُعرَض باللون الأخضر ("ضمن النطاق")، لا خرقاً زائفاً
+  (مُغطاة أيضاً بالاختبار الحدّي الآلي، ٨.١٢).
+- **إمكانية الوصول:** لم يُدخَل أي عنصر تفاعلي جديد يتجاوز نمط `NumberField` القائم المستخدم بكثافة
+  فعلاً في هذا الملف؛ نص إفصاح سابك ونص إجراء الخرق عناصر `<p>` ثابتة لا تعتمد على التحويم، فلم تُضِف
+  هذه الدفعة أي مخاطرة فخ لوحة مفاتيح أو تلميح يعتمد على التحويم فقط.
+- **التفاعل بين الميزات:** جرى تتبّع `assessAllApplicableLocalContentPrograms` (٨.١٠) للتأكد من أن
+  مورّداً منطبقة عليه روافد وبوابة سابك معاً يحصل على إدخالين مُجمَّعين منفصلين فعلاً، لا مدمَجين أو
+  مُجمَّعين في رقم واحد أبداً، وتأكَّد أن تجميع المحفظة يشمل إدخالات أي من البرنامجين الجديدين بنفس
+  الشروط تماماً كأي برنامج قائم مسبقاً (٨.١٢).
+- **الصدق (سجل القرار ٨.٧):** يظهر إفصاح سابك "ليس معياراً معلَناً على مستوى الشركة" داخل الواجهة
+  مباشرة فوق حقول الإدخال، لا مدفوناً في حاشية أو حاضراً فقط في تعليقات الشيفرة المصدرية — لا يمكن
+  لقارئ الوصول إلى نموذج إدخال سابك دون رؤية تنويه النطاق أولاً.
+- **الاتساق البصري/النَّبْري:** تُعيد صناديق تنبيه سابك الجديدة وألوان الشارات (كهرماني لإفصاح عدم
+  المعيارية، زمردي/أحمر لضمن النطاق/الخرق) استخدام دلالات ألوان الملف القائمة حرفياً (نفس نمط
+  الزمردي/الأحمر المستخدم فعلاً لشارة مؤهَّل/مُستبعَد الخاصة بـ`category-eligibility-gate`، ٨.٣؛ نفس
+  النمط الكهرماني المستخدم فعلاً لملاحظة عقوبة نقص توازن، ٩.٣) بدلاً من إدخال لغة بصرية منفردة جديدة.
 
 ## 9. تفكيك آليات دولة الإمارات العربية المتحدة (١٥ سبتمبر ٢٠٢٦)
 
