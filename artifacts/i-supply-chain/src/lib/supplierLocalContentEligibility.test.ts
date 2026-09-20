@@ -563,6 +563,37 @@ describe('AE / GCC Unified Economic Agreement Article 3 — gcc-origin-national-
     expect(framework.sourceNoteEn).toContain('Federal Decree-Law No. 11 of 2023');
     expect(framework.sourceNoteAr).toContain('المادة ٣');
   });
+
+  it('recommendLocalContentAction: fires a genuine primary + alternative when the gate genuinely fails -- primary raises GCC value-added/ownership toward Article 3(1), alternative points to the standard MoIAT ICV path instead (Rule 8: never a single-path recommendation)', () => {
+    const a = assessSupplierLocalContent('AE', 'government', { aeGccOrigin: { gccValueAddedPct: 10, gccCitizenOwnershipPct: 5 } }, 'ae-gcc-origin-treatment');
+    const rec = recommendLocalContentAction(a, null);
+    expect(rec).not.toBeNull();
+    expect(rec!.primaryEn).toContain('Article 3(1)');
+    expect(rec!.primaryEn).toContain('10.0%');
+    expect(rec!.primaryEn).toContain('5.0%');
+    expect(rec!.alternativeEn).toContain('MoIAT');
+    expect(rec!.alternativeEn).toContain('ae-icv-general');
+    expect(rec!.primaryAr).toContain('المادة ٣(١)');
+    expect(rec!.alternativeAr.length).toBeGreaterThan(0);
+  });
+
+  it('recommendLocalContentAction: returns null once the gate qualifies -- nothing to recommend against a treaty right already secured', () => {
+    const a = assessSupplierLocalContent('AE', 'government', { aeGccOrigin: { gccValueAddedPct: 65, gccCitizenOwnershipPct: 70 } }, 'ae-gcc-origin-treatment');
+    expect(recommendLocalContentAction(a, null)).toBeNull();
+  });
+
+  it('recommendLocalContentAction: returns null when the gate is still insufficient-data (null), same discipline as the category-eligibility and spend-set-aside gates -- never recommend against an unknown', () => {
+    const a = assessSupplierLocalContent('AE', 'government', { aeGccOrigin: { gccValueAddedPct: 65, gccCitizenOwnershipPct: null } }, 'ae-gcc-origin-treatment');
+    expect(recommendLocalContentAction(a, null)).toBeNull();
+  });
+
+  it('recommendLocalContentAction: uses "not yet entered" (never a fabricated number) when one input is missing but the other input alone already fails the gate', () => {
+    const a = assessSupplierLocalContent('AE', 'government', { aeGccOrigin: { gccValueAddedPct: 12, gccCitizenOwnershipPct: null } }, 'ae-gcc-origin-treatment');
+    const rec = recommendLocalContentAction(a, null);
+    expect(rec).not.toBeNull();
+    expect(rec!.primaryEn).toContain('not yet entered');
+    expect(rec!.primaryAr).toContain('لم تُدخَل بعد');
+  });
 });
 
 // ===========================================================================

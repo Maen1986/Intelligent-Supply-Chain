@@ -2613,6 +2613,19 @@ export function recommendLocalContentAction(assessment: LocalContentAssessment, 
       alternativeAr: `إذا تعذّر إغلاق الفجوة قبل التدقيق القادم: تتيح شروط هذا العقد نفسها التسوية بغرامة تصل إلى ١٪ من قيمة العقد، أو إعادة التفاوض على الهدف الملتزم به نفسه مع سابك إذا كان النقص يعكس تغيراً فعلياً في النطاق -- كلا الخيارين حقيقي، وليسا إخفاقاً في الامتثال يجب إخفاؤه.`,
     };
   }
+  if (c.mechanismType === 'gcc-origin-national-treatment-gate') {
+    if (c.qualifiesAsGccNationalProduct !== false) return null; // only recommend when genuinely not qualifying
+    const vaText = c.gccValueAddedPct !== null ? `${c.gccValueAddedPct.toFixed(1)}%` : 'not yet entered';
+    const ownText = c.gccCitizenOwnershipPct !== null ? `${c.gccCitizenOwnershipPct.toFixed(1)}%` : 'not yet entered';
+    const vaTextAr = c.gccValueAddedPct !== null ? `${c.gccValueAddedPct.toFixed(1)}%` : 'لم تُدخَل بعد';
+    const ownTextAr = c.gccCitizenOwnershipPct !== null ? `${c.gccCitizenOwnershipPct.toFixed(1)}%` : 'لم تُدخَل بعد';
+    return {
+      primaryEn: `Increase this supplier's GCC-sourced value-added and/or GCC-citizen ownership share toward the GCC Unified Economic Agreement's own Article 3(1) thresholds (currently ${vaText} value-added vs. a required ${GCC_ORIGIN_VALUE_ADDED_THRESHOLD_PCT}%, ${ownText} GCC-citizen ownership vs. a required ${GCC_ORIGIN_OWNERSHIP_THRESHOLD_PCT}%) -- this is the only path that qualifies the product for national treatment under the treaty right itself.`,
+      primaryAr: `ارفع نسبة القيمة المضافة الخليجية المصدر و/أو نسبة ملكية مواطني دول مجلس التعاون لهذا المورّد نحو حدود المادة ٣(١) من الاتفاقية الاقتصادية الموحدة لدول مجلس التعاون نفسها (حالياً ${vaTextAr} قيمة مضافة مقابل الحد المطلوب ${GCC_ORIGIN_VALUE_ADDED_THRESHOLD_PCT}%، و${ownTextAr} ملكية لمواطني الخليج مقابل الحد المطلوب ${GCC_ORIGIN_OWNERSHIP_THRESHOLD_PCT}%) -- هذا هو المسار الوحيد الذي يؤهل المنتج للمعاملة الوطنية بموجب الحق التعاهدي نفسه.`,
+      alternativeEn: `If GCC-origin status cannot be established in time, pursue the standard MoIAT ICV certification path instead (this supplier's ae-icv-general assessment, if run) -- a separate legal basis this supplier may still qualify for on its own domestic-content merits, without relying on the treaty claim this program's own sourcing disclosure flags as not yet confirmed operationalized in MoIAT's published methodology.`,
+      alternativeAr: `إذا تعذّر إثبات المنشأ الخليجي في الوقت المناسب، تابع مسار اعتماد المحتوى المحلي القياسي (ICV) لدى وزارة الصناعة والتكنولوجيا المتقدمة بدلاً من ذلك (تقييم ae-icv-general لهذا المورّد، إن أُجري) -- وهو أساس قانوني منفصل قد يظل هذا المورّد مؤهلاً له بناءً على محتواه المحلي الفعلي، دون الاعتماد على المطالبة التعاهدية التي يُشير إفصاح المصدر في هذا البرنامج نفسه إلى أنها لم تُؤكَّد كمفعّلة رسمياً في منهجية الوزارة المنشورة.`,
+    };
+  }
   return null;
 }
 
