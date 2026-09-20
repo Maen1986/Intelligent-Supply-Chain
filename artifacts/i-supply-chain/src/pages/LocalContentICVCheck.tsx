@@ -57,9 +57,11 @@ import {
   assessSupplierLocalContent, recommendLocalContentAction, rollUpPortfolioLocalContent,
   COUNTRY_FRAMEWORKS, PROGRAMS, PROGRAMS_BY_COUNTRY, DEFAULT_PROGRAM_BY_COUNTRY,
   TAWAZUN_OFFSET_THRESHOLD_AED, actionableNextStepForSabicLcGate, SABIC_LC_DEVIATION_TOLERANCE_PCT,
+  actionableNextStepForGccOriginTreatment, GCC_ORIGIN_VALUE_ADDED_THRESHOLD_PCT, GCC_ORIGIN_OWNERSHIP_THRESHOLD_PCT,
   type LocalContentCountry, type ProcurementContext, type SupplierLocalContentInputs,
   type LocalContentApplicability, type LocalContentAssessment, type PortfolioLocalContentInput,
   type LocalContentProgram, type LocalContentMechanismType, type CommitmentDeviationGateResult,
+  type GccOriginNationalTreatmentGateResult,
 } from '@/lib/supplierLocalContentEligibility';
 // Module 05 cross-reference (side-by-side callout only -- two independent
 // dimensions, per Core Instruction / Rule 7, never blended into one
@@ -79,6 +81,7 @@ type SaMandatoryListInputs = NonNullable<SupplierLocalContentInputs['saMandatory
 type SaPricePreferenceInputs = NonNullable<SupplierLocalContentInputs['saPricePreference']>;
 type IktvaInputs = NonNullable<SupplierLocalContentInputs['iktva']>;
 type AeTawazunInputs = NonNullable<SupplierLocalContentInputs['aeTawazun']>;
+type AeGccOriginInputs = NonNullable<SupplierLocalContentInputs['aeGccOrigin']>;
 type JoContractorQuotaInputs = NonNullable<SupplierLocalContentInputs['joContractorQuota']>;
 type OmMandatoryListInputs = NonNullable<SupplierLocalContentInputs['omMandatoryList']>;
 type OmOqPricePreferenceInputs = NonNullable<SupplierLocalContentInputs['omOqPricePreference']>;
@@ -134,6 +137,9 @@ function emptyIktva(): IktvaInputs {
 }
 function emptyAeTawazun(): AeTawazunInputs {
   return { contractValueAED: null, offsetCreditsEarnedAED: null };
+}
+function emptyAeGccOrigin(): AeGccOriginInputs {
+  return { gccValueAddedPct: null, gccCitizenOwnershipPct: null };
 }
 function emptyJoContractorQuota(): JoContractorQuotaInputs {
   return { isRegisteredJordanianContractor: null };
@@ -264,6 +270,7 @@ interface LocalContentEntry {
   iktva: IktvaInputs;
   ae: AeInputs;
   aeTawazun: AeTawazunInputs;
+  aeGccOrigin: AeGccOriginInputs;
   jo: JoInputs;
   joContractorQuota: JoContractorQuotaInputs;
   omMandatoryList: OmMandatoryListInputs;
@@ -292,7 +299,7 @@ function newLocalContentEntry(): LocalContentEntry {
     context: 'government',
     spendSharePct: null,
     sa: emptySa(), saMandatoryList: emptySaMandatoryList(), saPricePreference: emptySaPricePreference(), iktva: emptyIktva(),
-    ae: emptyAe(), aeTawazun: emptyAeTawazun(), jo: emptyJo(),
+    ae: emptyAe(), aeTawazun: emptyAeTawazun(), aeGccOrigin: emptyAeGccOrigin(), jo: emptyJo(),
     joContractorQuota: emptyJoContractorQuota(), omMandatoryList: emptyOmMandatoryList(), omOqPricePreference: emptyOmOqPricePreference(),
     qa: emptyQa(), bhSme: emptyBhSme(), kwLocalSpend: emptyKwLocalSpend(),
     eg: emptyEg(), egOilGas: emptyEgOilGas(), tr: emptyTr(), uk: emptyUk(),
@@ -330,6 +337,7 @@ function loadState(): PersistedState {
             iktva: { ...emptyIktva(), ...e.iktva },
             ae: { ...emptyAe(), ...e.ae },
             aeTawazun: { ...emptyAeTawazun(), ...e.aeTawazun },
+            aeGccOrigin: { ...emptyAeGccOrigin(), ...e.aeGccOrigin },
             jo: { ...emptyJo(), ...e.jo },
             joContractorQuota: { ...emptyJoContractorQuota(), ...e.joContractorQuota },
             omMandatoryList: { ...emptyOmMandatoryList(), ...e.omMandatoryList },
@@ -403,6 +411,7 @@ const PROGRAM_LABELS: Record<LocalContentProgram, { en: string; ar: string }> = 
   'sa-tharwah-maaden': { en: "Ma'aden Tharwah (not sourced)", ar: 'ثروة (معادن) — غير موثّق' },
   'ae-icv-general': { en: 'National ICV Score', ar: 'الدرجة الوطنية لـICV' },
   'ae-tawazun-offset': { en: 'Tawazun Offset', ar: 'مقاصة توازن' },
+  'ae-gcc-origin-treatment': { en: 'GCC Origin Treatment', ar: 'المعاملة الوطنية الخليجية' },
   'jo-price-preference': { en: 'Price Preference (20%)', ar: 'تفضيل السعر (٢٠٪)' },
   'jo-contractor-quota': { en: 'Contractor Quota (35%)', ar: 'حصة المقاولين (٣٥٪)' },
   'om-icv': { en: 'ICV (not sourced)', ar: 'ICV (غير موثّق)' },
@@ -596,7 +605,7 @@ function LocalContentEntryCard({
   const assessment: LocalContentAssessment | null = !isOther
     ? assessSupplierLocalContent(
         entry.countrySelection as LocalContentCountry, entry.context,
-        { sa: entry.sa, ae: entry.ae, jo: entry.jo, saMandatoryList: entry.saMandatoryList, saPricePreference: entry.saPricePreference, iktva: entry.iktva, aeTawazun: entry.aeTawazun, joContractorQuota: entry.joContractorQuota, omMandatoryList: entry.omMandatoryList, omOqPricePreference: entry.omOqPricePreference, qa: entry.qa, bhSme: entry.bhSme, kwLocalSpend: entry.kwLocalSpend, eg: entry.eg, egOilGas: entry.egOilGas, tr: entry.tr, uk: entry.uk, usa: entry.usa, usaBaba: entry.usaBaba, cn: entry.cn, cnSme: entry.cnSme, rawafedStc: entry.rawafedStc, sabicLcCommitment: entry.sabicLcCommitment },
+        { sa: entry.sa, ae: entry.ae, jo: entry.jo, saMandatoryList: entry.saMandatoryList, saPricePreference: entry.saPricePreference, iktva: entry.iktva, aeTawazun: entry.aeTawazun, aeGccOrigin: entry.aeGccOrigin, joContractorQuota: entry.joContractorQuota, omMandatoryList: entry.omMandatoryList, omOqPricePreference: entry.omOqPricePreference, qa: entry.qa, bhSme: entry.bhSme, kwLocalSpend: entry.kwLocalSpend, eg: entry.eg, egOilGas: entry.egOilGas, tr: entry.tr, uk: entry.uk, usa: entry.usa, usaBaba: entry.usaBaba, cn: entry.cn, cnSme: entry.cnSme, rawafedStc: entry.rawafedStc, sabicLcCommitment: entry.sabicLcCommitment },
         entry.program,
       )
     : null;
@@ -613,6 +622,7 @@ function LocalContentEntryCard({
     if (c.mechanismType === 'spend-set-aside-target') return c.qualifiesForSetAside !== null;
     if (c.mechanismType === 'modified-icv-score') return c.finalScorePct !== null;
     if (c.mechanismType === 'commitment-deviation-gate') return c.withinTolerance !== null;
+    if (c.mechanismType === 'gcc-origin-national-treatment-gate') return c.qualifiesAsGccNationalProduct !== null;
     return false;
   })();
 
@@ -998,6 +1008,35 @@ function LocalContentEntryCard({
                         ? 'يتطلب البرنامج ائتمانات مقاصة تعادل ٦٠٪ من قيمة العقد؛ أي نقص عند نهاية فترة الأداء يُسوَّى بنسبة ٨.٥٪ نقداً أو عبر ضمان بنكي.'
                         : 'The program requires offset credits equal to 60% of contract value; any shortfall at period end settles at 8.5%, cash or via bank guarantee.'}
                     </p>
+                  </div>
+                )}
+
+                {entry.countrySelection === 'AE' && entry.program === 'ae-gcc-origin-treatment' && (
+                  <div className="space-y-3">
+                    <p className="text-[10px] text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-2 leading-relaxed flex items-start gap-1.5">
+                      <Info className="w-3 h-3 shrink-0 mt-0.5" />
+                      {isAr
+                        ? 'هذا حق تعاهدي بموجب الاتفاقية الاقتصادية الموحدة لدول مجلس التعاون -- وليس معياراً معلَناً ضمن منهجية تصديق ICV لدى وزارة الصناعة، ولا نصاً وارداً في القانون الاتحادي رقم ١١ لسنة ٢٠٢٣. استوفاء الشرطين أدناه يمنح المورّد أساساً تعاهدياً للمطالبة بمعاملة المنتج الوطني، دون ضمان تفعيله تلقائياً في درجة ICV الفعلية.'
+                        : "This is a GCC Unified Economic Agreement treaty right -- not a standard published in MoIAT's own ICV certification methodology, and not confirmed in UAE Federal Law No. 11 of 2023's own text. Meeting both conditions below gives the supplier a treaty basis to claim national-product treatment -- it does not guarantee this is automatically reflected in an actual MoIAT ICV score."}
+                    </p>
+                    <div className="grid sm:grid-cols-2 gap-3">
+                      <NumberField
+                        label={isAr ? 'القيمة المضافة داخل دول المجلس' : 'GCC In-Region Value-Added'}
+                        hint={isAr ? `الحد المطلوب (المادة ٣(١)): ${GCC_ORIGIN_VALUE_ADDED_THRESHOLD_PCT}٪` : `Required threshold (Article 3(1)): ${GCC_ORIGIN_VALUE_ADDED_THRESHOLD_PCT}%`}
+                        unit="%"
+                        max={100}
+                        value={entry.aeGccOrigin.gccValueAddedPct}
+                        onChange={v => onUpdate(entry.id, { aeGccOrigin: { ...entry.aeGccOrigin, gccValueAddedPct: v } })}
+                      />
+                      <NumberField
+                        label={isAr ? 'ملكية مواطني دول المجلس لمنشأة الإنتاج' : 'GCC-Citizen Ownership of Producing Plant'}
+                        hint={isAr ? `الحد المطلوب (المادة ٣(١)): ${GCC_ORIGIN_OWNERSHIP_THRESHOLD_PCT}٪` : `Required threshold (Article 3(1)): ${GCC_ORIGIN_OWNERSHIP_THRESHOLD_PCT}%`}
+                        unit="%"
+                        max={100}
+                        value={entry.aeGccOrigin.gccCitizenOwnershipPct}
+                        onChange={v => onUpdate(entry.id, { aeGccOrigin: { ...entry.aeGccOrigin, gccCitizenOwnershipPct: v } })}
+                      />
+                    </div>
                   </div>
                 )}
 
@@ -1812,6 +1851,49 @@ function LocalContentEntryCard({
                     </>
                   );
                 })()}
+                {assessment.computation.mechanismType === 'gcc-origin-national-treatment-gate' && (() => {
+                  const c = assessment.computation as GccOriginNationalTreatmentGateResult;
+                  const nextStep = actionableNextStepForGccOriginTreatment(c);
+                  return (
+                    <>
+                      <div className="flex items-baseline justify-between">
+                        <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                          {isAr ? 'أهلية المنتج الوطني الخليجي (المادة ٣)' : 'GCC National Product Eligibility (Article 3)'}
+                        </span>
+                        <span className={`text-sm font-black px-2.5 py-1 rounded-full ${
+                          c.qualifiesAsGccNationalProduct === true ? 'bg-emerald-100 text-emerald-700'
+                            : c.qualifiesAsGccNationalProduct === false ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-500'
+                        }`}>
+                          {c.qualifiesAsGccNationalProduct === true ? (isAr ? 'مؤهَّل' : 'Qualifies')
+                            : c.qualifiesAsGccNationalProduct === false ? (isAr ? 'غير مؤهَّل' : 'Does not qualify') : (isAr ? 'غير مكتمل' : 'Incomplete')}
+                        </span>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between text-[11px] text-slate-600">
+                          <span>{isAr ? `القيمة المضافة الخليجية (الحد: ${c.valueAddedThresholdPct}٪)` : `GCC Value-Added (threshold: ${c.valueAddedThresholdPct}%)`}</span>
+                          <span className="font-semibold">{c.gccValueAddedPct !== null ? `${c.gccValueAddedPct.toFixed(1)}%` : '—'}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-[11px] text-slate-600">
+                          <span>{isAr ? `ملكية مواطني المجلس (الحد: ${c.ownershipThresholdPct}٪)` : `GCC-Citizen Ownership (threshold: ${c.ownershipThresholdPct}%)`}</span>
+                          <span className="font-semibold">{c.gccCitizenOwnershipPct !== null ? `${c.gccCitizenOwnershipPct.toFixed(1)}%` : '—'}</span>
+                        </div>
+                      </div>
+                      {nextStep && (
+                        <p className="text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-2.5 py-2 leading-relaxed">
+                          {isAr ? nextStep.ar : nextStep.en}
+                        </p>
+                      )}
+                      {c.qualifiesAsGccNationalProduct === false && (
+                        <p className="text-[10px] text-muted-foreground flex items-start gap-1.5">
+                          <Info className="w-3 h-3 shrink-0 mt-0.5" />
+                          {isAr
+                            ? 'لم يُستوفَ أحد الحدّين المطلوبين بموجب المادة ٣(١) أو كليهما -- الشرطان مطلوبان معاً.'
+                            : "At least one of Article 3(1)'s two required thresholds is not met -- both conditions are required together."}
+                        </p>
+                      )}
+                    </>
+                  );
+                })()}
               </div>
             )}
 
@@ -1876,6 +1958,7 @@ export function LocalContentICVCheck() {
       ...row.data, id: row.clientKey, label: row.name,
       program: normalizeProgram(row.data.program, row.data.countrySelection ?? 'SA'),
       aeTawazun: { ...emptyAeTawazun(), ...row.data.aeTawazun },
+      aeGccOrigin: { ...emptyAeGccOrigin(), ...row.data.aeGccOrigin },
       rawafedStc: { ...emptyRawafedStc(), ...row.data.rawafedStc },
       sabicLcCommitment: { ...emptySabicLcCommitment(), ...row.data.sabicLcCommitment },
     };
@@ -1972,7 +2055,7 @@ export function LocalContentICVCheck() {
       entry: e,
       assessment: assessSupplierLocalContent(
         e.countrySelection as LocalContentCountry, e.context,
-        { sa: e.sa, ae: e.ae, jo: e.jo, saMandatoryList: e.saMandatoryList, saPricePreference: e.saPricePreference, iktva: e.iktva, aeTawazun: e.aeTawazun, joContractorQuota: e.joContractorQuota, omMandatoryList: e.omMandatoryList, omOqPricePreference: e.omOqPricePreference, qa: e.qa, bhSme: e.bhSme, kwLocalSpend: e.kwLocalSpend, eg: e.eg, egOilGas: e.egOilGas, tr: e.tr, uk: e.uk, usa: e.usa, usaBaba: e.usaBaba, cn: e.cn, cnSme: e.cnSme, rawafedStc: e.rawafedStc, sabicLcCommitment: e.sabicLcCommitment },
+        { sa: e.sa, ae: e.ae, jo: e.jo, saMandatoryList: e.saMandatoryList, saPricePreference: e.saPricePreference, iktva: e.iktva, aeTawazun: e.aeTawazun, aeGccOrigin: e.aeGccOrigin, joContractorQuota: e.joContractorQuota, omMandatoryList: e.omMandatoryList, omOqPricePreference: e.omOqPricePreference, qa: e.qa, bhSme: e.bhSme, kwLocalSpend: e.kwLocalSpend, eg: e.eg, egOilGas: e.egOilGas, tr: e.tr, uk: e.uk, usa: e.usa, usaBaba: e.usaBaba, cn: e.cn, cnSme: e.cnSme, rawafedStc: e.rawafedStc, sabicLcCommitment: e.sabicLcCommitment },
         e.program,
       ),
     }));
