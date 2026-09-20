@@ -65,7 +65,7 @@ remain live and completely unchanged by this work.
 
 ---
 
-## 4. Stress-Test Record (39 tests as of 15 Sep 2026, all passing; three tiers per mechanism — see section 8.8 for the 23 additional Saudi-mechanism tests (62 total), section 9.5 for the 15 additional UAE-mechanism/architecture tests added 15 Sep 2026 (77 total), section 10.8 for the 32 additional Jordan/Oman/Qatar/Bahrain/Kuwait-mechanism tests added 15 Sep 2026 (109 total), section 11.5 for the 11 additional Egypt-mechanism tests added 15 Sep 2026 (120 total), section 12.5 for the 9 additional Turkey-mechanism tests added 16 Sep 2026 (129 total), section 13.5 for the 9 additional UK-mechanism tests added 16 Sep 2026 (138 total), and section 14.5 for the 22 additional USA-mechanism tests added 16 Sep 2026 (160 total))
+## 4. Stress-Test Record (39 tests as of 15 Sep 2026, all passing; three tiers per mechanism — see section 8.8 for the 23 additional Saudi-mechanism tests (62 total), section 9.5 for the 15 additional UAE-mechanism/architecture tests added 15 Sep 2026 (77 total), section 10.8 for the 32 additional Jordan/Oman/Qatar/Bahrain/Kuwait-mechanism tests added 15 Sep 2026 (109 total), section 11.5 for the 11 additional Egypt-mechanism tests added 15 Sep 2026 (120 total), section 12.5 for the 9 additional Turkey-mechanism tests added 16 Sep 2026 (129 total), section 13.5 for the 9 additional UK-mechanism tests added 16 Sep 2026 (138 total), and section 14.5 for the 22 additional USA-mechanism tests added 16 Sep 2026 (160 total); later batches (China, India/Germany/Japan/Korea, second-wave Saudi, UAE GCC-origin) are documented in their own sections' stress-test subsections rather than re-totaled here at every step -- section 9.9 documents the 16 new UAE GCC-origin mechanism tests added 20 Sep 2026, and the full suite's own directly re-verified total as of that addition (including the 4 additional recommendLocalContentAction consistency tests added during that section's QA pass, 9.10-9.11) is 276, confirmed by an actual `npx vitest run` immediately before this update, not carried forward by arithmetic)
 
 ### 4.1 Saudi Arabia — LCGPA eligible-spend-ratio
 
@@ -791,6 +791,181 @@ buyer's-reading/supplier's-reading subsections. The panel states, in both langua
 gets and what the supplier gets from the same mechanism, built entirely from facts already sourced
 and disclosed elsewhere in the engine (never a new claim or statistic) — re-stating in the live
 product the same reading this document has carried in prose since section 8.3.
+
+### 9.7 The GCC Unified Economic Agreement's Article 3 — A Third, Treaty-Based UAE Mechanism (20 Sep 2026)
+
+Following the platform owner's "Green light to move on to UAE's GCC" instruction, the exact scope was
+re-derived from the owner directly (the original brief text was not recoverable from the repo, so
+scope was not guessed at — Decision Record 8.7 applies to a task's own definition, not only to its
+data) and confirmed as: rework the UAE's UAE-origin-vs-everything-else model into a genuine
+local/GCC/foreign three-tier read, reflecting the preferential treatment UAE's real procurement rules
+(via the GCC Unified Economic Agreement) give GCC-origin goods and suppliers over non-GCC foreign
+content.
+
+Research (gaft.gov.sa's own summary, the Agreement's UNCTAD-archived text, and cross-checked against
+UAE's own Federal Decree-Law No. 11 of 2023 on Procurement in the Federal Government and MoIAT's ICV
+program materials) found the Agreement genuinely different in kind from `ae-icv-general` — a
+Gulf-wide treaty right, not a UAE domestic certification scheme — and a real, disclosed gap: **Article
+1(b) states GCC-origin products "shall receive the same treatment as national products," and Article
+3(1) sets a real, computable rules-of-origin test** (GCC in-region value-added ≥ 40% of the product's
+final value, AND GCC-citizen ownership ≥ 51% of the producing plant, both required together) — but
+neither MoIAT's own ICV program page/kit nor Federal Decree-Law No. 11 of 2023's own text (Articles
+13(2)/22(2), which govern "national products"/"locally produced" preferences) mentions GCC-origin
+treatment at all. This module therefore models Article 3's rules-of-origin eligibility test itself — a
+real, sourced, computable gate — while disclosing, not assuming, that clearing it is a treaty-level
+entitlement a supplier could assert, not a confirmed uplift to an actual MoIAT ICV score or a
+guaranteed procurement outcome. A second, narrower citation gap is also disclosed rather than silently
+resolved: Saudi Arabia's own GAFT separately summarizes the Agreement as giving GCC entities "the same
+privileges as citizens in government procurement," a real claim from a GCC-government source, but this
+research pass could not independently confirm that specific wording against a numbered article of the
+Agreement's own text (Article 8, the Agreement's general national-treatment article, covers work,
+residence, ownership, and economic activity broadly, but does not itself use the words "government
+procurement").
+
+Because this is a genuinely different legal basis from MoIAT's ICV certification — not a variant or
+extension of it — it is modeled as its own separate program, `ae-gcc-origin-treatment`, the **third**
+genuinely different UAE program alongside `ae-icv-general` and `ae-tawazun-offset`
+(`PROGRAMS_BY_COUNTRY.AE` grows from 2 entries to 3), never folded into the existing ICV score (Rule 7
+/ Decision Record 8.7: never collapse two different legal bases into one fabricated composite number).
+A genuinely new mechanism type was needed for this shape — `gcc-origin-national-treatment-gate`
+(`GccOriginNationalTreatmentGateResult`) — an AND-of-two-thresholds gate with a "known failure is
+decisive" short-circuit: if either input is known and fails its own threshold, the gate resolves
+`false` even while the other input is still missing (never withheld as `null` just because one number
+is incomplete); it resolves `null` (insufficient data) only when both known inputs so far would pass
+and at least one is still missing; it resolves `true` only when both are known and both clear their
+threshold. This mirrors the exact short-circuit precedent already established by
+`computeCategoryEligibilityGate`'s `inList === false` handling elsewhere in this file — a known failure
+is never softened into an unknown.
+
+**Worked mini-example (dual-sided reading):** a UAE-based fabricator supplying government tenders
+reports `gccValueAddedPct: 65`, `gccCitizenOwnershipPct: 70` — both comfortably clear the Article
+3(1) thresholds (40% / 51%) → `qualifiesAsGccNationalProduct: true`, and
+`actionableNextStepForGccOriginTreatment` returns a real, decision-ready action citing Article 1(b)
+and Article 3 by name, alongside the disclosed MoIAT-operationalization gap so the supplier does not
+mistake a treaty entitlement for a confirmed ICV score change. *Buyer's reading* (a UAE government
+procuring entity): "does this bid genuinely qualify for GCC national treatment under the Agreement's
+own rules-of-origin test, or is the supplier merely claiming GCC origin without meeting the
+value-added/ownership thresholds that actually earn it?" *Supplier's reading*: "I have a real treaty
+basis to assert national-product treatment for this bid — but I still need to separately confirm with
+the procuring entity how (or whether) that is reflected in the evaluation, since MoIAT's own
+methodology does not yet say."
+
+### 9.8 Explicitly not modeled, to avoid fabrication
+
+- **A confirmed MoIAT ICV score uplift for qualifying suppliers.** This is the central, disclosed gap
+  the whole mechanism is built around (9.7) — modeling an automatic score increase would have been
+  the exact fabrication Decision Record 8.7 exists to prevent, so `ae-gcc-origin-treatment` is
+  deliberately scoped to the treaty's own rules-of-origin eligibility test, never wired into
+  `ae-icv-general`'s `finalScorePct`.
+- **The GAFT "government procurement" citation, resolved by assumption.** The Agreement's own Article
+  8 does not use that specific phrase; this research pass disclosed the gap in the program's
+  `sourceNoteEn`/`sourceNoteAr` rather than either dropping GAFT's claim or silently asserting it
+  against an article that does not itself support it.
+- **A GCC-origin uplift for `ae-tawazun-offset`.** No sourced evidence was found that Tawazun's
+  offset-credit mechanism treats GCC-origin activity differently from any other in-country offset
+  activity; not modeled, since doing so would be a guess, not a sourced fact.
+
+### 9.9 Stress-test record — UAE GCC-origin mechanism (16 new tests, all passing; full suite 256 → 272 for this file)
+
+| Mechanism | Soft | Hardest | Boundary |
+|---|---|---|---|
+| `gcc-origin-national-treatment-gate` | value-added known and passing, ownership not yet known → `insufficient-data` (`null`), never guessed `true` | value-added known to fail with ownership missing entirely (and the mirror case, ownership known to fail with value-added missing) → resolves `false`, not `null` — a known failure is decisive regardless of what the other input is; both inputs well below threshold → clean `false`, never a fabricated partial-credit score | value-added and ownership exactly at the Article 3(1) thresholds (40% / 51%) qualify (`>=`, not `>`); one point below each threshold fails both, confirming the boundary is real, not an off-by-one; value-added exactly at threshold with ownership one point short fails on the ownership leg alone, confirming both conditions are genuinely required together |
+| Applicability | — | `private-commercial` correctly resolves `not-applicable` (sourced only for government/semi-government-soe procurement); `semi-government-soe` correctly resolves `applicable`, same scope as `ae-icv-general` | — |
+| `actionableNextStepForGccOriginTreatment` | — | returns `null` when the gate resolves `false` — no action manufactured for a supplier that does not qualify; returns `null` when inputs are incomplete even if what is known would pass — never a premature claim | — |
+| `assessAllApplicableLocalContentPrograms` | a supplier applicable to all three AE programs at once (`ae-icv-general`, `ae-tawazun-offset`, `ae-gcc-origin-treatment`) returns three genuinely separate stacked entries, never averaged | — | the GCC gate's `actionableNextStep` surfaces inside the stacked view exactly like the SABIC gate's does (8.10), confirming the dual-function pattern extends cleanly to a second gate mechanism |
+| Structural/bilingual | `PROGRAMS['ae-gcc-origin-treatment']` wired consistently: correct country, `mechanismType`, `applicableContexts`, and both `sourceNoteEn`/`sourceNoteAr` asserted for real content (Article 3, Federal Decree-Law No. 11 of 2023), not just presence | — | — |
+
+### 9.10 UI — GCC-origin input form and results panel, and one real cross-feature gap found and fixed during QA
+
+The existing UAE program-routing row (9.6) needed zero new logic — `ae-gcc-origin-treatment` simply
+appears as a third button in the UAE's now-three-program row the moment it exists in
+`PROGRAMS_BY_COUNTRY.AE`. The input form is new: an amber honesty-disclosure banner (matching the
+color semantics already established for SABIC's non-standard-practice disclosure, 8.10, and Tawazun's
+shortfall note, 9.3) stating plainly, before either input field, that this is a treaty right — not a
+standard published in MoIAT's own ICV certification methodology, and not confirmed in Federal
+Decree-Law No. 11 of 2023's own text — followed by the two `NumberField` inputs (GCC in-region
+value-added, GCC-citizen ownership), each carrying its own Article 3(1) threshold as a hint. The
+results panel is a new render branch (the second `*-gate` branch after SABIC's, 8.13): a
+qualifies/does-not-qualify/incomplete badge, both figures shown against their thresholds, and —
+only when the gate genuinely qualifies with complete inputs —
+`actionableNextStepForGccOriginTreatment`'s decision-ready text in a highlighted box.
+`hasMeaningfulResult` gained a `gcc-origin-national-treatment-gate` case
+(`c.qualifiesAsGccNationalProduct !== null`), so a brand-new entry shows the existing "enter the
+figures above" hint rather than a blank or misleading panel — proactively applied from the pattern
+this module's QA discipline already established for every prior mechanism.
+
+**A real cross-feature consistency gap this pass found and fixed, not merely logged:** while tracing
+dimension 7 of the QA walkthrough (cross-feature interaction), `recommendLocalContentAction` — the
+shared primary+alternative recommendation function this module's UI already renders generically for
+every mechanism type (Rule 8) — had no branch for `gcc-origin-national-treatment-gate`, unlike its
+structurally closest sibling, SABIC's `commitment-deviation-gate` (8.10), which has both a
+`recommendLocalContentAction` branch and its own dedicated actionable-step function. This was a real
+asymmetry, not an acceptable design difference: a supplier who genuinely fails the GCC gate would have
+seen the mechanism's own qualifies/does-not-qualify result, but no primary-plus-alternative
+recommendation in the generic panel every other failing gate in this file already surfaces. Fixed by
+adding a bilingual branch — primary: raise GCC in-region value-added and/or GCC-citizen ownership
+toward the Article 3(1) thresholds, with the supplier's own current figures quoted directly (or "not
+yet entered" when a figure is missing, never a fabricated number); alternative: pursue the standard
+MoIAT ICV certification path instead (`ae-icv-general`), a separate legal basis the same supplier may
+still qualify for on its own domestic-content merits, without relying on the treaty claim this
+program's own disclosure flags as not yet confirmed operationalized — together with 4 new tests
+confirming the branch fires only on a genuine `false` (never on `null` or `true`), and that the
+"not yet entered" wording is used rather than a guessed figure when one input is missing. Full suite:
+272 → 276 for this file, re-verified green before the fix was considered done.
+
+### 9.11 QA 10/10 customer-simulation pass — one real gap found and fixed
+
+Walked through as a UAE government-tender contracts consultant assessing a UAE-based fabricator that
+claims GCC origin for its bid, opening the AE tab, selecting the new GCC-origin program, entering
+figures that first fail the gate and then pass it, and reading both the English and Arabic paths for
+each state.
+
+- **Real gap found and fixed:** `recommendLocalContentAction` (9.10) had no branch for the new gate
+  mechanism — a genuine Rule 8 consistency gap, not a hypothetical risk, caught while tracing this
+  dimension specifically (not assumed from the mechanism's own `actionableNextStep` function alone),
+  fixed in the same pass with 4 new tests and a re-verified green suite (272 → 276) before this
+  section was written.
+- **Discoverability:** the new program surfaces exactly where a returning user already looks — the
+  existing UAE program-routing row — with no new page, tab, or hidden control to find.
+- **Bilingual correctness (EN + AR):** both language paths read independently for sense, not just
+  typechecked — the honesty-disclosure banner, the threshold hints, the qualifies/does-not-qualify
+  badge text, and both `recommendLocalContentAction` and `actionableNextStepForGccOriginTreatment`'s
+  Arabic output are real, grammatical Arabic with correct gender/number agreement, never a placeholder
+  or the English string reused; a direct grep of the new code found no escaped-unicode artifacts, the
+  same check this module's discipline has applied since 15 Sep 2026.
+- **Data safety:** the input-restoration and assess-call-site changes (9.10) were traced by reading the
+  actual source, confirming only the new `aeGccOrigin` field is read or written by this addition —
+  every other program's stored fields are untouched, and the addition is purely additive to
+  `SupplierLocalContentInputs`.
+- **Edge cases:** the empty state (a brand-new entry, both fields `null`) resolves to the existing
+  "enter the figures above" hint via the `hasMeaningfulResult` extension (9.10); the boundary case
+  (both inputs exactly at their Article 3(1) thresholds) was confirmed, by the automated boundary
+  test (9.9), to resolve `true`, not a false negative; the missing-one-input case was confirmed to
+  resolve `false` (not `null`) whenever the other, known input alone already fails — the gate's own
+  disclosed short-circuit behavior, not a rendering assumption.
+- **Accessibility:** no new interactive control was introduced beyond the existing `NumberField`
+  pattern used pervasively in this file; the disclosure banner and actionable-step text are static,
+  non-hover-gated elements, so no new keyboard-trap or hover-only-tooltip risk was added by this
+  program.
+- **Cross-feature interaction:** this is where the real gap (above) was found — traced by reading
+  `recommendLocalContentAction`'s full existing branch structure and the UI's generic rendering of its
+  output, not assumed from the mechanism's dedicated actionable-step function being present. Also
+  traced: `assessAllApplicableLocalContentPrograms` correctly stacks all three AE programs
+  side by side for a supplier applicable to all three, never averaging the GCC gate's result into
+  `ae-icv-general`'s score (9.9).
+- **Honesty (Decision Record 8.7):** the treaty-vs-domestic-methodology disclosure is shown inline in
+  the UI, directly above the input fields, not buried in a footnote or only present in the source
+  code's own comments — a reader cannot reach the GCC-origin input form without first seeing the scope
+  caveat; the unresolved GAFT "government procurement" citation gap and the confirmed MoIAT
+  operationalization gap are both disclosed in the program's own `sourceNoteEn`/`sourceNoteAr` (9.7),
+  not smoothed over to make the mechanism look more authoritative than its actual sourcing supports.
+- **Visual/tonal consistency:** the new disclosure banner and qualifies/does-not-qualify badge colors
+  reuse this file's existing color semantics verbatim (the same amber disclosure pattern already used
+  for SABIC's non-standard-practice note, 8.10, and Tawazun's shortfall note, 9.3; the same
+  emerald/red qualifies/gated-out pattern already used for `category-eligibility-gate`, 8.3, and
+  SABIC's within-tolerance/breach badge, 8.13) rather than introducing a new one-off visual language.
+
+---
 
 ## 10. Jordan's Second Mechanism, Oman, Qatar, Bahrain, and Kuwait Mechanism Decomposition (15 Sep 2026)
 
@@ -2500,6 +2675,162 @@ QA وأُصلحت ضمن هذه المرحلة نفسها:** كان التبدي
 مبنية بالكامل من حقائق موثّقة ومُفصَح عنها بالفعل في مكان آخر من المحرك (وليس ادعاءً أو رقماً
 جديداً) — تعيد في المنتج الحي نفس القراءة التي يحملها هذا المستند نثراً منذ القسم ٨.٣.
 
+### ٩.٧ المادة ٣ من الاتفاقية الاقتصادية الموحدة لدول مجلس التعاون — آلية إماراتية ثالثة قائمة على معاهدة (٢٠ سبتمبر ٢٠٢٦)
+
+بناءً على تعليمة صاحب المنصة "الضوء الأخضر للانتقال إلى ملف الخليج الإماراتي"، أُعيد اشتقاق النطاق
+الدقيق من صاحب المنصة مباشرة (لم يكن نص الموجز الأصلي قابلاً للاسترجاع من المستودع، فلم يُخمَّن
+النطاق — سجل القرار ٨.٧ ينطبق على تعريف المهمة نفسها، وليس فقط على بياناتها) وتأكد على النحو
+التالي: إعادة صياغة نموذج "محلي مقابل كل ما عداه" الإماراتي إلى قراءة ثلاثية حقيقية (محلي / خليجي /
+أجنبي)، تعكس المعاملة التفضيلية التي تمنحها القواعد الفعلية للمشتريات الإماراتية (عبر الاتفاقية
+الاقتصادية الموحدة لدول مجلس التعاون) للسلع والموردين ذوي المنشأ الخليجي مقابل المحتوى الأجنبي غير
+الخليجي.
+
+وجد البحث (ملخص الهيئة العامة للتجارة الخارجية السعودية gaft.gov.sa، والنص المؤرشف لدى الأونكتاد،
+مع التحقق المتقاطع مقابل المرسوم بقانون اتحادي رقم ١١ لسنة ٢٠٢٣ بشأن المشتريات في الحكومة الاتحادية
+ومواد برنامج ICV التابعة لوزارة الصناعة) أن الاتفاقية أساس قانوني مختلف فعلياً عن `ae-icv-general` —
+حق تعاهدي خليجي جماعي، وليس نظام تصديق إماراتي محلي — وفجوة حقيقية مُفصَح عنها: **تنص المادة ١(ب) على
+أن المنتجات ذات المنشأ الخليجي "تُعامَل معاملة المنتجات الوطنية"، وتحدد المادة ٣(١) اختباراً حقيقياً
+قابلاً للحساب لقواعد المنشأ** (قيمة مضافة خليجية لا تقل عن ٤٠٪ من القيمة النهائية للمنتج، مع ملكية
+مواطني دول المجلس لما لا يقل عن ٥١٪ من منشأة الإنتاج، والشرطان معاً مطلوبان) — لكن لا صفحة/حقيبة
+برنامج ICV الرسمية التابعة للوزارة ولا نص المرسوم بقانون اتحادي رقم ١١ لسنة ٢٠٢٣ نفسه (المادتان
+١٣(٢)/٢٢(٢) اللتان تحكمان تفضيلات "المنتجات الوطنية"/"المنتجة محلياً") تذكران معاملة خاصة بالمنشأ
+الخليجي على الإطلاق. لذا تُنمذِج هذه الوحدة اختبار أهلية قواعد المنشأ بموجب المادة ٣ نفسه — بوابة
+حقيقية موثّقة وقابلة للحساب — مع الإفصاح، لا الافتراض، بأن استيفاءه حق تعاهدي يمكن للمورّد الاستناد
+إليه، وليس رفعاً مؤكداً لدرجة ICV فعلية لدى الوزارة أو ضماناً لنتيجة مشتريات معينة. كما تُفصَح فجوة
+استشهاد ثانية أضيق دون حسمها بافتراض: تُلخِّص الهيئة العامة للتجارة الخارجية السعودية بشكل منفصل
+إحدى مزايا الاتفاقية بمنح الجهات الخليجية "نفس امتيازات المواطنين في المشتريات الحكومية" — ادعاء
+حقيقي من مصدر حكومي خليجي، إلا أن هذا البحث لم يتمكن من تأكيد هذه الصياغة تحديداً مقابل مادة مرقّمة
+في نص الاتفاقية نفسها (تغطي المادة ٨، مادة المعاملة الوطنية العامة، العمل والإقامة والتملك والنشاط
+الاقتصادي بشكل عام، دون استخدام عبارة "المشتريات الحكومية" حرفياً).
+
+ولأن هذا أساس قانوني مختلف فعلياً عن اعتماد ICV — وليس نسخة منه أو امتداداً له — نُمذِج كبرنامج منفصل
+قائم بذاته، `ae-gcc-origin-treatment`، وهو **البرنامج الثالث** المختلف فعلياً للإمارات إلى جانب
+`ae-icv-general` و`ae-tawazun-offset` (ينمو `PROGRAMS_BY_COUNTRY.AE` من مُدخلين إلى ثلاثة)، ولم
+يُدمَج أبداً في درجة ICV القائمة (القاعدة ٧ / سجل القرار ٨.٧: عدم اختزال أساسين قانونيين مختلفين في
+رقم مركّب واحد مُختلَق). استلزم هذا الشكل نوع آلية جديداً فعلياً — `gcc-origin-national-treatment-
+gate` (`GccOriginNationalTreatmentGateResult`) — بوابة من نوع "و" بين حدّين، مع منطق "الإخفاق
+المعروف حاسم": إذا كان أحد المدخلين معروفاً ويفشل في تجاوز حدّه الخاص، تُحسم البوابة بـ`false` حتى
+لو ظل المدخل الآخر مفقوداً (لا تُحجَب أبداً كـ`null` لمجرد أن رقماً واحداً غير مكتمل)؛ ولا تُحسم
+`null` (بيانات غير كافية) إلا حين يكون كل ما هو معروف حتى الآن سيجتاز الاختبار مع مدخل واحد على
+الأقل لا يزال مفقوداً؛ ولا تُحسم `true` إلا حين يكون المدخلان معروفين ويتجاوزان حدّيهما معاً. يحاكي
+هذا بدقة سابقة "الإخفاق المعروف حاسم" المُرساة بالفعل عبر معالجة `computeCategoryEligibilityGate`
+لحالة `inList === false` في مكان آخر من هذا الملف — إخفاق معروف لا يُلطَّف أبداً إلى مجهول.
+
+**مثال تطبيقي مصغّر (قراءة ثنائية الجانب):** مُصنِّع مقرّه الإمارات يورّد لمناقصات حكومية يُدخل
+`gccValueAddedPct: 65`، `gccCitizenOwnershipPct: 70` — يتجاوز كلاهما بارتياح حدود المادة ٣(١)
+(٤٠٪ / ٥١٪) ← `qualifiesAsGccNationalProduct: true`، وتُرجِع `actionableNextStepForGccOriginTreatment`
+إجراءً حقيقياً جاهزاً للقرار يستشهد بالمادة ١(ب) والمادة ٣ صراحةً، إلى جانب فجوة تفعيل ICV
+المُفصَح عنها، حتى لا يخلط المورّد بين حق تعاهدي وتغيير مؤكد في درجة ICV الفعلية. *قراءة المشتري*
+(جهة مشتريات حكومية إماراتية): "هل يستوفي هذا العطاء فعلياً شروط المعاملة الوطنية الخليجية بموجب
+اختبار قواعد المنشأ في الاتفاقية نفسها، أم أن المورّد يدّعي فقط منشأً خليجياً دون استيفاء حدّي
+القيمة المضافة/الملكية اللذين يخوّلانه ذلك فعلياً؟" *قراءة المورّد*: "لديّ أساس تعاهدي حقيقي للمطالبة
+بمعاملة المنتج الوطني لهذا العطاء — لكن ما زلت بحاجة للتأكد بشكل منفصل مع جهة المشتريات عن كيفية (أو
+ما إذا) انعكاس ذلك في التقييم، إذ لا تُحدِّد منهجية الوزارة نفسها ذلك بعد."
+
+### ٩.٨ ما لم يُنمذَج عمداً، تجنباً للاختلاق
+
+- **رفع مؤكد لدرجة ICV لدى الوزارة للموردين المؤهَّلين.** هذه هي الفجوة المركزية المُفصَح عنها التي
+  بُنيت الآلية بأكملها حولها (٩.٧) — كانت نمذجة رفع تلقائي للدرجة ستكون الاختلاق ذاته الذي يهدف سجل
+  القرار ٨.٧ إلى منعه، لذا نُطاق `ae-gcc-origin-treatment` عمداً على اختبار أهلية قواعد المنشأ
+  التعاهدي نفسه، ولم يُربَط أبداً بـ`finalScorePct` الخاصة بـ`ae-icv-general`.
+- **استشهاد "المشتريات الحكومية" لدى الهيئة العامة للتجارة الخارجية، محسوماً بالافتراض.** لا تستخدم
+  المادة ٨ من الاتفاقية نفسها تلك العبارة تحديداً؛ أفصح هذا البحث عن الفجوة في `sourceNoteEn`/
+  `sourceNoteAr` الخاصة بالبرنامج بدلاً من إسقاط ادعاء الهيئة أو تأكيده صامتاً مقابل مادة لا تدعمه
+  فعلياً.
+- **رفع خاص بالمنشأ الخليجي لـ`ae-tawazun-offset`.** لم يُعثر على دليل موثّق بأن آلية ائتمان مقاصة
+  توازن تعامل النشاط ذا المنشأ الخليجي بشكل مختلف عن أي نشاط مقاصة محلي آخر؛ لم تُنمذَج، إذ ستكون
+  تخميناً لا حقيقة موثّقة.
+
+### ٩.٩ سجل اختبار الإجهاد — آلية المنشأ الخليجي الإماراتية (١٦ اختباراً جديداً، جميعها ناجحة؛ إجمالي هذا الملف من ٢٥٦ إلى ٢٧٢)
+
+| الآلية | ناعم (Soft) | الأصعب (Hardest) | الحدّي (Boundary) |
+|---|---|---|---|
+| `gcc-origin-national-treatment-gate` | القيمة المضافة معروفة ومجتازة، والملكية غير معروفة بعد ← `insufficient-data` (`null`)، لا تُخمَّن `true` أبداً | القيمة المضافة معروفة وفاشلة مع غياب الملكية كلياً (والحالة المعاكسة، الملكية معروفة وفاشلة مع غياب القيمة المضافة كلياً) ← تُحسم `false`، لا `null` — إخفاق معروف حاسم بصرف النظر عن المدخل الآخر؛ كلا المدخلين أدنى بكثير من الحدّ ← `false` نظيفة، دون درجة ائتمان جزئي مُختلَقة أبداً | القيمة المضافة والملكية عند حدود المادة ٣(١) بالضبط (٤٠٪ / ٥١٪) تُؤهِّل (`>=` وليس `>`)؛ نقطة واحدة دون كل حدّ تُخفِق كليهما، مؤكدةً أن الحدّ حقيقي وليس خطأ إزاحة بواحد؛ القيمة المضافة عند الحدّ بالضبط مع نقص نقطة واحدة في الملكية تُخفِق على شقّ الملكية وحده، مؤكدةً أن الشرطين مطلوبان معاً فعلياً |
+| الانطباق | — | "تجاري خاص" يُصنَّف بشكل صحيح "لا ينطبق" (موثّق للمشتريات الحكومية/شبه الحكومية فقط)؛ "شبه حكومي" يُصنَّف بشكل صحيح "ينطبق"، بنفس نطاق `ae-icv-general` | — |
+| `actionableNextStepForGccOriginTreatment` | — | تُرجِع `null` عندما تُحسم البوابة `false` — لا إجراء مُختلَق لمورّد غير مؤهَّل؛ تُرجِع `null` عند بيانات غير مكتملة حتى لو كان المعروف سيجتاز — لا ادعاء سابق لأوانه أبداً | — |
+| `assessAllApplicableLocalContentPrograms` | مورّد ينطبق عليه كل برامج الإمارات الثلاثة معاً (`ae-icv-general`، `ae-tawazun-offset`، `ae-gcc-origin-treatment`) يُرجِع ثلاثة مُدخلات مُكدَّسة منفصلة فعلياً، دون أي معدَّل | — | تظهر `actionableNextStep` الخاصة ببوابة الخليج داخل العرض المُكدَّس تماماً كما تظهر لبوابة سابك (٨.١٠)، مؤكدةً أن نمط الوظيفتين المزدوج يمتد بسلاسة إلى بوابة ثانية |
+| بنيوي/ازدواج لغوي | `PROGRAMS['ae-gcc-origin-treatment']` مربوط باتساق: دولة صحيحة، `mechanismType` صحيح، `applicableContexts` صحيحة، وكل من `sourceNoteEn`/`sourceNoteAr` يُتحقق من محتواه الفعلي (المادة ٣، المرسوم بقانون اتحادي رقم ١١ لسنة ٢٠٢٣)، وليس مجرد وجوده | — | — |
+
+### ٩.١٠ الواجهة — نموذج إدخال المنشأ الخليجي ولوحة النتائج، وفجوة تفاعل حقيقية بين الميزات رُصدت وأُصلحت أثناء فحص الجودة
+
+لم يحتج صف سؤال توجيه برنامج الإمارات القائم (٩.٦) أي منطق جديد — يظهر `ae-gcc-origin-treatment`
+ببساطة كزر ثالث في صف الإمارات الذي أصبح الآن ثلاثي البرامج فور وجوده في
+`PROGRAMS_BY_COUNTRY.AE`. نموذج الإدخال جديد: لافتة إفصاح صادق كهرمانية اللون (تطابق دلالات
+الألوان المُرساة بالفعل لإفصاح سابك عن ممارسته غير المعيارية، ٨.١٠، وملاحظة نقص توازن، ٩.٣) تذكر
+بوضوح، قبل حقلي الإدخال، أن هذا حق تعاهدي — وليس معياراً منشوراً ضمن منهجية تصديق ICV لدى الوزارة،
+ولا مؤكَّداً في نص المرسوم بقانون اتحادي رقم ١١ لسنة ٢٠٢٣ نفسه — تليها حقلا `NumberField` (القيمة
+المضافة داخل دول المجلس، ملكية مواطني المجلس)، يحمل كل منهما حدّ المادة ٣(١) الخاص به كتلميح. لوحة
+النتائج فرع عرض جديد (فرع البوابة الثاني بعد بوابة سابك، ٨.١٣): شارة مؤهَّل/غير مؤهَّل/غير مكتمل،
+كلا الرقمين معروضين مقابل حدّيهما، و— فقط عندما تُؤهِّل البوابة فعلياً بمدخلات مكتملة — نص
+`actionableNextStepForGccOriginTreatment` الجاهز للقرار في مربع مُبرَز. اكتسبت
+`hasMeaningfulResult` حالة `gcc-origin-national-treatment-gate`
+(`c.qualifiesAsGccNationalProduct !== null`)، فتعرض جهة جديدة تماماً تلميح "أدخل الأرقام أعلاه"
+القائم بدلاً من لوحة فارغة أو مضلِّلة — تطبيقاً استباقياً للنمط الذي أرسته انضباط فحص الجودة في هذه
+الوحدة بالفعل لكل آلية سابقة.
+
+**فجوة اتساق حقيقية بين الميزات رصدتها هذه المرحلة وأصلحتها، لا مجرد تسجيلها:** أثناء تتبع البُعد ٧
+من جولة فحص الجودة (التفاعل بين الميزات)، تبيّن أن `recommendLocalContentAction` — الدالة المشتركة
+للتوصية الأساسية والبديل التي تعرضها واجهة هذه الوحدة بالفعل بشكل عام لكل نوع آلية (القاعدة ٨) — لم
+تحتوِ على فرع لـ`gcc-origin-national-treatment-gate`، خلافاً لأقرب شقيقاتها بنيوياً، بوابة التزام
+سابك `commitment-deviation-gate` (٨.١٠)، التي تحمل كلاً من فرع في `recommendLocalContentAction`
+ودالة إجراء قابل للتنفيذ مخصصة خاصة بها. كان هذا تبايناً حقيقياً، وليس اختلاف تصميم مقبولاً: مورّد
+يُخفِق فعلياً في بوابة الخليج كان سيرى نتيجة مؤهَّل/غير مؤهَّل الخاصة بالآلية نفسها، لكن دون توصية
+أساسية وبديل في اللوحة العامة التي تعرضها بالفعل كل بوابة فاشلة أخرى في هذا الملف. أُصلح ذلك بإضافة
+فرع ثنائي اللغة — الأساسي: رفع القيمة المضافة الخليجية و/أو ملكية مواطني المجلس نحو حدود المادة
+٣(١)، مع اقتباس أرقام المورّد الحالية مباشرة (أو "لم تُدخَل بعد" عند غياب رقم، وليس رقماً مُختلَقاً
+أبداً)؛ البديل: متابعة مسار اعتماد ICV القياسي لدى الوزارة بدلاً من ذلك (`ae-icv-general`)، وهو أساس
+قانوني منفصل قد يظل هذا المورّد نفسه مؤهَّلاً له بناءً على محتواه المحلي الفعلي، دون الاعتماد على
+المطالبة التعاهدية التي يُفصِح إفصاح هذا البرنامج نفسه عن أنها لم تُؤكَّد كمفعّلة بعد — إلى جانب ٤
+اختبارات جديدة تؤكد أن الفرع لا يُفعَّل إلا عند `false` حقيقية (وليس أبداً عند `null` أو `true`)،
+وأن صياغة "لم تُدخَل بعد" هي المُستخدمة بدلاً من رقم مُخمَّن عند غياب مدخل واحد. إجمالي مجموعة
+الاختبارات: من ٢٧٢ إلى ٢٧٦ لهذا الملف، أُعيد التحقق من نجاحها قبل اعتبار الإصلاح مكتملاً.
+
+### ٩.١١ فحص QA 10/10 لمحاكاة تجربة العميل — فجوة حقيقية واحدة رُصدت وأُصلحت
+
+جرى السير كمستشار عقود مناقصات حكومية إماراتية يُقيِّم مُصنِّعاً مقرّه الإمارات يدّعي منشأً خليجياً
+لعطائه، بفتح تبويب الإمارات، واختيار برنامج المنشأ الخليجي الجديد، وإدخال أرقام تُخفِق البوابة أولاً
+ثم تُجيزها، وقراءة المسارين الإنجليزي والعربي لكل حالة.
+
+- **فجوة حقيقية رُصدت وأُصلحت:** لم تحتوِ `recommendLocalContentAction` (٩.١٠) على فرع لنوع البوابة
+  الجديد — فجوة اتساق حقيقية بموجب القاعدة ٨، وليست خطراً افتراضياً، رُصدت أثناء تتبع هذا البُعد
+  تحديداً (وليس افتراضاً من وجود دالة `actionableNextStep` الخاصة بالآلية وحدها)، وأُصلحت في المرحلة
+  نفسها مع ٤ اختبارات جديدة ومجموعة اختبارات أُعيد التحقق من نجاحها (من ٢٧٢ إلى ٢٧٦) قبل كتابة هذا
+  القسم.
+- **قابلية الاكتشاف:** يظهر البرنامج الجديد تماماً حيث ينظر مستخدم عائد بالفعل — صف توجيه برنامج
+  الإمارات القائم — دون صفحة أو تبويب جديد أو عنصر تحكم مخفي يجب اكتشافه.
+- **الصحة اللغوية الثنائية (إنجليزي + عربي):** يُقرأ كلا المسارين اللغويين بشكل مستقل للمعنى، وليس
+  فقط للتحقق النوعي البرمجي — لافتة الإفصاح الصادق، تلميحات الحدود، نص شارة مؤهَّل/غير مؤهَّل،
+  ومخرجات كل من `recommendLocalContentAction` و`actionableNextStepForGccOriginTreatment` بالعربية
+  عربية حقيقية وسليمة نحوياً مع توافق صحيح في الجنس والعدد، ليست أبداً نصاً بديلاً أو إعادة استخدام
+  للنص الإنجليزي؛ لم يعثر فحص مباشر للكود الجديد على أي أثر لترميز يونيكود مُهرَّب، وهو نفس الفحص
+  المُطبَّق في انضباط هذه الوحدة منذ ١٥ سبتمبر ٢٠٢٦.
+- **سلامة البيانات:** تم تتبع تغييرات استعادة الإدخال ونقاط استدعاء التقييم (٩.١٠) بقراءة المصدر
+  الفعلي، مؤكداً أن حقل `aeGccOrigin` الجديد وحده هو ما تقرؤه أو تكتبه هذه الإضافة — حقول كل برنامج
+  آخر محفوظة دون مساس، والإضافة تراكمية بحتة على `SupplierLocalContentInputs`.
+- **الحالات الحدّية:** تحل الحالة الفارغة (جهة جديدة تماماً، كلا الحقلين `null`) إلى تلميح "أدخل
+  الأرقام أعلاه" القائم عبر توسعة `hasMeaningfulResult` (٩.١٠)؛ تأكدت الحالة الحدّية (كلا المدخلين
+  عند حدود المادة ٣(١) بالضبط) عبر الاختبار الحدّي الآلي (٩.٩) بأنها تُحسم `true`، وليست سلبية
+  كاذبة؛ تأكدت حالة فقدان مدخل واحد بأنها تُحسم `false` (وليس `null`) كلما كان المدخل الآخر المعروف
+  وحده يُخفِق فعلاً — سلوك البوابة الخاص بها المُفصَح عنه في التقصير الحاسم، وليس افتراضاً في العرض.
+- **إمكانية الوصول:** لم يُدخَل أي عنصر تفاعلي جديد يتجاوز نمط `NumberField` القائم والمُستخدم بكثرة
+  في هذا الملف؛ لافتة الإفصاح ونص الإجراء القابل للتنفيذ عناصر ثابتة غير مرتبطة بالتحويم، فلم تُضِف
+  هذه الآلية أي خطر فخّ لوحة مفاتيح أو تلميح يعمل بالتحويم فقط.
+- **التفاعل بين الميزات:** هنا رُصدت الفجوة الحقيقية (أعلاه) — بتتبع البنية الكاملة الحالية لفروع
+  `recommendLocalContentAction` وعرض الواجهة العام لمخرجاتها، وليس افتراضاً من وجود دالة الإجراء
+  القابل للتنفيذ المخصصة للآلية وحدها. كما تم تتبع: تُكدِّس `assessAllApplicableLocalContentPrograms`
+  بشكل صحيح كل برامج الإمارات الثلاثة جنباً إلى جنب لمورّد ينطبق عليه الثلاثة معاً، دون أي معدَّل
+  لنتيجة بوابة الخليج في درجة `ae-icv-general` أبداً (٩.٩).
+- **الصدق (سجل القرار ٨.٧):** يظهر إفصاح المعاهدة مقابل المنهجية المحلية داخل الواجهة مباشرة، فوق
+  حقول الإدخال، وليس مدفوناً في حاشية أو حاضراً فقط في تعليقات الكود المصدري — لا يمكن لقارئ الوصول
+  إلى نموذج إدخال المنشأ الخليجي دون رؤية تحذير النطاق أولاً؛ فجوة استشهاد "المشتريات الحكومية" لدى
+  الهيئة العامة للتجارة الخارجية غير المحسومة، وفجوة تفعيل ICV المؤكدة لدى الوزارة، كلتاهما مُفصَح
+  عنهما في `sourceNoteEn`/`sourceNoteAr` الخاصة بالبرنامج (٩.٧)، دون تنعيمهما لجعل الآلية تبدو أكثر
+  موثوقية مما يدعمه توثيقها الفعلي.
+- **الاتساق البصري/النغمي:** تُعيد ألوان لافتة الإفصاح الجديدة وشارة مؤهَّل/غير مؤهَّل استخدام دلالات
+  الألوان القائمة في هذا الملف حرفياً (نمط الإفصاح الكهرماني نفسه المُستخدم بالفعل لملاحظة ممارسة
+  سابك غير المعيارية، ٨.١٠، وملاحظة نقص توازن، ٩.٣؛ نمط مؤهَّل/غير مؤهَّل الزمردي/الأحمر نفسه
+  المُستخدم بالفعل لبوابة أهلية الفئة، ٨.٣، وشارة بوابة سابك ضمن الحد/الخرق، ٨.١٣) بدلاً من تقديم
+  لغة بصرية جديدة منفردة.
 
 ---
 
