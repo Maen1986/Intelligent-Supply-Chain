@@ -62,6 +62,10 @@ import {
   actionableNextStepForSabicLcGate,
   SABIC_LC_DEVIATION_TOLERANCE_PCT,
   SABIC_LC_PENALTY_MAX_PCT_OF_CONTRACT_VALUE,
+  type GccOriginNationalTreatmentGateResult,
+  actionableNextStepForGccOriginTreatment,
+  GCC_ORIGIN_VALUE_ADDED_THRESHOLD_PCT,
+  GCC_ORIGIN_OWNERSHIP_THRESHOLD_PCT,
 } from './supplierLocalContentEligibility';
 
 // ===========================================================================
@@ -429,6 +433,135 @@ describe('AE / Tawazun Economic Program — offset-obligation-gate', () => {
     expect(groups).toHaveLength(1);
     expect(groups[0]!.mechanismType).toBe('offset-obligation-gate');
     expect(groups[0]!.totalShortfallPenaltyAED).toBeCloseTo(1_700_000 + 2_040_000, 0);
+  });
+});
+
+// ===========================================================================
+// AE — GCC Unified Economic Agreement Article 3 rules-of-origin gate
+// (new, 20 Sep 2026)
+// ===========================================================================
+
+describe('AE / GCC Unified Economic Agreement Article 3 — gcc-origin-national-treatment-gate', () => {
+  it('soft: realistic supplier comfortably clears both thresholds', () => {
+    const a = assessSupplierLocalContent('AE', 'government', { aeGccOrigin: { gccValueAddedPct: 65, gccCitizenOwnershipPct: 70 } }, 'ae-gcc-origin-treatment');
+    expect(a.applicability).toBe('applicable');
+    const c = a.computation as GccOriginNationalTreatmentGateResult;
+    expect(c.qualifiesAsGccNationalProduct).toBe(true);
+    expect(c.valueAddedThresholdPct).toBe(GCC_ORIGIN_VALUE_ADDED_THRESHOLD_PCT);
+    expect(c.ownershipThresholdPct).toBe(GCC_ORIGIN_OWNERSHIP_THRESHOLD_PCT);
+  });
+
+  it('soft: value-added known and passing, ownership not yet known -- insufficient data, never guessed true', () => {
+    const a = assessSupplierLocalContent('AE', 'government', { aeGccOrigin: { gccValueAddedPct: 55, gccCitizenOwnershipPct: null } }, 'ae-gcc-origin-treatment');
+    const c = a.computation as GccOriginNationalTreatmentGateResult;
+    expect(c.qualifiesAsGccNationalProduct).toBeNull();
+    expect(c.gccValueAddedPct).toBe(55);
+    expect(c.gccCitizenOwnershipPct).toBeNull();
+  });
+
+  it('hardest: value-added known to fail, ownership missing entirely -- still resolves false, not null (a known failure is decisive regardless of the other input)', () => {
+    const a = assessSupplierLocalContent('AE', 'government', { aeGccOrigin: { gccValueAddedPct: 15, gccCitizenOwnershipPct: null } }, 'ae-gcc-origin-treatment');
+    const c = a.computation as GccOriginNationalTreatmentGateResult;
+    expect(c.qualifiesAsGccNationalProduct).toBe(false);
+  });
+
+  it('hardest: ownership known to fail, value-added missing entirely -- same short-circuit, the other direction', () => {
+    const a = assessSupplierLocalContent('AE', 'government', { aeGccOrigin: { gccValueAddedPct: null, gccCitizenOwnershipPct: 20 } }, 'ae-gcc-origin-treatment');
+    const c = a.computation as GccOriginNationalTreatmentGateResult;
+    expect(c.qualifiesAsGccNationalProduct).toBe(false);
+  });
+
+  it('hardest: both well below threshold -- clean false, not a fabricated partial-credit score', () => {
+    const a = assessSupplierLocalContent('AE', 'government', { aeGccOrigin: { gccValueAddedPct: 10, gccCitizenOwnershipPct: 5 } }, 'ae-gcc-origin-treatment');
+    const c = a.computation as GccOriginNationalTreatmentGateResult;
+    expect(c.qualifiesAsGccNationalProduct).toBe(false);
+  });
+
+  it('boundary: value-added and ownership exactly AT the Article 3(1) thresholds qualify (>=, not >)', () => {
+    const a = assessSupplierLocalContent('AE', 'government', { aeGccOrigin: { gccValueAddedPct: GCC_ORIGIN_VALUE_ADDED_THRESHOLD_PCT, gccCitizenOwnershipPct: GCC_ORIGIN_OWNERSHIP_THRESHOLD_PCT } }, 'ae-gcc-origin-treatment');
+    const c = a.computation as GccOriginNationalTreatmentGateResult;
+    expect(c.qualifiesAsGccNationalProduct).toBe(true);
+  });
+
+  it('boundary: one point below each threshold fails both, confirming the >= boundary is real (not an off-by-one)', () => {
+    const a = assessSupplierLocalContent('AE', 'government', { aeGccOrigin: { gccValueAddedPct: GCC_ORIGIN_VALUE_ADDED_THRESHOLD_PCT - 1, gccCitizenOwnershipPct: GCC_ORIGIN_OWNERSHIP_THRESHOLD_PCT - 1 } }, 'ae-gcc-origin-treatment');
+    const c = a.computation as GccOriginNationalTreatmentGateResult;
+    expect(c.qualifiesAsGccNationalProduct).toBe(false);
+  });
+
+  it('boundary: value-added exactly at threshold but ownership one point short -- fails on the ownership leg alone (both conditions genuinely required together)', () => {
+    const a = assessSupplierLocalContent('AE', 'government', { aeGccOrigin: { gccValueAddedPct: GCC_ORIGIN_VALUE_ADDED_THRESHOLD_PCT, gccCitizenOwnershipPct: GCC_ORIGIN_OWNERSHIP_THRESHOLD_PCT - 1 } }, 'ae-gcc-origin-treatment');
+    const c = a.computation as GccOriginNationalTreatmentGateResult;
+    expect(c.qualifiesAsGccNationalProduct).toBe(false);
+  });
+
+  it('insufficient-data (at the input level, not applicability): no GCC-origin inputs supplied yet -- both null, distinct from a computed false', () => {
+    const a = assessSupplierLocalContent('AE', 'government', {}, 'ae-gcc-origin-treatment');
+    expect(a.applicability).toBe('applicable'); // applicability is about context, not input completeness -- same precedent as Tawazun above
+    const c = a.computation as GccOriginNationalTreatmentGateResult;
+    expect(c.gccValueAddedPct).toBeNull();
+    expect(c.gccCitizenOwnershipPct).toBeNull();
+    expect(c.qualifiesAsGccNationalProduct).toBeNull();
+  });
+
+  it('not-applicable: sourced only for government/semi-government-soe procurement, not private-commercial', () => {
+    const priv = assessSupplierLocalContent('AE', 'private-commercial', { aeGccOrigin: { gccValueAddedPct: 65, gccCitizenOwnershipPct: 70 } }, 'ae-gcc-origin-treatment');
+    expect(priv.applicability).toBe('not-applicable');
+    const soe = assessSupplierLocalContent('AE', 'semi-government-soe', { aeGccOrigin: { gccValueAddedPct: 65, gccCitizenOwnershipPct: 70 } }, 'ae-gcc-origin-treatment');
+    expect(soe.applicability).toBe('applicable');
+  });
+
+  it('reasonEn/reasonAr for the no-input case carry the same information (bilingual completeness)', () => {
+    const a = assessSupplierLocalContent('AE', 'government', {}, 'ae-gcc-origin-treatment');
+    expect(a.reasonEn).toContain('No GCC value-added/ownership inputs supplied yet');
+    expect(a.reasonAr).toContain('لم تُدخل بيانات القيمة المضافة الخليجية');
+  });
+
+  it('actionableNextStepForGccOriginTreatment: returns a real bilingual decision-ready action citing Article 1(b)/Article 3 and the disclosed MoIAT-operationalization gap when the gate qualifies', () => {
+    const a = assessSupplierLocalContent('AE', 'government', { aeGccOrigin: { gccValueAddedPct: 65, gccCitizenOwnershipPct: 70 } }, 'ae-gcc-origin-treatment');
+    const step = actionableNextStepForGccOriginTreatment(a.computation as GccOriginNationalTreatmentGateResult);
+    expect(step).not.toBeNull();
+    expect(step!.en).toContain('Article 3');
+    expect(step!.en).toContain('Article 1(b)');
+    expect(step!.en).toContain('MoIAT');
+    expect(step!.ar).toContain('المادة ٣');
+    expect(step!.ar).toContain('المادة ١(ب)');
+  });
+
+  it('actionableNextStepForGccOriginTreatment: returns null when the gate resolves false -- no action manufactured for a supplier that does not qualify', () => {
+    const a = assessSupplierLocalContent('AE', 'government', { aeGccOrigin: { gccValueAddedPct: 10, gccCitizenOwnershipPct: 5 } }, 'ae-gcc-origin-treatment');
+    expect(actionableNextStepForGccOriginTreatment(a.computation as GccOriginNationalTreatmentGateResult)).toBeNull();
+  });
+
+  it('actionableNextStepForGccOriginTreatment: returns null when inputs are incomplete, even if what is known would pass -- never a premature claim', () => {
+    const a = assessSupplierLocalContent('AE', 'government', { aeGccOrigin: { gccValueAddedPct: 65, gccCitizenOwnershipPct: null } }, 'ae-gcc-origin-treatment');
+    expect(actionableNextStepForGccOriginTreatment(a.computation as GccOriginNationalTreatmentGateResult)).toBeNull();
+  });
+
+  it('assessAllApplicableLocalContentPrograms: AE now stacks all three genuinely different programs, and surfaces the GCC gate\'s actionable step inside the stacked view exactly like the SABIC gate does', () => {
+    const stacked = assessAllApplicableLocalContentPrograms('AE', 'government', {
+      ae: { manufacturingOrThirdPartySpendLocalAED: null, manufacturingOrThirdPartySpendTotalAED: null, investmentNBVLocalAED: null, investmentNBVTotalAED: null, emiratisationAnnualSpendAED: null, expatriateHeadcount: null, exportRevenueAED: null, emiratiHeadcountGrowthPct: null, investmentGrowthPct: null, registeredOnMainland: null },
+      aeTawazun: { contractValueAED: 50_000_000, offsetCreditsEarnedAED: 10_000_000 },
+      aeGccOrigin: { gccValueAddedPct: 65, gccCitizenOwnershipPct: 70 },
+    });
+    const programs = stacked.map(s => s.program);
+    expect(programs).toContain('ae-icv-general');
+    expect(programs).toContain('ae-tawazun-offset');
+    expect(programs).toContain('ae-gcc-origin-treatment');
+    expect(stacked).toHaveLength(3); // all three genuinely applicable to 'government', none averaged together
+    const gccEntry = stacked.find(s => s.program === 'ae-gcc-origin-treatment')!;
+    expect(gccEntry.actionableNextStep).not.toBeNull();
+    expect(gccEntry.actionableNextStep!.en).toContain('Article 3');
+  });
+
+  it('PROGRAMS[\'ae-gcc-origin-treatment\'] is wired consistently: correct country, mechanismType, and applicableContexts', () => {
+    const framework = PROGRAMS['ae-gcc-origin-treatment'];
+    expect(framework.country).toBe('AE');
+    expect(framework.mechanismType).toBe('gcc-origin-national-treatment-gate');
+    expect(framework.applicableContexts).toEqual(['government', 'semi-government-soe']);
+    expect(framework.sourceNoteEn).toContain('Article 3');
+    expect(framework.sourceNoteEn).toContain('Federal Decree-Law No. 11 of 2023');
+    expect(framework.sourceNoteAr).toContain('المادة ٣');
   });
 });
 
@@ -1603,9 +1736,9 @@ describe('SA — program routing default', () => {
     });
   });
 
-  it('PROGRAMS_BY_COUNTRY lists every program per country (SA: 9 -- +3 on 18 Sep 2026: Rawafed/SABIC/Tharwah -- AE: 2, JO: 2, OM: 3, QA: 2, BH: 3, KW: 2, EG: 3, TR: 2, UK: 1, USA: 4, CN: 4)', () => {
+  it('PROGRAMS_BY_COUNTRY lists every program per country (SA: 9 -- +3 on 18 Sep 2026: Rawafed/SABIC/Tharwah -- AE: 3 -- +1 on 20 Sep 2026: GCC origin treatment -- JO: 2, OM: 3, QA: 2, BH: 3, KW: 2, EG: 3, TR: 2, UK: 1, USA: 4, CN: 4)', () => {
     expect(PROGRAMS_BY_COUNTRY.SA).toHaveLength(9);
-    expect(PROGRAMS_BY_COUNTRY.AE).toHaveLength(2);
+    expect(PROGRAMS_BY_COUNTRY.AE).toHaveLength(3);
     expect(PROGRAMS_BY_COUNTRY.JO).toHaveLength(2);
     expect(PROGRAMS_BY_COUNTRY.OM).toHaveLength(3);
     expect(PROGRAMS_BY_COUNTRY.QA).toHaveLength(2);

@@ -40,7 +40,15 @@
  *     genuinely different body for a genuinely different buyer, not a
  *     variant of the general ICV score). See Section "AE Tawazun sourcing"
  *     below for the exact figures and how this research pass resolved the
- *     brief's own flagged "$10M vs AED10M" ambiguity.
+ *     brief's own flagged "$10M vs AED10M" ambiguity. A 20 Sep 2026 pass
+ *     added a THIRD AE program, `ae-gcc-origin-treatment` -- a genuinely
+ *     different legal basis again (the GCC Unified Economic Agreement's own
+ *     Article 3 rules-of-origin eligibility gate for GCC-origin products,
+ *     not a MoIAT certification), sourced with an explicitly disclosed gap:
+ *     the treaty entitles a qualifying GCC-origin product to the same
+ *     treatment as a UAE national product, but neither MoIAT's ICV
+ *     methodology nor UAE Federal Law No. 11 of 2023's own text confirms
+ *     that entitlement is actually operationalized as an ICV score uplift.
  *   - Jordan: NOT a scored certificate at all -- a 20% PRICE PREFERENCE
  *     MARGIN for locally-manufactured products in PUBLIC TENDERS only
  *     (Cabinet-approved, per Petra/Jordan News Agency reporting Minister of
@@ -437,6 +445,7 @@ export type LocalContentProgram =
   | 'sa-tharwah-maaden'   // SA type 6 (new, 18 Sep 2026): Ma'aden's real, named "Tharwah" local content program (confirmed via maaden.com/tharwah and press coverage) -- not-yet-sourced: no public per-supplier computable formula found, unlike stc's Rawafed
   | 'ae-icv-general'      // AE type 1: certification score (the module's original mechanism)
   | 'ae-tawazun-offset'   // AE type 6: offset/tech-transfer obligation (Tawazun Economic Council, real formula)
+  | 'ae-gcc-origin-treatment' // AE type 3-ish (new, 20 Sep 2026): GCC Unified Economic Agreement Article 3 rules-of-origin eligibility gate -- a treaty-level "national treatment" entitlement for GCC-origin products, genuinely different legal basis from MoIAT's ICV certification, with an explicitly disclosed gap between the treaty right and confirmed UAE domestic operationalization
   | 'jo-price-preference' // JO type 4: bid-evaluation price preference (the module's original mechanism)
   | 'jo-contractor-quota' // JO type 5 (new, 15 Sep 2026): international-tender contractor quota, real Cabinet decision
   | 'om-icv'              // OM: not-yet-sourced (the module's original mechanism -- general national ICV formula)
@@ -496,7 +505,7 @@ export const DEFAULT_PROGRAM_BY_COUNTRY: Record<LocalContentCountry, LocalConten
  * longer an SA/AE-only UI affordance. */
 export const PROGRAMS_BY_COUNTRY: Record<LocalContentCountry, LocalContentProgram[]> = {
   SA: ['sa-lcgpa-general', 'sa-mandatory-list', 'sa-price-preference', 'sa-iktva-aramco', 'sa-gami-defense', 'sa-likt', 'sa-rawafed-stc', 'sa-sabic-lc-commitment', 'sa-tharwah-maaden'],
-  AE: ['ae-icv-general', 'ae-tawazun-offset'],
+  AE: ['ae-icv-general', 'ae-tawazun-offset', 'ae-gcc-origin-treatment'],
   JO: ['jo-price-preference', 'jo-contractor-quota'],
   OM: ['om-icv', 'om-mandatory-list', 'om-oq-price-preference'],
   QA: ['qa-national-strategy', 'qa-icv-tawteen'],
@@ -538,6 +547,7 @@ export type LocalContentMechanismType =
   | 'spend-set-aside-target'    // (new, 15 Sep 2026) Jordan contractor quota; Bahrain SME allocation; Kuwait KPC local spend -- a sourced NATIONAL/PROGRAM target share plus this supplier's own qualification for it, not a per-bid score
   | 'modified-icv-score'        // (new, 15 Sep 2026) Qatar Tawteen/ICV -- eligible-spend-ratio base score plus real sourced modifiers (ICV+ manufacturer boost, micro/small blanket floor, capped strategic-behavior bonus)
   | 'commitment-deviation-gate' // (new, 18 Sep 2026) SABIC per-contract local-content commitment gate -- a covenant-compliance check against a per-contract negotiated target, NOT a published SABIC-wide standard (see PROGRAMS['sa-sabic-lc-commitment'].sourceNoteEn)
+  | 'gcc-origin-national-treatment-gate' // (new, 20 Sep 2026) UAE GCC Unified Economic Agreement Article 3 rules-of-origin eligibility gate -- see PROGRAMS['ae-gcc-origin-treatment'].sourceNoteEn for the full sourcing and the disclosed treaty-vs-operationalization gap
   | 'not-yet-sourced';          // Oman general ICV / Qatar National Local Content Strategy / Bahrain general framework / Kuwait general framework; Saudi GAMI / LIKT
 
 export interface CountryFrameworkInfo {
@@ -654,7 +664,7 @@ const SA_PROGRAMS: Record<'sa-lcgpa-general' | 'sa-mandatory-list' | 'sa-price-p
 // file header's "AE TAWAZUN SOURCING" section for the full sourcing.
 // ---------------------------------------------------------------------------
 
-const AE_PROGRAMS: Record<'ae-icv-general' | 'ae-tawazun-offset', CountryFrameworkInfo> = {
+const AE_PROGRAMS: Record<'ae-icv-general' | 'ae-tawazun-offset' | 'ae-gcc-origin-treatment', CountryFrameworkInfo> = {
   'ae-icv-general': {
     country: 'AE', countryNameEn: 'United Arab Emirates', countryNameAr: 'دولة الإمارات العربية المتحدة',
     programNameEn: 'National In-Country Value (ICV)', programNameAr: 'برنامج القيمة الوطنية المضافة (ICV)',
@@ -676,6 +686,14 @@ const AE_PROGRAMS: Record<'ae-icv-general' | 'ae-tawazun-offset', CountryFramewo
     applicableContexts: ['government'],
     sourceNoteEn: 'The Tawazun Economic Council\'s 2019 policy guidelines (per afridi-angell.com, mondaq.com legal summaries, and the US government\'s own trade.gov UAE Defense Country Commercial Guide, none flagging a more recent revision): offset obligations trigger on UAE Armed Forces / Abu Dhabi Police defense contracts valued at or above USD 10 million (= AED 36.73 million at the UAE\'s fixed USD peg of 3.6725 -- the SAME threshold in two currencies, resolving a currency-citation ambiguity flagged in this module\'s original brief). The required offset-credit target is 60% of the underlying contract value; a shortfall at the end of the performance period can be settled by paying 8.5% of the shortfall value (or rolling the obligation into a new project) -- contractors also post a bank guarantee of 8.5% of their offset obligation to secure performance. This is Tawazun\'s own separate defense-sector program, run by a different body for a different buyer (UAE Armed Forces / Abu Dhabi Police, via the Tawazun Economic Council) than MoIAT\'s general ICV program -- a genuinely distinct mechanism, not a variant of the ICV score.',
     sourceNoteAr: 'إرشادات السياسة الصادرة عن مجلس توازن الاقتصادي عام ٢٠١٩ (وفق ملخصات قانونية من afridi-angell.com وmondaq.com، ودليل الحكومة الأمريكية الرسمي لقطاع الدفاع الإماراتي على trade.gov، دون أن يشير أي منها إلى تحديث أحدث): تُستحق التزامات المقاصة على عقود القوات المسلحة الإماراتية/شرطة أبوظبي الدفاعية التي تبلغ قيمتها ١٠ ملايين دولار أمريكي أو أكثر (= ٣٦.٧٣ مليون درهم إماراتي وفق سعر الصرف الثابت للدرهم عند ٣.٦٧٢٥ -- وهو نفس الحد بعملتين، مما يحسم غموضاً في الاستشهاد بالعملة أشار إليه الموجز الأصلي لهذه الوحدة). الهدف المطلوب من ائتمانات المقاصة هو ٦٠٪ من قيمة العقد الأساسي؛ ويمكن تسوية أي نقص في نهاية فترة الأداء بدفع ٨.٥٪ من قيمة النقص (أو ترحيل الالتزام إلى مشروع جديد) -- كما يقدّم المقاولون ضماناً بنكياً بنسبة ٨.٥٪ من التزامهم بالمقاصة لضمان الأداء. هذا برنامج توازن الدفاعي الخاص، تديره جهة مختلفة لمشترٍ مختلف (القوات المسلحة الإماراتية/شرطة أبوظبي، عبر مجلس توازن الاقتصادي) عن برنامج ICV العام لدى وزارة الصناعة -- آلية مختلفة فعلاً، وليست نسخة من درجة ICV.',
+  },
+  'ae-gcc-origin-treatment': {
+    country: 'AE', countryNameEn: 'United Arab Emirates', countryNameAr: 'دولة الإمارات العربية المتحدة',
+    programNameEn: 'GCC Unified Economic Agreement -- National Treatment (Art. 3 Rules of Origin)', programNameAr: 'الاتفاقية الاقتصادية الموحدة لدول مجلس التعاون -- المعاملة الوطنية (قواعد المنشأ، المادة ٣)',
+    mechanismType: 'gcc-origin-national-treatment-gate', program: 'ae-gcc-origin-treatment',
+    applicableContexts: ['government', 'semi-government-soe'],
+    sourceNoteEn: "The GCC Unified Economic Agreement (in force since 1 Jan 1983, still the region's founding economic-integration treaty; see gaft.gov.sa's own summary and the agreement's UNCTAD-archived text) is a genuinely different legal basis from MoIAT's ICV program above -- a Gulf-wide treaty right, not a UAE domestic certification scheme. Article 1(b) states that GCC-origin agricultural, animal, industrial, and natural-resource products \"shall receive the same treatment as national products\"; Article 3(1) sets the real, sourced rules-of-origin test for a product to qualify as a \"national manufactured product\" under the Agreement: GCC in-region value-added of at least 40% of the product's final value, AND GCC-citizen ownership of at least 51% of the producing plant -- both conditions required together. Saudi Arabia's own General Authority of Foreign Trade (gaft.gov.sa) separately summarizes one of the Agreement's advantages as giving GCC entities \"the same privileges as citizens in government procurement\" -- a real claim from a GCC-government source, though this research pass could not independently confirm that specific wording against a numbered article of the Agreement's own text (Article 8, the Agreement's general national-treatment article, covers work, residence, ownership, and economic activity broadly, but does not use the words \"government procurement\" itself -- disclosed as an open citation gap, not resolved by assumption). Separately and more materially: neither MoIAT's own ICV program page/kit nor the UAE's Federal Decree-Law No. 11 of 2023 on Procurement in the Federal Government (Articles 13(2)/22(2), which govern \"national products\"/\"locally produced\" preferences) mentions GCC-origin treatment at all -- a real, disclosed gap between what the regional treaty entitles a GCC-origin supplier to, and what UAE's own certifying body and domestic procurement law text confirm is actually applied. This program therefore models the Article 3 rules-of-origin eligibility test itself (a real, computable, sourced gate) while disclosing, not assuming, that qualifying under it is a treaty-level entitlement a supplier could assert -- not a confirmed uplift to an actual MoIAT ICV score or a guaranteed procurement outcome.",
+    sourceNoteAr: 'الاتفاقية الاقتصادية الموحدة لدول مجلس التعاون الخليجي (سارية المفعول منذ ١ يناير ١٩٨٣، ولا تزال المعاهدة التأسيسية للتكامل الاقتصادي الخليجي؛ انظر ملخص الهيئة العامة للتجارة الخارجية السعودية gaft.gov.sa والنص المؤرشف لدى الأونكتاد) أساس قانوني مختلف فعلياً عن برنامج ICV التابع لوزارة الصناعة أعلاه -- حق تعاهدي خليجي جماعي، وليس نظام تصديق إماراتي محلي. تنص المادة ١(ب) على أن المنتجات الزراعية والحيوانية والصناعية ومنتجات الثروات الطبيعية ذات المنشأ الخليجي "تُعامَل معاملة المنتجات الوطنية"؛ وتحدد المادة ٣(١) اختبار قواعد المنشأ الحقيقي والموثّق لكي يُعَدّ المنتج "منتجاً وطنياً مصنَّعاً" بموجب الاتفاقية: قيمة مضافة خليجية لا تقل عن ٤٠٪ من القيمة النهائية للمنتج، مع ملكية مواطني دول المجلس لما لا يقل عن ٥١٪ من منشأة الإنتاج -- الشرطان معاً مطلوبان. تُلخِّص الهيئة العامة للتجارة الخارجية السعودية (gaft.gov.sa) بشكل منفصل إحدى مزايا الاتفاقية بمنح الجهات الخليجية "نفس امتيازات المواطنين في المشتريات الحكومية" -- ادعاء حقيقي من مصدر حكومي خليجي، إلا أن هذا البحث لم يتمكن من تأكيد هذه الصياغة تحديداً مقابل مادة مرقّمة في نص الاتفاقية نفسها (تغطي المادة ٨، مادة المعاملة الوطنية العامة في الاتفاقية، العمل والإقامة والتملك والنشاط الاقتصادي بشكل عام، دون استخدام عبارة "المشتريات الحكومية" حرفياً -- يُفصَح عن هذه الفجوة في الاستشهاد دون حسمها بافتراض). والأهم على نحو منفصل: لا تذكر صفحة/حقيبة برنامج ICV الرسمية التابعة لوزارة الصناعة، ولا المرسوم بقانون اتحادي رقم ١١ لسنة ٢٠٢٣ بشأن المشتريات في الحكومة الاتحادية (المادتان ١٣(٢)/٢٢(٢) اللتان تحكمان تفضيلات "المنتجات الوطنية"/"المنتجة محلياً")، أي معاملة خاصة بالمنشأ الخليجي على الإطلاق -- فجوة حقيقية ومُفصَح عنها بين ما تخوّله المعاهدة الإقليمية لمورّد ذي منشأ خليجي، وما تؤكده الجهة المصدِّقة الإماراتية ونص قانون المشتريات المحلي فعلياً. لذا تُنمذِج هذه الآلية اختبار أهلية قواعد المنشأ بموجب المادة ٣ نفسه (بوابة حقيقية قابلة للحساب وموثّقة) مع الإفصاح -- لا الافتراض -- بأن استيفاءه حق تعاهدي يمكن للمورّد الاستناد إليه، وليس رفعاً مؤكداً لدرجة ICV فعلية لدى الوزارة أو ضماناً لنتيجة مشتريات معينة.',
   },
 };
 
@@ -1171,6 +1189,19 @@ export interface SupplierLocalContentInputs {
      * (e.g. early in the contract, before any offset activity). */
     offsetCreditsEarnedAED: number | null;
   };
+  /** GCC Unified Economic Agreement Article 3 rules-of-origin inputs (AE /
+   * 'ae-gcc-origin-treatment', new 20 Sep 2026) -- see PROGRAMS[
+   * 'ae-gcc-origin-treatment'].sourceNoteEn for the full sourcing. Both
+   * conditions of Article 3(1) are required together; neither is a
+   * proxy/derivable from the other. */
+  aeGccOrigin?: {
+    /** % of the product's final value added through production within GCC
+     * member states (Article 3(1)'s 40% threshold). */
+    gccValueAddedPct: number | null;
+    /** % ownership of the producing plant held by GCC member-state
+     * citizens (Article 3(1)'s 51% threshold). */
+    gccCitizenOwnershipPct: number | null;
+  };
   /** Jordan price-preference mechanism -- % of this bid's value that is
    * Jordanian-manufactured (self-reported, caller-supplied). */
   jo?: {
@@ -1443,6 +1474,27 @@ export interface OffsetObligationGateResult {
   shortfallPenaltyAED: number | null;
 }
 
+/** (New, 20 Sep 2026) GCC Unified Economic Agreement Article 3 rules-of-
+ * origin eligibility gate for UAE -- see PROGRAMS['ae-gcc-origin-treatment']
+ * .sourceNoteEn for the full sourcing and the disclosed gap between this
+ * treaty entitlement and MoIAT's own confirmed ICV methodology. */
+export interface GccOriginNationalTreatmentGateResult {
+  mechanismType: 'gcc-origin-national-treatment-gate';
+  gccValueAddedPct: number | null;
+  gccCitizenOwnershipPct: number | null;
+  /** The Agreement's own disclosed Article 3(1) thresholds -- 40 and 51. */
+  valueAddedThresholdPct: number;
+  ownershipThresholdPct: number;
+  /** true = both thresholds met (qualifies as a "national manufactured
+   * product" under Article 3, entitled to Article 1(b) national
+   * treatment); false = at least one threshold is known and not met
+   * (short-circuits even if the other input is still missing, the same
+   * "a known failure is decisive" precedent as CategoryEligibilityGateResult
+   * .eligibleToBid); null = neither known value has failed, but at least
+   * one input is still missing. */
+  qualifiesAsGccNationalProduct: boolean | null;
+}
+
 /** (New, 18 Sep 2026) SABIC per-contract local-content commitment gate --
  * a covenant-compliance check against THIS contract's own negotiated
  * target, not a national program score or a fixed company-wide rate (see
@@ -1533,6 +1585,7 @@ export type LocalContentComputation =
   | SpendSetAsideResult
   | ModifiedIcvScoreResult
   | CommitmentDeviationGateResult
+  | GccOriginNationalTreatmentGateResult
   | NotYetSourcedResult;
 
 export type LocalContentApplicability = 'applicable' | 'not-applicable' | 'insufficient-data';
@@ -1850,6 +1903,59 @@ function computeTawazunOffset(input: NonNullable<SupplierLocalContentInputs['aeT
     mechanismType: 'offset-obligation-gate',
     triggersObligation, thresholdAED: TAWAZUN_OFFSET_THRESHOLD_AED,
     requiredOffsetCreditsAED, offsetCreditsEarnedAED: earned, shortfallAED, shortfallPenaltyAED,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Section 5c — AE: GCC Unified Economic Agreement Article 3 rules-of-origin
+// eligibility gate (new, 20 Sep 2026). See PROGRAMS['ae-gcc-origin-
+// treatment'].sourceNoteEn for the full sourcing and the disclosed gap
+// between this treaty entitlement and MoIAT's own confirmed ICV
+// methodology -- this mechanism computes real, sourced Article 3(1)
+// eligibility; it does NOT modify or feed into computeIcvAe's score.
+// ---------------------------------------------------------------------------
+
+/** Article 3(1)'s own disclosed thresholds -- these are the treaty's real,
+ * published figures, not a platform business-rule default (contrast with
+ * SABIC_LC_DEVIATION_TOLERANCE_PCT above, which IS a platform default). */
+export const GCC_ORIGIN_VALUE_ADDED_THRESHOLD_PCT = 40;
+export const GCC_ORIGIN_OWNERSHIP_THRESHOLD_PCT = 51;
+
+function computeGccOriginNationalTreatmentGate(input: NonNullable<SupplierLocalContentInputs['aeGccOrigin']>): GccOriginNationalTreatmentGateResult {
+  const valueAdded = input.gccValueAddedPct ?? null;
+  const ownership = input.gccCitizenOwnershipPct ?? null;
+  const valueAddedFails = valueAdded !== null && valueAdded < GCC_ORIGIN_VALUE_ADDED_THRESHOLD_PCT;
+  const ownershipFails = ownership !== null && ownership < GCC_ORIGIN_OWNERSHIP_THRESHOLD_PCT;
+  let qualifies: boolean | null;
+  if (valueAddedFails || ownershipFails) {
+    qualifies = false; // a known failure on either threshold is decisive, regardless of the other input
+  } else if (valueAdded === null || ownership === null) {
+    qualifies = null; // neither known value has failed, but at least one input is still missing
+  } else {
+    qualifies = true; // both known and both meet their threshold
+  }
+  return {
+    mechanismType: 'gcc-origin-national-treatment-gate',
+    gccValueAddedPct: valueAdded, gccCitizenOwnershipPct: ownership,
+    valueAddedThresholdPct: GCC_ORIGIN_VALUE_ADDED_THRESHOLD_PCT, ownershipThresholdPct: GCC_ORIGIN_OWNERSHIP_THRESHOLD_PCT,
+    qualifiesAsGccNationalProduct: qualifies,
+  };
+}
+
+/** Decision-ready output (isc-ai-output-standards rule 3) for a supplier
+ * that qualifies under the Agreement's Article 3 rules-of-origin test --
+ * states the treaty basis AND the disclosed gap (Decision Record 8.7) that
+ * MoIAT's own ICV methodology does not confirm this translates into an
+ * actual score uplift. Returns null when the gate does not (yet) resolve
+ * to true, the same "no fabricated filler" precedent as
+ * actionableNextStepForSabicLcGate above. */
+export function actionableNextStepForGccOriginTreatment(c: GccOriginNationalTreatmentGateResult): { en: string; ar: string } | null {
+  if (c.qualifiesAsGccNationalProduct !== true || c.gccValueAddedPct === null || c.gccCitizenOwnershipPct === null) return null;
+  const valueAddedPct = c.gccValueAddedPct;
+  const ownershipPct = c.gccCitizenOwnershipPct;
+  return {
+    en: `This product qualifies as a GCC "national manufactured product" under Article 3 of the GCC Unified Economic Agreement (${valueAddedPct.toFixed(1)}% GCC value-added, ${ownershipPct.toFixed(1)}% GCC-citizen ownership -- both above the Agreement's ${c.valueAddedThresholdPct}%/${c.ownershipThresholdPct}% thresholds), entitling it under Article 1(b) to the same treatment as a UAE national product. Cite this treaty basis explicitly to the procuring entity -- but do not assume it is applied automatically: neither MoIAT's ICV certification methodology nor UAE Federal Law No. 11 of 2023's own text confirms this treaty right is operationalized as an ICV score uplift, so raise it as a distinct claim alongside (not folded into) this supplier's actual MoIAT ICV certificate.`,
+    ar: `يستوفي هذا المنتج شرط "المنتج الوطني المصنَّع" الخليجي بموجب المادة ٣ من الاتفاقية الاقتصادية الموحدة لدول مجلس التعاون (قيمة مضافة خليجية ${valueAddedPct.toFixed(1)}٪، وملكية مواطني دول المجلس ${ownershipPct.toFixed(1)}٪ -- كلتاهما أعلى من حدّي الاتفاقية ${c.valueAddedThresholdPct}٪/${c.ownershipThresholdPct}٪)، ما يخوّله بموجب المادة ١(ب) معاملة المنتج الوطني الإماراتي نفسها. استشهد بهذا الأساس التعاهدي صراحة أمام الجهة المشترية -- لكن لا تفترض تطبيقه تلقائياً: فلا منهجية تصديق ICV لدى وزارة الصناعة ولا نص القانون الاتحادي رقم ١١ لسنة ٢٠٢٣ يؤكدان تفعيل هذا الحق التعاهدي كرفع فعلي لدرجة ICV، فارفعه كمطالبة مستقلة إلى جانب شهادة ICV الفعلية لهذا المورّد لدى الوزارة، لا كجزء مدمج فيها.`,
   };
 }
 
@@ -2258,6 +2364,11 @@ export function assessSupplierLocalContent(
       return { country, program: resolvedProgram, procurementContext, applicability: 'applicable', framework, computation: { mechanismType: 'offset-obligation-gate', triggersObligation: null, thresholdAED: TAWAZUN_OFFSET_THRESHOLD_AED, requiredOffsetCreditsAED: null, offsetCreditsEarnedAED: null, shortfallAED: null, shortfallPenaltyAED: null }, certificationCaveatEn: NOT_CERTIFIED_EN, certificationCaveatAr: NOT_CERTIFIED_AR, reasonEn: 'No Tawazun contract-value inputs supplied yet.', reasonAr: 'لم تُدخل بيانات قيمة العقد الخاصة بتوازن بعد.' };
     }
     computation = computeTawazunOffset(inputs.aeTawazun);
+  } else if (resolvedProgram === 'ae-gcc-origin-treatment') {
+    if (!inputs.aeGccOrigin) {
+      return { country, program: resolvedProgram, procurementContext, applicability: 'applicable', framework, computation: { mechanismType: 'gcc-origin-national-treatment-gate', gccValueAddedPct: null, gccCitizenOwnershipPct: null, valueAddedThresholdPct: GCC_ORIGIN_VALUE_ADDED_THRESHOLD_PCT, ownershipThresholdPct: GCC_ORIGIN_OWNERSHIP_THRESHOLD_PCT, qualifiesAsGccNationalProduct: null }, certificationCaveatEn: NOT_CERTIFIED_EN, certificationCaveatAr: NOT_CERTIFIED_AR, reasonEn: 'No GCC value-added/ownership inputs supplied yet.', reasonAr: 'لم تُدخل بيانات القيمة المضافة الخليجية أو نسبة الملكية بعد.' };
+    }
+    computation = computeGccOriginNationalTreatmentGate(inputs.aeGccOrigin);
   } else if (resolvedProgram === 'jo-price-preference') {
     if (!inputs.jo) {
       return { country, program: resolvedProgram, procurementContext, applicability: 'applicable', framework, computation: { mechanismType: 'price-preference-margin', preferenceMarginPct: JORDAN_PRICE_PREFERENCE_MARGIN_PCT, locallyManufacturedSharePct: null, effectiveBidDiscountPct: null }, certificationCaveatEn: NOT_CERTIFIED_EN, certificationCaveatAr: NOT_CERTIFIED_AR, reasonEn: 'No Jordan locally-manufactured bid share supplied yet.', reasonAr: 'لم تُدخل نسبة التصنيع المحلي في العطاء بعد.' };
@@ -2686,6 +2797,8 @@ export function assessAllApplicableLocalContentPrograms(
     if (assessment.applicability === 'not-applicable') continue;
     const actionableNextStep = assessment.computation && assessment.computation.mechanismType === 'commitment-deviation-gate'
       ? actionableNextStepForSabicLcGate(assessment.computation)
+      : assessment.computation && assessment.computation.mechanismType === 'gcc-origin-national-treatment-gate'
+      ? actionableNextStepForGccOriginTreatment(assessment.computation)
       : null;
     result.push({ program, assessment, actionableNextStep });
   }
