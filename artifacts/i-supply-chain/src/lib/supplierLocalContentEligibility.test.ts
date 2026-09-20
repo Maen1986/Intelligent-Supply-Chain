@@ -1767,12 +1767,12 @@ describe('SA — program routing default', () => {
     });
   });
 
-  it('PROGRAMS_BY_COUNTRY lists every program per country (SA: 9 -- +3 on 18 Sep 2026: Rawafed/SABIC/Tharwah -- AE: 3 -- +1 on 20 Sep 2026: GCC origin treatment -- JO: 2, OM: 3, QA: 2, BH: 3, KW: 2, EG: 3, TR: 2, UK: 1, USA: 4, CN: 4)', () => {
+  it('PROGRAMS_BY_COUNTRY lists every program per country (SA: 9 -- +3 on 18 Sep 2026: Rawafed/SABIC/Tharwah -- AE: 3 -- +1 on 20 Sep 2026: GCC origin treatment -- QA: 3 -- +1 on 20 Sep 2026: Tenders Law ICV consideration -- JO: 2, OM: 3, BH: 3, KW: 2, EG: 3, TR: 2, UK: 1, USA: 4, CN: 4)', () => {
     expect(PROGRAMS_BY_COUNTRY.SA).toHaveLength(9);
     expect(PROGRAMS_BY_COUNTRY.AE).toHaveLength(3);
     expect(PROGRAMS_BY_COUNTRY.JO).toHaveLength(2);
     expect(PROGRAMS_BY_COUNTRY.OM).toHaveLength(3);
-    expect(PROGRAMS_BY_COUNTRY.QA).toHaveLength(2);
+    expect(PROGRAMS_BY_COUNTRY.QA).toHaveLength(3);
     expect(PROGRAMS_BY_COUNTRY.BH).toHaveLength(3);
     expect(PROGRAMS_BY_COUNTRY.KW).toHaveLength(2);
     expect(PROGRAMS_BY_COUNTRY.EG).toHaveLength(3);
@@ -2063,6 +2063,102 @@ describe('SA / stc Rawafed — eligible-spend-ratio (reused, real LCGPA-approved
     expect(fw.sourceNoteAr).toContain('LCGPA');
     expect(fw.mechanismType).toBe('eligible-spend-ratio');
     expect(fw.sourceNoteEn).not.toEqual(PROGRAMS['sa-lcgpa-general'].sourceNoteEn);
+  });
+});
+
+// ===========================================================================
+// QA — Tenders Law ICV Consideration (eligible-spend-ratio, reused with a
+// SINGLE combined pillar -- Tenders and Auctions Law Executive Regulations
+// Arts. 2-3, 20 Sep 2026). A genuinely different, cross-government legal
+// basis from icv.qa's energy-sector-specific program above -- see
+// PROGRAMS['qa-tenders-icv'].sourceNoteEn for the full sourcing, including
+// the disclosed absence of a published Article 3 weighting/threshold and
+// the explicit rejection of the uncorroborated Pinsent Masons 30% claim.
+// ===========================================================================
+
+describe('QA / Tenders Law ICV Consideration — eligible-spend-ratio (reused, single combined pillar)', () => {
+  it('soft: a realistic self-certified local-value plan against total contract value produces the correct directional ratio', () => {
+    const inputs: SupplierLocalContentInputs = {
+      qaTendersIcv: { localValueQAR: 3_500_000, totalContractValueQAR: 10_000_000 },
+    };
+    const a = assessSupplierLocalContent('QA', 'government', inputs, 'qa-tenders-icv');
+    expect(a.applicability).toBe('applicable');
+    const c = a.computation as EligibleSpendRatioResult;
+    expect(c.mechanismType).toBe('eligible-spend-ratio'); // reused, not a new render branch
+    expect(c.scorePct).not.toBeNull();
+    expect(c.scorePct!).toBeCloseTo(35, 6);
+    expect(c.pillars).toHaveLength(1); // Article 2 bundles works/services/national-human-resources into ONE definition, unlike LCGPA's four
+    expect(c.pillars[0].key).toBe('qaTendersIcvLocalValue');
+  });
+
+  it('hardest: local value reported greater than total contract value (a messy/adversarial self-certification) -- computes past 100% rather than silently clamping, an honest reflection of a bad input rather than a hidden cap', () => {
+    const inputs: SupplierLocalContentInputs = { qaTendersIcv: { localValueQAR: 12_000_000, totalContractValueQAR: 10_000_000 } };
+    const a = assessSupplierLocalContent('QA', 'government', inputs, 'qa-tenders-icv');
+    const c = a.computation as EligibleSpendRatioResult;
+    expect(c.scorePct).toBeCloseTo(120, 6);
+  });
+
+  it('hardest: local value is zero (a bidder who submits a plan claiming no local value at all) -- resolves to exactly 0%, not null, since total contract value is known', () => {
+    const inputs: SupplierLocalContentInputs = { qaTendersIcv: { localValueQAR: 0, totalContractValueQAR: 8_000_000 } };
+    const a = assessSupplierLocalContent('QA', 'government', inputs, 'qa-tenders-icv');
+    const c = a.computation as EligibleSpendRatioResult;
+    expect(c.scorePct).toBeCloseTo(0, 6);
+  });
+
+  it('boundary: total contract value is zero -- null score (honest, not a fabricated 0% or divide-by-zero artifact)', () => {
+    const inputs: SupplierLocalContentInputs = { qaTendersIcv: { localValueQAR: 0, totalContractValueQAR: 0 } };
+    const a = assessSupplierLocalContent('QA', 'government', inputs, 'qa-tenders-icv');
+    const c = a.computation as EligibleSpendRatioResult;
+    expect(c.scorePct).toBeNull();
+    expect(a.reasonEn).toContain('incomplete inputs');
+    expect(a.reasonAr).toContain('بيانات غير مكتملة');
+  });
+
+  it('boundary: local value exactly equals total contract value -- resolves to exactly 100%', () => {
+    const inputs: SupplierLocalContentInputs = { qaTendersIcv: { localValueQAR: 6_000_000, totalContractValueQAR: 6_000_000 } };
+    const a = assessSupplierLocalContent('QA', 'government', inputs, 'qa-tenders-icv');
+    const c = a.computation as EligibleSpendRatioResult;
+    expect(c.scorePct).toBeCloseTo(100, 6);
+  });
+
+  it('is a general, cross-government Tenders Law mechanism, sourced as applying to government procurement -- semi-government-soe is not-applicable (no sourced evidence it extends there, unlike icv.qa)', () => {
+    const a = assessSupplierLocalContent('QA', 'semi-government-soe', { qaTendersIcv: { localValueQAR: 1, totalContractValueQAR: 1 } }, 'qa-tenders-icv');
+    expect(a.applicability).toBe('not-applicable');
+  });
+
+  it('no inputs supplied yet -- applicable but incomplete, never a guessed score', () => {
+    const a = assessSupplierLocalContent('QA', 'government', {}, 'qa-tenders-icv');
+    expect(a.applicability).toBe('applicable');
+    const c = a.computation as EligibleSpendRatioResult;
+    expect(c.scorePct).toBeNull();
+    expect(c.pillars).toHaveLength(0);
+  });
+
+  it('sourceNoteEn cites the real Tenders Law Executive Regulations Articles 2-3, discloses the absence of a published Article 3 threshold/weighting, and explicitly discloses the rejected Pinsent Masons 30% claim -- never a guessed or silently-omitted figure', () => {
+    const fw = PROGRAMS['qa-tenders-icv'];
+    expect(fw.mechanismType).toBe('eligible-spend-ratio');
+    expect(fw.applicableContexts).toEqual(['government']);
+    expect(fw.sourceNoteEn).toContain('Article 2');
+    expect(fw.sourceNoteEn).toContain('Article 3');
+    expect(fw.sourceNoteEn).toContain('does NOT specify');
+    expect(fw.sourceNoteEn).toContain('Pinsent Masons');
+    expect(fw.sourceNoteEn).toContain('NOT modeled');
+    expect(fw.sourceNoteAr).toContain('المادة ٢');
+    expect(fw.sourceNoteAr).toContain('المادة ٣');
+    // Genuinely distinct legal basis from icv.qa -- must never quietly reuse or duplicate that program's own sourceNote.
+    expect(fw.sourceNoteEn).not.toEqual(PROGRAMS['qa-icv-tawteen'].sourceNoteEn);
+    expect(fw.sourceNoteEn).toContain('icv.qa');
+  });
+
+  it('is reachable through assessAllApplicableLocalContentPrograms alongside qa-national-strategy and qa-icv-tawteen (multi-mechanism stacking, same treatment as every other country)', () => {
+    const inputs: SupplierLocalContentInputs = { qaTendersIcv: { localValueQAR: 4_000_000, totalContractValueQAR: 8_000_000 } };
+    const stacked = assessAllApplicableLocalContentPrograms('QA', 'government', inputs);
+    const programs = stacked.map(s => s.program);
+    expect(programs).toContain('qa-tenders-icv');
+    expect(programs).toContain('qa-national-strategy');
+    const tendersEntry = stacked.find(s => s.program === 'qa-tenders-icv')!;
+    const c = tendersEntry.assessment.computation as EligibleSpendRatioResult;
+    expect(c.scorePct).toBeCloseTo(50, 6);
   });
 });
 

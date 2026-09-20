@@ -452,7 +452,8 @@ export type LocalContentProgram =
   | 'om-mandatory-list'   // OM type 3 (new, 15 Sep 2026): PTLC Mandatory List category eligibility gate
   | 'om-oq-price-preference' // OM type 4 (new, 15 Sep 2026): OQ Group price preference (company-specific, like AE Tawazun/QA QatarEnergy)
   | 'qa-national-strategy' // QA: not-yet-sourced (the module's original mechanism -- the NEW Cabinet-approved National Local Content Strategy specifically)
-  | 'qa-icv-tawteen'      // QA type 1 (new, 15 Sep 2026): official icv.qa Tawteen ICV score with real modifiers
+  | 'qa-icv-tawteen'      // QA type 1 (new, 15 Sep 2026): official icv.qa Tawteen ICV score with real modifiers -- QatarEnergy's own energy-sector program, NOT a universal government-wide platform (see PROGRAMS['qa-tenders-icv'].sourceNoteEn for the cross-government contrast)
+  | 'qa-tenders-icv'      // QA type 1-ish (new, 20 Sep 2026): Tenders and Auctions Law (Law No. 24/2015) Executive Regulations Arts. 2-3 -- self-certified/planned local-value ratio considered (not scored against a published threshold) in government bid evaluation; a genuinely different, cross-government legal basis from icv.qa's energy-sector-specific program above; reuses eligible-spend-ratio with a single combined pillar
   | 'bh-local-content'    // BH: not-yet-sourced (the module's original mechanism -- general national framework)
   | 'bh-sme-price-preference' // BH type 4 (new, 15 Sep 2026): 10% SME bidding price advantage, Ministerial Decision 23/2026
   | 'bh-sme-spend-setaside'   // BH type 5 (new, 15 Sep 2026): 20% SME spend allocation, Ministerial Decision 23/2026
@@ -508,7 +509,7 @@ export const PROGRAMS_BY_COUNTRY: Record<LocalContentCountry, LocalContentProgra
   AE: ['ae-icv-general', 'ae-tawazun-offset', 'ae-gcc-origin-treatment'],
   JO: ['jo-price-preference', 'jo-contractor-quota'],
   OM: ['om-icv', 'om-mandatory-list', 'om-oq-price-preference'],
-  QA: ['qa-national-strategy', 'qa-icv-tawteen'],
+  QA: ['qa-national-strategy', 'qa-icv-tawteen', 'qa-tenders-icv'],
   BH: ['bh-local-content', 'bh-sme-price-preference', 'bh-sme-spend-setaside'],
   KW: ['kw-local-content', 'kw-kpc-local-spend'],
   EG: ['eg-price-preference', 'eg-oil-gas-price-preference', 'eg-auto-local-content'],
@@ -709,7 +710,7 @@ const AE_PROGRAMS: Record<'ae-icv-general' | 'ae-tawazun-offset' | 'ae-gcc-origi
 const JO_OM_QA_BH_KW_PROGRAMS: Record<
   | 'jo-price-preference' | 'jo-contractor-quota'
   | 'om-icv' | 'om-mandatory-list' | 'om-oq-price-preference'
-  | 'qa-national-strategy' | 'qa-icv-tawteen'
+  | 'qa-national-strategy' | 'qa-icv-tawteen' | 'qa-tenders-icv'
   | 'bh-local-content' | 'bh-sme-price-preference' | 'bh-sme-spend-setaside'
   | 'kw-local-content' | 'kw-kpc-local-spend',
   CountryFrameworkInfo
@@ -769,6 +770,14 @@ const JO_OM_QA_BH_KW_PROGRAMS: Record<
     applicableContexts: ['government', 'semi-government-soe'],
     sourceNoteEn: 'Qatar\'s official In-Country Value Digital Portal (icv.qa, the national ICV certification authority) publishes a real, computable methodology: a base ICV score = eligible local spend (local tangible goods/materials + local services -- manpower, subcontractors, goods + training cost for Qatari nationals/residents + supplier training/certification cost + depreciation of Qatar-based company assets) divided by total Qatar revenue EXCLUDING exports. Sub-supplier development costs count as 100% contribution to the primary supplier\'s own score. Real, sourced modifiers on top of the base score, per icv.qa\'s own FAQ and Enhanced Program pages: (1) an "ICV+" policy gives eligible manufacturers a 50% increase to their ICV score; (2) a "blanket score" guarantees micro and small suppliers a minimum ICV score of 30%; (3) suppliers can claim up to an additional 15 percentage points through disclosed strategic behaviors (productivity, capability building, investment growth, Qatarization, exports, R&D, sustainability) -- modeled here as a capped, self-reported, caller-supplied input (not independently verified/computed from sub-components, since icv.qa does not publish the internal weighting of that 15-point bonus). In tender evaluation, icv.qa states ICV "will play a role in the evaluation of commercial bids; premiums will be paid for higher ICV bids assuming the price is competitive" -- a real, sourced commercial-advantage mechanism, though (per icv.qa\'s own wording) not a guaranteed win and not an exact percentage weighting, so this is disclosed as context rather than modeled as a computed discount.',
     sourceNoteAr: 'تنشر البوابة الرقمية الرسمية للقيمة المحلية في قطر (icv.qa، الجهة الوطنية المعتمدة لشهادات القيمة المحلية) منهجية حقيقية قابلة للحساب: الدرجة الأساسية للقيمة المحلية = الإنفاق المحلي المؤهل (السلع والمواد الملموسة المحلية + الخدمات المحلية -- القوى العاملة والمقاولون من الباطن والسلع + تكلفة تدريب المواطنين/المقيمين القطريين + تكلفة تدريب/اعتماد الموردين + إهلاك أصول الشركة المقيمة في قطر) مقسومة على إجمالي إيرادات قطر باستثناء الصادرات. تُحتسب تكاليف تطوير الموردين من الباطن بنسبة ١٠٠٪ كمساهمة في درجة المورّد الرئيسي نفسه. معدِّلات حقيقية وموثّقة تُضاف إلى الدرجة الأساسية، بحسب صفحتي الأسئلة الشائعة والبرنامج المعزَّز على icv.qa: (١) سياسة "ICV+" تمنح المصنّعين المؤهلين زيادة ٥٠٪ على درجة القيمة المحلية؛ (٢) "الدرجة الشاملة" تضمن للموردين متناهي الصغر والصغار حداً أدنى لدرجة القيمة المحلية يبلغ ٣٠٪؛ (٣) يمكن للموردين المطالبة بحتى ١٥ نقطة مئوية إضافية عبر سلوكيات استراتيجية موثّقة (الإنتاجية، بناء القدرات، نمو الاستثمار، القطرنة، التصدير، البحث والتطوير، الاستدامة) -- وتُنمذَج هنا كمُدخل ذاتي التصريح يُدخله المستخدم بحدّ أقصى (وليس محسوباً بشكل مستقل من مكوّنات فرعية، إذ لا تنشر icv.qa الترجيح الداخلي لهذه المكافأة البالغة ١٥ نقطة). في تقييم العطاءات، تذكر icv.qa أن القيمة المحلية "ستؤدي دوراً في تقييم العروض التجارية؛ إذ تُمنح علاوات للعروض ذات القيمة المحلية الأعلى بشرط أن يكون السعر تنافسياً" -- آلية ميزة تجارية حقيقية وموثّقة، إلا أنها (بحسب صياغة icv.qa نفسها) لا تضمن الفوز ولا تمثّل ترجيحاً بنسبة مئوية دقيقة، لذا يُفصَح عنها كسياق وليس كخصم محسوب.',
+  },
+  'qa-tenders-icv': {
+    country: 'QA', countryNameEn: 'Qatar', countryNameAr: 'دولة قطر',
+    programNameEn: 'Tenders Law ICV Consideration (Executive Regulations, Arts. 2-3)', programNameAr: 'اعتبار القيمة المحلية بموجب قانون المناقصات (اللائحة التنفيذية، المادتان ٢-٣)',
+    mechanismType: 'eligible-spend-ratio', program: 'qa-tenders-icv',
+    applicableContexts: ['government'],
+    sourceNoteEn: "Qatar's Tenders and Auctions Law (Law No. 24 of 2015) Executive Regulations, as amended -- a general, cross-government legal basis genuinely distinct from QatarEnergy's own energy-sector-specific icv.qa platform modeled separately above (icv.qa's own overview page and a KPMG summary both confirm icv.qa is scoped to \"the Energy sector in Qatar,\" not a universal government-wide program). Two independent law-firm summaries of the same amended Executive Regulations (K&L Gates' \"Recent Changes to Tender Law Regulations in Qatar\" and a parallel National Law Review summary of the same underlying source) confirm: Article 2 defines In-Country Value (ICV) as \"the total amount spent by the contractor, supplier or service provider within the State for the development of works, services or national human resources to stimulate productivity in the local economy,\" determined either via a certificate of previously executed contracts or via the bidder's own tender-submitted plan stating its target local-value amount; Article 3 requires government procuring entities to \"consider ICV ratios of the bidders\" in bid evaluation, but -- per BOTH independent sources -- Article 3 does NOT specify a percentage threshold, a weighting formula, or a mathematical calculation for how that ICV ratio is actually scored. This mechanism therefore computes and discloses the Article-2-defined local-value ratio itself (reusing the SAME eligible-spend-ratio shape as SA's LCGPA general score and stc's Rawafed program, here with a single combined pillar since Article 2 bundles works/services/national-human-resources development into one definition rather than LCGPA's four separately-itemized pillars) as a decision-supporting figure for bid evaluation -- NOT a pass/fail score against a published cutoff, because no such cutoff has been published. Article 4 of the same Executive Regulations separately provides real, sourced, but PROCEDURAL SME provisions (exemption from tender-document fees below QR1 million contract value, exemption from performance guarantees, authority discretion to restrict tenders below QR5 million to micro/small enterprises only, and a 50% reduction in the standard SME-classification fee) -- these are not a spend-ratio and are deliberately not modeled as a computed score here; they are disclosed as real but out of this mechanism's scope. Separately: a claim from Pinsent Masons that Articles 33/34 of the base Tenders Law mandate a minimum 30% of total contract value be procured from local markets was investigated and explicitly NOT modeled -- three other independent summaries of the same law and its amendments (Mondaq, qatarlaw.com/Sultan Al-Abdulla & Partners -- a Qatari law firm itself -- and the US government's own trade.gov Qatar Country Commercial Guide) make no mention of any such percentage or these article numbers, despite discussing the law's other provisions in comparable detail; per this platform's Never-Fabricate standard, a single, uncorroborated figure is disclosed as investigated-but-rejected, not modeled. This research pass additionally searched for genuinely SOE-specific/sector-authority/anchor-buyer local-content mechanisms beyond icv.qa and this Tenders Law provision -- at Kahramaa, Ashghal, Qatar Development Bank's Moushtarayat/\"Access to Local Markets\" matchmaking program (confirmed to carry no percentage threshold), Qatar Free Zones Authority, Manateq, Qatar Rail, and Mwani Qatar/Hamad Port -- and found no further distinct, publicly computable local-content mechanism at any of them; this negative result is disclosed rather than omitted.",
+    sourceNoteAr: 'قانون قطر للمناقصات والمزايدات (القانون رقم ٢٤ لسنة ٢٠١٥) ولائحته التنفيذية المعدَّلة -- أساس قانوني عام وشامل لكل الجهات الحكومية، ومختلف فعلياً عن منصة icv.qa الخاصة بقطر للطاقة والمقتصرة على القطاع الطاقي والمُنمذَجة بشكل منفصل أعلاه (تؤكد صفحة icv.qa الرسمية نفسها، وكذلك ملخص KPMG، أن نطاقها يقتصر على "قطاع الطاقة في قطر"، وليست برنامجاً حكومياً شاملاً). يؤكد ملخصان قانونيان مستقلان لنفس اللائحة التنفيذية المعدَّلة (مقالة K&L Gates بعنوان "التعديلات الأخيرة على لائحة قانون المناقصات في قطر" وملخص مواز صادر عن National Law Review لنفس المصدر الأساسي): تُعرِّف المادة ٢ القيمة المحلية (ICV) بأنها "إجمالي المبلغ الذي ينفقه المقاول أو المورّد أو مقدّم الخدمة داخل الدولة لتطوير الأعمال أو الخدمات أو الموارد البشرية الوطنية بهدف تحفيز الإنتاجية في الاقتصاد المحلي"، وتُحدَّد إما عبر شهادة بالعقود المنفَّذة سابقاً أو عبر خطة يقدّمها مقدّم العطاء ضمن عطائه توضح المبلغ المستهدف للقيمة المحلية؛ وتُلزم المادة ٣ الجهات الحكومية المشترية بـ"مراعاة نسب القيمة المحلية لمقدمي العطاءات" عند تقييم العروض، إلا أن المادة ٣ -- بحسب كلا المصدرين المستقلين -- لا تحدد نسبة مئوية أو صيغة ترجيح أو طريقة حساب رياضية لكيفية تسجيل هذه النسبة فعلياً. لذا تحسب هذه الآلية وتُفصح عن نسبة القيمة المحلية المعرَّفة في المادة ٢ نفسها (بإعادة استخدام نفس بنية "نسبة الإنفاق المؤهل" المستخدمة في الدرجة العامة لهيئة المحتوى المحلي السعودية وبرنامج روافد التابع لـstc، هنا بركن واحد مدمج لأن المادة ٢ تجمع تطوير الأعمال/الخدمات/الموارد البشرية الوطنية ضمن تعريف واحد بدلاً من أركان LCGPA الأربعة المنفصلة) كرقم داعم لقرار تقييم العطاءات -- وليست درجة نجاح/فشل مقابل حد أدنى منشور، لأنه لا يوجد حد من هذا القبيل منشوراً. وتنص المادة ٤ من اللائحة التنفيذية نفسها، بشكل منفصل، على أحكام إجرائية حقيقية وموثّقة (لكنها إجرائية وليست نسبة إنفاق) لصالح المنشآت الصغيرة والمتوسطة: إعفاء من رسوم وثائق المناقصة للعقود التي تقل قيمتها عن مليون ريال قطري، وإعفاء من الضمانات النهائية، وصلاحية للجهة المختصة بقصر المناقصات التي تقل قيمتها عن خمسة ملايين ريال قطري على المنشآت متناهية الصغر والصغيرة فقط، وتخفيض ٥٠٪ من رسم التصنيف القياسي للمنشآت الصغيرة والمتوسطة -- وهذه ليست نسبة إنفاق، ولم تُنمذَج عمداً كدرجة محسوبة هنا؛ بل يُفصَح عنها كأحكام حقيقية لكنها خارج نطاق هذه الآلية. وبشكل منفصل: جرى التحقق من ادعاء صادر عن Pinsent Masons بأن المادتين ٣٣/٣٤ من قانون المناقصات الأساسي تُلزمان بحد أدنى ٣٠٪ من إجمالي قيمة العقد يجب شراؤه من الأسواق المحلية، ولم يُنمذَج هذا الادعاء عمداً -- إذ إن ثلاثة ملخصات قانونية مستقلة أخرى لنفس القانون وتعديلاته (Mondaq، وqatarlaw.com/مكتب سلطان العبدالله وشركاه -- وهو مكتب محاماة قطري بحد ذاته --، ودليل الحكومة الأمريكية الرسمي للأعمال القطرية على trade.gov) لا تذكر أي نسبة مئوية أو رقمي المادتين هذين، رغم مناقشتها أحكاماً أخرى من القانون بتفصيل مماثل؛ ووفق معيار "عدم الاختلاق" المعتمد في هذه المنصة، يُفصَح عن هذا الرقم الوحيد غير المؤكَّد كنتيجة بحث تم التحقق منها ورُفضت، لا كآلية مُنمذَجة. كما بحث هذا البحث أيضاً عن آليات محتوى محلي حقيقية خاصة بمنشآت مملوكة للدولة/هيئات قطاعية/مشترين رئيسيين تتجاوز icv.qa وحكم قانون المناقصات هذا -- لدى كهرماء، وأشغال، وبرنامج Moushtarayat ("الوصول إلى الأسواق المحلية") التابع لبنك قطر للتنمية (QDB) (تم التأكد من أنه برنامج مطابقة/تسهيل بلا أي حد نسبي)، وهيئة المناطق الحرة القطرية، ومناطق، وقطار قطر، وموانئ قطر/ميناء حمد -- ولم يُعثر على أي آلية محتوى محلي إضافية متميزة وقابلة للحساب وموثّقة علناً لدى أي منها؛ وتُفصَح هذه النتيجة السلبية بدلاً من إغفالها.',
   },
   'bh-local-content': {
     country: 'BH', countryNameEn: 'Bahrain', countryNameAr: 'مملكة البحرين',
@@ -1249,6 +1258,23 @@ export interface SupplierLocalContentInputs {
      * capability building, investment growth, Qatarization, exports, R&D,
      * sustainability) -- disclosed simplification, see sourceNoteEn. */
     selfReportedBonusPct: number | null;
+  };
+  /** Tenders Law ICV consideration (QA / 'qa-tenders-icv', new 20 Sep 2026)
+   * -- QAR, per the Tenders and Auctions Law (Law No. 24/2015) Executive
+   * Regulations Article 2's self-certified/planned local-value definition
+   * (see PROGRAMS['qa-tenders-icv'].sourceNoteEn for the full sourcing).
+   * Deliberately a SINGLE combined pillar, not LCGPA's four -- Article 2
+   * itself bundles works/services/national-human-resources development
+   * into one definition, so splitting it further would not be sourced. */
+  qaTendersIcv?: {
+    /** Article 2's full local-value amount for this contract/bidder --
+     * works, services, and/or national-human-resources development spent
+     * within Qatar (self-certified via a prior-contract certificate, or
+     * the bidder's own tender-submitted target-value plan). */
+    localValueQAR: number | null;
+    /** Total value of the same contract/tender this local value is being
+     * measured against. */
+    totalContractValueQAR: number | null;
   };
   /** Bahrain SME qualification (BH / 'bh-sme-price-preference' AND
    * 'bh-sme-spend-setaside', new 15 Sep 2026) -- self-reported SME
@@ -2288,6 +2314,17 @@ function computeIcvTawteenQa(qa: NonNullable<SupplierLocalContentInputs['qa']>):
   };
 }
 
+/** Tenders Law ICV consideration (QA / 'qa-tenders-icv', new 20 Sep 2026) --
+ * reuses eligible-spend-ratio with a SINGLE combined pillar, since Article
+ * 2 of the Executive Regulations bundles works/services/national-human-
+ * resources development into one local-value definition (see PROGRAMS[
+ * 'qa-tenders-icv'].sourceNoteEn for the full sourcing, including the
+ * disclosed absence of any published Article 3 weighting/threshold). */
+function computeQaTendersIcv(input: NonNullable<SupplierLocalContentInputs['qaTendersIcv']>): EligibleSpendRatioResult {
+  const localValue = { key: 'qaTendersIcvLocalValue', eligible: n(input.localValueQAR), total: n(input.totalContractValueQAR) };
+  return { mechanismType: 'eligible-spend-ratio', scorePct: localValue.total > 0 ? (localValue.eligible / localValue.total) * 100 : null, pillars: [localValue] };
+}
+
 // ---------------------------------------------------------------------------
 // Section 7 — top-level supplier assessment: resolves applicability first
 // (government/SOE vs private-commercial, and sourced vs not-yet-sourced),
@@ -2394,6 +2431,11 @@ export function assessSupplierLocalContent(
       return { country, program: resolvedProgram, procurementContext, applicability: 'applicable', framework, computation: { mechanismType: 'modified-icv-score', baseScorePct: null, pillars: [], isEligibleManufacturer: false, isMicroOrSmallSupplier: false, selfReportedBonusPct: null, finalScorePct: null }, certificationCaveatEn: NOT_CERTIFIED_EN, certificationCaveatAr: NOT_CERTIFIED_AR, reasonEn: 'No Qatar Tawteen/ICV inputs supplied yet.', reasonAr: 'لم تُدخل بيانات توطين/القيمة المحلية القطرية بعد.' };
     }
     computation = computeIcvTawteenQa(inputs.qa);
+  } else if (resolvedProgram === 'qa-tenders-icv') {
+    if (!inputs.qaTendersIcv) {
+      return { country, program: resolvedProgram, procurementContext, applicability: 'applicable', framework, computation: { mechanismType: 'eligible-spend-ratio', scorePct: null, pillars: [] }, certificationCaveatEn: NOT_CERTIFIED_EN, certificationCaveatAr: NOT_CERTIFIED_AR, reasonEn: 'No Tenders Law local-value/contract-value inputs supplied yet.', reasonAr: 'لم تُدخل بيانات القيمة المحلية أو قيمة العقد بموجب قانون المناقصات بعد.' };
+    }
+    computation = computeQaTendersIcv(inputs.qaTendersIcv);
   } else if (resolvedProgram === 'bh-sme-price-preference') {
     if (!inputs.bhSme) {
       return { country, program: resolvedProgram, procurementContext, applicability: 'applicable', framework, computation: computePricePreferenceMargin(BAHRAIN_SME_PRICE_PREFERENCE_MARGIN_PCT, null), certificationCaveatEn: NOT_CERTIFIED_EN, certificationCaveatAr: NOT_CERTIFIED_AR, reasonEn: 'No Bahrain SME qualification status supplied yet.', reasonAr: 'لم تُدخل حالة تأهل المؤسسة الصغيرة أو المتوسطة البحرينية بعد.' };
