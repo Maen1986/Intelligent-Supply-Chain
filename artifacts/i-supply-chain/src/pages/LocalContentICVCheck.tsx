@@ -98,6 +98,7 @@ type CnInputs = NonNullable<SupplierLocalContentInputs['cn']>;
 type CnSmeInputs = NonNullable<SupplierLocalContentInputs['cnSme']>;
 type RawafedStcInputs = NonNullable<SupplierLocalContentInputs['rawafedStc']>;
 type SabicLcCommitmentInputs = NonNullable<SupplierLocalContentInputs['sabicLcCommitment']>;
+type QaTendersIcvInputs = NonNullable<SupplierLocalContentInputs['qaTendersIcv']>;
 
 function emptySa(): SaInputs {
   return {
@@ -199,6 +200,9 @@ function emptyRawafedStc(): RawafedStcInputs {
 function emptySabicLcCommitment(): SabicLcCommitmentInputs {
   return { proposedTargetPct: null, actualAuditedPct: null };
 }
+function emptyQaTendersIcv(): QaTendersIcvInputs {
+  return { localValueQAR: null, totalContractValueQAR: null };
+}
 
 // Old (pre-16-Sep-2026-generalization) Saudi-only program keys, still
 // possibly sitting in a returning user's localStorage/server row from
@@ -288,6 +292,7 @@ interface LocalContentEntry {
   cnSme: CnSmeInputs;
   rawafedStc: RawafedStcInputs;
   sabicLcCommitment: SabicLcCommitmentInputs;
+  qaTendersIcv: QaTendersIcvInputs;
 }
 
 function newLocalContentEntry(): LocalContentEntry {
@@ -305,6 +310,7 @@ function newLocalContentEntry(): LocalContentEntry {
     eg: emptyEg(), egOilGas: emptyEgOilGas(), tr: emptyTr(), uk: emptyUk(),
     usa: emptyUsa(), usaBaba: emptyUsaBaba(), cn: emptyCn(), cnSme: emptyCnSme(),
     rawafedStc: emptyRawafedStc(), sabicLcCommitment: emptySabicLcCommitment(),
+    qaTendersIcv: emptyQaTendersIcv(),
   };
 }
 
@@ -355,6 +361,7 @@ function loadState(): PersistedState {
             cnSme: { ...emptyCnSme(), ...e.cnSme },
             rawafedStc: { ...emptyRawafedStc(), ...e.rawafedStc },
             sabicLcCommitment: { ...emptySabicLcCommitment(), ...e.sabicLcCommitment },
+            qaTendersIcv: { ...emptyQaTendersIcv(), ...e.qaTendersIcv },
           })),
           targetThresholdPct: parsed.targetThresholdPct ?? null,
         };
@@ -419,6 +426,7 @@ const PROGRAM_LABELS: Record<LocalContentProgram, { en: string; ar: string }> = 
   'om-oq-price-preference': { en: 'OQ Price Preference (10%)', ar: 'تفضيل سعر OQ (١٠٪)' },
   'qa-national-strategy': { en: 'National Strategy (not sourced)', ar: 'الاستراتيجية الوطنية (غير موثّقة)' },
   'qa-icv-tawteen': { en: 'Tawteen / ICV (icv.qa)', ar: 'توطين / ICV (icv.qa)' },
+  'qa-tenders-icv': { en: 'Tenders Law ICV (Arts. 2-3)', ar: 'القيمة المحلية بقانون المناقصات (المادتان ٢-٣)' },
   'bh-local-content': { en: 'Local Content (not sourced)', ar: 'المحتوى المحلي (غير موثّق)' },
   'bh-sme-price-preference': { en: 'SME Price Preference (10%)', ar: 'تفضيل سعر المنشآت الصغيرة والمتوسطة (١٠٪)' },
   'bh-sme-spend-setaside': { en: 'SME Spend Set-Aside (20%)', ar: 'تخصيص إنفاق للمنشآت الصغيرة والمتوسطة (٢٠٪)' },
@@ -535,6 +543,7 @@ const PILLAR_LABELS: Record<string, { en: string; ar: string }> = {
   salaries: { en: 'Salaries', ar: 'الرواتب' },
   assetDepreciation: { en: 'Asset Depreciation', ar: 'إهلاك الأصول' },
   capacityDevelopment: { en: 'Capacity Development', ar: 'تطوير القدرات' },
+  qaTendersIcvLocalValue: { en: 'Local Value (Tenders Law Art. 2)', ar: 'القيمة المحلية (قانون المناقصات، المادة ٢)' },
 };
 function pillarLabel(key: string, isAr: boolean): string {
   const l = PILLAR_LABELS[key];
@@ -608,7 +617,7 @@ function LocalContentEntryCard({
   const assessment: LocalContentAssessment | null = !isOther
     ? assessSupplierLocalContent(
         entry.countrySelection as LocalContentCountry, entry.context,
-        { sa: entry.sa, ae: entry.ae, jo: entry.jo, saMandatoryList: entry.saMandatoryList, saPricePreference: entry.saPricePreference, iktva: entry.iktva, aeTawazun: entry.aeTawazun, aeGccOrigin: entry.aeGccOrigin, joContractorQuota: entry.joContractorQuota, omMandatoryList: entry.omMandatoryList, omOqPricePreference: entry.omOqPricePreference, qa: entry.qa, bhSme: entry.bhSme, kwLocalSpend: entry.kwLocalSpend, eg: entry.eg, egOilGas: entry.egOilGas, tr: entry.tr, uk: entry.uk, usa: entry.usa, usaBaba: entry.usaBaba, cn: entry.cn, cnSme: entry.cnSme, rawafedStc: entry.rawafedStc, sabicLcCommitment: entry.sabicLcCommitment },
+        { sa: entry.sa, ae: entry.ae, jo: entry.jo, saMandatoryList: entry.saMandatoryList, saPricePreference: entry.saPricePreference, iktva: entry.iktva, aeTawazun: entry.aeTawazun, aeGccOrigin: entry.aeGccOrigin, joContractorQuota: entry.joContractorQuota, omMandatoryList: entry.omMandatoryList, omOqPricePreference: entry.omOqPricePreference, qa: entry.qa, bhSme: entry.bhSme, kwLocalSpend: entry.kwLocalSpend, eg: entry.eg, egOilGas: entry.egOilGas, tr: entry.tr, uk: entry.uk, usa: entry.usa, usaBaba: entry.usaBaba, cn: entry.cn, cnSme: entry.cnSme, rawafedStc: entry.rawafedStc, sabicLcCommitment: entry.sabicLcCommitment, qaTendersIcv: entry.qaTendersIcv },
         entry.program,
       )
     : null;
@@ -1206,6 +1215,20 @@ function LocalContentEntryCard({
                         <Checkbox id={`qa-microsmall-${entry.id}`} checked={entry.qa.isMicroOrSmallSupplier === true} onCheckedChange={c => onUpdate(entry.id, { qa: { ...entry.qa, isMicroOrSmallSupplier: c === true } })} />
                         {isAr ? 'مورّد متناهي الصغر أو صغير (حد أدنى مضمون ٣٠٪)' : 'Micro or small supplier (guaranteed 30% floor)'}
                       </label>
+                    </div>
+                  </div>
+                )}
+
+                {entry.countrySelection === 'QA' && entry.program === 'qa-tenders-icv' && (
+                  <div className="space-y-3">
+                    <p className="text-[11px] text-slate-500">
+                      {isAr
+                        ? 'المادة ٢ من اللائحة التنفيذية لقانون المناقصات: القيمة المحلية المعلنة/المخطَّطة لهذا العقد. المادة ٣ تُلزم الجهة الحكومية بمراعاة هذه النسبة عند التقييم، دون نشر حد أدنى أو ترجيح محدد -- فالرقم أدناه توجيهي وليس بوابة نجاح/فشل.'
+                        : "Executive Regulations Article 2: this contract's self-certified/planned local value. Article 3 requires the government client to consider this ratio in evaluation, but publishes no fixed threshold or weighting -- the figure below is decision-supporting, not a pass/fail gate."}
+                    </p>
+                    <div className="grid sm:grid-cols-2 gap-3">
+                      <NumberField label={isAr ? 'القيمة المحلية (المادة ٢)' : 'Local Value (Article 2)'} unit={isAr ? 'ر.ق' : 'QAR'} value={entry.qaTendersIcv.localValueQAR} onChange={v => onUpdate(entry.id, { qaTendersIcv: { ...entry.qaTendersIcv, localValueQAR: v } })} />
+                      <NumberField label={isAr ? 'إجمالي قيمة العقد' : 'Total Contract Value'} unit={isAr ? 'ر.ق' : 'QAR'} value={entry.qaTendersIcv.totalContractValueQAR} onChange={v => onUpdate(entry.id, { qaTendersIcv: { ...entry.qaTendersIcv, totalContractValueQAR: v } })} />
                     </div>
                   </div>
                 )}
@@ -2005,6 +2028,7 @@ export function LocalContentICVCheck() {
       aeGccOrigin: { ...emptyAeGccOrigin(), ...row.data.aeGccOrigin },
       rawafedStc: { ...emptyRawafedStc(), ...row.data.rawafedStc },
       sabicLcCommitment: { ...emptySabicLcCommitment(), ...row.data.sabicLcCommitment },
+      qaTendersIcv: { ...emptyQaTendersIcv(), ...row.data.qaTendersIcv },
     };
   }
   function entryToPayload(e: LocalContentEntry) {
@@ -2099,7 +2123,7 @@ export function LocalContentICVCheck() {
       entry: e,
       assessment: assessSupplierLocalContent(
         e.countrySelection as LocalContentCountry, e.context,
-        { sa: e.sa, ae: e.ae, jo: e.jo, saMandatoryList: e.saMandatoryList, saPricePreference: e.saPricePreference, iktva: e.iktva, aeTawazun: e.aeTawazun, aeGccOrigin: e.aeGccOrigin, joContractorQuota: e.joContractorQuota, omMandatoryList: e.omMandatoryList, omOqPricePreference: e.omOqPricePreference, qa: e.qa, bhSme: e.bhSme, kwLocalSpend: e.kwLocalSpend, eg: e.eg, egOilGas: e.egOilGas, tr: e.tr, uk: e.uk, usa: e.usa, usaBaba: e.usaBaba, cn: e.cn, cnSme: e.cnSme, rawafedStc: e.rawafedStc, sabicLcCommitment: e.sabicLcCommitment },
+        { sa: e.sa, ae: e.ae, jo: e.jo, saMandatoryList: e.saMandatoryList, saPricePreference: e.saPricePreference, iktva: e.iktva, aeTawazun: e.aeTawazun, aeGccOrigin: e.aeGccOrigin, joContractorQuota: e.joContractorQuota, omMandatoryList: e.omMandatoryList, omOqPricePreference: e.omOqPricePreference, qa: e.qa, bhSme: e.bhSme, kwLocalSpend: e.kwLocalSpend, eg: e.eg, egOilGas: e.egOilGas, tr: e.tr, uk: e.uk, usa: e.usa, usaBaba: e.usaBaba, cn: e.cn, cnSme: e.cnSme, rawafedStc: e.rawafedStc, sabicLcCommitment: e.sabicLcCommitment, qaTendersIcv: e.qaTendersIcv },
         e.program,
       ),
     }));
