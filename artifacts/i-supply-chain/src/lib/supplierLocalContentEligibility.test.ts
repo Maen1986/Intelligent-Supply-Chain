@@ -627,6 +627,17 @@ describe('JO / National Industry Price Preference — price-preference-margin', 
     expect(priv.applicability).toBe('not-applicable');
     expect(soe.applicability).toBe('not-applicable');
   });
+
+  it('discloses the statutory basis found in the 21 Sep 2026 Jordan deepening pass -- Bylaw No. 8 of 2022, Arts. 8(a)(7) and 15(b)(1) -- and the 15%->20% Cabinet history, bilingually, closing the earlier "exact legal citation is not [identified]" gap', () => {
+    const jo = PROGRAMS['jo-price-preference'];
+    expect(jo.sourceNoteEn).toContain('Bylaw No. 8 of 2022');
+    expect(jo.sourceNoteEn).toContain('Art. 8(a)(7)');
+    expect(jo.sourceNoteEn).toContain('Art. 15(b)(1)');
+    expect(jo.sourceNoteEn).toContain('15% -> 20%');
+    expect(jo.sourceNoteAr).toContain('رقم (٨) لسنة ٢٠٢٢');
+    expect(jo.sourceNoteAr).toContain('٨(أ)(٧)');
+    expect(jo.sourceNoteAr).toContain('١٥(ب)(١)');
+  });
 });
 
 // ===========================================================================
