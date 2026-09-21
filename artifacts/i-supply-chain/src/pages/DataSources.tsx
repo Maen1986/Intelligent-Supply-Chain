@@ -121,7 +121,7 @@ const SOURCES: Source[] = [
   },
   {
     name:    'IKTVA Progress Report',
-    nameAr:  'تقرير تقدم برنامج إكتفاء',
+    nameAr:  'تقرير تقدم برنامج اكتفاء',
     org:     'Saudi Aramco',
     orgAr:   'أرامكو السعودية',
     year:    '2023',

@@ -416,7 +416,7 @@ const PROGRAM_LABELS: Record<LocalContentProgram, { en: string; ar: string }> = 
   'sa-lcgpa-general': { en: 'LCGPA General Score', ar: 'الدرجة العامة (الهيئة)' },
   'sa-mandatory-list': { en: 'Mandatory List Gate', ar: 'بوابة القائمة الإلزامية' },
   'sa-price-preference': { en: 'Price Preference (10%)', ar: 'تفضيل السعر (١٠٪)' },
-  'sa-iktva-aramco': { en: 'Aramco IKTVA', ar: 'إكتفاء أرامكو' },
+  'sa-iktva-aramco': { en: 'Aramco IKTVA', ar: 'اكتفاء أرامكو' },
   'sa-gami-defense': { en: 'GAMI Defense', ar: 'التوطين الدفاعي (GAMI)' },
   'sa-likt': { en: 'LIKT', ar: 'LIKT' },
   'sa-rawafed-stc': { en: 'stc Rawafed', ar: 'روافد (STC)' },
@@ -437,10 +437,10 @@ const PROGRAM_LABELS: Record<LocalContentProgram, { en: string; ar: string }> = 
   'bh-sme-price-preference': { en: 'SME Price Preference (10%)', ar: 'تفضيل سعر المنشآت الصغيرة والمتوسطة (١٠٪)' },
   'bh-sme-spend-setaside': { en: 'SME Spend Set-Aside (20%)', ar: 'تخصيص إنفاق للمنشآت الصغيرة والمتوسطة (٢٠٪)' },
   'kw-local-content': { en: 'Local Content (not sourced)', ar: 'المحتوى المحلي (غير موثّق)' },
-  'kw-kpc-local-spend': { en: 'KPC Local Spend Target (30%)', ar: 'هدف إنفاق KPC المحلي (٣٠٪)' },
+  'kw-kpc-local-spend': { en: 'KPC Local Spend Target (30%)', ar: 'هدف KPC للإنفاق المحلي (٣٠٪)' },
   'kw-tender-law-price-preference': { en: 'Tender Law Price Preference (15%)', ar: 'تفضيل سعر قانون المناقصات (١٥٪)' },
   'eg-price-preference': { en: 'Price Preference (15%)', ar: 'تفضيل السعر (١٥٪)' },
-  'eg-oil-gas-price-preference': { en: 'Oil & Gas PSA Preference (10%)', ar: 'تفضيل اتفاقية تقاسم الإنتاج النفطية (١٠٪)' },
+  'eg-oil-gas-price-preference': { en: 'Oil & Gas PSA Preference (10%)', ar: 'تفضيل السعر بموجب اتفاقية تقاسم الإنتاج النفطية (١٠٪)' },
   'eg-auto-local-content': { en: 'Automotive Local Content (not sourced)', ar: 'المحتوى المحلي لصناعة السيارات (غير موثّق)' },
   'tr-price-preference': { en: 'Domestic Goods Price Preference (up to 15%)', ar: 'تفضيل سعر السلع المحلية (حتى ١٥٪)' },
   'tr-defense-offset': { en: 'SSB Defense Offset (not sourced)', ar: 'تعويض SSB الدفاعي (غير موثّق)' },
@@ -451,7 +451,7 @@ const PROGRAM_LABELS: Record<LocalContentProgram, { en: string; ar: string }> = 
   'usa-berry-amendment-dod': { en: 'Berry Amendment (DoD) -- not yet sourced', ar: 'تعديل بيري (وزارة الدفاع) — غير موثّق بعد' },
   'cn-domestic-product-price-preference': { en: 'Domestic Product Price Preference (20%)', ar: 'تفضيل سعر المنتج المحلي (٢٠٪)' },
   'cn-govt-procurement-law-domestic-mandate': { en: 'Article 10 Domestic Mandate Gate', ar: 'بوابة تفويض المادة العاشرة' },
-  'cn-sme-price-deduction': { en: 'SME Price Deduction', ar: 'خصم سعر المنشآت الصغيرة' },
+  'cn-sme-price-deduction': { en: 'SME Price Deduction', ar: 'خصم سعر المنشآت الصغيرة والمتوسطة' },
   'cn-defense-domestic-sourcing': { en: 'PLA Defense Sourcing -- not yet sourced', ar: 'مشتريات الدفاع (جيش التحرير الشعبي) — غير موثّق بعد' },
   'in-make-in-india-price-preference': { en: 'Make in India Preference (20%)', ar: 'تفضيل صنع في الهند (٢٠٪)' },
   'in-dap-2020-defense-offset': { en: 'DAP 2020 Defense Offset -- not yet sourced', ar: 'تعويض الدفاع DAP 2020 — غير موثّق بعد' },
@@ -1783,7 +1783,7 @@ function LocalContentEntryCard({
                   <>
                     <div className="flex items-baseline justify-between">
                       <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                        {isAr ? 'الدرجة التوجيهية (إكتفاء)' : 'Directional Score (iktva)'}
+                        {isAr ? 'الدرجة التوجيهية (اكتفاء)' : 'Directional Score (iktva)'}
                       </span>
                       <span className="text-2xl font-black text-[#082C6B]">
                         {assessment.computation.scorePct !== null ? `${assessment.computation.scorePct.toFixed(1)}%` : '—'}
