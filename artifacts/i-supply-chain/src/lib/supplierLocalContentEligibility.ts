@@ -459,6 +459,7 @@ export type LocalContentProgram =
   | 'bh-sme-spend-setaside'   // BH type 5 (new, 15 Sep 2026): 20% SME spend allocation, Ministerial Decision 23/2026
   | 'kw-local-content'    // KW: not-yet-sourced (the module's original mechanism -- general national framework)
   | 'kw-kpc-local-spend'  // KW type 5 (new, 15 Sep 2026): KPC 30% Kuwaiti-supplier spend target
+  | 'kw-tender-law-price-preference' // KW type 4 (new, 20 Sep 2026): Public Tenders Law No. 49/2016 Art. 62 + Executive Regulation Decree No. 30/2017 -- 15% national/GCC-origin product price preference, CAPT-administered, cross-government -- a genuinely different legal basis and buyer scope from KPC's own anchor-buyer spend target above; reuses price-preference-margin
   | 'eg-price-preference'          // EG type 4 (new, 15 Sep 2026 Part 2 pass): public-procurement price preference, Law 5/2015 as amended by Law 90/2018 (the module's default/original mechanism for Egypt)
   | 'eg-oil-gas-price-preference'  // EG type 4 (new, Part 2 pass): PSA local-contractor price-band priority, Ministry of Petroleum PSA framework -- a genuinely different buyer/program from the general procurement preference above
   | 'eg-auto-local-content'         // EG type 6-ish target (new, Part 2 pass): revamped AIDP 60% local-content target, not-yet-sourced (no published per-supplier formula)
@@ -511,7 +512,7 @@ export const PROGRAMS_BY_COUNTRY: Record<LocalContentCountry, LocalContentProgra
   OM: ['om-icv', 'om-mandatory-list', 'om-oq-price-preference'],
   QA: ['qa-national-strategy', 'qa-icv-tawteen', 'qa-tenders-icv'],
   BH: ['bh-local-content', 'bh-sme-price-preference', 'bh-sme-spend-setaside'],
-  KW: ['kw-local-content', 'kw-kpc-local-spend'],
+  KW: ['kw-local-content', 'kw-kpc-local-spend', 'kw-tender-law-price-preference'],
   EG: ['eg-price-preference', 'eg-oil-gas-price-preference', 'eg-auto-local-content'],
   TR: ['tr-price-preference', 'tr-defense-offset'],
   UK: ['uk-below-threshold-reservation'],
@@ -712,7 +713,7 @@ const JO_OM_QA_BH_KW_PROGRAMS: Record<
   | 'om-icv' | 'om-mandatory-list' | 'om-oq-price-preference'
   | 'qa-national-strategy' | 'qa-icv-tawteen' | 'qa-tenders-icv'
   | 'bh-local-content' | 'bh-sme-price-preference' | 'bh-sme-spend-setaside'
-  | 'kw-local-content' | 'kw-kpc-local-spend',
+  | 'kw-local-content' | 'kw-kpc-local-spend' | 'kw-tender-law-price-preference',
   CountryFrameworkInfo
 > = {
   'jo-price-preference': {
@@ -818,6 +819,14 @@ const JO_OM_QA_BH_KW_PROGRAMS: Record<
     applicableContexts: ['semi-government-soe'],
     sourceNoteEn: 'Per the U.S. government\'s own trade.gov Kuwait market-intelligence guide (citing Kuwait Petroleum Corporation\'s own stated objectives), KPC aims to "increase local private sector share in KPC spending by requiring a minimum of 30% of a project spending be designated for Kuwaiti suppliers," targeted "by 2040." This is KPC\'s own anchor-buyer-style spend target across its "K-company" group (KOC, KNPC, and other KPC subsidiaries) -- the real sourced mechanism the brief\'s own taxonomy note anticipated ("Kuwait\'s KPC/KOC run anchor-buyer-style programs... plus a spend set-aside"). No further per-supplier qualification criteria (a formal "Kuwaiti supplier" registration/certification scheme, as opposed to simple national ownership/registration) were found in this research pass -- disclosed as self-reported registration status pending a more granular sourced definition.',
     sourceNoteAr: 'بحسب دليل الحكومة الأمريكية الرسمي على trade.gov حول قطاع النفط الكويتي (نقلاً عن أهداف مؤسسة البترول الكويتية المعلنة)، تهدف المؤسسة إلى "زيادة حصة القطاع الخاص المحلي في إنفاق المؤسسة عبر اشتراط تخصيص ما لا يقل عن ٣٠٪ من إنفاق المشاريع للموردين الكويتيين"، بحلول عام ٢٠٤٠. هذا هدف إنفاق خاص بمؤسسة البترول الكويتية بصفتها مشترياً رئيسياً عبر مجموعة "شركات الكاف" التابعة لها (شركة نفط الكويت، شركة البترول الوطنية الكويتية، وشركات أخرى تابعة للمؤسسة) -- وهو الآلية الحقيقية والموثّقة التي توقّعتها ملاحظة التصنيف الأصلية في الموجز ("تدير مؤسسة البترول الكويتية/شركة نفط الكويت برامج على غرار المشتري الرئيسي... إضافة إلى تخصيص حصة من الإنفاق"). لم يُعثر في هذا البحث على معايير تأهيل إضافية على مستوى المورّد (نظام تسجيل/اعتماد رسمي لصفة "المورّد الكويتي"، بخلاف الملكية/التسجيل الوطني البسيط) -- يُفصَح عن ذلك كحالة تسجيل ذاتية التصريح ريثما تتوفر مصادر أدق.',
+  },
+  'kw-tender-law-price-preference': {
+    country: 'KW', countryNameEn: 'Kuwait', countryNameAr: 'دولة الكويت',
+    programNameEn: 'Public Tenders Law National Product Price Preference (Art. 62)', programNameAr: 'تفضيل سعري للمنتج الوطني بموجب قانون المناقصات العامة (المادة ٦٢)',
+    mechanismType: 'price-preference-margin', program: 'kw-tender-law-price-preference',
+    applicableContexts: ['government'],
+    sourceNoteEn: "Kuwait's Public Tenders Law No. 49 of 2016 (administered by the Central Agency for Public Tenders -- CAPT -- and applying to government procurement above KD 75,000, per the US government's own trade.gov Kuwait Country Commercial Guide), Article 62, requires the awarding authority to award a contract to a 'national product' bid -- one conforming to GCC Standardization Organization or applicable Kuwaiti national specifications -- over an imported alternative whenever the national bid's price does not exceed the lowest comparable imported price by more than a margin the Article itself delegates to the Executive Regulation (confirmed directly from the law's own primary text, hosted on kdipa.gov.kw, Kuwait's Direct Investment Promotion Authority). That implementing instrument, Decree No. 30 of 2017, and three independent secondary sources -- a legal summary from the Arab Contractors Federation (fac-arab.com), a 2026 Kuwait tenders market guide (tenderspedia.com), and trade.gov's own guide, which states plainly 'a 15 percent price preference favoring domestic and GCC-produced items' -- all converge on the same figure: a 15% price-evaluation margin. The GCC-origin extension (not Kuwaiti-origin only) mirrors Article 62's own GCC-standards-conformity condition and the same GCC Unified Economic Agreement national-treatment logic already modeled for the UAE ('ae-gcc-origin-treatment'). This is a genuinely different mechanism from this engine's other two Kuwait programs: unlike 'kw-local-content' (the still-not-yet-sourced GENERAL national framework) and 'kw-kpc-local-spend' (KPC's own anchor-buyer spend TARGET, run by a specific semi-government-owned company under its own internal policy, targeted 'by 2040'), this is CAPT's general, cross-government, ALL-TENDER price-preference rule under the Public Tenders Law itself -- the same 'general cross-government legal basis, genuinely distinct from a narrower anchor-buyer program' pattern already established for Qatar's Tenders Law provision ('qa-tenders-icv') alongside QatarEnergy's own icv.qa. Modeled here via the shared price-preference-margin primitive (the same continuously-scaled locally-manufactured-bid-share shape as Jordan/Saudi/Oman-OQ), since Article 62 evaluates the preference per bid/product rather than as a company-wide percentage. Two further real, sourced findings from this same research pass were investigated and deliberately NOT modeled as separate programs this pass, to keep it to the single new, cleanly-corroborated mechanism this task asked for: (1) trade.gov and tenderspedia.com both separately state a distinct 10% price preference specifically for Kuwaiti-NATIONALITY companies (not product-origin-based, unlike Article 62's 15% national-PRODUCT preference above) -- a genuinely different qualifying criterion, real and corroborated by two independent sources, flagged as a real candidate fourth Kuwait program for a future pass. (2) The same two sources also state a mandatory minimum 30% local-market-sourcing requirement for foreign bidders under the same Decree No. 30/2017 -- a genuinely different mechanism TYPE (a compliance mandate, not a price preference) and a genuinely different legal basis/buyer scope from 'kw-kpc-local-spend''s own 30%-by-2040 KPC-specific target (this one is CAPT-administered and cross-government, not KPC's internal K-company-group policy) -- also real, also corroborated by two sources, also deliberately not modeled this pass to avoid conflating two distinct 30% figures under one program. Separately, tenderspedia.com alone (uncorroborated by trade.gov, fac-arab.com, or any other source found in this pass) states a further 20% price preference for SMEs registered with Kuwait's National Fund for SME Development; per this platform's Never-Fabricate standard, a single uncorroborated figure from a lower-tier aggregator source is disclosed as investigated-but-rejected, not modeled -- the same treatment already applied to the Pinsent Masons 30%-local-market claim investigated and rejected in Qatar's own 'qa-tenders-icv' entry.",
+    sourceNoteAr: 'يُلزم قانون الكويت للمناقصات العامة رقم ٤٩ لسنة ٢٠١٦ (الذي يديره الجهاز المركزي للمناقصات العامة -- CAPT -- وينطبق على المشتريات الحكومية التي تتجاوز قيمتها ٧٥ ألف دينار كويتي، بحسب دليل الحكومة الأمريكية الرسمي على trade.gov حول الأعمال في الكويت)، في مادته ٦٢، الجهةَ المخوَّلة بالترسية بمنح العقد لعرض "المنتج الوطني" -- المطابق لمواصفات هيئة التقييس لدول مجلس التعاون الخليجي أو المواصفات الوطنية الكويتية المعتمدة -- على حساب البديل المستورد كلما لم يتجاوز سعر العرض الوطني أقل سعر مماثل للمنتج المستورد بأكثر من هامش تُحيل المادة نفسها تحديده إلى اللائحة التنفيذية (تم التحقق من ذلك مباشرة من النص الأساسي للقانون، المستضاف على موقع الهيئة العامة لتشجيع الاستثمار المباشر الكويتية kdipa.gov.kw). وتتوافق اللائحة التنفيذية المطبِّقة، وهي المرسوم رقم ٣٠ لسنة ٢٠١٧، مع ثلاثة مصادر ثانوية مستقلة -- ملخص قانوني صادر عن اتحاد المقاولين العرب (fac-arab.com)، ودليل سوق المناقصات الكويتية لعام ٢٠٢٦ (tenderspedia.com)، ودليل trade.gov الحكومي الأمريكي نفسه الذي ينص صراحة على "تفضيل سعري بنسبة ١٥٪ لصالح المنتجات المحلية والمنتجات ذات المنشأ الخليجي" -- على الرقم نفسه: هامش تقييم سعري بنسبة ١٥٪. ويعكس امتداد هذا التفضيل ليشمل المنشأ الخليجي (وليس المنشأ الكويتي فقط) شرط مطابقة مواصفات هيئة التقييس الخليجية الوارد في المادة ٦٢ نفسها، ونفس منطق المعاملة الوطنية بموجب الاتفاقية الاقتصادية الموحدة لدول مجلس التعاون الخليجي المُنمذَج مسبقاً للإمارات (`ae-gcc-origin-treatment`). وهذه آلية مختلفة فعلياً عن برنامجي الكويت الآخرين في هذا المحرك: فخلافاً لـ`kw-local-content` (الإطار الوطني العام الذي لا يزال غير موثّق) و`kw-kpc-local-spend` (هدف إنفاق مؤسسة البترول الكويتية بصفتها مشترياً رئيسياً، وتديره شركة واحدة مملوكة جزئياً للدولة بموجب سياستها الداخلية الخاصة، بحلول عام ٢٠٤٠)، فإن هذه الآلية هي قاعدة تفضيل سعري عامة شاملة لكل الجهات الحكومية بموجب قانون المناقصات العامة نفسه يديرها الجهاز المركزي للمناقصات -- وهو نفس نمط "أساس قانوني عام شامل لكل الجهات الحكومية، مختلف فعلياً عن برنامج أضيق خاص بمشترٍ رئيسي" المُثبَت مسبقاً لحكم قانون المناقصات القطري (`qa-tenders-icv`) إلى جانب منصة icv.qa الخاصة بقطر للطاقة. وتُنمذَج هذه الآلية هنا عبر بدائية تفضيل السعر المشتركة (بنفس صيغة الحصة المتدرجة المستمرة من قيمة العطاء المستخدمة في الأردن والسعودية ومجموعة OQ العُمانية)، لأن المادة ٦٢ تُقيَّم على مستوى العرض/المنتج وليس كنسبة على مستوى الشركة ككل. وتم في هذا البحث نفسه التحقق من نتيجتين حقيقيتين وموثّقتين إضافيتين، ولم تُنمذَجا عمداً كبرنامجين منفصلين في هذه المرحلة، للإبقاء على نطاق هذه المرحلة عند الآلية الجديدة الواحدة الموثّقة بدقة التي طلبتها المهمة: (١) يذكر كل من trade.gov وtenderspedia.com بشكل منفصل تفضيلاً سعرياً مختلفاً بنسبة ١٠٪ خاصاً تحديداً بالشركات الكويتية الجنسية (وليس مبنياً على منشأ المنتج، بخلاف تفضيل المنتج الوطني بنسبة ١٥٪ بموجب المادة ٦٢ أعلاه) -- وهو معيار تأهيل مختلف فعلياً، حقيقي وموثّق بمصدرين مستقلين، ويُشار إليه هنا كبرنامج كويتي رابع مرشّح حقيقي لمرحلة بحث مستقبلية. (٢) يذكر المصدران نفسهما أيضاً اشتراطاً إلزامياً بحد أدنى ٣٠٪ للتوريد من السوق المحلية لمقدمي العطاءات الأجانب بموجب المرسوم رقم ٣٠ لسنة ٢٠١٧ نفسه -- وهو نوع آلية مختلف فعلياً (اشتراط امتثال إلزامي، وليس تفضيلاً سعرياً) وأساس قانوني/نطاق مشترٍ مختلف فعلياً عن هدف مؤسسة البترول الكويتية الخاص بنسبة ٣٠٪ بحلول ٢٠٤٠ في `kw-kpc-local-spend` (فهذا الاشتراط يديره الجهاز المركزي للمناقصات وشامل لكل الجهات الحكومية، وليس سياسة داخلية خاصة بمجموعة شركات الكاف التابعة لمؤسسة البترول) -- وهو حقيقي أيضاً وموثّق بمصدرين أيضاً، ولم يُنمذَج عمداً في هذه المرحلة لتجنّب الخلط بين رقمي ٣٠٪ مختلفين تحت برنامج واحد. وبشكل منفصل، يذكر tenderspedia.com وحده (دون تأكيد من trade.gov أو fac-arab.com أو أي مصدر آخر عُثر عليه في هذا البحث) تفضيلاً سعرياً إضافياً بنسبة ٢٠٪ للمنشآت الصغيرة والمتوسطة المسجَّلة لدى الصندوق الوطني لتنمية المنشآت الصغيرة والمتوسطة في الكويت؛ ووفق معيار "عدم الاختلاق" المعتمد في هذه المنصة، يُفصَح عن هذا الرقم غير المؤكَّد الصادر عن مصدر تجميعي أقل موثوقية كنتيجة بحث تم التحقق منها ورُفضت، لا كآلية مُنمذَجة -- وهو نفس التعامل المُطبَّق مسبقاً مع ادعاء Pinsent Masons بنسبة ٣٠٪ الذي تم التحقق منه ورُفض في مُدخل `qa-tenders-icv` القطري نفسه.',
   },
 };
 
@@ -1290,6 +1299,17 @@ export interface SupplierLocalContentInputs {
    * more granular sourced qualification definition). */
   kwLocalSpend?: {
     isRegisteredKuwaitiSupplier: boolean | null;
+  };
+  /** Kuwait Public Tenders Law national-product price preference (KW /
+   * 'kw-tender-law-price-preference', new 20 Sep 2026) -- % of this bid's
+   * value that is a certified national/GCC-origin product (self-reported,
+   * caller-supplied), same continuously-scaled shape as Jordan/Saudi/
+   * Oman-OQ. See PROGRAMS['kw-tender-law-price-preference'].sourceNoteEn
+   * for the full sourcing and the two disclosed-but-not-modeled related
+   * findings (a separate 10% Kuwaiti-company preference and a mandatory
+   * 30% local-sourcing requirement, both investigated this same pass). */
+  kwTenderLawPricePreference?: {
+    bidValueNationalProductPct: number | null;
   };
   /** Egypt public-procurement price preference (EG / 'eg-price-preference',
    * new 15 Sep 2026 Part 2 pass) -- % of this bid's/project's estimated
@@ -2265,6 +2285,19 @@ function computeLocalSpendKw(kw: NonNullable<SupplierLocalContentInputs['kwLocal
 }
 
 // ---------------------------------------------------------------------------
+// Section 6d-2 — KW: Public Tenders Law national-product price preference
+// (type 4, new 20 Sep 2026). Reuses the shared price-preference-margin
+// primitive -- see PROGRAMS['kw-tender-law-price-preference'].sourceNoteEn
+// for the full sourcing (Law 49/2016 Art. 62 + Decree No. 30/2017, 15%).
+// ---------------------------------------------------------------------------
+
+export const KUWAIT_TENDER_LAW_PRICE_PREFERENCE_MARGIN_PCT = 15;
+
+function computePricePreferenceKw(kw: NonNullable<SupplierLocalContentInputs['kwTenderLawPricePreference']>): PricePreferenceMarginResult {
+  return computePricePreferenceMargin(KUWAIT_TENDER_LAW_PRICE_PREFERENCE_MARGIN_PCT, kw.bidValueNationalProductPct);
+}
+
+// ---------------------------------------------------------------------------
 // Section 6e — QA: Tawteen/ICV modified-icv-score (new 15 Sep 2026). Real
 // formula from icv.qa's own official methodology pages -- see PROGRAMS[
 // 'qa-icv-tawteen'].sourceNoteEn for the full sourcing.
@@ -2451,6 +2484,11 @@ export function assessSupplierLocalContent(
       return { country, program: resolvedProgram, procurementContext, applicability: 'applicable', framework, computation: { mechanismType: 'spend-set-aside-target', targetSharePct: KUWAIT_KPC_LOCAL_SPEND_TARGET_PCT, qualifiesForSetAside: null, eligibleForReservedShare: null }, certificationCaveatEn: NOT_CERTIFIED_EN, certificationCaveatAr: NOT_CERTIFIED_AR, reasonEn: 'No Kuwaiti-supplier registration status supplied yet.', reasonAr: 'لم تُدخل حالة تسجيل المورّد الكويتي بعد.' };
     }
     computation = computeLocalSpendKw(inputs.kwLocalSpend);
+  } else if (resolvedProgram === 'kw-tender-law-price-preference') {
+    if (!inputs.kwTenderLawPricePreference) {
+      return { country, program: resolvedProgram, procurementContext, applicability: 'applicable', framework, computation: computePricePreferenceMargin(KUWAIT_TENDER_LAW_PRICE_PREFERENCE_MARGIN_PCT, null), certificationCaveatEn: NOT_CERTIFIED_EN, certificationCaveatAr: NOT_CERTIFIED_AR, reasonEn: 'No Kuwaiti national/GCC-product bid share supplied yet.', reasonAr: 'لم تُدخل نسبة المنتج الوطني/الخليجي في العطاء بعد.' };
+    }
+    computation = computePricePreferenceKw(inputs.kwTenderLawPricePreference);
   } else if (resolvedProgram === 'eg-price-preference') {
     if (!inputs.eg) {
       return { country, program: resolvedProgram, procurementContext, applicability: 'applicable', framework, computation: computePricePreferenceMargin(EGYPT_PRICE_PREFERENCE_MARGIN_PCT, null), certificationCaveatEn: NOT_CERTIFIED_EN, certificationCaveatAr: NOT_CERTIFIED_AR, reasonEn: 'No Egyptian local-content share supplied yet.', reasonAr: 'لم تُدخل نسبة المحتوى المصري بعد.' };

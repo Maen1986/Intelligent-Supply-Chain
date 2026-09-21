@@ -17,6 +17,7 @@ import {
   BAHRAIN_SME_PRICE_PREFERENCE_MARGIN_PCT,
   BAHRAIN_SME_SPEND_SETASIDE_TARGET_PCT,
   KUWAIT_KPC_LOCAL_SPEND_TARGET_PCT,
+  KUWAIT_TENDER_LAW_PRICE_PREFERENCE_MARGIN_PCT,
   QATAR_ICV_PLUS_MANUFACTURER_BOOST_MULTIPLIER,
   QATAR_ICV_BLANKET_FLOOR_PCT_MICRO_SMALL,
   QATAR_ICV_MAX_SELF_REPORTED_BONUS_PCT,
@@ -1027,6 +1028,7 @@ describe('CN — structural sanity (16 Sep 2026 China Part 2 continuation, fifth
     const nonCnPriceProgramsWithContext: Array<[LocalContentProgram, ProcurementContext]> = [
       ['jo-price-preference', 'government'], ['sa-price-preference', 'government'],
       ['om-oq-price-preference', 'semi-government-soe'], ['bh-sme-price-preference', 'government'],
+      ['kw-tender-law-price-preference', 'government'],
       ['eg-price-preference', 'government'], ['eg-oil-gas-price-preference', 'semi-government-soe'],
       ['tr-price-preference', 'government'], ['usa-buy-american-price-preference', 'government'],
     ];
@@ -1767,14 +1769,14 @@ describe('SA — program routing default', () => {
     });
   });
 
-  it('PROGRAMS_BY_COUNTRY lists every program per country (SA: 9 -- +3 on 18 Sep 2026: Rawafed/SABIC/Tharwah -- AE: 3 -- +1 on 20 Sep 2026: GCC origin treatment -- QA: 3 -- +1 on 20 Sep 2026: Tenders Law ICV consideration -- JO: 2, OM: 3, BH: 3, KW: 2, EG: 3, TR: 2, UK: 1, USA: 4, CN: 4)', () => {
+  it('PROGRAMS_BY_COUNTRY lists every program per country (SA: 9 -- +3 on 18 Sep 2026: Rawafed/SABIC/Tharwah -- AE: 3 -- +1 on 20 Sep 2026: GCC origin treatment -- QA: 3 -- +1 on 20 Sep 2026: Tenders Law ICV consideration -- KW: 3 -- +1 on 20 Sep 2026: Public Tenders Law price preference -- JO: 2, OM: 3, BH: 3, EG: 3, TR: 2, UK: 1, USA: 4, CN: 4)', () => {
     expect(PROGRAMS_BY_COUNTRY.SA).toHaveLength(9);
     expect(PROGRAMS_BY_COUNTRY.AE).toHaveLength(3);
     expect(PROGRAMS_BY_COUNTRY.JO).toHaveLength(2);
     expect(PROGRAMS_BY_COUNTRY.OM).toHaveLength(3);
     expect(PROGRAMS_BY_COUNTRY.QA).toHaveLength(3);
     expect(PROGRAMS_BY_COUNTRY.BH).toHaveLength(3);
-    expect(PROGRAMS_BY_COUNTRY.KW).toHaveLength(2);
+    expect(PROGRAMS_BY_COUNTRY.KW).toHaveLength(3);
     expect(PROGRAMS_BY_COUNTRY.EG).toHaveLength(3);
     expect(PROGRAMS_BY_COUNTRY.TR).toHaveLength(2);
     expect(PROGRAMS_BY_COUNTRY.UK).toHaveLength(1);
@@ -2657,6 +2659,100 @@ describe("KW / KPC Kuwaiti-Supplier Spend Target — spend-set-aside-target", ()
   it("not-applicable: government procurement is outside KPC's own semi-government-soe-anchored scope", () => {
     const a = assessSupplierLocalContent('KW', 'government', { kwLocalSpend: { isRegisteredKuwaitiSupplier: true } }, 'kw-kpc-local-spend');
     expect(a.applicability).toBe('not-applicable');
+  });
+});
+
+describe("KW / Public Tenders Law National Product Price Preference (Art. 62) — price-preference-margin, genuinely distinct from kw-kpc-local-spend's own anchor-buyer target (20 Sep 2026, Kuwait deepening pass)", () => {
+  it('soft: realistic 40% national/GCC-product bid share', () => {
+    const a = assessSupplierLocalContent('KW', 'government', { kwTenderLawPricePreference: { bidValueNationalProductPct: 40 } }, 'kw-tender-law-price-preference');
+    const c = a.computation as PricePreferenceMarginResult;
+    expect(c.preferenceMarginPct).toBe(KUWAIT_TENDER_LAW_PRICE_PREFERENCE_MARGIN_PCT);
+    expect(c.effectiveBidDiscountPct).toBeCloseTo(6, 6); // 15% * 40%
+  });
+
+  it('hardest: 0% and 100% national/GCC-product share (the two adversarial extremes)', () => {
+    const zero = assessSupplierLocalContent('KW', 'government', { kwTenderLawPricePreference: { bidValueNationalProductPct: 0 } }, 'kw-tender-law-price-preference').computation as PricePreferenceMarginResult;
+    const full = assessSupplierLocalContent('KW', 'government', { kwTenderLawPricePreference: { bidValueNationalProductPct: 100 } }, 'kw-tender-law-price-preference').computation as PricePreferenceMarginResult;
+    expect(zero.effectiveBidDiscountPct).toBe(0);
+    expect(full.effectiveBidDiscountPct).toBe(KUWAIT_TENDER_LAW_PRICE_PREFERENCE_MARGIN_PCT); // 15% * 100% = 15
+  });
+
+  it('boundary: no bid share supplied -> honest null, never a fabricated zero', () => {
+    const a = assessSupplierLocalContent('KW', 'government', { kwTenderLawPricePreference: { bidValueNationalProductPct: null } }, 'kw-tender-law-price-preference');
+    const c = a.computation as PricePreferenceMarginResult;
+    expect(c.preferenceMarginPct).toBe(KUWAIT_TENDER_LAW_PRICE_PREFERENCE_MARGIN_PCT); // the legal margin itself is always known, even with no supplier data yet
+    expect(c.locallyManufacturedSharePct).toBeNull();
+    expect(c.effectiveBidDiscountPct).toBeNull();
+  });
+
+  it('boundary: no inputs object supplied at all -> insufficient-data short-circuit still discloses the real 15% margin, never a blank/zero one', () => {
+    const a = assessSupplierLocalContent('KW', 'government', {}, 'kw-tender-law-price-preference');
+    expect(a.applicability).toBe('applicable');
+    const c = a.computation as PricePreferenceMarginResult;
+    expect(c.preferenceMarginPct).toBe(KUWAIT_TENDER_LAW_PRICE_PREFERENCE_MARGIN_PCT);
+    expect(c.locallyManufacturedSharePct).toBeNull();
+  });
+
+  it("not-applicable: semi-government-soe procurement is outside this CAPT-administered government-tenders-only sourced scope (that context is KPC's own kw-kpc-local-spend instead)", () => {
+    const a = assessSupplierLocalContent('KW', 'semi-government-soe', { kwTenderLawPricePreference: { bidValueNationalProductPct: 50 } }, 'kw-tender-law-price-preference');
+    expect(a.applicability).toBe('not-applicable');
+  });
+
+  it("is a genuinely different mechanism from kw-kpc-local-spend, not a renamed copy: different mechanismType, different applicableContexts, and a distinct field the KPC program never reads", () => {
+    const kwPricePref = PROGRAMS['kw-tender-law-price-preference'];
+    const kwKpc = PROGRAMS['kw-kpc-local-spend'];
+    expect(kwPricePref.mechanismType).toBe('price-preference-margin');
+    expect(kwKpc.mechanismType).toBe('spend-set-aside-target');
+    expect(kwPricePref.applicableContexts).toEqual(['government']);
+    expect(kwKpc.applicableContexts).toEqual(['semi-government-soe']);
+    // Feeding the price-preference program's own field, in KPC's own applicable context, never accidentally
+    // resolves a spend-set-aside qualification -- the KPC program still correctly discloses a null
+    // qualification because its OWN field (kwLocalSpend) was never supplied, proving the two programs read
+    // genuinely separate inputs, not a shared/renamed one.
+    const priceOnlyInputs = assessSupplierLocalContent('KW', 'semi-government-soe', { kwTenderLawPricePreference: { bidValueNationalProductPct: 60 } }, 'kw-kpc-local-spend');
+    expect(priceOnlyInputs.applicability).toBe('applicable');
+    expect((priceOnlyInputs.computation as SpendSetAsideResult).qualifiesForSetAside).toBeNull();
+  });
+
+  it('discloses Law No. 49/2016 Art. 62, Decree No. 30/2017, the 15% figure, and the two investigated-but-not-modeled related findings (10% company preference, 30% mandatory local-sourcing requirement) bilingually', () => {
+    const fw = PROGRAMS['kw-tender-law-price-preference'];
+    expect(fw.sourceNoteEn).toContain('49 of 2016');
+    expect(fw.sourceNoteEn).toContain('Article 62');
+    expect(fw.sourceNoteEn).toContain('Decree No. 30 of 2017');
+    expect(fw.sourceNoteEn).toContain('15%');
+    expect(fw.sourceNoteEn).toContain('10% price preference specifically for Kuwaiti-NATIONALITY companies');
+    expect(fw.sourceNoteEn).toContain('mandatory minimum 30% local-market-sourcing requirement');
+    expect(fw.sourceNoteEn).toContain('investigated-but-rejected');
+    expect(fw.sourceNoteAr).toContain('٤٩ لسنة ٢٠١٦');
+    expect(fw.sourceNoteAr).toContain('المادة ٦٢');
+    expect(fw.sourceNoteAr).toContain('٣٠ لسنة ٢٠١٧');
+    expect(fw.sourceNoteAr).toContain('١٥٪');
+  });
+});
+
+// ===========================================================================
+// Cross-engine chained scenario -- Registry #436 groundwork: this Kuwait
+// deepening pass adds a THIRD real Kuwait program, so a single supplier can
+// now be assessed against two genuinely different, independently-applicable
+// Kuwait mechanisms in the SAME pass depending only on procurement context --
+// exactly the kind of same-country, context-switched chaining #436's
+// adversarial stress test will exercise across modules.
+// ===========================================================================
+
+describe('KW — same supplier, both real Kuwait programs, context alone decides which applies (chained, not isolated)', () => {
+  it('a government-context bid resolves ONLY the price-preference margin, and a semi-government-soe context for the SAME supplier resolves ONLY the KPC spend target -- never both, never neither', () => {
+    const govBid = assessSupplierLocalContent('KW', 'government', {
+      kwTenderLawPricePreference: { bidValueNationalProductPct: 30 },
+      kwLocalSpend: { isRegisteredKuwaitiSupplier: true },
+    }, 'kw-tender-law-price-preference');
+    const soeBid = assessSupplierLocalContent('KW', 'semi-government-soe', {
+      kwTenderLawPricePreference: { bidValueNationalProductPct: 30 },
+      kwLocalSpend: { isRegisteredKuwaitiSupplier: true },
+    }, 'kw-kpc-local-spend');
+    expect(govBid.applicability).toBe('applicable');
+    expect(govBid.computation.mechanismType).toBe('price-preference-margin');
+    expect(soeBid.applicability).toBe('applicable');
+    expect(soeBid.computation.mechanismType).toBe('spend-set-aside-target');
   });
 });
 
