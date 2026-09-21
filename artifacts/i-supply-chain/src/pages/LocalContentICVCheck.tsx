@@ -88,6 +88,7 @@ type OmOqPricePreferenceInputs = NonNullable<SupplierLocalContentInputs['omOqPri
 type QaInputs = NonNullable<SupplierLocalContentInputs['qa']>;
 type BhSmeInputs = NonNullable<SupplierLocalContentInputs['bhSme']>;
 type KwLocalSpendInputs = NonNullable<SupplierLocalContentInputs['kwLocalSpend']>;
+type KwTenderLawPricePreferenceInputs = NonNullable<SupplierLocalContentInputs['kwTenderLawPricePreference']>;
 type EgInputs = NonNullable<SupplierLocalContentInputs['eg']>;
 type EgOilGasInputs = NonNullable<SupplierLocalContentInputs['egOilGas']>;
 type TrInputs = NonNullable<SupplierLocalContentInputs['tr']>;
@@ -164,6 +165,9 @@ function emptyBhSme(): BhSmeInputs {
 }
 function emptyKwLocalSpend(): KwLocalSpendInputs {
   return { isRegisteredKuwaitiSupplier: null };
+}
+function emptyKwTenderLawPricePreference(): KwTenderLawPricePreferenceInputs {
+  return { bidValueNationalProductPct: null };
 }
 function emptyEg(): EgInputs {
   return { egyptianContentSharePct: null };
@@ -282,6 +286,7 @@ interface LocalContentEntry {
   qa: QaInputs;
   bhSme: BhSmeInputs;
   kwLocalSpend: KwLocalSpendInputs;
+  kwTenderLawPricePreference: KwTenderLawPricePreferenceInputs;
   eg: EgInputs;
   egOilGas: EgOilGasInputs;
   tr: TrInputs;
@@ -306,7 +311,7 @@ function newLocalContentEntry(): LocalContentEntry {
     sa: emptySa(), saMandatoryList: emptySaMandatoryList(), saPricePreference: emptySaPricePreference(), iktva: emptyIktva(),
     ae: emptyAe(), aeTawazun: emptyAeTawazun(), aeGccOrigin: emptyAeGccOrigin(), jo: emptyJo(),
     joContractorQuota: emptyJoContractorQuota(), omMandatoryList: emptyOmMandatoryList(), omOqPricePreference: emptyOmOqPricePreference(),
-    qa: emptyQa(), bhSme: emptyBhSme(), kwLocalSpend: emptyKwLocalSpend(),
+    qa: emptyQa(), bhSme: emptyBhSme(), kwLocalSpend: emptyKwLocalSpend(), kwTenderLawPricePreference: emptyKwTenderLawPricePreference(),
     eg: emptyEg(), egOilGas: emptyEgOilGas(), tr: emptyTr(), uk: emptyUk(),
     usa: emptyUsa(), usaBaba: emptyUsaBaba(), cn: emptyCn(), cnSme: emptyCnSme(),
     rawafedStc: emptyRawafedStc(), sabicLcCommitment: emptySabicLcCommitment(),
@@ -351,6 +356,7 @@ function loadState(): PersistedState {
             qa: { ...emptyQa(), ...e.qa },
             bhSme: { ...emptyBhSme(), ...e.bhSme },
             kwLocalSpend: { ...emptyKwLocalSpend(), ...e.kwLocalSpend },
+            kwTenderLawPricePreference: { ...emptyKwTenderLawPricePreference(), ...e.kwTenderLawPricePreference },
             eg: { ...emptyEg(), ...e.eg },
             egOilGas: { ...emptyEgOilGas(), ...e.egOilGas },
             tr: { ...emptyTr(), ...e.tr },
@@ -432,6 +438,7 @@ const PROGRAM_LABELS: Record<LocalContentProgram, { en: string; ar: string }> = 
   'bh-sme-spend-setaside': { en: 'SME Spend Set-Aside (20%)', ar: 'تخصيص إنفاق للمنشآت الصغيرة والمتوسطة (٢٠٪)' },
   'kw-local-content': { en: 'Local Content (not sourced)', ar: 'المحتوى المحلي (غير موثّق)' },
   'kw-kpc-local-spend': { en: 'KPC Local Spend Target (30%)', ar: 'هدف إنفاق KPC المحلي (٣٠٪)' },
+  'kw-tender-law-price-preference': { en: 'Tender Law Price Preference (15%)', ar: 'تفضيل سعر قانون المناقصات (١٥٪)' },
   'eg-price-preference': { en: 'Price Preference (15%)', ar: 'تفضيل السعر (١٥٪)' },
   'eg-oil-gas-price-preference': { en: 'Oil & Gas PSA Preference (10%)', ar: 'تفضيل اتفاقية تقاسم الإنتاج النفطية (١٠٪)' },
   'eg-auto-local-content': { en: 'Automotive Local Content (not sourced)', ar: 'المحتوى المحلي لصناعة السيارات (غير موثّق)' },
@@ -617,7 +624,7 @@ function LocalContentEntryCard({
   const assessment: LocalContentAssessment | null = !isOther
     ? assessSupplierLocalContent(
         entry.countrySelection as LocalContentCountry, entry.context,
-        { sa: entry.sa, ae: entry.ae, jo: entry.jo, saMandatoryList: entry.saMandatoryList, saPricePreference: entry.saPricePreference, iktva: entry.iktva, aeTawazun: entry.aeTawazun, aeGccOrigin: entry.aeGccOrigin, joContractorQuota: entry.joContractorQuota, omMandatoryList: entry.omMandatoryList, omOqPricePreference: entry.omOqPricePreference, qa: entry.qa, bhSme: entry.bhSme, kwLocalSpend: entry.kwLocalSpend, eg: entry.eg, egOilGas: entry.egOilGas, tr: entry.tr, uk: entry.uk, usa: entry.usa, usaBaba: entry.usaBaba, cn: entry.cn, cnSme: entry.cnSme, rawafedStc: entry.rawafedStc, sabicLcCommitment: entry.sabicLcCommitment, qaTendersIcv: entry.qaTendersIcv },
+        { sa: entry.sa, ae: entry.ae, jo: entry.jo, saMandatoryList: entry.saMandatoryList, saPricePreference: entry.saPricePreference, iktva: entry.iktva, aeTawazun: entry.aeTawazun, aeGccOrigin: entry.aeGccOrigin, joContractorQuota: entry.joContractorQuota, omMandatoryList: entry.omMandatoryList, omOqPricePreference: entry.omOqPricePreference, qa: entry.qa, bhSme: entry.bhSme, kwLocalSpend: entry.kwLocalSpend, kwTenderLawPricePreference: entry.kwTenderLawPricePreference, eg: entry.eg, egOilGas: entry.egOilGas, tr: entry.tr, uk: entry.uk, usa: entry.usa, usaBaba: entry.usaBaba, cn: entry.cn, cnSme: entry.cnSme, rawafedStc: entry.rawafedStc, sabicLcCommitment: entry.sabicLcCommitment, qaTendersIcv: entry.qaTendersIcv },
         entry.program,
       )
     : null;
@@ -1282,6 +1289,19 @@ function LocalContentEntryCard({
                     <p className="text-[10px] text-muted-foreground mt-1.5">
                       {isAr ? 'لم يُسنَد بعد تعريف تأهل أكثر تفصيلاً وموثّقاً -- التسجيل الرسمي هو الحقيقة المتاحة حالياً.' : 'A more granular sourced qualification definition has not been located yet -- formal registration is the fact available today.'}
                     </p>
+                  </div>
+                )}
+
+                {entry.countrySelection === 'KW' && entry.program === 'kw-tender-law-price-preference' && (
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    <NumberField
+                      label={isAr ? 'نسبة المنتج الوطني/الخليجي من قيمة العطاء' : 'National/GCC-Product Share of Bid Value'}
+                      hint={isAr ? `تفضيل السعر الأقصى بموجب المادة ٦٢ من قانون المناقصات العامة رقم ٤٩/٢٠١٦: ١٥٪` : 'Maximum price preference margin under Public Tenders Law No. 49/2016, Art. 62: 15%'}
+                      unit="%"
+                      max={100}
+                      value={entry.kwTenderLawPricePreference.bidValueNationalProductPct}
+                      onChange={v => onUpdate(entry.id, { kwTenderLawPricePreference: { ...entry.kwTenderLawPricePreference, bidValueNationalProductPct: v } })}
+                    />
                   </div>
                 )}
 
@@ -2029,6 +2049,7 @@ export function LocalContentICVCheck() {
       rawafedStc: { ...emptyRawafedStc(), ...row.data.rawafedStc },
       sabicLcCommitment: { ...emptySabicLcCommitment(), ...row.data.sabicLcCommitment },
       qaTendersIcv: { ...emptyQaTendersIcv(), ...row.data.qaTendersIcv },
+      kwTenderLawPricePreference: { ...emptyKwTenderLawPricePreference(), ...row.data.kwTenderLawPricePreference },
     };
   }
   function entryToPayload(e: LocalContentEntry) {
@@ -2123,7 +2144,7 @@ export function LocalContentICVCheck() {
       entry: e,
       assessment: assessSupplierLocalContent(
         e.countrySelection as LocalContentCountry, e.context,
-        { sa: e.sa, ae: e.ae, jo: e.jo, saMandatoryList: e.saMandatoryList, saPricePreference: e.saPricePreference, iktva: e.iktva, aeTawazun: e.aeTawazun, aeGccOrigin: e.aeGccOrigin, joContractorQuota: e.joContractorQuota, omMandatoryList: e.omMandatoryList, omOqPricePreference: e.omOqPricePreference, qa: e.qa, bhSme: e.bhSme, kwLocalSpend: e.kwLocalSpend, eg: e.eg, egOilGas: e.egOilGas, tr: e.tr, uk: e.uk, usa: e.usa, usaBaba: e.usaBaba, cn: e.cn, cnSme: e.cnSme, rawafedStc: e.rawafedStc, sabicLcCommitment: e.sabicLcCommitment, qaTendersIcv: e.qaTendersIcv },
+        { sa: e.sa, ae: e.ae, jo: e.jo, saMandatoryList: e.saMandatoryList, saPricePreference: e.saPricePreference, iktva: e.iktva, aeTawazun: e.aeTawazun, aeGccOrigin: e.aeGccOrigin, joContractorQuota: e.joContractorQuota, omMandatoryList: e.omMandatoryList, omOqPricePreference: e.omOqPricePreference, qa: e.qa, bhSme: e.bhSme, kwLocalSpend: e.kwLocalSpend, kwTenderLawPricePreference: e.kwTenderLawPricePreference, eg: e.eg, egOilGas: e.egOilGas, tr: e.tr, uk: e.uk, usa: e.usa, usaBaba: e.usaBaba, cn: e.cn, cnSme: e.cnSme, rawafedStc: e.rawafedStc, sabicLcCommitment: e.sabicLcCommitment, qaTendersIcv: e.qaTendersIcv },
         e.program,
       ),
     }));
