@@ -142,7 +142,7 @@ const MIGRATIONS: string[] = [
    FROM (VALUES
      -- Saudi Arabia — matches the 7 sub-segments already live in maturityData.tsx
      ('ksa', 'nitaqat', 'Nitaqat / Saudization', 'نطاقات / التوطين', 'Ministry of Human Resources and Social Development', 'وزارة الموارد البشرية والتنمية الاجتماعية', '["*"]', 'Workforce localisation quota system.', 'https://www.hrsd.gov.sa/en', 'verified', 1),
-     ('ksa', 'iktva', 'IKTVA & Local Content', 'إكتفاء والمحتوى المحلي', 'Ministry of Industry and Mineral Resources', 'وزارة الصناعة والثروة المعدنية', '["*"]', 'In-Kingdom Total Value Add local-content programme.', 'https://iktva.sa/', 'verified', 2),
+     ('ksa', 'iktva', 'IKTVA & Local Content', 'اكتفاء والمحتوى المحلي', 'Ministry of Industry and Mineral Resources', 'وزارة الصناعة والثروة المعدنية', '["*"]', 'In-Kingdom Total Value Add local-content programme.', 'https://iktva.sa/', 'verified', 2),
      ('ksa', 'import_export', 'Import/Export Licensing', 'تراخيص الاستيراد والتصدير', 'Saudi Customs / ZATCA', 'الجمارك السعودية / هيئة الزكاة والضريبة والجمارك', '["*"]', 'Customs and cross-border trade licensing.', 'https://zatca.gov.sa/', 'verified', 3),
      ('ksa', 'sfda', 'Product Regulatory Compliance', 'الامتثال التنظيمي للمنتجات', 'Saudi Food & Drug Authority (SFDA)', 'الهيئة العامة للغذاء والدواء', '["fmcg","pharma","retail"]', 'Product registration and compliance for food, drug, cosmetic and medical device products.', 'https://www.sfda.gov.sa/en/regulations', 'verified', 4),
      ('ksa', 'gtpl', 'GTPL (Government Procurement)', 'نظام المنافسات والمشتريات الحكومية', 'National Competitiveness Authority / Monafasat', 'الهيئة الوطنية للمنافسة / منافسات', '["government"]', 'Government Tendering and Procurement Law — applies to entities selling into government procurement.', 'https://monafasat.etimad.sa/', 'verified', 5),
@@ -506,6 +506,30 @@ const MIGRATIONS: string[] = [
      UNIQUE (industry, company_size, segment_id)
    )`,
   `CREATE INDEX IF NOT EXISTS industry_benchmarks_cohort ON industry_benchmarks (industry, company_size)`,
+
+  // Content-fidelity fix (22 Sep 2026) -- the 'ksa'/'iktva' regulatory
+  // framework's name_ar carried a one-character orthographic defect: a
+  // hamza-seat alif (إكتفاء) instead of the grammatically-correct plain-alif
+  // spelling (اكتفاء) that this word (a Form VIII verbal noun, hamzat wasl)
+  // actually takes -- confirmed against Aramco's own IKTVA branding and
+  // Saudi Press Agency reporting (spa.gov.sa/N2509865) during the SI Module
+  // 08 local-content engine's Arabic QA self-audit, which found and fixed
+  // the same defect in 23 other locations across supplierLocalContentEligibility.ts,
+  // its worked-example doc, LocalContentICVCheck.tsx, kraljicScoring.ts, and
+  // DataSources.tsx (this file was out of that audit's scope at the time,
+  // since it lives outside SI Module 08 and wasn't among the files that
+  // session had written). The INSERT above only fires once, guarded by
+  // `WHERE NOT EXISTS (SELECT 1 FROM regulatory_frameworks LIMIT 1)` -- so a
+  // database already seeded before this fix keeps the misspelling
+  // permanently unless corrected here, the same 'seed can't self-heal, needs
+  // a follow-up UPDATE' pattern already used above for the UAE/Qatar/Jordan/
+  // Oman/Bahrain coverage-level fixes. Idempotent and safe on every boot: a
+  // no-op once the value is already correct, whether that's because this
+  // UPDATE already ran or because the table was freshly seeded from the
+  // now-corrected INSERT literal above.
+  `UPDATE regulatory_frameworks
+     SET name_ar = 'اكتفاء والمحتوى المحلي'
+   WHERE country_id = 'ksa' AND code = 'iktva' AND name_ar = 'إكتفاء والمحتوى المحلي'`,
 
 ];
 
