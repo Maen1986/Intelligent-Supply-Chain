@@ -18,6 +18,9 @@ import {
   BAHRAIN_SME_SPEND_SETASIDE_TARGET_PCT,
   KUWAIT_KPC_LOCAL_SPEND_TARGET_PCT,
   KUWAIT_TENDER_LAW_PRICE_PREFERENCE_MARGIN_PCT,
+  BAHRAIN_TAKAMUL_PRICE_PREFERENCE_MARGIN_PCT,
+  BAHRAIN_GULF_MADE_PRICE_PREFERENCE_MARGIN_PCT,
+  KUWAIT_NATIONALITY_PRICE_PREFERENCE_MARGIN_PCT,
   QATAR_ICV_PLUS_MANUFACTURER_BOOST_MULTIPLIER,
   QATAR_ICV_BLANKET_FLOOR_PCT_MICRO_SMALL,
   QATAR_ICV_MAX_SELF_REPORTED_BONUS_PCT,
@@ -1780,14 +1783,14 @@ describe('SA — program routing default', () => {
     });
   });
 
-  it('PROGRAMS_BY_COUNTRY lists every program per country (SA: 9 -- +3 on 18 Sep 2026: Rawafed/SABIC/Tharwah -- AE: 3 -- +1 on 20 Sep 2026: GCC origin treatment -- QA: 3 -- +1 on 20 Sep 2026: Tenders Law ICV consideration -- KW: 3 -- +1 on 20 Sep 2026: Public Tenders Law price preference -- JO: 2, OM: 3, BH: 3, EG: 3, TR: 2, UK: 1, USA: 4, CN: 4)', () => {
+  it('PROGRAMS_BY_COUNTRY lists every program per country (SA: 9 -- +3 on 18 Sep 2026: Rawafed/SABIC/Tharwah -- AE: 3 -- +1 on 20 Sep 2026: GCC origin treatment -- QA: 3 -- +1 on 20 Sep 2026: Tenders Law ICV consideration -- KW: 4 -- +1 on 20 Sep 2026: Public Tenders Law price preference, +1 on 29 Sep 2026: Kuwaiti-nationality price preference -- BH: 5 -- +2 on 29 Sep 2026: Takamul + Gulf-Made preferences -- JO: 2, OM: 3, EG: 3, TR: 2, UK: 1, USA: 4, CN: 4)', () => {
     expect(PROGRAMS_BY_COUNTRY.SA).toHaveLength(9);
     expect(PROGRAMS_BY_COUNTRY.AE).toHaveLength(3);
     expect(PROGRAMS_BY_COUNTRY.JO).toHaveLength(2);
     expect(PROGRAMS_BY_COUNTRY.OM).toHaveLength(3);
     expect(PROGRAMS_BY_COUNTRY.QA).toHaveLength(3);
-    expect(PROGRAMS_BY_COUNTRY.BH).toHaveLength(3);
-    expect(PROGRAMS_BY_COUNTRY.KW).toHaveLength(3);
+    expect(PROGRAMS_BY_COUNTRY.BH).toHaveLength(5);
+    expect(PROGRAMS_BY_COUNTRY.KW).toHaveLength(4);
     expect(PROGRAMS_BY_COUNTRY.EG).toHaveLength(3);
     expect(PROGRAMS_BY_COUNTRY.TR).toHaveLength(2);
     expect(PROGRAMS_BY_COUNTRY.UK).toHaveLength(1);
@@ -2738,6 +2741,125 @@ describe("KW / Public Tenders Law National Product Price Preference (Art. 62) �
     expect(fw.sourceNoteAr).toContain('المادة ٦٢');
     expect(fw.sourceNoteAr).toContain('٣٠ لسنة ٢٠١٧');
     expect(fw.sourceNoteAr).toContain('١٥٪');
+  });
+});
+
+describe('BH / Takamul Local Value Certificate Preference — price-preference-margin (binary certificate status drives the share, 29 Sep 2026 verify-then-extend pass)', () => {
+  it('soft: holds a Takamul certificate -> full price-preference margin applied via a 100% binary share', () => {
+    const a = assessSupplierLocalContent('BH', 'government', { bhTakamul: { hasLocalValueCertificate: true } }, 'bh-takamul-local-value');
+    const c = a.computation as PricePreferenceMarginResult;
+    expect(c.preferenceMarginPct).toBe(BAHRAIN_TAKAMUL_PRICE_PREFERENCE_MARGIN_PCT);
+    expect(c.locallyManufacturedSharePct).toBe(100);
+    expect(c.effectiveBidDiscountPct).toBe(10);
+  });
+
+  it('hardest: does not hold the certificate -> zero effective discount, not a partial one', () => {
+    const a = assessSupplierLocalContent('BH', 'government', { bhTakamul: { hasLocalValueCertificate: false } }, 'bh-takamul-local-value');
+    const c = a.computation as PricePreferenceMarginResult;
+    expect(c.locallyManufacturedSharePct).toBe(0);
+    expect(c.effectiveBidDiscountPct).toBe(0);
+  });
+
+  it('boundary: no certificate status supplied -> honest null share, never assumed disqualified', () => {
+    const a = assessSupplierLocalContent('BH', 'government', { bhTakamul: { hasLocalValueCertificate: null } }, 'bh-takamul-local-value');
+    const c = a.computation as PricePreferenceMarginResult;
+    expect(c.locallyManufacturedSharePct).toBeNull();
+  });
+
+  it('boundary: no inputs object supplied at all -> insufficient-data short-circuit still discloses the real 10% margin', () => {
+    const a = assessSupplierLocalContent('BH', 'government', {}, 'bh-takamul-local-value');
+    expect(a.applicability).toBe('applicable');
+    const c = a.computation as PricePreferenceMarginResult;
+    expect(c.preferenceMarginPct).toBe(BAHRAIN_TAKAMUL_PRICE_PREFERENCE_MARGIN_PCT);
+    expect(c.locallyManufacturedSharePct).toBeNull();
+  });
+
+  it('is a genuinely different qualifying criterion from bh-sme-price-preference: a distinct field, both real and independently applicable', () => {
+    const takamulOnly = assessSupplierLocalContent('BH', 'government', { bhTakamul: { hasLocalValueCertificate: true } }, 'bh-sme-price-preference');
+    // Feeding Takamul's own field while resolving the SME program never accidentally resolves an SME
+    // qualification -- proving the two share no field.
+    expect((takamulOnly.computation as PricePreferenceMarginResult).locallyManufacturedSharePct).toBeNull();
+  });
+
+  it('discloses Cabinet Decision No. (11-2679), the Bahrain Tender Board Nov 2025 guideline, the 10% figure, and the higher-of-preferences disclaimer bilingually', () => {
+    const fw = PROGRAMS['bh-takamul-local-value'];
+    expect(fw.sourceNoteEn).toContain('11-2679');
+    expect(fw.sourceNoteEn).toContain('Takamul');
+    expect(fw.sourceNoteEn).toContain('10%');
+    expect(fw.sourceNoteEn).toContain('HIGHER preference rate');
+    expect(fw.sourceNoteAr).toContain('١١-٢٦٧٩');
+    expect(fw.sourceNoteAr).toContain('تكامل');
+  });
+});
+
+describe('BH / Gulf-Made Products Preference — price-preference-margin, continuously-scaled by Gulf-origin bid share (29 Sep 2026 verify-then-extend pass)', () => {
+  it('soft: realistic 60% Gulf-origin bid share', () => {
+    const a = assessSupplierLocalContent('BH', 'government', { bhGulfMade: { bidValueGulfOriginPct: 60 } }, 'bh-gulf-made-preference');
+    const c = a.computation as PricePreferenceMarginResult;
+    expect(c.preferenceMarginPct).toBe(BAHRAIN_GULF_MADE_PRICE_PREFERENCE_MARGIN_PCT);
+    expect(c.effectiveBidDiscountPct).toBeCloseTo(6, 6); // 10% * 60%
+  });
+
+  it('hardest: 0% and 100% Gulf-origin share (the two adversarial extremes)', () => {
+    const zero = assessSupplierLocalContent('BH', 'government', { bhGulfMade: { bidValueGulfOriginPct: 0 } }, 'bh-gulf-made-preference').computation as PricePreferenceMarginResult;
+    const full = assessSupplierLocalContent('BH', 'government', { bhGulfMade: { bidValueGulfOriginPct: 100 } }, 'bh-gulf-made-preference').computation as PricePreferenceMarginResult;
+    expect(zero.effectiveBidDiscountPct).toBe(0);
+    expect(full.effectiveBidDiscountPct).toBe(BAHRAIN_GULF_MADE_PRICE_PREFERENCE_MARGIN_PCT);
+  });
+
+  it('boundary: no bid share supplied -> honest null, never a fabricated zero', () => {
+    const a = assessSupplierLocalContent('BH', 'government', { bhGulfMade: { bidValueGulfOriginPct: null } }, 'bh-gulf-made-preference');
+    const c = a.computation as PricePreferenceMarginResult;
+    expect(c.preferenceMarginPct).toBe(BAHRAIN_GULF_MADE_PRICE_PREFERENCE_MARGIN_PCT);
+    expect(c.locallyManufacturedSharePct).toBeNull();
+  });
+
+  it("is a genuinely different qualifying test from bh-takamul-local-value -- product origin, not a supplier's own local-value certificate", () => {
+    const fw = PROGRAMS['bh-gulf-made-preference'];
+    expect(fw.mechanismType).toBe('price-preference-margin');
+    expect(fw.sourceNoteEn).toContain('Decision No. (40) of 2015');
+    expect(fw.sourceNoteEn).toContain('Gulf-made');
+    expect(fw.sourceNoteEn).toContain('10%');
+    expect(fw.sourceNoteAr).toContain('٤٠');
+  });
+});
+
+describe('KW / Kuwaiti-Nationality Company Price Preference — price-preference-margin (binary company-nationality status, the real "fourth Kuwait program" flagged in a prior pass, now implemented 29 Sep 2026)', () => {
+  it('soft: is a Kuwaiti-nationality company -> full price-preference margin applied via a 100% binary share', () => {
+    const a = assessSupplierLocalContent('KW', 'government', { kwNationality: { isKuwaitiNationalityCompany: true } }, 'kw-nationality-price-preference');
+    const c = a.computation as PricePreferenceMarginResult;
+    expect(c.preferenceMarginPct).toBe(KUWAIT_NATIONALITY_PRICE_PREFERENCE_MARGIN_PCT);
+    expect(c.locallyManufacturedSharePct).toBe(100);
+    expect(c.effectiveBidDiscountPct).toBe(10);
+  });
+
+  it('hardest: not a Kuwaiti-nationality company -> zero effective discount, not a partial one', () => {
+    const a = assessSupplierLocalContent('KW', 'government', { kwNationality: { isKuwaitiNationalityCompany: false } }, 'kw-nationality-price-preference');
+    const c = a.computation as PricePreferenceMarginResult;
+    expect(c.locallyManufacturedSharePct).toBe(0);
+    expect(c.effectiveBidDiscountPct).toBe(0);
+  });
+
+  it('boundary: no nationality status supplied -> honest null, never assumed disqualified', () => {
+    const a = assessSupplierLocalContent('KW', 'government', { kwNationality: { isKuwaitiNationalityCompany: null } }, 'kw-nationality-price-preference');
+    const c = a.computation as PricePreferenceMarginResult;
+    expect(c.locallyManufacturedSharePct).toBeNull();
+  });
+
+  it("is a genuinely different qualifying test from kw-tender-law-price-preference: company nationality, not product origin -- a distinct field, both real and independently applicable under the same Law/Decree", () => {
+    const nationalityOnlyInputs = assessSupplierLocalContent('KW', 'government', { kwNationality: { isKuwaitiNationalityCompany: true } }, 'kw-tender-law-price-preference');
+    // Feeding the nationality program's own field while resolving Article 62's product-origin program never
+    // accidentally resolves a product-origin share -- proving the two read genuinely separate inputs.
+    expect((nationalityOnlyInputs.computation as PricePreferenceMarginResult).locallyManufacturedSharePct).toBeNull();
+  });
+
+  it('discloses the sourcing (trade.gov + tenderspedia.com), the 10% figure, and that it was first flagged as a candidate fourth program in a prior pass, now implemented', () => {
+    const fw = PROGRAMS['kw-nationality-price-preference'];
+    expect(fw.sourceNoteEn).toContain('real candidate fourth Kuwait program');
+    expect(fw.sourceNoteEn).toContain('trade.gov');
+    expect(fw.sourceNoteEn).toContain('tenderspedia.com');
+    expect(fw.sourceNoteEn).toContain('10%');
+    expect(fw.sourceNoteAr).toContain('tenderspedia.com');
   });
 });
 

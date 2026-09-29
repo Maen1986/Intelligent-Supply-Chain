@@ -89,6 +89,9 @@ type QaInputs = NonNullable<SupplierLocalContentInputs['qa']>;
 type BhSmeInputs = NonNullable<SupplierLocalContentInputs['bhSme']>;
 type KwLocalSpendInputs = NonNullable<SupplierLocalContentInputs['kwLocalSpend']>;
 type KwTenderLawPricePreferenceInputs = NonNullable<SupplierLocalContentInputs['kwTenderLawPricePreference']>;
+type BhTakamulInputs = NonNullable<SupplierLocalContentInputs['bhTakamul']>;
+type BhGulfMadeInputs = NonNullable<SupplierLocalContentInputs['bhGulfMade']>;
+type KwNationalityInputs = NonNullable<SupplierLocalContentInputs['kwNationality']>;
 type EgInputs = NonNullable<SupplierLocalContentInputs['eg']>;
 type EgOilGasInputs = NonNullable<SupplierLocalContentInputs['egOilGas']>;
 type TrInputs = NonNullable<SupplierLocalContentInputs['tr']>;
@@ -168,6 +171,15 @@ function emptyKwLocalSpend(): KwLocalSpendInputs {
 }
 function emptyKwTenderLawPricePreference(): KwTenderLawPricePreferenceInputs {
   return { bidValueNationalProductPct: null };
+}
+function emptyBhTakamul(): BhTakamulInputs {
+  return { hasLocalValueCertificate: null };
+}
+function emptyBhGulfMade(): BhGulfMadeInputs {
+  return { bidValueGulfOriginPct: null };
+}
+function emptyKwNationality(): KwNationalityInputs {
+  return { isKuwaitiNationalityCompany: null };
 }
 function emptyEg(): EgInputs {
   return { egyptianContentSharePct: null };
@@ -285,8 +297,11 @@ interface LocalContentEntry {
   omOqPricePreference: OmOqPricePreferenceInputs;
   qa: QaInputs;
   bhSme: BhSmeInputs;
+  bhTakamul: BhTakamulInputs;
+  bhGulfMade: BhGulfMadeInputs;
   kwLocalSpend: KwLocalSpendInputs;
   kwTenderLawPricePreference: KwTenderLawPricePreferenceInputs;
+  kwNationality: KwNationalityInputs;
   eg: EgInputs;
   egOilGas: EgOilGasInputs;
   tr: TrInputs;
@@ -311,7 +326,8 @@ function newLocalContentEntry(): LocalContentEntry {
     sa: emptySa(), saMandatoryList: emptySaMandatoryList(), saPricePreference: emptySaPricePreference(), iktva: emptyIktva(),
     ae: emptyAe(), aeTawazun: emptyAeTawazun(), aeGccOrigin: emptyAeGccOrigin(), jo: emptyJo(),
     joContractorQuota: emptyJoContractorQuota(), omMandatoryList: emptyOmMandatoryList(), omOqPricePreference: emptyOmOqPricePreference(),
-    qa: emptyQa(), bhSme: emptyBhSme(), kwLocalSpend: emptyKwLocalSpend(), kwTenderLawPricePreference: emptyKwTenderLawPricePreference(),
+    qa: emptyQa(), bhSme: emptyBhSme(), bhTakamul: emptyBhTakamul(), bhGulfMade: emptyBhGulfMade(),
+    kwLocalSpend: emptyKwLocalSpend(), kwTenderLawPricePreference: emptyKwTenderLawPricePreference(), kwNationality: emptyKwNationality(),
     eg: emptyEg(), egOilGas: emptyEgOilGas(), tr: emptyTr(), uk: emptyUk(),
     usa: emptyUsa(), usaBaba: emptyUsaBaba(), cn: emptyCn(), cnSme: emptyCnSme(),
     rawafedStc: emptyRawafedStc(), sabicLcCommitment: emptySabicLcCommitment(),
@@ -355,8 +371,11 @@ function loadState(): PersistedState {
             omOqPricePreference: { ...emptyOmOqPricePreference(), ...e.omOqPricePreference },
             qa: { ...emptyQa(), ...e.qa },
             bhSme: { ...emptyBhSme(), ...e.bhSme },
+            bhTakamul: { ...emptyBhTakamul(), ...e.bhTakamul },
+            bhGulfMade: { ...emptyBhGulfMade(), ...e.bhGulfMade },
             kwLocalSpend: { ...emptyKwLocalSpend(), ...e.kwLocalSpend },
             kwTenderLawPricePreference: { ...emptyKwTenderLawPricePreference(), ...e.kwTenderLawPricePreference },
+            kwNationality: { ...emptyKwNationality(), ...e.kwNationality },
             eg: { ...emptyEg(), ...e.eg },
             egOilGas: { ...emptyEgOilGas(), ...e.egOilGas },
             tr: { ...emptyTr(), ...e.tr },
@@ -436,9 +455,12 @@ const PROGRAM_LABELS: Record<LocalContentProgram, { en: string; ar: string }> = 
   'bh-local-content': { en: 'Local Content (not sourced)', ar: 'المحتوى المحلي (غير موثّق)' },
   'bh-sme-price-preference': { en: 'SME Price Preference (10%)', ar: 'تفضيل سعر المنشآت الصغيرة والمتوسطة (١٠٪)' },
   'bh-sme-spend-setaside': { en: 'SME Spend Set-Aside (20%)', ar: 'تخصيص إنفاق للمنشآت الصغيرة والمتوسطة (٢٠٪)' },
+  'bh-takamul-local-value': { en: 'Takamul Local Value Preference (10%)', ar: 'تفضيل شهادة القيمة المحلية تكامل (١٠٪)' },
+  'bh-gulf-made-preference': { en: 'Gulf-Made Products Preference (10%)', ar: 'تفضيل المنتجات المصنّعة خليجياً (١٠٪)' },
   'kw-local-content': { en: 'Local Content (not sourced)', ar: 'المحتوى المحلي (غير موثّق)' },
   'kw-kpc-local-spend': { en: 'KPC Local Spend Target (30%)', ar: 'هدف KPC للإنفاق المحلي (٣٠٪)' },
   'kw-tender-law-price-preference': { en: 'Tender Law Price Preference (15%)', ar: 'تفضيل سعر قانون المناقصات (١٥٪)' },
+  'kw-nationality-price-preference': { en: 'Company-Nationality Price Preference (10%)', ar: 'تفضيل سعري لجنسية الشركة (١٠٪)' },
   'eg-price-preference': { en: 'Price Preference (15%)', ar: 'تفضيل السعر (١٥٪)' },
   'eg-oil-gas-price-preference': { en: 'Oil & Gas PSA Preference (10%)', ar: 'تفضيل السعر بموجب اتفاقية تقاسم الإنتاج النفطية (١٠٪)' },
   'eg-auto-local-content': { en: 'Automotive Local Content (not sourced)', ar: 'المحتوى المحلي لصناعة السيارات (غير موثّق)' },
@@ -624,7 +646,7 @@ function LocalContentEntryCard({
   const assessment: LocalContentAssessment | null = !isOther
     ? assessSupplierLocalContent(
         entry.countrySelection as LocalContentCountry, entry.context,
-        { sa: entry.sa, ae: entry.ae, jo: entry.jo, saMandatoryList: entry.saMandatoryList, saPricePreference: entry.saPricePreference, iktva: entry.iktva, aeTawazun: entry.aeTawazun, aeGccOrigin: entry.aeGccOrigin, joContractorQuota: entry.joContractorQuota, omMandatoryList: entry.omMandatoryList, omOqPricePreference: entry.omOqPricePreference, qa: entry.qa, bhSme: entry.bhSme, kwLocalSpend: entry.kwLocalSpend, kwTenderLawPricePreference: entry.kwTenderLawPricePreference, eg: entry.eg, egOilGas: entry.egOilGas, tr: entry.tr, uk: entry.uk, usa: entry.usa, usaBaba: entry.usaBaba, cn: entry.cn, cnSme: entry.cnSme, rawafedStc: entry.rawafedStc, sabicLcCommitment: entry.sabicLcCommitment, qaTendersIcv: entry.qaTendersIcv },
+        { sa: entry.sa, ae: entry.ae, jo: entry.jo, saMandatoryList: entry.saMandatoryList, saPricePreference: entry.saPricePreference, iktva: entry.iktva, aeTawazun: entry.aeTawazun, aeGccOrigin: entry.aeGccOrigin, joContractorQuota: entry.joContractorQuota, omMandatoryList: entry.omMandatoryList, omOqPricePreference: entry.omOqPricePreference, qa: entry.qa, bhSme: entry.bhSme, bhTakamul: entry.bhTakamul, bhGulfMade: entry.bhGulfMade, kwLocalSpend: entry.kwLocalSpend, kwTenderLawPricePreference: entry.kwTenderLawPricePreference, kwNationality: entry.kwNationality, eg: entry.eg, egOilGas: entry.egOilGas, tr: entry.tr, uk: entry.uk, usa: entry.usa, usaBaba: entry.usaBaba, cn: entry.cn, cnSme: entry.cnSme, rawafedStc: entry.rawafedStc, sabicLcCommitment: entry.sabicLcCommitment, qaTendersIcv: entry.qaTendersIcv },
         entry.program,
       )
     : null;
@@ -1302,6 +1324,71 @@ function LocalContentEntryCard({
                       value={entry.kwTenderLawPricePreference.bidValueNationalProductPct}
                       onChange={v => onUpdate(entry.id, { kwTenderLawPricePreference: { ...entry.kwTenderLawPricePreference, bidValueNationalProductPct: v } })}
                     />
+                  </div>
+                )}
+
+                {entry.countrySelection === 'BH' && entry.program === 'bh-takamul-local-value' && (
+                  <div>
+                    <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                      {isAr ? 'هل يحمل هذا المورّد شهادة القيمة المحلية (تكامل) للمنتج(ات) المدرَجة في العطاء؟' : 'Does this supplier hold a Takamul (Local Value Certificate) covering the product(s) in this bid?'}
+                    </p>
+                    <div className="flex gap-1.5" role="group" aria-label={isAr ? 'حالة شهادة تكامل' : 'Takamul certificate status'}>
+                      {([['yes', true], ['no', false]] as const).map(([k, v]) => (
+                        <button
+                          key={k}
+                          type="button"
+                          aria-pressed={entry.bhTakamul.hasLocalValueCertificate === v}
+                          onClick={() => onUpdate(entry.id, { bhTakamul: { ...entry.bhTakamul, hasLocalValueCertificate: v } })}
+                          className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors ${
+                            entry.bhTakamul.hasLocalValueCertificate === v ? 'bg-[#082C6B] border-[#082C6B] text-white' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                          }`}
+                        >
+                          {k === 'yes' ? (isAr ? 'نعم' : 'Yes') : (isAr ? 'لا' : 'No')}
+                        </button>
+                      ))}
+                    </div>
+                    <p className="text-[10px] text-muted-foreground mt-1.5">
+                      {isAr ? 'القرار الوزاري رقم (١١-٢٦٧٩) -- تصدر الشهادة عبر بوابة وزارة الصناعة والتجارة. في حال انطباق أكثر من تفضيل واحد على هذا المورّد، يُمنح التفضيل الأعلى وليس مجموعاً متراكماً.' : "Cabinet Decision No. (11-2679) -- the certificate is issued via the Ministry of Industry and Commerce's own portal. Where more than one preference applies to this supplier, the higher rate is granted, not a stacked total."}
+                    </p>
+                  </div>
+                )}
+
+                {entry.countrySelection === 'BH' && entry.program === 'bh-gulf-made-preference' && (
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    <NumberField
+                      label={isAr ? 'نسبة المنشأ الخليجي من قيمة العطاء' : 'Gulf-Origin Share of Bid Value'}
+                      hint={isAr ? 'تفضيل سعري بنسبة ١٠٪ للمنتجات المصنّعة خليجياً بموجب القرار رقم (٤٠) لسنة ٢٠١٥ (القواعد الموحدة الخليجية).' : 'A 10% price preference for Gulf-made products, under Decision No. (40) of 2015 (GCC unified rules).'}
+                      unit="%"
+                      max={100}
+                      value={entry.bhGulfMade.bidValueGulfOriginPct}
+                      onChange={v => onUpdate(entry.id, { bhGulfMade: { ...entry.bhGulfMade, bidValueGulfOriginPct: v } })}
+                    />
+                  </div>
+                )}
+
+                {entry.countrySelection === 'KW' && entry.program === 'kw-nationality-price-preference' && (
+                  <div>
+                    <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                      {isAr ? 'هل هذه الشركة المتقدمة بالعطاء كويتية الجنسية؟' : 'Is this bidding company itself of Kuwaiti nationality/ownership?'}
+                    </p>
+                    <div className="flex gap-1.5" role="group" aria-label={isAr ? 'حالة صفة الشركة الكويتية الجنسية' : 'Kuwaiti-nationality company status'}>
+                      {([['yes', true], ['no', false]] as const).map(([k, v]) => (
+                        <button
+                          key={k}
+                          type="button"
+                          aria-pressed={entry.kwNationality.isKuwaitiNationalityCompany === v}
+                          onClick={() => onUpdate(entry.id, { kwNationality: { ...entry.kwNationality, isKuwaitiNationalityCompany: v } })}
+                          className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors ${
+                            entry.kwNationality.isKuwaitiNationalityCompany === v ? 'bg-[#082C6B] border-[#082C6B] text-white' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                          }`}
+                        >
+                          {k === 'yes' ? (isAr ? 'نعم' : 'Yes') : (isAr ? 'لا' : 'No')}
+                        </button>
+                      ))}
+                    </div>
+                    <p className="text-[10px] text-muted-foreground mt-1.5">
+                      {isAr ? 'معيار جنسية/ملكية الشركة نفسها -- وليس منشأ المنتج (انظر تفضيل المادة ٦٢ أعلاه لمنشأ المنتج).' : "A company-nationality/ownership test -- not product origin (see Article 62's preference above for product origin)."}
+                    </p>
                   </div>
                 )}
 
@@ -2050,6 +2137,9 @@ export function LocalContentICVCheck() {
       sabicLcCommitment: { ...emptySabicLcCommitment(), ...row.data.sabicLcCommitment },
       qaTendersIcv: { ...emptyQaTendersIcv(), ...row.data.qaTendersIcv },
       kwTenderLawPricePreference: { ...emptyKwTenderLawPricePreference(), ...row.data.kwTenderLawPricePreference },
+      bhTakamul: { ...emptyBhTakamul(), ...row.data.bhTakamul },
+      bhGulfMade: { ...emptyBhGulfMade(), ...row.data.bhGulfMade },
+      kwNationality: { ...emptyKwNationality(), ...row.data.kwNationality },
     };
   }
   function entryToPayload(e: LocalContentEntry) {
@@ -2144,7 +2234,7 @@ export function LocalContentICVCheck() {
       entry: e,
       assessment: assessSupplierLocalContent(
         e.countrySelection as LocalContentCountry, e.context,
-        { sa: e.sa, ae: e.ae, jo: e.jo, saMandatoryList: e.saMandatoryList, saPricePreference: e.saPricePreference, iktva: e.iktva, aeTawazun: e.aeTawazun, aeGccOrigin: e.aeGccOrigin, joContractorQuota: e.joContractorQuota, omMandatoryList: e.omMandatoryList, omOqPricePreference: e.omOqPricePreference, qa: e.qa, bhSme: e.bhSme, kwLocalSpend: e.kwLocalSpend, kwTenderLawPricePreference: e.kwTenderLawPricePreference, eg: e.eg, egOilGas: e.egOilGas, tr: e.tr, uk: e.uk, usa: e.usa, usaBaba: e.usaBaba, cn: e.cn, cnSme: e.cnSme, rawafedStc: e.rawafedStc, sabicLcCommitment: e.sabicLcCommitment, qaTendersIcv: e.qaTendersIcv },
+        { sa: e.sa, ae: e.ae, jo: e.jo, saMandatoryList: e.saMandatoryList, saPricePreference: e.saPricePreference, iktva: e.iktva, aeTawazun: e.aeTawazun, aeGccOrigin: e.aeGccOrigin, joContractorQuota: e.joContractorQuota, omMandatoryList: e.omMandatoryList, omOqPricePreference: e.omOqPricePreference, qa: e.qa, bhSme: e.bhSme, bhTakamul: e.bhTakamul, bhGulfMade: e.bhGulfMade, kwLocalSpend: e.kwLocalSpend, kwTenderLawPricePreference: e.kwTenderLawPricePreference, kwNationality: e.kwNationality, eg: e.eg, egOilGas: e.egOilGas, tr: e.tr, uk: e.uk, usa: e.usa, usaBaba: e.usaBaba, cn: e.cn, cnSme: e.cnSme, rawafedStc: e.rawafedStc, sabicLcCommitment: e.sabicLcCommitment, qaTendersIcv: e.qaTendersIcv },
         e.program,
       ),
     }));
