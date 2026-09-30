@@ -1011,20 +1011,54 @@ describe('USA / SBA Small Business Contracting Goal & Set-Aside — spend-set-as
   });
 });
 
-describe('USA — Berry Amendment (DoD Textiles/Food/Tools, not-yet-sourced, real dated context)', () => {
-  it('returns insufficient-data disclosing the DoD-only near-100%-domestic scope and the 2006 specialty-metals carve-out, never a fabricated per-supplier formula', () => {
+describe('USA / Berry Amendment (DoD Textiles/Food/Tools) Coverage Gate — resolved 29 Sep 2026 verify-then-extend pass: category-eligibility-gate (two-toggle pattern, zero new compute logic, reuses computeCategoryEligibilityGate exactly like BABA above)', () => {
+  it('no inputs supplied at all -> applicable but incomplete, never a guessed answer (this program was not-yet-sourced before this pass; it must never silently regress to a fabricated per-supplier formula)', () => {
     const a = assessSupplierLocalContent('USA', 'government', {}, 'usa-berry-amendment-dod');
-    expect(a.applicability).toBe('insufficient-data');
-    expect(a.computation).toEqual({ mechanismType: 'not-yet-sourced' });
-    expect(a.program).toBe('usa-berry-amendment-dod');
-    expect(PROGRAMS['usa-berry-amendment-dod'].applicableContexts).toHaveLength(0);
-    expect(PROGRAMS['usa-berry-amendment-dod'].sourceNoteEn).toContain('2006');
-    expect(PROGRAMS['usa-berry-amendment-dod'].sourceNoteAr).toContain('٢٠٠٦');
+    expect(a.applicability).toBe('applicable');
+    expect(a.computation).toEqual({ mechanismType: 'category-eligibility-gate', inMandatoryListCategory: null, certifiedForCategory: null, eligibleToBid: null });
+  });
+
+  it('soft: Berry-covered DoD purchase and item clears the domestic-sourcing test -> eligible to bid', () => {
+    const a = assessSupplierLocalContent('USA', 'government', { usaBerry: { isBerryCoveredDodPurchase: true, meetsBerryDomesticSourcingTest: true } }, 'usa-berry-amendment-dod');
+    const c = a.computation as CategoryEligibilityGateResult;
+    expect(c.eligibleToBid).toBe(true);
+  });
+
+  it('hardest: Berry-covered DoD purchase but item does NOT clear the domestic-sourcing test -> gated out entirely (near-100% domestic, no partial credit)', () => {
+    const a = assessSupplierLocalContent('USA', 'government', { usaBerry: { isBerryCoveredDodPurchase: true, meetsBerryDomesticSourcingTest: false } }, 'usa-berry-amendment-dod');
+    const c = a.computation as CategoryEligibilityGateResult;
+    expect(c.eligibleToBid).toBe(false);
+  });
+
+  it('boundary: not a Berry-covered purchase at all (e.g. specialty metals, carved out in 2006) -> gate does not apply, eligible regardless of domestic-sourcing status', () => {
+    const a = assessSupplierLocalContent('USA', 'government', { usaBerry: { isBerryCoveredDodPurchase: false, meetsBerryDomesticSourcingTest: null } }, 'usa-berry-amendment-dod');
+    const c = a.computation as CategoryEligibilityGateResult;
+    expect(c.eligibleToBid).toBe(true);
+  });
+
+  it('boundary: no Berry coverage status supplied yet -> honest null, never assumed either way', () => {
+    const a = assessSupplierLocalContent('USA', 'government', { usaBerry: { isBerryCoveredDodPurchase: null, meetsBerryDomesticSourcingTest: null } }, 'usa-berry-amendment-dod');
+    const c = a.computation as CategoryEligibilityGateResult;
+    expect(c.eligibleToBid).toBeNull();
+  });
+
+  it("not-applicable: private-commercial procurement is outside Berry's sourced (DoD/federal government) scope", () => {
+    const a = assessSupplierLocalContent('USA', 'private-commercial', { usaBerry: { isBerryCoveredDodPurchase: true, meetsBerryDomesticSourcingTest: true } }, 'usa-berry-amendment-dod');
+    expect(a.applicability).toBe('not-applicable');
+  });
+
+  it('discloses the 2006 specialty-metals carve-out and the binary near-100%-domestic rationale for this resolution, in both languages', () => {
+    const fw = PROGRAMS['usa-berry-amendment-dod'];
+    expect(fw.mechanismType).toBe('category-eligibility-gate');
+    expect(fw.applicableContexts).toEqual(['government']);
+    expect(fw.sourceNoteEn).toContain('2006');
+    expect(fw.sourceNoteEn).toContain('near-100%');
+    expect(fw.sourceNoteAr).toContain('٢٠٠٦');
   });
 });
 
-describe('USA — structural sanity (16 Sep 2026 Part 2 continuation, fourth non-GCC/Jordan country)', () => {
-  it('USA is the eleventh country, has 4 programs (3 real + 1 not-yet-sourced), and resolves DEFAULT_PROGRAM_BY_COUNTRY to the Buy American Act program', () => {
+describe('USA — structural sanity (16 Sep 2026 Part 2 continuation, fourth non-GCC/Jordan country; Berry Amendment resolved 29 Sep 2026 verify-then-extend pass)', () => {
+  it('USA is the eleventh country, has 4 real computable programs (Berry Amendment resolved this pass), and resolves DEFAULT_PROGRAM_BY_COUNTRY to the Buy American Act program', () => {
     expect(DEFAULT_PROGRAM_BY_COUNTRY.USA).toBe('usa-buy-american-price-preference');
     expect(PROGRAMS_BY_COUNTRY.USA).toEqual(['usa-buy-american-price-preference', 'usa-baba-infrastructure-gate', 'usa-sba-small-business-setaside', 'usa-berry-amendment-dod']);
     expect(COUNTRY_FRAMEWORKS.USA.applicableContexts.length).toBeGreaterThan(0);

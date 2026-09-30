@@ -98,11 +98,16 @@ type TrInputs = NonNullable<SupplierLocalContentInputs['tr']>;
 type UkInputs = NonNullable<SupplierLocalContentInputs['uk']>;
 type UsaInputs = NonNullable<SupplierLocalContentInputs['usa']>;
 type UsaBabaInputs = NonNullable<SupplierLocalContentInputs['usaBaba']>;
+type UsaBerryInputs = NonNullable<SupplierLocalContentInputs['usaBerry']>;
 type CnInputs = NonNullable<SupplierLocalContentInputs['cn']>;
 type CnSmeInputs = NonNullable<SupplierLocalContentInputs['cnSme']>;
 type RawafedStcInputs = NonNullable<SupplierLocalContentInputs['rawafedStc']>;
 type SabicLcCommitmentInputs = NonNullable<SupplierLocalContentInputs['sabicLcCommitment']>;
 type QaTendersIcvInputs = NonNullable<SupplierLocalContentInputs['qaTendersIcv']>;
+type InMakeInIndiaInputs = NonNullable<SupplierLocalContentInputs['inMakeInIndia']>;
+type JpInputs = NonNullable<SupplierLocalContentInputs['jp']>;
+type KrSmeTargetInputs = NonNullable<SupplierLocalContentInputs['krSmeTarget']>;
+type KrCompetitiveProductsInputs = NonNullable<SupplierLocalContentInputs['krCompetitiveProducts']>;
 
 function emptySa(): SaInputs {
   return {
@@ -199,6 +204,21 @@ function emptyUsa(): UsaInputs {
 function emptyUsaBaba(): UsaBabaInputs {
   return { isFederallyFundedInfrastructureProcurement: null, meetsBabaDomesticContentRequirement: null };
 }
+function emptyUsaBerry(): UsaBerryInputs {
+  return { isBerryCoveredDodPurchase: null, meetsBerryDomesticSourcingTest: null };
+}
+function emptyInMakeInIndia(): InMakeInIndiaInputs {
+  return { localContentSharePct: null };
+}
+function emptyJp(): JpInputs {
+  return { policyYearTargetRatioPct: null, isSmeQualified: null };
+}
+function emptyKrSmeTarget(): KrSmeTargetInputs {
+  return { productCategory: null, isSmeQualified: null };
+}
+function emptyKrCompetitiveProducts(): KrCompetitiveProductsInputs {
+  return { inDesignatedCompetitiveProductCategory: null, directProductionCertified: null };
+}
 function emptyCn(): CnInputs {
   return { meetsDomesticProductCriteria: null, bundleDomesticCostSharePct: null, article10ExemptionApplies: null };
 }
@@ -251,13 +271,19 @@ function normalizeProgram(raw: unknown, countrySelection: CountrySelection): Loc
 }
 
 // 'OTHER' is a client-only pseudo-value for a supplier whose country is not
-// one of the 12 this module's engine can represent at all (e.g. Germany,
-// India) -- Egypt, then Turkey, then the UK moved from this "not yet
-// representable" list to a real LocalContentCountry across the 15-16 Sep
-// 2026 Part 2 pass, then the USA, then China moved from this "not yet
-// representable" list across the 16 Sep 2026 Part 2 continuation, the same
-// growth pattern documented for it in the engine file's own header. The UK
-// is a different kind of addition, though: it has no above-threshold price
+// one of the 16 this module's engine can represent at all. Egypt, then
+// Turkey, then the UK moved from this "not yet representable" list to a
+// real LocalContentCountry across the 15-16 Sep 2026 Part 2 pass, then the
+// USA, then China moved across the 16 Sep 2026 Part 2 continuation, then
+// India/Germany/Japan/Korea moved across the 17 Sep 2026 batch -- the same
+// growth pattern documented for it in the engine file's own header. (Note,
+// found and fixed in the 29 Sep 2026 verify-then-extend pass: the engine
+// file itself had already represented all 16 countries since 17 Sep 2026,
+// but this UI file's own per-program input forms and both
+// assessSupplierLocalContent call sites had never been wired up for India/
+// Japan/Korea -- Germany genuinely has no computable program, so it needs
+// none -- a real gap, not just a stale comment, now closed.) The UK is a
+// different kind of addition, though: it has no above-threshold price
 // preference at all (a structural PA23 s.90 non-discrimination fact, not a
 // research gap) -- only a below-threshold reservation gate, PPN 005 -- so
 // it is representable, but not with the same mechanism shape as every
@@ -308,11 +334,16 @@ interface LocalContentEntry {
   uk: UkInputs;
   usa: UsaInputs;
   usaBaba: UsaBabaInputs;
+  usaBerry: UsaBerryInputs;
   cn: CnInputs;
   cnSme: CnSmeInputs;
   rawafedStc: RawafedStcInputs;
   sabicLcCommitment: SabicLcCommitmentInputs;
   qaTendersIcv: QaTendersIcvInputs;
+  inMakeInIndia: InMakeInIndiaInputs;
+  jp: JpInputs;
+  krSmeTarget: KrSmeTargetInputs;
+  krCompetitiveProducts: KrCompetitiveProductsInputs;
 }
 
 function newLocalContentEntry(): LocalContentEntry {
@@ -329,9 +360,10 @@ function newLocalContentEntry(): LocalContentEntry {
     qa: emptyQa(), bhSme: emptyBhSme(), bhTakamul: emptyBhTakamul(), bhGulfMade: emptyBhGulfMade(),
     kwLocalSpend: emptyKwLocalSpend(), kwTenderLawPricePreference: emptyKwTenderLawPricePreference(), kwNationality: emptyKwNationality(),
     eg: emptyEg(), egOilGas: emptyEgOilGas(), tr: emptyTr(), uk: emptyUk(),
-    usa: emptyUsa(), usaBaba: emptyUsaBaba(), cn: emptyCn(), cnSme: emptyCnSme(),
+    usa: emptyUsa(), usaBaba: emptyUsaBaba(), usaBerry: emptyUsaBerry(), cn: emptyCn(), cnSme: emptyCnSme(),
     rawafedStc: emptyRawafedStc(), sabicLcCommitment: emptySabicLcCommitment(),
     qaTendersIcv: emptyQaTendersIcv(),
+    inMakeInIndia: emptyInMakeInIndia(), jp: emptyJp(), krSmeTarget: emptyKrSmeTarget(), krCompetitiveProducts: emptyKrCompetitiveProducts(),
   };
 }
 
@@ -382,11 +414,16 @@ function loadState(): PersistedState {
             uk: { ...emptyUk(), ...e.uk },
             usa: { ...emptyUsa(), ...e.usa },
             usaBaba: { ...emptyUsaBaba(), ...e.usaBaba },
+            usaBerry: { ...emptyUsaBerry(), ...e.usaBerry },
             cn: { ...emptyCn(), ...e.cn },
             cnSme: { ...emptyCnSme(), ...e.cnSme },
             rawafedStc: { ...emptyRawafedStc(), ...e.rawafedStc },
             sabicLcCommitment: { ...emptySabicLcCommitment(), ...e.sabicLcCommitment },
             qaTendersIcv: { ...emptyQaTendersIcv(), ...e.qaTendersIcv },
+            inMakeInIndia: { ...emptyInMakeInIndia(), ...e.inMakeInIndia },
+            jp: { ...emptyJp(), ...e.jp },
+            krSmeTarget: { ...emptyKrSmeTarget(), ...e.krSmeTarget },
+            krCompetitiveProducts: { ...emptyKrCompetitiveProducts(), ...e.krCompetitiveProducts },
           })),
           targetThresholdPct: parsed.targetThresholdPct ?? null,
         };
@@ -470,7 +507,7 @@ const PROGRAM_LABELS: Record<LocalContentProgram, { en: string; ar: string }> = 
   'usa-buy-american-price-preference': { en: 'Buy American Act Preference', ar: 'تفضيل قانون الشراء الأمريكي' },
   'usa-baba-infrastructure-gate': { en: 'BABA Infrastructure Gate', ar: 'بوابة BABA للبنية التحتية' },
   'usa-sba-small-business-setaside': { en: 'SBA Small Business Set-Aside', ar: 'تخصيص المنشآت الصغيرة (SBA)' },
-  'usa-berry-amendment-dod': { en: 'Berry Amendment (DoD) -- not yet sourced', ar: 'تعديل بيري (وزارة الدفاع) — غير موثّق بعد' },
+  'usa-berry-amendment-dod': { en: 'Berry Amendment (DoD) Coverage Gate', ar: 'بوابة شمول تعديل بيري (وزارة الدفاع)' },
   'cn-domestic-product-price-preference': { en: 'Domestic Product Price Preference (20%)', ar: 'تفضيل سعر المنتج المحلي (٢٠٪)' },
   'cn-govt-procurement-law-domestic-mandate': { en: 'Article 10 Domestic Mandate Gate', ar: 'بوابة تفويض المادة العاشرة' },
   'cn-sme-price-deduction': { en: 'SME Price Deduction', ar: 'خصم سعر المنشآت الصغيرة والمتوسطة' },
@@ -646,7 +683,7 @@ function LocalContentEntryCard({
   const assessment: LocalContentAssessment | null = !isOther
     ? assessSupplierLocalContent(
         entry.countrySelection as LocalContentCountry, entry.context,
-        { sa: entry.sa, ae: entry.ae, jo: entry.jo, saMandatoryList: entry.saMandatoryList, saPricePreference: entry.saPricePreference, iktva: entry.iktva, aeTawazun: entry.aeTawazun, aeGccOrigin: entry.aeGccOrigin, joContractorQuota: entry.joContractorQuota, omMandatoryList: entry.omMandatoryList, omOqPricePreference: entry.omOqPricePreference, qa: entry.qa, bhSme: entry.bhSme, bhTakamul: entry.bhTakamul, bhGulfMade: entry.bhGulfMade, kwLocalSpend: entry.kwLocalSpend, kwTenderLawPricePreference: entry.kwTenderLawPricePreference, kwNationality: entry.kwNationality, eg: entry.eg, egOilGas: entry.egOilGas, tr: entry.tr, uk: entry.uk, usa: entry.usa, usaBaba: entry.usaBaba, cn: entry.cn, cnSme: entry.cnSme, rawafedStc: entry.rawafedStc, sabicLcCommitment: entry.sabicLcCommitment, qaTendersIcv: entry.qaTendersIcv },
+        { sa: entry.sa, ae: entry.ae, jo: entry.jo, saMandatoryList: entry.saMandatoryList, saPricePreference: entry.saPricePreference, iktva: entry.iktva, aeTawazun: entry.aeTawazun, aeGccOrigin: entry.aeGccOrigin, joContractorQuota: entry.joContractorQuota, omMandatoryList: entry.omMandatoryList, omOqPricePreference: entry.omOqPricePreference, qa: entry.qa, bhSme: entry.bhSme, bhTakamul: entry.bhTakamul, bhGulfMade: entry.bhGulfMade, kwLocalSpend: entry.kwLocalSpend, kwTenderLawPricePreference: entry.kwTenderLawPricePreference, kwNationality: entry.kwNationality, eg: entry.eg, egOilGas: entry.egOilGas, tr: entry.tr, uk: entry.uk, usa: entry.usa, usaBaba: entry.usaBaba, usaBerry: entry.usaBerry, cn: entry.cn, cnSme: entry.cnSme, rawafedStc: entry.rawafedStc, sabicLcCommitment: entry.sabicLcCommitment, qaTendersIcv: entry.qaTendersIcv, inMakeInIndia: entry.inMakeInIndia, jp: entry.jp, krSmeTarget: entry.krSmeTarget, krCompetitiveProducts: entry.krCompetitiveProducts },
         entry.program,
       )
     : null;
@@ -1611,6 +1648,59 @@ function LocalContentEntryCard({
                   </div>
                 )}
 
+                {entry.countrySelection === 'USA' && entry.program === 'usa-berry-amendment-dod' && (
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                        {isAr ? 'هل هذه عملية شراء لوزارة الدفاع مشمولة بتعديل بيري (منسوجات أو أغذية أو أدوات يدوية/قياس)؟' : 'Is this a DoD purchase covered by the Berry Amendment (textiles, food, or hand/measuring tools)?'}
+                      </p>
+                      <div className="flex gap-1.5" role="group" aria-label={isAr ? 'حالة شمول تعديل بيري' : 'Berry Amendment coverage status'}>
+                        {([['yes', true], ['no', false]] as const).map(([k, v]) => (
+                          <button
+                            key={k}
+                            type="button"
+                            aria-pressed={entry.usaBerry.isBerryCoveredDodPurchase === v}
+                            onClick={() => onUpdate(entry.id, { usaBerry: { ...entry.usaBerry, isBerryCoveredDodPurchase: v } })}
+                            className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors ${
+                              entry.usaBerry.isBerryCoveredDodPurchase === v ? 'bg-[#082C6B] border-[#082C6B] text-white' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                            }`}
+                          >
+                            {k === 'yes' ? (isAr ? 'نعم' : 'Yes') : (isAr ? 'لا' : 'No')}
+                          </button>
+                        ))}
+                      </div>
+                      <p className="text-[10px] text-muted-foreground mt-1.5">
+                        {isAr ? 'المعادن الخاصة مستثناة (١٠ U.S.C. ٢٥٣٣b، منذ ٢٠٠٦) وليست مشمولة هنا.' : 'Specialty metals are carved out (10 U.S.C. 2533b, since 2006) and not covered here.'}
+                      </p>
+                    </div>
+                    {entry.usaBerry.isBerryCoveredDodPurchase === true && (
+                      <div>
+                        <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                          {isAr ? 'هل يجتاز هذا الصنف اختبار المصدر المحلي بموجب تعديل بيري بعد كل الاستثناءات؟' : 'Does this item clear the Berry Amendment domestic-sourcing test after all exceptions?'}
+                        </p>
+                        <div className="flex gap-1.5" role="group" aria-label={isAr ? 'التأهل بموجب تعديل بيري' : 'Berry Amendment qualification'}>
+                          {([['yes', true], ['no', false]] as const).map(([k, v]) => (
+                            <button
+                              key={k}
+                              type="button"
+                              aria-pressed={entry.usaBerry.meetsBerryDomesticSourcingTest === v}
+                              onClick={() => onUpdate(entry.id, { usaBerry: { ...entry.usaBerry, meetsBerryDomesticSourcingTest: v } })}
+                              className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors ${
+                                entry.usaBerry.meetsBerryDomesticSourcingTest === v ? 'bg-[#082C6B] border-[#082C6B] text-white' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                              }`}
+                            >
+                              {k === 'yes' ? (isAr ? 'نعم' : 'Yes') : (isAr ? 'لا' : 'No')}
+                            </button>
+                          ))}
+                        </div>
+                        <p className="text-[10px] text-muted-foreground mt-1.5">
+                          {isAr ? 'بوابة تأهل فئة ثنائية -- شبه ١٠٠٪ محلي، دون درجات جزئية.' : 'A binary category eligibility gate -- near-100% domestic, no partial credit.'}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {entry.countrySelection === 'CN' && entry.program === 'cn-domestic-product-price-preference' && (
                   <div className="space-y-3">
                     <div>
@@ -1760,6 +1850,151 @@ function LocalContentEntryCard({
                         value={entry.cnSme.consortiumSmallEnterpriseSubcontractSharePct}
                         onChange={v => onUpdate(entry.id, { cnSme: { ...entry.cnSme, consortiumSmallEnterpriseSubcontractSharePct: v } })}
                       />
+                    )}
+                  </div>
+                )}
+
+                {entry.countrySelection === 'IN' && entry.program === 'in-make-in-india-price-preference' && (
+                  <NumberField
+                    label={isAr ? 'نسبة المحتوى المحلي الهندي من قيمة هذا العطاء' : "Indian Local Content Share of This Bid's Value"}
+                    hint={isAr ? 'الفئة الأولى (٥٠٪ فأكثر) وحدها تحصل على هامش تفضيل الشراء الثابت ٢٠٪؛ الفئة الثانية (٢٠-<٥٠٪) وغير المحلي (≤٢٠٪) لا يحصلان على تفضيل سعري بموجب هذا الأمر.' : 'Only Class-I (>=50%) receives the flat 20% margin of purchase preference; Class-II (20-<50%) and Non-Local (<=20%) receive no price preference under this Order.'}
+                    unit="%"
+                    max={100}
+                    value={entry.inMakeInIndia.localContentSharePct}
+                    onChange={v => onUpdate(entry.id, { inMakeInIndia: { ...entry.inMakeInIndia, localContentSharePct: v } })}
+                  />
+                )}
+
+                {entry.countrySelection === 'JP' && entry.program === 'jp-kankoju-sme-target-ratio' && (
+                  <div className="space-y-3">
+                    <NumberField
+                      label={isAr ? 'نسبة استهداف كانكوجو المنشورة للسنة المالية الحالية' : "Current Fiscal Year's Published Kankouju Target Ratio"}
+                      hint={isAr ? 'غير ثابتة بنص قانوني -- تُحدَّد من جديد كل سنة مالية بقرار مجلس وزراء (السنة المالية ٢٠٢٥: ٦١٪ على مستوى الحكومة). أدخل الرقم المنشور حالياً؛ لا تُفترَض قيمة قديمة.' : "Not fixed by statute -- re-set every fiscal year by Cabinet decision (FY2025: 61% government-wide). Enter the currently published figure; a stale value is never assumed."}
+                      unit="%"
+                      max={100}
+                      value={entry.jp.policyYearTargetRatioPct}
+                      onChange={v => onUpdate(entry.id, { jp: { ...entry.jp, policyYearTargetRatioPct: v } })}
+                    />
+                    <div>
+                      <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                        {isAr ? 'هل هذا المورّد منشأة صغيرة أو متوسطة مؤهَّلة؟' : 'Is this supplier a qualifying small or medium enterprise?'}
+                      </p>
+                      <div className="flex gap-1.5" role="group" aria-label={isAr ? 'حالة تأهل المنشأة الصغيرة والمتوسطة اليابانية' : 'Japanese SME-qualification status'}>
+                        {([['yes', true], ['no', false]] as const).map(([k, v]) => (
+                          <button
+                            key={k}
+                            type="button"
+                            aria-pressed={entry.jp.isSmeQualified === v}
+                            onClick={() => onUpdate(entry.id, { jp: { ...entry.jp, isSmeQualified: v } })}
+                            className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors ${
+                              entry.jp.isSmeQualified === v ? 'bg-[#082C6B] border-[#082C6B] text-white' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                            }`}
+                          >
+                            {k === 'yes' ? (isAr ? 'نعم' : 'Yes') : (isAr ? 'لا' : 'No')}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {entry.countrySelection === 'KR' && entry.program === 'kr-sme-purchase-target-ratio' && (
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                        {isAr ? 'فئة المنتج' : 'Product Category'}
+                      </p>
+                      <div className="flex gap-1.5" role="group" aria-label={isAr ? 'فئة منتج المنشآت الصغيرة والمتوسطة الكورية' : 'Korean SME product category'}>
+                        {([
+                          ['general-sme-product', isAr ? 'منتج عام للمنشآت الصغيرة والمتوسطة (٥٠٪)' : 'General SME Product (50%)'],
+                          ['technology-development-product', isAr ? 'منتج تطوير تقني (١٥٪)' : 'Technology-Development Product (15%)'],
+                        ] as const).map(([k, label]) => (
+                          <button
+                            key={k}
+                            type="button"
+                            aria-pressed={entry.krSmeTarget.productCategory === k}
+                            onClick={() => onUpdate(entry.id, { krSmeTarget: { ...entry.krSmeTarget, productCategory: k } })}
+                            className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors ${
+                              entry.krSmeTarget.productCategory === k ? 'bg-[#082C6B] border-[#082C6B] text-white' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                            }`}
+                          >
+                            {label}
+                          </button>
+                        ))}
+                      </div>
+                      <p className="text-[10px] text-muted-foreground mt-1.5">
+                        {isAr ? 'هدف عام ٥٠٪ من إجمالي المشتريات، وهدف فرعي ١٥٪ ضمن مشتريات سلع المنشآت الصغيرة والمتوسطة لمنتجات التطوير التقني تحديداً.' : 'A 50% overall procurement target, and a 15% sub-target specifically within SME goods purchases for technology-development products.'}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                        {isAr ? 'هل هذا المورّد منشأة صغيرة أو متوسطة مؤهَّلة؟' : 'Is this supplier a qualifying small or medium enterprise?'}
+                      </p>
+                      <div className="flex gap-1.5" role="group" aria-label={isAr ? 'حالة تأهل المنشأة الصغيرة والمتوسطة الكورية' : 'Korean SME-qualification status'}>
+                        {([['yes', true], ['no', false]] as const).map(([k, v]) => (
+                          <button
+                            key={k}
+                            type="button"
+                            aria-pressed={entry.krSmeTarget.isSmeQualified === v}
+                            onClick={() => onUpdate(entry.id, { krSmeTarget: { ...entry.krSmeTarget, isSmeQualified: v } })}
+                            className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors ${
+                              entry.krSmeTarget.isSmeQualified === v ? 'bg-[#082C6B] border-[#082C6B] text-white' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                            }`}
+                          >
+                            {k === 'yes' ? (isAr ? 'نعم' : 'Yes') : (isAr ? 'لا' : 'No')}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {entry.countrySelection === 'KR' && entry.program === 'kr-sme-competitive-products-gate' && (
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                        {isAr ? 'هل فئة هذا المنتج/الخدمة من فئات المنتجات التنافسية الحصرية للمنشآت الصغيرة والمتوسطة المُصنَّفة (دورة ٢٠٢٥-٢٠٢٧)؟' : "Is this product/service category one of the designated SME-exclusive competitive products (2025-2027 cycle)?"}
+                      </p>
+                      <div className="flex gap-1.5" role="group" aria-label={isAr ? 'حالة تصنيف الفئة الكورية' : 'Korean category designation status'}>
+                        {([['yes', true], ['no', false]] as const).map(([k, v]) => (
+                          <button
+                            key={k}
+                            type="button"
+                            aria-pressed={entry.krCompetitiveProducts.inDesignatedCompetitiveProductCategory === v}
+                            onClick={() => onUpdate(entry.id, { krCompetitiveProducts: { ...entry.krCompetitiveProducts, inDesignatedCompetitiveProductCategory: v } })}
+                            className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors ${
+                              entry.krCompetitiveProducts.inDesignatedCompetitiveProductCategory === v ? 'bg-[#082C6B] border-[#082C6B] text-white' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                            }`}
+                          >
+                            {k === 'yes' ? (isAr ? 'نعم' : 'Yes') : (isAr ? 'لا' : 'No')}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    {entry.krCompetitiveProducts.inDesignatedCompetitiveProductCategory === true && (
+                      <div>
+                        <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                          {isAr ? 'هل حالة الإنتاج المباشر لهذا المورّد معتمدة بموجب المادة ٩؟' : "Is this supplier's direct-production status certified under Article 9?"}
+                        </p>
+                        <div className="flex gap-1.5" role="group" aria-label={isAr ? 'حالة اعتماد الإنتاج المباشر' : 'Direct-production certification status'}>
+                          {([['yes', true], ['no', false]] as const).map(([k, v]) => (
+                            <button
+                              key={k}
+                              type="button"
+                              aria-pressed={entry.krCompetitiveProducts.directProductionCertified === v}
+                              onClick={() => onUpdate(entry.id, { krCompetitiveProducts: { ...entry.krCompetitiveProducts, directProductionCertified: v } })}
+                              className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors ${
+                                entry.krCompetitiveProducts.directProductionCertified === v ? 'bg-[#082C6B] border-[#082C6B] text-white' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                              }`}
+                            >
+                              {k === 'yes' ? (isAr ? 'نعم' : 'Yes') : (isAr ? 'لا' : 'No')}
+                            </button>
+                          ))}
+                        </div>
+                        <p className="text-[10px] text-muted-foreground mt-1.5">
+                          {isAr ? 'ليس مجرد موزّع أو مستورد -- يجب أن يكون المورّد المُنتِج المباشر المُتحقَّق منه.' : 'Not merely a reseller or importer -- the supplier must be the verified direct producer.'}
+                        </p>
+                      </div>
                     )}
                   </div>
                 )}
@@ -2234,7 +2469,7 @@ export function LocalContentICVCheck() {
       entry: e,
       assessment: assessSupplierLocalContent(
         e.countrySelection as LocalContentCountry, e.context,
-        { sa: e.sa, ae: e.ae, jo: e.jo, saMandatoryList: e.saMandatoryList, saPricePreference: e.saPricePreference, iktva: e.iktva, aeTawazun: e.aeTawazun, aeGccOrigin: e.aeGccOrigin, joContractorQuota: e.joContractorQuota, omMandatoryList: e.omMandatoryList, omOqPricePreference: e.omOqPricePreference, qa: e.qa, bhSme: e.bhSme, bhTakamul: e.bhTakamul, bhGulfMade: e.bhGulfMade, kwLocalSpend: e.kwLocalSpend, kwTenderLawPricePreference: e.kwTenderLawPricePreference, kwNationality: e.kwNationality, eg: e.eg, egOilGas: e.egOilGas, tr: e.tr, uk: e.uk, usa: e.usa, usaBaba: e.usaBaba, cn: e.cn, cnSme: e.cnSme, rawafedStc: e.rawafedStc, sabicLcCommitment: e.sabicLcCommitment, qaTendersIcv: e.qaTendersIcv },
+        { sa: e.sa, ae: e.ae, jo: e.jo, saMandatoryList: e.saMandatoryList, saPricePreference: e.saPricePreference, iktva: e.iktva, aeTawazun: e.aeTawazun, aeGccOrigin: e.aeGccOrigin, joContractorQuota: e.joContractorQuota, omMandatoryList: e.omMandatoryList, omOqPricePreference: e.omOqPricePreference, qa: e.qa, bhSme: e.bhSme, bhTakamul: e.bhTakamul, bhGulfMade: e.bhGulfMade, kwLocalSpend: e.kwLocalSpend, kwTenderLawPricePreference: e.kwTenderLawPricePreference, kwNationality: e.kwNationality, eg: e.eg, egOilGas: e.egOilGas, tr: e.tr, uk: e.uk, usa: e.usa, usaBaba: e.usaBaba, usaBerry: e.usaBerry, cn: e.cn, cnSme: e.cnSme, rawafedStc: e.rawafedStc, sabicLcCommitment: e.sabicLcCommitment, qaTendersIcv: e.qaTendersIcv, inMakeInIndia: e.inMakeInIndia, jp: e.jp, krSmeTarget: e.krSmeTarget, krCompetitiveProducts: e.krCompetitiveProducts },
         e.program,
       ),
     }));
