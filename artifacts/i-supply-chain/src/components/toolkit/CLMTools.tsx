@@ -2191,7 +2191,7 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
                                 <input type="text" value={s} onChange={e => updateCustomStakeholder(c.id, idx, e.target.value)}
                                   placeholder={isAr ? 'مثال: منسق راعٍ خارجي' : 'e.g. External Sponsor Liaison'}
                                   className="flex-1 text-[11px] border border-slate-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-1 focus:ring-[#082C6B]" />
-                                <button type="button" onClick={() => removeCustomStakeholder(c.id, idx)} className="text-slate-300 hover:text-red-500 transition-colors shrink-0" aria-label={isAr ? 'إزالة' : 'Remove'}>
+                                <button type="button" onClick={() => removeCustomStakeholder(c.id, idx)} className="text-slate-300 hover:text-red-500 transition-colors shrink-0" aria-label={isAr ? 'إزالة الجهة المعنية المخصصة' : 'Remove custom stakeholder'}>
                                   <Trash2 className="w-3.5 h-3.5" />
                                 </button>
                               </div>

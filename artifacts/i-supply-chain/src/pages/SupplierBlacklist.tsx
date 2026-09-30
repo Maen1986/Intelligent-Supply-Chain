@@ -407,7 +407,7 @@ export function SupplierBlacklist() {
                 <span className="font-semibold text-slate-700">{isAr ? BLACKLIST_EVIDENCE_LABELS[row.category].ar : BLACKLIST_EVIDENCE_LABELS[row.category].en}</span>
                 <span className="text-slate-600 flex-1">{row.detailEn}</span>
                 {row.independentlySufficient && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-red-100 text-red-700">{t.independentlySufficientTag}</span>}
-                <button type="button" onClick={() => removeEvidenceRow(idx)} className="text-slate-400 hover:text-red-600 font-bold" aria-label={isAr ? 'إزالة' : 'Remove'}>×</button>
+                <button type="button" onClick={() => removeEvidenceRow(idx)} className="text-slate-400 hover:text-red-600 font-bold" aria-label={isAr ? 'إزالة سطر الدليل' : 'Remove evidence row'}>×</button>
               </div>
             ))}
           </div>

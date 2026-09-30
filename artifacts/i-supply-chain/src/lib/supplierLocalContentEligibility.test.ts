@@ -70,6 +70,14 @@ import {
   actionableNextStepForGccOriginTreatment,
   GCC_ORIGIN_VALUE_ADDED_THRESHOLD_PCT,
   GCC_ORIGIN_OWNERSHIP_THRESHOLD_PCT,
+  type ProductionIncentiveEligibilityGateResult,
+  EG_AUTO_ICE_MIN_LOCAL_CONTENT_PCT,
+  EG_AUTO_EV_MIN_LOCAL_CONTENT_PCT,
+  EG_AUTO_ICE_MAX_PRICE_EGP,
+  EG_AUTO_ICE_MAX_ENGINE_CC,
+  EG_AUTO_ICE_MIN_ANNUAL_UNITS,
+  EG_AUTO_ICE_MIN_UNITS_PER_MODEL,
+  EG_AUTO_EV_MIN_ANNUAL_UNITS,
 } from './supplierLocalContentEligibility';
 
 // ===========================================================================
@@ -733,16 +741,133 @@ describe('EG / Oil & Gas PSA Local-Contractor Priority — price-preference-marg
   });
 });
 
-describe('EG — Automotive Local Content Target (AIDP, not-yet-sourced, real dated context)', () => {
-  it('returns insufficient-data with the real 60% AIDP target disclosed in both languages, never a fabricated per-supplier formula', () => {
-    const a = assessSupplierLocalContent('EG', 'government', {}, 'eg-auto-local-content');
-    expect(a.applicability).toBe('insufficient-data');
-    expect(a.computation).toEqual({ mechanismType: 'not-yet-sourced' });
-    expect(a.reasonEn).toContain('60%');
-    expect(a.reasonAr).toContain('٦٠٪');
-    expect(a.program).toBe('eg-auto-local-content');
+describe('EG — National Automotive Industry Development Program — production-incentive-eligibility-gate (RESOLVED 1 Oct 2026 pass, was not-yet-sourced)', () => {
+  it('PROGRAMS[\'eg-auto-local-content\'] is wired consistently: correct country, mechanismType, applicableContexts, and sourceNote content', () => {
+    const framework = PROGRAMS['eg-auto-local-content'];
+    expect(framework.country).toBe('EG');
+    expect(framework.mechanismType).toBe('production-incentive-eligibility-gate');
+    expect(framework.applicableContexts).toEqual(['private-commercial']);
+    expect(framework.sourceNoteEn).toContain('28 Apr 2026');
+    expect(framework.sourceNoteEn).toContain('30%');
+    expect(framework.sourceNoteEn).not.toContain('not yet sourced');
+    expect(framework.sourceNoteAr).toContain('٢٨ أبريل ٢٠٢٦');
     expect(COUNTRY_FRAMEWORKS.EG.applicableContexts).not.toHaveLength(0); // EG's default program IS sourced, unlike OM/QA/BH/KW's default
-    expect(PROGRAMS['eg-auto-local-content'].applicableContexts).toHaveLength(0);
+  });
+
+  it('not-applicable for government/semi-government-soe -- this is a manufacturer incentive program, not a buyer-side tender preference', () => {
+    const gov = assessSupplierLocalContent('EG', 'government', { egAuto: { vehicleCategory: 'ice', localContentPct: 25, exFactoryPriceEGP: 1_000_000, engineCC: 1400, annualProductionUnits: 12_000, unitsPerModel: 6_000 } }, 'eg-auto-local-content');
+    expect(gov.applicability).toBe('not-applicable');
+    const soe = assessSupplierLocalContent('EG', 'semi-government-soe', { egAuto: { vehicleCategory: 'ice', localContentPct: 25, exFactoryPriceEGP: 1_000_000, engineCC: 1400, annualProductionUnits: 12_000, unitsPerModel: 6_000 } }, 'eg-auto-local-content');
+    expect(soe.applicability).toBe('not-applicable');
+  });
+
+  it('insufficient-data (at the input level): no egAuto inputs supplied yet', () => {
+    const a = assessSupplierLocalContent('EG', 'private-commercial', {}, 'eg-auto-local-content');
+    expect(a.applicability).toBe('applicable'); // applicability is about context, not input completeness -- same precedent as Tawazun/GCC-origin above
+    const c = a.computation as ProductionIncentiveEligibilityGateResult;
+    expect(c.vehicleCategory).toBeNull();
+    expect(c.eligibleForIncentive).toBeNull();
+    expect(a.reasonEn).toContain('No Egyptian AIDP vehicle-category/local-content inputs supplied yet');
+    expect(a.reasonAr).toContain('لم تُدخل بيانات فئة المركبة');
+  });
+
+  it('ICE: comfortably clears every gate -> eligible', () => {
+    const a = assessSupplierLocalContent('EG', 'private-commercial', { egAuto: { vehicleCategory: 'ice', localContentPct: 25, exFactoryPriceEGP: 1_000_000, engineCC: 1400, annualProductionUnits: 12_000, unitsPerModel: 6_000 } }, 'eg-auto-local-content');
+    const c = a.computation as ProductionIncentiveEligibilityGateResult;
+    expect(c.vehicleCategory).toBe('ice');
+    expect(c.localContentThresholdPct).toBe(EG_AUTO_ICE_MIN_LOCAL_CONTENT_PCT);
+    expect(c.meetsLocalContentThreshold).toBe(true);
+    expect(c.meetsPriceAndEngineCriteria).toBe(true);
+    expect(c.meetsProductionVolumeCriteria).toBe(true);
+    expect(c.eligibleForIncentive).toBe(true);
+    expect(a.reasonEn).toContain('eligible for an AIDP incentive');
+  });
+
+  it('ICE: boundary -- exactly at every threshold qualifies (>=/<=, not a strict inequality)', () => {
+    const a = assessSupplierLocalContent('EG', 'private-commercial', { egAuto: { vehicleCategory: 'ice', localContentPct: EG_AUTO_ICE_MIN_LOCAL_CONTENT_PCT, exFactoryPriceEGP: EG_AUTO_ICE_MAX_PRICE_EGP, engineCC: EG_AUTO_ICE_MAX_ENGINE_CC, annualProductionUnits: EG_AUTO_ICE_MIN_ANNUAL_UNITS, unitsPerModel: EG_AUTO_ICE_MIN_UNITS_PER_MODEL } }, 'eg-auto-local-content');
+    const c = a.computation as ProductionIncentiveEligibilityGateResult;
+    expect(c.eligibleForIncentive).toBe(true);
+  });
+
+  it('ICE: one point below the local-content threshold fails the gate, even with everything else clearing comfortably -- a known failure is decisive', () => {
+    const a = assessSupplierLocalContent('EG', 'private-commercial', { egAuto: { vehicleCategory: 'ice', localContentPct: EG_AUTO_ICE_MIN_LOCAL_CONTENT_PCT - 1, exFactoryPriceEGP: 900_000, engineCC: 1400, annualProductionUnits: 20_000, unitsPerModel: 8_000 } }, 'eg-auto-local-content');
+    const c = a.computation as ProductionIncentiveEligibilityGateResult;
+    expect(c.meetsLocalContentThreshold).toBe(false);
+    expect(c.eligibleForIncentive).toBe(false);
+    expect(a.reasonEn).toContain('gated out of AIDP incentive eligibility');
+  });
+
+  it('ICE: price over the EGP 1.25m ceiling fails the price/engine gate alone', () => {
+    const a = assessSupplierLocalContent('EG', 'private-commercial', { egAuto: { vehicleCategory: 'ice', localContentPct: 30, exFactoryPriceEGP: EG_AUTO_ICE_MAX_PRICE_EGP + 1, engineCC: 1400, annualProductionUnits: 20_000, unitsPerModel: 8_000 } }, 'eg-auto-local-content');
+    const c = a.computation as ProductionIncentiveEligibilityGateResult;
+    expect(c.meetsLocalContentThreshold).toBe(true);
+    expect(c.meetsPriceAndEngineCriteria).toBe(false);
+    expect(c.eligibleForIncentive).toBe(false);
+  });
+
+  it('ICE: engine over 1600cc fails the price/engine gate alone', () => {
+    const a = assessSupplierLocalContent('EG', 'private-commercial', { egAuto: { vehicleCategory: 'ice', localContentPct: 30, exFactoryPriceEGP: 900_000, engineCC: EG_AUTO_ICE_MAX_ENGINE_CC + 1, annualProductionUnits: 20_000, unitsPerModel: 8_000 } }, 'eg-auto-local-content');
+    const c = a.computation as ProductionIncentiveEligibilityGateResult;
+    expect(c.meetsPriceAndEngineCriteria).toBe(false);
+    expect(c.eligibleForIncentive).toBe(false);
+  });
+
+  it('ICE: below the 10,000/year OR 5,000/model production minimum fails the volume gate alone', () => {
+    const belowAnnual = assessSupplierLocalContent('EG', 'private-commercial', { egAuto: { vehicleCategory: 'ice', localContentPct: 30, exFactoryPriceEGP: 900_000, engineCC: 1400, annualProductionUnits: EG_AUTO_ICE_MIN_ANNUAL_UNITS - 1, unitsPerModel: 8_000 } }, 'eg-auto-local-content');
+    expect((belowAnnual.computation as ProductionIncentiveEligibilityGateResult).eligibleForIncentive).toBe(false);
+    const belowPerModel = assessSupplierLocalContent('EG', 'private-commercial', { egAuto: { vehicleCategory: 'ice', localContentPct: 30, exFactoryPriceEGP: 900_000, engineCC: 1400, annualProductionUnits: 20_000, unitsPerModel: EG_AUTO_ICE_MIN_UNITS_PER_MODEL - 1 } }, 'eg-auto-local-content');
+    expect((belowPerModel.computation as ProductionIncentiveEligibilityGateResult).eligibleForIncentive).toBe(false);
+  });
+
+  it('EV: comfortably clears its own, genuinely different thresholds (10% local content, 1,000 units/year, no price/engine ceiling)', () => {
+    const a = assessSupplierLocalContent('EG', 'private-commercial', { egAuto: { vehicleCategory: 'ev', localContentPct: 15, exFactoryPriceEGP: null, engineCC: null, annualProductionUnits: 2_000, unitsPerModel: null } }, 'eg-auto-local-content');
+    const c = a.computation as ProductionIncentiveEligibilityGateResult;
+    expect(c.vehicleCategory).toBe('ev');
+    expect(c.localContentThresholdPct).toBe(EG_AUTO_EV_MIN_LOCAL_CONTENT_PCT);
+    expect(c.meetsLocalContentThreshold).toBe(true);
+    // No sourced price/engine ceiling applies to EVs -- disclosed "not
+    // applicable", must not block eligibility and must not be conflated
+    // with a missing-input gap the way ICE's null would be.
+    expect(c.meetsPriceAndEngineCriteria).toBeNull();
+    expect(c.meetsProductionVolumeCriteria).toBe(true);
+    expect(c.eligibleForIncentive).toBe(true);
+  });
+
+  it('EV: below the 10% local-content minimum fails, even though no price/engine ceiling ever applies to EVs', () => {
+    const a = assessSupplierLocalContent('EG', 'private-commercial', { egAuto: { vehicleCategory: 'ev', localContentPct: EG_AUTO_EV_MIN_LOCAL_CONTENT_PCT - 1, exFactoryPriceEGP: null, engineCC: null, annualProductionUnits: 2_000, unitsPerModel: null } }, 'eg-auto-local-content');
+    const c = a.computation as ProductionIncentiveEligibilityGateResult;
+    expect(c.meetsLocalContentThreshold).toBe(false);
+    expect(c.eligibleForIncentive).toBe(false);
+  });
+
+  it('EV: below the 1,000-unit/year entry point fails the volume gate (the separately-disclosed 7,000-unit figure is an end-of-program target, not this gate\'s minimum)', () => {
+    const a = assessSupplierLocalContent('EG', 'private-commercial', { egAuto: { vehicleCategory: 'ev', localContentPct: 15, exFactoryPriceEGP: null, engineCC: null, annualProductionUnits: EG_AUTO_EV_MIN_ANNUAL_UNITS - 1, unitsPerModel: null } }, 'eg-auto-local-content');
+    const c = a.computation as ProductionIncentiveEligibilityGateResult;
+    expect(c.meetsProductionVolumeCriteria).toBe(false);
+    expect(c.eligibleForIncentive).toBe(false);
+  });
+
+  it('insufficient-data when vehicleCategory is known but a required field for that category is still missing -- never guessed true', () => {
+    const a = assessSupplierLocalContent('EG', 'private-commercial', { egAuto: { vehicleCategory: 'ice', localContentPct: 30, exFactoryPriceEGP: null, engineCC: 1400, annualProductionUnits: 20_000, unitsPerModel: 8_000 } }, 'eg-auto-local-content');
+    const c = a.computation as ProductionIncentiveEligibilityGateResult;
+    expect(c.meetsPriceAndEngineCriteria).toBeNull();
+    expect(c.eligibleForIncentive).toBeNull();
+    expect(a.reasonEn).toContain('incomplete inputs');
+  });
+
+  it('recommendLocalContentAction: fires a genuine primary + alternative when gated out, never manufactured against an unknown', () => {
+    const gated = assessSupplierLocalContent('EG', 'private-commercial', { egAuto: { vehicleCategory: 'ice', localContentPct: 10, exFactoryPriceEGP: 900_000, engineCC: 1400, annualProductionUnits: 20_000, unitsPerModel: 8_000 } }, 'eg-auto-local-content');
+    const rec = recommendLocalContentAction(gated, null);
+    expect(rec).not.toBeNull();
+    expect(rec!.primaryEn).toContain(`${EG_AUTO_ICE_MIN_LOCAL_CONTENT_PCT}%`);
+    expect(rec!.alternativeEn).toContain('general market');
+    expect(rec!.primaryAr.length).toBeGreaterThan(0);
+
+    const qualifying = assessSupplierLocalContent('EG', 'private-commercial', { egAuto: { vehicleCategory: 'ice', localContentPct: 25, exFactoryPriceEGP: 900_000, engineCC: 1400, annualProductionUnits: 20_000, unitsPerModel: 8_000 } }, 'eg-auto-local-content');
+    expect(recommendLocalContentAction(qualifying, null)).toBeNull();
+
+    const unknown = assessSupplierLocalContent('EG', 'private-commercial', {}, 'eg-auto-local-content');
+    expect(recommendLocalContentAction(unknown, null)).toBeNull();
   });
 });
 

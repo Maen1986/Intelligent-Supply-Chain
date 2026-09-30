@@ -108,6 +108,7 @@ type InMakeInIndiaInputs = NonNullable<SupplierLocalContentInputs['inMakeInIndia
 type JpInputs = NonNullable<SupplierLocalContentInputs['jp']>;
 type KrSmeTargetInputs = NonNullable<SupplierLocalContentInputs['krSmeTarget']>;
 type KrCompetitiveProductsInputs = NonNullable<SupplierLocalContentInputs['krCompetitiveProducts']>;
+type EgAutoInputs = NonNullable<SupplierLocalContentInputs['egAuto']>;
 
 function emptySa(): SaInputs {
   return {
@@ -218,6 +219,9 @@ function emptyKrSmeTarget(): KrSmeTargetInputs {
 }
 function emptyKrCompetitiveProducts(): KrCompetitiveProductsInputs {
   return { inDesignatedCompetitiveProductCategory: null, directProductionCertified: null };
+}
+function emptyEgAuto(): EgAutoInputs {
+  return { vehicleCategory: null, localContentPct: null, exFactoryPriceEGP: null, engineCC: null, annualProductionUnits: null, unitsPerModel: null };
 }
 function emptyCn(): CnInputs {
   return { meetsDomesticProductCriteria: null, bundleDomesticCostSharePct: null, article10ExemptionApplies: null };
@@ -344,6 +348,7 @@ interface LocalContentEntry {
   jp: JpInputs;
   krSmeTarget: KrSmeTargetInputs;
   krCompetitiveProducts: KrCompetitiveProductsInputs;
+  egAuto: EgAutoInputs;
 }
 
 function newLocalContentEntry(): LocalContentEntry {
@@ -364,6 +369,7 @@ function newLocalContentEntry(): LocalContentEntry {
     rawafedStc: emptyRawafedStc(), sabicLcCommitment: emptySabicLcCommitment(),
     qaTendersIcv: emptyQaTendersIcv(),
     inMakeInIndia: emptyInMakeInIndia(), jp: emptyJp(), krSmeTarget: emptyKrSmeTarget(), krCompetitiveProducts: emptyKrCompetitiveProducts(),
+    egAuto: emptyEgAuto(),
   };
 }
 
@@ -424,6 +430,7 @@ function loadState(): PersistedState {
             jp: { ...emptyJp(), ...e.jp },
             krSmeTarget: { ...emptyKrSmeTarget(), ...e.krSmeTarget },
             krCompetitiveProducts: { ...emptyKrCompetitiveProducts(), ...e.krCompetitiveProducts },
+            egAuto: { ...emptyEgAuto(), ...e.egAuto },
           })),
           targetThresholdPct: parsed.targetThresholdPct ?? null,
         };
@@ -500,7 +507,7 @@ const PROGRAM_LABELS: Record<LocalContentProgram, { en: string; ar: string }> = 
   'kw-nationality-price-preference': { en: 'Company-Nationality Price Preference (10%)', ar: 'تفضيل سعري لجنسية الشركة (١٠٪)' },
   'eg-price-preference': { en: 'Price Preference (15%)', ar: 'تفضيل السعر (١٥٪)' },
   'eg-oil-gas-price-preference': { en: 'Oil & Gas PSA Preference (10%)', ar: 'تفضيل السعر بموجب اتفاقية تقاسم الإنتاج النفطية (١٠٪)' },
-  'eg-auto-local-content': { en: 'Automotive Local Content (not sourced)', ar: 'المحتوى المحلي لصناعة السيارات (غير موثّق)' },
+  'eg-auto-local-content': { en: 'Automotive Incentive Eligibility Gate', ar: 'بوابة أهلية حافز صناعة السيارات' },
   'tr-price-preference': { en: 'Domestic Goods Price Preference (up to 15%)', ar: 'تفضيل سعر السلع المحلية (حتى ١٥٪)' },
   'tr-defense-offset': { en: 'SSB Defense Offset (not sourced)', ar: 'تعويض SSB الدفاعي (غير موثّق)' },
   'uk-below-threshold-reservation': { en: 'Below-Threshold Reservation (PPN 005)', ar: 'تخصيص دون العتبة (PPN 005)' },
@@ -683,7 +690,7 @@ function LocalContentEntryCard({
   const assessment: LocalContentAssessment | null = !isOther
     ? assessSupplierLocalContent(
         entry.countrySelection as LocalContentCountry, entry.context,
-        { sa: entry.sa, ae: entry.ae, jo: entry.jo, saMandatoryList: entry.saMandatoryList, saPricePreference: entry.saPricePreference, iktva: entry.iktva, aeTawazun: entry.aeTawazun, aeGccOrigin: entry.aeGccOrigin, joContractorQuota: entry.joContractorQuota, omMandatoryList: entry.omMandatoryList, omOqPricePreference: entry.omOqPricePreference, qa: entry.qa, bhSme: entry.bhSme, bhTakamul: entry.bhTakamul, bhGulfMade: entry.bhGulfMade, kwLocalSpend: entry.kwLocalSpend, kwTenderLawPricePreference: entry.kwTenderLawPricePreference, kwNationality: entry.kwNationality, eg: entry.eg, egOilGas: entry.egOilGas, tr: entry.tr, uk: entry.uk, usa: entry.usa, usaBaba: entry.usaBaba, usaBerry: entry.usaBerry, cn: entry.cn, cnSme: entry.cnSme, rawafedStc: entry.rawafedStc, sabicLcCommitment: entry.sabicLcCommitment, qaTendersIcv: entry.qaTendersIcv, inMakeInIndia: entry.inMakeInIndia, jp: entry.jp, krSmeTarget: entry.krSmeTarget, krCompetitiveProducts: entry.krCompetitiveProducts },
+        { sa: entry.sa, ae: entry.ae, jo: entry.jo, saMandatoryList: entry.saMandatoryList, saPricePreference: entry.saPricePreference, iktva: entry.iktva, aeTawazun: entry.aeTawazun, aeGccOrigin: entry.aeGccOrigin, joContractorQuota: entry.joContractorQuota, omMandatoryList: entry.omMandatoryList, omOqPricePreference: entry.omOqPricePreference, qa: entry.qa, bhSme: entry.bhSme, bhTakamul: entry.bhTakamul, bhGulfMade: entry.bhGulfMade, kwLocalSpend: entry.kwLocalSpend, kwTenderLawPricePreference: entry.kwTenderLawPricePreference, kwNationality: entry.kwNationality, eg: entry.eg, egOilGas: entry.egOilGas, tr: entry.tr, uk: entry.uk, usa: entry.usa, usaBaba: entry.usaBaba, usaBerry: entry.usaBerry, cn: entry.cn, cnSme: entry.cnSme, rawafedStc: entry.rawafedStc, sabicLcCommitment: entry.sabicLcCommitment, qaTendersIcv: entry.qaTendersIcv, inMakeInIndia: entry.inMakeInIndia, jp: entry.jp, krSmeTarget: entry.krSmeTarget, krCompetitiveProducts: entry.krCompetitiveProducts, egAuto: entry.egAuto },
         entry.program,
       )
     : null;
@@ -1465,6 +1472,83 @@ function LocalContentEntryCard({
                     <p className="text-[10px] text-muted-foreground mt-1.5">
                       {isAr ? 'وفق شروط اتفاقيات تقاسم الإنتاج (PSA) الخاصة بوزارة البترول -- تفضيل بهامش ١٠٪ لأسعار المقاولين المحليين المؤهلين.' : "Per Ministry of Petroleum PSA contractual terms -- a 10% price-band preference for qualifying local contractors."}
                     </p>
+                  </div>
+                )}
+
+                {entry.countrySelection === 'EG' && entry.program === 'eg-auto-local-content' && (
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                        {isAr ? 'فئة المركبة' : 'Vehicle Category'}
+                      </p>
+                      <div className="flex gap-1.5" role="group" aria-label={isAr ? 'فئة مركبة البرنامج الوطني لتنمية صناعة السيارات المصري' : 'Egyptian National Automotive Program vehicle category'}>
+                        {([
+                          ['ice', isAr ? 'تقليدية (محرك احتراق)' : 'Fossil-Fuel (ICE)'],
+                          ['ev', isAr ? 'كهربائية' : 'Electric (EV)'],
+                        ] as const).map(([k, lbl]) => (
+                          <button
+                            key={k}
+                            type="button"
+                            aria-pressed={entry.egAuto.vehicleCategory === k}
+                            onClick={() => onUpdate(entry.id, { egAuto: { ...entry.egAuto, vehicleCategory: k } })}
+                            className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors ${
+                              entry.egAuto.vehicleCategory === k ? 'bg-[#082C6B] border-[#082C6B] text-white' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                            }`}
+                          >
+                            {lbl}
+                          </button>
+                        ))}
+                      </div>
+                      <p className="text-[10px] text-muted-foreground mt-1.5">
+                        {isAr ? 'بحسب بيان المركز الإعلامي لمجلس الوزراء (٢٨ أبريل ٢٠٢٦): بوابة أهلية فقط -- لا تُحتسب قيمة الحافز الدقيقة هنا (انظر ملاحظة المصدر).' : "Per the Cabinet media-center statement (28 Apr 2026): an eligibility gate only -- the exact incentive amount is not computed here (see sourceNoteEn)."}
+                      </p>
+                    </div>
+                    <div className="grid sm:grid-cols-2 gap-3">
+                      <NumberField
+                        label={isAr ? 'نسبة المحتوى المحلي' : 'Local Content Share'}
+                        hint={entry.egAuto.vehicleCategory === 'ev'
+                          ? (isAr ? 'الحد الأدنى البدئي للمركبات الكهربائية ١٠٪ (مراجعة سنوية).' : 'Starting minimum for EVs is 10% (annual review).')
+                          : (isAr ? 'الحد الأدنى البدئي للمركبات التقليدية ٢٠٪ (مراجعة كل سنتين).' : 'Starting minimum for ICE vehicles is 20% (biennial review).')}
+                        unit="%"
+                        max={100}
+                        value={entry.egAuto.localContentPct}
+                        onChange={v => onUpdate(entry.id, { egAuto: { ...entry.egAuto, localContentPct: v } })}
+                      />
+                      <NumberField
+                        label={isAr ? 'حجم الإنتاج السنوي (وحدة)' : 'Annual Production Volume (units)'}
+                        hint={entry.egAuto.vehicleCategory === 'ev'
+                          ? (isAr ? 'نقطة الدخول ١٠٠٠ وحدة سنوياً؛ ٧٠٠٠ هدف نهاية البرنامج، وليس حد أهلية.' : "1,000 units/year entry point; 7,000 is an end-of-program target, not an eligibility minimum.")
+                          : (isAr ? 'حد أدنى ١٠٠٠٠ وحدة سنوياً.' : '10,000 units/year minimum.')}
+                        value={entry.egAuto.annualProductionUnits}
+                        onChange={v => onUpdate(entry.id, { egAuto: { ...entry.egAuto, annualProductionUnits: v } })}
+                      />
+                      {entry.egAuto.vehicleCategory !== 'ev' && (
+                        <>
+                          <NumberField
+                            label={isAr ? 'سعر التصنيع (جنيه مصري)' : 'Ex-Factory Price (EGP)'}
+                            hint={isAr ? 'سقف مؤهل ١.٢٥ مليون جنيه (للمركبات التقليدية فقط).' : 'Eligible ceiling EGP 1.25m (ICE only).'}
+                            unit="EGP"
+                            max={10_000_000}
+                            value={entry.egAuto.exFactoryPriceEGP}
+                            onChange={v => onUpdate(entry.id, { egAuto: { ...entry.egAuto, exFactoryPriceEGP: v } })}
+                          />
+                          <NumberField
+                            label={isAr ? 'سعة المحرك (سم³)' : 'Engine Size (cc)'}
+                            hint={isAr ? 'سقف مؤهل ١٦٠٠ سم³ (للمركبات التقليدية فقط).' : 'Eligible ceiling 1,600cc (ICE only).'}
+                            unit="cc"
+                            max={10_000}
+                            value={entry.egAuto.engineCC}
+                            onChange={v => onUpdate(entry.id, { egAuto: { ...entry.egAuto, engineCC: v } })}
+                          />
+                          <NumberField
+                            label={isAr ? 'وحدات الطراز الواحد سنوياً' : 'Units Per Model / Year'}
+                            hint={isAr ? 'حد أدنى ٥٠٠٠ وحدة للطراز الواحد (للمركبات التقليدية فقط).' : '5,000 units/model minimum (ICE only).'}
+                            value={entry.egAuto.unitsPerModel}
+                            onChange={v => onUpdate(entry.id, { egAuto: { ...entry.egAuto, unitsPerModel: v } })}
+                          />
+                        </>
+                      )}
+                    </div>
                   </div>
                 )}
 
@@ -2469,7 +2553,7 @@ export function LocalContentICVCheck() {
       entry: e,
       assessment: assessSupplierLocalContent(
         e.countrySelection as LocalContentCountry, e.context,
-        { sa: e.sa, ae: e.ae, jo: e.jo, saMandatoryList: e.saMandatoryList, saPricePreference: e.saPricePreference, iktva: e.iktva, aeTawazun: e.aeTawazun, aeGccOrigin: e.aeGccOrigin, joContractorQuota: e.joContractorQuota, omMandatoryList: e.omMandatoryList, omOqPricePreference: e.omOqPricePreference, qa: e.qa, bhSme: e.bhSme, bhTakamul: e.bhTakamul, bhGulfMade: e.bhGulfMade, kwLocalSpend: e.kwLocalSpend, kwTenderLawPricePreference: e.kwTenderLawPricePreference, kwNationality: e.kwNationality, eg: e.eg, egOilGas: e.egOilGas, tr: e.tr, uk: e.uk, usa: e.usa, usaBaba: e.usaBaba, usaBerry: e.usaBerry, cn: e.cn, cnSme: e.cnSme, rawafedStc: e.rawafedStc, sabicLcCommitment: e.sabicLcCommitment, qaTendersIcv: e.qaTendersIcv, inMakeInIndia: e.inMakeInIndia, jp: e.jp, krSmeTarget: e.krSmeTarget, krCompetitiveProducts: e.krCompetitiveProducts },
+        { sa: e.sa, ae: e.ae, jo: e.jo, saMandatoryList: e.saMandatoryList, saPricePreference: e.saPricePreference, iktva: e.iktva, aeTawazun: e.aeTawazun, aeGccOrigin: e.aeGccOrigin, joContractorQuota: e.joContractorQuota, omMandatoryList: e.omMandatoryList, omOqPricePreference: e.omOqPricePreference, qa: e.qa, bhSme: e.bhSme, bhTakamul: e.bhTakamul, bhGulfMade: e.bhGulfMade, kwLocalSpend: e.kwLocalSpend, kwTenderLawPricePreference: e.kwTenderLawPricePreference, kwNationality: e.kwNationality, eg: e.eg, egOilGas: e.egOilGas, tr: e.tr, uk: e.uk, usa: e.usa, usaBaba: e.usaBaba, usaBerry: e.usaBerry, cn: e.cn, cnSme: e.cnSme, rawafedStc: e.rawafedStc, sabicLcCommitment: e.sabicLcCommitment, qaTendersIcv: e.qaTendersIcv, inMakeInIndia: e.inMakeInIndia, jp: e.jp, krSmeTarget: e.krSmeTarget, krCompetitiveProducts: e.krCompetitiveProducts, egAuto: e.egAuto },
         e.program,
       ),
     }));

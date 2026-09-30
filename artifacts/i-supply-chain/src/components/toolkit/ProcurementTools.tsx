@@ -2856,7 +2856,7 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
                   {isAr ? 'تحليل الحساسية' : 'Sensitivity analysis'}
                 </p>
                 <div className="flex items-center gap-2 print-hide">
-                  <select value={tcoSensitivitySupplier?.id || ''} aria-label={isAr ? 'المورّد' : 'Supplier'}
+                  <select value={tcoSensitivitySupplier?.id || ''} aria-label={isAr ? 'مورّد تحليل الحساسية' : 'Sensitivity-analysis supplier'}
                     onChange={e => setTcoSensitivitySupplierId(e.target.value)}
                     className="text-xs border border-slate-200 rounded-lg px-2 py-1.5 font-semibold text-slate-700">
                     {tcoSuppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}

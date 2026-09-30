@@ -88,13 +88,29 @@ function mockFileReaderWith(text: string) {
 }
 
 /**
- * Find the hidden file input labelled "Import CSV file" (English) or
- * "استيراد ملف CSV" (Arabic) and fire a change event so the component's
- * onChange handler runs.
+ * Find the hidden file input labelled "Import scorecard CSV file" (English)
+ * or "استيراد ملف CSV لبطاقة أداء المورّدين" (Arabic) and fire a change
+ * event so SupplierScorecardTool's onChange handler runs. (Relabeled from
+ * the previous shared "Import CSV file" text during the repo-wide aria-
+ * label substring-collision fix -- SupplierScorecardTool and
+ * TrainingNeedsAssessment used to carry the exact same accessible name,
+ * which was itself a real, undetected accessibility defect, not just the
+ * RiskTools/ProcurementTools substring collisions the sweep flagged. Use
+ * `fireImportTrainingFile` below for the TrainingNeedsAssessment sections.)
  */
 function fireImportFile(csvText: string, ar = false) {
-  const label = ar ? 'استيراد ملف CSV' : 'Import CSV file';
+  const label = ar ? 'استيراد ملف CSV لبطاقة أداء المورّدين' : 'Import scorecard CSV file';
   const input = screen.getByLabelText(label);
+  const file  = new File([csvText], 'test.csv', { type: 'text/csv' });
+  Object.defineProperty(input, 'files', { value: [file], configurable: true });
+  fireEvent.change(input);
+}
+
+/** Same as `fireImportFile` above, but for TrainingNeedsAssessment's own
+ * (now genuinely distinct) "Import training CSV file" /
+ * "استيراد ملف CSV للتدريب" accessible name. */
+function fireImportTrainingFile(csvText: string) {
+  const input = screen.getByLabelText('Import training CSV file');
   const file  = new File([csvText], 'test.csv', { type: 'text/csv' });
   Object.defineProperty(input, 'files', { value: [file], configurable: true });
   fireEvent.change(input);
@@ -861,7 +877,7 @@ describe('TrainingNeedsAssessment — empty file shows failure message', () => {
   it('renders "Import failed:" when the CSV is empty', async () => {
     mockFileReaderWith('');
     render(<TrainingNeedsAssessment isAr={false} />);
-    fireImportFile('');
+    fireImportTrainingFile('');
     await waitFor(() =>
       expect(screen.getByText('Import failed:')).toBeInTheDocument(),
     );
@@ -871,7 +887,7 @@ describe('TrainingNeedsAssessment — empty file shows failure message', () => {
     const csv = 'Score,Level\n3,Competent';
     mockFileReaderWith(csv);
     render(<TrainingNeedsAssessment isAr={false} />);
-    fireImportFile(csv);
+    fireImportTrainingFile(csv);
     await waitFor(() =>
       expect(screen.getByText('Import failed:')).toBeInTheDocument(),
     );
@@ -885,7 +901,7 @@ describe('TrainingNeedsAssessment — empty Member Name row is skipped', () => {
     const csv = trainingCsv([',3', 'Jane Smith,4']);
     mockFileReaderWith(csv);
     render(<TrainingNeedsAssessment isAr={false} />);
-    fireImportFile(csv);
+    fireImportTrainingFile(csv);
     await waitFor(() =>
       expect(
         screen.getByText((txt) => txt.includes('Row 2') && txt.toLowerCase().includes('empty')),
@@ -897,7 +913,7 @@ describe('TrainingNeedsAssessment — empty Member Name row is skipped', () => {
     const csv = trainingCsv([',3', 'Jane Smith,4']);
     mockFileReaderWith(csv);
     render(<TrainingNeedsAssessment isAr={false} />);
-    fireImportFile(csv);
+    fireImportTrainingFile(csv);
     await waitFor(() =>
       expect(
         screen.getByText((txt) => txt.startsWith('✓') && txt.includes('Imported')),
@@ -911,7 +927,7 @@ describe('TrainingNeedsAssessment — non-numeric domain score column', () => {
     const csv = trainingCsv(['Jane Smith,excellent']); // "excellent" is not 1–5
     mockFileReaderWith(csv);
     render(<TrainingNeedsAssessment isAr={false} />);
-    fireImportFile(csv);
+    fireImportTrainingFile(csv);
     await waitFor(() =>
       expect(
         screen.getByText((txt) => txt.toLowerCase().includes('ignored')),
@@ -923,7 +939,7 @@ describe('TrainingNeedsAssessment — non-numeric domain score column', () => {
     const csv = trainingCsv(['Jane Smith,excellent']);
     mockFileReaderWith(csv);
     render(<TrainingNeedsAssessment isAr={false} />);
-    fireImportFile(csv);
+    fireImportTrainingFile(csv);
     await waitFor(() =>
       expect(
         screen.getByText((txt) => txt.startsWith('✓') && txt.includes('Imported')),
@@ -935,7 +951,7 @@ describe('TrainingNeedsAssessment — non-numeric domain score column', () => {
     const csv = trainingCsv(['Jane Smith,10']); // 10 is out of range
     mockFileReaderWith(csv);
     render(<TrainingNeedsAssessment isAr={false} />);
-    fireImportFile(csv);
+    fireImportTrainingFile(csv);
     await waitFor(() =>
       expect(
         screen.getByText((txt) => txt.toLowerCase().includes('ignored')),
@@ -952,7 +968,7 @@ describe('TrainingNeedsAssessment — file with only bad rows leaves existing st
     const csv = trainingCsv([',3', ',4']); // all empty names
     mockFileReaderWith(csv);
     render(<TrainingNeedsAssessment isAr={false} />);
-    fireImportFile(csv);
+    fireImportTrainingFile(csv);
 
     // Wait for the import summary line — exact text avoids matching multiple elements
     await screen.findByText('✓ Imported 0 member(s).');
@@ -965,7 +981,7 @@ describe('TrainingNeedsAssessment — file with only bad rows leaves existing st
     const csv = trainingCsv([',3', ',4']);
     mockFileReaderWith(csv);
     render(<TrainingNeedsAssessment isAr={false} />);
-    fireImportFile(csv);
+    fireImportTrainingFile(csv);
     await waitFor(() =>
       expect(
         screen.getByText((txt) => txt.includes('Row 2') && txt.toLowerCase().includes('empty')),

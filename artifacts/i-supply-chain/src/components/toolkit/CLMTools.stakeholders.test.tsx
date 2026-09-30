@@ -117,7 +117,7 @@ describe('NDA Skeleton -- Additional Stakeholders (item 50)', () => {
     fireEvent.change(inputs[0], { target: { value: 'External Sponsor Liaison' } });
     fireEvent.change(inputs[1], { target: { value: 'Board Observer' } });
 
-    const removeButtons = within(card).getAllByRole('button', { name: 'Remove' });
+    const removeButtons = within(card).getAllByRole('button', { name: 'Remove custom stakeholder' });
     fireEvent.click(removeButtons[0]);
 
     inputs = within(card).getAllByPlaceholderText('e.g. External Sponsor Liaison');
