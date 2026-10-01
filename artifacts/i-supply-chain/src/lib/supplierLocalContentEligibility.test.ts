@@ -88,6 +88,23 @@ import {
   OFFSET_MULTIPLIER_CREDIT_GATE_AVENUE_MULTIPLIERS,
   EDIP_EU_CONTENT_THRESHOLD_PCT,
   EDIP_NON_EU_CONTENT_CAP_PCT,
+  // Module 08 nine-program closure pass (1-2 Oct 2026) -- three more
+  // genuinely new mechanisms (sa-gami-defense, tr-defense-offset, and the
+  // new bh-bahrainisation-tender-workforce program).
+  type GamiValuationFactorCreditGateResult,
+  type TrIndustrializationLiabilityGateResult,
+  type PercentageThresholdGateResult,
+  GAMI_CONTRACT_VALUE_THRESHOLD_SAR,
+  GAMI_COMMITMENT_PCT_OF_CONTRACT_VALUE,
+  GAMI_PERFORMANCE_SECURITY_PCT_OF_CONTRACT_VALUE,
+  GAMI_LIQUIDATION_FULL_FORFEIT_BELOW_ACHIEVEMENT_PCT,
+  GAMI_VALUATION_FACTOR_RANGES,
+  GAMI_SME_BONUS_FACTOR,
+  GAMI_SOLE_SOURCE_BONUS_FACTOR,
+  TR_YS_SME_WORK_SHARE_THRESHOLD_PCT,
+  TR_EYDEP_WORK_SHARE_THRESHOLD_PCT,
+  TR_TECH_ACQUISITION_THRESHOLD_PCT,
+  BAHRAIN_TENDER_BAHRAINISATION_THRESHOLD_PCT,
 } from './supplierLocalContentEligibility';
 
 // ===========================================================================
@@ -1018,22 +1035,88 @@ describe('TR / Public Procurement Domestic Goods Price Preference — price-pref
   });
 });
 
-describe('TR — SSB Defense Offset Guideline (2022, not-yet-sourced, disclosed cross-source figure ambiguity)', () => {
-  it('returns insufficient-data with the disclosed 70%-figure discrepancy and no confirmed trigger threshold, never a guessed formula', () => {
-    const a = assessSupplierLocalContent('TR', 'government', {}, 'tr-defense-offset');
-    expect(a.applicability).toBe('insufficient-data');
-    expect(a.computation).toEqual({ mechanismType: 'not-yet-sourced' });
-    expect(a.reasonEn).toContain('70%');
-    expect(a.reasonAr).toContain('٧٠٪');
-    expect(a.program).toBe('tr-defense-offset');
-    expect(COUNTRY_FRAMEWORKS.TR.applicableContexts).not.toHaveLength(0); // TR's default program IS sourced, unlike its offset program
-    expect(PROGRAMS['tr-defense-offset'].applicableContexts).toHaveLength(0);
+describe('TR — SSB Industrialization Liability Gate — industrialization-liability-gate (RESOLVED 2 Oct 2026, Module 08 nine-program closure pass, was not-yet-sourced)', () => {
+  it("PROGRAMS['tr-defense-offset'] is wired consistently: correct country, mechanismType, applicableContexts now sourced, and sourceNote discloses the rejected mondaq.com 70% figure rather than silently dropping it", () => {
+    const framework = PROGRAMS['tr-defense-offset'];
+    expect(framework.country).toBe('TR');
+    expect(framework.mechanismType).toBe('industrialization-liability-gate');
+    expect(framework.applicableContexts).toEqual(['government']);
+    expect(framework.sourceNoteEn).toContain('70%'); // the disclosed, deliberately-unmodeled mondaq.com figure conflict
+    expect(framework.sourceNoteEn).toContain('SSB');
+    expect(COUNTRY_FRAMEWORKS.TR.applicableContexts).not.toHaveLength(0);
   });
 
-  it('discloses the YEKDEM solar scheme as an explicit not-modeled scope decision, not a silent omission', () => {
-    const fw = PROGRAMS['tr-defense-offset'];
-    expect(fw.sourceNoteEn).toContain('YEKDEM');
-    expect(fw.sourceNoteAr).toContain('YEKDEM');
+  it('boundary: no inputs supplied at all -> honest all-null result, never a fabricated pass/fail', () => {
+    const a = assessSupplierLocalContent('TR', 'government', {}, 'tr-defense-offset');
+    expect(a.applicability).toBe('applicable');
+    const c = a.computation as TrIndustrializationLiabilityGateResult;
+    expect(c.mechanismType).toBe('industrialization-liability-gate');
+    expect(c.meetsYsSmeThreshold).toBeNull();
+    expect(c.meetsEydepThreshold).toBeNull();
+    expect(c.meetsTechAcquisitionThreshold).toBeNull();
+    expect(c.meetsAllLiabilities).toBeNull();
+  });
+
+  it('soft: all three liabilities comfortably met -> meetsAllLiabilities true', () => {
+    const a = assessSupplierLocalContent('TR', 'government', {
+      trDefenseOffset: { contractValueTRY: 100_000_000, ysSmeWorkSharePct: 25, eydepWorkSharePct: 75, techAcquisitionValueTRY: 3_000_000 },
+    }, 'tr-defense-offset');
+    const c = a.computation as TrIndustrializationLiabilityGateResult;
+    expect(c.requiredTechAcquisitionValueTRY).toBe(2_000_000); // 2% of 100M
+    expect(c.meetsYsSmeThreshold).toBe(true);
+    expect(c.meetsEydepThreshold).toBe(true);
+    expect(c.meetsTechAcquisitionThreshold).toBe(true);
+    expect(c.meetsAllLiabilities).toBe(true);
+  });
+
+  it('boundary: all three thresholds met at EXACTLY the minimum (>=, never >)', () => {
+    const a = assessSupplierLocalContent('TR', 'government', {
+      trDefenseOffset: { contractValueTRY: 100_000_000, ysSmeWorkSharePct: TR_YS_SME_WORK_SHARE_THRESHOLD_PCT, eydepWorkSharePct: TR_EYDEP_WORK_SHARE_THRESHOLD_PCT, techAcquisitionValueTRY: 2_000_000 },
+    }, 'tr-defense-offset');
+    const c = a.computation as TrIndustrializationLiabilityGateResult;
+    expect(c.meetsYsSmeThreshold).toBe(true);
+    expect(c.meetsEydepThreshold).toBe(true);
+    expect(c.meetsTechAcquisitionThreshold).toBe(true);
+    expect(c.meetsAllLiabilities).toBe(true);
+  });
+
+  it('hardest: a known failure on just the YS-SME liability is decisive even though the other two inputs are still missing', () => {
+    const a = assessSupplierLocalContent('TR', 'government', {
+      trDefenseOffset: { contractValueTRY: 100_000_000, ysSmeWorkSharePct: 15, eydepWorkSharePct: null, techAcquisitionValueTRY: null },
+    }, 'tr-defense-offset');
+    const c = a.computation as TrIndustrializationLiabilityGateResult;
+    expect(c.meetsYsSmeThreshold).toBe(false);
+    expect(c.meetsEydepThreshold).toBeNull();
+    expect(c.meetsTechAcquisitionThreshold).toBeNull();
+    expect(c.meetsAllLiabilities).toBe(false); // the known failure is decisive, not blocked by the missing inputs
+  });
+
+  it('hardest: EYDEP liability alone fails (below 70%) even though the other two pass -- no single liability can be over-delivered to compensate', () => {
+    const a = assessSupplierLocalContent('TR', 'government', {
+      trDefenseOffset: { contractValueTRY: 100_000_000, ysSmeWorkSharePct: 90, eydepWorkSharePct: 50, techAcquisitionValueTRY: 5_000_000 },
+    }, 'tr-defense-offset');
+    const c = a.computation as TrIndustrializationLiabilityGateResult;
+    expect(c.meetsYsSmeThreshold).toBe(true);
+    expect(c.meetsEydepThreshold).toBe(false);
+    expect(c.meetsTechAcquisitionThreshold).toBe(true);
+    expect(c.meetsAllLiabilities).toBe(false);
+  });
+
+  it('hardest: technology-acquisition value fails against its own contract-value-relative threshold', () => {
+    const a = assessSupplierLocalContent('TR', 'government', {
+      trDefenseOffset: { contractValueTRY: 100_000_000, ysSmeWorkSharePct: 30, eydepWorkSharePct: 80, techAcquisitionValueTRY: 1_000_000 },
+    }, 'tr-defense-offset');
+    const c = a.computation as TrIndustrializationLiabilityGateResult;
+    expect(c.requiredTechAcquisitionValueTRY).toBe(2_000_000);
+    expect(c.meetsTechAcquisitionThreshold).toBe(false);
+    expect(c.meetsAllLiabilities).toBe(false);
+  });
+
+  it('not-applicable: private-commercial procurement is outside SSB\'s sourced (government) scope', () => {
+    const a = assessSupplierLocalContent('TR', 'private-commercial', {
+      trDefenseOffset: { contractValueTRY: 100_000_000, ysSmeWorkSharePct: 30, eydepWorkSharePct: 80, techAcquisitionValueTRY: 5_000_000 },
+    }, 'tr-defense-offset');
+    expect(a.applicability).toBe('not-applicable');
   });
 });
 
@@ -2167,13 +2250,13 @@ describe('SA — program routing default', () => {
     });
   });
 
-  it('PROGRAMS_BY_COUNTRY lists every program per country (SA: 9 -- +3 on 18 Sep 2026: Rawafed/SABIC/Tharwah -- AE: 3 -- +1 on 20 Sep 2026: GCC origin treatment -- QA: 3 -- +1 on 20 Sep 2026: Tenders Law ICV consideration -- KW: 4 -- +1 on 20 Sep 2026: Public Tenders Law price preference, +1 on 29 Sep 2026: Kuwaiti-nationality price preference -- BH: 5 -- +2 on 29 Sep 2026: Takamul + Gulf-Made preferences -- JO: 2, OM: 3, EG: 3, TR: 2, UK: 1, USA: 4, CN: 4)', () => {
+  it('PROGRAMS_BY_COUNTRY lists every program per country (SA: 9 -- +3 on 18 Sep 2026: Rawafed/SABIC/Tharwah -- AE: 3 -- +1 on 20 Sep 2026: GCC origin treatment -- QA: 3 -- +1 on 20 Sep 2026: Tenders Law ICV consideration -- KW: 4 -- +1 on 20 Sep 2026: Public Tenders Law price preference, +1 on 29 Sep 2026: Kuwaiti-nationality price preference -- BH: 6 -- +2 on 29 Sep 2026: Takamul + Gulf-Made preferences, +1 on 2 Oct 2026 (Module 08 nine-program closure pass): the new bh-bahrainisation-tender-workforce program -- JO: 2, OM: 3, EG: 3, TR: 2, UK: 1, USA: 4, CN: 4)', () => {
     expect(PROGRAMS_BY_COUNTRY.SA).toHaveLength(9);
     expect(PROGRAMS_BY_COUNTRY.AE).toHaveLength(3);
     expect(PROGRAMS_BY_COUNTRY.JO).toHaveLength(2);
     expect(PROGRAMS_BY_COUNTRY.OM).toHaveLength(3);
     expect(PROGRAMS_BY_COUNTRY.QA).toHaveLength(3);
-    expect(PROGRAMS_BY_COUNTRY.BH).toHaveLength(5);
+    expect(PROGRAMS_BY_COUNTRY.BH).toHaveLength(6);
     expect(PROGRAMS_BY_COUNTRY.KW).toHaveLength(4);
     expect(PROGRAMS_BY_COUNTRY.EG).toHaveLength(3);
     expect(PROGRAMS_BY_COUNTRY.TR).toHaveLength(2);
@@ -2370,16 +2453,106 @@ describe('SA / Aramco IKTVA — anchor-buyer-score', () => {
 // national-level context rather than a blank placeholder)
 // ===========================================================================
 
-describe('SA — GAMI defense localization (not-yet-sourced, real dated context)', () => {
-  it('returns insufficient-data with the real 24.89% / 2030 figures in both languages, never a fabricated per-supplier score', () => {
+describe('SA — GAMI Industrial Participation Policy — gami-valuation-factor-credit-gate (RESOLVED 2 Oct 2026, Module 08 nine-program closure pass, was not-yet-sourced)', () => {
+  it("PROGRAMS['sa-gami-defense'] is wired consistently: correct country, mechanismType, applicableContexts, and sourceNote cites GAMI's own PDF URL", () => {
+    const framework = PROGRAMS['sa-gami-defense'];
+    expect(framework.country).toBe('SA');
+    expect(framework.mechanismType).toBe('gami-valuation-factor-credit-gate');
+    expect(framework.applicableContexts).toEqual(['government']);
+    expect(framework.sourceNoteEn).toContain('gami.gov.sa');
+    expect(framework.sourceNoteEn).toContain('60%');
+    expect(framework.sourceNoteEn).toContain('150');
+    expect(framework.sourceNoteAr.length).toBeGreaterThan(0);
+  });
+
+  it('boundary: no inputs supplied at all -> honest all-null result, never a fabricated pass/fail (applicable, not insufficient-data -- a real mechanism exists)', () => {
     const a = assessSupplierLocalContent('SA', 'government', {}, 'sa-gami-defense');
-    expect(a.applicability).toBe('insufficient-data');
-    expect(a.computation).toEqual({ mechanismType: 'not-yet-sourced' });
-    expect(a.reasonEn).toContain('24.89%');
-    expect(a.reasonEn).toContain('2030');
-    expect(a.reasonAr).toContain('٢٤.٨٩٪');
-    expect(a.reasonAr).toContain('٢٠٣٠');
-    expect(a.program).toBe('sa-gami-defense');
+    expect(a.applicability).toBe('applicable');
+    const c = a.computation as GamiValuationFactorCreditGateResult;
+    expect(c.mechanismType).toBe('gami-valuation-factor-credit-gate');
+    expect(c.contractValueSAR).toBeNull();
+    expect(c.triggersCommitment).toBeNull();
+    expect(c.meetsCommitment).toBeNull();
+  });
+
+  it('boundary: contract value below the SAR 150M threshold -> no commitment triggers at all, regardless of category/activity', () => {
+    const a = assessSupplierLocalContent('SA', 'government', {
+      saGami: { contractValueSAR: 100_000_000, category: 'a1-domestic-production', chosenFactor: null, baseActivityValueSAR: 1_000, smeBonusApplies: false, soleSourceBonusApplies: false },
+    }, 'sa-gami-defense');
+    const c = a.computation as GamiValuationFactorCreditGateResult;
+    expect(c.triggersCommitment).toBe(false);
+    expect(c.requiredCommitmentSAR).toBe(0);
+    expect(c.meetsCommitment).toBe(true);
+  });
+
+  it('soft: triggered contract, fixed-factor A.1 category (1.0x, caller-supplied chosenFactor ignored), credited value exactly meets the 60% commitment', () => {
+    const a = assessSupplierLocalContent('SA', 'government', {
+      saGami: { contractValueSAR: 200_000_000, category: 'a1-domestic-production', chosenFactor: 99, baseActivityValueSAR: 120_000_000, smeBonusApplies: false, soleSourceBonusApplies: false },
+    }, 'sa-gami-defense');
+    const c = a.computation as GamiValuationFactorCreditGateResult;
+    expect(c.triggersCommitment).toBe(true);
+    expect(c.requiredCommitmentSAR).toBe(120_000_000); // 60% of 200M
+    expect(c.categoryMinFactor).toBe(1.0);
+    expect(c.categoryMaxFactor).toBe(1.0);
+    expect(c.chosenFactor).toBe(1.0); // fixed category: caller's 99 is ignored, never clamped-and-kept
+    expect(c.effectiveFactor).toBe(1.0);
+    expect(c.creditedValueSAR).toBe(120_000_000);
+    expect(c.achievementPct).toBe(100);
+    expect(c.meetsCommitment).toBe(true);
+    expect(c.liquidationSAR).toBe(0);
+  });
+
+  it('soft: ranged B.1 (FDI) category with both SME and sole-source bonuses stacked -- the multiplier lever genuinely lowers the base activity value needed', () => {
+    const a = assessSupplierLocalContent('SA', 'government', {
+      saGami: { contractValueSAR: 200_000_000, category: 'b1-fdi', chosenFactor: 3, baseActivityValueSAR: 40_000_000, smeBonusApplies: true, soleSourceBonusApplies: true },
+    }, 'sa-gami-defense');
+    const c = a.computation as GamiValuationFactorCreditGateResult;
+    expect(c.categoryMinFactor).toBe(2.0);
+    expect(c.categoryMaxFactor).toBe(5.0);
+    expect(c.chosenFactor).toBe(3);
+    expect(c.effectiveFactor).toBeCloseTo(4.5, 6); // 3 + 0.5 (SME) + 1.0 (sole-source)
+    expect(c.creditedValueSAR).toBeCloseTo(180_000_000, 2); // 40M * 4.5
+    expect(c.achievementPct!).toBeCloseTo(150, 4); // 180M / 120M required
+    expect(c.meetsCommitment).toBe(true);
+    expect(c.liquidationSAR).toBe(0);
+  });
+
+  it('boundary: a ranged category\'s chosenFactor is clamped into [min, max], never silently accepted out-of-range', () => {
+    const a = assessSupplierLocalContent('SA', 'government', {
+      saGami: { contractValueSAR: 200_000_000, category: 'b2-special-equipment', chosenFactor: 50, baseActivityValueSAR: 1_000_000, smeBonusApplies: false, soleSourceBonusApplies: false },
+    }, 'sa-gami-defense');
+    const c = a.computation as GamiValuationFactorCreditGateResult;
+    expect(c.categoryMinFactor).toBe(1.0);
+    expect(c.categoryMaxFactor).toBe(2.0);
+    expect(c.chosenFactor).toBe(2.0); // clamped to the category ceiling, not left at 50
+  });
+
+  it('hardest: full shortfall below 50% achievement -> 100% liquidation of the Performance Security (page 17)', () => {
+    const a = assessSupplierLocalContent('SA', 'government', {
+      saGami: { contractValueSAR: 200_000_000, category: 'a1-domestic-production', chosenFactor: null, baseActivityValueSAR: 50_000_000, smeBonusApplies: false, soleSourceBonusApplies: false },
+    }, 'sa-gami-defense');
+    const c = a.computation as GamiValuationFactorCreditGateResult;
+    expect(c.achievementPct!).toBeCloseTo(41.666667, 4); // 50M / 120M required
+    expect(c.meetsCommitment).toBe(false);
+    expect(c.performanceSecuritySAR).toBe(20_000_000); // 10% of 200M
+    expect(c.liquidationSAR).toBe(20_000_000); // full forfeit, page 17
+  });
+
+  it('hardest: partial shortfall between 50% and 100% achievement -> the disclosed proportional liquidation formula, not a flat penalty', () => {
+    const a = assessSupplierLocalContent('SA', 'government', {
+      saGami: { contractValueSAR: 200_000_000, category: 'a1-domestic-production', chosenFactor: null, baseActivityValueSAR: 90_000_000, smeBonusApplies: false, soleSourceBonusApplies: false },
+    }, 'sa-gami-defense');
+    const c = a.computation as GamiValuationFactorCreditGateResult;
+    expect(c.achievementPct).toBe(75); // 90M / 120M required
+    expect(c.meetsCommitment).toBe(false);
+    expect(c.liquidationSAR!).toBeCloseTo(5_000_000, 2); // ((120M-90M)/120M) * 20M Performance Security
+  });
+
+  it('not-applicable: private-commercial procurement is outside GAMI\'s sourced (government) scope', () => {
+    const a = assessSupplierLocalContent('SA', 'private-commercial', {
+      saGami: { contractValueSAR: 200_000_000, category: 'a1-domestic-production', chosenFactor: null, baseActivityValueSAR: 200_000_000, smeBonusApplies: false, soleSourceBonusApplies: false },
+    }, 'sa-gami-defense');
+    expect(a.applicability).toBe('not-applicable');
   });
 });
 
@@ -2706,10 +2879,17 @@ describe('assessAllApplicableLocalContentPrograms — multi-mechanism stacking',
     expect(programs).toContain('sa-mandatory-list');
   });
 
-  it('keeps insufficient-data programs (GAMI/LIKT/Tharwah) rather than silently hiding them', () => {
+  it('keeps insufficient-data programs (LIKT/Tharwah) rather than silently hiding them', () => {
+    // GAMI (sa-gami-defense) was RESOLVED 2 Oct 2026 (Module 08 nine-program
+    // closure pass) -- it no longer belongs in this insufficient-data list:
+    // with no saGami input supplied it now returns 'applicable' (an
+    // all-null gami-valuation-factor-credit-gate computation), the same
+    // "applicable but no result yet" shape every other resolved mechanism
+    // uses, never 'insufficient-data'. See the dedicated GAMI describe
+    // block below for its own resolved-mechanism coverage.
     const stacked = assessAllApplicableLocalContentPrograms('SA', 'government', {});
     const insufficientPrograms = stacked.filter(s => s.assessment.applicability === 'insufficient-data').map(s => s.program);
-    expect(insufficientPrograms).toContain('sa-gami-defense');
+    expect(insufficientPrograms).not.toContain('sa-gami-defense');
     expect(insufficientPrograms).toContain('sa-likt');
     expect(insufficientPrograms).toContain('sa-tharwah-maaden');
   });
@@ -3205,6 +3385,53 @@ describe('BH / Gulf-Made Products Preference — price-preference-margin, contin
     expect(fw.sourceNoteEn).toContain('Gulf-made');
     expect(fw.sourceNoteEn).toContain('10%');
     expect(fw.sourceNoteAr).toContain('٤٠');
+  });
+});
+
+describe('BH / Bahrainisation Rule for Tender Bidders — percentage-threshold-gate (NEW program, Module 08 nine-program closure pass, 2 Oct 2026 -- genuinely distinct from bh-local-content\'s own still-not-yet-sourced goods/local-content framework)', () => {
+  it("PROGRAMS['bh-bahrainisation-tender-workforce'] is wired consistently and is a genuinely separate program from bh-local-content, not a resolution of it", () => {
+    const framework = PROGRAMS['bh-bahrainisation-tender-workforce'];
+    expect(framework.country).toBe('BH');
+    expect(framework.mechanismType).toBe('percentage-threshold-gate');
+    expect(framework.applicableContexts).toEqual(['government']);
+    expect(framework.sourceNoteEn).toContain('20%');
+    expect(framework.sourceNoteEn).toContain('workforce');
+    expect(framework.sourceNoteEn).not.toEqual(PROGRAMS['bh-local-content'].sourceNoteEn);
+    expect(PROGRAMS['bh-local-content'].mechanismType).toBe('not-yet-sourced');
+    expect(PROGRAMS_BY_COUNTRY.BH).toContain('bh-bahrainisation-tender-workforce');
+    expect(PROGRAMS_BY_COUNTRY.BH).toContain('bh-local-content');
+  });
+
+  it('soft: workforce share comfortably above the 20% floor -> meets threshold', () => {
+    const a = assessSupplierLocalContent('BH', 'government', { bhBahrainisation: { bahrainiWorkforceSharePct: 35 } }, 'bh-bahrainisation-tender-workforce');
+    const c = a.computation as PercentageThresholdGateResult;
+    expect(c.thresholdPct).toBe(BAHRAIN_TENDER_BAHRAINISATION_THRESHOLD_PCT);
+    expect(c.actualPct).toBe(35);
+    expect(c.meetsThreshold).toBe(true);
+  });
+
+  it('boundary: exactly 20% -> meets threshold (>=20%, not >20%)', () => {
+    const a = assessSupplierLocalContent('BH', 'government', { bhBahrainisation: { bahrainiWorkforceSharePct: 20 } }, 'bh-bahrainisation-tender-workforce');
+    const c = a.computation as PercentageThresholdGateResult;
+    expect(c.meetsThreshold).toBe(true);
+  });
+
+  it('hardest: just below the floor (19.9%) -> fails, never rounded up', () => {
+    const a = assessSupplierLocalContent('BH', 'government', { bhBahrainisation: { bahrainiWorkforceSharePct: 19.9 } }, 'bh-bahrainisation-tender-workforce');
+    const c = a.computation as PercentageThresholdGateResult;
+    expect(c.meetsThreshold).toBe(false);
+  });
+
+  it('boundary: no workforce share supplied -> honest null, never a fabricated pass/fail', () => {
+    const a = assessSupplierLocalContent('BH', 'government', { bhBahrainisation: { bahrainiWorkforceSharePct: null } }, 'bh-bahrainisation-tender-workforce');
+    const c = a.computation as PercentageThresholdGateResult;
+    expect(c.actualPct).toBeNull();
+    expect(c.meetsThreshold).toBeNull();
+  });
+
+  it('not-applicable: private-commercial procurement is outside this gate\'s sourced (government) scope', () => {
+    const a = assessSupplierLocalContent('BH', 'private-commercial', { bhBahrainisation: { bahrainiWorkforceSharePct: 50 } }, 'bh-bahrainisation-tender-workforce');
+    expect(a.applicability).toBe('not-applicable');
   });
 });
 

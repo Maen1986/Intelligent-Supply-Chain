@@ -65,6 +65,16 @@ import {
   type DualLocalSourcingGateResult, type OffsetMultiplierCreditGateResult, type EuContentThresholdGateResult,
   OFFSET_MULTIPLIER_CREDIT_GATE_AVENUE_MULTIPLIERS,
   INDIA_DAP_OFFSET_TRIGGER_THRESHOLD_INR_CRORE, EDIP_EU_CONTENT_THRESHOLD_PCT, EDIP_NON_EU_CONTENT_CAP_PCT,
+  // Module 08 nine-program closure pass (1 Oct 2026) -- three more
+  // genuinely new mechanisms (sa-gami-defense, tr-defense-offset, and the
+  // new bh-bahrainisation-tender-workforce program).
+  type GamiValuationFactorCreditGateResult, type GamiValuationFactorCategory,
+  type TrIndustrializationLiabilityGateResult, type PercentageThresholdGateResult,
+  GAMI_CONTRACT_VALUE_THRESHOLD_SAR, GAMI_COMMITMENT_PCT_OF_CONTRACT_VALUE,
+  GAMI_PERFORMANCE_SECURITY_PCT_OF_CONTRACT_VALUE, GAMI_VALUATION_FACTOR_RANGES,
+  GAMI_SME_BONUS_FACTOR, GAMI_SOLE_SOURCE_BONUS_FACTOR,
+  TR_YS_SME_WORK_SHARE_THRESHOLD_PCT, TR_EYDEP_WORK_SHARE_THRESHOLD_PCT, TR_TECH_ACQUISITION_THRESHOLD_PCT,
+  BAHRAIN_TENDER_BAHRAINISATION_THRESHOLD_PCT,
 } from '@/lib/supplierLocalContentEligibility';
 // Module 05 cross-reference (side-by-side callout only -- two independent
 // dimensions, per Core Instruction / Rule 7, never blended into one
@@ -115,6 +125,11 @@ type EgAutoInputs = NonNullable<SupplierLocalContentInputs['egAuto']>;
 type KwLocalContentInputs = NonNullable<SupplierLocalContentInputs['kwLocalContent']>;
 type InDapInputs = NonNullable<SupplierLocalContentInputs['inDap']>;
 type DeEdipInputs = NonNullable<SupplierLocalContentInputs['deEdip']>;
+// Module 08 nine-program closure pass (1 Oct 2026) -- three more genuinely
+// new, real, sourced mechanisms resolved this round.
+type SaGamiInputs = NonNullable<SupplierLocalContentInputs['saGami']>;
+type TrDefenseOffsetInputs = NonNullable<SupplierLocalContentInputs['trDefenseOffset']>;
+type BhBahrainisationInputs = NonNullable<SupplierLocalContentInputs['bhBahrainisation']>;
 
 function emptySa(): SaInputs {
   return {
@@ -260,6 +275,23 @@ function emptySabicLcCommitment(): SabicLcCommitmentInputs {
 function emptyQaTendersIcv(): QaTendersIcvInputs {
   return { localValueQAR: null, totalContractValueQAR: null };
 }
+// Module 08 nine-program closure pass (1 Oct 2026) -- three more genuinely
+// new, real, sourced mechanisms resolved this round.
+function emptySaGami(): SaGamiInputs {
+  return {
+    contractValueSAR: null, category: null, chosenFactor: null,
+    baseActivityValueSAR: null, smeBonusApplies: null, soleSourceBonusApplies: null,
+  };
+}
+function emptyTrDefenseOffset(): TrDefenseOffsetInputs {
+  return {
+    contractValueTRY: null, ysSmeWorkSharePct: null,
+    eydepWorkSharePct: null, techAcquisitionValueTRY: null,
+  };
+}
+function emptyBhBahrainisation(): BhBahrainisationInputs {
+  return { bahrainiWorkforceSharePct: null };
+}
 
 // Old (pre-16-Sep-2026-generalization) Saudi-only program keys, still
 // possibly sitting in a returning user's localStorage/server row from
@@ -369,6 +401,9 @@ interface LocalContentEntry {
   kwLocalContent: KwLocalContentInputs;
   inDap: InDapInputs;
   deEdip: DeEdipInputs;
+  saGami: SaGamiInputs;
+  trDefenseOffset: TrDefenseOffsetInputs;
+  bhBahrainisation: BhBahrainisationInputs;
 }
 
 function newLocalContentEntry(): LocalContentEntry {
@@ -391,6 +426,7 @@ function newLocalContentEntry(): LocalContentEntry {
     inMakeInIndia: emptyInMakeInIndia(), jp: emptyJp(), krSmeTarget: emptyKrSmeTarget(), krCompetitiveProducts: emptyKrCompetitiveProducts(),
     egAuto: emptyEgAuto(),
     kwLocalContent: emptyKwLocalContent(), inDap: emptyInDap(), deEdip: emptyDeEdip(),
+    saGami: emptySaGami(), trDefenseOffset: emptyTrDefenseOffset(), bhBahrainisation: emptyBhBahrainisation(),
   };
 }
 
@@ -455,6 +491,9 @@ function loadState(): PersistedState {
             kwLocalContent: { ...emptyKwLocalContent(), ...e.kwLocalContent },
             inDap: { ...emptyInDap(), ...e.inDap },
             deEdip: { ...emptyDeEdip(), ...e.deEdip },
+            saGami: { ...emptySaGami(), ...e.saGami },
+            trDefenseOffset: { ...emptyTrDefenseOffset(), ...e.trDefenseOffset },
+            bhBahrainisation: { ...emptyBhBahrainisation(), ...e.bhBahrainisation },
           })),
           targetThresholdPct: parsed.targetThresholdPct ?? null,
         };
@@ -504,8 +543,8 @@ const PROGRAM_LABELS: Record<LocalContentProgram, { en: string; ar: string }> = 
   'sa-mandatory-list': { en: 'Mandatory List Gate', ar: 'بوابة القائمة الإلزامية' },
   'sa-price-preference': { en: 'Price Preference (10%)', ar: 'تفضيل السعر (١٠٪)' },
   'sa-iktva-aramco': { en: 'Aramco IKTVA', ar: 'اكتفاء أرامكو' },
-  'sa-gami-defense': { en: 'GAMI Defense', ar: 'التوطين الدفاعي (GAMI)' },
-  'sa-likt': { en: 'LIKT', ar: 'LIKT' },
+  'sa-gami-defense': { en: 'GAMI Industrial Participation (60%)', ar: 'المشاركة الصناعية لدى GAMI (٦٠٪)' },
+  'sa-likt': { en: 'LIKT (not sourced)', ar: 'LIKT (غير موثّق)' },
   'sa-rawafed-stc': { en: 'stc Rawafed', ar: 'روافد (STC)' },
   'sa-sabic-lc-commitment': { en: 'SABIC Commitment Gate', ar: 'بوابة التزام سابك' },
   'sa-tharwah-maaden': { en: "Ma'aden Tharwah (not sourced)", ar: 'ثروة (معادن) — غير موثّق' },
@@ -525,6 +564,7 @@ const PROGRAM_LABELS: Record<LocalContentProgram, { en: string; ar: string }> = 
   'bh-sme-spend-setaside': { en: 'SME Spend Set-Aside (20%)', ar: 'تخصيص إنفاق للمنشآت الصغيرة والمتوسطة (٢٠٪)' },
   'bh-takamul-local-value': { en: 'Takamul Local Value Preference (10%)', ar: 'تفضيل شهادة القيمة المحلية تكامل (١٠٪)' },
   'bh-gulf-made-preference': { en: 'Gulf-Made Products Preference (10%)', ar: 'تفضيل المنتجات المصنّعة خليجياً (١٠٪)' },
+  'bh-bahrainisation-tender-workforce': { en: 'Bahrainisation Rule for Tenders (20%)', ar: 'قاعدة البحرنة للمناقصات (٢٠٪)' },
   'kw-local-content': { en: 'Local Sourcing Gate (Art. 87)', ar: 'بوابة التوريد المحلي (المادة ٨٧)' },
   'kw-kpc-local-spend': { en: 'KPC Local Spend Target (30%)', ar: 'هدف KPC للإنفاق المحلي (٣٠٪)' },
   'kw-tender-law-price-preference': { en: 'Tender Law Price Preference (15%)', ar: 'تفضيل سعر قانون المناقصات (١٥٪)' },
@@ -533,7 +573,7 @@ const PROGRAM_LABELS: Record<LocalContentProgram, { en: string; ar: string }> = 
   'eg-oil-gas-price-preference': { en: 'Oil & Gas PSA Preference (10%)', ar: 'تفضيل السعر بموجب اتفاقية تقاسم الإنتاج النفطية (١٠٪)' },
   'eg-auto-local-content': { en: 'Automotive Incentive Eligibility Gate', ar: 'بوابة أهلية حافز صناعة السيارات' },
   'tr-price-preference': { en: 'Domestic Goods Price Preference (up to 15%)', ar: 'تفضيل سعر السلع المحلية (حتى ١٥٪)' },
-  'tr-defense-offset': { en: 'SSB Defense Offset (not sourced)', ar: 'تعويض SSB الدفاعي (غير موثّق)' },
+  'tr-defense-offset': { en: 'SSB Industrialization Liability Gate', ar: 'بوابة التزام التصنيع لدى SSB' },
   'uk-below-threshold-reservation': { en: 'Below-Threshold Reservation (PPN 005)', ar: 'تخصيص دون العتبة (PPN 005)' },
   'usa-buy-american-price-preference': { en: 'Buy American Act Preference', ar: 'تفضيل قانون الشراء الأمريكي' },
   'usa-baba-infrastructure-gate': { en: 'BABA Infrastructure Gate', ar: 'بوابة BABA للبنية التحتية' },
@@ -635,6 +675,24 @@ const MECHANISM_VALUE_FRAMING: Partial<Record<LocalContentMechanismType, { buyer
     supplierEn: "A single clear percentage to plan against (65% EU-or-associated, 35% cap otherwise) is more actionable for sourcing decisions than a multi-factor score would be -- a supplier knows exactly what share of the bill of materials needs to shift.",
     supplierAr: 'نسبة واحدة وواضحة للتخطيط (٦٥٪ من الاتحاد الأوروبي أو الدول المنتسبة، وسقف ٣٥٪ لغير ذلك) أكثر قابلية للتنفيذ في قرارات التوريد من درجة متعددة العوامل -- يعرف المورّد بدقة أي حصة من قائمة المواد يجب تحويلها.',
   },
+  'gami-valuation-factor-credit-gate': {
+    buyerEn: "The Valuation Factor table steers Industrial Participation discharge toward the activities GAMI's own policy values most (FDI and R&T programs at up to 5.0x vs. simple domestic production at 1.0x) without mandating any one category outright, and the liquidation formula gives GAMI a disclosed, proportionate remedy on shortfall rather than an all-or-nothing penalty.",
+    buyerAr: 'يوجّه جدول عامل التقييم إيفاء المشاركة الصناعية نحو الأنشطة التي تمنحها سياسة الهيئة نفسها الأولوية (الاستثمار الأجنبي المباشر وبرامج البحث والتقنية بمعامل يصل إلى ٥.٠× مقابل الإنتاج المحلي البسيط بمعامل ١.٠×) دون فرض فئة واحدة إلزامياً، وتمنح صيغة التصفية الهيئة علاجاً متناسباً ومُفصَحاً عنه عند التقصير بدلاً من عقوبة كل-شيء-أو-لا-شيء.',
+    supplierEn: "The multiplier table is a real lever, not just a compliance cost: directing base activity toward a higher-factor category (or stacking the SME/sole-source bonuses) reaches the same credited commitment value with a smaller underlying activity value, directly lowering what actually needs to be spent/built.",
+    supplierAr: 'جدول المعاملات رافعة حقيقية، لا مجرد تكلفة امتثال: توجيه قيمة النشاط الأساسي نحو فئة ذات معامل أعلى (أو تكديس مكافأتي المنشآت الصغيرة والمتوسطة/المصدر الوحيد) يحقق نفس قيمة الالتزام المُعتمَدة بقيمة نشاط أساسية أصغر، ما يقلّل مباشرة ما يجب إنفاقه/بناؤه فعلياً.',
+  },
+  'industrialization-liability-gate': {
+    buyerEn: "Three independent, separately-stated thresholds (SME work share, EYDEP work share, technology-acquisition value) close loopholes a single blended offset percentage would leave open -- a contractor cannot pass by over-delivering one liability to mask under-delivering another.",
+    buyerAr: 'ثلاثة حدود مستقلة ومنصوص عليها بشكل منفصل (حصة عمل المنشآت الصغيرة والمتوسطة، حصة عمل EYDEP، قيمة اكتساب التقنية) تغلق ثغرات قد تتركها نسبة مقاصة مدمجة واحدة مفتوحة -- لا يمكن للمقاول أن ينجح بالإفراط في استيفاء التزام واحد لتعويض نقص آخر.',
+    supplierEn: "A transparent, three-lever gate: a contractor can see exactly which of the three liabilities (SME work share, EYDEP work share, or technology acquisition) is the binding constraint and invest there specifically, rather than guessing at one combined offset number.",
+    supplierAr: 'بوابة شفافة بثلاث روافع: يمكن للمقاول معرفة أي من الالتزامات الثلاثة (حصة عمل المنشآت الصغيرة والمتوسطة، أو حصة عمل EYDEP، أو اكتساب التقنية) هو القيد الفعلي والاستثمار فيه تحديداً، بدلاً من التخمين حول رقم مقاصة مدمج واحد.',
+  },
+  'percentage-threshold-gate': {
+    buyerEn: "A single, clean percentage floor gives the procuring entity a straightforward, auditable eligibility test, consistent with the legislature's own stated intent to raise the bar gradually over time rather than impose a maximal figure immediately.",
+    buyerAr: 'حد أدنى واحد وواضح للنسبة يمنح الجهة المشترية معياراً مباشراً وقابلاً للتدقيق للأهلية، بما يتوافق مع نية المشرّع المعلنة برفع السقف تدريجياً بمرور الوقت بدلاً من فرض رقم أقصى فوراً.',
+    supplierEn: "A single clear percentage to plan workforce composition against is more actionable than a multi-factor score would be -- a bidder knows exactly what share of its workforce needs to shift before certifying.",
+    supplierAr: 'نسبة واحدة وواضحة للتخطيط لتكوين القوى العاملة أكثر قابلية للتنفيذ من درجة متعددة العوامل -- يعرف مقدّم العطاء بدقة أي حصة من قوته العاملة يجب تغييرها قبل التصديق.',
+  },
 };
 
 // Pillar keys come straight off the engine's computation result (SA: labor/goodsServices/
@@ -735,7 +793,7 @@ function LocalContentEntryCard({
   const assessment: LocalContentAssessment | null = !isOther
     ? assessSupplierLocalContent(
         entry.countrySelection as LocalContentCountry, entry.context,
-        { sa: entry.sa, ae: entry.ae, jo: entry.jo, saMandatoryList: entry.saMandatoryList, saPricePreference: entry.saPricePreference, iktva: entry.iktva, aeTawazun: entry.aeTawazun, aeGccOrigin: entry.aeGccOrigin, joContractorQuota: entry.joContractorQuota, omMandatoryList: entry.omMandatoryList, omOqPricePreference: entry.omOqPricePreference, qa: entry.qa, bhSme: entry.bhSme, bhTakamul: entry.bhTakamul, bhGulfMade: entry.bhGulfMade, kwLocalSpend: entry.kwLocalSpend, kwTenderLawPricePreference: entry.kwTenderLawPricePreference, kwNationality: entry.kwNationality, eg: entry.eg, egOilGas: entry.egOilGas, tr: entry.tr, uk: entry.uk, usa: entry.usa, usaBaba: entry.usaBaba, usaBerry: entry.usaBerry, cn: entry.cn, cnSme: entry.cnSme, rawafedStc: entry.rawafedStc, sabicLcCommitment: entry.sabicLcCommitment, qaTendersIcv: entry.qaTendersIcv, inMakeInIndia: entry.inMakeInIndia, jp: entry.jp, krSmeTarget: entry.krSmeTarget, krCompetitiveProducts: entry.krCompetitiveProducts, egAuto: entry.egAuto, kwLocalContent: entry.kwLocalContent, inDap: entry.inDap, deEdip: entry.deEdip },
+        { sa: entry.sa, ae: entry.ae, jo: entry.jo, saMandatoryList: entry.saMandatoryList, saPricePreference: entry.saPricePreference, iktva: entry.iktva, aeTawazun: entry.aeTawazun, aeGccOrigin: entry.aeGccOrigin, joContractorQuota: entry.joContractorQuota, omMandatoryList: entry.omMandatoryList, omOqPricePreference: entry.omOqPricePreference, qa: entry.qa, bhSme: entry.bhSme, bhTakamul: entry.bhTakamul, bhGulfMade: entry.bhGulfMade, kwLocalSpend: entry.kwLocalSpend, kwTenderLawPricePreference: entry.kwTenderLawPricePreference, kwNationality: entry.kwNationality, eg: entry.eg, egOilGas: entry.egOilGas, tr: entry.tr, uk: entry.uk, usa: entry.usa, usaBaba: entry.usaBaba, usaBerry: entry.usaBerry, cn: entry.cn, cnSme: entry.cnSme, rawafedStc: entry.rawafedStc, sabicLcCommitment: entry.sabicLcCommitment, qaTendersIcv: entry.qaTendersIcv, inMakeInIndia: entry.inMakeInIndia, jp: entry.jp, krSmeTarget: entry.krSmeTarget, krCompetitiveProducts: entry.krCompetitiveProducts, egAuto: entry.egAuto, kwLocalContent: entry.kwLocalContent, inDap: entry.inDap, deEdip: entry.deEdip, saGami: entry.saGami, trDefenseOffset: entry.trDefenseOffset, bhBahrainisation: entry.bhBahrainisation },
         entry.program,
       )
     : null;
@@ -766,6 +824,13 @@ function LocalContentEntryCard({
     if (c.mechanismType === 'dual-local-sourcing-gate') return c.meetsLocalSourcingRequirement !== null;
     if (c.mechanismType === 'offset-multiplier-credit-gate') return c.triggersObligation !== null;
     if (c.mechanismType === 'eu-content-threshold-gate') return c.meetsEuContentThreshold !== null;
+    // Module 08 nine-program closure pass (1 Oct 2026) -- three more
+    // genuinely new mechanisms (sa-gami-defense, tr-defense-offset, and the
+    // new bh-bahrainisation-tender-workforce program), wired into this
+    // check from the start, same discipline as the three above.
+    if (c.mechanismType === 'gami-valuation-factor-credit-gate') return c.meetsCommitment !== null;
+    if (c.mechanismType === 'industrialization-liability-gate') return c.meetsAllLiabilities !== null;
+    if (c.mechanismType === 'percentage-threshold-gate') return c.meetsThreshold !== null;
     return false;
   })();
 
@@ -1150,6 +1215,93 @@ function LocalContentEntryCard({
                   </div>
                 )}
 
+                {/* Module 08 nine-program closure pass (1 Oct 2026) -- GAMI
+                    Industrial Participation Policy, resolved from
+                    not-yet-sourced using GAMI's own primary policy PDF
+                    (gami.gov.sa). */}
+                {entry.countrySelection === 'SA' && entry.program === 'sa-gami-defense' && (
+                  <div className="space-y-3">
+                    <div className="grid sm:grid-cols-2 gap-3">
+                      <NumberField
+                        label={isAr ? 'قيمة العقد' : 'Contract Value'}
+                        hint={isAr ? `عتبة الالتزام: ${GAMI_CONTRACT_VALUE_THRESHOLD_SAR.toLocaleString()} ريال` : `Obligation threshold: SAR ${GAMI_CONTRACT_VALUE_THRESHOLD_SAR.toLocaleString()}`}
+                        unit="SAR"
+                        value={entry.saGami.contractValueSAR}
+                        onChange={v => onUpdate(entry.id, { saGami: { ...entry.saGami, contractValueSAR: v } })}
+                      />
+                      <NumberField
+                        label={isAr ? 'قيمة النشاط الأساسي' : 'Base Activity Value'}
+                        hint={isAr ? 'القيمة قبل تطبيق عامل التقييم' : 'Value before the Valuation Factor is applied'}
+                        unit="SAR"
+                        value={entry.saGami.baseActivityValueSAR}
+                        onChange={v => onUpdate(entry.id, { saGami: { ...entry.saGami, baseActivityValueSAR: v } })}
+                      />
+                    </div>
+                    <div>
+                      <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                        {isAr ? 'فئة عامل التقييم' : 'Valuation Factor Category'}
+                      </p>
+                      <div className="flex flex-wrap gap-1.5" role="group" aria-label={isAr ? 'فئة عامل التقييم لدى GAMI' : 'GAMI Valuation Factor category'}>
+                        {([
+                          ['a1-domestic-production', isAr ? 'أ.١ إنتاج محلي' : 'A.1 Domestic Production'],
+                          ['a2-export-production', isAr ? 'أ.٢ إنتاج تصديري' : 'A.2 Export Production'],
+                          ['a3-technical-support', isAr ? 'أ.٣ دعم تقني' : 'A.3 Technical Support'],
+                          ['b1-fdi', isAr ? 'ب.١ استثمار أجنبي مباشر' : 'B.1 FDI'],
+                          ['b2-special-equipment', isAr ? 'ب.٢ معدات خاصة' : 'B.2 Special Equipment'],
+                          ['b3-tech-transfer', isAr ? 'ب.٣ نقل تقني' : 'B.3 Tech Transfer'],
+                          ['b4-training', isAr ? 'ب.٤ تدريب' : 'B.4 Training'],
+                          ['b5-rt-programs', isAr ? 'ب.٥ برامج بحث وتقنية' : 'B.5 R&T Programs'],
+                        ] as const).map(([k, lbl]) => (
+                          <button
+                            key={k}
+                            type="button"
+                            aria-pressed={entry.saGami.category === k}
+                            onClick={() => onUpdate(entry.id, { saGami: { ...entry.saGami, category: k as GamiValuationFactorCategory } })}
+                            className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors ${
+                              entry.saGami.category === k ? 'bg-[#082C6B] border-[#082C6B] text-white' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                            }`}
+                          >
+                            {lbl}
+                          </button>
+                        ))}
+                      </div>
+                      {entry.saGami.category && GAMI_VALUATION_FACTOR_RANGES[entry.saGami.category][0] !== GAMI_VALUATION_FACTOR_RANGES[entry.saGami.category][1] && (
+                        <div className="mt-2 max-w-[220px]">
+                          <NumberField
+                            label={isAr ? 'المعامل المختار' : 'Chosen Factor'}
+                            hint={isAr
+                              ? `المدى: ${GAMI_VALUATION_FACTOR_RANGES[entry.saGami.category][0]}× إلى ${GAMI_VALUATION_FACTOR_RANGES[entry.saGami.category][1]}×`
+                              : `Range: ${GAMI_VALUATION_FACTOR_RANGES[entry.saGami.category][0]}x to ${GAMI_VALUATION_FACTOR_RANGES[entry.saGami.category][1]}x`}
+                            value={entry.saGami.chosenFactor}
+                            onChange={v => onUpdate(entry.id, { saGami: { ...entry.saGami, chosenFactor: v } })}
+                          />
+                        </div>
+                      )}
+                      {entry.saGami.category && GAMI_VALUATION_FACTOR_RANGES[entry.saGami.category][0] === GAMI_VALUATION_FACTOR_RANGES[entry.saGami.category][1] && (
+                        <p className="text-[10px] text-muted-foreground mt-1.5">
+                          {isAr ? `فئة ثابتة عند ${GAMI_VALUATION_FACTOR_RANGES[entry.saGami.category][0]}× -- لا مجال لاختيار معامل.` : `Fixed category at ${GAMI_VALUATION_FACTOR_RANGES[entry.saGami.category][0]}x -- no factor choice applies.`}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap gap-3">
+                      <label htmlFor={`sa-gami-sme-${entry.id}`} className="flex items-center gap-2 text-xs font-semibold text-slate-700">
+                        <Checkbox id={`sa-gami-sme-${entry.id}`} checked={entry.saGami.smeBonusApplies === true} onCheckedChange={c => onUpdate(entry.id, { saGami: { ...entry.saGami, smeBonusApplies: c === true } })} />
+                        {isAr ? `مكافأة المنشآت الصغيرة والمتوسطة (+${GAMI_SME_BONUS_FACTOR})` : `SME Bonus (+${GAMI_SME_BONUS_FACTOR})`}
+                      </label>
+                      <label htmlFor={`sa-gami-sole-${entry.id}`} className="flex items-center gap-2 text-xs font-semibold text-slate-700">
+                        <Checkbox id={`sa-gami-sole-${entry.id}`} checked={entry.saGami.soleSourceBonusApplies === true} onCheckedChange={c => onUpdate(entry.id, { saGami: { ...entry.saGami, soleSourceBonusApplies: c === true } })} />
+                        {isAr ? `مكافأة المصدر الوحيد (+${GAMI_SOLE_SOURCE_BONUS_FACTOR})` : `Sole-Source Bonus (+${GAMI_SOLE_SOURCE_BONUS_FACTOR})`}
+                      </label>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground flex items-start gap-1.5">
+                      <Info className="w-3 h-3 shrink-0 mt-0.5" />
+                      {isAr
+                        ? `الالتزام: ${GAMI_COMMITMENT_PCT_OF_CONTRACT_VALUE}٪ من قيمة العقد للعقود ≥ ${GAMI_CONTRACT_VALUE_THRESHOLD_SAR.toLocaleString()} ريال؛ ضمان أداء ${GAMI_PERFORMANCE_SECURITY_PCT_OF_CONTRACT_VALUE}٪. سياسة المشاركة الصناعية، GAMI.`
+                        : `Commitment: ${GAMI_COMMITMENT_PCT_OF_CONTRACT_VALUE}% of contract value for contracts ≥ SAR ${GAMI_CONTRACT_VALUE_THRESHOLD_SAR.toLocaleString()}; ${GAMI_PERFORMANCE_SECURITY_PCT_OF_CONTRACT_VALUE}% Performance Security. GAMI Industrial Participation Policy.`}
+                    </p>
+                  </div>
+                )}
+
                 {entry.countrySelection === 'AE' && entry.program === 'ae-icv-general' && (
                   <div className="grid sm:grid-cols-2 gap-3">
                     <NumberField label={isAr ? 'الإنفاق على التصنيع/الطرف الثالث داخل الإمارات' : 'UAE-Based Manufacturing/Third-Party Spend'} unit={isAr ? 'د.إ' : 'AED'} value={entry.ae.manufacturingOrThirdPartySpendLocalAED} onChange={v => onUpdate(entry.id, { ae: { ...entry.ae, manufacturingOrThirdPartySpendLocalAED: v } })} />
@@ -1468,6 +1620,31 @@ function LocalContentEntryCard({
                   </div>
                 )}
 
+                {/* Module 08 nine-program closure pass (1 Oct 2026) --
+                    Bahrain's Parliament-approved 20% Bahrainisation rule for
+                    government tender bidders, a genuinely distinct
+                    WORKFORCE-nationality gate from bh-local-content's own
+                    goods/local-content framework (which stays
+                    not-yet-sourced -- see its own sourceNote addendum). */}
+                {entry.countrySelection === 'BH' && entry.program === 'bh-bahrainisation-tender-workforce' && (
+                  <div className="space-y-3">
+                    <NumberField
+                      label={isAr ? 'نسبة التبحرن في القوى العاملة' : 'Bahrainisation Workforce Share'}
+                      hint={isAr ? `الحد المطلوب: ${BAHRAIN_TENDER_BAHRAINISATION_THRESHOLD_PCT}٪ من القوى العاملة الخاصة بهذا العطاء` : `Required threshold: ${BAHRAIN_TENDER_BAHRAINISATION_THRESHOLD_PCT}% of the workforce assigned to this tender`}
+                      unit="%"
+                      max={100}
+                      value={entry.bhBahrainisation.bahrainiWorkforceSharePct}
+                      onChange={v => onUpdate(entry.id, { bhBahrainisation: { ...entry.bhBahrainisation, bahrainiWorkforceSharePct: v } })}
+                    />
+                    <p className="text-[10px] text-muted-foreground flex items-start gap-1.5">
+                      <Info className="w-3 h-3 shrink-0 mt-0.5" />
+                      {isAr
+                        ? 'معيار جنسية القوى العاملة لهذا العطاء -- وليس حصة السلع/المحتوى المحلي (انظر "المحتوى المحلي" أعلاه لهذا البُعد المختلف). دليل مجلس المناقصات والمزايدات، نوفمبر ٢٠٢٥.'
+                        : 'A workforce-nationality test for this tender -- not a goods/local-content share (see "Local Content" above for that separate dimension). Tender Board Guideline, Nov 2025.'}
+                    </p>
+                  </div>
+                )}
+
                 {entry.countrySelection === 'KW' && entry.program === 'kw-nationality-price-preference' && (
                   <div>
                     <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
@@ -1644,6 +1821,55 @@ function LocalContentEntryCard({
                       value={entry.tr.bidValueDomesticCertifiedPct}
                       onChange={v => onUpdate(entry.id, { tr: { ...entry.tr, bidValueDomesticCertifiedPct: v } })}
                     />
+                  </div>
+                )}
+
+                {/* Module 08 nine-program closure pass (1 Oct 2026) -- SSB
+                    Industrialization Liability Gate, resolved from
+                    not-yet-sourced via SSB's own guideline (and
+                    herdemlaw.com's primary-text-grounded comparison after
+                    the 2011 PDF itself failed to fetch -- see
+                    sourceNoteEn). Three independent, non-substitutable
+                    liabilities -- never a single blended offset number. */}
+                {entry.countrySelection === 'TR' && entry.program === 'tr-defense-offset' && (
+                  <div className="space-y-3">
+                    <NumberField
+                      label={isAr ? 'قيمة العقد' : 'Contract Value'}
+                      unit="TRY"
+                      value={entry.trDefenseOffset.contractValueTRY}
+                      onChange={v => onUpdate(entry.id, { trDefenseOffset: { ...entry.trDefenseOffset, contractValueTRY: v } })}
+                    />
+                    <div className="grid sm:grid-cols-2 gap-3">
+                      <NumberField
+                        label={isAr ? 'حصة عمل YS-SME' : 'YS-SME Work Share'}
+                        hint={isAr ? `الحد المطلوب: ${TR_YS_SME_WORK_SHARE_THRESHOLD_PCT}٪` : `Required threshold: ${TR_YS_SME_WORK_SHARE_THRESHOLD_PCT}%`}
+                        unit="%"
+                        max={100}
+                        value={entry.trDefenseOffset.ysSmeWorkSharePct}
+                        onChange={v => onUpdate(entry.id, { trDefenseOffset: { ...entry.trDefenseOffset, ysSmeWorkSharePct: v } })}
+                      />
+                      <NumberField
+                        label={isAr ? 'حصة عمل EYDEP' : 'EYDEP Work Share'}
+                        hint={isAr ? `الحد المطلوب: ${TR_EYDEP_WORK_SHARE_THRESHOLD_PCT}٪` : `Required threshold: ${TR_EYDEP_WORK_SHARE_THRESHOLD_PCT}%`}
+                        unit="%"
+                        max={100}
+                        value={entry.trDefenseOffset.eydepWorkSharePct}
+                        onChange={v => onUpdate(entry.id, { trDefenseOffset: { ...entry.trDefenseOffset, eydepWorkSharePct: v } })}
+                      />
+                      <NumberField
+                        label={isAr ? 'قيمة اكتساب التقنية' : 'Technology Acquisition Value'}
+                        hint={isAr ? `الحد المطلوب: ${TR_TECH_ACQUISITION_THRESHOLD_PCT}٪ من قيمة العقد` : `Required threshold: ${TR_TECH_ACQUISITION_THRESHOLD_PCT}% of contract value`}
+                        unit="TRY"
+                        value={entry.trDefenseOffset.techAcquisitionValueTRY}
+                        onChange={v => onUpdate(entry.id, { trDefenseOffset: { ...entry.trDefenseOffset, techAcquisitionValueTRY: v } })}
+                      />
+                    </div>
+                    <p className="text-[10px] text-muted-foreground flex items-start gap-1.5">
+                      <Info className="w-3 h-3 shrink-0 mt-0.5" />
+                      {isAr
+                        ? 'الثلاثة حدود مستقلة وغير قابلة للاستبدال؛ تصعيد الغرامات متعدد الفترات لدى SSB غير مُحاكى هنا (تقييم عقد واحد). دليل SSB للمشاركة الصناعية/المقاصة.'
+                        : "All three thresholds are independent and non-substitutable; SSB's multi-period penalty escalation is not modeled here (single-contract assessment). SSB Industrial Participation/Offset Guideline."}
+                    </p>
                   </div>
                 )}
 
@@ -2697,6 +2923,131 @@ function LocalContentEntryCard({
                     </>
                   );
                 })()}
+                {/* Module 08 nine-program closure pass (1 Oct 2026) -- three
+                    more genuinely new result-display blocks, same
+                    discipline as the three above: real field names from the
+                    engine, never a hand-waved summary. */}
+                {assessment.computation.mechanismType === 'gami-valuation-factor-credit-gate' && (() => {
+                  const c = assessment.computation as GamiValuationFactorCreditGateResult;
+                  return (
+                    <>
+                      <div className="flex items-baseline justify-between">
+                        <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                          {isAr ? 'المشاركة الصناعية لدى GAMI (عامل التقييم)' : 'GAMI Industrial Participation (Valuation Factor)'}
+                        </span>
+                        <span className={`text-sm font-black px-2.5 py-1 rounded-full ${
+                          c.meetsCommitment === true ? 'bg-emerald-100 text-emerald-700'
+                            : c.meetsCommitment === false ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-500'
+                        }`}>
+                          {c.triggersCommitment === false ? (isAr ? 'دون عتبة ١٥٠ مليون ريال' : 'Below SAR 150M threshold')
+                            : c.meetsCommitment === true ? (isAr ? 'مستوفٍ' : 'Meets commitment')
+                            : c.meetsCommitment === false ? (isAr ? 'غير مستوفٍ' : 'Does not meet commitment') : (isAr ? 'غير مكتمل' : 'Incomplete')}
+                        </span>
+                      </div>
+                      {c.triggersCommitment === true && (
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between text-[11px] text-slate-600">
+                            <span>{isAr ? `الالتزام المطلوب (${c.commitmentPctOfContractValue}٪ من قيمة العقد)` : `Required Commitment (${c.commitmentPctOfContractValue}% of contract value)`}</span>
+                            <span className="font-semibold">SAR {c.requiredCommitmentSAR !== null ? c.requiredCommitmentSAR.toLocaleString() : '—'}</span>
+                          </div>
+                          {c.effectiveFactor !== null && (
+                            <div className="flex items-center justify-between text-[11px] text-slate-600">
+                              <span>{isAr ? `المعامل الفعّال (المكافآت متضمّنة)` : `Effective Factor (bonuses included)`}</span>
+                              <span className="font-semibold">{c.effectiveFactor.toFixed(2)}×</span>
+                            </div>
+                          )}
+                          {c.creditedValueSAR !== null && (
+                            <div className="flex items-center justify-between text-[11px] text-slate-600">
+                              <span>{isAr ? 'القيمة المعتمدة' : 'Credited Value'}</span>
+                              <span className="font-semibold">SAR {c.creditedValueSAR.toLocaleString()}</span>
+                            </div>
+                          )}
+                          {c.achievementPct !== null && (
+                            <div className="flex items-center justify-between text-[11px] text-slate-600">
+                              <span>{isAr ? 'نسبة الإنجاز' : 'Achievement %'}</span>
+                              <span className="font-semibold">{c.achievementPct.toFixed(1)}%</span>
+                            </div>
+                          )}
+                          {c.liquidationSAR !== null && c.liquidationSAR > 0 && (
+                            <div className="flex items-center justify-between text-[11px]">
+                              <span className="text-amber-700 font-semibold">{isAr ? 'التصفية عند النقص' : 'Shortfall Liquidation'}</span>
+                              <span className="font-semibold">SAR {c.liquidationSAR.toLocaleString()}</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      <p className="text-[10px] text-muted-foreground">
+                        {isAr
+                          ? `ضمان الأداء ${c.performanceSecurityPctOfContractValue}٪ من قيمة العقد -- نظام الائتمان البيني بين العقود/السنوات لدى GAMI غير مُحاكى هنا؛ هذا تقييم عقد واحد. سياسة المشاركة الصناعية، GAMI، gami.gov.sa.`
+                          : `Performance Security ${c.performanceSecurityPctOfContractValue}% of contract value -- GAMI's cross-contract/multi-year credit-banking is not modeled here; this is a single-contract assessment. GAMI Industrial Participation Policy, gami.gov.sa.`}
+                      </p>
+                    </>
+                  );
+                })()}
+                {assessment.computation.mechanismType === 'industrialization-liability-gate' && (() => {
+                  const c = assessment.computation as TrIndustrializationLiabilityGateResult;
+                  return (
+                    <>
+                      <div className="flex items-baseline justify-between">
+                        <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                          {isAr ? 'بوابة التزام التصنيع (SSB)' : 'Industrialization Liability Gate (SSB)'}
+                        </span>
+                        <span className={`text-sm font-black px-2.5 py-1 rounded-full ${
+                          c.meetsAllLiabilities === true ? 'bg-emerald-100 text-emerald-700'
+                            : c.meetsAllLiabilities === false ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-500'
+                        }`}>
+                          {c.meetsAllLiabilities === true ? (isAr ? 'مستوفٍ لكل الالتزامات' : 'Meets all liabilities')
+                            : c.meetsAllLiabilities === false ? (isAr ? 'غير مستوفٍ' : 'Does not meet all liabilities') : (isAr ? 'غير مكتمل' : 'Incomplete')}
+                        </span>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between text-[11px] text-slate-600">
+                          <span>{isAr ? `حصة عمل YS-SME (الحد: ${c.ysSmeThresholdPct}٪)` : `YS-SME Work Share (threshold: ${c.ysSmeThresholdPct}%)`}</span>
+                          <span className="font-semibold">{c.ysSmeWorkSharePct !== null ? `${c.ysSmeWorkSharePct.toFixed(1)}%` : '—'}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-[11px] text-slate-600">
+                          <span>{isAr ? `حصة عمل EYDEP (الحد: ${c.eydepThresholdPct}٪)` : `EYDEP Work Share (threshold: ${c.eydepThresholdPct}%)`}</span>
+                          <span className="font-semibold">{c.eydepWorkSharePct !== null ? `${c.eydepWorkSharePct.toFixed(1)}%` : '—'}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-[11px] text-slate-600">
+                          <span>{isAr ? `قيمة اكتساب التقنية (الحد: ${c.techAcquisitionThresholdPct}٪ من قيمة العقد)` : `Technology Acquisition Value (threshold: ${c.techAcquisitionThresholdPct}% of contract value)`}</span>
+                          <span className="font-semibold">{c.techAcquisitionValueTRY !== null ? `₺ ${c.techAcquisitionValueTRY.toLocaleString()}` : '—'}</span>
+                        </div>
+                      </div>
+                      {c.meetsAllLiabilities === false && (
+                        <p className="text-[10px] text-muted-foreground flex items-start gap-1.5">
+                          <Info className="w-3 h-3 shrink-0 mt-0.5" />
+                          {isAr
+                            ? 'الثلاثة حدود مستقلة وغير قابلة للاستبدال -- الإفراط في استيفاء التزام واحد لا يعوّض نقص التزام آخر. دليل SSB للمشاركة الصناعية/المقاصة.'
+                            : 'All three thresholds are independent and non-substitutable -- over-delivering one liability does not offset a shortfall in another. SSB Industrial Participation/Offset Guideline.'}
+                        </p>
+                      )}
+                    </>
+                  );
+                })()}
+                {assessment.computation.mechanismType === 'percentage-threshold-gate' && (() => {
+                  const c = assessment.computation as PercentageThresholdGateResult;
+                  return (
+                    <>
+                      <div className="flex items-baseline justify-between">
+                        <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                          {isAr ? 'قاعدة البحرنة للمناقصات' : 'Bahrainisation Rule for Tenders'}
+                        </span>
+                        <span className={`text-sm font-black px-2.5 py-1 rounded-full ${
+                          c.meetsThreshold === true ? 'bg-emerald-100 text-emerald-700'
+                            : c.meetsThreshold === false ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-500'
+                        }`}>
+                          {c.meetsThreshold === true ? (isAr ? 'مستوفٍ' : 'Meets threshold')
+                            : c.meetsThreshold === false ? (isAr ? 'غير مستوفٍ' : 'Does not meet threshold') : (isAr ? 'غير مكتمل' : 'Incomplete')}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between text-[11px] text-slate-600">
+                        <span>{isAr ? `نسبة التبحرن في القوى العاملة (الحد: ${c.thresholdPct}٪)` : `Bahrainisation Workforce Share (threshold: ${c.thresholdPct}%)`}</span>
+                        <span className="font-semibold">{c.actualPct !== null ? `${c.actualPct.toFixed(1)}%` : '—'}</span>
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
             )}
 
@@ -2782,6 +3133,13 @@ export function LocalContentICVCheck() {
       kwLocalContent: { ...emptyKwLocalContent(), ...row.data.kwLocalContent },
       inDap: { ...emptyInDap(), ...row.data.inDap },
       deEdip: { ...emptyDeEdip(), ...row.data.deEdip },
+      // Module 08 nine-program closure pass (1 Oct 2026) -- same
+      // server-row hydration discipline applied to the three mechanisms
+      // resolved this round, from the start (not left for a future pass
+      // to rediscover the same bug class).
+      saGami: { ...emptySaGami(), ...row.data.saGami },
+      trDefenseOffset: { ...emptyTrDefenseOffset(), ...row.data.trDefenseOffset },
+      bhBahrainisation: { ...emptyBhBahrainisation(), ...row.data.bhBahrainisation },
     };
   }
   function entryToPayload(e: LocalContentEntry) {
@@ -2876,7 +3234,7 @@ export function LocalContentICVCheck() {
       entry: e,
       assessment: assessSupplierLocalContent(
         e.countrySelection as LocalContentCountry, e.context,
-        { sa: e.sa, ae: e.ae, jo: e.jo, saMandatoryList: e.saMandatoryList, saPricePreference: e.saPricePreference, iktva: e.iktva, aeTawazun: e.aeTawazun, aeGccOrigin: e.aeGccOrigin, joContractorQuota: e.joContractorQuota, omMandatoryList: e.omMandatoryList, omOqPricePreference: e.omOqPricePreference, qa: e.qa, bhSme: e.bhSme, bhTakamul: e.bhTakamul, bhGulfMade: e.bhGulfMade, kwLocalSpend: e.kwLocalSpend, kwTenderLawPricePreference: e.kwTenderLawPricePreference, kwNationality: e.kwNationality, eg: e.eg, egOilGas: e.egOilGas, tr: e.tr, uk: e.uk, usa: e.usa, usaBaba: e.usaBaba, usaBerry: e.usaBerry, cn: e.cn, cnSme: e.cnSme, rawafedStc: e.rawafedStc, sabicLcCommitment: e.sabicLcCommitment, qaTendersIcv: e.qaTendersIcv, inMakeInIndia: e.inMakeInIndia, jp: e.jp, krSmeTarget: e.krSmeTarget, krCompetitiveProducts: e.krCompetitiveProducts, egAuto: e.egAuto, kwLocalContent: e.kwLocalContent, inDap: e.inDap, deEdip: e.deEdip },
+        { sa: e.sa, ae: e.ae, jo: e.jo, saMandatoryList: e.saMandatoryList, saPricePreference: e.saPricePreference, iktva: e.iktva, aeTawazun: e.aeTawazun, aeGccOrigin: e.aeGccOrigin, joContractorQuota: e.joContractorQuota, omMandatoryList: e.omMandatoryList, omOqPricePreference: e.omOqPricePreference, qa: e.qa, bhSme: e.bhSme, bhTakamul: e.bhTakamul, bhGulfMade: e.bhGulfMade, kwLocalSpend: e.kwLocalSpend, kwTenderLawPricePreference: e.kwTenderLawPricePreference, kwNationality: e.kwNationality, eg: e.eg, egOilGas: e.egOilGas, tr: e.tr, uk: e.uk, usa: e.usa, usaBaba: e.usaBaba, usaBerry: e.usaBerry, cn: e.cn, cnSme: e.cnSme, rawafedStc: e.rawafedStc, sabicLcCommitment: e.sabicLcCommitment, qaTendersIcv: e.qaTendersIcv, inMakeInIndia: e.inMakeInIndia, jp: e.jp, krSmeTarget: e.krSmeTarget, krCompetitiveProducts: e.krCompetitiveProducts, egAuto: e.egAuto, kwLocalContent: e.kwLocalContent, inDap: e.inDap, deEdip: e.deEdip, saGami: e.saGami, trDefenseOffset: e.trDefenseOffset, bhBahrainisation: e.bhBahrainisation },
         e.program,
       ),
     }));

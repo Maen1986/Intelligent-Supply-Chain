@@ -164,16 +164,26 @@ describe('LocalContentICVCheck -- Egypt National Automotive Industry Development
   });
 });
 
-describe('LocalContentICVCheck -- GAMI defense localization (re-confirmed not-yet-sourced this pass, real disclosure renders live)', () => {
-  it('selecting Saudi Arabia then GAMI Defense Localization renders the real, re-confirmed 1 Oct 2026 disclosure -- never a fabricated formula', () => {
+// GAMI defense localization (sa-gami-defense) was itself RESOLVED to a real,
+// computable gami-valuation-factor-credit-gate mechanism on 2 Oct 2026
+// (Module 08 nine-program closure pass) -- it is no longer a not-yet-sourced
+// program, so the "re-confirmed not-yet-sourced" coverage this describe
+// block once had here is obsolete and has been superseded by the dedicated
+// full click-through coverage in
+// LocalContentICVCheck.module08-nine-program-closure.test.tsx, not
+// re-duplicated in this file.
+describe('LocalContentICVCheck -- GAMI Industrial Participation program is still independently selectable alongside Egypt Auto (cross-country sanity, no collision)', () => {
+  it('selecting Saudi Arabia then the resolved GAMI program renders its own real result panel, not a not-yet-sourced disclosure', () => {
     renderPage();
     switchCountry('Saudi Arabia');
-    fireEvent.click(screen.getByRole('button', { name: /GAMI Defense/i }));
-    // reasonEn is always rendered once a real country+program is selected
-    // (load-bearing for every prior pass's QA assertions too) -- for a
-    // not-yet-sourced program it embeds the full sourceNoteEn text.
-    expect(screen.getByText(/Valuation Factor/i)).toBeInTheDocument();
-    expect(screen.getByText(/credit-banking/i)).toBeInTheDocument();
+    const programBtn = screen.getByRole('button', { name: /^GAMI Industrial Participation \(60%\)/i });
+    fireEvent.click(programBtn);
+    // Scoped to this program's own button -- sa-likt and sa-tharwah-maaden
+    // still legitimately carry their own "not sourced" badges elsewhere in
+    // the same SA program list, so an unscoped query here would wrongly
+    // collide with those.
+    expect(within(programBtn).queryByText(/not sourced/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/^Contract Value$/i)).toBeInTheDocument();
   });
 });
 
