@@ -105,6 +105,12 @@ import {
   TR_EYDEP_WORK_SHARE_THRESHOLD_PCT,
   TR_TECH_ACQUISITION_THRESHOLD_PCT,
   BAHRAIN_TENDER_BAHRAINISATION_THRESHOLD_PCT,
+  // SA-LIKT/EP-Policy + BH circular pass (2 Oct 2026) -- LCGPA's own 2023
+  // Economic Participation (EP) Policy, genuinely distinct from sa-likt.
+  type ImportValueParticipationGateResult,
+  EP_IMPORTED_VALUE_THRESHOLD_SAR,
+  EP_COMMITMENT_PCT_OF_IMPORTED_VALUE,
+  EP_VALUATION_FACTOR_RANGES,
 } from './supplierLocalContentEligibility';
 
 // ===========================================================================
@@ -2250,8 +2256,8 @@ describe('SA — program routing default', () => {
     });
   });
 
-  it('PROGRAMS_BY_COUNTRY lists every program per country (SA: 9 -- +3 on 18 Sep 2026: Rawafed/SABIC/Tharwah -- AE: 3 -- +1 on 20 Sep 2026: GCC origin treatment -- QA: 3 -- +1 on 20 Sep 2026: Tenders Law ICV consideration -- KW: 4 -- +1 on 20 Sep 2026: Public Tenders Law price preference, +1 on 29 Sep 2026: Kuwaiti-nationality price preference -- BH: 6 -- +2 on 29 Sep 2026: Takamul + Gulf-Made preferences, +1 on 2 Oct 2026 (Module 08 nine-program closure pass): the new bh-bahrainisation-tender-workforce program -- JO: 2, OM: 3, EG: 3, TR: 2, UK: 1, USA: 4, CN: 4)', () => {
-    expect(PROGRAMS_BY_COUNTRY.SA).toHaveLength(9);
+  it('PROGRAMS_BY_COUNTRY lists every program per country (SA: 10 -- +3 on 18 Sep 2026: Rawafed/SABIC/Tharwah, +1 on 2 Oct 2026 (SA-LIKT/EP-Policy + BH circular pass): the new sa-economic-participation-policy program -- AE: 3 -- +1 on 20 Sep 2026: GCC origin treatment -- QA: 3 -- +1 on 20 Sep 2026: Tenders Law ICV consideration -- KW: 4 -- +1 on 20 Sep 2026: Public Tenders Law price preference, +1 on 29 Sep 2026: Kuwaiti-nationality price preference -- BH: 6 -- +2 on 29 Sep 2026: Takamul + Gulf-Made preferences, +1 on 2 Oct 2026 (Module 08 nine-program closure pass): the new bh-bahrainisation-tender-workforce program -- JO: 2, OM: 3, EG: 3, TR: 2, UK: 1, USA: 4, CN: 4)', () => {
+    expect(PROGRAMS_BY_COUNTRY.SA).toHaveLength(10);
     expect(PROGRAMS_BY_COUNTRY.AE).toHaveLength(3);
     expect(PROGRAMS_BY_COUNTRY.JO).toHaveLength(2);
     expect(PROGRAMS_BY_COUNTRY.OM).toHaveLength(3);
@@ -2564,6 +2570,113 @@ describe('SA — LIKT (Localization of Industry & Knowledge Transfer, not-yet-so
     expect(PROGRAMS['sa-likt'].sourceNoteEn).not.toEqual(PROGRAMS['sa-gami-defense'].sourceNoteEn);
     expect(a.reasonEn).toContain('LIKT');
     expect(a.reasonAr).toContain('LIKT');
+  });
+
+  it("(new, SA-LIKT/EP-Policy + BH circular pass, 2 Oct 2026) is also genuinely distinct from LCGPA's own Economic Participation (EP) Policy -- the naming question this round was required to resolve, not guess at -- and stays not-yet-sourced itself", () => {
+    expect(PROGRAMS['sa-likt'].mechanismType).toBe('not-yet-sourced');
+    expect(PROGRAMS['sa-likt'].sourceNoteEn).toContain('Economic Participation');
+    expect(PROGRAMS['sa-likt'].sourceNoteEn).not.toEqual(PROGRAMS['sa-economic-participation-policy'].sourceNoteEn);
+    expect(PROGRAMS_BY_COUNTRY.SA).toContain('sa-likt');
+    expect(PROGRAMS_BY_COUNTRY.SA).toContain('sa-economic-participation-policy');
+  });
+});
+
+describe("SA — LCGPA Economic Participation (EP) Policy — import-value-participation-gate (RESOLVED 2 Oct 2026, SA-LIKT/EP-Policy + BH circular pass, modeled as a new program distinct from sa-likt)", () => {
+  it("PROGRAMS['sa-economic-participation-policy'] is wired consistently: correct country, mechanismType, applicableContexts, and sourceNote cites both DGA Group and Global Trade Alert", () => {
+    const framework = PROGRAMS['sa-economic-participation-policy'];
+    expect(framework.country).toBe('SA');
+    expect(framework.mechanismType).toBe('import-value-participation-gate');
+    expect(framework.applicableContexts).toEqual(['government']);
+    expect(framework.sourceNoteEn).toContain('dgagroup.com');
+    expect(framework.sourceNoteEn).toContain('globaltradealert.org');
+    expect(framework.sourceNoteEn).toContain('35%');
+    expect(framework.sourceNoteEn).toContain('100');
+    expect(framework.sourceNoteAr.length).toBeGreaterThan(0);
+  });
+
+  it('boundary: no inputs supplied at all -> honest all-null result, never a fabricated pass/fail (applicable, not insufficient-data -- a real mechanism exists)', () => {
+    const a = assessSupplierLocalContent('SA', 'government', {}, 'sa-economic-participation-policy');
+    expect(a.applicability).toBe('applicable');
+    const c = a.computation as ImportValueParticipationGateResult;
+    expect(c.mechanismType).toBe('import-value-participation-gate');
+    expect(c.importedContentValueSAR).toBeNull();
+    expect(c.triggersCommitment).toBeNull();
+    expect(c.meetsCommitment).toBeNull();
+  });
+
+  it('boundary: imported content value below the SAR 100M threshold -> no commitment triggers at all, regardless of category/activity', () => {
+    const a = assessSupplierLocalContent('SA', 'government', {
+      saEp: { importedContentValueSAR: 50_000_000, category: 'subcontracting', chosenFactor: null, baseActivityValueSAR: 1_000 },
+    }, 'sa-economic-participation-policy');
+    const c = a.computation as ImportValueParticipationGateResult;
+    expect(c.triggersCommitment).toBe(false);
+    expect(c.requiredCommitmentSAR).toBe(0);
+    expect(c.meetsCommitment).toBe(true);
+  });
+
+  it('soft: triggered contract, fixed-factor subcontracting category (1.0x, caller-supplied chosenFactor ignored), credited value exactly meets the 35% commitment', () => {
+    const a = assessSupplierLocalContent('SA', 'government', {
+      saEp: { importedContentValueSAR: 200_000_000, category: 'subcontracting', chosenFactor: 99, baseActivityValueSAR: 70_000_000 },
+    }, 'sa-economic-participation-policy');
+    const c = a.computation as ImportValueParticipationGateResult;
+    expect(c.triggersCommitment).toBe(true);
+    expect(c.requiredCommitmentSAR).toBe(70_000_000); // 35% of 200M
+    expect(c.categoryMinFactor).toBe(1.0);
+    expect(c.categoryMaxFactor).toBe(1.0);
+    expect(c.chosenFactor).toBe(1.0); // fixed category: caller's 99 is ignored, never clamped-and-kept
+    expect(c.creditedValueSAR).toBe(70_000_000);
+    expect(c.achievementPct).toBe(100);
+    expect(c.meetsCommitment).toBe(true);
+  });
+
+  it('soft: ranged R&D-adjacent "investment" category -- no SME/sole-source bonus exists for this policy, so creditedValue is base x chosenFactor only', () => {
+    const a = assessSupplierLocalContent('SA', 'government', {
+      saEp: { importedContentValueSAR: 200_000_000, category: 'investment', chosenFactor: 2, baseActivityValueSAR: 20_000_000 },
+    }, 'sa-economic-participation-policy');
+    const c = a.computation as ImportValueParticipationGateResult;
+    expect(c.categoryMinFactor).toBe(1.0);
+    expect(c.categoryMaxFactor).toBe(3.0);
+    expect(c.chosenFactor).toBe(2);
+    expect(c.creditedValueSAR).toBe(40_000_000); // 20M * 2, no bonus terms exist on this result type
+    expect(c.achievementPct!).toBeCloseTo(57.142857, 4); // 40M / 70M required
+    expect(c.meetsCommitment).toBe(false);
+  });
+
+  it('boundary: a ranged category\'s chosenFactor is clamped into [min, max], never silently accepted out-of-range', () => {
+    const a = assessSupplierLocalContent('SA', 'government', {
+      saEp: { importedContentValueSAR: 200_000_000, category: 'technology-transfer', chosenFactor: 50, baseActivityValueSAR: 1_000_000 },
+    }, 'sa-economic-participation-policy');
+    const c = a.computation as ImportValueParticipationGateResult;
+    expect(c.categoryMinFactor).toBe(0.5);
+    expect(c.categoryMaxFactor).toBe(3.0);
+    expect(c.chosenFactor).toBe(3.0); // clamped to the category ceiling, not left at 50
+  });
+
+  it('hardest: fixed R&D category (3.0x) credits exactly to the achievement boundary', () => {
+    const a = assessSupplierLocalContent('SA', 'government', {
+      saEp: { importedContentValueSAR: 100_000_000, category: 'rnd', chosenFactor: 1, baseActivityValueSAR: 35_000_000 / 3 },
+    }, 'sa-economic-participation-policy');
+    const c = a.computation as ImportValueParticipationGateResult;
+    expect(c.categoryMinFactor).toBe(3.0);
+    expect(c.chosenFactor).toBe(3.0); // fixed, caller's 1 ignored
+    expect(c.requiredCommitmentSAR).toBe(35_000_000); // 35% of 100M
+    expect(c.achievementPct!).toBeCloseTo(100, 2);
+    expect(c.meetsCommitment).toBe(true);
+  });
+
+  it('not-applicable: private-commercial procurement is outside this policy\'s sourced (government) scope', () => {
+    const a = assessSupplierLocalContent('SA', 'private-commercial', {
+      saEp: { importedContentValueSAR: 200_000_000, category: 'subcontracting', chosenFactor: null, baseActivityValueSAR: 200_000_000 },
+    }, 'sa-economic-participation-policy');
+    expect(a.applicability).toBe('not-applicable');
+  });
+
+  it('EP_VALUATION_FACTOR_RANGES has exactly the 7 disclosed categories, genuinely distinct from GAMI\'s own 8-category table', () => {
+    expect(Object.keys(EP_VALUATION_FACTOR_RANGES).sort()).toEqual(
+      ['export-promotion', 'investment', 'knowledge-transfer', 'localization', 'rnd', 'subcontracting', 'technology-transfer'].sort(),
+    );
+    expect(EP_IMPORTED_VALUE_THRESHOLD_SAR).toBe(100_000_000);
+    expect(EP_COMMITMENT_PCT_OF_IMPORTED_VALUE).toBe(35);
   });
 });
 
@@ -3385,6 +3498,32 @@ describe('BH / Gulf-Made Products Preference — price-preference-margin, contin
     expect(fw.sourceNoteEn).toContain('Gulf-made');
     expect(fw.sourceNoteEn).toContain('10%');
     expect(fw.sourceNoteAr).toContain('٤٠');
+  });
+});
+
+describe("BH — Local Content general framework — still not-yet-sourced (SA-LIKT/EP-Policy + BH circular pass, 2 Oct 2026: Circular No. 1 of 2023 checked directly against the Tender Board's own primary text, found to BE the Takamul circular, not a general preference)", () => {
+  it('stays not-yet-sourced, and its sourceNote discloses the discrepancy against the tendersarabia.com/PwC secondary claim rather than silently modeling that claim', () => {
+    const framework = PROGRAMS['bh-local-content'];
+    expect(framework.mechanismType).toBe('not-yet-sourced');
+    expect(framework.sourceNoteEn).toContain('Circular No. 1 of 2023');
+    expect(framework.sourceNoteEn).toContain('Takamul');
+    expect(framework.sourceNoteEn).toContain('tendersarabia.com');
+    expect(framework.sourceNoteEn).not.toContain('20% combined');
+    expect(framework.sourceNoteAr.length).toBeGreaterThan(0);
+  });
+
+  it('no new general-preference program was fabricated for this round -- PROGRAMS_BY_COUNTRY.BH is unchanged at 6 programs, same as the nine-program closure pass', () => {
+    expect(PROGRAMS_BY_COUNTRY.BH).toHaveLength(6);
+    expect(PROGRAMS_BY_COUNTRY.BH).toEqual([
+      'bh-local-content', 'bh-sme-price-preference', 'bh-sme-spend-setaside',
+      'bh-takamul-local-value', 'bh-gulf-made-preference', 'bh-bahrainisation-tender-workforce',
+    ]);
+  });
+
+  it('a supplier checking bh-local-content still gets an honest insufficient-data result, never a fabricated general-preference score', () => {
+    const a = assessSupplierLocalContent('BH', 'government', {}, 'bh-local-content');
+    expect(a.applicability).toBe('insufficient-data');
+    expect(a.computation).toEqual({ mechanismType: 'not-yet-sourced' });
   });
 });
 

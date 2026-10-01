@@ -439,7 +439,8 @@ export type LocalContentProgram =
   | 'sa-price-preference' // SA type 4: bid-evaluation price preference (reuses price-preference-margin)
   | 'sa-iktva-aramco'     // SA type 2: anchor-buyer program
   | 'sa-gami-defense'     // SA type 6: RESOLVED 2 Oct 2026 (Module 08 nine-program closure pass) -- GAMI's own official Industrial Participation Policy PDF (gami.gov.sa) gives the full computable structure: 60% minimum commitment on contracts >=SAR 150M, discharged via Valuation-Factor-weighted credits, 10% Performance Security, and a disclosed liquidation formula on shortfall
-  | 'sa-likt'             // SA type 6: offset/tech-transfer obligation (not-yet-sourced -- re-confirmed 2 Oct 2026 against LCGPA's own primary Local Content Mechanisms page, a genuinely separate instrument from GAMI's defense program, still no published formula)
+  | 'sa-likt'             // SA type 6: offset/tech-transfer obligation (not-yet-sourced -- re-confirmed 2 Oct 2026 against LCGPA's own primary Local Content Mechanisms page, a genuinely separate instrument from GAMI's defense program, still no published formula; this same 2 Oct 2026 round separately confirmed LIKT is ALSO genuinely distinct from LCGPA's own 2023 Economic Participation Policy -- see 'sa-economic-participation-policy' below and PROGRAMS['sa-likt'].sourceNoteEn)
+  | 'sa-economic-participation-policy' // SA type 6 (new, 2 Oct 2026 -- SA-LIKT/EP-Policy pass): RESOLVED -- LCGPA's own 2023 Economic Participation (EP) Policy, a genuinely separate instrument from 'sa-likt' (LIKT): 35%-of-imported-content-value commitment on government contracts where imported goods/services exceed SAR 100 million, discharged via a 7-category Valuation Factor credit (1.0x-3.0x); see PROGRAMS['sa-economic-participation-policy'].sourceNoteEn
   | 'sa-rawafed-stc'      // SA type 2-ish (new, 18 Sep 2026): stc's own Rawafed local-content program -- real LCGPA-approved formula, sourced from stc's own 2021 Rawafed Annual Report PDF; reuses eligible-spend-ratio (same 4-pillar shape as LCGPA general), a company-specific anchor-buyer program like Aramco IKTVA
   | 'sa-sabic-lc-commitment' // SA type 6-ish (new, 18 Sep 2026): SABIC per-contract local-content commitment deviation gate -- NOT a published SABIC-wide standard (none was found); models a per-contract negotiated target vs. audited actual, per the platform owner's explicit business rule, with a disclosed tolerance/penalty default
   | 'sa-tharwah-maaden'   // SA type 6 (new, 18 Sep 2026): Ma'aden's real, named "Tharwah" local content program (confirmed via maaden.com/tharwah and press coverage) -- not-yet-sourced: no public per-supplier computable formula found, unlike stc's Rawafed
@@ -510,7 +511,7 @@ export const DEFAULT_PROGRAM_BY_COUNTRY: Record<LocalContentCountry, LocalConten
  * country now has more than one program -- the routing question is no
  * longer an SA/AE-only UI affordance. */
 export const PROGRAMS_BY_COUNTRY: Record<LocalContentCountry, LocalContentProgram[]> = {
-  SA: ['sa-lcgpa-general', 'sa-mandatory-list', 'sa-price-preference', 'sa-iktva-aramco', 'sa-gami-defense', 'sa-likt', 'sa-rawafed-stc', 'sa-sabic-lc-commitment', 'sa-tharwah-maaden'],
+  SA: ['sa-lcgpa-general', 'sa-mandatory-list', 'sa-price-preference', 'sa-iktva-aramco', 'sa-gami-defense', 'sa-likt', 'sa-economic-participation-policy', 'sa-rawafed-stc', 'sa-sabic-lc-commitment', 'sa-tharwah-maaden'],
   AE: ['ae-icv-general', 'ae-tawazun-offset', 'ae-gcc-origin-treatment'],
   JO: ['jo-price-preference', 'jo-contractor-quota'],
   OM: ['om-icv', 'om-mandatory-list', 'om-oq-price-preference'],
@@ -561,6 +562,7 @@ export type LocalContentMechanismType =
   | 'gami-valuation-factor-credit-gate' // (new, 2 Oct 2026 -- Module 08 nine-program closure pass) Saudi GAMI Industrial Participation Policy -- 60%-of-contract-value commitment above SAR 150M, discharged via a per-category Valuation Factor credit, 10% Performance Security, disclosed liquidation formula; see PROGRAMS['sa-gami-defense'].sourceNoteEn
   | 'industrialization-liability-gate' // (new, 2 Oct 2026 -- Module 08 nine-program closure pass) Turkey SSB 2022 Industrialization Guideline -- three independent sub-liabilities (YS/SME work share >=21%, EYDEP work share >=70%, TUK tech-acquisition >=2% of bid value); see PROGRAMS['tr-defense-offset'].sourceNoteEn
   | 'percentage-threshold-gate' // (new, 2 Oct 2026 -- Module 08 nine-program closure pass) a fully generic single-percentage-threshold gate -- first use is Bahrain's Parliament-approved 20% Bahrainisation workforce rule for tender bidders; see PROGRAMS['bh-bahrainisation-tender-workforce'].sourceNoteEn
+  | 'import-value-participation-gate' // (new, 2 Oct 2026 -- SA-LIKT/EP-Policy + BH circular pass) LCGPA's own 2023 Economic Participation (EP) Policy -- 35%-of-imported-content-value commitment above a SAR 100M imported-goods/services trigger, discharged via a 7-category Valuation Factor credit; see PROGRAMS['sa-economic-participation-policy'].sourceNoteEn. Genuinely distinct from GAMI's gate: the percentage base is imported-content value (not contract value), there is no SME/sole-source bonus, and no liquidation/performance-security formula is sourced for this program, so only meetsCommitment/shortfall is computed, never a penalty amount.
   | 'not-yet-sourced';          // Oman general ICV / Qatar National Local Content Strategy / Bahrain general (goods) framework / Saudi LIKT / China PLA-specific defense domestic-sourcing threshold
 
 export interface CountryFrameworkInfo {
@@ -589,7 +591,7 @@ export interface CountryFrameworkInfo {
 // score's usage notes). See file header for full sourcing.
 // ---------------------------------------------------------------------------
 
-const SA_PROGRAMS: Record<'sa-lcgpa-general' | 'sa-mandatory-list' | 'sa-price-preference' | 'sa-iktva-aramco' | 'sa-gami-defense' | 'sa-likt' | 'sa-rawafed-stc' | 'sa-sabic-lc-commitment' | 'sa-tharwah-maaden', CountryFrameworkInfo> = {
+const SA_PROGRAMS: Record<'sa-lcgpa-general' | 'sa-mandatory-list' | 'sa-price-preference' | 'sa-iktva-aramco' | 'sa-gami-defense' | 'sa-likt' | 'sa-economic-participation-policy' | 'sa-rawafed-stc' | 'sa-sabic-lc-commitment' | 'sa-tharwah-maaden', CountryFrameworkInfo> = {
   'sa-lcgpa-general': {
     country: 'SA', countryNameEn: 'Saudi Arabia', countryNameAr: 'المملكة العربية السعودية',
     programNameEn: 'LCGPA Local Content (general score)', programNameAr: 'المحتوى المحلي العام (هيئة المحتوى المحلي والمشتريات الحكومية)',
@@ -643,8 +645,16 @@ const SA_PROGRAMS: Record<'sa-lcgpa-general' | 'sa-mandatory-list' | 'sa-price-p
     programNameEn: 'LIKT (Localization of Industry & Knowledge Transfer)', programNameAr: 'برنامج توطين الصناعة ونقل المعرفة (LIKT)',
     mechanismType: 'not-yet-sourced', program: 'sa-likt',
     applicableContexts: [],
-    sourceNoteEn: 'LCGPA\'s own official Local Content Mechanisms page names a distinct "LIKT" (Localization of Industry & Knowledge Transfer) program aimed at localizing targeted industries through collaboration with global investors and technology leaders -- genuinely new to this research pass and distinct from GAMI\'s defense-specific program. No per-supplier computable formula was found; deliberately not guessed. This 1 Oct 2026 pass (Module 08 twelve-gap closure) fetched LCGPA\'s own official pages directly rather than relying on a secondary description: the Authority\'s own media center confirms LIKT is "a newly introduced government contracting method in the new Government Tenders and Procurement Law" (lcgpa.gov.sa, Minister/Authority Chairman Bandar Al-Khorayef\'s own announcement activating it as one of the Authority\'s "advanced contracting methods"), and LCGPA\'s own Local Content Mechanisms page describes LIKT\'s role as overseeing collaboration "with global investors and owners of leading technologies to localize the targeted industries in Saudi Arabia" -- confirming the program is real, named, and government-code-anchored (not merely a marketing label), but, checked directly against LCGPA\'s own primary pages rather than a secondary summary, still carries no published eligibility threshold, SAR contract-value figure, or scoring formula. A prior round\'s working notes referenced an unconfirmed "SAR 100 million" LIKT eligibility figure; this pass searched specifically for that figure (LCGPA\'s own pages, Arabic- and English-language coverage of the Al-Khorayef announcement) and found no source stating it -- it is not carried into this file, consistent with Decision Record 8.7\'s standard that an unconfirmable figure is dropped, not repeated because an earlier note mentioned it. The not-yet-sourced status is re-confirmed against LCGPA\'s own primary pages, not merely against the same secondary source as before. This 2 Oct 2026 pass (Module 08 nine-program closure) re-checked this exact question once more, as this round\'s brief specifically directed: LCGPA\'s own Local Content Mechanisms page lists LIKT as its OWN distinct mechanism alongside the Authority\'s other named mechanisms, and a fresh fetch of GAMI\'s own Industrial Participation Policy PDF this same pass confirms that document never once uses the string \'LIKT\' anywhere in its text -- two separate regulators (LCGPA for LIKT, GAMI for the defense Industrial Participation Policy now resolved as sa-gami-defense), two separate named instruments, definitively not the same program under two names.',
-    sourceNoteAr: 'تسمّي الصفحة الرسمية لآليات المحتوى المحلي التابعة للهيئة برنامجاً مستقلاً يُدعى "LIKT" (توطين الصناعة ونقل المعرفة) يهدف إلى توطين صناعات مستهدفة عبر التعاون مع مستثمرين عالميين وقادة تقنيين -- برنامج جديد فعلاً اكتُشف في هذا البحث ومختلف عن برنامج الهيئة العامة للصناعات العسكرية الخاص بالدفاع. لم يُعثر على صيغة حساب على مستوى المورّد؛ لم يتم تخمينها عمداً. جلبت جولة ١ أكتوبر ٢٠٢٦ هذه (إغلاق الفجوات الاثنتي عشرة ضمن الوحدة ٠٨) صفحات الهيئة الرسمية نفسها مباشرة بدلاً من الاعتماد على وصف ثانوي: يؤكد مركز الإعلام التابع للهيئة أن LIKT "طريقة تعاقد حكومية جديدة ضمن نظام المنافسات والمشتريات الحكومية الجديد" (lcgpa.gov.sa، في إعلان وزير الصناعة والثروة المعدنية ورئيس الهيئة المهندس بندر الخرّيف نفسه بتفعيلها كواحدة من "طرق التعاقد المتقدمة" التابعة للهيئة)، وتصف صفحة آليات المحتوى المحلي الرسمية دور LIKT بالإشراف على التعاون "مع مستثمرين عالميين وأصحاب تقنيات رائدة لتوطين الصناعات المستهدفة في المملكة العربية السعودية" -- وهذا يؤكد أن البرنامج حقيقي ومسمّى ومرتبط بنظام رسمي (وليس مجرد تسمية تسويقية)، لكنه، بعد التحقق المباشر من صفحات الهيئة الرسمية نفسها بدلاً من ملخص ثانوي، لا يزال بلا عتبة أهلية منشورة أو رقم قيمة عقد بالريال أو صيغة تسجيل. أشارت ملاحظات عمل من جولة سابقة إلى رقم غير مؤكَّد "١٠٠ مليون ريال" كعتبة أهلية لـLIKT؛ بحثت هذه الجولة تحديداً عن هذا الرقم (صفحات الهيئة الرسمية نفسها، والتغطية العربية والإنجليزية لإعلان الخرّيف) ولم تعثر على مصدر يذكره -- ولم يُدرَج في هذا الملف، تماشياً مع معيار سجل القرار ٨.٧ القاضي بإسقاط رقم لا يمكن تأكيده، لا تكراره لمجرد ذكره في ملاحظة سابقة. تُعاد تأكيد حالة عدم التوثيق مقابل صفحات الهيئة الرسمية نفسها، لا مقابل المصدر الثانوي نفسه كما سبق. راجعت جولة ١ أكتوبر ٢٠٢٦ هذه (إغلاق الفجوات التسعة ضمن الوحدة ٠٨) هذا السؤال تحديداً مرة أخرى، كما طلب موجز هذه الجولة صراحةً: تسرد صفحة آليات المحتوى المحلي الرسمية لدى الهيئة برنامج LIKT كآلية مستقلة بذاتها إلى جانب آليات الهيئة الأخرى المسمّاة، وتؤكد إعادة جلب وثيقة سياسة المشاركة الصناعية الرسمية لـGAMI في هذه الجولة نفسها أن تلك الوثيقة لا تستخدم عبارة "LIKT" إطلاقاً في نصها -- جهتان تنظيميتان مختلفتان (الهيئة لـLIKT، وGAMI لسياسة المشاركة الصناعية الدفاعية المحسومة الآن باسم sa-gami-defense)، وآليتان مسمّاتان منفصلتان، وليس برنامجاً واحداً بمسميين قطعاً.',
+    sourceNoteEn: 'LCGPA\'s own official Local Content Mechanisms page names a distinct "LIKT" (Localization of Industry & Knowledge Transfer) program aimed at localizing targeted industries through collaboration with global investors and technology leaders -- genuinely new to this research pass and distinct from GAMI\'s defense-specific program. No per-supplier computable formula was found; deliberately not guessed. This 1 Oct 2026 pass (Module 08 twelve-gap closure) fetched LCGPA\'s own official pages directly rather than relying on a secondary description: the Authority\'s own media center confirms LIKT is "a newly introduced government contracting method in the new Government Tenders and Procurement Law" (lcgpa.gov.sa, Minister/Authority Chairman Bandar Al-Khorayef\'s own announcement activating it as one of the Authority\'s "advanced contracting methods"), and LCGPA\'s own Local Content Mechanisms page describes LIKT\'s role as overseeing collaboration "with global investors and owners of leading technologies to localize the targeted industries in Saudi Arabia" -- confirming the program is real, named, and government-code-anchored (not merely a marketing label), but, checked directly against LCGPA\'s own primary pages rather than a secondary summary, still carries no published eligibility threshold, SAR contract-value figure, or scoring formula. A prior round\'s working notes referenced an unconfirmed "SAR 100 million" LIKT eligibility figure; this pass searched specifically for that figure (LCGPA\'s own pages, Arabic- and English-language coverage of the Al-Khorayef announcement) and found no source stating it -- it is not carried into this file, consistent with Decision Record 8.7\'s standard that an unconfirmable figure is dropped, not repeated because an earlier note mentioned it. The not-yet-sourced status is re-confirmed against LCGPA\'s own primary pages, not merely against the same secondary source as before. This 2 Oct 2026 pass (Module 08 nine-program closure) re-checked this exact question once more, as this round\'s brief specifically directed: LCGPA\'s own Local Content Mechanisms page lists LIKT as its OWN distinct mechanism alongside the Authority\'s other named mechanisms, and a fresh fetch of GAMI\'s own Industrial Participation Policy PDF this same pass confirms that document never once uses the string \'LIKT\' anywhere in its text -- two separate regulators (LCGPA for LIKT, GAMI for the defense Industrial Participation Policy now resolved as sa-gami-defense), two separate named instruments, definitively not the same program under two names. This SAME 2 Oct 2026 round separately resolved a THIRD question the brief required be checked directly against LCGPA\'s own site, not secondary summaries: whether "LIKT" is also just an informal name for LCGPA\'s own 2023 "Economic Participation (EP) Policy" (DGA Group\'s law-firm analysis, 3 Jul 2023: https://dgagroup.com/insight/asg-analysis-saudi-arabia-imposes-new-economic-participation-policy/) -- it is not. LCGPA\'s own media-center page (lcgpa.gov.sa, News-001.aspx, the Al-Khorayef announcement already cited above) and Argaam\'s 6 Jul 2021 coverage of that same announcement describe LIKT as a 2021-activated CONTRACTING METHOD administered through sector-specific government-to-industry agreements with named industry partners and fixed procurement percentages set per agreement -- a government-to-industry supply-agreement mechanism. The EP Policy, by contrast, is a 2023-dated, per-bid, per-CONTRACTOR compliance gate: a SAR 100 million imported-goods/services trigger, a 35% minimum economic-participation requirement scored through a 7-category Valuation Factor table (1.0x-3.0x), with a formal EP proposal submitted at bid time and a signed commitment plus performance bond due within 30 days of award (DGA Group\'s 3 Jul 2023 analysis, corroborated by Global Trade Alert\'s independent entry, https://globaltradealert.org/state-act/87110, published 14 Dec 2023, confirming the measure\'s date and substance from a second, non-law-firm source). Two different legal instruments, two different mechanics (sector agreement vs. per-bid contractor gate), two different dates of origin (2021 vs. 2023) -- genuinely separate, not the same policy described twice. The EP Policy is real, sourced, and currently unmodeled under the pre-existing sa-likt label, so per this round\'s own instruction it is modeled as its OWN new program rather than left unmodeled for a naming mismatch -- see PROGRAMS[\'sa-economic-participation-policy\'].sourceNoteEn. sa-likt itself stays not-yet-sourced: LCGPA\'s own primary pages still publish no eligibility threshold, SAR figure, or scoring formula for LIKT specifically, as established in the paragraphs above.',
+    sourceNoteAr: 'تسمّي الصفحة الرسمية لآليات المحتوى المحلي التابعة للهيئة برنامجاً مستقلاً يُدعى "LIKT" (توطين الصناعة ونقل المعرفة) يهدف إلى توطين صناعات مستهدفة عبر التعاون مع مستثمرين عالميين وقادة تقنيين -- برنامج جديد فعلاً اكتُشف في هذا البحث ومختلف عن برنامج الهيئة العامة للصناعات العسكرية الخاص بالدفاع. لم يُعثر على صيغة حساب على مستوى المورّد؛ لم يتم تخمينها عمداً. جلبت جولة ١ أكتوبر ٢٠٢٦ هذه (إغلاق الفجوات الاثنتي عشرة ضمن الوحدة ٠٨) صفحات الهيئة الرسمية نفسها مباشرة بدلاً من الاعتماد على وصف ثانوي: يؤكد مركز الإعلام التابع للهيئة أن LIKT "طريقة تعاقد حكومية جديدة ضمن نظام المنافسات والمشتريات الحكومية الجديد" (lcgpa.gov.sa، في إعلان وزير الصناعة والثروة المعدنية ورئيس الهيئة المهندس بندر الخرّيف نفسه بتفعيلها كواحدة من "طرق التعاقد المتقدمة" التابعة للهيئة)، وتصف صفحة آليات المحتوى المحلي الرسمية دور LIKT بالإشراف على التعاون "مع مستثمرين عالميين وأصحاب تقنيات رائدة لتوطين الصناعات المستهدفة في المملكة العربية السعودية" -- وهذا يؤكد أن البرنامج حقيقي ومسمّى ومرتبط بنظام رسمي (وليس مجرد تسمية تسويقية)، لكنه، بعد التحقق المباشر من صفحات الهيئة الرسمية نفسها بدلاً من ملخص ثانوي، لا يزال بلا عتبة أهلية منشورة أو رقم قيمة عقد بالريال أو صيغة تسجيل. أشارت ملاحظات عمل من جولة سابقة إلى رقم غير مؤكَّد "١٠٠ مليون ريال" كعتبة أهلية لـLIKT؛ بحثت هذه الجولة تحديداً عن هذا الرقم (صفحات الهيئة الرسمية نفسها، والتغطية العربية والإنجليزية لإعلان الخرّيف) ولم تعثر على مصدر يذكره -- ولم يُدرَج في هذا الملف، تماشياً مع معيار سجل القرار ٨.٧ القاضي بإسقاط رقم لا يمكن تأكيده، لا تكراره لمجرد ذكره في ملاحظة سابقة. تُعاد تأكيد حالة عدم التوثيق مقابل صفحات الهيئة الرسمية نفسها، لا مقابل المصدر الثانوي نفسه كما سبق. راجعت جولة ١ أكتوبر ٢٠٢٦ هذه (إغلاق الفجوات التسعة ضمن الوحدة ٠٨) هذا السؤال تحديداً مرة أخرى، كما طلب موجز هذه الجولة صراحةً: تسرد صفحة آليات المحتوى المحلي الرسمية لدى الهيئة برنامج LIKT كآلية مستقلة بذاتها إلى جانب آليات الهيئة الأخرى المسمّاة، وتؤكد إعادة جلب وثيقة سياسة المشاركة الصناعية الرسمية لـGAMI في هذه الجولة نفسها أن تلك الوثيقة لا تستخدم عبارة "LIKT" إطلاقاً في نصها -- جهتان تنظيميتان مختلفتان (الهيئة لـLIKT، وGAMI لسياسة المشاركة الصناعية الدفاعية المحسومة الآن باسم sa-gami-defense)، وآليتان مسمّاتان منفصلتان، وليس برنامجاً واحداً بمسميين قطعاً. وحسمت هذه الجولة نفسها (٢ أكتوبر ٢٠٢٦) سؤالاً ثالثاً طلب هذا الموجز تحديداً التحقق منه مباشرة من موقع الهيئة نفسه لا من ملخصات ثانوية: هل "LIKT" هو أيضاً مجرد اسم غير رسمي لسياسة "المشاركة الاقتصادية" (EP Policy) الصادرة عن الهيئة عام ٢٠٢٣ (تحليل مجموعة DGA القانوني، ٣ يوليو ٢٠٢٣: https://dgagroup.com/insight/asg-analysis-saudi-arabia-imposes-new-economic-participation-policy/)؟ الجواب لا. تصف صفحة المركز الإعلامي الرسمية للهيئة (lcgpa.gov.sa، News-001.aspx، إعلان الخرّيف المذكور أعلاه) وتغطية Argaam بتاريخ ٦ يوليو ٢٠٢١ لذلك الإعلان نفسه، برنامج LIKT بأنه طريقة تعاقد فُعِّلت عام ٢٠٢١ تُدار عبر اتفاقيات حكومية-صناعية قطاعية مع شركاء صناعيين مسمّين ونسب شراء ثابتة لكل اتفاقية -- آلية اتفاقيات توريد بين الحكومة والصناعة. أما سياسة المشاركة الاقتصادية فهي بوابة امتثال مختلفة تماماً، مؤرَّخة ٢٠٢٣، على مستوى كل عطاء وكل مقاول: عتبة قيمة سلع/خدمات مستوردة تبلغ ١٠٠ مليون ريال سعودي، وشرط مشاركة اقتصادية لا يقل عن ٣٥٪ يُقيَّم عبر جدول عوامل تقييم من سبع فئات (١.٠×-٣.٠×)، مع تقديم مقترح مشاركة اقتصادية رسمي وقت تقديم العطاء وتوقيع التزام مع سند أداء خلال ٣٠ يوماً من الترسية (تحليل مجموعة DGA بتاريخ ٣ يوليو ٢٠٢٣، ويؤكده مصدر مستقل ثانٍ غير قانوني هو قيد Global Trade Alert، https://globaltradealert.org/state-act/87110، المنشور ١٤ ديسمبر ٢٠٢٣، والذي يثبّت تاريخ الإجراء وجوهره من مصدر ثانٍ). أداتان قانونيتان مختلفتان، وآليتان مختلفتان (اتفاقية قطاعية مقابل بوابة امتثال لكل عطاء)، وتاريخا نشأة مختلفان (٢٠٢١ مقابل ٢٠٢٣) -- منفصلتان فعلاً، لا سياسة واحدة وُصفت مرتين. سياسة المشاركة الاقتصادية حقيقية وموثّقة وغير مُنمذجة حالياً تحت اسم sa-likt، فتُنمذَج وفق تعليمات هذه الجولة كبرنامج جديد مستقل بدلاً من تركها غير مُنمذجة بسبب عدم تطابق الاسم -- انظر PROGRAMS[\'sa-economic-participation-policy\'].sourceNoteAr. ويبقى sa-likt نفسه غير موثّق: فصفحات الهيئة الرسمية نفسها لا تزال لا تنشر عتبة أهلية أو رقماً بالريال أو صيغة تسجيل خاصة بـLIKT تحديداً، كما تم إثباته في الفقرات أعلاه.',
+  },
+  'sa-economic-participation-policy': {
+    country: 'SA', countryNameEn: 'Saudi Arabia', countryNameAr: 'المملكة العربية السعودية',
+    programNameEn: 'LCGPA Economic Participation (EP) Policy', programNameAr: 'سياسة المشاركة الاقتصادية (هيئة المحتوى المحلي والمشتريات الحكومية)',
+    mechanismType: 'import-value-participation-gate', program: 'sa-economic-participation-policy',
+    applicableContexts: ['government'],
+    sourceNoteEn: "RESOLVED this 2 Oct 2026 pass (SA-LIKT/EP-Policy + BH circular pass), after the platform owner's own brief flagged a real, dated, computable LCGPA mechanism sitting unmodeled under no name in this file. LCGPA's \"Economic Participation (EP) Policy\" (2023) is confirmed via DGA Group's law-firm analysis (3 Jul 2023, https://dgagroup.com/insight/asg-analysis-saudi-arabia-imposes-new-economic-participation-policy/) and independently corroborated by Global Trade Alert's own entry (https://globaltradealert.org/state-act/87110, published 14 Dec 2023): government contracts where the value of imported goods/services exceeds SAR 100,000,000 trigger a minimum Economic Participation requirement of 35% of that imported-content value; bidders submit a formal EP proposal as part of their tender bid, and on winning, sign the EP commitment and submit a performance bond within 30 days. The requirement is discharged through a sum of eligible EP activities, each multiplied by its own disclosed Valuation Factor (DGA Group's own table): Subcontracting (purchasing local products/services) = 1.0x fixed; Localization of Manufacturing or Services = 0.5x-2.0x; Knowledge Transfer = 0.5x-2.0x; Technology Transfer = 0.5x-3.0x; Export Promotion = 0.5x-3.0x; Investment (capital injection) = 1.0x-3.0x; Research and Development = 3.0x fixed. Modeled here via a new import-value-participation-gate mechanism (see ImportValueParticipationGateResult) as a SINGLE EP-ACTIVITY LINE ITEM against that per-contract commitment -- genuinely computable and fully sourced for exactly what it models, deliberately mirroring GAMI's own gami-valuation-factor-credit-gate shape (see PROGRAMS['sa-gami-defense'].sourceNoteEn) but with three disclosed, deliberate differences, not oversights: (1) the percentage base here is IMPORTED-CONTENT value, not total contract value, per the policy's own stated trigger; (2) no SME or sole-source bonus is sourced for this policy (GAMI's +0.5/+1.0 bonuses are GAMI-specific and not carried over by assumption); (3) no performance-security amount or liquidation-on-shortfall formula is published anywhere in the sources reviewed for the EP Policy specifically, so this engine computes only requiredCommitmentSAR, creditedValueSAR, achievementPct, and meetsCommitment/shortfall -- it never fabricates a penalty amount GAMI's own policy happens to disclose but this one does not, per Decision Record 8.7. What is deliberately NOT modeled, and is disclosed rather than silently dropped: DGA Group's own follow-up article (https://dgagroup.com/insight/updated-version-of-saudi-economic-participation-policy-issued-for-public-consultation/) reports LCGPA issued an UPDATED version of this policy for public consultation, proposing a lower flat 25% requirement replaced by a TIERED schedule and other structural changes -- as of this pass, DGA Group's own article frames this as a consultation draft, not yet confirmed in force, so the currently-in-force 35%-flat version above is what is modeled; the pending reform is disclosed here as a known future change to re-check in a later pass, not silently pre-applied. Global Trade Alert's 15 Feb 2026 entry (cited in the original brief) further confirms LCGPA is still actively phasing in and tightening local-content/EP-adjacent percentage requirements, consistent with a policy under active revision rather than a stale, abandoned one.",
+    sourceNoteAr: 'جرى حسم هذا البرنامج في جولة ٢ أكتوبر ٢٠٢٦ هذه (جولة LIKT/سياسة المشاركة الاقتصادية وتعميم البحرين)، بعد أن أشار موجز مالك المنصة نفسه إلى آلية حقيقية ومؤرَّخة وقابلة للحساب صادرة عن الهيئة ولم تُنمذَج في هذا الملف تحت أي اسم. تؤكَّد "سياسة المشاركة الاقتصادية" (٢٠٢٣) الصادرة عن هيئة المحتوى المحلي والمشتريات الحكومية عبر تحليل مجموعة DGA القانوني (٣ يوليو ٢٠٢٣، https://dgagroup.com/insight/asg-analysis-saudi-arabia-imposes-new-economic-participation-policy/)، ويؤكدها مصدر مستقل هو قيد Global Trade Alert (https://globaltradealert.org/state-act/87110، المنشور ١٤ ديسمبر ٢٠٢٣): العقود الحكومية التي تتجاوز فيها قيمة السلع/الخدمات المستوردة ١٠٠,٠٠٠,٠٠٠ ريال سعودي تُحمِّل حداً أدنى لمتطلب المشاركة الاقتصادية يبلغ ٣٥٪ من قيمة ذلك المحتوى المستورد؛ ويقدّم المتنافسون مقترح مشاركة اقتصادية رسمياً كجزء من عطائهم، وعند الترسية، يوقّعون التزام المشاركة الاقتصادية ويقدّمون سند أداء خلال ٣٠ يوماً. يُستوفى المتطلب عبر مجموع أنشطة مشاركة اقتصادية مؤهلة، يُضرب كل منها بعامل تقييمه الخاص المُفصَح عنه (جدول مجموعة DGA نفسه): التعاقد من الباطن (شراء منتجات/خدمات محلية) = ١.٠× ثابت؛ توطين التصنيع أو الخدمات = ٠.٥×-٢.٠×؛ نقل المعرفة = ٠.٥×-٢.٠×؛ نقل التقنية = ٠.٥×-٣.٠×؛ تعزيز التصدير = ٠.٥×-٣.٠×؛ الاستثمار (ضخ رأس مال) = ١.٠×-٣.٠×؛ البحث والتطوير = ٣.٠× ثابت. يُنمذَج هذا عبر آلية جديدة "بوابة المشاركة بقيمة الاستيراد" (انظر ImportValueParticipationGateResult) كبند نشاط مشاركة اقتصادية واحد مقابل هذا الالتزام التعاقدي -- قابل للحساب فعلياً وموثّق بالكامل لما يُنمذجه تحديداً، ويحاكي عمداً شكل بوابة ائتمان عامل التقييم الخاصة بالهيئة العامة للصناعات العسكرية (انظر PROGRAMS[\'sa-gami-defense\'].sourceNoteEn) مع ثلاثة اختلافات مُفصَح عنها عمداً، لا سهواً: (١) الأساس النسبي هنا هو قيمة المحتوى المستورد لا قيمة العقد الإجمالية؛ (٢) لا توجد مكافأة منشآت صغيرة/متوسطة أو مصدر وحيد موثّقة لهذه السياسة؛ (٣) لا يوجد مبلغ ضمان أداء أو صيغة تصفية عند التقصير موثّقة لسياسة المشاركة الاقتصادية تحديداً، فيحسب هذا المحرك فقط الالتزام المطلوب والقيمة المُعتمَدة ونسبة التحقق ومعيار استيفاء الالتزام/النقص -- ولا يختلق مطلقاً مبلغ غرامة توثّقه سياسة الهيئة العسكرية ولا توثّقه هذه السياسة، وفق سجل القرار ٨.٧. وما لم يُنمذَج عمداً، ويُفصَح عنه بدلاً من إسقاطه بصمت: يذكر مقال لاحق لمجموعة DGA (https://dgagroup.com/insight/updated-version-of-saudi-economic-participation-policy-issued-for-public-consultation/) أن الهيئة أصدرت نسخة محدَّثة من هذه السياسة للتشاور العام، تقترح نسبة ثابتة أقل (٢٥٪) تُستبدَل بجدول متدرّج وتغييرات بنيوية أخرى -- وحتى هذه الجولة، يصف مقال DGA ذلك بأنه مسودة تشاور لم تُؤكَّد نفاذها بعد، فتُنمذَج النسخة الحالية النافذة بنسبة ٣٥٪ ثابتة أعلاه؛ ويُفصَح عن الإصلاح المرتقب هنا كتغيير مستقبلي معروف يجب التحقق منه في جولة لاحقة، لا كتطبيق مسبق صامت له. ويؤكد قيد Global Trade Alert بتاريخ ١٥ فبراير ٢٠٢٦ (المذكور في الموجز الأصلي) أن الهيئة لا تزال تُفعِّل وتُشدِّد فعلياً متطلبات نسب المحتوى المحلي/المشاركة الاقتصادية ذات الصلة، بما يتوافق مع سياسة قيد المراجعة النشطة لا سياسة راكدة مهجورة.',
   },
   'sa-rawafed-stc': {
     country: 'SA', countryNameEn: 'Saudi Arabia', countryNameAr: 'المملكة العربية السعودية',
@@ -797,8 +807,8 @@ const JO_OM_QA_BH_KW_PROGRAMS: Record<
     programNameEn: 'Local content framework -- not yet sourced', programNameAr: 'إطار المحتوى المحلي — غير موثّق بعد',
     mechanismType: 'not-yet-sourced', program: 'bh-local-content',
     applicableContexts: [],
-    sourceNoteEn: 'This research pass found no formalized, publicly-documented GENERAL national local-content scoring framework for Bahrain to the rigor applied to SA/AE/JO. Deliberately not guessed. Two genuinely different, narrower Bahrain mechanisms WERE sourced this pass (both under the same Ministerial Decision No. 23 of 2026) and are modeled separately below: `bh-sme-price-preference` and `bh-sme-spend-setaside` -- confirming the brief\'s own original taxonomy note that Bahrain "reserves a share of tenders for SMEs plus a stacked price preference." This 1 Oct 2026 pass (Module 08 twelve-gap closure), one of this round\'s four prioritized GCC flagship checks, went back to the SAME primary source already used for `bh-takamul-local-value` and `bh-gulf-made-preference` -- the Bahrain Tender Board\'s own official "Guideline for Suppliers & Contractors" (Version 1.0, Nov 2025) -- and checked it directly, cover to cover, for any GENERAL/umbrella local-content section distinct from the SME price preference, the SME spend set-aside, the Takamul local-value certificate, and the Gulf-made products preference. It contains none: the Guideline\'s only cross-reference between the preferences is a single interaction rule (page 24) stating that where more than one preference applies, "the higher preference rate" is granted, not a master framework with its own target or pillar structure. This is a stronger, more specific negative finding than prior rounds reached (which found no framework in general secondary research) -- the Kingdom\'s own tender authority, in the same document it uses to publish every other local-content mechanism this file models for Bahrain, simply does not describe a separate general national framework, strongly suggesting the four specific, targeted mechanisms already modeled ARE Bahrain\'s local-content regime in full, not an incomplete rendering of some separate unpublished general program. Disclosed as such rather than continuing to search for a program whose own regulator\'s own guideline gives no indication it exists as a distinct computable thing. This 2 Oct 2026 pass (Module 08 nine-program closure) additionally checked whether Bahrain\'s Parliament-approved 20% Bahrainisation workforce rule for tender bidders (lexis.ae, 20 Nov 2024) could BE the missing general framework -- it is not: it is a workforce-nationality requirement, not a goods/local-content mechanism, so it does not fill this gap. It is real, dated, and sourced, and is modeled as its own genuinely distinct new program, `bh-bahrainisation-tender-workforce`, immediately below.',
-    sourceNoteAr: 'لم يعثر هذا البحث على إطار وطني عام موثّق علنياً لتقييم المحتوى المحلي في مملكة البحرين بنفس دقة السعودية والإمارات والأردن. لم يتم تخمينه عمداً. جرى في هذا البحث توثيق آليتين بحرينيتين مختلفتين فعلياً وأضيق نطاقاً (كلتاهما بموجب القرار الوزاري رقم ٢٣ لسنة ٢٠٢٦ نفسه)، ونُمذجتا بشكل منفصل أدناه: `bh-sme-price-preference` و`bh-sme-spend-setaside` -- وهو ما يؤكد ملاحظة التصنيف الأصلية في الموجز بأن البحرين "تخصص حصة من المناقصات للمؤسسات الصغيرة والمتوسطة إضافة إلى تفضيل سعري متراكب." رجعت جولة ١ أكتوبر ٢٠٢٦ هذه (إغلاق الفجوات الاثنتي عشرة ضمن الوحدة ٠٨)، وهي أحد الفحوص الأربعة ذات الأولوية لدول مجلس التعاون الخليجي في هذه الجولة، إلى نفس المصدر الأساسي المستخدم بالفعل لـ`bh-takamul-local-value` و`bh-gulf-made-preference` -- دليل مجلس المناقصات البحريني الرسمي "دليل الموردين والمقاولين" (الإصدار ١.٠، نوفمبر ٢٠٢٥) -- وفحصته مباشرة من الغلاف إلى الغلاف بحثاً عن أي قسم عام/شامل للمحتوى المحلي مختلف عن التفضيل السعري للمنشآت الصغيرة والمتوسطة، وتخصيص الحصة لها، وشهادة تكامل للقيمة المحلية، وتفضيل المنتجات الخليجية. ولم تجد شيئاً من ذلك: الإشارة المتبادلة الوحيدة بين التفضيلات في الدليل هي قاعدة تفاعل واحدة (صفحة ٢٤) تنص على منح "نسبة التفضيل الأعلى" عند انطباق أكثر من تفضيل واحد، وليس إطاراً رئيسياً بهدف أو بنية أركان خاصة به. وهذه نتيجة سلبية أقوى وأكثر تحديداً من تلك التي بلغتها الجولات السابقة (التي لم تجد إطاراً عبر بحث ثانوي عام) -- فهيئة المناقصات نفسها في المملكة، وفي نفس الوثيقة التي تنشر فيها كل آلية محتوى محلي أخرى يُنمذجها هذا الملف للبحرين، لا تصف إطاراً وطنياً عاماً منفصلاً إطلاقاً، وهو ما يشير بقوة إلى أن الآليات الأربع المحددة والمستهدفة المُنمذجة بالفعل هي نظام المحتوى المحلي البحريني بالكامل، لا عرضاً ناقصاً لبرنامج عام منفصل غير منشور. يُفصَح عن ذلك بدلاً من الاستمرار في البحث عن برنامج لا يشير المنظِّم الرسمي نفسه في دليله الرسمي نفسه إلى وجوده كشيء قابل للحساب منفصل. وتحققت جولة ٢ أكتوبر ٢٠٢٦ هذه (إغلاق الفجوات التسعة ضمن الوحدة ٠٨) أيضاً من إمكانية أن تكون قاعدة البحرنة بنسبة ٢٠٪ لمقدمي عروض المناقصات التي وافق عليها مجلس النواب البحريني (lexis.ae، ٢٠ نوفمبر ٢٠٢٤) هي الإطار العام المفقود -- وهي ليست كذلك: فهي اشتراط قائم على جنسية القوى العاملة، لا آلية محتوى محلي للسلع، ولذلك لا تسد هذه الثغرة. وهي حقيقية ومؤرَّخة وموثّقة، وتُنمذَج كبرنامج جديد ومستقل فعلاً بعنوان `bh-bahrainisation-tender-workforce`، أدناه مباشرة.',
+    sourceNoteEn: 'This research pass found no formalized, publicly-documented GENERAL national local-content scoring framework for Bahrain to the rigor applied to SA/AE/JO. Deliberately not guessed. Two genuinely different, narrower Bahrain mechanisms WERE sourced this pass (both under the same Ministerial Decision No. 23 of 2026) and are modeled separately below: `bh-sme-price-preference` and `bh-sme-spend-setaside` -- confirming the brief\'s own original taxonomy note that Bahrain "reserves a share of tenders for SMEs plus a stacked price preference." This 1 Oct 2026 pass (Module 08 twelve-gap closure), one of this round\'s four prioritized GCC flagship checks, went back to the SAME primary source already used for `bh-takamul-local-value` and `bh-gulf-made-preference` -- the Bahrain Tender Board\'s own official "Guideline for Suppliers & Contractors" (Version 1.0, Nov 2025) -- and checked it directly, cover to cover, for any GENERAL/umbrella local-content section distinct from the SME price preference, the SME spend set-aside, the Takamul local-value certificate, and the Gulf-made products preference. It contains none: the Guideline\'s only cross-reference between the preferences is a single interaction rule (page 24) stating that where more than one preference applies, "the higher preference rate" is granted, not a master framework with its own target or pillar structure. This is a stronger, more specific negative finding than prior rounds reached (which found no framework in general secondary research) -- the Kingdom\'s own tender authority, in the same document it uses to publish every other local-content mechanism this file models for Bahrain, simply does not describe a separate general national framework, strongly suggesting the four specific, targeted mechanisms already modeled ARE Bahrain\'s local-content regime in full, not an incomplete rendering of some separate unpublished general program. Disclosed as such rather than continuing to search for a program whose own regulator\'s own guideline gives no indication it exists as a distinct computable thing. This 2 Oct 2026 pass (Module 08 nine-program closure) additionally checked whether Bahrain\'s Parliament-approved 20% Bahrainisation workforce rule for tender bidders (lexis.ae, 20 Nov 2024) could BE the missing general framework -- it is not: it is a workforce-nationality requirement, not a goods/local-content mechanism, so it does not fill this gap. It is real, dated, and sourced, and is modeled as its own genuinely distinct new program, `bh-bahrainisation-tender-workforce`, immediately below. This 2 Oct 2026 round (SA-LIKT/EP-Policy + BH circular pass) checked one further specific claim the brief raised: that a "Domestic Preference Circular No. 1 of 2023" gives ALL Bahraini-registered companies a general 10% price preference (not SME-limited), stacking with SME-Classification-Certificate holders\' preference for a combined 20%, per tendersarabia.com\'s Bahrain tender guide and a PwC "Doing Business in Bahrain" guide. Per the brief\'s own explicit instruction, this pass went to the Tender Board\'s own primary text rather than those secondary summaries. Circular No. 1 of 2023 itself was located and fetched directly; its own title, translated, is "Circular Regarding Application of Preference for Industrial Establishments with Local Added Value Certificate (Takamul)," issued 27 August 2023. That is not a separate general-company preference at all -- it IS the circular that already governs the Takamul Local Value Certificate preference this file models as `bh-takamul-local-value` (10% price preference, Cabinet Decision No. (11-2679), sourced from the Tender Board\'s own Nov 2025 "Guideline for Suppliers & Contractors"). The circular\'s own text states that where more than one preference could apply, the preferences do NOT stack -- the higher single rate is granted, the same "higher preference rate, not a stack" rule the Nov 2025 Guideline\'s page 24 already documents for this file\'s other Bahrain preferences. The secondary sources\' claim of a general, non-SME-limited 10% preference stacking to 20% with the SME preference is, on this primary-text check, simply not what Circular No. 1 of 2023 says -- disclosed here explicitly as a discrepancy between what tendersarabia.com/PwC report and what the Tender Board\'s own circular text and consolidated Guideline state, per Decision Record 8.7\'s standard that a conflict is disclosed, not silently resolved by adjusting the modeled figure to match the secondary claim. bh-local-content therefore remains not-yet-sourced: no separate general national local-content framework exists beyond the specific, already-modeled mechanisms (SME price preference, SME spend set-aside, Takamul, Gulf-Made, Bahrainisation workforce) -- this is now the third independent primary-source check (Nov 2025 Guideline cover-to-cover; the Bahrainisation Parliament rule; and now Circular No. 1 of 2023 itself) to reach the same negative finding, not a fourth unresearched gap.',
+    sourceNoteAr: 'لم يعثر هذا البحث على إطار وطني عام موثّق علنياً لتقييم المحتوى المحلي في مملكة البحرين بنفس دقة السعودية والإمارات والأردن. لم يتم تخمينه عمداً. جرى في هذا البحث توثيق آليتين بحرينيتين مختلفتين فعلياً وأضيق نطاقاً (كلتاهما بموجب القرار الوزاري رقم ٢٣ لسنة ٢٠٢٦ نفسه)، ونُمذجتا بشكل منفصل أدناه: `bh-sme-price-preference` و`bh-sme-spend-setaside` -- وهو ما يؤكد ملاحظة التصنيف الأصلية في الموجز بأن البحرين "تخصص حصة من المناقصات للمؤسسات الصغيرة والمتوسطة إضافة إلى تفضيل سعري متراكب." رجعت جولة ١ أكتوبر ٢٠٢٦ هذه (إغلاق الفجوات الاثنتي عشرة ضمن الوحدة ٠٨)، وهي أحد الفحوص الأربعة ذات الأولوية لدول مجلس التعاون الخليجي في هذه الجولة، إلى نفس المصدر الأساسي المستخدم بالفعل لـ`bh-takamul-local-value` و`bh-gulf-made-preference` -- دليل مجلس المناقصات البحريني الرسمي "دليل الموردين والمقاولين" (الإصدار ١.٠، نوفمبر ٢٠٢٥) -- وفحصته مباشرة من الغلاف إلى الغلاف بحثاً عن أي قسم عام/شامل للمحتوى المحلي مختلف عن التفضيل السعري للمنشآت الصغيرة والمتوسطة، وتخصيص الحصة لها، وشهادة تكامل للقيمة المحلية، وتفضيل المنتجات الخليجية. ولم تجد شيئاً من ذلك: الإشارة المتبادلة الوحيدة بين التفضيلات في الدليل هي قاعدة تفاعل واحدة (صفحة ٢٤) تنص على منح "نسبة التفضيل الأعلى" عند انطباق أكثر من تفضيل واحد، وليس إطاراً رئيسياً بهدف أو بنية أركان خاصة به. وهذه نتيجة سلبية أقوى وأكثر تحديداً من تلك التي بلغتها الجولات السابقة (التي لم تجد إطاراً عبر بحث ثانوي عام) -- فهيئة المناقصات نفسها في المملكة، وفي نفس الوثيقة التي تنشر فيها كل آلية محتوى محلي أخرى يُنمذجها هذا الملف للبحرين، لا تصف إطاراً وطنياً عاماً منفصلاً إطلاقاً، وهو ما يشير بقوة إلى أن الآليات الأربع المحددة والمستهدفة المُنمذجة بالفعل هي نظام المحتوى المحلي البحريني بالكامل، لا عرضاً ناقصاً لبرنامج عام منفصل غير منشور. يُفصَح عن ذلك بدلاً من الاستمرار في البحث عن برنامج لا يشير المنظِّم الرسمي نفسه في دليله الرسمي نفسه إلى وجوده كشيء قابل للحساب منفصل. وتحققت جولة ٢ أكتوبر ٢٠٢٦ هذه (إغلاق الفجوات التسعة ضمن الوحدة ٠٨) أيضاً من إمكانية أن تكون قاعدة البحرنة بنسبة ٢٠٪ لمقدمي عروض المناقصات التي وافق عليها مجلس النواب البحريني (lexis.ae، ٢٠ نوفمبر ٢٠٢٤) هي الإطار العام المفقود -- وهي ليست كذلك: فهي اشتراط قائم على جنسية القوى العاملة، لا آلية محتوى محلي للسلع، ولذلك لا تسد هذه الثغرة. وهي حقيقية ومؤرَّخة وموثّقة، وتُنمذَج كبرنامج جديد ومستقل فعلاً بعنوان `bh-bahrainisation-tender-workforce`، أدناه مباشرة. وتحققت جولة ٢ أكتوبر ٢٠٢٦ هذه (جولة LIKT/سياسة المشاركة الاقتصادية وتعميم البحرين) من مطالبة محددة أخرى أثارها الموجز: أن "التعميم رقم ١ لسنة ٢٠٢٣ بشأن التفضيل المحلي" يمنح جميع الشركات المسجَّلة بحرينياً تفضيلاً سعرياً عاماً بنسبة ١٠٪ (غير مقتصر على المنشآت الصغيرة والمتوسطة)، يتراكم مع تفضيل حاملي شهادة تصنيف المنشآت الصغيرة والمتوسطة ليصل إلى ٢٠٪ مجتمعة، وفق دليل tendersarabia.com لمناقصات البحرين ودليل PwC "ممارسة الأعمال في البحرين". ووفق تعليمات الموجز الصريحة، رجعت هذه الجولة إلى نص هيئة المناقصات الأساسي نفسه بدلاً من هذه الملخصات الثانوية. جرى تحديد التعميم رقم ١ لسنة ٢٠٢٣ وجلبه مباشرة؛ وعنوانه الفعلي، مترجَماً، هو "تعميم بشأن تطبيق التفضيل للمنشآت الصناعية الحاصلة على شهادة القيمة المضافة المحلية (تكامل)"، الصادر في ٢٧ أغسطس ٢٠٢٣. وهذا ليس تفضيلاً عاماً مستقلاً لكل الشركات على الإطلاق -- بل هو التعميم نفسه الذي يحكم بالفعل تفضيل شهادة القيمة المحلية (تكامل) الذي يُنمذجه هذا الملف باسم `bh-takamul-local-value` (تفضيل سعري ١٠٪، القرار الوزاري رقم (١١-٢٦٧٩)، الموثَّق من دليل هيئة المناقصات الرسمي "دليل الموردين والمقاولين" لنوفمبر ٢٠٢٥). وينص نص التعميم نفسه على أن التفضيلات لا تتراكم عند انطباق أكثر من تفضيل واحد -- بل تُمنَح النسبة الفردية الأعلى فقط، وهي نفس قاعدة "النسبة الأعلى لا التراكم" التي توثّقها الصفحة ٢٤ من دليل نوفمبر ٢٠٢٥ لتفضيلات البحرين الأخرى في هذا الملف. ومطالبة المصادر الثانوية بوجود تفضيل عام غير مقتصر على المنشآت الصغيرة والمتوسطة بنسبة ١٠٪ يتراكم إلى ٢٠٪ مع تفضيل تلك المنشآت، لا يتطابق، بعد هذا التحقق من النص الأساسي، مع ما ينص عليه التعميم رقم ١ لسنة ٢٠٢٣ فعلاً -- ويُفصَح عن ذلك هنا صريحاً كتعارض بين ما تذكره tendersarabia.com/PwC وما يذكره نص تعميم هيئة المناقصات نفسه ودليلها الموحَّد، وفق معيار سجل القرار ٨.٧ بالإفصاح عن التعارض لا حله بصمت بتعديل الرقم المُنمذَج لمطابقة المطالبة الثانوية. ويبقى bh-local-content بذلك غير موثّق: فلا يوجد إطار وطني عام منفصل للمحتوى المحلي يتجاوز الآليات المحددة المُنمذجة بالفعل (تفضيل المنشآت الصغيرة والمتوسطة، تخصيص الحصة لها، تكامل، المنتجات الخليجية، قوى عاملة البحرنة) -- وهذا هو التحقق الثالث المستقل من مصدر أساسي (دليل نوفمبر ٢٠٢٥ من الغلاف إلى الغلاف؛ وقاعدة البحرنة التي وافق عليها مجلس النواب؛ والآن التعميم رقم ١ لسنة ٢٠٢٣ نفسه) الذي يبلغ النتيجة السلبية نفسها، وليس ثغرة بحثية رابعة غير مفحوصة.',
   },
   'bh-sme-price-preference': {
     country: 'BH', countryNameEn: 'Bahrain', countryNameAr: 'مملكة البحرين',
@@ -1654,6 +1664,22 @@ export interface SupplierLocalContentInputs {
   bhBahrainisation?: {
     bahrainiWorkforceSharePct: number | null;
   };
+  /** LCGPA's own 2023 Economic Participation (EP) Policy (SA /
+   * 'sa-economic-participation-policy', resolved 2 Oct 2026, SA-LIKT/EP-
+   * Policy + BH circular pass) -- see
+   * PROGRAMS['sa-economic-participation-policy'].sourceNoteEn and
+   * ImportValueParticipationGateResult for the full sourcing. Unlike
+   * saGami above, there is no SME/sole-source bonus field here -- neither
+   * is sourced for this policy, so none is offered as a caller input. */
+  saEp?: {
+    importedContentValueSAR: number | null;
+    category: EpValuationFactorCategory | null;
+    /** Only meaningful for a ranged category -- ignored for the two
+     * fixed-factor categories (subcontracting, rnd), which always resolve
+     * to their single disclosed value regardless of this input. */
+    chosenFactor: number | null;
+    baseActivityValueSAR: number | null;
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -2147,6 +2173,76 @@ export interface PercentageThresholdGateResult {
   meetsThreshold: boolean | null;
 }
 
+/** LCGPA's own seven named Economic Participation activity categories
+ * (DGA Group's 3 Jul 2023 analysis table) -- two fixed-factor categories
+ * (subcontracting, rnd) and five genuinely ranged categories, mirroring
+ * GamiValuationFactorCategory's own fixed-vs-ranged shape but a distinct
+ * union (not reused), since the two policies' category names and ranges
+ * are genuinely different and conflating them would misattribute a GAMI-
+ * specific figure to the EP Policy or vice versa. */
+export type EpValuationFactorCategory =
+  | 'subcontracting' | 'localization' | 'knowledge-transfer' | 'technology-transfer'
+  | 'export-promotion' | 'investment' | 'rnd';
+
+/** (New, 2 Oct 2026 -- SA-LIKT/EP-Policy + BH circular pass) LCGPA's own
+ * 2023 Economic Participation (EP) Policy -- see
+ * PROGRAMS['sa-economic-participation-policy'].sourceNoteEn for the full
+ * citation (DGA Group's 3 Jul 2023 law-firm analysis, corroborated by
+ * Global Trade Alert's independent 14 Dec 2023 entry) and the disclosed
+ * pending-reform/not-yet-in-force 2026 consultation draft. Deliberately a
+ * SINGLE EP-ACTIVITY LINE ITEM model, mirroring GamiValuationFactorCredit
+ * GateResult's own single-discharge-line-item scope decision -- see that
+ * type's own doc comment for why this file does not attempt cross-
+ * contract/multi-year aggregation for either policy. Three disclosed,
+ * deliberate differences from GAMI's gate (not oversights): the
+ * percentage base is IMPORTED-CONTENT value, not contract value; there is
+ * no SME or sole-source bonus (neither is sourced for this policy); and
+ * no performance-security/liquidation formula is sourced for this policy
+ * specifically, so only meetsCommitment/shortfall is computed here, never
+ * a penalty amount -- per Decision Record 8.7, this engine does not
+ * fabricate a figure GAMI's own policy happens to disclose but this one
+ * does not. */
+export interface ImportValueParticipationGateResult {
+  mechanismType: 'import-value-participation-gate';
+  importedContentValueSAR: number | null;
+  /** The policy's own disclosed trigger -- SAR 100,000,000. */
+  importedContentValueThresholdSAR: number;
+  /** true = importedContentValueSAR >= importedContentValueThresholdSAR
+   * (an Economic Participation commitment exists); false = below
+   * threshold; null = value not supplied. */
+  triggersCommitment: boolean | null;
+  /** The policy's own disclosed minimum -- 35 (% of imported content
+   * value), currently in force; a lower, tiered 25% replacement is
+   * reported as a pending public-consultation draft, not yet modeled --
+   * see the program's own sourceNoteEn. */
+  commitmentPctOfImportedValue: number;
+  /** commitmentPctOfImportedValue% of importedContentValueSAR, only once
+   * triggersCommitment is known; 0 when false, null when unknown. */
+  requiredCommitmentSAR: number | null;
+  category: EpValuationFactorCategory | null;
+  /** The category's own disclosed Valuation Factor range -- [min,max],
+   * with min === max for the two fixed-factor categories (subcontracting,
+   * rnd). Null until a category is chosen. */
+  categoryMinFactor: number | null;
+  categoryMaxFactor: number | null;
+  /** The caller-supplied point within [categoryMinFactor,
+   * categoryMaxFactor] -- clamped to that range; always categoryMinFactor
+   * for a fixed category, regardless of caller input. */
+  chosenFactor: number | null;
+  baseActivityValueSAR: number | null;
+  /** baseActivityValueSAR x chosenFactor -- the credited Economic
+   * Participation value this single EP activity earns. No bonus terms
+   * apply (none are sourced for this policy), so chosenFactor is also the
+   * effective factor here, unlike GAMI's gate. */
+  creditedValueSAR: number | null;
+  /** creditedValueSAR / requiredCommitmentSAR x 100, only once both are
+   * known and requiredCommitmentSAR > 0. */
+  achievementPct: number | null;
+  /** true = no commitment triggers at all, OR achievementPct >= 100;
+   * false = a known shortfall; null = insufficient inputs. */
+  meetsCommitment: boolean | null;
+}
+
 export type LocalContentComputation =
   | EligibleSpendRatioResult
   | WeightedPillarScoreResult
@@ -2165,6 +2261,7 @@ export type LocalContentComputation =
   | GamiValuationFactorCreditGateResult
   | TrIndustrializationLiabilityGateResult
   | PercentageThresholdGateResult
+  | ImportValueParticipationGateResult
   | NotYetSourcedResult;
 
 export type LocalContentApplicability = 'applicable' | 'not-applicable' | 'insufficient-data';
@@ -2858,6 +2955,79 @@ function computeGamiValuationFactorCreditGate(input: NonNullable<SupplierLocalCo
   };
 }
 
+/** LCGPA's own 2023 Economic Participation (EP) Policy -- see
+ * PROGRAMS['sa-economic-participation-policy'].sourceNoteEn for the full
+ * citation (DGA Group's 3 Jul 2023 analysis, corroborated by Global
+ * Trade Alert's 14 Dec 2023 entry). The currently-in-force flat figures
+ * below; a pending, not-yet-confirmed-in-force tiered reform (25%) is
+ * disclosed in the sourceNote but deliberately not modeled here. */
+export const EP_IMPORTED_VALUE_THRESHOLD_SAR = 100_000_000;
+export const EP_COMMITMENT_PCT_OF_IMPORTED_VALUE = 35;
+
+/** DGA Group's own disclosed Valuation Factor table -- [min, max] per
+ * category; the two fixed-factor categories (subcontracting, rnd) have
+ * min === max. */
+export const EP_VALUATION_FACTOR_RANGES: Record<EpValuationFactorCategory, [number, number]> = {
+  subcontracting: [1.0, 1.0],
+  localization: [0.5, 2.0],
+  'knowledge-transfer': [0.5, 2.0],
+  'technology-transfer': [0.5, 3.0],
+  'export-promotion': [0.5, 3.0],
+  investment: [1.0, 3.0],
+  rnd: [3.0, 3.0],
+};
+
+/** Models ONE EP-activity line item against LCGPA's own disclosed per-
+ * contract Economic Participation commitment -- see
+ * ImportValueParticipationGateResult's own doc comment for the disclosed
+ * scope decision (single line item, no bonus terms, no sourced
+ * liquidation formula). */
+function computeImportValueParticipationGate(input: NonNullable<SupplierLocalContentInputs['saEp']>): ImportValueParticipationGateResult {
+  const importedContentValueSAR = input.importedContentValueSAR ?? null;
+  const triggersCommitment = importedContentValueSAR === null ? null : importedContentValueSAR >= EP_IMPORTED_VALUE_THRESHOLD_SAR;
+  const requiredCommitmentSAR = triggersCommitment === null
+    ? null
+    : triggersCommitment === false ? 0 : (importedContentValueSAR as number) * EP_COMMITMENT_PCT_OF_IMPORTED_VALUE / 100;
+
+  const category = input.category ?? null;
+  const range = category === null ? null : EP_VALUATION_FACTOR_RANGES[category];
+  const categoryMinFactor = range ? range[0] : null;
+  const categoryMaxFactor = range ? range[1] : null;
+  // A fixed-factor category (min === max) always resolves to that single
+  // value, regardless of caller input -- same discipline as GAMI's gate.
+  const rawFactor = input.chosenFactor ?? null;
+  const chosenFactor = range === null
+    ? null
+    : range[0] === range[1] ? range[0] : (rawFactor === null ? null : Math.min(range[1], Math.max(range[0], rawFactor)));
+
+  const baseActivityValueSAR = input.baseActivityValueSAR ?? null;
+  // No bonus terms are sourced for this policy, so chosenFactor is also
+  // the effective (credited) factor -- unlike GAMI's gate, which adds
+  // SME/sole-source bonuses on top of chosenFactor.
+  const creditedValueSAR = chosenFactor !== null && baseActivityValueSAR !== null ? baseActivityValueSAR * chosenFactor : null;
+
+  const achievementPct = requiredCommitmentSAR !== null && requiredCommitmentSAR > 0 && creditedValueSAR !== null
+    ? (creditedValueSAR / requiredCommitmentSAR) * 100
+    : null;
+
+  let meetsCommitment: boolean | null;
+  if (triggersCommitment === false) {
+    meetsCommitment = true; // no commitment at all below the SAR 100M trigger
+  } else if (achievementPct !== null) {
+    meetsCommitment = achievementPct >= 100;
+  } else {
+    meetsCommitment = null;
+  }
+
+  return {
+    mechanismType: 'import-value-participation-gate',
+    importedContentValueSAR, importedContentValueThresholdSAR: EP_IMPORTED_VALUE_THRESHOLD_SAR, triggersCommitment,
+    commitmentPctOfImportedValue: EP_COMMITMENT_PCT_OF_IMPORTED_VALUE, requiredCommitmentSAR,
+    category, categoryMinFactor, categoryMaxFactor, chosenFactor,
+    baseActivityValueSAR, creditedValueSAR, achievementPct, meetsCommitment,
+  };
+}
+
 /** herdemlaw.com's own disclosed figures, from its primary-text-grounded
  * 2011-vs-2022 SSB Industrialization Guideline comparison (fetched
  * directly 1-2 Oct 2026). The conflicting mondaq.com "70% of bid amount"
@@ -3382,6 +3552,11 @@ export function assessSupplierLocalContent(
       return { country, program: resolvedProgram, procurementContext, applicability: 'applicable', framework, computation: { mechanismType: 'gami-valuation-factor-credit-gate', contractValueSAR: null, contractValueThresholdSAR: GAMI_CONTRACT_VALUE_THRESHOLD_SAR, triggersCommitment: null, commitmentPctOfContractValue: GAMI_COMMITMENT_PCT_OF_CONTRACT_VALUE, requiredCommitmentSAR: null, category: null, categoryMinFactor: null, categoryMaxFactor: null, chosenFactor: null, smeBonusApplied: false, soleSourceBonusApplied: false, effectiveFactor: null, baseActivityValueSAR: null, creditedValueSAR: null, achievementPct: null, meetsCommitment: null, performanceSecurityPctOfContractValue: GAMI_PERFORMANCE_SECURITY_PCT_OF_CONTRACT_VALUE, performanceSecuritySAR: null, liquidationSAR: null }, certificationCaveatEn: NOT_CERTIFIED_EN, certificationCaveatAr: NOT_CERTIFIED_AR, reasonEn: 'No GAMI Industrial Participation contract-value/category inputs supplied yet.', reasonAr: 'لم تُدخل بيانات قيمة العقد أو فئة المشاركة الصناعية الخاصة بالهيئة العامة للصناعات العسكرية بعد.' };
     }
     computation = computeGamiValuationFactorCreditGate(inputs.saGami);
+  } else if (resolvedProgram === 'sa-economic-participation-policy') {
+    if (!inputs.saEp) {
+      return { country, program: resolvedProgram, procurementContext, applicability: 'applicable', framework, computation: { mechanismType: 'import-value-participation-gate', importedContentValueSAR: null, importedContentValueThresholdSAR: EP_IMPORTED_VALUE_THRESHOLD_SAR, triggersCommitment: null, commitmentPctOfImportedValue: EP_COMMITMENT_PCT_OF_IMPORTED_VALUE, requiredCommitmentSAR: null, category: null, categoryMinFactor: null, categoryMaxFactor: null, chosenFactor: null, baseActivityValueSAR: null, creditedValueSAR: null, achievementPct: null, meetsCommitment: null }, certificationCaveatEn: NOT_CERTIFIED_EN, certificationCaveatAr: NOT_CERTIFIED_AR, reasonEn: 'No LCGPA Economic Participation Policy imported-value/category inputs supplied yet.', reasonAr: 'لم تُدخل بيانات قيمة المحتوى المستورد أو فئة المشاركة الاقتصادية الخاصة بالهيئة بعد.' };
+    }
+    computation = computeImportValueParticipationGate(inputs.saEp);
   } else if (resolvedProgram === 'ae-icv-general') {
     if (!inputs.ae) {
       return { country, program: resolvedProgram, procurementContext, applicability: 'applicable', framework, computation: { mechanismType: 'weighted-pillar-score', scorePct: null, pillars: [], mainlandUpliftApplied: false }, certificationCaveatEn: NOT_CERTIFIED_EN, certificationCaveatAr: NOT_CERTIFIED_AR, reasonEn: 'No AE/ICV pillar inputs supplied yet.', reasonAr: 'لم تُدخل بيانات أركان ICV بعد.' };
@@ -3803,6 +3978,15 @@ export function recommendLocalContentAction(assessment: LocalContentAssessment, 
       alternativeAr: "إذا تعذّر إغلاق القيمة المُعتمَدة في الوقت المناسب: يوفر الائتمان التحفيزي الخاص بالسياسة نفسها (١٠٪ إضافية من الالتزام عند تحقيق ٣٠٪ توطين على الأقل) ونظام ترحيل الائتمانات الفائضة لمدة ٥ سنوات (من عقد آخر، بحد أقصى ٢٥٪ من هذا الالتزام) أداتين حقيقيتين ومُفصَح عنهما -- لكن لا تُنمذَج أي منهما في هذا التقييم أحادي البند، فتأكد من توفرهما مباشرة مع فريق قضايا المشاركة الصناعية في الهيئة العامة للصناعات العسكرية بدلاً من افتراض أن رقم هذا المحرك هو القول الأخير.",
     };
   }
+  if (c.mechanismType === 'import-value-participation-gate') {
+    if (c.meetsCommitment !== false) return null;
+    return {
+      primaryEn: `Raise this line item's credited Economic Participation value above the SAR ${c.requiredCommitmentSAR?.toLocaleString() ?? ''} commitment before the contract's own EP deadline -- directing additional base activity value toward a higher-Valuation-Factor category (Research & Development carries the policy's own highest disclosed factor, a fixed 3.0x) closes the gap fastest per riyal of underlying activity.`,
+      primaryAr: `رفع القيمة المُعتمَدة للمشاركة الاقتصادية لهذا البند فوق الالتزام البالغ ${c.requiredCommitmentSAR?.toLocaleString() ?? ''} ريال سعودي قبل الموعد النهائي للمشاركة الاقتصادية في العقد -- توجيه قيمة نشاط أساسية إضافية نحو فئة ذات عامل تقييم أعلى (البحث والتطوير يحمل أعلى عامل ثابت مُفصَح عنه في السياسة، ٣.٠×) يُغلق الفجوة بأسرع وتيرة لكل ريال من النشاط الأساسي.`,
+      alternativeEn: "If the credited value cannot close in time: LCGPA's own pending reform (a lower, tiered 25% requirement, per DGA Group's public-consultation-draft coverage) may change this commitment's size in a future contract cycle, but is not yet confirmed in force -- confirm the applicable version and any available extension directly with LCGPA's own Economic Participation case team rather than assuming this engine's currently-in-force 35% figure will still apply unchanged.",
+      alternativeAr: "إذا تعذّر إغلاق القيمة المُعتمَدة في الوقت المناسب: قد يغيّر إصلاح الهيئة المرتقب (متطلب أدنى متدرّج بنسبة ٢٥٪، وفق تغطية مشروع التشاور العام لمجموعة DGA) حجم هذا الالتزام في دورة تعاقد مستقبلية، لكنه لم يُؤكَّد نفاذه بعد -- تأكد من النسخة النافذة وأي تمديد متاح مباشرة مع فريق قضايا المشاركة الاقتصادية في الهيئة بدلاً من افتراض أن نسبة ٣٥٪ النافذة حالياً في هذا المحرك ستظل كما هي دون تغيير.",
+    };
+  }
   if (c.mechanismType === 'industrialization-liability-gate') {
     if (c.meetsAllLiabilities !== false) return null;
     const failedParts: string[] = [];
@@ -4041,6 +4225,21 @@ export function rollUpPortfolioLocalContent(inputs: PortfolioLocalContentInput[]
       if (scorableSpend > 0) {
         gateEligibleSharePct = scorable.reduce((s, i) => {
           const c = i.assessment.computation as GamiValuationFactorCreditGateResult;
+          return s + (c.meetsCommitment ? 100 : 0) * (i.spendShare / scorableSpend);
+        }, 0);
+      }
+    } else if (first.framework.mechanismType === 'import-value-participation-gate') {
+      // LCGPA Economic Participation Policy -- same gateEligibleSharePct
+      // reuse as GAMI above, for the same reason (single-line-item model,
+      // not a portfolio-complete figure).
+      const scorable = applicableItems.filter(i => {
+        const c = i.assessment.computation;
+        return c && c.mechanismType === 'import-value-participation-gate' && c.meetsCommitment !== null;
+      });
+      const scorableSpend = scorable.reduce((s, i) => s + i.spendShare, 0);
+      if (scorableSpend > 0) {
+        gateEligibleSharePct = scorable.reduce((s, i) => {
+          const c = i.assessment.computation as ImportValueParticipationGateResult;
           return s + (c.meetsCommitment ? 100 : 0) * (i.spendShare / scorableSpend);
         }, 0);
       }
