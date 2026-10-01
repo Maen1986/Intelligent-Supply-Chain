@@ -150,7 +150,7 @@ describe('LocalContentICVCheck -- Bahrain\'s 5 programs and Kuwait\'s 4 programs
     fireEvent.click(screen.getByRole('button', { name: /Gulf-Made Products Preference/i }));
     const gulfMadeInputs = lastNumberInputs(1);
     fireEvent.change(gulfMadeInputs[0], { target: { value: '25' } });
-    fireEvent.click(screen.getByRole('button', { name: /^Local Content/ }));
+    fireEvent.click(screen.getByRole('button', { name: /^Local Content/ })); // Bahrain's bh-local-content -- still 'Local Content (not sourced)' this pass; do not confuse with Kuwait's kw-local-content below, renamed to 'Local Sourcing Gate (Art. 87)' when resolved, Module 08 pass, 1 Oct 2026
 
     // Return to Takamul -- its own yes/no selection must have survived every intervening switch.
     fireEvent.click(screen.getByRole('button', { name: /Takamul Local Value Preference/i }));
@@ -170,7 +170,7 @@ describe('LocalContentICVCheck -- Bahrain\'s 5 programs and Kuwait\'s 4 programs
 
     fireEvent.click(screen.getByRole('button', { name: /Tender Law Price Preference/i }));
     fireEvent.click(screen.getByRole('button', { name: /KPC Local Spend Target/i }));
-    fireEvent.click(screen.getByRole('button', { name: /^Local Content/ }));
+    fireEvent.click(screen.getByRole('button', { name: /^Local Sourcing Gate/ })); // renamed from 'Local Content (not sourced)' when kw-local-content was resolved to dual-local-sourcing-gate, Module 08 pass, 1 Oct 2026
 
     fireEvent.click(screen.getByRole('button', { name: /Company-Nationality Price Preference/i }));
     expect(screen.getByRole('button', { name: 'Yes' }).getAttribute('aria-pressed')).toBe('true');

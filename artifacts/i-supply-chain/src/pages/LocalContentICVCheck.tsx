@@ -61,7 +61,10 @@ import {
   type LocalContentCountry, type ProcurementContext, type SupplierLocalContentInputs,
   type LocalContentApplicability, type LocalContentAssessment, type PortfolioLocalContentInput,
   type LocalContentProgram, type LocalContentMechanismType, type CommitmentDeviationGateResult,
-  type GccOriginNationalTreatmentGateResult,
+  type GccOriginNationalTreatmentGateResult, type ProductionIncentiveEligibilityGateResult,
+  type DualLocalSourcingGateResult, type OffsetMultiplierCreditGateResult, type EuContentThresholdGateResult,
+  OFFSET_MULTIPLIER_CREDIT_GATE_AVENUE_MULTIPLIERS,
+  INDIA_DAP_OFFSET_TRIGGER_THRESHOLD_INR_CRORE, EDIP_EU_CONTENT_THRESHOLD_PCT, EDIP_NON_EU_CONTENT_CAP_PCT,
 } from '@/lib/supplierLocalContentEligibility';
 // Module 05 cross-reference (side-by-side callout only -- two independent
 // dimensions, per Core Instruction / Rule 7, never blended into one
@@ -109,6 +112,9 @@ type JpInputs = NonNullable<SupplierLocalContentInputs['jp']>;
 type KrSmeTargetInputs = NonNullable<SupplierLocalContentInputs['krSmeTarget']>;
 type KrCompetitiveProductsInputs = NonNullable<SupplierLocalContentInputs['krCompetitiveProducts']>;
 type EgAutoInputs = NonNullable<SupplierLocalContentInputs['egAuto']>;
+type KwLocalContentInputs = NonNullable<SupplierLocalContentInputs['kwLocalContent']>;
+type InDapInputs = NonNullable<SupplierLocalContentInputs['inDap']>;
+type DeEdipInputs = NonNullable<SupplierLocalContentInputs['deEdip']>;
 
 function emptySa(): SaInputs {
   return {
@@ -222,6 +228,17 @@ function emptyKrCompetitiveProducts(): KrCompetitiveProductsInputs {
 }
 function emptyEgAuto(): EgAutoInputs {
   return { vehicleCategory: null, localContentPct: null, exFactoryPriceEGP: null, engineCC: null, annualProductionUnits: null, unitsPerModel: null };
+}
+// Module 08 twelve-gap closure pass (1 Oct 2026) -- three genuinely new,
+// real, sourced mechanisms resolved this round.
+function emptyKwLocalContent(): KwLocalContentInputs {
+  return { localMaterialsSharePct: null, localWorksSharePct: null };
+}
+function emptyInDap(): InDapInputs {
+  return { contractValueINR: null, offsetAvenue: null, rawDischargedAmountINR: null };
+}
+function emptyDeEdip(): DeEdipInputs {
+  return { euOrAssociatedContentPct: null };
 }
 function emptyCn(): CnInputs {
   return { meetsDomesticProductCriteria: null, bundleDomesticCostSharePct: null, article10ExemptionApplies: null };
@@ -349,6 +366,9 @@ interface LocalContentEntry {
   krSmeTarget: KrSmeTargetInputs;
   krCompetitiveProducts: KrCompetitiveProductsInputs;
   egAuto: EgAutoInputs;
+  kwLocalContent: KwLocalContentInputs;
+  inDap: InDapInputs;
+  deEdip: DeEdipInputs;
 }
 
 function newLocalContentEntry(): LocalContentEntry {
@@ -370,6 +390,7 @@ function newLocalContentEntry(): LocalContentEntry {
     qaTendersIcv: emptyQaTendersIcv(),
     inMakeInIndia: emptyInMakeInIndia(), jp: emptyJp(), krSmeTarget: emptyKrSmeTarget(), krCompetitiveProducts: emptyKrCompetitiveProducts(),
     egAuto: emptyEgAuto(),
+    kwLocalContent: emptyKwLocalContent(), inDap: emptyInDap(), deEdip: emptyDeEdip(),
   };
 }
 
@@ -431,6 +452,9 @@ function loadState(): PersistedState {
             krSmeTarget: { ...emptyKrSmeTarget(), ...e.krSmeTarget },
             krCompetitiveProducts: { ...emptyKrCompetitiveProducts(), ...e.krCompetitiveProducts },
             egAuto: { ...emptyEgAuto(), ...e.egAuto },
+            kwLocalContent: { ...emptyKwLocalContent(), ...e.kwLocalContent },
+            inDap: { ...emptyInDap(), ...e.inDap },
+            deEdip: { ...emptyDeEdip(), ...e.deEdip },
           })),
           targetThresholdPct: parsed.targetThresholdPct ?? null,
         };
@@ -501,7 +525,7 @@ const PROGRAM_LABELS: Record<LocalContentProgram, { en: string; ar: string }> = 
   'bh-sme-spend-setaside': { en: 'SME Spend Set-Aside (20%)', ar: 'تخصيص إنفاق للمنشآت الصغيرة والمتوسطة (٢٠٪)' },
   'bh-takamul-local-value': { en: 'Takamul Local Value Preference (10%)', ar: 'تفضيل شهادة القيمة المحلية تكامل (١٠٪)' },
   'bh-gulf-made-preference': { en: 'Gulf-Made Products Preference (10%)', ar: 'تفضيل المنتجات المصنّعة خليجياً (١٠٪)' },
-  'kw-local-content': { en: 'Local Content (not sourced)', ar: 'المحتوى المحلي (غير موثّق)' },
+  'kw-local-content': { en: 'Local Sourcing Gate (Art. 87)', ar: 'بوابة التوريد المحلي (المادة ٨٧)' },
   'kw-kpc-local-spend': { en: 'KPC Local Spend Target (30%)', ar: 'هدف KPC للإنفاق المحلي (٣٠٪)' },
   'kw-tender-law-price-preference': { en: 'Tender Law Price Preference (15%)', ar: 'تفضيل سعر قانون المناقصات (١٥٪)' },
   'kw-nationality-price-preference': { en: 'Company-Nationality Price Preference (10%)', ar: 'تفضيل سعري لجنسية الشركة (١٠٪)' },
@@ -520,9 +544,9 @@ const PROGRAM_LABELS: Record<LocalContentProgram, { en: string; ar: string }> = 
   'cn-sme-price-deduction': { en: 'SME Price Deduction', ar: 'خصم سعر المنشآت الصغيرة والمتوسطة' },
   'cn-defense-domestic-sourcing': { en: 'PLA Defense Sourcing -- not yet sourced', ar: 'مشتريات الدفاع (جيش التحرير الشعبي) — غير موثّق بعد' },
   'in-make-in-india-price-preference': { en: 'Make in India Preference (20%)', ar: 'تفضيل صنع في الهند (٢٠٪)' },
-  'in-dap-2020-defense-offset': { en: 'DAP 2020 Defense Offset -- not yet sourced', ar: 'تعويض الدفاع DAP 2020 — غير موثّق بعد' },
+  'in-dap-2020-defense-offset': { en: 'DAP 2020 Offset Multiplier Gate', ar: 'بوابة معامل مقاصة DAP 2020' },
   'de-eu-gpa-non-discrimination-baseline': { en: 'No Local-Content Preference -- confirmed absent', ar: 'لا يوجد تفضيل للمحتوى المحلي — غياب مؤكَّد' },
-  'de-edip-defense-local-content': { en: 'EDIP EU-Content Threshold -- not yet sourced', ar: 'عتبة محتوى EDIP الأوروبي — غير موثّق بعد' },
+  'de-edip-defense-local-content': { en: 'EDIP EU-Content Threshold (65%)', ar: 'عتبة محتوى EDIP الأوروبي (٦٥٪)' },
   'jp-kankoju-sme-target-ratio': { en: 'Kankouju SME Target Ratio', ar: 'نسبة استهداف كانكوجو للمنشآت الصغيرة والمتوسطة' },
   'kr-sme-purchase-target-ratio': { en: 'SME Purchase Target Ratio (50% / 15%)', ar: 'نسبة استهداف شراء المنشآت الصغيرة والمتوسطة (٥٠٪ / ١٥٪)' },
   'kr-sme-competitive-products-gate': { en: 'SME Competitive Products Gate', ar: 'بوابة المنتجات التنافسية للمنشآت الصغيرة والمتوسطة' },
@@ -589,6 +613,27 @@ const MECHANISM_VALUE_FRAMING: Partial<Record<LocalContentMechanismType, { buyer
     buyerAr: 'درجة رسمية واحدة (icv.qa) قابلة للاستخدام مباشرة في تقييم العطاءات، مع معدِّلات حقيقية ومُفصَح عنها (مكافأة المصنّعين، حد أدنى للموردين الصغار) تكافئ السلوكيات التي تستهدفها استراتيجية قطر دون ابتكار منهجية جديدة.',
     supplierEn: "Multiple real levers raise this score beyond raw spend: eligible-manufacturer status applies a 50% boost, and genuinely small/micro suppliers get a guaranteed 30% floor regardless of spend data -- both are policy facts worth checking before assuming a gap requires new spend.",
     supplierAr: 'توجد عدة روافع حقيقية لرفع هذه الدرجة إلى جانب الإنفاق وحده: صفة "المصنّع المؤهل" تمنح مكافأة ٥٠٪، ويحصل الموردون متناهو الصغر/الصغار فعلياً على حد أدنى مضمون ٣٠٪ بغض النظر عن بيانات الإنفاق -- وكلاهما حقيقة سياسية تستحق التحقق منها قبل افتراض أن سد الفجوة يتطلب إنفاقاً جديداً.',
+  },
+  // Module 08 twelve-gap closure pass (1 Oct 2026) -- three new mechanisms,
+  // given the same buyer/supplier framing every other resolved mechanism
+  // gets, rather than being left as a silent gap in this Partial map.
+  'dual-local-sourcing-gate': {
+    buyerEn: "Two independent thresholds (materials AND works) close a loophole a single blended ratio would leave open -- a bid cannot pass by over-sourcing one category to mask under-sourcing the other.",
+    buyerAr: 'حدّان مستقلّان (المواد والأعمال) يغلقان ثغرة قد تتركها نسبة مدمجة واحدة مفتوحة -- لا يمكن لعطاء أن ينجح بالإفراط في توريد فئة واحدة لتعويض نقص توريد الأخرى.',
+    supplierEn: "A transparent, two-lever gate: a supplier can see exactly which of the two shares (materials or works) is the binding constraint and invest there specifically, rather than guessing at one combined number.",
+    supplierAr: 'بوابة شفافة بمتغيرين: يمكن للمورّد معرفة أي من النسبتين (المواد أو الأعمال) هي القيد الفعلي والاستثمار فيها تحديداً، بدلاً من التخمين حول رقم مدمج واحد.',
+  },
+  'offset-multiplier-credit-gate': {
+    buyerEn: "The avenue-multiplier structure steers offset discharge toward the activities India's defense-industrial policy values most (DRDO technology acquisition at 4.0x vs. simple direct purchase at 1.0x) without having to mandate any one avenue outright.",
+    buyerAr: 'يوجّه هيكل معامل المسارات إيفاء المقاصة نحو الأنشطة التي تمنحها السياسة الدفاعية الصناعية الهندية الأولوية (اكتساب التكنولوجيا من دي آر دي أو بمعامل ٤.٠× مقابل الشراء المباشر البسيط بمعامل ١.٠×) دون الحاجة لفرض مسار واحد إلزامياً.',
+    supplierEn: "The multiplier table is a real lever, not just a compliance cost: discharging through a higher-multiplier avenue reaches the same credited offset value with a smaller raw amount, directly lowering the cash/activity actually required.",
+    supplierAr: 'جدول المعاملات رافعة حقيقية، لا مجرد تكلفة امتثال: الإيفاء عبر مسار ذي معامل أعلى يحقق نفس القيمة المعتمدة للمقاصة بمبلغ خام أصغر، ما يقلّل مباشرة النقد/النشاط المطلوب فعلياً.',
+  },
+  'eu-content-threshold-gate': {
+    buyerEn: "A single, clean EU-or-associated-country content floor gives EDIP-funded programmes a straightforward eligibility test, consistent with the Regulation's own goal of channeling EU defense investment to the EU defense industrial base.",
+    buyerAr: 'حد أدنى واحد وواضح للمحتوى من الاتحاد الأوروبي أو الدول المنتسبة يمنح البرامج الممولة من EDIP معياراً مباشراً للأهلية، بما يتوافق مع هدف اللائحة نفسها في توجيه الاستثمار الدفاعي الأوروبي إلى القاعدة الصناعية الدفاعية الأوروبية.',
+    supplierEn: "A single clear percentage to plan against (65% EU-or-associated, 35% cap otherwise) is more actionable for sourcing decisions than a multi-factor score would be -- a supplier knows exactly what share of the bill of materials needs to shift.",
+    supplierAr: 'نسبة واحدة وواضحة للتخطيط (٦٥٪ من الاتحاد الأوروبي أو الدول المنتسبة، وسقف ٣٥٪ لغير ذلك) أكثر قابلية للتنفيذ في قرارات التوريد من درجة متعددة العوامل -- يعرف المورّد بدقة أي حصة من قائمة المواد يجب تحويلها.',
   },
 };
 
@@ -690,7 +735,7 @@ function LocalContentEntryCard({
   const assessment: LocalContentAssessment | null = !isOther
     ? assessSupplierLocalContent(
         entry.countrySelection as LocalContentCountry, entry.context,
-        { sa: entry.sa, ae: entry.ae, jo: entry.jo, saMandatoryList: entry.saMandatoryList, saPricePreference: entry.saPricePreference, iktva: entry.iktva, aeTawazun: entry.aeTawazun, aeGccOrigin: entry.aeGccOrigin, joContractorQuota: entry.joContractorQuota, omMandatoryList: entry.omMandatoryList, omOqPricePreference: entry.omOqPricePreference, qa: entry.qa, bhSme: entry.bhSme, bhTakamul: entry.bhTakamul, bhGulfMade: entry.bhGulfMade, kwLocalSpend: entry.kwLocalSpend, kwTenderLawPricePreference: entry.kwTenderLawPricePreference, kwNationality: entry.kwNationality, eg: entry.eg, egOilGas: entry.egOilGas, tr: entry.tr, uk: entry.uk, usa: entry.usa, usaBaba: entry.usaBaba, usaBerry: entry.usaBerry, cn: entry.cn, cnSme: entry.cnSme, rawafedStc: entry.rawafedStc, sabicLcCommitment: entry.sabicLcCommitment, qaTendersIcv: entry.qaTendersIcv, inMakeInIndia: entry.inMakeInIndia, jp: entry.jp, krSmeTarget: entry.krSmeTarget, krCompetitiveProducts: entry.krCompetitiveProducts, egAuto: entry.egAuto },
+        { sa: entry.sa, ae: entry.ae, jo: entry.jo, saMandatoryList: entry.saMandatoryList, saPricePreference: entry.saPricePreference, iktva: entry.iktva, aeTawazun: entry.aeTawazun, aeGccOrigin: entry.aeGccOrigin, joContractorQuota: entry.joContractorQuota, omMandatoryList: entry.omMandatoryList, omOqPricePreference: entry.omOqPricePreference, qa: entry.qa, bhSme: entry.bhSme, bhTakamul: entry.bhTakamul, bhGulfMade: entry.bhGulfMade, kwLocalSpend: entry.kwLocalSpend, kwTenderLawPricePreference: entry.kwTenderLawPricePreference, kwNationality: entry.kwNationality, eg: entry.eg, egOilGas: entry.egOilGas, tr: entry.tr, uk: entry.uk, usa: entry.usa, usaBaba: entry.usaBaba, usaBerry: entry.usaBerry, cn: entry.cn, cnSme: entry.cnSme, rawafedStc: entry.rawafedStc, sabicLcCommitment: entry.sabicLcCommitment, qaTendersIcv: entry.qaTendersIcv, inMakeInIndia: entry.inMakeInIndia, jp: entry.jp, krSmeTarget: entry.krSmeTarget, krCompetitiveProducts: entry.krCompetitiveProducts, egAuto: entry.egAuto, kwLocalContent: entry.kwLocalContent, inDap: entry.inDap, deEdip: entry.deEdip },
         entry.program,
       )
     : null;
@@ -708,6 +753,19 @@ function LocalContentEntryCard({
     if (c.mechanismType === 'modified-icv-score') return c.finalScorePct !== null;
     if (c.mechanismType === 'commitment-deviation-gate') return c.withinTolerance !== null;
     if (c.mechanismType === 'gcc-origin-national-treatment-gate') return c.qualifiesAsGccNationalProduct !== null;
+    // Found and fixed alongside the three new mechanisms below: Egypt's
+    // production-incentive-eligibility-gate (1 Oct 2026, prior round) had
+    // never been wired into this hasMeaningfulResult check either, so the
+    // AIDP gate's own real result silently fell through to the "no result
+    // yet" placeholder UI even once fully computed -- the same class of
+    // wiring gap already found and fixed in the engine's own reasonEn/Ar
+    // chain. Fixed here too, not left for a future pass to rediscover.
+    if (c.mechanismType === 'production-incentive-eligibility-gate') return c.eligibleForIncentive !== null;
+    // Module 08 twelve-gap closure pass (1 Oct 2026) -- three genuinely new
+    // mechanisms, wired into this check from the start.
+    if (c.mechanismType === 'dual-local-sourcing-gate') return c.meetsLocalSourcingRequirement !== null;
+    if (c.mechanismType === 'offset-multiplier-credit-gate') return c.triggersObligation !== null;
+    if (c.mechanismType === 'eu-content-threshold-gate') return c.meetsEuContentThreshold !== null;
     return false;
   })();
 
@@ -859,8 +917,8 @@ function LocalContentEntryCard({
             <Compass className="w-4 h-4 text-slate-500 shrink-0 mt-0.5" />
             <p className="text-[11px] text-slate-600 leading-relaxed">
               {isAr
-                ? 'هذه الوحدة تغطي حالياً ستّ عشرة دولة فقط: السعودية والإمارات والأردن وعُمان وقطر والبحرين والكويت ومصر وتركيا والمملكة المتحدة والولايات المتحدة والصين والهند وألمانيا واليابان وكوريا الجنوبية، ولكل منها برنامج واحد أو أكثر بصيغة موثّقة قابلة للحساب أو إفصاح صادق موثّق (ألمانيا حالة خاصة: كلا برنامجيها "غير موثّق" -- الأول لأنه غياب مؤكَّد للتفضيل بموجب قواعد الاتحاد الأوروبي ومنظمة التجارة العالمية، والثاني لأن برنامج EDIP الأوروبي بوابة تمويل فوق وطنية وليس تفضيلاً مدنياً لكل عطاء؛ يُعرض ذلك صراحة عند اختياره، لا كدرجة صفرية). أي دولة أخرى (مثل فرنسا أو البرازيل) غير قابلة للتمثيل في هذه المكتبة إطلاقاً -- لا يوجد فحص محتوى محلي متاح لها هنا، وليس درجة صفرية أو "غير مطبَّق".'
-                : "This module currently covers only sixteen countries: Saudi Arabia, the UAE, Jordan, Oman, Qatar, Bahrain, Kuwait, Egypt, Turkey, the UK, the USA, China, India, Germany, Japan, and South Korea, each with one or more sourced, computable-formula programs or an honestly-sourced disclosure (Germany is a special case: BOTH of its programs are not-yet-sourced -- one because it's a confirmed absence of any preference under EU/WTO non-discrimination rules, the other because the EU's EDIP program is a supra-national funding gate, not a per-bid civil preference; disclosed explicitly when selected, not shown as a zero score). Any other country (e.g. France or Brazil) isn't representable by this library at all -- no local-content check is available for it here, and this is not a zero score or a \"not applicable\" verdict."}
+                ? 'هذه الوحدة تغطي حالياً ستّ عشرة دولة فقط: السعودية والإمارات والأردن وعُمان وقطر والبحرين والكويت ومصر وتركيا والمملكة المتحدة والولايات المتحدة والصين والهند وألمانيا واليابان وكوريا الجنوبية، ولكل منها برنامج واحد أو أكثر بصيغة موثّقة قابلة للحساب أو إفصاح صادق موثّق (ألمانيا حالة خاصة: برنامجها الأول "المعاملة الوطنية الأساسية" غياب مؤكَّد للتفضيل بموجب قواعد الاتحاد الأوروبي ومنظمة التجارة العالمية -- يُعرض ذلك صراحة عند اختياره، لا كدرجة صفرية؛ أما برنامجها الثاني، برنامج تنمية الصناعة الدفاعية الأوروبية EDIP، فقد أصبح بوابة حقيقية وقابلة للحساب لحد أدنى من المحتوى الأوروبي بدءاً من ١ أكتوبر ٢٠٢٦). أي دولة أخرى (مثل فرنسا أو البرازيل) غير قابلة للتمثيل في هذه المكتبة إطلاقاً -- لا يوجد فحص محتوى محلي متاح لها هنا، وليس درجة صفرية أو "غير مطبَّق".'
+                : "This module currently covers only sixteen countries: Saudi Arabia, the UAE, Jordan, Oman, Qatar, Bahrain, Kuwait, Egypt, Turkey, the UK, the USA, China, India, Germany, Japan, and South Korea, each with one or more sourced, computable-formula programs or an honestly-sourced disclosure (Germany is a special case: its first program, the GPA/WTO non-discrimination baseline, is a confirmed absence of any preference under EU/WTO rules -- disclosed explicitly when selected, not shown as a zero score; its second program, the EU's European Defence Industry Programme (EDIP), is now a real, computable EU-content-threshold gate as of 1 Oct 2026). Any other country (e.g. France or Brazil) isn't representable by this library at all -- no local-content check is available for it here, and this is not a zero score or a \"not applicable\" verdict."}
             </p>
           </div>
         ) : (
@@ -1436,6 +1494,30 @@ function LocalContentEntryCard({
                   </div>
                 )}
 
+                {/* Module 08 twelve-gap closure pass (1 Oct 2026) -- Kuwait
+                    Public Tenders Law Art. 87 dual-local-sourcing-gate,
+                    resolved from not-yet-sourced. */}
+                {entry.countrySelection === 'KW' && entry.program === 'kw-local-content' && (
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    <NumberField
+                      label={isAr ? 'حصة المواد المحلية' : 'Local Materials Share'}
+                      hint={isAr ? 'الحد المطلوب بموجب المادة ٨٧: ٣٠٪' : 'Required threshold under Article 87: 30%'}
+                      unit="%"
+                      max={100}
+                      value={entry.kwLocalContent.localMaterialsSharePct}
+                      onChange={v => onUpdate(entry.id, { kwLocalContent: { ...entry.kwLocalContent, localMaterialsSharePct: v } })}
+                    />
+                    <NumberField
+                      label={isAr ? 'حصة الأعمال المحلية' : 'Local Works Share'}
+                      hint={isAr ? 'الحد المطلوب بموجب المادة ٨٧: ٣٠٪' : 'Required threshold under Article 87: 30%'}
+                      unit="%"
+                      max={100}
+                      value={entry.kwLocalContent.localWorksSharePct}
+                      onChange={v => onUpdate(entry.id, { kwLocalContent: { ...entry.kwLocalContent, localWorksSharePct: v } })}
+                    />
+                  </div>
+                )}
+
                 {entry.countrySelection === 'EG' && entry.program === 'eg-price-preference' && (
                   <div className="grid sm:grid-cols-2 gap-3">
                     <NumberField
@@ -1949,6 +2031,64 @@ function LocalContentEntryCard({
                   />
                 )}
 
+                {/* Module 08 twelve-gap closure pass (1 Oct 2026) -- India
+                    DAP 2020 Buy (Global) offset-multiplier-credit-gate,
+                    resolved from not-yet-sourced. */}
+                {entry.countrySelection === 'IN' && entry.program === 'in-dap-2020-defense-offset' && (
+                  <div className="space-y-3">
+                    <NumberField
+                      label={isAr ? 'قيمة العقد (روبية هندية)' : 'Contract Value (INR)'}
+                      hint={isAr ? `عتبة تفعيل الالتزام بموجب الفقرة ٢.١ من DAP 2020: ${INDIA_DAP_OFFSET_TRIGGER_THRESHOLD_INR_CRORE.toLocaleString()} كرور روبية` : `Obligation-trigger threshold under DAP 2020 Para 2.1: INR ${INDIA_DAP_OFFSET_TRIGGER_THRESHOLD_INR_CRORE.toLocaleString()} crore`}
+                      unit="INR"
+                      max={1_000_000_000_000}
+                      value={entry.inDap.contractValueINR}
+                      onChange={v => onUpdate(entry.id, { inDap: { ...entry.inDap, contractValueINR: v } })}
+                    />
+                    <div>
+                      <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                        {isAr ? 'مسار إيفاء المقاصة المختار (الفقرة ٣.١)' : 'Selected Offset Discharge Avenue (Para 3.1)'}
+                      </p>
+                      <div className="flex flex-wrap gap-1.5" role="group" aria-label={isAr ? 'مسار إيفاء المقاصة' : 'Offset discharge avenue'}>
+                        {([
+                          ['eligible-products-direct-purchase', isAr ? 'شراء مباشر لمنتجات مؤهلة (١.٠×)' : 'Direct Purchase, Eligible Products (1.0x)'],
+                          ['eligible-product-components', isAr ? 'مكوّنات منتج مؤهل (٠.٥×)' : 'Eligible Product Components (0.5x)'],
+                          ['msme-investment', isAr ? 'استثمار في منشآت صغيرة ومتوسطة ومتناهية الصغر (١.٥×)' : 'MSME Investment (1.5x)'],
+                          ['defence-manufacturing-investment', isAr ? 'استثمار في تصنيع دفاعي (١.٥×)' : 'Defence Manufacturing Investment (1.5x)'],
+                          ['defence-industrial-corridor-investment', isAr ? 'استثمار في الممر الصناعي الدفاعي (٢.٠×)' : 'Defence Industrial Corridor Investment (2.0x)'],
+                          ['technology-transfer-to-indian-enterprises', isAr ? 'نقل تقني لمنشآت هندية (٢.٠×)' : 'Technology Transfer to Indian Enterprises (2.0x)'],
+                          ['technology-acquisition-by-drdo-government', isAr ? 'اكتساب تقني من قِبل DRDO/الحكومة (٣.٠×)' : 'Technology Acquisition by DRDO/Government (3.0x)'],
+                          ['critical-technology-acquisition-by-drdo', isAr ? 'اكتساب تقنية حرجة من قِبل DRDO (٤.٠×)' : 'Critical Technology Acquisition by DRDO (4.0x)'],
+                        ] as const).map(([k, label]) => (
+                          <button
+                            key={k}
+                            type="button"
+                            aria-pressed={entry.inDap.offsetAvenue === k}
+                            onClick={() => onUpdate(entry.id, { inDap: { ...entry.inDap, offsetAvenue: k } })}
+                            className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors ${
+                              entry.inDap.offsetAvenue === k ? 'bg-[#082C6B] border-[#082C6B] text-white' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                            }`}
+                          >
+                            {label}
+                          </button>
+                        ))}
+                      </div>
+                      <p className="text-[10px] text-muted-foreground mt-1.5">
+                        {isAr ? 'لا يسمح بدمج المسارات ضمن إيفاء واحد وفق الفقرة ٣.١ -- مسار واحد فقط لكل إيفاء.' : 'Avenues may not be clubbed within a single discharge per Para 3.1 -- only one avenue per discharge.'}
+                      </p>
+                    </div>
+                    {entry.inDap.offsetAvenue && (
+                      <NumberField
+                        label={isAr ? 'المبلغ الخام المُوفى عبر هذا المسار (روبية هندية)' : 'Raw Amount Discharged Through This Avenue (INR)'}
+                        hint={isAr ? `يُطبَّق المعامل (${OFFSET_MULTIPLIER_CREDIT_GATE_AVENUE_MULTIPLIERS[entry.inDap.offsetAvenue]}×) على هذا المبلغ قبل مقارنته بالقيمة المطلوبة.` : `The ${OFFSET_MULTIPLIER_CREDIT_GATE_AVENUE_MULTIPLIERS[entry.inDap.offsetAvenue]}x multiplier is applied to this amount before comparing it to the required value.`}
+                        unit="INR"
+                        max={1_000_000_000_000}
+                        value={entry.inDap.rawDischargedAmountINR}
+                        onChange={v => onUpdate(entry.id, { inDap: { ...entry.inDap, rawDischargedAmountINR: v } })}
+                      />
+                    )}
+                  </div>
+                )}
+
                 {entry.countrySelection === 'JP' && entry.program === 'jp-kankoju-sme-target-ratio' && (
                   <div className="space-y-3">
                     <NumberField
@@ -2081,6 +2221,22 @@ function LocalContentEntryCard({
                       </div>
                     )}
                   </div>
+                )}
+
+                {/* Module 08 twelve-gap closure pass (1 Oct 2026) -- Germany/EU
+                    European Defence Industry Programme (EDIP) eu-content-
+                    threshold-gate, resolved from not-yet-sourced. No DE-country
+                    form section existed before this pass (both DE programs were
+                    previously not-yet-sourced with no computable inputs). */}
+                {entry.countrySelection === 'DE' && entry.program === 'de-edip-defense-local-content' && (
+                  <NumberField
+                    label={isAr ? 'نسبة المحتوى من الاتحاد الأوروبي أو الدول المنتسبة' : 'EU-or-Associated-Country Content Share'}
+                    hint={isAr ? `الحد الأدنى المطلوب بموجب اللائحة (الاتحاد الأوروبي) ٢٠٢٥/٢٦٤٣: ${EDIP_EU_CONTENT_THRESHOLD_PCT}٪ (السقف الأقصى لغير ذلك: ${EDIP_NON_EU_CONTENT_CAP_PCT}٪)` : `Minimum required under Regulation (EU) 2025/2643: ${EDIP_EU_CONTENT_THRESHOLD_PCT}% (non-EU/non-associated cap: ${EDIP_NON_EU_CONTENT_CAP_PCT}%)`}
+                    unit="%"
+                    max={100}
+                    value={entry.deEdip.euOrAssociatedContentPct}
+                    onChange={v => onUpdate(entry.id, { deEdip: { ...entry.deEdip, euOrAssociatedContentPct: v } })}
+                  />
                 )}
 
               </div>
@@ -2387,6 +2543,160 @@ function LocalContentEntryCard({
                     </>
                   );
                 })()}
+                {/* Pre-existing gap found and fixed alongside the three new
+                    blocks below: Egypt AIDP's production-incentive-
+                    eligibility-gate had a hasMeaningfulResult case but no
+                    render block at all, so a computed result silently never
+                    displayed even once hasMeaningfulResult was fixed. */}
+                {assessment.computation.mechanismType === 'production-incentive-eligibility-gate' && (() => {
+                  const c = assessment.computation as ProductionIncentiveEligibilityGateResult;
+                  return (
+                    <>
+                      <div className="flex items-baseline justify-between">
+                        <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                          {isAr ? 'أهلية حافز AIDP' : 'AIDP Incentive Eligibility'}
+                        </span>
+                        <span className={`text-sm font-black px-2.5 py-1 rounded-full ${
+                          c.eligibleForIncentive === true ? 'bg-emerald-100 text-emerald-700'
+                            : c.eligibleForIncentive === false ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-500'
+                        }`}>
+                          {c.eligibleForIncentive === true ? (isAr ? 'مؤهل' : 'Eligible')
+                            : c.eligibleForIncentive === false ? (isAr ? 'مستبعد' : 'Gated out') : (isAr ? 'غير مكتمل' : 'Incomplete')}
+                        </span>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between text-[11px] text-slate-600">
+                          <span>{isAr ? `المحتوى المحلي (الحد: ${c.localContentThresholdPct ?? '—'}٪)` : `Local Content (threshold: ${c.localContentThresholdPct ?? '—'}%)`}</span>
+                          <span className="font-semibold">{c.localContentPct !== null ? `${c.localContentPct.toFixed(1)}%` : '—'}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-[11px] text-slate-600">
+                          <span>{isAr ? 'حجم الإنتاج مستوفٍ' : 'Production Volume Met'}</span>
+                          <span className="font-semibold">{c.meetsProductionVolumeCriteria === true ? (isAr ? 'نعم' : 'Yes') : c.meetsProductionVolumeCriteria === false ? (isAr ? 'لا' : 'No') : '—'}</span>
+                        </div>
+                        {c.vehicleCategory === 'ice' && (
+                          <div className="flex items-center justify-between text-[11px] text-slate-600">
+                            <span>{isAr ? 'السعر/سعة المحرك مستوفٍ' : 'Price/Engine Size Met'}</span>
+                            <span className="font-semibold">{c.meetsPriceAndEngineCriteria === true ? (isAr ? 'نعم' : 'Yes') : c.meetsPriceAndEngineCriteria === false ? (isAr ? 'لا' : 'No') : '—'}</span>
+                          </div>
+                        )}
+                      </div>
+                      <p className="text-[10px] text-muted-foreground">
+                        {isAr ? 'القيمة الدقيقة للحافز بالجنيه المصري غير محسوبة في هذا المحرك -- انظر ملاحظة مصدر البرنامج.' : "The exact EGP incentive amount is not computed by this engine -- see the program's sourceNoteEn."}
+                      </p>
+                    </>
+                  );
+                })()}
+                {/* Module 08 twelve-gap closure pass (1 Oct 2026) -- three
+                    new mechanisms, wired into this results panel from the
+                    start so the "recurring real bug" of a computed result
+                    never displaying cannot recur for these three. */}
+                {assessment.computation.mechanismType === 'dual-local-sourcing-gate' && (() => {
+                  const c = assessment.computation as DualLocalSourcingGateResult;
+                  return (
+                    <>
+                      <div className="flex items-baseline justify-between">
+                        <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                          {isAr ? 'بوابة التوريد المحلي المزدوجة (المادة ٨٧)' : 'Dual Local Sourcing Gate (Art. 87)'}
+                        </span>
+                        <span className={`text-sm font-black px-2.5 py-1 rounded-full ${
+                          c.meetsLocalSourcingRequirement === true ? 'bg-emerald-100 text-emerald-700'
+                            : c.meetsLocalSourcingRequirement === false ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-500'
+                        }`}>
+                          {c.meetsLocalSourcingRequirement === true ? (isAr ? 'مستوفٍ' : 'Meets requirement')
+                            : c.meetsLocalSourcingRequirement === false ? (isAr ? 'غير مستوفٍ' : 'Does not meet requirement') : (isAr ? 'غير مكتمل' : 'Incomplete')}
+                        </span>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between text-[11px] text-slate-600">
+                          <span>{isAr ? `حصة المواد المحلية (الحد: ${c.materialsThresholdPct}٪)` : `Local Materials Share (threshold: ${c.materialsThresholdPct}%)`}</span>
+                          <span className="font-semibold">{c.localMaterialsSharePct !== null ? `${c.localMaterialsSharePct.toFixed(1)}%` : '—'}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-[11px] text-slate-600">
+                          <span>{isAr ? `حصة الأعمال المحلية (الحد: ${c.worksThresholdPct}٪)` : `Local Works Share (threshold: ${c.worksThresholdPct}%)`}</span>
+                          <span className="font-semibold">{c.localWorksSharePct !== null ? `${c.localWorksSharePct.toFixed(1)}%` : '—'}</span>
+                        </div>
+                      </div>
+                      {c.meetsLocalSourcingRequirement === false && (
+                        <p className="text-[10px] text-muted-foreground flex items-start gap-1.5">
+                          <Info className="w-3 h-3 shrink-0 mt-0.5" />
+                          {isAr
+                            ? 'كلا الحدّين مطلوب بموجب المادة ٨٧ من قانون المناقصات العامة رقم ٤٩ لسنة ٢٠١٦ -- إغلاق أحدهما فقط لا يفتح البوابة.'
+                            : 'Both thresholds are required under Public Tenders Law No. 49/2016 Article 87 -- closing only one does not clear the gate.'}
+                        </p>
+                      )}
+                    </>
+                  );
+                })()}
+                {assessment.computation.mechanismType === 'offset-multiplier-credit-gate' && (() => {
+                  const c = assessment.computation as OffsetMultiplierCreditGateResult;
+                  return (
+                    <>
+                      <div className="flex items-baseline justify-between">
+                        <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                          {isAr ? 'التزام المقاصة (DAP 2020)' : 'Offset Obligation (DAP 2020)'}
+                        </span>
+                        <span className={`text-sm font-black px-2.5 py-1 rounded-full ${
+                          c.triggersObligation === true ? 'bg-amber-100 text-amber-700'
+                            : c.triggersObligation === false ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'
+                        }`}>
+                          {c.triggersObligation === true ? (isAr ? 'مفعّل' : 'Triggered')
+                            : c.triggersObligation === false ? (isAr ? 'دون العتبة' : 'Below threshold') : (isAr ? 'غير مكتمل' : 'Incomplete')}
+                        </span>
+                      </div>
+                      {c.triggersObligation === true && (
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between text-[11px] text-slate-600">
+                            <span>{isAr ? 'قيمة المقاصة المطلوبة (٣٠٪)' : 'Required Offset Value (30%)'}</span>
+                            <span className="font-semibold">₹ {c.requiredOffsetValueINR !== null ? c.requiredOffsetValueINR.toLocaleString() : '—'}</span>
+                          </div>
+                          {c.offsetAvenue && (
+                            <div className="flex items-center justify-between text-[11px] text-slate-600">
+                              <span>{isAr ? `معامل المسار المختار (${c.avenueMultiplier}×)` : `Selected Avenue Multiplier (${c.avenueMultiplier}x)`}</span>
+                              <span className="font-semibold">₹ {c.creditedOffsetValueINR !== null ? c.creditedOffsetValueINR.toLocaleString() : '—'} {isAr ? 'معتمد' : 'credited'}</span>
+                            </div>
+                          )}
+                          {c.shortfallINR !== null && (
+                            <div className="flex items-center justify-between text-[11px]">
+                              <span className={c.shortfallINR > 0 ? 'text-amber-700 font-semibold' : 'text-emerald-700 font-semibold'}>
+                                {c.shortfallINR > 0 ? (isAr ? 'النقص' : 'Shortfall') : (isAr ? 'مغطّى بالكامل' : 'Fully covered')}
+                              </span>
+                              <span className="font-semibold">₹ {c.shortfallINR.toLocaleString()}</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      <p className="text-[10px] text-muted-foreground">
+                        {isAr ? 'لا يسمح بدمج المسارات في إيفاء واحد وفق الفقرة ٣.١ من DAP 2020 -- يُطبَّق مسار واحد مختار فقط.' : "Avenues may not be clubbed within a single discharge per DAP 2020 Para 3.1 -- only the single selected avenue is applied."}
+                      </p>
+                    </>
+                  );
+                })()}
+                {assessment.computation.mechanismType === 'eu-content-threshold-gate' && (() => {
+                  const c = assessment.computation as EuContentThresholdGateResult;
+                  return (
+                    <>
+                      <div className="flex items-baseline justify-between">
+                        <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                          {isAr ? 'حد المحتوى الأوروبي (EDIP)' : 'EU Content Threshold (EDIP)'}
+                        </span>
+                        <span className={`text-sm font-black px-2.5 py-1 rounded-full ${
+                          c.meetsEuContentThreshold === true ? 'bg-emerald-100 text-emerald-700'
+                            : c.meetsEuContentThreshold === false ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-500'
+                        }`}>
+                          {c.meetsEuContentThreshold === true ? (isAr ? 'مستوفٍ' : 'Meets threshold')
+                            : c.meetsEuContentThreshold === false ? (isAr ? 'غير مستوفٍ' : 'Does not meet threshold') : (isAr ? 'غير مكتمل' : 'Incomplete')}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between text-[11px] text-slate-600">
+                        <span>{isAr ? `محتوى الاتحاد الأوروبي/المنتسب (الحد: ${c.euContentThresholdPct}٪)` : `EU/Associated Content (threshold: ${c.euContentThresholdPct}%)`}</span>
+                        <span className="font-semibold">{c.euOrAssociatedContentPct !== null ? `${c.euOrAssociatedContentPct.toFixed(1)}%` : '—'}</span>
+                      </div>
+                      <p className="text-[10px] text-muted-foreground">
+                        {isAr ? `السقف المسموح لغير الاتحاد الأوروبي/غير المنتسب: ${c.nonEuContentCapPct}٪ -- اللائحة (الاتحاد الأوروبي) ٢٠٢٥/٢٦٤٣` : `Non-EU/non-associated cap: ${c.nonEuContentCapPct}% -- Regulation (EU) 2025/2643`}
+                      </p>
+                    </>
+                  );
+                })()}
               </div>
             )}
 
@@ -2459,6 +2769,19 @@ export function LocalContentICVCheck() {
       bhTakamul: { ...emptyBhTakamul(), ...row.data.bhTakamul },
       bhGulfMade: { ...emptyBhGulfMade(), ...row.data.bhGulfMade },
       kwNationality: { ...emptyKwNationality(), ...row.data.kwNationality },
+      // Module 08 twelve-gap closure pass (1 Oct 2026) -- found and fixed a
+      // THIRD instance of the "recurring real bug" the governing prompt
+      // flagged (beyond the two assessSupplierLocalContent call sites):
+      // this server-row hydration path was missing from loadState()'s own
+      // migration coverage. A pre-existing server row synced before this
+      // round genuinely lacks these three fields, and without this merge
+      // `entry.kwLocalContent` etc. would be `undefined`, not the empty
+      // object the per-entry card's onUpdate spread pattern requires --
+      // a runtime crash for any already-synced user, not just a missing
+      // feature.
+      kwLocalContent: { ...emptyKwLocalContent(), ...row.data.kwLocalContent },
+      inDap: { ...emptyInDap(), ...row.data.inDap },
+      deEdip: { ...emptyDeEdip(), ...row.data.deEdip },
     };
   }
   function entryToPayload(e: LocalContentEntry) {
@@ -2553,7 +2876,7 @@ export function LocalContentICVCheck() {
       entry: e,
       assessment: assessSupplierLocalContent(
         e.countrySelection as LocalContentCountry, e.context,
-        { sa: e.sa, ae: e.ae, jo: e.jo, saMandatoryList: e.saMandatoryList, saPricePreference: e.saPricePreference, iktva: e.iktva, aeTawazun: e.aeTawazun, aeGccOrigin: e.aeGccOrigin, joContractorQuota: e.joContractorQuota, omMandatoryList: e.omMandatoryList, omOqPricePreference: e.omOqPricePreference, qa: e.qa, bhSme: e.bhSme, bhTakamul: e.bhTakamul, bhGulfMade: e.bhGulfMade, kwLocalSpend: e.kwLocalSpend, kwTenderLawPricePreference: e.kwTenderLawPricePreference, kwNationality: e.kwNationality, eg: e.eg, egOilGas: e.egOilGas, tr: e.tr, uk: e.uk, usa: e.usa, usaBaba: e.usaBaba, usaBerry: e.usaBerry, cn: e.cn, cnSme: e.cnSme, rawafedStc: e.rawafedStc, sabicLcCommitment: e.sabicLcCommitment, qaTendersIcv: e.qaTendersIcv, inMakeInIndia: e.inMakeInIndia, jp: e.jp, krSmeTarget: e.krSmeTarget, krCompetitiveProducts: e.krCompetitiveProducts, egAuto: e.egAuto },
+        { sa: e.sa, ae: e.ae, jo: e.jo, saMandatoryList: e.saMandatoryList, saPricePreference: e.saPricePreference, iktva: e.iktva, aeTawazun: e.aeTawazun, aeGccOrigin: e.aeGccOrigin, joContractorQuota: e.joContractorQuota, omMandatoryList: e.omMandatoryList, omOqPricePreference: e.omOqPricePreference, qa: e.qa, bhSme: e.bhSme, bhTakamul: e.bhTakamul, bhGulfMade: e.bhGulfMade, kwLocalSpend: e.kwLocalSpend, kwTenderLawPricePreference: e.kwTenderLawPricePreference, kwNationality: e.kwNationality, eg: e.eg, egOilGas: e.egOilGas, tr: e.tr, uk: e.uk, usa: e.usa, usaBaba: e.usaBaba, usaBerry: e.usaBerry, cn: e.cn, cnSme: e.cnSme, rawafedStc: e.rawafedStc, sabicLcCommitment: e.sabicLcCommitment, qaTendersIcv: e.qaTendersIcv, inMakeInIndia: e.inMakeInIndia, jp: e.jp, krSmeTarget: e.krSmeTarget, krCompetitiveProducts: e.krCompetitiveProducts, egAuto: e.egAuto, kwLocalContent: e.kwLocalContent, inDap: e.inDap, deEdip: e.deEdip },
         e.program,
       ),
     }));

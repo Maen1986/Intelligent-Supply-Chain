@@ -78,6 +78,16 @@ import {
   EG_AUTO_ICE_MIN_ANNUAL_UNITS,
   EG_AUTO_ICE_MIN_UNITS_PER_MODEL,
   EG_AUTO_EV_MIN_ANNUAL_UNITS,
+  type DualLocalSourcingGateResult,
+  type OffsetMultiplierCreditGateResult,
+  type EuContentThresholdGateResult,
+  KUWAIT_ART87_LOCAL_MATERIALS_THRESHOLD_PCT,
+  KUWAIT_ART87_LOCAL_WORKS_THRESHOLD_PCT,
+  INDIA_DAP_OFFSET_TRIGGER_THRESHOLD_INR_CRORE,
+  INDIA_DAP_OFFSET_OBLIGATION_PCT,
+  OFFSET_MULTIPLIER_CREDIT_GATE_AVENUE_MULTIPLIERS,
+  EDIP_EU_CONTENT_THRESHOLD_PCT,
+  EDIP_NON_EU_CONTENT_CAP_PCT,
 } from './supplierLocalContentEligibility';
 
 // ===========================================================================
@@ -655,8 +665,12 @@ describe('JO / National Industry Price Preference — price-preference-margin', 
 // OM / QA / BH / KW — not-yet-sourced (Decision Record 8.7: never guess)
 // ===========================================================================
 
-describe('OM/QA/BH/KW — not-yet-sourced (never a guessed formula)', () => {
-  for (const country of ['OM', 'QA', 'BH', 'KW'] as const) {
+describe('OM/QA/BH — not-yet-sourced (never a guessed formula)', () => {
+  // KW's default program was RESOLVED 1 Oct 2026 (Module 08 twelve-gap
+  // closure pass) -- see its own dedicated describe block below. Only
+  // OM/QA/BH remain genuinely not-yet-sourced for their general national
+  // frameworks.
+  for (const country of ['OM', 'QA', 'BH'] as const) {
     it(`${country}: always insufficient-data regardless of procurement context, never fabricates a score`, () => {
       const a = assessSupplierLocalContent(country, 'government', {});
       expect(a.applicability).toBe('insufficient-data');
@@ -664,6 +678,88 @@ describe('OM/QA/BH/KW — not-yet-sourced (never a guessed formula)', () => {
       expect(COUNTRY_FRAMEWORKS[country].applicableContexts).toHaveLength(0);
     });
   }
+});
+
+describe('KW — Public Tenders Law Local Sourcing Gate (Art. 87) — dual-local-sourcing-gate (RESOLVED 1 Oct 2026 pass, was not-yet-sourced)', () => {
+  it("PROGRAMS['kw-local-content'] is wired consistently: correct country, mechanismType, applicableContexts, and sourceNote content", () => {
+    const framework = PROGRAMS['kw-local-content'];
+    expect(framework.country).toBe('KW');
+    expect(framework.mechanismType).toBe('dual-local-sourcing-gate');
+    expect(framework.applicableContexts).toEqual(['government']);
+    expect(framework.sourceNoteEn).toContain('Article 87');
+    expect(framework.sourceNoteEn).toContain('30%');
+    expect(framework.sourceNoteEn).toContain('KD 75,000');
+    expect(framework.sourceNoteEn).not.toContain('This research pass found no formalized');
+    expect(framework.sourceNoteAr).toContain('٨٧');
+  });
+
+  it('is still the default program for KW when program is omitted', () => {
+    expect(DEFAULT_PROGRAM_BY_COUNTRY.KW).toBe('kw-local-content');
+  });
+
+  it('soft: both the 30% local-materials and 30% local-works thresholds comfortably met -> qualifies', () => {
+    const a = assessSupplierLocalContent('KW', 'government', { kwLocalContent: { localMaterialsSharePct: 45, localWorksSharePct: 60 } }, 'kw-local-content');
+    const c = a.computation as DualLocalSourcingGateResult;
+    expect(c.mechanismType).toBe('dual-local-sourcing-gate');
+    expect(c.materialsThresholdPct).toBe(KUWAIT_ART87_LOCAL_MATERIALS_THRESHOLD_PCT);
+    expect(c.worksThresholdPct).toBe(KUWAIT_ART87_LOCAL_WORKS_THRESHOLD_PCT);
+    expect(c.meetsMaterialsThreshold).toBe(true);
+    expect(c.meetsWorksThreshold).toBe(true);
+    expect(c.meetsLocalSourcingRequirement).toBe(true);
+  });
+
+  it('boundary: exactly 30%/30% -> meets both (>=30%, not >30%)', () => {
+    const a = assessSupplierLocalContent('KW', 'government', { kwLocalContent: { localMaterialsSharePct: 30, localWorksSharePct: 30 } }, 'kw-local-content');
+    const c = a.computation as DualLocalSourcingGateResult;
+    expect(c.meetsMaterialsThreshold).toBe(true);
+    expect(c.meetsWorksThreshold).toBe(true);
+    expect(c.meetsLocalSourcingRequirement).toBe(true);
+  });
+
+  it('hardest: materials share fails (29.9%) even though works share is strong (80%) -- a known failure on EITHER threshold is decisive', () => {
+    const a = assessSupplierLocalContent('KW', 'government', { kwLocalContent: { localMaterialsSharePct: 29.9, localWorksSharePct: 80 } }, 'kw-local-content');
+    const c = a.computation as DualLocalSourcingGateResult;
+    expect(c.meetsMaterialsThreshold).toBe(false);
+    expect(c.meetsWorksThreshold).toBe(true);
+    expect(c.meetsLocalSourcingRequirement).toBe(false);
+  });
+
+  it('hardest: works share fails even though materials share is strong -- symmetric failure case', () => {
+    const a = assessSupplierLocalContent('KW', 'government', { kwLocalContent: { localMaterialsSharePct: 90, localWorksSharePct: 10 } }, 'kw-local-content');
+    const c = a.computation as DualLocalSourcingGateResult;
+    expect(c.meetsMaterialsThreshold).toBe(true);
+    expect(c.meetsWorksThreshold).toBe(false);
+    expect(c.meetsLocalSourcingRequirement).toBe(false);
+  });
+
+  it('boundary: a known failure on one threshold is decisive even when the OTHER input is still missing (null)', () => {
+    const a = assessSupplierLocalContent('KW', 'government', { kwLocalContent: { localMaterialsSharePct: 10, localWorksSharePct: null } }, 'kw-local-content');
+    const c = a.computation as DualLocalSourcingGateResult;
+    expect(c.meetsMaterialsThreshold).toBe(false);
+    expect(c.meetsWorksThreshold).toBeNull();
+    expect(c.meetsLocalSourcingRequirement).toBe(false); // the known failure is decisive, not blocked by the missing input
+  });
+
+  it('boundary: no inputs supplied at all -> honest null result, never a fabricated pass/fail', () => {
+    const a = assessSupplierLocalContent('KW', 'government', {}, 'kw-local-content');
+    expect(a.applicability).toBe('applicable');
+    const c = a.computation as DualLocalSourcingGateResult;
+    expect(c.localMaterialsSharePct).toBeNull();
+    expect(c.localWorksSharePct).toBeNull();
+    expect(c.meetsLocalSourcingRequirement).toBeNull();
+  });
+
+  it('not-applicable: private-commercial procurement is outside Article 87\'s sourced (government) scope', () => {
+    const a = assessSupplierLocalContent('KW', 'private-commercial', { kwLocalContent: { localMaterialsSharePct: 50, localWorksSharePct: 50 } }, 'kw-local-content');
+    expect(a.applicability).toBe('not-applicable');
+  });
+
+  it("does not collide with Kuwait's other three programs -- kw-kpc-local-spend, kw-tender-law-price-preference, kw-nationality-price-preference all remain independently assessable", () => {
+    expect(PROGRAMS['kw-kpc-local-spend'].mechanismType).toBe('spend-set-aside-target');
+    expect(PROGRAMS['kw-tender-law-price-preference'].mechanismType).toBe('price-preference-margin');
+    expect(PROGRAMS['kw-nationality-price-preference'].mechanismType).toBe('price-preference-margin');
+    expect(PROGRAMS_BY_COUNTRY.KW).toEqual(['kw-local-content', 'kw-kpc-local-spend', 'kw-tender-law-price-preference', 'kw-nationality-price-preference']);
+  });
 });
 
 // ===========================================================================
@@ -1503,24 +1599,110 @@ describe('IN / Make in India Purchase Preference (PPP-MII Order 2017) — price-
   });
 });
 
-describe('IN — DAP 2020 Defense Offset & Indigenous Content (not-yet-sourced, real dated context)', () => {
-  it('returns insufficient-data disclosing the real 30% offset/indigenous-content thresholds, never a fabricated per-supplier formula', () => {
+describe('IN — DAP 2020 Buy (Global) Offset Multiplier Gate — offset-multiplier-credit-gate (RESOLVED 1 Oct 2026 pass, was not-yet-sourced)', () => {
+  it("PROGRAMS['in-dap-2020-defense-offset'] is wired consistently: correct country, mechanismType, applicableContexts, and sourceNote content", () => {
+    const framework = PROGRAMS['in-dap-2020-defense-offset'];
+    expect(framework.country).toBe('IN');
+    expect(framework.mechanismType).toBe('offset-multiplier-credit-gate');
+    expect(framework.applicableContexts).toEqual(['government']);
+    expect(framework.sourceNoteEn).toContain('2,000 crore');
+    expect(framework.sourceNoteEn).toContain('30%');
+    expect(framework.sourceNoteEn).toContain('clubbing of multipliers is not permitted');
+    expect(framework.sourceNoteEn).not.toContain('too intricate to reduce to a single supplier-computable formula from this research pass alone');
+    expect(framework.sourceNoteAr).toContain('٢٠٠٠ كرور');
+  });
+
+  it('exposes the real, two-source-corroborated avenue-multiplier table exactly (1.0/0.5/1.5/1.5/2.0/2.0/3.0/4.0, no clubbing)', () => {
+    expect(OFFSET_MULTIPLIER_CREDIT_GATE_AVENUE_MULTIPLIERS['eligible-products-direct-purchase']).toBe(1.0);
+    expect(OFFSET_MULTIPLIER_CREDIT_GATE_AVENUE_MULTIPLIERS['eligible-product-components']).toBe(0.5);
+    expect(OFFSET_MULTIPLIER_CREDIT_GATE_AVENUE_MULTIPLIERS['msme-investment']).toBe(1.5);
+    expect(OFFSET_MULTIPLIER_CREDIT_GATE_AVENUE_MULTIPLIERS['defence-manufacturing-investment']).toBe(1.5);
+    expect(OFFSET_MULTIPLIER_CREDIT_GATE_AVENUE_MULTIPLIERS['defence-industrial-corridor-investment']).toBe(2.0);
+    expect(OFFSET_MULTIPLIER_CREDIT_GATE_AVENUE_MULTIPLIERS['technology-transfer-to-indian-enterprises']).toBe(2.0);
+    expect(OFFSET_MULTIPLIER_CREDIT_GATE_AVENUE_MULTIPLIERS['technology-acquisition-by-drdo-government']).toBe(3.0);
+    expect(OFFSET_MULTIPLIER_CREDIT_GATE_AVENUE_MULTIPLIERS['critical-technology-acquisition-by-drdo']).toBe(4.0);
+  });
+
+  it('boundary: below the INR 2000-crore trigger -> no offset obligation at all, meetsOffsetObligation is true (not blocked)', () => {
+    const contractValueINR = (INDIA_DAP_OFFSET_TRIGGER_THRESHOLD_INR_CRORE - 1) * 1e7;
+    const a = assessSupplierLocalContent('IN', 'government', { inDap: { contractValueINR, offsetAvenue: null, rawDischargedAmountINR: null } }, 'in-dap-2020-defense-offset');
+    const c = a.computation as OffsetMultiplierCreditGateResult;
+    expect(c.triggersObligation).toBe(false);
+    expect(c.requiredOffsetValueINR).toBe(0);
+    expect(c.meetsOffsetObligation).toBe(true);
+  });
+
+  it('boundary: exactly at the INR 2000-crore trigger -> obligation triggers (>=, not >)', () => {
+    const contractValueINR = INDIA_DAP_OFFSET_TRIGGER_THRESHOLD_INR_CRORE * 1e7;
+    const a = assessSupplierLocalContent('IN', 'government', { inDap: { contractValueINR, offsetAvenue: null, rawDischargedAmountINR: null } }, 'in-dap-2020-defense-offset');
+    const c = a.computation as OffsetMultiplierCreditGateResult;
+    expect(c.triggersObligation).toBe(true);
+    expect(c.requiredOffsetValueINR).toBe(contractValueINR * INDIA_DAP_OFFSET_OBLIGATION_PCT / 100);
+    expect(c.meetsOffsetObligation).toBeNull(); // obligation triggered, but no avenue/discharge amount supplied yet
+  });
+
+  it('soft: INR 3000 crore contract, discharged entirely via direct purchase of eligible products (multiplier 1.0) at exactly the required amount -> meets obligation', () => {
+    const contractValueINR = 3000 * 1e7;
+    const required = contractValueINR * 0.30; // INR 900 crore
+    const a = assessSupplierLocalContent('IN', 'government', { inDap: { contractValueINR, offsetAvenue: 'eligible-products-direct-purchase', rawDischargedAmountINR: required } }, 'in-dap-2020-defense-offset');
+    const c = a.computation as OffsetMultiplierCreditGateResult;
+    expect(c.avenueMultiplier).toBe(1.0);
+    expect(c.creditedOffsetValueINR).toBe(required);
+    expect(c.shortfallINR).toBe(0);
+    expect(c.meetsOffsetObligation).toBe(true);
+  });
+
+  it('hardest: the SAME raw discharged amount via a LOWER-multiplier avenue (components, 0.5x) credits only half as much and falls short', () => {
+    const contractValueINR = 3000 * 1e7;
+    const required = contractValueINR * 0.30; // INR 900 crore required
+    const rawDischargedAmountINR = required; // same raw rupee amount as the soft case above
+    const a = assessSupplierLocalContent('IN', 'government', { inDap: { contractValueINR, offsetAvenue: 'eligible-product-components', rawDischargedAmountINR } }, 'in-dap-2020-defense-offset');
+    const c = a.computation as OffsetMultiplierCreditGateResult;
+    expect(c.avenueMultiplier).toBe(0.5);
+    expect(c.creditedOffsetValueINR).toBe(rawDischargedAmountINR * 0.5); // INR 450 crore credited
+    expect(c.shortfallINR).toBeCloseTo(required * 0.5, 0); // INR 450 crore shortfall
+    expect(c.meetsOffsetObligation).toBe(false);
+  });
+
+  it('soft: critical-technology acquisition by DRDO (4.0x multiplier) lets a SMALLER raw amount meet the same obligation', () => {
+    const contractValueINR = 3000 * 1e7;
+    const required = contractValueINR * 0.30; // INR 900 crore
+    const rawDischargedAmountINR = required / 4; // only a quarter of the raw rupee amount, at 4.0x
+    const a = assessSupplierLocalContent('IN', 'government', { inDap: { contractValueINR, offsetAvenue: 'critical-technology-acquisition-by-drdo', rawDischargedAmountINR } }, 'in-dap-2020-defense-offset');
+    const c = a.computation as OffsetMultiplierCreditGateResult;
+    expect(c.avenueMultiplier).toBe(4.0);
+    expect(c.creditedOffsetValueINR).toBeCloseTo(required, 0);
+    expect(c.meetsOffsetObligation).toBe(true);
+  });
+
+  it('boundary: no inputs supplied at all -> honest null result, never a fabricated pass/fail', () => {
     const a = assessSupplierLocalContent('IN', 'government', {}, 'in-dap-2020-defense-offset');
-    expect(a.applicability).toBe('insufficient-data');
-    expect(a.computation).toEqual({ mechanismType: 'not-yet-sourced' });
-    expect(a.program).toBe('in-dap-2020-defense-offset');
-    expect(PROGRAMS['in-dap-2020-defense-offset'].applicableContexts).toHaveLength(0);
-    expect(PROGRAMS['in-dap-2020-defense-offset'].sourceNoteEn).toContain('30%');
-    expect(PROGRAMS['in-dap-2020-defense-offset'].sourceNoteAr).toContain('30٪');
+    expect(a.applicability).toBe('applicable');
+    const c = a.computation as OffsetMultiplierCreditGateResult;
+    expect(c.contractValueINR).toBeNull();
+    expect(c.triggersObligation).toBeNull();
+    expect(c.meetsOffsetObligation).toBeNull();
+  });
+
+  it("not-applicable: private-commercial procurement is outside this Ministry-of-Defence-specific program's sourced (government) scope", () => {
+    const a = assessSupplierLocalContent('IN', 'private-commercial', { inDap: { contractValueINR: 5000 * 1e7, offsetAvenue: 'eligible-products-direct-purchase', rawDischargedAmountINR: 1500 * 1e7 } }, 'in-dap-2020-defense-offset');
+    expect(a.applicability).toBe('not-applicable');
+  });
+
+  it("does not collide with India's other program -- in-make-in-india-price-preference remains independently assessable and the sourced default for IN", () => {
+    expect(DEFAULT_PROGRAM_BY_COUNTRY.IN).toBe('in-make-in-india-price-preference');
+    expect(PROGRAMS['in-make-in-india-price-preference'].mechanismType).toBe('price-preference-margin');
   });
 });
 
-describe('DE — structural sanity (17 Sep 2026 India/Germany/Japan/Korea batch, 14th country, both programs honestly not-yet-sourced)', () => {
-  it('DE is the fourteenth country, has 2 programs, and BOTH are not-yet-sourced -- a genuine finding, not a placeholder gap', () => {
+describe('DE — structural sanity (17 Sep 2026 India/Germany/Japan/Korea batch, 14th country; EDIP RESOLVED 1 Oct 2026, the general civil baseline remains honestly not-yet-sourced)', () => {
+  it('DE is the fourteenth country, has 2 programs, and the general civil-procurement baseline is still not-yet-sourced -- a genuine confirmed-absent finding, not a placeholder gap', () => {
     expect(DEFAULT_PROGRAM_BY_COUNTRY.DE).toBe('de-eu-gpa-non-discrimination-baseline');
     expect(PROGRAMS_BY_COUNTRY.DE).toEqual(['de-eu-gpa-non-discrimination-baseline', 'de-edip-defense-local-content']);
     expect(PROGRAMS['de-eu-gpa-non-discrimination-baseline'].mechanismType).toBe('not-yet-sourced');
-    expect(PROGRAMS['de-edip-defense-local-content'].mechanismType).toBe('not-yet-sourced');
+    // EDIP itself (the defense-industrial co-funding mechanism) was RESOLVED
+    // this 1 Oct 2026 pass -- see its own dedicated describe block below.
+    expect(PROGRAMS['de-edip-defense-local-content'].mechanismType).toBe('eu-content-threshold-gate');
   });
 });
 
@@ -1544,18 +1726,61 @@ describe('DE / No Unilateral Local-Content Preference — confirmed ABSENT, not 
   });
 });
 
-describe('DE / European Defence Industry Programme (EDIP) EU-Content Threshold (not-yet-sourced, real dated context, out-of-scope defense mechanism)', () => {
-  it('returns insufficient-data disclosing the real 65%/35% EU-content threshold and the 30 Dec 2025 entry into force, never forced into a per-bid mechanism shape', () => {
-    const a = assessSupplierLocalContent('DE', 'government', {}, 'de-edip-defense-local-content');
-    expect(a.applicability).toBe('insufficient-data');
-    expect(a.computation).toEqual({ mechanismType: 'not-yet-sourced' });
+describe('DE / European Defence Industry Programme (EDIP) EU-Content Threshold Gate — eu-content-threshold-gate (RESOLVED 1 Oct 2026 pass, was not-yet-sourced)', () => {
+  it("PROGRAMS['de-edip-defense-local-content'] is wired consistently: correct country, mechanismType, applicableContexts, and the real 65%/35% threshold and 30 Dec 2025 entry into force, bilingually", () => {
     const fw = PROGRAMS['de-edip-defense-local-content'];
-    expect(fw.applicableContexts).toHaveLength(0);
+    expect(fw.country).toBe('DE');
+    expect(fw.mechanismType).toBe('eu-content-threshold-gate');
+    expect(fw.applicableContexts).toEqual(['semi-government-soe']);
     expect(fw.sourceNoteEn).toContain('65%');
     expect(fw.sourceNoteEn).toContain('35%');
     expect(fw.sourceNoteEn).toContain('30 December 2025');
-    expect(fw.sourceNoteAr).toContain('65٪');
-    expect(fw.sourceNoteAr).toContain('35٪');
+    // Decision Record 8.7 disclosure: the figures are two-source-corroborated,
+    // but the specific implementing article number is single-sourced -- this
+    // must stay visible in the sourceNote, not silently dropped.
+    expect(fw.sourceNoteEn).toContain('Article 10(3)-(4)');
+    expect(fw.sourceNoteEn).toContain('single-sourced');
+    expect(fw.sourceNoteAr).toContain('٦٥٪');
+    expect(fw.sourceNoteAr).toContain('٣٥٪');
+  });
+
+  it('exposes the real sourced threshold/cap constants exactly (65% minimum EU content, 35% non-EU cap)', () => {
+    expect(EDIP_EU_CONTENT_THRESHOLD_PCT).toBe(65);
+    expect(EDIP_NON_EU_CONTENT_CAP_PCT).toBe(35);
+  });
+
+  it('soft: 70% EU/associated content comfortably clears the 65% threshold', () => {
+    const a = assessSupplierLocalContent('DE', 'semi-government-soe', { deEdip: { euOrAssociatedContentPct: 70 } }, 'de-edip-defense-local-content');
+    const c = a.computation as EuContentThresholdGateResult;
+    expect(c.mechanismType).toBe('eu-content-threshold-gate');
+    expect(c.euContentThresholdPct).toBe(65);
+    expect(c.nonEuContentCapPct).toBe(35);
+    expect(c.meetsEuContentThreshold).toBe(true);
+  });
+
+  it('boundary: exactly 65% EU content -> meets the threshold (>=65%, not >65%)', () => {
+    const a = assessSupplierLocalContent('DE', 'semi-government-soe', { deEdip: { euOrAssociatedContentPct: 65 } }, 'de-edip-defense-local-content');
+    const c = a.computation as EuContentThresholdGateResult;
+    expect(c.meetsEuContentThreshold).toBe(true);
+  });
+
+  it('hardest: 64.9% EU content (just below the 65% threshold) -> fails, not partial credit', () => {
+    const a = assessSupplierLocalContent('DE', 'semi-government-soe', { deEdip: { euOrAssociatedContentPct: 64.9 } }, 'de-edip-defense-local-content');
+    const c = a.computation as EuContentThresholdGateResult;
+    expect(c.meetsEuContentThreshold).toBe(false);
+  });
+
+  it('boundary: no EU-content share supplied -> honest null result, never a fabricated pass/fail', () => {
+    const a = assessSupplierLocalContent('DE', 'semi-government-soe', {}, 'de-edip-defense-local-content');
+    expect(a.applicability).toBe('applicable');
+    const c = a.computation as EuContentThresholdGateResult;
+    expect(c.euOrAssociatedContentPct).toBeNull();
+    expect(c.meetsEuContentThreshold).toBeNull();
+  });
+
+  it("not-applicable: government procurement is outside this supra-national co-funding-eligibility program's sourced (semi-government-soe) scope", () => {
+    const a = assessSupplierLocalContent('DE', 'government', { deEdip: { euOrAssociatedContentPct: 80 } }, 'de-edip-defense-local-content');
+    expect(a.applicability).toBe('not-applicable');
   });
 });
 
