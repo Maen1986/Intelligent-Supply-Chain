@@ -65,7 +65,7 @@ import { useIPProtection } from '@/hooks/useIPProtection';
 import { ChatWidget } from '@/components/ChatWidget';
 import { WhatsAppButton } from '@/components/WhatsAppButton';
 import { AnnouncementBanner } from '@/components/AnnouncementBanner';
-import { CommandCentreFloat } from '@/components/CommandCentreFloat';
+import { ControlTowerBand } from '@/components/ControlTowerBand';
 import { SeoManager } from '@/components/SeoManager';
 
 const queryClient = new QueryClient();
@@ -144,10 +144,10 @@ function Layout({ children }: { children: React.ReactNode }) {
       <main className="flex-1 bg-background">
         {children}
       </main>
+      <ControlTowerBand />
       <Footer />
       {showFloats && <ChatWidget />}
       {showFloats && <WhatsAppButton />}
-      {showFloats && <CommandCentreFloat />}
     </div>
   );
 }
