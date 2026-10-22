@@ -279,11 +279,11 @@ export function Consultant() {
                 <p className="text-xs text-muted-foreground text-center">
                   {ar ? (
                     <>
-                      سيراجع مَعِن طلبك ويؤكّده عبر البريد الإلكتروني خلال 24 ساعة. تُرسَل الإشعارات إلى كلٍّ من <strong>haqash.maen@gmail.com</strong> و<strong>maen.haqash@yahoo.com</strong>.
+                      سيراجع مَعِن طلبك ويؤكّده عبر البريد الإلكتروني خلال 24 ساعة. ستصلك الردود من <strong>info@iscsupplychain.com</strong>.
                     </>
                   ) : (
                     <>
-                      Ma'in will review your request and confirm via email within 24 hours. Notifications go to both <strong>haqash.maen@gmail.com</strong> and <strong>maen.haqash@yahoo.com</strong>.
+                      Ma'in will review your request and confirm via email within 24 hours. Replies will come from <strong>info@iscsupplychain.com</strong>.
                     </>
                   )}
                 </p>
