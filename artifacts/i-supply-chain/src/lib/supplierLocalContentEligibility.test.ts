@@ -1,4 +1,6 @@
 import { describe, it, expect } from 'vitest';
+import { readFileSync } from 'fs';
+import { join } from 'path';
 import {
   assessSupplierLocalContent,
   recommendLocalContentAction,
@@ -672,13 +674,14 @@ describe('JO / National Industry Price Preference — price-preference-margin', 
     expect(soe.applicability).toBe('not-applicable');
   });
 
-  it('discloses the statutory basis found in the 21 Sep 2026 Jordan deepening pass -- Bylaw No. 8 of 2022, Arts. 8(a)(7) and 15(b)(1) -- and the 15%->20% Cabinet history, bilingually, closing the earlier "exact legal citation is not [identified]" gap', () => {
+  it('discloses the statutory basis -- Bylaw No. 8 of 2022, Article 8(a)(7) and Article 15(b)(1) -- and the prior-15%-raised-to-20% Cabinet history, bilingually, in customer-readable form (Round A.1)', () => {
     const jo = PROGRAMS['jo-price-preference'];
     expect(jo.sourceNoteEn).toContain('Bylaw No. 8 of 2022');
-    expect(jo.sourceNoteEn).toContain('Art. 8(a)(7)');
-    expect(jo.sourceNoteEn).toContain('Art. 15(b)(1)');
-    expect(jo.sourceNoteEn).toContain('15% -> 20%');
-    expect(jo.sourceNoteAr).toContain('رقم (٨) لسنة ٢٠٢٢');
+    expect(jo.sourceNoteEn).toContain('Article 8(a)(7)');
+    expect(jo.sourceNoteEn).toContain('Article 15(b)(1)');
+    expect(jo.sourceNoteEn).toContain('raised from a prior 15%');
+    expect(jo.sourceNoteEn).toContain('20%');
+    expect(jo.sourceNoteAr).toContain('رقم ٨ لسنة ٢٠٢٢');
     expect(jo.sourceNoteAr).toContain('٨(أ)(٧)');
     expect(jo.sourceNoteAr).toContain('١٥(ب)(١)');
   });
@@ -711,7 +714,7 @@ describe('KW — Public Tenders Law Local Sourcing Gate (Art. 87) — dual-local
     expect(framework.applicableContexts).toEqual(['government']);
     expect(framework.sourceNoteEn).toContain('Article 87');
     expect(framework.sourceNoteEn).toContain('30%');
-    expect(framework.sourceNoteEn).toContain('KD 75,000');
+    expect(framework.sourceNoteEn).toContain('Al Tamimi');
     expect(framework.sourceNoteEn).not.toContain('This research pass found no formalized');
     expect(framework.sourceNoteAr).toContain('٨٧');
   });
@@ -867,7 +870,7 @@ describe('EG — National Automotive Industry Development Program — production
     expect(framework.mechanismType).toBe('production-incentive-eligibility-gate');
     expect(framework.applicableContexts).toEqual(['private-commercial']);
     expect(framework.sourceNoteEn).toContain('28 Apr 2026');
-    expect(framework.sourceNoteEn).toContain('30%');
+    expect(framework.sourceNoteEn).toContain('20%');
     expect(framework.sourceNoteEn).not.toContain('not yet sourced');
     expect(framework.sourceNoteAr).toContain('٢٨ أبريل ٢٠٢٦');
     expect(COUNTRY_FRAMEWORKS.EG.applicableContexts).not.toHaveLength(0); // EG's default program IS sourced, unlike OM/QA/BH/KW's default
@@ -1048,7 +1051,7 @@ describe('TR — SSB Industrialization Liability Gate — industrialization-liab
     expect(framework.mechanismType).toBe('industrialization-liability-gate');
     expect(framework.applicableContexts).toEqual(['government']);
     expect(framework.sourceNoteEn).toContain('70%'); // the disclosed, deliberately-unmodeled mondaq.com figure conflict
-    expect(framework.sourceNoteEn).toContain('SSB');
+    expect(framework.sourceNoteEn).toContain('Presidency of Defence Industries');
     expect(COUNTRY_FRAMEWORKS.TR.applicableContexts).not.toHaveLength(0);
   });
 
@@ -1162,17 +1165,20 @@ describe("UK / Below-Threshold Procurement Reservation (PPN 005) — category-el
     expect(a.applicability).toBe('not-applicable');
   });
 
-  it('discloses the structural (not research-gap) reason the UK has no above-threshold price preference, citing PA23 s.90 and the 2026 thresholds', () => {
+  it('discloses the structural (not research-gap) reason the UK has no above-threshold price preference, citing WTO equal treatment and the 2026 thresholds (Round A.1: customer wording, detail moved to the research log)', () => {
     const fw = PROGRAMS['uk-below-threshold-reservation'];
-    expect(fw.sourceNoteEn).toContain('s.90');
+    expect(fw.sourceNoteEn).toContain('equal treatment');
     expect(fw.sourceNoteEn).toContain('135,018');
     expect(fw.sourceNoteAr).toContain('١٣٥,٠١٨');
   });
 
-  it('discloses UK social value scoring as an explicit not-modeled scope decision (nationality-neutral by legal necessity), not a silent omission', () => {
-    const fw = PROGRAMS['uk-below-threshold-reservation'];
-    expect(fw.sourceNoteEn).toContain('social value');
-    expect(fw.sourceNoteAr).toContain('القيمة الاجتماعية');
+  it('UK social value scoring is disclosed as an explicit not-modeled scope decision in the research log (Round A.1 moved this out of the customer-facing sourceNote)', () => {
+    const log = readFileSync(
+      join(import.meta.dirname, '..', '..', 'docs', 'module08-research-log.md'),
+      'utf-8',
+    );
+    expect(log).toContain('uk-below-threshold-reservation');
+    expect(log.toLowerCase()).toContain('social value');
   });
 
   it('UK is the tenth country and resolves DEFAULT_PROGRAM_BY_COUNTRY to its own single sourced program', () => {
@@ -1312,12 +1318,17 @@ describe('USA / SBA Small Business Contracting Goal & Set-Aside — spend-set-as
     expect(a.applicability).toBe('not-applicable');
   });
 
-  it("discloses the real 23% government-wide goal and FAR 19.502-2's Rule of Two, and the state-level-preference out-of-scope disclosure", () => {
+  it("discloses the real 23% government-wide goal and FAR 19.502-2's Rule of Two (Round A.1: customer wording; the state-level-preference out-of-scope disclosure moved to the research log)", () => {
     const fw = PROGRAMS['usa-sba-small-business-setaside'];
     expect(fw.sourceNoteEn).toContain('23%');
     expect(fw.sourceNoteEn).toContain('Rule of Two');
-    expect(fw.sourceNoteEn).toContain('state');
     expect(fw.sourceNoteAr).toContain('٢٣٪');
+    const log = readFileSync(
+      join(import.meta.dirname, '..', '..', 'docs', 'module08-research-log.md'),
+      'utf-8',
+    );
+    expect(log).toContain('usa-sba-small-business-setaside');
+    expect(log.toLowerCase()).toContain('state');
   });
 });
 
@@ -1357,13 +1368,13 @@ describe('USA / Berry Amendment (DoD Textiles/Food/Tools) Coverage Gate — reso
     expect(a.applicability).toBe('not-applicable');
   });
 
-  it('discloses the 2006 specialty-metals carve-out and the binary near-100%-domestic rationale for this resolution, in both languages', () => {
+  it('discloses the specialty-metals carve-out and the near-total-domestic rationale for this resolution, in both languages (Round A.1: customer wording)', () => {
     const fw = PROGRAMS['usa-berry-amendment-dod'];
     expect(fw.mechanismType).toBe('category-eligibility-gate');
     expect(fw.applicableContexts).toEqual(['government']);
-    expect(fw.sourceNoteEn).toContain('2006');
-    expect(fw.sourceNoteEn).toContain('near-100%');
-    expect(fw.sourceNoteAr).toContain('٢٠٠٦');
+    expect(fw.sourceNoteEn).toContain('Specialty metals');
+    expect(fw.sourceNoteEn).toContain('almost entirely domestically sourced');
+    expect(fw.sourceNoteAr).toContain('المعادن الخاصة');
   });
 });
 
@@ -1599,7 +1610,7 @@ describe('CN — PLA/Military-Civil Fusion Defense Sourcing (not-yet-sourced, re
     expect(a.program).toBe('cn-defense-domestic-sourcing');
     expect(PROGRAMS['cn-defense-domestic-sourcing'].applicableContexts).toHaveLength(0);
     expect(PROGRAMS['cn-defense-domestic-sourcing'].sourceNoteEn).toContain('Equipment Development Department');
-    expect(PROGRAMS['cn-defense-domestic-sourcing'].sourceNoteAr).toContain('军民融合');
+    expect(PROGRAMS['cn-defense-domestic-sourcing'].sourceNoteAr).toContain('الاندماج المدني العسكري');
   });
 });
 
@@ -1696,7 +1707,7 @@ describe('IN — DAP 2020 Buy (Global) Offset Multiplier Gate — offset-multipl
     expect(framework.applicableContexts).toEqual(['government']);
     expect(framework.sourceNoteEn).toContain('2,000 crore');
     expect(framework.sourceNoteEn).toContain('30%');
-    expect(framework.sourceNoteEn).toContain('clubbing of multipliers is not permitted');
+    expect(framework.sourceNoteEn).toContain('Multipliers cannot be combined across avenues');
     expect(framework.sourceNoteEn).not.toContain('too intricate to reduce to a single supplier-computable formula from this research pass alone');
     expect(framework.sourceNoteAr).toContain('٢٠٠٠ كرور');
   });
@@ -1802,9 +1813,9 @@ describe('DE / No Unilateral Local-Content Preference — confirmed ABSENT, not 
     expect(a.computation).toEqual({ mechanismType: 'not-yet-sourced' });
     const fw = PROGRAMS['de-eu-gpa-non-discrimination-baseline'];
     expect(fw.applicableContexts).toHaveLength(0);
-    expect(fw.sourceNoteEn).toContain('Confirmed ABSENT');
+    expect(fw.sourceNoteEn).toContain('confirmed absent');
     expect(fw.sourceNoteEn).toContain('Directive 2014/24/EU');
-    expect(fw.sourceNoteEn).toContain('WTO Agreement on Government Procurement');
+    expect(fw.sourceNoteEn).toContain('WTO Government Procurement Agreement');
     expect(fw.sourceNoteAr).toContain('غياب مؤكَّد');
   });
 
@@ -1827,8 +1838,9 @@ describe('DE / European Defence Industry Programme (EDIP) EU-Content Threshold G
     // Decision Record 8.7 disclosure: the figures are two-source-corroborated,
     // but the specific implementing article number is single-sourced -- this
     // must stay visible in the sourceNote, not silently dropped.
-    expect(fw.sourceNoteEn).toContain('Article 10(3)-(4)');
-    expect(fw.sourceNoteEn).toContain('single-sourced');
+    expect(fw.sourceNoteEn).toContain('could not be independently verified');
+    expect(fw.sourceNoteEn).toContain('CMS');
+    expect(fw.sourceNoteEn).toContain('Gleiss Lutz');
     expect(fw.sourceNoteAr).toContain('٦٥٪');
     expect(fw.sourceNoteAr).toContain('٣٥٪');
   });
@@ -1938,8 +1950,8 @@ describe('JP / Kankouju SME Government-Contract Target Ratio — spend-set-aside
     expect(fw.sourceNoteEn).toContain('56%');
     expect(fw.sourceNoteEn).toContain('FY2013');
     expect(fw.sourceNoteEn).toContain('1966');
-    expect(fw.sourceNoteAr).toContain('56٪');
-    expect(fw.sourceNoteAr).toContain('2013');
+    expect(fw.sourceNoteAr).toContain('٥٦٪');
+    expect(fw.sourceNoteAr).toContain('٢٠١٣');
   });
 });
 
@@ -2003,8 +2015,8 @@ describe('KR / SME Product Purchase Target Ratio System — spend-set-aside-targ
     expect(fw.sourceNoteEn).toContain('50%');
     expect(fw.sourceNoteEn).toContain('15%');
     expect(fw.sourceNoteEn).toContain('Article 5');
-    expect(fw.sourceNoteAr).toContain('50٪');
-    expect(fw.sourceNoteAr).toContain('15٪');
+    expect(fw.sourceNoteAr).toContain('٥٠٪');
+    expect(fw.sourceNoteAr).toContain('١٥٪');
   });
 });
 
@@ -2046,11 +2058,11 @@ describe('KR / SME-Exclusive Competitive Products Designation — category-eligi
     expect(a.applicability).toBe('not-applicable');
   });
 
-  it('discloses the real 213 products / 632 subcategories designation figures bilingually', () => {
+  it('discloses the real, current 610-item 2025-2027 designation figure bilingually (Round A.1: the 2022-2024 213/632 historical figures moved to the research log, since the current cycle supersedes them)', () => {
     const fw = PROGRAMS['kr-sme-competitive-products-gate'];
-    expect(fw.sourceNoteEn).toContain('213 products');
-    expect(fw.sourceNoteEn).toContain('632');
-    expect(fw.sourceNoteAr).toContain('632');
+    expect(fw.sourceNoteEn).toContain('610 product items');
+    expect(fw.sourceNoteEn).toContain('2025-2027');
+    expect(fw.sourceNoteAr).toContain('٦١٠');
   });
 
   it('cross-feature: the KR SME-status field is genuinely separate between the two Korean programs -- purchase-target-ratio and competitive-products-gate are not silently sharing state', () => {
@@ -2465,7 +2477,7 @@ describe('SA — GAMI Industrial Participation Policy — gami-valuation-factor-
     expect(framework.country).toBe('SA');
     expect(framework.mechanismType).toBe('gami-valuation-factor-credit-gate');
     expect(framework.applicableContexts).toEqual(['government']);
-    expect(framework.sourceNoteEn).toContain('gami.gov.sa');
+    expect(framework.sourceNoteEn).toContain('GAMI');
     expect(framework.sourceNoteEn).toContain('60%');
     expect(framework.sourceNoteEn).toContain('150');
     expect(framework.sourceNoteAr.length).toBeGreaterThan(0);
@@ -2587,8 +2599,8 @@ describe("SA — LCGPA Economic Participation (EP) Policy — import-value-parti
     expect(framework.country).toBe('SA');
     expect(framework.mechanismType).toBe('import-value-participation-gate');
     expect(framework.applicableContexts).toEqual(['government']);
-    expect(framework.sourceNoteEn).toContain('dgagroup.com');
-    expect(framework.sourceNoteEn).toContain('globaltradealert.org');
+    expect(framework.sourceNoteEn).toContain('DGA Group');
+    expect(framework.sourceNoteEn).toContain('Global Trade Alert');
     expect(framework.sourceNoteEn).toContain('35%');
     expect(framework.sourceNoteEn).toContain('100');
     expect(framework.sourceNoteAr.length).toBeGreaterThan(0);
@@ -2965,12 +2977,17 @@ describe("SA — Tharwah (Ma'aden Local Content Program, not-yet-sourced, real d
     expect(a.program).toBe('sa-tharwah-maaden');
   });
 
-  it('is modeled as a genuinely distinct program from GAMI/LIKT/Rawafed, with its own bilingual sourceNote honestly contrasting itself with Rawafed\'s published formula', () => {
+  it("is modeled as a genuinely distinct program from GAMI/LIKT, with its own bilingual sourceNote (Round A.1: the contrast with Rawafed's published formula moved to the research log)", () => {
     const fw = PROGRAMS['sa-tharwah-maaden'];
     expect(fw.sourceNoteEn).not.toEqual(PROGRAMS['sa-gami-defense'].sourceNoteEn);
     expect(fw.sourceNoteEn).not.toEqual(PROGRAMS['sa-likt'].sourceNoteEn);
-    expect(fw.sourceNoteEn).toContain('Rawafed');
     expect(fw.applicableContexts).toHaveLength(0);
+    const log = readFileSync(
+      join(import.meta.dirname, '..', '..', 'docs', 'module08-research-log.md'),
+      'utf-8',
+    );
+    expect(log).toContain('sa-tharwah-maaden');
+    expect(log).toContain('Rawafed');
   });
 });
 
@@ -3405,18 +3422,15 @@ describe("KW / Public Tenders Law National Product Price Preference (Art. 62) �
     expect((priceOnlyInputs.computation as SpendSetAsideResult).qualifiesForSetAside).toBeNull();
   });
 
-  it('discloses Law No. 49/2016 Art. 62, Decree No. 30/2017, the 15% figure, and the two investigated-but-not-modeled related findings (10% company preference, 30% mandatory local-sourcing requirement) bilingually', () => {
+  it('discloses Law No. 49/2016 Art. 62 and the 15% figure, and names the two related-but-separately-modeled findings (10% nationality preference, 30% local-sourcing mandate), bilingually (Round A.1: customer wording; full investigated-but-rejected detail moved to the research log)', () => {
     const fw = PROGRAMS['kw-tender-law-price-preference'];
     expect(fw.sourceNoteEn).toContain('49 of 2016');
     expect(fw.sourceNoteEn).toContain('Article 62');
-    expect(fw.sourceNoteEn).toContain('Decree No. 30 of 2017');
     expect(fw.sourceNoteEn).toContain('15%');
-    expect(fw.sourceNoteEn).toContain('10% price preference specifically for Kuwaiti-NATIONALITY companies');
-    expect(fw.sourceNoteEn).toContain('mandatory minimum 30% local-market-sourcing requirement');
-    expect(fw.sourceNoteEn).toContain('investigated-but-rejected');
+    expect(fw.sourceNoteEn).toContain('10% nationality preference');
+    expect(fw.sourceNoteEn).toContain('30% local-sourcing mandate');
     expect(fw.sourceNoteAr).toContain('٤٩ لسنة ٢٠١٦');
     expect(fw.sourceNoteAr).toContain('المادة ٦٢');
-    expect(fw.sourceNoteAr).toContain('٣٠ لسنة ٢٠١٧');
     expect(fw.sourceNoteAr).toContain('١٥٪');
   });
 });
@@ -3463,7 +3477,7 @@ describe('BH / Takamul Local Value Certificate Preference — price-preference-m
     expect(fw.sourceNoteEn).toContain('11-2679');
     expect(fw.sourceNoteEn).toContain('Takamul');
     expect(fw.sourceNoteEn).toContain('10%');
-    expect(fw.sourceNoteEn).toContain('HIGHER preference rate');
+    expect(fw.sourceNoteEn).toContain('higher single rate');
     expect(fw.sourceNoteAr).toContain('١١-٢٦٧٩');
     expect(fw.sourceNoteAr).toContain('تكامل');
   });
@@ -3494,7 +3508,7 @@ describe('BH / Gulf-Made Products Preference — price-preference-margin, contin
   it("is a genuinely different qualifying test from bh-takamul-local-value -- product origin, not a supplier's own local-value certificate", () => {
     const fw = PROGRAMS['bh-gulf-made-preference'];
     expect(fw.mechanismType).toBe('price-preference-margin');
-    expect(fw.sourceNoteEn).toContain('Decision No. (40) of 2015');
+    expect(fw.sourceNoteEn).toContain('Decision No. 40 of 2015');
     expect(fw.sourceNoteEn).toContain('Gulf-made');
     expect(fw.sourceNoteEn).toContain('10%');
     expect(fw.sourceNoteAr).toContain('٤٠');
@@ -3502,14 +3516,20 @@ describe('BH / Gulf-Made Products Preference — price-preference-margin, contin
 });
 
 describe("BH — Local Content general framework — still not-yet-sourced (SA-LIKT/EP-Policy + BH circular pass, 2 Oct 2026: Circular No. 1 of 2023 checked directly against the Tender Board's own primary text, found to BE the Takamul circular, not a general preference)", () => {
-  it('stays not-yet-sourced, and its sourceNote discloses the discrepancy against the tendersarabia.com/PwC secondary claim rather than silently modeling that claim', () => {
+  it('stays not-yet-sourced, and its sourceNote discloses the discrepancy against the secondary stacking-preference claim rather than silently modeling that claim (Round A.1: customer wording; the tendersarabia.com/PwC source names moved to the research log)', () => {
     const framework = PROGRAMS['bh-local-content'];
     expect(framework.mechanismType).toBe('not-yet-sourced');
     expect(framework.sourceNoteEn).toContain('Circular No. 1 of 2023');
     expect(framework.sourceNoteEn).toContain('Takamul');
-    expect(framework.sourceNoteEn).toContain('tendersarabia.com');
+    expect(framework.sourceNoteEn).toContain('does not match the Circular');
     expect(framework.sourceNoteEn).not.toContain('20% combined');
     expect(framework.sourceNoteAr.length).toBeGreaterThan(0);
+    const log = readFileSync(
+      join(import.meta.dirname, '..', '..', 'docs', 'module08-research-log.md'),
+      'utf-8',
+    );
+    expect(log).toContain('bh-local-content');
+    expect(log).toContain('tendersarabia.com');
   });
 
   it('no new general-preference program was fabricated for this round -- PROGRAMS_BY_COUNTRY.BH is unchanged at 6 programs, same as the nine-program closure pass', () => {
@@ -3603,9 +3623,8 @@ describe('KW / Kuwaiti-Nationality Company Price Preference — price-preference
     expect((nationalityOnlyInputs.computation as PricePreferenceMarginResult).locallyManufacturedSharePct).toBeNull();
   });
 
-  it('discloses the sourcing (trade.gov + tenderspedia.com), the 10% figure, and that it was first flagged as a candidate fourth program in a prior pass, now implemented', () => {
+  it('discloses the sourcing (trade.gov + tenderspedia.com) and the 10% figure, in customer-readable form (Round A.1)', () => {
     const fw = PROGRAMS['kw-nationality-price-preference'];
-    expect(fw.sourceNoteEn).toContain('real candidate fourth Kuwait program');
     expect(fw.sourceNoteEn).toContain('trade.gov');
     expect(fw.sourceNoteEn).toContain('tenderspedia.com');
     expect(fw.sourceNoteEn).toContain('10%');
@@ -3701,4 +3720,206 @@ describe('PROGRAMS_BY_COUNTRY — structural sanity (15 Sep 2026 continuation, E
     expect(PROGRAMS_BY_COUNTRY.JP).toHaveLength(1);
     expect(PROGRAMS_BY_COUNTRY.JP[0]).toBe('jp-kankoju-sme-target-ratio');
   });
+});
+
+// ---------------------------------------------------------------------------
+// Round A.1 — customer-facing sourceNote guard test.
+//
+// sourceNoteEn/Ar are rendered to real customers in the "Sourced Methodology"
+// accordion (LocalContentICVCheck.tsx). They must read like customer
+// documentation, not an internal builder's research diary. This test
+// enforces two things going forward:
+//
+// 1. ZERO TOLERANCE, all 52 programs: no internal-process phrase (dated
+//    "pass"/"round" language, code identifiers, backticks) may appear in
+//    customer-facing text. This check has no allowlist and must stay that
+//    way -- if a future edit reintroduces this language anywhere, this test
+//    fails.
+// 2. LENGTH CAP, with a disclosed, counted exception list: sourceNoteEn
+//    should read in well under a couple of minutes. The 27 programs
+//    rewritten in Round A.1 are held to a 135-word cap (the ~120-word target
+//    from the task, with headroom for the more legally complex programs).
+//    16 OTHER, already-clean (no jargon) programs were not in Round A.1's
+//    scope and remain longer than that cap as of this round -- they are
+//    listed explicitly below with their word count so this is a tracked,
+//    visible gap rather than a silent one. This allowlist must not grow:
+//    the test fails if any of these programs' word count INCREASES, and it
+//    fails for any program not on this list that exceeds the cap.
+// ---------------------------------------------------------------------------
+describe('Round A.1: customer-facing sourceNote hygiene (guard test)', () => {
+  const INTERNAL_PROCESS_PHRASES = [
+    'this pass', 'this round', "round's brief", 'Round A', 'twelve-gap',
+    'nine-program', 'closure pass', 'PROGRAMS[', 'sourceNoteEn', 'sourceNoteAr',
+    '`',
+  ];
+  const INTERNAL_PROCESS_PHRASES_AR = ['هذه الجولة', 'موجز هذه الجولة', 'جولة'];
+
+  const EN_WORD_CAP = 135;
+
+  it('no sourceNoteEn in any of the 52 programs contains an internal-process phrase', () => {
+    const offenders: Record<string, string[]> = {};
+    for (const [key, info] of Object.entries(PROGRAMS)) {
+      const hits = INTERNAL_PROCESS_PHRASES.filter((p) => info.sourceNoteEn.includes(p));
+      if (hits.length > 0) offenders[key] = hits;
+    }
+    expect(offenders).toEqual({});
+  });
+
+  it('no sourceNoteAr in any of the 52 programs contains an internal-process phrase', () => {
+    const offenders: Record<string, string[]> = {};
+    for (const [key, info] of Object.entries(PROGRAMS)) {
+      const hits = INTERNAL_PROCESS_PHRASES_AR.filter((p) => info.sourceNoteAr.includes(p));
+      if (hits.length > 0) offenders[key] = hits;
+    }
+    expect(offenders).toEqual({});
+  });
+
+  it('sourceNoteEn word count stays at or under the 135-word cap for all 52 programs, no exceptions (Round A.2 F4: the prior disclosed over-cap allowlist was deleted once all 16 listed programs were rewritten)', () => {
+    const offenders: Record<string, number> = {};
+    for (const [key, info] of Object.entries(PROGRAMS)) {
+      const words = info.sourceNoteEn.trim().split(/\s+/).length;
+      if (words > EN_WORD_CAP) offenders[key] = words;
+    }
+    expect(offenders).toEqual({});
+  });
+
+  it('every not-yet-sourced program states a plain-language STATUS and a LAST CHECKED date, not a bare "not-yet-sourced" label', () => {
+    for (const [key, info] of Object.entries(PROGRAMS)) {
+      if (info.mechanismType !== 'not-yet-sourced') continue;
+      expect(info.sourceNoteEn).toMatch(/(not calculated|shown for reference|confirmed absent)/i);
+      expect(info.sourceNoteEn).toMatch(/Last checked \d{1,2} \w{3} 2026/);
+    }
+  });
+
+  // All 27 programs rewritten in Round A.1 had dated research history moved
+  // out of the customer-facing field (Decision Record 8.7: moved, not lost).
+  // A first pass of the research-log doc missed 4 of the 27 (the 3 Bahrain
+  // price-preference programs and the China Article 10 mandate) -- caught
+  // only by this count check, not by the per-program read tests above
+  // (which only check the programs each already-existing test happens to
+  // reference). This guards against that gap recurring silently.
+  const ROUND_A1_REWRITTEN_PROGRAMS = [
+    'sa-likt', 'sa-tharwah-maaden', 'om-icv', 'qa-national-strategy', 'bh-local-content',
+    'cn-defense-domestic-sourcing', 'de-eu-gpa-non-discrimination-baseline',
+    'bh-bahrainisation-tender-workforce', 'bh-gulf-made-preference', 'bh-takamul-local-value',
+    'cn-govt-procurement-law-domestic-mandate', 'de-edip-defense-local-content', 'eg-auto-local-content',
+    'in-dap-2020-defense-offset', 'jo-price-preference', 'jp-kankoju-sme-target-ratio',
+    'kr-sme-competitive-products-gate', 'kr-sme-purchase-target-ratio', 'kw-local-content',
+    'kw-nationality-price-preference', 'kw-tender-law-price-preference', 'sa-economic-participation-policy',
+    'sa-gami-defense', 'tr-defense-offset', 'uk-below-threshold-reservation',
+    'usa-berry-amendment-dod', 'usa-sba-small-business-setaside',
+  ];
+
+  it('every one of the 27 Round A.1-rewritten programs has its own research-log section', () => {
+    const log = readFileSync(
+      join(import.meta.dirname, '..', '..', 'docs', 'module08-research-log.md'),
+      'utf-8',
+    );
+    expect(ROUND_A1_REWRITTEN_PROGRAMS).toHaveLength(27);
+    const missing = ROUND_A1_REWRITTEN_PROGRAMS.filter(key => !log.includes(`## ${key}`));
+    expect(missing).toEqual([]);
+  });
+});
+
+describe('Round A.2: Arabic terminology hygiene (guard test, per the owner\'s own Arabic QA review, F2)', () => {
+  // Each banned pattern paired with why it's wrong -- see
+  // docs/module08-arabic-glossary.md for the full glossary and sourcing.
+  const BANNED_AR_PATTERNS: Array<{ pattern: RegExp; why: string }> = [
+    { pattern: /تسجيل/, why: 'possible scoring/registration confusion -- see glossary' },
+    { pattern: /ثغرة/, why: 'loophole/vulnerability register is wrong for "unpublished gap"; use فجوة في المعلومات المنشورة' },
+    { pattern: /[يتلم]ُ?نمذَج[ةت]?/, why: 'مُنمذَج is an English calque of "modeled"; use يُحتسب/محتسب' },
+    { pattern: /للعِلم فقط/, why: 'stiff calque; use للاطلاع فقط' },
+    { pattern: /--/, why: 'ASCII double hyphen does not belong in Arabic text; use an Arabic dash, colon, or comma' },
+  ];
+
+  // تسجيل is the one banned pattern with a legitimate sense (real supplier/company
+  // registration, portal sign-up, or a login), so it is checked separately with an
+  // allowlist of the exact programs where that legitimate sense is used, rather than
+  // banned outright -- this is NOT a growable escape hatch for the scoring-confusion
+  // sense; every entry here was individually read in context during Round A.2.
+  const TASJEEL_LEGITIMATE_REGISTRATION_PROGRAMS = [
+    'sa-tharwah-maaden', // "سجل في بوابة موردي معادن" (register on the supplier portal) + "تسجيل دخول" (login)
+    'kw-kpc-local-spend', // "نظام تسجيل/اعتماد" + "حالة تسجيل ذاتية التصريح" (a real supplier registration/accreditation system)
+    'cn-domestic-product-price-preference', // "مكان تسجيل المورّد" (the supplier's place of registration)
+  ];
+
+  it('no sourceNoteAr in any of the 52 programs contains a banned Arabic term, except the disclosed, individually-reviewed تسجيل-as-registration allowlist', () => {
+    const offenders: Record<string, string[]> = {};
+    for (const [key, info] of Object.entries(PROGRAMS)) {
+      for (const { pattern, why } of BANNED_AR_PATTERNS) {
+        if (!pattern.test(info.sourceNoteAr)) continue;
+        if (pattern.source === 'تسجيل' && TASJEEL_LEGITIMATE_REGISTRATION_PROGRAMS.includes(key)) continue;
+        (offenders[key] ??= []).push(why);
+      }
+    }
+    expect(offenders).toEqual({});
+  });
+
+  it('the تسجيل-as-registration allowlist exactly matches real PROGRAMS keys (no stale entries)', () => {
+    for (const key of TASJEEL_LEGITIMATE_REGISTRATION_PROGRAMS) {
+      expect(Object.keys(PROGRAMS)).toContain(key);
+    }
+  });
+
+  it('the Arabic glossary doc exists and documents every banned-term category', () => {
+    const glossary = readFileSync(
+      join(import.meta.dirname, '..', '..', 'docs', 'module08-arabic-glossary.md'),
+      'utf-8',
+    );
+    for (const term of ['تسجيل', 'ثغرة', 'مُنمذَج', 'للعِلم فقط', 'ASCII']) {
+      expect(glossary).toContain(term);
+    }
+  });
+
+  it('kw-tender-law-price-preference restores the KD 75,000 applicability threshold (Round A.2 F3 finding)', () => {
+    expect(PROGRAMS['kw-tender-law-price-preference'].sourceNoteEn).toContain('KD 75,000');
+    expect(PROGRAMS['kw-tender-law-price-preference'].sourceNoteAr).toContain('٧٥ ألف دينار كويتي');
+  });
+});
+
+describe('Round A.2 F4: the 16 previously over-cap programs', () => {
+  // These 16 were left out of Round A.1's rewrite (they had no F2-style jargon
+  // to fix) but were over the 135-word customer-note cap. F4 rewrote all of
+  // them to the same customer shape and deleted the disclosed over-cap
+  // allowlist, so the cap now applies to all 52 programs with no exceptions.
+  const ROUND_A2_F4_REWRITTEN_PROGRAMS = [
+    'sa-rawafed-stc', 'sa-sabic-lc-commitment', 'ae-icv-general', 'ae-tawazun-offset',
+    'ae-gcc-origin-treatment', 'jo-contractor-quota', 'qa-icv-tawteen', 'qa-tenders-icv',
+    'eg-price-preference', 'eg-oil-gas-price-preference', 'tr-price-preference',
+    'usa-buy-american-price-preference', 'usa-baba-infrastructure-gate',
+    'cn-domestic-product-price-preference', 'cn-sme-price-deduction',
+    'in-make-in-india-price-preference',
+  ];
+
+  it('lists exactly the 16 programs named in the F4 finding', () => {
+    expect(ROUND_A2_F4_REWRITTEN_PROGRAMS).toHaveLength(16);
+    for (const key of ROUND_A2_F4_REWRITTEN_PROGRAMS) {
+      expect(Object.keys(PROGRAMS)).toContain(key);
+    }
+  });
+
+  it('every one of the 16 F4-rewritten programs has its own research-log section', () => {
+    const log = readFileSync(
+      join(import.meta.dirname, '..', '..', 'docs', 'module08-research-log.md'),
+      'utf-8',
+    );
+    const missing = ROUND_A2_F4_REWRITTEN_PROGRAMS.filter(key => !log.includes(`## ${key}`));
+    expect(missing).toEqual([]);
+  });
+
+  it('the disclosed over-cap allowlist no longer exists -- the 135-word cap applies with no exceptions', () => {
+    const src = readFileSync(
+      join(import.meta.dirname, 'supplierLocalContentEligibility.ts'),
+      'utf-8',
+    );
+    expect(src).not.toContain('DISCLOSED_OVER_CAP_AS_OF_ROUND_A1');
+  });
+
+  // The genuine min/max preference-margin range check (only CN SME consortium
+  // paths should ever populate preferenceMarginMinPct/MaxPct; every other
+  // price-preference program's computed result must leave both undefined) is
+  // already covered by the dedicated regression tests above (around line
+  // 1408) that call each compute function directly and assert on its actual
+  // result -- not repeated here against the static PROGRAMS record, which
+  // doesn't carry these fields itself.
 });
