@@ -122,9 +122,9 @@ export function Footer() {
                 <Phone className="w-4 h-4 shrink-0 text-accent" />
                 +966 549 479 722
               </a>
-              <a href="mailto:maen.haqash@yahoo.com" className="flex items-center gap-3 text-white/70 hover:text-white text-sm transition-colors">
+              <a href="mailto:info@iscsupplychain.com" className="flex items-center gap-3 text-white/70 hover:text-white text-sm transition-colors">
                 <Mail className="w-4 h-4 shrink-0 text-accent" />
-                maen.haqash@yahoo.com
+                info@iscsupplychain.com
               </a>
               <div className="flex items-start gap-3 text-white/70 text-sm">
                 <MapPin className="w-4 h-4 shrink-0 text-accent mt-0.5" />

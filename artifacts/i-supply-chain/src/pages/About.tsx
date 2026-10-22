@@ -297,8 +297,8 @@ export function About() {
 
                 {/* Contact */}
                 <div className="flex flex-wrap gap-4 pt-4 border-t border-border">
-                  <a href="mailto:maen.haqash@yahoo.com" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors font-medium">
-                    <Mail className="w-4 h-4" /> maen.haqash@yahoo.com
+                  <a href="mailto:info@iscsupplychain.com" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors font-medium">
+                    <Mail className="w-4 h-4" /> info@iscsupplychain.com
                   </a>
                   <a href="tel:+966549479722" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors font-medium">
                     <Phone className="w-4 h-4" /> +966 549 479 722

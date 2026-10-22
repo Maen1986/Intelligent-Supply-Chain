@@ -97,7 +97,7 @@ export function Consultant() {
       `DTEND:${dateStr}T100000Z`,
       `SUMMARY:Supply Chain Consultation — ${vals.fullName}`,
       `DESCRIPTION:${vals.serviceType}\\n${vals.description || ''}`,
-      'ORGANIZER;CN=Ma\'in Alhaqash:mailto:maen.haqash@yahoo.com',
+      'ORGANIZER;CN=Ma\'in Alhaqash:mailto:info@iscsupplychain.com',
       `ATTENDEE:mailto:${vals.email}`,
       'END:VEVENT', 'END:VCALENDAR',
     ].join('\r\n');

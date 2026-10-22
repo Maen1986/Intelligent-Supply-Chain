@@ -76,7 +76,7 @@ export const translations = {
     'footer.rights': '© 2025 I Supply Chain. All rights reserved.',
     'footer.contact': 'Contact',
     'footer.mobile': 'Mobile: +966 549 479 722',
-    'footer.email': 'Email: maen.haqash@yahoo.com',
+    'footer.email': 'Email: info@iscsupplychain.com',
   },
   ar: {
     'nav.home': 'الرئيسية',
@@ -155,6 +155,6 @@ export const translations = {
     'footer.rights': '© 2025 آي سبلاي تشين. جميع الحقوق محفوظة.',
     'footer.contact': 'تواصل معنا',
     'footer.mobile': 'هاتف: 00966549479722',
-    'footer.email': 'البريد: maen.haqash@yahoo.com',
+    'footer.email': 'البريد: info@iscsupplychain.com',
   }
 };
