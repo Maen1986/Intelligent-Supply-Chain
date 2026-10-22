@@ -623,7 +623,7 @@ const PROGRAM_LABELS: Record<LocalContentProgram, { en: string; ar: string }> = 
 const MECHANISM_VALUE_FRAMING: Partial<Record<LocalContentMechanismType, { buyerEn: string; buyerAr: string; supplierEn: string; supplierAr: string }>> = {
   'eligible-spend-ratio': {
     buyerEn: 'Verifiable assurance that spend genuinely reaches the local economy (real labor, goods & services, capacity-building) -- not a paper promise.',
-    buyerAr: 'ضمان قابل للتحقق بأن الإنفاق يصل فعلياً إلى الاقتصاد المحلي (عمالة، سلع وخدمات، بناء قدرات حقيقية) -- وليس وعداً على الورق.',
+    buyerAr: 'ضمان قابل للتحقق بأن الإنفاق يصل فعلياً إلى الاقتصاد المحلي (عمالة، سلع وخدمات، بناء قدرات حقيقية) — وليس وعداً على الورق.',
     supplierEn: 'A transparent, improvable score: each pillar shows exactly where to invest next to raise it, rather than a single opaque pass/fail number.',
     supplierAr: 'درجة شفافة وقابلة للتحسين: يوضّح كل ركن أين يجب الاستثمار تحديداً لرفعها، بدلاً من رقم نجاح/فشل واحد غامض.',
   },
@@ -635,46 +635,46 @@ const MECHANISM_VALUE_FRAMING: Partial<Record<LocalContentMechanismType, { buyer
   },
   'price-preference-margin': {
     buyerEn: 'Keeps national industrial capacity competitive for public spend without a hard quota -- the market still decides, with a disclosed thumb on the scale.',
-    buyerAr: 'يحافظ على تنافسية الصناعة الوطنية في الإنفاق العام دون فرض حصة إلزامية -- يظل السوق هو الفيصل، مع ترجيح مُعلَن وواضح.',
+    buyerAr: 'يحافظ على تنافسية الصناعة الوطنية في الإنفاق العام دون فرض حصة إلزامية — يظل السوق هو الفيصل، مع ترجيح مُعلَن وواضح.',
     supplierEn: 'A quantifiable price cushion: increasing the locally-manufactured share of a bid converts directly into a larger, calculable competitive discount.',
     supplierAr: 'وسادة سعرية قابلة للقياس: زيادة الحصة المصنّعة محلياً في العطاء تتحول مباشرة إلى خصم تنافسي أكبر وقابل للحساب.',
   },
   'category-eligibility-gate': {
     buyerEn: 'Removes negotiation entirely for strategic categories -- certainty of local sourcing by design, not by hoping a price preference is enough to win the bid.',
-    buyerAr: 'يزيل التفاوض تماماً في الفئات الاستراتيجية -- يقين بالتوريد المحلي بالتصميم، لا بالأمل في أن يكون التفضيل السعري كافياً للفوز بالعطاء.',
+    buyerAr: 'يزيل التفاوض تماماً في الفئات الاستراتيجية — يقين بالتوريد المحلي بالتصميم، لا بالأمل في أن يكون التفضيل السعري كافياً للفوز بالعطاء.',
     supplierEn: 'Certification in a gated category is a genuine moat: uncertified competitors, local or foreign, cannot bid at all -- not just at a disadvantage.',
-    supplierAr: 'الاعتماد في فئة مشمولة بالبوابة يمثّل ميزة تنافسية حقيقية: لا يمكن للمنافسين غير المعتمدين، محليين كانوا أم أجانب، التقديم إطلاقاً -- وليس فقط التنافس بوضع أضعف.',
+    supplierAr: 'الاعتماد في فئة مشمولة بالبوابة يمثّل ميزة تنافسية حقيقية: لا يمكن للمنافسين غير المعتمدين، محليين كانوا أم أجانب، التقديم إطلاقاً — وليس فقط التنافس بوضع أضعف.',
   },
   'anchor-buyer-score': {
     buyerEn: 'A single anchor-buyer program pulls supplier investment, training, and R&D spend into the country at a scale broader than what government procurement rules alone can mandate.',
     buyerAr: 'برنامج مشترٍ رئيسي واحد يجذب استثمارات الموردين وإنفاقهم على التدريب والبحث والتطوير إلى الداخل بحجم يتجاوز ما تستطيع أنظمة المشتريات الحكومية وحدها فرضه.',
     supplierEn: 'Five distinct, separately-improvable levers count toward the same score -- workforce development and R&D investment score just as much as pure local purchasing, widening the paths to a higher number.',
-    supplierAr: 'خمسة روافع مستقلة وقابلة للتحسين كل على حدة تُحتسب ضمن الدرجة نفسها -- يُحتسب تطوير القوى العاملة والاستثمار في البحث والتطوير بقدر الشراء المحلي البحت، ما يوسّع مسارات رفع الدرجة.',
+    supplierAr: 'خمسة روافع مستقلة وقابلة للتحسين كل على حدة تُحتسب ضمن الدرجة نفسها — يُحتسب تطوير القوى العاملة والاستثمار في البحث والتطوير بقدر الشراء المحلي البحت، ما يوسّع مسارات رفع الدرجة.',
   },
   'offset-obligation-gate': {
     buyerEn: 'Converts a portion of defense spend into real in-country economic activity (investment, JV, technology transfer) or a cash/guarantee-backed shortfall payment -- value is captured either way, never simply lost to a foreign contractor.',
-    buyerAr: 'يحوّل جزءاً من الإنفاق الدفاعي إلى نشاط اقتصادي محلي حقيقي (استثمار، مشروع مشترك، نقل تقني) أو دفعة تعويض مدعومة نقداً/ضماناً عند النقص -- تُستحصَل القيمة في الحالتين، ولا تُفقَد ببساطة لمقاول أجنبي.',
+    buyerAr: 'يحوّل جزءاً من الإنفاق الدفاعي إلى نشاط اقتصادي محلي حقيقي (استثمار، مشروع مشترك، نقل تقني) أو دفعة تعويض مدعومة نقداً/ضماناً عند النقص — تُستحصَل القيمة في الحالتين، ولا تُفقَد ببساطة لمقاول أجنبي.',
     supplierEn: 'Banking real offset credits early (investment, JV, tech transfer) avoids the 8.5% cash/guarantee cost -- a supplier who plans offset activity from day one turns a compliance obligation into a genuine local partnership, not a penalty to absorb at the end.',
-    supplierAr: 'اكتساب ائتمانات مقاصة حقيقية مبكراً (استثمار، مشروع مشترك، نقل تقني) يتجنب تكلفة ٨.٥٪ النقدية/الضمانية -- المورّد الذي يخطط لنشاط المقاصة منذ اليوم الأول يحوّل التزام الامتثال إلى شراكة محلية حقيقية، لا غرامة يتحملها في النهاية.',
+    supplierAr: 'اكتساب ائتمانات مقاصة حقيقية مبكراً (استثمار، مشروع مشترك، نقل تقني) يتجنب تكلفة ٨.٥٪ النقدية/الضمانية — المورّد الذي يخطط لنشاط المقاصة منذ اليوم الأول يحوّل التزام الامتثال إلى شراكة محلية حقيقية، لا غرامة يتحملها في النهاية.',
   },
   'spend-set-aside-target': {
     buyerEn: 'Guarantees a real, measurable share of spend reaches the reserved supplier class (SMEs, national contractors) without policing every individual award -- the target share itself does the enforcement.',
-    buyerAr: 'يضمن وصول حصة حقيقية وقابلة للقياس من الإنفاق إلى فئة الموردين المخصصة (المنشآت الصغيرة والمتوسطة، المقاولون الوطنيون) دون الحاجة لمراقبة كل قرار ترسية على حدة -- فالحصة المستهدفة نفسها تفرض التنفيذ.',
+    buyerAr: 'يضمن وصول حصة حقيقية وقابلة للقياس من الإنفاق إلى فئة الموردين المخصصة (المنشآت الصغيرة والمتوسطة، المقاولون الوطنيون) دون الحاجة لمراقبة كل قرار ترسية على حدة — فالحصة المستهدفة نفسها تفرض التنفيذ.',
     supplierEn: 'Once qualified, this supplier competes within a smaller, reserved pool instead of the full open market -- qualification itself is the lever, not incremental spend or score-building.',
-    supplierAr: 'بعد التأهل، يتنافس هذا المورّد ضمن مجموعة أصغر ومخصصة بدلاً من السوق المفتوح بالكامل -- التأهل نفسه هو الرافعة، وليس زيادة الإنفاق أو بناء الدرجة تدريجياً.',
+    supplierAr: 'بعد التأهل، يتنافس هذا المورّد ضمن مجموعة أصغر ومخصصة بدلاً من السوق المفتوح بالكامل — التأهل نفسه هو الرافعة، وليس زيادة الإنفاق أو بناء الدرجة تدريجياً.',
   },
   'modified-icv-score': {
     buyerEn: "A single official score (icv.qa) usable directly in bid evaluation, with real, disclosed modifiers (manufacturer boost, small-supplier floor) that reward the specific behaviors Qatar's strategy wants without inventing a new methodology.",
     buyerAr: 'درجة رسمية واحدة (icv.qa) قابلة للاستخدام مباشرة في تقييم العطاءات، مع معدِّلات حقيقية ومُفصَح عنها (مكافأة المصنّعين، حد أدنى للموردين الصغار) تكافئ السلوكيات التي تستهدفها استراتيجية قطر دون ابتكار منهجية جديدة.',
     supplierEn: "Multiple real levers raise this score beyond raw spend: eligible-manufacturer status applies a 50% boost, and genuinely small/micro suppliers get a guaranteed 30% floor regardless of spend data -- both are policy facts worth checking before assuming a gap requires new spend.",
-    supplierAr: 'توجد عدة روافع حقيقية لرفع هذه الدرجة إلى جانب الإنفاق وحده: صفة "المصنّع المؤهل" تمنح مكافأة ٥٠٪، ويحصل الموردون متناهو الصغر/الصغار فعلياً على حد أدنى مضمون ٣٠٪ بغض النظر عن بيانات الإنفاق -- وكلاهما حقيقة سياسية تستحق التحقق منها قبل افتراض أن سد الفجوة يتطلب إنفاقاً جديداً.',
+    supplierAr: 'توجد عدة روافع حقيقية لرفع هذه الدرجة إلى جانب الإنفاق وحده: صفة "المصنّع المؤهل" تمنح مكافأة ٥٠٪، ويحصل الموردون متناهو الصغر/الصغار فعلياً على حد أدنى مضمون ٣٠٪ بغض النظر عن بيانات الإنفاق — وكلاهما حقيقة سياسية تستحق التحقق منها قبل افتراض أن سد الفجوة يتطلب إنفاقاً جديداً.',
   },
   // Module 08 twelve-gap closure pass (1 Oct 2026) -- three new mechanisms,
   // given the same buyer/supplier framing every other resolved mechanism
   // gets, rather than being left as a silent gap in this Partial map.
   'dual-local-sourcing-gate': {
     buyerEn: "Two independent thresholds (materials AND works) close a loophole a single blended ratio would leave open -- a bid cannot pass by over-sourcing one category to mask under-sourcing the other.",
-    buyerAr: 'حدّان مستقلّان (المواد والأعمال) يغلقان ثغرة قد تتركها نسبة مدمجة واحدة مفتوحة -- لا يمكن لعطاء أن ينجح بالإفراط في توريد فئة واحدة لتعويض نقص توريد الأخرى.',
+    buyerAr: 'حدّان مستقلّان (المواد والأعمال) يغلقان ثغرة قد تتركها نسبة مدمجة واحدة مفتوحة — لا يمكن لعطاء أن ينجح بالإفراط في توريد فئة واحدة لتعويض نقص توريد الأخرى.',
     supplierEn: "A transparent, two-lever gate: a supplier can see exactly which of the two shares (materials or works) is the binding constraint and invest there specifically, rather than guessing at one combined number.",
     supplierAr: 'بوابة شفافة بمتغيرين: يمكن للمورّد معرفة أي من النسبتين (المواد أو الأعمال) هي القيد الفعلي والاستثمار فيها تحديداً، بدلاً من التخمين حول رقم مدمج واحد.',
   },
@@ -688,7 +688,7 @@ const MECHANISM_VALUE_FRAMING: Partial<Record<LocalContentMechanismType, { buyer
     buyerEn: "A single, clean EU-or-associated-country content floor gives EDIP-funded programmes a straightforward eligibility test, consistent with the Regulation's own goal of channeling EU defense investment to the EU defense industrial base.",
     buyerAr: 'حد أدنى واحد وواضح للمحتوى من الاتحاد الأوروبي أو الدول المنتسبة يمنح البرامج الممولة من EDIP معياراً مباشراً للأهلية، بما يتوافق مع هدف اللائحة نفسها في توجيه الاستثمار الدفاعي الأوروبي إلى القاعدة الصناعية الدفاعية الأوروبية.',
     supplierEn: "A single clear percentage to plan against (65% EU-or-associated, 35% cap otherwise) is more actionable for sourcing decisions than a multi-factor score would be -- a supplier knows exactly what share of the bill of materials needs to shift.",
-    supplierAr: 'نسبة واحدة وواضحة للتخطيط (٦٥٪ من الاتحاد الأوروبي أو الدول المنتسبة، وسقف ٣٥٪ لغير ذلك) أكثر قابلية للتنفيذ في قرارات التوريد من درجة متعددة العوامل -- يعرف المورّد بدقة أي حصة من قائمة المواد يجب تحويلها.',
+    supplierAr: 'نسبة واحدة وواضحة للتخطيط (٦٥٪ من الاتحاد الأوروبي أو الدول المنتسبة، وسقف ٣٥٪ لغير ذلك) أكثر قابلية للتنفيذ في قرارات التوريد من درجة متعددة العوامل — يعرف المورّد بدقة أي حصة من قائمة المواد يجب تحويلها.',
   },
   'gami-valuation-factor-credit-gate': {
     buyerEn: "The Valuation Factor table steers Industrial Participation discharge toward the activities GAMI's own policy values most (FDI and R&T programs at up to 5.0x vs. simple domestic production at 1.0x) without mandating any one category outright, and the liquidation formula gives GAMI a disclosed, proportionate remedy on shortfall rather than an all-or-nothing penalty.",
@@ -698,7 +698,7 @@ const MECHANISM_VALUE_FRAMING: Partial<Record<LocalContentMechanismType, { buyer
   },
   'industrialization-liability-gate': {
     buyerEn: "Three independent, separately-stated thresholds (SME work share, EYDEP work share, technology-acquisition value) close loopholes a single blended offset percentage would leave open -- a contractor cannot pass by over-delivering one liability to mask under-delivering another.",
-    buyerAr: 'ثلاثة حدود مستقلة ومنصوص عليها بشكل منفصل (حصة عمل المنشآت الصغيرة والمتوسطة، حصة عمل EYDEP، قيمة اكتساب التقنية) تغلق ثغرات قد تتركها نسبة مقاصة مدمجة واحدة مفتوحة -- لا يمكن للمقاول أن ينجح بالإفراط في استيفاء التزام واحد لتعويض نقص آخر.',
+    buyerAr: 'ثلاثة حدود مستقلة ومنصوص عليها بشكل منفصل (حصة عمل المنشآت الصغيرة والمتوسطة، حصة عمل EYDEP، قيمة اكتساب التقنية) تغلق ثغرات قد تتركها نسبة مقاصة مدمجة واحدة مفتوحة — لا يمكن للمقاول أن ينجح بالإفراط في استيفاء التزام واحد لتعويض نقص آخر.',
     supplierEn: "A transparent, three-lever gate: a contractor can see exactly which of the three liabilities (SME work share, EYDEP work share, or technology acquisition) is the binding constraint and invest there specifically, rather than guessing at one combined offset number.",
     supplierAr: 'بوابة شفافة بثلاث روافع: يمكن للمقاول معرفة أي من الالتزامات الثلاثة (حصة عمل المنشآت الصغيرة والمتوسطة، أو حصة عمل EYDEP، أو اكتساب التقنية) هو القيد الفعلي والاستثمار فيه تحديداً، بدلاً من التخمين حول رقم مقاصة مدمج واحد.',
   },
@@ -706,13 +706,13 @@ const MECHANISM_VALUE_FRAMING: Partial<Record<LocalContentMechanismType, { buyer
     buyerEn: "A single, clean percentage floor gives the procuring entity a straightforward, auditable eligibility test, consistent with the legislature's own stated intent to raise the bar gradually over time rather than impose a maximal figure immediately.",
     buyerAr: 'حد أدنى واحد وواضح للنسبة يمنح الجهة المشترية معياراً مباشراً وقابلاً للتدقيق للأهلية، بما يتوافق مع نية المشرّع المعلنة برفع السقف تدريجياً بمرور الوقت بدلاً من فرض رقم أقصى فوراً.',
     supplierEn: "A single clear percentage to plan workforce composition against is more actionable than a multi-factor score would be -- a bidder knows exactly what share of its workforce needs to shift before certifying.",
-    supplierAr: 'نسبة واحدة وواضحة للتخطيط لتكوين القوى العاملة أكثر قابلية للتنفيذ من درجة متعددة العوامل -- يعرف مقدّم العطاء بدقة أي حصة من قوته العاملة يجب تغييرها قبل التصديق.',
+    supplierAr: 'نسبة واحدة وواضحة للتخطيط لتكوين القوى العاملة أكثر قابلية للتنفيذ من درجة متعددة العوامل — يعرف مقدّم العطاء بدقة أي حصة من قوته العاملة يجب تغييرها قبل التصديق.',
   },
   'import-value-participation-gate': {
     buyerEn: "The Valuation Factor table steers Economic Participation discharge toward the activities LCGPA's own policy values most (Research & Development at a fixed 3.0x vs. simple subcontracting at 1.0x) without mandating any one category outright, giving the Authority a disclosed, auditable test tied to the value of imported content specifically.",
     buyerAr: 'يوجّه جدول عامل التقييم إيفاء المشاركة الاقتصادية نحو الأنشطة التي تمنحها سياسة الهيئة نفسها الأولوية (البحث والتطوير بمعامل ثابت ٣.٠× مقابل التعاقد من الباطن البسيط بمعامل ١.٠×) دون فرض فئة واحدة إلزامياً، وهو معيار مُفصَح عنه وقابل للتدقيق مرتبط بقيمة المحتوى المستورد تحديداً.',
     supplierEn: "The multiplier table is a real lever: directing base activity toward a higher-factor category (Technology Transfer, Export Promotion, or Investment all reach up to 3.0x) reaches the same credited Economic Participation value with a smaller underlying activity value -- and, unlike GAMI's gate, there is no SME/sole-source bonus to additionally plan around here.",
-    supplierAr: 'جدول المعاملات رافعة حقيقية: توجيه قيمة النشاط الأساسي نحو فئة ذات معامل أعلى (نقل التقنية، أو تعزيز التصدير، أو الاستثمار، وكلها تصل إلى ٣.٠×) يحقق نفس قيمة المشاركة الاقتصادية المُعتمَدة بقيمة نشاط أساسية أصغر -- وعلى خلاف بوابة الهيئة العسكرية، لا توجد هنا مكافأة منشآت صغيرة/متوسطة أو مصدر وحيد يُخطَّط حولها إضافياً.',
+    supplierAr: 'جدول المعاملات رافعة حقيقية: توجيه قيمة النشاط الأساسي نحو فئة ذات معامل أعلى (نقل التقنية، أو تعزيز التصدير، أو الاستثمار، وكلها تصل إلى ٣.٠×) يحقق نفس قيمة المشاركة الاقتصادية المُعتمَدة بقيمة نشاط أساسية أصغر — وعلى خلاف بوابة الهيئة العسكرية، لا توجد هنا مكافأة منشآت صغيرة/متوسطة أو مصدر وحيد يُخطَّط حولها إضافياً.',
   },
 };
 
@@ -1006,7 +1006,7 @@ function LocalContentEntryCard({
             <Compass className="w-4 h-4 text-slate-500 shrink-0 mt-0.5" />
             <p className="text-[11px] text-slate-600 leading-relaxed">
               {isAr
-                ? 'هذه الوحدة تغطي حالياً ستّ عشرة دولة فقط: السعودية والإمارات والأردن وعُمان وقطر والبحرين والكويت ومصر وتركيا والمملكة المتحدة والولايات المتحدة والصين والهند وألمانيا واليابان وكوريا الجنوبية، ولكل منها برنامج واحد أو أكثر بصيغة موثّقة قابلة للحساب أو إفصاح صادق موثّق (ألمانيا حالة خاصة: برنامجها الأول "المعاملة الوطنية الأساسية" غياب مؤكَّد للتفضيل بموجب قواعد الاتحاد الأوروبي ومنظمة التجارة العالمية -- يُعرض ذلك صراحة عند اختياره، لا كدرجة صفرية؛ أما برنامجها الثاني، برنامج تنمية الصناعة الدفاعية الأوروبية EDIP، فقد أصبح بوابة حقيقية وقابلة للحساب لحد أدنى من المحتوى الأوروبي بدءاً من ١ أكتوبر ٢٠٢٦). أي دولة أخرى (مثل فرنسا أو البرازيل) غير قابلة للتمثيل في هذه المكتبة إطلاقاً -- لا يوجد فحص محتوى محلي متاح لها هنا، وليس درجة صفرية أو "غير مطبَّق".'
+                ? 'هذه الوحدة تغطي حالياً ستّ عشرة دولة فقط: السعودية والإمارات والأردن وعُمان وقطر والبحرين والكويت ومصر وتركيا والمملكة المتحدة والولايات المتحدة والصين والهند وألمانيا واليابان وكوريا الجنوبية، ولكل منها برنامج واحد أو أكثر بصيغة موثّقة قابلة للحساب أو إفصاح صادق موثّق (ألمانيا حالة خاصة: برنامجها الأول "المعاملة الوطنية الأساسية" غياب مؤكَّد للتفضيل بموجب قواعد الاتحاد الأوروبي ومنظمة التجارة العالمية — يُعرض ذلك صراحة عند اختياره، لا كدرجة صفرية؛ أما برنامجها الثاني، برنامج تنمية الصناعة الدفاعية الأوروبية EDIP، فقد أصبح بوابة حقيقية وقابلة للحساب لحد أدنى من المحتوى الأوروبي بدءاً من ١ أكتوبر ٢٠٢٦). أي دولة أخرى (مثل فرنسا أو البرازيل) غير قابلة للتمثيل في هذه المكتبة إطلاقاً — لا يوجد فحص محتوى محلي متاح لها هنا، وليس درجة صفرية أو "غير مطبَّق".'
                 : "This module currently covers only sixteen countries: Saudi Arabia, the UAE, Jordan, Oman, Qatar, Bahrain, Kuwait, Egypt, Turkey, the UK, the USA, China, India, Germany, Japan, and South Korea, each with one or more sourced, computable-formula programs or an honestly-sourced disclosure (Germany is a special case: its first program, the GPA/WTO non-discrimination baseline, is a confirmed absence of any preference under EU/WTO rules -- disclosed explicitly when selected, not shown as a zero score; its second program, the EU's European Defence Industry Programme (EDIP), is now a real, computable EU-content-threshold gate as of 1 Oct 2026). Any other country (e.g. France or Brazil) isn't representable by this library at all -- no local-content check is available for it here, and this is not a zero score or a \"not applicable\" verdict."}
             </p>
           </div>
@@ -1190,7 +1190,7 @@ function LocalContentEntryCard({
                     <NumberField label={isAr ? 'E: إجمالي التكاليف (المقام)' : 'E: Total Costs (denominator)'} unit={isAr ? 'ر.س' : 'SAR'} value={entry.iktva.totalCostsSAR} onChange={v => onUpdate(entry.id, { iktva: { ...entry.iktva, totalCostsSAR: v } })} />
                     <NumberField
                       label={isAr ? 'I: نقاط مكافأة تحفيزية (اختياري، مبسّطة)' : 'I: Incentive Bonus Points (optional, simplified)'}
-                      hint={isAr ? 'حد أقصى ١٠ نقاط -- تبسيط مُفصَح عنه لصيغة أرامكو الفرعية الكاملة' : "Capped at 10 points -- disclosed simplification of Aramco's full bonus sub-formula"}
+                      hint={isAr ? 'حد أقصى ١٠ نقاط — تبسيط مُفصَح عنه لصيغة أرامكو الفرعية الكاملة' : "Capped at 10 points -- disclosed simplification of Aramco's full bonus sub-formula"}
                       unit="pts" max={10}
                       value={entry.iktva.incentiveBonusPct}
                       onChange={v => onUpdate(entry.id, { iktva: { ...entry.iktva, incentiveBonusPct: v } })}
@@ -1216,7 +1216,7 @@ function LocalContentEntryCard({
                     <p className="text-[10px] text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-2 leading-relaxed flex items-start gap-1.5">
                       <Info className="w-3 h-3 shrink-0 mt-0.5" />
                       {isAr
-                        ? 'هذا ليس معياراً معلَناً على مستوى سابك ككل -- الممارسة الفعلية لسابك هي التزام محتوى محلي متفاوض عليه لكل عقد على حدة، يُدقَّق مقابل الأداء الفعلي المُسلَّم، وليس نسبة ثابتة على مستوى الشركة. هامش التسامح ونسبة الغرامة أدناه إعدادات افتراضية خاصة بقواعد عمل هذه المنصة، وليسا معياراً معلَناً من سابك.'
+                        ? 'هذا ليس معياراً معلَناً على مستوى سابك ككل — الممارسة الفعلية لسابك هي التزام محتوى محلي متفاوض عليه لكل عقد على حدة، يُدقَّق مقابل الأداء الفعلي المُسلَّم، وليس نسبة ثابتة على مستوى الشركة. هامش التسامح ونسبة الغرامة أدناه إعدادات افتراضية خاصة بقواعد عمل هذه المنصة، وليسا معياراً معلَناً من سابك.'
                         : "This is NOT a published SABIC-wide local-content standard -- SABIC's real practice is a per-contract negotiated target audited against actual delivered performance, never a fixed company-wide rate. The tolerance and penalty figures below are this platform's own disclosed business-rule defaults, not a published SABIC standard."}
                     </p>
                     <div className="grid sm:grid-cols-2 gap-3">
@@ -1303,7 +1303,7 @@ function LocalContentEntryCard({
                       )}
                       {entry.saGami.category && GAMI_VALUATION_FACTOR_RANGES[entry.saGami.category][0] === GAMI_VALUATION_FACTOR_RANGES[entry.saGami.category][1] && (
                         <p className="text-[10px] text-muted-foreground mt-1.5">
-                          {isAr ? `فئة ثابتة عند ${GAMI_VALUATION_FACTOR_RANGES[entry.saGami.category][0]}× -- لا مجال لاختيار معامل.` : `Fixed category at ${GAMI_VALUATION_FACTOR_RANGES[entry.saGami.category][0]}x -- no factor choice applies.`}
+                          {isAr ? `فئة ثابتة عند ${GAMI_VALUATION_FACTOR_RANGES[entry.saGami.category][0]}× — لا مجال لاختيار معامل.` : `Fixed category at ${GAMI_VALUATION_FACTOR_RANGES[entry.saGami.category][0]}x — no factor choice applies.`}
                         </p>
                       )}
                     </div>
@@ -1326,8 +1326,7 @@ function LocalContentEntryCard({
                   </div>
                 )}
 
-                {/* SA-LIKT/EP-Policy + BH circular pass (2 Oct 2026) --
-                    LCGPA's own 2023 Economic Participation (EP) Policy,
+                {/* SA-LIKT/EP-Policy + BH circular pass (2 Oct 2026) — LCGPA's own 2023 Economic Participation (EP) Policy,
                     genuinely distinct from sa-likt (LIKT), resolved from
                     unmodeled using DGA Group's primary-text-grounded
                     analysis plus Global Trade Alert's independent entry. */}
@@ -1390,7 +1389,7 @@ function LocalContentEntryCard({
                       )}
                       {entry.saEp.category && EP_VALUATION_FACTOR_RANGES[entry.saEp.category][0] === EP_VALUATION_FACTOR_RANGES[entry.saEp.category][1] && (
                         <p className="text-[10px] text-muted-foreground mt-1.5">
-                          {isAr ? `فئة ثابتة عند ${EP_VALUATION_FACTOR_RANGES[entry.saEp.category][0]}× -- لا مجال لاختيار معامل.` : `Fixed category at ${EP_VALUATION_FACTOR_RANGES[entry.saEp.category][0]}x -- no factor choice applies.`}
+                          {isAr ? `فئة ثابتة عند ${EP_VALUATION_FACTOR_RANGES[entry.saEp.category][0]}× — لا مجال لاختيار معامل.` : `Fixed category at ${EP_VALUATION_FACTOR_RANGES[entry.saEp.category][0]}x — no factor choice applies.`}
                         </p>
                       )}
                     </div>
@@ -1433,7 +1432,7 @@ function LocalContentEntryCard({
                       />
                       <NumberField
                         label={isAr ? 'ائتمانات المقاصة المكتسبة حتى الآن (اختياري)' : 'Offset Credits Earned So Far (optional)'}
-                        hint={isAr ? 'اتركه فارغاً إذا كان غير معروف بعد -- يبقى النقص غير معروف، وليس صفراً' : 'Leave blank if not yet known -- shortfall stays unknown, not zero'}
+                        hint={isAr ? 'اتركه فارغاً إذا كان غير معروف بعد — يبقى النقص غير معروف، وليس صفراً' : 'Leave blank if not yet known — shortfall stays unknown, not zero'}
                         unit={isAr ? 'د.إ' : 'AED'}
                         value={entry.aeTawazun.offsetCreditsEarnedAED}
                         onChange={v => onUpdate(entry.id, { aeTawazun: { ...entry.aeTawazun, offsetCreditsEarnedAED: v } })}
@@ -1453,7 +1452,7 @@ function LocalContentEntryCard({
                     <p className="text-[10px] text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-2 leading-relaxed flex items-start gap-1.5">
                       <Info className="w-3 h-3 shrink-0 mt-0.5" />
                       {isAr
-                        ? 'هذا حق تعاهدي بموجب الاتفاقية الاقتصادية الموحدة لدول مجلس التعاون -- وليس معياراً معلَناً ضمن منهجية تصديق ICV لدى وزارة الصناعة، ولا نصاً وارداً في القانون الاتحادي رقم ١١ لسنة ٢٠٢٣. استوفاء الشرطين أدناه يمنح المورّد أساساً تعاهدياً للمطالبة بمعاملة المنتج الوطني، دون ضمان تفعيله تلقائياً في درجة ICV الفعلية.'
+                        ? 'هذا حق تعاهدي بموجب الاتفاقية الاقتصادية الموحدة لدول مجلس التعاون — وليس معياراً معلَناً ضمن منهجية تصديق ICV لدى وزارة الصناعة، ولا نصاً وارداً في القانون الاتحادي رقم ١١ لسنة ٢٠٢٣. استوفاء الشرطين أدناه يمنح المورّد أساساً تعاهدياً للمطالبة بمعاملة المنتج الوطني، دون ضمان تفعيله تلقائياً في درجة ICV الفعلية.'
                         : "This is a GCC Unified Economic Agreement treaty right -- not a standard published in MoIAT's own ICV certification methodology, and not confirmed in UAE Federal Law No. 11 of 2023's own text. Meeting both conditions below gives the supplier a treaty basis to claim national-product treatment -- it does not guarantee this is automatically reflected in an actual MoIAT ICV score."}
                     </p>
                     <div className="grid sm:grid-cols-2 gap-3">
@@ -1584,7 +1583,7 @@ function LocalContentEntryCard({
                       <NumberField label={isAr ? 'إجمالي إيرادات قطر (باستثناء الصادرات)' : 'Total Qatar Revenue (excl. exports)'} unit={isAr ? 'ر.ق' : 'QAR'} value={entry.qa.totalQatarRevenueExclExportsQAR} onChange={v => onUpdate(entry.id, { qa: { ...entry.qa, totalQatarRevenueExclExportsQAR: v } })} />
                       <NumberField
                         label={isAr ? 'مكافأة سلوك استراتيجي ذاتية (اختياري، مبسّطة)' : 'Self-Reported Strategic-Behaviour Bonus (optional, simplified)'}
-                        hint={isAr ? 'حد أقصى ١٥٪ -- تبسيط مُفصَح عنه لمعايير icv.qa الفرعية الكاملة' : "Capped at 15% -- disclosed simplification of icv.qa's full sub-criteria"}
+                        hint={isAr ? 'حد أقصى ١٥٪ — تبسيط مُفصَح عنه لمعايير icv.qa الفرعية الكاملة' : "Capped at 15% -- disclosed simplification of icv.qa's full sub-criteria"}
                         unit="%" max={15}
                         value={entry.qa.selfReportedBonusPct}
                         onChange={v => onUpdate(entry.id, { qa: { ...entry.qa, selfReportedBonusPct: v } })}
@@ -1607,7 +1606,7 @@ function LocalContentEntryCard({
                   <div className="space-y-3">
                     <p className="text-[11px] text-slate-500">
                       {isAr
-                        ? 'المادة ٢ من اللائحة التنفيذية لقانون المناقصات: القيمة المحلية المعلنة/المخطَّطة لهذا العقد. المادة ٣ تُلزم الجهة الحكومية بمراعاة هذه النسبة عند التقييم، دون نشر حد أدنى أو ترجيح محدد -- فالرقم أدناه توجيهي وليس بوابة نجاح/فشل.'
+                        ? 'المادة ٢ من اللائحة التنفيذية لقانون المناقصات: القيمة المحلية المعلنة/المخطَّطة لهذا العقد. المادة ٣ تُلزم الجهة الحكومية بمراعاة هذه النسبة عند التقييم، دون نشر حد أدنى أو ترجيح محدد — فالرقم أدناه توجيهي وليس بوابة نجاح/فشل.'
                         : "Executive Regulations Article 2: this contract's self-certified/planned local value. Article 3 requires the government client to consider this ratio in evaluation, but publishes no fixed threshold or weighting -- the figure below is decision-supporting, not a pass/fail gate."}
                     </p>
                     <div className="grid sm:grid-cols-2 gap-3">
@@ -1664,7 +1663,7 @@ function LocalContentEntryCard({
                       ))}
                     </div>
                     <p className="text-[10px] text-muted-foreground mt-1.5">
-                      {isAr ? 'لم يُسنَد بعد تعريف تأهل أكثر تفصيلاً وموثّقاً -- التسجيل الرسمي هو الحقيقة المتاحة حالياً.' : 'A more granular sourced qualification definition has not been located yet -- formal registration is the fact available today.'}
+                      {isAr ? 'لم يُسنَد بعد تعريف تأهل أكثر تفصيلاً وموثّقاً — التسجيل الرسمي هو الحقيقة المتاحة حالياً.' : 'A more granular sourced qualification definition has not been located yet -- formal registration is the fact available today.'}
                     </p>
                   </div>
                 )}
@@ -1703,7 +1702,7 @@ function LocalContentEntryCard({
                       ))}
                     </div>
                     <p className="text-[10px] text-muted-foreground mt-1.5">
-                      {isAr ? 'القرار الوزاري رقم (١١-٢٦٧٩) -- تصدر الشهادة عبر بوابة وزارة الصناعة والتجارة. في حال انطباق أكثر من تفضيل واحد على هذا المورّد، يُمنح التفضيل الأعلى وليس مجموعاً متراكماً.' : "Cabinet Decision No. (11-2679) -- the certificate is issued via the Ministry of Industry and Commerce's own portal. Where more than one preference applies to this supplier, the higher rate is granted, not a stacked total."}
+                      {isAr ? 'القرار الوزاري رقم (١١-٢٦٧٩) — تصدر الشهادة عبر بوابة وزارة الصناعة والتجارة. في حال انطباق أكثر من تفضيل واحد على هذا المورّد، يُمنح التفضيل الأعلى وليس مجموعاً متراكماً.' : "Cabinet Decision No. (11-2679) -- the certificate is issued via the Ministry of Industry and Commerce's own portal. Where more than one preference applies to this supplier, the higher rate is granted, not a stacked total."}
                     </p>
                   </div>
                 )}
@@ -1740,8 +1739,8 @@ function LocalContentEntryCard({
                     <p className="text-[10px] text-muted-foreground flex items-start gap-1.5">
                       <Info className="w-3 h-3 shrink-0 mt-0.5" />
                       {isAr
-                        ? 'معيار جنسية القوى العاملة لهذا العطاء -- وليس حصة السلع/المحتوى المحلي (انظر "المحتوى المحلي" أعلاه لهذا البُعد المختلف). دليل مجلس المناقصات والمزايدات، نوفمبر ٢٠٢٥.'
-                        : 'A workforce-nationality test for this tender -- not a goods/local-content share (see "Local Content" above for that separate dimension). Tender Board Guideline, Nov 2025.'}
+                        ? 'معيار جنسية القوى العاملة لهذا العطاء — وليس حصة السلع/المحتوى المحلي (انظر "المحتوى المحلي" أعلاه لهذا البُعد المختلف). دليل مجلس المناقصات والمزايدات، نوفمبر ٢٠٢٥.'
+                        : 'A workforce-nationality test for this tender — not a goods/local-content share (see "Local Content" above for that separate dimension). Tender Board Guideline, Nov 2025.'}
                     </p>
                   </div>
                 )}
@@ -1767,7 +1766,7 @@ function LocalContentEntryCard({
                       ))}
                     </div>
                     <p className="text-[10px] text-muted-foreground mt-1.5">
-                      {isAr ? 'معيار جنسية/ملكية الشركة نفسها -- وليس منشأ المنتج (انظر تفضيل المادة ٦٢ أعلاه لمنشأ المنتج).' : "A company-nationality/ownership test -- not product origin (see Article 62's preference above for product origin)."}
+                      {isAr ? 'معيار جنسية/ملكية الشركة نفسها — وليس منشأ المنتج (انظر تفضيل المادة ٦٢ أعلاه لمنشأ المنتج).' : "A company-nationality/ownership test -- not product origin (see Article 62's preference above for product origin)."}
                     </p>
                   </div>
                 )}
@@ -1830,7 +1829,7 @@ function LocalContentEntryCard({
                       ))}
                     </div>
                     <p className="text-[10px] text-muted-foreground mt-1.5">
-                      {isAr ? 'وفق شروط اتفاقيات تقاسم الإنتاج (PSA) الخاصة بوزارة البترول -- تفضيل بهامش ١٠٪ لأسعار المقاولين المحليين المؤهلين.' : "Per Ministry of Petroleum PSA contractual terms -- a 10% price-band preference for qualifying local contractors."}
+                      {isAr ? 'وفق شروط اتفاقيات تقاسم الإنتاج (PSA) الخاصة بوزارة البترول — تفضيل بهامش ١٠٪ لأسعار المقاولين المحليين المؤهلين.' : "Per Ministry of Petroleum PSA contractual terms -- a 10% price-band preference for qualifying local contractors."}
                     </p>
                   </div>
                 )}
@@ -1860,7 +1859,7 @@ function LocalContentEntryCard({
                         ))}
                       </div>
                       <p className="text-[10px] text-muted-foreground mt-1.5">
-                        {isAr ? 'بحسب بيان المركز الإعلامي لمجلس الوزراء (٢٨ أبريل ٢٠٢٦): بوابة أهلية فقط -- لا تُحتسب قيمة الحافز الدقيقة هنا (انظر ملاحظة المصدر).' : "Per the Cabinet media-center statement (28 Apr 2026): an eligibility gate only -- the exact incentive amount is not computed here (see sourceNoteEn)."}
+                        {isAr ? 'بحسب بيان المركز الإعلامي لمجلس الوزراء (٢٨ أبريل ٢٠٢٦): هذا يبيّن الأهلية فقط — لمعرفة قيمة الحافز الدقيقة، راجع قسم "المنهجية الموثّقة" أدناه أو تواصل مع وزارة التجارة والصناعة.' : "Per the Cabinet media-center statement (28 Apr 2026): this shows eligibility only -- see the Sourced Methodology section below for how this program works and what is not published, or ask the Ministry of Trade and Industry for the exact incentive amount."}
                       </p>
                     </div>
                     <div className="grid sm:grid-cols-2 gap-3">
@@ -2056,7 +2055,7 @@ function LocalContentEntryCard({
                         ))}
                       </div>
                       <p className="text-[10px] text-muted-foreground mt-1.5">
-                        {isAr ? 'الافتراضي عند عدم الإدخال: هامش المنشآت الكبيرة (٢٠٪) -- افتراض مُفصَح عنه وقابل للتجاوز من قِبل المستخدم.' : 'Default when not entered: large-business margin (20%) -- a disclosed, caller-overridable default.'}
+                        {isAr ? 'الافتراضي عند عدم الإدخال: هامش المنشآت الكبيرة (٢٠٪) — افتراض مُفصَح عنه وقابل للتجاوز من قِبل المستخدم.' : 'Default when not entered: large-business margin (20%) -- a disclosed, caller-overridable default.'}
                       </p>
                     </div>
                   </div>
@@ -2084,7 +2083,7 @@ function LocalContentEntryCard({
                         ))}
                       </div>
                       <p className="text-[10px] text-muted-foreground mt-1.5">
-                        {isAr ? 'قانون IIJA (البند التاسع) يشمل الحديد والصلب (١٠٠٪)، مواد البناء (١٠٠٪)، والمنتجات المصنّعة (٥٥٪) -- مع إخلاء طرف محتمل لكل جهة تمويل على حدة.' : 'IIJA Title IX covers iron & steel (100%), construction materials (100%), and manufactured products (55%) -- with a possible per-agency waiver.'}
+                        {isAr ? 'قانون IIJA (البند التاسع) يشمل الحديد والصلب (١٠٠٪)، مواد البناء (١٠٠٪)، والمنتجات المصنّعة (٥٥٪) — مع إخلاء طرف محتمل لكل جهة تمويل على حدة.' : 'IIJA Title IX covers iron & steel (100%), construction materials (100%), and manufactured products (55%) -- with a possible per-agency waiver.'}
                       </p>
                     </div>
                     {entry.usaBaba.isFederallyFundedInfrastructureProcurement === true && (
@@ -2108,7 +2107,7 @@ function LocalContentEntryCard({
                           ))}
                         </div>
                         <p className="text-[10px] text-muted-foreground mt-1.5">
-                          {isAr ? 'بوابة تأهل فئة، وليست تدرجاً -- يُستوفى الحد أو لا يُستوفى لكل فئة منتج.' : 'A category eligibility gate, not a scale -- the threshold is met or not, per product category.'}
+                          {isAr ? 'بوابة تأهل فئة، وليست تدرجاً — يُستوفى الحد أو لا يُستوفى لكل فئة منتج.' : 'A category eligibility gate, not a scale — the threshold is met or not, per product category.'}
                         </p>
                       </div>
                     )}
@@ -2136,7 +2135,7 @@ function LocalContentEntryCard({
                       ))}
                     </div>
                     <p className="text-[10px] text-muted-foreground mt-1.5">
-                      {isAr ? 'هدف حكومي عام ٢٣٪ (FAR 19.502-2) مع "قاعدة الاثنين" -- نفس الحقل المستخدم في هامش قانون Buy American أعلاه.' : 'A government-wide 23% goal (FAR 19.502-2) with the "Rule of Two" -- the same field used by the Buy American margin above.'}
+                      {isAr ? 'هدف حكومي عام ٢٣٪ (FAR 19.502-2) مع "قاعدة الاثنين" — نفس الحقل المستخدم في هامش قانون Buy American أعلاه.' : 'A government-wide 23% goal (FAR 19.502-2) with the "Rule of Two" -- the same field used by the Buy American margin above.'}
                     </p>
                   </div>
                 )}
@@ -2187,7 +2186,7 @@ function LocalContentEntryCard({
                           ))}
                         </div>
                         <p className="text-[10px] text-muted-foreground mt-1.5">
-                          {isAr ? 'بوابة تأهل فئة ثنائية -- شبه ١٠٠٪ محلي، دون درجات جزئية.' : 'A binary category eligibility gate -- near-100% domestic, no partial credit.'}
+                          {isAr ? 'بوابة تأهل فئة ثنائية — شبه ١٠٠٪ محلي، دون درجات جزئية.' : 'A binary category eligibility gate — near-100% domestic, no partial credit.'}
                         </p>
                       </div>
                     )}
@@ -2331,7 +2330,7 @@ function LocalContentEntryCard({
                         ))}
                       </div>
                       <p className="text-[10px] text-muted-foreground mt-1.5">
-                        {isAr ? 'يحدد النطاق المطبَّق دور المزايد ونوع المشتريات معاً -- مصفوفة ٢×٢.' : 'The applicable band depends on bidder role AND procurement type together -- a 2x2 matrix.'}
+                        {isAr ? 'يحدد النطاق المطبَّق دور المزايد ونوع المشتريات معاً — مصفوفة ٢×٢.' : 'The applicable band depends on bidder role AND procurement type together -- a 2x2 matrix.'}
                       </p>
                     </div>
                     {entry.cnSme.supplierRole === 'large-medium-consortium-subcontract' && (
@@ -2400,7 +2399,7 @@ function LocalContentEntryCard({
                         ))}
                       </div>
                       <p className="text-[10px] text-muted-foreground mt-1.5">
-                        {isAr ? 'لا يسمح بدمج المسارات ضمن إيفاء واحد وفق الفقرة ٣.١ -- مسار واحد فقط لكل إيفاء.' : 'Avenues may not be clubbed within a single discharge per Para 3.1 -- only one avenue per discharge.'}
+                        {isAr ? 'لا يسمح بدمج المسارات ضمن إيفاء واحد وفق الفقرة ٣.١ — مسار واحد فقط لكل إيفاء.' : 'Avenues may not be clubbed within a single discharge per Para 3.1 — only one avenue per discharge.'}
                       </p>
                     </div>
                     {entry.inDap.offsetAvenue && (
@@ -2420,7 +2419,7 @@ function LocalContentEntryCard({
                   <div className="space-y-3">
                     <NumberField
                       label={isAr ? 'نسبة استهداف كانكوجو المنشورة للسنة المالية الحالية' : "Current Fiscal Year's Published Kankouju Target Ratio"}
-                      hint={isAr ? 'غير ثابتة بنص قانوني -- تُحدَّد من جديد كل سنة مالية بقرار مجلس وزراء (السنة المالية ٢٠٢٥: ٦١٪ على مستوى الحكومة). أدخل الرقم المنشور حالياً؛ لا تُفترَض قيمة قديمة.' : "Not fixed by statute -- re-set every fiscal year by Cabinet decision (FY2025: 61% government-wide). Enter the currently published figure; a stale value is never assumed."}
+                      hint={isAr ? 'غير ثابتة بنص قانوني — تُحدَّد من جديد كل سنة مالية بقرار مجلس وزراء (السنة المالية ٢٠٢٥: ٦١٪ على مستوى الحكومة). أدخل الرقم المنشور حالياً؛ لا تُفترَض قيمة قديمة.' : "Not fixed by statute -- re-set every fiscal year by Cabinet decision (FY2025: 61% government-wide). Enter the currently published figure; a stale value is never assumed."}
                       unit="%"
                       max={100}
                       value={entry.jp.policyYearTargetRatioPct}
@@ -2543,14 +2542,14 @@ function LocalContentEntryCard({
                           ))}
                         </div>
                         <p className="text-[10px] text-muted-foreground mt-1.5">
-                          {isAr ? 'ليس مجرد موزّع أو مستورد -- يجب أن يكون المورّد المُنتِج المباشر المُتحقَّق منه.' : 'Not merely a reseller or importer -- the supplier must be the verified direct producer.'}
+                          {isAr ? 'ليس مجرد موزّع أو مستورد — يجب أن يكون المورّد المُنتِج المباشر المُتحقَّق منه.' : 'Not merely a reseller or importer — the supplier must be the verified direct producer.'}
                         </p>
                       </div>
                     )}
                   </div>
                 )}
 
-                {/* Module 08 twelve-gap closure pass (1 Oct 2026) -- Germany/EU
+                {/* Module 08 twelve-gap closure pass (1 Oct 2026) — Germany/EU
                     European Defence Industry Programme (EDIP) eu-content-
                     threshold-gate, resolved from not-yet-sourced. No DE-country
                     form section existed before this pass (both DE programs were
@@ -2635,8 +2634,8 @@ function LocalContentEntryCard({
                     {assessment.computation.preferenceMarginMinPct !== undefined && assessment.computation.preferenceMarginMaxPct !== undefined ? (
                       <p className="text-[11px] text-slate-600">
                         {isAr
-                          ? `الأرضية القانونية المضمونة: ${assessment.computation.preferenceMarginMinPct} نقطة -- والسقف القانوني حتى ${assessment.computation.preferenceMarginMaxPct} نقطة وفق تقدير جهة الشراء ضمن هذا النطاق (وليس رقماً ثابتاً)`
-                          : `Guaranteed legal floor: ${assessment.computation.preferenceMarginMinPct} pts -- statutory ceiling up to ${assessment.computation.preferenceMarginMaxPct} pts, at the procuring entity's discretion within the range (not a fixed figure)`}
+                          ? `الأرضية القانونية المضمونة: ${assessment.computation.preferenceMarginMinPct} نقطة — والسقف القانوني حتى ${assessment.computation.preferenceMarginMaxPct} نقطة وفق تقدير جهة الشراء ضمن هذا النطاق (وليس رقماً ثابتاً)`
+                          : `Guaranteed legal floor: ${assessment.computation.preferenceMarginMinPct} pts — statutory ceiling up to ${assessment.computation.preferenceMarginMaxPct} pts, at the procuring entity's discretion within the range (not a fixed figure)`}
                       </p>
                     ) : (
                       <p className="text-[11px] text-slate-600">
@@ -2863,7 +2862,7 @@ function LocalContentEntryCard({
                         <p className="text-[10px] text-muted-foreground flex items-start gap-1.5">
                           <Info className="w-3 h-3 shrink-0 mt-0.5" />
                           {isAr
-                            ? 'لم يُستوفَ أحد الحدّين المطلوبين بموجب المادة ٣(١) أو كليهما -- الشرطان مطلوبان معاً.'
+                            ? 'لم يُستوفَ أحد الحدّين المطلوبين بموجب المادة ٣(١) أو كليهما — الشرطان مطلوبان معاً.'
                             : "At least one of Article 3(1)'s two required thresholds is not met -- both conditions are required together."}
                         </p>
                       )}
@@ -2908,7 +2907,7 @@ function LocalContentEntryCard({
                         )}
                       </div>
                       <p className="text-[10px] text-muted-foreground">
-                        {isAr ? 'القيمة الدقيقة للحافز بالجنيه المصري غير محسوبة في هذا المحرك -- انظر ملاحظة مصدر البرنامج.' : "The exact EGP incentive amount is not computed by this engine -- see the program's sourceNoteEn."}
+                        {isAr ? 'القيمة الدقيقة للحافز بالجنيه المصري غير محسوبة هنا — راجع قسم "المنهجية الموثّقة" لمعرفة كيف يعمل هذا البرنامج وما هو غير منشور.' : 'The exact EGP incentive amount is not computed here -- see the Sourced Methodology section for how this program works and what is not published.'}
                       </p>
                     </>
                   );
@@ -2947,7 +2946,7 @@ function LocalContentEntryCard({
                         <p className="text-[10px] text-muted-foreground flex items-start gap-1.5">
                           <Info className="w-3 h-3 shrink-0 mt-0.5" />
                           {isAr
-                            ? 'كلا الحدّين مطلوب بموجب المادة ٨٧ من قانون المناقصات العامة رقم ٤٩ لسنة ٢٠١٦ -- إغلاق أحدهما فقط لا يفتح البوابة.'
+                            ? 'كلا الحدّين مطلوب بموجب المادة ٨٧ من قانون المناقصات العامة رقم ٤٩ لسنة ٢٠١٦ — إغلاق أحدهما فقط لا يفتح البوابة.'
                             : 'Both thresholds are required under Public Tenders Law No. 49/2016 Article 87 -- closing only one does not clear the gate.'}
                         </p>
                       )}
@@ -2993,7 +2992,7 @@ function LocalContentEntryCard({
                         </div>
                       )}
                       <p className="text-[10px] text-muted-foreground">
-                        {isAr ? 'لا يسمح بدمج المسارات في إيفاء واحد وفق الفقرة ٣.١ من DAP 2020 -- يُطبَّق مسار واحد مختار فقط.' : "Avenues may not be clubbed within a single discharge per DAP 2020 Para 3.1 -- only the single selected avenue is applied."}
+                        {isAr ? 'لا يسمح بدمج المسارات في إيفاء واحد وفق الفقرة ٣.١ من DAP 2020 — يُطبَّق مسار واحد مختار فقط.' : "Avenues may not be clubbed within a single discharge per DAP 2020 Para 3.1 -- only the single selected avenue is applied."}
                       </p>
                     </>
                   );
@@ -3019,7 +3018,7 @@ function LocalContentEntryCard({
                         <span className="font-semibold">{c.euOrAssociatedContentPct !== null ? `${c.euOrAssociatedContentPct.toFixed(1)}%` : '—'}</span>
                       </div>
                       <p className="text-[10px] text-muted-foreground">
-                        {isAr ? `السقف المسموح لغير الاتحاد الأوروبي/غير المنتسب: ${c.nonEuContentCapPct}٪ -- اللائحة (الاتحاد الأوروبي) ٢٠٢٥/٢٦٤٣` : `Non-EU/non-associated cap: ${c.nonEuContentCapPct}% -- Regulation (EU) 2025/2643`}
+                        {isAr ? `السقف المسموح لغير الاتحاد الأوروبي/غير المنتسب: ${c.nonEuContentCapPct}٪ — اللائحة (الاتحاد الأوروبي) ٢٠٢٥/٢٦٤٣` : `Non-EU/non-associated cap: ${c.nonEuContentCapPct}% -- Regulation (EU) 2025/2643`}
                       </p>
                     </>
                   );
@@ -3079,7 +3078,7 @@ function LocalContentEntryCard({
                       )}
                       <p className="text-[10px] text-muted-foreground">
                         {isAr
-                          ? `ضمان الأداء ${c.performanceSecurityPctOfContractValue}٪ من قيمة العقد -- نظام الائتمان البيني بين العقود/السنوات لدى GAMI غير مُحاكى هنا؛ هذا تقييم عقد واحد. سياسة المشاركة الصناعية، GAMI، gami.gov.sa.`
+                          ? `ضمان الأداء ${c.performanceSecurityPctOfContractValue}٪ من قيمة العقد — نظام الائتمان البيني بين العقود/السنوات لدى GAMI غير مُحاكى هنا؛ هذا تقييم عقد واحد. سياسة المشاركة الصناعية، GAMI، gami.gov.sa.`
                           : `Performance Security ${c.performanceSecurityPctOfContractValue}% of contract value -- GAMI's cross-contract/multi-year credit-banking is not modeled here; this is a single-contract assessment. GAMI Industrial Participation Policy, gami.gov.sa.`}
                       </p>
                     </>
@@ -3130,7 +3129,7 @@ function LocalContentEntryCard({
                       )}
                       <p className="text-[10px] text-muted-foreground">
                         {isAr
-                          ? 'لا توجد مكافأة منشآت صغيرة/متوسطة أو مصدر وحيد موثّقة لهذه السياسة، ولا صيغة ضمان أداء/تصفية عند النقص -- يُحسب الاستيفاء/النقص فقط، لا مبلغ غرامة. هذا تقييم بند نشاط واحد. سياسة المشاركة الاقتصادية، هيئة المحتوى المحلي والمشتريات الحكومية (٢٠٢٣).'
+                          ? 'لا توجد مكافأة منشآت صغيرة/متوسطة أو مصدر وحيد موثّقة لهذه السياسة، ولا صيغة ضمان أداء/تصفية عند النقص — يُحسب الاستيفاء/النقص فقط، لا مبلغ غرامة. هذا تقييم بند نشاط واحد. سياسة المشاركة الاقتصادية، هيئة المحتوى المحلي والمشتريات الحكومية (٢٠٢٣).'
                           : "No SME/sole-source bonus or performance-security/liquidation formula is sourced for this policy -- only meetsCommitment/shortfall is computed, never a penalty amount. This is a single-EP-activity-line-item assessment. LCGPA Economic Participation Policy (2023)."}
                       </p>
                     </>
@@ -3170,7 +3169,7 @@ function LocalContentEntryCard({
                         <p className="text-[10px] text-muted-foreground flex items-start gap-1.5">
                           <Info className="w-3 h-3 shrink-0 mt-0.5" />
                           {isAr
-                            ? 'الثلاثة حدود مستقلة وغير قابلة للاستبدال -- الإفراط في استيفاء التزام واحد لا يعوّض نقص التزام آخر. دليل SSB للمشاركة الصناعية/المقاصة.'
+                            ? 'الثلاثة حدود مستقلة وغير قابلة للاستبدال — الإفراط في استيفاء التزام واحد لا يعوّض نقص التزام آخر. دليل SSB للمشاركة الصناعية/المقاصة.'
                             : 'All three thresholds are independent and non-substitutable -- over-delivering one liability does not offset a shortfall in another. SSB Industrial Participation/Offset Guideline.'}
                         </p>
                       )}
@@ -3417,7 +3416,7 @@ export function LocalContentICVCheck() {
   const spendShareSum = spendShares.reduce((s, v) => s + v, 0);
 
   return (
-    <div className={`min-h-screen bg-slate-50 ${isAr ? 'rtl' : 'ltr'}`}>
+    <div className={`min-h-screen bg-slate-50 ${isAr ? 'rtl' : 'ltr'}`} dir={isAr ? 'rtl' : 'ltr'}>
       {/* ── Hero ── */}
       <div className="relative bg-gradient-to-br from-[#082C6B] via-[#0e3d8a] to-[#1a1a3e] text-white overflow-hidden">
         <div className="absolute inset-0 opacity-10"
@@ -3438,7 +3437,7 @@ export function LocalContentICVCheck() {
           </div>
           <p className="text-white/75 text-base max-w-2xl leading-relaxed mb-4">
             {isAr
-              ? 'المحتوى المحلي ليس معياراً إقليمياً واحداً -- إنه آليات مختلفة جوهرياً عبر ستّ عشرة دولة: درجة نسبة مئوية معتمدة في السعودية (LCGPA)، درجة مرجحة متعددة الأركان في الإمارات (ICV)، تفضيل سعري في عطاءات الأردن وعُمان والبحرين ومصر وتركيا والولايات المتحدة والصين والهند (عاماً، وفي قطاع النفط والغاز لمصر، وبخصم مُدرَّج حسب دور المزايد ونوع المشتريات للمنشآت الصغيرة في الصين، وببوابة تصنيف ثلاثية الفئات في الهند)، بوابة أهلية للفئات في القائمة الإلزامية بالسعودية وعُمان وبوابة التخصيص دون العتبة في المملكة المتحدة (PPN 005) وبوابة أهلية بنية تحتية BABA في الولايات المتحدة وبوابة المادة العاشرة من قانون المشتريات الحكومية الصيني وبوابة المنتجات التنافسية للمنشآت الصغيرة والمتوسطة الكورية، درجة توطين/ICV رسمية في قطر (icv.qa)، وحصص إنفاق مخصصة في الأردن والبحرين والكويت والولايات المتحدة (هدف SBA للمنشآت الصغيرة) وكوريا الجنوبية (نسبة استهداف بمُحدِّد فئة ثنائي) واليابان (نسبة استهداف كانكوجو التي تحددها الحكومة سنوياً بدل نسبة ثابتة)، وغياب مؤكَّد وموثَّق بصدق لأي تفضيل محلي أحادي في ألمانيا. سمِّ كل مورّد، اختر الدولة والبرنامج وسياق الشراء، واحصل على قراءة أهلية صادقة فوراً.'
+              ? 'المحتوى المحلي ليس معياراً إقليمياً واحداً — إنه آليات مختلفة جوهرياً عبر ستّ عشرة دولة: درجة نسبة مئوية معتمدة في السعودية (LCGPA)، درجة مرجحة متعددة الأركان في الإمارات (ICV)، تفضيل سعري في عطاءات الأردن وعُمان والبحرين ومصر وتركيا والولايات المتحدة والصين والهند (عاماً، وفي قطاع النفط والغاز لمصر، وبخصم مُدرَّج حسب دور المزايد ونوع المشتريات للمنشآت الصغيرة في الصين، وببوابة تصنيف ثلاثية الفئات في الهند)، بوابة أهلية للفئات في القائمة الإلزامية بالسعودية وعُمان وبوابة التخصيص دون العتبة في المملكة المتحدة (PPN 005) وبوابة أهلية بنية تحتية BABA في الولايات المتحدة وبوابة المادة العاشرة من قانون المشتريات الحكومية الصيني وبوابة المنتجات التنافسية للمنشآت الصغيرة والمتوسطة الكورية، درجة توطين/ICV رسمية في قطر (icv.qa)، وحصص إنفاق مخصصة في الأردن والبحرين والكويت والولايات المتحدة (هدف SBA للمنشآت الصغيرة) وكوريا الجنوبية (نسبة استهداف بمُحدِّد فئة ثنائي) واليابان (نسبة استهداف كانكوجو التي تحددها الحكومة سنوياً بدل نسبة ثابتة)، وغياب مؤكَّد وموثَّق بصدق لأي تفضيل محلي أحادي في ألمانيا. سمِّ كل مورّد، اختر الدولة والبرنامج وسياق الشراء، واحصل على قراءة أهلية صادقة فوراً.'
               : "Local content isn't one regional standard -- it's genuinely different mechanisms across sixteen countries: a certified percentage score in Saudi Arabia (LCGPA), a weighted multi-pillar score in the UAE (ICV), a bid-evaluation price preference in Jordan, Oman, Bahrain, Egypt, Turkey, the USA, China, and India (general procurement, plus a separate oil & gas PSA preference in Egypt, a role/procurement-type-banded SME deduction in China, and a three-tier local-content classification gate in India), a category-eligibility gate on Saudi and Omani Mandatory Lists plus the UK's below-threshold reservation gate (PPN 005), the USA's Build America, Buy America Act infrastructure gate, China's Government Procurement Law Article 10 domestic-mandate gate, and South Korea's SME-Exclusive Competitive Products gate, an official Tawteen/ICV score in Qatar (icv.qa), and reserved spend set-asides in Jordan, Bahrain, Kuwait, the USA (SBA small-business goal), South Korea (a 2-way category-selected SME purchase target), and Japan (a Kankouju target ratio set annually by the government rather than a fixed percentage) -- plus a confirmed, honestly-sourced absence of any unilateral local-content preference in Germany. Name each supplier, pick the country, program, and buyer context, and get an honest applicability read immediately."}
           </p>
           <div className="flex flex-wrap gap-3 text-xs text-white/60 mb-4">
@@ -3454,7 +3453,7 @@ export function LocalContentICVCheck() {
             <ShieldCheck className="w-4 h-4 text-[#C9A84C] shrink-0 mt-0.5" />
             <p className="text-xs text-white/90 leading-relaxed">
               {isAr
-                ? 'تُعرض نتيجة هنا فقط عندما ينطبق برنامج حكومي حقيقي وموثّق -- نحن لا نقدّر رقماً حيث لا يوجد واحد.'
+                ? 'تُعرض نتيجة هنا فقط عندما ينطبق برنامج حكومي حقيقي وموثّق — نحن لا نقدّر رقماً حيث لا يوجد واحد.'
                 : "A result only appears here when a real, sourced government program applies -- we don't estimate one where there isn't."}
             </p>
           </div>
@@ -3507,8 +3506,8 @@ export function LocalContentICVCheck() {
           </div>
           <p className="text-[10px] text-muted-foreground mt-2 leading-relaxed">
             {isAr
-              ? <>لا توجد مكتبة حدود دنيا موثّقة في هذه الوحدة بعد -- أدخل حد مناقصتك المذكور هنا. الفحص الذاتي الخاص بالسعودية (<Link href="/lcgpa-readiness" className="underline font-semibold">/lcgpa-readiness</Link>) يحتوي جدول حدود قطاعية موثّق صغير لثلاثة قطاعات (إدارة المرافق الشاملة، الاستشارات، خدمات تقنية المعلومات) -- راجعه إن كان قطاعك مطابقاً.</>
-              : <>No sourced threshold library exists in this module yet -- enter your tender's own stated requirement above. Saudi Arabia's dedicated self-check (<Link href="/lcgpa-readiness" className="underline font-semibold">/lcgpa-readiness</Link>) has a small sourced sector-threshold table for 3 sectors (Hard Facility Management, Consulting, IT Services) -- check there if your sector matches.</>}
+              ? <>لا توجد مكتبة حدود دنيا موثّقة في هذه الوحدة بعد — أدخل حد مناقصتك المذكور هنا. الفحص الذاتي الخاص بالسعودية (<Link href="/lcgpa-readiness" className="underline font-semibold">/lcgpa-readiness</Link>) يحتوي جدول حدود قطاعية موثّق صغير لثلاثة قطاعات (إدارة المرافق الشاملة، الاستشارات، خدمات تقنية المعلومات) — راجعه إن كان قطاعك مطابقاً.</>
+              : <>No sourced threshold library exists in this module yet — enter your tender's own stated requirement above. Saudi Arabia's dedicated self-check (<Link href="/lcgpa-readiness" className="underline font-semibold">/lcgpa-readiness</Link>) has a small sourced sector-threshold table for 3 sectors (Hard Facility Management, Consulting, IT Services) -- check there if your sector matches.</>}
           </p>
         </div>
 
@@ -3533,7 +3532,7 @@ export function LocalContentICVCheck() {
           </h2>
           <p className="text-[11px] text-muted-foreground mb-3">
             {isAr
-              ? 'مُجمَّعة حسب الدولة وسياق الشراء وآلية المحتوى المحلي، مرجحة بحصة الإنفاق -- لا يُدمَج مطلقاً بين آليات مختلفة في رقم واحد.'
+              ? 'مُجمَّعة حسب الدولة وسياق الشراء وآلية المحتوى المحلي، مرجحة بحصة الإنفاق — لا يُدمَج مطلقاً بين آليات مختلفة في رقم واحد.'
               : 'Grouped by country, buyer context, and local-content mechanism, spend-weighted -- never averaged across different mechanisms into one number.'}
           </p>
 
@@ -3590,7 +3589,7 @@ export function LocalContentICVCheck() {
           ) : (
             <p className="text-[11px] text-muted-foreground flex items-start gap-1.5">
               <Info className="w-3 h-3 shrink-0 mt-0.5" />
-              {isAr ? 'لا توجد مجموعات محفظة بعد -- كل الموردين المُدخلين إما بلا دولة مُختارة أو خارج نطاق هذه المكتبة.' : 'No portfolio groups yet -- every entered supplier is either uncountried or outside this library’s scope.'}
+              {isAr ? 'لا توجد مجموعات محفظة بعد — كل الموردين المُدخلين إما بلا دولة مُختارة أو خارج نطاق هذه المكتبة.' : 'No portfolio groups yet -- every entered supplier is either uncountried or outside this library’s scope.'}
             </p>
           )}
 
@@ -3605,13 +3604,13 @@ export function LocalContentICVCheck() {
                   </p>
                   <p className="text-[11px] text-indigo-800">
                     {isAr
-                      ? `مؤشر HHI = ${hhi.toFixed(0)} (${CONCENTRATION_BAND_LABEL[hhiBand].ar}) -- بناءً على حصص الإنفاق نفسها المُدخلة أعلاه. هذا مقياس منفصل تماماً عن أهلية المحتوى المحلي ولا يُدمَج معها أبداً في رقم واحد.`
+                      ? `مؤشر HHI = ${hhi.toFixed(0)} (${CONCENTRATION_BAND_LABEL[hhiBand].ar}) — بناءً على حصص الإنفاق نفسها المُدخلة أعلاه. هذا مقياس منفصل تماماً عن أهلية المحتوى المحلي ولا يُدمَج معها أبداً في رقم واحد.`
                       : `HHI = ${hhi.toFixed(0)} (${CONCENTRATION_BAND_LABEL[hhiBand].en}) -- based on the same spend shares entered above. This is a fully separate measure from local-content eligibility and is never blended with it into one number.`}
                   </p>
                   {Math.abs(spendShareSum - 100) > 5 && (
                     <p className="text-[10px] text-indigo-700/80 mt-1">
                       {isAr
-                        ? `ملاحظة: تجمع حصص الإنفاق المُدخلة إلى ${spendShareSum.toFixed(0)}٪ فقط -- هذه القراءة تفترض أن الحصص المُدخلة تمثّل كامل قاعدة الإنفاق ذات الصلة.`
+                        ? `ملاحظة: تجمع حصص الإنفاق المُدخلة إلى ${spendShareSum.toFixed(0)}٪ فقط — هذه القراءة تفترض أن الحصص المُدخلة تمثّل كامل قاعدة الإنفاق ذات الصلة.`
                         : `Note: the entered spend shares sum to only ${spendShareSum.toFixed(0)}% -- this reading assumes the entered shares represent the full relevant spend base.`}
                     </p>
                   )}
