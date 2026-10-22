@@ -122,8 +122,14 @@ describe('LocalContentICVCheck -- Round A.2 F2: this page\'s own Arabic UI strin
     // only the gap-as-missing-information mistranslation would be banned,
     // and it does not occur in this file (confirmed by manual review this
     // round, both occurrences read in full context).
+    // Round A.3 D1: the old pattern here was anchored to one vocalized shape
+    // and would have missed the same categories of residual found in
+    // supplierLocalContentEligibility.ts this round (kasra-on-ذ, pronoun
+    // suffixes, dual, present-tense verb forms). Matched there instead.
+    const arDiacritics = '[ً-ْٰ]*';
+    const nmzjRootRe = new RegExp(`ن${arDiacritics}م${arDiacritics}ذ${arDiacritics}ج`);
     const patterns: Array<{ pattern: RegExp; why: string }> = [
-      { pattern: /[يتلم]ُ?نمذَج[ةت]?/, why: 'English calque of "modeled"' },
+      { pattern: nmzjRootRe, why: 'نمذج-root (any vocalization/prefix/suffix) -- English calque of "modeled"' },
       { pattern: /للعِلم فقط/, why: 'stiff calque; use للاطلاع فقط' },
     ];
     const offenders: string[] = [];

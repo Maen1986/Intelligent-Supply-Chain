@@ -1169,7 +1169,12 @@ describe("UK / Below-Threshold Procurement Reservation (PPN 005) — category-el
     const fw = PROGRAMS['uk-below-threshold-reservation'];
     expect(fw.sourceNoteEn).toContain('equal treatment');
     expect(fw.sourceNoteEn).toContain('135,018');
-    expect(fw.sourceNoteAr).toContain('١٣٥,٠١٨');
+    // Round A.3 D5: the AR amount now uses the Arabic thousands separator
+    // (U+066C) consistently, and every amount in this note carries its
+    // currency word (the other two previously had none).
+    expect(fw.sourceNoteAr).toContain('١٣٥٬٠١٨ جنيهاً إسترلينياً');
+    expect(fw.sourceNoteAr).toContain('٢٠٧٬٧٢٠ جنيهاً');
+    expect(fw.sourceNoteAr).toContain('٥٬١٩٣٬٠٠٠ جنيه');
   });
 
   it('UK social value scoring is disclosed as an explicit not-modeled scope decision in the research log (Round A.1 moved this out of the customer-facing sourceNote)', () => {
@@ -1251,7 +1256,12 @@ describe("USA / Buy American Act Price Preference (FAR 25.1/25.2) — price-pref
     const fw = PROGRAMS['usa-buy-american-price-preference'];
     expect(fw.sourceNoteEn).toContain('75%');
     expect(fw.sourceNoteEn).toContain('174,000');
-    expect(fw.sourceNoteAr).toContain('١٧٤,٠٠٠');
+    // Round A.3 D7: this used to assert the AR figure with an ASCII comma
+    // (١٧٤,٠٠٠) -- that was itself the bug (an ASCII comma joining two
+    // Arabic-Indic digits), found and fixed during the D7 QA pass to use
+    // the real Arabic thousands separator (U+066C), matching the UK
+    // program's own fix in Round A.3 D5.
+    expect(fw.sourceNoteAr).toContain('١٧٤٬٠٠٠');
   });
 });
 
@@ -1694,8 +1704,12 @@ describe('IN / Make in India Purchase Preference (PPP-MII Order 2017) — price-
     expect(fw.sourceNoteEn).toContain('20%');
     expect(fw.sourceNoteEn).toContain('Class-I');
     expect(fw.sourceNoteEn).toContain('4 June 2020');
-    expect(fw.sourceNoteAr).toContain('20٪');
-    expect(fw.sourceNoteAr).toContain('4 يونيو 2020');
+    // Round A.3 D4: sourceNoteAr uses the file's Arabic-Indic numeral
+    // convention in prose (dates, percentages) -- these were bare Latin
+    // digits ("20٪", "4 يونيو 2020") before this round; only legal citation
+    // codes keep Latin digits, and those are bidi-isolated per D3.
+    expect(fw.sourceNoteAr).toContain('٢٠٪');
+    expect(fw.sourceNoteAr).toContain('٤ يونيو ٢٠٢٠');
   });
 });
 
@@ -3821,16 +3835,257 @@ describe('Round A.1: customer-facing sourceNote hygiene (guard test)', () => {
   });
 });
 
+describe('Round A.3 D2: every program states a dated "Last checked" or honestly discloses that none was recorded', () => {
+  // D2 found 27 of the 52 programs with no dated "Last checked"/"تاريخ آخر
+  // مراجعة" clause in EN and/or AR (one, cn-govt-procurement-law-domestic-mandate,
+  // had the AR label with no date after it at all). Per Decision Record 8.7
+  // (never fabricate), each program's real date -- the actual git commit date
+  // of the research-log content and program rewrite that produced its current
+  // wording (22 Oct 2026, commit a4832c6) -- was used where a research-log
+  // section for that program exists; where none exists, the note says plainly
+  // that no date was recorded, in both languages, rather than inventing one.
+  const EN_DATE_RE = /Last checked \d{1,2} \w{3} 2026|Last verified date not recorded/;
+  const AR_DATE_RE = /تاريخ آخر مراجعة:\s*[٠-٩]|لم يُسجَّل تاريخ آخر مراجعة/;
+
+  it('every one of the 52 programs\' sourceNoteEn contains a dated "Last checked" clause or the explicit not-recorded sentence', () => {
+    const offenders: string[] = [];
+    for (const [key, info] of Object.entries(PROGRAMS)) {
+      if (!EN_DATE_RE.test(info.sourceNoteEn)) offenders.push(key);
+    }
+    expect(offenders).toEqual([]);
+  });
+
+  it('every one of the 52 programs\' sourceNoteAr contains a dated "تاريخ آخر مراجعة" clause or the explicit not-recorded sentence -- never the label alone with nothing after it', () => {
+    const offenders: string[] = [];
+    for (const [key, info] of Object.entries(PROGRAMS)) {
+      if (!AR_DATE_RE.test(info.sourceNoteAr)) offenders.push(key);
+    }
+    expect(offenders).toEqual([]);
+  });
+
+  // The 8 programs with no research-log section for their own rewrite (none
+  // of the other search hits in docs/module08-research-log.md match these
+  // keys) must use the honest "not recorded" sentence, not a fabricated date.
+  // (om-mandatory-list was in this list until Round A.3 D6: that round's own
+  // live, dated primary-source research -- Royal Decree 57/2025 and
+  // omandaily.om, confirmed 22 Oct 2026 -- gave it a real "Last checked"
+  // date and its own research-log section, so it moved out of this list.)
+  const D2_NOT_RECORDED_PROGRAMS = [
+    'sa-lcgpa-general', 'sa-mandatory-list', 'sa-price-preference', 'sa-iktva-aramco',
+    'om-oq-price-preference',
+    'bh-sme-price-preference', 'bh-sme-spend-setaside', 'kw-kpc-local-spend',
+  ];
+
+  it('the 8 programs with no research-log section say "not recorded" in both languages, not a dated claim', () => {
+    expect(D2_NOT_RECORDED_PROGRAMS).toHaveLength(8);
+    const log = readFileSync(
+      join(import.meta.dirname, '..', '..', 'docs', 'module08-research-log.md'),
+      'utf-8',
+    );
+    for (const key of D2_NOT_RECORDED_PROGRAMS) {
+      expect(log.includes(`## ${key}`)).toBe(false);
+      expect(PROGRAMS[key as keyof typeof PROGRAMS].sourceNoteEn).toContain('Last verified date not recorded');
+      expect(PROGRAMS[key as keyof typeof PROGRAMS].sourceNoteAr).toContain('لم يُسجَّل تاريخ آخر مراجعة');
+    }
+  });
+});
+
+describe('Round A.3 D3: Latin citation runs with a digit or bracket, embedded in Arabic prose, are bidi-isolated', () => {
+  // Verified (not just "contains the isolate characters") with the Unicode
+  // Bidirectional Algorithm reference implementation (python-bidi, UAX #9):
+  // several of these exact citation strings, run through get_display()
+  // without any directional marks, come back with their own internal word
+  // order REVERSED under the base-RTL paragraph context -- e.g.
+  // "15 U.S.C. 644" resolves to visual order "U.S.C. 644 15", "Cai Ku [2020]"
+  // resolves with its own opening bracket detached to the FRONT of the run
+  // ("[Cai Ku [2020"), and "2014/24/EU" resolves as "EU/2014/24". Wrapping
+  // the run in LEFT-TO-RIGHT ISOLATE (U+2066) ... POP DIRECTIONAL ISOLATE
+  // (U+2069) fixes every one of those reversals under the same algorithm.
+  // (That library's version does not implement LRI/PDI itself -- isolates
+  // postdate the algorithm revision it targets -- so the fix was verified
+  // with the older LRE/PDF embedding marks, which the library does support
+  // and which resolve identically for ordering purposes; LRI/PDI were then
+  // used in the actual data because, per UAX #9, isolates additionally stop
+  // the wrapped run's direction from leaking into the neutral characters
+  // around it, which LRE/PDF can do. This is a textual verification of
+  // resolved character order, not a rendered-pixel check -- D7 covers actual
+  // browser rendering, and discloses there whether a browser was available.)
+  const LRI = '⁦';
+  const PDI = '⁩';
+  const CITATION_CHAR_CLASS = "A-Za-z0-9.,/()\\[\\]_-";
+  const SEG_RE = new RegExp(`[${CITATION_CHAR_CLASS}]+(?:\\s[${CITATION_CHAR_CLASS}]+)*`, 'g');
+  const hasLatinLetter = (s: string) => /[A-Za-z]/.test(s);
+  const hasDigitOrBracket = (s: string) => /[0-9[\]]/.test(s);
+
+  it('every Latin run in sourceNoteAr containing a digit or bracket is wrapped in LRI...PDI, across all 52 programs', () => {
+    const offenders: Record<string, string[]> = {};
+    for (const [key, info] of Object.entries(PROGRAMS)) {
+      const ar = info.sourceNoteAr;
+      // Strip isolate-wrapped runs first so the bare scan below only sees
+      // whatever is left unwrapped.
+      const stripped = ar.replaceAll(LRI, '\u0000').replaceAll(PDI, '\u0000');
+      let m: RegExpExecArray | null;
+      SEG_RE.lastIndex = 0;
+      while ((m = SEG_RE.exec(ar)) !== null) {
+        const run = m[0];
+        if (!hasLatinLetter(run) || !hasDigitOrBracket(run)) continue;
+        const before = ar[m.index - 1];
+        const after = ar[m.index + run.length];
+        if (before !== LRI || after !== PDI) {
+          (offenders[key] ??= []).push(run);
+        }
+      }
+      void stripped;
+    }
+    expect(offenders).toEqual({});
+  });
+
+  it('the LRI...PDI marks are real, paired, and present in the 14 programs known to carry a citation (regression count)', () => {
+    const CITED_PROGRAMS = [
+      'sa-lcgpa-general', 'sa-iktva-aramco', 'usa-buy-american-price-preference',
+      'usa-sba-small-business-setaside', 'usa-berry-amendment-dod',
+      'cn-govt-procurement-law-domestic-mandate', 'cn-sme-price-deduction',
+      'cn-defense-domestic-sourcing', 'cn-domestic-product-price-preference',
+      'in-make-in-india-price-preference',
+      'in-dap-2020-defense-offset', 'de-eu-gpa-non-discrimination-baseline',
+      'de-edip-defense-local-content', 'uk-below-threshold-reservation',
+    ];
+    expect(CITED_PROGRAMS).toHaveLength(14);
+    for (const key of CITED_PROGRAMS) {
+      const ar = PROGRAMS[key as keyof typeof PROGRAMS].sourceNoteAr;
+      const lriCount = ar.split(LRI).length - 1;
+      const pdiCount = ar.split(PDI).length - 1;
+      expect(lriCount).toBeGreaterThan(0);
+      expect(lriCount).toBe(pdiCount);
+    }
+  });
+});
+
+describe('Round A.3 D4: no bare Latin digit in sourceNoteAr outside an isolated citation run', () => {
+  // D4: Arabic prose (dates, percentages) must use the file's Arabic-Indic
+  // numeral convention; a Latin digit is only legitimate inside a legal
+  // citation code, and every such code is wrapped in LRI...PDI per D3 --
+  // so "no bare Latin digit outside an isolate" is the correct, single test
+  // for both rules at once. Found and fixed this round: a plain-prose date
+  // ("4 يونيو 2020") and a plain-prose percentage ("20٪") in
+  // in-make-in-india-price-preference's sourceNoteAr, converted to ٤ يونيو
+  // ٢٠٢٠ and ٢٠٪; and one additional citation code (cn-domestic-product-
+  // price-preference's "رقم [2025] 34") that D3's own scan had not isolated
+  // because it carries no Latin letter -- isolated here for the same
+  // scrambling-defense reason as every lettered citation code.
+  const LRI = '⁦';
+  const PDI = '⁩';
+
+  it('every sourceNoteAr, with isolated runs removed, contains zero ASCII digits', () => {
+    const offenders: Record<string, string> = {};
+    for (const [key, info] of Object.entries(PROGRAMS)) {
+      const stripped = info.sourceNoteAr.replace(new RegExp(`${LRI}.*?${PDI}`, 'gu'), '');
+      const digits = stripped.match(/[0-9]+/g);
+      if (digits) offenders[key] = digits.join(', ');
+    }
+    expect(offenders).toEqual({});
+  });
+});
+
+describe('Round A.3 D7: no ASCII comma used as a thousands separator between Arabic-Indic digits', () => {
+  // Found during the D7 manual QA customer-simulation pass (22 Oct 2026):
+  // usa-buy-american-price-preference's sourceNoteAr wrote "١٧٤,٠٠٠" --
+  // Arabic-Indic digits joined by a plain ASCII comma, the exact same bug
+  // class the UK (uk-below-threshold-reservation) program's thousands
+  // separators were fixed to use the real Arabic thousands separator
+  // (U+066C, "٬") for in Round A.3 D5. Fixed the same way here and guarded
+  // against regressing anywhere else in the file.
+  it('no sourceNoteAr joins two Arabic-Indic digits with an ASCII comma', () => {
+    const offenders: Record<string, string> = {};
+    for (const [key, info] of Object.entries(PROGRAMS)) {
+      const hits = info.sourceNoteAr.match(/[٠-٩],[٠-٩]/g);
+      if (hits) offenders[key] = hits.join(', ');
+    }
+    expect(offenders).toEqual({});
+  });
+
+  it('usa-buy-american-price-preference now uses the real Arabic thousands separator for ١٧٤٬٠٠٠', () => {
+    expect(PROGRAMS['usa-buy-american-price-preference'].sourceNoteAr).toContain('١٧٤٬٠٠٠ دولار');
+  });
+});
+
 describe('Round A.2: Arabic terminology hygiene (guard test, per the owner\'s own Arabic QA review, F2)', () => {
+  // Round A.3 D1: the previous نمذج pattern (/[يتلم]ُ?نمذَج[ةت]?/) was anchored to
+  // one specific vocalized shape and missed real residuals in other forms --
+  // "نمذِج" (kasra on ذ instead of fatha), "نمذجتها" (pronoun suffix), and
+  // "مُنمذجان" (dual) all slipped through it and were found only by a
+  // diacritic-tolerant re-scan. NMZJ_ROOT_RE matches the four root letters
+  // ن-م-ذ-ج in sequence with any run of Arabic diacritics (tashkeel) --
+  // including none -- between each pair, so it catches the root regardless of
+  // prefix (تُ-, يُ-, مُ-), suffix (-ة, -ها, -ان, -ج), or vocalization.
+  const AR_DIACRITICS = '[ً-ْٰ]*';
+  const NMZJ_ROOT_RE = new RegExp(`ن${AR_DIACRITICS}م${AR_DIACRITICS}ذ${AR_DIACRITICS}ج`);
+
   // Each banned pattern paired with why it's wrong -- see
   // docs/module08-arabic-glossary.md for the full glossary and sourcing.
   const BANNED_AR_PATTERNS: Array<{ pattern: RegExp; why: string }> = [
     { pattern: /تسجيل/, why: 'possible scoring/registration confusion -- see glossary' },
     { pattern: /ثغرة/, why: 'loophole/vulnerability register is wrong for "unpublished gap"; use فجوة في المعلومات المنشورة' },
-    { pattern: /[يتلم]ُ?نمذَج[ةت]?/, why: 'مُنمذَج is an English calque of "modeled"; use يُحتسب/محتسب' },
+    { pattern: NMZJ_ROOT_RE, why: 'نمذج-root (any vocalization/prefix/suffix) is an English calque of "modeled"; use يُحتسب/محتسب/تُحتسب' },
     { pattern: /للعِلم فقط/, why: 'stiff calque; use للاطلاع فقط' },
     { pattern: /--/, why: 'ASCII double hyphen does not belong in Arabic text; use an Arabic dash, colon, or comma' },
   ];
+
+  it('the نمذج-root regex catches every vocalization, prefix, and suffix variant (Round A.3 D1)', () => {
+    // At least 8 variants, per the round brief's own instruction, covering:
+    // bare root, gerund, gerund+suffix, passive participle (several
+    // vocalizations), dual, and 1st/3rd-person present-tense verb forms --
+    // the exact categories that slipped through the old pattern.
+    const variants = [
+      'نمذج',           // bare root, no tashkeel
+      'نمذجة',          // gerund
+      'نمذجتها',        // gerund + pronoun suffix (the bh-sme-price-preference residual)
+      'مُنمذَج',         // passive participle, fatha on ذ
+      'نمذِج',          // passive participle, kasra on ذ (the sa-gami-defense/tr-defense-offset residual)
+      'مُنمذجان',        // dual (the kw-nationality-price-preference residual)
+      'يُنمذج',         // present tense, 3rd person masculine
+      'تُنمذِج',         // present tense, 3rd person feminine
+      'لا تُنمذَج',      // negated passive present tense
+    ];
+    expect(variants.length).toBeGreaterThanOrEqual(8);
+    const uncaught = variants.filter(v => !NMZJ_ROOT_RE.test(v));
+    expect(uncaught).toEqual([]);
+  });
+
+  // Round A.3 D1 also re-scanned beyond sourceNoteAr: this file carries a
+  // second body of customer-facing Arabic text -- the recommendAction
+  // engine's primaryAr/alternativeAr/reasonAr strings and a handful of other
+  // inline Arabic literals -- that Round A.2's sourceNoteAr-only guard test
+  // never covered. That gap is exactly where 3 of this round's نمذج residuals
+  // and 40 ASCII "--" instances were actually found (sa-gami-defense and
+  // tr-defense-offset's own sourceNoteAr, plus the gami-valuation-factor
+  // recommendation's alternativeAr). This test scans every Arabic string
+  // literal in the whole file, not just PROGRAMS, so that gap cannot reopen.
+  function arabicLiteralsPerLine(src: string): Array<{ line: number; text: string }> {
+    const arabicRe = /[؀-ۿ]/;
+    const literalRe = /(['"`])((?:\\.|(?!\1)[^\\])*)\1/g;
+    const out: Array<{ line: number; text: string }> = [];
+    src.split('\n').forEach((lineText, idx) => {
+      if (!arabicRe.test(lineText)) return;
+      let m: RegExpExecArray | null;
+      literalRe.lastIndex = 0;
+      while ((m = literalRe.exec(lineText)) !== null) {
+        if (arabicRe.test(m[2])) out.push({ line: idx + 1, text: m[2] });
+      }
+    });
+    return out;
+  }
+
+  it('no Arabic string literal anywhere in this file (not just sourceNoteAr) contains an ASCII "--" or the نمذج-root calque', () => {
+    const src = readFileSync(join(import.meta.dirname, 'supplierLocalContentEligibility.ts'), 'utf-8');
+    const literals = arabicLiteralsPerLine(src);
+    const offenders: string[] = [];
+    for (const { line, text } of literals) {
+      if (text.includes('--')) offenders.push(`line ${line} [--]: ${text.slice(0, 80)}`);
+      if (NMZJ_ROOT_RE.test(text)) offenders.push(`line ${line} [نمذج]: ${text.slice(0, 80)}`);
+    }
+    expect(offenders).toEqual([]);
+  });
 
   // تسجيل is the one banned pattern with a legitimate sense (real supplier/company
   // registration, portal sign-up, or a login), so it is checked separately with an

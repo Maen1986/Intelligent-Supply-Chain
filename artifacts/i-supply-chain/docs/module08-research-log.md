@@ -108,6 +108,27 @@ not 11 Jun 2026 as earlier carried — the 11 Jun date reflected Gulf Times'
 own publication date reporting on "yesterday's" Cabinet meeting, not the
 meeting date itself.
 
+Round A.3 D6 (22 Oct 2026) addendum: the brief asked this round to try
+cabinet.gov.qa, mof.gov.qa, and QNA's Arabic article for this exact Cabinet
+session and quote the Arabic title if found. QNA's own primary article for
+10 Jun 2026 was located and fetched directly in English
+(qna.org.qa/en/News-Area/News/2026-6/10/cabinet-holds-weekly-meeting),
+confirming the title "General Policy and Strategy for National Local
+Content," the 10 Jun 2026 date, and that it was prepared by the Ministry of
+Finance with the National Planning Council under Cabinet Decision No. 11 of
+2025 -- all independently corroborated by Gulf Times' report of the same
+meeting (gulf-times.com/article/727284). Neither cabinet.gov.qa nor
+mof.gov.qa surfaced a matching page in this pass's searches, and QNA's
+Arabic-language (ar-QA) article for this same date could not be located --
+its language-switcher link resolves to a generic search page, not a direct
+article URL, and no search query tried this round turned up the Arabic
+article's own URL. This round's search therefore upgraded the confidence
+behind this program's existing Arabic title `السياسة العامة والاستراتيجية
+الوطنية للمحتوى المحلي` (now independently corroborated via QNA's own
+English-language primary reporting, not just secondary Gulf Times/Qatar
+Tribune coverage) without reaching a directly-quoted primary Arabic-script
+source -- disclosed as a partial, not full, resolution of D6(c).
+
 ## bh-local-content
 
 Research history: the Bahrain Tender Board's own Guideline (Nov 2025) was
@@ -134,6 +155,20 @@ discrepancy between what those secondary sources report and what the Tender
 Board's own primary text states, per Decision Record 8.7 (a conflict is
 disclosed, not silently resolved by adjusting the modeled figure to match the
 secondary claim).
+
+Round A.3 D6 (22 Oct 2026) addendum: the official Arabic name of Bahrain's
+Tender Board is `مجلس المناقصات والمزايدات`, confirmed from a primary
+tenderboard.gov.bh Arabic HTML page (not a PDF),
+`https://www.tenderboard.gov.bh/Ar/AboutUs/Overview`, whose footer reads
+`مجلس المناقصات والمزايدات - مملكة البحرين`. The customer-facing sourceNoteAr
+for this program and for `bh-takamul-local-value`, `bh-gulf-made-preference`,
+and `bh-bahrainisation-tender-workforce` (plus that last program's own
+Bahrainisation recommendation string) were updated from the prior, unverified
+descriptive phrase `هيئة المناقصات البحرينية` / `هيئة المناقصات` to this
+confirmed name, with verb/pronoun agreement switched from feminine to
+masculine throughout (`مجلس` is grammatically masculine). See
+`docs/module08-arabic-glossary.md`'s Bahrain Tender Board entry for the full
+citation.
 
 ## cn-defense-domestic-sourcing
 
@@ -578,3 +613,7 @@ Research history: Cai Ku [2020] No. 46 (effective 1 Jan 2021) and Cai Ku [2022] 
 ## in-make-in-india-price-preference
 
 Research history: the Public Procurement (Preference to Make in India) Order 2017 (DPIIT), as revised 4 June 2020, and its three-tier classification (Class-I ≥50%, Class-II 20%-50%, Non-Local ≤20%) are modeled via a new function, computePricePreferenceInMakeInIndia. Class-II and Non-Local both currently resolve to a zero effective margin in this engine, since honestly distinguishing "eligible to bid, no price preference" (Class-II) from "excluded entirely" (Non-Local) would need a field the shared result shape does not yet carry — this simplification is disclosed here rather than silently assumed. Nodal ministries' authority to notify higher minimum local-content thresholds for specific categories is real and sourced but not separately modeled, since this platform cannot know which category-specific notifications apply to a given tender without caller-supplied input this file does not yet collect.
+
+## om-mandatory-list
+
+Research history (Round A.3 D6, 22 Oct 2026): the customer note previously said Royal Decree No. 57/2025 renamed Oman's tender authority itself to PTLC "replacing the former Tender Board" — checked this round against the Decree's own primary Arabic text (qanoon.om/p/2025/rd2025057/) and found that framing wrong. Article 1 renames only the Tender Board's **General Secretariat** ("الأمانة العامة لمجلس المناقصات") to "هيئة المشاريع والمناقصات والمحتوى المحلي" (PTLC); Article 4 states PTLC's role is to support/assist the Tender Board ("معاونة مجلس المناقصات"), meaning the Board itself continues; Article 7 preserves the Board's own powers under other laws and decrees; Article 8 is the mechanical find-and-replace clause substituting the old Secretariat/Secretary-General titles with the new Authority's name wherever they appear in other legislation. A secondary source, omandaily.om's report of 24 Jun 2025 (omandaily.om/article/1181247), independently confirms the same renaming-of-the-Secretariat framing and additionally describes PTLC's expanded internal structure (new directorates including a Projects Follow-up Office and a General Directorate for Government Procurement; the former General Directorate for Local Content renamed to the National Office for Local Content; contract-review duties moved in from the Ministry of Justice and Legal Affairs). The customer-facing note was corrected to say only what these two primary/near-primary sources support — the Board continues, the Secretariat was renamed — rather than the prior, broader "replacing the former Tender Board" claim. This also resolved the program's own D2 "Last checked" date, moving it out of the not-recorded disclosure list it had carried since D2's own pass earlier this round.
