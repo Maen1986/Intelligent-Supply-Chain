@@ -129,6 +129,51 @@ English-language primary reporting, not just secondary Gulf Times/Qatar
 Tribune coverage) without reaching a directly-quoted primary Arabic-script
 source -- disclosed as a partial, not full, resolution of D6(c).
 
+Gap-closure pass, 23 Oct 2026 (per the owner's "close the 3 disclosed gaps"
+instruction): two further attempts were made to find a primary Arabic-script
+quote of the Strategy's own exact title, both of which turned up a real but
+adjacent result rather than the Strategy's own title. Al Meezan
+(almeezan.qa), Qatar's official legal-portal, indexes a verbatim Arabic
+title for Cabinet Decision No. 11 of 2025 itself (LawID=9984) via
+search-engine-indexed title text: `قرار مجلس الوزراء رقم (11) لسنة 2025
+بإنشاء اللجنة الوزارية للمحتوى المحلي الوطني` -- "Cabinet Decision No. 11 of
+2025 Establishing the National Local Content Ministerial Committee." This is
+a genuine primary-source Arabic title, but it is the title of the 2025
+*committee-establishing* decision, not the Strategy document itself (which
+the Cabinet approved later, under that committee's recommendation, on 10 Jun
+2026) -- so it corroborates the surrounding institutional structure without
+closing the gap. The live Al Meezan page could not be fetched directly to
+look for a cross-reference to the Strategy's own title: WebFetch returns
+only the portal's SPA shell (content loads via client-side JavaScript, not
+present in the initial HTML), and a direct Playwright fetch of the same URL
+fails with `net::ERR_TUNNEL_CONNECTION_FAILED` -- confirmed via this
+sandbox's own proxy-status endpoint to be a deliberate egress-policy block
+on general external domains (`403` logged against almeezan.qa in
+`recentRelayFailures`), not a transient failure. Two further targeted
+WebSearch queries this round (Arabic-language, combining "National Planning
+Council," "general policy," "local content," and "strategy") surfaced no
+new primary source beyond what Round A.3 D6 already found.
+
+**Honest conclusion, not yet closed:** no primary Arabic-script quote of the
+Strategy document's own exact title has been found across five research
+rounds (29 Sep, 1 Oct, 2 Oct, 20 Oct, Round A.3 D6, and this 23 Oct pass).
+The working hypothesis, strengthened but not proven this round, is that the
+Strategy itself may never have been separately gazetted or published with
+its own standalone Arabic title distinct from QNA's and Gulf Times'
+descriptive coverage -- Cabinet "approval" of a strategy document, as
+opposed to a numbered Cabinet Decision like 11/2025, does not always produce
+a separately-published legal-portal entry in Qatar's system. This is a
+disclosed limitation, not a closed gap: the existing Arabic title in the
+module (`السياسة العامة والاستراتيجية الوطنية للمحتوى المحلي`) remains the
+best-supported rendering (directly consistent with QNA's own English
+primary title, translated conventionally), but it is not a verbatim quote of
+a primary Arabic-script source, and this entry should continue to say so
+rather than imply full verification. Per Decision Record 8.7, this gap is
+disclosed as genuinely unclosable with the tools available in this sandbox
+session -- a future session with broader web access (or a human with direct
+access to Qatar's Official Gazette archive) is the realistic path to closing
+it, not further search-tool iteration from here.
+
 ## bh-local-content
 
 Research history: the Bahrain Tender Board's own Guideline (Nov 2025) was
