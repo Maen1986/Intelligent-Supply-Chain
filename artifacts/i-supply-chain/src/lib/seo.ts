@@ -4,6 +4,7 @@ export interface SeoRoute { path: string; title: string; description: string; }
 export interface SeoResult { title: string; description: string; canonical: string | null; robots: string; }
 
 const SITE_URL: string = data.site.url;
+const INDEXABLE: boolean = data.site.indexable;
 const byPath = new Map<string, SeoRoute>((data.routes as SeoRoute[]).map((r) => [r.path, r]));
 
 export function normalizePath(pathname: string): string {
@@ -16,7 +17,7 @@ export function seoForPath(pathname: string): SeoResult {
   const path = normalizePath(pathname);
   const route = byPath.get(path);
   if (route) {
-    return { title: route.title, description: route.description, canonical: SITE_URL + (path === '/' ? '/' : path), robots: 'index, follow, max-snippet:-1, max-image-preview:large' };
+    return { title: route.title, description: route.description, canonical: SITE_URL + (path === '/' ? '/' : path), robots: INDEXABLE ? 'index, follow, max-snippet:-1, max-image-preview:large' : 'noindex, nofollow' };
   }
   return { title: 'I Supply Chain', description: 'I Supply Chain interactive tool.', canonical: null, robots: 'noindex, follow' };
 }

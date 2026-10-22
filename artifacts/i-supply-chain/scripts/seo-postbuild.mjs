@@ -50,9 +50,10 @@ function page(route) {
   h = replaceTag(h, /<meta name="twitter:title"[^>]*>/, `<meta name="twitter:title" content="${esc(route.title)}" />`);
   h = replaceTag(h, /<meta name="twitter:description"[^>]*>/, `<meta name="twitter:description" content="${esc(route.description)}" />`);
   let extra = '';
-  if (route.noindex) {
-    h = replaceTag(h, /<meta name="robots"[^>]*>/, '<meta name="robots" content="noindex, follow" />');
-  } else {
+  if (route.noindex || !site.indexable) {
+    h = replaceTag(h, /<meta name="robots"[^>]*>/, `<meta name="robots" content="${site.indexable ? 'noindex, follow' : 'noindex, nofollow'}" />`);
+  }
+  if (!route.noindex) {
     extra += `\n    <link rel="canonical" href="${esc(abs(route.path))}" />`;
     extra += `\n    <meta property="og:url" content="${esc(abs(route.path))}" />`;
     extra += `\n    <meta property="og:image" content="${esc(ogImage)}" />`;

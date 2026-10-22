@@ -81,6 +81,8 @@ ind('healthcare', 'Healthcare', 'Resilient health supply chains for the Kingdom\
 ind('tech', 'Technology & ICT', 'Saudi Arabia\'s ICT sector — driven by Vision 2030 digital economy targets and NEOM\'s technology ambitions — is one of the world\'s fastest-growing.');
 
 const site = {
+  // PRE-LAUNCH SWITCH: false = every page ships noindex,nofollow. Set true on launch day.
+  indexable: false,
   name: 'I Supply Chain',
   url: 'https://iscsupplychain.com',
   legalNote: 'Single source for sitemap, per-route <head>, JSON-LD and the client-side SeoManager.',

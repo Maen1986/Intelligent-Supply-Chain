@@ -1,5 +1,6 @@
 {
   "site": {
+    "indexable": false,
     "name": "I Supply Chain",
     "url": "https://iscsupplychain.com",
     "legalNote": "Single source for sitemap, per-route <head>, JSON-LD and the client-side SeoManager.",

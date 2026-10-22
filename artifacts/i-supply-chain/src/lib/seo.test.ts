@@ -42,7 +42,7 @@ describe('seoForPath', () => {
   it('returns canonical + index for public routes, tolerant of trailing slash', () => {
     const a = seoForPath('/about/');
     expect(a.canonical).toBe('https://iscsupplychain.com/about');
-    expect(a.robots).toContain('index');
+    expect(a.robots).toBe(data.site.indexable ? 'index, follow, max-snippet:-1, max-image-preview:large' : 'noindex, nofollow');
     expect(seoForPath('/').canonical).toBe('https://iscsupplychain.com/');
   });
   it('marks unknown and private paths noindex with no canonical', () => {
@@ -55,6 +55,14 @@ describe('seoForPath', () => {
   it('normalizePath strips query, hash, trailing slashes', () => {
     expect(normalizePath('/about/?x=1#y')).toBe('/about');
     expect(normalizePath('/')).toBe('/');
+  });
+});
+
+describe('pre-launch noindex', () => {
+  it('when not indexable, source shell and every runtime route are noindex', () => {
+    if (data.site.indexable) return;
+    expect(readFileSync(join(root, 'index.html'), 'utf8')).toContain('content="noindex, nofollow"');
+    for (const r of data.routes) expect(seoForPath(r.path).robots, r.path).toBe('noindex, nofollow');
   });
 });
 
