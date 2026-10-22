@@ -124,7 +124,7 @@ Confidential Marking: All generated briefings are marked "CONFIDENTIAL — © I 
 5. A statement that the information in your notice is accurate, and under penalty of perjury, that you are the copyright owner or authorised to act on their behalf
 6. Your electronic or physical signature
 
-To report infringement of ISC's intellectual property by third parties, or to request a content licence, contact: legal@iscsupplychain.com or maen.haqash@yahoo.com`,
+To report infringement of ISC's intellectual property by third parties, or to request a content licence, contact: legal@iscsupplychain.com or info@iscsupplychain.com`,
     contentAr: `إذا كنت تعتقد أن أي محتوى على هذه المنصّة ينتهك حقوق ملكيتك الفكرية، يُرجى تقديم إشعار خطي إلى فريقنا القانوني يتضمّن ما يلي:
 
 1. تحديد المصنّف المحمي بحقوق النشر الذي تدّعي انتهاكه
@@ -134,7 +134,7 @@ To report infringement of ISC's intellectual property by third parties, or to re
 5. بيان بأن المعلومات الواردة في إشعارك دقيقة، وأنك — تحت طائلة عقوبة الحنث باليمين — مالك حقوق النشر أو مفوّض بالتصرف نيابةً عنه
 6. توقيعك الإلكتروني أو المادي
 
-للإبلاغ عن انتهاك أطراف ثالثة للملكية الفكرية لـ ISC، أو لطلب ترخيص محتوى، يُرجى التواصل عبر: legal@iscsupplychain.com أو maen.haqash@yahoo.com`,
+للإبلاغ عن انتهاك أطراف ثالثة للملكية الفكرية لـ ISC، أو لطلب ترخيص محتوى، يُرجى التواصل عبر: legal@iscsupplychain.com أو info@iscsupplychain.com`,
   },
   {
     id: 'jurisdiction',
@@ -270,11 +270,11 @@ export function Legal() {
               : 'To request a content licence, report infringement, or raise a legal matter, contact our principal directly. All communications are treated as confidential.'}
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <a href="mailto:maen.haqash@yahoo.com" className="inline-flex items-center gap-2 bg-[#C9A84C] hover:bg-[#b8973e] text-white font-bold px-5 py-2.5 rounded-xl text-sm transition-colors">
-              <Mail className="w-4 h-4" /> maen.haqash@yahoo.com
+            <a href="mailto:info@iscsupplychain.com" className="inline-flex items-center gap-2 bg-[#C9A84C] hover:bg-[#b8973e] text-white font-bold px-5 py-2.5 rounded-xl text-sm transition-colors">
+              <Mail className="w-4 h-4" /> info@iscsupplychain.com
             </a>
-            <a href="mailto:maen.haqash@yahoo.com" className="inline-flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white font-bold px-5 py-2.5 rounded-xl text-sm transition-colors">
-              <Mail className="w-4 h-4" /> maen.haqash@yahoo.com
+            <a href="mailto:info@iscsupplychain.com" className="inline-flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white font-bold px-5 py-2.5 rounded-xl text-sm transition-colors">
+              <Mail className="w-4 h-4" /> info@iscsupplychain.com
             </a>
           </div>
         </motion.div>

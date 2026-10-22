@@ -12,7 +12,7 @@ Last updated 22 Oct 2026. Code side is shipped by the build (`seo/routes.json` -
 1. Google Search Console: add a **Domain** property for `iscsupplychain.com`, verify with the DNS TXT record at the domain registrar, submit `https://iscsupplychain.com/sitemap.xml`, then use URL Inspection > Request indexing on `/`, `/about`, `/solutions/supply-chain-strategy`.
 2. Bing Webmaster Tools: sign in and import the site from Search Console.
 3. Create the real LinkedIn company page (and X account if wanted), then put the URLs in `src/config.ts` (`SOCIAL_LINKS`). Icons stay hidden until set.
-4. Public contact email is maen.haqash@yahoo.com (decided 22 Oct 2026).
+4. Public contact email is info@iscsupplychain.com (decided 22 Oct 2026; needs email forwarding to a real inbox).
 5. Render dashboard (isc-frontend > Redirects/Rewrites): the `/* -> /index.html` rewrite makes unknown URLs return 200. Remove it so `404.html` is served with a real 404. Per-route files take priority over rewrites, so removal is safe once this build is live.
 
 ## Verify after deploy
