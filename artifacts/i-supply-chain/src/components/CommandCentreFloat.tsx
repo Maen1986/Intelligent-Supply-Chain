@@ -3,6 +3,7 @@ import { motion, AnimatePresence  } from 'framer-motion';
 import { Link, useLocation } from 'wouter';
 import { X, Brain, Zap, ArrowRight, Clock , ArrowLeft } from 'lucide-react';
 import { useLanguage } from '@/lib/LanguageContext';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const SESSION_KEY = 'isc_float_dismissed';
 
@@ -11,6 +12,7 @@ export function CommandCentreFloat() {
   const [visible, setVisible] = useState(false);
   const { lang } = useLanguage();
   const ar = lang === 'ar';
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     // Don't show on the command centre itself, or if already dismissed this session
@@ -32,6 +34,10 @@ export function CommandCentreFloat() {
     sessionStorage.setItem(SESSION_KEY, '1');
     setVisible(false);
   };
+
+  // Zero-overlap rule: a floating promo card always covers page content on a
+  // phone, so it is desktop-only (the Control Tower stays reachable via the nav).
+  if (isMobile) return null;
 
   return (
     <AnimatePresence>

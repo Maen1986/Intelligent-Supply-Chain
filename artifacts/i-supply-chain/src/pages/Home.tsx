@@ -1072,7 +1072,7 @@ export function Home() {
               <p className="text-muted-foreground">{isAr ? 'خبرة مصمّمة لتلبية المتطلبات الفريدة لقطاعك تحديداً.' : 'Expertise tailored to the unique demands of your specific sector.'}</p>
             </RevealSection>
 
-            <div className="md:w-2/3 flex overflow-x-auto md:flex-wrap gap-3 md:justify-end pb-2 md:pb-0 snap-x snap-mandatory md:snap-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+            <div className="w-full min-w-0 md:w-2/3 flex overflow-x-auto md:flex-wrap gap-3 md:justify-end pb-2 md:pb-0 snap-x snap-mandatory md:snap-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
               {industries.map((ind, i) => (
                 <motion.div
                   key={i}

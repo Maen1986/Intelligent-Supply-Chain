@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Send, RotateCcw, Volume2, VolumeX } from 'lucide-react';
 import { useLanguage } from '@/lib/LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface ChatMessage {
   role: 'user' | 'assistant';
@@ -329,12 +330,13 @@ export function ChatWidget() {
 
   const suggestions = lang === 'ar' ? QUICK_SUGGESTIONS_AR : QUICK_SUGGESTIONS;
   const isRtl = lang === 'ar';
+  const isMobile = useIsMobile();
 
   return (
     <>
       {/* Speaking avatar card — shown above trigger when speaking & chat is closed */}
       <AnimatePresence>
-        {isSpeaking && !isOpen && (
+        {isSpeaking && !isOpen && !isMobile && (
           <motion.div
             key="speaking-card"
             initial={{ opacity: 0, y: 16, scale: 0.9 }}
@@ -395,9 +397,16 @@ export function ChatWidget() {
       {/* Floating trigger button */}
       <AnimatePresence>
         {!isOpen && (
-          <motion.div key="trigger-wrap" className="fixed bottom-6 right-6 z-50">
+          <motion.div
+            key="trigger-wrap"
+            data-testid="chat-trigger-wrap"
+            data-mobile-inflow={isMobile ? 'true' : 'false'}
+            className={isMobile
+              ? 'relative w-full flex items-center justify-center py-3 bg-background border-t border-border'
+              : 'fixed bottom-6 right-6 z-50'}
+          >
             {/* Speaking rings on trigger */}
-            {isSpeaking && (
+            {isSpeaking && !isMobile && (
               <>
                 <span className="absolute inset-0 rounded-full border-2 border-[#0B3D91]/50 animate-ping" />
                 <span className="absolute -inset-1 rounded-full border border-[#0B3D91]/30 animate-ping [animation-delay:0.4s]" />
@@ -410,16 +419,19 @@ export function ChatWidget() {
               whileHover={{ scale: 1.08 }}
               whileTap={{ scale: 0.92 }}
               onClick={() => setIsOpen(true)}
-              className="w-16 h-16 rounded-full shadow-2xl overflow-hidden focus:outline-none focus-visible:ring-4 focus-visible:ring-primary/50 relative"
+              className={isMobile
+                ? 'inline-flex items-center gap-2 rounded-full ps-1 pe-5 min-h-11 bg-[#0B3D91] text-white text-sm font-semibold shadow-md focus:outline-none focus-visible:ring-4 focus-visible:ring-primary/50 relative'
+                : 'w-16 h-16 rounded-full shadow-2xl overflow-hidden focus:outline-none focus-visible:ring-4 focus-visible:ring-primary/50 relative'}
               aria-label={isRtl ? 'افتح المحادثة مع معن، المستشار الذكي' : 'Open chat with Maen, AI Consultant'}
             >
               <img
                 src="/brand/chat-avatar.png"
                 alt="Maen AI Consultant"
-                className="w-full h-full object-cover bg-primary"
+                className={isMobile ? 'w-9 h-9 rounded-full object-cover bg-primary' : 'w-full h-full object-cover bg-primary'}
               />
+              {isMobile && <span>{isRtl ? 'تحدّث مع معن' : 'Chat with Maen'}</span>}
               {/* Online / speaking indicator */}
-              <span className="absolute top-1 right-1 w-4 h-4 flex items-center justify-center">
+              <span className={isMobile ? 'absolute top-0 start-8 w-4 h-4 flex items-center justify-center' : 'absolute top-1 right-1 w-4 h-4 flex items-center justify-center'}>
                 {isSpeaking ? (
                   <span className="w-3 h-3 bg-blue-400 rounded-full border-2 border-white animate-pulse" />
                 ) : (
