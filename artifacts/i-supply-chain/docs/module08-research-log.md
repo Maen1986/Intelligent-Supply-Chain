@@ -154,7 +154,9 @@ WebSearch queries this round (Arabic-language, combining "National Planning
 Council," "general policy," "local content," and "strategy") surfaced no
 new primary source beyond what Round A.3 D6 already found.
 
-**Honest conclusion, not yet closed:** no primary Arabic-script quote of the
+**CLOSED 23 Oct 2026 (owner instruction "fix it").** The exact Arabic title was found in Al-Sharq's report of 1 Jul 2026 on the Minister of Justice's statement (Minister of State for Cabinet Affairs): `السياسة والاستراتيجية العامة للمحتوى المحلي الوطني` -- quoted verbatim twice ("اعتماد السياسة والاستراتيجية العامة للمحتوى المحلي" and "اعتمد مجلس الوزراء السياسة والاستراتيجية العامة للمحتوى المحلي الوطني"). The module's Arabic title was corrected to this wording (word order differs from the earlier literal translation). Limits kept honest: this is a Qatari newspaper quoting the official statement, not the Cabinet Secretariat's own page or the Official Gazette; the strategy text itself remains unpublished, so the program stays not-yet-sourced for scoring purposes.
+
+Superseded earlier conclusion (kept for the audit trail): **Honest conclusion, not yet closed:** no primary Arabic-script quote of the
 Strategy document's own exact title has been found across five research
 rounds (29 Sep, 1 Oct, 2 Oct, 20 Oct, Round A.3 D6, and this 23 Oct pass).
 The working hypothesis, strengthened but not proven this round, is that the
