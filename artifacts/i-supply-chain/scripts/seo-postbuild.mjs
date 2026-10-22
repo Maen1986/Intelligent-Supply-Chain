@@ -80,13 +80,18 @@ function write(rel, content) {
 
 let count = 0;
 for (const route of routes) {
-  write(route.path === '/' ? 'index.html' : join(route.path, 'index.html'), page(route));
+  const html = page(route);
+  write(route.path === '/' ? 'index.html' : join(route.path, 'index.html'), html);
+  // Flat copy (about.html) so hosts that map /about -> about.html serve the right page without a trailing slash.
+  if (route.path !== '/') write(route.path.slice(1) + '.html', html);
   count++;
 }
 const generic = { title: `${site.name} — Private tool`, description: `${site.name} interactive tool.`, noindex: true };
 for (const p of privatePaths) {
   if (routes.some((r) => r.path === p)) continue;
-  write(join(p, 'index.html'), page({ ...generic, path: p, h1: site.name, summary: '' }));
+  const html = page({ ...generic, path: p, h1: site.name, summary: '' });
+  write(join(p, 'index.html'), html);
+  write(p.slice(1) + '.html', html);
   count++;
 }
 write('404.html', page({ title: `Page not found | ${site.name}`, description: 'This page does not exist.', noindex: true, path: '/404', h1: 'Page not found', summary: '' }));
