@@ -10,4 +10,10 @@ import './index.css';
 // why this isn't inlined directly into maturitySubSegData1to5.ts.
 applyItem42ComplianceQuestions();
 
+// Static hosting serves /about/ for the per-route shells; normalise to the canonical no-slash URL
+// before the router mounts so the SPA and the canonical tag agree.
+if (window.location.pathname.length > 1 && window.location.pathname.endsWith('/')) {
+  window.history.replaceState(null, '', window.location.pathname.replace(/\/+$/, '') + window.location.search + window.location.hash);
+}
+
 createRoot(document.getElementById('root')!).render(<App />);

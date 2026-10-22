@@ -1,4 +1,6 @@
-// Lead/booking submissions are proxied through the API server (see
-// /api/leads and /api/notify routes). Webhook URLs are held server-side
-// and must never be exposed in this client bundle.
-export {};
+// Public social profiles. Leave a value empty until the real page exists —
+// the footer only renders an icon when its URL is set (never link to a generic site root).
+export const SOCIAL_LINKS: { linkedin: string; x: string } = {
+  linkedin: '',
+  x: '',
+};

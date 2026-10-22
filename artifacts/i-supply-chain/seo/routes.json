@@ -1,0 +1,387 @@
+{
+  "site": {
+    "name": "I Supply Chain",
+    "url": "https://iscsupplychain.com",
+    "legalNote": "Single source for sitemap, per-route <head>, JSON-LD and the client-side SeoManager.",
+    "description": "AI-powered supply chain consultancy for Saudi Arabia, the GCC and worldwide, with executive briefings, benchmarking, savings modelling and risk assessment.",
+    "telephone": "+966549479722",
+    "founder": "Ma'in Alhaqash",
+    "areaServed": [
+      "Saudi Arabia",
+      "GCC",
+      "Worldwide"
+    ],
+    "logoPath": "/brand/logo.png"
+  },
+  "routes": [
+    {
+      "path": "/",
+      "title": "I Supply Chain — AI Supply Chain Consultancy for the GCC",
+      "description": "AI-powered supply chain consultancy for Saudi Arabia, the GCC and worldwide: executive briefings, diagnostics, benchmarking and risk assessment.",
+      "h1": "Your Intelligent Supply Chain Consultant — Anytime, Anywhere.",
+      "summary": "We help organizations build resilient, sustainable, and efficient supply chains through intelligent AI consultancy and professional human expertise.",
+      "priority": "1.0",
+      "changefreq": "weekly",
+      "group": "home"
+    },
+    {
+      "path": "/about",
+      "title": "About Us | I Supply Chain",
+      "description": "A boutique supply chain consultancy for the GCC and worldwide, founded by Ma'in Alhaqash MCIPS CPSM MSc MIPP. Our values, approach and certifications.",
+      "h1": "About I Supply Chain",
+      "summary": "A boutique supply chain consultancy built for the GCC and worldwide — combining global expertise with deep regional intelligence.",
+      "priority": "0.8",
+      "changefreq": "monthly",
+      "group": "page"
+    },
+    {
+      "path": "/insights",
+      "title": "Supply Chain Insights | I Supply Chain",
+      "description": "Expert perspectives on supply chain strategy, procurement, risk and the evolving GCC business landscape, including Vision 2030 supply chains.",
+      "h1": "Insights",
+      "summary": "Expert perspectives on supply chain strategy, procurement, risk, and the evolving GCC business landscape.",
+      "priority": "0.7",
+      "changefreq": "weekly",
+      "group": "page"
+    },
+    {
+      "path": "/csr",
+      "title": "Free Supply Chain Diagnostic for Startups | I Supply Chain",
+      "description": "Free supply chain support for startups and small businesses: our contribution to stronger, more resilient communities.",
+      "h1": "CSR Free Diagnostic",
+      "summary": "Free supply chain support for startups and small businesses — our contribution to stronger, more resilient communities.",
+      "priority": "0.7",
+      "changefreq": "monthly",
+      "group": "page"
+    },
+    {
+      "path": "/case-studies",
+      "title": "Illustrative Engagement Scenarios | I Supply Chain",
+      "description": "Illustrative examples of how ISC frameworks apply to realistic GCC supply chain challenges, with outcomes grounded in industry benchmarks.",
+      "h1": "Illustrative Engagement Scenarios",
+      "summary": "Illustrative examples of how ISC's frameworks apply to realistic GCC supply chain challenges, with outcomes grounded in industry benchmarks.",
+      "priority": "0.7",
+      "changefreq": "monthly",
+      "group": "page"
+    },
+    {
+      "path": "/consultant",
+      "title": "Book a Supply Chain Consultation | I Supply Chain",
+      "description": "Schedule a confidential session directly with Ma'in Alhaqash. Appointment requests are confirmed within 24 hours.",
+      "h1": "Book a Consultation",
+      "summary": "Schedule a confidential session directly with Ma'in Alhaqash — confirmed within 24 hours.",
+      "priority": "0.8",
+      "changefreq": "monthly",
+      "group": "page"
+    },
+    {
+      "path": "/lean-six-sigma",
+      "title": "Lean Six Sigma & Quality Excellence | I Supply Chain",
+      "description": "Eliminate waste, reduce variation and build quality into every supply chain process, across the GCC and worldwide.",
+      "h1": "Lean, Six Sigma & Quality Excellence",
+      "summary": "Eliminate waste, reduce variation, and build quality into every supply chain process — from strategy to operational execution across the GCC and worldwide.",
+      "priority": "0.7",
+      "changefreq": "monthly",
+      "group": "page"
+    },
+    {
+      "path": "/risk-management",
+      "title": "Supply Chain Risk Management | I Supply Chain",
+      "description": "ISO 31000-aligned identification, assessment and mitigation of supply chain risks across the GCC and worldwide.",
+      "h1": "Supply Chain Risk Management",
+      "summary": "Proactive, ISO 31000-aligned identification, assessment, and mitigation of supply chain risks — protecting revenue, operations, and reputation across the GCC and worldwide.",
+      "priority": "0.7",
+      "changefreq": "monthly",
+      "group": "page"
+    },
+    {
+      "path": "/governance-compliance",
+      "title": "Procurement Governance & Compliance | I Supply Chain",
+      "description": "A 4-layer governance model, from policy architecture to board-level oversight, across the GCC and global regulatory landscape.",
+      "h1": "Governance & Compliance Framework",
+      "summary": "Structured governance that protects, enables, and creates value — from policy architecture to board-level oversight — across the GCC and global regulatory landscape.",
+      "priority": "0.7",
+      "changefreq": "monthly",
+      "group": "page"
+    },
+    {
+      "path": "/legal",
+      "title": "Legal, Copyright & IP Notice | I Supply Chain",
+      "description": "Intellectual property, copyright and usage notice for the I Supply Chain platform, methodologies and AI tools.",
+      "h1": "Legal, Copyright & IP Notice",
+      "summary": "All intellectual property, methodologies, AI tools, frameworks and content on this platform are exclusively owned by I Supply Chain.",
+      "priority": "0.3",
+      "changefreq": "yearly",
+      "group": "legal"
+    },
+    {
+      "path": "/data-sources",
+      "title": "Data Sources & Methodology | I Supply Chain",
+      "description": "The authoritative data sources, scoring methodology and benchmark revision history behind the ISC KPI platform.",
+      "h1": "Data Sources & Methodology",
+      "summary": "Full documentation of the authoritative data sources, scoring methodology, and benchmark revision history behind the ISC KPI platform.",
+      "priority": "0.4",
+      "changefreq": "monthly",
+      "group": "legal"
+    },
+    {
+      "path": "/solutions/supply-chain-strategy",
+      "title": "Supply Chain Strategy | I Supply Chain",
+      "description": "End-to-end supply chain design aligned to your business objectives and Vision 2030, using SCOR, network design and S&OP frameworks.",
+      "h1": "Supply Chain Strategy",
+      "summary": "End-to-end supply chain design aligned to your business objectives and Vision 2030.",
+      "priority": "0.8",
+      "changefreq": "monthly",
+      "group": "solution"
+    },
+    {
+      "path": "/solutions/procurement-excellence",
+      "title": "Procurement Excellence | I Supply Chain",
+      "description": "Strategic sourcing, supplier transformation and procurement capability that delivers measurable savings, using CIPS category management and Kraljic.",
+      "h1": "Procurement Excellence",
+      "summary": "Strategic sourcing, supplier transformation, and procurement capability that delivers measurable savings.",
+      "priority": "0.8",
+      "changefreq": "monthly",
+      "group": "solution"
+    },
+    {
+      "path": "/solutions/contract-lifecycle-management",
+      "title": "Contract Lifecycle Management | I Supply Chain",
+      "description": "Contract authoring to renewal: CLM that protects value, ensures compliance and eliminates leakage across the GCC and worldwide.",
+      "h1": "Contract Lifecycle Management",
+      "summary": "From contract authoring to renewal — full CLM that protects value, ensures compliance, and eliminates leakage across the GCC and worldwide.",
+      "priority": "0.8",
+      "changefreq": "monthly",
+      "group": "solution"
+    },
+    {
+      "path": "/solutions/supplier-relationship-governance",
+      "title": "Supplier Relationship & Governance | I Supply Chain",
+      "description": "Structured SRM that moves you from transactional buying to strategic partnerships that drive performance, resilience and mutual value.",
+      "h1": "Supplier Relationship & Governance",
+      "summary": "From transactional buying to strategic partnerships — structured SRM that drives performance, resilience, and mutual value across your supplier base.",
+      "priority": "0.8",
+      "changefreq": "monthly",
+      "group": "solution"
+    },
+    {
+      "path": "/solutions/risk-management-solution",
+      "title": "Supply Chain Risk Management Solution | I Supply Chain",
+      "description": "Proactive, ISO 31000-aligned supply chain risk identification, assessment and mitigation, with risk registers and continuity plans.",
+      "h1": "Risk Management",
+      "summary": "Proactive, ISO 31000-aligned supply chain risk identification, assessment, and mitigation.",
+      "priority": "0.8",
+      "changefreq": "monthly",
+      "group": "solution"
+    },
+    {
+      "path": "/solutions/sustainability-esg",
+      "title": "Sustainability & ESG | I Supply Chain",
+      "description": "ESG integration, Scope 3 measurement, circular procurement and Saudi Net Zero alignment for supply chains.",
+      "h1": "Sustainability & ESG",
+      "summary": "ESG integration, Scope 3 measurement, circular procurement, and Saudi Net Zero alignment.",
+      "priority": "0.8",
+      "changefreq": "monthly",
+      "group": "solution"
+    },
+    {
+      "path": "/solutions/resiliency",
+      "title": "Supply Chain Resiliency | I Supply Chain",
+      "description": "Build supply chains that absorb disruption and recover fast, designed for the GCC's geopolitical and logistical realities.",
+      "h1": "Resiliency",
+      "summary": "Build supply chains that absorb disruption, recover fast, and emerge stronger — battle-tested on the GCC's unique geopolitical and logistical realities, and built to scale worldwide.",
+      "priority": "0.8",
+      "changefreq": "monthly",
+      "group": "solution"
+    },
+    {
+      "path": "/solutions/digital-transformation",
+      "title": "Supply Chain Digital Transformation | I Supply Chain",
+      "description": "Technology enablement, ERP optimisation and digital supply chain maturity roadmaps.",
+      "h1": "Digital Transformation",
+      "summary": "Technology enablement, ERP optimisation, and digital supply chain maturity roadmaps.",
+      "priority": "0.8",
+      "changefreq": "monthly",
+      "group": "solution"
+    },
+    {
+      "path": "/solutions/value-engineering",
+      "title": "Value Engineering | I Supply Chain",
+      "description": "Systematic function analysis that removes non-value-added cost without compromising quality, performance or compliance, for GCC capital projects.",
+      "h1": "Value Engineering",
+      "summary": "Systematic function analysis that eliminates non-value-added cost without compromising quality, performance, or compliance — critical for GCC capital projects.",
+      "priority": "0.8",
+      "changefreq": "monthly",
+      "group": "solution"
+    },
+    {
+      "path": "/solutions/lean-agile-supply-chain",
+      "title": "Lean & Agile Supply Chain | I Supply Chain",
+      "description": "Waste elimination, flow optimisation and agile response models that cut lead times and reduce inventory.",
+      "h1": "Lean & Agile Supply Chain",
+      "summary": "Waste elimination, flow optimisation, and agile response models that cut lead times and reduce inventory.",
+      "priority": "0.8",
+      "changefreq": "monthly",
+      "group": "solution"
+    },
+    {
+      "path": "/solutions/process-improvement-policy",
+      "title": "Process Improvement & Policy | I Supply Chain",
+      "description": "Lean, Six Sigma and structured policy design that standardises operations and meets Saudi and GCC regulatory requirements.",
+      "h1": "Process Improvement & Policy",
+      "summary": "Lean, Six Sigma, and structured policy design that eliminates waste, standardises operations, and ensures compliance with Saudi and GCC regulatory requirements.",
+      "priority": "0.8",
+      "changefreq": "monthly",
+      "group": "solution"
+    },
+    {
+      "path": "/solutions/training-capability-building",
+      "title": "Training & Capability Building | I Supply Chain",
+      "description": "CIPS-aligned procurement and supply chain learning programmes for GCC teams, delivered in Arabic and English.",
+      "h1": "Training & Capability Building",
+      "summary": "CIPS-aligned procurement and supply chain learning programmes — designed for the GCC workforce and adaptable for teams worldwide, delivered in Arabic and English, and built to stick.",
+      "priority": "0.8",
+      "changefreq": "monthly",
+      "group": "solution"
+    },
+    {
+      "path": "/industry/manufacturing",
+      "title": "Manufacturing Supply Chain | I Supply Chain",
+      "description": "Supply chain and procurement consulting for Manufacturing organisations in Saudi Arabia and the GCC, aligned to CIPS and ISO standards.",
+      "h1": "Manufacturing",
+      "summary": "Saudi Arabia's manufacturing sector is undergoing a historic transformation under Vision 2030, with the National Industrial Development and Logistics Programme (NIDLP) targeting a tripling of GDP contribution.",
+      "priority": "0.6",
+      "changefreq": "monthly",
+      "group": "industry"
+    },
+    {
+      "path": "/industry/energy",
+      "title": "Energy & Oil Supply Chain | I Supply Chain",
+      "description": "Supply chain and procurement consulting for Energy & Oil organisations in Saudi Arabia and the GCC, aligned to CIPS and ISO standards.",
+      "h1": "Energy & Oil",
+      "summary": "The GCC energy sector — anchored by Saudi Aramco, SABIC, and the Kingdom's Vision 2030 energy diversification agenda — operates the world's most complex and high-stakes supply chains.",
+      "priority": "0.6",
+      "changefreq": "monthly",
+      "group": "industry"
+    },
+    {
+      "path": "/industry/government",
+      "title": "Government Supply Chain | I Supply Chain",
+      "description": "Supply chain and procurement consulting for Government organisations in Saudi Arabia and the GCC, aligned to CIPS and ISO standards.",
+      "h1": "Government & Public Sector",
+      "summary": "Saudi government procurement is governed by the Government Tenders and Procurement Law (Royal Decree M/128 2019) and administered through the NCAR (National Centre for Competitive Procurement).",
+      "priority": "0.6",
+      "changefreq": "monthly",
+      "group": "industry"
+    },
+    {
+      "path": "/industry/pharma",
+      "title": "Pharma Supply Chain | I Supply Chain",
+      "description": "Supply chain and procurement consulting for Pharma organisations in Saudi Arabia and the GCC, aligned to CIPS and ISO standards.",
+      "h1": "Pharmaceutical & Healthcare Products",
+      "summary": "Securing medicine supply chains for the Kingdom's health ambitions.",
+      "priority": "0.6",
+      "changefreq": "monthly",
+      "group": "industry"
+    },
+    {
+      "path": "/industry/retail",
+      "title": "Retail & FMCG Supply Chain | I Supply Chain",
+      "description": "Supply chain and procurement consulting for Retail & FMCG organisations in Saudi Arabia and the GCC, aligned to CIPS and ISO standards.",
+      "h1": "Retail & FMCG",
+      "summary": "Demand-driven supply chains for the Kingdom's growing consumer market.",
+      "priority": "0.6",
+      "changefreq": "monthly",
+      "group": "industry"
+    },
+    {
+      "path": "/industry/logistics",
+      "title": "Logistics Supply Chain | I Supply Chain",
+      "description": "Supply chain and procurement consulting for Logistics organisations in Saudi Arabia and the GCC, aligned to CIPS and ISO standards.",
+      "h1": "Logistics & Distribution",
+      "summary": "Building the distribution backbone for the Kingdom's trade ambitions.",
+      "priority": "0.6",
+      "changefreq": "monthly",
+      "group": "industry"
+    },
+    {
+      "path": "/industry/marine",
+      "title": "Marine & Port Supply Chain | I Supply Chain",
+      "description": "Supply chain and procurement consulting for Marine & Port organisations in Saudi Arabia and the GCC, aligned to CIPS and ISO standards.",
+      "h1": "Marine & Port Operations",
+      "summary": "Saudi Arabia's Red Sea and Arabian Gulf coastlines host some of the world's busiest maritime corridors.",
+      "priority": "0.6",
+      "changefreq": "monthly",
+      "group": "industry"
+    },
+    {
+      "path": "/industry/construction",
+      "title": "Construction & EPC Supply Chain | I Supply Chain",
+      "description": "Supply chain and procurement consulting for Construction & EPC organisations in Saudi Arabia and the GCC, aligned to CIPS and ISO standards.",
+      "h1": "Construction & EPC",
+      "summary": "Saudi Arabia is executing the largest construction programme in human history — NEOM, The Line, Diriyah Gate, Qiddiya, Red Sea Project — alongside Vision 2030 social infrastructure.",
+      "priority": "0.6",
+      "changefreq": "monthly",
+      "group": "industry"
+    },
+    {
+      "path": "/industry/healthcare",
+      "title": "Healthcare Supply Chain | I Supply Chain",
+      "description": "Supply chain and procurement consulting for Healthcare organisations in Saudi Arabia and the GCC, aligned to CIPS and ISO standards.",
+      "h1": "Healthcare",
+      "summary": "Resilient health supply chains for the Kingdom's care transformation.",
+      "priority": "0.6",
+      "changefreq": "monthly",
+      "group": "industry"
+    },
+    {
+      "path": "/industry/tech",
+      "title": "Technology & ICT Supply Chain | I Supply Chain",
+      "description": "Supply chain and procurement consulting for Technology & ICT organisations in Saudi Arabia and the GCC, aligned to CIPS and ISO standards.",
+      "h1": "Technology & ICT",
+      "summary": "Saudi Arabia's ICT sector — driven by Vision 2030 digital economy targets and NEOM's technology ambitions — is one of the world's fastest-growing.",
+      "priority": "0.6",
+      "changefreq": "monthly",
+      "group": "industry"
+    }
+  ],
+  "privatePaths": [
+    "/diagnostic",
+    "/intelligence",
+    "/maturity",
+    "/report-generator",
+    "/login",
+    "/command-center",
+    "/kraljic",
+    "/problem-map",
+    "/industry-benchmark",
+    "/decision-lab",
+    "/admin",
+    "/admin/leads",
+    "/admin/integrations",
+    "/admin/automations",
+    "/admin/evidence-review",
+    "/admin/platform-impact",
+    "/account",
+    "/my-assessments",
+    "/action-tracker",
+    "/brief",
+    "/workbench",
+    "/decision-memory",
+    "/supplier-dependency",
+    "/supplier-recovery-portfolio",
+    "/supplier-copq",
+    "/raci-matrix",
+    "/pre-qualification-asl",
+    "/onboarding",
+    "/periodic-evaluation",
+    "/blacklist",
+    "/offboarding",
+    "/lcgpa-readiness",
+    "/local-content-icv",
+    "/freezone-routing",
+    "/gcc-seasonal-calendar",
+    "/roi-waterfall",
+    "/customer-voice"
+  ]
+}

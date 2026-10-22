@@ -4,23 +4,17 @@
 # Proprietary methodologies, AI tools and content are protected IP.
 # ─────────────────────────────────────────────────────────────────────────────
 
-# Standard crawlers — index homepage and public pages only
+# Standard crawlers (Google, Bing, etc.) — public marketing pages are crawlable.
+# Interactive tools, accounts and admin are kept out of results (they also carry noindex).
 User-agent: *
-Allow: /i-supply-chain/
-Allow: /i-supply-chain/about
-Allow: /i-supply-chain/insights
-Allow: /i-supply-chain/csr
-Allow: /i-supply-chain/case-studies
-Disallow: /i-supply-chain/command-center
-Disallow: /i-supply-chain/diagnostic
-Disallow: /i-supply-chain/maturity
-Disallow: /i-supply-chain/consultant
-Disallow: /i-supply-chain/login
-Disallow: /i-supply-chain/solutions/
-Disallow: /i-supply-chain/lean-six-sigma
-Disallow: /i-supply-chain/risk-management
-Disallow: /i-supply-chain/governance-compliance
+Allow: /
+Disallow: /admin
+Disallow: /account
+Disallow: /my-assessments
+Disallow: /login
 Disallow: /api-server/
+
+Sitemap: https://iscsupplychain.com/sitemap.xml
 
 # ── AI Training Crawlers — Blocked ───────────────────────────────────────────
 # OpenAI GPT

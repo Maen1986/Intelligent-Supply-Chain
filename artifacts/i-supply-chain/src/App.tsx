@@ -66,6 +66,7 @@ import { ChatWidget } from '@/components/ChatWidget';
 import { WhatsAppButton } from '@/components/WhatsAppButton';
 import { AnnouncementBanner } from '@/components/AnnouncementBanner';
 import { CommandCentreFloat } from '@/components/CommandCentreFloat';
+import { SeoManager } from '@/components/SeoManager';
 
 const queryClient = new QueryClient();
 
@@ -137,6 +138,7 @@ function Layout({ children }: { children: React.ReactNode }) {
   useIPProtection();
   return (
     <div className={`min-h-screen flex flex-col font-sans ${lang === 'ar' ? 'rtl' : 'ltr'}`}>
+      <SeoManager />
       <AnnouncementBanner />
       <Header />
       <main className="flex-1 bg-background">

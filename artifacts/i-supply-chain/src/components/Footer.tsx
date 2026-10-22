@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Logo } from './Logo';
 import { useLanguage } from '@/lib/LanguageContext';
+import { SOCIAL_LINKS } from '@/config';
 import { Link } from 'wouter';
 import { Linkedin, Twitter, Mail, Phone, MapPin, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -52,14 +53,18 @@ export function Footer() {
                 : 'A boutique supply chain consultancy combining AI-powered diagnostics with senior human expertise, serving organisations across the GCC, Saudi Arabia, Jordan, and internationally.'}
             </p>
             <div className="flex items-center gap-3 mt-2">
-              <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn"
-                className="w-9 h-9 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors">
-                <Linkedin className="w-4 h-4" />
-              </a>
-              <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" aria-label="Twitter / X"
-                className="w-9 h-9 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors">
-                <Twitter className="w-4 h-4" />
-              </a>
+              {SOCIAL_LINKS.linkedin && (
+                <a href={SOCIAL_LINKS.linkedin} target="_blank" rel="noopener noreferrer" aria-label="LinkedIn"
+                  className="w-9 h-9 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors">
+                  <Linkedin className="w-4 h-4" />
+                </a>
+              )}
+              {SOCIAL_LINKS.x && (
+                <a href={SOCIAL_LINKS.x} target="_blank" rel="noopener noreferrer" aria-label="X"
+                  className="w-9 h-9 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors">
+                  <Twitter className="w-4 h-4" />
+                </a>
+              )}
               <a href={`https://wa.me/966549479722`} target="_blank" rel="noopener noreferrer" aria-label="WhatsApp"
                 className="w-9 h-9 rounded-lg bg-white/10 hover:bg-[#25D366]/30 flex items-center justify-center transition-colors">
                 <svg viewBox="0 0 32 32" width="16" height="16" fill="white" xmlns="http://www.w3.org/2000/svg">
