@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageCircle, X } from 'lucide-react';
 import { useLanguage } from '@/lib/LanguageContext';
@@ -9,6 +9,26 @@ export function WhatsAppButton() {
   const ar = lang === 'ar';
   const [hovered, setHovered] = useState(false);
   const isMobile = useIsMobile();
+  // Backlog #451 (second pass): on mobile the button fades out completely
+  // while the page is scrolling (i.e. while the visitor is reading) and fades
+  // back in 1.2s after scrolling stops, so it never sits on top of the text
+  // being read. Desktop never listens to scroll and is unchanged.
+  const [scrolling, setScrolling] = useState(false);
+  const scrollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (!isMobile) { setScrolling(false); return; }
+    const onScroll = () => {
+      setScrolling(true);
+      if (scrollTimer.current) clearTimeout(scrollTimer.current);
+      scrollTimer.current = setTimeout(() => setScrolling(false), 1200);
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      if (scrollTimer.current) clearTimeout(scrollTimer.current);
+    };
+  }, [isMobile]);
+  const hideWhileScrolling = isMobile && scrolling;
   const phone = '966549479722';
   const message = encodeURIComponent(ar ? 'مرحباً، أودّ مناقشة تحدٍّ في سلسلة الإمداد مع I Supply Chain.' : 'Hello, I would like to discuss a supply chain challenge with I Supply Chain.');
   const url = `https://wa.me/${phone}?text=${message}`;
@@ -27,7 +47,7 @@ export function WhatsAppButton() {
   // so the animated ring doesn't grow out over text either. Full opacity
   // returns on hover/press/focus so the tap target is never ambiguous.
   const containerClass = isMobile
-    ? 'fixed bottom-4 left-3 z-40 flex items-center gap-3'
+    ? `fixed bottom-4 left-3 z-40 flex items-center gap-3 transition-opacity duration-200 ${hideWhileScrolling ? 'opacity-0 pointer-events-none' : 'opacity-100'}`
     : 'fixed bottom-24 left-5 z-40 flex items-center gap-3';
   const buttonClass = isMobile
     ? 'w-11 h-11 rounded-full flex items-center justify-center shadow-xl opacity-60 hover:opacity-100 focus-visible:opacity-100 active:opacity-100 transition-opacity'
@@ -38,7 +58,7 @@ export function WhatsAppButton() {
     : { scale: [1, 1.5], opacity: [0.6, 0] };
 
   return (
-    <div className={containerClass} data-testid="whatsapp-button-container" data-mobile-compact={isMobile ? 'true' : 'false'}>
+    <div className={containerClass} data-testid="whatsapp-button-container" data-mobile-compact={isMobile ? 'true' : 'false'} data-scrolling={hideWhileScrolling ? 'true' : 'false'}>
       <AnimatePresence>
         {hovered && (
           <motion.div

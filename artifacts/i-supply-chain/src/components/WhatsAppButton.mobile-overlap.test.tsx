@@ -39,8 +39,8 @@
  * own conditional logic is correct and will not regress silently.
  */
 import React from 'react';
-import { describe, it, expect, afterEach, beforeEach } from 'vitest';
-import { render, cleanup } from '@testing-library/react';
+import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest';
+import { render, cleanup, act } from '@testing-library/react';
 import { LanguageProvider } from '@/lib/LanguageContext';
 import { WhatsAppButton } from './WhatsAppButton';
 
@@ -149,5 +149,40 @@ describe('WhatsAppButton — mobile overlap fix (Backlog #451)', () => {
       expect(link.getAttribute('aria-label')).toBe('Chat with us on WhatsApp');
       unmount();
     }
+  });
+});
+
+describe('WhatsAppButton — hides while scrolling on mobile only (Backlog #451, second pass)', () => {
+  const originalMatchMedia = window.matchMedia;
+  beforeEach(() => { vi.useFakeTimers(); });
+  afterEach(() => { vi.useRealTimers(); cleanup(); window.matchMedia = originalMatchMedia; });
+
+  it('mobile: fades out on scroll, is not clickable while hidden, and returns 1.2s after scrolling stops', () => {
+    setViewportWidth(375);
+    const { getByTestId } = renderButton();
+    const box = () => getByTestId('whatsapp-button-container');
+    expect(box().getAttribute('data-scrolling')).toBe('false');
+    act(() => { window.dispatchEvent(new Event('scroll')); });
+    expect(box().getAttribute('data-scrolling')).toBe('true');
+    expect(box().className).toContain('opacity-0');
+    expect(box().className).toContain('pointer-events-none');
+    act(() => { vi.advanceTimersByTime(1000); window.dispatchEvent(new Event('scroll')); });
+    act(() => { vi.advanceTimersByTime(1000); });
+    expect(box().getAttribute('data-scrolling')).toBe('true'); // timer restarted by 2nd scroll
+    act(() => { vi.advanceTimersByTime(300); });
+    expect(box().getAttribute('data-scrolling')).toBe('false');
+    expect(box().className).toContain('opacity-100');
+  });
+
+  it('desktop: scrolling never hides the button and no scroll listener is attached', () => {
+    setViewportWidth(1280);
+    const spy = vi.spyOn(window, 'addEventListener');
+    const { getByTestId } = renderButton();
+    expect(spy.mock.calls.some(c => c[0] === 'scroll')).toBe(false);
+    act(() => { window.dispatchEvent(new Event('scroll')); });
+    const box = getByTestId('whatsapp-button-container');
+    expect(box.getAttribute('data-scrolling')).toBe('false');
+    expect(box.className).not.toContain('opacity-0');
+    spy.mockRestore();
   });
 });
