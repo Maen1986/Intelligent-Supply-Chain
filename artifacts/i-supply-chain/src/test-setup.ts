@@ -64,3 +64,19 @@ vi.mock('recharts', async () => {
     },
   };
 });
+
+/* ── jsdom doesn't implement matchMedia; useIsMobile (ChatWidget, ─────────
+   ── WhatsAppButton) needs it. Default stub = no match; tests that need a  ──
+   ── specific viewport install their own (see *.mobile-overlap.test.tsx). ── */
+if (typeof window !== 'undefined' && typeof window.matchMedia !== 'function') {
+  window.matchMedia = ((query: string) => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addListener: () => {},
+    removeListener: () => {},
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    dispatchEvent: () => false,
+  })) as unknown as typeof window.matchMedia;
+}

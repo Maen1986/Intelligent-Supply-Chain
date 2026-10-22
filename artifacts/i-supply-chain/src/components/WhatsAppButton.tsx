@@ -2,17 +2,46 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageCircle, X } from 'lucide-react';
 import { useLanguage } from '@/lib/LanguageContext';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 export function WhatsAppButton() {
   const { lang } = useLanguage();
   const ar = lang === 'ar';
   const [hovered, setHovered] = useState(false);
+  const isMobile = useIsMobile();
   const phone = '966549479722';
   const message = encodeURIComponent(ar ? 'مرحباً، أودّ مناقشة تحدٍّ في سلسلة الإمداد مع I Supply Chain.' : 'Hello, I would like to discuss a supply chain challenge with I Supply Chain.');
   const url = `https://wa.me/${phone}?text=${message}`;
 
+
+  // Backlog #451 -- zero overlap on mobile. A floating (position: fixed)
+  // button always sits on top of whatever scrolls under it, so below the
+  // site's mobile breakpoint (<768px) it is NOT floating at all: it renders
+  // as a normal, in-flow row at the very end of the page (below the footer).
+  // In-flow elements cannot cover other content by construction. Desktop is
+  // unchanged (the floating button below).
+  if (isMobile) {
+    return (
+      <div className="w-full flex items-center justify-center py-3 bg-background border-t border-border" data-testid="whatsapp-button-container" data-mobile-inflow="true">
+        <a
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label={ar ? 'تواصل معنا عبر واتساب' : 'Chat with us on WhatsApp'}
+          className="inline-flex items-center gap-2 rounded-full px-5 min-h-11 text-sm font-semibold text-white shadow-md"
+          style={{ background: 'linear-gradient(135deg, #25D366, #128C7E)' }}
+        >
+          <svg viewBox="0 0 32 32" width="22" height="22" fill="white" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M16.004 2.667C8.64 2.667 2.667 8.64 2.667 16c0 2.347.613 4.547 1.68 6.467L2.667 29.333l7.12-1.653A13.267 13.267 0 0 0 16.004 29.333C23.36 29.333 29.333 23.36 29.333 16S23.36 2.667 16.004 2.667zm0 24.266a11.04 11.04 0 0 1-5.627-1.546l-.4-.24-4.227.987.987-4.12-.267-.413A11.04 11.04 0 0 1 4.933 16c0-6.107 4.96-11.067 11.067-11.067 6.106 0 11.066 4.96 11.066 11.067 0 6.106-4.96 11.066-11.066 11.066zm6.08-8.266c-.334-.174-1.96-.974-2.267-1.08-.306-.107-.52-.16-.747.16-.226.32-.88 1.08-1.08 1.307-.2.226-.4.24-.733.08-.334-.16-1.4-.52-2.667-1.654-.987-.88-1.653-1.96-1.853-2.293-.2-.334-.014-.52.147-.68.147-.147.334-.373.493-.547.16-.173.214-.293.32-.507.107-.213.054-.4-.027-.546-.08-.147-.746-1.8-1.027-2.454-.266-.64-.546-.546-.746-.56-.2-.013-.427-.013-.654-.013-.226 0-.6.08-.907.4-.307.32-1.173 1.147-1.173 2.8 0 1.653 1.2 3.253 1.36 3.466.16.214 2.36 3.6 5.72 5.054.8.347 1.427.547 1.907.707.8.253 1.534.213 2.107.133.64-.094 1.96-.8 2.24-1.573.28-.774.28-1.44.2-1.574-.08-.133-.294-.213-.627-.386z" />
+          </svg>
+          <span>{ar ? 'تواصل عبر واتساب' : 'Chat on WhatsApp'}</span>
+        </a>
+      </div>
+    );
+  }
+
   return (
-    <div className="fixed bottom-24 left-5 z-40 flex items-center gap-3">
+    <div className="fixed bottom-24 left-5 z-40 flex items-center gap-3" data-testid="whatsapp-button-container" data-mobile-inflow="false">
       <AnimatePresence>
         {hovered && (
           <motion.div

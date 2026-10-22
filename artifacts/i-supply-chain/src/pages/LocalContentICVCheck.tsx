@@ -875,7 +875,7 @@ function LocalContentEntryCard({
           value={entry.label}
           onChange={e => onUpdate(entry.id, { label: e.target.value })}
           placeholder={isAr ? 'اسم المورّد أو الجهة' : 'Supplier or entity name'}
-          className="flex-1 text-sm font-semibold border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-[#082C6B]"
+          className="flex-1 min-w-0 text-sm font-semibold border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-[#082C6B]"
         />
         <div className="w-28 shrink-0">
           <NumberField
