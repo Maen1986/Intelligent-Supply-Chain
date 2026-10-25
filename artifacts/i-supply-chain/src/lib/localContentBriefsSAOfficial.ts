@@ -17,7 +17,7 @@ export const SA_BRIEFS_OFFICIAL: Record<string, ProgramBrief> = {
       'If your product is on the list, a bid that does not commit to a national factory is excluded, whatever its price. Look up each product code first: it tells you the price ceiling, the factory-certificate condition and the date the duty started.',
       'إذا كان منتجك في القائمة فالعرض الذي لا يلتزم بمصنع وطني يُستبعد مهما كان سعره. ابحث عن رمز كل منتج أولاً؛ فهو يخبرك بالسقف السعري وشرط شهادة المصنع وتاريخ بدء الإلزام.'),
     steps: [
-      b('Find each product by its Etimad code. The list covers 16 sectors; state-owned companies have their own start dates.', 'ابحث عن كل منتج برمز «اعتماد». تغطي القائمة ١٦ قطاعاً، ولكل من الشركات المملوكة للدولة تواريخ بدء خاصة.'),
+      b('Find each product by its Etimad code. The list covers 16 sectors; state-owned companies have their own start dates.', 'ابحث عن كل منتج برمز «اعتماد». تغطي القائمة ١٦ قطاعاً، وللشركات المملوكة للدولة تواريخ بدء خاصة بها.'),
       b('Bid with a written undertaking to supply from a national factory, and attach the factory\'s local-content certificate where the list requires one.', 'قدّم عرضك مع تعهد كتابي بالتوريد من مصنع وطني، وأرفق شهادة المحتوى المحلي للمصنع حيث تشترطها القائمة.'),
       b('A bid that does not comply is excluded (Article 9). If the tender can be split, only the non-compliant items are excluded.', 'يُستبعد العرض غير الملتزم (المادة التاسعة). وإذا كانت المنافسة قابلة للتجزئة فتُستبعد البنود غير الملتزمة فقط.'),
       b('If the buyer cannot apply the list to an item, it asks LCGPA for an exemption on one of five grounds. The item stays out of the tender until LCGPA approves.', 'إذا تعذّر على الجهة تطبيق القائمة على بند فإنها تطلب من الهيئة استثناءً لأحد خمسة أسباب، ولا يُدرج البند في المنافسة قبل اعتماد الهيئة.'),
@@ -75,7 +75,7 @@ export const SA_BRIEFS_OFFICIAL: Record<string, ProgramBrief> = {
     ],
     next: [
       { when: 'before', text: b('Run the calculator below with your real cost plan. If the result is under the minimum, see which line moves it most before you bid.', 'شغّل الحاسبة أدناه بخطة كلفتك الفعلية. فإن جاءت النتيجة دون الحد الأدنى فانظر أي بند يحركها أكثر قبل أن تقدّم العرض.') },
-      { when: 'before', text: b('List your top suppliers (at least 70% of goods and services, or the top 40) with their audited local-content % if they have one.', 'أعدّ قائمة بأكبر موردينك (٧٠٪ على الأقل من السلع والخدمات أو أكبر ٤٠ مورداً) مع نسبة المحتوى المحلي المدققة لكل مورد إن وُجدت.') },
+      { when: 'before', text: b('List your top suppliers (at least 70% of goods and services, or the top 40) with their audited local-content % if they have one.', 'أعدّ قائمة بأكبر مورديك (٧٠٪ على الأقل من السلع والخدمات أو أكبر ٤٠ مورداً) مع نسبة المحتوى المحلي المدققة لكل مورد إن وُجدت.') },
       { when: 'with-bid', text: b('Submit the official form with the technical offer. It is mandatory for high-value contracts.', 'قدّم النموذج الرسمي مع العرض الفني؛ فهو إلزامي في العقود عالية القيمة.') },
       { when: 'after', text: b('Track the plan against the number you promised every period. A shortfall found at the final report is too late to fix.', 'تابع الخطة مقابل الرقم الذي وعدت به في كل فترة؛ فاكتشاف النقص عند التقرير النهائي متأخر جداً لتداركه.') },
     ],
