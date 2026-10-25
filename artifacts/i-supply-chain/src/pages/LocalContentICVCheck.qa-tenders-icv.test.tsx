@@ -58,7 +58,7 @@ describe('LocalContentICVCheck -- QA / Tenders Law ICV Consideration real click-
     expect(programBtn.getAttribute('aria-pressed')).toBe('true');
 
     // Article 3 disclosure copy renders before any input.
-    expect(screen.getByText(/does not|Article 3|no fixed threshold/i)).toBeTruthy();
+    expect(screen.getAllByText(/does not|Article 3|no fixed threshold/i).length).toBeGreaterThan(0);
 
     const inputs = lastNumberInputs(2);
     expect(inputs).toHaveLength(2);

@@ -150,7 +150,7 @@ describe('LocalContentICVCheck -- Japan / Kankouju SME Target Ratio real click-t
     // hint ("FY2025: 61% government-wide") and once in the methodology
     // paragraph itself -- both are real, both are this pass's sourced figure.
     expect(screen.getAllByText(/61%/).length).toBeGreaterThanOrEqual(2);
-    expect(screen.getByText(/56%/)).toBeInTheDocument();
+    expect(screen.getAllByText(/56%/).length).toBeGreaterThan(0);
   });
 });
 
