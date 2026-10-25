@@ -61,6 +61,8 @@ export type BriefTool =
   | 'targeted-enterprise'   // official enterprise-level targeted local-content form
   | 'contract-minimum'      // pre-award contract-minimum study (workforce + items)
   | 'financial-evaluation'  // 60/40 financial evaluation scoring
+  | 'penalty-exposure'      // Arts 28-34 + 37-38 ceilings and referral triggers
+  | 'tender-checklist'       // Art. 7 drafting checklist for government entities
   | 'saudization-check';    // HRSD Saudization shortfall (ICT 25%, consulting 35/40%, technical engineering 30%)
 
 export interface ProgramBrief {
