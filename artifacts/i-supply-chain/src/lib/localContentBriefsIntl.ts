@@ -70,7 +70,7 @@ export const INTL_BRIEFS: Record<string, ProgramBrief> = {
       b('The advantage is added to competing non-domestic bids\' prices, not deducted from yours.', 'تُضاف الأفضلية إلى أسعار العروض غير المحلية المنافسة ولا تُخصم من سعرك.'),
     ],
     next: [
-      { when: 'before', text: b('If your goods are listed, the full advantage is not optional: raise it with the authority if the tender documents show less.', 'إن كانت سلعك مدرجة فالأفضلية الكاملة ليست اختيارية: أثر الأمر مع الجهة إن بدت وثائق المناقصة أقل.') },
+      { when: 'before', text: b('If your goods are listed, the full advantage is not optional: raise it with the authority if the tender documents show less.', 'إن كانت سلعك مدرجة فالأفضلية الكاملة ليست اختيارية: أثِر الأمر مع الجهة إن بدت وثائق المناقصة أقل.') },
       { when: 'with-bid', text: b('Prove domestic-goods status in the bid.', 'أثبت صفة السلعة المحلية في العرض.') },
     ],
     watch: [b('Law No. 4734, Article 63(c). A 7% rate on listed goods was ruled non-compliant by KIK.', 'القانون ٤٧٣٤، المادة ٦٣(ج). قضت هيئة KIK بأن نسبة ٧٪ على سلع مدرجة مخالفة.')],
@@ -173,7 +173,7 @@ export const INTL_BRIEFS: Record<string, ProgramBrief> = {
     headline: { value: b('No partial credit', 'لا اعتماد جزئي'), label: b('covered DoD textiles, food and hand/measuring tools must be domestic', 'يجب أن تكون منسوجات الدفاع والغذاء وأدوات اليد والقياس المشمولة محلية') },
     verdict: b(
       'If a DoD purchase is covered, it either meets the domestic test or it fails. First find out whether it is covered at all.',
-      'إذا كان مشتريات وزارة الدفاع مشمولة فإما أن تجتاز الاختبار المحلي أو تفشل. اعرف أولاً هل هي مشمولة أصلاً.'),
+      'إذا كانت مشتريات وزارة الدفاع مشمولة فإما أن تجتاز الاختبار المحلي أو تفشل. اعرف أولاً هل هي مشمولة أصلاً.'),
     steps: [
       b('Check whether the item is a textile, food or hand/measuring tool.', 'تحقق هل البند منسوجات أو غذاء أو أداة يد أو قياس.'),
       b('If covered, test domestic sourcing after any substantial-transformation determination or non-availability exception.', 'إن كان مشمولاً فاختبر التوريد المحلي بعد أي تحديد للتحويل الجوهري أو استثناء عدم التوفر.'),
@@ -192,7 +192,7 @@ export const INTL_BRIEFS: Record<string, ProgramBrief> = {
       'Reach domestic-product status by either path and your evaluated price drops 20%. Two independent paths exist, so pick the one you can prove.',
       'إذا بلغت صفة المنتج المحلي بأحد المسارين ينخفض سعرك المقيَّم ٢٠٪. يوجد مساران مستقلان، فاختر ما يمكنك إثباته.'),
     steps: [
-      b('Path 1: the product passes a substantial-transformation-in-China test. Simple assembly, packaging and relabeling do not count; a cost-ratio threshold is pending.', 'المسار الأول: يجتاز المنتج اختبار التحويل الجوهري داخل الصين. لا يُعدّ التجميع البسيط والتعبئة وإعادة الوسم؛ وعتبة نسبة التكلفة قيد الإصدار.'),
+      b('Path 1: the product passes a substantial-transformation-in-China test. Simple assembly, packaging and relabeling do not count; a cost-ratio threshold is pending.', 'المسار الأول: يجتاز المنتج اختبار التحويل الجوهري داخل الصين. ولا يُعدّ التجميع البسيط والتعبئة وإعادة الوسم تحويلاً جوهرياً؛ وعتبة نسبة التكلفة قيد الإصدار.'),
       b('Path 2: for a mixed bundle, domestically made products reach at least 80% of total bundle cost.', 'المسار الثاني: في الحزمة المختلطة تبلغ المنتجات المصنَّعة محلياً ٨٠٪ على الأقل من تكلفة الحزمة.'),
       b('Either path earns the 20% deduction (State Council Doc. [2025] No. 34, effective 1 Jan 2026).', 'أي مسار يمنح خصم ٢٠٪ (وثيقة مجلس الدولة [٢٠٢٥] رقم ٣٤، سارية من ١ يناير ٢٠٢٦).'),
     ],

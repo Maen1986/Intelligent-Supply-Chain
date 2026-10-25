@@ -67,7 +67,7 @@ export const GULF_BRIEFS: Record<string, ProgramBrief> = {
       { when: 'with-bid', text: b('Ask the buyer in writing whether GCC origin earns national treatment in this tender.', 'اسأل الجهة كتابياً هل يمنح المنشأ الخليجي معاملة وطنية في هذه المناقصة.') },
     ],
     watch: [
-      b('Neither MoIAT\'s ICV materials nor Federal Decree-Law No. 11 of 2023 was found to restate the rule.', 'لم يُعثر على ما يعيد النص على القاعدة في مواد الوزارة ولا في المرسوم بقانون اتحادي رقم ١١ لسنة ٢٠٢٣.'),
+      b('Neither MoIAT\'s ICV materials nor Federal Decree-Law No. 11 of 2023 was found to restate the rule.', 'لم يُعثر في مواد الوزارة ولا في المرسوم بقانون اتحادي رقم ١١ لسنة ٢٠٢٣ على نص يؤكد هذه القاعدة.'),
     ],
   },
 
@@ -99,7 +99,7 @@ export const GULF_BRIEFS: Record<string, ProgramBrief> = {
     headline: { value: b('35%', '٣٥٪'), label: b('minimum Jordanian-contractor share in international tenders', 'حد أدنى لحصة المقاولين الأردنيين في العطاءات الدولية') },
     verdict: b(
       'If you bid as a foreign contractor on a project in Jordan, plan for Jordanian contractors to carry at least 35% of the work. The 2018 decision has no primary-source reconfirmation after 2022.',
-      'إذا تتقدم كمقاول أجنبي لمشروع في الأردن فخطِّط لأن يتولى مقاولون أردنيون ٣٥٪ على الأقل من الأعمال. ولا يوجد تأكيد من مصدر أولي للقرار الصادر عام ٢٠١٨ بعد عام ٢٠٢٢.'),
+      'إذا كنت تتقدم كمقاول أجنبي لمشروع في الأردن فخطِّط لأن يتولى مقاولون أردنيون ٣٥٪ على الأقل من الأعمال. ولا يوجد تأكيد من مصدر أولي للقرار الصادر عام ٢٠١٨ بعد عام ٢٠٢٢.'),
     steps: [
       b('Check whether the tender is international and the project is in Jordan.', 'تحقق من أن العطاء دولي والمشروع داخل الأردن.'),
       b('Line up Jordanian contractors for at least 35% of the work, and Jordanian consultants for design and supervision.', 'رتّب مع مقاولين أردنيين لتنفيذ ٣٥٪ على الأقل من الأعمال، ومع استشاريين أردنيين للتصميم والإشراف.'),
@@ -146,7 +146,7 @@ export const GULF_BRIEFS: Record<string, ProgramBrief> = {
     ],
     next: [
       { when: 'before', text: b('Ask PTLC for the current category list in writing before you invest in the bid.', 'اطلب من الهيئة قائمة الفئات الحالية كتابياً قبل الاستثمار في العرض.') },
-      { when: 'with-bid', text: b('If you partner with a local supplier, state the reserved scope and who delivers it.', 'إن شاركت موردًا محلياً فبيّن النطاق المحجوز ومن ينفذه.') },
+      { when: 'with-bid', text: b('If you partner with a local supplier, state the reserved scope and who delivers it.', 'إن تعاونت مع مورّد محلي فبيّن النطاق المحجوز ومن ينفذه.') },
     ],
     watch: [
       b('The Tender Board still exists; Royal Decree 57/2025 renamed only its General Secretariat.', 'لا يزال مجلس المناقصات قائماً؛ فالمرسوم السلطاني ٥٧/٢٠٢٥ غيّر اسم أمانته العامة فقط.'),
