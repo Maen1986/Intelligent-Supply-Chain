@@ -37,7 +37,7 @@ export const SA_BRIEFS_OFFICIAL: Record<string, ProgramBrief> = {
 
   'sa-price-preference': {
     confidence: 'official',
-    tools: ['mechanism-finder', 'sa-adjusted-bid'],
+    tools: ['mechanism-finder', 'sa-adjusted-bid', 'penalty-exposure'],
     headline: { value: b('+10%', '+١٠٪'), label: b('assumed uplift on the foreign share of your bid at evaluation', 'زيادة مفترضة على الجزء الأجنبي من عرضك عند التقييم') },
     verdict: b(
       'The buyer evaluates as if foreign products cost 10% more, so every riyal of national product you add lowers your evaluated price. The contractor must also apply it to its own subcontractors.',
@@ -62,7 +62,7 @@ export const SA_BRIEFS_OFFICIAL: Record<string, ProgramBrief> = {
 
   'sa-contract-minimum': {
     confidence: 'corroborated',
-    tools: ['mechanism-finder', 'targeted-contract', 'contract-minimum', 'saudization-check'],
+    tools: ['mechanism-finder', 'targeted-contract', 'contract-minimum', 'saudization-check', 'penalty-exposure', 'tender-checklist'],
     headline: { value: b('≥ SAR 25M', '٢٥ مليون ريال فأكثر'), label: b('high-value service contracts: a mandatory minimum local content, measured per contract', 'عقود الخدمات عالية القيمة: حد أدنى إلزامي للمحتوى المحلي يُقاس على مستوى العقد') },
     verdict: b(
       'You must state a targeted local-content percentage in your technical offer, never below the minimum the buyer sets, and then deliver it by contract end. Price your plan before you promise the number.',
@@ -87,7 +87,7 @@ export const SA_BRIEFS_OFFICIAL: Record<string, ProgramBrief> = {
 
   'sa-financial-evaluation-weight': {
     confidence: 'corroborated',
-    tools: ['mechanism-finder', 'targeted-enterprise', 'financial-evaluation'],
+    tools: ['mechanism-finder', 'targeted-enterprise', 'financial-evaluation', 'penalty-exposure'],
     headline: { value: b('60 / 40', '٦٠ / ٤٠'), label: b('financial evaluation: 60% price, 40% local content, after technical qualification', 'التقييم المالي: ٦٠٪ للسعر و٤٠٪ للمحتوى المحلي، بعد التأهل الفني') },
     verdict: b(
       'On high-value contracts a cheaper bid can still lose to a stronger local-content bid. Your local-content score is worth as much as a large price gap.',
@@ -110,7 +110,7 @@ export const SA_BRIEFS_OFFICIAL: Record<string, ProgramBrief> = {
   },
 
   'sa-sme-preference': {
-    confidence: 'single',
+    confidence: 'official',
     tools: ['mechanism-finder', 'sme-check'],
     headline: { value: b('10%', '١٠٪'), label: b('other bidders\' prices are assumed 10% higher than stated', 'تُفترض أسعار عروض المتنافسين الآخرين أعلى بنسبة ١٠٪ مما ذُكر') },
     verdict: b(
@@ -127,7 +127,8 @@ export const SA_BRIEFS_OFFICIAL: Record<string, ProgramBrief> = {
       { when: 'with-bid', text: b('Attach the certificate and show the Saudi ownership split of capital.', 'أرفق الشهادة وبيّن توزيع ملكية رأس المال بين السعوديين وغيرهم.') },
     ],
     watch: [
-      b('No LCGPA primary text for this mechanism was available in this check. Confirm the current percentage with LCGPA.', 'لم يتوفر نص أولي صادر عن الهيئة لهذه الآلية في هذه المراجعة؛ فتأكد من النسبة الحالية لدى الهيئة.'),
+      b('Source: Art. 4(2) of the Local Content Preference Regulation (read 25 Oct 2026): prices of other bids are assumed higher by 10%, in all non-supply contracts below the high-value threshold. Arts 18(2) and 27(2) set the same preference as "not more than 10%".', 'المصدر: المادة ٤(٢) من لائحة تفضيل المحتوى المحلي (اطُّلع عليها ٢٥ أكتوبر ٢٠٢٦): تُفترض أسعار العروض الأخرى أعلى بنسبة ١٠٪ في جميع العقود غير التوريد التي تقل عن حد القيمة العالية. وتنص المادتان ١٨(٢) و٢٧(٢) على الأفضلية نفسها بعبارة «لا تتجاوز ١٠٪».'),
+      b('The SME definition (Article 1) refers to a Monsha\'at certificate and at least 50% citizen ownership; that wording appears in the marked-up amendments text, whose adoption date ISC could not confirm. Check the tender documents for the certificate rule.', 'يشير تعريف المنشآت الصغيرة والمتوسطة (المادة ١) إلى شهادة منشآت وملكية مواطنين لا تقل عن ٥٠٪؛ وهذه الصياغة واردة في نص التعديلات المعلَّم الذي لم تتأكد المنصة من تاريخ نفاذه. راجع وثائق المنافسة بشأن شرط الشهادة.'),
       b('The preference does not apply to supply contracts or high-value contracts (SAR 25 million and above).', 'لا تسري الأفضلية على عقود التوريد ولا على العقود عالية القيمة (٢٥ مليون ريال فأكثر).'),
     ],
     priceTest: { pct: 0.1, mode: 'add-to-rival', rateNote: b('Applied to rival bids', 'تُطبَّق على عروض المنافسين') },

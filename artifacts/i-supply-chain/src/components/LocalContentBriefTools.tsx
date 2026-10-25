@@ -9,6 +9,8 @@ import { computeTargetedLocalContent, gapToThreshold } from '@/lib/lcgpaTargeted
 import { computeContractMinimum, financialEvaluation, sectorById } from '@/lib/lcgpaContractMinimum';
 import { LCGPA_SECTORS } from '@/lib/lcgpaContractMinimumData';
 import { usePublishFinding } from './ReportFindings';
+import { PENALTY_RULES, penaltyExposure, referralCheck, PENALTY_SOURCE, type PenaltyArticle } from '@/lib/lcgpaPenalties';
+import { checklistFor, TENDER_SOURCE, type TenderKind } from '@/lib/lcgpaTenderChecklist';
 import { parseAmount, parsePercent } from '@/lib/parseLocaleNumber';
 import type { MandatoryProduct } from '@/lib/lcgpaMandatoryList';
 
@@ -432,6 +434,81 @@ function SaudizationCheck({ isAr }: { isAr: boolean }) {
   );
 }
 
+
+/* ── Penalty exposure (Arts 28-34, 37-38): ceilings only ── */
+function PenaltyExposure({ isAr }: { isAr: boolean }) {
+  const [cv, setCv] = useState(''); const [iv, setIv] = useState(''); const [other, setOther] = useState('');
+  const [on, setOn] = useState<Partial<Record<PenaltyArticle, boolean>>>({});
+  const [sg, setSg] = useState(''); const [lg, setLg] = useState('');
+  const breaches = PENALTY_RULES.filter(r => on[r.id]).map(r => r.id);
+  const r = num(cv) > 0 && breaches.length ? penaltyExposure({ contractValue: num(cv), itemValue: num(iv), breaches, otherFinesUnderLaw: num(other) }) : null;
+  const flags = referralCheck({ supplyShareGapPts: sg.trim() ? num(sg) : undefined, localContentGapPts: lg.trim() ? num(lg) : undefined });
+  usePublishFinding('penalty-exposure', r ? {
+    title: bi('Penalty exposure (ceilings)', 'التعرض للغرامات (حدود قصوى)'),
+    lines: [bi(`At the regulation's ceilings, fines could reach SAR ${fmt(r.total)} on a contract of SAR ${fmt(num(cv))}${r.capBinds ? ' (the 20% total cap binds)' : ''}.`,
+      `بالحدود القصوى في اللائحة قد تبلغ الغرامات ${fmt(r.total)} ريال على عقد قيمته ${fmt(num(cv))} ريال${r.capBinds ? ' (يسري سقف ٢٠٪ للإجمالي)' : ''}.`),
+      bi('The tender documents set the actual rate; these are ceilings, not a forecast.', 'وثائق المنافسة تحدد النسبة الفعلية؛ وهذه حدود قصوى لا توقع.')],
+  } : null);
+  return (
+    <Box title={T(isAr, 'What could a shortfall cost? (penalty ceilings)', 'كم قد يكلف التقصير؟ (الحدود القصوى للغرامات)')} note={isAr ? PENALTY_SOURCE.ar : PENALTY_SOURCE.en}>
+      <div className="grid grid-cols-3 gap-2">
+        <Field label={T(isAr, 'Contract value (SAR)', 'قيمة العقد (ريال)')} value={cv} onChange={setCv} />
+        <Field label={T(isAr, 'Defaulting item value', 'قيمة البند المقصّر')} value={iv} onChange={setIv} />
+        <Field label={T(isAr, 'Other fines already', 'غرامات أخرى قائمة')} value={other} onChange={setOther} />
+      </div>
+      <fieldset className="mt-2 space-y-1">
+        <legend className="text-[11px] text-slate-600">{T(isAr, 'Which breaches apply?', 'أي المخالفات تنطبق؟')}</legend>
+        {PENALTY_RULES.map(x => (
+          <label key={x.id} className="flex gap-2 text-xs items-start">
+            <input type="checkbox" className="mt-0.5" checked={!!on[x.id]} onChange={e => setOn(p => ({ ...p, [x.id]: e.target.checked }))} />
+            <span><bdi dir="ltr" className="font-semibold">{x.article}</bdi> · {isAr ? x.trigger.ar : x.trigger.en}{x.amendedText ? T(isAr, ' (amended text; adoption date not confirmed)', ' (نص معدَّل؛ تاريخ النفاذ غير مؤكد)') : ''}</span>
+          </label>
+        ))}
+      </fieldset>
+      {r && (
+        <div className="mt-2 text-xs space-y-0.5" role="status">
+          {r.lines.map(l => <p key={l.id}><bdi dir="ltr">{l.article}</bdi>: <bdi dir="ltr">{fmt(l.amount)}</bdi> {T(isAr, 'SAR at most', 'ريال كحد أقصى')}{l.cappedBy34 ? T(isAr, ' (inside the 20% cap)', ' (ضمن سقف ٢٠٪)') : ''}</p>)}
+          <p className="font-bold">{T(isAr, `Most you could be fined: SAR ${fmt(r.total)}`, `أقصى غرامة محتملة: ${fmt(r.total)} ريال`)}{r.capBinds ? T(isAr, ' · the 20% total cap applies (Art. 34; Art. 29(2) is outside it)', ' · يسري سقف ٢٠٪ للإجمالي (م٣٤؛ والمادة ٢٩/٢ خارجه)') : ''}</p>
+        </div>
+      )}
+      <div className="grid grid-cols-2 gap-2 mt-3">
+        <Field label={T(isAr, 'Supply share gap (points)', 'فارق حصة المنتجات الوطنية (نقاط)')} value={sg} onChange={setSg} />
+        <Field label={T(isAr, 'Local-content gap (points)', 'فارق المحتوى المحلي (نقاط)')} value={lg} onChange={setLg} />
+      </div>
+      {flags.length > 0 && (
+        <ul className="mt-2 text-xs space-y-0.5" role="status">
+          {flags.map(f => <li key={f.article}><bdi dir="ltr" className="font-semibold">{f.article}</bdi> · {f.level === 'crossed' ? T(isAr, 'Trigger crossed: ', 'تحقق الشرط: ') : f.level === 'ambiguous' ? T(isAr, 'Unclear: ', 'غير محسوم: ') : T(isAr, 'Clear: ', 'سليم: ')}{isAr ? f.ar : f.en}</li>)}
+        </ul>
+      )}
+    </Box>
+  );
+}
+
+/* ── Tender-drafting checklist (Art. 7 and linked articles) ── */
+function TenderChecklist({ isAr }: { isAr: boolean }) {
+  const [kind, setKind] = useState<TenderKind>('works-services');
+  const [hv, setHv] = useState(false); const [fw, setFw] = useState(false); const [ml, setMl] = useState(false);
+  const items = checklistFor({ kind, highValue: hv, framework: fw, hasMandatoryListItems: ml });
+  return (
+    <Box title={T(isAr, 'Drafting a tender? Local-content checklist', 'تعد منافسة؟ قائمة تحقق المحتوى المحلي')} note={isAr ? TENDER_SOURCE.ar : TENDER_SOURCE.en}>
+      <div className="grid grid-cols-2 gap-2">
+        <label className="text-[11px] text-slate-600 col-span-2">{T(isAr, 'Contract type', 'نوع العقد')}
+          <select value={kind} onChange={e => setKind(e.target.value as TenderKind)} className="mt-1 w-full border rounded px-2 py-1 text-sm">
+            <option value="supply">{T(isAr, 'Supply', 'توريد')}</option>
+            <option value="works-services">{T(isAr, 'Works / services / consulting', 'أعمال / خدمات / استشارات')}</option>
+            <option value="mixed">{T(isAr, 'Mixed', 'مختلط')}</option>
+          </select></label>
+        <label className="flex gap-2 text-xs"><input type="checkbox" checked={hv} onChange={e => setHv(e.target.checked)} />{T(isAr, 'High-value contract (as set by LCGPA)', 'عقد عالي القيمة (بحسب تحديد الهيئة)')}</label>
+        <label className="flex gap-2 text-xs"><input type="checkbox" checked={fw} onChange={e => setFw(e.target.checked)} />{T(isAr, 'Framework agreement', 'اتفاقية إطارية')}</label>
+        <label className="flex gap-2 text-xs col-span-2"><input type="checkbox" checked={ml} onChange={e => setMl(e.target.checked)} />{T(isAr, 'Includes Mandatory List items', 'يتضمن بنوداً من القائمة الإلزامية')}</label>
+      </div>
+      <ol className="mt-2 space-y-1.5 text-xs list-decimal ps-5" role="status">
+        {items.map(i => <li key={i.id}><bdi dir="ltr" className="font-semibold">{i.article}</bdi> · {isAr ? i.ar : i.en}</li>)}
+      </ol>
+    </Box>
+  );
+}
+
 export function ProgramBriefTools({ tools, isAr }: { tools: BriefTool[]; isAr: boolean }) {
   return (
     <div className="space-y-3">
@@ -446,6 +523,8 @@ export function ProgramBriefTools({ tools, isAr }: { tools: BriefTool[]; isAr: b
           case 'contract-minimum': return <ContractMinimum key={t} isAr={isAr} />;
           case 'financial-evaluation': return <FinancialEval key={t} isAr={isAr} />;
           case 'saudization-check': return <SaudizationCheck key={t} isAr={isAr} />;
+          case 'penalty-exposure': return <PenaltyExposure key={t} isAr={isAr} />;
+          case 'tender-checklist': return <TenderChecklist key={t} isAr={isAr} />;
           default: return null;
         }
       })}
