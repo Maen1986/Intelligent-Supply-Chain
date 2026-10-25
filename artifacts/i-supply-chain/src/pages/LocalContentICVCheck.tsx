@@ -50,6 +50,11 @@ import {
 } from 'lucide-react';
 import { useLanguage } from '@/lib/LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
+import { ProgramBriefCard } from '@/components/ProgramBriefCard';
+import { SaudiJourney } from '@/components/SaudiJourney';
+import { PersonalisedReport } from '@/components/PersonalisedReport';
+import { ReportFindingsProvider } from '@/components/ReportFindings';
+import { briefFor } from '@/lib/localContentBriefs';
 import { API_BASE } from '@/lib/apiBase';
 import { Checkbox } from '@/components/ui/checkbox';
 import { safeSetItem } from '@/lib/storage';
@@ -556,6 +561,9 @@ const PROGRAM_LABELS: Record<LocalContentProgram, { en: string; ar: string }> = 
   'sa-lcgpa-general': { en: 'LCGPA General Score', ar: 'الدرجة العامة (الهيئة)' },
   'sa-mandatory-list': { en: 'Mandatory List Gate', ar: 'بوابة القائمة الإلزامية' },
   'sa-price-preference': { en: 'Price Preference (10%)', ar: 'تفضيل السعر (١٠٪)' },
+  'sa-contract-minimum': { en: 'Minimum Local Content (contract level)', ar: 'الحد الأدنى للمحتوى المحلي (على مستوى العقد)' },
+  'sa-financial-evaluation-weight': { en: 'Local-Content Weight (60/40)', ar: 'وزن المحتوى المحلي (٦٠/٤٠)' },
+  'sa-sme-preference': { en: 'Local SME Preference', ar: 'تفضيل المنشآت الصغيرة والمتوسطة' },
   'sa-iktva-aramco': { en: 'Aramco IKTVA', ar: 'اكتفاء أرامكو' },
   'sa-gami-defense': { en: 'GAMI Industrial Participation (60%)', ar: 'المشاركة الصناعية لدى GAMI (٦٠٪)' },
   'sa-likt': { en: 'LIKT (not sourced)', ar: 'LIKT (غير موثّق)' },
@@ -859,6 +867,7 @@ function LocalContentEntryCard({
   })();
 
   return (
+    <ReportFindingsProvider>
     <div className="print-zone-local-content-icv bg-white rounded-2xl border border-slate-200 shadow-sm p-4 space-y-4">
       {/* Print-only header */}
       <div className="hidden print:block pb-3 border-b border-gray-300">
@@ -1032,6 +1041,17 @@ function LocalContentEntryCard({
             </div>
 
             {/* ── Sourced methodology (collapsible, keyboard-operable, never hover-only) ── */}
+            {briefFor(framework!.program) && entry.countrySelection === 'SA' && PROGRAMS_BY_COUNTRY.SA.includes(framework!.program) && (
+              <SaudiJourney isAr={isAr} current={framework!.program} onSelect={p => onUpdate(entry.id, { program: p })} />
+            )}
+            {briefFor(framework!.program) ? (
+              <ProgramBriefCard
+                brief={briefFor(framework!.program)!}
+                isAr={isAr}
+                sourceNote={isAr ? framework!.sourceNoteAr : framework!.sourceNoteEn}
+                sourceTitle={isAr ? `المنهجية الموثّقة — ${framework!.programNameAr}` : `Sourced Methodology — ${framework!.programNameEn}`}
+              />
+            ) : (
             <div className="border border-slate-100 rounded-xl mb-3">
               <button
                 type="button"
@@ -1051,6 +1071,7 @@ function LocalContentEntryCard({
                 </p>
               )}
             </div>
+            )}
 
             {/* ── Dual-sided value framing (buyer + supplier), every country including
                  SA -- explicit instruction (15 Sep 2026): a compliance number alone is
@@ -3202,7 +3223,7 @@ function LocalContentEntryCard({
               </div>
             )}
 
-            {assessment?.applicability === 'applicable' && assessment.computation && !hasMeaningfulResult && (
+            {assessment?.applicability === 'applicable' && assessment.computation && assessment.computation.mechanismType !== 'dedicated-calculator' && !hasMeaningfulResult && (
               <p className="mt-3 text-[10px] text-muted-foreground flex items-start gap-1.5">
                 <Info className="w-3 h-3 shrink-0 mt-0.5" />
                 {isAr ? 'أدخل الأرقام أعلاه لعرض النتيجة.' : 'Enter the figures above to see the result.'}
@@ -3229,7 +3250,35 @@ function LocalContentEntryCard({
           </>
         )}
       </div>
+
+      {/* ── Final step, every country: the reader's own personalised report ── */}
+      {isOther && (
+        <PersonalisedReport
+          isAr={isAr}
+          dateLabel={new Date().toLocaleDateString(isAr ? 'ar-SA' : 'en-GB')}
+          preparedFor={entry.label}
+          countryName={isAr ? 'دولة أخرى / غير مدرجة' : 'Other / not listed'}
+          programName="" contextLabel="" assessment={null} recommendation={null} hasResult={false} brief={undefined}
+          targetThresholdPct={targetThresholdPct} notListed
+        />
+      )}
+      {!isOther && framework && (
+        <PersonalisedReport
+          isAr={isAr}
+          dateLabel={new Date().toLocaleDateString(isAr ? 'ar-SA' : 'en-GB')}
+          preparedFor={entry.label}
+          countryName={isAr ? COUNTRY_FRAMEWORKS[entry.countrySelection as LocalContentCountry].countryNameAr : COUNTRY_FRAMEWORKS[entry.countrySelection as LocalContentCountry].countryNameEn}
+          programName={isAr ? framework.programNameAr : framework.programNameEn}
+          contextLabel={(() => { const c = CONTEXT_TABS.find(x => x.v === entry.context); return c ? (isAr ? c.ar : c.en) : entry.context; })()}
+          assessment={assessment}
+          recommendation={recommendation}
+          hasResult={hasMeaningfulResult}
+          brief={briefFor(framework.program)}
+          targetThresholdPct={targetThresholdPct}
+        />
+      )}
     </div>
+    </ReportFindingsProvider>
   );
 }
 

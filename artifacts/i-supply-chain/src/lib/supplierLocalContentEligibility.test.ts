@@ -2283,7 +2283,8 @@ describe('SA — program routing default', () => {
   });
 
   it('PROGRAMS_BY_COUNTRY lists every program per country (SA: 10 -- +3 on 18 Sep 2026: Rawafed/SABIC/Tharwah, +1 on 2 Oct 2026 (SA-LIKT/EP-Policy + BH circular pass): the new sa-economic-participation-policy program -- AE: 3 -- +1 on 20 Sep 2026: GCC origin treatment -- QA: 3 -- +1 on 20 Sep 2026: Tenders Law ICV consideration -- KW: 4 -- +1 on 20 Sep 2026: Public Tenders Law price preference, +1 on 29 Sep 2026: Kuwaiti-nationality price preference -- BH: 6 -- +2 on 29 Sep 2026: Takamul + Gulf-Made preferences, +1 on 2 Oct 2026 (Module 08 nine-program closure pass): the new bh-bahrainisation-tender-workforce program -- JO: 2, OM: 3, EG: 3, TR: 2, UK: 1, USA: 4, CN: 4)', () => {
-    expect(PROGRAMS_BY_COUNTRY.SA).toHaveLength(10);
+    // SA: 13 -- +3 on 24 Oct 2026: contract-minimum, financial-evaluation-weight (60/40), SME preference (official LCGPA forms)
+    expect(PROGRAMS_BY_COUNTRY.SA).toHaveLength(13);
     expect(PROGRAMS_BY_COUNTRY.AE).toHaveLength(3);
     expect(PROGRAMS_BY_COUNTRY.JO).toHaveLength(2);
     expect(PROGRAMS_BY_COUNTRY.OM).toHaveLength(3);
