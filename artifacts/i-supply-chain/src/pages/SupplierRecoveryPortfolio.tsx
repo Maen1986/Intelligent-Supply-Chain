@@ -621,19 +621,19 @@ export function SupplierRecoveryPortfolio() {
               <table className="w-full text-xs">
                 <thead>
                   <tr className="text-[10px] uppercase tracking-wider text-slate-400 border-b border-slate-100">
-                    <th className={isAr ? 'text-right py-2' : 'text-left py-2'}>{isAr ? 'المورد' : 'Supplier'}</th>
-                    <th className={isAr ? 'text-right py-2' : 'text-left py-2'}>{isAr ? 'الفئة' : 'Category'}</th>
-                    <th className={isAr ? 'text-right py-2' : 'text-left py-2'}>{isAr ? 'الربع' : 'Quadrant'}</th>
-                    <th className={isAr ? 'text-right py-2' : 'text-left py-2'}>{isAr ? 'الطلبات' : 'CARs'}</th>
-                    <th className={isAr ? 'text-right py-2' : 'text-left py-2'} />
+                    <th className={isAr ? 'text-right py-2 pe-3' : 'text-left py-2 pe-3'}>{isAr ? 'المورد' : 'Supplier'}</th>
+                    <th className={isAr ? 'text-right py-2 pe-3' : 'text-left py-2 pe-3'}>{isAr ? 'الفئة' : 'Category'}</th>
+                    <th className={isAr ? 'text-right py-2 pe-3' : 'text-left py-2 pe-3'}>{isAr ? 'الربع' : 'Quadrant'}</th>
+                    <th className={isAr ? 'text-right py-2 pe-3' : 'text-left py-2 pe-3'}>{isAr ? 'الطلبات' : 'CARs'}</th>
+                    <th className={isAr ? 'text-right py-2 pe-3' : 'text-left py-2 pe-3'} />
                   </tr>
                 </thead>
                 <tbody>
                   {myEntries.map((s) => (
                     <tr key={s.supplierId} className="border-b border-slate-50 last:border-0">
-                      <td className="py-2 font-semibold text-slate-800">{s.name || (isAr ? '(بدون اسم)' : '(unnamed)')}</td>
-                      <td className="py-2 text-slate-600">{s.category || '—'}</td>
-                      <td className="py-2 text-slate-600">{isAr ? QUADRANT_META[s.quadrant].labelAr : QUADRANT_META[s.quadrant].label}</td>
+                      <td className="py-2 pe-3 font-semibold text-slate-800 break-words">{s.name || (isAr ? '(بدون اسم)' : '(unnamed)')}</td>
+                      <td className="py-2 pe-3 text-slate-600 break-words">{s.category || '—'}</td>
+                      <td className="py-2 pe-3 text-slate-600">{isAr ? QUADRANT_META[s.quadrant].labelAr : QUADRANT_META[s.quadrant].label}</td>
                       <td className="py-2 text-slate-600">{s.cars.length}</td>
                       <td className="py-2">
                         <div className="flex items-center gap-1.5 justify-end">

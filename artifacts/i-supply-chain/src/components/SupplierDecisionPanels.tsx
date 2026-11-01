@@ -11,7 +11,7 @@
 import { useMemo, useState } from 'react';
 import { Printer, Download } from 'lucide-react';
 import {
-  buildDecisions, buildWeeklyActions, DUE_CADENCE_NOTE, DEFAULT_OWNER,
+  buildDecisions, buildWeeklyActions, DUE_CADENCE_NOTE, DEFAULT_OWNER, DEFAULT_OWNER_AR,
   type SupplierDecision, type Tier, type CauseKey,
 } from '@/lib/supplierDecisionView';
 import { buildPortfolioSummary, buildClientPackCsv } from '@/lib/supplierPortfolioSummary';
@@ -61,7 +61,7 @@ export function SupplierDecisionPanels({
 }) {
   const [owners, setOwners] = useState<Record<string, string>>(loadOwners);
   const decisions = useMemo(() => buildDecisions(suppliers, { asOfIso, categoryItems, shares }), [suppliers, asOfIso, categoryItems, shares]);
-  const actions = useMemo(() => buildWeeklyActions(decisions, asOfIso, owners), [decisions, asOfIso, owners]);
+  const actions = useMemo(() => buildWeeklyActions(decisions, asOfIso, owners, isAr ? DEFAULT_OWNER_AR : DEFAULT_OWNER), [decisions, asOfIso, owners, isAr]);
   const summary = useMemo(() => buildPortfolioSummary(decisions, asOfIso), [decisions, asOfIso]);
   const L = (b: { en: string; ar: string }) => (isAr ? b.ar : b.en);
 
@@ -154,37 +154,31 @@ export function SupplierDecisionPanels({
 
   function ActionsTable() {
     return (
-      <div className="overflow-x-auto">
-        <table className="w-full text-xs">
-          <thead>
-            <tr className="text-slate-500 border-b border-slate-200">
-              {[T.supplier, T.tier, T.action, T.owner, T.due].map((h) => <th key={h} className={`py-2 font-semibold ${isAr ? 'text-right' : 'text-left'}`}>{h}</th>)}
-            </tr>
-          </thead>
-          <tbody>
-            {actions.map((a) => (
-              <tr key={a.id} className="border-b border-slate-100 last:border-0 align-top">
-                <td className="py-2 font-medium text-slate-800">{a.supplierName}</td>
-                <td className="py-2"><span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${TIER_STYLE[a.tier]}`}>{L(TIER_LABEL[a.tier])}</span></td>
-                <td className="py-2">
-                  {a.kind === 'data-gap' && <span className="text-[9px] font-bold uppercase text-blue-700 me-1">{T.dataGap}</span>}
-                  <span className="font-semibold text-slate-800">{L(a.title)}</span>
-                  <p className="text-[11px] text-slate-500">{L(a.detail)}</p>
-                </td>
-                <td className="py-2">
-                  <input
-                    type="text" value={owners[a.supplierId] ?? DEFAULT_OWNER}
-                    onChange={(e) => setOwner(a.supplierId, e.target.value)}
-                    aria-label={`${T.owner}: ${a.supplierName}`}
-                    className="w-28 text-[11px] border border-slate-200 rounded px-1.5 py-1"
-                  />
-                </td>
-                <td className="py-2 whitespace-nowrap">{a.dueDate}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <ul className="space-y-2">
+        {actions.map((a) => (
+          <li key={a.id} className="rounded-lg border border-slate-200 p-3 text-xs">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="font-semibold text-slate-800">{a.supplierName}</span>
+              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${TIER_STYLE[a.tier]}`}>{L(TIER_LABEL[a.tier])}</span>
+              {a.kind === 'data-gap' && <span className="text-[9px] font-bold uppercase text-blue-700">{T.dataGap}</span>}
+            </div>
+            <p className="mt-1 font-semibold text-slate-800">{L(a.title)}</p>
+            <p className="text-[11px] text-slate-500">{L(a.detail)}</p>
+            <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1.5">
+              <label className="flex items-center gap-1.5">
+                <span className="text-slate-500">{T.owner}</span>
+                <input
+                  type="text" value={owners[a.supplierId] ?? (isAr ? DEFAULT_OWNER_AR : DEFAULT_OWNER)}
+                  onChange={(e) => setOwner(a.supplierId, e.target.value)}
+                  aria-label={`${T.owner}: ${a.supplierName}`}
+                  className="w-36 text-[11px] border border-slate-200 rounded px-1.5 py-1"
+                />
+              </label>
+              <span className="text-slate-500">{T.due}: <span className="font-medium text-slate-800" dir="ltr">{a.dueDate}</span></span>
+            </div>
+          </li>
+        ))}
+      </ul>
     );
   }
 

@@ -410,12 +410,13 @@ function addDays(iso: string, n: number): string {
 }
 
 export const DEFAULT_OWNER = 'Category manager';
+export const DEFAULT_OWNER_AR = 'مدير الفئة';
 const TIER_RANK: Record<Tier, number> = { critical: 0, high: 1, medium: 2, low: 3 };
 
-export function buildWeeklyActions(decisions: SupplierDecision[], asOfIso: string, owners: Record<string, string> = {}): WeeklyAction[] {
+export function buildWeeklyActions(decisions: SupplierDecision[], asOfIso: string, owners: Record<string, string> = {}, defaultOwner: string = DEFAULT_OWNER): WeeklyAction[] {
   const out: WeeklyAction[] = [];
   for (const d of decisions) {
-    const owner = owners[d.supplier.supplierId] ?? DEFAULT_OWNER;
+    const owner = owners[d.supplier.supplierId] ?? defaultOwner;
     if (d.tier !== 'low' || d.recommendation.primary.key !== 'MONITOR') {
       out.push({
         id: `${d.supplier.supplierId}:decision`, kind: 'decision', supplierId: d.supplier.supplierId, supplierName: d.supplier.name,

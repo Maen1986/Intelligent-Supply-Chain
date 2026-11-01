@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   computeCauseMix, recommend, buildSupplierDecision, buildDecisions, buildWeeklyActions, computeCategoryConcentration, computeTier,
-  FIX_OUR_SIDE_MIN_PCT, DUE_DAYS_BY_TIER, OVERDUE_CAR_DAYS, ACTION_CATALOGUE,
+  FIX_OUR_SIDE_MIN_PCT, DUE_DAYS_BY_TIER, OVERDUE_CAR_DAYS, ACTION_CATALOGUE, DEFAULT_OWNER, DEFAULT_OWNER_AR,
 } from './supplierDecisionView';
 import { buildPortfolioSummary, buildClientPackCsv } from './supplierPortfolioSummary';
 import { assessESG, ESG_THEMES, ESG_STALE_AFTER_DAYS } from './supplierESG';
@@ -284,5 +284,20 @@ describe('CHAINED: import -> M07 detection -> decision -> summary -> pack (cross
 describe('tier is ordinal, never a composite', () => {
   it('computeTier on no signals is low', () => {
     expect(computeTier({ recommendedIntervention: 'REPAIR', combinedSignalFlag: false } as never, [])).toBe('low');
+  });
+});
+
+describe('default owner is localised (found by the 375px Arabic render)', () => {
+  const s = sup({ name: 'A', cars: [car('1', 'x', '2026-01-01')] });
+  const ds = buildDecisions([s], { asOfIso: ASOF, categoryItems: [], shares: [] });
+  it('English default is unchanged', () => {
+    expect(buildWeeklyActions(ds, ASOF).every((a) => a.owner === DEFAULT_OWNER)).toBe(true);
+  });
+  it('Arabic default is Arabic, and an explicit owner always wins', () => {
+    expect(DEFAULT_OWNER_AR).toMatch(/[\u0600-\u06FF]/);
+    const ar = buildWeeklyActions(ds, ASOF, {}, DEFAULT_OWNER_AR);
+    expect(ar.length).toBeGreaterThan(0);
+    expect(ar.every((a) => a.owner === DEFAULT_OWNER_AR)).toBe(true);
+    expect(buildWeeklyActions(ds, ASOF, { A: 'Sara' }, DEFAULT_OWNER_AR).every((a) => a.owner === 'Sara')).toBe(true);
   });
 });
