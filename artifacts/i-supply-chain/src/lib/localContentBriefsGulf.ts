@@ -343,7 +343,7 @@ export const GULF_BRIEFS: Record<string, ProgramBrief> = {
       b('Test 2: at least 30% of contract works awarded to registered local contractors.', 'الاختبار الثاني: ٣٠٪ على الأقل من أعمال العقد لمقاولين محليين مسجلين.'),
     ],
     next: [
-      { when: 'before', text: b('Line up registered local suppliers and contractors before pricing so both shares are built in.', 'رتّب موردين ومقاولين محليين مسجلين قبل التسعير لتُدمج الحصتان في السعر.') },
+      { when: 'before', text: b('Line up registered local suppliers and contractors before pricing so both shares are built in.', 'رتّب وجود موردين ومقاولين محليين مسجلين قبل التسعير لتُدمج الحصتان في السعر') },
       { when: 'after', text: b('Track both shares through delivery. They are contract-performance duties.', 'تابع الحصتين حتى التسليم؛ فهما التزامان أثناء تنفيذ العقد.') },
     ],
     watch: [b('Law No. 49 of 2016, Article 87.', 'القانون رقم ٤٩ لسنة ٢٠١٦، المادة ٨٧.')],

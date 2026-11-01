@@ -103,7 +103,7 @@ export function referralCheck(i: ReferralInput): ReferralFlag[] {
         : 'فارق المحتوى المحلي عند أو دون الرقم الأدنى الوارد (١٠ نقاط).' });
   }
   if (i.finalReportMissing !== undefined) out.push(i.finalReportMissing
-    ? { article: 'Art. 37(3)', level: 'crossed', en: 'Final report not delivered in the period set by the tender documents: referral trigger.', ar: 'عدم تسليم التقرير النهائي خلال المدة المحددة في وثائق المنافسة: شرط للرفع.' }
+    ? { article: 'Art. 37(3)', level: 'crossed', en: 'Final report not delivered in the period set by the tender documents: referral trigger.', ar: 'عدم تسليم التقرير النهائي خلال المدة المحددة في وثائق المنافسة: سبب للإحالة.' }
     : { article: 'Art. 37(3)', level: 'clear', en: 'Final report delivered.', ar: 'تم تسليم التقرير النهائي.' });
   if (i.repeatSupplyContracts !== undefined) out.push(i.repeatSupplyContracts >= 3
     ? { article: 'Art. 38(1)', level: 'crossed', en: 'Three supply contracts in three consecutive years, each with a share gap above 25 points: LCGPA can refer you to the committee.', ar: 'ثلاثة عقود توريد خلال ثلاث سنوات متتالية بفارق حصة يزيد على ٢٥ نقطة في كل عقد: يجوز للهيئة الرفع إلى اللجنة.' }
@@ -112,7 +112,7 @@ export function referralCheck(i: ReferralInput): ReferralFlag[] {
     ? { article: 'Art. 38(2)', level: 'ambiguous', en: 'Three contracts in three consecutive years missed the local-content target by more than the threshold. The text prints 10 and 5 points; check which applies.', ar: 'ثلاثة عقود خلال ثلاث سنوات متتالية لم يتحقق فيها المستهدف بأكثر من الحد. يطبع النص ١٠ و٥ نقاط؛ راجع الرقم المعتمد.' }
     : { article: 'Art. 38(2)', level: 'clear', en: `${i.repeatLcContracts} of 3 repeat contracts counted.`, ar: `${i.repeatLcContracts} من ٣ عقود متكررة.` });
   if (i.repeatMissingFinalReports !== undefined) out.push(i.repeatMissingFinalReports >= 3
-    ? { article: 'Art. 38(3)', level: 'crossed', en: 'Final report missed on three contracts in three consecutive years: LCGPA referral trigger.', ar: 'عدم تسليم التقرير النهائي في ثلاثة عقود خلال ثلاث سنوات متتالية: شرط لرفع الهيئة.' }
+    ? { article: 'Art. 38(3)', level: 'crossed', en: 'Final report missed on three contracts in three consecutive years: LCGPA referral trigger.', ar: 'عدم تسليم التقرير النهائي في ثلاثة عقود خلال ثلاث سنوات متتالية: شرط الرفع للهيئة' }
     : { article: 'Art. 38(3)', level: 'clear', en: `${i.repeatMissingFinalReports} of 3 repeat contracts counted.`, ar: `${i.repeatMissingFinalReports} من ٣ عقود متكررة.` });
   return out;
 }
