@@ -140,7 +140,7 @@ function toObjects(
 const QUADRANT_ALIASES: Record<string, KraljicQuadrant> = {
   strategic: 'strategic', 'استراتيجي': 'strategic',
   leverage: 'leverage', 'نفوذ سوق': 'leverage',
-  bottleneck: 'bottleneck', 'نقطة اختناق': 'bottleneck',
+  bottleneck: 'bottleneck', 'نقطة اختناق': 'bottleneck', 'نقطة اختناق (إمداد هش)': 'bottleneck', 'إمداد هش': 'bottleneck',
   'non-critical': 'non-critical', non_critical: 'non-critical', noncritical: 'non-critical',
   'non critical': 'non-critical', routine: 'non-critical', 'غير حرج': 'non-critical',
 };

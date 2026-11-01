@@ -291,9 +291,12 @@ const MOCK_IMPACT_NOTE_AR = 'أرقام تكلفة تقديرية على محف�
 const QUADRANT_META: Record<KraljicQuadrant, { label: string; labelAr: string; color: string }> = {
   strategic: { label: 'Strategic', labelAr: 'استراتيجي', color: '#082C6B' },
   leverage: { label: 'Leverage', labelAr: 'نفوذ سوق', color: '#065f46' },
-  bottleneck: { label: 'Bottleneck', labelAr: 'نقطة اختناق', color: '#92400e' },
+  bottleneck: { label: 'Bottleneck', labelAr: 'نقطة اختناق (إمداد هش)', color: '#92400e' },
   'non-critical': { label: 'Non-Critical', labelAr: 'غير حرج', color: '#374151' },
 };
+
+/** One-line meaning shown under the Bottleneck label so the term is never unexplained. */
+const BOTTLENECK_NOTE = { en: 'Low spend, few alternatives, high disruption risk', ar: 'إنفاق منخفض، بدائل قليلة، خطر انقطاع مرتفع' };
 
 const DIMENSION_LABEL: Record<string, { en: string; ar: string }> = {
   delivery: { en: 'Delivery', ar: 'التسليم' },
@@ -633,7 +636,10 @@ export function SupplierRecoveryPortfolio() {
                     <tr key={s.supplierId} className="border-b border-slate-50 last:border-0">
                       <td className="py-2 pe-3 font-semibold text-slate-800 break-words">{s.name || (isAr ? '(بدون اسم)' : '(unnamed)')}</td>
                       <td className="py-2 pe-3 text-slate-600 break-words">{s.category || '—'}</td>
-                      <td className="py-2 pe-3 text-slate-600">{isAr ? QUADRANT_META[s.quadrant].labelAr : QUADRANT_META[s.quadrant].label}</td>
+                      <td className="py-2 pe-3 text-slate-600">
+                        {isAr ? QUADRANT_META[s.quadrant].labelAr : QUADRANT_META[s.quadrant].label}
+                        {s.quadrant === 'bottleneck' && <span className="block text-[10px] text-slate-400 leading-snug">{isAr ? BOTTLENECK_NOTE.ar : BOTTLENECK_NOTE.en}</span>}
+                      </td>
                       <td className="py-2 text-slate-600">{s.cars.length}</td>
                       <td className="py-2">
                         <div className="flex items-center gap-1.5 justify-end">

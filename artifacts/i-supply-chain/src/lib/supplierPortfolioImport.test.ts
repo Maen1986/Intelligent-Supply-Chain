@@ -35,6 +35,13 @@ describe('parseScoresCsv', () => {
     expect(r.suppliers[0]!.scorePeriods).toEqual(['2026-01', '2026-02', '2026-03']);
     expect(r.suppliers[0]!.scoreHistory12mo).toEqual([90, 80, 70]);
   });
+  it('accepts the old and the new Arabic Bottleneck label', () => {
+    for (const q of ['نقطة اختناق', 'نقطة اختناق (إمداد هش)', 'إمداد هش', 'bottleneck']) {
+      const r = parseScoresCsv(`supplier,period,score,quadrant\nA,2026-01,80,"${q}"\n`);
+      expect(r.report.rejected).toHaveLength(0);
+      expect(r.suppliers[0]!.quadrant).toBe('bottleneck');
+    }
+  });
   it('rejects bad rows with a reason, never silently fixes them (hardest)', () => {
     const r = parseScoresCsv('supplier,period,score,quadrant\nA,2026-01,101,\nA,2026-02,abc,\nA,2026-03,50,weird\n,2026-04,50,\nA,2026-05,60,strategic\n');
     expect(r.report.rowsRead).toBe(5);

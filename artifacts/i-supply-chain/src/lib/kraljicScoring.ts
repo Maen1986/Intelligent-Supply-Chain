@@ -86,7 +86,7 @@ export const QUADRANT_META: Record<KraljicQuadrant, {
     icon: '💰',
   },
   bottleneck: {
-    label: 'Bottleneck',        labelAr: 'نقطة اختناق',
+    label: 'Bottleneck',        labelAr: 'نقطة اختناق (إمداد هش)',
     color: '#92400e',           bg: '#FFFBEB',   border: '#d97706',
     tagline: 'Low impact · High risk — Secure supply first',
     taglineAr: 'تأثير منخفض · خطر مرتفع — أمّن الإمداد أولاً',
