@@ -59,6 +59,7 @@ import {
 } from '@/lib/supplierRecoveryPortfolio';
 import { SupplierPortfolioImportPanel } from '@/components/SupplierPortfolioImportPanel';
 import { SupplierDecisionPanels, type DecisionView } from '@/components/SupplierDecisionPanels';
+import { SupplierSubtypePanel } from '@/components/SupplierSubtypePanel';
 import { ESG_THEMES, ESG_THEME_LABEL, ESG_LEVEL_LABEL, type ESGEvidenceLevel, type ESGTheme } from '@/lib/supplierESG';
 import type { PerformanceCause } from '@/lib/supplierPerformanceRecovery';
 
@@ -338,7 +339,7 @@ export function SupplierRecoveryPortfolio() {
   const [portfolioMode, setPortfolioMode] = useState<'demo' | 'mine'>('demo');
   const [myEntries, setMyEntries] = useState<SupplierRecord[]>(loadMyEntries);
   const [editingSupplier, setEditingSupplier] = useState<SupplierRecord | null>(null);
-  const [view, setView] = useState<DecisionView | 'analysis'>('actions');
+  const [view, setView] = useState<DecisionView | 'analysis' | 'subtypes'>('actions');
 
   // ── Server sync ("mine" mode only -- added 17 Sep 2026, see file header
   // above the ASOF constant for the full rationale). Mirrors
@@ -688,6 +689,7 @@ export function SupplierRecoveryPortfolio() {
             ['actions', isAr ? 'مدير الفئة: إجراءات الأسبوع' : 'Category manager: this week'],
             ['summary', isAr ? 'رئيس المشتريات: ملخص المحفظة' : 'Procurement head: portfolio summary'],
             ['pack', isAr ? 'المستشار: حزمة العميل' : 'Consultant: client pack'],
+            ['subtypes', isAr ? 'أنواع كرالييك الفرعية' : 'Kraljic sub-types'],
             ['analysis', isAr ? 'التحليل التفصيلي' : 'Detailed analysis'],
           ] as const).map(([v, label]) => (
             <button
@@ -705,7 +707,11 @@ export function SupplierRecoveryPortfolio() {
           </p>
         )}
 
-        {view !== 'analysis' && (
+        {view === 'subtypes' && (
+          <SupplierSubtypePanel isAr={isAr} suppliers={suppliers} asOfIso={asOf} categoryItems={categoryItems} shares={shares} />
+        )}
+
+        {view !== 'analysis' && view !== 'subtypes' && (
           <SupplierDecisionPanels
             isAr={isAr} view={view} suppliers={suppliers} asOfIso={asOf}
             categoryItems={categoryItems} shares={shares}
