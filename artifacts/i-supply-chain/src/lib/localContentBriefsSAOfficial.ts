@@ -46,11 +46,11 @@ export const SA_BRIEFS_OFFICIAL: Record<string, ProgramBrief> = {
       b('Work out your national-product share: national products (excluding Mandatory List items) ÷ total bid value (excluding Mandatory List items).', 'احسب حصة المنتجات الوطنية: قيمة المنتجات الوطنية (دون بنود القائمة الإلزامية) ÷ إجمالي قيمة العرض (دون بنود القائمة الإلزامية).'),
       b('Adjusted bid = bid price + 10% × bid price × (1 − national share).', 'العرض المعدَّل = سعر العرض + ١٠٪ × سعر العرض × (١ − حصة المنتجات الوطنية).'),
       b('The rate can be raised by agreement between LCGPA and the buyer, and must then be stated in the tender documents.', 'يجوز رفع النسبة باتفاق بين الهيئة والجهة، وعندئذٍ تُوضَّح في وثائق المنافسة.'),
-      b('After the contract, report the national-product share you delivered. A shortfall carries fines.', 'بعد العقد ارفع تقريراً بحصة المنتجات الوطنية التي حققتها؛ والنقص يترتب عليه غرامات.'),
+      b('After the contract, report the national-product share you delivered. A shortfall carries fines.', 'بعد انتهاء العقد ارفع تقريراً بحصة المنتجات الوطنية التي حققتها؛ والنقص يترتب عليه غرامات.'),
     ],
     next: [
       { when: 'before', text: b('Use the adjuster below to see how much a higher national share lowers your evaluated price, then price local sourcing into the bid.', 'استخدم أداة التعديل أدناه لترى كم تخفض الحصة الوطنية الأعلى سعرك المقيَّم، ثم أدرج كلفة التوريد المحلي في عرضك.') },
-      { when: 'with-bid', text: b('State the national-product share you commit to, with the list of national products behind it.', 'اذكر حصة المنتجات الوطنية التي تلتزم بها مع قائمة المنتجات الوطنية التي تسندها.') },
+      { when: 'with-bid', text: b('State the national-product share you commit to, with the list of national products behind it.', 'اذكر حصة المنتجات الوطنية التي تلتزم بها مع قائمة المنتجات الوطنية المرتبطة بها') },
       { when: 'after', text: b('Fill the contractor report within 30 days of contract end. The buyer reviews it within 10 days and sends LCGPA a copy.', 'عبّئ تقرير المتعاقد خلال ٣٠ يوماً من نهاية العقد؛ وتراجعه الجهة خلال ١٠ أيام وترسل نسخة للهيئة.') },
     ],
     watch: [
@@ -71,7 +71,7 @@ export const SA_BRIEFS_OFFICIAL: Record<string, ProgramBrief> = {
       b('LCGPA and the buyer pick the projects. Supply contracts are outside this mechanism.', 'تحدد الهيئة والجهة المشاريع، وعقود التوريد خارج هذه الآلية.'),
       b('Complete the official contract-level form: workforce pay, goods and services, Saudi training, supplier development, R&D and depreciation.', 'عبّئ النموذج الرسمي على مستوى العقد: أجور القوى العاملة، والسلع والخدمات، وتدريب السعوديين، وتطوير الموردين، والبحث والتطوير، والإهلاك.'),
       b('Your targeted % = local value ÷ total related cost. Attach the form to the technical offer and say whether you are listed on the Saudi exchange.', 'نسبتك المستهدفة = القيمة المحلية ÷ إجمالي التكلفة ذات الصلة. أرفق النموذج بالعرض الفني وبيّن هل أنت مدرج في السوق المالية السعودية.'),
-      b('If you win: phased plan within 60 days of award, periodic reports (none in the first six months, or on contracts under a year), and an audited final report within seven months of contract end. The final report releases the final guarantee.', 'عند الفوز: خطة تدرجية خلال ٦٠ يوماً من الترسية، وتقارير دورية (لا تُطلب في الأشهر الستة الأولى ولا في العقود التي تقل عن سنة)، وتقرير نهائي مدقَّق خلال سبعة أشهر من نهاية العقد. ويُفرج عن الضمان النهائي بتقديمه.'),
+      b('If you win: phased plan within 60 days of award, periodic reports (none in the first six months, or on contracts under a year), and an audited final report within seven months of contract end. The final report releases the final guarantee.', 'عند الفوز: خطة تدرجية خلال ٦٠ يوماً من الترسية، وتقارير دورية (لا تُطلب في الأشهر الستة الأولى ولا في العقود التي تقل عن سنة)، وتقرير نهائي مدقَّق خلال سبعة أشهر من نهاية العقد. حيث يُفرج عن الضمان النهائي بتقديمه.'),
     ],
     next: [
       { when: 'before', text: b('Run the calculator below with your real cost plan. If the result is under the minimum, see which line moves it most before you bid.', 'شغّل الحاسبة أدناه بخطة كلفتك الفعلية. فإن جاءت النتيجة دون الحد الأدنى فانظر أي بند يحركها أكثر قبل أن تقدّم العرض.') },
@@ -115,7 +115,7 @@ export const SA_BRIEFS_OFFICIAL: Record<string, ProgramBrief> = {
     headline: { value: b('10%', '١٠٪'), label: b('other bidders\' prices are assumed 10% higher than stated', 'تُفترض أسعار عروض المتنافسين الآخرين أعلى بنسبة ١٠٪ مما ذُكر') },
     verdict: b(
       'If you qualify as a local SME, your offer can win while up to 10% above a larger rival. It applies to non-supply contracts below the high-value threshold only.',
-      'إذا تأهلت منشأة صغيرة أو متوسطة محلية فقد يفوز عرضك وهو أعلى بنسبة تصل إلى ١٠٪ من منافس أكبر. وتسري على عقود غير التوريد التي تقل عن حد القيمة العالية فقط.'),
+      'إذا تأهلت كمنشأة محلية صغيرة أو متوسطة فقد يفوز عرضك وهو أعلى بنسبة تصل إلى ١٠٪ من منافس أكبر. وتسري على عقود غير التوريد التي تقل عن حد القيمة العالية فقط'),
     steps: [
       b('You must be classified small or medium by the SME General Authority (Monsha\'at).', 'يجب أن تكون مصنَّفاً صغيراً أو متوسطاً لدى الهيئة العامة للمنشآت الصغيرة والمتوسطة (منشآت).'),
       b('Saudi ownership of capital must be at least 50%.', 'يجب ألا تقل ملكية السعوديين لرأس المال عن ٥٠٪.'),

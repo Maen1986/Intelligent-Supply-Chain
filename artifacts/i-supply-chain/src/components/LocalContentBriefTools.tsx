@@ -490,7 +490,7 @@ function TenderChecklist({ isAr }: { isAr: boolean }) {
   const [hv, setHv] = useState(false); const [fw, setFw] = useState(false); const [ml, setMl] = useState(false);
   const items = checklistFor({ kind, highValue: hv, framework: fw, hasMandatoryListItems: ml });
   return (
-    <Box title={T(isAr, 'Drafting a tender? Local-content checklist', 'تعد منافسة؟ قائمة تحقق المحتوى المحلي')} note={isAr ? TENDER_SOURCE.ar : TENDER_SOURCE.en}>
+    <Box title={T(isAr, 'Drafting a tender? Local-content checklist', 'هل تُعد منافسة؟ قائمة تحقق المحتوى المحلي')} note={isAr ? TENDER_SOURCE.ar : TENDER_SOURCE.en}>
       <div className="grid grid-cols-2 gap-2">
         <label className="text-[11px] text-slate-600 col-span-2">{T(isAr, 'Contract type', 'نوع العقد')}
           <select value={kind} onChange={e => setKind(e.target.value as TenderKind)} className="mt-1 w-full border rounded px-2 py-1 text-sm">
