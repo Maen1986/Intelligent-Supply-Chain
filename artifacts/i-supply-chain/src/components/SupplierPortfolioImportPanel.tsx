@@ -40,7 +40,7 @@ export function SupplierPortfolioImportPanel({
     carsFile: isAr ? 'ملف طلبات الإجراء التصحيحي (اختياري)' : 'Corrective-actions file (optional)',
     template: isAr ? 'تنزيل القالب' : 'Download template',
     policy: isAr
-      ? 'عند التطبيق: ملف الدرجات هو المرجع لسلسلة درجات كل مورد يرد فيه؛ الموردون غير الواردين لا يتغيرون؛ تُطابَق الطلبات حسب اسم المورد + معرّف الطلب (الجديد يُضاف والمطابق يُحدَّث)؛ طلب لمورد غير موجود يُعرض ولا يُنشأ له مورد تلقائياً.'
+      ? 'عند التطبيق: ملف الدرجات هو المرجع لسلسلة درجات كل مورد يرد فيه؛ الموردون غير الواردين لا يتغيرون؛ تُطابق الطلبات حسب اسم المورد + معرّف الطلب (الجديد يُضاف والمطابق يُحدَّث)؛ طلب لمورد غير موجود يُعرض ولا يُنشأ له مورد تلقائياً.'
       : 'When applied: the scores file is the source of truth for each supplier it lists; suppliers not in the file are untouched; CARs match on supplier name + car_id (new are added, same id updated); a CAR for an unknown supplier is reported, never auto-created.',
     accepted: isAr ? 'صفوف مقبولة' : 'rows accepted',
     rejected: isAr ? 'صفوف مرفوضة' : 'rows rejected',
@@ -48,7 +48,7 @@ export function SupplierPortfolioImportPanel({
     line: isAr ? 'سطر' : 'line',
     apply: isAr ? 'تطبيق الاستيراد' : 'Apply import',
     done: (s: MergeSummary) => isAr
-      ? `تم: ${s.suppliersAdded} مورد جديد، ${s.suppliersUpdated} محدَّث، ${s.carsAdded} طلب جديد، ${s.carsUpdated} محدَّث${s.carsUnmatched.length ? `، ${s.carsUnmatched.length} طلب لمورد غير موجود (لم يُستورد): ${s.carsUnmatched.join('، ')}` : ''}.`
+      ? `تم: ${s.suppliersAdded} مورد جديد، ${s.suppliersUpdated} محدَّث، ${s.carsAdded} طلب جديد، ${s.carsUpdated} محدَّث${s.carsUnmatched.length ? `، ${s.carsUnmatched.length} طلب لمورد غير موجود (لم يُستورد): ${s.carsUnmatched.join('، ')}` : ''}.`
       : `Done: ${s.suppliersAdded} supplier(s) added, ${s.suppliersUpdated} updated, ${s.carsAdded} CAR(s) added, ${s.carsUpdated} updated${s.carsUnmatched.length ? `; ${s.carsUnmatched.length} CAR(s) for unknown suppliers were NOT imported: ${s.carsUnmatched.join(', ')}` : ''}.`,
   };
 

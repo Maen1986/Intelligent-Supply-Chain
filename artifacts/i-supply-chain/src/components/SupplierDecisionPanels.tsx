@@ -96,7 +96,7 @@ export function SupplierDecisionPanels({
     // pack
     print: isAr ? 'طباعة / حفظ PDF' : 'Print / save as PDF', csv: isAr ? 'تنزيل CSV' : 'Download CSV',
     packTitle: isAr ? 'حزمة مراجعة الموردين' : 'Supplier Review Pack', asOf: isAr ? 'بتاريخ' : 'As of', source: isAr ? 'مصدر البيانات' : 'Data source',
-    packNote: isAr ? 'مخرجات دعم قرار بقواعد معلنة، وليست حكماً نهائياً. تُراجَع من مختص قبل أي إجراء تعاقدي.' : 'Decision-support output with disclosed rules, not a final verdict. Review with a professional before any contractual step.',
+    packNote: isAr ? 'مخرجات دعم قرار بقواعد معلنة، وليست حكماً نهائياً. تُراجع من مختص قبل أي إجراء تعاقدي.' : 'Decision-support output with disclosed rules, not a final verdict. Review with a professional before any contractual step.',
   };
 
   if (suppliers.length === 0) {
