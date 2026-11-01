@@ -49,6 +49,7 @@
  * back to Module 02 that would let this be computed from production data
  * instead of a mock dataset. See the write-up for the proposed fix.
  */
+import type { SupplierESG } from './supplierESG';
 import {
   classifyVariability,
   computeTrend,
@@ -57,6 +58,8 @@ import {
   checkLatestPeriodShock,
   type InterventionType,
   type PerformanceTrend,
+  type PerformanceCause,
+  type SIDataSource,
 } from './supplierPerformanceRecovery';
 import {
   type CARRecord as COPQCARRecord,
@@ -102,6 +105,15 @@ export interface CARRecord {
   status: CARStatus;
   createdAt: string; // ISO date
   closedAt: string | null;
+  /** Round B (Nov 2026) -- all optional, so every pre-existing record stays valid.
+   * Whose-fault axis, separate from `category`. Absent = 'unassessed'
+   * (never silently assumed to be the supplier's fault -- SI-07 core rule). */
+  cause?: PerformanceCause;
+  /** Client-supplied cost of this CAR in USD (feeds COPQ). Absent = uncosted. */
+  estimatedCostUSD?: number | null;
+  costBasis?: 'observed' | 'calculated' | 'estimated';
+  /** Absent = internal failure (COPQ default); 'external' = reached the customer. */
+  customerImpact?: 'internal' | 'external';
 }
 
 export interface SupplierRecord {
@@ -112,6 +124,17 @@ export interface SupplierRecord {
   quadrantPriorQuarter: KraljicQuadrant | null; // for the migration-trail upgrade
   scoreHistory12mo: number[]; // chronological, oldest first — feeds real computeTrend/classifyVariability
   cars: CARRecord[]; // this supplier's own CAR history
+  /** Round B (Nov 2026), optional: 'YYYY-MM' label per score, parallel to
+   * scoreHistory12mo. Needed to verify recovery AFTER a CAR closes. */
+  scorePeriods?: string[];
+  /** Round B, optional: the client's own annual spend with this supplier (SAR).
+   * When present it replaces the mock category-share derivation, closing the
+   * long-standing #668 gap for real users. */
+  annualSpendSAR?: number | null;
+  /** SI-00 Charter data-source tag. Absent = 'manual'. */
+  dataSource?: SIDataSource;
+  /** Round B3: per-theme ESG evidence (never scored; see supplierESG.ts). */
+  esg?: SupplierESG;
 }
 
 // ---- Real, executed per-supplier detection (calls the REAL SI-07 functions) ----
@@ -137,6 +160,24 @@ export interface SupplierDetection {
   shockRuleSourceAr: string;
 }
 
+/** Prior-occurrence CAR ids for the root cause with the most repeats. */
+export function worstRecurrencePriorIds(cars: CARRecord[]): string[] {
+  const groups = new Map<string, CARRecord[]>();
+  for (const c of cars) {
+    const key = c.rootCause.trim().toLowerCase();
+    if (!key) continue;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key)!.push(c);
+  }
+  let worst: string[] = [];
+  for (const g of groups.values()) {
+    const ordered = [...g].sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+    const priors = ordered.slice(0, -1).map((c) => c.id);
+    if (priors.length > worst.length) worst = priors;
+  }
+  return worst;
+}
+
 export function detectSupplier(s: SupplierRecord): SupplierDetection {
   const latest = s.scoreHistory12mo[s.scoreHistory12mo.length - 1]!;
   const prior = s.scoreHistory12mo.slice(0, -1);
@@ -144,8 +185,15 @@ export function detectSupplier(s: SupplierRecord): SupplierDetection {
   const varResult = classifyVariability(prior, latest);
   const shockResult = checkLatestPeriodShock(s.scoreHistory12mo);
 
-  const closedSameRootCause = s.cars.filter((c) => c.status === 'closed').map((c) => c.id);
-  const recurrence = assessRecurrence(closedSameRootCause.slice(0, -1)); // prior occurrences, not counting latest
+  // Round B fix (Nov 2026): recurrence is counted PER ROOT CAUSE, as SI-07's
+  // own 8D/SCAR rule requires. The earlier version pooled every closed CAR of
+  // the supplier regardless of root cause and dropped one occurrence, which
+  // under-counted real repeats and over-counted unrelated ones. Now: for each
+  // root-cause identifier, the CARs for that cause (open or closed) are
+  // ordered by opening date; prior occurrences = n - 1; the supplier's
+  // recurrence is the worst (max) across its root causes. CARs with an empty
+  // root cause cannot be grouped and are never counted as repeats.
+  const recurrence = assessRecurrence(worstRecurrencePriorIds(s.cars));
 
   // Base intervention: a simple, disclosed stand-in for the caller's own
   // reasoning-chain step (this module doesn't own that decision) — REPAIR by
@@ -225,7 +273,7 @@ export function buildMockSupplierSpendDataset(
 export interface ExposureResult {
   supplierId: string;
   exposureSAR: number;
-  exposureBasis: 'mock-simulated-per-supplier-spend' | 'INSUFFICIENT_DATA';
+  exposureBasis: 'client-supplied' | 'mock-simulated-per-supplier-spend' | 'INSUFFICIENT_DATA';
 }
 
 export function computeSupplierExposure(
@@ -233,6 +281,10 @@ export function computeSupplierExposure(
   categoryItems: KraljicItemLite[],
   shares: SupplierCategoryShare[]
 ): ExposureResult {
+  // Round B: a client-supplied annual spend always wins over the mock derivation.
+  if (typeof supplier.annualSpendSAR === 'number' && supplier.annualSpendSAR > 0) {
+    return { supplierId: supplier.supplierId, exposureSAR: supplier.annualSpendSAR, exposureBasis: 'client-supplied' };
+  }
   const itemsInCategory = categoryItems.filter((i) => i.category === supplier.category);
   const share = shares.find((s) => s.supplierId === supplier.supplierId && s.category === supplier.category);
   if (itemsInCategory.length === 0 || !share) {
@@ -560,4 +612,87 @@ export function computeCOPQAttentionPriority(
     };
   });
   return results.sort((a, b) => b.priorityScore - a.priorityScore);
+}
+
+// ---------------------------------------------------------------------------
+// Round B (Nov 2026) -- real-data helpers. These exist so a user's OWN
+// portfolio never has to borrow the demo portfolio's cost tables (the demo
+// leak found in the Round B audit).
+// ---------------------------------------------------------------------------
+
+/** Build COPQ impacts/overrides from the cost fields on a user's own CARs.
+ * A CAR with no estimatedCostUSD produces no impact row -- it stays uncosted
+ * (INSUFFICIENT_DATA downstream), never zero-filled. */
+export function deriveImpactsFromCars(cars: CARRecord[]): {
+  impacts: CARBusinessImpact[];
+  overrides: CARCustomerImpactOverride[];
+} {
+  const impacts: CARBusinessImpact[] = [];
+  const overrides: CARCustomerImpactOverride[] = [];
+  for (const c of cars) {
+    if (typeof c.estimatedCostUSD === 'number' && c.estimatedCostUSD >= 0) {
+      impacts.push({
+        carId: c.id,
+        description: c.rootCause || c.id,
+        estimatedCostUSD: c.estimatedCostUSD,
+        basis: c.costBasis ?? 'estimated',
+      });
+    }
+    if (c.customerImpact === 'external') overrides.push({ carId: c.id, customerImpact: 'external' });
+  }
+  return { impacts, overrides };
+}
+
+export type RecoveryVerificationStatus =
+  | 'VERIFIED_RECOVERED'
+  | 'CLOSED_NOT_RECOVERED'
+  | 'NOT_ENOUGH_POST_CLOSURE_DATA'
+  | 'NO_CLOSED_CAR'
+  | 'NO_PERIOD_LABELS';
+
+export interface RecoveryVerification {
+  supplierId: string;
+  status: RecoveryVerificationStatus;
+  carId: string | null;
+  meanBefore: number | null;
+  meanAfter: number | null;
+  periodsAfter: number;
+  ruleEn: string;
+  ruleAr: string;
+}
+
+export const MIN_POST_CLOSURE_PERIODS = 2;
+const RECOVERY_RULE_EN =
+  'Closing a corrective action is not the same as recovery. Recovery is verified only when the supplier\'s own score, measured over at least 2 periods AFTER the CAR closed, is not lower than the average of the periods before it closed. Fewer than 2 post-closure periods is reported as not enough data, never as recovered. (ISC rule, grounded in the 8D "verify effectiveness of corrective action" step.)';
+const RECOVERY_RULE_AR =
+  'إغلاق الإجراء التصحيحي لا يعني التعافي. لا يُعتمد التعافي إلا إذا كان متوسط درجة المورد خلال فترتين على الأقل بعد إغلاق الطلب لا يقل عن متوسط الفترات التي سبقت الإغلاق. أقل من فترتين بعد الإغلاق يُعرض كبيانات غير كافية، وليس كتعافٍ. (قاعدة ISC مستندة إلى خطوة "التحقق من فعالية الإجراء التصحيحي" في منهجية 8D.)';
+
+/** Verifies recovery for the supplier's most recently CLOSED CAR using the
+ * dated score periods. Pure and deterministic; needs scorePeriods. */
+export function verifyRecovery(s: SupplierRecord): RecoveryVerification {
+  const base = { supplierId: s.supplierId, ruleEn: RECOVERY_RULE_EN, ruleAr: RECOVERY_RULE_AR };
+  const closed = s.cars.filter((c) => c.status === 'closed' && c.closedAt).sort((a, b) => b.closedAt!.localeCompare(a.closedAt!));
+  if (closed.length === 0) return { ...base, status: 'NO_CLOSED_CAR', carId: null, meanBefore: null, meanAfter: null, periodsAfter: 0 };
+  const car = closed[0]!;
+  const periods = s.scorePeriods;
+  if (!periods || periods.length !== s.scoreHistory12mo.length) {
+    return { ...base, status: 'NO_PERIOD_LABELS', carId: car.id, meanBefore: null, meanAfter: null, periodsAfter: 0 };
+  }
+  const closeMonth = car.closedAt!.slice(0, 7);
+  const before: number[] = [];
+  const after: number[] = [];
+  periods.forEach((p, i) => {
+    if (p <= closeMonth) before.push(s.scoreHistory12mo[i]!);
+    else after.push(s.scoreHistory12mo[i]!);
+  });
+  if (after.length < MIN_POST_CLOSURE_PERIODS || before.length === 0) {
+    return { ...base, status: 'NOT_ENOUGH_POST_CLOSURE_DATA', carId: car.id, meanBefore: before.length ? mean(before) : null, meanAfter: after.length ? mean(after) : null, periodsAfter: after.length };
+  }
+  const mb = mean(before);
+  const ma = mean(after);
+  return { ...base, status: ma >= mb ? 'VERIFIED_RECOVERED' : 'CLOSED_NOT_RECOVERED', carId: car.id, meanBefore: mb, meanAfter: ma, periodsAfter: after.length };
+}
+
+function mean(xs: number[]): number {
+  return Math.round((xs.reduce((a, b) => a + b, 0) / xs.length) * 10) / 10;
 }
