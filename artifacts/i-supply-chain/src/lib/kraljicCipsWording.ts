@@ -109,6 +109,6 @@ export function matchesKraljicTerm(query: string): boolean {
 }
 
 export const ARABIC_DISCLOSURE: Bilingual = {
-  en: 'Arabic wording is ISC editorial, not a published standard. Review status: 1,170 Arabic texts certified by a native Arabic reader (the ISC founder) on 2 Nov 2026 and his corrections applied. Wording revised after that review (53 playbook lines and the abbreviations list) is awaiting his re-check.',
-  ar: 'الصياغة العربية تحريرية من ISC وليست معيارًا منشورًا. حالة المراجعة: اعتمد قارئ عربي أصلي (مؤسس ISC) 1,170 نصًا عربيًا في 2 نوفمبر 2026 وطُبّقت تصويباته. أما الصياغات المعدَّلة بعد ذلك (53 سطرًا في دليل العمل وقائمة الاختصارات) فبانتظار مراجعته.',
+  en: 'Arabic wording is ISC editorial, not a published standard. Review status: all Arabic texts (1,170 first review plus 121 re-checked lines) certified by a native Arabic reader (the ISC founder) on 2 Nov 2026, with his corrections applied.',
+  ar: 'الصياغة العربية تحريرية من ISC وليست معيارًا منشورًا. حالة المراجعة: اعتمد قارئ عربي أصلي (مؤسس ISC) جميع النصوص العربية في 2 نوفمبر 2026 (1,170 نصًا في المراجعة الأولى و121 سطرًا في إعادة المراجعة)، وطُبّقت تصويباته.',
 };

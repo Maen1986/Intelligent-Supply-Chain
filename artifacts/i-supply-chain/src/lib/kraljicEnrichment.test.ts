@@ -177,8 +177,8 @@ describe('wording pack (item 11)', () => {
     for (const q of ['كرالجيك', 'كراجيك', 'كرلجيك', 'Kraljic matrix']) expect(matchesKraljicTerm(q)).toBe(true);
     expect(matchesKraljicTerm('كراليك')).toBe(false); expect(matchesKraljicTerm('')).toBe(false);
   });
-  it('discloses honestly that the Arabic is not human-certified', () => {
-    expect(ARABIC_DISCLOSURE.en).toMatch(/awaiting his re-check/);
-    expect(ARABIC_DISCLOSURE.ar).toMatch(/بانتظار مراجعته/);
+  it('discloses the Arabic review status', () => {
+    expect(ARABIC_DISCLOSURE.en).toMatch(/certified by a native Arabic reader/);
+    expect(ARABIC_DISCLOSURE.ar).toMatch(/اعتمد قارئ عربي أصلي/);
   });
 });

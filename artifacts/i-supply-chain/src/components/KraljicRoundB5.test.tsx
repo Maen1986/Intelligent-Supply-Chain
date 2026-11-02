@@ -109,7 +109,7 @@ describe('evidence tab', () => {
   it('source ledger shows unconfirmed claims as unconfirmed and the wording pack discloses Arabic status', () => {
     render(<KraljicEvidencePanel isAr={false} suppliers={sups} entries={[]} asOfIso="2026-11-02" onAdd={() => {}} onRemove={() => {}} />);
     expect(screen.getAllByText('Not confirmed: not stated').length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/awaiting his re-check/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/certified by a native Arabic reader/).length).toBeGreaterThan(0);
     expect(screen.getByText(/كراجيك/)).toBeTruthy();
   });
   it('shows stability and moved-out-of-bottleneck from history', () => {
