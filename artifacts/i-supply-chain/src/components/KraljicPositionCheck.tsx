@@ -37,7 +37,7 @@ export function KraljicPositionCheck({
     none: isAr ? 'لا' : 'No', shock: isAr ? 'صدمة سوق' : 'Market shock', failure: isAr ? 'إخفاق مورد' : 'Supplier failure',
     dur: isAr ? 'المدة المتوقعة (أيام)' : 'Expected length (days)', surv: isAr ? 'مدة صمودنا دون إمداد (أيام)' : 'Days we can run without supply',
     cfg: isAr ? 'إعدادات القاعدة' : 'Rule settings', need: isAr ? 'عدد المراجعات المتتالية للتأكيد' : 'Consecutive reviews to confirm',
-    handover: isAr ? 'عند الانتقال' : 'Handover', missing: isAr ? 'حقائق ناقصة' : 'Facts needed',
+    handover: isAr ? 'عند الانتقال' : 'Handover', missing: isAr ? 'حقائق مطلوبة' : 'Facts needed',
     basis: isAr ? 'قاعدة ISC: لا يوجد مصدر منشور لها. الأرقام قابلة للتغيير.' : 'ISC rule: no published source states one. Numbers can be changed.',
     count: isAr ? 'متتالية' : 'consecutive',
   };

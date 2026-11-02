@@ -178,7 +178,7 @@ describe('wording pack (item 11)', () => {
     expect(matchesKraljicTerm('كراليك')).toBe(false); expect(matchesKraljicTerm('')).toBe(false);
   });
   it('discloses honestly that the Arabic is not human-certified', () => {
-    expect(ARABIC_DISCLOSURE.en).toMatch(/not certified by a human/);
-    expect(ARABIC_DISCLOSURE.ar).toMatch(/ولم يعتمدها ممارس مشتريات بشري/);
+    expect(ARABIC_DISCLOSURE.en).toMatch(/awaiting his re-check/);
+    expect(ARABIC_DISCLOSURE.ar).toMatch(/بانتظار مراجعته/);
   });
 });

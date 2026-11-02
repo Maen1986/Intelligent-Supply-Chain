@@ -276,7 +276,7 @@ export const QUADRANT_IDEAS: Record<Quadrant, QuadrantIdea> = {
   bottleneck: {
     quadrant: 'bottleneck', basis: IC,
     headline: b('An unmanaged bottleneck is hidden debt: move it, secure it or bridge it, with a date', 'الاختناق غير المُدار دَين خفي: انقله أو أمّنه أو غطِّه مؤقتًا بتاريخ محدد'),
-    idea: b('Every bottleneck gets one of three decisions: move out of the box (qualify, simplify), hold and secure (contingency, buffer, remedies), or bridge (temporary, with an expiry). None sit undecided. The price of ignoring one is paid on the worst day.', 'كل اختناق يُتخذ بشأنه أحد ثلاثة قرارات: الخروج من الربع (تأهيل أو تبسيط)، أو الإبقاء والتأمين (طوارئ ومخزون وعلاجات)، أو التغطية المؤقتة (بتاريخ انتهاء). لا يُترك أي منها بلا قرار. ثمن إهماله يُدفع في أسوأ يوم.'),
+    idea: b('Every bottleneck gets one of three decisions: move out of the box (qualify, simplify), hold and secure (contingency, buffer, remedies), or bridge (temporary, with an expiry). None sit undecided. The price of ignoring one is paid on the worst day.', 'كل اختناق يُتخذ بشأنه أحد ثلاثة قرارات: الخروج من الربع الخاص (تأهيل أو تبسيط)، أو الإبقاء والتأمين (طوارئ ومخزون وعلاجات)، أو التغطية المؤقتة (بتاريخ انتهاء). لا يُترك أي منها بلا قرار. ثمن إهماله يُدفع في أسوأ يوم!'),
     firstQuestion: b('Which of the three is it, and who owns the date?', 'أي من الثلاثة هو، ومن يملك التاريخ؟'),
     measure: b('Bottlenecks with a decision and a review date; Locked suppliers without a contingency plan (target zero).', 'اختناقات لها قرار وتاريخ مراجعة؛ موردون مقيَّدون بلا خطة طوارئ (المستهدف صفر).'),
   },
@@ -380,7 +380,7 @@ export function buildKraljicReport(inputs: SubtypeSupplierInput[], asOfIso: stri
     asOfIso, total: inputs.length, classified: inputs.length - unclassified, unclassified, quadrants, priorityMoves,
     migrations: assessed.flatMap(({ s, a }) => a.migrations.map((m) => ({ supplierId: s.supplierId, name: s.name, reviewAs: m.reviewAs, why: b(m.whyEn, m.whyAr) }))),
     dataGaps: assessed.filter((x) => x.a.result.missingFacts.length > 0).map(({ s, a }) => ({ supplierId: s.supplierId, name: s.name, missing: a.result.missingFacts as string[] })),
-    honesty: b('Method: ISC extends Kraljic (1983) and Gelderman & van Weele (2003) with sub-types, routes and migration alerts. Every rule is shown in full and can be calibrated to your business. Spend totals count only suppliers with a spend figure. Decision support to be confirmed by your team.', 'المنهجية: تمدّ ISC نموذج Kraljic (1983) وGelderman & van Weele (2003) بأنواع فرعية ومسارات وتنبيهات انتقال. كل قاعدة معروضة كاملة ويمكن معايرتها لتناسب عملك. تُحتسب إجماليات الإنفاق للموردين الذين لديهم رقم إنفاق فقط. دعم قرار يؤكده فريقك.'),
+    honesty: b('Method: ISC extends Kraljic (1983) and Gelderman & van Weele (2003) with sub-types, routes, migration alerts and repositioning. Every rule is shown in full and can be calibrated to your business. Spend totals count only suppliers with a spend figure. Decision support to be confirmed by your team.', 'المنهجية: تمدّ ISC نموذج Kraljic (1983) وGelderman & van Weele (2003) بأنواع فرعية ومسارات وتنبيهات انتقال وتغيير موضع. كل قاعدة معروضة كاملة ويمكن معايرتها لتناسب عملك. تُحتسب إجماليات الإنفاق للموردين الذين لديهم رقم إنفاق فقط. دعم قرار يؤكده فريقك.'),
   };
 }
 

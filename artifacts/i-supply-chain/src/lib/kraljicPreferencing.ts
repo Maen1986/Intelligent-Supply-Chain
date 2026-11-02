@@ -93,7 +93,7 @@ export function spCue(quadrant: Quadrant, i: SpInputs): SpCue {
   if (!sp) {
     return {
       sp: null, spLabel: null, cue: null, noEvidence: false,
-      ask: b('Answer both questions about how the supplier sees us. ISC does not guess.', 'أجب عن السؤالين حول نظرة المورد إلينا. لا تخمّن ISC.'),
+      ask: b('Answer both questions about how the supplier sees us. ISC does not guess.', 'أجب عن السؤالين حول نظرة المورد إلينا. ISC لا تخمّن.'),
     };
   }
   return { sp, spLabel: PREFERENCING_LABEL[sp], cue: GRID[quadrant][sp], noEvidence: i.evidence.trim().length === 0, ask: null };

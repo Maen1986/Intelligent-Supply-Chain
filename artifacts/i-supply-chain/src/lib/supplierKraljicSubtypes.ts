@@ -409,7 +409,7 @@ export function detectSituations(s: SubtypeSupplierInput, r: SubtypeResult, opts
     if (rec >= thr) {
       out.push({
         key: 'locked-recurring-failures', severity: 'high', basis: 'isc-convention', problemMapArea: 'Supplier Governance',
-        problem: { en: 'The supplier keeps failing and you cannot leave.', ar: 'المورد يكرر الإخفاق ولا تستطيع المغادرة.' },
+        problem: { en: 'The supplier keeps failing and you cannot leave.', ar: 'المورد يكرر الإخفاق ولا تستطيع إيقاف التعامل معه.' },
         action: { en: 'Run a joint corrective plan with executive sponsorship and use the contract remedies you already hold.', ar: 'نفّذ خطة تصحيحية مشتركة برعاية الإدارة العليا واستخدم علاجات العقد التي بين يديك.' },
         caution: { en: 'Do not threaten to exit. With no alternative the threat is not credible and costs trust.', ar: 'لا تهدّد بالمغادرة. مع غياب البديل لا يكون التهديد موثوقًا ويكلّف الثقة.' },
         links: [L.m07Cause, L.m06Leverage, L.m03Remedy],
@@ -466,7 +466,7 @@ export function detectSituations(s: SubtypeSupplierInput, r: SubtypeResult, opts
   if ((r.subtype === 'leverage-stable' || r.subtype === 'leverage-volatile') && rec >= thr) {
     out.push({
       key: 'leverage-recurring-failures', severity: 'medium', basis: 'sourced', problemMapArea: 'Supplier Governance',
-      problem: { en: 'Recurring failures on a Leverage supplier. Gelderman & van Weele name supplier non-performance as a reason an item moves.', ar: 'إخفاقات متكررة لمورد في ربع النفوذ. يذكر Gelderman & van Weele عدم أداء المورد سببًا لانتقال البند.' },
+      problem: { en: 'Recurring failures on a Leverage supplier. Gelderman & van Weele name supplier non-performance as a reason an item moves.', ar: 'إخفاقات متكررة لمورد في مربع النفوذ الشرائي. يذكر Gelderman & van Weele عدم أداء المورد سببًا لانتقال البند.' },
       action: { en: 'Switch supplier by tender, or re-classify and manage as a partner if switching is costly.', ar: 'غيّر المورد عبر مناقصة، أو أعد التصنيف وأدِره كشريك إن كان التغيير مكلفًا.' },
       links: [L.m07Cause, L.m06Leverage],
     });
@@ -511,8 +511,8 @@ export function detectSituations(s: SubtypeSupplierInput, r: SubtypeResult, opts
   if (s.quadrantPriorQuarter && s.quadrantPriorQuarter !== s.quadrant) {
     out.push({
       key: 'quadrant-changed', severity: 'medium', basis: 'isc-convention', problemMapArea: 'Supplier Governance',
-      problem: { en: `Moved from ${s.quadrantPriorQuarter} to ${s.quadrant} since last quarter.`, ar: `انتقل من ${s.quadrantPriorQuarter} إلى ${s.quadrant} منذ الربع السابق.` },
-      action: { en: 'Confirm the move is intended and switch to the new quadrant\'s sub-type actions.', ar: 'تأكد أن الانتقال مقصود وانتقل إلى إجراءات النوع الفرعي للربع الجديد.' },
+      problem: { en: `Moved from ${s.quadrantPriorQuarter} to ${s.quadrant} since last quarter.`, ar: `انتقل من ${s.quadrantPriorQuarter} إلى ${s.quadrant} منذ المربع السابق.` },
+      action: { en: 'Confirm the move is intended and switch to the new quadrant\'s sub-type actions.', ar: 'تأكد أن الانتقال مقصود وانتقل إلى إجراءات النوع الفرعي للمربع الجديد.' },
       links: [L.m07Cause],
     });
   }
@@ -547,7 +547,7 @@ export function detectMigrations(s: SubtypeSupplierInput, opts: SituationOptions
     out.push({
       supplierId: s.supplierId, trigger: 'supplier-non-performance', fromQuadrant: 'leverage', reviewAs: 'strategic', basis: 'sourced',
       whyEn: 'Recurring failures make this item riskier to depend on than its Leverage position assumes.',
-      whyAr: 'الإخفاقات المتكررة تجعل الاعتماد على هذا البند أخطر مما يفترضه موقعه في ربع النفوذ.',
+      whyAr: 'الإخفاقات المتكررة تجعل الاعتماد على هذا البند أخطر مما يفترضه موقعه في مربع النفوذ الشرائي.',
     });
   }
   if (s.quadrant === 'bottleneck' && typeof f.qualifiedAlternatives === 'number' && f.qualifiedAlternatives >= ALTERNATIVES_FOR_MIGRATION) {
@@ -560,7 +560,7 @@ export function detectMigrations(s: SubtypeSupplierInput, opts: SituationOptions
   if (s.quadrantPriorQuarter && s.quadrantPriorQuarter !== s.quadrant) {
     out.push({
       supplierId: s.supplierId, trigger: 'quadrant-changed', fromQuadrant: s.quadrantPriorQuarter, reviewAs: s.quadrant, basis: 'isc-convention',
-      whyEn: 'The quadrant changed since last quarter.', whyAr: 'تغيّر الربع منذ الربع السابق.',
+      whyEn: 'The quadrant changed since last quarter.', whyAr: 'تغيّر المربع منذ الربع السابق.',
     });
   }
   return out;

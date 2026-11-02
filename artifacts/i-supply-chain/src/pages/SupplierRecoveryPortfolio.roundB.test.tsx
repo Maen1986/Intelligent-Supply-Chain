@@ -101,7 +101,7 @@ describe('B3: summary and client pack', () => {
     fireEvent.click(screen.getByRole('button', { name: /Procurement head/ }));
     expect(screen.getByText(/Portfolio summary/, { selector: 'h2' })).toBeTruthy();
     expect(screen.getByText('Data confidence')).toBeTruthy();
-    expect(screen.getByText(/CARs with a cost/)).toBeTruthy();
+    expect(screen.getByText(/\(CARs\) with a cost/)).toBeTruthy();
     expect(screen.getByText(/No ESG score is produced/)).toBeTruthy();
   });
 

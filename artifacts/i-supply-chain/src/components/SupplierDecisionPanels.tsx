@@ -34,9 +34,9 @@ const CAUSE_LABEL: Record<CauseKey, { en: string; ar: string }> = {
 };
 const RECOVERY_LABEL: Record<string, { en: string; ar: string }> = {
   VERIFIED_RECOVERED: { en: 'Recovery verified', ar: 'التعافي مُتحقَّق منه' },
-  CLOSED_NOT_RECOVERED: { en: 'CAR closed, score did NOT recover', ar: 'أُغلق الطلب ولم تتعافَ الدرجة' },
+  CLOSED_NOT_RECOVERED: { en: 'Corrective action request (CAR) closed, score did NOT recover', ar: 'أُغلق طلب الإجراء التصحيحي (CAR) ولم تتعافَ الدرجة' },
   NOT_ENOUGH_POST_CLOSURE_DATA: { en: 'Too early to verify (need 2 periods after closure)', ar: 'مبكر للتحقق (يلزم فترتان بعد الإغلاق)' },
-  NO_CLOSED_CAR: { en: 'No closed CAR yet', ar: 'لا يوجد طلب مغلق بعد' },
+  NO_CLOSED_CAR: { en: 'No closed corrective action request (CAR) yet', ar: 'لا يوجد طلب إجراء تصحيحي (CAR) مغلق بعد' },
   NO_PERIOD_LABELS: { en: 'Cannot verify: score periods not dated', ar: 'تعذّر التحقق: فترات الدرجات غير مؤرخة' },
 };
 const fmtUSD = (n: number | null) => (n === null ? '—' : `$${Math.round(n).toLocaleString('en-US')}`);
@@ -77,7 +77,7 @@ export function SupplierDecisionPanels({
     nothing: isAr ? 'لا توجد إجراءات مطلوبة هذا الأسبوع.' : 'Nothing needs action this week.',
     supplier: isAr ? 'المورد' : 'Supplier', tier: isAr ? 'الأولوية' : 'Priority', action: isAr ? 'الإجراء' : 'Action',
     owner: isAr ? 'المسؤول' : 'Owner', due: isAr ? 'الاستحقاق' : 'Due', dataGap: isAr ? 'فجوة بيانات' : 'Data gap',
-    decisionTitle: isAr ? 'قرار كل مورد' : 'Decision per supplier',
+    decisionTitle: isAr ? 'قرار لكل مورد' : 'Decision per supplier',
     primary: isAr ? 'الموصى به' : 'Recommended', alt: isAr ? 'البديل القوي' : 'Strong alternative', tradeoff: isAr ? 'المقايضة' : 'Trade-off',
     why: isAr ? 'لماذا' : 'Why', cause: isAr ? 'صاحب المشكلة (مزيج الأسباب)' : 'Whose problem (cause mix)',
     recovery: isAr ? 'هل نجح آخر إصلاح؟' : 'Did the last fix work?', cost: isAr ? 'تكلفة سوء الجودة' : 'Cost of poor quality',
@@ -89,7 +89,7 @@ export function SupplierDecisionPanels({
     // summary
     sumTitle: isAr ? 'ملخص المحفظة' : 'Portfolio summary', conf: isAr ? 'ثقة البيانات' : 'Data confidence',
     confNote: isAr ? 'نسبة المحفظة التي ترتكز عليها الأرقام أعلاه. كل نسبة منفصلة، ولا توجد درجة مركّبة.' : 'How much of the portfolio the numbers above rest on. Each is shown separately; there is no composite score.',
-    costByCause: isAr ? 'التكلفة حسب صاحب المشكلة' : 'Cost by whose problem', cars: isAr ? 'طلبات' : 'CARs',
+    costByCause: isAr ? 'التكلفة حسب صاحب المشكلة' : 'Cost by whose problem', cars: isAr ? 'طلبات الإجراء التصحيحي (CAR)' : 'Corrective action requests (CARs)',
     recTitle: isAr ? 'التحقق من التعافي' : 'Recovery verification', concTitle: isAr ? 'تركّز الفئات (الوحدة 05)' : 'Category concentration (Module 05)',
     esgTitle: isAr ? 'الاستدامة (ESG) — أدلة لا درجات' : 'ESG — evidence, not a score',
     esgSummary: (a: number, b: number, c: number) => isAr ? `${a} غير مقيّم · ${b} جزئي · ${c} كامل` : `${a} not assessed · ${b} partial · ${c} full`,
@@ -219,8 +219,8 @@ export function SupplierDecisionPanels({
     [isAr ? 'موردون بـ 4 فترات أو أكثر' : 'Suppliers with 4+ periods', summary.confidence.pctSuppliersWith4PlusPeriods],
     [isAr ? 'موردون بفترات مؤرخة' : 'Suppliers with dated periods', summary.confidence.pctSuppliersWithPeriodLabels],
     [isAr ? 'موردون بإنفاق سنوي' : 'Suppliers with annual spend', summary.confidence.pctSuppliersWithSpend],
-    [isAr ? 'طلبات بسبب مقيَّم' : 'CARs with an assessed cause', summary.confidence.pctCarsWithCause],
-    [isAr ? 'طلبات بتكلفة' : 'CARs with a cost', summary.confidence.pctCarsCosted],
+    [isAr ? 'طلبات إجراء تصحيحي بسبب مقيَّم' : 'Corrective action requests (CARs) with an assessed cause', summary.confidence.pctCarsWithCause],
+    [isAr ? 'طلبات إجراء تصحيحي بتكلفة' : 'Corrective action requests (CARs) with a cost', summary.confidence.pctCarsCosted],
   ];
 
   function SummaryBody() {

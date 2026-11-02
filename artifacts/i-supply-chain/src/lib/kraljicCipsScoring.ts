@@ -126,7 +126,7 @@ export function scoreItem(ratings: Record<string, number | null | undefined>, co
     return {
       status: 'insufficient', risk, profit, quadrant: null, borderline: false, borderlineAxes: [], flipFactors: [], missing,
       stepsNoteEn: `Not enough factors answered (need at least ${Math.round(minCov * 100)}% on each axis). ISC does not guess.`,
-      stepsNoteAr: `عدد العوامل المُجاب عنها غير كافٍ (يلزم ${Math.round(minCov * 100)}% على الأقل لكل محور). لا تخمّن ISC.`,
+      stepsNoteAr: `عدد العوامل المُجاب عنها غير كافٍ (يلزم ${Math.round(minCov * 100)}% على الأقل لكل محور). ISC لا تخمّن.`,
     };
   }
   const quadrant = quadrantFor(risk.pct, profit.pct, boundary);

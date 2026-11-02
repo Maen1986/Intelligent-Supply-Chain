@@ -521,7 +521,7 @@ export function SupplierRecoveryPortfolio() {
     copqPriorityEmpty: isAr ? 'لا توجد بيانات COPQ مكلَّفة كافية لترتيب الأولوية حالياً.' : 'No costed COPQ data yet to rank priority.',
     copqPriorityExternal: isAr ? 'حصة الفشل الخارجي' : 'External Failure share',
     cohortTitle: isAr ? 'أفواج إجراءات التصحيح (CAR) — نسبة الحل خلال 90 يوم' : 'CAR Cohorts — % Resolved Within 90 Days',
-    migrationTitle: isAr ? 'مسارات انتقال الربع الاستراتيجي' : 'Quadrant Migration Trails',
+    migrationTitle: isAr ? 'مسارات انتقال المربع الاستراتيجي' : 'Quadrant Migration Trails',
     watchlistTitle: isAr ? 'قائمة المراقبة — الموردون المُصعّدون' : 'Watchlist — Escalated Suppliers',
     emptyToggleOn: isAr ? 'عرض حالة عدم وجود موردين (تجربة الحافة)' : 'Show zero-suppliers state (edge case)',
     emptyToggleOff: isAr ? 'عرض بيانات العرض التوضيحي' : 'Show demo data',
@@ -1084,8 +1084,8 @@ function SupplierEditorForm({
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">{isAr ? 'الربع الاستراتيجي (الحالي)' : 'Kraljic quadrant (current)'}</p>
-          <div className="flex flex-wrap gap-1.5" role="group" aria-label={isAr ? 'الربع الحالي' : 'Current quadrant'}>
+          <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">{isAr ? 'المربع الاستراتيجي (الحالي)' : 'Kraljic quadrant (current)'}</p>
+          <div className="flex flex-wrap gap-1.5" role="group" aria-label={isAr ? 'المربع الحالي' : 'Current quadrant'}>
             {QUADRANT_OPTIONS.map((q) => (
               <button
                 key={q}
@@ -1102,8 +1102,8 @@ function SupplierEditorForm({
           </div>
         </div>
         <div>
-          <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">{isAr ? 'الربع الاستراتيجي (الربع السابق، اختياري)' : 'Kraljic quadrant (prior quarter, optional)'}</p>
-          <div className="flex flex-wrap gap-1.5" role="group" aria-label={isAr ? 'الربع السابق' : 'Prior quadrant'}>
+          <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">{isAr ? 'المربع الاستراتيجي (الربع السابق، اختياري)' : 'Kraljic quadrant (prior quarter, optional)'}</p>
+          <div className="flex flex-wrap gap-1.5" role="group" aria-label={isAr ? 'المربع السابق' : 'Prior quadrant'}>
             <button
               type="button"
               aria-pressed={draft.quadrantPriorQuarter === null}

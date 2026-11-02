@@ -32,6 +32,7 @@ import { KraljicEvidencePanel } from './KraljicEvidencePanel';
 import { KraljicReportPack } from './KraljicReportPack';
 import { playbookFor, nextDdDate } from '@/lib/kraljicPlaybook';
 import { gccAdjustment } from '@/lib/kraljicGccModifiers';
+import { KRALJIC_GLOSSARY } from '@/lib/kraljicGlossary';
 import type { LedgerEntry } from '@/lib/kraljicLedger';
 
 const FACTS_KEY = 'isc-m02-subtype-facts-v1';
@@ -147,7 +148,7 @@ export function SupplierSubtypePanel({
     primary: isAr ? 'الموصى به' : 'Recommended', alt: isAr ? 'البديل القوي' : 'Strong alternative', trade: isAr ? 'المقايضة' : 'Trade-off',
     why: isAr ? 'لماذا هذا النوع' : 'Why this sub-type', review: isAr ? 'المراجعة القادمة' : 'Next review',
     sourced: isAr ? 'أساس أكاديمي (Kraljic)' : 'Kraljic / academic foundation', conv: isAr ? 'منهجية ISC' : 'ISC method',
-    facts: isAr ? 'الحقائق المحدِّدة' : 'Deciding facts', missing: isAr ? 'حقائق ناقصة' : 'Missing facts',
+    facts: isAr ? 'الحقائق المحدِّدة' : 'Deciding facts', missing: isAr ? 'حقائق مطلوبة' : 'Missing facts',
     sit: isAr ? 'مواقف ومشكلات مرصودة' : 'Situations and problems found', mig: isAr ? 'تنبيهات الانتقال' : 'Migration alerts',
     dont: isAr ? 'تنبيه: لا تفعل' : 'Careful', links: isAr ? 'اربط بـ' : 'Link to', notBuilt: isAr ? 'غير مبني بعد' : 'not built yet',
     reviewAs: isAr ? 'راجعه كـ' : 'Review as', empty: isAr ? 'لا يوجد موردون بعد.' : 'No suppliers yet.',
@@ -163,7 +164,7 @@ export function SupplierSubtypePanel({
     meth2: isAr ? 'الامتداد: تضيف ISC أنواعًا فرعية تغيّر الإجراء فعلًا، وشبكة تنقل بين الأنواع داخل الأرباع وعبرها، وتنبيهات انتقال، ومسارات خطوة بخطوة. لا يوجد معيار منشور يفعل ذلك، ولهذا بنته ISC.' : 'Extension: ISC adds sub-types that change the action, a network of moves between sub-types inside and across quadrants, migration alerts, and step-by-step routes. No published standard does this, which is why ISC built it.',
     meth3: isAr ? 'الضمانات: لا تخمّن ISC أبدًا (تسأل عن الحقيقة الناقصة)، وتعرض كل قاعدة كاملة، وتقدّم بديلًا قويًا ومقايضة لكل توصية، وكل العتبات قابلة للمعايرة لتناسب عملك.' : 'Safeguards: ISC never guesses (it asks for the missing fact), shows every rule in full, gives a strong alternative and a trade-off for each recommendation, and every threshold can be calibrated to your business.',
     meth4: isAr ? 'التحقق: النموذج مختبَر بحالات حدّية وسيناريوهات متسلسلة عبر الوحدات. القرار النهائي دائمًا لفريقك.' : 'Verification: the model is tested with boundary cases and chained cross-module scenarios. The final decision always stays with your team.',
-    tabScore: isAr ? 'قيّم بطريقة CIPS' : 'Score (CIPS method)', constructLbl: isAr ? 'ما الذي يحدد هذا النوع' : 'What decides this sub-type', whyQ: isAr ? 'أسئلة المراجعة' : 'Questions to ask', ground: isAr ? 'الأساس' : 'Grounding', lockIn: isAr ? 'الاعتماد مفروض (براءة/احتكار/تكلفة تحويل)؟' : 'Is the dependence forced (patent / monopoly / switching cost)?', stopRisk: isAr ? 'هل يوقف الانقطاع التشغيل؟' : 'Would a stoppage halt operations?', cipsStrat: isAr ? 'استراتيجية CIPS' : 'CIPS strategy', synth: isAr ? 'تركيب من ISC' : 'ISC synthesis',
+    tabScore: isAr ? 'قيّم بطريقة CIPS' : 'Score (CIPS method)', constructLbl: isAr ? 'ما الذي يحدد هذا النوع الفرعي' : 'What decides this sub-type', whyQ: isAr ? 'أسئلة المراجعة' : 'Questions to ask', ground: isAr ? 'الأساس' : 'Grounding', lockIn: isAr ? 'الاعتماد مفروض (براءة/احتكار/تكلفة تحويل)؟' : 'Is the dependence forced (patent / monopoly / switching cost)?', stopRisk: isAr ? 'هل يوقف الانقطاع التشغيل؟' : 'Would a stoppage halt operations?', cipsStrat: isAr ? 'استراتيجية CIPS' : 'CIPS strategy', synth: isAr ? 'تركيب من ISC' : 'ISC synthesis',
     tabSuppliers: isAr ? 'الموردون' : 'Suppliers', tabNetwork: isAr ? 'الشبكة: كيف تتحرك الأنواع' : 'Network: how sub-types connect', tabReport: isAr ? 'تقرير الإدارة' : 'Management report', tabPlaybook: isAr ? 'دليل العمل' : 'Playbook', tabEvidence: isAr ? 'الأدلة والقياس' : 'Evidence',
     m02: isAr ? 'افتح مصفوفة كرالجيك (الوحدة 02) لتجربة الطريقة على بنودك' : 'Open the Kraljic matrix (Module 02) to try the method on your items', lastRev: isAr ? 'آخر مراجعة مقيَّمة' : 'Last scored review', nextDd: isAr ? 'العناية الواجبة القادمة' : 'Next due diligence', atRenewal: isAr ? 'عند التجديد أو وقوع حادثة' : 'at renewal or incident', noneYet: isAr ? 'لا يوجد' : 'none',
     axesNote: isAr ? 'الصفوف: أثر الإنفاق (الأعلى أكبر). الأعمدة: خطر الإمداد (منخفض ثم مرتفع).' : 'Rows: spend impact (top is higher). Columns: supply risk (low, then high).',
@@ -389,6 +390,14 @@ export function SupplierSubtypePanel({
         <div className="mt-2 space-y-1.5 text-[11px] text-slate-700">
           <p>{T.meth1}</p><p>{T.meth2}</p><p>{T.meth3}</p><p>{T.meth4}</p><p>{L(WORDING_NOTE)}</p>
         </div>
+      </details>
+      <details className="rounded-xl border border-slate-200 bg-white p-3 print:hidden" data-testid="kraljic-glossary">
+        <summary className="text-xs font-bold text-[#082C6B] cursor-pointer min-h-[32px]">{isAr ? 'الاختصارات المستخدمة' : 'Abbreviations used'}</summary>
+        <dl className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-[11px] text-slate-700">
+          {KRALJIC_GLOSSARY.map((e) => (
+            <div key={e.abbr} className="flex gap-2"><dt className="font-bold text-[#082C6B] min-w-[3.5rem]" dir="ltr">{e.abbr}</dt><dd><span className="font-semibold">{isAr ? e.ar : e.en}.</span> {isAr ? e.plainAr : e.plainEn}</dd></div>
+          ))}
+        </dl>
       </details>
       <FlowSteps isAr={isAr} mode={mode} onGo={setMode} />
       <div className="flex flex-wrap gap-1.5 print:hidden" role="group" aria-label={isAr ? 'عرض أنواع كرالجيك' : 'Kraljic sub-type views'}>
