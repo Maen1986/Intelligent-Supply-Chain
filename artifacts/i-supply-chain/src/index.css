@@ -199,6 +199,11 @@ html[lang="ar"] {
     visibility: visible;
   }
 
+  body[data-print="supplier-recovery"] .print-zone-supplier-recovery,
+  body[data-print="supplier-recovery"] .print-zone-supplier-recovery * {
+    visibility: visible;
+  }
+
   body[data-print="supplier-dependency"] .print-zone-supplier-dependency,
   body[data-print="supplier-dependency"] .print-zone-supplier-dependency * {
     visibility: visible;

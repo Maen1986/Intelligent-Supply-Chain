@@ -55,9 +55,21 @@ import {
   computeCOPQAttentionPriority,
   computeSupplierExposure,
   detectSupplier,
+  deriveImpactsFromCars,
 } from '@/lib/supplierRecoveryPortfolio';
+import { SupplierPortfolioImportPanel } from '@/components/SupplierPortfolioImportPanel';
+import { SupplierDecisionPanels, type DecisionView } from '@/components/SupplierDecisionPanels';
+import { SupplierSubtypePanel } from '@/components/SupplierSubtypePanel';
+import { ESG_THEMES, ESG_THEME_LABEL, ESG_LEVEL_LABEL, type ESGEvidenceLevel, type ESGTheme } from '@/lib/supplierESG';
+import type { PerformanceCause } from '@/lib/supplierPerformanceRecovery';
 
-const ASOF = '2026-09-10';
+const ASOF = '2026-09-10'; // fixed as-of date of the constructed DEMO portfolio only
+/** A user's own portfolio is always measured as of TODAY (Round B fix: it
+ * previously reused the demo's frozen date, which made every real CAR look
+ * like it was open on 10 Sep 2026). */
+function todayIso(): string {
+  return new Date().toISOString().slice(0, 10);
+}
 
 // ---------------------------------------------------------------------------
 // Persistence layer (SI Module 07 -- added 17 Sep 2026, closing the gap
@@ -103,7 +115,7 @@ function emptyCar(supplierId: string): CARRecord {
     scorecardDimension: 'delivery',
     rootCause: '',
     status: 'open',
-    createdAt: ASOF,
+    createdAt: todayIso(),
     closedAt: null,
   };
 }
@@ -280,9 +292,12 @@ const MOCK_IMPACT_NOTE_AR = 'أرقام تكلفة تقديرية على محف�
 const QUADRANT_META: Record<KraljicQuadrant, { label: string; labelAr: string; color: string }> = {
   strategic: { label: 'Strategic', labelAr: 'استراتيجي', color: '#082C6B' },
   leverage: { label: 'Leverage', labelAr: 'نفوذ سوق', color: '#065f46' },
-  bottleneck: { label: 'Bottleneck', labelAr: 'نقطة اختناق', color: '#92400e' },
+  bottleneck: { label: 'Bottleneck', labelAr: 'نقطة اختناق (إمداد هش)', color: '#92400e' },
   'non-critical': { label: 'Non-Critical', labelAr: 'غير حرج', color: '#374151' },
 };
+
+/** One-line meaning shown under the Bottleneck label so the term is never unexplained. */
+const BOTTLENECK_NOTE = { en: 'Low spend, few alternatives, high disruption risk', ar: 'إنفاق منخفض، بدائل قليلة، خطر انقطاع مرتفع' };
 
 const DIMENSION_LABEL: Record<string, { en: string; ar: string }> = {
   delivery: { en: 'Delivery', ar: 'التسليم' },
@@ -324,6 +339,7 @@ export function SupplierRecoveryPortfolio() {
   const [portfolioMode, setPortfolioMode] = useState<'demo' | 'mine'>('demo');
   const [myEntries, setMyEntries] = useState<SupplierRecord[]>(loadMyEntries);
   const [editingSupplier, setEditingSupplier] = useState<SupplierRecord | null>(null);
+  const [view, setView] = useState<DecisionView | 'analysis' | 'subtypes'>('actions');
 
   // ── Server sync ("mine" mode only -- added 17 Sep 2026, see file header
   // above the ASOF constant for the full rationale). Mirrors
@@ -413,9 +429,15 @@ export function SupplierRecoveryPortfolio() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
-  const suppliers = portfolioMode === 'mine' ? myEntries : (showEmptyState ? [] : DEMO_SUPPLIERS);
-  const categoryItems = portfolioMode === 'mine' ? DEMO_CATEGORY_ITEMS : (showEmptyState ? [] : DEMO_CATEGORY_ITEMS);
-  const shares = portfolioMode === 'mine' ? DEMO_SHARES : (showEmptyState ? [] : DEMO_SHARES);
+  // Round B fix: "My Portfolio" NEVER borrows the demo portfolio's category
+  // spend, shares or cost tables. Exposure comes from the user's own
+  // annualSpendSAR (else honestly INSUFFICIENT_DATA); cost comes from the
+  // user's own CAR costs (else uncosted).
+  const isMine = portfolioMode === 'mine';
+  const asOf = isMine ? todayIso() : ASOF;
+  const suppliers = isMine ? myEntries : (showEmptyState ? [] : DEMO_SUPPLIERS);
+  const categoryItems = isMine || showEmptyState ? [] : DEMO_CATEGORY_ITEMS;
+  const shares = isMine || showEmptyState ? [] : DEMO_SHARES;
 
   function upsertSupplier(next: SupplierRecord) {
     const idx = myEntries.findIndex((s) => s.supplierId === next.supplierId);
@@ -428,17 +450,21 @@ export function SupplierRecoveryPortfolio() {
   }
   const allCars: CARRecord[] = useMemo(() => suppliers.flatMap((s) => s.cars), [suppliers]);
 
-  const { kpis } = useMemo(() => computePortfolioKPIs(suppliers, categoryItems, shares, ASOF), [suppliers, categoryItems, shares]);
-  const cohorts = useMemo(() => computeCarCohorts(allCars, ASOF), [allCars]);
+  const { kpis } = useMemo(() => computePortfolioKPIs(suppliers, categoryItems, shares, asOf), [suppliers, categoryItems, shares, asOf]);
+  const cohorts = useMemo(() => computeCarCohorts(allCars, asOf), [allCars, asOf]);
   const trails = useMemo(() => computeMigrationTrails(suppliers), [suppliers]);
   const rootCause = useMemo(() => computeRootCauseByDimension(allCars), [allCars]);
+  const impactSource = useMemo(
+    () => (isMine ? deriveImpactsFromCars(allCars) : { impacts: DEMO_CAR_IMPACTS, overrides: DEMO_CAR_OVERRIDES }),
+    [isMine, allCars]
+  );
   const rootCauseCOPQ = useMemo(
-    () => computeRootCauseCOPQBreakdown(allCars, DEMO_CAR_IMPACTS, DEMO_CAR_OVERRIDES, ASOF),
-    [allCars]
+    () => computeRootCauseCOPQBreakdown(allCars, impactSource.impacts, impactSource.overrides, asOf),
+    [allCars, impactSource, asOf]
   );
   const copqPriority = useMemo(
-    () => computeCOPQAttentionPriority(suppliers, DEMO_CAR_IMPACTS, DEMO_CAR_OVERRIDES, ASOF).filter((p) => p.priorityScore > 0),
-    [suppliers]
+    () => computeCOPQAttentionPriority(suppliers, impactSource.impacts, impactSource.overrides, asOf).filter((p) => p.priorityScore > 0),
+    [suppliers, impactSource, asOf]
   );
   const migrated = trails.filter((t) => t.migrated);
 
@@ -449,12 +475,12 @@ export function SupplierRecoveryPortfolio() {
           const d = detectSupplier(s);
           const exposure = computeSupplierExposure(s, categoryItems, shares);
           const openCar = s.cars.find((c) => c.status !== 'closed');
-          const daysOpen = openCar ? Math.round((new Date(ASOF).getTime() - new Date(openCar.createdAt).getTime()) / 86400000) : null;
+          const daysOpen = openCar ? Math.round((new Date(asOf).getTime() - new Date(openCar.createdAt).getTime()) / 86400000) : null;
           return { supplier: s, detection: d, exposure, daysOpen };
         })
         .filter((r) => r.detection.recommendedIntervention !== 'REPAIR')
         .sort((a, b) => b.exposure.exposureSAR - a.exposure.exposureSAR),
-    [suppliers, categoryItems, shares]
+    [suppliers, categoryItems, shares, asOf]
   );
 
   const rootCauseChartData = rootCause
@@ -482,6 +508,7 @@ export function SupplierRecoveryPortfolio() {
       ? 'الوحدة 07 من محرك ذكاء الموردين — أول بناء حقيقي متكامل مع الوحدتين 02 و05 وبطاقة الأداء'
       : 'SI Module 07 — first real build, wired to Modules 02, 05, and the CAR scorecard',
     mockBadge: isAr ? 'بيانات محاكاة/تجريبية' : 'SIMULATED / MOCK DATA',
+    ownSpendBadge: isAr ? 'من الإنفاق السنوي الذي أدخلته' : 'from the annual spend you entered',
     kpiEscalation: isAr ? 'موردون قيد التصعيد' : 'Suppliers in Escalation',
     kpiExposure: isAr ? 'التعرّض المالي المعرّض للخطر (ريال)' : 'SAR Exposure at Risk',
     kpiDays: isAr ? 'متوسط أيام التعافي' : 'Avg Days in Recovery',
@@ -489,12 +516,12 @@ export function SupplierRecoveryPortfolio() {
     rootCauseTitle: isAr ? 'الأسباب الجذرية حسب بُعد بطاقة الأداء' : 'Root Cause by Scorecard Dimension',
     rootCauseCountLegend: isAr ? '% من عدد الطلبات' : '% of CAR count',
     rootCauseCostLegend: isAr ? '% من تكلفة COPQ المقدّرة' : '% of estimated COPQ cost',
-    rootCauseCostNote: isAr ? MOCK_IMPACT_NOTE_AR : MOCK_IMPACT_NOTE_EN,
+    rootCauseCostNote: isMine ? (isAr ? 'التكاليف هي الأرقام التي أدخلتها على طلباتك؛ الطلبات بلا تكلفة لا تُحتسب (ولا تُعامل كصفر).' : 'Costs are the figures you entered on your own CARs; CARs without a cost are not counted (never treated as zero).') : (isAr ? MOCK_IMPACT_NOTE_AR : MOCK_IMPACT_NOTE_EN),
     copqPriorityTitle: isAr ? 'أولوية معالجة COPQ' : 'COPQ Attention Priority',
     copqPriorityEmpty: isAr ? 'لا توجد بيانات COPQ مكلَّفة كافية لترتيب الأولوية حالياً.' : 'No costed COPQ data yet to rank priority.',
     copqPriorityExternal: isAr ? 'حصة الفشل الخارجي' : 'External Failure share',
     cohortTitle: isAr ? 'أفواج إجراءات التصحيح (CAR) — نسبة الحل خلال 90 يوم' : 'CAR Cohorts — % Resolved Within 90 Days',
-    migrationTitle: isAr ? 'مسارات انتقال الربع الاستراتيجي' : 'Quadrant Migration Trails',
+    migrationTitle: isAr ? 'مسارات انتقال المربع الاستراتيجي' : 'Quadrant Migration Trails',
     watchlistTitle: isAr ? 'قائمة المراقبة — الموردون المُصعّدون' : 'Watchlist — Escalated Suppliers',
     emptyToggleOn: isAr ? 'عرض حالة عدم وجود موردين (تجربة الحافة)' : 'Show zero-suppliers state (edge case)',
     emptyToggleOff: isAr ? 'عرض بيانات العرض التوضيحي' : 'Show demo data',
@@ -505,9 +532,11 @@ export function SupplierRecoveryPortfolio() {
     noOpenCars: isAr ? '—' : '—',
     daysOpenLabel: isAr ? 'يوم مفتوح' : 'days open',
     exposureBasisLabel: isAr ? MOCK_NOTE_AR_SHORT : 'mock/simulated basis',
-    exposureExcludedNote: (n: number) => isAr
-      ? `${n} ${n === 1 ? 'مورد واحد' : 'موردون'} قيد التصعيد ببيانات فئة غير مطابقة لمرجع Kraljic -- غير مُدرَج في الإجمالي (بيانات غير كافية، وليس صفراً)`
-      : `${n} escalated supplier${n === 1 ? '' : 's'} excluded from this total -- category has no matching Kraljic reference (insufficient data, not zero risk)`,
+    exposureExcludedNote: (n: number) => isMine
+      ? (isAr ? `${n} ${n === 1 ? 'مورد' : 'موردين'} قيد التصعيد بلا إنفاق سنوي مُدخل -- غير مُدرَج في الإجمالي (بيانات غير كافية، وليس صفراً)` : `${n} escalated supplier${n === 1 ? '' : 's'} excluded from this total -- no annual spend entered (insufficient data, not zero risk)`)
+      : (isAr
+        ? `${n} ${n === 1 ? 'مورد واحد' : 'موردون'} قيد التصعيد ببيانات فئة غير مطابقة لمرجع Kraljic -- غير مُدرَج في الإجمالي (بيانات غير كافية، وليس صفراً)`
+        : `${n} escalated supplier${n === 1 ? '' : 's'} excluded from this total -- category has no matching Kraljic reference (insufficient data, not zero risk)`),
     modeDemo: isAr ? 'المثال التوضيحي (الروابي)' : 'Worked Example (Al-Rawabi)',
     modeMine: isAr ? 'محفظتي' : 'My Portfolio',
     addSupplier: isAr ? 'إضافة مورد' : 'Add supplier',
@@ -596,19 +625,22 @@ export function SupplierRecoveryPortfolio() {
               <table className="w-full text-xs">
                 <thead>
                   <tr className="text-[10px] uppercase tracking-wider text-slate-400 border-b border-slate-100">
-                    <th className={isAr ? 'text-right py-2' : 'text-left py-2'}>{isAr ? 'المورد' : 'Supplier'}</th>
-                    <th className={isAr ? 'text-right py-2' : 'text-left py-2'}>{isAr ? 'الفئة' : 'Category'}</th>
-                    <th className={isAr ? 'text-right py-2' : 'text-left py-2'}>{isAr ? 'الربع' : 'Quadrant'}</th>
-                    <th className={isAr ? 'text-right py-2' : 'text-left py-2'}>{isAr ? 'الطلبات' : 'CARs'}</th>
-                    <th className={isAr ? 'text-right py-2' : 'text-left py-2'} />
+                    <th className={isAr ? 'text-right py-2 pe-3' : 'text-left py-2 pe-3'}>{isAr ? 'المورد' : 'Supplier'}</th>
+                    <th className={isAr ? 'text-right py-2 pe-3' : 'text-left py-2 pe-3'}>{isAr ? 'الفئة' : 'Category'}</th>
+                    <th className={isAr ? 'text-right py-2 pe-3' : 'text-left py-2 pe-3'}>{isAr ? 'الربع' : 'Quadrant'}</th>
+                    <th className={isAr ? 'text-right py-2 pe-3' : 'text-left py-2 pe-3'}>{isAr ? 'الطلبات' : 'CARs'}</th>
+                    <th className={isAr ? 'text-right py-2 pe-3' : 'text-left py-2 pe-3'} />
                   </tr>
                 </thead>
                 <tbody>
                   {myEntries.map((s) => (
                     <tr key={s.supplierId} className="border-b border-slate-50 last:border-0">
-                      <td className="py-2 font-semibold text-slate-800">{s.name || (isAr ? '(بدون اسم)' : '(unnamed)')}</td>
-                      <td className="py-2 text-slate-600">{s.category || '—'}</td>
-                      <td className="py-2 text-slate-600">{isAr ? QUADRANT_META[s.quadrant].labelAr : QUADRANT_META[s.quadrant].label}</td>
+                      <td className="py-2 pe-3 font-semibold text-slate-800 break-words">{s.name || (isAr ? '(بدون اسم)' : '(unnamed)')}</td>
+                      <td className="py-2 pe-3 text-slate-600 break-words">{s.category || '—'}</td>
+                      <td className="py-2 pe-3 text-slate-600">
+                        {isAr ? QUADRANT_META[s.quadrant].labelAr : QUADRANT_META[s.quadrant].label}
+                        {s.quadrant === 'bottleneck' && <span className="block text-[10px] text-slate-400 leading-snug">{isAr ? BOTTLENECK_NOTE.ar : BOTTLENECK_NOTE.en}</span>}
+                      </td>
                       <td className="py-2 text-slate-600">{s.cars.length}</td>
                       <td className="py-2">
                         <div className="flex items-center gap-1.5 justify-end">
@@ -647,15 +679,57 @@ export function SupplierRecoveryPortfolio() {
           />
         )}
 
+        {portfolioMode === 'mine' && (
+          <SupplierPortfolioImportPanel isAr={isAr} existing={myEntries} onApply={persistMyEntries} />
+        )}
+
+        {/* Audience views (Round B2/B3). One data model, three readers. */}
+        <div className="flex flex-wrap items-center gap-1.5 mb-4" role="group" aria-label={isAr ? 'اختيار العرض' : 'Select view'}>
+          {([
+            ['actions', isAr ? 'مدير الفئة: إجراءات الأسبوع' : 'Category manager: this week'],
+            ['summary', isAr ? 'رئيس المشتريات: ملخص المحفظة' : 'Procurement head: portfolio summary'],
+            ['pack', isAr ? 'المستشار: حزمة العميل' : 'Consultant: client pack'],
+            ['subtypes', isAr ? 'أنواع كرالجيك الفرعية' : 'Kraljic sub-types'],
+            ['analysis', isAr ? 'التحليل التفصيلي' : 'Detailed analysis'],
+          ] as const).map(([v, label]) => (
+            <button
+              key={v} type="button" aria-pressed={view === v} onClick={() => setView(v)}
+              className={`text-xs font-semibold px-3 py-2 rounded-lg border transition-colors ${view === v ? 'bg-[#082C6B] border-[#082C6B] text-white' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'}`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {portfolioMode === 'demo' && (
+          <p className="text-[11px] text-amber-700 mb-3">
+            {isAr ? 'بيانات تجريبية: الأرقام هنا مثال توضيحي (الروابي)، وليست بياناتك. اختر "محفظتي" لاستخدام بياناتك.' : 'Demo data: these figures are the Al-Rawabi worked example, not your data. Choose "My Portfolio" to use your own.'}
+          </p>
+        )}
+
+        {view === 'subtypes' && (
+          <SupplierSubtypePanel isAr={isAr} suppliers={suppliers} asOfIso={asOf} categoryItems={categoryItems} shares={shares} />
+        )}
+
+        {view !== 'analysis' && view !== 'subtypes' && (
+          <SupplierDecisionPanels
+            isAr={isAr} view={view} suppliers={suppliers} asOfIso={asOf}
+            categoryItems={categoryItems} shares={shares}
+            sourceLabel={isMine ? (isAr ? 'بيانات المستخدم (مُدخلة/مستوردة)' : 'User data (entered/imported)') : (isAr ? 'مثال تجريبي (الروابي)' : 'Demo worked example (Al-Rawabi)')}
+          />
+        )}
+
+        {view === 'analysis' && (
+          <>
         {/* KPI row -- every value from kpis, a real computePortfolioKPIs() call above */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
           <KpiCard label={t.kpiEscalation} value={String(kpis.suppliersInEscalation)} sub={`/ ${kpis.totalActiveSuppliers}`} critical={kpis.suppliersInEscalation > 0} />
           <KpiCard
             label={t.kpiExposure}
-            value={fmtSAR(kpis.totalExposureAtRiskSAR, isAr)}
+            value={kpis.totalExposureAtRiskSAR === 0 && kpis.exposureInsufficientDataCount > 0 ? '—' : fmtSAR(kpis.totalExposureAtRiskSAR, isAr)}
             sub={kpis.exposureInsufficientDataCount > 0
-              ? `${t.mockBadge} \u00b7 ${t.exposureExcludedNote(kpis.exposureInsufficientDataCount)}`
-              : t.mockBadge}
+              ? `${isMine ? t.ownSpendBadge : t.mockBadge} \u00b7 ${t.exposureExcludedNote(kpis.exposureInsufficientDataCount)}`
+              : (isMine ? t.ownSpendBadge : t.mockBadge)}
             subMuted
             critical={kpis.totalExposureAtRiskSAR > 20_000_000}
           />
@@ -806,7 +880,7 @@ export function SupplierRecoveryPortfolio() {
                 </table>
               </div>
               <p className="text-[10px] text-slate-400 mt-3">
-                * {isAr ? MOCK_NOTE_AR_SHORT : 'SAR exposure is a labeled mock/simulated derivation (category spend × relative supplier share), not a live production figure -- see module notes.'}
+                * {isMine ? (isAr ? 'الإنفاق من القيمة السنوية التي أدخلتها لكل مورد؛ بدونها يظهر "بيانات غير كافية".' : 'Spend is the annual figure you entered per supplier; without it this shows "insufficient data".') : (isAr ? MOCK_NOTE_AR_SHORT : 'SAR exposure is a labeled mock/simulated derivation (category spend × relative supplier share), not a live production figure -- see module notes.')}
               </p>
               {watchlist.some((r) => r.detection.shockFlag) && (
                 <p className="text-[10px] text-slate-400 mt-1">
@@ -823,7 +897,7 @@ export function SupplierRecoveryPortfolio() {
                 isc-ai-output-standards #7 -- never a black-box composite score). */}
             <div className="bg-white rounded-2xl border border-slate-200 p-4 mt-6">
               <h2 className="text-sm font-bold text-slate-800 mb-1">{t.copqPriorityTitle} ({copqPriority.length})</h2>
-              <p className="text-[10px] text-slate-400 mb-3">{isAr ? MOCK_IMPACT_NOTE_AR : MOCK_IMPACT_NOTE_EN}</p>
+              <p className="text-[10px] text-slate-400 mb-3">{t.rootCauseCostNote}</p>
               {copqPriority.length === 0 ? (
                 <p className="text-xs text-slate-400">{t.copqPriorityEmpty}</p>
               ) : (
@@ -862,6 +936,8 @@ export function SupplierRecoveryPortfolio() {
               )}
               <p className="text-[10px] text-slate-400 mt-3">{isAr ? copqPriority[0]?.formulaAr ?? '' : copqPriority[0]?.formulaEn ?? ''}</p>
             </div>
+          </>
+        )}
           </>
         )}
       </div>
@@ -925,11 +1001,37 @@ function SupplierEditorForm({
   function updateHistoryAt(i: number, v: number) {
     setDraft((d) => ({ ...d, scoreHistory12mo: d.scoreHistory12mo.map((h, idx) => (idx === i ? v : h)) }));
   }
+  function nextMonth(label: string): string {
+    const [y, m] = label.split('-').map(Number);
+    const d = new Date(Date.UTC(y!, m!, 1)); // month index m == next month
+    return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
+  }
   function addPeriod() {
-    setDraft((d) => ({ ...d, scoreHistory12mo: [...d.scoreHistory12mo, d.scoreHistory12mo[d.scoreHistory12mo.length - 1] ?? 80] }));
+    setDraft((d) => {
+      const hasLabels = d.scorePeriods && d.scorePeriods.length === d.scoreHistory12mo.length;
+      return {
+        ...d,
+        scoreHistory12mo: [...d.scoreHistory12mo, d.scoreHistory12mo[d.scoreHistory12mo.length - 1] ?? 80],
+        // Keep dated labels parallel; a manually-built (undated) history stays undated.
+        scorePeriods: hasLabels ? [...d.scorePeriods!, nextMonth(d.scorePeriods![d.scorePeriods!.length - 1]!)] : d.scorePeriods,
+      };
+    });
   }
   function removePeriod(i: number) {
-    setDraft((d) => ({ ...d, scoreHistory12mo: d.scoreHistory12mo.filter((_, idx) => idx !== i) }));
+    setDraft((d) => {
+      const hasLabels = d.scorePeriods && d.scorePeriods.length === d.scoreHistory12mo.length;
+      return {
+        ...d,
+        scoreHistory12mo: d.scoreHistory12mo.filter((_, idx) => idx !== i),
+        scorePeriods: hasLabels ? d.scorePeriods!.filter((_, idx) => idx !== i) : d.scorePeriods,
+      };
+    });
+  }
+  function setEsg(theme: ESGTheme, patch: Partial<{ level: ESGEvidenceLevel; note: string; checkedOn: string }>) {
+    setDraft((d) => {
+      const cur = d.esg?.[theme] ?? { level: 'none' as ESGEvidenceLevel };
+      return { ...d, esg: { ...(d.esg ?? {}), [theme]: { ...cur, ...patch } } };
+    });
   }
 
   function addCar() {
@@ -982,8 +1084,8 @@ function SupplierEditorForm({
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">{isAr ? 'الربع الاستراتيجي (الحالي)' : 'Kraljic quadrant (current)'}</p>
-          <div className="flex flex-wrap gap-1.5" role="group" aria-label={isAr ? 'الربع الحالي' : 'Current quadrant'}>
+          <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">{isAr ? 'المربع الاستراتيجي (الحالي)' : 'Kraljic quadrant (current)'}</p>
+          <div className="flex flex-wrap gap-1.5" role="group" aria-label={isAr ? 'المربع الحالي' : 'Current quadrant'}>
             {QUADRANT_OPTIONS.map((q) => (
               <button
                 key={q}
@@ -1000,8 +1102,8 @@ function SupplierEditorForm({
           </div>
         </div>
         <div>
-          <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">{isAr ? 'الربع الاستراتيجي (الربع السابق، اختياري)' : 'Kraljic quadrant (prior quarter, optional)'}</p>
-          <div className="flex flex-wrap gap-1.5" role="group" aria-label={isAr ? 'الربع السابق' : 'Prior quadrant'}>
+          <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">{isAr ? 'المربع الاستراتيجي (الربع السابق، اختياري)' : 'Kraljic quadrant (prior quarter, optional)'}</p>
+          <div className="flex flex-wrap gap-1.5" role="group" aria-label={isAr ? 'المربع السابق' : 'Prior quadrant'}>
             <button
               type="button"
               aria-pressed={draft.quadrantPriorQuarter === null}
@@ -1030,6 +1132,18 @@ function SupplierEditorForm({
       </div>
 
       <div>
+        <label htmlFor="m07-spend" className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5">{isAr ? 'الإنفاق السنوي مع هذا المورد (ريال، اختياري)' : 'Annual spend with this supplier (SAR, optional)'}</label>
+        <input
+          id="m07-spend" type="number" min={0} value={draft.annualSpendSAR ?? ''}
+          onChange={(e) => setDraft((d) => ({ ...d, annualSpendSAR: e.target.value === '' ? null : Math.max(0, parseFloat(e.target.value) || 0) }))}
+          className="w-full sm:w-64 text-xs border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-[#082C6B]"
+        />
+        <p className="text-[10px] text-muted-foreground mt-1.5">
+          {isAr ? 'يُستخدم لحساب التعرّض المالي وتركّز الفئة (HHI). بدونه يظهر "بيانات غير كافية" بصدق.' : 'Used for financial exposure and category concentration (HHI). Without it the app honestly shows "insufficient data".'}
+        </p>
+      </div>
+
+      <div>
         <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
           {isAr ? 'تاريخ الأداء (بالترتيب الزمني، الأقدم أولاً)' : 'Score history (chronological, oldest first)'}
         </p>
@@ -1045,6 +1159,9 @@ function SupplierEditorForm({
                 aria-label={isAr ? `الفترة ${i + 1}` : `Period ${i + 1}`}
                 className="w-16 text-xs border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#082C6B]"
               />
+              {draft.scorePeriods && draft.scorePeriods.length === draft.scoreHistory12mo.length && (
+                <span className="text-[9px] text-slate-400 font-mono">{draft.scorePeriods[i]}</span>
+              )}
               {draft.scoreHistory12mo.length > 1 && (
                 <button
                   type="button"
@@ -1126,7 +1243,7 @@ function SupplierEditorForm({
                     <label className="text-[9px] font-bold text-slate-400 uppercase block mb-1">{isAr ? 'الحالة' : 'Status'}</label>
                     <select
                       value={c.status}
-                      onChange={(e) => updateCar(i, { status: e.target.value as CARStatus, closedAt: e.target.value === 'closed' ? (c.closedAt ?? ASOF) : null })}
+                      onChange={(e) => updateCar(i, { status: e.target.value as CARStatus, closedAt: e.target.value === 'closed' ? (c.closedAt ?? todayIso()) : null })}
                       className="w-full text-[11px] border border-slate-200 rounded-lg px-2 py-1.5"
                     >
                       {CAR_STATUS_OPTIONS.map((opt) => (
@@ -1159,10 +1276,93 @@ function SupplierEditorForm({
                       : 'Reuse the same identifier across multiple CARs for the same root cause -- this is what feeds real recurrence detection (assessRecurrence).'}
                   </p>
                 </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  <div>
+                    <label className="text-[9px] font-bold text-slate-400 uppercase block mb-1">{isAr ? 'صاحب المشكلة' : 'Whose problem'}</label>
+                    <select
+                      value={c.cause ?? ''}
+                      onChange={(e) => updateCar(i, { cause: (e.target.value || undefined) as PerformanceCause | undefined })}
+                      className="w-full text-[11px] border border-slate-200 rounded-lg px-2 py-1.5"
+                    >
+                      <option value="">{isAr ? 'غير مقيّم' : 'Not assessed'}</option>
+                      <option value="supplier">{isAr ? 'المورد' : 'Supplier'}</option>
+                      <option value="client">{isAr ? 'جانبنا' : 'Our side'}</option>
+                      <option value="shared">{isAr ? 'مشترك' : 'Shared'}</option>
+                      <option value="external">{isAr ? 'خارجي' : 'External'}</option>
+                      <option value="measurement">{isAr ? 'القياس' : 'Measurement'}</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-[9px] font-bold text-slate-400 uppercase block mb-1">{isAr ? 'التكلفة (دولار)' : 'Cost (USD)'}</label>
+                    <input
+                      type="number" min={0} value={c.estimatedCostUSD ?? ''}
+                      onChange={(e) => updateCar(i, { estimatedCostUSD: e.target.value === '' ? undefined : Math.max(0, parseFloat(e.target.value) || 0) })}
+                      className="w-full text-[11px] border border-slate-200 rounded-lg px-2 py-1.5"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[9px] font-bold text-slate-400 uppercase block mb-1">{isAr ? 'أساس التكلفة' : 'Cost basis'}</label>
+                    <select
+                      value={c.costBasis ?? 'estimated'}
+                      onChange={(e) => updateCar(i, { costBasis: e.target.value as 'observed' | 'calculated' | 'estimated' })}
+                      className="w-full text-[11px] border border-slate-200 rounded-lg px-2 py-1.5"
+                    >
+                      <option value="observed">{isAr ? 'مُلاحَظ' : 'Observed'}</option>
+                      <option value="calculated">{isAr ? 'محسوب' : 'Calculated'}</option>
+                      <option value="estimated">{isAr ? 'تقديري' : 'Estimated'}</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-[9px] font-bold text-slate-400 uppercase block mb-1">{isAr ? 'وصل إلى العميل؟' : 'Reached the customer?'}</label>
+                    <select
+                      value={c.customerImpact ?? 'internal'}
+                      onChange={(e) => updateCar(i, { customerImpact: e.target.value as 'internal' | 'external' })}
+                      className="w-full text-[11px] border border-slate-200 rounded-lg px-2 py-1.5"
+                    >
+                      <option value="internal">{isAr ? 'لا (داخلي)' : 'No (internal)'}</option>
+                      <option value="external">{isAr ? 'نعم (خارجي)' : 'Yes (external)'}</option>
+                    </select>
+                  </div>
+                </div>
               </div>
             ))}
           </div>
         )}
+      </div>
+
+      <div>
+        <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">{isAr ? 'الاستدامة (ESG): الأدلة المتوفرة (اختياري)' : 'ESG: evidence you hold (optional)'}</p>
+        <p className="text-[10px] text-muted-foreground mb-2">{isAr ? 'لا تُحتسب درجة ESG. سجّل أقوى دليل لكل محور؛ المحاور الفارغة تظهر كفجوة.' : 'No ESG score is calculated. Record the strongest evidence per theme; empty themes show as a gap.'}</p>
+        <div className="space-y-2">
+          {ESG_THEMES.map((th) => {
+            const ev = draft.esg?.[th];
+            return (
+              <div key={th} className="grid grid-cols-1 sm:grid-cols-4 gap-2 items-end">
+                <p className="text-[11px] font-semibold text-slate-700">{isAr ? ESG_THEME_LABEL[th].ar : ESG_THEME_LABEL[th].en}</p>
+                <select
+                  aria-label={`${isAr ? ESG_THEME_LABEL[th].ar : ESG_THEME_LABEL[th].en}: ${isAr ? 'قوة الدليل' : 'evidence level'}`}
+                  value={ev?.level ?? 'none'} onChange={(e) => setEsg(th, { level: e.target.value as ESGEvidenceLevel })}
+                  className="text-[11px] border border-slate-200 rounded-lg px-2 py-1.5"
+                >
+                  {(Object.keys(ESG_LEVEL_LABEL) as ESGEvidenceLevel[]).map((lv) => (
+                    <option key={lv} value={lv}>{isAr ? ESG_LEVEL_LABEL[lv].ar : ESG_LEVEL_LABEL[lv].en}</option>
+                  ))}
+                </select>
+                <input
+                  type="text" value={ev?.note ?? ''} onChange={(e) => setEsg(th, { note: e.target.value })}
+                  aria-label={`${isAr ? ESG_THEME_LABEL[th].ar : ESG_THEME_LABEL[th].en}: ${isAr ? 'ملاحظة' : 'note'}`}
+                  placeholder={isAr ? 'مثال: شهادة ISO 14001' : 'e.g. ISO 14001 certificate'}
+                  className="text-[11px] border border-slate-200 rounded-lg px-2 py-1.5"
+                />
+                <input
+                  type="date" value={ev?.checkedOn ?? ''} onChange={(e) => setEsg(th, { checkedOn: e.target.value || undefined })}
+                  aria-label={`${isAr ? ESG_THEME_LABEL[th].ar : ESG_THEME_LABEL[th].en}: ${isAr ? 'تاريخ آخر تحقق' : 'last checked'}`}
+                  className="text-[11px] border border-slate-200 rounded-lg px-2 py-1.5"
+                />
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       <div className="flex items-center gap-2 pt-2 border-t border-slate-100">
