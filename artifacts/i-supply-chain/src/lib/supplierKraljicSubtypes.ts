@@ -384,7 +384,7 @@ const L = {
   m06Leverage: { module: 'M06', built: true, purposeEn: 'Negotiate with the real leverage picture: an exit threat you cannot execute is not leverage.', purposeAr: 'تفاوض وفق صورة النفوذ الحقيقية: تهديد بالخروج لا تستطيع تنفيذه ليس نفوذًا.' } as ModuleLink,
   m06Cost: { module: 'M06', built: true, purposeEn: 'Use should-cost and index evidence in the price conversation.', purposeAr: 'استخدم التكلفة المعيارية وأدلة المؤشر في حوار السعر.' } as ModuleLink,
   m07Cause: { module: 'M07', built: true, purposeEn: 'Check whose problem it is (cause mix) before blaming the supplier.', purposeAr: 'افحص صاحب المشكلة (توزيع الأسباب) قبل لوم المورد.' } as ModuleLink,
-  m04Qual: { module: 'M04', built: false, purposeEn: 'Qualify the alternative through the qualification and due-diligence gates. Link defined, not yet built.', purposeAr: 'أهّل البديل عبر بوابات التأهيل والعناية الواجبة. الربط معرَّف وغير مبني بعد.' } as ModuleLink,
+  m04Qual: { module: 'M04', built: true, purposeEn: 'Qualify the alternative through the qualification and due-diligence gates; the due-diligence depth for this supplier is on the supplier card.', purposeAr: 'أهّل البديل عبر بوابات التأهيل والعناية الواجبة؛ عمق العناية الواجبة لهذا المورد ظاهر في بطاقة المورد.' } as ModuleLink,
 };
 
 export interface SituationOptions {

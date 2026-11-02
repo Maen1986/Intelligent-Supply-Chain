@@ -32,6 +32,7 @@ import { KraljicEvidencePanel } from './KraljicEvidencePanel';
 import { KraljicReportPack } from './KraljicReportPack';
 import { playbookFor, nextDdDate } from '@/lib/kraljicPlaybook';
 import { gccAdjustment } from '@/lib/kraljicGccModifiers';
+import { dueDiligenceHandoff, negotiationHandoff } from '@/lib/kraljicModuleLinks';
 import { KRALJIC_GLOSSARY } from '@/lib/kraljicGlossary';
 import { useAuth } from '@/lib/AuthContext';
 import { useKraljicWorkspaceSync } from '@/lib/kraljicWorkspaceSync';
@@ -258,6 +259,17 @@ export function SupplierSubtypePanel({
               <h3 className="text-sm font-bold text-slate-800">{L(sel.label)}</h3>
               <p className="text-[11px] text-slate-600">{L(sel.meaning)}</p>
               <p className="text-[11px] text-slate-700 mt-1"><b>{T.hereNow}: </b>{namesIn(selected).length ? namesIn(selected).join(isAr ? '، ' : ', ') : T.none}</p>
+              {(() => {
+                const dd = dueDiligenceHandoff({ subtype: selected });
+                const ng = negotiationHandoff({ subtype: selected });
+                const ddLabel = dd.tier === 'ENHANCED' ? (isAr ? 'معززة' : 'Enhanced') : (isAr ? 'قياسية' : 'Standard');
+                return (
+                  <div className="mt-2 rounded-lg bg-slate-50 border border-slate-200 p-2 text-[11px] text-slate-700 space-y-1" data-testid="kraljic-module-links">
+                    <p><b>{isAr ? 'العناية الواجبة (الوحدة 4): ' : 'Due diligence (Module 04): '}</b>{ddLabel}. {L(dd.reason)}</p>
+                    <p><b>{isAr ? 'موقف التفاوض (الوحدة 6): ' : 'Negotiation stance (Module 06): '}</b>{L(ng.stanceNote)} <span className="text-slate-500">({isAr ? 'منهجية ISC' : 'ISC method'})</span></p>
+                  </div>
+                );
+              })()}
             </div>
             <div>
               <p className="text-[10px] font-bold uppercase text-slate-500 mb-1">{T.goesTo}</p>
@@ -425,9 +437,9 @@ export function SupplierSubtypePanel({
         ))}
       </div>
       {mode === 'score' && <KraljicScorer isAr={isAr} suppliers={inputs.map((i) => ({ supplierId: i.supplierId, name: i.name }))} onRecord={recordReview} />}
-      {mode === 'network' && <NetworkView />}
+      {mode === 'network' && NetworkView()}
       {mode === 'playbook' && <KraljicPlaybookPanel isAr={isAr} />}
-      {mode === 'report' && <ReportView />}
+      {mode === 'report' && ReportView()}
       {mode === 'evidence' && <KraljicEvidencePanel isAr={isAr} suppliers={inputs.map((i) => ({ supplierId: i.supplierId, name: i.name, quadrant: i.quadrant, subtype: assess(i).result.subtype }))} entries={ledger} asOfIso={asOfIso} onAdd={addLedger} onRemove={removeLedger} />}
       {mode === 'suppliers' && (<>
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-2">
@@ -533,7 +545,7 @@ export function SupplierSubtypePanel({
               </div>
               <p className="text-[11px] text-slate-700 mt-1"><span className="font-semibold">{T.trade}: </span>{L(r.def.tradeoff)}</p>
               <p className="text-[11px] text-slate-500 mt-1">{T.review}: <span dir="ltr">{addDays(asOfIso, r.reviewDays)}</span> ({r.reviewDays} {isAr ? 'يوم' : 'days'})</p>
-              <RouteChips from={r.subtype} />
+              {RouteChips({ from: r.subtype })}
               <KraljicPositionCheck isAr={isAr} quadrant={inp.quadrant} reviews={reviews[inp.supplierId] ?? []} asOfIso={asOfIso} />
               <KraljicSupplierExtras isAr={isAr} quadrant={inp.quadrant} qualifiedAlternatives={facts[inp.supplierId]?.qualifiedAlternatives ?? null} extras={extras[inp.supplierId] ?? emptyExtras()} onChange={(n) => setExtra(inp.supplierId, n)} />
 

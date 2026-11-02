@@ -105,10 +105,10 @@ describe('situations: the problems this solves', () => {
     const a = assess(base({ quadrant: 'leverage', facts: { marketVolatility: 'volatile' } }));
     expect(a.situations.find((x) => x.key === 'volatile-needs-index')?.links.some((l) => l.module === 'M03')).toBe(true);
   });
-  it('undefined links are marked not built (M04)', () => {
+  it('the M04 link is marked built (hand-off function exists)', () => {
     const a = assess(base({ facts: { qualifiedAlternatives: 1 } }));
     const l = a.situations.flatMap((x) => x.links).find((x) => x.module === 'M04');
-    expect(l?.built).toBe(false);
+    expect(l?.built).toBe(true);
   });
   it('an unclassified supplier raises no situations from guesses', () => {
     expect(assess(base({})).situations).toEqual([]);
