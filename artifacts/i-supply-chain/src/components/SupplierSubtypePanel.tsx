@@ -15,16 +15,24 @@ import {
   type SubtypeFacts, type SubtypeSupplierInput, type FactKey, type ConstraintCause, type Quadrant, type SubtypeKey, type Bilingual,
 } from '@/lib/supplierKraljicSubtypes';
 import {
-  outgoing, incoming, routeFor, crossesQuadrant, buildKraljicReport, reportToCsv, QUADRANT_IDEAS, QUADRANT_LABEL,
+  outgoing, incoming, routeFor, crossesQuadrant, buildKraljicReport, reportToCsv, QUADRANT_IDEAS, QUADRANT_LABEL, type CsvExtra,
 } from '@/lib/supplierKraljicNetwork';
 import type { SupplierRecord, KraljicItemLite, SupplierCategoryShare } from '@/lib/supplierRecoveryPortfolio';
 import { safeSetItem } from '@/lib/storage';
 import { CONSTRUCTS } from '@/lib/supplierKraljicConstructs';
-import { CIPS_QUADRANT_LABEL, CIPS_ONE_LINE, WORDING_NOTE } from '@/lib/kraljicCipsWording';
+import { CIPS_QUADRANT_LABEL, CIPS_ONE_LINE, WORDING_NOTE, ARABIC_DISCLOSURE } from '@/lib/kraljicCipsWording';
 import type { ReviewPoint } from '@/lib/kraljicRepositioning';
 import { KraljicScorer } from './KraljicScorer';
 import { KraljicPositionCheck } from './KraljicPositionCheck';
-import { FlowSteps, MatrixIllustration } from './KraljicFlow';
+import { FlowSteps, MatrixIllustration, type Mode } from './KraljicFlow';
+import { Link } from 'wouter';
+import { KraljicPlaybookPanel, BasisBadge } from './KraljicPlaybookPanel';
+import { KraljicSupplierExtras, emptyExtras, type SupplierExtras } from './KraljicSupplierExtras';
+import { KraljicEvidencePanel } from './KraljicEvidencePanel';
+import { KraljicReportPack } from './KraljicReportPack';
+import { playbookFor, nextDdDate } from '@/lib/kraljicPlaybook';
+import { gccAdjustment } from '@/lib/kraljicGccModifiers';
+import type { LedgerEntry } from '@/lib/kraljicLedger';
 
 const FACTS_KEY = 'isc-m02-subtype-facts-v1';
 const REVIEWS_KEY = 'isc-m02-review-log-v1';
@@ -33,6 +41,15 @@ function loadReviews(): ReviewMap {
   try { const r = localStorage.getItem(REVIEWS_KEY); return r ? (JSON.parse(r) as ReviewMap) : {}; } catch { return {}; }
 }
 type FactsMap = Record<string, SubtypeFacts>;
+const EXTRAS_KEY = 'isc-m02-extras-v1';
+const LEDGER_KEY = 'isc-m02-ledger-v1';
+type ExtrasMap = Record<string, SupplierExtras>;
+function loadExtras(): ExtrasMap {
+  try { const r = localStorage.getItem(EXTRAS_KEY); return r ? (JSON.parse(r) as ExtrasMap) : {}; } catch { return {}; }
+}
+function loadLedger(): LedgerEntry[] {
+  try { const r = localStorage.getItem(LEDGER_KEY); const v = r ? JSON.parse(r) : []; return Array.isArray(v) ? (v as LedgerEntry[]) : []; } catch { return []; }
+}
 
 function loadFacts(): FactsMap {
   try { const r = localStorage.getItem(FACTS_KEY); return r ? (JSON.parse(r) as FactsMap) : {}; } catch { return {}; }
@@ -61,13 +78,22 @@ function addDays(iso: string, days: number): string {
   return d.toISOString().slice(0, 10);
 }
 
+/** A Mandatory-List item shrinks the eligible supplier base: use the reduced count as the supply-risk input (ISC inference, shown to the user). */
+function withGcc(f: SubtypeFacts, e: SupplierExtras | undefined): SubtypeFacts {
+  if (!e) return f;
+  const adj = gccAdjustment(f.qualifiedAlternatives ?? null, e.gcc);
+  return adj.reducedBy > 0 && adj.effectiveAlternatives !== null ? { ...f, qualifiedAlternatives: adj.effectiveAlternatives } : f;
+}
+
 export function SupplierSubtypePanel({
   isAr, suppliers, asOfIso, categoryItems, shares,
 }: {
   isAr: boolean; suppliers: SupplierRecord[]; asOfIso: string; categoryItems: KraljicItemLite[]; shares: SupplierCategoryShare[];
 }) {
   const [facts, setFacts] = useState<FactsMap>(loadFacts);
-  const [mode, setMode] = useState<'suppliers' | 'score' | 'network' | 'report'>('suppliers');
+  const [mode, setMode] = useState<Mode>('suppliers');
+  const [extras, setExtras] = useState<ExtrasMap>(loadExtras);
+  const [ledger, setLedger] = useState<LedgerEntry[]>(loadLedger);
   const [reviews, setReviews] = useState<ReviewMap>(loadReviews);
   const [selected, setSelected] = useState<SubtypeKey | null>(null);
   const L = (b: { en: string; ar: string }) => (isAr ? b.ar : b.en);
@@ -76,8 +102,8 @@ export function SupplierSubtypePanel({
   const inputs: SubtypeSupplierInput[] = useMemo(() => decisions.map((d) => ({
     supplierId: d.supplier.supplierId, name: d.supplier.name, quadrant: d.supplier.quadrant,
     quadrantPriorQuarter: d.supplier.quadrantPriorQuarter, annualSpendSAR: d.supplier.annualSpendSAR ?? null,
-    facts: facts[d.supplier.supplierId] ?? {}, recurrenceCount: d.detection.recurrenceCount, hhiBand: d.concentration.band,
-  })), [decisions, facts]);
+    facts: withGcc(facts[d.supplier.supplierId] ?? {}, extras[d.supplier.supplierId]), recurrenceCount: d.detection.recurrenceCount, hhiBand: d.concentration.band,
+  })), [decisions, facts, extras]);
   const summary = useMemo(() => summarisePortfolio(inputs), [inputs]);
   const report = useMemo(() => buildKraljicReport(inputs, asOfIso), [inputs, asOfIso]);
 
@@ -85,6 +111,22 @@ export function SupplierSubtypePanel({
     const next = { ...facts, [id]: { ...(facts[id] ?? {}), [k]: v } };
     setFacts(next);
     safeSetItem(FACTS_KEY, JSON.stringify(next));
+  }
+
+  function setExtra(id: string, next: SupplierExtras) {
+    const all = { ...extras, [id]: next };
+    setExtras(all);
+    safeSetItem(EXTRAS_KEY, JSON.stringify(all));
+  }
+  function addLedger(e: LedgerEntry) {
+    const next = [...ledger, e].slice(-500);
+    setLedger(next);
+    safeSetItem(LEDGER_KEY, JSON.stringify(next));
+  }
+  function removeLedger(id: string) {
+    const next = ledger.filter((x) => x.id !== id);
+    setLedger(next);
+    safeSetItem(LEDGER_KEY, JSON.stringify(next));
   }
 
   function recordReview(id: string, p: { quadrant: Quadrant; riskPct: number; profitPct: number }) {
@@ -96,9 +138,9 @@ export function SupplierSubtypePanel({
   }
 
   const T = {
-    title: isAr ? 'أنواع كرالييك الفرعية: ماذا نفعل بكل مورد' : 'Kraljic sub-types: what to do with each supplier',
+    title: isAr ? 'أنواع كرالجيك الفرعية: ماذا نفعل بكل مورد' : 'Kraljic sub-types: what to do with each supplier',
     intro: isAr ? 'كل نوع فرعي يغيّر الإجراء. النوع تحدده حقائق عن المورد؛ وحيث تنقص حقيقة حاسمة نسألك عنها ولا نفترض.' : 'Each sub-type changes the action. It is decided by facts about the supplier; where a decisive fact is missing we ask for it rather than assume.',
-    kLocked: isAr ? 'مقيَّد بلا خطة طوارئ' : 'Locked, no contingency plan', kMovable: isAr ? 'اختناق قابل للتحويل' : 'Movable bottlenecks',
+    kLocked: isAr ? 'مقيَّد بلا خطة طوارئ' : 'Locked, no contingency plan', kMovable: isAr ? 'اختناق يمكن تجاوزه' : 'Movable bottlenecks',
     kPool: isAr ? 'إنفاق قابل للتجميع' : 'Poolable spend', kMig: isAr ? 'تنبيهات انتقال' : 'Migration alerts', kUn: isAr ? 'جاهز للتصنيف' : 'Ready to classify',
     of: isAr ? 'من' : 'of', withSpend: isAr ? 'لها إنفاق' : 'with spend',
     unknown: isAr ? 'غير معروف' : 'Unknown', yes: isAr ? 'نعم' : 'Yes', no: isAr ? 'لا' : 'No',
@@ -121,8 +163,9 @@ export function SupplierSubtypePanel({
     meth2: isAr ? 'الامتداد: تضيف ISC أنواعًا فرعية تغيّر الإجراء فعلًا، وشبكة تنقل بين الأنواع داخل الأرباع وعبرها، وتنبيهات انتقال، ومسارات خطوة بخطوة. لا يوجد معيار منشور يفعل ذلك، ولهذا بنته ISC.' : 'Extension: ISC adds sub-types that change the action, a network of moves between sub-types inside and across quadrants, migration alerts, and step-by-step routes. No published standard does this, which is why ISC built it.',
     meth3: isAr ? 'الضمانات: لا تخمّن ISC أبدًا (تسأل عن الحقيقة الناقصة)، وتعرض كل قاعدة كاملة، وتقدّم بديلًا قويًا ومقايضة لكل توصية، وكل العتبات قابلة للمعايرة لتناسب عملك.' : 'Safeguards: ISC never guesses (it asks for the missing fact), shows every rule in full, gives a strong alternative and a trade-off for each recommendation, and every threshold can be calibrated to your business.',
     meth4: isAr ? 'التحقق: النموذج مختبَر بحالات حدّية وسيناريوهات متسلسلة عبر الوحدات. القرار النهائي دائمًا لفريقك.' : 'Verification: the model is tested with boundary cases and chained cross-module scenarios. The final decision always stays with your team.',
-    tabScore: isAr ? 'قيّم بطريقة CIPS' : 'Score (CIPS method)', constructLbl: isAr ? 'ما الذي يحدد هذا النوع' : 'What decides this sub-type', whyQ: isAr ? 'أسئلة المراجعة' : 'Questions to ask', ground: isAr ? 'الأساس' : 'Grounding', lockIn: isAr ? 'الاعتماد مفروض (براءة/احتكار/كلفة تحويل)؟' : 'Is the dependence forced (patent / monopoly / switching cost)?', stopRisk: isAr ? 'هل يوقف الانقطاع التشغيل؟' : 'Would a stoppage halt operations?', cipsStrat: isAr ? 'استراتيجية CIPS' : 'CIPS strategy', synth: isAr ? 'تركيب من ISC' : 'ISC synthesis',
-    tabSuppliers: isAr ? 'الموردون' : 'Suppliers', tabNetwork: isAr ? 'الشبكة: كيف تتحرك الأنواع' : 'Network: how sub-types connect', tabReport: isAr ? 'تقرير الإدارة' : 'Management report',
+    tabScore: isAr ? 'قيّم بطريقة CIPS' : 'Score (CIPS method)', constructLbl: isAr ? 'ما الذي يحدد هذا النوع' : 'What decides this sub-type', whyQ: isAr ? 'أسئلة المراجعة' : 'Questions to ask', ground: isAr ? 'الأساس' : 'Grounding', lockIn: isAr ? 'الاعتماد مفروض (براءة/احتكار/تكلفة تحويل)؟' : 'Is the dependence forced (patent / monopoly / switching cost)?', stopRisk: isAr ? 'هل يوقف الانقطاع التشغيل؟' : 'Would a stoppage halt operations?', cipsStrat: isAr ? 'استراتيجية CIPS' : 'CIPS strategy', synth: isAr ? 'تركيب من ISC' : 'ISC synthesis',
+    tabSuppliers: isAr ? 'الموردون' : 'Suppliers', tabNetwork: isAr ? 'الشبكة: كيف تتحرك الأنواع' : 'Network: how sub-types connect', tabReport: isAr ? 'تقرير الإدارة' : 'Management report', tabPlaybook: isAr ? 'دليل العمل' : 'Playbook', tabEvidence: isAr ? 'الأدلة والقياس' : 'Evidence',
+    m02: isAr ? 'افتح مصفوفة كرالجيك (الوحدة 02) لتجربة الطريقة على بنودك' : 'Open the Kraljic matrix (Module 02) to try the method on your items', lastRev: isAr ? 'آخر مراجعة مقيَّمة' : 'Last scored review', nextDd: isAr ? 'العناية الواجبة القادمة' : 'Next due diligence', atRenewal: isAr ? 'عند التجديد أو وقوع حادثة' : 'at renewal or incident', noneYet: isAr ? 'لا يوجد' : 'none',
     axesNote: isAr ? 'الصفوف: أثر الإنفاق (الأعلى أكبر). الأعمدة: خطر الإمداد (منخفض ثم مرتفع).' : 'Rows: spend impact (top is higher). Columns: supply risk (low, then high).',
     pickOne: isAr ? 'اختر نوعًا فرعيًا لترى إلى أين يمكن أن ينتقل ومن أين يأتي.' : 'Pick a sub-type to see where it can go and where it comes from.',
     goesTo: isAr ? 'إلى أين يمكن أن ينتقل' : 'Where it can go', comesFrom: isAr ? 'من أين يأتي' : 'Where it comes from', hereNow: isAr ? 'الموردون فيه الآن' : 'Suppliers here now',
@@ -131,7 +174,7 @@ export function SupplierSubtypePanel({
     route: isAr ? 'المسار المقترح' : 'Suggested route', idea: isAr ? 'الفكرة الكبرى' : 'The big idea', q1: isAr ? 'السؤال الأول' : 'First question', measure: isAr ? 'المقياس' : 'How to measure it',
     priority: isAr ? 'التحركات ذات الأولوية' : 'Priority moves', migr: isAr ? 'تنبيهات الانتقال بين الأرباع' : 'Quadrant migration alerts', gaps: isAr ? 'فجوات البيانات' : 'Data gaps',
     noMoves: isAr ? 'لا توجد تحركات بعد. أكمل الحقائق الناقصة أولًا.' : 'No moves yet. Complete the missing facts first.',
-    repTitle: isAr ? 'تقرير أنواع كرالييك' : 'Kraljic sub-type report', asOf: isAr ? 'بتاريخ' : 'As of', print: isAr ? 'طباعة / حفظ PDF' : 'Print / save as PDF', csv: isAr ? 'تنزيل CSV' : 'Download CSV',
+    repTitle: isAr ? 'تقرير أنواع كرالجيك' : 'Kraljic sub-type report', asOf: isAr ? 'بتاريخ' : 'As of', print: isAr ? 'طباعة / حفظ PDF' : 'Print / save as PDF', csv: isAr ? 'تنزيل CSV' : 'Download CSV',
     classified: isAr ? 'مصنّف' : 'classified', spendNote: isAr ? 'الإنفاق المعروف' : 'Known spend', suppliersWord: isAr ? 'موردًا' : 'suppliers', moves: isAr ? 'خطوات' : 'moves',
   };
 
@@ -240,8 +283,18 @@ export function SupplierSubtypePanel({
     );
   }
 
+  const csvExtras: Record<string, CsvExtra> = {};
+  for (const q of report.quadrants) for (const row of q.rows) {
+    const pb = playbookFor(row.subtype, q.quadrant);
+    csvExtras[row.supplierId] = { lastReview: (reviews[row.supplierId] ?? []).slice(-1)[0]?.dateIso ?? '', nextDueDiligence: nextDdDate(q.quadrant, asOfIso) ?? T.atRenewal, playbookBasis: pb.objective[0]?.basis ?? '' };
+  }
+  const bubbleItems = report.quadrants.flatMap((q) => q.rows.map((row) => {
+    const last = (reviews[row.supplierId] ?? []).slice(-1)[0];
+    return { supplierId: row.supplierId, name: row.name, quadrant: q.quadrant, spendSAR: row.spendSAR, latest: last && last.riskPct != null && last.profitPct != null ? { riskPct: last.riskPct, profitPct: last.profitPct } : null };
+  }));
+
   function downloadReportCsv() {
-    const blob = new Blob([reportToCsv(report, isAr ? 'ar' : 'en')], { type: 'text/csv;charset=utf-8' });
+    const blob = new Blob([reportToCsv(report, isAr ? 'ar' : 'en', csvExtras)], { type: 'text/csv;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url; a.download = `isc-kraljic-subtype-report-${asOfIso}.csv`; a.click();
@@ -285,6 +338,7 @@ export function SupplierSubtypePanel({
                         <p className="text-[11px] text-slate-700">{L(row.action)}</p>
                         {row.topSituation && <p className="text-[11px] text-red-800">{L(row.topSituation)}</p>}
                         <p className="text-[10px] text-slate-500">{T.route}: {row.route.steps.length > 0 ? `${row.route.steps.length} ${T.moves}` : L(row.route.note)} · {isAr ? 'المراجعة' : 'Review'} <span dir="ltr">{row.review}</span></p>
+                        <p className="text-[10px] text-slate-500">{T.lastRev}: <span dir="ltr">{(reviews[row.supplierId] ?? []).slice(-1)[0]?.dateIso ?? T.noneYet}</span> · {T.nextDd}: <span dir="ltr">{nextDdDate(q.quadrant, asOfIso) ?? T.atRenewal}</span> <BasisBadge isAr={isAr} basis={playbookFor(row.subtype, q.quadrant).objective[0]?.basis ?? 'isc-design'} /></p>
                       </li>
                     ))}
                   </ul>
@@ -292,6 +346,7 @@ export function SupplierSubtypePanel({
               )}
             </section>
           ))}
+          <KraljicReportPack isAr={isAr} items={bubbleItems} entries={ledger} nameOf={(id) => inputs.find((i) => i.supplierId === id)?.name ?? id} />
           <section>
             <h3 className="text-sm font-bold text-slate-800">{T.priority}</h3>
             {report.priorityMoves.length === 0 ? <p className="text-[11px] text-slate-500">{T.noMoves}</p> : (
@@ -313,6 +368,7 @@ export function SupplierSubtypePanel({
             </section>
           )}
           <p className="text-[10px] text-slate-500">{L(report.honesty)}</p>
+          <p className="text-[10px] text-slate-500">{L(ARABIC_DISCLOSURE)}</p>
         </div>
       </div>
     );
@@ -325,6 +381,7 @@ export function SupplierSubtypePanel({
       <div>
         <h2 className="text-base font-bold text-slate-800">{T.title}</h2>
         <p className="text-xs text-slate-600 mt-1">{T.intro}</p>
+        <Link href="/kraljic" className="inline-flex items-center min-h-[36px] mt-1 text-xs font-semibold text-[#082C6B] underline">{T.m02}</Link>
       </div>
 
       <details className="rounded-xl border border-slate-200 bg-white p-3 print:hidden">
@@ -334,15 +391,17 @@ export function SupplierSubtypePanel({
         </div>
       </details>
       <FlowSteps isAr={isAr} mode={mode} onGo={setMode} />
-      <div className="flex flex-wrap gap-1.5 print:hidden" role="group" aria-label={isAr ? 'عرض أنواع كرالييك' : 'Kraljic sub-type views'}>
-        {([['suppliers', T.tabSuppliers], ['score', T.tabScore], ['network', T.tabNetwork], ['report', T.tabReport]] as const).map(([m, label]) => (
+      <div className="flex flex-wrap gap-1.5 print:hidden" role="group" aria-label={isAr ? 'عرض أنواع كرالجيك' : 'Kraljic sub-type views'}>
+        {([['suppliers', T.tabSuppliers], ['score', T.tabScore], ['network', T.tabNetwork], ['playbook', T.tabPlaybook], ['report', T.tabReport], ['evidence', T.tabEvidence]] as const).map(([m, label]) => (
           <button key={m} type="button" aria-pressed={mode === m} onClick={() => setMode(m)}
             className={`text-xs font-semibold px-3 py-2 rounded-lg border min-h-[36px] ${mode === m ? 'bg-[#082C6B] border-[#082C6B] text-white' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'}`}>{label}</button>
         ))}
       </div>
       {mode === 'score' && <KraljicScorer isAr={isAr} suppliers={inputs.map((i) => ({ supplierId: i.supplierId, name: i.name }))} onRecord={recordReview} />}
       {mode === 'network' && <NetworkView />}
+      {mode === 'playbook' && <KraljicPlaybookPanel isAr={isAr} />}
       {mode === 'report' && <ReportView />}
+      {mode === 'evidence' && <KraljicEvidencePanel isAr={isAr} suppliers={inputs.map((i) => ({ supplierId: i.supplierId, name: i.name, quadrant: i.quadrant, subtype: assess(i).result.subtype }))} entries={ledger} asOfIso={asOfIso} onAdd={addLedger} onRemove={removeLedger} />}
       {mode === 'suppliers' && (<>
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-2">
         {([
@@ -449,6 +508,7 @@ export function SupplierSubtypePanel({
               <p className="text-[11px] text-slate-500 mt-1">{T.review}: <span dir="ltr">{addDays(asOfIso, r.reviewDays)}</span> ({r.reviewDays} {isAr ? 'يوم' : 'days'})</p>
               <RouteChips from={r.subtype} />
               <KraljicPositionCheck isAr={isAr} quadrant={inp.quadrant} reviews={reviews[inp.supplierId] ?? []} asOfIso={asOfIso} />
+              <KraljicSupplierExtras isAr={isAr} quadrant={inp.quadrant} qualifiedAlternatives={facts[inp.supplierId]?.qualifiedAlternatives ?? null} extras={extras[inp.supplierId] ?? emptyExtras()} onChange={(n) => setExtra(inp.supplierId, n)} />
 
               {a.situations.length > 0 && (
                 <div className="mt-2">

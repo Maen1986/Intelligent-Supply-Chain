@@ -85,7 +85,7 @@ const daysBetween = (a: string, z: string): number => {
 
 export const QUADRANT_NAME: Record<Quadrant, Bilingual> = {
   strategic: b('Critical (Strategic)', 'استراتيجي (حرج)'),
-  leverage: b('Leverage', 'نفوذ سوقي'),
+  leverage: b('Leverage', 'نفوذ شرائي'),
   bottleneck: b('Bottleneck', 'نقطة اختناق'),
   'non-critical': b('Routine (Non-critical)', 'غير حرج (روتيني)'),
 };
@@ -114,7 +114,7 @@ export function evaluateReposition(inp: RepositionInput): RepositionResult {
     }
     if (dur < surv) {
       return { ...base, decision: 'situational', candidate: null, consecutive: 0,
-        headline: b('Short shock: bridge it, do not change the contract strategy.', 'صدمة قصيرة: اجسرها ولا تغيّر استراتيجية العقد.'),
+        headline: b('Short shock: bridge it, do not change the contract strategy.', 'صدمة قصيرة: غطِّها مؤقتًا ولا تغيّر استراتيجية العقد.'),
         reasons: [b(`Expected disruption (${dur} days) is shorter than the time we can survive (${surv} days).`, `الانقطاع المتوقع (${dur} يومًا) أقصر من مدة صمودنا (${surv} يومًا).`),
           b('Use stock, spot buys or a temporary source with an expiry date. Re-check at the next review.', 'استخدم المخزون أو الشراء الفوري أو مصدرًا مؤقتًا بتاريخ انتهاء. أعد الفحص في المراجعة القادمة.')],
         handover: [b('Keep the current quadrant controls unchanged.', 'أبقِ ضوابط الربع الحالي كما هي.')] };

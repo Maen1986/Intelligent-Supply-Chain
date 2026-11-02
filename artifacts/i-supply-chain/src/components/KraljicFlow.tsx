@@ -7,17 +7,17 @@
  */
 import { CIPS_QUADRANT_LABEL } from '@/lib/kraljicCipsWording';
 
-type Mode = 'suppliers' | 'score' | 'network' | 'report';
+export type Mode = 'suppliers' | 'score' | 'network' | 'playbook' | 'report' | 'evidence';
 
 export function FlowSteps({ isAr, mode, onGo }: { isAr: boolean; mode: Mode; onGo: (m: Mode) => void }) {
   const steps: Array<{ n: number; go: Mode | null; en: string; ar: string; subEn: string; subAr: string }> = [
     { n: 1, go: 'score', en: 'Score', ar: 'قيّم', subEn: 'CIPS seven-step method', subAr: 'طريقة CIPS ذات الخطوات السبع' },
     { n: 2, go: 'suppliers', en: 'Place', ar: 'صنّف', subEn: 'Quadrant and sub-type', subAr: 'الربع والنوع الفرعي' },
-    { n: 3, go: 'suppliers', en: 'Act', ar: 'نفّذ', subEn: 'Recommended plan and alternative', subAr: 'الخطة الموصى بها وبديلها' },
+    { n: 3, go: 'playbook', en: 'Act', ar: 'نفّذ', subEn: 'Recommended plan and alternative', subAr: 'الخطة الموصى بها وبديلها' },
     { n: 4, go: 'suppliers', en: 'Review', ar: 'راجع', subEn: 'Position check: hold, watch or move', subAr: 'فحص الموقع: أبقِ أو راقب أو انتقل' },
     { n: 5, go: 'network', en: 'Move', ar: 'انتقل', subEn: 'Route through the network', subAr: 'المسار عبر الشبكة' },
   ];
-  const active = mode === 'score' ? 1 : mode === 'network' ? 5 : mode === 'report' ? 0 : 2;
+  const active = mode === 'score' ? 1 : mode === 'network' ? 5 : mode === 'playbook' ? 3 : mode === 'report' || mode === 'evidence' ? 0 : 2;
   return (
     <nav aria-label={isAr ? 'مراحل العمل' : 'How the work flows'} className="print:hidden">
       <ol className="grid grid-cols-5 gap-1.5 sm:gap-2">
@@ -45,7 +45,7 @@ export function MatrixIllustration({ isAr }: { isAr: boolean }) {
   const moves = isAr
     ? { a: 'تبسيط المواصفة أو إعادة التوريد', b: 'تجميع الطلب', c: 'استثناء: شراكة', d: 'إعادة التوريد' }
     : { a: 'Loosen spec or re-source', b: 'Pool demand', c: 'Exception: partner', d: 'Re-source' };
-  const axisX = isAr ? 'خطر الإمداد ←' : 'Supply risk →';
+  const axisX = isAr ? 'خطر الإمداد →' : 'Supply risk →';
   const axisY = isAr ? 'أثر التكلفة ↑' : 'Cost impact ↑';
   return (
     <figure className="rounded-xl border border-slate-200 bg-white p-3" dir="ltr">

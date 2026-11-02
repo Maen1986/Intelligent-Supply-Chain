@@ -52,7 +52,7 @@ export const CONSTRUCTS: Record<SubtypeKey, Construct> = {
     origin: 'isc-synthesis',
   },
   'leverage-stable': {
-    construct: b('Buyer power in a steady market: many suppliers, low switching cost, stable prices.', 'قوة المشتري في سوق مستقر: موردون كثر وكلفة تحويل منخفضة وأسعار مستقرة.'),
+    construct: b('Buyer power in a steady market: many suppliers, low switching cost, stable prices.', 'قوة المشتري في سوق مستقر: موردون كثر وتكلفة تحويل منخفضة وأسعار مستقرة.'),
     whyHere: [
       b('How many suppliers could bid tomorrow?', 'كم مورد يستطيع التقدم للمناقصة غدًا؟'),
       b('Have prices moved less than the tolerance you accept over the last year?', 'هل تحركت الأسعار أقل من هامش التحمل الذي تقبله خلال العام الماضي؟'),
@@ -81,7 +81,7 @@ export const CONSTRUCTS: Record<SubtypeKey, Construct> = {
   'noncritical-process': {
     construct: b('Process efficiency: low value and not worth combining, so the goal is the least effort.', 'كفاءة العملية: قيمة منخفضة ولا يستحق التجميع، فالهدف أقل جهد ممكن.'),
     whyHere: [
-      b('Is the cost of buying it more than the cost of the item?', 'هل كلفة شرائه أكبر من كلفة البند نفسه؟'),
+      b('Is the cost of buying it more than the cost of the item?', 'هل تكلفة شرائه أكبر من تكلفة البند نفسه؟'),
       b('Could a catalogue or purchase card remove the manual steps?', 'هل يمكن لكتالوج أو بطاقة شراء إزالة الخطوات اليدوية؟'),
     ],
     grounding: b('Gelderman & van Weele (2003) and CIPS (2020): individual ordering, purchase card, systems contracting.', 'Gelderman & van Weele (2003) وCIPS (2020): طلب فردي وبطاقة شراء وعقود نظامية.'),
@@ -111,7 +111,7 @@ export const CONSTRUCTS: Record<SubtypeKey, Construct> = {
       b('Could the supplier raise prices or cut priority without losing us?', 'هل يستطيع المورد رفع الأسعار أو خفض أولويتنا دون أن يخسرنا؟'),
       b('How long would a switch take, and what would it cost?', 'كم يستغرق التحويل وكم يكلّف؟'),
     ],
-    grounding: b('Kraljic (1983): diversify when the supplier is stronger. Gelderman & van Weele (2003): an imprisoned strategic position (patent, switching cost) differs from a chosen one.', 'Kraljic (1983): نوّع عندما يكون المورد أقوى. Gelderman & van Weele (2003): الموقع الاستراتيجي المقيَّد (براءة، كلفة تحويل) يختلف عن المختار.'),
+    grounding: b('Kraljic (1983): diversify when the supplier is stronger. Gelderman & van Weele (2003): an imprisoned strategic position (patent, switching cost) differs from a chosen one.', 'Kraljic (1983): نوّع عندما يكون المورد أقوى. Gelderman & van Weele (2003): الموقع الاستراتيجي المقيَّد (براءة، تكلفة تحويل) يختلف عن المختار.'),
     origin: 'sourced',
   },
   unclassified: {

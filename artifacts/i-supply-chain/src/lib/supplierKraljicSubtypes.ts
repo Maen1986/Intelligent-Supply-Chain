@@ -128,7 +128,7 @@ export const REVIEW_INTERVAL_NOTE: Bilingual = {
 export const SUBTYPES: Record<SubtypeKey, SubtypeDef> = {
   'bottleneck-movable': {
     key: 'bottleneck-movable', quadrant: 'bottleneck',
-    label: { en: 'Bottleneck - movable', ar: 'اختناق قابل للتحويل' },
+    label: { en: 'Bottleneck - movable', ar: 'اختناق يمكن تجاوزه' },
     meaning: { en: 'Few suppliers today, but an alternative exists or the specification can change.', ar: 'موردون قليلون اليوم، لكن يوجد بديل أو يمكن تعديل المواصفة.' },
     basis: 'sourced', source: GW,
     primary: { en: 'Move it out of the box: qualify a second source or simplify the specification, with a named owner and a date.', ar: 'أخرجه من هذا الربع: أهّل مصدرًا ثانيًا أو بسّط المواصفة، مع مسؤول محدد وتاريخ.' },
@@ -151,14 +151,14 @@ export const SUBTYPES: Record<SubtypeKey, SubtypeDef> = {
     label: { en: 'Bottleneck - situational', ar: 'اختناق ظرفي (مؤقت)' },
     meaning: { en: 'A temporary shortage; the market is expected to recover.', ar: 'نقص مؤقت يُتوقع أن يزول مع تعافي السوق.' },
     basis: 'isc-convention', source: ISC,
-    primary: { en: 'Bridge it: spot buy or temporary stock with an expiry date. Do not sign long commitments for a short problem.', ar: 'اجسر الفجوة: شراء فوري أو مخزون مؤقت بتاريخ انتهاء. لا توقّع التزامات طويلة لمشكلة قصيرة.' },
+    primary: { en: 'Bridge it: spot buy or temporary stock with an expiry date. Do not sign long commitments for a short problem.', ar: 'غطِّ الفجوة مؤقتًا: شراء فوري أو مخزون مؤقت بتاريخ انتهاء. لا توقّع التزامات طويلة لمشكلة قصيرة.' },
     alternative: { en: 'Pre-qualify a backup supplier so the next shortage is not a crisis.', ar: 'أهّل موردًا احتياطيًا مسبقًا كي لا يتحول النقص القادم إلى أزمة.' },
-    tradeoff: { en: 'Bridging is cheap but can be mistaken for a fix. Pre-qualifying costs effort now and pays off only if the shortage repeats.', ar: 'الجسر رخيص لكن قد يُظن حلًا. التأهيل المسبق يكلّف جهدًا الآن ولا يفيد إلا إن تكرر النقص.' },
+    tradeoff: { en: 'Bridging is cheap but can be mistaken for a fix. Pre-qualifying costs effort now and pays off only if the shortage repeats.', ar: 'التغطية المؤقتة رخيصة لكن قد تُعدّ حلًا دائمًا. التأهيل المسبق يكلّف جهدًا الآن ولا يفيد إلا إن تكرر النقص.' },
     reviewDays: 30,
   },
   'leverage-stable': {
     key: 'leverage-stable', quadrant: 'leverage',
-    label: { en: 'Leverage - stable market', ar: 'نفوذ سوقي - سوق مستقر' },
+    label: { en: 'Leverage - stable market', ar: 'نفوذ شرائي - سوق مستقر' },
     meaning: { en: 'High spend, many suppliers, steady prices.', ar: 'إنفاق مرتفع وموردون كثر وأسعار مستقرة.' },
     basis: 'sourced', source: KR,
     primary: { en: 'Exploit purchasing power: competitive tender, target pricing, volume bundling.', ar: 'استغل القوة الشرائية: مناقصة تنافسية وسعر مستهدف وتجميع الكميات.' },
@@ -168,10 +168,10 @@ export const SUBTYPES: Record<SubtypeKey, SubtypeDef> = {
   },
   'leverage-volatile': {
     key: 'leverage-volatile', quadrant: 'leverage',
-    label: { en: 'Leverage - volatile market', ar: 'نفوذ سوقي - سوق متقلب' },
+    label: { en: 'Leverage - volatile market', ar: 'نفوذ شرائي - سوق متقلب' },
     meaning: { en: 'High spend, many suppliers, but prices swing.', ar: 'إنفاق مرتفع وموردون كثر لكن الأسعار متقلبة.' },
     basis: 'isc-convention', source: { en: 'ISC method. Index-linked and price-adjustment clauses are a growing practice for commodity price risk (SDA Bocconi, 2025); ISC turns this into a clear Leverage sub-type with its own playbook.', ar: 'منهجية ISC. بنود الربط بمؤشر وتعديل السعر ممارسة متنامية لمخاطر أسعار السلع (SDA Bocconi، 2025)؛ وتحوّلها ISC إلى نوع فرعي واضح في ربع النفوذ له دليل عمل خاص.' },
-    primary: { en: 'Replace a fixed price with an index-linked or price-adjustment clause, and tender on the margin over the index.', ar: 'استبدل السعر الثابت ببند مرتبط بمؤشر أو بند تعديل سعر، وناقص على الهامش فوق المؤشر.' },
+    primary: { en: 'Replace a fixed price with an index-linked or price-adjustment clause, and tender on the margin over the index.', ar: 'استبدل السعر الثابت ببند مرتبط بمؤشر أو بند تعديل سعر، واطرح المناقصة على الهامش فوق المؤشر.' },
     alternative: { en: 'Keep a fixed price for a short term and accept that the supplier will price in the risk.', ar: 'أبقِ سعرًا ثابتًا لمدة قصيرة وتقبّل أن المورد سيسعّر المخاطرة.' },
     tradeoff: { en: 'An index clause shares the swing fairly but makes budgets less certain. A fixed price gives certainty at a built-in premium.', ar: 'بند المؤشر يتقاسم التقلب بإنصاف لكنه يقلّل يقين الميزانية. السعر الثابت يمنح اليقين بعلاوة مضمّنة.' },
     reviewDays: 30,
@@ -182,7 +182,7 @@ export const SUBTYPES: Record<SubtypeKey, SubtypeDef> = {
     meaning: { en: 'Low value each, but the demand can be combined across sites or categories.', ar: 'قيمة منخفضة لكل بند، لكن يمكن تجميع الطلب عبر المواقع أو الفئات.' },
     basis: 'sourced', source: GW,
     primary: { en: 'Pool the demand: framework agreement, systems contract or vendor-managed inventory. This moves it toward Leverage.', ar: 'جمّع الطلب: اتفاقية إطارية أو عقد نظامي أو مخزون مدار من المورد. هذا ينقله نحو ربع النفوذ.' },
-    alternative: { en: 'Leave it with local buyers and cap the effort with a catalogue.', ar: 'اتركه للمشترين المحليين وحدّ الجهد بكتالوج.' },
+    alternative: { en: 'Leave it with local buyers and cap the effort with a catalogue.', ar: 'اتركه للمشترين المحليين وقلّل الجهد بكتالوج.' },
     tradeoff: { en: 'Pooling saves money but needs agreement across sites. Leaving it local avoids that but keeps prices scattered.', ar: 'التجميع يوفّر المال لكنه يحتاج اتفاقًا بين المواقع. تركه محليًا يتجنب ذلك لكنه يُبقي الأسعار مبعثرة.' },
     reviewDays: 180,
   },
@@ -271,7 +271,7 @@ export const FACT_LABEL: Record<FactKey, Bilingual> = {
   poolableAcrossSites: { en: 'whether demand can be combined', ar: 'إمكانية تجميع الطلب' },
   powerBalance: { en: 'who holds the power', ar: 'من يملك القوة' },
   contingencyInPlace: { en: 'whether a contingency plan is on record', ar: 'وجود خطة طوارئ موثّقة' },
-  lockIn: { en: 'whether the dependence is forced (patent, monopoly, switching cost)', ar: 'هل الاعتماد مفروض (براءة، احتكار، كلفة تحويل)' },
+  lockIn: { en: 'whether the dependence is forced (patent, monopoly, switching cost)', ar: 'هل الاعتماد مفروض (براءة، احتكار، تكلفة تحويل)' },
   operationalStopRisk: { en: 'whether a stoppage would halt operations', ar: 'هل يوقف الانقطاع التشغيل' },
 };
 
@@ -450,7 +450,7 @@ export function detectSituations(s: SubtypeSupplierInput, r: SubtypeResult, opts
     out.push({
       key: 'situational-needs-expiry', severity: 'low', basis: 'isc-convention', problemMapArea: 'Risk Management',
       problem: { en: 'A temporary shortage can quietly turn into a permanent arrangement.', ar: 'قد يتحول النقص المؤقت بهدوء إلى ترتيب دائم.' },
-      action: { en: 'Put an end date on the bridge and a named owner for the review.', ar: 'ضع تاريخ انتهاء للجسر ومسؤولًا محددًا للمراجعة.' },
+      action: { en: 'Put an end date on the bridge and a named owner for the review.', ar: 'ضع تاريخ انتهاء للحل المؤقت ومسؤولًا محددًا للمراجعة.' },
       links: [L.m05Hhi],
     });
   }
@@ -459,7 +459,7 @@ export function detectSituations(s: SubtypeSupplierInput, r: SubtypeResult, opts
     out.push({
       key: 'volatile-needs-index', severity: 'medium', basis: 'isc-convention', problemMapArea: 'Risk Management',
       problem: { en: 'Price swings land entirely on one side unless the contract shares them.', ar: 'تقلبات الأسعار تقع على طرف واحد ما لم يتقاسمها العقد.' },
-      action: { en: 'Move to an index-linked clause and tender on the margin over the index.', ar: 'انتقل إلى بند مرتبط بمؤشر وناقص على الهامش فوق المؤشر.' },
+      action: { en: 'Move to an index-linked clause and tender on the margin over the index.', ar: 'انتقل إلى بند مرتبط بمؤشر واطرح المناقصة على الهامش فوق المؤشر.' },
       links: [L.m03Index, L.m06Cost],
     });
   }
@@ -493,7 +493,7 @@ export function detectSituations(s: SubtypeSupplierInput, r: SubtypeResult, opts
   if (s.quadrant === 'strategic' && f.lockIn === true) {
     out.push({
       key: 'strategic-locked-in', severity: 'high', basis: 'sourced', problemMapArea: 'Risk Management',
-      problem: { en: 'A strategic dependence that was forced on you, not chosen (patent, monopoly or switching cost).', ar: 'اعتماد استراتيجي مفروض عليك لا مختار (براءة أو احتكار أو كلفة تحويل).' },
+      problem: { en: 'A strategic dependence that was forced on you, not chosen (patent, monopoly or switching cost).', ar: 'اعتماد استراتيجي مفروض عليك لا مختار (براءة أو احتكار أو تكلفة تحويل).' },
       action: { en: 'Do not treat it as a partnership by default. Secure terms and continuity now, and start a long-horizon plan to reduce the lock-in.', ar: 'لا تعامله كشراكة افتراضيًا. أمّن الشروط والاستمرارية الآن وابدأ خطة طويلة الأمد لتقليل القيد.' },
       caution: { en: 'There is no quick voluntary move out of this position. Threatening to leave is not credible.', ar: 'لا يوجد انتقال طوعي سريع خارج هذا الموقع. التهديد بالمغادرة ليس موثوقًا.' },
       links: [L.m05Hhi, L.m03Remedy, L.m06Leverage],

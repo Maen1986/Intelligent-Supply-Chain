@@ -26,14 +26,14 @@ const b = (en: string, ar: string): Bilingual => ({ en, ar });
 /** Display label, CIPS name first, accepted alias second. */
 export const CIPS_QUADRANT_LABEL: Record<Q, Bilingual> = {
   strategic: b('Critical (Strategic)', 'استراتيجي (حرج)'),
-  leverage: b('Leverage', 'نفوذ سوقي'),
+  leverage: b('Leverage', 'نفوذ شرائي'),
   bottleneck: b('Bottleneck (fragile supply)', 'نقطة اختناق (إمداد هش)'),
   'non-critical': b('Routine (Non-critical)', 'غير حرج (روتيني)'),
 };
 
 export const CIPS_AXIS_LABEL = {
   risk: b('Risk impact (supply risk)', 'أثر المخاطر (خطر الإمداد)'),
-  cost: b('Cost impact (profit potential)', 'أثر التكلفة (إمكانية الربح)'),
+  cost: b('Cost impact (profit potential)', 'أثر التكلفة (الربحية المحتملة)'),
 };
 
 /** CIPS's own one-line strategy per quadrant, paraphrased. */
@@ -43,7 +43,7 @@ export const CIPS_ONE_LINE: Record<Q, { strategy: Bilingual; source: Bilingual }
     source: b('CIPS Intelligence Hub, Kraljic matrix page (2026).', 'CIPS Intelligence Hub، صفحة مصفوفة Kraljic (2026).'),
   },
   leverage: {
-    strategy: b('Use competitive tendering, target pricing and substitution.', 'استخدم المناقصات التنافسية والسعر المستهدف والإحلال.'),
+    strategy: b('Use competitive tendering, target pricing and substitution.', 'استخدم المناقصات التنافسية والسعر المستهدف والاستبدال.'),
     source: b('CIPS Intelligence Hub, Kraljic matrix page (2026).', 'CIPS Intelligence Hub، صفحة مصفوفة Kraljic (2026).'),
   },
   bottleneck: {
@@ -61,7 +61,7 @@ export type PreferencingKey = 'core' | 'development' | 'exploitable' | 'nuisance
 export const PREFERENCING_LABEL: Record<PreferencingKey, Bilingual> = {
   core: b('Core', 'أساسي'),
   development: b('Development', 'تطويري'),
-  exploitable: b('Exploitable', 'قابل للاستثمار'),
+  exploitable: b('Exploitable', 'قابل للاستغلال'),
   nuisance: b('Nuisance', 'مُزعج'),
 };
 
@@ -80,4 +80,35 @@ export const CIPS_SYLLABUS_ANCHORS: string[] = [
 export const WORDING_NOTE: Bilingual = {
   en: 'Quadrant names follow CIPS (Critical, Leverage, Bottleneck, Routine) with the Kraljic names alongside. Arabic labels are ISC wording: no standard Arabic terms are published.',
   ar: 'تتبع أسماء الأرباع CIPS (حرج، نفوذ، اختناق، روتيني) مع أسماء Kraljic بجانبها. التسميات العربية صياغة ISC: لا توجد مصطلحات عربية معيارية منشورة.',
+};
+
+// ---------------------------------------------------------------------------
+// Round B5, item 11: EN/AR wording pack
+// ---------------------------------------------------------------------------
+
+/**
+ * Arabic labels are shown as Arabic plus the English name in brackets, so a
+ * reader who knows the CIPS name can match it. Practice in the region mostly
+ * keeps the English names (practitioner kits add Arabic glosses), so this is
+ * disclosed as ISC editorial wording, not a published standard.
+ */
+const EN_SHORT: Record<Q, string> = { strategic: 'Critical', leverage: 'Leverage', bottleneck: 'Bottleneck', 'non-critical': 'Routine' };
+export function arabicWithEnglish(q: Q): string {
+  return `${CIPS_QUADRANT_LABEL[q].ar} [${EN_SHORT[q]}]`;
+}
+
+/** Spellings of the model name found in Arabic sources. All must stay searchable. */
+export const KRALJIC_SPELLINGS_AR: string[] = ['كرالجيك', 'كراجيك', 'كرلجيك'];
+/** The spelling ISC shows. The forms كراليك and كراليتش were not found in any source. */
+export const KRALJIC_PREFERRED_AR = 'كرالجيك';
+
+export function matchesKraljicTerm(query: string): boolean {
+  const q = query.trim().toLowerCase();
+  if (!q) return false;
+  return q.includes('kraljic') || KRALJIC_SPELLINGS_AR.some((s) => q.includes(s));
+}
+
+export const ARABIC_DISCLOSURE: Bilingual = {
+  en: 'Arabic wording is ISC editorial, not a published standard. Review status: read by an AI native-reader pass on 2 Nov 2026 at the owner\'s request; not certified by a human procurement practitioner.',
+  ar: 'الصياغة العربية تحريرية من ISC وليست معيارًا منشورًا. حالة المراجعة: قُرئت في مراجعة بقارئ أصلي بالذكاء الاصطناعي في 2 نوفمبر 2026 بطلب من المالك؛ ولم يعتمدها ممارس مشتريات بشري.',
 };

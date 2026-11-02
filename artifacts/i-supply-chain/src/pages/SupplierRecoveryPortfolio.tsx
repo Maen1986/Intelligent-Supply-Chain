@@ -689,7 +689,7 @@ export function SupplierRecoveryPortfolio() {
             ['actions', isAr ? 'مدير الفئة: إجراءات الأسبوع' : 'Category manager: this week'],
             ['summary', isAr ? 'رئيس المشتريات: ملخص المحفظة' : 'Procurement head: portfolio summary'],
             ['pack', isAr ? 'المستشار: حزمة العميل' : 'Consultant: client pack'],
-            ['subtypes', isAr ? 'أنواع كرالييك الفرعية' : 'Kraljic sub-types'],
+            ['subtypes', isAr ? 'أنواع كرالجيك الفرعية' : 'Kraljic sub-types'],
             ['analysis', isAr ? 'التحليل التفصيلي' : 'Detailed analysis'],
           ] as const).map(([v, label]) => (
             <button

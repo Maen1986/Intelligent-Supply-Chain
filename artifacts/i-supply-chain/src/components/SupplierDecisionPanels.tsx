@@ -85,7 +85,7 @@ export function SupplierDecisionPanels({
     spendUnknown: isAr ? 'بيانات غير كافية' : 'insufficient data', spendMock: isAr ? 'مشتق من بيانات تجريبية' : 'derived from demo data',
     rule: isAr ? 'القاعدة' : 'Rule', handoff: isAr ? 'تسليم الأدلة إلى' : 'Evidence hand-off to',
     m06: isAr ? 'الوحدة 06 (التفاوض)' : 'Module 06 (negotiation)', m03: isAr ? 'الوحدة 03 (العقود)' : 'Module 03 (contracts)',
-    quadActs: isAr ? 'إجراءات ربع كرالييك (الوحدة 02)' : 'Kraljic-quadrant actions (Module 02)',
+    quadActs: isAr ? 'إجراءات ربع كرالجيك (الوحدة 02)' : 'Kraljic-quadrant actions (Module 02)',
     // summary
     sumTitle: isAr ? 'ملخص المحفظة' : 'Portfolio summary', conf: isAr ? 'ثقة البيانات' : 'Data confidence',
     confNote: isAr ? 'نسبة المحفظة التي ترتكز عليها الأرقام أعلاه. كل نسبة منفصلة، ولا توجد درجة مركّبة.' : 'How much of the portfolio the numbers above rest on. Each is shown separately; there is no composite score.',

@@ -81,10 +81,10 @@ export const TRANSITIONS: Transition[] = [
   T('bn-situational-to-locked', 'bottleneck-situational', 'bottleneck-locked', 'risk', 'raise-risk', 'medium',
     b('The "temporary" shortage outlasts its review date and no alternative exists.', 'يتجاوز النقص «المؤقت» تاريخ مراجعته ولا يوجد بديل.'),
     [b('Reclassify as structural and write the contingency plan.', 'أعد التصنيف كقيد هيكلي واكتب خطة الطوارئ.'), b('Start the long-horizon search for a second source.', 'ابدأ البحث طويل الأمد عن مصدر ثانٍ.')],
-    b('Stops a bridge from silently becoming a permanent dependence.', 'يمنع تحوّل الجسر بصمت إلى اعتماد دائم.'), IC),
+    b('Stops a bridge from silently becoming a permanent dependence.', 'يمنع تحوّل الحل المؤقت بصمت إلى اعتماد دائم.'), IC),
   T('bn-situational-to-movable', 'bottleneck-situational', 'bottleneck-movable', 'risk', 'de-risk', 'medium',
     b('The shortage persists but a qualified alternative now exists.', 'يستمر النقص لكن أصبح هناك بديل مؤهَّل.'), QUALIFY,
-    b('Turns a crisis response into a planned move.', 'يحوّل ردّ الأزمة إلى انتقال مخطَّط.'), IC),
+    b('Turns a crisis response into a planned move.', 'يحوّل الاستجابة للأزمة إلى انتقال مخطَّط.'), IC),
 
   // ---- Bottleneck -> Non-critical (risk falls, spend stays low) -----------
   T('bn-movable-to-nc-pool', 'bottleneck-movable', 'noncritical-pool', 'risk', 'de-risk', 'medium',
@@ -97,7 +97,7 @@ export const TRANSITIONS: Transition[] = [
     b('The team stops spending attention on a solved problem.', 'يتوقف الفريق عن صرف الانتباه على مشكلة حُلّت.'), GW),
   T('bn-situational-to-nc-process', 'bottleneck-situational', 'noncritical-process', 'risk', 'de-risk', 'low',
     b('The shortage ends and the market recovers.', 'ينتهي النقص ويتعافى السوق.'),
-    [b('Close the bridge and release any temporary stock.', 'أغلق الجسر وحرّر المخزون المؤقت.'), b('Return to normal ordering.', 'عُد إلى الطلب العادي.')],
+    [b('Close the bridge and release any temporary stock.', 'أنهِ الحل المؤقت وحرّر المخزون المؤقت.'), b('Return to normal ordering.', 'عُد إلى الطلب العادي.')],
     b('Releases cash and attention held by the emergency.', 'يحرّر النقد والانتباه المحتجزين بسبب الطارئ.'), IC),
 
   // ---- Bottleneck -> Strategic (impact rises) -----------------------------
@@ -113,7 +113,7 @@ export const TRANSITIONS: Transition[] = [
     b('Shares the swing instead of letting one side absorb it.', 'يتقاسم التقلب بدل أن يتحمله طرف واحد.'), IC),
   T('lv-volatile-to-stable', 'leverage-volatile', 'leverage-stable', 'market', 'lateral', 'low',
     b('Prices settle.', 'تستقر الأسعار.'),
-    [b('Tender on a fixed price for a longer period.', 'ناقص على سعر ثابت لمدة أطول.')],
+    [b('Tender on a fixed price for a longer period.', 'اطرح مناقصة على سعر ثابت لمدة أطول.')],
     b('Locks in a calm market at a good price.', 'يثبّت سوقًا هادئًا بسعر جيد.'), IC),
   T('lv-stable-to-strategic', 'leverage-stable', 'strategic-balance', 'risk', 'raise-risk', 'high',
     b('Failures recur or switching becomes costly, so the supplier is harder to replace than the position assumes.', 'تتكرر الإخفاقات أو يصبح التبديل مكلفًا فيصعب استبدال المورد أكثر مما يفترضه موقعه.'),
@@ -126,7 +126,7 @@ export const TRANSITIONS: Transition[] = [
   T('lv-stable-to-bottleneck', 'leverage-stable', 'bottleneck-movable', 'impact', 'lateral', 'low',
     b('Spend falls so the item no longer matters financially, while the supplier base is thin.', 'ينخفض الإنفاق فلا يعود البند مؤثرًا ماليًا بينما قاعدة الموردين ضيقة.'),
     [b('Downgrade to Bottleneck handling and qualify one more source.', 'خفّضه إلى معالجة الاختناق وأهّل مصدرًا إضافيًا.')],
-    b('Right-sizes attention to the new, smaller exposure.', 'يضبط الانتباه على الانكشاف الجديد الأصغر.'), IC),
+    b('Right-sizes attention to the new, smaller exposure.', 'يوجّه الانتباه إلى الانكشاف الجديد الأصغر.'), IC),
   T('lv-stable-to-nc-pool', 'leverage-stable', 'noncritical-pool', 'impact', 'lateral', 'low',
     b('Spend falls below what justifies a tender.', 'ينخفض الإنفاق دون ما يبرر المناقصة.'),
     [b('Move to a framework agreement and stop re-tendering.', 'انتقل إلى اتفاقية إطارية وتوقف عن إعادة المناقصة.')],
@@ -139,20 +139,20 @@ export const TRANSITIONS: Transition[] = [
     b('First step toward a price you can negotiate.', 'الخطوة الأولى نحو سعر يمكن التفاوض عليه.'), GW),
   T('nc-pool-to-leverage-stable', 'noncritical-pool', 'leverage-stable', 'impact', 'lateral', 'medium',
     b('Pooled spend becomes large enough to matter and the market is steady.', 'يصبح الإنفاق المجمّع كبيرًا بما يكفي ليؤثر والسوق مستقر.'),
-    [b('Tender the pooled demand.', 'ناقص على الطلب المجمّع.'), b('Set a target price from the pooled volume.', 'حدّد سعرًا مستهدفًا من الحجم المجمّع.')],
+    [b('Tender the pooled demand.', 'اطرح الطلب المجمّع في مناقصة.'), b('Set a target price from the pooled volume.', 'حدّد سعرًا مستهدفًا من الحجم المجمّع.')],
     b('Turns scattered small buys into negotiating power.', 'يحوّل مشتريات صغيرة متفرقة إلى قوة تفاوضية.'), GW),
   T('nc-pool-to-leverage-volatile', 'noncritical-pool', 'leverage-volatile', 'impact', 'lateral', 'medium',
     b('Pooled spend becomes material and prices swing.', 'يصبح الإنفاق المجمّع جوهريًا والأسعار متقلبة.'),
-    [b('Tender the pooled demand on a margin over an index.', 'ناقص على الطلب المجمّع بهامش فوق مؤشر.')],
+    [b('Tender the pooled demand on a margin over an index.', 'اطرح الطلب المجمّع في مناقصة بهامش فوق مؤشر.')],
     b('Negotiating power without absorbing price swings.', 'قوة تفاوضية دون تحمّل تقلبات الأسعار.'), GW),
   T('nc-process-to-situational', 'noncritical-process', 'bottleneck-situational', 'risk', 'raise-risk', 'medium',
     b('A normally easy item becomes temporarily scarce.', 'يصبح بند عادة ما يكون سهلًا شحيحًا بشكل مؤقت.'),
-    [b('Bridge with spot buys and set an end date.', 'اجسر بمشتريات فورية وحدّد تاريخ انتهاء.')],
+    [b('Bridge with spot buys and set an end date.', 'غطِّ الفجوة بمشتريات فورية وحدّد تاريخ انتهاء.')],
     b('Early warning before routine ordering fails.', 'إنذار مبكر قبل أن يفشل الطلب الروتيني.'), IC),
   T('nc-pool-to-situational', 'noncritical-pool', 'bottleneck-situational', 'risk', 'raise-risk', 'medium',
     b('A pooled item becomes temporarily scarce.', 'يصبح بند مجمّع شحيحًا بشكل مؤقت.'),
-    [b('Bridge and notify all sites sharing the agreement.', 'اجسر وأبلغ جميع المواقع المشاركة في الاتفاقية.')],
-    b('One shared response instead of many panicked ones.', 'استجابة مشتركة واحدة بدل استجابات مذعورة متعددة.'), IC),
+    [b('Bridge and notify all sites sharing the agreement.', 'غطِّ الفجوة وأبلغ جميع المواقع المشاركة في الاتفاقية.')],
+    b('One shared response instead of many panicked ones.', 'استجابة مشتركة واحدة بدل ردود فعل متسرعة متعددة.'), IC),
 
   // ---- Strategic: the power axis -----------------------------------------
   T('st-diversify-to-balance', 'strategic-diversify', 'strategic-balance', 'power', 'de-risk', 'high',
@@ -177,12 +177,12 @@ export const TRANSITIONS: Transition[] = [
     b('Competition replaces a relationship you no longer need.', 'تحلّ المنافسة محل علاقة لم تعد بحاجة إليها.'), GW),
   T('st-exploit-to-leverage', 'strategic-exploit', 'leverage-stable', 'risk', 'de-risk', 'low',
     b('Supply risk is now low and the buyer is strong.', 'أصبح خطر الإمداد منخفضًا والمشتري قويًا.'),
-    [b('Run it as a Leverage category: tender and bundle.', 'أدِره كفئة نفوذ: ناقص وجمّع الكميات.')],
+    [b('Run it as a Leverage category: tender and bundle.', 'أدِره كفئة نفوذ شرائي: اطرح مناقصة وجمّع الكميات.')],
     b('Gets the commodity price for a commodity risk.', 'تحصل على سعر السلعة لقاء مخاطرة السلعة.'), GW),
   T('st-diversify-to-locked', 'strategic-diversify', 'bottleneck-locked', 'impact', 'lateral', 'low',
     b('Spend falls so the item no longer drives profit, but no alternative exists.', 'ينخفض الإنفاق فلا يعود البند يحرّك الربح لكن لا بديل.'),
     [b('Downgrade to Bottleneck handling: contingency and buffer, not executive attention.', 'خفّضه إلى معالجة الاختناق: خطة طوارئ ومخزون لا انتباه تنفيذي.')],
-    b('Right-sizes attention to the new exposure.', 'يضبط الانتباه على الانكشاف الجديد.'), IC),
+    b('Right-sizes attention to the new exposure.', 'يوجّه الانتباه إلى الانكشاف الجديد.'), IC),
 ];
 
 export function outgoing(k: SubtypeKey): Transition[] { return TRANSITIONS.filter((t) => t.from === k); }
@@ -275,8 +275,8 @@ export const QUADRANT_IDEAS: Record<Quadrant, QuadrantIdea> = {
   },
   bottleneck: {
     quadrant: 'bottleneck', basis: IC,
-    headline: b('An unmanaged bottleneck is hidden debt: move it, secure it or bridge it, with a date', 'الاختناق غير المُدار دَين خفي: انقله أو أمّنه أو اجسره بتاريخ محدد'),
-    idea: b('Every bottleneck gets one of three decisions: move out of the box (qualify, simplify), hold and secure (contingency, buffer, remedies), or bridge (temporary, with an expiry). None sit undecided. The price of ignoring one is paid on the worst day.', 'كل اختناق يُتخذ بشأنه أحد ثلاثة قرارات: الخروج من الربع (تأهيل أو تبسيط)، أو الإبقاء والتأمين (طوارئ ومخزون وعلاجات)، أو الجسر (مؤقتًا بتاريخ انتهاء). لا يُترك أي منها بلا قرار. ثمن إهماله يُدفع في أسوأ يوم.'),
+    headline: b('An unmanaged bottleneck is hidden debt: move it, secure it or bridge it, with a date', 'الاختناق غير المُدار دَين خفي: انقله أو أمّنه أو غطِّه مؤقتًا بتاريخ محدد'),
+    idea: b('Every bottleneck gets one of three decisions: move out of the box (qualify, simplify), hold and secure (contingency, buffer, remedies), or bridge (temporary, with an expiry). None sit undecided. The price of ignoring one is paid on the worst day.', 'كل اختناق يُتخذ بشأنه أحد ثلاثة قرارات: الخروج من الربع (تأهيل أو تبسيط)، أو الإبقاء والتأمين (طوارئ ومخزون وعلاجات)، أو التغطية المؤقتة (بتاريخ انتهاء). لا يُترك أي منها بلا قرار. ثمن إهماله يُدفع في أسوأ يوم.'),
     firstQuestion: b('Which of the three is it, and who owns the date?', 'أي من الثلاثة هو، ومن يملك التاريخ؟'),
     measure: b('Bottlenecks with a decision and a review date; Locked suppliers without a contingency plan (target zero).', 'اختناقات لها قرار وتاريخ مراجعة؛ موردون مقيَّدون بلا خطة طوارئ (المستهدف صفر).'),
   },
@@ -296,7 +296,7 @@ export const QUADRANT_IDEAS: Record<Quadrant, QuadrantIdea> = {
 const QUADS: Quadrant[] = ['strategic', 'leverage', 'bottleneck', 'non-critical'];
 export const QUADRANT_LABEL: Record<Quadrant, Bilingual> = {
   strategic: b('Critical (Strategic)', 'استراتيجي (حرج)'),
-  leverage: b('Leverage', 'نفوذ سوقي'),
+  leverage: b('Leverage', 'نفوذ شرائي'),
   bottleneck: b('Bottleneck (fragile supply)', 'نقطة اختناق (إمداد هش)'),
   'non-critical': b('Routine (Non-critical)', 'غير حرج (روتيني)'),
 };
@@ -389,14 +389,17 @@ function csvCell(v: string | number | null): string {
   return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 
-export function reportToCsv(r: KraljicReport, lang: 'en' | 'ar'): string {
+export interface CsvExtra { lastReview: string; nextDueDiligence: string; playbookBasis: string }
+
+export function reportToCsv(r: KraljicReport, lang: 'en' | 'ar', extras?: Record<string, CsvExtra>): string {
   const L = (x: Bilingual) => x[lang];
   const head = lang === 'ar'
     ? ['الربع', 'المورد', 'النوع الفرعي', 'لماذا', 'الإجراء الموصى به', 'أبرز مشكلة', 'الأولوية', 'المراجعة القادمة', 'الإنفاق السنوي (ر.س)', 'الخطوات نحو الهدف']
     : ['Quadrant', 'Supplier', 'Sub-type', 'Why', 'Recommended action', 'Top problem', 'Severity', 'Next review', 'Annual spend (SAR)', 'Moves to goal'];
-  const lines = [head.map(csvCell).join(',')];
+  const extraHead = lang === 'ar' ? ['آخر مراجعة مسجّلة', 'العناية الواجبة القادمة', 'أساس دليل العمل'] : ['Last recorded review', 'Next due diligence', 'Playbook basis'];
+  const lines = [(extras ? [...head, ...extraHead] : head).map(csvCell).join(',')];
   for (const q of r.quadrants) for (const row of q.rows) {
-    lines.push([L(q.label), row.name, L(row.subtypeLabel), L(row.why), L(row.action), row.topSituation ? L(row.topSituation) : '', row.topSeverity ?? '', row.review, row.spendSAR, row.route.steps.length].map(csvCell).join(','));
+    lines.push([L(q.label), row.name, L(row.subtypeLabel), L(row.why), L(row.action), row.topSituation ? L(row.topSituation) : '', row.topSeverity ?? '', row.review, row.spendSAR, row.route.steps.length, ...(extras ? [extras[row.supplierId]?.lastReview ?? '', extras[row.supplierId]?.nextDueDiligence ?? '', extras[row.supplierId]?.playbookBasis ?? ''] : [])].map(csvCell).join(','));
   }
   return '﻿' + lines.join('\n');
 }

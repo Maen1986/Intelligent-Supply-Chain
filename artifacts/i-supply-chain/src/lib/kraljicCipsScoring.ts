@@ -45,7 +45,7 @@ export const CIPS_FACTORS: Factor[] = [
 
 export const SCALE_NOTE: Bilingual = {
   en: 'Rate each factor from 1 to 5, where 5 means it pushes risk (or profit potential) up.',
-  ar: 'قيّم كل عامل من 1 إلى 5، حيث تعني 5 أنه يرفع الخطر (أو إمكانية الربح).',
+  ar: 'قيّم كل عامل من 1 إلى 5، حيث تعني 5 أنه يرفع الخطر (أو الربحية المحتملة).',
 };
 
 export interface ScoringConfig {
