@@ -122,6 +122,9 @@ export interface SupplierRecord {
   category: string;
   quadrant: KraljicQuadrant;
   quadrantPriorQuarter: KraljicQuadrant | null; // for the migration-trail upgrade
+  /** Round C #668, optional: true when the quadrant was NOT in the imported file and was assumed
+   * (non-critical). A later import without a quadrant must never override a real, user-set one. */
+  quadrantDefaulted?: boolean;
   scoreHistory12mo: number[]; // chronological, oldest first — feeds real computeTrend/classifyVariability
   cars: CARRecord[]; // this supplier's own CAR history
   /** Round B (Nov 2026), optional: 'YYYY-MM' label per score, parallel to

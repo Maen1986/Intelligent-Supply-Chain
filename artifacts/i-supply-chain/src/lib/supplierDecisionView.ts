@@ -256,6 +256,8 @@ export interface PortfolioContext {
   shares: SupplierCategoryShare[];
   /** Everyone, so category concentration can be computed from real spend. */
   allSuppliers: SupplierRecord[];
+  /** Round C #668 (scale): peers grouped by category, built once by buildDecisions. Optional -- computed on demand when absent. */
+  peersByCategory?: Map<string, SupplierRecord[]>;
 }
 
 export interface CategoryConcentration {
@@ -269,8 +271,16 @@ export interface CategoryConcentration {
 /** HHI per category from REAL client spend (M05). Computed only when every
  * supplier in the category has a spend figure; otherwise INSUFFICIENT_DATA --
  * a partial set would understate concentration. */
-export function computeCategoryConcentration(all: SupplierRecord[], supplier: SupplierRecord): CategoryConcentration {
-  const peers = all.filter((x) => x.category && x.category === supplier.category);
+export function groupPeersByCategory(all: SupplierRecord[]): Map<string, SupplierRecord[]> {
+  const m = new Map<string, SupplierRecord[]>();
+  for (const x of all) { if (!x.category) continue; const g = m.get(x.category); if (g) g.push(x); else m.set(x.category, [x]); }
+  return m;
+}
+
+export function computeCategoryConcentration(all: SupplierRecord[], supplier: SupplierRecord, peersByCategory?: Map<string, SupplierRecord[]>): CategoryConcentration {
+  const peers = peersByCategory
+    ? (supplier.category ? peersByCategory.get(supplier.category) ?? [] : [])
+    : all.filter((x) => x.category && x.category === supplier.category);
   const allHaveSpend = peers.length >= 2 && peers.every((p) => typeof p.annualSpendSAR === 'number' && p.annualSpendSAR! > 0);
   if (!allHaveSpend) return { category: supplier.category, hhi: null, band: null, supplierSharePct: null, basis: 'INSUFFICIENT_DATA' };
   const total = peers.reduce((a, p) => a + p.annualSpendSAR!, 0);
@@ -329,7 +339,7 @@ export function buildSupplierDecision(s: SupplierRecord, ctx: PortfolioContext):
   const mix = computeCauseMix(s);
   const recovery = verifyRecovery(s);
   const exposure = computeSupplierExposure(s, ctx.categoryItems, ctx.shares);
-  const concentration = computeCategoryConcentration(ctx.allSuppliers, s);
+  const concentration = computeCategoryConcentration(ctx.allSuppliers, s, ctx.peersByCategory);
 
   const { impacts, overrides } = deriveImpactsFromCars(s.cars);
   let copq: SupplierDecision['copq'] = { totalUSD: null, externalSharePct: null, costedCars: impacts.length };
@@ -459,6 +469,6 @@ export function buildWeeklyActions(decisions: SupplierDecision[], asOfIso: strin
 }
 
 export function buildDecisions(suppliers: SupplierRecord[], ctx: Omit<PortfolioContext, 'allSuppliers'>): SupplierDecision[] {
-  const full: PortfolioContext = { ...ctx, allSuppliers: suppliers };
+  const full: PortfolioContext = { ...ctx, allSuppliers: suppliers, peersByCategory: groupPeersByCategory(suppliers) };
   return suppliers.map((s) => buildSupplierDecision(s, full));
 }

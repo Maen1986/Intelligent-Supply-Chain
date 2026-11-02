@@ -125,6 +125,8 @@
 
 /** Mirrors the minimal fields of supplierPreQualification.ts's ASLCurrentState
  * this module actually needs -- not the full ASL record. */
+import { sortEventsChronologically as orderEventsChronologically } from './eventLogOrder';
+
 export type AslStateLike = {
   status: string;
   /** Mirrors supplierPreQualification.ts's decisionKeepsOnASL() output for
@@ -562,11 +564,7 @@ export interface TransitionCurrentState {
 }
 
 function sortTransitionEventsChronologically(events: TransitionEventLike[]): TransitionEventLike[] {
-  return [...events].sort((a, b) => {
-    const t = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-    if (t !== 0) return t;
-    return String(a.id).localeCompare(String(b.id));
-  });
+  return orderEventsChronologically(events); // shared, deterministic (Round C #668)
 }
 
 /**

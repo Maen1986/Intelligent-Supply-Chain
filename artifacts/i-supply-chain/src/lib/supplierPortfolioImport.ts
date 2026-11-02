@@ -223,16 +223,26 @@ export function parseScoresCsv(text: string, opts: { idFactory?: (name: string) 
   }
 
   const suppliers: SupplierRecord[] = [];
+  const usedIds = new Set<string>();
+  /** Round C #668: two different names ("A B", "A-B", "---") can slug to the same id,
+   * which would merge their cars and actions downstream. Make ids unique, in file order. */
+  const uniqueId = (base: string): string => {
+    let id = base || 'imp-supplier'; let n = 2;
+    while (usedIds.has(id)) id = `${base || 'imp-supplier'}-${n++}`;
+    usedIds.add(id);
+    return id;
+  };
   for (const acc of byName.values()) {
     const periods = [...acc.points.keys()].sort();
     if (!acc.category) report.warnings.push({ line: 0, reasonEn: `"${acc.name}" has no category -- exposure will show insufficient data.`, reasonAr: `المورد "${acc.name}" بلا فئة -- سيُعرض التعرّض كبيانات غير كافية.` });
     if (!acc.quadrant) report.warnings.push({ line: 0, reasonEn: `"${acc.name}" has no Kraljic quadrant -- defaulted to non-critical (lowest weight). Set it for a correct priority.`, reasonAr: `المورد "${acc.name}" بلا ربع كرالييك -- تم افتراضه غير حرج (أقل وزن). حدّده للحصول على أولوية صحيحة.` });
     if (periods.length < 4) report.warnings.push({ line: 0, reasonEn: `"${acc.name}" has only ${periods.length} period(s) -- trend and variability need at least 4.`, reasonAr: `المورد "${acc.name}" لديه ${periods.length} فترة فقط -- الاتجاه والتذبذب يحتاجان 4 فترات على الأقل.` });
     suppliers.push({
-      supplierId: idFor(acc.name),
+      supplierId: uniqueId(idFor(acc.name)),
       name: acc.name,
       category: acc.category,
       quadrant: acc.quadrant ?? 'non-critical',
+      quadrantDefaulted: acc.quadrant === null ? true : undefined,
       quadrantPriorQuarter: null,
       scoreHistory12mo: periods.map((p) => acc.points.get(p)!),
       scorePeriods: periods,
@@ -354,14 +364,30 @@ export function mergeImport(
   const out = existing.map((s) => ({ ...s, cars: [...s.cars] }));
   const summary: MergeSummary = { suppliersAdded: 0, suppliersUpdated: 0, carsAdded: 0, carsUpdated: 0, carsUnmatched: [] };
 
+  // Round C #668 (scale): index by normalised name and by id once. The old findIndex/some per row was
+  // O(n^2) -- 5,000 suppliers took ~10 s, 50,000 would not finish. First match wins, as before.
+  const byName = new Map<string, number>();
+  const ids = new Set<string>();
+  out.forEach((s, i) => { const k = normName(s.name); if (!byName.has(k)) byName.set(k, i); ids.add(s.supplierId); });
+
   for (const inc of scores) {
-    const idx = out.findIndex((s) => normName(s.name) === normName(inc.name));
-    if (idx === -1) { out.push(inc); summary.suppliersAdded++; continue; }
+    const key = normName(inc.name);
+    const idx = byName.get(key) ?? -1;
+    if (idx === -1) {
+      // Round C #668: a new supplier must not reuse an id already in the portfolio.
+      let id = inc.supplierId; let n = 2;
+      while (ids.has(id)) id = `${inc.supplierId}-${n++}`;
+      ids.add(id); byName.set(key, out.length);
+      out.push(id === inc.supplierId ? inc : { ...inc, supplierId: id }); summary.suppliersAdded++; continue;
+    }
     const cur = out[idx]!;
     out[idx] = {
       ...cur,
       category: inc.category || cur.category,
-      quadrant: inc.quadrant,
+      // Round C #668: a file with no quadrant column must not silently downgrade a
+      // supplier the user already classed (e.g. strategic -> non-critical). Keep theirs.
+      quadrant: inc.quadrantDefaulted ? cur.quadrant : inc.quadrant,
+      quadrantDefaulted: inc.quadrantDefaulted ? cur.quadrantDefaulted : undefined,
       scoreHistory12mo: inc.scoreHistory12mo,
       scorePeriods: inc.scorePeriods,
       annualSpendSAR: inc.annualSpendSAR ?? cur.annualSpendSAR ?? null,
@@ -371,7 +397,7 @@ export function mergeImport(
   }
 
   for (const c of cars) {
-    const idx = out.findIndex((s) => normName(s.name) === normName(c.supplierName));
+    const idx = byName.get(normName(c.supplierName)) ?? -1;
     if (idx === -1) { summary.carsUnmatched.push(`${c.supplierName} / ${c.id}`); continue; }
     const sup = out[idx]!;
     const { supplierName: _drop, ...rec } = c;

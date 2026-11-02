@@ -773,7 +773,8 @@ const HIGH_LOCK_IN_THRESHOLD = 4;
 export function assessNegotiationLeverage(inputs: NegotiationLeverageInputs, quadrant?: KraljicQuadrant | null): NegotiationLeverage {
   const { lockInIndex, isSurvivable } = inputs;
 
-  if (lockInIndex === null || isSurvivable === null) {
+  // Round C (#668): a non-finite Lock-In Index is not evidence -- NaN used to fall through to MODERATE.
+  if (lockInIndex === null || isSurvivable === null || !Number.isFinite(lockInIndex)) {
     return {
       level: 'INSUFFICIENT_DATA',
       lockInIndex,

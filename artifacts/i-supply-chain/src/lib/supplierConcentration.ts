@@ -188,7 +188,10 @@ function weakestEvidenceStage(stages: EvidenceStage[]): EvidenceStage {
  * to fewer effective nodes once a shared upstream dependency is found.
  */
 export function testDimension(dimension: DependencyDimension, suppliers: ConcentrationSupplierInput[]): CommonModeFinding[] {
-  const withFact = suppliers.filter((s) => s.dependencyFacts[dimension] !== undefined);
+  // Round C #668: a supplier whose share is NaN/Infinity/negative is EXCLUDED from the grouping (same
+  // rule as "no fact": not assumed zero). Before, one bad share made the HHI NaN and the dimension was
+  // reported as "competitive / TRUE_DIVERSIFICATION" -- a false reassurance built on invalid data.
+  const withFact = suppliers.filter((s) => s.dependencyFacts[dimension] !== undefined && Number.isFinite(s.capacityOrSpendSharePct) && s.capacityOrSpendSharePct >= 0);
   if (withFact.length === 0) return [];
 
   const groups = new Map<string, ConcentrationSupplierInput[]>();
@@ -251,6 +254,12 @@ export interface ShortfallResult {
  * TTR > TTS -> a quantifiable shortfall window (TTR - TTS).
  */
 export function computeShortfall(timeToRecoverWeeks: number | null, timeToSurviveWeeks: number | null): ShortfallResult {
+  // Round C (#668): NaN / Infinity / negative durations are not evidence. Previously NaN fell through to
+  // "not survivable, shortfall NaN weeks" -- a confident answer from garbage (Decision Record 8.7).
+  const valid = (v: number | null) => v !== null && typeof v === 'number' && Number.isFinite(v) && v >= 0;
+  if (!valid(timeToRecoverWeeks) || !valid(timeToSurviveWeeks)) {
+    return { shortfallWeeks: null, isSurvivable: null };
+  }
   if (timeToRecoverWeeks === null || timeToSurviveWeeks === null) {
     return { shortfallWeeks: null, isSurvivable: null };
   }
@@ -315,7 +324,10 @@ export function countUnresolvedEvidenceGaps(facts: SupplierFact[]): number {
  */
 export function computeIntelligenceDebtUSD(unresolvedGapCount: number, costPerUnresolvedGapUSD: number | null): number | null {
   if (costPerUnresolvedGapUSD === null) return null;
-  return unresolvedGapCount * costPerUnresolvedGapUSD;
+  // Round C #668: a negative or non-finite count/cost is invalid input, not a negative debt.
+  if (!Number.isFinite(unresolvedGapCount) || !Number.isFinite(costPerUnresolvedGapUSD) || unresolvedGapCount < 0 || costPerUnresolvedGapUSD < 0) return null;
+  const debt = unresolvedGapCount * costPerUnresolvedGapUSD;
+  return Number.isFinite(debt) ? debt : null; // overflow (e.g. 1e308 x 10) is not a number a client can use
 }
 
 // ---------------------------------------------------------------------------
@@ -332,6 +344,7 @@ export function computeIntelligenceDebtUSD(unresolvedGapCount: number, costPerUn
  * one.
  */
 export function computeHiddenConcentrationIndex(capacityOrSpendSharePct: number, subTierFacts: SupplierFact[]): number {
+  // Round C (#668): callers that need an honest "not assessable" use computeSupplierMetrics (returns null).
   if (subTierFacts.length === 0) return capacityOrSpendSharePct;
   const unresolvedCount = subTierFacts.filter((f) => f.evidenceStage === 'CLAIMED').length;
   return capacityOrSpendSharePct * (unresolvedCount / subTierFacts.length);
@@ -361,20 +374,34 @@ export interface SupplierConcentrationMetrics {
   isSurvivable: boolean | null;
   lockInIndex: number | null;
   intelligenceDebtUSD: number | null;
-  hiddenConcentrationIndex: number;
+  /** null = share was missing / not a finite 0-100 number: not assessable (Round C #668). */
+  hiddenConcentrationIndex: number | null;
+}
+
+function finiteOrNull(n: number): number | null {
+  return typeof n === 'number' && Number.isFinite(n) ? n : null;
+}
+function finiteNonNegOrNull(n: number | null): number | null {
+  return typeof n === 'number' && Number.isFinite(n) && n >= 0 ? n : null;
+}
+function validShare(n: number): boolean {
+  return typeof n === 'number' && Number.isFinite(n) && n >= 0 && n <= 100;
 }
 
 export function computeSupplierMetrics(input: SupplierConcentrationMetricsInput): SupplierConcentrationMetrics {
   const shortfall = computeShortfall(input.timeToRecoverWeeks, input.timeToSurviveWeeks);
   return {
     supplierId: input.supplierId,
-    timeToRecoverWeeks: input.timeToRecoverWeeks,
-    timeToSurviveWeeks: input.timeToSurviveWeeks,
+    // Echo only usable durations -- a NaN/negative input must not travel on into the next engine (Round C #668).
+    timeToRecoverWeeks: shortfall.isSurvivable === null ? (finiteNonNegOrNull(input.timeToRecoverWeeks)) : input.timeToRecoverWeeks,
+    timeToSurviveWeeks: shortfall.isSurvivable === null ? (finiteNonNegOrNull(input.timeToSurviveWeeks)) : input.timeToSurviveWeeks,
     shortfallWeeks: shortfall.shortfallWeeks,
     isSurvivable: shortfall.isSurvivable,
-    lockInIndex: input.lockIn ? computeLockInIndex(input.lockIn, input.lockInWeights) : null,
+    lockInIndex: input.lockIn ? finiteOrNull(computeLockInIndex(input.lockIn, input.lockInWeights)) : null,
     intelligenceDebtUSD: computeIntelligenceDebtUSD(input.unresolvedEvidenceGapCount, input.costPerUnresolvedGapUSD),
-    hiddenConcentrationIndex: computeHiddenConcentrationIndex(input.capacityOrSpendSharePct, input.subTierFacts),
+    hiddenConcentrationIndex: validShare(input.capacityOrSpendSharePct)
+      ? finiteOrNull(computeHiddenConcentrationIndex(input.capacityOrSpendSharePct, input.subTierFacts ?? []))
+      : null,
   };
 }
 
@@ -479,7 +506,7 @@ export function buildSupplierMetricsPrompt(metrics: SupplierConcentrationMetrics
           : `فجوة زمنية ${metrics.shortfallWeeks} أسابيع بين وقت الاستعادة ووقت البقاء.`,
       metrics.lockInIndex !== null ? `مؤشر الارتباط بالمورّد: ${metrics.lockInIndex.toFixed(1)} من 5.` : 'مؤشر الارتباط بالمورّد: لم يُدخل بعد.',
       metrics.intelligenceDebtUSD !== null ? `دين المعرفة عن المورّد: ${metrics.intelligenceDebtUSD.toLocaleString()} دولار.` : 'دين المعرفة عن المورّد: بيانات غير كافية (لم يُحدد تكلفة الفجوة الواحدة).',
-      `مؤشر الإخفاء عند الطبقة الفرعية: ${metrics.hiddenConcentrationIndex.toFixed(0)}٪.`,
+      metrics.hiddenConcentrationIndex !== null ? `مؤشر الإخفاء عند الطبقة الفرعية: ${metrics.hiddenConcentrationIndex.toFixed(0)}٪.` : 'مؤشر الإخفاء عند الطبقة الفرعية: بيانات غير كافية (حصة المورّد غير صالحة).',
     ];
     return lines.join('\n');
   }
@@ -492,7 +519,7 @@ export function buildSupplierMetricsPrompt(metrics: SupplierConcentrationMetrics
         : `${metrics.shortfallWeeks}-week shortfall window between recovery time and survival time.`,
     metrics.lockInIndex !== null ? `Lock-In Index: ${metrics.lockInIndex.toFixed(1)} of 5.` : 'Lock-In Index: not yet entered.',
     metrics.intelligenceDebtUSD !== null ? `Supplier Intelligence Debt: $${metrics.intelligenceDebtUSD.toLocaleString()}.` : 'Supplier Intelligence Debt: insufficient data (no per-gap cost set yet).',
-    `Hidden Concentration (sub-tier) Index: ${metrics.hiddenConcentrationIndex.toFixed(0)}%.`,
+    metrics.hiddenConcentrationIndex !== null ? `Hidden Concentration (sub-tier) Index: ${metrics.hiddenConcentrationIndex.toFixed(0)}%.` : 'Hidden Concentration (sub-tier) Index: insufficient data (supplier share missing or invalid).',
   ];
   return lines.join('\n');
 }

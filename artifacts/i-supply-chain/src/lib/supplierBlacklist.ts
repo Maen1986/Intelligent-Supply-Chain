@@ -196,6 +196,8 @@
 // ---------------------------------------------------------------------------
 
 /** Mirrors supplierPeriodicEvaluation.ts's OverallRecommendation. */
+import { sortEventsChronologically as orderEventsChronologically } from './eventLogOrder';
+
 export type PeriodicEvaluationOutcomeLike = {
   overallRecommendation: 'continue_standard_cadence' | 'monitor_closely' | 'escalate_consider';
   /** Mirrors CategoryScoreResult's rating for the single worst-rated category, if any. */
@@ -568,11 +570,7 @@ export interface BlacklistCurrentState {
 }
 
 function sortEventsChronologically(events: BlacklistEventLike[]): BlacklistEventLike[] {
-  return [...events].sort((a, b) => {
-    const t = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-    if (t !== 0) return t;
-    return String(a.id).localeCompare(String(b.id));
-  });
+  return orderEventsChronologically(events); // shared, deterministic (Round C #668)
 }
 
 /**

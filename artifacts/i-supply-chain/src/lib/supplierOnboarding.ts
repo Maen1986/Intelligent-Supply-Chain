@@ -101,6 +101,8 @@
 /** Disclosed mirror of supplierPreQualification.ts's ASLCurrentState -- only
  *  the fields this module actually needs, so onboarding never re-derives
  *  ASL status itself (that stays Item 3's job). */
+import { sortEventsChronologically as orderEventsChronologically } from './eventLogOrder';
+
 export interface ASLGateSnapshotLike {
   supplierId: string;
   onASL: boolean;
@@ -333,11 +335,7 @@ export interface OnboardingStepEventLike {
 }
 
 function sortChrono(events: OnboardingStepEventLike[]): OnboardingStepEventLike[] {
-  return [...events].sort((a, b) => {
-    const t = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-    if (t !== 0) return t;
-    return String(a.id).localeCompare(String(b.id));
-  });
+  return orderEventsChronologically(events); // shared, deterministic (Round C #668)
 }
 
 export interface OnboardingCurrentState {
