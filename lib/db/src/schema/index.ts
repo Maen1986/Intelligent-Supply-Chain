@@ -11,6 +11,7 @@ export * from "./workingCapitalAnalyses";
 export * from "./spendVarianceAnalyses";
 export * from "./clmContracts";
 export * from "./rarAnalyses";
+export * from "./kraljicWorkspaces";
 export * from "./supplierDependencyChecks";
 export * from "./localContentIcvEntries";
 export * from "./supplierRecoveryEntries";

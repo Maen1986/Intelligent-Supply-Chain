@@ -33,6 +33,8 @@ import { KraljicReportPack } from './KraljicReportPack';
 import { playbookFor, nextDdDate } from '@/lib/kraljicPlaybook';
 import { gccAdjustment } from '@/lib/kraljicGccModifiers';
 import { KRALJIC_GLOSSARY } from '@/lib/kraljicGlossary';
+import { useAuth } from '@/lib/AuthContext';
+import { useKraljicWorkspaceSync } from '@/lib/kraljicWorkspaceSync';
 import type { LedgerEntry } from '@/lib/kraljicLedger';
 
 const FACTS_KEY = 'isc-m02-subtype-facts-v1';
@@ -97,6 +99,15 @@ export function SupplierSubtypePanel({
   const [ledger, setLedger] = useState<LedgerEntry[]>(loadLedger);
   const [reviews, setReviews] = useState<ReviewMap>(loadReviews);
   const [selected, setSelected] = useState<SubtypeKey | null>(null);
+  const { user } = useAuth();
+  const syncStatus = useKraljicWorkspaceSync(
+    user, { facts, reviews, extras, ledger },
+    (w) => {
+      setFacts(w.facts as FactsMap); setReviews(w.reviews as ReviewMap); setExtras(w.extras as ExtrasMap); setLedger(w.ledger as LedgerEntry[]);
+      safeSetItem(FACTS_KEY, JSON.stringify(w.facts)); safeSetItem(REVIEWS_KEY, JSON.stringify(w.reviews));
+      safeSetItem(EXTRAS_KEY, JSON.stringify(w.extras)); safeSetItem(LEDGER_KEY, JSON.stringify(w.ledger));
+    },
+  );
   const L = (b: { en: string; ar: string }) => (isAr ? b.ar : b.en);
   const decisions = useMemo(() => buildDecisions(suppliers, { asOfIso, categoryItems, shares }), [suppliers, asOfIso, categoryItems, shares]);
 
@@ -391,6 +402,13 @@ export function SupplierSubtypePanel({
           <p>{T.meth1}</p><p>{T.meth2}</p><p>{T.meth3}</p><p>{T.meth4}</p><p>{L(WORDING_NOTE)}</p>
         </div>
       </details>
+      {user && syncStatus !== 'idle' && (
+        <p role="status" data-testid="kraljic-sync-status" className={`text-[11px] print:hidden ${syncStatus === 'error' ? 'text-red-700' : 'text-slate-500'}`}>
+          {syncStatus === 'saving' ? (isAr ? 'جارٍ الحفظ...' : 'Saving...')
+            : syncStatus === 'saved' ? (isAr ? 'تم الحفظ' : 'Saved')
+            : (isAr ? 'تعذّر الحفظ على الخادم؛ بياناتك محفوظة على هذا الجهاز' : 'Could not save to the server; your data is kept on this device')}
+        </p>
+      )}
       <details className="rounded-xl border border-slate-200 bg-white p-3 print:hidden" data-testid="kraljic-glossary">
         <summary className="text-xs font-bold text-[#082C6B] cursor-pointer min-h-[32px]">{isAr ? 'الاختصارات المستخدمة' : 'Abbreviations used'}</summary>
         <dl className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-[11px] text-slate-700">
