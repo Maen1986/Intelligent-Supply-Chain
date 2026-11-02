@@ -115,7 +115,16 @@ export function computeHHI(sharesPct: number[]): number {
   return sharesPct.reduce((sum, s) => sum + s * s, 0);
 }
 
+/** A usable HHI is finite and within 0..10,000 (shares are percentages). */
+export function isValidHHI(hhi: number): boolean {
+  return typeof hhi === 'number' && Number.isFinite(hhi) && hhi >= 0 && hhi <= 10000 + 1e-6;
+}
+
 export function bandForHHI(hhi: number): ConcentrationBand {
+  // Round C #668 (RC-2): NaN used to fall through every comparison to 'competitive' -- a false reassurance.
+  // An invalid HHI is never reassuring: it reads as the most cautious band. Callers that must show
+  // "not assessable" should test isValidHHI() first.
+  if (!isValidHHI(hhi)) return 'highlyConcentrated';
   if (hhi > HHI_HIGH_THRESHOLD) return 'highlyConcentrated';
   if (hhi >= HHI_MODERATE_THRESHOLD) return 'moderatelyConcentrated';
   return 'competitive';
@@ -123,6 +132,7 @@ export function bandForHHI(hhi: number): ConcentrationBand {
 
 /** Per SI-05 doc: HHI > 1,500 on a dimension is APPARENT_DIVERSIFICATION; below is TRUE_DIVERSIFICATION. */
 export function flagForHHI(hhi: number): DiversificationFlag {
+  if (!isValidHHI(hhi)) return 'APPARENT_DIVERSIFICATION'; // Round C #668 (RC-2): invalid is never "true diversification"
   return hhi > HHI_MODERATE_THRESHOLD ? 'APPARENT_DIVERSIFICATION' : 'TRUE_DIVERSIFICATION';
 }
 

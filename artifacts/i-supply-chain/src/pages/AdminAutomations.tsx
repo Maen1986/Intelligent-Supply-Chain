@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { API_BASE } from '@/lib/apiBase';
 import { PLATFORM_LABEL } from '@/lib/platformLabel';
+import { csvCell } from '@/lib/csvSafe';
 export { PLATFORM_LABEL } from '@/lib/platformLabel';
 
 /* ─── types ──────────────────────────────────────────────────────────────── */
@@ -220,7 +221,9 @@ function ExpandableRow({ payload }: { payload: unknown }) {
 function exportCsv(data: Record<string, unknown>[], filename: string) {
   if (!data.length) return;
   const keys = Object.keys(data[0]);
-  const rows = [keys.join(','), ...data.map(r => keys.map(k => JSON.stringify(r[k] ?? '')).join(','))];
+  // Round C #668 (RC-3): shared spreadsheet-safe writer; objects are JSON text, everything else is the value itself.
+  const cell = (v: unknown) => csvCell(v !== null && typeof v === 'object' ? JSON.stringify(v) : v);
+  const rows = [keys.map(cell).join(','), ...data.map(r => keys.map(k => cell(r[k] ?? '')).join(','))];
   const blob = new Blob([rows.join('\n')], { type: 'text/csv' });
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement('a');
