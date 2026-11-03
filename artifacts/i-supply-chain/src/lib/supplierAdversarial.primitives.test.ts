@@ -43,7 +43,7 @@ describe('R-C regression: invalid numbers are INSUFFICIENT_DATA, never a confide
     dependencyFacts: { logistics: { value, evidenceStage: 'VERIFIED' } } as ConcentrationSupplierInput['dependencyFacts'],
   });
   it.each(BAD)('one supplier with share %s must not turn the dimension into "competitive / true diversification"', (b) => {
-    const out = testDimension('logistics', [sup('a', 60), sup('b', 40), sup('bad', b)]);
+    const out = testDimension('logistics' as never, [sup('a', 60), sup('b', 40), sup('bad', b)]);
     for (const f of out) {
       expect(Number.isFinite(f.hhi)).toBe(true);
       expect(Number.isFinite(f.affectedSharePct)).toBe(true);
@@ -53,7 +53,7 @@ describe('R-C regression: invalid numbers are INSUFFICIENT_DATA, never a confide
     expect(out[0]!.affectedSuppliers.sort()).toEqual(['a', 'b']);
   });
   it('a negative share is excluded, not subtracted', () => {
-    const out = testDimension('logistics', [sup('a', 60), sup('b', 40), sup('neg', -50)]);
+    const out = testDimension('logistics' as never, [sup('a', 60), sup('b', 40), sup('neg', -50)]);
     expect(out[0]!.affectedSharePct).toBe(100);
   });
 });

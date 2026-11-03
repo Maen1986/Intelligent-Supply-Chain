@@ -91,7 +91,8 @@ describe('R-C hostile CSV import: never throws, never invents, always reconciles
         if (c.closedAt && c.createdAt && c.closedAt < c.createdAt) failures.push(`seed ${s}: CAR ${c.id} closes before it opens (${c.createdAt} > ${c.closedAt})`);
         if (c.status === 'closed' && !c.closedAt) failures.push(`seed ${s}: CAR ${c.id} closed with no close date`);
         if (c.status !== 'closed' && c.closedAt) failures.push(`seed ${s}: CAR ${c.id} open but has close date`);
-        if (c.costUSD != null && (!Number.isFinite(c.costUSD) || c.costUSD < 0)) failures.push(`seed ${s}: CAR ${c.id} bad cost ${c.costUSD}`);
+        const cost = (c as unknown as { costUSD?: number }).costUSD;
+        if (cost != null && (!Number.isFinite(cost) || cost < 0)) failures.push(`seed ${s}: CAR ${c.id} bad cost ${cost}`);
       }
       const bad = findBad({ cars, report });
       if (bad.length) failures.push(`seed ${s}: leak ${bad[0]!.path} "${bad[0]!.sample}"`);

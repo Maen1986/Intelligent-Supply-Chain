@@ -2,7 +2,7 @@
  * Round C #668 — gap closure regression tests (RC-2 fail-closed numbers, RC-3 CSV injection).
  */
 import { describe, it, expect } from 'vitest';
-import { bandForHHI, flagForHHI, isValidHHI } from './supplierConcentration';
+import { bandForHHI, flagForHHI, isValidHHI, HHI_HIGH_THRESHOLD, HHI_MODERATE_THRESHOLD } from './supplierConcentration';
 import { rateCategoryScore } from './supplierPeriodicEvaluation';
 import { quadrantFor, scoreItem } from './kraljicCipsScoring';
 import { buildScorecardCsvString } from './scorecardCsv';
@@ -39,6 +39,26 @@ describe('RC-2 fail-closed on invalid numbers', () => {
     expect(r.stepsNoteEn).toMatch(/invalid number/i);
     const w = scoreItem({}, { weights: { x: -1 } });
     expect(w.status).toBe('insufficient');
+  });
+});
+
+describe('RC-6 mutation-driven exact-boundary pins', () => {
+  it('invalid HHI maps to exactly the cautious values', () => {
+    expect(flagForHHI(NaN)).toBe('APPARENT_DIVERSIFICATION');
+    expect(bandForHHI(NaN)).toBe('highlyConcentrated');
+  });
+  it('band boundaries are exact (high is strictly above 2500, moderate starts at 1500)', () => {
+    expect(bandForHHI(HHI_HIGH_THRESHOLD)).toBe('moderatelyConcentrated');
+    expect(bandForHHI(HHI_HIGH_THRESHOLD + 0.01)).toBe('highlyConcentrated');
+    expect(bandForHHI(HHI_MODERATE_THRESHOLD)).toBe('moderatelyConcentrated');
+    expect(bandForHHI(HHI_MODERATE_THRESHOLD - 0.01)).toBe('competitive');
+  });
+  it('flag boundary is exact and the HHI validity ceiling is inclusive', () => {
+    expect(flagForHHI(HHI_MODERATE_THRESHOLD)).toBe('TRUE_DIVERSIFICATION');
+    expect(flagForHHI(HHI_MODERATE_THRESHOLD + 0.01)).toBe('APPARENT_DIVERSIFICATION');
+    expect(isValidHHI(10000 + 1e-6)).toBe(true);
+    expect(isValidHHI(10000 + 1e-3)).toBe(false);
+    expect(isValidHHI('5000' as unknown as number)).toBe(false);
   });
 });
 
