@@ -227,7 +227,7 @@ export function parseCSV(text: string): KraljicItem[] {
   const dataLines = lines[0].toLowerCase().includes('category') ? lines.slice(1) : lines;
   return dataLines.map(line => {
     const cols = line.split(',').map(c => c.trim().replace(/^"|"$/g, ''));
-    const n = (i: number, fallback = 0) => { const v = parseFloat(cols[i] ?? ''); return isNaN(v) ? fallback : v; };
+    const n = (i: number, fallback = 0) => { const v = parseFloat(cols[i] ?? ''); return Number.isFinite(v) ? Math.min(Math.max(v, -1e15), 1e15) : fallback; }; // RC-6: Infinity/NaN/1e999 from a hostile CSV fall back instead of poisoning totals
     const s = (i: number, fallback = '') => cols[i] ?? fallback;
     return newItem({
       category:              s(0),
