@@ -56,7 +56,7 @@ export function AnnouncementBanner() {
 
             {/* CTA + dismiss */}
             <div className="flex items-center gap-2 shrink-0">
-              <Link href="/command-center" onClick={dismiss}>
+              <Link href="/command-center" onClick={dismiss} aria-label={ar ? 'ابدأ الآن' : 'Get Started'}>
                 <motion.span
                   whileHover={{ scale: 1.04 }}
                   className="hidden sm:flex items-center gap-1.5 bg-[#C9A84C] hover:bg-[#b8973e] text-white text-xs font-bold px-3 py-1 rounded-lg transition-colors cursor-pointer shadow"
