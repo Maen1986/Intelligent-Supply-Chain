@@ -131,7 +131,7 @@ export function KraljicMatrix() {
   };
 
   // ── Scoring ────────────────────────────────────────────────────────────────
-  const validItems = useMemo(() => items.filter(i => (i.itemName || i.category) && i.annualSpend > 0), [items]);
+  const validItems = useMemo(() => items.filter(i => (i.itemName || i.category) && Number.isFinite(i.annualSpend) && i.annualSpend > 0), [items]);
   const scored = useMemo(() => scoreItems(validItems, selectedIndustry), [validItems, selectedIndustry]);
   const threshold = INDUSTRY_THRESHOLDS[selectedIndustry ?? 'default'] ?? INDUSTRY_THRESHOLDS.default;
 
@@ -260,7 +260,7 @@ export function KraljicMatrix() {
         {/* ── Tabs ── */}
         <div className="flex gap-1 mb-6 bg-white border border-slate-200 rounded-2xl p-1 shadow-sm">
           {tabs.map(tab => (
-            <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+            <button key={tab.id} onClick={() => setActiveTab(tab.id)} aria-label={isAr ? tab.labelAr : tab.label} aria-pressed={activeTab === tab.id}
               className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all ${
                 activeTab === tab.id ? 'bg-[#082C6B] text-white shadow-md' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
               }`}
