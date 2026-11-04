@@ -88,6 +88,8 @@
 // ---------------------------------------------------------------------------
 
 /** Mirrors supplierQualificationGates.ts's OverallQualificationStatus. */
+import { sortEventsChronologically as orderEventsChronologically } from './eventLogOrder';
+
 export type QualificationGateStatus =
   | 'QUALIFIED'
   | 'CONDITIONALLY_QUALIFIED'
@@ -562,11 +564,7 @@ export interface ASLCurrentState {
 }
 
 function sortEventsChronologically(events: ASLDecisionEventLike[]): ASLDecisionEventLike[] {
-  return [...events].sort((a, b) => {
-    const t = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-    if (t !== 0) return t;
-    return String(a.id).localeCompare(String(b.id));
-  });
+  return orderEventsChronologically(events); // shared, deterministic (Round C #668)
 }
 
 /**

@@ -234,6 +234,9 @@ export type SIDataSourceLike = 'manual' | 'imported-file' | 'erp' | 'wms' | 'scm
  * "strong", exactly 65 is "acceptable", exactly 40 is "watch".
  */
 export function rateCategoryScore(score: number): CategoryRating {
+  // Round C #668 (RC-2): Infinity used to read as 'strong'. A non-finite score is not evidence of strength;
+  // it reads as the most cautious rating (NaN already fell through to at_risk -- now explicit and pinned).
+  if (typeof score !== 'number' || !Number.isFinite(score)) return 'at_risk';
   if (score >= 85) return 'strong';
   if (score >= 65) return 'acceptable';
   if (score >= 40) return 'watch';

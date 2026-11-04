@@ -14,6 +14,7 @@ import type { SupplierDecision, Tier, CauseKey, WeeklyAction, Bilingual } from '
 import { assessESG, ESG_THEMES, type ESGTheme } from './supplierESG';
 import type { CategoryConcentration } from './supplierDecisionView';
 import type { RecoveryVerificationStatus } from './supplierRecoveryPortfolio';
+import { csvCell } from './csvSafe';
 
 export interface DataConfidence {
   suppliers: number;
@@ -118,10 +119,6 @@ export function buildPortfolioSummary(decisions: SupplierDecision[], asOfIso: st
   };
 }
 
-function csvCell(v: unknown): string {
-  const s = v === null || v === undefined ? '' : String(v);
-  return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-}
 
 /** Client-pack CSV for consultants: one row per supplier decision, plus the
  * action list. English column headers (spreadsheet-safe); Arabic text is
@@ -129,8 +126,11 @@ function csvCell(v: unknown): string {
 export function buildClientPackCsv(decisions: SupplierDecision[], actions: WeeklyAction[]): string {
   const head = ['section', 'supplier', 'tier', 'primary_en', 'primary_ar', 'alternative_en', 'alternative_ar', 'tradeoff_en', 'tradeoff_ar', 'recurrence', 'trend', 'recovery', 'costed_copq_usd', 'exposure_sar', 'exposure_basis', 'owner', 'due'];
   const lines = [head.join(',')];
+  // Round C #668 (scale): index the decision actions once instead of a find() per supplier (O(n^2)).
+  const decisionActions = new Map<string, WeeklyAction>();
+  for (const x of actions) if (!decisionActions.has(x.id)) decisionActions.set(x.id, x);
   for (const d of decisions) {
-    const a = actions.find((x) => x.id === `${d.supplier.supplierId}:decision`);
+    const a = decisionActions.get(`${d.supplier.supplierId}:decision`);
     lines.push([
       'decision', d.supplier.name, d.tier, d.recommendation.primary.title.en, d.recommendation.primary.title.ar,
       d.recommendation.alternative.title.en, d.recommendation.alternative.title.ar, d.recommendation.tradeoff.en, d.recommendation.tradeoff.ar,

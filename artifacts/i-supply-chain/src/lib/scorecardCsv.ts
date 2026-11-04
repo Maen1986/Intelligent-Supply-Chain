@@ -12,6 +12,7 @@
  * elevated to 18% to reflect its rise to near-equal weight with Cost
  * across leading GCC procurement functions.
  */
+import { csvSafeText } from './csvSafe';
 
 /* ─── Types ─── */
 
@@ -127,7 +128,7 @@ export function calcDimScore(
 ): number | null {
   const subs = SUB_INDICATORS[dimId] ?? [];
   const vals = subs
-    .map(s => parseFloat(subScores[dimId]?.[s.id] ?? ''))
+    .map(s => parseFloat(subScores?.[dimId]?.[s.id] ?? ''))
     .filter(v => !isNaN(v) && v >= 0);
   if (vals.length === 0) return null;
   return Math.min(100, Math.max(0, Math.round(vals.reduce((a, b) => a + b, 0) / vals.length)));
@@ -216,7 +217,8 @@ export function buildScorecardCsvString(
     ];
   });
 
-  const escape = (cell: string) => `"${cell.replace(/"/g, '""')}"`;
+  // Round C #668 (RC-3): formula-injection neutralised (csvSafeText) before the always-quote rule.
+  const escape = (cell: string) => `"${csvSafeText(cell).replace(/"/g, '""')}"`;
   return [headers, ...rows].map(row => row.map(escape).join(',')).join('\r\n');
 }
 

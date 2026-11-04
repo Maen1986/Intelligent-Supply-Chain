@@ -41,13 +41,21 @@ router.get('/', async (_req, res) => {
 });
 
 router.put('/', async (req, res) => {
-  const body = req.body as { data?: unknown };
+  // Round C (#668): Express 5 leaves req.body undefined for a missing / non-JSON body -- that used to throw (500).
+  const body = (isPlainObject(req.body) ? req.body : {}) as { data?: unknown };
   if (!isPlainObject(body.data)) {
     res.status(400).json({ ok: false, error: 'Invalid shape -- expected { data: object }' });
     return;
   }
-  if (JSON.stringify(body.data).length > MAX_BYTES) {
+  const serialised = JSON.stringify(body.data);
+  // Round C (#668): cap in BYTES (Arabic is 2 bytes/char), not characters.
+  if (Buffer.byteLength(serialised, 'utf8') > MAX_BYTES) {
     res.status(400).json({ ok: false, error: 'Workspace too large' });
+    return;
+  }
+  // Round C (#668): PostgreSQL jsonb cannot store U+0000 -- refuse it up front (400) instead of failing after the delete (500).
+  if (serialised.includes('\\u0000')) {
+    res.status(400).json({ ok: false, error: 'Invalid character (U+0000) in workspace' });
     return;
   }
   const data = body.data;

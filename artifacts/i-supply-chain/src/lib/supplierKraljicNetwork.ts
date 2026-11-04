@@ -27,10 +27,11 @@
  * module family's own sub-type engine.
  */
 import {
-  SUBTYPES, assess,
+  SUBTYPES, assess, cleanSpend,
   type Bilingual, type Basis, type Quadrant, type SubtypeKey,
   type SubtypeSupplierInput, type SubtypeAssessment, type Severity,
 } from './supplierKraljicSubtypes';
+import { csvCell } from './csvSafe';
 
 const b = (en: string, ar: string): Bilingual => ({ en, ar });
 
@@ -360,7 +361,7 @@ export function buildKraljicReport(inputs: SubtypeSupplierInput[], asOfIso: stri
         why: b(a.result.whyEn, a.result.whyAr), action: a.result.def.primary,
         topSituation: top ? top.problem : null, topSeverity: top ? top.severity : null,
         review: addDays(asOfIso, a.result.reviewDays), route: routeFor(a.result.subtype),
-        spendSAR: typeof s.annualSpendSAR === 'number' && s.annualSpendSAR > 0 ? s.annualSpendSAR : null,
+        spendSAR: cleanSpend(s.annualSpendSAR),
       };
     }).sort((x, y) => (y.topSeverity ? SEV_RANK[y.topSeverity] : 0) - (x.topSeverity ? SEV_RANK[x.topSeverity] : 0));
     return {
@@ -384,10 +385,6 @@ export function buildKraljicReport(inputs: SubtypeSupplierInput[], asOfIso: stri
   };
 }
 
-function csvCell(v: string | number | null): string {
-  const s = v === null ? '' : String(v);
-  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-}
 
 export interface CsvExtra { lastReview: string; nextDueDiligence: string; playbookBasis: string }
 

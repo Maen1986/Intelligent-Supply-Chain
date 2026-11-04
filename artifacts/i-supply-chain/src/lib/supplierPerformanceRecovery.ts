@@ -168,7 +168,11 @@ export function classifyVariability(
   const minSampleSize = opts?.minSampleSize ?? DEFAULT_MIN_SAMPLE_SIZE;
   const sigmaCuts = opts?.sigmaOverride ?? { low: 1, moderate: 2 };
 
-  if (priorValues.length < minSampleSize) {
+  // Round C #668: a NaN/Infinity anywhere in the history (a blank spreadsheet cell, a broken
+  // export) used to be read as "high variability" -- a false alarm. Invalid data is
+  // INSUFFICIENT_DATA, never a confident class (Decision Record 8.7).
+  const hasInvalid = !Number.isFinite(latestValue) || priorValues.some((v) => !Number.isFinite(v));
+  if (hasInvalid || priorValues.length < minSampleSize) {
     return {
       variability: 'INSUFFICIENT_DATA',
       deviationInSigma: null,
@@ -290,7 +294,8 @@ export function computeTrend(
   orderedValues: number[],
   opts?: { toleranceAbsOverride?: number; seMultiplierOverride?: number }
 ): TrendAssessment {
-  if (orderedValues.length < 2) {
+  // Round C #668: any NaN/Infinity in the series used to yield "declining" with a null slope.
+  if (orderedValues.length < 2 || orderedValues.some((v) => !Number.isFinite(v))) {
     return { trend: 'INSUFFICIENT_DATA', slope: null, toleranceSource: TREND_TOLERANCE_SOURCE_EN, toleranceBasis: 'n/a' };
   }
 
@@ -377,7 +382,9 @@ export function checkLatestPeriodShock(
   opts?: { thresholdPctOverride?: number }
 ): ShockCheckResult {
   const thresholdPct = opts?.thresholdPctOverride ?? DEFAULT_SHOCK_THRESHOLD_PCT;
-  if (orderedValues.length < 2) {
+  // Round C #668: a non-finite latest/prior value used to report a shock (Infinity) or hide one (NaN).
+  const tail = orderedValues.slice(-2);
+  if (orderedValues.length < 2 || tail.some((v) => !Number.isFinite(v))) {
     return {
       isShock: false,
       periodOverPeriodChangePct: null,

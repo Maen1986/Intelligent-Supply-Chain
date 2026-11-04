@@ -350,7 +350,11 @@ export const ENHANCED_DD_UNIMPLEMENTED_MECHANISMS_AR = [
  * honest answer when criticality/geography have not been assessed.
  */
 export function determineDueDiligenceTier(inputs: { kraljicQuadrant?: KraljicQuadrant; geographicRisk?: number } = {}): DueDiligenceTier {
-  const highCriticality = inputs.kraljicQuadrant === 'strategic' || inputs.kraljicQuadrant === 'bottleneck';
+  // Round C (#668): the quadrant label is a cross-module handoff. Other modules write it Capitalised
+  // ('Strategic') -- compare case- and whitespace-insensitively so a label difference can never silently
+  // downgrade a critical supplier to STANDARD due diligence.
+  const q = typeof inputs.kraljicQuadrant === 'string' ? inputs.kraljicQuadrant.trim().toLowerCase() : '';
+  const highCriticality = q === 'strategic' || q === 'bottleneck';
   const highGeoRisk = typeof inputs.geographicRisk === 'number' && inputs.geographicRisk >= 4;
   return highCriticality || highGeoRisk ? 'ENHANCED' : 'STANDARD';
 }

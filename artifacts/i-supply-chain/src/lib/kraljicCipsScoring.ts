@@ -86,6 +86,9 @@ export interface ScoringResult {
 }
 
 export function quadrantFor(riskPct: number, profitPct: number, boundary: number): Quadrant {
+  // Round C #668 (RC-2): NaN comparisons are false, which used to downgrade to 'non-critical' (lowest scrutiny).
+  // scoreItem() refuses to score invalid input; this direct-call guard fails toward the HIGHEST scrutiny.
+  if (![riskPct, profitPct, boundary].every((v) => typeof v === 'number' && Number.isFinite(v))) return 'strategic';
   const highRisk = riskPct >= boundary;
   const highProfit = profitPct >= boundary;
   if (highProfit && highRisk) return 'strategic';
@@ -117,6 +120,18 @@ export function scoreItem(ratings: Record<string, number | null | undefined>, co
 
   const risk = axisScore('risk', ratings, weights, factors);
   const profit = axisScore('profit', ratings, weights, factors);
+  // Round C #668 (RC-2): invalid configuration (NaN/negative/infinite weights, boundary, margin, coverage)
+  // is refused, not silently scored: a NaN weight dropped its factor, an Infinity weight made the axis NaN.
+  const badConfig = [boundary, margin, minCov].some((v) => !Number.isFinite(v))
+    || Object.values(weights).some((w) => typeof w !== 'number' || !Number.isFinite(w) || w < 0)
+    || !Number.isFinite(risk.pct) || !Number.isFinite(profit.pct);
+  if (badConfig) {
+    return {
+      status: 'insufficient', risk, profit, quadrant: null, borderline: false, borderlineAxes: [], flipFactors: [], missing: [],
+      stepsNoteEn: 'The scoring configuration contains an invalid number (weights, boundary, margin or coverage). ISC does not guess; fix the setting and score again.',
+      stepsNoteAr: 'إعدادات التقييم تحتوي على رقم غير صالح (الأوزان أو الحد أو الهامش أو التغطية). ISC لا تخمّن؛ صحّح الإعداد وأعد التقييم.',
+    };
+  }
   const missing = factors
     .filter((x) => (weights[x.id] ?? x.defaultWeight) > 0 && !(typeof ratings[x.id] === 'number' && (ratings[x.id] as number) >= 1 && (ratings[x.id] as number) <= 5))
     .map((x) => ({ id: x.id, axis: x.axis, label: x.label }));

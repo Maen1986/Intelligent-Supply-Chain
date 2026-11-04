@@ -130,27 +130,31 @@ export function scoreItems(
   items: KraljicItem[],
   industryKey: string | null,
 ): KraljicScored[] {
-  const totalSpend = items.reduce((s, i) => s + (i.annualSpend || 0), 0) || 1;
+  // Round C #668 (RC-4): hostile numbers (NaN/Infinity/negative/out-of-range) are clamped to the
+  // same neutral defaults newItem() uses, so one bad row can never poison every other row's share.
+  const spendOf = (v: number) => (Number.isFinite(v) && v > 0 ? Math.min(v, 1e15) : 0);
+  const rate = (v: number, fallback = 3) => (Number.isFinite(v) ? Math.min(5, Math.max(1, v)) : fallback);
+  const totalSpend = items.reduce((s, i) => s + spendOf(i.annualSpend), 0) || 1;
   const th = INDUSTRY_THRESHOLDS[industryKey ?? 'default'] ?? INDUSTRY_THRESHOLDS.default;
 
   return items.map(item => {
-    const spendPct = (item.annualSpend / totalSpend) * 100;
+    const spendPct = (spendOf(item.annualSpend) / totalSpend) * 100;
 
     // ── Profit Impact ─────────────────────────────────────────────────────────
     // Log-scale spend so a 5% item scores ~55, a 25% item ~80, a 50%+ item ~95
     const spendScore = Math.min(100, (Math.log1p(spendPct) / Math.log1p(100)) * 160);
-    const qualScore  = ((Math.max(1, item.qualityImpact)  - 1) / 4) * 100;
-    const revScore   = ((Math.max(1, item.revenueImpact)  - 1) / 4) * 100;
+    const qualScore  = ((rate(item.qualityImpact)  - 1) / 4) * 100;
+    const revScore   = ((rate(item.revenueImpact)  - 1) / 4) * 100;
     const profitImpactScore = Math.round(
       spendScore * 0.60 + qualScore * 0.20 + revScore * 0.20,
     );
 
     // ── Supply Risk ───────────────────────────────────────────────────────────
-    const supplierRisk  = supplierCountToRisk(item.supplierCount || 1);
-    const marketRisk    = ((5 - Math.max(1, item.marketCompetitiveness)) / 4) * 100;
-    const geoRisk       = ((Math.max(1, item.geographicRisk)  - 1) / 4) * 100;
-    const leadTimeRisk  = Math.min(100, ((item.leadTimeDays || 0) / 120) * 100);
-    const subRisk       = ((5 - Math.max(1, item.substitutability)) / 4) * 100;
+    const supplierRisk  = supplierCountToRisk(Number.isFinite(item.supplierCount) && item.supplierCount >= 1 ? item.supplierCount : 1);
+    const marketRisk    = ((5 - rate(item.marketCompetitiveness)) / 4) * 100;
+    const geoRisk       = ((rate(item.geographicRisk, 2)  - 1) / 4) * 100;
+    const leadTimeRisk  = Math.min(100, ((Number.isFinite(item.leadTimeDays) && item.leadTimeDays > 0 ? item.leadTimeDays : 0) / 120) * 100);
+    const subRisk       = ((5 - rate(item.substitutability)) / 4) * 100;
     const supplyRiskScore = Math.round(
       supplierRisk * 0.30 +
       marketRisk   * 0.20 +
@@ -223,7 +227,7 @@ export function parseCSV(text: string): KraljicItem[] {
   const dataLines = lines[0].toLowerCase().includes('category') ? lines.slice(1) : lines;
   return dataLines.map(line => {
     const cols = line.split(',').map(c => c.trim().replace(/^"|"$/g, ''));
-    const n = (i: number, fallback = 0) => { const v = parseFloat(cols[i] ?? ''); return isNaN(v) ? fallback : v; };
+    const n = (i: number, fallback = 0) => { const v = parseFloat(cols[i] ?? ''); return Number.isFinite(v) ? Math.min(Math.max(v, -1e15), 1e15) : fallback; }; // RC-6: Infinity/NaN/1e999 from a hostile CSV fall back instead of poisoning totals
     const s = (i: number, fallback = '') => cols[i] ?? fallback;
     return newItem({
       category:              s(0),

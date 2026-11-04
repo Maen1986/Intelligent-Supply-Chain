@@ -72,6 +72,8 @@
 // Section 0 — the 7 fixed activities
 // ---------------------------------------------------------------------------
 
+import { sortEventsChronologically as orderEventsChronologically } from './eventLogOrder';
+
 export type RaciRole = 'R' | 'A' | 'C' | 'I';
 
 export const RACI_ROLES: RaciRole[] = ['R', 'A', 'C', 'I'];
@@ -276,11 +278,7 @@ function sortEventsChronologically(events: RaciAssignmentEvent[]): RaciAssignmen
   // events sharing the exact same timestamp (real possibility with
   // millisecond-coarse clocks under concurrent writes) — never relies on
   // input array order alone.
-  return [...events].sort((a, b) => {
-    const t = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-    if (t !== 0) return t;
-    return String(a.id).localeCompare(String(b.id));
-  });
+  return orderEventsChronologically(events); // shared, deterministic (Round C #668)
 }
 
 /**

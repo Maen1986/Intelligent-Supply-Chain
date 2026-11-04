@@ -8,6 +8,7 @@
  * No third-party dependencies — uses only the native FileReader API and
  * standard string operations.
  */
+import { csvSafeText } from './csvSafe';
 
 export interface CsvParseResult {
   /** Headers from the first row (BOM-stripped, trimmed). */
@@ -133,7 +134,8 @@ export function parseCsvFile(
  * @param filename Download filename (should end in `.csv`).
  */
 export function downloadCsv(rows: string[][], filename: string): void {
-  const escape = (cell: string) => `"${cell.replace(/"/g, '""')}"`;
+  // Round C #668 (RC-3): formula-injection neutralised (csvSafeText) before the always-quote rule.
+  const escape = (cell: string) => `"${csvSafeText(cell).replace(/"/g, '""')}"`;
   const csv = rows.map(r => r.map(escape).join(',')).join('\r\n');
   const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);

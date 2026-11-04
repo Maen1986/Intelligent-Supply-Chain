@@ -151,7 +151,7 @@ export function Footer() {
                       disabled={subscribing}
                       className="flex-1 bg-white/10 border border-white/20 rounded-xl px-3 py-2.5 text-sm text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-accent/50 min-w-0 disabled:opacity-60"
                     />
-                    <Button type="submit" size="sm" disabled={subscribing} className="bg-accent hover:bg-accent/90 text-white px-3 shrink-0 disabled:opacity-60">
+                    <Button type="submit" size="sm" disabled={subscribing} aria-label={ar ? 'اشتراك' : 'Subscribe'} className="bg-accent hover:bg-accent/90 text-white px-3 shrink-0 disabled:opacity-60">
                       <Send className="w-4 h-4" />
                     </Button>
                   </form>

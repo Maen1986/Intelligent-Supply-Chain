@@ -295,8 +295,54 @@ const CAUSE_LABEL: Record<ConstraintCause, Bilingual> = {
   none: { en: 'none', ar: 'لا يوجد' },
 };
 
+// ---------------------------------------------------------------------------
+// Input hygiene (Round C #668). The Suppliers-tab data round-trips through localStorage and the
+// server as JSON of ANY shape. A stale schema or a hand-edited save used to crash classifySubtype
+// (unknown quadrant -> undefined, unknown cause -> CAUSE_LABEL[x].en) or print "Infinity qualified
+// alternative(s)". Anything that is not exactly a documented value is treated as NOT KNOWN, so the
+// engine asks for it instead of guessing (Decision Record 8.7).
+// ---------------------------------------------------------------------------
+const QUADRANTS: readonly Quadrant[] = ['strategic', 'leverage', 'bottleneck', 'non-critical'];
+export function isQuadrant(v: unknown): v is Quadrant {
+  return typeof v === 'string' && (QUADRANTS as readonly string[]).includes(v);
+}
+const bool = (v: unknown): boolean | null => (v === true ? true : v === false ? false : null);
+const oneOf = <T extends string>(v: unknown, allowed: readonly T[]): T | null =>
+  typeof v === 'string' && (allowed as readonly string[]).includes(v) ? (v as T) : null;
+/** A count is a whole number 0..100000, otherwise it is not known. */
+export function cleanCount(v: unknown): number {
+  return typeof v === 'number' && Number.isSafeInteger(v) && v >= 0 && v <= 100000 ? v : 0;
+}
+/** Spend is a finite positive SAR amount up to 1e15 (1 quadrillion); anything else is not known.
+ * The cap keeps portfolio sums finite: two 1e308 rows used to overflow to Infinity. */
+export function cleanSpend(v: unknown): number | null {
+  return typeof v === 'number' && Number.isFinite(v) && v > 0 && v <= 1e15 ? v : null;
+}
+export function cleanFacts(raw: unknown): SubtypeFacts {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
+  const f = raw as Record<string, unknown>;
+  const alt = f.qualifiedAlternatives;
+  return {
+    qualifiedAlternatives: typeof alt === 'number' && Number.isSafeInteger(alt) && alt >= 0 && alt <= 100000 ? alt : null,
+    constraintCause: oneOf<ConstraintCause>(f.constraintCause, Object.keys(CAUSE_LABEL) as ConstraintCause[]),
+    specLoosenable: bool(f.specLoosenable),
+    temporaryShortage: bool(f.temporaryShortage),
+    marketVolatility: oneOf(f.marketVolatility, ['stable', 'volatile'] as const),
+    poolableAcrossSites: bool(f.poolableAcrossSites),
+    powerBalance: oneOf(f.powerBalance, ['buyer', 'balanced', 'supplier'] as const),
+    contingencyInPlace: bool(f.contingencyInPlace),
+    lockIn: bool(f.lockIn),
+    operationalStopRisk: bool(f.operationalStopRisk),
+  };
+}
+
 export function classifySubtype(s: SubtypeSupplierInput): SubtypeResult {
-  const f = s.facts ?? {};
+  const f = cleanFacts(s.facts);
+  if (!isQuadrant(s.quadrant)) {
+    return res({ ...s, quadrant: 'non-critical' }, 'unclassified',
+      'The Kraljic quadrant is missing or not recognised; set the quadrant first.',
+      'ربع كراجليك مفقود أو غير معروف؛ حدّد الربع أولاً.');
+  }
   switch (s.quadrant) {
     case 'bottleneck': {
       const alt = f.qualifiedAlternatives;
@@ -392,9 +438,9 @@ export interface SituationOptions {
 }
 
 export function detectSituations(s: SubtypeSupplierInput, r: SubtypeResult, opts: SituationOptions = {}): Situation[] {
-  const f = s.facts ?? {};
+  const f = cleanFacts(s.facts);
   const thr = opts.recurrenceThreshold ?? RECURRENCE_THRESHOLD;
-  const rec = s.recurrenceCount ?? 0;
+  const rec = cleanCount(s.recurrenceCount);
   const out: Situation[] = [];
 
   if (r.subtype === 'bottleneck-locked') {
@@ -508,7 +554,7 @@ export function detectSituations(s: SubtypeSupplierInput, r: SubtypeResult, opts
     });
   }
 
-  if (s.quadrantPriorQuarter && s.quadrantPriorQuarter !== s.quadrant) {
+  if (isQuadrant(s.quadrantPriorQuarter) && isQuadrant(s.quadrant) && s.quadrantPriorQuarter !== s.quadrant) {
     out.push({
       key: 'quadrant-changed', severity: 'medium', basis: 'isc-convention', problemMapArea: 'Supplier Governance',
       problem: { en: `Moved from ${s.quadrantPriorQuarter} to ${s.quadrant} since last quarter.`, ar: `انتقل من ${s.quadrantPriorQuarter} إلى ${s.quadrant} منذ المربع السابق.` },
@@ -540,10 +586,10 @@ export interface MigrationAlert {
 export const ALTERNATIVES_FOR_MIGRATION = 2;
 
 export function detectMigrations(s: SubtypeSupplierInput, opts: SituationOptions = {}): MigrationAlert[] {
-  const f = s.facts ?? {};
+  const f = cleanFacts(s.facts);
   const thr = opts.recurrenceThreshold ?? RECURRENCE_THRESHOLD;
   const out: MigrationAlert[] = [];
-  if (s.quadrant === 'leverage' && (s.recurrenceCount ?? 0) >= thr) {
+  if (s.quadrant === 'leverage' && cleanCount(s.recurrenceCount) >= thr) {
     out.push({
       supplierId: s.supplierId, trigger: 'supplier-non-performance', fromQuadrant: 'leverage', reviewAs: 'strategic', basis: 'sourced',
       whyEn: 'Recurring failures make this item riskier to depend on than its Leverage position assumes.',
@@ -557,7 +603,7 @@ export function detectMigrations(s: SubtypeSupplierInput, opts: SituationOptions
       whyAr: `${f.qualifiedAlternatives} بدائل مؤهَّلة: انخفضت مخاطر الإمداد على الأرجح. الإنفاق منخفض فينتقل البند نحو «غير حرج» (Gelderman & van Weele). توقف عن دفع ثمن أمان لم تعد تحتاجه.`,
     });
   }
-  if (s.quadrantPriorQuarter && s.quadrantPriorQuarter !== s.quadrant) {
+  if (isQuadrant(s.quadrantPriorQuarter) && isQuadrant(s.quadrant) && s.quadrantPriorQuarter !== s.quadrant) {
     out.push({
       supplierId: s.supplierId, trigger: 'quadrant-changed', fromQuadrant: s.quadrantPriorQuarter, reviewAs: s.quadrant, basis: 'isc-convention',
       whyEn: 'The quadrant changed since last quarter.', whyAr: 'تغيّر المربع منذ الربع السابق.',
@@ -606,7 +652,7 @@ export function summarisePortfolio(inputs: SubtypeSupplierInput[], opts: Situati
     if (a.result.subtype === 'bottleneck-movable') movable++;
     if (a.result.subtype === 'noncritical-pool') {
       pool.suppliers++;
-      if (typeof s.annualSpendSAR === 'number' && s.annualSpendSAR > 0) { pool.withSpend++; pool.spendSAR += s.annualSpendSAR; }
+      { const sp = cleanSpend(s.annualSpendSAR); if (sp !== null) { pool.withSpend++; pool.spendSAR += sp; } }
     }
     migrations += a.migrations.length;
     if (a.situations.some((x) => x.severity === 'high')) high++;

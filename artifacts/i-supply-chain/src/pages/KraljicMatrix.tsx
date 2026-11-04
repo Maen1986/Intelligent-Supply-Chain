@@ -131,7 +131,7 @@ export function KraljicMatrix() {
   };
 
   // ── Scoring ────────────────────────────────────────────────────────────────
-  const validItems = useMemo(() => items.filter(i => (i.itemName || i.category) && i.annualSpend > 0), [items]);
+  const validItems = useMemo(() => items.filter(i => (i.itemName || i.category) && Number.isFinite(i.annualSpend) && i.annualSpend > 0), [items]);
   const scored = useMemo(() => scoreItems(validItems, selectedIndustry), [validItems, selectedIndustry]);
   const threshold = INDUSTRY_THRESHOLDS[selectedIndustry ?? 'default'] ?? INDUSTRY_THRESHOLDS.default;
 
@@ -260,7 +260,7 @@ export function KraljicMatrix() {
         {/* ── Tabs ── */}
         <div className="flex gap-1 mb-6 bg-white border border-slate-200 rounded-2xl p-1 shadow-sm">
           {tabs.map(tab => (
-            <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+            <button key={tab.id} onClick={() => setActiveTab(tab.id)} aria-label={isAr ? tab.labelAr : tab.label} aria-pressed={activeTab === tab.id}
               className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all ${
                 activeTab === tab.id ? 'bg-[#082C6B] text-white shadow-md' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
               }`}
@@ -367,13 +367,13 @@ export function KraljicMatrix() {
                           <input type="number" min="0" value={item.annualQty || ''} onChange={e => updateItem(item.id, 'annualQty', parseFloat(e.target.value) || 0)} placeholder="0" className="w-full text-xs border border-slate-200 rounded px-2 py-1 text-right focus:outline-none focus:ring-1 focus:ring-[#082C6B] w-20" />
                         </td>
                         <td className="px-2 py-1.5">
-                          <input value={item.unit} onChange={e => updateItem(item.id, 'unit', e.target.value)} className="text-xs border border-slate-200 rounded px-1.5 py-1 focus:outline-none focus:ring-1 focus:ring-[#082C6B] w-14 text-center" />
+                          <input aria-label={isAr ? 'الوحدة' : 'Unit'} value={item.unit} onChange={e => updateItem(item.id, 'unit', e.target.value)} className="text-xs border border-slate-200 rounded px-1.5 py-1 focus:outline-none focus:ring-1 focus:ring-[#082C6B] w-14 text-center" />
                         </td>
                         <td className="px-2 py-1.5 text-center">
-                          <input type="number" min="1" max="99" value={item.supplierCount} onChange={e => updateItem(item.id, 'supplierCount', Math.max(1, parseInt(e.target.value) || 1))} className="text-xs border border-slate-200 rounded px-1.5 py-1 text-center focus:outline-none focus:ring-1 focus:ring-[#082C6B] w-16" />
+                          <input aria-label={isAr ? 'عدد الموردين' : 'Number of suppliers'} type="number" min="1" max="99" value={item.supplierCount} onChange={e => updateItem(item.id, 'supplierCount', Math.max(1, parseInt(e.target.value) || 1))} className="text-xs border border-slate-200 rounded px-1.5 py-1 text-center focus:outline-none focus:ring-1 focus:ring-[#082C6B] w-16" />
                         </td>
                         <td className="px-2 py-1.5 text-center">
-                          <input type="number" min="0" value={item.leadTimeDays} onChange={e => updateItem(item.id, 'leadTimeDays', Math.max(0, parseInt(e.target.value) || 0))} className="text-xs border border-slate-200 rounded px-1.5 py-1 text-center focus:outline-none focus:ring-1 focus:ring-[#082C6B] w-16" />
+                          <input aria-label={isAr ? 'مدة التوريد (أيام)' : 'Lead time (days)'} type="number" min="0" value={item.leadTimeDays} onChange={e => updateItem(item.id, 'leadTimeDays', Math.max(0, parseInt(e.target.value) || 0))} className="text-xs border border-slate-200 rounded px-1.5 py-1 text-center focus:outline-none focus:ring-1 focus:ring-[#082C6B] w-16" />
                         </td>
                         <td className="px-2 py-1.5 text-center">
                           <RatingSelect value={item.qualityImpact} onChange={v => updateItem(item.id, 'qualityImpact', v)} title="Quality Impact: 1 = no dependency, 5 = critical" />
@@ -391,7 +391,7 @@ export function KraljicMatrix() {
                           <RatingSelect value={item.substitutability} onChange={v => updateItem(item.id, 'substitutability', v)} title="Substitutability: 1 = no substitute, 5 = easily substituted" />
                         </td>
                         <td className="px-2 py-1.5 text-center">
-                          <button onClick={() => removeRow(item.id)} disabled={items.length === 1} className="text-slate-300 hover:text-red-500 transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
+                          <button aria-label={isAr ? 'حذف الصف' : 'Delete row'} onClick={() => removeRow(item.id)} disabled={items.length === 1} className="text-slate-300 hover:text-red-500 transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </td>

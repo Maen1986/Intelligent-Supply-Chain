@@ -8,6 +8,7 @@ import { Printer, Plus, Trash2, Users, Download, Upload, Settings, ChevronDown, 
 import { safeSetItem } from '@/lib/storage';
 import { useAuth } from '@/lib/AuthContext';
 import { API_BASE } from '@/lib/apiBase';
+import { csvCell } from '@/lib/csvSafe';
 import { parseCsvFile, downloadCsv } from '@/lib/importCsv';
 import { useAIPlan } from '@/hooks/useAIPlan';
 import {
@@ -276,10 +277,8 @@ function exportComparisonToCSV(
   const incompleteLabel = isAr ? 'غير مكتمل' : 'Incomplete';
   const supplierNames = suppliers.map(s => s.name || (isAr ? 'مورّد جديد' : 'New Supplier'));
 
-  const esc = (v: string | number) => {
-    const s = String(v);
-    return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s.replace(/"/g, '""')}"` : s;
-  };
+  // Round C #668 (RC-3): shared spreadsheet-safe writer (formula injection + RFC 4180).
+  const esc = (v: string | number) => csvCell(v);
 
   const rows: string[] = [];
 
