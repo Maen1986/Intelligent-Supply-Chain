@@ -970,7 +970,7 @@ function BenchmarkTab({ lang }: { lang: Lang }) {
           </p>
         </div>
         <Link href="/consultant">
-          <Button className="bg-[#C9A84C] hover:bg-[#b8973e] text-white font-bold shrink-0">
+          <Button className="bg-[#C9A84C] hover:bg-[#b8973e] text-[#082C6B] font-bold shrink-0">
             {ar ? 'احجز استشارة مجانية' : 'Book Free Consultation'} {ar ? <ArrowLeft className="w-4 h-4 mr-1" /> : <ArrowRight className="w-4 h-4 ml-1" />}
           </Button>
         </Link>
@@ -1675,7 +1675,7 @@ function RiskTab({ lang }: { lang: Lang }) {
           <p className="text-white/70 text-sm mt-1">{ar ? `تعرضك: ${exposureScore}/100 · الهدف: ${targetScore}/100 · ISC تسدّ هذه الفجوة بدقة ISO 31000.` : `Your exposure: ${exposureScore}/100 · Target: ${targetScore}/100 · ISC closes this gap with ISO 31000 precision.`}</p>
         </div>
         <Link href="/consultant">
-          <Button className="bg-[#C9A84C] hover:bg-[#b8973e] text-white font-bold shrink-0">
+          <Button className="bg-[#C9A84C] hover:bg-[#b8973e] text-[#082C6B] font-bold shrink-0">
             {ar ? "تحدّث مع ما'ين" : "Talk to Ma'in"} {ar ? <ArrowLeft className="w-4 h-4 mr-1" /> : <ArrowRight className="w-4 h-4 ml-1" />}
           </Button>
         </Link>
@@ -2921,7 +2921,7 @@ function BriefingTab({ lang }: { lang: Lang }) {
             </p>
           </div>
           <Link href="/consultant">
-            <Button className="bg-[#C9A84C] hover:bg-[#b8973e] text-white font-bold shrink-0">
+            <Button className="bg-[#C9A84C] hover:bg-[#b8973e] text-[#082C6B] font-bold shrink-0">
               {ar ? 'احجز استشارة' : 'Book Consultation'} {ar ? <ArrowLeft className="w-4 h-4 mr-2" /> : <ArrowRight className="w-4 h-4 ml-2" />}
             </Button>
           </Link>
@@ -3206,7 +3206,7 @@ function BriefingTab({ lang }: { lang: Lang }) {
                                         key={n}
                                         type="button"
                                         onClick={() => setMaturitySubRating(domain.id, key, n)}
-                                        className={`w-8 h-8 rounded-md text-xs font-bold border transition-all ${val >= n ? 'bg-[#C9A84C] text-white border-[#C9A84C]' : 'bg-white text-muted-foreground border-border hover:border-[#C9A84C]/40'}`}
+                                        className={`w-8 h-8 rounded-md text-xs font-bold border transition-all ${val >= n ? 'bg-[#C9A84C] text-[#082C6B] border-[#C9A84C]' : 'bg-white text-muted-foreground border-border hover:border-[#C9A84C]/40'}`}
                                       >
                                         {n}
                                       </button>
@@ -3717,7 +3717,7 @@ function ConsultancyTab({ lang }: { lang: Lang }) {
               <div className="flex gap-2 items-center">
                 {[1,2,3,4,5].map(n => (
                   <button key={n} onClick={() => setSatisfaction(n)}
-                    className={`w-10 h-10 rounded-full border text-sm font-bold transition-all ${satisfaction >= n ? 'bg-[#C9A84C] text-white border-[#C9A84C]' : 'bg-white text-muted-foreground border-border hover:border-[#C9A84C]'}`}>
+                    className={`w-10 h-10 rounded-full border text-sm font-bold transition-all ${satisfaction >= n ? 'bg-[#C9A84C] text-[#082C6B] border-[#C9A84C]' : 'bg-white text-muted-foreground border-border hover:border-[#C9A84C]'}`}>
                     {n}
                   </button>
                 ))}
@@ -3743,7 +3743,7 @@ function ConsultancyTab({ lang }: { lang: Lang }) {
             </div>
             {!escalated ? (
               <div className="flex gap-2 flex-wrap">
-                <Button onClick={escalate} className="bg-[#C9A84C] hover:bg-[#b8973e] text-white font-bold shrink-0">
+                <Button onClick={escalate} className="bg-[#C9A84C] hover:bg-[#b8973e] text-[#082C6B] font-bold shrink-0">
                   <MessageSquare className={`w-4 h-4 ${ar ? 'ml-2' : 'mr-2'}`} />{ar ? 'إحالة للمستشار' : 'Escalate to Consultant'}
                 </Button>
                 <Link href="/consultant">

@@ -35,7 +35,7 @@ export function AnnouncementBanner() {
           <div className="container mx-auto px-4 py-1 flex items-center justify-between gap-3">
             {/* Left badge + message */}
             <div className="flex items-center gap-3 min-w-0">
-              <span className="flex items-center gap-1.5 bg-[#C9A84C] text-white text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full shrink-0 shadow-lg">
+              <span className="flex items-center gap-1.5 bg-[#C9A84C] text-[#082C6B] text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full shrink-0 shadow-lg">
                 <Zap className="w-3 h-3" />
                 {ar ? 'مباشر الآن' : 'Live Now'}
               </span>
