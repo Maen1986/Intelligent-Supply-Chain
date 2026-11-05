@@ -220,7 +220,7 @@ function ReleaseCard({
 
           {/* change table */}
           {release.changes.length > 0 && (
-            <div className="overflow-x-auto rounded-xl border border-border">
+            <div role="region" tabIndex={0} aria-label={ar ? 'جدول التغييرات' : 'Changes table'} className="overflow-x-auto rounded-xl border border-border">
               <table className="w-full text-sm min-w-[640px]">
                 <thead>
                   <tr className="bg-muted/60 text-xs uppercase tracking-wide text-muted-foreground">
