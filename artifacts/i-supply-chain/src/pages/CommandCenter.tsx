@@ -836,7 +836,7 @@ function BenchmarkTab({ lang }: { lang: Lang }) {
                     </span>
                   </div>
                 </div>
-                <input type="range" min={k.min} max={k.max} step={(k.max - k.min) < 5 ? 0.1 : 1}
+                <input type="range" aria-label={ar ? k.labelAr : k.label} min={k.min} max={k.max} step={(k.max - k.min) < 5 ? 0.1 : 1}
                   value={v} onChange={e => setVals(p => ({ ...p, [k.id]: +e.target.value }))}
                   className="w-full accent-[#082C6B]" />
                 <div className="flex justify-between text-xs text-muted-foreground">
@@ -1061,7 +1061,7 @@ function SavingsTab({ lang }: { lang: Lang }) {
             {ar ? 'الإيرادات السنوية' : 'Annual Revenue'}
           </label>
           <div className="flex items-center gap-2">
-            <input type="range" min={50} max={5000} step={50} value={revenue} onChange={e => setRevenue(+e.target.value)} className="flex-1 accent-[#082C6B]" />
+            <input type="range" aria-label={ar ? 'الإيرادات السنوية' : 'Annual Revenue'} min={50} max={5000} step={50} value={revenue} onChange={e => setRevenue(+e.target.value)} className="flex-1 accent-[#082C6B]" />
             <span className="text-sm font-bold text-[#C9A84C] w-20 text-right">SAR {revenue >= 1000 ? `${(revenue/1000).toFixed(1)}B` : `${revenue}M`}</span>
           </div>
         </div>
@@ -1070,7 +1070,7 @@ function SavingsTab({ lang }: { lang: Lang }) {
             {ar ? 'الإنفاق الشرائي % من الإيرادات' : 'Procurement Spend % of Revenue'}
           </label>
           <div className="flex items-center gap-2">
-            <input type="range" min={5} max={70} value={spendPct} onChange={e => setSpendPct(+e.target.value)} className="flex-1 accent-[#082C6B]" />
+            <input type="range" aria-label={ar ? 'الإنفاق الشرائي % من الإيرادات' : 'Procurement Spend % of Revenue'} min={5} max={70} value={spendPct} onChange={e => setSpendPct(+e.target.value)} className="flex-1 accent-[#082C6B]" />
             <span className="text-sm font-bold text-[#C9A84C] w-12 text-right">{spendPct}%</span>
           </div>
         </div>
@@ -1108,7 +1108,7 @@ function SavingsTab({ lang }: { lang: Lang }) {
                   <span className="text-sm font-bold" style={{ color: l.color }}>{formatSAR(calcSaving(l.id, levers[l.id] ?? 40))}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <input type="range" min={0} max={100} value={levers[l.id] ?? 40}
+                  <input type="range" aria-label={ar ? l.labelAr : l.label} min={0} max={100} value={levers[l.id] ?? 40}
                     onChange={e => setLevers(prev => ({ ...prev, [l.id]: +e.target.value }))}
                     className="flex-1" style={{ accentColor: l.color }} />
                   <span className="text-xs text-muted-foreground w-10 text-right">{levers[l.id] ?? 40}%</span>
