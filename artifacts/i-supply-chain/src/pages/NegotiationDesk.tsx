@@ -107,7 +107,7 @@ const APPROACH: Record<LeverageLevel, { pEn: string; pAr: string; aEn: string; a
     pEn: 'Trade, do not demand: link any price movement to volume, payment terms or contract length.',
     pAr: 'تبادل ولا تطالب: اربط أي تغيير في السعر بالكمية أو شروط الدفع أو مدة العقد.',
     aEn: 'Run a quick market check on one or two alternatives to strengthen your hand before you meet.',
-    aAr: 'أجرِ فحصاً سريعاً للسوق لبديل أو اثنين لتقوية موقفك قبل اللقاء.',
+    aAr: 'أجرِ فحصاً سريعاً للسوق عن بديل أو اثنين لتقوية موقفك قبل اللقاء.',
     tEn: 'Trading is faster; the market check takes time but can lift you to a strong position.',
     tAr: 'التبادل أسرع؛ وفحص السوق يستغرق وقتاً لكنه قد يرفعك إلى موقف قوي.',
   },
@@ -443,7 +443,7 @@ export function NegotiationDesk() {
                   <p className="text-xs text-slate-600 mt-1" data-testid="leverage-sensitivity">
                     {sensitivity.changes
                       ? (isAr
-                        ? `لو كان الحدّان أكثر تحفظاً بمقدار ${sensitivity.step} لكانت القراءة «${LEVEL_TONE[sensitivity.moreCautious].ar}»؛ وأقل تحفظاً بمقدار ${sensitivity.step} «${LEVEL_TONE[sensitivity.lessCautious].ar}».`
+                        ? `لو كان الحدّان أكثر تحفظاً بمقدار ${sensitivity.step} لكانت القراءة «${LEVEL_TONE[sensitivity.moreCautious].ar}»؛ ولو كانا أقل تحفظاً بمقدار ${sensitivity.step} لكانت «${LEVEL_TONE[sensitivity.lessCautious].ar}».`
                         : `If the cut-offs were ${sensitivity.step} more cautious the reading would be "${LEVEL_TONE[sensitivity.moreCautious].en}"; ${sensitivity.step} less cautious, "${LEVEL_TONE[sensitivity.lessCautious].en}".`)
                       : t(`The reading does not change if the cut-offs move by ${sensitivity.step} either way.`, `لا تتغير القراءة إذا تحرك الحدّان بمقدار ${sensitivity.step} في أي اتجاه.`)}
                   </p>
@@ -553,7 +553,7 @@ export function NegotiationDesk() {
               <div className={`mt-4 border rounded-xl p-4 ${tone.box}`}>
                 <p className="font-bold text-sm">{isAr ? tone.ar : tone.en}</p>
                 <p className="text-sm mt-1">{isAr ? leverage.framingAr : leverage.framingEn}</p>
-                <p className="text-[11px] mt-2 opacity-80" data-testid="brief-cutoffs">{isAr ? `قاعدة القراءة: قوي إذا كان التقييد ≤ ${leverage.thresholds.low} مع القدرة على الصمود؛ ضعيف إذا كان ≥ ${leverage.thresholds.high} أو بلا قدرة على الصمود (${cutsOverridden ? 'حدّان من إعدادك' : 'حدّان افتراضيان من ISC'}). الأساس: BATNA (Fisher & Ury, 1981) واعتماد القوة (Emerson, 1962).` : `Reading rule: strong if lock-in ≤ ${leverage.thresholds.low} and you could survive a switch; weak if ≥ ${leverage.thresholds.high} or you could not (${cutsOverridden ? 'your cut-offs' : 'ISC default cut-offs'}). Basis: BATNA (Fisher & Ury, 1981) and power-dependence (Emerson, 1962).`}</p>
+                <p className="text-[11px] mt-2 opacity-80" data-testid="brief-cutoffs">{isAr ? `قاعدة القراءة: قوي إذا كان التقييد ≤ ${leverage.thresholds.low} مع القدرة على الصمود؛ ضعيف إذا كان ≥ ${leverage.thresholds.high} أو بلا قدرة على الصمود (${cutsOverridden ? 'حدّان من إعدادك' : 'حدّان افتراضيان من ISC'}). الأساس: ⁦BATNA (Fisher & Ury, 1981)⁩ واعتماد القوة ⁦(Emerson, 1962)⁩.` : `Reading rule: strong if lock-in ≤ ${leverage.thresholds.low} and you could survive a switch; weak if ≥ ${leverage.thresholds.high} or you could not (${cutsOverridden ? 'your cut-offs' : 'ISC default cut-offs'}). Basis: BATNA (Fisher & Ury, 1981) and power-dependence (Emerson, 1962).`}</p>
               </div>
               <div className="grid sm:grid-cols-2 gap-3 mt-3">
                 <div className="border-2 border-[#082C6B] rounded-xl p-4 bg-[#082C6B]/5">
