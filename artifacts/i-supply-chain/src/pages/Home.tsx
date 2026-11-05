@@ -999,7 +999,7 @@ export function Home() {
               <motion.button
                 whileHover={{ scale: 1.04, boxShadow: '0 0 40px rgba(201,168,76,0.4)' }}
                 whileTap={{ scale: 0.98 }}
-                className="inline-flex items-center gap-3 bg-[#C9A84C] hover:bg-[#b8973e] text-white font-black text-base px-8 py-4 rounded-2xl transition-colors shadow-xl cursor-pointer"
+                className="inline-flex items-center gap-3 bg-[#C9A84C] hover:bg-[#b8973e] text-[#082C6B] font-black text-base px-8 py-4 rounded-2xl transition-colors shadow-xl cursor-pointer"
               >
                 {isAr ? '⚡ ادخل إلى برج التحكم' : '⚡ Launch Control Tower'}
                 <ChevronRight className="w-5 h-5 rtl:rotate-180" />

@@ -272,7 +272,7 @@ export function Consultant() {
                 )} />
 
                 <Button type="submit" disabled={isSubmitting}
-                  className="w-full bg-[#C9A84C] hover:bg-[#b8963e] text-white font-bold h-12 text-[15px] rounded-xl">
+                  className="w-full bg-[#C9A84C] hover:bg-[#b8963e] text-[#082C6B] font-bold h-12 text-[15px] rounded-xl">
                   {isSubmitting ? (ar ? 'جارٍ الإرسال…' : 'Submitting…') : (ar ? 'طلب الموعد' : 'Request Appointment')}
                 </Button>
 

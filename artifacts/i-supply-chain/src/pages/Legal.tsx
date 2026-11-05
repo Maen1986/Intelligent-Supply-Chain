@@ -270,7 +270,7 @@ export function Legal() {
               : 'To request a content licence, report infringement, or raise a legal matter, contact our principal directly. All communications are treated as confidential.'}
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <a href="mailto:info@iscsupplychain.com" className="inline-flex items-center gap-2 bg-[#C9A84C] hover:bg-[#b8973e] text-white font-bold px-5 py-2.5 rounded-xl text-sm transition-colors">
+            <a href="mailto:info@iscsupplychain.com" className="inline-flex items-center gap-2 bg-[#C9A84C] hover:bg-[#b8973e] text-[#082C6B] font-bold px-5 py-2.5 rounded-xl text-sm transition-colors">
               <Mail className="w-4 h-4" /> info@iscsupplychain.com
             </a>
             <a href="mailto:info@iscsupplychain.com" className="inline-flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white font-bold px-5 py-2.5 rounded-xl text-sm transition-colors">

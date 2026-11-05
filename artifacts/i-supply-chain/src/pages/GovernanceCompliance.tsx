@@ -79,7 +79,7 @@ export function GovernanceCompliance() {
           <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-white mb-3">{isAr ? 'إطار الحوكمة والامتثال' : <>Governance &amp; Compliance Framework</>}</h1>
           <p className="text-white/75 text-lg max-w-2xl">{isAr ? 'حوكمة منظّمة تحمي وتمكّن وتخلق القيمة — من هيكل السياسات إلى الإشراف على مستوى المجلس — عبر المشهد التنظيمي الخليجي والعالمي.' : 'Structured governance that protects, enables, and creates value — from policy architecture to board-level oversight — across the GCC and global regulatory landscape.'}</p>
           <div className="flex gap-3 mt-6 flex-wrap">
-            <Link href="/consultant"><Button className="bg-[#C9A84C] hover:bg-[#b8943d] text-white font-bold">{isAr ? 'تقييم الحوكمة' : 'Governance Assessment'}</Button></Link>
+            <Link href="/consultant"><Button className="bg-[#C9A84C] hover:bg-[#b8943d] text-[#082C6B] font-bold">{isAr ? 'تقييم الحوكمة' : 'Governance Assessment'}</Button></Link>
             <Link href="/diagnostic"><Button variant="outline" className="border-white text-white hover:bg-white hover:text-primary font-bold">{isAr ? 'تشخيص مجاني' : 'Free Diagnostic'}</Button></Link>
           </div>
         </div>
@@ -378,7 +378,7 @@ export function GovernanceCompliance() {
                 <ul className="grid sm:grid-cols-2 gap-3">
                   {(isAr ? QUICK_WINS_30_AR : QUICK_WINS_30).map((qw, i) => (
                     <li key={i} className="flex items-start gap-3 text-sm text-white/80">
-                      <span className="w-6 h-6 rounded-full bg-[#C9A84C] text-white text-xs font-extrabold flex items-center justify-center shrink-0">{i + 1}</span>
+                      <span className="w-6 h-6 rounded-full bg-[#C9A84C] text-[#082C6B] text-xs font-extrabold flex items-center justify-center shrink-0">{i + 1}</span>
                       {qw}
                     </li>
                   ))}
@@ -432,7 +432,7 @@ export function GovernanceCompliance() {
               <h3 className="text-2xl font-bold mb-3">{isAr ? 'ابدأ بتقييم حوكمة مجاني' : 'Start with a Free Governance Assessment'}</h3>
               <p className="text-white/70 max-w-xl mx-auto mb-6 text-sm">{isAr ? 'تقدّم ISC فحص صحة حوكمة مجانياً لمدة ساعتين — يقيّم حوكمة مشترياتك الحالية مقابل إطار ISC ويحدّد أهم 3 مكاسب سريعة لديك.' : 'ISC offers a complimentary 2-hour governance health check — scoring your current procurement governance against the ISC framework and identifying your top 3 quick wins.'}</p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Link href="/consultant"><Button className="bg-[#C9A84C] hover:bg-[#b8943d] text-white font-bold px-8">{isAr ? 'احجز تقييماً مجانياً' : 'Book Free Assessment'}</Button></Link>
+                <Link href="/consultant"><Button className="bg-[#C9A84C] hover:bg-[#b8943d] text-[#082C6B] font-bold px-8">{isAr ? 'احجز تقييماً مجانياً' : 'Book Free Assessment'}</Button></Link>
                 <Link href="/risk-management"><Button variant="outline" className="border-white text-white hover:bg-white hover:text-primary font-bold px-8">{isAr ? 'عرض إدارة المخاطر ←' : 'View Risk Management →'}</Button></Link>
               </div>
             </Reveal>

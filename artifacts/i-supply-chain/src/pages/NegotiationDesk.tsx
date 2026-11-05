@@ -142,7 +142,7 @@ const inputCls = 'w-full text-sm border border-slate-300 rounded-xl px-3 py-2.5 
 
 function Note({ children }: { children: React.ReactNode }) {
   return (
-    <p className="flex gap-2 text-[11px] text-slate-500 leading-relaxed mt-4 bg-slate-50 border border-slate-100 rounded-lg p-3">
+    <p className="flex gap-2 text-[11px] text-slate-600 leading-relaxed mt-4 bg-slate-50 border border-slate-100 rounded-lg p-3">
       <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" /> <span>{children}</span>
     </p>
   );
@@ -355,10 +355,10 @@ export function NegotiationDesk() {
             <div>
               <div className="flex items-start justify-between gap-3 flex-wrap">
                 <div><h2 className="text-lg font-bold text-[#082C6B]">{t('Who are you negotiating with?', 'مع من تتفاوض؟')}</h2>
-                  <p className="text-sm text-slate-500">{t('Two answers shape everything that follows.', 'إجابتان تحددان كل ما يلي.')}</p></div>
+                  <p className="text-sm text-slate-600">{t('Two answers shape everything that follows.', 'إجابتان تحددان كل ما يلي.')}</p></div>
                 <div className="no-print flex gap-2">
                   <button onClick={() => { setS(EXAMPLE); }} className="flex items-center gap-1.5 text-xs font-bold text-[#082C6B] border border-[#082C6B]/30 rounded-lg px-3 py-2 hover:bg-slate-50"><Sparkles className="w-3.5 h-3.5" />{t('Try an example', 'جرّب مثالاً')}</button>
-                  <button onClick={() => { setS(EMPTY); setStep(0); }} className="flex items-center gap-1.5 text-xs font-bold text-slate-500 border border-slate-200 rounded-lg px-3 py-2 hover:bg-slate-50"><RotateCcw className="w-3.5 h-3.5" />{t('Clear', 'مسح')}</button>
+                  <button onClick={() => { setS(EMPTY); setStep(0); }} className="flex items-center gap-1.5 text-xs font-bold text-slate-600 border border-slate-200 rounded-lg px-3 py-2 hover:bg-slate-50"><RotateCcw className="w-3.5 h-3.5" />{t('Clear', 'مسح')}</button>
                 </div>
               </div>
               <label className="block text-xs font-semibold text-slate-600 mt-5">{t('Supplier or category', 'المورّد أو الفئة')}
@@ -371,7 +371,7 @@ export function NegotiationDesk() {
                     {depChecks.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                   </select></label>
               ) : (
-                <p className="text-[11px] text-slate-500 mt-3">{t('No saved Dependency Checks in this browser yet. ', 'لا توجد فحوصات اعتماد محفوظة في هذا المتصفح بعد. ')}<a className="underline text-[#082C6B] font-semibold" href="/supplier-dependency">{t('Run one', 'أجرِ فحصاً')}</a>{t(' to link it here.', ' لربطه هنا.')}</p>
+                <p className="text-[11px] text-slate-600 mt-3">{t('No saved Dependency Checks in this browser yet. ', 'لا توجد فحوصات اعتماد محفوظة في هذا المتصفح بعد. ')}<a className="underline text-[#082C6B] font-semibold" href="/supplier-dependency">{t('Run one', 'أجرِ فحصاً')}</a>{t(' to link it here.', ' لربطه هنا.')}</p>
               )}
               <fieldset className="mt-5">
                 <legend className="text-xs font-semibold text-slate-600 mb-2">{t('What kind of purchase is it?', 'ما نوع هذه المشتريات؟')}</legend>
@@ -380,7 +380,7 @@ export function NegotiationDesk() {
                     <button key={q.id} type="button" onClick={() => set('quadrant', q.id)} aria-pressed={s.quadrant === q.id}
                       className={`text-start rounded-xl border p-3 transition ${s.quadrant === q.id ? 'border-[#082C6B] bg-[#082C6B]/5 ring-2 ring-[#082C6B]/20' : 'border-slate-200 hover:border-[#082C6B]/40'}`}>
                       <span className="block text-sm font-bold text-[#082C6B]">{isAr ? q.ar : q.en}</span>
-                      <span className="block text-[11px] text-slate-500 mt-0.5">{isAr ? q.hintAr : q.hintEn}</span>
+                      <span className="block text-[11px] text-slate-600 mt-0.5">{isAr ? q.hintAr : q.hintEn}</span>
                     </button>
                   ))}
                 </div>
@@ -393,7 +393,7 @@ export function NegotiationDesk() {
           {step === 1 && (
             <div>
               <h2 className="text-lg font-bold text-[#082C6B]">{t('Where do you stand?', 'أين تقف؟')}</h2>
-              <p className="text-sm text-slate-500">{t('How easily could you walk away from this supplier?', 'ما مدى سهولة انسحابك من هذا المورّد؟')}</p>
+              <p className="text-sm text-slate-600">{t('How easily could you walk away from this supplier?', 'ما مدى سهولة انسحابك من هذا المورّد؟')}</p>
               <div className="grid sm:grid-cols-2 gap-4 mt-4">
                 <label className="text-xs font-semibold text-slate-600">{t('Lock-in index (0 = free to leave, 5 = trapped)', 'مؤشر التقييد (0 = حر في المغادرة، 5 = مقيَّد)')}
                   <input className={`${inputCls} mt-1`} type="number" min={0} max={5} step={0.1} value={s.lockIn} onChange={e => set('lockIn', e.target.value)} />
@@ -412,9 +412,9 @@ export function NegotiationDesk() {
               </div>
               {linked && linkedSeverity && (
                 <div className="mt-4 border border-slate-200 rounded-xl p-4 bg-slate-50 text-sm" role="note">
-                  <p className="font-bold text-xs text-slate-500 mb-1">{t('From your Supplier Dependency Check', 'من فحص اعتماد المورّد لديك')}: {linked.name}</p>
+                  <p className="font-bold text-xs text-slate-600 mb-1">{t('From your Supplier Dependency Check', 'من فحص اعتماد المورّد لديك')}: {linked.name}</p>
                   <p><b>{linkedSeverity.level}</b> — {isAr ? linkedSeverity.reasonAr : linkedSeverity.reasonEn}</p>
-                  <p className="text-[11px] text-slate-500 mt-2">{t('This is a different scale from the 0-5 lock-in index. ISC does not convert one into the other; use it as a guide when you answer the two questions above.', 'هذا مقياس مختلف عن مؤشر التقييد من 0 إلى 5. لا تحوّل ISC أحدهما إلى الآخر؛ استخدمه كدليل عند الإجابة عن السؤالين أعلاه.')}</p>
+                  <p className="text-[11px] text-slate-600 mt-2">{t('This is a different scale from the 0-5 lock-in index. ISC does not convert one into the other; use it as a guide when you answer the two questions above.', 'هذا مقياس مختلف عن مؤشر التقييد من 0 إلى 5. لا تحوّل ISC أحدهما إلى الآخر؛ استخدمه كدليل عند الإجابة عن السؤالين أعلاه.')}</p>
                 </div>
               )}
               <div className="mt-4 border border-slate-200 rounded-xl p-4 bg-white" data-testid="leverage-rule">
@@ -448,8 +448,8 @@ export function NegotiationDesk() {
                       : t(`The reading does not change if the cut-offs move by ${sensitivity.step} either way.`, `لا تتغير القراءة إذا تحرك الحدّان بمقدار ${sensitivity.step} في أي اتجاه.`)}
                   </p>
                 )}
-                <p className="text-[11px] text-slate-500 leading-relaxed mt-3">{t('Sources for the idea that leverage follows each side\'s alternatives and dependence: ', 'مصادر فكرة أن القوة التفاوضية تتبع بدائل كل طرف واعتماده على الآخر: ')}<span dir="ltr">Fisher & Ury, Getting to Yes (1981), on the best alternative to a negotiated agreement (BATNA); Emerson, Power-Dependence Relations, American Sociological Review 27(1), 1962: dependence rests on how much one side values what the other provides and on how many alternatives it has; Caniëls & Gelderman, Industrial Marketing Management 36(2), 2007, who measured power and interdependence for each Kraljic quadrant in a survey of Dutch purchasing professionals. See also Cox, Journal of Supply Chain Management 37(2), 2001 (title only, not re-read).</span></p>
-                <p className="text-[11px] text-slate-500 leading-relaxed mt-1">{t('None of these sets numeric cut-offs on ISC\'s 0-5 lock-in index. The default cut-offs 2 and 4 are ISC\'s own calibration on its own scale, not an industry standard. Change them if your policy differs; the brief shows which cut-offs were used.',
+                <p className="text-[11px] text-slate-600 leading-relaxed mt-3">{t('Sources for the idea that leverage follows each side\'s alternatives and dependence: ', 'مصادر فكرة أن القوة التفاوضية تتبع بدائل كل طرف واعتماده على الآخر: ')}<span dir="ltr">Fisher & Ury, Getting to Yes (1981), on the best alternative to a negotiated agreement (BATNA); Emerson, Power-Dependence Relations, American Sociological Review 27(1), 1962: dependence rests on how much one side values what the other provides and on how many alternatives it has; Caniëls & Gelderman, Industrial Marketing Management 36(2), 2007, who measured power and interdependence for each Kraljic quadrant in a survey of Dutch purchasing professionals. See also Cox, Journal of Supply Chain Management 37(2), 2001 (title only, not re-read).</span></p>
+                <p className="text-[11px] text-slate-600 leading-relaxed mt-1">{t('None of these sets numeric cut-offs on ISC\'s 0-5 lock-in index. The default cut-offs 2 and 4 are ISC\'s own calibration on its own scale, not an industry standard. Change them if your policy differs; the brief shows which cut-offs were used.',
                        'لا يحدد أي من هذه المصادر حدوداً رقمية على مؤشر التقييد من 0 إلى 5 لدى ISC. الحدّان الافتراضيان 2 و4 معايرة من ISC على مقياسها الخاص وليسا معياراً صناعياً. غيّرهما إذا كانت سياستك مختلفة؛ وسيُظهر الملخص الحدّين المستخدمين.')}</p>
               </div>
             </div>
@@ -458,13 +458,13 @@ export function NegotiationDesk() {
           {step === 2 && (
             <div>
               <h2 className="text-lg font-bold text-[#082C6B]">{t('What is the price doing?', 'ماذا يفعل السعر؟')}</h2>
-              <p className="text-sm text-slate-500">{t('Enter what you actually paid in at least three periods.', 'أدخل ما دفعته فعلاً في ثلاث فترات على الأقل.')}</p>
+              <p className="text-sm text-slate-600">{t('Enter what you actually paid in at least three periods.', 'أدخل ما دفعته فعلاً في ثلاث فترات على الأقل.')}</p>
               <div className="mt-4 space-y-2">
                 {s.points.map((p, i) => (
                   <div key={i} className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2 items-end">
-                    <label className="text-[11px] text-slate-500">{t('Period', 'الفترة')}<input className={`${inputCls} mt-1`} value={p.periodLabel} onChange={e => updPoint(i, { periodLabel: e.target.value })} /></label>
-                    <label className="text-[11px] text-slate-500">{t('Unit price', 'سعر الوحدة')}<input className={`${inputCls} mt-1`} type="number" min={0} value={p.price || ''} onChange={e => updPoint(i, { price: Number(e.target.value) })} /></label>
-                    <label className="text-[11px] text-slate-500">{t('Date', 'التاريخ')}<input className={`${inputCls} mt-1`} type="date" value={p.sortKey} onChange={e => updPoint(i, { sortKey: e.target.value })} /></label>
+                    <label className="text-[11px] text-slate-600">{t('Period', 'الفترة')}<input className={`${inputCls} mt-1`} value={p.periodLabel} onChange={e => updPoint(i, { periodLabel: e.target.value })} /></label>
+                    <label className="text-[11px] text-slate-600">{t('Unit price', 'سعر الوحدة')}<input className={`${inputCls} mt-1`} type="number" min={0} value={p.price || ''} onChange={e => updPoint(i, { price: Number(e.target.value) })} /></label>
+                    <label className="text-[11px] text-slate-600">{t('Date', 'التاريخ')}<input className={`${inputCls} mt-1`} type="date" value={p.sortKey} onChange={e => updPoint(i, { sortKey: e.target.value })} /></label>
                     <button aria-label={t('Remove price point', 'حذف نقطة السعر')} onClick={() => set('points', s.points.filter((_, j) => j !== i))} className="p-2.5 text-slate-600 hover:text-red-600"><Trash2 className="w-4 h-4" /></button>
                   </div>
                 ))}
@@ -474,7 +474,7 @@ export function NegotiationDesk() {
                 <p className="font-bold text-sm">{isAr ? DIR[trend.direction].ar : DIR[trend.direction].en}{trend.percentChange !== null && ` (${trend.percentChange > 0 ? '+' : ''}${trend.percentChange.toFixed(1)}%)`}</p>
                 <Spark points={s.points} />
                 {trend.hasIntermediateVolatility && <p className="text-xs text-amber-700 mt-2">{t('There was a larger swing inside the period than the start-to-end change shows.', 'حدث تذبذب داخل الفترة أكبر مما يظهره التغيير بين البداية والنهاية.')}</p>}
-                {trend.flatBandPctApplied !== undefined && <p className="text-xs text-slate-500 mt-2">{t(`Counted as flat within ±${trend.flatBandPctApplied}% (`, `يُعدّ مستقراً ضمن ±${trend.flatBandPctApplied}% (`)}{trend.flatBandSource === 'quadrant-informed-default' ? t('ISC assumption set by purchase type', 'افتراض من ISC حسب نوع المشتريات') : t('general default', 'افتراض عام')})</p>}
+                {trend.flatBandPctApplied !== undefined && <p className="text-xs text-slate-600 mt-2">{t(`Counted as flat within ±${trend.flatBandPctApplied}% (`, `يُعدّ مستقراً ضمن ±${trend.flatBandPctApplied}% (`)}{trend.flatBandSource === 'quadrant-informed-default' ? t('ISC assumption set by purchase type', 'افتراض من ISC حسب نوع المشتريات') : t('general default', 'افتراض عام')})</p>}
               </div>
               <Note>{t('Based only on the prices you enter, not on market data. Check the market separately before you rely on it.', 'يعتمد فقط على الأسعار التي تدخلها وليس على بيانات السوق. تحقق من السوق بشكل منفصل قبل الاعتماد عليه.')}</Note>
             </div>
@@ -484,7 +484,7 @@ export function NegotiationDesk() {
             <div>
               <h2 className="text-lg font-bold text-[#082C6B]">{t('Tactics for a', 'تكتيكات لمشتريات')} {isAr ? quad.ar : quad.en}{isAr ? '' : ' purchase'}</h2>
               <h3 className="text-sm font-bold text-emerald-800 mt-4 mb-2">{t('You can use', 'يمكنك استخدامها')}</h3>
-              {useTactics.length === 0 && <p className="text-sm text-slate-500">{t('No tactic in the library fits this purchase type with low ethical risk.', 'لا يوجد تكتيك في المكتبة يناسب هذا النوع بمخاطر أخلاقية منخفضة.')}</p>}
+              {useTactics.length === 0 && <p className="text-sm text-slate-600">{t('No tactic in the library fits this purchase type with low ethical risk.', 'لا يوجد تكتيك في المكتبة يناسب هذا النوع بمخاطر أخلاقية منخفضة.')}</p>}
               {useTactics.map(x => (
                 <details key={x.id} className="border border-emerald-100 bg-emerald-50/30 rounded-xl p-3 mb-2">
                   <summary className="cursor-pointer text-sm font-semibold">{isAr ? x.name.ar : x.name.en}</summary>
@@ -492,7 +492,7 @@ export function NegotiationDesk() {
                     <p>{isAr ? x.whatItIs.ar : x.whatItIs.en}</p>
                     <p><b>{t('How: ', 'كيف: ')}</b>{isAr ? x.how.ar : x.how.en}</p>
                     <p><b>{t('Follow up: ', 'المتابعة: ')}</b>{isAr ? x.followUp.ar : x.followUp.en}</p>
-                    <p className="text-xs text-slate-500">{isAr ? x.ethicalNote.ar : x.ethicalNote.en} — {x.source}</p>
+                    <p className="text-xs text-slate-600">{isAr ? x.ethicalNote.ar : x.ethicalNote.en} — {x.source}</p>
                   </div>
                 </details>
               ))}
@@ -503,7 +503,7 @@ export function NegotiationDesk() {
                   <div className="text-sm text-slate-700 space-y-1.5 mt-2">
                     <p>{isAr ? x.whatItIs.ar : x.whatItIs.en}</p>
                     <p><b>{t('How to respond: ', 'كيف تردّ: ')}</b>{isAr ? x.counterTactic.ar : x.counterTactic.en}</p>
-                    <p className="text-xs text-slate-500">{isAr ? x.ethicalNote.ar : x.ethicalNote.en} — {x.source}</p>
+                    <p className="text-xs text-slate-600">{isAr ? x.ethicalNote.ar : x.ethicalNote.en} — {x.source}</p>
                   </div>
                 </details>
               ))}
@@ -517,19 +517,19 @@ export function NegotiationDesk() {
           {step === 4 && (
             <div>
               <h2 className="text-lg font-bold text-[#082C6B]">{t('Rounds so far and the next move', 'الجولات السابقة والخطوة التالية')}</h2>
-              <p className="text-sm text-slate-500">{t('Skip this if you have not met yet.', 'تجاوز هذه الخطوة إن لم تلتقِ بعد.')}</p>
+              <p className="text-sm text-slate-600">{t('Skip this if you have not met yet.', 'تجاوز هذه الخطوة إن لم تلتقِ بعد.')}</p>
               <div className="mt-4 space-y-2">
                 {s.rounds.map((r, i) => (
                   <div key={i} className="border border-slate-200 rounded-xl p-3 grid sm:grid-cols-4 gap-2 items-end">
-                    <label className="text-[11px] text-slate-500">{t('Date', 'التاريخ')}<input className={`${inputCls} mt-1`} type="date" value={r.date} onChange={e => updRound(i, { date: e.target.value })} /></label>
-                    <label className="text-[11px] text-slate-500">{t('Our move', 'خطوتنا')}
+                    <label className="text-[11px] text-slate-600">{t('Date', 'التاريخ')}<input className={`${inputCls} mt-1`} type="date" value={r.date} onChange={e => updRound(i, { date: e.target.value })} /></label>
+                    <label className="text-[11px] text-slate-600">{t('Our move', 'خطوتنا')}
                       <select className={`${inputCls} mt-1`} value={r.ourMove} onChange={e => updRound(i, { ourMove: e.target.value as OurMove })}>
                         <option value="cooperated">{t('Cooperated', 'تعاونّا')}</option><option value="defected">{t('Pushed hard', 'ضغطنا')}</option></select></label>
-                    <label className="text-[11px] text-slate-500">{t('Their move', 'خطوتهم')}
+                    <label className="text-[11px] text-slate-600">{t('Their move', 'خطوتهم')}
                       <select className={`${inputCls} mt-1`} value={r.counterpartMove} onChange={e => updRound(i, { counterpartMove: e.target.value as CounterpartMove })}>
                         <option value="cooperated">{t('Cooperated', 'تعاونوا')}</option><option value="defected">{t('Pushed hard', 'ضغطوا')}</option><option value="unclear">{t('Unclear', 'غير واضح')}</option></select></label>
                     <button aria-label={t('Remove round', 'حذف الجولة')} onClick={() => set('rounds', s.rounds.filter((_, j) => j !== i))} className="p-2.5 text-slate-600 hover:text-red-600 justify-self-end"><Trash2 className="w-4 h-4" /></button>
-                    <label className="text-[11px] text-slate-500 sm:col-span-4">{t('Why did you label it this way? (write the evidence)', 'لماذا صنّفتها هكذا؟ (اكتب الدليل)')}
+                    <label className="text-[11px] text-slate-600 sm:col-span-4">{t('Why did you label it this way? (write the evidence)', 'لماذا صنّفتها هكذا؟ (اكتب الدليل)')}
                       <input className={`${inputCls} mt-1`} value={r.note} onChange={e => updRound(i, { note: e.target.value })} /></label>
                   </div>
                 ))}
@@ -547,7 +547,7 @@ export function NegotiationDesk() {
             <div data-testid="brief">
               <div className="flex items-start justify-between gap-3 flex-wrap">
                 <div><h2 className="text-lg font-bold text-[#082C6B]">{t('Your preparation brief', 'ملخص تحضيرك')}</h2>
-                  <p className="text-sm text-slate-500">{shownName.trim() || t('Unnamed negotiation', 'تفاوض بلا اسم')} · {isAr ? quad.ar : quad.en}</p></div>
+                  <p className="text-sm text-slate-600">{shownName.trim() || t('Unnamed negotiation', 'تفاوض بلا اسم')} · {isAr ? quad.ar : quad.en}</p></div>
                 <button onClick={() => window.print()} className="no-print flex items-center gap-1.5 text-xs font-bold text-white bg-[#082C6B] rounded-lg px-3 py-2"><Printer className="w-3.5 h-3.5" />{t('Print / save as PDF', 'طباعة / حفظ PDF')}</button>
               </div>
               <div className={`mt-4 border rounded-xl p-4 ${tone.box}`}>
@@ -561,19 +561,19 @@ export function NegotiationDesk() {
                   <p className="text-sm mt-1">{isAr ? approach.pAr : approach.pEn}</p>
                 </div>
                 <div className="border border-slate-300 rounded-xl p-4">
-                  <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">{t('Strong alternative', 'بديل قوي')}</p>
+                  <p className="text-[10px] font-bold uppercase tracking-wide text-slate-600">{t('Strong alternative', 'بديل قوي')}</p>
                   <p className="text-sm mt-1">{isAr ? approach.aAr : approach.aEn}</p>
                 </div>
               </div>
               <p className="text-xs text-slate-600 mt-2"><b>{t('Trade-off: ', 'المفاضلة: ')}</b>{isAr ? approach.tAr : approach.tEn}</p>
               <div className="grid sm:grid-cols-2 gap-3 mt-4">
                 <div className="border border-slate-200 rounded-xl p-4">
-                  <p className="text-xs font-bold text-slate-500 mb-1">{t('Price', 'السعر')}</p>
+                  <p className="text-xs font-bold text-slate-600 mb-1">{t('Price', 'السعر')}</p>
                   <p className="text-sm font-semibold">{isAr ? DIR[trend.direction].ar : DIR[trend.direction].en}{trend.percentChange !== null && ` (${trend.percentChange > 0 ? '+' : ''}${trend.percentChange.toFixed(1)}%)`}</p>
                   <Spark points={s.points} />
                 </div>
                 <div className="border border-slate-200 rounded-xl p-4">
-                  <p className="text-xs font-bold text-slate-500 mb-2">{t('Readiness', 'الجاهزية')} {done}/{checks.length}</p>
+                  <p className="text-xs font-bold text-slate-600 mb-2">{t('Readiness', 'الجاهزية')} {done}/{checks.length}</p>
                   <ul className="text-sm space-y-1">{checks.map(c => (
                     <li key={c.en} className={`flex items-center gap-2 ${c.ok ? 'text-emerald-700' : 'text-slate-600'}`}>
                       {c.ok ? <Check className="w-4 h-4" /> : <span className="w-4 h-4 rounded-full border border-slate-300 inline-block" />}{isAr ? c.ar : c.en}</li>))}</ul>
@@ -584,7 +584,7 @@ export function NegotiationDesk() {
                 <ul className="text-sm list-disc ps-5 space-y-0.5">{watchTactics.slice(0, 3).map(x => <li key={x.id}>{isAr ? x.name.ar : x.name.en}</li>)}</ul>
               </div>
               <div className="border border-slate-200 rounded-xl p-4 mt-3">
-                <p className="text-xs font-bold text-slate-500 mb-1">{t('Next move', 'الخطوة التالية')}</p>
+                <p className="text-xs font-bold text-slate-600 mb-1">{t('Next move', 'الخطوة التالية')}</p>
                 <p className="text-sm">{isAr ? next.rationaleAr : next.rationaleEn}</p>
               </div>
               <Note>{t('Internal. Not for the supplier. Not legal advice. The recommendation is ISC guidance derived from the rule on step 2, not a sourced benchmark. Saved in this browser, and in your account when you are signed in (one saved case).', 'داخلي. ليس للمورّد. ليس استشارة قانونية. التوصية إرشاد من ISC مشتق من القاعدة في الخطوة 2، وليست معياراً موثّقاً. يُحفظ في هذا المتصفح، وفي حسابك عند تسجيل الدخول (حالة محفوظة واحدة).')}</Note>

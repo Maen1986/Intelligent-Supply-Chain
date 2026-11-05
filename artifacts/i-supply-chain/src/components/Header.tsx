@@ -318,7 +318,7 @@ export function Header() {
           </button>
 
           <Link href="/consultant">
-            <Button className="bg-[#C9A84C] hover:bg-[#b8963e] text-white font-bold px-4 py-2 text-[14px] rounded-xl shadow-md hover:shadow-lg transition-all whitespace-nowrap">
+            <Button className="bg-[#C9A84C] hover:bg-[#b8963e] text-[#082C6B] font-bold px-4 py-2 text-[14px] rounded-xl shadow-md hover:shadow-lg transition-all whitespace-nowrap">
               {/* Shorter label at lg (extra safety margin against the merged
                   row overflowing on ~1280px laptop widths); full label once
                   there's room at xl+. */}
@@ -458,7 +458,7 @@ export function Header() {
                 <Phone className="w-4 h-4" /> +966 549 479 722
               </a>
               <Link href="/consultant" onClick={() => setMobileMenuOpen(false)}>
-                <Button className="w-full bg-[#C9A84C] hover:bg-[#b8963e] text-white font-bold text-[15px] py-3 rounded-xl">
+                <Button className="w-full bg-[#C9A84C] hover:bg-[#b8963e] text-[#082C6B] font-bold text-[15px] py-3 rounded-xl">
                   {lang === 'ar' ? 'احجز استشارة' : 'Book a Consultation'}
                 </Button>
               </Link>
