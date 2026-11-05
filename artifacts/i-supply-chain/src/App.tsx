@@ -49,6 +49,7 @@ import { DailyBrief } from '@/pages/DailyBrief';
 import { MyWorkbench } from '@/pages/MyWorkbench';
 import { DecisionMemory } from '@/pages/DecisionMemory';
 import { SupplierDependencyCheck } from '@/pages/SupplierDependencyCheck';
+import { NegotiationDesk } from '@/pages/NegotiationDesk';
 import { SupplierRecoveryPortfolio } from '@/pages/SupplierRecoveryPortfolio';
 import { SupplierCOPQ } from '@/pages/SupplierCOPQ';
 import { RaciMatrix } from '@/pages/RaciMatrix';
@@ -189,6 +190,7 @@ function Router() {
         <Route path="/workbench" component={MyWorkbench} />
         <Route path="/decision-memory" component={DecisionMemory} />
         <Route path="/supplier-dependency" component={SupplierDependencyCheck} />
+        <Route path="/negotiation-desk" component={NegotiationDesk} />
         <Route path="/supplier-recovery-portfolio" component={SupplierRecoveryPortfolio} />
         <Route path="/supplier-copq" component={SupplierCOPQ} />
         <Route path="/raci-matrix" component={RaciMatrix} />
