@@ -19,7 +19,7 @@ import { API_BASE } from '@/lib/apiBase';
 import type { KraljicQuadrant } from '@/lib/kraljicScoring';
 import { deriveSeverity, type SupplierCheck } from '@/lib/supplierDependency';
 import {
-  assessNegotiationLeverage, computePriceTrajectory, recommendNextMove,
+  assessNegotiationLeverage, assessLeverageSensitivity, DEFAULT_LEVERAGE_THRESHOLDS, computePriceTrajectory, recommendNextMove,
   type PricePoint, type NegotiationRound, type OurMove, type CounterpartMove, type LeverageLevel,
 } from '@/lib/supplierCommercialIntelligence';
 import {
@@ -37,6 +37,9 @@ interface DeskState {
   rounds: NegotiationRound[];
   /** Optional link to a saved Supplier Dependency Check (reference only, never converted to a score). */
   linkedCheckId?: string;
+  /** Optional own cut-offs for the leverage rule (strings so an empty box means "use the ISC default"). */
+  cutLow?: string;
+  cutHigh?: string;
 }
 const EMPTY: DeskState = { supplier: '', quadrant: 'leverage', lockIn: '', survivable: 'unknown', points: [], rounds: [] };
 // Illustrative example only. Not client data, not a benchmark.
@@ -243,10 +246,23 @@ export function NegotiationDesk() {
 
   const lockInNum = s.lockIn.trim() === '' ? null : Number(s.lockIn);
   const lockInClean = lockInNum !== null && Number.isFinite(lockInNum) ? Math.min(5, Math.max(0, lockInNum)) : null;
+  const cutNum = (v: string | undefined) => (v === undefined || v.trim() === '' ? undefined : Number(v));
+  const cutLowNum = cutNum(s.cutLow);
+  const cutHighNum = cutNum(s.cutHigh);
+  const leverageIn = { lockInIndex: lockInClean, isSurvivable: s.survivable === 'unknown' ? null : s.survivable === 'yes' };
+  const leverageOpts = { thresholds: { low: cutLowNum, high: cutHighNum } };
   const leverage = useMemo(
-    () => assessNegotiationLeverage({ lockInIndex: lockInClean, isSurvivable: s.survivable === 'unknown' ? null : s.survivable === 'yes' }, s.quadrant),
-    [lockInClean, s.survivable, s.quadrant],
+    () => assessNegotiationLeverage(leverageIn, s.quadrant, leverageOpts),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [lockInClean, s.survivable, s.quadrant, cutLowNum, cutHighNum],
   );
+  const sensitivity = useMemo(
+    () => assessLeverageSensitivity(leverageIn, s.quadrant, leverageOpts),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [lockInClean, s.survivable, s.quadrant, cutLowNum, cutHighNum],
+  );
+  const cutsOverridden = leverage.thresholdSource === 'caller-override';
+  const cutsTyped = (s.cutLow ?? '').trim() !== '' || (s.cutHigh ?? '').trim() !== '';
   const trend = useMemo(() => computePriceTrajectory(s.points, { quadrant: s.quadrant, basis: 'observed' }), [s.points, s.quadrant]);
   const next = useMemo(() => recommendNextMove(s.rounds), [s.rounds]);
   const useTactics = recommendClientTactics(s.quadrant);
@@ -401,8 +417,41 @@ export function NegotiationDesk() {
                   <p className="text-[11px] text-slate-500 mt-2">{t('This is a different scale from the 0-5 lock-in index. ISC does not convert one into the other; use it as a guide when you answer the two questions above.', 'هذا مقياس مختلف عن مؤشر التقييد من 0 إلى 5. لا تحوّل ISC أحدهما إلى الآخر؛ استخدمه كدليل عند الإجابة عن السؤالين أعلاه.')}</p>
                 </div>
               )}
-              <Note>{t('Rule: strong if lock-in is 2 or below and you could survive a switch; weak if lock-in is 4 or above or you could not survive. The cut-offs 2 and 4 are ISC planning assumptions, not an industry standard. This reads your dependence on the supplier only, not theirs on you.',
-                       'القاعدة: قوي إذا كان التقييد 2 أو أقل وتستطيع الصمود عند التغيير؛ ضعيف إذا كان 4 أو أكثر أو لا تستطيع الصمود. الحدّان 2 و4 افتراضات تخطيط من ISC وليسا معياراً صناعياً. يقيس هذا اعتمادك على المورّد فقط، لا اعتماده عليك.')}</Note>
+              <div className="mt-4 border border-slate-200 rounded-xl p-4 bg-white" data-testid="leverage-rule">
+                <p className="font-bold text-sm text-[#082C6B] flex items-center gap-2"><Info className="w-4 h-4" />{t('How this reading is built', 'كيف تُبنى هذه القراءة')}</p>
+                <p className="text-xs text-slate-600 leading-relaxed mt-2">{t('Rule: strong if lock-in is at or below the strong cut-off and you could survive a switch; weak if lock-in is at or above the weak cut-off or you could not survive; otherwise moderate. This reads your dependence on the supplier only, not theirs on you.',
+                       'القاعدة: قوي إذا كان التقييد يساوي حدّ القوي أو أقل وتستطيع الصمود عند التغيير؛ ضعيف إذا كان يساوي حدّ الضعيف أو أكثر أو لا تستطيع الصمود؛ وإلا فمتوسط. يقيس هذا اعتمادك على المورّد فقط، لا اعتماده عليك.')}</p>
+                <div className="grid sm:grid-cols-2 gap-3 mt-3">
+                  <label className="text-xs font-semibold text-slate-600">{t('Strong if lock-in is at or below', 'قوي إذا كان التقييد يساوي أو أقل من')}
+                    <input className={`${inputCls} mt-1`} type="number" min={0} max={5} step={0.1} placeholder={String(DEFAULT_LEVERAGE_THRESHOLDS.low)} value={s.cutLow ?? ''} onChange={e => set('cutLow', e.target.value)} /></label>
+                  <label className="text-xs font-semibold text-slate-600">{t('Weak if lock-in is at or above', 'ضعيف إذا كان التقييد يساوي أو أكثر من')}
+                    <input className={`${inputCls} mt-1`} type="number" min={0} max={5} step={0.1} placeholder={String(DEFAULT_LEVERAGE_THRESHOLDS.high)} value={s.cutHigh ?? ''} onChange={e => set('cutHigh', e.target.value)} /></label>
+                </div>
+                <p className="text-xs text-slate-700 mt-2" data-testid="cutoffs-used">
+                  {isAr
+                    ? `الحدّان المستخدمان: قوي ≤ ${leverage.thresholds.low}، ضعيف ≥ ${leverage.thresholds.high} (${cutsOverridden ? 'إعدادك' : 'افتراضي ISC'})`
+                    : `Cut-offs used: strong ≤ ${leverage.thresholds.low}, weak ≥ ${leverage.thresholds.high} (${cutsOverridden ? 'your setting' : 'ISC default'})`}
+                  {cutsTyped && (
+                    <button type="button" onClick={() => setS(prev => ({ ...prev, cutLow: '', cutHigh: '' }))} className="no-print ms-2 underline text-[#082C6B] font-semibold">{t('Reset to ISC defaults (2 and 4)', 'إعادة الحدّين الافتراضيين (2 و4)')}</button>
+                  )}
+                </p>
+                {leverage.thresholdOverrideRejected && (
+                  <p className="text-xs text-amber-700 mt-1" role="alert">{t('Your cut-offs are not valid (strong must be below weak, both between 0 and 5), so the ISC defaults are used.',
+                    'الحدّان اللذان أدخلتهما غير صالحين (يجب أن يكون حدّ القوي أقل من حدّ الضعيف، وكلاهما بين 0 و5)، لذلك استُخدم الحدّان الافتراضيان.')}</p>
+                )}
+                {leverage.level !== 'INSUFFICIENT_DATA' && (
+                  <p className="text-xs text-slate-600 mt-1" data-testid="leverage-sensitivity">
+                    {sensitivity.changes
+                      ? (isAr
+                        ? `لو كان الحدّان أكثر تحفظاً بمقدار ${sensitivity.step} لكانت القراءة «${LEVEL_TONE[sensitivity.moreCautious].ar}»؛ وأقل تحفظاً بمقدار ${sensitivity.step} «${LEVEL_TONE[sensitivity.lessCautious].ar}».`
+                        : `If the cut-offs were ${sensitivity.step} more cautious the reading would be "${LEVEL_TONE[sensitivity.moreCautious].en}"; ${sensitivity.step} less cautious, "${LEVEL_TONE[sensitivity.lessCautious].en}".`)
+                      : t(`The reading does not change if the cut-offs move by ${sensitivity.step} either way.`, `لا تتغير القراءة إذا تحرك الحدّان بمقدار ${sensitivity.step} في أي اتجاه.`)}
+                  </p>
+                )}
+                <p className="text-[11px] text-slate-500 leading-relaxed mt-3">{t('Sources for the idea that leverage follows each side\'s alternatives and dependence: ', 'مصادر فكرة أن القوة التفاوضية تتبع بدائل كل طرف واعتماده على الآخر: ')}<span dir="ltr">Fisher & Ury, Getting to Yes (1981), on the best alternative to a negotiated agreement (BATNA); Emerson, Power-Dependence Relations, American Sociological Review 27(1), 1962: dependence rests on how much one side values what the other provides and on how many alternatives it has; Caniëls & Gelderman, Industrial Marketing Management 36(2), 2007, who measured power and interdependence for each Kraljic quadrant in a survey of Dutch purchasing professionals. See also Cox, Journal of Supply Chain Management 37(2), 2001 (title only, not re-read).</span></p>
+                <p className="text-[11px] text-slate-500 leading-relaxed mt-1">{t('None of these sets numeric cut-offs on ISC\'s 0-5 lock-in index. The default cut-offs 2 and 4 are ISC\'s own calibration on its own scale, not an industry standard. Change them if your policy differs; the brief shows which cut-offs were used.',
+                       'لا يحدد أي من هذه المصادر حدوداً رقمية على مؤشر التقييد من 0 إلى 5 لدى ISC. الحدّان الافتراضيان 2 و4 معايرة من ISC على مقياسها الخاص وليسا معياراً صناعياً. غيّرهما إذا كانت سياستك مختلفة؛ وسيُظهر الملخص الحدّين المستخدمين.')}</p>
+              </div>
             </div>
           )}
 
@@ -504,6 +553,7 @@ export function NegotiationDesk() {
               <div className={`mt-4 border rounded-xl p-4 ${tone.box}`}>
                 <p className="font-bold text-sm">{isAr ? tone.ar : tone.en}</p>
                 <p className="text-sm mt-1">{isAr ? leverage.framingAr : leverage.framingEn}</p>
+                <p className="text-[11px] mt-2 opacity-80" data-testid="brief-cutoffs">{isAr ? `قاعدة القراءة: قوي إذا كان التقييد ≤ ${leverage.thresholds.low} مع القدرة على الصمود؛ ضعيف إذا كان ≥ ${leverage.thresholds.high} أو بلا قدرة على الصمود (${cutsOverridden ? 'حدّان من إعدادك' : 'حدّان افتراضيان من ISC'}). الأساس: BATNA (Fisher & Ury, 1981) واعتماد القوة (Emerson, 1962).` : `Reading rule: strong if lock-in ≤ ${leverage.thresholds.low} and you could survive a switch; weak if ≥ ${leverage.thresholds.high} or you could not (${cutsOverridden ? 'your cut-offs' : 'ISC default cut-offs'}). Basis: BATNA (Fisher & Ury, 1981) and power-dependence (Emerson, 1962).`}</p>
               </div>
               <div className="grid sm:grid-cols-2 gap-3 mt-3">
                 <div className="border-2 border-[#082C6B] rounded-xl p-4 bg-[#082C6B]/5">

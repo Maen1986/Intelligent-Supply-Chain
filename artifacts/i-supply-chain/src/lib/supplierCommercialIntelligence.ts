@@ -757,10 +757,48 @@ export interface NegotiationLeverage {
    */
   quadrantConsistencyNote: string | null;
   quadrantConsistencyNoteAr: string | null;
+  /** The Lock-In Index cut-offs actually used for this reading. */
+  thresholds: LeverageThresholds;
+  thresholdSource: LeverageThresholdSource;
+  /** True when a caller-supplied cut-off pair was invalid and the ISC defaults were used instead. */
+  thresholdOverrideRejected: boolean;
 }
 
-const LOW_LOCK_IN_THRESHOLD = 2;
-const HIGH_LOCK_IN_THRESHOLD = 4;
+/**
+ * Lock-In Index cut-offs for the leverage reading (E3 closure, 6 Nov 2026).
+ *
+ * SOURCING, stated plainly (Decision Record 8.7): the STRUCTURE of the rule is sourced -- negotiating power
+ * follows each side's alternatives and dependence (Fisher & Ury, Getting to Yes, 1981, on BATNA; Emerson,
+ * "Power-Dependence Relations", American Sociological Review 27(1), 1962: dependence rests on how much one side
+ * values what the other provides and on how many alternatives it has; Caniels & Gelderman, Industrial Marketing
+ * Management 36(2), 2007, measured power and interdependence per Kraljic quadrant; see also Cox, Journal of
+ * Supply Chain Management 37(2), 2001, title-level only). NONE of these sets numeric cut-offs on ISC's own 0-5
+ * Lock-In Index (Module 05). The default cut-offs 2 and 4 are therefore ISC's calibration on ISC's own scale.
+ * They are caller-overridable and every result reports which cut-offs were used.
+ */
+export interface LeverageThresholds {
+  /** STRONG requires lockInIndex <= low (and survivable). */
+  low: number;
+  /** WEAK when lockInIndex >= high (or not survivable). */
+  high: number;
+}
+export const DEFAULT_LEVERAGE_THRESHOLDS: LeverageThresholds = { low: 2, high: 4 };
+export type LeverageThresholdSource = 'isc-calibration-default' | 'caller-override';
+export interface AssessLeverageOptions {
+  thresholds?: Partial<LeverageThresholds>;
+}
+
+function resolveLeverageThresholds(opts?: AssessLeverageOptions): { thresholds: LeverageThresholds; source: LeverageThresholdSource; rejected: boolean } {
+  const supplied = opts?.thresholds;
+  if (!supplied || (supplied.low === undefined && supplied.high === undefined)) {
+    return { thresholds: { ...DEFAULT_LEVERAGE_THRESHOLDS }, source: 'isc-calibration-default', rejected: false };
+  }
+  const low = supplied.low === undefined ? DEFAULT_LEVERAGE_THRESHOLDS.low : supplied.low;
+  const high = supplied.high === undefined ? DEFAULT_LEVERAGE_THRESHOLDS.high : supplied.high;
+  const valid = typeof low === 'number' && typeof high === 'number' && Number.isFinite(low) && Number.isFinite(high) && low >= 0 && high <= 5 && low < high;
+  if (!valid) return { thresholds: { ...DEFAULT_LEVERAGE_THRESHOLDS }, source: 'isc-calibration-default', rejected: true };
+  return { thresholds: { low, high }, source: 'caller-override', rejected: false };
+}
 
 /**
  * BATNA strength requires BOTH low lock-in AND survivable continuity -- a
@@ -770,8 +808,10 @@ const HIGH_LOCK_IN_THRESHOLD = 4;
  * KRALJIC USAGE MAP item 5b: pass `quadrant` to run the structural
  * consistency check described in this file's header.
  */
-export function assessNegotiationLeverage(inputs: NegotiationLeverageInputs, quadrant?: KraljicQuadrant | null): NegotiationLeverage {
+export function assessNegotiationLeverage(inputs: NegotiationLeverageInputs, quadrant?: KraljicQuadrant | null, opts?: AssessLeverageOptions): NegotiationLeverage {
   const { lockInIndex, isSurvivable } = inputs;
+  const th = resolveLeverageThresholds(opts);
+  const thresholdFields = { thresholds: th.thresholds, thresholdSource: th.source, thresholdOverrideRejected: th.rejected };
 
   // Round C (#668): a non-finite Lock-In Index is not evidence -- NaN used to fall through to MODERATE.
   if (lockInIndex === null || isSurvivable === null || !Number.isFinite(lockInIndex)) {
@@ -783,13 +823,14 @@ export function assessNegotiationLeverage(inputs: NegotiationLeverageInputs, qua
       framingAr: 'لا يمكن تقييم قوة التفاوض بعد -- لم تُصدر الوحدة 05 بعد مؤشر التقييد أو نتيجة القدرة على الاستمرار (أو كليهما) لهذا المورّد.',
       quadrantConsistencyNote: null,
       quadrantConsistencyNoteAr: null,
+      ...thresholdFields,
     };
   }
 
   let level: LeverageLevel;
-  if (lockInIndex <= LOW_LOCK_IN_THRESHOLD && isSurvivable) {
+  if (lockInIndex <= th.thresholds.low && isSurvivable) {
     level = 'STRONG';
-  } else if (lockInIndex >= HIGH_LOCK_IN_THRESHOLD || !isSurvivable) {
+  } else if (lockInIndex >= th.thresholds.high || !isSurvivable) {
     level = 'WEAK';
   } else {
     level = 'MODERATE';
@@ -799,13 +840,13 @@ export function assessNegotiationLeverage(inputs: NegotiationLeverageInputs, qua
     level === 'STRONG'
       ? `Strong BATNA: Lock-In Index ${lockInIndex.toFixed(1)}/5 (low) and the client is survivable through a transition -- a credible, executable alternative to this deal exists and can be stated plainly at the table.`
       : level === 'WEAK'
-        ? `Weak BATNA: ${lockInIndex >= HIGH_LOCK_IN_THRESHOLD ? `Lock-In Index ${lockInIndex.toFixed(1)}/5 (high)` : 'not survivable through a transition'} -- walking away is not a credible threat today; negotiate accordingly and prioritize reducing lock-in before the next cycle.`
+        ? `Weak BATNA: ${lockInIndex >= th.thresholds.high ? `Lock-In Index ${lockInIndex.toFixed(1)}/5 (high)` : 'not survivable through a transition'} -- walking away is not a credible threat today; negotiate accordingly and prioritize reducing lock-in before the next cycle.`
         : `Moderate BATNA: Lock-In Index ${lockInIndex.toFixed(1)}/5, ${isSurvivable ? 'survivable' : 'not survivable'} through a transition -- some leverage exists but is not unconditional.`;
   const ar =
     level === 'STRONG'
       ? `قوة تفاوضية عالية: مؤشر التقييد ${lockInIndex.toFixed(1)}/5 (منخفض) والعميل قادر على الاستمرار خلال فترة الانتقال -- يوجد بديل حقيقي وقابل للتنفيذ عن هذه الصفقة ويمكن ذكره صراحةً على طاولة التفاوض.`
       : level === 'WEAK'
-        ? `قوة تفاوضية ضعيفة: ${lockInIndex >= HIGH_LOCK_IN_THRESHOLD ? `مؤشر التقييد ${lockInIndex.toFixed(1)}/5 (مرتفع)` : 'عدم القدرة على الاستمرار خلال فترة الانتقال'} -- الانسحاب ليس تهديداً قابلاً للتصديق اليوم؛ يجب التفاوض وفقاً لذلك وإعطاء أولوية لتقليل التقييد قبل الدورة القادمة.`
+        ? `قوة تفاوضية ضعيفة: ${lockInIndex >= th.thresholds.high ? `مؤشر التقييد ${lockInIndex.toFixed(1)}/5 (مرتفع)` : 'عدم القدرة على الاستمرار خلال فترة الانتقال'} -- الانسحاب ليس تهديداً قابلاً للتصديق اليوم؛ يجب التفاوض وفقاً لذلك وإعطاء أولوية لتقليل التقييد قبل الدورة القادمة.`
         : `قوة تفاوضية متوسطة: مؤشر التقييد ${lockInIndex.toFixed(1)}/5، و${isSurvivable ? 'قادر' : 'غير قادر'} على الاستمرار خلال فترة الانتقال -- توجد بعض القوة التفاوضية لكنها غير مطلقة.`;
 
   let quadrantConsistencyNote: string | null = null;
@@ -818,7 +859,38 @@ export function assessNegotiationLeverage(inputs: NegotiationLeverageInputs, qua
     quadrantConsistencyNoteAr = 'يستحق إعادة التحقق: مورد من ربع "الاختناق" (يملك بحكم تعريفه بدائل حقيقية قليلة) يُظهر قوة تفاوضية عالية محسوبة هو تناقض بنيوي -- تأكد مما إذا كان قد ظهر بديل حقيقي جديد فعلاً (وعندها قد يكون تصنيف كرالييك نفسه جاهزاً للتغيير) أو ما إذا كانت مدخلات الوحدة 05 بحاجة لمراجعة.';
   }
 
-  return { level, lockInIndex, isSurvivable, framingEn: en, framingAr: ar, quadrantConsistencyNote, quadrantConsistencyNoteAr };
+  return { level, lockInIndex, isSurvivable, framingEn: en, framingAr: ar, quadrantConsistencyNote, quadrantConsistencyNoteAr, ...thresholdFields };
+}
+
+export interface LeverageSensitivity {
+  /** Reading with the cut-offs in force. */
+  base: LeverageLevel;
+  /** Reading if both cut-offs were `step` more cautious (strong harder to reach, weak easier to reach). */
+  moreCautious: LeverageLevel;
+  /** Reading if both cut-offs were `step` less cautious. */
+  lessCautious: LeverageLevel;
+  /** True when moving the cut-offs by `step` either way changes the reading. */
+  changes: boolean;
+  step: number;
+}
+
+/**
+ * How fragile is the reading to the (unsourced) numeric cut-offs? Shifts both cut-offs by `step` (default 0.5)
+ * in each direction, clamped to the valid 0-5 range, and re-runs the same rule. Pure arithmetic on the same
+ * inputs; adds no new claim.
+ */
+export function assessLeverageSensitivity(inputs: NegotiationLeverageInputs, quadrant?: KraljicQuadrant | null, opts?: AssessLeverageOptions, step = 0.5): LeverageSensitivity {
+  const base = assessNegotiationLeverage(inputs, quadrant, opts);
+  const { low, high } = base.thresholds;
+  const s = Number.isFinite(step) && step > 0 ? step : 0.5;
+  const shifted = (dl: number): LeverageLevel => {
+    const nl = Math.min(4.9, Math.max(0, low + dl));
+    const nh = Math.min(5, Math.max(nl + 0.1, high + dl));
+    return assessNegotiationLeverage(inputs, quadrant, { thresholds: { low: nl, high: nh } }).level;
+  };
+  const moreCautious = shifted(-s);
+  const lessCautious = shifted(s);
+  return { base: base.level, moreCautious, lessCautious, changes: moreCautious !== base.level || lessCautious !== base.level, step: s };
 }
 
 // ---------------------------------------------------------------------------
