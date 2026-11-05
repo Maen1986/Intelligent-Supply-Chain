@@ -4,16 +4,18 @@
 // A guided six-step preparation flow that surfaces logic which already existed and was tested but had no page:
 //   supplierCommercialIntelligence.ts  -> leverage reading, price trend, tit-for-tat next move
 //   negotiationTactics.ts              -> tactics to use, tactics to watch for, team, stages
-// Standalone-first: manual input only. Saved in this browser only (localStorage), a disclosed
-// prototype-stage limit; a server-saved case record is the next step in the E3 spec.
+// Standalone-first: manual input only. Saved in this browser (localStorage); signed-in users also get one
+// server-saved case (negotiation_cases). Several named cases per user is the next E3 step.
 // Nothing here is shared with the supplier. Every rule and threshold is disclosed on screen.
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Handshake, Plus, Trash2, Printer, Info, ShieldAlert, Check, ChevronRight, ChevronLeft,
   Gauge, TrendingUp, Swords, Users, Repeat, FileText, Sparkles, RotateCcw, Lock,
 } from 'lucide-react';
 import { useLanguage } from '@/lib/LanguageContext';
 import { safeSetItem } from '@/lib/storage';
+import { useAuth } from '@/lib/AuthContext';
+import { API_BASE } from '@/lib/apiBase';
 import type { KraljicQuadrant } from '@/lib/kraljicScoring';
 import { deriveSeverity, type SupplierCheck } from '@/lib/supplierDependency';
 import {
@@ -180,7 +182,63 @@ export function NegotiationDesk() {
   const [s, setS] = useState<DeskState>(load);
   const [step, setStep] = useState(0);
   const depChecks = useMemo(loadChecks, []);
-  useEffect(() => { safeSetItem(KEY, JSON.stringify(s)); }, [s]);
+  // Server save (E3 N0, 5 Nov 2026): signed-in users also get one saved case in their account
+  // (table negotiation_cases). Same whole-state pattern as rar_analyses / supplier_dependency_checks.
+  // localStorage stays the source of truth if the server is unreachable; signed-out users are unchanged.
+  const { user } = useAuth();
+  const [sync, setSync] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const bootDone = useRef(false);
+  const localEdited = useRef(false);
+  const skipNextPush = useRef(false);
+  const firstRun = useRef(true);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const stateRef = useRef(s);
+  stateRef.current = s;
+  const push = (st: DeskState) => {
+    if (!user) return;
+    setSync('saving');
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`${API_BASE}/negotiation-cases`, {
+          method: 'PUT', credentials: 'include', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ cases: [{ clientKey: 'desk-current', name: (st.supplier.trim() || 'Negotiation').slice(0, 120), data: st }] }),
+        });
+        setSync(res.ok ? 'saved' : 'error');
+        if (res.ok) setTimeout(() => setSync('idle'), 2500);
+      } catch { setSync('error'); }
+    }, 500);
+  };
+  useEffect(() => {
+    safeSetItem(KEY, JSON.stringify(s));
+    if (firstRun.current) { firstRun.current = false; return; }
+    if (skipNextPush.current) { skipNextPush.current = false; return; }
+    if (!bootDone.current) { localEdited.current = true; return; }
+    push(s);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [s]);
+  useEffect(() => {
+    if (!user) { bootDone.current = false; return; }
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`${API_BASE}/negotiation-cases`, { credentials: 'include' });
+        if (!cancelled && res.ok) {
+          const data = await res.json() as { ok: boolean; cases: { data: DeskState }[] };
+          if (data.ok && Array.isArray(data.cases) && data.cases.length > 0 && !localEdited.current) {
+            skipNextPush.current = true;
+            setS({ ...EMPTY, ...data.cases[0].data });
+          } else if (!cancelled) {
+            const cur = stateRef.current;
+            if (cur.supplier || cur.points.length || cur.rounds.length) push(cur);
+          }
+        }
+      } catch { /* offline: localStorage keeps working */ }
+      if (!cancelled) bootDone.current = true;
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
   const set = <K extends keyof DeskState>(k: K, v: DeskState[K]) => setS(prev => ({ ...prev, [k]: v }));
 
   const lockInNum = s.lockIn.trim() === '' ? null : Number(s.lockIn);
@@ -238,6 +296,12 @@ export function NegotiationDesk() {
             <span className="px-3 py-1 rounded-full border border-white/20 bg-white/5 flex items-center gap-1"><Lock className="w-3 h-3" />{t('Private to your team', 'خاص بفريقك')}</span>
             <span className="px-3 py-1 rounded-full border border-white/20 bg-white/5">{t('Rules shown on screen', 'القواعد معروضة على الشاشة')}</span>
             <span className="px-3 py-1 rounded-full border border-white/20 bg-white/5">{t('Arabic / English', 'عربي / إنجليزي')}</span>
+            <span className="px-3 py-1 rounded-full border border-white/20 bg-white/5" role="status">
+              {!user ? t('Saved in this browser. Sign in to keep it across devices.', 'محفوظ في هذا المتصفح. سجّل الدخول للاحتفاظ به عبر الأجهزة.')
+                : sync === 'saving' ? t('Saving to your account...', 'جارٍ الحفظ في حسابك...')
+                : sync === 'error' ? t('Could not reach the server. Saved in this browser.', 'تعذّر الوصول إلى الخادم. تم الحفظ في هذا المتصفح.')
+                : t('Saved to your account', 'محفوظ في حسابك')}
+            </span>
           </div>
         </div>
       </div>
@@ -473,7 +537,7 @@ export function NegotiationDesk() {
                 <p className="text-xs font-bold text-slate-500 mb-1">{t('Next move', 'الخطوة التالية')}</p>
                 <p className="text-sm">{isAr ? next.rationaleAr : next.rationaleEn}</p>
               </div>
-              <Note>{t('Internal. Not for the supplier. Not legal advice. The recommendation is ISC guidance derived from the rule on step 2, not a sourced benchmark. Saved in this browser only.', 'داخلي. ليس للمورّد. ليس استشارة قانونية. التوصية إرشاد من ISC مشتق من القاعدة في الخطوة 2، وليست معياراً موثّقاً. يُحفظ في هذا المتصفح فقط.')}</Note>
+              <Note>{t('Internal. Not for the supplier. Not legal advice. The recommendation is ISC guidance derived from the rule on step 2, not a sourced benchmark. Saved in this browser, and in your account when you are signed in (one saved case).', 'داخلي. ليس للمورّد. ليس استشارة قانونية. التوصية إرشاد من ISC مشتق من القاعدة في الخطوة 2، وليست معياراً موثّقاً. يُحفظ في هذا المتصفح، وفي حسابك عند تسجيل الدخول (حالة محفوظة واحدة).')}</Note>
             </div>
           )}
         </div>
