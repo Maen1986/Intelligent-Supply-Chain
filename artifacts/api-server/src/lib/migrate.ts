@@ -507,6 +507,23 @@ const MIGRATIONS: string[] = [
    )`,
   `CREATE INDEX IF NOT EXISTS industry_benchmarks_cohort ON industry_benchmarks (industry, company_size)`,
 
+  // negotiation_cases -- server persistence for the Negotiation Desk (E3 N0,
+  // 5 Nov 2026; table approved by the owner 6 Nov 2026). See
+  // lib/db/src/schema/negotiationCases.ts. Created here because the build-time
+  // `drizzle-kit push` aborts on Render (interactive prompt needs a TTY), so
+  // new tables only appear through this startup guard. Additive and idempotent.
+  `CREATE TABLE IF NOT EXISTS negotiation_cases (
+     id               SERIAL PRIMARY KEY,
+     user_id          INTEGER     NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+     organization_id  INTEGER     REFERENCES organizations(id),
+     client_key       TEXT        NOT NULL,
+     name             TEXT        NOT NULL,
+     data             JSONB       NOT NULL,
+     created_at       TIMESTAMP   NOT NULL DEFAULT NOW(),
+     updated_at       TIMESTAMP   NOT NULL DEFAULT NOW()
+   )`,
+  `CREATE INDEX IF NOT EXISTS negotiation_cases_user_id ON negotiation_cases (user_id)`,
+
   // Content-fidelity fix (22 Sep 2026) -- the 'ksa'/'iktva' regulatory
   // framework's name_ar carried a one-character orthographic defect: a
   // hamza-seat alif (إكتفاء) instead of the grammatically-correct plain-alif
