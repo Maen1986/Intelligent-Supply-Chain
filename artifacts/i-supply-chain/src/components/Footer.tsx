@@ -76,7 +76,7 @@ export function Footer() {
 
           {/* Services */}
           <div className="flex flex-col gap-4">
-            <h4 className="font-bold text-sm uppercase tracking-widest text-white/50">{ar ? 'الخدمات' : 'Services'}</h4>
+            <h4 className="font-bold text-sm uppercase tracking-widest text-white/70">{ar ? 'الخدمات' : 'Services'}</h4>
             <nav className="flex flex-col gap-2.5">
               {[
                 { label: 'AI Supply Chain Diagnostic', labelAr: 'التشخيص الذكي لسلسلة الإمداد', href: '/diagnostic' },
@@ -97,7 +97,7 @@ export function Footer() {
 
           {/* Company */}
           <div className="flex flex-col gap-4">
-            <h4 className="font-bold text-sm uppercase tracking-widest text-white/50">{ar ? 'الشركة' : 'Company'}</h4>
+            <h4 className="font-bold text-sm uppercase tracking-widest text-white/70">{ar ? 'الشركة' : 'Company'}</h4>
             <nav className="flex flex-col gap-2.5">
               {[
                 { label: 'About Us', labelAr: 'من نحن', href: '/about' },
@@ -116,7 +116,7 @@ export function Footer() {
 
           {/* Contact & Newsletter */}
           <div className="flex flex-col gap-5">
-            <h4 className="font-bold text-sm uppercase tracking-widest text-white/50">{ar ? 'تواصل معنا' : 'Get in Touch'}</h4>
+            <h4 className="font-bold text-sm uppercase tracking-widest text-white/70">{ar ? 'تواصل معنا' : 'Get in Touch'}</h4>
             <div className="flex flex-col gap-3">
               <a href="tel:+966549479722" className="flex items-center gap-3 text-white/70 hover:text-white text-sm transition-colors">
                 <Phone className="w-4 h-4 shrink-0 text-accent" />
@@ -167,10 +167,10 @@ export function Footer() {
 
       {/* Bottom bar */}
       <div className="border-t border-white/10">
-        <div className="container mx-auto px-4 py-5 flex flex-col sm:flex-row justify-between items-center gap-3 text-xs text-white/40">
+        <div className="container mx-auto px-4 py-5 flex flex-col sm:flex-row justify-between items-center gap-3 text-xs text-white/70">
           <div>
             <p>{lang === 'ar' ? '© 2026 آي سبلاي تشين. جميع الحقوق محفوظة.' : '© 2026 I Supply Chain. All Rights Reserved.'}</p>
-            <p className="text-white/25 text-[10px] mt-0.5">{ar ? 'جميع الملكيات الفكرية والمنهجيات وأدوات الذكاء الاصطناعي والأطر مملوكة حصرياً لشركة ISC.' : 'All intellectual property, methodologies, AI tools & frameworks are exclusively owned by ISC.'}</p>
+            <p className="text-white/60 text-[10px] mt-0.5">{ar ? 'جميع الملكيات الفكرية والمنهجيات وأدوات الذكاء الاصطناعي والأطر مملوكة حصرياً لشركة ISC.' : 'All intellectual property, methodologies, AI tools & frameworks are exclusively owned by ISC.'}</p>
           </div>
           <div className="flex gap-5">
             <Link href="/legal" className="hover:text-white/70 transition-colors">{ar ? 'الإشعار القانوني والملكية الفكرية' : 'Legal & IP Notice'}</Link>

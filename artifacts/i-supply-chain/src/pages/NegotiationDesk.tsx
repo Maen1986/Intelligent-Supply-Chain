@@ -158,7 +158,7 @@ function PowerMeter({ value, isAr }: { value: number | null; isAr: boolean }) {
         <div className="bg-red-400" style={{ width: '20%' }} />
         {pct !== null && <div className="absolute top-[-3px] w-1.5 h-[18px] bg-[#082C6B] rounded border border-white" style={{ [isAr ? 'right' : 'left']: `calc(${isAr ? 100 - pct : pct}% - 3px)` }} />}
       </div>
-      <div className="flex justify-between text-[10px] text-slate-400 mt-1"><span>0</span><span>2</span><span>4</span><span>5</span></div>
+      <div className="flex justify-between text-[10px] text-slate-600 mt-1"><span>0</span><span>2</span><span>4</span><span>5</span></div>
     </div>
   );
 }
@@ -325,13 +325,13 @@ export function NegotiationDesk() {
       <div className="container mx-auto px-4 max-w-4xl -mt-5 pb-12">
         {/* At-a-glance bar */}
         <div className="bg-white border border-slate-200 rounded-2xl shadow-md p-4 grid grid-cols-2 sm:grid-cols-4 gap-3 sticky top-2 z-10" aria-label={t('Your negotiation at a glance', 'تفاوضك في لمحة')}>
-          <div><p className="text-[10px] uppercase tracking-wide text-slate-400">{t('Position', 'الموقف')}</p>
+          <div><p className="text-[10px] uppercase tracking-wide text-slate-600">{t('Position', 'الموقف')}</p>
             <p className="text-sm font-bold flex items-center gap-1.5"><span className={`w-2.5 h-2.5 rounded-full ${tone.dot}`} />{isAr ? tone.ar : tone.en}</p></div>
-          <div><p className="text-[10px] uppercase tracking-wide text-slate-400">{t('Price', 'السعر')}</p>
+          <div><p className="text-[10px] uppercase tracking-wide text-slate-600">{t('Price', 'السعر')}</p>
             <p className="text-sm font-bold">{isAr ? DIR[trend.direction].ar : DIR[trend.direction].en}{trend.percentChange !== null && ` ${trend.percentChange > 0 ? '+' : ''}${trend.percentChange.toFixed(1)}%`}</p></div>
-          <div><p className="text-[10px] uppercase tracking-wide text-slate-400">{t('Ready', 'الجاهزية')}</p>
+          <div><p className="text-[10px] uppercase tracking-wide text-slate-600">{t('Ready', 'الجاهزية')}</p>
             <p className="text-sm font-bold">{done}/{checks.length}</p></div>
-          <div><p className="text-[10px] uppercase tracking-wide text-slate-400">{t('Next move', 'الخطوة التالية')}</p>
+          <div><p className="text-[10px] uppercase tracking-wide text-slate-600">{t('Next move', 'الخطوة التالية')}</p>
             <p className="text-sm font-bold">{next.move === 'cooperate' ? t('Cooperate', 'تعاون') : t('Match, then reset', 'مجاراة ثم عودة')}</p></div>
         </div>
 
@@ -465,7 +465,7 @@ export function NegotiationDesk() {
                     <label className="text-[11px] text-slate-500">{t('Period', 'الفترة')}<input className={`${inputCls} mt-1`} value={p.periodLabel} onChange={e => updPoint(i, { periodLabel: e.target.value })} /></label>
                     <label className="text-[11px] text-slate-500">{t('Unit price', 'سعر الوحدة')}<input className={`${inputCls} mt-1`} type="number" min={0} value={p.price || ''} onChange={e => updPoint(i, { price: Number(e.target.value) })} /></label>
                     <label className="text-[11px] text-slate-500">{t('Date', 'التاريخ')}<input className={`${inputCls} mt-1`} type="date" value={p.sortKey} onChange={e => updPoint(i, { sortKey: e.target.value })} /></label>
-                    <button aria-label={t('Remove price point', 'حذف نقطة السعر')} onClick={() => set('points', s.points.filter((_, j) => j !== i))} className="p-2.5 text-slate-400 hover:text-red-600"><Trash2 className="w-4 h-4" /></button>
+                    <button aria-label={t('Remove price point', 'حذف نقطة السعر')} onClick={() => set('points', s.points.filter((_, j) => j !== i))} className="p-2.5 text-slate-600 hover:text-red-600"><Trash2 className="w-4 h-4" /></button>
                   </div>
                 ))}
               </div>
@@ -528,7 +528,7 @@ export function NegotiationDesk() {
                     <label className="text-[11px] text-slate-500">{t('Their move', 'خطوتهم')}
                       <select className={`${inputCls} mt-1`} value={r.counterpartMove} onChange={e => updRound(i, { counterpartMove: e.target.value as CounterpartMove })}>
                         <option value="cooperated">{t('Cooperated', 'تعاونوا')}</option><option value="defected">{t('Pushed hard', 'ضغطوا')}</option><option value="unclear">{t('Unclear', 'غير واضح')}</option></select></label>
-                    <button aria-label={t('Remove round', 'حذف الجولة')} onClick={() => set('rounds', s.rounds.filter((_, j) => j !== i))} className="p-2.5 text-slate-400 hover:text-red-600 justify-self-end"><Trash2 className="w-4 h-4" /></button>
+                    <button aria-label={t('Remove round', 'حذف الجولة')} onClick={() => set('rounds', s.rounds.filter((_, j) => j !== i))} className="p-2.5 text-slate-600 hover:text-red-600 justify-self-end"><Trash2 className="w-4 h-4" /></button>
                     <label className="text-[11px] text-slate-500 sm:col-span-4">{t('Why did you label it this way? (write the evidence)', 'لماذا صنّفتها هكذا؟ (اكتب الدليل)')}
                       <input className={`${inputCls} mt-1`} value={r.note} onChange={e => updRound(i, { note: e.target.value })} /></label>
                   </div>
@@ -575,7 +575,7 @@ export function NegotiationDesk() {
                 <div className="border border-slate-200 rounded-xl p-4">
                   <p className="text-xs font-bold text-slate-500 mb-2">{t('Readiness', 'الجاهزية')} {done}/{checks.length}</p>
                   <ul className="text-sm space-y-1">{checks.map(c => (
-                    <li key={c.en} className={`flex items-center gap-2 ${c.ok ? 'text-emerald-700' : 'text-slate-400'}`}>
+                    <li key={c.en} className={`flex items-center gap-2 ${c.ok ? 'text-emerald-700' : 'text-slate-600'}`}>
                       {c.ok ? <Check className="w-4 h-4" /> : <span className="w-4 h-4 rounded-full border border-slate-300 inline-block" />}{isAr ? c.ar : c.en}</li>))}</ul>
                 </div>
               </div>

@@ -59,7 +59,7 @@ export function AnnouncementBanner() {
               <Link href="/command-center" onClick={dismiss} aria-label={ar ? 'ابدأ الآن' : 'Get Started'}>
                 <motion.span
                   whileHover={{ scale: 1.04 }}
-                  className="hidden sm:flex items-center gap-1.5 bg-[#C9A84C] hover:bg-[#b8973e] text-white text-xs font-bold px-3 py-1 rounded-lg transition-colors cursor-pointer shadow"
+                  className="hidden sm:flex items-center gap-1.5 bg-[#C9A84C] hover:bg-[#b8973e] text-[#082C6B] text-xs font-bold px-3 py-1 rounded-lg transition-colors cursor-pointer shadow"
                 >
                   {ar ? 'ابدأ الآن' : 'Get Started'} {ar ? <ArrowLeft className="w-3.5 h-3.5" /> : <ArrowRight className="w-3.5 h-3.5" />}
                 </motion.span>
