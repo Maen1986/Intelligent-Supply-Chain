@@ -76,7 +76,7 @@ export function Footer() {
 
           {/* Services */}
           <div className="flex flex-col gap-4">
-            <h4 className="font-bold text-sm uppercase tracking-widest text-white/50">{ar ? 'الخدمات' : 'Services'}</h4>
+            <h4 className="font-bold text-sm uppercase tracking-widest text-white/70">{ar ? 'الخدمات' : 'Services'}</h4>
             <nav className="flex flex-col gap-2.5">
               {[
                 { label: 'AI Supply Chain Diagnostic', labelAr: 'التشخيص الذكي لسلسلة الإمداد', href: '/diagnostic' },
@@ -97,7 +97,7 @@ export function Footer() {
 
           {/* Company */}
           <div className="flex flex-col gap-4">
-            <h4 className="font-bold text-sm uppercase tracking-widest text-white/50">{ar ? 'الشركة' : 'Company'}</h4>
+            <h4 className="font-bold text-sm uppercase tracking-widest text-white/70">{ar ? 'الشركة' : 'Company'}</h4>
             <nav className="flex flex-col gap-2.5">
               {[
                 { label: 'About Us', labelAr: 'من نحن', href: '/about' },
@@ -116,7 +116,7 @@ export function Footer() {
 
           {/* Contact & Newsletter */}
           <div className="flex flex-col gap-5">
-            <h4 className="font-bold text-sm uppercase tracking-widest text-white/50">{ar ? 'تواصل معنا' : 'Get in Touch'}</h4>
+            <h4 className="font-bold text-sm uppercase tracking-widest text-white/70">{ar ? 'تواصل معنا' : 'Get in Touch'}</h4>
             <div className="flex flex-col gap-3">
               <a href="tel:+966549479722" className="flex items-center gap-3 text-white/70 hover:text-white text-sm transition-colors">
                 <Phone className="w-4 h-4 shrink-0 text-accent" />
