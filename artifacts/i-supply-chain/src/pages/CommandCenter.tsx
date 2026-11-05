@@ -736,7 +736,7 @@ function BenchmarkTab({ lang }: { lang: Lang }) {
             <label className="text-xs font-bold text-[#082C6B] uppercase tracking-wider">
               {ar ? 'القطاع الصناعي' : 'Industry Sector'}
             </label>
-            <select value={industry} onChange={e => handleIndustryChange(e.target.value)}
+            <select aria-label={ar ? 'القطاع الصناعي' : 'Industry Sector'} value={industry} onChange={e => handleIndustryChange(e.target.value)}
               className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#082C6B]/30">
               {Object.keys(INDUSTRY_TREE).map(i => <option key={i} value={i}>{industryLabel(i, ar)}</option>)}
             </select>
@@ -747,7 +747,7 @@ function BenchmarkTab({ lang }: { lang: Lang }) {
             <label className="text-xs font-bold text-[#082C6B] uppercase tracking-wider">
               {ar ? 'القطاع الفرعي' : 'Sub-Sector'}
             </label>
-            <select value={subIndustry} onChange={e => handleSubSectorChange(e.target.value)}
+            <select aria-label={ar ? 'القطاع الفرعي' : 'Sub-Sector'} value={subIndustry} onChange={e => handleSubSectorChange(e.target.value)}
               className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#082C6B]/30">
               <option value="">{ar ? '— الكل —' : '— All sub-sectors —'}</option>
               {(INDUSTRY_TREE[industry] ?? []).map(s => <option key={s} value={s}>{subSectorLabel(industry, s, ar)}</option>)}
@@ -765,6 +765,7 @@ function BenchmarkTab({ lang }: { lang: Lang }) {
               )}
             </label>
             <select
+              aria-label={ar ? 'فئة المخزون / SKU' : 'SKU / Inventory Class'}
               value={skuClass ?? ''}
               onChange={e => setSkuClass((e.target.value as SkuClassKey) || null)}
               className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#082C6B]/30"
@@ -792,7 +793,7 @@ function BenchmarkTab({ lang }: { lang: Lang }) {
               {ar ? 'الإيرادات السنوية' : 'Annual Revenue'}
             </label>
             <div className="flex items-center gap-2">
-              <input type="range" min={10} max={5000} step={10} value={revenue}
+              <input type="range" min={10} max={5000} step={10} value={revenue} aria-label={ar ? 'الإيرادات السنوية' : 'Annual Revenue'}
                 onChange={e => setRevenue(+e.target.value)}
                 className="flex-1 accent-[#C9A84C]" />
               <span className="text-sm font-bold text-[#C9A84C] whitespace-nowrap w-24 text-right">
@@ -914,17 +915,17 @@ function BenchmarkTab({ lang }: { lang: Lang }) {
                   <td className="px-3 py-2.5 font-semibold text-muted-foreground">{g.gcMedianRaw}</td>
                   <td className="px-3 py-2.5">
                     <div className="flex items-center gap-1">
-                      <input type="number" min={0} max={100}
+                      <input type="number" min={0} max={100} aria-label={`${ar ? 'الهدف' : 'Target'} ${g.id}`}
                         value={Math.round(targets[g.id] ?? g.gcTopQ)}
                         onChange={e => setTargets(p => ({ ...p, [g.id]: +e.target.value }))}
                         className="w-14 border border-border rounded px-1.5 py-0.5 text-xs text-center bg-white focus:outline-none focus:ring-1 focus:ring-[#082C6B]" />
                       <span className="text-muted-foreground">/100</span>
                     </div>
                   </td>
-                  <td className={`px-3 py-2.5 font-bold ${g.gapToMed > 10 ? 'text-red-600' : g.gapToMed > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>
+                  <td className={`px-3 py-2.5 font-bold ${g.gapToMed > 10 ? 'text-red-600' : g.gapToMed > 0 ? 'text-amber-700' : 'text-emerald-600'}`}>
                     {g.gapToMed > 0 ? `−${Math.round(g.gapToMed)}` : `+${Math.abs(Math.round(g.gapToMed))}`}
                   </td>
-                  <td className={`px-3 py-2.5 font-bold ${g.gapToTgt > 15 ? 'text-red-600' : g.gapToTgt > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>
+                  <td className={`px-3 py-2.5 font-bold ${g.gapToTgt > 15 ? 'text-red-600' : g.gapToTgt > 0 ? 'text-amber-700' : 'text-emerald-600'}`}>
                     {g.gapToTgt > 0 ? `−${Math.round(g.gapToTgt)}` : `+${Math.abs(Math.round(g.gapToTgt))}`}
                   </td>
                   <td className="px-3 py-2.5 font-bold text-[#082C6B]">
@@ -1381,7 +1382,7 @@ function RiskTab({ lang }: { lang: Lang }) {
         <div className="space-y-1.5">
           <label className="text-xs font-bold text-[#082C6B] uppercase tracking-wider">{ar ? 'الإيرادات السنوية' : 'Annual Revenue'}</label>
           <div className="flex items-center gap-2">
-            <input type="range" min={10} max={5000} step={10} value={revenue} onChange={e => setRevenue(+e.target.value)} className="flex-1 accent-[#C9A84C]" />
+            <input type="range" min={10} max={5000} step={10} value={revenue} aria-label={ar ? 'الإيرادات السنوية' : 'Annual Revenue'} onChange={e => setRevenue(+e.target.value)} className="flex-1 accent-[#C9A84C]" />
             <span className="text-sm font-bold text-[#C9A84C] whitespace-nowrap w-24 text-right">
               {revenue >= 1000 ? `SAR ${(revenue/1000).toFixed(1)}B` : `SAR ${revenue}M`}
             </span>
@@ -2805,7 +2806,7 @@ function BriefingTab({ lang }: { lang: Lang }) {
                   <div className="w-20 h-1.5 rounded-full bg-gray-100 overflow-hidden">
                     <div className={`h-full rounded-full ${s.score <= 2 ? 'bg-red-500' : s.score <= 3 ? 'bg-amber-500' : 'bg-emerald-500'}`} style={{ width: `${(s.score / 5) * 100}%` }} />
                   </div>
-                  <span className={`text-sm font-bold tabular-nums ${s.score <= 2 ? 'text-red-600' : s.score <= 3 ? 'text-amber-600' : 'text-emerald-600'}`}>{s.score}<span className="text-xs font-normal text-muted-foreground">/5</span></span>
+                  <span className={`text-sm font-bold tabular-nums ${s.score <= 2 ? 'text-red-600' : s.score <= 3 ? 'text-amber-700' : 'text-emerald-600'}`}>{s.score}<span className="text-xs font-normal text-muted-foreground">/5</span></span>
                 </div>
               </div>
             ))}
@@ -3556,7 +3557,7 @@ function ConsultancyTab({ lang }: { lang: Lang }) {
             </div>
             <div className="rounded-xl border p-4 text-center">
               <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">{ar ? 'المخاطر' : 'Risk Level'}</p>
-              <p className={`font-black text-sm ${diagnosis.riskAssessment.level === 'Critical' ? 'text-red-600' : diagnosis.riskAssessment.level === 'High' ? 'text-orange-600' : diagnosis.riskAssessment.level === 'Moderate' ? 'text-amber-600' : 'text-emerald-600'}`}>{diagnosis.riskAssessment.level}</p>
+              <p className={`font-black text-sm ${diagnosis.riskAssessment.level === 'Critical' ? 'text-red-600' : diagnosis.riskAssessment.level === 'High' ? 'text-orange-600' : diagnosis.riskAssessment.level === 'Moderate' ? 'text-amber-700' : 'text-emerald-600'}`}>{diagnosis.riskAssessment.level}</p>
               <p className="text-2xl font-black mt-1" style={{ color: riskColor(diagnosis.riskAssessment.iso31000Score) }}>{diagnosis.riskAssessment.iso31000Score}<span className="text-sm font-normal">/100</span></p>
             </div>
             <div className="rounded-xl border p-4 text-center">
@@ -3570,7 +3571,7 @@ function ConsultancyTab({ lang }: { lang: Lang }) {
               {(diagnosis.problems ?? []).map((p) => {
                 const sev = p.severityScore >= 70 ? 'High' : p.severityScore >= 40 ? 'Medium' : 'Low';
                 const sevClass = sev === 'High' ? 'bg-red-50 border-red-200' : sev === 'Medium' ? 'bg-amber-50 border-amber-200' : 'bg-blue-50 border-blue-200';
-                const sevIcon  = sev === 'High' ? 'text-red-600' : sev === 'Medium' ? 'text-amber-600' : 'text-blue-600';
+                const sevIcon  = sev === 'High' ? 'text-red-600' : sev === 'Medium' ? 'text-amber-700' : 'text-blue-600';
                 const sevBadge = sev === 'High' ? 'bg-red-100 text-red-700' : sev === 'Medium' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700';
                 const isOpen = !!expandedProblems[p.id];
                 return (

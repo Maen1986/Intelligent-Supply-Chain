@@ -274,7 +274,7 @@ export function Login() {
                       <Input inputMode="numeric" autoComplete="one-time-code" placeholder={ar ? 'الرمز المكون من 6 أرقام' : '6-digit code'} value={resetCode} onChange={e => setResetCode(e.target.value)} />
                     </Field>
                     <Field label={ar ? 'كلمة المرور الجديدة *' : 'New Password *'} icon={<Lock className="w-4 h-4" />}
-                      suffix={<button type="button" onClick={() => setShowPass(v => !v)} className="text-muted-foreground hover:text-primary">{showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}</button>}>
+                      suffix={<button type="button" onClick={() => setShowPass(v => !v)} aria-label={ar ? 'إظهار أو إخفاء كلمة المرور' : 'Show or hide password'} className="text-muted-foreground hover:text-primary">{showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}</button>}>
                       <Input type={showPass ? 'text' : 'password'} placeholder={ar ? '6 أحرف على الأقل' : 'Min. 6 characters'} value={newPassword} onChange={e => setNewPassword(e.target.value)} />
                     </Field>
                     <Button type="submit" disabled={loading}
@@ -312,7 +312,7 @@ export function Login() {
                   <Input type="email" placeholder={ar ? 'you@company.com' : 'you@company.com'} value={form.email} onChange={set('email')} />
                 </Field>
                 <Field label={ar ? 'كلمة المرور *' : 'Password *'} icon={<Lock className="w-4 h-4" />}
-                  suffix={<button type="button" onClick={() => setShowPass(v => !v)} className="text-muted-foreground hover:text-primary">{showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}</button>}>
+                  suffix={<button type="button" onClick={() => setShowPass(v => !v)} aria-label={ar ? 'إظهار أو إخفاء كلمة المرور' : 'Show or hide password'} className="text-muted-foreground hover:text-primary">{showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}</button>}>
                   <Input type={showPass ? 'text' : 'password'} placeholder={ar ? '6 أحرف على الأقل' : 'Min. 6 characters'} value={form.password} onChange={set('password')} />
                 </Field>
                 <Field label={ar ? 'رقم الجوال *' : 'Mobile Number *'} icon={<Phone className="w-4 h-4" />}>
@@ -345,7 +345,7 @@ export function Login() {
                   <Input type="email" placeholder="you@company.com" value={form.email} onChange={set('email')} />
                 </Field>
                 <Field label={ar ? 'كلمة المرور *' : 'Password *'} icon={<Lock className="w-4 h-4" />}
-                  suffix={<button type="button" onClick={() => setShowPass(v => !v)} className="text-muted-foreground hover:text-primary">{showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}</button>}>
+                  suffix={<button type="button" onClick={() => setShowPass(v => !v)} aria-label={ar ? 'إظهار أو إخفاء كلمة المرور' : 'Show or hide password'} className="text-muted-foreground hover:text-primary">{showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}</button>}>
                   <Input type={showPass ? 'text' : 'password'} placeholder={ar ? 'كلمة المرور الخاصة بك' : 'Your password'} value={form.password} onChange={set('password')} />
                 </Field>
                 <p className="text-right rtl:text-left -mt-1">
