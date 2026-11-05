@@ -167,10 +167,10 @@ export function Footer() {
 
       {/* Bottom bar */}
       <div className="border-t border-white/10">
-        <div className="container mx-auto px-4 py-5 flex flex-col sm:flex-row justify-between items-center gap-3 text-xs text-white/40">
+        <div className="container mx-auto px-4 py-5 flex flex-col sm:flex-row justify-between items-center gap-3 text-xs text-white/70">
           <div>
             <p>{lang === 'ar' ? '© 2026 آي سبلاي تشين. جميع الحقوق محفوظة.' : '© 2026 I Supply Chain. All Rights Reserved.'}</p>
-            <p className="text-white/25 text-[10px] mt-0.5">{ar ? 'جميع الملكيات الفكرية والمنهجيات وأدوات الذكاء الاصطناعي والأطر مملوكة حصرياً لشركة ISC.' : 'All intellectual property, methodologies, AI tools & frameworks are exclusively owned by ISC.'}</p>
+            <p className="text-white/60 text-[10px] mt-0.5">{ar ? 'جميع الملكيات الفكرية والمنهجيات وأدوات الذكاء الاصطناعي والأطر مملوكة حصرياً لشركة ISC.' : 'All intellectual property, methodologies, AI tools & frameworks are exclusively owned by ISC.'}</p>
           </div>
           <div className="flex gap-5">
             <Link href="/legal" className="hover:text-white/70 transition-colors">{ar ? 'الإشعار القانوني والملكية الفكرية' : 'Legal & IP Notice'}</Link>
