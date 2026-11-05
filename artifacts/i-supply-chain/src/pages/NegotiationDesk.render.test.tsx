@@ -88,3 +88,23 @@ describe('NegotiationDesk QA fixes (5 Nov 2026)', () => {
     expect(nav.className).not.toMatch(/overflow-x-auto/);
   });
 });
+
+describe('NegotiationDesk supplier link (5 Nov 2026)', () => {
+  const check = { id: 'sdep-1', name: 'Acme Steel', hasNamedAlternative: false, contractType: 'relationship', switchingCostNote: '', volumeConcentrationPct: 80, hasRecentStressSignal: true, recentStressNote: '' };
+  it('picking a saved Dependency Check fills the name and shows its severity as reference only', () => {
+    localStorage.setItem('isc-supplier-dependency-v1', JSON.stringify([check]));
+    mount('en');
+    fireEvent.change(screen.getByLabelText(/Or pick a supplier from your Dependency Check/), { target: { value: 'sdep-1' } });
+    expect((screen.getByLabelText(/Supplier or category/) as HTMLInputElement).value).toBe('Acme Steel');
+    go(2);
+    expect(screen.getByText(/From your Supplier Dependency Check/)).toBeTruthy();
+    expect(screen.getByText(/ISC does not convert one into the other/)).toBeTruthy();
+    // lock-in index is NOT prefilled
+    expect((screen.getByLabelText(/Lock-in index/) as HTMLInputElement).value).toBe('');
+  });
+  it('no saved checks: shows a pointer to run one, no crash on corrupt storage', () => {
+    localStorage.setItem('isc-supplier-dependency-v1', '{not json');
+    mount('en');
+    expect(screen.getByText(/No saved Dependency Checks/)).toBeTruthy();
+  });
+});

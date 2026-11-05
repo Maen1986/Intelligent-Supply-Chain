@@ -15,6 +15,7 @@ import {
 import { useLanguage } from '@/lib/LanguageContext';
 import { safeSetItem } from '@/lib/storage';
 import type { KraljicQuadrant } from '@/lib/kraljicScoring';
+import { deriveSeverity, type SupplierCheck } from '@/lib/supplierDependency';
 import {
   assessNegotiationLeverage, computePriceTrajectory, recommendNextMove,
   type PricePoint, type NegotiationRound, type OurMove, type CounterpartMove, type LeverageLevel,
@@ -32,6 +33,8 @@ interface DeskState {
   survivable: Survive;
   points: PricePoint[];
   rounds: NegotiationRound[];
+  /** Optional link to a saved Supplier Dependency Check (reference only, never converted to a score). */
+  linkedCheckId?: string;
 }
 const EMPTY: DeskState = { supplier: '', quadrant: 'leverage', lockIn: '', survivable: 'unknown', points: [], rounds: [] };
 // Illustrative example only. Not client data, not a benchmark.
@@ -48,6 +51,14 @@ const EXAMPLE: DeskState = {
   ],
   rounds: [],
 };
+
+function loadChecks(): SupplierCheck[] {
+  try {
+    const raw = localStorage.getItem('isc-supplier-dependency-v1');
+    const parsed = raw ? (JSON.parse(raw) as SupplierCheck[]) : [];
+    return Array.isArray(parsed) ? parsed.filter(c => c && typeof c.name === 'string' && c.name.trim() !== '') : [];
+  } catch { return []; }
+}
 
 function load(): DeskState {
   try {
@@ -168,6 +179,7 @@ export function NegotiationDesk() {
   const t = (en: string, ar: string) => (isAr ? ar : en);
   const [s, setS] = useState<DeskState>(load);
   const [step, setStep] = useState(0);
+  const depChecks = useMemo(loadChecks, []);
   useEffect(() => { safeSetItem(KEY, JSON.stringify(s)); }, [s]);
   const set = <K extends keyof DeskState>(k: K, v: DeskState[K]) => setS(prev => ({ ...prev, [k]: v }));
 
@@ -186,6 +198,8 @@ export function NegotiationDesk() {
   const tone = LEVEL_TONE[leverage.level];
   const approach = APPROACH[leverage.level];
   const quad = QUADRANTS.find(q => q.id === s.quadrant)!;
+  const linked = depChecks.find(c => c.id === s.linkedCheckId);
+  const linkedSeverity = linked ? deriveSeverity(linked, isAr) : null;
   const shownName = isAr && s.supplier === EXAMPLE.supplier ? 'شركة تغليف نموذجية (توضيحي)' : s.supplier;
 
   const checks = [
@@ -269,6 +283,16 @@ export function NegotiationDesk() {
               </div>
               <label className="block text-xs font-semibold text-slate-600 mt-5">{t('Supplier or category', 'المورّد أو الفئة')}
                 <input className={`${inputCls} mt-1`} value={s.supplier} onChange={e => set('supplier', e.target.value)} placeholder={t('e.g. Packaging supplier', 'مثال: مورّد التغليف')} /></label>
+              {depChecks.length > 0 ? (
+                <label className="block text-xs font-semibold text-slate-600 mt-4">{t('Or pick a supplier from your Dependency Check', 'أو اختر مورّداً من فحص الاعتماد لديك')}
+                  <select className={`${inputCls} mt-1`} value={s.linkedCheckId ?? ''}
+                    onChange={e => { const c = depChecks.find(x => x.id === e.target.value); setS(prev => ({ ...prev, linkedCheckId: c ? c.id : undefined, supplier: c ? c.name : prev.supplier })); }}>
+                    <option value="">{t('Not linked', 'غير مرتبط')}</option>
+                    {depChecks.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select></label>
+              ) : (
+                <p className="text-[11px] text-slate-500 mt-3">{t('No saved Dependency Checks in this browser yet. ', 'لا توجد فحوصات اعتماد محفوظة في هذا المتصفح بعد. ')}<a className="underline text-[#082C6B] font-semibold" href="/supplier-dependency">{t('Run one', 'أجرِ فحصاً')}</a>{t(' to link it here.', ' لربطه هنا.')}</p>
+              )}
               <fieldset className="mt-5">
                 <legend className="text-xs font-semibold text-slate-600 mb-2">{t('What kind of purchase is it?', 'ما نوع هذه المشتريات؟')}</legend>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -306,6 +330,13 @@ export function NegotiationDesk() {
                 <p className="text-sm leading-relaxed">{isAr ? leverage.framingAr : leverage.framingEn}</p>
                 {leverage.quadrantConsistencyNote && <p className="text-xs mt-2 flex gap-2"><ShieldAlert className="w-4 h-4 shrink-0" />{isAr ? leverage.quadrantConsistencyNoteAr : leverage.quadrantConsistencyNote}</p>}
               </div>
+              {linked && linkedSeverity && (
+                <div className="mt-4 border border-slate-200 rounded-xl p-4 bg-slate-50 text-sm" role="note">
+                  <p className="font-bold text-xs text-slate-500 mb-1">{t('From your Supplier Dependency Check', 'من فحص اعتماد المورّد لديك')}: {linked.name}</p>
+                  <p><b>{linkedSeverity.level}</b> — {isAr ? linkedSeverity.reasonAr : linkedSeverity.reasonEn}</p>
+                  <p className="text-[11px] text-slate-500 mt-2">{t('This is a different scale from the 0-5 lock-in index. ISC does not convert one into the other; use it as a guide when you answer the two questions above.', 'هذا مقياس مختلف عن مؤشر التقييد من 0 إلى 5. لا تحوّل ISC أحدهما إلى الآخر؛ استخدمه كدليل عند الإجابة عن السؤالين أعلاه.')}</p>
+                </div>
+              )}
               <Note>{t('Rule: strong if lock-in is 2 or below and you could survive a switch; weak if lock-in is 4 or above or you could not survive. The cut-offs 2 and 4 are ISC planning assumptions, not an industry standard. This reads your dependence on the supplier only, not theirs on you.',
                        'القاعدة: قوي إذا كان التقييد 2 أو أقل وتستطيع الصمود عند التغيير؛ ضعيف إذا كان 4 أو أكثر أو لا تستطيع الصمود. الحدّان 2 و4 افتراضات تخطيط من ISC وليسا معياراً صناعياً. يقيس هذا اعتمادك على المورّد فقط، لا اعتماده عليك.')}</Note>
             </div>
