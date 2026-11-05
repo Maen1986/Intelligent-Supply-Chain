@@ -108,3 +108,14 @@ describe('NegotiationDesk supplier link (5 Nov 2026)', () => {
     expect(screen.getByText(/No saved Dependency Checks/)).toBeTruthy();
   });
 });
+
+describe('NegotiationDesk server save status (5 Nov 2026)', () => {
+  it('signed-out: tells the user it is saved in this browser only', () => {
+    mount('en');
+    expect(screen.getByText(/Saved in this browser\. Sign in to keep it across devices/)).toBeTruthy();
+  });
+  it('signed-out Arabic status is Arabic', () => {
+    mount('ar');
+    expect(screen.getByText(/سجّل الدخول للاحتفاظ به عبر الأجهزة/)).toBeTruthy();
+  });
+});
