@@ -186,6 +186,7 @@ export function NegotiationDesk() {
   const tone = LEVEL_TONE[leverage.level];
   const approach = APPROACH[leverage.level];
   const quad = QUADRANTS.find(q => q.id === s.quadrant)!;
+  const shownName = isAr && s.supplier === EXAMPLE.supplier ? 'شركة تغليف نموذجية (توضيحي)' : s.supplier;
 
   const checks = [
     { ok: s.supplier.trim().length > 0, en: 'Supplier named', ar: 'تمت تسمية المورّد' },
@@ -241,13 +242,13 @@ export function NegotiationDesk() {
         </div>
 
         {/* Stepper */}
-        <nav aria-label={t('Steps', 'الخطوات')} className="no-print flex gap-1 mt-5 overflow-x-auto pb-1">
+        <nav aria-label={t('Steps', 'الخطوات')} className="no-print grid grid-cols-3 sm:grid-cols-6 gap-1 mt-5">
           {STEPS.map((st, i) => {
             const Icon = st.icon;
             const active = i === step;
             return (
               <button key={st.id} onClick={() => setStep(i)} aria-current={active ? 'step' : undefined}
-                className={`flex-1 min-w-[84px] flex flex-col items-center gap-1 rounded-xl px-2 py-2.5 text-[11px] font-semibold border transition ${active ? 'bg-[#082C6B] text-white border-[#082C6B] shadow' : 'bg-white text-slate-600 border-slate-200 hover:border-[#082C6B]/40'}`}>
+                className={`min-w-0 flex flex-col items-center gap-1 rounded-xl px-2 py-2.5 text-[11px] font-semibold border transition ${active ? 'bg-[#082C6B] text-white border-[#082C6B] shadow' : 'bg-white text-slate-600 border-slate-200 hover:border-[#082C6B]/40'}`}>
                 <Icon className="w-4 h-4" /> {i + 1}. {isAr ? st.ar : st.en}
               </button>
             );
@@ -402,7 +403,7 @@ export function NegotiationDesk() {
             <div data-testid="brief">
               <div className="flex items-start justify-between gap-3 flex-wrap">
                 <div><h2 className="text-lg font-bold text-[#082C6B]">{t('Your preparation brief', 'ملخص تحضيرك')}</h2>
-                  <p className="text-sm text-slate-500">{s.supplier.trim() || t('Unnamed negotiation', 'تفاوض بلا اسم')} · {isAr ? quad.ar : quad.en}</p></div>
+                  <p className="text-sm text-slate-500">{shownName.trim() || t('Unnamed negotiation', 'تفاوض بلا اسم')} · {isAr ? quad.ar : quad.en}</p></div>
                 <button onClick={() => window.print()} className="no-print flex items-center gap-1.5 text-xs font-bold text-white bg-[#082C6B] rounded-lg px-3 py-2"><Printer className="w-3.5 h-3.5" />{t('Print / save as PDF', 'طباعة / حفظ PDF')}</button>
               </div>
               <div className={`mt-4 border rounded-xl p-4 ${tone.box}`}>
