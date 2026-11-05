@@ -72,3 +72,19 @@ describe('NegotiationDesk render', () => {
     expect(screen.getByText(/planning assumptions, not an industry standard/)).toBeTruthy();
   });
 });
+
+describe('NegotiationDesk QA fixes (5 Nov 2026)', () => {
+  it('Arabic brief shows the example supplier name in Arabic', () => {
+    mount('ar');
+    fireEvent.click(screen.getByText('جرّب مثالاً'));
+    go(6);
+    expect(screen.getByTestId('brief').textContent).toMatch(/شركة تغليف نموذجية/);
+    expect(screen.getByTestId('brief').textContent).not.toMatch(/Example Packaging/);
+  });
+  it('step bar wraps (no sideways scroll) so all six steps stay visible on a phone', () => {
+    mount('en');
+    const nav = screen.getByRole('navigation', { name: 'Steps' });
+    expect(nav.className).toMatch(/grid-cols-3/);
+    expect(nav.className).not.toMatch(/overflow-x-auto/);
+  });
+});
