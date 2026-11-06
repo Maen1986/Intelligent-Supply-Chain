@@ -68,7 +68,7 @@ export function DecisionMemory() {
         <p className="text-muted-foreground mb-6">
           {ar ? 'سجّل الدخول لعرض سجل التعلم التنظيمي الخاص بك.' : 'Sign in to see your organizational-learning record.'}
         </p>
-        <Link href="/login"><Button size="lg" className="bg-accent hover:bg-accent/90">{ar ? 'تسجيل الدخول' : 'Sign In'}</Button></Link>
+        <Link href="/login"><Button size="lg" className="bg-accent hover:bg-accent/90 text-[#082C6B]">{ar ? 'تسجيل الدخول' : 'Sign In'}</Button></Link>
       </div>
     );
   }
@@ -92,7 +92,7 @@ export function DecisionMemory() {
             ? 'لا يوجد سجل بعد. أكمل تقييم النضج وتتبّع إجراءاتك، وسيبدأ سجل التعلم بالتكوّن تلقائيًا.'
             : 'No record yet. Complete a Maturity Assessment and track your actions, and your learning record will start building itself here automatically.'}
         </p>
-        <Link href="/maturity"><Button size="lg" className="bg-accent hover:bg-accent/90 gap-2">
+        <Link href="/maturity"><Button size="lg" className="bg-accent hover:bg-accent/90 text-[#082C6B] gap-2">
           {ar ? 'ابدأ تقييم النضج' : 'Start Maturity Assessment'} <ArrowRight className="w-4 h-4" />
         </Button></Link>
       </div>

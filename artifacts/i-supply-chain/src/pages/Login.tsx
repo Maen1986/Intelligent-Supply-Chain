@@ -336,7 +336,7 @@ export function Login() {
                 </Field>
 
                 <Button type="submit" disabled={loading}
-                  className="w-full bg-[#C9A84C] hover:bg-[#b8963e] text-white font-bold h-12 text-[15px] rounded-xl mt-2">
+                  className="w-full bg-[#C9A84C] hover:bg-[#b8963e] text-[#082C6B] font-bold h-12 text-[15px] rounded-xl mt-2">
                   {loading
                     ? (ar ? 'جارٍ إنشاء الحساب…' : 'Creating Account…')
                     : (ar ? 'إنشاء الحساب والمتابعة' : 'Create Account & Continue')}

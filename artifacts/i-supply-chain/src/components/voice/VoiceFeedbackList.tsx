@@ -58,7 +58,7 @@ export function VoiceFeedbackList() {
         <div>
           <p className="text-xs text-muted-foreground mb-1">{t('voice.filterTool')}</p>
           <Select value={tool} onValueChange={(v) => { setTool(v); resetPage(); }}>
-            <SelectTrigger className="w-[150px] h-9" data-testid="select-filter-tool"><SelectValue /></SelectTrigger>
+            <SelectTrigger aria-label={t('voice.filterTool')} className="w-[150px] h-9" data-testid="select-filter-tool"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">{t('voice.allTools')}</SelectItem>
               <SelectItem value="diagnostic">{toolLabel('diagnostic')}</SelectItem>
@@ -68,18 +68,18 @@ export function VoiceFeedbackList() {
         </div>
         <div>
           <p className="text-xs text-muted-foreground mb-1">{t('voice.from')}</p>
-          <input type="date" value={from} onChange={(e) => { setFrom(e.target.value); resetPage(); }}
+          <input aria-label={t('voice.from')} type="date" value={from} onChange={(e) => { setFrom(e.target.value); resetPage(); }}
             className="h-9 rounded-md border border-input bg-background px-3 text-sm" data-testid="input-filter-from" />
         </div>
         <div>
           <p className="text-xs text-muted-foreground mb-1">{t('voice.to')}</p>
-          <input type="date" value={to} onChange={(e) => { setTo(e.target.value); resetPage(); }}
+          <input aria-label={t('voice.to')} type="date" value={to} onChange={(e) => { setTo(e.target.value); resetPage(); }}
             className="h-9 rounded-md border border-input bg-background px-3 text-sm" data-testid="input-filter-to" />
         </div>
         <div>
           <p className="text-xs text-muted-foreground mb-1">{t('voice.minRating')}</p>
           <Select value={minRating} onValueChange={(v) => { setMinRating(v); resetPage(); }}>
-            <SelectTrigger className="w-[110px] h-9" data-testid="select-filter-rating"><SelectValue /></SelectTrigger>
+            <SelectTrigger aria-label={t('voice.minRating')} className="w-[110px] h-9" data-testid="select-filter-rating"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">{t('voice.any')}</SelectItem>
               {[1, 2, 3, 4, 5].map((r) => <SelectItem key={r} value={String(r)}>{r}★+</SelectItem>)}

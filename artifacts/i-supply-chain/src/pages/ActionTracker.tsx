@@ -209,7 +209,7 @@ export function ActionTracker() {
             ? 'سجّل الدخول لمتابعة خطة العمل الخاصة بك من ٣٠/٦٠/٩٠ يومًا الناتجة عن تقييم النضج.'
             : 'Sign in to track your 30/60/90-day remedy roadmap from the Maturity Assessment.'}
         </p>
-        <Link href="/login"><Button size="lg" className="bg-accent hover:bg-accent/90">{ar ? 'تسجيل الدخول' : 'Sign In'}</Button></Link>
+        <Link href="/login"><Button size="lg" className="bg-accent hover:bg-accent/90 text-[#082C6B]">{ar ? 'تسجيل الدخول' : 'Sign In'}</Button></Link>
       </div>
     );
   }
@@ -233,7 +233,7 @@ export function ActionTracker() {
             ? 'لا توجد خطة عمل بعد. أكمل تقييم النضج واطلب خارطة الطريق المدعومة بالذكاء الاصطناعي لتتبّعها هنا.'
             : "No roadmap yet. Complete the Maturity Assessment and generate your AI roadmap, and it'll show up here to track."}
         </p>
-        <Link href="/maturity"><Button size="lg" className="bg-accent hover:bg-accent/90 gap-2">
+        <Link href="/maturity"><Button size="lg" className="bg-accent hover:bg-accent/90 text-[#082C6B] gap-2">
           {ar ? 'ابدأ تقييم النضج' : 'Start Maturity Assessment'} <ArrowRight className="w-4 h-4" />
         </Button></Link>
       </div>
