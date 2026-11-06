@@ -540,7 +540,7 @@ export const BENCHMARK_CHANGELOG: ChangelogRelease[] = [
       'First release of the ISC KPI benchmark library. Eight GCC industries, 24 KPI indicators, ' +
       'industry benchmarks and world-class targets sourced from 2022-2023 authoritative studies.',
     summaryAr:
-      'الإصدار الأول لمكتبة مؤشرات الأداء الرئيسية من ISC. ثمانية قطاعات خليجية، 24 مؤشر أداء، ' +
+      'الإصدار الأول لمكتبة مؤشرات الأداء الرئيسية من آي سبلاي تشين. ثمانية قطاعات خليجية، 24 مؤشر أداء، ' +
       'مؤشرات مرجعية وأهداف عالمية المستوى مستقاة من دراسات موثوقة للفترة 2022-2023.',
     changes: [],
   },
