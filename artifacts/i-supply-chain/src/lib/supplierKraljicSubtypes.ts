@@ -117,12 +117,12 @@ const KR: Bilingual = {
 };
 const ISC: Bilingual = {
   en: 'ISC method: an extension built by ISC on the cited foundations (Kraljic 1983; Gelderman & van Weele 2003). The rule is shown in full and can be calibrated to your business.',
-  ar: 'منهجية ISC: امتداد بنته ISC على الأسس المذكورة (Kraljic 1983؛ Gelderman & van Weele 2003). القاعدة معروضة كاملة ويمكن معايرتها لتناسب عملك.',
+  ar: 'منهجية ISC: امتداد بنته آي سبلاي تشين على الأسس المذكورة (Kraljic 1983؛ Gelderman & van Weele 2003). القاعدة معروضة كاملة ويمكن معايرتها لتناسب عملك.',
 };
 
 export const REVIEW_INTERVAL_NOTE: Bilingual = {
   en: 'Review intervals are ISC defaults, not an external standard. Override them per client.',
-  ar: 'فترات المراجعة قيم افتراضية من ISC وليست معيارًا خارجيًا. يمكن تغييرها لكل عميل.',
+  ar: 'فترات المراجعة قيم افتراضية من آي سبلاي تشين وليست معيارًا خارجيًا. يمكن تغييرها لكل عميل.',
 };
 
 export const SUBTYPES: Record<SubtypeKey, SubtypeDef> = {
@@ -170,7 +170,7 @@ export const SUBTYPES: Record<SubtypeKey, SubtypeDef> = {
     key: 'leverage-volatile', quadrant: 'leverage',
     label: { en: 'Leverage - volatile market', ar: 'نفوذ شرائي - سوق متقلب' },
     meaning: { en: 'High spend, many suppliers, but prices swing.', ar: 'إنفاق مرتفع وموردون كثر لكن الأسعار متقلبة.' },
-    basis: 'isc-convention', source: { en: 'ISC method. Index-linked and price-adjustment clauses are a growing practice for commodity price risk (SDA Bocconi, 2025); ISC turns this into a clear Leverage sub-type with its own playbook.', ar: 'منهجية ISC. بنود الربط بمؤشر وتعديل السعر ممارسة متنامية لمخاطر أسعار السلع (SDA Bocconi، 2025)؛ وتحوّلها ISC إلى نوع فرعي واضح في ربع النفوذ له دليل عمل خاص.' },
+    basis: 'isc-convention', source: { en: 'ISC method. Index-linked and price-adjustment clauses are a growing practice for commodity price risk (SDA Bocconi, 2025); ISC turns this into a clear Leverage sub-type with its own playbook.', ar: 'منهجية آي سبلاي تشين. بنود الربط بمؤشر وتعديل السعر ممارسة متنامية لمخاطر أسعار السلع (SDA Bocconi، 2025)؛ وتحوّلها آي سبلاي تشين إلى نوع فرعي واضح في ربع النفوذ له دليل عمل خاص.' },
     primary: { en: 'Replace a fixed price with an index-linked or price-adjustment clause, and tender on the margin over the index.', ar: 'استبدل السعر الثابت ببند مرتبط بمؤشر أو بند تعديل سعر، واطرح المناقصة على الهامش فوق المؤشر.' },
     alternative: { en: 'Keep a fixed price for a short term and accept that the supplier will price in the risk.', ar: 'أبقِ سعرًا ثابتًا لمدة قصيرة وتقبّل أن المورد سيسعّر المخاطرة.' },
     tradeoff: { en: 'An index clause shares the swing fairly but makes budgets less certain. A fixed price gives certainty at a built-in premium.', ar: 'بند المؤشر يتقاسم التقلب بإنصاف لكنه يقلّل يقين الميزانية. السعر الثابت يمنح اليقين بعلاوة مضمّنة.' },
@@ -229,7 +229,7 @@ export const SUBTYPES: Record<SubtypeKey, SubtypeDef> = {
   unclassified: {
     key: 'unclassified', quadrant: null,
     label: { en: 'Ready to classify', ar: 'جاهز للتصنيف' },
-    meaning: { en: 'One quick answer is needed to place this supplier. ISC asks rather than assumes.', ar: 'يلزم جواب سريع واحد لتصنيف هذا المورد. تسأل ISC ولا تفترض.' },
+    meaning: { en: 'One quick answer is needed to place this supplier. ISC asks rather than assumes.', ar: 'يلزم جواب سريع واحد لتصنيف هذا المورد. تسأل آي سبلاي تشين ولا تفترض.' },
     basis: 'isc-convention', source: ISC,
     primary: { en: 'Answer the highlighted question below and the supplier-specific plan appears.', ar: 'أجب عن السؤال المظلَّل أدناه وستظهر الخطة الخاصة بهذا المورد.' },
     alternative: { en: 'Use the general quadrant guidance in the meantime.', ar: 'استخدم إرشاد الربع العام في الأثناء.' },
