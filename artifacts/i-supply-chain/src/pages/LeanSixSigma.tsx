@@ -199,7 +199,7 @@ export function LeanSixSigma() {
           <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-white mb-3">{isAr ? 'Lean وSix Sigma وتميّز الجودة' : <>Lean, Six Sigma &amp; Quality Excellence</>}</h1>
           <p className="text-white/75 text-lg max-w-2xl">{isAr ? 'أزِل الهدر، وقلّل التباين، وابنِ الجودة في كل عملية بسلسلة الإمداد — من الاستراتيجية إلى التنفيذ التشغيلي عبر الخليج والعالم.' : 'Eliminate waste, reduce variation, and build quality into every supply chain process — from strategy to operational execution across the GCC and worldwide.'}</p>
           <div className="flex gap-3 mt-6 flex-wrap">
-            <Link href="/consultant"><Button className="bg-[#C9A84C] hover:bg-[#b8943d] text-white font-bold">{isAr ? 'احجز استشارة LSS' : 'Book LSS Consultation'}</Button></Link>
+            <Link href="/consultant"><Button className="bg-[#8A6D1F] hover:bg-[#7A5F14] text-white font-bold">{isAr ? 'احجز استشارة LSS' : 'Book LSS Consultation'}</Button></Link>
             <Link href="/diagnostic"><Button variant="outline" className="border-white text-white hover:bg-white hover:text-primary font-bold">{isAr ? 'تشخيص مجاني' : 'Free Diagnostic'}</Button></Link>
           </div>
         </div>
@@ -582,7 +582,7 @@ export function LeanSixSigma() {
               <p className="text-white/70 mb-5 text-sm max-w-xl mx-auto">{isAr ? 'تنشر ISC نظام Lean Six Sigma في السياق الخليجي — بمراعاة المتطلبات التنظيمية السعودية والديناميكيات الثقافية والواقع التشغيلي. احجز مكالمة تحديد نطاق لتعريف مشروعك الأول.' : 'ISC deploys Lean Six Sigma in the GCC context — accounting for Saudi regulatory requirements, cultural dynamics, and operational realities. Book a scoping call to define your first project.'}</p>
               <Link href="/governance-compliance"><span className="text-[#C9A84C] text-sm font-semibold underline cursor-pointer">{isAr ? 'يجب حوكمة LSS ← اطّلع على إطار الحوكمة لدينا' : 'LSS must be governed → See our Governance Framework'}</span></Link>
               <div className="mt-4 flex justify-center gap-3 flex-wrap">
-                <Link href="/consultant"><Button className="bg-[#C9A84C] hover:bg-[#b8943d] text-white font-bold">{isAr ? 'احجز استشارة LSS' : 'Book LSS Consultation'}</Button></Link>
+                <Link href="/consultant"><Button className="bg-[#8A6D1F] hover:bg-[#7A5F14] text-white font-bold">{isAr ? 'احجز استشارة LSS' : 'Book LSS Consultation'}</Button></Link>
                 <Link href="/diagnostic"><Button variant="outline" className="border-white text-white hover:bg-white hover:text-primary">{isAr ? 'تشخيص مجاني' : 'Free Diagnostic'}</Button></Link>
               </div>
             </Reveal>
