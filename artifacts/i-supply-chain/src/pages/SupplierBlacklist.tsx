@@ -412,7 +412,7 @@ export function SupplierBlacklist() {
             ))}
           </div>
           <div className="flex flex-col sm:flex-row gap-2">
-            <select value={newCategory} onChange={(e) => setNewCategory(e.target.value as BlacklistEvidenceCategory)} className="text-xs border border-slate-300 rounded-lg px-2 py-2">
+            <select aria-label={isAr ? 'فئة الدليل' : 'Evidence category'} value={newCategory} onChange={(e) => setNewCategory(e.target.value as BlacklistEvidenceCategory)} className="text-xs border border-slate-300 rounded-lg px-2 py-2">
               {BLACKLIST_EVIDENCE_CATEGORIES.map((c) => <option key={c} value={c}>{isAr ? BLACKLIST_EVIDENCE_LABELS[c].ar : BLACKLIST_EVIDENCE_LABELS[c].en}</option>)}
             </select>
             <input type="text" value={newDetail} onChange={(e) => setNewDetail(e.target.value)} placeholder={t.detailPlaceholder} className="flex-1 text-xs border border-slate-300 rounded-lg px-2 py-2" />
