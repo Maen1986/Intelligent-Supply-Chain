@@ -2,7 +2,7 @@ import React from 'react';
 import { useLanguage } from '@/lib/LanguageContext';
 
 const SIZE_CLASSES = ['text-xs', 'text-sm', 'text-base', 'text-lg', 'text-xl', 'text-2xl'];
-const COLOR_CLASSES = ['text-[#082C6B]', 'text-[#0B3D91]', 'text-[#C9A84C]', 'text-slate-600'];
+const COLOR_CLASSES = ['text-[#082C6B]', 'text-[#0B3D91]', 'text-[#7A5F14]', 'text-slate-600'];
 
 export function VoiceKeywordCloud({ keywords }: { keywords: { word: string; count: number }[] }) {
   const { t } = useLanguage();
