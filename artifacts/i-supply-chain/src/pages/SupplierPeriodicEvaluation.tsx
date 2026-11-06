@@ -390,7 +390,7 @@ export function SupplierPeriodicEvaluation() {
                 {effectiveCadence.source === 'client-override' ? t.overriddenBadge : t.recommendedBadge}: {effectiveCadence.cadence === 'annual' ? t.cadenceAnnual : t.cadenceSemiAnnual}
               </span>
               <p className="text-xs text-slate-700 leading-relaxed">{isAr ? cadenceRecommendation.rationaleAr : cadenceRecommendation.rationaleEn}</p>
-              {cadenceSaveStatus === 'saving' && <p className="text-[10px] text-slate-400 mt-1">{t.saving}</p>}
+              {cadenceSaveStatus === 'saving' && <p className="text-[10px] text-slate-500 mt-1">{t.saving}</p>}
               {cadenceSaveStatus === 'error' && <p className="text-[10px] text-red-700 mt-1 font-semibold">{hasOrg && !canWrite ? t.notAuthorized : t.saveError}</p>}
               {cadenceLoadState === 'unreachable' && <p className="text-[10px] text-amber-700 mt-1">{t.unreachable}</p>}
             </div>
@@ -416,7 +416,7 @@ export function SupplierPeriodicEvaluation() {
           )}
           {historyLoadState === 'unreachable' && <p className="text-[10px] text-amber-700 mt-1">{t.unreachable}</p>}
           {lastEvaluationCompletedAt && (
-            <p className="text-[10px] text-slate-400 mt-1">{t.lastEvaluation}: {new Date(lastEvaluationCompletedAt).toLocaleDateString(isAr ? 'ar' : 'en-US')} -- {lastOverallRecommendation}</p>
+            <p className="text-[10px] text-slate-500 mt-1">{t.lastEvaluation}: {new Date(lastEvaluationCompletedAt).toLocaleDateString(isAr ? 'ar' : 'en-US')} -- {lastOverallRecommendation}</p>
           )}
         </div>
 
@@ -428,7 +428,7 @@ export function SupplierPeriodicEvaluation() {
           </div>
           <ul className="text-xs space-y-1">
             {evidenceChecklist.map((item) => (
-              <li key={item.category} className={item.present ? 'text-emerald-700' : 'text-slate-400'}>
+              <li key={item.category} className={item.present ? 'text-emerald-700' : 'text-slate-500'}>
                 {item.present ? '✓' : '○'} {isAr ? item.labelAr : item.labelEn}
               </li>
             ))}
@@ -465,9 +465,10 @@ export function SupplierPeriodicEvaluation() {
                 <div key={meta.key} className="grid grid-cols-1 sm:grid-cols-4 gap-2 items-center border-b border-slate-100 pb-3">
                   <div className="sm:col-span-2">
                     <p className="text-xs font-semibold text-slate-700">{isAr ? meta.labelAr : meta.labelEn}</p>
-                    <p className="text-[10px] text-slate-400">{isAr ? meta.descriptionAr : meta.descriptionEn}</p>
+                    <p className="text-[10px] text-slate-500">{isAr ? meta.descriptionAr : meta.descriptionEn}</p>
                   </div>
                   <input
+                    aria-label={isAr ? meta.labelAr : meta.labelEn}
                     type="number" min={0} max={100} value={state.score}
                     onChange={(e) => {
                       const parsed = Number(e.target.value);
@@ -478,6 +479,7 @@ export function SupplierPeriodicEvaluation() {
                   />
                   <div className="flex items-center gap-2">
                     <select
+                      aria-label={(isAr ? meta.labelAr : meta.labelEn) + (isAr ? ' - مصدر البيانات' : ' - data source')}
                       value={state.dataSource}
                       onChange={(e) => setCategoryScores((prev) => ({ ...prev, [meta.key]: { ...prev[meta.key], dataSource: e.target.value as SIDataSourceLike } }))}
                       className="text-xs border border-slate-300 rounded-lg px-2 py-2"
@@ -498,7 +500,7 @@ export function SupplierPeriodicEvaluation() {
             {isAr ? OVERALL_RECOMMENDATION_LABELS[overallResult.overallRecommendation].ar : OVERALL_RECOMMENDATION_LABELS[overallResult.overallRecommendation].en}
           </p>
           <p className="text-xs text-slate-700 mb-1">{isAr ? overallResult.rationaleAr : overallResult.rationaleEn}</p>
-          <p className="text-[10px] text-slate-400">{isAr ? overallResult.noCompositeScoreDisclosureAr : overallResult.noCompositeScoreDisclosureEn}</p>
+          <p className="text-[10px] text-slate-500">{isAr ? overallResult.noCompositeScoreDisclosureAr : overallResult.noCompositeScoreDisclosureEn}</p>
           {shouldEscalateToFindingsActions(overallResult.overallRecommendation) && tier === 'operational' && (
             <p className="text-[10px] text-red-700 mt-2 font-semibold">{t.escalationNote}</p>
           )}
@@ -518,7 +520,7 @@ export function SupplierPeriodicEvaluation() {
               {hasOrg && !canWrite && <p className="text-[10px] text-amber-700 mt-1">{t.notAuthorized}</p>}
             </div>
           ) : (
-            <p className="text-[10px] text-slate-400 mt-2">{t.advisoryNoPersist}</p>
+            <p className="text-[10px] text-slate-500 mt-2">{t.advisoryNoPersist}</p>
           )}
         </div>
 
