@@ -950,7 +950,7 @@ function BenchmarkTab({ lang }: { lang: Lang }) {
         </div>
         <p className="text-xs text-muted-foreground mt-2">
           {ar
-            ? '* التقديرات مبنية على مؤشرات مرجعية مركّبة استرشادية (راجع منهجية ISC) وبانتظار مراجعة خبير مستقل. يمكنك تعديل هدفك في عمود Target.'
+            ? '* التقديرات مبنية على مؤشرات مرجعية مركّبة استرشادية (راجع منهجية آي سبلاي تشين) وبانتظار مراجعة خبير مستقل. يمكنك تعديل هدفك في عمود Target.'
             : '* Estimates based on ISC composite reference scores (see methodology), pending independent expert review. Adjust your target in the table above.'}
           {skuClass && (ar ? ' ✦ الأرقام المعدّلة تعكس فئة المخزون المختارة.' : ' ✦ Adjusted figures reflect the selected SKU class.')}
         </p>
@@ -961,7 +961,7 @@ function BenchmarkTab({ lang }: { lang: Lang }) {
         <div>
           <p className="text-white font-black text-base">
             {ar
-              ? `مع ISC، تُغلق شركات قطاع ${industry} هذه الفجوات خلال 3–6 أشهر.`
+              ? `مع آي سبلاي تشين، تُغلق شركات قطاع ${industry} هذه الفجوات خلال 3–6 أشهر.`
               : `With ISC, ${industry} organisations close these gaps in 3–6 months.`}
           </p>
           <p className="text-white/70 text-sm mt-1">
@@ -1238,7 +1238,7 @@ function SavingsTab({ lang }: { lang: Lang }) {
 
       <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-900">
         {ar ? (
-          <><strong className="font-bold">ملاحظة ISC:</strong> تستند هذه التقديرات إلى مؤشر ISC المرجعي المركّب، استرشاداً بأدبيات إدارة الفئات لدى CIPS لقطاع {industry}، وهي بانتظار مراجعة خبير مستقل. تعتمد الوفورات الفعلية على الجاهزية التنظيمية ونضج المشتريات وجودة التنفيذ. احجز استشارة للحصول على تقييم دقيق للفرص.</>
+          <><strong className="font-bold">ملاحظة ISC:</strong> تستند هذه التقديرات إلى مؤشر آي سبلاي تشين المرجعي المركّب، استرشاداً بأدبيات إدارة الفئات لدى CIPS لقطاع {industry}، وهي بانتظار مراجعة خبير مستقل. تعتمد الوفورات الفعلية على الجاهزية التنظيمية ونضج المشتريات وجودة التنفيذ. احجز استشارة للحصول على تقييم دقيق للفرص.</>
         ) : (
           <><strong className="font-bold">ISC Note:</strong> These estimates are based on ISC's composite reference index, informed by CIPS Category Management savings literature for {industry}, pending independent expert review. Actual savings depend on organisational readiness, procurement maturity, and implementation quality. Book a consultation for a precise opportunity assessment.</>
         )}
@@ -1401,7 +1401,7 @@ function RiskTab({ lang }: { lang: Lang }) {
         <div className="grid grid-cols-3 gap-4">
         {[
           { label: ar ? 'مؤشر تعرضك (As-Is)' : 'Your Exposure Score (As-Is)', value: exposureScore, color: riskColor(exposureScore), sub: riskLabel(exposureScore, ar) },
-          { label: ar ? 'مؤشر ISC المرجعي' : 'ISC Reference Index', value: industryBenchmark, color: '#082C6B', sub: ar ? 'مؤشر تقديري داخلي' : 'Internal composite estimate' },
+          { label: ar ? 'مؤشر آي سبلاي تشين المرجعي' : 'ISC Reference Index', value: industryBenchmark, color: '#082C6B', sub: ar ? 'مؤشر تقديري داخلي' : 'Internal composite estimate' },
           { label: ar ? 'الهدف (Top Quartile)' : 'Target (Top Quartile)', value: targetScore, color: '#10b981', sub: ar ? 'أفضل ربع' : 'Top quartile' },
         ].map(s => (
           <div key={s.label} className="text-center rounded-xl border border-border p-4">
@@ -1673,7 +1673,7 @@ function RiskTab({ lang }: { lang: Lang }) {
       <div className="bg-[#082C6B] rounded-2xl p-6 flex items-center justify-between gap-4 flex-wrap">
         <div>
           <p className="text-white font-black text-base">{ar ? 'هل تريد خطة إدارة مخاطر مخصصة بالكامل؟' : 'Need a fully customised risk management plan?'}</p>
-          <p className="text-white/70 text-sm mt-1">{ar ? `تعرضك: ${exposureScore}/100 · الهدف: ${targetScore}/100 · ISC تسدّ هذه الفجوة بدقة ISO 31000.` : `Your exposure: ${exposureScore}/100 · Target: ${targetScore}/100 · ISC closes this gap with ISO 31000 precision.`}</p>
+          <p className="text-white/70 text-sm mt-1">{ar ? `تعرضك: ${exposureScore}/100 · الهدف: ${targetScore}/100 · آي سبلاي تشين تسدّ هذه الفجوة بدقة ISO 31000.` : `Your exposure: ${exposureScore}/100 · Target: ${targetScore}/100 · ISC closes this gap with ISO 31000 precision.`}</p>
         </div>
         <Link href="/consultant">
           <Button className="bg-[#C9A84C] hover:bg-[#b8973e] text-[#082C6B] font-bold shrink-0">
@@ -2560,7 +2560,7 @@ function BriefingTab({ lang }: { lang: Lang }) {
         '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
         '',
       ].join('\n');
-      const body = `إحاطة سلسلة الإمداد التنفيذية — ISC\n\nالملخص التنفيذي:\n${briefing.executiveSummary}\n\nمستوى النضج: ${briefing.maturityLevel} (${briefing.maturityScore}/100)\n\nمستوى المخاطر العام: ${RISK_LEVEL_AR[briefing.overallRiskLevel] ?? briefing.overallRiskLevel}\n\nنضج المجالات:\n${domainLines}\n\nأضعف الأبعاد الفرعية:\n${weakestSubLines}\n\nالفجوات الحرجة:\n${briefing.criticalGaps.map((g, i) => `${i+1}. ${g.title} — ${g.businessImpact} [الأولوية: ${URGENCY_AR[g.urgency] ?? g.urgency}]`).join('\n')}\n\nالمكاسب السريعة:\n${briefing.quickWins.map((w, i) => `${i+1}. ${w.action} (${w.timeframe}، جهد ${EFFORT_AR[w.effort] ?? w.effort}، ~${w.expectedSavingPct}% وفر)`).join('\n')}\n\nخطة 90 يوماً:\nالشهر 1: ${briefing.ninetyDayPlan.month1.focus}\nالشهر 2: ${briefing.ninetyDayPlan.month2.focus}\nالشهر 3: ${briefing.ninetyDayPlan.month3.focus}\n\nالوفر المتوقع — السنة الأولى: ${briefing.ninetyDayPlan.totalProjectedSaving}\n\n— معين الحقاش، MCIPS · CPSM · MSc · MIPP\n   آي سبلاي تشين | info@iscsupplychain.com\n\n© 2026 آي سبلاي تشين. جميع الحقوق محفوظة. سري وخاص.`;
+      const body = `إحاطة سلسلة الإمداد التنفيذية — آي سبلاي تشين\n\nالملخص التنفيذي:\n${briefing.executiveSummary}\n\nمستوى النضج: ${briefing.maturityLevel} (${briefing.maturityScore}/100)\n\nمستوى المخاطر العام: ${RISK_LEVEL_AR[briefing.overallRiskLevel] ?? briefing.overallRiskLevel}\n\nنضج المجالات:\n${domainLines}\n\nأضعف الأبعاد الفرعية:\n${weakestSubLines}\n\nالفجوات الحرجة:\n${briefing.criticalGaps.map((g, i) => `${i+1}. ${g.title} — ${g.businessImpact} [الأولوية: ${URGENCY_AR[g.urgency] ?? g.urgency}]`).join('\n')}\n\nالمكاسب السريعة:\n${briefing.quickWins.map((w, i) => `${i+1}. ${w.action} (${w.timeframe}، جهد ${EFFORT_AR[w.effort] ?? w.effort}، ~${w.expectedSavingPct}% وفر)`).join('\n')}\n\nخطة 90 يوماً:\nالشهر 1: ${briefing.ninetyDayPlan.month1.focus}\nالشهر 2: ${briefing.ninetyDayPlan.month2.focus}\nالشهر 3: ${briefing.ninetyDayPlan.month3.focus}\n\nالوفر المتوقع — السنة الأولى: ${briefing.ninetyDayPlan.totalProjectedSaving}\n\n— معين الحقاش، MCIPS · CPSM · MSc · MIPP\n   آي سبلاي تشين | info@iscsupplychain.com\n\n© 2026 آي سبلاي تشين. جميع الحقوق محفوظة. سري وخاص.`;
       text = header + body;
     } else {
       const header = [
