@@ -169,7 +169,7 @@ describe('NegotiationDesk leverage cut-offs (6 Nov 2026)', () => {
     go(2);
     const rule = screen.getByTestId('leverage-rule');
     expect(rule.textContent).toMatch(/كيف تُبنى هذه القراءة/);
-    expect(screen.getByTestId('cutoffs-used').textContent).toMatch(/الحدّان المستخدمان: قوي ≤ 2، ضعيف ≥ 4 \(افتراضي ISC\)/);
+    expect(screen.getByTestId('cutoffs-used').textContent).toMatch(/الحدّان المستخدمان: قوي ≤ 2، ضعيف ≥ 4 \(افتراضي آي سبلاي تشين\)/);
     expect(rule.textContent).toMatch(/Emerson/);
   });
   it('older saved cases without cut-offs still load and use the defaults', () => {
