@@ -958,7 +958,7 @@ export function ReportGenerator() {
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-3">
                   <Link href="/maturity">
                     <Button variant="outline" className="gap-2">
                       <ChevronLeft className="w-4 h-4" />
@@ -968,7 +968,7 @@ export function ReportGenerator() {
                   <Button
                     onClick={handleGenerate}
                     disabled={!canGenerate}
-                    className="bg-accent hover:bg-accent/90 text-white font-bold gap-2 min-w-[200px]">
+                    className="bg-accent hover:bg-accent/90 text-[#082C6B] font-bold gap-2 min-w-[200px]">
                     <Sparkles className="w-4 h-4" />
                     Generate My Report
                     <ChevronRight className="w-4 h-4" />
