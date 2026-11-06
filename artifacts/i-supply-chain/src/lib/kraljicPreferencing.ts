@@ -37,7 +37,7 @@ export interface SpInputs {
 
 export const SP_NOTE: Bilingual = b(
   'ISC synthesis of CIPS\'s two open statements (buyer advice per preferencing quadrant, and the Kraljic action). CIPS says the overlay gives 16 scenarios but publishes none openly. This is a cue for discussion, not CIPS content.',
-  'تركيب من ISC لعبارتين منشورتين في CIPS (نصيحة المشتري لكل ربع تفضيل، وإجراء Kraljic). تذكر CIPS أن التراكب يعطي 16 سيناريو لكنها لا تنشر أيًّا منها علنًا. هذه إشارة للنقاش وليست محتوى من CIPS.',
+  'تركيب من آي سبلاي تشين لعبارتين منشورتين في CIPS (نصيحة المشتري لكل ربع تفضيل، وإجراء Kraljic). تذكر CIPS أن التراكب يعطي 16 سيناريو لكنها لا تنشر أيًّا منها علنًا. هذه إشارة للنقاش وليست محتوى من CIPS.',
 );
 
 export const SP_AXIS_NOTE: Bilingual = b(
@@ -93,7 +93,7 @@ export function spCue(quadrant: Quadrant, i: SpInputs): SpCue {
   if (!sp) {
     return {
       sp: null, spLabel: null, cue: null, noEvidence: false,
-      ask: b('Answer both questions about how the supplier sees us. ISC does not guess.', 'أجب عن السؤالين حول نظرة المورد إلينا. ISC لا تخمّن.'),
+      ask: b('Answer both questions about how the supplier sees us. ISC does not guess.', 'أجب عن السؤالين حول نظرة المورد إلينا. آي سبلاي تشين لا تخمّن.'),
     };
   }
   return { sp, spLabel: PREFERENCING_LABEL[sp], cue: GRID[quadrant][sp], noEvidence: i.evidence.trim().length === 0, ask: null };
@@ -118,7 +118,7 @@ export interface LensResult { key: LensKey; label: Bilingual; action: Bilingual 
 
 export const LENS_NOTE: Bilingual = b(
   'Optional lens for firms with many suppliers. The idea (supplier capabilities against willingness) is Rezaei & Ortt\'s. The segment names and actions are ISC\'s. The Olsen & Ellram grid is not built: its source text was not opened.',
-  'عدسة اختيارية للشركات ذات القاعدة الكبيرة من الموردين. الفكرة (قدرات المورد مقابل استعداده) لـ Rezaei وOrtt. أما أسماء الشرائح والإجراءات فمن ISC. شبكة Olsen وEllram غير مبنية: لم يُفتح نصها المصدري.',
+  'عدسة اختيارية للشركات ذات القاعدة الكبيرة من الموردين. الفكرة (قدرات المورد مقابل استعداده) لـ Rezaei وOrtt. أما أسماء الشرائح والإجراءات فمن آي سبلاي تشين. شبكة Olsen وEllram غير مبنية: لم يُفتح نصها المصدري.',
 );
 
 const LENS: Record<LensKey, LensResult> = {
