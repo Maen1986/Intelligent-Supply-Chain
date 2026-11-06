@@ -194,7 +194,7 @@ describe('TemplateCard — FlowPreview Webhook node description', () => {
     clickSetupAR(container);
 
     const desc = getNodeDesc(container, 'Webhook');
-    expect(desc).toBe('يستقبل حمولة حدث ISC عبر HTTP POST');
+    expect(desc).toBe('يستقبل حمولة حدث آي سبلاي تشين عبر HTTP POST');
   });
 });
 
