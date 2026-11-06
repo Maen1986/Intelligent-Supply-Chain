@@ -124,7 +124,7 @@ export function About() {
         <div className="container mx-auto px-4 max-w-5xl">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="space-y-6">
-              <span className="text-accent font-bold text-sm uppercase tracking-widest">{ar ? 'مهمتنا' : 'Our Mission'}</span>
+              <span className="text-[#7A5F14] font-bold text-sm uppercase tracking-widest">{ar ? 'مهمتنا' : 'Our Mission'}</span>
               <h2 className="text-3xl md:text-4xl font-bold text-primary leading-tight">
                 {ar
                   ? 'بناء سلاسل إمداد تعزّز التنافسية الوطنية'
