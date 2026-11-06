@@ -790,7 +790,7 @@ function NumberField({
           placeholder={placeholder ?? '0'}
           className="w-full text-xs border border-slate-200 rounded-lg px-3 py-2 pe-14 focus:outline-none focus:ring-1 focus:ring-[#082C6B]"
         />
-        {unit && <span className="absolute inset-y-0 end-3 flex items-center text-[10px] font-bold text-slate-400">{unit}</span>}
+        {unit && <span className="absolute inset-y-0 end-3 flex items-center text-[10px] font-bold text-slate-500">{unit}</span>}
       </div>
     </div>
   );
@@ -2608,7 +2608,7 @@ function LocalContentEntryCard({
                           <span>{pillarLabel(p.key, isAr)}</span>
                           <span className="font-semibold">
                             {p.total > 0 ? `${((p.eligible / p.total) * 100).toFixed(0)}%` : '—'}
-                            <span className="text-slate-400 font-normal"> ({p.eligible.toLocaleString()} / {p.total.toLocaleString()})</span>
+                            <span className="text-slate-500 font-normal"> ({p.eligible.toLocaleString()} / {p.total.toLocaleString()})</span>
                           </span>
                         </div>
                       ))}
@@ -2792,7 +2792,7 @@ function LocalContentEntryCard({
                           <span>{pillarLabel(p.key, isAr)}</span>
                           <span className="font-semibold">
                             {p.total > 0 ? `${((p.eligible / p.total) * 100).toFixed(0)}%` : '—'}
-                            <span className="text-slate-400 font-normal"> ({p.eligible.toLocaleString()} / {p.total.toLocaleString()})</span>
+                            <span className="text-slate-500 font-normal"> ({p.eligible.toLocaleString()} / {p.total.toLocaleString()})</span>
                           </span>
                         </div>
                       ))}
@@ -3610,12 +3610,12 @@ export function LocalContentICVCheck() {
                         {PROGRAMS_BY_COUNTRY[g.country].length > 1
                           ? (isAr ? PROGRAM_LABELS[g.program].ar : PROGRAM_LABELS[g.program].en)
                           : (isAr ? COUNTRY_FRAMEWORKS[g.country].countryNameAr : COUNTRY_FRAMEWORKS[g.country].countryNameEn)}
-                        <span className="text-slate-400 font-normal"> — {isAr ? CONTEXT_TABS.find(c => c.v === g.procurementContext)?.ar : CONTEXT_TABS.find(c => c.v === g.procurementContext)?.en}</span>
+                        <span className="text-slate-500 font-normal"> — {isAr ? CONTEXT_TABS.find(c => c.v === g.procurementContext)?.ar : CONTEXT_TABS.find(c => c.v === g.procurementContext)?.en}</span>
                       </td>
                       <td className="py-1.5 pe-3 text-slate-600">
                         {g.supplierCount}
                         {(g.suppliersWithInsufficientData > 0 || g.suppliersNotApplicable > 0) && (
-                          <span className="text-slate-400">
+                          <span className="text-slate-500">
                             {' '}({g.suppliersNotApplicable > 0 ? (isAr ? `${g.suppliersNotApplicable} لا ينطبق` : `${g.suppliersNotApplicable} n/a`) : ''}
                             {g.suppliersWithInsufficientData > 0 ? (isAr ? ` ${g.suppliersWithInsufficientData} غير موثّق` : ` ${g.suppliersWithInsufficientData} not sourced`) : ''})
                           </span>
