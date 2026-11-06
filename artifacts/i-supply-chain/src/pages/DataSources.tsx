@@ -230,7 +230,7 @@ function ReleaseCard({
                     {isAdmin && (
                       <>
                         <th className="px-4 py-3 text-start font-semibold text-red-600">{ar ? 'القيمة السابقة' : 'Old'}</th>
-                        <th className="px-4 py-3 text-start font-semibold text-green-600">{ar ? 'القيمة الجديدة' : 'New'}</th>
+                        <th className="px-4 py-3 text-start font-semibold text-green-700">{ar ? 'القيمة الجديدة' : 'New'}</th>
                       </>
                     )}
                     <th className="px-4 py-3 text-start font-semibold">{ar ? 'السبب' : 'Rationale'}</th>
@@ -253,10 +253,10 @@ function ReleaseCard({
                       </td>
                       {isAdmin && (
                         <>
-                          <td className="px-4 py-3 font-mono text-red-500 whitespace-nowrap line-through text-xs">
+                          <td className="px-4 py-3 font-mono text-red-700 whitespace-nowrap line-through text-xs">
                             {c.oldValue}
                           </td>
-                          <td className="px-4 py-3 font-mono text-green-600 whitespace-nowrap font-bold text-xs">
+                          <td className="px-4 py-3 font-mono text-green-700 whitespace-nowrap font-bold text-xs">
                             {c.newValue}
                           </td>
                         </>
