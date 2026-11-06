@@ -92,7 +92,7 @@ const industryData: Record<string, IndustryInfo> = {
           "يجعل تقلب أسعار السلع (الصلب +40%، الألمنيوم +35% في الدورات الأخيرة) التعاقد بسعر ثابت غير مستدام — تغطي وحدة CPSM الثانية آليات تعديل الأسعار بما في ذلك الصيغ المرتبطة بمؤشر أسعار المستهلك والأحكام التعاقدية القائمة على المؤشرات.",
         ],
         solution: "ISC applies the CIPS Category Management 7-Step Model and CPSM strategic sourcing methodology to design dual-source strategies, Iktva supplier development programmes, and index-linked contract frameworks — typically delivering 15–25% total cost reduction whilst achieving full localisation compliance.",
-        solutionAr: "تطبّق ISC نموذج إدارة الفئات المكوّن من 7 خطوات من CIPS ومنهجية التوريد الاستراتيجي CPSM لتصميم استراتيجيات توريد مزدوج وبرامج تطوير موردين للتوطين (اكتفاء) وأطر عقود مرتبطة بالمؤشرات — محققةً عادةً خفضًا في التكلفة الإجمالية بنسبة 15–25% مع تحقيق امتثال كامل للتوطين.",
+        solutionAr: "تطبّق آي سبلاي تشين نموذج إدارة الفئات المكوّن من 7 خطوات من CIPS ومنهجية التوريد الاستراتيجي CPSM لتصميم استراتيجيات توريد مزدوج وبرامج تطوير موردين للتوطين (اكتفاء) وأطر عقود مرتبطة بالمؤشرات — محققةً عادةً خفضًا في التكلفة الإجمالية بنسبة 15–25% مع تحقيق امتثال كامل للتوطين.",
       },
       {
         type: 'midstream',
@@ -129,7 +129,7 @@ const industryData: Record<string, IndustryInfo> = {
           "توقّف الإنتاج الناجم عن عيوب جودة لم تُكتشف عند فحص الاستلام يكلّف 50–500 ألف SAR في الساعة — يتطلب البند 8.4 من ISO 9001:2015 (التحكم في العمليات المقدَّمة خارجيًا) خطط جودة خاصة بكل مورد ومعايير فحص استلام.",
         ],
         solution: "ISC deploys integrated S&OP programmes aligned with APICS best practices, implements ISO 9001-compliant quality management systems, and conducts MRO rationalisation using criticality-based stocking policies — reducing expedited purchasing by 60% and unplanned downtime by 40%.",
-        solutionAr: "تنشر ISC برامج متكاملة لتخطيط المبيعات والعمليات مواءَمة مع أفضل ممارسات APICS، وتطبّق أنظمة إدارة جودة متوافقة مع ISO 9001، وتُجري ترشيدًا لقطع الغيار والصيانة باستخدام سياسات تخزين قائمة على الأهمية — مما يقلّل الشراء العاجل بنسبة 60% والتوقف غير المخطط بنسبة 40%.",
+        solutionAr: "تنشر آي سبلاي تشين برامج متكاملة لتخطيط المبيعات والعمليات مواءَمة مع أفضل ممارسات APICS، وتطبّق أنظمة إدارة جودة متوافقة مع ISO 9001، وتُجري ترشيدًا لقطع الغيار والصيانة باستخدام سياسات تخزين قائمة على الأهمية — مما يقلّل الشراء العاجل بنسبة 60% والتوقف غير المخطط بنسبة 40%.",
       },
       {
         type: 'downstream',
@@ -166,7 +166,7 @@ const industryData: Record<string, IndustryInfo> = {
           "معدلات المرتجعات بنسبة 8–15% في تصنيع السلع الموجهة للمستهلك تقلّص الهوامش وتضر بولاء العلامة التجارية — يحدد نطاق الإرجاع من APICS SCOR زمن دورة اللوجستيات العكسية الأفضل في فئته دون 5 أيام، مقابل متوسطات القطاع 15–21 يومًا في دول الخليج.",
         ],
         solution: "ISC applies APICS SCOR Deliver domain benchmarks and CSCMP network design principles to redesign distribution footprints, consolidate carrier bases, and implement OTIF dashboards — achieving 98%+ OTIF rates and a 20–30% reduction in distribution cost-per-unit.",
-        solutionAr: "تطبّق ISC معايير نطاق التسليم من APICS SCOR ومبادئ تصميم الشبكة من CSCMP لإعادة تصميم نطاقات التوزيع وتوحيد قواعد الناقلين وتطبيق لوحات معلومات OTIF — محققةً معدلات OTIF تتجاوز 98% وخفضًا بنسبة 20–30% في تكلفة التوزيع لكل وحدة.",
+        solutionAr: "تطبّق آي سبلاي تشين معايير نطاق التسليم من APICS SCOR ومبادئ تصميم الشبكة من CSCMP لإعادة تصميم نطاقات التوزيع وتوحيد قواعد الناقلين وتطبيق لوحات معلومات OTIF — محققةً معدلات OTIF تتجاوز 98% وخفضًا بنسبة 20–30% في تكلفة التوزيع لكل وحدة.",
       },
     ],
     cases: [
@@ -220,7 +220,7 @@ const industryData: Record<string, IndustryInfo> = {
           "يتطلب تأهيل المورّدين للمعدات الحرجة للسلامة (أوعية الضغط وفق ASME VIII، الصمامات وفق API 6A/6D) من 12 إلى 18 شهرًا — لا يملك معظم المشغّلين السعوديين قوائم موردين مؤهَّلين مسبقًا، مما يخلق مخاطر جدولة على المسار الحرج لمشاريع النفقات الرأسمالية.",
         ],
         solution: "ISC provides CAPEX supply chain advisory aligned with CIPS Major Projects Standard and Aramco SQSP requirements — long-lead procurement strategies, LSTK contract structuring with IACCM-aligned risk provisions, and pre-qualified vendor databases — reducing CAPEX procurement cycle time by 30%.",
-        solutionAr: "تقدّم ISC استشارات سلسلة إمداد للنفقات الرأسمالية مواءَمة مع معيار المشاريع الكبرى من CIPS ومتطلبات أرامكو SQSP — استراتيجيات شراء للأصناف طويلة أمد التوريد وهيكلة عقود LSTK ببنود مخاطر مواءَمة مع IACCM وقواعد بيانات موردين مؤهَّلين مسبقًا — مما يقلّل زمن دورة مشتريات النفقات الرأسمالية بنسبة 30%.",
+        solutionAr: "تقدّم آي سبلاي تشين استشارات سلسلة إمداد للنفقات الرأسمالية مواءَمة مع معيار المشاريع الكبرى من CIPS ومتطلبات أرامكو SQSP — استراتيجيات شراء للأصناف طويلة أمد التوريد وهيكلة عقود LSTK ببنود مخاطر مواءَمة مع IACCM وقواعد بيانات موردين مؤهَّلين مسبقًا — مما يقلّل زمن دورة مشتريات النفقات الرأسمالية بنسبة 30%.",
       },
       {
         type: 'midstream',
@@ -257,7 +257,7 @@ const industryData: Record<string, IndustryInfo> = {
           "تُسعَّر عقود الصيانة الحصرية من الشركة المصنّعة الأصلية عادةً بنسبة 25–40% أعلى من المعايير المستقلة — تتضمن منهجية التوريد الاستراتيجي من CIPS لخدمات الصيانة اختبار السوق والمزادات العكسية والتعاقد القائم على الأداء.",
         ],
         solution: "ISC conducts full MRO rationalisation using the APICS CPIM criticality framework and SMRP metrics, designs TAR supply chain playbooks aligned with world-class turnaround standards, and implements ISO 55001-compliant asset management plans — typically freeing 20–35% of inventory value and reducing TAR cost by 15–25%.",
-        solutionAr: "تُجري ISC ترشيدًا كاملاً لقطع الغيار والصيانة باستخدام إطار الأهمية من APICS CPIM ومقاييس SMRP، وتصمّم أدلة عمل لسلسلة إمداد الإيقاف والصيانة مواءَمة مع معايير عالمية، وتطبّق خطط إدارة أصول متوافقة مع ISO 55001 — محررةً عادةً 20–35% من قيمة المخزون وخافضةً تكلفة الإيقاف والصيانة بنسبة 15–25%.",
+        solutionAr: "تُجري آي سبلاي تشين ترشيدًا كاملاً لقطع الغيار والصيانة باستخدام إطار الأهمية من APICS CPIM ومقاييس SMRP، وتصمّم أدلة عمل لسلسلة إمداد الإيقاف والصيانة مواءَمة مع معايير عالمية، وتطبّق خطط إدارة أصول متوافقة مع ISO 55001 — محررةً عادةً 20–35% من قيمة المخزون وخافضةً تكلفة الإيقاف والصيانة بنسبة 15–25%.",
       },
       {
         type: 'downstream',
@@ -294,7 +294,7 @@ const industryData: Record<string, IndustryInfo> = {
           "قد تتعارض التزامات المحتوى المحلي (اكتفاء) مع معايير تنوع الموردين البيئية والاجتماعية والحوكمية — يوفر ISO 20400 الإطار المتوازن لدمج المحتوى المحلي وتطوير المنشآت الصغيرة والمتطلبات البيئية في سياسة توريد مستدام واحدة.",
         ],
         solution: "ISC builds ISO 14001 and ISO 20400-aligned sustainable procurement frameworks, delivers GRI and CDP supply chain reporting programmes, and integrates ESG metrics into supplier scorecards — enabling access to ESG-conscious capital and unlocking green financing at 50–150bps premium savings.",
-        solutionAr: "تبني ISC أطر توريد مستدام مواءَمة مع ISO 14001 وISO 20400، وتقدّم برامج تقارير سلسلة الإمداد وفق GRI وCDP، وتدمج المقاييس البيئية والاجتماعية والحوكمية في بطاقات أداء الموردين — مما يتيح الوصول إلى رأس المال الواعي بالاستدامة ويفتح تمويلاً أخضر بوفورات علاوة تتراوح بين 50 و150 نقطة أساس.",
+        solutionAr: "تبني آي سبلاي تشين أطر توريد مستدام مواءَمة مع ISO 14001 وISO 20400، وتقدّم برامج تقارير سلسلة الإمداد وفق GRI وCDP، وتدمج المقاييس البيئية والاجتماعية والحوكمية في بطاقات أداء الموردين — مما يتيح الوصول إلى رأس المال الواعي بالاستدامة ويفتح تمويلاً أخضر بوفورات علاوة تتراوح بين 50 و150 نقطة أساس.",
       },
     ],
     cases: [
@@ -348,7 +348,7 @@ const industryData: Record<string, IndustryInfo> = {
           "مقاومة مالكي ميزانيات الإدارات لنماذج المشتريات المركزية هي أكثر تحديات التطبيق شيوعًا — يوفر المبدأ الثامن لنزاهة المشتريات من OECD (إشراك أصحاب المصلحة) نهج إدارة التغيير المنظم لتحول القطاع العام.",
         ],
         solution: "ISC designs NCAR-compliant centralised procurement models and category management frameworks aligned with the CIPS Public Sector Standard — delivering 15–25% cost savings on consolidated spend, zero NCAR audit findings, and full Vision 2030 SME / Iktva compliance documentation.",
-        solutionAr: "تصمّم ISC نماذج مشتريات مركزية متوافقة مع NCAR وأطر إدارة فئات مواءَمة مع معيار القطاع العام من CIPS — محققةً وفورات بنسبة 15–25% على الإنفاق الموحّد، وصفر ملاحظات تدقيق من NCAR، وتوثيق امتثال كامل للمنشآت الصغيرة والمتوسطة واكتفاء ضمن رؤية 2030.",
+        solutionAr: "تصمّم آي سبلاي تشين نماذج مشتريات مركزية متوافقة مع NCAR وأطر إدارة فئات مواءَمة مع معيار القطاع العام من CIPS — محققةً وفورات بنسبة 15–25% على الإنفاق الموحّد، وصفر ملاحظات تدقيق من NCAR، وتوثيق امتثال كامل للمنشآت الصغيرة والمتوسطة واكتفاء ضمن رؤية 2030.",
       },
       {
         type: 'midstream',
@@ -385,7 +385,7 @@ const industryData: Record<string, IndustryInfo> = {
           "إدارة أداء الموردين غير رسمية في معظم الجهات الحكومية — بدون آليات تعاقدية مرتبطة بمؤشرات الأداء، تتجدد عقود المقاولين ضعيفي الأداء تلقائيًا لعدم وجود أسباب موثّقة للإنهاء.",
         ],
         solution: "ISC implements full CLM programmes aligned with IACCM standards and Etimad platform requirements — contract templates, KPI frameworks, ZATCA compliance, and audit-readiness documentation — recovering 9% average contract value leakage and achieving zero NCAR/MOF audit findings.",
-        solutionAr: "تطبّق ISC برامج كاملة لإدارة دورة حياة العقود مواءَمة مع معايير IACCM ومتطلبات منصة اعتماد — قوالب عقود وأطر مؤشرات أداء والامتثال لهيئة الزكاة والضريبة والجمارك وتوثيق الجاهزية للتدقيق — مستردةً في المتوسط 9% من تسرّب قيمة العقود ومحققةً صفر ملاحظات تدقيق من NCAR ووزارة المالية.",
+        solutionAr: "تطبّق آي سبلاي تشين برامج كاملة لإدارة دورة حياة العقود مواءَمة مع معايير IACCM ومتطلبات منصة اعتماد — قوالب عقود وأطر مؤشرات أداء والامتثال لهيئة الزكاة والضريبة والجمارك وتوثيق الجاهزية للتدقيق — مستردةً في المتوسط 9% من تسرّب قيمة العقود ومحققةً صفر ملاحظات تدقيق من NCAR ووزارة المالية.",
       },
       {
         type: 'downstream',
@@ -422,7 +422,7 @@ const industryData: Record<string, IndustryInfo> = {
           "تترتب على ملاحظات تدقيق المشتريات تبعات مسؤولية شخصية بموجب نظام مكافحة الفساد السعودي (نزاهة) — يوصي CIPS ببرنامج منظم للجاهزية لتدقيق المشتريات يُنفَّذ قبل ستة أشهر من أي مراجعة مجدولة.",
         ],
         solution: "ISC designs government-grade KPI reporting frameworks and Power BI dashboards aligned with NCAR reporting requirements, implements ISO 9001-compliant service acceptance protocols, and runs audit-readiness programmes — achieving 100% NCAR compliance and delivering Vision 2030 reporting packs on time.",
-        solutionAr: "تصمّم ISC أطر تقارير مؤشرات أداء بمستوى حكومي ولوحات معلومات Power BI مواءَمة مع متطلبات تقارير NCAR، وتطبّق بروتوكولات قبول خدمة متوافقة مع ISO 9001، وتُنفّذ برامج جاهزية للتدقيق — محققةً امتثالاً كاملاً لـ NCAR وتسليم حزم تقارير رؤية 2030 في الوقت المحدد.",
+        solutionAr: "تصمّم آي سبلاي تشين أطر تقارير مؤشرات أداء بمستوى حكومي ولوحات معلومات Power BI مواءَمة مع متطلبات تقارير NCAR، وتطبّق بروتوكولات قبول خدمة متوافقة مع ISO 9001، وتُنفّذ برامج جاهزية للتدقيق — محققةً امتثالاً كاملاً لـ NCAR وتسليم حزم تقارير رؤية 2030 في الوقت المحدد.",
       },
     ],
     cases: [
@@ -476,7 +476,7 @@ const industryData: Record<string, IndustryInfo> = {
           "تبيّن أن توريد المواد الفعّالة من دولة واحدة (الهند/الصين لأكثر من 60% من الإمداد العالمي) كارثي أثناء اضطرابات كوفيد-19 — يوصي برنامج الأدوية الأساسية من منظمة الصحة العالمية بحد أقصى 70% للاعتماد على أي دولة مصدر واحدة للأدوية الحرجة.",
         ],
         solution: "ISC implements WHO GDP-aligned multi-source procurement strategies, designs SFDA import pipeline management systems, and audits cold-chain infrastructure against PIC/S GDP PE 011-1 — reducing temperature excursion incidents by 85% and eliminating SFDA non-compliance risk.",
-        solutionAr: "تطبّق ISC استراتيجيات توريد متعدد المصادر مواءَمة مع GDP من منظمة الصحة العالمية، وتصمّم أنظمة لإدارة خط استيراد SFDA، وتدقّق بنية سلسلة التبريد مقابل GDP من PIC/S PE 011-1 — مقللةً حوادث تجاوز درجة الحرارة بنسبة 85% ومزيلةً مخاطر عدم الامتثال لـ SFDA.",
+        solutionAr: "تطبّق آي سبلاي تشين استراتيجيات توريد متعدد المصادر مواءَمة مع GDP من منظمة الصحة العالمية، وتصمّم أنظمة لإدارة خط استيراد SFDA، وتدقّق بنية سلسلة التبريد مقابل GDP من PIC/S PE 011-1 — مقللةً حوادث تجاوز درجة الحرارة بنسبة 85% ومزيلةً مخاطر عدم الامتثال لـ SFDA.",
       },
       {
         type: 'midstream',
@@ -513,7 +513,7 @@ const industryData: Record<string, IndustryInfo> = {
           "تتطلب متطلبات ترشيد مضادات الميكروبات (AMS) بموجب تعميم وزارة الصحة السعودية 2023 بيانات استهلاك مضادات حيوية آنية — وهذا يستلزم نظام معلومات لسلسلة الإمداد الدوائية متكاملاً مع نظام معلومات المستشفى (HIS)، وهو ما يفتقر إليه معظم المستشفيات السعودية.",
         ],
         solution: "ISC builds JCI-compliant hospital pharmacy supply chain systems including VEN/ABC formulary management, ASHP-aligned demand forecasting, FEFO inventory controls, and VMI programmes with key suppliers — reducing pharmacy inventory from 5.4 to 2.8 months DOH and cutting wastage from 5% to under 1%.",
-        solutionAr: "تبني ISC أنظمة سلسلة إمداد لصيدليات المستشفيات متوافقة مع JCI تشمل إدارة القائمة الدوائية بـ VEN/ABC والتنبؤ بالطلب المواءَم مع ASHP وضوابط مخزون FEFO وبرامج المخزون المُدار من المورد مع الموردين الرئيسيين — مقللةً مخزون الصيدلية من 5.4 إلى 2.8 شهر تغطية والهدر من 5% إلى أقل من 1%.",
+        solutionAr: "تبني آي سبلاي تشين أنظمة سلسلة إمداد لصيدليات المستشفيات متوافقة مع JCI تشمل إدارة القائمة الدوائية بـ VEN/ABC والتنبؤ بالطلب المواءَم مع ASHP وضوابط مخزون FEFO وبرامج المخزون المُدار من المورد مع الموردين الرئيسيين — مقللةً مخزون الصيدلية من 5.4 إلى 2.8 شهر تغطية والهدر من 5% إلى أقل من 1%.",
       },
       {
         type: 'downstream',
@@ -550,7 +550,7 @@ const industryData: Record<string, IndustryInfo> = {
           "تتطلب عمليات سحب الأدوية من المستشفيات (بمتوسط 3–4 عمليات سحب من الفئة الثانية سنويًا في المملكة) تتبّعًا للمنتج خلال 24 ساعة حتى مستوى المريض — بدون تسلسل GS1 للرعاية الصحية، لا تستطيع المستشفيات الامتثال لمتطلبات إشعار السحب من SFDA.",
         ],
         solution: "ISC designs SFDA Salama-compliant pharmaceutical distribution systems, implements GS1 Healthcare traceability programmes, and qualifies cold-chain transport lanes to PIC/S GDP standard — achieving 100% SFDA traceability compliance and eliminating all temperature excursion incidents.",
-        solutionAr: "تصمّم ISC أنظمة توزيع دوائي متوافقة مع نظام سلامة من SFDA، وتطبّق برامج تتبّع GS1 للرعاية الصحية، وتؤهّل مسارات نقل سلسلة التبريد وفق معيار GDP من PIC/S — محققةً امتثالاً كاملاً لتتبّع SFDA بنسبة 100% ومزيلةً جميع حوادث تجاوز درجة الحرارة.",
+        solutionAr: "تصمّم آي سبلاي تشين أنظمة توزيع دوائي متوافقة مع نظام سلامة من SFDA، وتطبّق برامج تتبّع GS1 للرعاية الصحية، وتؤهّل مسارات نقل سلسلة التبريد وفق معيار GDP من PIC/S — محققةً امتثالاً كاملاً لتتبّع SFDA بنسبة 100% ومزيلةً جميع حوادث تجاوز درجة الحرارة.",
       },
     ],
     cases: [
@@ -604,7 +604,7 @@ const industryData: Record<string, IndustryInfo> = {
           "تظل العلامة الخاصة غير مطوَّرة في تجزئة دول الخليج (انتشار 8% مقابل 35–40% في المملكة المتحدة/ألمانيا) — يوفر دليل مشتريات العلامة الخاصة من CIPS إطار التوريد ومواصفات الجودة لتطوير تشكيلات علامة خاصة معزّزة للهامش.",
         ],
         solution: "ISC implements CIPS Category Management methodology and ECR-aligned JBP frameworks with top suppliers — reallocating management effort via Kraljic Matrix, building JBP programmes with 20 strategic suppliers, and launching private label development — delivering 3–5% margin improvement.",
-        solutionAr: "تطبّق ISC منهجية إدارة الفئات من CIPS وأطر JBP المواءَمة مع ECR مع كبار الموردين — بإعادة توزيع جهد الإدارة عبر مصفوفة كرالجيك وبناء برامج JBP مع 20 موردًا استراتيجيًا وإطلاق تطوير العلامة الخاصة — محققةً تحسّنًا في الهامش بنسبة 3–5%.",
+        solutionAr: "تطبّق آي سبلاي تشين منهجية إدارة الفئات من CIPS وأطر JBP المواءَمة مع ECR مع كبار الموردين — بإعادة توزيع جهد الإدارة عبر مصفوفة كرالجيك وبناء برامج JBP مع 20 موردًا استراتيجيًا وإطلاق تطوير العلامة الخاصة — محققةً تحسّنًا في الهامش بنسبة 3–5%.",
       },
       {
         type: 'midstream',
@@ -641,7 +641,7 @@ const industryData: Record<string, IndustryInfo> = {
           "هدر القابل للتلف بنسبة 8–15% الناتج عن التدوير في المتجر بأسلوب LIFO (بدلاً من FEFO) يمكن منعه — يتيح معيار التتبّع GS1 ببيانات مدة الصلاحية في الباركود تدويرًا آليًا بـ FEFO في المركز والمتجر، مقللاً الهدر إلى 2–4%.",
         ],
         solution: "ISC implements APICS IBF-aligned demand planning systems with Ramadan/seasonal adjustment factors, designs ECR-compliant S&OP cycles integrating buying and logistics, and implements GS1-enabled FEFO systems — reducing forecast error by 30%, out-of-stocks by 50%, and perishables wastage by 60%.",
-        solutionAr: "تطبّق ISC أنظمة تخطيط طلب مواءَمة مع APICS IBF بعوامل تعديل رمضانية/موسمية، وتصمّم دورات تخطيط متكامل للمبيعات والعمليات متوافقة مع ECR تدمج الشراء واللوجستيات، وتطبّق أنظمة FEFO مدعومة بـ GS1 — مقللةً خطأ التنبؤ بنسبة 30% والنفاد بنسبة 50% وهدر القابل للتلف بنسبة 60%.",
+        solutionAr: "تطبّق آي سبلاي تشين أنظمة تخطيط طلب مواءَمة مع APICS IBF بعوامل تعديل رمضانية/موسمية، وتصمّم دورات تخطيط متكامل للمبيعات والعمليات متوافقة مع ECR تدمج الشراء واللوجستيات، وتطبّق أنظمة FEFO مدعومة بـ GS1 — مقللةً خطأ التنبؤ بنسبة 30% والنفاد بنسبة 50% وهدر القابل للتلف بنسبة 60%.",
       },
       {
         type: 'downstream',
@@ -678,7 +678,7 @@ const industryData: Record<string, IndustryInfo> = {
           "معدلات الإرجاع المرتفعة (12–20% في الأزياء/الإلكترونيات) دون بنية لوجستيات عكسية تخلق قيمة مخزون غير مستردة — تُظهر معايير مجال الإرجاع من APICS SCOR أن أفضل تجار التجزئة يعالجون المرتجعات خلال 5 أيام مقابل متوسط 21 يومًا في دول الخليج، مسترجعين قيمة مخزون أعلى بنسبة 40%.",
         ],
         solution: "ISC designs unified omnichannel OMS architectures aligned with WERC standards, implements CSCMP-benchmarked last-mile carrier frameworks, and builds APICS SCOR Return-compliant reverse logistics programmes — reducing last-mile cost by 25–35% and return processing cost by 40%.",
-        solutionAr: "تصمّم ISC بنى أنظمة إدارة طلبات موحّدة متعددة القنوات مواءَمة مع معايير WERC، وتطبّق أطر ناقلي الميل الأخير المعيارية من CSCMP، وتبني برامج لوجستيات عكسية متوافقة مع مجال الإرجاع من APICS SCOR — مقللةً تكلفة الميل الأخير بنسبة 25–35% وتكلفة معالجة المرتجعات بنسبة 40%.",
+        solutionAr: "تصمّم آي سبلاي تشين بنى أنظمة إدارة طلبات موحّدة متعددة القنوات مواءَمة مع معايير WERC، وتطبّق أطر ناقلي الميل الأخير المعيارية من CSCMP، وتبني برامج لوجستيات عكسية متوافقة مع مجال الإرجاع من APICS SCOR — مقللةً تكلفة الميل الأخير بنسبة 25–35% وتكلفة معالجة المرتجعات بنسبة 40%.",
       },
     ],
     cases: [
@@ -732,7 +732,7 @@ const industryData: Record<string, IndustryInfo> = {
           "تجزّؤ الناقلين (إدارة 10–20 مزوّدًا لوجستيًا دون إطار عقد رئيسي) يخلق اتفاقيات مستوى خدمة غير متسقة ولا قدرة تفاوض على الحجم — تُظهر أبحاث IACCM أن الترشيد إلى 3–5 ناقلين مفضّلين بعقود ملتزمة بالحجم يخفض تكلفة الشحن بنسبة 15–22%.",
         ],
         solution: "ISC conducts CIPS-aligned fleet TCO analysis, runs CSCMP-framework carrier tenders, and designs IACCM-compliant carrier contracts with volume commitments, KPI-linked pricing, and penalty mechanisms — typically reducing procurement-controllable logistics cost by 18–25%.",
-        solutionAr: "تُجري ISC تحليل تكلفة كلية للأسطول مواءَمًا مع CIPS، وتدير مناقصات ناقلين وفق إطار CSCMP، وتصمّم عقود ناقلين متوافقة مع IACCM بالتزامات حجم وتسعير مرتبط بمؤشرات الأداء وآليات غرامات — مقللةً عادةً التكلفة اللوجستية القابلة للتحكم عبر المشتريات بنسبة 18–25%.",
+        solutionAr: "تُجري آي سبلاي تشين تحليل تكلفة كلية للأسطول مواءَمًا مع CIPS، وتدير مناقصات ناقلين وفق إطار CSCMP، وتصمّم عقود ناقلين متوافقة مع IACCM بالتزامات حجم وتسعير مرتبط بمؤشرات الأداء وآليات غرامات — مقللةً عادةً التكلفة اللوجستية القابلة للتحكم عبر المشتريات بنسبة 18–25%.",
       },
       {
         type: 'midstream',
@@ -769,7 +769,7 @@ const industryData: Record<string, IndustryInfo> = {
           "بصمات الشبكات المصمَّمة قبل 2020 لم تعد مثلى — حوّلت المناطق الاقتصادية الجديدة ضمن رؤية 2030 (نيوم، مدينة الملك عبدالله الاقتصادية، الدرعية) مراكز جاذبية الطلب بشكل كبير؛ يوصي APICS CSCP بإعادة تأسيس كاملة للشبكة كل 3–5 سنوات أو بعد تغيّر نمط الطلب بأكثر من 15%.",
         ],
         solution: "ISC delivers APICS CSCP-aligned network optimisation studies, WERC-benchmarked warehouse operational improvements, and WMS implementation programmes — increasing fleet utilisation to 79%+, pick accuracy to 99.4%, and delivering 20–30% labour cost reduction.",
-        solutionAr: "تقدّم ISC دراسات تحسين شبكة مواءَمة مع APICS CSCP وتحسينات تشغيلية للمستودعات معيارية وفق WERC وبرامج تطبيق نظام إدارة المستودعات — رافعةً استخدام الأسطول إلى أكثر من 79% ودقة الانتقاء إلى 99.4% ومحققةً خفض تكلفة العمالة بنسبة 20–30%.",
+        solutionAr: "تقدّم آي سبلاي تشين دراسات تحسين شبكة مواءَمة مع APICS CSCP وتحسينات تشغيلية للمستودعات معيارية وفق WERC وبرامج تطبيق نظام إدارة المستودعات — رافعةً استخدام الأسطول إلى أكثر من 79% ودقة الانتقاء إلى 99.4% ومحققةً خفض تكلفة العمالة بنسبة 20–30%.",
       },
       {
         type: 'downstream',
@@ -806,7 +806,7 @@ const industryData: Record<string, IndustryInfo> = {
           "مخاطر الهجمات السيبرانية على أنظمة الإدارة اللوجستية (WMS وTMS وEDI) في تزايد لكنها غير معالَجة — أوقف هجوم فدية ترانسنت 2021 (جنوب إفريقيا) مشغّل ميناء كبير لمدة 7 أيام؛ يوصي CSCMP باعتبار المخاطر السيبرانية من مخاطر سلسلة الإمداد من الفئة الأولى اعتبارًا من 2024.",
         ],
         solution: "ISC implements APICS SCOR Perfect Order Fulfilment measurement frameworks, designs ISO 22301-aligned BCP programmes for logistics operations, and deploys CSCMP risk management methodologies — reducing annual penalty exposure by SAR 2–5M and achieving 97%+ POF performance.",
-        solutionAr: "تطبّق ISC أطر قياس تلبية الطلب المثالي من APICS SCOR، وتصمّم برامج استمرارية أعمال مواءَمة مع ISO 22301 للعمليات اللوجستية، وتنشر منهجيات إدارة المخاطر من CSCMP — مقللةً التعرّض السنوي للغرامات بمقدار 2–5 ملايين SAR ومحققةً أداء تلبية طلب مثالي يتجاوز 97%.",
+        solutionAr: "تطبّق آي سبلاي تشين أطر قياس تلبية الطلب المثالي من APICS SCOR، وتصمّم برامج استمرارية أعمال مواءَمة مع ISO 22301 للعمليات اللوجستية، وتنشر منهجيات إدارة المخاطر من CSCMP — مقللةً التعرّض السنوي للغرامات بمقدار 2–5 ملايين SAR ومحققةً أداء تلبية طلب مثالي يتجاوز 97%.",
       },
     ],
     cases: [
@@ -860,7 +860,7 @@ const industryData: Record<string, IndustryInfo> = {
           "شراء قطع الغيار البحرية دون تصنيف أهمية (مواءَم مع ISO 55001) يؤدي إلى الإفراط في تخزين الأصناف منخفضة الأهمية ونقص قطع الغيار الحرجة في آنٍ واحد — مسبّبًا أحداث توقف مكلفة للسفن بمتوسط 15,000–50,000 دولار يوميًا.",
         ],
         solution: "ISC designs IMPA-aligned consolidated marine procurement programmes, implements BIMCO-compliant bunker hedging strategies, and conducts ISO 55001-based spare parts criticality classification — reducing vessel supply cost by 15–25% and eliminating supply-caused demurrage.",
-        solutionAr: "تصمّم ISC برامج مشتريات بحرية موحّدة مواءَمة مع IMPA، وتطبّق استراتيجيات تحوّط للوقود البحري متوافقة مع BIMCO، وتُجري تصنيف أهمية لقطع الغيار وفق ISO 55001 — مقللةً تكلفة توريد السفن بنسبة 15–25% ومزيلةً غرامات التأخير الناتجة عن التوريد.",
+        solutionAr: "تصمّم آي سبلاي تشين برامج مشتريات بحرية موحّدة مواءَمة مع IMPA، وتطبّق استراتيجيات تحوّط للوقود البحري متوافقة مع BIMCO، وتُجري تصنيف أهمية لقطع الغيار وفق ISO 55001 — مقللةً تكلفة توريد السفن بنسبة 15–25% ومزيلةً غرامات التأخير الناتجة عن التوريد.",
       },
       {
         type: 'midstream',
@@ -897,7 +897,7 @@ const industryData: Record<string, IndustryInfo> = {
           "يبلغ متوسط زمن مكوث الحاويات في الموانئ السعودية 4–6 أيام مقابل معايير عالمية بيومين — تُظهر مؤشرات أداء IAPH أن خفض زمن المكوث يرتبط مباشرةً باستخدام سعة الساحة، مقللاً الحاجة إلى توسعة مكلفة للساحة.",
         ],
         solution: "ISC delivers PIANC and IAPH-aligned port supply chain optimisation programmes — equipment MRO criticality management, PCS integration advisory, and ISO 28000-compliant supply chain security — increasing terminal throughput by 15–20% and reducing container dwell time to under 2.5 days.",
-        solutionAr: "تقدّم ISC برامج تحسين لسلسلة إمداد الموانئ مواءَمة مع PIANC وIAPH — إدارة أهمية صيانة المعدات واستشارات تكامل نظام مجتمع الميناء وأمن سلسلة الإمداد المتوافق مع ISO 28000 — رافعةً إنتاجية المحطة بنسبة 15–20% ومقللةً زمن مكوث الحاويات إلى أقل من 2.5 يوم.",
+        solutionAr: "تقدّم آي سبلاي تشين برامج تحسين لسلسلة إمداد الموانئ مواءَمة مع PIANC وIAPH — إدارة أهمية صيانة المعدات واستشارات تكامل نظام مجتمع الميناء وأمن سلسلة الإمداد المتوافق مع ISO 28000 — رافعةً إنتاجية المحطة بنسبة 15–20% ومقللةً زمن مكوث الحاويات إلى أقل من 2.5 يوم.",
       },
       {
         type: 'downstream',
@@ -934,7 +934,7 @@ const industryData: Record<string, IndustryInfo> = {
           "إدارة المستندات التجارية (الاعتمادات المستندية وشهادات المنشأ وشهادات سابر) يدوية إلى حد كبير لدى المستوردين السعوديين — تخفض الإدارة الإلكترونية للمستندات المواءَمة مع معيار المشتريات الدولية من CIPS أخطاء التوثيق التجاري بنسبة 75% ومعدلات استفسارات الجمارك بنسبة 60%.",
         ],
         solution: "ISC provides ZATCA-aligned free zone supply chain structuring and AEO programme support, implements supply chain finance programmes per CIPS SCF Guide, and digitises trade documentation management — unlocking full duty-deferral benefits and reducing customs clearance time by 80%.",
-        solutionAr: "توفّر ISC هيكلة سلسلة إمداد للمناطق الحرة مواءَمة مع هيئة الزكاة والضريبة والجمارك ودعم برنامج AEO، وتطبّق برامج تمويل سلسلة الإمداد وفق دليل SCF من CIPS، وترقمن إدارة المستندات التجارية — فاتحةً كامل مزايا تأجيل الرسوم ومقللةً زمن التخليص الجمركي بنسبة 80%.",
+        solutionAr: "توفّر آي سبلاي تشين هيكلة سلسلة إمداد للمناطق الحرة مواءَمة مع هيئة الزكاة والضريبة والجمارك ودعم برنامج AEO، وتطبّق برامج تمويل سلسلة الإمداد وفق دليل SCF من CIPS، وترقمن إدارة المستندات التجارية — فاتحةً كامل مزايا تأجيل الرسوم ومقللةً زمن التخليص الجمركي بنسبة 80%.",
       },
     ],
     cases: [
@@ -988,7 +988,7 @@ const industryData: Record<string, IndustryInfo> = {
           "تتطلب التزامات التوريد المستدام بموجب LEED V4 (إلزامية للعديد من مشاريع رؤية 2030) بيانات كربون المواد وتوثيق المحتوى المعاد تدويره — يوفر التوريد المستدام ISO 20400 إطار إشراك الموردين لمواد البناء.",
         ],
         solution: "ISC implements CIPS Major Projects-aligned procurement scheduling with BOQ-integrated material management, conducts CIOB-standard subcontractor pre-qualification with financial health monitoring, and delivers ISO 20400-compliant sustainable procurement frameworks — reducing supply-caused schedule delays by 70%.",
-        solutionAr: "تطبّق ISC جدولة مشتريات مواءَمة مع معيار المشاريع الكبرى من CIPS بإدارة مواد متكاملة مع جداول الكميات، وتُجري تأهيلاً مسبقًا للمقاولين من الباطن وفق معيار CIOB بمراقبة السلامة المالية، وتقدّم أطر توريد مستدام متوافقة مع ISO 20400 — مقللةً تأخيرات الجدول الناتجة عن التوريد بنسبة 70%.",
+        solutionAr: "تطبّق آي سبلاي تشين جدولة مشتريات مواءَمة مع معيار المشاريع الكبرى من CIPS بإدارة مواد متكاملة مع جداول الكميات، وتُجري تأهيلاً مسبقًا للمقاولين من الباطن وفق معيار CIOB بمراقبة السلامة المالية، وتقدّم أطر توريد مستدام متوافقة مع ISO 20400 — مقللةً تأخيرات الجدول الناتجة عن التوريد بنسبة 70%.",
       },
       {
         type: 'midstream',
@@ -1025,7 +1025,7 @@ const industryData: Record<string, IndustryInfo> = {
           "إخفاقات حوكمة مدفوعات المقاولين من الباطن — تأخير المقاولين الرئيسيين للسداد أكثر من 90 يومًا — تتسلسل إلى إخفاقات سلسلة الإمداد من الطبقتين الثانية والثالثة؛ يُلزم خيار NEC4 Y(UK)2 والأحكام المكافئة في FIDIC بالسداد خلال 21 يومًا؛ حوكمة المدفوعات المنظمة تمنع اضطرابًا في سلسلة الإمداد بملايين الـ SAR.",
         ],
         solution: "ISC implements LCI-aligned JIT delivery systems with RFID material tracking, deploys hire utilisation management programmes, and establishes NEC4-compliant subcontractor payment governance — recovering 3–5% of total project cost and eliminating supply chain-caused schedule delays.",
-        solutionAr: "تطبّق ISC أنظمة تسليم في الوقت المناسب مواءَمة مع معهد البناء الرشيق بتتبّع مواد بـ RFID، وتنشر برامج إدارة استخدام التأجير، وتؤسّس حوكمة مدفوعات للمقاولين من الباطن متوافقة مع NEC4 — مستردةً 3–5% من إجمالي تكلفة المشروع ومزيلةً تأخيرات الجدول الناتجة عن سلسلة الإمداد.",
+        solutionAr: "تطبّق آي سبلاي تشين أنظمة تسليم في الوقت المناسب مواءَمة مع معهد البناء الرشيق بتتبّع مواد بـ RFID، وتنشر برامج إدارة استخدام التأجير، وتؤسّس حوكمة مدفوعات للمقاولين من الباطن متوافقة مع NEC4 — مستردةً 3–5% من إجمالي تكلفة المشروع ومزيلةً تأخيرات الجدول الناتجة عن سلسلة الإمداد.",
       },
       {
         type: 'downstream',
@@ -1062,7 +1062,7 @@ const industryData: Record<string, IndustryInfo> = {
           "نزاعات تسوية الحساب الختامي التي تستمر 24–48 شهرًا شائعة في المشاريع العملاقة السعودية — تُظهر بيانات IACCM أن المقاولين ذوي حفظ السجلات الآنية المنظّم (يوميات الموقع والأدلة المصوّرة وسجلات الموارد) يسوّون الحسابات الختامية أسرع بـ18 شهرًا ويستردّون استحقاقًا أعلى بنسبة 25%.",
         ],
         solution: "ISC provides FIDIC/NEC4-aligned commercial and supply chain advisory — VO capture programmes, DLP supply chain planning, and IACCM-standard final account management — recovering 5–15% of unclaimed contract entitlement and avoiding 18–24 months of dispute.",
-        solutionAr: "تقدّم ISC استشارات تجارية وسلسلة إمداد مواءَمة مع FIDIC/NEC4 — برامج التقاط أوامر التغيير وتخطيط سلسلة إمداد فترة مسؤولية العيوب وإدارة الحساب الختامي وفق معيار IACCM — مستردةً 5–15% من استحقاق العقد غير المطالَب به ومتجنّبةً 18–24 شهرًا من النزاع.",
+        solutionAr: "تقدّم آي سبلاي تشين استشارات تجارية وسلسلة إمداد مواءَمة مع FIDIC/NEC4 — برامج التقاط أوامر التغيير وتخطيط سلسلة إمداد فترة مسؤولية العيوب وإدارة الحساب الختامي وفق معيار IACCM — مستردةً 5–15% من استحقاق العقد غير المطالَب به ومتجنّبةً 18–24 شهرًا من النزاع.",
       },
     ],
     cases: [
@@ -1116,7 +1116,7 @@ const industryData: Record<string, IndustryInfo> = {
           "مناقصة الأجهزة الطبية دون مواصفات فنية مصمَّمة جيدًا تؤدي إلى عروض غير قابلة للمقارنة (إن أُفرط في تحديدها لعلامة واحدة) أو نتائج سريرية ضعيفة (إن نقص تحديدها) — يتطلب معيار الرعاية الصحية من CIPS كتابة المواصفات الفنية وفق النتيجة السريرية لا العلامة التجارية.",
         ],
         solution: "ISC implements NHS-aligned PPI value analysis programmes, designs SFDA MDR-compliant supplier qualification processes, and develops outcome-based medical device tender specifications — reducing medical supply cost by 15–22% while maintaining full JCI supply chain compliance.",
-        solutionAr: "تطبّق ISC برامج تحليل قيمة PPI مواءَمة مع NHS، وتصمّم عمليات تأهيل موردين متوافقة مع لائحة الأجهزة الطبية من SFDA، وتطوّر مواصفات مناقصات أجهزة طبية قائمة على النتائج — مقللةً تكلفة التوريد الطبي بنسبة 15–22% مع الحفاظ على امتثال كامل لسلسلة الإمداد وفق JCI.",
+        solutionAr: "تطبّق آي سبلاي تشين برامج تحليل قيمة PPI مواءَمة مع NHS، وتصمّم عمليات تأهيل موردين متوافقة مع لائحة الأجهزة الطبية من SFDA، وتطوّر مواصفات مناقصات أجهزة طبية قائمة على النتائج — مقللةً تكلفة التوريد الطبي بنسبة 15–22% مع الحفاظ على امتثال كامل لسلسلة الإمداد وفق JCI.",
       },
       {
         type: 'midstream',
@@ -1153,7 +1153,7 @@ const industryData: Record<string, IndustryInfo> = {
           "يُلزم تعميم ترشيد مضادات الميكروبات من وزارة الصحة السعودية 2023 بتقارير آنية لاستهلاك المضادات الحيوية مرتبطة ببيانات الأحياء الدقيقة — يتطلب تطبيق AMS من ASHP نظام معلومات صيدلية متكاملاً مع نظام معلومات المستشفى ونظام معلومات مختبر الأحياء الدقيقة، وهو ما يفتقر إليه أكثر من 70% من المستشفيات السعودية.",
         ],
         solution: "ISC builds ASHP and JCI-compliant hospital pharmacy supply chain systems with VEN-based formulary management, automated DOH-based replenishment, JCI MMU-compliant cold-chain management, and AMS-ready pharmacy information architecture — reducing inventory from 5.4 to 2.8 months and wastage from 5% to under 1%.",
-        solutionAr: "تبني ISC أنظمة سلسلة إمداد لصيدليات المستشفيات متوافقة مع ASHP وJCI بإدارة قائمة دوائية قائمة على VEN وتجديد آلي قائم على أيام التغطية وإدارة سلسلة تبريد متوافقة مع JCI MMU وبنية معلومات صيدلية جاهزة لترشيد مضادات الميكروبات — مقللةً المخزون من 5.4 إلى 2.8 شهر والهدر من 5% إلى أقل من 1%.",
+        solutionAr: "تبني آي سبلاي تشين أنظمة سلسلة إمداد لصيدليات المستشفيات متوافقة مع ASHP وJCI بإدارة قائمة دوائية قائمة على VEN وتجديد آلي قائم على أيام التغطية وإدارة سلسلة تبريد متوافقة مع JCI MMU وبنية معلومات صيدلية جاهزة لترشيد مضادات الميكروبات — مقللةً المخزون من 5.4 إلى 2.8 شهر والهدر من 5% إلى أقل من 1%.",
       },
       {
         type: 'downstream',
@@ -1190,7 +1190,7 @@ const industryData: Record<string, IndustryInfo> = {
           "استبدال المعدات الرأسمالية تفاعلي لا مخطط — تُظهر نمذجة تكلفة دورة حياة الأصول وفق ISO 55001 أن برامج الاستبدال المخطّطة تقلّل الشراء الطارئ (بعلاوة 30–50%) وتزيل مخاطر سلامة المريض الناتجة عن عطل المعدات أثناء الاستخدام السريري.",
         ],
         solution: "ISC conducts CIPS Healthcare FM procurement reviews introducing competitive tendering and KPI frameworks, benchmarks biomedical maintenance against ISP alternatives, and implements ISO 55001 capital replacement plans — saving 20–30% on non-clinical procurement and eliminating equipment safety risks.",
-        solutionAr: "تُجري ISC مراجعات لمشتريات إدارة مرافق الرعاية الصحية بإدخال المناقصات التنافسية وأطر مؤشرات الأداء، وتقارن صيانة المعدات الطبية الحيوية ببدائل مزوّدي الخدمة المستقلين، وتطبّق خطط استبدال رأسمالي وفق ISO 55001 — موفّرةً 20–30% على المشتريات غير السريرية ومزيلةً مخاطر سلامة المعدات.",
+        solutionAr: "تُجري آي سبلاي تشين مراجعات لمشتريات إدارة مرافق الرعاية الصحية بإدخال المناقصات التنافسية وأطر مؤشرات الأداء، وتقارن صيانة المعدات الطبية الحيوية ببدائل مزوّدي الخدمة المستقلين، وتطبّق خطط استبدال رأسمالي وفق ISO 55001 — موفّرةً 20–30% على المشتريات غير السريرية ومزيلةً مخاطر سلامة المعدات.",
       },
     ],
     cases: [
@@ -1244,7 +1244,7 @@ const industryData: Record<string, IndustryInfo> = {
           "انتشار برمجيات SaaS بمتوسط 100–200 تطبيق لكل مؤسسة سعودية (30–40% مكرر) — يتطلب معيار إدارة فئات تقنية المعلومات من CIPS عملية حوكمة SaaS موحّدة تشمل سجل اشتراكات رئيسيًا ومراجعة تبرير الأعمال ودورة ترشيد سنوية.",
         ],
         solution: "ISC implements ISO/IEC 19770-1 SAM programmes and CIPS IT category management with rolling hardware forecasts — eliminating 25–35% software overspend within 90 days, rationalising SaaS estates by 30–40%, and preventing hardware supply failures through 18-month pipeline procurement.",
-        solutionAr: "تطبّق ISC برامج إدارة أصول البرمجيات ISO/IEC 19770-1 وإدارة فئات تقنية المعلومات من CIPS بتوقعات أجهزة متجددة — مزيلةً 25–35% من الإفراط في إنفاق البرمجيات خلال 90 يومًا ومرشّدةً حيازات SaaS بنسبة 30–40% ومانعةً إخفاقات إمداد الأجهزة عبر خط مشتريات لـ18 شهرًا.",
+        solutionAr: "تطبّق آي سبلاي تشين برامج إدارة أصول البرمجيات ISO/IEC 19770-1 وإدارة فئات تقنية المعلومات من CIPS بتوقعات أجهزة متجددة — مزيلةً 25–35% من الإفراط في إنفاق البرمجيات خلال 90 يومًا ومرشّدةً حيازات SaaS بنسبة 30–40% ومانعةً إخفاقات إمداد الأجهزة عبر خط مشتريات لـ18 شهرًا.",
       },
       {
         type: 'midstream',
@@ -1281,7 +1281,7 @@ const industryData: Record<string, IndustryInfo> = {
           "مخاطر الطرف الثالث السيبرانية هي أسرع متجهات الهجوم نموًا — يتطلب ISO/IEC 27001:2022 برنامج إدارة مخاطر طرف ثالث (TPRM) موثّقًا بتقييمات أمنية لجميع الموردين ذوي الوصول إلى أنظمة المؤسسة.",
         ],
         solution: "ISC implements ITIL 4 CMDB programmes, FinOps Foundation-aligned cloud governance, and ISO/IEC 27001-compliant TPRM programmes — reducing cloud waste by 30%, eliminating hardware over-procurement by 20%, and mitigating third-party cyber supply chain risk.",
-        solutionAr: "تطبّق ISC برامج قاعدة بيانات إدارة التكوين ITIL 4 وحوكمة سحابية مواءَمة مع مؤسسة FinOps وبرامج إدارة مخاطر طرف ثالث متوافقة مع ISO/IEC 27001 — مقللةً هدر السحابة بنسبة 30% ومزيلةً الإفراط في شراء الأجهزة بنسبة 20% ومخففةً مخاطر سلسلة الإمداد السيبرانية من الطرف الثالث.",
+        solutionAr: "تطبّق آي سبلاي تشين برامج قاعدة بيانات إدارة التكوين ITIL 4 وحوكمة سحابية مواءَمة مع مؤسسة FinOps وبرامج إدارة مخاطر طرف ثالث متوافقة مع ISO/IEC 27001 — مقللةً هدر السحابة بنسبة 30% ومزيلةً الإفراط في شراء الأجهزة بنسبة 20% ومخففةً مخاطر سلسلة الإمداد السيبرانية من الطرف الثالث.",
       },
       {
         type: 'downstream',
@@ -1318,7 +1318,7 @@ const industryData: Record<string, IndustryInfo> = {
           "إدارة خروج موردي تقنية المعلومات ضعيفة التخطيط باستمرار — تتطلب ممارسة إدارة الموردين ITIL 4 بند إدارة خروج موثّقًا في كل عقد تعهيد لتقنية المعلومات يشمل مراحل نقل المعرفة وجداول إعادة توطين البيانات وتخطيط سلسلة إمداد الانتقال.",
         ],
         solution: "ISC designs ISO/IEC 20000-1-compliant IT service governance frameworks with IACCM-aligned outsourcing contracts, implements CIS Controls v8-based cybersecurity vendor consolidation strategies, and delivers ITIL 4 exit management programmes — reducing IT service management cost by 15–20% and closing all critical cyber supply chain gaps.",
-        solutionAr: "تصمّم ISC أطر حوكمة خدمات تقنية معلومات متوافقة مع ISO/IEC 20000-1 بعقود تعهيد مواءَمة مع IACCM، وتطبّق استراتيجيات توحيد موردي الأمن السيبراني القائمة على CIS Controls v8، وتقدّم برامج إدارة الخروج وفق ITIL 4 — مقللةً تكلفة إدارة خدمات تقنية المعلومات بنسبة 15–20% ومغلِقةً جميع فجوات سلسلة الإمداد السيبرانية الحرجة.",
+        solutionAr: "تصمّم آي سبلاي تشين أطر حوكمة خدمات تقنية معلومات متوافقة مع ISO/IEC 20000-1 بعقود تعهيد مواءَمة مع IACCM، وتطبّق استراتيجيات توحيد موردي الأمن السيبراني القائمة على CIS Controls v8، وتقدّم برامج إدارة الخروج وفق ITIL 4 — مقللةً تكلفة إدارة خدمات تقنية المعلومات بنسبة 15–20% ومغلِقةً جميع فجوات سلسلة الإمداد السيبرانية الحرجة.",
       },
     ],
     cases: [
@@ -1440,11 +1440,11 @@ function StreamCard({ stream, index }: { stream: Stream; index: number }) {
           <div className="bg-[#C9A84C]/8 rounded-xl p-4 border border-[#C9A84C]/25 flex items-start gap-3">
             <CheckCircle className="w-5 h-5 text-[#C9A84C] shrink-0 mt-0.5" />
             <div>
-              <p className="text-xs font-bold text-[#C9A84C] uppercase tracking-widest mb-1">{ar ? 'حل ISC' : 'ISC Solution'}</p>
+              <p className="text-xs font-bold text-[#C9A84C] uppercase tracking-widest mb-1">{ar ? 'حل آي سبلاي تشين' : 'ISC Solution'}</p>
               <p className="text-sm text-foreground/80 leading-relaxed">{ar ? stream.solutionAr : stream.solution}</p>
               <p className="text-xs text-foreground/50 italic leading-relaxed mt-2">
                 {ar
-                  ? 'الأرقام مبنية على خبرة المؤسس المهنية في مشاركات مماثلة — وليست بعد نتائج عملاء موثّقة أو تم التحقّق منها لدى ISC.'
+                  ? 'الأرقام مبنية على خبرة المؤسس المهنية في مشاركات مماثلة — وليست بعد نتائج عملاء موثّقة أو تم التحقّق منها لدى آي سبلاي تشين.'
                   : "Figures reflect the founder's professional experience across comparable engagements — not yet documented or verified ISC client outcomes."}
               </p>
             </div>
