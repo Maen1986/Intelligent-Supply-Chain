@@ -23,7 +23,7 @@ export type DecisionView = 'actions' | 'summary' | 'pack';
 const OWNERS_KEY = 'isc-m07-action-owners-v1';
 
 const TIER_STYLE: Record<Tier, string> = {
-  critical: 'bg-red-700 text-white', high: 'bg-orange-600 text-white', medium: 'bg-amber-500 text-white', low: 'bg-slate-500 text-white',
+  critical: 'bg-red-700 text-white', high: 'bg-orange-700 text-white', medium: 'bg-amber-700 text-white', low: 'bg-slate-500 text-white',
 };
 const TIER_LABEL: Record<Tier, { en: string; ar: string }> = {
   critical: { en: 'Critical', ar: 'حرج' }, high: { en: 'High', ar: 'مرتفع' }, medium: { en: 'Medium', ar: 'متوسط' }, low: { en: 'Low', ar: 'منخفض' },
