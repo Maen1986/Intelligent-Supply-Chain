@@ -470,7 +470,7 @@ function CommandCentreDetail({ inputs, outputs, ar }: {
         </div>
       )}
       <Link href="/command-center">
-        <Button size="sm" variant="outline" className="gap-2 border-accent/40 text-accent hover:bg-accent/5">
+        <Button size="sm" variant="outline" className="gap-2 border-accent/40 text-[#7A5F14] hover:bg-accent/5">
           <RotateCcw className="w-3.5 h-3.5" />
           {ar ? 'برج التحكم' : 'Control Tower'}
         </Button>
@@ -732,7 +732,7 @@ export function MyAssessments() {
                 </Button>
               </Link>
               <Link href="/diagnostic">
-                <Button variant="outline" className="border-accent text-accent hover:bg-accent/5 gap-2">
+                <Button variant="outline" className="border-accent text-[#7A5F14] hover:bg-accent/5 gap-2">
                   <ClipboardList className="w-4 h-4" />
                   {ar ? 'التشخيص المنهجي' : 'Supply Chain Diagnostic'}
                 </Button>
