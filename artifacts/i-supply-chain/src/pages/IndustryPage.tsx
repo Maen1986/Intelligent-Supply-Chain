@@ -126,7 +126,7 @@ const industryData: Record<string, IndustryInfo> = {
         challengesAr: [
           "الشراء العاجل الذي يبلغ متوسطه 25–40% من جميع أوامر الشراء يشير إلى خلل في عملية تخطيط المبيعات والعمليات — يوصي APICS بدورة مراجعة طلب قائمة على التوافق بأفق متجدد مدته 12 أسبوعًا للقضاء على الشراء التفاعلي.",
           "مخازن قطع الغيار والصيانة التي بها 30–40% مخزون بطيء الحركة أو متقادم (نتيجة معيارية شائعة في دول الخليج) تشير إلى غياب تصنيف الأهمية ABC — توفر وحدة APICS CPIM الثالثة إطار VED/ABC/XYZ للترشيد.",
-          "توقّف الإنتاج الناجم عن عيوب جودة لم تُكتشف عند فحص الاستلام يكلّف 50–500 ألف SAR في الساعة — يتطلب البند 8.4 من ISO 9001:2015 (التحكم في العمليات المقدَّمة خارجيًا) خطط جودة خاصة بكل مورد ومعايير فحص استلام.",
+          "توقّف الإنتاج الناجم عن عيوب جودة لم تُكتشف عند فحص الاستلام يكلّف 50–500 ألف ريال في الساعة — يتطلب البند 8.4 من ISO 9001:2015 (التحكم في العمليات المقدَّمة خارجيًا) خطط جودة خاصة بكل مورد ومعايير فحص استلام.",
         ],
         solution: "ISC deploys integrated S&OP programmes aligned with APICS best practices, implements ISO 9001-compliant quality management systems, and conducts MRO rationalisation using criticality-based stocking policies — reducing expedited purchasing by 60% and unplanned downtime by 40%.",
         solutionAr: "تنشر آي سبلاي تشين برامج متكاملة لتخطيط المبيعات والعمليات مواءَمة مع أفضل ممارسات APICS، وتطبّق أنظمة إدارة جودة متوافقة مع ISO 9001، وتُجري ترشيدًا لقطع الغيار والصيانة باستخدام سياسات تخزين قائمة على الأهمية — مما يقلّل الشراء العاجل بنسبة 60% والتوقف غير المخطط بنسبة 40%.",
@@ -252,7 +252,7 @@ const industryData: Record<string, IndustryInfo> = {
           "OEM sole-source maintenance contracts are routinely priced 25–40% above independent MRO benchmarks — CIPSM strategic sourcing methodology for maintenance services includes market testing, reverse auctions, and performance-based contracting.",
         ],
         challengesAr: [
-          "مخزون قطع الغيار والصيانة بقيمة 200 مليون – 2 مليار SAR مع 30–40% مخزون بطيء الحركة أو متقادم — يتطلب ISO 55001 تحليل تكلفة دورة الحياة لتبرير قرارات التخزين؛ وبدونه تفرط المؤسسات في تخزين الأصناف غير الحرجة بينما تنقص لديها قطع الغيار الحرجة الحقيقية.",
+          "مخزون قطع الغيار والصيانة بقيمة 200 مليون – 2 مليار ريال مع 30–40% مخزون بطيء الحركة أو متقادم — يتطلب ISO 55001 تحليل تكلفة دورة الحياة لتبرير قرارات التخزين؛ وبدونه تفرط المؤسسات في تخزين الأصناف غير الحرجة بينما تنقص لديها قطع الغيار الحرجة الحقيقية.",
           "تسبّب فجوات تخطيط عمليات الإيقاف والصيانة علاوات تكلفة بنسبة 40–60% على الشراء العاجل في اللحظة الأخيرة — يوصي دليل أفضل الممارسات من SMRP بخطة سلسلة إمداد للإيقاف والصيانة مدتها 52 أسبوعًا مع الالتزام مسبقًا بـ85% من المواد قبل ستة أشهر من التنفيذ.",
           "تُسعَّر عقود الصيانة الحصرية من الشركة المصنّعة الأصلية عادةً بنسبة 25–40% أعلى من المعايير المستقلة — تتضمن منهجية التوريد الاستراتيجي من CIPS لخدمات الصيانة اختبار السوق والمزادات العكسية والتعاقد القائم على الأداء.",
         ],
@@ -299,7 +299,7 @@ const industryData: Record<string, IndustryInfo> = {
     ],
     cases: [
       { client: "Saudi Energy Services Company", clientAr: "شركة خدمات طاقة سعودية", challenge: "No ESG supply chain metrics; failing international tender qualification on ISO 20400 criteria; CDP not submitted", challengeAr: "لا توجد مقاييس بيئية واجتماعية وحوكمية لسلسلة الإمداد؛ إخفاق في تأهيل المناقصات الدولية على معايير ISO 20400؛ لم يُقدَّم CDP", result: "CDP A- score achieved; 28% supply chain carbon reduction; 3 international tenders qualified; ISO 14001 certified", resultAr: "تحقيق درجة CDP A-؛ خفض كربون سلسلة الإمداد بنسبة 28%؛ تأهيل 3 مناقصات دولية؛ الحصول على شهادة ISO 14001" },
-      { client: "GCC Petrochemical Operator", clientAr: "مشغّل بتروكيماويات خليجي", challenge: "MRO inventory SAR 1.2B with 38% SLOB; unplanned downtime 12% of production hours; no ISO 55001 programme", challengeAr: "مخزون قطع غيار وصيانة بقيمة 1.2 مليار SAR مع 38% مخزون بطيء ومتقادم؛ توقف غير مخطط بنسبة 12% من ساعات الإنتاج؛ لا يوجد برنامج ISO 55001", result: "SAR 290M inventory rationalised; downtime reduced to 4.5%; ISO 55001 implementation roadmap completed", resultAr: "ترشيد مخزون بقيمة 290 مليون SAR؛ خفض التوقف إلى 4.5%؛ إكمال خارطة طريق تطبيق ISO 55001" },
+      { client: "GCC Petrochemical Operator", clientAr: "مشغّل بتروكيماويات خليجي", challenge: "MRO inventory SAR 1.2B with 38% SLOB; unplanned downtime 12% of production hours; no ISO 55001 programme", challengeAr: "مخزون قطع غيار وصيانة بقيمة 1.2 مليار ريال مع 38% مخزون بطيء ومتقادم؛ توقف غير مخطط بنسبة 12% من ساعات الإنتاج؛ لا يوجد برنامج ISO 55001", result: "SAR 290M inventory rationalised; downtime reduced to 4.5%; ISO 55001 implementation roadmap completed", resultAr: "ترشيد مخزون بقيمة 290 مليون ريال؛ خفض التوقف إلى 4.5%؛ إكمال خارطة طريق تطبيق ISO 55001" },
     ],
   },
 
@@ -381,7 +381,7 @@ const industryData: Record<string, IndustryInfo> = {
         ],
         challengesAr: [
           "تدير الجهات الحكومية آلاف العقود دون نظام لإدارة دورة حياة العقود — تُظهر أبحاث IACCM أن العقود غير المُدارة تؤدي إلى تسرّب قيمة بنسبة 9.2% عبر تفويت وفورات التجديد وعدم المطالبة بغرامات التأخير وزحف النطاق.",
-          "تفرض متطلبات الفوترة الإلكترونية للمرحلة الثانية من هيئة الزكاة والضريبة والجمارك معالجة جميع المشتريات الحكومية عبر أنظمة متوافقة مع فاتورة — يُعرّض عدم الامتثال لغرامات ضريبة قيمة مضافة قدرها 1,000 SAR لكل معاملة غير ممتثلة.",
+          "تفرض متطلبات الفوترة الإلكترونية للمرحلة الثانية من هيئة الزكاة والضريبة والجمارك معالجة جميع المشتريات الحكومية عبر أنظمة متوافقة مع فاتورة — يُعرّض عدم الامتثال لغرامات ضريبة قيمة مضافة قدرها 1,000 ريال لكل معاملة غير ممتثلة.",
           "إدارة أداء الموردين غير رسمية في معظم الجهات الحكومية — بدون آليات تعاقدية مرتبطة بمؤشرات الأداء، تتجدد عقود المقاولين ضعيفي الأداء تلقائيًا لعدم وجود أسباب موثّقة للإنهاء.",
         ],
         solution: "ISC implements full CLM programmes aligned with IACCM standards and Etimad platform requirements — contract templates, KPI frameworks, ZATCA compliance, and audit-readiness documentation — recovering 9% average contract value leakage and achieving zero NCAR/MOF audit findings.",
@@ -427,7 +427,7 @@ const industryData: Record<string, IndustryInfo> = {
     ],
     cases: [
       { client: "GCC Government Procurement Authority", clientAr: "هيئة مشتريات حكومية خليجية", challenge: "Manual supplier onboarding; 0% Iktva visibility; non-compliant contracts; NCAR audit imminent", challengeAr: "إدخال موردين يدوي؛ رؤية اكتفاء 0%؛ عقود غير ممتثلة؛ تدقيق NCAR وشيك", result: "Full NCAR compliance; 100% Iktva tracking; 60% faster onboarding; 35 contract templates standardised; zero audit findings", resultAr: "امتثال كامل لـ NCAR؛ تتبّع اكتفاء بنسبة 100%؛ إدخال أسرع بنسبة 60%؛ توحيد 35 قالب عقد؛ صفر ملاحظات تدقيق" },
-      { client: "Saudi Ministry Procurement Directorate", clientAr: "إدارة مشتريات وزارة سعودية", challenge: "SAR 2.4B fragmented spend across 12 departments; no category management; Etimad not integrated", challengeAr: "إنفاق مجزأ بقيمة 2.4 مليار SAR عبر 12 إدارة؛ لا توجد إدارة فئات؛ منصة اعتماد غير متكاملة", result: "Category management programme live; SAR 380M Year-1 savings identified; Etimad fully integrated", resultAr: "برنامج إدارة فئات قيد التشغيل؛ تحديد وفورات بقيمة 380 مليون SAR في السنة الأولى؛ تكامل كامل مع منصة اعتماد" },
+      { client: "Saudi Ministry Procurement Directorate", clientAr: "إدارة مشتريات وزارة سعودية", challenge: "SAR 2.4B fragmented spend across 12 departments; no category management; Etimad not integrated", challengeAr: "إنفاق مجزأ بقيمة 2.4 مليار ريال عبر 12 إدارة؛ لا توجد إدارة فئات؛ منصة اعتماد غير متكاملة", result: "Category management programme live; SAR 380M Year-1 savings identified; Etimad fully integrated", resultAr: "برنامج إدارة فئات قيد التشغيل؛ تحديد وفورات بقيمة 380 مليون ريال في السنة الأولى؛ تكامل كامل مع منصة اعتماد" },
     ],
   },
 
@@ -437,7 +437,7 @@ const industryData: Record<string, IndustryInfo> = {
     tagline: "Securing medicine supply chains for the Kingdom's health ambitions",
     taglineAr: "تأمين سلاسل إمداد الأدوية لتطلعات المملكة الصحية",
     intro: "Saudi Arabia's pharmaceutical market exceeds SAR 30B annually, governed by SFDA regulations with strict cold-chain, GDP (Good Distribution Practice), and traceability requirements. Vision 2030 targets 40% local pharmaceutical manufacturing by 2030. CIPS Healthcare Procurement Standard, WHO Good Distribution Practice 2010, PIC/S GDP Guidelines, and APICS inventory management frameworks define professional best practice for this zero-tolerance supply chain sector.",
-    introAr: "يتجاوز سوق الأدوية في المملكة العربية السعودية 30 مليار SAR سنويًا، ويخضع للوائح الهيئة العامة للغذاء والدواء (SFDA) بمتطلبات صارمة لسلسلة التبريد وممارسات التوزيع الجيدة (GDP) والتتبّع. تستهدف رؤية 2030 توطين 40% من التصنيع الدوائي المحلي بحلول 2030. تحدد معايير مشتريات الرعاية الصحية من CIPS، وممارسات التوزيع الجيدة من منظمة الصحة العالمية 2010، وإرشادات GDP من PIC/S، وأطر إدارة المخزون من APICS أفضل الممارسات المهنية لهذا القطاع عديم التسامح مع الخطأ.",
+    introAr: "يتجاوز سوق الأدوية في المملكة العربية السعودية 30 مليار ريال سنويًا، ويخضع للوائح الهيئة العامة للغذاء والدواء (SFDA) بمتطلبات صارمة لسلسلة التبريد وممارسات التوزيع الجيدة (GDP) والتتبّع. تستهدف رؤية 2030 توطين 40% من التصنيع الدوائي المحلي بحلول 2030. تحدد معايير مشتريات الرعاية الصحية من CIPS، وممارسات التوزيع الجيدة من منظمة الصحة العالمية 2010، وإرشادات GDP من PIC/S، وأطر إدارة المخزون من APICS أفضل الممارسات المهنية لهذا القطاع عديم التسامح مع الخطأ.",
     icon: Pill,
     heroColor: "#1a6b4a",
     streams: [
@@ -472,7 +472,7 @@ const industryData: Record<string, IndustryInfo> = {
         ],
         challengesAr: [
           "تخلق مهل تسجيل SFDA (12–24 شهرًا) مخاطر نفاد المخزون إذ لا يمكن استيراد المنتجات المنتظرة للتسجيل تجاريًا — يوصي ICH Q10 بخط تسجيل مستقبلي مدته 24 شهرًا يُدار مقابل توقّع المبيعات للحفاظ على توفر المنتج.",
-          "تسبّب إخفاقات سلسلة التبريد (تجاوزات درجة الحرارة في توزيع الميل الأخير) هدرًا في المنتجات يتجاوز 200 مليون SAR سنويًا في المملكة — تتطلب GDP من PIC/S مراقبة مستمرة لدرجة الحرارة من مستودع المصنّع حتى الصيدلية؛ ومعظم الموزعين السعوديين يراقبون فقط عند نقاط تخزين ثابتة.",
+          "تسبّب إخفاقات سلسلة التبريد (تجاوزات درجة الحرارة في توزيع الميل الأخير) هدرًا في المنتجات يتجاوز 200 مليون ريال سنويًا في المملكة — تتطلب GDP من PIC/S مراقبة مستمرة لدرجة الحرارة من مستودع المصنّع حتى الصيدلية؛ ومعظم الموزعين السعوديين يراقبون فقط عند نقاط تخزين ثابتة.",
           "تبيّن أن توريد المواد الفعّالة من دولة واحدة (الهند/الصين لأكثر من 60% من الإمداد العالمي) كارثي أثناء اضطرابات كوفيد-19 — يوصي برنامج الأدوية الأساسية من منظمة الصحة العالمية بحد أقصى 70% للاعتماد على أي دولة مصدر واحدة للأدوية الحرجة.",
         ],
         solution: "ISC implements WHO GDP-aligned multi-source procurement strategies, designs SFDA import pipeline management systems, and audits cold-chain infrastructure against PIC/S GDP PE 011-1 — reducing temperature excursion incidents by 85% and eliminating SFDA non-compliance risk.",
@@ -545,7 +545,7 @@ const industryData: Record<string, IndustryInfo> = {
           "Hospital pharmaceutical recalls (averaging 3–4 SFDA Class II recalls per year in KSA) require 24-hour product traceability to the patient level — without GS1 Healthcare serialisation, hospitals cannot comply with SFDA recall notification requirements.",
         ],
         challengesAr: [
-          "أصبحت متطلبات التسلسل والتتبّع في نظام سلامة من SFDA إلزامية لجميع المنتجات الدوائية في المملكة — يواجه الموزعون الذين يفتقرون إلى بنية التسلسل غرامات تتجاوز مليون SAR وإلغاء رخصة التوريد.",
+          "أصبحت متطلبات التسلسل والتتبّع في نظام سلامة من SFDA إلزامية لجميع المنتجات الدوائية في المملكة — يواجه الموزعون الذين يفتقرون إلى بنية التسلسل غرامات تتجاوز مليون ريال وإلغاء رخصة التوريد.",
           "تأهيل مسارات النقل وفق GDP (المطلوب لمنتجات سلسلة التبريد بموجب القسم 9 من PIC/S GDP PE 011-1) غائب لدى معظم موزعي الأدوية السعوديين — يمكن لتجاوز واحد غير موثّق لدرجة الحرارة أثناء النقل أن يُبطل شحنة سلسلة تبريد كاملة.",
           "تتطلب عمليات سحب الأدوية من المستشفيات (بمتوسط 3–4 عمليات سحب من الفئة الثانية سنويًا في المملكة) تتبّعًا للمنتج خلال 24 ساعة حتى مستوى المريض — بدون تسلسل GS1 للرعاية الصحية، لا تستطيع المستشفيات الامتثال لمتطلبات إشعار السحب من SFDA.",
         ],
@@ -565,7 +565,7 @@ const industryData: Record<string, IndustryInfo> = {
     tagline: "Demand-driven supply chains for the Kingdom's growing consumer market",
     taglineAr: "سلاسل إمداد مدفوعة بالطلب لسوق المستهلكين المتنامي في المملكة",
     intro: "Saudi Arabia's retail sector — the largest in MENA at SAR 500B+ — is being reshaped by e-commerce growth (35% YoY), Vision 2030 lifestyle changes, and global FMCG players entering the market. CIPS Category Management Standard, APICS IBF demand forecasting methodologies, ECR (Efficient Consumer Response) best practices, and GS1 supply chain standards define the professional framework for demand-driven, omnichannel supply chain excellence in GCC retail.",
-    introAr: "يُعاد تشكيل قطاع التجزئة في المملكة العربية السعودية — الأكبر في الشرق الأوسط وشمال إفريقيا بأكثر من 500 مليار SAR — بفعل نمو التجارة الإلكترونية (35% سنويًا) وتغيّرات نمط الحياة ضمن رؤية 2030 ودخول كبار مشغّلي السلع الاستهلاكية العالميين إلى السوق. تحدد معيار إدارة الفئات من CIPS ومنهجيات التنبؤ بالطلب من APICS IBF وأفضل ممارسات الاستجابة الفعّالة للمستهلك (ECR) ومعايير سلسلة الإمداد GS1 الإطار المهني للتميّز في سلسلة الإمداد المدفوعة بالطلب ومتعددة القنوات في تجزئة دول الخليج.",
+    introAr: "يُعاد تشكيل قطاع التجزئة في المملكة العربية السعودية — الأكبر في الشرق الأوسط وشمال إفريقيا بأكثر من 500 مليار ريال — بفعل نمو التجارة الإلكترونية (35% سنويًا) وتغيّرات نمط الحياة ضمن رؤية 2030 ودخول كبار مشغّلي السلع الاستهلاكية العالميين إلى السوق. تحدد معيار إدارة الفئات من CIPS ومنهجيات التنبؤ بالطلب من APICS IBF وأفضل ممارسات الاستجابة الفعّالة للمستهلك (ECR) ومعايير سلسلة الإمداد GS1 الإطار المهني للتميّز في سلسلة الإمداد المدفوعة بالطلب ومتعددة القنوات في تجزئة دول الخليج.",
     icon: ShoppingCart,
     heroColor: "#6b1a1a",
     streams: [
@@ -674,7 +674,7 @@ const industryData: Record<string, IndustryInfo> = {
         ],
         challengesAr: [
           "انفصال أنظمة المخزون عبر الإنترنت وخارجه يسبّب بيعًا زائدًا عبر الإنترنت ومخزونًا راكدًا في المتاجر في آنٍ واحد — يوصي WERC برؤية مخزون موحّدة واحدة عبر جميع القنوات باعتبارها القدرة الأساسية متعددة القنوات قبل أي استثمار رقمي آخر.",
-          "تكلفة توصيل الميل الأخير التي تبلغ متوسطها 22–35 SAR للطلب تجعل التجارة الإلكترونية خاسرة هيكليًا دون قيمة طلب 150 SAR — تُظهر معايير تحسين المسارات من CSCMP أن مشغّلي الربع الأعلى يحققون 14–18 SAR للتوصيل عبر تجميع المسارات الديناميكي.",
+          "تكلفة توصيل الميل الأخير التي تبلغ متوسطها 22–35 ريال للطلب تجعل التجارة الإلكترونية خاسرة هيكليًا دون قيمة طلب 150 ريال — تُظهر معايير تحسين المسارات من CSCMP أن مشغّلي الربع الأعلى يحققون 14–18 ريال للتوصيل عبر تجميع المسارات الديناميكي.",
           "معدلات الإرجاع المرتفعة (12–20% في الأزياء/الإلكترونيات) دون بنية لوجستيات عكسية تخلق قيمة مخزون غير مستردة — تُظهر معايير مجال الإرجاع من APICS SCOR أن أفضل تجار التجزئة يعالجون المرتجعات خلال 5 أيام مقابل متوسط 21 يومًا في دول الخليج، مسترجعين قيمة مخزون أعلى بنسبة 40%.",
         ],
         solution: "ISC designs unified omnichannel OMS architectures aligned with WERC standards, implements CSCMP-benchmarked last-mile carrier frameworks, and builds APICS SCOR Return-compliant reverse logistics programmes — reducing last-mile cost by 25–35% and return processing cost by 40%.",
@@ -682,8 +682,8 @@ const industryData: Record<string, IndustryInfo> = {
       },
     ],
     cases: [
-      { client: "Saudi Regional Retail Chain (120+ Stores)", clientAr: "سلسلة تجزئة سعودية إقليمية (أكثر من 120 متجرًا)", challenge: "15–20% OOS during peaks; SAR 4.5M overstock write-offs; no S&OP; APICS IBF assessment score 38%", challengeAr: "نفاد مخزون 15–20% في الذروة؛ شطب فائض بقيمة 4.5 مليون SAR؛ لا يوجد تخطيط متكامل؛ درجة تقييم APICS IBF 38%", result: "67% OOS reduction; 31% inventory cost reduction; SAR 4.5M working capital released; APICS IBF score raised to 74%", resultAr: "خفض النفاد بنسبة 67%؛ خفض تكلفة المخزون بنسبة 31%؛ تحرير رأس مال عامل بقيمة 4.5 مليون SAR؛ رفع درجة APICS IBF إلى 74%" },
-      { client: "Saudi FMCG Distributor", clientAr: "موزّع سلع استهلاكية سعودي", challenge: "Forecast error 38%; expedited POs 28%; no ECR Efficient Replenishment; carrier SLA at 76%", challengeAr: "خطأ تنبؤ 38%؛ أوامر شراء عاجلة 28%؛ لا يوجد تجديد فعّال ECR؛ اتفاقية مستوى خدمة الناقل 76%", result: "Forecast error 14%; expedited POs 6%; carrier SLA 97.2%; SAR 1.8M annual logistics savings", resultAr: "خطأ تنبؤ 14%؛ أوامر شراء عاجلة 6%؛ اتفاقية مستوى خدمة الناقل 97.2%؛ وفورات لوجستية سنوية بقيمة 1.8 مليون SAR" },
+      { client: "Saudi Regional Retail Chain (120+ Stores)", clientAr: "سلسلة تجزئة سعودية إقليمية (أكثر من 120 متجرًا)", challenge: "15–20% OOS during peaks; SAR 4.5M overstock write-offs; no S&OP; APICS IBF assessment score 38%", challengeAr: "نفاد مخزون 15–20% في الذروة؛ شطب فائض بقيمة 4.5 مليون ريال؛ لا يوجد تخطيط متكامل؛ درجة تقييم APICS IBF 38%", result: "67% OOS reduction; 31% inventory cost reduction; SAR 4.5M working capital released; APICS IBF score raised to 74%", resultAr: "خفض النفاد بنسبة 67%؛ خفض تكلفة المخزون بنسبة 31%؛ تحرير رأس مال عامل بقيمة 4.5 مليون ريال؛ رفع درجة APICS IBF إلى 74%" },
+      { client: "Saudi FMCG Distributor", clientAr: "موزّع سلع استهلاكية سعودي", challenge: "Forecast error 38%; expedited POs 28%; no ECR Efficient Replenishment; carrier SLA at 76%", challengeAr: "خطأ تنبؤ 38%؛ أوامر شراء عاجلة 28%؛ لا يوجد تجديد فعّال ECR؛ اتفاقية مستوى خدمة الناقل 76%", result: "Forecast error 14%; expedited POs 6%; carrier SLA 97.2%; SAR 1.8M annual logistics savings", resultAr: "خطأ تنبؤ 14%؛ أوامر شراء عاجلة 6%؛ اتفاقية مستوى خدمة الناقل 97.2%؛ وفورات لوجستية سنوية بقيمة 1.8 مليون ريال" },
     ],
   },
 
@@ -693,7 +693,7 @@ const industryData: Record<string, IndustryInfo> = {
     tagline: "Building the distribution backbone for the Kingdom's trade ambitions",
     taglineAr: "بناء العمود الفقري للتوزيع لطموحات المملكة التجارية",
     intro: "Saudi Arabia's National Transport and Logistics Strategy targets a top-10 global logistics ranking by 2030, with SAR 100B+ invested in logistics infrastructure. CSCMP Supply Chain Management Principles, APICS CSCP, the Logistics Management Institute (LMI) network design methodology, and ISO 9001:2015 for logistics service providers define the professional standards framework for world-class 3PL and logistics operations in the Kingdom.",
-    introAr: "تستهدف الاستراتيجية الوطنية للنقل والخدمات اللوجستية في المملكة العربية السعودية دخول أفضل 10 مراكز لوجستية عالميًا بحلول 2030، باستثمار يتجاوز 100 مليار SAR في البنية التحتية اللوجستية. تحدد مبادئ إدارة سلسلة الإمداد من CSCMP وشهادة APICS CSCP ومنهجية تصميم الشبكات من معهد إدارة اللوجستيات (LMI) وISO 9001:2015 لمزوّدي الخدمات اللوجستية إطار المعايير المهنية لعمليات الطرف الثالث اللوجستية عالمية المستوى في المملكة.",
+    introAr: "تستهدف الاستراتيجية الوطنية للنقل والخدمات اللوجستية في المملكة العربية السعودية دخول أفضل 10 مراكز لوجستية عالميًا بحلول 2030، باستثمار يتجاوز 100 مليار ريال في البنية التحتية اللوجستية. تحدد مبادئ إدارة سلسلة الإمداد من CSCMP وشهادة APICS CSCP ومنهجية تصميم الشبكات من معهد إدارة اللوجستيات (LMI) وISO 9001:2015 لمزوّدي الخدمات اللوجستية إطار المعايير المهنية لعمليات الطرف الثالث اللوجستية عالمية المستوى في المملكة.",
     icon: Truck,
     heroColor: "#6b4a1a",
     streams: [
@@ -806,12 +806,12 @@ const industryData: Record<string, IndustryInfo> = {
           "مخاطر الهجمات السيبرانية على أنظمة الإدارة اللوجستية (WMS وTMS وEDI) في تزايد لكنها غير معالَجة — أوقف هجوم فدية ترانسنت 2021 (جنوب إفريقيا) مشغّل ميناء كبير لمدة 7 أيام؛ يوصي CSCMP باعتبار المخاطر السيبرانية من مخاطر سلسلة الإمداد من الفئة الأولى اعتبارًا من 2024.",
         ],
         solution: "ISC implements APICS SCOR Perfect Order Fulfilment measurement frameworks, designs ISO 22301-aligned BCP programmes for logistics operations, and deploys CSCMP risk management methodologies — reducing annual penalty exposure by SAR 2–5M and achieving 97%+ POF performance.",
-        solutionAr: "تطبّق آي سبلاي تشين أطر قياس تلبية الطلب المثالي من APICS SCOR، وتصمّم برامج استمرارية أعمال مواءَمة مع ISO 22301 للعمليات اللوجستية، وتنشر منهجيات إدارة المخاطر من CSCMP — مقللةً التعرّض السنوي للغرامات بمقدار 2–5 ملايين SAR ومحققةً أداء تلبية طلب مثالي يتجاوز 97%.",
+        solutionAr: "تطبّق آي سبلاي تشين أطر قياس تلبية الطلب المثالي من APICS SCOR، وتصمّم برامج استمرارية أعمال مواءَمة مع ISO 22301 للعمليات اللوجستية، وتنشر منهجيات إدارة المخاطر من CSCMP — مقللةً التعرّض السنوي للغرامات بمقدار 2–5 ملايين ريال ومحققةً أداء تلبية طلب مثالي يتجاوز 97%.",
       },
     ],
     cases: [
-      { client: "International Logistics Operator (GCC)", clientAr: "مشغّل لوجستي دولي (الخليج)", challenge: "12 single-source critical suppliers; 1 insolvency caused SAR 900K in penalties; no BCP; SCOR score below 50th percentile", challengeAr: "12 موردًا حرجًا من مصدر وحيد؛ إعسار واحد سبّب غرامات بقيمة 900 ألف SAR؛ لا توجد خطة استمرارية أعمال؛ درجة SCOR دون المئين الخمسين", result: "Zero single-source dependencies; 48hr RTO for all critical systems; SCOR POF raised to 96.8%; SAR 2.1M avoided penalties", resultAr: "صفر تبعيات مصدر وحيد؛ هدف زمن تعافٍ 48 ساعة لجميع الأنظمة الحرجة؛ رفع تلبية الطلب المثالي إلى 96.8%؛ تجنّب غرامات بقيمة 2.1 مليون SAR" },
-      { client: "Saudi 3PL (8 Warehouses)", clientAr: "مشغّل طرف ثالث لوجستي سعودي (8 مستودعات)", challenge: "Fleet utilisation 58%; manual WMS; pick accuracy 93.2%; WERC benchmarked at bottom quartile", challengeAr: "استخدام أسطول 58%؛ نظام إدارة مستودعات يدوي؛ دقة انتقاء 93.2%؛ تصنيف WERC في الربع الأدنى", result: "Fleet utilisation 79%; pick accuracy 99.4%; WERC KPIs at 3rd quartile; SAR 3.2M annual cost reduction", resultAr: "استخدام أسطول 79%؛ دقة انتقاء 99.4%؛ مؤشرات WERC في الربع الثالث؛ خفض تكلفة سنوي بقيمة 3.2 مليون SAR" },
+      { client: "International Logistics Operator (GCC)", clientAr: "مشغّل لوجستي دولي (الخليج)", challenge: "12 single-source critical suppliers; 1 insolvency caused SAR 900K in penalties; no BCP; SCOR score below 50th percentile", challengeAr: "12 موردًا حرجًا من مصدر وحيد؛ إعسار واحد سبّب غرامات بقيمة 900 ألف ريال؛ لا توجد خطة استمرارية أعمال؛ درجة SCOR دون المئين الخمسين", result: "Zero single-source dependencies; 48hr RTO for all critical systems; SCOR POF raised to 96.8%; SAR 2.1M avoided penalties", resultAr: "صفر تبعيات مصدر وحيد؛ هدف زمن تعافٍ 48 ساعة لجميع الأنظمة الحرجة؛ رفع تلبية الطلب المثالي إلى 96.8%؛ تجنّب غرامات بقيمة 2.1 مليون ريال" },
+      { client: "Saudi 3PL (8 Warehouses)", clientAr: "مشغّل طرف ثالث لوجستي سعودي (8 مستودعات)", challenge: "Fleet utilisation 58%; manual WMS; pick accuracy 93.2%; WERC benchmarked at bottom quartile", challengeAr: "استخدام أسطول 58%؛ نظام إدارة مستودعات يدوي؛ دقة انتقاء 93.2%؛ تصنيف WERC في الربع الأدنى", result: "Fleet utilisation 79%; pick accuracy 99.4%; WERC KPIs at 3rd quartile; SAR 3.2M annual cost reduction", resultAr: "استخدام أسطول 79%؛ دقة انتقاء 99.4%؛ مؤشرات WERC في الربع الثالث؛ خفض تكلفة سنوي بقيمة 3.2 مليون ريال" },
     ],
   },
 
@@ -939,7 +939,7 @@ const industryData: Record<string, IndustryInfo> = {
     ],
     cases: [
       { client: "Red Sea Shipping Operator", clientAr: "مشغّل شحن في البحر الأحمر", challenge: "Decentralised chandlery; no bunker hedging; demurrage averaging $28,000 per vessel call; IMPA non-compliant", challengeAr: "تموين لامركزي؛ لا يوجد تحوّط للوقود البحري؛ غرامات تأخير بمتوسط 28,000 دولار لكل رسو سفينة؛ عدم امتثال لـ IMPA", result: "IMPA-aligned consolidated procurement; bunker hedging implemented; demurrage eliminated; 19% vessel supply cost reduction", resultAr: "مشتريات موحّدة مواءَمة مع IMPA؛ تطبيق تحوّط الوقود البحري؛ إزالة غرامات التأخير؛ خفض تكلفة توريد السفن بنسبة 19%" },
-      { client: "Saudi Port Terminal Operator", clientAr: "مشغّل محطة ميناء سعودي", challenge: "Equipment downtime 14% of operating hours; no PIANC maintenance programme; MRO spend 35% above benchmark", challengeAr: "توقف المعدات 14% من ساعات التشغيل؛ لا يوجد برنامج صيانة PIANC؛ إنفاق صيانة يتجاوز المعيار بنسبة 35%", result: "Downtime 5.2%; PIANC-aligned MRO programme; SAR 8.5M annual MRO cost reduction", resultAr: "توقف 5.2%؛ برنامج صيانة مواءَم مع PIANC؛ خفض تكلفة صيانة سنوي بقيمة 8.5 ملايين SAR" },
+      { client: "Saudi Port Terminal Operator", clientAr: "مشغّل محطة ميناء سعودي", challenge: "Equipment downtime 14% of operating hours; no PIANC maintenance programme; MRO spend 35% above benchmark", challengeAr: "توقف المعدات 14% من ساعات التشغيل؛ لا يوجد برنامج صيانة PIANC؛ إنفاق صيانة يتجاوز المعيار بنسبة 35%", result: "Downtime 5.2%; PIANC-aligned MRO programme; SAR 8.5M annual MRO cost reduction", resultAr: "توقف 5.2%؛ برنامج صيانة مواءَم مع PIANC؛ خفض تكلفة صيانة سنوي بقيمة 8.5 ملايين ريال" },
     ],
   },
 
@@ -949,7 +949,7 @@ const industryData: Record<string, IndustryInfo> = {
     tagline: "Supply chains for the Kingdom's giga-project era",
     taglineAr: "سلاسل إمداد لعصر المشاريع العملاقة في المملكة",
     intro: "Saudi Arabia is executing the largest construction programme in human history — NEOM, The Line, Diriyah Gate, Qiddiya, Red Sea Project — alongside Vision 2030 social infrastructure. With SAR 1.4 trillion in active projects, construction supply chains require CIPS Major Projects & Programme Procurement Standard, CIOB (Chartered Institute of Building) supply chain management guidelines, APICS project supply chain management, and the NEC4 (New Engineering Contract) supply chain risk framework.",
-    introAr: "تنفّذ المملكة العربية السعودية أكبر برنامج إنشاءات في تاريخ البشرية — نيوم وذا لاين وبوابة الدرعية والقدية ومشروع البحر الأحمر — إلى جانب البنية التحتية الاجتماعية ضمن رؤية 2030. ومع مشاريع نشطة بقيمة 1.4 تريليون SAR، تتطلب سلاسل إمداد الإنشاءات معيار مشتريات المشاريع والبرامج الكبرى من CIPS وإرشادات إدارة سلسلة الإمداد من CIOB (المعهد المعتمد للبناء) وإدارة سلسلة إمداد المشاريع من APICS وإطار مخاطر سلسلة الإمداد في عقد الهندسة الجديد NEC4.",
+    introAr: "تنفّذ المملكة العربية السعودية أكبر برنامج إنشاءات في تاريخ البشرية — نيوم وذا لاين وبوابة الدرعية والقدية ومشروع البحر الأحمر — إلى جانب البنية التحتية الاجتماعية ضمن رؤية 2030. ومع مشاريع نشطة بقيمة 1.4 تريليون ريال، تتطلب سلاسل إمداد الإنشاءات معيار مشتريات المشاريع والبرامج الكبرى من CIPS وإرشادات إدارة سلسلة الإمداد من CIOB (المعهد المعتمد للبناء) وإدارة سلسلة إمداد المشاريع من APICS وإطار مخاطر سلسلة الإمداد في عقد الهندسة الجديد NEC4.",
     icon: HardHat,
     heroColor: "#6b3a1a",
     streams: [
@@ -1022,7 +1022,7 @@ const industryData: Record<string, IndustryInfo> = {
         challengesAr: [
           "تهدر مواقع الإنشاء الكبيرة (5–15 كم²) 15–25% من ساعات العمل في البحث عن المواد — تُظهر أبحاث معهد البناء الرشيق أن أنظمة التسليم في الوقت المناسب القائمة على السحب مع تتبّع المواد على مستوى الموقع تخفض هدر العمالة إلى أقل من 5% وترفع الإنتاجية بنسبة 20%.",
           "زمن خمول تأجير المعدات بمتوسط 35–45% في المشاريع العملاقة السعودية يمثّل تآكلاً مباشرًا للربح — يوصي دليل لوجستيات الموقع من CIOB بنظام تتبّع استخدام التأجير بمحفّز حد أدنى للاستخدام 75% لقرارات الإرجاع.",
-          "إخفاقات حوكمة مدفوعات المقاولين من الباطن — تأخير المقاولين الرئيسيين للسداد أكثر من 90 يومًا — تتسلسل إلى إخفاقات سلسلة الإمداد من الطبقتين الثانية والثالثة؛ يُلزم خيار NEC4 Y(UK)2 والأحكام المكافئة في FIDIC بالسداد خلال 21 يومًا؛ حوكمة المدفوعات المنظمة تمنع اضطرابًا في سلسلة الإمداد بملايين الـ SAR.",
+          "إخفاقات حوكمة مدفوعات المقاولين من الباطن — تأخير المقاولين الرئيسيين للسداد أكثر من 90 يومًا — تتسلسل إلى إخفاقات سلسلة الإمداد من الطبقتين الثانية والثالثة؛ يُلزم خيار NEC4 Y(UK)2 والأحكام المكافئة في FIDIC بالسداد خلال 21 يومًا؛ حوكمة المدفوعات المنظمة تمنع اضطرابًا في سلسلة الإمداد بملايين الـ ريال.",
         ],
         solution: "ISC implements LCI-aligned JIT delivery systems with RFID material tracking, deploys hire utilisation management programmes, and establishes NEC4-compliant subcontractor payment governance — recovering 3–5% of total project cost and eliminating supply chain-caused schedule delays.",
         solutionAr: "تطبّق آي سبلاي تشين أنظمة تسليم في الوقت المناسب مواءَمة مع معهد البناء الرشيق بتتبّع مواد بـ RFID، وتنشر برامج إدارة استخدام التأجير، وتؤسّس حوكمة مدفوعات للمقاولين من الباطن متوافقة مع NEC4 — مستردةً 3–5% من إجمالي تكلفة المشروع ومزيلةً تأخيرات الجدول الناتجة عن سلسلة الإمداد.",
@@ -1066,8 +1066,8 @@ const industryData: Record<string, IndustryInfo> = {
       },
     ],
     cases: [
-      { client: "Major Saudi EPC Contractor", clientAr: "مقاول هندسة وتوريد وبناء سعودي كبير", challenge: "Material shortages causing 18-week schedule delay; SAR 42M VO entitlement untracked; no NEC4 CE log", challengeAr: "نقص مواد يسبّب تأخير جدول 18 أسبوعًا؛ استحقاق أوامر تغيير بقيمة 42 مليون SAR غير متتبَّع؛ لا يوجد سجل أحداث تعويض NEC4", result: "Bulk pre-commitment strategy eliminated material delays; SAR 42M VO recovered; NEC4 CE management system deployed", resultAr: "استراتيجية الالتزام المسبق بالجملة أزالت تأخيرات المواد؛ استرداد أوامر تغيير بقيمة 42 مليون SAR؛ نشر نظام إدارة أحداث التعويض NEC4" },
-      { client: "Vision 2030 Giga-Project Subcontractor", clientAr: "مقاول من الباطن لمشروع عملاق ضمن رؤية 2030", challenge: "Equipment hire utilisation 41%; material losses SAR 3.2M; no site logistics plan; CIOB non-compliant", challengeAr: "استخدام تأجير المعدات 41%؛ خسائر مواد بقيمة 3.2 ملايين SAR؛ لا توجد خطة لوجستيات موقع؛ عدم امتثال لـ CIOB", result: "Utilisation 73%; material loss 0.8%; CIOB-compliant logistics plan; SAR 5.1M net annual saving", resultAr: "استخدام 73%؛ خسارة مواد 0.8%؛ خطة لوجستيات متوافقة مع CIOB؛ صافي وفورات سنوي بقيمة 5.1 ملايين SAR" },
+      { client: "Major Saudi EPC Contractor", clientAr: "مقاول هندسة وتوريد وبناء سعودي كبير", challenge: "Material shortages causing 18-week schedule delay; SAR 42M VO entitlement untracked; no NEC4 CE log", challengeAr: "نقص مواد يسبّب تأخير جدول 18 أسبوعًا؛ استحقاق أوامر تغيير بقيمة 42 مليون ريال غير متتبَّع؛ لا يوجد سجل أحداث تعويض NEC4", result: "Bulk pre-commitment strategy eliminated material delays; SAR 42M VO recovered; NEC4 CE management system deployed", resultAr: "استراتيجية الالتزام المسبق بالجملة أزالت تأخيرات المواد؛ استرداد أوامر تغيير بقيمة 42 مليون ريال؛ نشر نظام إدارة أحداث التعويض NEC4" },
+      { client: "Vision 2030 Giga-Project Subcontractor", clientAr: "مقاول من الباطن لمشروع عملاق ضمن رؤية 2030", challenge: "Equipment hire utilisation 41%; material losses SAR 3.2M; no site logistics plan; CIOB non-compliant", challengeAr: "استخدام تأجير المعدات 41%؛ خسائر مواد بقيمة 3.2 ملايين ريال؛ لا توجد خطة لوجستيات موقع؛ عدم امتثال لـ CIOB", result: "Utilisation 73%; material loss 0.8%; CIOB-compliant logistics plan; SAR 5.1M net annual saving", resultAr: "استخدام 73%؛ خسارة مواد 0.8%؛ خطة لوجستيات متوافقة مع CIOB؛ صافي وفورات سنوي بقيمة 5.1 ملايين ريال" },
     ],
   },
 
@@ -1112,7 +1112,7 @@ const industryData: Record<string, IndustryInfo> = {
         ],
         challengesAr: [
           "تدفع أصناف تفضيل الطبيب (الغرسات والأدوات الجراحية) 35–45% من إنفاق المستهلكات لكنها تُشترى وفق التفضيل السريري لا القيمة — يُظهر برنامج تحليل قيمة PPI من سلسلة إمداد NHS أن مراجعات التكافؤ المنظمة تحقق خفض تكلفة بنسبة 15–22% دون مساس سريري.",
-          "تخلق مهل تسجيل الأجهزة الطبية لدى SFDA فجوات في المشتريات — يتطلب ISO 13485 عملية تأهيل موردين موثّقة تتحقق من حالة تسجيل الجهاز قبل أي التزام شرائي لمنع تعرّضات امتثال تتجاوز 500 ألف SAR من شراء أجهزة غير مسجّلة.",
+          "تخلق مهل تسجيل الأجهزة الطبية لدى SFDA فجوات في المشتريات — يتطلب ISO 13485 عملية تأهيل موردين موثّقة تتحقق من حالة تسجيل الجهاز قبل أي التزام شرائي لمنع تعرّضات امتثال تتجاوز 500 ألف ريال من شراء أجهزة غير مسجّلة.",
           "مناقصة الأجهزة الطبية دون مواصفات فنية مصمَّمة جيدًا تؤدي إلى عروض غير قابلة للمقارنة (إن أُفرط في تحديدها لعلامة واحدة) أو نتائج سريرية ضعيفة (إن نقص تحديدها) — يتطلب معيار الرعاية الصحية من CIPS كتابة المواصفات الفنية وفق النتيجة السريرية لا العلامة التجارية.",
         ],
         solution: "ISC implements NHS-aligned PPI value analysis programmes, designs SFDA MDR-compliant supplier qualification processes, and develops outcome-based medical device tender specifications — reducing medical supply cost by 15–22% while maintaining full JCI supply chain compliance.",
@@ -1195,7 +1195,7 @@ const industryData: Record<string, IndustryInfo> = {
     ],
     cases: [
       { client: "GCC Hospital Network (12 facilities)", clientAr: "شبكة مستشفيات خليجية (12 منشأة)", challenge: "5.4 months pharmacy DOH; 5.2% expiry waste; 12 critical stock-outs; JCI MMU non-conformance; ASHP assessment: bottom quartile", challengeAr: "تغطية صيدلية 5.4 أشهر؛ هدر انتهاء صلاحية 5.2%؛ 12 حالة نفاد حرجة؛ عدم مطابقة JCI MMU؛ تقييم ASHP في الربع الأدنى", result: "2.8 months DOH; 1.1% wastage; zero stock-outs 18 months; JCI MMU achieved; ASHP assessment: 3rd quartile", resultAr: "تغطية 2.8 شهر؛ هدر 1.1%؛ صفر حالات نفاد لمدة 18 شهرًا؛ تحقيق JCI MMU؛ تقييم ASHP في الربع الثالث" },
-      { client: "Private Saudi Hospital Group", clientAr: "مجموعة مستشفيات سعودية خاصة", challenge: "Biomedical maintenance SAR 18M/yr; OEM sole-source; 23% equipment past optimal lifecycle; ISO 55001 absent", challengeAr: "صيانة معدات طبية حيوية بقيمة 18 مليون SAR سنويًا؛ إسناد حصري للشركة المصنّعة؛ 23% من المعدات تجاوزت دورة الحياة المثلى؛ غياب ISO 55001", result: "SAR 4.8M annual saving; ISO 55001 replacement programme; ISP programme implemented; zero patient safety incidents", resultAr: "وفورات سنوية بقيمة 4.8 ملايين SAR؛ برنامج استبدال وفق ISO 55001؛ تطبيق برنامج مزوّد خدمة مستقل؛ صفر حوادث سلامة مرضى" },
+      { client: "Private Saudi Hospital Group", clientAr: "مجموعة مستشفيات سعودية خاصة", challenge: "Biomedical maintenance SAR 18M/yr; OEM sole-source; 23% equipment past optimal lifecycle; ISO 55001 absent", challengeAr: "صيانة معدات طبية حيوية بقيمة 18 مليون ريال سنويًا؛ إسناد حصري للشركة المصنّعة؛ 23% من المعدات تجاوزت دورة الحياة المثلى؛ غياب ISO 55001", result: "SAR 4.8M annual saving; ISO 55001 replacement programme; ISP programme implemented; zero patient safety incidents", resultAr: "وفورات سنوية بقيمة 4.8 ملايين ريال؛ برنامج استبدال وفق ISO 55001؛ تطبيق برنامج مزوّد خدمة مستقل؛ صفر حوادث سلامة مرضى" },
     ],
   },
 
@@ -1322,8 +1322,8 @@ const industryData: Record<string, IndustryInfo> = {
       },
     ],
     cases: [
-      { client: "Saudi Government Technology Entity", clientAr: "جهة تقنية حكومية سعودية", challenge: "Software licence overspend SAR 22M/yr; 180 SaaS apps (45% underutilised); ISO 19770 not implemented; no SAM programme", challengeAr: "إفراط في إنفاق تراخيص البرمجيات بقيمة 22 مليون SAR سنويًا؛ 180 تطبيق SaaS (45% غير مستغَل)؛ لم يُطبَّق ISO 19770؛ لا يوجد برنامج إدارة أصول برمجيات", result: "SAR 8.4M annual saving; 110 SaaS apps (down from 180); ISO/IEC 19770-1 Level 2 achieved", resultAr: "وفورات سنوية بقيمة 8.4 ملايين SAR؛ 110 تطبيقات SaaS (بعد أن كانت 180)؛ تحقيق ISO/IEC 19770-1 المستوى الثاني" },
-      { client: "GCC Telecom Operator", clientAr: "مشغّل اتصالات خليجي", challenge: "Hardware lead-time surprises (18+ months); no 18-month pipeline; FinOps absent; cloud costs growing 65% YoY", challengeAr: "مفاجآت في مهل توريد الأجهزة (أكثر من 18 شهرًا)؛ لا يوجد خط لـ18 شهرًا؛ غياب FinOps؛ نمو تكاليف السحابة بنسبة 65% سنويًا", result: "18-month rolling IT procurement plan; SAR 12M hardware savings; cloud waste reduced 32%; FinOps Level 2 achieved", resultAr: "خطة مشتريات تقنية معلومات متجددة لـ18 شهرًا؛ وفورات أجهزة بقيمة 12 مليون SAR؛ خفض هدر السحابة بنسبة 32%؛ تحقيق FinOps المستوى الثاني" },
+      { client: "Saudi Government Technology Entity", clientAr: "جهة تقنية حكومية سعودية", challenge: "Software licence overspend SAR 22M/yr; 180 SaaS apps (45% underutilised); ISO 19770 not implemented; no SAM programme", challengeAr: "إفراط في إنفاق تراخيص البرمجيات بقيمة 22 مليون ريال سنويًا؛ 180 تطبيق SaaS (45% غير مستغَل)؛ لم يُطبَّق ISO 19770؛ لا يوجد برنامج إدارة أصول برمجيات", result: "SAR 8.4M annual saving; 110 SaaS apps (down from 180); ISO/IEC 19770-1 Level 2 achieved", resultAr: "وفورات سنوية بقيمة 8.4 ملايين ريال؛ 110 تطبيقات SaaS (بعد أن كانت 180)؛ تحقيق ISO/IEC 19770-1 المستوى الثاني" },
+      { client: "GCC Telecom Operator", clientAr: "مشغّل اتصالات خليجي", challenge: "Hardware lead-time surprises (18+ months); no 18-month pipeline; FinOps absent; cloud costs growing 65% YoY", challengeAr: "مفاجآت في مهل توريد الأجهزة (أكثر من 18 شهرًا)؛ لا يوجد خط لـ18 شهرًا؛ غياب FinOps؛ نمو تكاليف السحابة بنسبة 65% سنويًا", result: "18-month rolling IT procurement plan; SAR 12M hardware savings; cloud waste reduced 32%; FinOps Level 2 achieved", resultAr: "خطة مشتريات تقنية معلومات متجددة لـ18 شهرًا؛ وفورات أجهزة بقيمة 12 مليون ريال؛ خفض هدر السحابة بنسبة 32%؛ تحقيق FinOps المستوى الثاني" },
     ],
   },
 
