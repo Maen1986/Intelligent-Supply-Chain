@@ -123,8 +123,8 @@ export function ProcessImprovementToolsSection({ isAr }: Props) {
           <div className="space-y-3">
             {validSops.length > 0 && (
               <div className="grid grid-cols-2 gap-3">
-                <div className="bg-slate-50 border border-slate-200 rounded-xl p-3"><p className="text-[11px] text-slate-400 font-semibold">{isAr ? 'التغطية الموثَّقة' : 'Documented Coverage'}</p><p className="text-lg font-bold text-teal-700">{docCoverage}%</p></div>
-                <div className="bg-slate-50 border border-slate-200 rounded-xl p-3"><p className="text-[11px] text-slate-400 font-semibold">{isAr ? 'الامتثال المُقاس' : 'Compliance Measured'}</p><p className="text-lg font-bold text-teal-700">{complianceMeasuredPct}%</p></div>
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-3"><p className="text-[11px] text-slate-500 font-semibold">{isAr ? 'التغطية الموثَّقة' : 'Documented Coverage'}</p><p className="text-lg font-bold text-teal-700">{docCoverage}%</p></div>
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-3"><p className="text-[11px] text-slate-500 font-semibold">{isAr ? 'الامتثال المُقاس' : 'Compliance Measured'}</p><p className="text-lg font-bold text-teal-700">{complianceMeasuredPct}%</p></div>
               </div>
             )}
             {sops.map(s => (
@@ -173,7 +173,7 @@ export function ProcessImprovementToolsSection({ isAr }: Props) {
                   <label key={i.id} className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-colors ${checked ? 'bg-teal-50 border-teal-300' : 'bg-white border-slate-200 hover:bg-slate-50'}`}>
                     <input type="checkbox" checked={checked} onChange={() => toggleCompliance(i.id)} className="mt-0.5 w-4 h-4 accent-teal-600" />
                     <span className="text-sm text-slate-700 flex-1">{isAr ? i.labelAr : i.label}</span>
-                    <span className="text-[10px] font-bold text-slate-400 shrink-0">+{i.weight}</span>
+                    <span className="text-[10px] font-bold text-slate-500 shrink-0">+{i.weight}</span>
                   </label>
                 );
               })}

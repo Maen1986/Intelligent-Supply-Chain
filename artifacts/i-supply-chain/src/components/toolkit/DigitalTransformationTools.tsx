@@ -153,7 +153,7 @@ export function DigitalTransformationToolsSection({ isAr }: Props) {
               return (
                 <div key={d.id} className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
                   <div className="flex items-start justify-between gap-3 flex-wrap">
-                    <div className="flex-1 min-w-[180px]"><p className="font-bold text-sm text-slate-800">{isAr ? d.labelAr : d.label}</p><p className="text-[11px] text-slate-400 mt-0.5">{isAr ? d.descAr : d.desc}</p></div>
+                    <div className="flex-1 min-w-[180px]"><p className="font-bold text-sm text-slate-800">{isAr ? d.labelAr : d.label}</p><p className="text-[11px] text-slate-500 mt-0.5">{isAr ? d.descAr : d.desc}</p></div>
                     <div className="flex items-center gap-1">{[1, 2, 3, 4, 5].map(n => (<button key={n} onClick={() => setMat(d.id, n)} className={`w-8 h-8 rounded-lg text-xs font-bold transition-colors ${v === n ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}>{n}</button>))}</div>
                   </div>
                 </div>
@@ -164,7 +164,7 @@ export function DigitalTransformationToolsSection({ isAr }: Props) {
 
         {activeTab === 'modules' && (
           <div className="space-y-3">
-            {validModules.length > 0 && <div className="bg-slate-50 border border-slate-200 rounded-xl p-3"><p className="text-[11px] text-slate-400 font-semibold">{isAr ? 'مستغَل بالكامل' : 'Fully Utilised'}</p><p className="text-lg font-bold text-indigo-700">{utilizedPct}%</p></div>}
+            {validModules.length > 0 && <div className="bg-slate-50 border border-slate-200 rounded-xl p-3"><p className="text-[11px] text-slate-500 font-semibold">{isAr ? 'مستغَل بالكامل' : 'Fully Utilised'}</p><p className="text-lg font-bold text-indigo-700">{utilizedPct}%</p></div>}
             {modules.map(m => (
               <div key={m.id} className="bg-white border border-slate-200 rounded-2xl p-3 flex flex-wrap items-center gap-2">
                 <input value={m.name} onChange={e => updateModule(m.id, 'name', e.target.value)} placeholder={isAr ? 'اسم الوحدة/النظام' : 'Module/system name'} className="flex-1 min-w-[160px] border border-slate-200 rounded-lg px-3 py-2 text-sm" />
@@ -190,8 +190,8 @@ export function DigitalTransformationToolsSection({ isAr }: Props) {
                     style={{ left: `${(i.effort / 5) * 100}%`, bottom: `${(i.impact / 5) * 100}%` }} />
                 ))}
               </div>
-              <span className="absolute bottom-0 left-2 text-[10px] text-slate-400">{isAr ? 'الجهد ←' : 'Effort →'}</span>
-              <span className="absolute top-2 left-2 text-[10px] text-slate-400" style={{ writingMode: 'vertical-rl' }}>{isAr ? 'الأثر ↑' : 'Impact ↑'}</span>
+              <span className="absolute bottom-0 left-2 text-[10px] text-slate-500">{isAr ? 'الجهد ←' : 'Effort →'}</span>
+              <span className="absolute top-2 left-2 text-[10px] text-slate-500" style={{ writingMode: 'vertical-rl' }}>{isAr ? 'الأثر ↑' : 'Impact ↑'}</span>
             </div>
             <div className="space-y-2">
               {roadmap.map(i => (

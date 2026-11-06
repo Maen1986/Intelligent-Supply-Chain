@@ -145,9 +145,9 @@ export function ValueEngineeringToolsSection({ isAr }: Props) {
             </div>
             {(cost.material > 0 || cost.labor > 0) && (
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                <div className="bg-slate-50 border border-slate-200 rounded-xl p-3"><p className="text-[11px] text-slate-400 font-semibold">{isAr ? 'التكلفة المتوقّعة' : 'Should-Cost'}</p><p className="text-lg font-bold text-[#082C6B]">{shouldCostWithMargin.toFixed(0)}</p></div>
-                <div className="bg-slate-50 border border-slate-200 rounded-xl p-3"><p className="text-[11px] text-slate-400 font-semibold">{isAr ? 'السعر المعروض' : 'Quoted Price'}</p><p className="text-lg font-bold text-slate-600">{cost.quotedPrice || '—'}</p></div>
-                <div className={`rounded-xl p-3 border ${savingsOpportunity > 0 ? 'bg-emerald-50 border-emerald-200' : 'bg-slate-50 border-slate-200'}`}><p className="text-[11px] text-slate-400 font-semibold">{isAr ? 'فرصة التوفير' : 'Savings Opportunity'}</p><p className={`text-lg font-bold ${savingsOpportunity > 0 ? 'text-emerald-700' : 'text-slate-600'}`}>{savingsOpportunity}%</p></div>
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-3"><p className="text-[11px] text-slate-500 font-semibold">{isAr ? 'التكلفة المتوقّعة' : 'Should-Cost'}</p><p className="text-lg font-bold text-[#082C6B]">{shouldCostWithMargin.toFixed(0)}</p></div>
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-3"><p className="text-[11px] text-slate-500 font-semibold">{isAr ? 'السعر المعروض' : 'Quoted Price'}</p><p className="text-lg font-bold text-slate-600">{cost.quotedPrice || '—'}</p></div>
+                <div className={`rounded-xl p-3 border ${savingsOpportunity > 0 ? 'bg-emerald-50 border-emerald-200' : 'bg-slate-50 border-slate-200'}`}><p className="text-[11px] text-slate-500 font-semibold">{isAr ? 'فرصة التوفير' : 'Savings Opportunity'}</p><p className={`text-lg font-bold ${savingsOpportunity > 0 ? 'text-emerald-700' : 'text-slate-600'}`}>{savingsOpportunity}%</p></div>
               </div>
             )}
           </div>
@@ -180,7 +180,7 @@ export function ValueEngineeringToolsSection({ isAr }: Props) {
               return (
                 <div key={d.id} className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
                   <div className="flex items-start justify-between gap-3 flex-wrap">
-                    <div className="flex-1 min-w-[180px]"><p className="font-bold text-sm text-slate-800">{isAr ? d.labelAr : d.label}</p><p className="text-[11px] text-slate-400 mt-0.5">{isAr ? d.descAr : d.desc}</p></div>
+                    <div className="flex-1 min-w-[180px]"><p className="font-bold text-sm text-slate-800">{isAr ? d.labelAr : d.label}</p><p className="text-[11px] text-slate-500 mt-0.5">{isAr ? d.descAr : d.desc}</p></div>
                     <div className="flex items-center gap-1">{[1, 2, 3, 4, 5].map(n => (<button key={n} onClick={() => setMat(d.id, n)} className={`w-8 h-8 rounded-lg text-xs font-bold transition-colors ${v === n ? 'bg-amber-600 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}>{n}</button>))}</div>
                   </div>
                 </div>

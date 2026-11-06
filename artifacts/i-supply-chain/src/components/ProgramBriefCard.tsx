@@ -143,7 +143,7 @@ export function ProgramBriefCard({ brief, isAr, sourceNote, sourceTitle, mandato
                   return (
                     <label key={id} className="flex gap-2 items-start text-xs text-slate-700 leading-relaxed py-0.5 cursor-pointer">
                       <input type="checkbox" checked={!!done[id]} onChange={e => setDone(d => ({ ...d, [id]: e.target.checked }))} className="mt-0.5" />
-                      <span className={done[id] ? 'line-through text-slate-400' : ''}>{t(a.text)}</span>
+                      <span className={done[id] ? 'line-through text-slate-500' : ''}>{t(a.text)}</span>
                     </label>
                   );
                 })}
@@ -162,7 +162,7 @@ export function ProgramBriefCard({ brief, isAr, sourceNote, sourceTitle, mandato
         )}
 
         {brief.update && (
-          <p className="text-[11px] text-slate-600 border-s-2 border-sky-300 ps-2">{t(brief.update.text)} <span className="text-slate-400">({brief.update.sourceName}, <bdi dir="ltr">{brief.update.asOf}</bdi>)</span></p>
+          <p className="text-[11px] text-slate-600 border-s-2 border-sky-300 ps-2">{t(brief.update.text)} <span className="text-slate-500">({brief.update.sourceName}, <bdi dir="ltr">{brief.update.asOf}</bdi>)</span></p>
         )}
 
         <div className="border border-slate-100 rounded-xl">

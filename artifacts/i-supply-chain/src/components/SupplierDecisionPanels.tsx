@@ -144,7 +144,7 @@ export function SupplierDecisionPanels({
         </dl>
         <details className="mt-2 text-[11px] text-slate-600">
           <summary className="cursor-pointer font-semibold text-slate-700">{T.quadActs}</summary>
-          <ul className="list-disc ms-5 mt-1">{rec.quadrantActions.map((a) => <li key={a.action}>{a.action} <span className="text-slate-400">({a.timeframe}, {a.effort})</span></li>)}</ul>
+          <ul className="list-disc ms-5 mt-1">{rec.quadrantActions.map((a) => <li key={a.action}>{a.action} <span className="text-slate-500">({a.timeframe}, {a.effort})</span></li>)}</ul>
           <p className="mt-1 text-slate-500">{T.rule}: {L(rec.ruleSource)}</p>
           <p className="mt-1 text-slate-500">{T.handoff}: {L({ en: `${T.m06}: ${d.evidence.handoffTo[0]!.purposeEn} | ${T.m03}: ${d.evidence.handoffTo[1]!.purposeEn}`, ar: `${T.m06}: ${d.evidence.handoffTo[0]!.purposeAr} | ${T.m03}: ${d.evidence.handoffTo[1]!.purposeAr}` })}</p>
         </details>
@@ -205,7 +205,7 @@ export function SupplierDecisionPanels({
         <div className="bg-white rounded-2xl border border-slate-200 p-4">
           <h2 className="text-sm font-bold text-slate-800 mb-3">{T.actionsTitle} ({actions.length})</h2>
           {actions.length === 0 ? <p className="text-xs text-slate-500">{T.nothing}</p> : ActionsTable()}
-          <p className="text-[10px] text-slate-400 mt-3">{L(DUE_CADENCE_NOTE)}</p>
+          <p className="text-[10px] text-slate-500 mt-3">{L(DUE_CADENCE_NOTE)}</p>
         </div>
         <div className="bg-white rounded-2xl border border-slate-200 p-4">
           <h2 className="text-sm font-bold text-slate-800 mb-3">{T.decisionTitle} ({escalated.length})</h2>
@@ -266,7 +266,7 @@ export function SupplierDecisionPanels({
           <div>
             <h3 className="text-xs font-bold text-slate-700 mb-1">{T.esgTitle}</h3>
             <p className="text-xs text-slate-700">{T.esgSummary(summary.esg.notAssessed, summary.esg.partial, summary.esg.full)}</p>
-            <p className="text-[10px] text-slate-400 mt-1">{L(ESG_METHOD_NOTE)}</p>
+            <p className="text-[10px] text-slate-500 mt-1">{L(ESG_METHOD_NOTE)}</p>
           </div>
         </div>
         <div className="mt-4">
@@ -276,7 +276,7 @@ export function SupplierDecisionPanels({
               <div key={label} className="flex justify-between text-xs border-b border-slate-100 py-1"><span>{label}</span><span className="font-semibold">{pctOrDash(v)}</span></div>
             ))}
           </div>
-          <p className="text-[10px] text-slate-400 mt-1">{T.confNote}</p>
+          <p className="text-[10px] text-slate-500 mt-1">{T.confNote}</p>
         </div>
       </>
     );
@@ -306,7 +306,7 @@ export function SupplierDecisionPanels({
         <div>
           <h3 className="text-xs font-bold text-slate-700 mb-2">{T.actionsTitle}</h3>
           {ActionsTable()}
-          <p className="text-[10px] text-slate-400 mt-2">{L(DUE_CADENCE_NOTE)}</p>
+          <p className="text-[10px] text-slate-500 mt-2">{L(DUE_CADENCE_NOTE)}</p>
         </div>
         <div>
           <h3 className="text-xs font-bold text-slate-700 mb-2">{T.esgTitle}</h3>
@@ -317,7 +317,7 @@ export function SupplierDecisionPanels({
             })}
           </ul>
         </div>
-        <p className="text-[10px] text-slate-400">{T.packNote}</p>
+        <p className="text-[10px] text-slate-500">{T.packNote}</p>
       </div>
     </div>
   );

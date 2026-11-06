@@ -1264,7 +1264,7 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
       </div>
       {/* Toolbar */}
       <div className="flex items-center justify-between">
-        <p className="text-xs text-slate-400">{isAr ? 'إدارة دورة حياة العقود' : 'Contract Lifecycle Management'}</p>
+        <p className="text-xs text-slate-500">{isAr ? 'إدارة دورة حياة العقود' : 'Contract Lifecycle Management'}</p>
         <button
           onClick={() => { document.body.setAttribute('data-print', 'clm'); window.addEventListener('afterprint', () => document.body.removeAttribute('data-print'), { once: true }); window.print(); }}
           className="no-print flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg font-bold text-white bg-[#082C6B] hover:opacity-90 transition-colors">
@@ -1382,11 +1382,11 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
                     </div>
                     <div className="shrink-0 text-right flex items-center gap-3">
                       <div className="hidden sm:block">
-                        <p className="text-[10px] text-slate-400">{isAr ? 'ينتهي' : 'Expires'}</p>
+                        <p className="text-[10px] text-slate-500">{isAr ? 'ينتهي' : 'Expires'}</p>
                         <p className="text-xs font-bold" style={{ color: urgency.color }}>{urgency.text}</p>
                       </div>
                       <button onClick={e => { e.stopPropagation(); removeContract(c.id); }} className="text-slate-300 hover:text-red-500 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
-                      {isOpen ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
+                      {isOpen ? <ChevronUp className="w-4 h-4 text-slate-500" /> : <ChevronDown className="w-4 h-4 text-slate-500" />}
                     </div>
                   </div>
 
@@ -1489,7 +1489,7 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
                                       className="w-full text-left px-2 py-1.5 hover:bg-slate-50 text-xs"
                                     >
                                       <span className="font-semibold text-slate-700">{r.commodityTitle ?? r.classTitle ?? r.familyTitle}</span>
-                                      <span className="text-[10px] text-slate-400 ml-1">
+                                      <span className="text-[10px] text-slate-500 ml-1">
                                         {r.level === 'commodity' ? (isAr ? 'سلعة' : 'commodity') : r.level === 'class' ? (isAr ? 'فئة' : 'class') : (isAr ? 'عائلة' : 'family')}
                                         {' -- '}{r.familyTitle}{r.classTitle ? ` > ${r.classTitle}` : ''}
                                       </span>
@@ -1497,7 +1497,7 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
                                   ))}
                                 </div>
                               ) : (
-                                <p className="text-[10px] text-slate-400 mt-1">{isAr ? 'لا توجد نتائج مطابقة' : 'No matching results'}</p>
+                                <p className="text-[10px] text-slate-500 mt-1">{isAr ? 'لا توجد نتائج مطابقة' : 'No matching results'}</p>
                               );
                             })()}
                             {c.unspscCommodityCode ? (
@@ -1521,7 +1521,7 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
                             ) : null}
                           </div>
                         ) : null}
-                        <p className="text-[10px] text-slate-400">{isAr ? 'تصنيف خدمات UNSPSC الرسمي (16 قطاعاً مصدره حتى الآن، مع مستوى العائلة الكامل من مصدر الأمم المتحدة الرسمي) -- إضافي إلى حقل الفئة الحر. اختر "أخرى" إذا لم تجد ما تبحث عنه' : 'Real UNSPSC services classification (16 sourced segments, now with full Family-level detail sourced directly from the UN\'s own primary distribution) -- additive to the free-text Category field above. Pick "Other" if what you need isn\'t listed yet'}</p>
+                        <p className="text-[10px] text-slate-500">{isAr ? 'تصنيف خدمات UNSPSC الرسمي (16 قطاعاً مصدره حتى الآن، مع مستوى العائلة الكامل من مصدر الأمم المتحدة الرسمي) -- إضافي إلى حقل الفئة الحر. اختر "أخرى" إذا لم تجد ما تبحث عنه' : 'Real UNSPSC services classification (16 sourced segments, now with full Family-level detail sourced directly from the UN\'s own primary distribution) -- additive to the free-text Category field above. Pick "Other" if what you need isn\'t listed yet'}</p>
                       </div>
                       <div className="space-y-1">
                         <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{isAr ? 'نوع الطرف المقابل (اختياري)' : 'Counterparty Type (optional)'}</label>
@@ -1530,7 +1530,7 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
                           <option value="government">{isAr ? 'جهة حكومية' : 'Government'}</option>
                           <option value="private">{isAr ? 'طرف خاص' : 'Private'}</option>
                         </select>
-                        <p className="text-[10px] text-slate-400">{isAr ? 'يحدد المرساة السعودية: حكومي = نظام المنافسات والمشتريات الحكومية، خاص = نظام المعاملات المدنية' : 'Determines the Saudi anchor: government = GTPL/MOF-Etimad, private = Civil Transactions Law (CTL)'}</p>
+                        <p className="text-[10px] text-slate-500">{isAr ? 'يحدد المرساة السعودية: حكومي = نظام المنافسات والمشتريات الحكومية، خاص = نظام المعاملات المدنية' : 'Determines the Saudi anchor: government = GTPL/MOF-Etimad, private = Civil Transactions Law (CTL)'}</p>
                       </div>
                       <div className="space-y-1">
                         <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{isAr ? 'القانون الحاكم (اختياري)' : 'Governing Law (optional)'}</label>
@@ -1549,7 +1549,7 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
                           <p className="text-[10px] text-slate-500 bg-blue-50 border border-blue-100 rounded-lg px-2 py-1.5 mt-1">
                             {internationalContractingPracticeGuide(isAr)}
                           </p>
-                          <p className="text-[10px] text-slate-400 mt-1.5">{isAr ? 'اختياري تماماً -- عند اختيار أي مما يلي، تملأ isc القانون الحاكم وجهة التحكيم وبند تسوية المنازعات معاً تلقائياً، وتبقى كل الحقول قابلة للتعديل بعد ذلك.' : 'Entirely optional -- picking any of the below has ISC fill in the governing law, arbitration institution, and dispute-resolution sub-clause together automatically. Every field stays editable afterward.'}</p>
+                          <p className="text-[10px] text-slate-500 mt-1.5">{isAr ? 'اختياري تماماً -- عند اختيار أي مما يلي، تملأ isc القانون الحاكم وجهة التحكيم وبند تسوية المنازعات معاً تلقائياً، وتبقى كل الحقول قابلة للتعديل بعد ذلك.' : 'Entirely optional -- picking any of the below has ISC fill in the governing law, arbitration institution, and dispute-resolution sub-clause together automatically. Every field stays editable afterward.'}</p>
                           <div className="flex flex-wrap gap-1 mt-1">
                             {COMMON_CONTRACTING_COMBOS.map(combo => (
                               <button key={combo.id} type="button" onClick={() => applyContractingCombo(c.id, combo)}
@@ -1566,7 +1566,7 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
                           <option value="">{isAr ? 'غير محدد' : 'Not specified'}</option>
                           {ARBITRATION_INSTITUTIONS.map(i => <option key={i.id} value={i.id}>{isAr ? i.labelAr : i.label}</option>)}
                         </select>
-                        <p className="text-[10px] text-slate-400">{isAr ? 'الجهة المحددة التي تدير التحكيم -- بخلاف حقل "تسوية المنازعات" أدناه في تبويب البنود، الذي يحدد الآلية فقط (تقاضٍ/تحكيم/وساطة)' : 'The specific body administering arbitration -- distinct from the Dispute Resolution sub-clause in the Clauses tab below, which sets only the mechanism (litigation/arbitration/mediation)'}</p>
+                        <p className="text-[10px] text-slate-500">{isAr ? 'الجهة المحددة التي تدير التحكيم -- بخلاف حقل "تسوية المنازعات" أدناه في تبويب البنود، الذي يحدد الآلية فقط (تقاضٍ/تحكيم/وساطة)' : 'The specific body administering arbitration -- distinct from the Dispute Resolution sub-clause in the Clauses tab below, which sets only the mechanism (litigation/arbitration/mediation)'}</p>
                       </div>
                       <div className="space-y-1">
                         <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{isAr ? 'ولاية الطرف المقابل (اختياري)' : "Counterparty Jurisdiction (optional)"}</label>
@@ -1579,7 +1579,7 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
                         <input type="text" value={c.performanceLocation ?? ''} onChange={e => updateContract(c.id, 'performanceLocation', e.target.value || undefined)}
                           placeholder={isAr ? 'مثال: الرياض، السعودية' : 'e.g. Riyadh, Saudi Arabia'}
                           className="w-full text-xs border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#082C6B]" />
-                        <p className="text-[10px] text-slate-400">{isAr ? 'يُستخدم نوع الطرف المقابل والقانون الحاكم والولايتان أعلاه لتوليد تنبيه مراجعة اتجاهي عند عدم التطابق -- ليس حكماً قانونياً قطعياً' : 'Counterparty type, governing law, and the two jurisdiction fields above drive a directional review flag on mismatch -- not a definitive legal verdict'}</p>
+                        <p className="text-[10px] text-slate-500">{isAr ? 'يُستخدم نوع الطرف المقابل والقانون الحاكم والولايتان أعلاه لتوليد تنبيه مراجعة اتجاهي عند عدم التطابق -- ليس حكماً قانونياً قطعياً' : 'Counterparty type, governing law, and the two jurisdiction fields above drive a directional review flag on mismatch -- not a definitive legal verdict'}</p>
                       </div>
                       <div className="space-y-1 sm:col-span-2 bg-slate-50 border border-slate-200 rounded-xl p-3">
                         <p className="text-[11px] font-bold text-slate-600 uppercase tracking-wider">{isAr ? 'تعقيد العقد وعمق المراجعة (الوحدة 03)' : 'Contract Complexity & Review Depth (Module 03)'}</p>
@@ -1634,7 +1634,7 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
                               <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${review.depth === 'heavy' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>
                                 {review.depth === 'heavy' ? (isAr ? 'مراجعة معمّقة' : 'HEAVY REVIEW') : (isAr ? 'مراجعة خفيفة' : 'LIGHT REVIEW')}
                               </span>
-                              <p className="text-[10px] text-slate-400 basis-full">{isAr ? review.reasonAr : review.reasonEn}</p>
+                              <p className="text-[10px] text-slate-500 basis-full">{isAr ? review.reasonAr : review.reasonEn}</p>
                               {mandatoryClauses.categories.length > 0 && (
                                 <div className="basis-full flex flex-wrap items-center gap-1.5 mt-1">
                                   <span className="text-[10px] text-slate-500">{isAr ? 'فئات البنود الإلزامية عند هذا المستوى:' : 'Mandatory clause categories at this level:'}</span>
@@ -1661,19 +1661,19 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
                                     <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">{isAr ? `فحوصات الربط بين الوحدات (الجزء E) -- ${activeCount} نشطة من ${wiringChecks.length}` : `Cross-Module Wiring Checks (Part E) -- ${activeCount} of ${wiringChecks.length} active`}</p>
                                     <div className="flex flex-wrap gap-1.5">
                                       {wiringChecks.map(w => (
-                                        <span key={w.id} className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${w.flagged ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-400'}`}>
+                                        <span key={w.id} className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${w.flagged ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-500'}`}>
                                           {w.flagged ? '⚠ ' : '✓ '}{isAr ? w.labelAr : w.labelEn}
                                         </span>
                                       ))}
                                     </div>
-                                    <p className="text-[10px] text-slate-400 mt-1">{isAr ? 'يجمع هذا اللوح تنبيهات موجودة بالفعل من الوحدات 01 و04 و05 في مكان واحد -- لا يُعيد تنفيذ أي فحص، بل يعرضها معاً فقط' : 'This panel consolidates checks already computed by Modules 01, 04, and 05 into one place -- it does not reimplement any check, only displays them together'}</p>
+                                    <p className="text-[10px] text-slate-500 mt-1">{isAr ? 'يجمع هذا اللوح تنبيهات موجودة بالفعل من الوحدات 01 و04 و05 في مكان واحد -- لا يُعيد تنفيذ أي فحص، بل يعرضها معاً فقط' : 'This panel consolidates checks already computed by Modules 01, 04, and 05 into one place -- it does not reimplement any check, only displays them together'}</p>
                                   </div>
                                 );
                               })()}
                             </div>
                           );
                         })()}
-                        <p className="text-[10px] text-slate-400 mt-1">{isAr ? 'حساب اتجاهي بحت من الحقول المُدخلة يدوياً أعلاه -- ليس تحققاً من نص العقد الفعلي' : 'Purely directional, computed from the manually-entered fields above -- not a check against the actual contract text'}</p>
+                        <p className="text-[10px] text-slate-500 mt-1">{isAr ? 'حساب اتجاهي بحت من الحقول المُدخلة يدوياً أعلاه -- ليس تحققاً من نص العقد الفعلي' : 'Purely directional, computed from the manually-entered fields above -- not a check against the actual contract text'}</p>
                       </div>
                       <div className="space-y-1">
                         <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{isAr ? 'قطاع الصناعة / نطاق العمل (اختياري)' : 'Industry / SOW Bucket (optional)'}</label>
@@ -1681,7 +1681,7 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
                           <option value="">{isAr ? 'غير محدد' : 'Not specified'}</option>
                           {INDUSTRY_BUCKETS.map(b => <option key={b.id} value={b.id}>{isAr ? b.labelAr : b.label}</option>)}
                         </select>
-                        <p className="text-[10px] text-slate-400">{isAr ? 'يحدد المعيار المرجعي الموضح أدناه -- معلومة مرجعية وليست تنبيهاً' : 'Drives the reference standard shown below -- informational, not a flag'}</p>
+                        <p className="text-[10px] text-slate-500">{isAr ? 'يحدد المعيار المرجعي الموضح أدناه -- معلومة مرجعية وليست تنبيهاً' : 'Drives the reference standard shown below -- informational, not a flag'}</p>
                       </div>
                       {c.industryBucket === 'construction' && (
                         subSelectorsApplicable(c.counterpartyType) ? (
@@ -1693,7 +1693,7 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
                           </select>
                         </div>
                         ) : (
-                          <p className="text-[10px] text-slate-400 sm:col-span-1 self-end pb-1.5">{isAr ? 'كتاب FIDIC غير قابل للتطبيق -- المسار الحكومي يستخدم فئات وزارة المالية / اعتماد الثابتة دون تصنيف فرعي' : 'FIDIC book not applicable -- the government track uses fixed MOF/Etimad categories with no sub-selection'}</p>
+                          <p className="text-[10px] text-slate-500 sm:col-span-1 self-end pb-1.5">{isAr ? 'كتاب FIDIC غير قابل للتطبيق -- المسار الحكومي يستخدم فئات وزارة المالية / اعتماد الثابتة دون تصنيف فرعي' : 'FIDIC book not applicable -- the government track uses fixed MOF/Etimad categories with no sub-selection'}</p>
                         )
                       )}
                       {c.industryBucket === 'professional-services' && (
@@ -1706,7 +1706,7 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
                           </select>
                         </div>
                         ) : (
-                          <p className="text-[10px] text-slate-400 sm:col-span-1 self-end pb-1.5">{isAr ? 'مسار الخدمات المهنية غير قابل للتطبيق -- المسار الحكومي يستخدم فئات وزارة المالية / اعتماد الثابتة دون تصنيف فرعي' : 'Professional Services Track not applicable -- the government track uses fixed MOF/Etimad categories with no sub-selection'}</p>
+                          <p className="text-[10px] text-slate-500 sm:col-span-1 self-end pb-1.5">{isAr ? 'مسار الخدمات المهنية غير قابل للتطبيق -- المسار الحكومي يستخدم فئات وزارة المالية / اعتماد الثابتة دون تصنيف فرعي' : 'Professional Services Track not applicable -- the government track uses fixed MOF/Etimad categories with no sub-selection'}</p>
                         )
                       )}
                       {c.industryBucket === 'logistics' && (
@@ -1719,14 +1719,14 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
                           </select>
                         </div>
                         ) : (
-                          <p className="text-[10px] text-slate-400 sm:col-span-1 self-end pb-1.5">{isAr ? 'وسيلة النقل غير قابلة للتطبيق -- المسار الحكومي يستخدم فئات وزارة المالية / اعتماد الثابتة دون تصنيف فرعي' : 'Transport Mode not applicable -- the government track uses fixed MOF/Etimad categories with no sub-selection'}</p>
+                          <p className="text-[10px] text-slate-500 sm:col-span-1 self-end pb-1.5">{isAr ? 'وسيلة النقل غير قابلة للتطبيق -- المسار الحكومي يستخدم فئات وزارة المالية / اعتماد الثابتة دون تصنيف فرعي' : 'Transport Mode not applicable -- the government track uses fixed MOF/Etimad categories with no sub-selection'}</p>
                         )
                       )}
                       {(() => {
                         const std = resolveApplicableStandard(c.counterpartyType, c.industryBucket, c.fidicBook, c.professionalServicesTrack, c.logisticsMode);
                         return std ? (
                           <div className="col-span-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 space-y-0.5">
-                            <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">{isAr ? 'المعيار المرجعي المنطبق' : 'Applicable Reference Standard'}</p>
+                            <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">{isAr ? 'المعيار المرجعي المنطبق' : 'Applicable Reference Standard'}</p>
                             <p className="text-xs font-bold text-slate-700">{isAr ? std.standardAr : std.standardEn}</p>
                             {(isAr ? std.noteAr : std.noteEn) ? <p className="text-[10px] text-slate-500">{isAr ? std.noteAr : std.noteEn}</p> : null}
                           </div>
@@ -1740,7 +1740,7 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
                         </select>
                         {c.incoterm && (() => {
                           const it = INCOTERMS_2020.find(i => i.id === c.incoterm);
-                          return it ? <p className="text-[10px] text-slate-400">{isAr ? it.noteAr : it.noteEn}</p> : null;
+                          return it ? <p className="text-[10px] text-slate-500">{isAr ? it.noteAr : it.noteEn}</p> : null;
                         })()}
                       </div>
                       <div className="space-y-1">
@@ -1757,7 +1757,7 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
                         </select>
                         {c.paymentTerm && (() => {
                           const pt = PAYMENT_TERMS.find(p => p.id === c.paymentTerm);
-                          return pt ? <p className="text-[10px] text-slate-400">{isAr ? pt.riskNoteAr : pt.riskNoteEn}</p> : null;
+                          return pt ? <p className="text-[10px] text-slate-500">{isAr ? pt.riskNoteAr : pt.riskNoteEn}</p> : null;
                         })()}
                       </div>
                       {c.paymentTerm === 'open-account' && (
@@ -1780,7 +1780,7 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
                           <option value="">{isAr ? 'غير محدد' : 'Not specified'}</option>
                           {PRICING_TYPES.map(t => <option key={t.id} value={t.id}>{isAr ? t.labelAr : t.label}</option>)}
                         </select>
-                        <p className="text-[10px] text-slate-400">{isAr ? 'لهياكل التسعير المختلطة، مثل مبلغ إجمالي مع مبالغ احتياطية بسعر الوحدة' : 'For hybrid structures, e.g. a lump-sum primary with unit-price provisional sums'}</p>
+                        <p className="text-[10px] text-slate-500">{isAr ? 'لهياكل التسعير المختلطة، مثل مبلغ إجمالي مع مبالغ احتياطية بسعر الوحدة' : 'For hybrid structures, e.g. a lump-sum primary with unit-price provisional sums'}</p>
                       </div>
                       <div className="space-y-1">
                         <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{isAr ? 'مدى وضوح النطاق (اختياري، تصريح ذاتي)' : 'Scope Definiteness (optional, self-declared)'}</label>
@@ -1790,7 +1790,7 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
                           <option value="evolving">{isAr ? 'متطور / قابل للتغيير' : 'Evolving'}</option>
                           <option value="uncertain">{isAr ? 'غير مؤكد إلى حد كبير' : 'Highly uncertain'}</option>
                         </select>
-                        <p className="text-[10px] text-slate-400">{isAr ? 'يُستخدم مع نوع التسعير لتوليد تنبيه "يستحق نظرة ثانية" -- استناداً إلى ما تفيدون به فقط، وليس حكماً تحققنا منه' : 'Used with pricing type to drive a "worth a second look" flag -- based only on what you tell us, not a verified judgment'}</p>
+                        <p className="text-[10px] text-slate-500">{isAr ? 'يُستخدم مع نوع التسعير لتوليد تنبيه "يستحق نظرة ثانية" -- استناداً إلى ما تفيدون به فقط، وليس حكماً تحققنا منه' : 'Used with pricing type to drive a "worth a second look" flag -- based only on what you tell us, not a verified judgment'}</p>
                       </div>
                       {c.pricingPrimary === 'tm' && (
                         <div className="flex items-center gap-2">
@@ -1815,7 +1815,7 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
                         <button onClick={() => addPricingPhase(c.id)} className="flex items-center gap-1.5 text-xs text-[#082C6B] font-semibold hover:opacity-80">
                           <Plus className="w-3.5 h-3.5" />{isAr ? 'إضافة مرحلة' : 'Add Phase'}
                         </button>
-                        <p className="text-[10px] text-slate-400">{isAr ? 'مثال: عقد Gold Book بمرحلة إنشاء بسعر GMP ومرحلة تشغيل بـ CPIF' : "e.g. a Gold Book contract's GMP construct phase and CPIF operate phase"}</p>
+                        <p className="text-[10px] text-slate-500">{isAr ? 'مثال: عقد Gold Book بمرحلة إنشاء بسعر GMP ومرحلة تشغيل بـ CPIF' : "e.g. a Gold Book contract's GMP construct phase and CPIF operate phase"}</p>
                       </div>
                       <div className="space-y-1">
                         <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{isAr ? 'الحالة' : 'Status'}</label>
@@ -1847,7 +1847,7 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
                         <div className="bg-slate-50 px-3 py-2.5 flex items-center justify-between flex-wrap gap-2">
                           <div>
                             <p className="text-xs font-bold text-slate-700">{isAr ? 'تغطية بنود العقد' : 'Clause Coverage'}</p>
-                            <p className="text-[10px] text-slate-400">{isAr ? `${presentSubclauseCount(c.clausesPresent)} من أصل ${totalSubclauseCount()} بنداً فرعياً تم تحديده` : `${presentSubclauseCount(c.clausesPresent)} of ${totalSubclauseCount()} subclauses checked`}</p>
+                            <p className="text-[10px] text-slate-500">{isAr ? `${presentSubclauseCount(c.clausesPresent)} من أصل ${totalSubclauseCount()} بنداً فرعياً تم تحديده` : `${presentSubclauseCount(c.clausesPresent)} of ${totalSubclauseCount()} subclauses checked`}</p>
                           </div>
                           {(() => {
                             const health = overallClauseHealth(c.clausesPresent, c.clauseCategoriesNotApplicable);
@@ -1921,26 +1921,26 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
                               <div key={cat.id}>
                                 <button type="button" onClick={() => toggleClauseCategoryExpand(c.id, cat.id)} className="w-full px-3 py-2 flex items-center justify-between gap-2 hover:bg-slate-50 transition-colors text-left">
                                   <div className="flex items-center gap-2 min-w-0">
-                                    {isCatOpen ? <ChevronUp className="w-3.5 h-3.5 text-slate-400 shrink-0" /> : <ChevronDown className="w-3.5 h-3.5 text-slate-400 shrink-0" />}
+                                    {isCatOpen ? <ChevronUp className="w-3.5 h-3.5 text-slate-500 shrink-0" /> : <ChevronDown className="w-3.5 h-3.5 text-slate-500 shrink-0" />}
                                     <span className="text-xs font-semibold text-slate-700 truncate">{isAr ? cat.labelAr : cat.label}</span>
                                     <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full shrink-0 hidden sm:inline-block" style={{ background: cat.sensitivity === 'low-moderate' ? '#f1f5f9' : '#fef3c7', color: cat.sensitivity === 'low-moderate' ? '#64748b' : '#92400e' }}>{isAr ? cat.sensitivityLabelAr : cat.sensitivityLabelEn}</span>
                                   </div>
                                   <div className="flex items-center gap-2 shrink-0">
                                     {comp.status === 'not-applicable' ? (
-                                      <span className="text-[10px] text-slate-400 italic">{isAr ? 'لا ينطبق' : 'N/A'}</span>
+                                      <span className="text-[10px] text-slate-500 italic">{isAr ? 'لا ينطبق' : 'N/A'}</span>
                                     ) : (
                                       <>
                                         <div className="w-14 h-1.5 bg-slate-200 rounded-full overflow-hidden hidden sm:block">
                                           <div className="h-full rounded-full transition-all" style={{ width: `${comp.percent}%`, background: barColor }} />
                                         </div>
-                                        <span className="text-[10px] text-slate-400">{comp.present}/{comp.total}</span>
+                                        <span className="text-[10px] text-slate-500">{comp.present}/{comp.total}</span>
                                       </>
                                     )}
                                   </div>
                                 </button>
                                 {isCatOpen && (
                                   <div className="px-3 pb-3 space-y-2">
-                                    <p className="text-[10px] text-slate-400">{isAr ? cat.sensitivityNoteAr : cat.sensitivityNoteEn}</p>
+                                    <p className="text-[10px] text-slate-500">{isAr ? cat.sensitivityNoteAr : cat.sensitivityNoteEn}</p>
                                     <label className="flex items-center gap-2 text-[10px] text-slate-500">
                                       <input type="checkbox" checked={comp.status === 'not-applicable'} onChange={() => toggleClauseCategoryNA(c.id, cat.id)} className="w-3.5 h-3.5 accent-[#082C6B]" />
                                       {isAr ? 'هذه الفئة غير منطبقة على هذا العقد' : 'This category is not applicable to this contract'}
@@ -1963,11 +1963,11 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
                                             const modelClauseOpen = expandedModelClause.has(modelClauseKey);
                                             return (
                                               <div key={sc.id} className="space-y-1">
-                                                <label className={`flex items-start gap-1.5 text-[11px] cursor-pointer ${isAtypical ? 'text-slate-400' : 'text-slate-600'}`} title={help}>
+                                                <label className={`flex items-start gap-1.5 text-[11px] cursor-pointer ${isAtypical ? 'text-slate-500' : 'text-slate-600'}`} title={help}>
                                                   <input type="checkbox" checked={checked} onChange={() => toggleClauseSubclause(c.id, cat.id, sc.id)} className="w-3.5 h-3.5 mt-0.5 accent-[#082C6B] shrink-0" />
                                                   <span className="inline-flex items-center gap-1 flex-wrap">
                                                     {isAr ? sc.labelAr : sc.label}
-                                                    {help ? <Info className="w-2.5 h-2.5 text-slate-400 shrink-0" aria-hidden="true" /> : null}
+                                                    {help ? <Info className="w-2.5 h-2.5 text-slate-500 shrink-0" aria-hidden="true" /> : null}
                                                     {isAtypical ? <span className="italic">{isAr ? '(أقل شيوعاً لهذا القطاع)' : '(less common for this industry)'}</span> : null}
                                                     {modelClause && (
                                                       <button type="button" onClick={e => { e.preventDefault(); toggleModelClause(c.id, sc.id); }}
@@ -1991,14 +1991,14 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
                                                       <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${modelClause.assuranceTier === 'reference-verified' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>
                                                         {isAr ? CLAUSE_ASSURANCE_META[modelClause.assuranceTier].labelAr : CLAUSE_ASSURANCE_META[modelClause.assuranceTier].labelEn}
                                                       </span>
-                                                      <span className="text-[9px] text-slate-400">{isAr ? CLAUSE_ASSURANCE_META[modelClause.assuranceTier].descAr : CLAUSE_ASSURANCE_META[modelClause.assuranceTier].descEn}</span>
+                                                      <span className="text-[9px] text-slate-500">{isAr ? CLAUSE_ASSURANCE_META[modelClause.assuranceTier].descAr : CLAUSE_ASSURANCE_META[modelClause.assuranceTier].descEn}</span>
                                                     </div>
                                                     <p className="text-[11px] text-slate-700 leading-relaxed whitespace-pre-wrap" dir="ltr">{modelClause.clauseTextEn}</p>
                                                     <p className="text-[11px] text-slate-700 leading-relaxed whitespace-pre-wrap" dir="rtl">{modelClause.clauseTextAr}</p>
                                                     {modelClause.variantNoteEn && (
                                                       <p className="text-[10px] text-slate-500 italic">{isAr ? modelClause.variantNoteAr : modelClause.variantNoteEn}</p>
                                                     )}
-                                                    <p className="text-[9px] text-slate-400 border-t border-slate-200 pt-1.5">{isAr ? modelClause.sourceNoteAr : modelClause.sourceNoteEn}</p>
+                                                    <p className="text-[9px] text-slate-500 border-t border-slate-200 pt-1.5">{isAr ? modelClause.sourceNoteAr : modelClause.sourceNoteEn}</p>
                                                     <p className="text-[9px] font-semibold text-amber-700 bg-amber-50 rounded px-1.5 py-1">{isAr ? COUNSEL_REVIEW_DISCLAIMER.textAr : COUNSEL_REVIEW_DISCLAIMER.textEn}</p>
                                                   </div>
                                                 )}
@@ -2007,7 +2007,7 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
                                           })}
                                         </div>
                                         <div className="space-y-1 pt-1">
-                                          <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">{isAr ? 'شروط خاصة إضافية (نص حر، اختياري)' : 'Additional Special Conditions (free text, optional)'}</label>
+                                          <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">{isAr ? 'شروط خاصة إضافية (نص حر، اختياري)' : 'Additional Special Conditions (free text, optional)'}</label>
                                           <textarea value={c.clauseSpecialConditions?.[cat.id] ?? ''} onChange={e => updateClauseSpecialCondition(c.id, cat.id, e.target.value)} rows={2}
                                             placeholder={isAr ? 'أي شرط خاص بهذا العقد لا تغطيه القائمة أعلاه (مثال: بند سرية غير معتاد، شرط خروج خاص بالعميل)' : 'Any bespoke condition specific to this contract not covered by the checklist above (e.g. an unusual NDA carve-out, a client-specific exit condition)'}
                                             className="w-full text-[11px] border border-slate-200 rounded-lg px-2 py-1.5 resize-none focus:outline-none focus:ring-1 focus:ring-[#082C6B]" />
@@ -2035,10 +2035,10 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
                       <div className="col-span-full border border-slate-200 rounded-xl overflow-hidden">
                         <button type="button" onClick={() => toggleReviewExpand(c.id)} className="w-full bg-slate-50 px-3 py-2.5 flex items-center justify-between gap-2 hover:bg-slate-100 transition-colors text-left">
                           <div className="flex items-center gap-2 min-w-0">
-                            {expandedReview.has(c.id) ? <ChevronUp className="w-3.5 h-3.5 text-slate-400 shrink-0" /> : <ChevronDown className="w-3.5 h-3.5 text-slate-400 shrink-0" />}
+                            {expandedReview.has(c.id) ? <ChevronUp className="w-3.5 h-3.5 text-slate-500 shrink-0" /> : <ChevronDown className="w-3.5 h-3.5 text-slate-500 shrink-0" />}
                             <div>
                               <p className="text-xs font-bold text-slate-700">{isAr ? 'سلسلة ضمان العقد (المراجعة)' : 'The Contract Assurance Chain (Review)'}</p>
-                              <p className="text-[10px] text-slate-400">{isAr ? 'مراجعة متعددة الأبعاد مبنية على ما تم تحديده أعلاه' : 'Cross-dimensional review built from what\'s entered above'}</p>
+                              <p className="text-[10px] text-slate-500">{isAr ? 'مراجعة متعددة الأبعاد مبنية على ما تم تحديده أعلاه' : 'Cross-dimensional review built from what\'s entered above'}</p>
                             </div>
                           </div>
                         </button>
@@ -2084,7 +2084,7 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
                                   ? (isAr ? 'هيكل الاتفاقية الإطارية (الإصدار 1)' : 'MSA Skeleton (v1)')
                                   : (isAr ? 'هيكل اتفاقية السرية (الإصدار 1)' : 'NDA Skeleton (v1)')}
                               </p>
-                              <p className="text-[10px] text-slate-400">{isAr ? 'وقائع + مخطط بنود مصنّف -- بدون صياغة نصوص قانونية' : 'Facts + a classified clause outline -- no clause language drafted'}</p>
+                              <p className="text-[10px] text-slate-500">{isAr ? 'وقائع + مخطط بنود مصنّف -- بدون صياغة نصوص قانونية' : 'Facts + a classified clause outline -- no clause language drafted'}</p>
                             </div>
                             <div className="flex items-center gap-2 shrink-0">
                               <button type="button" onClick={() => {
@@ -2179,8 +2179,8 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
                           <div className="px-3 py-2.5 border-t border-slate-100 space-y-1.5">
                             <div className="flex items-center justify-between gap-2">
                               <div>
-                                <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">{isAr ? 'أطراف إضافية مقترحة (اختياري)' : 'Additional Stakeholders (optional)'}</label>
-                                <p className="text-[9px] text-slate-400 mt-0.5">{isAr ? 'لحالات خاصة تحتاج طرفاً لم تشمله خريطة الأدوار الثمانية المشتقة أعلاه' : 'For special cases needing a role the derived 8-role map above doesn\'t cover'}</p>
+                                <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">{isAr ? 'أطراف إضافية مقترحة (اختياري)' : 'Additional Stakeholders (optional)'}</label>
+                                <p className="text-[9px] text-slate-500 mt-0.5">{isAr ? 'لحالات خاصة تحتاج طرفاً لم تشمله خريطة الأدوار الثمانية المشتقة أعلاه' : 'For special cases needing a role the derived 8-role map above doesn\'t cover'}</p>
                               </div>
                               <button type="button" onClick={() => addCustomStakeholder(c.id)} className="flex items-center gap-1 text-[10px] font-semibold text-[#082C6B] hover:opacity-80 shrink-0">
                                 <Plus className="w-3 h-3" />{isAr ? 'إضافة' : 'Add'}
@@ -2237,7 +2237,7 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
                 <p className="text-sm font-semibold text-slate-700">{isAr ? 'استخراج من مستند (Review v2)' : 'Extract from a Document (Review v2)'}</p>
                 <p className="text-[11px] text-slate-500">{isAr ? 'ارفع عقداً بصيغة PDF أو DOCX للحصول على مسودة حقول قابلة للتعديل' : 'Upload a PDF or DOCX contract to get an editable draft of the fields below'}</p>
               </div>
-              <label className={`flex items-center gap-2 text-sm font-semibold border rounded-xl px-4 py-2 transition-colors cursor-pointer ${extractionState.status === 'loading' ? 'text-slate-400 border-slate-200 cursor-not-allowed' : 'text-[#082C6B] border-[#082C6B] hover:bg-[#082C6B]/5'}`}>
+              <label className={`flex items-center gap-2 text-sm font-semibold border rounded-xl px-4 py-2 transition-colors cursor-pointer ${extractionState.status === 'loading' ? 'text-slate-500 border-slate-200 cursor-not-allowed' : 'text-[#082C6B] border-[#082C6B] hover:bg-[#082C6B]/5'}`}>
                 <FileDown className="w-4 h-4" />
                 {extractionState.status === 'loading' ? (isAr ? 'جارٍ الاستخراج…' : 'Extracting…') : (isAr ? 'رفع مستند' : 'Upload Document')}
                 <input
@@ -2292,7 +2292,7 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
             <button onClick={addContract} className="flex items-center gap-2 text-sm text-[#082C6B] font-semibold border border-[#082C6B] rounded-xl px-4 py-2 hover:bg-[#082C6B]/5 transition-colors">
               <Plus className="w-4 h-4" />{isAr ? 'إضافة عقد' : 'Add Contract'}
             </button>
-            <p className="text-[10px] text-slate-400">
+            <p className="text-[10px] text-slate-500">
               {user
                 ? (clmSyncStatus === 'saving' ? (isAr ? 'جارٍ المزامنة مع الخادم…' : 'Syncing to server…')
                   : clmSyncStatus === 'saved' ? (isAr ? 'تمت المزامنة مع الخادم ✓' : 'Synced to server ✓')
@@ -2367,7 +2367,7 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
                         )}
                       </div>
                       <div className="shrink-0 text-right">
-                        <p className="text-[10px] text-slate-400 mb-1">{isAr ? 'الأداء' : 'Performance'}</p>
+                        <p className="text-[10px] text-slate-500 mb-1">{isAr ? 'الأداء' : 'Performance'}</p>
                         <p className="text-xl font-black" style={{ color: c.performanceScore >= 80 ? '#10b981' : c.performanceScore >= 60 ? '#d97706' : '#ef4444' }}>{c.performanceScore}%</p>
                       </div>
                     </div>
@@ -2384,7 +2384,7 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
         <div className="space-y-4">
           {contracts.length === 0 ? (
             <div className="bg-slate-50 border border-dashed border-slate-300 rounded-2xl p-8 text-center">
-              <p className="text-slate-400 text-sm">{isAr ? 'أضف عقوداً في تبويب المخزون أولاً' : 'Add contracts in the Inventory tab first'}</p>
+              <p className="text-slate-500 text-sm">{isAr ? 'أضف عقوداً في تبويب المخزون أولاً' : 'Add contracts in the Inventory tab first'}</p>
             </div>
           ) : (
             <>
@@ -2420,19 +2420,19 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
                       <div key={c.id} className="px-4 py-3 flex items-center gap-3">
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-semibold text-slate-800 truncate">{c.name || '(unnamed)'}{claimableRebate(c) && <span className="ml-2 text-[10px] bg-emerald-100 text-emerald-700 font-bold px-2 py-0.5 rounded-full align-middle">{isAr ? 'خصم مستحق' : 'REBATE'}</span>}</p>
-                          <p className="text-[11px] text-slate-400">{c.supplier}</p>
+                          <p className="text-[11px] text-slate-500">{c.supplier}</p>
                         </div>
                         <div className="hidden sm:flex gap-6 text-center shrink-0">
                           <div>
-                            <p className="text-[10px] text-slate-400">{isAr ? 'الأداء' : 'Perf'}</p>
+                            <p className="text-[10px] text-slate-500">{isAr ? 'الأداء' : 'Perf'}</p>
                             <p className="text-sm font-bold" style={{ color: c.performanceScore >= 80 ? '#10b981' : c.performanceScore >= 60 ? '#d97706' : '#ef4444' }}>{c.performanceScore}%</p>
                           </div>
                           <div>
-                            <p className="text-[10px] text-slate-400">{isAr ? 'الامتثال' : 'Compl'}</p>
+                            <p className="text-[10px] text-slate-500">{isAr ? 'الامتثال' : 'Compl'}</p>
                             <p className="text-sm font-bold" style={{ color: c.complianceScore >= 80 ? '#10b981' : c.complianceScore >= 60 ? '#d97706' : '#ef4444' }}>{c.complianceScore}%</p>
                           </div>
                           <div>
-                            <p className="text-[10px] text-slate-400">{isAr ? 'يتبقى' : 'Expires'}</p>
+                            <p className="text-[10px] text-slate-500">{isAr ? 'يتبقى' : 'Expires'}</p>
                             <p className="text-sm font-bold" style={{ color: days <= 30 ? '#dc2626' : days <= 90 ? '#d97706' : '#059669' }}>{days < 0 ? (isAr ? 'منتهٍ' : 'Expired') : `${days}d`}</p>
                           </div>
                         </div>
@@ -2509,7 +2509,7 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
                   {GOVERNING_LAW_TRACKS.map(t => <option key={t.id} value={t.id}>{isAr ? t.labelAr : t.label}</option>)}
                 </select>
               </div>
-              <p className="text-[10px] text-slate-400">
+              <p className="text-[10px] text-slate-500">
                 {isAr
                   ? 'يحدد ما إذا كان قانون المشتريات الحكومية في المسار المختار يفرض سلماً إلزامياً لأسلوب الشراء (شراء مباشر/منافسة محدودة/منافسة عامة) يسبق سؤال RFI/RFP/RFQ -- معلوماتي فقط، لا يغيّر التوصية أعلاه.'
                   : 'Determines whether the selected track\'s government procurement law imposes a mandatory procurement-method ladder (direct purchase / limited tender / public tender) that precedes the RFI/RFP/RFQ question -- informational only, does not change the recommendation above.'}
@@ -2575,7 +2575,7 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
               {RFX_TYPES.map(t => (
                 <div key={t.id} className={`rounded-lg border px-3 py-2 ${rfxRecommendation.type === t.id ? 'border-[#082C6B] bg-[#082C6B]/5' : 'border-slate-200'}`}>
                   <p className="text-[11px] font-bold text-slate-700">{isAr ? t.labelAr : t.label}</p>
-                  <p className="text-[10px] text-slate-400 mt-0.5">{isAr ? t.purposeAr : t.purposeEn}</p>
+                  <p className="text-[10px] text-slate-500 mt-0.5">{isAr ? t.purposeAr : t.purposeEn}</p>
                 </div>
               ))}
             </div>
@@ -2589,7 +2589,7 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
                 {isAr ? `إجمالي الأوزان: ${rfxWeightSum}%` : `Weights sum to ${rfxWeightSum}%`}{rfxWeightSum !== 100 ? (isAr ? ' (يجب أن يساوي 100%)' : ' (should equal 100%)') : ''}
               </span>
             </div>
-            <p className="text-[10px] text-slate-400">
+            <p className="text-[10px] text-slate-500">
               {isAr
                 ? 'بوابة الامتثال الإلزامي تُفحص أولاً (نجاح/رسوب) قبل بدء التقييم المرجّح -- نمط من مرحلتين موثّق في الوحدة 03، الجزء D.'
                 : 'The mandatory-compliance gate is checked first (pass/fail) before weighted scoring begins -- the two-stage pattern sourced in Module 03 Part D.'}
@@ -2597,7 +2597,7 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
             <div className="overflow-x-auto">
               <table className="w-full text-xs">
                 <thead>
-                  <tr className="border-b border-slate-200 text-left text-[10px] text-slate-400 uppercase tracking-wider">
+                  <tr className="border-b border-slate-200 text-left text-[10px] text-slate-500 uppercase tracking-wider">
                     <th className="py-1.5 pr-2">{isAr ? 'مقدّم العرض' : 'Bidder'}</th>
                     <th className="py-1.5 px-2">{isAr ? 'اجتاز البوابة الإلزامية' : 'Passed Gate'}</th>
                     {rfxCriteria.filter(c => !c.isMandatoryGate).map(c => (
@@ -2607,7 +2607,7 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
                           <input type="number" min={0} max={100} value={c.weight}
                             onChange={e => updateRfxCriterionWeight(c.id, parseFloat(e.target.value) || 0)}
                             className="w-14 text-[10px] border border-slate-200 rounded px-1 py-0.5 font-bold" />
-                          <span className="text-[9px] text-slate-400">%</span>
+                          <span className="text-[9px] text-slate-500">%</span>
                         </div>
                       </th>
                     ))}
@@ -2667,7 +2667,7 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
               <p className="text-sm font-bold text-slate-800">{isAr ? 'الترتيب النهائي' : 'Final Ranking'}</p>
               {rfxResultsSorted.map((r, idx) => (
                 <div key={r.bidderId} className="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
-                  <span className="text-[11px] font-bold text-slate-400 w-5">{r.disqualified ? '--' : `#${idx + 1}`}</span>
+                  <span className="text-[11px] font-bold text-slate-500 w-5">{r.disqualified ? '--' : `#${idx + 1}`}</span>
                   <span className="flex-1 text-xs font-semibold text-slate-700">{r.input?.bidderName || (isAr ? '(بدون اسم)' : '(unnamed)')}</span>
                   {r.disqualified ? (
                     <span className="flex items-center gap-1 text-[10px] font-bold text-red-600">
@@ -2704,7 +2704,7 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
                   {isAr ? 'خبير' : 'Expert'}
                 </button>
               </div>
-              <span className="text-[10px] text-slate-400">{isAr ? '(إرشادي = عرض إرشادات "لماذا/كيف" كاملة؛ خبير = قائمة سريعة فقط)' : "(Guided = full \"why/how\" guidance shown; Expert = fast checklist only)"}</span>
+              <span className="text-[10px] text-slate-500">{isAr ? '(إرشادي = عرض إرشادات "لماذا/كيف" كاملة؛ خبير = قائمة سريعة فقط)' : "(Guided = full \"why/how\" guidance shown; Expert = fast checklist only)"}</span>
             </div>
 
             <div className="grid gap-3 sm:grid-cols-2">
@@ -2731,7 +2731,7 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
                 <div className="bg-[#082C6B]/5 border border-[#082C6B]/20 rounded-xl p-3">
                   <p className="text-[11px] font-bold text-[#082C6B]">{isAr ? SPEC_TYPE_META[rfxScopeProfile.specType.type].labelAr : SPEC_TYPE_META[rfxScopeProfile.specType.type].labelEn}</p>
                   <p className="text-xs text-slate-600 mt-1">{isAr ? rfxScopeProfile.specType.reasonAr : rfxScopeProfile.specType.reasonEn}</p>
-                  <p className="text-[10px] text-slate-400 mt-1">{isAr ? rfxScopeProfile.specType.sourceAr : rfxScopeProfile.specType.sourceEn}</p>
+                  <p className="text-[10px] text-slate-500 mt-1">{isAr ? rfxScopeProfile.specType.sourceAr : rfxScopeProfile.specType.sourceEn}</p>
                 </div>
 
                 {/* Elicitation guidance (BABOK) -- collapsed by default in Expert mode (#396) */}
@@ -2844,7 +2844,7 @@ export function ContractHealthChecker({ isAr }: CLMToolsProps) {
                 <span className="text-2xl shrink-0">{t.icon}</span>
                 <div className="flex-1">
                   <p className="font-bold text-sm text-slate-800">{isAr ? t.labelAr : t.label}</p>
-                  <p className="text-[11px] text-slate-400 mt-0.5 leading-relaxed">{isAr ? t.descAr : t.desc}</p>
+                  <p className="text-[11px] text-slate-500 mt-0.5 leading-relaxed">{isAr ? t.descAr : t.desc}</p>
                   <button onClick={() => { t.fn(); toast.success(isAr ? 'جاري التحميل…' : 'Downloading…'); }}
                     className="mt-2 flex items-center gap-1.5 text-xs text-[#082C6B] font-semibold hover:opacity-80">
                     <FileDown className="w-3.5 h-3.5" />{isAr ? 'تحميل' : 'Download'}

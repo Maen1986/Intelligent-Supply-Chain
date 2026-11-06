@@ -130,7 +130,7 @@ export function LeanAgileToolsSection({ isAr }: Props) {
           <div className="space-y-3">
             {wasteFilled.length > 0 && (
               <div className="grid grid-cols-2 gap-3">
-                <div className="bg-slate-50 border border-slate-200 rounded-xl p-3"><p className="text-[11px] text-slate-400 font-semibold">{isAr ? 'المتوسط العام' : 'Overall Average'}</p><p className="text-lg font-bold text-purple-700">{wasteAvg.toFixed(1)}/5</p></div>
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-3"><p className="text-[11px] text-slate-500 font-semibold">{isAr ? 'المتوسط العام' : 'Overall Average'}</p><p className="text-lg font-bold text-purple-700">{wasteAvg.toFixed(1)}/5</p></div>
                 {worstWaste && <div className="bg-amber-50 border border-amber-200 rounded-xl p-3"><p className="text-[11px] text-amber-600 font-semibold">{isAr ? 'أعلى هدر' : 'Worst Waste'}</p><p className="text-sm font-bold text-amber-800">{isAr ? worstWaste.labelAr : worstWaste.label}</p></div>}
               </div>
             )}
@@ -139,7 +139,7 @@ export function LeanAgileToolsSection({ isAr }: Props) {
               return (
                 <div key={w.id} className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
                   <div className="flex items-start justify-between gap-3 flex-wrap">
-                    <div className="flex-1 min-w-[160px]"><p className="font-bold text-sm text-slate-800">{isAr ? w.labelAr : w.label}</p><p className="text-[11px] text-slate-400 mt-0.5">{isAr ? w.descAr : w.desc}</p></div>
+                    <div className="flex-1 min-w-[160px]"><p className="font-bold text-sm text-slate-800">{isAr ? w.labelAr : w.label}</p><p className="text-[11px] text-slate-500 mt-0.5">{isAr ? w.descAr : w.desc}</p></div>
                     <div className="flex items-center gap-1">{[1, 2, 3, 4, 5].map(n => (<button key={n} onClick={() => setWaste(w.id, n)} className={`w-8 h-8 rounded-lg text-xs font-bold transition-colors ${v === n ? 'bg-purple-600 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}>{n}</button>))}</div>
                   </div>
                 </div>

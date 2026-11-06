@@ -2322,7 +2322,7 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
                                   <p className="text-muted-foreground text-[10px] leading-snug mt-0.5">
                                     <span className="font-medium text-slate-600">Source:</span> {inp.dataSource.substring(0, 110)}{inp.dataSource.length > 110 ? '…' : ''}
                                   </p>
-                                  <p className="text-slate-400 text-[9px] mt-0.5">{inp.unit} · e.g. {inp.example.toLocaleString()}</p>
+                                  <p className="text-slate-500 text-[9px] mt-0.5">{inp.unit} · e.g. {inp.example.toLocaleString()}</p>
                                 </div>
                               </div>
                             </div>

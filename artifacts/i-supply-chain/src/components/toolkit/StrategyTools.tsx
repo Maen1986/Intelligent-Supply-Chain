@@ -287,11 +287,11 @@ export function StrategyToolsSection({ isAr }: StrategyToolsProps) {
           {scorFilled.length > 0 && (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               <div className="bg-slate-50 border border-slate-200 rounded-xl p-3">
-                <p className="text-[11px] text-slate-400 font-semibold">{isAr ? 'درجتك الإجمالية' : 'Your Overall Score'}</p>
+                <p className="text-[11px] text-slate-500 font-semibold">{isAr ? 'درجتك الإجمالية' : 'Your Overall Score'}</p>
                 <p className="text-xl font-bold text-[#082C6B]">{scorAvg.toFixed(1)}/5</p>
               </div>
               <div className="bg-slate-50 border border-slate-200 rounded-xl p-3">
-                <p className="text-[11px] text-slate-400 font-semibold">{isAr ? 'المعيار الخليجي' : 'GCC Benchmark'}</p>
+                <p className="text-[11px] text-slate-500 font-semibold">{isAr ? 'المعيار الخليجي' : 'GCC Benchmark'}</p>
                 <p className="text-xl font-bold text-slate-600">{benchmarkAvg.toFixed(1)}/5</p>
               </div>
               {weakestProcess && (
@@ -327,7 +327,7 @@ export function StrategyToolsSection({ isAr }: StrategyToolsProps) {
                   <div className="flex items-start justify-between gap-3 flex-wrap">
                     <div className="flex-1 min-w-[180px]">
                       <p className="font-bold text-sm text-slate-800">{isAr ? p.labelAr : p.label}</p>
-                      <p className="text-[11px] text-slate-400 mt-0.5 leading-relaxed">{isAr ? p.descAr : p.desc}</p>
+                      <p className="text-[11px] text-slate-500 mt-0.5 leading-relaxed">{isAr ? p.descAr : p.desc}</p>
                     </div>
                     <div className="flex items-center gap-1">
                       {[1, 2, 3, 4, 5].map(n => (
@@ -340,7 +340,7 @@ export function StrategyToolsSection({ isAr }: StrategyToolsProps) {
                     </div>
                   </div>
                   {v > 0 && (
-                    <p className="text-[11px] text-slate-400 mt-2">{isAr ? SCOR_LEVEL_LABELS_AR[v] : SCOR_LEVEL_LABELS_EN[v]} · {isAr ? `مقابل معيار ${p.benchmark}/5` : `vs benchmark ${p.benchmark}/5`}</p>
+                    <p className="text-[11px] text-slate-500 mt-2">{isAr ? SCOR_LEVEL_LABELS_AR[v] : SCOR_LEVEL_LABELS_EN[v]} · {isAr ? `مقابل معيار ${p.benchmark}/5` : `vs benchmark ${p.benchmark}/5`}</p>
                   )}
                 </div>
               );
@@ -378,7 +378,7 @@ export function StrategyToolsSection({ isAr }: StrategyToolsProps) {
                 <label key={t.id} className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-colors ${checked ? 'bg-blue-50 border-blue-300' : 'bg-white border-slate-200 hover:bg-slate-50'}`}>
                   <input type="checkbox" checked={checked} onChange={() => toggleTrigger(t.id)} className="mt-0.5 w-4 h-4 accent-[#082C6B]" />
                   <span className="text-sm text-slate-700 flex-1">{isAr ? t.labelAr : t.label}</span>
-                  <span className="text-[10px] font-bold text-slate-400 shrink-0">+{t.weight}</span>
+                  <span className="text-[10px] font-bold text-slate-500 shrink-0">+{t.weight}</span>
                 </label>
               );
             })}
@@ -405,7 +405,7 @@ export function StrategyToolsSection({ isAr }: StrategyToolsProps) {
                   <div className="flex items-start justify-between gap-3 flex-wrap">
                     <div className="flex-1 min-w-[180px]">
                       <p className="font-bold text-sm text-slate-800">{isAr ? d.labelAr : d.label}</p>
-                      <p className="text-[11px] text-slate-400 mt-0.5 leading-relaxed">{isAr ? d.descAr : d.desc}</p>
+                      <p className="text-[11px] text-slate-500 mt-0.5 leading-relaxed">{isAr ? d.descAr : d.desc}</p>
                     </div>
                     <div className="flex items-center gap-1">
                       {[1, 2, 3, 4, 5].map(n => (
@@ -446,7 +446,7 @@ export function StrategyToolsSection({ isAr }: StrategyToolsProps) {
             disabled={!canGenerate}
           />
           {!canGenerate && (
-            <p className="text-[11px] text-slate-400 mt-3 text-center">{isAr ? 'أكمل 3 عناصر تقييم على الأقل في تبويب SCOR أو S&OP، أو حدّد مؤشرًا واحدًا في تشخيص الشبكة، لتفعيل التوليد.' : 'Score at least 3 items in SCOR or S&OP, or flag one network trigger, to enable generation.'}</p>
+            <p className="text-[11px] text-slate-500 mt-3 text-center">{isAr ? 'أكمل 3 عناصر تقييم على الأقل في تبويب SCOR أو S&OP، أو حدّد مؤشرًا واحدًا في تشخيص الشبكة، لتفعيل التوليد.' : 'Score at least 3 items in SCOR or S&OP, or flag one network trigger, to enable generation.'}</p>
           )}
         </div>
       )}
