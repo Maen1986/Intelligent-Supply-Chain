@@ -29,7 +29,7 @@ export const EVIDENCE_LABEL: Record<EvidenceStatus, Bilingual> = {
   snippet: b('Snippet only', 'مقتطف فقط'),
   'member-only': b('Member-only: not read', 'للأعضاء فقط: لم يُقرأ'),
   unconfirmed: b('Not confirmed: not stated', 'غير مؤكد: لا يُذكر'),
-  'isc-synthesis': b('ISC synthesis', 'تركيب من ISC'),
+  'isc-synthesis': b('ISC synthesis', 'تركيب من آي سبلاي تشين'),
 };
 
 export interface SourceEntry {
@@ -53,14 +53,14 @@ export const SOURCE_LEDGER: SourceEntry[] = [
   { id: 'cips-savings', claim: b('Saving is measured against a baseline; cost avoidance is not a saving but is reported.', 'يُقاس الوفر مقابل سعر أساس؛ وتجنّب التكلفة ليس وفرًا لكنه يُعرض.'), status: 'verified', source: 'CIPS Position on Practice: Savings (2013)', opened: OPENED, lastChecked: OPENED, limit: b('No quadrant KPI mapping.', 'لا ربط بمؤشرات حسب الربع.') },
   { id: 'cips-gs64', claim: b('Required knowledge: portfolio analysis and supplier preferencing.', 'المعرفة المطلوبة: تحليل المحفظة وتفضيل الموردين.'), status: 'verified', source: 'CIPS Global Standard segment 6.4', url: 'https://globalstandard.cips.org/segments/segment-6.4-sourcing-processes-and-systems-in-procurement-and-supply/', opened: OPENED, lastChecked: OPENED, limit: b('Contract forms are not tied to quadrants.', 'أشكال العقود غير مرتبطة بالأرباع.') },
   { id: 'gvw', claim: b('Hold-or-move strategies per quadrant.', 'استراتيجيات «الإبقاء أو الانتقال» لكل ربع.'), status: 'verified', source: 'Gelderman & Van Weele (2003), full text', opened: OPENED, lastChecked: OPENED, limit: b('One note could not read the PDF; two did.', 'تعذّرت قراءة الملف في إحدى الملاحظات وقُرئ في اثنتين.') },
-  { id: 'cips-member', claim: b('Per-quadrant contract types, negotiation styles, KPIs and the 16 scenarios.', 'أنواع العقود وأساليب التفاوض والمؤشرات لكل ربع والسيناريوهات الستة عشر.'), status: 'member-only', source: 'CIPS member guides', opened: OPENED, lastChecked: OPENED, limit: b('Titles and blurbs only. ISC claims none of this content.', 'عناوين ونبذ فقط. لا تدّعي ISC أيًّا من هذا المحتوى.') },
-  { id: 'ppsd', claim: b('Analysis and due-diligence effort scale with supply positioning.', 'يتناسب جهد التحليل والعناية الواجبة مع موقع التوريد.'), status: 'verified', source: 'World Bank PPSD guidance (Aug 2024)', opened: OPENED, lastChecked: OPENED, limit: b('The Bank states no Kraljic mapping. The quadrant-to-tier map is ISC\'s.', 'لا يذكر البنك ربطًا بنموذج Kraljic. ربط الربع بالمستوى من ISC.') },
+  { id: 'cips-member', claim: b('Per-quadrant contract types, negotiation styles, KPIs and the 16 scenarios.', 'أنواع العقود وأساليب التفاوض والمؤشرات لكل ربع والسيناريوهات الستة عشر.'), status: 'member-only', source: 'CIPS member guides', opened: OPENED, lastChecked: OPENED, limit: b('Titles and blurbs only. ISC claims none of this content.', 'عناوين ونبذ فقط. لا تدّعي آي سبلاي تشين أيًّا من هذا المحتوى.') },
+  { id: 'ppsd', claim: b('Analysis and due-diligence effort scale with supply positioning.', 'يتناسب جهد التحليل والعناية الواجبة مع موقع التوريد.'), status: 'verified', source: 'World Bank PPSD guidance (Aug 2024)', opened: OPENED, lastChecked: OPENED, limit: b('The Bank states no Kraljic mapping. The quadrant-to-tier map is ISC\'s.', 'لا يذكر البنك ربطًا بنموذج Kraljic. ربط الربع بالمستوى من آي سبلاي تشين.') },
   { id: 'isc-movement', claim: b('Sub-types, persistence test, hysteresis, trigger rules and review intervals.', 'الأنواع الفرعية واختبار الاستمرارية والتثبيت وقواعد المحفّزات وفترات المراجعة.'), status: 'isc-synthesis', source: 'ISC method', opened: OPENED, lastChecked: OPENED, limit: b('No published source states these rules. Numbers are configurable defaults pending pilot data.', 'لا يذكر أي مصدر منشور هذه القواعد. الأرقام قيم افتراضية قابلة للتغيير بانتظار بيانات تجريبية.') },
   { id: 'sa-law', claim: b('Details of the new Saudi Government Tenders and Procurement Law (articles, ceilings, guarantees).', 'تفاصيل نظام المنافسات والمشتريات الحكومية السعودي الجديد (المواد والسقوف والضمانات).'), status: 'secondary', source: 'CMS, 20 Oct 2026', url: 'https://cms.law/en/sau/legal-updates/a-new-chapter-in-saudi-government-procurement-key-features-of-the-new-government-tenders-and-procurement-law', opened: OPENED, lastChecked: OPENED, limit: b('Law-firm summary, not the law text. In-force status not confirmed.', 'ملخص مكتب محاماة لا نص النظام. حالة النفاذ غير مؤكدة.') },
   { id: 'lcgpa', claim: b('Mandatory List of National Products and the 10% price preference.', 'قائمة المنتجات الوطنية الإلزامية وأفضلية السعر 10%.'), status: 'secondary', source: 'Argaam; Global Trade Alert; Ajel', opened: OPENED, lastChecked: OPENED, limit: b('Minimum local-content percentages not confirmed.', 'نسب الحد الأدنى للمحتوى المحلي غير مؤكدة.') },
   { id: 'qa-15', claim: b('A Qatar 15% domestic preference.', 'أفضلية محلية قطرية 15%.'), status: 'unconfirmed', source: 'Searched; no opened source states it', opened: OPENED, lastChecked: OPENED, limit: b('Do not state.', 'لا تذكره.') },
   { id: 'ar-terms', claim: b('Standard Arabic quadrant terms.', 'مصطلحات عربية معيارية للأرباع.'), status: 'isc-synthesis', source: 'No published standard found; ISC editorial wording', opened: OPENED, lastChecked: OPENED, limit: b('Practice mostly keeps the English names. Native-speaker review pending.', 'الممارسة تُبقي الأسماء الإنجليزية غالبًا. مراجعة متحدث أصلي معلّقة.') },
-  { id: 'outcomes', claim: b('That segmenting suppliers improves cost, risk or performance.', 'أن تقسيم الموردين يحسّن التكلفة أو المخاطر أو الأداء.'), status: 'unconfirmed', source: 'No study found', opened: OPENED, lastChecked: OPENED, limit: b('ISC builds its own evidence through the measurement ledger.', 'تبني ISC أدلتها عبر سجل القياس.') },
+  { id: 'outcomes', claim: b('That segmenting suppliers improves cost, risk or performance.', 'أن تقسيم الموردين يحسّن التكلفة أو المخاطر أو الأداء.'), status: 'unconfirmed', source: 'No study found', opened: OPENED, lastChecked: OPENED, limit: b('ISC builds its own evidence through the measurement ledger.', 'تبني آي سبلاي تشين أدلتها عبر سجل القياس.') },
 ];
 
 export function evidenceFor(id: string): SourceEntry | undefined { return SOURCE_LEDGER.find((e) => e.id === id); }
@@ -107,7 +107,7 @@ export function emptyOutcome(): Outcome {
 
 export const LEDGER_NOTE: Bilingual = b(
   'These measures build ISC\'s own evidence for your business. Stability and update-frequency KPIs are vendor-style suggestions, not standards. Association is not proof of benefit.',
-  'تبني هذه المقاييس أدلة ISC الخاصة بعملك. مؤشرا الاستقرار وتكرار التحديث مقترحان بأسلوب الموردين وليسا معيارين. الارتباط ليس دليلًا على الفائدة.',
+  'تبني هذه المقاييس أدلة آي سبلاي تشين الخاصة بعملك. مؤشرا الاستقرار وتكرار التحديث مقترحان بأسلوب الموردين وليسا معيارين. الارتباط ليس دليلًا على الفائدة.',
 );
 
 export interface LedgerKpis {
