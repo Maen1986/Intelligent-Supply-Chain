@@ -867,9 +867,9 @@ function BenchmarkTab({ lang }: { lang: Lang }) {
           {/* 3-number score cards */}
           <div className="grid grid-cols-3 gap-3">
             {[
-              { label: ar ? 'As-Is (أداؤك)' : 'As-Is',          value: avgAsIs,   color: '#C9A84C' },
+              { label: ar ? 'As-Is (أداؤك)' : 'As-Is',          value: avgAsIs,   color: '#8A6D1F' },
               { label: ar ? 'المؤشر المرجعي'   : 'Reference Score',      value: avgMedian, color: '#082C6B' },
-              { label: ar ? 'الهدف (Top Q)' : 'Target (Top Q)',  value: avgTopQ,   color: '#10b981' },
+              { label: ar ? 'الهدف (Top Q)' : 'Target (Top Q)',  value: avgTopQ,   color: '#047857' },
             ].map(c => (
               <div key={c.label} className="text-center rounded-xl border border-border p-3">
                 <p className="text-xs text-muted-foreground mb-1 leading-tight">{c.label}</p>
