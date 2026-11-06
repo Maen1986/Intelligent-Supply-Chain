@@ -358,12 +358,12 @@ function LeadsDashboard({ onLogout, ar }: { onLogout: () => Promise<void>; ar: b
                         {row.tool !== 'command_centre' ? (
                           <span className="text-muted-foreground">—</span>
                         ) : row.emailSentAt ? (
-                          <span className="inline-flex items-center gap-1 text-emerald-600" data-testid={`status-sent-${row.id}`}>
+                          <span className="inline-flex items-center gap-1 text-emerald-700" data-testid={`status-sent-${row.id}`}>
                             <CheckCircle2 className="w-4 h-4" />
                             {ar ? 'أُرسل' : 'Sent'} {fmt(row.emailSentAt)}
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 text-amber-600" data-testid={`status-flagged-${row.id}`}>
+                          <span className="inline-flex items-center gap-1 text-amber-700" data-testid={`status-flagged-${row.id}`}>
                             <AlertTriangle className="w-4 h-4" />
                             {ar ? 'لم يُرسل' : 'Not sent'}
                             {row.emailError && (
