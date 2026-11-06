@@ -551,7 +551,7 @@ export function ChatWidget() {
                 />
                 <div className="max-w-[82%] bg-white rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm border border-border text-sm text-foreground leading-relaxed">
                   {isRtl
-                    ? 'مرحباً! أنا معن، مستشارك الذكي لسلسلة التوريد في I Supply Chain. كيف يمكنني مساعدتك اليوم؟'
+                    ? 'مرحباً! أنا معن، مستشارك الذكي لسلسلة التوريد في آي سبلاي تشين. كيف يمكنني مساعدتك اليوم؟'
                     : "Hi! I'm Maen, your AI supply chain consultant at I Supply Chain. How can I help you today?"}
                 </div>
               </div>
@@ -634,7 +634,7 @@ export function ChatWidget() {
                 </button>
               </div>
               <p className="text-center text-[10px] text-muted-foreground mt-2">
-                {isRtl ? 'مدعوم بالذكاء الاصطناعي · I Supply Chain' : 'Powered by AI · I Supply Chain'}
+                {isRtl ? 'مدعوم بالذكاء الاصطناعي · آي سبلاي تشين' : 'Powered by AI · I Supply Chain'}
               </p>
             </div>
           </motion.div>
