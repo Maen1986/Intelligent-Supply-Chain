@@ -327,7 +327,7 @@ export function NegotiationDesk() {
       setS(prev => ({ ...prev, supplier: v, quadrant: q ? q.id : prev.quadrant, linkedCheckId: m.checkId ?? prev.linkedCheckId }));
       setPrefillNote(q
         ? t(`Filled the purchase type (${q.en}) from your ${m.source === 'portfolio' ? 'Supplier portfolio' : 'Dependency Check'}. Change it below if it is wrong.`,
-            `تم تعبئة نوع الشراء (${q.ar}) من ${m.source === 'portfolio' ? 'محفظة الموردين' : 'فحص الاعتماد'}. غيّره أدناه إن كان خاطئا.`)
+            `تم ملء نوع الشراء (${q.ar}) من ${m.source === 'portfolio' ? 'محفظة الموردين' : 'فحص الاعتماد'}. غيّره أدناه إن كان خاطئًا.`)
         : t('Linked to your saved check. Nothing else was changed.', 'تم الربط بفحصك المحفوظ. لم يتغير شيء آخر.'));
     } else {
       set('supplier', v);
@@ -350,7 +350,7 @@ export function NegotiationDesk() {
   const deleteCase = (key: string) => { setOthers(othersRef.current.filter(c => c.clientKey !== key)); setDelKey(null); };
   const applyPaste = () => {
     const probe = parsePastedPrices(pasteText, new Date().toISOString().slice(0, 10));
-    if (probe.points.length === 0) { setPasteMsg(t('No prices found. Put one price per line, for example "Q1 100".', 'لم يتم العثور على أسعار. ضع سعرا واحدا في كل سطر مثل "Q1 100".')); return; }
+    if (probe.points.length === 0) { setPasteMsg(t('No prices found. Put one price per line, for example "Q1 100".', 'لم يتم العثور على أي أسعار. أدخل سعرًا واحدًا في كل سطر، مثل "Q1 100".')); return; }
     const today = new Date().toISOString().slice(0, 10);
     const latest = !pasteReplace && s.points.length > 0 ? [...s.points].map(p => p.sortKey).sort().slice(-1)[0] : '';
     const base = latest ? addDays(latest, 30) : addDays(today, -30 * (probe.points.length - 1));
@@ -358,7 +358,7 @@ export function NegotiationDesk() {
     setS(prev => ({ ...prev, points: pasteReplace ? r.points : [...prev.points, ...r.points] }));
     setPasteText('');
     setPasteMsg(t(`Added ${r.points.length} price(s)${r.skipped ? `, skipped ${r.skipped} line(s) with no usable price` : ''}. Rows without a date were given dates 30 days apart in the order pasted; edit the dates if they are wrong.`,
-      `تمت إضافة ${r.points.length} سعر${r.skipped ? `، وتم تخطي ${r.skipped} سطر بلا سعر صالح` : ''}. الصفوف بلا تاريخ أُعطيت تواريخ بفارق 30 يوما بترتيب اللصق؛ عدّل التواريخ إن كانت خاطئة.`));
+      `عدد الأسعار المضافة: ${r.points.length}.${r.skipped ? ` عدد الأسطر المتخطاة لعدم وجود سعر صالح: ${r.skipped}.` : ''} الأسطر التي بلا تاريخ أُعطيت تواريخ بفارق 30 يومًا بترتيب اللصق؛ عدّل التواريخ إن كانت خاطئة.`));
   };
 
   const lockInNum = s.lockIn.trim() === '' ? null : Number(s.lockIn);
@@ -455,7 +455,7 @@ export function NegotiationDesk() {
         {/* Start here: flexible entry routes + saved cases */}
         <section className="no-print bg-white border border-slate-200 rounded-2xl shadow-sm p-4 mt-4" aria-label={t('Start here', 'ابدأ من هنا')}>
           <h2 className="text-sm font-bold text-[#082C6B]">{t('Start where you are', 'ابدأ من وضعك الحالي')}</h2>
-          <p className="text-[11px] text-slate-600 mt-0.5">{t('Pick the situation closest to yours, or ignore this and use the steps below. Every step stays open, so you can jump anywhere.', 'اختر الحالة الأقرب لوضعك، أو تجاهل هذا واستخدم الخطوات أدناه. كل الخطوات تبقى مفتوحة ويمكنك الانتقال لأي منها.')}</p>
+          <p className="text-[11px] text-slate-600 mt-0.5">{t('Pick the situation closest to yours, or ignore this and use the steps below. Every step stays open, so you can jump anywhere.', 'اختر الخيار الأقرب لوضعك، أو تجاهل هذا واستخدم الخطوات أدناه. كل الخطوات تبقى مفتوحة ويمكنك الانتقال إلى أي منها.')}</p>
           <div className="flex flex-wrap gap-2 mt-3">
             {DESK_ROUTES.map(r => (
               <button key={r.id} type="button" onClick={() => pickRoute(r.id)} aria-pressed={s.route === r.id}
@@ -468,7 +468,7 @@ export function NegotiationDesk() {
             <p className="text-[11px] text-slate-700 mt-2 leading-relaxed" role="status">
               {isAr ? route.whenAr : route.whenEn}{' '}
               <span className="font-semibold">{t('Steps for this route: ', 'خطوات هذا المسار: ')}{route.needs.map(stepLabel).join(isAr ? '، ' : ', ')}.</span>{' '}
-              {t('The others are optional; open them any time for more depth.', 'الباقي اختياري؛ افتحه في أي وقت لمزيد من العمق.')}
+              {t('The others are optional; open them any time for more depth.', 'بقية الخطوات اختيارية؛ افتحها في أي وقت لمزيد من التفصيل.')}
             </p>
           )}
           <div className="mt-4 border-t border-slate-100 pt-3">
@@ -481,7 +481,7 @@ export function NegotiationDesk() {
                     <>
                       <span className="text-red-700 font-semibold">{t('Erase this case?', 'حذف هذه الحالة؟')}</span>
                       <button type="button" onClick={() => deleteCase(c.clientKey)} className="font-bold text-red-700 underline px-1">{t('Yes, erase this case', 'نعم، احذف هذه الحالة')}</button>
-                      <button type="button" onClick={() => setDelKey(null)} className="font-semibold text-slate-600 underline px-1">{t('Keep', 'إبقاء')}</button>
+                      <button type="button" onClick={() => setDelKey(null)} className="font-semibold text-slate-600 underline px-1">{t('Keep', 'احتفظ بها')}</button>
                     </>
                   ) : (
                     <>
@@ -494,7 +494,7 @@ export function NegotiationDesk() {
               <button type="button" disabled={others.length >= MAX_CASES - 1} onClick={() => (hasContent(s) ? newCase() : undefined)}
                 className="inline-flex items-center gap-1 text-xs font-bold text-white bg-[#082C6B] rounded-lg px-3 py-1.5 disabled:opacity-40"><Plus className="w-3 h-3" />{t('New negotiation', 'مفاوضة جديدة')}</button>
             </div>
-            <p className="text-[11px] text-slate-600 mt-2">{t('Starting a new one keeps the current case in this list. Saved in this browser; signed-in users also keep them in their account.', 'بدء مفاوضة جديدة يُبقي الحالية في هذه القائمة. تُحفظ في هذا المتصفح، والمستخدم المسجل يحفظها أيضا في حسابه.')}</p>
+            <p className="text-[11px] text-slate-600 mt-2">{t('Starting a new one keeps the current case in this list. Saved in this browser; signed-in users also keep them in their account.', 'بدء مفاوضة جديدة يُبقي الحالة الحالية في هذه القائمة. تُحفظ الحالات في هذا المتصفح، ويحتفظ بها المستخدمون الذين سجّلوا الدخول في حساباتهم أيضًا.')}</p>
           </div>
         </section>
 
@@ -537,9 +537,9 @@ export function NegotiationDesk() {
                 </div>
               )}
               <label className="block text-xs font-semibold text-slate-600 mt-5">{t('Supplier or category', 'المورّد أو الفئة')}
-                <input className={`${inputCls} mt-1`} list="desk-suggest" autoComplete="off" value={s.supplier} onChange={onSupplierChange} placeholder={t('e.g. Packaging supplier', 'مثال: مورّد التغليف')} /></label>
+                <input className={`${inputCls} mt-1`} list="desk-suggest" autoComplete="off" value={s.supplier} onChange={onSupplierChange} placeholder={t('e.g. Packaging supplier', 'مثال: مورد التغليف')} /></label>
               <datalist id="desk-suggest">{suggestions.map(x => <option key={`${x.source}-${x.name}`} value={x.name} label={srcLabel(x)} />)}</datalist>
-              <p className="text-[11px] text-slate-600 mt-1">{t('Why we ask: the name labels the case, links your saved checks and appears on the brief. Type anything, or pick from the list (saved cases, your supplier portfolio, Dependency Checks, UNSPSC service categories).', 'لماذا نسأل: الاسم يميّز الحالة ويربطها بفحوصاتك المحفوظة ويظهر في الملخص. اكتب أي اسم أو اختر من القائمة (الحالات المحفوظة، محفظة الموردين، فحوص الاعتماد، فئات خدمات UNSPSC).')}</p>
+              <p className="text-[11px] text-slate-600 mt-1">{t('Why we ask: the name labels the case, links your saved checks and appears on the brief. Type anything, or pick from the list (saved cases, your supplier portfolio, Dependency Checks, UNSPSC service categories).', 'لماذا نسأل: الاسم يميّز الحالة ويربطها بفحوصك المحفوظة ويظهر في الملخص. اكتب أي اسم أو اختر من القائمة (الحالات المحفوظة، محفظة الموردين، فحوص الاعتماد، فئات خدمات UNSPSC).')}</p>
               {prefillNote && <p role="status" className="text-[11px] text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-lg p-2 mt-2">{prefillNote}</p>}
               {matchedCase && <p className="text-[11px] text-slate-700 mt-2">{t('You already have a saved case with this name. ', 'لديك حالة محفوظة بهذا الاسم. ')}<button type="button" onClick={() => openCase(matchedCase.clientKey)} className="font-bold text-[#082C6B] underline">{t('Open it', 'افتحها')}</button></p>}
               {depChecks.length > 0 ? (
@@ -651,9 +651,9 @@ export function NegotiationDesk() {
               </div>
               <button onClick={addPoint} className="no-print mt-3 flex items-center gap-1.5 text-xs font-bold text-white bg-[#082C6B] rounded-lg px-3 py-2"><Plus className="w-3.5 h-3.5" />{t('Add a price point', 'إضافة نقطة سعرية')}</button>
               <details className="no-print mt-3 border border-slate-200 rounded-xl p-3 bg-white">
-                <summary className="text-xs font-bold text-[#082C6B] cursor-pointer">{t('Paste prices from a spreadsheet or email', 'الصق الأسعار من جدول أو بريد')}</summary>
+                <summary className="text-xs font-bold text-[#082C6B] cursor-pointer">{t('Paste prices from a spreadsheet or email', 'الصق الأسعار من جدول بيانات أو رسالة بريد إلكتروني')}</summary>
                 <p className="text-[11px] text-slate-600 mt-2">{t('One price per line, for example "Q1 100" or "2026-03-01 98". Numbers with thousands commas are fine.', 'سعر واحد في كل سطر مثل "Q1 100" أو "2026-03-01 98". الأرقام بفواصل الآلاف مقبولة.')}</p>
-                <textarea className={`${inputCls} mt-2`} rows={4} value={pasteText} onChange={e => setPasteText(e.target.value)} aria-label={t('Paste prices', 'الصق الأسعار')} />
+                <textarea className={`${inputCls} mt-2`} rows={4} value={pasteText} onChange={e => setPasteText(e.target.value)} aria-label={t('Paste prices', 'لصق الأسعار')} />
                 <label className="flex items-center gap-2 text-[11px] text-slate-700 mt-2"><input type="checkbox" checked={pasteReplace} onChange={e => setPasteReplace(e.target.checked)} />{t('Replace the prices already entered (otherwise these are added to them)', 'استبدل الأسعار المدخلة سابقا (وإلا تُضاف هذه إليها)')}</label>
                 <button type="button" onClick={applyPaste} className="mt-2 text-xs font-bold text-white bg-[#082C6B] rounded-lg px-3 py-2">{t('Add these prices', 'أضف هذه الأسعار')}</button>
                 {pasteMsg && <p role="status" className="text-[11px] text-slate-700 mt-2">{pasteMsg}</p>}
