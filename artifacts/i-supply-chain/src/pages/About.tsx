@@ -109,7 +109,7 @@ export function About() {
         <div className="absolute inset-0 bg-gradient-to-r from-[#082C6B]/92 via-[#0B3D91]/80 to-[#0B3D91]/50" />
         <div className="relative z-10 h-full flex flex-col items-center justify-center text-center px-4">
           <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-white mb-3">
-            {ar ? 'عن I Supply Chain' : 'About I Supply Chain'}
+            {ar ? 'عن آي سبلاي تشين' : 'About I Supply Chain'}
           </h1>
           <p className="text-white/80 text-base md:text-lg max-w-2xl">
             {ar
@@ -132,7 +132,7 @@ export function About() {
               </h2>
               <p className="text-muted-foreground text-lg leading-relaxed">
                 {ar
-                  ? 'تأسّست I Supply Chain على قناعة راسخة: لا يمكن تحقيق طموحات دول الخليج — رؤية 2030 والتنويع الاقتصادي والتوطين الصناعي — إلا من خلال بنية تحتية لسلاسل الإمداد بمستوى عالمي. نحن موجودون لبناء تلك البنية، مؤسسةً تلو الأخرى.'
+                  ? 'تأسّست آي سبلاي تشين على قناعة راسخة: لا يمكن تحقيق طموحات دول الخليج — رؤية 2030 والتنويع الاقتصادي والتوطين الصناعي — إلا من خلال بنية تحتية لسلاسل الإمداد بمستوى عالمي. نحن موجودون لبناء تلك البنية، مؤسسةً تلو الأخرى.'
                   : "I Supply Chain was founded on a clear conviction: the GCC's ambitions — Vision 2030, economic diversification, industrial localisation — can only be achieved through world-class supply chain infrastructure. We exist to build that infrastructure, one organisation at a time."}
               </p>
               <p className="text-muted-foreground text-lg leading-relaxed">
@@ -212,7 +212,7 @@ export function About() {
       <section className="py-20 bg-muted">
         <div className="container mx-auto px-4 max-w-5xl">
           <RevealSection className="text-center mb-14">
-            <span className="text-accent font-bold text-sm uppercase tracking-widest">{ar ? 'الخبير وراء ISC' : 'The Expert Behind ISC'}</span>
+            <span className="text-accent font-bold text-sm uppercase tracking-widest">{ar ? 'الخبير وراء آي سبلاي تشين' : 'The Expert Behind ISC'}</span>
             <h2 className="text-3xl md:text-4xl font-bold text-primary mt-3">{ar ? 'تعرّف على المؤسِّس' : 'Meet the Founder'}</h2>
           </RevealSection>
 
