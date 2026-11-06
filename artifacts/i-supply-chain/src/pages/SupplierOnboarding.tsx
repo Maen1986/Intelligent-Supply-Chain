@@ -324,7 +324,7 @@ export function SupplierOnboarding() {
     tierAdvisory: isAr ? 'المستوى الاستشاري' : 'Advisory Tier',
     tierOperational: isAr ? 'المستوى التشغيلي' : 'Operational Tier',
     tierAdvisoryDesc: isAr ? 'قائمة تحقق موثّقة المصدر ينفّذها العميل بأنظمته الخاصة -- بلا تخزين إلزامي' : 'A sourced checklist the client executes in their own systems -- no required persistence',
-    tierOperationalDesc: isAr ? 'تحفظ ISC سجل التهيئة الفعلي كسجل مرجعي للعميل مع تنبيه على التهيئة المتوقفة' : "ISC persists the real onboarding record as the client's system of record, with stalled-onboarding alerting",
+    tierOperationalDesc: isAr ? 'تحفظ آي سبلاي تشين سجل التهيئة الفعلي كسجل مرجعي للعميل مع تنبيه على التهيئة المتوقفة' : "ISC persists the real onboarding record as the client's system of record, with stalled-onboarding alerting",
     supplierIdLabel: isAr ? 'معرّف المورّد' : 'Supplier ID',
     esgLabel: isAr ? 'ينطبق استبيان الاستدامة (ESG) على هذه المؤسسة' : 'ESG questionnaire applies for this organization',
     aslStatusLabel: isAr ? 'حالة القائمة المعتمدة (مباشرة من البند 3)' : 'Live ASL status (from Item 3)',
