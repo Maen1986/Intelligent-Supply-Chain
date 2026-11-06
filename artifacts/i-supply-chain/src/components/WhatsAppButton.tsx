@@ -10,7 +10,7 @@ export function WhatsAppButton() {
   const [hovered, setHovered] = useState(false);
   const isMobile = useIsMobile();
   const phone = '966549479722';
-  const message = encodeURIComponent(ar ? 'مرحباً، أودّ مناقشة تحدٍّ في سلسلة الإمداد مع I Supply Chain.' : 'Hello, I would like to discuss a supply chain challenge with I Supply Chain.');
+  const message = encodeURIComponent(ar ? 'مرحباً، أودّ مناقشة تحدٍّ في سلسلة الإمداد مع آي سبلاي تشين.' : 'Hello, I would like to discuss a supply chain challenge with I Supply Chain.');
   const url = `https://wa.me/${phone}?text=${message}`;
 
 
