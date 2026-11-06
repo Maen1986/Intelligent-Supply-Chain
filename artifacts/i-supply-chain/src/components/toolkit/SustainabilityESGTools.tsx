@@ -130,7 +130,7 @@ export function SustainabilityESGToolsSection({ isAr }: Props) {
               ))}
             </div>
             {carbonEstimate > 0 && (
-              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4"><p className="text-[11px] text-slate-400 font-semibold">{isAr ? 'التقدير الاتجاهي لانبعاثات الكربون' : 'Directional Carbon Estimate'}</p><p className="text-2xl font-bold text-emerald-700">~{carbonEstimate.toFixed(1)} tCO2e</p></div>
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4"><p className="text-[11px] text-slate-500 font-semibold">{isAr ? 'التقدير الاتجاهي لانبعاثات الكربون' : 'Directional Carbon Estimate'}</p><p className="text-2xl font-bold text-emerald-700">~{carbonEstimate.toFixed(1)} tCO2e</p></div>
             )}
           </div>
         )}
@@ -140,7 +140,7 @@ export function SustainabilityESGToolsSection({ isAr }: Props) {
             {esgFilled.length > 0 && (
               <div className="grid grid-cols-3 gap-3">
                 {(['E', 'S', 'G'] as const).map(p => (
-                  <div key={p} className="bg-slate-50 border border-slate-200 rounded-xl p-3"><p className="text-[11px] text-slate-400 font-semibold">{pillarLabel(p)}</p><p className="text-lg font-bold text-emerald-700">{pillarAvg(p).toFixed(1)}/5</p></div>
+                  <div key={p} className="bg-slate-50 border border-slate-200 rounded-xl p-3"><p className="text-[11px] text-slate-500 font-semibold">{pillarLabel(p)}</p><p className="text-lg font-bold text-emerald-700">{pillarAvg(p).toFixed(1)}/5</p></div>
                 ))}
               </div>
             )}
@@ -151,7 +151,7 @@ export function SustainabilityESGToolsSection({ isAr }: Props) {
                   <div className="flex items-start justify-between gap-3 flex-wrap">
                     <div className="flex-1 min-w-[180px]">
                       <p className="font-bold text-sm text-slate-800"><span className="text-emerald-600">[{d.pillar}]</span> {isAr ? d.labelAr : d.label}</p>
-                      <p className="text-[11px] text-slate-400 mt-0.5">{isAr ? d.descAr : d.desc}</p>
+                      <p className="text-[11px] text-slate-500 mt-0.5">{isAr ? d.descAr : d.desc}</p>
                     </div>
                     <div className="flex items-center gap-1">{[1, 2, 3, 4, 5].map(n => (<button key={n} onClick={() => setEsgVal(d.id, n)} className={`w-8 h-8 rounded-lg text-xs font-bold transition-colors ${v === n ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}>{n}</button>))}</div>
                   </div>
