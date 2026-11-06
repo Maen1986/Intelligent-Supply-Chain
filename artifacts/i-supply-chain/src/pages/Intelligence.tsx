@@ -288,7 +288,7 @@ export function Intelligence() {
             {isAr ? 'ذكاء المشتريات وسلسلة الإمداد' : <>Procurement &amp; Supply Chain Intelligence</>}
           </h1>
           <p className="text-white/75 text-base md:text-lg max-w-2xl">
-            {isAr ? "تعليقات ورؤى تُصاغ بالذكاء الاصطناعي حول الأدوات الرقمية وابتكارات العمليات ورؤى التحوّل، استناداً إلى منهجية ISC." : "AI-synthesized commentary on digital tools, process innovations, and transformation trends, grounded in ISC's methodology."}
+            {isAr ? "تعليقات ورؤى تُصاغ بالذكاء الاصطناعي حول الأدوات الرقمية وابتكارات العمليات ورؤى التحوّل، استناداً إلى منهجية آي سبلاي تشين." : "AI-synthesized commentary on digital tools, process innovations, and transformation trends, grounded in ISC's methodology."}
           </p>
           <div className="flex items-center gap-1.5 mt-3 text-white/60 text-xs">
             <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />
@@ -398,7 +398,7 @@ export function Intelligence() {
           <div className="space-y-8">
             <Reveal>
               <h2 className="text-2xl font-bold text-primary">{isAr ? 'أبرز الأدوات الرقمية' : 'Digital Tools Spotlight'}</h2>
-              <p className="text-muted-foreground mt-1">{isAr ? 'المنصّات والتقنيات التي ينشرها مَعِن وفريق I Supply Chain للعملاء — مُقيَّمة باستقلالية، وتُحدَّث أسبوعياً.' : "The platforms and technologies Ma'in and the I Supply Chain team deploy for clients — assessed independently, refreshed weekly."}</p>
+              <p className="text-muted-foreground mt-1">{isAr ? 'المنصّات والتقنيات التي ينشرها مَعِن وفريق آي سبلاي تشين للعملاء — مُقيَّمة باستقلالية، وتُحدَّث أسبوعياً.' : "The platforms and technologies Ma'in and the I Supply Chain team deploy for clients — assessed independently, refreshed weekly."}</p>
             </Reveal>
 
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
