@@ -283,7 +283,7 @@ export function AdminAutomations() {
 
       {/* Page header */}
       <div className="flex items-center gap-4 flex-wrap">
-        <Link href="/admin/leads" className="text-muted-foreground hover:text-primary transition-colors">
+        <Link href="/admin/leads" aria-label={ar ? 'رجوع' : 'Back'} className="text-muted-foreground hover:text-primary transition-colors">
           <ArrowLeft className="w-4 h-4" />
         </Link>
         <div className="flex-1">
