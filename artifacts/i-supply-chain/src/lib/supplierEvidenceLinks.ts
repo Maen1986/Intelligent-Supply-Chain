@@ -21,7 +21,7 @@ import type { EvidencePackage, SupplierDecision, Bilingual } from './supplierDec
 
 export const CONVENTION_NOTE: Bilingual = {
   en: 'Which clause families to check, and the trigger conditions, are an ISC convention for prompting a contract review. They are not legal advice and do not mean any clause exists.',
-  ar: 'تحديد عائلات البنود المطلوب فحصها وشروط التفعيل هو اصطلاح من ISC لتحفيز مراجعة العقد. ليس استشارة قانونية ولا يعني أن أي بند موجود.',
+  ar: 'تحديد عائلات البنود المطلوب فحصها وشروط التفعيل هو اصطلاح من آي سبلاي تشين لتحفيز مراجعة العقد. ليس استشارة قانونية ولا يعني أن أي بند موجود.',
 };
 
 /** Share of assessed CARs not caused by the supplier at/above which blame-based leverage is blocked (mirrors M07 rule). */
