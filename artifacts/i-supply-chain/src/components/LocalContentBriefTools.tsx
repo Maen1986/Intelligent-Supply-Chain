@@ -39,7 +39,7 @@ function Field({ label, value, onChange, hint }: { label: string; value: string;
   return (
     <label className="text-[11px] text-slate-600 block">{label}
       <input inputMode="decimal" dir="ltr" value={value} onChange={e => onChange(e.target.value)} className="mt-1 w-full border rounded px-2 py-1 text-sm text-start" />
-      {hint && <span className="text-[10px] text-slate-400">{hint}</span>}
+      {hint && <span className="text-[10px] text-slate-500">{hint}</span>}
     </label>
   );
 }
@@ -79,7 +79,7 @@ function MechanismFinder({ isAr }: { isAr: boolean }) {
       {hits.length > 0 && (
         <ul className="mt-2 space-y-1" role="status">
           {hits.map(h => (
-            <li key={h.program} className={`text-xs ${h.applies ? 'text-emerald-800' : 'text-slate-400'}`}>
+            <li key={h.program} className={`text-xs ${h.applies ? 'text-emerald-800' : 'text-slate-500'}`}>
               <span aria-hidden="true">{h.applies ? '✓' : '–'}</span>{' '}
               {isAr ? MECH_LABEL[h.program].ar : MECH_LABEL[h.program].en}{' '}
               <span className="sr-only">{h.applies ? T(isAr, 'applies', 'تنطبق') : T(isAr, 'does not apply', 'لا تنطبق')}</span>
@@ -133,14 +133,14 @@ function MandatoryLookup({ isAr }: { isAr: boolean }) {
         <ul className="mt-2 divide-y border rounded" role="listbox">
           {res.items.map(p => (
             <li key={`${p.code}-${p.nameEn}`}><button type="button" onClick={() => setPick(p)} className="w-full text-start px-2 py-1.5 text-xs hover:bg-slate-50">
-              <bdi dir="ltr" className="text-slate-400">{p.code}</bdi> {isAr ? p.nameAr : p.nameEn}</button></li>
+              <bdi dir="ltr" className="text-slate-500">{p.code}</bdi> {isAr ? p.nameAr : p.nameEn}</button></li>
           ))}
           {res.total > res.items.length && <li className="px-2 py-1 text-[10px] text-slate-500">{T(isAr, `${res.total} matches: refine your search`, `${res.total} نتيجة: ضيّق البحث`)}</li>}
         </ul>
       )}
       {pick && mod && (
         <div className="mt-2 text-xs space-y-1" role="status">
-          <p className="font-semibold">{isAr ? pick.nameAr : pick.nameEn} <bdi dir="ltr" className="text-slate-400">{pick.code}</bdi></p>
+          <p className="font-semibold">{isAr ? pick.nameAr : pick.nameEn} <bdi dir="ltr" className="text-slate-500">{pick.code}</bdi></p>
           <p>{T(isAr, 'Sector', 'القطاع')}: {isAr ? pick.sectorAr : pick.sectorEn}</p>
           <p>{T(isAr, 'Price ceiling', 'السقف السعري')}: <bdi dir="ltr">{pick.ceilingPct === null ? '—' : pick.ceilingPct + '%'}</bdi></p>
           <p>{T(isAr, 'Duty starts', 'بدء الإلزام')}: <bdi dir="ltr">{mod.effectiveDateFor(pick, buyer) ?? '—'}</bdi></p>
@@ -313,7 +313,7 @@ function Targeted({ mode, isAr }: { mode: 'contract' | 'enterprise'; isAr: boole
       <div className="mt-2">
         <p className="text-[11px] font-semibold text-slate-700 mb-1">{T(isAr, 'Goods and services by supplier item', 'السلع والخدمات بحسب بنود الموردين')}</p>
         <ItemsEditor rows={rows} setRows={setRows} isAr={isAr} withAudited />
-        <p className="text-[10px] text-slate-400 mt-1">{T(isAr, 'Un-itemised spend is valued at the weighted average of the listed items.', 'الإنفاق غير المفصَّل يُقيَّم بالمتوسط المرجّح للبنود المدرجة.')}</p>
+        <p className="text-[10px] text-slate-500 mt-1">{T(isAr, 'Un-itemised spend is valued at the weighted average of the listed items.', 'الإنفاق غير المفصَّل يُقيَّم بالمتوسط المرجّح للبنود المدرجة.')}</p>
       </div>
       {r.totalCost > 0 && (
         <div className="mt-2 text-xs space-y-1" role="status">
