@@ -116,7 +116,7 @@ export function SupplierPortfolioImportPanel({
           </div>
         ))}
       </div>
-      <p className="text-[10px] text-slate-400 mt-3">{T.policy}</p>
+      <p className="text-[10px] text-slate-500 mt-3">{T.policy}</p>
       <div className="mt-3 flex items-center gap-3">
         <button type="button" disabled={!canApply} onClick={apply} className="text-xs font-semibold px-4 py-2 rounded-lg bg-[#082C6B] text-white hover:bg-[#0a3a8c] disabled:opacity-40 disabled:cursor-not-allowed inline-flex items-center gap-1.5">
           <Upload className="w-3.5 h-3.5" aria-hidden="true" />{T.apply}
