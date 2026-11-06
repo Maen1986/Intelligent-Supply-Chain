@@ -1,11 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
 
 // Owner rule: Arabic reads right-to-left, so an Arabic sentence must never embed the
 // English company name or the "ISC" acronym. Use the Arabic brand name instead.
-const SRC = fileURLToPath(new URL('..', import.meta.url));
+const SRC = [join(process.cwd(), 'src'), join(process.cwd(), 'artifacts/i-supply-chain/src')].find((d) => existsSync(d)) as string;
 const AR = /[\u0600-\u06FF]/;
 const BRAND = /I Supply Chain/;
 const ISC = /(?<![\w\-/.@#:])ISC(?![\w\-/@:]|\.[a-z])(?!\s+[A-Za-z])/;
