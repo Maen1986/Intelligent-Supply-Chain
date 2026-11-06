@@ -60,7 +60,7 @@ const severityStyles: Record<SeverityResult['level'], { badge: string; icon: Rea
   Critical:   { badge: 'bg-red-50 border-red-200 text-red-700',       icon: <ShieldAlert className="w-3.5 h-3.5" />,    barColor: 'bg-red-500' },
   Moderate:   { badge: 'bg-amber-50 border-amber-200 text-amber-700', icon: <ShieldAlert className="w-3.5 h-3.5" />,    barColor: 'bg-amber-500' },
   Low:        { badge: 'bg-emerald-50 border-emerald-200 text-emerald-700', icon: <ShieldCheck className="w-3.5 h-3.5" />, barColor: 'bg-emerald-500' },
-  Incomplete: { badge: 'bg-slate-100 border-slate-200 text-slate-500', icon: <ShieldQuestion className="w-3.5 h-3.5" />, barColor: 'bg-slate-300' },
+  Incomplete: { badge: 'bg-slate-100 border-slate-200 text-slate-600', icon: <ShieldQuestion className="w-3.5 h-3.5" />, barColor: 'bg-slate-300' },
 };
 
 /* ── Per-check card (owns its own AI-plan hook instance) ───────────────── */
@@ -108,7 +108,7 @@ function SupplierCheckCard({
       <div className="grid sm:grid-cols-2 gap-3">
         {/* Q1: named alternative */}
         <div>
-          <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5">
+          <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wider block mb-1.5">
             {isAr ? 'هل لديك بديل محدد؟' : 'Named alternative?'}
           </label>
           <p className="text-[11px] text-muted-foreground mb-1.5">
@@ -131,7 +131,7 @@ function SupplierCheckCard({
 
         {/* Q2: contract vs relationship */}
         <div>
-          <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5">
+          <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wider block mb-1.5">
             {isAr ? 'عقد موثّق أم علاقة؟' : 'Contract or relationship?'}
           </label>
           <p className="text-[11px] text-muted-foreground mb-1.5">
@@ -155,7 +155,7 @@ function SupplierCheckCard({
 
       {/* Q3: switching-cost tell (free text) */}
       <div>
-        <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5">
+        <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wider block mb-1.5">
           {isAr ? 'ما أول ما قد يتأثر عند التبديل؟ (اختياري)' : "What would break first if you switched? (optional)"}
         </label>
         <input
@@ -170,7 +170,7 @@ function SupplierCheckCard({
       <div className="grid sm:grid-cols-2 gap-3">
         {/* Q4: volume concentration */}
         <div>
-          <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5">
+          <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wider block mb-1.5">
             {isAr ? 'نسبة تركّز الإنفاق (تقديري، اختياري)' : 'Spend concentration % (estimate, optional)'}
           </label>
           <input
@@ -186,7 +186,7 @@ function SupplierCheckCard({
 
         {/* Q5: recent stress signal */}
         <div>
-          <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5">
+          <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wider block mb-1.5">
             {isAr ? 'إشارة ضغط حديثة؟' : 'Recent stress signal?'}
           </label>
           <div className="flex gap-2">
@@ -478,15 +478,15 @@ export function SupplierDependencyCheck() {
 
         {correlations.length > 0 && (
           <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-2">
-            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+            <p className="text-[11px] font-bold text-slate-600 uppercase tracking-wider">
               {isAr ? `طبقة بيانات العميل المشتركة -- ${flaggedCorrelations.length} تطابق يستحق المراجعة من ${correlations.length}` : `Shared Client Case Data -- ${flaggedCorrelations.length} of ${correlations.length} matches worth reviewing`}
             </p>
             {correlations.map((corr, idx) => (
-              <div key={`${corr.supplierCheckId}-${corr.matchedContractId}-${idx}`} className={`text-xs rounded-lg px-3 py-2 ${corr.flagged ? 'bg-amber-100 text-amber-800 font-medium' : 'bg-white text-slate-500 border border-slate-200'}`}>
+              <div key={`${corr.supplierCheckId}-${corr.matchedContractId}-${idx}`} className={`text-xs rounded-lg px-3 py-2 ${corr.flagged ? 'bg-amber-100 text-amber-800 font-medium' : 'bg-white text-slate-600 border border-slate-200'}`}>
                 {corr.flagged ? '⚠ ' : ''}{isAr ? corr.narrativeAr : corr.narrativeEn}
               </div>
             ))}
-            <p className="text-[10px] text-slate-500">
+            <p className="text-[10px] text-slate-600">
               {isAr
                 ? 'يطابق هذا فحوصات اعتماد الموردين مع عقود التوريد (الوحدة 03) عبر تطابق اسم المورد تماماً -- مصدران فقط حتى الآن (سجل المخاطر واكتشاف الموردين ما زالا خارج النطاق حتى يتم بناؤهما)'
                 : 'This matches Supplier Dependency Checks against Contract Intelligence contracts via exact supplier-name match -- 2 sources only for now (Risk Register and Supplier Discovery remain out of scope until those tools exist)'}
