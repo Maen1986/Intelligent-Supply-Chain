@@ -287,7 +287,7 @@ export function AccountSettings() {
                 disabled={pwSubmitting}
                 className="h-11"
               />
-              <p className="text-xs text-gray-400">{t('Minimum 6 characters', 'الحد الأدنى 6 أحرف')}</p>
+              <p className="text-xs text-gray-500">{t('Minimum 6 characters', 'الحد الأدنى 6 أحرف')}</p>
             </div>
 
             <div className="space-y-1.5">
