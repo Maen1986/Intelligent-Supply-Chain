@@ -2065,7 +2065,7 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
           {paretoData.length > 0 && (
             <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
               <h3 className="text-sm font-bold text-slate-700 mb-1">{isAr ? 'تحليل باريتو — أعلى 10 موردين' : 'Pareto Analysis — Top 10 Suppliers'}</h3>
-              <p className="text-[11px] text-slate-400 mb-3">{isAr ? 'الأعمدة = الإنفاق السنوي، الخط = النسبة التراكمية' : 'Bars = annual spend · Line = cumulative %'}</p>
+              <p className="text-[11px] text-slate-500 mb-3">{isAr ? 'الأعمدة = الإنفاق السنوي، الخط = النسبة التراكمية' : 'Bars = annual spend · Line = cumulative %'}</p>
               <ResponsiveContainer width="100%" height={220}>
                 <ComposedChart data={paretoData} margin={{ top: 5, right: 30, bottom: 40, left: 10 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
@@ -2087,7 +2087,7 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
           <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
             <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
               <h3 className="text-sm font-bold text-slate-700">{isAr ? 'بيانات الإنفاق' : 'Spend Data'}</h3>
-              <p className="text-[11px] text-slate-400">{isAr ? 'أدخل البيانات يدوياً أو ارفع CSV' : 'Enter manually or upload CSV'}</p>
+              <p className="text-[11px] text-slate-500">{isAr ? 'أدخل البيانات يدوياً أو ارفع CSV' : 'Enter manually or upload CSV'}</p>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-xs">
@@ -2213,7 +2213,7 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
                   <div className="flex items-start justify-between gap-4 mb-3">
                     <div className="flex-1">
                       <p className="font-bold text-sm text-slate-800">{isAr ? force.labelAr : force.label}</p>
-                      <p className="text-[11px] text-slate-400 mt-0.5">{isAr ? force.hintAr : force.hint}</p>
+                      <p className="text-[11px] text-slate-500 mt-0.5">{isAr ? force.hintAr : force.hint}</p>
                     </div>
                     <div className="shrink-0 text-right">
                       <p className="text-2xl font-black" style={{ color }}>{score}</p>
@@ -2226,7 +2226,7 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
                     style={{ accentColor: color }}
                     aria-label={isAr ? force.labelAr : force.label}
                   />
-                  <div className="flex justify-between text-[10px] text-slate-400 mt-1 px-0.5">
+                  <div className="flex justify-between text-[10px] text-slate-500 mt-1 px-0.5">
                     <span>{isAr ? 'منخفض' : 'Low'}</span><span>2</span><span>3</span><span>4</span><span>{isAr ? 'مرتفع' : 'High'}</span>
                   </div>
                   <input value={porter[force.id]?.notes ?? ''} onChange={e => updatePorter(force.id, 'notes', e.target.value)}
@@ -2314,7 +2314,7 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
                           {isSelected && <span className="text-[10px] bg-[#082C6B] text-white px-2 py-0.5 rounded-full font-semibold">{isAr ? 'محدد' : 'Selected'}</span>}
                           {s.id === autoStrategy && !isSelected && <span className="text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-semibold">{isAr ? 'موصى به' : 'Recommended'}</span>}
                         </div>
-                        <p className="text-[11px] text-slate-400 mt-0.5">{isAr ? s.whenAr : s.when}</p>
+                        <p className="text-[11px] text-slate-500 mt-0.5">{isAr ? s.whenAr : s.when}</p>
                       </div>
                     </div>
                     {isSelected && <p className="text-xs text-slate-600 mt-2 leading-relaxed">{isAr ? s.descAr : s.desc}</p>}
@@ -2339,7 +2339,7 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
                 <span className="text-2xl shrink-0">{t.icon}</span>
                 <div className="flex-1 min-w-0">
                   <p className="font-bold text-sm text-slate-800">{isAr ? t.labelAr : t.label}</p>
-                  <p className="text-[11px] text-slate-400 mt-0.5 leading-relaxed">{isAr ? t.descAr : t.desc}</p>
+                  <p className="text-[11px] text-slate-500 mt-0.5 leading-relaxed">{isAr ? t.descAr : t.desc}</p>
                   <button onClick={() => { t.generate(); toast.success(isAr ? 'جاري التحميل…' : 'Downloading…'); }}
                     className="mt-2 flex items-center gap-1.5 text-xs text-[#082C6B] font-semibold hover:opacity-80">
                     <FileDown className="w-3.5 h-3.5" />{isAr ? 'تحميل' : 'Download'}
@@ -2382,7 +2382,7 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
               {/* Print-only header (#167) */}
               <div className="tco-print-header pb-3 border-b border-slate-200 mb-2">
                 <h2 className="text-base font-bold text-slate-800">{isAr ? 'تقرير مقارنة محفظة TCO' : 'TCO Portfolio Comparison Report'}</h2>
-                <p className="text-[11px] text-slate-400 mt-0.5">{isAr ? 'تاريخ الإنشاء: ' : 'Generated: '}{new Date().toLocaleDateString()}</p>
+                <p className="text-[11px] text-slate-500 mt-0.5">{isAr ? 'تاريخ الإنشاء: ' : 'Generated: '}{new Date().toLocaleDateString()}</p>
               </div>
 
               <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 flex items-start gap-2">
@@ -2422,22 +2422,22 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
                 <table className="w-full text-xs border-collapse">
                   <thead>
                     <tr className="border-b border-slate-200">
-                      <th className="text-left py-2 pr-2 text-slate-400 font-semibold whitespace-nowrap">{isAr ? 'التحليل / العنصر' : 'Analysis / Item'}</th>
-                      <th className="text-left py-2 px-2 text-slate-400 font-semibold whitespace-nowrap">{isAr ? 'الصناعة / الفئة' : 'Industry / Category'}</th>
-                      <th className="text-left py-2 px-2 text-slate-400 font-semibold whitespace-nowrap">{isAr ? 'الموردون' : 'Suppliers'}</th>
-                      <th className="text-left py-2 px-2 text-slate-400 font-semibold whitespace-nowrap">{isAr ? 'أفضل مورّد' : 'Best supplier'}</th>
-                      <th className="text-left py-2 px-2 text-slate-400 font-semibold whitespace-nowrap">{isAr ? 'TCO لكل وحدة' : 'TCO/unit'}</th>
-                      <th className="text-left py-2 px-2 text-slate-400 font-semibold whitespace-nowrap">{isAr ? 'TCO السنوي' : 'Annual TCO'}</th>
-                      <th className="text-left py-2 px-2 text-slate-400 font-semibold whitespace-nowrap">{isAr ? 'فرصة التوفير' : 'Savings potential'}</th>
-                      <th className="text-left py-2 px-2 text-slate-400 font-semibold whitespace-nowrap">{isAr ? 'آخر تحديث' : 'Updated'}</th>
+                      <th className="text-left py-2 pr-2 text-slate-500 font-semibold whitespace-nowrap">{isAr ? 'التحليل / العنصر' : 'Analysis / Item'}</th>
+                      <th className="text-left py-2 px-2 text-slate-500 font-semibold whitespace-nowrap">{isAr ? 'الصناعة / الفئة' : 'Industry / Category'}</th>
+                      <th className="text-left py-2 px-2 text-slate-500 font-semibold whitespace-nowrap">{isAr ? 'الموردون' : 'Suppliers'}</th>
+                      <th className="text-left py-2 px-2 text-slate-500 font-semibold whitespace-nowrap">{isAr ? 'أفضل مورّد' : 'Best supplier'}</th>
+                      <th className="text-left py-2 px-2 text-slate-500 font-semibold whitespace-nowrap">{isAr ? 'TCO لكل وحدة' : 'TCO/unit'}</th>
+                      <th className="text-left py-2 px-2 text-slate-500 font-semibold whitespace-nowrap">{isAr ? 'TCO السنوي' : 'Annual TCO'}</th>
+                      <th className="text-left py-2 px-2 text-slate-500 font-semibold whitespace-nowrap">{isAr ? 'فرصة التوفير' : 'Savings potential'}</th>
+                      <th className="text-left py-2 px-2 text-slate-500 font-semibold whitespace-nowrap">{isAr ? 'آخر تحديث' : 'Updated'}</th>
                       <th className="py-2 px-2"></th>
                     </tr>
                   </thead>
                   <tbody>
                     {tcoPortfolioSorted.map(r => (
                       <tr key={r.id} className={`border-b border-slate-100 ${r.id === tcoActiveAnalysis.id ? 'bg-blue-50/50' : ''}`}>
-                        <td className="py-2 pr-2 font-semibold text-slate-700 whitespace-nowrap">{r.name}{r.itemName ? <span className="block text-[10px] font-normal text-slate-400">{r.itemName}</span> : null}</td>
-                        <td className="py-2 px-2 text-slate-500 whitespace-nowrap">{r.industryLabel || '—'}{r.skuLabel ? <span className="block text-[10px] text-slate-400">{r.skuLabel}</span> : null}</td>
+                        <td className="py-2 pr-2 font-semibold text-slate-700 whitespace-nowrap">{r.name}{r.itemName ? <span className="block text-[10px] font-normal text-slate-500">{r.itemName}</span> : null}</td>
+                        <td className="py-2 px-2 text-slate-500 whitespace-nowrap">{r.industryLabel || '—'}{r.skuLabel ? <span className="block text-[10px] text-slate-500">{r.skuLabel}</span> : null}</td>
                         <td className="py-2 px-2 text-slate-500">{r.supplierCount}</td>
                         <td className="py-2 px-2 text-slate-700">{r.hasData ? r.bestSupplierName : <span className="text-slate-300 italic">{isAr ? 'لا بيانات' : 'no data yet'}</span>}</td>
                         <td className="py-2 px-2 font-semibold text-slate-800">{r.hasData ? `SAR ${r.bestTcoPerUnit.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : '—'}</td>
@@ -2447,7 +2447,7 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
                             <span className="text-emerald-600 font-semibold">{r.savingsPct.toFixed(1)}%</span>
                           ) : <span className="text-slate-300">—</span>}
                         </td>
-                        <td className="py-2 px-2 text-slate-400 whitespace-nowrap">{new Date(r.updatedAt).toLocaleDateString()}</td>
+                        <td className="py-2 px-2 text-slate-500 whitespace-nowrap">{new Date(r.updatedAt).toLocaleDateString()}</td>
                         <td className="py-2 px-2 print-hide">
                           <button onClick={() => { switchTcoAnalysis(r.id); setTcoViewMode('analysis'); }}
                             className="text-[11px] font-semibold text-[#082C6B] hover:opacity-80 whitespace-nowrap">
@@ -2462,7 +2462,7 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
 
               {tcoPortfolio.filter(r => r.hasData).length === 0 && (
                 <div className="bg-slate-50 border border-dashed border-slate-300 rounded-xl p-3">
-                  <p className="text-[11px] text-slate-400">
+                  <p className="text-[11px] text-slate-500">
                     {isAr ? 'لا توجد بيانات تكلفة بعد في أي تحليل. أدخل الأسعار والكميات في "تحليل واحد" لرؤية المقارنة هنا.' : 'No cost data entered yet in any analysis. Fill in prices and quantities under "Single analysis" to see the comparison here.'}
                   </p>
                 </div>
@@ -2488,7 +2488,7 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
               {tcoActiveAnalysis.name}
               {tcoActiveAnalysis.itemName ? ` -- ${tcoActiveAnalysis.itemName}` : ''}
             </p>
-            <p className="text-[11px] text-slate-400 mt-0.5">
+            <p className="text-[11px] text-slate-500 mt-0.5">
               {[
                 INDUSTRIES.find(i => i.id === tcoActiveAnalysis.industry)?.label,
                 tcoActiveAnalysis.subSector,
@@ -2496,7 +2496,7 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
               ].filter(Boolean).join(' | ') || (isAr ? 'لم يتم تحديد الصناعة/الفئة' : 'Industry/category not specified')}
             </p>
             {tcoSuppliers.length > 1 && (
-              <p className="text-[11px] text-slate-400 mt-0.5">
+              <p className="text-[11px] text-slate-500 mt-0.5">
                 {isAr ? 'أوزان التقييم المرجّح: ' : 'Decision score weights: '}
                 {isAr ? 'التكلفة' : 'Cost'} {tcoWeights.cost}% / {isAr ? 'الجودة' : 'Quality'} {tcoWeights.quality}% / {isAr ? 'التسليم' : 'Delivery'} {tcoWeights.delivery}% / {isAr ? 'مخاطر المصدر الواحد' : 'Single-source risk'} {tcoWeights.risk}% / {isAr ? 'الملاءمة الاستراتيجية' : 'Strategic fit'} {tcoWeights.strategicFit}%
               </p>
@@ -2522,7 +2522,7 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
                 {isAr ? 'نسخ' : 'Duplicate'}
               </button>
               {tcoState.analyses.length > 1 && (
-                <button onClick={() => deleteTcoAnalysis(tcoActiveAnalysis.id)} className="flex items-center gap-1 text-[11px] font-semibold text-slate-400 hover:text-red-500 shrink-0">
+                <button onClick={() => deleteTcoAnalysis(tcoActiveAnalysis.id)} className="flex items-center gap-1 text-[11px] font-semibold text-slate-500 hover:text-red-500 shrink-0">
                   <Trash2 className="w-3.5 h-3.5" />{isAr ? 'حذف' : 'Delete'}
                 </button>
               )}
@@ -2531,14 +2531,14 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
             {/* Item / Industry / Sub-sector / Category context -- drives the grounded checklist below via Category only */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
               <div>
-                <label className="text-[10px] text-slate-400 block mb-0.5">{isAr ? 'اسم العنصر' : 'Item name'}</label>
+                <label className="text-[10px] text-slate-500 block mb-0.5">{isAr ? 'اسم العنصر' : 'Item name'}</label>
                 <input value={tcoActiveAnalysis.itemName} onChange={e => updateActiveAnalysis({ itemName: e.target.value })}
                   placeholder={isAr ? 'مثال: محمل كروي 6205' : 'e.g. Bearing 6205-ZZ'}
                   aria-label={isAr ? 'اسم العنصر' : 'Item name'}
                   className="w-full text-xs border border-slate-200 rounded-lg px-2 py-1.5" />
               </div>
               <div>
-                <label className="text-[10px] text-slate-400 block mb-0.5">{isAr ? 'الصناعة' : 'Industry'}</label>
+                <label className="text-[10px] text-slate-500 block mb-0.5">{isAr ? 'الصناعة' : 'Industry'}</label>
                 <select value={tcoActiveAnalysis.industry} aria-label={isAr ? 'الصناعة' : 'Industry'}
                   onChange={e => updateActiveAnalysis({ industry: e.target.value as IndustryKey | '', subSector: '' })}
                   className="w-full text-xs border border-slate-200 rounded-lg px-2 py-1.5">
@@ -2547,7 +2547,7 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
                 </select>
               </div>
               <div>
-                <label className="text-[10px] text-slate-400 block mb-0.5">{isAr ? 'القطاع الفرعي' : 'Sub-sector'}</label>
+                <label className="text-[10px] text-slate-500 block mb-0.5">{isAr ? 'القطاع الفرعي' : 'Sub-sector'}</label>
                 <select value={tcoActiveAnalysis.subSector} onChange={e => updateActiveAnalysis({ subSector: e.target.value })}
                   aria-label={isAr ? 'القطاع الفرعي' : 'Sub-sector'}
                   disabled={!tcoActiveAnalysis.industry}
@@ -2557,7 +2557,7 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
                 </select>
               </div>
               <div>
-                <label className="text-[10px] text-slate-400 block mb-0.5">{isAr ? 'الفئة (نوع الصنف)' : 'Category (item type)'}</label>
+                <label className="text-[10px] text-slate-500 block mb-0.5">{isAr ? 'الفئة (نوع الصنف)' : 'Category (item type)'}</label>
                 <select value={tcoActiveAnalysis.skuClass} onChange={e => updateActiveAnalysis({ skuClass: e.target.value as SkuClassKey | '' })}
                   aria-label={isAr ? 'الفئة (نوع الصنف)' : 'Category (item type)'}
                   className="w-full text-xs border border-slate-200 rounded-lg px-2 py-1.5 font-semibold">
@@ -2579,7 +2579,7 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
                 if (items.length === 0) return null;
                 return (
                   <div key={stage.id} className="flex items-start gap-2">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase w-24 shrink-0 pt-0.5">{isAr ? stage.labelAr : stage.label}</span>
+                    <span className="text-[10px] font-bold text-slate-500 uppercase w-24 shrink-0 pt-0.5">{isAr ? stage.labelAr : stage.label}</span>
                     <ul className="space-y-1.5 flex-1">
                       {items.map((item, i) => (
                         <li key={i} className="text-[11px] text-slate-600 leading-snug">
@@ -2590,7 +2590,7 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
                             </a>
                           )}
                           {item.confidence === 'principle' && (
-                            <span className="ml-1 text-[9px] text-slate-400 italic">({isAr ? 'مبدأ عام' : 'general principle'})</span>
+                            <span className="ml-1 text-[9px] text-slate-500 italic">({isAr ? 'مبدأ عام' : 'general principle'})</span>
                           )}
                         </li>
                       ))}
@@ -2601,7 +2601,7 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
             </div>
           ) : (
             <div className="bg-slate-50 border border-dashed border-slate-300 rounded-xl p-3">
-              <p className="text-[11px] text-slate-400">
+              <p className="text-[11px] text-slate-500">
                 {isAr ? 'اختر "الفئة" أعلاه لعرض قائمة تحقق موثّقة وخاصة بهذه الفئة حول التكاليف الخفية الأكثر أهمية.' : 'Select a Category above to see a sourced, category-specific checklist of which hidden costs are typically most material.'}
               </p>
             </div>
@@ -2611,7 +2611,7 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
             <table className="w-full text-xs border-collapse">
               <thead>
                 <tr className="border-b border-slate-200">
-                  <th className="text-left py-2 pr-2 text-slate-400 font-semibold whitespace-nowrap">{isAr ? 'عنصر التكلفة' : 'Cost element'}</th>
+                  <th className="text-left py-2 pr-2 text-slate-500 font-semibold whitespace-nowrap">{isAr ? 'عنصر التكلفة' : 'Cost element'}</th>
                   {tcoSuppliers.map(s => (
                     <th key={s.id} className="text-left py-2 px-2 min-w-[150px]">
                       <div className="flex items-center gap-1">
@@ -2631,7 +2631,7 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
                   <React.Fragment key={stage.id}>
                     <tr className="bg-slate-50">
                       <td colSpan={1 + tcoSuppliers.length} className="py-1 pr-2 text-[10px] font-bold text-slate-500 uppercase tracking-wide">
-                        {isAr ? stage.labelAr : stage.label} <span className="font-normal normal-case text-slate-400">-- {isAr ? stage.shortAr : stage.short}</span>
+                        {isAr ? stage.labelAr : stage.label} <span className="font-normal normal-case text-slate-500">-- {isAr ? stage.shortAr : stage.short}</span>
                       </td>
                     </tr>
                     {TCO_FIELDS.filter(f => f.stage === stage.id).map(f => (
@@ -2674,20 +2674,20 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
                   ))}
                 </tr>
                 <tr>
-                  <td className="py-1.5 pr-2 text-slate-400">{isAr ? 'مقابل الأقل (%)' : 'vs. lowest (%)'}</td>
+                  <td className="py-1.5 pr-2 text-slate-500">{isAr ? 'مقابل الأقل (%)' : 'vs. lowest (%)'}</td>
                   {tcoResults.map(r => {
                     const pctVsLowest = tcoLowestPerUnit > 0 && r.tcoPerUnit > 0 ? ((r.tcoPerUnit - tcoLowestPerUnit) / tcoLowestPerUnit) * 100 : 0;
                     return (
-                      <td key={r.id} className="py-1.5 px-2 text-slate-400">
+                      <td key={r.id} className="py-1.5 px-2 text-slate-500">
                         {r.tcoPerUnit > 0 ? (r.id === tcoLowestId ? (isAr ? 'الأساس' : 'base') : `+${pctVsLowest.toFixed(1)}%`) : '—'}
                       </td>
                     );
                   })}
                 </tr>
                 <tr>
-                  <td className="py-1.5 pr-2 text-slate-400 italic">{isAr ? 'تكلفة الخروج لمرة واحدة (خارج TCO السنوي)' : 'One-time exit cost (not in annual TCO)'}</td>
+                  <td className="py-1.5 pr-2 text-slate-500 italic">{isAr ? 'تكلفة الخروج لمرة واحدة (خارج TCO السنوي)' : 'One-time exit cost (not in annual TCO)'}</td>
                   {tcoResults.map(r => (
-                    <td key={r.id} className="py-1.5 px-2 text-slate-400 italic">
+                    <td key={r.id} className="py-1.5 px-2 text-slate-500 italic">
                       {r.contractExitOneTime > 0 ? `SAR ${r.contractExitOneTime.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : '—'}
                     </td>
                   ))}
@@ -2707,7 +2707,7 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
                 <Download className="w-3.5 h-3.5" />{isAr ? 'تصدير هذا التحليل (CSV)' : 'Export this analysis (CSV)'}
               </button>
             </div>
-            <p className="text-[10px] text-slate-400">
+            <p className="text-[10px] text-slate-500">
               {user
                 ? (tcoSyncStatus === 'saving' ? (isAr ? 'جارٍ المزامنة مع الخادم…' : 'Syncing to server…')
                   : tcoSyncStatus === 'saved' ? (isAr ? 'تمت المزامنة مع الخادم ✓' : 'Synced to server ✓')
@@ -2724,7 +2724,7 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
                 <p className="text-[11px] font-bold text-slate-600 uppercase tracking-wide">
                   {isAr ? 'التقييم المرجّح -- إلى ما هو أبعد من التكلفة' : 'Weighted decision score -- beyond raw cost'}
                 </p>
-                <p className="text-[10px] text-slate-400 mt-0.5">
+                <p className="text-[10px] text-slate-500 mt-0.5">
                   {isAr
                     ? 'قيّم كل مورّد يدوياً (١-٥) على الجودة والتسليم ومخاطر الاعتماد على مصدر واحد والملاءمة الاستراتيجية. هذه تقديرات إدارية منك أنت -- لا تُشتق من أي معيار. اضبط الأوزان لرؤية كيف تتغير النتيجة.'
                     : 'Rate each supplier yourself (1-5) on quality, delivery, single-source risk, and strategic fit. These are your own judgement calls -- not derived from any benchmark. Adjust the weights to see how the ranking shifts.'}
@@ -2759,7 +2759,7 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
                             </button>
                           )}
                           <a href="/solutions/supplier-relationship-governance" target="_blank" rel="noopener noreferrer"
-                            className="text-[10px] font-semibold text-slate-400 hover:text-slate-600">
+                            className="text-[10px] font-semibold text-slate-500 hover:text-slate-600">
                             {isAr ? 'فتح بطاقة الأداء ↗' : 'Open Scorecard ↗'}
                           </a>
                         </div>
@@ -2778,7 +2778,7 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
                   ['strategicFit', isAr ? 'الملاءمة الاستراتيجية' : 'Strategic fit'],
                 ] as [keyof typeof tcoWeights, string][]).map(([key, label]) => (
                   <div key={key}>
-                    <label className="text-[10px] text-slate-400 block mb-0.5">{label} %</label>
+                    <label className="text-[10px] text-slate-500 block mb-0.5">{label} %</label>
                     <input type="number" min={0} max={100} value={tcoWeights[key]}
                       aria-label={`${label} %`}
                       onChange={e => setTcoWeights({ ...tcoWeights, [key]: Math.max(0, parseFloat(e.target.value) || 0) })}
@@ -2787,7 +2787,7 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
                 ))}
               </div>
               {tcoWeightsTotal !== 100 && (
-                <p className="text-[10px] text-slate-400">
+                <p className="text-[10px] text-slate-500">
                   {isAr ? `مجموع الأوزان ${tcoWeightsTotal}% -- يُطبَّع تلقائياً عند الحساب.` : `Weights sum to ${tcoWeightsTotal}% -- automatically normalized when scoring.`}
                 </p>
               )}
@@ -2796,12 +2796,12 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
                 <table className="w-full text-xs border-collapse">
                   <thead>
                     <tr className="border-b border-slate-200">
-                      <th className="text-left py-2 pr-2 text-slate-400 font-semibold whitespace-nowrap">{isAr ? 'المورّد' : 'Supplier'}</th>
-                      <th className="text-left py-2 px-2 text-slate-400 font-semibold whitespace-nowrap">{isAr ? 'الجودة' : 'Quality'}</th>
-                      <th className="text-left py-2 px-2 text-slate-400 font-semibold whitespace-nowrap">{isAr ? 'التسليم' : 'Delivery'}</th>
-                      <th className="text-left py-2 px-2 text-slate-400 font-semibold whitespace-nowrap">{isAr ? 'مخاطر المصدر الواحد' : 'Single-source risk'}</th>
-                      <th className="text-left py-2 px-2 text-slate-400 font-semibold whitespace-nowrap">{isAr ? 'الملاءمة الاستراتيجية' : 'Strategic fit'}</th>
-                      <th className="text-left py-2 px-2 text-slate-400 font-semibold whitespace-nowrap">{isAr ? 'النتيجة المرجّحة' : 'Weighted score'}</th>
+                      <th className="text-left py-2 pr-2 text-slate-500 font-semibold whitespace-nowrap">{isAr ? 'المورّد' : 'Supplier'}</th>
+                      <th className="text-left py-2 px-2 text-slate-500 font-semibold whitespace-nowrap">{isAr ? 'الجودة' : 'Quality'}</th>
+                      <th className="text-left py-2 px-2 text-slate-500 font-semibold whitespace-nowrap">{isAr ? 'التسليم' : 'Delivery'}</th>
+                      <th className="text-left py-2 px-2 text-slate-500 font-semibold whitespace-nowrap">{isAr ? 'مخاطر المصدر الواحد' : 'Single-source risk'}</th>
+                      <th className="text-left py-2 px-2 text-slate-500 font-semibold whitespace-nowrap">{isAr ? 'الملاءمة الاستراتيجية' : 'Strategic fit'}</th>
+                      <th className="text-left py-2 px-2 text-slate-500 font-semibold whitespace-nowrap">{isAr ? 'النتيجة المرجّحة' : 'Weighted score'}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -2868,7 +2868,7 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
                   </select>
                 </div>
               </div>
-              <p className="text-[10px] text-slate-400">
+              <p className="text-[10px] text-slate-500">
                 {isAr
                   ? `أي مما يلي يغيّر TCO لكل وحدة لمورّد "${tcoSensitivitySupplier?.name || ''}" أكثر إذا كان الرقم المُدخل خاطئاً بنسبة ±${tcoSensitivitySwingPct}%؟`
                   : `Which of these moves TCO/unit for "${tcoSensitivitySupplier?.name || ''}" the most if that entered number is off by ±${tcoSensitivitySwingPct}%?`}
@@ -2888,7 +2888,7 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
                   ))}
                 </div>
               ) : (
-                <p className="text-[11px] text-slate-400 italic">
+                <p className="text-[11px] text-slate-500 italic">
                   {isAr ? 'أدخل بيانات التكلفة لهذا المورّد لرؤية تحليل الحساسية.' : 'Enter cost data for this supplier to see the sensitivity read.'}
                 </p>
               )}
@@ -2906,16 +2906,16 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
               <p className="text-[11px] font-bold text-slate-600 uppercase tracking-wide">
                 {isAr ? 'اتجاه التكلفة الإجمالية للملكية' : 'TCO trend history'}
               </p>
-              {tcoTrendLoading && <span className="text-[10px] text-slate-400">{isAr ? 'جارٍ التحميل...' : 'Loading…'}</span>}
+              {tcoTrendLoading && <span className="text-[10px] text-slate-500">{isAr ? 'جارٍ التحميل...' : 'Loading…'}</span>}
             </div>
             {!user ? (
-              <p className="text-[11px] text-slate-400 italic">
+              <p className="text-[11px] text-slate-500 italic">
                 {isAr
                   ? 'سجّل الدخول لتتبّع أفضل تكلفة إجمالية للملكية لهذا التحليل شهرياً بمرور الوقت.'
                   : 'Sign in to track this analysis\'s best TCO/unit month over month.'}
               </p>
             ) : tcoTrend.length < 2 ? (
-              <p className="text-[11px] text-slate-400 italic">
+              <p className="text-[11px] text-slate-500 italic">
                 {isAr
                   ? 'يُبنى الاتجاه تلقائياً كلما عدت إلى هذا التحليل عبر أشهر مختلفة ولديه بيانات تسعير صالحة. عودة الشهر القادم ستضيف نقطة ثانية.'
                   : 'The trend builds automatically as you keep returning to this priced analysis across different months. Come back next month for a second data point.'}
@@ -2977,7 +2977,7 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
           )}
 
           {/* Sources panel -- every grounded (non-"general principle") checklist claim above traces to one of these */}
-          <details className="text-[10px] text-slate-400">
+          <details className="text-[10px] text-slate-500">
             <summary className="cursor-pointer font-semibold text-slate-500">{isAr ? 'المصادر والمنهجية' : 'Sources & methodology'}</summary>
             <ul className="mt-1.5 space-y-1 pl-3 list-disc">
               {TCO_SOURCES.map(src => (
@@ -3031,12 +3031,12 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
                 {isAr ? 'نسخ' : 'Duplicate'}
               </button>
               {wcState.analyses.length > 1 && (
-                <button onClick={() => deleteWcAnalysis(wcActive.id)} className="flex items-center gap-1 text-[11px] font-semibold text-slate-400 hover:text-red-500 shrink-0">
+                <button onClick={() => deleteWcAnalysis(wcActive.id)} className="flex items-center gap-1 text-[11px] font-semibold text-slate-500 hover:text-red-500 shrink-0">
                   <Trash2 className="w-3.5 h-3.5" />{isAr ? 'حذف' : 'Delete'}
                 </button>
               )}
               {user && (
-                <span className="text-[10px] font-semibold text-slate-400 ml-auto shrink-0">
+                <span className="text-[10px] font-semibold text-slate-500 ml-auto shrink-0">
                   {wcSyncStatus === 'saving' && (isAr ? 'جارٍ الحفظ…' : 'Saving…')}
                   {wcSyncStatus === 'saved' && (isAr ? 'تم الحفظ ✓' : 'Saved ✓')}
                   {wcSyncStatus === 'error' && (isAr ? 'فشل الحفظ' : 'Save failed')}
@@ -3050,35 +3050,35 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
             <h3 className="text-xs font-bold text-slate-700 mb-2">{isAr ? 'المدخلات' : 'Inputs'}</h3>
             <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
               <div>
-                <label className="text-[10px] text-slate-400 block mb-0.5">{isAr ? 'قيمة المخزون (ر.س)' : 'Inventory value (SAR)'}</label>
+                <label className="text-[10px] text-slate-500 block mb-0.5">{isAr ? 'قيمة المخزون (ر.س)' : 'Inventory value (SAR)'}</label>
                 <input type="number" min={0} value={wcActive.inventoryValue || ''}
                   onChange={e => updateWcActive({ inventoryValue: parseFloat(e.target.value) || 0 })}
                   aria-label={isAr ? 'قيمة المخزون' : 'Inventory value'}
                   className="w-full text-xs border border-slate-200 rounded-lg px-2 py-1.5" />
               </div>
               <div>
-                <label className="text-[10px] text-slate-400 block mb-0.5">{isAr ? 'أيام المخزون (DIO)' : 'DIO (days)'}</label>
+                <label className="text-[10px] text-slate-500 block mb-0.5">{isAr ? 'أيام المخزون (DIO)' : 'DIO (days)'}</label>
                 <input type="number" min={0} value={wcActive.dioDays || ''}
                   onChange={e => updateWcActive({ dioDays: parseFloat(e.target.value) || 0 })}
                   aria-label="DIO"
                   className="w-full text-xs border border-slate-200 rounded-lg px-2 py-1.5" />
               </div>
               <div>
-                <label className="text-[10px] text-slate-400 block mb-0.5">{isAr ? 'أيام تحصيل الذمم (DSO)' : 'DSO (days)'}</label>
+                <label className="text-[10px] text-slate-500 block mb-0.5">{isAr ? 'أيام تحصيل الذمم (DSO)' : 'DSO (days)'}</label>
                 <input type="number" min={0} value={wcActive.dsoDays || ''}
                   onChange={e => updateWcActive({ dsoDays: parseFloat(e.target.value) || 0 })}
                   aria-label="DSO"
                   className="w-full text-xs border border-slate-200 rounded-lg px-2 py-1.5" />
               </div>
               <div>
-                <label className="text-[10px] text-slate-400 block mb-0.5">{isAr ? 'أيام سداد الموردين (DPO)' : 'DPO (days)'}</label>
+                <label className="text-[10px] text-slate-500 block mb-0.5">{isAr ? 'أيام سداد الموردين (DPO)' : 'DPO (days)'}</label>
                 <input type="number" min={0} value={wcActive.dpoDays || ''}
                   onChange={e => updateWcActive({ dpoDays: parseFloat(e.target.value) || 0 })}
                   aria-label="DPO"
                   className="w-full text-xs border border-slate-200 rounded-lg px-2 py-1.5" />
               </div>
               <div>
-                <label className="text-[10px] text-slate-400 block mb-0.5">{isAr ? 'تكلفة البضاعة المباعة السنوية (ر.س)' : 'Annual COGS (SAR)'}</label>
+                <label className="text-[10px] text-slate-500 block mb-0.5">{isAr ? 'تكلفة البضاعة المباعة السنوية (ر.س)' : 'Annual COGS (SAR)'}</label>
                 <input type="number" min={0} value={wcActive.annualCogs || ''}
                   onChange={e => updateWcActive({ annualCogs: parseFloat(e.target.value) || 0 })}
                   aria-label={isAr ? 'تكلفة البضاعة المباعة السنوية' : 'Annual COGS'}
@@ -3101,7 +3101,7 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
                 {isAr ? 'CCC' : 'CCC'} {wcCcc.toFixed(1)} {isAr ? 'يوماً' : 'days'}
               </span>
             </div>
-            <p className="text-[10px] text-slate-400 mt-2">
+            <p className="text-[10px] text-slate-500 mt-2">
               {isAr
                 ? `أثر دورة التحويل النقدي بالريال = CCC × (تكلفة البضاعة المباعة السنوية ÷ 365) = ${wcCcc.toFixed(1)} × (${wcActive.annualCogs.toLocaleString()} ÷ 365) = ر.س ${Math.round(wcCccDollarImpact).toLocaleString()}`
                 : `CCC dollar impact = CCC × (Annual COGS ÷ 365) = ${wcCcc.toFixed(1)} × (${wcActive.annualCogs.toLocaleString()} ÷ 365) = SAR ${Math.round(wcCccDollarImpact).toLocaleString()}`}
@@ -3117,26 +3117,26 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
               <div className="border border-blue-200 bg-blue-50/50 rounded-xl p-3">
                 <p className="text-[10px] font-semibold text-blue-600 uppercase tracking-wide">{isAr ? '1. قيمة المخزون' : '1. Inventory value'}</p>
                 <p className="text-lg font-bold text-slate-800 mt-1">SAR {wcActive.inventoryValue.toLocaleString()}</p>
-                <p className="text-[10px] text-slate-400 mt-1">{isAr ? 'قيمة دفترية، رأس مال محتجز في المخزون الآن' : 'Balance-sheet stock -- capital sitting in inventory right now'}</p>
+                <p className="text-[10px] text-slate-500 mt-1">{isAr ? 'قيمة دفترية، رأس مال محتجز في المخزون الآن' : 'Balance-sheet stock -- capital sitting in inventory right now'}</p>
               </div>
               <div className="border border-amber-200 bg-amber-50/50 rounded-xl p-3">
                 <p className="text-[10px] font-semibold text-amber-600 uppercase tracking-wide">{isAr ? '2. أثر دورة التحويل النقدي' : '2. CCC dollar impact'}</p>
                 <p className="text-lg font-bold text-slate-800 mt-1">SAR {Math.round(wcCccDollarImpact).toLocaleString()}</p>
-                <p className="text-[10px] text-slate-400 mt-1">{isAr ? 'نقد يمكن تحريره سنوياً بتقصير الدورة يوماً واحداً في كل اتجاه' : 'Cash-days figure -- what tightening the cycle by one day, each lever, could free annually'}</p>
+                <p className="text-[10px] text-slate-500 mt-1">{isAr ? 'نقد يمكن تحريره سنوياً بتقصير الدورة يوماً واحداً في كل اتجاه' : 'Cash-days figure -- what tightening the cycle by one day, each lever, could free annually'}</p>
               </div>
               <div className="border border-red-200 bg-red-50/50 rounded-xl p-3">
                 <p className="text-[10px] font-semibold text-red-600 uppercase tracking-wide">{isAr ? '3. التعرض لمخاطر الإيراد (RAR)' : '3. Revenue-at-Risk exposure'}</p>
                 {wcRar.hasRun ? (
                   <>
                     <p className="text-lg font-bold text-slate-800 mt-1">SAR {Math.round(wcRar.dollarAtMedian).toLocaleString()}</p>
-                    <p className="text-[10px] text-slate-400 mt-1">
+                    <p className="text-[10px] text-slate-500 mt-1">
                       {isAr ? `عند اضطراب نموذجي؛ حتى ر.س ${Math.round(wcRar.dollarAtP95).toLocaleString()} عند اضطراب شديد -- من أداة المرونة` : `at a typical disruption; up to SAR ${Math.round(wcRar.dollarAtP95).toLocaleString()} at a severe one -- from the Resiliency toolkit`}
                     </p>
                   </>
                 ) : (
                   <>
                     <p className="text-lg font-bold text-slate-300 mt-1">{isAr ? 'لم يُشغَّل بعد' : 'Not yet run'}</p>
-                    <p className="text-[10px] text-slate-400 mt-1">
+                    <p className="text-[10px] text-slate-500 mt-1">
                       {isAr ? 'شغّل حاسبة التعرض لمخاطر الإيراد (RAR) في أداة المرونة لعرض هذا الرقم الحقيقي هنا.' : 'Run the Revenue-at-Risk (RAR) calculator in the Resiliency toolkit to surface this real figure here.'}
                     </p>
                   </>
@@ -3193,7 +3193,7 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
           </div>
 
           {/* Sources -- real, verified citations for the CCC methodology (Decision Record 8.7: no invented URLs) */}
-          <details className="text-[10px] text-slate-400 print-hide">
+          <details className="text-[10px] text-slate-500 print-hide">
             <summary className="cursor-pointer font-semibold text-slate-500">{isAr ? 'المصادر والمنهجية' : 'Sources & methodology'}</summary>
             <ul className="mt-1.5 space-y-1 pl-3 list-disc">
               {WC_SOURCES.map(src => (
@@ -3247,12 +3247,12 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
                 {isAr ? 'نسخ' : 'Duplicate'}
               </button>
               {svState.analyses.length > 1 && (
-                <button onClick={() => deleteSvAnalysis(svActive.id)} className="flex items-center gap-1 text-[11px] font-semibold text-slate-400 hover:text-red-500 shrink-0">
+                <button onClick={() => deleteSvAnalysis(svActive.id)} className="flex items-center gap-1 text-[11px] font-semibold text-slate-500 hover:text-red-500 shrink-0">
                   <Trash2 className="w-3.5 h-3.5" />{isAr ? 'حذف' : 'Delete'}
                 </button>
               )}
               {user && (
-                <span className="text-[10px] font-semibold text-slate-400 ml-auto shrink-0">
+                <span className="text-[10px] font-semibold text-slate-500 ml-auto shrink-0">
                   {svSyncStatus === 'saving' && (isAr ? 'جارٍ الحفظ…' : 'Saving…')}
                   {svSyncStatus === 'saved' && (isAr ? 'تم الحفظ ✓' : 'Saved ✓')}
                   {svSyncStatus === 'error' && (isAr ? 'فشل الحفظ' : 'Save failed')}
@@ -3260,7 +3260,7 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
               )}
             </div>
             <div>
-              <label className="text-[10px] text-slate-400 block mb-0.5">{isAr ? 'مواصفة الصنف' : 'Item specification'}</label>
+              <label className="text-[10px] text-slate-500 block mb-0.5">{isAr ? 'مواصفة الصنف' : 'Item specification'}</label>
               <input value={svActive.itemSpec} onChange={e => updateSvActive({ itemSpec: e.target.value })}
                 placeholder={isAr ? 'مثال: محمل كروي 6205، فولاذ كروم، مانع تسرب' : 'e.g. Bearing 6205-ZZ, chrome steel, sealed'}
                 aria-label={isAr ? 'مواصفة الصنف' : 'Item specification'}
@@ -3296,12 +3296,12 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
             <table className="w-full text-xs border-collapse">
               <thead>
                 <tr className="border-b border-slate-200">
-                  <th className="text-left py-2 pr-2 text-slate-400 font-semibold whitespace-nowrap">{isAr ? 'الموقع/المورّد' : 'Site/Supplier'}</th>
-                  <th className="text-left py-2 px-2 text-slate-400 font-semibold whitespace-nowrap">{isAr ? 'سعر الوحدة' : 'Unit price'}</th>
-                  <th className="text-left py-2 px-2 text-slate-400 font-semibold whitespace-nowrap">{isAr ? 'الشحن/وحدة' : 'Freight/unit'}</th>
-                  <th className="text-left py-2 px-2 text-slate-400 font-semibold whitespace-nowrap">{isAr ? 'تعديل الجودة/وحدة' : 'Quality adj/unit'}</th>
-                  <th className="text-left py-2 px-2 text-slate-400 font-semibold whitespace-nowrap">{isAr ? 'الكمية السنوية' : 'Annual qty'}</th>
-                  <th className="text-left py-2 px-2 text-slate-400 font-semibold whitespace-nowrap">{isAr ? 'الحد الأدنى للطلب' : 'MOQ'}</th>
+                  <th className="text-left py-2 pr-2 text-slate-500 font-semibold whitespace-nowrap">{isAr ? 'الموقع/المورّد' : 'Site/Supplier'}</th>
+                  <th className="text-left py-2 px-2 text-slate-500 font-semibold whitespace-nowrap">{isAr ? 'سعر الوحدة' : 'Unit price'}</th>
+                  <th className="text-left py-2 px-2 text-slate-500 font-semibold whitespace-nowrap">{isAr ? 'الشحن/وحدة' : 'Freight/unit'}</th>
+                  <th className="text-left py-2 px-2 text-slate-500 font-semibold whitespace-nowrap">{isAr ? 'تعديل الجودة/وحدة' : 'Quality adj/unit'}</th>
+                  <th className="text-left py-2 px-2 text-slate-500 font-semibold whitespace-nowrap">{isAr ? 'الكمية السنوية' : 'Annual qty'}</th>
+                  <th className="text-left py-2 px-2 text-slate-500 font-semibold whitespace-nowrap">{isAr ? 'الحد الأدنى للطلب' : 'MOQ'}</th>
                   <th className="py-2 px-2 print-hide"></th>
                 </tr>
               </thead>
@@ -3358,10 +3358,10 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
             <table className="w-full text-xs border-collapse">
               <thead>
                 <tr className="border-b border-slate-200">
-                  <th className="text-left py-2 pr-2 text-slate-400 font-semibold whitespace-nowrap">{isAr ? 'الموقع/المورّد' : 'Site/Supplier'}</th>
-                  <th className="text-left py-2 px-2 text-slate-400 font-semibold whitespace-nowrap">{isAr ? 'التكلفة المسلَّمة/وحدة' : 'Landed cost/unit'}</th>
-                  <th className="text-left py-2 px-2 text-slate-400 font-semibold whitespace-nowrap">PPV/{isAr ? 'وحدة' : 'unit'}</th>
-                  <th className="text-left py-2 px-2 text-slate-400 font-semibold whitespace-nowrap">{isAr ? 'الفرصة القابلة للتحصيل/سنة' : 'Addressable opportunity/yr'}</th>
+                  <th className="text-left py-2 pr-2 text-slate-500 font-semibold whitespace-nowrap">{isAr ? 'الموقع/المورّد' : 'Site/Supplier'}</th>
+                  <th className="text-left py-2 px-2 text-slate-500 font-semibold whitespace-nowrap">{isAr ? 'التكلفة المسلَّمة/وحدة' : 'Landed cost/unit'}</th>
+                  <th className="text-left py-2 px-2 text-slate-500 font-semibold whitespace-nowrap">PPV/{isAr ? 'وحدة' : 'unit'}</th>
+                  <th className="text-left py-2 px-2 text-slate-500 font-semibold whitespace-nowrap">{isAr ? 'الفرصة القابلة للتحصيل/سنة' : 'Addressable opportunity/yr'}</th>
                 </tr>
               </thead>
               <tbody>
@@ -3390,7 +3390,7 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
 
             <div className="mt-3 pt-3 border-t border-slate-200 flex items-center justify-between flex-wrap gap-2">
               <div>
-                <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">{isAr ? 'إجمالي الفرصة القابلة للتحصيل سنوياً' : 'Total addressable opportunity / year'}</p>
+                <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">{isAr ? 'إجمالي الفرصة القابلة للتحصيل سنوياً' : 'Total addressable opportunity / year'}</p>
                 <p className="text-xl font-bold text-slate-800">SAR {svResults.totalAddressableOpportunity.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
               </div>
             </div>
@@ -3407,7 +3407,7 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
             )}
 
             <div className="bg-slate-50 border border-dashed border-slate-300 rounded-xl p-3 mt-3 print-hide">
-              <p className="text-[10px] text-slate-400">
+              <p className="text-[10px] text-slate-500">
                 {isAr
                   ? 'ملاحظة صدق: قد يعكس الفارق سعراً هيكلياً حقيقياً أو عاملاً مؤقتاً (مثل ارتفاع مؤقت في تكلفة الشحن). تحقق قبل التفاوض أو إعادة التوجيه.'
                   : 'Honesty note: this gap may reflect a real, structural price difference or a temporary factor (e.g. a recent freight spike at one site). Verify before renegotiating or redirecting volume.'}
@@ -3455,7 +3455,7 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
           </div>
 
           {/* Sources -- real, verified citations for the PPV methodology */}
-          <details className="text-[10px] text-slate-400 print-hide">
+          <details className="text-[10px] text-slate-500 print-hide">
             <summary className="cursor-pointer font-semibold text-slate-500">{isAr ? 'المصادر والمنهجية' : 'Sources & methodology'}</summary>
             <ul className="mt-1.5 space-y-1 pl-3 list-disc">
               {SV_SOURCES.map(src => (
@@ -3524,8 +3524,8 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
                             </span>
                           )}
                         </div>
-                        <p className="text-[11px] text-slate-400 mt-0.5">{isAr ? def.hintAr : def.hint}</p>
-                        <p className="text-[10px] text-slate-400 mt-0.5">
+                        <p className="text-[11px] text-slate-500 mt-0.5">{isAr ? def.hintAr : def.hint}</p>
+                        <p className="text-[10px] text-slate-500 mt-0.5">
                           {isAr ? 'القيمة الحالية:' : 'Current value:'}{' '}
                           <strong className="text-slate-600">
                             {def.key === 'contractedPct' ? `${contractedPct}${def.unit}` :
@@ -3598,7 +3598,7 @@ export function ProcurementToolsSection({ isAr }: ProcurementToolsProps) {
               </button>
 
               {/* Guidance note */}
-              <p className="text-[11px] text-slate-400 text-center">
+              <p className="text-[11px] text-slate-500 text-center">
                 {isAr
                   ? 'تُطبَّق الحدود على مؤشرات الأداء الحالية وتُحفظ في المتصفح وتبقى بعد إعادة التحميل.'
                   : 'Thresholds apply to current KPI values and are saved in your browser — they survive page reloads.'}
