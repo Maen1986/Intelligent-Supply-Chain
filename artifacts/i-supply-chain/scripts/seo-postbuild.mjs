@@ -16,7 +16,7 @@ const BUILD_DATE = process.env.SEO_LASTMOD || new Date().toISOString().slice(0, 
 
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const abs = (p) => site.url + (p === '/' ? '/' : p);
-const ogImage = site.url + '/brand/og-card.png';
+const ogImage = site.url + '/brand/og-card-v3.png';
 
 function replaceTag(html, re, replacement) {
   if (!re.test(html)) throw new Error('template is missing expected tag: ' + re);
