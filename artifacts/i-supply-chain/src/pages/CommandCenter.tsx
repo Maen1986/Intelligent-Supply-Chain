@@ -796,7 +796,7 @@ function BenchmarkTab({ lang }: { lang: Lang }) {
               <input type="range" min={10} max={5000} step={10} value={revenue} aria-label={ar ? 'الإيرادات السنوية' : 'Annual Revenue'}
                 onChange={e => setRevenue(+e.target.value)}
                 className="flex-1 accent-[#C9A84C]" />
-              <span className="text-sm font-bold text-[#C9A84C] whitespace-nowrap w-24 text-right">
+              <span className="text-sm font-bold text-[#7A5F14] whitespace-nowrap w-24 text-right">
                 {revenue >= 1000 ? `SAR ${(revenue/1000).toFixed(1)}B` : `SAR ${revenue}M`}
               </span>
             </div>
@@ -830,7 +830,7 @@ function BenchmarkTab({ lang }: { lang: Lang }) {
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-semibold">{ar ? k.labelAr : k.label}</span>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-bold text-[#C9A84C]">{v}{k.unit}</span>
+                    <span className="text-sm font-bold text-[#7A5F14]">{v}{k.unit}</span>
                     <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${ok ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
                       {normV}/100
                     </span>
@@ -942,7 +942,7 @@ function BenchmarkTab({ lang }: { lang: Lang }) {
                 <td colSpan={6} className="px-3 py-3 font-black text-[#082C6B] text-sm">
                   {ar ? 'إجمالي الفرصة السنوية' : 'Total Annual Improvement Opportunity'}
                 </td>
-                <td className="px-3 py-3 font-black text-[#C9A84C] text-base">{formatSAR(totalImpact)}</td>
+                <td className="px-3 py-3 font-black text-[#7A5F14] text-base">{formatSAR(totalImpact)}</td>
                 <td />
               </tr>
             </tfoot>
@@ -1062,7 +1062,7 @@ function SavingsTab({ lang }: { lang: Lang }) {
           </label>
           <div className="flex items-center gap-2">
             <input type="range" aria-label={ar ? 'الإيرادات السنوية' : 'Annual Revenue'} min={50} max={5000} step={50} value={revenue} onChange={e => setRevenue(+e.target.value)} className="flex-1 accent-[#082C6B]" />
-            <span className="text-sm font-bold text-[#C9A84C] w-20 text-right">SAR {revenue >= 1000 ? `${(revenue/1000).toFixed(1)}B` : `${revenue}M`}</span>
+            <span className="text-sm font-bold text-[#7A5F14] w-20 text-right">SAR {revenue >= 1000 ? `${(revenue/1000).toFixed(1)}B` : `${revenue}M`}</span>
           </div>
         </div>
         <div className="space-y-1.5">
@@ -1071,7 +1071,7 @@ function SavingsTab({ lang }: { lang: Lang }) {
           </label>
           <div className="flex items-center gap-2">
             <input type="range" aria-label={ar ? 'الإنفاق الشرائي % من الإيرادات' : 'Procurement Spend % of Revenue'} min={5} max={70} value={spendPct} onChange={e => setSpendPct(+e.target.value)} className="flex-1 accent-[#082C6B]" />
-            <span className="text-sm font-bold text-[#C9A84C] w-12 text-right">{spendPct}%</span>
+            <span className="text-sm font-bold text-[#7A5F14] w-12 text-right">{spendPct}%</span>
           </div>
         </div>
         <div className="space-y-1.5">
@@ -1383,7 +1383,7 @@ function RiskTab({ lang }: { lang: Lang }) {
           <label className="text-xs font-bold text-[#082C6B] uppercase tracking-wider">{ar ? 'الإيرادات السنوية' : 'Annual Revenue'}</label>
           <div className="flex items-center gap-2">
             <input type="range" min={10} max={5000} step={10} value={revenue} aria-label={ar ? 'الإيرادات السنوية' : 'Annual Revenue'} onChange={e => setRevenue(+e.target.value)} className="flex-1 accent-[#C9A84C]" />
-            <span className="text-sm font-bold text-[#C9A84C] whitespace-nowrap w-24 text-right">
+            <span className="text-sm font-bold text-[#7A5F14] whitespace-nowrap w-24 text-right">
               {revenue >= 1000 ? `SAR ${(revenue/1000).toFixed(1)}B` : `SAR ${revenue}M`}
             </span>
           </div>
@@ -2870,7 +2870,7 @@ function BriefingTab({ lang }: { lang: Lang }) {
             <h3 className="font-bold text-[#082C6B] text-sm uppercase tracking-wider">
               {ar ? 'خارطة طريق التحول — 90 يوماً' : '90-Day Transformation Roadmap'}
             </h3>
-            <span className="text-sm font-bold text-[#C9A84C]">
+            <span className="text-sm font-bold text-[#7A5F14]">
               {briefing.ninetyDayPlan.totalProjectedSaving} {ar ? 'وفر متوقع — السنة الأولى' : 'projected Year 1'}
             </span>
           </div>
