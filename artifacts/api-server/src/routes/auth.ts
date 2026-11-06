@@ -89,7 +89,7 @@ router.post('/register', authRateLimiter, registerEmailRateLimiter, async (req, 
 
   try {
     const passwordHash = await bcrypt.hash(password, 10);
-    let [user] = await db.select().from(usersTable).where(eq(usersTable.email, email)).limit(1);
+    let [user] = await db.select().from(usersTable).where(sql`lower(${usersTable.email}) = ${email.trim().toLowerCase()}`).limit(1);
 
     if (!user) {
       const [created] = await db
@@ -216,7 +216,7 @@ router.post('/login', loginRateLimiter, async (req, res) => {
   }
 
   try {
-    const [user] = await db.select().from(usersTable).where(eq(usersTable.email, email)).limit(1);
+    const [user] = await db.select().from(usersTable).where(sql`lower(${usersTable.email}) = ${email.trim().toLowerCase()}`).limit(1);
     if (!user || !user.passwordHash || user.role === 'admin') {
       // Same message for all failure cases — don't leak which emails are registered.
       res.status(401).json({ ok: false, error: 'Invalid email or password.' });
@@ -273,14 +273,16 @@ router.post('/forgot-password', forgotPasswordRateLimiter, async (req, res) => {
   const adminEmail = process.env.ADMIN_EMAIL?.trim().toLowerCase();
   if (adminEmail && email.trim().toLowerCase() === adminEmail) {
     // Return the same generic response so the admin email is not enumerable.
+    logger.warn({ reason: 'admin-email-blocked' }, '[auth] Forgot-password skipped: admin account is credential-managed via env vars');
     res.json(genericResponse);
     return;
   }
 
   try {
-    const [user] = await db.select().from(usersTable).where(eq(usersTable.email, email)).limit(1);
+    const [user] = await db.select().from(usersTable).where(sql`lower(${usersTable.email}) = ${email.trim().toLowerCase()}`).limit(1);
     if (!user || !user.passwordHash) {
       // No account (or a legacy profile with no password to reset) — same reply.
+      logger.warn({ reason: !user ? 'no-account' : 'no-password-set' }, '[auth] Forgot-password skipped: no email sent');
       res.json(genericResponse);
       return;
     }
@@ -334,7 +336,7 @@ router.post('/reset-password', forgotPasswordRateLimiter, async (req, res) => {
   }
 
   try {
-    const [user] = await db.select().from(usersTable).where(eq(usersTable.email, email)).limit(1);
+    const [user] = await db.select().from(usersTable).where(sql`lower(${usersTable.email}) = ${email.trim().toLowerCase()}`).limit(1);
     const invalid = () => res.status(400).json({ ok: false, error: 'Invalid or expired reset code.' });
 
     if (!user || !user.resetTokenHash || !user.resetTokenExpiresAt) { invalid(); return; }
