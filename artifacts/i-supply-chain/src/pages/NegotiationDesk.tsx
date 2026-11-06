@@ -25,6 +25,8 @@ import {
 import {
   recommendClientTactics, recommendWatchForTactics, buildNegotiationTeam, recommendNegotiationLevels,
 } from '@/lib/negotiationTactics';
+import { DESK_ROUTES, STEP_IDS, getRoute, stepNeed, buildSuggestions, matchSuggestion, parsePastedPrices, type RouteId, type Suggestion } from '@/lib/deskRoutes';
+import { UNSPSC_SERVICES_SEGMENTS } from '@/lib/unspscSegments';
 
 const KEY = 'isc-negotiation-desk-v1';
 type Survive = 'yes' | 'no' | 'unknown';
@@ -40,6 +42,8 @@ interface DeskState {
   /** Optional own cut-offs for the leverage rule (strings so an empty box means "use the ISC default"). */
   cutLow?: string;
   cutHigh?: string;
+  /** Optional entry route chosen on the Start-here panel (a navigation aid only; it never changes any result). */
+  route?: string;
 }
 const EMPTY: DeskState = { supplier: '', quadrant: 'leverage', lockIn: '', survivable: 'unknown', points: [], rounds: [] };
 // Illustrative example only. Not client data, not a benchmark.
@@ -64,6 +68,33 @@ function loadChecks(): SupplierCheck[] {
     return Array.isArray(parsed) ? parsed.filter(c => c && typeof c.name === 'string' && c.name.trim() !== '') : [];
   } catch { return []; }
 }
+
+interface SavedCase { clientKey: string; name: string; data: DeskState }
+const OTHERS_KEY = 'isc-negotiation-desk-others-v1';
+const MAX_CASES = 20;
+const hasContent = (st: DeskState) => st.supplier.trim() !== '' || st.points.length > 0 || st.rounds.length > 0;
+function loadOthers(): SavedCase[] {
+  try {
+    const raw = localStorage.getItem(OTHERS_KEY);
+    const parsed = raw ? (JSON.parse(raw) as SavedCase[]) : [];
+    return Array.isArray(parsed) ? parsed.filter(c => c && typeof c.clientKey === 'string' && c.data && typeof c.data.supplier === 'string').map(c => ({ ...c, data: { ...EMPTY, ...c.data } })).slice(0, MAX_CASES - 1) : [];
+  } catch { return []; }
+}
+function mergeOthers(prev: SavedCase[], incoming: SavedCase[]): SavedCase[] {
+  const m = new Map<string, SavedCase>();
+  for (const c of prev) m.set(c.clientKey, c);
+  for (const c of incoming) m.set(c.clientKey, c);
+  return [...m.values()].slice(0, MAX_CASES - 1);
+}
+/** Suppliers already recorded in the Supplier Recovery Portfolio (this browser). Read-only. */
+function loadPortfolio(): { name?: string; category?: string; quadrant?: string }[] {
+  try {
+    const raw = localStorage.getItem('isc-supplier-recovery-portfolio-v1');
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed.filter(p => p && typeof p.name === 'string') : [];
+  } catch { return []; }
+}
+const addDays = (iso: string, d: number) => { const x = new Date(`${iso}T00:00:00Z`); x.setUTCDate(x.getUTCDate() + d); return x.toISOString().slice(0, 10); };
 
 function load(): DeskState {
   try {
@@ -185,6 +216,16 @@ export function NegotiationDesk() {
   const [s, setS] = useState<DeskState>(load);
   const [step, setStep] = useState(0);
   const depChecks = useMemo(loadChecks, []);
+  const portfolio = useMemo(loadPortfolio, []);
+  const [others, setOthers] = useState<SavedCase[]>(loadOthers);
+  const othersRef = useRef(others);
+  othersRef.current = others;
+  const firstOthers = useRef(true);
+  const [confirmKind, setConfirmKind] = useState<null | 'example' | 'clear' | 'new'>(null);
+  const [delKey, setDelKey] = useState<string | null>(null);
+  const [prefillNote, setPrefillNote] = useState('');
+  const [pasteText, setPasteText] = useState('');
+  const [pasteMsg, setPasteMsg] = useState('');
   // Server save (E3 N0, 5 Nov 2026): signed-in users also get one saved case in their account
   // (table negotiation_cases). Same whole-state pattern as rar_analyses / supplier_dependency_checks.
   // localStorage stays the source of truth if the server is unreachable; signed-out users are unchanged.
@@ -205,7 +246,7 @@ export function NegotiationDesk() {
       try {
         const res = await fetch(`${API_BASE}/negotiation-cases`, {
           method: 'PUT', credentials: 'include', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ cases: [{ clientKey: 'desk-current', name: (st.supplier.trim() || 'Negotiation').slice(0, 120), data: st }] }),
+          body: JSON.stringify({ cases: [{ clientKey: 'desk-current', name: (st.supplier.trim() || 'Negotiation').slice(0, 120), data: st }, ...othersRef.current.map(c => ({ clientKey: c.clientKey, name: (c.name.trim() || 'Negotiation').slice(0, 120), data: c.data }))].slice(0, MAX_CASES) }),
         });
         setSync(res.ok ? 'saved' : 'error');
         if (res.ok) setTimeout(() => setSync('idle'), 2500);
@@ -227,11 +268,16 @@ export function NegotiationDesk() {
       try {
         const res = await fetch(`${API_BASE}/negotiation-cases`, { credentials: 'include' });
         if (!cancelled && res.ok) {
-          const data = await res.json() as { ok: boolean; cases: { data: DeskState }[] };
-          if (data.ok && Array.isArray(data.cases) && data.cases.length > 0 && !localEdited.current) {
+          const data = await res.json() as { ok: boolean; cases: { clientKey?: string; name?: string; data: DeskState }[] };
+          if (!cancelled && data.ok && Array.isArray(data.cases)) {
+            const srv = data.cases.filter(c => c.clientKey && c.clientKey !== 'desk-current' && c.data && typeof c.data.supplier === 'string');
+            if (srv.length > 0) setOthers(prev => mergeOthers(prev, srv.map(c => ({ clientKey: c.clientKey as string, name: c.name ?? c.data.supplier, data: { ...EMPTY, ...c.data } }))));
+          }
+          const curRow = data.ok && Array.isArray(data.cases) ? data.cases.find(c => c.clientKey === 'desk-current') : undefined;
+          if (curRow && !localEdited.current) {
             skipNextPush.current = true;
-            setS({ ...EMPTY, ...data.cases[0].data });
-          } else if (!cancelled) {
+            setS({ ...EMPTY, ...curRow.data });
+          } else if (!cancelled && !curRow) {
             const cur = stateRef.current;
             if (cur.supplier || cur.points.length || cur.rounds.length) push(cur);
           }
@@ -243,6 +289,76 @@ export function NegotiationDesk() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
   const set = <K extends keyof DeskState>(k: K, v: DeskState[K]) => setS(prev => ({ ...prev, [k]: v }));
+  useEffect(() => {
+    safeSetItem(OTHERS_KEY, JSON.stringify(others));
+    if (firstOthers.current) { firstOthers.current = false; return; }
+    if (bootDone.current) push(stateRef.current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [others]);
+
+  const route = getRoute(s.route);
+  const stepLabel = (id: string) => { const st = STEPS.find(x => x.id === id); return st ? (isAr ? st.ar : st.en) : id; };
+  const pickRoute = (id: RouteId) => {
+    if (s.route === id) { set('route', undefined); return; }
+    const r = getRoute(id);
+    set('route', id);
+    if (r) setStep(Math.max(0, STEP_IDS.indexOf(r.landing)));
+  };
+  const suggestions: Suggestion[] = useMemo(() => buildSuggestions({
+    cases: others.map(c => ({ name: c.name || c.data.supplier, quadrant: c.data.quadrant })),
+    portfolio,
+    checks: depChecks,
+    categories: UNSPSC_SERVICES_SEGMENTS.map(g => ({ label: isAr ? g.labelAr : g.label })),
+  }), [others, portfolio, depChecks, isAr]);
+  const srcLabel = (x: Suggestion) =>
+    x.source === 'case' ? t('Saved case', 'حالة محفوظة')
+      : x.source === 'portfolio' ? `${t('Supplier portfolio', 'محفظة الموردين')}${x.detail ? ` · ${x.detail}` : ''}`
+      : x.source === 'check' ? t('Dependency Check', 'فحص الاعتماد')
+      : t('UNSPSC services category', 'فئة خدمات UNSPSC');
+  const matchedCase = others.find(c => (c.name || c.data.supplier).trim().toLowerCase() === s.supplier.trim().toLowerCase() && s.supplier.trim() !== '');
+  const onSupplierChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const v = e.target.value;
+    const ie = e.nativeEvent as InputEvent;
+    const picked = !ie.inputType || ie.inputType === 'insertReplacementText';
+    const m = picked ? matchSuggestion(suggestions, v) : undefined;
+    if (m && (m.source === 'portfolio' || m.source === 'check')) {
+      const q = QUADRANTS.find(x => x.id === m.quadrant);
+      setS(prev => ({ ...prev, supplier: v, quadrant: q ? q.id : prev.quadrant, linkedCheckId: m.checkId ?? prev.linkedCheckId }));
+      setPrefillNote(q
+        ? t(`Filled the purchase type (${q.en}) from your ${m.source === 'portfolio' ? 'Supplier portfolio' : 'Dependency Check'}. Change it below if it is wrong.`,
+            `تم تعبئة نوع الشراء (${q.ar}) من ${m.source === 'portfolio' ? 'محفظة الموردين' : 'فحص الاعتماد'}. غيّره أدناه إن كان خاطئا.`)
+        : t('Linked to your saved check. Nothing else was changed.', 'تم الربط بفحصك المحفوظ. لم يتغير شيء آخر.'));
+    } else {
+      set('supplier', v);
+      setPrefillNote('');
+    }
+  };
+  const archiveCurrent = (list: SavedCase[]): SavedCase[] =>
+    hasContent(s) ? [{ clientKey: `case-${Date.now()}`, name: s.supplier.trim() || 'Negotiation', data: s }, ...list] : list;
+  const newCase = () => {
+    setOthers(archiveCurrent(othersRef.current).slice(0, MAX_CASES - 1));
+    setS(EMPTY); setStep(0); setConfirmKind(null); setPrefillNote('');
+  };
+  const openCase = (key: string) => {
+    const target = othersRef.current.find(c => c.clientKey === key);
+    if (!target) return;
+    const rest = othersRef.current.filter(c => c.clientKey !== key);
+    setOthers(archiveCurrent(rest).slice(0, MAX_CASES - 1));
+    setS({ ...EMPTY, ...target.data }); setStep(0); setPrefillNote('');
+  };
+  const deleteCase = (key: string) => { setOthers(othersRef.current.filter(c => c.clientKey !== key)); setDelKey(null); };
+  const applyPaste = () => {
+    const probe = parsePastedPrices(pasteText, new Date().toISOString().slice(0, 10));
+    if (probe.points.length === 0) { setPasteMsg(t('No prices found. Put one price per line, for example "Q1 100".', 'لم يتم العثور على أسعار. ضع سعرا واحدا في كل سطر مثل "Q1 100".')); return; }
+    const today = new Date().toISOString().slice(0, 10);
+    const latest = s.points.length > 0 ? [...s.points].map(p => p.sortKey).sort().slice(-1)[0] : '';
+    const base = latest ? addDays(latest, 30) : addDays(today, -30 * (probe.points.length - 1));
+    const r = parsePastedPrices(pasteText, base);
+    setS(prev => ({ ...prev, points: [...prev.points, ...r.points] }));
+    setPasteText('');
+    setPasteMsg(t(`Added ${r.points.length} price(s)${r.skipped ? `, skipped ${r.skipped} line(s) with no usable price` : ''}. Rows without a date were given dates 30 days apart in the order pasted; edit the dates if they are wrong.`,
+      `تمت إضافة ${r.points.length} سعر${r.skipped ? `، وتم تخطي ${r.skipped} سطر بلا سعر صالح` : ''}. الصفوف بلا تاريخ أُعطيت تواريخ بفارق 30 يوما بترتيب اللصق؛ عدّل التواريخ إن كانت خاطئة.`));
+  };
 
   const lockInNum = s.lockIn.trim() === '' ? null : Number(s.lockIn);
   const lockInClean = lockInNum !== null && Number.isFinite(lockInNum) ? Math.min(5, Math.max(0, lockInNum)) : null;
@@ -335,6 +451,52 @@ export function NegotiationDesk() {
             <p className="text-sm font-bold">{next.move === 'cooperate' ? t('Cooperate', 'تعاون') : t('Match, then reset', 'مجاراة ثم عودة')}</p></div>
         </div>
 
+        {/* Start here: flexible entry routes + saved cases */}
+        <section className="no-print bg-white border border-slate-200 rounded-2xl shadow-sm p-4 mt-4" aria-label={t('Start here', 'ابدأ من هنا')}>
+          <h2 className="text-sm font-bold text-[#082C6B]">{t('Start where you are', 'ابدأ من وضعك الحالي')}</h2>
+          <p className="text-[11px] text-slate-600 mt-0.5">{t('Pick the situation closest to yours, or ignore this and use the steps below. Every step stays open, so you can jump anywhere.', 'اختر الحالة الأقرب لوضعك، أو تجاهل هذا واستخدم الخطوات أدناه. كل الخطوات تبقى مفتوحة ويمكنك الانتقال لأي منها.')}</p>
+          <div className="flex flex-wrap gap-2 mt-3">
+            {DESK_ROUTES.map(r => (
+              <button key={r.id} type="button" onClick={() => pickRoute(r.id)} aria-pressed={s.route === r.id}
+                className={`text-xs font-bold rounded-full border px-3 py-2 transition ${s.route === r.id ? 'bg-[#082C6B] text-white border-[#082C6B]' : 'bg-white text-[#082C6B] border-[#082C6B]/30 hover:bg-slate-50'}`}>
+                {isAr ? r.ar : r.en}
+              </button>
+            ))}
+          </div>
+          {route && (
+            <p className="text-[11px] text-slate-700 mt-2 leading-relaxed" role="status">
+              {isAr ? route.whenAr : route.whenEn}{' '}
+              <span className="font-semibold">{t('Steps for this route: ', 'خطوات هذا المسار: ')}{route.needs.map(stepLabel).join(isAr ? '، ' : ', ')}.</span>{' '}
+              {t('The others are optional; open them any time for more depth.', 'الباقي اختياري؛ افتحه في أي وقت لمزيد من العمق.')}
+            </p>
+          )}
+          <div className="mt-4 border-t border-slate-100 pt-3">
+            <p className="text-[11px] font-bold text-slate-600">{t('Your negotiations', 'مفاوضاتك')} ({others.length + 1}/{MAX_CASES})</p>
+            <div className="flex flex-wrap gap-2 mt-2 items-center">
+              <span className="text-xs font-bold rounded-lg border border-[#082C6B] bg-[#082C6B]/5 text-[#082C6B] px-3 py-1.5" aria-current="true">{shownName.trim() || t('Untitled (open now)', 'بلا عنوان (مفتوحة الآن)')}</span>
+              {others.map(c => (
+                <span key={c.clientKey} className="inline-flex items-center gap-1 text-xs rounded-lg border border-slate-200 bg-white px-2 py-1">
+                  {delKey === c.clientKey ? (
+                    <>
+                      <span className="text-red-700 font-semibold">{t('Erase this case?', 'حذف هذه الحالة؟')}</span>
+                      <button type="button" onClick={() => deleteCase(c.clientKey)} className="font-bold text-red-700 underline px-1">{t('Yes, erase this case', 'نعم، احذف هذه الحالة')}</button>
+                      <button type="button" onClick={() => setDelKey(null)} className="font-semibold text-slate-600 underline px-1">{t('Keep', 'إبقاء')}</button>
+                    </>
+                  ) : (
+                    <>
+                      <button type="button" onClick={() => openCase(c.clientKey)} className="font-semibold text-[#082C6B] hover:underline px-1" aria-label={`${t('Open saved case', 'فتح حالة محفوظة')}: ${c.name || c.data.supplier}`}>{c.name || c.data.supplier || t('Untitled', 'بلا عنوان')}</button>
+                      <button type="button" onClick={() => setDelKey(c.clientKey)} className="text-slate-500 hover:text-red-600 px-1" aria-label={`${t('Delete saved case', 'حذف حالة محفوظة')}: ${c.name || c.data.supplier}`}><Trash2 className="w-3 h-3" /></button>
+                    </>
+                  )}
+                </span>
+              ))}
+              <button type="button" disabled={others.length >= MAX_CASES - 1} onClick={() => (hasContent(s) ? newCase() : undefined)}
+                className="inline-flex items-center gap-1 text-xs font-bold text-white bg-[#082C6B] rounded-lg px-3 py-1.5 disabled:opacity-40"><Plus className="w-3 h-3" />{t('New negotiation', 'مفاوضة جديدة')}</button>
+            </div>
+            <p className="text-[11px] text-slate-600 mt-2">{t('Starting a new one keeps the current case in this list. Saved in this browser; signed-in users also keep them in their account.', 'بدء مفاوضة جديدة يُبقي الحالية في هذه القائمة. تُحفظ في هذا المتصفح، والمستخدم المسجل يحفظها أيضا في حسابه.')}</p>
+          </div>
+        </section>
+
         {/* Stepper */}
         <nav aria-label={t('Steps', 'الخطوات')} className="no-print grid grid-cols-3 sm:grid-cols-6 gap-1 mt-5">
           {STEPS.map((st, i) => {
@@ -343,7 +505,7 @@ export function NegotiationDesk() {
             return (
               <button key={st.id} onClick={() => setStep(i)} aria-current={active ? 'step' : undefined}
                 className={`min-w-0 flex flex-col items-center gap-1 rounded-xl px-2 py-2.5 text-[11px] font-semibold border transition ${active ? 'bg-[#082C6B] text-white border-[#082C6B] shadow' : 'bg-white text-slate-600 border-slate-200 hover:border-[#082C6B]/40'}`}>
-                <Icon className="w-4 h-4" /> {i + 1}. {isAr ? st.ar : st.en}
+                <Icon className="w-4 h-4" /> {i + 1}. {isAr ? st.ar : st.en}{s.route && stepNeed(s.route, st.id) === 'optional' && <span aria-hidden="true" title={t('Optional for this route', 'اختياري لهذا المسار')} className="text-[9px] font-normal opacity-70">{t('optional', 'اختياري')}</span>}
               </button>
             );
           })}
@@ -357,12 +519,28 @@ export function NegotiationDesk() {
                 <div><h2 className="text-lg font-bold text-[#082C6B]">{t('Who are you negotiating with?', 'مع من تتفاوض؟')}</h2>
                   <p className="text-sm text-slate-600">{t('Two answers shape everything that follows.', 'إجابتان تحددان كل ما يلي.')}</p></div>
                 <div className="no-print flex gap-2">
-                  <button onClick={() => { setS(EXAMPLE); }} className="flex items-center gap-1.5 text-xs font-bold text-[#082C6B] border border-[#082C6B]/30 rounded-lg px-3 py-2 hover:bg-slate-50"><Sparkles className="w-3.5 h-3.5" />{t('Try an example', 'جرّب مثالاً')}</button>
-                  <button onClick={() => { setS(EMPTY); setStep(0); }} className="flex items-center gap-1.5 text-xs font-bold text-slate-600 border border-slate-200 rounded-lg px-3 py-2 hover:bg-slate-50"><RotateCcw className="w-3.5 h-3.5" />{t('Clear', 'مسح')}</button>
+                  <button onClick={() => { if (hasContent(s) && s.supplier !== EXAMPLE.supplier) setConfirmKind('example'); else setS(EXAMPLE); }} className="flex items-center gap-1.5 text-xs font-bold text-[#082C6B] border border-[#082C6B]/30 rounded-lg px-3 py-2 hover:bg-slate-50"><Sparkles className="w-3.5 h-3.5" />{t('Try an example', 'جرّب مثالاً')}</button>
+                  <button onClick={() => { if (hasContent(s)) setConfirmKind('clear'); else { setS(EMPTY); setStep(0); } }} className="flex items-center gap-1.5 text-xs font-bold text-slate-600 border border-slate-200 rounded-lg px-3 py-2 hover:bg-slate-50"><RotateCcw className="w-3.5 h-3.5" />{t('Clear', 'مسح')}</button>
                 </div>
               </div>
+              {confirmKind && confirmKind !== 'new' && (
+                <div role="alertdialog" aria-label={t('Confirm', 'تأكيد')} className="no-print mt-3 border border-amber-300 bg-amber-50 text-amber-900 rounded-xl p-3 text-xs">
+                  <p className="font-semibold">{confirmKind === 'example'
+                    ? t('This replaces the case on screen with an illustrative example. Your current case can be kept in your list first.', 'هذا يستبدل الحالة المعروضة بمثال توضيحي. يمكن حفظ حالتك الحالية في قائمتك أولا.')
+                    : t('This erases the case on screen. Your current case can be kept in your list first.', 'هذا يمسح الحالة المعروضة. يمكن حفظ حالتك الحالية في قائمتك أولا.')}</p>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    <button type="button" onClick={() => { setOthers(archiveCurrent(othersRef.current).slice(0, MAX_CASES - 1)); if (confirmKind === 'example') setS(EXAMPLE); else { setS(EMPTY); setStep(0); } setConfirmKind(null); }} className="font-bold bg-[#082C6B] text-white rounded-lg px-3 py-1.5">{t('Keep mine in my list, then continue', 'احتفظ بحالتي في قائمتي ثم تابع')}</button>
+                    <button type="button" onClick={() => { if (confirmKind === 'example') setS(EXAMPLE); else { setS(EMPTY); setStep(0); } setConfirmKind(null); }} className="font-bold border border-amber-400 rounded-lg px-3 py-1.5">{t('Replace without keeping', 'استبدل دون حفظ')}</button>
+                    <button type="button" onClick={() => setConfirmKind(null)} className="font-semibold underline px-2">{t('Cancel', 'إلغاء')}</button>
+                  </div>
+                </div>
+              )}
               <label className="block text-xs font-semibold text-slate-600 mt-5">{t('Supplier or category', 'المورّد أو الفئة')}
-                <input className={`${inputCls} mt-1`} value={s.supplier} onChange={e => set('supplier', e.target.value)} placeholder={t('e.g. Packaging supplier', 'مثال: مورّد التغليف')} /></label>
+                <input className={`${inputCls} mt-1`} list="desk-suggest" autoComplete="off" value={s.supplier} onChange={onSupplierChange} placeholder={t('e.g. Packaging supplier', 'مثال: مورّد التغليف')} /></label>
+              <datalist id="desk-suggest">{suggestions.map(x => <option key={`${x.source}-${x.name}`} value={x.name} label={srcLabel(x)} />)}</datalist>
+              <p className="text-[11px] text-slate-600 mt-1">{t('Why we ask: the name labels the case, links your saved checks and appears on the brief. Type anything, or pick from the list (saved cases, your supplier portfolio, Dependency Checks, UNSPSC service categories).', 'لماذا نسأل: الاسم يميّز الحالة ويربطها بفحوصاتك المحفوظة ويظهر في الملخص. اكتب أي اسم أو اختر من القائمة (الحالات المحفوظة، محفظة الموردين، فحوص الاعتماد، فئات خدمات UNSPSC).')}</p>
+              {prefillNote && <p role="status" className="text-[11px] text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-lg p-2 mt-2">{prefillNote}</p>}
+              {matchedCase && <p className="text-[11px] text-slate-700 mt-2">{t('You already have a saved case with this name. ', 'لديك حالة محفوظة بهذا الاسم. ')}<button type="button" onClick={() => openCase(matchedCase.clientKey)} className="font-bold text-[#082C6B] underline">{t('Open it', 'افتحها')}</button></p>}
               {depChecks.length > 0 ? (
                 <label className="block text-xs font-semibold text-slate-600 mt-4">{t('Or pick a supplier from your Dependency Check', 'أو اختر مورّداً من فحص الاعتماد لديك')}
                   <select className={`${inputCls} mt-1`} value={s.linkedCheckId ?? ''}
@@ -375,6 +553,7 @@ export function NegotiationDesk() {
               )}
               <fieldset className="mt-5">
                 <legend className="text-xs font-semibold text-slate-600 mb-2">{t('What kind of purchase is it?', 'ما نوع هذه المشتريات؟')}</legend>
+                <p className="text-[11px] text-slate-600 -mt-1 mb-2">{t('Why we ask: the purchase type sets which tactics fit and how the leverage rule reads your answers on the next step.', 'لماذا نسأل: نوع الشراء يحدد التكتيكات المناسبة وكيف تقرأ قاعدة النفوذ إجاباتك في الخطوة التالية.')}</p>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   {QUADRANTS.map(q => (
                     <button key={q.id} type="button" onClick={() => set('quadrant', q.id)} aria-pressed={s.quadrant === q.id}
@@ -470,6 +649,13 @@ export function NegotiationDesk() {
                 ))}
               </div>
               <button onClick={addPoint} className="no-print mt-3 flex items-center gap-1.5 text-xs font-bold text-white bg-[#082C6B] rounded-lg px-3 py-2"><Plus className="w-3.5 h-3.5" />{t('Add a price point', 'إضافة نقطة سعرية')}</button>
+              <details className="no-print mt-3 border border-slate-200 rounded-xl p-3 bg-white">
+                <summary className="text-xs font-bold text-[#082C6B] cursor-pointer">{t('Paste prices from a spreadsheet or email', 'الصق الأسعار من جدول أو بريد')}</summary>
+                <p className="text-[11px] text-slate-600 mt-2">{t('One price per line, for example "Q1 100" or "2026-03-01 98". Numbers with thousands commas are fine.', 'سعر واحد في كل سطر مثل "Q1 100" أو "2026-03-01 98". الأرقام بفواصل الآلاف مقبولة.')}</p>
+                <textarea className={`${inputCls} mt-2`} rows={4} value={pasteText} onChange={e => setPasteText(e.target.value)} aria-label={t('Paste prices', 'الصق الأسعار')} />
+                <button type="button" onClick={applyPaste} className="mt-2 text-xs font-bold text-white bg-[#082C6B] rounded-lg px-3 py-2">{t('Add these prices', 'أضف هذه الأسعار')}</button>
+                {pasteMsg && <p role="status" className="text-[11px] text-slate-700 mt-2">{pasteMsg}</p>}
+              </details>
               <div className="mt-5 border border-slate-200 rounded-xl p-4 bg-slate-50" role="status">
                 <p className="font-bold text-sm">{isAr ? DIR[trend.direction].ar : DIR[trend.direction].en}{trend.percentChange !== null && ` (${trend.percentChange > 0 ? '+' : ''}${trend.percentChange.toFixed(1)}%)`}</p>
                 <Spark points={s.points} />
