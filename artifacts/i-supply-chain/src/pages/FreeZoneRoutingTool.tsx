@@ -158,7 +158,7 @@ export function FreeZoneRoutingTool() {
               <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5">
                 {isAr ? 'المنطقة الحرة' : 'Free Zone'}
               </label>
-              <select
+              <select aria-label={isAr ? 'المنطقة الحرة' : 'Free Zone'}
                 value={inputs.freeZone}
                 onChange={e => onZoneChange(e.target.value as FreeZone)}
                 className="w-full text-xs border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-[#082C6B]"
