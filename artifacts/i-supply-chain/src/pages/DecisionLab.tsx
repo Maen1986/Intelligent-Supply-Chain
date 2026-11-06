@@ -53,10 +53,11 @@ function loadScenario(): DecisionScenario {
 
 type Tab = 'setup' | 'results';
 
-function NumberSelect({ value, onChange, max, min = 0 }: { value: number; onChange: (v: number) => void; max: number; min?: number }) {
+function NumberSelect({ value, onChange, max, min = 0, label }: { value: number; onChange: (v: number) => void; max: number; min?: number; label: string }) {
   const options = Array.from({ length: max - min + 1 }, (_, i) => min + i);
   return (
     <select
+      aria-label={label}
       value={value}
       onChange={e => onChange(parseInt(e.target.value))}
       className="text-[11px] border border-slate-200 rounded px-1 py-0.5 bg-white w-12 text-center focus:outline-none focus:ring-1 focus:ring-[#082C6B]"
@@ -181,7 +182,7 @@ export function DecisionLab() {
               key={t.id}
               onClick={() => setActiveTab(t.id)}
               className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-bold border-b-2 transition-colors ${
-                activeTab === t.id ? 'border-[#082C6B] text-[#082C6B]' : 'border-transparent text-slate-400 hover:text-slate-600'
+                activeTab === t.id ? 'border-[#082C6B] text-[#082C6B]' : 'border-transparent text-slate-500 hover:text-slate-600'
               }`}
             >
               {t.icon}
@@ -221,8 +222,8 @@ export function DecisionLab() {
                       className="flex-1 text-xs border border-slate-200 rounded px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#082C6B]"
                     />
                     <span className="text-[10px] text-muted-foreground shrink-0">{isAr ? 'الوزن' : 'Weight'}</span>
-                    <NumberSelect value={c.weight} min={0} max={10} onChange={v => updateCriterion(c.id, 'weight', v)} />
-                    <button onClick={() => removeCriterion(c.id)} className="p-1 text-slate-300 hover:text-red-500 shrink-0">
+                    <NumberSelect label={isAr ? 'الوزن' : 'Weight'} value={c.weight} min={0} max={10} onChange={v => updateCriterion(c.id, 'weight', v)} />
+                    <button aria-label={isAr ? 'حذف المعيار' : 'Remove criterion'} onClick={() => removeCriterion(c.id)} className="p-1 text-slate-300 hover:text-red-500 shrink-0">
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
@@ -271,11 +272,11 @@ export function DecisionLab() {
                       </td>
                       {scenario.criteria.filter(c => c.name.trim()).map(c => (
                         <td key={c.id} className="text-center py-1.5 px-1">
-                          <NumberSelect value={o.scores[c.id] ?? 0} min={0} max={5} onChange={v => updateOptionScore(o.id, c.id, v)} />
+                          <NumberSelect label={isAr ? 'الدرجة' : 'Score'} value={o.scores[c.id] ?? 0} min={0} max={5} onChange={v => updateOptionScore(o.id, c.id, v)} />
                         </td>
                       ))}
                       <td className="text-center">
-                        <button onClick={() => removeOption(o.id)} className="p-1 text-slate-300 hover:text-red-500">
+                        <button aria-label={isAr ? 'حذف الخيار' : 'Remove option'} onClick={() => removeOption(o.id)} className="p-1 text-slate-300 hover:text-red-500">
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </td>
