@@ -402,14 +402,14 @@ describe('POST /api/auth/forgot-password rate limiting', () => {
   });
 });
 
-describe('POST /api/auth/forgot-password — admin email guard', () => {
+describe('POST /api/auth/forgot-password — admin email recovery', () => {
   const ADMIN = 'admin@example.com';
 
   beforeEach(() => { process.env.ADMIN_EMAIL = ADMIN; });
   afterEach(() => { delete process.env.ADMIN_EMAIL; });
 
-  it('returns the generic 200 for the admin email but never issues a reset code', async () => {
-    // Even if an admin row exists with a passwordHash, no code should be stored or emailed.
+  it('emails a reset code to the admin email (admin recovery works like any account)', async () => {
+    // Admin recovery: a code is stored and emailed to the admin address.
     const bcrypt = (await import('bcryptjs')).default;
     dbState.selectRows = [{ ...user, email: ADMIN, role: 'admin', passwordHash: await bcrypt.hash('adminpass', 4) }];
     sendPasswordResetEmail.mockClear();
@@ -421,15 +421,15 @@ describe('POST /api/auth/forgot-password — admin email guard', () => {
       .set('X-Forwarded-For', '10.60.0.1')
       .send({ email: ADMIN });
 
-    // Same generic 200 as an unknown email — does not leak that the address is blocked.
     expect(res.status).toBe(200);
     expect(res.body.ok).toBe(true);
-    // The email helper must never have been called.
-    expect(sendPasswordResetEmail).not.toHaveBeenCalled();
+    expect(res.body.adminManaged).toBeUndefined();
+    expect(sendPasswordResetEmail).toHaveBeenCalledTimes(1);
   });
 
-  it('blocks the admin email case-insensitively', async () => {
+  it('matches the admin email case-insensitively and creates the admin row if missing', async () => {
     dbState.selectRows = [];
+    dbState.insertRows = [{ ...user, email: ADMIN, role: 'admin' }];
     sendPasswordResetEmail.mockClear();
     const app = makeApp('/api/auth', authRouter);
 
@@ -438,7 +438,7 @@ describe('POST /api/auth/forgot-password — admin email guard', () => {
       .set('X-Forwarded-For', '10.60.0.2')
       .send({ email: 'ADMIN@EXAMPLE.COM' });
     expect(res.status).toBe(200);
-    expect(sendPasswordResetEmail).not.toHaveBeenCalled();
+    expect(sendPasswordResetEmail).toHaveBeenCalledTimes(1);
   });
 
   it('still issues codes normally for non-admin emails', async () => {
@@ -456,13 +456,13 @@ describe('POST /api/auth/forgot-password — admin email guard', () => {
   });
 });
 
-describe('POST /api/auth/reset-password — admin email guard', () => {
+describe('POST /api/auth/reset-password — admin email recovery', () => {
   const ADMIN = 'admin@example.com';
 
   beforeEach(() => { process.env.ADMIN_EMAIL = ADMIN; });
   afterEach(() => { delete process.env.ADMIN_EMAIL; });
 
-  it('returns 403 for the admin email even when a valid reset code is supplied', async () => {
+  it('lets the admin set a new password with a valid emailed code', async () => {
     const bcrypt = (await import('bcryptjs')).default;
     const code = '123456';
     const resetTokenHash = await bcrypt.hash(code, 4);
@@ -474,18 +474,19 @@ describe('POST /api/auth/reset-password — admin email guard', () => {
       resetTokenHash,
       resetTokenExpiresAt: new Date(Date.now() + 60_000),
     }];
+    dbState.updateRows = [{ ...user, email: ADMIN, role: 'admin' }];
     const app = makeApp('/api/auth', authRouter);
 
     const res = await request(app)
       .post('/api/auth/reset-password')
       .set('X-Forwarded-For', '10.70.0.1')
-      .send({ email: ADMIN, code, newPassword: 'attackerpassword' });
+      .send({ email: ADMIN, code, newPassword: 'newadminpass' });
 
-    expect(res.status).toBe(403);
-    expect(res.body.ok).toBe(false);
+    expect(res.status).toBe(200);
+    expect(res.body.ok).toBe(true);
   });
 
-  it('blocks the admin email case-insensitively on reset', async () => {
+  it('rejects an admin reset with no valid code (no bypass)', async () => {
     dbState.selectRows = [];
     const app = makeApp('/api/auth', authRouter);
 
@@ -493,7 +494,7 @@ describe('POST /api/auth/reset-password — admin email guard', () => {
       .post('/api/auth/reset-password')
       .set('X-Forwarded-For', '10.70.0.2')
       .send({ email: 'ADMIN@EXAMPLE.COM', code: '000000', newPassword: 'attackerpassword' });
-    expect(res.status).toBe(403);
+    expect(res.status).toBe(400);
     expect(res.body.ok).toBe(false);
   });
 
