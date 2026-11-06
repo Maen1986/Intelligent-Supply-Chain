@@ -1659,7 +1659,7 @@ export const SETUP_GUIDES: Record<string, { en: string[]; ar: string[] }> = {
       '٤. في آي سبلاي تشين ← الإدارة ← مركز التكاملات ← الويب-هوك، أضف ويب-هوك بحدث "schedule.monthly_scorecard" والصق الرابط.',
       '٥. استبدل YOUR_ISC_DOMAIN في وحدة Set Variable وفي حقل "from" بالبريد.',
       '٦. أضف اتصال Gmail إلى وحدة Gmail.',
-      '٧. لا حاجة لمفتاح ISC API — بيانات الموردين والمستخدم والشهر تأتي من الحمولة مباشرةً.',
+      '٧. لا حاجة لمفتاح واجهة برمجة آي سبلاي تشين — بيانات الموردين والمستخدم والشهر تأتي من الحمولة مباشرةً.',
       '٨. تُرسل آي سبلاي تشين هذا الحدث في أول كل شهر تلقائياً.',
       '٩. شغّل السيناريو.',
     ],
@@ -1682,7 +1682,7 @@ export const SETUP_GUIDES: Record<string, { en: string[]; ar: string[] }> = {
       '٣. استبدل YOUR_ERP_BASE_URL وREPLACE_WITH_ERP_API_TOKEN في وحدتَي ERP.',
       '٤. استبدل YOUR_ISC_DOMAIN وREPLACE_WITH_ISC_API_KEY في وحدتَي آي سبلاي تشين (المفتاح يجب أن يملك صلاحية الكتابة).',
       '٥. راجع وحدة Set Variable (تعيين الحقول) وعدّل أسماء حقول ERP.',
-      '٦. عدّل تعيين حقول الموردين في وحدة ISC Suppliers بالمثل.',
+      '٦. عدّل تعيين حقول الموردين في وحدة موردي آي سبلاي تشين بالمثل.',
       '٧. غيّر قيمة slug "erp-sync" لتطابق اسم الحقيبة التي تستخدمها في آي سبلاي تشين.',
       '٨. يستخدم السيناريو مجدول Make.com الداخلي — لا حاجة لتسجيل ويب-هوك في آي سبلاي تشين.',
       '٩. شغّل السيناريو.',
@@ -2239,7 +2239,7 @@ export function PrepareDownloadModal({
         {/* API Key select + paste */}
         <div className="space-y-1.5">
           <label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
-            {ar ? 'مفتاح ISC API' : 'ISC API Key'}
+            {ar ? 'مفتاح واجهة برمجة آي سبلاي تشين' : 'ISC API Key'}
           </label>
           {keysLoading ? (
             <div className="flex items-center gap-2 text-xs text-muted-foreground py-1">
@@ -2384,7 +2384,7 @@ const NODE_DESCS: Array<{ match: RegExp; en: string; ar: string; icon: React.Ele
   { match: /http request \(isc suppliers\)/i, icon: Zap, en: 'Imports supplier data into ISC via the API',                          ar: 'يستورد بيانات الموردين إلى آي سبلاي تشين عبر API' },
   { match: /http request \(pdf convert\)/i, icon: Zap,   en: 'Converts the HTML report to a PDF attachment',                        ar: 'يحوّل التقرير HTML إلى مرفق PDF' },
   { match: /http request \(linear\/jira\)/i, icon: Zap,  en: 'Creates a ticket in Linear or Jira',                                  ar: 'ينشئ تذكرة في Linear أو Jira' },
-  { match: /http request \(isc api\)/i,  icon: Zap,      en: 'Calls the ISC REST API to fetch data',                                ar: 'يستدعي ISC API لجلب البيانات' },
+  { match: /http request \(isc api\)/i,  icon: Zap,      en: 'Calls the ISC REST API to fetch data',                                ar: 'يستدعي واجهة برمجة آي سبلاي تشين لجلب البيانات' },
   { match: /http \(slack\)/i,            icon: Zap,      en: 'Posts a message to a Slack channel',                                  ar: 'يرسل رسالة إلى قناة Slack' },
   { match: /http \(twilio\)/i,           icon: Zap,      en: 'Sends an SMS via Twilio',                                             ar: 'يرسل رسالة نصية SMS عبر Twilio' },
   { match: /webhooks post/i,             icon: Zap,      en: 'POSTs data to an external webhook URL',                               ar: 'يرسل البيانات إلى ويب-هوك خارجي' },
