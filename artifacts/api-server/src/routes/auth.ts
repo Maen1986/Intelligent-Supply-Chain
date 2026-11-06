@@ -274,7 +274,7 @@ router.post('/forgot-password', forgotPasswordRateLimiter, async (req, res) => {
   if (adminEmail && email.trim().toLowerCase() === adminEmail) {
     // Return the same generic response so the admin email is not enumerable.
     logger.warn({ reason: 'admin-email-blocked' }, '[auth] Forgot-password skipped: admin account is credential-managed via env vars');
-    res.json(genericResponse);
+    res.json({ ...genericResponse, adminManaged: true });
     return;
   }
 

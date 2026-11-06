@@ -35,7 +35,7 @@ export function Login() {
 
   // Registration fields
   const [form, setForm] = useState({
-    fullName: '', email: '', password: '', mobile: '', designation: '', company: '',
+    fullName: '', email: (() => { try { return localStorage.getItem('isc.lastEmail') || ''; } catch { return ''; } })(), password: '', mobile: '', designation: '', company: '',
   });
 
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
@@ -122,6 +122,12 @@ export function Login() {
         }
       }
       if (!res.ok) throw new Error(data?.error || '');
+      if (data?.adminManaged) {
+        setNotice(ar
+          ? 'هذا هو حساب المسؤول. لا يمكن إعادة تعيين كلمة مروره من هنا. سجّل الدخول بكلمة مرور المسؤول المضبوطة في إعدادات الخادم (ADMIN_PASSWORD).'
+          : 'This is the administrator account. Its password cannot be reset here. Sign in with the admin password set on the server (ADMIN_PASSWORD).');
+        return;
+      }
       setResetStep('verify');
       setNotice(ar
         ? 'إذا كان هناك حساب بهذا البريد، فقد أرسلنا رمزاً مكوناً من 6 أرقام (صالح 15 دقيقة). تحقق من الوارد والبريد غير الهام. إن لم يصل خلال دقيقتين فاضغط «أعد الإرسال» وتأكد من كتابة البريد نفسه الذي سجّلت به.'
@@ -190,9 +196,13 @@ export function Login() {
     setLoading(true);
     try {
       await login(form.email, form.password);
+      // Remember the email only (never the password); the browser's password manager fills the password.
+      try { localStorage.setItem('isc.lastEmail', form.email.trim()); } catch { /* ignore */ }
       navigate(redirectTo);
     } catch {
-      setError(ar ? 'البريد الإلكتروني أو كلمة المرور غير صحيحة.' : 'Invalid email or password.');
+      setError(ar
+        ? 'البريد الإلكتروني أو كلمة المرور غير صحيحة. إذا كنت متأكداً من صحتهما واستمرت المشكلة، تواصل معنا: info@iscsupplychain.com'
+        : 'Invalid email or password. If you are sure they are right and this keeps happening, contact info@iscsupplychain.com');
     } finally {
       setLoading(false);
     }
