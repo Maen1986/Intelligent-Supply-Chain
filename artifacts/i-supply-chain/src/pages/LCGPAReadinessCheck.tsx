@@ -312,7 +312,7 @@ export function LCGPAReadinessCheck() {
                 <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5">
                   {isAr ? 'القطاع' : 'Sector'}
                 </label>
-                <select
+                <select aria-label={isAr ? 'القطاع' : 'Sector'}
                   value={state.sector}
                   onChange={e => persist({ ...state, sector: e.target.value as Sector })}
                   className="w-full text-xs border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-[#082C6B]"

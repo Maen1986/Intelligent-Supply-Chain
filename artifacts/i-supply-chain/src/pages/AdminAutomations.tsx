@@ -160,8 +160,8 @@ function fmtRelative(iso: string | null): string {
 
 function successRateColor(rate: number | null): string {
   if (rate === null) return 'text-muted-foreground';
-  if (rate >= 95) return 'text-emerald-600';
-  if (rate >= 80) return 'text-amber-600';
+  if (rate >= 95) return 'text-emerald-700';
+  if (rate >= 80) return 'text-amber-700';
   return 'text-red-600';
 }
 
@@ -191,7 +191,7 @@ function CopyBtn({ value }: { value: string }) {
       className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors"
       title="Copy"
     >
-      {copied ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
+      {copied ? <Check className="w-3 h-3 text-emerald-700" /> : <Copy className="w-3 h-3" />}
     </button>
   );
 }
@@ -418,7 +418,7 @@ function OverviewTab({ ar, refresh }: { ar: boolean; refresh: number }) {
           </div>
           <div className="grid grid-cols-2 gap-3 text-sm">
             <StatItem label={ar ? 'الطلبات (30 يوم)' : 'Requests (30d)'} value={String(data.inbound.total)} />
-            <StatItem label={ar ? 'ناجح' : 'Successful'} value={String(data.inbound.successful)} className="text-emerald-600" />
+            <StatItem label={ar ? 'ناجح' : 'Successful'} value={String(data.inbound.successful)} className="text-emerald-700" />
             <StatItem label={ar ? 'فشل' : 'Failed'} value={String(data.inbound.failed)} className={data.inbound.failed > 0 ? 'text-red-600' : undefined} />
             <StatItem label={ar ? 'آخر استلام' : 'Last received'} value={fmtRelative(data.inbound.lastReceivedAt)} />
           </div>
@@ -432,7 +432,7 @@ function OverviewTab({ ar, refresh }: { ar: boolean; refresh: number }) {
           <h3 className="font-bold text-sm">{ar ? 'تنبيهات KPI (30 يوم)' : 'KPI Alerts (last 30 days)'}</h3>
         </div>
         <div className="flex items-center gap-3">
-          <span className={`text-3xl font-extrabold ${data.kpiAlerts.totalBreaches > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>
+          <span className={`text-3xl font-extrabold ${data.kpiAlerts.totalBreaches > 0 ? 'text-amber-700' : 'text-emerald-700'}`}>
             {data.kpiAlerts.totalBreaches}
           </span>
           <span className="text-sm text-muted-foreground">
@@ -582,15 +582,15 @@ function ConnectionHealthPanel({ ar }: { ar: boolean }) {
   };
 
   function latencyColor(ms: number) {
-    if (ms < 400)  return 'text-emerald-600';
-    if (ms < 1200) return 'text-amber-600';
+    if (ms < 400)  return 'text-emerald-700';
+    if (ms < 1200) return 'text-amber-700';
     return 'text-red-600';
   }
 
   function statusColor(code: number | null) {
     if (code === null)       return 'text-muted-foreground';
-    if (code >= 200 && code < 300) return 'text-emerald-600';
-    if (code >= 300 && code < 400) return 'text-amber-600';
+    if (code >= 200 && code < 300) return 'text-emerald-700';
+    if (code >= 300 && code < 400) return 'text-amber-700';
     return 'text-red-600';
   }
 
@@ -1137,7 +1137,7 @@ function ScheduleLogTab({ ar, refresh }: { ar: boolean; refresh: number }) {
                         <AlertTriangle className="w-3 h-3 inline me-1" />{r.errors.length > 60 ? `${r.errors.slice(0, 60)}…` : r.errors}
                       </span>
                     ) : (
-                      <span className="text-emerald-600">✓</span>
+                      <span className="text-emerald-700">✓</span>
                     )}
                   </td>
                 </tr>
@@ -2543,7 +2543,7 @@ export function TemplateCard({ template: t, ar }: { template: TemplateManifestIt
 
           {/* Trigger event hint */}
           <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800">
-            <Server className="w-3.5 h-3.5 shrink-0 mt-0.5 text-amber-600" />
+            <Server className="w-3.5 h-3.5 shrink-0 mt-0.5 text-amber-700" />
             <span>
               {t.triggerEvent === 'cron.daily' ? (
                 ar

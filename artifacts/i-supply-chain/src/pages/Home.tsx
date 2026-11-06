@@ -692,7 +692,7 @@ export function Home() {
             className="flex flex-col sm:flex-row gap-3 justify-center"
           >
             <Link href="/diagnostic">
-              <Button size="lg" className="w-full sm:w-auto bg-accent hover:bg-accent/90 text-white font-bold px-8 shadow-lg min-h-[52px] text-base">
+              <Button size="lg" className="w-full sm:w-auto bg-accent hover:bg-accent/90 text-[#082C6B] font-bold px-8 shadow-lg min-h-[52px] text-base">
                 {t('hero.ctaPrimary')}
               </Button>
             </Link>
@@ -708,7 +708,7 @@ export function Home() {
             animate={{ opacity: 1 }}
             transition={{ duration: 0.8, delay: 0.5 }}
           >
-            <Link href="/csr" className="text-sm text-white/60 hover:text-accent underline underline-offset-4 font-medium inline-flex items-center gap-1 transition-colors">
+            <Link href="/csr" className="text-sm text-white/80 hover:text-accent underline underline-offset-4 font-medium inline-flex items-center gap-1 transition-colors">
               {t('hero.ctaTertiary')} <ArrowRight className="w-3 h-3 rtl:rotate-180" />
             </Link>
           </motion.div>
@@ -774,13 +774,13 @@ export function Home() {
                     <span className={`w-10 h-10 rounded-xl flex items-center justify-center ${s.live ? 'bg-[#C9A84C]/15 text-[#C9A84C]' : 'bg-white/5 text-white/30'}`}>
                       <Icon className="w-5 h-5" />
                     </span>
-                    {!s.live && <Lock className="w-3.5 h-3.5 text-white/25" />}
+                    {!s.live && <Lock className="w-3.5 h-3.5 text-white/60" />}
                   </div>
-                  <p className={`text-[10px] font-black uppercase tracking-widest mb-1 ${s.live ? 'text-[#C9A84C]' : 'text-white/25'}`}>{i + 1}. {s.stage}</p>
-                  <p className={`text-sm font-bold mb-1.5 ${s.live ? 'text-white' : 'text-white/40'}`}>{s.tool}</p>
-                  <p className={`text-xs leading-relaxed ${s.live ? 'text-white/50' : 'text-white/25'}`}>{s.body}</p>
+                  <p className={`text-[10px] font-black uppercase tracking-widest mb-1 ${s.live ? 'text-[#C9A84C]' : 'text-white/60'}`}>{i + 1}. {s.stage}</p>
+                  <p className={`text-sm font-bold mb-1.5 ${s.live ? 'text-white' : 'text-white/65'}`}>{s.tool}</p>
+                  <p className={`text-xs leading-relaxed ${s.live ? 'text-white/50' : 'text-white/60'}`}>{s.body}</p>
                   {!s.live && (
-                    <p className="text-[10px] text-white/25 mt-2 uppercase tracking-wider font-bold">
+                    <p className="text-[10px] text-white/60 mt-2 uppercase tracking-wider font-bold">
                       {isAr ? 'على خارطة الطريق' : 'On our roadmap'}
                     </p>
                   )}
@@ -950,8 +950,8 @@ export function Home() {
             <div className="rounded-2xl overflow-hidden border border-white/10">
               {/* Table header */}
               <div className="grid grid-cols-3 text-xs font-black uppercase tracking-wider">
-                <div className="bg-white/5 px-4 py-3 text-white/40">{isAr ? 'ما تحتاجه' : 'What you need'}</div>
-                <div className="bg-white/10 px-4 py-3 text-white/40 text-center">{isAr ? 'الاستشاري التقليدي' : 'Traditional Consultant'}</div>
+                <div className="bg-white/5 px-4 py-3 text-white/65">{isAr ? 'ما تحتاجه' : 'What you need'}</div>
+                <div className="bg-white/10 px-4 py-3 text-white/65 text-center">{isAr ? 'الاستشاري التقليدي' : 'Traditional Consultant'}</div>
                 <div className="px-4 py-3 text-center text-[#C9A84C]" style={{ background: 'rgba(201,168,76,0.12)' }}>{isAr ? '⚡ برج التحكم ISC' : '⚡ ISC Control Tower'}</div>
               </div>
               {(isAr
@@ -974,7 +974,7 @@ export function Home() {
               ).map(([label, trad, isc], i) => (
                 <div key={i} className={`grid grid-cols-3 text-sm border-t border-white/5 ${i % 2 === 0 ? '' : 'bg-white/[0.02]'}`}>
                   <div className="px-4 py-3 text-white/60 font-medium text-xs">{label}</div>
-                  <div className="px-4 py-3 text-center text-white/40 text-xs">{trad}</div>
+                  <div className="px-4 py-3 text-center text-white/65 text-xs">{trad}</div>
                   <div className="px-4 py-3 text-center font-bold text-[#C9A84C] text-xs" style={{ background: 'rgba(201,168,76,0.05)' }}>{isc}</div>
                 </div>
               ))}
@@ -1223,7 +1223,7 @@ export function Home() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center pt-2">
               <Link href="/diagnostic">
-                <Button size="lg" className="bg-accent hover:bg-accent/90 text-white font-bold px-8 min-h-[52px]">
+                <Button size="lg" className="bg-accent hover:bg-accent/90 text-[#082C6B] font-bold px-8 min-h-[52px]">
                   {isAr ? 'ابدأ التشخيص الذكي المجاني' : 'Start Free AI Diagnostic'}
                 </Button>
               </Link>

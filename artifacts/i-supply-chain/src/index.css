@@ -65,7 +65,7 @@
   --muted: 213 67% 95%;
   --muted-foreground: 213 12% 39%;
   --accent: 42 72% 47%;
-  --accent-foreground: 0 0% 100%;
+  --accent-foreground: 220 87% 22%;
   --destructive: 0 84% 60%;
   --destructive-foreground: 0 0% 100%;
   
@@ -98,7 +98,7 @@ html[lang="ar"] {
   --muted: 213 20% 20%;
   --muted-foreground: 213 12% 70%;
   --accent: 42 72% 47%;
-  --accent-foreground: 0 0% 100%;
+  --accent-foreground: 220 87% 22%;
   --destructive: 0 84% 60%;
   --destructive-foreground: 0 0% 100%;
   
@@ -390,4 +390,10 @@ html[lang="ar"] {
   .print-zone-alert-config .alert-cfg-print-header {
     display: block !important;
   }
+}
+
+/* a11y (6 Nov 2026): lift slate-400/500 text to WCAG 2.1 AA contrast on white and slate-50/100 backgrounds. */
+:root {
+  --color-slate-400: #5f6f88;
+  --color-slate-500: #52627a;
 }

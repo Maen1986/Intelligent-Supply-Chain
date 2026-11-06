@@ -655,7 +655,7 @@ export function MyAssessments() {
         <div className="container mx-auto px-4 py-10 max-w-5xl">
           <div className="inline-flex items-center gap-2 bg-white/10 rounded-full px-4 py-1.5 mb-4">
             <Award className="w-4 h-4 text-accent" />
-            <span className="text-accent font-bold text-xs uppercase tracking-widest">
+            <span className="text-[#E8C468] font-bold text-xs uppercase tracking-widest">
               {ar ? 'سجلّي' : 'My History'}
             </span>
           </div>

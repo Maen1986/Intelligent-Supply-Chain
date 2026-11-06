@@ -166,7 +166,7 @@ export function GccSeasonalCalendar() {
               <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5">
                 {isAr ? 'الدولة' : 'Country'}
               </label>
-              <select
+              <select aria-label={isAr ? 'الدولة' : 'Country'}
                 value={sel.country}
                 onChange={e => persist({ ...sel, country: e.target.value as GccCountry })}
                 className="w-full text-xs border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-[#082C6B]"
@@ -180,7 +180,7 @@ export function GccSeasonalCalendar() {
               <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5">
                 {isAr ? 'الصناعة' : 'Industry'}
               </label>
-              <select
+              <select aria-label={isAr ? 'الصناعة' : 'Industry'}
                 value={sel.industry}
                 onChange={e => persist({ ...sel, industry: e.target.value })}
                 className="w-full text-xs border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-[#082C6B]"
@@ -341,7 +341,7 @@ export function GccSeasonalCalendar() {
               <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5">
                 {isAr ? 'متوسط الاستهلاك اليومي' : 'Average Daily Usage'}
               </label>
-              <input
+              <input aria-label={isAr ? 'متوسط الاستهلاك اليومي' : 'Average Daily Usage'}
                 type="number" min={0}
                 value={rop.avgDailyUsage ?? ''}
                 onChange={e => persistRop({ ...rop, avgDailyUsage: e.target.value === '' ? null : Math.max(0, parseFloat(e.target.value) || 0) })}
@@ -353,7 +353,7 @@ export function GccSeasonalCalendar() {
               <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5">
                 {isAr ? 'مهلة التوريد الأساسية (أيام)' : 'Base Lead Time (days)'}
               </label>
-              <input
+              <input aria-label={isAr ? 'مهلة التوريد الأساسية (أيام)' : 'Base Lead Time (days)'}
                 type="number" min={0}
                 value={rop.baseLeadTimeDays ?? ''}
                 onChange={e => persistRop({ ...rop, baseLeadTimeDays: e.target.value === '' ? null : Math.max(0, parseFloat(e.target.value) || 0) })}
@@ -368,7 +368,7 @@ export function GccSeasonalCalendar() {
               <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5">
                 {isAr ? 'تاريخ الطلب' : 'Order Date'}
               </label>
-              <input
+              <input aria-label={isAr ? 'تاريخ الطلب' : 'Order Date'}
                 type="date"
                 value={rop.orderDate}
                 onChange={e => persistRop({ ...rop, orderDate: e.target.value })}
@@ -379,7 +379,7 @@ export function GccSeasonalCalendar() {
               <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5">
                 {isAr ? 'مضاعف الطلب الموسمي (١.٠ = بدون تغيير)' : 'Seasonal Demand Multiplier (1.0 = no change)'}
               </label>
-              <input
+              <input aria-label={isAr ? 'مضاعف الطلب الموسمي (١.٠ = بدون تغيير)' : 'Seasonal Demand Multiplier (1.0 = no change)'}
                 type="number" min={0} step={0.05}
                 value={rop.seasonalDemandMultiplier}
                 onChange={e => persistRop({ ...rop, seasonalDemandMultiplier: Math.max(0, parseFloat(e.target.value) || 0) })}
@@ -392,7 +392,7 @@ export function GccSeasonalCalendar() {
             <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5">
               {isAr ? 'مصدر مضاعف الطلب (اختياري لكن يُنصح به)' : 'Demand Multiplier Source (optional but recommended)'}
             </label>
-            <input
+            <input aria-label={isAr ? 'مصدر مضاعف الطلب (اختياري لكن يُنصح به)' : 'Demand Multiplier Source (optional but recommended)'}
               type="text"
               value={rop.demandMultiplierSource}
               onChange={e => persistRop({ ...rop, demandMultiplierSource: e.target.value })}

@@ -78,7 +78,7 @@ export function CustomerVoice() {
           <div>
             <p className="text-xs text-muted-foreground mb-1">{t('voice.filterTool')}</p>
             <Select value={tool} onValueChange={setTool}>
-              <SelectTrigger className="w-[150px] h-9" data-testid="analytics-filter-tool">
+              <SelectTrigger aria-label={t('voice.filterTool')} className="w-[150px] h-9" data-testid="analytics-filter-tool">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -90,7 +90,7 @@ export function CustomerVoice() {
           </div>
           <div>
             <p className="text-xs text-muted-foreground mb-1">{t('voice.from')}</p>
-            <input
+            <input aria-label={t('voice.from')}
               type="date"
               value={from}
               onChange={(e) => setFrom(e.target.value)}
@@ -100,7 +100,7 @@ export function CustomerVoice() {
           </div>
           <div>
             <p className="text-xs text-muted-foreground mb-1">{t('voice.to')}</p>
-            <input
+            <input aria-label={t('voice.to')}
               type="date"
               value={to}
               onChange={(e) => setTo(e.target.value)}
