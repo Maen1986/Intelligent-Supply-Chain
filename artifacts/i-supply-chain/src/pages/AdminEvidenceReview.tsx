@@ -221,7 +221,7 @@ export function AdminEvidenceReview() {
                           <div className="flex items-center gap-1 mb-0.5">
                             {rec.aiEvaluation.plausible_support
                               ? <CheckCircle2 className="w-3.5 h-3.5 text-green-600 shrink-0" />
-                              : <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0" />}
+                              : <AlertTriangle className="w-3.5 h-3.5 text-amber-700 shrink-0" />}
                             <span className={`text-xs font-semibold ${rec.aiEvaluation.plausible_support ? 'text-green-700' : 'text-amber-700'}`}>
                               {rec.aiEvaluation.plausible_support
                                 ? (ar ? 'دليل مقبول' : 'Plausible support')
