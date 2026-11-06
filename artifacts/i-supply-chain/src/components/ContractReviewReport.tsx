@@ -104,7 +104,7 @@ function FindingCard({ finding, isAr, isOpen, onToggle }: {
     <div className="border border-slate-200 rounded-xl overflow-hidden bg-white">
       <button type="button" onClick={onToggle} className="w-full px-3 py-2.5 flex items-center justify-between gap-2 hover:bg-slate-50 transition-colors text-left">
         <div className="flex items-center gap-2 min-w-0">
-          {isOpen ? <ChevronUp className="w-3.5 h-3.5 text-slate-400 shrink-0" /> : <ChevronDown className="w-3.5 h-3.5 text-slate-400 shrink-0" />}
+          {isOpen ? <ChevronUp className="w-3.5 h-3.5 text-slate-500 shrink-0" /> : <ChevronDown className="w-3.5 h-3.5 text-slate-500 shrink-0" />}
           <span className="text-xs font-bold text-slate-700 truncate">{isAr ? finding.titleAr : finding.titleEn}</span>
         </div>
         <div className="flex items-center gap-1.5 shrink-0 flex-wrap justify-end">
@@ -113,7 +113,7 @@ function FindingCard({ finding, isAr, isOpen, onToggle }: {
       </button>
       {isOpen && (
         <div className="px-3 pb-3 space-y-3 border-t border-slate-100">
-          <p className="text-[10px] text-slate-400 italic pt-2">{isAr ? `المصدر: ${finding.sourceAr}` : `Source: ${finding.sourceEn}`}</p>
+          <p className="text-[10px] text-slate-500 italic pt-2">{isAr ? `المصدر: ${finding.sourceAr}` : `Source: ${finding.sourceEn}`}</p>
 
           <CausalChain finding={finding} isAr={isAr} />
 
