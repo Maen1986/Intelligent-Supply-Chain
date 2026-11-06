@@ -154,9 +154,9 @@ const SOURCES: Source[] = [
   },
   {
     name:    'Proprietary GCC Practitioner Data',
-    nameAr:  'بيانات الممارسين الخليجيين الخاصة بـ ISC',
+    nameAr:  'بيانات الممارسين الخليجيين الخاصة بـ آي سبلاي تشين',
     org:     'I Supply Chain (ISC)',
-    orgAr:   'آي سبلاي تشين (ISC)',
+    orgAr:   'آي سبلاي تشين (آي سبلاي تشين)',
     year:    '2022–2025',
     kpis:    'GCC-specific calibrations across all 24 KPIs',
     kpisAr:  'معايرة خاصة بدول الخليج عبر جميع مؤشرات الأداء الـ 24',
@@ -300,7 +300,7 @@ export function DataSources() {
           </h1>
           <p className="text-white/80 text-lg leading-relaxed max-w-2xl mx-auto">
             {ar
-              ? 'توثيق شامل لمصادر بيانات مؤشرات الأداء المعتمدة في منصة ISC، ومنهجية التقييم، وسجل مراجعات الأرقام المرجعية.'
+              ? 'توثيق شامل لمصادر بيانات مؤشرات الأداء المعتمدة في منصة آي سبلاي تشين، ومنهجية التقييم، وسجل مراجعات الأرقام المرجعية.'
               : 'Full documentation of the authoritative data sources, scoring methodology, and benchmark revision history behind the ISC KPI platform.'}
           </p>
           <div className="mt-6 inline-flex items-center gap-2 bg-white/10 rounded-full px-4 py-2 text-sm border border-white/20">
@@ -484,7 +484,7 @@ export function DataSources() {
           </p>
           <p>
             {ar
-              ? 'تعكس المؤشرات المرجعية المذكورة في هذه الصفحة متوسطات قطاعية مجمّعة من مصادر بحثية عامة وبيانات ممارسين خاصة. لا تمثّل هذه الأرقام ضمانات لأداء أي منظمة بعينها. يتحمل المستخدم مسؤولية التحقق من ملاءمة هذه المؤشرات لسياقه الخاص. جميع مؤشرات الأداء وأدوات التقييم ملكية فكرية حصرية لـ ISC.'
+              ? 'تعكس المؤشرات المرجعية المذكورة في هذه الصفحة متوسطات قطاعية مجمّعة من مصادر بحثية عامة وبيانات ممارسين خاصة. لا تمثّل هذه الأرقام ضمانات لأداء أي منظمة بعينها. يتحمل المستخدم مسؤولية التحقق من ملاءمة هذه المؤشرات لسياقه الخاص. جميع مؤشرات الأداء وأدوات التقييم ملكية فكرية حصرية لـ آي سبلاي تشين.'
               : 'Benchmarks on this page reflect sector-level aggregates compiled from public research and proprietary practitioner data. They are not guarantees of performance for any individual organisation. Users are responsible for validating applicability to their specific context. All KPI frameworks and assessment tools are exclusive intellectual property of ISC.'}
           </p>
         </section>
