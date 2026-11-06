@@ -397,7 +397,7 @@ export function ResiliencyToolsSection({ isAr }: Props) {
                     <div className="flex items-start justify-between gap-3 flex-wrap">
                       <div className="flex-1 min-w-[180px]">
                         <p className="font-bold text-sm text-slate-800">{isAr ? c.labelAr : c.label}</p>
-                        <p className="text-[11px] text-slate-400 mt-0.5">{isAr ? c.descAr : c.desc}</p>
+                        <p className="text-[11px] text-slate-500 mt-0.5">{isAr ? c.descAr : c.desc}</p>
                       </div>
                       <div className="flex items-center gap-1">
                         {[1, 2, 3, 4, 5].map(n => (
@@ -426,7 +426,7 @@ export function ResiliencyToolsSection({ isAr }: Props) {
                   <label key={i.id} className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-colors ${checked ? 'bg-red-50 border-red-300' : 'bg-white border-slate-200 hover:bg-slate-50'}`}>
                     <input type="checkbox" checked={checked} onChange={() => toggleBcp(i.id)} className="mt-0.5 w-4 h-4 accent-red-600" />
                     <span className="text-sm text-slate-700 flex-1">{isAr ? i.labelAr : i.label}</span>
-                    <span className="text-[10px] font-bold text-slate-400 shrink-0">+{i.weight}</span>
+                    <span className="text-[10px] font-bold text-slate-500 shrink-0">+{i.weight}</span>
                   </label>
                 );
               })}
@@ -440,7 +440,7 @@ export function ResiliencyToolsSection({ isAr }: Props) {
               {SCENARIOS.map(s => (
                 <button key={s.id} onClick={() => setScenario(s.id)} className={`text-left p-4 rounded-2xl border-2 transition-colors ${scenarioId === s.id ? 'border-red-600 bg-red-50' : 'border-slate-200 bg-white hover:bg-slate-50'}`}>
                   <p className="font-bold text-sm text-slate-800">{isAr ? s.labelAr : s.label}</p>
-                  <p className="text-[11px] text-slate-400 mt-1">{isAr ? s.descAr : s.desc}</p>
+                  <p className="text-[11px] text-slate-500 mt-1">{isAr ? s.descAr : s.desc}</p>
                 </button>
               ))}
             </div>
@@ -483,12 +483,12 @@ export function ResiliencyToolsSection({ isAr }: Props) {
                     <p className="font-bold text-sm text-slate-800">{isAr ? cs.companiesEventAr : cs.companiesEvent}</p>
                     <span className="text-[10px] font-bold text-red-700 bg-red-50 border border-red-200 rounded-full px-2 py-0.5 shrink-0">{cs.year}</span>
                   </div>
-                  <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide mb-2">{isAr ? cs.disruptionTypeAr : cs.disruptionType}</p>
+                  <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-2">{isAr ? cs.disruptionTypeAr : cs.disruptionType}</p>
                   <p className="text-xs text-slate-600 leading-relaxed mb-2">{isAr ? cs.metricsAr : cs.metrics}</p>
                   <div className="bg-amber-50 border border-amber-200 rounded-xl p-2.5 mb-2">
                     <p className="text-xs text-amber-900 leading-relaxed"><span className="font-bold">{isAr ? 'الدرس: ' : 'Lesson: '}</span>{isAr ? cs.lessonAr : cs.lesson}</p>
                   </div>
-                  <p className="text-[10px] text-slate-400">{isAr ? 'المصدر: ' : 'Source: '}{cs.source}</p>
+                  <p className="text-[10px] text-slate-500">{isAr ? 'المصدر: ' : 'Source: '}{cs.source}</p>
                 </div>
               ))}
             </div>
@@ -508,7 +508,7 @@ export function ResiliencyToolsSection({ isAr }: Props) {
             {/* Step 1 + 4: critical nodes */}
             <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
               <p className="text-xs font-bold text-slate-700 mb-1">{isAr ? 'الخطوة 1 و4 — العقد الحرجة' : 'Steps 1 & 4 — Critical Nodes'}</p>
-              <p className="text-[11px] text-slate-400 mb-3">
+              <p className="text-[11px] text-slate-500 mb-3">
                 {isAr ? 'أضف كل عميل رئيسي أو مورّد أو مصنع أحادي المصدر، ونسبته من إجمالي الإيراد، وحدّد ما إذا كان زمن التعافي أطول من زمن الصمود له (عندها فقط يُحتسب كعقدة "معرّضة للخطر فعلياً").' : 'Add each key customer, supplier, or single-source plant, its % of total revenue, and whether its recovery time exceeds your survival time (only then does it count as "genuinely at risk").'}
               </p>
               {/* #182 honesty note: leadTimeDays/route are recorded for reference on each node
@@ -540,7 +540,7 @@ export function ResiliencyToolsSection({ isAr }: Props) {
                       <input type="checkbox" checked={n.atRisk} onChange={e => updateRarNode(n.id, { atRisk: e.target.checked })} className="w-3.5 h-3.5 accent-red-600" />
                       {isAr ? 'التعافي > الصمود' : 'TTR > TTS'}
                     </label>
-                    <button onClick={() => removeRarNode(n.id)} className="text-slate-400 hover:text-red-600 shrink-0"><Trash2 className="w-3.5 h-3.5" /></button>
+                    <button onClick={() => removeRarNode(n.id)} className="text-slate-500 hover:text-red-600 shrink-0"><Trash2 className="w-3.5 h-3.5" /></button>
                   </div>
                 ))}
                 <div className="flex items-center gap-3 flex-wrap">
@@ -603,7 +603,7 @@ export function ResiliencyToolsSection({ isAr }: Props) {
                 <div className="flex items-center justify-between gap-2 flex-wrap">
                   <p className="text-xs font-bold text-slate-700">{isAr ? 'سيناريوهات "ماذا لو" المحفوظة' : 'Saved What-If Scenarios'}</p>
                   {user && (
-                    <span className="text-[10px] text-slate-400">
+                    <span className="text-[10px] text-slate-500">
                       {rarSyncStatus === 'saving' ? (isAr ? 'جارٍ الحفظ...' : 'Saving...')
                         : rarSyncStatus === 'saved' ? (isAr ? 'تم الحفظ' : 'Saved')
                         : rarSyncStatus === 'error' ? (isAr ? 'تعذّر الحفظ (محفوظ محلياً)' : 'Save failed (kept locally)')
@@ -611,7 +611,7 @@ export function ResiliencyToolsSection({ isAr }: Props) {
                     </span>
                   )}
                 </div>
-                <p className="text-[11px] text-slate-400">
+                <p className="text-[11px] text-slate-500">
                   {isAr
                     ? 'عدّل عقد أي سيناريو (المورّد/المسار/مهلة التوريد/النسبة/التعرّض) بشكل مستقل عن خط الأساس أعلاه، ثم قارن التعرّض جنباً إلى جنب. (تُحتسب النسبة المئوية للتعرّض فقط من نسبة الإيراد وحالة "معرّض للخطر" — المسار ومهلة التوريد للتوثيق فقط.)'
                     : "Edit any scenario's nodes (supplier, route, lead-time, %-revenue, at-risk) independently of the baseline above, then compare exposure side-by-side. (Only %-revenue and at-risk status drive the exposure % -- route and lead-time are recorded for reference only.)"}
@@ -625,7 +625,7 @@ export function ResiliencyToolsSection({ isAr }: Props) {
                         <input type="text" value={s.name} onChange={e => updateRarScenario(s.id, { name: e.target.value })}
                           aria-label={isAr ? 'اسم السيناريو' : 'Scenario name'}
                           className="flex-1 min-w-[140px] text-xs font-bold px-2.5 py-1.5 rounded-lg border border-slate-200" />
-                        <button onClick={() => removeRarScenario(s.id)} className="text-slate-400 hover:text-red-600 shrink-0"><Trash2 className="w-3.5 h-3.5" /></button>
+                        <button onClick={() => removeRarScenario(s.id)} className="text-slate-500 hover:text-red-600 shrink-0"><Trash2 className="w-3.5 h-3.5" /></button>
                       </div>
                       <div className="space-y-1.5">
                         {s.nodes.map(n => (
@@ -646,7 +646,7 @@ export function ResiliencyToolsSection({ isAr }: Props) {
                               <input type="checkbox" checked={n.atRisk} onChange={e => updateRarScenarioNode(s.id, n.id, { atRisk: e.target.checked })} className="w-3.5 h-3.5 accent-red-600" />
                               {isAr ? 'خطر' : 'At risk'}
                             </label>
-                            <button onClick={() => removeRarScenarioNode(s.id, n.id)} className="text-slate-400 hover:text-red-600 shrink-0"><Trash2 className="w-3 h-3" /></button>
+                            <button onClick={() => removeRarScenarioNode(s.id, n.id)} className="text-slate-500 hover:text-red-600 shrink-0"><Trash2 className="w-3 h-3" /></button>
                           </div>
                         ))}
                         <button onClick={() => addRarScenarioNode(s.id)} className="flex items-center gap-1.5 text-[10px] font-semibold text-red-700 hover:text-red-800">
@@ -690,7 +690,7 @@ export function ResiliencyToolsSection({ isAr }: Props) {
                         <td className="px-2.5 py-1.5 font-bold text-red-800">{isAr ? 'خط الأساس' : 'Baseline'}</td>
                         <td className="px-2.5 py-1.5">{baselineRarResult.rawExposurePct === 0 ? '—' : `${baselineRarResult.midPct.toFixed(1)}%`}</td>
                         <td className="px-2.5 py-1.5">{baselineRarResult.annualRevenueNum > 0 ? formatDollarCompact(baselineRarResult.dollarAtMedian) : '—'}</td>
-                        <td className="px-2.5 py-1.5 text-slate-400">—</td>
+                        <td className="px-2.5 py-1.5 text-slate-500">—</td>
                       </tr>
                       {rarScenarios.map(s => {
                         const sResult = computeRarExposure(s.nodes, s.meta);
@@ -702,7 +702,7 @@ export function ResiliencyToolsSection({ isAr }: Props) {
                             <td className="px-2.5 py-1.5 font-semibold text-slate-700">{s.name}</td>
                             <td className="px-2.5 py-1.5">{sResult.rawExposurePct === 0 ? '—' : `${sResult.midPct.toFixed(1)}%`}</td>
                             <td className="px-2.5 py-1.5">{sResult.annualRevenueNum > 0 ? formatDollarCompact(sResult.dollarAtMedian) : '—'}</td>
-                            <td className={`px-2.5 py-1.5 font-bold ${deltaPp > 0.05 ? 'text-red-600' : deltaPp < -0.05 ? 'text-emerald-600' : 'text-slate-400'}`}>
+                            <td className={`px-2.5 py-1.5 font-bold ${deltaPp > 0.05 ? 'text-red-600' : deltaPp < -0.05 ? 'text-emerald-600' : 'text-slate-500'}`}>
                               {formatPPDelta(deltaPp)}{deltaDollar !== null && ` / ${formatDollarDelta(deltaDollar)}`}
                             </td>
                           </tr>
@@ -725,7 +725,7 @@ export function ResiliencyToolsSection({ isAr }: Props) {
                   </div>
                 ))}
               </div>
-              <p className="text-[10px] text-slate-400 mt-2 flex items-center gap-1">
+              <p className="text-[10px] text-slate-500 mt-2 flex items-center gap-1">
                 <ExternalLink className="w-3 h-3" />
                 {isAr ? `مثال محسوب: ${RAR_WORKED_EXAMPLE.company} — تعرّض بسيط ${RAR_WORKED_EXAMPLE.exposureNaivePct}% مقابل ${RAR_WORKED_EXAMPLE.exposureWithMappedInterdependenciesPct}% مع ترابط مُرسَّم بالكامل (${RAR_WORKED_EXAMPLE.source})`
                   : `Worked example: ${RAR_WORKED_EXAMPLE.company} — naive exposure ${RAR_WORKED_EXAMPLE.exposureNaivePct}% vs. ${RAR_WORKED_EXAMPLE.exposureWithMappedInterdependenciesPct}% with fully mapped interdependencies (${RAR_WORKED_EXAMPLE.source}).`}
