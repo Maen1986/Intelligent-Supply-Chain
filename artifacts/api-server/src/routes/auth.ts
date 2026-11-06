@@ -178,12 +178,16 @@ router.post('/login', loginRateLimiter, async (req, res) => {
   const adminEmail    = process.env.ADMIN_EMAIL?.trim().toLowerCase();
   const adminPassword = process.env.ADMIN_PASSWORD;
   if (adminEmail && email.trim().toLowerCase() === adminEmail) {
-    if (!adminPassword || !safeEqual(password, adminPassword)) {
-      res.status(401).json({ ok: false, error: 'Invalid email or password.' });
-      return;
-    }
     try {
       let [user] = await db.select().from(usersTable).where(eq(usersTable.email, adminEmail)).limit(1);
+      // Accept the ADMIN_PASSWORD env var OR a password the admin set through
+      // the emailed reset code (stored as a bcrypt hash on the admin row).
+      const envOk  = !!adminPassword && safeEqual(password, adminPassword);
+      const hashOk = !envOk && !!user?.passwordHash && await bcrypt.compare(password, user.passwordHash);
+      if (!envOk && !hashOk) {
+        res.status(401).json({ ok: false, error: 'Invalid email or password.' });
+        return;
+      }
       if (!user) {
         const [created] = await db
           .insert(usersTable)
@@ -268,19 +272,16 @@ router.post('/forgot-password', forgotPasswordRateLimiter, async (req, res) => {
   const { email, lang } = parsed.data;
   const genericResponse = { ok: true, message: 'If an account exists for that email, a reset code has been sent.' };
 
-  // Block the admin email — the admin account is credential-managed via env
-  // vars and must never be reset through the self-service flow.
-  const adminEmail = process.env.ADMIN_EMAIL?.trim().toLowerCase();
-  if (adminEmail && email.trim().toLowerCase() === adminEmail) {
-    // Return the same generic response so the admin email is not enumerable.
-    logger.warn({ reason: 'admin-email-blocked' }, '[auth] Forgot-password skipped: admin account is credential-managed via env vars');
-    res.json({ ...genericResponse, adminManaged: true });
-    return;
-  }
-
   try {
-    const [user] = await db.select().from(usersTable).where(sql`lower(${usersTable.email}) = ${email.trim().toLowerCase()}`).limit(1);
-    if (!user || !user.passwordHash) {
+    let [user] = await db.select().from(usersTable).where(sql`lower(${usersTable.email}) = ${email.trim().toLowerCase()}`).limit(1);
+    const isAdminEmail = !!process.env.ADMIN_EMAIL && email.trim().toLowerCase() === process.env.ADMIN_EMAIL.trim().toLowerCase();
+    if (isAdminEmail && !user) {
+      // Admin has never signed in yet: create the admin row so a code can be stored.
+      const [created] = await db.insert(usersTable)
+        .values({ email: email.trim().toLowerCase(), fullName: 'Administrator', role: 'admin' }).returning();
+      user = created;
+    }
+    if (!user || (!user.passwordHash && !isAdminEmail)) {
       // No account (or a legacy profile with no password to reset) — same reply.
       logger.warn({ reason: !user ? 'no-account' : 'no-password-set' }, '[auth] Forgot-password skipped: no email sent');
       res.json(genericResponse);
@@ -326,14 +327,6 @@ router.post('/reset-password', forgotPasswordRateLimiter, async (req, res) => {
     return;
   }
   const { email, code, newPassword } = parsed.data;
-
-  // Block the admin email — even with a valid code, the admin password is
-  // controlled exclusively by the ADMIN_PASSWORD env var.
-  const adminEmailGuard = process.env.ADMIN_EMAIL?.trim().toLowerCase();
-  if (adminEmailGuard && email.trim().toLowerCase() === adminEmailGuard) {
-    res.status(403).json({ ok: false, error: 'This account cannot use the self-service password reset.' });
-    return;
-  }
 
   try {
     const [user] = await db.select().from(usersTable).where(sql`lower(${usersTable.email}) = ${email.trim().toLowerCase()}`).limit(1);
