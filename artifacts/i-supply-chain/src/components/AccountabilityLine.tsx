@@ -19,7 +19,7 @@ export function AccountabilityLine({ ar }: { ar?: boolean }) {
     <p className="flex items-center gap-1.5 text-[11px] text-muted-foreground/80 mt-2">
       <ShieldCheck className="w-3 h-3 shrink-0" />
       {ar
-        ? "تمت مراجعته وفق معايير I Supply Chain؛ للتصعيد تواصل مباشرة مع مَعِين الحقش."
+        ? "تمت مراجعته وفق معايير آي سبلاي تشين؛ للتصعيد تواصل مباشرة مع مَعِين الحقش."
         : "Reviewed against ISC's standards; escalate to Ma'in Alhaqash directly."}
     </p>
   );
