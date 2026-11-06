@@ -804,7 +804,7 @@ export function ReportGenerator() {
           <div className="container mx-auto px-4 py-14 max-w-4xl text-center">
             <div className="inline-flex items-center gap-2 bg-accent/20 border border-accent/30 rounded-full px-4 py-1.5 mb-5">
               <FileText className="w-4 h-4 text-accent" />
-              <span className="text-accent font-bold text-sm uppercase tracking-widest">SME Growth Programme</span>
+              <span className="text-[#E8C468] font-bold text-sm uppercase tracking-widest">SME Growth Programme</span>
             </div>
             <h1 className="text-3xl md:text-4xl font-extrabold mb-3">
               30-Page Supply Chain Strategy Report
