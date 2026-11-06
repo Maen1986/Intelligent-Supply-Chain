@@ -33,7 +33,7 @@ export function KraljicScorer({
     intro: isAr ? 'طريقة CIPS ذات الخطوات السبع: عوامل مرجّحة تُقيَّم من 1 إلى 5. تبيّن الأداة مدى قرب النتيجة من الحدّ وما الذي قد يقلبها.' : 'The CIPS seven-step method: weighted factors rated 1 to 5. The tool shows how close the result is to a boundary and what could flip it.',
     progress: isAr ? 'تم الجواب عن' : 'Answered', of: isAr ? 'من' : 'of',
     risk: L(CIPS_AXIS_LABEL.risk), profit: L(CIPS_AXIS_LABEL.cost),
-    weights: isAr ? 'تعديل الأوزان' : 'Adjust the weights', weightNote: isAr ? 'الأوزان المتساوية افتراضية من ISC. CIPS لا تنشر أوزانًا. اجعل الوزن 0 لإيقاف عامل.' : 'Equal weights are an ISC default: CIPS publishes none. Set a weight to 0 to switch a factor off.',
+    weights: isAr ? 'تعديل الأوزان' : 'Adjust the weights', weightNote: isAr ? 'الأوزان المتساوية افتراضية من آي سبلاي تشين. CIPS لا تنشر أوزانًا. اجعل الوزن 0 لإيقاف عامل.' : 'Equal weights are an ISC default: CIPS publishes none. Set a weight to 0 to switch a factor off.',
     reset: isAr ? 'مسح الإجابات' : 'Clear answers',
     result: isAr ? 'النتيجة' : 'Result', needMore: isAr ? 'أجب عن مزيد من العوامل' : 'Answer more factors',
     border: isAr ? 'قريب من الحدّ: الأفضل ألّا تعتمد على هذه النتيجة وحدها.' : 'Close to a boundary: do not rely on this result alone.',
@@ -42,7 +42,7 @@ export function KraljicScorer({
     record: isAr ? 'سجّل كمراجعة لمورد' : 'Record as a review for a supplier', pick: isAr ? 'اختر موردًا' : 'Choose a supplier',
     recordBtn: isAr ? 'سجّل المراجعة' : 'Record review', savedMsg: isAr ? 'سُجّلت المراجعة. ستظهر في فحص الموقع للمورد.' : 'Review recorded. It now feeds the supplier\'s position check.',
     strategy: isAr ? 'استراتيجية CIPS لهذا الربع' : 'CIPS strategy for this quadrant', weight: isAr ? 'الوزن' : 'Weight',
-    boundaryNote: isAr ? `الحدّ ${DEFAULTS.boundaryPct}% والهامش ${DEFAULTS.borderlineMargin} نقاط قيمتان افتراضيتان من ISC.` : `Boundary ${DEFAULTS.boundaryPct}% and margin ${DEFAULTS.borderlineMargin} points are ISC defaults.`,
+    boundaryNote: isAr ? `الحدّ ${DEFAULTS.boundaryPct}% والهامش ${DEFAULTS.borderlineMargin} نقاط قيمتان افتراضيتان من آي سبلاي تشين.` : `Boundary ${DEFAULTS.boundaryPct}% and margin ${DEFAULTS.borderlineMargin} points are ISC defaults.`,
   };
 
   const AXES: Axis[] = ['risk', 'profit'];
