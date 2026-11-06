@@ -124,8 +124,8 @@ export function Login() {
       if (!res.ok) throw new Error(data?.error || '');
       setResetStep('verify');
       setNotice(ar
-        ? 'إذا كان هناك حساب بهذا البريد، فقد أرسلنا رمزاً مكوناً من 6 أرقام. تحقق من بريدك الوارد.'
-        : 'If an account exists for that email, we sent a 6-digit code. Check your inbox.');
+        ? 'إذا كان هناك حساب بهذا البريد، فقد أرسلنا رمزاً مكوناً من 6 أرقام (صالح 15 دقيقة). تحقق من الوارد والبريد غير الهام. إن لم يصل خلال دقيقتين فاضغط «أعد الإرسال» وتأكد من كتابة البريد نفسه الذي سجّلت به.'
+        : 'If an account exists for that email, we sent a 6-digit code (valid 15 minutes). Check inbox and spam. If nothing arrives within 2 minutes, tap Resend and make sure the email is the exact one you registered with.');
     } catch (err) {
       const msg = err instanceof Error ? err.message : '';
       setError(msg || (ar ? 'تعذّر إرسال رمز إعادة التعيين. حاول مرة أخرى لاحقاً.' : 'Could not send the reset code. Please try again later.'));
@@ -260,7 +260,7 @@ export function Login() {
                         : "Enter your email and we'll send you a code to reset your password."}
                     </p>
                     <Field label={ar ? 'البريد الإلكتروني *' : 'Email Address *'} icon={<Mail className="w-4 h-4" />}>
-                      <Input type="email" placeholder="you@company.com" value={form.email} onChange={set('email')} />
+                      <Input type="email" name="email" id="isc-email" autoComplete="username" inputMode="email" autoCapitalize="none" autoCorrect="off" spellCheck={false} placeholder="you@company.com" value={form.email} onChange={set('email')} />
                     </Field>
                     <Button type="submit" disabled={loading}
                       className="w-full bg-[#082C6B] hover:bg-[#0B3D91] text-white font-bold h-12 text-[15px] rounded-xl mt-2">
@@ -275,7 +275,7 @@ export function Login() {
                     </Field>
                     <Field label={ar ? 'كلمة المرور الجديدة *' : 'New Password *'} icon={<Lock className="w-4 h-4" />}
                       suffix={<button type="button" onClick={() => setShowPass(v => !v)} aria-label={ar ? 'إظهار أو إخفاء كلمة المرور' : 'Show or hide password'} className="text-muted-foreground hover:text-primary">{showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}</button>}>
-                      <Input type={showPass ? 'text' : 'password'} placeholder={ar ? '6 أحرف على الأقل' : 'Min. 6 characters'} value={newPassword} onChange={e => setNewPassword(e.target.value)} />
+                      <Input type={showPass ? 'text' : 'password'} name="new-password" id="isc-new-password" autoComplete="new-password" placeholder={ar ? '6 أحرف على الأقل' : 'Min. 6 characters'} value={newPassword} onChange={e => setNewPassword(e.target.value)} />
                     </Field>
                     <Button type="submit" disabled={loading}
                       className="w-full bg-[#082C6B] hover:bg-[#0B3D91] text-white font-bold h-12 text-[15px] rounded-xl mt-2">
@@ -309,11 +309,11 @@ export function Login() {
                   <Input placeholder={ar ? 'مثال: أحمد الراشد' : 'e.g. Ahmed Al-Rashid'} value={form.fullName} onChange={set('fullName')} />
                 </Field>
                 <Field label={ar ? 'البريد الإلكتروني *' : 'Email Address *'} icon={<Mail className="w-4 h-4" />}>
-                  <Input type="email" placeholder={ar ? 'you@company.com' : 'you@company.com'} value={form.email} onChange={set('email')} />
+                  <Input type="email" name="email" id="isc-reg-email" autoComplete="username" inputMode="email" autoCapitalize="none" autoCorrect="off" spellCheck={false} placeholder="you@company.com" value={form.email} onChange={set('email')} />
                 </Field>
                 <Field label={ar ? 'كلمة المرور *' : 'Password *'} icon={<Lock className="w-4 h-4" />}
                   suffix={<button type="button" onClick={() => setShowPass(v => !v)} aria-label={ar ? 'إظهار أو إخفاء كلمة المرور' : 'Show or hide password'} className="text-muted-foreground hover:text-primary">{showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}</button>}>
-                  <Input type={showPass ? 'text' : 'password'} placeholder={ar ? '6 أحرف على الأقل' : 'Min. 6 characters'} value={form.password} onChange={set('password')} />
+                  <Input type={showPass ? 'text' : 'password'} name="new-password" id="isc-reg-password" autoComplete="new-password" placeholder={ar ? '6 أحرف على الأقل' : 'Min. 6 characters'} value={form.password} onChange={set('password')} />
                 </Field>
                 <Field label={ar ? 'رقم الجوال *' : 'Mobile Number *'} icon={<Phone className="w-4 h-4" />}>
                   <Input placeholder="+966 5XX XXX XXXX" value={form.mobile} onChange={set('mobile')} />
@@ -342,11 +342,11 @@ export function Login() {
             ) : (
               <form onSubmit={handleLogin} className="space-y-4">
                 <Field label={ar ? 'البريد الإلكتروني *' : 'Email Address *'} icon={<Mail className="w-4 h-4" />}>
-                  <Input type="email" placeholder="you@company.com" value={form.email} onChange={set('email')} />
+                  <Input type="email" name="email" id="isc-email" autoComplete="username" inputMode="email" autoCapitalize="none" autoCorrect="off" spellCheck={false} placeholder="you@company.com" value={form.email} onChange={set('email')} />
                 </Field>
                 <Field label={ar ? 'كلمة المرور *' : 'Password *'} icon={<Lock className="w-4 h-4" />}
                   suffix={<button type="button" onClick={() => setShowPass(v => !v)} aria-label={ar ? 'إظهار أو إخفاء كلمة المرور' : 'Show or hide password'} className="text-muted-foreground hover:text-primary">{showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}</button>}>
-                  <Input type={showPass ? 'text' : 'password'} placeholder={ar ? 'كلمة المرور الخاصة بك' : 'Your password'} value={form.password} onChange={set('password')} />
+                  <Input type={showPass ? 'text' : 'password'} name="password" id="isc-password" autoComplete="current-password" placeholder={ar ? 'كلمة المرور الخاصة بك' : 'Your password'} value={form.password} onChange={set('password')} />
                 </Field>
                 <p className="text-right rtl:text-left -mt-1">
                   <button type="button" onClick={openForgot} className="text-sm text-primary font-semibold hover:underline">
