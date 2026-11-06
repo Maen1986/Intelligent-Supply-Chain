@@ -51,7 +51,7 @@ export type SupplierESG = Partial<Record<ESGTheme, ESGEvidence>>;
 
 export const ESG_METHOD_NOTE: { en: string; ar: string } = {
   en: 'No ESG score is produced. Each theme shows the strongest evidence you recorded and its age. Themes follow EcoVadis\'s four published themes; the strength ladder is an ISC convention. A score would need sector- and size-specific weights that ISC cannot source, so it is deliberately not invented.',
-  ar: 'لا تُنتَج درجة ESG. يعرض كل محور أقوى دليل سجّلته وعمره. المحاور مأخوذة من محاور EcoVadis الأربعة المنشورة؛ وسلّم القوة اصطلاح من ISC. الدرجة تحتاج أوزاناً خاصة بالقطاع والحجم لا تستطيع ISC توثيقها، لذلك لم تُختلق عمداً.',
+  ar: 'لا تُنتَج درجة ESG. يعرض كل محور أقوى دليل سجّلته وعمره. المحاور مأخوذة من محاور EcoVadis الأربعة المنشورة؛ وسلّم القوة اصطلاح من آي سبلاي تشين. الدرجة تحتاج أوزاناً خاصة بالقطاع والحجم لا تستطيع آي سبلاي تشين توثيقها، لذلك لم تُختلق عمداً.',
 };
 
 /** ISC default: evidence older than this is flagged as stale. Caller-overridable. */

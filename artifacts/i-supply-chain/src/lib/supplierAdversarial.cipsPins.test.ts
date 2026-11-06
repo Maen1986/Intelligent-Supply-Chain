@@ -42,7 +42,7 @@ describe('scoreItem exact behaviour', () => {
           "weighted": 35,
         },
         "status": "scored",
-        "stepsNoteAr": "تم التقييم بطريقة CIPS ذات الخطوات السبع. الأوزان والحد والهامش قيم افتراضية من ISC يمكنك تغييرها.",
+        "stepsNoteAr": "تم التقييم بطريقة CIPS ذات الخطوات السبع. الأوزان والحد والهامش قيم افتراضية من آي سبلاي تشين يمكنك تغييرها.",
         "stepsNoteEn": "Scored with the CIPS seven-step method. Weights, boundary and margin are ISC defaults you can change.",
       }
     `);
@@ -70,7 +70,7 @@ describe('scoreItem exact behaviour', () => {
           "weighted": 7,
         },
         "status": "scored",
-        "stepsNoteAr": "تم التقييم بطريقة CIPS ذات الخطوات السبع. الأوزان والحد والهامش قيم افتراضية من ISC يمكنك تغييرها.",
+        "stepsNoteAr": "تم التقييم بطريقة CIPS ذات الخطوات السبع. الأوزان والحد والهامش قيم افتراضية من آي سبلاي تشين يمكنك تغييرها.",
         "stepsNoteEn": "Scored with the CIPS seven-step method. Weights, boundary and margin are ISC defaults you can change.",
       }
     `);
@@ -197,7 +197,7 @@ describe('scoreItem exact behaviour', () => {
           "weighted": 0,
         },
         "status": "insufficient",
-        "stepsNoteAr": "عدد العوامل المُجاب عنها غير كافٍ (يلزم 60% على الأقل لكل محور). ISC لا تخمّن.",
+        "stepsNoteAr": "عدد العوامل المُجاب عنها غير كافٍ (يلزم 60% على الأقل لكل محور). آي سبلاي تشين لا تخمّن.",
         "stepsNoteEn": "Not enough factors answered (need at least 60% on each axis). ISC does not guess.",
       }
     `);
@@ -234,7 +234,7 @@ describe('scoreItem exact behaviour', () => {
           "weighted": 19.6,
         },
         "status": "scored",
-        "stepsNoteAr": "تم التقييم بطريقة CIPS ذات الخطوات السبع. الأوزان والحد والهامش قيم افتراضية من ISC يمكنك تغييرها.",
+        "stepsNoteAr": "تم التقييم بطريقة CIPS ذات الخطوات السبع. الأوزان والحد والهامش قيم افتراضية من آي سبلاي تشين يمكنك تغييرها.",
         "stepsNoteEn": "Scored with the CIPS seven-step method. Weights, boundary and margin are ISC defaults you can change.",
       }
     `);
@@ -265,7 +265,7 @@ describe('scoreItem exact behaviour', () => {
           "weighted": 18.2,
         },
         "status": "scored",
-        "stepsNoteAr": "تم التقييم بطريقة CIPS ذات الخطوات السبع. الأوزان والحد والهامش قيم افتراضية من ISC يمكنك تغييرها.",
+        "stepsNoteAr": "تم التقييم بطريقة CIPS ذات الخطوات السبع. الأوزان والحد والهامش قيم افتراضية من آي سبلاي تشين يمكنك تغييرها.",
         "stepsNoteEn": "Scored with the CIPS seven-step method. Weights, boundary and margin are ISC defaults you can change.",
       }
     `);
@@ -293,7 +293,7 @@ describe('scoreItem exact behaviour', () => {
           "weighted": 28,
         },
         "status": "scored",
-        "stepsNoteAr": "تم التقييم بطريقة CIPS ذات الخطوات السبع. الأوزان والحد والهامش قيم افتراضية من ISC يمكنك تغييرها.",
+        "stepsNoteAr": "تم التقييم بطريقة CIPS ذات الخطوات السبع. الأوزان والحد والهامش قيم افتراضية من آي سبلاي تشين يمكنك تغييرها.",
         "stepsNoteEn": "Scored with the CIPS seven-step method. Weights, boundary and margin are ISC defaults you can change.",
       }
     `);
@@ -367,7 +367,7 @@ describe('scoreItem exact behaviour', () => {
           "weighted": 23,
         },
         "status": "scored",
-        "stepsNoteAr": "تم التقييم بطريقة CIPS ذات الخطوات السبع. الأوزان والحد والهامش قيم افتراضية من ISC يمكنك تغييرها.",
+        "stepsNoteAr": "تم التقييم بطريقة CIPS ذات الخطوات السبع. الأوزان والحد والهامش قيم افتراضية من آي سبلاي تشين يمكنك تغييرها.",
         "stepsNoteEn": "Scored with the CIPS seven-step method. Weights, boundary and margin are ISC defaults you can change.",
       }
     `);

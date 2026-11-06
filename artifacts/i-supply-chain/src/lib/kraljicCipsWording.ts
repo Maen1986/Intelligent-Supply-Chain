@@ -110,5 +110,5 @@ export function matchesKraljicTerm(query: string): boolean {
 
 export const ARABIC_DISCLOSURE: Bilingual = {
   en: 'Arabic wording is ISC editorial, not a published standard. Review status: all Arabic texts (1,170 first review plus 121 re-checked lines) certified by a native Arabic reader (the ISC founder) on 2 Nov 2026, with his corrections applied.',
-  ar: 'الصياغة العربية تحريرية من ISC وليست معيارًا منشورًا. حالة المراجعة: اعتمد قارئ عربي أصلي (مؤسس ISC) جميع النصوص العربية في 2 نوفمبر 2026 (1,170 نصًا في المراجعة الأولى و121 سطرًا في إعادة المراجعة)، وطُبّقت تصويباته.',
+  ar: 'الصياغة العربية تحريرية من آي سبلاي تشين وليست معيارًا منشورًا. حالة المراجعة: اعتمد قارئ عربي أصلي (مؤسس آي سبلاي تشين) جميع النصوص العربية في 2 نوفمبر 2026 (1,170 نصًا في المراجعة الأولى و121 سطرًا في إعادة المراجعة)، وطُبّقت تصويباته.',
 };

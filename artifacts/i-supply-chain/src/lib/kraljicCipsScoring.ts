@@ -129,7 +129,7 @@ export function scoreItem(ratings: Record<string, number | null | undefined>, co
     return {
       status: 'insufficient', risk, profit, quadrant: null, borderline: false, borderlineAxes: [], flipFactors: [], missing: [],
       stepsNoteEn: 'The scoring configuration contains an invalid number (weights, boundary, margin or coverage). ISC does not guess; fix the setting and score again.',
-      stepsNoteAr: 'إعدادات التقييم تحتوي على رقم غير صالح (الأوزان أو الحد أو الهامش أو التغطية). ISC لا تخمّن؛ صحّح الإعداد وأعد التقييم.',
+      stepsNoteAr: 'إعدادات التقييم تحتوي على رقم غير صالح (الأوزان أو الحد أو الهامش أو التغطية). آي سبلاي تشين لا تخمّن؛ صحّح الإعداد وأعد التقييم.',
     };
   }
   const missing = factors
@@ -141,7 +141,7 @@ export function scoreItem(ratings: Record<string, number | null | undefined>, co
     return {
       status: 'insufficient', risk, profit, quadrant: null, borderline: false, borderlineAxes: [], flipFactors: [], missing,
       stepsNoteEn: `Not enough factors answered (need at least ${Math.round(minCov * 100)}% on each axis). ISC does not guess.`,
-      stepsNoteAr: `عدد العوامل المُجاب عنها غير كافٍ (يلزم ${Math.round(minCov * 100)}% على الأقل لكل محور). ISC لا تخمّن.`,
+      stepsNoteAr: `عدد العوامل المُجاب عنها غير كافٍ (يلزم ${Math.round(minCov * 100)}% على الأقل لكل محور). آي سبلاي تشين لا تخمّن.`,
     };
   }
   const quadrant = quadrantFor(risk.pct, profit.pct, boundary);
@@ -166,6 +166,6 @@ export function scoreItem(ratings: Record<string, number | null | undefined>, co
   return {
     status: 'scored', risk, profit, quadrant, borderline: borderlineAxes.length > 0, borderlineAxes, flipFactors: flip, missing,
     stepsNoteEn: 'Scored with the CIPS seven-step method. Weights, boundary and margin are ISC defaults you can change.',
-    stepsNoteAr: 'تم التقييم بطريقة CIPS ذات الخطوات السبع. الأوزان والحد والهامش قيم افتراضية من ISC يمكنك تغييرها.',
+    stepsNoteAr: 'تم التقييم بطريقة CIPS ذات الخطوات السبع. الأوزان والحد والهامش قيم افتراضية من آي سبلاي تشين يمكنك تغييرها.',
   };
 }

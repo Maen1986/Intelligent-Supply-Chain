@@ -159,7 +159,7 @@ export function SupplierSubtypePanel({
     unknown: isAr ? 'غير معروف' : 'Unknown', yes: isAr ? 'نعم' : 'Yes', no: isAr ? 'لا' : 'No',
     primary: isAr ? 'الموصى به' : 'Recommended', alt: isAr ? 'البديل القوي' : 'Strong alternative', trade: isAr ? 'المقايضة' : 'Trade-off',
     why: isAr ? 'لماذا هذا النوع' : 'Why this sub-type', review: isAr ? 'المراجعة القادمة' : 'Next review',
-    sourced: isAr ? 'أساس أكاديمي (Kraljic)' : 'Kraljic / academic foundation', conv: isAr ? 'منهجية ISC' : 'ISC method',
+    sourced: isAr ? 'أساس أكاديمي (Kraljic)' : 'Kraljic / academic foundation', conv: isAr ? 'منهجية آي سبلاي تشين' : 'ISC method',
     facts: isAr ? 'الحقائق المحدِّدة' : 'Deciding facts', missing: isAr ? 'حقائق مطلوبة' : 'Missing facts',
     sit: isAr ? 'مواقف ومشكلات مرصودة' : 'Situations and problems found', mig: isAr ? 'تنبيهات الانتقال' : 'Migration alerts',
     dont: isAr ? 'تنبيه: لا تفعل' : 'Careful', links: isAr ? 'اربط بـ' : 'Link to', notBuilt: isAr ? 'غير مبني بعد' : 'not built yet',
@@ -173,10 +173,10 @@ export function SupplierSubtypePanel({
     oneQuick: isAr ? 'جواب سريع واحد' : 'one quick answer',
     methTitle: isAr ? 'منهجية ISC: كيف يعمل هذا ولماذا يمكنك الوثوق به' : 'The ISC method: how this works and why you can rely on it',
     meth1: isAr ? 'الأساس: نموذج Kraljic (1983) واستراتيجيات «الإبقاء أو الانتقال» لدى Gelderman & van Weele (2003) وهما المرجعان الأكثر اعتمادًا في إدارة محافظ الشراء.' : 'Foundation: Kraljic (1983) and the hold-or-move strategies of Gelderman & van Weele (2003), the most widely used references in purchasing-portfolio management.',
-    meth2: isAr ? 'الامتداد: تضيف ISC أنواعًا فرعية تغيّر الإجراء فعلًا، وشبكة تنقل بين الأنواع داخل الأرباع وعبرها، وتنبيهات انتقال، ومسارات خطوة بخطوة. لا يوجد معيار منشور يفعل ذلك، ولهذا بنته ISC.' : 'Extension: ISC adds sub-types that change the action, a network of moves between sub-types inside and across quadrants, migration alerts, and step-by-step routes. No published standard does this, which is why ISC built it.',
-    meth3: isAr ? 'الضمانات: لا تخمّن ISC أبدًا (تسأل عن الحقيقة الناقصة)، وتعرض كل قاعدة كاملة، وتقدّم بديلًا قويًا ومقايضة لكل توصية، وكل العتبات قابلة للمعايرة لتناسب عملك.' : 'Safeguards: ISC never guesses (it asks for the missing fact), shows every rule in full, gives a strong alternative and a trade-off for each recommendation, and every threshold can be calibrated to your business.',
+    meth2: isAr ? 'الامتداد: تضيف آي سبلاي تشين أنواعًا فرعية تغيّر الإجراء فعلًا، وشبكة تنقل بين الأنواع داخل الأرباع وعبرها، وتنبيهات انتقال، ومسارات خطوة بخطوة. لا يوجد معيار منشور يفعل ذلك، ولهذا بنته آي سبلاي تشين.' : 'Extension: ISC adds sub-types that change the action, a network of moves between sub-types inside and across quadrants, migration alerts, and step-by-step routes. No published standard does this, which is why ISC built it.',
+    meth3: isAr ? 'الضمانات: لا تخمّن آي سبلاي تشين أبدًا (تسأل عن الحقيقة الناقصة)، وتعرض كل قاعدة كاملة، وتقدّم بديلًا قويًا ومقايضة لكل توصية، وكل العتبات قابلة للمعايرة لتناسب عملك.' : 'Safeguards: ISC never guesses (it asks for the missing fact), shows every rule in full, gives a strong alternative and a trade-off for each recommendation, and every threshold can be calibrated to your business.',
     meth4: isAr ? 'التحقق: النموذج مختبَر بحالات حدّية وسيناريوهات متسلسلة عبر الوحدات. القرار النهائي دائمًا لفريقك.' : 'Verification: the model is tested with boundary cases and chained cross-module scenarios. The final decision always stays with your team.',
-    tabScore: isAr ? 'قيّم بطريقة CIPS' : 'Score (CIPS method)', constructLbl: isAr ? 'ما الذي يحدد هذا النوع الفرعي' : 'What decides this sub-type', whyQ: isAr ? 'أسئلة المراجعة' : 'Questions to ask', ground: isAr ? 'الأساس' : 'Grounding', lockIn: isAr ? 'الاعتماد مفروض (براءة/احتكار/تكلفة تحويل)؟' : 'Is the dependence forced (patent / monopoly / switching cost)?', stopRisk: isAr ? 'هل يوقف الانقطاع التشغيل؟' : 'Would a stoppage halt operations?', cipsStrat: isAr ? 'استراتيجية CIPS' : 'CIPS strategy', synth: isAr ? 'تركيب من ISC' : 'ISC synthesis',
+    tabScore: isAr ? 'قيّم بطريقة CIPS' : 'Score (CIPS method)', constructLbl: isAr ? 'ما الذي يحدد هذا النوع الفرعي' : 'What decides this sub-type', whyQ: isAr ? 'أسئلة المراجعة' : 'Questions to ask', ground: isAr ? 'الأساس' : 'Grounding', lockIn: isAr ? 'الاعتماد مفروض (براءة/احتكار/تكلفة تحويل)؟' : 'Is the dependence forced (patent / monopoly / switching cost)?', stopRisk: isAr ? 'هل يوقف الانقطاع التشغيل؟' : 'Would a stoppage halt operations?', cipsStrat: isAr ? 'استراتيجية CIPS' : 'CIPS strategy', synth: isAr ? 'تركيب من آي سبلاي تشين' : 'ISC synthesis',
     tabSuppliers: isAr ? 'الموردون' : 'Suppliers', tabNetwork: isAr ? 'الشبكة: كيف تتحرك الأنواع' : 'Network: how sub-types connect', tabReport: isAr ? 'تقرير الإدارة' : 'Management report', tabPlaybook: isAr ? 'دليل العمل' : 'Playbook', tabEvidence: isAr ? 'الأدلة والقياس' : 'Evidence',
     m02: isAr ? 'افتح مصفوفة كرالجيك (الوحدة 02) لتجربة الطريقة على بنودك' : 'Open the Kraljic matrix (Module 02) to try the method on your items', lastRev: isAr ? 'آخر مراجعة مقيَّمة' : 'Last scored review', nextDd: isAr ? 'العناية الواجبة القادمة' : 'Next due diligence', atRenewal: isAr ? 'عند التجديد أو وقوع حادثة' : 'at renewal or incident', noneYet: isAr ? 'لا يوجد' : 'none',
     axesNote: isAr ? 'الصفوف: أثر الإنفاق (الأعلى أكبر). الأعمدة: خطر الإمداد (منخفض ثم مرتفع).' : 'Rows: spend impact (top is higher). Columns: supply risk (low, then high).',
@@ -266,7 +266,7 @@ export function SupplierSubtypePanel({
                 return (
                   <div className="mt-2 rounded-lg bg-slate-50 border border-slate-200 p-2 text-[11px] text-slate-700 space-y-1" data-testid="kraljic-module-links">
                     <p><b>{isAr ? 'العناية الواجبة (الوحدة 4): ' : 'Due diligence (Module 04): '}</b>{ddLabel}. {L(dd.reason)}</p>
-                    <p><b>{isAr ? 'موقف التفاوض (الوحدة 6): ' : 'Negotiation stance (Module 06): '}</b>{L(ng.stanceNote)} <span className="text-slate-500">({isAr ? 'منهجية ISC' : 'ISC method'})</span></p>
+                    <p><b>{isAr ? 'موقف التفاوض (الوحدة 6): ' : 'Negotiation stance (Module 06): '}</b>{L(ng.stanceNote)} <span className="text-slate-500">({isAr ? 'منهجية آي سبلاي تشين' : 'ISC method'})</span></p>
                   </div>
                 );
               })()}
@@ -282,7 +282,7 @@ export function SupplierSubtypePanel({
                       <span className="text-[10px] px-1.5 py-0.5 rounded border border-slate-200 text-slate-600">{L(AXIS[t.axis])}</span>
                       <span className="text-[10px] px-1.5 py-0.5 rounded border border-slate-200 text-slate-600">{crossesQuadrant(t) ? T.crosses : T.inside}</span>
                       <span className="text-[10px] text-slate-500">{T.effort}: {L(EFF[t.effort])}</span>
-                      <span className="text-[10px] text-slate-500">{t.basis === 'sourced' ? (isAr ? 'أساس أكاديمي (Kraljic)' : 'Kraljic / academic foundation') : (isAr ? 'منهجية ISC' : 'ISC method')}</span>
+                      <span className="text-[10px] text-slate-500">{t.basis === 'sourced' ? (isAr ? 'أساس أكاديمي (Kraljic)' : 'Kraljic / academic foundation') : (isAr ? 'منهجية آي سبلاي تشين' : 'ISC method')}</span>
                     </div>
                     <p className="text-[11px] text-slate-700 mt-1"><b>{T.trigger}: </b>{L(t.trigger)}</p>
                     <ul className="list-disc ms-4 text-[11px] text-slate-700 mt-0.5">{t.steps.map((s) => <li key={s.en}>{L(s)}</li>)}</ul>
@@ -351,7 +351,7 @@ export function SupplierSubtypePanel({
               <p className="text-[11px] text-slate-700 mt-1"><b>{T.cipsStrat}: </b>{L(CIPS_ONE_LINE[q.quadrant].strategy)}</p>
               <p className="text-[11px] text-slate-700 mt-1"><b>{T.q1}: </b>{L(q.idea.firstQuestion)}</p>
               <p className="text-[11px] text-slate-700"><b>{T.measure}: </b>{L(q.idea.measure)}</p>
-              <p className="text-[10px] text-slate-500 mt-0.5">{isAr ? 'رؤية ISC' : 'ISC insight'}</p>
+              <p className="text-[10px] text-slate-500 mt-0.5">{isAr ? 'رؤية آي سبلاي تشين' : 'ISC insight'}</p>
               {q.count > 0 && (
                 <>
                   <p className="text-[11px] text-slate-600 mt-2">{q.bySubtype.map((s) => `${L(s.label)}: ${s.count}`).join(' · ')} · {T.spendNote}: <span dir="ltr">SAR {Math.round(q.spendSAR).toLocaleString('en-US')}</span> ({q.spendKnownCount}/{q.count})</p>

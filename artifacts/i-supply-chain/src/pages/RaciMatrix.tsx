@@ -125,7 +125,7 @@ export function RaciMatrix() {
     tierAdvisory: isAr ? 'المستوى الاستشاري' : 'Advisory Tier',
     tierOperational: isAr ? 'المستوى التشغيلي' : 'Operational Tier',
     tierAdvisoryDesc: isAr ? 'قالب أدوار عام — بلا أسماء حقيقية وبلا تخزين' : 'Generic role template — no real names, no persistence',
-    tierOperationalDesc: isAr ? 'تحفظ ISC تعيينات فعلية بأسماء حقيقية كسجل مرجعي معتمَد للعميل' : "ISC persists real, named assignments as the client's system of record",
+    tierOperationalDesc: isAr ? 'تحفظ آي سبلاي تشين تعيينات فعلية بأسماء حقيقية كسجل مرجعي معتمَد للعميل' : "ISC persists real, named assignments as the client's system of record",
     frameworkLabel: isAr ? 'المنهجية المعتمدة' : 'Sourced Methodology',
     frameworkText: isAr
       ? 'مصفوفة RACI (المسؤول، المعتمِد، المستشار، المُعلَم) كما هي موثقة في دليل PMBOK الصادر عن معهد إدارة المشاريع (PMI)، وممارسات إدارة علاقات الموردين لدى CIPS، والبند 8.4 من المواصفة ISO 9001. راجع مقالة ويكيبيديا "Responsibility assignment matrix" للخلفية التاريخية الموحّدة.'

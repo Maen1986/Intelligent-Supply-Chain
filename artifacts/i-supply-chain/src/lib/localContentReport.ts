@@ -74,7 +74,7 @@ export function buildReport(i: ReportInput): Report {
     sections.push({ id: 'evidence', title: L('Evidence and limits', 'الأدلة والحدود'), bullets: [L('No ISC figure exists for this country. This page is a to-do list, not an assessment.', 'لا يوجد رقم من النظام لهذه الدولة. هذه الصفحة قائمة مهام وليست تقييماً.')] });
     return { title: L('Local-content decision report', 'تقرير قرار المحتوى المحلي'), subtitle: i.countryName,
       meta: [{ label: L('Prepared for', 'أُعدّ لـ'), value: i.preparedFor || L('Your organisation', 'منشأتك') }, { label: L('Country', 'الدولة'), value: i.countryName }, { label: L('Date', 'التاريخ'), value: i.dateLabel }],
-      status, statusLabel: t(STATUS[status]), sections, footer: L('Prepared with I Supply Chain, Local Content / ICV engine.', 'أُعدّ بواسطة I Supply Chain، محرك المحتوى المحلي / القيمة المحلية المضافة.') };
+      status, statusLabel: t(STATUS[status]), sections, footer: L('Prepared with I Supply Chain, Local Content / ICV engine.', 'أُعدّ بواسطة آي سبلاي تشين، محرك المحتوى المحلي / القيمة المحلية المضافة.') };
   }
 
   // 1. Bottom line
@@ -130,7 +130,7 @@ export function buildReport(i: ReportInput): Report {
       { label: L('Date', 'التاريخ'), value: i.dateLabel },
     ],
     status, statusLabel: t(STATUS[status]), sections,
-    footer: L('Prepared with I Supply Chain, Local Content / ICV engine.', 'أُعدّ بواسطة I Supply Chain، محرك المحتوى المحلي / القيمة المحلية المضافة.'),
+    footer: L('Prepared with I Supply Chain, Local Content / ICV engine.', 'أُعدّ بواسطة آي سبلاي تشين، محرك المحتوى المحلي / القيمة المحلية المضافة.'),
   };
 }
 

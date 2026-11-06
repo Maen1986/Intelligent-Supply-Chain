@@ -816,11 +816,11 @@ export function Home() {
             {/* Text */}
             <div className="space-y-6">
               <h2 className="text-3xl md:text-4xl font-bold text-primary">
-                {isAr ? 'لماذا I Supply Chain؟' : 'Why I Supply Chain?'}
+                {isAr ? 'لماذا آي سبلاي تشين؟' : 'Why I Supply Chain?'}
               </h2>
               <p className="text-muted-foreground text-lg leading-relaxed">
                 {isAr
-                  ? 'حين تحمل قرارات سلسلة الإمداد تبعات بملايين الريالات، لا تكفي النصائح العامة. تجلب ISC أكثر من 20 عاماً من الخبرة الميدانية في الخليج ومنطقة الشرق الأوسط وشمال إفريقيا — من إصلاح المشتريات ضمن رؤية السعودية 2030 إلى ديناميكيات البوابة التجارية في الأردن — مدمجةً مع الذكاء الاصطناعي الذي يختصر أسابيع من التحليل إلى دقائق من الرؤى.'
+                  ? 'حين تحمل قرارات سلسلة الإمداد تبعات بملايين الريالات، لا تكفي النصائح العامة. تجلب آي سبلاي تشين أكثر من 20 عاماً من الخبرة الميدانية في الخليج ومنطقة الشرق الأوسط وشمال إفريقيا — من إصلاح المشتريات ضمن رؤية السعودية 2030 إلى ديناميكيات البوابة التجارية في الأردن — مدمجةً مع الذكاء الاصطناعي الذي يختصر أسابيع من التحليل إلى دقائق من الرؤى.'
                   : "When supply chain decisions carry SAR-million consequences, generic advice won't cut it. ISC brings 20+ years of hands-on GCC and MENA expertise — from Saudi Vision 2030 procurement reform to Jordan's trade gateway dynamics — fused with AI that compresses weeks of analysis into minutes of insight."}
               </p>
               <ul className="space-y-3">
@@ -952,7 +952,7 @@ export function Home() {
               <div className="grid grid-cols-3 text-xs font-black uppercase tracking-wider">
                 <div className="bg-white/5 px-4 py-3 text-white/65">{isAr ? 'ما تحتاجه' : 'What you need'}</div>
                 <div className="bg-white/10 px-4 py-3 text-white/65 text-center">{isAr ? 'الاستشاري التقليدي' : 'Traditional Consultant'}</div>
-                <div className="px-4 py-3 text-center text-[#C9A84C]" style={{ background: 'rgba(201,168,76,0.12)' }}>{isAr ? '⚡ برج التحكم ISC' : '⚡ ISC Control Tower'}</div>
+                <div className="px-4 py-3 text-center text-[#C9A84C]" style={{ background: 'rgba(201,168,76,0.12)' }}>{isAr ? '⚡ برج التحكم آي سبلاي تشين' : '⚡ ISC Control Tower'}</div>
               </div>
               {(isAr
                 ? [
@@ -1190,7 +1190,7 @@ export function Home() {
               <h2 className="text-3xl font-bold text-primary">{isAr ? 'مصمّمة لخفض التكاليف وتقليل نفاد المخزون وإزالة مخاطر الاعتماد على مصدر واحد' : 'Built to Cut Cost, Reduce Stockouts, and Remove Single-Source Risk'}</h2>
               <p className="text-muted-foreground leading-relaxed">
                 {isAr
-                  ? 'استكشف سيناريوهات توضيحية تُبيّن كيفية تطبيق أطرنا في قطاعات الأدوية والتصنيع والتجزئة والقطاع الحكومي والخدمات اللوجستية والطاقة — مبنية على منهجية ISC ومعايير مرجعية للقطاع، وليست نتائج عملاء موثّقة بعد. سننشر هنا النتائج الفعلية فور اكتمال المشاركات الحقيقية.'
+                  ? 'استكشف سيناريوهات توضيحية تُبيّن كيفية تطبيق أطرنا في قطاعات الأدوية والتصنيع والتجزئة والقطاع الحكومي والخدمات اللوجستية والطاقة — مبنية على منهجية آي سبلاي تشين ومعايير مرجعية للقطاع، وليست نتائج عملاء موثّقة بعد. سننشر هنا النتائج الفعلية فور اكتمال المشاركات الحقيقية.'
                   : "Explore illustrative scenarios showing how our frameworks apply across pharma, manufacturing, retail, government, logistics, and energy — built on ISC's methodology and industry benchmarks, not yet verified client outcomes. As real engagements are completed, we'll publish the actual results here."}
               </p>
             </div>

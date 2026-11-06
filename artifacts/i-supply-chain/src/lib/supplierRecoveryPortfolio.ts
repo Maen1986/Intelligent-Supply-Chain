@@ -668,7 +668,7 @@ export const MIN_POST_CLOSURE_PERIODS = 2;
 const RECOVERY_RULE_EN =
   'Closing a corrective action is not the same as recovery. Recovery is verified only when the supplier\'s own score, measured over at least 2 periods AFTER the CAR closed, is not lower than the average of the periods before it closed. Fewer than 2 post-closure periods is reported as not enough data, never as recovered. (ISC rule, grounded in the 8D "verify effectiveness of corrective action" step.)';
 const RECOVERY_RULE_AR =
-  'إغلاق الإجراء التصحيحي لا يعني التعافي. لا يُعتمد التعافي إلا إذا كان متوسط درجة المورد خلال فترتين على الأقل بعد إغلاق الطلب لا يقل عن متوسط الفترات التي سبقت الإغلاق. أقل من فترتين بعد الإغلاق يُعرض كبيانات غير كافية، وليس كتعافٍ. (قاعدة ISC مستندة إلى خطوة "التحقق من فعالية الإجراء التصحيحي" في منهجية 8D.)';
+  'إغلاق الإجراء التصحيحي لا يعني التعافي. لا يُعتمد التعافي إلا إذا كان متوسط درجة المورد خلال فترتين على الأقل بعد إغلاق الطلب لا يقل عن متوسط الفترات التي سبقت الإغلاق. أقل من فترتين بعد الإغلاق يُعرض كبيانات غير كافية، وليس كتعافٍ. (قاعدة آي سبلاي تشين مستندة إلى خطوة "التحقق من فعالية الإجراء التصحيحي" في منهجية 8D.)';
 
 /** Verifies recovery for the supplier's most recently CLOSED CAR using the
  * dated score periods. Pure and deterministic; needs scorePeriods. */

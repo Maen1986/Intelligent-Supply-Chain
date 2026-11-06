@@ -917,7 +917,7 @@ function PerformanceIntelligence({ scores, isAr, kpisTotal }: {
         </div>
         <div className="flex-1 min-w-0">
           <p className="font-bold text-white text-sm leading-tight">
-            {isAr ? 'ذكاء الأداء — تحليل ISC' : 'Performance Intelligence — ISC Diagnostic'}
+            {isAr ? 'ذكاء الأداء — تحليل آي سبلاي تشين' : 'Performance Intelligence — ISC Diagnostic'}
           </p>
           <p className="text-white/60 text-[10px] mt-0.5">
             {isAr
@@ -1626,7 +1626,7 @@ export function KPIDashboard({ slug }: KPIDashboardProps) {
       {/* Header */}
       <div>
         <div className="flex items-center justify-between gap-3 flex-wrap">
-          <h2 className="text-2xl font-bold text-primary">{isAr ? 'لوحة مؤشرات الأداء — ISC' : 'ISC KPI Dashboard'}</h2>
+          <h2 className="text-2xl font-bold text-primary">{isAr ? 'لوحة مؤشرات الأداء — آي سبلاي تشين' : 'ISC KPI Dashboard'}</h2>
           <div className="flex items-center gap-2 flex-wrap">
             {!planResult && !planLoading && (
               isAuthenticated ? (

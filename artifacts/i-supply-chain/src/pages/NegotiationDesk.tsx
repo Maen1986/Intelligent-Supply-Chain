@@ -604,7 +604,7 @@ export function NegotiationDesk() {
                 <div className="mt-4 border border-slate-200 rounded-xl p-4 bg-slate-50 text-sm" role="note">
                   <p className="font-bold text-xs text-slate-600 mb-1">{t('From your Supplier Dependency Check', 'من فحص اعتماد المورّد لديك')}: {linked.name}</p>
                   <p><b>{linkedSeverity.level}</b> — {isAr ? linkedSeverity.reasonAr : linkedSeverity.reasonEn}</p>
-                  <p className="text-[11px] text-slate-600 mt-2">{t('This is a different scale from the 0-5 lock-in index. ISC does not convert one into the other; use it as a guide when you answer the two questions above.', 'هذا مقياس مختلف عن مؤشر التقييد من 0 إلى 5. لا تحوّل ISC أحدهما إلى الآخر؛ استخدمه كدليل عند الإجابة عن السؤالين أعلاه.')}</p>
+                  <p className="text-[11px] text-slate-600 mt-2">{t('This is a different scale from the 0-5 lock-in index. ISC does not convert one into the other; use it as a guide when you answer the two questions above.', 'هذا مقياس مختلف عن مؤشر التقييد من 0 إلى 5. لا تحوّل آي سبلاي تشين أحدهما إلى الآخر؛ استخدمه كدليل عند الإجابة عن السؤالين أعلاه.')}</p>
                 </div>
               )}
               <div className="mt-4 border border-slate-200 rounded-xl p-4 bg-white" data-testid="leverage-rule">
@@ -619,7 +619,7 @@ export function NegotiationDesk() {
                 </div>
                 <p className="text-xs text-slate-700 mt-2" data-testid="cutoffs-used">
                   {isAr
-                    ? `الحدّان المستخدمان: قوي ≤ ${leverage.thresholds.low}، ضعيف ≥ ${leverage.thresholds.high} (${cutsOverridden ? 'إعدادك' : 'افتراضي ISC'})`
+                    ? `الحدّان المستخدمان: قوي ≤ ${leverage.thresholds.low}، ضعيف ≥ ${leverage.thresholds.high} (${cutsOverridden ? 'إعدادك' : 'افتراضي آي سبلاي تشين'})`
                     : `Cut-offs used: strong ≤ ${leverage.thresholds.low}, weak ≥ ${leverage.thresholds.high} (${cutsOverridden ? 'your setting' : 'ISC default'})`}
                   {cutsTyped && (
                     <button type="button" onClick={() => setS(prev => ({ ...prev, cutLow: '', cutHigh: '' }))} className="no-print ms-2 underline text-[#082C6B] font-semibold">{t('Reset to ISC defaults (2 and 4)', 'إعادة الحدّين الافتراضيين (2 و4)')}</button>
@@ -640,7 +640,7 @@ export function NegotiationDesk() {
                 )}
                 <p className="text-[11px] text-slate-600 leading-relaxed mt-3">{t('Sources for the idea that leverage follows each side\'s alternatives and dependence: ', 'مصادر فكرة أن القوة التفاوضية تتبع بدائل كل طرف واعتماده على الآخر: ')}<span dir="ltr">Fisher & Ury, Getting to Yes (1981), on the best alternative to a negotiated agreement (BATNA); Emerson, Power-Dependence Relations, American Sociological Review 27(1), 1962: dependence rests on how much one side values what the other provides and on how many alternatives it has; Caniëls & Gelderman, Industrial Marketing Management 36(2), 2007, who measured power and interdependence for each Kraljic quadrant in a survey of Dutch purchasing professionals. See also Cox, Journal of Supply Chain Management 37(2), 2001 (title only, not re-read).</span></p>
                 <p className="text-[11px] text-slate-600 leading-relaxed mt-1">{t('None of these sets numeric cut-offs on ISC\'s 0-5 lock-in index. The default cut-offs 2 and 4 are ISC\'s own calibration on its own scale, not an industry standard. Change them if your policy differs; the brief shows which cut-offs were used.',
-                       'لا يحدد أي من هذه المصادر حدوداً رقمية على مؤشر التقييد من 0 إلى 5 لدى ISC. الحدّان الافتراضيان 2 و4 معايرة من ISC على مقياسها الخاص وليسا معياراً صناعياً. غيّرهما إذا كانت سياستك مختلفة؛ وسيُظهر الملخص الحدّين المستخدمين.')}</p>
+                       'لا يحدد أي من هذه المصادر حدوداً رقمية على مؤشر التقييد من 0 إلى 5 لدى آي سبلاي تشين. الحدّان الافتراضيان 2 و4 معايرة من آي سبلاي تشين على مقياسها الخاص وليسا معياراً صناعياً. غيّرهما إذا كانت سياستك مختلفة؛ وسيُظهر الملخص الحدّين المستخدمين.')}</p>
               </div>
             </div>
           )}
@@ -672,7 +672,7 @@ export function NegotiationDesk() {
                 <p className="font-bold text-sm">{isAr ? DIR[trend.direction].ar : DIR[trend.direction].en}{trend.percentChange !== null && ` (${trend.percentChange > 0 ? '+' : ''}${trend.percentChange.toFixed(1)}%)`}</p>
                 <Spark points={s.points} />
                 {trend.hasIntermediateVolatility && <p className="text-xs text-amber-700 mt-2">{t('There was a larger swing inside the period than the start-to-end change shows.', 'حدث تذبذب داخل الفترة أكبر مما يظهره التغيير بين البداية والنهاية.')}</p>}
-                {trend.flatBandPctApplied !== undefined && <p className="text-xs text-slate-600 mt-2">{t(`Counted as flat within ±${trend.flatBandPctApplied}% (`, `يُعدّ مستقراً ضمن ±${trend.flatBandPctApplied}% (`)}{trend.flatBandSource === 'quadrant-informed-default' ? t('ISC assumption set by purchase type', 'افتراض من ISC حسب نوع المشتريات') : t('general default', 'افتراض عام')})</p>}
+                {trend.flatBandPctApplied !== undefined && <p className="text-xs text-slate-600 mt-2">{t(`Counted as flat within ±${trend.flatBandPctApplied}% (`, `يُعدّ مستقراً ضمن ±${trend.flatBandPctApplied}% (`)}{trend.flatBandSource === 'quadrant-informed-default' ? t('ISC assumption set by purchase type', 'افتراض من آي سبلاي تشين حسب نوع المشتريات') : t('general default', 'افتراض عام')})</p>}
               </div>
               <Note>{t('Based only on the prices you enter, not on market data. Check the market separately before you rely on it.', 'يعتمد فقط على الأسعار التي تدخلها وليس على بيانات السوق. تحقق من السوق بشكل منفصل قبل الاعتماد عليه.')}</Note>
             </div>
@@ -708,7 +708,7 @@ export function NegotiationDesk() {
               <h3 className="text-sm font-bold text-[#082C6B] mt-5 mb-2 flex items-center gap-2"><Users className="w-4 h-4" />{t('Your team and the stages', 'فريقك والمراحل')}</h3>
               <ul className="text-sm space-y-1.5 mb-3">{team.map(r => <li key={r.role.en}><b>{isAr ? r.role.ar : r.role.en}</b>: {isAr ? r.responsibility.ar : r.responsibility.en}</li>)}</ul>
               <ol className="text-sm space-y-1.5">{levels.map(l => <li key={l.level}><b>{isAr ? l.name.ar : l.name.en}</b>: {isAr ? l.purpose.ar : l.purpose.en}</li>)}</ol>
-              <Note>{t('Tactics are shown so you can recognise and answer them. ISC does not recommend deceiving a supplier. Some sources are secondary and are named on each card.', 'تُعرض التكتيكات لتتعرف عليها وترد عليها. لا توصي ISC بخداع المورّد. بعض المصادر ثانوية وتُذكر على كل بطاقة.')}</Note>
+              <Note>{t('Tactics are shown so you can recognise and answer them. ISC does not recommend deceiving a supplier. Some sources are secondary and are named on each card.', 'تُعرض التكتيكات لتتعرف عليها وترد عليها. لا توصي آي سبلاي تشين بخداع المورّد. بعض المصادر ثانوية وتُذكر على كل بطاقة.')}</Note>
             </div>
           )}
 
@@ -751,7 +751,7 @@ export function NegotiationDesk() {
               <div className={`mt-4 border rounded-xl p-4 ${tone.box}`}>
                 <p className="font-bold text-sm">{isAr ? tone.ar : tone.en}</p>
                 <p className="text-sm mt-1">{isAr ? leverage.framingAr : leverage.framingEn}</p>
-                <p className="text-[11px] mt-2 opacity-80" data-testid="brief-cutoffs">{isAr ? `قاعدة القراءة: قوي إذا كان التقييد ≤ ${leverage.thresholds.low} مع القدرة على الصمود؛ ضعيف إذا كان ≥ ${leverage.thresholds.high} أو بلا قدرة على الصمود (${cutsOverridden ? 'حدّان من إعدادك' : 'حدّان افتراضيان من ISC'}). الأساس: ⁦BATNA (Fisher & Ury, 1981)⁩ واعتماد القوة ⁦(Emerson, 1962)⁩.` : `Reading rule: strong if lock-in ≤ ${leverage.thresholds.low} and you could survive a switch; weak if ≥ ${leverage.thresholds.high} or you could not (${cutsOverridden ? 'your cut-offs' : 'ISC default cut-offs'}). Basis: BATNA (Fisher & Ury, 1981) and power-dependence (Emerson, 1962).`}</p>
+                <p className="text-[11px] mt-2 opacity-80" data-testid="brief-cutoffs">{isAr ? `قاعدة القراءة: قوي إذا كان التقييد ≤ ${leverage.thresholds.low} مع القدرة على الصمود؛ ضعيف إذا كان ≥ ${leverage.thresholds.high} أو بلا قدرة على الصمود (${cutsOverridden ? 'حدّان من إعدادك' : 'حدّان افتراضيان من آي سبلاي تشين'}). الأساس: ⁦BATNA (Fisher & Ury, 1981)⁩ واعتماد القوة ⁦(Emerson, 1962)⁩.` : `Reading rule: strong if lock-in ≤ ${leverage.thresholds.low} and you could survive a switch; weak if ≥ ${leverage.thresholds.high} or you could not (${cutsOverridden ? 'your cut-offs' : 'ISC default cut-offs'}). Basis: BATNA (Fisher & Ury, 1981) and power-dependence (Emerson, 1962).`}</p>
               </div>
               <div className="grid sm:grid-cols-2 gap-3 mt-3">
                 <div className="border-2 border-[#082C6B] rounded-xl p-4 bg-[#082C6B]/5">
@@ -786,7 +786,7 @@ export function NegotiationDesk() {
                 <p className="text-sm">{isAr ? next.rationaleAr : next.rationaleEn}</p>
               </div>
               <CloseOutPanel key={`${s.supplier}|${s.lesson?.closedAt ?? 'new'}`} lesson={s.lesson} lastPrice={s.points.length ? String([...s.points].sort((a, b) => a.sortKey.localeCompare(b.sortKey)).slice(-1)[0].price) : ''} isAr={isAr} onSave={l => set('lesson', l)} />
-              <Note>{t('Internal. Not for the supplier. Not legal advice. The recommendation is ISC guidance derived from the rule on step 2, not a sourced benchmark. Saved in this browser, and in your account when you are signed in (one saved case).', 'داخلي. ليس للمورّد. ليس استشارة قانونية. التوصية إرشاد من ISC مشتق من القاعدة في الخطوة 2، وليست معياراً موثّقاً. يُحفظ في هذا المتصفح، وفي حسابك عند تسجيل الدخول (حالة محفوظة واحدة).')}</Note>
+              <Note>{t('Internal. Not for the supplier. Not legal advice. The recommendation is ISC guidance derived from the rule on step 2, not a sourced benchmark. Saved in this browser, and in your account when you are signed in (one saved case).', 'داخلي. ليس للمورّد. ليس استشارة قانونية. التوصية إرشاد من آي سبلاي تشين مشتق من القاعدة في الخطوة 2، وليست معياراً موثّقاً. يُحفظ في هذا المتصفح، وفي حسابك عند تسجيل الدخول (حالة محفوظة واحدة).')}</Note>
             </div>
           )}
         </div>

@@ -323,7 +323,7 @@ export function Csr() {
               </div>
 
               <div className="bg-primary px-4 sm:px-8 py-4 text-white flex flex-col sm:flex-row justify-between sm:items-center gap-1 text-sm">
-                <p>{ar ? 'I Supply Chain — مبادرة المسؤولية الاجتماعية' : 'I Supply Chain — CSR Initiative'}</p>
+                <p>{ar ? 'آي سبلاي تشين — مبادرة المسؤولية الاجتماعية' : 'I Supply Chain — CSR Initiative'}</p>
                 <p>{ar ? 'سرّي' : 'Confidential'}</p>
               </div>
             </div>

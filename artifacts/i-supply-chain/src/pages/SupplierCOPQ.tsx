@@ -203,7 +203,7 @@ export function SupplierCOPQ() {
     tierAdvisory: isAr ? 'المستوى الاستشاري' : 'Advisory Tier',
     tierOperational: isAr ? 'المستوى التشغيلي' : 'Operational Tier',
     tierAdvisoryDesc: isAr ? 'حساب فوري بلا تخزين — ينفّذ العميل الإجراء ضمن أنظمته الخاصة' : 'Computed live, no persistence — client acts in their own systems',
-    tierOperationalDesc: isAr ? 'تحفظ ISC السجل والتنبيهات لتكون النظام المرجعي الرسمي لدى العميل' : 'ISC persists the ledger + alerts as the client\'s system of record',
+    tierOperationalDesc: isAr ? 'تحفظ آي سبلاي تشين السجل والتنبيهات لتكون النظام المرجعي الرسمي لدى العميل' : 'ISC persists the ledger + alerts as the client\'s system of record',
     frameworkLabel: isAr ? 'المنهجية المعتمدة' : 'Sourced Methodology',
     waterfallTitle: isAr ? 'تحليل تكلفة الجودة الرديئة حسب فئات PAF' : 'COPQ Breakdown by PAF Category',
     perCarRateLabel: isAr ? 'معدل تكلفة التحقيق لكل طلب (دولار، اختياري)' : 'Per-CAR investigation rate ($, optional)',

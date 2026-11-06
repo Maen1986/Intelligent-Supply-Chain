@@ -122,7 +122,7 @@ function SegmentCompareBar({ row, ar }: { row: BenchmarkRow; ar: boolean }) {
             <span className="flex items-center gap-1">
               <Users className="w-3 h-3" />
               {ar
-                ? `بناءً على ${row.sampleSize} من عملاء ISC في قطاعك وحجم شركتك`
+                ? `بناءً على ${row.sampleSize} من عملاء آي سبلاي تشين في قطاعك وحجم شركتك`
                 : `Based on ${row.sampleSize} ISC clients in your industry and size band`}
             </span>
             <span>{ar ? 'المتوسط' : 'Mean'}: <span className="font-semibold text-slate-700">{row.mean?.toFixed(1)}</span></span>
@@ -161,7 +161,7 @@ export function IndustryBenchmark() {
         <h1 className="text-2xl font-bold text-primary mb-2">{ar ? 'مقارنة القطاع' : 'Industry Benchmark'}</h1>
         <p className="text-muted-foreground mb-6">
           {ar
-            ? 'سجّل الدخول لمقارنة نتائجك بمتوسط عملاء ISC المجهولين في قطاعك وحجم شركتك.'
+            ? 'سجّل الدخول لمقارنة نتائجك بمتوسط عملاء آي سبلاي تشين المجهولين في قطاعك وحجم شركتك.'
             : 'Sign in to compare your scores against the anonymized average of ISC clients in your industry and size band.'}
         </p>
         <Link href="/login"><Button size="lg" className="bg-accent hover:bg-accent/90">{ar ? 'تسجيل الدخول' : 'Sign In'}</Button></Link>
@@ -194,7 +194,7 @@ export function IndustryBenchmark() {
           </h1>
           <p className="text-white/70 text-sm">
             {ar
-              ? 'نقاطك الفعلية مقابل متوسط عملاء ISC المجهولين في نفس القطاع وحجم الشركة — كل ما زاد عدد العملاء، زادت دقة هذا المعيار.'
+              ? 'نقاطك الفعلية مقابل متوسط عملاء آي سبلاي تشين المجهولين في نفس القطاع وحجم الشركة — كل ما زاد عدد العملاء، زادت دقة هذا المعيار.'
               : 'Your real scores against the anonymized average of ISC clients in the same industry and company-size band -- the more clients who assess, the sharper this benchmark gets for everyone.'}
           </p>
         </div>

@@ -67,7 +67,7 @@ export const REGULATORY_REGIONS: RegionCoverage[] = [
     coverage: 'roadmap',
     frameworks: [],
     note: 'The other 14 Maturity Assessment segments use globally portable frameworks and apply worldwide today. Country-specific regulatory content beyond the GCC is being built out on this same pattern — contact ISC to scope your market.',
-    noteAr: 'الوحدات الـ14 الأخرى لتقييم النضج تستخدم أطراً عالمية قابلة للتطبيق وتنطبق عالميًا اليوم. المحتوى التنظيمي الخاص بدول أخرى غير الخليج قيد التطوير وفق النمط ذاته — تواصل مع ISC لتحديد نطاق سوقك.',
+    noteAr: 'الوحدات الـ14 الأخرى لتقييم النضج تستخدم أطراً عالمية قابلة للتطبيق وتنطبق عالميًا اليوم. المحتوى التنظيمي الخاص بدول أخرى غير الخليج قيد التطوير وفق النمط ذاته — تواصل مع آي سبلاي تشين لتحديد نطاق سوقك.',
   },
 ];
 

@@ -128,10 +128,10 @@ export function RiskManagement() {
           <div className="space-y-8">
             <Reveal className="grid md:grid-cols-2 gap-8 items-start">
               <div>
-                <h2 className="text-2xl font-bold text-primary mb-3">{isAr ? 'فلسفة ISC في إدارة المخاطر' : 'ISC Risk Management Philosophy'}</h2>
-                <p className="text-muted-foreground leading-relaxed mb-4">{isAr ? 'تُطبّق ISC أُطر مخاطر ISO 31000:2018 وAPICS SCOR لبناء برامج إدارة مخاطر منهجية ومحكومة على مستوى المجلس — لنقل المنشآت من إدارة الأزمات الرَّدّية إلى ذكاء المخاطر الاستباقي.' : 'ISC applies ISO 31000:2018 and APICS SCOR risk frameworks to build systematic, board-governed risk management programmes — moving organisations from reactive crisis management to proactive risk intelligence.'}</p>
+                <h2 className="text-2xl font-bold text-primary mb-3">{isAr ? 'فلسفة آي سبلاي تشين في إدارة المخاطر' : 'ISC Risk Management Philosophy'}</h2>
+                <p className="text-muted-foreground leading-relaxed mb-4">{isAr ? 'تُطبّق آي سبلاي تشين أُطر مخاطر ISO 31000:2018 وAPICS SCOR لبناء برامج إدارة مخاطر منهجية ومحكومة على مستوى المجلس — لنقل المنشآت من إدارة الأزمات الرَّدّية إلى ذكاء المخاطر الاستباقي.' : 'ISC applies ISO 31000:2018 and APICS SCOR risk frameworks to build systematic, board-governed risk management programmes — moving organisations from reactive crisis management to proactive risk intelligence.'}</p>
                 <div className="grid grid-cols-2 gap-3 mt-5">
-                  {[{ val: '6–8%', label: 'Avg disruption cost as % revenue', labelAr: 'متوسط تكلفة الاضطراب كنسبة من الإيراد' }, { val: '74%', label: 'Companies with major disruption in 5 years', labelAr: 'شركات واجهت اضطراباً كبيراً خلال 5 سنوات' }, { val: '72h', label: 'Target recovery time (ISC BCP standard)', labelAr: 'زمن التعافي المستهدف (معيار ISC للاستمرارية)' }, { val: '10×', label: 'Cost of response vs cost of prevention', labelAr: 'تكلفة الاستجابة مقابل تكلفة الوقاية' }].map(s => (
+                  {[{ val: '6–8%', label: 'Avg disruption cost as % revenue', labelAr: 'متوسط تكلفة الاضطراب كنسبة من الإيراد' }, { val: '74%', label: 'Companies with major disruption in 5 years', labelAr: 'شركات واجهت اضطراباً كبيراً خلال 5 سنوات' }, { val: '72h', label: 'Target recovery time (ISC BCP standard)', labelAr: 'زمن التعافي المستهدف (معيار آي سبلاي تشين للاستمرارية)' }, { val: '10×', label: 'Cost of response vs cost of prevention', labelAr: 'تكلفة الاستجابة مقابل تكلفة الوقاية' }].map(s => (
                     <div key={s.label} className="bg-muted rounded-xl p-4 text-center">
                       <p className="text-2xl font-extrabold text-red-600">{s.val}</p>
                       <p className="text-xs text-muted-foreground mt-1">{isAr ? s.labelAr : s.label}</p>
@@ -156,7 +156,7 @@ export function RiskManagement() {
             </Reveal>
             <Reveal>
               <div className="bg-white border border-border rounded-2xl p-6 shadow-sm">
-                <h3 className="font-bold text-primary mb-4">{isAr ? 'أدوات ISC لإدارة المخاطر' : 'ISC Risk Management Toolkit'}</h3>
+                <h3 className="font-bold text-primary mb-4">{isAr ? 'أدوات آي سبلاي تشين لإدارة المخاطر' : 'ISC Risk Management Toolkit'}</h3>
                 <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
                   {[{ icon: BarChart3, label: 'Risk Heat Map', labelAr: 'خريطة حرارة المخاطر', desc: '5×5 likelihood × impact matrix with real-time risk positioning', descAr: 'مصفوفة 5×5 للاحتمالية × الأثر مع تموضع لحظي للمخاطر' }, { icon: ClipboardList, label: 'Risk Register', labelAr: 'سجلّ المخاطر', desc: 'Structured register with owner, control, residual risk, and status tracking', descAr: 'سجلّ منظّم مع المالك والضابط والمخاطر المتبقية وتتبّع الحالة' }, { icon: Shield, label: 'BCP / ISO 22301', labelAr: 'استمرارية الأعمال / ISO 22301', desc: 'Business continuity plan covering supply chain recovery scenarios', descAr: 'خطة استمرارية أعمال تغطّي سيناريوهات تعافي سلسلة الإمداد' }, { icon: Eye, label: 'Supplier Risk Score', labelAr: 'درجة مخاطر المورّد', desc: 'Financial, operational, geographic, ESG scoring for all strategic vendors', descAr: 'تقييم مالي وتشغيلي وجغرافي وESG لجميع المورّدين الاستراتيجيين' }].map(t => (
                     <div key={t.label} className="bg-muted rounded-xl p-5 flex flex-col gap-3">
@@ -368,7 +368,7 @@ export function RiskManagement() {
             </Reveal>
             <Reveal className="bg-muted rounded-2xl p-5">
               <p className="text-xs font-bold text-primary mb-2">{isAr ? 'حوكمة السجلّ' : 'Register Governance'}</p>
-              <p className="text-sm text-muted-foreground">{isAr ? 'يجب مراجعة سجلّات المخاطر ربع سنوياً من قِبل لجنة إدارة المخاطر، مع مراجعة المخاطر الحرجة شهرياً. ويجب أن يكون لكل خطر مالك مسمّى يرفع تقرير الحالة في المراجعة الإدارية. وتوفّر ISC قالب السجلّ وعملية الحوكمة وتيسير المراجعة الأولى كجزء من كل ارتباط لإدارة المخاطر.' : 'Risk registers must be reviewed quarterly by the Risk Management Committee, with Critical risks reviewed monthly. Each risk must have a named owner who reports status at the management review. ISC provides the register template, governance process, and facilitated first review as part of every risk engagement.'}</p>
+              <p className="text-sm text-muted-foreground">{isAr ? 'يجب مراجعة سجلّات المخاطر ربع سنوياً من قِبل لجنة إدارة المخاطر، مع مراجعة المخاطر الحرجة شهرياً. ويجب أن يكون لكل خطر مالك مسمّى يرفع تقرير الحالة في المراجعة الإدارية. وتوفّر آي سبلاي تشين قالب السجلّ وعملية الحوكمة وتيسير المراجعة الأولى كجزء من كل ارتباط لإدارة المخاطر.' : 'Risk registers must be reviewed quarterly by the Risk Management Committee, with Critical risks reviewed monthly. Each risk must have a named owner who reports status at the management review. ISC provides the register template, governance process, and facilitated first review as part of every risk engagement.'}</p>
             </Reveal>
           </div>
         )}
@@ -464,7 +464,7 @@ export function RiskManagement() {
             </Reveal>
             <Reveal className="text-center py-4">
               <Link href="/consultant"><Button size="lg" className="bg-primary hover:bg-primary/90 text-white font-bold px-10">{isAr ? 'اطلب تقييم المخاطر' : 'Request Risk Assessment'}</Button></Link>
-              <p className="text-muted-foreground text-sm mt-3">{isAr ? 'تُجري ISC تقييماً كاملاً لمخاطر سلسلة الإمداد — يشمل سجلّ المخاطر وخريطة الحرارة وخارطة طريق التخفيف — خلال 4–6 أسابيع.' : 'ISC conducts a full supply chain risk assessment — delivering risk register, heat map, and mitigation roadmap — in 4–6 weeks.'}</p>
+              <p className="text-muted-foreground text-sm mt-3">{isAr ? 'تُجري آي سبلاي تشين تقييماً كاملاً لمخاطر سلسلة الإمداد — يشمل سجلّ المخاطر وخريطة الحرارة وخارطة طريق التخفيف — خلال 4–6 أسابيع.' : 'ISC conducts a full supply chain risk assessment — delivering risk register, heat map, and mitigation roadmap — in 4–6 weeks.'}</p>
             </Reveal>
           </div>
         )}

@@ -259,11 +259,11 @@ export const GUARDRAILS: Guardrail[] = [
   },
   {
     text: b('A label must change a decision. If two sub-types lead to the same action, merge them.', 'يجب أن يغيّر التصنيف قرارًا. إذا أدى نوعان فرعيان إلى الإجراء نفسه فادمجهما.'),
-    basis: 'isc-design', source: b('TechTarget argument; ISC design rule.', 'حجة TechTarget؛ قاعدة تصميم من ISC.'),
+    basis: 'isc-design', source: b('TechTarget argument; ISC design rule.', 'حجة TechTarget؛ قاعدة تصميم من آي سبلاي تشين.'),
   },
   {
-    text: b('Sub-types, thresholds and intervals are ISC conventions you can calibrate. They are not CIPS or ISM content.', 'الأنواع الفرعية والعتبات والفترات اصطلاحات من ISC يمكنك معايرتها. وهي ليست من محتوى CIPS أو ISM.'),
-    basis: 'isc-design', source: b('ISC method note.', 'ملاحظة منهجية ISC.'),
+    text: b('Sub-types, thresholds and intervals are ISC conventions you can calibrate. They are not CIPS or ISM content.', 'الأنواع الفرعية والعتبات والفترات اصطلاحات من آي سبلاي تشين يمكنك معايرتها. وهي ليست من محتوى CIPS أو ISM.'),
+    basis: 'isc-design', source: b('ISC method note.', 'ملاحظة منهجية آي سبلاي تشين.'),
   },
 ];
 

@@ -38,7 +38,7 @@ export const ILLUSTRATIVE_BANNER_EN =
   'Illustrative Case Study — Rawabi Advanced Industries is a fictional composite, not a real ISC client. Shown to demonstrate how this engine works once your own supplier data is entered.';
 
 export const ILLUSTRATIVE_BANNER_AR =
-  'مثال توضيحي — "روابي للصناعات المتقدمة" شركة افتراضية مركّبة وليست عميلاً حقيقيًا لدى I Supply Chain. تُعرض لتوضيح كيفية عمل هذا المحرك بمجرد إدخال بيانات موردينك الفعلية.';
+  'مثال توضيحي — "روابي للصناعات المتقدمة" شركة افتراضية مركّبة وليست عميلاً حقيقيًا لدى آي سبلاي تشين. تُعرض لتوضيح كيفية عمل هذا المحرك بمجرد إدخال بيانات موردينك الفعلية.';
 
 export interface IllustrativeOrganization {
   name: string;

@@ -381,7 +381,7 @@ export function buildKraljicReport(inputs: SubtypeSupplierInput[], asOfIso: stri
     asOfIso, total: inputs.length, classified: inputs.length - unclassified, unclassified, quadrants, priorityMoves,
     migrations: assessed.flatMap(({ s, a }) => a.migrations.map((m) => ({ supplierId: s.supplierId, name: s.name, reviewAs: m.reviewAs, why: b(m.whyEn, m.whyAr) }))),
     dataGaps: assessed.filter((x) => x.a.result.missingFacts.length > 0).map(({ s, a }) => ({ supplierId: s.supplierId, name: s.name, missing: a.result.missingFacts as string[] })),
-    honesty: b('Method: ISC extends Kraljic (1983) and Gelderman & van Weele (2003) with sub-types, routes, migration alerts and repositioning. Every rule is shown in full and can be calibrated to your business. Spend totals count only suppliers with a spend figure. Decision support to be confirmed by your team.', 'المنهجية: تمدّ ISC نموذج Kraljic (1983) وGelderman & van Weele (2003) بأنواع فرعية ومسارات وتنبيهات انتقال وتغيير موضع. كل قاعدة معروضة كاملة ويمكن معايرتها لتناسب عملك. تُحتسب إجماليات الإنفاق للموردين الذين لديهم رقم إنفاق فقط. دعم قرار يؤكده فريقك.'),
+    honesty: b('Method: ISC extends Kraljic (1983) and Gelderman & van Weele (2003) with sub-types, routes, migration alerts and repositioning. Every rule is shown in full and can be calibrated to your business. Spend totals count only suppliers with a spend figure. Decision support to be confirmed by your team.', 'المنهجية: تمدّ آي سبلاي تشين نموذج Kraljic (1983) وGelderman & van Weele (2003) بأنواع فرعية ومسارات وتنبيهات انتقال وتغيير موضع. كل قاعدة معروضة كاملة ويمكن معايرتها لتناسب عملك. تُحتسب إجماليات الإنفاق للموردين الذين لديهم رقم إنفاق فقط. دعم قرار يؤكده فريقك.'),
   };
 }
 

@@ -101,7 +101,7 @@ export function gccAdjustment(qualifiedAlternatives: number | null, f: GccFacts)
     return {
       effectiveAlternatives: qualifiedAlternatives, reducedBy: 0, ask: f.mandatoryListed === null,
       note: f.mandatoryListed === null
-        ? b('Is the item on the Mandatory List of National Products? ISC does not guess.', 'هل البند ضمن قائمة المنتجات الوطنية الإلزامية؟ ISC لا تخمّن.')
+        ? b('Is the item on the Mandatory List of National Products? ISC does not guess.', 'هل البند ضمن قائمة المنتجات الوطنية الإلزامية؟ آي سبلاي تشين لا تخمّن.')
         : b('Not on the Mandatory List: the alternatives count unchanged.', 'ليس ضمن القائمة الإلزامية: يبقى عدد البدائل كما هو.'),
     };
   }
@@ -116,7 +116,7 @@ export function gccAdjustment(qualifiedAlternatives: number | null, f: GccFacts)
     effectiveAlternatives: eff, reducedBy: qualifiedAlternatives - eff, ask: false,
     note: b(
       `Listed item: ${eff} of ${qualifiedAlternatives} alternatives are eligible. Use ${eff} as the supply-risk input. This effect is ISC inference.`,
-      `بند مدرج: ${eff} من ${qualifiedAlternatives} بدائل مؤهلة. استخدم ${eff} مدخلًا لخطر الإمداد. هذا الأثر استنتاج من ISC.`,
+      `بند مدرج: ${eff} من ${qualifiedAlternatives} بدائل مؤهلة. استخدم ${eff} مدخلًا لخطر الإمداد. هذا الأثر استنتاج من آي سبلاي تشين.`,
     ),
   };
 }

@@ -34,7 +34,7 @@ describe('playbook tab', () => {
     render(<KraljicPlaybookPanel isAr />);
     expect(screen.getByText('1. الهدف')).toBeTruthy();
     expect(screen.getByText('ضوابط الاستخدام')).toBeTruthy();
-    expect(screen.getAllByText('اختيار تصميمي من ISC').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('اختيار تصميمي من آي سبلاي تشين').length).toBeGreaterThan(0);
   });
 });
 

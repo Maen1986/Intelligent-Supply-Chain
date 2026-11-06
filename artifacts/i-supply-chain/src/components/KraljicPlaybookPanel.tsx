@@ -21,7 +21,7 @@ export function BasisBadge({ isAr, basis }: { isAr: boolean; basis: 'sourced' | 
   const sourced = basis === 'sourced';
   return (
     <span className={`inline-block text-[10px] px-1.5 py-0.5 rounded border whitespace-nowrap ${sourced ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-slate-50 border-slate-300 text-slate-600'}`}>
-      {sourced ? (isAr ? 'موثّق' : 'Sourced') : (isAr ? 'اختيار تصميمي من ISC' : 'ISC design choice')}
+      {sourced ? (isAr ? 'موثّق' : 'Sourced') : (isAr ? 'اختيار تصميمي من آي سبلاي تشين' : 'ISC design choice')}
     </span>
   );
 }
@@ -53,7 +53,7 @@ export function KraljicPlaybookPanel({ isAr }: { isAr: boolean }) {
     cad: isAr ? 'إعادة التقييم' : 'Reassess', anchor: isAr ? 'السند' : 'Anchor',
     ddAll: isAr ? 'عمق العناية الواجبة حسب الربع' : 'Due-diligence depth by quadrant',
     guard: isAr ? 'ضوابط الاستخدام' : 'Guardrails',
-    months: isAr ? 'أشهر' : 'months', intro: isAr ? 'خمسة عناوين لكل نوع فرعي. كل سطر يوضح هل هو موثّق أم اختيار تصميمي من ISC، فلا نُنسب إلى CIPS ما لم تنشره.' : 'Five headings per sub-type. Every line says whether it is sourced or an ISC design choice, so nothing is attributed to CIPS that CIPS has not published.',
+    months: isAr ? 'أشهر' : 'months', intro: isAr ? 'خمسة عناوين لكل نوع فرعي. كل سطر يوضح هل هو موثّق أم اختيار تصميمي من آي سبلاي تشين، فلا نُنسب إلى CIPS ما لم تنشره.' : 'Five headings per sub-type. Every line says whether it is sourced or an ISC design choice, so nothing is attributed to CIPS that CIPS has not published.',
   };
   const cards: Array<{ key: string; title: string; body: ReactElement }> = [
     { key: 'o', title: H.obj, body: <Lines isAr={isAr} lines={pb.objective} /> },

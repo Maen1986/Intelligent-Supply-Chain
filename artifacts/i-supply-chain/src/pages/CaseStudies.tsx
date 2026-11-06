@@ -193,7 +193,7 @@ export function CaseStudies() {
           <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-white mb-3">{ar ? 'سيناريوهات تطبيقية للمشاركات' : 'Illustrative Engagement Scenarios'}</h1>
           <p className="text-white/80 text-base md:text-lg max-w-2xl">
             {ar
-              ? 'أمثلة توضيحية لكيفية تطبيق أطر عمل ISC على تحديات واقعية لسلسلة الإمداد في الخليج، بنتائج مبنية على المعايير المرجعية للقطاع.'
+              ? 'أمثلة توضيحية لكيفية تطبيق أطر عمل آي سبلاي تشين على تحديات واقعية لسلسلة الإمداد في الخليج، بنتائج مبنية على المعايير المرجعية للقطاع.'
               : 'Illustrative examples of how ISC\'s frameworks apply to realistic GCC supply chain challenges, with outcomes grounded in industry benchmarks.'}
           </p>
         </div>
@@ -206,7 +206,7 @@ export function CaseStudies() {
             <Info className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
             <p className="text-sm text-amber-900 leading-relaxed">
               {ar
-                ? 'هذه سيناريوهات توضيحية مبنية على منهجية ISC ومعايير القطاع الخليجي المرجعية — وليست مشاركات عملاء موثّقة أو تم التحقّق منها. سنستبدلها تدريجيًا بدراسات حالة حقيقية موثّقة مع اكتمال المشاركات الفعلية.'
+                ? 'هذه سيناريوهات توضيحية مبنية على منهجية آي سبلاي تشين ومعايير القطاع الخليجي المرجعية — وليست مشاركات عملاء موثّقة أو تم التحقّق منها. سنستبدلها تدريجيًا بدراسات حالة حقيقية موثّقة مع اكتمال المشاركات الفعلية.'
                 : "These are illustrative scenarios built on ISC's methodology and GCC industry benchmarks — not documented or verified client engagements. As real engagements are completed, they will replace these one at a time."}
             </p>
           </div>

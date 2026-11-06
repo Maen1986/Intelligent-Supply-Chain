@@ -395,7 +395,7 @@ export function computeTier(d: SupplierDetection, signals: Signal[]): Tier {
 export const DUE_DAYS_BY_TIER: Record<Tier, number> = { critical: 3, high: 7, medium: 14, low: 30 };
 export const DUE_CADENCE_NOTE: Bilingual = {
   en: 'Due dates are an ISC default cadence (critical 3 days, high 7, medium 14, low 30) counted from the as-of date. Change them to match your own SLAs.',
-  ar: 'مواعيد الاستحقاق وتيرة افتراضية من ISC (حرج 3 أيام، مرتفع 7، متوسط 14، منخفض 30) تُحسب من تاريخ الحساب. عدّلها لتناسب اتفاقياتك الداخلية.',
+  ar: 'مواعيد الاستحقاق وتيرة افتراضية من آي سبلاي تشين (حرج 3 أيام، مرتفع 7، متوسط 14، منخفض 30) تُحسب من تاريخ الحساب. عدّلها لتناسب اتفاقياتك الداخلية.',
 };
 
 export type ActionKind = 'decision' | 'data-gap';
