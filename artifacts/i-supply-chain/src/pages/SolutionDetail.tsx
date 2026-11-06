@@ -650,7 +650,7 @@ const SOLUTIONS: SolutionData[] = [
     tagline: 'Lean, Six Sigma, and structured policy design that eliminates waste, standardises operations, and ensures compliance with Saudi and GCC regulatory requirements.',
     taglineAr: 'تحسين مستمر ومنهجي للعمليات وتصميم سياسات منظّم يلغي الهدر ويوحّد العمليات ويضمن الامتثال للمتطلبات التنظيمية السعودية والخليجية.',
     description: 'Process inefficiency costs GCC organisations an estimated 20–30% of operational capacity — through rework, manual workarounds, excessive approvals, and undocumented variation. ISC applies Lean Six Sigma (DMAIC), value stream mapping, and structured policy development to redesign processes from the ground up, deploying SOPs that stick and policies that protect the organisation from compliance risk.',
-    descriptionAr: 'تُكلّف غير الكفاءة العملياتية المنشآت الخليجية ما يُقدَّر بـ 20–30% من الطاقة التشغيلية — عبر إعادة العمل والحلول البديلة اليدوية واعتمادات مفرطة وتباين غير موثّق. تطبّق ISC Lean Six Sigma (DMAIC) ورسم خرائط تدفّق القيمة وتطوير السياسات المنظّم لإعادة تصميم العمليات من الأساس، مع نشر إجراءات تشغيل معيارية راسخة وسياسات تحمي المنشأة من مخاطر الامتثال.',
+    descriptionAr: 'تُكلّف غير الكفاءة العملياتية المنشآت الخليجية ما يُقدَّر بـ 20–30% من الطاقة التشغيلية — عبر إعادة العمل والحلول البديلة اليدوية واعتمادات مفرطة وتباين غير موثّق. تطبّق آي سبلاي تشين Lean Six Sigma (DMAIC) ورسم خرائط تدفّق القيمة وتطوير السياسات المنظّم لإعادة تصميم العمليات من الأساس، مع نشر إجراءات تشغيل معيارية راسخة وسياسات تحمي المنشأة من مخاطر الامتثال.',
     icon: GitBranch, color: 'text-indigo-600', bgGrad: 'from-indigo-700 to-indigo-900',
     frameworks: {
       strategic: [

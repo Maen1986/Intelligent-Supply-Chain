@@ -146,7 +146,7 @@ const KPI_NOTE_AR = 'مؤشر مرجعي مركّب من 0 إلى 100. نقاط 
 const LEVER_NOTE_EN = 'Composite savings-potential estimate (% of spend). Range is informed by commonly cited procurement literature on this lever (CIPS category-management guidance and general CPO-survey cost-reduction findings), not a GCC-specific study -- pending independent expert review.';
 const LEVER_NOTE_AR = 'تقدير مركّب لإمكانية التوفير (كنسبة من الإنفاق). النطاق مستند إلى أدبيات المشتريات الشائعة (إرشادات CIPS لإدارة الفئات ونتائج استطلاعات CPO العامة)، وليست دراسة خاصة بالخليج -- بانتظار مراجعة خبير مستقل.';
 const RISK_NOTE_EN = 'ISC composite risk-exposure index (internal 0-100 scale). This is ISC’s own risk-scoring methodology, informed by ISO 31000 risk-management principles -- it is not an externally published market statistic, and no external benchmark exists for this exact measure. Anchor points reflect ISC practitioner judgment, pending independent expert review.';
-const RISK_NOTE_AR = 'مؤشر ISC المركّب للتعرض للمخاطر (مقياس داخلي من 0 إلى 100). هذه منهجية خاصة بـ ISC مستندة إلى مبادئ ISO 31000 لإدارة المخاطر -- وليست إحصائية سوقية منشورة خارجياً، ولا يوجد معيار خارجي لهذا المقياس بالذات. نقاط الاسترشاد تعكس تقدير خبراء ISC الممارسين، بانتظار مراجعة خبير مستقل.';
+const RISK_NOTE_AR = 'مؤشر آي سبلاي تشين المركّب للتعرض للمخاطر (مقياس داخلي من 0 إلى 100). هذه منهجية خاصة بـ آي سبلاي تشين مستندة إلى مبادئ ISO 31000 لإدارة المخاطر -- وليست إحصائية سوقية منشورة خارجياً، ولا يوجد معيار خارجي لهذا المقياس بالذات. نقاط الاسترشاد تعكس تقدير خبراء آي سبلاي تشين الممارسين، بانتظار مراجعة خبير مستقل.';
 
 export const FACTORY_DEFAULTS = [
   // KPI benchmarks (0-100 normalised score space)
