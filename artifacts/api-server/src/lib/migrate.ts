@@ -562,6 +562,178 @@ const MIGRATIONS: string[] = [
   `ALTER TABLE users ADD COLUMN IF NOT EXISTS tool_data JSONB`,
   `ALTER TABLE users ADD COLUMN IF NOT EXISTS last_import_at TIMESTAMP`,
 
+  // Missing-table repair (6 Nov 2026). Audit of lib/db/src/schema vs this file found
+  // tables whose only creator was the build-time `drizzle-kit push`, which has aborted on
+  // Render since ~24 Aug. Live check: their API routes returned HTTP 500. Additive and
+  // idempotent (IF NOT EXISTS) - harmless where the table already exists.
+  `CREATE TABLE IF NOT EXISTS clm_contracts (
+     id               SERIAL PRIMARY KEY,
+     user_id          INTEGER     NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+     organization_id  INTEGER     REFERENCES organizations(id),
+     client_key       TEXT        NOT NULL,
+     name             TEXT        NOT NULL,
+     data             JSONB       NOT NULL,
+     created_at       TIMESTAMP   NOT NULL DEFAULT NOW(),
+     updated_at       TIMESTAMP   NOT NULL DEFAULT NOW()
+   )`,
+  `CREATE INDEX IF NOT EXISTS clm_contracts_user_id ON clm_contracts (user_id)`,
+  `CREATE TABLE IF NOT EXISTS rar_analyses (
+     id               SERIAL PRIMARY KEY,
+     user_id          INTEGER     NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+     organization_id  INTEGER     REFERENCES organizations(id),
+     client_key       TEXT        NOT NULL,
+     name             TEXT        NOT NULL,
+     data             JSONB       NOT NULL,
+     created_at       TIMESTAMP   NOT NULL DEFAULT NOW(),
+     updated_at       TIMESTAMP   NOT NULL DEFAULT NOW()
+   )`,
+  `CREATE INDEX IF NOT EXISTS rar_analyses_user_id ON rar_analyses (user_id)`,
+  `CREATE TABLE IF NOT EXISTS supplier_dependency_checks (
+     id               SERIAL PRIMARY KEY,
+     user_id          INTEGER     NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+     organization_id  INTEGER     REFERENCES organizations(id),
+     client_key       TEXT        NOT NULL,
+     name             TEXT        NOT NULL,
+     data             JSONB       NOT NULL,
+     created_at       TIMESTAMP   NOT NULL DEFAULT NOW(),
+     updated_at       TIMESTAMP   NOT NULL DEFAULT NOW()
+   )`,
+  `CREATE INDEX IF NOT EXISTS supplier_dependency_checks_user_id ON supplier_dependency_checks (user_id)`,
+  `CREATE TABLE IF NOT EXISTS local_content_icv_entries (
+     id               SERIAL PRIMARY KEY,
+     user_id          INTEGER     NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+     organization_id  INTEGER     REFERENCES organizations(id),
+     client_key       TEXT        NOT NULL,
+     name             TEXT        NOT NULL,
+     data             JSONB       NOT NULL,
+     created_at       TIMESTAMP   NOT NULL DEFAULT NOW(),
+     updated_at       TIMESTAMP   NOT NULL DEFAULT NOW()
+   )`,
+  `CREATE INDEX IF NOT EXISTS local_content_icv_entries_user_id ON local_content_icv_entries (user_id)`,
+  `CREATE TABLE IF NOT EXISTS supplier_recovery_entries (
+     id               SERIAL PRIMARY KEY,
+     user_id          INTEGER     NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+     organization_id  INTEGER     REFERENCES organizations(id),
+     client_key       TEXT        NOT NULL,
+     name             TEXT        NOT NULL,
+     data             JSONB       NOT NULL,
+     created_at       TIMESTAMP   NOT NULL DEFAULT NOW(),
+     updated_at       TIMESTAMP   NOT NULL DEFAULT NOW()
+   )`,
+  `CREATE INDEX IF NOT EXISTS supplier_recovery_entries_user_id ON supplier_recovery_entries (user_id)`,
+  `CREATE TABLE IF NOT EXISTS kraljic_workspaces (
+     id               SERIAL PRIMARY KEY,
+     user_id          INTEGER     NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+     organization_id  INTEGER     REFERENCES organizations(id),
+     data             JSONB       NOT NULL,
+     created_at       TIMESTAMP   NOT NULL DEFAULT NOW(),
+     updated_at       TIMESTAMP   NOT NULL DEFAULT NOW()
+   )`,
+  `CREATE TABLE IF NOT EXISTS copq_ledger (
+     id               SERIAL PRIMARY KEY,
+     user_id          INTEGER     NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+     organization_id  INTEGER     REFERENCES organizations(id),
+     period_label     TEXT        NOT NULL,
+     data             JSONB       NOT NULL,
+     alerted          BOOLEAN     NOT NULL DEFAULT FALSE,
+     alert_reason     TEXT,
+     created_at       TIMESTAMP   NOT NULL DEFAULT NOW()
+   )`,
+  `CREATE INDEX IF NOT EXISTS copq_ledger_user_id ON copq_ledger (user_id)`,
+  `CREATE TABLE IF NOT EXISTS asl_decision_events (
+     id               SERIAL PRIMARY KEY,
+     organization_id  INTEGER     NOT NULL REFERENCES organizations(id),
+     supplier_id      TEXT        NOT NULL,
+     decision_type    TEXT        NOT NULL,
+     reason_category  TEXT        NOT NULL,
+     reason_note      TEXT,
+     approver_user_id INTEGER     NOT NULL REFERENCES users(id),
+     qualification_gate_status_at_decision TEXT NOT NULL,
+     due_diligence_tier_at_decision TEXT NOT NULL,
+     review_due_at    TIMESTAMP,
+     data             JSONB,
+     created_at       TIMESTAMP   NOT NULL DEFAULT NOW()
+   )`,
+  `CREATE INDEX IF NOT EXISTS asl_decision_events_org ON asl_decision_events (organization_id)`,
+  `CREATE TABLE IF NOT EXISTS blacklist_events (
+     id               SERIAL PRIMARY KEY,
+     organization_id  INTEGER     NOT NULL REFERENCES organizations(id),
+     supplier_id      TEXT        NOT NULL,
+     action           TEXT        NOT NULL,
+     evidence         JSONB,
+     right_to_respond_confirmed BOOLEAN,
+     duration_type    TEXT,
+     effective_until  TIMESTAMP,
+     actor_user_id    INTEGER     NOT NULL REFERENCES users(id),
+     notes            TEXT,
+     created_at       TIMESTAMP   NOT NULL DEFAULT NOW()
+   )`,
+  `CREATE INDEX IF NOT EXISTS blacklist_events_org ON blacklist_events (organization_id)`,
+  `CREATE TABLE IF NOT EXISTS governance_tier_override_events (
+     id               SERIAL PRIMARY KEY,
+     organization_id  INTEGER     NOT NULL REFERENCES organizations(id),
+     supplier_id      TEXT        NOT NULL,
+     action           TEXT        NOT NULL,
+     tier             TEXT,
+     actor_user_id    INTEGER     NOT NULL REFERENCES users(id),
+     created_at       TIMESTAMP   NOT NULL DEFAULT NOW()
+   )`,
+  `CREATE INDEX IF NOT EXISTS governance_tier_override_events_org ON governance_tier_override_events (organization_id)`,
+  `CREATE TABLE IF NOT EXISTS onboarding_step_events (
+     id               SERIAL PRIMARY KEY,
+     organization_id  INTEGER     NOT NULL REFERENCES organizations(id),
+     supplier_id      TEXT        NOT NULL,
+     step_key         TEXT        NOT NULL,
+     action           TEXT        NOT NULL,
+     actor_user_id    INTEGER     NOT NULL REFERENCES users(id),
+     note             TEXT,
+     verification_channel_note TEXT,
+     first_payment_hold_acknowledged BOOLEAN,
+     asl_status_at_event TEXT     NOT NULL,
+     created_at       TIMESTAMP   NOT NULL DEFAULT NOW()
+   )`,
+  `CREATE INDEX IF NOT EXISTS onboarding_step_events_org ON onboarding_step_events (organization_id)`,
+  `CREATE TABLE IF NOT EXISTS periodic_evaluation_events (
+     id               SERIAL PRIMARY KEY,
+     organization_id  INTEGER     NOT NULL REFERENCES organizations(id),
+     supplier_id      TEXT        NOT NULL,
+     action           TEXT        NOT NULL,
+     cadence          TEXT,
+     category_scores  JSONB,
+     overall_recommendation TEXT,
+     actor_user_id    INTEGER     NOT NULL REFERENCES users(id),
+     notes            TEXT,
+     created_at       TIMESTAMP   NOT NULL DEFAULT NOW()
+   )`,
+  `CREATE INDEX IF NOT EXISTS periodic_evaluation_events_org ON periodic_evaluation_events (organization_id)`,
+  `CREATE TABLE IF NOT EXISTS raci_assignment_events (
+     id               SERIAL PRIMARY KEY,
+     organization_id  INTEGER     NOT NULL REFERENCES organizations(id),
+     activity_key     TEXT        NOT NULL,
+     role             TEXT        NOT NULL,
+     user_id          INTEGER     NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+     action           TEXT        NOT NULL,
+     assigned_by_user_id INTEGER  NOT NULL REFERENCES users(id),
+     created_at       TIMESTAMP   NOT NULL DEFAULT NOW()
+   )`,
+  `CREATE INDEX IF NOT EXISTS raci_assignment_events_org ON raci_assignment_events (organization_id)`,
+  `CREATE TABLE IF NOT EXISTS transition_events (
+     id               SERIAL PRIMARY KEY,
+     organization_id  INTEGER     NOT NULL REFERENCES organizations(id),
+     supplier_id      TEXT        NOT NULL,
+     action           TEXT        NOT NULL,
+     trigger_reason   TEXT,
+     cooperation_level TEXT,
+     replacement_supplier_named BOOLEAN,
+     checklist_item_key TEXT,
+     item_status      TEXT,
+     actor_user_id    INTEGER     NOT NULL REFERENCES users(id),
+     notes            TEXT,
+     data             JSONB,
+     created_at       TIMESTAMP   NOT NULL DEFAULT NOW()
+   )`,
+  `CREATE INDEX IF NOT EXISTS transition_events_org ON transition_events (organization_id)`,
+
 ];
 
 export async function runStartupMigrations(): Promise<void> {
