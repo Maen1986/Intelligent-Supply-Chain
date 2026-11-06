@@ -96,7 +96,7 @@ export function ROIWaterfall() {
             ? 'سجّل الدخول لعرض ملخص تحقيق القيمة الخاص بك، المبني على سجل تقييماتك وإجراءاتك الفعلية.'
             : 'Sign in to see your value-realization summary, built from your own assessment and action history.'}
         </p>
-        <Link href="/login"><Button size="lg" className="bg-accent hover:bg-accent/90">{ar ? 'تسجيل الدخول' : 'Sign In'}</Button></Link>
+        <Link href="/login"><Button size="lg" className="bg-accent hover:bg-accent/90 text-[#082C6B]">{ar ? 'تسجيل الدخول' : 'Sign In'}</Button></Link>
       </div>
     );
   }
@@ -120,7 +120,7 @@ export function ROIWaterfall() {
             ? 'لا يوجد سجل بعد. أكمل تقييم النضج وتتبّع إجراءاتك، وسيظهر ملخص تحقيق القيمة هنا تلقائيًا.'
             : "No history yet. Complete a Maturity Assessment and track your actions, and your value-realization summary will build itself here automatically."}
         </p>
-        <Link href="/maturity"><Button size="lg" className="bg-accent hover:bg-accent/90 gap-2">
+        <Link href="/maturity"><Button size="lg" className="bg-accent hover:bg-accent/90 text-[#082C6B] gap-2">
           {ar ? 'ابدأ تقييم النضج' : 'Start Maturity Assessment'} <ArrowRight className="w-4 h-4" />
         </Button></Link>
       </div>
