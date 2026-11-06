@@ -119,7 +119,7 @@ export function AdminEvidenceReview() {
         <div className="container mx-auto px-4 py-10 max-w-6xl">
           <div className="flex items-center gap-2 mb-2">
             <Link href="/admin/leads">
-              <button className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 transition-colors">
+              <button aria-label={ar ? 'رجوع' : 'Back'} className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 transition-colors">
                 {ar ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
               </button>
             </Link>
@@ -150,7 +150,7 @@ export function AdminEvidenceReview() {
                 {f === 'all'
                   ? (ar ? 'الكل' : 'All')
                   : tierLabel(f)}
-                {f !== 'all' && <span className="ml-1 opacity-70">({records.filter(r => r.confidenceTier === f).length})</span>}
+                {f !== 'all' && <span className="ml-1">({records.filter(r => r.confidenceTier === f).length})</span>}
               </button>
             ))}
           </div>
