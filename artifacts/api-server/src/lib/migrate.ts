@@ -548,6 +548,20 @@ const MIGRATIONS: string[] = [
      SET name_ar = 'اكتفاء والمحتوى المحلي'
    WHERE country_id = 'ksa' AND code = 'iktva' AND name_ar = 'إكتفاء والمحتوى المحلي'`,
 
+  // Auth-critical users columns (idempotent). Production login failed with
+  // 'column "org_role" does not exist' because the build-step drizzle push
+  // fails on every deploy (interactive prompt, no TTY) and this file never
+  // added org_role. All statements are no-ops where the column already exists.
+  `ALTER TABLE users ADD COLUMN IF NOT EXISTS org_role TEXT NOT NULL DEFAULT 'member'`,
+  `ALTER TABLE users ADD COLUMN IF NOT EXISTS role TEXT NOT NULL DEFAULT 'user'`,
+  `ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash TEXT`,
+  `ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token_hash TEXT`,
+  `ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token_expires_at TIMESTAMP`,
+  `ALTER TABLE users ADD COLUMN IF NOT EXISTS scorecard_roster JSONB`,
+  `ALTER TABLE users ADD COLUMN IF NOT EXISTS scorecard_config JSONB`,
+  `ALTER TABLE users ADD COLUMN IF NOT EXISTS tool_data JSONB`,
+  `ALTER TABLE users ADD COLUMN IF NOT EXISTS last_import_at TIMESTAMP`,
+
 ];
 
 export async function runStartupMigrations(): Promise<void> {
