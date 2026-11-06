@@ -226,6 +226,7 @@ export function NegotiationDesk() {
   const [prefillNote, setPrefillNote] = useState('');
   const [pasteText, setPasteText] = useState('');
   const [pasteMsg, setPasteMsg] = useState('');
+  const [pasteReplace, setPasteReplace] = useState(false);
   // Server save (E3 N0, 5 Nov 2026): signed-in users also get one saved case in their account
   // (table negotiation_cases). Same whole-state pattern as rar_analyses / supplier_dependency_checks.
   // localStorage stays the source of truth if the server is unreachable; signed-out users are unchanged.
@@ -351,10 +352,10 @@ export function NegotiationDesk() {
     const probe = parsePastedPrices(pasteText, new Date().toISOString().slice(0, 10));
     if (probe.points.length === 0) { setPasteMsg(t('No prices found. Put one price per line, for example "Q1 100".', 'لم يتم العثور على أسعار. ضع سعرا واحدا في كل سطر مثل "Q1 100".')); return; }
     const today = new Date().toISOString().slice(0, 10);
-    const latest = s.points.length > 0 ? [...s.points].map(p => p.sortKey).sort().slice(-1)[0] : '';
+    const latest = !pasteReplace && s.points.length > 0 ? [...s.points].map(p => p.sortKey).sort().slice(-1)[0] : '';
     const base = latest ? addDays(latest, 30) : addDays(today, -30 * (probe.points.length - 1));
     const r = parsePastedPrices(pasteText, base);
-    setS(prev => ({ ...prev, points: [...prev.points, ...r.points] }));
+    setS(prev => ({ ...prev, points: pasteReplace ? r.points : [...prev.points, ...r.points] }));
     setPasteText('');
     setPasteMsg(t(`Added ${r.points.length} price(s)${r.skipped ? `, skipped ${r.skipped} line(s) with no usable price` : ''}. Rows without a date were given dates 30 days apart in the order pasted; edit the dates if they are wrong.`,
       `تمت إضافة ${r.points.length} سعر${r.skipped ? `، وتم تخطي ${r.skipped} سطر بلا سعر صالح` : ''}. الصفوف بلا تاريخ أُعطيت تواريخ بفارق 30 يوما بترتيب اللصق؛ عدّل التواريخ إن كانت خاطئة.`));
@@ -653,6 +654,7 @@ export function NegotiationDesk() {
                 <summary className="text-xs font-bold text-[#082C6B] cursor-pointer">{t('Paste prices from a spreadsheet or email', 'الصق الأسعار من جدول أو بريد')}</summary>
                 <p className="text-[11px] text-slate-600 mt-2">{t('One price per line, for example "Q1 100" or "2026-03-01 98". Numbers with thousands commas are fine.', 'سعر واحد في كل سطر مثل "Q1 100" أو "2026-03-01 98". الأرقام بفواصل الآلاف مقبولة.')}</p>
                 <textarea className={`${inputCls} mt-2`} rows={4} value={pasteText} onChange={e => setPasteText(e.target.value)} aria-label={t('Paste prices', 'الصق الأسعار')} />
+                <label className="flex items-center gap-2 text-[11px] text-slate-700 mt-2"><input type="checkbox" checked={pasteReplace} onChange={e => setPasteReplace(e.target.checked)} />{t('Replace the prices already entered (otherwise these are added to them)', 'استبدل الأسعار المدخلة سابقا (وإلا تُضاف هذه إليها)')}</label>
                 <button type="button" onClick={applyPaste} className="mt-2 text-xs font-bold text-white bg-[#082C6B] rounded-lg px-3 py-2">{t('Add these prices', 'أضف هذه الأسعار')}</button>
                 {pasteMsg && <p role="status" className="text-[11px] text-slate-700 mt-2">{pasteMsg}</p>}
               </details>
