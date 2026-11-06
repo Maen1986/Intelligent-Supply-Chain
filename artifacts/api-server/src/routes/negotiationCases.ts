@@ -17,8 +17,8 @@ import { logger } from '../lib/logger';
 const router = Router();
 router.use(requireSession);
 
-/** Cap per sync: a handful of named cases per user, not a business register. */
-const MAX_CASES_PER_SYNC = 20;
+/** Cap per sync: up to 20 visible cases plus archived cases that keep a recorded lesson (client keeps at most 80 archived). Not a business register. */
+const MAX_CASES_PER_SYNC = 100;
 
 interface NegotiationCasePayload {
   clientKey: string;
