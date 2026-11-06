@@ -149,14 +149,14 @@ export function Header() {
           sit near the bar's actual left/right edges on wide viewports,
           instead of being capped by container's max-width with unused
           navy margin on both sides -- reported live via screenshot. */}
-      <div className="w-full px-4 sm:px-6 lg:px-4 xl:px-6 2xl:px-10 h-16 flex items-center justify-between gap-2 lg:gap-2 xl:gap-3 2xl:gap-4">
+      <div className="w-full px-3 sm:px-6 lg:px-4 xl:px-6 2xl:px-10 h-16 flex items-center justify-between gap-2 lg:gap-2 xl:gap-3 2xl:gap-4">
         <div className="flex items-center gap-3 shrink-0">
           {/* Chip height (44px logo + 8px padding = 52px) is kept well under
               the header's own h-16 (64px) bar so it never pokes out past the
               bar's top/bottom edge -- Logo's default 100px (used by
               Footer/Csr/ReportOutput, which aren't height-constrained like
               this) would overflow a 64px-tall container. */}
-          <div className="bg-white rounded-xl px-2.5 py-1 shadow-sm">
+          <div className="bg-white rounded-xl px-2 sm:px-2.5 py-1 shadow-sm">
             <Logo heightPx={44} />
           </div>
           <PilotStatusBadge lang={lang} className="hidden sm:inline-flex" />
@@ -329,18 +329,18 @@ export function Header() {
         </div>
 
         {/* ── Mobile controls ── */}
-        <div className="lg:hidden flex items-center gap-2 ml-auto">
+        <div className="lg:hidden flex items-center gap-1 ml-auto">
           {user && (
             <span className="text-white/80">
               <NotificationsBell lang={lang} />
             </span>
           )}
-          <button onClick={toggleLanguage} className="text-sm font-bold text-white/70 hover:text-white px-2 py-1">
+          <button onClick={toggleLanguage} className="text-sm font-bold text-white/70 hover:text-white px-1.5 py-1">
             {lang === 'en' ? 'AR' : 'EN'}
           </button>
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="p-2 rounded-lg text-white/90 hover:bg-white/10 transition-colors"
+            className="p-1.5 rounded-lg text-white/90 hover:bg-white/10 transition-colors"
             aria-label={lang === 'ar' ? 'تبديل القائمة' : 'Toggle menu'}
           >
             {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
