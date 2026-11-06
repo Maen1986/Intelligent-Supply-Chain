@@ -482,7 +482,7 @@ export function RiskToolsSection({ isAr }: RiskToolsProps) {
       </div>
       {/* Toolbar */}
       <div className="flex items-center justify-between">
-        <p className="text-xs text-slate-400">{isAr ? 'إدارة مخاطر سلسلة التوريد' : 'Supply Chain Risk Management'}</p>
+        <p className="text-xs text-slate-500">{isAr ? 'إدارة مخاطر سلسلة التوريد' : 'Supply Chain Risk Management'}</p>
         {activeTab !== 'alert-config' && (
           <button
             onClick={() => { document.body.setAttribute('data-print', 'kri'); window.addEventListener('afterprint', () => document.body.removeAttribute('data-print'), { once: true }); window.print(); }}
@@ -537,9 +537,9 @@ export function RiskToolsSection({ isAr }: RiskToolsProps) {
                           </span>
                         )}
                       </div>
-                      <p className="text-[11px] text-slate-400 mt-0.5">{isAr ? def.descAr : def.desc}</p>
+                      <p className="text-[11px] text-slate-500 mt-0.5">{isAr ? def.descAr : def.desc}</p>
                       <div className="flex items-center gap-2 mt-2">
-                        <p className="text-[10px] text-slate-400">
+                        <p className="text-[10px] text-slate-500">
                           {isAr ? 'إنذار:' : 'Alert:'} ≥{def.higherIsBetter ? `below ${def.red}` : def.red}{def.unit} · {isAr ? 'مراقبة:' : 'Watch:'} {def.higherIsBetter ? `below ${def.amber}` : `>${def.amber}`}{def.unit}
                         </p>
                       </div>
@@ -548,7 +548,7 @@ export function RiskToolsSection({ isAr }: RiskToolsProps) {
                       <input type="number" value={raw} onChange={e => updateKri(def.id, e.target.value)}
                         placeholder="—" className="w-20 text-sm font-bold text-center border rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-[#082C6B]"
                         style={{ borderColor: status ? (status === 'green' ? '#10b981' : status === 'amber' ? '#d97706' : '#ef4444') : '#e5e7eb' }} />
-                      <span className="text-xs text-slate-400">{isAr ? def.unitAr : def.unit}</span>
+                      <span className="text-xs text-slate-500">{isAr ? def.unitAr : def.unit}</span>
                     </div>
                   </div>
                   {/* Progress bar */}
@@ -610,21 +610,21 @@ export function RiskToolsSection({ isAr }: RiskToolsProps) {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: level.bg, color: level.color }}>{isAr ? riskLevel(score).labelAr : riskLevel(score).label} · {score}/25</span>
-                        <span className="text-[10px] text-slate-400">{isAr ? catMeta?.labelAr : catMeta?.label}</span>
+                        <span className="text-[10px] text-slate-500">{isAr ? catMeta?.labelAr : catMeta?.label}</span>
                         {risk.status === 'open' && <span className="text-[10px] bg-red-50 text-red-600 px-1.5 py-0.5 rounded-full font-semibold">{isAr ? 'مفتوح' : 'OPEN'}</span>}
                         {risk.status === 'in-progress' && <span className="text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded-full font-semibold">{isAr ? 'قيد التنفيذ' : 'IN PROGRESS'}</span>}
                         {risk.status === 'closed' && <span className="text-[10px] bg-emerald-50 text-emerald-600 px-1.5 py-0.5 rounded-full font-semibold">{isAr ? 'مغلق' : 'CLOSED'}</span>}
                       </div>
                       <p className="text-sm font-semibold text-slate-700 mt-1">{risk.description || (isAr ? '(وصف المخاطرة)' : '(Risk description)')}</p>
-                      {risk.owner && <p className="text-[11px] text-slate-400 mt-0.5">{isAr ? 'المسؤول:' : 'Owner:'} {risk.owner} {risk.dueDate ? `· ${isAr ? 'الموعد:' : 'Due:'} ${risk.dueDate}` : ''}</p>}
+                      {risk.owner && <p className="text-[11px] text-slate-500 mt-0.5">{isAr ? 'المسؤول:' : 'Owner:'} {risk.owner} {risk.dueDate ? `· ${isAr ? 'الموعد:' : 'Due:'} ${risk.dueDate}` : ''}</p>}
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       <div className="text-center hidden sm:block">
-                        <p className="text-[10px] text-slate-400">L×I</p>
+                        <p className="text-[10px] text-slate-500">L×I</p>
                         <p className="text-lg font-black" style={{ color: level.color }}>{score}</p>
                       </div>
                       <button onClick={e => { e.stopPropagation(); removeRisk(risk.id); }} className="text-slate-300 hover:text-red-500 transition-colors ml-1"><Trash2 className="w-3.5 h-3.5" /></button>
-                      {isOpen ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
+                      {isOpen ? <ChevronUp className="w-4 h-4 text-slate-500" /> : <ChevronDown className="w-4 h-4 text-slate-500" />}
                     </div>
                   </div>
 
@@ -699,14 +699,14 @@ export function RiskToolsSection({ isAr }: RiskToolsProps) {
                         <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">{isAr ? 'المخاطرة المتبقية (بعد التخفيف)' : 'Residual Risk (After Mitigation)'}</p>
                         <div className="grid grid-cols-2 gap-3">
                           <div>
-                            <label className="text-[10px] text-slate-400">{isAr ? 'الاحتمالية المتبقية' : 'Residual Likelihood'}</label>
+                            <label className="text-[10px] text-slate-500">{isAr ? 'الاحتمالية المتبقية' : 'Residual Likelihood'}</label>
                             <div className="flex items-center gap-2 mt-1">
                               <input type="range" min={1} max={5} value={risk.residualLikelihood} onChange={e => updateRisk(risk.id, 'residualLikelihood', parseInt(e.target.value))} className="flex-1" style={{ accentColor: '#059669' }} />
                               <span className="font-bold text-emerald-600 w-4">{risk.residualLikelihood}</span>
                             </div>
                           </div>
                           <div>
-                            <label className="text-[10px] text-slate-400">{isAr ? 'الأثر المتبقي' : 'Residual Impact'}</label>
+                            <label className="text-[10px] text-slate-500">{isAr ? 'الأثر المتبقي' : 'Residual Impact'}</label>
                             <div className="flex items-center gap-2 mt-1">
                               <input type="range" min={1} max={5} value={risk.residualImpact} onChange={e => updateRisk(risk.id, 'residualImpact', parseInt(e.target.value))} className="flex-1" style={{ accentColor: '#059669' }} />
                               <span className="font-bold text-emerald-600 w-4">{risk.residualImpact}</span>
@@ -760,7 +760,7 @@ export function RiskToolsSection({ isAr }: RiskToolsProps) {
         <div role="tabpanel" id="heatmap-panel" aria-labelledby="heatmap-tab" className="space-y-4">
           <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
             <h3 className="font-bold text-slate-800 text-sm mb-1">{isAr ? 'خريطة حرارة المخاطر (5×5)' : 'Risk Heat Map (5×5)'}</h3>
-            <p className="text-[11px] text-slate-400 mb-4">{isAr ? 'المحور الأفقي = الأثر، المحور الرأسي = الاحتمالية. انقر على خلية لتصفية السجل.' : 'X-axis = Impact · Y-axis = Likelihood. Click a cell to filter the register.'}</p>
+            <p className="text-[11px] text-slate-500 mb-4">{isAr ? 'المحور الأفقي = الأثر، المحور الرأسي = الاحتمالية. انقر على خلية لتصفية السجل.' : 'X-axis = Impact · Y-axis = Likelihood. Click a cell to filter the register.'}</p>
 
             {/* Heat map grid */}
             <div className="overflow-x-auto">
@@ -778,7 +778,7 @@ export function RiskToolsSection({ isAr }: RiskToolsProps) {
                   <div className="flex-1">
                     {/* Column headers */}
                     <div className="grid grid-cols-5 mb-1">
-                      {[1,2,3,4,5].map(i => <div key={i} className="text-center text-[11px] font-bold text-slate-400">{i}</div>)}
+                      {[1,2,3,4,5].map(i => <div key={i} className="text-center text-[11px] font-bold text-slate-500">{i}</div>)}
                     </div>
                     {[5,4,3,2,1].map(l => (
                       <div key={l} className="grid grid-cols-5 gap-1 mb-1">
@@ -802,7 +802,7 @@ export function RiskToolsSection({ isAr }: RiskToolsProps) {
                     ))}
                     {/* Row labels */}
                     <div className="flex justify-between mt-1 px-0.5">
-                      {[1,2,3,4,5].map(n => <span key={n} className="text-[11px] text-slate-400 flex-1 text-center">{n}</span>)}
+                      {[1,2,3,4,5].map(n => <span key={n} className="text-[11px] text-slate-500 flex-1 text-center">{n}</span>)}
                     </div>
                   </div>
                 </div>
@@ -826,11 +826,11 @@ export function RiskToolsSection({ isAr }: RiskToolsProps) {
                   {isAr ? `مخاطر في الخلية L${heatFilter.l}×I${heatFilter.i} (الدرجة: ${heatFilter.l * heatFilter.i}):` : `Risks at L${heatFilter.l}×I${heatFilter.i} (score: ${heatFilter.l * heatFilter.i}):`}
                 </p>
                 {risks.filter(r => r.likelihood === heatFilter.l && r.impact === heatFilter.i).length === 0
-                  ? <p className="text-xs text-slate-400">{isAr ? 'لا توجد مخاطر في هذه الخلية.' : 'No risks in this cell.'}</p>
+                  ? <p className="text-xs text-slate-500">{isAr ? 'لا توجد مخاطر في هذه الخلية.' : 'No risks in this cell.'}</p>
                   : risks.filter(r => r.likelihood === heatFilter.l && r.impact === heatFilter.i).map(r => (
                     <div key={r.id} className="text-xs text-slate-700 py-1 border-b border-slate-50 last:border-0">
                       <span className="font-semibold">{r.description || '(untitled)'}</span>
-                      {r.owner && <span className="text-slate-400 ml-2">— {r.owner}</span>}
+                      {r.owner && <span className="text-slate-500 ml-2">— {r.owner}</span>}
                     </div>
                   ))}
               </div>
@@ -874,7 +874,7 @@ export function RiskToolsSection({ isAr }: RiskToolsProps) {
                         </div>
                         <p className="text-sm font-bold text-slate-800 mt-1">{risk.description || (isAr ? '(وصف المخاطرة)' : '(Risk description)')}</p>
                         <div className="mt-2 space-y-1">
-                          <p className="text-xs text-slate-600"><span className="font-semibold">{isAr ? 'الإجراء:' : 'Action:'}</span> {risk.mitigationAction || <span className="text-slate-400 italic">{isAr ? 'لم يُحدَّد بعد' : 'Not defined yet'}</span>}</p>
+                          <p className="text-xs text-slate-600"><span className="font-semibold">{isAr ? 'الإجراء:' : 'Action:'}</span> {risk.mitigationAction || <span className="text-slate-500 italic">{isAr ? 'لم يُحدَّد بعد' : 'Not defined yet'}</span>}</p>
                           <div className="flex gap-4 text-xs text-slate-500">
                             {risk.owner && <span><span className="font-semibold">{isAr ? 'المسؤول:' : 'Owner:'}</span> {risk.owner}</span>}
                             {risk.dueDate && <span className={isOverdue ? 'text-red-600 font-bold' : ''}><span className="font-semibold">{isAr ? 'الموعد:' : 'Due:'}</span> {risk.dueDate}</span>}
@@ -891,7 +891,7 @@ export function RiskToolsSection({ isAr }: RiskToolsProps) {
                         </div>
                       </div>
                       <div className="shrink-0 text-right hidden sm:block">
-                        <p className="text-[10px] text-slate-400">{isAr ? 'متبقي' : 'Residual'}</p>
+                        <p className="text-[10px] text-slate-500">{isAr ? 'متبقي' : 'Residual'}</p>
                         <p className="text-lg font-black" style={{ color: riskLevel(residualScore(risk)).color }}>{residualScore(risk)}</p>
                       </div>
                     </div>
@@ -916,7 +916,7 @@ export function RiskToolsSection({ isAr }: RiskToolsProps) {
                 <span className="text-2xl shrink-0">{t.icon}</span>
                 <div className="flex-1">
                   <p className="font-bold text-sm text-slate-800">{isAr ? t.labelAr : t.label}</p>
-                  <p className="text-[11px] text-slate-400 mt-0.5 leading-relaxed">{isAr ? t.descAr : t.desc}</p>
+                  <p className="text-[11px] text-slate-500 mt-0.5 leading-relaxed">{isAr ? t.descAr : t.desc}</p>
                   <button onClick={() => { t.fn(); toast.success(isAr ? 'جاري التحميل…' : 'Downloading…'); }}
                     className="mt-2 flex items-center gap-1.5 text-xs text-[#082C6B] font-semibold hover:opacity-80">
                     <FileDown className="w-3.5 h-3.5" />{isAr ? 'تحميل' : 'Download'}
@@ -948,13 +948,13 @@ export function RiskToolsSection({ isAr }: RiskToolsProps) {
             {/* Print-only header */}
             <div className="hidden alert-cfg-print-header px-5 pt-5 pb-3 border-b border-slate-100">
               <h2 className="text-base font-bold text-slate-800">{isAr ? 'إعداد تنبيهات الموردين' : 'Supplier Alert Configuration'}</h2>
-              <p className="text-[11px] text-slate-400 mt-0.5">{isAr ? 'حدود تشغيل تنبيهات أداء الموردين' : 'Threshold values that trigger supplier performance alerts'}</p>
+              <p className="text-[11px] text-slate-500 mt-0.5">{isAr ? 'حدود تشغيل تنبيهات أداء الموردين' : 'Threshold values that trigger supplier performance alerts'}</p>
             </div>
 
             {/* Card header — visible on screen */}
             <div className="px-5 pt-5 pb-3 border-b border-slate-100 print-hide">
               <h3 className="font-bold text-slate-800 text-sm">{isAr ? 'إعداد تنبيهات الموردين' : 'Supplier Alert Configuration'}</h3>
-              <p className="text-[11px] text-slate-400 mt-0.5">{isAr ? 'عيّن حدود التنبيه لكل شريحة من شرائح الموردين' : 'Set alert thresholds for each supplier tier. Values outside these bounds trigger an alert.'}</p>
+              <p className="text-[11px] text-slate-500 mt-0.5">{isAr ? 'عيّن حدود التنبيه لكل شريحة من شرائح الموردين' : 'Set alert thresholds for each supplier tier. Values outside these bounds trigger an alert.'}</p>
             </div>
 
             {/* Table */}
@@ -968,7 +968,7 @@ export function RiskToolsSection({ isAr }: RiskToolsProps) {
                     {ALERT_COLS.map(col => (
                       <th key={col.field} scope="col" className="text-center py-2 px-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
                         <div>{isAr ? col.labelAr : col.label}</div>
-                        <div className="text-[10px] font-normal text-slate-400 normal-case tracking-normal mt-0.5">
+                        <div className="text-[10px] font-normal text-slate-500 normal-case tracking-normal mt-0.5">
                           ({isAr ? col.unitAr : col.unit})
                         </div>
                       </th>
@@ -1027,14 +1027,14 @@ export function RiskToolsSection({ isAr }: RiskToolsProps) {
 
             {/* Footer note */}
             <div className="px-5 pb-4 flex items-center justify-between gap-3">
-              <p className="text-[10px] text-slate-400 leading-relaxed">
+              <p className="text-[10px] text-slate-500 leading-relaxed">
                 {isAr
                   ? 'يتم تشغيل التنبيه عندما يكون الأداء الفعلي أقل من حدّ الشريحة المقابلة.'
                   : 'An alert fires when actual supplier performance falls below the threshold for its tier.'}
               </p>
               <button
                 onClick={resetAlerts}
-                className="print-hide flex items-center gap-1.5 text-[11px] text-slate-400 hover:text-slate-600 whitespace-nowrap transition-colors"
+                className="print-hide flex items-center gap-1.5 text-[11px] text-slate-500 hover:text-slate-600 whitespace-nowrap transition-colors"
               >
                 {isAr ? 'إعادة التعيين' : 'Reset to defaults'}
               </button>
