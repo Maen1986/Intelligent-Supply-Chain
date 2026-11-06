@@ -633,7 +633,7 @@ const NEGOTIATION_PROFILE_BY_QUADRANT: Record<KraljicQuadrant, NegotiationProfil
       { en: "Insist on objective, verifiable criteria (market indices, audited cost models) to resolve disagreements rather than a battle of wills.", ar: "أصرّ على معايير موضوعية يمكن التحقق منها (مؤشرات السوق، نماذج التكلفة المدقَّقة) لحل الخلافات بدلاً من صراع الإرادات." },
       { en: "Run interest-based bargaining sessions rather than single-round offer/counter-offer exchanges.", ar: "أجرِ جلسات تفاوض قائمة على المصالح بدلاً من تبادل عروض ومقابل عروض من جولة واحدة." },
       { en: "Build joint negotiation teams with technical and commercial members on both sides, not procurement versus sales alone.", ar: "شكّل فرق تفاوض مشتركة تضم أعضاء تقنيين وتجاريين من الطرفين، وليس المشتريات مقابل المبيعات فقط." },
-      { en: "Rehearse likely objections and prepare fallback trade-offs before the session -- the same structured planning discipline ISC's own Maturity Assessment already scores.", ar: "تدرّب على الاعتراضات المحتملة وجهّز مقايضات بديلة قبل الجلسة -- وهو نفس انضباط التخطيط المنظّم الذي يقيّمه تقييم النضج الخاص بـ ISC بالفعل." },
+      { en: "Rehearse likely objections and prepare fallback trade-offs before the session -- the same structured planning discipline ISC's own Maturity Assessment already scores.", ar: "تدرّب على الاعتراضات المحتملة وجهّز مقايضات بديلة قبل الجلسة -- وهو نفس انضباط التخطيط المنظّم الذي يقيّمه تقييم النضج الخاص بـ آي سبلاي تشين بالفعل." },
     ],
     avoid: [
       { en: "Aggressive, price-only tactics that treat a Strategic partner like a commodity supplier.", ar: "تكتيكات عدوانية قائمة على السعر فقط تعامل شريكاً استراتيجياً كأنه مورد سلعي." },
