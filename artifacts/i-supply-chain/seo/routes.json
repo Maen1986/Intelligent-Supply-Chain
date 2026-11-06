@@ -17,8 +17,8 @@
   "routes": [
     {
       "path": "/",
-      "title": "I Supply Chain — AI Supply Chain Consultancy for the GCC",
-      "description": "AI-powered supply chain consultancy for Saudi Arabia, the GCC and worldwide: executive briefings, diagnostics, benchmarking and risk assessment.",
+      "title": "I Supply Chain — Supply Chain and Procurement Consultancy",
+      "description": "Supply chain and procurement consultancy for Saudi Arabia, the GCC and worldwide: strategy, diagnostics, benchmarking and risk assessment.",
       "h1": "Your Intelligent Supply Chain Consultant — Anytime, Anywhere.",
       "summary": "We help organizations build resilient, sustainable, and efficient supply chains through intelligent AI consultancy and professional human expertise.",
       "priority": "1.0",
