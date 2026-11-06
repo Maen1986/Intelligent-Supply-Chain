@@ -48,7 +48,7 @@ export const CONSTRUCTS: Record<SubtypeKey, Construct> = {
       b('What caused the shortage and when is recovery expected?', 'ما سبب النقص ومتى يُتوقع التعافي؟'),
       b('Is the expected duration shorter than our time-to-survive?', 'هل المدة المتوقعة أقصر من مدة صمودنا؟'),
     ],
-    grounding: b('Tip et al. (2021): COVID turned low-risk hospital items into temporary bottlenecks. Tomlin (2006): short, frequent disruptions favour inventory; rare, long ones favour sourcing change. The sub-type itself is ISC synthesis.', 'Tip وآخرون (2021): حوّلت كوفيد بنودًا منخفضة الخطر إلى اختناقات مؤقتة. Tomlin (2006): الانقطاعات القصيرة المتكررة تناسبها المخزونات والنادرة الطويلة تناسبها إعادة التوريد. النوع الفرعي نفسه تركيب من ISC.'),
+    grounding: b('Tip et al. (2021): COVID turned low-risk hospital items into temporary bottlenecks. Tomlin (2006): short, frequent disruptions favour inventory; rare, long ones favour sourcing change. The sub-type itself is ISC synthesis.', 'Tip وآخرون (2021): حوّلت كوفيد بنودًا منخفضة الخطر إلى اختناقات مؤقتة. Tomlin (2006): الانقطاعات القصيرة المتكررة تناسبها المخزونات والنادرة الطويلة تناسبها إعادة التوريد. النوع الفرعي نفسه تركيب من آي سبلاي تشين.'),
     origin: 'isc-synthesis',
   },
   'leverage-stable': {
