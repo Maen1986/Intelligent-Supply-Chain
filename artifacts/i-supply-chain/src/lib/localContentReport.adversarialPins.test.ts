@@ -98,7 +98,7 @@ describe('not-listed country report', () => {
     expect(a.meta[0]).toEqual({ label: 'أُعدّ لـ', value: 'منشأتك' });
     expect(a.meta[1].label).toBe('الدولة');
     expect(a.meta[2].label).toBe('التاريخ');
-    expect(a.footer).toBe('أُعدّ بواسطة I Supply Chain، محرك المحتوى المحلي / القيمة المحلية المضافة.');
+    expect(a.footer).toBe('أُعدّ بواسطة آي سبلاي تشين، محرك المحتوى المحلي / القيمة المحلية المضافة.');
     expect(buildReport(base({ notListed: true, preparedFor: '' })).meta[0].value).toBe('Your organisation');
   });
 });
@@ -217,7 +217,7 @@ describe('full report sections', () => {
     expect(ar.meta.map((m) => m.label)).toEqual(['أُعدّ لـ', 'الدولة', 'البرنامج', 'سياق الجهة المشترية', 'التاريخ']);
     expect(ar.meta[0].value).toBe('منشأتك');
     expect(ar.title).toBe('تقرير قرار المحتوى المحلي');
-    expect(ar.footer).toBe('أُعدّ بواسطة I Supply Chain، محرك المحتوى المحلي / القيمة المحلية المضافة.');
+    expect(ar.footer).toBe('أُعدّ بواسطة آي سبلاي تشين، محرك المحتوى المحلي / القيمة المحلية المضافة.');
     expect(buildReport({ ...full, preparedFor: '' }).meta[0].value).toBe('Your organisation');
   });
 });
