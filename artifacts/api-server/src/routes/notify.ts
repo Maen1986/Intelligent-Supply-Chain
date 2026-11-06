@@ -248,7 +248,7 @@ export async function sendPasswordResetEmail(params: {
     return { sent: false, reason: msg };
   }
   const ar = params.lang === 'ar';
-  const subject = ar ? 'رمز إعادة تعيين كلمة المرور — I Supply Chain' : 'Your password reset code — I Supply Chain';
+  const subject = ar ? 'رمز إعادة تعيين كلمة المرور — آي سبلاي تشين' : 'Your password reset code — I Supply Chain';
   const html = `
     <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto"${ar ? ' dir="rtl"' : ''}>
       <div style="background:#082C6B;padding:24px 32px;border-radius:8px 8px 0 0">
@@ -349,7 +349,7 @@ export async function sendGuestResultsEmail(params: {
   const resultsUrl = `${appDomain}/maturity?token=${params.token}`;
 
   const subject = ar
-    ? 'نتائج تقييمكم — I Supply Chain'
+    ? 'نتائج تقييمكم — آي سبلاي تشين'
     : 'Your Maturity Assessment Results — I Supply Chain';
 
   const scoreBlock = (params.overallScore !== undefined && params.overallLevel)
