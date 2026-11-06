@@ -7,7 +7,8 @@ import { join } from 'node:path';
 const SRC = [join(process.cwd(), 'src'), join(process.cwd(), 'artifacts/i-supply-chain/src')].find((d) => existsSync(d)) as string;
 const AR = /[\u0600-\u06FF]/;
 const BRAND = /I Supply Chain/;
-const ISC = /(?<![\w\-/.@#:])ISC(?![\w\-/@:]|\.[a-z])(?!\s+[A-Za-z])/;
+const ISC = /(?<![\w\-/.@#:])ISC(?![\w\-/@:]|\.[a-z])/;
+const OTHER = /\bSAR\b|GPT-4o/;
 
 function walk(dir: string, out: string[] = []): string[] {
   for (const name of readdirSync(dir)) {
@@ -29,7 +30,7 @@ describe('Arabic strings do not embed the English brand', () => {
         for (const seg of line.split(/(["'`])/)) {
           if (!AR.test(seg)) continue;
           const codeLike = /(className|=>|===)/.test(seg);
-          if (BRAND.test(seg) || (!codeLike && ISC.test(seg))) {
+          if (BRAND.test(seg) || (!codeLike && (ISC.test(seg) || OTHER.test(seg)))) {
             violations.push(`${file.slice(SRC.length)}:${i + 1}: ${seg.trim().slice(0, 80)}`);
           }
         }
