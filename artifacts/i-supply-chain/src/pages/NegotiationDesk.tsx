@@ -27,6 +27,8 @@ import {
 } from '@/lib/negotiationTactics';
 import { DESK_ROUTES, STEP_IDS, getRoute, stepNeed, buildSuggestions, matchSuggestion, parsePastedPrices, type RouteId, type Suggestion } from '@/lib/deskRoutes';
 import { UNSPSC_SERVICES_SEGMENTS } from '@/lib/unspscSegments';
+import { CloseOutPanel, PastExperience } from '@/components/DeskLessons';
+import { capCases, eraseOrArchive, isArchived, type Lesson } from '@/lib/deskLessons';
 
 const KEY = 'isc-negotiation-desk-v1';
 type Survive = 'yes' | 'no' | 'unknown';
@@ -44,6 +46,10 @@ interface DeskState {
   cutHigh?: string;
   /** Optional entry route chosen on the Start-here panel (a navigation aid only; it never changes any result). */
   route?: string;
+  /** Lessons (registry #809, Phase 1): the lesson recorded when this negotiation was closed. Typed by the user; private to the account. */
+  lesson?: Lesson;
+  /** Set when a case that has a lesson is erased: it is archived (hidden, kept) so the lesson survives. */
+  archivedAt?: string;
 }
 const EMPTY: DeskState = { supplier: '', quadrant: 'leverage', lockIn: '', survivable: 'unknown', points: [], rounds: [] };
 // Illustrative example only. Not client data, not a benchmark.
@@ -72,19 +78,21 @@ function loadChecks(): SupplierCheck[] {
 interface SavedCase { clientKey: string; name: string; data: DeskState }
 const OTHERS_KEY = 'isc-negotiation-desk-others-v1';
 const MAX_CASES = 20;
+const MAX_ARCHIVED = 80;
+const capActive = <T extends { data: { archivedAt?: string } }>(l: T[]): T[] => capCases(l, MAX_CASES - 1, MAX_ARCHIVED);
 const hasContent = (st: DeskState) => st.supplier.trim() !== '' || st.points.length > 0 || st.rounds.length > 0;
 function loadOthers(): SavedCase[] {
   try {
     const raw = localStorage.getItem(OTHERS_KEY);
     const parsed = raw ? (JSON.parse(raw) as SavedCase[]) : [];
-    return Array.isArray(parsed) ? parsed.filter(c => c && typeof c.clientKey === 'string' && c.data && typeof c.data.supplier === 'string').map(c => ({ ...c, data: { ...EMPTY, ...c.data } })).slice(0, MAX_CASES - 1) : [];
+    return Array.isArray(parsed) ? capActive(parsed.filter(c => c && typeof c.clientKey === 'string' && c.data && typeof c.data.supplier === 'string').map(c => ({ ...c, data: { ...EMPTY, ...c.data } }))) : [];
   } catch { return []; }
 }
 function mergeOthers(prev: SavedCase[], incoming: SavedCase[]): SavedCase[] {
   const m = new Map<string, SavedCase>();
   for (const c of prev) m.set(c.clientKey, c);
   for (const c of incoming) m.set(c.clientKey, c);
-  return [...m.values()].slice(0, MAX_CASES - 1);
+  return capActive([...m.values()]);
 }
 /** Suppliers already recorded in the Supplier Recovery Portfolio (this browser). Read-only. */
 function loadPortfolio(): { name?: string; category?: string; quadrant?: string }[] {
@@ -316,7 +324,8 @@ export function NegotiationDesk() {
       : x.source === 'portfolio' ? `${t('Supplier portfolio', 'محفظة الموردين')}${x.detail ? ` · ${x.detail}` : ''}`
       : x.source === 'check' ? t('Dependency Check', 'فحص الاعتماد')
       : t('UNSPSC services category', 'فئة خدمات UNSPSC');
-  const matchedCase = others.find(c => (c.name || c.data.supplier).trim().toLowerCase() === s.supplier.trim().toLowerCase() && s.supplier.trim() !== '');
+  const activeOthers = others.filter(c => !isArchived(c));
+  const matchedCase = activeOthers.find(c => (c.name || c.data.supplier).trim().toLowerCase() === s.supplier.trim().toLowerCase() && s.supplier.trim() !== '');
   const onSupplierChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const v = e.target.value;
     const ie = e.nativeEvent as InputEvent;
@@ -337,17 +346,17 @@ export function NegotiationDesk() {
   const archiveCurrent = (list: SavedCase[]): SavedCase[] =>
     hasContent(s) ? [{ clientKey: `case-${Date.now()}`, name: s.supplier.trim() || 'Negotiation', data: s }, ...list] : list;
   const newCase = () => {
-    setOthers(archiveCurrent(othersRef.current).slice(0, MAX_CASES - 1));
+    setOthers(capActive(archiveCurrent(othersRef.current)));
     setS(EMPTY); setStep(0); setConfirmKind(null); setPrefillNote('');
   };
   const openCase = (key: string) => {
     const target = othersRef.current.find(c => c.clientKey === key);
     if (!target) return;
     const rest = othersRef.current.filter(c => c.clientKey !== key);
-    setOthers(archiveCurrent(rest).slice(0, MAX_CASES - 1));
-    setS({ ...EMPTY, ...target.data }); setStep(0); setPrefillNote('');
+    setOthers(capActive(archiveCurrent(rest)));
+    setS({ ...EMPTY, ...target.data, archivedAt: undefined }); setStep(0); setPrefillNote('');
   };
-  const deleteCase = (key: string) => { setOthers(othersRef.current.filter(c => c.clientKey !== key)); setDelKey(null); };
+  const deleteCase = (key: string) => { setOthers(eraseOrArchive(othersRef.current, key, new Date().toISOString())); setDelKey(null); };
   const applyPaste = () => {
     const probe = parsePastedPrices(pasteText, new Date().toISOString().slice(0, 10));
     if (probe.points.length === 0) { setPasteMsg(t('No prices found. Put one price per line, for example "Q1 100".', 'لم يتم العثور على أي أسعار. أدخل سعرًا واحدًا في كل سطر، مثل "Q1 100".')); return; }
@@ -472,15 +481,15 @@ export function NegotiationDesk() {
             </p>
           )}
           <div className="mt-4 border-t border-slate-100 pt-3">
-            <p className="text-[11px] font-bold text-slate-600">{t('Your negotiations', 'مفاوضاتك')} ({others.length + 1}/{MAX_CASES})</p>
+            <p className="text-[11px] font-bold text-slate-600">{t('Your negotiations', 'مفاوضاتك')} ({activeOthers.length + 1}/{MAX_CASES})</p>
             <div className="flex flex-wrap gap-2 mt-2 items-center">
               <span className="text-xs font-bold rounded-lg border border-[#082C6B] bg-[#082C6B]/5 text-[#082C6B] px-3 py-1.5" aria-current="true">{shownName.trim() || t('Untitled (open now)', 'بلا عنوان (مفتوحة الآن)')}</span>
-              {others.map(c => (
+              {activeOthers.map(c => (
                 <span key={c.clientKey} className="inline-flex items-center gap-1 text-xs rounded-lg border border-slate-200 bg-white px-2 py-1">
                   {delKey === c.clientKey ? (
                     <>
-                      <span className="text-red-700 font-semibold">{t('Erase this case?', 'حذف هذه الحالة؟')}</span>
-                      <button type="button" onClick={() => deleteCase(c.clientKey)} className="font-bold text-red-700 underline px-1">{t('Yes, erase this case', 'نعم، احذف هذه الحالة')}</button>
+                      <span className="text-red-700 font-semibold">{c.data.lesson ? t('Archive this case? Its lesson is kept.', 'أرشفة هذه الحالة؟ يبقى درسها محفوظا.') : t('Erase this case?', 'حذف هذه الحالة؟')}</span>
+                      <button type="button" onClick={() => deleteCase(c.clientKey)} className="font-bold text-red-700 underline px-1">{c.data.lesson ? t('Yes, archive this case', 'نعم، أرشف هذه الحالة') : t('Yes, erase this case', 'نعم، احذف هذه الحالة')}</button>
                       <button type="button" onClick={() => setDelKey(null)} className="font-semibold text-slate-600 underline px-1">{t('Keep', 'احتفظ بها')}</button>
                     </>
                   ) : (
@@ -491,7 +500,7 @@ export function NegotiationDesk() {
                   )}
                 </span>
               ))}
-              <button type="button" disabled={others.length >= MAX_CASES - 1} onClick={() => (hasContent(s) ? newCase() : undefined)}
+              <button type="button" disabled={activeOthers.length >= MAX_CASES - 1} onClick={() => (hasContent(s) ? newCase() : undefined)}
                 className="inline-flex items-center gap-1 text-xs font-bold text-white bg-[#082C6B] rounded-lg px-3 py-1.5 disabled:opacity-40"><Plus className="w-3 h-3" />{t('New negotiation', 'مفاوضة جديدة')}</button>
             </div>
             <p className="text-[11px] text-slate-600 mt-2">{t('Starting a new one keeps the current case in this list. Saved in this browser; signed-in users also keep them in their account.', 'بدء مفاوضة جديدة يُبقي الحالة الحالية في هذه القائمة. تُحفظ الحالات في هذا المتصفح، ويحتفظ بها المستخدمون الذين سجّلوا الدخول في حساباتهم أيضًا.')}</p>
@@ -530,7 +539,7 @@ export function NegotiationDesk() {
                     ? t('This replaces the case on screen with an illustrative example. Your current case can be kept in your list first.', 'هذا يستبدل الحالة المعروضة بمثال توضيحي. يمكن حفظ حالتك الحالية في قائمتك أولا.')
                     : t('This erases the case on screen. Your current case can be kept in your list first.', 'هذا يمسح الحالة المعروضة. يمكن حفظ حالتك الحالية في قائمتك أولا.')}</p>
                   <div className="flex flex-wrap gap-2 mt-2">
-                    <button type="button" onClick={() => { setOthers(archiveCurrent(othersRef.current).slice(0, MAX_CASES - 1)); if (confirmKind === 'example') setS(EXAMPLE); else { setS(EMPTY); setStep(0); } setConfirmKind(null); }} className="font-bold bg-[#082C6B] text-white rounded-lg px-3 py-1.5">{t('Keep mine in my list, then continue', 'احتفظ بحالتي في قائمتي ثم تابع')}</button>
+                    <button type="button" onClick={() => { setOthers(capActive(archiveCurrent(othersRef.current))); if (confirmKind === 'example') setS(EXAMPLE); else { setS(EMPTY); setStep(0); } setConfirmKind(null); }} className="font-bold bg-[#082C6B] text-white rounded-lg px-3 py-1.5">{t('Keep mine in my list, then continue', 'احتفظ بحالتي في قائمتي ثم تابع')}</button>
                     <button type="button" onClick={() => { if (confirmKind === 'example') setS(EXAMPLE); else { setS(EMPTY); setStep(0); } setConfirmKind(null); }} className="font-bold border border-amber-400 rounded-lg px-3 py-1.5">{t('Replace without keeping', 'استبدل دون حفظ')}</button>
                     <button type="button" onClick={() => setConfirmKind(null)} className="font-semibold underline px-2">{t('Cancel', 'إلغاء')}</button>
                   </div>
@@ -542,6 +551,7 @@ export function NegotiationDesk() {
               <p className="text-[11px] text-slate-600 mt-1">{t('Why we ask: the name labels the case, links your saved checks and appears on the brief. Type anything, or pick from the list (saved cases, your supplier portfolio, Dependency Checks, UNSPSC service categories).', 'لماذا نسأل: الاسم يميّز الحالة ويربطها بفحوصك المحفوظة ويظهر في الملخص. اكتب أي اسم أو اختر من القائمة (الحالات المحفوظة، محفظة الموردين، فحوص الاعتماد، فئات خدمات UNSPSC).')}</p>
               {prefillNote && <p role="status" className="text-[11px] text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-lg p-2 mt-2">{prefillNote}</p>}
               {matchedCase && <p className="text-[11px] text-slate-700 mt-2">{t('You already have a saved case with this name. ', 'لديك حالة محفوظة بهذا الاسم. ')}<button type="button" onClick={() => openCase(matchedCase.clientKey)} className="font-bold text-[#082C6B] underline">{t('Open it', 'افتحها')}</button></p>}
+              <PastExperience supplier={s.supplier} quadrant={s.quadrant} others={others} isAr={isAr} />
               {depChecks.length > 0 ? (
                 <label className="block text-xs font-semibold text-slate-600 mt-4">{t('Or pick a supplier from your Dependency Check', 'أو اختر مورّداً من فحص الاعتماد لديك')}
                   <select className={`${inputCls} mt-1`} value={s.linkedCheckId ?? ''}
@@ -775,6 +785,7 @@ export function NegotiationDesk() {
                 <p className="text-xs font-bold text-slate-600 mb-1">{t('Next move', 'الخطوة التالية')}</p>
                 <p className="text-sm">{isAr ? next.rationaleAr : next.rationaleEn}</p>
               </div>
+              <CloseOutPanel key={`${s.supplier}|${s.lesson?.closedAt ?? 'new'}`} lesson={s.lesson} lastPrice={s.points.length ? String([...s.points].sort((a, b) => a.sortKey.localeCompare(b.sortKey)).slice(-1)[0].price) : ''} isAr={isAr} onSave={l => set('lesson', l)} />
               <Note>{t('Internal. Not for the supplier. Not legal advice. The recommendation is ISC guidance derived from the rule on step 2, not a sourced benchmark. Saved in this browser, and in your account when you are signed in (one saved case).', 'داخلي. ليس للمورّد. ليس استشارة قانونية. التوصية إرشاد من ISC مشتق من القاعدة في الخطوة 2، وليست معياراً موثّقاً. يُحفظ في هذا المتصفح، وفي حسابك عند تسجيل الدخول (حالة محفوظة واحدة).')}</Note>
             </div>
           )}
