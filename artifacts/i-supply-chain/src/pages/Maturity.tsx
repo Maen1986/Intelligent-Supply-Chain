@@ -1313,7 +1313,7 @@ export function Maturity() {
                       {ar ? ind.labelAr : ind.label}
                     </p>
                     {modules.length > 0 && (
-                      <p className="text-[10px] text-accent font-bold mt-1 flex items-center gap-1 flex-wrap">
+                      <p className="text-[10px] text-[#7A5F14] font-bold mt-1 flex items-center gap-1 flex-wrap">
                         <Sparkles className="w-3 h-3 shrink-0" />
                         {modules.map((m, i) => (ar ? m.shortTitleAr : m.shortTitle)).join(' · ')}
                       </p>

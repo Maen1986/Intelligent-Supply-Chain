@@ -624,7 +624,7 @@ export function SupplierRecoveryPortfolio() {
             ) : (
               <table className="w-full text-xs">
                 <thead>
-                  <tr className="text-[10px] uppercase tracking-wider text-slate-400 border-b border-slate-100">
+                  <tr className="text-[10px] uppercase tracking-wider text-slate-500 border-b border-slate-100">
                     <th className={isAr ? 'text-right py-2 pe-3' : 'text-left py-2 pe-3'}>{isAr ? 'المورد' : 'Supplier'}</th>
                     <th className={isAr ? 'text-right py-2 pe-3' : 'text-left py-2 pe-3'}>{isAr ? 'الفئة' : 'Category'}</th>
                     <th className={isAr ? 'text-right py-2 pe-3' : 'text-left py-2 pe-3'}>{isAr ? 'الربع' : 'Quadrant'}</th>
@@ -639,7 +639,7 @@ export function SupplierRecoveryPortfolio() {
                       <td className="py-2 pe-3 text-slate-600 break-words">{s.category || '—'}</td>
                       <td className="py-2 pe-3 text-slate-600">
                         {isAr ? QUADRANT_META[s.quadrant].labelAr : QUADRANT_META[s.quadrant].label}
-                        {s.quadrant === 'bottleneck' && <span className="block text-[10px] text-slate-400 leading-snug">{isAr ? BOTTLENECK_NOTE.ar : BOTTLENECK_NOTE.en}</span>}
+                        {s.quadrant === 'bottleneck' && <span className="block text-[10px] text-slate-500 leading-snug">{isAr ? BOTTLENECK_NOTE.ar : BOTTLENECK_NOTE.en}</span>}
                       </td>
                       <td className="py-2 text-slate-600">{s.cars.length}</td>
                       <td className="py-2">
@@ -771,7 +771,7 @@ export function SupplierRecoveryPortfolio() {
                     <Bar dataKey="costPct" radius={[0, 4, 4, 0]} name="costPct" fill="#082C6B" fillOpacity={0.75} />
                   </BarChart>
                 </ResponsiveContainer>
-                <p className="text-[10px] text-slate-400 mt-2">* {t.rootCauseCostNote}</p>
+                <p className="text-[10px] text-slate-500 mt-2">* {t.rootCauseCostNote}</p>
               </div>
 
               <div className="bg-white rounded-2xl border border-slate-200 p-4">
@@ -806,7 +806,7 @@ export function SupplierRecoveryPortfolio() {
                     >
                       <span className="font-semibold">{s.name}</span>{' '}
                       {tr.migrated && priorMeta && (
-                        <span className="text-slate-400 line-through mr-1 ml-1">{isAr ? priorMeta.labelAr : priorMeta.label}</span>
+                        <span className="text-slate-500 line-through mr-1 ml-1">{isAr ? priorMeta.labelAr : priorMeta.label}</span>
                       )}
                       <span className="font-semibold" style={{ color: meta.color }}>
                         {isAr ? meta.labelAr : meta.label}
@@ -864,7 +864,7 @@ export function SupplierRecoveryPortfolio() {
                           </td>
                           <td className="py-2">
                             {row.exposure.exposureBasis === 'INSUFFICIENT_DATA' ? (
-                              <span className="text-slate-400">{isAr ? 'بيانات غير كافية' : 'insufficient data'}</span>
+                              <span className="text-slate-500">{isAr ? 'بيانات غير كافية' : 'insufficient data'}</span>
                             ) : (
                               <span title={t.exposureBasisLabel}>
                                 {fmtSAR(row.exposure.exposureSAR, isAr)}
@@ -879,11 +879,11 @@ export function SupplierRecoveryPortfolio() {
                   </tbody>
                 </table>
               </div>
-              <p className="text-[10px] text-slate-400 mt-3">
+              <p className="text-[10px] text-slate-500 mt-3">
                 * {isMine ? (isAr ? 'الإنفاق من القيمة السنوية التي أدخلتها لكل مورد؛ بدونها يظهر "بيانات غير كافية".' : 'Spend is the annual figure you entered per supplier; without it this shows "insufficient data".') : (isAr ? MOCK_NOTE_AR_SHORT : 'SAR exposure is a labeled mock/simulated derivation (category spend × relative supplier share), not a live production figure -- see module notes.')}
               </p>
               {watchlist.some((r) => r.detection.shockFlag) && (
-                <p className="text-[10px] text-slate-400 mt-1">
+                <p className="text-[10px] text-slate-500 mt-1">
                   {isAr
                     ? 'شارة \u201cصدمة\u201d: تغيّر فردي بين آخر فترتين يتجاوز الحد المصدره من اتفاقية الوحدة 06 (maxIntraPeriodSwingPct)، مستقل عن قراءة الاتجاه العامة.'
                     : 'SHOCK badge: a single period-over-period swing past the Module-06-sourced threshold (maxIntraPeriodSwingPct convention), independent of the whole-series trend read above.'}
@@ -897,9 +897,9 @@ export function SupplierRecoveryPortfolio() {
                 isc-ai-output-standards #7 -- never a black-box composite score). */}
             <div className="bg-white rounded-2xl border border-slate-200 p-4 mt-6">
               <h2 className="text-sm font-bold text-slate-800 mb-1">{t.copqPriorityTitle} ({copqPriority.length})</h2>
-              <p className="text-[10px] text-slate-400 mb-3">{t.rootCauseCostNote}</p>
+              <p className="text-[10px] text-slate-500 mb-3">{t.rootCauseCostNote}</p>
               {copqPriority.length === 0 ? (
-                <p className="text-xs text-slate-400">{t.copqPriorityEmpty}</p>
+                <p className="text-xs text-slate-500">{t.copqPriorityEmpty}</p>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs">
@@ -934,7 +934,7 @@ export function SupplierRecoveryPortfolio() {
                   </table>
                 </div>
               )}
-              <p className="text-[10px] text-slate-400 mt-3">{isAr ? copqPriority[0]?.formulaAr ?? '' : copqPriority[0]?.formulaEn ?? ''}</p>
+              <p className="text-[10px] text-slate-500 mt-3">{isAr ? copqPriority[0]?.formulaAr ?? '' : copqPriority[0]?.formulaEn ?? ''}</p>
             </div>
           </>
         )}
@@ -950,7 +950,7 @@ function KpiCard({ label, value, sub, subMuted, critical }: { label: string; val
     <div className={`bg-white rounded-2xl border p-4 ${critical ? 'border-red-300' : 'border-slate-200'}`}>
       <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1">{label}</p>
       <p className={`text-2xl sm:text-3xl font-extrabold ${critical ? 'text-red-700' : 'text-[#082C6B]'}`}>{value}</p>
-      {sub && <p className={`text-[11px] mt-1 ${subMuted ? 'text-amber-600 font-semibold' : 'text-slate-400'}`}>{sub}</p>}
+      {sub && <p className={`text-[11px] mt-1 ${subMuted ? 'text-amber-600 font-semibold' : 'text-slate-500'}`}>{sub}</p>}
     </div>
   );
 }
@@ -1050,7 +1050,7 @@ function SupplierEditorForm({
         <h2 className="text-sm font-bold text-slate-800">
           {isNew ? (isAr ? 'إضافة مورد' : 'Add supplier') : (isAr ? 'تعديل المورد' : 'Edit supplier')}
         </h2>
-        <button type="button" onClick={onCancel} aria-label={isAr ? 'إغلاق' : 'Close'} className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-50">
+        <button type="button" onClick={onCancel} aria-label={isAr ? 'إغلاق' : 'Close'} className="p-1.5 rounded-lg text-slate-500 hover:bg-slate-50">
           <X className="w-4 h-4" aria-hidden="true" />
         </button>
       </div>
@@ -1160,14 +1160,14 @@ function SupplierEditorForm({
                 className="w-16 text-xs border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#082C6B]"
               />
               {draft.scorePeriods && draft.scorePeriods.length === draft.scoreHistory12mo.length && (
-                <span className="text-[9px] text-slate-400 font-mono">{draft.scorePeriods[i]}</span>
+                <span className="text-[9px] text-slate-500 font-mono">{draft.scorePeriods[i]}</span>
               )}
               {draft.scoreHistory12mo.length > 1 && (
                 <button
                   type="button"
                   onClick={() => removePeriod(i)}
                   aria-label={isAr ? `إزالة الفترة ${i + 1}` : `Remove period ${i + 1}`}
-                  className="p-1 rounded text-slate-400 hover:text-red-500"
+                  className="p-1 rounded text-slate-500 hover:text-red-500"
                 >
                   <X className="w-3 h-3" aria-hidden="true" />
                 </button>
@@ -1203,20 +1203,20 @@ function SupplierEditorForm({
           </button>
         </div>
         {draft.cars.length === 0 ? (
-          <p className="text-[11px] text-slate-400">{isAr ? 'لا توجد طلبات إجراء تصحيحي.' : 'No CARs recorded.'}</p>
+          <p className="text-[11px] text-slate-500">{isAr ? 'لا توجد طلبات إجراء تصحيحي.' : 'No CARs recorded.'}</p>
         ) : (
           <div className="space-y-3">
             {draft.cars.map((c, i) => (
               <div key={c.id} className="border border-slate-200 rounded-lg p-3 space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-mono text-slate-400">{c.id}</span>
-                  <button type="button" onClick={() => removeCar(i)} aria-label={isAr ? 'إزالة CAR' : 'Remove CAR'} className="p-1 rounded text-slate-400 hover:text-red-500">
+                  <span className="text-[10px] font-mono text-slate-500">{c.id}</span>
+                  <button type="button" onClick={() => removeCar(i)} aria-label={isAr ? 'إزالة CAR' : 'Remove CAR'} className="p-1 rounded text-slate-500 hover:text-red-500">
                     <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
                   </button>
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   <div>
-                    <label className="text-[9px] font-bold text-slate-400 uppercase block mb-1">{isAr ? 'الفئة' : 'Category'}</label>
+                    <label className="text-[9px] font-bold text-slate-500 uppercase block mb-1">{isAr ? 'الفئة' : 'Category'}</label>
                     <select
                       value={c.category}
                       onChange={(e) => updateCar(i, { category: e.target.value as CARCategory })}
@@ -1228,7 +1228,7 @@ function SupplierEditorForm({
                     </select>
                   </div>
                   <div>
-                    <label className="text-[9px] font-bold text-slate-400 uppercase block mb-1">{isAr ? 'بُعد بطاقة الأداء' : 'Scorecard dimension'}</label>
+                    <label className="text-[9px] font-bold text-slate-500 uppercase block mb-1">{isAr ? 'بُعد بطاقة الأداء' : 'Scorecard dimension'}</label>
                     <select
                       value={c.scorecardDimension}
                       onChange={(e) => updateCar(i, { scorecardDimension: e.target.value as ScorecardDimension })}
@@ -1240,7 +1240,7 @@ function SupplierEditorForm({
                     </select>
                   </div>
                   <div>
-                    <label className="text-[9px] font-bold text-slate-400 uppercase block mb-1">{isAr ? 'الحالة' : 'Status'}</label>
+                    <label className="text-[9px] font-bold text-slate-500 uppercase block mb-1">{isAr ? 'الحالة' : 'Status'}</label>
                     <select
                       value={c.status}
                       onChange={(e) => updateCar(i, { status: e.target.value as CARStatus, closedAt: e.target.value === 'closed' ? (c.closedAt ?? todayIso()) : null })}
@@ -1252,7 +1252,7 @@ function SupplierEditorForm({
                     </select>
                   </div>
                   <div>
-                    <label className="text-[9px] font-bold text-slate-400 uppercase block mb-1">{isAr ? 'تاريخ الفتح' : 'Opened'}</label>
+                    <label className="text-[9px] font-bold text-slate-500 uppercase block mb-1">{isAr ? 'تاريخ الفتح' : 'Opened'}</label>
                     <input
                       type="date"
                       value={c.createdAt}
@@ -1262,7 +1262,7 @@ function SupplierEditorForm({
                   </div>
                 </div>
                 <div>
-                  <label className="text-[9px] font-bold text-slate-400 uppercase block mb-1">{isAr ? 'السبب الجذري (مُعرِّف)' : 'Root cause (identifier)'}</label>
+                  <label className="text-[9px] font-bold text-slate-500 uppercase block mb-1">{isAr ? 'السبب الجذري (مُعرِّف)' : 'Root cause (identifier)'}</label>
                   <input
                     type="text"
                     value={c.rootCause}
@@ -1278,7 +1278,7 @@ function SupplierEditorForm({
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   <div>
-                    <label className="text-[9px] font-bold text-slate-400 uppercase block mb-1">{isAr ? 'صاحب المشكلة' : 'Whose problem'}</label>
+                    <label className="text-[9px] font-bold text-slate-500 uppercase block mb-1">{isAr ? 'صاحب المشكلة' : 'Whose problem'}</label>
                     <select
                       value={c.cause ?? ''}
                       onChange={(e) => updateCar(i, { cause: (e.target.value || undefined) as PerformanceCause | undefined })}
@@ -1293,7 +1293,7 @@ function SupplierEditorForm({
                     </select>
                   </div>
                   <div>
-                    <label className="text-[9px] font-bold text-slate-400 uppercase block mb-1">{isAr ? 'التكلفة (دولار)' : 'Cost (USD)'}</label>
+                    <label className="text-[9px] font-bold text-slate-500 uppercase block mb-1">{isAr ? 'التكلفة (دولار)' : 'Cost (USD)'}</label>
                     <input
                       type="number" min={0} value={c.estimatedCostUSD ?? ''}
                       onChange={(e) => updateCar(i, { estimatedCostUSD: e.target.value === '' ? undefined : Math.max(0, parseFloat(e.target.value) || 0) })}
@@ -1301,7 +1301,7 @@ function SupplierEditorForm({
                     />
                   </div>
                   <div>
-                    <label className="text-[9px] font-bold text-slate-400 uppercase block mb-1">{isAr ? 'أساس التكلفة' : 'Cost basis'}</label>
+                    <label className="text-[9px] font-bold text-slate-500 uppercase block mb-1">{isAr ? 'أساس التكلفة' : 'Cost basis'}</label>
                     <select
                       value={c.costBasis ?? 'estimated'}
                       onChange={(e) => updateCar(i, { costBasis: e.target.value as 'observed' | 'calculated' | 'estimated' })}
@@ -1313,7 +1313,7 @@ function SupplierEditorForm({
                     </select>
                   </div>
                   <div>
-                    <label className="text-[9px] font-bold text-slate-400 uppercase block mb-1">{isAr ? 'وصل إلى العميل؟' : 'Reached the customer?'}</label>
+                    <label className="text-[9px] font-bold text-slate-500 uppercase block mb-1">{isAr ? 'وصل إلى العميل؟' : 'Reached the customer?'}</label>
                     <select
                       value={c.customerImpact ?? 'internal'}
                       onChange={(e) => updateCar(i, { customerImpact: e.target.value as 'internal' | 'external' })}

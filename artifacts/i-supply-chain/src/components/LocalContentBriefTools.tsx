@@ -388,7 +388,7 @@ function FinancialEval({ isAr }: { isAr: boolean }) {
         <button type="button" onClick={() => setRows(rs => [...rs, { name: String.fromCharCode(65 + rs.length), price: '', lc: '' }])} className="text-[11px] text-[#082C6B] underline">{T(isAr, 'Add a bidder', 'أضف متنافساً')}</button>
       </div>
       {out.length > 1 && (
-        <ol className="mt-2 text-xs space-y-0.5" role="status">
+        <ol className="mt-2 text-xs space-y-0.5" aria-live="polite">
           {[...out].sort((a, b) => a.rank - b.rank).map(o => (
             <li key={o.name}><bdi dir="ltr">{o.rank}. {o.name}</bdi>: <bdi dir="ltr">{fmt(o.total * 100, 1)}</bdi> / 100</li>
           ))}
@@ -502,7 +502,7 @@ function TenderChecklist({ isAr }: { isAr: boolean }) {
         <label className="flex gap-2 text-xs"><input type="checkbox" checked={fw} onChange={e => setFw(e.target.checked)} />{T(isAr, 'Framework agreement', 'اتفاقية إطارية')}</label>
         <label className="flex gap-2 text-xs col-span-2"><input type="checkbox" checked={ml} onChange={e => setMl(e.target.checked)} />{T(isAr, 'Includes Mandatory List items', 'يتضمن بنوداً من القائمة الإلزامية')}</label>
       </div>
-      <ol className="mt-2 space-y-1.5 text-xs list-decimal ps-5" role="status">
+      <ol className="mt-2 space-y-1.5 text-xs list-decimal ps-5" aria-live="polite">
         {items.map(i => <li key={i.id}><bdi dir="ltr" className="font-semibold">{i.article}</bdi> · {isAr ? i.ar : i.en}</li>)}
       </ol>
     </Box>

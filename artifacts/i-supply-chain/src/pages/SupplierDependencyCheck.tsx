@@ -486,7 +486,7 @@ export function SupplierDependencyCheck() {
                 {corr.flagged ? '⚠ ' : ''}{isAr ? corr.narrativeAr : corr.narrativeEn}
               </div>
             ))}
-            <p className="text-[10px] text-slate-400">
+            <p className="text-[10px] text-slate-500">
               {isAr
                 ? 'يطابق هذا فحوصات اعتماد الموردين مع عقود التوريد (الوحدة 03) عبر تطابق اسم المورد تماماً -- مصدران فقط حتى الآن (سجل المخاطر واكتشاف الموردين ما زالا خارج النطاق حتى يتم بناؤهما)'
                 : 'This matches Supplier Dependency Checks against Contract Intelligence contracts via exact supplier-name match -- 2 sources only for now (Risk Register and Supplier Discovery remain out of scope until those tools exist)'}
