@@ -216,7 +216,7 @@ export function SupplierPreQualification() {
     tierAdvisory: isAr ? 'المستوى الاستشاري' : 'Advisory Tier',
     tierOperational: isAr ? 'المستوى التشغيلي' : 'Operational Tier',
     tierAdvisoryDesc: isAr ? 'تقييم فوري بلا تخزين وبلا اسم مورّد حقيقي' : 'Instant assessment, zero persistence, no real supplier name',
-    tierOperationalDesc: isAr ? 'تحفظ ISC قرارات القائمة المعتمدة الفعلية كسجل مرجعي معتمد للعميل' : "ISC persists real ASL decisions as the client's system of record",
+    tierOperationalDesc: isAr ? 'تحفظ آي سبلاي تشين قرارات القائمة المعتمدة الفعلية كسجل مرجعي معتمد للعميل' : "ISC persists real ASL decisions as the client's system of record",
     frameworkLabel: isAr ? 'المنهجية المعتمدة' : 'Sourced Methodology',
     frameworkText: isAr
       ? 'استبيان تأهيل مسبق يغطي البيانات المالية وشهادات الجودة والمراجع لتصفية المرشحين، وموافقة موثّقة السبب دائماً؛ إعادة المراجعة الدورية للقائمة المعتمدة تتناسب مع مستوى مخاطرة المورّد بدلاً من جدول ثابت واحد (sourceday.com، greenlight.guru، lassosupplychain.com، cenitconsulting.com).'
