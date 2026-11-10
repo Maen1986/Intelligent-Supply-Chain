@@ -37,3 +37,4 @@ export * from "./maturitySnapshots";
 export * from "./industryBenchmarks";
 export * from "./maturityEvidence";
 export * from "./regulatoryContent";
+export * from "./confidenceTierRecords";
