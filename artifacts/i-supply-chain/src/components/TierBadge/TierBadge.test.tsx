@@ -222,13 +222,17 @@ describe('long text, digits, ISC, bidi (boundary)', () => {
     expect(container.textContent!.length).toBeGreaterThan(10000);
     expect(screen.getByRole('button').getAttribute('aria-label')).toBeTruthy();
   });
-  it('ISC is wrapped in <bdi> in the visible label (EN and AR)', () => {
-    for (const l of langs) {
-      const { container, unmount } = render(<TierBadge {...T2} lang={l} />);
-      const label = container.querySelector('.isc-tier__label')!;
-      expect(within(label as HTMLElement).getByText('ISC').tagName).toBe('BDI');
-      unmount();
-    }
+  it('ISC is wrapped in <bdi> in the English visible label; the Arabic label uses the Arabic brand name, not Latin ISC', () => {
+    const en = render(<TierBadge {...T2} lang="en" />);
+    const enLabel = en.container.querySelector('.isc-tier__label')!;
+    expect(within(enLabel as HTMLElement).getByText('ISC').tagName).toBe('BDI');
+    en.unmount();
+    const ar = render(<TierBadge {...T2} lang="ar" />);
+    const arLabel = ar.container.querySelector('.isc-tier__label')!;
+    // Owner rule (arabicBrand.test.ts): no Latin "ISC" inside Arabic text; the Arabic brand name is used instead.
+    expect(arLabel.textContent).not.toMatch(/ISC/);
+    expect(arLabel.textContent).toContain('آي سبلاي تشين');
+    ar.unmount();
   });
   it('Arabic-Indic digits in user text and dates are shown as Western digits', () => {
     const { container } = render(<TierBadge tier={1} basis="المادة ١٢ من النظام" confirmedBy="الخبير" confirmedOn="٢٠٢٦-١١-٠٩" lang="ar" now={now} />);
