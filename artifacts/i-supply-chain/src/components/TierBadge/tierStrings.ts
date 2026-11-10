@@ -22,19 +22,19 @@ export interface Bilingual {
 /** Strings of the spec table (English and Arabic). */
 export const TIER_STRINGS = {
   't1': { en: 'Tier 1: Certain', ar: 'المستوى الأول: مؤكد' },
-  't2': { en: 'Tier 2: Reviewed and corrected by ISC, please confirm before relying on it', ar: 'المستوى الثاني: راجعته ISC وصوبته، يرجى التأكد قبل الاعتماد عليه' },
+  't2': { en: 'Tier 2: Reviewed and corrected by ISC, please confirm before relying on it', ar: 'المستوى الثاني: راجعته آي سبلاي تشين وصوبته، يرجى التأكد قبل الاعتماد عليه' },
   't3': { en: 'Tier 3: Cannot confirm. Specialist or legal expert opinion required', ar: 'المستوى الثالث: تعذر التأكد، يتطلب رأي مختص أو خبير قانوني' },
   't2_prompt': { en: 'Please confirm this with an expert.', ar: 'يرجى التأكد من ذلك مع خبير.' },
   't3_prompt': { en: 'Specialist or legal expert opinion required. Please check with an expert.', ar: 'يتطلب رأي مختص أو خبير قانوني. يرجى الرجوع إلى خبير.' },
   't1_by': { en: 'Confirmed by [name, role], [date]', ar: 'أكده [الاسم، الصفة] بتاريخ [التاريخ]' },
-  't1_source': { en: 'Source opened by ISC: [source], [date]', ar: 'اطلعت ISC على المصدر: [المصدر]، [التاريخ]' },
+  't1_source': { en: 'Source opened by ISC: [source], [date]', ar: 'اطلعت آي سبلاي تشين على المصدر: [المصدر]، [التاريخ]' },
   'na': { en: 'Not applicable (no confidence tier for this row)', ar: 'لا ينطبق' },
   'field_tier': { en: 'Confidence tier', ar: 'مستوى الثقة' },
   'choose': { en: 'Choose a confidence tier', ar: 'اختر مستوى الثقة' },
   'field_basis': { en: 'Basis', ar: 'الأساس' },
-  't3_guidance': { en: 'ISC cannot verify this. Possible answers are shown with their sources. Please check with an expert.', ar: 'تعذر على ISC التحقق من هذا. الإجابات المحتملة ومصادرها معروضة أدناه. يرجى الرجوع إلى خبير.' },
+  't3_guidance': { en: 'ISC cannot verify this. Possible answers are shown with their sources. Please check with an expert.', ar: 'تعذر على آي سبلاي تشين التحقق من هذا. الإجابات المحتملة ومصادرها معروضة أدناه. يرجى الرجوع إلى خبير.' },
   'none': { en: 'No tier on this output', ar: 'لا يوجد مستوى ثقة لهذا المخرج' },
-  'never_certifies': { en: 'ISC output is not legal, tax, insurance, sanctions, security or accessibility advice or certification', ar: 'مخرجات ISC ليست استشارة قانونية أو ضريبية أو تأمينية أو أمنية أو في مجال العقوبات أو إمكانية الوصول، وليست شهادة امتثال' },
+  'never_certifies': { en: 'ISC output is not legal, tax, insurance, sanctions, security or accessibility advice or certification', ar: 'مخرجات آي سبلاي تشين ليست استشارة قانونية أو ضريبية أو تأمينية أو أمنية أو في مجال العقوبات أو إمكانية الوصول، وليست شهادة امتثال' },
   'possible_answers': { en: 'Possible answers', ar: 'الإجابات المحتملة' },
   'source_label': { en: 'Source', ar: 'المصدر' },
   'vlevel_label': { en: 'V level', ar: 'مستوى التحقق من المصدر' },
@@ -45,14 +45,14 @@ export const TIER_STRINGS = {
 /** Screen-reader sentences (tier.sr_t1..3). Each contains the visible label of its tier exactly (WCAG 2.5.3, ARQ-23). [basis] / [الأساس] is replaced by the record's basis. */
 export const SR_STRINGS = {
   'sr_t1': { en: 'Confidence tier: Tier 1: Certain. [basis].', ar: 'مستوى الثقة: المستوى الأول: مؤكد. [الأساس].' },
-  'sr_t2': { en: 'Confidence tier: Tier 2: Reviewed and corrected by ISC, please confirm before relying on it. Please confirm this with an expert.', ar: 'مستوى الثقة: المستوى الثاني: راجعته ISC وصوبته، يرجى التأكد قبل الاعتماد عليه. يرجى التأكد من ذلك مع خبير.' },
+  'sr_t2': { en: 'Confidence tier: Tier 2: Reviewed and corrected by ISC, please confirm before relying on it. Please confirm this with an expert.', ar: 'مستوى الثقة: المستوى الثاني: راجعته آي سبلاي تشين وصوبته، يرجى التأكد قبل الاعتماد عليه. يرجى التأكد من ذلك مع خبير.' },
   'sr_t3': { en: 'Confidence tier: Tier 3: Cannot confirm. Specialist or legal expert opinion required. Please check with an expert.', ar: 'مستوى الثقة: المستوى الثالث: تعذر التأكد، يتطلب رأي مختص أو خبير قانوني. يرجى الرجوع إلى خبير.' },
 } as const satisfies Record<string, Bilingual>;
 
 /** Short badges (tier.t1_short..3). A display form for narrow screens and table cells: this package exports the strings and the accessible-name rule (shortBadgeName) but does NOT render the short variant yet. */
 export const SHORT_STRINGS = {
   't1_short': { en: 'Tier 1: Certain', ar: 'المستوى 1: مؤكد' },
-  't2_short': { en: 'Tier 2: Reviewed by ISC, please confirm before relying', ar: 'المستوى 2: راجعته ISC، يرجى التأكد قبل الاعتماد' },
+  't2_short': { en: 'Tier 2: Reviewed by ISC, please confirm before relying', ar: 'المستوى 2: راجعته آي سبلاي تشين، يرجى التأكد قبل الاعتماد' },
   't3_short': { en: 'Tier 3: Cannot confirm', ar: 'المستوى 3: تعذر التأكد' },
 } as const satisfies Record<string, Bilingual>;
 

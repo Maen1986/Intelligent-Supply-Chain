@@ -10,7 +10,7 @@ describe('tier strings are EXACTLY the spec 6.15A table (soft)', () => {
     expect(TIER_STRINGS.t1.en).toBe('Tier 1: Certain');
     expect(TIER_STRINGS.t1.ar).toBe('المستوى الأول: مؤكد');
     expect(TIER_STRINGS.t2.en).toBe('Tier 2: Reviewed and corrected by ISC, please confirm before relying on it');
-    expect(TIER_STRINGS.t2.ar).toBe('المستوى الثاني: راجعته ISC وصوبته، يرجى التأكد قبل الاعتماد عليه');
+    expect(TIER_STRINGS.t2.ar).toBe('المستوى الثاني: راجعته آي سبلاي تشين وصوبته، يرجى التأكد قبل الاعتماد عليه');
     expect(TIER_STRINGS.t2_prompt.en).toBe('Please confirm this with an expert.');
     expect(TIER_STRINGS.t2_prompt.ar).toBe('يرجى التأكد من ذلك مع خبير.');
     expect(TIER_STRINGS.t3.en).toBe('Tier 3: Cannot confirm. Specialist or legal expert opinion required');

@@ -9,7 +9,7 @@
     },
     "tier.t2": {
       "en": "Tier 2: Reviewed and corrected by ISC, please confirm before relying on it",
-      "ar": "المستوى الثاني: راجعته ISC وصوبته، يرجى التأكد قبل الاعتماد عليه"
+      "ar": "المستوى الثاني: راجعته آي سبلاي تشين وصوبته، يرجى التأكد قبل الاعتماد عليه"
     },
     "tier.t3": {
       "en": "Tier 3: Cannot confirm. Specialist or legal expert opinion required",
@@ -21,7 +21,7 @@
     },
     "tier.t2_short": {
       "en": "Tier 2: Reviewed by ISC, please confirm before relying",
-      "ar": "المستوى 2: راجعته ISC، يرجى التأكد قبل الاعتماد"
+      "ar": "المستوى 2: راجعته آي سبلاي تشين، يرجى التأكد قبل الاعتماد"
     },
     "tier.t3_short": {
       "en": "Tier 3: Cannot confirm",
@@ -41,7 +41,7 @@
     },
     "tier.t1_source": {
       "en": "Source opened by ISC: [source], [date]",
-      "ar": "اطلعت ISC على المصدر: [المصدر]، [التاريخ]"
+      "ar": "اطلعت آي سبلاي تشين على المصدر: [المصدر]، [التاريخ]"
     },
     "tier.na": {
       "en": "Not applicable (no confidence tier for this row)",
@@ -65,7 +65,7 @@
     },
     "tier.sr_t2": {
       "en": "Confidence tier: Tier 2: Reviewed and corrected by ISC, please confirm before relying on it. Please confirm this with an expert.",
-      "ar": "مستوى الثقة: المستوى الثاني: راجعته ISC وصوبته، يرجى التأكد قبل الاعتماد عليه. يرجى التأكد من ذلك مع خبير."
+      "ar": "مستوى الثقة: المستوى الثاني: راجعته آي سبلاي تشين وصوبته، يرجى التأكد قبل الاعتماد عليه. يرجى التأكد من ذلك مع خبير."
     },
     "tier.sr_t3": {
       "en": "Confidence tier: Tier 3: Cannot confirm. Specialist or legal expert opinion required. Please check with an expert.",
@@ -73,7 +73,7 @@
     },
     "tier.t3_guidance": {
       "en": "ISC cannot verify this. Possible answers are shown with their sources. Please check with an expert.",
-      "ar": "تعذر على ISC التحقق من هذا. الإجابات المحتملة ومصادرها معروضة أدناه. يرجى الرجوع إلى خبير."
+      "ar": "تعذر على آي سبلاي تشين التحقق من هذا. الإجابات المحتملة ومصادرها معروضة أدناه. يرجى الرجوع إلى خبير."
     },
     "tier.none": {
       "en": "No tier on this output",
@@ -81,7 +81,7 @@
     },
     "tier.never_certifies": {
       "en": "ISC output is not legal, tax, insurance, sanctions, security or accessibility advice or certification",
-      "ar": "مخرجات ISC ليست استشارة قانونية أو ضريبية أو تأمينية أو أمنية أو في مجال العقوبات أو إمكانية الوصول، وليست شهادة امتثال"
+      "ar": "مخرجات آي سبلاي تشين ليست استشارة قانونية أو ضريبية أو تأمينية أو أمنية أو في مجال العقوبات أو إمكانية الوصول، وليست شهادة امتثال"
     },
     "tier.possible_answers": {
       "en": "Possible answers",
