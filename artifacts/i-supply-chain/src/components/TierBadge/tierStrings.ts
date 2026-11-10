@@ -5,6 +5,10 @@
 // Arabic status: owner-delegated, back-translated, REVIEWED, NOT CERTIFIED. Professional proofreading is gate RG-09 (postponed by the owner).
 // DO NOT edit these strings here without a spec change: tierStrings.test.ts compares every one with the fixture.
 //
+// Owner decisions 9-10 Nov 2026 (delegated, settled): (a) INSUFFICIENT_DATA keeps the extra reason line under the Tier 3 label and prompt
+// ('insufficient' below); (b) the Arabic for "V level" stays مستوى التحقق من المصدر, which is Glossary v8 entry G-367 (already the glossary term).
+// Arabic stays 'reviewed, not certified' (RG-09 postponed). No string text changed by these decisions; tierDecisions.test.ts locks them.
+//
 // Placeholders are in square brackets, as in the spec; the badge replaces them at display time.
 
 export type Lang = 'en' | 'ar';
