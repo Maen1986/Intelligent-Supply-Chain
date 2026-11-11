@@ -1,0 +1,79 @@
+/**
+ * Risk Management page: honesty fixes (backlog #862, audit findings F1, F6, F7).
+ * - the toolkit says its data is saved in this browser only (not "your account");
+ * - the four headline figures carry an "illustrative, no source yet" caption;
+ * - the Risk Register tab labels its rows as sample data.
+ * Arabic strings never contain the Latin brand "ISC".
+ */
+import React from 'react';
+import { describe, it, expect, afterEach, vi } from 'vitest';
+import { render, screen, cleanup, fireEvent } from '@testing-library/react';
+
+let mockAr = false;
+vi.mock('@/lib/LanguageContext', () => ({
+  useLanguage: () => ({ lang: mockAr ? 'ar' : 'en', ar: mockAr, t: (k: string) => k }),
+}));
+vi.mock('wouter', () => ({
+  Link: ({ children, href }: { children: React.ReactNode; href: string }) => <a href={href}>{children}</a>,
+  useLocation: () => ['/', vi.fn()],
+}));
+vi.mock('framer-motion', () => ({
+  motion: new Proxy({}, {
+    get: (_t, tag: string) =>
+      ({ children, initial, animate, whileInView, viewport, transition, variants, ...rest }: any) =>
+        React.createElement(tag, rest, children),
+  }),
+  AnimatePresence: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+}));
+vi.mock('@/components/KPIDashboard', () => ({ KPIDashboard: () => <div /> }));
+vi.mock('@/components/toolkit/RiskTools', () => ({ RiskToolsSection: () => <div /> }));
+
+import { RiskManagement } from '../RiskManagement';
+
+afterEach(() => cleanup());
+
+describe('Risk Management page honesty fixes', () => {
+  it('Overview: the four figures are captioned as illustrative (EN)', () => {
+    mockAr = false;
+    render(<RiskManagement />);
+    const cap = screen.getByTestId('risk-stats-illustrative');
+    expect(cap.textContent).toMatch(/Illustrative figures/);
+    expect(cap.textContent).toMatch(/No source is published/);
+  });
+
+  it('Overview: the caption is Arabic without the Latin brand (AR)', () => {
+    mockAr = true;
+    render(<RiskManagement />);
+    const cap = screen.getByTestId('risk-stats-illustrative');
+    expect(cap.textContent).toMatch(/[؀-ۿ]/);
+    expect(cap.textContent).not.toMatch(/ISC/);
+  });
+
+  it('Risk Register tab: rows are labelled sample data (EN and AR)', () => {
+    mockAr = false;
+    render(<RiskManagement />);
+    fireEvent.click(screen.getByRole('button', { name: 'Risk Register' }));
+    expect(screen.getByTestId('risk-register-sample-badge').textContent).toBe('Sample data (illustrative)');
+    cleanup();
+    mockAr = true;
+    render(<RiskManagement />);
+    fireEvent.click(screen.getByRole('button', { name: 'سجلّ المخاطر' }));
+    const ar = screen.getByTestId('risk-register-sample-badge').textContent || '';
+    expect(ar).toMatch(/[؀-ۿ]/);
+    expect(ar).not.toMatch(/ISC/);
+  });
+
+  it('Toolkit tab: says saved in this browser only, never "your account"', () => {
+    mockAr = false;
+    render(<RiskManagement />);
+    fireEvent.click(screen.getByRole('button', { name: 'Your Risk Toolkit' }));
+    expect(screen.getByText(/saved in this browser only/)).toBeTruthy();
+    expect(document.body.textContent).not.toMatch(/saved to your account/);
+    cleanup();
+    mockAr = true;
+    render(<RiskManagement />);
+    fireEvent.click(screen.getByRole('button', { name: 'أدواتك التفاعلية' }));
+    expect(document.body.textContent).toMatch(/محفوظ على هذا المتصفح فقط/);
+    expect(document.body.textContent).not.toMatch(/محفوظ لحسابك/);
+  });
+});
