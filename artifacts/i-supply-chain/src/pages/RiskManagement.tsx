@@ -138,6 +138,7 @@ export function RiskManagement() {
                     </div>
                   ))}
                 </div>
+                <p data-testid="risk-stats-illustrative" className="text-xs text-muted-foreground mt-3">{isAr ? 'أرقام توضيحية فقط. لم يُنشر لها مصدر بعد، فاعتبرها استرشادية لا قياسات مُثبتة.' : 'Illustrative figures. No source is published for them yet, so treat them as indicative, not as measured or verified results.'}</p>
               </div>
               <div className="bg-[#082C6B] rounded-2xl p-6 text-white">
                 <p className="text-xs font-bold text-[#C9A84C] uppercase tracking-widest mb-3">{isAr ? '5 مبادئ — ISO 31000' : '5 Principles — ISO 31000'}</p>
@@ -324,6 +325,7 @@ export function RiskManagement() {
               <div>
                 <h2 className="text-2xl font-bold text-primary">{isAr ? 'سجلّ المخاطر' : 'Risk Register'}</h2>
                 <p className="text-muted-foreground mt-1">{isAr ? 'سجلّ منظّم مع مالكي المخاطر وتدابير الضبط وتتبّع المخاطر المتبقية.' : 'Structured register with risk owners, control measures, and residual risk tracking.'}</p>
+                <p data-testid="risk-register-sample-badge" className="inline-block mt-2 text-xs font-bold px-2 py-1 rounded bg-amber-100 text-amber-800 border border-amber-300">{isAr ? 'بيانات تجريبية للتوضيح' : 'Sample data (illustrative)'}</p>
               </div>
               <div className="flex gap-2 flex-wrap">
                 <Filter className="w-4 h-4 text-muted-foreground self-center" />
@@ -427,7 +429,7 @@ export function RiskManagement() {
                 <span className="px-2.5 py-1 rounded-full text-xs font-extrabold bg-primary text-white">{isAr ? '🛠 أداة تفاعلية' : '🛠 Interactive Tool'}</span>
                 <h3 className="font-bold text-primary">{isAr ? 'سجلّ مخاطرك الحيّ' : 'Your Live Risk Register'}</h3>
               </div>
-              <p className="text-sm text-muted-foreground mb-4">{isAr ? 'أضف مخاطرك، واحصل على درجات ودرجات متبقية محسوبة تلقائياً، وخريطة حرارة ومراقب KRI وموجز تخفيف بالذكاء الاصطناعي — كل ذلك محفوظ لحسابك.' : "Add your own risks and get auto-calculated scores, a live heat map, a KRI monitor, and an AI-generated mitigation brief — saved to your account."}</p>
+              <p className="text-sm text-muted-foreground mb-4">{isAr ? 'أضف مخاطرك، واحصل على درجات ودرجات متبقية محسوبة تلقائياً، وخريطة حرارة ومراقب KRI وموجز تخفيف بالذكاء الاصطناعي — كل ذلك محفوظ على هذا المتصفح فقط.' : "Add your own risks and get auto-calculated scores, a live heat map, a KRI monitor, and an AI-generated mitigation brief — saved in this browser only."}</p>
               <RiskToolsSection isAr={isAr} />
             </Reveal>
           </div>
