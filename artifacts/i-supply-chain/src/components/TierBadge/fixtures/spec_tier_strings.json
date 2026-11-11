@@ -1,0 +1,107 @@
+{
+  "source": "ISC_Super_MD_E4_Risk_and_Resilience_Intelligence_Engine_v3_8_DRAFT.md",
+  "sha256": "fa1119f87c5f62885cfc004e68896219b91f53144d0763797214b895883e9005",
+  "section": "6.15A",
+  "rows": {
+    "tier.t1": {
+      "en": "Tier 1: Certain",
+      "ar": "المستوى الأول: مؤكد"
+    },
+    "tier.t2": {
+      "en": "Tier 2: Reviewed and corrected by ISC, please confirm before relying on it",
+      "ar": "المستوى الثاني: راجعته آي سبلاي تشين وصوبته، يرجى التأكد قبل الاعتماد عليه"
+    },
+    "tier.t3": {
+      "en": "Tier 3: Cannot confirm. Specialist or legal expert opinion required",
+      "ar": "المستوى الثالث: تعذر التأكد، يتطلب رأي مختص أو خبير قانوني"
+    },
+    "tier.t1_short": {
+      "en": "Tier 1: Certain",
+      "ar": "المستوى 1: مؤكد"
+    },
+    "tier.t2_short": {
+      "en": "Tier 2: Reviewed by ISC, please confirm before relying",
+      "ar": "المستوى 2: راجعته آي سبلاي تشين، يرجى التأكد قبل الاعتماد"
+    },
+    "tier.t3_short": {
+      "en": "Tier 3: Cannot confirm",
+      "ar": "المستوى 3: تعذر التأكد"
+    },
+    "tier.t2_prompt": {
+      "en": "Please confirm this with an expert.",
+      "ar": "يرجى التأكد من ذلك مع خبير."
+    },
+    "tier.t3_prompt": {
+      "en": "Specialist or legal expert opinion required. Please check with an expert.",
+      "ar": "يتطلب رأي مختص أو خبير قانوني. يرجى الرجوع إلى خبير."
+    },
+    "tier.t1_by": {
+      "en": "Confirmed by [name, role], [date]",
+      "ar": "أكده [الاسم، الصفة] بتاريخ [التاريخ]"
+    },
+    "tier.t1_source": {
+      "en": "Source opened by ISC: [source], [date]",
+      "ar": "اطلعت آي سبلاي تشين على المصدر: [المصدر]، [التاريخ]"
+    },
+    "tier.na": {
+      "en": "Not applicable (no confidence tier for this row)",
+      "ar": "لا ينطبق"
+    },
+    "tier.field_tier": {
+      "en": "Confidence tier (field label)",
+      "ar": "مستوى الثقة"
+    },
+    "tier.choose": {
+      "en": "Choose a confidence tier (dropdown prompt)",
+      "ar": "اختر مستوى الثقة"
+    },
+    "tier.field_basis": {
+      "en": "Basis (field label)",
+      "ar": "الأساس"
+    },
+    "tier.sr_t1": {
+      "en": "Confidence tier: Tier 1: Certain. [basis].",
+      "ar": "مستوى الثقة: المستوى الأول: مؤكد. [الأساس]."
+    },
+    "tier.sr_t2": {
+      "en": "Confidence tier: Tier 2: Reviewed and corrected by ISC, please confirm before relying on it. Please confirm this with an expert.",
+      "ar": "مستوى الثقة: المستوى الثاني: راجعته آي سبلاي تشين وصوبته، يرجى التأكد قبل الاعتماد عليه. يرجى التأكد من ذلك مع خبير."
+    },
+    "tier.sr_t3": {
+      "en": "Confidence tier: Tier 3: Cannot confirm. Specialist or legal expert opinion required. Please check with an expert.",
+      "ar": "مستوى الثقة: المستوى الثالث: تعذر التأكد، يتطلب رأي مختص أو خبير قانوني. يرجى الرجوع إلى خبير."
+    },
+    "tier.t3_guidance": {
+      "en": "ISC cannot verify this. Possible answers are shown with their sources. Please check with an expert.",
+      "ar": "تعذر على آي سبلاي تشين التحقق من هذا. الإجابات المحتملة ومصادرها معروضة أدناه. يرجى الرجوع إلى خبير."
+    },
+    "tier.none": {
+      "en": "No tier on this output",
+      "ar": "لا يوجد مستوى ثقة لهذا المخرج"
+    },
+    "tier.never_certifies": {
+      "en": "ISC output is not legal, tax, insurance, sanctions, security or accessibility advice or certification",
+      "ar": "مخرجات آي سبلاي تشين ليست استشارة قانونية أو ضريبية أو تأمينية أو أمنية أو في مجال العقوبات أو إمكانية الوصول، وليست شهادة امتثال"
+    },
+    "tier.possible_answers": {
+      "en": "Possible answers",
+      "ar": "الإجابات المحتملة"
+    },
+    "tier.source_label": {
+      "en": "Source",
+      "ar": "المصدر"
+    },
+    "tier.vlevel_label": {
+      "en": "V level",
+      "ar": "مستوى التحقق من المصدر"
+    },
+    "tier.insufficient": {
+      "en": "Insufficient data to confirm a confidence tier.",
+      "ar": "بيانات غير كافية للتأكد من مستوى الثقة."
+    },
+    "tier.close": {
+      "en": "Close",
+      "ar": "إغلاق"
+    }
+  }
+}

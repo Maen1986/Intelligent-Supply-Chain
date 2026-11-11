@@ -23,6 +23,7 @@ import { FrameworkBadge } from '@/components/FrameworkBadge';
 import { EvidenceSummary, type EvidenceSummaryData } from '@/components/EvidenceSummary';
 import { AccountabilityLine } from '@/components/AccountabilityLine';
 import { API_BASE } from '@/lib/apiBase';
+import { TierBadgeSlot, type TierRecordInput } from '@/components/TierBadge';
 import { useAuth } from '@/lib/AuthContext';
 import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
@@ -180,6 +181,8 @@ interface RegCountry {
   notes?: string | null;
   notesAr?: string | null;
   sortOrder: number;
+  /** X-01 confidence tier (optional). No API returns this yet; when absent nothing is rendered. */
+  tierRecord?: TierRecordInput | null;
 }
 
 /* ── Module 06 gap #2 (27 Aug 2026): CLM_SUB_SEGMENTS <-> CLMTools.tsx
@@ -1259,6 +1262,9 @@ export function Maturity() {
                 })}
               </div>
             )}
+            {/* X-01 confidence tier for the selected country's regulatory content. Renders nothing unless the
+                country row carries a tierRecord (none do today). Separate from ConfidenceTierBadge (evidence tiers). */}
+            <TierBadgeSlot record={selectedCountryRecord?.tierRecord} lang={ar ? 'ar' : 'en'} className="mt-4" />
             {regulatorySuppressed && selectedCountryRecord && (
               <div className="mt-4 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
                 <AlertCircle className="w-4 h-4 mt-0.5 shrink-0 text-amber-600" />

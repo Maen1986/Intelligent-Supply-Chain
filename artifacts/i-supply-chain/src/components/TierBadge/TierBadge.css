@@ -1,0 +1,63 @@
+/* ISC Confidence tier badge. Logical properties only (RTL-safe). Plain CSS, no framework needed.
+   Tokens: ratios computed in the build report (ARQ-13). Tier is never colour alone: text + icon shape + border style. */
+.isc-tier, .isc-tier-portal {
+  --isc-t1-fg: #0b4f1c; --isc-t1-bg: #e8f5ea; --isc-t1-bd: #1f7a33;
+  --isc-t2-fg: #5a3a00; --isc-t2-bg: #fff3d1; --isc-t2-bd: #8a5a00;
+  --isc-t3-fg: #7d0f1f; --isc-t3-bg: #fde8eb; --isc-t3-bd: #a3132a;
+  --isc-focus: #1a4fd6;
+}
+.isc-tier { display: flex; flex-direction: column; gap: 6px; min-inline-size: 0; max-inline-size: 100%;
+  font: inherit; line-height: 1.5; text-align: start; box-sizing: border-box; }
+.isc-tier *, .isc-tier-portal * { box-sizing: border-box; }
+.isc-tier__badge { display: inline-flex; align-items: center; gap: 8px; align-self: flex-start;
+  min-block-size: 44px; min-inline-size: 44px; max-inline-size: 100%; padding-block: 6px; padding-inline: 12px;
+  font: inherit; font-weight: 600; text-align: start; cursor: pointer; border-radius: 10px;
+  overflow-wrap: anywhere; word-break: normal; white-space: normal; }
+.isc-tier__icon { flex: none; }
+.isc-tier__label { min-inline-size: 0; }
+.isc-tier--t1 .isc-tier__badge { color: var(--isc-t1-fg); background: var(--isc-t1-bg); border: 1px solid var(--isc-t1-bd); }
+.isc-tier--t2 .isc-tier__badge { color: var(--isc-t2-fg); background: var(--isc-t2-bg); border: 2px dashed var(--isc-t2-bd); }
+.isc-tier--t3 .isc-tier__badge { color: var(--isc-t3-fg); background: var(--isc-t3-bg); border: 4px double var(--isc-t3-bd); }
+.isc-tier__badge:focus-visible, .isc-tier__close:focus-visible, .isc-tier__drawer:focus-visible {
+  outline: 3px solid var(--isc-focus); outline-offset: 2px; }
+.isc-tier__inline { display: flex; flex-direction: column; gap: 4px; padding-inline: 4px; min-inline-size: 0; }
+.isc-tier--t3 > .isc-tier__inline { border-inline-start: 4px solid var(--isc-t3-bd); padding-inline-start: 10px;
+  background: var(--isc-t3-bg); color: var(--isc-t3-fg); padding-block: 6px; border-radius: 6px; }
+.isc-tier__row, .isc-tier__prompt, .isc-tier__guidance, .isc-tier__never, .isc-tier__drawer-title { margin: 0; overflow-wrap: anywhere; }
+.isc-tier__prompt { font-weight: 600; }
+.isc-tier__key { font-weight: 600; }
+.isc-tier__source { font-style: normal; }
+.isc-tier__heading { margin: 4px 0 0; }
+.isc-tier__meta { white-space: normal; }
+.isc-tier__insufficient { margin: 0; overflow-wrap: anywhere; }
+.isc-tier__answers { margin: 0; padding-inline-start: 1.25em; overflow-wrap: anywhere; }
+.isc-tier__v { font-variant-numeric: tabular-nums; }
+.isc-tier__drawer { display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; margin-block-start: 2px;
+  background: #fff; color: #1b1b1b; border: 2px solid #1b1b1b; border-radius: 10px; min-inline-size: 0; max-inline-size: 100%; }
+.isc-tier__drawer-title { font-weight: 700; }
+.isc-tier__never { font-size: .9em; border-block-start: 1px solid #767676; padding-block-start: 8px; }
+.isc-tier__close { align-self: flex-start; min-block-size: 44px; min-inline-size: 44px; padding-inline: 16px; font: inherit; font-weight: 600;
+  background: #fff; color: #1b1b1b; border: 2px solid #1b1b1b; border-radius: 10px; cursor: pointer; }
+.isc-tier-na { margin: 0; font: inherit; color: #4a4a4a; }
+.isc-tier__scrim { position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 999; }
+@media (max-width: 480px) {
+  .isc-tier__drawer--sheet { position: fixed; inset-inline: 0; inset-block-end: 0; z-index: 1000; margin: 0;
+    max-block-size: 85vh; max-block-size: 85dvh; overflow-y: auto; overscroll-behavior: contain;
+    border-end-start-radius: 0; border-end-end-radius: 0; border-start-start-radius: 16px; border-start-end-radius: 16px;
+    padding-block-end: calc(16px + env(safe-area-inset-bottom, 0px)); }
+}
+@media (forced-colors: active) {
+  .isc-tier__badge { forced-color-adjust: auto; border-color: CanvasText; color: ButtonText; background: ButtonFace; }
+  .isc-tier--t2 .isc-tier__badge { border-style: dashed; border-width: 2px; }
+  .isc-tier--t3 .isc-tier__badge { border-style: double; border-width: 4px; }
+  .isc-tier--t3 > .isc-tier__inline { border-inline-start: 4px solid CanvasText; background: Canvas; color: CanvasText; }
+  .isc-tier__badge:focus-visible, .isc-tier__close:focus-visible, .isc-tier__drawer:focus-visible { outline: 3px solid Highlight; }
+  .isc-tier__drawer { border-color: CanvasText; background: Canvas; color: CanvasText; }
+}
+@media print {
+  .isc-tier__badge { border-color: #000; color: #000; background: #fff; }
+  .isc-tier--t3 > .isc-tier__inline { background: #fff; color: #000; border-inline-start: 4px solid #000; }
+  .isc-tier__drawer, .isc-tier__scrim { display: none; }
+}
+.isc-tier time { white-space: nowrap; }
+.isc-tier__source { unicode-bidi: isolate; }
