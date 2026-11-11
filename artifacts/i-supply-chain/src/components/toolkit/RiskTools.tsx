@@ -19,6 +19,7 @@ import { useAIPlan } from '@/hooks/useAIPlan';
 export const RISK_TOOL_KEY = 'risk-register' as const;
 import { AIPlanPanel } from '@/components/AIPlanPanel';
 import { toast } from 'sonner';
+import { riskBand } from '@/lib/riskBands';
 
 interface RiskToolsProps { isAr: boolean; }
 
@@ -54,9 +55,9 @@ const riskScore = (r: RiskItem) => r.likelihood * r.impact;
 const residualScore = (r: RiskItem) => r.residualLikelihood * r.residualImpact;
 
 function riskLevel(score: number): { label: string; labelAr: string; color: string; bg: string; border: string } {
-  if (score >= 20) return { label: 'Critical',      labelAr: 'حرج',         color: '#7f1d1d', bg: '#fee2e2', border: '#ef4444' };
-  if (score >= 12) return { label: 'High',           labelAr: 'مرتفع',       color: '#92400e', bg: '#fef3c7', border: '#d97706' };
-  if (score >= 6)  return { label: 'Medium',         labelAr: 'متوسط',       color: '#854d0e', bg: '#fefce8', border: '#eab308' };
+  if (riskBand(score) === 'critical') return { label: 'Critical',      labelAr: 'حرج',         color: '#7f1d1d', bg: '#fee2e2', border: '#ef4444' };
+  if (riskBand(score) === 'high') return { label: 'High',           labelAr: 'مرتفع',       color: '#92400e', bg: '#fef3c7', border: '#d97706' };
+  if (riskBand(score) === 'medium') return { label: 'Medium',         labelAr: 'متوسط',       color: '#854d0e', bg: '#fefce8', border: '#eab308' };
   return              { label: 'Low',            labelAr: 'منخفض',      color: '#065f46', bg: '#d1fae5', border: '#10b981' };
 }
 
@@ -405,8 +406,8 @@ export function RiskToolsSection({ isAr }: RiskToolsProps) {
     KRI_DEFS.filter(d => { const v = parseFloat(kriValues[d.id] ?? ''); return !isNaN(v) && kriStatus(d, v) === 'red'; }),
     [kriValues]);
 
-  const criticalRisks  = useMemo(() => risks.filter(r => riskScore(r) >= 20), [risks]);
-  const highRisks      = useMemo(() => risks.filter(r => riskScore(r) >= 12 && riskScore(r) < 20), [risks]);
+  const criticalRisks  = useMemo(() => risks.filter(r => riskBand(riskScore(r)) === 'critical'), [risks]);
+  const highRisks      = useMemo(() => risks.filter(r => riskBand(riskScore(r)) === 'high'), [risks]);
   const openRisks      = useMemo(() => risks.filter(r => r.status === 'open' || r.status === 'in-progress'), [risks]);
   const overdueRisks   = useMemo(() => risks.filter(r => r.dueDate && new Date(r.dueDate) < new Date() && r.mitigationStatus !== 'completed'), [risks]);
 
@@ -785,7 +786,7 @@ export function RiskToolsSection({ isAr }: RiskToolsProps) {
                         {[1,2,3,4,5].map(i => {
                           const score = l * i;
                           const cellRisks = risks.filter(r => r.likelihood === l && r.impact === i);
-                          const bg = score >= 20 ? '#fca5a5' : score >= 12 ? '#fcd34d' : score >= 6 ? '#fef08a' : '#bbf7d0';
+                          const b = riskBand(score); const bg = b === 'critical' ? '#fca5a5' : b === 'high' ? '#fcd34d' : b === 'medium' ? '#fef08a' : '#bbf7d0';
                           const isSelected = heatFilter?.l === l && heatFilter?.i === i;
                           return (
                             <div key={i} onClick={() => setHeatFilter(isSelected ? null : { l, i })}
@@ -809,7 +810,7 @@ export function RiskToolsSection({ isAr }: RiskToolsProps) {
 
                 {/* Legend */}
                 <div className="flex gap-3 mt-3 flex-wrap">
-                  {[{ label: isAr ? 'حرج (20–25)' : 'Critical (20-25)', bg: '#fca5a5' }, { label: isAr ? 'مرتفع (12–19)' : 'High (12-19)', bg: '#fcd34d' }, { label: isAr ? 'متوسط (6–11)' : 'Medium (6-11)', bg: '#fef08a' }, { label: isAr ? 'منخفض (1–5)' : 'Low (1-5)', bg: '#bbf7d0' }].map(l => (
+                  {[{ label: isAr ? 'حرج (15–25)' : 'Critical (15-25)', bg: '#fca5a5' }, { label: isAr ? 'مرتفع (10–14)' : 'High (10-14)', bg: '#fcd34d' }, { label: isAr ? 'متوسط (5–9)' : 'Medium (5-9)', bg: '#fef08a' }, { label: isAr ? 'منخفض (1–4)' : 'Low (1-4)', bg: '#bbf7d0' }].map(l => (
                     <div key={l.label} className="flex items-center gap-1.5 text-[11px] text-slate-600">
                       <div className="w-4 h-4 rounded" style={{ background: l.bg }} />
                       {l.label}

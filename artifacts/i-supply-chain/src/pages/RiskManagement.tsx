@@ -12,6 +12,7 @@ import {
 import { useLanguage } from '@/lib/LanguageContext';
 import { KPIDashboard } from '@/components/KPIDashboard';
 import { RiskToolsSection } from '@/components/toolkit/RiskTools';
+import { riskBand } from '@/lib/riskBands';
 
 function Reveal({ children, delay = 0, className = '' }: { children: React.ReactNode; delay?: number; className?: string }) {
   return (
@@ -52,9 +53,10 @@ const HEAT_MAP_RISKS = [
 ];
 
 function cellColor(score: number) {
-  if (score >= 15) return 'bg-red-500 text-white';
-  if (score >= 10) return 'bg-orange-400 text-white';
-  if (score >= 5) return 'bg-yellow-400 text-gray-900';
+  const b = riskBand(score);
+  if (b === 'critical') return 'bg-red-500 text-white';
+  if (b === 'high') return 'bg-orange-400 text-white';
+  if (b === 'medium') return 'bg-yellow-400 text-gray-900';
   return 'bg-green-400 text-white';
 }
 
