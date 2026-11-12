@@ -19,6 +19,7 @@ const router = Router();
 router.use(requireSession);
 
 export const MAX_RISKS = 500;
+export const exceedsCap = (n: number) => n > MAX_RISKS;
 const CATEGORIES = ['supply', 'demand', 'operational', 'financial', 'geopolitical', 'regulatory', 'cyber', 'environmental'];
 const VELOCITIES = ['slow', 'medium', 'fast'];
 const STATUSES = ['open', 'in-progress', 'closed', 'accepted'];
@@ -70,7 +71,7 @@ router.put('/', async (req, res) => {
     return;
   }
   const risks = body.risks as RiskPayload[];
-  if (risks.length > MAX_RISKS) {
+  if (exceedsCap(risks.length)) {
     res.status(400).json({ ok: false, error: `Too many risks in one sync (max ${MAX_RISKS})` });
     return;
   }
