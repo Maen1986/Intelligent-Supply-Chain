@@ -456,6 +456,35 @@ const MIGRATIONS: string[] = [
    )`,
   `CREATE INDEX IF NOT EXISTS working_capital_analyses_user_id ON working_capital_analyses (user_id)`,
 
+  // risk_register_items -- server store for the E4 risk register (#866). See
+  // lib/db/src/schema/riskRegisterItems.ts. Additive and idempotent; cannot
+  // change or delete existing data. CHECKs keep 1-5 scales honest.
+  `CREATE TABLE IF NOT EXISTS risk_register_items (
+     id                   SERIAL PRIMARY KEY,
+     user_id              INTEGER   NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+     organization_id      INTEGER   REFERENCES organizations(id),
+     client_key           TEXT      NOT NULL,
+     category             TEXT      NOT NULL,
+     description          TEXT      NOT NULL,
+     driver               TEXT      NOT NULL DEFAULT '',
+     affected_area        TEXT      NOT NULL DEFAULT '',
+     likelihood           INTEGER   NOT NULL CHECK (likelihood BETWEEN 1 AND 5),
+     impact               INTEGER   NOT NULL CHECK (impact BETWEEN 1 AND 5),
+     velocity             TEXT      NOT NULL,
+     mitigation_action    TEXT      NOT NULL DEFAULT '',
+     owner                TEXT      NOT NULL DEFAULT '',
+     due_date             TEXT      NOT NULL DEFAULT '',
+     status               TEXT      NOT NULL,
+     mitigation_status    TEXT      NOT NULL,
+     residual_likelihood  INTEGER   NOT NULL CHECK (residual_likelihood BETWEEN 1 AND 5),
+     residual_impact      INTEGER   NOT NULL CHECK (residual_impact BETWEEN 1 AND 5),
+     data_source          TEXT      NOT NULL DEFAULT 'manual',
+     created_at           TIMESTAMP NOT NULL DEFAULT NOW(),
+     updated_at           TIMESTAMP NOT NULL DEFAULT NOW(),
+     CONSTRAINT risk_register_items_user_client_key UNIQUE (user_id, client_key)
+   )`,
+  `CREATE INDEX IF NOT EXISTS risk_register_items_user_id ON risk_register_items (user_id)`,
+
   // spend_variance_analyses -- real backend persistence for the
   // Opportunity / Spend Variance Finder (#170, Wave B-3, 2026-08-23). See
   // lib/db/src/schema/spendVarianceAnalyses.ts for the full design
