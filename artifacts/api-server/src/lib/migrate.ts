@@ -485,6 +485,26 @@ const MIGRATIONS: string[] = [
    )`,
   `CREATE INDEX IF NOT EXISTS risk_register_items_user_id ON risk_register_items (user_id)`,
 
+  // confidence_tier_records -- storage for the ISC Confidence tier badge (X-01,
+  // #868). Defined in lib/db/src/schema/confidenceTierRecords.ts since #40 but
+  // never created in the live database (drizzle-kit push skips on prompts at
+  // deploy). Additive and idempotent; nothing reads or writes it yet, so it
+  // changes no behaviour. tier is nullable on purpose (no default invented).
+  `CREATE TABLE IF NOT EXISTS confidence_tier_records (
+     id               SERIAL PRIMARY KEY,
+     subject_type     TEXT      NOT NULL,
+     subject_ref_id   INTEGER   NOT NULL,
+     tier             INTEGER,
+     basis            TEXT,
+     confirmed_by     TEXT,
+     confirmed_on     DATE,
+     source           TEXT,
+     created_at       TIMESTAMP NOT NULL DEFAULT NOW(),
+     updated_at       TIMESTAMP NOT NULL DEFAULT NOW(),
+     CONSTRAINT confidence_tier_records_tier_chk CHECK (tier IS NULL OR tier IN (1, 2, 3))
+   )`,
+  `CREATE INDEX IF NOT EXISTS confidence_tier_records_subject_idx ON confidence_tier_records (subject_type, subject_ref_id)`,
+
   // spend_variance_analyses -- real backend persistence for the
   // Opportunity / Spend Variance Finder (#170, Wave B-3, 2026-08-23). See
   // lib/db/src/schema/spendVarianceAnalyses.ts for the full design
