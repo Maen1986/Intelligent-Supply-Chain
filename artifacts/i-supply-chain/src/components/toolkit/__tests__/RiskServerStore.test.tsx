@@ -65,8 +65,8 @@ describe('risk register server store (#866)', () => {
     localStorage.setItem('isc-tool-risk-register-v2', JSON.stringify([LOCAL]));
     render(<RiskToolsSection isAr={false} />);
     openRegister();
-    await waitFor(() => expect(screen.getByDisplayValue('Server-side risk')).toBeTruthy());
-    expect(screen.queryByDisplayValue('Local-only risk')).toBeNull();
+    await waitFor(() => expect(screen.getByText('Server-side risk')).toBeTruthy());
+    expect(screen.queryByText('Local-only risk')).toBeNull();
     expect(putCalls().length).toBe(0);
   });
 
@@ -96,7 +96,7 @@ describe('risk register server store (#866)', () => {
     await waitFor(() => screen.getByRole('button', { name: 'Not now' }));
     fireEvent.click(screen.getByRole('button', { name: 'Not now' }));
     expect(screen.getByText(/stays here and is not saved to your account/)).toBeTruthy();
-    expect(screen.getByDisplayValue('Local-only risk')).toBeTruthy();
+    expect(screen.getByText('Local-only risk')).toBeTruthy();
     await new Promise(r => setTimeout(r, 500));
     expect(putCalls().length).toBe(0);
   });
@@ -121,6 +121,6 @@ describe('risk register server store (#866)', () => {
     render(<RiskToolsSection isAr={false} />);
     openRegister();
     await waitFor(() => expect(screen.getByText(/Not saved to your account yet/)).toBeTruthy());
-    expect(screen.getByDisplayValue('Local-only risk')).toBeTruthy();
+    expect(screen.getByText('Local-only risk')).toBeTruthy();
   });
 });
