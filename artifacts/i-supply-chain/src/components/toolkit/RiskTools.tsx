@@ -23,7 +23,7 @@ import { riskBand } from '@/lib/riskBands';
 import { useAuth } from '@/lib/AuthContext';
 import { API_BASE } from '@/lib/apiBase';
 
-interface RiskToolsProps { isAr: boolean; }
+interface RiskToolsProps { isAr: boolean; /** Sub-tab to open first; the page links straight to 'register' (#866). */ initialTab?: 'kri' | 'register'; }
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -300,8 +300,8 @@ type Tab = 'kri' | 'register' | 'heatmap' | 'mitigation' | 'templates' | 'ai' | 
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-export function RiskToolsSection({ isAr }: RiskToolsProps) {
-  const [activeTab, setActiveTab] = useState<Tab>('kri');
+export function RiskToolsSection({ isAr, initialTab }: RiskToolsProps) {
+  const [activeTab, setActiveTab] = useState<Tab>(initialTab ?? 'kri');
 
   // Supplier Alert Config state
   const [alertCfg, setAlertCfg] = useState<AlertCfg[]>(() => loadJson(SK_ALERTS, DEFAULT_ALERTS));
@@ -526,7 +526,7 @@ export function RiskToolsSection({ isAr }: RiskToolsProps) {
 
   const tabs: { id: Tab; icon: string; label: string; labelAr: string }[] = [
     { id: 'kri',          icon: '🚨', label: 'KRI Monitor',      labelAr: 'مؤشرات المخاطر'      },
-    { id: 'register',     icon: '📋', label: 'Risk Register',    labelAr: 'سجل المخاطر'          },
+    { id: 'register',     icon: '📋', label: 'My Risk Register', labelAr: 'سجل المخاطر الخاص بي' },
     { id: 'heatmap',      icon: '🗺️', label: 'Heat Map',         labelAr: 'خريطة الحرارة'        },
     { id: 'mitigation',   icon: '🛡️', label: 'Mitigation Plans', labelAr: 'خطط التخفيف'          },
     { id: 'templates',    icon: '📥', label: 'BCP & Templates',  labelAr: 'القوالب والاستمرارية'  },
