@@ -63,17 +63,19 @@ describe('Risk Management page honesty fixes', () => {
     expect(ar).not.toMatch(/ISC/);
   });
 
-  it('Toolkit tab: says saved in this browser only, never "your account"', () => {
+  it('Toolkit tab: register is saved to the account only when signed in; indicators and alerts stay in this browser', () => {
     mockAr = false;
     render(<RiskManagement />);
     fireEvent.click(screen.getByRole('button', { name: 'Your Risk Toolkit' }));
-    expect(screen.getByText(/saved in this browser only/)).toBeTruthy();
-    expect(document.body.textContent).not.toMatch(/saved to your account/);
+    expect(screen.getByText(/risk register is saved to your account/)).toBeTruthy();
+    expect(document.body.textContent).toMatch(/indicator values and alert settings stay in this browser only/);
+    expect(document.body.textContent).toMatch(/for guests everything stays in this browser only/);
     cleanup();
     mockAr = true;
     render(<RiskManagement />);
     fireEvent.click(screen.getByRole('button', { name: 'أدواتك التفاعلية' }));
-    expect(document.body.textContent).toMatch(/محفوظ على هذا المتصفح فقط/);
-    expect(document.body.textContent).not.toMatch(/محفوظ لحسابك/);
+    expect(document.body.textContent).toMatch(/يُحفظ سجلّ المخاطر في حسابك/);
+    expect(document.body.textContent).toMatch(/فتبقى على هذا المتصفح فقط/);
+    expect(document.body.textContent).not.toMatch(/ISC/);
   });
 });
