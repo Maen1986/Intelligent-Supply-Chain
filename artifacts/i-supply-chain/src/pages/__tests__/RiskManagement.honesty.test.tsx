@@ -26,7 +26,7 @@ vi.mock('framer-motion', () => ({
   AnimatePresence: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 vi.mock('@/components/KPIDashboard', () => ({ KPIDashboard: () => <div /> }));
-vi.mock('@/components/toolkit/RiskTools', () => ({ RiskToolsSection: () => <div /> }));
+vi.mock('@/components/toolkit/RiskTools', () => ({ RiskToolsSection: (p: { initialTab?: string }) => <div data-testid="toolkit-stub" data-start={p.initialTab ?? ''} /> }));
 
 import { RiskManagement } from '../RiskManagement';
 
@@ -52,12 +52,12 @@ describe('Risk Management page honesty fixes', () => {
   it('Risk Register tab: rows are labelled sample data (EN and AR)', () => {
     mockAr = false;
     render(<RiskManagement />);
-    fireEvent.click(screen.getByRole('button', { name: 'Risk Register' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Sample Register' }));
     expect(screen.getByTestId('risk-register-sample-badge').textContent).toBe('Sample data (illustrative)');
     cleanup();
     mockAr = true;
     render(<RiskManagement />);
-    fireEvent.click(screen.getByRole('button', { name: 'سجلّ المخاطر' }));
+    fireEvent.click(screen.getByRole('button', { name: 'سجلّ تجريبي' }));
     const ar = screen.getByTestId('risk-register-sample-badge').textContent || '';
     expect(ar).toMatch(/[؀-ۿ]/);
     expect(ar).not.toMatch(/ISC/);
@@ -77,5 +77,27 @@ describe('Risk Management page honesty fixes', () => {
     expect(document.body.textContent).toMatch(/يُحفظ سجلّ المخاطر في حسابك/);
     expect(document.body.textContent).toMatch(/فتبقى على هذا المتصفح فقط/);
     expect(document.body.textContent).not.toMatch(/ISC/);
+  });
+
+  it('the sample tab is named Sample Register and links straight to My Risk Register (EN and AR)', () => {
+    mockAr = false;
+    render(<RiskManagement />);
+    expect(screen.queryByRole('button', { name: 'Risk Register' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Sample Register' }));
+    fireEvent.click(screen.getByTestId('open-my-register'));
+    expect(screen.getByTestId('toolkit-stub').getAttribute('data-start')).toBe('register');
+    cleanup();
+    mockAr = true;
+    render(<RiskManagement />);
+    fireEvent.click(screen.getByRole('button', { name: 'سجلّ تجريبي' }));
+    expect(screen.getByTestId('open-my-register').textContent).toMatch(/سجل المخاطر الخاص بي/);
+    expect(document.body.textContent).not.toMatch(/ISC/);
+  });
+
+  it('opening Your Risk Toolkit from the top bar still starts on the first sub-tab', () => {
+    mockAr = false;
+    render(<RiskManagement />);
+    fireEvent.click(screen.getByRole('button', { name: 'Your Risk Toolkit' }));
+    expect(screen.getByTestId('toolkit-stub').getAttribute('data-start')).toBe('kri');
   });
 });
