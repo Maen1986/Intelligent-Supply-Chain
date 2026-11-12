@@ -431,7 +431,7 @@ export function RiskManagement() {
                 <span className="px-2.5 py-1 rounded-full text-xs font-extrabold bg-primary text-white">{isAr ? '🛠 أداة تفاعلية' : '🛠 Interactive Tool'}</span>
                 <h3 className="font-bold text-primary">{isAr ? 'سجلّ مخاطرك الحيّ' : 'Your Live Risk Register'}</h3>
               </div>
-              <p className="text-sm text-muted-foreground mb-4">{isAr ? 'أضف مخاطرك، واحصل على درجات ودرجات متبقية محسوبة تلقائياً، وخريطة حرارة ومراقب KRI وموجز تخفيف بالذكاء الاصطناعي — كل ذلك محفوظ على هذا المتصفح فقط.' : "Add your own risks and get auto-calculated scores, a live heat map, a KRI monitor, and an AI-generated mitigation brief — saved in this browser only."}</p>
+              <p className="text-sm text-muted-foreground mb-4">{isAr ? 'أضف مخاطرك، واحصل على درجات ودرجات متبقية محسوبة تلقائياً، وخريطة حرارة ومراقب KRI وموجز تخفيف بالذكاء الاصطناعي عند تسجيل الدخول يُحفظ سجلّ المخاطر في حسابك، أما قيم المؤشرات وإعدادات التنبيه فتبقى على هذا المتصفح فقط، وللزائر كل شيء على هذا المتصفح فقط.' : "Add your own risks and get auto-calculated scores, a heat map, a KRI monitor, and an AI-generated mitigation brief. When you are signed in, your risk register is saved to your account; indicator values and alert settings stay in this browser only, and for guests everything stays in this browser only."}</p>
               <RiskToolsSection isAr={isAr} />
             </Reveal>
           </div>

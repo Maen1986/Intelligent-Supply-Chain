@@ -38,3 +38,4 @@ export * from "./industryBenchmarks";
 export * from "./maturityEvidence";
 export * from "./regulatoryContent";
 export * from "./confidenceTierRecords";
+export * from "./riskRegisterItems";

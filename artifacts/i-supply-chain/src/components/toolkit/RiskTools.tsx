@@ -9,7 +9,7 @@
  * 5. BCP Templates    — downloadable business continuity & contingency templates
  * 6. AI Risk Brief    — AI-generated risk assessment and response strategy
  */
-import React, { useState, useCallback, useMemo, useRef } from 'react';
+import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { AlertTriangle, Plus, Trash2, ChevronDown, ChevronUp,
   FileDown, Sparkles, Shield, Activity, Info, CheckCircle } from 'lucide-react';
 import { safeSetItem } from '@/lib/storage';
@@ -20,6 +20,8 @@ export const RISK_TOOL_KEY = 'risk-register' as const;
 import { AIPlanPanel } from '@/components/AIPlanPanel';
 import { toast } from 'sonner';
 import { riskBand } from '@/lib/riskBands';
+import { useAuth } from '@/lib/AuthContext';
+import { API_BASE } from '@/lib/apiBase';
 
 interface RiskToolsProps { isAr: boolean; }
 
@@ -319,7 +321,86 @@ export function RiskToolsSection({ isAr }: RiskToolsProps) {
 
   // Risk register state
   const [risks, setRisks] = useState<RiskItem[]>(() => loadJson(SK_RISKS, []));
-  const saveRisks = (r: RiskItem[]) => { setRisks(r); safeSetItem(SK_RISKS, JSON.stringify(r)); };
+  // #866 server store: signed-in users keep the register in their account.
+  // Browser copy stays as the local-first cache and the guest home.
+  const { user } = useAuth();
+  const [riskSync, setRiskSync] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [importOffer, setImportOffer] = useState<RiskItem[] | null>(null);
+  const [syncOff, setSyncOff] = useState(false);
+  const riskSyncReady = useRef(false);
+  const riskLoadedFor = useRef<number | null>(null);
+  const riskTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const risksRef = useRef<RiskItem[]>([]);
+  risksRef.current = risks;
+  const clamp15 = (n: unknown) => { const v = Math.round(Number(n)); return Number.isFinite(v) ? Math.min(5, Math.max(1, v)) : 3; };
+  const riskToPayload = (r: RiskItem, dataSource: 'manual' | 'imported-file') => ({
+    clientKey: String(r.id).slice(0, 100),
+    category: RISK_CATEGORIES.some(c => c.id === r.category) ? r.category : 'supply',
+    description: String(r.description ?? '').slice(0, 4000), driver: String(r.driver ?? '').slice(0, 2000),
+    affectedArea: String(r.affectedArea ?? '').slice(0, 2000),
+    likelihood: clamp15(r.likelihood), impact: clamp15(r.impact),
+    velocity: ['slow', 'medium', 'fast'].includes(r.velocity) ? r.velocity : 'medium',
+    mitigationAction: String(r.mitigationAction ?? '').slice(0, 4000), owner: String(r.owner ?? '').slice(0, 500),
+    dueDate: String(r.dueDate ?? '').slice(0, 40),
+    status: ['open', 'in-progress', 'closed', 'accepted'].includes(r.status) ? r.status : 'open',
+    mitigationStatus: ['not-started', 'in-progress', 'completed'].includes(r.mitigationStatus) ? r.mitigationStatus : 'not-started',
+    residualLikelihood: clamp15(r.residualLikelihood), residualImpact: clamp15(r.residualImpact), dataSource,
+  });
+  const pushRisks = (list: RiskItem[], dataSource: 'manual' | 'imported-file' = 'manual') => {
+    if (riskTimer.current) clearTimeout(riskTimer.current);
+    setRiskSync('saving');
+    riskTimer.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`${API_BASE}/risk-register-items`, {
+          method: 'PUT', credentials: 'include', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ risks: list.map(r => riskToPayload(r, dataSource)) }),
+        });
+        setRiskSync(res.ok ? 'saved' : 'error');
+      } catch { setRiskSync('error'); }
+    }, 400);
+  };
+  const saveRisks = (r: RiskItem[]) => {
+    setRisks(r); safeSetItem(SK_RISKS, JSON.stringify(r));
+    if (user && riskSyncReady.current && !syncOff) pushRisks(r);
+  };
+  useEffect(() => {
+    if (!user) { riskLoadedFor.current = null; riskSyncReady.current = false; setImportOffer(null); setRiskSync('idle'); return; }
+    if (riskLoadedFor.current === user.id) return;
+    riskLoadedFor.current = user.id;
+    riskSyncReady.current = false;
+    const forUser = user.id;
+    (async () => {
+      try {
+        const res = await fetch(`${API_BASE}/risk-register-items`, { credentials: 'include' });
+        if (riskLoadedFor.current !== forUser) return;
+        if (!res.ok) { setRiskSync('error'); return; }
+        const data = await res.json() as { ok: boolean; risks: Array<Record<string, unknown>> };
+        if (!data.ok || !Array.isArray(data.risks)) { setRiskSync('error'); return; }
+        if (data.risks.length > 0) {
+          const fromServer = data.risks.map(s => ({
+            id: String(s.clientKey), category: s.category, description: s.description, driver: s.driver,
+            affectedArea: s.affectedArea, likelihood: s.likelihood, impact: s.impact, velocity: s.velocity,
+            mitigationAction: s.mitigationAction, owner: s.owner, dueDate: s.dueDate, status: s.status,
+            mitigationStatus: s.mitigationStatus, residualLikelihood: s.residualLikelihood, residualImpact: s.residualImpact,
+          })) as RiskItem[];
+          setRisks(fromServer); safeSetItem(SK_RISKS, JSON.stringify(fromServer));
+          riskSyncReady.current = true;
+        } else if (risksRef.current.length > 0) {
+          setImportOffer(risksRef.current);
+        } else {
+          riskSyncReady.current = true;
+        }
+      } catch { setRiskSync('error'); }
+    })();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
+  const acceptImport = () => {
+    if (!importOffer) return;
+    riskSyncReady.current = true;
+    pushRisks(importOffer, 'imported-file');
+    setImportOffer(null);
+  };
+  const declineImport = () => { setSyncOff(true); setImportOffer(null); };
   const updateRisk = (id: string, field: keyof RiskItem, value: string | number) =>
     saveRisks(risks.map(r => r.id === id ? { ...r, [field]: value } : r));
   const addRisk = () => saveRisks([...risks, defaultRisk()]);
@@ -587,6 +668,26 @@ export function RiskToolsSection({ isAr }: RiskToolsProps) {
                   <p className="text-2xl font-black mt-1" style={{ color: c.color }}>{c.value}</p>
                 </div>
               ))}
+            </div>
+          )}
+
+          {user && (importOffer || riskSync !== 'idle' || syncOff) && (
+            <div data-testid="risk-store-status" className="bg-sky-50 border border-sky-200 rounded-xl p-3 flex flex-wrap items-center gap-2">
+              {importOffer ? (
+                <>
+                  <p className="text-xs text-sky-900 flex-1">{isAr ? `وجدنا سجل مخاطر محفوظاً على هذا المتصفح (${importOffer.length}). هل تريد استيراده إلى حسابك؟` : `We found a risk register saved in this browser (${importOffer.length}). Import it to your account?`}</p>
+                  <button type="button" onClick={acceptImport} className="text-xs font-bold px-3 py-1.5 rounded-lg text-white bg-[#082C6B]">{isAr ? 'استيراد' : 'Import'}</button>
+                  <button type="button" onClick={declineImport} className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-sky-300 text-sky-900">{isAr ? 'ليس الآن' : 'Not now'}</button>
+                </>
+              ) : syncOff ? (
+                <p className="text-xs text-sky-900">{isAr ? 'سجل هذا المتصفح باقٍ هنا ولا يُحفظ في حسابك.' : 'The register in this browser stays here and is not saved to your account.'}</p>
+              ) : (
+                <p className="text-xs text-sky-900" role="status">
+                  {riskSync === 'saving' && (isAr ? 'جارٍ الحفظ في حسابك…' : 'Saving to your account…')}
+                  {riskSync === 'saved' && (isAr ? 'تم الحفظ في حسابك ✓' : 'Saved to your account ✓')}
+                  {riskSync === 'error' && (isAr ? 'لم يُحفظ في حسابك بعد — نسخة المتصفح محفوظة.' : 'Not saved to your account yet. Your browser copy is safe.')}
+                </p>
+              )}
             </div>
           )}
 
