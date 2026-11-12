@@ -23,7 +23,7 @@ scripts/            One-off/maintenance scripts
 
 ## Requirements
 
-- **Node.js 20** and **pnpm 9** — this is what CI (`.github/workflows/ci.yml`) actually installs and verifies against; treat other versions as unverified, not necessarily broken.
+- **Node.js 20** and **pnpm 12** — this is what CI (`.github/workflows/ci.yml`) installs and what Render's `npx pnpm` resolves to; the lockfile needs it (pnpm 9 rejects it with a lockfile config mismatch). Treat other versions as unverified.
 - **PostgreSQL 16** — a real, reachable database. CI spins up `postgres:16` as a service container for tests.
 
 ## Getting started
