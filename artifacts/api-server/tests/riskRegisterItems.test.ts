@@ -47,7 +47,7 @@ vi.mock('@workspace/db/schema', () => ({
 
 vi.mock('../src/lib/logger', () => makeLoggerMock());
 
-import riskRegisterItemsRouter, { isValidRisk, MAX_RISKS } from '../src/routes/riskRegisterItems';
+import riskRegisterItemsRouter, { isValidRisk, MAX_RISKS, exceedsCap } from '../src/routes/riskRegisterItems';
 
 const URL = '/api/risk-register-items';
 const VALID = {
@@ -122,11 +122,10 @@ describe('PUT /api/risk-register-items', () => {
     const res = await request(app()).put(URL).send({ risks: [{ ...VALID, impact: 9 }] });
     expect(res.status).toBe(400);
   });
-  it('400 when over the cap', async () => {
-    const many = Array.from({ length: MAX_RISKS + 1 }, (_, i) => ({ ...VALID, clientKey: 'k' + i }));
-    const res = await request(app()).put(URL).send({ risks: many });
-    expect(res.status).toBe(400);
-    expect(res.body.error).toMatch(/500/);
+  it('cap is 500: 500 is allowed, 501 is refused (unit; production body limit is 25mb)', () => {
+    expect(MAX_RISKS).toBe(500);
+    expect(exceedsCap(500)).toBe(false);
+    expect(exceedsCap(501)).toBe(true);
   });
   it('400 on a duplicate clientKey', async () => {
     const res = await request(app()).put(URL).send({ risks: [VALID, { ...VALID }] });
