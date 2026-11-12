@@ -22,8 +22,8 @@ function Reveal({ children, delay = 0, className = '' }: { children: React.React
   );
 }
 
-const TABS = ['Overview', 'Risk Types', 'Heat Map', 'Risk Register', 'Your Risk Toolkit', 'Governance', 'KPI Dashboard'];
-const TABS_AR = ['نظرة عامة', 'أنواع المخاطر', 'خريطة الحرارة', 'سجلّ المخاطر', 'أدواتك التفاعلية', 'الحوكمة', 'لوحة المؤشرات'];
+const TABS = ['Overview', 'Risk Types', 'Heat Map', 'Sample Register', 'Your Risk Toolkit', 'Governance', 'KPI Dashboard'];
+const TABS_AR = ['نظرة عامة', 'أنواع المخاطر', 'خريطة الحرارة', 'سجلّ تجريبي', 'أدواتك التفاعلية', 'الحوكمة', 'لوحة المؤشرات'];
 
 const RISK_TYPES = [
   { icon: Globe, color: 'bg-red-50 text-red-600 border-red-200', badge: 'bg-red-100 text-red-700', name: 'Strategic Risk', nameAr: 'المخاطر الاستراتيجية', examples: ['Aramco localisation (Iktva) requirements tightening', 'Trade sanctions impacting import corridors', 'Competitor supply chain advantage'], examplesAr: ['تشديد متطلبات التوطين (Iktva) لدى أرامكو', 'عقوبات تجارية تؤثّر في ممرّات الاستيراد', 'تفوّق سلسلة إمداد المنافس'], signals: ['Regulatory announcements', 'Competitor supplier shifts', 'Customer requirement changes'], signalsAr: ['الإعلانات التنظيمية', 'تحوّلات مورّدي المنافسين', 'تغيّرات متطلبات العملاء'], response: 'Scenario planning, strategy review, supply chain redesign', responseAr: 'تخطيط السيناريوهات، ومراجعة الاستراتيجية، وإعادة تصميم سلسلة الإمداد' },
@@ -86,6 +86,7 @@ export function RiskManagement() {
   const { lang } = useLanguage();
   const isAr = lang === 'ar';
   const [activeTab, setActiveTab] = useState(0);
+  const [toolkitStart, setToolkitStart] = useState<'kri' | 'register'>('kri');
   const [openRiskType, setOpenRiskType] = useState<number | null>(0);
   const [hoveredCell, setHoveredCell] = useState<string | null>(null);
   const [registerFilter, setRegisterFilter] = useState<'ALL' | 'CRITICAL' | 'HIGH' | 'MEDIUM'>('ALL');
@@ -115,7 +116,7 @@ export function RiskManagement() {
       <div className="sticky top-16 z-30 bg-white border-b border-border shadow-sm">
         <div className="container mx-auto px-4 flex overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           {TABS.map((tab, i) => (
-            <button key={tab} onClick={() => setActiveTab(i)}
+            <button key={tab} onClick={() => { setToolkitStart('kri'); setActiveTab(i); }}
               className={`px-4 py-4 text-sm font-semibold border-b-2 whitespace-nowrap shrink-0 transition-all duration-200 ${activeTab === i ? 'border-red-600 text-red-600' : 'border-transparent text-muted-foreground hover:text-red-600 hover:border-red-300'}`}>
               {isAr ? TABS_AR[i] : tab}
             </button>
@@ -317,8 +318,8 @@ export function RiskManagement() {
                       ? 'السجلّ أدناه مثال توضيحي ثابت. لإنشاء سجلّ حيّ ببياناتك الخاصة، قابل للإضافة والتحرير، مع درجات تُحسَب تلقائياً وموجز تخفيف بالذكاء الاصطناعي:'
                       : "The register below is a static worked example. To create a live register with your own data — add and edit rows, auto-calculated scores, and an AI-generated mitigation brief:"}
                   </p>
-                  <button onClick={() => setActiveTab(4)} className="mt-2 text-sm font-bold text-primary hover:underline inline-flex items-center gap-1">
-                    {isAr ? 'افتح أدواتك التفاعلية' : 'Open Your Risk Toolkit'} <ArrowRight className="w-3.5 h-3.5 rtl:rotate-180" />
+                  <button data-testid="open-my-register" onClick={() => { setToolkitStart('register'); setActiveTab(4); }} className="mt-2 text-sm font-bold text-primary hover:underline inline-flex items-center gap-1">
+                    {isAr ? 'افتح سجل المخاطر الخاص بي' : 'Open My Risk Register'} <ArrowRight className="w-3.5 h-3.5 rtl:rotate-180" />
                   </button>
                 </div>
               </div>
@@ -432,7 +433,7 @@ export function RiskManagement() {
                 <h3 className="font-bold text-primary">{isAr ? 'سجلّ مخاطرك الحيّ' : 'Your Live Risk Register'}</h3>
               </div>
               <p className="text-sm text-muted-foreground mb-4">{isAr ? 'أضف مخاطرك، واحصل على درجات ودرجات متبقية محسوبة تلقائياً، وخريطة حرارة ومراقب KRI وموجز تخفيف بالذكاء الاصطناعي عند تسجيل الدخول يُحفظ سجلّ المخاطر في حسابك، أما قيم المؤشرات وإعدادات التنبيه فتبقى على هذا المتصفح فقط، وللزائر كل شيء على هذا المتصفح فقط.' : "Add your own risks and get auto-calculated scores, a heat map, a KRI monitor, and an AI-generated mitigation brief. When you are signed in, your risk register is saved to your account; indicator values and alert settings stay in this browser only, and for guests everything stays in this browser only."}</p>
-              <RiskToolsSection isAr={isAr} />
+              <RiskToolsSection isAr={isAr} initialTab={toolkitStart} />
             </Reveal>
           </div>
         )}
