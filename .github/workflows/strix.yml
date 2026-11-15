@@ -1,0 +1,63 @@
+name: Strix security scan (report only)
+
+# Scans the code of every pull request with Strix (AI penetration-testing tool,
+# https://github.com/usestrix/strix). REPORT ONLY: findings are uploaded as a
+# build artifact and never block a merge.
+#
+# Does nothing until the repository owner adds two secrets in GitHub
+# (Settings > Secrets and variables > Actions):
+#   STRIX_LLM    model name, for example openrouter/z-ai/glm-5.3
+#   LLM_API_KEY  the owner's own API key for that provider
+# Without both secrets the job only prints a notice and passes.
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  strix:
+    # Pull requests from forks do not receive secrets, so skip them.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check configuration
+        id: cfg
+        env:
+          STRIX_LLM: ${{ secrets.STRIX_LLM }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+        run: |
+          if [ -z "$STRIX_LLM" ] || [ -z "$LLM_API_KEY" ]; then
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Strix scan skipped: add the STRIX_LLM and LLM_API_KEY repository secrets to turn it on."
+          else
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install Strix
+        if: steps.cfg.outputs.enabled == 'true'
+        run: pipx install strix-agent
+
+      - name: Run Strix (quick scan of the changed files, report only)
+        if: steps.cfg.outputs.enabled == 'true'
+        continue-on-error: true
+        env:
+          STRIX_LLM: ${{ secrets.STRIX_LLM }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+        run: strix -n -t ./ --scan-mode quick
+
+      - name: Upload findings
+        if: always() && steps.cfg.outputs.enabled == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: strix-findings
+          path: strix_runs/
+          retention-days: 14
+          if-no-files-found: ignore
