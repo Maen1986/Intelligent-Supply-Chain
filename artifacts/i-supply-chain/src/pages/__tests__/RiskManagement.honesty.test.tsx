@@ -63,6 +63,22 @@ describe('Risk Management page honesty fixes', () => {
     expect(ar).not.toMatch(/ISC/);
   });
 
+  it('Risk Register tab: phone card list mirrors the table rows (EN and AR)', () => {
+    mockAr = false;
+    render(<RiskManagement />);
+    fireEvent.click(screen.getByRole('button', { name: 'Sample Register' }));
+    const cards = screen.getByTestId('risk-register-cards');
+    expect(cards.querySelectorAll('li').length).toBe(document.querySelectorAll('tbody tr').length);
+    expect(cards.textContent).toMatch(/RSK-001/);
+    cleanup();
+    mockAr = true;
+    render(<RiskManagement />);
+    fireEvent.click(screen.getByRole('button', { name: 'سجلّ تجريبي' }));
+    const ar = screen.getByTestId('risk-register-cards').textContent || '';
+    expect(ar).toMatch(/[؀-ۿ]/);
+    expect(ar).not.toMatch(/ISC/);
+  });
+
   it('Toolkit tab: register is saved to the account only when signed in; indicators and alerts stay in this browser', () => {
     mockAr = false;
     render(<RiskManagement />);

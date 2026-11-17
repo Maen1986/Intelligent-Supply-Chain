@@ -339,7 +339,28 @@ export function RiskManagement() {
               </div>
             </Reveal>
             <Reveal>
-              <div className="bg-white border border-border rounded-2xl shadow-sm overflow-hidden">
+              <ul data-testid="risk-register-cards" className="md:hidden space-y-3">
+                {filteredRegister.map(r => (
+                  <li key={r.ref} className="bg-white border border-border rounded-2xl shadow-sm p-4 space-y-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-mono text-xs font-bold text-primary">{r.ref}</span>
+                      <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${statusColor(r.status)}`}>{isAr ? STATUS_AR[r.status] : (STATUS_EN[r.status] ?? r.status)}</span>
+                    </div>
+                    <p className="text-sm font-bold text-foreground">{isAr ? r.catAr : r.cat}</p>
+                    <p className="text-xs text-muted-foreground">{isAr ? r.descAr : r.desc}</p>
+                    <div className="flex items-center gap-2 text-xs">
+                      <span className="text-muted-foreground">{isAr ? 'احتمالية' : 'L'} {r.l} × {isAr ? 'أثر' : 'I'} {r.i}</span>
+                      <span className={`px-2 py-0.5 rounded-full font-extrabold ${cellColor(r.score)}`}>{r.score}</span>
+                    </div>
+                    <dl className="text-xs space-y-1">
+                      <div className="flex gap-2"><dt className="font-bold text-primary shrink-0">{isAr ? 'المالك' : 'Owner'}</dt><dd className="text-muted-foreground">{isAr ? r.ownerAr : r.owner}</dd></div>
+                      <div className="flex gap-2"><dt className="font-bold text-primary shrink-0">{isAr ? 'الضبط' : 'Control'}</dt><dd className="text-muted-foreground">{isAr ? r.controlAr : r.control}</dd></div>
+                      <div className="flex gap-2"><dt className="font-bold text-primary shrink-0">{isAr ? 'المتبقية' : 'Residual'}</dt><dd className="text-muted-foreground">{isAr ? r.residualAr : r.residual}</dd></div>
+                    </dl>
+                  </li>
+                ))}
+              </ul>
+              <div className="hidden md:block bg-white border border-border rounded-2xl shadow-sm overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead className="bg-muted">
