@@ -100,4 +100,30 @@ describe('Risk Management page honesty fixes', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Your Risk Toolkit' }));
     expect(screen.getByTestId('toolkit-stub').getAttribute('data-start')).toBe('kri');
   });
+
+  it('Overview: all eight ISO 31000:2018 principles are listed, not five (EN and AR)', () => {
+    mockAr = false;
+    render(<RiskManagement />);
+    const en = screen.getByTestId('iso-principles');
+    expect(en.querySelectorAll('li').length).toBe(8);
+    expect(en.textContent).toMatch(/Continual improvement/);
+    cleanup();
+    mockAr = true;
+    render(<RiskManagement />);
+    const ar = screen.getByTestId('iso-principles');
+    expect(ar.querySelectorAll('li').length).toBe(8);
+    expect(ar.textContent).toMatch(/التحسين المستمر/);
+  });
+
+  it('Heat Map legend uses the band names Low, Watch, Act, Urgent (EN and AR)', () => {
+    mockAr = false;
+    render(<RiskManagement />);
+    fireEvent.click(screen.getByRole('button', { name: 'Heat Map' }));
+    for (const w of ['Low (1', 'Watch (5', 'Act (10', 'Urgent (15']) expect(document.body.textContent).toContain(w);
+    cleanup();
+    mockAr = true;
+    render(<RiskManagement />);
+    fireEvent.click(screen.getByRole('button', { name: 'خريطة الحرارة' }));
+    for (const w of ['منخفض (1', 'مراقبة (5', 'تحرّك (10', 'عاجل (15']) expect(document.body.textContent).toContain(w);
+  });
 });
