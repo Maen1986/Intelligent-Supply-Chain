@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion  } from 'framer-motion';
-import { Link } from 'wouter';
+import { Link, useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
 import {
   Shield, AlertTriangle, BarChart3, ClipboardList, FileText,
@@ -13,6 +13,13 @@ import { useLanguage } from '@/lib/LanguageContext';
 import { KPIDashboard } from '@/components/KPIDashboard';
 import { RiskToolsSection } from '@/components/toolkit/RiskTools';
 import { riskBand } from '@/lib/riskBands';
+import { HEAT_MAP_RISKS, bandView } from '@/lib/riskPageData';
+import { RiskPictureExplorer } from '@/components/risk/RiskPictureExplorer';
+import { WorldwideExamples } from '@/components/risk/WorldwideExamples';
+import { GovernanceSelfCheck } from '@/components/risk/GovernanceSelfCheck';
+import { RiskKpiBoard } from '@/components/risk/RiskKpiBoard';
+import { IsoStageBar } from '@/components/risk/IsoStageBar';
+import { HeatMapCellPanel } from '@/components/risk/HeatMapCellPanel';
 
 function Reveal({ children, delay = 0, className = '' }: { children: React.ReactNode; delay?: number; className?: string }) {
   return (
@@ -25,7 +32,7 @@ function Reveal({ children, delay = 0, className = '' }: { children: React.React
 const TABS = ['Overview', 'Risk Types', 'Heat Map', 'Sample Register', 'Your Risk Toolkit', 'Governance', 'KPI Dashboard'];
 const TABS_AR = ['نظرة عامة', 'أنواع المخاطر', 'خريطة الحرارة', 'سجلّ تجريبي', 'أدواتك التفاعلية', 'الحوكمة', 'لوحة المؤشرات'];
 
-const RISK_TYPES = [
+export const RISK_TYPES = [
   { icon: Globe, color: 'bg-red-50 text-red-600 border-red-200', badge: 'bg-red-100 text-red-700', name: 'Strategic Risk', nameAr: 'المخاطر الاستراتيجية', examples: ['Aramco localisation (Iktva) requirements tightening', 'Trade sanctions impacting import corridors', 'Competitor supply chain advantage'], examplesAr: ['تشديد متطلبات التوطين (Iktva) لدى أرامكو', 'عقوبات تجارية تؤثّر في ممرّات الاستيراد', 'تفوّق سلسلة إمداد المنافس'], signals: ['Regulatory announcements', 'Competitor supplier shifts', 'Customer requirement changes'], signalsAr: ['الإعلانات التنظيمية', 'تحوّلات مورّدي المنافسين', 'تغيّرات متطلبات العملاء'], response: 'Scenario planning, strategy review, supply chain redesign', responseAr: 'تخطيط السيناريوهات، ومراجعة الاستراتيجية، وإعادة تصميم سلسلة الإمداد' },
   { icon: AlertTriangle, color: 'bg-orange-50 text-orange-600 border-orange-200', badge: 'bg-orange-100 text-orange-700', name: 'Operational Risk', nameAr: 'المخاطر التشغيلية', examples: ['ERP migration failure causing data loss', 'Warehouse fire or flooding', 'Key equipment breakdown'], examplesAr: ['فشل ترحيل نظام ERP يؤدي إلى فقدان البيانات', 'حريق أو فيضان في المستودع', 'تعطّل معدّات رئيسية'], signals: ['System performance degradation', 'Maintenance backlog increase', 'Quality escape incidents'], signalsAr: ['تدهور أداء النظام', 'تزايد متأخرات الصيانة', 'حوادث تسرّب عيوب الجودة'], response: 'BCP, preventive maintenance, redundant systems, FMEA', responseAr: 'خطة استمرارية الأعمال، والصيانة الوقائية، والأنظمة الاحتياطية، وتحليل FMEA' },
   { icon: DollarSign, color: 'bg-yellow-50 text-yellow-700 border-yellow-200', badge: 'bg-yellow-100 text-yellow-800', name: 'Financial Risk', nameAr: 'المخاطر المالية', examples: ['USD-denominated contracts with SAR fluctuation impact', 'Oil price spike on logistics costs', 'Tier-1 supplier insolvency'], examplesAr: ['عقود مقوّمة بالدولار متأثّرة بتقلّب الريال', 'ارتفاع أسعار النفط على تكاليف الخدمات اللوجستية', 'إعسار مورّد من المستوى الأول'], signals: ['Supplier payment delays', 'Commodity price index movement', 'Credit rating change'], signalsAr: ['تأخّر مدفوعات المورّدين', 'حركة مؤشر أسعار السلع', 'تغيّر التصنيف الائتماني'], response: 'Hedging, financial monitoring, dual-source, contractual protections', responseAr: 'التحوّط، والمراقبة المالية، والتوريد الثنائي، والحمايات التعاقدية' },
@@ -36,21 +43,7 @@ const RISK_TYPES = [
   { icon: Lock, color: 'bg-gray-50 text-gray-600 border-gray-200', badge: 'bg-gray-100 text-gray-700', name: 'Cyber & Digital Risk', nameAr: 'المخاطر السيبرانية والرقمية', examples: ['SAP system ransomware attack', 'Supplier portal data breach', 'Inventory data theft via ERP vulnerability'], examplesAr: ['هجوم فدية على نظام SAP', 'اختراق بيانات بوابة المورّدين', 'سرقة بيانات المخزون عبر ثغرة في ERP'], signals: ['Security scan alerts', 'Supplier system change notifications', 'Anomalous access patterns'], signalsAr: ['تنبيهات الفحص الأمني', 'إشعارات تغيير أنظمة المورّدين', 'أنماط وصول غير اعتيادية'], response: 'Cyber policy, ERP access controls, supplier cybersecurity assessment, incident response plan', responseAr: 'السياسة السيبرانية، وضوابط الوصول لنظام ERP، وتقييم الأمن السيبراني للمورّدين، وخطة الاستجابة للحوادث' },
 ];
 
-// 5x5 heat map grid — risk items positioned by [likelihood (1-5), impact (1-5)]
-const HEAT_MAP_RISKS = [
-  { id: 'R1', name: 'Supplier insolvency (Tier-1)', nameAr: 'إعسار مورّد (المستوى الأول)', l: 3, i: 5 },
-  { id: 'R2', name: 'FX/Commodity price spike', nameAr: 'قفزة أسعار العملات/السلع', l: 4, i: 3 },
-  { id: 'R3', name: 'Red Sea logistics disruption', nameAr: 'اضطراب لوجستي في البحر الأحمر', l: 3, i: 4 },
-  { id: 'R4', name: 'Regulatory change (SFDA/NCAR)', nameAr: 'تغيّر تنظيمي (SFDA/NCAR)', l: 3, i: 3 },
-  { id: 'R5', name: 'ERP system failure', nameAr: 'فشل نظام ERP', l: 2, i: 4 },
-  { id: 'R6', name: 'Single-source supplier', nameAr: 'مورّد أحادي المصدر', l: 3, i: 5 },
-  { id: 'R7', name: 'Demand forecast error >25%', nameAr: 'خطأ توقّع الطلب أكثر من 25%', l: 4, i: 2 },
-  { id: 'R8', name: 'Quality recall', nameAr: 'سحب بسبب الجودة', l: 2, i: 5 },
-  { id: 'R9', name: 'Cyber attack on procurement', nameAr: 'هجوم سيبراني على المشتريات', l: 2, i: 4 },
-  { id: 'R10', name: 'ESG compliance failure', nameAr: 'فشل الامتثال لـ ESG', l: 3, i: 3 },
-  { id: 'R11', name: 'Key talent departure', nameAr: 'مغادرة كفاءة رئيسية', l: 3, i: 2 },
-  { id: 'R12', name: 'Port/natural disaster', nameAr: 'كارثة طبيعية/بالميناء', l: 2, i: 3 },
-];
+// 5x5 heat map grid: the 12 sample risks live in lib/riskPageData.ts (shared with the Overview explorer)
 
 function cellColor(score: number) {
   const b = riskBand(score);
@@ -61,14 +54,14 @@ function cellColor(score: number) {
 }
 
 const REGISTER = [
-  { ref: 'RSK-001', cat: 'Supplier Concentration', catAr: 'تركّز المورّدين', desc: '70%+ spend with single vendor; no qualified alternate', descAr: 'أكثر من 70% من الإنفاق مع مورّد واحد؛ لا بديل مؤهّل', l: 4, i: 5, score: 20, owner: 'CPO', ownerAr: 'رئيس المشتريات', control: 'Dual-source qualification programme; vendor spend cap policy', controlAr: 'برنامج تأهيل توريد ثنائي؛ سياسة سقف إنفاق للمورّد', residual: 'MEDIUM (8)', residualAr: 'متوسط (8)', status: 'CRITICAL' },
-  { ref: 'RSK-002', cat: 'Geopolitical', catAr: 'جيوسياسي', desc: 'Red Sea shipping disruption — extended re-routing adds 18+ days', descAr: 'اضطراب شحن البحر الأحمر — إعادة التوجيه تضيف أكثر من 18 يوماً', l: 3, i: 4, score: 12, owner: 'Logistics Mgr', ownerAr: 'مدير الخدمات اللوجستية', control: 'Alternative routing pre-approved; inventory buffer +30 days for sea-dependent items', controlAr: 'مسارات بديلة معتمدة مسبقاً؛ مخزون احتياطي +30 يوماً للأصناف المعتمدة على البحر', residual: 'MEDIUM (6)', residualAr: 'متوسط (6)', status: 'HIGH' },
+  { ref: 'RSK-001', cat: 'Supplier Concentration', catAr: 'تركّز المورّدين', desc: '70%+ spend with single vendor; no qualified alternate', descAr: 'أكثر من 70% من الإنفاق مع مورّد واحد؛ لا بديل مؤهّل', l: 4, i: 5, score: 20, owner: 'CPO', ownerAr: 'رئيس المشتريات', control: 'Dual-source qualification programme; vendor spend cap policy', controlAr: 'برنامج تأهيل توريد ثنائي؛ سياسة سقف إنفاق للمورّد', residual: 'WATCH (8)', residualAr: 'مراقبة (8)', status: 'CRITICAL' },
+  { ref: 'RSK-002', cat: 'Geopolitical', catAr: 'جيوسياسي', desc: 'Red Sea shipping disruption — extended re-routing adds 18+ days', descAr: 'اضطراب شحن البحر الأحمر — إعادة التوجيه تضيف أكثر من 18 يوماً', l: 3, i: 4, score: 12, owner: 'Logistics Mgr', ownerAr: 'مدير الخدمات اللوجستية', control: 'Alternative routing pre-approved; inventory buffer +30 days for sea-dependent items', controlAr: 'مسارات بديلة معتمدة مسبقاً؛ مخزون احتياطي +30 يوماً للأصناف المعتمدة على البحر', residual: 'WATCH (6)', residualAr: 'مراقبة (6)', status: 'HIGH' },
   { ref: 'RSK-003', cat: 'Compliance', catAr: 'الامتثال', desc: 'SFDA / Vision 2030 regulatory change impacting product classification', descAr: 'تغيّر تنظيمي من SFDA / رؤية 2030 يؤثّر في تصنيف المنتج', l: 3, i: 3, score: 9, owner: 'Compliance', ownerAr: 'الامتثال', control: 'Regulatory monitoring subscription; 90-day impact assessment protocol', controlAr: 'اشتراك مراقبة تنظيمية؛ بروتوكول تقييم أثر خلال 90 يوماً', residual: 'LOW (4)', residualAr: 'منخفض (4)', status: 'MEDIUM' },
-  { ref: 'RSK-004', cat: 'Financial', catAr: 'مالي', desc: 'FX exposure — USD-denominated contracts vs SAR operational budget', descAr: 'انكشاف صرف العملات — عقود بالدولار مقابل موازنة تشغيلية بالريال', l: 4, i: 3, score: 12, owner: 'CFO', ownerAr: 'المدير المالي', control: 'FX hedging on >SAR 500K contracts; contractual USD/SAR floor provision', controlAr: 'تحوّط للعملات على العقود التي تتجاوز 500 ألف ريال؛ بند حدّ أدنى تعاقدي للدولار/الريال', residual: 'MEDIUM (6)', residualAr: 'متوسط (6)', status: 'HIGH' },
-  { ref: 'RSK-005', cat: 'Operational', catAr: 'تشغيلي', desc: 'ERP migration — data loss or integration failure during cutover', descAr: 'ترحيل ERP — فقدان بيانات أو فشل تكامل أثناء التحوّل', l: 2, i: 5, score: 10, owner: 'IT Director', ownerAr: 'مدير تقنية المعلومات', control: 'Parallel run 4 weeks pre-cutover; full data backup; rollback plan', controlAr: 'تشغيل متوازٍ لأربعة أسابيع قبل التحوّل؛ نسخ احتياطي كامل؛ خطة تراجع', residual: 'MEDIUM (6)', residualAr: 'متوسط (6)', status: 'HIGH' },
-  { ref: 'RSK-006', cat: 'Supply Concentration', catAr: 'تركّز التوريد', desc: 'Sole-source critical component — no alternate qualified or stocked', descAr: 'مكوّن حرج أحادي المصدر — لا بديل مؤهّل أو مخزّن', l: 4, i: 5, score: 20, owner: 'Category Mgr', ownerAr: 'مدير الفئة', control: 'Emergency qualification of 2nd source; 90-day safety stock for critical items', controlAr: 'تأهيل طارئ لمصدر ثانٍ؛ مخزون أمان 90 يوماً للأصناف الحرجة', residual: 'HIGH (12)', residualAr: 'مرتفع (12)', status: 'CRITICAL' },
+  { ref: 'RSK-004', cat: 'Financial', catAr: 'مالي', desc: 'FX exposure — USD-denominated contracts vs SAR operational budget', descAr: 'انكشاف صرف العملات — عقود بالدولار مقابل موازنة تشغيلية بالريال', l: 4, i: 3, score: 12, owner: 'CFO', ownerAr: 'المدير المالي', control: 'FX hedging on >SAR 500K contracts; contractual USD/SAR floor provision', controlAr: 'تحوّط للعملات على العقود التي تتجاوز 500 ألف ريال؛ بند حدّ أدنى تعاقدي للدولار/الريال', residual: 'WATCH (6)', residualAr: 'مراقبة (6)', status: 'HIGH' },
+  { ref: 'RSK-005', cat: 'Operational', catAr: 'تشغيلي', desc: 'ERP migration — data loss or integration failure during cutover', descAr: 'ترحيل ERP — فقدان بيانات أو فشل تكامل أثناء التحوّل', l: 2, i: 5, score: 10, owner: 'IT Director', ownerAr: 'مدير تقنية المعلومات', control: 'Parallel run 4 weeks pre-cutover; full data backup; rollback plan', controlAr: 'تشغيل متوازٍ لأربعة أسابيع قبل التحوّل؛ نسخ احتياطي كامل؛ خطة تراجع', residual: 'WATCH (6)', residualAr: 'مراقبة (6)', status: 'HIGH' },
+  { ref: 'RSK-006', cat: 'Supply Concentration', catAr: 'تركّز التوريد', desc: 'Sole-source critical component — no alternate qualified or stocked', descAr: 'مكوّن حرج أحادي المصدر — لا بديل مؤهّل أو مخزّن', l: 4, i: 5, score: 20, owner: 'Category Mgr', ownerAr: 'مدير الفئة', control: 'Emergency qualification of 2nd source; 90-day safety stock for critical items', controlAr: 'تأهيل طارئ لمصدر ثانٍ؛ مخزون أمان 90 يوماً للأصناف الحرجة', residual: 'ACT (12)', residualAr: 'تحرّك (12)', status: 'CRITICAL' },
   { ref: 'RSK-007', cat: 'Demand', catAr: 'الطلب', desc: 'Forecast accuracy <75% — overstock and stockout co-exist', descAr: 'دقّة التوقّع أقل من 75% — تكدّس ونفاد مخزون معاً', l: 4, i: 3, score: 12, owner: 'Demand Planner', ownerAr: 'مخطّط الطلب', control: 'Demand sensing implementation; DDMRP buffer methodology; weekly demand review', controlAr: 'تطبيق استشعار الطلب؛ منهجية مخزون DDMRP؛ مراجعة طلب أسبوعية', residual: 'LOW (4)', residualAr: 'منخفض (4)', status: 'HIGH' },
-  { ref: 'RSK-008', cat: 'ESG / Reputational', catAr: 'ESG / السمعة', desc: 'Supplier linked to labour violation or environmental breach', descAr: 'مورّد مرتبط بمخالفة عمالية أو انتهاك بيئي', l: 3, i: 4, score: 12, owner: 'CPO', ownerAr: 'رئيس المشتريات', control: 'Annual ESG supplier audit; Supplier Code of Conduct with termination clause', controlAr: 'تدقيق ESG سنوي للمورّدين؛ مدوّنة سلوك للمورّد مع بند إنهاء', residual: 'MEDIUM (6)', residualAr: 'متوسط (6)', status: 'HIGH' },
+  { ref: 'RSK-008', cat: 'ESG / Reputational', catAr: 'ESG / السمعة', desc: 'Supplier linked to labour violation or environmental breach', descAr: 'مورّد مرتبط بمخالفة عمالية أو انتهاك بيئي', l: 3, i: 4, score: 12, owner: 'CPO', ownerAr: 'رئيس المشتريات', control: 'Annual ESG supplier audit; Supplier Code of Conduct with termination clause', controlAr: 'تدقيق ESG سنوي للمورّدين؛ مدوّنة سلوك للمورّد مع بند إنهاء', residual: 'WATCH (6)', residualAr: 'مراقبة (6)', status: 'HIGH' },
   { ref: 'RSK-009', cat: 'Operational', catAr: 'تشغيلي', desc: 'Warehouse or port infrastructure failure — earthquake, fire, flood', descAr: 'فشل بنية المستودع أو الميناء — زلزال، حريق، فيضان', l: 2, i: 4, score: 8, owner: 'Operations Mgr', ownerAr: 'مدير العمليات', control: 'BCP with alternate storage; facility insurance; emergency supplier restocking protocol', controlAr: 'خطة استمرارية مع تخزين بديل؛ تأمين المنشأة؛ بروتوكول إعادة تموين طارئ من المورّدين', residual: 'LOW (4)', residualAr: 'منخفض (4)', status: 'MEDIUM' },
   { ref: 'RSK-010', cat: 'People', catAr: 'الموارد البشرية', desc: 'Key procurement talent departure — critical category knowledge lost', descAr: 'مغادرة كفاءة مشتريات رئيسية — فقدان معرفة فئة حرجة', l: 3, i: 3, score: 9, owner: 'CHRO', ownerAr: 'رئيس الموارد البشرية', control: 'Knowledge management programme; succession plans for all critical roles; retention strategy', controlAr: 'برنامج إدارة المعرفة؛ خطط إحلال لجميع الأدوار الحرجة؛ استراتيجية استبقاء', residual: 'LOW (3)', residualAr: 'منخفض (3)', status: 'MEDIUM' },
 ];
@@ -90,6 +83,8 @@ export function RiskManagement() {
   const [toolkitStart, setToolkitStart] = useState<'kri' | 'register'>('kri');
   const [openRiskType, setOpenRiskType] = useState<number | null>(0);
   const [hoveredCell, setHoveredCell] = useState<string | null>(null);
+  const [selectedCell, setSelectedCell] = useState<string | null>(null);
+  const [, navigate] = useLocation();
   const [registerFilter, setRegisterFilter] = useState<'ALL' | 'CRITICAL' | 'HIGH' | 'MEDIUM'>('ALL');
 
   const filteredRegister = registerFilter === 'ALL' ? REGISTER : REGISTER.filter(r => r.status === registerFilter);
@@ -127,9 +122,11 @@ export function RiskManagement() {
 
       <div className="container mx-auto px-4 py-10 max-w-6xl space-y-8">
 
+        <IsoStageBar isAr={isAr} tab={activeTab} />
         {/* TAB 0 — OVERVIEW */}
         {activeTab === 0 && (
           <div className="space-y-8">
+            <RiskPictureExplorer isAr={isAr} categories={RISK_TYPES.map(r => ({ response: r.response, responseAr: r.responseAr }))} onOpenToolkit={() => setActiveTab(4)} />
             <Reveal className="grid md:grid-cols-2 gap-8 items-start">
               <div>
                 <h2 className="text-2xl font-bold text-primary mb-3">{isAr ? 'فلسفة آي سبلاي تشين في إدارة المخاطر' : 'ISC Risk Management Philosophy'}</h2>
@@ -210,6 +207,7 @@ export function RiskManagement() {
                             <p className="text-xs text-muted-foreground">{isAr ? rt.responseAr : rt.response}</p>
                           </div>
                         </div>
+                        <WorldwideExamples index={i} isAr={isAr} onOpenRegister={() => { setToolkitStart('register'); setActiveTab(4); }} onOpenHeatMap={() => setActiveTab(2)} />
                       </motion.div>
                     )}
                   </div>
@@ -224,7 +222,7 @@ export function RiskManagement() {
           <div className="space-y-6">
             <Reveal>
               <h2 className="text-2xl font-bold text-primary">{isAr ? 'خريطة حرارة المخاطر' : 'Risk Heat Map'}</h2>
-              <p className="text-muted-foreground mt-1">{isAr ? 'مصفوفة 5×5 ترسم الاحتمالية مقابل الأثر. مرّر المؤشّر فوق أي خلية لرؤية المخاطر الموضوعة فيها.' : '5×5 matrix plotting likelihood against impact. Hover any cell to see the risks positioned there.'}</p>
+              <p className="text-muted-foreground mt-1">{isAr ? 'مصفوفة 5×5 ترسم الاحتمالية مقابل الأثر. اضغط أي خلية لعرض المخاطر الموضوعة فيها.' : '5×5 matrix plotting likelihood against impact. Tap or click any cell to list the risks in it.'}</p>
             </Reveal>
             <Reveal>
               <div className="flex items-start gap-3 bg-primary/5 border border-primary/20 rounded-2xl px-5 py-4">
@@ -260,16 +258,14 @@ export function RiskManagement() {
                           const risksHere = HEAT_MAP_RISKS.filter(r => r.l === likelihood && r.i === impact);
                           const cellId = `${likelihood}-${impact}`;
                           return (
-                            <div key={impact} className={`flex-1 h-16 rounded-lg flex flex-col items-center justify-center cursor-pointer transition-all relative ${cellColor(score)} ${hoveredCell === cellId ? 'ring-2 ring-white scale-105 z-10' : ''}`}
+                            <button key={impact} type="button" aria-pressed={selectedCell === cellId}
+                              aria-label={`${isAr ? 'احتمال' : 'Likelihood'} ${likelihood}, ${isAr ? 'أثر' : 'impact'} ${impact}, ${isAr ? 'الدرجة' : 'score'} ${score}, ${isAr ? bandView(score).ar : bandView(score).en}`}
+                              className={`flex-1 h-16 rounded-lg flex flex-col items-center justify-center cursor-pointer transition-all relative focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary ${cellColor(score)} ${(hoveredCell === cellId || selectedCell === cellId) ? 'ring-2 ring-primary scale-105 z-10' : ''}`}
+                              onClick={() => setSelectedCell(selectedCell === cellId ? null : cellId)}
                               onMouseEnter={() => setHoveredCell(cellId)} onMouseLeave={() => setHoveredCell(null)}>
                               <span className="text-xs font-extrabold">{score}</span>
                               {risksHere.length > 0 && <div className="flex gap-0.5 mt-0.5">{risksHere.map(r => <span key={r.id} className="w-1.5 h-1.5 rounded-full bg-white/70" />)}</div>}
-                              {hoveredCell === cellId && risksHere.length > 0 && (
-                                <div className="absolute bottom-full mb-1 left-0 bg-white border border-border rounded-xl p-2 shadow-lg z-20 w-48">
-                                  {risksHere.map(r => <p key={r.id} className="text-xs text-foreground font-medium">{r.id}: {isAr ? r.nameAr : r.name}</p>)}
-                                </div>
-                              )}
-                            </div>
+                            </button>
                           );
                         })}
                       </div>
@@ -284,6 +280,7 @@ export function RiskManagement() {
                 </div>
               </div>
             </Reveal>
+            <Reveal><HeatMapCellPanel cell={selectedCell} risks={HEAT_MAP_RISKS} isAr={isAr} onClear={() => setSelectedCell(null)} /></Reveal>
             <Reveal>
               <div className="bg-muted rounded-2xl p-5">
                 <p className="text-xs font-bold text-primary uppercase tracking-widest mb-3">{isAr ? 'معادلة درجة المخاطرة' : 'Risk Score Formula'}</p>
@@ -374,7 +371,7 @@ export function RiskManagement() {
             </Reveal>
             <Reveal className="bg-muted rounded-2xl p-5">
               <p className="text-xs font-bold text-primary mb-2">{isAr ? 'حوكمة السجلّ' : 'Register Governance'}</p>
-              <p className="text-sm text-muted-foreground">{isAr ? 'يجب مراجعة سجلّات المخاطر ربع سنوياً من قِبل لجنة إدارة المخاطر، مع مراجعة المخاطر الحرجة شهرياً. ويجب أن يكون لكل خطر مالك مسمّى يرفع تقرير الحالة في المراجعة الإدارية. وتوفّر آي سبلاي تشين قالب السجلّ وعملية الحوكمة وتيسير المراجعة الأولى كجزء من كل ارتباط لإدارة المخاطر.' : 'Risk registers must be reviewed quarterly by the Risk Management Committee, with Critical risks reviewed monthly. Each risk must have a named owner who reports status at the management review. ISC provides the register template, governance process, and facilitated first review as part of every risk engagement.'}</p>
+              <p className="text-sm text-muted-foreground">{isAr ? 'يجب مراجعة سجلّات المخاطر ربع سنوياً من قِبل لجنة إدارة المخاطر، مع مراجعة المخاطر العاجلة شهرياً. ويجب أن يكون لكل خطر مالك مسمّى يرفع تقرير الحالة في المراجعة الإدارية. وتوفّر آي سبلاي تشين قالب السجلّ وعملية الحوكمة وتيسير المراجعة الأولى كجزء من كل ارتباط لإدارة المخاطر.' : 'Risk registers must be reviewed quarterly by the Risk Management Committee, with Urgent risks reviewed monthly. Each risk must have a named owner who reports status at the management review. ISC provides the register template, governance process, and facilitated first review as part of every risk engagement.'}</p>
             </Reveal>
           </div>
         )}
@@ -448,7 +445,7 @@ export function RiskManagement() {
             </Reveal>
             <div className="space-y-4">
               {[{ tier: 'Board Level', tierAr: 'مستوى المجلس', color: 'border-l-red-600 bg-red-50', items: ['Risk appetite statement — approved annually by full board', 'Quarterly risk review: top 5 risks, strategic risk profile', 'ESG and reputational risk oversight', 'Business continuity assurance'], itemsAr: ['بيان قابلية تحمّل المخاطر — يعتمده المجلس بالكامل سنوياً', 'مراجعة مخاطر ربع سنوية: أهم 5 مخاطر وملف المخاطر الاستراتيجي', 'الإشراف على مخاطر ESG والسمعة', 'ضمان استمرارية الأعمال'] },
-                { tier: 'Executive / Management Level', tierAr: 'المستوى التنفيذي / الإداري', color: 'border-l-orange-500 bg-orange-50', items: ['Risk Management Committee — meets monthly', 'Procurement risk dashboard review (KRI-based)', 'Escalation decision for Critical risks', 'Risk programme budget approval', 'Supplier risk review: strategic suppliers quarterly'], itemsAr: ['لجنة إدارة المخاطر — تجتمع شهرياً', 'مراجعة لوحة مخاطر المشتريات (المبنية على مؤشرات المخاطر الرئيسية)', 'قرار التصعيد للمخاطر الحرجة', 'اعتماد موازنة برنامج المخاطر', 'مراجعة مخاطر المورّدين: المورّدون الاستراتيجيون ربع سنوياً'] },
+                { tier: 'Executive / Management Level', tierAr: 'المستوى التنفيذي / الإداري', color: 'border-l-orange-500 bg-orange-50', items: ['Risk Management Committee — meets monthly', 'Procurement risk dashboard review (KRI-based)', 'Escalation decision for Urgent risks', 'Risk programme budget approval', 'Supplier risk review: strategic suppliers quarterly'], itemsAr: ['لجنة إدارة المخاطر — تجتمع شهرياً', 'مراجعة لوحة مخاطر المشتريات (المبنية على مؤشرات المخاطر الرئيسية)', 'قرار التصعيد للمخاطر العاجلة', 'اعتماد موازنة برنامج المخاطر', 'مراجعة مخاطر المورّدين: المورّدون الاستراتيجيون ربع سنوياً'] },
                 { tier: 'Operational Level', tierAr: 'المستوى التشغيلي', color: 'border-l-yellow-500 bg-yellow-50', items: ['Risk owner accountability for assigned register items', 'Weekly risk monitoring against KRI thresholds', 'Incident reporting (within 24h of identification)', 'Monthly mitigation plan progress update', 'Supplier risk score updates (monthly for Tier-1)'], itemsAr: ['مساءلة مالك المخاطرة عن بنود السجلّ المسندة إليه', 'مراقبة مخاطر أسبوعية مقابل حدود مؤشرات المخاطر الرئيسية', 'الإبلاغ عن الحوادث (خلال 24 ساعة من التحديد)', 'تحديث شهري لتقدّم خطة التخفيف', 'تحديث درجات مخاطر المورّدين (شهرياً للمستوى الأول)'] },
               ].map((tier, i) => (
                 <Reveal key={tier.tier} delay={i * 0.06}>
@@ -459,6 +456,7 @@ export function RiskManagement() {
                 </Reveal>
               ))}
             </div>
+            <GovernanceSelfCheck isAr={isAr} onRequestAssessment={() => navigate('/consultant')} />
             <Reveal className="bg-[#082C6B] rounded-2xl p-6 text-white">
               <h3 className="font-bold text-[#C9A84C] mb-3">{isAr ? 'التكامل مع سياسة المشتريات' : 'Integration with Procurement Policy'}</h3>
               <div className="grid sm:grid-cols-2 gap-4 mb-4">
@@ -477,7 +475,10 @@ export function RiskManagement() {
 
         {/* TAB 6 — KPI Dashboard */}
         {activeTab === 6 && (
-          <KPIDashboard slug="risk-management" />
+          <div className="space-y-10">
+            <RiskKpiBoard isAr={isAr} onOpenTab={setActiveTab} />
+            <KPIDashboard slug="risk-management" />
+          </div>
         )}
       </div>
     </div>
