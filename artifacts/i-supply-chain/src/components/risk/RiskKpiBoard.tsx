@@ -58,7 +58,7 @@ export function RiskKpiBoard({ isAr, onOpenTab }: Props) {
           );
         })}
       </div>
-      <p className="text-xs text-muted-foreground bg-muted rounded-xl px-4 py-3">{isAr ? 'ست أبعاد تُعرض منفصلة: لا تدمجها ISC في درجة واحدة. الحالة: بلوغ الهدف = سليم؛ ضمن 10 نقاط = مراقبة؛ أبعد من ذلك = يحتاج انتباها عاليا (قاعدة استرشادية من ISC). بنود الاستمرارية متوافقة مع ISO 22301 وليست معتمدة.' : 'Six dimensions, shown separately: ISC does not collapse them into one score. Status: meets target is Healthy; within 10 points is Watch; further below is High attention (ISC indicative rule). Continuity items are aligned to ISO 22301, not certified.'}</p>
+      <p className="text-xs text-muted-foreground bg-muted rounded-xl px-4 py-3">{isAr ? 'ست أبعاد تُعرض منفصلة: لا تدمجها آي سبلاي تشين في درجة واحدة. الحالة: بلوغ الهدف = سليم؛ ضمن 10 نقاط = مراقبة؛ أبعد من ذلك = يحتاج انتباها عاليا (قاعدة استرشادية من آي سبلاي تشين). بنود الاستمرارية متوافقة مع ISO 22301 وليست معتمدة.' : 'Six dimensions, shown separately: ISC does not collapse them into one score. Status: meets target is Healthy; within 10 points is Watch; further below is High attention (ISC indicative rule). Continuity items are aligned to ISO 22301, not certified.'}</p>
     </section>
   );
 }

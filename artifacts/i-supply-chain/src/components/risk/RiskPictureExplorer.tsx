@@ -26,7 +26,7 @@ export function RiskPictureExplorer({ isAr, categories, onOpenToolkit }: Props) 
     <section aria-labelledby="rp-title" data-testid="risk-picture" className="space-y-5">
       <div>
         <h2 id="rp-title" className="text-2xl font-bold text-primary">{tr(isAr, 'See your risk picture in 10 seconds', 'شاهد صورة مخاطرك في 10 ثوانٍ')}</h2>
-        <p className="text-muted-foreground mt-1">{tr(isAr, 'Pick your sector. ISC shows the five sample risks most likely to matter, on the same 5×5 grid the toolkit uses.', 'اختر قطاعك. تعرض ISC خمسة مخاطر نموذجية الأرجح أهميتها، على الشبكة 5×5 نفسها التي تستخدمها الأدوات.')}</p>
+        <p className="text-muted-foreground mt-1">{tr(isAr, 'Pick your sector. ISC shows the five sample risks most likely to matter, on the same 5×5 grid the toolkit uses.', 'اختر قطاعك. تعرض آي سبلاي تشين خمسة مخاطر نموذجية الأرجح أهميتها، على الشبكة 5×5 نفسها التي تستخدمها الأدوات.')}</p>
       </div>
       <div className="flex flex-wrap gap-2" role="group" aria-label={tr(isAr, 'Sector', 'القطاع')}>
         {SECTORS.map(s => (
@@ -88,7 +88,7 @@ export function RiskPictureExplorer({ isAr, categories, onOpenToolkit }: Props) 
         {first && firstCat && (
           <p className="mt-2 text-sm"><b>{tr(isAr, 'Start with: ', 'ابدأ بـ: ')}</b>{isAr ? first.nameAr : first.name} — {isAr ? firstCat.responseAr : firstCat.response}</p>
         )}
-        <p className="text-xs text-muted-foreground mt-2">{tr(isAr, 'Indicative picks from ISC practitioner judgement over sample risks, not your data. Evidence: not checked. Build the real one in the toolkit.', 'اختيارات استرشادية من تقدير ممارسي ISC على مخاطر نموذجية، لا من بياناتك. الدليل: لم يُفحص. ابنِ الصفحة الحقيقية في الأدوات.')}</p>
+        <p className="text-xs text-muted-foreground mt-2">{tr(isAr, 'Indicative picks from ISC practitioner judgement over sample risks, not your data. Evidence: not checked. Build the real one in the toolkit.', 'اختيارات استرشادية من تقدير ممارسي آي سبلاي تشين على مخاطر نموذجية، لا من بياناتك. الدليل: لم يُفحص. ابنِ الصفحة الحقيقية في الأدوات.')}</p>
         <button type="button" onClick={onOpenToolkit} className="mt-3 min-h-[44px] px-5 rounded-lg bg-primary text-white font-semibold hover:bg-primary/90">{tr(isAr, 'Build mine in the toolkit', 'ابنِ صفحتي في الأدوات')}</button>
       </div>
     </section>
