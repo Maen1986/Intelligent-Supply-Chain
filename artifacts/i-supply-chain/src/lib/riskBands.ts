@@ -1,7 +1,8 @@
 /**
  * One risk band set for the whole platform (#863).
  * Score = likelihood (1-5) x impact (1-5) = 1-25.
- * ISC default / board appetite: Critical >= 15, High 10-14, Medium 5-9, Low 1-4.
+ * ISC default / board appetite: Urgent >= 15, Act 10-14, Watch 5-9, Low 1-4 (internal keys stay critical/high/medium/low;
+ * display words changed 17 Nov 2026 so a band is not confused with a severity word).
  * A client's own RM-01 criteria override these in the engine; this file is the
  * default shared by the Heat Map tab and the toolkit. Change numbers here only.
  */

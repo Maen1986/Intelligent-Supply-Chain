@@ -73,7 +73,8 @@ const REGISTER = [
   { ref: 'RSK-010', cat: 'People', catAr: 'الموارد البشرية', desc: 'Key procurement talent departure — critical category knowledge lost', descAr: 'مغادرة كفاءة مشتريات رئيسية — فقدان معرفة فئة حرجة', l: 3, i: 3, score: 9, owner: 'CHRO', ownerAr: 'رئيس الموارد البشرية', control: 'Knowledge management programme; succession plans for all critical roles; retention strategy', controlAr: 'برنامج إدارة المعرفة؛ خطط إحلال لجميع الأدوار الحرجة؛ استراتيجية استبقاء', residual: 'LOW (3)', residualAr: 'منخفض (3)', status: 'MEDIUM' },
 ];
 
-const STATUS_AR: Record<string, string> = { ALL: 'الكل', CRITICAL: 'حرج', HIGH: 'مرتفع', MEDIUM: 'متوسط', LOW: 'منخفض' };
+const STATUS_AR: Record<string, string> = { ALL: 'الكل', CRITICAL: 'عاجل', HIGH: 'تحرّك', MEDIUM: 'مراقبة', LOW: 'منخفض' };
+const STATUS_EN: Record<string, string> = { ALL: 'ALL', CRITICAL: 'URGENT', HIGH: 'ACT', MEDIUM: 'WATCH', LOW: 'LOW' };
 
 function statusColor(s: string) {
   if (s === 'CRITICAL') return 'bg-red-100 text-red-700 border border-red-200';
@@ -276,7 +277,7 @@ export function RiskManagement() {
                   </div>
                   <div className="mt-4 flex items-center gap-4 flex-wrap">
                     <p className="text-xs font-bold text-muted-foreground">{isAr ? 'المفتاح:' : 'Legend:'}</p>
-                    {[{ color: 'bg-green-400', label: 'Low (1–4)', labelAr: 'منخفض (1–4)' }, { color: 'bg-yellow-400', label: 'Medium (5–9)', labelAr: 'متوسط (5–9)' }, { color: 'bg-orange-400', label: 'High (10–14)', labelAr: 'مرتفع (10–14)' }, { color: 'bg-red-500', label: 'Critical (15–25)', labelAr: 'حرج (15–25)' }].map(l => (
+                    {[{ color: 'bg-green-400', label: 'Low (1–4)', labelAr: 'منخفض (1–4)' }, { color: 'bg-yellow-400', label: 'Watch (5–9)', labelAr: 'مراقبة (5–9)' }, { color: 'bg-orange-400', label: 'Act (10–14)', labelAr: 'تحرّك (10–14)' }, { color: 'bg-red-500', label: 'Urgent (15–25)', labelAr: 'عاجل (15–25)' }].map(l => (
                       <div key={l.label} className="flex items-center gap-1.5"><div className={`w-3 h-3 rounded ${l.color}`} /><span className="text-xs text-muted-foreground">{isAr ? l.labelAr : l.label}</span></div>
                     ))}
                   </div>
@@ -287,7 +288,7 @@ export function RiskManagement() {
               <div className="bg-muted rounded-2xl p-5">
                 <p className="text-xs font-bold text-primary uppercase tracking-widest mb-3">{isAr ? 'معادلة درجة المخاطرة' : 'Risk Score Formula'}</p>
                 <p className="text-sm text-foreground font-mono bg-white rounded-lg px-4 py-3 inline-block border border-border">{isAr ? 'درجة المخاطرة = الاحتمالية (1–5) × الأثر (1–5) = 1–25' : 'Risk Score = Likelihood (1–5) × Impact (1–5) = 1–25'}</p>
-                <p className="text-xs text-muted-foreground mt-3">{isAr ? 'يحدّد المجلس حدود قابلية تحمّل المخاطر. الإعداد الافتراضي لـ ISC: حرج ≥15 = تخفيف فوري مطلوب؛ مرتفع 10–14 = خطة تخفيف خلال 30 يوماً؛ متوسط 5–9 = مراجعة ربع سنوية؛ منخفض 1–4 = مراقبة سنوية.' : 'Risk appetite thresholds are defined by the board. ISC default: Critical ≥15 = immediate mitigation required; High 10–14 = mitigation plan within 30 days; Medium 5–9 = quarterly review; Low 1–4 = monitor annually.'}</p>
+                <p className="text-xs text-muted-foreground mt-3">{isAr ? 'يحدّد المجلس حدود قابلية تحمّل المخاطر. الإعداد الافتراضي لـ ISC: عاجل ≥15 = تخفيف فوري مطلوب؛ تحرّك 10–14 = خطة تخفيف خلال 30 يوماً؛ مراقبة 5–9 = مراجعة ربع سنوية؛ منخفض 1–4 = مراقبة سنوية.' : 'Risk appetite thresholds are defined by the board. ISC default: Urgent ≥15 = immediate mitigation required; Act 10–14 = mitigation plan within 30 days; Watch 5–9 = quarterly review; Low 1–4 = monitor annually.'}</p>
               </div>
             </Reveal>
             <Reveal>
@@ -335,7 +336,7 @@ export function RiskManagement() {
                 {(['ALL', 'CRITICAL', 'HIGH', 'MEDIUM'] as const).map(f => (
                   <button key={f} onClick={() => setRegisterFilter(f)}
                     className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors ${registerFilter === f ? 'bg-primary text-white border-primary' : 'bg-white text-muted-foreground border-border hover:border-primary/40'}`}>
-                    {isAr ? STATUS_AR[f] : f}
+                    {isAr ? STATUS_AR[f] : STATUS_EN[f]}
                   </button>
                 ))}
               </div>
@@ -362,7 +363,7 @@ export function RiskManagement() {
                           <td className="py-3 px-3 text-xs text-muted-foreground max-w-[200px]">{isAr ? r.controlAr : r.control}</td>
                           <td className="py-3 px-3 text-xs whitespace-nowrap text-muted-foreground">{isAr ? r.residualAr : r.residual}</td>
                           <td className="py-3 px-3 whitespace-nowrap">
-                            <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${statusColor(r.status)}`}>{isAr ? STATUS_AR[r.status] : r.status}</span>
+                            <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${statusColor(r.status)}`}>{isAr ? STATUS_AR[r.status] : (STATUS_EN[r.status] ?? r.status)}</span>
                           </td>
                         </tr>
                       ))}

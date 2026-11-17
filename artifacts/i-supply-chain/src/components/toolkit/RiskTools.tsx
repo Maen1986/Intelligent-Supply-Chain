@@ -57,9 +57,9 @@ const riskScore = (r: RiskItem) => r.likelihood * r.impact;
 const residualScore = (r: RiskItem) => r.residualLikelihood * r.residualImpact;
 
 function riskLevel(score: number): { label: string; labelAr: string; color: string; bg: string; border: string } {
-  if (riskBand(score) === 'critical') return { label: 'Critical',      labelAr: 'حرج',         color: '#7f1d1d', bg: '#fee2e2', border: '#ef4444' };
-  if (riskBand(score) === 'high') return { label: 'High',           labelAr: 'مرتفع',       color: '#92400e', bg: '#fef3c7', border: '#d97706' };
-  if (riskBand(score) === 'medium') return { label: 'Medium',         labelAr: 'متوسط',       color: '#854d0e', bg: '#fefce8', border: '#eab308' };
+  if (riskBand(score) === 'critical') return { label: 'Urgent',        labelAr: 'عاجل',        color: '#7f1d1d', bg: '#fee2e2', border: '#ef4444' };
+  if (riskBand(score) === 'high') return { label: 'Act',            labelAr: 'تحرّك',      color: '#92400e', bg: '#fef3c7', border: '#d97706' };
+  if (riskBand(score) === 'medium') return { label: 'Watch',          labelAr: 'مراقبة',     color: '#854d0e', bg: '#fefce8', border: '#eab308' };
   return              { label: 'Low',            labelAr: 'منخفض',      color: '#065f46', bg: '#d1fae5', border: '#10b981' };
 }
 
@@ -505,7 +505,7 @@ export function RiskToolsSection({ isAr, initialTab }: RiskToolsProps) {
 
     return [
       '## Supply Chain Risk Assessment Report',
-      `Total risks tracked: ${risks.length} | Critical: ${criticalRisks.length} | High: ${highRisks.length} | Open: ${openRisks.length} | Overdue: ${overdueRisks.length}`,
+      `Total risks tracked: ${risks.length} | Urgent: ${criticalRisks.length} | Act: ${highRisks.length} | Open: ${openRisks.length} | Overdue: ${overdueRisks.length}`,
       '',
       kriSummary ? '## Key Risk Indicators (KRIs)\n' + kriSummary : '',
       '',
@@ -514,10 +514,10 @@ export function RiskToolsSection({ isAr, initialTab }: RiskToolsProps) {
       '## Your Task',
       'Generate a 4–6 paragraph executive supply chain risk assessment:',
       '1. Overall risk posture: portfolio severity, concentration of risks by category',
-      '2. Critical and High risks: call out each by name with context and urgency',
+      '2. Urgent and Act risks: call out each by name with context and urgency',
       '3. KRI analysis: interpret the dashboard — what the numbers signal about supply health',
       '4. Mitigation gap analysis: which risks are inadequately mitigated or overdue',
-      '5. 90-day risk response plan: prioritised actions [CRITICAL] / [HIGH] / [MEDIUM]',
+      '5. 90-day risk response plan: prioritised actions [URGENT] / [ACT] / [WATCH]',
       '6. Resilience recommendations: structural improvements to reduce systemic supply chain fragility',
     ].filter(Boolean).join('\n');
   }, [risks, kriValues, criticalRisks, highRisks, openRisks, overdueRisks]);
@@ -659,8 +659,8 @@ export function RiskToolsSection({ isAr, initialTab }: RiskToolsProps) {
             <div className="grid grid-cols-4 gap-3">
               {[
                 { label: isAr ? 'إجمالي المخاطر' : 'Total Risks', value: risks.length, color: '#082C6B' },
-                { label: isAr ? 'حرجة' : 'Critical', value: criticalRisks.length, color: '#dc2626' },
-                { label: isAr ? 'مرتفعة' : 'High', value: highRisks.length, color: '#d97706' },
+                { label: isAr ? 'عاجلة' : 'Urgent', value: criticalRisks.length, color: '#dc2626' },
+                { label: isAr ? 'تتطلب تحرّكا' : 'Act', value: highRisks.length, color: '#d97706' },
                 { label: isAr ? 'متأخرة' : 'Overdue', value: overdueRisks.length, color: overdueRisks.length > 0 ? '#dc2626' : '#059669' },
               ].map(c => (
                 <div key={c.label} className="bg-white border border-slate-200 rounded-xl p-3 text-center shadow-sm">
@@ -911,7 +911,7 @@ export function RiskToolsSection({ isAr, initialTab }: RiskToolsProps) {
 
                 {/* Legend */}
                 <div className="flex gap-3 mt-3 flex-wrap">
-                  {[{ label: isAr ? 'حرج (15–25)' : 'Critical (15-25)', bg: '#fca5a5' }, { label: isAr ? 'مرتفع (10–14)' : 'High (10-14)', bg: '#fcd34d' }, { label: isAr ? 'متوسط (5–9)' : 'Medium (5-9)', bg: '#fef08a' }, { label: isAr ? 'منخفض (1–4)' : 'Low (1-4)', bg: '#bbf7d0' }].map(l => (
+                  {[{ label: isAr ? 'عاجل (15–25)' : 'Urgent (15-25)', bg: '#fca5a5' }, { label: isAr ? 'تحرّك (10–14)' : 'Act (10-14)', bg: '#fcd34d' }, { label: isAr ? 'مراقبة (5–9)' : 'Watch (5-9)', bg: '#fef08a' }, { label: isAr ? 'منخفض (1–4)' : 'Low (1-4)', bg: '#bbf7d0' }].map(l => (
                     <div key={l.label} className="flex items-center gap-1.5 text-[11px] text-slate-600">
                       <div className="w-4 h-4 rounded" style={{ background: l.bg }} />
                       {l.label}
