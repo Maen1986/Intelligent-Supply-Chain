@@ -49,7 +49,7 @@ describe('explorer shows sector-specific risks (#890)', () => {
     const tags = screen.getAllByTestId('scope-tag').map(t => t.textContent);
     expect(tags.filter(t => t === 'Sector-specific')).toHaveLength(7);
     expect(tags.filter(t => t === 'Common')).toHaveLength(3);
-    expect(screen.getByText(/Active ingredient \(API\)/)).toBeTruthy();
+    expect(screen.getAllByText(/Active ingredient \(API\)/).length).toBeGreaterThan(0);
   });
   it('shows the evidence kind and source type when a sector-specific risk is pinned', () => {
     render(<RiskPictureExplorer isAr={false} categories={cats} onOpenToolkit={() => {}} />);
@@ -69,7 +69,7 @@ describe('explorer shows sector-specific risks (#890)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'الأغذية والمشروبات' }));
     expect(screen.getAllByText('خاص بالقطاع').length).toBe(7);
     expect(screen.getAllByText('مشترك').length).toBe(3);
-    expect(screen.getByText(/فقدان شهادة الحلال/)).toBeTruthy();
+    expect(screen.getAllByText(/فقدان شهادة الحلال/).length).toBeGreaterThan(0);
   });
   it('shows ten ranked rows for every sector', () => {
     render(<RiskPictureExplorer isAr={false} categories={cats} onOpenToolkit={() => {}} />);

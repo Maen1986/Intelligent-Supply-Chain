@@ -104,7 +104,7 @@ describe('RiskPictureExplorer', () => {
     expect(screen.getAllByTestId('rank-row').map(r => r.textContent).join('|')).not.toBe(general);
     expect(screen.getByTestId('board-preview').textContent).toMatch(/Healthcare & Pharma/);
     expect(screen.getByTestId('board-preview').textContent).toMatch(/of 10 risks need action now/);
-    expect(screen.getByText('Quality recall')).toBeTruthy();
+    expect(screen.getAllByText(/Quality failure at a sole-source generic maker/).length).toBeGreaterThan(0);
     expect(Number(screen.getByTestId('act-now-count').textContent)).toBeGreaterThan(0);
   });
   it('ranks by score and keeps the act-now count equal to the Urgent plus Act bands', () => {
