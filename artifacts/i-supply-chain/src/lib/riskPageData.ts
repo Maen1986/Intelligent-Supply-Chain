@@ -85,7 +85,7 @@ export const WORLDWIDE: WorldwideExample[][] = [
   ],
   [
     { en: 'Gulf Coast petrochemical plant outages in the Texas winter storm', ar: 'توقف مصانع البتروكيماويات في ساحل الخليج خلال العاصفة الشتوية في تكساس', year: '2021', sourceName: 'US EIA, Today in Energy: ethane demand, February 2021', url: 'https://www.eia.gov/todayinEnergy/detail.php?id=48016', kind: 'primary' },
-    { en: 'Renesas chip plant fire hitting carmakers that relied on its chips', ar: 'حريق مصنع رقائق Renesas أثّر في صانعي السيارات المعتمدين عليه', year: '2021', sourceName: 'Renesas, official notice on the Naka factory fire', url: 'https://www.renesas.com/en/about/press-room/notice-regarding-semiconductor-manufacturing-factory-naka-factory-fire', kind: 'primary' },
+    { en: 'Renesas chip plant fire halting a production line, with only about two-thirds of its products able to be made elsewhere', ar: 'حريق مصنع رقائق Renesas أوقف خط إنتاج، ولا يمكن تصنيع سوى نحو ثلثي منتجاته في مكان آخر', year: '2021', sourceName: 'Renesas, official update 3 on the Naka factory fire (21 March 2021)', url: 'https://www.renesas.com/en/about/newsroom/update-3-notice-regarding-semiconductor-manufacturing-factory-naka-factory-fire', kind: 'primary' },
   ],
   [
     { en: 'Hanjin Shipping bankruptcy leaving cargo stranded at sea', ar: 'إفلاس شركة Hanjin للشحن وبقاء بضائع عالقة في البحر', year: '2016', sourceName: 'UNCTAD, Global container shipping: another crisis?', url: 'https://unctad.org/news/global-container-shipping-face-yet-another-crisis', kind: 'primary' },
