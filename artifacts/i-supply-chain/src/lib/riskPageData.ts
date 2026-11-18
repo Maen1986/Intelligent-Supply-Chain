@@ -84,7 +84,7 @@ export const SECTORS: Sector[] = [
     status: 'sourced',
     note: { en: 'Geoeconomic confrontation tops the 2026 near-term list and is expected to hit systemically important supply chains.', ar: 'يتصدّر التصعيد الجيو-اقتصادي قائمة 2026 القريبة ويُتوقّع أن يضرب سلاسل إمداد محورية.' },
     sources: [{ name: 'WEF Global Risks Report 2026', url: 'https://www.weforum.org/stories/global-risks/global-risks-2026-top-10-two-and-ten-year-horizon', kind: 'primary' }] } },
-  { id: 'retail', en: 'Retail / FMCG', ar: 'التجزئة / سلع استهلاكية', picks: ['R7', 'R13', 'R2', 'R14', 'R3', 'R10', 'R6', 'R15', 'R20', 'R19'], evidence: {
+  { id: 'retail', en: 'Retail / FMCG', ar: 'التجزئة / سلع استهلاكية', picks: ['RT1', 'RT2', 'RT3', 'RT4', 'RT5', 'RT6', 'RT8', 'R13', 'R14', 'R10'], evidence: {
     status: 'partly',
     note: { en: 'Surveys of retail and consumer-goods leaders point to demand volatility, supply-chain uncertainty and tariffs. The sources are vendor and consultancy surveys.', ar: 'تشير استطلاعات قادة التجزئة والسلع الاستهلاكية إلى تقلّب الطلب وعدم اليقين في سلسلة الإمداد والرسوم الجمركية. المصادر استطلاعات لشركات حلول واستشارات.' },
     sources: [
@@ -92,18 +92,18 @@ export const SECTORS: Sector[] = [
       { name: 'Protiviti 2025 top risks, consumer products and retail', url: 'https://www.protiviti.com/sites/default/files/2025-04/nc-state-protiviti-2025-top-risks-survey-cpg-retail-industry.pdf', kind: 'analyst' },
       { name: 'KPMG, US retailers and tariffs', url: 'https://kpmg.com/us/en/articles/2025/us-retailers-battle-tariff-turbulence.html', kind: 'analyst' },
     ] } },
-  { id: 'manufacturing', en: 'Manufacturing', ar: 'التصنيع', picks: ['R6', 'R16', 'R1', 'R3', 'R5', 'R8', 'R13', 'R20', 'R9', 'R15'], evidence: {
+  { id: 'manufacturing', en: 'Manufacturing', ar: 'التصنيع', picks: ['MF1', 'MF2', 'MF3', 'MF4', 'MF6', 'MF7', 'MF8', 'R1', 'R5', 'R13'], evidence: {
     status: 'partly',
     note: { en: 'McKinsey finds visibility thins beyond tier-one suppliers, which hides single points of failure.', ar: 'تجد ماكنزي أن الرؤية تضعف بعد موردي المستوى الأول، فتخفي نقاط الفشل المفردة.' },
     sources: [{ name: 'McKinsey supply chain risk pulse 2025', url: 'https://www.mckinsey.com/capabilities/operations/our-insights/supply-chain-risk-survey', kind: 'analyst' }] } },
-  { id: 'pharma', en: 'Healthcare & Pharma', ar: 'الرعاية الصحية والأدوية', picks: ['R6', 'R8', 'R4', 'R18', 'R20', 'R1', 'R3', 'R16', 'R9', 'R14'], evidence: {
+  { id: 'pharma', en: 'Healthcare & Pharma', ar: 'الرعاية الصحية والأدوية', picks: ['PH1', 'PH2', 'PH3', 'PH4', 'PH5', 'PH6', 'PH7', 'R16', 'R3', 'R9'], evidence: {
     status: 'sourced',
     note: { en: 'The FDA tied 62% of 2013 to 2017 drug shortages to manufacturing quality, and about 40% of generic markets had a single maker (2020).', ar: 'ربطت إدارة الغذاء والدواء الأمريكية 62% من حالات نقص الأدوية بين 2013 و2017 بجودة التصنيع، وكان نحو 40% من أسواق الأدوية الجنيسة بمصنّع واحد (2020).' },
     sources: [
       { name: 'FDA, Drug Shortages: Root Causes and Potential Solutions', url: 'https://www.fda.gov/media/131130/download', kind: 'primary' },
       { name: 'HHS ASPE, drug shortages analysis', url: 'https://aspe.hhs.gov/sites/default/files/documents/e164eb468ad15b938aefeff137201e7d/RRA1070-1_globalshortages.pdf', kind: 'primary' },
     ] } },
-  { id: 'energy', en: 'Oil & Gas / Energy', ar: 'النفط والغاز / الطاقة', picks: ['R3', 'R2', 'R12', 'R4', 'R9', 'R13', 'R16', 'R19', 'R17', 'R15'], evidence: {
+  { id: 'energy', en: 'Oil & Gas / Energy', ar: 'النفط والغاز / الطاقة', picks: ['EN1', 'EN2', 'EN3', 'EN4', 'EN5', 'EN6', 'EN8', 'R2', 'R12', 'R4'], evidence: {
     status: 'partly',
     note: { en: 'Chokepoint disruption, attacks on infrastructure and cyber threats to control systems appear in official energy and security material. Page dates are not yet re-checked.', ar: 'يظهر اضطراب الممرات الحيوية والهجمات على المنشآت والتهديدات السيبرانية لأنظمة التحكم في مواد رسمية عن الطاقة والأمن. لم تُعَد مراجعة تواريخ الصفحات بعد.' },
     sources: [
@@ -111,19 +111,19 @@ export const SECTORS: Sector[] = [
       { name: 'US EIA, Short-Term Energy Outlook, August 2026', url: 'https://www.eia.gov/outlooks/steo/archives/aug26.pdf', kind: 'primary' },
       { name: 'CISA, cyber actors targeting operational technology', url: 'https://www.cisa.gov/news-events/alerts/2025/05/06/unsophisticated-cyber-actors-targeting-operational-technology', kind: 'primary' },
     ] } },
-  { id: 'government', en: 'Government / Public', ar: 'القطاع الحكومي', picks: ['R4', 'R1', 'R10', 'R9', 'R17', 'R11', 'R2', 'R5', 'R15', 'R20'], evidence: {
+  { id: 'government', en: 'Government / Public', ar: 'القطاع الحكومي', picks: ['GV1', 'GV2', 'GV3', 'GV4', 'GV5', 'GV6', 'GV7', 'R4', 'R9', 'R11'], evidence: {
     status: 'sourced',
     note: { en: 'The UK National Audit Office found Carillion held about 420 public contracts; its liquidation was estimated to cost taxpayers about 148 million pounds.', ar: 'وجد مكتب التدقيق الوطني البريطاني أن لدى كاريليون نحو 420 عقدا حكوميا، وقُدّرت كلفة تصفيتها على دافعي الضرائب بنحو 148 مليون جنيه إسترليني.' },
     sources: [{ name: 'UK NAO, handling of the collapse of Carillion', url: 'https://www.nao.org.uk/press-releases/investigation-into-the-governments-handling-of-the-collapse-of-carillion/', kind: 'primary' }] } },
-  { id: 'logistics', en: 'Logistics / 3PL', ar: 'الخدمات اللوجستية', picks: ['R3', 'R14', 'R12', 'R9', 'R2', 'R5', 'R15', 'R13', 'R19', 'R16'], evidence: {
+  { id: 'logistics', en: 'Logistics / 3PL', ar: 'الخدمات اللوجستية', picks: ['LG1', 'LG2', 'LG3', 'LG4', 'LG5', 'LG6', 'LG7', 'R12', 'R9', 'R5'], evidence: {
     status: 'sourced',
     note: { en: 'UNCTAD reports the Cape detour added about 30% to voyage lengths, ports under strain, and Suez tonnage about 70% below 2023 in May 2025.', ar: 'تفيد الأونكتاد بأن الالتفاف حول رأس الرجاء الصالح زاد أطوال الرحلات نحو 30%، وبضغط على الموانئ، وبأن حمولات السويس كانت أقل بنحو 70% من 2023 في مايو 2025.' },
     sources: [{ name: 'UNCTAD, Review of Maritime Transport 2025', url: 'https://unctad.org/system/files/official-document/rmt2025_en.pdf', kind: 'primary' }] } },
-  { id: 'food', en: 'Food & Beverage', ar: 'الأغذية والمشروبات', picks: ['R8', 'R2', 'R19', 'R18', 'R3', 'R10', 'R12', 'R14', 'R15', 'R20'], evidence: {
+  { id: 'food', en: 'Food & Beverage', ar: 'الأغذية والمشروبات', picks: ['FB1', 'FB2', 'FB3', 'FB4', 'FB5', 'FB6', 'FB7', 'R2', 'R14', 'R10'], evidence: {
     status: 'partly',
     note: { en: 'FAO links food price swings to weather, Black Sea logistics and animal disease. Recall and safety risk is ISC judgement.', ar: 'تربط الفاو تقلّبات أسعار الغذاء بالطقس ولوجستيات البحر الأسود وأمراض الحيوان. أما مخاطر السحب وسلامة الغذاء فتقدير ممارسين.' },
     sources: [{ name: 'FAO Food Price Index', url: 'https://www.fao.org/worldfoodsituation/foodpricesindex/en/', kind: 'primary' }] } },
-  { id: 'construction', en: 'Construction / Real Estate', ar: 'المقاولات والعقار', picks: ['R1', 'R2', 'R17', 'R6', 'R4', 'R12', 'R15', 'R19', 'R13', 'R20'], evidence: {
+  { id: 'construction', en: 'Construction / Real Estate', ar: 'المقاولات والعقار', picks: ['CN1', 'CN2', 'CN3', 'CN4', 'CN5', 'CN7', 'CN8', 'R4', 'R15', 'R2'], evidence: {
     status: 'judgement',
     note: { en: 'Only trade-body and press sources were found for materials inflation and contractor insolvency. No official source yet.', ar: 'لم تُوجد سوى مصادر هيئات تجارية وصحافة عن تضخم المواد وتعثّر المقاولين. لا يوجد مصدر رسمي بعد.' },
     sources: [{ name: 'BCIS, why contractors are vulnerable to insolvency', url: 'https://bcis.co.uk/insight/why-are-contractors-in-the-construction-industry-vulnerable-to-insolvencies', kind: 'analyst' }] } },
