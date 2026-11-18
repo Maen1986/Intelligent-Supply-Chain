@@ -18,6 +18,7 @@ import { RiskPictureExplorer } from '@/components/risk/RiskPictureExplorer';
 import { WorldwideExamples } from '@/components/risk/WorldwideExamples';
 import { GovernanceSelfCheck } from '@/components/risk/GovernanceSelfCheck';
 import { RiskKpiBoard } from '@/components/risk/RiskKpiBoard';
+import { RegionalMeasures } from '@/components/risk/RegionalMeasures';
 import { IsoStageBar } from '@/components/risk/IsoStageBar';
 import { HeatMapCellPanel } from '@/components/risk/HeatMapCellPanel';
 
@@ -498,6 +499,7 @@ export function RiskManagement() {
         {activeTab === 6 && (
           <div className="space-y-10">
             <RiskKpiBoard isAr={isAr} onOpenTab={setActiveTab} />
+            <RegionalMeasures isAr={isAr} />
             <KPIDashboard slug="risk-management" />
           </div>
         )}
