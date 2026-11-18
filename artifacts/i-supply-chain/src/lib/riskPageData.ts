@@ -84,11 +84,11 @@ export const WORLDWIDE: WorldwideExample[][] = [
     { en: 'US-China tariff and export-control shifts reshaping sourcing', ar: 'تحوّلات الرسوم وضوابط التصدير بين أمريكا والصين التي أعادت تشكيل مصادر التوريد', year: '2018', sourceName: 'USTR, Section 301 product list fact sheet', url: 'https://ustr.gov/about-us/policy-offices/press-office/fact-sheets/2018/june/section-301-product-list-fact-sheet', kind: 'primary' },
   ],
   [
-    { en: 'Gulf Coast petrochemical plant outages in the Texas winter storm', ar: 'توقف مصانع البتروكيماويات في ساحل الخليج خلال العاصفة الشتوية في تكساس', year: '2021', sourceName: 'Oil & Gas Journal', url: 'https://www.ogj.com/refining-processing/article/14197991/winter-storm-ices-usgc-refining-petrochemical-operations', kind: 'press' },
-    { en: 'Renesas chip plant fire hitting carmakers that relied on its chips', ar: 'حريق مصنع رقائق Renesas أثّر في صانعي السيارات المعتمدين عليه', year: '2021', sourceName: 'Omdia analysis', url: 'https://omdia.tech.informa.com/blogs/2021/mar/fire-at-renesas-wafer-fab', kind: 'analyst' },
+    { en: 'Gulf Coast petrochemical plant outages in the Texas winter storm', ar: 'توقف مصانع البتروكيماويات في ساحل الخليج خلال العاصفة الشتوية في تكساس', year: '2021', sourceName: 'US EIA, Today in Energy: ethane demand, February 2021', url: 'https://www.eia.gov/todayinEnergy/detail.php?id=48016', kind: 'primary' },
+    { en: 'Renesas chip plant fire halting a production line, with only about two-thirds of its products able to be made elsewhere', ar: 'حريق مصنع رقائق Renesas أوقف خط إنتاج، ولا يمكن تصنيع سوى نحو ثلثي منتجاته في مكان آخر', year: '2021', sourceName: 'Renesas, official update 3 on the Naka factory fire (21 March 2021)', url: 'https://www.renesas.com/en/about/newsroom/update-3-notice-regarding-semiconductor-manufacturing-factory-naka-factory-fire', kind: 'primary' },
   ],
   [
-    { en: 'Hanjin Shipping bankruptcy leaving cargo stranded at sea', ar: 'إفلاس شركة Hanjin للشحن وبقاء بضائع عالقة في البحر', year: '2016', sourceName: 'Fortune', url: 'https://fortune.com/2016/09/11/hanjin-shipping-collapse-numbers/', kind: 'press' },
+    { en: 'Hanjin Shipping bankruptcy leaving cargo stranded at sea', ar: 'إفلاس شركة Hanjin للشحن وبقاء بضائع عالقة في البحر', year: '2016', sourceName: 'UNCTAD, Global container shipping: another crisis?', url: 'https://unctad.org/news/global-container-shipping-face-yet-another-crisis', kind: 'primary' },
   ],
   [
     { en: 'US Uyghur Forced Labor Prevention Act: import detentions at the border', ar: 'قانون الولايات المتحدة لمنع العمل القسري للأويغور: احتجاز واردات عند الحدود', year: '2022', sourceName: 'CSIS, impact after three years', url: 'https://www.csis.org/analysis/assessing-impact-uyghur-forced-labor-prevention-act-after-three-years', kind: 'analyst' },
@@ -97,7 +97,7 @@ export const WORLDWIDE: WorldwideExample[][] = [
     { en: 'Floods in Thailand disrupting global hard-drive supply', ar: 'فيضانات تايلاند التي عطّلت توريد الأقراص الصلبة عالميا', year: '2011', sourceName: 'eWeek', url: 'https://www.eweek.com/storage/thailand-flooding-could-impact-global-hdd-production-until-spring-2012/', kind: 'press' },
   ],
   [
-    { en: 'Rana Plaza factory collapse in Bangladesh and the brand response', ar: 'انهيار مصنع رانا بلازا في بنغلاديش واستجابة العلامات التجارية', year: '2013', sourceName: 'Al Jazeera, ten years on', url: 'https://www.aljazeera.com/news/2023/4/24/ten-years-of-rana-plaza-how-safe-is-bangladesh-garment-industry', kind: 'press' },
+    { en: 'Rana Plaza factory collapse in Bangladesh and the brand response', ar: 'انهيار مصنع رانا بلازا في بنغلاديش واستجابة العلامات التجارية', year: '2013', sourceName: 'ILO, The Rana Plaza disaster ten years on', url: 'https://www.ilo.org/infostories/en-GB/Stories/Country-Focus/rana-plaza', kind: 'primary' },
   ],
   [
     { en: 'Suez Canal blocked by the Ever Given', ar: 'إغلاق قناة السويس بسفينة Ever Given', year: '2021', sourceName: 'Arab News, Suez Canal Authority statements', url: 'https://www.arabnews.pk/node/1836171', kind: 'press' },
