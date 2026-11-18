@@ -100,7 +100,7 @@ export const WORLDWIDE: WorldwideExample[][] = [
     { en: 'Rana Plaza factory collapse in Bangladesh and the brand response', ar: 'انهيار مصنع رانا بلازا في بنغلاديش واستجابة العلامات التجارية', year: '2013', sourceName: 'ILO, The Rana Plaza disaster ten years on', url: 'https://www.ilo.org/infostories/en-GB/Stories/Country-Focus/rana-plaza', kind: 'primary' },
   ],
   [
-    { en: 'Suez Canal blocked by the Ever Given', ar: 'إغلاق قناة السويس بسفينة Ever Given', year: '2021', sourceName: 'Arab News, Suez Canal Authority statements', url: 'https://www.arabnews.pk/node/1836171', kind: 'press' },
+    { en: 'Suez Canal blocked by the Ever Given', ar: 'إغلاق قناة السويس بسفينة Ever Given', year: '2021', sourceName: 'IMO Secretary-General statements on the Ever Given (26 March and 1 April 2021)', url: 'https://www.imo.org/en/MediaCentre/SecretaryGeneral/Pages/MV-Ever-Given-incident.aspx', kind: 'primary' },
     { en: 'War in Ukraine: energy, food and fertiliser price shock', ar: 'الحرب في أوكرانيا: صدمة أسعار الطاقة والغذاء والأسمدة', year: '2022', sourceName: 'World Bank, Commodity Markets Outlook press release', url: 'https://www.worldbank.org/en/news/press-release/2022/04/26/food-and-energy-price-shocks-from-ukraine-war', kind: 'primary' },
   ],
   [
