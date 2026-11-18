@@ -10,7 +10,7 @@ import { RiskKpiBoard } from '../RiskKpiBoard';
 import { HeatMapCellPanel } from '../HeatMapCellPanel';
 import { WorldwideExamples } from '../WorldwideExamples';
 import { IsoStageBar } from '../IsoStageBar';
-import { HEAT_MAP_RISKS, SECTORS, WORLDWIDE, GOV_TIERS, KPI_DEFS, ISO_STAGE_BY_TAB, bandView, kpiState, tierState } from '@/lib/riskPageData';
+import { HEAT_MAP_RISKS, SAMPLE_RISKS, SECTORS, WORLDWIDE, GOV_TIERS, KPI_DEFS, ISO_STAGE_BY_TAB, bandView, kpiState, tierState } from '@/lib/riskPageData';
 
 afterEach(() => cleanup());
 
@@ -27,12 +27,32 @@ describe('riskPageData integrity', () => {
       expect(r.nameAr).toMatch(ARABIC);
     }
   });
-  it('every sector picks five existing sample risks', () => {
-    for (const s of SECTORS) {
-      expect(s.picks).toHaveLength(5);
-      for (const id of s.picks) expect(HEAT_MAP_RISKS.some(r => r.id === id)).toBe(true);
-      expect(s.ar).toMatch(ARABIC);
+  it('has the 20-risk explorer pool: the 12 heat-map risks plus 8 new, ids R1 to R20', () => {
+    expect(SAMPLE_RISKS).toHaveLength(20);
+    expect(new Set(SAMPLE_RISKS.map(r => r.id)).size).toBe(20);
+    for (let n = 1; n <= 20; n++) expect(SAMPLE_RISKS.some(r => r.id === `R${n}`)).toBe(true);
+    for (const r of SAMPLE_RISKS) {
+      expect(r.l).toBeGreaterThanOrEqual(1); expect(r.l).toBeLessThanOrEqual(5);
+      expect(r.i).toBeGreaterThanOrEqual(1); expect(r.i).toBeLessThanOrEqual(5);
+      expect(r.cat).toBeGreaterThanOrEqual(0); expect(r.cat).toBeLessThanOrEqual(7);
+      expect(r.nameAr).toMatch(ARABIC);
     }
+  });
+  it('every sector picks ten distinct pool risks and carries an evidence note with Arabic and https sources', () => {
+    for (const s of SECTORS) {
+      expect(s.picks).toHaveLength(10);
+      expect(new Set(s.picks).size).toBe(10);
+      for (const id of s.picks) expect(SAMPLE_RISKS.some(r => r.id === id)).toBe(true);
+      expect(s.ar).toMatch(ARABIC);
+      expect(s.evidence.note.en.length).toBeGreaterThan(20);
+      expect(s.evidence.note.ar).toMatch(ARABIC);
+      expect(s.evidence.sources.length).toBeGreaterThan(0);
+      for (const src of s.evidence.sources) expect(src.url).toMatch(/^https:\/\//);
+    }
+  });
+  it('no two sectors show the same set of ten risks', () => {
+    const keys = SECTORS.map(s => [...s.picks].sort().join(','));
+    expect(new Set(keys).size).toBe(SECTORS.length);
   });
   it('has worldwide examples for all eight categories, each with year, https source and Arabic', () => {
     expect(WORLDWIDE).toHaveLength(8);
@@ -71,14 +91,52 @@ describe('riskPageData integrity', () => {
 });
 
 describe('RiskPictureExplorer', () => {
-  it('shows five risks and a board preview, and changes with the sector', () => {
+  const active = () => Array.from(document.querySelectorAll('[data-testid="risk-dot"][data-active="true"]'));
+  it('shows ten ranked risks and a board preview, and changes with the sector', () => {
     render(<RiskPictureExplorer isAr={false} categories={cats} onOpenToolkit={() => {}} />);
-    expect(screen.getAllByTestId('risk-dot')).toHaveLength(5);
+    expect(active()).toHaveLength(10);
+    expect(screen.getAllByTestId('rank-row')).toHaveLength(10);
+    const general = screen.getAllByTestId('rank-row').map(r => r.textContent).join('|');
     fireEvent.click(screen.getByRole('button', { name: 'Healthcare & Pharma' }));
-    expect(screen.getAllByTestId('risk-dot')).toHaveLength(5);
+    expect(active()).toHaveLength(10);
+    expect(screen.getAllByTestId('rank-row')).toHaveLength(10);
+    expect(screen.getAllByTestId('rank-row').map(r => r.textContent).join('|')).not.toBe(general);
     expect(screen.getByTestId('board-preview').textContent).toMatch(/Healthcare & Pharma/);
+    expect(screen.getByTestId('board-preview').textContent).toMatch(/of 10 risks need action now/);
     expect(screen.getByText('Quality recall')).toBeTruthy();
     expect(Number(screen.getByTestId('act-now-count').textContent)).toBeGreaterThan(0);
+  });
+  it('ranks by score and keeps the act-now count equal to the Urgent plus Act bands', () => {
+    render(<RiskPictureExplorer isAr={false} categories={cats} onOpenToolkit={() => {}} />);
+    for (const s of SECTORS) {
+      fireEvent.click(screen.getByRole('button', { name: s.en }));
+      const scores = screen.getAllByTestId('rank-row').map(r => Number((r.textContent || '').match(/(\d+)$/)?.[1]));
+      for (let i = 1; i < scores.length; i++) expect(scores[i - 1]).toBeGreaterThanOrEqual(scores[i]);
+      const band = (k: string) => Number(screen.queryByTestId(`band-${k}`)?.getAttribute('data-count') ?? 0);
+      expect(Number(screen.getByTestId('act-now-count').textContent)).toBe(band('critical') + band('high'));
+      expect(band('critical') + band('high') + band('medium') + band('low')).toBe(10);
+    }
+  });
+  it('pins a risk to show its score and usual response, and unpins on a second press', () => {
+    render(<RiskPictureExplorer isAr={false} categories={cats} onOpenToolkit={() => {}} />);
+    expect(screen.getByTestId('risk-detail').textContent).toMatch(/Select a risk/);
+    const row = screen.getAllByTestId('rank-row')[0];
+    fireEvent.click(row);
+    expect(screen.getByTestId('risk-detail').textContent).toMatch(/Likelihood \d × impact \d = \d+/);
+    expect(screen.getByTestId('risk-detail').textContent).toMatch(/Usual response: Response \d/);
+    fireEvent.click(row);
+    expect(screen.getByTestId('risk-detail').textContent).toMatch(/Select a risk/);
+  });
+  it('names the sources behind each sector with a status, and says the order is judgement', () => {
+    render(<RiskPictureExplorer isAr={false} categories={cats} onOpenToolkit={() => {}} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Healthcare & Pharma' }));
+    const ev = screen.getByTestId('sector-evidence');
+    expect(ev.querySelectorAll('a[href^="https://"]').length).toBeGreaterThan(0);
+    expect(ev.textContent).toMatch(/FDA/);
+    expect(screen.getByTestId('evidence-status').textContent).toBe('Theme found in sources');
+    expect(ev.textContent).toMatch(/order is ISC practitioner judgement/);
+    fireEvent.click(screen.getByRole('button', { name: 'Construction / Real Estate' }));
+    expect(screen.getByTestId('evidence-status').textContent).toBe('ISC judgement');
   });
   it('renders in Arabic and opens the toolkit', () => {
     const open = vi.fn();
