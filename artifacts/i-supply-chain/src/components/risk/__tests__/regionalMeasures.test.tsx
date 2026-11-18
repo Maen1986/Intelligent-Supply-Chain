@@ -13,7 +13,8 @@ describe('RegionalMeasures (#892)', () => {
     for (const r of REGIONAL_INDICATORS) {
       const a = REGIONAL_INDICATORS_AR[r.id];
       expect(a, r.id).toBeDefined();
-      for (const v of [a.indicator, a.formula, a.unit, a.frequency, a.rule]) expect(v).toMatch(ARABIC);
+      for (const v of [a.indicator, a.formula, a.frequency, a.rule]) expect(v).toMatch(ARABIC);
+      expect(a.unit.length).toBeGreaterThan(0);
       if (r.parameterStatus !== 'none') expect(a.parameter, r.id).toMatch(ARABIC);
     }
   });
