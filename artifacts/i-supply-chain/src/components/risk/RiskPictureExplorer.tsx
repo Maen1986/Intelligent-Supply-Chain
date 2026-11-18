@@ -62,6 +62,7 @@ export function RiskPictureExplorer({ isAr, categories, onOpenToolkit }: Props) 
   const first = risks[0];
   const firstCat = first ? categories[first.cat] : undefined;
   const sel = risks.find(r => r.id === pinned) ?? null;
+  const selSpec = sel ? SECTOR_RISKS.find(x => x.id === sel.id) : undefined;
   const selCat = sel ? categories[sel.cat] : undefined;
   const highlight = hover ?? sel?.id ?? null;
   const ev = sector.evidence;
@@ -144,9 +145,9 @@ export function RiskPictureExplorer({ isAr, categories, onOpenToolkit }: Props) 
               <>
                 <p className="font-semibold">{isAr ? sel.nameAr : sel.name}</p>
                 <p className="text-muted-foreground">{tr(isAr, `Likelihood ${sel.l} × impact ${sel.i} = ${sel.l * sel.i} (${bandView(sel.l * sel.i).en})`, `الاحتمال ${sel.l} × الأثر ${sel.i} = ${sel.l * sel.i} (${bandView(sel.l * sel.i).ar})`)}</p>
-                {'evidenceKind' in sel && (
+                {selSpec && (
                   <p data-testid="risk-evidence" className="mt-1 text-xs text-muted-foreground">
-                    <b>{tr(isAr, 'Evidence: ', 'الدليل: ')}</b>{isAr ? SOURCE_TYPE_LABEL[sel.sourceType].ar : SOURCE_TYPE_LABEL[sel.sourceType].en}, {isAr ? EVIDENCE_KIND_LABEL[sel.evidenceKind].name.ar : EVIDENCE_KIND_LABEL[sel.evidenceKind].name.en} ({isAr ? EVIDENCE_KIND_LABEL[sel.evidenceKind].use.ar : EVIDENCE_KIND_LABEL[sel.evidenceKind].use.en}). {tr(isAr, 'Likelihood and impact are ISC sample values.', 'الاحتمال والأثر قيم نموذجية من آي سبلاي تشين.')}
+                    <b>{tr(isAr, 'Evidence: ', 'الدليل: ')}</b>{isAr ? SOURCE_TYPE_LABEL[selSpec.sourceType].ar : SOURCE_TYPE_LABEL[selSpec.sourceType].en}, {isAr ? EVIDENCE_KIND_LABEL[selSpec.evidenceKind].name.ar : EVIDENCE_KIND_LABEL[selSpec.evidenceKind].name.en} ({isAr ? EVIDENCE_KIND_LABEL[selSpec.evidenceKind].use.ar : EVIDENCE_KIND_LABEL[selSpec.evidenceKind].use.en}). {tr(isAr, 'Likelihood and impact are ISC sample values.', 'الاحتمال والأثر قيم نموذجية من آي سبلاي تشين.')}
                   </p>
                 )}
                 {selCat && <p className="mt-1"><b>{tr(isAr, 'Usual response: ', 'الاستجابة المعتادة: ')}</b>{isAr ? selCat.responseAr : selCat.response}</p>}
