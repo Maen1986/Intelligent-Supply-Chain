@@ -1,6 +1,13 @@
 import { useState } from 'react';
 import { SAMPLE_RISKS, SECTORS, SOURCE_KIND_LABEL, EVIDENCE_STATUS_LABEL, bandView } from '@/lib/riskPageData';
 import type { BandView, EvidenceStatus } from '@/lib/riskPageData';
+import { SECTOR_RISKS, EVIDENCE_KIND_LABEL, SOURCE_TYPE_LABEL } from '@/lib/sectorSpecificRisks';
+
+/** The 20 common risks plus the sector-specific ones, so every sector's picks can be looked up. */
+const POOL = [...SAMPLE_RISKS, ...SECTOR_RISKS];
+const PLOTTED = POOL.filter(r => SECTORS.some(s => s.picks.includes(r.id)));
+const isSpecific = (id: string) => !/^R\d+$/.test(id);
+const dotLabel = (id: string) => (isSpecific(id) ? id : id.slice(1));
 
 interface Category { response: string; responseAr: string }
 interface Props {
@@ -34,7 +41,7 @@ export function RiskPictureExplorer({ isAr, categories, onOpenToolkit }: Props) 
   const [hover, setHover] = useState<string | null>(null);
   const sector = SECTORS.find(s => s.id === sectorId) ?? SECTORS[0];
   const risks = sector.picks
-    .map(id => SAMPLE_RISKS.find(r => r.id === id))
+    .map(id => POOL.find(r => r.id === id))
     .filter((r): r is NonNullable<typeof r> => Boolean(r))
     .sort((a, b) => b.l * b.i - a.l * a.i);
   const total = risks.length;
@@ -64,7 +71,7 @@ export function RiskPictureExplorer({ isAr, categories, onOpenToolkit }: Props) 
     <section aria-labelledby="rp-title" data-testid="risk-picture" className="space-y-5">
       <div>
         <h2 id="rp-title" className="text-2xl font-bold text-primary">{tr(isAr, 'See your risk picture in 10 seconds', 'شاهد صورة مخاطرك في 10 ثوانٍ')}</h2>
-        <p className="text-muted-foreground mt-1">{tr(isAr, 'Pick your sector. ISC shows the ten sample risks most likely to matter, chosen from twenty, on the same 5×5 grid the toolkit uses.', 'اختر قطاعك. تعرض آي سبلاي تشين عشرة مخاطر نموذجية الأرجح أهميتها، مختارة من عشرين، على الشبكة 5×5 نفسها التي تستخدمها الأدوات.')}</p>
+        <p className="text-muted-foreground mt-1">{tr(isAr, 'Pick your sector. ISC shows the ten sample risks most likely to matter, seven specific to the sector and three common, on the same 5×5 grid the toolkit uses.', 'اختر قطاعك. تعرض آي سبلاي تشين عشرة مخاطر نموذجية الأرجح أهميتها، سبعة خاصة بالقطاع وثلاثة مشتركة، على الشبكة 5×5 نفسها التي تستخدمها الأدوات.')}</p>
       </div>
       <div className="flex flex-wrap gap-2" role="group" aria-label={tr(isAr, 'Sector', 'القطاع')}>
         {SECTORS.map(s => (
@@ -93,14 +100,14 @@ export function RiskPictureExplorer({ isAr, categories, onOpenToolkit }: Props) 
                   </div>
                 )))}
               </div>
-              {SAMPLE_RISKS.map(r => {
+              {PLOTTED.map(r => {
                 const on = activeIds.has(r.id);
                 const [dx, dy] = offset(cellCount[`${r.l}-${r.i}`] ?? 1, slotOf[r.id] ?? 0);
                 return (
                   <span key={r.id} data-testid="risk-dot" data-active={on} aria-hidden="true"
                     style={{ left: `calc(${(r.i - 1) * 20 + 10}% + ${dx}px)`, top: `calc(${(5 - r.l) * 20 + 10}% + ${dy}px)` }}
-                    className={`absolute w-6 h-6 rounded-full border-2 border-white shadow text-[10px] font-bold flex items-center justify-center transition-[left,top,opacity,transform] duration-700 ease-out motion-reduce:transition-none ${on ? 'opacity-100' : 'opacity-0 scale-50 pointer-events-none'} ${highlight === r.id ? 'bg-accent text-foreground scale-125 z-10' : 'bg-primary text-white'}`}>
-                    {r.id.slice(1)}
+                    className={`absolute w-6 h-6 rounded-full border-2 border-white shadow text-[9px] font-bold flex items-center justify-center transition-[left,top,opacity,transform] duration-700 ease-out motion-reduce:transition-none ${on ? 'opacity-100' : 'opacity-0 scale-50 pointer-events-none'} ${highlight === r.id ? 'bg-accent text-foreground scale-125 z-10' : 'bg-primary text-white'}`}>
+                    {dotLabel(r.id)}
                   </span>
                 );
               })}
@@ -122,7 +129,7 @@ export function RiskPictureExplorer({ isAr, categories, onOpenToolkit }: Props) 
                     onFocus={() => setHover(r.id)} onBlur={() => setHover(null)}
                     className={`w-full grid grid-cols-[1.5rem_minmax(0,1fr)_auto] items-center gap-x-2 gap-y-1 min-h-[44px] px-2 py-1.5 rounded-lg text-start text-sm transition-colors hover:bg-muted aria-pressed:bg-muted ${highlight === r.id ? 'bg-muted' : ''}`}>
                     <span className="text-muted-foreground tabular-nums">{n + 1}</span>
-                    <span>{isAr ? r.nameAr : r.name}</span>
+                    <span>{isAr ? r.nameAr : r.name}{' '}<span data-testid="scope-tag" className="inline-block align-middle px-1.5 py-0.5 rounded bg-muted text-[10px] text-muted-foreground">{isSpecific(r.id) ? tr(isAr, 'Sector-specific', 'خاص بالقطاع') : tr(isAr, 'Common', 'مشترك')}</span></span>
                     <span className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-bold tabular-nums ${b.cls}`}>{isAr ? b.ar : b.en} {score}</span>
                     <span className="col-start-2 col-span-2 h-1.5 rounded-full bg-muted overflow-hidden" aria-hidden="true">
                       <span className={`block h-full rounded-full ${b.cls.split(' ')[0]}`} style={{ width: `${(score / 25) * 100}%` }} />
@@ -137,6 +144,11 @@ export function RiskPictureExplorer({ isAr, categories, onOpenToolkit }: Props) 
               <>
                 <p className="font-semibold">{isAr ? sel.nameAr : sel.name}</p>
                 <p className="text-muted-foreground">{tr(isAr, `Likelihood ${sel.l} × impact ${sel.i} = ${sel.l * sel.i} (${bandView(sel.l * sel.i).en})`, `الاحتمال ${sel.l} × الأثر ${sel.i} = ${sel.l * sel.i} (${bandView(sel.l * sel.i).ar})`)}</p>
+                {'evidenceKind' in sel && (
+                  <p data-testid="risk-evidence" className="mt-1 text-xs text-muted-foreground">
+                    <b>{tr(isAr, 'Evidence: ', 'الدليل: ')}</b>{isAr ? SOURCE_TYPE_LABEL[sel.sourceType].ar : SOURCE_TYPE_LABEL[sel.sourceType].en}, {isAr ? EVIDENCE_KIND_LABEL[sel.evidenceKind].name.ar : EVIDENCE_KIND_LABEL[sel.evidenceKind].name.en} ({isAr ? EVIDENCE_KIND_LABEL[sel.evidenceKind].use.ar : EVIDENCE_KIND_LABEL[sel.evidenceKind].use.en}). {tr(isAr, 'Likelihood and impact are ISC sample values.', 'الاحتمال والأثر قيم نموذجية من آي سبلاي تشين.')}
+                  </p>
+                )}
                 {selCat && <p className="mt-1"><b>{tr(isAr, 'Usual response: ', 'الاستجابة المعتادة: ')}</b>{isAr ? selCat.responseAr : selCat.response}</p>}
               </>
             ) : (

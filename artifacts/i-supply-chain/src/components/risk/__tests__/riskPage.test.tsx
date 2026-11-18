@@ -10,6 +10,7 @@ import { RiskKpiBoard } from '../RiskKpiBoard';
 import { HeatMapCellPanel } from '../HeatMapCellPanel';
 import { WorldwideExamples } from '../WorldwideExamples';
 import { IsoStageBar } from '../IsoStageBar';
+import { SECTOR_RISKS } from '@/lib/sectorSpecificRisks';
 import { HEAT_MAP_RISKS, SAMPLE_RISKS, SECTORS, WORLDWIDE, GOV_TIERS, KPI_DEFS, ISO_STAGE_BY_TAB, bandView, kpiState, tierState } from '@/lib/riskPageData';
 
 afterEach(() => cleanup());
@@ -42,7 +43,7 @@ describe('riskPageData integrity', () => {
     for (const s of SECTORS) {
       expect(s.picks).toHaveLength(10);
       expect(new Set(s.picks).size).toBe(10);
-      for (const id of s.picks) expect(SAMPLE_RISKS.some(r => r.id === id)).toBe(true);
+      for (const id of s.picks) expect([...SAMPLE_RISKS, ...SECTOR_RISKS].some(r => r.id === id)).toBe(true);
       expect(s.ar).toMatch(ARABIC);
       expect(s.evidence.note.en.length).toBeGreaterThan(20);
       expect(s.evidence.note.ar).toMatch(ARABIC);
